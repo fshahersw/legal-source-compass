@@ -40,6 +40,8 @@ import { Route as MattersIdRouteImport } from './routes/matters.$id'
 import { Route as MattersCasesRouteImport } from './routes/matters.cases'
 import { Route as PlacesIndexRouteImport } from './routes/places.index'
 import { Route as PlacesStateRouteImport } from './routes/places.$state'
+import { Route as RegistryIndexRouteImport } from './routes/registry.index'
+import { Route as RegistryIdRouteImport } from './routes/registry.$id'
 import { Route as SourcesCoverageRouteImport } from './routes/sources.coverage'
 import { Route as SourcesLibraryRouteImport } from './routes/sources.library'
 import { Route as SourcesRegistryRouteImport } from './routes/sources.registry'
@@ -204,6 +206,16 @@ const PlacesStateRoute = PlacesStateRouteImport.update({
   path: '/places/$state',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RegistryIndexRoute = RegistryIndexRouteImport.update({
+  id: '/registry/',
+  path: '/registry/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegistryIdRoute = RegistryIdRouteImport.update({
+  id: '/registry/$id',
+  path: '/registry/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SourcesCoverageRoute = SourcesCoverageRouteImport.update({
   id: '/sources/coverage',
   path: '/sources/coverage',
@@ -271,6 +283,7 @@ export interface FileRoutesByFullPath {
   '/matters/$id': typeof MattersIdRoute
   '/matters/cases': typeof MattersCasesRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
+  '/registry/$id': typeof RegistryIdRoute
   '/sources/coverage': typeof SourcesCoverageRoute
   '/sources/library': typeof SourcesLibraryRoute
   '/sources/registry': typeof SourcesRegistryRoute
@@ -281,6 +294,7 @@ export interface FileRoutesByFullPath {
   '/judges/': typeof JudgesIndexRoute
   '/matters/': typeof MattersIndexRoute
   '/places/': typeof PlacesIndexRoute
+  '/registry/': typeof RegistryIndexRoute
   '/data/tables/$table': typeof DataTablesTableRoute
   '/law/provision/$id': typeof LawProvisionIdRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
@@ -312,6 +326,7 @@ export interface FileRoutesByTo {
   '/matters/$id': typeof MattersIdRoute
   '/matters/cases': typeof MattersCasesRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
+  '/registry/$id': typeof RegistryIdRoute
   '/sources/coverage': typeof SourcesCoverageRoute
   '/sources/library': typeof SourcesLibraryRoute
   '/sources/registry': typeof SourcesRegistryRoute
@@ -322,6 +337,7 @@ export interface FileRoutesByTo {
   '/judges': typeof JudgesIndexRoute
   '/matters': typeof MattersIndexRoute
   '/places': typeof PlacesIndexRoute
+  '/registry': typeof RegistryIndexRoute
   '/data/tables/$table': typeof DataTablesTableRoute
   '/law/provision/$id': typeof LawProvisionIdRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
@@ -354,6 +370,7 @@ export interface FileRoutesById {
   '/matters/$id': typeof MattersIdRoute
   '/matters/cases': typeof MattersCasesRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
+  '/registry/$id': typeof RegistryIdRoute
   '/sources/coverage': typeof SourcesCoverageRoute
   '/sources/library': typeof SourcesLibraryRoute
   '/sources/registry': typeof SourcesRegistryRoute
@@ -364,6 +381,7 @@ export interface FileRoutesById {
   '/judges/': typeof JudgesIndexRoute
   '/matters/': typeof MattersIndexRoute
   '/places/': typeof PlacesIndexRoute
+  '/registry/': typeof RegistryIndexRoute
   '/data/tables/$table': typeof DataTablesTableRoute
   '/law_/provision/$id': typeof LawProvisionIdRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
@@ -397,6 +415,7 @@ export interface FileRouteTypes {
     | '/matters/$id'
     | '/matters/cases'
     | '/places/$state'
+    | '/registry/$id'
     | '/sources/coverage'
     | '/sources/library'
     | '/sources/registry'
@@ -407,6 +426,7 @@ export interface FileRouteTypes {
     | '/judges/'
     | '/matters/'
     | '/places/'
+    | '/registry/'
     | '/data/tables/$table'
     | '/law/provision/$id'
     | '/places/$state/$county'
@@ -438,6 +458,7 @@ export interface FileRouteTypes {
     | '/matters/$id'
     | '/matters/cases'
     | '/places/$state'
+    | '/registry/$id'
     | '/sources/coverage'
     | '/sources/library'
     | '/sources/registry'
@@ -448,6 +469,7 @@ export interface FileRouteTypes {
     | '/judges'
     | '/matters'
     | '/places'
+    | '/registry'
     | '/data/tables/$table'
     | '/law/provision/$id'
     | '/places/$state/$county'
@@ -479,6 +501,7 @@ export interface FileRouteTypes {
     | '/matters/$id'
     | '/matters/cases'
     | '/places/$state'
+    | '/registry/$id'
     | '/sources/coverage'
     | '/sources/library'
     | '/sources/registry'
@@ -489,6 +512,7 @@ export interface FileRouteTypes {
     | '/judges/'
     | '/matters/'
     | '/places/'
+    | '/registry/'
     | '/data/tables/$table'
     | '/law_/provision/$id'
     | '/places/$state/$county'
@@ -521,6 +545,7 @@ export interface RootRouteChildren {
   MattersIdRoute: typeof MattersIdRoute
   MattersCasesRoute: typeof MattersCasesRoute
   PlacesStateRoute: typeof PlacesStateRouteWithChildren
+  RegistryIdRoute: typeof RegistryIdRoute
   SourcesCoverageRoute: typeof SourcesCoverageRoute
   SourcesLibraryRoute: typeof SourcesLibraryRoute
   SourcesRegistryRoute: typeof SourcesRegistryRoute
@@ -531,6 +556,7 @@ export interface RootRouteChildren {
   JudgesIndexRoute: typeof JudgesIndexRoute
   MattersIndexRoute: typeof MattersIndexRoute
   PlacesIndexRoute: typeof PlacesIndexRoute
+  RegistryIndexRoute: typeof RegistryIndexRoute
   DataTablesTableRoute: typeof DataTablesTableRoute
   LawProvisionIdRoute: typeof LawProvisionIdRoute
   RecordsDatasetIdRoute: typeof RecordsDatasetIdRoute
@@ -755,6 +781,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlacesStateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/registry/': {
+      id: '/registry/'
+      path: '/registry'
+      fullPath: '/registry/'
+      preLoaderRoute: typeof RegistryIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/registry/$id': {
+      id: '/registry/$id'
+      path: '/registry/$id'
+      fullPath: '/registry/$id'
+      preLoaderRoute: typeof RegistryIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sources/coverage': {
       id: '/sources/coverage'
       path: '/sources/coverage'
@@ -852,6 +892,7 @@ const rootRouteChildren: RootRouteChildren = {
   MattersIdRoute: MattersIdRoute,
   MattersCasesRoute: MattersCasesRoute,
   PlacesStateRoute: PlacesStateRouteWithChildren,
+  RegistryIdRoute: RegistryIdRoute,
   SourcesCoverageRoute: SourcesCoverageRoute,
   SourcesLibraryRoute: SourcesLibraryRoute,
   SourcesRegistryRoute: SourcesRegistryRoute,
@@ -862,6 +903,7 @@ const rootRouteChildren: RootRouteChildren = {
   JudgesIndexRoute: JudgesIndexRoute,
   MattersIndexRoute: MattersIndexRoute,
   PlacesIndexRoute: PlacesIndexRoute,
+  RegistryIndexRoute: RegistryIndexRoute,
   DataTablesTableRoute: DataTablesTableRoute,
   LawProvisionIdRoute: LawProvisionIdRoute,
   RecordsDatasetIdRoute: RecordsDatasetIdRoute,

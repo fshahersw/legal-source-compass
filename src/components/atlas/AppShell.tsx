@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 
 type NavItem = { to: string; label: string; icon: typeof Library; paths: string[] };
 const EXPLORE = ["/", "/places", "/search", "/jurisdictions", "/overview"];
-const LITIGATION = ["/courts", "/judges", "/matters", "/people", "/insights", "/mdls", "/records"];
+const LITIGATION = ["/courts", "/judges", "/matters", "/people", "/insights", "/mdls", "/records", "/registry"];
 const LAW = ["/law", "/laws", "/safety", "/agencies"];
 const SOURCES = ["/sources", "/categories", "/source-families", "/endpoint-explorer", "/source-datasets", "/data", "/saved-sources", "/review-queue", "/data-exports"];
 const NAV: NavItem[] = [
@@ -29,7 +29,7 @@ const NAV: NavItem[] = [
 const CONTEXT_NAV = [
   { paths: EXPLORE, items: [{ to: "/", label: "Map" }, { to: "/search", label: "Search everything" }, { to: "/jurisdictions", label: "Jurisdiction index" }] },
   { paths: LITIGATION, items: [
-    { to: "/courts", label: "1 · Courts" }, { to: "/judges", label: "2 · Judges" }, { to: "/matters", label: "3 · Matters (MDLs)" }, { to: "/matters/cases", label: "4 · Cases & analytics" }, { to: "/people", label: "People A–Z" },
+    { to: "/courts", label: "1 · Courts" }, { to: "/judges", label: "2 · Judges" }, { to: "/matters", label: "3 · Matters (MDLs)" }, { to: "/matters/cases", label: "4 · Cases & analytics" }, { to: "/registry", label: "5 · Case registry" }, { to: "/people", label: "People A–Z" },
   ] },
   { paths: LAW, items: [{ to: "/law", label: "Law & regulation" }, { to: "/safety", label: "Product safety" }, { to: "/agencies", label: "Agencies" }] },
   { paths: SOURCES, items: [
