@@ -35,14 +35,25 @@ export const Route = createFileRoute("/api/public/corpus/search")({
         }
 
         const { rpcPost } = await import("@/lib/external/rest.server");
-        const res = await rpcPost<{ items: Record<string, any>[]; total: number | null; total_capped: boolean }>("corpus_query_bounded", {
-          p_q: q || null,
-          p_dataset: dataset,
-          p_filters: filters,
-          p_limit: limit,
-          p_offset: offset,
-          p_count_cap: 10000,
-        });
+        // Dataset-scoped queries use the bounded listing function; cross-dataset
+        // keyword search uses the corpus's own ranked search function.
+        const res = dataset
+          ? await rpcPost<{ items: Record<string, any>[]; total: number | null; total_capped: boolean }>("corpus_query_bounded", {
+              p_q: q || null,
+              p_dataset: dataset,
+              p_filters: filters,
+              p_limit: limit,
+              p_offset: offset,
+              p_count_cap: 10000,
+            })
+          : await rpcPost<{ items: Record<string, any>[]; total: number | null; total_capped: boolean }>("corpus_query", {
+              p_q: q || null,
+              p_datasets: null,
+              p_filters: filters,
+              p_limit: limit,
+              p_offset: offset,
+              p_sort: null,
+            });
         const items = (res.items ?? []).map((i) => ({
           id: String(i["id"] ?? ""),
           dataset: i["dataset"] ?? dataset,
