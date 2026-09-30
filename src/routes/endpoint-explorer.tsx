@@ -27,7 +27,7 @@ export const Route = createFileRoute("/endpoint-explorer")({
       {
         name: "description",
         content:
-          "Raw endpoint candidates carried in the imported V2.2A bundle, listed without any live probing or crawling.",
+          "Raw endpoint candidates carried in the imported bundle, listed without any live probing or crawling.",
       },
       { property: "og:title", content: "Endpoint Explorer — Legal Source Atlas" },
       {
@@ -70,7 +70,7 @@ function EndpointExplorer() {
 
   return (
     <AppShell
-      breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Sources", to: "/" }, { label: "Endpoint Explorer" }]}
+      breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Sources", to: "/sources/library" }, { label: "Endpoint Explorer" }]}
       title="Endpoint Explorer"
       description="Raw endpoint candidates exactly as recorded in the bundle. This build performs no live requests, probing or crawling — status values shown here are imported text, not a live check."
     >

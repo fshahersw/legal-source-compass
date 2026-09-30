@@ -14,7 +14,7 @@ export function EmptyBundleState({ view }: { view: string }) {
         role="status"
         className="flex items-center gap-2.5 rounded-lg border border-border bg-surface p-6 text-[13px] text-muted-foreground"
       >
-        <Loader2 className="size-4 animate-spin" /> Loading the V2.2A directory…
+        <Loader2 className="size-4 animate-spin" /> Loading the source directory…
       </div>
     );
   }
@@ -49,7 +49,7 @@ export function EmptyBundleState({ view }: { view: string }) {
       <h2 className="mt-3 text-base">No source rows in the loaded bundle</h2>
       <p className="mx-auto mt-2 max-w-xl text-[13px] leading-relaxed text-muted-foreground">
         {view} is empty because the bundle currently loaded contains no directory sources. You can
-        restore the bundled V2.2A directory from Data &amp; Exports.
+        restore the bundled source directory from Data &amp; Exports.
       </p>
       <Button asChild className="mt-5" size="sm">
         <Link to="/data-exports">Go to Data {"&"} Exports</Link>

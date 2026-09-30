@@ -23,7 +23,7 @@ export const Route = createFileRoute("/jurisdictions")({
       {
         name: "description",
         content:
-          "Source counts per U.S. jurisdiction as recorded in the imported V2.2A litigation source bundle.",
+          "Source counts per U.S. jurisdiction as recorded in the imported litigation source bundle.",
       },
       { property: "og:title", content: "Jurisdictions — Legal Source Atlas" },
       {
@@ -81,7 +81,7 @@ function JurisdictionsView() {
                       className="h-7 text-[11px]"
                       onClick={() => {
                         setFilters({ ...defaultFilters, jurisdictions: [row.value] });
-                        navigate({ to: "/" });
+                        navigate({ to: "/sources/library" });
                       }}
                     >
                       View sources

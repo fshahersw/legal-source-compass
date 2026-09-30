@@ -30,7 +30,7 @@ export const Route = createFileRoute("/data-exports")({
       {
         name: "description",
         content:
-          "Provenance of the bundled V2.2A litigation source directory, optional browser-local import, and CSV/JSON/raw exports.",
+          "Provenance of the bundled litigation source directory, optional browser-local import, and CSV/JSON/raw exports.",
       },
       { property: "og:title", content: "Data & Exports — Legal Source Atlas" },
       {
@@ -147,8 +147,8 @@ function DataExportsView() {
           <div className="eyebrow">Directory data</div>
           <h2 className="mt-1 text-base">Currently loaded bundle</h2>
           <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
-            The real supplied V2.2A file is shipped with this build and loads automatically. You can
-            replace it in this browser with your own V2.2A file; your file is kept as exact raw bytes in
+            The real supplied file is shipped with this build and loads automatically. You can
+            replace it in this browser with your own directory file; your file is kept as exact raw bytes in
             this browser&apos;s storage (IndexedDB) and never uploaded. Source URLs are kept
             byte-for-byte, including query strings and hash routes.
           </p>
@@ -205,7 +205,7 @@ function DataExportsView() {
                   </Button>
                 }
                 title="Restore the bundled directory?"
-                description="Your imported bundle file will be deleted from this browser and the V2.2A directory shipped with the app will be shown. Your reviews and bookmarks are kept."
+                description="Your imported bundle file will be deleted from this browser and the source directory shipped with the app will be shown. Your reviews and bookmarks are kept."
                 action="Remove import"
                 onConfirm={async () => {
                   const r = await restoreBundledDefault();

@@ -129,7 +129,7 @@ export function SourceDrawer({
             <section className="border-b border-border p-5">
               <div className="eyebrow">Imported historical metadata</div>
               <p className="mt-1.5 rounded-md border border-warning/40 bg-warning/10 p-2 text-[11px] leading-relaxed text-warning-foreground">
-                These labels were copied verbatim from the V2.2A export. They are imported historical
+                These labels were copied verbatim from the export. They are imported historical
                 metadata, <strong>not new validation</strong>: nothing here has been re-checked against
                 the live source by this app.
               </p>

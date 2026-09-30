@@ -17,7 +17,7 @@ function Catalog() {
   const all = ds.data ?? [];
   const total = all.reduce((n, d) => n + (d.records ?? 0), 0);
   return (
-    <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Sources", to: "/" }, { label: "Dataset inventory" }]} title="Dataset inventory" description="Advanced inventory of every connected corpus dataset. Record counts are the corpus's own imported counts; no coverage is inferred.">
+    <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Sources", to: "/sources/library" }, { label: "Dataset inventory" }]} title="Dataset inventory" description="Advanced inventory of every connected corpus dataset. Record counts are the corpus's own imported counts; no coverage is inferred.">
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <ExternalBadge />
         {all.length ? <span className="text-[12px] text-muted-foreground">{all.length} datasets · {total.toLocaleString()} imported records</span> : null}

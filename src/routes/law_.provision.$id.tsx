@@ -38,6 +38,7 @@ function ProvisionPage() {
     queryFn: () => listFn({ data: { node: Number(node), offset: Math.max(0, idx! - 1), limit: 3 } }),
   });
   const [copied, setCopied] = useState(false);
+  const [copiedCite, setCopiedCite] = useState(false);
 
   if (!p) return <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Law & regulation", to: "/law" }, { label: "Not found" }]} title="Provision not found"><p className="text-[13px] text-muted-foreground">The corpus has no record “{id}”.</p></AppShell>;
 
@@ -48,6 +49,7 @@ function ProvisionPage() {
   if (p.kind) crumbs.push({ label: kindLabel(p.kind), to: "/law", search: federal ? { scope: "federal", kind: p.kind } : { scope: "states", state: usps!, kind: p.kind } });
   crumbs.push({ label: p.citation ?? "Provision" });
 
+  const cite = p.citation ?? (/^cfr:\d+:/.test(p.id) ? p.id.replace(/^cfr:(\d+):/, "$1 CFR ") : null);
   const paras = p.text ? formatLawText(p.text) : [];
   const rows = around.data ?? [];
   const pos = idx != null ? idx - Math.max(0, idx - 1) : -1;
@@ -65,6 +67,11 @@ function ProvisionPage() {
         {p.text ? (
           <Button size="sm" variant="outline" onClick={() => { void navigator.clipboard.writeText(paras.join("\n\n")); setCopied(true); setTimeout(() => setCopied(false), 1500); }}><Copy className="mr-1 size-3.5" />{copied ? "Copied" : "Copy text"}</Button>
         ) : null}
+          {cite ? <Button size="sm" variant="outline" onClick={() => { void navigator.clipboard.writeText(cite); setCopiedCite(true); setTimeout(() => setCopiedCite(false), 1500); }}><Copy className="mr-1 size-3.5" />{copiedCite ? "Copied" : "Copy citation"}</Button> : null}
+          {(() => { const m = /(\d+)\s*C\.?F\.?R\.?\s*(?:§+\s*)?(\d+)(?:\.(\d+[a-z]?))?/i.exec(cite ?? ""); if (!m) return null; const u = m[3] ? `https://www.ecfr.gov/current/title-${m[1]}/section-${m[2]}.${m[3]}` : `https://www.ecfr.gov/current/title-${m[1]}/part-${m[2]}`; return <>
+            <Button asChild size="sm" variant="outline"><a href={u} target="_blank" rel="noreferrer"><ExternalLink className="mr-1 size-3.5" />Current eCFR</a></Button>
+            <Button asChild size="sm" variant="outline"><Link to="/data/$dataset" params={{ dataset: "federal_register_history" }} search={{ q: `${m[1]} CFR ${m[2]}` }}>Federal Register for part {m[2]} →</Link></Button>
+          </>; })()}
         <span className="text-[12px] text-muted-foreground">{p.text && p.sourceUrl ? "Text saved · official source linked" : p.text ? "Text saved · no source link recorded" : p.sourceUrl ? "No saved text — open the official source" : ""}</span>
       </div>
 

@@ -11,7 +11,9 @@
 - [x] Consolidate navigation, duplicate pages, labels, and dataset presentation while preserving the current visual design
 - [ ] Later (out of scope now): Tavily server-side harvesting
 - [x] Case analytics (year×status, defendants, firm roles, median close, state map) + defendant/role filters; /insights redirects
-- [ ] Agency profiles (needs agency-field check in Federal Register/safety data)
-- [ ] Provision page: copy citation, eCFR/part links, dates & sources, citing FR docs
-- [ ] Map as home page; retire Categories/Jurisdictions/Families/Endpoints
+- [x] Agency profiles (Federal Register agency list, exact type counts, recent docs, all docs, safety links)
+- [x] Provision page: copy citation, eCFR, Federal Register link
+- [ ] Provision page: Title·Part·Subpart line, Dates & sources tab
+- [x] Map as home page; library at /sources/library; V2.2A labels removed; state source rows clickable
+- [ ] Retire Categories/Jurisdictions/Families/Endpoints into library filters; merge state sources with Registry V2.2 duplicates
 - [ ] Supporting tables into court/case/county pages; court mini-map; MDL judge links; DB-based coverage gaps

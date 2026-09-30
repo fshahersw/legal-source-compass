@@ -34,7 +34,7 @@ function RegistryPage() {
   const rows = term ? inCat.filter((e) => `${e.name} ${e.url} ${e.description} ${e.section}`.toLowerCase().includes(term)) : inCat.filter((e) => !e.parent_id || !all.some((p) => p.id === e.parent_id && inCat.includes(p)));
   const [limit, setLimit] = useState(100);
 
-  const crumbs = [{ label: "Atlas", to: "/" }, { label: "Sources", to: "/" }, { label: "Registry", to: "/sources/registry" }];
+  const crumbs = [{ label: "Atlas", to: "/" }, { label: "Sources", to: "/sources/library" }, { label: "Registry", to: "/sources/registry" }];
   if (j) crumbs.push({ label: jurisdictionLabel(j), to: "" });
   return (
     <AppShell breadcrumbs={crumbs.map((c) => (c.to ? c : { label: c.label }))} title={j ? `${jurisdictionLabel(j)} sources` : "Source registry"} description={`${all.length.toLocaleString()} registry entries · narrow by jurisdiction, then layer, then record type`}>
