@@ -1,4 +1,13 @@
 import { bundleSchema, type Bundle, type Source } from "./types";
+import { adaptV22A, isV22A, v22aBundleSchema } from "./v22a";
+
+/** Values of a possibly multi-valued field (V2.2A sources carry arrays). */
+export function valuesOf(s: Source, key: keyof Source): string[] {
+  const arrKey = key === "jurisdiction" ? "jurisdiction_values" : key === "heading_category" ? "category_values" : null;
+  const arr = arrKey ? (s as Record<string, unknown>)[arrKey] : undefined;
+  if (Array.isArray(arr)) return arr.length ? arr.map(String) : [""];
+  return [String(s[key] ?? "")];
+}
 
 export type ParseResult =
   | { ok: true; bundle: Bundle; stats: BundleStats; warnings: string[] }
@@ -19,6 +28,16 @@ export type BundleStats = {
  * query strings and hash routes exactly as supplied.
  */
 export function parseBundle(raw: unknown): ParseResult {
+  if (isV22A(raw)) {
+    const v = v22aBundleSchema.safeParse(raw);
+    if (!v.success) {
+      return {
+        ok: false,
+        errors: v.error.issues.slice(0, 20).map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`),
+      };
+    }
+    raw = adaptV22A(v.data);
+  }
   const parsed = bundleSchema.safeParse(raw);
   if (!parsed.success) {
     return {
