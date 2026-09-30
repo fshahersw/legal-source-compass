@@ -9,7 +9,7 @@ type Props = {
   stateFips?: string;
   onState?: (fips: string) => void;
   onCounty?: (fips: string) => void;
-  selectedCounty?: string;
+  selectedCounty?: string | undefined;
 };
 
 /** Plain SVG map from the pre-projected us-atlas geometry. No map service, no API key. */
