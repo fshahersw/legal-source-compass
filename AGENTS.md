@@ -27,6 +27,7 @@
 
 - Corpus UI is generic and metadata-driven: `src/lib/external/catalog.functions.ts` reads each dataset's own listing metadata (columns, filters, qualification) and the corpus RPCs (`corpus_query_bounded`, `corpus_query`, `corpus_detail`); sections are a pure mapping in `groups.ts`, so every dataset is reachable without per-dataset code.
 - Stored corpus files (seals, portraits, PDFs) are served only via `/api/files?route=` which looks up `corpus_artifacts` by route and streams from the private bucket, so storage keys never reach the client.
+- Home "/" is the map (PlacesMap); the source library lives at /sources/library.
 - Primary navigation is domain-based; specialist/raw pages remain available through contextual navigation, not competing top-level links.
 - Courts, judges and MDLs have full pages (`/courts/$id`, `/judges/$id`, `/matters/$id`, generic `/records/$dataset/$id`) rendered from `corpus_detail` via the pure `entityView.ts` mapper; directory rows navigate there, related collections embed filtered DatasetBrowsers, and provenance sits in a collapsed "Technical details" block.
 - The supplied source registry (`public/data/registry_v06_1.jsonl`) is read-only, parsed in `src/lib/atlas/registry.ts`, and browsed jurisdiction → layer → record type; its HTTP statuses are shown as historical registry checks.
@@ -36,3 +37,4 @@
 - Courts and Judges open as folder drill-downs (system → state → type/court → list) built by the pure `directoryTree.ts` from the full listings loaded once via `directory.functions.ts`; judge names link to a profile only on a unique exact `nameKey` match, since fuzzy matching would misattribute people.
 - Law & Safety open as folder drill-downs (jurisdiction → type of law → outline/record set; agency → record kind) via the pure `lawTree.ts` mapping; unmapped dataset IDs fall into "Other" so nothing is hidden.
 - Law provisions open at `/law/provision/$id` from `corpus_records` text + http(s) source_url only (internal file paths never linked); `formatLawText.ts` splits at subsection markers without dropping text.
+- Agency profiles use the Federal Register listing's own agency filter ids/counts (agency.functions.ts); type counts via bounded query, timeouts shown as "too large to count".
