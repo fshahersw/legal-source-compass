@@ -1,0 +1,115 @@
+{
+ "total": 35862,
+ "mdls": {
+  "2789": {
+   "count": 1361,
+   "case_name": "STEVEN GOODSTEIN v. ASTRAZENECA PHARMACEUTICALS LP",
+   "defendant": "ASTRAZENECA PHARMACEUTICALS",
+   "court": "njd"
+  },
+  "unassigned": {
+   "count": 4505,
+   "case_name": "In RE: Hair Relaxer Marketing, Sales Practices, And Products Liability Litigation",
+   "defendant": "LOREAL",
+   "court": "ilnd"
+  },
+  "2873": {
+   "count": 2423,
+   "case_name": "In Re Aqueous Film-Forming Foams Products Liability Litigation MDL 2873",
+   "defendant": "3M",
+   "court": "scd"
+  },
+  "3094": {
+   "count": 1497,
+   "case_name": "GLUCAGON-LIKE PEPTIDE-1 RECEPTOR AGONISTS (GLP-1 RAS) PRODUCTS LIABILITY LITIGATION",
+   "defendant": "NOVO NORDISK",
+   "court": "paed"
+  },
+  "3081": {
+   "count": 2009,
+   "case_name": "IN RE: Bard Implanted Port Catheter Products Liability Litigation",
+   "defendant": "BECTON DICKINSON AND",
+   "court": "azd"
+  },
+  "3047": {
+   "count": 2811,
+   "case_name": "IN RE: SOCIAL MEDIA ADOLESCENT ADDICTION/PERSONAL INJURY PRODUCTS LIABILITY LITIGATION",
+   "defendant": "META PLATFORMS",
+   "court": "cand"
+  },
+  "2885": {
+   "count": 2909,
+   "case_name": "IN RE: 3M COMBAT ARMS EARPLUG PRODUCTS LIABILITY LITIGATION",
+   "defendant": "3M",
+   "court": "flnd"
+  },
+  "2606": {
+   "count": 1557,
+   "case_name": "IN RE: BENICAR (OLMESARTAN) PRODUCTS LIABILITY LITIGATION",
+   "defendant": "DAIICHI SANKYO",
+   "court": "njd"
+  },
+  "2570": {
+   "count": 2272,
+   "case_name": "IN RE: COOK MEDICAL INC.",
+   "defendant": "COOK",
+   "court": "insd"
+  },
+  "2592": {
+   "count": 3603,
+   "case_name": "In Re: Xarelto (Rivaroxaban) Products Liability Litigation",
+   "defendant": "JANSSEN RESEARCH &",
+   "court": "laed"
+  },
+  "2846": {
+   "count": 1030,
+   "case_name": "In re: Davol, Inc./C.R. Bard, Inc. Polypropylene Hernia Mesh Products Liability Litigation",
+   "defendant": "DAVOL",
+   "court": "ohsd"
+  },
+  "2804": {
+   "count": 3074,
+   "case_name": "In Re: National Prescription Opiate Litigation",
+   "defendant": "PURDUE PHARMA",
+   "court": "ohnd"
+  },
+  "2641": {
+   "count": 2173,
+   "case_name": "IN RE: Bard IVC Filters Products Liability Litigation",
+   "defendant": "C R BARD",
+   "court": "azd"
+  },
+  "2913": {
+   "count": 2193,
+   "case_name": "In Re: Juul Labs, Inc., Marketing, Sales Practices, and Products Liability Litigation",
+   "defendant": "JUUL LABS",
+   "court": "cand"
+  },
+  "2100": {
+   "count": 2029,
+   "case_name": "In Re: Yasmin and Yaz (Drospirenone) Marketing, Sales Practices and Products Liability Litigation",
+   "defendant": "BAYER",
+   "court": "ilsd"
+  },
+  "2973": {
+   "count": 416,
+   "case_name": "ELMIRON (PENTOSAN POLYSULFATE SODIUM) PRODUCTS LIABILITY LITIGATION",
+   "defendant": "JANSSEN PHARMACEUTICALS",
+   "court": "njd"
+  }
+ },
+ "courts": {
+  "njd": 3334,
+  "ilnd": 4505,
+  "scd": 2423,
+  "paed": 1497,
+  "azd": 4182,
+  "cand": 5004,
+  "flnd": 2909,
+  "insd": 2272,
+  "laed": 3603,
+  "ohsd": 1030,
+  "ohnd": 3074,
+  "ilsd": 2029
+ }
+}
