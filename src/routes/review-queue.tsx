@@ -8,6 +8,7 @@ import { LibraryBrowser } from "@/components/atlas/LibraryBrowser";
 import { Button } from "@/components/ui/button";
 import { reviewCounts } from "@/lib/atlas/review";
 import { useAtlas } from "@/lib/atlas/store";
+import { useMergedSources } from "@/lib/atlas/useMergedSources";
 
 export const Route = createFileRoute("/review-queue")({
   head: () => ({

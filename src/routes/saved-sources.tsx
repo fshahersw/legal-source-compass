@@ -5,6 +5,7 @@ import { AppShell } from "@/components/atlas/AppShell";
 import { EmptyBundleState } from "@/components/atlas/EmptyBundleState";
 import { LibraryBrowser } from "@/components/atlas/LibraryBrowser";
 import { useAtlas } from "@/lib/atlas/store";
+import { useMergedSources } from "@/lib/atlas/useMergedSources";
 
 export const Route = createFileRoute("/saved-sources")({
   head: () => ({
