@@ -15,7 +15,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getStateCountyRecords } from "@/lib/external/corpus.functions";
 import { FolderGrid } from "@/components/corpus/FolderGrid";
-import { countBy } from "@/lib/external/directoryTree";
+import { countBy as countDir } from "@/lib/external/directoryTree";
 import { useCourtDirectory } from "@/lib/external/useDirectory";
 import { loadRegistryJurisdiction, taskCounts, taskLabel } from "@/lib/atlas/registryV22";
 import { ExternalBadge, ExternalError } from "@/components/corpus/ExternalBadge";
@@ -133,7 +133,7 @@ function StateCourts({ usps }: { usps: string }) {
         title="Courts in this state"
         hint={dir.data ? `${(rows.length + fed.length).toLocaleString()} courts in the directory` : "Loading courts…"}
         items={[
-          ...countBy(rows, (r) => r.type).map((c) => ({ key: c.key, label: c.key, count: c.count, link: { to: "/courts", search: { system: rows.find((r) => r.type === c.key)!.system, state: usps, type: c.key } } })),
+          ...countDir(rows, (r) => r.type).map((c) => ({ key: c.key, label: c.key, count: c.count, link: { to: "/courts", search: { system: rows.find((r) => r.type === c.key)!.system, state: usps, type: c.key } } })),
           ...(fed.length ? [{ key: "fed", label: "Federal courts located here", count: fed.length, link: { to: "/courts", search: { system: "Federal", state: usps, type: "*" } } }] : []),
         ]}
       />
