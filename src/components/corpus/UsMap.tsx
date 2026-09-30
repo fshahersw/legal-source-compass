@@ -14,7 +14,7 @@ type Props = {
 
 /** Plain SVG map from the pre-projected us-atlas geometry. No map service, no API key. */
 export function UsMap({ geo, values, valueLabel, stateFips, onState, onCounty, selectedCounty }: Props) {
-  const [hover, setHover] = useState<{ name: string; value: number | undefined } | null>(null);
+  const [hover, setHover] = useState<{ id: string; name: string; value: number | undefined } | null>(null);
   const max = Math.max(1, ...values.values());
   const opacity = (v: number | undefined) => (v ? 0.18 + 0.82 * Math.sqrt(v / max) : 0);
 
@@ -37,6 +37,8 @@ export function UsMap({ geo, values, valueLabel, stateFips, onState, onCounty, s
         {stateFips ? (
           counties.map((c) => {
             const v = values.get(c.id);
+            const selected = selectedCounty === c.id;
+            const hovered = hover?.id === c.id;
             return (
               <path
                 key={c.id}
@@ -45,8 +47,8 @@ export function UsMap({ geo, values, valueLabel, stateFips, onState, onCounty, s
                 aria-label={`${c.name} County`}
                 role="button"
                 className="cursor-pointer stroke-background transition-[fill-opacity]"
-                style={{ fill: selectedCounty === c.id ? "var(--accent-foreground)" : "var(--primary)", fillOpacity: selectedCounty === c.id ? 1 : opacity(v) || 0.06, strokeWidth: 0.4 }}
-                onMouseEnter={() => setHover({ name: c.name, value: v })}
+                style={{ fill: selected ? "var(--accent-foreground)" : "var(--primary)", fillOpacity: selected ? 1 : hovered ? Math.min(1, (opacity(v) || 0.06) + 0.4) : opacity(v) || 0.06, strokeWidth: selected ? 1 : 0.4 }}
+                onMouseEnter={() => setHover({ id: c.id, name: c.name, value: v })}
                 onMouseLeave={() => setHover(null)}
                 onClick={() => onCounty?.(c.id)}
               />
@@ -56,6 +58,7 @@ export function UsMap({ geo, values, valueLabel, stateFips, onState, onCounty, s
           <>
             {geo.states.map((s) => {
               const v = values.get(s.id);
+              const hovered = hover?.id === s.id;
               return (
                 <path
                   key={s.id}
@@ -63,9 +66,9 @@ export function UsMap({ geo, values, valueLabel, stateFips, onState, onCounty, s
                   data-state={stateByFips.get(s.id)?.usps}
                   aria-label={s.name}
                   role="button"
-                  className="cursor-pointer transition-[fill-opacity] hover:[fill-opacity:1]"
-                  style={{ fill: "var(--primary)", fillOpacity: opacity(v) || 0.06 }}
-                  onMouseEnter={() => setHover({ name: s.name, value: v })}
+                  className="cursor-pointer transition-[fill-opacity]"
+                  style={{ fill: "var(--primary)", fillOpacity: hovered ? Math.min(1, (opacity(v) || 0.06) + 0.4) : opacity(v) || 0.06 }}
+                  onMouseEnter={() => setHover({ id: s.id, name: s.name, value: v })}
                   onMouseLeave={() => setHover(null)}
                   onClick={() => onState?.(s.id)}
                 />
