@@ -38,7 +38,7 @@ function Page() {
     <AppShell
       breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Sources", to: "/" }, ...(j ? [{ label: "Registry V2.2", to: "/sources/registry-v22" }, ...(task || showAll ? [{ label: name ?? j, to: `/sources/registry-v22?j=${encodeURIComponent(j)}` }, { label: task ? taskLabel(task) : "All sources" }] : [{ label: name ?? j }])] : [{ label: "Registry V2.2" }])]}
       title={name ? `${name} litigation sources` : "Litigation source registry V2.2"}
-      description={`${(idx.data?.recordCount ?? 4846).toLocaleString()} sources${meta?.["verifiedThrough"] ? ` · registry states verified through ${String(meta["verifiedThrough"])} (imported, not re-checked)` : ""}`}
+      description={`${(j ? all.length : idx.data?.recordCount ?? 4846).toLocaleString()} sources${meta?.["verifiedThrough"] ? ` · registry states verified through ${String(meta["verifiedThrough"])} (imported, not re-checked)` : ""}`}
     >
       {!j ? (
         idx.isLoading ? <p className="text-[12px] text-muted-foreground">Loading…</p> : (
