@@ -1,24 +1,47 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
+import { AppShell } from "@/components/atlas/AppShell";
+import { EmptyBundleState } from "@/components/atlas/EmptyBundleState";
+import { LibraryBrowser } from "@/components/atlas/LibraryBrowser";
+import { useAtlas } from "@/lib/atlas/store";
+
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "Library — Legal Source Atlas" },
+      {
+        name: "description",
+        content:
+          "Searchable directory of imported U.S. litigation research sources: exact URLs, jurisdictions, source families and heading categories.",
+      },
+      { property: "og:title", content: "Library — Legal Source Atlas" },
+      {
+        property: "og:description",
+        content:
+          "Compact searchable directory of imported U.S. litigation source URLs with filters, detail drawer and exports.",
+      },
+    ],
+  }),
+  component: LibraryView,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+function LibraryView() {
+  const { bundle, ready } = useAtlas();
+  const sources = bundle?.sources ?? [];
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
+    <AppShell
+      breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Library" }]}
+      title="Library"
+      description="Every distinct source URL in the imported V2.2A bundle. URLs are shown exactly as supplied, including query strings and hash routes."
     >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+      {!ready ? (
+        <p className="text-[13px] text-muted-foreground">Loading local data…</p>
+      ) : sources.length === 0 ? (
+        <EmptyBundleState view="The library" />
+      ) : (
+        <LibraryBrowser sources={sources} scope="library" />
+      )}
+    </AppShell>
   );
 }
