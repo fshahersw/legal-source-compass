@@ -28,7 +28,7 @@ describe("entity view", () => {
     expect(v.title).toBe("Jane Roe");
     expect(v.facts).toContainEqual(["Role", "Judge"]);
     expect(v.sections.find((s) => s.key === "education")?.kind).toBe("list");
-    expect(v.empty).toEqual(expect.arrayContaining(["Documents", "Mdls"]));
+    expect(v.empty).toEqual(expect.arrayContaining(["Documents", "MDL appearances"]));
     expect(v.technical.length).toBe(1);
   });
   it("normalizes names only for grouping", () => {
