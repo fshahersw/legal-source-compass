@@ -72,7 +72,7 @@ function MatterPage() {
         ) : <p className="text-[12px] text-muted-foreground">Not recorded</p>}
       </Section>
 
-      <Section title="Docket documents" hint={docs.isLoading ? "Loading…" : docs.data ? `${docs.data.length.toLocaleString()} verified documents — details only; the files live in private storage` : undefined}>
+      <Section title="Docket documents" hint={docs.isLoading ? "Loading…" : docs.data?.length ? `${docs.data.length.toLocaleString()} verified documents — details only; the files live in private storage` : undefined}>
         {docs.error ? <p role="alert" className="text-[12px] text-destructive">Documents could not be loaded.</p> : null}
         {docs.data && docs.data.length === 0 ? <p className="text-[12px] text-muted-foreground">No documents recorded for this matter.</p> : null}
         {docs.data && docs.data.length ? (
