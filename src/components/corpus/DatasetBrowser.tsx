@@ -74,7 +74,7 @@ export function DatasetBrowser({
   const navigate = useNavigate();
   const openRow = (i: NormItem) => {
     const page = ENTITY_ROUTES[dataset];
-    if (page) navigate({ to: page, params: { id: i.id } });
+    if (page) navigate({ to: page, params: { id: i.id.replace(/^mdl:/, "") } });
     else setOpen(i);
   };
   const query = useQuery({
