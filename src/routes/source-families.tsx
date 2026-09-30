@@ -118,7 +118,7 @@ function FamiliesView() {
                     disabled={f.linkedSources === 0}
                     onClick={() => {
                       setFilters({ ...defaultFilters, families: [f.name] });
-                      navigate({ to: "/" });
+                      navigate({ to: "/sources/library" });
                     }}
                   >
                     {f.linkedSources === 0 ? "No linked directory sources" : "Open in Library"}

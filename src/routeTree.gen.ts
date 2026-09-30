@@ -41,6 +41,7 @@ import { Route as MattersCasesRouteImport } from './routes/matters.cases'
 import { Route as PlacesIndexRouteImport } from './routes/places.index'
 import { Route as PlacesStateRouteImport } from './routes/places.$state'
 import { Route as SourcesCoverageRouteImport } from './routes/sources.coverage'
+import { Route as SourcesLibraryRouteImport } from './routes/sources.library'
 import { Route as SourcesRegistryRouteImport } from './routes/sources.registry'
 import { Route as SourcesRegistryV22RouteImport } from './routes/sources.registry-v22'
 import { Route as DataTablesTableRouteImport } from './routes/data.tables.$table'
@@ -208,6 +209,11 @@ const SourcesCoverageRoute = SourcesCoverageRouteImport.update({
   path: '/sources/coverage',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SourcesLibraryRoute = SourcesLibraryRouteImport.update({
+  id: '/sources/library',
+  path: '/sources/library',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SourcesRegistryRoute = SourcesRegistryRouteImport.update({
   id: '/sources/registry',
   path: '/sources/registry',
@@ -266,6 +272,7 @@ export interface FileRoutesByFullPath {
   '/matters/cases': typeof MattersCasesRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/sources/coverage': typeof SourcesCoverageRoute
+  '/sources/library': typeof SourcesLibraryRoute
   '/sources/registry': typeof SourcesRegistryRoute
   '/sources/registry-v22': typeof SourcesRegistryV22Route
   '/agencies/': typeof AgenciesIndexRoute
@@ -306,6 +313,7 @@ export interface FileRoutesByTo {
   '/matters/cases': typeof MattersCasesRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/sources/coverage': typeof SourcesCoverageRoute
+  '/sources/library': typeof SourcesLibraryRoute
   '/sources/registry': typeof SourcesRegistryRoute
   '/sources/registry-v22': typeof SourcesRegistryV22Route
   '/agencies': typeof AgenciesIndexRoute
@@ -347,6 +355,7 @@ export interface FileRoutesById {
   '/matters/cases': typeof MattersCasesRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/sources/coverage': typeof SourcesCoverageRoute
+  '/sources/library': typeof SourcesLibraryRoute
   '/sources/registry': typeof SourcesRegistryRoute
   '/sources/registry-v22': typeof SourcesRegistryV22Route
   '/agencies/': typeof AgenciesIndexRoute
@@ -389,6 +398,7 @@ export interface FileRouteTypes {
     | '/matters/cases'
     | '/places/$state'
     | '/sources/coverage'
+    | '/sources/library'
     | '/sources/registry'
     | '/sources/registry-v22'
     | '/agencies/'
@@ -429,6 +439,7 @@ export interface FileRouteTypes {
     | '/matters/cases'
     | '/places/$state'
     | '/sources/coverage'
+    | '/sources/library'
     | '/sources/registry'
     | '/sources/registry-v22'
     | '/agencies'
@@ -469,6 +480,7 @@ export interface FileRouteTypes {
     | '/matters/cases'
     | '/places/$state'
     | '/sources/coverage'
+    | '/sources/library'
     | '/sources/registry'
     | '/sources/registry-v22'
     | '/agencies/'
@@ -510,6 +522,7 @@ export interface RootRouteChildren {
   MattersCasesRoute: typeof MattersCasesRoute
   PlacesStateRoute: typeof PlacesStateRouteWithChildren
   SourcesCoverageRoute: typeof SourcesCoverageRoute
+  SourcesLibraryRoute: typeof SourcesLibraryRoute
   SourcesRegistryRoute: typeof SourcesRegistryRoute
   SourcesRegistryV22Route: typeof SourcesRegistryV22Route
   AgenciesIndexRoute: typeof AgenciesIndexRoute
@@ -749,6 +762,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SourcesCoverageRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sources/library': {
+      id: '/sources/library'
+      path: '/sources/library'
+      fullPath: '/sources/library'
+      preLoaderRoute: typeof SourcesLibraryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sources/registry': {
       id: '/sources/registry'
       path: '/sources/registry'
@@ -833,6 +853,7 @@ const rootRouteChildren: RootRouteChildren = {
   MattersCasesRoute: MattersCasesRoute,
   PlacesStateRoute: PlacesStateRouteWithChildren,
   SourcesCoverageRoute: SourcesCoverageRoute,
+  SourcesLibraryRoute: SourcesLibraryRoute,
   SourcesRegistryRoute: SourcesRegistryRoute,
   SourcesRegistryV22Route: SourcesRegistryV22Route,
   AgenciesIndexRoute: AgenciesIndexRoute,

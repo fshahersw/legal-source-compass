@@ -107,7 +107,7 @@ function StatePage() {
             disabled={sources.length === 0}
             onClick={() => {
               setFilters({ ...defaultFilters, jurisdictions: [st.name] });
-              navigate({ to: "/" });
+              navigate({ to: "/sources/library" });
             }}
           >
             Open {sources.length.toLocaleString()} sources in Library
@@ -116,7 +116,7 @@ function StatePage() {
           <BarList title="Case rows by status" rows={countBy(matters, (m) => m.status)} unit="saved case rows" />
         </div>
       </div>
-      <StateSourceTable sources={sources} onAll={() => { setFilters({ ...defaultFilters, jurisdictions: [st.name] }); navigate({ to: "/" }); }} />
+      <StateSourceTable sources={sources} onAll={() => { setFilters({ ...defaultFilters, jurisdictions: [st.name] }); navigate({ to: "/sources/library" }); }} />
     </AppShell>
   );
 }

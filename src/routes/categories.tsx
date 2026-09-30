@@ -51,7 +51,7 @@ function Categories() {
                     <li key={h} className="flex items-center gap-2">
                       <span className="min-w-0 flex-1 break-words">{h}</span>
                       <span className="font-mono">{n.toLocaleString()}</span>
-                      <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => { setFilters({ ...defaultFilters, headingCategories: [h] }); navigate({ to: "/" }); }}>
+                      <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => { setFilters({ ...defaultFilters, headingCategories: [h] }); navigate({ to: "/sources/library" }); }}>
                         View
                       </Button>
                     </li>

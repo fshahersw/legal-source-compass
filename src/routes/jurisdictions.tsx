@@ -81,7 +81,7 @@ function JurisdictionsView() {
                       className="h-7 text-[11px]"
                       onClick={() => {
                         setFilters({ ...defaultFilters, jurisdictions: [row.value] });
-                        navigate({ to: "/" });
+                        navigate({ to: "/sources/library" });
                       }}
                     >
                       View sources
