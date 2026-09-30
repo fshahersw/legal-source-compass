@@ -32,3 +32,4 @@
 - The supplied source registry (`public/data/registry_v06_1.jsonl`) is read-only, parsed in `src/lib/atlas/registry.ts`, and browsed jurisdiction → layer → record type; its HTTP statuses are shown as historical registry checks.
 - Sidebar has exactly 4 sections (Explore, Litigation, Law & Safety, Sources & Work) in `AppShell`; all other pages are contextual sub-navigation so the top level stays uncluttered.
 - Uploaded MDL docket documents are split into `public/data/mdl-documents/{mdl,court}-<key>.json` (each <10 MB commit limit); the full original is a lovable-asset (`src/assets/mdl-documents.json.asset.json`); PACER-only rows are never linked as downloads.
+- Case catalog (`public/data/catalog-matters.json`) links to MDLs only via master-docket ids found in the docket documents (`mdl-documents/master-dockets.json`); registry V2.2 is split per jurisdiction in `public/data/registry-v22/` with the full original as a lovable-asset.

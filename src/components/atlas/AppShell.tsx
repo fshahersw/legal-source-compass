@@ -29,11 +29,11 @@ const NAV: NavItem[] = [
 const CONTEXT_NAV = [
   { paths: EXPLORE, items: [{ to: "/places", label: "Map" }, { to: "/search", label: "Search everything" }, { to: "/jurisdictions", label: "Jurisdiction index" }] },
   { paths: LITIGATION, items: [
-    { to: "/courts", label: "1 · Courts" }, { to: "/judges", label: "2 · Judges" }, { to: "/matters", label: "3 · Matters (MDLs)" }, { to: "/insights", label: "Case analysis" }, { to: "/people", label: "People A–Z" },
+    { to: "/courts", label: "1 · Courts" }, { to: "/judges", label: "2 · Judges" }, { to: "/matters", label: "3 · Matters (MDLs)" }, { to: "/matters/cases", label: "4 · Case catalog" }, { to: "/insights", label: "Case analysis" }, { to: "/people", label: "People A–Z" },
   ] },
   { paths: LAW, items: [{ to: "/law", label: "Law & regulation" }, { to: "/safety", label: "Product safety" }] },
   { paths: SOURCES, items: [
-    { to: "/", label: "Source library" }, { to: "/sources/registry", label: "Registry" }, { to: "/sources/coverage", label: "Coverage gaps" }, { to: "/categories", label: "Categories" }, { to: "/source-families", label: "Families" },
+    { to: "/", label: "Source library" }, { to: "/sources/registry-v22", label: "Registry V2.2" }, { to: "/sources/registry", label: "Registry v0.6" }, { to: "/sources/coverage", label: "Coverage gaps" }, { to: "/categories", label: "Categories" }, { to: "/source-families", label: "Families" },
     { to: "/endpoint-explorer", label: "Endpoints" }, { to: "/source-datasets", label: "Corpus records" }, { to: "/data", label: "All datasets" },
     { to: "/saved-sources", label: "Saved" }, { to: "/review-queue", label: "Review queue" }, { to: "/data-exports", label: "Imports & exports" },
   ] },
