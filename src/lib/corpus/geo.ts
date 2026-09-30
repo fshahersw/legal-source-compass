@@ -1,5 +1,4 @@
 import { feature, mesh } from "topojson-client";
-import type { Topology, GeometryCollection } from "topojson-specification";
 import { geoPath } from "d3-geo";
 
 /** FIPS / USPS / name for the 50 states + DC (same table as corpussite usmap.js). */
@@ -33,7 +32,8 @@ export type GeoData = {
 
 /** Decode the pre-projected us-atlas topology (975x610 viewport) into SVG paths. */
 export function decodeTopology(topo: unknown): GeoData {
-  const t = topo as Topology<{ states: GeometryCollection<{ name: string }>; counties: GeometryCollection<{ name: string }> }>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const t = topo as any;
   const path = geoPath(); // identity: geometry is already projected
   const toShapes = (key: "states" | "counties") =>
     (feature(t, t.objects[key]) as unknown as GeoJSON.FeatureCollection<GeoJSON.Geometry, { name: string }>).features.map(
@@ -42,7 +42,7 @@ export function decodeTopology(topo: unknown): GeoData {
   return {
     states: toShapes("states"),
     counties: toShapes("counties").map((c) => ({ ...c, stateFips: c.id.slice(0, 2) })),
-    stateBorders: path(mesh(t, t.objects.states, (a, b) => a !== b)) ?? "",
+    stateBorders: path(mesh(t, t.objects.states, (a: unknown, b: unknown) => a !== b)) ?? "",
   };
 }
 
