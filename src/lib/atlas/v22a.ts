@@ -94,28 +94,49 @@ export function isV22A(raw: unknown): boolean {
 
 const norm = (s: string) => s.trim().toUpperCase();
 
-/** Convert a parsed V2.2A bundle into the app's generic bundle shape. */
-export function adaptV22A(b: V22ABundle): Record<string, unknown> {
-  const familyByName = new Map(b.familyManifest.map((f) => [norm(f.source_family_name), f]));
-  const familyByUrl = new Map<string, string>();
+/**
+ * Convert a parsed V2.2A bundle into the app's generic bundle shape.
+ * `rawBundle` is the original (unparsed) object; when supplied, each derived
+ * source keeps a reference to its untouched raw record as
+ * `imported_raw_record` for round-trip export.
+ */
+export function adaptV22A(b: V22ABundle, rawBundle?: unknown): Record<string, unknown> {
+  const rawSources = (rawBundle as { directorySources?: unknown[] } | undefined)?.directorySources;
+  const familyIdByName = new Map(b.familyManifest.map((f) => [norm(f.source_family_name), f.source_family_id]));
+  const familyNameById = new Map(b.familyManifest.map((f) => [f.source_family_id, f.source_family_name]));
+  const familyIdsByUrl = new Map<string, Set<string>>();
   for (const e of b.endpointCandidates) {
-    if (e.source_family_name) familyByUrl.set(e.url, e.source_family_name);
+    if (!e.source_family_id) continue;
+    if (!familyNameById.has(e.source_family_id)) familyNameById.set(e.source_family_id, e.source_family_name);
+    const set = familyIdsByUrl.get(e.url) ?? new Set<string>();
+    set.add(e.source_family_id);
+    familyIdsByUrl.set(e.url, set);
   }
 
-  const sources = b.directorySources.map((s) => {
-    const famFromCategory = s.categories
-      .map((c) => familyByName.get(norm(c))?.source_family_name)
-      .find(Boolean);
+  const sources = b.directorySources.map((s, i) => {
+    // Membership rule: exact heading-category name match to a manifest family,
+    // or exact URL match to an endpoint candidate. More than one family = ambiguous.
+    const ids = new Set<string>();
+    for (const c of s.categories) {
+      const id = familyIdByName.get(norm(c));
+      if (id) ids.add(id);
+    }
+    for (const id of familyIdsByUrl.get(s.url) ?? []) ids.add(id);
+    const idList = [...ids].sort();
+    const single = idList.length === 1 ? idList[0]! : null;
     return {
       ...s,
-      // Derived display fields only; originals above are untouched.
+      // Derived display fields only; the raw record is kept verbatim below.
+      imported_raw_record: rawSources?.[i] ?? undefined,
       occurrence_records: s.occurrences,
       occurrences: s.occurrences.length,
       category_values: s.categories,
       jurisdiction_values: s.jurisdictions,
       heading_category: s.categories.join("; "),
       jurisdiction: s.jurisdictions.join("; "),
-      source_family: famFromCategory ?? familyByUrl.get(s.url) ?? "",
+      source_family: single ? (familyNameById.get(single) ?? "") : "",
+      source_family_id: single ?? "",
+      source_family_ambiguous_ids: idList.length > 1 ? idList : undefined,
       imported_review_label: s.importedVerification,
     };
   });
