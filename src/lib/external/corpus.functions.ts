@@ -41,11 +41,11 @@ export const listJudges = createServerFn({ method: "GET" })
     return { rows: r.rows, total: r.total, pageSize: PAGE };
   });
 
-export type MdlRow = { id: string; title: string; status: string | null; jpml_total: number | null; jpml_pending: number | null; corpus_cases: number | null };
+export type MdlRow = { id: string; title: string; status: string | null; total_actions: number | null; actions_pending: number | null; court_name: string | null; transferee_judge: unknown };
 export const listMdls = createServerFn({ method: "GET" })
   .inputValidator((d) => listInput.parse(d))
   .handler(async ({ data }) => {
-    let p = `corpus_records?select=id,title,status:detail->>status,jpml_total:detail->cases->jpml_total_actions,jpml_pending:detail->cases->jpml_actions_pending,corpus_cases:detail->cases->total&dataset=eq.mdls&order=id.desc`;
+    let p = `corpus_records?select=id,title,status:detail->>status,total_actions:detail->total_actions,actions_pending:detail->actions_pending,court_name:detail->>court_name,transferee_judge:detail->transferee_judge&dataset=eq.mdls&order=id.desc`;
     if (data.q.trim()) p += `&or=(title.ilike.${ilikeTerm(data.q)},id.ilike.${ilikeTerm(data.q)})`;
     const r = await restGet<MdlRow[]>(p, { count: true, range: [data.offset, data.offset + PAGE - 1] });
     return { rows: r.rows, total: r.total, pageSize: PAGE };
