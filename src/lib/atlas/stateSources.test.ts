@@ -6,7 +6,7 @@ import type { Source } from "./types";
 import type { CatalogEntry } from "./catalog";
 import type { RegistryV22Record } from "./registryV22";
 
-const dir = JSON.parse(readFileSync("public/data/atlas-import-bundle.json", "utf8")) as { sources: Source[] };
+const dir = JSON.parse(readFileSync("public/data/atlas-import-bundle.json", "utf8")) as { directorySources: Source[] };
 const catalogTx = JSON.parse(readFileSync("public/data/catalog/tx.json", "utf8")) as CatalogEntry[];
 const registryTx = JSON.parse(readFileSync("public/data/registry-v22/MS.json", "utf8")) as RegistryV22Record[];
 
@@ -31,7 +31,7 @@ describe("mergeStateSources", () => {
   });
 
   it("handles real Texas data without inventing rows", () => {
-    const txSources = dir.sources.filter((s) => s.jurisdiction === "Texas");
+    const txSources = dir.directorySources.filter((s) => s.jurisdiction === "Texas");
     const rows = mergeStateSources(txSources, catalogTx, []);
     const urls = new Set(rows.map((r) => r.url));
     expect(rows.length).toBe(urls.size);
