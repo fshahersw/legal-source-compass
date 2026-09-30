@@ -27,7 +27,7 @@ export const Route = createFileRoute("/saved-sources")({
 
 function SavedSourcesView() {
   const { bundle, bookmarks } = useAtlas();
-  const sources = bundle?.sources ?? [];
+  const { sources } = useMergedSources();
   const saved = useMemo(() => sources.filter((s) => bookmarks[s.id]), [sources, bookmarks]);
 
   return (
