@@ -10,7 +10,7 @@ export const Route = createFileRoute("/registry/$id")({
   notFoundComponent: () => <p className="p-6 text-[13px]">Matter not found in the registry.</p>,
 });
 
-function Section({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+function Section({ title, hint, children }: { title: string; hint?: string | undefined; children: React.ReactNode }) {
   return (
     <section className="mb-5 rounded-lg border border-border bg-surface p-3 shadow-card">
       <div className="mb-2 flex flex-wrap items-baseline gap-2"><h2 className="eyebrow">{title}</h2>{hint ? <span className="text-[12px] text-muted-foreground">{hint}</span> : null}</div>
