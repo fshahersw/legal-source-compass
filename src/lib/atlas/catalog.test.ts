@@ -38,3 +38,20 @@ describe("docket summaries match the case catalog", () => {
     expect(years).toEqual(graph!.filings_by_year);
   });
 });
+
+import { mergeCatalog, uscourtsId } from "./catalog";
+describe("merge and court links", () => {
+  it("adds only catalog rows with new exact URLs", () => {
+    const base = [{ id: "a", url: "https://x.gov/", title: "X", domain: "x.gov", jurisdiction: "Ohio", heading_category: "", source_family: "", occurrences: 2 }];
+    const cat = [{ id: "1", url: "https://x.gov/", title: "X2", jurisdiction: "oh" }, { id: "2", url: "https://x.gov", title: "Y", jurisdiction: "oh" }] as CatalogEntry[];
+    const r = mergeCatalog(base, cat);
+    expect(r).toMatchObject({ added: 1, matched: 1 });
+    expect(r.rows[0]!.title).toBe("X");
+    expect(base[0]).not.toHaveProperty("catalog_record");
+  });
+  it("reads uscourts ids exactly", () => {
+    expect(uscourtsId("http://www.akd.uscourts.gov/")).toBe("akd");
+    expect(uscourtsId("https://uscourts.gov.evil.com/")).toBeNull();
+    expect(uscourtsId("https://www.ca9.uscourts.gov/x")).toBe("ca9");
+  });
+});

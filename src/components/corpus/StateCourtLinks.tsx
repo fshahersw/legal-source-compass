@@ -1,10 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { loadCatalogIndex, loadStateCourts } from "@/lib/atlas/catalog";
+import { loadCatalogIndex, loadStateCourts, uscourtsId } from "@/lib/atlas/catalog";
+import { useCourtDirectory } from "@/lib/external/useDirectory";
 
 export function StateCourtLinks({ stateName, usps }: { stateName: string; usps: string }) {
   const q = useQuery({ queryKey: ["state-courts"], queryFn: loadStateCourts, staleTime: Infinity });
   const idx = useQuery({ queryKey: ["catalog-index"], queryFn: loadCatalogIndex, staleTime: Infinity });
+  const dir = useCourtDirectory();
+  const ids = new Set((dir.data ?? []).map((c) => c.id));
   const sections = q.data?.states[stateName];
   const cat = idx.data?.jurisdictions.find((j) => j.jurisdiction === usps.toLowerCase());
   return (
@@ -20,7 +23,9 @@ export function StateCourtLinks({ stateName, usps }: { stateName: string; usps: 
             <div key={s.section}>
               <h3 className="mb-1 text-[12px] font-medium">{s.section} <span className="text-muted-foreground">({s.links.length})</span></h3>
               <ul className="max-h-48 space-y-0.5 overflow-auto text-[12px]">
-                {s.links.map((l) => <li key={l.url + l.title}><a href={l.url} target="_blank" rel="noreferrer" className="hover:underline">{l.title}</a></li>)}
+                {s.links.map((l) => { const cid = uscourtsId(l.url); return (
+                  <li key={l.url + l.title}><a href={l.url} target="_blank" rel="noreferrer" className="hover:underline">{l.title}</a>{cid && ids.has(cid) ? <> · <Link to="/courts/$id" params={{ id: cid }} className="text-muted-foreground underline">court page</Link></> : null}</li>
+                ); })}
               </ul>
             </div>
           ))}

@@ -4,6 +4,9 @@ import { AppShell } from "@/components/atlas/AppShell";
 import { EmptyBundleState } from "@/components/atlas/EmptyBundleState";
 import { LibraryBrowser } from "@/components/atlas/LibraryBrowser";
 import { useAtlas } from "@/lib/atlas/store";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { loadAllCatalog, mergeCatalog } from "@/lib/atlas/catalog";
 
 export const Route = createFileRoute("/sources/library")({
   head: () => ({
@@ -29,7 +32,11 @@ export const Route = createFileRoute("/sources/library")({
 
 function LibraryView() {
   const { bundle } = useAtlas();
-  const sources = bundle?.sources ?? [];
+  const [withCatalog, setWithCatalog] = useState(true);
+  const cat = useQuery({ queryKey: ["catalog-all"], queryFn: loadAllCatalog, staleTime: Infinity, enabled: withCatalog });
+  const base = bundle?.sources ?? [];
+  const merged = useMemo(() => (withCatalog && cat.data && base.length ? mergeCatalog(base, cat.data) : null), [withCatalog, cat.data, base]);
+  const sources = merged?.rows ?? base;
 
   return (
     <AppShell
@@ -37,6 +44,11 @@ function LibraryView() {
       title="Sources"
       description="Every distinct source URL in the bundle shipped with this build (or your own browser import). URLs are shown exactly as supplied, including query strings and hash routes."
     >
+      <label className="mb-3 flex items-center gap-2 text-[12px] text-muted-foreground">
+        <input type="checkbox" checked={withCatalog} onChange={(e) => setWithCatalog(e.target.checked)} />
+        Include the source catalog
+        <span>{withCatalog ? (cat.isLoading ? "· loading catalog…" : cat.error ? `· catalog could not be loaded: ${(cat.error as Error).message}` : merged ? `· ${base.length.toLocaleString()} directory + ${merged.added.toLocaleString()} catalog-only sources; ${merged.matched.toLocaleString()} share an exact URL and are shown once` : "") : `· ${base.length.toLocaleString()} directory sources`}</span>
+      </label>
       {sources.length === 0 ? (
         <EmptyBundleState view="The library" />
       ) : (
