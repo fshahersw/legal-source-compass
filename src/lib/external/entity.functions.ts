@@ -8,7 +8,8 @@ const ds = z.string().regex(/^[a-z0-9_]{1,80}$/);
 export const getEntity = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ dataset: ds, id: z.string().min(1).max(300) }).parse(d))
   .handler(async ({ data }): Promise<{ json: string | null }> => {
-    const d = await rpcPost<unknown>("corpus_detail", { p_id: data.id, p_datasets: [data.dataset], p_full: false });
+    const pid = data.dataset === "mdls" ? data.id.replace(/^mdl:/, "") : data.id;
+    const d = await rpcPost<unknown>("corpus_detail", { p_id: pid, p_datasets: [data.dataset], p_full: false });
     if (!d || typeof d !== "object") return { json: null };
     return { json: JSON.stringify(d) };
   });
