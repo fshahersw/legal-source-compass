@@ -16,5 +16,5 @@ export const Route = createFileRoute("/matters/$id")({
 
 function Page() {
   const { id } = Route.useParams();
-  return <EntityPage dataset="mdls" id={id} crumbs={[{ label: "Atlas", to: "/" }, { label: "Matters", to: "/matters" }]} />;
+  return <EntityPage dataset="mdls" id={id} docket={{ kind: "mdl", id }} crumbs={[{ label: "Atlas", to: "/" }, { label: "Matters", to: "/matters" }]} />;
 }
