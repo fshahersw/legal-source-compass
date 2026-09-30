@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { ilikeTerm, restGet } from "./rest.server";
+import { ilikeTerm, restGet, rpcPost } from "./rest.server";
 
 const DIRECTORY_DATASET = "counties";
 const ROW_CAP = 5000;
@@ -72,7 +72,6 @@ export type LawProvisionRow = { id: string; title: string | null; citation: stri
 export const listLawProvisions = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ node: z.number().int().min(1), offset: z.number().int().min(0).max(1_000_000).default(0), limit: z.number().int().min(1).max(50).default(50) }).parse(d))
   .handler(async ({ data }) => {
-    const { rpcPost } = await import("./rest.server");
     const rows = await rpcPost<LawProvisionRow[]>("corpus_law_provision_rows", { p_node: data.node, p_offset: data.offset, p_limit: data.limit });
     return rows ?? [];
   });

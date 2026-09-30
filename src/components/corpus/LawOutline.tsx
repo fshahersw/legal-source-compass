@@ -3,7 +3,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
-import { listLawCollections, listLawNodes } from "@/lib/external/corpus.functions";
+import { listLawCollections, listLawNodes, listLawProvisions } from "@/lib/external/corpus.functions";
+import { Link } from "@tanstack/react-router";
+import { keepPreviousData } from "@tanstack/react-query";
 
 export function LawOutline() {
   const collFn = useServerFn(listLawCollections);
@@ -62,17 +64,53 @@ export function LawLevel({ state, kind, parent }: { state: string; kind: string;
       {q.data.map((n) => (
         <li key={n.id}>
           <button
-            disabled={!n.has_children}
+            disabled={n.total === 0}
             onClick={() => setOpen((s) => { const x = new Set(s); x.has(n.id) ? x.delete(n.id) : x.add(n.id); return x; })}
             className="flex w-full items-center gap-1 rounded px-1 py-0.5 text-left hover:bg-muted disabled:hover:bg-transparent"
           >
-            <ChevronRight className={`h-3.5 w-3.5 shrink-0 transition-transform ${n.has_children ? "" : "opacity-0"} ${open.has(n.id) ? "rotate-90" : ""}`} />
+            <ChevronRight className={`h-3.5 w-3.5 shrink-0 transition-transform ${n.total > 0 ? "" : "opacity-0"} ${open.has(n.id) ? "rotate-90" : ""}`} />
             <span className="flex-1">{n.label}</span>
             <span className="tabular-nums text-[11px] text-muted-foreground">{n.total.toLocaleString()}</span>
           </button>
-          {open.has(n.id) ? <div className="ml-4 border-l border-border pl-2"><LawLevel state={state} kind={kind} parent={n.id} /></div> : null}
+          {open.has(n.id) ? <div className="ml-4 border-l border-border pl-2">{n.has_children ? <LawLevel state={state} kind={kind} parent={n.id} /> : <LawProvisions node={n.id} total={n.total} />}</div> : null}
         </li>
       ))}
     </ul>
+  );
+}
+
+/** Provisions under a lowest-level heading; each opens its own page with saved text and/or the official link. */
+function LawProvisions({ node, total }: { node: number; total: number }) {
+  const fn = useServerFn(listLawProvisions);
+  const [offset, setOffset] = useState(0);
+  const [q, setQ] = useState("");
+  const rows = useQuery({ queryKey: ["law-prov", node, offset], queryFn: () => fn({ data: { node, offset, limit: 50 } }), placeholderData: keepPreviousData });
+  if (rows.error) return <ExternalError error={rows.error} />;
+  const t = q.trim().toLowerCase();
+  const list = (rows.data ?? []).filter((r) => !t || `${r.citation ?? ""} ${r.title ?? ""}`.toLowerCase().includes(t));
+  return (
+    <div className="py-1">
+      <div className="mb-1 flex items-center gap-2">
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter this page" className="h-7 w-48 rounded-md border border-input bg-background px-2 text-[12px]" />
+        <span className="text-[11px] text-muted-foreground">{rows.isLoading ? "Loading…" : `${offset + 1}–${Math.min(offset + 50, total)} of ${total.toLocaleString()}`}</span>
+      </div>
+      <ul className="divide-y divide-border">
+        {list.map((r, i) => (
+          <li key={r.id}>
+            <Link to="/law/provision/$id" params={{ id: r.id }} search={{ node: String(node), i: String(offset + i) }} className="flex items-baseline gap-2 rounded px-1 py-1 hover:bg-muted">
+              {r.citation ? <span className="shrink-0 font-mono text-[11px] text-muted-foreground">{r.citation}</span> : null}
+              <span className="min-w-0 flex-1 truncate">{r.title ?? r.id}</span>
+              {r.status ? <span className="shrink-0 text-[11px] text-muted-foreground">{r.status.replace(/_/g, " ")}</span> : null}
+            </Link>
+          </li>
+        ))}
+      </ul>
+      {total > 50 ? (
+        <div className="mt-1 flex gap-2 text-[12px]">
+          <button disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 50))} className="rounded border border-border px-2 py-0.5 disabled:opacity-40">Previous</button>
+          <button disabled={offset + 50 >= total} onClick={() => setOffset(offset + 50)} className="rounded border border-border px-2 py-0.5 disabled:opacity-40">Next</button>
+        </div>
+      ) : null}
+    </div>
   );
 }
