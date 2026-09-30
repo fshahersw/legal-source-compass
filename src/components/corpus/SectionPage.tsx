@@ -21,6 +21,8 @@ export function SectionPage({
   const datasets = useDatasets();
   const list = (datasets.data ?? []).filter((d) => sectionOf(d.id) === section && (d.records ?? 0) > 0).sort((a, b) => (b.records ?? 0) - (a.records ?? 0));
   const empty = (datasets.data ?? []).filter((d) => sectionOf(d.id) === section && !(d.records ?? 0));
+  const primary = PRIMARY[section];
+  if (primary) list.sort((a, b) => (a.id === primary ? -1 : b.id === primary ? 1 : 0));
   const active = ds ?? extraTabs[0]?.id ?? list[0]?.id;
   const extra = extraTabs.find((t) => t.id === active);
 
@@ -46,6 +48,8 @@ export function SectionPage({
     </AppShell>
   );
 }
+
+const PRIMARY: Partial<Record<SectionId, string>> = { courts: "court_spine", judges: "judges", matters: "mdls" };
 
 function tabCls(on: boolean) {
   return `rounded-md px-2 py-1 text-[12px] ${on ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`;
