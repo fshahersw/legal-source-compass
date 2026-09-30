@@ -62,7 +62,7 @@ export const queryDataset = createServerFn({ method: "GET" })
     }
     let p = `corpus_records?select=id,title,category,state,source_url,item&dataset=eq.${data.dataset}`;
     if (q) p += `&title=ilike.${ilikeTerm(q)}`;
-    const raw = await restGet<{ id: string; title: string | null; category: string | null; state: string | null; source_url: string | null; item: Record<string, unknown> | null }[]>(p, {
+    const raw = await restGet<{ id: string; title: string | null; category: string | null; state: string | null; source_url: string | null; item: Record<string, any> | null }[]>(p, {
       range: [data.offset, data.offset + PAGE - 1],
     });
     const items = raw.rows.map((r) => ({ ...(r.item ?? {}), id: r.id, title: r.item?.title ?? r.title, category: r.category, state: r.state || null, source_url: r.source_url || null }));
