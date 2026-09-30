@@ -10,3 +10,8 @@
 - [x] Verification report in docs/
 - [x] Consolidate navigation, duplicate pages, labels, and dataset presentation while preserving the current visual design
 - [ ] Later (out of scope now): Tavily server-side harvesting
+- [x] Case analytics (year×status, defendants, firm roles, median close, state map) + defendant/role filters; /insights redirects
+- [ ] Agency profiles (needs agency-field check in Federal Register/safety data)
+- [ ] Provision page: copy citation, eCFR/part links, dates & sources, citing FR docs
+- [ ] Map as home page; retire Categories/Jurisdictions/Families/Endpoints
+- [ ] Supporting tables into court/case/county pages; court mini-map; MDL judge links; DB-based coverage gaps
