@@ -22,17 +22,17 @@ describe.skipIf(!has)("real V2.2A bundle", () => {
       promotions: res.stats.promotionRecords,
     });
     expect(checks.every((c) => c.match)).toBe(true);
-    expect(res.stats.distinctSources).toBe(new Set(raw.directorySources.map((s: { url: string }) => s.url)).size);
+    expect(res.stats.distinctSources).toBe(new Set(raw.directorySources.map((s: { url: string }) => s['url'])).size);
   });
 
   it("preserves URLs and original fields exactly", () => {
     if (!res?.ok) throw new Error("parse failed");
     raw.directorySources.forEach((s: Record<string, unknown>, i: number) => {
       const out = res.bundle.sources[i] as Record<string, unknown>;
-      expect(out.url).toBe(s.url);
-      expect(out.categories).toEqual(s.categories);
-      expect(out.jurisdictions).toEqual(s.jurisdictions);
-      expect(out.occurrence_records).toEqual(s.occurrences);
+      expect(out['url']).toBe(s['url']);
+      expect(out['categories']).toEqual(s['categories']);
+      expect(out['jurisdictions']).toEqual(s['jurisdictions']);
+      expect(out['occurrence_records']).toEqual(s['occurrences']);
     });
   });
 

@@ -240,12 +240,12 @@ function DataExportsView() {
                   <div className="eyebrow">Original files (imported checksums)</div>
                   <ul className="mt-1 space-y-1 text-[11px]">
                     {((bundle as Record<string, unknown>).original_files as Array<Record<string, unknown>>).map((f) => (
-                      <li key={String(f.name)}>
-                        <div className="font-medium">{String(f.name)}</div>
+                      <li key={String(f['name'])}>
+                        <div className="font-medium">{String(f['name'])}</div>
                         <div className="mono-cell break-all text-muted-foreground">
-                          {typeof f.sizeBytes === "number" ? `${f.sizeBytes.toLocaleString()} bytes · ` : ""}
-                          sha256 {String(f.sha256 ?? "—")}
-                          {typeof f.text === "string" ? "" : " · text not kept after reload"}
+                          {typeof f['sizeBytes'] === "number" ? `${f['sizeBytes'].toLocaleString()} bytes · ` : ""}
+                          sha256 {String(f['sha256'] ?? "—")}
+                          {typeof f['text'] === "string" ? "" : " · text not kept after reload"}
                         </div>
                       </li>
                     ))}
