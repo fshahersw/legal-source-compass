@@ -22,19 +22,20 @@ const NAV: NavItem[] = [
   { to: "/search", label: "Search", icon: Search },
   { to: "/places", label: "Places", icon: MapIcon, paths: ["/places", "/jurisdictions"] },
   { to: "/courts", label: "Courts", icon: Landmark },
-  { to: "/judges", label: "Judges", icon: Gavel },
+  { to: "/judges", label: "Judges", icon: Gavel, paths: ["/judges", "/people"] },
   { to: "/matters", label: "Matters", icon: Scale, paths: ["/matters", "/insights", "/mdls"] },
   { to: "/law", label: "Law & Regulation", icon: BookOpen, paths: ["/law", "/laws"] },
   { to: "/safety", label: "Safety", icon: ShieldAlert },
-  { to: "/", label: "Sources", icon: Library, paths: ["/", "/categories", "/source-families", "/endpoint-explorer", "/source-datasets", "/data"] },
+  { to: "/", label: "Sources", icon: Library, paths: ["/", "/sources", "/categories", "/source-families", "/endpoint-explorer", "/source-datasets", "/data"] },
   { to: "/saved-sources", label: "Saved Work", icon: Bookmark, paths: ["/saved-sources", "/review-queue", "/data-exports"] },
 ];
 
 const CONTEXT_NAV = [
   { paths: ["/places", "/jurisdictions"], items: [{ to: "/places", label: "Map & states" }, { to: "/jurisdictions", label: "Jurisdiction index" }] },
-  { paths: ["/matters", "/insights"], items: [{ to: "/matters", label: "Matter records" }, { to: "/insights", label: "Analysis" }] },
-  { paths: ["/", "/categories", "/source-families", "/endpoint-explorer", "/source-datasets", "/data"], items: [
-    { to: "/", label: "Directory" }, { to: "/categories", label: "Categories" }, { to: "/source-families", label: "Families" },
+  { paths: ["/matters", "/insights"], items: [{ to: "/matters", label: "Matter records" }, { to: "/insights", label: "Analysis" }, { to: "/people", label: "Name index A–Z" }] },
+  { paths: ["/judges", "/people"], items: [{ to: "/judges", label: "Judge directory" }, { to: "/people", label: "Name index A–Z" }] },
+  { paths: ["/", "/sources", "/categories", "/source-families", "/endpoint-explorer", "/source-datasets", "/data"], items: [
+    { to: "/", label: "Directory" }, { to: "/sources/registry", label: "Registry" }, { to: "/sources/coverage", label: "Coverage gaps" }, { to: "/categories", label: "Categories" }, { to: "/source-families", label: "Families" },
     { to: "/endpoint-explorer", label: "Endpoints" }, { to: "/source-datasets", label: "Corpus records" }, { to: "/data", label: "Dataset inventory" },
   ] },
   { paths: ["/saved-sources", "/review-queue", "/data-exports"], items: [

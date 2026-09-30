@@ -1,7 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { AppShell } from "@/components/atlas/AppShell";
-import { ExternalBadge, ExternalError } from "@/components/corpus/ExternalBadge";
+import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { DatasetBrowser, useDatasets } from "@/components/corpus/DatasetBrowser";
 import { SECTIONS, sectionOf, type SectionId } from "@/lib/external/groups";
 import { datasetDisplayName, datasetPurpose, sectionDescription } from "@/lib/external/domainRegistry";
@@ -31,7 +31,6 @@ export function SectionPage({
 
   return (
     <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: meta.label }]} title={meta.label} description={sectionDescription(section)}>
-      <div className="mb-3"><ExternalBadge /></div>
       {datasets.error ? <ExternalError error={datasets.error} /> : null}
       <div className="mb-4 flex flex-wrap items-end gap-3 border-b border-border pb-3">
         <div className="min-w-[17rem] max-w-lg flex-1">

@@ -108,8 +108,14 @@ export function fieldLabel(key: string) {
     judge_id: "Judge ID",
     mdl_no: "MDL number",
     in_slice: "Included in source slice",
+    mdls: "MDL appearances",
+    judge_links: "Linked judges",
+    counsel_directory: "Counsel",
+    docket_activity: "Docket activity",
   };
-  return aliases[key] ?? key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  if (aliases[key]) return aliases[key];
+  return key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+    .replace(/\bCl\b/g, "CourtListener").replace(/\bFjc\b/g, "FJC").replace(/\bJpml\b/g, "JPML").replace(/\bMdls?\b/g, (m) => m.toUpperCase()).replace(/\bNid\b/g, "ID").replace(/\bId\b/g, "ID");
 }
 
 export function displayValue(value: string | undefined) {
