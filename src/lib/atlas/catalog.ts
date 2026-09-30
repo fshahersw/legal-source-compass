@@ -62,3 +62,56 @@ export function countField(rows: CatalogEntry[], key: "category" | "access_metho
 export function inLibrary(rows: CatalogEntry[], libraryUrls: Set<string>): number {
   return rows.filter((r) => libraryUrls.has(r.url)).length;
 }
+
+/** Federal court id from an official uscourts.gov host, e.g. http://www.akd.uscourts.gov/ → "akd". Exact host pattern only. */
+export function uscourtsId(url: string): string | null {
+  try {
+    const m = new URL(url).hostname.toLowerCase().match(/^(?:www\.)?([a-z0-9]+)\.uscourts\.gov$/);
+    return m ? m[1]! : null;
+  } catch { return null; }
+}
+
+/** Every catalog row (all jurisdiction files). */
+export async function loadAllCatalog(): Promise<CatalogEntry[]> {
+  const idx = await loadCatalogIndex();
+  const parts = await Promise.all(idx.jurisdictions.map((j) => loadCatalogJurisdiction(j.jurisdiction)));
+  return parts.flat();
+}
+
+type LibSource = { id: string; url: string; title: string; domain: string; jurisdiction: string; heading_category: string; source_family: string; occurrences: number };
+
+/**
+ * Library rows = bundle sources, plus catalog rows whose exact URL is not already there.
+ * Existing rows are copied (never mutated) and gain a `catalog_record` when the URL matches exactly.
+ */
+export function mergeCatalog<S extends LibSource>(sources: S[], catalog: CatalogEntry[]): { rows: S[]; added: number; matched: number } {
+  const byUrl = new Map<string, CatalogEntry>();
+  for (const c of catalog) if (!byUrl.has(c.url)) byUrl.set(c.url, c);
+  const seen = new Set<string>();
+  let matched = 0;
+  const rows = sources.map((s) => {
+    seen.add(s.url);
+    const c = byUrl.get(s.url);
+    if (!c) return s;
+    matched++;
+    return { ...s, catalog_record: c };
+  });
+  let added = 0;
+  for (const c of byUrl.values()) {
+    if (seen.has(c.url)) continue;
+    added++;
+    rows.push({
+      id: `catalog:${c.id}`,
+      url: c.url,
+      title: c.title ?? "",
+      domain: c.host ?? "",
+      jurisdiction: c.jurisdiction === "us" ? "Federal" : c.jurisdiction_label ?? c.jurisdiction,
+      heading_category: c.category ?? "",
+      source_family: "",
+      occurrences: 1,
+      origin: "Source catalog",
+      catalog_record: c,
+    } as unknown as S);
+  }
+  return { rows, added, matched };
+}
