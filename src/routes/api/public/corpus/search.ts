@@ -44,13 +44,13 @@ export const Route = createFileRoute("/api/public/corpus/search")({
           p_count_cap: 10000,
         });
         const items = (res.items ?? []).map((i) => ({
-          id: String(i.id ?? ""),
-          dataset: i.dataset ?? dataset,
-          title: typeof i.title === "string" ? i.title.replace(/\s+/g, " ").trim() : (i.title ?? null),
-          state: i.state ?? null,
-          county: i.county ?? null,
-          kind: i.kind ?? i.group ?? null,
-          source_url: i.source_url ?? null,
+          id: String(i["id"] ?? ""),
+          dataset: i["dataset"] ?? dataset,
+          title: typeof i["title"] === "string" ? (i["title"] as string).replace(/\s+/g, " ").trim() : (i["title"] ?? null),
+          state: i["state"] ?? null,
+          county: i["county"] ?? null,
+          kind: i["kind"] ?? i["group"] ?? null,
+          source_url: i["source_url"] ?? null,
           ...Object.fromEntries(Object.entries(i).filter(([k]) => !["id", "dataset", "title", "state", "county", "kind", "group", "source_url"].includes(k))),
         }));
         return json({ items, total: res.total ?? null, totalCapped: !!res.total_capped, limit, offset });
