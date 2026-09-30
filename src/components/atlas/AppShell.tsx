@@ -32,7 +32,7 @@ const NAV: NavItem[] = [
 
 const CONTEXT_NAV = [
   { paths: ["/places", "/jurisdictions"], items: [{ to: "/places", label: "Map & states" }, { to: "/jurisdictions", label: "Jurisdiction index" }] },
-  { paths: ["/matters", "/insights"], items: [{ to: "/matters", label: "Matter records" }, { to: "/insights", label: "Analysis" }, { to: "/people?kind=mdl_counsel", label: "Counsel A–Z" }] },
+  { paths: ["/matters", "/insights"], items: [{ to: "/matters", label: "Matter records" }, { to: "/insights", label: "Analysis" }, { to: "/people", label: "Name index A–Z" }] },
   { paths: ["/judges", "/people"], items: [{ to: "/judges", label: "Judge directory" }, { to: "/people", label: "Name index A–Z" }] },
   { paths: ["/", "/sources", "/categories", "/source-families", "/endpoint-explorer", "/source-datasets", "/data"], items: [
     { to: "/", label: "Directory" }, { to: "/sources/registry", label: "Registry" }, { to: "/sources/coverage", label: "Coverage gaps" }, { to: "/categories", label: "Categories" }, { to: "/source-families", label: "Families" },
