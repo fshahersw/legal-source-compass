@@ -25,6 +25,8 @@ export function SourceDrawer({
 
   const overlay = source ? overlays[source.id] : undefined;
   const bookmarked = source ? Boolean(bookmarks[source.id]) : false;
+  const raw = (source ?? {}) as Record<string, unknown>;
+  const str = (v: unknown) => (typeof v === "string" ? v : undefined);
   const promotions = source
     ? (bundle?.promotion_records ?? []).filter(
         (p) => p.source_id === source.id || (p.url && p.url === source.url),
@@ -109,24 +111,45 @@ export function SourceDrawer({
                 <ImportedLabel label="Domain" value={source.domain} />
                 <ImportedLabel label="Jurisdiction" value={source.jurisdiction} />
                 <ImportedLabel label="Heading category" value={source.heading_category} />
-                <ImportedLabel label="Source family" value={source.source_family} />
+                <ImportedLabel
+                  label="Source family"
+                  value={
+                    source.source_family ||
+                    (Array.isArray(raw["source_family_ambiguous_ids"])
+                      ? `Ambiguous — matches ${(raw["source_family_ambiguous_ids"] as string[]).join(", ")}`
+                      : "Unassigned (no exact heading or endpoint match)")
+                  }
+                />
+                <ImportedLabel label="Format (imported)" value={str(raw["format"])} />
+                <ImportedLabel label="Format basis (imported)" value={str(raw["formatBasis"])} />
                 <ImportedLabel label="Occurrences in originals" value={String(source.occurrences)} />
               </div>
             </section>
 
             <section className="border-b border-border p-5">
-              <div className="eyebrow">Imported curation labels</div>
+              <div className="eyebrow">Imported historical metadata</div>
               <p className="mt-1.5 rounded-md border border-warning/40 bg-warning/10 p-2 text-[11px] leading-relaxed text-warning-foreground">
-                These labels were copied verbatim from the V2.2A export. They are historical curation
-                values, <strong>not fresh verification</strong>: nothing here has been re-checked
-                against the live source by this app.
+                These labels were copied verbatim from the V2.2A export. They are imported historical
+                metadata, <strong>not new validation</strong>: nothing here has been re-checked against
+                the live source by this app.
               </p>
               <div className="mt-2">
                 <ImportedLabel label="Authority label" value={source.imported_authority_label} />
                 <ImportedLabel label="Currentness label" value={source.imported_currentness_label} />
-                <ImportedLabel label="Review label" value={source.imported_review_label} />
+                <ImportedLabel label="Imported verification" value={source.imported_review_label} />
               </div>
             </section>
+
+            {raw["imported_raw_record"] !== undefined ? (
+              <section className="border-b border-border p-5">
+                <details>
+                  <summary className="eyebrow cursor-pointer">Raw imported record (verbatim)</summary>
+                  <pre className="mono-cell mt-2 max-h-72 overflow-auto whitespace-pre-wrap break-all rounded-md bg-muted/50 p-2 text-[11px]">
+                    {JSON.stringify(raw["imported_raw_record"], null, 2)}
+                  </pre>
+                </details>
+              </section>
+            ) : null}
 
             {source.provenance ? (
               <section className="border-b border-border p-5">
