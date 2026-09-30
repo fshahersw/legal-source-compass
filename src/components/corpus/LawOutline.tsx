@@ -50,7 +50,7 @@ export function LawOutline() {
   );
 }
 
-function LawLevel({ state, kind, parent }: { state: string; kind: string; parent: number }) {
+export function LawLevel({ state, kind, parent }: { state: string; kind: string; parent: number }) {
   const fn = useServerFn(listLawNodes);
   const q = useQuery({ queryKey: ["law-nodes", state, kind, parent], queryFn: () => fn({ data: { state, kind, parent } }) });
   const [open, setOpen] = useState<Set<number>>(new Set());
