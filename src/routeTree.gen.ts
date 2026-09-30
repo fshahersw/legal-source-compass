@@ -39,6 +39,7 @@ import { Route as PlacesIndexRouteImport } from './routes/places.index'
 import { Route as PlacesStateRouteImport } from './routes/places.$state'
 import { Route as SourcesCoverageRouteImport } from './routes/sources.coverage'
 import { Route as SourcesRegistryRouteImport } from './routes/sources.registry'
+import { Route as DataTablesTableRouteImport } from './routes/data.tables.$table'
 import { Route as PlacesStateCountyRouteImport } from './routes/places.$state.$county'
 import { Route as RecordsDatasetIdRouteImport } from './routes/records.$dataset.$id'
 
@@ -192,6 +193,11 @@ const SourcesRegistryRoute = SourcesRegistryRouteImport.update({
   path: '/sources/registry',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DataTablesTableRoute = DataTablesTableRouteImport.update({
+  id: '/data/tables/$table',
+  path: '/data/tables/$table',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlacesStateCountyRoute = PlacesStateCountyRouteImport.update({
   id: '/$county',
   path: '/$county',
@@ -234,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/judges/': typeof JudgesIndexRoute
   '/matters/': typeof MattersIndexRoute
   '/places/': typeof PlacesIndexRoute
+  '/data/tables/$table': typeof DataTablesTableRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
   '/records/$dataset/$id': typeof RecordsDatasetIdRoute
 }
@@ -268,6 +275,7 @@ export interface FileRoutesByTo {
   '/judges': typeof JudgesIndexRoute
   '/matters': typeof MattersIndexRoute
   '/places': typeof PlacesIndexRoute
+  '/data/tables/$table': typeof DataTablesTableRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
   '/records/$dataset/$id': typeof RecordsDatasetIdRoute
 }
@@ -303,6 +311,7 @@ export interface FileRoutesById {
   '/judges/': typeof JudgesIndexRoute
   '/matters/': typeof MattersIndexRoute
   '/places/': typeof PlacesIndexRoute
+  '/data/tables/$table': typeof DataTablesTableRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
   '/records/$dataset/$id': typeof RecordsDatasetIdRoute
 }
@@ -339,6 +348,7 @@ export interface FileRouteTypes {
     | '/judges/'
     | '/matters/'
     | '/places/'
+    | '/data/tables/$table'
     | '/places/$state/$county'
     | '/records/$dataset/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -373,6 +383,7 @@ export interface FileRouteTypes {
     | '/judges'
     | '/matters'
     | '/places'
+    | '/data/tables/$table'
     | '/places/$state/$county'
     | '/records/$dataset/$id'
   id:
@@ -407,6 +418,7 @@ export interface FileRouteTypes {
     | '/judges/'
     | '/matters/'
     | '/places/'
+    | '/data/tables/$table'
     | '/places/$state/$county'
     | '/records/$dataset/$id'
   fileRoutesById: FileRoutesById
@@ -442,6 +454,7 @@ export interface RootRouteChildren {
   JudgesIndexRoute: typeof JudgesIndexRoute
   MattersIndexRoute: typeof MattersIndexRoute
   PlacesIndexRoute: typeof PlacesIndexRoute
+  DataTablesTableRoute: typeof DataTablesTableRoute
   RecordsDatasetIdRoute: typeof RecordsDatasetIdRoute
 }
 
@@ -657,6 +670,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SourcesRegistryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/data/tables/$table': {
+      id: '/data/tables/$table'
+      path: '/data/tables/$table'
+      fullPath: '/data/tables/$table'
+      preLoaderRoute: typeof DataTablesTableRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/places/$state/$county': {
       id: '/places/$state/$county'
       path: '/$county'
@@ -717,6 +737,7 @@ const rootRouteChildren: RootRouteChildren = {
   JudgesIndexRoute: JudgesIndexRoute,
   MattersIndexRoute: MattersIndexRoute,
   PlacesIndexRoute: PlacesIndexRoute,
+  DataTablesTableRoute: DataTablesTableRoute,
   RecordsDatasetIdRoute: RecordsDatasetIdRoute,
 }
 export const routeTree = rootRouteImport

@@ -5,6 +5,7 @@ import { useDatasets } from "@/components/corpus/DatasetBrowser";
 import { SECTIONS, sectionOf } from "@/lib/external/groups";
 import { datasetDisplayName, datasetPurpose } from "@/lib/external/domainRegistry";
 import { pageHead } from "@/lib/corpus/head";
+import { EXTRA_TABLES } from "@/lib/external/tables.functions";
 
 export const Route = createFileRoute("/data/")({
   head: () => pageHead("Data catalog", "Every dataset in the connected corpus with its imported record count, grouped by section."),
@@ -44,6 +45,17 @@ function Catalog() {
             </section>
           );
         })}
+        <section>
+          <h2 className="mb-2 font-display text-lg">Supporting tables <span className="text-[12px] font-normal text-muted-foreground">stored outside the dataset list</span></h2>
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            {Object.entries(EXTRA_TABLES).map(([id, t]) => (
+              <Link key={id} to="/data/tables/$table" params={{ table: id }} className="rounded-lg border border-border bg-surface p-3 shadow-card hover:border-primary/50">
+                <span className="text-[13px] font-medium">{t.label}</span>
+                <div className="mt-1 truncate font-mono text-[10px] text-muted-foreground">{id}</div>
+              </Link>
+            ))}
+          </div>
+        </section>
       </div>
     </AppShell>
   );
