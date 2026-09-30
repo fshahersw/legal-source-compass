@@ -15,6 +15,6 @@
 - [x] Provision page: copy citation, eCFR, Federal Register link
 - [ ] Provision page: Title·Part·Subpart line, Dates & sources tab
 - [x] Map as home page; library at /sources/library; V2.2A labels removed; state source rows clickable
-- [ ] Retire Categories/Jurisdictions/Families/Endpoints into library filters; merge state sources with Registry V2.2 duplicates
+- [x] Retire Categories/Jurisdictions/Families/Endpoints into library filters; merge state sources with Registry V2.2 duplicates
 - [x] Supporting tables into court/case/county pages; court mini-map; MDL judge links
 - [ ] DB-based coverage gaps column

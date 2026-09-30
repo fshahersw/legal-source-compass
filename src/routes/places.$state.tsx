@@ -22,7 +22,10 @@ import { kindLabel } from "@/lib/external/lawTree";
 import { useServerFn as useSF } from "@tanstack/react-start";
 import { useQuery as useQ } from "@tanstack/react-query";
 import { loadRegistryJurisdiction, taskCounts, taskLabel } from "@/lib/atlas/registryV22";
+import { loadCatalogIndex, loadCatalogJurisdiction } from "@/lib/atlas/catalog";
+import { mergeStateSources, type MergedStateSource } from "@/lib/atlas/stateSources";
 import { SourceDrawer } from "@/components/atlas/SourceDrawer";
+import { Badge } from "@/components/ui/badge";
 import { ExternalLink } from "lucide-react";
 import type { Source } from "@/lib/atlas/types";
 import { useState } from "react";
@@ -52,8 +55,19 @@ function StatePage() {
   const navigate = useNavigate();
   const county = useStateCounty(st?.name);
   const reg = useQuery({ queryKey: ["reg22", usps], queryFn: () => loadRegistryJurisdiction(usps), staleTime: Infinity });
+  const catIdx = useQuery({ queryKey: ["catalog-index"], queryFn: loadCatalogIndex, staleTime: Infinity });
+  const catState = useQuery({
+    queryKey: ["catalog-state", usps],
+    queryFn: () => loadCatalogJurisdiction(usps.toLowerCase()),
+    staleTime: Infinity,
+    enabled: !!catIdx.data?.jurisdictions.some((j) => j.jurisdiction === usps.toLowerCase()),
+  });
   const countyValues = useMemo(() => new Map(Object.entries(county.data?.counts ?? {})), [county.data]);
   const sources = useMemo(() => (st ? sourcesForState(bundle?.sources ?? [], usps) : []), [bundle, usps, st]);
+  const merged = useMemo(
+    () => mergeStateSources(sources, catState.data ?? [], reg.data ?? []),
+    [sources, catState.data, reg.data],
+  );
   const matters = useMemo(() => (corpus.insights ? mattersForState(corpus.insights, usps) : []), [corpus.insights, usps]);
 
   if (!st) {
@@ -67,7 +81,8 @@ function StatePage() {
 
   return (
     <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Places", to: "/places" }, { label: st.name }]} title={st.name} description="Sources are matched by exact state name in the imported jurisdiction field; case rows by state code.">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+        <Stat label="Sources, all collections" value={merged.length} note="exact URL match" />
         <Stat label="Directory sources" value={sources.length} />
         <Stat label="Occurrences" value={sources.reduce((a, s) => a + s.occurrences, 0)} />
         <Stat label="Saved case rows" value={matters.length} />
@@ -118,7 +133,7 @@ function StatePage() {
           <BarList title="Case rows by status" rows={countBy(matters, (m) => m.status)} unit="saved case rows" />
         </div>
       </div>
-      <StateSourceTable sources={sources} onAll={() => { setFilters({ ...defaultFilters, jurisdictions: [st.name] }); navigate({ to: "/sources/library" }); }} />
+      <StateSourceTable rows={merged} stateName={st.name} onAll={() => { setFilters({ ...defaultFilters, jurisdictions: [st.name] }); navigate({ to: "/sources/library" }); }} />
     </AppShell>
   );
 }
@@ -157,25 +172,44 @@ function StateLaws({ usps }: { usps: string }) {
   );
 }
 
-function StateSourceTable({ sources, onAll }: { sources: Source[]; onAll: () => void }) {
+function StateSourceTable({ rows, stateName, onAll }: { rows: MergedStateSource[]; stateName: string; onAll: () => void }) {
   const [open, setOpen] = useState<Source | null>(null);
-  const shown = [...sources].sort((a, b) => a.title.localeCompare(b.title)).slice(0, 50);
+  const shown = rows.slice(0, 50); // mergeStateSources already sorts by title
+  const asSource = (r: MergedStateSource): Source =>
+    r.source ??
+    ({
+      id: r.id,
+      url: r.url,
+      title: r.title,
+      domain: r.domain,
+      jurisdiction: stateName,
+      heading_category: r.category,
+      source_family: "",
+      occurrences: 1,
+    } as Source);
   return (
     <section className="mt-5 overflow-hidden rounded-lg border border-border bg-surface shadow-card">
       <div className="flex items-center justify-between border-b border-border px-3 py-2">
         <h2 className="eyebrow">Sources for this state (first 50 by title)</h2>
-        {sources.length > 50 ? <button type="button" onClick={onAll} className="text-[12px] underline">Show all {sources.length.toLocaleString()}</button> : null}
+        {rows.length > 50 ? <button type="button" onClick={onAll} className="text-[12px] underline">Show all {rows.length.toLocaleString()}</button> : null}
       </div>
-      {sources.length === 0 ? <p className="px-3 py-2 text-[13px] text-muted-foreground">No sources name this state.</p> : (
+      {rows.length === 0 ? <p className="px-3 py-2 text-[13px] text-muted-foreground">No sources name this state.</p> : (
         <table className="w-full table-fixed text-[13px]">
-          <thead className="bg-muted/50 text-left text-[11px] text-muted-foreground"><tr><th className="w-1/2 px-3 py-1.5">Title</th><th className="px-3 py-1.5">Domain</th><th className="px-3 py-1.5">Category</th><th className="w-10" /></tr></thead>
+          <thead className="bg-muted/50 text-left text-[11px] text-muted-foreground"><tr><th className="w-2/5 px-3 py-1.5">Title</th><th className="px-3 py-1.5">Domain</th><th className="px-3 py-1.5">Category</th><th className="px-3 py-1.5">In collections</th><th className="w-10" /></tr></thead>
           <tbody>
-            {shown.map((s) => (
-              <tr key={s.id} role="button" tabIndex={0} onClick={() => setOpen(s)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(s); } }} className="cursor-pointer border-t border-border hover:bg-muted/50 focus:bg-muted/50 focus:outline-none">
-                <td className="truncate px-3 py-1.5">{s.title || s.url}</td>
-                <td className="truncate px-3 py-1.5 font-mono text-[11px] text-muted-foreground">{s.domain}</td>
-                <td className="truncate px-3 py-1.5 text-[12px] text-muted-foreground">{(s as unknown as Record<string, unknown>)["heading_category"] as string || "—"}</td>
-                <td className="px-2 py-1.5"><a href={s.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} aria-label={`Open ${s.title || s.url} in a new tab`} className="text-muted-foreground hover:text-foreground"><ExternalLink className="size-3.5" /></a></td>
+            {shown.map((r) => (
+              <tr key={r.id} role="button" tabIndex={0} onClick={() => setOpen(asSource(r))} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(asSource(r)); } }} className="cursor-pointer border-t border-border hover:bg-muted/50 focus:bg-muted/50 focus:outline-none">
+                <td className="truncate px-3 py-1.5">{r.title || r.url}</td>
+                <td className="truncate px-3 py-1.5 font-mono text-[11px] text-muted-foreground">{r.domain || "—"}</td>
+                <td className="truncate px-3 py-1.5 text-[12px] text-muted-foreground">{r.category || "—"}</td>
+                <td className="truncate px-3 py-1.5">
+                  <span className="flex flex-wrap gap-1">
+                    {r.collections.map((c) => (
+                      <Badge key={c} variant="outline" className="text-[10px] font-normal">{c}</Badge>
+                    ))}
+                  </span>
+                </td>
+                <td className="px-2 py-1.5"><a href={r.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} aria-label={`Open ${r.title || r.url} in a new tab`} className="text-muted-foreground hover:text-foreground"><ExternalLink className="size-3.5" /></a></td>
               </tr>
             ))}
           </tbody>

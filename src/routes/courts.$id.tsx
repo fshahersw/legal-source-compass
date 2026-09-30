@@ -10,12 +10,12 @@ import { useCourtDirectory } from "@/lib/external/useDirectory";
 export const Route = createFileRoute("/courts/$id")({
   loader: ({ context, params }) => context.queryClient.ensureQueryData(entityQuery("court_spine", params.id)),
   head: ({ loaderData }) => {
-    const raw = loaderData?.raw as Record<string, unknown> | null | undefined;
+    const raw = (loaderData as { raw?: unknown } | undefined)?.raw as Record<string, unknown> | null | undefined;
     const name = String(raw?.["title"] ?? raw?.["name"] ?? "Court profile");
     return pageHead(name, `Court profile for ${name}: every linked record in the connected corpus on one page.`);
   },
   component: Page,
-  errorComponent: EntityError,
+  errorComponent: ({ error }) => <EntityError error={error instanceof Error ? error : new Error(String(error))} /> ,
   notFoundComponent: () => <p className="p-6 text-[13px]">Court not found.</p>,
 });
 

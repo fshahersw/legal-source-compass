@@ -15,10 +15,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 type NavItem = { to: string; label: string; icon: typeof Library; paths: string[] };
-const EXPLORE = ["/", "/places", "/search", "/jurisdictions", "/overview"];
+const EXPLORE = ["/", "/places", "/search", "/overview"];
 const LITIGATION = ["/courts", "/judges", "/matters", "/people", "/insights", "/mdls", "/records", "/registry"];
 const LAW = ["/law", "/laws", "/safety", "/agencies"];
-const SOURCES = ["/sources", "/categories", "/source-families", "/endpoint-explorer", "/source-datasets", "/data", "/saved-sources", "/review-queue", "/data-exports"];
+const SOURCES = ["/sources", "/source-datasets", "/data", "/saved-sources", "/review-queue", "/data-exports"];
 const NAV: NavItem[] = [
   { to: "/places", label: "Explore", icon: MapIcon, paths: EXPLORE },
   { to: "/courts", label: "Litigation", icon: Landmark, paths: LITIGATION },
@@ -27,14 +27,14 @@ const NAV: NavItem[] = [
 ];
 
 const CONTEXT_NAV = [
-  { paths: EXPLORE, items: [{ to: "/", label: "Map" }, { to: "/search", label: "Search everything" }, { to: "/jurisdictions", label: "Jurisdiction index" }] },
+  { paths: EXPLORE, items: [{ to: "/", label: "Map" }, { to: "/search", label: "Search everything" }] },
   { paths: LITIGATION, items: [
     { to: "/courts", label: "1 · Courts" }, { to: "/judges", label: "2 · Judges" }, { to: "/matters", label: "3 · Matters (MDLs)" }, { to: "/matters/cases", label: "4 · Cases & analytics" }, { to: "/registry", label: "5 · Case registry" }, { to: "/people", label: "People A–Z" },
   ] },
   { paths: LAW, items: [{ to: "/law", label: "Law & regulation" }, { to: "/safety", label: "Product safety" }, { to: "/agencies", label: "Agencies" }] },
   { paths: SOURCES, items: [
-    { to: "/sources/library", label: "Source library" }, { to: "/sources/catalog", label: "Source catalog" }, { to: "/sources/registry-v22", label: "Registry V2.2" }, { to: "/sources/registry", label: "Registry v0.6" }, { to: "/sources/coverage", label: "Coverage gaps" }, { to: "/categories", label: "Categories" }, { to: "/source-families", label: "Families" },
-    { to: "/endpoint-explorer", label: "Endpoints" }, { to: "/source-datasets", label: "Corpus records" }, { to: "/data", label: "All datasets" },
+    { to: "/sources/library", label: "Source library" }, { to: "/sources/catalog", label: "Source catalog" }, { to: "/sources/registry-v22", label: "Registry V2.2" }, { to: "/sources/registry", label: "Registry v0.6" }, { to: "/sources/coverage", label: "Coverage gaps" },
+    { to: "/source-datasets", label: "Corpus records" }, { to: "/data", label: "All datasets" },
     { to: "/saved-sources", label: "Saved" }, { to: "/review-queue", label: "Review queue" }, { to: "/data-exports", label: "Imports & exports" },
   ] },
 ];

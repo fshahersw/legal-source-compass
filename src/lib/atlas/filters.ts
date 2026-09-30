@@ -1,3 +1,4 @@
+import { classifySource } from "@/lib/corpus/taxonomy";
 import { valuesOf } from "./bundle";
 import type { ReviewOverlay, Source } from "./types";
 
@@ -9,6 +10,8 @@ export type LibraryFilters = {
   jurisdictions: string[];
   families: string[];
   headingCategories: string[];
+  /** corpussite taxonomy category ids (derived from heading categories). */
+  categories: string[];
   domains: string[];
   /** Browser-local review state filter. */
   reviewState: "any" | "unreviewed" | "accepted" | "rejected" | "needs_follow_up";
@@ -24,6 +27,7 @@ export const defaultFilters: LibraryFilters = {
   jurisdictions: [],
   families: [],
   headingCategories: [],
+  categories: [],
   domains: [],
   reviewState: "any",
   bookmarkedOnly: false,
@@ -72,6 +76,7 @@ export function filterSources(
     if (!inList(filters.jurisdictions, valuesOf(s, "jurisdiction"))) return false;
     if (!inList(filters.families, s.source_family)) return false;
     if (!inList(filters.headingCategories, valuesOf(s, "heading_category"))) return false;
+    if (!inList(filters.categories, classifySource(valuesOf(s, "heading_category")))) return false;
     if (!inList(filters.domains, s.domain)) return false;
     if (filters.bookmarkedOnly && !ctx.bookmarks[s.id]) return false;
     if (filters.reviewState !== "any") {
