@@ -1,40 +1,28 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { ChevronRight } from "lucide-react";
-import { AppShell } from "@/components/atlas/AppShell";
-import { ExternalBadge, ExternalError } from "@/components/corpus/ExternalBadge";
+import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { listLawCollections, listLawNodes } from "@/lib/external/corpus.functions";
-import { pageHead } from "@/lib/corpus/head";
 
-export const Route = createFileRoute("/laws")({
-  head: () => pageHead("State laws", "Browse state statutes, constitutions, court rules and guidance collections held in the connected corpus."),
-  component: LawsPage,
-});
-
-function LawsPage() {
+export function LawOutline() {
   const collFn = useServerFn(listLawCollections);
   const colls = useQuery({ queryKey: ["law-collections"], queryFn: () => collFn() });
   const [sel, setSel] = useState<{ state: string; kind: string } | null>(null);
   const states = useMemo(() => [...new Set((colls.data ?? []).map((c) => c.state))], [colls.data]);
   return (
-    <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "State laws" }]} title="State laws" description="Provision and heading counts come from your corpus's law collections. Currentness is not re-verified.">
-      <div className="mb-3"><ExternalBadge /></div>
+    <div>
       {colls.error ? <ExternalError error={colls.error} /> : null}
       {colls.isLoading ? <p className="text-[13px] text-muted-foreground">Loading…</p> : null}
-      <div className="grid gap-5 lg:grid-cols-[24rem_1fr]">
+      <div className="grid gap-5 lg:grid-cols-[22rem_1fr]">
         <div className="max-h-[75vh] overflow-auto rounded-lg border border-border bg-surface shadow-card">
           {states.map((s) => (
             <div key={s} className="border-b border-border px-3 py-2">
               <div className="eyebrow mb-1">{s}</div>
               <div className="flex flex-wrap gap-1">
                 {(colls.data ?? []).filter((c) => c.state === s).map((c) => (
-                  <button
-                    key={c.kind}
-                    onClick={() => setSel({ state: s, kind: c.kind })}
-                    className={`rounded border px-1.5 py-0.5 text-[12px] ${sel?.state === s && sel.kind === c.kind ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}
-                  >
+                  <button key={c.kind} onClick={() => setSel({ state: s, kind: c.kind })}
+                    className={`rounded border px-1.5 py-0.5 text-[12px] ${sel?.state === s && sel.kind === c.kind ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}>
                     {c.kind.replace(/_/g, " ")} · {c.provisions.toLocaleString()}
                   </button>
                 ))}
@@ -43,17 +31,11 @@ function LawsPage() {
           ))}
         </div>
         <div className="rounded-lg border border-border bg-surface p-3 shadow-card">
-          {sel ? (
-            <>
-              <h2 className="eyebrow mb-2">{sel.state} · {sel.kind.replace(/_/g, " ")}</h2>
-              <LawLevel state={sel.state} kind={sel.kind} parent={0} key={`${sel.state}-${sel.kind}`} />
-            </>
-          ) : (
-            <p className="text-[13px] text-muted-foreground">Pick a state collection to browse its outline.</p>
-          )}
+          {sel ? (<><h2 className="eyebrow mb-2">{sel.state} · {sel.kind.replace(/_/g, " ")}</h2><LawLevel state={sel.state} kind={sel.kind} parent={0} key={`${sel.state}-${sel.kind}`} /></>)
+            : <p className="text-[13px] text-muted-foreground">Pick a collection to browse its outline.</p>}
         </div>
       </div>
-    </AppShell>
+    </div>
   );
 }
 
