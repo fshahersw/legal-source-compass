@@ -79,7 +79,7 @@ function SectionView({ s, aliases }: { s: EntitySection; aliases: Record<string,
       <div className="overflow-x-auto"><table className="w-full text-[12px]">
         {s.columns.some(Boolean) ? <thead className="text-left text-[11px] uppercase tracking-wide text-muted-foreground"><tr>{s.columns.map((c, i) => <th key={i} className="px-2 py-1">{c}</th>)}</tr></thead> : null}
         <tbody className="divide-y divide-border">{s.rows.slice(0, all ? undefined : 25).map((r, i) => (
-          <tr key={i}>{r.map((c, j) => <td key={j} className="max-w-[22rem] px-2 py-1 align-top">{j === 0 && s.links[i] ? <CorpusLink url={s.links[i]!} label={c} aliases={aliases} /> : <span className={c === "—" ? "text-muted-foreground/60" : "break-words"}>{c}</span>}</td>)}</tr>))}</tbody>
+          <tr key={i}>{r.map((c, j) => <td key={j} className="max-w-[22rem] px-2 py-1 align-top">{j === 0 && s.links[i] ? <CorpusLink url={s.links[i]!} label={c} aliases={aliases} /> : <span className="break-words">{c}</span>}</td>)}</tr>))}</tbody>
       </table></div>
       {s.rows.length > 25 && !all ? <button className="mt-2 text-[12px] text-primary" onClick={() => setAll(true)}>Show all {s.rows.length.toLocaleString()}</button> : null}
     </Section>
