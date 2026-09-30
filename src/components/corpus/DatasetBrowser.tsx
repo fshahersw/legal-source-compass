@@ -156,6 +156,9 @@ export function RecordDrawer({ item, dataset, onClose, aliases }: { item: ({ id:
         </SheetHeader>
         <div className="space-y-4 px-4 pb-6 text-[13px]">
           {photo ? <Photo src={photo} className="h-40 w-32 rounded-md border border-border" /> : null}
+          {links.filter((l) => l.url.startsWith("/") && /image|seal|photo|portrait/i.test(l.label)).slice(0, 4).map((l) => (
+            <img key={l.url} src={fileUrl(l.url)} alt={l.label} className="max-h-40 rounded-md border border-border bg-surface object-contain p-1" />
+          ))}
           {item?.badges?.length ? <div className="flex flex-wrap gap-1">{item.badges.map((b) => <Badge key={b} variant="secondary">{b}</Badge>)}</div> : null}
           {q.isLoading ? <p className="text-muted-foreground">Loading detail…</p> : null}
           {q.error ? <ExternalError error={q.error} /> : null}
