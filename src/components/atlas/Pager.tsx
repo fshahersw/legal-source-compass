@@ -37,7 +37,7 @@ export function Pager({
       </div>
       <div className="flex items-center gap-2">
         <Select value={String(pageSize)} onValueChange={(v) => onPageSize(Number(v))}>
-          <SelectTrigger size="sm" className="h-8 w-[5.5rem] text-[12px]">
+          <SelectTrigger className="h-8 w-[5.5rem] text-[12px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
