@@ -26,18 +26,16 @@ export const Route = createFileRoute("/")({
 });
 
 function LibraryView() {
-  const { bundle, ready } = useAtlas();
+  const { bundle } = useAtlas();
   const sources = bundle?.sources ?? [];
 
   return (
     <AppShell
       breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Library" }]}
       title="Library"
-      description="Every distinct source URL in the imported V2.2A bundle. URLs are shown exactly as supplied, including query strings and hash routes."
+      description="Every distinct source URL in the V2.2A bundle shipped with this build (or your own browser import). URLs are shown exactly as supplied, including query strings and hash routes."
     >
-      {!ready ? (
-        <p className="text-[13px] text-muted-foreground">Loading local data…</p>
-      ) : sources.length === 0 ? (
+      {sources.length === 0 ? (
         <EmptyBundleState view="The library" />
       ) : (
         <LibraryBrowser sources={sources} scope="library" />

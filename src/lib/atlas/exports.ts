@@ -80,15 +80,21 @@ export function sourcesToJson(
       note:
         "imported_* fields are historical curation values copied verbatim from the bundle and are not fresh verification. local_review_* and local_bookmarked come from this browser only.",
       row_count: sources.length,
-      rows: toSourceRows(sources, overlays, bookmarks),
+      rows: toSourceRows(sources, overlays, bookmarks).map((row, i) => {
+        const rec = (sources[i] as Record<string, unknown>)["imported_raw_record"];
+        return rec === undefined ? row : { ...row, imported_raw_record: rec };
+      }),
     },
     null,
     2,
   );
 }
 
-export function downloadText(filename: string, mime: string, text: string) {
-  const blob = new Blob([text], { type: `${mime};charset=utf-8` });
+export function downloadBytes(filename: string, mime: string, bytes: ArrayBuffer) {
+  triggerDownload(filename, new Blob([bytes], { type: mime }));
+}
+
+function triggerDownload(filename: string, blob: Blob) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -96,5 +102,10 @@ export function downloadText(filename: string, mime: string, text: string) {
   document.body.appendChild(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export function downloadText(filename: string, mime: string, text: string) {
+  const blob = new Blob([text], { type: `${mime};charset=utf-8` });
+  triggerDownload(filename, blob);
 }
