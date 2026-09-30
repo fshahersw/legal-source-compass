@@ -120,3 +120,29 @@ Limits:
 - Neither dataset has county-level records, so county pages show a name and FIPS without counts.
 - Applying corpussite's category rule to V2.2A headings puts most headings in "Other / not matched by rule" (4,531 links; Regulations 96). This is shown as-is, not re-guessed.
 - Laws, judges, regulations and county registries from the full corpus are not imported. They need per-collection exports.
+
+---
+
+## Phase: navigation and data consolidation (2026-09-30)
+
+The existing visual theme was preserved. The sidebar now has nine domain destinations: Search, Places, Courts, Judges, Matters, Law & Regulation, Safety, Sources, and Saved Work. Specialist source, review, export, analysis, and raw-inventory pages remain reachable through contextual navigation instead of competing in the sidebar.
+
+Changes verified:
+- Replaced long dataset tab strips with one compact record-view selector. Human-readable labels lead; raw dataset IDs remain visible in the advanced inventory.
+- Added a metadata registry for dataset names, purposes, field labels, boolean/empty display, and explicit fallback handling.
+- Kept all 71 connected datasets reachable through Sources → Dataset inventory.
+- Added a compact cross-domain search field to every workspace header.
+- Removed the repeated bundle-statistics panel from navigation; provenance remains under Imports & Exports.
+- Preserved old `/overview`, `/mdls`, and `/laws` entry points as redirects, including their destination search state.
+
+Final checks:
+- `bunx vitest run`: **10 files, 80 / 80 tests passed**.
+- `bunx tsgo --noEmit`: no errors.
+- Preview build signal: **build OK**.
+- Fresh Chromium context, 1280 × 1800: all nine destinations and all specialist pages loaded; Courts returned 50 rows and opened the N.D. California detail drawer; the compact Court selector exposed 11 real record views; Dataset inventory exposed all 71 datasets; global search navigation worked; no page errors or HTTP 5xx responses.
+- Fresh Chromium context, 390 × 844: mobile navigation, contextual navigation, filters, and the source table rendered without page errors.
+
+Remaining limits:
+- Relationships are displayed only when supplied by corpus links or detail sections. Unsupported joins remain absent or explicitly unmapped; none were inferred.
+- Very large corpus datasets still use bounded paging/search and may time out on broad searches.
+- Saved sources and review decisions remain browser-local and are not synchronized.

@@ -70,7 +70,7 @@ function EndpointExplorer() {
 
   return (
     <AppShell
-      breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Endpoint Explorer" }]}
+      breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Sources", to: "/" }, { label: "Endpoint Explorer" }]}
       title="Endpoint Explorer"
       description="Raw endpoint candidates exactly as recorded in the bundle. This build performs no live requests, probing or crawling — status values shown here are imported text, not a live check."
     >

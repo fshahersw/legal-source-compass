@@ -11,17 +11,13 @@
 
 ## Legal Source Atlas architecture rules
 
-- Directory data is the real supplied V2.2A file shipped byte-identical at
-  `public/data/atlas-import-bundle.json` (sha256 recorded in `persistence.ts`), optionally
-  replaced by a user import; no sample or fabricated rows so every count is computed from real rows.
+- Directory data is the supplied V2.2A file at `public/data/atlas-import-bundle.json`, optionally replaced by a user import; no fabricated rows.
 - Startup order is saved IndexedDB import → legacy localStorage (migrated only after a verified
   IndexedDB write) → bundled default, in `src/lib/atlas/persistence.ts`, because multi-MB bundles
   exceed localStorage quota; stale async loads are discarded via a generation counter.
 - User imports are stored as exact raw bytes in IndexedDB and view models are derived in memory,
   so round-trip exports and original-file text are never lost.
-- Pure data logic lives in `src/lib/atlas/{bundle,filters,review,exports}.ts` and is
-  unit-tested; React code only renders it, which keeps filter/export behaviour testable
-  without a DOM.
+- Pure data logic lives in `src/lib/atlas/{bundle,filters,review,exports}.ts` and is unit-tested.
 - Imported bundle fields are immutable (raw object deep-frozen, each source keeps
   `imported_raw_record`); review decisions and bookmarks are a separate localStorage overlay
   (`localState.ts`) written only by user actions, so startup can never overwrite them.
@@ -31,3 +27,4 @@
 
 - Corpus UI is generic and metadata-driven: `src/lib/external/catalog.functions.ts` reads each dataset's own listing metadata (columns, filters, qualification) and the corpus RPCs (`corpus_query_bounded`, `corpus_query`, `corpus_detail`); sections are a pure mapping in `groups.ts`, so every dataset is reachable without per-dataset code.
 - Stored corpus files (seals, portraits, PDFs) are served only via `/api/files?route=` which looks up `corpus_artifacts` by route and streams from the private bucket, so storage keys never reach the client.
+- Primary navigation is domain-based; specialist/raw pages remain available through contextual navigation, not competing top-level links.

@@ -138,8 +138,8 @@ function DataExportsView() {
 
   return (
     <AppShell
-      breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Data & Exports" }]}
-      title="Data & Exports"
+      breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Saved Work", to: "/saved-sources" }, { label: "Imports & Exports" }]}
+      title="Imports & Exports"
       description="Where the directory data comes from, how to replace it with your own file in this browser, and exports of the directory and your browser-local review overlay."
     >
       <div className="grid gap-4 lg:grid-cols-3">

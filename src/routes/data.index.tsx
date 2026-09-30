@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
 import { ExternalBadge, ExternalError } from "@/components/corpus/ExternalBadge";
 import { useDatasets } from "@/components/corpus/DatasetBrowser";
-import { SECTIONS, datasetLabel, sectionOf } from "@/lib/external/groups";
+import { SECTIONS, sectionOf } from "@/lib/external/groups";
+import { datasetDisplayName, datasetPurpose } from "@/lib/external/domainRegistry";
 import { pageHead } from "@/lib/corpus/head";
 
 export const Route = createFileRoute("/data/")({
@@ -15,7 +16,7 @@ function Catalog() {
   const all = ds.data ?? [];
   const total = all.reduce((n, d) => n + (d.records ?? 0), 0);
   return (
-    <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Data catalog" }]} title="Data catalog" description="Record counts are the corpus's own imported-record counts per dataset. Open any dataset to browse it.">
+    <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Sources", to: "/" }, { label: "Dataset inventory" }]} title="Dataset inventory" description="Advanced inventory of every connected corpus dataset. Record counts are the corpus's own imported counts; no coverage is inferred.">
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <ExternalBadge />
         {all.length ? <span className="text-[12px] text-muted-foreground">{all.length} datasets · {total.toLocaleString()} imported records</span> : null}
@@ -33,10 +34,10 @@ function Catalog() {
                 {list.map((d) => (
                   <Link key={d.id} to="/data/$dataset" params={{ dataset: d.id }} className="rounded-lg border border-border bg-surface p-3 shadow-card hover:border-primary/50">
                     <div className="flex items-baseline justify-between gap-2">
-                      <span className="truncate text-[13px] font-medium">{datasetLabel(d.id, d.label)}</span>
+                       <span className="truncate text-[13px] font-medium">{datasetDisplayName(d.id, d.label)}</span>
                       <span className="shrink-0 tabular-nums text-[12px] text-muted-foreground">{d.records?.toLocaleString() ?? "—"}</span>
                     </div>
-                    <div className="mt-0.5 font-mono text-[10px] text-muted-foreground">{d.id}</div>
+                     <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-muted-foreground"><span>{datasetPurpose(d.id)}</span><span className="truncate font-mono">{d.id}</span></div>
                   </Link>
                 ))}
               </div>

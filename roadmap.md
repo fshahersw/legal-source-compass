@@ -8,4 +8,5 @@
 - [x] Source Families: all 8 manifest families, computed counts by ID, unassigned/ambiguous labelled
 - [x] Data & Exports overflow + title fixes
 - [x] Verification report in docs/
+- [x] Consolidate navigation, duplicate pages, labels, and dataset presentation while preserving the current visual design
 - [ ] Later (out of scope now): Tavily server-side harvesting

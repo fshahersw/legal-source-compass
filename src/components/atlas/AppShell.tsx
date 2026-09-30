@@ -1,59 +1,50 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Bookmark,
-  BarChart3,
-  Compass,
-  Database,
   Map as MapIcon,
-  Tags,
   Landmark,
-  Layers,
   Library,
-  ListChecks,
-  Plug,
   ShieldAlert,
   Gavel,
   Scale,
   BookOpen,
   Search,
-  FolderOpen,
-  Download,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 
 import { useAtlas } from "@/lib/atlas/store";
 import { reviewCounts } from "@/lib/atlas/review";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
-type NavItem = { to: string; label: string; icon: typeof Library; exact?: boolean };
-const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
-  { label: "Explore", items: [
-    { to: "/search", label: "Search", icon: Search },
-    { to: "/places", label: "Places", icon: MapIcon },
-    { to: "/data", label: "Data catalog", icon: Database },
+type NavItem = { to: string; label: string; icon: typeof Library; paths?: string[] };
+const NAV: NavItem[] = [
+  { to: "/search", label: "Search", icon: Search },
+  { to: "/places", label: "Places", icon: MapIcon, paths: ["/places", "/jurisdictions"] },
+  { to: "/courts", label: "Courts", icon: Landmark },
+  { to: "/judges", label: "Judges", icon: Gavel },
+  { to: "/matters", label: "Matters", icon: Scale, paths: ["/matters", "/insights", "/mdls"] },
+  { to: "/law", label: "Law & Regulation", icon: BookOpen, paths: ["/law", "/laws"] },
+  { to: "/safety", label: "Safety", icon: ShieldAlert },
+  { to: "/", label: "Sources", icon: Library, paths: ["/", "/categories", "/source-families", "/endpoint-explorer", "/source-datasets", "/data"] },
+  { to: "/saved-sources", label: "Saved Work", icon: Bookmark, paths: ["/saved-sources", "/review-queue", "/data-exports"] },
+];
+
+const CONTEXT_NAV = [
+  { paths: ["/places", "/jurisdictions"], items: [{ to: "/places", label: "Map & states" }, { to: "/jurisdictions", label: "Jurisdiction index" }] },
+  { paths: ["/matters", "/insights"], items: [{ to: "/matters", label: "Matter records" }, { to: "/insights", label: "Analysis" }] },
+  { paths: ["/", "/categories", "/source-families", "/endpoint-explorer", "/source-datasets", "/data"], items: [
+    { to: "/", label: "Directory" }, { to: "/categories", label: "Categories" }, { to: "/source-families", label: "Families" },
+    { to: "/endpoint-explorer", label: "Endpoints" }, { to: "/source-datasets", label: "Corpus records" }, { to: "/data", label: "Dataset inventory" },
   ] },
-  { label: "Corpus", items: [
-    { to: "/courts", label: "Courts", icon: Landmark },
-    { to: "/judges", label: "Judges", icon: Gavel },
-    { to: "/matters", label: "Matters", icon: Scale },
-    { to: "/insights", label: "Case insights", icon: BarChart3 },
-    { to: "/law", label: "Law", icon: BookOpen },
-    { to: "/safety", label: "Safety", icon: ShieldAlert },
-  ] },
-  { label: "V2.2A sources", items: [
-    { to: "/", label: "Library", icon: Library, exact: true },
-    { to: "/jurisdictions", label: "Jurisdictions", icon: Compass },
-    { to: "/categories", label: "Categories", icon: Tags },
-    { to: "/source-families", label: "Source families", icon: Layers },
-    { to: "/endpoint-explorer", label: "Endpoints", icon: Plug },
-    { to: "/source-datasets", label: "Corpus sources", icon: FolderOpen },
-  ] },
-  { label: "My work", items: [
-    { to: "/review-queue", label: "Review Queue", icon: ListChecks },
-    { to: "/saved-sources", label: "Saved Sources", icon: Bookmark },
-    { to: "/data-exports", label: "Data & Exports", icon: Download },
+  { paths: ["/saved-sources", "/review-queue", "/data-exports"], items: [
+    { to: "/saved-sources", label: "Saved sources" }, { to: "/review-queue", label: "Review queue" }, { to: "/data-exports", label: "Imports & exports" },
   ] },
 ];
-const NAV = NAV_GROUPS.flatMap((g) => g.items);
+
+function pathMatches(pathname: string, path: string) {
+  return path === "/" ? pathname === "/" : pathname === path || pathname.startsWith(`${path}/`);
+}
 
 export function AppShell({
   breadcrumbs,
@@ -68,8 +59,17 @@ export function AppShell({
   actions?: ReactNode;
   children: ReactNode;
 }) {
-  const { bundle, stats, overlays, bookmarks, status, loaded, localStateWarning, persistWarning } = useAtlas();
+  const { overlays, bookmarks, localStateWarning, persistWarning } = useAtlas();
   const counts = reviewCounts(overlays);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
+  const [search, setSearch] = useState("");
+  const context = CONTEXT_NAV.find((group) => group.paths.some((path) => pathMatches(pathname, path)));
+  const submitSearch = (event: FormEvent) => {
+    event.preventDefault();
+    const q = search.trim();
+    if (q.length >= 2) navigate({ to: "/search", search: { q } });
+  };
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -83,58 +83,17 @@ export function AppShell({
           </div>
         </Link>
 
-        <nav className="flex flex-col gap-3 overflow-y-auto">
-          {NAV_GROUPS.map((g) => (
-            <div key={g.label} className="flex flex-col gap-0.5">
-              <div className="eyebrow px-2 pb-0.5 text-[10px]">{g.label}</div>
-              {g.items.map((item) => (
-                <Link key={item.to} to={item.to} activeOptions={{ exact: !!item.exact }} className="nav-link">
-                  <item.icon className="size-4 opacity-70" strokeWidth={1.75} />
-                  <span className="flex-1">{item.label}</span>
-                  {item.label === "Review Queue" && counts.total > 0 ? (
-                    <span className="rounded-full bg-secondary px-1.5 text-[10px] font-semibold text-secondary-foreground">{counts.total}</span>
-                  ) : null}
-                  {item.label === "Saved Sources" && Object.keys(bookmarks).length > 0 ? (
-                    <span className="rounded-full bg-secondary px-1.5 text-[10px] font-semibold text-secondary-foreground">{Object.keys(bookmarks).length}</span>
-                  ) : null}
-                </Link>
-              ))}
-            </div>
+        <nav className="flex flex-col gap-0.5 overflow-y-auto">
+          {NAV.map((item) => (
+            <Link key={item.to} to={item.to} activeOptions={{ exact: item.to === "/" }} className={`nav-link ${(item.paths ?? [item.to]).some((path) => pathMatches(pathname, path)) ? "active" : ""}`}>
+              <item.icon className="size-4 opacity-70" strokeWidth={1.75} />
+              <span className="flex-1">{item.label}</span>
+              {item.label === "Saved Work" && counts.total + Object.keys(bookmarks).length > 0 ? <span className="rounded-full bg-secondary px-1.5 text-[10px] font-semibold text-secondary-foreground">{counts.total + Object.keys(bookmarks).length}</span> : null}
+            </Link>
           ))}
         </nav>
 
         <div className="mt-auto space-y-3 px-2 pt-6">
-          <div className="rounded-md border border-border bg-muted/60 p-2.5">
-            <div className="eyebrow">
-              {loaded?.origin === "bundled-default" || !loaded ? "Bundled directory" : "Your browser import"}
-            </div>
-            {status === "loading" ? (
-              <p className="mt-1.5 text-[11px] text-muted-foreground">Loading…</p>
-            ) : bundle && stats ? (
-              <dl className="mt-1.5 space-y-0.5 text-[11px] text-muted-foreground">
-                <div className="flex justify-between">
-                  <dt>Version</dt>
-                  <dd className="font-mono text-foreground">{bundle.bundle_version}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt>Distinct URLs</dt>
-                  <dd className="font-mono text-foreground" data-testid="sidebar-distinct">
-                    {stats.distinctSources.toLocaleString()}
-                  </dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt>Occurrences</dt>
-                  <dd className="font-mono text-foreground" data-testid="sidebar-occurrences">
-                    {stats.totalOccurrences.toLocaleString()}
-                  </dd>
-                </div>
-              </dl>
-            ) : (
-              <p className="mt-1.5 text-[11px] leading-relaxed text-destructive">
-                Directory not loaded. See the message on the page.
-              </p>
-            )}
-          </div>
           <p className="flex gap-1.5 text-[10px] leading-relaxed text-muted-foreground">
             <ShieldAlert className="mt-px size-3.5 shrink-0" strokeWidth={1.75} />
             <span>
@@ -175,14 +134,20 @@ export function AppShell({
             </div>
             {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
           </div>
+          <form onSubmit={submitSearch} className="mt-3 flex max-w-xl items-center gap-1.5">
+            <Input aria-label="Search all corpus data" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search courts, judges, matters, law, and sources" className="h-8 bg-background text-[12px]" />
+            <Button type="submit" size="icon" variant="outline" className="size-8" aria-label="Search"><Search /></Button>
+          </form>
         </header>
+
+        {context ? <nav aria-label="Section" className="flex gap-1 overflow-x-auto border-b border-border bg-surface px-5 py-2 lg:px-8">{context.items.map((item) => <Link key={item.to} to={item.to} activeOptions={{ exact: item.to === "/" }} className="rounded-md px-2 py-1 text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground" activeProps={{ className: "bg-muted font-semibold text-foreground" }}>{item.label}</Link>)}</nav> : null}
 
         <nav className="flex gap-1 overflow-x-auto border-b border-border bg-surface px-3 py-2 lg:hidden">
           {NAV.map((item) => (
             <Link
               key={item.to}
               to={item.to}
-              activeOptions={{ exact: !!item.exact }}
+              activeOptions={{ exact: item.to === "/" }}
               className="nav-link whitespace-nowrap"
             >
               {item.label}
