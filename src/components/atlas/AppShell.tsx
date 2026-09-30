@@ -29,7 +29,7 @@ const NAV: NavItem[] = [
 const CONTEXT_NAV = [
   { paths: EXPLORE, items: [{ to: "/places", label: "Map" }, { to: "/search", label: "Search everything" }, { to: "/jurisdictions", label: "Jurisdiction index" }] },
   { paths: LITIGATION, items: [
-    { to: "/courts", label: "1 · Courts" }, { to: "/judges", label: "2 · Judges" }, { to: "/matters", label: "3 · Matters (MDLs)" }, { to: "/matters/cases", label: "4 · Case catalog" }, { to: "/insights", label: "Case analysis" }, { to: "/people", label: "People A–Z" },
+    { to: "/courts", label: "1 · Courts" }, { to: "/judges", label: "2 · Judges" }, { to: "/matters", label: "3 · Matters (MDLs)" }, { to: "/matters/cases", label: "4 · Cases & analytics" }, { to: "/people", label: "People A–Z" },
   ] },
   { paths: LAW, items: [{ to: "/law", label: "Law & regulation" }, { to: "/safety", label: "Product safety" }] },
   { paths: SOURCES, items: [
