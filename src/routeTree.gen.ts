@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DataExportsRouteImport } from './routes/data-exports'
 import { Route as EndpointExplorerRouteImport } from './routes/endpoint-explorer'
 import { Route as JurisdictionsRouteImport } from './routes/jurisdictions'
 import { Route as ReviewQueueRouteImport } from './routes/review-queue'
@@ -19,6 +20,11 @@ import { Route as SourceFamiliesRouteImport } from './routes/source-families'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DataExportsRoute = DataExportsRouteImport.update({
+  id: '/data-exports',
+  path: '/data-exports',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EndpointExplorerRoute = EndpointExplorerRouteImport.update({
@@ -49,6 +55,7 @@ const SourceFamiliesRoute = SourceFamiliesRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/data-exports': typeof DataExportsRoute
   '/endpoint-explorer': typeof EndpointExplorerRoute
   '/jurisdictions': typeof JurisdictionsRoute
   '/review-queue': typeof ReviewQueueRoute
@@ -57,6 +64,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/data-exports': typeof DataExportsRoute
   '/endpoint-explorer': typeof EndpointExplorerRoute
   '/jurisdictions': typeof JurisdictionsRoute
   '/review-queue': typeof ReviewQueueRoute
@@ -66,6 +74,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/data-exports': typeof DataExportsRoute
   '/endpoint-explorer': typeof EndpointExplorerRoute
   '/jurisdictions': typeof JurisdictionsRoute
   '/review-queue': typeof ReviewQueueRoute
@@ -76,6 +85,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/data-exports'
     | '/endpoint-explorer'
     | '/jurisdictions'
     | '/review-queue'
@@ -84,6 +94,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/data-exports'
     | '/endpoint-explorer'
     | '/jurisdictions'
     | '/review-queue'
@@ -92,6 +103,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/data-exports'
     | '/endpoint-explorer'
     | '/jurisdictions'
     | '/review-queue'
@@ -101,6 +113,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DataExportsRoute: typeof DataExportsRoute
   EndpointExplorerRoute: typeof EndpointExplorerRoute
   JurisdictionsRoute: typeof JurisdictionsRoute
   ReviewQueueRoute: typeof ReviewQueueRoute
@@ -115,6 +128,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/data-exports': {
+      id: '/data-exports'
+      path: '/data-exports'
+      fullPath: '/data-exports'
+      preLoaderRoute: typeof DataExportsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/endpoint-explorer': {
@@ -157,6 +177,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DataExportsRoute: DataExportsRoute,
   EndpointExplorerRoute: EndpointExplorerRoute,
   JurisdictionsRoute: JurisdictionsRoute,
   ReviewQueueRoute: ReviewQueueRoute,
