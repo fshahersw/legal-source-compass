@@ -114,10 +114,10 @@ export function resolveLink(url: string, aliases: Record<string, string>): Resol
   if (/^https?:\/\//i.test(url)) return { kind: "external", href: url };
   if (url.startsWith("/")) return { kind: "file", href: fileUrl(url) };
   if (url.startsWith("#")) {
-    const [name, qs = ""] = url.slice(1).split("?");
+    const [name = "", qs = ""] = url.slice(1).split("?");
     const params = Object.fromEntries(new URLSearchParams(qs));
-    const q = params.q ?? "";
-    delete params.q;
+    const q = params["q"] ?? "";
+    delete params["q"];
     if (name === "documents" || name === "search") return { kind: "search", q };
     const key = name.replace(/-/g, "_");
     const ds = aliases[name] ?? aliases[key];

@@ -140,7 +140,7 @@ export function DatasetBrowser({
   );
 }
 
-export function RecordDrawer({ item, dataset, onClose, aliases }: { item: { id: string; title: string } & Partial<NormItem> | null; dataset: string | null; onClose: () => void; aliases: Record<string, string> }) {
+export function RecordDrawer({ item, dataset, onClose, aliases }: { item: ({ id: string; title: string } & { [K in keyof NormItem]?: NormItem[K] | undefined }) | null; dataset: string | null; onClose: () => void; aliases: Record<string, string> }) {
   const fn = useServerFn(getRecordDetail);
   const q = useQuery({ queryKey: ["corpus-detail", dataset, item?.id], queryFn: () => fn({ data: { id: item!.id, dataset } }), enabled: !!item });
   const d = q.data;

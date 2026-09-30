@@ -12,7 +12,7 @@ import { datasetLabel } from "@/lib/external/groups";
 import { pageHead } from "@/lib/corpus/head";
 
 export const Route = createFileRoute("/search")({
-  validateSearch: (s: Record<string, unknown>) => ({ q: typeof s.q === "string" ? s.q : "" }),
+  validateSearch: (s: Record<string, unknown>) => ({ q: typeof s["q"] === "string" ? s["q"] : "" }),
   head: () => pageHead("Search", "Search across the connected corpus: court documents, forms, sources and records."),
   component: SearchPage,
 });
@@ -55,7 +55,7 @@ function SearchPage() {
           <Button size="sm" variant="outline" disabled={d.hits.length < 50} onClick={() => setOffset(offset + 50)}>Next</Button>
         </div>
       ) : null}
-      <RecordDrawer item={open ? { id: open.id, title: open.title, sourceUrl: open.source_url } : null} dataset={open && ds.aliases[open.dataset] ? ds.aliases[open.dataset] : null} onClose={() => setOpen(null)} aliases={ds.aliases} />
+      <RecordDrawer item={open ? { id: open.id, title: open.title, sourceUrl: open.source_url ?? null } : null} dataset={open && ds.aliases[open.dataset] ? ds.aliases[open.dataset] : null} onClose={() => setOpen(null)} aliases={ds.aliases} />
     </AppShell>
   );
 }
