@@ -22,10 +22,14 @@ function InsightsPage() {
       states: countBy(ins.matters, (m) => m.state),
       courts: countBy(ins.matters, (m) => m.court),
       status: countBy(ins.matters, (m) => m.status),
-      mdl: countBy(ins.matters.filter((m) => m.mdl), (m) => (m.mdl_name ? `MDL ${m.mdl} · ${m.mdl_name}` : `MDL ${m.mdl}`)),
+      mdl: countBy(ins.matters.filter((m) => m.mdl), (m) => {
+        const label = m.mdl.startsWith("master:") ? `Master docket ${m.mdl.slice(7)} (no MDL no.)` : `MDL ${m.mdl}`;
+        return m.mdl_name ? `${label} · ${m.mdl_name}` : label;
+      }),
       firms: firmCounts(ins),
       roles: countBy(ins.parties, (p) => p.role),
-      withMdl: ins.matters.filter((m) => m.mdl).length,
+      withMdl: ins.matters.filter((m) => m.mdl && !m.mdl.startsWith("master:")).length,
+      withMasterOnly: ins.matters.filter((m) => m.mdl.startsWith("master:")).length,
     };
   }, [ins]);
 
@@ -41,7 +45,7 @@ function InsightsPage() {
           </blockquote>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <Stat label="Saved case rows" value={ins.matters.length} />
-            <Stat label="Rows with MDL number" value={data.withMdl} />
+            <Stat label="Rows with MDL number" value={data.withMdl} note={`+${data.withMasterOnly.toLocaleString()} point at a master docket only`} />
             <Stat label="Scoped master dockets" value={ins.masters.length} />
             <Stat label="Citation edges" value={ins.citation_edges} note="value as shipped" />
           </div>
@@ -62,7 +66,7 @@ function InsightsPage() {
           <div className="mt-5 grid gap-4 lg:grid-cols-2">
             <BarList title="By state" rows={data.states} unit="saved case rows" />
             <BarList title="By court" rows={data.courts} unit="saved case rows" />
-            <BarList title="By MDL" rows={data.mdl} unit="saved case rows with an MDL number" />
+            <BarList title="By MDL / master docket" rows={data.mdl} unit="case rows with an MDL or master-docket link" />
             <BarList title="By firm (catalog alias lists applied)" rows={data.firms} unit="case rows naming the firm" />
             <BarList title="By status" rows={data.status} unit="saved case rows" />
             <BarList title="Party roles" rows={data.roles} unit="party records" />
