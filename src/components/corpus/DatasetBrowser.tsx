@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { getRecordDetail, listDatasets, queryDataset, type DatasetInfo } from "@/lib/external/catalog.functions";
 import { datasetLabel, fileUrl, normalizeItem, resolveLink, type NormItem } from "@/lib/external/groups";
+import { datasetDisplayName, displayValue, fieldLabel } from "@/lib/external/domainRegistry";
 
 export function useDatasets() {
   const fn = useServerFn(listDatasets);
@@ -68,10 +69,10 @@ export function DatasetBrowser({
   });
   const items = useMemo(() => (query.data?.items ?? []).map((i) => normalizeItem(i)), [query.data]);
   const columns = useMemo(() => {
-    if (info?.columns.length) return info.columns.filter((c) => !["title", "name"].includes(c.key));
+    if (info?.columns.length) return info.columns.filter((c) => !["title", "name"].includes(c.key)).map((c) => ({ ...c, label: c.label && c.label !== c.key ? c.label : fieldLabel(c.key) }));
     const keys = new Set<string>();
     for (const i of items.slice(0, 20)) for (const k of Object.keys(i.cells)) keys.add(k);
-    return [...keys].slice(0, 5).map((k) => ({ key: k, label: k.replace(/_/g, " ") }));
+    return [...keys].slice(0, 5).map((k) => ({ key: k, label: fieldLabel(k) }));
   }, [info, items]);
   const hasPhoto = items.some((i) => i.photo);
   const update = (nq: string, nf: Record<string, string>) => {
@@ -84,7 +85,7 @@ export function DatasetBrowser({
     <div>
       {info?.qualification ? <p className="mb-3 max-w-4xl text-[12px] leading-relaxed text-muted-foreground">{info.qualification}</p> : null}
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <Input aria-label={`Search ${datasetLabel(dataset, info?.label)}`} placeholder="Search this dataset" value={q} onChange={(e) => update(e.target.value, filters)} className="h-8 max-w-xs text-[13px]" />
+        <Input aria-label={`Search ${datasetDisplayName(dataset, info?.label)}`} placeholder={`Search ${datasetDisplayName(dataset, info?.label).toLowerCase()}`} value={q} onChange={(e) => update(e.target.value, filters)} className="h-8 max-w-xs text-[13px]" />
         {info?.filters.map((f) => (
           <select
             key={f.name}
@@ -123,7 +124,7 @@ export function DatasetBrowser({
                   <div className="truncate font-medium" title={i.title}>{i.title}</div>
                   {i.subtitle ? <div className="truncate text-[11px] text-muted-foreground">{i.subtitle}</div> : null}
                 </td>
-                {columns.map((c) => <td key={c.key} className="max-w-[16rem] truncate px-3 py-1.5" title={i.cells[c.key]}>{i.cells[c.key] ?? "—"}</td>)}
+                {columns.map((c) => <td key={c.key} className="max-w-[16rem] truncate px-3 py-1.5" title={i.cells[c.key]}>{displayValue(i.cells[c.key])}</td>)}
               </tr>
             ))}
             {d && items.length === 0 ? <tr><td colSpan={columns.length + 2} className="px-3 py-3 text-muted-foreground">No records match.</td></tr> : null}
@@ -150,7 +151,7 @@ export function RecordDrawer({ item, dataset, onClose, aliases }: { item: ({ id:
     <Sheet open={!!item} onOpenChange={(o) => !o && onClose()}>
       <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
         <SheetHeader>
-          <div className="eyebrow">{dataset ? datasetLabel(dataset, null) : "Record"}</div>
+          <div className="eyebrow">{dataset ? datasetDisplayName(dataset, null) : "Record"}</div>
           <SheetTitle className="text-left text-lg leading-snug">{d?.title ?? item?.title}</SheetTitle>
           {d?.subtitle ?? item?.subtitle ? <p className="text-[12px] text-muted-foreground">{d?.subtitle ?? item?.subtitle}</p> : null}
         </SheetHeader>
