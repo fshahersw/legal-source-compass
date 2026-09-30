@@ -28,3 +28,6 @@
 - External corpus data (user-requested) is read-only via PostgREST in `src/lib/external/*` server functions using EXTERNAL_SUPABASE_URL/KEY secrets; secrets never reach the client and nothing is written.
 - Apart from that connection, no other backend or external call is used; the only browser fetch is the
   app's own bundled data file.
+
+- Corpus UI is generic and metadata-driven: `src/lib/external/catalog.functions.ts` reads each dataset's own listing metadata (columns, filters, qualification) and the corpus RPCs (`corpus_query_bounded`, `corpus_query`, `corpus_detail`); sections are a pure mapping in `groups.ts`, so every dataset is reachable without per-dataset code.
+- Stored corpus files (seals, portraits, PDFs) are served only via `/api/files?route=` which looks up `corpus_artifacts` by route and streams from the private bucket, so storage keys never reach the client.
