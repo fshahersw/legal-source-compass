@@ -59,10 +59,10 @@ export const listLawCollections = createServerFn({ method: "GET" }).handler(asyn
 
 export type LawNode = { id: number; label: string; total: number; has_children: boolean };
 export const listLawNodes = createServerFn({ method: "GET" })
-  .inputValidator((d) => z.object({ state: z.string().regex(/^[A-Z]{2}$/), kind: z.string().regex(/^[a-z_]{2,40}$/), parent: z.number().int().min(0) }).parse(d))
+  .inputValidator((d) => z.object({ state: z.string().regex(/^[A-Za-z0-9_]{2,40}$/), kind: z.string().regex(/^[A-Za-z0-9_]{2,60}$/), parent: z.number().int().min(0) }).parse(d))
   .handler(async ({ data }) => {
     const r = await restGet<LawNode[]>(
-      `corpus_law_nodes?select=id,label,total,has_children&state=eq.${data.state}&kind=eq.${data.kind}&parent=eq.${data.parent}&order=position.asc&limit=500`,
+      `corpus_law_nodes?select=id,label,total,has_children&state=eq.${encodeURIComponent(data.state)}&kind=eq.${encodeURIComponent(data.kind)}&parent=eq.${data.parent}&order=position.asc&limit=500`,
     );
     return r.rows;
   });
