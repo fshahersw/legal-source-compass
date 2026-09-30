@@ -47,10 +47,10 @@ Saved Work
 6. Link related entities only through IDs and relationships present in the corpus. Mark records as `Unlinked` or `Relationship unavailable` when the source data does not support a connection.
 
 ## Visual cleanup
-- Preserve the existing white, navy, and gray legal-research identity; generated prototype directions were declined and will not be used.
+- Preserve the current style, theme, colors, typography, spacing character, and component appearance. This is an information-architecture and content-organization cleanup, not a visual redesign; generated prototype directions were declined and will not be used.
 - Reduce sidebar density and remove the persistent bundle statistics box from primary navigation; place provenance and data status within Sources.
-- Use fewer bordered containers, clearer section bands, compact table rows, sticky headers, consistent column alignment, and stronger selected-row states.
-- Keep typography compact and professional. Human-readable names lead; technical IDs, qualifications, and provenance remain visible but secondary.
+- Reuse the existing page, table, filter, tab, drawer, button, and card styling while arranging them more consistently across domains.
+- Keep the current compact typography. Human-readable names lead; technical IDs, qualifications, and provenance remain visible but secondary.
 - Keep the right-side drawer and improve its hierarchy instead of adding more standalone detail pages unless a record needs a shareable route.
 - Maintain usable mobile navigation and prevent long legal titles, citations, filenames, and URLs from overflowing.
 
