@@ -111,7 +111,13 @@ export function SourceTable({
                     <div className="mono-cell mt-0.5 line-clamp-1 break-all">{source.url}</div>
                   </TableCell>
                   <TableCell className="py-2 text-[12px]">
-                    {source.jurisdiction || <span className="text-muted-foreground">—</span>}
+                    {source.jurisdiction ? (
+                      <span className="line-clamp-2" title={source.jurisdiction}>
+                        {source.jurisdiction}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="py-2 text-[12px]">
                     {source.source_family || <span className="text-muted-foreground">—</span>}

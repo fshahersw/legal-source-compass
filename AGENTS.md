@@ -11,14 +11,19 @@
 
 ## Legal Source Atlas architecture rules
 
-- All directory data comes from a user-imported V2.2A JSON bundle validated by
-  `src/lib/atlas/types.ts`; the repo ships no seeded, sample or fabricated records
-  so no count in the UI can be mistaken for verified live data.
+- Directory data is the real supplied V2.2A file shipped byte-identical at
+  `public/data/atlas-import-bundle.json` (sha256 recorded in `persistence.ts`), optionally
+  replaced by a user import; no sample or fabricated rows so every count is computed from real rows.
+- Startup order is saved IndexedDB import → legacy localStorage (migrated only after a verified
+  IndexedDB write) → bundled default, in `src/lib/atlas/persistence.ts`, because multi-MB bundles
+  exceed localStorage quota; stale async loads are discarded via a generation counter.
+- User imports are stored as exact raw bytes in IndexedDB and view models are derived in memory,
+  so round-trip exports and original-file text are never lost.
 - Pure data logic lives in `src/lib/atlas/{bundle,filters,review,exports}.ts` and is
   unit-tested; React code only renders it, which keeps filter/export behaviour testable
   without a DOM.
-- Imported bundle fields are immutable; review decisions and bookmarks are a separate
-  browser-local overlay in `src/lib/atlas/store.tsx` (localStorage) so curation history
-  is never overwritten by local triage.
-- No backend, database, API key or network call is used by this app; everything runs in
-  the browser.
+- Imported bundle fields are immutable (raw object deep-frozen, each source keeps
+  `imported_raw_record`); review decisions and bookmarks are a separate localStorage overlay
+  (`localState.ts`) written only by user actions, so startup can never overwrite them.
+- No backend, database, API key or external network call is used; the only fetch is the
+  app's own bundled data file.
