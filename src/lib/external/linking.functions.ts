@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { restGet } from "./rest.server";
 
-const key = z.string().min(1).max(40).regex(/^[\w:.\-]+$/);
+const key = z.string().min(1).max(200).regex(/^[\w:.\-]+$/);
 
 export type DocketLink = { docket_number: string; court_id: string; mdl: string; event_date: string | null; date_basis: string | null; evidence_url: string | null; source_dataset: string };
 const linkCols = "docket_number,court_id,mdl,event_date,date_basis,evidence_url,source_dataset";
