@@ -97,7 +97,7 @@ function LawProvisions({ node, total }: { node: number; total: number }) {
       <ul className="divide-y divide-border">
         {list.map((r, i) => (
           <li key={r.id}>
-            <Link to="/law/provision/$id" params={{ id: r.id }} search={{ node: String(node), i: String(offset + i) }} className="flex items-baseline gap-2 rounded px-1 py-1 hover:bg-muted">
+            <Link to="/law/provision/$id" params={{ id: r.id }} search={{ node, i: offset + i }} className="flex items-baseline gap-2 rounded px-1 py-1 hover:bg-muted">
               {r.citation ? <span className="shrink-0 font-mono text-[11px] text-muted-foreground">{r.citation}</span> : null}
               <span className="min-w-0 flex-1 truncate">{r.title ?? r.id}</span>
               {r.status ? <span className="shrink-0 text-[11px] text-muted-foreground">{r.status.replace(/_/g, " ")}</span> : null}

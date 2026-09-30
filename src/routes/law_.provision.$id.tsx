@@ -11,8 +11,8 @@ import { getLawProvision, listLawProvisions } from "@/lib/external/corpus.functi
 import { formatLawText, markerDepth } from "@/lib/external/formatLawText";
 import { kindLabel } from "@/lib/external/lawTree";
 
-type S = { node?: string | undefined; i?: string | undefined };
-const num = (v: unknown) => (typeof v === "string" && /^\d{1,9}$/.test(v) ? v : undefined);
+type S = { node?: number | undefined; i?: number | undefined };
+const num = (v: unknown) => { const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN; return Number.isInteger(n) && n >= 0 && n < 1e9 ? n : undefined; };
 const provQuery = (id: string) => queryOptions({ queryKey: ["law-provision", id], queryFn: () => getLawProvision({ data: { id } }), staleTime: Infinity });
 
 export const Route = createFileRoute("/law_/provision/$id")({
@@ -31,7 +31,7 @@ function ProvisionPage() {
   const { node, i } = Route.useSearch();
   const { data: p } = useSuspenseQuery(provQuery(id));
   const listFn = useServerFn(listLawProvisions);
-  const idx = i != null ? Number(i) : null;
+  const idx = i ?? null;
   const around = useQuery({
     queryKey: ["law-prov-around", node, idx],
     enabled: node != null && idx != null,
@@ -54,7 +54,7 @@ function ProvisionPage() {
   const prev = pos > 0 ? rows[pos - 1] : undefined;
   const next = pos >= 0 ? rows[pos + 1] : undefined;
   const nav = (r: { id: string; citation: string | null; title: string | null } | undefined, d: number, label: string) =>
-    r ? <Link to="/law/provision/$id" params={{ id: r.id }} search={{ node, i: String(idx! + d) }} className="min-w-0 truncate rounded border border-border px-2 py-1 text-[12px] hover:bg-muted">{label} {r.citation ?? r.title}</Link> : <span />;
+    r ? <Link to="/law/provision/$id" params={{ id: r.id }} search={{ node, i: idx! + d }} className="min-w-0 truncate rounded border border-border px-2 py-1 text-[12px] hover:bg-muted">{label} {r.citation ?? r.title}</Link> : <span />;
 
   return (
     <AppShell breadcrumbs={crumbs} title={p.title ?? p.citation ?? "Provision"} description={[p.citation, p.state ?? "Federal", p.kind ? kindLabel(p.kind) : null, p.status?.replace(/_/g, " ")].filter(Boolean).join(" · ")}>
