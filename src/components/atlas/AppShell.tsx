@@ -1,8 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   Bookmark,
-  BarChart3,
-  Compass,
   Map as MapIcon,
   Landmark,
   Library,
@@ -87,7 +85,7 @@ export function AppShell({
 
         <nav className="flex flex-col gap-0.5 overflow-y-auto">
           {NAV.map((item) => (
-            <Link key={item.to} to={item.to} activeOptions={{ exact: item.to === "/" }} className="nav-link" data-status={(item.paths ?? [item.to]).some((path) => pathMatches(pathname, path)) ? "active" : undefined}>
+            <Link key={item.to} to={item.to} activeOptions={{ exact: item.to === "/" }} className={`nav-link ${(item.paths ?? [item.to]).some((path) => pathMatches(pathname, path)) ? "active" : ""}`}>
               <item.icon className="size-4 opacity-70" strokeWidth={1.75} />
               <span className="flex-1">{item.label}</span>
               {item.label === "Saved Work" && counts.total + Object.keys(bookmarks).length > 0 ? <span className="rounded-full bg-secondary px-1.5 text-[10px] font-semibold text-secondary-foreground">{counts.total + Object.keys(bookmarks).length}</span> : null}

@@ -36,7 +36,7 @@ export function SectionPage({
       <div className="mb-4 flex flex-wrap items-end gap-3 border-b border-border pb-3">
         <div className="min-w-[17rem] max-w-lg flex-1">
           <label className="eyebrow mb-1 block" htmlFor={`${section}-view`}>Record view</label>
-          <Select value={active} onValueChange={(value) => navigate({ to: path, search: { ds: value } })}>
+          <Select value={active ?? ""} onValueChange={(value) => navigate({ to: path, search: { ds: value } })}>
             <SelectTrigger id={`${section}-view`} className="h-9 bg-surface text-[13px]"><SelectValue placeholder="Choose a record view" /></SelectTrigger>
             <SelectContent>
               {extraTabs.map((t) => <SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>)}

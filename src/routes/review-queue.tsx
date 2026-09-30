@@ -35,7 +35,7 @@ function ReviewQueueView() {
 
   return (
     <AppShell
-      breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Review Queue" }]}
+      breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Saved Work", to: "/saved-sources" }, { label: "Review Queue" }]}
       title="Review Queue"
       description="Local triage of imported sources. Open any row to record a decision — a reason is required and each decision is timestamped in this browser."
       actions={

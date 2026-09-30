@@ -8,18 +8,20 @@ import { useAtlas } from "@/lib/atlas/store";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Library — Legal Source Atlas" },
+      { title: "Sources — Legal Source Atlas" },
       {
         name: "description",
         content:
           "Searchable directory of imported U.S. litigation research sources: exact URLs, jurisdictions, source families and heading categories.",
       },
-      { property: "og:title", content: "Library — Legal Source Atlas" },
+      { property: "og:title", content: "Sources — Legal Source Atlas" },
       {
         property: "og:description",
         content:
           "Compact searchable directory of imported U.S. litigation source URLs with filters, detail drawer and exports.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: LibraryView,
@@ -31,8 +33,8 @@ function LibraryView() {
 
   return (
     <AppShell
-      breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Library" }]}
-      title="Library"
+      breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Sources" }, { label: "Directory" }]}
+      title="Sources"
       description="Every distinct source URL in the V2.2A bundle shipped with this build (or your own browser import). URLs are shown exactly as supplied, including query strings and hash routes."
     >
       {sources.length === 0 ? (

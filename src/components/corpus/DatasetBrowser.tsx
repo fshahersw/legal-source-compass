@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { getRecordDetail, listDatasets, queryDataset, type DatasetInfo } from "@/lib/external/catalog.functions";
-import { datasetLabel, fileUrl, normalizeItem, resolveLink, type NormItem } from "@/lib/external/groups";
+import { fileUrl, normalizeItem, resolveLink, type NormItem } from "@/lib/external/groups";
 import { datasetDisplayName, displayValue, fieldLabel } from "@/lib/external/domainRegistry";
 
 export function useDatasets() {
@@ -167,7 +167,7 @@ export function RecordDrawer({ item, dataset, onClose, aliases }: { item: ({ id:
           {(d?.facts.length ? d.facts : Object.entries(item?.cells ?? {})).length ? (
             <dl className="grid grid-cols-[minmax(8rem,auto)_1fr] gap-x-3 gap-y-1">
               {(d?.facts.length ? d.facts : Object.entries(item?.cells ?? {})).map(([k, v], i) => (
-                <div key={`${k}-${i}`} className="contents"><dt className="text-muted-foreground">{k}</dt><dd className="break-words">{v}</dd></div>
+                <div key={`${k}-${i}`} className="contents"><dt className="text-muted-foreground">{fieldLabel(k)}</dt><dd className="break-words">{displayValue(v)}</dd></div>
               ))}
             </dl>
           ) : null}
