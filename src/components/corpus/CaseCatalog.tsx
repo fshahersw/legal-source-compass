@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { filterMatters, loadCatalog, mdlForMatter, summarizeMatters, type MatterFilter } from "@/lib/atlas/catalogMatters";
 import { surnameLetter } from "@/lib/external/directoryTree";
-import { useJudgeMatcher } from "@/lib/external/useDirectory";
+import { useCourtDirectory, useJudgeMatcher } from "@/lib/external/useDirectory";
+import { CaseAnalytics } from "@/components/corpus/CaseAnalytics";
+import { defendants } from "@/lib/atlas/caseAnalytics";
 
 const PAGE = 25;
 
@@ -16,9 +18,14 @@ export function CaseCatalog({ scope }: { scope?: { court?: string | undefined; m
   const q = useQuery({ queryKey: ["catalog-matters"], queryFn: loadCatalog, staleTime: Infinity });
   const [f, setF] = useState<MatterFilter>({});
   const [page, setPage] = useState(0);
+  const [state, setState] = useState<string | undefined>();
+  const [view, setView] = useState<"list" | "analytics">("list");
+  const courtsDir = useCourtDirectory();
+  const stateCourts = useMemo(() => (state && courtsDir.data ? new Set(courtsDir.data.filter((c) => c.state === state).map((c) => c.id)) : undefined), [state, courtsDir.data]);
   const base = useMemo(() => (q.data ? filterMatters(q.data.rows, { court: scope?.court, mdl: scope?.mdl }, q.data.masterMap) : []), [q.data, scope?.court, scope?.mdl]);
-  const rows = useMemo(() => (q.data ? filterMatters(base, f, q.data.masterMap).sort((a, b) => (b.date_filed ?? "").localeCompare(a.date_filed ?? "")) : []), [base, f, q.data]);
+  const rows = useMemo(() => (q.data ? filterMatters(base, { ...f, courts: stateCourts }, q.data.masterMap).sort((a, b) => (b.date_filed ?? "").localeCompare(a.date_filed ?? "")) : []), [base, f, q.data, stateCourts]);
   const s = useMemo(() => summarizeMatters(base), [base]);
+  const defs = useMemo(() => (q.data ? defendants(base, q.data.masterMap) : []), [base, q.data]);
   const set = (p: MatterFilter) => { setF((prev) => ({ ...prev, ...p })); setPage(0); };
 
   if (q.isLoading) return <p className="text-[12px] text-muted-foreground">Loading case catalog…</p>;
@@ -39,6 +46,10 @@ export function CaseCatalog({ scope }: { scope?: { court?: string | undefined; m
         <BarList title="Firms of record" rows={s.byFirm} limit={8} unit="cases" />
         <BarList title="Assigned judges" rows={s.byJudge} limit={8} unit="cases" />
       </div>
+      <div className="inline-flex rounded-md border border-border p-0.5 text-[12px]">
+        {(["list", "analytics"] as const).map((v) => <button key={v} type="button" onClick={() => setView(v)} className={`rounded px-3 py-1 capitalize ${view === v ? "bg-muted font-medium" : "text-muted-foreground"}`}>{v === "list" ? "Cases" : "Analytics"}</button>)}
+      </div>
+      {view === "analytics" ? <CaseAnalytics rows={rows} masterMap={map} compact={!!scope} onPick={(p) => { if (p.state) { setState(p.state); setPage(0); } else set({ defendant: p.defendant, firm: p.firm ?? f.firm }); setView("list"); }} /> : null}
       <div className="flex flex-wrap items-center gap-2">
         <Input value={f.q ?? ""} onChange={(e) => set({ q: e.target.value })} placeholder="Search case, party, firm, judge" className="h-8 max-w-xs text-[12px]" />
         <select value={f.firm ?? ""} onChange={(e) => set({ firm: e.target.value || undefined })} className="h-8 max-w-[14rem] rounded-md border border-input bg-background px-2 text-[12px]">
@@ -50,6 +61,13 @@ export function CaseCatalog({ scope }: { scope?: { court?: string | undefined; m
         <select value={f.status ?? ""} onChange={(e) => set({ status: e.target.value || undefined })} className="h-8 rounded-md border border-input bg-background px-2 text-[12px]">
           <option value="">Any status</option><option value="active">Active</option><option value="terminated">Terminated</option>
         </select>
+        <select value={f.defendant ?? ""} onChange={(e) => set({ defendant: e.target.value || undefined })} className="h-8 max-w-[14rem] rounded-md border border-input bg-background px-2 text-[12px]">
+          <option value="">All defendants</option>{defs.map((x) => <option key={x.label} value={x.label}>{x.label} ({x.count})</option>)}
+        </select>
+        <select value={f.role ?? ""} onChange={(e) => set({ role: e.target.value || undefined })} className="h-8 rounded-md border border-input bg-background px-2 text-[12px]">
+          <option value="">Any firm role</option><option value="anchor">Anchor</option><option value="competitor">Competitor</option>
+        </select>
+        {state ? <button type="button" onClick={() => setState(undefined)} className="rounded bg-muted px-2 py-1 text-[11px]">State: {state} ×</button> : null}
         <span className="text-[11px] text-muted-foreground">{rows.length.toLocaleString()} cases</span>
       </div>
       <div className="overflow-x-auto rounded-lg border border-border">
