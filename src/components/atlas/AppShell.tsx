@@ -15,28 +15,45 @@ import {
   Gavel,
   Scale,
   BookOpen,
+  Search,
+  FolderOpen,
+  Download,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { useAtlas } from "@/lib/atlas/store";
 import { reviewCounts } from "@/lib/atlas/review";
 
-const NAV = [
-  { to: "/overview", label: "Overview", icon: Compass },
-  { to: "/places", label: "Places Map", icon: MapIcon },
-  { to: "/categories", label: "Categories", icon: Tags },
-  { to: "/insights", label: "Litigation Insights", icon: BarChart3 },
-  { to: "/judges", label: "Judges", icon: Gavel },
-  { to: "/mdls", label: "MDLs", icon: Scale },
-  { to: "/laws", label: "State Laws", icon: BookOpen },
-  { to: "/", label: "Library", icon: Library, exact: true },
-  { to: "/jurisdictions", label: "Jurisdictions", icon: Landmark },
-  { to: "/source-families", label: "Source Families", icon: Layers },
-  { to: "/endpoint-explorer", label: "Endpoint Explorer", icon: Plug },
-  { to: "/review-queue", label: "Review Queue", icon: ListChecks },
-  { to: "/saved-sources", label: "Saved Sources", icon: Bookmark },
-  { to: "/data-exports", label: "Data & Exports", icon: Database },
-] as const;
+type NavItem = { to: string; label: string; icon: typeof Library; exact?: boolean };
+const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
+  { label: "Explore", items: [
+    { to: "/search", label: "Search", icon: Search },
+    { to: "/places", label: "Places", icon: MapIcon },
+    { to: "/data", label: "Data catalog", icon: Database },
+  ] },
+  { label: "Corpus", items: [
+    { to: "/courts", label: "Courts", icon: Landmark },
+    { to: "/judges", label: "Judges", icon: Gavel },
+    { to: "/matters", label: "Matters", icon: Scale },
+    { to: "/insights", label: "Case insights", icon: BarChart3 },
+    { to: "/law", label: "Law", icon: BookOpen },
+    { to: "/safety", label: "Safety", icon: ShieldAlert },
+  ] },
+  { label: "V2.2A sources", items: [
+    { to: "/", label: "Library", icon: Library, exact: true },
+    { to: "/jurisdictions", label: "Jurisdictions", icon: Compass },
+    { to: "/categories", label: "Categories", icon: Tags },
+    { to: "/source-families", label: "Source families", icon: Layers },
+    { to: "/endpoint-explorer", label: "Endpoints", icon: Plug },
+    { to: "/source-datasets", label: "Corpus sources", icon: FolderOpen },
+  ] },
+  { label: "My work", items: [
+    { to: "/review-queue", label: "Review Queue", icon: ListChecks },
+    { to: "/saved-sources", label: "Saved Sources", icon: Bookmark },
+    { to: "/data-exports", label: "Data & Exports", icon: Download },
+  ] },
+];
+const NAV = NAV_GROUPS.flatMap((g) => g.items);
 
 export function AppShell({
   breadcrumbs,
@@ -56,8 +73,8 @@ export function AppShell({
 
   return (
     <div className="flex min-h-screen bg-background">
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar px-3 py-5 lg:flex">
-        <Link to="/" className="mb-6 block px-2">
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar px-3 py-5 lg:flex">
+        <Link to="/" className="mb-4 block px-2">
           <div className="eyebrow">Corpus + V2.2A directory</div>
           <div className="mt-1 font-display text-lg leading-tight text-sidebar-primary">
             Legal Source
@@ -66,27 +83,23 @@ export function AppShell({
           </div>
         </Link>
 
-        <nav className="flex flex-col gap-0.5">
-          {NAV.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              activeOptions={{ exact: "exact" in item ? item.exact : false }}
-              className="nav-link"
-            >
-              <item.icon className="size-4 opacity-70" strokeWidth={1.75} />
-              <span className="flex-1">{item.label}</span>
-              {item.label === "Review Queue" && counts.total > 0 ? (
-                <span className="rounded-full bg-secondary px-1.5 text-[10px] font-semibold text-secondary-foreground">
-                  {counts.total}
-                </span>
-              ) : null}
-              {item.label === "Saved Sources" && Object.keys(bookmarks).length > 0 ? (
-                <span className="rounded-full bg-secondary px-1.5 text-[10px] font-semibold text-secondary-foreground">
-                  {Object.keys(bookmarks).length}
-                </span>
-              ) : null}
-            </Link>
+        <nav className="flex flex-col gap-3 overflow-y-auto">
+          {NAV_GROUPS.map((g) => (
+            <div key={g.label} className="flex flex-col gap-0.5">
+              <div className="eyebrow px-2 pb-0.5 text-[10px]">{g.label}</div>
+              {g.items.map((item) => (
+                <Link key={item.to} to={item.to} activeOptions={{ exact: !!item.exact }} className="nav-link">
+                  <item.icon className="size-4 opacity-70" strokeWidth={1.75} />
+                  <span className="flex-1">{item.label}</span>
+                  {item.label === "Review Queue" && counts.total > 0 ? (
+                    <span className="rounded-full bg-secondary px-1.5 text-[10px] font-semibold text-secondary-foreground">{counts.total}</span>
+                  ) : null}
+                  {item.label === "Saved Sources" && Object.keys(bookmarks).length > 0 ? (
+                    <span className="rounded-full bg-secondary px-1.5 text-[10px] font-semibold text-secondary-foreground">{Object.keys(bookmarks).length}</span>
+                  ) : null}
+                </Link>
+              ))}
+            </div>
           ))}
         </nav>
 
@@ -169,7 +182,7 @@ export function AppShell({
             <Link
               key={item.to}
               to={item.to}
-              activeOptions={{ exact: "exact" in item ? item.exact : false }}
+              activeOptions={{ exact: !!item.exact }}
               className="nav-link whitespace-nowrap"
             >
               {item.label}
