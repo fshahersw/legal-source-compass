@@ -65,7 +65,7 @@ export function CaseCatalog({ scope }: { scope?: { court?: string | undefined; m
                     <div className="font-mono text-[10px] text-muted-foreground">{m.docket_number}{m.defendant ? ` · v. ${m.defendant}` : ""}</div>
                   </td>
                   <td className="px-2 py-1.5">{m.court ? <Link to="/courts/$id" params={{ id: m.court }} className="underline">{m.court}</Link> : "—"}</td>
-                  <td className="px-2 py-1.5">{m.judge ? <button type="button" className="text-left underline decoration-dotted" onClick={() => set({ judge: m.judge ?? undefined })}>{m.judge}</button> : "—"}</td>
+                  <td className="px-2 py-1.5">{m.judge ? <JudgeName name={m.judge} match={match} onFilter={() => set({ judge: m.judge ?? undefined })} /> : "—"}</td>
                   <td className="px-2 py-1.5">{(m.firms ?? []).map((x) => <button key={x} type="button" onClick={() => set({ firm: x })} className="mr-1 mb-0.5 rounded bg-muted px-1.5 py-0.5 text-[11px] hover:bg-secondary">{x}</button>)}</td>
                   <td className="px-2 py-1.5">{mdl ? <Link to="/matters/$id" params={{ id: mdl }} className="underline">MDL {mdl}</Link> : m.mdl_master_docket_id ? <span className="text-muted-foreground" title="Master docket not in the docket documents file">unlinked</span> : "—"}</td>
                   <td className="px-2 py-1.5 capitalize">{m.status ?? "—"}</td>
@@ -83,5 +83,15 @@ export function CaseCatalog({ scope }: { scope?: { court?: string | undefined; m
         </div>
       ) : null}
     </div>
+  );
+}
+
+function JudgeName({ name, match, onFilter }: { name: string; match: ((n: string) => string | null) | null; onFilter: () => void }) {
+  const id = match?.(name);
+  return (
+    <span className="inline-flex items-center gap-1">
+      {id ? <Link to="/judges/$id" params={{ id }} className="underline decoration-dotted">{name}</Link> : <Link to="/people" search={{ kind: "judges", letter: surnameLetter(name), offset: 0 }} className="underline decoration-dotted" title="No single exact profile match; opens the A–Z index">{name}</Link>}
+      <button type="button" onClick={onFilter} className="text-[10px] text-muted-foreground hover:text-foreground" title="Show only this judge's cases">filter</button>
+    </span>
   );
 }

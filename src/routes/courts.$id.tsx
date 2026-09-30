@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { EntityError, EntityPage, entityQuery } from "@/components/corpus/EntityPage";
 import { pageHead } from "@/lib/corpus/head";
+import { stateByUsps } from "@/lib/corpus/geo";
+import { useCourtDirectory } from "@/lib/external/useDirectory";
 
 export const Route = createFileRoute("/courts/$id")({
   loader: ({ context, params }) => context.queryClient.ensureQueryData(entityQuery("court_spine", params.id)),
@@ -16,5 +18,13 @@ export const Route = createFileRoute("/courts/$id")({
 
 function Page() {
   const { id } = Route.useParams();
-  return <EntityPage dataset="court_spine" id={id} docket={{ kind: "court", id }} crumbs={[{ label: "Atlas", to: "/" }, { label: "Courts", to: "/courts" }]} />;
+  const dir = useCourtDirectory();
+  const c = dir.data?.find((r) => r.id === id);
+  const crumbs: { label: string; to?: string; search?: Record<string, string> }[] = [{ label: "Atlas", to: "/" }, { label: "Courts", to: "/courts" }];
+  if (c) {
+    crumbs.push({ label: c.system, to: "/courts", search: { system: c.system } });
+    if (c.system !== "Federal") crumbs.push({ label: `${stateByUsps.get(c.state)?.name ?? c.state} courts`, to: "/courts", search: { system: c.system, state: c.state } });
+    crumbs.push({ label: c.type, to: "/courts", search: c.system === "Federal" ? { system: c.system, type: c.type } : { system: c.system, state: c.state, type: c.type } });
+  }
+  return <EntityPage dataset="court_spine" id={id} docket={{ kind: "court", id }} crumbs={crumbs} />;
 }

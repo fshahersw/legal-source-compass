@@ -15,6 +15,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getStateCountyRecords } from "@/lib/external/corpus.functions";
 import { FolderGrid } from "@/components/corpus/FolderGrid";
+import { countBy } from "@/lib/external/directoryTree";
+import { useCourtDirectory } from "@/lib/external/useDirectory";
 import { loadRegistryJurisdiction, taskCounts, taskLabel } from "@/lib/atlas/registryV22";
 import { ExternalBadge, ExternalError } from "@/components/corpus/ExternalBadge";
 
@@ -62,6 +64,7 @@ function StatePage() {
         <Stat label="Saved case rows" value={matters.length} />
         <Stat label="Endpoint candidates" value={endpoints.length} note="exact URL match" />
       </div>
+      <StateCourts usps={usps} />
       <div className="mt-5">
         <FolderGrid
           title="Sources for this state"
@@ -117,5 +120,23 @@ function StatePage() {
         </ul>
       </section>
     </AppShell>
+  );
+}
+
+function StateCourts({ usps }: { usps: string }) {
+  const dir = useCourtDirectory();
+  const rows = (dir.data ?? []).filter((r) => r.state === usps && r.system !== "Federal");
+  const fed = (dir.data ?? []).filter((r) => r.state === usps && r.system === "Federal");
+  return (
+    <div className="mt-5">
+      <FolderGrid
+        title="Courts in this state"
+        hint={dir.data ? `${(rows.length + fed.length).toLocaleString()} courts in the directory` : "Loading courts…"}
+        items={[
+          ...countBy(rows, (r) => r.type).map((c) => ({ key: c.key, label: c.key, count: c.count, link: { to: "/courts", search: { system: rows.find((r) => r.type === c.key)!.system, state: usps, type: c.key } } })),
+          ...(fed.length ? [{ key: "fed", label: "Federal courts located here", count: fed.length, link: { to: "/courts", search: { system: "Federal", state: usps, type: "*" } } }] : []),
+        ]}
+      />
+    </div>
   );
 }

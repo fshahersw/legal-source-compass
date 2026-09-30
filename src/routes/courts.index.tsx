@@ -18,7 +18,7 @@ export const Route = createFileRoute("/courts/")({
   component: CourtsPage,
 });
 
-export const stateLabel = (code: string) => (code === NOT_RECORDED ? "No state recorded" : stateByUsps.get(code)?.name ?? code);
+const stateLabel = (code: string) => (code === NOT_RECORDED ? "No state recorded" : stateByUsps.get(code)?.name ?? code);
 
 function CourtsPage() {
   const s = Route.useSearch();
