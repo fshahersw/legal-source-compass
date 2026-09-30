@@ -10,7 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as EndpointExplorerRouteImport } from './routes/endpoint-explorer'
 import { Route as JurisdictionsRouteImport } from './routes/jurisdictions'
+import { Route as ReviewQueueRouteImport } from './routes/review-queue'
+import { Route as SavedSourcesRouteImport } from './routes/saved-sources'
 import { Route as SourceFamiliesRouteImport } from './routes/source-families'
 
 const IndexRoute = IndexRouteImport.update({
@@ -18,9 +21,24 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EndpointExplorerRoute = EndpointExplorerRouteImport.update({
+  id: '/endpoint-explorer',
+  path: '/endpoint-explorer',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const JurisdictionsRoute = JurisdictionsRouteImport.update({
   id: '/jurisdictions',
   path: '/jurisdictions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReviewQueueRoute = ReviewQueueRouteImport.update({
+  id: '/review-queue',
+  path: '/review-queue',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SavedSourcesRoute = SavedSourcesRouteImport.update({
+  id: '/saved-sources',
+  path: '/saved-sources',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SourceFamiliesRoute = SourceFamiliesRouteImport.update({
@@ -31,31 +49,62 @@ const SourceFamiliesRoute = SourceFamiliesRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/endpoint-explorer': typeof EndpointExplorerRoute
   '/jurisdictions': typeof JurisdictionsRoute
+  '/review-queue': typeof ReviewQueueRoute
+  '/saved-sources': typeof SavedSourcesRoute
   '/source-families': typeof SourceFamiliesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/endpoint-explorer': typeof EndpointExplorerRoute
   '/jurisdictions': typeof JurisdictionsRoute
+  '/review-queue': typeof ReviewQueueRoute
+  '/saved-sources': typeof SavedSourcesRoute
   '/source-families': typeof SourceFamiliesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/endpoint-explorer': typeof EndpointExplorerRoute
   '/jurisdictions': typeof JurisdictionsRoute
+  '/review-queue': typeof ReviewQueueRoute
+  '/saved-sources': typeof SavedSourcesRoute
   '/source-families': typeof SourceFamiliesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/jurisdictions' | '/source-families'
+  fullPaths:
+    | '/'
+    | '/endpoint-explorer'
+    | '/jurisdictions'
+    | '/review-queue'
+    | '/saved-sources'
+    | '/source-families'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/jurisdictions' | '/source-families'
-  id: '__root__' | '/' | '/jurisdictions' | '/source-families'
+  to:
+    | '/'
+    | '/endpoint-explorer'
+    | '/jurisdictions'
+    | '/review-queue'
+    | '/saved-sources'
+    | '/source-families'
+  id:
+    | '__root__'
+    | '/'
+    | '/endpoint-explorer'
+    | '/jurisdictions'
+    | '/review-queue'
+    | '/saved-sources'
+    | '/source-families'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  EndpointExplorerRoute: typeof EndpointExplorerRoute
   JurisdictionsRoute: typeof JurisdictionsRoute
+  ReviewQueueRoute: typeof ReviewQueueRoute
+  SavedSourcesRoute: typeof SavedSourcesRoute
   SourceFamiliesRoute: typeof SourceFamiliesRoute
 }
 
@@ -68,11 +117,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/endpoint-explorer': {
+      id: '/endpoint-explorer'
+      path: '/endpoint-explorer'
+      fullPath: '/endpoint-explorer'
+      preLoaderRoute: typeof EndpointExplorerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/jurisdictions': {
       id: '/jurisdictions'
       path: '/jurisdictions'
       fullPath: '/jurisdictions'
       preLoaderRoute: typeof JurisdictionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/review-queue': {
+      id: '/review-queue'
+      path: '/review-queue'
+      fullPath: '/review-queue'
+      preLoaderRoute: typeof ReviewQueueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/saved-sources': {
+      id: '/saved-sources'
+      path: '/saved-sources'
+      fullPath: '/saved-sources'
+      preLoaderRoute: typeof SavedSourcesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/source-families': {
@@ -87,7 +157,10 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  EndpointExplorerRoute: EndpointExplorerRoute,
   JurisdictionsRoute: JurisdictionsRoute,
+  ReviewQueueRoute: ReviewQueueRoute,
+  SavedSourcesRoute: SavedSourcesRoute,
   SourceFamiliesRoute: SourceFamiliesRoute,
 }
 export const routeTree = rootRouteImport
