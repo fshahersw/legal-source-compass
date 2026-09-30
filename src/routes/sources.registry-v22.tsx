@@ -6,19 +6,21 @@ import { AppShell } from "@/components/atlas/AppShell";
 import { BarList } from "@/components/corpus/BarList";
 import { Input } from "@/components/ui/input";
 import { pageHead } from "@/lib/corpus/head";
-import { distinct, filterRegistry, loadRegistryIndex, loadRegistryJurisdiction } from "@/lib/atlas/registryV22";
+import { distinct, filterRegistry, loadRegistryIndex, loadRegistryJurisdiction, taskCounts, taskLabel } from "@/lib/atlas/registryV22";
+import { FolderGrid } from "@/components/corpus/FolderGrid";
+import { stateByUsps } from "@/lib/corpus/geo";
 
-type S = { j?: string | undefined; task?: string | undefined; q?: string | undefined };
+type S = { j?: string | undefined; task?: string | undefined; q?: string | undefined; all?: string | undefined };
 const str = (v: unknown) => (typeof v === "string" && v.length <= 120 ? v : undefined);
 
 export const Route = createFileRoute("/sources/registry-v22")({
-  validateSearch: (s: Record<string, unknown>): S => ({ j: str(s["j"]), task: str(s["task"]), q: str(s["q"]) }),
+  validateSearch: (s: Record<string, unknown>): S => ({ j: str(s["j"]), task: str(s["task"]), q: str(s["q"]), all: str(s["all"]) }),
   head: () => pageHead("Litigation source registry V2.2", "4,846 U.S. litigation sources by jurisdiction and research task, with source type, access and format."),
   component: Page,
 });
 
 function Page() {
-  const { j, task, q } = Route.useSearch();
+  const { j, task, q, all: showAll } = Route.useSearch();
   const navigate = useNavigate({ from: "/sources/registry-v22" });
   const set = (p: Partial<S>) => navigate({ search: (prev) => ({ ...prev, ...p }) });
   const idx = useQuery({ queryKey: ["reg22-index"], queryFn: loadRegistryIndex, staleTime: Infinity });
@@ -34,31 +36,33 @@ function Page() {
 
   return (
     <AppShell
-      breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Sources", to: "/" }, ...(j ? [{ label: "Registry V2.2", to: "/sources/registry-v22" }, { label: name ?? j }] : [{ label: "Registry V2.2" }])]}
+      breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Sources", to: "/" }, ...(j ? [{ label: "Registry V2.2", to: "/sources/registry-v22" }, ...(task || showAll ? [{ label: name ?? j, to: `/sources/registry-v22?j=${encodeURIComponent(j)}` }, { label: task ? taskLabel(task) : "All sources" }] : [{ label: name ?? j }])] : [{ label: "Registry V2.2" }])]}
       title={name ? `${name} litigation sources` : "Litigation source registry V2.2"}
       description={`${(idx.data?.recordCount ?? 4846).toLocaleString()} sources${meta?.["verifiedThrough"] ? ` · registry states verified through ${String(meta["verifiedThrough"])} (imported, not re-checked)` : ""}`}
     >
       {!j ? (
         idx.isLoading ? <p className="text-[12px] text-muted-foreground">Loading…</p> : (
-          <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
-            {juris.map(([code, v]) => (
-              <Link key={code} to="/sources/registry-v22" search={{ j: code }} className="rounded-lg border border-border bg-surface p-3 shadow-card hover:bg-muted">
-                <div className="text-[13px] font-medium">{v.name || code}</div>
-                <div className="text-[11px] text-muted-foreground">{v.count.toLocaleString()} sources</div>
-              </Link>
+          <div className="space-y-5">
+            {[["Federal & multi-jurisdiction", juris.filter(([c]) => !stateByUsps.has(c) && ["US", "MULTI", "OTHER", "NONE"].includes(c))], ["States & DC", juris.filter(([c]) => stateByUsps.has(c)).sort((x, y) => x[1].name.localeCompare(y[1].name))], ["Territories", juris.filter(([c]) => !stateByUsps.has(c) && !["US", "MULTI", "OTHER", "NONE"].includes(c))]].map(([title, list]) => (
+              <FolderGrid key={title as string} title={title as string} items={(list as typeof juris).map(([code, v]) => ({ key: code, label: v.name || code, count: v.count, link: { to: "/sources/registry-v22", search: { j: code } } }))} />
             ))}
           </div>
         )
-      ) : recs.isLoading ? <p className="text-[12px] text-muted-foreground">Loading sources…</p> : (
+      ) : recs.isLoading ? <p className="text-[12px] text-muted-foreground">Loading sources…</p> : !task && !showAll && !q ? (
+        <div className="space-y-4">
+          {stateByUsps.has(j) ? <Link to="/places/$state" params={{ state: j }} className="text-[12px] underline">Back to {name} on the map</Link> : null}
+          <FolderGrid title="Open a research task" hint={`${all.length.toLocaleString()} sources · a source can sit in more than one task`} items={[{ key: "all", label: "All sources", count: all.length, link: { to: "/sources/registry-v22", search: { j, all: "1" } } }, ...taskCounts(all).map((t) => ({ key: t.task, label: taskLabel(t.task), count: t.count, link: { to: "/sources/registry-v22", search: { j, task: t.task } } }))]} />
+        </div>
+      ) : (
         <div className="space-y-3">
           <div className="grid gap-3 lg:grid-cols-2">
-            <BarList title="By research task" rows={tasks.map((t) => ({ label: t, count: all.filter((r) => r.taskFamilies.includes(t)).length })).sort((a, b) => b.count - a.count)} limit={8} unit="sources" />
+            <BarList title="By research task" rows={tasks.map((t) => ({ label: taskLabel(t), count: all.filter((r) => r.taskFamilies.includes(t)).length })).sort((a, b) => b.count - a.count)} limit={8} unit="sources" />
             <BarList title="By source type" rows={distinct(all, (r) => [r.sourceType]).map((t) => ({ label: t, count: all.filter((r) => r.sourceType === t).length })).sort((a, b) => b.count - a.count)} limit={8} unit="sources" />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Input value={q ?? ""} onChange={(e) => set({ q: e.target.value || undefined })} placeholder="Search title, URL, topic" className="h-8 max-w-xs text-[12px]" />
             <select value={task ?? ""} onChange={(e) => set({ task: e.target.value || undefined })} className="h-8 rounded-md border border-input bg-background px-2 text-[12px]">
-              <option value="">All tasks</option>{tasks.map((t) => <option key={t} value={t}>{t}</option>)}
+              <option value="">All tasks</option>{tasks.map((t) => <option key={t} value={t}>{taskLabel(t)}</option>)}
             </select>
             <label className="flex items-center gap-1.5 text-[12px]"><input type="checkbox" checked={official} onChange={(e) => setOfficial(e.target.checked)} /> Official only</label>
             <span className="text-[11px] text-muted-foreground">{rows.length.toLocaleString()} of {all.length.toLocaleString()}</span>
