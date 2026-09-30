@@ -3,6 +3,7 @@ import { EntityError, EntityPage, entityQuery } from "@/components/corpus/Entity
 import { pageHead } from "@/lib/corpus/head";
 import { stateByUsps } from "@/lib/corpus/geo";
 import { CourtContext, RelatedDockets } from "@/components/corpus/LinkedPanels";
+import { buildEntityView } from "@/lib/external/entityView";
 import { useCourtDirectory } from "@/lib/external/useDirectory";
 
 export const Route = createFileRoute("/courts/$id")({
@@ -27,5 +28,5 @@ function Page() {
     if (c.system !== "Federal") crumbs.push({ label: `${stateByUsps.get(c.state)?.name ?? c.state} courts`, to: "/courts", search: { system: c.system, state: c.state } });
     crumbs.push({ label: c.type, to: "/courts", search: c.system === "Federal" ? { system: c.system, type: c.type } : { system: c.system, state: c.state, type: c.type } });
   }
-  return <EntityPage dataset="court_spine" id={id} docket={{ kind: "court", id }} crumbs={crumbs} extra={() => <><CourtContext courtId={id} fallbackState={c?.state} /><RelatedDockets by="court" id={id} /></>} />;
+  return <EntityPage dataset="court_spine" id={id} docket={{ kind: "court", id }} crumbs={crumbs} extra={(raw) => <><CourtContext courtId={id} fallbackState={c?.state} known={new Set(buildEntityView(raw).facts.slice(0, 8).map(([k]) => k))} /><RelatedDockets by="court" id={id} /></>} />;
 }

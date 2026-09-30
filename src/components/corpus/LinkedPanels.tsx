@@ -20,13 +20,14 @@ function Box({ title, hint, children }: { title: string; hint?: string; children
 }
 
 /** Court page: state mini-map (court's state highlighted) + court-map facts. */
-export function CourtContext({ courtId, fallbackState }: { courtId: string; fallbackState?: string | undefined }) {
+export function CourtContext({ courtId, fallbackState, known }: { courtId: string; fallbackState?: string | undefined; known?: Set<string> }) {
   const fn = useServerFn(getCourtMap);
   const q = useQuery({ queryKey: ["court-map", courtId], queryFn: () => fn({ data: { id: courtId } }), staleTime: Infinity });
   const { geo } = useCorpus();
   const usps = (q.data?.state ?? fallbackState ?? "").toUpperCase();
   const st = stateByUsps.get(usps);
   const values = useMemo(() => new Map(st ? [[st.fips, 1]] : []), [st]);
+  const facts = (q.data?.facts ?? []).filter(([k]) => !known?.has(k));
   if (q.error) return <ExternalError error={q.error} />;
   if (!q.data && !st) return null;
   return (
@@ -34,9 +35,9 @@ export function CourtContext({ courtId, fallbackState }: { courtId: string; fall
       <Box title="Location" hint={st ? st.name : "State not recorded"}>
         {geo && st ? <Link to="/places/$state" params={{ state: usps }} aria-label={`Open ${st.name}`}><UsMap geo={geo} values={values} valueLabel="court location" /></Link> : <p className="text-[12px] text-muted-foreground">Not recorded</p>}
       </Box>
-      {q.data?.facts?.length ? (
-        <Box title="Court map record">
-          <dl className="grid grid-cols-1 gap-x-6 gap-y-1 text-[12px] sm:grid-cols-2">{q.data.facts.map(([k, v], i) => <div key={i}><dt className="text-[11px] text-muted-foreground">{k}</dt><dd className="break-words">{v}</dd></div>)}</dl>
+      {facts.length ? (
+        <Box title="Court map record" hint="fields not already shown above">
+          <dl className="grid grid-cols-1 gap-x-6 gap-y-1 text-[12px] sm:grid-cols-2">{facts.map(([k, v], i) => <div key={i}><dt className="text-[11px] text-muted-foreground">{k}</dt><dd className="break-words">{v}</dd></div>)}</dl>
         </Box>
       ) : null}
     </div>
