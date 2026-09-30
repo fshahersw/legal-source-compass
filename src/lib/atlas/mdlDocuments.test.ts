@@ -10,7 +10,7 @@ const all: MdlDocument[] = readdirSync(dir)
 describe("MDL docket documents (real uploaded data)", () => {
   it("contains every uploaded row exactly once", () => {
     expect(all.length).toBe(35862);
-    expect(new Set(all.map((d) => d.doc_uid + "|" + d.master_docket_id)).size).toBeGreaterThan(0);
+    expect(new Set(all.map((d) => d.doc_uid + "|" + d["master_docket_id"])).size).toBeGreaterThan(0);
     const courtTotal = readdirSync(dir).filter((f) => f.startsWith("court-")).reduce((n, f) => n + (JSON.parse(readFileSync(`${dir}/${f}`, "utf8")) as unknown[]).length, 0);
     expect(courtTotal).toBe(35862);
   });
