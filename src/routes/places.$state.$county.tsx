@@ -4,6 +4,7 @@ import { useCorpus } from "@/lib/corpus/store";
 import { stateByUsps } from "@/lib/corpus/geo";
 import { pageHead } from "@/lib/corpus/head";
 import { useStateCounty } from "./places.$state";
+import { CountyProfile } from "@/components/corpus/LinkedPanels";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 
 export const Route = createFileRoute("/places/$state/$county")({
@@ -27,6 +28,7 @@ function CountyDetail() {
     <div className="mt-3 rounded-md border border-border bg-muted/50 p-3 text-[13px]" data-testid="county-detail">
       <div className="eyebrow">County · FIPS {county}</div>
       <div className="mt-0.5 font-display text-lg">{c ? `${c.name} County, ${st?.name ?? state}` : "Unknown county"}</div>
+      <CountyProfile fips={county} {...(c ? { county: `${c.name} County` } : {})} {...(st ? { state: st.name } : {})} />
       {q.error ? <ExternalError error={q.error} /> : null}
       {q.isLoading ? <p className="mt-1 text-muted-foreground">Loading county records…</p> : (
         <>

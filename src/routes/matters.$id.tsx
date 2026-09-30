@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { EntityError, EntityPage, entityQuery } from "@/components/corpus/EntityPage";
+import { MdlJudges, RelatedDockets } from "@/components/corpus/LinkedPanels";
 import { pageHead } from "@/lib/corpus/head";
 
 export const Route = createFileRoute("/matters/$id")({
@@ -16,5 +17,5 @@ export const Route = createFileRoute("/matters/$id")({
 
 function Page() {
   const { id } = Route.useParams();
-  return <EntityPage dataset="mdls" id={id} docket={{ kind: "mdl", id }} crumbs={[{ label: "Atlas", to: "/" }, { label: "Matters", to: "/matters" }]} />;
+  return <EntityPage dataset="mdls" id={id} docket={{ kind: "mdl", id }} crumbs={[{ label: "Atlas", to: "/" }, { label: "Matters", to: "/matters" }]} extra={(raw) => <><MdlJudges raw={raw} /><RelatedDockets by="mdl" id={id.replace(/^mdl:/i, "").replace(/^0+/, "")} /></>} />;
 }

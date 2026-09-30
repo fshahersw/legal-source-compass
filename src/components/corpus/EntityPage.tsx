@@ -11,7 +11,7 @@ import { fileUrl, resolveLink } from "@/lib/external/groups";
 export const entityQuery = (dataset: string, id: string) =>
   queryOptions({ queryKey: ["entity", dataset, id], queryFn: async (): Promise<{ raw: Record<string, unknown> | null }> => { const r = await getEntity({ data: { dataset, id } }); return { raw: r.json ? (JSON.parse(r.json) as Record<string, unknown>) : null }; }, staleTime: 5 * 60_000 });
 
-export function EntityPage({ dataset, id, crumbs, docket }: { dataset: string; id: string; crumbs: { label: string; to?: string; search?: Record<string, string> | undefined }[]; docket?: { kind: "mdl" | "court"; id: string } | undefined }) {
+export function EntityPage({ dataset, id, crumbs, docket, extra }: { dataset: string; id: string; crumbs: { label: string; to?: string; search?: Record<string, string> | undefined }[]; docket?: { kind: "mdl" | "court"; id: string } | undefined; extra?: (raw: Record<string, unknown>) => React.ReactNode }) {
   const { data } = useSuspenseQuery(entityQuery(dataset, id));
   const { aliases } = useDatasets();
   if (!data.raw) return <AppShell breadcrumbs={crumbs} title="Record not found"><p className="text-[13px] text-muted-foreground">The corpus has no record “{id}”.</p></AppShell>;
@@ -29,6 +29,7 @@ export function EntityPage({ dataset, id, crumbs, docket }: { dataset: string; i
         </dl>
       </div>
       {v.links.length ? <div className="mb-5 flex flex-wrap gap-x-4 gap-y-1">{v.links.map((l) => <CorpusLink key={l.url} url={l.url} label={l.label} aliases={aliases} />)}</div> : null}
+      {extra ? extra(data.raw) : null}
       {nav.length > 1 ? (
         <nav aria-label="On this page" className="sticky top-0 z-10 -mx-1 mb-4 flex gap-1 overflow-x-auto border-b border-border bg-background px-1 py-2">
           {nav.map((n) => <a key={n.key} href={`#${n.key}`} className="whitespace-nowrap rounded px-2 py-1 text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground">{n.label}</a>)}
