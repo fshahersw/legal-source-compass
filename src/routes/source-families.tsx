@@ -45,7 +45,7 @@ function FamiliesView() {
 
   return (
     <AppShell
-      breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Sources", to: "/" }, { label: "Source Families" }]}
+      breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Sources", to: "/sources/library" }, { label: "Source Families" }]}
       title="Source Families"
       description="Every family in the imported family manifest. Endpoint and promotion counts are computed from the bundle's rows by family ID; manifest figures are the bundle's own imported claims."
     >

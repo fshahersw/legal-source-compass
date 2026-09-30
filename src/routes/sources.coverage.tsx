@@ -23,7 +23,7 @@ function CoveragePage() {
   const unreachable = (reg.data?.entries ?? []).filter((e) => e.http_status && !isReachable(e)).length;
   const cats = m.categories.slice(0, 12);
   return (
-    <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Sources", to: "/" }, { label: "Coverage gaps" }]} title="Coverage gaps" description="Computed from the registry file and the bundled source directory. Blank cells are gaps in the registry, not proof that no source exists.">
+    <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Sources", to: "/sources/library" }, { label: "Coverage gaps" }]} title="Coverage gaps" description="Computed from the registry file and the bundled source directory. Blank cells are gaps in the registry, not proof that no source exists.">
       {reg.isLoading ? <p className="text-[13px] text-muted-foreground">Loading…</p> : null}
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <Stat label="Registry jurisdictions with categorized sources" value={m.rows.length} />
