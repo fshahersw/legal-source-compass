@@ -5,11 +5,14 @@ import { BarList, Stat } from "@/components/corpus/BarList";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { filterMatters, loadCatalog, mdlForMatter, summarizeMatters, type MatterFilter } from "@/lib/atlas/catalogMatters";
+import { surnameLetter } from "@/lib/external/directoryTree";
+import { useJudgeMatcher } from "@/lib/external/useDirectory";
 
 const PAGE = 25;
 
 /** Tracked cases from the uploaded case catalog, optionally scoped to one court or MDL. */
 export function CaseCatalog({ scope }: { scope?: { court?: string | undefined; mdl?: string | undefined } | undefined }) {
+  const match = useJudgeMatcher();
   const q = useQuery({ queryKey: ["catalog-matters"], queryFn: loadCatalog, staleTime: Infinity });
   const [f, setF] = useState<MatterFilter>({});
   const [page, setPage] = useState(0);
