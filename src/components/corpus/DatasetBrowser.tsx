@@ -32,6 +32,11 @@ export function CorpusLink({ url, label, aliases }: { url: string; label: string
   const cls = "inline-flex items-center gap-1 text-[12px] text-primary underline-offset-2 hover:underline";
   if (r.kind === "external") return <a className={cls} href={r.href} target="_blank" rel="noreferrer">{label}<ExternalLink className="size-3" /></a>;
   if (r.kind === "file") return <a className={cls} href={r.href} target="_blank" rel="noreferrer"><FileText className="size-3" />{label}</a>;
+  if (r.kind === "entity") {
+    if (r.type === "mdl") return <Link className={cls} to="/matters/$id" params={{ id: r.id }}>{label}</Link>;
+    if (r.type === "court") return <Link className={cls} to="/courts/$id" params={{ id: r.id }}>{label}</Link>;
+    return <Link className={cls} to="/judges/$id" params={{ id: r.id }}>{label}</Link>;
+  }
   if (r.kind === "search") return <Link className={cls} to="/search" search={{ q: r.q }}>{label}</Link>;
   if (r.kind === "dataset") return <Link className={cls} to="/data/$dataset" params={{ dataset: r.dataset }} search={{ q: r.q || undefined, f: Object.keys(r.filters).length ? r.filters : undefined }}>{label}</Link>;
   return <span className="text-[12px] text-muted-foreground" title={r.raw}>{label} (link not mapped in this app)</span>;

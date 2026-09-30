@@ -107,6 +107,7 @@ export type ResolvedLink =
   | { kind: "file"; href: string }
   | { kind: "dataset"; dataset: string; q: string; filters: Record<string, string> }
   | { kind: "search"; q: string }
+  | { kind: "entity"; type: "mdl" | "court" | "judge"; id: string }
   | { kind: "unmapped"; raw: string };
 
 /** Map a corpus link to where it lives in this app. `aliases` maps alias -> dataset id. */
@@ -114,6 +115,8 @@ export function resolveLink(url: string, aliases: Record<string, string>): Resol
   if (/^https?:\/\//i.test(url)) return { kind: "external", href: url };
   if (url.startsWith("/")) return { kind: "file", href: fileUrl(url) };
   if (url.startsWith("#")) {
+    const ent = /^#(mdl|court|judge)\/([^?#]{1,120})$/.exec(url);
+    if (ent) return { kind: "entity", type: ent[1] as "mdl" | "court" | "judge", id: decodeURIComponent(ent[2]!) };
     const [name = "", qs = ""] = url.slice(1).split("?");
     const params = Object.fromEntries(new URLSearchParams(qs));
     const q = params["q"] ?? "";
