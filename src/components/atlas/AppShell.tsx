@@ -12,6 +12,9 @@ import {
   ListChecks,
   Plug,
   ShieldAlert,
+  Gavel,
+  Scale,
+  BookOpen,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
