@@ -14,6 +14,8 @@ import { pageHead } from "@/lib/corpus/head";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getStateCountyRecords } from "@/lib/external/corpus.functions";
+import { FolderGrid } from "@/components/corpus/FolderGrid";
+import { loadRegistryJurisdiction, taskCounts, taskLabel } from "@/lib/atlas/registryV22";
 import { ExternalBadge, ExternalError } from "@/components/corpus/ExternalBadge";
 
 export function useStateCounty(stateName: string | undefined) {
@@ -38,6 +40,7 @@ function StatePage() {
   const corpus = useCorpus();
   const navigate = useNavigate();
   const county = useStateCounty(st?.name);
+  const reg = useQuery({ queryKey: ["reg22", usps], queryFn: () => loadRegistryJurisdiction(usps), staleTime: Infinity });
   const countyValues = useMemo(() => new Map(Object.entries(county.data?.counts ?? {})), [county.data]);
   const sources = useMemo(() => (st ? sourcesForState(bundle?.sources ?? [], usps) : []), [bundle, usps, st]);
   const matters = useMemo(() => (corpus.insights ? mattersForState(corpus.insights, usps) : []), [corpus.insights, usps]);
@@ -58,6 +61,16 @@ function StatePage() {
         <Stat label="Occurrences" value={sources.reduce((a, s) => a + s.occurrences, 0)} />
         <Stat label="Saved case rows" value={matters.length} />
         <Stat label="Endpoint candidates" value={endpoints.length} note="exact URL match" />
+      </div>
+      <div className="mt-5">
+        <FolderGrid
+          title="Sources for this state"
+          hint={reg.data ? `${reg.data.length.toLocaleString()} in the litigation source registry V2.2 · open a folder` : "Loading registry…"}
+          items={[
+            { key: "all", label: "All state sources", count: reg.data?.length, link: { to: "/sources/registry-v22", search: { j: usps, all: "1" } } },
+            ...taskCounts(reg.data ?? []).map((t) => ({ key: t.task, label: taskLabel(t.task), count: t.count, link: { to: "/sources/registry-v22", search: { j: usps, task: t.task } } })),
+          ]}
+        />
       </div>
       <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_22rem]">
         <section className="rounded-lg border border-border bg-surface p-3 shadow-card">

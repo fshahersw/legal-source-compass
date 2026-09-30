@@ -62,3 +62,25 @@ export async function loadRegistryJurisdiction(code: string): Promise<RegistryV2
   const t = await r.text();
   return t.trimStart().startsWith("<") ? [] : (JSON.parse(t) as RegistryV22Record[]);
 }
+
+export const TASK_LABELS: Record<string, string> = {
+  "courts-procedure": "Courts & procedure",
+  "regulatory-administrative": "Regulatory & administrative",
+  "law-authority": "Law & authority",
+  "discovery-trial": "Discovery & trial",
+  "people-professional-records": "People & professional records",
+  "complex-litigation": "Complex litigation",
+  "evidence-acquisition": "Evidence acquisition",
+  insurance: "Insurance",
+};
+
+export function taskLabel(t: string): string {
+  return TASK_LABELS[t] ?? t.replace(/-/g, " ").replace(/^./, (c) => c.toUpperCase());
+}
+
+/** Sources per research task (a source can belong to several tasks). */
+export function taskCounts(rows: RegistryV22Record[]): { task: string; count: number }[] {
+  const m = new Map<string, number>();
+  for (const r of rows) for (const t of new Set(r.taskFamilies)) m.set(t, (m.get(t) ?? 0) + 1);
+  return [...m.entries()].map(([task, count]) => ({ task, count })).sort((a, b) => b.count - a.count || a.task.localeCompare(b.task));
+}

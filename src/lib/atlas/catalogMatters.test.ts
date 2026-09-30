@@ -31,3 +31,14 @@ describe("registry V2.2 split", () => {
     expect(filterRegistry(all, { officialOnly: true }).every((r) => r.official)).toBe(true);
   });
 });
+
+import { taskCounts, taskLabel } from "./registryV22";
+describe("registry task folders", () => {
+  it("counts Texas sources per task from real data", () => {
+    const tx = JSON.parse(readFileSync("public/data/registry-v22/TX.json", "utf8")) as RegistryV22Record[];
+    expect(tx.length).toBe(104);
+    const c = taskCounts(tx);
+    expect(c[0]).toEqual({ task: "courts-procedure", count: 70 });
+    expect(taskLabel("courts-procedure")).toBe("Courts & procedure");
+  });
+});
