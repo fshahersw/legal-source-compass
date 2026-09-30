@@ -63,7 +63,7 @@ function StatePage() {
   return (
     <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Places", to: "/places" }, { label: st.name }]} title={st.name} description="Sources are matched by exact state name in the imported jurisdiction field; case rows by state code.">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Stat label="V2.2A sources" value={sources.length} />
+        <Stat label="Directory sources" value={sources.length} />
         <Stat label="Occurrences" value={sources.reduce((a, s) => a + s.occurrences, 0)} />
         <Stat label="Saved case rows" value={matters.length} />
         <Stat label="Endpoint candidates" value={endpoints.length} note="exact URL match" />

@@ -7,7 +7,7 @@ import { useRegistry } from "@/lib/atlas/useRegistry";
 import { useAtlas } from "@/lib/atlas/store";
 
 export const Route = createFileRoute("/sources/coverage")({
-  head: () => pageHead("Coverage gaps", "Where the source registry and the V2.2A directory have — and lack — sources, by state and record type."),
+  head: () => pageHead("Coverage gaps", "Where the source registry and the source directory have — and lack — sources, by state and record type."),
   component: CoveragePage,
 });
 
@@ -23,7 +23,7 @@ function CoveragePage() {
   const unreachable = (reg.data?.entries ?? []).filter((e) => e.http_status && !isReachable(e)).length;
   const cats = m.categories.slice(0, 12);
   return (
-    <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Sources", to: "/" }, { label: "Coverage gaps" }]} title="Coverage gaps" description="Computed from the registry file and the bundled V2.2A directory. Blank cells are gaps in the registry, not proof that no source exists.">
+    <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Sources", to: "/" }, { label: "Coverage gaps" }]} title="Coverage gaps" description="Computed from the registry file and the bundled source directory. Blank cells are gaps in the registry, not proof that no source exists.">
       {reg.isLoading ? <p className="text-[13px] text-muted-foreground">Loading…</p> : null}
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <Stat label="Registry jurisdictions with categorized sources" value={m.rows.length} />
@@ -33,7 +33,7 @@ function CoveragePage() {
       <div className="overflow-x-auto rounded-lg border border-border bg-surface shadow-card">
         <table className="w-full text-[12px]">
           <thead className="bg-muted/60 text-left text-[10px] uppercase tracking-wide text-muted-foreground">
-            <tr><th className="px-2 py-2">Jurisdiction</th><th className="px-2 py-2">V2.2A</th><th className="px-2 py-2">Registry</th>{cats.map((c) => <th key={c} className="px-2 py-2">{humanize(c)}</th>)}<th className="px-2 py-2">Missing types</th></tr>
+            <tr><th className="px-2 py-2">Jurisdiction</th><th className="px-2 py-2">Directory</th><th className="px-2 py-2">Registry</th>{cats.map((c) => <th key={c} className="px-2 py-2">{humanize(c)}</th>)}<th className="px-2 py-2">Missing types</th></tr>
           </thead>
           <tbody className="divide-y divide-border">
             {m.rows.map((r) => {

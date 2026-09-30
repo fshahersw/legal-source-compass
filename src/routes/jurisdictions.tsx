@@ -23,7 +23,7 @@ export const Route = createFileRoute("/jurisdictions")({
       {
         name: "description",
         content:
-          "Source counts per U.S. jurisdiction as recorded in the imported V2.2A litigation source bundle.",
+          "Source counts per U.S. jurisdiction as recorded in the imported litigation source bundle.",
       },
       { property: "og:title", content: "Jurisdictions — Legal Source Atlas" },
       {

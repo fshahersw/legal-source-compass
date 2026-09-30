@@ -35,7 +35,7 @@ function LibraryView() {
     <AppShell
       breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Sources" }, { label: "Directory" }]}
       title="Sources"
-      description="Every distinct source URL in the V2.2A bundle shipped with this build (or your own browser import). URLs are shown exactly as supplied, including query strings and hash routes."
+      description="Every distinct source URL in the bundle shipped with this build (or your own browser import). URLs are shown exactly as supplied, including query strings and hash routes."
     >
       {sources.length === 0 ? (
         <EmptyBundleState view="The library" />

@@ -15,12 +15,12 @@ export const Route = createFileRoute("/source-families")({
       {
         name: "description",
         content:
-          "All source families in the V2.2A family manifest, with computed endpoint, promotion and linked-source counts.",
+          "All source families in the family manifest, with computed endpoint, promotion and linked-source counts.",
       },
       { property: "og:title", content: "Source Families — Legal Source Atlas" },
       {
         property: "og:description",
-        content: "Family-level grouping of U.S. litigation research sources from the V2.2A manifest.",
+        content: "Family-level grouping of U.S. litigation research sources from the manifest.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

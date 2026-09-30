@@ -30,7 +30,7 @@ function Places() {
     <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Places" }]} title="Places" description="Click a state to open its sources, saved cases and counties.">
       <Tabs value={metric} onValueChange={(v) => setMetric(v as Metric)} className="mb-3">
         <TabsList>
-          <TabsTrigger value="sources">V2.2A sources</TabsTrigger>
+          <TabsTrigger value="sources">Directory sources</TabsTrigger>
           <TabsTrigger value="matters">Saved case rows</TabsTrigger>
         </TabsList>
       </Tabs>

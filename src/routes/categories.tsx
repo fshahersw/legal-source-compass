@@ -9,7 +9,7 @@ import { CATEGORY_LABELS, classify, type CategoryId } from "@/lib/corpus/taxonom
 import { pageHead } from "@/lib/corpus/head";
 
 export const Route = createFileRoute("/categories")({
-  head: () => pageHead("Categories", "The corpussite category taxonomy applied to the V2.2A heading categories, with unmatched headings shown separately."),
+  head: () => pageHead("Categories", "The corpussite category taxonomy applied to the heading categories, with unmatched headings shown separately."),
   component: Categories,
 });
 
@@ -33,7 +33,7 @@ function Categories() {
   }, [bundle]);
 
   return (
-    <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Categories" }]} title="Categories" description="corpussite's eight categories (rule ported exactly from categories.py) applied to each imported V2.2A heading. Headings the rule does not recognise are listed under “not matched”, not reassigned by guesswork.">
+    <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Categories" }]} title="Categories" description="corpussite's eight categories (rule ported exactly from categories.py) applied to each imported heading. Headings the rule does not recognise are listed under “not matched”, not reassigned by guesswork.">
       <div className="grid gap-4 lg:grid-cols-2">
         {groups.map((g) => {
           const total = g.headings.reduce((a, [, n]) => a + n, 0);
@@ -44,7 +44,7 @@ function Categories() {
                 <span className="font-mono text-[12px] text-muted-foreground">{total.toLocaleString()} source–heading links</span>
               </div>
               {g.headings.length === 0 ? (
-                <p className="mt-2 text-[12px] text-muted-foreground">No V2.2A heading falls in this category.</p>
+                <p className="mt-2 text-[12px] text-muted-foreground">No heading falls in this category.</p>
               ) : (
                 <ul className="mt-2 max-h-64 space-y-1 overflow-auto text-[12px]">
                   {g.headings.map(([h, n]) => (

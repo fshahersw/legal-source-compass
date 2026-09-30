@@ -72,7 +72,7 @@ export function AppShell({
     <div className="flex min-h-screen bg-background">
       <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar px-3 py-5 lg:flex">
         <Link to="/" className="mb-4 block px-2">
-          <div className="eyebrow">Corpus + V2.2A directory</div>
+          <div className="eyebrow">Corpus + source directory</div>
           <div className="mt-1 font-display text-lg leading-tight text-sidebar-primary">
             Legal Source
             <br />

@@ -27,7 +27,7 @@ export const Route = createFileRoute("/endpoint-explorer")({
       {
         name: "description",
         content:
-          "Raw endpoint candidates carried in the imported V2.2A bundle, listed without any live probing or crawling.",
+          "Raw endpoint candidates carried in the imported bundle, listed without any live probing or crawling.",
       },
       { property: "og:title", content: "Endpoint Explorer — Legal Source Atlas" },
       {

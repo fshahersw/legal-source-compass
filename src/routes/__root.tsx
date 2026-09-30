@@ -84,7 +84,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "description",
         content:
-          "A compact searchable directory of U.S. litigation research sources imported from a V2.2A export.",
+          "A compact searchable directory of U.S. litigation research sources imported from a export.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
