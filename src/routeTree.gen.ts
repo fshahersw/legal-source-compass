@@ -10,33 +10,53 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as JurisdictionsRouteImport } from './routes/jurisdictions'
+import { Route as SourceFamiliesRouteImport } from './routes/source-families'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JurisdictionsRoute = JurisdictionsRouteImport.update({
+  id: '/jurisdictions',
+  path: '/jurisdictions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SourceFamiliesRoute = SourceFamiliesRouteImport.update({
+  id: '/source-families',
+  path: '/source-families',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/jurisdictions': typeof JurisdictionsRoute
+  '/source-families': typeof SourceFamiliesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/jurisdictions': typeof JurisdictionsRoute
+  '/source-families': typeof SourceFamiliesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/jurisdictions': typeof JurisdictionsRoute
+  '/source-families': typeof SourceFamiliesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/jurisdictions' | '/source-families'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/jurisdictions' | '/source-families'
+  id: '__root__' | '/' | '/jurisdictions' | '/source-families'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  JurisdictionsRoute: typeof JurisdictionsRoute
+  SourceFamiliesRoute: typeof SourceFamiliesRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +68,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/jurisdictions': {
+      id: '/jurisdictions'
+      path: '/jurisdictions'
+      fullPath: '/jurisdictions'
+      preLoaderRoute: typeof JurisdictionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/source-families': {
+      id: '/source-families'
+      path: '/source-families'
+      fullPath: '/source-families'
+      preLoaderRoute: typeof SourceFamiliesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  JurisdictionsRoute: JurisdictionsRoute,
+  SourceFamiliesRoute: SourceFamiliesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
