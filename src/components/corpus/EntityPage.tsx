@@ -4,19 +4,20 @@ import { AppShell } from "@/components/atlas/AppShell";
 import { CorpusLink, DatasetBrowser, useDatasets } from "@/components/corpus/DatasetBrowser";
 import { getEntity } from "@/lib/external/entity.functions";
 import { buildEntityView, type EntitySection } from "@/lib/external/entityView";
+import { DocketDocuments } from "@/components/corpus/DocketDocuments";
 import { fileUrl, resolveLink } from "@/lib/external/groups";
 
 export const entityQuery = (dataset: string, id: string) =>
   queryOptions({ queryKey: ["entity", dataset, id], queryFn: async (): Promise<{ raw: Record<string, unknown> | null }> => { const r = await getEntity({ data: { dataset, id } }); return { raw: r.json ? (JSON.parse(r.json) as Record<string, unknown>) : null }; }, staleTime: 5 * 60_000 });
 
-export function EntityPage({ dataset, id, crumbs }: { dataset: string; id: string; crumbs: { label: string; to?: string }[] }) {
+export function EntityPage({ dataset, id, crumbs, docket }: { dataset: string; id: string; crumbs: { label: string; to?: string }[]; docket?: { kind: "mdl" | "court"; id: string } | undefined }) {
   const { data } = useSuspenseQuery(entityQuery(dataset, id));
   const { aliases } = useDatasets();
   if (!data.raw) return <AppShell breadcrumbs={crumbs} title="Record not found"><p className="text-[13px] text-muted-foreground">The corpus has no record “{id}”.</p></AppShell>;
   const v = buildEntityView(data.raw);
   const key = v.facts.slice(0, 8);
   const rest = v.facts.slice(8);
-  const nav = v.sections.map((s) => ({ key: s.key, label: s.label }));
+  const nav = [...(docket ? [{ key: "docket", label: "Docket documents" }] : []), ...v.sections.map((s) => ({ key: s.key, label: s.label }))];
   return (
     <AppShell breadcrumbs={[...crumbs, { label: v.title }]} title={v.title} {...(v.subtitle ? { description: v.subtitle } : {})}>
       <div className="mb-5 flex flex-col gap-4 rounded-lg border border-border bg-surface p-4 shadow-card sm:flex-row">
@@ -34,6 +35,7 @@ export function EntityPage({ dataset, id, crumbs }: { dataset: string; id: strin
       ) : null}
       <div className="space-y-6">
         {rest.length ? <Section id="more" label="More details"><dl className="grid grid-cols-1 gap-x-6 gap-y-1.5 text-[13px] sm:grid-cols-2">{rest.map(([k, val], i) => <div key={i}><dt className="text-[11px] text-muted-foreground">{k}</dt><dd className="break-words">{val}</dd></div>)}</dl></Section> : null}
+        {docket ? <Section id="docket" label={docket.kind === "mdl" ? "Docket documents" : "MDL documents filed here"}><DocketDocuments kind={docket.kind} id={docket.id} /></Section> : null}
         {v.sections.map((s) => <SectionView key={s.key} s={s} aliases={aliases} />)}
         {v.text ? <FullText text={v.text} /> : null}
       </div>
