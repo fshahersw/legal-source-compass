@@ -36,7 +36,7 @@ export function parseBundle(raw: unknown): ParseResult {
         errors: v.error.issues.slice(0, 20).map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`),
       };
     }
-    raw = adaptV22A(v.data);
+    raw = adaptV22A(v.data, raw);
   }
   const parsed = bundleSchema.safeParse(raw);
   if (!parsed.success) {

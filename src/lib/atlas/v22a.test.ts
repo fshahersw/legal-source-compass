@@ -1,13 +1,15 @@
 import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { facet, parseBundle } from "./bundle";
 import { filterSources, defaultFilters } from "./filters";
 import { checkMetaClaims } from "./v22a";
 
-const PATH = "/mnt/user-uploads/atlas-import-bundle.json";
+const PATH = resolve(__dirname, "../../../public/data/atlas-import-bundle.json");
 const has = existsSync(PATH);
+if (!has) throw new Error(`Bundled real dataset missing at ${PATH}`);
 
-describe.skipIf(!has)("real V2.2A bundle", () => {
+describe("real V2.2A bundle", () => {
   const raw = has ? JSON.parse(readFileSync(PATH, "utf8")) : null;
   const res = has ? parseBundle(raw) : null;
 

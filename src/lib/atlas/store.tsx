@@ -9,29 +9,54 @@ import {
   type ReactNode,
 } from "react";
 
-import { computeStats, parseBundle, type BundleStats } from "./bundle";
+import { computeStats, type BundleStats } from "./bundle";
+import { downloadBytes } from "./exports";
 import { defaultFilters, type LibraryFilters } from "./filters";
+import { loadLocalState, saveLocalState, type LocalState } from "./localState";
+import {
+  createIdbImportStore,
+  fetchBundledDefault,
+  parseBundleBytes,
+  persistImport,
+  resolveStartupBundle,
+  sha256Hex,
+  type ImportStore,
+  type LoadedBundle,
+} from "./persistence";
 import { applyReview, undoReview } from "./review";
 import type { Bookmark, Bundle, ReviewAction, ReviewOverlay } from "./types";
 
-const KEY_BUNDLE = "lsa.bundle.v1";
-const KEY_OVERLAYS = "lsa.review-overlays.v1";
-const KEY_BOOKMARKS = "lsa.bookmarks.v1";
-
 type LastReview = { sourceId: string; previous: ReviewOverlay | null } | null;
 
+export type LoadStatus = "loading" | "ready" | "error";
+
+export type ImportResult =
+  | { ok: true; persisted: true; warnings: string[] }
+  | { ok: true; persisted: false; warnings: string[]; error: string }
+  | { ok: false; errors: string[] };
+
 type AtlasState = {
+  status: LoadStatus;
+  /** True once the startup load has finished (ready or error). */
   ready: boolean;
+  loadError: string | null;
+  notices: string[];
+  loaded: LoadedBundle | null;
   bundle: Bundle | null;
   stats: BundleStats | null;
-  storageWarning: string | null;
+  /** Set when the currently shown user import is NOT saved in browser storage. */
+  persistWarning: string | null;
+  /** Set when reviews/bookmarks could not be saved or read. */
+  localStateWarning: string | null;
   overlays: Record<string, ReviewOverlay>;
   bookmarks: Record<string, true>;
   filters: LibraryFilters;
   setFilters: (next: Partial<LibraryFilters>) => void;
   resetFilters: () => void;
-  importBundleText: (text: string) => { ok: true; warnings: string[] } | { ok: false; errors: string[] };
-  clearBundle: () => void;
+  retryLoad: () => void;
+  importBundleFile: (file: File) => Promise<ImportResult>;
+  restoreBundledDefault: () => Promise<{ ok: true } | { ok: false; error: string }>;
+  downloadRawBundle: () => void;
   review: (input: { sourceId: string; action: ReviewAction; reason: string }) =>
     | { ok: true }
     | { ok: false; error: string };
@@ -43,46 +68,90 @@ type AtlasState = {
 
 const AtlasContext = createContext<AtlasState | null>(null);
 
-function readJson<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback;
+function safeLocalStorage(): Storage | null {
   try {
-    const raw = window.localStorage.getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw) as T;
+    return typeof window === "undefined" ? null : window.localStorage;
   } catch {
-    return fallback;
+    return null;
   }
 }
 
 export function AtlasProvider({ children }: { children: ReactNode }) {
-  const [ready, setReady] = useState(false);
-  const [bundle, setBundle] = useState<Bundle | null>(null);
+  const [status, setStatus] = useState<LoadStatus>("loading");
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [notices, setNotices] = useState<string[]>([]);
+  const [loaded, setLoaded] = useState<LoadedBundle | null>(null);
+  const [persistWarning, setPersistWarning] = useState<string | null>(null);
+  const [localStateWarning, setLocalStateWarning] = useState<string | null>(null);
   const [overlays, setOverlays] = useState<Record<string, ReviewOverlay>>({});
   const [bookmarks, setBookmarks] = useState<Record<string, true>>({});
   const [filters, setFiltersState] = useState<LibraryFilters>(defaultFilters);
-  const [storageWarning, setStorageWarning] = useState<string | null>(null);
   const [lastReview, setLastReview] = useState<LastReview>(null);
-  const hydrated = useRef(false);
 
+  const localRef = useRef<LocalState>({ overlays: {}, bookmarks: {} });
+  const localHydrated = useRef(false);
+  /** Monotonic load generation: stale async results are discarded. */
+  const seq = useRef(0);
+  const storeRef = useRef<ImportStore | null>(null);
+  const getStore = () => (storeRef.current ??= createIdbImportStore());
+
+  // Personal state: read once, never written by startup.
   useEffect(() => {
-    setBundle(readJson<Bundle | null>(KEY_BUNDLE, null));
-    setOverlays(readJson<Record<string, ReviewOverlay>>(KEY_OVERLAYS, {}));
-    setBookmarks(readJson<Record<string, true>>(KEY_BOOKMARKS, {}));
-    hydrated.current = true;
-    setReady(true);
+    const ls = safeLocalStorage();
+    if (!ls) {
+      setLocalStateWarning("Browser storage is unavailable; reviews and bookmarks will not be saved.");
+    } else {
+      const s = loadLocalState(ls);
+      localRef.current = { overlays: s.overlays, bookmarks: s.bookmarks };
+      setOverlays(s.overlays);
+      setBookmarks(s.bookmarks);
+      if (s.errors.length) setLocalStateWarning(s.errors.join(" "));
+    }
+    localHydrated.current = true;
+  }, []);
+
+  const commitLocal = useCallback((next: LocalState) => {
+    localRef.current = next;
+    setOverlays(next.overlays);
+    setBookmarks(next.bookmarks);
+    const ls = safeLocalStorage();
+    if (!localHydrated.current || !ls) {
+      setLocalStateWarning("Reviews and bookmarks could not be saved in this browser.");
+      return;
+    }
+    const r = saveLocalState(ls, next);
+    setLocalStateWarning(r.ok ? null : `Reviews and bookmarks were NOT saved: ${r.error}`);
+  }, []);
+
+  const runStartup = useCallback(async () => {
+    const my = ++seq.current;
+    setStatus("loading");
+    setLoadError(null);
+    const res = await resolveStartupBundle({
+      store: getStore(),
+      legacy: safeLocalStorage(),
+      fetchDefault: fetchBundledDefault,
+    }).catch((e: unknown) => ({ ok: false as const, error: String((e as Error)?.message ?? e), notices: [] }));
+    if (my !== seq.current) return; // a newer import/restore superseded this load
+    if (res.ok) {
+      setLoaded(res.loaded);
+      setNotices(res.loaded.notices);
+      setPersistWarning(
+        res.loaded.persisted ? null : "This bundle is loaded for this session only — saving it to browser storage failed.",
+      );
+      setStatus("ready");
+    } else {
+      setNotices(res.notices);
+      setLoadError(res.error);
+      setStatus("error");
+    }
   }, []);
 
   useEffect(() => {
-    if (!hydrated.current) return;
-    try {
-      window.localStorage.setItem(KEY_OVERLAYS, JSON.stringify(overlays));
-      window.localStorage.setItem(KEY_BOOKMARKS, JSON.stringify(bookmarks));
-    } catch {
-      setStorageWarning("This browser refused to save review/bookmark state (storage full).");
-    }
-  }, [overlays, bookmarks]);
+    void runStartup();
+  }, [runStartup]);
 
-  const stats = useMemo(() => (bundle ? computeStats(bundle) : null), [bundle]);
+  const stats = useMemo(() => (loaded ? computeStats(loaded.bundle) : null), [loaded]);
 
   const setFilters = useCallback((next: Partial<LibraryFilters>) => {
     setFiltersState((prev) => {
@@ -94,97 +163,152 @@ export function AtlasProvider({ children }: { children: ReactNode }) {
 
   const resetFilters = useCallback(() => setFiltersState(defaultFilters), []);
 
-  const importBundleText = useCallback((text: string) => {
-    let raw: unknown;
+  const importBundleFile = useCallback(async (file: File): Promise<ImportResult> => {
+    let bytes: ArrayBuffer;
     try {
-      raw = JSON.parse(text);
+      bytes = await file.arrayBuffer();
     } catch (e) {
-      return { ok: false as const, errors: [`File is not valid JSON: ${(e as Error).message}`] };
+      return { ok: false, errors: [`File could not be read: ${(e as Error).message}`] };
     }
-    const result = parseBundle(raw);
-    if (!result.ok) return { ok: false as const, errors: result.errors };
-    setBundle(result.bundle);
+    const p = parseBundleBytes(bytes);
+    if (!p.ok) return { ok: false, errors: p.errors };
+    const my = ++seq.current;
+    const sha = await sha256Hex(bytes);
+    const next: LoadedBundle = {
+      origin: "user-import",
+      bytes,
+      raw: p.raw,
+      bundle: p.bundle,
+      warnings: p.warnings,
+      info: { fileName: file.name, sizeBytes: bytes.byteLength, sha256: sha },
+      persisted: false,
+      notices: [],
+    };
+    setLoaded(next);
+    setNotices([]);
+    setLoadError(null);
+    setStatus("ready");
     setFiltersState(defaultFilters);
-    try {
-      // Original file text (~1.2 MB) is kept for this session only.
-      const { original_files, ...rest } = result.bundle as Record<string, unknown>;
-      const slim = Array.isArray(original_files)
-        ? { ...rest, original_files: original_files.map(({ text: _t, ...f }: Record<string, unknown>) => f) }
-        : result.bundle;
-      window.localStorage.setItem(KEY_BUNDLE, JSON.stringify(slim));
-      setStorageWarning(null);
-    } catch {
-      setStorageWarning(
-        "The bundle is loaded for this session but was too large for browser storage, so it will not survive a reload. Re-import the file after refreshing.",
-      );
+    setPersistWarning("Saving to browser storage…");
+    const saved = await persistImport(getStore(), bytes.slice(0), file.name);
+    if (my !== seq.current) {
+      return saved.ok
+        ? { ok: true, persisted: true, warnings: p.warnings }
+        : { ok: true, persisted: false, warnings: p.warnings, error: saved.error };
     }
-    return { ok: true as const, warnings: result.warnings };
+    if (saved.ok) {
+      setLoaded({ ...next, persisted: true, info: { ...next.info, savedAt: saved.record.savedAt } });
+      setPersistWarning(null);
+      return { ok: true, persisted: true, warnings: p.warnings };
+    }
+    setPersistWarning(
+      `This import is loaded for this session only — saving it to browser storage failed (${saved.error}). After a reload the previously saved data will be shown.`,
+    );
+    return { ok: true, persisted: false, warnings: p.warnings, error: saved.error };
   }, []);
 
-  const clearBundle = useCallback(() => {
-    setBundle(null);
-    setFiltersState(defaultFilters);
+  const restoreBundledDefault = useCallback(async () => {
+    const my = ++seq.current;
     try {
-      window.localStorage.removeItem(KEY_BUNDLE);
-    } catch {
-      /* ignore */
+      await getStore().remove();
+    } catch (e) {
+      return { ok: false as const, error: `Your saved import could not be removed: ${(e as Error).message}` };
+    }
+    try {
+      const bytes = await fetchBundledDefault();
+      const p = parseBundleBytes(bytes);
+      if (!p.ok) throw new Error(p.errors[0]);
+      if (my !== seq.current) return { ok: true as const };
+      setLoaded({
+        origin: "bundled-default",
+        bytes,
+        raw: p.raw,
+        bundle: p.bundle,
+        warnings: p.warnings,
+        info: { fileName: "atlas-import-bundle.json", sizeBytes: bytes.byteLength, sha256: await sha256Hex(bytes) },
+        persisted: true,
+        notices: [],
+      });
+      setNotices([]);
+      setPersistWarning(null);
+      setLoadError(null);
+      setStatus("ready");
+      setFiltersState(defaultFilters);
+      return { ok: true as const };
+    } catch (e) {
+      if (my === seq.current) {
+        setLoaded(null);
+        setLoadError(`Your import was removed, but the bundled directory could not be loaded: ${(e as Error).message}`);
+        setStatus("error");
+      }
+      return { ok: false as const, error: (e as Error).message };
     }
   }, []);
+
+  const retryLoad = useCallback(() => void runStartup(), [runStartup]);
+
+  const downloadRawBundle = useCallback(() => {
+    if (!loaded) return;
+    downloadBytes(loaded.info.fileName, "application/json", loaded.bytes);
+  }, [loaded]);
 
   const review = useCallback<AtlasState["review"]>(
     (input) => {
-      const result = applyReview(overlays, input);
+      const result = applyReview(localRef.current.overlays, input);
       if (!result.ok) return { ok: false, error: result.error };
-      setOverlays(result.overlays);
+      commitLocal({ ...localRef.current, overlays: result.overlays });
       setLastReview({ sourceId: input.sourceId, previous: result.previous });
       return { ok: true };
     },
-    [overlays],
+    [commitLocal],
   );
 
   const undoLastReview = useCallback(() => {
-    setLastReview((last) => {
-      if (!last) return null;
-      setOverlays((prev) => undoReview(prev, last.sourceId, last.previous));
-      return null;
+    if (!lastReview) return;
+    commitLocal({
+      ...localRef.current,
+      overlays: undoReview(localRef.current.overlays, lastReview.sourceId, lastReview.previous),
     });
-  }, []);
+    setLastReview(null);
+  }, [lastReview, commitLocal]);
 
-  const toggleBookmark = useCallback((sourceId: string) => {
-    let nowBookmarked = false;
-    setBookmarks((prev) => {
-      const next = { ...prev };
-      if (next[sourceId]) {
-        delete next[sourceId];
-        nowBookmarked = false;
-      } else {
-        next[sourceId] = true;
-        nowBookmarked = true;
-      }
-      return next;
-    });
-    return !bookmarks[sourceId];
-  }, [bookmarks]);
+  const toggleBookmark = useCallback(
+    (sourceId: string) => {
+      const next = { ...localRef.current.bookmarks };
+      const nowBookmarked = !next[sourceId];
+      if (nowBookmarked) next[sourceId] = true;
+      else delete next[sourceId];
+      commitLocal({ ...localRef.current, bookmarks: next });
+      return nowBookmarked;
+    },
+    [commitLocal],
+  );
 
   const clearLocalState = useCallback(() => {
-    setOverlays({});
-    setBookmarks({});
+    commitLocal({ overlays: {}, bookmarks: {} });
     setLastReview(null);
-  }, []);
+  }, [commitLocal]);
 
   const value = useMemo<AtlasState>(
     () => ({
-      ready,
-      bundle,
+      status,
+      ready: status !== "loading",
+      loadError,
+      notices,
+      loaded,
+      bundle: loaded?.bundle ?? null,
       stats,
-      storageWarning,
+      persistWarning,
+      localStateWarning,
       overlays,
       bookmarks,
       filters,
       setFilters,
       resetFilters,
-      importBundleText,
-      clearBundle,
+      retryLoad,
+      importBundleFile,
+      restoreBundledDefault,
+      downloadRawBundle,
       review,
       lastReview,
       undoLastReview,
@@ -192,17 +316,22 @@ export function AtlasProvider({ children }: { children: ReactNode }) {
       clearLocalState,
     }),
     [
-      ready,
-      bundle,
+      status,
+      loadError,
+      notices,
+      loaded,
       stats,
-      storageWarning,
+      persistWarning,
+      localStateWarning,
       overlays,
       bookmarks,
       filters,
       setFilters,
       resetFilters,
-      importBundleText,
-      clearBundle,
+      retryLoad,
+      importBundleFile,
+      restoreBundledDefault,
+      downloadRawBundle,
       review,
       lastReview,
       undoLastReview,

@@ -37,7 +37,7 @@ export function AppShell({
   actions?: ReactNode;
   children: ReactNode;
 }) {
-  const { bundle, stats, overlays, bookmarks } = useAtlas();
+  const { bundle, stats, overlays, bookmarks, status, loaded, localStateWarning, persistWarning } = useAtlas();
   const counts = reviewCounts(overlays);
 
   return (
@@ -78,8 +78,12 @@ export function AppShell({
 
         <div className="mt-auto space-y-3 px-2 pt-6">
           <div className="rounded-md border border-border bg-muted/60 p-2.5">
-            <div className="eyebrow">Imported bundle</div>
-            {bundle && stats ? (
+            <div className="eyebrow">
+              {loaded?.origin === "bundled-default" || !loaded ? "Bundled directory" : "Your browser import"}
+            </div>
+            {status === "loading" ? (
+              <p className="mt-1.5 text-[11px] text-muted-foreground">Loading…</p>
+            ) : bundle && stats ? (
               <dl className="mt-1.5 space-y-0.5 text-[11px] text-muted-foreground">
                 <div className="flex justify-between">
                   <dt>Version</dt>
@@ -87,29 +91,29 @@ export function AppShell({
                 </div>
                 <div className="flex justify-between">
                   <dt>Distinct URLs</dt>
-                  <dd className="font-mono text-foreground">
+                  <dd className="font-mono text-foreground" data-testid="sidebar-distinct">
                     {stats.distinctSources.toLocaleString()}
                   </dd>
                 </div>
                 <div className="flex justify-between">
                   <dt>Occurrences</dt>
-                  <dd className="font-mono text-foreground">
+                  <dd className="font-mono text-foreground" data-testid="sidebar-occurrences">
                     {stats.totalOccurrences.toLocaleString()}
                   </dd>
                 </div>
               </dl>
             ) : (
-              <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground">
-                No bundle imported. All views are empty until a V2.2A JSON bundle is loaded.
+              <p className="mt-1.5 text-[11px] leading-relaxed text-destructive">
+                Directory not loaded. See the message on the page.
               </p>
             )}
           </div>
           <p className="flex gap-1.5 text-[10px] leading-relaxed text-muted-foreground">
             <ShieldAlert className="mt-px size-3.5 shrink-0" strokeWidth={1.75} />
             <span>
-              Reviews, bookmarks and the imported bundle are stored in{" "}
-              <strong className="font-semibold text-foreground">this browser only</strong>. Nothing is
-              uploaded to a server.
+              The directory is public-source data shipped with this build. Your reviews, bookmarks and
+              any file you import are stored in{" "}
+              <strong className="font-semibold text-foreground">this browser only</strong>.
             </span>
           </p>
         </div>
@@ -159,7 +163,17 @@ export function AppShell({
           ))}
         </nav>
 
-        <main className="px-5 py-6 lg:px-8">{children}</main>
+        <main className="px-5 py-6 lg:px-8">
+          {localStateWarning || (persistWarning && persistWarning !== "Saving to browser storage…") ? (
+            <div
+              role="alert"
+              className="mb-4 rounded-md border border-warning/40 bg-warning/10 p-2.5 text-[12px] leading-relaxed text-warning-foreground"
+            >
+              {[localStateWarning, persistWarning].filter(Boolean).join(" ")}
+            </div>
+          ) : null}
+          {children}
+        </main>
       </div>
     </div>
   );
