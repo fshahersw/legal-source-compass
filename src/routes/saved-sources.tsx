@@ -5,6 +5,7 @@ import { AppShell } from "@/components/atlas/AppShell";
 import { EmptyBundleState } from "@/components/atlas/EmptyBundleState";
 import { LibraryBrowser } from "@/components/atlas/LibraryBrowser";
 import { useAtlas } from "@/lib/atlas/store";
+import { useMergedSources } from "@/lib/atlas/useMergedSources";
 
 export const Route = createFileRoute("/saved-sources")({
   head: () => ({
@@ -26,8 +27,8 @@ export const Route = createFileRoute("/saved-sources")({
 });
 
 function SavedSourcesView() {
-  const { bundle, bookmarks } = useAtlas();
-  const sources = bundle?.sources ?? [];
+  const { bookmarks } = useAtlas();
+  const { sources } = useMergedSources();
   const saved = useMemo(() => sources.filter((s) => bookmarks[s.id]), [sources, bookmarks]);
 
   return (

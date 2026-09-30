@@ -4,9 +4,27 @@ import { Link } from "@tanstack/react-router";
 import { BarList, Stat } from "@/components/corpus/BarList";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { categoryLabel, filterDocs, isDownloadable, loadDocs, summarize } from "@/lib/atlas/mdlDocuments";
 
 const PAGE = 25;
+
+/** In-app reader for a free RECAP PDF, with a fallback link out. */
+function PdfReader({ url, title, onClose }: { url: string; title: string; onClose: () => void }) {
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="flex h-[85vh] max-w-4xl flex-col">
+        <DialogHeader>
+          <DialogTitle className="truncate pr-6 text-[13px]">{title}</DialogTitle>
+        </DialogHeader>
+        <iframe src={url} title={title} className="min-h-0 flex-1 rounded-md border border-border bg-muted" />
+        <p className="text-[11px] text-muted-foreground">
+          Served by the RECAP archive. If it does not load here, <a href={url} target="_blank" rel="noreferrer" className="underline">open it in a new tab</a>.
+        </p>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 /** Docket documents for one MDL or one court, from the uploaded documents file. */
 export function DocketDocuments({ kind, id }: { kind: "mdl" | "court"; id: string }) {
@@ -15,6 +33,7 @@ export function DocketDocuments({ kind, id }: { kind: "mdl" | "court"; id: strin
   const [category, setCategory] = useState("");
   const [onlyFiles, setOnlyFiles] = useState(false);
   const [page, setPage] = useState(0);
+  const [reader, setReader] = useState<{ url: string; title: string } | null>(null);
   const docs = q.data ?? [];
   const summary = useMemo(() => summarize(docs), [docs]);
   const rows = useMemo(() => filterDocs(docs, { q: text, category, onlyDownloadable: onlyFiles }).sort((a, b) => (b.entry_date_filed ?? "").localeCompare(a.entry_date_filed ?? "")), [docs, text, category, onlyFiles]);
@@ -72,7 +91,12 @@ export function DocketDocuments({ kind, id }: { kind: "mdl" | "court"; id: strin
                 <td className="max-w-xl px-2 py-1.5"><span className="line-clamp-2" title={d.entry_description ?? ""}>{d.entry_description ?? d.document_description ?? "—"}</span></td>
                 {kind === "court" ? <td className="px-2 py-1.5">{d.mdl_number ? <Link to="/matters/$id" params={{ id: String(Number(d.mdl_number)) }} className="underline">MDL {Number(d.mdl_number)}</Link> : "—"}</td> : null}
                 <td className="whitespace-nowrap px-2 py-1.5">
-                  {isDownloadable(d) ? <a href={d.download_url!} target="_blank" rel="noreferrer" className="underline">PDF{d.page_count ? ` · ${d.page_count}p` : ""}</a> : <span className="text-muted-foreground">Not freely available</span>}
+                  {isDownloadable(d) ? (
+                    <span className="flex gap-2">
+                      <button type="button" className="underline" onClick={() => setReader({ url: d.download_url!, title: d.entry_description ?? d.document_description ?? "Docket document" })}>View{d.page_count ? ` · ${d.page_count}p` : ""}</button>
+                      <a href={d.download_url!} target="_blank" rel="noreferrer" className="underline" title="Open the PDF in a new tab">↗</a>
+                    </span>
+                  ) : <span className="text-muted-foreground">Not freely available</span>}
                 </td>
               </tr>
             ))}
@@ -86,6 +110,7 @@ export function DocketDocuments({ kind, id }: { kind: "mdl" | "court"; id: strin
           <Button size="sm" variant="outline" disabled={(page + 1) * PAGE >= rows.length} onClick={() => setPage(page + 1)}>Next</Button>
         </div>
       ) : null}
+      {reader ? <PdfReader url={reader.url} title={reader.title} onClose={() => setReader(null)} /> : null}
     </div>
   );
 }

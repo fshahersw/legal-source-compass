@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { Copy } from "lucide-react";
 import { AppShell } from "@/components/atlas/AppShell";
 import { pageHead } from "@/lib/corpus/head";
 import { formatBytes, loadMatterDocs, loadRegistry } from "@/lib/registry/registry";
@@ -9,6 +11,21 @@ export const Route = createFileRoute("/registry/$id")({
   component: MatterPage,
   notFoundComponent: () => <p className="p-6 text-[13px]">Matter not found in the registry.</p>,
 });
+
+/** Copyable private-storage key for a registry document (files are not publicly downloadable). */
+function StorageKey({ k }: { k: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      title={`${k} — click to copy`}
+      className="inline-flex max-w-56 items-center gap-1 truncate font-mono text-[11px] underline decoration-dotted"
+      onClick={() => { void navigator.clipboard.writeText(k); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
+    >
+      <Copy className="size-3 shrink-0" />{copied ? "Copied" : k}
+    </button>
+  );
+}
 
 function Section({ title, hint, children }: { title: string; hint?: string | undefined; children: React.ReactNode }) {
   return (
@@ -72,17 +89,18 @@ function MatterPage() {
         ) : <p className="text-[12px] text-muted-foreground">Not recorded</p>}
       </Section>
 
-      <Section title="Docket documents" hint={docs.isLoading ? "Loading…" : docs.data?.length ? `${docs.data.length.toLocaleString()} verified documents — details only; the files live in private storage` : undefined}>
+      <Section title="Docket documents" hint={docs.isLoading ? "Loading…" : docs.data?.length ? `${docs.data.length.toLocaleString()} verified documents — the files live in your private storage; copy the key to fetch one` : undefined}>
         {docs.error ? <p role="alert" className="text-[12px] text-destructive">Documents could not be loaded.</p> : null}
         {docs.data && docs.data.length === 0 ? <p className="text-[12px] text-muted-foreground">No documents recorded for this matter.</p> : null}
         {docs.data && docs.data.length ? (
           <div className="overflow-x-auto"><table className="w-full text-[12px]">
-            <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-2 py-1">Description</th><th className="px-2 py-1">Size</th><th className="px-2 py-1">Verified</th></tr></thead>
+            <thead className="text-left text-[11px] text-muted-foreground"><tr><th className="px-2 py-1">Description</th><th className="px-2 py-1">Size</th><th className="px-2 py-1">Verified</th><th className="px-2 py-1">Storage key</th></tr></thead>
             <tbody className="divide-y divide-border">{docs.data.slice(0, 200).map((d) => (
               <tr key={d.document_id}>
                 <td className="px-2 py-1">{d.description ?? "Not recorded"}</td>
                 <td className="px-2 py-1 whitespace-nowrap">{formatBytes(d.byte_count)}</td>
                 <td className="px-2 py-1">{d.verification_status ? <span className="rounded-full bg-secondary px-1.5 text-[10px] font-semibold text-secondary-foreground">{d.verification_status.replace(/_/g, " ")}</span> : "—"}</td>
+                <td className="px-2 py-1">{d.doc_uid ? <StorageKey k={d.doc_uid} /> : <span className="text-muted-foreground">Not recorded</span>}</td>
               </tr>))}</tbody>
           </table>
           {docs.data.length > 200 ? <p className="mt-2 text-[11px] text-muted-foreground">Showing first 200 of {docs.data.length.toLocaleString()} documents.</p> : null}

@@ -58,8 +58,19 @@ function ProvisionPage() {
   const nav = (r: { id: string; citation: string | null; title: string | null } | undefined, d: number, label: string) =>
     r ? <Link to="/law/provision/$id" params={{ id: r.id }} search={{ node, i: idx! + d }} className="min-w-0 truncate rounded border border-border px-2 py-1 text-[12px] hover:bg-muted">{label} {r.citation ?? r.title}</Link> : <span />;
 
+  const frameParts = p.frame
+    ? [
+        p.frame.titleName ?? (p.frame.part ? `Title ${p.frame.part.replace(/:.*/, "")}` : null),
+        p.frame.chapter ? `Chapter ${p.frame.chapter}` : null,
+        p.frame.part ? `Part ${p.frame.part}` : null,
+        p.frame.subpart ? `Subpart ${p.frame.subpart}` : null,
+        p.frame.section ? `Section ${p.frame.section}` : null,
+      ].filter(Boolean).join(" · ")
+    : null;
+
   return (
     <AppShell breadcrumbs={crumbs} title={p.title ?? p.citation ?? "Provision"} description={[p.citation, p.state ?? "Federal", p.kind ? kindLabel(p.kind) : null, p.status?.replace(/_/g, " ")].filter(Boolean).join(" · ")}>
+      {frameParts ? <p className="mb-3 text-[12px] text-muted-foreground">{frameParts}{p.frame?.partHeading ? ` — ${p.frame.partHeading}` : ""}</p> : null}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {p.sourceUrl ? (
           <Button asChild size="sm"><a href={p.sourceUrl} target="_blank" rel="noreferrer"><ExternalLink className="mr-1 size-3.5" />Official source</a></Button>
@@ -86,6 +97,22 @@ function ProvisionPage() {
       </section>
 
       {node && idx != null ? <div className="mt-4 flex items-center justify-between gap-3">{nav(prev, -1, "←")}{nav(next, 1, "→")}</div> : null}
+
+      {p.dates || p.frCitations?.length || p.authorityNote || p.sourceNote ? (
+        <section className="mt-4 rounded-lg border border-border bg-surface p-4 shadow-card">
+          <h2 className="eyebrow mb-2">Dates & sources</h2>
+          <dl className="grid grid-cols-[10rem_1fr] gap-x-3 gap-y-1 text-[12px]">
+            <dt className="text-muted-foreground">Source as of</dt><dd>{p.dates?.sourceAsOf ?? "Not recorded"}</dd>
+            <dt className="text-muted-foreground">Latest amendment</dt><dd>{p.dates?.latestAmendmentDate ?? "Not recorded"}</dd>
+            <dt className="text-muted-foreground">Latest issue</dt><dd>{p.dates?.latestIssueDate ?? "Not recorded"}</dd>
+            <dt className="text-muted-foreground">Captured</dt><dd>{p.dates?.capturedAt ?? "Not recorded"}</dd>
+            {p.frCitations?.length ? <><dt className="text-muted-foreground">Federal Register</dt><dd>{p.frCitations.join("; ")}</dd></> : null}
+            {p.authorityNote ? <><dt className="text-muted-foreground">Authority</dt><dd className="whitespace-pre-line">{p.authorityNote}</dd></> : null}
+            {p.sourceNote ? <><dt className="text-muted-foreground">Source note</dt><dd className="whitespace-pre-line">{p.sourceNote}</dd></> : null}
+          </dl>
+          <p className="mt-2 text-[11px] text-muted-foreground">Dates are as stated by the publisher snapshot; never inferred from other dates.</p>
+        </section>
+      ) : null}
 
       {p.quality ? <p className="mt-4 text-[11px] text-muted-foreground">{p.quality}. Text is the publisher snapshot stored in the corpus, not re-checked against the live site.</p> : null}
       <details className="mt-3 text-[12px] text-muted-foreground">
