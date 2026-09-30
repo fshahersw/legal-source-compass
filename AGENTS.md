@@ -30,3 +30,5 @@
 - Primary navigation is domain-based; specialist/raw pages remain available through contextual navigation, not competing top-level links.
 - Courts, judges and MDLs have full pages (`/courts/$id`, `/judges/$id`, `/matters/$id`, generic `/records/$dataset/$id`) rendered from `corpus_detail` via the pure `entityView.ts` mapper; directory rows navigate there, related collections embed filtered DatasetBrowsers, and provenance sits in a collapsed "Technical details" block.
 - The supplied source registry (`public/data/registry_v06_1.jsonl`) is read-only, parsed in `src/lib/atlas/registry.ts`, and browsed jurisdiction → layer → record type; its HTTP statuses are shown as historical registry checks.
+- Sidebar has exactly 4 sections (Explore, Litigation, Law & Safety, Sources & Work) in `AppShell`; all other pages are contextual sub-navigation so the top level stays uncluttered.
+- Uploaded MDL docket documents are split into `public/data/mdl-documents/{mdl,court}-<key>.json` (each <10 MB commit limit); the full original is a lovable-asset (`src/assets/mdl-documents.json.asset.json`); PACER-only rows are never linked as downloads.
