@@ -94,7 +94,7 @@ export function computeStats(bundle: Bundle): BundleStats {
       bundle.source_families.length ||
       new Set(bundle.sources.map((s) => s.source_family).filter(Boolean)).size,
     promotionRecords: bundle.promotion_records.length,
-    jurisdictions: new Set(bundle.sources.map((s) => s.jurisdiction).filter(Boolean)).size,
+    jurisdictions: new Set(bundle.sources.flatMap((s) => valuesOf(s, "jurisdiction")).filter(Boolean)).size,
     domains: new Set(bundle.sources.map((s) => s.domain).filter(Boolean)).size,
   };
 }
@@ -104,12 +104,13 @@ export type Facet = { value: string; count: number; occurrences: number };
 export function facet(sources: Source[], key: keyof Source): Facet[] {
   const map = new Map<string, Facet>();
   for (const s of sources) {
-    const value = String(s[key] ?? "").trim();
-    const label = value === "" ? "(unspecified)" : value;
-    const entry = map.get(label) ?? { value: label, count: 0, occurrences: 0 };
-    entry.count += 1;
-    entry.occurrences += s.occurrences ?? 0;
-    map.set(label, entry);
+    for (const raw of new Set(valuesOf(s, key).map((v) => v.trim()))) {
+      const label = raw === "" ? "(unspecified)" : raw;
+      const entry = map.get(label) ?? { value: label, count: 0, occurrences: 0 };
+      entry.count += 1;
+      entry.occurrences += s.occurrences ?? 0;
+      map.set(label, entry);
+    }
   }
   return [...map.values()].sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
 }
