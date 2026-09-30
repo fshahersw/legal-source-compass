@@ -14,7 +14,7 @@ export const Route = createFileRoute("/records/$dataset/$id")({
     return pageHead(name, `${datasetDisplayName(params.dataset)} record: ${name}.`);
   },
   component: Page,
-  errorComponent: ({ error }) => <EntityError error={error} /> ,
+  errorComponent: ({ error }) => <EntityError error={error instanceof Error ? error : new Error(String(error))} /> ,
   notFoundComponent: () => <p className="p-6 text-[13px]">Record not found.</p>,
 });
 

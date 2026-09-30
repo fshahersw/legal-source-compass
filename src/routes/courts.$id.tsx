@@ -15,7 +15,7 @@ export const Route = createFileRoute("/courts/$id")({
     return pageHead(name, `Court profile for ${name}: every linked record in the connected corpus on one page.`);
   },
   component: Page,
-  errorComponent: ({ error }) => <EntityError error={error} /> ,
+  errorComponent: ({ error }) => <EntityError error={error instanceof Error ? error : new Error(String(error))} /> ,
   notFoundComponent: () => <p className="p-6 text-[13px]">Court not found.</p>,
 });
 

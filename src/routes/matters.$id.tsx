@@ -11,7 +11,7 @@ export const Route = createFileRoute("/matters/$id")({
     return pageHead(name, `MDL profile for ${name}: every linked record in the connected corpus on one page.`);
   },
   component: Page,
-  errorComponent: ({ error }) => <EntityError error={error} /> ,
+  errorComponent: ({ error }) => <EntityError error={error instanceof Error ? error : new Error(String(error))} /> ,
   notFoundComponent: () => <p className="p-6 text-[13px]">MDL not found.</p>,
 });
 
