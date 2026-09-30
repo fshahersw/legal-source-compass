@@ -35,7 +35,7 @@ export function EntityPage({ dataset, id, crumbs }: { dataset: string; id: strin
       <div className="space-y-6">
         {rest.length ? <Section id="more" label="More details"><dl className="grid grid-cols-1 gap-x-6 gap-y-1.5 text-[13px] sm:grid-cols-2">{rest.map(([k, val], i) => <div key={i}><dt className="text-[11px] text-muted-foreground">{k}</dt><dd className="break-words">{val}</dd></div>)}</dl></Section> : null}
         {v.sections.map((s) => <SectionView key={s.key} s={s} aliases={aliases} />)}
-        {v.text ? <Section id="text" label="Stored text"><p className="max-h-96 overflow-auto whitespace-pre-wrap text-[12px] leading-relaxed">{v.text}</p></Section> : null}
+        {v.text ? <FullText text={v.text} /> : null}
       </div>
       {v.empty.length ? <p className="mt-6 text-[11px] text-muted-foreground">Not recorded for this entry: {v.empty.join(", ")}.</p> : null}
       {v.technical.length ? (
@@ -87,6 +87,19 @@ function SectionView({ s, aliases }: { s: EntitySection; aliases: Record<string,
         : <ul className="divide-y divide-border text-[13px]">{s.sample.map((it, i) => (
           <li key={i} className="py-1.5">{it.link ? <CorpusLink url={it.link} label={it.title} aliases={aliases} /> : <span className="font-medium">{it.title}</span>}{it.subtitle ? <span className="ml-2 text-[11px] text-muted-foreground">{it.subtitle}</span> : null}</li>))}</ul>}
     </Section>
+  );
+}
+
+/** Clean scraped text into readable paragraphs; collapsed by default. */
+function FullText({ text }: { text: string }) {
+  const paras = text.replace(/\r/g, "").split(/\n\s*\n+/).map((p) => p.replace(/\s+/g, " ").trim()).filter((p) => p.length > 1)
+    .filter((p, i, a) => a.indexOf(p) === i);
+  if (!paras.length) return null;
+  return (
+    <details className="rounded-lg border border-border bg-surface p-3 shadow-card">
+      <summary className="cursor-pointer text-[13px] font-medium">Full text <span className="text-[11px] font-normal text-muted-foreground">({paras.length} paragraphs)</span></summary>
+      <div className="mt-3 max-h-[32rem] max-w-3xl space-y-3 overflow-auto text-[13px] leading-relaxed">{paras.map((p, i) => <p key={i}>{p}</p>)}</div>
+    </details>
   );
 }
 
