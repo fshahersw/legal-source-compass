@@ -18,10 +18,7 @@ type RawDataset = { id: string; label: string | null; imported_records: number |
 /** All datasets with their own listing metadata (columns, filters, qualification). */
 export const listDatasets = createServerFn({ method: "GET" }).handler(async (): Promise<DatasetInfo[]> => {
   const r = await restGet<RawDataset[]>(
-    `corpus_datasets?select=id,label,imported_records,metadata->listing,metadata->aliases,metadata->qualification&order=id.asc`.replace(
-      "metadata->listing,metadata->aliases,metadata->qualification",
-      "listing:metadata->listing,aliases:metadata->aliases,qualification:metadata->qualification",
-    ),
+    "corpus_datasets?select=id,label,imported_records,listing:metadata->listing,aliases:metadata->aliases,qualification:metadata->qualification&order=id.asc",
   );
   return (r.rows as any[]).map((d) => {
     const listing = d.listing ?? {};
@@ -87,9 +84,9 @@ export type RecordDetail = {
 
 /** Full record detail from the corpus's own detail function. */
 export const getRecordDetail = createServerFn({ method: "GET" })
-  .inputValidator((d) => z.object({ id: z.string().min(1).max(300), dataset: z.string().regex(/^[a-z0-9_]{1,80}$/) }).parse(d))
+  .inputValidator((d) => z.object({ id: z.string().min(1).max(300), dataset: z.string().regex(/^[a-z0-9_]{1,80}$/).nullable() }).parse(d))
   .handler(async ({ data }): Promise<RecordDetail | null> => {
-    const d = await rpcPost<Record<string, any> | null>("corpus_detail", { p_id: data.id, p_datasets: [data.dataset], p_full: false });
+    const d = await rpcPost<Record<string, any> | null>("corpus_detail", { p_id: data.id, p_datasets: data.dataset ? [data.dataset] : null, p_full: false });
     if (!d) return null;
     const facts: [string, string][] = Array.isArray(d.facts)
       ? d.facts.filter((f: unknown) => Array.isArray(f) && f.length >= 2).map((f: unknown[]) => [String(f[0]), typeof f[1] === "string" ? f[1] : JSON.stringify(f[1])])
