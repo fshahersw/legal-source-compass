@@ -70,7 +70,7 @@ function scalar(v: unknown): string | null {
 const SKIP = new Set(["id", "title", "name", "subtitle", "links", "badges", "cells", "photo_url", "source_url", "search_vector", "text", "snippet"]);
 
 /** Normalise any corpus listing item (they vary by dataset) without inventing values. */
-export function normalizeItem(raw: Record<string, unknown>): NormItem {
+export function normalizeItem(raw: any): NormItem {
   const id = String(raw.id ?? "");
   const title = scalar(raw.title) ?? scalar(raw.name) ?? id;
   const cells: Record<string, string> = {};

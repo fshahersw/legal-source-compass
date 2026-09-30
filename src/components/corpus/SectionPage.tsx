@@ -51,4 +51,4 @@ function tabCls(on: boolean) {
   return `rounded-md px-2 py-1 text-[12px] ${on ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`;
 }
 
-export const dsSearch = (s: Record<string, unknown>) => ({ ds: typeof s.ds === "string" && /^[a-z0-9_-]{1,80}$/.test(s.ds) ? s.ds : undefined });
+export const dsSearch = (s: Record<string, unknown>) => ({ ds: typeof s["ds"] === "string" && /^[a-z0-9_-]{1,80}$/.test(s["ds"]) ? s["ds"] : undefined });

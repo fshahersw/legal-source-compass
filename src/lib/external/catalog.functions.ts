@@ -62,7 +62,7 @@ export const queryDataset = createServerFn({ method: "GET" })
     }
     let p = `corpus_records?select=id,title,category,state,source_url,item&dataset=eq.${data.dataset}`;
     if (q) p += `&title=ilike.${ilikeTerm(q)}`;
-    const raw = await restGet<{ id: string; title: string | null; category: string | null; state: string | null; source_url: string | null; item: Record<string, any> | null }[]>(p, {
+    const raw = await restGet<{ id: string; title: string | null; category: string | null; state: string | null; source_url: string | null; item: any }[]>(p, {
       range: [data.offset, data.offset + PAGE - 1],
     });
     const items = raw.rows.map((r) => ({ ...(r.item ?? {}), id: r.id, title: r.item?.title ?? r.title, category: r.category, state: r.state || null, source_url: r.source_url || null }));
@@ -86,7 +86,7 @@ export type RecordDetail = {
 export const getRecordDetail = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ id: z.string().min(1).max(300), dataset: z.string().regex(/^[a-z0-9_]{1,80}$/).nullable() }).parse(d))
   .handler(async ({ data }): Promise<RecordDetail | null> => {
-    const d = await rpcPost<Record<string, any> | null>("corpus_detail", { p_id: data.id, p_datasets: data.dataset ? [data.dataset] : null, p_full: false });
+    const d = await rpcPost<any>("corpus_detail", { p_id: data.id, p_datasets: data.dataset ? [data.dataset] : null, p_full: false });
     if (!d) return null;
     const facts: [string, string][] = Array.isArray(d.facts)
       ? d.facts.filter((f: unknown) => Array.isArray(f) && f.length >= 2).map((f: unknown[]) => [String(f[0]), typeof f[1] === "string" ? f[1] : JSON.stringify(f[1])])
@@ -114,7 +114,7 @@ export type SearchHit = { id: string; dataset: string; title: string; state: str
 export const searchCorpus = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ q: z.string().min(2).max(200), offset: z.number().int().min(0).max(10000).default(0) }).parse(d))
   .handler(async ({ data }) => {
-    const r = await rpcPost<{ items: Record<string, any>[]; total: number | null }>("corpus_query", {
+    const r = await rpcPost<{ items: any[]; total: number | null }>("corpus_query", {
       p_q: data.q.trim(),
       p_datasets: null,
       p_filters: {},
