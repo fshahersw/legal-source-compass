@@ -44,7 +44,7 @@ function linkOf(o: Record<string, unknown>): string | null {
 
 function tableFrom(key: string, arr: Record<string, unknown>[]): EntitySection {
   const counts = new Map<string, number>();
-  for (const o of arr.slice(0, 50)) for (const [k, v] of Object.entries(o)) if (!TECH.test(k) && k !== "links" && scalar(v) != null && String(scalar(v)).length < 160) counts.set(k, (counts.get(k) ?? 0) + 1);
+  for (const o of arr.slice(0, 50)) for (const [k, v] of Object.entries(o)) if (!TECH.test(k) && !["links", "url", "mime", "object_key", "why", "sha256"].includes(k) && scalar(v) != null && String(scalar(v)).length < 160) counts.set(k, (counts.get(k) ?? 0) + 1);
   const pref = ["title", "name", "date", "year", "status", "court", "role"];
   const cols = [...counts.keys()].sort((a, b) => (pref.indexOf(a) + 1 || 99) - (pref.indexOf(b) + 1 || 99) || (counts.get(b)! - counts.get(a)!)).filter((k) => k !== "id" || counts.size === 1).slice(0, 6);
   return {
