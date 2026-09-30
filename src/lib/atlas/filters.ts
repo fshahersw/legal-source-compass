@@ -103,7 +103,6 @@ export function sortSources(sources: Source[], key: SortKey, dir: SortDir): Sour
 export type Page<T> = {
   items: T[];
   page: number;
-  pageСount?: never;
   pageCount: number;
   total: number;
   from: number;
