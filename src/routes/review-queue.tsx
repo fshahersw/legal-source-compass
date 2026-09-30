@@ -30,7 +30,7 @@ export const Route = createFileRoute("/review-queue")({
 });
 
 function ReviewQueueView() {
-  const { bundle, overlays, lastReview, undoLastReview } = useAtlas();
+  const { overlays, lastReview, undoLastReview } = useAtlas();
   const { sources } = useMergedSources();
   const counts = useMemo(() => reviewCounts(overlays), [overlays]);
 
