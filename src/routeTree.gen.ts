@@ -22,6 +22,7 @@ import { Route as OverviewRouteImport } from './routes/overview'
 import { Route as ReviewQueueRouteImport } from './routes/review-queue'
 import { Route as SavedSourcesRouteImport } from './routes/saved-sources'
 import { Route as SourceFamiliesRouteImport } from './routes/source-families'
+import { Route as ApiFilesRouteImport } from './routes/api/files'
 import { Route as PlacesIndexRouteImport } from './routes/places.index'
 import { Route as PlacesStateRouteImport } from './routes/places.$state'
 import { Route as PlacesStateCountyRouteImport } from './routes/places.$state.$county'
@@ -91,6 +92,11 @@ const SourceFamiliesRoute = SourceFamiliesRouteImport.update({
   path: '/source-families',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiFilesRoute = ApiFilesRouteImport.update({
+  id: '/api/files',
+  path: '/api/files',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlacesIndexRoute = PlacesIndexRouteImport.update({
   id: '/places/',
   path: '/places/',
@@ -121,6 +127,7 @@ export interface FileRoutesByFullPath {
   '/review-queue': typeof ReviewQueueRoute
   '/saved-sources': typeof SavedSourcesRoute
   '/source-families': typeof SourceFamiliesRoute
+  '/api/files': typeof ApiFilesRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/places/': typeof PlacesIndexRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
@@ -139,6 +146,7 @@ export interface FileRoutesByTo {
   '/review-queue': typeof ReviewQueueRoute
   '/saved-sources': typeof SavedSourcesRoute
   '/source-families': typeof SourceFamiliesRoute
+  '/api/files': typeof ApiFilesRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/places': typeof PlacesIndexRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
@@ -158,6 +166,7 @@ export interface FileRoutesById {
   '/review-queue': typeof ReviewQueueRoute
   '/saved-sources': typeof SavedSourcesRoute
   '/source-families': typeof SourceFamiliesRoute
+  '/api/files': typeof ApiFilesRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/places/': typeof PlacesIndexRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
@@ -178,6 +187,7 @@ export interface FileRouteTypes {
     | '/review-queue'
     | '/saved-sources'
     | '/source-families'
+    | '/api/files'
     | '/places/$state'
     | '/places/'
     | '/places/$state/$county'
@@ -196,6 +206,7 @@ export interface FileRouteTypes {
     | '/review-queue'
     | '/saved-sources'
     | '/source-families'
+    | '/api/files'
     | '/places/$state'
     | '/places'
     | '/places/$state/$county'
@@ -214,6 +225,7 @@ export interface FileRouteTypes {
     | '/review-queue'
     | '/saved-sources'
     | '/source-families'
+    | '/api/files'
     | '/places/$state'
     | '/places/'
     | '/places/$state/$county'
@@ -233,6 +245,7 @@ export interface RootRouteChildren {
   ReviewQueueRoute: typeof ReviewQueueRoute
   SavedSourcesRoute: typeof SavedSourcesRoute
   SourceFamiliesRoute: typeof SourceFamiliesRoute
+  ApiFilesRoute: typeof ApiFilesRoute
   PlacesStateRoute: typeof PlacesStateRouteWithChildren
   PlacesIndexRoute: typeof PlacesIndexRoute
 }
@@ -330,6 +343,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SourceFamiliesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/files': {
+      id: '/api/files'
+      path: '/api/files'
+      fullPath: '/api/files'
+      preLoaderRoute: typeof ApiFilesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/places/': {
       id: '/places/'
       path: '/places'
@@ -380,6 +400,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReviewQueueRoute: ReviewQueueRoute,
   SavedSourcesRoute: SavedSourcesRoute,
   SourceFamiliesRoute: SourceFamiliesRoute,
+  ApiFilesRoute: ApiFilesRoute,
   PlacesStateRoute: PlacesStateRouteWithChildren,
   PlacesIndexRoute: PlacesIndexRoute,
 }
