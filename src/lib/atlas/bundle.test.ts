@@ -35,7 +35,7 @@ describe("parseBundle", () => {
 
   it("preserves the exact URL including query string and hash route", () => {
     const result = parseBundle(minimal);
-    expect(result.ok && result.bundle.sources[0].url).toBe("https://a.gov/p?x=1#/h");
+    expect(result.ok && result.bundle.sources[0]!.url).toBe("https://a.gov/p?x=1#/h");
   });
 
   it("rejects a payload without a sources array", () => {
@@ -78,7 +78,7 @@ describe("parseBundle", () => {
     });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect((result.bundle.sources[0] as Record<string, unknown>).extra_imported_field).toBe("keep me");
+    expect((result.bundle.sources[0] as Record<string, unknown>)['extra_imported_field']).toBe("keep me");
   });
 });
 

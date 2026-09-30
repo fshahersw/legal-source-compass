@@ -64,26 +64,26 @@ function f(overrides: Partial<LibraryFilters> = {}): LibraryFilters {
 
 describe("matchesQuery", () => {
   it("matches on title", () => {
-    expect(matchesQuery(rows[0], "pacer")).toBe(true);
+    expect(matchesQuery(rows[0]!, "pacer")).toBe(true);
   });
 
   it("matches on the exact URL including query and hash", () => {
-    expect(matchesQuery(rows[0], "index.jsf?x=1#/search")).toBe(true);
+    expect(matchesQuery(rows[0]!, "index.jsf?x=1#/search")).toBe(true);
   });
 
   it("matches on domain, jurisdiction and heading category", () => {
-    expect(matchesQuery(rows[1], "courts.ca.gov")).toBe(true);
-    expect(matchesQuery(rows[1], "california")).toBe(true);
-    expect(matchesQuery(rows[1], "opinions")).toBe(true);
+    expect(matchesQuery(rows[1]!, "courts.ca.gov")).toBe(true);
+    expect(matchesQuery(rows[1]!, "california")).toBe(true);
+    expect(matchesQuery(rows[1]!, "opinions")).toBe(true);
   });
 
   it("requires all terms (AND semantics)", () => {
-    expect(matchesQuery(rows[1], "california opinions")).toBe(true);
-    expect(matchesQuery(rows[1], "california dockets")).toBe(false);
+    expect(matchesQuery(rows[1]!, "california opinions")).toBe(true);
+    expect(matchesQuery(rows[1]!, "california dockets")).toBe(false);
   });
 
   it("treats an empty query as match-all", () => {
-    expect(matchesQuery(rows[2], "   ")).toBe(true);
+    expect(matchesQuery(rows[2]!, "   ")).toBe(true);
   });
 });
 

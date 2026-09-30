@@ -3,7 +3,7 @@ export function ImportedLabel({
   value,
 }: {
   label: string;
-  value?: string | null;
+  value?: string | null | undefined;
 }) {
   return (
     <div className="flex items-baseline justify-between gap-3 border-b border-border py-1.5 last:border-b-0">

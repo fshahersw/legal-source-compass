@@ -29,7 +29,7 @@ describe("applyReview", () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.overlays.s1).toEqual({
+    expect(result.overlays['s1']).toEqual({
       source_id: "s1",
       action: "needs_follow_up",
       reason: "needs a live check next cycle",
@@ -56,7 +56,7 @@ describe("applyReview", () => {
     expect(second.ok).toBe(true);
     if (!second.ok) return;
     expect(second.previous?.action).toBe("accepted");
-    expect(second.overlays.s1.action).toBe("rejected");
+    expect(second.overlays['s1']!.action).toBe("rejected");
   });
 });
 
@@ -77,8 +77,8 @@ describe("undoReview", () => {
     });
     if (!second.ok) throw new Error("setup failed");
     const undone = undoReview(second.overlays, "s1", second.previous);
-    expect(undone.s1.action).toBe("accepted");
-    expect(undone.s1.reason).toBe("good source");
+    expect(undone['s1']!.action).toBe("accepted");
+    expect(undone['s1']!.reason).toBe("good source");
   });
 });
 

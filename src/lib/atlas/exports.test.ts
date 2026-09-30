@@ -41,13 +41,13 @@ describe("sourcesToCsv", () => {
   it("emits a header plus one row with local overlay columns", () => {
     const csv = sourcesToCsv([source], overlays, { s1: true });
     const lines = csv.split("\r\n");
-    expect(lines[0]).toBe(SOURCE_EXPORT_COLUMNS.join(","));
+    expect(lines[0]!).toBe(SOURCE_EXPORT_COLUMNS.join(","));
     expect(lines).toHaveLength(2);
-    expect(lines[1]).toContain("https://pcl.uscourts.gov/pcl/index.jsf?x=1#/search");
-    expect(lines[1]).toContain('"Docket, ""Locator"""');
-    expect(lines[1]).toContain("accepted");
-    expect(lines[1]).toContain("checked against the docket index");
-    expect(lines[1].endsWith("true")).toBe(true);
+    expect(lines[1]!).toContain("https://pcl.uscourts.gov/pcl/index.jsf?x=1#/search");
+    expect(lines[1]!).toContain('"Docket, ""Locator"""');
+    expect(lines[1]!).toContain("accepted");
+    expect(lines[1]!).toContain("checked against the docket index");
+    expect(lines[1]!.endsWith("true")).toBe(true);
   });
 
   it("emits header only for an empty selection", () => {
@@ -56,7 +56,7 @@ describe("sourcesToCsv", () => {
 
   it("leaves local columns blank when there is no local state", () => {
     const csv = sourcesToCsv([source], {}, {});
-    const row = csv.split("\r\n")[1];
+    const row = csv.split("\r\n")[1]!;
     expect(row.endsWith(",,,false")).toBe(true);
   });
 

@@ -57,7 +57,7 @@ export function AppShell({
             <Link
               key={item.to}
               to={item.to}
-              activeOptions={"exact" in item ? { exact: item.exact } : undefined}
+              activeOptions={{ exact: "exact" in item ? item.exact : false }}
               className="nav-link"
             >
               <item.icon className="size-4 opacity-70" strokeWidth={1.75} />
@@ -151,7 +151,7 @@ export function AppShell({
             <Link
               key={item.to}
               to={item.to}
-              activeOptions={"exact" in item ? { exact: item.exact } : undefined}
+              activeOptions={{ exact: "exact" in item ? item.exact : false }}
               className="nav-link whitespace-nowrap"
             >
               {item.label}
