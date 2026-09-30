@@ -95,3 +95,28 @@ They read the bundled project file directly, so real-data tests never skip.
 - Browser state is per browser and per device; nothing is synced.
 - The bundled 6.5 MB file is downloaded on each visit that has no saved import. There is no service-worker cache.
 - The file hash differs from the one in the request (see above).
+
+---
+
+## Phase: corpussite integration (2026-09-30)
+
+Source: https://github.com/fshahersw/corpussite at commit `9385b59e0e0fa05573df7ec2d9eafa8df30bebcf`.
+The repository holds code only (645 files, about 9 MB). The about 130 GB corpus lives outside git, so only these real files were brought in (hashes in `public/data/corpus/PROVENANCE.json`):
+- `us-counties-albers-10m.json` (us-atlas 3.0.1, ISC), sha256 `a674dfa3…` matches the upstream SOURCE note.
+- `insights.json`: `insights-data.js` with the `window.CATALOG_INSIGHTS=` wrapper removed. Values are unchanged.
+- The category rule `categories.py` is ported exactly to `src/lib/corpus/taxonomy.ts`.
+
+New views: Overview, Places Map (state choropleth + county borders), state pages with county maps and county detail, Categories, Litigation Insights.
+
+Commands on final code:
+- `bunx vitest run`: 8 files, 71 tests passed. This includes `src/lib/corpus/corpus.test.ts`, which checks hashes, 51 states decoded, >3,000 counties, 2,122 case rows / 131 masters, alias resolution, taxonomy parity and the V2.2A↔state join totals.
+- `bunx tsgo --noEmit`: clean.
+- `bunx vite build`: succeeded.
+
+Browser check (fresh context): the Overview map rendered. Clicking Texas opened /places/TX with 254 county shapes. Clicking a county opened /places/TX/48471 (Walker County, Texas). "Open sources in Library" applied the Texas filter. Insights rendered with the verbatim qualification. Categories rendered. All seven original views loaded. No page errors.
+
+Limits:
+- 888 V2.2A sources name no state and are not placed on the map. States are matched by exact name only.
+- Neither dataset has county-level records, so county pages show a name and FIPS without counts.
+- Applying corpussite's category rule to V2.2A headings puts most headings in "Other / not matched by rule" (4,531 links; Regulations 96). This is shown as-is, not re-guessed.
+- Laws, judges, regulations and county registries from the full corpus are not imported. They need per-collection exports.
