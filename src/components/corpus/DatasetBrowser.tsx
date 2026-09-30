@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
@@ -11,6 +11,8 @@ import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { getRecordDetail, listDatasets, queryDataset, type DatasetInfo } from "@/lib/external/catalog.functions";
 import { fileUrl, normalizeItem, resolveLink, type NormItem } from "@/lib/external/groups";
 import { datasetDisplayName, displayValue, fieldLabel } from "@/lib/external/domainRegistry";
+
+const ENTITY_ROUTES: Record<string, "/courts/$id" | "/judges/$id" | "/matters/$id"> = { court_spine: "/courts/$id", judges: "/judges/$id", mdls: "/matters/$id" };
 
 export function useDatasets() {
   const fn = useServerFn(listDatasets);
@@ -54,7 +56,9 @@ export function DatasetBrowser({
   initialQ = "",
   initialFilters = {},
   onStateChange,
+  compact = false,
 }: {
+  compact?: boolean;
   dataset: string;
   initialQ?: string;
   initialFilters?: Record<string, string>;
@@ -67,6 +71,12 @@ export function DatasetBrowser({
   const [filters, setFilters] = useState<Record<string, string>>(initialFilters);
   const [offset, setOffset] = useState(0);
   const [open, setOpen] = useState<NormItem | null>(null);
+  const navigate = useNavigate();
+  const openRow = (i: NormItem) => {
+    const page = ENTITY_ROUTES[dataset];
+    if (page) navigate({ to: page, params: { id: i.id } });
+    else setOpen(i);
+  };
   const query = useQuery({
     queryKey: ["corpus-ds", dataset, q, filters, offset],
     queryFn: () => fn({ data: { dataset, q, filters, offset } }),
@@ -88,7 +98,7 @@ export function DatasetBrowser({
 
   return (
     <div>
-      {info?.qualification ? <p className="mb-3 max-w-4xl text-[12px] leading-relaxed text-muted-foreground">{info.qualification}</p> : null}
+      {info?.qualification && !compact ? <details className="mb-3 max-w-4xl text-[12px] text-muted-foreground"><summary className="cursor-pointer">About this data</summary><p className="mt-1 leading-relaxed">{info.qualification}</p></details> : null}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <Input aria-label={`Search ${datasetDisplayName(dataset, info?.label)}`} placeholder={`Search ${datasetDisplayName(dataset, info?.label).toLowerCase()}`} value={q} onChange={(e) => update(e.target.value, filters)} className="h-8 max-w-xs text-[13px]" />
         {info?.filters.map((f) => (
@@ -123,7 +133,7 @@ export function DatasetBrowser({
           <tbody className="divide-y divide-border">
             {query.isLoading ? <tr><td colSpan={columns.length + 2} className="px-3 py-3 text-muted-foreground">Loading…</td></tr> : null}
             {items.map((i) => (
-              <tr key={i.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setOpen(i)}>
+              <tr key={i.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openRow(i)}>
                 {hasPhoto ? <td className="px-3 py-1">{i.photo ? <Photo src={i.photo} className="size-8 rounded" /> : null}</td> : null}
                 <td className="max-w-[30rem] px-3 py-1.5">
                   <div className="truncate font-medium" title={i.title}>{i.title}</div>
@@ -168,7 +178,8 @@ export function RecordDrawer({ item, dataset, onClose, aliases }: { item: ({ id:
           {item?.badges?.length ? <div className="flex flex-wrap gap-1">{item.badges.map((b) => <Badge key={b} variant="secondary">{b}</Badge>)}</div> : null}
           {q.isLoading ? <p className="text-muted-foreground">Loading detail…</p> : null}
           {q.error ? <ExternalError error={q.error} /> : null}
-          {d?.qualification ? <p className="rounded-md border border-border bg-muted/50 p-2 text-[12px] leading-relaxed text-muted-foreground">{d.qualification}</p> : null}
+          {item && dataset ? <Link to="/records/$dataset/$id" params={{ dataset, id: item.id }} className="inline-block text-[12px] font-medium text-primary hover:underline">Open full page →</Link> : null}
+          {d?.qualification ? <details className="text-[12px] text-muted-foreground"><summary className="cursor-pointer">About this record</summary><p className="mt-1 leading-relaxed">{d.qualification}</p></details> : null}
           {(d?.facts.length ? d.facts : Object.entries(item?.cells ?? {})).length ? (
             <dl className="grid grid-cols-[minmax(8rem,auto)_1fr] gap-x-3 gap-y-1">
               {(d?.facts.length ? d.facts : Object.entries(item?.cells ?? {})).map(([k, v], i) => (
