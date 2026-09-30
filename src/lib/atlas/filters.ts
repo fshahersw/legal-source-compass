@@ -1,3 +1,4 @@
+import { valuesOf } from "./bundle";
 import type { ReviewOverlay, Source } from "./types";
 
 export type SortKey = "title" | "domain" | "jurisdiction" | "occurrences" | "source_family";
@@ -50,9 +51,10 @@ export function matchesQuery(source: Source, query: string): boolean {
   return terms.every((t) => haystack.includes(t));
 }
 
-function inList(list: string[], value: string) {
+function inList(list: string[], values: string | string[]) {
   if (list.length === 0) return true;
-  return list.includes(value === "" ? "(unspecified)" : value);
+  const arr = Array.isArray(values) ? values : [values];
+  return arr.some((value) => list.includes(value.trim() === "" ? "(unspecified)" : value.trim()));
 }
 
 export type FilterContext = {
@@ -67,9 +69,9 @@ export function filterSources(
 ): Source[] {
   return sources.filter((s) => {
     if (!matchesQuery(s, filters.query)) return false;
-    if (!inList(filters.jurisdictions, s.jurisdiction)) return false;
+    if (!inList(filters.jurisdictions, valuesOf(s, "jurisdiction"))) return false;
     if (!inList(filters.families, s.source_family)) return false;
-    if (!inList(filters.headingCategories, s.heading_category)) return false;
+    if (!inList(filters.headingCategories, valuesOf(s, "heading_category"))) return false;
     if (!inList(filters.domains, s.domain)) return false;
     if (filters.bookmarkedOnly && !ctx.bookmarks[s.id]) return false;
     if (filters.reviewState !== "any") {

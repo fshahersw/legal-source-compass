@@ -106,7 +106,12 @@ export function AtlasProvider({ children }: { children: ReactNode }) {
     setBundle(result.bundle);
     setFiltersState(defaultFilters);
     try {
-      window.localStorage.setItem(KEY_BUNDLE, JSON.stringify(result.bundle));
+      // Original file text (~1.2 MB) is kept for this session only.
+      const { original_files, ...rest } = result.bundle as Record<string, unknown>;
+      const slim = Array.isArray(original_files)
+        ? { ...rest, original_files: original_files.map(({ text: _t, ...f }: Record<string, unknown>) => f) }
+        : result.bundle;
+      window.localStorage.setItem(KEY_BUNDLE, JSON.stringify(slim));
       setStorageWarning(null);
     } catch {
       setStorageWarning(

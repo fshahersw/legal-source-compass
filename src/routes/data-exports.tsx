@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { downloadText, sourcesToCsv, sourcesToJson } from "@/lib/atlas/exports";
 import { reviewCounts } from "@/lib/atlas/review";
 import { useAtlas } from "@/lib/atlas/store";
+import { checkMetaClaims } from "@/lib/atlas/v22a";
 
 export const Route = createFileRoute("/data-exports")({
   head: () => ({
@@ -202,6 +203,55 @@ function DataExportsView() {
                   bundle.provenance?.original_files?.join(", ")
                 }
               />
+              {(() => {
+                const checks = checkMetaClaims(
+                  (bundle as Record<string, unknown>)["meta_claims"] as Record<string, unknown> | undefined,
+                  {
+                    sources: stats.distinctSources,
+                    occurrences: stats.totalOccurrences,
+                    endpoints: stats.endpointCandidates,
+                    families: stats.sourceFamilies,
+                    promotions: stats.promotionRecords,
+                  },
+                );
+                if (!checks.length) return null;
+                return (
+                  <div className="mt-3 border-t border-border pt-3">
+                    <div className="eyebrow">Bundle claims vs counted rows</div>
+                    <table className="mt-1 w-full text-[12px]">
+                      <tbody>
+                        {checks.map((c) => (
+                          <tr key={c.label}>
+                            <td className="py-0.5 text-muted-foreground">{c.label}</td>
+                            <td className="mono-cell text-right">{c.claimed ?? "—"}</td>
+                            <td className="mono-cell text-right">{c.counted}</td>
+                            <td className={`pl-2 text-right ${c.match ? "text-muted-foreground" : "text-destructive"}`}>
+                              {c.match ? "match" : "mismatch"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
+              {Array.isArray((bundle as Record<string, unknown>)["original_files"]) && (
+                <div className="mt-3 border-t border-border pt-3">
+                  <div className="eyebrow">Original files (imported checksums)</div>
+                  <ul className="mt-1 space-y-1 text-[11px]">
+                    {((bundle as Record<string, unknown>)["original_files"] as Array<Record<string, unknown>>).map((f) => (
+                      <li key={String(f['name'])}>
+                        <div className="font-medium">{String(f['name'])}</div>
+                        <div className="mono-cell break-all text-muted-foreground">
+                          {typeof f['sizeBytes'] === "number" ? `${f['sizeBytes'].toLocaleString()} bytes · ` : ""}
+                          sha256 {String(f['sha256'] ?? "—")}
+                          {typeof f['text'] === "string" ? "" : " · text not kept after reload"}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           ) : (
             <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">

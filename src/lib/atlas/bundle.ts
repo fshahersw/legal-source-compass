@@ -1,4 +1,13 @@
 import { bundleSchema, type Bundle, type Source } from "./types";
+import { adaptV22A, isV22A, v22aBundleSchema } from "./v22a";
+
+/** Values of a possibly multi-valued field (V2.2A sources carry arrays). */
+export function valuesOf(s: Source, key: keyof Source): string[] {
+  const arrKey = key === "jurisdiction" ? "jurisdiction_values" : key === "heading_category" ? "category_values" : null;
+  const arr = arrKey ? (s as Record<string, unknown>)[arrKey] : undefined;
+  if (Array.isArray(arr)) return arr.length ? arr.map(String) : [""];
+  return [String(s[key] ?? "")];
+}
 
 export type ParseResult =
   | { ok: true; bundle: Bundle; stats: BundleStats; warnings: string[] }
@@ -19,6 +28,16 @@ export type BundleStats = {
  * query strings and hash routes exactly as supplied.
  */
 export function parseBundle(raw: unknown): ParseResult {
+  if (isV22A(raw)) {
+    const v = v22aBundleSchema.safeParse(raw);
+    if (!v.success) {
+      return {
+        ok: false,
+        errors: v.error.issues.slice(0, 20).map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`),
+      };
+    }
+    raw = adaptV22A(v.data);
+  }
   const parsed = bundleSchema.safeParse(raw);
   if (!parsed.success) {
     return {
@@ -75,7 +94,7 @@ export function computeStats(bundle: Bundle): BundleStats {
       bundle.source_families.length ||
       new Set(bundle.sources.map((s) => s.source_family).filter(Boolean)).size,
     promotionRecords: bundle.promotion_records.length,
-    jurisdictions: new Set(bundle.sources.map((s) => s.jurisdiction).filter(Boolean)).size,
+    jurisdictions: new Set(bundle.sources.flatMap((s) => valuesOf(s, "jurisdiction")).filter(Boolean)).size,
     domains: new Set(bundle.sources.map((s) => s.domain).filter(Boolean)).size,
   };
 }
@@ -85,12 +104,13 @@ export type Facet = { value: string; count: number; occurrences: number };
 export function facet(sources: Source[], key: keyof Source): Facet[] {
   const map = new Map<string, Facet>();
   for (const s of sources) {
-    const value = String(s[key] ?? "").trim();
-    const label = value === "" ? "(unspecified)" : value;
-    const entry = map.get(label) ?? { value: label, count: 0, occurrences: 0 };
-    entry.count += 1;
-    entry.occurrences += s.occurrences ?? 0;
-    map.set(label, entry);
+    for (const raw of new Set(valuesOf(s, key).map((v) => v.trim()))) {
+      const label = raw === "" ? "(unspecified)" : raw;
+      const entry = map.get(label) ?? { value: label, count: 0, occurrences: 0 };
+      entry.count += 1;
+      entry.occurrences += s.occurrences ?? 0;
+      map.set(label, entry);
+    }
   }
   return [...map.values()].sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));
 }
