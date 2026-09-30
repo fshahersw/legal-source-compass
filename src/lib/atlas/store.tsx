@@ -126,21 +126,16 @@ export function AtlasProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const review = useCallback<AtlasState["review"]>((input) => {
-    let outcome: { ok: true } | { ok: false; error: string } = { ok: true };
-    setOverlays((prev) => {
-      const result = applyReview(prev, input);
-      if (!result.ok) {
-        outcome = { ok: false, error: result.error };
-        return prev;
-      }
+  const review = useCallback<AtlasState["review"]>(
+    (input) => {
+      const result = applyReview(overlays, input);
+      if (!result.ok) return { ok: false, error: result.error };
+      setOverlays(result.overlays);
       setLastReview({ sourceId: input.sourceId, previous: result.previous });
-      return result.overlays;
-    });
-    const check = applyReview(overlays, input);
-    if (!check.ok) return { ok: false, error: check.error };
-    return outcome;
-  }, [overlays]);
+      return { ok: true };
+    },
+    [overlays],
+  );
 
   const undoLastReview = useCallback(() => {
     setLastReview((last) => {
