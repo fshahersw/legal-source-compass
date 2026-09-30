@@ -39,7 +39,7 @@ export const loadCatalogJurisdiction = (j: string) => getJson<CatalogEntry[]>(`/
 let courts: Promise<StateCourts> | null = null;
 export const loadStateCourts = () => (courts ??= getJson<StateCourts>("/data/state-courts.json"));
 
-export type CatalogFilter = { q?: string; category?: string; access?: string; layer?: string };
+export type CatalogFilter = { q?: string | undefined; category?: string | undefined; access?: string | undefined; layer?: string | undefined };
 
 export function filterCatalog(rows: CatalogEntry[], f: CatalogFilter): CatalogEntry[] {
   const q = (f.q ?? "").trim().toLowerCase();

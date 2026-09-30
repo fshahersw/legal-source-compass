@@ -7,7 +7,7 @@ import { pageHead } from "@/lib/corpus/head";
 import { useAtlas } from "@/lib/atlas/store";
 import { countField, filterCatalog, loadCatalogIndex, loadCatalogJurisdiction, type CatalogEntry } from "@/lib/atlas/catalog";
 
-type Search = { j?: string };
+type Search = { j?: string | undefined };
 
 export const Route = createFileRoute("/sources/catalog")({
   validateSearch: (s: Record<string, unknown>): Search => ({ j: typeof s["j"] === "string" ? s["j"] : undefined }),
