@@ -10,16 +10,27 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as DataExportsRouteImport } from './routes/data-exports'
 import { Route as EndpointExplorerRouteImport } from './routes/endpoint-explorer'
+import { Route as InsightsRouteImport } from './routes/insights'
 import { Route as JurisdictionsRouteImport } from './routes/jurisdictions'
+import { Route as OverviewRouteImport } from './routes/overview'
 import { Route as ReviewQueueRouteImport } from './routes/review-queue'
 import { Route as SavedSourcesRouteImport } from './routes/saved-sources'
 import { Route as SourceFamiliesRouteImport } from './routes/source-families'
+import { Route as PlacesIndexRouteImport } from './routes/places.index'
+import { Route as PlacesStateRouteImport } from './routes/places.$state'
+import { Route as PlacesStateCountyRouteImport } from './routes/places.$state.$county'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CategoriesRoute = CategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DataExportsRoute = DataExportsRouteImport.update({
@@ -32,9 +43,19 @@ const EndpointExplorerRoute = EndpointExplorerRouteImport.update({
   path: '/endpoint-explorer',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InsightsRoute = InsightsRouteImport.update({
+  id: '/insights',
+  path: '/insights',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const JurisdictionsRoute = JurisdictionsRouteImport.update({
   id: '/jurisdictions',
   path: '/jurisdictions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OverviewRoute = OverviewRouteImport.update({
+  id: '/overview',
+  path: '/overview',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReviewQueueRoute = ReviewQueueRouteImport.update({
@@ -52,73 +73,129 @@ const SourceFamiliesRoute = SourceFamiliesRouteImport.update({
   path: '/source-families',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlacesIndexRoute = PlacesIndexRouteImport.update({
+  id: '/places/',
+  path: '/places/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlacesStateRoute = PlacesStateRouteImport.update({
+  id: '/places/$state',
+  path: '/places/$state',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlacesStateCountyRoute = PlacesStateCountyRouteImport.update({
+  id: '/$county',
+  path: '/$county',
+  getParentRoute: () => PlacesStateRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/categories': typeof CategoriesRoute
   '/data-exports': typeof DataExportsRoute
   '/endpoint-explorer': typeof EndpointExplorerRoute
+  '/insights': typeof InsightsRoute
   '/jurisdictions': typeof JurisdictionsRoute
+  '/overview': typeof OverviewRoute
   '/review-queue': typeof ReviewQueueRoute
   '/saved-sources': typeof SavedSourcesRoute
   '/source-families': typeof SourceFamiliesRoute
+  '/places/$state': typeof PlacesStateRouteWithChildren
+  '/places/': typeof PlacesIndexRoute
+  '/places/$state/$county': typeof PlacesStateCountyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/categories': typeof CategoriesRoute
   '/data-exports': typeof DataExportsRoute
   '/endpoint-explorer': typeof EndpointExplorerRoute
+  '/insights': typeof InsightsRoute
   '/jurisdictions': typeof JurisdictionsRoute
+  '/overview': typeof OverviewRoute
   '/review-queue': typeof ReviewQueueRoute
   '/saved-sources': typeof SavedSourcesRoute
   '/source-families': typeof SourceFamiliesRoute
+  '/places/$state': typeof PlacesStateRouteWithChildren
+  '/places': typeof PlacesIndexRoute
+  '/places/$state/$county': typeof PlacesStateCountyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/categories': typeof CategoriesRoute
   '/data-exports': typeof DataExportsRoute
   '/endpoint-explorer': typeof EndpointExplorerRoute
+  '/insights': typeof InsightsRoute
   '/jurisdictions': typeof JurisdictionsRoute
+  '/overview': typeof OverviewRoute
   '/review-queue': typeof ReviewQueueRoute
   '/saved-sources': typeof SavedSourcesRoute
   '/source-families': typeof SourceFamiliesRoute
+  '/places/$state': typeof PlacesStateRouteWithChildren
+  '/places/': typeof PlacesIndexRoute
+  '/places/$state/$county': typeof PlacesStateCountyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/categories'
     | '/data-exports'
     | '/endpoint-explorer'
+    | '/insights'
     | '/jurisdictions'
+    | '/overview'
     | '/review-queue'
     | '/saved-sources'
     | '/source-families'
+    | '/places/$state'
+    | '/places/'
+    | '/places/$state/$county'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/categories'
     | '/data-exports'
     | '/endpoint-explorer'
+    | '/insights'
     | '/jurisdictions'
+    | '/overview'
     | '/review-queue'
     | '/saved-sources'
     | '/source-families'
+    | '/places/$state'
+    | '/places'
+    | '/places/$state/$county'
   id:
     | '__root__'
     | '/'
+    | '/categories'
     | '/data-exports'
     | '/endpoint-explorer'
+    | '/insights'
     | '/jurisdictions'
+    | '/overview'
     | '/review-queue'
     | '/saved-sources'
     | '/source-families'
+    | '/places/$state'
+    | '/places/'
+    | '/places/$state/$county'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CategoriesRoute: typeof CategoriesRoute
   DataExportsRoute: typeof DataExportsRoute
   EndpointExplorerRoute: typeof EndpointExplorerRoute
+  InsightsRoute: typeof InsightsRoute
   JurisdictionsRoute: typeof JurisdictionsRoute
+  OverviewRoute: typeof OverviewRoute
   ReviewQueueRoute: typeof ReviewQueueRoute
   SavedSourcesRoute: typeof SavedSourcesRoute
   SourceFamiliesRoute: typeof SourceFamiliesRoute
+  PlacesStateRoute: typeof PlacesStateRouteWithChildren
+  PlacesIndexRoute: typeof PlacesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -128,6 +205,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/categories': {
+      id: '/categories'
+      path: '/categories'
+      fullPath: '/categories'
+      preLoaderRoute: typeof CategoriesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/data-exports': {
@@ -144,11 +228,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EndpointExplorerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/insights': {
+      id: '/insights'
+      path: '/insights'
+      fullPath: '/insights'
+      preLoaderRoute: typeof InsightsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/jurisdictions': {
       id: '/jurisdictions'
       path: '/jurisdictions'
       fullPath: '/jurisdictions'
       preLoaderRoute: typeof JurisdictionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/overview': {
+      id: '/overview'
+      path: '/overview'
+      fullPath: '/overview'
+      preLoaderRoute: typeof OverviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/review-queue': {
@@ -172,17 +270,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SourceFamiliesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/places/': {
+      id: '/places/'
+      path: '/places'
+      fullPath: '/places/'
+      preLoaderRoute: typeof PlacesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/places/$state': {
+      id: '/places/$state'
+      path: '/places/$state'
+      fullPath: '/places/$state'
+      preLoaderRoute: typeof PlacesStateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/places/$state/$county': {
+      id: '/places/$state/$county'
+      path: '/$county'
+      fullPath: '/places/$state/$county'
+      preLoaderRoute: typeof PlacesStateCountyRouteImport
+      parentRoute: typeof PlacesStateRoute
+    }
   }
 }
 
+interface PlacesStateRouteChildren {
+  PlacesStateCountyRoute: typeof PlacesStateCountyRoute
+}
+
+const PlacesStateRouteChildren: PlacesStateRouteChildren = {
+  PlacesStateCountyRoute: PlacesStateCountyRoute,
+}
+
+const PlacesStateRouteWithChildren = PlacesStateRoute._addFileChildren(
+  PlacesStateRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CategoriesRoute: CategoriesRoute,
   DataExportsRoute: DataExportsRoute,
   EndpointExplorerRoute: EndpointExplorerRoute,
+  InsightsRoute: InsightsRoute,
   JurisdictionsRoute: JurisdictionsRoute,
+  OverviewRoute: OverviewRoute,
   ReviewQueueRoute: ReviewQueueRoute,
   SavedSourcesRoute: SavedSourcesRoute,
   SourceFamiliesRoute: SourceFamiliesRoute,
+  PlacesStateRoute: PlacesStateRouteWithChildren,
+  PlacesIndexRoute: PlacesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

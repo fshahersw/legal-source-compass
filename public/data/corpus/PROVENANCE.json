@@ -1,0 +1,17 @@
+{
+  "repository": "https://github.com/fshahersw/corpussite",
+  "commit": "9385b59e0e0fa05573df7ec2d9eafa8df30bebcf",
+  "files": {
+    "us-counties-albers-10m.json": {
+      "from": "delivery/archive-directory/assets/us-counties-albers-10m.json",
+      "sha256": "a674dfa31b625e92635f32684a61ae135b05a91507f17f2d5164833237fecf46",
+      "licence": "us-atlas 3.0.1 counties-albers-10m.json (ISC licence, Mike Bostock; derived from U.S. Census Bureau cartographic boundary files, 2017 edition).\nSource: https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/counties-albers-10m.json\nsha256: a674dfa31b625e92635f32684a61ae135b05a91507f17f2d5164833237fecf46\nPre-projected with geoAlbersUsa to a 975 x 610 viewport."
+    },
+    "insights.json": {
+      "from": "delivery/archive-directory/insights-data.js",
+      "sha256": "c77635eb16be3c170d19dbd1320fa6c4484baf0556649115c3fa6ff77cea5301",
+      "source_js_sha256": "2edb6de65c0f933d6533ea2802a5ff71bfc222f5f7d20f7f76a846cace8f8c4a",
+      "conversion": "window.CATALOG_INSIGHTS= prefix and trailing semicolon removed; JSON re-serialised compactly, values unchanged"
+    }
+  }
+}

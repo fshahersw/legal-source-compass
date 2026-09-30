@@ -1,7 +1,11 @@
 import { Link } from "@tanstack/react-router";
 import {
   Bookmark,
+  BarChart3,
+  Compass,
   Database,
+  Map as MapIcon,
+  Tags,
   Landmark,
   Layers,
   Library,
@@ -15,6 +19,10 @@ import { useAtlas } from "@/lib/atlas/store";
 import { reviewCounts } from "@/lib/atlas/review";
 
 const NAV = [
+  { to: "/overview", label: "Overview", icon: Compass },
+  { to: "/places", label: "Places Map", icon: MapIcon },
+  { to: "/categories", label: "Categories", icon: Tags },
+  { to: "/insights", label: "Litigation Insights", icon: BarChart3 },
   { to: "/", label: "Library", icon: Library, exact: true },
   { to: "/jurisdictions", label: "Jurisdictions", icon: Landmark },
   { to: "/source-families", label: "Source Families", icon: Layers },
@@ -44,7 +52,7 @@ export function AppShell({
     <div className="flex min-h-screen bg-background">
       <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar px-3 py-5 lg:flex">
         <Link to="/" className="mb-6 block px-2">
-          <div className="eyebrow">V2.2A directory</div>
+          <div className="eyebrow">Corpus + V2.2A directory</div>
           <div className="mt-1 font-display text-lg leading-tight text-sidebar-primary">
             Legal Source
             <br />
