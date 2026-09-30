@@ -1,15 +1,100 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { SectionPage, dsSearch } from "@/components/corpus/SectionPage";
-import { LawOutline } from "@/components/corpus/LawOutline";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { AppShell } from "@/components/atlas/AppShell";
+import { SectionPage } from "@/components/corpus/SectionPage";
+import { FolderGrid, type FolderItem } from "@/components/corpus/FolderGrid";
+import { DatasetBrowser, useDatasets } from "@/components/corpus/DatasetBrowser";
+import { LawLevel } from "@/components/corpus/LawOutline";
+import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { pageHead } from "@/lib/corpus/head";
+import { stateByUsps } from "@/lib/corpus/geo";
+import { listLawCollections } from "@/lib/external/corpus.functions";
+import { datasetDisplayName } from "@/lib/external/domainRegistry";
+import { sectionOf } from "@/lib/external/groups";
+import { kindLabel, LAW_GROUP_LABELS, lawGroup, STATE_DATASETS, type LawGroup } from "@/lib/external/lawTree";
+
+type S = { ds?: string | undefined; view?: string | undefined; scope?: string | undefined; state?: string | undefined; kind?: string | undefined; group?: string | undefined };
+const str = (v: unknown) => (typeof v === "string" && /^[A-Za-z0-9_-]{1,80}$/.test(v) ? v : undefined);
 
 export const Route = createFileRoute("/law")({
-  validateSearch: dsSearch,
-  head: () => pageHead("Law", "State and federal statutes, regulations, Federal Register, limitation periods and citations."),
+  validateSearch: (s: Record<string, unknown>): S => ({ ds: str(s["ds"]), view: str(s["view"]), scope: str(s["scope"]), state: str(s["state"]), kind: str(s["kind"]), group: str(s["group"]) }),
+  head: () => pageHead("Law & regulation", "Browse law top-down: federal or a state, then type of law, then collection and provision."),
   component: LawPage,
 });
 
+const FED_GROUPS: LawGroup[] = ["statutes", "regulations", "register", "notices", "other"];
+const stName = (c: string) => (c === "FEDERAL" ? "Federal" : stateByUsps.get(c)?.name ?? c);
+
 function LawPage() {
-  const { ds } = Route.useSearch();
-  return <SectionPage section="law" path="/law" ds={ds} extraTabs={[{ id: "outline", label: "Law outlines", render: () => <LawOutline /> }]} />;
+  const s = Route.useSearch();
+  const collFn = useServerFn(listLawCollections);
+  const colls = useQuery({ queryKey: ["law-collections"], queryFn: () => collFn(), staleTime: Infinity });
+  const datasets = useDatasets();
+  if (s.view === "list" || s.ds === "outline") return <SectionPage section="law" path="/law" ds={s.ds === "outline" ? undefined : s.ds} />;
+
+  const lawDs = (datasets.data ?? []).filter((d) => sectionOf(d.id) === "law");
+  const coll = colls.data ?? [];
+  const dsFolder = (d: { id: string; label: string; records: number | null }, extra: Partial<S>): FolderItem => ({ key: d.id, label: datasetDisplayName(d.id, d.label), count: d.records ?? 0, link: { to: "/law", search: { ...extra, ds: d.id } } });
+
+  const crumbs: { label: string; to?: string; search?: Record<string, string> }[] = [{ label: "Atlas", to: "/" }, { label: "Law & regulation", to: "/law" }];
+  const scopeLabel = s.scope === "federal" ? "Federal" : s.scope === "states" ? "States" : s.scope === "reference" ? "Reference tools" : undefined;
+  if (scopeLabel) crumbs.push({ label: scopeLabel, to: "/law", search: { scope: s.scope! } });
+  if (s.state) crumbs.push({ label: stName(s.state), to: "/law", search: { scope: "states", state: s.state } });
+  if (s.group) crumbs.push({ label: LAW_GROUP_LABELS[s.group as LawGroup] ?? s.group, to: "/law", search: { scope: s.scope ?? "federal", group: s.group } });
+  if (s.kind) crumbs.push({ label: kindLabel(s.kind) });
+  if (s.ds) crumbs.push({ label: datasetDisplayName(s.ds, lawDs.find((d) => d.id === s.ds)?.label) });
+  const last = crumbs[crumbs.length - 1]!; if (crumbs.length > 2) { delete last.to; delete last.search; }
+
+  let body: React.ReactNode;
+  const err = colls.error ?? datasets.error;
+  if (err) body = <ExternalError error={err} />;
+  else if (colls.isLoading || datasets.isLoading) body = <p className="text-[13px] text-muted-foreground">Loading law collections…</p>;
+  else if (s.ds) body = <DatasetBrowser key={s.ds} dataset={s.ds} />;
+  else if (s.kind) {
+    const code = s.scope === "federal" ? "FEDERAL" : s.state ?? "";
+    const c = coll.find((x) => x.state === code && x.kind === s.kind);
+    body = (
+      <div className="rounded-lg border border-border bg-surface p-3 shadow-card">
+        <h2 className="eyebrow mb-2">{stName(code)} · {kindLabel(s.kind)}{c ? ` · ${c.provisions.toLocaleString()} provisions` : ""}</h2>
+        <LawLevel key={`${code}-${s.kind}`} state={code} kind={s.kind} parent={0} />
+        <p className="mt-3 text-[11px] text-muted-foreground">Outline as stored in the corpus; the database marks law outlines as not yet cleared for publication.</p>
+      </div>
+    );
+  } else if (!s.scope) {
+    const fedProv = coll.filter((c) => c.state === "FEDERAL").reduce((a, c) => a + c.provisions, 0);
+    const states = new Set(coll.filter((c) => c.state !== "FEDERAL").map((c) => c.state));
+    body = <FolderGrid title="Jurisdiction" items={[
+      { key: "federal", label: "Federal", note: "U.S. Code, regulations, Federal Register, agency notices", count: fedProv + lawDs.filter((d) => FED_GROUPS.includes(lawGroup(d.id))).reduce((a, d) => a + (d.records ?? 0), 0), link: { to: "/law", search: { scope: "federal" } } },
+      { key: "states", label: "States", note: `${states.size} jurisdictions with law outlines`, count: states.size, link: { to: "/law", search: { scope: "states" } } },
+      { key: "reference", label: "Reference tools", note: "Limitation periods and citations", count: lawDs.filter((d) => lawGroup(d.id) === "reference").reduce((a, d) => a + (d.records ?? 0), 0), link: { to: "/law", search: { scope: "reference" } } },
+      { key: "list", label: "All law datasets (list)", note: "Every law record set in one list", link: { to: "/law", search: { view: "list" } } },
+    ]} />;
+  } else if (s.scope === "federal" && s.group) {
+    body = <FolderGrid title={LAW_GROUP_LABELS[s.group as LawGroup] ?? s.group} items={lawDs.filter((d) => lawGroup(d.id) === s.group).map((d) => dsFolder(d, { scope: "federal", group: s.group }))} />;
+  } else if (s.scope === "federal") {
+    body = (
+      <div className="space-y-5">
+        <FolderGrid title="Type of law" hint="law outlines by collection" items={coll.filter((c) => c.state === "FEDERAL").sort((a, b) => b.provisions - a.provisions).map((c) => ({ key: c.kind, label: kindLabel(c.kind), count: c.provisions, link: { to: "/law", search: { scope: "federal", kind: c.kind } } }))} />
+        <FolderGrid title="Federal record sets" items={FED_GROUPS.map((g) => ({ key: g, label: LAW_GROUP_LABELS[g], count: lawDs.filter((d) => lawGroup(d.id) === g).reduce((a, d) => a + (d.records ?? 0), 0), link: { to: "/law", search: { scope: "federal", group: g } } }))} />
+      </div>
+    );
+  } else if (s.scope === "reference") {
+    body = <FolderGrid title="Reference tools" items={lawDs.filter((d) => lawGroup(d.id) === "reference").map((d) => dsFolder(d, { scope: "reference" }))} />;
+  } else if (!s.state) {
+    const codes = [...new Set(coll.filter((c) => c.state !== "FEDERAL").map((c) => c.state)), ...Object.values(STATE_DATASETS)];
+    const uniq = [...new Set(codes)].sort((a, b) => stName(a).localeCompare(stName(b)));
+    body = <FolderGrid title="Pick a state" hint="provisions in law outlines" items={uniq.map((code) => ({ key: code, label: stName(code), count: coll.filter((c) => c.state === code).reduce((a, c) => a + c.provisions, 0) + lawDs.filter((d) => STATE_DATASETS[d.id] === code).reduce((a, d) => a + (d.records ?? 0), 0), link: { to: "/law", search: { scope: "states", state: code } } }))} />;
+  } else {
+    const own = lawDs.filter((d) => STATE_DATASETS[d.id] === s.state);
+    body = (
+      <div className="space-y-5">
+        <FolderGrid title="Type of law" items={coll.filter((c) => c.state === s.state).sort((a, b) => b.provisions - a.provisions).map((c) => ({ key: c.kind, label: kindLabel(c.kind), count: c.provisions, link: { to: "/law", search: { scope: "states", state: s.state, kind: c.kind } } }))} />
+        {own.length ? <FolderGrid title="State code datasets" items={own.map((d) => dsFolder(d, { scope: "states", state: s.state }))} /> : null}
+      </div>
+    );
+  }
+
+  const title = s.kind ? kindLabel(s.kind) : s.ds ? datasetDisplayName(s.ds, lawDs.find((d) => d.id === s.ds)?.label) : s.state ? `${stName(s.state)} law` : scopeLabel ?? "Law & regulation";
+  return <AppShell breadcrumbs={crumbs} title={title} description="Open a folder to narrow down: jurisdiction, then type of law, then collection and provision.">{body}</AppShell>;
 }

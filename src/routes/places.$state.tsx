@@ -17,6 +17,10 @@ import { getStateCountyRecords } from "@/lib/external/corpus.functions";
 import { FolderGrid } from "@/components/corpus/FolderGrid";
 import { countBy as countDir } from "@/lib/external/directoryTree";
 import { useCourtDirectory } from "@/lib/external/useDirectory";
+import { listLawCollections } from "@/lib/external/corpus.functions";
+import { kindLabel } from "@/lib/external/lawTree";
+import { useServerFn as useSF } from "@tanstack/react-start";
+import { useQuery as useQ } from "@tanstack/react-query";
 import { loadRegistryJurisdiction, taskCounts, taskLabel } from "@/lib/atlas/registryV22";
 import { ExternalBadge, ExternalError } from "@/components/corpus/ExternalBadge";
 
@@ -65,6 +69,7 @@ function StatePage() {
         <Stat label="Endpoint candidates" value={endpoints.length} note="exact URL match" />
       </div>
       <StateCourts usps={usps} />
+      <StateLaws usps={usps} />
       <div className="mt-5">
         <FolderGrid
           title="Sources for this state"
@@ -136,6 +141,22 @@ function StateCourts({ usps }: { usps: string }) {
           ...countDir(rows, (r) => r.type).map((c) => ({ key: c.key, label: c.key, count: c.count, link: { to: "/courts", search: { system: rows.find((r) => r.type === c.key)!.system, state: usps, type: c.key } } })),
           ...(fed.length ? [{ key: "fed", label: "Federal courts located here", count: fed.length, link: { to: "/courts", search: { system: "Federal", state: usps, type: "*" } } }] : []),
         ]}
+      />
+    </div>
+  );
+}
+
+function StateLaws({ usps }: { usps: string }) {
+  const fn = useSF(listLawCollections);
+  const q = useQ({ queryKey: ["law-collections"], queryFn: () => fn(), staleTime: Infinity });
+  const rows = (q.data ?? []).filter((c) => c.state === usps).sort((a, b) => b.provisions - a.provisions);
+  if (q.data && !rows.length) return null;
+  return (
+    <div className="mt-5">
+      <FolderGrid
+        title="Laws for this state"
+        hint={q.data ? `${rows.reduce((a, c) => a + c.provisions, 0).toLocaleString()} provisions in law outlines` : "Loading laws…"}
+        items={[{ key: "all", label: "All law types", count: rows.reduce((a, c) => a + c.provisions, 0), link: { to: "/law", search: { scope: "states", state: usps } } }, ...rows.map((c) => ({ key: c.kind, label: kindLabel(c.kind), count: c.provisions, link: { to: "/law", search: { scope: "states", state: usps, kind: c.kind } } }))]}
       />
     </div>
   );
