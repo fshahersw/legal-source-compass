@@ -28,7 +28,7 @@ export function mdlForMatter(m: CatalogMatter, masterMap: Record<string, string>
   return m.mdl_master_docket_id == null ? null : masterMap[String(m.mdl_master_docket_id)] ?? null;
 }
 
-export type MatterFilter = { q?: string | undefined; court?: string | undefined; mdl?: string | undefined; firm?: string | undefined; judge?: string | undefined; status?: string | undefined };
+export type MatterFilter = { q?: string | undefined; court?: string | undefined; mdl?: string | undefined; firm?: string | undefined; judge?: string | undefined; status?: string | undefined; defendant?: string | undefined; role?: string | undefined; courts?: Set<string> | undefined };
 
 export function filterMatters(rows: CatalogMatter[], f: MatterFilter, masterMap: Record<string, string>): CatalogMatter[] {
   const q = (f.q ?? "").trim().toLowerCase();
@@ -38,6 +38,9 @@ export function filterMatters(rows: CatalogMatter[], f: MatterFilter, masterMap:
     if (f.firm && !(m.firms ?? []).includes(f.firm)) return false;
     if (f.judge && m.judge !== f.judge) return false;
     if (f.status && m.status !== f.status) return false;
+    if (f.defendant && m.defendant !== f.defendant) return false;
+    if (f.role && !(m.roles ?? []).includes(f.role)) return false;
+    if (f.courts && !(m.court && f.courts.has(m.court))) return false;
     if (!q) return true;
     return [m.case_name, m.defendant, m.docket_number, m.judge, ...(m.firms ?? [])].some((v) => (v ?? "").toLowerCase().includes(q));
   });
