@@ -76,7 +76,23 @@ export const listLawProvisions = createServerFn({ method: "GET" })
     return rows ?? [];
   });
 
-export type LawProvision = { id: string; dataset: string; title: string | null; state: string | null; kind: string | null; citation: string | null; status: string | null; quality: string | null; sourceUrl: string | null; text: string | null; file: { id?: string; bytes?: number; sha256?: string } | null };
+export type LawProvision = {
+  id: string; dataset: string; title: string | null; state: string | null; kind: string | null; citation: string | null; status: string | null; quality: string | null; sourceUrl: string | null; text: string | null; file: { id?: string; bytes?: number; sha256?: string } | null;
+  /** Reference frame from the publisher snapshot (eCFR detail fields); all null when the source does not state them. */
+  frame: {
+    titleName: string | null; chapter: string | null; part: string | null; partHeading: string | null; subpart: string | null; subjectGroup: string | null; section: string | null;
+  } | null;
+  dates: {
+    sourceAsOf: string | null; capturedAt: string | null; latestAmendmentDate: string | null; latestIssueDate: string | null;
+  } | null;
+  frCitations: string[] | null;
+  authorityNote: string | null;
+  sourceNote: string | null;
+};
+
+const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
+const strArr = (v: unknown): string[] | null => (Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && !!x.trim()) : null);
+
 /** One provision: stored text and the publisher's own http(s) link. Internal file paths are not exposed. */
 export const getLawProvision = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ id: z.string().min(1).max(300) }).parse(d))
@@ -89,9 +105,47 @@ export const getLawProvision = createServerFn({ method: "GET" })
     const d = row.detail ?? {};
     const md = d.metadata ?? {};
     const src = typeof row.source_url === "string" && /^https?:\/\//i.test(row.source_url) ? row.source_url : null;
+    const t = d.temporal ?? {};
+    const frame = d.part || d.title_name || d.chapter || d.subpart
+      ? {
+          titleName: str(d.title_name), chapter: str(d.chapter), part: str(d.part), partHeading: str(d.part_heading),
+          subpart: str(d.subpart), subjectGroup: str(d.subject_group), section: str(d.section),
+        }
+      : null;
+    const dates = d.temporal || d.latest_amendment_date || d.latest_issue_date
+      ? {
+          sourceAsOf: str(t.source_as_of), capturedAt: str(t.captured_at),
+          latestAmendmentDate: str(d.latest_amendment_date), latestIssueDate: str(d.latest_issue_date),
+        }
+      : null;
     return {
       id: row.id, dataset: row.dataset, title: row.title ?? d.title ?? null, state: row.state ?? d.state ?? null, kind: d.kind ?? null,
-      citation: md.citation ?? null, status: md.status ?? null, quality: d.quality ?? null, sourceUrl: src,
+      citation: md.citation ?? str(d.citation), status: md.status ?? null, quality: d.quality ?? null, sourceUrl: src,
       text: row.text && row.text.trim() ? row.text : null, file: md.file ?? null,
+      frame, dates, frCitations: strArr(d.printed_fr_citations),
+      authorityNote: str(d.authority_note_as_printed), sourceNote: str(d.source_note_as_printed),
     };
+  });
+
+export type StateRecordCount = { state: string; total: number | null };
+/** Exact corpus_records totals per state name (HEAD count=exact; null when the database times out). */
+export const getStateRecordCounts = createServerFn({ method: "GET" })
+  .inputValidator((d) => z.object({ states: z.array(z.string().min(2).max(60)).min(1).max(80) }).parse(d))
+  .handler(async ({ data }): Promise<StateRecordCount[]> => {
+    const out: StateRecordCount[] = [];
+    const CHUNK = 8;
+    for (let i = 0; i < data.states.length; i += CHUNK) {
+      const part = await Promise.all(
+        data.states.slice(i, i + CHUNK).map(async (state): Promise<StateRecordCount> => {
+          try {
+            const r = await restGet<unknown[]>(`corpus_records?select=id&state=eq.${encodeURIComponent(state)}&limit=1`, { count: true });
+            return { state, total: r.total ?? null };
+          } catch {
+            return { state, total: null };
+          }
+        }),
+      );
+      out.push(...part);
+    }
+    return out;
   });
