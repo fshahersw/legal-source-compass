@@ -17,29 +17,28 @@ import { reviewCounts } from "@/lib/atlas/review";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-type NavItem = { to: string; label: string; icon: typeof Library; paths?: string[] };
+type NavItem = { to: string; label: string; icon: typeof Library; paths: string[] };
+const EXPLORE = ["/places", "/search", "/jurisdictions", "/overview"];
+const LITIGATION = ["/courts", "/judges", "/matters", "/people", "/insights", "/mdls", "/records"];
+const LAW = ["/law", "/laws", "/safety"];
+const SOURCES = ["/", "/sources", "/categories", "/source-families", "/endpoint-explorer", "/source-datasets", "/data", "/saved-sources", "/review-queue", "/data-exports"];
 const NAV: NavItem[] = [
-  { to: "/search", label: "Search", icon: Search },
-  { to: "/places", label: "Places", icon: MapIcon, paths: ["/places", "/jurisdictions"] },
-  { to: "/courts", label: "Courts", icon: Landmark },
-  { to: "/judges", label: "Judges", icon: Gavel, paths: ["/judges", "/people"] },
-  { to: "/matters", label: "Matters", icon: Scale, paths: ["/matters", "/insights", "/mdls"] },
-  { to: "/law", label: "Law & Regulation", icon: BookOpen, paths: ["/law", "/laws"] },
-  { to: "/safety", label: "Safety", icon: ShieldAlert },
-  { to: "/", label: "Sources", icon: Library, paths: ["/", "/sources", "/categories", "/source-families", "/endpoint-explorer", "/source-datasets", "/data"] },
-  { to: "/saved-sources", label: "Saved Work", icon: Bookmark, paths: ["/saved-sources", "/review-queue", "/data-exports"] },
+  { to: "/places", label: "Explore", icon: MapIcon, paths: EXPLORE },
+  { to: "/courts", label: "Litigation", icon: Landmark, paths: LITIGATION },
+  { to: "/law", label: "Law & Safety", icon: BookOpen, paths: LAW },
+  { to: "/", label: "Sources & Work", icon: Library, paths: SOURCES },
 ];
 
 const CONTEXT_NAV = [
-  { paths: ["/places", "/jurisdictions"], items: [{ to: "/places", label: "Map & states" }, { to: "/jurisdictions", label: "Jurisdiction index" }] },
-  { paths: ["/matters", "/insights"], items: [{ to: "/matters", label: "Matter records" }, { to: "/insights", label: "Analysis" }, { to: "/people", label: "Name index A–Z" }] },
-  { paths: ["/judges", "/people"], items: [{ to: "/judges", label: "Judge directory" }, { to: "/people", label: "Name index A–Z" }] },
-  { paths: ["/", "/sources", "/categories", "/source-families", "/endpoint-explorer", "/source-datasets", "/data"], items: [
-    { to: "/", label: "Directory" }, { to: "/sources/registry", label: "Registry" }, { to: "/sources/coverage", label: "Coverage gaps" }, { to: "/categories", label: "Categories" }, { to: "/source-families", label: "Families" },
-    { to: "/endpoint-explorer", label: "Endpoints" }, { to: "/source-datasets", label: "Corpus records" }, { to: "/data", label: "Dataset inventory" },
+  { paths: EXPLORE, items: [{ to: "/places", label: "Map" }, { to: "/search", label: "Search everything" }, { to: "/jurisdictions", label: "Jurisdiction index" }] },
+  { paths: LITIGATION, items: [
+    { to: "/courts", label: "1 · Courts" }, { to: "/judges", label: "2 · Judges" }, { to: "/matters", label: "3 · Matters (MDLs)" }, { to: "/insights", label: "Case analysis" }, { to: "/people", label: "People A–Z" },
   ] },
-  { paths: ["/saved-sources", "/review-queue", "/data-exports"], items: [
-    { to: "/saved-sources", label: "Saved sources" }, { to: "/review-queue", label: "Review queue" }, { to: "/data-exports", label: "Imports & exports" },
+  { paths: LAW, items: [{ to: "/law", label: "Law & regulation" }, { to: "/safety", label: "Product safety" }] },
+  { paths: SOURCES, items: [
+    { to: "/", label: "Source library" }, { to: "/sources/registry", label: "Registry" }, { to: "/sources/coverage", label: "Coverage gaps" }, { to: "/categories", label: "Categories" }, { to: "/source-families", label: "Families" },
+    { to: "/endpoint-explorer", label: "Endpoints" }, { to: "/source-datasets", label: "Corpus records" }, { to: "/data", label: "All datasets" },
+    { to: "/saved-sources", label: "Saved" }, { to: "/review-queue", label: "Review queue" }, { to: "/data-exports", label: "Imports & exports" },
   ] },
 ];
 
@@ -86,10 +85,10 @@ export function AppShell({
 
         <nav className="flex flex-col gap-0.5 overflow-y-auto">
           {NAV.map((item) => (
-            <Link key={item.to} to={item.to} activeOptions={{ exact: item.to === "/" }} className={`nav-link ${(item.paths ?? [item.to]).some((path) => pathMatches(pathname, path)) ? "active" : ""}`}>
+            <Link key={item.to} to={item.to} activeOptions={{ exact: item.to === "/" }} className={`nav-link ${item.paths.some((path) => pathMatches(pathname, path)) ? "active" : ""}`}>
               <item.icon className="size-4 opacity-70" strokeWidth={1.75} />
               <span className="flex-1">{item.label}</span>
-              {item.label === "Saved Work" && counts.total + Object.keys(bookmarks).length > 0 ? <span className="rounded-full bg-secondary px-1.5 text-[10px] font-semibold text-secondary-foreground">{counts.total + Object.keys(bookmarks).length}</span> : null}
+              {item.label === "Sources & Work" && counts.total + Object.keys(bookmarks).length > 0 ? <span className="rounded-full bg-secondary px-1.5 text-[10px] font-semibold text-secondary-foreground">{counts.total + Object.keys(bookmarks).length}</span> : null}
             </Link>
           ))}
         </nav>
