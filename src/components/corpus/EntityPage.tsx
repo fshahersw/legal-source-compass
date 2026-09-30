@@ -7,7 +7,7 @@ import { buildEntityView, type EntitySection } from "@/lib/external/entityView";
 import { fileUrl, resolveLink } from "@/lib/external/groups";
 
 export const entityQuery = (dataset: string, id: string) =>
-  queryOptions({ queryKey: ["entity", dataset, id], queryFn: () => getEntity({ data: { dataset, id } }), staleTime: 5 * 60_000 });
+  queryOptions({ queryKey: ["entity", dataset, id], queryFn: async (): Promise<{ raw: Record<string, unknown> | null }> => { const r = await getEntity({ data: { dataset, id } }); return { raw: r.json ? (JSON.parse(r.json) as Record<string, unknown>) : null }; }, staleTime: 5 * 60_000 });
 
 export function EntityPage({ dataset, id, crumbs }: { dataset: string; id: string; crumbs: { label: string; to?: string }[] }) {
   const { data } = useSuspenseQuery(entityQuery(dataset, id));
@@ -18,7 +18,7 @@ export function EntityPage({ dataset, id, crumbs }: { dataset: string; id: strin
   const rest = v.facts.slice(8);
   const nav = v.sections.map((s) => ({ key: s.key, label: s.label }));
   return (
-    <AppShell breadcrumbs={[...crumbs, { label: v.title }]} title={v.title} description={v.subtitle ?? undefined}>
+    <AppShell breadcrumbs={[...crumbs, { label: v.title }]} title={v.title} {...(v.subtitle ? { description: v.subtitle } : {})}>
       <div className="mb-5 flex flex-col gap-4 rounded-lg border border-border bg-surface p-4 shadow-card sm:flex-row">
         {v.photo ? <Img src={v.photo} className="h-36 w-28 shrink-0 rounded-md border border-border object-cover" /> : null}
         {v.links.filter((l) => l.url.startsWith("/") && /seal|image|logo/i.test(l.label)).slice(0, 1).map((l) => <Img key={l.url} src={l.url} className="h-28 w-28 shrink-0 object-contain" />)}

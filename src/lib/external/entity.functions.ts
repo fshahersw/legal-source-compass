@@ -7,10 +7,10 @@ const ds = z.string().regex(/^[a-z0-9_]{1,80}$/);
 /** Full structured record from the corpus's own detail function, as plain JSON. */
 export const getEntity = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ dataset: ds, id: z.string().min(1).max(300) }).parse(d))
-  .handler(async ({ data }): Promise<{ raw: Record<string, unknown> | null }> => {
+  .handler(async ({ data }): Promise<{ json: string | null }> => {
     const d = await rpcPost<unknown>("corpus_detail", { p_id: data.id, p_datasets: [data.dataset], p_full: false });
-    if (!d || typeof d !== "object") return { raw: null };
-    return { raw: JSON.parse(JSON.stringify(d)) as Record<string, unknown> };
+    if (!d || typeof d !== "object") return { json: null };
+    return { json: JSON.stringify(d) };
   });
 
 export type NameRow = { id: string; title: string; state: string | null; subtitle: string | null };

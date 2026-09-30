@@ -22,7 +22,7 @@ const NAV: NavItem[] = [
   { to: "/search", label: "Search", icon: Search },
   { to: "/places", label: "Places", icon: MapIcon, paths: ["/places", "/jurisdictions"] },
   { to: "/courts", label: "Courts", icon: Landmark },
-  { to: "/judges", label: "Judges", icon: Gavel },
+  { to: "/judges", label: "Judges", icon: Gavel, paths: ["/judges", "/people"] },
   { to: "/matters", label: "Matters", icon: Scale, paths: ["/matters", "/insights", "/mdls"] },
   { to: "/law", label: "Law & Regulation", icon: BookOpen, paths: ["/law", "/laws"] },
   { to: "/safety", label: "Safety", icon: ShieldAlert },
