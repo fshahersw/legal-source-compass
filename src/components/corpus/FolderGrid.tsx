@@ -7,7 +7,7 @@ export type FolderItem = {
   label: string;
   count?: number | undefined;
   note?: string | undefined;
-  link: Pick<ComponentProps<typeof Link>, "to" | "params" | "search">;
+  link: { to: string; params?: Record<string, string> | undefined; search?: Record<string, string | undefined> | undefined };
 };
 
 /** Folder-style cards: click to open the next level. Empty folders are shown greyed out, not linked. */
@@ -32,7 +32,7 @@ export function FolderGrid({ title, items, hint }: { title?: string | undefined;
           return it.count === 0 ? (
             <div key={it.key} className={`${cls} opacity-50`} aria-disabled>{body}</div>
           ) : (
-            <Link key={it.key} {...(it.link as ComponentProps<typeof Link>)} className={`${cls} hover:bg-muted`}>{body}</Link>
+            <Link key={it.key} {...(it.link as unknown as ComponentProps<typeof Link>)} className={`${cls} hover:bg-muted`}>{body}</Link>
           );
         })}
       </div>
