@@ -9,13 +9,24 @@ export function LawOutline() {
   const collFn = useServerFn(listLawCollections);
   const colls = useQuery({ queryKey: ["law-collections"], queryFn: () => collFn() });
   const [sel, setSel] = useState<{ state: string; kind: string } | null>(null);
-  const states = useMemo(() => [...new Set((colls.data ?? []).map((c) => c.state))], [colls.data]);
+  const allStates = useMemo(() => [...new Set((colls.data ?? []).map((c) => c.state))], [colls.data]);
+  const [scope, setScope] = useState<string | null>(null);
+  const states = scope ? [scope] : [];
   return (
     <div>
       {colls.error ? <ExternalError error={colls.error} /> : null}
       {colls.isLoading ? <p className="text-[13px] text-muted-foreground">Loading…</p> : null}
       <div className="grid gap-5 lg:grid-cols-[22rem_1fr]">
         <div className="max-h-[75vh] overflow-auto rounded-lg border border-border bg-surface shadow-card">
+          <div className="border-b border-border px-3 py-2">
+            <div className="eyebrow mb-1">1 · Jurisdiction</div>
+            <div className="flex flex-wrap gap-1">
+              {allStates.map((s) => (
+                <button key={s} onClick={() => { setScope(s); setSel(null); }} className={`rounded border px-1.5 py-0.5 text-[12px] ${scope === s ? "border-primary bg-primary text-primary-foreground" : "border-border hover:bg-muted"}`}>{s === "FEDERAL" ? "Federal" : s}</button>
+              ))}
+            </div>
+          </div>
+          {scope ? <div className="eyebrow px-3 pt-2">2 · Type of law</div> : <p className="px-3 py-2 text-[12px] text-muted-foreground">Choose Federal or a state, then a type of law.</p>}
           {states.map((s) => (
             <div key={s} className="border-b border-border px-3 py-2">
               <div className="eyebrow mb-1">{s}</div>

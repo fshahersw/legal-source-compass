@@ -17,7 +17,7 @@ function CoveragePage() {
   const m = useMemo(() => coverageMatrix(reg.data?.entries ?? []), [reg.data]);
   const v22 = useMemo(() => {
     const c = new Map<string, number>();
-    for (const s of atlas.bundle?.sources ?? []) for (const j of s.jurisdictions ?? []) c.set(j, (c.get(j) ?? 0) + 1);
+    for (const s of atlas.bundle?.sources ?? []) if (s.jurisdiction) c.set(s.jurisdiction, (c.get(s.jurisdiction) ?? 0) + 1);
     return c;
   }, [atlas.bundle]);
   const unreachable = (reg.data?.entries ?? []).filter((e) => e.http_status && !isReachable(e)).length;
