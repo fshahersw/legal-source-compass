@@ -28,7 +28,7 @@ describe("case analytics (real catalog)", () => {
     expect(median([1, 3, 2])).toBe(2);
     expect(median([1, 2, 3, 4])).toBe(3);
     const n = closedWithDates(rows);
-    expect(n).toBe(1090);
+    expect(n).toBe(1089); // 1,090 have both dates; 1 closes before its filing date and is excluded
     expect(medianCloseBy(rows, () => ["all"])[0]!.n).toBe(n);
   });
   it("state rollup ignores courts without a known state", () => {
