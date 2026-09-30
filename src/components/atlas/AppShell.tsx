@@ -1,12 +1,9 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
-  Bookmark,
   Map as MapIcon,
   Landmark,
   Library,
   ShieldAlert,
-  Gavel,
-  Scale,
   BookOpen,
   Search,
 } from "lucide-react";
