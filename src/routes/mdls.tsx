@@ -14,10 +14,6 @@ export const Route = createFileRoute("/mdls")({
   component: MdlsPage,
 });
 
-function judgeName(j: unknown) {
-  return j && typeof j === "object" && "name_as_printed" in j ? String((j as { name_as_printed: unknown }).name_as_printed) : "—";
-}
-
 function MdlsPage() {
   const fn = useServerFn(listMdls);
   const [q, setQ] = useState("");
@@ -45,7 +41,7 @@ function MdlsPage() {
                 <td className="max-w-[28rem] truncate px-3 py-1.5" title={m.title}>{m.title}</td>
                 <td className="px-3 py-1.5">{m.status ?? "—"}</td>
                 <td className="px-3 py-1.5">{m.court_name ?? "—"}</td>
-                <td className="px-3 py-1.5">{judgeName(m.transferee_judge)}</td>
+                <td className="px-3 py-1.5">{m.transferee_judge ?? "—"}</td>
                 <td className="px-3 py-1.5 text-right tabular-nums">{m.total_actions?.toLocaleString() ?? "—"}</td>
                 <td className="px-3 py-1.5 text-right tabular-nums">{m.actions_pending?.toLocaleString() ?? "—"}</td>
               </tr>
