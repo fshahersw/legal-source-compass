@@ -6,12 +6,12 @@ import { useJudgeDirectory } from "@/lib/external/useDirectory";
 export const Route = createFileRoute("/judges/$id")({
   loader: ({ context, params }) => context.queryClient.ensureQueryData(entityQuery("judges", params.id)),
   head: ({ loaderData }) => {
-    const raw = loaderData?.raw as Record<string, unknown> | null | undefined;
+    const raw = (loaderData as { raw?: unknown } | undefined)?.raw as Record<string, unknown> | null | undefined;
     const name = String(raw?.["title"] ?? raw?.["name"] ?? "Judge profile");
     return pageHead(name, `Judge profile for ${name}: every linked record in the connected corpus on one page.`);
   },
   component: Page,
-  errorComponent: EntityError,
+  errorComponent: ({ error }) => <EntityError error={error} /> ,
   notFoundComponent: () => <p className="p-6 text-[13px]">Judge not found.</p>,
 });
 

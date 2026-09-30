@@ -9,12 +9,12 @@ export const Route = createFileRoute("/records/$dataset/$id")({
     return context.queryClient.ensureQueryData(entityQuery(params.dataset, params.id));
   },
   head: ({ loaderData, params }) => {
-    const raw = loaderData?.raw as Record<string, unknown> | null | undefined;
+    const raw = (loaderData as { raw?: unknown } | undefined)?.raw as Record<string, unknown> | null | undefined;
     const name = String(raw?.["title"] ?? raw?.["name"] ?? params.id);
     return pageHead(name, `${datasetDisplayName(params.dataset)} record: ${name}.`);
   },
   component: Page,
-  errorComponent: EntityError,
+  errorComponent: ({ error }) => <EntityError error={error} /> ,
   notFoundComponent: () => <p className="p-6 text-[13px]">Record not found.</p>,
 });
 
