@@ -33,7 +33,7 @@ const CONTEXT_NAV = [
   ] },
   { paths: LAW, items: [{ to: "/law", label: "Law & regulation" }, { to: "/safety", label: "Product safety" }, { to: "/agencies", label: "Agencies" }] },
   { paths: SOURCES, items: [
-    { to: "/sources/library", label: "Source library" }, { to: "/sources/registry-v22", label: "Registry V2.2" }, { to: "/sources/registry", label: "Registry v0.6" }, { to: "/sources/coverage", label: "Coverage gaps" }, { to: "/categories", label: "Categories" }, { to: "/source-families", label: "Families" },
+    { to: "/sources/library", label: "Source library" }, { to: "/sources/catalog", label: "Source catalog" }, { to: "/sources/registry-v22", label: "Registry V2.2" }, { to: "/sources/registry", label: "Registry v0.6" }, { to: "/sources/coverage", label: "Coverage gaps" }, { to: "/categories", label: "Categories" }, { to: "/source-families", label: "Families" },
     { to: "/endpoint-explorer", label: "Endpoints" }, { to: "/source-datasets", label: "Corpus records" }, { to: "/data", label: "All datasets" },
     { to: "/saved-sources", label: "Saved" }, { to: "/review-queue", label: "Review queue" }, { to: "/data-exports", label: "Imports & exports" },
   ] },
