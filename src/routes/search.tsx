@@ -55,7 +55,7 @@ function SearchPage() {
           <Button size="sm" variant="outline" disabled={d.hits.length < 50} onClick={() => setOffset(offset + 50)}>Next</Button>
         </div>
       ) : null}
-      <RecordDrawer item={open ? { id: open.id, title: open.title, sourceUrl: open.source_url ?? null } : null} dataset={open && ds.aliases[open.dataset] ? ds.aliases[open.dataset] : null} onClose={() => setOpen(null)} aliases={ds.aliases} />
+      <RecordDrawer item={open ? { id: open.id, title: open.title, sourceUrl: open.source_url ?? null } : null} dataset={open && ds.aliases[open.dataset] ? (ds.aliases[open.dataset] ?? null) : null} onClose={() => setOpen(null)} aliases={ds.aliases} />
     </AppShell>
   );
 }
