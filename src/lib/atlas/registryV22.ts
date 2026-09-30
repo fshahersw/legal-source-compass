@@ -35,7 +35,7 @@ export function codeFile(code: string): string {
   return /^[A-Z0-9-]{2,12}$/.test(code) ? code : "OTHER";
 }
 
-export function filterRegistry(rows: RegistryV22Record[], f: { q?: string; task?: string; sourceType?: string; officialOnly?: boolean }) {
+export function filterRegistry(rows: RegistryV22Record[], f: { q?: string | undefined; task?: string | undefined; sourceType?: string | undefined; officialOnly?: boolean | undefined }) {
   const q = (f.q ?? "").trim().toLowerCase();
   return rows.filter((r) => {
     if (f.task && !r.taskFamilies.includes(f.task)) return false;

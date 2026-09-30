@@ -28,7 +28,7 @@ export function mdlForMatter(m: CatalogMatter, masterMap: Record<string, string>
   return m.mdl_master_docket_id == null ? null : masterMap[String(m.mdl_master_docket_id)] ?? null;
 }
 
-export type MatterFilter = { q?: string; court?: string; mdl?: string; firm?: string; judge?: string; status?: string };
+export type MatterFilter = { q?: string | undefined; court?: string | undefined; mdl?: string | undefined; firm?: string | undefined; judge?: string | undefined; status?: string | undefined };
 
 export function filterMatters(rows: CatalogMatter[], f: MatterFilter, masterMap: Record<string, string>): CatalogMatter[] {
   const q = (f.q ?? "").trim().toLowerCase();
