@@ -15,7 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { facet } from "@/lib/atlas/bundle";
+import { facet, valuesOf } from "@/lib/atlas/bundle";
+import { CATEGORY_LABELS, classifySource, type CategoryId } from "@/lib/corpus/taxonomy";
 import { downloadText, sourcesToCsv, sourcesToJson } from "@/lib/atlas/exports";
 import { filterSources, queryAndPaginate, sortSources, type SortKey } from "@/lib/atlas/filters";
 import { useAtlas } from "@/lib/atlas/store";
@@ -50,6 +51,13 @@ export function LibraryBrowser({
       families: facet(sources, "source_family"),
       headings: facet(sources, "heading_category"),
       domains: facet(sources, "domain"),
+      categories: (() => {
+        const m = new Map<CategoryId, number>();
+        for (const s of sources) for (const c of classifySource(valuesOf(s, "heading_category"))) m.set(c, (m.get(c) ?? 0) + 1);
+        return [...m.entries()]
+          .map(([id, count]) => ({ value: id, label: CATEGORY_LABELS[id], count, occurrences: count }))
+          .sort((a, b) => b.count - a.count);
+      })(),
     }),
     [sources],
   );
@@ -122,6 +130,16 @@ export function LibraryBrowser({
                 facets={facets.headings}
                 selected={filters.headingCategories}
                 onChange={(v) => setFilters({ headingCategories: v })}
+              />
+              <FacetFilter
+                label="Category"
+                facets={facets.categories.map((c) => ({ ...c, value: `${c.label}` }))}
+                selected={filters.categories.map((id) => CATEGORY_LABELS[id as CategoryId] ?? id)}
+                onChange={(v) =>
+                  setFilters({
+                    categories: v.map((label) => (Object.entries(CATEGORY_LABELS).find(([, l]) => l === label)?.[0] ?? label)),
+                  })
+                }
               />
               <FacetFilter
                 label="Domain"
