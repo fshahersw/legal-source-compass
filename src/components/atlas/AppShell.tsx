@@ -50,7 +50,7 @@ export function AppShell({
   actions,
   children,
 }: {
-  breadcrumbs: { label: string; to?: string }[];
+  breadcrumbs: { label: string; to?: string; search?: Record<string, string> | undefined }[];
   title: string;
   description?: string;
   actions?: ReactNode;
@@ -110,7 +110,7 @@ export function AppShell({
                 <li key={`${crumb.label}-${i}`} className="flex items-center gap-1.5">
                   {i > 0 ? <span aria-hidden className="opacity-50">/</span> : null}
                   {crumb.to ? (
-                    <Link to={crumb.to} className="hover:text-foreground hover:underline">
+                    <Link to={crumb.to} {...(crumb.search ? { search: crumb.search as never } : {})} className="hover:text-foreground hover:underline">
                       {crumb.label}
                     </Link>
                   ) : (

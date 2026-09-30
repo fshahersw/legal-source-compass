@@ -11,7 +11,7 @@ import { fileUrl, resolveLink } from "@/lib/external/groups";
 export const entityQuery = (dataset: string, id: string) =>
   queryOptions({ queryKey: ["entity", dataset, id], queryFn: async (): Promise<{ raw: Record<string, unknown> | null }> => { const r = await getEntity({ data: { dataset, id } }); return { raw: r.json ? (JSON.parse(r.json) as Record<string, unknown>) : null }; }, staleTime: 5 * 60_000 });
 
-export function EntityPage({ dataset, id, crumbs, docket }: { dataset: string; id: string; crumbs: { label: string; to?: string }[]; docket?: { kind: "mdl" | "court"; id: string } | undefined }) {
+export function EntityPage({ dataset, id, crumbs, docket }: { dataset: string; id: string; crumbs: { label: string; to?: string; search?: Record<string, string> | undefined }[]; docket?: { kind: "mdl" | "court"; id: string } | undefined }) {
   const { data } = useSuspenseQuery(entityQuery(dataset, id));
   const { aliases } = useDatasets();
   if (!data.raw) return <AppShell breadcrumbs={crumbs} title="Record not found"><p className="text-[13px] text-muted-foreground">The corpus has no record “{id}”.</p></AppShell>;
