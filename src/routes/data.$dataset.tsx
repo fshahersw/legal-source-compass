@@ -5,7 +5,7 @@ import { DatasetBrowser, useDatasets } from "@/components/corpus/DatasetBrowser"
 import { SECTIONS, datasetLabel, sectionOf } from "@/lib/external/groups";
 import { pageHead } from "@/lib/corpus/head";
 
-type S = { q?: string; f?: Record<string, string> };
+type S = { q?: string | undefined; f?: Record<string, string> | undefined };
 
 export const Route = createFileRoute("/data/$dataset")({
   validateSearch: (s: Record<string, unknown>): S => ({

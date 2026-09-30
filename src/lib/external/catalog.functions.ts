@@ -42,14 +42,14 @@ const queryInput = z.object({
   offset: z.number().int().min(0).max(1_000_000).default(0),
 });
 
-export type QueryResult = { items: Record<string, unknown>[]; total: number | null; capped: boolean; pageSize: number; mode: "listing" | "raw" };
+export type QueryResult = { items: Record<string, any>[]; total: number | null; capped: boolean; pageSize: number; mode: "listing" | "raw" };
 
 /** One page of a dataset: the corpus's own bounded listing, falling back to raw records for unlisted datasets. */
 export const queryDataset = createServerFn({ method: "GET" })
   .inputValidator((d) => queryInput.parse(d))
   .handler(async ({ data }): Promise<QueryResult> => {
     const q = data.q.trim();
-    const res = await rpcPost<{ items: Record<string, unknown>[]; total: number | null; total_capped: boolean }>("corpus_query_bounded", {
+    const res = await rpcPost<{ items: Record<string, any>[]; total: number | null; total_capped: boolean }>("corpus_query_bounded", {
       p_q: q || null,
       p_dataset: data.dataset,
       p_filters: data.filters,
@@ -76,7 +76,7 @@ export type RecordDetail = {
   qualification: string | null;
   facts: [string, string][];
   links: { url: string; label: string }[];
-  sections: { title: string | null; items: Record<string, unknown>[] }[];
+  sections: { title: string | null; items: Record<string, any>[] }[];
   text: string | null;
   textTruncated: boolean;
   photo: string | null;
