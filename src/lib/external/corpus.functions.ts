@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { ilikeTerm, restGet } from "./rest.server";
+import { ilikeTerm, restGet, rpcPost } from "./rest.server";
 
 const DIRECTORY_DATASET = "counties";
 const ROW_CAP = 5000;
@@ -65,4 +65,33 @@ export const listLawNodes = createServerFn({ method: "GET" })
       `corpus_law_nodes?select=id,label,total,has_children&state=eq.${encodeURIComponent(data.state)}&kind=eq.${encodeURIComponent(data.kind)}&parent=eq.${data.parent}&order=position.asc&limit=500`,
     );
     return r.rows;
+  });
+
+export type LawProvisionRow = { id: string; title: string | null; citation: string | null; status: string | null };
+/** Provisions under one lowest-level outline heading, 50 per page, from the corpus's own ordered list. */
+export const listLawProvisions = createServerFn({ method: "GET" })
+  .inputValidator((d) => z.object({ node: z.number().int().min(1), offset: z.number().int().min(0).max(1_000_000).default(0), limit: z.number().int().min(1).max(50).default(50) }).parse(d))
+  .handler(async ({ data }) => {
+    const rows = await rpcPost<LawProvisionRow[]>("corpus_law_provision_rows", { p_node: data.node, p_offset: data.offset, p_limit: data.limit });
+    return rows ?? [];
+  });
+
+export type LawProvision = { id: string; dataset: string; title: string | null; state: string | null; kind: string | null; citation: string | null; status: string | null; quality: string | null; sourceUrl: string | null; text: string | null; file: { id?: string; bytes?: number; sha256?: string } | null };
+/** One provision: stored text and the publisher's own http(s) link. Internal file paths are not exposed. */
+export const getLawProvision = createServerFn({ method: "GET" })
+  .inputValidator((d) => z.object({ id: z.string().min(1).max(300) }).parse(d))
+  .handler(async ({ data }): Promise<LawProvision | null> => {
+    const r = await restGet<{ id: string; dataset: string; title: string | null; state: string | null; source_url: string | null; text: string | null; detail: any }[]>(
+      `corpus_records?select=id,dataset,title,state,source_url,text,detail&id=eq.${encodeURIComponent(data.id)}&limit=1`,
+    );
+    const row = r.rows[0];
+    if (!row) return null;
+    const d = row.detail ?? {};
+    const md = d.metadata ?? {};
+    const src = typeof row.source_url === "string" && /^https?:\/\//i.test(row.source_url) ? row.source_url : null;
+    return {
+      id: row.id, dataset: row.dataset, title: row.title ?? d.title ?? null, state: row.state ?? d.state ?? null, kind: d.kind ?? null,
+      citation: md.citation ?? null, status: md.status ?? null, quality: d.quality ?? null, sourceUrl: src,
+      text: row.text && row.text.trim() ? row.text : null, file: md.file ?? null,
+    };
   });

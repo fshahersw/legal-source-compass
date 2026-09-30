@@ -1,3 +1,4 @@
+import { sectionOf } from "@/lib/external/groups";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -75,6 +76,7 @@ export function DatasetBrowser({
   const openRow = (i: NormItem) => {
     const page = ENTITY_ROUTES[dataset];
     if (page) navigate({ to: page, params: { id: i.id.replace(/^mdl:/, "") } });
+    else if (sectionOf(dataset) === "law") navigate({ to: "/law/provision/$id", params: { id: i.id } });
     else setOpen(i);
   };
   const query = useQuery({
