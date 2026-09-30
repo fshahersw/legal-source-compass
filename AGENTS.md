@@ -25,5 +25,6 @@
 - Imported bundle fields are immutable (raw object deep-frozen, each source keeps
   `imported_raw_record`); review decisions and bookmarks are a separate localStorage overlay
   (`localState.ts`) written only by user actions, so startup can never overwrite them.
-- No backend, database, API key or external network call is used; the only fetch is the
+- External corpus data (user-requested) is read-only via PostgREST in `src/lib/external/*` server functions using EXTERNAL_SUPABASE_URL/KEY secrets; secrets never reach the client and nothing is written.
+- Apart from that connection, no other backend or external call is used; the only browser fetch is the
   app's own bundled data file.

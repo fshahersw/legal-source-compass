@@ -11,6 +11,15 @@ import { sourcesForState } from "@/lib/corpus/join";
 import { stateByUsps } from "@/lib/corpus/geo";
 import { countBy, mattersForState } from "@/lib/corpus/insights";
 import { pageHead } from "@/lib/corpus/head";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { getStateCountyRecords } from "@/lib/external/corpus.functions";
+import { ExternalBadge, ExternalError } from "@/components/corpus/ExternalBadge";
+
+export function useStateCounty(stateName: string | undefined) {
+  const fn = useServerFn(getStateCountyRecords);
+  return useQuery({ queryKey: ["state-county", stateName], enabled: !!stateName, staleTime: 5 * 60_000, queryFn: () => fn({ data: { stateName: stateName! } }) });
+}
 
 export const Route = createFileRoute("/places/$state")({
   head: ({ params }) => {
@@ -28,6 +37,8 @@ function StatePage() {
   const { bundle, setFilters } = useAtlas();
   const corpus = useCorpus();
   const navigate = useNavigate();
+  const county = useStateCounty(st?.name);
+  const countyValues = useMemo(() => new Map(Object.entries(county.data?.counts ?? {})), [county.data]);
   const sources = useMemo(() => (st ? sourcesForState(bundle?.sources ?? [], usps) : []), [bundle, usps, st]);
   const matters = useMemo(() => (corpus.insights ? mattersForState(corpus.insights, usps) : []), [corpus.insights, usps]);
 
@@ -50,9 +61,16 @@ function StatePage() {
       </div>
       <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_22rem]">
         <section className="rounded-lg border border-border bg-surface p-3 shadow-card">
-          <h2 className="eyebrow mb-2">Counties</h2>
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <h2 className="eyebrow">Counties</h2>
+            <ExternalBadge />
+            <span className="text-[12px] text-muted-foreground">
+              {county.isLoading ? "Loading county records…" : county.data ? `${county.data.records.length.toLocaleString()} county-tagged records across ${Object.keys(county.data.counts).length} of ${county.data.directoryCounties} counties${county.data.truncated ? " (first 5,000 only)" : ""}` : ""}
+            </span>
+          </div>
+          {county.error ? <ExternalError error={county.error} /> : null}
           {corpus.geo ? (
-            <UsMap geo={corpus.geo} values={new Map()} valueLabel="county-level records" stateFips={st.fips} selectedCounty={countyMatch?.params.county} onCounty={(c) => navigate({ to: "/places/$state/$county", params: { state: usps, county: c } })} />
+            <UsMap geo={corpus.geo} values={countyValues} valueLabel="county-tagged records" stateFips={st.fips} selectedCounty={countyMatch?.params.county} onCounty={(c) => navigate({ to: "/places/$state/$county", params: { state: usps, county: c } })} />
           ) : (
             <CorpusStatus {...corpus} />
           )}

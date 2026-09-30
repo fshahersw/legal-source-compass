@@ -12,6 +12,9 @@ import {
   ListChecks,
   Plug,
   ShieldAlert,
+  Gavel,
+  Scale,
+  BookOpen,
 } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -23,6 +26,9 @@ const NAV = [
   { to: "/places", label: "Places Map", icon: MapIcon },
   { to: "/categories", label: "Categories", icon: Tags },
   { to: "/insights", label: "Litigation Insights", icon: BarChart3 },
+  { to: "/judges", label: "Judges", icon: Gavel },
+  { to: "/mdls", label: "MDLs", icon: Scale },
+  { to: "/laws", label: "State Laws", icon: BookOpen },
   { to: "/", label: "Library", icon: Library, exact: true },
   { to: "/jurisdictions", label: "Jurisdictions", icon: Landmark },
   { to: "/source-families", label: "Source Families", icon: Layers },
