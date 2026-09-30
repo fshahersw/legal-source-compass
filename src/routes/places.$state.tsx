@@ -26,6 +26,7 @@ import { SourceDrawer } from "@/components/atlas/SourceDrawer";
 import { ExternalLink } from "lucide-react";
 import type { Source } from "@/lib/atlas/types";
 import { useState } from "react";
+import { StateCourtLinks } from "@/components/corpus/StateCourtLinks";
 import { ExternalBadge, ExternalError } from "@/components/corpus/ExternalBadge";
 
 export function useStateCounty(stateName: string | undefined) {
@@ -73,6 +74,7 @@ function StatePage() {
         <Stat label="Endpoint candidates" value={endpoints.length} note="exact URL match" />
       </div>
       <StateCourts usps={usps} />
+      <StateCourtLinks stateName={st.name} usps={usps} />
       <StateLaws usps={usps} />
       <div className="mt-5">
         <FolderGrid
