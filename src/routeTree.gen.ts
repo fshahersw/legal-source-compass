@@ -14,11 +14,7 @@ import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as DataExportsRouteImport } from './routes/data-exports'
 import { Route as EndpointExplorerRouteImport } from './routes/endpoint-explorer'
 import { Route as InsightsRouteImport } from './routes/insights'
-import { Route as JudgesRouteImport } from './routes/judges'
 import { Route as JurisdictionsRouteImport } from './routes/jurisdictions'
-import { Route as LawsRouteImport } from './routes/laws'
-import { Route as MdlsRouteImport } from './routes/mdls'
-import { Route as OverviewRouteImport } from './routes/overview'
 import { Route as ReviewQueueRouteImport } from './routes/review-queue'
 import { Route as SavedSourcesRouteImport } from './routes/saved-sources'
 import { Route as SourceFamiliesRouteImport } from './routes/source-families'
@@ -52,29 +48,9 @@ const InsightsRoute = InsightsRouteImport.update({
   path: '/insights',
   getParentRoute: () => rootRouteImport,
 } as any)
-const JudgesRoute = JudgesRouteImport.update({
-  id: '/judges',
-  path: '/judges',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const JurisdictionsRoute = JurisdictionsRouteImport.update({
   id: '/jurisdictions',
   path: '/jurisdictions',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LawsRoute = LawsRouteImport.update({
-  id: '/laws',
-  path: '/laws',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MdlsRoute = MdlsRouteImport.update({
-  id: '/mdls',
-  path: '/mdls',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OverviewRoute = OverviewRouteImport.update({
-  id: '/overview',
-  path: '/overview',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReviewQueueRoute = ReviewQueueRouteImport.update({
@@ -119,11 +95,7 @@ export interface FileRoutesByFullPath {
   '/data-exports': typeof DataExportsRoute
   '/endpoint-explorer': typeof EndpointExplorerRoute
   '/insights': typeof InsightsRoute
-  '/judges': typeof JudgesRoute
   '/jurisdictions': typeof JurisdictionsRoute
-  '/laws': typeof LawsRoute
-  '/mdls': typeof MdlsRoute
-  '/overview': typeof OverviewRoute
   '/review-queue': typeof ReviewQueueRoute
   '/saved-sources': typeof SavedSourcesRoute
   '/source-families': typeof SourceFamiliesRoute
@@ -138,11 +110,7 @@ export interface FileRoutesByTo {
   '/data-exports': typeof DataExportsRoute
   '/endpoint-explorer': typeof EndpointExplorerRoute
   '/insights': typeof InsightsRoute
-  '/judges': typeof JudgesRoute
   '/jurisdictions': typeof JurisdictionsRoute
-  '/laws': typeof LawsRoute
-  '/mdls': typeof MdlsRoute
-  '/overview': typeof OverviewRoute
   '/review-queue': typeof ReviewQueueRoute
   '/saved-sources': typeof SavedSourcesRoute
   '/source-families': typeof SourceFamiliesRoute
@@ -158,11 +126,7 @@ export interface FileRoutesById {
   '/data-exports': typeof DataExportsRoute
   '/endpoint-explorer': typeof EndpointExplorerRoute
   '/insights': typeof InsightsRoute
-  '/judges': typeof JudgesRoute
   '/jurisdictions': typeof JurisdictionsRoute
-  '/laws': typeof LawsRoute
-  '/mdls': typeof MdlsRoute
-  '/overview': typeof OverviewRoute
   '/review-queue': typeof ReviewQueueRoute
   '/saved-sources': typeof SavedSourcesRoute
   '/source-families': typeof SourceFamiliesRoute
@@ -179,11 +143,7 @@ export interface FileRouteTypes {
     | '/data-exports'
     | '/endpoint-explorer'
     | '/insights'
-    | '/judges'
     | '/jurisdictions'
-    | '/laws'
-    | '/mdls'
-    | '/overview'
     | '/review-queue'
     | '/saved-sources'
     | '/source-families'
@@ -198,11 +158,7 @@ export interface FileRouteTypes {
     | '/data-exports'
     | '/endpoint-explorer'
     | '/insights'
-    | '/judges'
     | '/jurisdictions'
-    | '/laws'
-    | '/mdls'
-    | '/overview'
     | '/review-queue'
     | '/saved-sources'
     | '/source-families'
@@ -217,11 +173,7 @@ export interface FileRouteTypes {
     | '/data-exports'
     | '/endpoint-explorer'
     | '/insights'
-    | '/judges'
     | '/jurisdictions'
-    | '/laws'
-    | '/mdls'
-    | '/overview'
     | '/review-queue'
     | '/saved-sources'
     | '/source-families'
@@ -237,11 +189,7 @@ export interface RootRouteChildren {
   DataExportsRoute: typeof DataExportsRoute
   EndpointExplorerRoute: typeof EndpointExplorerRoute
   InsightsRoute: typeof InsightsRoute
-  JudgesRoute: typeof JudgesRoute
   JurisdictionsRoute: typeof JurisdictionsRoute
-  LawsRoute: typeof LawsRoute
-  MdlsRoute: typeof MdlsRoute
-  OverviewRoute: typeof OverviewRoute
   ReviewQueueRoute: typeof ReviewQueueRoute
   SavedSourcesRoute: typeof SavedSourcesRoute
   SourceFamiliesRoute: typeof SourceFamiliesRoute
@@ -287,39 +235,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InsightsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/judges': {
-      id: '/judges'
-      path: '/judges'
-      fullPath: '/judges'
-      preLoaderRoute: typeof JudgesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/jurisdictions': {
       id: '/jurisdictions'
       path: '/jurisdictions'
       fullPath: '/jurisdictions'
       preLoaderRoute: typeof JurisdictionsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/laws': {
-      id: '/laws'
-      path: '/laws'
-      fullPath: '/laws'
-      preLoaderRoute: typeof LawsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mdls': {
-      id: '/mdls'
-      path: '/mdls'
-      fullPath: '/mdls'
-      preLoaderRoute: typeof MdlsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/overview': {
-      id: '/overview'
-      path: '/overview'
-      fullPath: '/overview'
-      preLoaderRoute: typeof OverviewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/review-queue': {
@@ -392,11 +312,7 @@ const rootRouteChildren: RootRouteChildren = {
   DataExportsRoute: DataExportsRoute,
   EndpointExplorerRoute: EndpointExplorerRoute,
   InsightsRoute: InsightsRoute,
-  JudgesRoute: JudgesRoute,
   JurisdictionsRoute: JurisdictionsRoute,
-  LawsRoute: LawsRoute,
-  MdlsRoute: MdlsRoute,
-  OverviewRoute: OverviewRoute,
   ReviewQueueRoute: ReviewQueueRoute,
   SavedSourcesRoute: SavedSourcesRoute,
   SourceFamiliesRoute: SourceFamiliesRoute,
