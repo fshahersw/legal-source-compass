@@ -22,6 +22,10 @@ import { kindLabel } from "@/lib/external/lawTree";
 import { useServerFn as useSF } from "@tanstack/react-start";
 import { useQuery as useQ } from "@tanstack/react-query";
 import { loadRegistryJurisdiction, taskCounts, taskLabel } from "@/lib/atlas/registryV22";
+import { SourceDrawer } from "@/components/atlas/SourceDrawer";
+import { ExternalLink } from "lucide-react";
+import type { Source } from "@/lib/atlas/types";
+import { useState } from "react";
 import { ExternalBadge, ExternalError } from "@/components/corpus/ExternalBadge";
 
 export function useStateCounty(stateName: string | undefined) {
@@ -112,18 +116,7 @@ function StatePage() {
           <BarList title="Case rows by status" rows={countBy(matters, (m) => m.status)} unit="saved case rows" />
         </div>
       </div>
-      <section className="mt-5 overflow-hidden rounded-lg border border-border bg-surface shadow-card">
-        <h2 className="eyebrow border-b border-border px-3 py-2">Sources (first 50 by title)</h2>
-        <ul className="divide-y divide-border text-[13px]">
-          {[...sources].sort((a, b) => a.title.localeCompare(b.title)).slice(0, 50).map((s) => (
-            <li key={s.id} className="flex items-baseline gap-3 px-3 py-1.5">
-              <span className="min-w-0 flex-1 truncate">{s.title || s.url}</span>
-              <a href={s.url} target="_blank" rel="noreferrer" className="max-w-[45%] truncate font-mono text-[11px] text-muted-foreground underline">{s.url}</a>
-            </li>
-          ))}
-          {sources.length === 0 ? <li className="px-3 py-2 text-muted-foreground">No sources name this state.</li> : null}
-        </ul>
-      </section>
+      <StateSourceTable sources={sources} onAll={() => { setFilters({ ...defaultFilters, jurisdictions: [st.name] }); navigate({ to: "/" }); }} />
     </AppShell>
   );
 }
@@ -159,5 +152,34 @@ function StateLaws({ usps }: { usps: string }) {
         items={[{ key: "all", label: "All law types", count: rows.reduce((a, c) => a + c.provisions, 0), link: { to: "/law", search: { scope: "states", state: usps } } }, ...rows.map((c) => ({ key: c.kind, label: kindLabel(c.kind), count: c.provisions, link: { to: "/law", search: { scope: "states", state: usps, kind: c.kind } } }))]}
       />
     </div>
+  );
+}
+
+function StateSourceTable({ sources, onAll }: { sources: Source[]; onAll: () => void }) {
+  const [open, setOpen] = useState<Source | null>(null);
+  const shown = [...sources].sort((a, b) => a.title.localeCompare(b.title)).slice(0, 50);
+  return (
+    <section className="mt-5 overflow-hidden rounded-lg border border-border bg-surface shadow-card">
+      <div className="flex items-center justify-between border-b border-border px-3 py-2">
+        <h2 className="eyebrow">Sources for this state (first 50 by title)</h2>
+        {sources.length > 50 ? <button type="button" onClick={onAll} className="text-[12px] underline">Show all {sources.length.toLocaleString()}</button> : null}
+      </div>
+      {sources.length === 0 ? <p className="px-3 py-2 text-[13px] text-muted-foreground">No sources name this state.</p> : (
+        <table className="w-full table-fixed text-[13px]">
+          <thead className="bg-muted/50 text-left text-[11px] text-muted-foreground"><tr><th className="w-1/2 px-3 py-1.5">Title</th><th className="px-3 py-1.5">Domain</th><th className="px-3 py-1.5">Category</th><th className="w-10" /></tr></thead>
+          <tbody>
+            {shown.map((s) => (
+              <tr key={s.id} role="button" tabIndex={0} onClick={() => setOpen(s)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(s); } }} className="cursor-pointer border-t border-border hover:bg-muted/50 focus:bg-muted/50 focus:outline-none">
+                <td className="truncate px-3 py-1.5">{s.title || s.url}</td>
+                <td className="truncate px-3 py-1.5 font-mono text-[11px] text-muted-foreground">{s.domain}</td>
+                <td className="truncate px-3 py-1.5 text-[12px] text-muted-foreground">{(s as unknown as Record<string, unknown>)["heading_category"] as string || "—"}</td>
+                <td className="px-2 py-1.5"><a href={s.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} aria-label={`Open ${s.title || s.url} in a new tab`} className="text-muted-foreground hover:text-foreground"><ExternalLink className="size-3.5" /></a></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      <SourceDrawer source={open} onClose={() => setOpen(null)} />
+    </section>
   );
 }
