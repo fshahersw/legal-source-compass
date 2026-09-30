@@ -51,6 +51,10 @@ import { Route as DataTablesTableRouteImport } from './routes/data.tables.$table
 import { Route as LawProvisionIdRouteImport } from './routes/law_.provision.$id'
 import { Route as PlacesStateCountyRouteImport } from './routes/places.$state.$county'
 import { Route as RecordsDatasetIdRouteImport } from './routes/records.$dataset.$id'
+import { Route as ApiPublicCorpusCapabilitiesRouteImport } from './routes/api/public/corpus/capabilities'
+import { Route as ApiPublicCorpusDatasetsRouteImport } from './routes/api/public/corpus/datasets'
+import { Route as ApiPublicCorpusSearchRouteImport } from './routes/api/public/corpus/search'
+import { Route as ApiPublicCorpusRecordIdRouteImport } from './routes/api/public/corpus/record.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -262,6 +266,27 @@ const RecordsDatasetIdRoute = RecordsDatasetIdRouteImport.update({
   path: '/records/$dataset/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCorpusCapabilitiesRoute =
+  ApiPublicCorpusCapabilitiesRouteImport.update({
+    id: '/api/public/corpus/capabilities',
+    path: '/api/public/corpus/capabilities',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicCorpusDatasetsRoute = ApiPublicCorpusDatasetsRouteImport.update({
+  id: '/api/public/corpus/datasets',
+  path: '/api/public/corpus/datasets',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicCorpusSearchRoute = ApiPublicCorpusSearchRouteImport.update({
+  id: '/api/public/corpus/search',
+  path: '/api/public/corpus/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicCorpusRecordIdRoute = ApiPublicCorpusRecordIdRouteImport.update({
+  id: '/api/public/corpus/record/$id',
+  path: '/api/public/corpus/record/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -306,6 +331,10 @@ export interface FileRoutesByFullPath {
   '/law/provision/$id': typeof LawProvisionIdRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
   '/records/$dataset/$id': typeof RecordsDatasetIdRoute
+  '/api/public/corpus/capabilities': typeof ApiPublicCorpusCapabilitiesRoute
+  '/api/public/corpus/datasets': typeof ApiPublicCorpusDatasetsRoute
+  '/api/public/corpus/search': typeof ApiPublicCorpusSearchRoute
+  '/api/public/corpus/record/$id': typeof ApiPublicCorpusRecordIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -350,6 +379,10 @@ export interface FileRoutesByTo {
   '/law/provision/$id': typeof LawProvisionIdRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
   '/records/$dataset/$id': typeof RecordsDatasetIdRoute
+  '/api/public/corpus/capabilities': typeof ApiPublicCorpusCapabilitiesRoute
+  '/api/public/corpus/datasets': typeof ApiPublicCorpusDatasetsRoute
+  '/api/public/corpus/search': typeof ApiPublicCorpusSearchRoute
+  '/api/public/corpus/record/$id': typeof ApiPublicCorpusRecordIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -395,6 +428,10 @@ export interface FileRoutesById {
   '/law_/provision/$id': typeof LawProvisionIdRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
   '/records/$dataset/$id': typeof RecordsDatasetIdRoute
+  '/api/public/corpus/capabilities': typeof ApiPublicCorpusCapabilitiesRoute
+  '/api/public/corpus/datasets': typeof ApiPublicCorpusDatasetsRoute
+  '/api/public/corpus/search': typeof ApiPublicCorpusSearchRoute
+  '/api/public/corpus/record/$id': typeof ApiPublicCorpusRecordIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -441,6 +478,10 @@ export interface FileRouteTypes {
     | '/law/provision/$id'
     | '/places/$state/$county'
     | '/records/$dataset/$id'
+    | '/api/public/corpus/capabilities'
+    | '/api/public/corpus/datasets'
+    | '/api/public/corpus/search'
+    | '/api/public/corpus/record/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -485,6 +526,10 @@ export interface FileRouteTypes {
     | '/law/provision/$id'
     | '/places/$state/$county'
     | '/records/$dataset/$id'
+    | '/api/public/corpus/capabilities'
+    | '/api/public/corpus/datasets'
+    | '/api/public/corpus/search'
+    | '/api/public/corpus/record/$id'
   id:
     | '__root__'
     | '/'
@@ -529,6 +574,10 @@ export interface FileRouteTypes {
     | '/law_/provision/$id'
     | '/places/$state/$county'
     | '/records/$dataset/$id'
+    | '/api/public/corpus/capabilities'
+    | '/api/public/corpus/datasets'
+    | '/api/public/corpus/search'
+    | '/api/public/corpus/record/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -573,6 +622,10 @@ export interface RootRouteChildren {
   DataTablesTableRoute: typeof DataTablesTableRoute
   LawProvisionIdRoute: typeof LawProvisionIdRoute
   RecordsDatasetIdRoute: typeof RecordsDatasetIdRoute
+  ApiPublicCorpusCapabilitiesRoute: typeof ApiPublicCorpusCapabilitiesRoute
+  ApiPublicCorpusDatasetsRoute: typeof ApiPublicCorpusDatasetsRoute
+  ApiPublicCorpusSearchRoute: typeof ApiPublicCorpusSearchRoute
+  ApiPublicCorpusRecordIdRoute: typeof ApiPublicCorpusRecordIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -871,6 +924,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RecordsDatasetIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/corpus/capabilities': {
+      id: '/api/public/corpus/capabilities'
+      path: '/api/public/corpus/capabilities'
+      fullPath: '/api/public/corpus/capabilities'
+      preLoaderRoute: typeof ApiPublicCorpusCapabilitiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/corpus/datasets': {
+      id: '/api/public/corpus/datasets'
+      path: '/api/public/corpus/datasets'
+      fullPath: '/api/public/corpus/datasets'
+      preLoaderRoute: typeof ApiPublicCorpusDatasetsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/corpus/search': {
+      id: '/api/public/corpus/search'
+      path: '/api/public/corpus/search'
+      fullPath: '/api/public/corpus/search'
+      preLoaderRoute: typeof ApiPublicCorpusSearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/corpus/record/$id': {
+      id: '/api/public/corpus/record/$id'
+      path: '/api/public/corpus/record/$id'
+      fullPath: '/api/public/corpus/record/$id'
+      preLoaderRoute: typeof ApiPublicCorpusRecordIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -928,6 +1009,10 @@ const rootRouteChildren: RootRouteChildren = {
   DataTablesTableRoute: DataTablesTableRoute,
   LawProvisionIdRoute: LawProvisionIdRoute,
   RecordsDatasetIdRoute: RecordsDatasetIdRoute,
+  ApiPublicCorpusCapabilitiesRoute: ApiPublicCorpusCapabilitiesRoute,
+  ApiPublicCorpusDatasetsRoute: ApiPublicCorpusDatasetsRoute,
+  ApiPublicCorpusSearchRoute: ApiPublicCorpusSearchRoute,
+  ApiPublicCorpusRecordIdRoute: ApiPublicCorpusRecordIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

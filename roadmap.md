@@ -17,4 +17,7 @@
 - [x] Map as home page; library at /sources/library; V2.2A labels removed; state source rows clickable
 - [x] Retire Categories/Jurisdictions/Families/Endpoints into library filters; merge state sources with Registry V2.2 duplicates
 - [x] Supporting tables into court/case/county pages; court mini-map; MDL judge links
-- [ ] DB-based coverage gaps column
+- [x] DB-based coverage gaps column
+- [x] Public read-only corpus API for research agents (/api/public/corpus/*, API-key auth, docs/corpus-api.md)
+- [x] UI polish: working map hover/selected states, muted "not recorded" table cells
+- [ ] Semantic search: needs pgvector + embedding backfill in the external database (verified absent via /api/public/corpus/capabilities)
