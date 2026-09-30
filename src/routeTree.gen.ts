@@ -42,6 +42,7 @@ import { Route as PlacesIndexRouteImport } from './routes/places.index'
 import { Route as PlacesStateRouteImport } from './routes/places.$state'
 import { Route as RegistryIndexRouteImport } from './routes/registry.index'
 import { Route as RegistryIdRouteImport } from './routes/registry.$id'
+import { Route as SourcesCatalogRouteImport } from './routes/sources.catalog'
 import { Route as SourcesCoverageRouteImport } from './routes/sources.coverage'
 import { Route as SourcesLibraryRouteImport } from './routes/sources.library'
 import { Route as SourcesRegistryRouteImport } from './routes/sources.registry'
@@ -216,6 +217,11 @@ const RegistryIdRoute = RegistryIdRouteImport.update({
   path: '/registry/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SourcesCatalogRoute = SourcesCatalogRouteImport.update({
+  id: '/sources/catalog',
+  path: '/sources/catalog',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SourcesCoverageRoute = SourcesCoverageRouteImport.update({
   id: '/sources/coverage',
   path: '/sources/coverage',
@@ -284,6 +290,7 @@ export interface FileRoutesByFullPath {
   '/matters/cases': typeof MattersCasesRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/registry/$id': typeof RegistryIdRoute
+  '/sources/catalog': typeof SourcesCatalogRoute
   '/sources/coverage': typeof SourcesCoverageRoute
   '/sources/library': typeof SourcesLibraryRoute
   '/sources/registry': typeof SourcesRegistryRoute
@@ -327,6 +334,7 @@ export interface FileRoutesByTo {
   '/matters/cases': typeof MattersCasesRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/registry/$id': typeof RegistryIdRoute
+  '/sources/catalog': typeof SourcesCatalogRoute
   '/sources/coverage': typeof SourcesCoverageRoute
   '/sources/library': typeof SourcesLibraryRoute
   '/sources/registry': typeof SourcesRegistryRoute
@@ -371,6 +379,7 @@ export interface FileRoutesById {
   '/matters/cases': typeof MattersCasesRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/registry/$id': typeof RegistryIdRoute
+  '/sources/catalog': typeof SourcesCatalogRoute
   '/sources/coverage': typeof SourcesCoverageRoute
   '/sources/library': typeof SourcesLibraryRoute
   '/sources/registry': typeof SourcesRegistryRoute
@@ -416,6 +425,7 @@ export interface FileRouteTypes {
     | '/matters/cases'
     | '/places/$state'
     | '/registry/$id'
+    | '/sources/catalog'
     | '/sources/coverage'
     | '/sources/library'
     | '/sources/registry'
@@ -459,6 +469,7 @@ export interface FileRouteTypes {
     | '/matters/cases'
     | '/places/$state'
     | '/registry/$id'
+    | '/sources/catalog'
     | '/sources/coverage'
     | '/sources/library'
     | '/sources/registry'
@@ -502,6 +513,7 @@ export interface FileRouteTypes {
     | '/matters/cases'
     | '/places/$state'
     | '/registry/$id'
+    | '/sources/catalog'
     | '/sources/coverage'
     | '/sources/library'
     | '/sources/registry'
@@ -546,6 +558,7 @@ export interface RootRouteChildren {
   MattersCasesRoute: typeof MattersCasesRoute
   PlacesStateRoute: typeof PlacesStateRouteWithChildren
   RegistryIdRoute: typeof RegistryIdRoute
+  SourcesCatalogRoute: typeof SourcesCatalogRoute
   SourcesCoverageRoute: typeof SourcesCoverageRoute
   SourcesLibraryRoute: typeof SourcesLibraryRoute
   SourcesRegistryRoute: typeof SourcesRegistryRoute
@@ -795,6 +808,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegistryIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sources/catalog': {
+      id: '/sources/catalog'
+      path: '/sources/catalog'
+      fullPath: '/sources/catalog'
+      preLoaderRoute: typeof SourcesCatalogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sources/coverage': {
       id: '/sources/coverage'
       path: '/sources/coverage'
@@ -893,6 +913,7 @@ const rootRouteChildren: RootRouteChildren = {
   MattersCasesRoute: MattersCasesRoute,
   PlacesStateRoute: PlacesStateRouteWithChildren,
   RegistryIdRoute: RegistryIdRoute,
+  SourcesCatalogRoute: SourcesCatalogRoute,
   SourcesCoverageRoute: SourcesCoverageRoute,
   SourcesLibraryRoute: SourcesLibraryRoute,
   SourcesRegistryRoute: SourcesRegistryRoute,
