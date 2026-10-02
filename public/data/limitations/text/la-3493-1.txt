@@ -1,0 +1,133 @@
+![Skip Navigation Links](/Legis/WebResource.axd?d=9dRXm_2hH9Tre_DnPjqfcn65FFHj8DUuXqVRtz_zag39ullvw0q6guAM4ZFsnXHFEq6mGtXywrbQHS8tDVVVxjHIwF9HCr7852nH8bqvaiI1&t=639190664600000000)
+
+|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| |  | | --- | | [Home](Home.aspx) | |  |  | |  | | --- | | [Laws](LawSearch.aspx) | |  |  | |  | | --- | | [Bills](BillSearch.aspx?sid=last) | |  |  | |  | | --- | | [Sessions](SessionInfo/SessionInfo.aspx?sid=last) | |  |  | |  | | --- | | [House](https://house.louisiana.gov) | |  |  | |  | | --- | | [Senate](https://senate.la.gov) | |  |  | |  | | --- | | [Committees](Committees.aspx?c=H) | |  |  | |  | | --- | | [Legislators](Bios.aspx?cid=H) | |  |  | |  | | --- | | [My Legis](MyLegis.aspx) | |  |
+
+|  |
+| --- |
+| [Home](Home.aspx) |
+
+|  |
+| --- |
+| [Laws](LawSearch.aspx) |
+
+|  |
+| --- |
+| [Bills](BillSearch.aspx?sid=last) |
+
+|  |
+| --- |
+| [Sessions](SessionInfo/SessionInfo.aspx?sid=last) |
+
+|  |
+| --- |
+| [House](https://house.louisiana.gov) |
+
+|  |
+| --- |
+| [Senate](https://senate.la.gov) |
+
+|  |
+| --- |
+| [Committees](Committees.aspx?c=H) |
+
+|  |
+| --- |
+| [Legislators](Bios.aspx?cid=H) |
+
+|  |
+| --- |
+| [My Legis](MyLegis.aspx) |
+
+|  |  |
+| --- | --- |
+| |  | | --- | | [2026 Regular Session](BillSearch.aspx?sid=current) | |
+| |  | | --- | | [Other Sessions](BillSearch.aspx) | |
+
+|  |
+| --- |
+| [2026 Regular Session](BillSearch.aspx?sid=current) |
+
+|  |
+| --- |
+| [Other Sessions](BillSearch.aspx) |
+
+![Scroll up](/Legis/WebResource.axd?d=ipjuTCqW9PLszAb4R023pfK-fxiRaVaxIm_qOvWhTbdyQ6jpjljh_7EOUjyKS80gMCr4hnLRisFrzkORm0mYpzIikuCtpmxgJA8MwtktdjU1&t=639190664600000000)
+![Scroll down](/Legis/WebResource.axd?d=zY31a2t2Ehewqi_SuWrMmHzmJ6NGTWXsuYqKKC1JSvgabSu4aroPE9KKWHs9jAm_z0vIwjGlfHRigpXHw7bFSbALLWiG7DibaJi3S1ZdhT41&t=639190664600000000)
+
+|  |  |
+| --- | --- |
+| |  | | --- | | [2026 Regular Session](SessionInfo/SessionInfo.aspx?sid=current) | |
+| |  | | --- | | [Other Sessions](SessionInfo/SessionInfo.aspx) | |
+
+|  |
+| --- |
+| [2026 Regular Session](SessionInfo/SessionInfo.aspx?sid=current) |
+
+|  |
+| --- |
+| [Other Sessions](SessionInfo/SessionInfo.aspx) |
+
+![Scroll up](/Legis/WebResource.axd?d=ipjuTCqW9PLszAb4R023pfK-fxiRaVaxIm_qOvWhTbdyQ6jpjljh_7EOUjyKS80gMCr4hnLRisFrzkORm0mYpzIikuCtpmxgJA8MwtktdjU1&t=639190664600000000)
+![Scroll down](/Legis/WebResource.axd?d=zY31a2t2Ehewqi_SuWrMmHzmJ6NGTWXsuYqKKC1JSvgabSu4aroPE9KKWHs9jAm_z0vIwjGlfHRigpXHw7bFSbALLWiG7DibaJi3S1ZdhT41&t=639190664600000000)
+
+|  |  |
+| --- | --- |
+| |  | | --- | | [House Committees](Committees.aspx?c=H) | |
+| |  | | --- | | [Senate Committees](Committees.aspx?c=S) | |
+| |  | | --- | | [Miscellaneous Committees](Committees.aspx?c=M) | |
+| |  | | --- | | [Scheduled Meetings](ByCmte.aspx) | |
+
+|  |
+| --- |
+| [House Committees](Committees.aspx?c=H) |
+
+|  |
+| --- |
+| [Senate Committees](Committees.aspx?c=S) |
+
+|  |
+| --- |
+| [Miscellaneous Committees](Committees.aspx?c=M) |
+
+|  |
+| --- |
+| [Scheduled Meetings](ByCmte.aspx) |
+
+![Scroll up](/Legis/WebResource.axd?d=ipjuTCqW9PLszAb4R023pfK-fxiRaVaxIm_qOvWhTbdyQ6jpjljh_7EOUjyKS80gMCr4hnLRisFrzkORm0mYpzIikuCtpmxgJA8MwtktdjU1&t=639190664600000000)
+![Scroll down](/Legis/WebResource.axd?d=zY31a2t2Ehewqi_SuWrMmHzmJ6NGTWXsuYqKKC1JSvgabSu4aroPE9KKWHs9jAm_z0vIwjGlfHRigpXHw7bFSbALLWiG7DibaJi3S1ZdhT41&t=639190664600000000)
+
+|  |  |
+| --- | --- |
+| |  | | --- | | [Representatives](Bios.aspx?cid=H) | |
+| |  | | --- | | [Senators](Bios.aspx?cid=S) | |
+| |  | | --- | | [Caucuses and Delegations](Caucuses.aspx) | |
+
+|  |
+| --- |
+| [Representatives](Bios.aspx?cid=H) |
+
+|  |
+| --- |
+| [Senators](Bios.aspx?cid=S) |
+
+|  |
+| --- |
+| [Caucuses and Delegations](Caucuses.aspx) |
+
+![Scroll up](/Legis/WebResource.axd?d=ipjuTCqW9PLszAb4R023pfK-fxiRaVaxIm_qOvWhTbdyQ6jpjljh_7EOUjyKS80gMCr4hnLRisFrzkORm0mYpzIikuCtpmxgJA8MwtktdjU1&t=639190664600000000)
+![Scroll down](/Legis/WebResource.axd?d=zY31a2t2Ehewqi_SuWrMmHzmJ6NGTWXsuYqKKC1JSvgabSu4aroPE9KKWHs9jAm_z0vIwjGlfHRigpXHw7bFSbALLWiG7DibaJi3S1ZdhT41&t=639190664600000000)
+![](App_Themes/Legis/Images/print.gif "Printable Version")
+
+SECTION 1-A. TWO-YEAR PRESCRIPTION
+
+Art. 3493.1. Delictual actions
+
+            Delictual actions are subject to a liberative prescription of two years. This
+prescription commences to run from the day that injury or damage is sustained. It does not
+run against minors or interdicts in actions involving permanent disability and brought
+pursuant to the Louisiana Products Liability Act or state law governing product liability
+actions in effect at the time of the injury or damage.
+
+            Acts 2024, No. 423, §1, eff. July 1, 2024.

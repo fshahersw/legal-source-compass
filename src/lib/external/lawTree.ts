@@ -22,7 +22,7 @@ export function lawGroup(id: string): LawGroup {
   if (id.startsWith("federal_regulations_")) return "regulations";
   if (id === "federal_register_history") return "register";
   if (id === "federal") return "notices";
-  if (id === "citation_index" || id === "citation_reference" || id === "limitation_periods") return "reference";
+  if (id === "citation_index" || id === "citation_reference" || id === "limitation_periods" || id === "statutory_limitations_review" || id === "cl_reporter_citations" || id === "cl_citation_edges" || id === "regulatory_backfill") return "reference";
   if (id in STATE_DATASETS || id === "state_codes") return "state";
   return "other";
 }

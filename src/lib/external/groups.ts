@@ -1,35 +1,133 @@
 /** Pure helpers for the connected corpus: section grouping, item normalisation and link resolution. */
+import { isProvisionDataset } from "./lawTree";
+
+/** An exact collection identity selects a permanent detail page. IDs are never inferred from names. */
+export function recordDestination(dataset: string, id: string) {
+  if (dataset === "court_spine") return { kind: "court" as const, id };
+  if (dataset === "judges") return { kind: "judge" as const, id };
+  if (dataset === "mdls") return { kind: "mdl" as const, id: id.replace(/^mdl:/, "") };
+  if (isProvisionDataset(dataset)) return { kind: "provision" as const, dataset, id };
+  return { kind: "record" as const, dataset, id };
+}
 
 export type SectionId = "courts" | "judges" | "matters" | "law" | "safety" | "sources" | "other";
 
 export const SECTIONS: { id: SectionId; label: string; blurb: string }[] = [
-  { id: "courts", label: "Courts", blurb: "Court registry, seals, statistics, rules, forms and court documents." },
-  { id: "judges", label: "Judges", blurb: "Judge directory, enrichment, disclosures, entities and biographies." },
-  { id: "matters", label: "Matters", blurb: "MDLs, dockets, cases, counsel, settlements, verdicts and expert rulings." },
-  { id: "law", label: "Law", blurb: "Statutes, regulations, Federal Register, public laws, limitation periods and citations." },
-  { id: "safety", label: "Safety", blurb: "FDA, openFDA and CPSC recall, enforcement and injury data." },
-  { id: "sources", label: "Sources", blurb: "Source directories, saved pages, URL directory and coverage labels." },
+  {
+    id: "courts",
+    label: "Courts",
+    blurb: "Court registry, seals, statistics, rules, forms and court documents.",
+  },
+  {
+    id: "judges",
+    label: "Judges",
+    blurb: "Judge directory, enrichment, disclosures, entities and biographies.",
+  },
+  {
+    id: "matters",
+    label: "Matters",
+    blurb: "MDLs, dockets, cases, counsel, settlements, verdicts and expert rulings.",
+  },
+  {
+    id: "law",
+    label: "Law",
+    blurb:
+      "Statutes, regulations, Federal Register, public laws, limitation periods and citations.",
+  },
+  {
+    id: "safety",
+    label: "Safety",
+    blurb: "FDA, openFDA and CPSC recall, enforcement and injury data.",
+  },
+  {
+    id: "sources",
+    label: "Sources",
+    blurb: "Source directories, saved pages, URL directory and coverage labels.",
+  },
   { id: "other", label: "Other", blurb: "Datasets not yet assigned to a section." },
 ];
 
 const EXPLICIT: Record<string, SectionId> = {
-  court_spine: "courts", court_reference: "courts", court_statistics: "courts", court_documents: "courts",
-  court_forms_expansion_20260912: "courts", uscourts_pages: "courts", county_litigation: "courts",
-  county_enrichment_20260928: "courts", counties: "courts", trellis_browser_counties: "courts", trellis_receipts: "courts",
-  judges: "judges", judge_enrichment: "judges", judge_disclosures: "judges", judge_entities: "judges",
-  judge_portraits: "judges", judge_vendor: "judges", people: "judges",
-  mdls: "matters", mdl_appearances: "matters", mdl_crosswalk: "matters", mdl_counsel: "matters",
-  mdl_case_inventory: "matters", mdl_docket_documents: "matters", mdl_docket_activity: "matters",
-  settlements: "matters", verdict_reports: "matters", expert_rulings: "matters", state_proceedings: "matters",
-  counsel_directory: "matters", seeger: "matters",
-  open_us_law: "law", state_codes: "law", indiana_code: "law", sd_statutes: "law", provider_laws: "law",
-  public_laws: "law", limitation_periods: "law", citation_reference: "law", citation_index: "law",
-  federal_regulations_sections: "law", federal_regulations_parts: "law", federal_regulations_documents: "law",
-  federal_register_history: "law", federal: "law",
-  cpsc_injury_data: "safety", agency_science_documents: "safety",
-  sources: "sources", url_directory: "sources", saved_pages: "sources", source_documents: "sources",
-  docsupload_coverage: "sources", coverage_labels: "sources", coverage_topics: "sources", library_assets: "sources",
-  large_text_assets: "sources", gap_enrichment_20260927: "sources", focused: "sources", pending_publication: "sources",
+  cl_courts: "courts",
+  cl_courthouses: "courts",
+  cl_court_appeals_to: "courts",
+  cl_people: "judges",
+  cl_positions: "judges",
+  cl_educations: "judges",
+  cl_schools: "judges",
+  cl_political_affiliations: "judges",
+  cl_races: "judges",
+  cl_race_choices: "judges",
+  cl_dockets: "matters",
+  cl_docket_entries: "matters",
+  cl_recap_documents: "matters",
+  cl_parties: "matters",
+  cl_attorneys: "matters",
+  cl_party_roles: "matters",
+  cl_docket_metadata: "matters",
+  cl_citation_edges: "law",
+  cl_reporter_citations: "law",
+  statutory_limitations_review: "law",
+  regulatory_backfill: "law",
+  court_spine: "courts",
+  court_reference: "courts",
+  court_statistics: "courts",
+  court_documents: "courts",
+  court_forms_expansion_20260912: "courts",
+  uscourts_pages: "courts",
+  county_litigation: "courts",
+  county_enrichment_20260928: "courts",
+  counties: "courts",
+  trellis_browser_counties: "courts",
+  trellis_receipts: "courts",
+  judges: "judges",
+  judge_enrichment: "judges",
+  judge_disclosures: "judges",
+  judge_entities: "judges",
+  judge_portraits: "judges",
+  judge_vendor: "judges",
+  people: "judges",
+  mdls: "matters",
+  mdl_appearances: "matters",
+  mdl_crosswalk: "matters",
+  mdl_counsel: "matters",
+  mdl_case_inventory: "matters",
+  mdl_docket_documents: "matters",
+  mdl_docket_activity: "matters",
+  settlements: "matters",
+  verdict_reports: "matters",
+  expert_rulings: "matters",
+  state_proceedings: "matters",
+  counsel_directory: "matters",
+  seeger: "matters",
+  open_us_law: "law",
+  state_codes: "law",
+  indiana_code: "law",
+  sd_statutes: "law",
+  provider_laws: "law",
+  public_laws: "law",
+  limitation_periods: "law",
+  citation_reference: "law",
+  citation_index: "law",
+  federal_regulations_sections: "law",
+  federal_regulations_parts: "law",
+  federal_regulations_documents: "law",
+  federal_register_history: "law",
+  federal: "law",
+  cpsc_injury_data: "safety",
+  agency_science_documents: "safety",
+  sources: "sources",
+  url_directory: "sources",
+  saved_pages: "sources",
+  source_documents: "sources",
+  docsupload_coverage: "sources",
+  coverage_labels: "sources",
+  coverage_topics: "sources",
+  library_assets: "sources",
+  large_text_assets: "sources",
+  gap_enrichment_20260927: "sources",
+  focused: "sources",
+  pending_publication: "sources",
 };
 
 export function sectionOf(datasetId: string): SectionId {
@@ -63,14 +161,40 @@ function scalar(v: unknown): string | null {
   if (v == null || v === "") return null;
   if (typeof v === "string") return v.replace(/\s+/g, " ").trim() || null;
   if (typeof v === "number" || typeof v === "boolean") return String(v);
-  if (Array.isArray(v) && v.every((x) => typeof x === "string" || typeof x === "number")) return v.length ? v.join("; ") : null;
+  if (Array.isArray(v) && v.every((x) => typeof x === "string" || typeof x === "number"))
+    return v.length ? v.join("; ") : null;
   return null;
 }
 
-const SKIP = new Set(["id", "title", "name", "subtitle", "links", "badges", "cells", "photo_url", "source_url", "search_vector", "text", "snippet"]);
+const SKIP = new Set([
+  "id",
+  "title",
+  "name",
+  "subtitle",
+  "links",
+  "badges",
+  "cells",
+  "photo_url",
+  "source_url",
+  "search_vector",
+  "text",
+  "snippet",
+]);
 
 /** Normalise any corpus listing item (they vary by dataset) without inventing values. */
-export function normalizeItem(raw: any): NormItem {
+export function normalizeItem(
+  raw: Record<string, unknown> & {
+    id?: unknown;
+    title?: unknown;
+    name?: unknown;
+    subtitle?: unknown;
+    cells?: unknown;
+    links?: unknown;
+    badges?: unknown;
+    photo_url?: unknown;
+    source_url?: unknown;
+  },
+): NormItem {
   const id = String(raw.id ?? "");
   const title = scalar(raw.title) ?? scalar(raw.name) ?? id;
   const cells: Record<string, string> = {};
@@ -87,9 +211,13 @@ export function normalizeItem(raw: any): NormItem {
     }
   }
   const links = Array.isArray(raw.links)
-    ? (raw.links as unknown[]).filter((l): l is Link => !!l && typeof (l as Link).url === "string").map((l) => ({ url: l.url, label: l.label ?? l.url }))
+    ? (raw.links as unknown[])
+        .filter((l): l is Link => !!l && typeof (l as Link).url === "string")
+        .map((l) => ({ url: l.url, label: l.label ?? l.url }))
     : [];
-  const badges = Array.isArray(raw.badges) ? (raw.badges as unknown[]).filter((b): b is string => typeof b === "string") : [];
+  const badges = Array.isArray(raw.badges)
+    ? (raw.badges as unknown[]).filter((b): b is string => typeof b === "string")
+    : [];
   return {
     id,
     title,
@@ -121,7 +249,12 @@ export function resolveLink(url: string, aliases: Record<string, string>): Resol
     const provision = /^#record\/(oul:[0-9a-f]{64})$/.exec(url);
     if (provision) return { kind: "provision", dataset: "open_us_law", id: provision[1]! };
     const ent = /^#(mdl|court|judge)\/([^?#]{1,120})$/.exec(url);
-    if (ent) return { kind: "entity", type: ent[1] as "mdl" | "court" | "judge", id: decodeURIComponent(ent[2]!) };
+    if (ent)
+      return {
+        kind: "entity",
+        type: ent[1] as "mdl" | "court" | "judge",
+        id: decodeURIComponent(ent[2]!),
+      };
     const [name = "", qs = ""] = url.slice(1).split("?");
     const params = Object.fromEntries(new URLSearchParams(qs));
     const q = params["q"] ?? "";

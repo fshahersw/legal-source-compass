@@ -14,7 +14,7 @@ if (
   throw new Error("Use ISO dates for --after and --through.");
 const since = new Date(Date.parse(after) + 86400000).toISOString().slice(0, 10);
 if (since > through) throw new Error("The acquisition interval is empty.");
-const directory = "public/data/quality/reference/federal-register-gap";
+const directory = value("--output", "public/data/quality/reference/federal-register-gap");
 const fields = [
   "document_number",
   "title",
@@ -99,7 +99,7 @@ const manifest = {
   cfrReferenceRecords: records.filter((r) => r.cfr_references?.length).length,
   correctionRecords: records.filter((r) => r.correction_of).length,
   qualification:
-    "Complete publisher metadata index for this bounded publication interval, reconciled to the API count and unique document numbers. The official legal editions are the linked GovInfo PDFs. Effective dates are publisher fields, not a finding that every provision is in force. This supplement does not change or merge the external Supabase corpus.",
+    "Complete publisher metadata index for this bounded publication interval, reconciled to the API count and unique document numbers. The official legal editions are the linked GovInfo PDFs. Effective dates are publisher fields, not a finding that every provision is in force. Acquisition preserves original source bytes; a separate administrative import records native document identities and versions.",
   pages: pages.map(({ bytes, ...metadata }) => ({
     ...metadata,
     bytes: bytes.length,

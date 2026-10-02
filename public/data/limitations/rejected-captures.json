@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.0.0",
+  "snapshotDate": "2026-10-02",
+  "captures": [
+    {
+      "id": "wv-55-2-12-provider-rejection-20261002",
+      "requestedUrl": "https://code.wvlegislature.gov/55-2-12/",
+      "method": "Tavily extraction",
+      "reason": "Reported success returned unrelated FBI cyber content and no statutory body.",
+      "disposition": "Excluded and replaced by manually checked live Firecrawl HTML extraction; rejected body is not published.",
+      "replacementSourceId": "wv-55-2-12"
+    },
+    {
+      "id": "oh-5903-21-definition-gap-20261002",
+      "requestedUrl": "https://codes.ohio.gov/ohio-revised-code/section-5903.21",
+      "method": "Live Firecrawl HTML capture",
+      "reason": "The current publisher returned Number Not Found for definitions referenced by § 2305.10(F)(1).",
+      "disposition": "Not admitted as statutory text. The veteran/Agent Orange branch remains research-only pending definition and historical-version review.",
+      "affectedRuleId": "oh-product_liability-agent_orange-review-20261002"
+    }
+  ]
+}

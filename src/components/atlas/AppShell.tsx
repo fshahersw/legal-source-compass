@@ -1,12 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import {
-  Map as MapIcon,
-  Landmark,
-  Library,
-  ShieldAlert,
-  BookOpen,
-  Search,
-} from "lucide-react";
+import { Map as MapIcon, Landmark, Library, ShieldAlert, BookOpen, Search } from "lucide-react";
 import { useState, type FormEvent, type ReactNode } from "react";
 
 import { useAtlas } from "@/lib/atlas/store";
@@ -16,9 +9,25 @@ import { Button } from "@/components/ui/button";
 
 type NavItem = { to: string; label: string; icon: typeof Library; paths: string[] };
 const EXPLORE = ["/", "/places", "/search", "/overview"];
-const LITIGATION = ["/courts", "/judges", "/matters", "/people", "/insights", "/mdls", "/records", "/registry"];
-const LAW = ["/law", "/laws", "/safety", "/agencies"];
-const SOURCES = ["/sources", "/source-datasets", "/data", "/saved-sources", "/review-queue", "/data-exports"];
+const LITIGATION = [
+  "/courts",
+  "/judges",
+  "/matters",
+  "/people",
+  "/insights",
+  "/mdls",
+  "/records",
+  "/registry",
+];
+const LAW = ["/law", "/laws", "/limitations", "/safety", "/agencies"];
+const SOURCES = [
+  "/sources",
+  "/source-datasets",
+  "/data",
+  "/saved-sources",
+  "/review-queue",
+  "/data-exports",
+];
 const NAV: NavItem[] = [
   { to: "/places", label: "Explore", icon: MapIcon, paths: EXPLORE },
   { to: "/courts", label: "Litigation", icon: Landmark, paths: LITIGATION },
@@ -27,16 +36,52 @@ const NAV: NavItem[] = [
 ];
 
 const CONTEXT_NAV = [
-  { paths: EXPLORE, items: [{ to: "/", label: "Map" }, { to: "/search", label: "Search everything" }, { to: "/insights", label: "Research workbench" }] },
-  { paths: LITIGATION, items: [
-    { to: "/courts", label: "1 · Courts" }, { to: "/judges", label: "2 · Judges" }, { to: "/matters", label: "3 · Matters (MDLs)" }, { to: "/matters/cases", label: "4 · Cases & analytics" }, { to: "/insights", label: "Research workbench" }, { to: "/registry", label: "5 · Case registry" }, { to: "/people", label: "People A–Z" },
-  ] },
-  { paths: LAW, items: [{ to: "/law", label: "Law & regulation" }, { to: "/safety", label: "Product safety" }, { to: "/agencies", label: "Agencies" }, { to: "/insights", label: "Research workbench" }] },
-  { paths: SOURCES, items: [
-    { to: "/sources/library", label: "Source library" }, { to: "/sources/catalog", label: "Source catalog" }, { to: "/sources/registry-v22", label: "Registry V2.2" }, { to: "/sources/registry", label: "Registry v0.6" }, { to: "/sources/coverage", label: "Quality & coverage" },
-    { to: "/source-datasets", label: "Corpus records" }, { to: "/data", label: "All datasets" },
-    { to: "/saved-sources", label: "Saved" }, { to: "/review-queue", label: "Review queue" }, { to: "/data-exports", label: "Imports & exports" },
-  ] },
+  {
+    paths: EXPLORE,
+    items: [
+      { to: "/", label: "Map" },
+      { to: "/search", label: "Search everything" },
+      { to: "/insights", label: "Research workbench" },
+    ],
+  },
+  {
+    paths: LITIGATION,
+    items: [
+      { to: "/courts", label: "1 · Courts" },
+      { to: "/judges", label: "2 · Judges" },
+      { to: "/matters", label: "3 · Matters (MDLs)" },
+      { to: "/matters/cases", label: "4 · Cases & analytics" },
+      { to: "/insights", label: "Research workbench" },
+      { to: "/registry", label: "5 · Case registry" },
+      { to: "/people", label: "People A–Z" },
+    ],
+  },
+  {
+    paths: LAW,
+    items: [
+      { to: "/law", label: "Law & regulation" },
+      { to: "/limitations", label: "Cited limitations" },
+      { to: "/safety", label: "Product safety" },
+      { to: "/agencies", label: "Agencies" },
+      { to: "/insights", label: "Research workbench" },
+    ],
+  },
+  {
+    paths: SOURCES,
+    items: [
+      { to: "/sources/library", label: "Source library" },
+      { to: "/sources/catalog", label: "Source catalog" },
+      { to: "/sources/registry-v22", label: "Registry V2.2" },
+      { to: "/sources/registry", label: "Registry v0.6" },
+      { to: "/sources/coverage", label: "Quality & coverage" },
+      { to: "/source-datasets", label: "Corpus records" },
+      { to: "/data", label: "All datasets" },
+      { to: "/sources/enrichment", label: "Enrichment" },
+      { to: "/saved-sources", label: "Saved" },
+      { to: "/review-queue", label: "Review queue" },
+      { to: "/data-exports", label: "Imports & exports" },
+    ],
+  },
 ];
 
 function pathMatches(pathname: string, path: string) {
@@ -61,7 +106,9 @@ export function AppShell({
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
-  const context = CONTEXT_NAV.find((group) => group.paths.some((path) => pathMatches(pathname, path)));
+  const context = CONTEXT_NAV.find((group) =>
+    group.paths.some((path) => pathMatches(pathname, path)),
+  );
   const submitSearch = (event: FormEvent) => {
     event.preventDefault();
     const q = search.trim();
@@ -82,10 +129,20 @@ export function AppShell({
 
         <nav className="flex flex-col gap-0.5 overflow-y-auto">
           {NAV.map((item) => (
-            <Link key={item.to} to={item.to} activeOptions={{ exact: item.to === "/" }} className={`nav-link ${item.paths.some((path) => pathMatches(pathname, path)) ? "active" : ""}`}>
+            <Link
+              key={item.to}
+              to={item.to}
+              activeOptions={{ exact: item.to === "/" }}
+              className={`nav-link ${item.paths.some((path) => pathMatches(pathname, path)) ? "active" : ""}`}
+            >
               <item.icon className="size-4 opacity-70" strokeWidth={1.75} />
               <span className="flex-1">{item.label}</span>
-              {item.label === "Sources & Work" && counts.total + Object.keys(bookmarks).length > 0 ? <span className="rounded-full bg-secondary px-1.5 text-[10px] font-semibold text-secondary-foreground">{counts.total + Object.keys(bookmarks).length}</span> : null}
+              {item.label === "Sources & Work" &&
+              counts.total + Object.keys(bookmarks).length > 0 ? (
+                <span className="rounded-full bg-secondary px-1.5 text-[10px] font-semibold text-secondary-foreground">
+                  {counts.total + Object.keys(bookmarks).length}
+                </span>
+              ) : null}
             </Link>
           ))}
         </nav>
@@ -94,8 +151,8 @@ export function AppShell({
           <p className="flex gap-1.5 text-[10px] leading-relaxed text-muted-foreground">
             <ShieldAlert className="mt-px size-3.5 shrink-0" strokeWidth={1.75} />
             <span>
-              The directory is public-source data shipped with this build. Your reviews, bookmarks and
-              any file you import are stored in{" "}
+              The directory is public-source data shipped with this build. Your reviews, bookmarks
+              and any file you import are stored in{" "}
               <strong className="font-semibold text-foreground">this browser only</strong>.
             </span>
           </p>
@@ -108,9 +165,17 @@ export function AppShell({
             <ol className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
               {breadcrumbs.map((crumb, i) => (
                 <li key={`${crumb.label}-${i}`} className="flex items-center gap-1.5">
-                  {i > 0 ? <span aria-hidden className="opacity-50">/</span> : null}
+                  {i > 0 ? (
+                    <span aria-hidden className="opacity-50">
+                      /
+                    </span>
+                  ) : null}
                   {crumb.to ? (
-                    <Link to={crumb.to} {...(crumb.search ? { search: crumb.search as never } : {})} className="hover:text-foreground hover:underline">
+                    <Link
+                      to={crumb.to}
+                      {...(crumb.search ? { search: crumb.search as never } : {})}
+                      className="hover:text-foreground hover:underline"
+                    >
                       {crumb.label}
                     </Link>
                   ) : (
@@ -132,12 +197,43 @@ export function AppShell({
             {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
           </div>
           <form onSubmit={submitSearch} className="mt-3 flex max-w-xl items-center gap-1.5">
-            <Input aria-label="Search all corpus data" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search courts, judges, matters, law, and sources" className="h-8 bg-background text-[12px]" />
-            <Button type="submit" size="icon" variant="outline" className="size-8" aria-label="Search"><Search /></Button>
+            <Input
+              aria-label="Search all corpus data"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search courts, judges, matters, law, and sources"
+              className="h-8 bg-background text-[12px]"
+            />
+            <Button
+              type="submit"
+              size="icon"
+              variant="outline"
+              className="size-8"
+              aria-label="Search"
+            >
+              <Search />
+            </Button>
           </form>
         </header>
 
-        {context ? <nav aria-label="Section" className="flex gap-1 overflow-x-auto border-b border-border bg-surface px-5 py-2 lg:px-8">{context.items.map((item) => <Link key={item.to} to={item.to} activeOptions={{ exact: item.to === "/" }} className="rounded-md px-2 py-1 text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground" activeProps={{ className: "bg-muted font-semibold text-foreground" }}>{item.label}</Link>)}</nav> : null}
+        {context ? (
+          <nav
+            aria-label="Section"
+            className="flex gap-1 overflow-x-auto border-b border-border bg-surface px-5 py-2 lg:px-8"
+          >
+            {context.items.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                activeOptions={{ exact: item.to === "/" }}
+                className="rounded-md px-2 py-1 text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground"
+                activeProps={{ className: "bg-muted font-semibold text-foreground" }}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        ) : null}
 
         <nav className="flex gap-1 overflow-x-auto border-b border-border bg-surface px-3 py-2 lg:hidden">
           {NAV.map((item) => (
@@ -153,7 +249,8 @@ export function AppShell({
         </nav>
 
         <main className="px-5 py-6 lg:px-8">
-          {localStateWarning || (persistWarning && persistWarning !== "Saving to browser storage…") ? (
+          {localStateWarning ||
+          (persistWarning && persistWarning !== "Saving to browser storage…") ? (
             <div
               role="alert"
               className="mb-4 rounded-md border border-warning/40 bg-warning/10 p-2.5 text-[12px] leading-relaxed text-warning-foreground"

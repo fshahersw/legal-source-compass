@@ -24,11 +24,8 @@ import { useQuery as useQ } from "@tanstack/react-query";
 import { loadRegistryJurisdiction, taskCounts, taskLabel } from "@/lib/atlas/registryV22";
 import { loadCatalogIndex, loadCatalogJurisdiction } from "@/lib/atlas/catalog";
 import { mergeStateSources, type MergedStateSource } from "@/lib/atlas/stateSources";
-import { SourceDrawer } from "@/components/atlas/SourceDrawer";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink } from "lucide-react";
-import type { Source } from "@/lib/atlas/types";
-import { useState } from "react";
 import { StateCourtLinks } from "@/components/corpus/StateCourtLinks";
 import { ExternalBadge, ExternalError } from "@/components/corpus/ExternalBadge";
 
@@ -134,7 +131,7 @@ function StatePage() {
           <BarList title="Case rows by status" rows={countBy(matters, (m) => m.status)} unit="saved case rows" />
         </div>
       </div>
-      <StateSourceTable rows={merged} stateName={st.name} onAll={() => { setFilters({ ...defaultFilters, jurisdictions: [st.name] }); navigate({ to: "/sources/library" }); }} />
+      <StateSourceTable rows={merged} state={usps} onAll={() => { setFilters({ ...defaultFilters, jurisdictions: [st.name] }); navigate({ to: "/sources/library" }); }} />
     </AppShell>
   );
 }
@@ -173,21 +170,8 @@ function StateLaws({ usps }: { usps: string }) {
   );
 }
 
-function StateSourceTable({ rows, stateName, onAll }: { rows: MergedStateSource[]; stateName: string; onAll: () => void }) {
-  const [open, setOpen] = useState<Source | null>(null);
+function StateSourceTable({ rows, state, onAll }: { rows: MergedStateSource[]; state: string; onAll: () => void }) {
   const shown = rows.slice(0, 50); // mergeStateSources already sorts by title
-  const asSource = (r: MergedStateSource): Source =>
-    r.source ??
-    ({
-      id: r.id,
-      url: r.url,
-      title: r.title,
-      domain: r.domain,
-      jurisdiction: stateName,
-      heading_category: r.category,
-      source_family: "",
-      occurrences: 1,
-    } as Source);
   return (
     <section className="mt-5 overflow-hidden rounded-lg border border-border bg-surface shadow-card">
       <div className="flex items-center justify-between border-b border-border px-3 py-2">
@@ -196,11 +180,11 @@ function StateSourceTable({ rows, stateName, onAll }: { rows: MergedStateSource[
       </div>
       {rows.length === 0 ? <p className="px-3 py-2 text-[13px] text-muted-foreground">No sources name this state.</p> : (
         <table className="w-full table-fixed text-[13px]">
-          <thead className="bg-muted/50 text-left text-[11px] text-muted-foreground"><tr><th className="w-2/5 px-3 py-1.5">Title</th><th className="px-3 py-1.5">Domain</th><th className="px-3 py-1.5">Category</th><th className="px-3 py-1.5">In collections</th><th className="w-10" /></tr></thead>
+          <thead className="bg-muted/50 text-left text-[11px] text-muted-foreground"><tr><th className="w-2/5 px-3 py-1.5">Title</th><th className="px-3 py-1.5">Domain</th><th className="px-3 py-1.5">Resource group</th><th className="px-3 py-1.5">In collections</th><th className="w-10" /></tr></thead>
           <tbody>
             {shown.map((r) => (
-              <tr key={r.id} role="button" tabIndex={0} onClick={() => setOpen(asSource(r))} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOpen(asSource(r)); } }} className="cursor-pointer border-t border-border hover:bg-muted/50 focus:bg-muted/50 focus:outline-none">
-                <td className="truncate px-3 py-1.5">{r.title || r.url}</td>
+              <tr key={r.id} className="border-t border-border hover:bg-muted/50">
+                <td className="truncate px-3 py-1.5"><Link to="/sources/detail" search={{ id: r.id, state }} className="text-primary hover:underline">{r.title || r.url}</Link></td>
                 <td className="truncate px-3 py-1.5 font-mono text-[11px] text-muted-foreground">{r.domain || "—"}</td>
                 <td className="truncate px-3 py-1.5 text-[12px] text-muted-foreground">{r.category || "—"}</td>
                 <td className="truncate px-3 py-1.5">
@@ -216,7 +200,6 @@ function StateSourceTable({ rows, stateName, onAll }: { rows: MergedStateSource[
           </tbody>
         </table>
       )}
-      <SourceDrawer source={open} onClose={() => setOpen(null)} />
     </section>
   );
 }

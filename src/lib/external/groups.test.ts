@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { normalizeItem, resolveLink, sectionOf, datasetLabel } from "./groups";
+import { normalizeItem, resolveLink, sectionOf, datasetLabel, recordDestination } from "./groups";
+
+describe("permanent record destinations", () => {
+  it("preserves exact collection identity and native IDs", () => {
+    expect(recordDestination("mdls", "mdl:2873")).toEqual({ kind: "mdl", id: "2873" });
+    expect(recordDestination("mdl_docket_activity", "mdl:2873")).toEqual({ kind: "record", dataset: "mdl_docket_activity", id: "mdl:2873" });
+    expect(recordDestination("court_spine", "cand")).toEqual({ kind: "court", id: "cand" });
+    expect(recordDestination("open_us_law", "oul:abc")).toEqual({ kind: "provision", dataset: "open_us_law", id: "oul:abc" });
+    expect(recordDestination("citation_index", "1956")).toEqual({ kind: "record", dataset: "citation_index", id: "1956" });
+  });
+});
 
 describe("sectionOf", () => {
   it("groups datasets by explicit id and prefix", () => {

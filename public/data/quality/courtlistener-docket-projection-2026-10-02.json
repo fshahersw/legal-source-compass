@@ -1,0 +1,979 @@
+{
+  "schema_version": "courtlistener-public-docket-projection-receipt/1",
+  "contract_version": "courtlistener-docket-metadata-view/1",
+  "dataset": "cl_docket_metadata",
+  "ready": true,
+  "source_snapshot": "2026-09-30",
+  "metadata_only": true,
+  "pdf_downloads": 0,
+  "expected_records": 186923,
+  "public_records": 186923,
+  "bounded_verifications": 19,
+  "root_first_batch": {
+    "owner": "root",
+    "lower_ordinal_exclusive": 0,
+    "upper_ordinal_inclusive": 10000,
+    "batch_records": 10000,
+    "missing_records": 0,
+    "mismatched_records": 0,
+    "unexpected_batch_records": 0,
+    "expected_full_fields_sha256": "5dd4340b2cd044519ace7be5a7bf5bc4419efa866b18b8e2a13f85e66837d1d4",
+    "actual_full_fields_sha256": "5dd4340b2cd044519ace7be5a7bf5bc4419efa866b18b8e2a13f85e66837d1d4",
+    "verified": true,
+    "evidence_source": "Root agent confirmed first independent full-field database receipt; final whole-collection reconciliation will independently validate every row."
+  },
+  "remaining_batch_receipts": [
+    {
+      "lower_ordinal_exclusive": 10000,
+      "upper_ordinal_inclusive": 20000,
+      "expected_records": 10000,
+      "batch": {
+        "checked_at": "2026-10-02T09:43:03.580185+00:00",
+        "max_ordinal": 20000,
+        "min_ordinal": 10001,
+        "written_records": 10000,
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "expected_batch_records": 10000,
+        "lower_ordinal_exclusive": 10000,
+        "upper_ordinal_inclusive": 20000,
+        "expected_eligible_records": 186923
+      },
+      "verify": {
+        "checks": {
+          "batch_records": 10000,
+          "public_records": 20000,
+          "missing_records": 0,
+          "eligible_records": 186923,
+          "mismatched_records": 0,
+          "unexpected_batch_records": 0,
+          "actual_full_fields_sha256": "ce9f933f27ea5778912ba52e05bbf07224d2b4c3961bacfe87d04fc1d4d8bf75",
+          "expected_full_fields_sha256": "ce9f933f27ea5778912ba52e05bbf07224d2b4c3961bacfe87d04fc1d4d8bf75",
+          "registered_expected_records": 186923
+        },
+        "verified": true,
+        "checked_at": "2026-10-02T09:43:22.515442+00:00",
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "mismatched_native_ids": [],
+        "lower_ordinal_exclusive": 10000,
+        "upper_ordinal_inclusive": 20000
+      }
+    },
+    {
+      "lower_ordinal_exclusive": 20000,
+      "upper_ordinal_inclusive": 30000,
+      "expected_records": 10000,
+      "batch": {
+        "checked_at": "2026-10-02T09:44:39.23197+00:00",
+        "max_ordinal": 30000,
+        "min_ordinal": 20001,
+        "written_records": 10000,
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "expected_batch_records": 10000,
+        "lower_ordinal_exclusive": 20000,
+        "upper_ordinal_inclusive": 30000,
+        "expected_eligible_records": 186923
+      },
+      "verify": {
+        "checks": {
+          "batch_records": 10000,
+          "public_records": 30000,
+          "missing_records": 0,
+          "eligible_records": 186923,
+          "mismatched_records": 0,
+          "unexpected_batch_records": 0,
+          "actual_full_fields_sha256": "917d2ab76ab5106990ba0b4fa230541d53549e44e159ef628ff6133fd74f18ba",
+          "expected_full_fields_sha256": "917d2ab76ab5106990ba0b4fa230541d53549e44e159ef628ff6133fd74f18ba",
+          "registered_expected_records": 186923
+        },
+        "verified": true,
+        "checked_at": "2026-10-02T09:44:57.287+00:00",
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "mismatched_native_ids": [],
+        "lower_ordinal_exclusive": 20000,
+        "upper_ordinal_inclusive": 30000
+      }
+    },
+    {
+      "lower_ordinal_exclusive": 30000,
+      "upper_ordinal_inclusive": 40000,
+      "expected_records": 10000,
+      "batch": {
+        "checked_at": "2026-10-02T09:45:50.347088+00:00",
+        "max_ordinal": 40000,
+        "min_ordinal": 30001,
+        "written_records": 10000,
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "expected_batch_records": 10000,
+        "lower_ordinal_exclusive": 30000,
+        "upper_ordinal_inclusive": 40000,
+        "expected_eligible_records": 186923
+      },
+      "verify": {
+        "checks": {
+          "batch_records": 10000,
+          "public_records": 40000,
+          "missing_records": 0,
+          "eligible_records": 186923,
+          "mismatched_records": 0,
+          "unexpected_batch_records": 0,
+          "actual_full_fields_sha256": "3e3b8c850be167ff4e24da0e9971ba3d19e1ecead6e713f07801452547417392",
+          "expected_full_fields_sha256": "3e3b8c850be167ff4e24da0e9971ba3d19e1ecead6e713f07801452547417392",
+          "registered_expected_records": 186923
+        },
+        "verified": true,
+        "checked_at": "2026-10-02T09:46:07.723841+00:00",
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "mismatched_native_ids": [],
+        "lower_ordinal_exclusive": 30000,
+        "upper_ordinal_inclusive": 40000
+      }
+    },
+    {
+      "lower_ordinal_exclusive": 40000,
+      "upper_ordinal_inclusive": 50000,
+      "expected_records": 10000,
+      "batch": {
+        "checked_at": "2026-10-02T09:46:37.843304+00:00",
+        "max_ordinal": 50000,
+        "min_ordinal": 40001,
+        "written_records": 10000,
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "expected_batch_records": 10000,
+        "lower_ordinal_exclusive": 40000,
+        "upper_ordinal_inclusive": 50000,
+        "expected_eligible_records": 186923
+      },
+      "verify": {
+        "checks": {
+          "batch_records": 10000,
+          "public_records": 50000,
+          "missing_records": 0,
+          "eligible_records": 186923,
+          "mismatched_records": 0,
+          "unexpected_batch_records": 0,
+          "actual_full_fields_sha256": "a74665ce2abd9957f655049dc35d9ef82e499f21abe6f143f0151ecccd1bae8b",
+          "expected_full_fields_sha256": "a74665ce2abd9957f655049dc35d9ef82e499f21abe6f143f0151ecccd1bae8b",
+          "registered_expected_records": 186923
+        },
+        "verified": true,
+        "checked_at": "2026-10-02T09:46:57.698594+00:00",
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "mismatched_native_ids": [],
+        "lower_ordinal_exclusive": 40000,
+        "upper_ordinal_inclusive": 50000
+      }
+    },
+    {
+      "lower_ordinal_exclusive": 50000,
+      "upper_ordinal_inclusive": 60000,
+      "expected_records": 10000,
+      "batch": {
+        "checked_at": "2026-10-02T09:47:18.434976+00:00",
+        "max_ordinal": 60000,
+        "min_ordinal": 50001,
+        "written_records": 10000,
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "expected_batch_records": 10000,
+        "lower_ordinal_exclusive": 50000,
+        "upper_ordinal_inclusive": 60000,
+        "expected_eligible_records": 186923
+      },
+      "verify": {
+        "checks": {
+          "batch_records": 10000,
+          "public_records": 60000,
+          "missing_records": 0,
+          "eligible_records": 186923,
+          "mismatched_records": 0,
+          "unexpected_batch_records": 0,
+          "actual_full_fields_sha256": "d0e5e0db0ca991bb4440d630d3505dabaf80421d6043b5e6b51814b93bc8280b",
+          "expected_full_fields_sha256": "d0e5e0db0ca991bb4440d630d3505dabaf80421d6043b5e6b51814b93bc8280b",
+          "registered_expected_records": 186923
+        },
+        "verified": true,
+        "checked_at": "2026-10-02T09:47:36.029788+00:00",
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "mismatched_native_ids": [],
+        "lower_ordinal_exclusive": 50000,
+        "upper_ordinal_inclusive": 60000
+      }
+    },
+    {
+      "lower_ordinal_exclusive": 60000,
+      "upper_ordinal_inclusive": 70000,
+      "expected_records": 10000,
+      "batch": {
+        "checked_at": "2026-10-02T09:47:53.346001+00:00",
+        "max_ordinal": 70000,
+        "min_ordinal": 60001,
+        "written_records": 10000,
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "expected_batch_records": 10000,
+        "lower_ordinal_exclusive": 60000,
+        "upper_ordinal_inclusive": 70000,
+        "expected_eligible_records": 186923
+      },
+      "verify": {
+        "checks": {
+          "batch_records": 10000,
+          "public_records": 70000,
+          "missing_records": 0,
+          "eligible_records": 186923,
+          "mismatched_records": 0,
+          "unexpected_batch_records": 0,
+          "actual_full_fields_sha256": "14fefee69b969eb202174ca39bdec6c0ef37a489fe0f675ef70b0eb2f0839c20",
+          "expected_full_fields_sha256": "14fefee69b969eb202174ca39bdec6c0ef37a489fe0f675ef70b0eb2f0839c20",
+          "registered_expected_records": 186923
+        },
+        "verified": true,
+        "checked_at": "2026-10-02T09:48:10.677093+00:00",
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "mismatched_native_ids": [],
+        "lower_ordinal_exclusive": 60000,
+        "upper_ordinal_inclusive": 70000
+      }
+    },
+    {
+      "lower_ordinal_exclusive": 70000,
+      "upper_ordinal_inclusive": 80000,
+      "expected_records": 10000,
+      "batch": {
+        "checked_at": "2026-10-02T09:48:33.720175+00:00",
+        "max_ordinal": 80000,
+        "min_ordinal": 70001,
+        "written_records": 10000,
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "expected_batch_records": 10000,
+        "lower_ordinal_exclusive": 70000,
+        "upper_ordinal_inclusive": 80000,
+        "expected_eligible_records": 186923
+      },
+      "verify": {
+        "checks": {
+          "batch_records": 10000,
+          "public_records": 80000,
+          "missing_records": 0,
+          "eligible_records": 186923,
+          "mismatched_records": 0,
+          "unexpected_batch_records": 0,
+          "actual_full_fields_sha256": "26c1167fbc6178108a6160b4e1084369117151d3bc35a59118ea2436cfd663bb",
+          "expected_full_fields_sha256": "26c1167fbc6178108a6160b4e1084369117151d3bc35a59118ea2436cfd663bb",
+          "registered_expected_records": 186923
+        },
+        "verified": true,
+        "checked_at": "2026-10-02T09:48:51.580741+00:00",
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "mismatched_native_ids": [],
+        "lower_ordinal_exclusive": 70000,
+        "upper_ordinal_inclusive": 80000
+      }
+    },
+    {
+      "lower_ordinal_exclusive": 80000,
+      "upper_ordinal_inclusive": 90000,
+      "expected_records": 10000,
+      "batch": {
+        "checked_at": "2026-10-02T09:49:27.965229+00:00",
+        "max_ordinal": 90000,
+        "min_ordinal": 80001,
+        "written_records": 10000,
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "expected_batch_records": 10000,
+        "lower_ordinal_exclusive": 80000,
+        "upper_ordinal_inclusive": 90000,
+        "expected_eligible_records": 186923
+      },
+      "verify": {
+        "checks": {
+          "batch_records": 10000,
+          "public_records": 90000,
+          "missing_records": 0,
+          "eligible_records": 186923,
+          "mismatched_records": 0,
+          "unexpected_batch_records": 0,
+          "actual_full_fields_sha256": "5e597b0676f52a85f432a987589eb4f9c5a372c06209a9b77714a1333b3ffaa7",
+          "expected_full_fields_sha256": "5e597b0676f52a85f432a987589eb4f9c5a372c06209a9b77714a1333b3ffaa7",
+          "registered_expected_records": 186923
+        },
+        "verified": true,
+        "checked_at": "2026-10-02T09:49:45.16912+00:00",
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "mismatched_native_ids": [],
+        "lower_ordinal_exclusive": 80000,
+        "upper_ordinal_inclusive": 90000
+      }
+    },
+    {
+      "lower_ordinal_exclusive": 90000,
+      "upper_ordinal_inclusive": 100000,
+      "expected_records": 10000,
+      "batch": {
+        "checked_at": "2026-10-02T09:50:05.971078+00:00",
+        "max_ordinal": 100000,
+        "min_ordinal": 90001,
+        "written_records": 10000,
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "expected_batch_records": 10000,
+        "lower_ordinal_exclusive": 90000,
+        "upper_ordinal_inclusive": 100000,
+        "expected_eligible_records": 186923
+      },
+      "verify": {
+        "checks": {
+          "batch_records": 10000,
+          "public_records": 100000,
+          "missing_records": 0,
+          "eligible_records": 186923,
+          "mismatched_records": 0,
+          "unexpected_batch_records": 0,
+          "actual_full_fields_sha256": "21f2031f60073b3d79b54a5e5612bb198e3222c00ecb265951faced6974ff786",
+          "expected_full_fields_sha256": "21f2031f60073b3d79b54a5e5612bb198e3222c00ecb265951faced6974ff786",
+          "registered_expected_records": 186923
+        },
+        "verified": true,
+        "checked_at": "2026-10-02T09:50:24.233005+00:00",
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "mismatched_native_ids": [],
+        "lower_ordinal_exclusive": 90000,
+        "upper_ordinal_inclusive": 100000
+      }
+    },
+    {
+      "lower_ordinal_exclusive": 100000,
+      "upper_ordinal_inclusive": 110000,
+      "expected_records": 10000,
+      "batch": {
+        "checked_at": "2026-10-02T09:50:43.897456+00:00",
+        "max_ordinal": 110000,
+        "min_ordinal": 100001,
+        "written_records": 10000,
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "expected_batch_records": 10000,
+        "lower_ordinal_exclusive": 100000,
+        "upper_ordinal_inclusive": 110000,
+        "expected_eligible_records": 186923
+      },
+      "verify": {
+        "checks": {
+          "batch_records": 10000,
+          "public_records": 110000,
+          "missing_records": 0,
+          "eligible_records": 186923,
+          "mismatched_records": 0,
+          "unexpected_batch_records": 0,
+          "actual_full_fields_sha256": "1b0053c85fa2e0d44f6c8bbb80617b4c57ca4156ae501abcb564eacc49510160",
+          "expected_full_fields_sha256": "1b0053c85fa2e0d44f6c8bbb80617b4c57ca4156ae501abcb564eacc49510160",
+          "registered_expected_records": 186923
+        },
+        "verified": true,
+        "checked_at": "2026-10-02T09:51:01.569212+00:00",
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "mismatched_native_ids": [],
+        "lower_ordinal_exclusive": 100000,
+        "upper_ordinal_inclusive": 110000
+      }
+    },
+    {
+      "lower_ordinal_exclusive": 110000,
+      "upper_ordinal_inclusive": 120000,
+      "expected_records": 10000,
+      "batch": {
+        "checked_at": "2026-10-02T09:51:36.570617+00:00",
+        "max_ordinal": 120000,
+        "min_ordinal": 110001,
+        "written_records": 10000,
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "expected_batch_records": 10000,
+        "lower_ordinal_exclusive": 110000,
+        "upper_ordinal_inclusive": 120000,
+        "expected_eligible_records": 186923
+      },
+      "verify": {
+        "checks": {
+          "batch_records": 10000,
+          "public_records": 120000,
+          "missing_records": 0,
+          "eligible_records": 186923,
+          "mismatched_records": 0,
+          "unexpected_batch_records": 0,
+          "actual_full_fields_sha256": "36f760374ce65ba8f31001ae955854685aaaf042497e9ffb2d49d81b388839f2",
+          "expected_full_fields_sha256": "36f760374ce65ba8f31001ae955854685aaaf042497e9ffb2d49d81b388839f2",
+          "registered_expected_records": 186923
+        },
+        "verified": true,
+        "checked_at": "2026-10-02T09:51:53.997754+00:00",
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "mismatched_native_ids": [],
+        "lower_ordinal_exclusive": 110000,
+        "upper_ordinal_inclusive": 120000
+      }
+    },
+    {
+      "lower_ordinal_exclusive": 120000,
+      "upper_ordinal_inclusive": 130000,
+      "expected_records": 10000,
+      "batch": {
+        "checked_at": "2026-10-02T09:52:19.775374+00:00",
+        "max_ordinal": 130000,
+        "min_ordinal": 120001,
+        "written_records": 10000,
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "expected_batch_records": 10000,
+        "lower_ordinal_exclusive": 120000,
+        "upper_ordinal_inclusive": 130000,
+        "expected_eligible_records": 186923
+      },
+      "verify": {
+        "checks": {
+          "batch_records": 10000,
+          "public_records": 130000,
+          "missing_records": 0,
+          "eligible_records": 186923,
+          "mismatched_records": 0,
+          "unexpected_batch_records": 0,
+          "actual_full_fields_sha256": "e654b76fa0a30a2b34018d22c2ca96cb7fd09612e13fe883eca5a060006680bc",
+          "expected_full_fields_sha256": "e654b76fa0a30a2b34018d22c2ca96cb7fd09612e13fe883eca5a060006680bc",
+          "registered_expected_records": 186923
+        },
+        "verified": true,
+        "checked_at": "2026-10-02T09:52:37.258134+00:00",
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "mismatched_native_ids": [],
+        "lower_ordinal_exclusive": 120000,
+        "upper_ordinal_inclusive": 130000
+      }
+    },
+    {
+      "lower_ordinal_exclusive": 130000,
+      "upper_ordinal_inclusive": 140000,
+      "expected_records": 10000,
+      "batch": {
+        "checked_at": "2026-10-02T09:53:05.346413+00:00",
+        "max_ordinal": 140000,
+        "min_ordinal": 130001,
+        "written_records": 10000,
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "expected_batch_records": 10000,
+        "lower_ordinal_exclusive": 130000,
+        "upper_ordinal_inclusive": 140000,
+        "expected_eligible_records": 186923
+      },
+      "verify": {
+        "checks": {
+          "batch_records": 10000,
+          "public_records": 140000,
+          "missing_records": 0,
+          "eligible_records": 186923,
+          "mismatched_records": 0,
+          "unexpected_batch_records": 0,
+          "actual_full_fields_sha256": "647c44ed4030b33083ccac875b99e084e9250822c7382fcd4df32b873feba93c",
+          "expected_full_fields_sha256": "647c44ed4030b33083ccac875b99e084e9250822c7382fcd4df32b873feba93c",
+          "registered_expected_records": 186923
+        },
+        "verified": true,
+        "checked_at": "2026-10-02T09:53:24.286427+00:00",
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "mismatched_native_ids": [],
+        "lower_ordinal_exclusive": 130000,
+        "upper_ordinal_inclusive": 140000
+      }
+    },
+    {
+      "lower_ordinal_exclusive": 140000,
+      "upper_ordinal_inclusive": 150000,
+      "expected_records": 10000,
+      "batch": {
+        "checked_at": "2026-10-02T09:53:57.393251+00:00",
+        "max_ordinal": 150000,
+        "min_ordinal": 140001,
+        "written_records": 10000,
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "expected_batch_records": 10000,
+        "lower_ordinal_exclusive": 140000,
+        "upper_ordinal_inclusive": 150000,
+        "expected_eligible_records": 186923
+      },
+      "verify": {
+        "checks": {
+          "batch_records": 10000,
+          "public_records": 150000,
+          "missing_records": 0,
+          "eligible_records": 186923,
+          "mismatched_records": 0,
+          "unexpected_batch_records": 0,
+          "actual_full_fields_sha256": "d3cf68f74a461ba9d9c9ef22e113998c562ad23ec53e60fdb61fcb8eed271c19",
+          "expected_full_fields_sha256": "d3cf68f74a461ba9d9c9ef22e113998c562ad23ec53e60fdb61fcb8eed271c19",
+          "registered_expected_records": 186923
+        },
+        "verified": true,
+        "checked_at": "2026-10-02T09:54:14.904711+00:00",
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "mismatched_native_ids": [],
+        "lower_ordinal_exclusive": 140000,
+        "upper_ordinal_inclusive": 150000
+      }
+    },
+    {
+      "lower_ordinal_exclusive": 150000,
+      "upper_ordinal_inclusive": 160000,
+      "expected_records": 10000,
+      "batch": {
+        "checked_at": "2026-10-02T09:54:44.408154+00:00",
+        "max_ordinal": 160000,
+        "min_ordinal": 150001,
+        "written_records": 10000,
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "expected_batch_records": 10000,
+        "lower_ordinal_exclusive": 150000,
+        "upper_ordinal_inclusive": 160000,
+        "expected_eligible_records": 186923
+      },
+      "verify": {
+        "checks": {
+          "batch_records": 10000,
+          "public_records": 160000,
+          "missing_records": 0,
+          "eligible_records": 186923,
+          "mismatched_records": 0,
+          "unexpected_batch_records": 0,
+          "actual_full_fields_sha256": "0a9598d4595b6bcf1011cd97ba5ee40e5d621f9ac0b5c5f0c689ab45941674e4",
+          "expected_full_fields_sha256": "0a9598d4595b6bcf1011cd97ba5ee40e5d621f9ac0b5c5f0c689ab45941674e4",
+          "registered_expected_records": 186923
+        },
+        "verified": true,
+        "checked_at": "2026-10-02T09:55:02.283232+00:00",
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "mismatched_native_ids": [],
+        "lower_ordinal_exclusive": 150000,
+        "upper_ordinal_inclusive": 160000
+      }
+    },
+    {
+      "lower_ordinal_exclusive": 160000,
+      "upper_ordinal_inclusive": 170000,
+      "expected_records": 10000,
+      "batch": {
+        "checked_at": "2026-10-02T09:55:20.646659+00:00",
+        "max_ordinal": 170000,
+        "min_ordinal": 160001,
+        "written_records": 10000,
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "expected_batch_records": 10000,
+        "lower_ordinal_exclusive": 160000,
+        "upper_ordinal_inclusive": 170000,
+        "expected_eligible_records": 186923
+      },
+      "verify": {
+        "checks": {
+          "batch_records": 10000,
+          "public_records": 170000,
+          "missing_records": 0,
+          "eligible_records": 186923,
+          "mismatched_records": 0,
+          "unexpected_batch_records": 0,
+          "actual_full_fields_sha256": "88dad0bbdfb8a6336401276f3aad8f7a91e866a375c0af927a9dcb3e590a1568",
+          "expected_full_fields_sha256": "88dad0bbdfb8a6336401276f3aad8f7a91e866a375c0af927a9dcb3e590a1568",
+          "registered_expected_records": 186923
+        },
+        "verified": true,
+        "checked_at": "2026-10-02T09:55:38.055067+00:00",
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "mismatched_native_ids": [],
+        "lower_ordinal_exclusive": 160000,
+        "upper_ordinal_inclusive": 170000
+      }
+    },
+    {
+      "lower_ordinal_exclusive": 170000,
+      "upper_ordinal_inclusive": 180000,
+      "expected_records": 10000,
+      "batch": {
+        "checked_at": "2026-10-02T09:56:03.04011+00:00",
+        "max_ordinal": 180000,
+        "min_ordinal": 170001,
+        "written_records": 10000,
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "expected_batch_records": 10000,
+        "lower_ordinal_exclusive": 170000,
+        "upper_ordinal_inclusive": 180000,
+        "expected_eligible_records": 186923
+      },
+      "verify": {
+        "checks": {
+          "batch_records": 10000,
+          "public_records": 180000,
+          "missing_records": 0,
+          "eligible_records": 186923,
+          "mismatched_records": 0,
+          "unexpected_batch_records": 0,
+          "actual_full_fields_sha256": "7e32cf57f03dc9b23c1015616d7b7ff0f24c2eb7c5fcab5a45af1766988e6397",
+          "expected_full_fields_sha256": "7e32cf57f03dc9b23c1015616d7b7ff0f24c2eb7c5fcab5a45af1766988e6397",
+          "registered_expected_records": 186923
+        },
+        "verified": true,
+        "checked_at": "2026-10-02T09:56:21.936967+00:00",
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "mismatched_native_ids": [],
+        "lower_ordinal_exclusive": 170000,
+        "upper_ordinal_inclusive": 180000
+      }
+    },
+    {
+      "lower_ordinal_exclusive": 180000,
+      "upper_ordinal_inclusive": 190000,
+      "expected_records": 6923,
+      "batch": {
+        "checked_at": "2026-10-02T09:56:42.380142+00:00",
+        "max_ordinal": 186923,
+        "min_ordinal": 180001,
+        "written_records": 6923,
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "expected_batch_records": 6923,
+        "lower_ordinal_exclusive": 180000,
+        "upper_ordinal_inclusive": 190000,
+        "expected_eligible_records": 186923
+      },
+      "verify": {
+        "checks": {
+          "batch_records": 6923,
+          "public_records": 186923,
+          "missing_records": 0,
+          "eligible_records": 186923,
+          "mismatched_records": 0,
+          "unexpected_batch_records": 0,
+          "actual_full_fields_sha256": "69111c8495b9ecec25ec371a0e4ba97c387286b676aebf7879490c4f313069f2",
+          "expected_full_fields_sha256": "69111c8495b9ecec25ec371a0e4ba97c387286b676aebf7879490c4f313069f2",
+          "registered_expected_records": 186923
+        },
+        "verified": true,
+        "checked_at": "2026-10-02T09:56:59.102105+00:00",
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "mismatched_native_ids": [],
+        "lower_ordinal_exclusive": 180000,
+        "upper_ordinal_inclusive": 190000
+      }
+    }
+  ],
+  "executed_contract_hashes": {
+    "batch": {
+      "executed_sha256": "da2ec3b665efb4252dc5aceacf644d6c3cad3990b1a257a91a4bfe0049764ec5",
+      "terminal_whitespace_normalized_sha256": "e554ea9e7cb6d46d545ce8db71c789c5d2005da9f05cfbb12d7fb0855ff5a565"
+    },
+    "verify": {
+      "executed_sha256": "40e3b4c382b5a7eb6ad7f21bed9ce799bde9315f2ab56d6dce4b28f06f8531db",
+      "terminal_whitespace_normalized_sha256": "41e7ce068ed5fba15c26613cc22b35b3427187ff7e0f936389037232dafe08e1"
+    },
+    "publish": {
+      "executed_sha256": "84b8c6652a1527f58889f473f75c933e3848a745bd34f5753f62a02b7e40e19f",
+      "terminal_whitespace_normalized_sha256": "c5ffd020bd2a923240b2e41cceb707558582bed8ca5bdfb45dbfd24101c3eb38"
+    }
+  },
+  "contract_hash_qualification": "Exact executed SQL was captured before terminal blank-line cleanup. Normalized hashes remove only trailing whitespace and add one final newline.",
+  "whole_collection_verification": {
+    "checks": {
+      "verified": true,
+      "max_ordinal": 186923,
+      "min_ordinal": 1,
+      "batch_records": 186923,
+      "public_records": 186923,
+      "missing_records": 0,
+      "eligible_records": 186923,
+      "distinct_ordinals": 186923,
+      "mismatched_records": 0,
+      "unexpected_batch_records": 0,
+      "actual_full_fields_sha256": "b63f675fdf282b4a6839b13ed9b11c0a5c16e766fce06a21cbb16f48301e89f5",
+      "expected_full_fields_sha256": "b63f675fdf282b4a6839b13ed9b11c0a5c16e766fce06a21cbb16f48301e89f5",
+      "registered_expected_records": 186923
+    },
+    "checked_at": "2026-10-02T09:57:45.922846+00:00",
+    "publication": {
+      "id": "cl_docket_metadata",
+      "ready": true,
+      "expected_records": 186923,
+      "imported_records": 186923
+    }
+  },
+  "independent_postpublication_aggregate": {
+    "dataset": {
+      "id": "cl_docket_metadata",
+      "ready": true,
+      "validation": {
+        "records": 186923,
+        "verified": true,
+        "validated_at": "2026-10-02T09:57:45.922846+00:00",
+        "source_snapshot": "2026-09-30",
+        "contract_version": "courtlistener-docket-metadata-view/1",
+        "full_fields_sha256": "b63f675fdf282b4a6839b13ed9b11c0a5c16e766fce06a21cbb16f48301e89f5"
+      },
+      "expected_records": 186923,
+      "imported_records": 186923
+    },
+    "quality": {
+      "records": 186923,
+      "distinct_ids": 186923,
+      "distinct_ordinals": 186923,
+      "asserted_state_rows": 0,
+      "incorrect_category_rows": 0
+    },
+    "checked_at": "2026-10-02T09:59:28.340536+00:00",
+    "per_mdl_counts": [
+      {
+        "mdl_number": "2100",
+        "distinct_native_courts": 1,
+        "public_metadata_records": 1095
+      },
+      {
+        "mdl_number": "2545",
+        "distinct_native_courts": 1,
+        "public_metadata_records": 95
+      },
+      {
+        "mdl_number": "2570",
+        "distinct_native_courts": 6,
+        "public_metadata_records": 8420
+      },
+      {
+        "mdl_number": "2592",
+        "distinct_native_courts": 17,
+        "public_metadata_records": 31495
+      },
+      {
+        "mdl_number": "2606",
+        "distinct_native_courts": 3,
+        "public_metadata_records": 2311
+      },
+      {
+        "mdl_number": "2641",
+        "distinct_native_courts": 88,
+        "public_metadata_records": 10511
+      },
+      {
+        "mdl_number": "2789",
+        "distinct_native_courts": 5,
+        "public_metadata_records": 16676
+      },
+      {
+        "mdl_number": "2804",
+        "distinct_native_courts": 26,
+        "public_metadata_records": 3021
+      },
+      {
+        "mdl_number": "2846",
+        "distinct_native_courts": 5,
+        "public_metadata_records": 7755
+      },
+      {
+        "mdl_number": "2873",
+        "distinct_native_courts": 4,
+        "public_metadata_records": 730
+      },
+      {
+        "mdl_number": "2885",
+        "distinct_native_courts": 5,
+        "public_metadata_records": 103095
+      },
+      {
+        "mdl_number": "2913",
+        "distinct_native_courts": 5,
+        "public_metadata_records": 8
+      },
+      {
+        "mdl_number": "2973",
+        "distinct_native_courts": 1,
+        "public_metadata_records": 1
+      },
+      {
+        "mdl_number": null,
+        "distinct_native_courts": 77,
+        "public_metadata_records": 1710
+      }
+    ]
+  },
+  "per_mdl_counts": [
+    {
+      "mdl_number": "2100",
+      "distinct_native_courts": 1,
+      "public_metadata_records": 1095
+    },
+    {
+      "mdl_number": "2545",
+      "distinct_native_courts": 1,
+      "public_metadata_records": 95
+    },
+    {
+      "mdl_number": "2570",
+      "distinct_native_courts": 6,
+      "public_metadata_records": 8420
+    },
+    {
+      "mdl_number": "2592",
+      "distinct_native_courts": 17,
+      "public_metadata_records": 31495
+    },
+    {
+      "mdl_number": "2606",
+      "distinct_native_courts": 3,
+      "public_metadata_records": 2311
+    },
+    {
+      "mdl_number": "2641",
+      "distinct_native_courts": 88,
+      "public_metadata_records": 10511
+    },
+    {
+      "mdl_number": "2789",
+      "distinct_native_courts": 5,
+      "public_metadata_records": 16676
+    },
+    {
+      "mdl_number": "2804",
+      "distinct_native_courts": 26,
+      "public_metadata_records": 3021
+    },
+    {
+      "mdl_number": "2846",
+      "distinct_native_courts": 5,
+      "public_metadata_records": 7755
+    },
+    {
+      "mdl_number": "2873",
+      "distinct_native_courts": 4,
+      "public_metadata_records": 730
+    },
+    {
+      "mdl_number": "2885",
+      "distinct_native_courts": 5,
+      "public_metadata_records": 103095
+    },
+    {
+      "mdl_number": "2913",
+      "distinct_native_courts": 5,
+      "public_metadata_records": 8
+    },
+    {
+      "mdl_number": "2973",
+      "distinct_native_courts": 1,
+      "public_metadata_records": 1
+    },
+    {
+      "mdl_number": null,
+      "distinct_native_courts": 77,
+      "public_metadata_records": 1710
+    }
+  ],
+  "requested_fjc_scope_counts": [
+    {
+      "mdl_number": "2100",
+      "fjc_source_snapshot_rows": 1099,
+      "public_metadata_records": 1095,
+      "public_distinct_native_courts": 1
+    },
+    {
+      "mdl_number": "2545",
+      "fjc_source_snapshot_rows": 7964,
+      "public_metadata_records": 95,
+      "public_distinct_native_courts": 1
+    },
+    {
+      "mdl_number": "2570",
+      "fjc_source_snapshot_rows": 10017,
+      "public_metadata_records": 8420,
+      "public_distinct_native_courts": 6
+    },
+    {
+      "mdl_number": "2592",
+      "fjc_source_snapshot_rows": 31663,
+      "public_metadata_records": 31495,
+      "public_distinct_native_courts": 17
+    },
+    {
+      "mdl_number": "2606",
+      "fjc_source_snapshot_rows": 2316,
+      "public_metadata_records": 2311,
+      "public_distinct_native_courts": 3
+    },
+    {
+      "mdl_number": "2641",
+      "fjc_source_snapshot_rows": 12594,
+      "public_metadata_records": 10511,
+      "public_distinct_native_courts": 88
+    },
+    {
+      "mdl_number": "2782",
+      "fjc_source_snapshot_rows": 3854,
+      "public_metadata_records": 0,
+      "public_distinct_native_courts": 0
+    },
+    {
+      "mdl_number": "2789",
+      "fjc_source_snapshot_rows": 19295,
+      "public_metadata_records": 16676,
+      "public_distinct_native_courts": 5
+    },
+    {
+      "mdl_number": "2804",
+      "fjc_source_snapshot_rows": 3212,
+      "public_metadata_records": 3021,
+      "public_distinct_native_courts": 26
+    },
+    {
+      "mdl_number": "2846",
+      "fjc_source_snapshot_rows": 13723,
+      "public_metadata_records": 7755,
+      "public_distinct_native_courts": 5
+    },
+    {
+      "mdl_number": "2873",
+      "fjc_source_snapshot_rows": 1402,
+      "public_metadata_records": 730,
+      "public_distinct_native_courts": 4
+    },
+    {
+      "mdl_number": "2885",
+      "fjc_source_snapshot_rows": 258227,
+      "public_metadata_records": 103095,
+      "public_distinct_native_courts": 5
+    },
+    {
+      "mdl_number": "2913",
+      "fjc_source_snapshot_rows": 10,
+      "public_metadata_records": 8,
+      "public_distinct_native_courts": 5
+    },
+    {
+      "mdl_number": "2973",
+      "fjc_source_snapshot_rows": 469,
+      "public_metadata_records": 1,
+      "public_distinct_native_courts": 1
+    },
+    {
+      "mdl_number": "3047",
+      "fjc_source_snapshot_rows": 0,
+      "public_metadata_records": 0,
+      "public_distinct_native_courts": 0
+    },
+    {
+      "mdl_number": "3081",
+      "fjc_source_snapshot_rows": 0,
+      "public_metadata_records": 0,
+      "public_distinct_native_courts": 0
+    },
+    {
+      "mdl_number": "3094",
+      "fjc_source_snapshot_rows": 0,
+      "public_metadata_records": 0,
+      "public_distinct_native_courts": 0
+    }
+  ],
+  "privacy": {
+    "public_fields": "Native identifiers, docket numbers, court identifiers, recorded dates, qualified FJC source associations, snapshot references and source provenance.",
+    "state_attribution": "No case state was inferred from court location.",
+    "captions_names_contacts_projected": false,
+    "unconfirmed_candidates_projected": false
+  },
+  "qualifications": [
+    "Public metadata counts are counts of this approved source-selected projection, not current MDL member-case totals.",
+    "FJC administrative source data carries historical statistical tape labels; pending source sentinel 2099 is not a future year or a current 2026 case-status finding.",
+    "A complete CourtListener bulk scan does not establish complete current PACER, member-case, party, or citation coverage."
+  ]
+}

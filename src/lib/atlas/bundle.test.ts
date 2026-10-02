@@ -105,6 +105,14 @@ describe("computeStats", () => {
 });
 
 describe("facet", () => {
+  it("counts a source once when recorded headings differ only by case or spacing", () => {
+    const rows = [
+      source({ id: "a", url: "https://a.gov", heading_category: "Court Rules", category_values: ["Court Rules", " court   rules "], occurrences: 3 }),
+      source({ id: "b", url: "https://b.gov", heading_category: "COURT RULES", occurrences: 2 }),
+    ];
+    expect(facet(rows, "heading_category")).toEqual([{ value: "Court Rules", count: 2, occurrences: 5 }]);
+    expect(rows[0]!["category_values"]).toEqual(["Court Rules", " court   rules "]);
+  });
   it("groups values with counts and labels blanks", () => {
     const rows = [
       source({ id: "a", url: "u1", jurisdiction: "Federal", occurrences: 2 }),

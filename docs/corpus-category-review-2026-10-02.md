@@ -1,0 +1,18 @@
+# Source category and detail navigation review
+
+The state source view previously used the Registry V2.2 `sourceType` as its content category. Values such as `official-primary` describe the publisher, whereas `resourceType` describes the resource. It also retained only the first category encountered for an exact URL and repeated collection badges when a collection supplied multiple rows.
+
+The merged view now retains every original row and native ID for each exact URL, distinguishes recorded content categories from recorded publisher classifications, and deduplicates collection badges. Exact URL identity remains the only source merge rule; query strings, hash routes, protocol differences, and trailing slashes remain distinct. Original files are unchanged.
+
+Resource groups use an explicit, versioned crosswalk (`2026-10-02.1`) for the observed source catalog categories and Registry V2.2 resource types. The catalog has 9,348 rows: 5,700 have a mapped content group and 3,648 are explicitly uncategorized. The registry has 4,846 rows: 2,424 have a mapped content group and 2,422 are landing pages without an assigned content group. These residuals remain unmatched; publisher identity and broad topic words do not infer an exact document type. Groups are browsing aids, not a legal authority ranking or a verification finding.
+
+Case and whitespace variations in recorded heading labels share a filter identity. A source is counted once within a category facet even if its imported heading array repeats an equivalent label. Raw category arrays remain available in permanent detail pages and metadata exports. Exported JSON records the taxonomy version and both the recorded categories and derived groups.
+
+Source records now open at `/sources/detail`; state source links include a state code and an exact-URL identity so all constituent collections can be displayed. Imported metadata, raw records, promotion history, browser-local review actions, undo, bookmarks, exact URLs, and JSON downloads remain on the page. Generic corpus listings and search now open permanent court, judge, MDL, provision, or collection record routes using exact collection identity. Active source and record views no longer mount right-side sheets.
+
+A generic stored `source_url` is labeled **Original source**, rather than **Official source**. The application cannot infer official authority from an arbitrary stored URL. Generic record pages preserve qualification and preview notices and provide a metadata export with a stated export schema version.
+
+No people were fuzzy-merged, no docket/MDL relationships were inferred, no record was represented as verified from an imported historical label, and no Supabase data or permissions were changed by this UI review.
+
+The administrative record crosswalk separately covers all 84 native categories observed in the database at its checkpoint. It is stored in the private `corpus_ingest.category_map` with the same taxonomy version. Federal Register histories and the new regulatory metadata backfill are mixed publisher documents, since they include notices and proposed rules as well as rules. Third-party limitations summaries are guidance; verdict reports are data rather than findings of an adjudicated outcome. Unknown future kinds remain unmatched. This exact vocabulary replaces broad substring guesses and leaves the original native category on each record.
+The final administrative crosswalk includes 88 exact categories: the initial 84 plus judicial service, regulatory backfill, cited limitations review and privacy-reviewed docket metadata. All observed active public categories have an explicit mapping at this release checkpoint.

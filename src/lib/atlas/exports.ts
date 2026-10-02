@@ -1,4 +1,6 @@
 import type { ReviewOverlay, Source } from "./types";
+import { TAXONOMY_VERSION, classifySource } from "@/lib/corpus/taxonomy";
+import { valuesOf } from "./bundle";
 
 export function csvCell(value: unknown): string {
   const s = value === null || value === undefined ? "" : String(value);
@@ -69,20 +71,27 @@ export function sourcesToJson(
   sources: Source[],
   overlays: Record<string, ReviewOverlay>,
   bookmarks: Record<string, true>,
-  meta: { bundle_version: string; exported_at?: string; scope: string },
+  meta: { bundle_version: string; taxonomy_version?: string; exported_at?: string; scope: string },
 ): string {
   return JSON.stringify(
     {
       export_kind: "legal-source-atlas-export",
       scope: meta.scope,
       bundle_version: meta.bundle_version,
+      taxonomy_version: meta.taxonomy_version ?? TAXONOMY_VERSION,
       exported_at: meta.exported_at ?? new Date().toISOString(),
       note:
         "imported_* fields are historical curation values copied verbatim from the bundle and are not fresh verification. local_review_* and local_bookmarked come from this browser only.",
       row_count: sources.length,
       rows: toSourceRows(sources, overlays, bookmarks).map((row, i) => {
-        const rec = (sources[i] as Record<string, unknown>)["imported_raw_record"];
-        return rec === undefined ? row : { ...row, imported_raw_record: rec };
+        const source = sources[i]!;
+        const raw = source as Record<string, unknown>;
+        return { ...row,
+          recorded_categories: valuesOf(source, "heading_category"),
+          resource_groups: classifySource(valuesOf(source, "heading_category")),
+          ...(raw["imported_raw_record"] === undefined ? {} : { imported_raw_record: raw["imported_raw_record"] }),
+          ...(raw["catalog_records"] === undefined ? {} : { catalog_records: raw["catalog_records"] }),
+        };
       }),
     },
     null,

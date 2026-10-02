@@ -16,8 +16,22 @@ describe("directory tree", () => {
     const js = [toJudgeRow({ id: "a", name: "Alice Beck Dubow" }), toJudgeRow({ id: "b", name: "John Smith" }), toJudgeRow({ id: "c", name: "John  Smith Jr." })];
     const m = makeJudgeMatcher(js);
     expect(m("alice beck dubow")).toBe("a");
-    expect(m("John Smith")).toBeNull();
+    expect(m("John Smith")).toBe("b");
+    expect(m("John Smith Jr.")).toBe("c");
     expect(m("Alice Dubow")).toBeNull();
     expect(surnameLetter("Alice Beck Dubow")).toBe("D");
+  });
+  it("does not route a shortened initial, missing suffix or removed accent to another person", () => {
+    const match = makeJudgeMatcher([
+      toJudgeRow({ id: "a", name: "María A. Peña Jr." }),
+      toJudgeRow({ id: "b", name: "María A. Peña III" }),
+      toJudgeRow({ id: "c", name: "John Smith" }),
+      toJudgeRow({ id: "d", name: "John Smith" }),
+    ]);
+    expect(match("María A Peña Jr")).toBe("a");
+    expect(match("María A Peña")).toBeNull();
+    expect(match("Maria A Peña Jr")).toBeNull();
+    expect(match("María Peña Jr")).toBeNull();
+    expect(match("John Smith")).toBeNull();
   });
 });

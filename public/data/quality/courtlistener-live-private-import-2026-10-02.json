@@ -1,0 +1,393 @@
+{
+  "schemaVersion": "courtlistener-live-private-import-receipt/1",
+  "metadataOnly": true,
+  "pdfDownloads": 0,
+  "observations": 14799,
+  "collections": [
+    {
+      "verified": true,
+      "entity_type": "attorneys",
+      "actual_sha256": "99c2a914d148d39a7937a5fe82545d560888a72ac1a12cbc1f4e89d469da2cb7",
+      "actual_records": 887,
+      "expected_sha256": "99c2a914d148d39a7937a5fe82545d560888a72ac1a12cbc1f4e89d469da2cb7",
+      "expected_records": 887
+    },
+    {
+      "verified": true,
+      "entity_type": "docket-entries",
+      "actual_sha256": "aa43c5c560c6667e9fe6ac9f14f704adb5b09ee3fbfdb8469479ecdbd138ea73",
+      "actual_records": 5727,
+      "expected_sha256": "aa43c5c560c6667e9fe6ac9f14f704adb5b09ee3fbfdb8469479ecdbd138ea73",
+      "expected_records": 5727
+    },
+    {
+      "verified": true,
+      "entity_type": "dockets",
+      "actual_sha256": "1db75950f1f3145ad503f5a0026211db44fa78b6da0849e4c1982f32699943b7",
+      "actual_records": 105,
+      "expected_sha256": "1db75950f1f3145ad503f5a0026211db44fa78b6da0849e4c1982f32699943b7",
+      "expected_records": 105
+    },
+    {
+      "verified": true,
+      "entity_type": "mdl-source-pages",
+      "actual_sha256": "0a8f727ad76a46d7045d7a89248fa1d1a131deaf7c7a583ed6289ea4d167e543",
+      "actual_records": 16,
+      "expected_sha256": "0a8f727ad76a46d7045d7a89248fa1d1a131deaf7c7a583ed6289ea4d167e543",
+      "expected_records": 16
+    },
+    {
+      "verified": true,
+      "entity_type": "parties",
+      "actual_sha256": "218310e8f2a6420c2cd381f4628c30ed041e10d24f78a88fe3b1eda40ca1d95f",
+      "actual_records": 1359,
+      "expected_sha256": "218310e8f2a6420c2cd381f4628c30ed041e10d24f78a88fe3b1eda40ca1d95f",
+      "expected_records": 1359
+    },
+    {
+      "verified": true,
+      "entity_type": "recap-documents",
+      "actual_sha256": "f83a841f33b96a52a267f4a58a68bbac823436f76c7d492b113b1c1b6a886297",
+      "actual_records": 6705,
+      "expected_sha256": "f83a841f33b96a52a267f4a58a68bbac823436f76c7d492b113b1c1b6a886297",
+      "expected_records": 6705
+    }
+  ],
+  "privateOnly": true,
+  "newRawPublicDatasets": 0,
+  "versionStorageHashMismatches": 0,
+  "nativeFieldEdges": 143832,
+  "unresolvedFieldEdges": 59755,
+  "nativeAssociations": {
+    "partyTypes": 3529,
+    "partyAttorneyAssociations": 17735,
+    "attorneyRepresentations": 42753
+  },
+  "distinctNestedDocketIds": 1174,
+  "nestedDocketsOutsideCapturedSet": 1159,
+  "completeAllRequestedScopes": false,
+  "qualifications": [
+    "Counts describe captured native metadata observations at different entity grains, not complete nationwide coverage.",
+    "Field edges are anchored to original source versions and JSON array paths. They are not deduplicated unique legal representations or verified MDL membership.",
+    "All contact fields, captions, party data, and live native payloads remain private. Document locators were collected without downloading PDF bytes.",
+    "Missing native targets remain explicitly unresolved; names, query docket parameters, and docket-number resemblance do not supply missing relationships."
+  ],
+  "relationshipBatches": [
+    {
+      "by_target": [
+        {
+          "edges": 105,
+          "to_type": "courts",
+          "unresolved": 0
+        },
+        {
+          "edges": 85,
+          "to_type": "people",
+          "unresolved": 0
+        }
+      ],
+      "checked_at": "2026-10-02T09:19:33.705944+00:00",
+      "entity_type": "dockets",
+      "written_edges": 190,
+      "source_versions": 105,
+      "unresolved_edges": 0,
+      "recorded_field_edges": 190,
+      "unparsed_nonempty_references": 0,
+      "lower_source_ordinal_exclusive": 0,
+      "upper_source_ordinal_inclusive": 105
+    },
+    {
+      "by_target": [
+        {
+          "edges": 5727,
+          "to_type": "dockets",
+          "unresolved": 0
+        }
+      ],
+      "checked_at": "2026-10-02T09:20:33.355277+00:00",
+      "entity_type": "docket-entries",
+      "written_edges": 5727,
+      "source_versions": 5727,
+      "unresolved_edges": 0,
+      "recorded_field_edges": 5727,
+      "unparsed_nonempty_references": 0,
+      "lower_source_ordinal_exclusive": 0,
+      "upper_source_ordinal_inclusive": 5727
+    },
+    {
+      "by_target": [
+        {
+          "edges": 6705,
+          "to_type": "docket-entries",
+          "unresolved": 0
+        },
+        {
+          "edges": 6705,
+          "to_type": "dockets",
+          "unresolved": 0
+        }
+      ],
+      "checked_at": "2026-10-02T09:20:41.029645+00:00",
+      "entity_type": "recap-documents",
+      "written_edges": 13410,
+      "source_versions": 6705,
+      "unresolved_edges": 0,
+      "recorded_field_edges": 13410,
+      "unparsed_nonempty_references": 0,
+      "lower_source_ordinal_exclusive": 0,
+      "upper_source_ordinal_inclusive": 6705
+    },
+    {
+      "by_target": [
+        {
+          "edges": 2301,
+          "to_type": "dockets",
+          "unresolved": 130
+        },
+        {
+          "edges": 2017,
+          "to_type": "attorneys",
+          "unresolved": 746
+        }
+      ],
+      "checked_at": "2026-10-02T09:20:48.762861+00:00",
+      "entity_type": "parties",
+      "written_edges": 4318,
+      "source_versions": 250,
+      "unresolved_edges": 876,
+      "recorded_field_edges": 4318,
+      "unparsed_nonempty_references": 0,
+      "lower_source_ordinal_exclusive": 0,
+      "upper_source_ordinal_inclusive": 250
+    },
+    {
+      "by_target": [
+        {
+          "edges": 5696,
+          "to_type": "dockets",
+          "unresolved": 4072
+        },
+        {
+          "edges": 4336,
+          "to_type": "attorneys",
+          "unresolved": 3294
+        }
+      ],
+      "checked_at": "2026-10-02T09:20:56.177806+00:00",
+      "entity_type": "parties",
+      "written_edges": 10032,
+      "source_versions": 250,
+      "unresolved_edges": 7366,
+      "recorded_field_edges": 10032,
+      "unparsed_nonempty_references": 0,
+      "lower_source_ordinal_exclusive": 250,
+      "upper_source_ordinal_inclusive": 500
+    },
+    {
+      "by_target": [
+        {
+          "edges": 812,
+          "to_type": "dockets",
+          "unresolved": 0
+        },
+        {
+          "edges": 562,
+          "to_type": "attorneys",
+          "unresolved": 0
+        }
+      ],
+      "checked_at": "2026-10-02T09:21:04.801739+00:00",
+      "entity_type": "parties",
+      "written_edges": 1374,
+      "source_versions": 250,
+      "unresolved_edges": 0,
+      "recorded_field_edges": 1374,
+      "unparsed_nonempty_references": 0,
+      "lower_source_ordinal_exclusive": 500,
+      "upper_source_ordinal_inclusive": 750
+    },
+    {
+      "by_target": [
+        {
+          "edges": 8583,
+          "to_type": "dockets",
+          "unresolved": 4571
+        },
+        {
+          "edges": 7314,
+          "to_type": "attorneys",
+          "unresolved": 6628
+        }
+      ],
+      "checked_at": "2026-10-02T09:21:12.089545+00:00",
+      "entity_type": "parties",
+      "written_edges": 15897,
+      "source_versions": 250,
+      "unresolved_edges": 11199,
+      "recorded_field_edges": 15897,
+      "unparsed_nonempty_references": 0,
+      "lower_source_ordinal_exclusive": 750,
+      "upper_source_ordinal_inclusive": 1000
+    },
+    {
+      "by_target": [
+        {
+          "edges": 2187,
+          "to_type": "dockets",
+          "unresolved": 0
+        },
+        {
+          "edges": 1937,
+          "to_type": "attorneys",
+          "unresolved": 1036
+        }
+      ],
+      "checked_at": "2026-10-02T09:24:10.398706+00:00",
+      "entity_type": "parties",
+      "written_edges": 4124,
+      "source_versions": 250,
+      "unresolved_edges": 1036,
+      "recorded_field_edges": 4124,
+      "unparsed_nonempty_references": 0,
+      "lower_source_ordinal_exclusive": 1000,
+      "upper_source_ordinal_inclusive": 1250
+    },
+    {
+      "by_target": [
+        {
+          "edges": 1685,
+          "to_type": "dockets",
+          "unresolved": 0
+        },
+        {
+          "edges": 1569,
+          "to_type": "attorneys",
+          "unresolved": 1278
+        }
+      ],
+      "checked_at": "2026-10-02T09:24:18.012744+00:00",
+      "entity_type": "parties",
+      "written_edges": 3254,
+      "source_versions": 109,
+      "unresolved_edges": 1278,
+      "recorded_field_edges": 3254,
+      "unparsed_nonempty_references": 0,
+      "lower_source_ordinal_exclusive": 1250,
+      "upper_source_ordinal_inclusive": 1359
+    },
+    {
+      "by_target": [
+        {
+          "edges": 23228,
+          "to_type": "parties",
+          "unresolved": 21370
+        },
+        {
+          "edges": 23228,
+          "to_type": "dockets",
+          "unresolved": 0
+        }
+      ],
+      "checked_at": "2026-10-02T09:24:25.529282+00:00",
+      "entity_type": "attorneys",
+      "written_edges": 46456,
+      "source_versions": 250,
+      "unresolved_edges": 21370,
+      "recorded_field_edges": 46456,
+      "unparsed_nonempty_references": 0,
+      "lower_source_ordinal_exclusive": 0,
+      "upper_source_ordinal_inclusive": 250
+    },
+    {
+      "by_target": [
+        {
+          "edges": 2072,
+          "to_type": "parties",
+          "unresolved": 1392
+        },
+        {
+          "edges": 2072,
+          "to_type": "dockets",
+          "unresolved": 0
+        }
+      ],
+      "checked_at": "2026-10-02T09:24:35.569097+00:00",
+      "entity_type": "attorneys",
+      "written_edges": 4144,
+      "source_versions": 250,
+      "unresolved_edges": 1392,
+      "recorded_field_edges": 4144,
+      "unparsed_nonempty_references": 0,
+      "lower_source_ordinal_exclusive": 250,
+      "upper_source_ordinal_inclusive": 500
+    },
+    {
+      "by_target": [
+        {
+          "edges": 6323,
+          "to_type": "dockets",
+          "unresolved": 0
+        },
+        {
+          "edges": 6323,
+          "to_type": "parties",
+          "unresolved": 4873
+        }
+      ],
+      "checked_at": "2026-10-02T09:24:42.949446+00:00",
+      "entity_type": "attorneys",
+      "written_edges": 12646,
+      "source_versions": 250,
+      "unresolved_edges": 4873,
+      "recorded_field_edges": 12646,
+      "unparsed_nonempty_references": 0,
+      "lower_source_ordinal_exclusive": 500,
+      "upper_source_ordinal_inclusive": 750
+    },
+    {
+      "by_target": [
+        {
+          "edges": 11130,
+          "to_type": "dockets",
+          "unresolved": 0
+        },
+        {
+          "edges": 11130,
+          "to_type": "parties",
+          "unresolved": 10365
+        }
+      ],
+      "checked_at": "2026-10-02T09:24:51.22035+00:00",
+      "entity_type": "attorneys",
+      "written_edges": 22260,
+      "source_versions": 137,
+      "unresolved_edges": 10365,
+      "recorded_field_edges": 22260,
+      "unparsed_nonempty_references": 0,
+      "lower_source_ordinal_exclusive": 750,
+      "upper_source_ordinal_inclusive": 887
+    }
+  ],
+  "postBulkTargetRefresh": {
+    "checkedAt": "2026-10-02T09:42:24.289061+00:00",
+    "newlyResolvedEdges": 3097,
+    "partyDocketEdgesResolved": 1707,
+    "clusterDocketEdgesResolved": 1390,
+    "allCurrentApiEdges": 143856,
+    "allCurrentApiUnresolvedEdges": 58060,
+    "allRunTargetPresenceMismatches": 0,
+    "qualification": "Original live graph counts remain scoped to that receipt; current API totals include 24 later field edges added by another worker."
+  },
+  "offlineNestedValidation": {
+    "validatedAt": "2026-10-02T09:43:19.571Z",
+    "nativeAssociations": {
+      "partyTypes": 3529,
+      "partyAttorneys": 17735,
+      "attorneyRepresentations": 42753,
+      "distinctNestedDocketTargets": 1174,
+      "nestedDocketTargetsOutsideCapturedRecords": 1159
+    },
+    "verified": true,
+    "qualification": "Private observations retain each association's actual native docket/party/attorney IDs, including targets outside the query docket. Contact/caption fields remain private. This does not establish exhaustive docket, party, attorney, representation, or member-case coverage."
+  }
+}

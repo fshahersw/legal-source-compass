@@ -1,0 +1,24 @@
+![Legislative Information header image: click to go to the home page](/resources/images/header_img.png)
+![Legislative Information header image](/resources/images/calegis_header_mobile.png)
+![home image: click to go to the home page](/resources/images/header_img_mobile_02.png)
+![Bill Search image: click to go to the bill search page](/resources/images/header_img_mobile_025.png)
+![back button image: click to go to previous page](/resources/images/header_img_mobile_03.png)
+![magnifying glass image](/resources/images/mag_glass.png)
+
+# Code Section
+
+![information](/resources/images/info_popup.gif)
+
+## Code Text
+
+#### **Code of Civil Procedure - CCP**
+
+#### **PART 2. OF CIVIL ACTIONS [307 - 1062.34]**
+
+#### **TITLE 2. OF THE TIME OF COMMENCING CIVIL ACTIONS [312 - 366.3]**
+
+##### **CHAPTER 3. The Time of Commencing Actions Other Than for the Recovery of Real Property [335 - 349.4]**
+
+###### **335.1.**
+
+Within two years: An action for assault, battery, or injury to, or for the death of, an individual caused by the wrongful act or neglect of another.

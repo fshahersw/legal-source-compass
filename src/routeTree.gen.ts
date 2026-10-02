@@ -17,6 +17,7 @@ import { Route as InsightsRouteImport } from './routes/insights'
 import { Route as JurisdictionsRouteImport } from './routes/jurisdictions'
 import { Route as LawRouteImport } from './routes/law'
 import { Route as LawsRouteImport } from './routes/laws'
+import { Route as LimitationsRouteImport } from './routes/limitations'
 import { Route as MdlsRouteImport } from './routes/mdls'
 import { Route as OverviewRouteImport } from './routes/overview'
 import { Route as PeopleRouteImport } from './routes/people'
@@ -44,6 +45,8 @@ import { Route as RegistryIndexRouteImport } from './routes/registry.index'
 import { Route as RegistryIdRouteImport } from './routes/registry.$id'
 import { Route as SourcesCatalogRouteImport } from './routes/sources.catalog'
 import { Route as SourcesCoverageRouteImport } from './routes/sources.coverage'
+import { Route as SourcesDetailRouteImport } from './routes/sources.detail'
+import { Route as SourcesEnrichmentRouteImport } from './routes/sources.enrichment'
 import { Route as SourcesLibraryRouteImport } from './routes/sources.library'
 import { Route as SourcesRegistryRouteImport } from './routes/sources.registry'
 import { Route as SourcesRegistryV22RouteImport } from './routes/sources.registry-v22'
@@ -90,6 +93,11 @@ const LawRoute = LawRouteImport.update({
 const LawsRoute = LawsRouteImport.update({
   id: '/laws',
   path: '/laws',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LimitationsRoute = LimitationsRouteImport.update({
+  id: '/limitations',
+  path: '/limitations',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MdlsRoute = MdlsRouteImport.update({
@@ -227,6 +235,16 @@ const SourcesCoverageRoute = SourcesCoverageRouteImport.update({
   path: '/sources/coverage',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SourcesDetailRoute = SourcesDetailRouteImport.update({
+  id: '/sources/detail',
+  path: '/sources/detail',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SourcesEnrichmentRoute = SourcesEnrichmentRouteImport.update({
+  id: '/sources/enrichment',
+  path: '/sources/enrichment',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SourcesLibraryRoute = SourcesLibraryRouteImport.update({
   id: '/sources/library',
   path: '/sources/library',
@@ -272,6 +290,7 @@ export interface FileRoutesByFullPath {
   '/jurisdictions': typeof JurisdictionsRoute
   '/law': typeof LawRoute
   '/laws': typeof LawsRoute
+  '/limitations': typeof LimitationsRoute
   '/mdls': typeof MdlsRoute
   '/overview': typeof OverviewRoute
   '/people': typeof PeopleRoute
@@ -292,6 +311,8 @@ export interface FileRoutesByFullPath {
   '/registry/$id': typeof RegistryIdRoute
   '/sources/catalog': typeof SourcesCatalogRoute
   '/sources/coverage': typeof SourcesCoverageRoute
+  '/sources/detail': typeof SourcesDetailRoute
+  '/sources/enrichment': typeof SourcesEnrichmentRoute
   '/sources/library': typeof SourcesLibraryRoute
   '/sources/registry': typeof SourcesRegistryRoute
   '/sources/registry-v22': typeof SourcesRegistryV22Route
@@ -316,6 +337,7 @@ export interface FileRoutesByTo {
   '/jurisdictions': typeof JurisdictionsRoute
   '/law': typeof LawRoute
   '/laws': typeof LawsRoute
+  '/limitations': typeof LimitationsRoute
   '/mdls': typeof MdlsRoute
   '/overview': typeof OverviewRoute
   '/people': typeof PeopleRoute
@@ -336,6 +358,8 @@ export interface FileRoutesByTo {
   '/registry/$id': typeof RegistryIdRoute
   '/sources/catalog': typeof SourcesCatalogRoute
   '/sources/coverage': typeof SourcesCoverageRoute
+  '/sources/detail': typeof SourcesDetailRoute
+  '/sources/enrichment': typeof SourcesEnrichmentRoute
   '/sources/library': typeof SourcesLibraryRoute
   '/sources/registry': typeof SourcesRegistryRoute
   '/sources/registry-v22': typeof SourcesRegistryV22Route
@@ -361,6 +385,7 @@ export interface FileRoutesById {
   '/jurisdictions': typeof JurisdictionsRoute
   '/law': typeof LawRoute
   '/laws': typeof LawsRoute
+  '/limitations': typeof LimitationsRoute
   '/mdls': typeof MdlsRoute
   '/overview': typeof OverviewRoute
   '/people': typeof PeopleRoute
@@ -381,6 +406,8 @@ export interface FileRoutesById {
   '/registry/$id': typeof RegistryIdRoute
   '/sources/catalog': typeof SourcesCatalogRoute
   '/sources/coverage': typeof SourcesCoverageRoute
+  '/sources/detail': typeof SourcesDetailRoute
+  '/sources/enrichment': typeof SourcesEnrichmentRoute
   '/sources/library': typeof SourcesLibraryRoute
   '/sources/registry': typeof SourcesRegistryRoute
   '/sources/registry-v22': typeof SourcesRegistryV22Route
@@ -407,6 +434,7 @@ export interface FileRouteTypes {
     | '/jurisdictions'
     | '/law'
     | '/laws'
+    | '/limitations'
     | '/mdls'
     | '/overview'
     | '/people'
@@ -427,6 +455,8 @@ export interface FileRouteTypes {
     | '/registry/$id'
     | '/sources/catalog'
     | '/sources/coverage'
+    | '/sources/detail'
+    | '/sources/enrichment'
     | '/sources/library'
     | '/sources/registry'
     | '/sources/registry-v22'
@@ -451,6 +481,7 @@ export interface FileRouteTypes {
     | '/jurisdictions'
     | '/law'
     | '/laws'
+    | '/limitations'
     | '/mdls'
     | '/overview'
     | '/people'
@@ -471,6 +502,8 @@ export interface FileRouteTypes {
     | '/registry/$id'
     | '/sources/catalog'
     | '/sources/coverage'
+    | '/sources/detail'
+    | '/sources/enrichment'
     | '/sources/library'
     | '/sources/registry'
     | '/sources/registry-v22'
@@ -495,6 +528,7 @@ export interface FileRouteTypes {
     | '/jurisdictions'
     | '/law'
     | '/laws'
+    | '/limitations'
     | '/mdls'
     | '/overview'
     | '/people'
@@ -515,6 +549,8 @@ export interface FileRouteTypes {
     | '/registry/$id'
     | '/sources/catalog'
     | '/sources/coverage'
+    | '/sources/detail'
+    | '/sources/enrichment'
     | '/sources/library'
     | '/sources/registry'
     | '/sources/registry-v22'
@@ -540,6 +576,7 @@ export interface RootRouteChildren {
   JurisdictionsRoute: typeof JurisdictionsRoute
   LawRoute: typeof LawRoute
   LawsRoute: typeof LawsRoute
+  LimitationsRoute: typeof LimitationsRoute
   MdlsRoute: typeof MdlsRoute
   OverviewRoute: typeof OverviewRoute
   PeopleRoute: typeof PeopleRoute
@@ -560,6 +597,8 @@ export interface RootRouteChildren {
   RegistryIdRoute: typeof RegistryIdRoute
   SourcesCatalogRoute: typeof SourcesCatalogRoute
   SourcesCoverageRoute: typeof SourcesCoverageRoute
+  SourcesDetailRoute: typeof SourcesDetailRoute
+  SourcesEnrichmentRoute: typeof SourcesEnrichmentRoute
   SourcesLibraryRoute: typeof SourcesLibraryRoute
   SourcesRegistryRoute: typeof SourcesRegistryRoute
   SourcesRegistryV22Route: typeof SourcesRegistryV22Route
@@ -631,6 +670,13 @@ declare module '@tanstack/react-router' {
       path: '/laws'
       fullPath: '/laws'
       preLoaderRoute: typeof LawsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/limitations': {
+      id: '/limitations'
+      path: '/limitations'
+      fullPath: '/limitations'
+      preLoaderRoute: typeof LimitationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mdls': {
@@ -822,6 +868,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SourcesCoverageRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sources/detail': {
+      id: '/sources/detail'
+      path: '/sources/detail'
+      fullPath: '/sources/detail'
+      preLoaderRoute: typeof SourcesDetailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sources/enrichment': {
+      id: '/sources/enrichment'
+      path: '/sources/enrichment'
+      fullPath: '/sources/enrichment'
+      preLoaderRoute: typeof SourcesEnrichmentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sources/library': {
       id: '/sources/library'
       path: '/sources/library'
@@ -895,6 +955,7 @@ const rootRouteChildren: RootRouteChildren = {
   JurisdictionsRoute: JurisdictionsRoute,
   LawRoute: LawRoute,
   LawsRoute: LawsRoute,
+  LimitationsRoute: LimitationsRoute,
   MdlsRoute: MdlsRoute,
   OverviewRoute: OverviewRoute,
   PeopleRoute: PeopleRoute,
@@ -915,6 +976,8 @@ const rootRouteChildren: RootRouteChildren = {
   RegistryIdRoute: RegistryIdRoute,
   SourcesCatalogRoute: SourcesCatalogRoute,
   SourcesCoverageRoute: SourcesCoverageRoute,
+  SourcesDetailRoute: SourcesDetailRoute,
+  SourcesEnrichmentRoute: SourcesEnrichmentRoute,
   SourcesLibraryRoute: SourcesLibraryRoute,
   SourcesRegistryRoute: SourcesRegistryRoute,
   SourcesRegistryV22Route: SourcesRegistryV22Route,

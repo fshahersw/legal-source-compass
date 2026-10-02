@@ -32,7 +32,7 @@ export const Route = createFileRoute("/sources/library")({
       {
         property: "og:description",
         content:
-          "Compact searchable directory of imported U.S. litigation source URLs with filters, detail drawer and exports.",
+          "Compact searchable directory of imported U.S. litigation source URLs with filters, permanent detail pages and exports.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

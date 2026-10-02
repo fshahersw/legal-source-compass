@@ -1,10 +1,9 @@
 import { Download, RotateCcw, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { toast } from "sonner";
 
 import { FacetFilter } from "@/components/atlas/FacetFilter";
 import { Pager } from "@/components/atlas/Pager";
-import { SourceDrawer } from "@/components/atlas/SourceDrawer";
 import { SourceTable } from "@/components/atlas/SourceTable";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { facet, valuesOf } from "@/lib/atlas/bundle";
-import { CATEGORY_LABELS, classifySource, type CategoryId } from "@/lib/corpus/taxonomy";
+import { CATEGORY_LABELS, classifySource, TAXONOMY_VERSION, type CategoryId } from "@/lib/corpus/taxonomy";
 import { downloadText, sourcesToCsv, sourcesToJson } from "@/lib/atlas/exports";
 import { filterSources, queryAndPaginate, sortSources, type SortKey } from "@/lib/atlas/filters";
 import { useAtlas } from "@/lib/atlas/store";
@@ -40,7 +39,6 @@ export function LibraryBrowser({
   showFacets?: boolean;
 }) {
   const { filters, setFilters, resetFilters, overlays, bookmarks, bundle } = useAtlas();
-  const [selected, setSelected] = useState<Source | null>(null);
 
   const ctx = useMemo(() => ({ overlays, bookmarks }), [overlays, bookmarks]);
   const page = useMemo(() => queryAndPaginate(sources, filters, ctx), [sources, filters, ctx]);
@@ -91,6 +89,7 @@ export function LibraryBrowser({
       "application/json",
       sourcesToJson(rows, overlays, bookmarks, {
         bundle_version: bundle?.bundle_version ?? "unknown",
+        taxonomy_version: TAXONOMY_VERSION,
         scope,
       }),
     );
@@ -126,13 +125,13 @@ export function LibraryBrowser({
                 onChange={(v) => setFilters({ families: v })}
               />
               <FacetFilter
-                label="Heading category"
+                label="Recorded category"
                 facets={facets.headings}
                 selected={filters.headingCategories}
                 onChange={(v) => setFilters({ headingCategories: v })}
               />
               <FacetFilter
-                label="Resource group (from heading)"
+                label="Resource group"
                 facets={facets.categories.map((c) => ({ ...c, value: `${c.label}` }))}
                 selected={filters.categories.map((id) => CATEGORY_LABELS[id as CategoryId] ?? id)}
                 onChange={(v) =>
@@ -185,11 +184,9 @@ export function LibraryBrowser({
           rows={page.items}
           overlays={overlays}
           bookmarks={bookmarks}
-          selectedId={selected?.id ?? null}
           sortKey={filters.sortKey}
           sortDir={filters.sortDir}
           onSort={onSort}
-          onSelect={setSelected}
         />
         <Pager
           page={page.page}
@@ -203,7 +200,6 @@ export function LibraryBrowser({
         />
       </div>
 
-      <SourceDrawer source={selected} onClose={() => setSelected(null)} />
     </>
   );
 }
