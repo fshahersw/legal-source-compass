@@ -1,12 +1,24 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Map as MapIcon, Landmark, Library, ShieldAlert, BookOpen, Search, LogIn, LogOut } from "lucide-react";
-import { useState, type FormEvent, type ReactNode } from "react";
+import {
+  Map as MapIcon,
+  Landmark,
+  Library,
+  ShieldAlert,
+  BookOpen,
+  Search,
+  LogIn,
+  LogOut,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useSessionUser } from "@/lib/auth/useSession";
 import { useAtlas } from "@/lib/atlas/store";
 import { reviewCounts } from "@/lib/atlas/review";
+import { getSidebarCollapsed, setSidebarCollapsed } from "@/lib/atlas/ui";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -87,16 +99,22 @@ const CONTEXT_NAV = [
   },
 ];
 
-function AccountBox() {
+function AccountBox({ collapsed }: { collapsed: boolean }) {
   const { user, ready } = useSessionUser();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   if (!ready) return null;
+  const center = collapsed ? "justify-center px-0" : "";
   if (!user)
     return (
-      <Link to="/auth" className="nav-link">
+      <Link
+        to="/auth"
+        className={`nav-link ${center}`}
+        title={collapsed ? "Sign in" : undefined}
+        aria-label={collapsed ? "Sign in" : undefined}
+      >
         <LogIn className="size-4 opacity-70" strokeWidth={1.75} />
-        <span>Sign in</span>
+        {!collapsed && <span>Sign in</span>}
       </Link>
     );
   const signOut = async () => {
@@ -105,13 +123,21 @@ function AccountBox() {
     navigate({ to: "/auth", replace: true });
   };
   return (
-    <div className="space-y-1">
-      <div className="truncate text-[11px] text-muted-foreground" title={user.email ?? ""}>
-        {user.email}
-      </div>
-      <button type="button" onClick={signOut} className="nav-link w-full">
+    <div className={collapsed ? "flex justify-center" : "space-y-1"}>
+      {!collapsed && (
+        <div className="truncate text-[11px] text-muted-foreground" title={user.email ?? ""}>
+          {user.email}
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={signOut}
+        className={`nav-link w-full ${center}`}
+        title={collapsed ? "Sign out" : undefined}
+        aria-label={collapsed ? "Sign out" : undefined}
+      >
         <LogOut className="size-4 opacity-70" strokeWidth={1.75} />
-        <span>Sign out</span>
+        {!collapsed && <span>Sign out</span>}
       </button>
     </div>
   );
@@ -139,6 +165,15 @@ export function AppShell({
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    setCollapsed(getSidebarCollapsed());
+  }, []);
+  const toggleSidebar = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    setSidebarCollapsed(next);
+  };
   const context = CONTEXT_NAV.find((group) =>
     group.paths.some((path) => pathMatches(pathname, path)),
   );
