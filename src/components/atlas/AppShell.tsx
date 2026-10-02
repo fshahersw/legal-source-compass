@@ -27,11 +27,11 @@ const NAV: NavItem[] = [
 ];
 
 const CONTEXT_NAV = [
-  { paths: EXPLORE, items: [{ to: "/", label: "Map" }, { to: "/search", label: "Search everything" }] },
+  { paths: EXPLORE, items: [{ to: "/", label: "Map" }, { to: "/search", label: "Search everything" }, { to: "/insights", label: "Research workbench" }] },
   { paths: LITIGATION, items: [
-    { to: "/courts", label: "1 · Courts" }, { to: "/judges", label: "2 · Judges" }, { to: "/matters", label: "3 · Matters (MDLs)" }, { to: "/matters/cases", label: "4 · Cases & analytics" }, { to: "/registry", label: "5 · Case registry" }, { to: "/people", label: "People A–Z" },
+    { to: "/courts", label: "1 · Courts" }, { to: "/judges", label: "2 · Judges" }, { to: "/matters", label: "3 · Matters (MDLs)" }, { to: "/matters/cases", label: "4 · Cases & analytics" }, { to: "/insights", label: "Research workbench" }, { to: "/registry", label: "5 · Case registry" }, { to: "/people", label: "People A–Z" },
   ] },
-  { paths: LAW, items: [{ to: "/law", label: "Law & regulation" }, { to: "/safety", label: "Product safety" }, { to: "/agencies", label: "Agencies" }] },
+  { paths: LAW, items: [{ to: "/law", label: "Law & regulation" }, { to: "/safety", label: "Product safety" }, { to: "/agencies", label: "Agencies" }, { to: "/insights", label: "Research workbench" }] },
   { paths: SOURCES, items: [
     { to: "/sources/library", label: "Source library" }, { to: "/sources/catalog", label: "Source catalog" }, { to: "/sources/registry-v22", label: "Registry V2.2" }, { to: "/sources/registry", label: "Registry v0.6" }, { to: "/sources/coverage", label: "Quality & coverage" },
     { to: "/source-datasets", label: "Corpus records" }, { to: "/data", label: "All datasets" },

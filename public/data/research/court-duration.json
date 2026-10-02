@@ -1,0 +1,2475 @@
+{
+  "sourceId": "uscourts-duration",
+  "periodEnd": "2025-09-30",
+  "national": {
+    "all": {
+      "cases": 355243,
+      "medianMonths": 15.6393442622951
+    },
+    "noCourtAction": {
+      "cases": 52285,
+      "medianMonths": 5.08196721311475
+    },
+    "beforePretrial": {
+      "cases": 276057,
+      "medianMonths": 18.8196721311475
+    },
+    "duringAfterPretrial": {
+      "cases": 25439,
+      "medianMonths": 15.9016393442623
+    },
+    "duringTrial": {
+      "cases": 1462,
+      "medianMonths": 30.7213114754098
+    }
+  },
+  "districts": [
+    {
+      "label": "DC",
+      "state": "DC",
+      "metrics": {
+        "all": {
+          "cases": 3347,
+          "medianMonths": 7.73770491803279
+        },
+        "noCourtAction": {
+          "cases": 876,
+          "medianMonths": 5.44262295081967
+        },
+        "beforePretrial": {
+          "cases": 2449,
+          "medianMonths": 8.78688524590164
+        },
+        "duringAfterPretrial": {
+          "cases": 13,
+          "medianMonths": 53.2459016393443
+        },
+        "duringTrial": {
+          "cases": 9,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "ME",
+      "state": "ME",
+      "metrics": {
+        "all": {
+          "cases": 464,
+          "medianMonths": 6.24590163934426
+        },
+        "noCourtAction": {
+          "cases": 149,
+          "medianMonths": 4.85245901639344
+        },
+        "beforePretrial": {
+          "cases": 290,
+          "medianMonths": 6.68852459016393
+        },
+        "duringAfterPretrial": {
+          "cases": 22,
+          "medianMonths": 20.0163934426229
+        },
+        "duringTrial": {
+          "cases": 3,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "MA",
+      "state": "MA",
+      "metrics": {
+        "all": {
+          "cases": 2682,
+          "medianMonths": 7.34426229508197
+        },
+        "noCourtAction": {
+          "cases": 1095,
+          "medianMonths": 3.80327868852459
+        },
+        "beforePretrial": {
+          "cases": 881,
+          "medianMonths": 7.14754098360656
+        },
+        "duringAfterPretrial": {
+          "cases": 676,
+          "medianMonths": 17.3770491803279
+        },
+        "duringTrial": {
+          "cases": 30,
+          "medianMonths": 34.8196721311475
+        }
+      }
+    },
+    {
+      "label": "NH",
+      "state": "NH",
+      "metrics": {
+        "all": {
+          "cases": 672,
+          "medianMonths": 32.9672131147541
+        },
+        "noCourtAction": {
+          "cases": 89,
+          "medianMonths": 3.21311475409836
+        },
+        "beforePretrial": {
+          "cases": 506,
+          "medianMonths": 41.6065573770492
+        },
+        "duringAfterPretrial": {
+          "cases": 74,
+          "medianMonths": 15.6229508196721
+        },
+        "duringTrial": {
+          "cases": 3,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "RI",
+      "state": "RI",
+      "metrics": {
+        "all": {
+          "cases": 484,
+          "medianMonths": 8.85245901639344
+        },
+        "noCourtAction": {
+          "cases": 214,
+          "medianMonths": 8.9672131147541
+        },
+        "beforePretrial": {
+          "cases": 247,
+          "medianMonths": 7.80327868852459
+        },
+        "duringAfterPretrial": {
+          "cases": 19,
+          "medianMonths": 30.6229508196721
+        },
+        "duringTrial": {
+          "cases": 4,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "PR",
+      "state": "PR",
+      "metrics": {
+        "all": {
+          "cases": 584,
+          "medianMonths": 13.9016393442623
+        },
+        "noCourtAction": {
+          "cases": 84,
+          "medianMonths": 7.62295081967213
+        },
+        "beforePretrial": {
+          "cases": 470,
+          "medianMonths": 14.1311475409836
+        },
+        "duringAfterPretrial": {
+          "cases": 13,
+          "medianMonths": 37.1475409836066
+        },
+        "duringTrial": {
+          "cases": 17,
+          "medianMonths": 37.2459016393443
+        }
+      }
+    },
+    {
+      "label": "CT",
+      "state": "CT",
+      "metrics": {
+        "all": {
+          "cases": 1471,
+          "medianMonths": 6.85245901639344
+        },
+        "noCourtAction": {
+          "cases": 227,
+          "medianMonths": 3.01639344262295
+        },
+        "beforePretrial": {
+          "cases": 833,
+          "medianMonths": 5.57377049180328
+        },
+        "duringAfterPretrial": {
+          "cases": 401,
+          "medianMonths": 13.8360655737705
+        },
+        "duringTrial": {
+          "cases": 10,
+          "medianMonths": 36.4098360655738
+        }
+      }
+    },
+    {
+      "label": "NY,N",
+      "state": "NY",
+      "metrics": {
+        "all": {
+          "cases": 1302,
+          "medianMonths": 8.44262295081967
+        },
+        "noCourtAction": {
+          "cases": 227,
+          "medianMonths": 4.22950819672131
+        },
+        "beforePretrial": {
+          "cases": 796,
+          "medianMonths": 7.36065573770492
+        },
+        "duringAfterPretrial": {
+          "cases": 267,
+          "medianMonths": 17.2459016393443
+        },
+        "duringTrial": {
+          "cases": 12,
+          "medianMonths": 53.7868852459016
+        }
+      }
+    },
+    {
+      "label": "NY,E",
+      "state": "NY",
+      "metrics": {
+        "all": {
+          "cases": 7392,
+          "medianMonths": 6.65573770491803
+        },
+        "noCourtAction": {
+          "cases": 1485,
+          "medianMonths": 3.01639344262295
+        },
+        "beforePretrial": {
+          "cases": 5022,
+          "medianMonths": 6.91803278688525
+        },
+        "duringAfterPretrial": {
+          "cases": 835,
+          "medianMonths": 13.9344262295082
+        },
+        "duringTrial": {
+          "cases": 50,
+          "medianMonths": 49.6393442622951
+        }
+      }
+    },
+    {
+      "label": "NY,S",
+      "state": "NY",
+      "metrics": {
+        "all": {
+          "cases": 9565,
+          "medianMonths": 5.63934426229508
+        },
+        "noCourtAction": {
+          "cases": 1749,
+          "medianMonths": 3.50819672131148
+        },
+        "beforePretrial": {
+          "cases": 6416,
+          "medianMonths": 5.11475409836066
+        },
+        "duringAfterPretrial": {
+          "cases": 1313,
+          "medianMonths": 14.0655737704918
+        },
+        "duringTrial": {
+          "cases": 87,
+          "medianMonths": 51.672131147541
+        }
+      }
+    },
+    {
+      "label": "NY,W",
+      "state": "NY",
+      "metrics": {
+        "all": {
+          "cases": 1499,
+          "medianMonths": 9.14754098360656
+        },
+        "noCourtAction": {
+          "cases": 91,
+          "medianMonths": 8.65573770491803
+        },
+        "beforePretrial": {
+          "cases": 1344,
+          "medianMonths": 8.55737704918033
+        },
+        "duringAfterPretrial": {
+          "cases": 56,
+          "medianMonths": 28.5245901639344
+        },
+        "duringTrial": {
+          "cases": 8,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "VT",
+      "state": "VT",
+      "metrics": {
+        "all": {
+          "cases": 1324,
+          "medianMonths": 2.52459016393443
+        },
+        "noCourtAction": {
+          "cases": 1000,
+          "medianMonths": 2.32786885245902
+        },
+        "beforePretrial": {
+          "cases": 315,
+          "medianMonths": 4.81967213114754
+        },
+        "duringAfterPretrial": {
+          "cases": 6,
+          "medianMonths": null
+        },
+        "duringTrial": {
+          "cases": 3,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "DE",
+      "state": "DE",
+      "metrics": {
+        "all": {
+          "cases": 1391,
+          "medianMonths": 9.70491803278689
+        },
+        "noCourtAction": {
+          "cases": 244,
+          "medianMonths": 3.40983606557377
+        },
+        "beforePretrial": {
+          "cases": 1042,
+          "medianMonths": 10.5409836065574
+        },
+        "duringAfterPretrial": {
+          "cases": 68,
+          "medianMonths": 21.0327868852459
+        },
+        "duringTrial": {
+          "cases": 37,
+          "medianMonths": 42.2950819672131
+        }
+      }
+    },
+    {
+      "label": "NJ",
+      "state": "NJ",
+      "metrics": {
+        "all": {
+          "cases": 8970,
+          "medianMonths": 8.09836065573771
+        },
+        "noCourtAction": {
+          "cases": 370,
+          "medianMonths": 4.55737704918033
+        },
+        "beforePretrial": {
+          "cases": 6266,
+          "medianMonths": 5.34426229508197
+        },
+        "duringAfterPretrial": {
+          "cases": 2317,
+          "medianMonths": 14.3934426229508
+        },
+        "duringTrial": {
+          "cases": 17,
+          "medianMonths": 36.5573770491803
+        }
+      }
+    },
+    {
+      "label": "PA,E",
+      "state": "PA",
+      "metrics": {
+        "all": {
+          "cases": 5730,
+          "medianMonths": 5.08196721311475
+        },
+        "noCourtAction": {
+          "cases": 1952,
+          "medianMonths": 3.24590163934426
+        },
+        "beforePretrial": {
+          "cases": 2834,
+          "medianMonths": 4.65573770491803
+        },
+        "duringAfterPretrial": {
+          "cases": 898,
+          "medianMonths": 10.0327868852459
+        },
+        "duringTrial": {
+          "cases": 46,
+          "medianMonths": 17.8360655737705
+        }
+      }
+    },
+    {
+      "label": "PA,M",
+      "state": "PA",
+      "metrics": {
+        "all": {
+          "cases": 1590,
+          "medianMonths": 8.52459016393443
+        },
+        "noCourtAction": {
+          "cases": 660,
+          "medianMonths": 6.0
+        },
+        "beforePretrial": {
+          "cases": 901,
+          "medianMonths": 10.5901639344262
+        },
+        "duringAfterPretrial": {
+          "cases": 21,
+          "medianMonths": 39.8032786885246
+        },
+        "duringTrial": {
+          "cases": 8,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "PA,W",
+      "state": "PA",
+      "metrics": {
+        "all": {
+          "cases": 1965,
+          "medianMonths": 6.45901639344262
+        },
+        "noCourtAction": {
+          "cases": 665,
+          "medianMonths": 4.55737704918033
+        },
+        "beforePretrial": {
+          "cases": 659,
+          "medianMonths": 5.14754098360656
+        },
+        "duringAfterPretrial": {
+          "cases": 632,
+          "medianMonths": 8.37704918032787
+        },
+        "duringTrial": {
+          "cases": 9,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "VI",
+      "state": "VI",
+      "metrics": {
+        "all": {
+          "cases": 105,
+          "medianMonths": 10.2950819672131
+        },
+        "noCourtAction": {
+          "cases": 62,
+          "medianMonths": 5.50819672131148
+        },
+        "beforePretrial": {
+          "cases": 15,
+          "medianMonths": 10.7540983606557
+        },
+        "duringAfterPretrial": {
+          "cases": 27,
+          "medianMonths": 25.7377049180328
+        },
+        "duringTrial": {
+          "cases": 1,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "MD",
+      "state": "MD",
+      "metrics": {
+        "all": {
+          "cases": 3191,
+          "medianMonths": 6.68852459016393
+        },
+        "noCourtAction": {
+          "cases": 151,
+          "medianMonths": 5.70491803278689
+        },
+        "beforePretrial": {
+          "cases": 2564,
+          "medianMonths": 5.86885245901639
+        },
+        "duringAfterPretrial": {
+          "cases": 457,
+          "medianMonths": 13.6393442622951
+        },
+        "duringTrial": {
+          "cases": 19,
+          "medianMonths": 33.8688524590164
+        }
+      }
+    },
+    {
+      "label": "NC,E",
+      "state": "NC",
+      "metrics": {
+        "all": {
+          "cases": 1130,
+          "medianMonths": 8.29508196721312
+        },
+        "noCourtAction": {
+          "cases": 640,
+          "medianMonths": 8.13114754098361
+        },
+        "beforePretrial": {
+          "cases": 486,
+          "medianMonths": 8.34426229508197
+        },
+        "duringAfterPretrial": {
+          "cases": 2,
+          "medianMonths": null
+        },
+        "duringTrial": {
+          "cases": 2,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "NC,M",
+      "state": "NC",
+      "metrics": {
+        "all": {
+          "cases": 590,
+          "medianMonths": 8.39344262295082
+        },
+        "noCourtAction": {
+          "cases": 377,
+          "medianMonths": 7.14754098360656
+        },
+        "beforePretrial": {
+          "cases": 189,
+          "medianMonths": 9.9344262295082
+        },
+        "duringAfterPretrial": {
+          "cases": 20,
+          "medianMonths": 21.0327868852459
+        },
+        "duringTrial": {
+          "cases": 4,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "NC,W",
+      "state": "NC",
+      "metrics": {
+        "all": {
+          "cases": 1033,
+          "medianMonths": 5.9016393442623
+        },
+        "noCourtAction": {
+          "cases": 193,
+          "medianMonths": 2.95081967213115
+        },
+        "beforePretrial": {
+          "cases": 586,
+          "medianMonths": 5.11475409836066
+        },
+        "duringAfterPretrial": {
+          "cases": 248,
+          "medianMonths": 13.1967213114754
+        },
+        "duringTrial": {
+          "cases": 6,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "SC",
+      "state": "SC",
+      "metrics": {
+        "all": {
+          "cases": 2805,
+          "medianMonths": 7.83606557377049
+        },
+        "noCourtAction": {
+          "cases": 724,
+          "medianMonths": 5.13114754098361
+        },
+        "beforePretrial": {
+          "cases": 2005,
+          "medianMonths": 8.59016393442623
+        },
+        "duringAfterPretrial": {
+          "cases": 64,
+          "medianMonths": 17.9016393442623
+        },
+        "duringTrial": {
+          "cases": 12,
+          "medianMonths": 35.9672131147541
+        }
+      }
+    },
+    {
+      "label": "VA,E",
+      "state": "VA",
+      "metrics": {
+        "all": {
+          "cases": 3011,
+          "medianMonths": 5.63934426229508
+        },
+        "noCourtAction": {
+          "cases": 1204,
+          "medianMonths": 5.01639344262295
+        },
+        "beforePretrial": {
+          "cases": 1299,
+          "medianMonths": 4.88524590163934
+        },
+        "duringAfterPretrial": {
+          "cases": 493,
+          "medianMonths": 8.91803278688525
+        },
+        "duringTrial": {
+          "cases": 15,
+          "medianMonths": 19.3114754098361
+        }
+      }
+    },
+    {
+      "label": "VA,W",
+      "state": "VA",
+      "metrics": {
+        "all": {
+          "cases": 517,
+          "medianMonths": 9.18032786885246
+        },
+        "noCourtAction": {
+          "cases": 48,
+          "medianMonths": 6.9344262295082
+        },
+        "beforePretrial": {
+          "cases": 447,
+          "medianMonths": 9.34426229508197
+        },
+        "duringAfterPretrial": {
+          "cases": 14,
+          "medianMonths": 13.1475409836066
+        },
+        "duringTrial": {
+          "cases": 8,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "WV,N",
+      "state": "WV",
+      "metrics": {
+        "all": {
+          "cases": 300,
+          "medianMonths": 10.2622950819672
+        },
+        "noCourtAction": {
+          "cases": 9,
+          "medianMonths": null
+        },
+        "beforePretrial": {
+          "cases": 272,
+          "medianMonths": 9.73770491803279
+        },
+        "duringAfterPretrial": {
+          "cases": 15,
+          "medianMonths": 14.8196721311475
+        },
+        "duringTrial": {
+          "cases": 4,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "WV,S",
+      "state": "WV",
+      "metrics": {
+        "all": {
+          "cases": 470,
+          "medianMonths": 10.0491803278689
+        },
+        "noCourtAction": {
+          "cases": 16,
+          "medianMonths": 3.0327868852459
+        },
+        "beforePretrial": {
+          "cases": 441,
+          "medianMonths": 10.0655737704918
+        },
+        "duringAfterPretrial": {
+          "cases": 10,
+          "medianMonths": 19.5409836065574
+        },
+        "duringTrial": {
+          "cases": 3,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "LA,E",
+      "state": "LA",
+      "metrics": {
+        "all": {
+          "cases": 10411,
+          "medianMonths": 79.9344262295082
+        },
+        "noCourtAction": {
+          "cases": 3511,
+          "medianMonths": 86.6229508196721
+        },
+        "beforePretrial": {
+          "cases": 2814,
+          "medianMonths": 14.6229508196721
+        },
+        "duringAfterPretrial": {
+          "cases": 4062,
+          "medianMonths": 86.7868852459017
+        },
+        "duringTrial": {
+          "cases": 24,
+          "medianMonths": 23.1967213114754
+        }
+      }
+    },
+    {
+      "label": "LA,M",
+      "state": "LA",
+      "metrics": {
+        "all": {
+          "cases": 1130,
+          "medianMonths": 13.8524590163934
+        },
+        "noCourtAction": {
+          "cases": 185,
+          "medianMonths": 14.655737704918
+        },
+        "beforePretrial": {
+          "cases": 924,
+          "medianMonths": 13.3934426229508
+        },
+        "duringAfterPretrial": {
+          "cases": 15,
+          "medianMonths": 25.7049180327869
+        },
+        "duringTrial": {
+          "cases": 6,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "LA,W",
+      "state": "LA",
+      "metrics": {
+        "all": {
+          "cases": 1541,
+          "medianMonths": 13.4426229508197
+        },
+        "noCourtAction": {
+          "cases": 287,
+          "medianMonths": 8.91803278688525
+        },
+        "beforePretrial": {
+          "cases": 832,
+          "medianMonths": 13.2295081967213
+        },
+        "duringAfterPretrial": {
+          "cases": 398,
+          "medianMonths": 16.0983606557377
+        },
+        "duringTrial": {
+          "cases": 24,
+          "medianMonths": 27.5737704918033
+        }
+      }
+    },
+    {
+      "label": "MS,N",
+      "state": "MS",
+      "metrics": {
+        "all": {
+          "cases": 563,
+          "medianMonths": 7.27868852459017
+        },
+        "noCourtAction": {
+          "cases": 121,
+          "medianMonths": 2.81967213114754
+        },
+        "beforePretrial": {
+          "cases": 199,
+          "medianMonths": 4.16393442622951
+        },
+        "duringAfterPretrial": {
+          "cases": 242,
+          "medianMonths": 11.7868852459016
+        },
+        "duringTrial": {
+          "cases": 1,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "MS,S",
+      "state": "MS",
+      "metrics": {
+        "all": {
+          "cases": 1034,
+          "medianMonths": 9.40983606557377
+        },
+        "noCourtAction": {
+          "cases": 613,
+          "medianMonths": 8.39344262295082
+        },
+        "beforePretrial": {
+          "cases": 385,
+          "medianMonths": 9.86885245901639
+        },
+        "duringAfterPretrial": {
+          "cases": 26,
+          "medianMonths": 21.016393442623
+        },
+        "duringTrial": {
+          "cases": 10,
+          "medianMonths": 21.4754098360656
+        }
+      }
+    },
+    {
+      "label": "TX,N",
+      "state": "TX",
+      "metrics": {
+        "all": {
+          "cases": 4103,
+          "medianMonths": 5.9016393442623
+        },
+        "noCourtAction": {
+          "cases": 829,
+          "medianMonths": 3.9672131147541
+        },
+        "beforePretrial": {
+          "cases": 3228,
+          "medianMonths": 6.32786885245902
+        },
+        "duringAfterPretrial": {
+          "cases": 11,
+          "medianMonths": 16.0983606557377
+        },
+        "duringTrial": {
+          "cases": 35,
+          "medianMonths": 19.344262295082
+        }
+      }
+    },
+    {
+      "label": "TX,E",
+      "state": "TX",
+      "metrics": {
+        "all": {
+          "cases": 2854,
+          "medianMonths": 7.31147540983607
+        },
+        "noCourtAction": {
+          "cases": 1222,
+          "medianMonths": 5.34426229508197
+        },
+        "beforePretrial": {
+          "cases": 1581,
+          "medianMonths": 8.95081967213115
+        },
+        "duringAfterPretrial": {
+          "cases": 15,
+          "medianMonths": 26.0327868852459
+        },
+        "duringTrial": {
+          "cases": 36,
+          "medianMonths": 24.1967213114754
+        }
+      }
+    },
+    {
+      "label": "TX,S",
+      "state": "TX",
+      "metrics": {
+        "all": {
+          "cases": 5742,
+          "medianMonths": 7.63934426229508
+        },
+        "noCourtAction": {
+          "cases": 2442,
+          "medianMonths": 6.0
+        },
+        "beforePretrial": {
+          "cases": 2371,
+          "medianMonths": 7.44262295081967
+        },
+        "duringAfterPretrial": {
+          "cases": 871,
+          "medianMonths": 11.4098360655738
+        },
+        "duringTrial": {
+          "cases": 58,
+          "medianMonths": 31.6393442622951
+        }
+      }
+    },
+    {
+      "label": "TX,W",
+      "state": "TX",
+      "metrics": {
+        "all": {
+          "cases": 3691,
+          "medianMonths": 7.67213114754098
+        },
+        "noCourtAction": {
+          "cases": 1171,
+          "medianMonths": 5.54098360655738
+        },
+        "beforePretrial": {
+          "cases": 2115,
+          "medianMonths": 7.47540983606557
+        },
+        "duringAfterPretrial": {
+          "cases": 366,
+          "medianMonths": 14.0491803278689
+        },
+        "duringTrial": {
+          "cases": 39,
+          "medianMonths": 30.5901639344262
+        }
+      }
+    },
+    {
+      "label": "KY,E",
+      "state": "KY",
+      "metrics": {
+        "all": {
+          "cases": 725,
+          "medianMonths": 8.26229508196721
+        },
+        "noCourtAction": {
+          "cases": 107,
+          "medianMonths": 6.95081967213115
+        },
+        "beforePretrial": {
+          "cases": 602,
+          "medianMonths": 8.26229508196721
+        },
+        "duringAfterPretrial": {
+          "cases": 6,
+          "medianMonths": null
+        },
+        "duringTrial": {
+          "cases": 10,
+          "medianMonths": 37.3606557377049
+        }
+      }
+    },
+    {
+      "label": "KY,W",
+      "state": "KY",
+      "metrics": {
+        "all": {
+          "cases": 931,
+          "medianMonths": 7.86885245901639
+        },
+        "noCourtAction": {
+          "cases": 121,
+          "medianMonths": 3.73770491803279
+        },
+        "beforePretrial": {
+          "cases": 790,
+          "medianMonths": 8.36065573770492
+        },
+        "duringAfterPretrial": {
+          "cases": 17,
+          "medianMonths": 27.1147540983607
+        },
+        "duringTrial": {
+          "cases": 3,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "MI,E",
+      "state": "MI",
+      "metrics": {
+        "all": {
+          "cases": 2926,
+          "medianMonths": 8.31147540983607
+        },
+        "noCourtAction": {
+          "cases": 410,
+          "medianMonths": 2.91803278688525
+        },
+        "beforePretrial": {
+          "cases": 1246,
+          "medianMonths": 4.0655737704918
+        },
+        "duringAfterPretrial": {
+          "cases": 1252,
+          "medianMonths": 15.2622950819672
+        },
+        "duringTrial": {
+          "cases": 18,
+          "medianMonths": 35.8032786885246
+        }
+      }
+    },
+    {
+      "label": "MI,W",
+      "state": "MI",
+      "metrics": {
+        "all": {
+          "cases": 1042,
+          "medianMonths": 7.62295081967213
+        },
+        "noCourtAction": {
+          "cases": 107,
+          "medianMonths": 2.75409836065574
+        },
+        "beforePretrial": {
+          "cases": 714,
+          "medianMonths": 6.65573770491803
+        },
+        "duringAfterPretrial": {
+          "cases": 217,
+          "medianMonths": 14.1639344262295
+        },
+        "duringTrial": {
+          "cases": 4,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "OH,N",
+      "state": "OH",
+      "metrics": {
+        "all": {
+          "cases": 2048,
+          "medianMonths": 7.0655737704918
+        },
+        "noCourtAction": {
+          "cases": 394,
+          "medianMonths": 3.32786885245902
+        },
+        "beforePretrial": {
+          "cases": 1035,
+          "medianMonths": 5.86885245901639
+        },
+        "duringAfterPretrial": {
+          "cases": 607,
+          "medianMonths": 11.3770491803279
+        },
+        "duringTrial": {
+          "cases": 12,
+          "medianMonths": 18.0
+        }
+      }
+    },
+    {
+      "label": "OH,S",
+      "state": "OH",
+      "metrics": {
+        "all": {
+          "cases": 2199,
+          "medianMonths": 8.98360655737705
+        },
+        "noCourtAction": {
+          "cases": 1037,
+          "medianMonths": 7.50819672131148
+        },
+        "beforePretrial": {
+          "cases": 810,
+          "medianMonths": 7.24590163934426
+        },
+        "duringAfterPretrial": {
+          "cases": 343,
+          "medianMonths": 15.2131147540984
+        },
+        "duringTrial": {
+          "cases": 9,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "TN,E",
+      "state": "TN",
+      "metrics": {
+        "all": {
+          "cases": 933,
+          "medianMonths": 9.34426229508197
+        },
+        "noCourtAction": {
+          "cases": 139,
+          "medianMonths": 7.27868852459017
+        },
+        "beforePretrial": {
+          "cases": 724,
+          "medianMonths": 9.0655737704918
+        },
+        "duringAfterPretrial": {
+          "cases": 59,
+          "medianMonths": 20.1967213114754
+        },
+        "duringTrial": {
+          "cases": 11,
+          "medianMonths": 32.4262295081967
+        }
+      }
+    },
+    {
+      "label": "TN,M",
+      "state": "TN",
+      "metrics": {
+        "all": {
+          "cases": 1138,
+          "medianMonths": 8.68852459016394
+        },
+        "noCourtAction": {
+          "cases": 576,
+          "medianMonths": 7.45901639344262
+        },
+        "beforePretrial": {
+          "cases": 543,
+          "medianMonths": 9.40983606557377
+        },
+        "duringAfterPretrial": {
+          "cases": 9,
+          "medianMonths": null
+        },
+        "duringTrial": {
+          "cases": 10,
+          "medianMonths": 28.1311475409836
+        }
+      }
+    },
+    {
+      "label": "TN,W",
+      "state": "TN",
+      "metrics": {
+        "all": {
+          "cases": 893,
+          "medianMonths": 8.62295081967213
+        },
+        "noCourtAction": {
+          "cases": 381,
+          "medianMonths": 8.55737704918033
+        },
+        "beforePretrial": {
+          "cases": 489,
+          "medianMonths": 8.32786885245902
+        },
+        "duringAfterPretrial": {
+          "cases": 10,
+          "medianMonths": 25.8360655737705
+        },
+        "duringTrial": {
+          "cases": 13,
+          "medianMonths": 26.6885245901639
+        }
+      }
+    },
+    {
+      "label": "IL,N",
+      "state": "IL",
+      "metrics": {
+        "all": {
+          "cases": 12205,
+          "medianMonths": 5.9344262295082
+        },
+        "noCourtAction": {
+          "cases": 4300,
+          "medianMonths": 7.01639344262295
+        },
+        "beforePretrial": {
+          "cases": 7558,
+          "medianMonths": 5.37704918032787
+        },
+        "duringAfterPretrial": {
+          "cases": 305,
+          "medianMonths": 12.6229508196721
+        },
+        "duringTrial": {
+          "cases": 42,
+          "medianMonths": 49.5245901639344
+        }
+      }
+    },
+    {
+      "label": "IL,C",
+      "state": "IL",
+      "metrics": {
+        "all": {
+          "cases": 760,
+          "medianMonths": 7.26229508196721
+        },
+        "noCourtAction": {
+          "cases": 315,
+          "medianMonths": 6.16393442622951
+        },
+        "beforePretrial": {
+          "cases": 438,
+          "medianMonths": 8.39344262295082
+        },
+        "duringAfterPretrial": {
+          "cases": 0,
+          "medianMonths": null
+        },
+        "duringTrial": {
+          "cases": 7,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "IL,S",
+      "state": "IL",
+      "metrics": {
+        "all": {
+          "cases": 1081,
+          "medianMonths": 13.6393442622951
+        },
+        "noCourtAction": {
+          "cases": 651,
+          "medianMonths": 13.5081967213115
+        },
+        "beforePretrial": {
+          "cases": 414,
+          "medianMonths": 13.8196721311475
+        },
+        "duringAfterPretrial": {
+          "cases": 7,
+          "medianMonths": null
+        },
+        "duringTrial": {
+          "cases": 9,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "IN,N",
+      "state": "IN",
+      "metrics": {
+        "all": {
+          "cases": 1338,
+          "medianMonths": 8.49180327868852
+        },
+        "noCourtAction": {
+          "cases": 68,
+          "medianMonths": 2.60655737704918
+        },
+        "beforePretrial": {
+          "cases": 958,
+          "medianMonths": 7.59016393442623
+        },
+        "duringAfterPretrial": {
+          "cases": 302,
+          "medianMonths": 14.5245901639344
+        },
+        "duringTrial": {
+          "cases": 10,
+          "medianMonths": 43.6393442622951
+        }
+      }
+    },
+    {
+      "label": "IN,S",
+      "state": "IN",
+      "metrics": {
+        "all": {
+          "cases": 2443,
+          "medianMonths": 11.2459016393443
+        },
+        "noCourtAction": {
+          "cases": 70,
+          "medianMonths": 2.34426229508197
+        },
+        "beforePretrial": {
+          "cases": 1083,
+          "medianMonths": 5.08196721311475
+        },
+        "duringAfterPretrial": {
+          "cases": 1283,
+          "medianMonths": 26.2950819672131
+        },
+        "duringTrial": {
+          "cases": 7,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "WI,E",
+      "state": "WI",
+      "metrics": {
+        "all": {
+          "cases": 1062,
+          "medianMonths": 5.95081967213115
+        },
+        "noCourtAction": {
+          "cases": 137,
+          "medianMonths": 2.98360655737705
+        },
+        "beforePretrial": {
+          "cases": 879,
+          "medianMonths": 6.16393442622951
+        },
+        "duringAfterPretrial": {
+          "cases": 36,
+          "medianMonths": 13.1475409836066
+        },
+        "duringTrial": {
+          "cases": 10,
+          "medianMonths": 22.5573770491803
+        }
+      }
+    },
+    {
+      "label": "WI,W",
+      "state": "WI",
+      "metrics": {
+        "all": {
+          "cases": 545,
+          "medianMonths": 6.91803278688525
+        },
+        "noCourtAction": {
+          "cases": 188,
+          "medianMonths": 2.80327868852459
+        },
+        "beforePretrial": {
+          "cases": 169,
+          "medianMonths": 6.0
+        },
+        "duringAfterPretrial": {
+          "cases": 174,
+          "medianMonths": 13.4426229508197
+        },
+        "duringTrial": {
+          "cases": 14,
+          "medianMonths": 26.4918032786885
+        }
+      }
+    },
+    {
+      "label": "AR,E",
+      "state": "AR",
+      "metrics": {
+        "all": {
+          "cases": 726,
+          "medianMonths": 10.4098360655738
+        },
+        "noCourtAction": {
+          "cases": 373,
+          "medianMonths": 12.655737704918
+        },
+        "beforePretrial": {
+          "cases": 338,
+          "medianMonths": 7.91803278688525
+        },
+        "duringAfterPretrial": {
+          "cases": 2,
+          "medianMonths": null
+        },
+        "duringTrial": {
+          "cases": 13,
+          "medianMonths": 30.8524590163934
+        }
+      }
+    },
+    {
+      "label": "AR,W",
+      "state": "AR",
+      "metrics": {
+        "all": {
+          "cases": 468,
+          "medianMonths": 9.47540983606557
+        },
+        "noCourtAction": {
+          "cases": 38,
+          "medianMonths": 3.85245901639344
+        },
+        "beforePretrial": {
+          "cases": 341,
+          "medianMonths": 8.75409836065574
+        },
+        "duringAfterPretrial": {
+          "cases": 85,
+          "medianMonths": 11.4098360655738
+        },
+        "duringTrial": {
+          "cases": 4,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "IA,N",
+      "state": "IA",
+      "metrics": {
+        "all": {
+          "cases": 248,
+          "medianMonths": 7.14754098360656
+        },
+        "noCourtAction": {
+          "cases": 62,
+          "medianMonths": 8.9016393442623
+        },
+        "beforePretrial": {
+          "cases": 184,
+          "medianMonths": 5.80327868852459
+        },
+        "duringAfterPretrial": {
+          "cases": 0,
+          "medianMonths": null
+        },
+        "duringTrial": {
+          "cases": 2,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "IA,S",
+      "state": "IA",
+      "metrics": {
+        "all": {
+          "cases": 395,
+          "medianMonths": 8.0327868852459
+        },
+        "noCourtAction": {
+          "cases": 161,
+          "medianMonths": 9.14754098360656
+        },
+        "beforePretrial": {
+          "cases": 222,
+          "medianMonths": 5.81967213114754
+        },
+        "duringAfterPretrial": {
+          "cases": 4,
+          "medianMonths": null
+        },
+        "duringTrial": {
+          "cases": 8,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "MN",
+      "state": "MN",
+      "metrics": {
+        "all": {
+          "cases": 2681,
+          "medianMonths": 8.19672131147541
+        },
+        "noCourtAction": {
+          "cases": 1499,
+          "medianMonths": 5.57377049180328
+        },
+        "beforePretrial": {
+          "cases": 645,
+          "medianMonths": 7.40983606557377
+        },
+        "duringAfterPretrial": {
+          "cases": 525,
+          "medianMonths": 13.3114754098361
+        },
+        "duringTrial": {
+          "cases": 12,
+          "medianMonths": 39.4426229508197
+        }
+      }
+    },
+    {
+      "label": "MO,E",
+      "state": "MO",
+      "metrics": {
+        "all": {
+          "cases": 1561,
+          "medianMonths": 5.9672131147541
+        },
+        "noCourtAction": {
+          "cases": 502,
+          "medianMonths": 4.32786885245902
+        },
+        "beforePretrial": {
+          "cases": 1031,
+          "medianMonths": 6.98360655737705
+        },
+        "duringAfterPretrial": {
+          "cases": 16,
+          "medianMonths": 15.327868852459
+        },
+        "duringTrial": {
+          "cases": 12,
+          "medianMonths": 31.1803278688525
+        }
+      }
+    },
+    {
+      "label": "MO,W",
+      "state": "MO",
+      "metrics": {
+        "all": {
+          "cases": 1429,
+          "medianMonths": 6.72131147540984
+        },
+        "noCourtAction": {
+          "cases": 520,
+          "medianMonths": 5.72131147540984
+        },
+        "beforePretrial": {
+          "cases": 876,
+          "medianMonths": 7.16393442622951
+        },
+        "duringAfterPretrial": {
+          "cases": 19,
+          "medianMonths": 49.3114754098361
+        },
+        "duringTrial": {
+          "cases": 14,
+          "medianMonths": 22.672131147541
+        }
+      }
+    },
+    {
+      "label": "NE",
+      "state": "NE",
+      "metrics": {
+        "all": {
+          "cases": 734,
+          "medianMonths": 5.39344262295082
+        },
+        "noCourtAction": {
+          "cases": 210,
+          "medianMonths": 3.0327868852459
+        },
+        "beforePretrial": {
+          "cases": 506,
+          "medianMonths": 6.90163934426229
+        },
+        "duringAfterPretrial": {
+          "cases": 13,
+          "medianMonths": 27.0819672131148
+        },
+        "duringTrial": {
+          "cases": 5,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "ND",
+      "state": "ND",
+      "metrics": {
+        "all": {
+          "cases": 200,
+          "medianMonths": 8.70491803278689
+        },
+        "noCourtAction": {
+          "cases": 5,
+          "medianMonths": null
+        },
+        "beforePretrial": {
+          "cases": 188,
+          "medianMonths": 8.50819672131148
+        },
+        "duringAfterPretrial": {
+          "cases": 0,
+          "medianMonths": null
+        },
+        "duringTrial": {
+          "cases": 7,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "SD",
+      "state": "SD",
+      "metrics": {
+        "all": {
+          "cases": 236,
+          "medianMonths": 10.1639344262295
+        },
+        "noCourtAction": {
+          "cases": 76,
+          "medianMonths": 10.9672131147541
+        },
+        "beforePretrial": {
+          "cases": 151,
+          "medianMonths": 8.65573770491803
+        },
+        "duringAfterPretrial": {
+          "cases": 1,
+          "medianMonths": null
+        },
+        "duringTrial": {
+          "cases": 8,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "AK",
+      "state": "AK",
+      "metrics": {
+        "all": {
+          "cases": 235,
+          "medianMonths": 10.0655737704918
+        },
+        "noCourtAction": {
+          "cases": 38,
+          "medianMonths": 10.344262295082
+        },
+        "beforePretrial": {
+          "cases": 191,
+          "medianMonths": 9.24590163934426
+        },
+        "duringAfterPretrial": {
+          "cases": 2,
+          "medianMonths": null
+        },
+        "duringTrial": {
+          "cases": 4,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "AZ",
+      "state": "AZ",
+      "metrics": {
+        "all": {
+          "cases": 2485,
+          "medianMonths": 6.0
+        },
+        "noCourtAction": {
+          "cases": 135,
+          "medianMonths": 2.16393442622951
+        },
+        "beforePretrial": {
+          "cases": 2001,
+          "medianMonths": 5.18032786885246
+        },
+        "duringAfterPretrial": {
+          "cases": 335,
+          "medianMonths": 15.1803278688525
+        },
+        "duringTrial": {
+          "cases": 14,
+          "medianMonths": 32.3934426229508
+        }
+      }
+    },
+    {
+      "label": "CA,N",
+      "state": "CA",
+      "metrics": {
+        "all": {
+          "cases": 6017,
+          "medianMonths": 7.73770491803279
+        },
+        "noCourtAction": {
+          "cases": 2955,
+          "medianMonths": 5.50819672131148
+        },
+        "beforePretrial": {
+          "cases": 1978,
+          "medianMonths": 7.60655737704918
+        },
+        "duringAfterPretrial": {
+          "cases": 1052,
+          "medianMonths": 15.0
+        },
+        "duringTrial": {
+          "cases": 32,
+          "medianMonths": 36.8524590163934
+        }
+      }
+    },
+    {
+      "label": "CA,E",
+      "state": "CA",
+      "metrics": {
+        "all": {
+          "cases": 2984,
+          "medianMonths": 8.0655737704918
+        },
+        "noCourtAction": {
+          "cases": 1029,
+          "medianMonths": 5.54098360655738
+        },
+        "beforePretrial": {
+          "cases": 1899,
+          "medianMonths": 9.14754098360656
+        },
+        "duringAfterPretrial": {
+          "cases": 36,
+          "medianMonths": 29.9180327868853
+        },
+        "duringTrial": {
+          "cases": 20,
+          "medianMonths": 50.5245901639344
+        }
+      }
+    },
+    {
+      "label": "CA,C",
+      "state": "CA",
+      "metrics": {
+        "all": {
+          "cases": 15190,
+          "medianMonths": 3.9016393442623
+        },
+        "noCourtAction": {
+          "cases": 4414,
+          "medianMonths": 3.14754098360656
+        },
+        "beforePretrial": {
+          "cases": 10538,
+          "medianMonths": 4.32786885245902
+        },
+        "duringAfterPretrial": {
+          "cases": 103,
+          "medianMonths": 17.9344262295082
+        },
+        "duringTrial": {
+          "cases": 135,
+          "medianMonths": 25.7049180327869
+        }
+      }
+    },
+    {
+      "label": "CA,S",
+      "state": "CA",
+      "metrics": {
+        "all": {
+          "cases": 2204,
+          "medianMonths": 5.27868852459016
+        },
+        "noCourtAction": {
+          "cases": 642,
+          "medianMonths": 3.32786885245902
+        },
+        "beforePretrial": {
+          "cases": 1066,
+          "medianMonths": 5.27868852459016
+        },
+        "duringAfterPretrial": {
+          "cases": 484,
+          "medianMonths": 10.3606557377049
+        },
+        "duringTrial": {
+          "cases": 12,
+          "medianMonths": 38.2622950819672
+        }
+      }
+    },
+    {
+      "label": "HI",
+      "state": "HI",
+      "metrics": {
+        "all": {
+          "cases": 570,
+          "medianMonths": 4.9344262295082
+        },
+        "noCourtAction": {
+          "cases": 152,
+          "medianMonths": 3.49180327868852
+        },
+        "beforePretrial": {
+          "cases": 398,
+          "medianMonths": 5.78688524590164
+        },
+        "duringAfterPretrial": {
+          "cases": 12,
+          "medianMonths": 28.8852459016393
+        },
+        "duringTrial": {
+          "cases": 8,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "ID",
+      "state": "ID",
+      "metrics": {
+        "all": {
+          "cases": 405,
+          "medianMonths": 10.2950819672131
+        },
+        "noCourtAction": {
+          "cases": 53,
+          "medianMonths": 3.80327868852459
+        },
+        "beforePretrial": {
+          "cases": 322,
+          "medianMonths": 10.3770491803279
+        },
+        "duringAfterPretrial": {
+          "cases": 27,
+          "medianMonths": 23.5409836065574
+        },
+        "duringTrial": {
+          "cases": 3,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "MT",
+      "state": "MT",
+      "metrics": {
+        "all": {
+          "cases": 430,
+          "medianMonths": 9.36065573770492
+        },
+        "noCourtAction": {
+          "cases": 186,
+          "medianMonths": 6.45901639344262
+        },
+        "beforePretrial": {
+          "cases": 137,
+          "medianMonths": 8.26229508196721
+        },
+        "duringAfterPretrial": {
+          "cases": 103,
+          "medianMonths": 14.0983606557377
+        },
+        "duringTrial": {
+          "cases": 4,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "NV",
+      "state": "NV",
+      "metrics": {
+        "all": {
+          "cases": 2100,
+          "medianMonths": 7.9672131147541
+        },
+        "noCourtAction": {
+          "cases": 290,
+          "medianMonths": 5.42622950819672
+        },
+        "beforePretrial": {
+          "cases": 1769,
+          "medianMonths": 8.42622950819672
+        },
+        "duringAfterPretrial": {
+          "cases": 28,
+          "medianMonths": 8.0
+        },
+        "duringTrial": {
+          "cases": 13,
+          "medianMonths": 62.0
+        }
+      }
+    },
+    {
+      "label": "OR",
+      "state": "OR",
+      "metrics": {
+        "all": {
+          "cases": 1647,
+          "medianMonths": 9.77049180327869
+        },
+        "noCourtAction": {
+          "cases": 300,
+          "medianMonths": 5.21311475409836
+        },
+        "beforePretrial": {
+          "cases": 1316,
+          "medianMonths": 10.3934426229508
+        },
+        "duringAfterPretrial": {
+          "cases": 9,
+          "medianMonths": null
+        },
+        "duringTrial": {
+          "cases": 22,
+          "medianMonths": 33.6393442622951
+        }
+      }
+    },
+    {
+      "label": "WA,E",
+      "state": "WA",
+      "metrics": {
+        "all": {
+          "cases": 620,
+          "medianMonths": 6.22950819672131
+        },
+        "noCourtAction": {
+          "cases": 56,
+          "medianMonths": 4.59016393442623
+        },
+        "beforePretrial": {
+          "cases": 554,
+          "medianMonths": 6.31147540983607
+        },
+        "duringAfterPretrial": {
+          "cases": 3,
+          "medianMonths": null
+        },
+        "duringTrial": {
+          "cases": 7,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "WA,W",
+      "state": "WA",
+      "metrics": {
+        "all": {
+          "cases": 2877,
+          "medianMonths": 6.0
+        },
+        "noCourtAction": {
+          "cases": 684,
+          "medianMonths": 3.44262295081967
+        },
+        "beforePretrial": {
+          "cases": 2159,
+          "medianMonths": 6.65573770491803
+        },
+        "duringAfterPretrial": {
+          "cases": 10,
+          "medianMonths": 27.6885245901639
+        },
+        "duringTrial": {
+          "cases": 24,
+          "medianMonths": 25.2131147540984
+        }
+      }
+    },
+    {
+      "label": "GU",
+      "state": "GU",
+      "metrics": {
+        "all": {
+          "cases": 137,
+          "medianMonths": 77.2786885245902
+        },
+        "noCourtAction": {
+          "cases": 8,
+          "medianMonths": null
+        },
+        "beforePretrial": {
+          "cases": 121,
+          "medianMonths": 77.2786885245902
+        },
+        "duringAfterPretrial": {
+          "cases": 8,
+          "medianMonths": null
+        },
+        "duringTrial": {
+          "cases": 0,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "NMI",
+      "state": "NMI",
+      "metrics": {
+        "all": {
+          "cases": 9,
+          "medianMonths": null
+        },
+        "noCourtAction": {
+          "cases": 7,
+          "medianMonths": null
+        },
+        "beforePretrial": {
+          "cases": 2,
+          "medianMonths": null
+        },
+        "duringAfterPretrial": {
+          "cases": 0,
+          "medianMonths": null
+        },
+        "duringTrial": {
+          "cases": 0,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "CO",
+      "state": "CO",
+      "metrics": {
+        "all": {
+          "cases": 2669,
+          "medianMonths": 7.73770491803279
+        },
+        "noCourtAction": {
+          "cases": 497,
+          "medianMonths": 7.60655737704918
+        },
+        "beforePretrial": {
+          "cases": 2076,
+          "medianMonths": 7.16393442622951
+        },
+        "duringAfterPretrial": {
+          "cases": 63,
+          "medianMonths": 26.2295081967213
+        },
+        "duringTrial": {
+          "cases": 33,
+          "medianMonths": 39.3114754098361
+        }
+      }
+    },
+    {
+      "label": "KS",
+      "state": "KS",
+      "metrics": {
+        "all": {
+          "cases": 967,
+          "medianMonths": 7.01639344262295
+        },
+        "noCourtAction": {
+          "cases": 225,
+          "medianMonths": 4.75409836065574
+        },
+        "beforePretrial": {
+          "cases": 645,
+          "medianMonths": 6.85245901639344
+        },
+        "duringAfterPretrial": {
+          "cases": 83,
+          "medianMonths": 18.2622950819672
+        },
+        "duringTrial": {
+          "cases": 14,
+          "medianMonths": 22.5081967213115
+        }
+      }
+    },
+    {
+      "label": "NM",
+      "state": "NM",
+      "metrics": {
+        "all": {
+          "cases": 908,
+          "medianMonths": 8.16393442622951
+        },
+        "noCourtAction": {
+          "cases": 150,
+          "medianMonths": 4.14754098360656
+        },
+        "beforePretrial": {
+          "cases": 511,
+          "medianMonths": 6.95081967213115
+        },
+        "duringAfterPretrial": {
+          "cases": 242,
+          "medianMonths": 13.8360655737705
+        },
+        "duringTrial": {
+          "cases": 5,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "OK,N",
+      "state": "OK",
+      "metrics": {
+        "all": {
+          "cases": 525,
+          "medianMonths": 7.01639344262295
+        },
+        "noCourtAction": {
+          "cases": 112,
+          "medianMonths": 5.49180327868853
+        },
+        "beforePretrial": {
+          "cases": 401,
+          "medianMonths": 7.27868852459017
+        },
+        "duringAfterPretrial": {
+          "cases": 9,
+          "medianMonths": null
+        },
+        "duringTrial": {
+          "cases": 3,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "OK,E",
+      "state": "OK",
+      "metrics": {
+        "all": {
+          "cases": 329,
+          "medianMonths": 7.80327868852459
+        },
+        "noCourtAction": {
+          "cases": 12,
+          "medianMonths": 2.39344262295082
+        },
+        "beforePretrial": {
+          "cases": 309,
+          "medianMonths": 7.70491803278689
+        },
+        "duringAfterPretrial": {
+          "cases": 3,
+          "medianMonths": null
+        },
+        "duringTrial": {
+          "cases": 5,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "OK,W",
+      "state": "OK",
+      "metrics": {
+        "all": {
+          "cases": 1011,
+          "medianMonths": 6.81967213114754
+        },
+        "noCourtAction": {
+          "cases": 361,
+          "medianMonths": 4.98360655737705
+        },
+        "beforePretrial": {
+          "cases": 461,
+          "medianMonths": 6.55737704918033
+        },
+        "duringAfterPretrial": {
+          "cases": 185,
+          "medianMonths": 12.327868852459
+        },
+        "duringTrial": {
+          "cases": 4,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "UT",
+      "state": "UT",
+      "metrics": {
+        "all": {
+          "cases": 1120,
+          "medianMonths": 8.50819672131148
+        },
+        "noCourtAction": {
+          "cases": 343,
+          "medianMonths": 6.98360655737705
+        },
+        "beforePretrial": {
+          "cases": 764,
+          "medianMonths": 8.95081967213115
+        },
+        "duringAfterPretrial": {
+          "cases": 3,
+          "medianMonths": null
+        },
+        "duringTrial": {
+          "cases": 10,
+          "medianMonths": 59.0
+        }
+      }
+    },
+    {
+      "label": "WY",
+      "state": "WY",
+      "metrics": {
+        "all": {
+          "cases": 240,
+          "medianMonths": 9.0655737704918
+        },
+        "noCourtAction": {
+          "cases": 74,
+          "medianMonths": 4.86885245901639
+        },
+        "beforePretrial": {
+          "cases": 70,
+          "medianMonths": 5.0
+        },
+        "duringAfterPretrial": {
+          "cases": 86,
+          "medianMonths": 15.9180327868852
+        },
+        "duringTrial": {
+          "cases": 10,
+          "medianMonths": 21.7213114754098
+        }
+      }
+    },
+    {
+      "label": "AL,N",
+      "state": "AL",
+      "metrics": {
+        "all": {
+          "cases": 1513,
+          "medianMonths": 8.68852459016394
+        },
+        "noCourtAction": {
+          "cases": 113,
+          "medianMonths": 2.45901639344262
+        },
+        "beforePretrial": {
+          "cases": 1380,
+          "medianMonths": 9.11475409836066
+        },
+        "duringAfterPretrial": {
+          "cases": 6,
+          "medianMonths": null
+        },
+        "duringTrial": {
+          "cases": 14,
+          "medianMonths": 32.8196721311475
+        }
+      }
+    },
+    {
+      "label": "AL,M",
+      "state": "AL",
+      "metrics": {
+        "all": {
+          "cases": 581,
+          "medianMonths": 7.80327868852459
+        },
+        "noCourtAction": {
+          "cases": 45,
+          "medianMonths": 3.40983606557377
+        },
+        "beforePretrial": {
+          "cases": 525,
+          "medianMonths": 7.83606557377049
+        },
+        "duringAfterPretrial": {
+          "cases": 10,
+          "medianMonths": 25.0327868852459
+        },
+        "duringTrial": {
+          "cases": 1,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "AL,S",
+      "state": "AL",
+      "metrics": {
+        "all": {
+          "cases": 352,
+          "medianMonths": 10.3606557377049
+        },
+        "noCourtAction": {
+          "cases": 98,
+          "medianMonths": 6.65573770491803
+        },
+        "beforePretrial": {
+          "cases": 238,
+          "medianMonths": 10.3606557377049
+        },
+        "duringAfterPretrial": {
+          "cases": 8,
+          "medianMonths": null
+        },
+        "duringTrial": {
+          "cases": 8,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "FL,N",
+      "state": "FL",
+      "metrics": {
+        "all": {
+          "cases": 148428,
+          "medianMonths": 47.7049180327869
+        },
+        "noCourtAction": {
+          "cases": 30,
+          "medianMonths": 2.9672131147541
+        },
+        "beforePretrial": {
+          "cases": 148385,
+          "medianMonths": 47.7049180327869
+        },
+        "duringAfterPretrial": {
+          "cases": 4,
+          "medianMonths": null
+        },
+        "duringTrial": {
+          "cases": 9,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "FL,M",
+      "state": "FL",
+      "metrics": {
+        "all": {
+          "cases": 6896,
+          "medianMonths": 5.50819672131148
+        },
+        "noCourtAction": {
+          "cases": 49,
+          "medianMonths": 3.47540983606557
+        },
+        "beforePretrial": {
+          "cases": 6492,
+          "medianMonths": 5.18032786885246
+        },
+        "duringAfterPretrial": {
+          "cases": 319,
+          "medianMonths": 14.6885245901639
+        },
+        "duringTrial": {
+          "cases": 36,
+          "medianMonths": 24.1803278688525
+        }
+      }
+    },
+    {
+      "label": "FL,S",
+      "state": "FL",
+      "metrics": {
+        "all": {
+          "cases": 8196,
+          "medianMonths": 3.44262295081967
+        },
+        "noCourtAction": {
+          "cases": 848,
+          "medianMonths": 3.01639344262295
+        },
+        "beforePretrial": {
+          "cases": 7287,
+          "medianMonths": 3.47540983606557
+        },
+        "duringAfterPretrial": {
+          "cases": 16,
+          "medianMonths": 10.1147540983607
+        },
+        "duringTrial": {
+          "cases": 45,
+          "medianMonths": 17.1147540983607
+        }
+      }
+    },
+    {
+      "label": "GA,N",
+      "state": "GA",
+      "metrics": {
+        "all": {
+          "cases": 6703,
+          "medianMonths": 3.9672131147541
+        },
+        "noCourtAction": {
+          "cases": 640,
+          "medianMonths": 2.98360655737705
+        },
+        "beforePretrial": {
+          "cases": 4138,
+          "medianMonths": 1.63934426229508
+        },
+        "duringAfterPretrial": {
+          "cases": 1901,
+          "medianMonths": 11.6065573770492
+        },
+        "duringTrial": {
+          "cases": 24,
+          "medianMonths": 31.3606557377049
+        }
+      }
+    },
+    {
+      "label": "GA,M",
+      "state": "GA",
+      "metrics": {
+        "all": {
+          "cases": 737,
+          "medianMonths": 6.42622950819672
+        },
+        "noCourtAction": {
+          "cases": 281,
+          "medianMonths": 6.26229508196721
+        },
+        "beforePretrial": {
+          "cases": 443,
+          "medianMonths": 6.26229508196721
+        },
+        "duringAfterPretrial": {
+          "cases": 8,
+          "medianMonths": null
+        },
+        "duringTrial": {
+          "cases": 5,
+          "medianMonths": null
+        }
+      }
+    },
+    {
+      "label": "GA,S",
+      "state": "GA",
+      "metrics": {
+        "all": {
+          "cases": 558,
+          "medianMonths": 7.60655737704918
+        },
+        "noCourtAction": {
+          "cases": 29,
+          "medianMonths": 5.04918032786885
+        },
+        "beforePretrial": {
+          "cases": 523,
+          "medianMonths": 7.67213114754098
+        },
+        "duringAfterPretrial": {
+          "cases": 2,
+          "medianMonths": null
+        },
+        "duringTrial": {
+          "cases": 4,
+          "medianMonths": null
+        }
+      }
+    }
+  ],
+  "notes": [
+    "NOTE: Median time intervals are not computed when fewer than 10 cases reported. This table excludes land condemnations, prisoner petitions, deportation reviews, recovery of overpayments, and enforcement of judgments. Includes cases filed in previous years as consolidated cases that thereafter were severed into individual cases. For fiscal years prior to 2001, this table included data on recovery of overpayments and enforcement of judgments."
+  ]
+}

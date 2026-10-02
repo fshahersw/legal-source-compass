@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { EntityError, EntityPage, entityQuery } from "@/components/corpus/EntityPage";
 import { pageHead } from "@/lib/corpus/head";
 import { useJudgeDirectory } from "@/lib/external/useDirectory";
@@ -26,5 +26,5 @@ function Page() {
     const court = j.courts[0];
     if (court) crumbs.push({ label: court, to: "/judges", search: { system: j.system, state: j.state, court } });
   }
-  return <EntityPage dataset="judges" id={id} crumbs={crumbs} />;
+  return <EntityPage dataset="judges" id={id} crumbs={crumbs} extra={raw => <div className="mb-4 rounded-lg border border-primary/25 bg-primary/5 p-4 text-[13px]"><Link className="font-semibold text-primary underline" to="/insights" search={{ view: "judges", judge: j?.name ?? String(raw['title'] ?? raw['name'] ?? '') }}>Open judge analysis and service history</Link><p className="mt-1 text-[12px] text-muted-foreground">Inspect exact-name catalog cases, duration distributions and sourced federal appointments.</p></div>} />;
 }
