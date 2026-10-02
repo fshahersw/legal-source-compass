@@ -108,6 +108,7 @@ export type ResolvedLink =
   | { kind: "dataset"; dataset: string; q: string; filters: Record<string, string> }
   | { kind: "search"; q: string }
   | { kind: "entity"; type: "mdl" | "court" | "judge"; id: string }
+  | { kind: "provision"; dataset: "open_us_law"; id: string }
   | { kind: "unmapped"; raw: string };
 
 /** Map a corpus link to where it lives in this app. `aliases` maps alias -> dataset id. */
@@ -115,6 +116,10 @@ export function resolveLink(url: string, aliases: Record<string, string>): Resol
   if (/^https?:\/\//i.test(url)) return { kind: "external", href: url };
   if (url.startsWith("/")) return { kind: "file", href: fileUrl(url) };
   if (url.startsWith("#")) {
+    // Citation detail emits this native ID for an exact saved-law match.
+    // Preserve its collection identity; do not guess from a citation string.
+    const provision = /^#record\/(oul:[0-9a-f]{64})$/.exec(url);
+    if (provision) return { kind: "provision", dataset: "open_us_law", id: provision[1]! };
     const ent = /^#(mdl|court|judge)\/([^?#]{1,120})$/.exec(url);
     if (ent) return { kind: "entity", type: ent[1] as "mdl" | "court" | "judge", id: decodeURIComponent(ent[2]!) };
     const [name = "", qs = ""] = url.slice(1).split("?");

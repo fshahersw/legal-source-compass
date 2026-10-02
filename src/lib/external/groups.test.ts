@@ -37,6 +37,12 @@ describe("normalizeItem", () => {
 
 describe("resolveLink", () => {
   const aliases = { mdls: "mdls", mdl_docket_activity: "mdl_docket_activity", "mdl-activity": "mdl_docket_activity" };
+  it("opens an exact native saved-law target without guessing other record identities", () => {
+    const id = "oul:ba1dac985d5bad2c6fa80ecaa19261a8e2b1f45102c91f1e4c053ce835f2ef52";
+    expect(resolveLink(`#record/${id}`, aliases)).toEqual({ kind: "provision", dataset: "open_us_law", id });
+    expect(resolveLink("#record/unknown:123", aliases)).toEqual({ kind: "unmapped", raw: "#record/unknown:123" });
+    expect(resolveLink(`#record/${id}?dataset=other`, aliases)).toEqual({ kind: "unmapped", raw: `#record/${id}?dataset=other` });
+  });
   it("maps corpus hash routes to datasets and search", () => {
     expect(resolveLink("#mdls?court=cand", aliases)).toEqual({ kind: "dataset", dataset: "mdls", q: "", filters: { court: "cand" } });
     expect(resolveLink("#mdl-activity?mdl=3071", aliases)).toMatchObject({ kind: "dataset", dataset: "mdl_docket_activity" });
