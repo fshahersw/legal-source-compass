@@ -185,46 +185,79 @@ export function AppShell({
 
   return (
     <div className="flex min-h-screen bg-background">
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar px-3 py-5 lg:flex">
-        <Link to="/" className="mb-4 block px-2">
-          <div className="eyebrow">Corpus + source directory</div>
-          <div className="mt-1 font-display text-lg leading-tight text-sidebar-primary">
-            Legal Source
-            <br />
-            Atlas
-          </div>
-        </Link>
+      <aside
+        className={`sticky top-0 hidden h-screen shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar px-3 py-5 transition-[width] duration-200 lg:flex ${
+          collapsed ? "w-14" : "w-60"
+        }`}
+      >
+        {collapsed ? (
+          <Link
+            to="/"
+            className="mb-4 flex justify-center"
+            aria-label="Legal Source Atlas — home"
+          >
+            <span
+              aria-hidden
+              className="flex size-8 items-center justify-center rounded-md bg-sidebar-accent font-display text-[13px] font-semibold text-sidebar-primary"
+            >
+              LA
+            </span>
+          </Link>
+        ) : (
+          <Link to="/" className="mb-4 block px-2">
+            <div className="eyebrow">Corpus + source directory</div>
+            <div className="mt-1 font-display text-lg leading-tight text-sidebar-primary">
+              Legal Source
+              <br />
+              Atlas
+            </div>
+          </Link>
+        )}
 
         <nav className="flex flex-col gap-0.5 overflow-y-auto">
-          {NAV.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              activeOptions={{ exact: item.to === "/" }}
-              className={`nav-link ${item.paths.some((path) => pathMatches(pathname, path)) ? "active" : ""}`}
-            >
-              <item.icon className="size-4 opacity-70" strokeWidth={1.75} />
-              <span className="flex-1">{item.label}</span>
-              {item.label === "Sources & Work" &&
-              counts.total + Object.keys(bookmarks).length > 0 ? (
-                <span className="rounded-full bg-secondary px-1.5 text-[10px] font-semibold text-secondary-foreground">
-                  {counts.total + Object.keys(bookmarks).length}
-                </span>
-              ) : null}
-            </Link>
-          ))}
+          {NAV.map((item) => {
+            const active = item.paths.some((path) => pathMatches(pathname, path));
+            const badgeCount = item.label === "Sources & Work" ? counts.total + Object.keys(bookmarks).length : 0;
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                activeOptions={{ exact: item.to === "/" }}
+                title={collapsed ? item.label : undefined}
+                aria-label={collapsed ? item.label : undefined}
+                className={`nav-link ${active ? "active" : ""} ${collapsed ? "justify-center px-0" : ""}`}
+              >
+                <item.icon className="size-4 opacity-70" strokeWidth={1.75} />
+                {!collapsed && <span className="flex-1">{item.label}</span>}
+                {badgeCount > 0 ? (
+                  collapsed ? (
+                    <span
+                      aria-hidden
+                      className="absolute -right-0.5 top-1.5 size-1.5 rounded-full bg-secondary"
+                    />
+                  ) : (
+                    <span className="rounded-full bg-secondary px-1.5 text-[10px] font-semibold text-secondary-foreground">
+                      {badgeCount}
+                    </span>
+                  )
+                ) : null}
+              </Link>
+            );
+          })}
         </nav>
 
-        <div className="mt-auto space-y-3 px-2 pt-6">
-          <AccountBox />
-          <p className="flex gap-1.5 text-[10px] leading-relaxed text-muted-foreground">
-            <ShieldAlert className="mt-px size-3.5 shrink-0" strokeWidth={1.75} />
-            <span>
-              The directory is public-source data shipped with this build. Your reviews, bookmarks
-              and any file you import are stored in{" "}
-              <strong className="font-semibold text-foreground">this browser only</strong>.
-            </span>
-          </p>
+        <div className={`mt-auto space-y-3 pt-6 ${collapsed ? "px-0" : "px-2"}`}>
+          <AccountBox collapsed={collapsed} />
+          {!collapsed && (
+            <p className="flex gap-1.5 text-[10px] leading-relaxed text-muted-foreground">
+              <ShieldAlert className="mt-px size-3.5 shrink-0" strokeWidth={1.75} />
+              <span>
+                The directory is public-source data shipped with this build. Your reviews, bookmarks
+                and any file you import are stored in{" "}
+                <strong className="font-semibold text-foreground">this browser only</strong>.
+              </span>
+            </p>
+          )}
         </div>
       </aside>
 
