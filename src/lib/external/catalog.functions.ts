@@ -1,12 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { ilikeTerm, restGet, rpcPost } from "./rest.server";
+import { restGet, rpcPost } from "./rest.server";
+import { queryPublishedDataset, searchPublishedCorpus } from "./catalog.reads.server";
 
 export type DatasetFilter = { name: string; type: string; label: string; placeholder?: string; options?: { value: string; label: string; count?: number }[] };
 export type DatasetInfo = {
   id: string;
   label: string;
   records: number | null;
+  ready: boolean | null;
   columns: { key: string; label: string }[];
   filters: DatasetFilter[];
   qualification: string | null;
@@ -18,7 +20,7 @@ type RawDataset = { id: string; label: string | null; imported_records: number |
 /** All datasets with their own listing metadata (columns, filters, qualification). */
 export const listDatasets = createServerFn({ method: "GET" }).handler(async (): Promise<DatasetInfo[]> => {
   const r = await restGet<RawDataset[]>(
-    "corpus_datasets?select=id,label,imported_records,listing:metadata->listing,aliases:metadata->aliases,qualification:metadata->qualification&order=id.asc",
+    "corpus_datasets?select=id,label,ready,imported_records,listing:metadata->listing,aliases:metadata->aliases,qualification:metadata->qualification&order=id.asc",
   );
   return (r.rows as any[]).map((d) => {
     const listing = d.listing ?? {};
@@ -26,6 +28,7 @@ export const listDatasets = createServerFn({ method: "GET" }).handler(async (): 
       id: d.id,
       label: d.label ?? d.id,
       records: typeof d.imported_records === "number" ? d.imported_records : null,
+      ready: typeof d.ready === "boolean" ? d.ready : null,
       columns: Array.isArray(listing.columns) ? listing.columns : [],
       filters: Array.isArray(listing.filters) ? listing.filters.filter((f: DatasetFilter) => f.type === "select" && f.options?.length) : [],
       qualification: listing.qualification ?? (typeof d.qualification === "string" ? d.qualification : null),
@@ -44,29 +47,11 @@ const queryInput = z.object({
 
 export type QueryResult = { items: Record<string, any>[]; total: number | null; capped: boolean; pageSize: number; mode: "listing" | "raw" };
 
-/** One page of a dataset: the corpus's own bounded listing, falling back to raw records for unlisted datasets. */
+/** One page using the corpus's publication and search rules, including valid empty results. */
 export const queryDataset = createServerFn({ method: "GET" })
   .inputValidator((d) => queryInput.parse(d))
   .handler(async ({ data }): Promise<QueryResult> => {
-    const q = data.q.trim();
-    const res = await rpcPost<{ items: Record<string, any>[]; total: number | null; total_capped: boolean }>("corpus_query_bounded", {
-      p_q: q || null,
-      p_dataset: data.dataset,
-      p_filters: data.filters,
-      p_limit: PAGE,
-      p_offset: data.offset,
-      p_count_cap: 10000,
-    });
-    if (res.items?.length || data.offset > 0 || Object.keys(data.filters).length) {
-      return { items: res.items ?? [], total: res.total, capped: !!res.total_capped, pageSize: PAGE, mode: "listing" };
-    }
-    let p = `corpus_records?select=id,title,category,state,source_url,item&dataset=eq.${data.dataset}`;
-    if (q) p += `&title=ilike.${ilikeTerm(q)}`;
-    const raw = await restGet<{ id: string; title: string | null; category: string | null; state: string | null; source_url: string | null; item: any }[]>(p, {
-      range: [data.offset, data.offset + PAGE - 1],
-    });
-    const items = raw.rows.map((r) => ({ ...(r.item ?? {}), id: r.id, title: r.item?.title ?? r.title, category: r.category, state: r.state || null, source_url: r.source_url || null }));
-    return { items, total: null, capped: false, pageSize: PAGE, mode: "raw" };
+    return queryPublishedDataset(data, PAGE);
   });
 
 export type RecordDetail = {
@@ -114,22 +99,15 @@ export type SearchHit = { id: string; dataset: string; title: string; state: str
 export const searchCorpus = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ q: z.string().min(2).max(200), offset: z.number().int().min(0).max(10000).default(0) }).parse(d))
   .handler(async ({ data }) => {
-    const r = await rpcPost<{ items: any[]; total: number | null }>("corpus_query", {
-      p_q: data.q.trim(),
-      p_datasets: null,
-      p_filters: {},
-      p_limit: PAGE,
-      p_offset: data.offset,
-      p_sort: null,
-    });
-    const hits: SearchHit[] = (r.items ?? []).map((i) => ({
-      id: String(i.id),
-      dataset: String(i.dataset ?? ""),
-      title: String(i.title ?? i.name ?? i.id).replace(/\s+/g, " ").trim(),
-      state: i.state ?? null,
-      county: i.county ?? null,
-      source_url: i.source_url ?? null,
-      kind: i.kind ?? i.group ?? null,
+    const r = await searchPublishedCorpus(data.q, data.offset, PAGE);
+    const hits: SearchHit[] = r.matches.map(({ item: i, record }) => ({
+      id: record.id,
+      dataset: record.dataset,
+      title: String(i["title"] ?? i["name"] ?? record.title ?? record.id).replace(/\s+/g, " ").trim(),
+      state: record.state,
+      county: typeof i["county"] === "string" ? i["county"] : null,
+      source_url: record.source_url,
+      kind: typeof i["kind"] === "string" ? i["kind"] : record.category,
     }));
-    return { hits, total: r.total ?? null, pageSize: PAGE };
+    return { hits, total: r.total, unresolved: r.unresolved, pageSize: PAGE, returned: r.returned };
   });

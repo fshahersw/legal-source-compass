@@ -1,0 +1,2 @@
+# Imported source bytes and their provenance hashes must survive Windows checkouts.
+public/data/** -text

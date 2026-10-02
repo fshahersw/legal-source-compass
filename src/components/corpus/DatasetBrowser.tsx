@@ -1,4 +1,3 @@
-import { sectionOf } from "@/lib/external/groups";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -12,6 +11,7 @@ import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { getRecordDetail, listDatasets, queryDataset, type DatasetInfo } from "@/lib/external/catalog.functions";
 import { fileUrl, normalizeItem, resolveLink, type NormItem } from "@/lib/external/groups";
 import { datasetDisplayName, displayValue, fieldLabel } from "@/lib/external/domainRegistry";
+import { isProvisionDataset } from "@/lib/external/lawTree";
 
 const ENTITY_ROUTES: Record<string, "/courts/$id" | "/judges/$id" | "/matters/$id"> = { court_spine: "/courts/$id", judges: "/judges/$id", mdls: "/matters/$id" };
 
@@ -76,7 +76,7 @@ export function DatasetBrowser({
   const openRow = (i: NormItem) => {
     const page = ENTITY_ROUTES[dataset];
     if (page) navigate({ to: page, params: { id: i.id.replace(/^mdl:/, "") } });
-    else if (sectionOf(dataset) === "law") navigate({ to: "/law/provision/$id", params: { id: i.id } });
+    else if (isProvisionDataset(dataset)) navigate({ to: "/law/provision/$id", params: { id: i.id }, search: { dataset } });
     else setOpen(i);
   };
   const query = useQuery({
@@ -100,6 +100,7 @@ export function DatasetBrowser({
 
   return (
     <div>
+      {info?.ready === false ? <p role="status" className="mb-3 rounded-lg border border-border bg-muted/50 p-3 text-[13px]">This collection is imported but has not been cleared for publication. Its imported count is an inventory measure; records are unavailable in the published listing.</p> : null}
       {info?.qualification && !compact ? <details className="mb-3 max-w-4xl text-[12px] text-muted-foreground"><summary className="cursor-pointer">About this data</summary><p className="mt-1 leading-relaxed">{info.qualification}</p></details> : null}
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <Input aria-label={`Search ${datasetDisplayName(dataset, info?.label)}`} placeholder={`Search ${datasetDisplayName(dataset, info?.label).toLowerCase()}`} value={q} onChange={(e) => update(e.target.value, filters)} className="h-8 max-w-xs text-[13px]" />

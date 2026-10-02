@@ -35,10 +35,10 @@ function LawPage() {
 
   const lawDs = (datasets.data ?? []).filter((d) => sectionOf(d.id) === "law");
   const coll = colls.data ?? [];
-  const dsFolder = (d: { id: string; label: string; records: number | null }, extra: Partial<S>): FolderItem => ({ key: d.id, label: datasetDisplayName(d.id, d.label), count: d.records ?? 0, link: { to: "/law", search: { ...extra, ds: d.id } } });
+  const dsFolder = (d: { id: string; label: string; records: number | null; ready: boolean | null }, extra: Partial<S>): FolderItem => ({ key: d.id, label: datasetDisplayName(d.id, d.label), count: d.records ?? undefined, note: d.ready === false ? "Imported · not cleared for publication" : "Imported records", link: { to: "/law", search: { ...extra, ds: d.id } } });
 
   const crumbs: { label: string; to?: string; search?: Record<string, string> }[] = [{ label: "Atlas", to: "/" }, { label: "Law & regulation", to: "/law" }];
-  const scopeLabel = s.scope === "federal" ? "Federal" : s.scope === "states" ? "States" : s.scope === "reference" ? "Reference tools" : undefined;
+  const scopeLabel = s.scope === "federal" ? "Federal" : s.scope === "states" ? "States" : s.scope === "reference" ? "Reference tools" : s.scope === "mixed" ? "Mixed federal & state law" : undefined;
   if (scopeLabel) crumbs.push({ label: scopeLabel, to: "/law", search: { scope: s.scope! } });
   if (s.state) crumbs.push({ label: stName(s.state), to: "/law", search: { scope: "states", state: s.state } });
   if (s.group) crumbs.push({ label: LAW_GROUP_LABELS[s.group as LawGroup] ?? s.group, to: "/law", search: { scope: s.scope ?? "federal", group: s.group } });
@@ -65,11 +65,14 @@ function LawPage() {
     const fedProv = coll.filter((c) => c.state === "FEDERAL").reduce((a, c) => a + c.provisions, 0);
     const states = new Set(coll.filter((c) => c.state !== "FEDERAL").map((c) => c.state));
     body = <FolderGrid title="Jurisdiction" items={[
-      { key: "federal", label: "Federal", note: "U.S. Code, regulations, Federal Register, agency notices", count: fedProv + lawDs.filter((d) => FED_GROUPS.includes(lawGroup(d.id))).reduce((a, d) => a + (d.records ?? 0), 0), link: { to: "/law", search: { scope: "federal" } } },
+      { key: "federal", label: "Federal", note: "Outline provisions · record sets listed separately", count: fedProv, link: { to: "/law", search: { scope: "federal" } } },
       { key: "states", label: "States", note: `${states.size} jurisdictions with law outlines`, count: states.size, link: { to: "/law", search: { scope: "states" } } },
       { key: "reference", label: "Reference tools", note: "Limitation periods and citations", count: lawDs.filter((d) => lawGroup(d.id) === "reference").reduce((a, d) => a + (d.records ?? 0), 0), link: { to: "/law", search: { scope: "reference" } } },
+      { key: "mixed", label: "Mixed federal & state law", note: "Multiple jurisdictions and legal types", link: { to: "/law", search: { scope: "mixed" } } },
       { key: "list", label: "All law datasets (list)", note: "Every law record set in one list", link: { to: "/law", search: { view: "list" } } },
     ]} />;
+  } else if (s.scope === "mixed") {
+    body = <FolderGrid title="Mixed federal & state law" items={lawDs.filter((d) => lawGroup(d.id) === "mixed").map((d) => dsFolder(d, { scope: "mixed" }))} />;
   } else if (s.scope === "federal" && s.group) {
     body = <FolderGrid title={LAW_GROUP_LABELS[s.group as LawGroup] ?? s.group} items={lawDs.filter((d) => lawGroup(d.id) === s.group).map((d) => dsFolder(d, { scope: "federal", group: s.group }))} />;
   } else if (s.scope === "federal") {
@@ -84,7 +87,7 @@ function LawPage() {
   } else if (!s.state) {
     const codes = [...new Set(coll.filter((c) => c.state !== "FEDERAL").map((c) => c.state)), ...Object.values(STATE_DATASETS)];
     const uniq = [...new Set(codes)].sort((a, b) => stName(a).localeCompare(stName(b)));
-    body = <FolderGrid title="Pick a state" hint="provisions in law outlines" items={uniq.map((code) => ({ key: code, label: stName(code), count: coll.filter((c) => c.state === code).reduce((a, c) => a + c.provisions, 0) + lawDs.filter((d) => STATE_DATASETS[d.id] === code).reduce((a, d) => a + (d.records ?? 0), 0), link: { to: "/law", search: { scope: "states", state: code } } }))} />;
+    body = <FolderGrid title="Pick a state" hint="outline provisions; separate code datasets are not added to this count" items={uniq.map((code) => ({ key: code, label: stName(code), count: coll.some((c) => c.state === code) ? coll.filter((c) => c.state === code).reduce((a, c) => a + c.provisions, 0) : undefined, link: { to: "/law", search: { scope: "states", state: code } } }))} />;
   } else {
     const own = lawDs.filter((d) => STATE_DATASETS[d.id] === s.state);
     body = (

@@ -11,6 +11,7 @@ describe("law & safety folders", () => {
     for (const id of LAW) { expect(sectionOf(id)).toBe("law"); expect(lawGroup(id)).toBeTruthy(); }
     expect(lawGroup("federal_regulations_parts")).toBe("regulations");
     expect(lawGroup("public_laws")).toBe("statutes");
+    expect(lawGroup("open_us_law")).toBe("mixed");
     expect(lawGroup("provider_laws")).toBe("other");
   });
   it("groups safety datasets by agency", () => {

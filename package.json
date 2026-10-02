@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "audit:corpus": "node scripts/audit-corpus.mjs",
+    "audit:check": "node scripts/audit-corpus.mjs --check"
   },
   "overrides": {
     "rolldown": "1.2.1"

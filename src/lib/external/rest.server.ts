@@ -48,7 +48,7 @@ export async function fetchArtifact(route: string): Promise<Response> {
   const { url, key } = creds();
   const headers: Record<string, string> = { apikey: key };
   if (!key.startsWith("sb_")) headers["Authorization"] = `Bearer ${key}`;
-  const meta = await fetch(`${url}/rest/v1/corpus_artifacts?select=object_key,mime,filename,bytes&route=eq.${encodeURIComponent(route)}&limit=1`, { headers });
+  const meta = await fetch(`${url}/rest/v1/corpus_artifacts?select=object_key,mime,filename,bytes&ready=eq.true&route=eq.${encodeURIComponent(route)}&limit=1`, { headers });
   if (!meta.ok) return new Response("File lookup failed", { status: 502 });
   const [a] = (await meta.json()) as { object_key: string; mime: string | null; filename: string | null }[];
   if (!a) return new Response("File not available in the corpus", { status: 404 });

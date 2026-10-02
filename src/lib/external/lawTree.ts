@@ -1,6 +1,6 @@
 /** Pure folder mapping for Law & Safety. Unmapped dataset IDs fall into "other" so nothing is hidden. */
 
-export type LawGroup = "statutes" | "regulations" | "register" | "notices" | "reference" | "state" | "other";
+export type LawGroup = "statutes" | "regulations" | "register" | "notices" | "reference" | "state" | "mixed" | "other";
 
 export const LAW_GROUP_LABELS: Record<LawGroup, string> = {
   statutes: "Statutes",
@@ -9,6 +9,7 @@ export const LAW_GROUP_LABELS: Record<LawGroup, string> = {
   notices: "Agency notices",
   reference: "Reference tools",
   state: "State code datasets",
+  mixed: "Mixed federal & state law",
   other: "Other law records",
 };
 
@@ -16,7 +17,8 @@ export const LAW_GROUP_LABELS: Record<LawGroup, string> = {
 export const STATE_DATASETS: Record<string, string> = { indiana_code: "IN", sd_statutes: "SD" };
 
 export function lawGroup(id: string): LawGroup {
-  if (id === "open_us_law" || id === "public_laws") return "statutes";
+  if (id === "open_us_law") return "mixed";
+  if (id === "public_laws") return "statutes";
   if (id.startsWith("federal_regulations_")) return "regulations";
   if (id === "federal_register_history") return "register";
   if (id === "federal") return "notices";
@@ -24,6 +26,10 @@ export function lawGroup(id: string): LawGroup {
   if (id in STATE_DATASETS || id === "state_codes") return "state";
   return "other";
 }
+
+/** These datasets contain individual law provisions. Reference indexes open as records. */
+export const PROVISION_DATASETS = ["open_us_law", "indiana_code", "sd_statutes", "federal_regulations_sections"] as const;
+export const isProvisionDataset = (id: string): id is (typeof PROVISION_DATASETS)[number] => (PROVISION_DATASETS as readonly string[]).includes(id);
 
 /** Outline collection kinds → readable type of law. */
 const KIND_LABELS: Record<string, string> = {
