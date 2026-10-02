@@ -35,6 +35,7 @@ export function CorpusLink({ url, label, aliases }: { url: string; label: string
   const cls = "inline-flex items-center gap-1 text-[12px] text-primary underline-offset-2 hover:underline";
   if (r.kind === "external") return <a className={cls} href={r.href} target="_blank" rel="noreferrer">{label}<ExternalLink className="size-3" /></a>;
   if (r.kind === "file") return <a className={cls} href={r.href} target="_blank" rel="noreferrer"><FileText className="size-3" />{label}</a>;
+  if (r.kind === "provision") return <Link className={cls} to="/law/provision/$id" params={{ id: r.id }} search={{ dataset: r.dataset }}>{label}</Link>;
   if (r.kind === "entity") {
     if (r.type === "mdl") return <Link className={cls} to="/matters/$id" params={{ id: r.id }}>{label}</Link>;
     if (r.type === "court") return <Link className={cls} to="/courts/$id" params={{ id: r.id }}>{label}</Link>;
