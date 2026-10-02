@@ -225,7 +225,7 @@ export function AppShell({
                 activeOptions={{ exact: item.to === "/" }}
                 title={collapsed ? item.label : undefined}
                 aria-label={collapsed ? item.label : undefined}
-                className={`nav-link ${active ? "active" : ""} ${collapsed ? "justify-center px-0" : ""}`}
+                className={`nav-link relative ${active ? "active" : ""} ${collapsed ? "justify-center px-0" : ""}`}
               >
                 <item.icon className="size-4 opacity-70" strokeWidth={1.75} />
                 {!collapsed && <span className="flex-1">{item.label}</span>}
@@ -263,8 +263,23 @@ export function AppShell({
 
       <div className="min-w-0 flex-1">
         <header className="sticky top-0 z-20 border-b border-border bg-surface/90 px-5 py-4 backdrop-blur lg:px-8">
-          <nav aria-label="Breadcrumb" className="mb-1.5">
-            <ol className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+          <div className="mb-1.5 flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={toggleSidebar}
+              aria-expanded={!collapsed}
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              className="hidden shrink-0 rounded-md border border-border bg-background p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:inline-flex"
+            >
+              {collapsed ? (
+                <PanelLeftOpen className="size-4" strokeWidth={1.75} />
+              ) : (
+                <PanelLeftClose className="size-4" strokeWidth={1.75} />
+              )}
+            </button>
+            <nav aria-label="Breadcrumb" className="min-w-0">
+              <ol className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
               {breadcrumbs.map((crumb, i) => (
                 <li key={`${crumb.label}-${i}`} className="flex items-center gap-1.5">
                   {i > 0 ? (
