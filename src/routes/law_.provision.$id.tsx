@@ -6,18 +6,20 @@ import { Copy, ExternalLink } from "lucide-react";
 import { AppShell } from "@/components/atlas/AppShell";
 import { Button } from "@/components/ui/button";
 import { pageHead } from "@/lib/corpus/head";
-import { stateByName } from "@/lib/corpus/geo";
+import { stateByName, stateByUsps } from "@/lib/corpus/geo";
 import { getLawProvision, listLawProvisions } from "@/lib/external/corpus.functions";
 import { formatLawText, markerDepth } from "@/lib/external/formatLawText";
-import { kindLabel } from "@/lib/external/lawTree";
+import { isProvisionDataset, kindLabel, type PROVISION_DATASETS } from "@/lib/external/lawTree";
 
-type S = { node?: number | undefined; i?: number | undefined };
+type ProvisionDataset = (typeof PROVISION_DATASETS)[number];
+type S = { dataset?: ProvisionDataset | undefined; node?: number | undefined; i?: number | undefined };
 const num = (v: unknown) => { const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN; return Number.isInteger(n) && n >= 0 && n < 1e9 ? n : undefined; };
-const provQuery = (id: string) => queryOptions({ queryKey: ["law-provision", id], queryFn: () => getLawProvision({ data: { id } }), staleTime: Infinity });
+const provQuery = (id: string, dataset?: ProvisionDataset) => queryOptions({ queryKey: ["law-provision", dataset ?? null, id], queryFn: () => getLawProvision({ data: { id, dataset: dataset ?? null } }), staleTime: Infinity });
 
 export const Route = createFileRoute("/law_/provision/$id")({
-  validateSearch: (s: Record<string, unknown>): S => ({ node: num(s["node"]), i: num(s["i"]) }),
-  loader: ({ context, params }) => context.queryClient.ensureQueryData(provQuery(params.id)),
+  validateSearch: (s: Record<string, unknown>): S => ({ dataset: typeof s["dataset"] === "string" && isProvisionDataset(s["dataset"]) ? s["dataset"] as ProvisionDataset : undefined, node: num(s["node"]), i: num(s["i"]) }),
+  loaderDeps: ({ search }) => ({ dataset: search.dataset }),
+  loader: ({ context, params, deps }) => context.queryClient.ensureQueryData(provQuery(params.id, deps.dataset)),
   head: ({ loaderData }) => {
     const t = [loaderData?.citation, loaderData?.title].filter(Boolean).join(" — ") || "Law provision";
     return pageHead(t, `${t}: saved text and official source link.`);
@@ -28,8 +30,8 @@ export const Route = createFileRoute("/law_/provision/$id")({
 
 function ProvisionPage() {
   const { id } = Route.useParams();
-  const { node, i } = Route.useSearch();
-  const { data: p } = useSuspenseQuery(provQuery(id));
+  const { dataset, node, i } = Route.useSearch();
+  const { data: p } = useSuspenseQuery(provQuery(id, dataset));
   const listFn = useServerFn(listLawProvisions);
   const idx = i ?? null;
   const around = useQuery({
@@ -40,13 +42,13 @@ function ProvisionPage() {
   const [copied, setCopied] = useState(false);
   const [copiedCite, setCopiedCite] = useState(false);
 
-  if (!p) return <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Law & regulation", to: "/law" }, { label: "Not found" }]} title="Provision not found"><p className="text-[13px] text-muted-foreground">The corpus has no record “{id}”.</p></AppShell>;
+  if (!p) return <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Law & regulation", to: "/law" }, { label: "Not found" }]} title="Provision not found"><p className="text-[13px] text-muted-foreground">No unique provision is recorded for this link. Open the provision from its dataset to retain its collection identity.</p></AppShell>;
 
-  const usps = p.state ? stateByName.get(p.state)?.usps : undefined;
-  const federal = !usps;
+  const usps = p.state ? (stateByName.get(p.state) ?? stateByUsps.get(p.state))?.usps : undefined;
+  const federal = p.state != null && ["US", "FEDERAL", "Federal"].includes(p.state);
   const crumbs: { label: string; to?: string; search?: Record<string, string> }[] = [{ label: "Atlas", to: "/" }, { label: "Law & regulation", to: "/law" }];
-  crumbs.push(federal ? { label: "Federal", to: "/law", search: { scope: "federal" } } : { label: p.state!, to: "/law", search: { scope: "states", state: usps! } });
-  if (p.kind) crumbs.push({ label: kindLabel(p.kind), to: "/law", search: federal ? { scope: "federal", kind: p.kind } : { scope: "states", state: usps!, kind: p.kind } });
+  crumbs.push(federal ? { label: "Federal", to: "/law", search: { scope: "federal" } } : usps ? { label: p.state!, to: "/law", search: { scope: "states", state: usps } } : { label: p.state ?? "Jurisdiction not recorded" });
+  if (p.kind) crumbs.push(federal || usps ? { label: kindLabel(p.kind), to: "/law", search: federal ? { scope: "federal", kind: p.kind } : { scope: "states", state: usps!, kind: p.kind } } : { label: kindLabel(p.kind) });
   crumbs.push({ label: p.citation ?? "Provision" });
 
   const cite = p.citation ?? (/^cfr:\d+:/.test(p.id) ? p.id.replace(/^cfr:(\d+):/, "$1 CFR ") : null);
@@ -56,7 +58,7 @@ function ProvisionPage() {
   const prev = pos > 0 ? rows[pos - 1] : undefined;
   const next = pos >= 0 ? rows[pos + 1] : undefined;
   const nav = (r: { id: string; citation: string | null; title: string | null } | undefined, d: number, label: string) =>
-    r ? <Link to="/law/provision/$id" params={{ id: r.id }} search={{ node, i: idx! + d }} className="min-w-0 truncate rounded border border-border px-2 py-1 text-[12px] hover:bg-muted">{label} {r.citation ?? r.title}</Link> : <span />;
+    r ? <Link to="/law/provision/$id" params={{ id: r.id }} search={{ dataset: p.dataset as ProvisionDataset, node, i: idx! + d }} className="min-w-0 truncate rounded border border-border px-2 py-1 text-[12px] hover:bg-muted">{label} {r.citation ?? r.title}</Link> : <span />;
 
   const frameParts = p.frame
     ? [
@@ -69,7 +71,8 @@ function ProvisionPage() {
     : null;
 
   return (
-    <AppShell breadcrumbs={crumbs} title={p.title ?? p.citation ?? "Provision"} description={[p.citation, p.state ?? "Federal", p.kind ? kindLabel(p.kind) : null, p.status?.replace(/_/g, " ")].filter(Boolean).join(" · ")}>
+    <AppShell breadcrumbs={crumbs} title={p.title ?? p.citation ?? "Provision"} description={[p.citation, p.state ?? "Jurisdiction not recorded", p.kind ? kindLabel(p.kind) : null, p.status?.replace(/_/g, " ")].filter(Boolean).join(" · ")}>
+      {p.publicationReady !== true ? <p role="status" className="mb-3 rounded-lg border border-border bg-muted/50 p-3 text-[13px]">Stored preview · {p.publicationReady === false ? "this collection has not been cleared for publication" : "publication status is not recorded"}. Source dates describe the saved snapshot.</p> : null}
       {frameParts ? <p className="mb-3 text-[12px] text-muted-foreground">{frameParts}{p.frame?.partHeading ? ` — ${p.frame.partHeading}` : ""}</p> : null}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {p.sourceUrl ? (

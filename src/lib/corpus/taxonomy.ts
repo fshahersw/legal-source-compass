@@ -1,7 +1,7 @@
 /**
  * Port of corpussite `delivery/archive-directory/categories.py` (commit 9385b59).
- * The same rule is applied to V2.2A heading-category text. Anything the rule
- * does not recognise lands in "other" and is labelled as not matched — never guessed.
+ * Technical record kinds and human source headings have different vocabularies.
+ * Source headings use an explicit crosswalk; broad topics are not inferred types.
  */
 export const CATEGORY_LABELS = {
   statutes: "Statutes & codes",
@@ -11,6 +11,7 @@ export const CATEGORY_LABELS = {
   forms: "Forms & documents",
   guidance: "Guides & references",
   directories: "Courts & directories",
+  mixed: "Mixed legal resources",
   other: "Other / not matched by rule",
 } as const;
 export type CategoryId = keyof typeof CATEGORY_LABELS;
@@ -32,10 +33,30 @@ export function classify(kind: string | null | undefined): CategoryId {
   return "other";
 }
 
-/** Categories for a source: the rule applied to each of its imported heading categories. */
+/** Exact, reviewable crosswalk for the supplied heading vocabulary. No keyword guesses. */
+export const HEADING_CATEGORIES: Record<string, CategoryId> = {
+  "STATE LEGAL RESOURCES --- ALL 50 STATES + DC (FULL DOJ JMD RESOURCE TREES)": "mixed",
+  "STATUTES, CONSTITUTION & LEGISLATION": "mixed",
+  "FEDERAL CASE LAW, COURTS & PROCEDURE": "mixed",
+  "FEDERAL LEGAL RESEARCH & SPECIAL COLLECTIONS": "mixed",
+  "REGULATIONS & RULEMAKING": "regulations",
+  "FEDERAL COURTS OF APPEALS (BY CIRCUIT)": "directories",
+  "U.S. TERRITORIES --- COURTS, BARS, LEGISLATURES & AGENCIES": "directories",
+  "STATE LAW DIRECTORIES": "directories",
+  "50-STATE CIVIL-LIABILITY & PROCEDURAL-TRIGGER COVERAGE GUIDE": "guidance",
+  "50-STATE REGULATORY-EVIDENCE COVERAGE GUIDE": "guidance",
+  "JURY INSTRUCTIONS & TRIAL-PRACTICE FINDING AIDS": "guidance",
+};
+
+const KNOWN_KINDS = new Set([...STATUTES, ...FORMS, ...GUIDANCE, "constitutions", "state_constitution", "court_rules", "regulations", "administrative_code", "federal_order_document_link", "executive_order", "legal_inventory_navigation", "court_clerk_office"]);
+
+/** Broad source groups derived from headings, not verified document types. Original headings stay intact. */
 export function classifySource(headings: string[]): CategoryId[] {
   const out = new Set<CategoryId>();
-  for (const h of headings) out.add(classify(h));
+  for (const h of headings) {
+    const normalized = h.trim().replace(/\s+/g, " ");
+    out.add(HEADING_CATEGORIES[normalized.toUpperCase()] ?? (KNOWN_KINDS.has(normalized.toLowerCase()) ? classify(normalized) : "other"));
+  }
   if (out.size === 0) out.add("other");
   return [...out];
 }

@@ -9,17 +9,20 @@ import { useCorpus } from "@/lib/corpus/store";
 import { joinByState } from "@/lib/corpus/join";
 import { stateByFips } from "@/lib/corpus/geo";
 import { FolderGrid } from "@/components/corpus/FolderGrid";
+import { knownCount } from "@/lib/corpus/quality";
 
 type Metric = "sources" | "matters";
 
 export function PlacesMap({ home }: { home?: boolean | undefined }) {
-  const { bundle } = useAtlas();
+  const atlas = useAtlas();
+  const { bundle } = atlas;
   const corpus = useCorpus();
   const navigate = useNavigate();
   const [metric, setMetric] = useState<Metric>("sources");
   const join = useMemo(() => joinByState(bundle?.sources ?? [], corpus.insights), [bundle, corpus.insights]);
   const rows = useMemo(() => [...join.byState.values()].sort((a, b) => b[metric] - a[metric] || a.name.localeCompare(b.name)), [join, metric]);
-  const values = useMemo(() => new Map(rows.map((r) => [r.fips, r[metric]])), [rows, metric]);
+  const metricStatus = metric === "sources" ? atlas.status : corpus.status;
+  const values = useMemo(() => new Map(metricStatus === "ready" ? rows.map((r) => [r.fips, r[metric]]) : []), [rows, metric, metricStatus]);
 
   return (
     <AppShell breadcrumbs={home ? [{ label: "Atlas" }] : [{ label: "Atlas", to: "/" }, { label: "Places" }]} title={home ? "Legal Source Atlas" : "Places"} description="Click a state to open its courts, judges, laws, sources, cases and counties.">
@@ -30,6 +33,8 @@ export function PlacesMap({ home }: { home?: boolean | undefined }) {
           <TabsTrigger value="matters">Saved case rows</TabsTrigger>
         </TabsList>
       </Tabs>
+      {metricStatus === "loading" ? <p role="status" className="mb-3 text-[13px] text-muted-foreground">Loading {metric === "sources" ? "directory sources" : "saved case rows"}… Counts are not available yet.</p> : null}
+      {metric === "sources" && atlas.status === "error" ? <div role="alert" className="mb-3 text-[13px] text-muted-foreground">Directory counts are not recorded: {atlas.loadError} <button className="underline" onClick={atlas.retryLoad}>Retry</button></div> : null}
       <div className="grid gap-5 xl:grid-cols-[1fr_18rem]">
         <section className="rounded-lg border border-border bg-surface p-3 shadow-card">
           {corpus.geo ? (
@@ -44,7 +49,7 @@ export function PlacesMap({ home }: { home?: boolean | undefined }) {
               <li key={r.usps}>
                 <Link to="/places/$state" params={{ state: r.usps }} className="flex justify-between px-3 py-1.5 hover:bg-muted/60">
                   <span>{r.name}</span>
-                  <span className="font-mono text-[12px] text-muted-foreground">{r[metric].toLocaleString()}</span>
+                  <span className="font-mono text-[12px] text-muted-foreground">{knownCount(metricStatus, r[metric])?.toLocaleString() ?? (metricStatus === "loading" ? "…" : "Not recorded")}</span>
                 </Link>
               </li>
             ))}
@@ -52,7 +57,9 @@ export function PlacesMap({ home }: { home?: boolean | undefined }) {
         </section>
       </div>
       <p className="mt-3 text-[11px] text-muted-foreground">
-        {join.sourcesWithoutState.toLocaleString()} sources name no state; {join.mattersWithoutState.toLocaleString()} case rows have no state code. They stay in the Library and Insights but are not placed on the map.
+        {atlas.status === "ready" ? `${join.sourcesWithoutState.toLocaleString()} sources have no exact state tag. ` : ""}
+        {corpus.status === "ready" ? `${join.mattersWithoutState.toLocaleString()} case rows have no recognized state code. ` : ""}
+        Counts describe these saved files. Unplaced rows remain in the source library and case catalog; a missing tag does not establish a missing source.
       </p>
     </AppShell>
   );

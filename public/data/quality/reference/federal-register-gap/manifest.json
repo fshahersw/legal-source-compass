@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "source": "FederalRegister.gov public API",
+  "sourceSnapshotCutoff": "2026-08-20",
+  "publicationFrom": "2026-08-21",
+  "publicationThrough": "2026-10-01",
+  "fetchedAt": "2026-10-02T05:08:02.464Z",
+  "records": 3045,
+  "typeCounts": [
+    {
+      "label": "Notice",
+      "count": 2480
+    },
+    {
+      "label": "Rule",
+      "count": 343
+    },
+    {
+      "label": "Proposed Rule",
+      "count": 188
+    },
+    {
+      "label": "Presidential Document",
+      "count": 34
+    }
+  ],
+  "effectiveDateRecords": 397,
+  "cfrReferenceRecords": 531,
+  "correctionRecords": 9,
+  "qualification": "Complete publisher metadata index for this bounded publication interval, reconciled to the API count and unique document numbers. The official legal editions are the linked GovInfo PDFs. Effective dates are publisher fields, not a finding that every provision is in force. This supplement does not change or merge the external Supabase corpus.",
+  "pages": [
+    {
+      "name": "page-001.json",
+      "url": "https://www.federalregister.gov/api/v1/documents.json?per_page=1000&page=1&order=oldest&conditions%5Bpublication_date%5D%5Bgte%5D=2026-08-21&conditions%5Bpublication_date%5D%5Blte%5D=2026-10-01&fields%5B%5D=document_number&fields%5B%5D=title&fields%5B%5D=type&fields%5B%5D=publication_date&fields%5B%5D=effective_on&fields%5B%5D=dates&fields%5B%5D=citation&fields%5B%5D=html_url&fields%5B%5D=pdf_url&fields%5B%5D=agencies&fields%5B%5D=cfr_references&fields%5B%5D=related_documents&fields%5B%5D=correction_of",
+      "fetchedAt": "2026-10-02T05:08:02.113Z",
+      "sha256": "1e98bbc5f6cdad07493472c17af7c8831fdb7f32c833c7c85a521426313b77f8",
+      "bytes": 3304400
+    },
+    {
+      "name": "page-002.json",
+      "url": "https://www.federalregister.gov/api/v1/documents.json?per_page=1000&page=2&order=oldest&conditions%5Bpublication_date%5D%5Bgte%5D=2026-08-21&conditions%5Bpublication_date%5D%5Blte%5D=2026-10-01&fields%5B%5D=document_number&fields%5B%5D=title&fields%5B%5D=type&fields%5B%5D=publication_date&fields%5B%5D=effective_on&fields%5B%5D=dates&fields%5B%5D=citation&fields%5B%5D=html_url&fields%5B%5D=pdf_url&fields%5B%5D=agencies&fields%5B%5D=cfr_references&fields%5B%5D=related_documents&fields%5B%5D=correction_of",
+      "fetchedAt": "2026-10-02T05:08:02.272Z",
+      "sha256": "165397bbe5d6a77d348f8da1cf1c6a2925eb8b36063705c8a5899233c1e53a45",
+      "bytes": 3350180
+    },
+    {
+      "name": "page-003.json",
+      "url": "https://www.federalregister.gov/api/v1/documents.json?per_page=1000&page=3&order=oldest&conditions%5Bpublication_date%5D%5Bgte%5D=2026-08-21&conditions%5Bpublication_date%5D%5Blte%5D=2026-10-01&fields%5B%5D=document_number&fields%5B%5D=title&fields%5B%5D=type&fields%5B%5D=publication_date&fields%5B%5D=effective_on&fields%5B%5D=dates&fields%5B%5D=citation&fields%5B%5D=html_url&fields%5B%5D=pdf_url&fields%5B%5D=agencies&fields%5B%5D=cfr_references&fields%5B%5D=related_documents&fields%5B%5D=correction_of",
+      "fetchedAt": "2026-10-02T05:08:02.365Z",
+      "sha256": "51c4f40f26e1d8b4372ad10b902e62651826c82bf2177d9e982eb142b8563f5e",
+      "bytes": 3592680
+    },
+    {
+      "name": "page-004.json",
+      "url": "https://www.federalregister.gov/api/v1/documents.json?per_page=1000&page=4&order=oldest&conditions%5Bpublication_date%5D%5Bgte%5D=2026-08-21&conditions%5Bpublication_date%5D%5Blte%5D=2026-10-01&fields%5B%5D=document_number&fields%5B%5D=title&fields%5B%5D=type&fields%5B%5D=publication_date&fields%5B%5D=effective_on&fields%5B%5D=dates&fields%5B%5D=citation&fields%5B%5D=html_url&fields%5B%5D=pdf_url&fields%5B%5D=agencies&fields%5B%5D=cfr_references&fields%5B%5D=related_documents&fields%5B%5D=correction_of",
+      "fetchedAt": "2026-10-02T05:08:02.464Z",
+      "sha256": "8e5ffadbd1d18109d4d8900d7eb4a7ef70b92d396011ef74d08dab9603f61b6e",
+      "bytes": 88303
+    }
+  ]
+}

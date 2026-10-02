@@ -30,7 +30,7 @@ export type CountyItem = { url: string; title: string; kind_label: string | null
 export const getCountyProfile = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ fips: z.string().regex(/^\d{5}$/), county: z.string().max(80).optional(), state: z.string().max(40).optional() }).parse(d))
   .handler(async ({ data }) => {
-    const ctx = await restGet<{ data: { groups?: { items?: CountyItem[] }[] } }[]>(`corpus_context?select=data&key=eq.county-filing:county:${data.fips}&limit=1`);
+    const ctx = await restGet<{ data: { groups?: { items?: CountyItem[] }[] } }[]>(`corpus_context?select=data&ready=eq.true&key=eq.county-filing:county:${data.fips}&limit=1`);
     const items: CountyItem[] = [];
     for (const g of ctx.rows[0]?.data.groups ?? []) for (const it of g.items ?? []) items.push({ url: it.url, title: it.title, kind_label: it.kind_label ?? null, publisher: it.publisher ?? null, as_of: it.as_of ?? null });
     let groups: { id: string; title: string; source_count: number }[] = [];

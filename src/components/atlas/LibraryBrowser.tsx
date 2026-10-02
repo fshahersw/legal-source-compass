@@ -132,7 +132,7 @@ export function LibraryBrowser({
                 onChange={(v) => setFilters({ headingCategories: v })}
               />
               <FacetFilter
-                label="Category"
+                label="Resource group (from heading)"
                 facets={facets.categories.map((c) => ({ ...c, value: `${c.label}` }))}
                 selected={filters.categories.map((id) => CATEGORY_LABELS[id as CategoryId] ?? id)}
                 onChange={(v) =>

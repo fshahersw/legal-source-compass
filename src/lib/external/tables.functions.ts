@@ -17,7 +17,7 @@ export const queryTable = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const t = EXTRA_TABLES[data.table];
     const q = data.q.trim();
-    const filter = q ? `&${t.search}=ilike.${ilikeTerm(q)}` : "";
+    const filter = (data.table === "corpus_context" ? "&ready=eq.true" : "") + (q ? `&${t.search}=ilike.${ilikeTerm(q)}` : "");
     const r = await restGet<Record<string, unknown>[]>(`${data.table}?select=*${filter}&order=${t.order}`, { count: !q, range: [data.offset, data.offset + 49] });
     return { json: JSON.stringify(r.rows), total: r.total, pageSize: 50 };
   });

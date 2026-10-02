@@ -4,14 +4,14 @@ export function BarList({ title, rows, limit = 12, unit }: { title: string; rows
   const shown = rows.slice(0, limit);
   const max = Math.max(1, ...shown.map((r) => r.count));
   return (
-    <section className="rounded-lg border border-border bg-surface p-4 shadow-card">
+    <section className="min-w-0 rounded-lg border border-border bg-surface p-4 shadow-card">
       <h3 className="eyebrow mb-3">{title}</h3>
       {shown.length === 0 ? (
         <p className="text-[12px] text-muted-foreground">No rows.</p>
       ) : (
         <ul className="space-y-1.5">
           {shown.map((r) => (
-            <li key={r.label} className="grid grid-cols-[minmax(0,11rem)_1fr_3.5rem] items-center gap-2 text-[12px]">
+            <li key={r.label} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_5.5rem] items-center gap-2 text-[12px] sm:grid-cols-[minmax(0,11rem)_minmax(0,1fr)_5.5rem]">
               <span className="truncate" title={r.label}>{r.label}</span>
               <span className="h-2 rounded-sm bg-muted">
                 <span className="block h-2 rounded-sm bg-primary" style={{ width: `${(r.count / max) * 100}%` }} />

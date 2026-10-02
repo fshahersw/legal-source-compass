@@ -36,6 +36,7 @@ function SearchPage() {
         {d?.total != null ? <span className="text-[12px] text-muted-foreground">{d.total.toLocaleString()} results</span> : null}
       </form>
       {query.error ? <ExternalError error={query.error} /> : null}
+      {d?.unresolved ? <p role="status" className="mb-3 text-[12px] text-muted-foreground">{d.unresolved.toLocaleString()} results on this page could not be linked to an exact dataset and record. Their identity is not inferred.</p> : null}
       {q.trim().length < 2 ? <p className="text-[13px] text-muted-foreground">Enter at least two characters.</p> : null}
       <ul className="divide-y divide-border rounded-lg border border-border bg-surface shadow-card">
         {query.isLoading ? <li className="px-3 py-3 text-[13px] text-muted-foreground">Searching…</li> : null}
@@ -47,12 +48,12 @@ function SearchPage() {
             </button>
           </li>
         ))}
-        {d && !d.hits.length ? <li className="px-3 py-3 text-[13px] text-muted-foreground">No results.</li> : null}
+        {d && d.returned === 0 ? <li className="px-3 py-3 text-[13px] text-muted-foreground">No results.</li> : null}
       </ul>
-      {d?.hits.length ? (
+      {d && d.returned > 0 ? (
         <div className="mt-3 flex gap-2">
           <Button size="sm" variant="outline" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - 50))}>Previous</Button>
-          <Button size="sm" variant="outline" disabled={d.hits.length < 50} onClick={() => setOffset(offset + 50)}>Next</Button>
+          <Button size="sm" variant="outline" disabled={d.returned < 50} onClick={() => setOffset(offset + 50)}>Next</Button>
         </div>
       ) : null}
       <RecordDrawer item={open ? { id: open.id, title: open.title, sourceUrl: open.source_url ?? null } : null} dataset={open && ds.aliases[open.dataset] ? (ds.aliases[open.dataset] ?? null) : null} onClose={() => setOpen(null)} aliases={ds.aliases} />

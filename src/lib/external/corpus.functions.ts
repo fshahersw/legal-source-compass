@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { ilikeTerm, restGet, rpcPost } from "./rest.server";
+import { PROVISION_DATASETS } from "./lawTree";
 
 const DIRECTORY_DATASET = "counties";
 const ROW_CAP = 5000;
@@ -77,6 +78,7 @@ export const listLawProvisions = createServerFn({ method: "GET" })
   });
 
 export type LawProvision = {
+  publicationReady: boolean | null;
   id: string; dataset: string; title: string | null; state: string | null; kind: string | null; citation: string | null; status: string | null; quality: string | null; sourceUrl: string | null; text: string | null; file: { id?: string; bytes?: number; sha256?: string } | null;
   /** Reference frame from the publisher snapshot (eCFR detail fields); all null when the source does not state them. */
   frame: {
@@ -95,13 +97,14 @@ const strArr = (v: unknown): string[] | null => (Array.isArray(v) ? v.filter((x)
 
 /** One provision: stored text and the publisher's own http(s) link. Internal file paths are not exposed. */
 export const getLawProvision = createServerFn({ method: "GET" })
-  .inputValidator((d) => z.object({ id: z.string().min(1).max(300) }).parse(d))
+  .inputValidator((d) => z.object({ id: z.string().min(1).max(300), dataset: z.enum(PROVISION_DATASETS).nullable().default(null) }).parse(d))
   .handler(async ({ data }): Promise<LawProvision | null> => {
     const r = await restGet<{ id: string; dataset: string; title: string | null; state: string | null; source_url: string | null; text: string | null; detail: any }[]>(
-      `corpus_records?select=id,dataset,title,state,source_url,text,detail&id=eq.${encodeURIComponent(data.id)}&limit=1`,
+      `corpus_records?select=id,dataset,title,state,source_url,text,detail&id=eq.${encodeURIComponent(data.id)}&dataset=${data.dataset ? `eq.${data.dataset}` : `in.(${PROVISION_DATASETS.join(",")})`}&limit=2`,
     );
     const row = r.rows[0];
-    if (!row) return null;
+    if (!row || r.rows.length !== 1) return null;
+    const publication = await restGet<{ ready: boolean }[]>(`corpus_datasets?select=ready&id=eq.${encodeURIComponent(row.dataset)}&limit=1`);
     const d = row.detail ?? {};
     const md = d.metadata ?? {};
     const src = typeof row.source_url === "string" && /^https?:\/\//i.test(row.source_url) ? row.source_url : null;
@@ -119,6 +122,7 @@ export const getLawProvision = createServerFn({ method: "GET" })
         }
       : null;
     return {
+      publicationReady: typeof publication.rows[0]?.ready === "boolean" ? publication.rows[0].ready : null,
       id: row.id, dataset: row.dataset, title: row.title ?? d.title ?? null, state: row.state ?? d.state ?? null, kind: d.kind ?? null,
       citation: md.citation ?? str(d.citation), status: md.status ?? null, quality: d.quality ?? null, sourceUrl: src,
       text: row.text && row.text.trim() ? row.text : null, file: md.file ?? null,
