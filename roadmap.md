@@ -13,8 +13,12 @@
 - [x] Case analytics (year×status, defendants, firm roles, median close, state map) + defendant/role filters; /insights redirects
 - [x] Agency profiles (Federal Register agency list, exact type counts, recent docs, all docs, safety links)
 - [x] Provision page: copy citation, eCFR, Federal Register link
-- [ ] Provision page: Title·Part·Subpart line, Dates & sources tab
+- [x] Provision page: Title·Part·Subpart line, Dates & sources tab
 - [x] Map as home page; library at /sources/library; V2.2A labels removed; state source rows clickable
 - [x] Retire Categories/Jurisdictions/Families/Endpoints into library filters; merge state sources with Registry V2.2 duplicates
 - [x] Supporting tables into court/case/county pages; court mini-map; MDL judge links
-- [ ] DB-based coverage gaps column
+- [x] DB-based coverage gaps column
+- [x] Case registry (matters/parties/outcomes/docket documents) + Registry matter pages
+- [x] Source catalog integrated into library; court website links on state pages
+- [x] Email/password sign-up, sign-in, reset; sidebar AccountBox
+- [x] Collapsible sidebar (icon rail, persisted choice, header toggle)
