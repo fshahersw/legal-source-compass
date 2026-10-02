@@ -300,8 +300,9 @@ export function AppShell({
                   )}
                 </li>
               ))}
-            </ol>
-          </nav>
+              </ol>
+            </nav>
+          </div>
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div className="min-w-0">
               <h1 className="text-xl leading-tight">{title}</h1>
