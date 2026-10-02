@@ -81,6 +81,7 @@ function StatePage() {
 
   return (
     <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Places", to: "/places" }, { label: st.name }]} title={st.name} description="Sources are matched by exact state name in the imported jurisdiction field; case rows by state code.">
+      <div className="mb-4 rounded-lg border border-primary/25 bg-primary/5 p-4 text-[13px]"><Link className="font-semibold text-primary underline" to="/insights" search={{ view: "states", state: usps }}>Analyze {st.name}</Link><p className="mt-1 text-[12px] text-muted-foreground">Compare federal civil workload per resident, inspect district disposition times, explore judge and case cohorts, and browse court and rules hierarchies.</p></div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <Stat label="Sources, all collections" value={merged.length} note="exact URL match" />
         <Stat label="Directory sources" value={sources.length} />

@@ -82,7 +82,8 @@ export function CaseCatalog({ scope }: { scope?: { court?: string | undefined; m
                 <tr key={m.docket_id} className="border-t border-border align-top">
                   <td className="whitespace-nowrap px-2 py-1.5 font-mono">{m.date_filed ?? "—"}</td>
                   <td className="max-w-sm px-2 py-1.5">
-                    {m.courtlistener_docket_url ? <a href={m.courtlistener_docket_url} target="_blank" rel="noreferrer" className="underline">{m.case_name ?? m.docket_number}</a> : m.case_name}
+                    <Link to="/insights" search={{ view: "cases", docket: m.docket_id }} className="underline">{m.case_name ?? m.docket_number ?? m.docket_id}</Link>
+                    {m.courtlistener_docket_url ? <a href={m.courtlistener_docket_url} target="_blank" rel="noreferrer" className="ml-2 text-[10px] text-muted-foreground underline">Source docket</a> : null}
                     <div className="font-mono text-[10px] text-muted-foreground">{m.docket_number}{m.defendant ? ` · v. ${m.defendant}` : ""}</div>
                   </td>
                   <td className="px-2 py-1.5">{m.court ? <Link to="/courts/$id" params={{ id: m.court }} className="underline">{m.court}</Link> : "—"}</td>
