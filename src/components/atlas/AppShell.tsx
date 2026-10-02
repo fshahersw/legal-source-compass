@@ -1,7 +1,10 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Map as MapIcon, Landmark, Library, ShieldAlert, BookOpen, Search } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Map as MapIcon, Landmark, Library, ShieldAlert, BookOpen, Search, LogIn, LogOut } from "lucide-react";
 import { useState, type FormEvent, type ReactNode } from "react";
 
+import { supabase } from "@/integrations/supabase/client";
+import { useSessionUser } from "@/lib/auth/useSession";
 import { useAtlas } from "@/lib/atlas/store";
 import { reviewCounts } from "@/lib/atlas/review";
 import { Input } from "@/components/ui/input";
@@ -84,6 +87,36 @@ const CONTEXT_NAV = [
   },
 ];
 
+function AccountBox() {
+  const { user, ready } = useSessionUser();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  if (!ready) return null;
+  if (!user)
+    return (
+      <Link to="/auth" className="nav-link">
+        <LogIn className="size-4 opacity-70" strokeWidth={1.75} />
+        <span>Sign in</span>
+      </Link>
+    );
+  const signOut = async () => {
+    await queryClient.cancelQueries();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  };
+  return (
+    <div className="space-y-1">
+      <div className="truncate text-[11px] text-muted-foreground" title={user.email ?? ""}>
+        {user.email}
+      </div>
+      <button type="button" onClick={signOut} className="nav-link w-full">
+        <LogOut className="size-4 opacity-70" strokeWidth={1.75} />
+        <span>Sign out</span>
+      </button>
+    </div>
+  );
+}
+
 function pathMatches(pathname: string, path: string) {
   return path === "/" ? pathname === "/" : pathname === path || pathname.startsWith(`${path}/`);
 }
@@ -148,6 +181,7 @@ export function AppShell({
         </nav>
 
         <div className="mt-auto space-y-3 px-2 pt-6">
+          <AccountBox />
           <p className="flex gap-1.5 text-[10px] leading-relaxed text-muted-foreground">
             <ShieldAlert className="mt-px size-3.5 shrink-0" strokeWidth={1.75} />
             <span>
