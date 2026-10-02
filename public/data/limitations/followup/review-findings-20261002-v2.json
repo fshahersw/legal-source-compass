@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0.0",
+  "reviewVersion": "2026-10-02.2",
+  "reviewedAt": "2026-10-02T10:42:46.404Z",
+  "findings": [
+    {
+      "id": "nd-public-building-asbestos-property-cutoff-20261002-v2",
+      "jurisdiction": "ND",
+      "claimCategory": "asbestos_property_remediation",
+      "sourceIds": [
+        "nd-ch28-01"
+      ],
+      "pinpoint": "N.D.C.C. § 28-01-47",
+      "disposition": "not_a_personal_injury_or_wrongful_death_calculator_rule",
+      "observation": "The section concerns asbestos removal / abatement cost actions for public buildings and a fixed August 1, 1997 commencement cutoff / revival provision. It is not an asbestos personal-injury statute and is not added to any of the three injury calculator claim categories.",
+      "automaticDate": null,
+      "historicalApplicability": "Historical fixed-date provision, not a present-day rolling anniversary"
+    }
+  ]
+}

@@ -6,7 +6,9 @@
       "state": "AL",
       "name": "Alabama",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["al-6-2-38"],
+      "sourceIds": [
+        "al-6-2-38"
+      ],
       "baselineRuleIds": [
         "al-personal_injury-general-review-20261002",
         "al-wrongful_death-general-review-20261002"
@@ -46,8 +48,12 @@
       "state": "AK",
       "name": "Alaska",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["ak-9-10-070"],
-      "baselineRuleIds": ["ak-personal_injury-general-review-20261002"],
+      "sourceIds": [
+        "ak-9-10-070"
+      ],
+      "baselineRuleIds": [
+        "ak-personal_injury-general-review-20261002"
+      ],
       "researchRuleIds": [],
       "coverage": "conditional_baselines",
       "publisherLinks": [
@@ -84,12 +90,17 @@
       "state": "AZ",
       "name": "Arizona",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["az-12-542", "az-12-551"],
+      "sourceIds": [
+        "az-12-542",
+        "az-12-551"
+      ],
       "baselineRuleIds": [
         "az-personal_injury-baseline-20261002",
         "az-wrongful_death-baseline-20261002"
       ],
-      "researchRuleIds": ["az-validity-1-20261002"],
+      "researchRuleIds": [
+        "az-validity-1-20261002"
+      ],
       "coverage": "conditional_baselines",
       "publisherLinks": [
         {
@@ -138,7 +149,7 @@
         {
           "title": "Public code linked by Arkansas Legislature",
           "url": "https://www.lexisnexis.com/hottopics/arcode/",
-          "status": "publisher_text_fetch_failed"
+          "status": "terms_agreement_gate"
         }
       ],
       "metadataOnlyReferences": [],
@@ -154,7 +165,7 @@
         }
       ],
       "gaps": [
-        "Official legislature routes the code through public Lexis; statutory body retrieval failed. Introduced bills were rejected as proof of current code.",
+        "Public publisher navigation / terms notice was retrieved, but statutory body access requires an express terms agreement. No agreement was submitted; claim-specific current and historical text remains pending.",
         "Primary statutory text still needs retrieval and claim-level verification.",
         "personal injury: no automatically computable reviewed baseline.",
         "product liability: no automatically computable reviewed baseline.",
@@ -167,13 +178,19 @@
       "state": "CA",
       "name": "California",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["ca-335-1", "ca-12a", "ca-352"],
+      "sourceIds": [
+        "ca-335-1",
+        "ca-12a",
+        "ca-352"
+      ],
       "baselineRuleIds": [
         "ca-personal_injury-baseline-20261002",
         "ca-wrongful_death-baseline-20261002",
         "ca-product_liability-general-review-20261002"
       ],
-      "researchRuleIds": ["ca-personal_injury-general-review-20261002"],
+      "researchRuleIds": [
+        "ca-personal_injury-general-review-20261002"
+      ],
       "coverage": "conditional_baselines",
       "publisherLinks": [
         {
@@ -229,7 +246,9 @@
       "state": "CO",
       "name": "Colorado",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["co-t13-a80-2026"],
+      "sourceIds": [
+        "co-t13-a80-2026"
+      ],
       "baselineRuleIds": [
         "co-personal_injury-general-review-20261002",
         "co-wrongful_death-general-review-20261002",
@@ -269,9 +288,15 @@
       "state": "CT",
       "name": "Connecticut",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["ct-ch926"],
-      "baselineRuleIds": ["ct-product_liability-general-review-20261002"],
-      "researchRuleIds": ["ct-personal_injury-general-review-20261002"],
+      "sourceIds": [
+        "ct-ch926"
+      ],
+      "baselineRuleIds": [
+        "ct-product_liability-general-review-20261002"
+      ],
+      "researchRuleIds": [
+        "ct-personal_injury-general-review-20261002"
+      ],
       "coverage": "conditional_baselines",
       "publisherLinks": [
         {
@@ -319,9 +344,15 @@
       "state": "DE",
       "name": "Delaware",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["de-10c81"],
-      "baselineRuleIds": ["de-personal_injury-general-review-20261002"],
-      "researchRuleIds": ["de-limitations-1-20261002"],
+      "sourceIds": [
+        "de-10c81"
+      ],
+      "baselineRuleIds": [
+        "de-personal_injury-general-review-20261002"
+      ],
+      "researchRuleIds": [
+        "de-limitations-1-20261002"
+      ],
       "coverage": "conditional_baselines",
       "publisherLinks": [
         {
@@ -357,9 +388,14 @@
       "state": "DC",
       "name": "District of Columbia",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["dc-12-301", "dc-12-311"],
+      "sourceIds": [
+        "dc-12-301",
+        "dc-12-311"
+      ],
       "baselineRuleIds": [],
-      "researchRuleIds": ["dc-personal_injury-general-review-20261002"],
+      "researchRuleIds": [
+        "dc-personal_injury-general-review-20261002"
+      ],
       "coverage": "research_only",
       "publisherLinks": [
         {
@@ -393,7 +429,10 @@
       "state": "FL",
       "name": "Florida",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["fl-95-11", "fl-95-031"],
+      "sourceIds": [
+        "fl-95-11",
+        "fl-95-031"
+      ],
       "baselineRuleIds": [
         "fl-personal_injury-general-review-20261002",
         "fl-wrongful_death-general-review-20261002",
@@ -455,7 +494,7 @@
         {
           "title": "Public code linked by Georgia government",
           "url": "https://www.lexisnexis.com/hottopics/gacode/",
-          "status": "publisher_text_pending"
+          "status": "captcha_denied"
         }
       ],
       "metadataOnlyReferences": [],
@@ -471,7 +510,7 @@
         }
       ],
       "gaps": [
-        "Official government directs readers through public Lexis and its terms/navigation. Current claim-level code text and historical amendments are not captured.",
+        "Ordinary navigation to Title 9, Chapter 3, Article 2, § 9-3-33 reached publisher CAPTCHA on the first statute-document request. No CAPTCHA was solved or access evaded; statutory body and historical applicability remain pending.",
         "Primary statutory text still needs retrieval and claim-level verification.",
         "personal injury: no automatically computable reviewed baseline.",
         "product liability: no automatically computable reviewed baseline.",
@@ -484,8 +523,12 @@
       "state": "HI",
       "name": "Hawaii",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["hi-657-7"],
-      "baselineRuleIds": ["hi-personal_injury-general-review-20261002"],
+      "sourceIds": [
+        "hi-657-7"
+      ],
+      "baselineRuleIds": [
+        "hi-personal_injury-general-review-20261002"
+      ],
       "researchRuleIds": [],
       "coverage": "conditional_baselines",
       "publisherLinks": [
@@ -522,7 +565,9 @@
       "state": "ID",
       "name": "Idaho",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["id-5-219"],
+      "sourceIds": [
+        "id-5-219"
+      ],
       "baselineRuleIds": [
         "id-personal_injury-general-review-20261002",
         "id-wrongful_death-general-review-20261002"
@@ -562,9 +607,16 @@
       "state": "IL",
       "name": "Illinois",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["il-13-202", "il-13-213"],
-      "baselineRuleIds": ["il-personal_injury-general-review-20261002"],
-      "researchRuleIds": ["il-product_liability-general-review-20261002"],
+      "sourceIds": [
+        "il-13-202",
+        "il-13-213"
+      ],
+      "baselineRuleIds": [
+        "il-personal_injury-general-review-20261002"
+      ],
+      "researchRuleIds": [
+        "il-product_liability-general-review-20261002"
+      ],
       "coverage": "conditional_baselines",
       "publisherLinks": [
         {
@@ -605,13 +657,18 @@
       "state": "IN",
       "name": "Indiana",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["in-code-2026"],
+      "sourceIds": [
+        "in-code-2026"
+      ],
       "baselineRuleIds": [
         "in-personal_injury-baseline-20261002",
         "in-wrongful_death-baseline-20261002",
         "in-product_liability-general-review-20261002"
       ],
-      "researchRuleIds": ["in-repose-1-20261002", "in-accrual-1-20261002"],
+      "researchRuleIds": [
+        "in-repose-1-20261002",
+        "in-accrual-1-20261002"
+      ],
       "coverage": "conditional_baselines",
       "publisherLinks": [
         {
@@ -645,12 +702,16 @@
       "state": "IA",
       "name": "Iowa",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["ia-c614-2026"],
+      "sourceIds": [
+        "ia-c614-2026"
+      ],
       "baselineRuleIds": [
         "ia-personal_injury-general-review-20261002",
         "ia-product_liability-latent_toxic-review-20261002"
       ],
-      "researchRuleIds": ["ia-product_liability-general-review-20261002"],
+      "researchRuleIds": [
+        "ia-product_liability-general-review-20261002"
+      ],
       "coverage": "conditional_baselines",
       "publisherLinks": [
         {
@@ -685,9 +746,16 @@
       "state": "KS",
       "name": "Kansas",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["ks-60-513", "ks-60-3303"],
-      "baselineRuleIds": ["ks-product_liability-latent_toxic-review-20261002"],
-      "researchRuleIds": ["ks-product_liability-general-review-20261002"],
+      "sourceIds": [
+        "ks-60-513",
+        "ks-60-3303"
+      ],
+      "baselineRuleIds": [
+        "ks-product_liability-latent_toxic-review-20261002"
+      ],
+      "researchRuleIds": [
+        "ks-product_liability-general-review-20261002"
+      ],
       "coverage": "conditional_baselines",
       "publisherLinks": [
         {
@@ -737,10 +805,10 @@
       ],
       "metadataOnlyReferences": [
         {
-          "title": "KRS 413.140, publisher version effective July 15, 2026",
+          "title": "KRS 413.140 current index target; PDF metadata only",
           "url": "https://apps.legislature.ky.gov/law/statutes/statute.aspx?id=58050",
           "format": "application/PDF",
-          "note": "HEAD verified PDF response. URL retained only; no PDF binary saved. Reconfirm current index link before future ingestion."
+          "note": "Current official chapter index points to this target. HEAD on 2026-10-02 returned 200 application/PDF; no body downloaded. Effective-date text and injury-claim mapping are not verified from the PDF."
         }
       ],
       "discoverySource": "https://www.justice.gov/jmd/ls/state/kentucky",
@@ -763,7 +831,7 @@
         }
       ],
       "gaps": [
-        "The official section endpoint serves a PDF. Text ingestion deferred under the metadata-only PDF constraint; no calculator branch.",
+        "Official index and HEAD confirm a PDF-only section target. No PDF bytes fetched; the heading alone does not prove personal-injury applicability or operative version. No calculator branch.",
         "Primary statutory text still needs retrieval and claim-level verification.",
         "personal injury: no automatically computable reviewed baseline.",
         "product liability: no automatically computable reviewed baseline.",
@@ -776,9 +844,13 @@
       "state": "LA",
       "name": "Louisiana",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["la-3493-1"],
+      "sourceIds": [
+        "la-3493-1"
+      ],
       "baselineRuleIds": [],
-      "researchRuleIds": ["la-personal_injury-general-review-20261002"],
+      "researchRuleIds": [
+        "la-personal_injury-general-review-20261002"
+      ],
       "coverage": "research_only",
       "publisherLinks": [
         {
@@ -811,7 +883,10 @@
       "state": "ME",
       "name": "Maine",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["me-14-752", "me-18c-2-807"],
+      "sourceIds": [
+        "me-14-752",
+        "me-18c-2-807"
+      ],
       "baselineRuleIds": [
         "me-personal_injury-baseline-20261002",
         "me-wrongful_death-baseline-20261002"
@@ -868,13 +943,18 @@
       "state": "MD",
       "name": "Maryland",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["md-cjp5-101", "md-cjp3-904"],
+      "sourceIds": [
+        "md-cjp5-101",
+        "md-cjp3-904"
+      ],
       "baselineRuleIds": [
         "md-personal_injury-baseline-20261002",
         "md-wrongful_death-baseline-20261002",
         "md-wrongful_death-occupational_disease-20261002"
       ],
-      "researchRuleIds": ["md-accrual-1-20261002"],
+      "researchRuleIds": [
+        "md-accrual-1-20261002"
+      ],
       "coverage": "conditional_baselines",
       "publisherLinks": [
         {
@@ -910,8 +990,12 @@
       "state": "MA",
       "name": "Massachusetts",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["ma-260-2a"],
-      "baselineRuleIds": ["ma-personal_injury-general-review-20261002"],
+      "sourceIds": [
+        "ma-260-2a"
+      ],
+      "baselineRuleIds": [
+        "ma-personal_injury-general-review-20261002"
+      ],
       "researchRuleIds": [],
       "coverage": "conditional_baselines",
       "publisherLinks": [
@@ -952,9 +1036,16 @@
       "state": "MI",
       "name": "Michigan",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["mi-600-5805", "mi-600-5827"],
-      "baselineRuleIds": ["mi-personal_injury-baseline-20261002"],
-      "researchRuleIds": ["mi-limitations-2-20261002"],
+      "sourceIds": [
+        "mi-600-5805",
+        "mi-600-5827"
+      ],
+      "baselineRuleIds": [
+        "mi-personal_injury-baseline-20261002"
+      ],
+      "researchRuleIds": [
+        "mi-limitations-2-20261002"
+      ],
       "coverage": "conditional_baselines",
       "publisherLinks": [
         {
@@ -991,8 +1082,13 @@
       "state": "MN",
       "name": "Minnesota",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["mn-541-05", "mn-573-02"],
-      "baselineRuleIds": ["mn-product_liability-general-review-20261002"],
+      "sourceIds": [
+        "mn-541-05",
+        "mn-573-02"
+      ],
+      "baselineRuleIds": [
+        "mn-product_liability-general-review-20261002"
+      ],
       "researchRuleIds": [
         "mn-limitations-1-20261002",
         "mn-limitations-2-20261002",
@@ -1055,7 +1151,7 @@
         {
           "title": "Mississippi Code linked by Legislature",
           "url": "https://www.lexisnexis.com/hottopics/mscode/",
-          "status": "publisher_text_pending"
+          "status": "terms_agreement_gate"
         }
       ],
       "metadataOnlyReferences": [],
@@ -1075,7 +1171,7 @@
         }
       ],
       "gaps": [
-        "Official legislature links public Lexis. Current § 15-1-49 text, product repose and historical changes remain unreviewed.",
+        "Public publisher navigation / terms notice was retrieved, but statutory body access requires an express terms agreement. No agreement was submitted; claim-specific current and historical text remains pending.",
         "Primary statutory text still needs retrieval and claim-level verification.",
         "personal injury: no automatically computable reviewed baseline.",
         "product liability: no automatically computable reviewed baseline.",
@@ -1088,9 +1184,13 @@
       "state": "MO",
       "name": "Missouri",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["mo-516-120"],
+      "sourceIds": [
+        "mo-516-120"
+      ],
       "baselineRuleIds": [],
-      "researchRuleIds": ["mo-personal_injury-general-review-20261002"],
+      "researchRuleIds": [
+        "mo-personal_injury-general-review-20261002"
+      ],
       "coverage": "research_only",
       "publisherLinks": [
         {
@@ -1123,7 +1223,9 @@
       "state": "MT",
       "name": "Montana",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["mt-27-2-204"],
+      "sourceIds": [
+        "mt-27-2-204"
+      ],
       "baselineRuleIds": [
         "mt-personal_injury-general-review-20261002",
         "mt-wrongful_death-general-review-20261002"
@@ -1163,9 +1265,13 @@
       "state": "NE",
       "name": "Nebraska",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["ne-25-207"],
+      "sourceIds": [
+        "ne-25-207"
+      ],
       "baselineRuleIds": [],
-      "researchRuleIds": ["ne-personal_injury-general-review-20261002"],
+      "researchRuleIds": [
+        "ne-personal_injury-general-review-20261002"
+      ],
       "coverage": "research_only",
       "publisherLinks": [
         {
@@ -1202,7 +1308,9 @@
       "state": "NV",
       "name": "Nevada",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["nv-nrs11"],
+      "sourceIds": [
+        "nv-nrs11"
+      ],
       "baselineRuleIds": [
         "nv-personal_injury-general-review-20261002",
         "nv-wrongful_death-general-review-20261002"
@@ -1250,8 +1358,12 @@
       "state": "NH",
       "name": "New Hampshire",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["nh-508-4"],
-      "baselineRuleIds": ["nh-personal_injury-baseline-20261002"],
+      "sourceIds": [
+        "nh-508-4"
+      ],
+      "baselineRuleIds": [
+        "nh-personal_injury-baseline-20261002"
+      ],
       "researchRuleIds": [],
       "coverage": "conditional_baselines",
       "publisherLinks": [
@@ -1292,9 +1404,13 @@
       "state": "NJ",
       "name": "New Jersey",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["nj-2019-c120"],
+      "sourceIds": [
+        "nj-2019-c120"
+      ],
       "baselineRuleIds": [],
-      "researchRuleIds": ["nj-personal_injury-general-review-20261002"],
+      "researchRuleIds": [
+        "nj-personal_injury-general-review-20261002"
+      ],
       "coverage": "research_only",
       "publisherLinks": [
         {
@@ -1335,11 +1451,20 @@
     {
       "state": "NM",
       "name": "New Mexico",
-      "sourceStatus": "primary_text_pending",
-      "sourceIds": [],
-      "baselineRuleIds": [],
-      "researchRuleIds": [],
-      "coverage": "pending",
+      "sourceStatus": "primary_text_retrieved",
+      "sourceIds": [
+        "nm-ch37-fragment0",
+        "nm-ch41-fragment0"
+      ],
+      "baselineRuleIds": [
+        "nm-personal_injury-baseline-20261002-v2",
+        "nm-wrongful_death-baseline-20261002-v2"
+      ],
+      "researchRuleIds": [
+        "nm-product_liability-accrual-review-20261002-v2",
+        "nm-personal_injury-exceptions-review-20261002-v2"
+      ],
+      "coverage": "conditional_baselines",
       "publisherLinks": [
         {
           "title": "New Mexico Compilation Commission: official laws access",
@@ -1350,6 +1475,16 @@
           "title": "NMOneSource official statutory repository",
           "url": "https://nmonesource.com/nmos/en/nav.do",
           "status": "publisher_text_fetch_failed"
+        },
+        {
+          "title": "NMSA 1978 Chapter 37 first rendered HTML fragment (§§ 37-1-1–37-1-29)",
+          "url": "https://nmonesource.com/nmos/nmsa-unanno/en/item/18537/index.do",
+          "status": "statutory_text_retrieved"
+        },
+        {
+          "title": "NMSA 1978 Chapter 41 first rendered HTML fragment, including Article 2",
+          "url": "https://nmonesource.com/nmos/nmsa-unanno/en/item/18541/index.do",
+          "status": "statutory_text_retrieved"
         }
       ],
       "metadataOnlyReferences": [],
@@ -1365,11 +1500,8 @@
         }
       ],
       "gaps": [
-        "Official publisher and its repository were identified; repository extraction failed. No third-party FindLaw summary was promoted to primary statutory verification.",
-        "Primary statutory text still needs retrieval and claim-level verification.",
-        "personal injury: no automatically computable reviewed baseline.",
+        "Official rendered HTML fragments recovered, supporting ordinary injury and wrongful-death conditional baselines. Later chapter fragments, latent/product controlling accrual authority, government claims and historical versions remain unreviewed.",
         "product liability: no automatically computable reviewed baseline.",
-        "wrongful death: no automatically computable reviewed baseline.",
         "No comprehensive controlling-precedent, historical-version, tolling, repose or choice-of-law review completed.",
         "Official holiday / closure calendars and court-specific filing / service rules not loaded."
       ]
@@ -1378,13 +1510,22 @@
       "state": "NY",
       "name": "New York",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["ny-cplr214", "ny-cplr214c", "ny-ept-death", "ny-cplr202", "ny-cplr208"],
+      "sourceIds": [
+        "ny-cplr214",
+        "ny-cplr214c",
+        "ny-ept-death",
+        "ny-cplr202",
+        "ny-cplr208"
+      ],
       "baselineRuleIds": [
         "ny-personal_injury-baseline-20261002",
         "ny-wrongful_death-baseline-20261002",
         "ny-product_liability-latent_toxic-20261002"
       ],
-      "researchRuleIds": ["ny-accrual-1-20261002", "ny-personal_injury-general-review-20261002"],
+      "researchRuleIds": [
+        "ny-accrual-1-20261002",
+        "ny-personal_injury-general-review-20261002"
+      ],
       "coverage": "conditional_baselines",
       "publisherLinks": [
         {
@@ -1438,7 +1579,12 @@
       "state": "NC",
       "name": "North Carolina",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["nc-1-52", "nc-1-53", "nc-1-46-1", "nc-1-17"],
+      "sourceIds": [
+        "nc-1-52",
+        "nc-1-53",
+        "nc-1-46-1",
+        "nc-1-17"
+      ],
       "baselineRuleIds": [],
       "researchRuleIds": [
         "nc-limitations-1-20261002",
@@ -1491,16 +1637,38 @@
     {
       "state": "ND",
       "name": "North Dakota",
-      "sourceStatus": "primary_text_pending",
-      "sourceIds": [],
-      "baselineRuleIds": [],
-      "researchRuleIds": [],
-      "coverage": "pending",
+      "sourceStatus": "primary_text_retrieved",
+      "sourceIds": [
+        "nd-ch28-01",
+        "nd-ch28-01-3",
+        "nd-ch32-21"
+      ],
+      "baselineRuleIds": [
+        "nd-personal_injury-baseline-20261002-v2",
+        "nd-wrongful_death-baseline-20261002-v2"
+      ],
+      "researchRuleIds": [
+        "nd-product_liability-repose-validity-review-20261002-v2",
+        "nd-product_liability-asbestos-review-20261002-v2",
+        "nd-personal_injury-exceptions-review-20261002-v2",
+        "nd-wrongful_death-standing-survival-review-20261002-v2"
+      ],
+      "coverage": "conditional_baselines",
       "publisherLinks": [
         {
           "title": "North Dakota Century Code, Chapter 28-01 official index",
           "url": "https://ndlegis.gov/cencode/t28c01.html",
           "status": "official_statute_index_retrieved"
+        },
+        {
+          "title": "North Dakota official Century Code JSON API",
+          "url": "https://ndlegis.gov/api/data/century_code.json",
+          "status": "statutory_text_retrieved"
+        },
+        {
+          "title": "Legislative API documentation",
+          "url": "https://ndlegis.gov/legislative-api-documentation",
+          "status": "official_api_documentation_retrieved"
         }
       ],
       "metadataOnlyReferences": [
@@ -1523,11 +1691,8 @@
         }
       ],
       "gaps": [
-        "Official index maps limitation sections to chapter PDF. The § 28-01-16 general heading does not prove the applicability of its period to every injury type.",
-        "Primary statutory text still needs retrieval and claim-level verification.",
-        "personal injury: no automatically computable reviewed baseline.",
+        "Documented official JSON yielded Chapters 28-01, 28-01.3 and 32-21 (publisher update 2026-09-15, timezone unspecified). Ordinary injury/death baselines are conditional; Dickie invalidity prevents automatic product repose, and asbestos severability/current treatment remains unreviewed. Service-based commencement must be verified.",
         "product liability: no automatically computable reviewed baseline.",
-        "wrongful death: no automatically computable reviewed baseline.",
         "No comprehensive controlling-precedent, historical-version, tolling, repose or choice-of-law review completed.",
         "Official holiday / closure calendars and court-specific filing / service rules not loaded."
       ]
@@ -1536,7 +1701,10 @@
       "state": "OH",
       "name": "Ohio",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["oh-2305-10", "oh-2307-71"],
+      "sourceIds": [
+        "oh-2305-10",
+        "oh-2307-71"
+      ],
       "baselineRuleIds": [
         "oh-personal_injury-general-review-20261002",
         "oh-product_liability-latent_toxic-review-20261002",
@@ -1544,7 +1712,9 @@
         "oh-product_liability-synthetic_estrogen-review-20261002",
         "oh-product_liability-asbestos-review-20261002"
       ],
-      "researchRuleIds": ["oh-product_liability-agent_orange-review-20261002"],
+      "researchRuleIds": [
+        "oh-product_liability-agent_orange-review-20261002"
+      ],
       "coverage": "conditional_baselines",
       "publisherLinks": [
         {
@@ -1583,11 +1753,21 @@
     {
       "state": "OK",
       "name": "Oklahoma",
-      "sourceStatus": "primary_text_pending",
-      "sourceIds": [],
-      "baselineRuleIds": [],
-      "researchRuleIds": [],
-      "coverage": "pending",
+      "sourceStatus": "primary_text_retrieved",
+      "sourceIds": [
+        "ok-12-95",
+        "ok-12-96",
+        "ok-12-1053"
+      ],
+      "baselineRuleIds": [
+        "ok-personal_injury-baseline-20261002-v2"
+      ],
+      "researchRuleIds": [
+        "ok-product_liability-accrual-review-20261002-v2",
+        "ok-wrongful_death-accrual-review-20261002-v2",
+        "ok-personal_injury-exceptions-review-20261002-v2"
+      ],
+      "coverage": "conditional_baselines",
       "publisherLinks": [
         {
           "title": "Oklahoma Legislature official statute index, updated November 18, 2025",
@@ -1598,6 +1778,11 @@
           "title": "Oklahoma State Courts Network statute browse",
           "url": "https://www.oscn.net/applications/oscn/index.asp?ftdb=STOKST&level=1",
           "status": "human_verification_blocked"
+        },
+        {
+          "title": "Official Oklahoma Statutes (Unannotated), maintained by Thomson Reuters",
+          "url": "https://govt.westlaw.com/okjc/Index?contextData=%28sc.Default%29",
+          "status": "statutory_text_retrieved"
         }
       ],
       "metadataOnlyReferences": [
@@ -1636,9 +1821,7 @@
         }
       ],
       "gaps": [
-        "Official HTML index captured but statutory text is PDF; OSCN requested human verification. No unverified cite-ID was retained.",
-        "Primary statutory text still needs retrieval and claim-level verification.",
-        "personal injury: no automatically computable reviewed baseline.",
+        "Public official unannotated publisher yielded §§ 95, 96 and 1053, with a 2026 currentness notice. OSCN was not retried. Ordinary injury baseline is conditional; wrongful-death accrual, product discovery/classification, special claims and historical applicability remain unreviewed.",
         "product liability: no automatically computable reviewed baseline.",
         "wrongful death: no automatically computable reviewed baseline.",
         "No comprehensive controlling-precedent, historical-version, tolling, repose or choice-of-law review completed.",
@@ -1649,9 +1832,13 @@
       "state": "OR",
       "name": "Oregon",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["or-c12"],
+      "sourceIds": [
+        "or-c12"
+      ],
       "baselineRuleIds": [],
-      "researchRuleIds": ["or-limitations-1-20261002"],
+      "researchRuleIds": [
+        "or-limitations-1-20261002"
+      ],
       "coverage": "research_only",
       "publisherLinks": [
         {
@@ -1684,12 +1871,16 @@
       "state": "PA",
       "name": "Pennsylvania",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["pa-t42c55"],
+      "sourceIds": [
+        "pa-t42c55"
+      ],
       "baselineRuleIds": [
         "pa-personal_injury-baseline-20261002",
         "pa-wrongful_death-baseline-20261002"
       ],
-      "researchRuleIds": ["pa-validity-1-20261002"],
+      "researchRuleIds": [
+        "pa-validity-1-20261002"
+      ],
       "coverage": "conditional_baselines",
       "publisherLinks": [
         {
@@ -1720,8 +1911,12 @@
       "state": "RI",
       "name": "Rhode Island",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["ri-9-1-14"],
-      "baselineRuleIds": ["ri-personal_injury-baseline-20261002"],
+      "sourceIds": [
+        "ri-9-1-14"
+      ],
+      "baselineRuleIds": [
+        "ri-personal_injury-baseline-20261002"
+      ],
       "researchRuleIds": [],
       "coverage": "conditional_baselines",
       "publisherLinks": [
@@ -1754,7 +1949,9 @@
       "state": "SC",
       "name": "South Carolina",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["sc-t15c3"],
+      "sourceIds": [
+        "sc-t15c3"
+      ],
       "baselineRuleIds": [
         "sc-personal_injury-baseline-20261002",
         "sc-wrongful_death-baseline-20261002"
@@ -1790,8 +1987,12 @@
       "state": "SD",
       "name": "South Dakota",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["sd-15-2-14"],
-      "baselineRuleIds": ["sd-personal_injury-general-review-20261002"],
+      "sourceIds": [
+        "sd-15-2-14"
+      ],
+      "baselineRuleIds": [
+        "sd-personal_injury-general-review-20261002"
+      ],
       "researchRuleIds": [],
       "coverage": "conditional_baselines",
       "publisherLinks": [
@@ -1838,6 +2039,11 @@
           "title": "Tennessee Courts attorney resources",
           "url": "https://www.tncourts.gov/attorneys",
           "status": "official_publisher_bridge_indexed"
+        },
+        {
+          "title": "Official public code publisher",
+          "url": "https://www.lexisnexis.com/hottopics/tncode/",
+          "status": "terms_agreement_gate"
         }
       ],
       "metadataOnlyReferences": [],
@@ -1857,7 +2063,7 @@
         }
       ],
       "gaps": [
-        "Official courts identify the public Lexis code; automated access encountered browser validation. Current injury/product/death text and historical versions remain pending.",
+        "Public publisher navigation / terms notice was retrieved, but statutory body access requires an express terms agreement. No agreement was submitted; claim-specific current and historical text remains pending.",
         "Primary statutory text still needs retrieval and claim-level verification.",
         "personal injury: no automatically computable reviewed baseline.",
         "product liability: no automatically computable reviewed baseline.",
@@ -1870,7 +2076,9 @@
       "state": "TX",
       "name": "Texas",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["tx-cp16"],
+      "sourceIds": [
+        "tx-cp16"
+      ],
       "baselineRuleIds": [
         "tx-personal_injury-baseline-20261002",
         "tx-wrongful_death-baseline-20261002",
@@ -1910,9 +2118,13 @@
       "state": "UT",
       "name": "Utah",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["ut-78b-2-307"],
+      "sourceIds": [
+        "ut-78b-2-307"
+      ],
       "baselineRuleIds": [],
-      "researchRuleIds": ["ut-personal_injury-general-review-20261002"],
+      "researchRuleIds": [
+        "ut-personal_injury-general-review-20261002"
+      ],
       "coverage": "research_only",
       "publisherLinks": [
         {
@@ -1949,7 +2161,10 @@
       "state": "VT",
       "name": "Vermont",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["vt-12-512", "vt-14-1492"],
+      "sourceIds": [
+        "vt-12-512",
+        "vt-14-1492"
+      ],
       "baselineRuleIds": [
         "vt-personal_injury-baseline-20261002",
         "vt-wrongful_death-baseline-20261002"
@@ -1998,7 +2213,13 @@
       "state": "VA",
       "name": "Virginia",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["va-8-01-243", "va-8-01-244", "va-8-01-230", "va-8-01-249", "va-8-01-229"],
+      "sourceIds": [
+        "va-8-01-243",
+        "va-8-01-244",
+        "va-8-01-230",
+        "va-8-01-249",
+        "va-8-01-229"
+      ],
       "baselineRuleIds": [
         "va-personal_injury-baseline-20261002",
         "va-wrongful_death-baseline-20261002",
@@ -2007,7 +2228,9 @@
         "va-product_liability-medical_device-20261002",
         "va-product_liability-breast_implant-20261002"
       ],
-      "researchRuleIds": ["va-personal_injury-general-review-20261002"],
+      "researchRuleIds": [
+        "va-personal_injury-general-review-20261002"
+      ],
       "coverage": "conditional_baselines",
       "publisherLinks": [
         {
@@ -2057,8 +2280,12 @@
       "state": "WA",
       "name": "Washington",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["wa-4-16-080"],
-      "baselineRuleIds": ["wa-personal_injury-baseline-20261002"],
+      "sourceIds": [
+        "wa-4-16-080"
+      ],
+      "baselineRuleIds": [
+        "wa-personal_injury-baseline-20261002"
+      ],
       "researchRuleIds": [],
       "coverage": "conditional_baselines",
       "publisherLinks": [
@@ -2099,8 +2326,12 @@
       "state": "WV",
       "name": "West Virginia",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["wv-55-2-12"],
-      "baselineRuleIds": ["wv-personal_injury-general-review-20261002"],
+      "sourceIds": [
+        "wv-55-2-12"
+      ],
+      "baselineRuleIds": [
+        "wv-personal_injury-general-review-20261002"
+      ],
       "researchRuleIds": [],
       "coverage": "conditional_baselines",
       "publisherLinks": [
@@ -2133,7 +2364,9 @@
       "state": "WI",
       "name": "Wisconsin",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["wi-893-54"],
+      "sourceIds": [
+        "wi-893-54"
+      ],
       "baselineRuleIds": [
         "wi-personal_injury-general-review-20261002",
         "wi-wrongful_death-general-review-20261002"
@@ -2173,9 +2406,13 @@
       "state": "WY",
       "name": "Wyoming",
       "sourceStatus": "primary_text_retrieved",
-      "sourceIds": ["wy-title1c3-2026"],
+      "sourceIds": [
+        "wy-title1c3-2026"
+      ],
       "baselineRuleIds": [],
-      "researchRuleIds": ["wy-personal_injury-general-review-20261002"],
+      "researchRuleIds": [
+        "wy-personal_injury-general-review-20261002"
+      ],
       "coverage": "research_only",
       "publisherLinks": [
         {
