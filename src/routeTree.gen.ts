@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as DataExportsRouteImport } from './routes/data-exports'
 import { Route as EndpointExplorerRouteImport } from './routes/endpoint-explorer'
@@ -21,6 +22,7 @@ import { Route as LimitationsRouteImport } from './routes/limitations'
 import { Route as MdlsRouteImport } from './routes/mdls'
 import { Route as OverviewRouteImport } from './routes/overview'
 import { Route as PeopleRouteImport } from './routes/people'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ReviewQueueRouteImport } from './routes/review-queue'
 import { Route as SafetyRouteImport } from './routes/safety'
 import { Route as SavedSourcesRouteImport } from './routes/saved-sources'
@@ -58,6 +60,11 @@ import { Route as RecordsDatasetIdRouteImport } from './routes/records.$dataset.
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CategoriesRoute = CategoriesRouteImport.update({
@@ -113,6 +120,11 @@ const OverviewRoute = OverviewRouteImport.update({
 const PeopleRoute = PeopleRouteImport.update({
   id: '/people',
   path: '/people',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReviewQueueRoute = ReviewQueueRouteImport.update({
@@ -283,6 +295,7 @@ const RecordsDatasetIdRoute = RecordsDatasetIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/categories': typeof CategoriesRoute
   '/data-exports': typeof DataExportsRoute
   '/endpoint-explorer': typeof EndpointExplorerRoute
@@ -294,6 +307,7 @@ export interface FileRoutesByFullPath {
   '/mdls': typeof MdlsRoute
   '/overview': typeof OverviewRoute
   '/people': typeof PeopleRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/review-queue': typeof ReviewQueueRoute
   '/safety': typeof SafetyRoute
   '/saved-sources': typeof SavedSourcesRoute
@@ -330,6 +344,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/categories': typeof CategoriesRoute
   '/data-exports': typeof DataExportsRoute
   '/endpoint-explorer': typeof EndpointExplorerRoute
@@ -341,6 +356,7 @@ export interface FileRoutesByTo {
   '/mdls': typeof MdlsRoute
   '/overview': typeof OverviewRoute
   '/people': typeof PeopleRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/review-queue': typeof ReviewQueueRoute
   '/safety': typeof SafetyRoute
   '/saved-sources': typeof SavedSourcesRoute
@@ -378,6 +394,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/categories': typeof CategoriesRoute
   '/data-exports': typeof DataExportsRoute
   '/endpoint-explorer': typeof EndpointExplorerRoute
@@ -389,6 +406,7 @@ export interface FileRoutesById {
   '/mdls': typeof MdlsRoute
   '/overview': typeof OverviewRoute
   '/people': typeof PeopleRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/review-queue': typeof ReviewQueueRoute
   '/safety': typeof SafetyRoute
   '/saved-sources': typeof SavedSourcesRoute
@@ -427,6 +445,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
     | '/categories'
     | '/data-exports'
     | '/endpoint-explorer'
@@ -438,6 +457,7 @@ export interface FileRouteTypes {
     | '/mdls'
     | '/overview'
     | '/people'
+    | '/reset-password'
     | '/review-queue'
     | '/safety'
     | '/saved-sources'
@@ -474,6 +494,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth'
     | '/categories'
     | '/data-exports'
     | '/endpoint-explorer'
@@ -485,6 +506,7 @@ export interface FileRouteTypes {
     | '/mdls'
     | '/overview'
     | '/people'
+    | '/reset-password'
     | '/review-queue'
     | '/safety'
     | '/saved-sources'
@@ -521,6 +543,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/auth'
     | '/categories'
     | '/data-exports'
     | '/endpoint-explorer'
@@ -532,6 +555,7 @@ export interface FileRouteTypes {
     | '/mdls'
     | '/overview'
     | '/people'
+    | '/reset-password'
     | '/review-queue'
     | '/safety'
     | '/saved-sources'
@@ -569,6 +593,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRoute
   CategoriesRoute: typeof CategoriesRoute
   DataExportsRoute: typeof DataExportsRoute
   EndpointExplorerRoute: typeof EndpointExplorerRoute
@@ -580,6 +605,7 @@ export interface RootRouteChildren {
   MdlsRoute: typeof MdlsRoute
   OverviewRoute: typeof OverviewRoute
   PeopleRoute: typeof PeopleRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   ReviewQueueRoute: typeof ReviewQueueRoute
   SafetyRoute: typeof SafetyRoute
   SavedSourcesRoute: typeof SavedSourcesRoute
@@ -621,6 +647,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/categories': {
@@ -698,6 +731,13 @@ declare module '@tanstack/react-router' {
       path: '/people'
       fullPath: '/people'
       preLoaderRoute: typeof PeopleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/review-queue': {
@@ -948,6 +988,7 @@ const PlacesStateRouteWithChildren = PlacesStateRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRoute,
   CategoriesRoute: CategoriesRoute,
   DataExportsRoute: DataExportsRoute,
   EndpointExplorerRoute: EndpointExplorerRoute,
@@ -959,6 +1000,7 @@ const rootRouteChildren: RootRouteChildren = {
   MdlsRoute: MdlsRoute,
   OverviewRoute: OverviewRoute,
   PeopleRoute: PeopleRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   ReviewQueueRoute: ReviewQueueRoute,
   SafetyRoute: SafetyRoute,
   SavedSourcesRoute: SavedSourcesRoute,
