@@ -14,11 +14,11 @@
         {
           "title": "Public code linked by Arkansas Legislature",
           "url": "https://www.lexisnexis.com/hottopics/arcode/",
-          "status": "publisher_text_fetch_failed"
+          "status": "terms_agreement_gate"
         }
       ],
       "metadataOnlyReferences": [],
-      "gap": "Official legislature routes the code through public Lexis; statutory body retrieval failed. Introduced bills were rejected as proof of current code."
+      "gap": "Public publisher navigation / terms notice was retrieved, but statutory body access requires an express terms agreement. No agreement was submitted; claim-specific current and historical text remains pending."
     },
     {
       "state": "GA",
@@ -31,11 +31,11 @@
         {
           "title": "Public code linked by Georgia government",
           "url": "https://www.lexisnexis.com/hottopics/gacode/",
-          "status": "publisher_text_pending"
+          "status": "captcha_denied"
         }
       ],
       "metadataOnlyReferences": [],
-      "gap": "Official government directs readers through public Lexis and its terms/navigation. Current claim-level code text and historical amendments are not captured."
+      "gap": "Ordinary navigation to Title 9, Chapter 3, Article 2, § 9-3-33 reached publisher CAPTCHA on the first statute-document request. No CAPTCHA was solved or access evaded; statutory body and historical applicability remain pending."
     },
     {
       "state": "KY",
@@ -48,13 +48,13 @@
       ],
       "metadataOnlyReferences": [
         {
-          "title": "KRS 413.140, publisher version effective July 15, 2026",
+          "title": "KRS 413.140 current index target; PDF metadata only",
           "url": "https://apps.legislature.ky.gov/law/statutes/statute.aspx?id=58050",
           "format": "application/PDF",
-          "note": "HEAD verified PDF response. URL retained only; no PDF binary saved. Reconfirm current index link before future ingestion."
+          "note": "Current official chapter index points to this target. HEAD on 2026-10-02 returned 200 application/PDF; no body downloaded. Effective-date text and injury-claim mapping are not verified from the PDF."
         }
       ],
-      "gap": "The official section endpoint serves a PDF. Text ingestion deferred under the metadata-only PDF constraint; no calculator branch."
+      "gap": "Official index and HEAD confirm a PDF-only section target. No PDF bytes fetched; the heading alone does not prove personal-injury applicability or operative version. No calculator branch."
     },
     {
       "state": "MS",
@@ -67,11 +67,11 @@
         {
           "title": "Mississippi Code linked by Legislature",
           "url": "https://www.lexisnexis.com/hottopics/mscode/",
-          "status": "publisher_text_pending"
+          "status": "terms_agreement_gate"
         }
       ],
       "metadataOnlyReferences": [],
-      "gap": "Official legislature links public Lexis. Current § 15-1-49 text, product repose and historical changes remain unreviewed."
+      "gap": "Public publisher navigation / terms notice was retrieved, but statutory body access requires an express terms agreement. No agreement was submitted; claim-specific current and historical text remains pending."
     },
     {
       "state": "NM",
@@ -85,10 +85,20 @@
           "title": "NMOneSource official statutory repository",
           "url": "https://nmonesource.com/nmos/en/nav.do",
           "status": "publisher_text_fetch_failed"
+        },
+        {
+          "title": "NMSA 1978 Chapter 37 first rendered HTML fragment (§§ 37-1-1–37-1-29)",
+          "url": "https://nmonesource.com/nmos/nmsa-unanno/en/item/18537/index.do",
+          "status": "statutory_text_retrieved"
+        },
+        {
+          "title": "NMSA 1978 Chapter 41 first rendered HTML fragment, including Article 2",
+          "url": "https://nmonesource.com/nmos/nmsa-unanno/en/item/18541/index.do",
+          "status": "statutory_text_retrieved"
         }
       ],
       "metadataOnlyReferences": [],
-      "gap": "Official publisher and its repository were identified; repository extraction failed. No third-party FindLaw summary was promoted to primary statutory verification."
+      "gap": "Official rendered HTML fragments recovered, supporting ordinary injury and wrongful-death conditional baselines. Later chapter fragments, latent/product controlling accrual authority, government claims and historical versions remain unreviewed."
     },
     {
       "state": "ND",
@@ -97,6 +107,16 @@
           "title": "North Dakota Century Code, Chapter 28-01 official index",
           "url": "https://ndlegis.gov/cencode/t28c01.html",
           "status": "official_statute_index_retrieved"
+        },
+        {
+          "title": "North Dakota official Century Code JSON API",
+          "url": "https://ndlegis.gov/api/data/century_code.json",
+          "status": "statutory_text_retrieved"
+        },
+        {
+          "title": "Legislative API documentation",
+          "url": "https://ndlegis.gov/legislative-api-documentation",
+          "status": "official_api_documentation_retrieved"
         }
       ],
       "metadataOnlyReferences": [
@@ -107,7 +127,7 @@
           "note": "Linked from official HTML index. PDF URL only; no binary downloaded."
         }
       ],
-      "gap": "Official index maps limitation sections to chapter PDF. The § 28-01-16 general heading does not prove the applicability of its period to every injury type."
+      "gap": "Documented official JSON yielded Chapters 28-01, 28-01.3 and 32-21 (publisher update 2026-09-15, timezone unspecified). Ordinary injury/death baselines are conditional; Dickie invalidity prevents automatic product repose, and asbestos severability/current treatment remains unreviewed. Service-based commencement must be verified."
     },
     {
       "state": "OK",
@@ -121,6 +141,11 @@
           "title": "Oklahoma State Courts Network statute browse",
           "url": "https://www.oscn.net/applications/oscn/index.asp?ftdb=STOKST&level=1",
           "status": "human_verification_blocked"
+        },
+        {
+          "title": "Official Oklahoma Statutes (Unannotated), maintained by Thomson Reuters",
+          "url": "https://govt.westlaw.com/okjc/Index?contextData=%28sc.Default%29",
+          "status": "statutory_text_retrieved"
         }
       ],
       "metadataOnlyReferences": [
@@ -131,7 +156,7 @@
           "note": "Official index link only. Index currency is 2025-11-18; 2026 changes require review."
         }
       ],
-      "gap": "Official HTML index captured but statutory text is PDF; OSCN requested human verification. No unverified cite-ID was retained."
+      "gap": "Public official unannotated publisher yielded §§ 95, 96 and 1053, with a 2026 currentness notice. OSCN was not retried. Ordinary injury baseline is conditional; wrongful-death accrual, product discovery/classification, special claims and historical applicability remain unreviewed."
     },
     {
       "state": "TN",
@@ -145,10 +170,15 @@
           "title": "Tennessee Courts attorney resources",
           "url": "https://www.tncourts.gov/attorneys",
           "status": "official_publisher_bridge_indexed"
+        },
+        {
+          "title": "Official public code publisher",
+          "url": "https://www.lexisnexis.com/hottopics/tncode/",
+          "status": "terms_agreement_gate"
         }
       ],
       "metadataOnlyReferences": [],
-      "gap": "Official courts identify the public Lexis code; automated access encountered browser validation. Current injury/product/death text and historical versions remain pending."
+      "gap": "Public publisher navigation / terms notice was retrieved, but statutory body access requires an express terms agreement. No agreement was submitted; claim-specific current and historical text remains pending."
     }
   ]
 }

@@ -1,0 +1,72 @@
+{
+  "schemaVersion": "1.0.0",
+  "requestedUrl": "https://ndlegis.gov/api/data/century_code.json",
+  "retrievedUrl": "https://ndlegis.gov/api/data/century_code.json",
+  "capturedAt": "2026-10-02T10:23:08.421Z",
+  "statusCode": 200,
+  "contentType": "application/json",
+  "publisherUpdatedAt": "2026-09-15T11:11:14",
+  "fullResponseByteLength": 70043454,
+  "fullResponseSha256": "9744b2bc818d57046fbb451cb797a1538baa8275fb2f944b7be4c017362997ac",
+  "projection": "exact chapter record from official JSON; full response was held in memory only",
+  "pdfDownloaded": false,
+  "titleNumber": "32",
+  "titleName": "Judicial Remedies",
+  "chapter": {
+    "id": "32-21",
+    "chapter_num": "21",
+    "chapter_title": "Death By Wrongful Act",
+    "source_url": "https://ndlegis.gov/cencode/t32c21.pdf",
+    "repealed": false,
+    "sections": {
+      "01": {
+        "id": "32-21-01",
+        "section_num": "01",
+        "title": "When action for death by wrongful act maintainable",
+        "page": 1,
+        "text": "Whenever the death of a person shall be caused by a wrongful act, neglect, or default, and the act, neglect, or default is such as would have entitled the party injured, if death had not ensued, to maintain an action and recover damages in respect thereof, then and in every such case the person who, or the corporation, limited liability company, or company which, would have  been  liable  if  death  had  not  ensued,  shall  be  liable  to  an  action  for  damages, notwithstanding the death of the person injured or of the tort-feasor, and although the death shall have been caused under such circumstances as amount in law to felony.",
+        "html": "Whenever the death of a person shall be caused by a wrongful act, neglect, or default, and the act, neglect, or default is such as would have entitled the party injured, if death had not ensued, to maintain an action and recover damages in respect thereof, then and in every such case the person who, or the corporation, limited liability company, or company which, would have  been  liable  if  death  had  not  ensued,  shall  be  liable  to  an  action  for  damages, notwithstanding the death of the person injured or of the tort-feasor, and although the death shall have been caused under such circumstances as amount in law to felony."
+      },
+      "02": {
+        "id": "32-21-02",
+        "section_num": "02",
+        "title": "Measure of recovery",
+        "page": 1,
+        "text": "In an action brought under the provisions of this chapter, the jury shall give such damages as it finds proportionate to the injury resulting from the death to the persons entitled to the recovery.",
+        "html": "In an action brought under the provisions of this chapter, the jury shall give such damages as it finds proportionate to the injury resulting from the death to the persons entitled to the recovery."
+      },
+      "03": {
+        "id": "32-21-03",
+        "section_num": "03",
+        "title": "Who may bring action",
+        "page": 1,
+        "text": "The action shall be brought by the following persons in the order named: 1.The surviving husband or wife, if any. 2.The surviving children, if any. 3.The surviving mother or father. 4.A surviving grandparent. 5.The personal representative. 6.A person who has had primary physical custody of the decedent before the wrongful act. If any person entitled to bring the action refuses or neglects so to do for a period of thirty days after demand of the person next in order, that person may bring the action.",
+        "html": "The action shall be brought by the following persons in the order named:<ol><li>The surviving husband or wife, if any.</li><li>The surviving children, if any.</li><li>The surviving mother or father.</li><li>A surviving grandparent.</li><li>The personal representative.</li><li>A person who has had primary physical custody of the decedent before the wrongful act. If any person entitled to bring the action refuses or neglects so to do for a period of thirty days after demand of the person next in order, that person may bring the action.</li></ol>"
+      },
+      "04": {
+        "id": "32-21-04",
+        "section_num": "04",
+        "title": "Recovery exempt from decedent's debts",
+        "page": 1,
+        "text": "The amount recovered shall not be liable for the debts of the decedent, but shall inure to the exclusive benefit of the decedent's heirs at law in such shares as the judge before whom the case is tried shall fix in the order for judgment, and for the purpose of determining such shares, the judge after the trial may make any investigation which the judge deems necessary.",
+        "html": "The amount recovered shall not be liable for the debts of the decedent, but shall inure to the exclusive benefit of the decedent&#x27;s heirs at law in such shares as the judge before whom the case is tried shall fix in the order for judgment, and for the purpose of determining such shares, the judge after the trial may make any investigation which the judge deems necessary."
+      },
+      "05": {
+        "id": "32-21-05",
+        "section_num": "05",
+        "title": "Action not abated by death",
+        "page": 1,
+        "text": "The action shall not abate by the death of the injured party or the tort-feasor. If the plaintiff dies pending the action, the person next in order entitled to bring the action, by order of the court, shall be made plaintiff therein.",
+        "html": "The action shall not abate by the death of the injured party or the tort-feasor. If the plaintiff dies pending the action, the person next in order entitled to bring the action, by order of the court, shall be made plaintiff therein."
+      },
+      "06": {
+        "id": "32-21-06",
+        "section_num": "06",
+        "title": "Compromise of action",
+        "page": 1,
+        "text": "The person entitled to bring the action may compromise the same, or the right thereto, and such compromise shall be binding upon all persons authorized to bring the action or to share in the recovery.",
+        "html": "The person entitled to bring the action may compromise the same, or the right thereto, and such compromise shall be binding upon all persons authorized to bring the action or to share in the recovery."
+      }
+    }
+  }
+}

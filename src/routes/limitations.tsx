@@ -24,7 +24,7 @@ export const Route = createFileRoute("/limitations")({
   }),
   head: () =>
     pageHead(
-      "Cited limitations research",
+      "Statute of limitations calculator",
       "State-specific statutory limitations, product and toxic-exposure branches, wrongful death, source versions, legal qualifications and conditional date baselines.",
     ),
   component: Page,
@@ -39,12 +39,12 @@ function Page() {
         { label: "Law & regulation", to: "/law" },
         { label: "Limitations research" },
       ]}
-      title="Cited limitations research"
-      description="Inspect governing statutes, claim-specific triggers and source versions. Compute conditional calendar baselines only after the relevant legal facts are confirmed."
+      title="Statute of limitations calculator"
+      description="Choose a state and claim, enter the relevant dates, then review a cited conditional baseline."
     >
       <LimitationsWorkbench
-        initialState={search.state ?? "IN"}
-        initialClaim={search.claim ?? "product_liability"}
+        initialState={search.state ?? ""}
+        initialClaim={search.claim}
         initialView={search.view ?? "calculator"}
       />
     </AppShell>

@@ -1,5 +1,7 @@
 # US limitations corpus review — 2026-10-02
 
+This file preserves the first release's evidence and database receipt. Current bundle additions and remaining acquisition gaps are documented in the [authority follow-up](limitations-review-followup-2026-10-02.md).
+
 Version: schema 1.0.0; rule/reference 2026-10-02.1.
 
 This release adds a full-page cited analysis tool at /limitations. It computes an unadjusted calendar anniversary only after the user confirms governing law, legally established trigger facts, historical statutory applicability, branch conditions and resolved exceptions. It does not certify a filing deadline, operative law, timeliness, tolling or service. Exposure/diagnosis dates are not automatically substituted for accrual.

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { STATES } from "@/lib/corpus/geo";
 import { loadLimitations } from "@/lib/limitations/load";
 import { baselineRule, calculateBaseline } from "@/lib/limitations/engine";
+import { guidedDateFields, unconfirmedClaimInput } from "./calculatorGuidance";
 import {
   CLAIM_LABELS,
   CLAIM_TYPES,
@@ -239,6 +240,13 @@ function Result({
         </ol>
       )}
       {result.rule && <Citations snapshot={snapshot} rule={result.rule} />}
+      <p className="mt-3 text-[12px] text-muted-foreground">
+        {STATES.find((state) => state.usps === input.jurisdiction)?.name} ·{" "}
+        {CLAIM_LABELS[input.claimType]} · source version {snapshot.snapshotDate}.
+        {result.status === "baseline"
+          ? " Governing law, the legal start dates, rule applicability and exception review were explicitly confirmed for this result. Calendar, filing and service adjustments still require verification."
+          : " A date stays withheld while required dates or legal facts remain unresolved."}
+      </p>
     </section>
   );
 }
@@ -249,7 +257,7 @@ export function LimitationsWorkbench({
   initialView,
 }: {
   initialState: string;
-  initialClaim: ClaimType;
+  initialClaim: ClaimType | undefined;
   initialView: "calculator" | "coverage" | "sources";
 }) {
   const query = useQuery({
@@ -258,28 +266,19 @@ export function LimitationsWorkbench({
     staleTime: Infinity,
   });
   const [state, setState] = useState(initialState),
-    [claim, setClaim] = useState<ClaimType>(initialClaim),
+    [claim, setClaim] = useState<ClaimType | "">(initialClaim ?? ""),
     [view, setView] = useState(initialView);
-  const empty = (): BaselineInput => ({
-    jurisdiction: state,
-    claimType: claim,
-    subtype: "general",
-    accrualDate: "",
-    governingLawConfirmed: false,
-    accrualConfirmed: false,
-    applicabilityConfirmed: false,
-    exceptionReview: "unresolved",
-    issues: [],
-    vitalStatus: "unknown",
-  });
+  const empty = (): BaselineInput => unconfirmedClaimInput(state, claim);
+  const [showIssues, setShowIssues] = useState(false);
   const [input, setInput] = useState<BaselineInput>(empty),
     [result, setResult] = useState<BaselineResult | null>(null);
   const update = (patch: Partial<BaselineInput>) => {
     setInput((previous) => ({ ...previous, ...patch }));
     setResult(null);
   };
-  const reset = (jurisdiction: string, claimType: ClaimType, subtype = "general") => {
-    setInput({ ...empty(), jurisdiction, claimType, subtype });
+  const reset = (jurisdiction: string, claimType: ClaimType | "", subtype = "general") => {
+    setInput(unconfirmedClaimInput(jurisdiction, claimType, subtype));
+    setShowIssues(false);
     setResult(null);
   };
   if (query.isPending)
@@ -301,18 +300,11 @@ export function LimitationsWorkbench({
       </div>
     );
   const snapshot = query.data;
-  const rule = baselineRule(snapshot.rules, state, claim, input.subtype);
+  const rule = state && claim ? baselineRule(snapshot.rules, state, claim, input.subtype) : null;
   const stateRules = snapshot.rules.filter(
     (r) => r.jurisdiction === state && r.claimType === claim,
   );
-  const subtypes = [
-    ...new Set([
-      "general",
-      ...stateRules
-        .filter((r) => r.computation === "baseline_only")
-        .map((r) => r.subtype ?? "general"),
-    ]),
-  ];
+  const subtypes = [...new Set(["general", ...stateRules.map((r) => r.subtype ?? "general")])];
   const stateSources = snapshot.sources.filter((s) => s.state === state || s.state === "US");
   const stateCases = snapshot.cases.filter(
     (c) => c.jurisdiction === state || c.jurisdiction === "US",
@@ -321,59 +313,13 @@ export function LimitationsWorkbench({
   const sourceStates = snapshot.coverage.filter(
     (c) => c.sourceStatus === "primary_text_retrieved",
   ).length;
-  const dates =
-    rule?.calculation?.mode === "discovery_min"
-      ? [
-          {
-            key: "actualDiscoveryDate",
-            label:
-              state === "OH"
-                ? "First competent-medical-authority information of injury related to exposure"
-                : state === "CA"
-                  ? "Actual discovery / suspicion of the factual basis for product wrongdoing"
-                  : state === "NY"
-                    ? "Actual discovery of injury"
-                    : "Actual knowledge of injury and causal connection",
-          },
-          {
-            key: "constructiveDiscoveryDate",
-            label: "When reasonable diligence should have produced that knowledge",
-          },
-        ]
-      : rule?.calculation?.mode === "diagnosis"
-        ? [
-            {
-              key: "diagnosisCommunicationDate",
-              label:
-                input.subtype === "breast_implant"
-                  ? "First physician communication of injury and causal connection"
-                  : "First physician communication of qualifying asbestos diagnosis",
-            },
-          ]
-        : rule?.calculation?.mode === "death_cause_min"
-          ? [
-              { key: "deathDate", label: "Date of death" },
-              { key: "causeDiscoveryDate", label: "Legally relevant discovery of cause of death" },
-            ]
-          : [
-              {
-                key: "accrualDate",
-                label:
-                  rule?.accrualBasis === "death"
-                    ? "Date of death"
-                    : rule?.accrualBasis === "discovery_of_death"
-                      ? "Discovery of death"
-                      : "Legally confirmed accrual date",
-              },
-            ];
-  if (rule?.calculation?.requiresExposureWithinDeliveryYears)
-    dates.push(
-      { key: "firstProductDeliveryDate", label: "Delivery to first qualifying purchaser / lessee" },
-      { key: "qualifyingExposureDate", label: "Qualifying exposure causing the bodily injury" },
-    );
-  return (
-    <div>
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+  const dates = guidedDateFields(rule, state, input.subtype);
+  const researchNavigation = (
+    <details className={`${box} mb-4`} open={view !== "calculator"}>
+      <summary className="cursor-pointer text-[13px] font-medium">
+        Research sources, coverage and versions
+      </summary>
+      <div className="mb-4 mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
           ["Jurisdiction inventory", "51"],
           ["Primary text retrieved", `${sourceStates} / 51`],
@@ -396,97 +342,117 @@ export function LimitationsWorkbench({
             onClick={() => setView(v)}
           >
             {v === "calculator"
-              ? "Claim & date analysis"
+              ? "Back to calculator"
               : v === "coverage"
                 ? "All-state coverage"
                 : "Statutory sources"}
           </Button>
         ))}
       </nav>
-      <div className="mb-4 rounded-xl border border-primary/25 bg-primary/5 p-4 text-[13px] leading-relaxed">
-        <strong>U.S. claims, with inspectable authority.</strong> A statutory period is one part of
-        timeliness. The output uses confirmed legal facts and remains an unadjusted calendar
-        baseline. Statutory text retrieval does not establish that every provision is valid or
-        applicable. {snapshot.reviewMeaning}
+      <p className="text-[12px] text-muted-foreground">{snapshot.reviewMeaning}</p>
+    </details>
+  );
+  const mdlContext = (
+    <details className={`${box} mb-4`}>
+      <summary className="cursor-pointer text-[13px] font-medium">
+        How MDL transfer, direct filing and prior filings affect this research
+      </summary>
+      <p className="mt-2 text-[13px] leading-relaxed">
+        Centralization is for coordinated or consolidated pretrial proceedings. The transferor
+        forum, governing state law, direct-filing terms and prior orders require separate analysis.
+        A master complaint, registry entry or MDL transfer is not treated here as proof of tolling
+        or a timely individual claim.
+      </p>
+      <div className="mt-2 flex flex-wrap gap-3 text-[12px]">
+        {snapshot.sources
+          .filter((s) => s.state === "US")
+          .map((s) => (
+            <a
+              key={s.id}
+              href={s.url}
+              target="_blank"
+              rel="noreferrer"
+              className="text-primary underline"
+            >
+              {s.title}
+            </a>
+          ))}
       </div>
-      <section className={`${box} mb-4`}>
-        <h2 className="text-[14px] font-semibold">MDL venue does not choose a limitations rule</h2>
-        <p className="mt-2 text-[13px] leading-relaxed">
-          Centralization is for coordinated or consolidated pretrial proceedings. The transferor
-          forum, governing state law, direct-filing terms and prior orders require separate
-          analysis. A master complaint, registry entry or MDL transfer is not treated here as proof
-          of tolling or a timely individual claim.
-        </p>
-        <div className="mt-2 flex flex-wrap gap-3 text-[12px]">
-          {snapshot.sources
-            .filter((s) => s.state === "US")
-            .map((s) => (
-              <a
-                key={s.id}
-                href={s.url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-primary underline"
-              >
-                {s.title}
-              </a>
+      <details className="mt-3">
+        <summary className="cursor-pointer text-[12px] font-medium">
+          Primary decisions on transfer, direct filing and governing law
+        </summary>
+        <div className="mt-3 grid gap-3 lg:grid-cols-2">
+          {snapshot.cases
+            .filter((c) => c.jurisdiction === "US")
+            .map((reference) => (
+              <JudicialEvidence key={reference.id} reference={reference} />
             ))}
         </div>
-        <details className="mt-3">
-          <summary className="cursor-pointer text-[12px] font-medium">
-            Primary decisions on transfer, direct filing and governing law
-          </summary>
-          <div className="mt-3 grid gap-3 lg:grid-cols-2">
-            {snapshot.cases
-              .filter((c) => c.jurisdiction === "US")
-              .map((reference) => (
-                <JudicialEvidence key={reference.id} reference={reference} />
-              ))}
-          </div>
-        </details>
-      </section>
+      </details>
+    </details>
+  );
+  return (
+    <div>
+      {view !== "calculator" && researchNavigation}
+      <div className="mb-4 rounded-xl border border-primary/25 bg-primary/5 p-4 text-[13px] leading-relaxed">
+        <strong>A cited starting point for review.</strong> Any date shown is a conditional calendar
+        baseline, not a verified filing deadline. Required legal facts and exceptions must be
+        checked first. Sources captured through {snapshot.snapshotDate}.
+      </div>
+
       {view !== "coverage" && (
-        <div className="mb-4 grid gap-3 sm:grid-cols-2">
-          <label className="text-[12px] font-medium">
-            Governing jurisdiction
-            <select
-              className={control}
-              value={state}
-              onChange={(e) => {
-                setState(e.target.value);
-                reset(e.target.value, claim);
-              }}
-            >
-              {[...STATES]
-                .sort((a, b) => a.name.localeCompare(b.name))
-                .map((s) => (
-                  <option key={s.usps} value={s.usps}>
-                    {s.name}
-                  </option>
-                ))}
-            </select>
-          </label>
-          <label className="text-[12px] font-medium">
-            Claim category
-            <select
-              className={control}
-              value={claim}
-              onChange={(e) => {
-                const c = e.target.value as ClaimType;
-                setClaim(c);
-                reset(state, c);
-              }}
-            >
-              {CLAIM_TYPES.map((c) => (
-                <option key={c} value={c}>
-                  {CLAIM_LABELS[c]}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+        <section className={`${box} mb-4`} aria-label="Choose state and claim">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="text-[12px] font-medium">
+              1. Which state's law are you reviewing?
+              <select
+                className={control}
+                value={state}
+                onChange={(e) => {
+                  setState(e.target.value);
+                  reset(e.target.value, claim);
+                }}
+              >
+                <option value="">Choose a state or DC</option>
+                {[...STATES]
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map((s) => (
+                    <option key={s.usps} value={s.usps}>
+                      {s.name}
+                    </option>
+                  ))}
+              </select>
+              <span className="mt-2 block font-normal text-muted-foreground">
+                Residence, injury location and MDL venue do not automatically select the governing
+                law.
+              </span>
+            </label>
+            {state && (
+              <label className="text-[12px] font-medium">
+                2. What type of claim?
+                <select
+                  className={control}
+                  value={claim}
+                  onChange={(e) => {
+                    const c = e.target.value as ClaimType;
+                    setClaim(c);
+                    reset(state, c);
+                  }}
+                >
+                  <option value="">Choose a claim type</option>
+                  {CLAIM_TYPES.map((c) => (
+                    <option key={c} value={c}>
+                      {CLAIM_LABELS[c]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </div>
+        </section>
       )}
-      {view === "calculator" && (
+      {view === "calculator" && state && claim && (
         <>
           <form
             className={box}
@@ -495,10 +461,10 @@ export function LimitationsWorkbench({
               setResult(calculateBaseline(snapshot, input));
             }}
           >
-            <h2 className="text-base font-semibold">Claim-specific legal facts</h2>
+            <h2 className="text-base font-semibold">3. Enter the dates this rule needs</h2>
             {subtypes.length > 1 && (
               <label className="mt-3 block text-[12px] font-medium">
-                Supported statutory branch
+                Which fact pattern fits this claim?
                 <select
                   className={control}
                   value={input.subtype ?? "general"}
@@ -507,6 +473,7 @@ export function LimitationsWorkbench({
                   {subtypes.map((s) => (
                     <option key={s} value={s}>
                       {subtypeLabels[s] ?? s}
+                      {baselineRule(snapshot.rules, state, claim, s) ? "" : " · needs legal review"}
                     </option>
                   ))}
                 </select>
@@ -514,7 +481,13 @@ export function LimitationsWorkbench({
             )}
             {rule ? (
               <div className="mt-3 rounded-md border border-border bg-muted/35 p-3">
-                <p className="text-[13px]">{rule.scope}</p>
+                <p className="text-[13px] font-medium">
+                  {rule.period
+                    ? `${rule.period.amount} calendar years`
+                    : "Period requires legal review"}{" "}
+                  · conditional statutory baseline
+                </p>
+                <p className="mt-1 text-[13px]">{rule.scope}</p>
                 <Citations snapshot={snapshot} rule={rule} />
                 {rule.conditions.length > 0 && (
                   <ul className="mt-2 list-disc space-y-1 pl-5 text-[12px] text-muted-foreground">
@@ -525,140 +498,203 @@ export function LimitationsWorkbench({
                 )}
               </div>
             ) : (
-              <p className="mt-3 rounded-md border border-warning/40 bg-warning/10 p-3 text-[13px]">
-                No uniquely supported baseline for this branch. The cited research below shows
-                applicable issues and missing review; this selection will not issue a date.
-              </p>
+              <div
+                role="status"
+                className="mt-3 rounded-md border border-warning/40 bg-warning/10 p-3 text-[13px]"
+              >
+                <p>
+                  This claim and fact pattern need further legal review. No uniquely supported rule
+                  is available, so no date will be calculated.
+                </p>
+                <Button
+                  className="mt-2"
+                  size="sm"
+                  variant="outline"
+                  type="button"
+                  onClick={() => setView("sources")}
+                >
+                  View this state's sources
+                </Button>
+              </div>
             )}
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              {dates.map((d) => (
-                <label key={d.key} className="text-[12px] font-medium">
-                  {d.label}
-                  <input
-                    className={control}
-                    type="date"
-                    value={(input as unknown as Record<string, string>)[d.key] ?? ""}
-                    max={snapshot.snapshotDate}
-                    onChange={(e) => update({ [d.key]: e.target.value })}
-                  />
-                </label>
-              ))}
-            </div>
-            {rule?.calculation?.deathCapYears && (
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <label className="text-[12px] font-medium">
-                  Injured person's status
+            {rule && (
+              <>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  {dates.map((d) => (
+                    <label key={d.key} className="text-[12px] font-medium">
+                      {d.label}
+                      <input
+                        className={control}
+                        type="date"
+                        aria-required="true"
+                        aria-describedby={`date-help-${d.key}`}
+                        value={(input as unknown as Record<string, string>)[d.key] ?? ""}
+                        min="1900-01-01"
+                        max={snapshot.snapshotDate}
+                        onChange={(e) => update({ [d.key]: e.target.value })}
+                      />
+                      <span
+                        id={`date-help-${d.key}`}
+                        className="mt-1 block font-normal leading-relaxed text-muted-foreground"
+                      >
+                        {d.help}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                {rule?.calculation?.deathCapYears && (
+                  <div className="mt-4 grid gap-4 md:grid-cols-2">
+                    <label className="text-[12px] font-medium">
+                      Is the injured person living?
+                      <select
+                        className={control}
+                        value={input.vitalStatus ?? "unknown"}
+                        onChange={(e) =>
+                          update({
+                            vitalStatus: e.target.value as NonNullable<
+                              BaselineInput["vitalStatus"]
+                            >,
+                            deathDate: "",
+                          })
+                        }
+                      >
+                        <option value="unknown">Choose a status · required for this rule</option>
+                        <option value="alive">Alive</option>
+                        <option value="deceased">Deceased</option>
+                      </select>
+                    </label>
+                    {input.vitalStatus === "deceased" && (
+                      <label className="text-[12px] font-medium">
+                        Date of death · required for this rule's cap
+                        <input
+                          type="date"
+                          className={control}
+                          value={input.deathDate ?? ""}
+                          max={snapshot.snapshotDate}
+                          onChange={(e) => update({ deathDate: e.target.value })}
+                        />
+                      </label>
+                    )}
+                  </div>
+                )}
+                <fieldset className="mt-5 space-y-3">
+                  <legend className="mb-2 text-[13px] font-semibold">
+                    4. Check the legal facts before calculating
+                  </legend>
+                  {(
+                    [
+                      [
+                        "governingLawConfirmed",
+                        "I have checked that this state's law governs the claim, including any transfer, direct-filing or borrowing issues.",
+                      ],
+                      [
+                        "accrualConfirmed",
+                        "I have verified the start / discovery dates under the cited rule, rather than assuming the exposure or diagnosis date applies.",
+                      ],
+                      [
+                        "applicabilityConfirmed",
+                        "I have checked that this claim type, statutory version and the listed rule conditions apply to these facts.",
+                      ],
+                    ] as const
+                  ).map(([key, label]) => (
+                    <label key={key} className="flex items-start gap-2 text-[12px] leading-relaxed">
+                      <input
+                        type="checkbox"
+                        className="mt-1"
+                        checked={input[key]}
+                        onChange={(e) => update({ [key]: e.target.checked })}
+                      />
+                      <span>{label}</span>
+                    </label>
+                  ))}
+                </fieldset>
+                <fieldset className="mt-5">
+                  <legend className="mb-2 text-[13px] font-semibold">
+                    Has the exception review been completed?
+                  </legend>
+                  <p
+                    id="exception-help"
+                    className="mb-2 text-[12px] leading-relaxed text-muted-foreground"
+                  >
+                    Check tolling, age or disability, product repose, earlier filings or MDL orders,
+                    other states' law and special claims. An unresolved issue prevents a date.
+                  </p>
                   <select
                     className={control}
-                    value={input.vitalStatus ?? "unknown"}
-                    onChange={(e) =>
-                      update({
-                        vitalStatus: e.target.value as NonNullable<BaselineInput["vitalStatus"]>,
-                        deathDate: "",
-                      })
+                    aria-label="Exception review status"
+                    aria-describedby="exception-help"
+                    value={
+                      input.exceptionReview === "no_unresolved_issues"
+                        ? "none"
+                        : showIssues || input.issues.length
+                          ? "issues"
+                          : ""
                     }
+                    onChange={(e) => {
+                      setShowIssues(e.target.value === "issues");
+                      update({
+                        exceptionReview:
+                          e.target.value === "none" && !input.issues.length
+                            ? "no_unresolved_issues"
+                            : "unresolved",
+                      });
+                    }}
                   >
-                    <option value="unknown">Not confirmed</option>
-                    <option value="alive">Alive</option>
-                    <option value="deceased">Deceased</option>
+                    <option value="">Not reviewed / not sure</option>
+                    <option value="issues">An issue may apply · review required</option>
+                    <option value="none" disabled={input.issues.length > 0}>
+                      Review completed · no unresolved issues
+                    </option>
                   </select>
-                </label>
-                {input.vitalStatus === "deceased" && (
-                  <label className="text-[12px] font-medium">
-                    Death date for statutory cap
-                    <input
-                      type="date"
-                      className={control}
-                      value={input.deathDate ?? ""}
-                      max={snapshot.snapshotDate}
-                      onChange={(e) => update({ deathDate: e.target.value })}
-                    />
-                  </label>
-                )}
-              </div>
-            )}
-            <fieldset className="mt-5 space-y-3">
-              <legend className="mb-2 text-[13px] font-semibold">
-                Confirm the assumptions used for calculation
-              </legend>
-              {(
-                [
-                  [
-                    "governingLawConfirmed",
-                    "The selected state's limitations law governs this claim; transfer, direct filing and borrowing issues have been reviewed.",
-                  ],
-                  [
-                    "accrualConfirmed",
-                    "The supplied trigger / discovery dates have been legally confirmed for the selected branch.",
-                  ],
-                  [
-                    "applicabilityConfirmed",
-                    "This claim category, statutory version and all listed branch conditions apply to these historical facts.",
-                  ],
-                ] as const
-              ).map(([key, label]) => (
-                <label key={key} className="flex items-start gap-2 text-[12px] leading-relaxed">
-                  <input
-                    type="checkbox"
-                    className="mt-1"
-                    checked={input[key]}
-                    onChange={(e) => update({ [key]: e.target.checked })}
-                  />
-                  <span>{label}</span>
-                </label>
-              ))}
-            </fieldset>
-            <fieldset className="mt-5">
-              <legend className="mb-2 text-[13px] font-semibold">
-                Unresolved issues — each prevents a date
-              </legend>
-              <div className="grid gap-2 md:grid-cols-2">
-                {SPECIAL_ISSUES.map((issue) => (
-                  <label
-                    key={issue.id}
-                    className="flex items-start gap-2 text-[12px] leading-relaxed"
+                  <details
+                    className="mt-3 rounded-md border border-border p-3"
+                    open={showIssues || input.issues.length > 0}
+                    onToggle={(e) => setShowIssues(e.currentTarget.open)}
                   >
-                    <input
-                      type="checkbox"
-                      className="mt-1"
-                      checked={input.issues.includes(issue.id)}
-                      onChange={(e) =>
-                        update({
-                          issues: e.target.checked
-                            ? [...input.issues, issue.id]
-                            : input.issues.filter((x) => x !== issue.id),
-                          exceptionReview: "unresolved",
-                        })
-                      }
-                    />
-                    <span>{issue.label}</span>
-                  </label>
-                ))}
-              </div>
-              <label className="mt-4 flex items-start gap-2 rounded-md border border-border p-3 text-[12px]">
-                <input
-                  type="checkbox"
-                  className="mt-1"
-                  checked={input.exceptionReview === "no_unresolved_issues"}
-                  onChange={(e) =>
-                    update({
-                      exceptionReview: e.target.checked ? "no_unresolved_issues" : "unresolved",
-                    })
-                  }
-                />
-                <span>
-                  Exception review is complete and no unresolved issue above affects this
-                  conditional baseline. Court calendar, filing / service and cutoff adjustments
-                  still need separate verification.
-                </span>
-              </label>
-            </fieldset>
-            <Button className="mt-4" type="submit">
-              Analyze cited baseline
-            </Button>
+                    <summary className="cursor-pointer text-[12px] font-medium">
+                      Review the possible exceptions and special claims
+                    </summary>
+                    <div className="mt-3 grid gap-2 md:grid-cols-2">
+                      {SPECIAL_ISSUES.map((issue) => (
+                        <label
+                          key={issue.id}
+                          className="flex items-start gap-2 text-[12px] leading-relaxed"
+                        >
+                          <input
+                            type="checkbox"
+                            className="mt-1"
+                            checked={input.issues.includes(issue.id)}
+                            onChange={(e) =>
+                              update({
+                                issues: e.target.checked
+                                  ? [...input.issues, issue.id]
+                                  : input.issues.filter((x) => x !== issue.id),
+                                exceptionReview: "unresolved",
+                              })
+                            }
+                          />
+                          <span>{issue.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </details>
+                </fieldset>
+                <Button className="mt-4" type="submit">
+                  Check cited baseline
+                </Button>
+                <p className="mt-2 text-[12px] text-muted-foreground">
+                  No date is issued until every required date and legal assumption is confirmed.
+                  Court calendars, filing, service and cutoff adjustments still need separate
+                  verification.
+                </p>
+              </>
+            )}
           </form>
           {result && <Result snapshot={snapshot} result={result} input={input} />}
-          <section className="mt-6">
+          <details className={`${box} mt-6`}>
+            <summary className="cursor-pointer text-[13px] font-medium">
+              Detailed authority and claim research · {STATES.find((s) => s.usps === state)?.name}
+            </summary>
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-base font-semibold">
                 {STATES.find((s) => s.usps === state)?.name} · cited claim evidence
@@ -694,7 +730,7 @@ export function LimitationsWorkbench({
                 </p>
               )}
             </div>
-          </section>
+          </details>
         </>
       )}
       {view === "coverage" && (
@@ -883,6 +919,8 @@ export function LimitationsWorkbench({
           </div>
         </section>
       )}
+      {view === "calculator" && researchNavigation}
+      {mdlContext}
       <div className="mt-5 flex flex-wrap gap-4 text-[12px]">
         <Link to="/insights" className="text-primary underline">
           Research workbench
@@ -890,23 +928,30 @@ export function LimitationsWorkbench({
         <Link to="/law" className="text-primary underline">
           Law & regulation
         </Link>
-        <a
-          href="/data/limitations/rules.json"
-          target="_blank"
-          rel="noreferrer"
-          className="text-primary underline"
-        >
-          Versioned rules JSON
-        </a>
-        <a
-          href="/data/limitations/sources.json"
-          target="_blank"
-          rel="noreferrer"
-          className="text-primary underline"
-        >
-          Source manifest
-        </a>
       </div>
+      <details className="mt-3 text-[12px]">
+        <summary className="cursor-pointer text-muted-foreground">
+          Data exports and source versions
+        </summary>
+        <div className="mt-2 flex flex-wrap gap-4">
+          <a
+            href="/data/limitations/rules.json"
+            target="_blank"
+            rel="noreferrer"
+            className="text-primary underline"
+          >
+            Versioned rules JSON
+          </a>
+          <a
+            href="/data/limitations/sources.json"
+            target="_blank"
+            rel="noreferrer"
+            className="text-primary underline"
+          >
+            Source manifest
+          </a>
+        </div>
+      </details>
     </div>
   );
 }
