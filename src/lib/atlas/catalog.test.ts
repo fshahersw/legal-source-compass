@@ -41,6 +41,17 @@ describe("docket summaries match the case catalog", () => {
 
 import { mergeCatalog, uscourtsId } from "./catalog";
 describe("merge and court links", () => {
+  it("keeps every catalog origin for one exact URL and preserves the directory row", () => {
+    const base = [{ id: "a", url: "https://x.gov/", title: "X", domain: "x.gov", jurisdiction: "Ohio", heading_category: "Federal courts", source_family: "", occurrences: 2 }];
+    const catalog = [
+      { id: "1", url: "https://x.gov/", title: "X rules", jurisdiction: "oh", category: "court_rules" },
+      { id: "2", url: "https://x.gov/", title: "X forms", jurisdiction: "oh", category: "court_forms" },
+    ];
+    const merged = mergeCatalog(base, catalog);
+    expect(merged.rows).toHaveLength(1);
+    expect(merged.rows[0]).toMatchObject({ id: "a", occurrences: 2, heading_category: "Federal courts", catalog_records: catalog, category_values: ["Federal courts", "court_rules", "court_forms"] });
+    expect(base[0]).not.toHaveProperty("catalog_records");
+  });
   it("adds only catalog rows with new exact URLs", () => {
     const base = [{ id: "a", url: "https://x.gov/", title: "X", domain: "x.gov", jurisdiction: "Ohio", heading_category: "", source_family: "", occurrences: 2 }];
     const cat = [{ id: "1", url: "https://x.gov/", title: "X2", jurisdiction: "oh" }, { id: "2", url: "https://x.gov", title: "Y", jurisdiction: "oh" }] as CatalogEntry[];

@@ -40,6 +40,21 @@ describe("mergeStateSources", () => {
     for (const c of catalogTx) expect(urls.has(c.url)).toBe(true);
   });
 
+  it("retains all original categories and rows without treating publisher type as content", () => {
+    const catalog = [
+      { id: "c1", url: "https://x.gov/a", title: "A", jurisdiction: "tx", category: "court_forms" },
+      { id: "c2", url: "https://x.gov/a", title: "B", jurisdiction: "tx", category: "court_rules" },
+    ];
+    const registry = [{ id: "r1", url: "https://x.gov/a", sourceType: "official-primary", resourceType: "court-rule" } as RegistryV22Record];
+    const row = mergeStateSources([], catalog, registry)[0]!;
+    expect(row.collections).toEqual(["Source catalog", "Registry V2.2"]);
+    expect(row.categories).toEqual(["court_forms", "court_rules", "court-rule"]);
+    expect(row.resourceGroups).toEqual(["forms", "rules"]);
+    expect(row.sourceTypes).toEqual(["official-primary"]);
+    expect(row.records.map((x) => x.record)).toEqual([...catalog, ...registry]);
+    expect(registry[0]!.sourceType).toBe("official-primary");
+  });
+
   it("accepts an empty registry file (states without one)", () => {
     const rows = mergeStateSources([], [], registryTx);
     expect(rows.length).toBe(new Set(registryTx.map((r) => r.url)).size);

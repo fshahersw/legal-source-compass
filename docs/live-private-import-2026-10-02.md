@@ -1,0 +1,11 @@
+# Live metadata import — October 2, 2026
+
+The authorized private import accepted 14,799 observations from 52 verified local SQL batches: 105 dockets, 5,727 docket entries, 1,359 parties, 887 attorneys, 6,705 nested RECAP document metadata records and 16 official court HTML source pages. These are partial captured scopes, not complete national or member-docket backfills.
+
+The offline verifier checked each file and SQL digest, native identity, approved resource endpoint and retrieval provenance. Its repeatable nested check also verified all 3,529 party-type, 17,735 party-attorney and 42,753 attorney-party associations against their actual native resource URLs and any explicit paired IDs. Resource URLs reject alternate origins, ports, embedded credentials and query/fragment suffixes; source query URLs retain their documented filters. Server reconciliation matched each source observation and version payload signature; no version storage hash mismatches remained. Original natural-person captions and contact fields are private. The HTML records retain candidate PDF locators, and PDF downloads are zero.
+
+The native API graph recorded 143,832 field edges, initially 59,755 unresolved target observations and no unparsed references. Array paths retain the precise source association's docket/party/attorney IDs and source version hash. Native party responses contained 1,174 distinct nested docket targets; 1,159 were outside the 105 captured docket records. Those target IDs were never replaced with the query docket. Attorney association role values remain private native metadata, without inferred representation or case membership.
+
+The September 30 bulk backfill can resolve some previously absent docket targets. Target presence is refreshed by exact native identity after that import; absent targets stay unresolved. Edge counts measure versioned field observations rather than unique legal representations.
+
+Safe aggregate import and graph receipts are in `public/data/quality/courtlistener-live-private-import-2026-10-02.json`. Original local envelopes, SQL batches and full private checkpoint ledgers remain outside the repository cache; `scripts/admin/verify-live-import.mjs` provides the repeatable offline source/file verification.

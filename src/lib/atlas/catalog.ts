@@ -85,19 +85,22 @@ type LibSource = { id: string; url: string; title: string; domain: string; juris
  * Existing rows are copied (never mutated) and gain a `catalog_record` when the URL matches exactly.
  */
 export function mergeCatalog<S extends LibSource>(sources: S[], catalog: CatalogEntry[]): { rows: S[]; added: number; matched: number } {
-  const byUrl = new Map<string, CatalogEntry>();
-  for (const c of catalog) if (!byUrl.has(c.url)) byUrl.set(c.url, c);
+  const byUrl = new Map<string, CatalogEntry[]>();
+  for (const c of catalog) byUrl.set(c.url, [...(byUrl.get(c.url) ?? []), c]);
   const seen = new Set<string>();
   let matched = 0;
   const rows = sources.map((s) => {
     seen.add(s.url);
-    const c = byUrl.get(s.url);
-    if (!c) return s;
+    const records = byUrl.get(s.url);
+    if (!records?.length) return s;
     matched++;
-    return { ...s, catalog_record: c };
+    const existing = (s as unknown as Record<string, unknown>)["category_values"];
+    return { ...s, catalog_record: records[0], catalog_records: records,
+      category_values: [...new Set([...(Array.isArray(existing) ? existing.map(String) : [s.heading_category]).filter(Boolean), ...records.map((c) => c.category ?? "").filter(Boolean)])] };
   });
   let added = 0;
-  for (const c of byUrl.values()) {
+  for (const records of byUrl.values()) {
+    const c = records[0]!;
     if (seen.has(c.url)) continue;
     added++;
     rows.push({
@@ -108,9 +111,11 @@ export function mergeCatalog<S extends LibSource>(sources: S[], catalog: Catalog
       jurisdiction: c.jurisdiction === "us" ? "Federal" : c.jurisdiction_label ?? c.jurisdiction,
       heading_category: c.category ?? "",
       source_family: "",
-      occurrences: 1,
+      occurrences: records.length,
       origin: "Source catalog",
       catalog_record: c,
+      catalog_records: records,
+      category_values: [...new Set(records.map((r) => r.category ?? "").filter(Boolean))],
     } as unknown as S);
   }
   return { rows, added, matched };

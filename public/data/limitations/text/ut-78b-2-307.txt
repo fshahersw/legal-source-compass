@@ -1,0 +1,193 @@
+*   Accessibility
+*   Use the Settings Button to view other accessibility Settings
+*   [Skip to Content](https://le.utah.gov/xcode/Title78B/Chapter2/78B-2-S307.html#main-content)
+
+ Search Settings
+
+[Login](https://le.utah.gov/tracking/tracking.jsp "Login")
+
+Search
+
+[![Image 1: Utah State Legislature Home](https://le.utah.gov/images/logos/web-logo-horizontal.png)](https://le.utah.gov/ "Home")
+
+*   [Legislators](https://le.utah.gov/Documents/find.htm)
+
+All Legislators[All Legislators](https://le.utah.gov/Documents/find.htm)
+    *   [Find Legislators](https://le.utah.gov/Documents/find.htm)
+    *   [By Session (1896-Current)](https://le.utah.gov/asp/roster/roster.asp)
+    *   [Alphabetical (Historical)](https://le.utah.gov/asp/roster/complist.asp)
+    *   [Find by Address/Map](https://le.utah.gov/GIS/findDistrict.jsp)
+    *   [Sessions](https://le.utah.gov/sessions/sessions.jsp)
+    *   [Reading Calendars](https://readingcalendar.le.utah.gov/)
+    *   [Journals](https://le.utah.gov/asp/schedule/journal.asp)
+    *   [Session Dates](https://le.utah.gov/sessionSchedule/sessdates.jsp)
+
+[House](https://house.utleg.gov/)House
+    *   [House Home](https://house.utleg.gov/)
+    *   [About the House](https://house.utleg.gov/about/)
+    *   [Leadership](https://house.utleg.gov/house-leadership/)
+    *   [Roster](https://house.utleg.gov/house-members/)
+    *   [Seating Chart](https://le.utah.gov/asp/seating/hseat.asp)
+    *   [Conflict of Interest Forms](https://house.utleg.gov/conflict-disclosures/)
+    *   [Past Floor Debates](https://le.utah.gov/asp/audio/index.asp?House=H)
+
+[Senate](https://senate.utah.gov/)Senate
+    *   [Senate Home](https://senate.utah.gov/)
+    *   [About the Senate](https://senate.utah.gov/about-the-senate/)
+    *   [Leadership](https://senate.utah.gov/leadership/)
+    *   [Roster](https://senate.utah.gov/senate-roster/)
+    *   [Seating Chart](https://le.utah.gov/asp/seating/sseat.asp)
+    *   [Extraordinary Sessions](https://le.utah.gov/sessions/es.jsp)
+    *   [Past Floor Debates](https://le.utah.gov/asp/audio/index.asp?House=S)
+    *   [Disclosure Forms](https://disclosures.utah.gov/Search/PublicSearch?type=PCC)
+
+*   [Bills](https://le.utah.gov/bills/bills_By_Session.jsp)
+
+[View Bills](https://le.utah.gov/bills/bills_By_Session.jsp)
+    *   [2026 Bills](https://le.utah.gov/billlist.jsp?session=2026GS)
+    *   [Browse by Session](https://le.utah.gov/bills/billSearch.jsp)
+    *   [Passed Bills](https://le.utah.gov/asp/passedbills/passedbills.asp)
+    *   [Keyword Search](https://le.utah.gov/solrsearch.jsp?ktype=Bill)
+    *   [Tracking Service](https://le.utah.gov/tracking/tracking.jsp)
+    *   [Working Bills (1896-1989)](http://images.archives.utah.gov/cdm/search/collection/432n!428/searchterm/working%20bills/field/all/mode/all/conn/and/order/identi/ad/asc)
+    *   [Bill Data](https://le.utah.gov/lrgc/bill-data.html)
+
+*   [Code](https://le.utah.gov/xcode/code.html)
+
+[Utah Code](https://le.utah.gov/xcode/code.html)
+    *   [Code and Constitution](https://le.utah.gov/Documents/code_const.htm)
+    *   [Keyword Search](https://le.utah.gov/solrsearch.jsp?ktype=Code)
+    *   [Utah Constitution](https://le.utah.gov/xcode/constitution.html)
+    *   [Constitutional Convention](https://le.utah.gov/documents/conconv/utconstconv.htm)
+    *   [Laws of Utah 2014-ongoing](https://le.utah.gov/documents/laws-recent.htm)
+    *   [Historical Laws of Utah](https://onlinelibrary.utah.gov/library-resource/uspl/?topic=law-legal)
+    *   [Legislative Rules](https://le.utah.gov/xcode/R.html)
+    *   [Utah Administrative Rules](https://adminrules.utah.gov/)
+    *   [Advanced Law Search](https://le.utah.gov/lawSearch.jsp)
+    *   [Historical Code](https://le.utah.gov/UtahCode/historical.jsp)
+
+*   [Committees](https://le.utah.gov/asp/interim/Main.asp?ComType=All&List=2)
+
+[All Committees](https://le.utah.gov/asp/interim/Main.asp?ComType=All&List=2)
+    *   [Appropriations](https://le.utah.gov/asp/interim/Main.asp?ComType=App&List=2)
+    *   [Commissions](https://le.utah.gov/asp/interim/Main.asp?ComType=Com&List=2)
+    *   [Confirmation](https://le.utah.gov/asp/interim/Main.asp?ComType=Cnf&List=2)
+    *   [Interim](https://le.utah.gov/asp/interim/Main.asp?ComType=Int&List=2)
+    *   [Standing](https://le.utah.gov/asp/interim/Main.asp?ComType=Std&List=2)
+    *   [Subcommittees](https://le.utah.gov/asp/interim/Main.asp?ComType=Sub&List=2)
+    *   [Task Forces](https://le.utah.gov/asp/interim/Main.asp?ComType=Tsk&List=2)
+    *   [Bills in Committees](https://le.utah.gov/asp/billsintro/committeebills.asp)
+
+*   [Audits](https://lag.utleg.gov/)
+
+    *   [New Audits](https://lag.utleg.gov/audits_current.jsp)
+    *   [Audit Subcommittee](https://le.utah.gov/committee/committee.jsp?com=SPEAUD)
+    *   [Government Excellence](https://lag.utleg.gov/best_practices.jsp)
+    *   [Annual Reports](https://lag.utleg.gov/annual_report.jsp)
+    *   [Office of the Legislative Auditor General](https://lag.utleg.gov/)
+
+*   [Budget](https://budget.utah.gov/)
+
+[Budget.Utah.gov](https://budget.utah.gov/)
+    *   [State Budget (PDF)](https://le.utah.gov/CobiServlet/cobi/BudgetRD?key=stateBudget)
+    *   [COBI](https://le.utah.gov/CobiServlet/cobi/BudgetRD?key=cobi)
+    *   [Quick Facts (PDF)](https://le.utah.gov/CobiServlet/cobi/BudgetRD?key=quickFacts)
+    *   [Fiscal Health](https://le.utah.gov/CobiServlet/cobi/BudgetRD?key=fiscalHealth)
+    *   [Taxpayer Receipt](https://le.utah.gov/CobiServlet/cobi/BudgetRD?key=taxpayerReceipt)
+    *   [Data Visualizer](https://le.utah.gov/CobiServlet/cobi/BudgetRD?key=budgetVisualizer)
+    *   [Budget Bills](https://le.utah.gov/CobiServlet/cobi/BudgetRD?key=appsByBills)
+    *   [Budget Committees](https://le.utah.gov/CobiServlet/cobi/BudgetRD?key=appsBySubcommittees)
+    *   [Budget Publications](https://le.utah.gov/asp/lfa/lfareports.asp)
+    *   [Office of the Legislative Fiscal Analyst](https://budget.utah.gov/products/aboutLFA/)
+
+*   [Research and Legal](https://le.utah.gov/lrgc/home.html)
+
+    *   [Office of Legislative Research and General Counsel](https://le.utah.gov/lrgc/home.html)
+    *   [Publications](https://le.utah.gov/lrgc/publications.html)
+    *   [Bill Data](https://le.utah.gov/lrgc/bill-data.html)
+    *   [Legislative Information](https://le.utah.gov/lrgc/researchMaterials.htm)
+    *   [Agency Reporting](https://le.utah.gov/AgencyRP/index.jsp)
+    *   [Advanced Law Search](https://le.utah.gov/lawSearch.jsp)
+
+## Additional Accessibility Settings
+
+Default Settings High Contrast Text Only
+
+Font Size:A A A
+
+*   [Home](https://le.utah.gov/)
+*   [Utah Code](https://le.utah.gov/xcode/code.html)
+*   [Title 78B](https://le.utah.gov/xcode/Title78B/78B.html)
+*   [Chapter 2](https://le.utah.gov/xcode/Title78B/Chapter2/78B-2.html)
+*   [Part 3](https://le.utah.gov/xcode/Title78B/Chapter2/78B-2-P3.html)
+*   Section 307
+
+[Historical Code](https://le.utah.gov/UtahCode/historical.jsp)
+
+### Title 78B Chapter 2 Part 3 Section 307
+
+[<< Previous Section (78B-2-306)](https://le.utah.gov/xcode/Title78B/Chapter2/78B-2-S306.html)Download Options [PDF](https://le.utah.gov/xcode/Title78B/Chapter2/C78B-2-S307_2023050320230503.pdf)|[RTF](https://le.utah.gov/xcode/Title78B/Chapter2/C78B-2-S307_2023050320230503.rtf)|[XML](https://le.utah.gov/xcode/Title78B/Chapter2/C78B-2-S307_2023050320230503.xml)[Next Section (78B-2-307.5) >>](https://le.utah.gov/xcode/Title78B/Chapter2/78B-2-S307.5.html)
+
+[Index](https://le.utah.gov/xcode/code.html)Utah Code
+[Title 78B](https://le.utah.gov/xcode/Title78B/78B.html)Judicial Code
+[Chapter 2](https://le.utah.gov/xcode/Title78B/Chapter2/78B-2.html)Statutes of Limitations
+[Part 3](https://le.utah.gov/xcode/Title78B/Chapter2/78B-2-P3.html)Other than Real Property
+Section 307 Within four years.
+
+**_(Effective 5/3/2023)_**
+
+* * *
+
+  
+
+**_Effective 5/3/2023_**  
+**78B-2-307.****Within four years.**  
+An action may be brought within four years:[](https://le.utah.gov/xcode/Title78B/Chapter2/78B-2-S307.html)
+(1)after the last charge is made or the last payment is received: [](https://le.utah.gov/xcode/Title78B/Chapter2/78B-2-S307.html) (a)upon a contract, obligation, or liability not founded upon an instrument in writing; [](https://le.utah.gov/xcode/Title78B/Chapter2/78B-2-S307.html) (b)on an open store account for any goods, wares, or merchandise; or [](https://le.utah.gov/xcode/Title78B/Chapter2/78B-2-S307.html) (c)on an open account for work, labor or services rendered, or materials furnished;
+[](https://le.utah.gov/xcode/Title78B/Chapter2/78B-2-S307.html)
+(2)for a claim for relief or a cause of action under the following sections of [Title 25, Chapter 6, Uniform Voidable Transactions Act](https://le.utah.gov/xcode/Title25/Chapter6/25-6.html?v=C25-6_2017050920170509): [](https://le.utah.gov/xcode/Title78B/Chapter2/78B-2-S307.html) (a)Subsection [25-6-202(1)(a)](https://le.utah.gov/xcode/Title25/Chapter6/25-6-S202.html?v=C25-6-S202_2017050920170509#25-6-202(1)(a)), except in specific situations where the time for action is limited to one year under Section [25-6-305](https://le.utah.gov/xcode/Title25/Chapter6/25-6-S305.html?v=C25-6-S305_2017050920170509); [](https://le.utah.gov/xcode/Title78B/Chapter2/78B-2-S307.html) (b)Subsection [25-6-202(1)(b)](https://le.utah.gov/xcode/Title25/Chapter6/25-6-S202.html?v=C25-6-S202_2017050920170509#25-6-202(1)(b)); or [](https://le.utah.gov/xcode/Title78B/Chapter2/78B-2-S307.html) (c)Subsection [25-6-203(1)](https://le.utah.gov/xcode/Title25/Chapter6/25-6-S203.html?v=C25-6-S203_2017050920170509#25-6-203(1));
+[](https://le.utah.gov/xcode/Title78B/Chapter2/78B-2-S307.html)
+(3)for a claim involving personal property damage to the aggrieved party's motor vehicle, as defined in Section [41-6a-102](https://le.utah.gov/xcode/Title41/Chapter6A/41-6a-S102.html?v=C41-6a-S102_2023050320230503), or personal property from an accident involving a motor vehicle; and
+[](https://le.utah.gov/xcode/Title78B/Chapter2/78B-2-S307.html)
+(4)for relief not otherwise provided for by law.
+  
+  
+Amended by Chapter [185](http://le.utah.gov/UtahCode/ChapterLookup.jsp?chap=185&sess=2023GS), 2023 General Session  
+
+* * *
+
+[<< Previous Section (78B-2-306)](https://le.utah.gov/xcode/Title78B/Chapter2/78B-2-S306.html)Download Options [PDF](https://le.utah.gov/xcode/Title78B/Chapter2/C78B-2-S307_2023050320230503.pdf)|[RTF](https://le.utah.gov/xcode/Title78B/Chapter2/C78B-2-S307_2023050320230503.rtf)|[XML](https://le.utah.gov/xcode/Title78B/Chapter2/C78B-2-S307_2023050320230503.xml)[Next Section (78B-2-307.5) >>](https://le.utah.gov/xcode/Title78B/Chapter2/78B-2-S307.5.html)
+
+[![Image 2: Seal for Utah State Senate](https://le.utah.gov/images/logos/senate.svg) ## State Senate](https://senate.utah.gov/)
+*    350 North State, Suite 320  
+ PO Box 145115  
+ Salt Lake City, Utah 84114 
+*   Telephone: [(801) 538-1408](tel:8015381035)
+*   [https://senate.utah.gov](https://senate.utah.gov/)
+*   [Contact a Senator](https://senate.utah.gov/contact/)
+
+[![Image 3: Seal for Utah House of Representatives](https://le.utah.gov/images/logos/house.svg) ## House of Representatives](https://house.utleg.gov/)
+*    350 North State, Suite 350  
+ PO Box 145030  
+ Salt Lake City, Utah 84114 
+*   Telephone: [(801) 538-1408](tel:8015381408)
+*   [https://house.utleg.gov](https://house.utleg.gov/)
+*   [Contact a Representative](https://house.utleg.gov/contact/)
+
+## [Staff Offices](https://le.utah.gov/Documents/staff.htm)
+
+*   [Legislative Auditor General](https://lag.utleg.gov/)
+*   [Legislative Fiscal Analyst](https://budget.utah.gov/products/aboutLFA/)
+*   [Legislative Research and General Counsel](https://le.utah.gov/lrgc/home.html)
+*   [Legislative Services](https://le.utah.gov/legservices/home.html)
+*   [Staff Awards](https://le.utah.gov/ncsl/utahstaffawards.htm)
+*   [Public Information](https://le.utah.gov/lrgc/researchMaterials.htm)
+
+*   [Records Requests](https://le.utah.gov/Documents/recordsrequests.htm)
+*   [Procurement](https://le.utah.gov/rfp_legal.htm)
+*   [Contact the Webmaster](https://le.utah.gov/contact.htm)
+*   [Job Opportunities](https://le.utah.gov/jobs/jobs.htm)
+*   [Site Map](https://le.utah.gov/sitemap.htm)
+*   [Terms of Use](https://le.utah.gov/documents/disclaimer.htm)
+*   [ADA](https://le.utah.gov/documents/ADAnotice.htm)
+*   [Utah.gov](http://utah.gov/)

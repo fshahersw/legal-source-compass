@@ -12,7 +12,9 @@
 ## Legal Source Atlas rules
 
 - No fabricated data: every row comes from bundled uploads in `public/data/` or the read-only external corpus.
-- External corpus is read-only via `src/lib/external/*` server functions (EXTERNAL_SUPABASE_* secrets never reach the client); no other backend.
+- Website access to the external corpus stays read-only via `src/lib/external/*` server functions (EXTERNAL_SUPABASE_* secrets never reach the client).
+- The user explicitly authorized administrative Supabase enrichment on October 2, 2026. Use the private, versioned `corpus_ingest` contract for acquisitions and native-ID relationships; retain raw source versions, retrieval provenance, checksums and reversible cleanup evidence. Administrative credentials never enter the client or repository. Do not overwrite or release held collections by implication.
+- The October 2 backfill is metadata-only: collect document locators, not PDF bytes. Document downloads are a separate user-authorized scope.
 - Files >10 MB are split under `public/data/` with the original as a lovable-asset (commit limit).
 - Sidebar has exactly 4 sections in `AppShell`; everything else is contextual sub-navigation. Home `/` is the map; the library is `/sources/library`.
 - Names link to a profile only on a unique exact match; never fuzzy-merge people.

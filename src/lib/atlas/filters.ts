@@ -1,4 +1,4 @@
-import { classifySource } from "@/lib/corpus/taxonomy";
+import { classifySource, headingIdentity } from "@/lib/corpus/taxonomy";
 import { valuesOf } from "./bundle";
 import type { ReviewOverlay, Source } from "./types";
 
@@ -75,7 +75,7 @@ export function filterSources(
     if (!matchesQuery(s, filters.query)) return false;
     if (!inList(filters.jurisdictions, valuesOf(s, "jurisdiction"))) return false;
     if (!inList(filters.families, s.source_family)) return false;
-    if (!inList(filters.headingCategories, valuesOf(s, "heading_category"))) return false;
+    if (!inList(filters.headingCategories.map(headingIdentity), valuesOf(s, "heading_category").map(headingIdentity))) return false;
     if (!inList(filters.categories, classifySource(valuesOf(s, "heading_category")))) return false;
     if (!inList(filters.domains, s.domain)) return false;
     if (filters.bookmarkedOnly && !ctx.bookmarks[s.id]) return false;

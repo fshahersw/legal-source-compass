@@ -46,12 +46,17 @@ export function countBy<T>(rows: T[], key: (r: T) => string | string[]): Count[]
 
 export const judgeCourts = (j: JudgeRow) => (j.courts.length ? j.courts : [NOT_RECORDED]);
 
+/** Exact person identity for links. Initials, suffixes and diacritics remain significant. */
+export function exactPersonNameKey(name: string): string {
+  return name.normalize("NFC").toLowerCase().replace(/[.,]/g, " ").replace(/\s+/g, " ").trim();
+}
+
 /** Exact normalized-name lookup. Returns the judge id only when exactly one judge has that name; never guesses. */
 export function makeJudgeMatcher(judges: JudgeRow[]) {
   const m = new Map<string, string[]>();
-  for (const j of judges) { const k = nameKey(j.name); if (k) m.set(k, [...(m.get(k) ?? []), j.id]); }
+  for (const j of judges) { const k = exactPersonNameKey(j.name); if (k) m.set(k, [...(m.get(k) ?? []), j.id]); }
   return (name: string): string | null => {
-    const ids = m.get(nameKey(name));
+    const ids = m.get(exactPersonNameKey(name));
     return ids && ids.length === 1 ? ids[0]! : null;
   };
 }

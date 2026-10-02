@@ -1,0 +1,895 @@
+{
+  "schemaVersion": "courtlistener-bulk-docket-graph-receipt/1",
+  "metadataOnly": true,
+  "pdfDownloads": 0,
+  "sourceSnapshot": "2026-09-30",
+  "sourceFileSha256": "f40588851cee0d95696c40b8740106473f83ea3ffd8745799e03c42a15b9399b",
+  "sourceUrl": "https://com-courtlistener-storage.s3-us-west-2.amazonaws.com/bulk-data/dockets-2026-09-30.csv.bz2",
+  "sourceVersions": 187900,
+  "fieldEdges": 706328,
+  "unparsedReferences": 0,
+  "batches": [
+    {
+      "by_field": [
+        {
+          "edges": 1,
+          "field": "appeal_from_id",
+          "to_type": "courts",
+          "unresolved": 0
+        },
+        {
+          "edges": 9304,
+          "field": "assigned_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "court_id",
+          "to_type": "courts",
+          "unresolved": 0
+        },
+        {
+          "edges": 9979,
+          "field": "idb_data_id",
+          "to_type": "fjc-integrated-database",
+          "unresolved": 103
+        },
+        {
+          "edges": 1,
+          "field": "originating_court_information_id",
+          "to_type": "originating-court-information",
+          "unresolved": 0
+        },
+        {
+          "edges": 9153,
+          "field": "referred_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        }
+      ],
+      "checked_at": "2026-10-02T09:36:27.440794+00:00",
+      "written_edges": 38438,
+      "source_versions": 10000,
+      "contract_version": "corpus-native-docket-fields/1",
+      "unresolved_edges": 103,
+      "native_field_edges": 38438,
+      "lower_ordinal_exclusive": 0,
+      "upper_ordinal_inclusive": 10000,
+      "unparsed_nonempty_references": 0,
+      "source_identity_ordinal_sha256": "484423c546868485403c466a6bad317f1dc9aa22aa88c09e8ef16247ab265880"
+    },
+    {
+      "by_field": [
+        {
+          "edges": 7021,
+          "field": "assigned_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "court_id",
+          "to_type": "courts",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "idb_data_id",
+          "to_type": "fjc-integrated-database",
+          "unresolved": 0
+        },
+        {
+          "edges": 7021,
+          "field": "referred_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        }
+      ],
+      "checked_at": "2026-10-02T09:38:44.41319+00:00",
+      "written_edges": 34042,
+      "source_versions": 10000,
+      "contract_version": "corpus-native-docket-fields/1",
+      "unresolved_edges": 0,
+      "native_field_edges": 34042,
+      "lower_ordinal_exclusive": 10000,
+      "upper_ordinal_inclusive": 20000,
+      "unparsed_nonempty_references": 0,
+      "source_identity_ordinal_sha256": "e5cc5473b986633e6cba0dceb0ae579f8da63bc19c9896810a090ab4d4bf32a1"
+    },
+    {
+      "by_field": [
+        {
+          "edges": 9284,
+          "field": "assigned_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "court_id",
+          "to_type": "courts",
+          "unresolved": 0
+        },
+        {
+          "edges": 9986,
+          "field": "idb_data_id",
+          "to_type": "fjc-integrated-database",
+          "unresolved": 18
+        },
+        {
+          "edges": 5794,
+          "field": "referred_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        }
+      ],
+      "checked_at": "2026-10-02T09:38:54.096157+00:00",
+      "written_edges": 35064,
+      "source_versions": 10000,
+      "contract_version": "corpus-native-docket-fields/1",
+      "unresolved_edges": 18,
+      "native_field_edges": 35064,
+      "lower_ordinal_exclusive": 20000,
+      "upper_ordinal_inclusive": 30000,
+      "unparsed_nonempty_references": 0,
+      "source_identity_ordinal_sha256": "85278523543e0ea8127e6ea6590b8b3b6c3cd1fe8d931123a710c3a8a502be22"
+    },
+    {
+      "by_field": [
+        {
+          "edges": 8278,
+          "field": "assigned_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "court_id",
+          "to_type": "courts",
+          "unresolved": 0
+        },
+        {
+          "edges": 9991,
+          "field": "idb_data_id",
+          "to_type": "fjc-integrated-database",
+          "unresolved": 1
+        },
+        {
+          "edges": 7687,
+          "field": "referred_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        }
+      ],
+      "checked_at": "2026-10-02T09:39:03.730135+00:00",
+      "written_edges": 35956,
+      "source_versions": 10000,
+      "contract_version": "corpus-native-docket-fields/1",
+      "unresolved_edges": 1,
+      "native_field_edges": 35956,
+      "lower_ordinal_exclusive": 30000,
+      "upper_ordinal_inclusive": 40000,
+      "unparsed_nonempty_references": 0,
+      "source_identity_ordinal_sha256": "580d1d0bb7240918ed2c98b506abaacf3743a9fcbdfeb845097ebfcd4edc409b"
+    },
+    {
+      "by_field": [
+        {
+          "edges": 7663,
+          "field": "assigned_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "court_id",
+          "to_type": "courts",
+          "unresolved": 0
+        },
+        {
+          "edges": 9986,
+          "field": "idb_data_id",
+          "to_type": "fjc-integrated-database",
+          "unresolved": 25
+        },
+        {
+          "edges": 5105,
+          "field": "referred_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        }
+      ],
+      "checked_at": "2026-10-02T09:39:13.381245+00:00",
+      "written_edges": 32754,
+      "source_versions": 10000,
+      "contract_version": "corpus-native-docket-fields/1",
+      "unresolved_edges": 25,
+      "native_field_edges": 32754,
+      "lower_ordinal_exclusive": 40000,
+      "upper_ordinal_inclusive": 50000,
+      "unparsed_nonempty_references": 0,
+      "source_identity_ordinal_sha256": "721a4f078742e2cff6393469d55f7a2ee72f6dfb1dc59c7d0ba89e1a9b0c4dab"
+    },
+    {
+      "by_field": [
+        {
+          "edges": 2,
+          "field": "appeal_from_id",
+          "to_type": "courts",
+          "unresolved": 0
+        },
+        {
+          "edges": 8634,
+          "field": "assigned_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "court_id",
+          "to_type": "courts",
+          "unresolved": 0
+        },
+        {
+          "edges": 9981,
+          "field": "idb_data_id",
+          "to_type": "fjc-integrated-database",
+          "unresolved": 15
+        },
+        {
+          "edges": 2,
+          "field": "originating_court_information_id",
+          "to_type": "originating-court-information",
+          "unresolved": 0
+        },
+        {
+          "edges": 5969,
+          "field": "referred_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        }
+      ],
+      "checked_at": "2026-10-02T09:39:23.007114+00:00",
+      "written_edges": 34588,
+      "source_versions": 10000,
+      "contract_version": "corpus-native-docket-fields/1",
+      "unresolved_edges": 15,
+      "native_field_edges": 34588,
+      "lower_ordinal_exclusive": 50000,
+      "upper_ordinal_inclusive": 60000,
+      "unparsed_nonempty_references": 0,
+      "source_identity_ordinal_sha256": "42a3116ea123e6b0c8281a6704c79daf12f7ec3500ba6a03987f04a24172a8aa"
+    },
+    {
+      "by_field": [
+        {
+          "edges": 9671,
+          "field": "assigned_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "court_id",
+          "to_type": "courts",
+          "unresolved": 0
+        },
+        {
+          "edges": 9857,
+          "field": "idb_data_id",
+          "to_type": "fjc-integrated-database",
+          "unresolved": 20
+        },
+        {
+          "edges": 9469,
+          "field": "referred_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        }
+      ],
+      "checked_at": "2026-10-02T09:39:32.758954+00:00",
+      "written_edges": 38997,
+      "source_versions": 10000,
+      "contract_version": "corpus-native-docket-fields/1",
+      "unresolved_edges": 20,
+      "native_field_edges": 38997,
+      "lower_ordinal_exclusive": 60000,
+      "upper_ordinal_inclusive": 70000,
+      "unparsed_nonempty_references": 0,
+      "source_identity_ordinal_sha256": "ab94028b050d23835a8cf58a7431a9318872cdd59cc43ccf9c1fe48ad320c026"
+    },
+    {
+      "by_field": [
+        {
+          "edges": 10000,
+          "field": "assigned_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "court_id",
+          "to_type": "courts",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "idb_data_id",
+          "to_type": "fjc-integrated-database",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "referred_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        }
+      ],
+      "checked_at": "2026-10-02T09:39:43.396105+00:00",
+      "written_edges": 40000,
+      "source_versions": 10000,
+      "contract_version": "corpus-native-docket-fields/1",
+      "unresolved_edges": 0,
+      "native_field_edges": 40000,
+      "lower_ordinal_exclusive": 70000,
+      "upper_ordinal_inclusive": 80000,
+      "unparsed_nonempty_references": 0,
+      "source_identity_ordinal_sha256": "69b38bc360637dc99d9ac4acb0c31b962f97cfd729b1291a7ac197abb64e6436"
+    },
+    {
+      "by_field": [
+        {
+          "edges": 10000,
+          "field": "assigned_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "court_id",
+          "to_type": "courts",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "idb_data_id",
+          "to_type": "fjc-integrated-database",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "referred_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        }
+      ],
+      "checked_at": "2026-10-02T09:39:53.307979+00:00",
+      "written_edges": 40000,
+      "source_versions": 10000,
+      "contract_version": "corpus-native-docket-fields/1",
+      "unresolved_edges": 0,
+      "native_field_edges": 40000,
+      "lower_ordinal_exclusive": 80000,
+      "upper_ordinal_inclusive": 90000,
+      "unparsed_nonempty_references": 0,
+      "source_identity_ordinal_sha256": "34e6353d2039c8ca800e4bc195d7391d99ec025a4dd22d6135c6dcaefef104fc"
+    },
+    {
+      "by_field": [
+        {
+          "edges": 10000,
+          "field": "assigned_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "court_id",
+          "to_type": "courts",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "idb_data_id",
+          "to_type": "fjc-integrated-database",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "referred_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        }
+      ],
+      "checked_at": "2026-10-02T09:40:03.924237+00:00",
+      "written_edges": 40000,
+      "source_versions": 10000,
+      "contract_version": "corpus-native-docket-fields/1",
+      "unresolved_edges": 0,
+      "native_field_edges": 40000,
+      "lower_ordinal_exclusive": 90000,
+      "upper_ordinal_inclusive": 100000,
+      "unparsed_nonempty_references": 0,
+      "source_identity_ordinal_sha256": "1dba5a1be32763dc9b1445df38ed93a302683ea406f0ec3874c659027d873304"
+    },
+    {
+      "by_field": [
+        {
+          "edges": 9950,
+          "field": "assigned_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "court_id",
+          "to_type": "courts",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "idb_data_id",
+          "to_type": "fjc-integrated-database",
+          "unresolved": 0
+        },
+        {
+          "edges": 9979,
+          "field": "referred_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        }
+      ],
+      "checked_at": "2026-10-02T09:40:13.961115+00:00",
+      "written_edges": 39929,
+      "source_versions": 10000,
+      "contract_version": "corpus-native-docket-fields/1",
+      "unresolved_edges": 0,
+      "native_field_edges": 39929,
+      "lower_ordinal_exclusive": 100000,
+      "upper_ordinal_inclusive": 110000,
+      "unparsed_nonempty_references": 0,
+      "source_identity_ordinal_sha256": "1fb878116149442deeb17788af9e36bfc54f9f33bbba09f4a373203dc9e4060c"
+    },
+    {
+      "by_field": [
+        {
+          "edges": 10000,
+          "field": "assigned_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "court_id",
+          "to_type": "courts",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "idb_data_id",
+          "to_type": "fjc-integrated-database",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "referred_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        }
+      ],
+      "checked_at": "2026-10-02T09:40:23.943556+00:00",
+      "written_edges": 40000,
+      "source_versions": 10000,
+      "contract_version": "corpus-native-docket-fields/1",
+      "unresolved_edges": 0,
+      "native_field_edges": 40000,
+      "lower_ordinal_exclusive": 110000,
+      "upper_ordinal_inclusive": 120000,
+      "unparsed_nonempty_references": 0,
+      "source_identity_ordinal_sha256": "4ba95a3d74b2a0c9c65774f029c24529fcb83891f4dedafe768dc59900a1a790"
+    },
+    {
+      "by_field": [
+        {
+          "edges": 10000,
+          "field": "assigned_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "court_id",
+          "to_type": "courts",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "idb_data_id",
+          "to_type": "fjc-integrated-database",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "referred_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        }
+      ],
+      "checked_at": "2026-10-02T09:40:33.85218+00:00",
+      "written_edges": 40000,
+      "source_versions": 10000,
+      "contract_version": "corpus-native-docket-fields/1",
+      "unresolved_edges": 0,
+      "native_field_edges": 40000,
+      "lower_ordinal_exclusive": 120000,
+      "upper_ordinal_inclusive": 130000,
+      "unparsed_nonempty_references": 0,
+      "source_identity_ordinal_sha256": "e250ba5bc760f9d37ea08c19808acc1c84d8f93166f91bfec4e2cc67dd3ff15d"
+    },
+    {
+      "by_field": [
+        {
+          "edges": 10000,
+          "field": "assigned_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "court_id",
+          "to_type": "courts",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "idb_data_id",
+          "to_type": "fjc-integrated-database",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "referred_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        }
+      ],
+      "checked_at": "2026-10-02T09:40:43.850733+00:00",
+      "written_edges": 40000,
+      "source_versions": 10000,
+      "contract_version": "corpus-native-docket-fields/1",
+      "unresolved_edges": 0,
+      "native_field_edges": 40000,
+      "lower_ordinal_exclusive": 130000,
+      "upper_ordinal_inclusive": 140000,
+      "unparsed_nonempty_references": 0,
+      "source_identity_ordinal_sha256": "3cb7b48f9903f60d1c5b9ee25f8e67c03759e205857d59e7bd33819855fa57c9"
+    },
+    {
+      "by_field": [
+        {
+          "edges": 10000,
+          "field": "assigned_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "court_id",
+          "to_type": "courts",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "idb_data_id",
+          "to_type": "fjc-integrated-database",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "referred_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        }
+      ],
+      "checked_at": "2026-10-02T09:40:53.958039+00:00",
+      "written_edges": 40000,
+      "source_versions": 10000,
+      "contract_version": "corpus-native-docket-fields/1",
+      "unresolved_edges": 0,
+      "native_field_edges": 40000,
+      "lower_ordinal_exclusive": 140000,
+      "upper_ordinal_inclusive": 150000,
+      "unparsed_nonempty_references": 0,
+      "source_identity_ordinal_sha256": "679f624d8c7e62f36fcebb52fb52b8770511fd48870229284aa76bbe57449b8d"
+    },
+    {
+      "by_field": [
+        {
+          "edges": 10000,
+          "field": "assigned_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "court_id",
+          "to_type": "courts",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "idb_data_id",
+          "to_type": "fjc-integrated-database",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "referred_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        }
+      ],
+      "checked_at": "2026-10-02T09:41:03.810172+00:00",
+      "written_edges": 40000,
+      "source_versions": 10000,
+      "contract_version": "corpus-native-docket-fields/1",
+      "unresolved_edges": 0,
+      "native_field_edges": 40000,
+      "lower_ordinal_exclusive": 150000,
+      "upper_ordinal_inclusive": 160000,
+      "unparsed_nonempty_references": 0,
+      "source_identity_ordinal_sha256": "39a25365b843257352acb37249131e561c906c457f9d978729a59aa9b0be7f04"
+    },
+    {
+      "by_field": [
+        {
+          "edges": 1,
+          "field": "appeal_from_id",
+          "to_type": "courts",
+          "unresolved": 0
+        },
+        {
+          "edges": 8631,
+          "field": "assigned_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "court_id",
+          "to_type": "courts",
+          "unresolved": 0
+        },
+        {
+          "edges": 9616,
+          "field": "idb_data_id",
+          "to_type": "fjc-integrated-database",
+          "unresolved": 230
+        },
+        {
+          "edges": 1,
+          "field": "originating_court_information_id",
+          "to_type": "originating-court-information",
+          "unresolved": 0
+        },
+        {
+          "edges": 7175,
+          "field": "referred_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        }
+      ],
+      "checked_at": "2026-10-02T09:41:13.520116+00:00",
+      "written_edges": 35424,
+      "source_versions": 10000,
+      "contract_version": "corpus-native-docket-fields/1",
+      "unresolved_edges": 230,
+      "native_field_edges": 35424,
+      "lower_ordinal_exclusive": 160000,
+      "upper_ordinal_inclusive": 170000,
+      "unparsed_nonempty_references": 0,
+      "source_identity_ordinal_sha256": "726b01f1e65324fa0343fd755468fe1a7e232635e990a3c82446d66b24e8d864"
+    },
+    {
+      "by_field": [
+        {
+          "edges": 33,
+          "field": "appeal_from_id",
+          "to_type": "courts",
+          "unresolved": 0
+        },
+        {
+          "edges": 8153,
+          "field": "assigned_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        },
+        {
+          "edges": 10000,
+          "field": "court_id",
+          "to_type": "courts",
+          "unresolved": 0
+        },
+        {
+          "edges": 8692,
+          "field": "idb_data_id",
+          "to_type": "fjc-integrated-database",
+          "unresolved": 193
+        },
+        {
+          "edges": 46,
+          "field": "originating_court_information_id",
+          "to_type": "originating-court-information",
+          "unresolved": 0
+        },
+        {
+          "edges": 6815,
+          "field": "referred_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        }
+      ],
+      "checked_at": "2026-10-02T09:41:24.8781+00:00",
+      "written_edges": 33739,
+      "source_versions": 10000,
+      "contract_version": "corpus-native-docket-fields/1",
+      "unresolved_edges": 193,
+      "native_field_edges": 33739,
+      "lower_ordinal_exclusive": 170000,
+      "upper_ordinal_inclusive": 180000,
+      "unparsed_nonempty_references": 0,
+      "source_identity_ordinal_sha256": "242fcd67c90da476d1f9c5b0c4e22470240ce10e85c503bf3a8686662f81fe9d"
+    },
+    {
+      "by_field": [
+        {
+          "edges": 4,
+          "field": "appeal_from_id",
+          "to_type": "courts",
+          "unresolved": 0
+        },
+        {
+          "edges": 6188,
+          "field": "assigned_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        },
+        {
+          "edges": 7900,
+          "field": "court_id",
+          "to_type": "courts",
+          "unresolved": 0
+        },
+        {
+          "edges": 7793,
+          "field": "idb_data_id",
+          "to_type": "fjc-integrated-database",
+          "unresolved": 57
+        },
+        {
+          "edges": 4,
+          "field": "originating_court_information_id",
+          "to_type": "originating-court-information",
+          "unresolved": 0
+        },
+        {
+          "edges": 5508,
+          "field": "referred_to_id",
+          "to_type": "people",
+          "unresolved": 0
+        }
+      ],
+      "checked_at": "2026-10-02T09:41:35.103576+00:00",
+      "written_edges": 27397,
+      "source_versions": 7900,
+      "contract_version": "corpus-native-docket-fields/1",
+      "unresolved_edges": 57,
+      "native_field_edges": 27397,
+      "lower_ordinal_exclusive": 180000,
+      "upper_ordinal_inclusive": 187900,
+      "unparsed_nonempty_references": 0,
+      "source_identity_ordinal_sha256": "d24dcaad799169d50eb8fd09b4dc7913a71c91e703e47fe6413c4cb5df76ebbe"
+    }
+  ],
+  "targetPresenceRefresh": [
+    {
+      "by_target": [
+        {
+          "changed": 1390,
+          "to_type": "dockets",
+          "from_type": "clusters",
+          "newly_resolved": 1390
+        },
+        {
+          "changed": 1707,
+          "to_type": "dockets",
+          "from_type": "parties",
+          "newly_resolved": 1707
+        }
+      ],
+      "checked_at": "2026-10-02T09:41:54.419007+00:00",
+      "changed_edges": 3097,
+      "newly_resolved": 3097,
+      "contract_version": "corpus-native-target-presence/1",
+      "newly_unresolved": 0
+    },
+    {
+      "by_target": null,
+      "checked_at": "2026-10-02T09:42:15.873642+00:00",
+      "changed_edges": 0,
+      "newly_resolved": 0,
+      "contract_version": "corpus-native-target-presence/1",
+      "newly_unresolved": 0
+    }
+  ],
+  "finalReconciliation": {
+    "checked_at": "2026-10-02T09:42:24.289061+00:00",
+    "bulk_by_field": [
+      {
+        "edges": 41,
+        "field": "appeal_from_id",
+        "to_type": "courts",
+        "unresolved": 0
+      },
+      {
+        "edges": 172777,
+        "field": "assigned_to_id",
+        "to_type": "people",
+        "unresolved": 0
+      },
+      {
+        "edges": 187900,
+        "field": "court_id",
+        "to_type": "courts",
+        "unresolved": 0
+      },
+      {
+        "edges": 185881,
+        "field": "idb_data_id",
+        "to_type": "fjc-integrated-database",
+        "unresolved": 662
+      },
+      {
+        "edges": 54,
+        "field": "originating_court_information_id",
+        "to_type": "originating-court-information",
+        "unresolved": 0
+      },
+      {
+        "edges": 159675,
+        "field": "referred_to_id",
+        "to_type": "people",
+        "unresolved": 0
+      }
+    ],
+    "api_unresolved_edges": 58060,
+    "bulk_source_versions": 187900,
+    "bulk_unresolved_edges": 662,
+    "api_native_field_edges": 143856,
+    "bulk_source_native_ids": 187900,
+    "bulk_native_field_edges": 706328,
+    "all_run_native_relationships": 994493,
+    "all_run_target_presence_mismatches": 0
+  },
+  "publicSelectionPreflight": {
+    "selectedFjcRows": 354027,
+    "positiveMdlFields": 354027,
+    "emptyMdlFields": 0,
+    "invalidOrZeroMdlFields": 0,
+    "invalidOrZeroCodes": {},
+    "selectedDockets": 186944,
+    "selectedBlockedOrDated": 21,
+    "selectedExplicitlyUnblocked": 186923,
+    "selectedUnknownBlock": 0
+  },
+  "qualifications": [
+    "Original captions, names, contacts, party arrays and full native source payloads remain private.",
+    "Field-edge counts describe versioned native observations, not distinct cases, verified representation, legal outcomes or current MDL membership.",
+    "Criminal parent-docket links are not MDL membership. No parent-docket field was present in this selected snapshot.",
+    "FJC MDL numbers remain dated source metadata; no unimported JPML entity target is fabricated from a number.",
+    "662 native FJC foreign keys point outside the imported selected FJC subset and remain unresolved.",
+    "Public selection preflight is an offline snapshot count; newer source blocking and quarantined source courts are checked again by the independently ready-gated projection.",
+    "Final all-run and API totals include other workers' native edges added after the original live-import receipt."
+  ]
+}

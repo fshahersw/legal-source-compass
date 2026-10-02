@@ -13,5 +13,5 @@ export function useMergedSources() {
   const base = useMemo(() => bundle?.sources ?? [], [bundle]);
   const cat = useQuery({ queryKey: ["catalog-all"], queryFn: loadAllCatalog, staleTime: Infinity, enabled: base.length > 0 });
   const sources = useMemo(() => (cat.data && base.length ? mergeCatalog(base, cat.data).rows : base), [base, cat.data]);
-  return { sources, base, catalogLoading: cat.isLoading };
+  return { sources, base, catalogLoading: cat.isLoading, catalogError: cat.error };
 }

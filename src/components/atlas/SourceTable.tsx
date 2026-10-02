@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { ArrowDown, ArrowUp, Bookmark, ExternalLink } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +18,7 @@ const COLUMNS: { key: SortKey | null; label: string; className?: string }[] = [
   { key: "title", label: "Title / URL" },
   { key: "jurisdiction", label: "Jurisdiction", className: "w-40" },
   { key: "source_family", label: "Family", className: "w-40" },
-  { key: "occurrences", label: "Occ.", className: "w-16 text-right" },
+  { key: "occurrences", label: "Count", className: "w-20 text-right" },
   { key: null, label: "Local", className: "w-28" },
 ];
 
@@ -25,20 +26,16 @@ export function SourceTable({
   rows,
   overlays,
   bookmarks,
-  selectedId,
   sortKey,
   sortDir,
   onSort,
-  onSelect,
 }: {
   rows: Source[];
   overlays: Record<string, ReviewOverlay>;
   bookmarks: Record<string, true>;
-  selectedId?: string | null;
   sortKey: SortKey;
   sortDir: SortDir;
   onSort: (key: SortKey) => void;
-  onSelect: (source: Source) => void;
 }) {
   return (
     <div className="overflow-hidden rounded-lg border border-border bg-surface shadow-card">
@@ -88,15 +85,13 @@ export function SourceTable({
               return (
                 <TableRow
                   key={source.id}
-                  onClick={() => onSelect(source)}
-                  data-state={selectedId === source.id ? "selected" : undefined}
-                  className="cursor-pointer border-border align-top data-[state=selected]:bg-accent"
+                  className="border-border align-top"
                 >
                   <TableCell className="py-2">
                     <div className="flex items-start gap-1.5">
-                      <span className="line-clamp-1 font-medium">
+                      <Link to="/sources/detail" search={{ id: source.id }} className="line-clamp-1 font-medium text-primary hover:underline">
                         {source.title || "(untitled source)"}
-                      </span>
+                      </Link>
                       <a
                         href={source.url}
                         target="_blank"
@@ -122,8 +117,9 @@ export function SourceTable({
                   <TableCell className="py-2 text-[12px]">
                     {source.source_family || <span className="text-muted-foreground">—</span>}
                   </TableCell>
-                  <TableCell className="py-2 text-right font-mono text-[12px]">
+                  <TableCell className="py-2 text-right font-mono text-[12px]" title={source["origin"] === "Source catalog" ? "Catalog records for this exact URL" : "Recorded occurrences in directory originals"}>
                     {source.occurrences}
+                    <div className="font-sans text-[9px] text-muted-foreground">{source["origin"] === "Source catalog" ? "catalog rows" : "occurrences"}</div>
                   </TableCell>
                   <TableCell className="py-2">
                     <div className="flex items-center gap-1">

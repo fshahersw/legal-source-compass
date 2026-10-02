@@ -1,2 +1,5 @@
 # Imported source bytes and their provenance hashes must survive Windows checkouts.
 public/data/** -text
+# Publisher capture formatting is evidence; retain whitespace with its checksum.
+public/data/limitations/text/** -whitespace
+public/data/limitations/opinion-text/** -whitespace

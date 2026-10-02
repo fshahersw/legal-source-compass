@@ -6,8 +6,8 @@ import { AppShell } from "@/components/atlas/AppShell";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ExternalBadge, ExternalError } from "@/components/corpus/ExternalBadge";
-import { RecordDrawer, useDatasets } from "@/components/corpus/DatasetBrowser";
-import { searchCorpus, type SearchHit } from "@/lib/external/catalog.functions";
+import { CorpusRecordLink } from "@/components/corpus/DatasetBrowser";
+import { searchCorpus } from "@/lib/external/catalog.functions";
 import { datasetLabel } from "@/lib/external/groups";
 import { pageHead } from "@/lib/corpus/head";
 
@@ -22,8 +22,6 @@ function SearchPage() {
   const navigate = useNavigate({ from: "/search" });
   const [draft, setDraft] = useState(q);
   const [offset, setOffset] = useState(0);
-  const [open, setOpen] = useState<SearchHit | null>(null);
-  const ds = useDatasets();
   const fn = useServerFn(searchCorpus);
   const query = useQuery({ queryKey: ["corpus-search", q, offset], queryFn: () => fn({ data: { q, offset } }), enabled: q.trim().length >= 2, placeholderData: keepPreviousData });
   const d = query.data;
@@ -42,10 +40,10 @@ function SearchPage() {
         {query.isLoading ? <li className="px-3 py-3 text-[13px] text-muted-foreground">Searching…</li> : null}
         {d?.hits.map((h) => (
           <li key={`${h.dataset}-${h.id}`}>
-            <button className="w-full px-3 py-2 text-left hover:bg-muted/50" onClick={() => setOpen(h)}>
+            <CorpusRecordLink dataset={h.dataset} id={h.id} className="block w-full px-3 py-2 text-left hover:bg-muted/50">
               <div className="text-[13px] font-medium">{h.title}</div>
               <div className="text-[11px] text-muted-foreground">{[datasetLabel(h.dataset, null), h.kind?.replace(/_/g, " "), h.county, h.state].filter(Boolean).join(" · ")}</div>
-            </button>
+            </CorpusRecordLink>
           </li>
         ))}
         {d && d.returned === 0 ? <li className="px-3 py-3 text-[13px] text-muted-foreground">No results.</li> : null}
@@ -56,7 +54,6 @@ function SearchPage() {
           <Button size="sm" variant="outline" disabled={d.returned < 50} onClick={() => setOffset(offset + 50)}>Next</Button>
         </div>
       ) : null}
-      <RecordDrawer item={open ? { id: open.id, title: open.title, sourceUrl: open.source_url ?? null } : null} dataset={open && ds.aliases[open.dataset] ? (ds.aliases[open.dataset] ?? null) : null} onClose={() => setOpen(null)} aliases={ds.aliases} />
     </AppShell>
   );
 }

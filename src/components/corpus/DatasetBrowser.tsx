@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
@@ -6,14 +6,11 @@ import { ExternalLink, FileText } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
-import { getRecordDetail, listDatasets, queryDataset, type DatasetInfo } from "@/lib/external/catalog.functions";
-import { fileUrl, normalizeItem, resolveLink, type NormItem } from "@/lib/external/groups";
+import { listDatasets, queryDataset, type DatasetInfo } from "@/lib/external/catalog.functions";
+import { fileUrl, normalizeItem, resolveLink, recordDestination } from "@/lib/external/groups";
 import { datasetDisplayName, displayValue, fieldLabel } from "@/lib/external/domainRegistry";
-import { isProvisionDataset } from "@/lib/external/lawTree";
 
-const ENTITY_ROUTES: Record<string, "/courts/$id" | "/judges/$id" | "/matters/$id"> = { court_spine: "/courts/$id", judges: "/judges/$id", mdls: "/matters/$id" };
 
 export function useDatasets() {
   const fn = useServerFn(listDatasets);
@@ -72,14 +69,6 @@ export function DatasetBrowser({
   const [q, setQ] = useState(initialQ);
   const [filters, setFilters] = useState<Record<string, string>>(initialFilters);
   const [offset, setOffset] = useState(0);
-  const [open, setOpen] = useState<NormItem | null>(null);
-  const navigate = useNavigate();
-  const openRow = (i: NormItem) => {
-    const page = ENTITY_ROUTES[dataset];
-    if (page) navigate({ to: page, params: { id: i.id.replace(/^mdl:/, "") } });
-    else if (isProvisionDataset(dataset)) navigate({ to: "/law/provision/$id", params: { id: i.id }, search: { dataset } });
-    else setOpen(i);
-  };
   const query = useQuery({
     queryKey: ["corpus-ds", dataset, q, filters, offset],
     queryFn: () => fn({ data: { dataset, q, filters, offset } }),
@@ -137,10 +126,10 @@ export function DatasetBrowser({
           <tbody className="divide-y divide-border">
             {query.isLoading ? <tr><td colSpan={columns.length + 2} className="px-3 py-3 text-muted-foreground">Loading…</td></tr> : null}
             {items.map((i) => (
-              <tr key={i.id} className="cursor-pointer hover:bg-muted/50" onClick={() => openRow(i)}>
+              <tr key={i.id} className="hover:bg-muted/50">
                 {hasPhoto ? <td className="px-3 py-1">{i.photo ? <Photo src={i.photo} className="size-8 rounded" /> : null}</td> : null}
                 <td className="max-w-[30rem] px-3 py-1.5">
-                  <div className="truncate font-medium" title={i.title}>{i.title}</div>
+                  <CorpusRecordLink dataset={dataset} id={i.id} className="block truncate font-medium text-primary hover:underline">{i.title}</CorpusRecordLink>
                   {i.subtitle ? <div className="truncate text-[11px] text-muted-foreground">{i.subtitle}</div> : null}
                 </td>
                 {columns.map((c) => <td key={c.key} className="max-w-[16rem] truncate px-3 py-1.5" title={i.cells[c.key]}>{displayValue(i.cells[c.key])}</td>)}
@@ -155,69 +144,17 @@ export function DatasetBrowser({
         <span className="text-muted-foreground">{items.length ? `${offset + 1}–${offset + items.length}` : ""}</span>
         <Button size="sm" variant="outline" disabled={items.length < 50 || (total != null && offset + 50 >= total)} onClick={() => setOffset(offset + 50)}>Next</Button>
       </div>
-      <RecordDrawer item={open} dataset={dataset} onClose={() => setOpen(null)} aliases={ds.aliases} />
     </div>
   );
 }
 
-export function RecordDrawer({ item, dataset, onClose, aliases }: { item: ({ id: string; title: string } & { [K in keyof NormItem]?: NormItem[K] | undefined }) | null; dataset: string | null; onClose: () => void; aliases: Record<string, string> }) {
-  const fn = useServerFn(getRecordDetail);
-  const q = useQuery({ queryKey: ["corpus-detail", dataset, item?.id], queryFn: () => fn({ data: { id: item!.id, dataset } }), enabled: !!item });
-  const d = q.data;
-  const photo = d?.photo ?? item?.photo ?? null;
-  const links = [...(d?.links ?? []), ...(item?.links ?? [])].filter((l, i, a) => a.findIndex((x) => x.url === l.url) === i);
-  return (
-    <Sheet open={!!item} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
-        <SheetHeader>
-          <div className="eyebrow">{dataset ? datasetDisplayName(dataset, null) : "Record"}</div>
-          <SheetTitle className="text-left text-lg leading-snug">{d?.title ?? item?.title}</SheetTitle>
-          {d?.subtitle ?? item?.subtitle ? <p className="text-[12px] text-muted-foreground">{d?.subtitle ?? item?.subtitle}</p> : null}
-        </SheetHeader>
-        <div className="space-y-4 px-4 pb-6 text-[13px]">
-          {photo ? <Photo src={photo} className="h-40 w-32 rounded-md border border-border" /> : null}
-          {links.filter((l) => l.url.startsWith("/") && /image|seal|photo|portrait/i.test(l.label)).slice(0, 4).map((l) => (
-            <img key={l.url} src={fileUrl(l.url)} alt={l.label} className="max-h-40 rounded-md border border-border bg-surface object-contain p-1" />
-          ))}
-          {item?.badges?.length ? <div className="flex flex-wrap gap-1">{item.badges.map((b) => <Badge key={b} variant="secondary">{b}</Badge>)}</div> : null}
-          {q.isLoading ? <p className="text-muted-foreground">Loading detail…</p> : null}
-          {q.error ? <ExternalError error={q.error} /> : null}
-          {item && dataset ? <Link to="/records/$dataset/$id" params={{ dataset, id: item.id }} className="inline-block text-[12px] font-medium text-primary hover:underline">Open full page →</Link> : null}
-          {d?.qualification ? <details className="text-[12px] text-muted-foreground"><summary className="cursor-pointer">About this record</summary><p className="mt-1 leading-relaxed">{d.qualification}</p></details> : null}
-          {(d?.facts.length ? d.facts : Object.entries(item?.cells ?? {})).length ? (
-            <dl className="grid grid-cols-[minmax(8rem,auto)_1fr] gap-x-3 gap-y-1">
-              {(d?.facts.length ? d.facts : Object.entries(item?.cells ?? {})).map(([k, v], i) => (
-                <div key={`${k}-${i}`} className="contents"><dt className="text-muted-foreground">{fieldLabel(k)}</dt><dd className="break-words">{displayValue(v)}</dd></div>
-              ))}
-            </dl>
-          ) : null}
-          {links.length ? (
-            <div><div className="eyebrow mb-1">Links</div><ul className="space-y-1">{links.map((l) => <li key={l.url}><CorpusLink url={l.url} label={l.label} aliases={aliases} /></li>)}</ul></div>
-          ) : null}
-          {item?.sourceUrl && !links.some((l) => l.url === item.sourceUrl) ? <CorpusLink url={item.sourceUrl} label="Open source" aliases={aliases} /> : null}
-          {d?.sections.map((s, si) => (
-            <div key={si}>
-              <div className="eyebrow mb-1">{s.title ?? `Related (${s.items.length})`}</div>
-              <ul className="space-y-2">
-                {s.items.slice(0, 50).map((raw, ii) => {
-                  const n = normalizeItem(raw);
-                  return (
-                    <li key={ii} className="rounded border border-border p-2">
-                      <div className="font-medium">{n.title}</div>
-                      {n.subtitle ? <div className="text-[11px] text-muted-foreground">{n.subtitle}</div> : null}
-                      {n.links.length ? <div className="mt-1 flex flex-wrap gap-x-3">{n.links.map((l) => <CorpusLink key={l.url} url={l.url} label={l.label} aliases={aliases} />)}</div> : null}
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))}
-          {d?.text ? (
-            <div><div className="eyebrow mb-1">Stored text{d.textTruncated ? " (preview)" : ""}</div><p className="max-h-72 overflow-auto whitespace-pre-wrap rounded border border-border bg-muted/30 p-2 text-[12px] leading-relaxed">{d.text}</p></div>
-          ) : null}
-          {!q.isLoading && !d && !q.error ? <p className="text-[12px] text-muted-foreground">The corpus has no separate detail for this record; the listing fields are shown above.</p> : null}
-        </div>
-      </SheetContent>
-    </Sheet>
-  );
+
+/** Permanent, copyable links use the same exact collection mapping in listings and search. */
+export function CorpusRecordLink({ dataset, id, className, children }: { dataset: string; id: string; className?: string; children: React.ReactNode }) {
+  const r = recordDestination(dataset, id);
+  if (r.kind === "court") return <Link className={className} to="/courts/$id" params={{ id: r.id }}>{children}</Link>;
+  if (r.kind === "judge") return <Link className={className} to="/judges/$id" params={{ id: r.id }}>{children}</Link>;
+  if (r.kind === "mdl") return <Link className={className} to="/matters/$id" params={{ id: r.id }}>{children}</Link>;
+  if (r.kind === "provision") return <Link className={className} to="/law/provision/$id" params={{ id: r.id }} search={{ dataset: r.dataset }}>{children}</Link>;
+  return <Link className={className} to="/records/$dataset/$id" params={{ dataset: r.dataset, id: r.id }}>{children}</Link>;
 }

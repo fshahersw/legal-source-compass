@@ -1,5 +1,6 @@
 import { bundleSchema, type Bundle, type Source } from "./types";
 import { adaptV22A, isV22A, v22aBundleSchema } from "./v22a";
+import { headingIdentity } from "@/lib/corpus/taxonomy";
 
 /** Values of a possibly multi-valued field (V2.2A sources carry arrays). */
 export function valuesOf(s: Source, key: keyof Source): string[] {
@@ -104,12 +105,16 @@ export type Facet = { value: string; count: number; occurrences: number };
 export function facet(sources: Source[], key: keyof Source): Facet[] {
   const map = new Map<string, Facet>();
   for (const s of sources) {
-    for (const raw of new Set(valuesOf(s, key).map((v) => v.trim()))) {
+    const seen = new Set<string>();
+    for (const raw of valuesOf(s, key).map((v) => key === "heading_category" ? v.trim().replace(/\s+/g, " ") : v.trim())) {
+      const identity = key === "heading_category" ? headingIdentity(raw) : raw;
+      if (seen.has(identity)) continue;
+      seen.add(identity);
       const label = raw === "" ? "(unspecified)" : raw;
-      const entry = map.get(label) ?? { value: label, count: 0, occurrences: 0 };
+      const entry = map.get(identity) ?? { value: label, count: 0, occurrences: 0 };
       entry.count += 1;
       entry.occurrences += s.occurrences ?? 0;
-      map.set(label, entry);
+      map.set(identity, entry);
     }
   }
   return [...map.values()].sort((a, b) => b.count - a.count || a.value.localeCompare(b.value));

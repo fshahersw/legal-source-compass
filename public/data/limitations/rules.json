@@ -1,0 +1,3413 @@
+{
+  "schemaVersion": "1.0.0",
+  "ruleVersion": "2026-10-02.1",
+  "snapshotDate": "2026-10-02",
+  "reviewMeaning": "Statutory text and stated baseline cross-checked; not a complete operative-law or case-specific legal review.",
+  "dateMeaning": "Unadjusted calendar anniversary under confirmed assumptions, not a verified filing deadline.",
+  "rules": [
+    {
+      "id": "in-personal_injury-baseline-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "IN",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["in-code-2026"],
+      "pinpoint": "IC 34-11-2-4(a)(1)",
+      "scope": "Ordinary injury to person; special claims excluded.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [],
+      "exclusions": [
+        "Product / latent-toxic exposure unless this specific rule has been selected after separate claim analysis",
+        "Medical / professional malpractice, governmental defendant, special statutory claim or intentional / sexual abuse claim",
+        "Unresolved minority, disability, fraudulent concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues"
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "2 calendar-year statutory baseline, subject to the cited scope and exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "in-wrongful_death-baseline-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "IN",
+      "claimType": "wrongful_death",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["in-code-2026"],
+      "pinpoint": "IC 34-23-1-1",
+      "scope": "Ordinary wrongful-death action brought by personal representative.",
+      "accrualBasis": "death",
+      "conditions": [
+        "The decedent's underlying claim and representative's right to sue must be independently confirmed."
+      ],
+      "exclusions": [
+        "Product / latent-toxic exposure unless this specific rule has been selected after separate claim analysis",
+        "Medical / professional malpractice, governmental defendant, special statutory claim or intentional / sexual abuse claim",
+        "Unresolved minority, disability, fraudulent concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues"
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "2 calendar-year statutory baseline, subject to the cited scope and exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "az-personal_injury-baseline-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "AZ",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["az-12-542"],
+      "pinpoint": "A.R.S. § 12-542(1)",
+      "scope": "Ordinary personal injury; product and medical claims excluded.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [],
+      "exclusions": [
+        "Product / latent-toxic exposure unless this specific rule has been selected after separate claim analysis",
+        "Medical / professional malpractice, governmental defendant, special statutory claim or intentional / sexual abuse claim",
+        "Unresolved minority, disability, fraudulent concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues"
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "2 calendar-year statutory baseline, subject to the cited scope and exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "az-wrongful_death-baseline-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "AZ",
+      "claimType": "wrongful_death",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["az-12-542"],
+      "pinpoint": "A.R.S. § 12-542(2)",
+      "scope": "Injury resulting in death; source expressly says accrual at death.",
+      "accrualBasis": "death",
+      "conditions": [],
+      "exclusions": [
+        "Product / latent-toxic exposure unless this specific rule has been selected after separate claim analysis",
+        "Medical / professional malpractice, governmental defendant, special statutory claim or intentional / sexual abuse claim",
+        "Unresolved minority, disability, fraudulent concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues"
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "2 calendar-year statutory baseline, subject to the cited scope and exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "ca-personal_injury-baseline-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "CA",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["ca-335-1"],
+      "pinpoint": "Cal. Code Civ. Proc. § 335.1",
+      "scope": "Ordinary personal injury caused by another's wrongful act or neglect.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [],
+      "exclusions": [
+        "Product / latent-toxic exposure unless this specific rule has been selected after separate claim analysis",
+        "Medical / professional malpractice, governmental defendant, special statutory claim or intentional / sexual abuse claim",
+        "Unresolved minority, disability, fraudulent concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues"
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "2 calendar-year statutory baseline, subject to the cited scope and exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "ca-wrongful_death-baseline-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "CA",
+      "claimType": "wrongful_death",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["ca-335-1"],
+      "pinpoint": "Cal. Code Civ. Proc. § 335.1",
+      "scope": "Ordinary death caused by another's wrongful act or neglect.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": ["Accrual and any claim-specific exceptions must be confirmed separately."],
+      "exclusions": [
+        "Product / latent-toxic exposure unless this specific rule has been selected after separate claim analysis",
+        "Medical / professional malpractice, governmental defendant, special statutory claim or intentional / sexual abuse claim",
+        "Unresolved minority, disability, fraudulent concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues"
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "2 calendar-year statutory baseline, subject to the cited scope and exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "sc-personal_injury-baseline-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "SC",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 3,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["sc-t15c3"],
+      "pinpoint": "S.C. Code §§ 15-3-530(5), 15-3-535",
+      "scope": "Ordinary injury; three years from actual or reasonable-diligence knowledge of the cause of action.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Accrual is the earlier of actual knowledge and knowledge reasonable diligence should have produced."
+      ],
+      "exclusions": [
+        "Product / latent-toxic exposure unless this specific rule has been selected after separate claim analysis",
+        "Medical / professional malpractice, governmental defendant, special statutory claim or intentional / sexual abuse claim",
+        "Unresolved minority, disability, fraudulent concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues"
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "3 calendar-year statutory baseline, subject to the cited scope and exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "sc-wrongful_death-baseline-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "SC",
+      "claimType": "wrongful_death",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 3,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["sc-t15c3"],
+      "pinpoint": "S.C. Code § 15-3-530(6)",
+      "scope": "Ordinary wrongful death; period starts at death.",
+      "accrualBasis": "death",
+      "conditions": [],
+      "exclusions": [
+        "Product / latent-toxic exposure unless this specific rule has been selected after separate claim analysis",
+        "Medical / professional malpractice, governmental defendant, special statutory claim or intentional / sexual abuse claim",
+        "Unresolved minority, disability, fraudulent concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues"
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "3 calendar-year statutory baseline, subject to the cited scope and exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "pa-personal_injury-baseline-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "PA",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["pa-t42c55"],
+      "pinpoint": "42 Pa.C.S. §§ 5524(2), 5502(a)",
+      "scope": "Ordinary injury; computation from confirmed cause-of-action accrual.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Asbestos and other latent-disease claims require independent operative-law review."
+      ],
+      "exclusions": [
+        "Product / latent-toxic exposure unless this specific rule has been selected after separate claim analysis",
+        "Medical / professional malpractice, governmental defendant, special statutory claim or intentional / sexual abuse claim",
+        "Unresolved minority, disability, fraudulent concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues"
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "2 calendar-year statutory baseline, subject to the cited scope and exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "pa-wrongful_death-baseline-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "PA",
+      "claimType": "wrongful_death",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["pa-t42c55"],
+      "pinpoint": "42 Pa.C.S. §§ 5524(2), 5502(a)",
+      "scope": "Ordinary death claim; accrual and survival action must be analyzed separately.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": ["This is not a calculation of a separate survival claim."],
+      "exclusions": [
+        "Product / latent-toxic exposure unless this specific rule has been selected after separate claim analysis",
+        "Medical / professional malpractice, governmental defendant, special statutory claim or intentional / sexual abuse claim",
+        "Unresolved minority, disability, fraudulent concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues"
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "2 calendar-year statutory baseline, subject to the cited scope and exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "ny-personal_injury-baseline-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "NY",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 3,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["ny-cplr214"],
+      "pinpoint": "CPLR § 214(5)",
+      "scope": "Ordinary personal injury except §§ 214-b, 214-c, 214-i and 215.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Latent toxic exposure, Agent Orange, sexual abuse and intentional-tort rules are excluded."
+      ],
+      "exclusions": [
+        "Product / latent-toxic exposure unless this specific rule has been selected after separate claim analysis",
+        "Medical / professional malpractice, governmental defendant, special statutory claim or intentional / sexual abuse claim",
+        "Unresolved minority, disability, fraudulent concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues"
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "3 calendar-year statutory baseline, subject to the cited scope and exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "ny-wrongful_death-baseline-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "NY",
+      "claimType": "wrongful_death",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["ny-ept-death"],
+      "pinpoint": "EPTL § 5-4.1(1)",
+      "scope": "Ordinary wrongful death by the duly appointed personal representative.",
+      "accrualBasis": "death",
+      "conditions": [
+        "Criminal-action extension and September 11 exception excluded; decedent's right and representative qualification require review."
+      ],
+      "exclusions": [
+        "Product / latent-toxic exposure unless this specific rule has been selected after separate claim analysis",
+        "Medical / professional malpractice, governmental defendant, special statutory claim or intentional / sexual abuse claim",
+        "Unresolved minority, disability, fraudulent concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues"
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "2 calendar-year statutory baseline, subject to the cited scope and exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "tx-personal_injury-baseline-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "TX",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["tx-cp16"],
+      "pinpoint": "Tex. Civ. Prac. & Rem. Code § 16.003(a)",
+      "scope": "Ordinary personal injury except §§ 16.010, 16.0031 and 16.0045.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": ["Asbestos/silica, trafficking and sexual-abuse provisions excluded."],
+      "exclusions": [
+        "Product / latent-toxic exposure unless this specific rule has been selected after separate claim analysis",
+        "Medical / professional malpractice, governmental defendant, special statutory claim or intentional / sexual abuse claim",
+        "Unresolved minority, disability, fraudulent concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues"
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "2 calendar-year statutory baseline, subject to the cited scope and exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "tx-wrongful_death-baseline-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "TX",
+      "claimType": "wrongful_death",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["tx-cp16"],
+      "pinpoint": "Tex. Civ. Prac. & Rem. Code § 16.003(b)",
+      "scope": "Injury resulting in death; source expressly sets accrual at death.",
+      "accrualBasis": "death",
+      "conditions": ["Asbestos/silica and other special claims require separate analysis."],
+      "exclusions": [
+        "Product / latent-toxic exposure unless this specific rule has been selected after separate claim analysis",
+        "Medical / professional malpractice, governmental defendant, special statutory claim or intentional / sexual abuse claim",
+        "Unresolved minority, disability, fraudulent concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues"
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "2 calendar-year statutory baseline, subject to the cited scope and exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "va-personal_injury-baseline-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "VA",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["va-8-01-243"],
+      "pinpoint": "Va. Code § 8.01-243(A)",
+      "scope": "Ordinary personal injury, unless another statute supplies a different rule.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [],
+      "exclusions": [
+        "Product / latent-toxic exposure unless this specific rule has been selected after separate claim analysis",
+        "Medical / professional malpractice, governmental defendant, special statutory claim or intentional / sexual abuse claim",
+        "Unresolved minority, disability, fraudulent concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues"
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "2 calendar-year statutory baseline, subject to the cited scope and exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "va-wrongful_death-baseline-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "VA",
+      "claimType": "wrongful_death",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["va-8-01-244"],
+      "pinpoint": "Va. Code § 8.01-244(A)-(B)",
+      "scope": "Ordinary wrongful death by personal representative.",
+      "accrualBasis": "death",
+      "conditions": [
+        "Decedent's injury claim must not have expired before death; prior pending actions, nonsuit and § 8.01-229 need separate review."
+      ],
+      "exclusions": [
+        "Product / latent-toxic exposure unless this specific rule has been selected after separate claim analysis",
+        "Medical / professional malpractice, governmental defendant, special statutory claim or intentional / sexual abuse claim",
+        "Unresolved minority, disability, fraudulent concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues"
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "2 calendar-year statutory baseline, subject to the cited scope and exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "vt-personal_injury-baseline-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "VT",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 3,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["vt-12-512"],
+      "pinpoint": "12 V.S.A. § 512(4)",
+      "scope": "Personal injury; source measures accrual from discovery of injury.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Accrual must reflect legally relevant discovery, not automatically the date of exposure."
+      ],
+      "exclusions": [
+        "Product / latent-toxic exposure unless this specific rule has been selected after separate claim analysis",
+        "Medical / professional malpractice, governmental defendant, special statutory claim or intentional / sexual abuse claim",
+        "Unresolved minority, disability, fraudulent concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues"
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "3 calendar-year statutory baseline, subject to the cited scope and exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "vt-wrongful_death-baseline-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "VT",
+      "claimType": "wrongful_death",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["vt-14-1492"],
+      "pinpoint": "14 V.S.A. § 1492(a)",
+      "scope": "Ordinary wrongful death; time from discovery of death.",
+      "accrualBasis": "discovery_of_death",
+      "conditions": ["Absence from the state, homicide and murder provisions excluded."],
+      "exclusions": [
+        "Product / latent-toxic exposure unless this specific rule has been selected after separate claim analysis",
+        "Medical / professional malpractice, governmental defendant, special statutory claim or intentional / sexual abuse claim",
+        "Unresolved minority, disability, fraudulent concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues"
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "2 calendar-year statutory baseline, subject to the cited scope and exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "me-personal_injury-baseline-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "ME",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 6,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["me-14-752"],
+      "pinpoint": "14 M.R.S. § 752",
+      "scope": "General civil action period only when no more specific statute supplies a different period.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Special professional, governmental, intentional and other specifically provided periods excluded."
+      ],
+      "exclusions": [
+        "Product / latent-toxic exposure unless this specific rule has been selected after separate claim analysis",
+        "Medical / professional malpractice, governmental defendant, special statutory claim or intentional / sexual abuse claim",
+        "Unresolved minority, disability, fraudulent concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues"
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "6 calendar-year statutory baseline, subject to the cited scope and exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "me-wrongful_death-baseline-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "ME",
+      "claimType": "wrongful_death",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 3,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["me-18c-2-807"],
+      "pinpoint": "18-C M.R.S. § 2-807(2)",
+      "scope": "Current compiled ordinary wrongful-death provision.",
+      "accrualBasis": "death",
+      "conditions": [
+        "2023 amendment applicability must be confirmed; homicide provision excluded."
+      ],
+      "exclusions": [
+        "Product / latent-toxic exposure unless this specific rule has been selected after separate claim analysis",
+        "Medical / professional malpractice, governmental defendant, special statutory claim or intentional / sexual abuse claim",
+        "Unresolved minority, disability, fraudulent concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues"
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "3 calendar-year statutory baseline, subject to the cited scope and exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "wa-personal_injury-baseline-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "WA",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 3,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["wa-4-16-080"],
+      "pinpoint": "RCW 4.16.080(2)",
+      "scope": "Injury to the person not separately enumerated.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Product liability and medical claims have distinct statutes and are excluded."
+      ],
+      "exclusions": [
+        "Product / latent-toxic exposure unless this specific rule has been selected after separate claim analysis",
+        "Medical / professional malpractice, governmental defendant, special statutory claim or intentional / sexual abuse claim",
+        "Unresolved minority, disability, fraudulent concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues"
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "3 calendar-year statutory baseline, subject to the cited scope and exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "md-personal_injury-baseline-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "MD",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 3,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["md-cjp5-101"],
+      "pinpoint": "Md. Code, Cts. & Jud. Proc. § 5-101",
+      "scope": "General civil action period unless another Code provision gives a different period.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [],
+      "exclusions": [
+        "Product / latent-toxic exposure unless this specific rule has been selected after separate claim analysis",
+        "Medical / professional malpractice, governmental defendant, special statutory claim or intentional / sexual abuse claim",
+        "Unresolved minority, disability, fraudulent concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues"
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "3 calendar-year statutory baseline, subject to the cited scope and exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "md-wrongful_death-baseline-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "MD",
+      "claimType": "wrongful_death",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 3,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["md-cjp3-904"],
+      "pinpoint": "Md. Code, Cts. & Jud. Proc. § 3-904(g)(1)",
+      "scope": "Ordinary wrongful death.",
+      "accrualBasis": "death",
+      "conditions": [
+        "Occupational disease and criminal-homicide rules under (g)(2)-(3) are excluded."
+      ],
+      "exclusions": [
+        "Product / latent-toxic exposure unless this specific rule has been selected after separate claim analysis",
+        "Medical / professional malpractice, governmental defendant, special statutory claim or intentional / sexual abuse claim",
+        "Unresolved minority, disability, fraudulent concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues"
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "3 calendar-year statutory baseline, subject to the cited scope and exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "mi-personal_injury-baseline-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "MI",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 3,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["mi-600-5805"],
+      "pinpoint": "MCL 600.5805(2)",
+      "scope": "Ordinary injury or death, subject to the remaining subsections.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": ["Accrual and applicable exceptions in Chapter 58 require separate review."],
+      "exclusions": [
+        "Product / latent-toxic exposure unless this specific rule has been selected after separate claim analysis",
+        "Medical / professional malpractice, governmental defendant, special statutory claim or intentional / sexual abuse claim",
+        "Unresolved minority, disability, fraudulent concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues"
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "3 calendar-year statutory baseline, subject to the cited scope and exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "ri-personal_injury-baseline-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "RI",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 3,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["ri-9-1-14"],
+      "pinpoint": "R.I. Gen. Laws § 9-1-14(b)",
+      "scope": "Ordinary personal injuries.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": ["Direct-insurer extension under (c) and child sexual-abuse rules excluded."],
+      "exclusions": [
+        "Product / latent-toxic exposure unless this specific rule has been selected after separate claim analysis",
+        "Medical / professional malpractice, governmental defendant, special statutory claim or intentional / sexual abuse claim",
+        "Unresolved minority, disability, fraudulent concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues"
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "3 calendar-year statutory baseline, subject to the cited scope and exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "nh-personal_injury-baseline-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "NH",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 3,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["nh-508-4"],
+      "pinpoint": "RSA 508:4(I)",
+      "scope": "Ordinary personal action from act/omission or qualifying reasonable-diligence discovery.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Where latent, both injury and causal relationship must be assessed; input must be legally confirmed."
+      ],
+      "exclusions": [
+        "Product / latent-toxic exposure unless this specific rule has been selected after separate claim analysis",
+        "Medical / professional malpractice, governmental defendant, special statutory claim or intentional / sexual abuse claim",
+        "Unresolved minority, disability, fraudulent concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues"
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "3 calendar-year statutory baseline, subject to the cited scope and exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "in-repose-1-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "IN",
+      "claimType": "product_liability",
+      "ruleKind": "repose",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 10,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["in-code-2026"],
+      "pinpoint": "IC 34-20-3-1(b), 34-20-3-2",
+      "scope": "Product liability has a two-year accrual period, ten-year delivery provision and an eight-to-ten-year late-accrual exception.",
+      "accrualBasis": "requires_review",
+      "conditions": [
+        "Initial delivery, claim accrual, product theory and asbestos/constitutional case history require review."
+      ],
+      "exclusions": [],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "Application requires further operative-law review",
+      "historicalApplicability": "Historical and transitional applicability not comprehensively reviewed",
+      "summary": "Product liability has a two-year accrual period, ten-year delivery provision and an eight-to-ten-year late-accrual exception.",
+      "warnings": ["Research evidence only; this rule does not produce a filing date."]
+    },
+    {
+      "id": "in-accrual-1-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "IN",
+      "claimType": "product_liability",
+      "ruleKind": "accrual",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": null,
+      "sourceIds": ["in-code-2026"],
+      "pinpoint": "IC 34-20-3-2",
+      "scope": "The compiled asbestos section contains claim-specific accrual and defendant provisions; no automatic applicability is inferred.",
+      "accrualBasis": "requires_review",
+      "conditions": [
+        "Operative constitutional history, separate disease and defendant class require review."
+      ],
+      "exclusions": [],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "Application requires further operative-law review",
+      "historicalApplicability": "Historical and transitional applicability not comprehensively reviewed",
+      "summary": "The compiled asbestos section contains claim-specific accrual and defendant provisions; no automatic applicability is inferred.",
+      "warnings": ["Research evidence only; this rule does not produce a filing date."]
+    },
+    {
+      "id": "nc-limitations-1-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "NC",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 3,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["nc-1-52"],
+      "pinpoint": "N.C. Gen. Stat. § 1-52(5), (16)",
+      "scope": "Ordinary injury text supplies three years with actual/reasonable discovery and a last-act provision; a bare injury date is insufficient.",
+      "accrualBasis": "requires_review",
+      "conditions": [
+        "Last act/omission, special claim and latent-disease case history require review."
+      ],
+      "exclusions": [],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "Application requires further operative-law review",
+      "historicalApplicability": "Historical and transitional applicability not comprehensively reviewed",
+      "summary": "Ordinary injury text supplies three years with actual/reasonable discovery and a last-act provision; a bare injury date is insufficient.",
+      "warnings": ["Research evidence only; this rule does not produce a filing date."]
+    },
+    {
+      "id": "nc-repose-1-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "NC",
+      "claimType": "product_liability",
+      "ruleKind": "repose",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 12,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["nc-1-46-1"],
+      "pinpoint": "N.C. Gen. Stat. § 1-46.1(1)",
+      "scope": "Compiled product statute contains a twelve-year initial-purchase repose provision.",
+      "accrualBasis": "requires_review",
+      "conditions": [
+        "Initial purchase, latent-disease decisions and effective-date applicability require review."
+      ],
+      "exclusions": [],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "Application requires further operative-law review",
+      "historicalApplicability": "Historical and transitional applicability not comprehensively reviewed",
+      "summary": "Compiled product statute contains a twelve-year initial-purchase repose provision.",
+      "warnings": ["Research evidence only; this rule does not produce a filing date."]
+    },
+    {
+      "id": "nc-limitations-2-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "NC",
+      "claimType": "wrongful_death",
+      "ruleKind": "limitations",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["nc-1-53"],
+      "pinpoint": "N.C. Gen. Stat. § 1-53(4)",
+      "scope": "Wrongful death has a two-year death-based period but no action if the decedent's specified bodily-harm claim would already be barred.",
+      "accrualBasis": "requires_review",
+      "conditions": [
+        "Decedent's pre-death claim, § 1-15(c), § 1-52(16), and product repose must be checked."
+      ],
+      "exclusions": [],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "Application requires further operative-law review",
+      "historicalApplicability": "Historical and transitional applicability not comprehensively reviewed",
+      "summary": "Wrongful death has a two-year death-based period but no action if the decedent's specified bodily-harm claim would already be barred.",
+      "warnings": ["Research evidence only; this rule does not produce a filing date."]
+    },
+    {
+      "id": "az-validity-1-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "AZ",
+      "claimType": "product_liability",
+      "ruleKind": "validity",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": null,
+      "sourceIds": ["az-12-551"],
+      "pinpoint": "A.R.S. § 12-551; Hazine v. Montgomery Elevator Co., 176 Ariz. 340 (1993)",
+      "scope": "The publisher still displays a twelve-year product-repose sentence. Hazine constitutional history prevents treating that sentence as a verified operative cutoff.",
+      "accrualBasis": "requires_review",
+      "conditions": [
+        "Official Arizona Court of Appeals Roebuck v. Mayo Clinic, ¶25, discusses Hazine; decision URL retained as metadata."
+      ],
+      "exclusions": [],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "Constitutional invalidity flagged; do not apply the published twelve-year language",
+      "historicalApplicability": "Historical and transitional applicability not comprehensively reviewed",
+      "summary": "The publisher still displays a twelve-year product-repose sentence. Hazine constitutional history prevents treating that sentence as a verified operative cutoff.",
+      "warnings": ["Research evidence only; this rule does not produce a filing date."],
+      "caseReferenceIds": ["az-hazine-1993"]
+    },
+    {
+      "id": "pa-validity-1-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "PA",
+      "claimType": "product_liability",
+      "ruleKind": "validity",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": null,
+      "sourceIds": ["pa-t42c55"],
+      "pinpoint": "42 Pa.C.S. § 5524.1; publisher note at § 5524",
+      "scope": "Publisher marks § 5524.1 unconstitutional and notes Act 152 of 2004 invalidity. The displayed asbestos language must not be applied solely because it remains on the statute page.",
+      "accrualBasis": "requires_review",
+      "conditions": [
+        "Commonwealth v. Neiman, 84 A.3d 603 (Pa. 2013) and operative asbestos law need case-specific review."
+      ],
+      "exclusions": [],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "Unconstitutional amendment flagged by publisher",
+      "historicalApplicability": "Historical and transitional applicability not comprehensively reviewed",
+      "summary": "Publisher marks § 5524.1 unconstitutional and notes Act 152 of 2004 invalidity. The displayed asbestos language must not be applied solely because it remains on the statute page.",
+      "warnings": ["Research evidence only; this rule does not produce a filing date."],
+      "caseReferenceIds": ["pa-neiman-2013"]
+    },
+    {
+      "id": "ny-accrual-1-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "NY",
+      "claimType": "product_liability",
+      "ruleKind": "accrual",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 3,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["ny-cplr214c"],
+      "pinpoint": "CPLR § 214-c(2), (4), (6)",
+      "scope": "Latent toxic exposure uses a discovery framework with separate cause-discovery provisions and statutory exceptions.",
+      "accrualBasis": "requires_review",
+      "conditions": [
+        "Actual/reasonable discovery of injury, cause discovery, scientific knowledge, substance and excluded claims require review."
+      ],
+      "exclusions": [],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "Application requires further operative-law review",
+      "historicalApplicability": "Historical and transitional applicability not comprehensively reviewed",
+      "summary": "Latent toxic exposure uses a discovery framework with separate cause-discovery provisions and statutory exceptions.",
+      "warnings": ["Research evidence only; this rule does not produce a filing date."]
+    },
+    {
+      "id": "fl-transition-1-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "FL",
+      "claimType": "personal_injury",
+      "ruleKind": "transition",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["fl-95-11"],
+      "pinpoint": "Fla. Stat. § 95.11(5)(a); Chapter 2023-15 transition requires verification",
+      "scope": "Current compilation gives negligence two years, but pre-amendment claims may involve the former four-year provision.",
+      "accrualBasis": "requires_review",
+      "conditions": [
+        "Effective and transitional applicability was not retrieved from enrolled HTML; no Florida negligence date is computed."
+      ],
+      "exclusions": [],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "Application requires further operative-law review",
+      "historicalApplicability": "Historical and transitional applicability not comprehensively reviewed",
+      "summary": "Current compilation gives negligence two years, but pre-amendment claims may involve the former four-year provision.",
+      "warnings": ["Research evidence only; this rule does not produce a filing date."]
+    },
+    {
+      "id": "fl-limitations-1-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "FL",
+      "claimType": "product_liability",
+      "ruleKind": "limitations",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 4,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["fl-95-11", "fl-95-031"],
+      "pinpoint": "Fla. Stat. §§ 95.11(3)(d), 95.031(2)(b)",
+      "scope": "The four-year product-injury provision differs from two-year negligence and has discovery/repose qualifications.",
+      "accrualBasis": "requires_review",
+      "conditions": [
+        "Determine specific theory; initial delivery, useful-life warranty, latent disease and fraudulent concealment may affect repose."
+      ],
+      "exclusions": [],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "Application requires further operative-law review",
+      "historicalApplicability": "Historical and transitional applicability not comprehensively reviewed",
+      "summary": "The four-year product-injury provision differs from two-year negligence and has discovery/repose qualifications.",
+      "warnings": ["Research evidence only; this rule does not produce a filing date."]
+    },
+    {
+      "id": "fl-limitations-2-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "FL",
+      "claimType": "wrongful_death",
+      "ruleKind": "limitations",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["fl-95-11", "fl-95-031"],
+      "pinpoint": "Fla. Stat. §§ 95.11(5)(e), (11), 95.031",
+      "scope": "Current ordinary wrongful-death provision is two years; product, intentional-homicide and accrual exceptions require review.",
+      "accrualBasis": "requires_review",
+      "conditions": [],
+      "exclusions": [],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "Application requires further operative-law review",
+      "historicalApplicability": "Historical and transitional applicability not comprehensively reviewed",
+      "summary": "Current ordinary wrongful-death provision is two years; product, intentional-homicide and accrual exceptions require review.",
+      "warnings": ["Research evidence only; this rule does not produce a filing date."]
+    },
+    {
+      "id": "tx-repose-1-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "TX",
+      "claimType": "product_liability",
+      "ruleKind": "repose",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 15,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["tx-cp16"],
+      "pinpoint": "Tex. Civ. Prac. & Rem. Code § 16.012(b)-(g)",
+      "scope": "Product statute has a fifteen-year sale-based repose period, useful-safe-life warranties and latent-disease exceptions.",
+      "accrualBasis": "requires_review",
+      "conditions": [
+        "Sale versus lease, first sale by defendant, written warranty, exposure and symptom dates, aviation rules require review."
+      ],
+      "exclusions": [],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "Application requires further operative-law review",
+      "historicalApplicability": "Historical and transitional applicability not comprehensively reviewed",
+      "summary": "Product statute has a fifteen-year sale-based repose period, useful-safe-life warranties and latent-disease exceptions.",
+      "warnings": ["Research evidence only; this rule does not produce a filing date."]
+    },
+    {
+      "id": "tx-accrual-1-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "TX",
+      "claimType": "personal_injury",
+      "ruleKind": "accrual",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": null,
+      "sourceIds": ["tx-cp16"],
+      "pinpoint": "Tex. Civ. Prac. & Rem. Code § 16.0031",
+      "scope": "Asbestos/silica accrual can depend on death or a statutorily qualifying report; a diagnosis date alone is not automatically sufficient.",
+      "accrualBasis": "requires_review",
+      "conditions": [],
+      "exclusions": [],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "Application requires further operative-law review",
+      "historicalApplicability": "Historical and transitional applicability not comprehensively reviewed",
+      "summary": "Asbestos/silica accrual can depend on death or a statutorily qualifying report; a diagnosis date alone is not automatically sufficient.",
+      "warnings": ["Research evidence only; this rule does not produce a filing date."]
+    },
+    {
+      "id": "tx-counting-1-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "TX",
+      "claimType": "personal_injury",
+      "ruleKind": "counting",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": null,
+      "sourceIds": ["tx-cp16"],
+      "pinpoint": "Tex. Civ. Prac. & Rem. Code § 16.072",
+      "scope": "Saturday, Sunday or holiday filing extensions require county-office opening information.",
+      "accrualBasis": "requires_review",
+      "conditions": [
+        "This calculator leaves the anniversary unadjusted; no official holiday/office calendar is loaded."
+      ],
+      "exclusions": [],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "Application requires further operative-law review",
+      "historicalApplicability": "Historical and transitional applicability not comprehensively reviewed",
+      "summary": "Saturday, Sunday or holiday filing extensions require county-office opening information.",
+      "warnings": ["Research evidence only; this rule does not produce a filing date."]
+    },
+    {
+      "id": "md-accrual-1-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "MD",
+      "claimType": "wrongful_death",
+      "ruleKind": "accrual",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": null,
+      "sourceIds": ["md-cjp3-904"],
+      "pinpoint": "Md. Code, Cts. & Jud. Proc. § 3-904(g)(2)-(3)",
+      "scope": "Occupational-disease death has a shorter-of-ten-years-from-death / three-years-from-cause-discovery structure; homicide has separate accrual rules.",
+      "accrualBasis": "requires_review",
+      "conditions": [
+        "Death, occupational exposure and legally relevant cause-discovery dates require review."
+      ],
+      "exclusions": [],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "Application requires further operative-law review",
+      "historicalApplicability": "Historical and transitional applicability not comprehensively reviewed",
+      "summary": "Occupational-disease death has a shorter-of-ten-years-from-death / three-years-from-cause-discovery structure; homicide has separate accrual rules.",
+      "warnings": ["Research evidence only; this rule does not produce a filing date."]
+    },
+    {
+      "id": "mn-limitations-1-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "MN",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 6,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["mn-541-05"],
+      "pinpoint": "Minn. Stat. § 541.05, subd. 1(5)",
+      "scope": "The general six-year provision must be mapped by claim theory and exceptions, not by a generic personal-injury label.",
+      "accrualBasis": "requires_review",
+      "conditions": [],
+      "exclusions": [],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "Application requires further operative-law review",
+      "historicalApplicability": "Historical and transitional applicability not comprehensively reviewed",
+      "summary": "The general six-year provision must be mapped by claim theory and exceptions, not by a generic personal-injury label.",
+      "warnings": ["Research evidence only; this rule does not produce a filing date."]
+    },
+    {
+      "id": "mn-limitations-2-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "MN",
+      "claimType": "product_liability",
+      "ruleKind": "limitations",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 4,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["mn-541-05"],
+      "pinpoint": "Minn. Stat. § 541.05, subd. 2",
+      "scope": "Strict product liability has a separate four-year provision; negligence and warranty theories are not silently merged.",
+      "accrualBasis": "requires_review",
+      "conditions": [],
+      "exclusions": [],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "Application requires further operative-law review",
+      "historicalApplicability": "Historical and transitional applicability not comprehensively reviewed",
+      "summary": "Strict product liability has a separate four-year provision; negligence and warranty theories are not silently merged.",
+      "warnings": ["Research evidence only; this rule does not produce a filing date."]
+    },
+    {
+      "id": "mn-repose-1-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "MN",
+      "claimType": "wrongful_death",
+      "ruleKind": "repose",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 3,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["mn-573-02"],
+      "pinpoint": "Minn. Stat. § 573.02, subd. 1",
+      "scope": "Ordinary death has a three-year death period subject to a six-year act/omission cap; medical and intentional-murder claims differ.",
+      "accrualBasis": "requires_review",
+      "conditions": [
+        "Date of defendant's act/omission and applicable statutory category required."
+      ],
+      "exclusions": [],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "Application requires further operative-law review",
+      "historicalApplicability": "Historical and transitional applicability not comprehensively reviewed",
+      "summary": "Ordinary death has a three-year death period subject to a six-year act/omission cap; medical and intentional-murder claims differ.",
+      "warnings": ["Research evidence only; this rule does not produce a filing date."]
+    },
+    {
+      "id": "de-limitations-1-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "DE",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["de-10c81"],
+      "pinpoint": "10 Del. C. §§ 8119, 8121, 8127",
+      "scope": "Personal-injury text gives two years and cross-references improvement-related repose; borrowing statute may supply a shorter period.",
+      "accrualBasis": "requires_review",
+      "conditions": ["Accrual, foreign cause of action/residency and § 8127 require review."],
+      "exclusions": [],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "Application requires further operative-law review",
+      "historicalApplicability": "Historical and transitional applicability not comprehensively reviewed",
+      "summary": "Personal-injury text gives two years and cross-references improvement-related repose; borrowing statute may supply a shorter period.",
+      "warnings": ["Research evidence only; this rule does not produce a filing date."]
+    },
+    {
+      "id": "or-limitations-1-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "OR",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": null,
+      "sourceIds": ["or-c12"],
+      "pinpoint": "ORS 12.110, 12.115, 12.410-12.480",
+      "scope": "Ordinary injury, negligent-injury repose, special breast-implant rules and conflict-of-laws provisions must be evaluated together.",
+      "accrualBasis": "requires_review",
+      "conditions": [],
+      "exclusions": [],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "Application requires further operative-law review",
+      "historicalApplicability": "Historical and transitional applicability not comprehensively reviewed",
+      "summary": "Ordinary injury, negligent-injury repose, special breast-implant rules and conflict-of-laws provisions must be evaluated together.",
+      "warnings": ["Research evidence only; this rule does not produce a filing date."]
+    },
+    {
+      "id": "mi-limitations-2-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "MI",
+      "claimType": "product_liability",
+      "ruleKind": "limitations",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 3,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["mi-600-5805"],
+      "pinpoint": "MCL 600.5805(12), (14)",
+      "scope": "Products liability has a three-year provision; ten years in use changes a presumption, not automatically a ten-year repose cutoff.",
+      "accrualBasis": "requires_review",
+      "conditions": [
+        "Applicable repose in §§ 5838a, 5838b or 5839 and claim accrual require review."
+      ],
+      "exclusions": [],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "Application requires further operative-law review",
+      "historicalApplicability": "Historical and transitional applicability not comprehensively reviewed",
+      "summary": "Products liability has a three-year provision; ten years in use changes a presumption, not automatically a ten-year repose cutoff.",
+      "warnings": ["Research evidence only; this rule does not produce a filing date."]
+    },
+    {
+      "id": "ny-product_liability-latent_toxic-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "NY",
+      "claimType": "product_liability",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 3,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["ny-cplr214c"],
+      "pinpoint": "CPLR § 214-c(2), (4)-(6)",
+      "scope": "Latent effects of exposure to a substance; injury discovery is distinct from discovery of its cause.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Medical/dental malpractice excluded; statutory historic exclusion in (6) must be checked.",
+        "Any cause-discovery extension under (4) must be separately resolved; it is not computed."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, tolling, disability, previous actions or service requirements."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Latent effects of exposure to a substance; injury discovery is distinct from discovery of its cause.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ],
+      "subtype": "latent_toxic",
+      "calculation": {
+        "mode": "discovery_min"
+      }
+    },
+    {
+      "id": "va-product_liability-latent_toxic-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "VA",
+      "claimType": "product_liability",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["va-8-01-243", "va-8-01-249"],
+      "pinpoint": "Va. Code §§ 8.01-243(A), 8.01-249(4a)",
+      "scope": "Latent substance/product injury, excluding asbestos and claims against health-care providers.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Both injury and its causal connection to the substance/product must be actually or constructively known.",
+        "If the injured person has died, supply the death date for the statutory two-year death cap."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, tolling, disability, previous actions or service requirements."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Latent substance/product injury, excluding asbestos and claims against health-care providers.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ],
+      "subtype": "latent_toxic",
+      "calculation": {
+        "mode": "discovery_min",
+        "deathCapYears": 2
+      }
+    },
+    {
+      "id": "va-product_liability-asbestos-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "VA",
+      "claimType": "product_liability",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["va-8-01-243", "va-8-01-249"],
+      "pinpoint": "Va. Code §§ 8.01-243(A), 8.01-249(4)",
+      "scope": "Qualifying asbestos-related diagnosis first communicated by a physician.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "The diagnosis must be a qualifying disabling asbestos-related injury/disease.",
+        "Separate later malignant injury, representative issues and prior claims require review; supply death date if deceased."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, tolling, disability, previous actions or service requirements."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Qualifying asbestos-related diagnosis first communicated by a physician.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ],
+      "subtype": "asbestos",
+      "calculation": {
+        "mode": "diagnosis",
+        "deathCapYears": 2
+      }
+    },
+    {
+      "id": "va-product_liability-medical_device-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "VA",
+      "claimType": "product_liability",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["va-8-01-243", "va-8-01-249"],
+      "pinpoint": "Va. Code §§ 8.01-243(A), 8.01-249(9)",
+      "scope": "Implanted medical-device product claim against a party other than a health-care provider.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Knowledge must cover the injury and causal connection to the implanted device.",
+        "Breast augmentation/reconstruction prostheses have the separate branch in (7); do not apply (9) automatically."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, tolling, disability, previous actions or service requirements."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Implanted medical-device product claim against a party other than a health-care provider.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ],
+      "subtype": "medical_device",
+      "calculation": {
+        "mode": "discovery_min"
+      }
+    },
+    {
+      "id": "va-product_liability-breast_implant-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "VA",
+      "claimType": "product_liability",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["va-8-01-243", "va-8-01-249"],
+      "pinpoint": "Va. Code §§ 8.01-243(A), 8.01-249(7)",
+      "scope": "Prosthetic device implanted for breast augmentation/reconstruction; non-health-care-provider product defendant.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "A physician must first communicate both injury and its causal connection to implantation; diagnosis alone is insufficient."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, tolling, disability, previous actions or service requirements."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Prosthetic device implanted for breast augmentation/reconstruction; non-health-care-provider product defendant.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ],
+      "subtype": "breast_implant",
+      "calculation": {
+        "mode": "diagnosis"
+      }
+    },
+    {
+      "id": "md-wrongful_death-occupational_disease-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "MD",
+      "claimType": "wrongful_death",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 3,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["md-cjp3-904"],
+      "pinpoint": "Md. Code, Cts. & Jud. Proc. § 3-904(g)(2)",
+      "scope": "Occupational disease caused by workplace toxic exposure and contributing to death.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "The occupational-disease statutory definition must be satisfied.",
+        "Use the shorter of ten years from death and three years from cause-of-death discovery; do not substitute an earlier diagnosis."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, tolling, disability, previous actions or service requirements."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Occupational disease caused by workplace toxic exposure and contributing to death.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ],
+      "subtype": "occupational_disease",
+      "calculation": {
+        "mode": "death_cause_min",
+        "secondaryCapYears": 10
+      }
+    },
+    {
+      "id": "al-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "AL",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["al-6-2-38"],
+      "pinpoint": "Ala. Code § 6-2-38(l)",
+      "scope": "Ordinary noncontractual injury to the person, not specifically enumerated elsewhere.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Subsection (g) concerns workers' compensation and is not this claim mapping.",
+        "Latent exposure accrual and special statutes require separate legal confirmation."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Ordinary noncontractual injury to the person, not specifically enumerated elsewhere.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "al-wrongful_death-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "AL",
+      "claimType": "wrongful_death",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["al-6-2-38"],
+      "pinpoint": "Ala. Code § 6-2-38(a)",
+      "scope": "Representative's qualifying wrongful-death action under §§ 6-5-391 or 6-5-410.",
+      "accrualBasis": "death",
+      "conditions": [
+        "Representative status, underlying claim eligibility, and the substantive death statutes require separate confirmation."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Representative's qualifying wrongful-death action under §§ 6-5-391 or 6-5-410.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "ak-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "AK",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["ak-9-10-070"],
+      "pinpoint": "Alaska Stat. § 09.10.070(a)(2)",
+      "scope": "Ordinary personal injury not specifically provided otherwise.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Ordinary personal injury not specifically provided otherwise.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "hi-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "HI",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["hi-657-7"],
+      "pinpoint": "Haw. Rev. Stat. § 657-7",
+      "scope": "Compensation for injury to a person, subject to other statutory provisions.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": ["Accrual/discovery and § 657-13 exceptions must be independently resolved."],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Compensation for injury to a person, subject to other statutory provisions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "id-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "ID",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["id-5-219"],
+      "pinpoint": "Idaho Code § 5-219(4)",
+      "scope": "Ordinary injury to the person under the occurrence-based statutory rule.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Use the legally established occurrence/accrual date. Do not infer a general latent-injury discovery rule.",
+        "Foreign-object, fraudulent-concealment and malpractice exceptions are outside this branch."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Ordinary injury to the person under the occurrence-based statutory rule.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "id-wrongful_death-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "ID",
+      "claimType": "wrongful_death",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["id-5-219"],
+      "pinpoint": "Idaho Code § 5-219(4)",
+      "scope": "Death caused by wrongful act or neglect, with statutory accrual separately established.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Underlying death-action requirements and accrual must be confirmed; date of death is not substituted for every occurrence issue."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Death caused by wrongful act or neglect, with statutory accrual separately established.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "il-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "IL",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["il-13-202"],
+      "pinpoint": "735 ILCS 5/13-202",
+      "scope": "Ordinary damages for injury to a person.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Special limitations, legal disability, and discovery exceptions must be reviewed independently."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Ordinary damages for injury to a person.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "ia-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "IA",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["ia-c614-2026"],
+      "pinpoint": "Iowa Code § 614.1(2)",
+      "scope": "Ordinary injuries to the person under subsection (2).",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Malpractice, improvements to real property and other specially declared limitations are excluded."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Ordinary injuries to the person under subsection (2).",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "ma-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "MA",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 3,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["ma-260-2a"],
+      "pinpoint": "Mass. Gen. Laws ch. 260, § 2A",
+      "scope": "Ordinary tort injury or contract action to recover for personal injuries.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Other specially provided statutory periods and accrual/discovery require confirmation."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Ordinary tort injury or contract action to recover for personal injuries.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "sd-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "SD",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 3,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["sd-15-2-14"],
+      "pinpoint": "S.D. Codified Laws § 15-2-14(3)",
+      "scope": "Ordinary personal injury under the general three-year provision.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Product, medical, governmental and other specially provided actions are excluded."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Ordinary personal injury under the general three-year provision.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "wv-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "WV",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["wv-55-2-12"],
+      "pinpoint": "W. Va. Code § 55-2-12(b)",
+      "scope": "Ordinary personal-injury action not otherwise provided for.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Do not treat death or product-specific issues as resolved by this subsection."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Ordinary personal-injury action not otherwise provided for.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "wi-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "WI",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 3,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["wi-893-54"],
+      "pinpoint": "Wis. Stat. § 893.54(1m)(a)",
+      "scope": "Ordinary injuries to the person under subsection (1m)(a).",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Special statutory claims and operative discovery/accrual remain separately confirmed."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Ordinary injuries to the person under subsection (1m)(a).",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "wi-wrongful_death-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "WI",
+      "claimType": "wrongful_death",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 3,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["wi-893-54"],
+      "pinpoint": "Wis. Stat. § 893.54(1m)(b), (2m)",
+      "scope": "Ordinary wrongful death outside the two-year motor-vehicle death provision.",
+      "accrualBasis": "death",
+      "conditions": [
+        "A death arising from a motor-vehicle accident has a different two-year subsection (2m); it is excluded here."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Ordinary wrongful death outside the two-year motor-vehicle death provision.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "nv-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "NV",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["nv-nrs11"],
+      "pinpoint": "Nev. Rev. Stat. § 11.190(4)(e)",
+      "scope": "Ordinary injury caused by wrongful act or neglect.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Other enumerated actions, malpractice, product repose and discovery require separate review."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Ordinary injury caused by wrongful act or neglect.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "nv-wrongful_death-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "NV",
+      "claimType": "wrongful_death",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["nv-nrs11"],
+      "pinpoint": "Nev. Rev. Stat. § 11.190(4)(e)",
+      "scope": "Ordinary death caused by wrongful act or neglect.",
+      "accrualBasis": "death",
+      "conditions": [
+        "Underlying death-action prerequisites and special statutes remain independently confirmed."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Ordinary death caused by wrongful act or neglect.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "oh-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "OH",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["oh-2305-10"],
+      "pinpoint": "Ohio Rev. Code § 2305.10(A), (B), (E)",
+      "scope": "Ordinary bodily injury on the legally established injury/accrual date.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Exposure branches (B)(1)–(5), childhood sexual abuse and special claims are excluded from this general branch."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Ordinary bodily injury on the legally established injury/accrual date.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "co-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "CO",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["co-t13-a80-2026"],
+      "pinpoint": "Colo. Rev. Stat. §§ 13-80-102(1)(a), 13-80-108(1)",
+      "scope": "Ordinary tort injury, excluding motor-vehicle and specially provided claims.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Accrual requires legally confirmed actual or reasonable-diligence knowledge of both injury and cause."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Ordinary tort injury, excluding motor-vehicle and specially provided claims.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "co-wrongful_death-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "CO",
+      "claimType": "wrongful_death",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["co-t13-a80-2026"],
+      "pinpoint": "Colo. Rev. Stat. §§ 13-80-102(1)(d), (2), 13-80-108(2)",
+      "scope": "Ordinary wrongful death, accruing at death.",
+      "accrualBasis": "death",
+      "conditions": [
+        "The specified vehicular-homicide/leaving-scene exception and other special claims are excluded."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Ordinary wrongful death, accruing at death.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "mt-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "MT",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 3,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["mt-27-2-204"],
+      "pinpoint": "Mont. Code Ann. § 27-2-204(1), effective October 1, 2026 text",
+      "scope": "Ordinary non-written-liability personal-injury claim within the subsection (1) classification.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "The current publisher displays two transition versions. Applicability of the October 1, 2026 amendment and §§ 27-2-216, 27-2-219 must be confirmed.",
+        "Intentional torts enumerated in (3) have a different two-year period and are excluded."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Ordinary non-written-liability personal-injury claim within the subsection (1) classification.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "mt-wrongful_death-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "MT",
+      "claimType": "wrongful_death",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 3,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["mt-27-2-204"],
+      "pinpoint": "Mont. Code Ann. § 27-2-204(2)",
+      "scope": "Ordinary death caused by wrongful act or neglect.",
+      "accrualBasis": "death",
+      "conditions": [
+        "Homicide deaths have a different ten-year period and are excluded; historic version and accrual require confirmation."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Ordinary death caused by wrongful act or neglect.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "de-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "DE",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["de-10c81"],
+      "pinpoint": "10 Del. C. § 8119",
+      "scope": "Ordinary damages for alleged personal injuries.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Borrowing under § 8121, latent accrual and special statutory provisions require separate confirmation."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Ordinary damages for alleged personal injuries.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "fl-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "FL",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["fl-95-11", "fl-95-031"],
+      "pinpoint": "Fla. Stat. §§ 95.11(5)(a), 95.031(1)",
+      "scope": "Ordinary negligence under the current two-year provision.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Confirm Chapter 2023-15 transition and governing historic version; a pre-amendment four-year claim must not use this branch.",
+        "Product design/manufacture/distribution/sale injury has a distinct four-year statutory provision and is excluded."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Ordinary negligence under the current two-year provision.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "fl-wrongful_death-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "FL",
+      "claimType": "wrongful_death",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["fl-95-11", "fl-95-031"],
+      "pinpoint": "Fla. Stat. §§ 95.11(5)(e), (11), 95.031",
+      "scope": "Ordinary wrongful death outside special product, intentional-homicide and other statutory exceptions.",
+      "accrualBasis": "death",
+      "conditions": [
+        "Independent accrual, representative eligibility and underlying death-action requirements must be confirmed."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Ordinary wrongful death outside special product, intentional-homicide and other statutory exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "in-product_liability-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "IN",
+      "claimType": "product_liability",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["in-code-2026"],
+      "pinpoint": "IC 34-20-3-1(b), (c)",
+      "scope": "General product-injury two-year accrual period after independent delivery/repose review.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "The ten-year delivery provision, accrual in years eight to ten, and any applicable exception must be resolved separately. The calculator does not determine that ten-year bar.",
+        "Protracted asbestos exposure and constitutional treatment of IC 34-20-3-2 require the separate validity review."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "General product-injury two-year accrual period after independent delivery/repose review.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ],
+      "caseReferenceIds": ["in-myers-2016"]
+    },
+    {
+      "id": "tx-product_liability-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "TX",
+      "claimType": "product_liability",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["tx-cp16"],
+      "pinpoint": "Tex. Civ. Prac. & Rem. Code §§ 16.003(a), 16.012",
+      "scope": "Product claim seeking damages for personal injury under the confirmed two-year injury classification.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Independently resolve fifteen-year sale-based repose, longer express warranties and latent-exposure exceptions in § 16.012.",
+        "Asbestos/silica accrual under § 16.0031 is excluded from this general branch."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Product claim seeking damages for personal injury under the confirmed two-year injury classification.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "fl-product_liability-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "FL",
+      "claimType": "product_liability",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 4,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["fl-95-11", "fl-95-031"],
+      "pinpoint": "Fla. Stat. §§ 95.11(3)(d), 95.031(2)(b)–(d)",
+      "scope": "Injury founded on design, manufacture, distribution or sale of personal property not permanently incorporated in an improvement to real property.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "The claim must fall in § 95.11(3)(d), including its fixture language; do not apply the general negligence period.",
+        "Legally establish discovery and resolve product useful-life/repose, latent-disease and concealment provisions in § 95.031 before selecting this period."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Injury founded on design, manufacture, distribution or sale of personal property not permanently incorporated in an improvement to real property.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "co-product_liability-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "CO",
+      "claimType": "product_liability",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["co-t13-a80-2026"],
+      "pinpoint": "Colo. Rev. Stat. §§ 13-80-106(1), (2), 13-80-108(1)",
+      "scope": "Personal injury caused by a manufacturer's or seller's product under § 13-80-106.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Actions governed by UCC § 4-2-725 are excluded.",
+        "Manufacturing-equipment repose under § 13-80-107, disability, and any other special statute must be resolved separately."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Personal injury caused by a manufacturer's or seller's product under § 13-80-106.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "ct-product_liability-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "CT",
+      "claimType": "product_liability",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 3,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["ct-ch926"],
+      "pinpoint": "Conn. Gen. Stat. § 52-577a(a), (c)–(e)",
+      "scope": "Qualifying product claim, after independent ten-year possession/control and exception review.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Resolve last possession/control, useful safe life, warranty, asbestos and other applicable statutory exceptions separately.",
+        "The trigger is first injury sustained or actual/reasonable-care discovery; it is not automatically product purchase or diagnosis."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Qualifying product claim, after independent ten-year possession/control and exception review.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "mn-product_liability-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "MN",
+      "claimType": "product_liability",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 4,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["mn-541-05"],
+      "pinpoint": "Minn. Stat. § 541.05, subd. 2",
+      "scope": "Product injury under strict liability in tort.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "This four-year classification is specifically strict liability, and does not automatically classify negligence or warranty.",
+        "Accrual, useful-life defenses, special statutes and historical applicability require separate confirmation."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Product injury under strict liability in tort.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "ca-product_liability-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "CA",
+      "claimType": "product_liability",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["ca-335-1"],
+      "pinpoint": "Cal. Code Civ. Proc. § 335.1; Fox, 35 Cal.4th at 806–813 & fn. 3",
+      "scope": "Negligence or strict-liability product claim for bodily injury, with legally confirmed discovery of the factual basis of the claim.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Discovery requires the actual or reasonably suspected factual basis for this wrongdoing after legally assessed diligence; diagnosis or knowledge of medical negligence alone is not enough.",
+        "Medical malpractice, asbestos-specific statutes, economic-loss/warranty claims, public-entity claims and special revival statutes are excluded."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Negligence or strict-liability product claim for bodily injury, with legally confirmed discovery of the factual basis of the claim.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ],
+      "calculation": {
+        "mode": "discovery_min"
+      },
+      "caseReferenceIds": ["ca-fox-2005"]
+    },
+    {
+      "id": "oh-product_liability-latent_toxic-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "OH",
+      "claimType": "product_liability",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["oh-2305-10", "oh-2307-71"],
+      "pinpoint": "Ohio Rev. Code § 2305.10(A), (B)(1), (C)(7), (F); § 2307.71",
+      "scope": "Exposure to hazardous/toxic chemicals, ethical drugs or ethical medical devices, excluding the separate (B)(2)–(5) classes.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Use the earlier competent-medical-authority information or legally confirmed reasonable-diligence knowledge of injury related to exposure.",
+        "This selected repose exception requires the bodily injury to result from qualifying exposure during the ten-year first qualifying purchaser/lessee delivery window.",
+        "All product/defendant/substance definitions, and any separate reference definitions in § 5903.21 for veterans' claims, must be independently confirmed."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Exposure to hazardous/toxic chemicals, ethical drugs or ethical medical devices, excluding the separate (B)(2)–(5) classes.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ],
+      "subtype": "latent_toxic",
+      "calculation": {
+        "mode": "discovery_min",
+        "requiresExposureWithinDeliveryYears": 10
+      }
+    },
+    {
+      "id": "oh-product_liability-chromium-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "OH",
+      "claimType": "product_liability",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["oh-2305-10", "oh-2307-71"],
+      "pinpoint": "Ohio Rev. Code § 2305.10(A), (B)(2), (C)(7), (F); § 2307.71",
+      "scope": "Bodily injury caused by chromium exposure in any chemical form.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Use the earlier competent-medical-authority information or legally confirmed reasonable-diligence knowledge of injury related to exposure.",
+        "This selected repose exception requires the bodily injury to result from qualifying exposure during the ten-year first qualifying purchaser/lessee delivery window.",
+        "All product/defendant/substance definitions, and any separate reference definitions in § 5903.21 for veterans' claims, must be independently confirmed."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Bodily injury caused by chromium exposure in any chemical form.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ],
+      "subtype": "chromium",
+      "calculation": {
+        "mode": "discovery_min",
+        "requiresExposureWithinDeliveryYears": 10
+      }
+    },
+    {
+      "id": "oh-product_liability-agent_orange-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "OH",
+      "claimType": "product_liability",
+      "ruleKind": "limitations",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["oh-2305-10", "oh-2307-71"],
+      "pinpoint": "Ohio Rev. Code § 2305.10(A), (B)(3), (C)(7), (F); § 2307.71",
+      "scope": "Qualifying veteran's bodily injury through defoliants, herbicides or other statutory causative agents.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Use the earlier competent-medical-authority information or legally confirmed reasonable-diligence knowledge of injury related to exposure.",
+        "This selected repose exception requires the bodily injury to result from qualifying exposure during the ten-year first qualifying purchaser/lessee delivery window.",
+        "All product/defendant/substance definitions, and any separate reference definitions in § 5903.21 for veterans' claims, must be independently confirmed.",
+        "Current official § 5903.21 URL returned Number Not Found. Resolve the referenced definitions, repeals and historical applicability before using this branch."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "Referenced § 5903.21 definitions were unavailable at the current official publisher on capture; no automatic computation.",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Qualifying veteran's bodily injury through defoliants, herbicides or other statutory causative agents.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ],
+      "subtype": "agent_orange",
+      "calculation": {
+        "mode": "discovery_min",
+        "requiresExposureWithinDeliveryYears": 10
+      }
+    },
+    {
+      "id": "oh-product_liability-synthetic_estrogen-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "OH",
+      "claimType": "product_liability",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["oh-2305-10", "oh-2307-71"],
+      "pinpoint": "Ohio Rev. Code § 2305.10(A), (B)(4), (C)(7), (F); § 2307.71",
+      "scope": "Bodily injury through diethylstilbestrol or other nonsteroidal synthetic estrogen, including exposure before birth.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Use the earlier competent-medical-authority information or legally confirmed reasonable-diligence knowledge of injury related to exposure.",
+        "This selected repose exception requires the bodily injury to result from qualifying exposure during the ten-year first qualifying purchaser/lessee delivery window.",
+        "All product/defendant/substance definitions, and any separate reference definitions in § 5903.21 for veterans' claims, must be independently confirmed."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Bodily injury through diethylstilbestrol or other nonsteroidal synthetic estrogen, including exposure before birth.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ],
+      "subtype": "synthetic_estrogen",
+      "calculation": {
+        "mode": "discovery_min",
+        "requiresExposureWithinDeliveryYears": 10
+      }
+    },
+    {
+      "id": "oh-product_liability-asbestos-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "OH",
+      "claimType": "product_liability",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["oh-2305-10", "oh-2307-71"],
+      "pinpoint": "Ohio Rev. Code § 2305.10(A), (B)(5), (C)(6), (F)",
+      "scope": "Qualifying asbestos-exposure bodily-injury claim under the express asbestos discovery/repose exception.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Use the earlier competent-medical-authority information or legally confirmed reasonable-diligence knowledge of injury related to asbestos.",
+        "This is bodily injury, not a computation of Ohio's separate wrongful-death cause of action."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Qualifying asbestos-exposure bodily-injury claim under the express asbestos discovery/repose exception.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ],
+      "subtype": "asbestos",
+      "calculation": {
+        "mode": "discovery_min"
+      }
+    },
+    {
+      "id": "ia-product_liability-latent_toxic-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "IA",
+      "claimType": "product_liability",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["ia-c614-2026"],
+      "pinpoint": "Iowa Code § 614.1(2), (2A)(a), (b)",
+      "scope": "Latent disease from statutorily defined harmful material within the product provision.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Harmful material is limited to pre-July 12, 1992 silicone gel breast implants; asbestos, dioxins, tobacco, PCBs; or a substance satisfying the statutory EPA/state unreasonable-risk determination and regulation criteria.",
+        "Knowledge must concern both disease and its cause. Claims governed by improvements-to-real-property subsection (11), medical malpractice or other special statutes are excluded."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Latent disease from statutorily defined harmful material within the product provision.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ],
+      "subtype": "latent_toxic",
+      "calculation": {
+        "mode": "discovery_min"
+      }
+    },
+    {
+      "id": "ks-product_liability-latent_toxic-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "KS",
+      "claimType": "product_liability",
+      "ruleKind": "limitations",
+      "computation": "baseline_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["ks-60-513", "ks-60-3303"],
+      "pinpoint": "K.S.A. §§ 60-513(a)(4), (b), 60-3303(a)–(d)",
+      "scope": "Product seller's latent-disease claim involving statutorily defined harmful material.",
+      "accrualBasis": "confirmed_accrual",
+      "conditions": [
+        "Harmful material is limited to pre-July 1, 1992 silicone gel breast implants; asbestos, dioxins, PCBs; or a substance satisfying the statutory EPA/Kansas unreasonable-risk determination and regulation criteria.",
+        "Knowledge must concern both disease and its cause. The ten-year useful-safe-life presumption is rebuttable, not a universal absolute cutoff.",
+        "The 60-513 ten-year discovery cap has the specified latent-disease exception; useful safe life, warranties and other defenses remain independently reviewed."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Product seller's latent-disease claim involving statutorily defined harmful material.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ],
+      "subtype": "latent_toxic",
+      "calculation": {
+        "mode": "discovery_min"
+      }
+    },
+    {
+      "id": "ct-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "CT",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": {
+        "amount": 2,
+        "unit": "calendar_years"
+      },
+      "sourceIds": ["ct-ch926"],
+      "pinpoint": "Conn. Gen. Stat. § 52-584",
+      "scope": "Negligence injury: two years from injury sustained or actual/reasonable-care discovery, with three-year act/omission cap.",
+      "accrualBasis": "requires_review",
+      "conditions": [
+        "Do not compute a single two-year date without the separate act/omission cap and exceptions."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Negligence injury: two years from injury sustained or actual/reasonable-care discovery, with three-year act/omission cap.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "ks-product_liability-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "KS",
+      "claimType": "product_liability",
+      "ruleKind": "limitations",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": null,
+      "sourceIds": ["ks-60-3303"],
+      "pinpoint": "K.S.A. § 60-3303(a)–(d)",
+      "scope": "Useful-safe-life defense and ten-year rebuttable presumption have extended warranties, concealment, prolonged-exposure and latent-disease exceptions.",
+      "accrualBasis": "requires_review",
+      "conditions": ["Never treat the number ten as a universal automatic product cutoff."],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Useful-safe-life defense and ten-year rebuttable presumption have extended warranties, concealment, prolonged-exposure and latent-disease exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "ia-product_liability-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "IA",
+      "claimType": "product_liability",
+      "ruleKind": "limitations",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": null,
+      "sourceIds": ["ia-c614-2026"],
+      "pinpoint": "Iowa Code § 614.1(2A)(a), (b)",
+      "scope": "Fifteen-year product provision has longer express-warranty, concealment and defined latent-harmful-material exceptions.",
+      "accrualBasis": "requires_review",
+      "conditions": [],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Fifteen-year product provision has longer express-warranty, concealment and defined latent-harmful-material exceptions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "il-product_liability-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "IL",
+      "claimType": "product_liability",
+      "ruleKind": "validity",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": null,
+      "sourceIds": ["il-13-202", "il-13-213"],
+      "pinpoint": "735 ILCS 5/13-202, 13-213, text WITHOUT P.A. 89-7 changes",
+      "scope": "Publisher labels the expanded P.A. 89-7 version unconstitutional. The unaffected text applies repose to strict-liability product claims, with 12/10-year and other exception analysis.",
+      "accrualBasis": "requires_review",
+      "conditions": [
+        "Do not apply the invalid expanded all-theories version. Separate negligence, strict liability, warranty, first-sale and first-user dates."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "Primary judicial opinion invalidated P.A. 89-7 as a whole; the publisher identifies dual versions. Later treatment not comprehensively reviewed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Publisher labels the expanded P.A. 89-7 version unconstitutional. The unaffected text applies repose to strict-liability product claims, with 12/10-year and other exception analysis.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ],
+      "caseReferenceIds": ["il-best-1997"]
+    },
+    {
+      "id": "la-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "LA",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": null,
+      "sourceIds": ["la-3493-1"],
+      "pinpoint": "La. Civ. Code art. 3493.1; 2024 Act 423",
+      "scope": "Current delictual-action text gives two years, with a July 1, 2024 statutory change; transition must be independently resolved.",
+      "accrualBasis": "requires_review",
+      "conditions": [
+        "Do not replace historic one-year rules wholesale or infer event-date applicability from a current page."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Current delictual-action text gives two years, with a July 1, 2024 statutory change; transition must be independently resolved.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "dc-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "DC",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": null,
+      "sourceIds": ["dc-12-301", "dc-12-311"],
+      "pinpoint": "D.C. Code §§ 12-301(a)(8), 12-311",
+      "scope": "Three-year residual classification and asbestos-specific trigger provisions require distinct claim mapping.",
+      "accrualBasis": "requires_review",
+      "conditions": [
+        "The asbestos provision includes alternative later-of windows, not a generic two-year or three-year exposure deadline."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Three-year residual classification and asbestos-specific trigger provisions require distinct claim mapping.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "mo-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "MO",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": null,
+      "sourceIds": ["mo-516-120"],
+      "pinpoint": "Mo. Rev. Stat. § 516.120(4)",
+      "scope": "Five-year injury-to-person/rights classification is subject to special statutes and accrual law.",
+      "accrualBasis": "requires_review",
+      "conditions": [],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Five-year injury-to-person/rights classification is subject to special statutes and accrual law.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "ne-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "NE",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": null,
+      "sourceIds": ["ne-25-207"],
+      "pinpoint": "Neb. Rev. Stat. § 25-207(3)",
+      "scope": "Four-year injury-to-rights residual classification needs claim-specific mapping and special-statute review.",
+      "accrualBasis": "requires_review",
+      "conditions": [],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Four-year injury-to-rights residual classification needs claim-specific mapping and special-statute review.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "ut-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "UT",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": null,
+      "sourceIds": ["ut-78b-2-307"],
+      "pinpoint": "Utah Code § 78B-2-307(4)",
+      "scope": "Four-year residual relief provision does not itself establish every injury or product classification.",
+      "accrualBasis": "requires_review",
+      "conditions": [],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Four-year residual relief provision does not itself establish every injury or product classification.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "wy-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "WY",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": null,
+      "sourceIds": ["wy-title1c3-2026"],
+      "pinpoint": "Wyo. Stat. § 1-3-105(a)(iv)(C)",
+      "scope": "Four-year noncontractual injury-to-rights provision requires claim classification and special-statute review.",
+      "accrualBasis": "requires_review",
+      "conditions": [],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Four-year noncontractual injury-to-rights provision requires claim classification and special-statute review.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "nj-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "NJ",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": null,
+      "sourceIds": ["nj-2019-c120"],
+      "pinpoint": "N.J.S.A. 2A:14-2, as reproduced in P.L. 2019, c.120",
+      "scope": "Enacted amendment reproduces a two-year ordinary-injury provision; current codification and intervening changes remain unverified.",
+      "accrualBasis": "requires_review",
+      "conditions": [
+        "The same act contains sexual-abuse provisions. It does not verify every current product/injury limitation or historical version."
+      ],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Enacted amendment reproduces a two-year ordinary-injury provision; current codification and intervening changes remain unverified.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "ny-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "NY",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": null,
+      "sourceIds": ["ny-cplr202", "ny-cplr208"],
+      "pinpoint": "CPLR §§ 202, 208",
+      "scope": "Nonresident outside-New-York accrual may require both New York and foreign timeliness; infancy/insanity rules have statutory limits.",
+      "accrualBasis": "requires_review",
+      "conditions": [],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Nonresident outside-New-York accrual may require both New York and foreign timeliness; infancy/insanity rules have statutory limits.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "va-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "VA",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": null,
+      "sourceIds": ["va-8-01-230", "va-8-01-229", "va-8-01-249"],
+      "pinpoint": "Va. Code §§ 8.01-229, 8.01-230, 8.01-249",
+      "scope": "General accrual and enumerated discovery exceptions differ; disability, death, nonsuit and other tolling require separate branches.",
+      "accrualBasis": "requires_review",
+      "conditions": [],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "General accrual and enumerated discovery exceptions differ; disability, death, nonsuit and other tolling require separate branches.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    },
+    {
+      "id": "ca-personal_injury-general-review-20261002",
+      "schemaVersion": "1.0.0",
+      "ruleVersion": "2026-10-02.1",
+      "jurisdiction": "CA",
+      "claimType": "personal_injury",
+      "ruleKind": "limitations",
+      "computation": "research_only",
+      "reviewStatus": "statutory_text_verified",
+      "period": null,
+      "sourceIds": ["ca-12a", "ca-352"],
+      "pinpoint": "Cal. Code Civ. Proc. §§ 12a, 352",
+      "scope": "Time computation and specified minority/disability provisions are not applied without the correct court calendar and statutory exclusions.",
+      "accrualBasis": "requires_review",
+      "conditions": [],
+      "exclusions": [
+        "Unresolved choice of law, historical applicability, disability, tolling, prior actions, special claims, commencement and service requirements.",
+        "Any listed discovery, repose, claim-definition or transition issue not separately resolved."
+      ],
+      "effectiveFrom": null,
+      "effectiveThrough": null,
+      "validity": "No comprehensive operative-law or case-specific review completed",
+      "historicalApplicability": "Historical amendments and transitional applicability must be confirmed",
+      "summary": "Time computation and specified minority/disability provisions are not applied without the correct court calendar and statutory exclusions.",
+      "warnings": [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed."
+      ]
+    }
+  ]
+}

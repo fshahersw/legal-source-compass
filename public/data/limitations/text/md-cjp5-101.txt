@@ -1,0 +1,96 @@
+[Legislative Services](https://dls.maryland.gov/home/)  |  [Legislative Audits](https://www.ola.state.md.us/)
+
+* [Sign In](/mgawebsite/Account/Login?registerId=Tracking)
+* [Register](/mgawebsite/Account/Register/Tracking)
+* [Forgot Password](/mgawebsite/Account/ForgotPassword/Tracking)
+
+##### Accessibility Tools
+
+* [MEMBERS](/mgawebsite/Members/District)
+
+  [Find My Representatives](/mgawebsite/Members/District) [Senate](/mgawebsite/Members/Index/senate) [House](/mgawebsite/Members/Index/house) [Publications](/mgawebsite/Members/Publications) [Related Links](/mgawebsite/Members/RelatedLinks) [About](/mgawebsite/Members/About)
+* [COMMITTEES](/mgawebsite/Committees/Charts)
+
+  [Charts](/mgawebsite/Committees/Charts) [Senate](/mgawebsite/Committees/Index/senate) [House](/mgawebsite/Committees/Index/house) [Other](/mgawebsite/Committees/Index/other) [Publications](/mgawebsite/Committees/Publications) [Related Links](/mgawebsite/Committees/RelatedLinks) [About](/mgawebsite/Committees/About)
+* [MEETINGS](/mgawebsite/Meetings/Day)
+
+  [Day(s)](/mgawebsite/Meetings/Day) [Week](/mgawebsite/Meetings/Week) [Month](/mgawebsite/Meetings/Month) [Update Report](/mgawebsite/Meetings/UpdateReport) [Publications](/mgawebsite/Meetings/Publications) [About](/mgawebsite/Meetings/About)
+* [LEGISLATION](/mgawebsite/Legislation/Charts)
+
+  [Charts](/mgawebsite/Legislation/Charts) [Senate](/mgawebsite/Legislation/Index/senate) [House](/mgawebsite/Legislation/Index/house) [Publications](/mgawebsite/Legislation/Publications) [About](/mgawebsite/Legislation/About)
+* [BUDGET](/mgawebsite/Budget/Charts)
+
+  [Charts](/mgawebsite/Budget/Charts) [Analyses](/mgawebsite/Budget/Analyses) [Legislation](/mgawebsite/Budget/Legislation) [Bond Initiatives](/mgawebsite/Budget/BondInitiatives) [Publications](/mgawebsite/Budget/Publications) [Related Links](/mgawebsite/Budget/RelatedLinks) [About](/mgawebsite/Budget/About)
+* [LAWS](/mgawebsite/Laws/Statutes)
+
+  [Statutes](/mgawebsite/Laws/Statutes) [Counties](/mgawebsite/Laws/Counties) [Municipalities](/mgawebsite/Laws/Municipalities) [Publications](/mgawebsite/Laws/Publications) [Related Links](/mgawebsite/Laws/RelatedLinks) [About](/mgawebsite/Laws/About)
+* [FLOOR ACTIONS](/mgawebsite/FloorActions/Status)
+
+  [Status](/mgawebsite/FloorActions/Status) [Agendas](/mgawebsite/FloorActions/Agenda/agendas) [Senate Index](/mgawebsite/FloorActions/Index/senate) [House Index](/mgawebsite/FloorActions/Index/house) [Follow Both Chambers](/mgawebsite/FloorActions/FollowBothChambers) [Publications](/mgawebsite/FloorActions/Publications) [About](/mgawebsite/FloorActions/About)
+* [REDISTRICTING](/mgawebsite/Redistricting/Congressional)
+
+  [Congressional](/mgawebsite/Redistricting/Congressional) [Legislative](/mgawebsite/Redistricting/Legislative)
+* [SEARCH](/mgawebsite/Search/Legislation)
+
+  [Legislation](/mgawebsite/Search/Legislation) [Full Text](/mgawebsite/Search/FullText) [Publications](/mgawebsite/Search/Publications) [Media](/mgawebsite/Search/Media)
+
+* [MEMBERS](#navCollapseMembers)
+
+  [Find My Representatives](/mgawebsite/Members/District) [Senate](/mgawebsite/Members/Index/senate) [House](/mgawebsite/Members/Index/house) [Publications](/mgawebsite/Members/Publications) [Related Links](/mgawebsite/Members/RelatedLinks) [About](/mgawebsite/Members/About)
+* [COMMITTEES](#navCollapseCommittees)
+
+  [Senate](/mgawebsite/Committees/Index/senate) [House](/mgawebsite/Committees/Index/house) [Other](/mgawebsite/Committees/Index/other) [Publications](/mgawebsite/Committees/Publications) [Related Links](/mgawebsite/Committees/RelatedLinks) [About](/mgawebsite/Committees/About)
+* [MEETINGS](#navCollapseMeetings)
+
+  [Day(s)](/mgawebsite/Meetings/Day) [Update Report](/mgawebsite/Meetings/UpdateReport) [Publications](/mgawebsite/Meetings/Publications) [About](/mgawebsite/Meetings/About)
+* [LEGISLATION](#navCollapseLegislation)
+
+  [Senate](/mgawebsite/Legislation/Index/senate) [House](/mgawebsite/Legislation/Index/house) [Publications](/mgawebsite/Legislation/Publications) [About](/mgawebsite/Legislation/About)
+* [BUDGET](#navCollapseBudget)
+
+  [Analyses](/mgawebsite/Budget/Analyses) [Legislation](/mgawebsite/Budget/Legislation) [Bond Initiatives](/mgawebsite/Budget/BondInitiatives) [Publications](/mgawebsite/Budget/Publications) [Related Links](/mgawebsite/Budget/RelatedLinks) [About](/mgawebsite/Budget/About)
+* [LAWS](#navCollapseLaws)
+
+  [Statutes](/mgawebsite/Laws/Statutes) [Counties](/mgawebsite/Laws/Counties) [Municipalities](/mgawebsite/Laws/Municipalities) [Publications](/mgawebsite/Laws/Publications) [Related Links](/mgawebsite/Laws/RelatedLinks) [About](/mgawebsite/Laws/About)
+* [FLOOR ACTIONS](#navCollapseFloorActions)
+
+  [Status](/mgawebsite/FloorActions/Status) [Agendas](/mgawebsite/FloorActions/Agenda/agendas) [Senate Index](/mgawebsite/FloorActions/Index/senate) [House Index](/mgawebsite/FloorActions/Index/house) [Publications](/mgawebsite/FloorActions/Publications) [About](/mgawebsite/FloorActions/About)
+* [REDISTRICTING](#navCollapseRedistricting)
+
+  [Congressional](/mgawebsite/Redistricting/Congressional) [Legislative](/mgawebsite/Redistricting/Legislative)
+* [SEARCH](#navCollapseSearch)
+
+  [Legislation](/mgawebsite/Search/Legislation) [Full Text](/mgawebsite/Search/FullText) [Publications](/mgawebsite/Search/Publications) [Media](/mgawebsite/Search/Media)
+
+* [Track](/mgawebsite/MyMGATracking/ManageLists)
+* [Witness Signup](/mgawebsite/MyMGATracking/WitnessSignup)
+* [FAQ](/mgawebsite/MyMGATracking/FAQ)
+* [Change Password](/mgawebsite/Manage/ChangePassword)
+* [Cancel Account](/mgawebsite/MyMGATracking/CancelAccount)
+
+* [Senate](/mgawebsite/Information/YouTubeChannelInfo?id=s)
+* [House](/mgawebsite/Information/YouTubeChannelInfo?id=h)
+* [Other](/mgawebsite/Information/YouTubeChannelInfo?id=o)
+* [About](/mgawebsite/Information/YouTubeChannelInfoAbout)
+
+[Statutes](/mgawebsite/Laws/Statutes) [Counties](/mgawebsite/Laws/Counties) [Municipalities](/mgawebsite/Laws/Municipalities) [Publications](/mgawebsite/Laws/Publications) [Related Links](/mgawebsite/Laws/RelatedLinks) [About](/mgawebsite/Laws/About)
+
+## Statutes Text
+
+Article - Courts and Judicial Proceedings
+
+  
+  
+  
+  
+§5–101.  
+  
+    A civil action at law shall be filed within three years from the date it accrues unless another provision of the Code provides a different period of time within which an action shall be commenced.
+
+Validation
+
+Please fix the following:
+
+Success
+
+[Click to return on the top page](# "Click to return on the top page") 

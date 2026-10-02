@@ -1,6 +1,7 @@
 import { datasetLabel, sectionOf, type SectionId } from "./groups";
 
-export type DatasetPurpose = "Directory" | "Documents" | "Activity" | "Analysis" | "Reference" | "Source data";
+export type DatasetPurpose =
+  "Directory" | "Documents" | "Activity" | "Analysis" | "Reference" | "Source data";
 
 const PURPOSES: Record<string, DatasetPurpose> = {
   court_spine: "Directory",
@@ -26,6 +27,11 @@ const PURPOSES: Record<string, DatasetPurpose> = {
   federal_regulations_parts: "Directory",
   federal_regulations_documents: "Documents",
   federal_register_history: "Activity",
+  regulatory_backfill: "Reference",
+  statutory_limitations_review: "Reference",
+  cl_docket_metadata: "Reference",
+  cl_reporter_citations: "Reference",
+  cl_citation_edges: "Reference",
   public_laws: "Documents",
   sources: "Directory",
   url_directory: "Directory",
@@ -53,7 +59,7 @@ const LABELS: Record<string, string> = {
   mdl_counsel: "Counsel",
   mdl_crosswalk: "Matter crosswalk",
   settlements: "Settlements",
-  verdict_reports: "Verdicts",
+  verdict_reports: "Reported verdicts",
   expert_rulings: "Expert rulings",
   state_proceedings: "State proceedings",
   counsel_directory: "Counsel directory",
@@ -64,6 +70,11 @@ const LABELS: Record<string, string> = {
   federal_register_history: "Federal Register history",
   public_laws: "Public laws",
   limitation_periods: "Limitation periods",
+  statutory_limitations_review: "Cited limitations rules",
+  regulatory_backfill: "Federal Register metadata backfill",
+  cl_docket_metadata: "Native docket metadata",
+  cl_reporter_citations: "Native reporter citations",
+  cl_citation_edges: "Directed citation mentions",
   citation_reference: "Citation reference",
   citation_index: "Citation index",
   cpsc_injury_data: "CPSC injury data",
@@ -114,8 +125,15 @@ export function fieldLabel(key: string) {
     docket_activity: "Docket activity",
   };
   if (aliases[key]) return aliases[key];
-  return key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
-    .replace(/\bCl\b/g, "CourtListener").replace(/\bFjc\b/g, "FJC").replace(/\bJpml\b/g, "JPML").replace(/\bMdls?\b/g, (m) => m.toUpperCase()).replace(/\bNid\b/g, "ID").replace(/\bId\b/g, "ID");
+  return key
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .replace(/\bCl\b/g, "CourtListener")
+    .replace(/\bFjc\b/g, "FJC")
+    .replace(/\bJpml\b/g, "JPML")
+    .replace(/\bMdls?\b/g, (m) => m.toUpperCase())
+    .replace(/\bNid\b/g, "ID")
+    .replace(/\bId\b/g, "ID");
 }
 
 export function displayValue(value: string | undefined) {

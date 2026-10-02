@@ -13,6 +13,12 @@ describe("law & safety folders", () => {
     expect(lawGroup("public_laws")).toBe("statutes");
     expect(lawGroup("open_us_law")).toBe("mixed");
     expect(lawGroup("provider_laws")).toBe("other");
+    expect(sectionOf("statutory_limitations_review")).toBe("law");
+    expect(lawGroup("statutory_limitations_review")).toBe("reference");
+    for (const id of ["cl_reporter_citations", "cl_citation_edges", "regulatory_backfill"]) {
+      expect(sectionOf(id)).toBe("law");
+      expect(lawGroup(id)).toBe("reference");
+    }
   });
   it("groups safety datasets by agency", () => {
     for (const id of SAFETY) expect(sectionOf(id)).toBe("safety");

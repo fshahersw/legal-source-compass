@@ -62,6 +62,14 @@ function f(overrides: Partial<LibraryFilters> = {}): LibraryFilters {
   return { ...defaultFilters, ...overrides };
 }
 
+describe("category presentation identity", () => {
+  it("selects all spacing/case aliases while retaining distinct substantive categories", () => {
+    const values = [s({ id: "a", heading_category: "Court Rules" }), s({ id: "b", heading_category: " court   rules " }), s({ id: "c", heading_category: "Court Forms" })];
+    expect(filterSources(values, f({ headingCategories: ["COURT RULES"] }), emptyCtx).map((r) => r.id)).toEqual(["a", "b"]);
+    expect(values[1]!.heading_category).toBe(" court   rules ");
+  });
+});
+
 describe("matchesQuery", () => {
   it("matches on title", () => {
     expect(matchesQuery(rows[0]!, "pacer")).toBe(true);
