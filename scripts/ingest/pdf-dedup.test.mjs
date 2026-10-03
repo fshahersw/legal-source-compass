@@ -107,3 +107,17 @@ test('permanent registry errors and endless outages surface as explicit, restart
  await assert.rejects(loadDedupIndex({baseUrl:'https://x',headers:{},fetchImpl:down.fetchImpl,attempts:3,pause:async()=>{}}),e=>e.message==='DEDUP_INDEX_UNAVAILABLE'&&e.failure==='HTTP_503');
  assert.equal(down.calls.length,3);
 });
+
+test('the queue report separates rows already done, dedupable by basis, and rows that need a download',async()=>{
+ const {default:fs}=await import('node:fs/promises'),os=await import('node:os'),path=await import('node:path');
+ const {reportQueueDedup}=await import('./report-pdf-queue-dedup.mjs');
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'dedup-report-')),dir=path.join(root,'courtlistener-pdf-batches');await fs.mkdir(dir,{recursive:true});
+ const stored=object('reported'),index=createDedupIndex();index.addObject(stored);index.addVerifiedUrl(url(2),stored.sha256);
+ const origin=n=>[{native_record_sha256:h('rec'+n),retrieved_at:'2026-10-02T21:00:00.000Z'}];
+ const rows=[nativeRow(1,{expected_sha1:stored.sha1,selected_source_record_sha256:h('rec1'),origins:origin(1)}),locatorRow(2,{selected_source_record_sha256:h('rec2'),origins:origin(2)}),nativeRow(3,{expected_sha1:h('other','sha1'),selected_source_record_sha256:h('rec3'),origins:origin(3)}),nativeRow(4,{selected_source_record_sha256:h('rec4'),origins:origin(4)})];
+ const queue=path.join(dir,'q-0001.queue.jsonl');await fs.writeFile(queue,rows.map(r=>JSON.stringify(r)).join('\n')+'\n');await fs.writeFile(queue+'.manifest.json',JSON.stringify({queue,sha256:h('x')}));
+ const verified=new Set([rows[3].provider+'|'+rows[3].native_document_id+'|'+h('rec4')]);
+ const report=await reportQueueDedup({root,index,verified});
+ assert.deepEqual(report.total,{rows:4,already_done:1,dedup_provider_sha1:1,dedup_exact_url:1,download:1,conflicts:0,pending_rows:3,dedupable_rows:2,dedupable_share:0.6667});
+ assert.deepEqual(report.download_reasons,{no_stored_match:1});assert.equal(report.per_queue[0].queue,'q-0001');
+});
