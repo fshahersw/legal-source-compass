@@ -43,6 +43,8 @@ export type EntryDocumentRef = {
 
 export type RegistryEntry = {
   id: string;
+  /** Where the entry comes from: `courtlistener`, or for a docket CourtListener does not publish `govinfo` / `official-court`. */
+  provider: string | null;
   nativeEntryId: string | null;
   docketKey: string | null;
   docketNumber: string | null;
@@ -65,13 +67,23 @@ export type RegistryEntry = {
   sealedCount: number | null;
   /** The projection's RECAP summary (`recap_available`, `recap_unavailable`, `includes_sealed`...). */
   availability: string | null;
+  /** Per-document detail (number, description, pages) of the documents the entry lists. */
   documents: EntryDocumentRef[];
-  /** CourtListener page for the entry (https only). */
+  /**
+   * The exact provider document ids the PDF archive is joined on: CourtListener RECAP document ids, or the PDF URL of an
+   * external (GovInfo / court website) entry. Empty for an entry held back by the publication rule.
+   */
+  documentIds: string[];
+  /** The page of the entry at its source (https only): CourtListener, GovInfo or the court's own page. */
   sourceUrl: string | null;
 };
 
-const ENTRY_ID = /^sw-entry:[a-z]{2,20}:[A-Za-z0-9._:-]{1,100}$/;
+/** The provider part may carry a hyphen ("official-court"). */
+const ENTRY_ID = /^sw-entry:[a-z][a-z-]{1,30}:[A-Za-z0-9._:-]{1,100}$/;
 const DOC_ID = /^[A-Za-z0-9][A-Za-z0-9:._-]{0,119}$/;
+/** A document id is a plain provider id or, for an external entry, the https URL of the PDF. */
+export const DOCUMENT_ID_PATTERN =
+  /^(?:https:\/\/[^\s"<>]{1,480}|[A-Za-z0-9][A-Za-z0-9:._-]{0,119})$/;
 
 /** One `sw_docket_entries_v1` row (id, listing cells, links, `detail.registry`) -> entry; null when malformed. */
 export function parseRegistryEntry(row: {
@@ -85,12 +97,17 @@ export function parseRegistryEntry(row: {
   const cells = row.cells;
   const reg = isObj(row.reg) ? row.reg : {};
   const withheldRaw = str(cells["description_withheld"]) ?? str(reg["description_withheld"]);
+  // `held` mirrors the withholding flag; if only it is set, the entry is still treated as withheld.
   const withheld: EntryWithheld | null =
-    withheldRaw && WITHHELD.includes(withheldRaw) ? (withheldRaw as EntryWithheld) : null;
+    withheldRaw && WITHHELD.includes(withheldRaw)
+      ? (withheldRaw as EntryWithheld)
+      : cells["held"] === true
+        ? "sealed_or_restricted_text"
+        : null;
   const text = str(cells["description"]);
   const documents: EntryDocumentRef[] = [];
-  // An entry with a sealed document lists no documents at all (contract §6.0 rule 2).
-  if (withheld !== "sealed_document" && Array.isArray(reg["documents"])) {
+  // A withheld entry (sealed document, or text the rule withholds) lists no documents at all (contract §6.0, `held`).
+  if (!withheld && Array.isArray(reg["documents"])) {
     for (const d of reg["documents"]) {
       if (!isObj(d)) continue;
       const nativeDocumentId = idStr(d["native_document_id"]);
@@ -108,6 +125,20 @@ export function parseRegistryEntry(row: {
       });
     }
   }
+  // The join key to the archive: the row's own document_ids, else the ids of the per-document detail.
+  const documentIds: string[] = [];
+  if (!withheld) {
+    const listed = Array.isArray(cells["document_ids"])
+      ? cells["document_ids"].flatMap((v) => (typeof v === "string" ? [v.trim()] : []))
+      : documents.map((d) => d.nativeDocumentId);
+    for (const docId of listed)
+      if (
+        DOCUMENT_ID_PATTERN.test(docId) &&
+        !documentIds.includes(docId) &&
+        documentIds.length < 200
+      )
+        documentIds.push(docId);
+  }
   const links = Array.isArray(row.links) ? row.links : [];
   let sourceUrl: string | null = null;
   for (const l of links) {
@@ -117,8 +148,11 @@ export function parseRegistryEntry(row: {
       break;
     }
   }
+  const cellSource = str(cells["source_url"]);
+  if (!sourceUrl && cellSource && /^https:\/\//i.test(cellSource)) sourceUrl = cellSource;
   return {
     id,
+    provider: str(cells["provider"]),
     nativeEntryId: idStr(cells["native_entry_id"]),
     docketKey: str(cells["docket_key"]),
     docketNumber: str(cells["docket_number"]),
@@ -135,6 +169,7 @@ export function parseRegistryEntry(row: {
     sealedCount: int(cells["documents_sealed"]),
     availability: str(cells["availability"]),
     documents,
+    documentIds,
     sourceUrl,
   };
 }
@@ -150,14 +185,27 @@ export function isRealDate(value: string): boolean {
   return date.getUTCFullYear() === y && date.getUTCMonth() === mo - 1 && date.getUTCDate() === d;
 }
 
+/**
+ * Which entries to keep by their documents: any; those the source lists a document for; or those with a free PDF at the
+ * source (CourtListener's RECAP archive, or the court's or GovInfo's own file). Neither is the firm's PDF archive.
+ */
+export type TimelineDocuments = "any" | "listed" | "free";
+export const TIMELINE_DOCUMENTS: readonly TimelineDocuments[] = ["any", "listed", "free"];
+
+/** The projection's `availability` values that mean a free PDF exists at the source. */
+export const FREE_PDF_AVAILABILITY: readonly string[] = [
+  "recap_available",
+  "recap_partly_available",
+  "official_pdf",
+];
+
 export type TimelineFilter = {
   /** Words searched in the docket text and entry number (prefix match on each word). */
   q: string;
   /** Inclusive yyyy-mm-dd bounds on the filing date; entries with no date match neither. */
   from: string | null;
   to: string | null;
-  /** Only entries CourtListener lists documents for. */
-  hasDocuments: boolean;
+  documents: TimelineDocuments;
   /** One docket of the matter; null for all. */
   docketKey: string | null;
 };
@@ -166,13 +214,13 @@ export const EMPTY_TIMELINE_FILTER: TimelineFilter = {
   q: "",
   from: null,
   to: null,
-  hasDocuments: false,
+  documents: "any",
   docketKey: null,
 };
 
 /** True when any filter narrows the timeline. */
 export function isFiltered(f: TimelineFilter): boolean {
-  return !!(f.q.trim() || f.from || f.to || f.hasDocuments || f.docketKey);
+  return !!(f.q.trim() || f.from || f.to || f.documents !== "any" || f.docketKey);
 }
 
 /**
@@ -240,24 +288,36 @@ export type EntryArchive = {
   notArchived: number;
 };
 
+/** Archive source systems a listed document id can belong to, by the kind of id and the entry's provider. */
+function archiveSourcesFor(id: string, provider: string | null): readonly string[] {
+  // An external entry's document is the PDF URL; the archive keys court-hosted files by that URL.
+  if (/^https:\/\//i.test(id)) return ["official-court", "courtlistener-public-locator"];
+  return provider === "docketbird" ? ["docketbird"] : ["courtlistener"];
+}
+
 /**
  * The archive documents of one entry:
- * - every document CourtListener lists for the entry whose RECAP id is a `courtlistener` row of the archive; and
+ * - every document the entry lists (CourtListener RECAP document id, or the PDF URL of an external entry) that is a row
+ *   of the archive under that exact id; and
  * - for the same docket (registry-resolved DocketBird case id) the DocketBird documents whose id carries the entry's
  *   own docket-sheet number (an attachment keeps its parent's number).
- * An entry whose projection withheld its document list (sealed document) maps to nothing.
+ * An entry the publication rule held back (it lists no document) maps to nothing.
  */
 export function matchEntryDocuments(
-  entry: Pick<RegistryEntry, "entryNumber" | "documents" | "withheld">,
+  entry: Pick<RegistryEntry, "entryNumber" | "documentIds" | "withheld"> & {
+    provider?: string | null;
+  },
   docketbirdCaseId: string | null,
   index: ArchiveIndex,
 ): EntryArchive {
-  if (entry.withheld === "sealed_document") return { documents: [], notArchived: 0 };
+  if (entry.withheld) return { documents: [], notArchived: 0 };
   const out: EntryArchiveDocument[] = [];
   const seen = new Set<string>();
   let notArchived = 0;
-  for (const d of entry.documents) {
-    const hit = index.byDocumentId.get(docKey("courtlistener", d.nativeDocumentId));
+  for (const id of entry.documentIds) {
+    const hit = archiveSourcesFor(id, entry.provider ?? null)
+      .map((source) => index.byDocumentId.get(docKey(source, id)))
+      .find((d): d is MatterDocument => !!d);
     if (!hit) {
       notArchived++;
       continue;
@@ -303,7 +363,22 @@ export const RECAP_LABELS: Record<string, string> = {
   recap_unavailable: "Not in RECAP",
   includes_sealed: "Includes a sealed document",
   unknown: "RECAP status not recorded",
+  // External entries: the court's or GovInfo's own published PDF.
+  official_pdf: "Official PDF",
+  provider_pdf: "Provider PDF",
 };
+
+/** Who published an entry; CourtListener is the default and needs no label of its own. */
+export const ENTRY_PROVIDER_LABELS: Record<string, string> = {
+  courtlistener: "CourtListener",
+  govinfo: "GovInfo",
+  "official-court": "Court website",
+  docketbird: "DocketBird",
+};
+
+export function entryProviderLabel(provider: string | null): string | null {
+  return provider ? (ENTRY_PROVIDER_LABELS[provider] ?? provider.replace(/-/g, " ")) : null;
+}
 
 export function recapLabel(availability: string | null): string | null {
   if (!availability) return null;
@@ -314,5 +389,5 @@ export const WITHHELD_NOTES: Record<EntryWithheld, string> = {
   sealed_document:
     "Published without text or document list: the entry has a document the source flags as sealed.",
   sealed_or_restricted_text:
-    "Published without text: the docket text mentions sealing, restriction, in camera, ex parte or redaction, which the publication rule withholds.",
+    "Published without text or document list: the docket text mentions sealing, restriction, in camera, ex parte or redaction, which the publication rule withholds.",
 };

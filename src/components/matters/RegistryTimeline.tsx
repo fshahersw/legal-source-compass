@@ -24,20 +24,18 @@ import { formatBytes, type MatterDocument } from "@/lib/matters/documents";
 import { groupEntriesByMonth } from "@/lib/matters/entries";
 import { getMatterTimeline, getMatterTimelineArchive } from "@/lib/matters/matters.functions";
 import {
+  EMPTY_TIMELINE_FILTER,
   WITHHELD_NOTES,
   archiveCounts,
+  entryProviderLabel,
   isFiltered,
   recapLabel,
   type EntryArchive,
   type RegistryEntry,
+  type TimelineDocuments,
   type TimelineFilter,
 } from "@/lib/matters/timeline";
 import type { MatterOverviewPayload, TimelineArchivePayload } from "@/lib/matters/types";
-
-const PROVIDER_LABELS: Record<string, string> = {
-  courtlistener: "CourtListener",
-  docketbird: "DocketBird",
-};
 
 /** Characters of docket text shown before "Show full text". */
 const CLAMP_CHARS = 260;
@@ -192,6 +190,11 @@ function EntryRow({
               Archive: {counts.open} open{counts.held ? ` · ${counts.held} held` : ""}
             </Chip>
           ) : null}
+          {entry.provider && entry.provider !== "courtlistener" ? (
+            <Chip title="This entry comes from the source named here, not from CourtListener.">
+              {entryProviderLabel(entry.provider)}
+            </Chip>
+          ) : null}
           {entry.withheld ? (
             <Chip tone="warning" title={WITHHELD_NOTES[entry.withheld]}>
               {entry.withheld === "sealed_document" ? "Sealed document" : "Text withheld"}
@@ -243,7 +246,11 @@ function EntryRow({
               Documents for entry {entry.entryNumber}
             </Link>
           ) : null}
-          {entry.sourceUrl ? <LinkOut href={entry.sourceUrl}>CourtListener</LinkOut> : null}
+          {entry.sourceUrl ? (
+            <LinkOut href={entry.sourceUrl}>
+              {entryProviderLabel(entry.provider) ?? "Source"}
+            </LinkOut>
+          ) : null}
         </div>
       </div>
     </li>
@@ -259,14 +266,16 @@ function CoverageNote({ payload }: { payload: MatterOverviewPayload }) {
   const behind = rec && rec.entriesPublished !== null && captured > rec.entriesPublished;
   return (
     <Scope title="Scope">
-      Docket text is shown exactly as the court record prints it (CourtListener docket entries
-      collected by the matter registry for the master docket). Text that mentions sealing,
-      restriction, in camera, ex parte or redaction is not published: those entries keep their
-      number, date and document count and say so. A sealed document is never listed.{" "}
+      Docket text is shown exactly as the court record prints it. Entries are the master docket's
+      CourtListener entries collected by the matter registry or, for a docket CourtListener does not
+      publish, what GovInfo and the court's own page publish (a partial list by construction). Text
+      that mentions sealing, restriction, in camera, ex parte or redaction is not published: those
+      entries keep their number, date and document count and say so. A sealed document is never
+      listed.{" "}
       {caps.length
         ? caps.map((e, i) => (
             <span key={`${e.provider}-${e.docketKey ?? i}`}>
-              {PROVIDER_LABELS[e.provider] ?? e.provider} entries captured:{" "}
+              {entryProviderLabel(e.provider) ?? e.provider} entries captured:{" "}
               <span className="font-medium text-foreground tabular-nums">
                 {e.captured!.toLocaleString()}
               </span>
@@ -291,8 +300,8 @@ function CoverageNote({ payload }: { payload: MatterOverviewPayload }) {
       rec.entriesWithheld > 0
         ? `${rec.entriesWithheld.toLocaleString()} of ${rec.entriesPublished.toLocaleString()} published entries have no text under that rule (the rule is deliberately broad: it also catches words such as “unsealed” or “motion to seal”). `
         : ""}
-      Documents listed here are the ones CourtListener lists; the archive chips show which of them
-      the verified PDF archive holds.
+      Documents listed here are the ones the source lists; the archive chips show which of them the
+      verified PDF archive holds.
     </Scope>
   );
 }
@@ -313,7 +322,7 @@ export function RegistryTimeline({
     q: "",
     from: null,
     to: null,
-    hasDocuments: false,
+    documents: "any",
     docketKey: null,
   });
   const [order, setOrder] = useState<"newest" | "oldest">("newest");
@@ -343,10 +352,11 @@ export function RegistryTimeline({
     () =>
       (entries ?? []).map((e) => ({
         id: e.id,
+        provider: e.provider,
         docketKey: e.docketKey,
         entryNumber: e.entryNumber,
         withheld: e.withheld,
-        documentIds: e.documents.map((d) => d.nativeDocumentId),
+        documentIds: e.documentIds,
       })),
     [entries],
   );
@@ -423,15 +433,18 @@ export function RegistryTimeline({
               onChange={(e) => patch({ to: e.target.value || null })}
             />
           </FilterField>
-          <label className="flex items-end gap-2 pb-1.5 text-[12px]">
-            <input
-              type="checkbox"
-              className="size-4 rounded border-input"
-              checked={filter.hasDocuments}
-              onChange={(e) => patch({ hasDocuments: e.target.checked })}
-            />
-            Has documents
-          </label>
+          <FilterField label="Documents">
+            <select
+              className={selectClass}
+              aria-label="Documents"
+              value={filter.documents}
+              onChange={(e) => patch({ documents: e.target.value as TimelineDocuments })}
+            >
+              <option value="any">Any entry</option>
+              <option value="listed">Has documents listed</option>
+              <option value="free">Has a free PDF (RECAP or official)</option>
+            </select>
+          </FilterField>
         </div>
         <div className="flex flex-wrap items-end gap-2">
           {dockets.length > 1 ? (
@@ -470,7 +483,7 @@ export function RegistryTimeline({
               className="h-8"
               onClick={() => {
                 setDraft("");
-                setFilter({ q: "", from: null, to: null, hasDocuments: false, docketKey: null });
+                setFilter({ ...EMPTY_TIMELINE_FILTER });
                 setOffset(0);
               }}
             >

@@ -5,6 +5,7 @@ import {
   archiveCounts,
   buildArchiveIndex,
   EMPTY_TIMELINE_FILTER,
+  entryProviderLabel,
   ftsPrefixQuery,
   isFiltered,
   isRealDate,
@@ -115,7 +116,8 @@ describe("registry entry rows", () => {
     )!;
     expect(e.withheld).toBe("sealed_or_restricted_text");
     expect(e.description).toBeNull();
-    expect(e.documents).toHaveLength(1);
+    expect(e.documents).toEqual([]);
+    expect(e.documentIds).toEqual([]);
   });
 
   it("lists no document at all for an entry with a sealed document", () => {
@@ -208,7 +210,8 @@ describe("timeline filters", () => {
     expect(isFiltered(EMPTY_TIMELINE_FILTER)).toBe(false);
     expect(isFiltered({ ...EMPTY_TIMELINE_FILTER, q: " x " })).toBe(true);
     expect(isFiltered({ ...EMPTY_TIMELINE_FILTER, q: "   " })).toBe(false);
-    expect(isFiltered({ ...EMPTY_TIMELINE_FILTER, hasDocuments: true })).toBe(true);
+    expect(isFiltered({ ...EMPTY_TIMELINE_FILTER, documents: "listed" })).toBe(true);
+    expect(isFiltered({ ...EMPTY_TIMELINE_FILTER, documents: "free" })).toBe(true);
     expect(isFiltered({ ...EMPTY_TIMELINE_FILTER, from: "2026-01-01" })).toBe(true);
   });
 
@@ -264,19 +267,20 @@ describe("entry to archive mapping", () => {
       native_document_id: "cand-4:2022-md-03047-00770",
       native_case_id: "cand-4:2022-md-03047",
     }),
+    // Court-hosted files are keyed by their URL.
+    doc({
+      source_system: "official-court",
+      native_document_id:
+        "https://www.flnd.uscourts.gov/sites/flnd/files/mdl/2025.02.11%20-%20PTO%202.pdf",
+      native_case_id: "3:25md3140",
+    }),
   ];
   const index = buildArchiveIndex(archive, true);
   const entry = (over: Record<string, unknown> = {}) => ({
+    provider: "courtlistener",
     entryNumber: 770,
     withheld: null,
-    documents: [{ nativeDocumentId: "495058040" }].map((d) => ({
-      ...d,
-      documentNumber: null,
-      attachmentNumber: null,
-      description: null,
-      pageCount: null,
-      recapAvailable: null,
-    })),
+    documentIds: ["495058040"],
     ...over,
   });
 
@@ -292,13 +296,13 @@ describe("entry to archive mapping", () => {
 
   it("keeps attachments with their entry, main document first, and reports held ones as held", () => {
     const m = matchEntryDocuments(
-      entry({ entryNumber: 772, documents: [] }),
+      entry({ entryNumber: 772, documentIds: [] }),
       "flnd-3:2025-md-03140",
       index,
     );
     expect(m.documents.map((d) => d.doc.attachment)).toEqual([null, 1]);
     const held = matchEntryDocuments(
-      entry({ entryNumber: 771, documents: [] }),
+      entry({ entryNumber: 771, documentIds: [] }),
       "flnd-3:2025-md-03140",
       index,
     );
@@ -313,12 +317,12 @@ describe("entry to archive mapping", () => {
   });
 
   it("does not match by entry number across dockets, or without the docket's DocketBird id", () => {
-    const m = matchEntryDocuments(entry({ documents: [] }), "cand-4:2022-md-03047", index);
+    const m = matchEntryDocuments(entry({ documentIds: [] }), "cand-4:2022-md-03047", index);
     expect(m.documents.map((d) => d.doc.nativeDocumentId)).toEqual(["cand-4:2022-md-03047-00770"]);
-    expect(matchEntryDocuments(entry({ documents: [] }), null, index).documents).toEqual([]);
+    expect(matchEntryDocuments(entry({ documentIds: [] }), null, index).documents).toEqual([]);
     expect(
       matchEntryDocuments(
-        entry({ entryNumber: null, documents: [] }),
+        entry({ entryNumber: null, documentIds: [] }),
         "flnd-3:2025-md-03140",
         index,
       ).documents,
@@ -326,35 +330,143 @@ describe("entry to archive mapping", () => {
   });
 
   it("counts listed documents the archive does not hold and never matches a different id", () => {
-    const e = entry({
-      documents: ["495058040", "999", "111"].map((nativeDocumentId) => ({
-        nativeDocumentId,
-        documentNumber: null,
-        attachmentNumber: null,
-        description: null,
-        pageCount: null,
-        recapAvailable: null,
-      })),
-    });
-    const m = matchEntryDocuments(e, null, index);
+    const m = matchEntryDocuments(entry({ documentIds: ["495058040", "999", "111"] }), null, index);
     expect(m.documents.map((d) => d.doc.nativeDocumentId)).toEqual(["495058040", "111"]);
     expect(m.notArchived).toBe(1);
     expect(archiveCounts(m.documents)).toEqual({ open: 1, held: 1 });
   });
 
-  it("maps an entry with a sealed document to nothing", () => {
+  it("maps an entry the publication rule held back to nothing, whichever rule held it", () => {
+    for (const withheld of ["sealed_document", "sealed_or_restricted_text"]) {
+      const m = matchEntryDocuments(entry({ withheld }), "flnd-3:2025-md-03140", index);
+      expect(m).toEqual({ documents: [], notArchived: 0 });
+    }
+  });
+
+  it("joins an external entry to the court-hosted PDF by its exact URL", () => {
+    const url = "https://www.flnd.uscourts.gov/sites/flnd/files/mdl/2025.02.11%20-%20PTO%202.pdf";
     const m = matchEntryDocuments(
-      entry({ withheld: "sealed_document" }),
+      entry({ provider: "official-court", entryNumber: null, documentIds: [url] }),
       "flnd-3:2025-md-03140",
       index,
     );
-    expect(m).toEqual({ documents: [], notArchived: 0 });
+    expect(m.documents.map((d) => [d.doc.sourceSystem, d.via])).toEqual([
+      ["official-court", "document_id"],
+    ]);
+    // A GovInfo URL the archive does not hold is simply not archived; a URL is never matched by file name.
+    const other = matchEntryDocuments(
+      entry({
+        provider: "govinfo",
+        entryNumber: null,
+        documentIds: [
+          "https://www.govinfo.gov/content/pkg/USCOURTS-njd-3_16-md-02738/pdf/USCOURTS-njd-3_16-md-02738-12.pdf",
+        ],
+      }),
+      null,
+      index,
+    );
+    expect(other).toEqual({ documents: [], notArchived: 1 });
   });
 
   it("describes the projection's RECAP summary without implying the archive", () => {
     expect(recapLabel("recap_available")).toBe("Free PDF in RECAP");
     expect(recapLabel("recap_unavailable")).toBe("Not in RECAP");
+    expect(recapLabel("official_pdf")).toBe("Official PDF");
     expect(recapLabel(null)).toBeNull();
     expect(recapLabel("something_new")).toBe("something new");
+    expect(entryProviderLabel("official-court")).toBe("Court website");
+    expect(entryProviderLabel("govinfo")).toBe("GovInfo");
+    expect(entryProviderLabel(null)).toBeNull();
+  });
+});
+
+describe("external entries (GovInfo, court website)", () => {
+  const external = (
+    over: Record<string, unknown> = {},
+    id = "sw-entry:govinfo:USCOURTS-njd-3_16-md-02738-12",
+  ) => ({
+    id,
+    cells: {
+      mdl: "2738",
+      held: false,
+      court_id: "njd",
+      provider: "govinfo",
+      documents: 1,
+      date_filed: "2026-07-22",
+      docket_key: "njd:3:2016-md-02738",
+      source_url:
+        "https://www.govinfo.gov/content/pkg/USCOURTS-njd-3_16-md-02738/pdf/USCOURTS-njd-3_16-md-02738-12.pdf",
+      description: "MEMORANDUM OPINION ON MOTION FOR THE ENTRY OF AN ORDER TO SHOW CAUSE. (sks)",
+      availability: "official_pdf",
+      document_ids: [
+        "https://www.govinfo.gov/content/pkg/USCOURTS-njd-3_16-md-02738/pdf/USCOURTS-njd-3_16-md-02738-12.pdf",
+      ],
+      entry_number: null,
+      native_entry_id: "USCOURTS-njd-3_16-md-02738-12",
+      description_withheld: null,
+      ...over,
+    },
+    links: [
+      {
+        url: "https://www.govinfo.gov/app/details/USCOURTS-njd-3_16-md-02738/USCOURTS-njd-3_16-md-02738-12",
+      },
+    ],
+    reg: {
+      documents: [
+        {
+          native_document_id: "USCOURTS-njd-3_16-md-02738-12",
+          is_available: true,
+          description_withheld: null,
+        },
+      ],
+    },
+  });
+
+  it("reads an unnumbered GovInfo entry with the PDF URL as its document id", () => {
+    const e = parseRegistryEntry(external())!;
+    expect(e).toMatchObject({
+      provider: "govinfo",
+      entryNumber: null,
+      date: "2026-07-22",
+      availability: "official_pdf",
+      withheld: null,
+    });
+    expect(e.documentIds).toEqual([
+      "https://www.govinfo.gov/content/pkg/USCOURTS-njd-3_16-md-02738/pdf/USCOURTS-njd-3_16-md-02738-12.pdf",
+    ]);
+    expect(e.description).toContain("MEMORANDUM OPINION");
+  });
+
+  it("accepts a provider id with a hyphen and uses the court page when the cells carry no link", () => {
+    const e = parseRegistryEntry({
+      ...external({}, "sw-entry:official-court:0123456789abcdef"),
+      links: [],
+    })!;
+    expect(e.id).toBe("sw-entry:official-court:0123456789abcdef");
+    expect(e.sourceUrl).toBe(
+      "https://www.govinfo.gov/content/pkg/USCOURTS-njd-3_16-md-02738/pdf/USCOURTS-njd-3_16-md-02738-12.pdf",
+    );
+  });
+
+  it("treats the held flag as withheld even when no reason is given, and lists no document", () => {
+    const e = parseRegistryEntry(
+      external({ held: true, description: "text", document_ids: ["x1"] }),
+    )!;
+    expect(e.withheld).toBe("sealed_or_restricted_text");
+    expect(e.description).toBeNull();
+    expect(e.documentIds).toEqual([]);
+    expect(e.documents).toEqual([]);
+  });
+
+  it("falls back to the per-document ids when the row has no document_ids and drops an unusable id", () => {
+    const e = parseRegistryEntry({
+      ...external({ document_ids: undefined }),
+      reg: { documents: [{ native_document_id: "495058040" }, { native_document_id: "../x" }] },
+    })!;
+    expect(e.documentIds).toEqual(["495058040"]);
+    const bad = parseRegistryEntry(
+      external({ document_ids: ["javascript:alert(1)", "http://insecure.test/a.pdf", "ok-1"] }),
+    )!;
+    expect(bad.documentIds).toEqual(["ok-1"]);
   });
 });

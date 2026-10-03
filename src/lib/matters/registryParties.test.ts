@@ -116,6 +116,11 @@ describe("exact firm matching", () => {
     expect(isSeegerWeissFirm("Seeger Weiss LLP")).toBe(true);
     expect(isSeegerWeissFirm("SEEGER WEISS LLP")).toBe(true);
     expect(isSeegerWeissFirm("  Seeger   Weiss  LLP ")).toBe(true);
+    // Commas and periods in the printed line do not make it another firm.
+    expect(isSeegerWeissFirm("SEEGER WEISS, LLP")).toBe(true);
+    expect(isSeegerWeissFirm("Seeger Weiss, LLP")).toBe(true);
+    expect(isSeegerWeissFirm("Seeger Weiss L.L.P.")).toBe(false);
+    expect(isSeegerWeissFirm("SEEGER WEISS LLP - Ridgefield Park")).toBe(false);
     expect(isSeegerWeissFirm("Seeger Weiss - Newark")).toBe(false);
     expect(isSeegerWeissFirm("Seeger Weiss LLP (Newark)")).toBe(false);
     expect(isSeegerWeissFirm("Weiss Seeger LLP")).toBe(false);
@@ -125,6 +130,8 @@ describe("exact firm matching", () => {
 
   it("recognises a near miss without ever treating it as the firm", () => {
     expect(isSeegerWeissNearMiss("Seeger Weiss - Newark")).toBe(true);
+    expect(isSeegerWeissNearMiss("SEEGER WEISS LLP - Ridgefield Park")).toBe(true);
+    expect(isSeegerWeissNearMiss("Seeger Weiss, LLP")).toBe(false);
     expect(isSeegerWeissNearMiss("Seeger Weiss LLP")).toBe(false);
     expect(isSeegerWeissNearMiss("Anapol Weiss")).toBe(false);
   });

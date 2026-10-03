@@ -20,12 +20,15 @@ const collapse = (s: string) => s.replace(/\s+/g, " ").trim();
 
 export const REGISTRY_PARTIES_DATASET = "sw_matter_parties_v1";
 
-/** The firm whose attorneys are highlighted. Matching is exact on the whole printed firm line (case and spacing aside). */
+/**
+ * The firm whose attorneys are highlighted. The whole printed firm line must be this name; only capitalisation, spacing
+ * and commas or periods are ignored ("SEEGER WEISS, LLP" is the firm; "Seeger Weiss - Newark" is not).
+ */
 export const SEEGER_WEISS_FIRM = "Seeger Weiss LLP";
-const normalizeFirm = (s: string) => collapse(s).toLowerCase();
+const normalizeFirm = (s: string) => collapse(s.replace(/[.,]/g, " ")).toLowerCase();
 const SW_EXACT = normalizeFirm(SEEGER_WEISS_FIRM);
 
-/** True only when the printed firm line IS "Seeger Weiss LLP" (e.g. "SEEGER WEISS LLP"); "Seeger Weiss - Newark" is not. */
+/** True only when the printed firm line IS "Seeger Weiss LLP" ("SEEGER WEISS LLP", "Seeger Weiss, LLP"); an added office is not. */
 export function isSeegerWeissFirm(firm: string | null | undefined): boolean {
   return !!firm && normalizeFirm(firm) === SW_EXACT;
 }

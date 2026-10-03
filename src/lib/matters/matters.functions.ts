@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { CASE_ROLES, CASE_SORTS, type CaseFilter, type CaseRole } from "./cases";
 import { normalizeMdlNumber, type JpmlReport } from "./overview";
-import { isRealDate, type TimelineFilter } from "./timeline";
+import { DOCUMENT_ID_PATTERN, isRealDate, type TimelineFilter } from "./timeline";
 import { caseIdPlan } from "./registry";
 import {
   loadAppearances,
@@ -164,7 +164,7 @@ export const getMatterTimeline = createServerFn({ method: "GET" })
         q: z.string().max(120).default(""),
         from: isoDateInput.nullable().default(null),
         to: isoDateInput.nullable().default(null),
-        hasDocuments: z.boolean().default(false),
+        documents: z.enum(["any", "listed", "free"]).default("any"),
         docketKey: docketKeyInput.nullable().default(null),
         order: z.enum(["newest", "oldest"]).default("newest"),
         offset: z.number().int().min(0).max(100000).default(0),
@@ -178,7 +178,7 @@ export const getMatterTimeline = createServerFn({ method: "GET" })
       q: data.q.trim(),
       from: data.from,
       to: data.to,
-      hasDocuments: data.hasDocuments,
+      documents: data.documents,
       docketKey: data.docketKey,
     };
     return loadTimeline(overview, filter, data.offset, data.order === "newest");
@@ -194,12 +194,14 @@ export const getMatterTimelineArchive = createServerFn({ method: "POST" })
           .array(
             z.object({
               id: z.string().min(8).max(140),
+              provider: z
+                .string()
+                .regex(/^[a-z][a-z-]{1,30}$/)
+                .nullable(),
               docketKey: docketKeyInput.nullable(),
               entryNumber: z.number().int().min(0).max(9_999_999).nullable(),
               withheld: z.enum(["sealed_document", "sealed_or_restricted_text"]).nullable(),
-              documentIds: z
-                .array(z.string().regex(/^[A-Za-z0-9][A-Za-z0-9:._-]{0,119}$/))
-                .max(200),
+              documentIds: z.array(z.string().regex(DOCUMENT_ID_PATTERN)).max(200),
             }),
           )
           .max(80),

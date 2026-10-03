@@ -58,6 +58,7 @@ import {
 } from "./registry";
 import {
   buildArchiveIndex,
+  FREE_PDF_AVAILABILITY,
   ftsPrefixQuery,
   matchEntryDocuments,
   normalizeRange,
@@ -312,8 +313,7 @@ export async function loadMatterOverview(mdl: string): Promise<MatterOverviewPay
     loadJudgeProfileById(parsed.judge.profileId)
       .then(
         (p) =>
-          p ??
-          (parsed.judge.nativeIdEvidence ? loadJudgeProfile(parsed.judge.entityId) : null),
+          p ?? (parsed.judge.nativeIdEvidence ? loadJudgeProfile(parsed.judge.entityId) : null),
       )
       .catch(() => null),
     loadJpmlReferences(mdl).catch(() => []),
@@ -810,18 +810,22 @@ export async function loadTimeline(
   newestFirst = true,
 ): Promise<TimelinePayload | null> {
   if (!(await isPublished("sw_docket_entries_v1"))) return null;
-  const containment: Record<string, string> = {
-    mdl: payload.overview.mdl,
-    provider: "courtlistener",
-  };
+  // Every provider of the matter's entries: CourtListener, and for a docket it does not publish GovInfo and the court's
+  // own page (those rows are told apart by the provider chip on each entry).
+  const containment: Record<string, string> = { mdl: payload.overview.mdl };
   if (filter.docketKey && DOCKET_KEY.test(filter.docketKey))
     containment["docket_key"] = filter.docketKey;
-  if (filter.hasDocuments) containment["has_documents"] = "true";
+  if (filter.documents === "listed") containment["has_documents"] = "true";
   const parts = [
     "select=id,cells:item->cells,links:item->links,reg:detail->registry",
     "dataset=eq.sw_docket_entries_v1",
     `filters=cs.${enc(JSON.stringify(containment))}`,
   ];
+  // A free PDF at the source is one of several availability values: an OR of containments on the indexed filters.
+  if (filter.documents === "free")
+    parts.push(
+      `or=(${FREE_PDF_AVAILABILITY.map((a) => `filters.cs.${enc(JSON.stringify({ availability: a }))}`).join(",")})`,
+    );
   const { from, to } = normalizeRange(filter.from, filter.to);
   if (from) parts.push(`item->cells->>date_filed=gte.${from}`);
   if (to) parts.push(`item->cells->>date_filed=lte.${to}`);
@@ -840,6 +844,7 @@ export async function loadTimeline(
 /** One entry of a timeline page as the browser reports it back for the archive lookup. */
 export type TimelineArchiveItem = {
   id: string;
+  provider: string | null;
   docketKey: string | null;
   entryNumber: number | null;
   withheld: EntryWithheld | null;
@@ -865,16 +870,10 @@ export async function loadTimelineArchive(
   for (const item of items) {
     byEntry[item.id] = matchEntryDocuments(
       {
+        provider: item.provider,
         entryNumber: item.entryNumber,
         withheld: item.withheld,
-        documents: item.documentIds.map((nativeDocumentId) => ({
-          nativeDocumentId,
-          documentNumber: null,
-          attachmentNumber: null,
-          description: null,
-          pageCount: null,
-          recapAvailable: null,
-        })),
+        documentIds: item.documentIds,
       },
       caseIdFor(item.docketKey),
       index,
