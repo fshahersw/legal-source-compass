@@ -55,6 +55,26 @@ import {
   type RegistryDocketDetail,
   type RegistryMatter,
 } from "./registry";
+import {
+  buildArchiveIndex,
+  ftsPrefixQuery,
+  matchEntryDocuments,
+  normalizeRange,
+  parseRegistryEntry,
+  type ArchiveIndex,
+  type EntryArchive,
+  type EntryWithheld,
+  type TimelineFilter,
+} from "./timeline";
+import {
+  buildPartiesModel,
+  groupParties,
+  parseRegistryPartyRow,
+  pickFirms,
+  pickParties,
+  type ParsedPartyRow,
+  type PartiesModel,
+} from "./registryParties";
 import { SW_MATTERS } from "./tiers";
 import type {
   AppearancesPayload,
@@ -69,7 +89,12 @@ import type {
   MatterCasesPageResponse,
   MatterOverviewPayload,
   PartiesPayload,
+  RegistryCounselList,
   RegistryDocumentsPayload,
+  RegistryPartiesList,
+  RegistryPartiesSummary,
+  TimelineArchivePayload,
+  TimelinePayload,
 } from "./types";
 
 const isObj = (v: unknown): v is Record<string, unknown> =>
@@ -390,7 +415,10 @@ export async function loadCasesPage(
   offset: number,
 ): Promise<MatterCasesPageResponse> {
   const state = await casesStateFor(payload);
-  return { ...pageCases(state.rows, filter, sort, offset, CASE_PAGE_SIZE, state.scope.labels), scope: state.scope };
+  return {
+    ...pageCases(state.rows, filter, sort, offset, CASE_PAGE_SIZE, state.scope.labels),
+    scope: state.scope,
+  };
 }
 
 /** The composition of the list without any row (overview tiles). */
@@ -609,7 +637,10 @@ const REGISTRY_PAGE = 500;
  * minutes (the Documents tab, the overview tiles, the timeline and the drawers ask for the same lists), and the pages
  * after the first are read four at a time.
  */
-const registryDocsCache = new Map<string, { at: number; value: Promise<RegistryDocumentsPayload> }>();
+const registryDocsCache = new Map<
+  string,
+  { at: number; value: Promise<RegistryDocumentsPayload> }
+>();
 
 export function loadRegistryDocuments(
   caseIds: CaseIdPlanEntry[],
@@ -623,7 +654,8 @@ export function loadRegistryDocuments(
   // An unconnected reader or a failed read is not worth remembering.
   value.then(
     (v) => {
-      if (!v.connected && registryDocsCache.get(key)?.value === value) registryDocsCache.delete(key);
+      if (!v.connected && registryDocsCache.get(key)?.value === value)
+        registryDocsCache.delete(key);
     },
     () => {
       if (registryDocsCache.get(key)?.value === value) registryDocsCache.delete(key);
@@ -640,6 +672,7 @@ export function loadRegistryDocuments(
 async function readRegistryDocuments(
   caseIds: CaseIdPlanEntry[],
   summaryOnly: boolean,
+  rowCap: number = REGISTRY_ROW_CAP,
 ): Promise<RegistryDocumentsPayload> {
   if (!caseIds.length) {
     return {
@@ -671,7 +704,7 @@ async function readRegistryDocuments(
     if (summaryOnly) return { connected: true, summary, rows: [], truncated: false, caseIds };
     const rows: MatterDocument[] = [...first.parsed];
     const offsets: number[] = [];
-    for (let o = REGISTRY_PAGE; o < Math.min(summary.total, REGISTRY_ROW_CAP); o += REGISTRY_PAGE)
+    for (let o = REGISTRY_PAGE; o < Math.min(summary.total, rowCap); o += REGISTRY_PAGE)
       offsets.push(o);
     for (const page of await mapLimit(offsets, 4, (o) => readPage(o, REGISTRY_PAGE)))
       rows.push(...page.parsed);
@@ -707,6 +740,129 @@ export async function loadCaseDocuments(
     ids,
     documents: await loadRegistryDocuments(ids.map((id) => ({ id, basis: "registry" as const }))),
   };
+}
+
+/* ------------------------------------------------------------------ timeline (matter registry entries) */
+
+const TIMELINE_PAGE = 50;
+/** The most archive rows indexed for one matter (the largest holds about 8,000). */
+const ARCHIVE_INDEX_CAP = 20_000;
+const ARCHIVE_TTL_MS = 10 * 60_000;
+
+const archiveCache = new Map<string, { at: number; index: Promise<ArchiveIndex | string> }>();
+
+/**
+ * The matter's archive rows (master + JPML docket ids), indexed for exact entry-to-PDF lookups; a string is the reason
+ * the archive could not be read. Cached ten minutes, concurrent callers share one read, and only the lean index is
+ * kept (not the row list).
+ */
+function archiveIndexFor(payload: MatterOverviewPayload): Promise<ArchiveIndex | string> {
+  const plan = caseIdPlan(payload.registry, payload.overview.keys.all);
+  const key = plan.map((c) => c.id).join(",");
+  const hit = archiveCache.get(key);
+  if (hit && Date.now() - hit.at < ARCHIVE_TTL_MS) return hit.index;
+  const index = readRegistryDocuments(plan, false, ARCHIVE_INDEX_CAP).then((docs) =>
+    docs.connected ? buildArchiveIndex(docs.rows, !docs.truncated) : docs.reason,
+  );
+  archiveCache.set(key, { at: Date.now(), index });
+  const forget = () => {
+    if (archiveCache.get(key)?.index === index) archiveCache.delete(key);
+  };
+  // A failed or unconnected read is not remembered.
+  index.then((v) => (typeof v === "string" ? forget() : undefined), forget);
+  while (archiveCache.size > 6) {
+    const oldest = archiveCache.keys().next().value;
+    if (oldest === undefined) break;
+    archiveCache.delete(oldest);
+  }
+  return index;
+}
+
+const DOCKET_KEY = /^[A-Za-z0-9:._-]{3,80}$/;
+
+/**
+ * One page of the registry's docket-entry timeline for a matter, newest first. Filtering, counting and paging happen in
+ * the database: containment on the indexed filters, the filing date as ISO text, the docket text through the search
+ * vector (prefix match on each word), and the dataset's own ordinal, which is chronological.
+ */
+export async function loadTimeline(
+  payload: MatterOverviewPayload,
+  filter: TimelineFilter,
+  offset: number,
+  newestFirst = true,
+): Promise<TimelinePayload | null> {
+  if (!(await isPublished("sw_docket_entries_v1"))) return null;
+  const containment: Record<string, string> = {
+    mdl: payload.overview.mdl,
+    provider: "courtlistener",
+  };
+  if (filter.docketKey && DOCKET_KEY.test(filter.docketKey))
+    containment["docket_key"] = filter.docketKey;
+  if (filter.hasDocuments) containment["has_documents"] = "true";
+  const parts = [
+    "select=id,cells:item->cells,links:item->links,reg:detail->registry",
+    "dataset=eq.sw_docket_entries_v1",
+    `filters=cs.${enc(JSON.stringify(containment))}`,
+  ];
+  const { from, to } = normalizeRange(filter.from, filter.to);
+  if (from) parts.push(`item->cells->>date_filed=gte.${from}`);
+  if (to) parts.push(`item->cells->>date_filed=lte.${to}`);
+  const fts = ftsPrefixQuery(filter.q);
+  if (fts) parts.push(`search_vector=fts(simple).${enc(fts)}`);
+  parts.push(newestFirst ? "order=ordinal.desc,id.desc" : "order=ordinal.asc,id.asc");
+  const start = Math.max(0, Math.floor(offset));
+  const r = await restGet<{ id: string; cells: unknown; links: unknown; reg: unknown }[]>(
+    `corpus_records?${parts.join("&")}`,
+    { count: true, range: [start, start + TIMELINE_PAGE - 1] },
+  );
+  const entries = r.rows.flatMap((row) => parseRegistryEntry(row) ?? []);
+  return { entries, total: r.total ?? entries.length, offset: start, pageSize: TIMELINE_PAGE };
+}
+
+/** One entry of a timeline page as the browser reports it back for the archive lookup. */
+export type TimelineArchiveItem = {
+  id: string;
+  docketKey: string | null;
+  entryNumber: number | null;
+  withheld: EntryWithheld | null;
+  documentIds: string[];
+};
+
+/**
+ * The archive documents of the entries on one timeline page. Each entry is tied to the archive only by exact keys: the
+ * RECAP document ids it lists, and (for the same docket) the DocketBird documents carrying its own entry number.
+ */
+export async function loadTimelineArchive(
+  payload: MatterOverviewPayload,
+  items: TimelineArchiveItem[],
+): Promise<TimelineArchivePayload> {
+  const index = await archiveIndexFor(payload);
+  if (typeof index === "string") return { connected: false, reason: index };
+  const caseIdFor = (docketKey: string | null): string | null => {
+    if (!docketKey) return null;
+    const docket = payload.registry?.caseIds.find((c) => c.docketKey === docketKey);
+    return docket?.nativeCaseIds.find((n) => n.provider === "docketbird")?.id ?? null;
+  };
+  const byEntry: Record<string, EntryArchive> = {};
+  for (const item of items) {
+    byEntry[item.id] = matchEntryDocuments(
+      {
+        entryNumber: item.entryNumber,
+        withheld: item.withheld,
+        documents: item.documentIds.map((nativeDocumentId) => ({
+          nativeDocumentId,
+          documentNumber: null,
+          attachmentNumber: null,
+          description: null,
+          pageCount: null,
+          recapAvailable: null,
+        })),
+      },
+      caseIdFor(item.docketKey),
+      index,
+    );
+  }
+  return { connected: true, complete: index.complete, byEntry };
 }
 
 export type RegistryObject =
@@ -806,7 +962,122 @@ export async function loadLegacyDocuments(
   };
 }
 
-/* ------------------------------------------------------------------ parties and counsel */
+/* ------------------------------------------------------------------ parties and counsel (matter registry) */
+
+const PARTIES_TTL_MS = 10 * 60_000;
+const PARTIES_PAGE = 50;
+const FIRMS_PAGE = 20;
+/** Attorneys listed under one firm before the rest are only counted. */
+const FIRM_ATTORNEY_CAP = 60;
+const PARTIES_PER_GROUP = 8;
+
+const partiesCache = new Map<string, { at: number; model: Promise<PartiesModel | null> }>();
+
+/**
+ * Every party row of the matter's master docket with its counsel, read once (three pages at a time), reduced to a lean
+ * model and cached for ten minutes. A matter with no rows (or a dataset that is not released) has no model.
+ */
+function partiesModelFor(mdl: string): Promise<PartiesModel | null> {
+  const hit = partiesCache.get(mdl);
+  if (hit && Date.now() - hit.at < PARTIES_TTL_MS) return hit.model;
+  const model = readPartiesModel(mdl);
+  partiesCache.set(mdl, { at: Date.now(), model });
+  model.then(
+    (m) => {
+      if (!m && partiesCache.get(mdl)?.model === model) partiesCache.delete(mdl);
+    },
+    () => {
+      if (partiesCache.get(mdl)?.model === model) partiesCache.delete(mdl);
+    },
+  );
+  while (partiesCache.size > 8) {
+    const oldest = partiesCache.keys().next().value;
+    if (oldest === undefined) break;
+    partiesCache.delete(oldest);
+  }
+  return model;
+}
+
+async function readPartiesModel(mdl: string): Promise<PartiesModel | null> {
+  if (!(await isPublished("sw_matter_parties_v1"))) return null;
+  const path = `corpus_records?select=id,cells:item->cells,counsel:detail->registry->counsel&dataset=eq.sw_matter_parties_v1&filters=cs.${enc(JSON.stringify({ mdl }))}&order=ordinal.asc,id.asc`;
+  const PAGE = 1000;
+  type PartyRow = { id: string; cells: unknown; counsel: unknown };
+  const first = await restGet<PartyRow[]>(path, { count: true, range: [0, PAGE - 1] });
+  const rows = [...first.rows];
+  const total = Math.min(first.total ?? rows.length, 6000);
+  const starts: number[] = [];
+  for (let s = PAGE; s < total; s += PAGE) starts.push(s);
+  for (const page of await mapLimit(starts, 3, (s) =>
+    restGet<PartyRow[]>(path, { range: [s, s + PAGE - 1] }),
+  ))
+    rows.push(...page.rows);
+  const parsed: ParsedPartyRow[] = [];
+  for (const r of rows) {
+    const party = parseRegistryPartyRow(r);
+    if (party) parsed.push(party);
+  }
+  return parsed.length ? buildPartiesModel(parsed) : null;
+}
+
+/** Counts, party types and the Seeger Weiss summary for the matter; null when the registry holds no parties for it. */
+export async function loadRegistryPartiesSummary(
+  mdl: string,
+): Promise<RegistryPartiesSummary | null> {
+  const model = await partiesModelFor(mdl);
+  return model
+    ? { counts: model.counts, types: model.types, seegerWeiss: model.seegerWeiss }
+    : null;
+}
+
+/** Parties of the master docket: grouped by type when unfiltered, otherwise one filtered page. */
+export async function loadRegistryParties(
+  mdl: string,
+  type: string,
+  q: string,
+  offset: number,
+): Promise<RegistryPartiesList | null> {
+  const model = await partiesModelFor(mdl);
+  if (!model) return null;
+  const rows = pickParties(model, { type, q });
+  const start = Math.max(0, Math.min(Math.floor(offset), Math.max(0, rows.length - 1)));
+  const aligned = start - (start % PARTIES_PAGE);
+  const overview = !type && !q.trim() && aligned === 0;
+  return {
+    total: rows.length,
+    offset: aligned,
+    pageSize: PARTIES_PAGE,
+    rows: rows.slice(aligned, aligned + PARTIES_PAGE),
+    groups: overview ? groupParties(model, PARTIES_PER_GROUP) : null,
+  };
+}
+
+/** Counsel grouped by the firm line as printed, the exact Seeger Weiss firm first. */
+export async function loadRegistryCounsel(
+  mdl: string,
+  q: string,
+  offset: number,
+): Promise<RegistryCounselList | null> {
+  const model = await partiesModelFor(mdl);
+  if (!model) return null;
+  const firms = pickFirms(model, q);
+  const start = Math.max(0, Math.min(Math.floor(offset), Math.max(0, firms.length - 1)));
+  const aligned = start - (start % FIRMS_PAGE);
+  return {
+    total: firms.length,
+    offset: aligned,
+    pageSize: FIRMS_PAGE,
+    firms: firms.slice(aligned, aligned + FIRMS_PAGE).map((g) => ({
+      firm: g.firm,
+      seegerWeiss: g.seegerWeiss,
+      parties: g.parties,
+      attorneyCount: g.attorneys.length,
+      attorneys: g.attorneys.slice(0, FIRM_ATTORNEY_CAP),
+    })),
+  };
+}
+
+/* ------------------------------------------------------------------ parties and counsel (saved sample) */
 
 export async function loadCounsel(
   mdl: string,

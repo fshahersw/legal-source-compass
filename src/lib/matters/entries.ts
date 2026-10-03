@@ -95,7 +95,11 @@ export function entryTypeLabel(key: string): string {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : key;
 }
 
-export type EntryGroup = { key: string; label: string; entries: DocketEntry[] };
+export type EntryGroup<T extends { date: string | null } = DocketEntry> = {
+  key: string;
+  label: string;
+  entries: T[];
+};
 
 const MONTHS = [
   "January",
@@ -113,9 +117,11 @@ const MONTHS = [
 ];
 
 /** Group entries by calendar month in the order given; undated entries form one trailing group. */
-export function groupEntriesByMonth(entries: DocketEntry[]): EntryGroup[] {
-  const groups: EntryGroup[] = [];
-  const index = new Map<string, EntryGroup>();
+export function groupEntriesByMonth<T extends { date: string | null }>(
+  entries: T[],
+): EntryGroup<T>[] {
+  const groups: EntryGroup<T>[] = [];
+  const index = new Map<string, EntryGroup<T>>();
   for (const e of entries) {
     const key = e.date ? e.date.slice(0, 7) : "undated";
     let g = index.get(key);

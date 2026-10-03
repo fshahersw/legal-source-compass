@@ -2,7 +2,6 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 
-import { DatasetBrowser } from "@/components/corpus/DatasetBrowser";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import {
   Chip,
@@ -21,6 +20,7 @@ import {
   td,
   th,
 } from "@/components/matters/common";
+import { RegistryParties } from "@/components/matters/RegistryParties";
 import { Input } from "@/components/ui/input";
 import { getMatterParties } from "@/lib/matters/matters.functions";
 import {
@@ -197,42 +197,12 @@ export function PartiesPanel({ payload }: { payload: MatterOverviewPayload }) {
 
   return (
     <div className="space-y-4">
+      <RegistryParties payload={payload} />
       <Panel
         id="parties"
-        title="Parties and counsel"
-        note="Names exactly as the sources recorded them. Spellings are never merged, and an individual's name on the plaintiff side is counted rather than listed."
+        title="Counsel and parties in the saved docket sample"
+        note="The firm-focused sample of saved dockets, for matters and years the matter registry has not collected. Names exactly as the sample recorded them; spellings are never merged, and an individual's name on the plaintiff side is counted rather than listed."
       >
-        {payload.registryReleased.parties ? (
-          <div className="mb-3 space-y-2">
-            <p className="text-[12px] font-medium text-muted-foreground">
-              Parties and counsel on the master docket (matter registry)
-            </p>
-            <DatasetBrowser
-              key={payload.registryReleased.parties}
-              dataset={payload.registryReleased.parties}
-              initialFilters={{ mdl }}
-              compact
-            />
-          </div>
-        ) : payload.registry?.parties.length ? (
-          <div className="mb-3">
-            <Scope title="Master-docket parties: not yet available">
-              The matter registry captured{" "}
-              {payload.registry.parties
-                .map(
-                  (p) =>
-                    `${p.captured !== null ? p.captured.toLocaleString() : "an unrecorded number of"} ${p.kind}`,
-                )
-                .join(" and ")}{" "}
-              from the master docket
-              {payload.registry.parties.every((p) => p.complete === true)
-                ? " (complete at capture)"
-                : ""}
-              . Names from that capture are not released yet, so the lists below come from the saved
-              firm-focused sample only.
-            </Scope>
-          </div>
-        ) : null}
         {query.isLoading ? <Loading what="counsel" /> : null}
         {query.error ? <ExternalError error={query.error} /> : null}
         {counsel ? (

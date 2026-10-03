@@ -2,8 +2,16 @@
 import type { CasesPage, CaseRow, RegistryLabels } from "./cases";
 import type { MatterDocument, RegistrySummary } from "./documents";
 import type { DocketEntry } from "./entries";
+import type { EntryArchive, RegistryEntry } from "./timeline";
 import type { MatterOverview } from "./overview";
 import type { AppearanceRow, CounselRow, PartyKind } from "./parties";
+import type {
+  AttorneyView,
+  FirmGroup,
+  PartiesCounts,
+  PartyView,
+  SeegerWeissSummary,
+} from "./registryParties";
 import type { CaseIdPlanEntry, RegistryMatter } from "./registry";
 
 export type MasterDocketMeta = {
@@ -80,6 +88,28 @@ export type EntriesPayload = {
   coverage: { activityLast: string | null; clLast: string | null };
 };
 
+/** One page of the matter registry's docket-entry timeline, newest first. */
+export type TimelinePayload = {
+  entries: RegistryEntry[];
+  /** Entries matching the filter (all pages), exact. */
+  total: number;
+  offset: number;
+  pageSize: number;
+};
+
+/**
+ * Which verified PDFs the archive holds for the entries of one timeline page, keyed by entry id. Read separately from
+ * the page itself because the first read of a matter's archive index takes a few seconds.
+ */
+export type TimelineArchivePayload =
+  | {
+      connected: true;
+      /** False when the archive holds more rows than were indexed, so "not archived" may only be "not read". */
+      complete: boolean;
+      byEntry: Record<string, EntryArchive>;
+    }
+  | { connected: false; reason: string };
+
 export type RegistryDocumentsPayload =
   | {
       connected: true;
@@ -121,6 +151,37 @@ export type PartiesPayload = {
   pageSize: number;
   /** Exact totals for each kind for this MDL. */
   totals: Record<PartyKind, number | null>;
+};
+
+/** What the matter registry holds for the master docket's parties and counsel (numbers only; the lists load apart). */
+export type RegistryPartiesSummary = {
+  counts: PartiesCounts;
+  /** Party types with the number of parties of each, defendants first. */
+  types: { value: string; count: number }[];
+  seegerWeiss: SeegerWeissSummary;
+};
+
+/** Parties of the master docket: a grouped overview (first rows of each type) or one filtered, paged list. */
+export type RegistryPartiesList = {
+  total: number;
+  offset: number;
+  pageSize: number;
+  rows: PartyView[];
+  /** Set only for the unfiltered first page. */
+  groups: { type: string; count: number; rows: PartyView[] }[] | null;
+};
+
+/** A firm as listed on the Counsel view: attorneys beyond the cap are counted, not sent. */
+export type FirmListItem = Omit<FirmGroup, "attorneys"> & {
+  attorneys: AttorneyView[];
+  attorneyCount: number;
+};
+
+export type RegistryCounselList = {
+  total: number;
+  offset: number;
+  pageSize: number;
+  firms: FirmListItem[];
 };
 
 export type AppearancesPayload = { rows: AppearanceRow[]; published: boolean };
