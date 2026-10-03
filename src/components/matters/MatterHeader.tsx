@@ -37,6 +37,10 @@ export function MatterHeader({ payload }: { payload: MatterOverviewPayload }) {
     seen.has(r.url) ? false : (seen.add(r.url), true),
   );
   const judge = o.judge;
+  // The registry records the magistrate judge the master docket is referred to, as the source string only.
+  const referred =
+    payload.registry?.judges.find((j) => j.role === "referred_to" && j.sourceString) ?? null;
+  const registry = payload.registry;
 
   return (
     <section
@@ -67,6 +71,24 @@ export function MatterHeader({ payload }: { payload: MatterOverviewPayload }) {
           </Chip>
         ) : null}
         {o.litigationType ? <Chip title="JPML docket type">{o.litigationType}</Chip> : null}
+        {registry ? (
+          <Link
+            to="/matters/$id"
+            params={{ id: o.mdl }}
+            search={{ tab: "cases" }}
+            className="rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            <Chip
+              tone="success"
+              title="The Seeger Weiss matter registry holds explicit case ids and evidence-backed dockets for this MDL."
+            >
+              In the matter registry
+              {registry.members.rows !== null
+                ? ` · ${registry.members.rows.toLocaleString()} dockets`
+                : ""}
+            </Chip>
+          </Link>
+        ) : null}
         <Link
           to="/matters/seeger-weiss"
           className="ml-auto text-[12px] text-primary underline-offset-2 hover:underline"
@@ -128,6 +150,12 @@ export function MatterHeader({ payload }: { payload: MatterOverviewPayload }) {
                   ? `Profile linked by native id${judge.evidenceNote ? ` — ${judge.evidenceNote}` : ""}.`
                   : "No profile link: no native-id evidence ties a judge profile to this MDL."}
               </span>
+              {referred ? (
+                <span className="block text-[11px] text-muted-foreground">
+                  Referred to (CourtListener docket): {referred.sourceString}
+                  {referred.clPersonId ? ` · person ${referred.clPersonId}` : ""}
+                </span>
+              ) : null}
             </>
           ) : (
             <span className="text-muted-foreground">Not recorded</span>

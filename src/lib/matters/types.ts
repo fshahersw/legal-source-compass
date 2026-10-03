@@ -1,9 +1,10 @@
 /** Payload shapes shared by the matter server functions and the matter UI (no server code lives here). */
-import type { CaseRow } from "./cases";
+import type { CaseRow, RegistryLabels } from "./cases";
 import type { MatterDocument, RegistrySummary } from "./documents";
 import type { DocketEntry } from "./entries";
 import type { MatterOverview } from "./overview";
 import type { AppearanceRow, CounselRow, PartyKind } from "./parties";
+import type { CaseIdPlanEntry, RegistryMatter } from "./registry";
 
 export type MasterDocketMeta = {
   docketNumber: string | null;
@@ -23,15 +24,19 @@ export type MatterOverviewPayload = {
   judgeProfile: { id: string; name: string } | null;
   jpmlReferences: JpmlReference[];
   sw: { tier: 1 | 2 | null; shortName: string | null };
+  /** The Seeger Weiss matter registry's record for this MDL, when the registry publishes one; null otherwise. */
+  registry: RegistryMatter | null;
 };
 
 export type MatterCasesPayload = {
-  /** Master docket + saved-docket-sample members, merged by CourtListener docket id. */
+  /** Master docket + registry dockets + saved-docket-sample members, merged by CourtListener docket id. */
   rows: CaseRow[];
   inventoryTotal: number;
   /** Dockets whose FJC IDB record carries this MDL number (historical/administrative); null when not published. */
   fjc: { total: number | null; capped: boolean } | null;
   inventoryPublished: boolean;
+  /** Rows read from the matter registry's docket projection; null when that dataset is not published. */
+  registryDockets: { total: number; truncated: boolean; labels: RegistryLabels } | null;
 };
 
 export type FjcCasesPage = {
@@ -61,9 +66,10 @@ export type RegistryDocumentsPayload =
       summary: RegistrySummary;
       rows: MatterDocument[];
       truncated: boolean;
-      caseKeys: string[];
+      /** Provider case ids asked for, each marked as supplied by the matter registry or derived. */
+      caseIds: CaseIdPlanEntry[];
     }
-  | { connected: false; reason: string; caseKeys: string[] };
+  | { connected: false; reason: string; caseIds: CaseIdPlanEntry[] };
 
 export type LegacyDocument = {
   id: string;
@@ -113,4 +119,6 @@ export type HubRow = {
   savedDocuments: number | null;
   swAppearances: number | null;
   registry: HubRegistry;
+  /** Dockets the matter registry holds for this MDL (all roles); null when the registry has no record for it. */
+  registryDockets: number | null;
 };

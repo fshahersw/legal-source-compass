@@ -50,27 +50,28 @@ export function MatterPage({
     >
       <div className="space-y-4">
         <MatterHeader payload={payload} />
-        <nav
-          aria-label="Matter sections"
-          className="-mx-1 flex gap-1 overflow-x-auto border-b border-border px-1"
-        >
-          {MATTER_TABS.map((t) => (
-            <Link
-              key={t}
-              to="/matters/$id"
-              params={{ id: o.mdl }}
-              // The active tab keeps the current search (so it is "exactly active"); the others reset transient filters.
-              search={tab === t ? true : t === "overview" ? {} : { tab: t }}
-              activeOptions={{ exact: true, includeSearch: true }}
-              className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-[13px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring ${
-                tab === t
-                  ? "border-primary text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {MATTER_TAB_LABELS[t]}
-            </Link>
-          ))}
+        {/* The border lives on the nav and the scroller is inside it: a negative-margin tab inside an overflow
+            container would add a 1px vertical overflow and show a vertical scrollbar on Windows. */}
+        <nav aria-label="Matter sections" className="border-b border-border">
+          <div className="-mx-1 flex gap-1 overflow-x-auto overflow-y-hidden px-1">
+            {MATTER_TABS.map((t) => (
+              <Link
+                key={t}
+                to="/matters/$id"
+                params={{ id: o.mdl }}
+                // The active tab keeps the current search (so it is "exactly active"); the others reset transient filters.
+                search={tab === t ? true : t === "overview" ? {} : { tab: t }}
+                activeOptions={{ exact: true, includeSearch: true }}
+                className={`whitespace-nowrap border-b-2 px-3 py-2 text-[13px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring ${
+                  tab === t
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {MATTER_TAB_LABELS[t]}
+              </Link>
+            ))}
+          </div>
         </nav>
         <div role="region" aria-label={MATTER_TAB_LABELS[tab]}>
           {tab === "overview" ? <OverviewPanel payload={payload} /> : null}

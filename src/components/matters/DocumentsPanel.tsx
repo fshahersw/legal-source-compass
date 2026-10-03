@@ -40,9 +40,28 @@ import {
 } from "@/lib/matters/documents";
 import { getMatterDocuments } from "@/lib/matters/matters.functions";
 import type { JpmlReport } from "@/lib/matters/overview";
+import type { CaseIdPlanEntry } from "@/lib/matters/registry";
 import type { LegacyDocument, MatterOverviewPayload } from "@/lib/matters/types";
 
 const PAGE = 50;
+/** A stable empty list, so memoised filters do not re-run on every render while data loads. */
+const NO_DOCS: MatterDocument[] = [];
+
+/** The provider case ids the registry was asked for, each marked as recorded by the matter registry or derived. */
+function CaseIdList({ ids }: { ids: CaseIdPlanEntry[] }) {
+  return (
+    <span className="inline-flex flex-wrap gap-x-3 gap-y-0.5">
+      {ids.map((c) => (
+        <span key={c.id} className="whitespace-nowrap">
+          <span className="font-mono">{c.id}</span>{" "}
+          <span className="text-muted-foreground">
+            ({c.basis === "registry" ? "matter registry" : "derived from the docket number"})
+          </span>
+        </span>
+      ))}
+    </span>
+  );
+}
 
 function RegistryTable({
   docs,
@@ -152,25 +171,34 @@ function RegistrySection({
     q: string;
     source: RegistrySource | "";
     availability: Availability | "";
-  }>({ q: "", source: "", availability: "" });
+    caseId: string;
+  }>({ q: "", source: "", availability: "", caseId: "" });
   const [sort, setSort] = useState<DocumentSort>("entry-desc");
   const [offset, setOffset] = useState(0);
   const registry = q.data?.registry;
-  const docs = registry && registry.connected ? registry.rows : [];
-  const { q: text, source, availability } = filter;
+  const docs = registry && registry.connected ? registry.rows : NO_DOCS;
+  const { q: text, source, availability, caseId } = filter;
   const filtered = useMemo(() => {
-    const f: DocumentFilter = { q: text, source, availability, entry };
+    const f: DocumentFilter = { q: text, source, availability, entry, caseId };
     return sortDocuments(filterDocuments(docs, f), sort);
-  }, [docs, text, source, availability, entry, sort]);
+  }, [docs, text, source, availability, entry, caseId, sort]);
   // Each facet ignores its own filter but honours the others, so option counts match the table.
   const sourceCounts = useMemo(
     () =>
-      countDocuments(filterDocuments(docs, { q: text, source: "", availability, entry })).bySource,
-    [docs, text, availability, entry],
+      countDocuments(filterDocuments(docs, { q: text, source: "", availability, entry, caseId }))
+        .bySource,
+    [docs, text, availability, entry, caseId],
   );
   const availCounts = useMemo(
-    () => countDocuments(filterDocuments(docs, { q: text, source, availability: "", entry })),
-    [docs, text, source, entry],
+    () =>
+      countDocuments(filterDocuments(docs, { q: text, source, availability: "", entry, caseId })),
+    [docs, text, source, entry, caseId],
+  );
+  const caseCounts = useMemo(
+    () =>
+      countDocuments(filterDocuments(docs, { q: text, source, availability, entry, caseId: "" }))
+        .byCase,
+    [docs, text, source, availability, entry],
   );
   const page = filtered.slice(offset, offset + PAGE);
   const viewed = viewKey
@@ -203,27 +231,28 @@ function RegistrySection({
       >
         <EmptyState>
           {registry.reason}
-          {registry.caseKeys.length ? (
-            <span className="mt-1 block font-mono text-[11px]">
-              Derived case keys: {registry.caseKeys.join(", ")}
+          {registry.caseIds.length ? (
+            <span className="mt-1 block text-[11px]">
+              Case ids asked for: <CaseIdList ids={registry.caseIds} />
             </span>
           ) : null}
         </EmptyState>
       </Panel>
     );
   const s = registry.summary;
+  const caseIdsWithDocs = registry.caseIds.filter((c) => (caseCounts[c.id] ?? 0) > 0);
   return (
     <Panel
       id="registry"
       title="Verified PDFs"
       note={
         <>
-          Originals held in the private archive, listed from the verified registry for the master
-          docket. Case key
-          {registry.caseKeys.length === 1 ? "" : "s"}{" "}
-          <span className="font-mono">{registry.caseKeys.join(" · ")}</span> were <em>derived</em>{" "}
-          from the court id and docket number (exact match); the matter registry will replace the
-          derivation.
+          Originals held in the private archive, listed from the verified registry for this
+          matter&apos;s master and JPML dockets. Case id
+          {registry.caseIds.length === 1 ? "" : "s"} asked for:{" "}
+          <CaseIdList ids={registry.caseIds} />. An id from the matter registry is the explicit
+          provider id it records for the docket; a derived id comes from an exact match on court and
+          docket number.
         </>
       }
     >
@@ -263,7 +292,7 @@ function RegistrySection({
           or hash. It is held when the source did not confirm that the document is unsealed and
           available (for example a search-only locator).
         </Scope>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
           <FilterField label="Search">
             <Input
               aria-label="Search verified PDFs"
@@ -273,6 +302,22 @@ function RegistrySection({
               placeholder="Entry number or file name"
             />
           </FilterField>
+          {caseIdsWithDocs.length > 1 ? (
+            <FilterField label="Case id">
+              <select
+                className={selectClass}
+                value={filter.caseId}
+                onChange={(e) => set({ caseId: e.target.value })}
+              >
+                <option value="">All case ids</option>
+                {caseIdsWithDocs.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.id} ({(caseCounts[c.id] ?? 0).toLocaleString()})
+                  </option>
+                ))}
+              </select>
+            </FilterField>
+          ) : null}
           <FilterField label="Source">
             <select
               className={selectClass}
@@ -331,13 +376,13 @@ function RegistrySection({
             {filtered.length.toLocaleString()}
           </span>{" "}
           of {docs.length.toLocaleString()} documents match
-          {filter.q || filter.source || filter.availability || entry !== null ? (
+          {filter.q || filter.source || filter.availability || filter.caseId || entry !== null ? (
             <Button
               variant="ghost"
               size="sm"
               className="ml-2 h-7 px-2"
               onClick={() => {
-                setFilter({ q: "", source: "", availability: "" });
+                setFilter({ q: "", source: "", availability: "", caseId: "" });
                 onEntry(null);
                 setOffset(0);
               }}

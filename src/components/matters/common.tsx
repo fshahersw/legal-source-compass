@@ -128,7 +128,7 @@ export function Chip({
 }: {
   children: ReactNode;
   tone?: "neutral" | "primary" | "success" | "warning";
-  title?: string;
+  title?: string | undefined;
 }) {
   const tones = {
     neutral: "border-border bg-muted text-muted-foreground",

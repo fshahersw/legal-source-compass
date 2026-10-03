@@ -4,6 +4,7 @@ import { Link } from "@tanstack/react-router";
 
 import { BarList } from "@/components/corpus/BarList";
 import {
+  Chip,
   DataTable,
   LinkOut,
   NotRecorded,
@@ -13,13 +14,111 @@ import {
   td,
   th,
 } from "@/components/matters/common";
+import { evidenceKindLabel } from "@/lib/matters/cases";
 import { formatBytes } from "@/lib/matters/documents";
 import { entryTypeLabel } from "@/lib/matters/entries";
-import { getMatterDocumentsSummary, getMatterEntries } from "@/lib/matters/matters.functions";
+import {
+  getMatterCases,
+  getMatterDocumentsSummary,
+  getMatterEntries,
+} from "@/lib/matters/matters.functions";
 import { orNotRecorded } from "@/lib/matters/overview";
+import { formatUtc } from "@/lib/matters/registry";
 import type { MatterOverviewPayload } from "@/lib/matters/types";
 
 type TabSearch = "cases" | "docket" | "documents" | "parties" | "evidence";
+
+const PROVIDER_LABELS: Record<string, string> = {
+  courtlistener: "CourtListener",
+  docketbird: "DocketBird",
+  jpml: "JPML",
+  "official-court": "Court website",
+};
+
+/** What the Seeger Weiss matter registry holds for this MDL: explicit relationships, coverage and gaps. */
+function RegistryCard({ payload }: { payload: MatterOverviewPayload }) {
+  const reg = payload.registry;
+  if (!reg) return null;
+  const byBasis = Object.entries(reg.members.byBasis).sort((a, b) => b[1] - a[1]);
+  return (
+    <Panel
+      id="registry-coverage"
+      title="Matter registry"
+      note="Evidence-backed relationships the Seeger Weiss matter registry holds for this MDL. It is partial by design: the JPML counts are the size of the MDL, the registry is the evidence it can show."
+      aside={
+        <>
+          {reg.tier ? <Chip tone="primary">{reg.tier.replace(/^tier/, "Tier ")}</Chip> : null}
+          {reg.projectedAt ? <span>Projected {formatUtc(reg.projectedAt)}</span> : null}
+        </>
+      }
+    >
+      <div className="space-y-3">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <StatTile
+            label="Member-like dockets"
+            value={reg.members.rows !== null ? reg.members.rows.toLocaleString() : <NotRecorded />}
+            note={
+              reg.members.actions !== null
+                ? `${reg.members.actions.toLocaleString()} counted as actions · all roles, not a census`
+                : "All roles, not a census"
+            }
+          />
+          <div className="rounded-md border border-border bg-background p-3 sm:col-span-1">
+            <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              By evidence kind
+            </div>
+            {byBasis.length ? (
+              <ul className="mt-1 space-y-0.5 text-[12px]">
+                {byBasis.map(([kind, n]) => (
+                  <li key={kind} className="flex justify-between gap-2">
+                    <span>{evidenceKindLabel(kind)}</span>
+                    <span className="tabular-nums">{n.toLocaleString()}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-1 text-[12px] text-muted-foreground">No members recorded</p>
+            )}
+          </div>
+          {reg.entries.length ? (
+            reg.entries.map((e) => (
+              <StatTile
+                key={`${e.provider}-${e.docketKey}`}
+                label={`Docket entries captured (${PROVIDER_LABELS[e.provider] ?? e.provider})`}
+                value={e.captured !== null ? e.captured.toLocaleString() : <NotRecorded />}
+                note={
+                  e.providerTotal !== null
+                    ? `of ${e.providerTotal.toLocaleString()} reported by the provider${e.complete ? " · complete at capture" : e.complete === false ? " · incomplete" : ""}`
+                    : "Provider total not recorded"
+                }
+              />
+            ))
+          ) : (
+            <StatTile label="Docket entries captured" value={<NotRecorded />} />
+          )}
+          {reg.parties.length ? (
+            <StatTile
+              label="Parties / attorneys captured"
+              value={reg.parties
+                .map((p) => (p.captured !== null ? p.captured.toLocaleString() : "—"))
+                .join(" / ")}
+              note={`${reg.parties.map((p) => p.kind).join(" / ")} on the master docket${reg.parties.every((p) => p.complete) ? " · complete at capture" : ""}`}
+            />
+          ) : null}
+        </div>
+        {reg.gaps.length ? (
+          <Scope title="Known gaps">
+            {reg.gaps.map((g, i) => (
+              <span key={i} className="block">
+                {g}
+              </span>
+            ))}
+          </Scope>
+        ) : null}
+      </div>
+    </Panel>
+  );
+}
 
 function TabLink({ id, tab, children }: { id: string; tab: TabSearch; children: React.ReactNode }) {
   return (
@@ -53,10 +152,20 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
     queryFn: () => entriesFn({ data: { id: o.mdl, source: "auto", type: null, q: "", offset: 0 } }),
     staleTime: 2 * 60_000,
   });
+  // Same query key as the Cases tab, so opening that tab afterwards is instant.
+  const casesFn = useServerFn(getMatterCases);
+  const caseList = useQuery({
+    queryKey: ["matter-cases", o.mdl],
+    queryFn: () => casesFn({ data: { id: o.mdl } }),
+    staleTime: 5 * 60_000,
+  });
   const registry = docs.data && docs.data.connected ? docs.data.summary : null;
   const available = entries.data?.available;
   const cases = o.cases;
   const counsel = o.counsel;
+  const reg = payload.registry;
+  const listedCases = caseList.data ? caseList.data.rows.length : null;
+  const capturedEntries = reg ? reg.entries.reduce((n, e) => n + (e.captured ?? 0), 0) : 0;
 
   return (
     <div className="space-y-4">
@@ -73,15 +182,23 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
           }
         />
         <StatTile
-          label="Cases in the corpus"
+          label="Dockets listed"
           value={
-            cases?.total !== null && cases?.total !== undefined ? (
+            listedCases !== null ? (
+              listedCases.toLocaleString()
+            ) : caseList.isLoading ? (
+              "…"
+            ) : cases?.total !== null && cases?.total !== undefined ? (
               cases.total.toLocaleString()
             ) : (
               <NotRecorded />
             )
           }
-          note="Master docket plus the saved docket sample; never the size of the MDL"
+          note={
+            reg
+              ? "Master and JPML dockets, the matter registry's member dockets and the saved sample; never the size of the MDL"
+              : "Master docket plus the saved docket sample; never the size of the MDL"
+          }
         />
         <StatTile
           label="Docket entries"
@@ -105,7 +222,10 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
                     : null,
                 ]
                   .filter(Boolean)
-                  .join(" · ") || "None in the corpus yet"
+                  .join(" · ") ||
+                (capturedEntries
+                  ? `${capturedEntries.toLocaleString()} captured by the matter registry, not published yet`
+                  : "None in the corpus yet")
               : undefined
           }
         />
@@ -139,6 +259,8 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
         />
       </div>
 
+      <RegistryCard payload={payload} />
+
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel
           title="JPML counts over time"
@@ -162,7 +284,14 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
               <tbody>
                 {o.actions.snapshots.map((s) => (
                   <tr key={s.asOf}>
-                    <td className={`${td} font-mono`}>{s.asOf}</td>
+                    <td className={`${td} font-mono`}>
+                      {s.asOf}
+                      {s.label && /matter registry/i.test(s.label) ? (
+                        <span className="block font-sans text-[10px] text-muted-foreground">
+                          via the matter registry
+                        </span>
+                      ) : null}
+                    </td>
                     <td className={`${td} text-right tabular-nums`}>{orNotRecorded(s.total)}</td>
                     <td className={`${td} text-right tabular-nums`}>{orNotRecorded(s.pending)}</td>
                   </tr>
@@ -183,9 +312,11 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
                 Member cases
               </TabLink>{" "}
               —{" "}
-              {cases?.total
-                ? `${cases.total.toLocaleString()} dockets with membership evidence`
-                : "none beyond the master docket"}
+              {reg && reg.members.rows !== null
+                ? `${reg.members.rows.toLocaleString()} member-like dockets in the matter registry, each with its evidence`
+                : cases?.total
+                  ? `${cases.total.toLocaleString()} dockets with membership evidence`
+                  : "none beyond the master docket"}
             </li>
             <li>
               <TabLink id={o.mdl} tab="docket">
@@ -198,7 +329,10 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
                     available.activity ? `${available.activity.toLocaleString()} with text` : null,
                   ]
                     .filter(Boolean)
-                    .join(", ") || "none yet"
+                    .join(", ") ||
+                  (capturedEntries
+                    ? `${capturedEntries.toLocaleString()} captured, not published yet`
+                    : "none yet")
                 : "loading"}
             </li>
             <li>

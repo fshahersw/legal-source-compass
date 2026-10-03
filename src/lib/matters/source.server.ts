@@ -1,14 +1,23 @@
 /**
  * Server-only data access for matter pages. ONE module reads the corpus; the UI never touches REST directly.
  *
- * Today's sources are the existing public read model (`mdls`, `mdl_case_inventory`, `mdl_docket_activity`,
- * `mdl_docket_documents`, `mdl_counsel`, `mdl_appearances`, `cl_master_entries`, `cl_docket_metadata`,
- * `jpml_html_reference`) plus the verified PDF registry through `corpus_matter_pdf_*_v1`. When the matter registry
- * projection lands (see _work/contracts/sw-matter-registry.md) the readers below are the only code that changes.
- * Datasets that are not published (`corpus_datasets.ready = false`) are never read.
+ * Sources: the public read model (`mdls`, `mdl_case_inventory`, `mdl_docket_activity`, `mdl_docket_documents`,
+ * `mdl_counsel`, `mdl_appearances`, `cl_master_entries`, `cl_docket_metadata`, `jpml_html_reference`), the verified PDF
+ * registry through `corpus_matter_pdf_*_v1`, and the Seeger Weiss matter registry projection (`sw_matters_v1`,
+ * `sw_matter_dockets_v1`; contract in _work/contracts/sw-matter-registry.md) which supplies explicit provider case ids
+ * and evidence-backed member dockets for the matters it covers. A matter the registry does not cover keeps working
+ * from the derived keys, labelled "derived". Datasets that are not published (`corpus_datasets.ready = false`) are
+ * never read.
  */
 import { restGet, rpcPost } from "@/lib/external/rest.server";
-import { masterCase, mergeCases, parseFjcCase, parseInventoryCase, type CaseRow } from "./cases";
+import {
+  masterCase,
+  mergeCases,
+  parseFjcCase,
+  parseInventoryCase,
+  type CaseRow,
+  type RegistryLabels,
+} from "./cases";
 import { matterCaseKeys } from "./docketKeys";
 import {
   describeDocument,
@@ -26,6 +35,19 @@ import {
   type CounselRow,
   type PartyKind,
 } from "./parties";
+import {
+  caseIdPlan,
+  isRegistryRowOf,
+  newerJpmlCounts,
+  parseRegistryDocket,
+  parseRegistryDocketDetail,
+  parseRegistryLabels,
+  parseRegistryMatter,
+  withRegistryJpml,
+  type CaseIdPlanEntry,
+  type RegistryDocketDetail,
+  type RegistryMatter,
+} from "./registry";
 import { SW_MATTERS } from "./tiers";
 import type {
   AppearancesPayload,
@@ -57,6 +79,8 @@ const MATTER_DATASETS = [
   "cl_master_entries",
   "cl_docket_metadata",
   "jpml_html_reference",
+  "sw_matters_v1",
+  "sw_matter_dockets_v1",
 ] as const;
 type MatterDataset = (typeof MATTER_DATASETS)[number];
 
@@ -130,6 +154,78 @@ async function loadJpmlReferences(mdl: string): Promise<JpmlReference[]> {
   return out;
 }
 
+/* ------------------------------------------------------------------ matter registry */
+
+/** The matter registry's record for this MDL; null when the registry is not published or holds no record for it. */
+export async function loadRegistryMatter(mdl: string): Promise<RegistryMatter | null> {
+  if (!(await isPublished("sw_matters_v1"))) return null;
+  const r = await restGet<{ registry: unknown }[]>(
+    `corpus_records?select=registry:detail->registry&dataset=eq.sw_matters_v1&id=eq.${enc(`sw-matter:${mdl}`)}&limit=1`,
+  );
+  return parseRegistryMatter(r.rows[0]?.registry, mdl);
+}
+
+let labelsCache: { at: number; labels: RegistryLabels } | null = null;
+
+/** Evidence-kind and role labels as the registry dataset itself publishes them; the static map is the fallback. */
+async function registryLabels(): Promise<RegistryLabels> {
+  if (labelsCache && Date.now() - labelsCache.at < 5 * 60_000) return labelsCache.labels;
+  let labels: RegistryLabels = {};
+  try {
+    const r = await restGet<{ metadata: unknown }[]>(
+      "corpus_datasets?select=metadata&id=eq.sw_matter_dockets_v1&limit=1",
+    );
+    labels = parseRegistryLabels(r.rows[0]?.metadata);
+  } catch {
+    labels = {};
+  }
+  labelsCache = { at: Date.now(), labels };
+  return labels;
+}
+
+const REGISTRY_DOCKET_PAGE = 1000;
+const REGISTRY_DOCKET_CAP = 3000;
+
+/** Listing rows of the registry's docket projection for one MDL (evidence rows are fetched per docket on demand). */
+async function loadRegistryDockets(
+  mdl: string,
+): Promise<{ rows: CaseRow[]; total: number; truncated: boolean }> {
+  const rows: CaseRow[] = [];
+  let total: number | null = null;
+  for (let from = 0; from < REGISTRY_DOCKET_CAP; from += REGISTRY_DOCKET_PAGE) {
+    const r = await restGet<
+      { id: string; cells: unknown; links: unknown; badges: unknown; filters: unknown }[]
+    >(
+      `corpus_records?select=id,cells:item->cells,links:item->links,badges:item->badges,filters&dataset=eq.sw_matter_dockets_v1&filters->>mdl=eq.${enc(mdl)}&order=ordinal.asc,id.asc`,
+      { count: true, range: [from, from + REGISTRY_DOCKET_PAGE - 1] },
+    );
+    if (total === null) total = r.total;
+    for (const row of r.rows) {
+      const parsed = parseRegistryDocket({
+        id: row.id,
+        item: { cells: row.cells, links: row.links, badges: row.badges },
+        filters: row.filters,
+      });
+      if (parsed) rows.push(parsed);
+    }
+    if (r.rows.length < REGISTRY_DOCKET_PAGE) break;
+  }
+  const exact = total ?? rows.length;
+  return { rows, total: exact, truncated: rows.length < exact };
+}
+
+/** The evidence behind one registry docket (the drawer); null unless the row belongs to this MDL. */
+export async function loadRegistryDocketDetail(
+  mdl: string,
+  rowId: string,
+): Promise<RegistryDocketDetail | null> {
+  if (!isRegistryRowOf(rowId, mdl) || !(await isPublished("sw_matter_dockets_v1"))) return null;
+  const r = await restGet<{ detail: unknown }[]>(
+    `corpus_records?select=detail&dataset=eq.sw_matter_dockets_v1&id=eq.${enc(rowId)}&limit=1`,
+  );
+  return parseRegistryDocketDetail(r.rows[0]?.detail);
+}
+
 const overviewCache = new Map<string, { at: number; value: MatterOverviewPayload | null }>();
 
 /** The overview, cached for a minute so the tab loaders that need it do not each re-read the 70 KB MDL record. */
@@ -149,22 +245,24 @@ export async function loadMatterOverview(mdl: string): Promise<MatterOverviewPay
     p_datasets: ["mdls"],
     p_full: false,
   });
-  const overview = parseMdlDetail(raw);
-  if (!overview || overview.mdl !== mdl) return null;
-  const [master, judgeProfile, jpmlReferences] = await Promise.all([
-    loadMasterMeta(overview.masterDocket.clDocketId).catch(() => null),
-    overview.judge.nativeIdEvidence
-      ? loadJudgeProfile(overview.judge.entityId).catch(() => null)
+  const parsed = parseMdlDetail(raw);
+  if (!parsed || parsed.mdl !== mdl) return null;
+  const [master, judgeProfile, jpmlReferences, registry] = await Promise.all([
+    loadMasterMeta(parsed.masterDocket.clDocketId).catch(() => null),
+    parsed.judge.nativeIdEvidence
+      ? loadJudgeProfile(parsed.judge.entityId).catch(() => null)
       : Promise.resolve(null),
     loadJpmlReferences(mdl).catch(() => []),
+    loadRegistryMatter(mdl).catch(() => null),
   ]);
   const sw = SW_MATTERS.find((m) => String(m.mdl) === mdl) ?? null;
   return {
-    overview,
+    overview: withRegistryJpml(parsed, registry),
     master,
     judgeProfile,
     jpmlReferences,
     sw: { tier: sw?.tier ?? null, shortName: sw?.shortName ?? null },
+    registry,
   };
 }
 
@@ -182,6 +280,22 @@ export async function loadMatterCases(payload: MatterOverviewPayload): Promise<M
     title: overview.title,
   });
   if (m) rows.push(m);
+
+  let registryDockets: MatterCasesPayload["registryDockets"] = null;
+  if (await isPublished("sw_matter_dockets_v1")) {
+    try {
+      const [reg, labels] = await Promise.all([
+        loadRegistryDockets(overview.mdl),
+        registryLabels(),
+      ]);
+      if (reg.total > 0 || reg.rows.length > 0) {
+        rows.push(...reg.rows);
+        registryDockets = { total: reg.total, truncated: reg.truncated, labels };
+      }
+    } catch {
+      registryDockets = null;
+    }
+  }
 
   let inventoryTotal = 0;
   const inventoryPublished = await isPublished("mdl_case_inventory");
@@ -202,7 +316,7 @@ export async function loadMatterCases(payload: MatterOverviewPayload): Promise<M
   if (await isPublished("cl_docket_metadata")) {
     fjc = { total: await exactFjcCount(overview.mdl, null), capped: false };
   }
-  return { rows: mergeCases(rows), inventoryTotal, fjc, inventoryPublished };
+  return { rows: mergeCases(rows), inventoryTotal, fjc, inventoryPublished, registryDockets };
 }
 
 /** Exact (uncapped) number of cl_docket_metadata rows selected by an FJC MDL number, optionally in one exact court. */
@@ -409,18 +523,22 @@ export async function loadEntryText(entryId: string): Promise<{ text: string | n
 
 const REGISTRY_ROW_CAP = 5000;
 
-/** Verified-PDF registry rows for the derived case keys; degrades to `connected:false` if the reader is absent. */
+/**
+ * Verified-PDF registry rows for a matter's provider case ids (the matter registry's explicit ids first, derived
+ * keys as a labelled supplement); degrades to `connected:false` if the reader is absent.
+ */
 export async function loadRegistryDocuments(
-  caseKeys: string[],
+  caseIds: CaseIdPlanEntry[],
   summaryOnly = false,
 ): Promise<RegistryDocumentsPayload> {
-  if (!caseKeys.length) {
+  if (!caseIds.length) {
     return {
       connected: false,
-      reason: "No native case key could be derived from the master docket.",
-      caseKeys,
+      reason: "No native case id is recorded or derivable for this matter's master docket.",
+      caseIds,
     };
   }
+  const caseKeys = caseIds.map((c) => c.id);
   const rows: MatterDocument[] = [];
   let summary: RegistrySummary | null = null;
   try {
@@ -435,7 +553,7 @@ export async function loadRegistryDocuments(
       const parsed = raw
         .map((r) => parseRegistryDocument(r))
         .filter((r): r is NonNullable<typeof r> => !!r)
-        // A row is accepted only if its case id is exactly one of the derived keys.
+        // A row is accepted only if its case id is exactly one of the ids asked for.
         .filter((r) => r.nativeCaseId !== null && caseKeys.includes(r.nativeCaseId))
         .map(describeDocument);
       rows.push(...parsed);
@@ -453,7 +571,7 @@ export async function loadRegistryDocuments(
       reason: /\((404|400)\)/.test(message)
         ? "The verified PDF registry reader is not installed on the corpus database."
         : "The verified PDF registry could not be read.",
-      caseKeys,
+      caseIds,
     };
   }
   const resolved = summary ?? parseRegistrySummary(null, rows);
@@ -462,7 +580,7 @@ export async function loadRegistryDocuments(
     summary: resolved,
     rows,
     truncated: !summaryOnly && rows.length < resolved.total,
-    caseKeys,
+    caseIds,
   };
 }
 
@@ -656,6 +774,30 @@ export async function loadHub(): Promise<HubRow[]> {
     for (const row of a.rows)
       for (const m of row.filters?.mdl ?? []) sw.set(m, (sw.get(m) ?? 0) + 1);
   }
+  // The matter registry's per-matter block (explicit PDF case ids and docket counts) for the matters it covers.
+  const registryMatters = new Map<
+    string,
+    { pdfCaseIds: string[]; dockets: number | null; jpml: RegistryMatter["jpml"] }
+  >();
+  if (await isPublished("sw_matters_v1")) {
+    try {
+      const reg = await restGet<{ id: string; block: unknown }[]>(
+        "corpus_records?select=id,block:detail->registry&dataset=eq.sw_matters_v1&limit=200",
+      );
+      for (const row of reg.rows) {
+        const mdl = /^sw-matter:(\d{1,6})$/.exec(row.id)?.[1];
+        const parsed = mdl ? parseRegistryMatter(row.block, mdl) : null;
+        if (!mdl || !parsed) continue;
+        registryMatters.set(mdl, {
+          pdfCaseIds: parsed.pdfCaseIds,
+          dockets: parsed.members.rows,
+          jpml: parsed.jpml,
+        });
+      }
+    } catch {
+      registryMatters.clear();
+    }
+  }
   const registryFresh =
     hubRegistryCache && Date.now() - hubRegistryCache.at < 5 * 60_000
       ? hubRegistryCache.byMdl
@@ -665,7 +807,9 @@ export async function loadHub(): Promise<HubRow[]> {
     await mapLimit(SW_MATTERS, 6, async (m) => {
       const key = String(m.mdl);
       const s = summaries.get(key)?.summary;
-      const caseKeys = s ? matterCaseKeys(str(s["cl_court_id"]), str(s["master_docket"])).all : [];
+      const derived = s ? matterCaseKeys(str(s["cl_court_id"]), str(s["master_docket"])).all : [];
+      const plan = caseIdPlan(registryMatters.get(key) ?? null, derived);
+      const caseKeys = plan.map((c) => c.id);
       if (!caseKeys.length) {
         byMdl.set(key, null);
         return;
@@ -693,6 +837,16 @@ export async function loadHub(): Promise<HubRow[]> {
     const key = String(m.mdl);
     const row = summaries.get(key);
     const s = row?.summary ?? null;
+    const reg = registryMatters.get(key) ?? null;
+    // A newer JPML report held by the matter registry supersedes the MDL record's figures, with its own date.
+    const counts = newerJpmlCounts(
+      {
+        asOf: s ? str(s["as_of"]) : null,
+        total: s && typeof s["total_actions"] === "number" ? s["total_actions"] : null,
+        pending: s && typeof s["actions_pending"] === "number" ? s["actions_pending"] : null,
+      },
+      reg?.jpml,
+    );
     return {
       mdl: key,
       tier: m.tier,
@@ -703,9 +857,10 @@ export async function loadHub(): Promise<HubRow[]> {
       courtName: s ? str(s["court_name"]) : null,
       masterDocket: s ? str(s["master_docket"]) : null,
       judgePrinted: s ? str(s["judge_name_as_printed"]) : null,
-      totalActions: s && typeof s["total_actions"] === "number" ? s["total_actions"] : null,
-      pendingActions: s && typeof s["actions_pending"] === "number" ? s["actions_pending"] : null,
-      asOf: s ? str(s["as_of"]) : null,
+      totalActions: counts.total,
+      pendingActions: counts.pending,
+      asOf: counts.asOf,
+      registryDockets: reg?.dockets ?? null,
       casesInSample: row && typeof row.cases_total === "number" ? row.cases_total : null,
       docketEntriesInSample:
         row && typeof row.activity_total === "number" ? row.activity_total : null,

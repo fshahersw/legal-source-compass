@@ -137,6 +137,8 @@ export type DocumentFilter = {
   source?: RegistrySource | "";
   availability?: Availability | "";
   entry?: number | null;
+  /** Exact provider case id the document is filed under. */
+  caseId?: string;
 };
 
 export function filterDocuments(docs: MatterDocument[], f: DocumentFilter): MatterDocument[] {
@@ -145,6 +147,7 @@ export function filterDocuments(docs: MatterDocument[], f: DocumentFilter): Matt
     if (f.source && d.sourceSystem !== f.source) return false;
     if (f.availability && d.availability !== f.availability) return false;
     if (f.entry != null && d.entryNumber !== f.entry) return false;
+    if (f.caseId && d.nativeCaseId !== f.caseId) return false;
     if (q && !`${d.label} ${d.nativeDocumentId} ${d.entryNumber ?? ""}`.toLowerCase().includes(q))
       return false;
     return true;
@@ -178,14 +181,16 @@ export function sortDocuments(docs: MatterDocument[], sort: DocumentSort): Matte
 /** Counts computed from the rows in hand (the caller says whether those rows are the whole set). */
 export function countDocuments(docs: MatterDocument[]) {
   const bySource: Record<string, number> = {};
+  const byCase: Record<string, number> = {};
   let open = 0;
   let held = 0;
   for (const d of docs) {
     bySource[d.sourceSystem] = (bySource[d.sourceSystem] ?? 0) + 1;
+    if (d.nativeCaseId) byCase[d.nativeCaseId] = (byCase[d.nativeCaseId] ?? 0) + 1;
     if (d.availability === "open") open++;
     else held++;
   }
-  return { total: docs.length, open, held, bySource };
+  return { total: docs.length, open, held, bySource, byCase };
 }
 
 export function formatBytes(bytes: number | null | undefined): string {

@@ -24,10 +24,24 @@ import { TIER_LABELS, type SwTier } from "@/lib/matters/tiers";
 import type { HubRow } from "@/lib/matters/types";
 
 type Sort = "priority" | "pending" | "mdl";
+/** A stable empty list, so the memoised filter does not re-run on every render while data loads. */
+const NO_HUB_ROWS: HubRow[] = [];
 
 function Coverage({ row }: { row: HubRow }) {
   const chips: { key: string; node: React.ReactNode }[] = [];
   const num = (n: number | null) => (n === null ? null : n.toLocaleString());
+  if (row.registryDockets !== null)
+    chips.push({
+      key: "registry",
+      node: (
+        <Chip
+          tone="success"
+          title="Member-like dockets in the Seeger Weiss matter registry, each with its evidence. Not the size of the MDL."
+        >
+          Registry dockets {num(row.registryDockets)}
+        </Chip>
+      ),
+    });
   if (row.casesInSample !== null)
     chips.push({
       key: "cases",
@@ -240,7 +254,7 @@ export function HubPage() {
   const [text, setText] = useState("");
   const [status, setStatus] = useState("");
   const [sort, setSort] = useState<Sort>("priority");
-  const rows = q.data ?? [];
+  const rows = q.data ?? NO_HUB_ROWS;
   const filtered = useMemo(() => {
     const needle = text.trim().toLowerCase();
     const list = rows.filter((r) => {

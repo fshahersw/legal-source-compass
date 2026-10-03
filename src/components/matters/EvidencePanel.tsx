@@ -2,10 +2,22 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 
 import { entityQuery } from "@/components/corpus/EntityPage";
-import { Chip, Fact, LinkOut, Loading, NotRecorded, Panel } from "@/components/matters/common";
+import {
+  Chip,
+  DataTable,
+  Fact,
+  LinkOut,
+  Loading,
+  NotRecorded,
+  Panel,
+  td,
+  th,
+} from "@/components/matters/common";
 import { MdlEvidence } from "@/components/legal/MdlEvidence";
 import { buildEntityView } from "@/lib/external/entityView";
 import { displayValue } from "@/lib/external/domainRegistry";
+import { evidenceKindLabel } from "@/lib/matters/cases";
+import { formatUtc, type RegistryMatter } from "@/lib/matters/registry";
 import type { MatterOverviewPayload } from "@/lib/matters/types";
 
 const KIND_LABELS: Record<string, string> = {
@@ -16,6 +28,152 @@ const KIND_LABELS: Record<string, string> = {
   "source-caption-conflicts": "Caption conflict audit",
 };
 
+const ROLE_NAMES: Record<string, string> = {
+  master: "MDL master docket",
+  jpml_panel: "JPML panel proceeding",
+};
+
+/** Explicit provider ids for the master and JPML dockets, and the JPML orders the registry parsed. */
+function RegistryEvidence({ registry }: { registry: RegistryMatter }) {
+  return (
+    <Panel
+      title="Matter registry: identities and orders"
+      note="The explicit provider case ids the Seeger Weiss matter registry records for the master and JPML dockets, with how each was resolved, and the JPML orders it read member dockets from."
+      aside={
+        registry.projectedAt ? <span>Projected {formatUtc(registry.projectedAt)}</span> : undefined
+      }
+    >
+      <div className="space-y-4">
+        {registry.caseIds.length ? (
+          <DataTable caption="Master and JPML dockets with provider case ids">
+            <thead>
+              <tr>
+                <th className={th} scope="col">
+                  Docket
+                </th>
+                <th className={th} scope="col">
+                  Court
+                </th>
+                <th className={th} scope="col">
+                  Provider case ids
+                </th>
+                <th className={th} scope="col">
+                  Evidence
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {registry.caseIds.map((c) => (
+                <tr key={c.docketKey}>
+                  <td className={td}>
+                    <div className="font-mono text-[12px]">{c.docketNumber ?? <NotRecorded />}</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {ROLE_NAMES[c.role] ?? c.role.replace(/_/g, " ")}
+                    </div>
+                  </td>
+                  <td className={td}>{c.courtId ?? <NotRecorded />}</td>
+                  <td className={td}>
+                    {c.nativeCaseIds.length ? (
+                      <ul className="space-y-0.5">
+                        {c.nativeCaseIds.map((n) => (
+                          <li key={`${n.provider}:${n.id}`}>
+                            <span className="text-muted-foreground">{n.provider}</span>{" "}
+                            <span className="font-mono text-[11px]">{n.id}</span>
+                            {n.basis ? (
+                              <span className="ml-1 text-[10px] text-muted-foreground">
+                                ({n.basis.replace(/_/g, " ")})
+                              </span>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <NotRecorded />
+                    )}
+                  </td>
+                  <td className={td}>
+                    <div className="flex flex-wrap gap-1">
+                      {c.basis.map((b) => (
+                        <Chip key={b}>{evidenceKindLabel(b)}</Chip>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </DataTable>
+        ) : null}
+        {registry.jpmlOrders.length ? (
+          <DataTable caption="JPML orders parsed for Schedule A">
+            <thead>
+              <tr>
+                <th className={th} scope="col">
+                  Order
+                </th>
+                <th className={th} scope="col">
+                  Date
+                </th>
+                <th className={`${th} text-right`} scope="col">
+                  Rows read
+                </th>
+                <th className={th} scope="col">
+                  Source
+                </th>
+                <th className={th} scope="col">
+                  SHA-256
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {registry.jpmlOrders.map((ord) => (
+                <tr key={ord.url}>
+                  <td className={td}>
+                    {ord.docType ? ord.docType.replace(/_/g, " ") : <NotRecorded />}
+                    {ord.ctoNo ? ` · CTO ${ord.ctoNo}` : ""}
+                  </td>
+                  <td className={`${td} whitespace-nowrap font-mono`}>
+                    {ord.docDate ?? <NotRecorded />}
+                  </td>
+                  <td className={`${td} text-right tabular-nums`}>
+                    {ord.rows !== null ? ord.rows.toLocaleString() : <NotRecorded />}
+                  </td>
+                  <td className={td}>
+                    <LinkOut href={ord.url}>jpml.uscourts.gov</LinkOut>
+                    {ord.altCopies.map((a) => (
+                      <div key={a.url} className="text-[11px]">
+                        <LinkOut href={a.url}>Other copy</LinkOut>
+                      </div>
+                    ))}
+                  </td>
+                  <td className={`${td} font-mono text-[11px]`} title={ord.sha256 ?? undefined}>
+                    {ord.sha256 ? `${ord.sha256.slice(0, 12)}…` : <NotRecorded />}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </DataTable>
+        ) : (
+          <p className="text-[12px] text-muted-foreground">
+            No JPML order has been parsed for this matter yet. <NotRecorded />
+          </p>
+        )}
+        {registry.unassignedNativeCaseIds.length ? (
+          <p className="text-[12px] text-muted-foreground">
+            Case ids the registry could not attach to a docket (held, not guessed):{" "}
+            <span className="font-mono">{registry.unassignedNativeCaseIds.join(", ")}</span>
+          </p>
+        ) : null}
+        {registry.runIds.length ? (
+          <p className="text-[11px] text-muted-foreground">
+            Registry run{registry.runIds.length === 1 ? "" : "s"}:{" "}
+            <span className="font-mono">{registry.runIds.join(", ")}</span>
+          </p>
+        ) : null}
+      </div>
+    </Panel>
+  );
+}
+
 export function EvidencePanel({ payload }: { payload: MatterOverviewPayload }) {
   const o = payload.overview;
   const record = useQuery(entityQuery("mdls", o.mdl));
@@ -24,6 +182,8 @@ export function EvidencePanel({ payload }: { payload: MatterOverviewPayload }) {
   return (
     <div className="space-y-4">
       <MdlEvidence id={o.mdl} />
+
+      {payload.registry ? <RegistryEvidence registry={payload.registry} /> : null}
 
       <Panel
         title="Presiding judge link"

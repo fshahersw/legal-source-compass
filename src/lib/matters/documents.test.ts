@@ -136,11 +136,17 @@ describe("document labels, links and ordering", () => {
     expect(filterDocuments(docs, { entry: 771 })).toHaveLength(1);
     expect(filterDocuments(docs, { q: "pto 2" })).toHaveLength(1);
     expect(filterDocuments(docs, { q: "  " })).toHaveLength(5);
+    expect(filterDocuments(docs, { caseId: "3:25md3140" })).toHaveLength(2);
+    expect(
+      filterDocuments(docs, { caseId: "flnd-3:2025-md-03140", availability: "held" }),
+    ).toHaveLength(1);
+    expect(filterDocuments(docs, { caseId: "unknown-id" })).toHaveLength(0);
     expect(countDocuments(docs)).toEqual({
       total: 5,
       open: 4,
       held: 1,
       bySource: { docketbird: 3, "official-court": 2 },
+      byCase: { "flnd-3:2025-md-03140": 3, "3:25md3140": 2 },
     });
   });
 });

@@ -201,6 +201,25 @@ export function PartiesPanel({ payload }: { payload: MatterOverviewPayload }) {
         title="Parties and counsel"
         note="Names exactly as the sources recorded them. Spellings are never merged, and an individual's name on the plaintiff side is counted rather than listed."
       >
+        {payload.registry?.parties.length ? (
+          <div className="mb-3">
+            <Scope title="Matter registry capture">
+              The matter registry captured{" "}
+              {payload.registry.parties
+                .map(
+                  (p) =>
+                    `${p.captured !== null ? p.captured.toLocaleString() : "an unrecorded number of"} ${p.kind}`,
+                )
+                .join(" and ")}{" "}
+              from the master docket
+              {payload.registry.parties.every((p) => p.complete === true)
+                ? " (complete at capture)"
+                : ""}
+              . Names from that capture are not published yet, so the lists below come from the
+              saved firm-focused sample only.
+            </Scope>
+          </div>
+        ) : null}
         {query.isLoading ? <Loading what="counsel" /> : null}
         {query.error ? <ExternalError error={query.error} /> : null}
         {counsel ? (

@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 
+import { CaseDrawer } from "@/components/matters/CaseDrawer";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import {
   Chip,
@@ -22,9 +23,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  EVIDENCE_LABELS,
+  BASIS_NOTES,
   EVIDENCE_NOTES,
+  ROLE_LABELS,
+  computeFacets,
+  evidenceKindLabel,
+  evidenceKindsOf,
   filterCases,
+  routeLabel,
   scopedFacets,
   sortCases,
   type CaseEvidence,
@@ -33,11 +39,14 @@ import {
   type CaseRow,
   type CaseSort,
   type FacetOption,
+  type RegistryLabels,
 } from "@/lib/matters/cases";
 import { getMatterCases, getMatterFjcCases } from "@/lib/matters/matters.functions";
 import type { MatterOverviewPayload } from "@/lib/matters/types";
 
 const PAGE = 50;
+/** A stable empty list, so memoised filters do not re-run on every render while data loads. */
+const NO_ROWS: CaseRow[] = [];
 
 function Facet({
   label,
@@ -66,19 +75,69 @@ function Facet({
   );
 }
 
-function EvidenceChip({ evidence, detail }: { evidence: CaseEvidence; detail: string | null }) {
-  const historical = evidence === "fjc_idb";
+function EvidenceChip({ kind, labels }: { kind: string; labels: RegistryLabels | undefined }) {
+  const historical = kind === "fjc_idb" || kind === "fjc_idb_mdl_number";
+  const note = BASIS_NOTES[kind] ?? EVIDENCE_NOTES[kind as CaseEvidence];
   return (
     <Chip
-      tone={historical ? "warning" : evidence === "master_docket" ? "primary" : "neutral"}
-      title={`${EVIDENCE_NOTES[evidence]}${detail ? `\n\nSource: ${detail}` : ""}`}
+      tone={historical ? "warning" : kind === "master_docket" ? "primary" : "neutral"}
+      title={note}
     >
-      {EVIDENCE_LABELS[evidence]}
+      {evidenceKindLabel(kind, labels)}
     </Chip>
   );
 }
 
-function CaseTable({ rows, showRoute }: { rows: CaseRow[]; showRoute: boolean }) {
+function EvidenceCell({
+  row,
+  labels,
+  onOpen,
+}: {
+  row: CaseRow;
+  labels: RegistryLabels | undefined;
+  onOpen?: ((row: CaseRow) => void) | undefined;
+}) {
+  const kinds = evidenceKindsOf(row);
+  const shown = kinds.slice(0, 2);
+  const rest = kinds.slice(2);
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      {shown.map((k) => (
+        <EvidenceChip key={k} kind={k} labels={labels} />
+      ))}
+      {rest.length ? (
+        <Chip title={rest.map((k) => evidenceKindLabel(k, labels)).join(", ")}>+{rest.length}</Chip>
+      ) : null}
+      {row.registry && onOpen ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-6 px-1.5 text-[11px]"
+          onClick={() => onOpen(row)}
+          aria-label={`Evidence for ${row.docketNumber ?? "this docket"}`}
+        >
+          Evidence{row.registry.evidenceCount ? ` (${row.registry.evidenceCount})` : ""}
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
+function CaseTable({
+  rows,
+  showRoute,
+  labels,
+  onOpen,
+}: {
+  rows: CaseRow[];
+  showRoute: boolean;
+  labels?: RegistryLabels | undefined;
+  onOpen?: ((row: CaseRow) => void) | undefined;
+}) {
+  // Columns appear only when at least one row records the value, so a column is never a wall of "Not recorded".
+  const showTerminated = rows.some((r) => r.dateTerminated);
+  const showDefendant = rows.some((r) => r.defendant);
   return (
     <DataTable caption="Member cases and their membership evidence">
       <thead>
@@ -92,17 +151,16 @@ function CaseTable({ rows, showRoute }: { rows: CaseRow[]; showRoute: boolean })
           <th className={th} scope="col">
             Filed
           </th>
-          <th className={th} scope="col">
-            Terminated
-          </th>
+          {showTerminated ? (
+            <th className={th} scope="col">
+              Terminated
+            </th>
+          ) : null}
           <th className={th} scope="col">
             Status
           </th>
           <th className={th} scope="col">
             Role
-          </th>
-          <th className={th} scope="col">
-            Membership evidence
           </th>
           {showRoute ? (
             <th className={th} scope="col">
@@ -110,15 +168,22 @@ function CaseTable({ rows, showRoute }: { rows: CaseRow[]; showRoute: boolean })
             </th>
           ) : null}
           <th className={th} scope="col">
-            Defendant (as recorded)
+            Membership evidence
           </th>
+          {showDefendant ? (
+            <th className={th} scope="col">
+              Defendant (as recorded)
+            </th>
+          ) : null}
         </tr>
       </thead>
       <tbody>
         {rows.map((r) => (
           <tr key={r.id} className="hover:bg-muted/40">
             <td className={td}>
-              <div className="font-mono text-[12px]">{r.docketNumber ?? <NotRecorded />}</div>
+              <div className="whitespace-nowrap font-mono text-[12px]">
+                {r.docketNumber ?? <NotRecorded />}
+              </div>
               {r.caption ? (
                 <div className="max-w-[22rem] text-[11px] text-muted-foreground">{r.caption}</div>
               ) : r.captionWithheld ? (
@@ -126,7 +191,15 @@ function CaseTable({ rows, showRoute }: { rows: CaseRow[]; showRoute: boolean })
                   Caption withheld by the source
                 </div>
               ) : null}
-              {r.sourceUrl ? (
+              {r.registry?.links.length ? (
+                <div className="flex flex-wrap gap-x-3 text-[11px]">
+                  {r.registry.links.slice(0, 3).map((l) => (
+                    <LinkOut key={l.url} href={l.url}>
+                      {l.label}
+                    </LinkOut>
+                  ))}
+                </div>
+              ) : r.sourceUrl ? (
                 <div className="text-[11px]">
                   <LinkOut href={r.sourceUrl}>CourtListener</LinkOut>
                 </div>
@@ -148,9 +221,11 @@ function CaseTable({ rows, showRoute }: { rows: CaseRow[]; showRoute: boolean })
             <td className={`${td} whitespace-nowrap font-mono`}>
               {r.dateFiled ?? <NotRecorded />}
             </td>
-            <td className={`${td} whitespace-nowrap font-mono`}>
-              {r.dateTerminated ?? <span className="text-muted-foreground">—</span>}
-            </td>
+            {showTerminated ? (
+              <td className={`${td} whitespace-nowrap font-mono`}>
+                {r.dateTerminated ?? <span className="text-muted-foreground">—</span>}
+              </td>
+            ) : null}
             <td className={td}>
               {r.status ? (
                 <span className="capitalize">{r.status.replace(/_/g, " ")}</span>
@@ -160,18 +235,20 @@ function CaseTable({ rows, showRoute }: { rows: CaseRow[]; showRoute: boolean })
             </td>
             <td className={td}>
               {r.role === "master" ? (
-                <Chip tone="primary">Master</Chip>
-              ) : r.role === "member" ? (
-                "Member"
+                <Chip tone="primary">{labels?.role?.[r.role] ?? ROLE_LABELS[r.role]}</Chip>
               ) : (
-                "Unknown"
+                (labels?.role?.[r.role] ?? ROLE_LABELS[r.role])
               )}
             </td>
+            {showRoute ? (
+              <td className={td}>{r.route ? routeLabel(r.route) : <NotRecorded />}</td>
+            ) : null}
             <td className={td}>
-              <EvidenceChip evidence={r.evidence} detail={r.evidenceDetail} />
+              <EvidenceCell row={r} labels={labels} onOpen={onOpen} />
             </td>
-            {showRoute ? <td className={td}>{r.route ?? <NotRecorded />}</td> : null}
-            <td className={`${td} max-w-[12rem]`}>{r.defendant ?? <NotRecorded />}</td>
+            {showDefendant ? (
+              <td className={`${td} max-w-[12rem]`}>{r.defendant ?? <NotRecorded />}</td>
+            ) : null}
           </tr>
         ))}
       </tbody>
@@ -179,7 +256,75 @@ function CaseTable({ rows, showRoute }: { rows: CaseRow[]; showRoute: boolean })
   );
 }
 
-/** Member cases in the saved docket sample, with evidence-scoped facets computed from this matter's rows only. */
+function ScopeNote({
+  payload,
+  rows,
+  registryRows,
+  inventoryPublished,
+  truncated,
+  labels,
+}: {
+  payload: MatterOverviewPayload;
+  rows: CaseRow[];
+  registryRows: number;
+  inventoryPublished: boolean;
+  truncated: boolean;
+  labels: RegistryLabels | undefined;
+}) {
+  const o = payload.overview;
+  const jpmlTotal = o.actions.total;
+  const jpmlPending = o.actions.pending;
+  const roles = computeFacets(rows, labels).role;
+  const actionRows = rows.filter((r) => r.registry?.countsAsAction === true).length;
+  return (
+    <Scope title="Scope">
+      {registryRows > 0 ? (
+        <>
+          The matter registry lists {registryRows.toLocaleString()}{" "}
+          {registryRows === 1 ? "docket" : "dockets"} for this MDL (
+          {roles.map((r) => `${r.label.toLowerCase()} ${r.count.toLocaleString()}`).join(", ")}).{" "}
+          {actionRows > 0 ? (
+            <>
+              {actionRows.toLocaleString()} {actionRows === 1 ? "is" : "are"} counted as an action:
+              a transferred action appears as a transferor and a transferee row, and only one
+              carries the count.{" "}
+            </>
+          ) : null}
+          {rows.length > registryRows
+            ? `${(rows.length - registryRows).toLocaleString()} more come from the saved docket sample. `
+            : ""}
+        </>
+      ) : (
+        <>
+          The corpus lists {rows.length.toLocaleString()} {rows.length === 1 ? "docket" : "dockets"}{" "}
+          for this MDL: the master docket
+          {rows.length > 1
+            ? ` and ${(rows.length - rows.filter((r) => r.role === "master").length).toLocaleString()} from the saved docket sample`
+            : ""}
+          {inventoryPublished ? "" : " (the saved docket sample is not published)"}.{" "}
+        </>
+      )}
+      {jpmlTotal !== null || jpmlPending !== null ? (
+        <>
+          The JPML counts{" "}
+          {jpmlPending !== null
+            ? `${jpmlPending.toLocaleString()} pending`
+            : "pending actions not recorded"}
+          {jpmlTotal !== null ? ` and ${jpmlTotal.toLocaleString()} historical` : ""} actions
+          {o.asOf ? ` as of ${o.asOf}` : ""}; the corpus holds only the dockets listed below, so
+          these lists are never the size of the MDL.{" "}
+        </>
+      ) : null}
+      {truncated ? "The list is truncated at the registry read limit. " : ""}
+      <span className="block pt-1">
+        Membership comes from the evidence shown on each row. A parent-docket reference is not
+        membership, and no row was added by guessing.
+      </span>
+    </Scope>
+  );
+}
+
+/** Member cases (matter registry + saved docket sample), with evidence-scoped facets computed from this matter's rows only. */
 function SampleCases({ payload }: { payload: MatterOverviewPayload }) {
   const mdl = payload.overview.mdl;
   const fn = useServerFn(getMatterCases);
@@ -191,16 +336,18 @@ function SampleCases({ payload }: { payload: MatterOverviewPayload }) {
   const [filter, setFilter] = useState<CaseFilter>({});
   const [sort, setSort] = useState<CaseSort>("filed-desc");
   const [offset, setOffset] = useState(0);
-  const rows = q.data?.rows ?? [];
+  const [open, setOpen] = useState<CaseRow | null>(null);
+  const rows = q.data?.rows ?? NO_ROWS;
+  const labels = q.data?.registryDockets?.labels;
   const filtered = useMemo(() => sortCases(filterCases(rows, filter), sort), [rows, filter, sort]);
-  const facets = useMemo(() => scopedFacets(rows, filter), [rows, filter]);
+  const facets = useMemo(() => scopedFacets(rows, filter, labels), [rows, filter, labels]);
   const set = (patch: Partial<CaseFilter>) => {
     setFilter((f) => ({ ...f, ...patch }));
     setOffset(0);
   };
   const active = Object.values(filter).some((v) => v);
   const page = filtered.slice(offset, offset + PAGE);
-  const jpmlTotal = payload.overview.actions.total;
+  const registryRows = rows.filter((r) => r.registry).length;
 
   if (q.isLoading) return <Loading what="member cases" />;
   if (q.error) return <ExternalError error={q.error} />;
@@ -208,32 +355,21 @@ function SampleCases({ payload }: { payload: MatterOverviewPayload }) {
 
   return (
     <div className="space-y-3">
-      <Scope title="Scope">
-        The corpus lists {rows.length.toLocaleString()} {rows.length === 1 ? "docket" : "dockets"}{" "}
-        for this MDL: the master docket
-        {rows.length > 1
-          ? ` and ${(rows.length - rows.filter((r) => r.role === "master").length).toLocaleString()} from the saved docket sample`
-          : ""}
-        {q.data.inventoryPublished ? "" : " (the saved docket sample is not published)"}.{" "}
-        {jpmlTotal !== null ? (
-          <>
-            The JPML listing counts {jpmlTotal.toLocaleString()} actions
-            {payload.overview.asOf ? ` as of ${payload.overview.asOf}` : ""}; the corpus holds only
-            the dockets listed below, so these counts are never the size of the MDL.{" "}
-          </>
-        ) : null}
-        <span className="block pt-1">
-          Membership comes from the evidence shown on each row. A parent-docket reference is not
-          membership, and no row was added by guessing.
-        </span>
-      </Scope>
+      <ScopeNote
+        payload={payload}
+        rows={rows}
+        registryRows={q.data.registryDockets?.total ?? registryRows}
+        inventoryPublished={q.data.inventoryPublished}
+        truncated={!!q.data.registryDockets?.truncated}
+        labels={labels}
+      />
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">
         <div className="sm:col-span-2">
           <FilterField label="Search">
             <Input
               aria-label="Search member cases"
               className="h-8 text-[12px]"
-              placeholder="Docket, court, defendant"
+              placeholder="Docket number, court or provider case id"
               value={filter.q ?? ""}
               onChange={(e) => set({ q: e.target.value })}
             />
@@ -253,19 +389,21 @@ function SampleCases({ payload }: { payload: MatterOverviewPayload }) {
           allLabel="Any year"
           onChange={(v) => set({ year: v })}
         />
-        <Facet
-          label="Status"
-          value={filter.status ?? ""}
-          options={facets.status}
-          allLabel="Any status"
-          onChange={(v) => set({ status: v })}
-        />
+        {facets.status.length ? (
+          <Facet
+            label="Status"
+            value={filter.status ?? ""}
+            options={facets.status}
+            allLabel="Any status"
+            onChange={(v) => set({ status: v })}
+          />
+        ) : null}
         <Facet
           label="Membership evidence"
           value={filter.evidence ?? ""}
           options={facets.evidence}
           allLabel="Any evidence"
-          onChange={(v) => set({ evidence: v as CaseEvidence | "" })}
+          onChange={(v) => set({ evidence: v })}
         />
         <Facet
           label="Role"
@@ -282,6 +420,20 @@ function SampleCases({ payload }: { payload: MatterOverviewPayload }) {
             allLabel="Any route"
             onChange={(v) => set({ route: v })}
           />
+        ) : null}
+        {facets.actionRows > 0 ? (
+          <FilterField label="Count">
+            <select
+              className={selectClass}
+              value={filter.actions ?? ""}
+              onChange={(e) => set({ actions: e.target.value === "action" ? "action" : "" })}
+            >
+              <option value="">All dockets</option>
+              <option value="action">
+                Counted as an action ({facets.actionRows.toLocaleString()})
+              </option>
+            </select>
+          </FilterField>
         ) : null}
         <FilterField label="Sort">
           <select
@@ -317,7 +469,7 @@ function SampleCases({ payload }: { payload: MatterOverviewPayload }) {
         ) : null}
       </div>
       {filtered.length ? (
-        <CaseTable rows={page} showRoute={facets.routeRecorded} />
+        <CaseTable rows={page} showRoute={facets.routeRecorded} labels={labels} onOpen={setOpen} />
       ) : (
         <EmptyState>No docket matches these filters.</EmptyState>
       )}
@@ -325,6 +477,12 @@ function SampleCases({ payload }: { payload: MatterOverviewPayload }) {
         <p className="text-[11px] text-muted-foreground">
           Route into the MDL (direct filing, JPML transfer order, tag-along) is not recorded in the
           sources currently loaded, so it is not shown or filterable.
+        </p>
+      ) : null}
+      {facets.evidence.reduce((n, o) => n + o.count, 0) > filtered.length ? (
+        <p className="text-[11px] text-muted-foreground">
+          A docket with several kinds of evidence is counted once under each kind, so the evidence
+          counts can add up to more than the number of dockets.
         </p>
       ) : null}
       {filtered.length > PAGE ? (
@@ -336,6 +494,7 @@ function SampleCases({ payload }: { payload: MatterOverviewPayload }) {
           onOffset={setOffset}
         />
       ) : null}
+      <CaseDrawer mdl={mdl} row={open} labels={labels} onClose={() => setOpen(null)} />
     </div>
   );
 }

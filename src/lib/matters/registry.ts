@@ -1,0 +1,636 @@
+/**
+ * Pure: read side of the Seeger Weiss matter registry projection
+ * (datasets `sw_matters_v1` and `sw_matter_dockets_v1`, schema `sw-matter-registry/1`; contract in
+ * _work/contracts/sw-matter-registry.md).
+ *
+ * The registry supplies the explicit relationships the matter page used to derive: which provider case ids
+ * belong to a matter's master and JPML dockets, which dockets are members with which evidence, and newer JPML
+ * counts. Everything here is defensive: a record that does not match the expected schema yields null and the
+ * caller falls back to the labelled "derived" path. Nothing is inferred and unknown values stay null.
+ */
+import {
+  CASE_ROLES,
+  type CaseRole,
+  type CaseRow,
+  type RegistryCaseDetail,
+  type RegistryLabels,
+} from "./cases";
+import type { CountSnapshot, MatterOverview } from "./overview";
+
+const isObj = (v: unknown): v is Record<string, unknown> =>
+  !!v && typeof v === "object" && !Array.isArray(v);
+const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
+const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
+const idStr = (v: unknown): string | null =>
+  typeof v === "number" && Number.isFinite(v) ? String(v) : str(v);
+const arr = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
+const NOT_RECORDED_TEXT = /^(not recorded|—|-|none|n\/a|unknown)$/i;
+const cleaned = (v: unknown): string | null => {
+  const s = str(v);
+  return s && !NOT_RECORDED_TEXT.test(s) ? s : null;
+};
+
+export const REGISTRY_SCHEMA_PREFIX = "sw-matter-registry/";
+export const REGISTRY_MATTERS_DATASET = "sw_matters_v1";
+export const REGISTRY_DOCKETS_DATASET = "sw_matter_dockets_v1";
+
+/** Provider case ids are passed to the PDF reader; only plain identifier characters are accepted. */
+const NATIVE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9:._-]{0,119}$/;
+export const isNativeCaseId = (v: string): boolean => NATIVE_ID_PATTERN.test(v);
+
+/* ------------------------------------------------------------------ matter record */
+
+export type NativeCaseId = {
+  provider: string;
+  sourceSystem: string;
+  id: string;
+  /** How the registry resolved this id ("provider_native_id", "exact_docket_key"...). */
+  basis: string | null;
+  pacerCaseId: string | null;
+};
+
+export type RegistryCaseIds = {
+  role: string;
+  docketKey: string;
+  courtId: string | null;
+  docketNumber: string | null;
+  nativeCaseIds: NativeCaseId[];
+  /** Evidence kinds for the master / JPML identity. */
+  basis: string[];
+};
+
+export type RegistryJudge = {
+  role: string;
+  clPersonId: string | null;
+  sourceString: string | null;
+  docketKey: string | null;
+  basis: string | null;
+};
+
+export type RegistryEntryCapture = {
+  provider: string;
+  docketKey: string | null;
+  captured: number | null;
+  providerTotal: number | null;
+  complete: boolean | null;
+  observedAt: string | null;
+};
+
+export type RegistryPartyCapture = {
+  kind: string;
+  provider: string;
+  docketKey: string | null;
+  captured: number | null;
+  complete: boolean | null;
+};
+
+export type RegistryJpmlOrder = {
+  url: string;
+  docType: string | null;
+  docDate: string | null;
+  rows: number | null;
+  ctoNo: string | null;
+  sha256: string | null;
+  altCopies: { url: string; rows: number | null; retrievedAt: string | null }[];
+};
+
+export type RegistryMatter = {
+  mdl: string;
+  tier: string | null;
+  caseIds: RegistryCaseIds[];
+  /** Flat, de-duplicated list the registry says is ready to pass to the PDF reader. */
+  pdfCaseIds: string[];
+  members: { rows: number | null; actions: number | null; byBasis: Record<string, number> };
+  judges: RegistryJudge[];
+  entries: RegistryEntryCapture[];
+  parties: RegistryPartyCapture[];
+  jpml: {
+    asOf: string | null;
+    pending: number | null;
+    historicalTotal: number | null;
+    reportUrl: string | null;
+    scope: string | null;
+  } | null;
+  jpmlOrders: RegistryJpmlOrder[];
+  unassignedNativeCaseIds: string[];
+  gaps: string[];
+  projectedAt: string | null;
+  runIds: string[];
+};
+
+function httpsUrl(v: unknown): string | null {
+  const s = str(v);
+  return s && /^https:\/\//i.test(s) ? s : null;
+}
+
+function parseNativeCaseIds(v: unknown): NativeCaseId[] {
+  const out: NativeCaseId[] = [];
+  for (const raw of arr(v)) {
+    if (!isObj(raw)) continue;
+    const id = idStr(raw["id"]);
+    const provider = str(raw["provider"]);
+    const sourceSystem = str(raw["source_system"]);
+    if (!id || !isNativeCaseId(id) || !provider || !sourceSystem) continue;
+    out.push({
+      provider,
+      sourceSystem,
+      id,
+      basis: str(raw["resolution_basis"]),
+      pacerCaseId: idStr(raw["pacer_case_id"]),
+    });
+  }
+  return out;
+}
+
+const strings = (v: unknown): string[] =>
+  arr(v).flatMap((x) => {
+    const s = str(x);
+    return s ? [s] : [];
+  });
+
+/**
+ * `detail.registry` of a `sw_matters_v1` record. Returns null when the block is absent, is not the registry schema
+ * or names a different MDL than the one requested.
+ */
+export function parseRegistryMatter(raw: unknown, expectedMdl?: string): RegistryMatter | null {
+  if (!isObj(raw)) return null;
+  const schema = str(raw["schema"]);
+  const mdl = idStr(raw["mdl"]);
+  if (!schema || !schema.startsWith(REGISTRY_SCHEMA_PREFIX) || !mdl || !/^\d{1,6}$/.test(mdl))
+    return null;
+  if (expectedMdl !== undefined && mdl !== expectedMdl) return null;
+
+  const caseIds: RegistryCaseIds[] = [];
+  for (const c of arr(raw["case_ids"])) {
+    if (!isObj(c)) continue;
+    const docketKey = str(c["docket_key"]);
+    const role = str(c["role"]);
+    if (!docketKey || !role) continue;
+    caseIds.push({
+      role,
+      docketKey,
+      courtId: str(c["court_id"]),
+      docketNumber: str(c["docket_number"]),
+      nativeCaseIds: parseNativeCaseIds(c["native_case_ids"]),
+      basis: strings(c["basis"]),
+    });
+  }
+
+  const pdfCaseIds = [...new Set(strings(raw["pdf_case_ids"]).filter(isNativeCaseId))].slice(
+    0,
+    100,
+  );
+
+  const membersRaw = isObj(raw["members"]) ? raw["members"] : {};
+  const byBasis: Record<string, number> = {};
+  if (isObj(membersRaw["by_basis"]))
+    for (const [k, n] of Object.entries(membersRaw["by_basis"]))
+      if (typeof n === "number" && Number.isFinite(n)) byBasis[k] = n;
+
+  const judges: RegistryJudge[] = [];
+  for (const j of arr(raw["judges"])) {
+    if (!isObj(j)) continue;
+    const role = str(j["role"]);
+    if (!role) continue;
+    judges.push({
+      role,
+      clPersonId: idStr(j["cl_person_id"]),
+      sourceString: str(j["source_string"]),
+      docketKey: str(j["docket_key"]),
+      basis: str(j["basis"]),
+    });
+  }
+
+  const entries: RegistryEntryCapture[] = [];
+  for (const e of arr(raw["entries"])) {
+    if (!isObj(e)) continue;
+    const provider = str(e["provider"]);
+    if (!provider) continue;
+    entries.push({
+      provider,
+      docketKey: str(e["docket_key"]),
+      captured: num(e["captured"]),
+      providerTotal: num(e["provider_total"]),
+      complete: typeof e["complete"] === "boolean" ? e["complete"] : null,
+      observedAt: str(e["observed_at"]),
+    });
+  }
+
+  // `parties_summary` is an array in the live projection and a single object in the contract's example.
+  const partiesRaw = Array.isArray(raw["parties_summary"])
+    ? raw["parties_summary"]
+    : isObj(raw["parties_summary"])
+      ? [raw["parties_summary"]]
+      : [];
+  const parties: RegistryPartyCapture[] = [];
+  for (const p of partiesRaw) {
+    if (!isObj(p)) continue;
+    const provider = str(p["provider"]);
+    if (!provider) continue;
+    if (str(p["kind"])) {
+      parties.push({
+        kind: str(p["kind"])!,
+        provider,
+        docketKey: str(p["docket_key"]),
+        captured: num(p["captured"]),
+        complete: typeof p["complete"] === "boolean" ? p["complete"] : null,
+      });
+    } else {
+      const base = { provider, docketKey: str(p["docket_key"]) };
+      parties.push({
+        kind: "parties",
+        ...base,
+        captured: num(p["parties_captured"]),
+        complete: typeof p["complete"] === "boolean" ? p["complete"] : null,
+      });
+      parties.push({
+        kind: "attorneys",
+        ...base,
+        captured: num(p["attorneys_captured"]),
+        complete: typeof p["complete"] === "boolean" ? p["complete"] : null,
+      });
+    }
+  }
+
+  const jpmlRaw = isObj(raw["jpml"]) ? raw["jpml"] : null;
+  const jpml = jpmlRaw
+    ? {
+        asOf: str(jpmlRaw["as_of"]),
+        pending: num(jpmlRaw["pending"]),
+        historicalTotal: num(jpmlRaw["historical_total"]),
+        reportUrl: httpsUrl(jpmlRaw["report_url"]),
+        scope: str(jpmlRaw["scope"]),
+      }
+    : null;
+
+  const jpmlOrders: RegistryJpmlOrder[] = [];
+  for (const o of arr(raw["jpml_orders"])) {
+    if (!isObj(o)) continue;
+    const url = httpsUrl(o["url"]);
+    if (!url) continue;
+    jpmlOrders.push({
+      url,
+      docType: str(o["doc_type"]),
+      docDate: str(o["doc_date"]),
+      rows: num(o["rows"]),
+      ctoNo: idStr(o["cto_no"]),
+      sha256:
+        typeof o["document_sha256"] === "string" && /^[a-f0-9]{64}$/.test(o["document_sha256"])
+          ? o["document_sha256"]
+          : null,
+      altCopies: arr(o["alt_copies"]).flatMap((a) => {
+        if (!isObj(a)) return [];
+        const altUrl = httpsUrl(a["url"]);
+        return altUrl
+          ? [{ url: altUrl, rows: num(a["rows"]), retrievedAt: str(a["retrieved_at"]) }]
+          : [];
+      }),
+    });
+  }
+
+  const provenance = isObj(raw["provenance"]) ? raw["provenance"] : {};
+  return {
+    mdl,
+    tier: str(raw["tier"]),
+    caseIds,
+    pdfCaseIds,
+    members: {
+      rows: num(membersRaw["rows"]),
+      actions: num(membersRaw["actions"]),
+      byBasis,
+    },
+    judges,
+    entries,
+    parties,
+    jpml,
+    jpmlOrders,
+    unassignedNativeCaseIds: strings(raw["unassigned_native_case_ids"]),
+    gaps: strings(raw["gaps"]),
+    projectedAt: str(provenance["projected_at"]),
+    runIds: strings(provenance["run_ids"]),
+  };
+}
+
+/* ------------------------------------------------------------------ PDF case ids */
+
+export type CaseIdBasis = "registry" | "derived";
+export type CaseIdPlanEntry = { id: string; basis: CaseIdBasis };
+
+/**
+ * The provider case ids to ask the PDF reader for: the registry's explicit ids first, then any derived key
+ * (exact court + docket-number normalization) the registry did not already supply. Each carries its basis so the UI
+ * can say which is which.
+ */
+export function caseIdPlan(
+  registry: Pick<RegistryMatter, "pdfCaseIds"> | null,
+  derived: string[],
+): CaseIdPlanEntry[] {
+  const out: CaseIdPlanEntry[] = [];
+  const seen = new Set<string>();
+  const add = (id: string, basis: CaseIdBasis) => {
+    if (!isNativeCaseId(id) || seen.has(id)) return;
+    seen.add(id);
+    out.push({ id, basis });
+  };
+  for (const id of registry?.pdfCaseIds ?? []) add(id, "registry");
+  for (const id of derived) add(id, "derived");
+  return out;
+}
+
+/* ------------------------------------------------------------------ JPML counts */
+
+export type JpmlCounts = { asOf: string | null; total: number | null; pending: number | null };
+
+/**
+ * The registry's JPML block replaces the current counts only when its report is dated after the current one; the
+ * current counts are returned untouched otherwise (and when the registry block is incomplete).
+ */
+export function newerJpmlCounts(
+  current: JpmlCounts,
+  jpml: RegistryMatter["jpml"] | null | undefined,
+): JpmlCounts {
+  if (!jpml || !jpml.asOf || !/^\d{4}-\d{2}-\d{2}$/.test(jpml.asOf)) return current;
+  if (jpml.pending === null && jpml.historicalTotal === null) return current;
+  if (current.asOf !== null && jpml.asOf <= current.asOf) return current;
+  return { asOf: jpml.asOf, total: jpml.historicalTotal, pending: jpml.pending };
+}
+
+/**
+ * Adds the registry's JPML count snapshot to the matter's history and, when it is newer than the MDL record's own
+ * latest report, makes it the current figure. The older snapshots stay listed with their own dates.
+ */
+export function withRegistryJpml(
+  overview: MatterOverview,
+  registry: RegistryMatter | null,
+): MatterOverview {
+  const j = registry?.jpml;
+  if (!j || !j.asOf || !/^\d{4}-\d{2}-\d{2}$/.test(j.asOf)) return overview;
+  if (j.pending === null && j.historicalTotal === null) return overview;
+  if (overview.actions.snapshots.some((s) => s.asOf === j.asOf)) return overview;
+  const snapshot: CountSnapshot = {
+    asOf: j.asOf,
+    total: j.historicalTotal,
+    pending: j.pending,
+    label: `JPML pending-MDL report ${j.asOf} (via the matter registry)`,
+  };
+  const snapshots = [...overview.actions.snapshots, snapshot].sort((a, b) =>
+    b.asOf.localeCompare(a.asOf),
+  );
+  // Only a report dated after the MDL record's own latest one replaces the current figures.
+  if (overview.asOf !== null && snapshot.asOf <= overview.asOf)
+    return { ...overview, actions: { ...overview.actions, snapshots } };
+  return {
+    ...overview,
+    asOf: snapshot.asOf,
+    countsLabel: snapshot.label,
+    actions: { total: snapshot.total, pending: snapshot.pending, snapshots },
+  };
+}
+
+/* ------------------------------------------------------------------ docket rows (list) */
+
+const ROLE_SET = new Set<string>(CASE_ROLES);
+
+function roleOf(v: unknown): CaseRole {
+  const s = str(v);
+  return s && ROLE_SET.has(s) ? (s as CaseRole) : "unknown";
+}
+
+/** A registry status of "no_termination_date_recorded" or "unknown" is the absence of a status, not a status. */
+function statusOf(v: unknown): string | null {
+  const s = cleaned(v);
+  return s && s !== "no_termination_date_recorded" ? s : null;
+}
+
+function clDocketIdFrom(links: { url: string }[], nativeIds: string[]): string | null {
+  for (const l of links) {
+    const m = /^https:\/\/www\.courtlistener\.com\/docket\/(\d+)\/?/.exec(l.url);
+    if (m) return m[1]!;
+  }
+  // CourtListener docket ids are the only purely numeric provider ids in the registry.
+  return nativeIds.find((id) => /^[1-9]\d*$/.test(id)) ?? null;
+}
+
+/**
+ * One `sw_matter_dockets_v1` listing row (id, item, filters) -> CaseRow. Evidence rows are not in the listing;
+ * they load on demand for the detail drawer.
+ */
+export function parseRegistryDocket(row: {
+  id: unknown;
+  item: unknown;
+  filters: unknown;
+}): CaseRow | null {
+  const id = str(row.id);
+  if (!id || !isObj(row.item)) return null;
+  const cells = isObj(row.item["cells"]) ? row.item["cells"] : {};
+  const filters = isObj(row.filters) ? row.filters : {};
+  const m = /^sw-md:(\d{1,6}):(.+)$/.exec(id);
+  if (!m) return null;
+  const docketKey = m[2]!;
+  const links = arr(row.item["links"]).flatMap((l) => {
+    if (!isObj(l)) return [];
+    const url = httpsUrl(l["url"]);
+    // The projection leaves "()" behind when a report has no date ("JPML master docket list ()").
+    const label = str(l["label"])?.replace(/\s*\(\s*\)\s*$/, "") ?? null;
+    return url ? [{ url, label: label ?? url }] : [];
+  });
+  const nativeIds = strings(filters["native_case_id"]);
+  const clId = clDocketIdFrom(links, nativeIds);
+  const basisKinds = strings(filters["basis"]);
+  const badges = JSON.stringify(row.item["badges"] ?? []);
+  const withheld = /caption withheld/i.test(badges);
+  const routeRaw = str(cells["route"]);
+  const detail: RegistryCaseDetail = {
+    rowId: id,
+    docketKey,
+    basisKinds,
+    evidenceCount: num(cells["evidence_count"]),
+    countsAsAction:
+      typeof cells["counts_as_action"] === "boolean"
+        ? cells["counts_as_action"]
+        : filters["counts_as_action"] === "true"
+          ? true
+          : filters["counts_as_action"] === "false"
+            ? false
+            : null,
+    actionId: str(cells["action_id"]),
+    conflict: filters["conflict"] === "true",
+    nativeCaseIds: nativeIds,
+    links,
+  };
+  return {
+    id: `registry:${id}`,
+    clDocketId: clId,
+    docketNumber: cleaned(cells["docket_number"]),
+    caption: null,
+    captionWithheld: withheld,
+    courtId: cleaned(cells["court_id"]),
+    dateFiled: cleaned(cells["filed"]),
+    dateTerminated: cleaned(cells["terminated"]),
+    status: statusOf(cells["status"]),
+    role: roleOf(cells["role"]),
+    evidence: "registry",
+    evidenceDetail: null,
+    route: routeRaw && routeRaw !== "unknown" ? routeRaw : null,
+    defendant: null,
+    sourceUrl: clId ? `https://www.courtlistener.com/docket/${clId}/` : null,
+    source: "registry",
+    registry: detail,
+  };
+}
+
+/**
+ * Evidence kind -> label, read from the dataset's own filter metadata (`metadata.listing.filters`), so a new kind
+ * shows with the label the registry publishes.
+ */
+export function parseRegistryLabels(metadata: unknown): RegistryLabels {
+  const out: { basis: Record<string, string>; role: Record<string, string> } = {
+    basis: {},
+    role: {},
+  };
+  const listing = isObj(metadata) && isObj(metadata["listing"]) ? metadata["listing"] : null;
+  for (const f of arr(listing?.["filters"])) {
+    if (!isObj(f)) continue;
+    const name = str(f["name"]);
+    if (name !== "basis" && name !== "role") continue;
+    for (const o of arr(f["options"])) {
+      if (!isObj(o)) continue;
+      const value = str(o["value"]);
+      const label = str(o["label"]);
+      if (value && label) out[name][value] = label;
+    }
+  }
+  return out;
+}
+
+/* ------------------------------------------------------------------ docket row (detail drawer) */
+
+export type EvidenceItem = {
+  kind: string;
+  label: string | null;
+  assertedRole: string | null;
+  assertedRoute: string | null;
+  /** The source as recorded; shown as text always, as a link only when `linkable`. */
+  sourceUrl: string | null;
+  linkable: boolean;
+  sourceSha256: string | null;
+  /** Compact, human-readable locator ("page 4 · row 1 · as printed 2:24-09195"). */
+  locator: string | null;
+  quote: string | null;
+  retrievedAt: string | null;
+  asOf: string | null;
+  qualification: string | null;
+};
+
+export type RegistryDocketDetail = {
+  rowId: string;
+  facts: [string, string][];
+  nativeCaseIds: NativeCaseId[];
+  evidence: EvidenceItem[];
+  linkedDockets: { docketKey: string; role: string }[];
+  judges: RegistryJudge[];
+  held: string[];
+  hasConflict: boolean;
+  qualification: string | null;
+  projectedAt: string | null;
+};
+
+/** A CourtListener REST API address is a data endpoint, not a page a reader can open. */
+export function isLinkableSource(url: string | null): url is string {
+  return !!url && /^https:\/\//i.test(url) && !/\/api\/rest\//i.test(url);
+}
+
+export function formatLocator(locator: unknown): string | null {
+  if (!isObj(locator)) return null;
+  const parts: string[] = [];
+  for (const [key, value] of Object.entries(locator)) {
+    if (value === null || value === undefined || value === "") continue;
+    const text =
+      typeof value === "string"
+        ? value
+        : typeof value === "number" || typeof value === "boolean"
+          ? String(value)
+          : JSON.stringify(value);
+    parts.push(`${key.replace(/_/g, " ")} ${text.length > 80 ? `${text.slice(0, 77)}…` : text}`);
+  }
+  return parts.length ? parts.join(" · ") : null;
+}
+
+export function parseRegistryDocketDetail(raw: unknown): RegistryDocketDetail | null {
+  if (!isObj(raw)) return null;
+  const reg = isObj(raw["registry"]) ? raw["registry"] : null;
+  const rowId = str(raw["id"]);
+  if (!reg || !rowId) return null;
+  const schema = str(reg["schema"]);
+  if (!schema || !schema.startsWith(REGISTRY_SCHEMA_PREFIX)) return null;
+  const evidence: EvidenceItem[] = [];
+  for (const e of arr(reg["evidence"])) {
+    if (!isObj(e)) continue;
+    const kind = str(e["kind"]);
+    if (!kind) continue;
+    const sourceUrl = str(e["source_url"]);
+    const sha = e["source_sha256"];
+    evidence.push({
+      kind,
+      label: str(e["label"]),
+      assertedRole: str(e["asserted_role"]),
+      assertedRoute: str(e["asserted_route"]),
+      sourceUrl,
+      linkable: isLinkableSource(sourceUrl),
+      sourceSha256: typeof sha === "string" && /^[a-f0-9]{64}$/.test(sha) ? sha : null,
+      locator: formatLocator(e["locator"]),
+      quote: str(e["quote"]),
+      retrievedAt: str(e["retrieved_at"]),
+      asOf: str(e["as_of"]),
+      qualification: str(e["qualification"]),
+    });
+  }
+  const facts: [string, string][] = [];
+  for (const f of arr(raw["facts"]))
+    if (Array.isArray(f) && typeof f[0] === "string" && f[1] != null)
+      facts.push([f[0], String(f[1])]);
+  const provenance = isObj(raw["provenance"]) ? raw["provenance"] : {};
+  return {
+    rowId,
+    facts,
+    nativeCaseIds: parseNativeCaseIds(reg["native_case_ids"]),
+    evidence,
+    linkedDockets: arr(reg["linked_dockets"]).flatMap((d) => {
+      if (!isObj(d)) return [];
+      const docketKey = str(d["docket_key"]);
+      const role = str(d["role"]);
+      return docketKey && role ? [{ docketKey, role }] : [];
+    }),
+    judges: arr(reg["judges"]).flatMap((j) => {
+      if (!isObj(j)) return [];
+      const role = str(j["role"]);
+      return role
+        ? [
+            {
+              role,
+              clPersonId: idStr(j["cl_person_id"]),
+              sourceString: str(j["source_string"]),
+              docketKey: null,
+              basis: str(j["basis"]),
+            },
+          ]
+        : [];
+    }),
+    held: strings(reg["held"]),
+    hasConflict: arr(reg["conflicts"]).length > 0,
+    qualification: str(raw["qualification"]),
+    projectedAt: str(provenance["projected_at"]),
+  };
+}
+
+/** "2026-10-03T11:28:30.867Z" -> "2026-10-03 11:28 UTC"; anything else is returned as recorded, null stays null. */
+export function formatUtc(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|\+00:00)$/.exec(value);
+  return m ? `${m[1]} ${m[2]} UTC` : value;
+}
+
+/** True when `rowId` is a registry row of the given MDL (guards the on-demand detail lookup). */
+export function isRegistryRowOf(rowId: string, mdl: string): boolean {
+  return rowId.startsWith(`sw-md:${mdl}:`) && /^sw-md:\d{1,6}:[A-Za-z0-9:._-]{1,160}$/.test(rowId);
+}

@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { normalizeMdlNumber, type JpmlReport } from "./overview";
+import { caseIdPlan } from "./registry";
 import {
   loadAppearances,
   loadCounsel,
@@ -10,6 +11,7 @@ import {
   loadHub,
   loadLegacyDocuments,
   loadMatterCases,
+  loadRegistryDocketDetail,
   loadRegistryDocuments,
   overviewFor,
 } from "./source.server";
@@ -94,20 +96,27 @@ export const getMatterDocuments = createServerFn({ method: "GET" })
     const overview = await overviewFor(mdlOf(data.id));
     if (!overview) return null;
     const [registry, legacy] = await Promise.all([
-      loadRegistryDocuments(overview.overview.keys.all),
+      loadRegistryDocuments(caseIdPlan(overview.registry, overview.overview.keys.all)),
       loadLegacyDocuments(overview.overview.mdl).catch(() => ({ rows: [], published: false })),
     ]);
     const reports: JpmlReport[] = overview.overview.reports;
     return { registry, legacy, reports };
   });
 
-/** Registry totals only (one cheap call) for the overview tiles. */
+/** PDF registry totals only (one cheap call) for the overview tiles. */
 export const getMatterDocumentsSummary = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ id: mdlInput }).parse(d))
   .handler(async ({ data }) => {
     const overview = await overviewFor(mdlOf(data.id));
-    return overview ? loadRegistryDocuments(overview.overview.keys.all, true) : null;
+    return overview
+      ? loadRegistryDocuments(caseIdPlan(overview.registry, overview.overview.keys.all), true)
+      : null;
   });
+
+/** The evidence behind one matter-registry docket, for the detail drawer. */
+export const getMatterRegistryDocket = createServerFn({ method: "GET" })
+  .inputValidator((d) => z.object({ id: mdlInput, rowId: z.string().min(8).max(200) }).parse(d))
+  .handler(async ({ data }) => loadRegistryDocketDetail(mdlOf(data.id), data.rowId));
 
 export const getMatterParties = createServerFn({ method: "GET" })
   .inputValidator((d) =>

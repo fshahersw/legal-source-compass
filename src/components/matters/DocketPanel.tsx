@@ -159,18 +159,41 @@ export function DocketPanel({ payload }: { payload: MatterOverviewPayload }) {
 
   if (query.isLoading) return <Loading what="docket entries" />;
   if (query.error) return <ExternalError error={query.error} />;
-  if (!data || (!data.available.activity && !data.available.clEntries))
+  if (!data || (!data.available.activity && !data.available.clEntries)) {
+    const captures = (payload.registry?.entries ?? []).filter(
+      (e) => e.captured !== null && e.captured > 0,
+    );
     return (
       <Panel id="docket" title="Docket entries">
         <EmptyState>
-          No docket entries for this matter are in the connected corpus yet. The master docket
+          No docket entries for this matter are published in the connected corpus yet. The master
+          docket
           {payload.overview.masterDocket.number
             ? ` ${payload.overview.masterDocket.number}`
             : ""}{" "}
           is listed in the header, and the Documents tab shows any verified PDFs filed on it.
         </EmptyState>
+        {captures.length ? (
+          <div className="mt-3">
+            <Scope title="Captured, not yet published">
+              {captures.map((e, i) => (
+                <span key={`${e.provider}-${e.docketKey ?? i}`} className="block">
+                  The matter registry captured {e.captured!.toLocaleString()}
+                  {e.providerTotal !== null
+                    ? ` of ${e.providerTotal.toLocaleString()} reported`
+                    : ""}{" "}
+                  entries from {e.provider === "courtlistener" ? "CourtListener" : e.provider}
+                  {e.complete === true ? " (complete at capture)" : ""}
+                  {e.observedAt ? ` on ${e.observedAt.slice(0, 10)}` : ""}. They are not in a
+                  published dataset yet, so the timeline cannot be shown.
+                </span>
+              ))}
+            </Scope>
+          </div>
+        ) : null}
       </Panel>
     );
+  }
 
   return (
     <Panel
