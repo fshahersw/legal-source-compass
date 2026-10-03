@@ -32,6 +32,18 @@ export function searchDisplayTitle({ record, item }: SearchMatch): string {
 }
 
 /**
+ * The kind shown beside a result, or null when it only repeats the dataset it came from. A record without its own kind
+ * falls back to its category, which is usually the dataset id ("Counsel directory · counsel directory"), and the matter
+ * registry's kinds are singular forms of the dataset id ("sw_matter" in "sw_matters_v1").
+ */
+export function searchKindLabel(kind: string | null | undefined, dataset: string): string | null {
+  const stem = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().replace(/ v\d+$/, "").replace(/s$/, "");
+  const label = kind?.replace(/_/g, " ").trim();
+  if (!label || stem(label) === stem(dataset)) return null;
+  return label;
+}
+
+/**
  * Search intent for a person. A query that STARTS with an honorific ("Judge Rodgers", "Hon. Casey Rodgers") and has a
  * short name after it is a search for a person. Titles never contain the honorific, so the AND query would exclude
  * the person: the database is asked for the query without it and ranking uses the intent instead. A bare honorific,

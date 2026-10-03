@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canonicalSourceUrl, rankSearchMatches, searchDisplayTitle, searchIntent, searchQueryFilters, searchState, type SearchMatch } from "./searchQuality";
+import { canonicalSourceUrl, rankSearchMatches, searchDisplayTitle, searchIntent, searchKindLabel, searchQueryFilters, searchState, type SearchMatch } from "./searchQuality";
 import type { SearchRecord } from "./searchIdentity";
 
 function match(dataset: string, id: string, title: string, item: Record<string, unknown>, source_url: string | null = null): SearchMatch {
@@ -158,5 +158,23 @@ describe("entity-name queries", () => {
     const reordered = match("people", "10", "Weiss Seeger", { id: "10" });
     const r2 = rankSearchMatches([reordered, firm], "Seeger Weiss").ranked;
     expect(r2[0]!.record.id).toBe("firm:3f24b0b7635a81a8");
+  });
+});
+
+describe("result kind labels", () => {
+  it("drops a kind that only repeats the dataset", () => {
+    expect(searchKindLabel("counsel_directory", "counsel_directory")).toBeNull();
+    expect(searchKindLabel("mdl_docket_documents", "mdl_docket_documents")).toBeNull();
+    // The matter registry's kinds are singular forms of its versioned dataset ids.
+    expect(searchKindLabel("sw_matter", "sw_matters_v1")).toBeNull();
+    expect(searchKindLabel("sw_matter_docket", "sw_matter_dockets_v1")).toBeNull();
+    expect(searchKindLabel(null, "judges")).toBeNull();
+    expect(searchKindLabel("  ", "judges")).toBeNull();
+  });
+
+  it("keeps a kind that says something the dataset does not", () => {
+    expect(searchKindLabel("order", "mdl_docket_documents")).toBe("order");
+    expect(searchKindLabel("expert_ruling", "mdl_docket_documents")).toBe("expert ruling");
+    expect(searchKindLabel("sw_matter", "mdl_docket_documents")).toBe("sw matter");
   });
 });

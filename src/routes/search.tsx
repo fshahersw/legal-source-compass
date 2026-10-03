@@ -9,6 +9,7 @@ import { ExternalBadge, ExternalError } from "@/components/corpus/ExternalBadge"
 import { CorpusRecordLink } from "@/components/corpus/DatasetBrowser";
 import { searchCorpus } from "@/lib/external/catalog.functions";
 import { datasetDisplayName } from "@/lib/external/domainRegistry";
+import { searchKindLabel } from "@/lib/external/searchQuality";
 import { pageHead } from "@/lib/corpus/head";
 
 export const Route = createFileRoute("/search")({
@@ -46,7 +47,7 @@ function SearchPage() {
           <li key={`${h.dataset}-${h.id}`}>
             <CorpusRecordLink dataset={h.dataset} id={h.id} className="block w-full px-3 py-2 text-left hover:bg-muted/50">
               <div className="text-[13px] font-medium">{h.title}</div>
-              <div className="text-[11px] text-muted-foreground">{[datasetDisplayName(h.dataset, null), h.kind?.replace(/_/g, " "), h.county, h.state ? `${h.stateBasis === "exact_court_location" ? "Court location" : "Recorded state"}: ${h.state}` : null, h.sourceFileLabel].filter(Boolean).join(" · ")}</div>
+              <div className="text-[11px] text-muted-foreground">{[datasetDisplayName(h.dataset, null), searchKindLabel(h.kind, h.dataset), h.county, h.state ? `${h.stateBasis === "exact_court_location" ? "Court location" : "Recorded state"}: ${h.state}` : null, h.sourceFileLabel].filter(Boolean).join(" · ")}</div>
             </CorpusRecordLink>
             {h.alsoIndexedAs.length > 0 ? <details className="px-3 pb-2 text-[11px] text-muted-foreground"><summary className="cursor-pointer">Also indexed in {h.alsoIndexedAs.length} identical source record{h.alsoIndexedAs.length === 1 ? "" : "s"}</summary><div className="mt-1 flex flex-wrap gap-2">{h.alsoIndexedAs.map((identity) => <CorpusRecordLink key={`${identity.dataset}-${identity.id}`} dataset={identity.dataset} id={identity.id} className="underline">{datasetDisplayName(identity.dataset, null)} · {identity.id}</CorpusRecordLink>)}</div></details> : null}
           </li>
