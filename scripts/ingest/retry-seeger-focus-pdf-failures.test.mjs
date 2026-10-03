@@ -17,8 +17,8 @@ test('the latest outcome per document decides: a later verification clears an ea
  const r=(state,id,extra={})=>({provider:'courtlistener-public-locator',native_document_id:id,state,...extra});
  const map=outcomes([r('failed','a',{error:'SOURCE_HTTP_503'}),r('failed','b',{error:'NOT_A_PDF'}),r('failed','c',{error:'NETWORK_ERROR'}),r('cloud_verified','c'),r('cloud_verified','d'),r('failed','d',{error:'SOURCE_HTTP_503'}),r('download_pending','e')]);
  const get=id=>map.get('courtlistener-public-locator|'+id);
- assert.deepEqual(get('a'),{verified:false,error:'SOURCE_HTTP_503',permanent:false});
- assert.deepEqual(get('b'),{verified:false,error:'NOT_A_PDF',permanent:true});
+ assert.deepEqual(get('a'),{verified:false,error:'SOURCE_HTTP_503',permanent:false,at:undefined});
+ assert.deepEqual(get('b'),{verified:false,error:'NOT_A_PDF',permanent:true,at:undefined});
  assert.equal(get('c').verified,true);assert.equal(get('d').verified,true);assert.equal(get('e'),undefined);
 });
 
@@ -27,4 +27,11 @@ test('only complete JSONL lines are read from a receipts file that is still bein
  fs.writeFileSync(file,'{"a":1}\n{"b":2}\n{"c":');
  assert.deepEqual(lines(file),[{a:1},{b:2}]);
  assert.deepEqual(lines(file+'.missing'),[]);
+});
+
+test('merging transfer directories keeps the most recent failure regardless of directory order',()=>{
+ const old={provider:'courtlistener',native_document_id:'1',state:'failed',error:'TRANSFER_OR_INTEGRITY_FAILURE',recorded_at:'2026-10-02T10:00:00.000Z'};
+ const newer={provider:'courtlistener',native_document_id:'1',state:'failed',error:'SOURCE_SHA1_MISMATCH',retryable:false,recorded_at:'2026-10-03T10:00:00.000Z'};
+ const map=new Map();outcomes([newer],map);outcomes([old],map);
+ assert.equal(map.get('courtlistener|1').error,'SOURCE_SHA1_MISMATCH');assert.equal(map.get('courtlistener|1').permanent,true);
 });

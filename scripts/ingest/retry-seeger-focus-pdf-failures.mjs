@@ -11,12 +11,13 @@ const pause=ms=>new Promise(r=>setTimeout(r,ms)),sha=b=>createHash('sha256').upd
 const PERMANENT=/^(?:SOURCE_HTTP_(?:400|401|402|403|404|405|406|409|410|451)|NOT_A_PDF|SOURCE_SHA1_MISMATCH|SOURCE_SIZE_MISMATCH|PDF_SIZE_LIMIT|PDF_HOST_NOT_ALLOWED|PDF_URL_INVALID|PDF_REDIRECT_LIMIT|PDF_REDIRECT_MISSING|CLOUD_HASH_MISMATCH)$/;
 export const isPermanentFailure=receipt=>receipt.retryable===false||(receipt.retryable===undefined&&PERMANENT.test(receipt.error??''));
 export function lines(file){if(!fs.existsSync(file))return[];const text=fs.readFileSync(file,'utf8');return text.slice(0,text.lastIndexOf('\n')+1).split('\n').filter(Boolean).map(JSON.parse);}
-// Latest outcome per document across receipts: verified wins; otherwise the last failure with its classification.
+// Latest outcome per document across receipts (several transfer directories may be merged): verified always wins;
+// otherwise the most recently recorded failure with its classification.
 export function outcomes(receiptLines,into=new Map()){
  for(const r of receiptLines){
-  const key=r.provider+'|'+r.native_document_id;
+  const key=r.provider+'|'+r.native_document_id,current=into.get(key);
   if(r.state==='cloud_verified')into.set(key,{verified:true});
-  else if(r.state==='failed'&&!into.get(key)?.verified)into.set(key,{verified:false,error:r.error,permanent:isPermanentFailure(r)});
+  else if(r.state==='failed'&&!current?.verified&&(!current||String(r.recorded_at??'')>=String(current.at??'')))into.set(key,{verified:false,error:r.error,permanent:isPermanentFailure(r),at:r.recorded_at});
  }
  return into;
 }
@@ -29,7 +30,7 @@ async function main(args){
  const runId=args['run-id']??'r1',marker=args.marker??'pdf-retries-finished.json',attempts=Number(args.attempts??2);
  const providers=(args.providers??'docketbird,courtlistener-public-locator,courtlistener,official-court').split(',');
  const transferDirs=()=>[...fs.readdirSync(root,{withFileTypes:true}).filter(d=>d.isDirectory()&&d.name.endsWith('-transfers')).map(d=>path.join(root,d.name)),...extra.map(e=>e.transfers)];
- const extra=args['sources-file']?JSON.parse(fs.readFileSync(args['sources-file'],'utf8')).map(e=>({transfers:path.resolve(e.transfers),queue:path.resolve(e.queue)})):[];
+ const extra=args['sources-file']?JSON.parse(fs.readFileSync(args['sources-file'],'utf8')).map(e=>({transfers:path.resolve(e.transfers),queue:e.queue?path.resolve(e.queue):null})):[];
  if(!args['no-wait'])for(;;){
   const states=['docketbird','courtlistener'].map(provider=>{try{return JSON.parse(fs.readFileSync(path.join(root,provider+'-batch-progress.json')));}catch{return{};}});
   if(fs.existsSync(path.join(root,'acquisition-finished.json'))&&states.every(s=>s.state==='complete'))break;
@@ -49,7 +50,7 @@ async function main(args){
    pairs.push({queue:manifest.queue,transfers:path.join(root,provider+'-batch-'+label+'-transfers')});
   }
  }
- pairs.push(...extra);
+ pairs.push(...extra.filter(e=>e.queue)); // entries without a queue only contribute their verified receipts
  for(const pair of pairs){
   const failed=new Set([...outcomes(lines(path.join(pair.transfers,'transfer-receipts.jsonl')))].filter(([,v])=>!v.verified).map(([k])=>k));
   if(!failed.size)continue;
@@ -64,7 +65,7 @@ async function main(args){
   const transfers=path.join(root,'final-retry-'+label+'-transfers');
   fs.writeFileSync(path.join(out,'progress.json'),JSON.stringify({state:'retrying',provider,attempt,documents:rows.length,started_at:new Date().toISOString()},null,2));
   const slow=provider!=='docketbird';
-  const code=await launch('scripts/ingest/backfill-pdfs-to-supabase.mjs',['--queue='+queue,'--queue-sha256='+sha(bytes),'--cache='+transfers,'--credentials='+args.credentials,'--max-files=200000','--concurrency=3','--source-delay-ms='+(slow?'400':'250'),'--worker-delay-ms='+(slow?'1500':'0'),'--execute'],path.join(out,label+'.log'));
+  const code=await launch('scripts/ingest/backfill-pdfs-to-supabase.mjs',['--queue='+queue,'--queue-sha256='+sha(bytes),'--cache='+transfers,'--credentials='+args.credentials,'--max-files=200000','--concurrency=3','--source-delay-ms='+(slow?'400':'250'),'--worker-delay-ms='+(slow?'1500':'0'),'--pacing-file='+path.join(root,(slow?'courtlistener':'docketbird')+'-pacing.json'),'--execute'],path.join(out,label+'.log'));
   // A stopped attempt keeps its receipts; registration still runs for everything that verified, and later attempts/providers continue.
   const registration=await launch('scripts/admin/register-private-pdf-assets.mjs',['--transfers='+transfers,'--out='+path.join(out,label+'-registration'),'--credentials='+args.credentials],path.join(out,label+'-registration.log'));
   fs.writeFileSync(path.join(out,'progress.json'),JSON.stringify({state:'attempt_finished',provider,attempt,transfer_exit_code:code,registration_exit_code:registration,finished_at:new Date().toISOString()},null,2));

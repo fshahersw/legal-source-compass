@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {
- isTransientHttpStatus,isTransientNetworkError,isTransientCloudError,classifyFailure,retryAfterMs,backoffDelay,withBackoff,FailureBreaker,fetchSourcePdf,createCloudStore
+ isTransientHttpStatus,isTransientNetworkError,isTransientCloudError,classifyFailure,retryAfterMs,backoffDelay,withBackoff,FailureBreaker,fetchSourcePdf,createCloudStore,createPacer,describeRefusal
 } from './backfill-pdfs-to-supabase.mjs';
 
 const pdf=label=>Buffer.from('%PDF-1.7\n'+label+'\n%%EOF\n');
@@ -247,4 +247,38 @@ test('a sustained cloud outage trips the breaker, which pauses and finally stops
  const outcomes=[];
  for(let i=0;i<4;i++)outcomes.push(await f.store.ensureObject(f.key,f.file,f.digest,{provider:'x'}).then(()=>'ok',e=>e.breakerExhausted?'stop':e.message));
  assert.ok(outcomes.includes('stop'),outcomes.join(','));assert.ok(f.breaker.totalTrips>=2);
+});
+
+// ---- source pacing -------------------------------------------------------------------------
+function clock(){let t=1_000_000;const waits=[];return{now:()=>t,pause:async ms=>{waits.push(ms);t+=ms;},waits,get t(){return t;}};}
+
+test('pacer spaces requests globally and per worker, and a 429 raises a sticky level that survives until sustained calm',async()=>{
+ const c=clock(),levels=[];
+ const pacer=createPacer({sourceDelayMs:500,workerDelayMs:1000,now:c.now,pause:c.pause,recoverAfter:3,onLevelChange:l=>levels.push(l)});
+ const a={nextAt:0},b={nextAt:0},starts=[];
+ for(const worker of [a,b,a,b]){await pacer.slot(worker);starts.push(c.t);}
+ assert.deepEqual(starts.map(t=>t-1_000_000),[0,500,1000,1500],'global spacing of 500 ms across workers, each worker at most once per second');
+ pacer.block(60000);pacer.rateLimited();
+ assert.equal(pacer.level,1);assert.equal(pacer.spacing(),1000);
+ const before=c.t;await pacer.slot(a);assert.ok(c.t-before>=60000,'every worker waits out the refusal');
+ pacer.success();pacer.success();assert.equal(pacer.level,1);pacer.success();assert.equal(pacer.level,0);assert.deepEqual(levels,[1,0]);assert.equal(pacer.spacing(),500);
+});
+
+test('a persisted level is honored at start, is capped, and 5xx penalties relax in steps without touching the rate level',()=>{
+ const c=clock();
+ const resumed=createPacer({sourceDelayMs:500,level:2,now:c.now,pause:c.pause});assert.equal(resumed.spacing(),1500);
+ assert.equal(createPacer({sourceDelayMs:500,level:99,now:c.now,pause:c.pause}).level,6);
+ const pacer=createPacer({sourceDelayMs:100,now:c.now,pause:c.pause});
+ pacer.penalize();assert.equal(pacer.penaltyMs,500);pacer.penalize();assert.equal(pacer.penaltyMs,1000);assert.equal(pacer.level,0);
+ for(let i=0;i<25;i++)pacer.success();assert.equal(pacer.penaltyMs,500);
+ for(let i=0;i<25;i++)pacer.success();assert.equal(pacer.penaltyMs,250);
+ for(let i=0;i<25;i++)pacer.success();assert.equal(pacer.penaltyMs,0);
+});
+
+test('a refusal is described with a bounded, allow-listed slice of the response only',async()=>{
+ const response=new Response('<html>'+'x'.repeat(1000)+'</html>',{status:429,statusText:'Too Many Requests',headers:{server:'AmazonS3','x-cache':'Error from cloudfront','set-cookie':'secret=1','x-amz-cf-pop':'ORD58-C1','authorization':'Bearer nope'}});
+ const info=await describeRefusal(response);
+ assert.equal(info.status,429);assert.equal(info.body_snippet.length,300);
+ assert.deepEqual(Object.keys(info.headers).sort(),['content-type','server','x-amz-cf-pop','x-cache']);
+ assert.equal(JSON.stringify(info).includes('secret'),false);
 });

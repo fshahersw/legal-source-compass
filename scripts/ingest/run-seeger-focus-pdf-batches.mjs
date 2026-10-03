@@ -33,7 +33,7 @@ async function main(args){
  fs.mkdirSync(dir,{recursive:true});
  const transferScript=args['transfer-script']??'scripts/ingest/backfill-pdfs-to-supabase.mjs',registrationScript=args['registration-script']??'scripts/admin/register-private-pdf-assets.mjs';
  const scale=Number(args['cooldown-scale']??1),pollMs=Number(args['poll-ms']??10000),maxIdleRestarts=Number(args['max-idle-restarts']??4);
- const concurrency=args.concurrency??(provider==='docketbird'?'6':'4'),sourceDelay=args['source-delay-ms']??(provider==='docketbird'?'150':'250'),workerDelay=args['worker-delay-ms']??(provider==='docketbird'?'0':'1000');
+ const concurrency=args.concurrency??(provider==='docketbird'?'6':'4'),sourceDelay=args['source-delay-ms']??(provider==='docketbird'?'150':'1000'),workerDelay=args['worker-delay-ms']??(provider==='docketbird'?'0':'1000');
  const writeStatus=value=>fs.writeFileSync(status,JSON.stringify({provider,pid:process.pid,...value,at:new Date().toISOString()},null,2));
  let batches=0,halted=null;
  if(args['wait-for-progress'])for(;;){
@@ -61,7 +61,7 @@ async function main(args){
    writeStatus({state:'transferring',queue:manifest.queue,transfers:transfer,batch:label,attempt,batches_completed:batches});
    const transferRun=launch(transferScript,[
     '--queue='+manifest.queue,'--queue-sha256='+manifest.sha256,'--cache='+transfer,'--credentials='+args.credentials,
-    '--max-files=200000','--concurrency='+concurrency,'--source-delay-ms='+sourceDelay,'--worker-delay-ms='+workerDelay,'--execute'
+    '--max-files=200000','--concurrency='+concurrency,'--source-delay-ms='+sourceDelay,'--worker-delay-ms='+workerDelay,'--pacing-file='+path.join(root,provider+'-pacing.json'),'--execute'
    ],path.join(dir,label+'.transfer.log'));
    const registrationRun=launch(registrationScript,[
     '--transfers='+transfer,'--out='+registration,'--credentials='+args.credentials,'--watch','--stop-file='+stopFile

@@ -35,7 +35,12 @@ export async function queuedKeys(root){
  const keys=new Set();
  for(const provider of ['courtlistener','docketbird']){
   const dir=path.join(root,provider+'-pdf-batches');if(!fs.existsSync(dir))continue;
-  for(const name of fs.readdirSync(dir).filter(n=>n.endsWith('.queue.jsonl')))for await(const line of jsonlLines(path.join(dir,name)))keys.add(rowKey(JSON.parse(line)));
+  for(const name of fs.readdirSync(dir).filter(n=>n.endsWith('.queue.jsonl'))){
+   // A queue superseded before it ran no longer holds its rows.
+   const done=path.join(dir,name+'.manifest.json.done.json');
+   if(fs.existsSync(done)&&JSON.parse(fs.readFileSync(done)).state==='superseded_before_execution')continue;
+   for await(const line of jsonlLines(path.join(dir,name)))keys.add(rowKey(JSON.parse(line)));
+  }
  }
  return keys;
 }

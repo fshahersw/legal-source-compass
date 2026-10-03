@@ -111,6 +111,31 @@ export async function withBackoff(action,{attempts=5,baseMs=1000,maxMs=60000,isR
   await onRetry(error,attempt,delay);await pause(delay);
  }
 }
+// Source pacing shared by all workers: every request takes a slot spaced by `sourceDelayMs` (globally) and `workerDelayMs` (per worker).
+// An HTTP 429 raises a sticky rate level (spacing x (1+level)) that only relaxes after `recoverAfter` consecutive successes, so a restart
+// (the level is persisted by the caller) does not immediately re-probe the pace that was just refused. 5xx/reset penalties are separate and short-lived.
+export function createPacer({sourceDelayMs=0,workerDelayMs=0,initialWaitMs=0,now=Date.now,pause=defaultPause,level=0,maxLevel=6,recoverAfter=2000,onLevelChange=()=>{}}={}){
+ let nextSourceAt=now()+initialWaitMs,blockedUntil=0,penaltyMs=0,goodStreak=0,rateLevel=Math.min(maxLevel,Math.max(0,level)),calm=0;
+ const spacing=()=>sourceDelayMs*(1+rateLevel)+penaltyMs;
+ return{
+  spacing,
+  async slot(pace){for(;;){const due=Math.max(now(),nextSourceAt,blockedUntil,pace.nextAt);nextSourceAt=due+spacing();pace.nextAt=due+workerDelayMs*(1+rateLevel)+penaltyMs;if(due>now())await pause(due-now());if(blockedUntil<=now())return;}},
+  block(ms){blockedUntil=Math.max(blockedUntil,now()+ms);return blockedUntil;},
+  rateLimited(){rateLevel=Math.min(maxLevel,rateLevel+1);calm=0;goodStreak=0;onLevelChange(rateLevel);},
+  penalize(){goodStreak=0;penaltyMs=Math.min(8000,Math.max(500,penaltyMs*2));},
+  success(){
+   if(penaltyMs&&++goodStreak>=25){goodStreak=0;penaltyMs=penaltyMs<=250?0:Math.floor(penaltyMs/2);}
+   if(rateLevel&&++calm>=recoverAfter){calm=0;rateLevel--;onLevelChange(rateLevel);}
+  },
+  get level(){return rateLevel;},get penaltyMs(){return penaltyMs;},get blockedUntil(){return blockedUntil;}
+ };
+}
+const DIAGNOSTIC_HEADERS=['retry-after','server','via','x-cache','x-amz-cf-pop','x-amzn-errortype','content-type','date','age'];
+// A bounded, non-sensitive description of a refusal (status text, a few response headers, the first 300 body characters).
+export async function describeRefusal(response){
+ let body=null;try{body=(await response.text()).slice(0,300);}catch{/* body unavailable */}
+ return{status:response.status,status_text:response.statusText||null,headers:Object.fromEntries(DIAGNOSTIC_HEADERS.map(h=>[h,response.headers.get(h)]).filter(([,v])=>v!==null)),body_snippet:body};
+}
 // Pauses all workers after `threshold` consecutive failures; stops (breakerExhausted) only after a
 // sustained outage of `maxTrips` consecutive cool-downs without a single success.
 export class FailureBreaker{
@@ -306,12 +331,15 @@ async function main(){
   }finally{await retryTransferFileOperation('receipt_close',()=>fd.close());}
  });return writeQueue;};
  const pause=defaultPause;
- let nextSourceAt=Date.now()+initialWaitMs,sourceBlockedUntil=0,penaltyMs=0,goodStreak=0;
- // One slot per source request: globally spaced by --source-delay-ms and per worker by --worker-delay-ms.
- async function sourceSlot(pace){for(;;){const due=Math.max(Date.now(),nextSourceAt,sourceBlockedUntil,pace.nextAt);nextSourceAt=due+sourceDelayMs+penaltyMs;pace.nextAt=due+workerDelayMs+penaltyMs;if(due>Date.now())await pause(due-Date.now());if(sourceBlockedUntil<=Date.now())return;}}
- // Gentle self-throttle when the source misbehaves (5xx/resets); relaxes again after sustained success.
- const penalize=()=>{goodStreak=0;penaltyMs=Math.min(8000,Math.max(500,penaltyMs*2));state.source_penalty_ms=penaltyMs;};
- const relax=()=>{if(penaltyMs&&++goodStreak>=25){goodStreak=0;penaltyMs=penaltyMs<=500?0:Math.floor(penaltyMs/2);state.source_penalty_ms=penaltyMs;}};
+ // The learned 429 level is shared across batches/restarts through --pacing-file (a refused pace is not re-probed at every batch start).
+ const pacingFile=typeof args['pacing-file']==='string'?path.resolve(args['pacing-file']):null;
+ let startLevel=0;if(pacingFile)try{startLevel=Number(JSON.parse(await fs.readFile(pacingFile,'utf8')).level)||0;}catch{/* first run */}
+ const pacer=createPacer({sourceDelayMs,workerDelayMs,initialWaitMs,level:startLevel,pause,onLevelChange:level=>{
+  state.rate_level=level;state.source_spacing_ms=pacer.spacing();
+  if(pacingFile)fs.writeFile(pacingFile+'.part',JSON.stringify({level,spacing_ms:pacer.spacing(),updated_at:new Date().toISOString()}))
+   .then(()=>fs.rename(pacingFile+'.part',pacingFile)).catch(()=>{/* the in-process level still applies */});
+ }});
+ state.rate_level=pacer.level;state.source_spacing_ms=pacer.spacing();
  let accessDenied=0,hardCloudFailures=0;
  const cloudBreaker=new FailureBreaker({stopCode:'CLOUD_STORAGE_UNAVAILABLE',threshold:6,baseCooldownMs:30000,maxTrips:8,pause,onTrip:t=>{state.cloud_breaker_trips++;state.cloud_breaker_resume_after=t.resume_after;record({state:'breaker_tripped',breaker:'cloud',...t}).catch(()=>{});save().catch(()=>{});}});
  const sourceBreaker=new FailureBreaker({stopCode:'SOURCE_UNAVAILABLE',threshold:8,baseCooldownMs:30000,maxTrips:8,pause,onTrip:t=>{state.source_breaker_trips++;state.source_breaker_resume_after=t.resume_after;record({state:'breaker_tripped',breaker:'source',...t}).catch(()=>{});save().catch(()=>{});}});
@@ -321,10 +349,11 @@ async function main(){
  await save();
  // HTTP 429 from the source: honor Retry-After for every worker; the fourth consecutive 429 for one file stops the run.
  async function rateLimited(context,response,final){
-  const delay=retryAfterMs(response.headers.get('retry-after'),300000);penalize();
-  sourceBlockedUntil=Math.max(sourceBlockedUntil,Date.now()+delay);state.provider_cooldown_until=new Date(sourceBlockedUntil).toISOString();
-  await record({...context,state:'source_rate_limit_wait',retry_after:response.headers.get('retry-after'),resume_after:state.provider_cooldown_until});
-  await response.body?.cancel();await save();
+  const delay=retryAfterMs(response.headers.get('retry-after'),300000),refusal=await describeRefusal(response);
+  pacer.rateLimited();state.rate_limit_events=(state.rate_limit_events??0)+1;
+  state.provider_cooldown_until=new Date(pacer.block(delay)).toISOString();
+  await record({...context,state:'source_rate_limit_wait',retry_after:response.headers.get('retry-after'),resume_after:state.provider_cooldown_until,rate_level:pacer.level,next_spacing_ms:pacer.spacing(),refusal});
+  await response.body?.cancel().catch(()=>{});await save();
   if(final){stopped=true;state.stop_reason='PROVIDER_RATE_LIMIT_REPEATED';}
  }
  async function worker(){
@@ -335,7 +364,7 @@ async function main(){
    try{
     const disk=await fs.statfs(root);if(disk.bavail*disk.bsize<20*1024**3+maxBytes*concurrency){stopped=true;state.stop_reason='LOCAL_DISK_RESERVE';return;}
     await record({...context,state:'download_pending'});
-    const digest=await fetchSourcePdf({row,temp,maxBytes,slot:()=>sourceSlot(pace),breaker:sourceBreaker,onPenalty:penalize,onSuccess:()=>{accessDenied=0;relax();},onAccessDenied:status=>{if(++accessDenied>=8){stopped=true;state.stop_reason='SOURCE_ACCESS_DENIED_REPEATED';}},
+    const digest=await fetchSourcePdf({row,temp,maxBytes,slot:()=>pacer.slot(pace),breaker:sourceBreaker,onPenalty:()=>{pacer.penalize();state.source_penalty_ms=pacer.penaltyMs;},onSuccess:()=>{accessDenied=0;pacer.success();},onAccessDenied:status=>{if(++accessDenied>=8){stopped=true;state.stop_reason='SOURCE_ACCESS_DENIED_REPEATED';}},
      onRateLimit:(response,attempt,final)=>rateLimited(context,response,final),pause});
     const handle=await fs.open(temp,'r+');try{await handle.sync();}finally{await handle.close();}
     const key='seeger-weiss/pdf-sha256/'+digest.sha256.slice(0,2)+'/'+digest.sha256+'.pdf';

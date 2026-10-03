@@ -57,12 +57,12 @@ function row(n,{caseId='111',title='ORDER',date='2020-01-01'}={}){
   provider_flags:{public_pdf_link_observed:true,sealing_related_locator_held:false,backend_api_id_verified:false,api_availability_verified:false}};
 }
 
-test('ordering is tier, then document rank, then smaller matter, then newest filing',async()=>{
+test('ordering: Tier 1-2 key documents first, then their bulk, then other matters; tier, rank, smaller matter, newest filing inside a phase',async()=>{
  const f=await fixtureAudit(),map=buildPriorityMap({registryFile:f.registry,parentMattersCsv:f.csv});
  const rows=[row(1,{caseId:'222',title:'ORDER'}),row(2,{caseId:'111',title:'Notice of Appearance'}),row(3,{caseId:'111',title:'ORDER',date:'2019-01-01'}),row(4,{caseId:'111',title:'ORDER',date:'2021-01-01'}),row(5,{caseId:'444',title:'ORDER'}),row(6,{caseId:'333',title:'ORDER'})];
  const order=orderRows(rows,map).map(i=>i.row.native_document_id.match(/\.(\d+)\.0\.pdf$/)[1]);
- // tier1 rank0: matter 444 (1 row) before matter 111 (3 rows), newest first; tier1 rank5; tier2; tier3.
- assert.deepEqual(order,['5','4','3','2','1','6']);
+ // phase 0: tier1 rank0 (matter 444 with 1 row before matter 111, newest first), tier2 rank0; phase 1: tier1 rank5; phase 2: tier3.
+ assert.deepEqual(order,['5','4','3','1','2','6']);
 });
 
 function run(args){return new Promise(resolve=>{const child=spawn(process.execPath,[freeze,...args],{stdio:['ignore','pipe','pipe']});let out='',err='';child.stdout.on('data',d=>out+=d);child.stderr.on('data',d=>err+=d);child.on('exit',code=>resolve({code,out,err}));});}
@@ -87,8 +87,8 @@ test('backlog freeze excludes verified and superseded rows, orders by priority, 
  const first=JSON.parse(await fs.readFile(path.join(batches,'p-0001.queue.jsonl.manifest.json'),'utf8')),bytes=await fs.readFile(first.queue);
  assert.equal(first.sha256,sha(bytes));assert.equal(first.rows,2);assert.equal(first.courtlistener_api_requests,0);assert.equal(first.public_projection_allowed,false);assert.equal(first.priority.ordering_only,true);
  const order=[];for(const n of names)for(const line of (await fs.readFile(path.join(batches,n),'utf8')).trim().split('\n'))order.push(JSON.parse(line).native_document_id.match(/\.(\d+)\.0\.pdf$/)[1]);
- // tier 1 (case 111): ORDER excluded as verified (1); MOTION (5, rank 2) after tier-1 rank 5 is false: rank2 < rank5 -> 5, 2; then tier 2 (3); then unmapped (4).
- assert.deepEqual(order,['5','2','3','4']);
+ // ORDER 1 is excluded as verified. Phase 0: tier-1 MOTION (5), tier-2 ORDER (3); phase 1: tier-1 Notice of Appearance (2); phase 2: unmapped (4).
+ assert.deepEqual(order,['5','3','2','4']);
  const again=await run(f.args);assert.equal(again.code,0,again.err);assert.equal(JSON.parse(again.out).to_freeze,0,'a repeated run finds nothing new');
  assert.equal((await fs.readdir(batches)).filter(n=>n.endsWith('.queue.jsonl')).length,2);
 });

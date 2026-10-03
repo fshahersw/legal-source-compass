@@ -62,12 +62,15 @@ export function docRank(title){
  if(/(MOTION|MEMORANDUM|BRIEF|OPPOSITION|REPLY|RESPONSE|DECLARATION|AFFIDAVIT|APPENDIX|EXHIBIT)/.test(t)&&!/ANSWER/.test(t))return 2;
  return 4;
 }
-// Deterministic order: tier, document rank, smaller matter first (more matters finish sooner), newest filing first, locator.
+// Deterministic order. Phase 0: Tier 1-2 documents of rank 0-2 (orders/opinions, complaints, motions and briefs); phase 1: the rest of Tier 1-2
+// (short-form complaint notices, answers, administrative); phase 2: other firm-linked and unmapped matters. Inside a phase: tier, document
+// rank, smaller matter first (more matters finish sooner), newest filing first, locator. Tier 1 therefore precedes Tier 2 for every document class.
+const phaseOf=i=>i.matter.tier<=2?(i.rank<=2?0:1):2;
 export function orderRows(rows,map){
  const infos=rows.map(row=>({row,matter:matterOf(row,map),rank:docRank(row.title)}));
  const size=new Map();for(const i of infos){const k=i.matter.case_key??('case:'+i.row.native_case_id);size.set(k,(size.get(k)??0)+1);}
  for(const i of infos){i.key=i.matter.case_key??('case:'+i.row.native_case_id);i.size=size.get(i.key);}
- infos.sort((a,b)=>a.matter.tier-b.matter.tier||a.rank-b.rank||a.size-b.size||(a.key<b.key?-1:a.key>b.key?1:0)||String(b.row.filing_date??'').localeCompare(String(a.row.filing_date??''))||(a.row.download_url<b.row.download_url?-1:a.row.download_url>b.row.download_url?1:0));
+ infos.sort((a,b)=>phaseOf(a)-phaseOf(b)||a.matter.tier-b.matter.tier||a.rank-b.rank||a.size-b.size||(a.key<b.key?-1:a.key>b.key?1:0)||String(b.row.filing_date??'').localeCompare(String(a.row.filing_date??''))||(a.row.download_url<b.row.download_url?-1:a.row.download_url>b.row.download_url?1:0));
  return infos;
 }
 export function summarize(infos){
