@@ -111,7 +111,21 @@ function CaseDocuments({ mdl, rowId }: { mdl: string; rowId: string }) {
         ) : null}
         .
       </p>
-      {rows.length ? (
+      {docs.truncated ? (
+        // A partial read is not a list worth showing (it would be the first rows the archive returns, not the newest).
+        <p className="text-[12px] text-muted-foreground">
+          Too many to list here.{" "}
+          <Link
+            to="/matters/$id"
+            params={{ id: mdl }}
+            search={{ tab: "documents" }}
+            className="text-primary underline-offset-2 hover:underline"
+          >
+            Open them in the Documents tab
+          </Link>
+          , where they can be searched and filtered.
+        </p>
+      ) : rows.length ? (
         <>
           <ul className="divide-y divide-border rounded-md border border-border text-[12px]">
             {shown.map((d) => (
@@ -172,11 +186,6 @@ function CaseDocuments({ mdl, rowId }: { mdl: string; rowId: string }) {
               </Link>
             ) : null}
           </div>
-          {docs.truncated ? (
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              The archive holds more documents than the {rows.length.toLocaleString()} read here.
-            </p>
-          ) : null}
         </>
       ) : (
         <p className="text-[12px] text-muted-foreground">

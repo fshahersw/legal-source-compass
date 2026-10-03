@@ -6,6 +6,7 @@ import {
   buildArchiveIndex,
   EMPTY_TIMELINE_FILTER,
   entryProviderLabel,
+  FREE_PDF_AVAILABILITY,
   ftsPrefixQuery,
   isFiltered,
   isRealDate,
@@ -13,6 +14,7 @@ import {
   normalizeRange,
   parseRegistryEntry,
   recapLabel,
+  timelinePath,
 } from "./timeline";
 
 /** Trimmed from the live sw_docket_entries_v1 rows of MDL 3140 (public docket text and court identifiers only). */
@@ -225,6 +227,152 @@ describe("timeline filters", () => {
       ["August 2026", 1],
       ["Date not recorded", 1],
     ]);
+  });
+});
+
+describe("the timeline query the database receives", () => {
+  /** The query string of a path as a map of its (decoded) parameters, in order of appearance. */
+  const params = (path: string): [string, string][] => {
+    const query = path.slice(path.indexOf("?") + 1);
+    return query.split("&").map((p) => {
+      const at = p.indexOf("=");
+      return [p.slice(0, at), decodeURIComponent(p.slice(at + 1))];
+    });
+  };
+  const get = (path: string, key: string) => params(path).find(([k]) => k === key)?.[1];
+  const contained = (path: string) =>
+    JSON.parse(get(path, "filters")?.replace(/^cs\./, "") ?? "{}");
+
+  it("asks for the matter's entries newest first with nothing else when no filter is set", () => {
+    const path = timelinePath("3047", EMPTY_TIMELINE_FILTER, true);
+    expect(path.startsWith("corpus_records?select=")).toBe(true);
+    expect(get(path, "dataset")).toBe("eq.sw_docket_entries_v1");
+    expect(contained(path)).toEqual({ mdl: "3047" });
+    expect(get(path, "order")).toBe("ordinal.desc,id.desc");
+    expect(params(path).map(([k]) => k)).toEqual(["select", "dataset", "filters", "order"]);
+  });
+
+  it("orders oldest first on request", () => {
+    expect(get(timelinePath("3047", EMPTY_TIMELINE_FILTER, false), "order")).toBe(
+      "ordinal.asc,id.asc",
+    );
+  });
+
+  it("narrows to one docket only by a well-formed docket key", () => {
+    const one = timelinePath(
+      "3047",
+      { ...EMPTY_TIMELINE_FILTER, docketKey: "flnd:3:2025-md-03140" },
+      true,
+    );
+    expect(contained(one)).toEqual({ mdl: "3047", docket_key: "flnd:3:2025-md-03140" });
+    for (const bad of ['x"}', "a b c", "ab", "x".repeat(81), "k&order=ordinal.asc"]) {
+      const path = timelinePath("3047", { ...EMPTY_TIMELINE_FILTER, docketKey: bad }, true);
+      expect(contained(path)).toEqual({ mdl: "3047" });
+      expect(path).not.toContain("order=ordinal.asc");
+    }
+  });
+
+  it("filters on listed documents by containment and on free PDFs by an OR of availability values", () => {
+    const listed = timelinePath("3047", { ...EMPTY_TIMELINE_FILTER, documents: "listed" }, true);
+    expect(contained(listed)).toEqual({ mdl: "3047", has_documents: "true" });
+    expect(get(listed, "or")).toBeUndefined();
+
+    const free = timelinePath("3047", { ...EMPTY_TIMELINE_FILTER, documents: "free" }, true);
+    expect(contained(free)).toEqual({ mdl: "3047" });
+    const or = get(free, "or") ?? "";
+    expect(or.startsWith("(") && or.endsWith(")")).toBe(true);
+    const clauses = or.slice(1, -1).split(",filters.cs.");
+    expect(clauses[0]?.startsWith("filters.cs.")).toBe(true);
+    const values = [clauses[0]?.slice("filters.cs.".length), ...clauses.slice(1)].map((c) =>
+      JSON.parse(c ?? "{}"),
+    );
+    expect(values).toEqual(FREE_PDF_AVAILABILITY.map((availability) => ({ availability })));
+    expect(FREE_PDF_AVAILABILITY).toContain("official_pdf");
+    expect(FREE_PDF_AVAILABILITY).not.toContain("recap_unavailable");
+  });
+
+  it("bounds the filing date as ISO text, swaps a backwards range and drops dates that do not exist", () => {
+    const both = timelinePath(
+      "3047",
+      { ...EMPTY_TIMELINE_FILTER, from: "2026-09-30", to: "2026-09-01" },
+      true,
+    );
+    // Both bounds are parameters of the same column, lower bound first.
+    expect(
+      params(both)
+        .filter(([k]) => k === "item->cells->>date_filed")
+        .map(([, v]) => v),
+    ).toEqual(["gte.2026-09-01", "lte.2026-09-30"]);
+
+    const fromOnly = timelinePath("3047", { ...EMPTY_TIMELINE_FILTER, from: "2026-09-01" }, true);
+    expect(fromOnly).toContain("date_filed=gte.2026-09-01");
+    expect(fromOnly).not.toContain("date_filed=lte");
+
+    const bad = timelinePath(
+      "3047",
+      { ...EMPTY_TIMELINE_FILTER, from: "2026-02-30", to: "nope" },
+      true,
+    );
+    expect(bad).not.toContain("date_filed");
+  });
+
+  it("searches the docket text with prefix words through the search vector, encoded as one parameter", () => {
+    const path = timelinePath("3047", { ...EMPTY_TIMELINE_FILTER, q: "Motion  dismiss!" }, true);
+    expect(get(path, "search_vector")).toBe("fts(simple).motion:*&dismiss:*");
+    // The ampersand between the words is encoded, so it cannot start another parameter.
+    expect(path).toContain("search_vector=fts(simple).motion%3A*%26dismiss%3A*");
+    expect(params(path).map(([k]) => k)).toEqual([
+      "select",
+      "dataset",
+      "filters",
+      "search_vector",
+      "order",
+    ]);
+    expect(
+      get(timelinePath("3047", { ...EMPTY_TIMELINE_FILTER, q: "!!!" }, true), "search_vector"),
+    ).toBeUndefined();
+  });
+
+  it("cannot be steered by hostile text in the search box or the matter id", () => {
+    const hostile = timelinePath(
+      '3047","x":"y',
+      { ...EMPTY_TIMELINE_FILTER, q: "a&dataset=eq.other&select=*" },
+      true,
+    );
+    // One dataset and one select parameter, the ones the function wrote.
+    expect(params(hostile).filter(([k]) => k === "dataset")).toEqual([
+      ["dataset", "eq.sw_docket_entries_v1"],
+    ]);
+    expect(params(hostile).filter(([k]) => k === "select")).toHaveLength(1);
+    // The matter id stays one string value of the containment, never a second key.
+    expect(Object.keys(contained(hostile))).toEqual(["mdl"]);
+    expect(get(hostile, "search_vector")).toBe("fts(simple).a:*&dataset:*&eq:*&other:*&select:*");
+  });
+
+  it("combines every filter in one query", () => {
+    const path = timelinePath(
+      "3047",
+      {
+        q: "daubert",
+        from: "2026-01-01",
+        to: "2026-09-30",
+        documents: "free",
+        docketKey: "flnd:3:2025-md-03140",
+      },
+      false,
+    );
+    expect(params(path).map(([k]) => k)).toEqual([
+      "select",
+      "dataset",
+      "filters",
+      "or",
+      "item->cells->>date_filed",
+      "item->cells->>date_filed",
+      "search_vector",
+      "order",
+    ]);
+    expect(contained(path)).toEqual({ mdl: "3047", docket_key: "flnd:3:2025-md-03140" });
+    expect(get(path, "order")).toBe("ordinal.asc,id.asc");
   });
 });
 

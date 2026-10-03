@@ -245,6 +245,38 @@ export function normalizeRange(
   return { from: f, to: t };
 }
 
+const DOCKET_KEY = /^[A-Za-z0-9:._-]{3,80}$/;
+const enc = encodeURIComponent;
+
+/**
+ * The PostgREST path of one timeline query over `sw_docket_entries_v1`: containment on the indexed filters (matter,
+ * docket, documents listed), an OR of availability values for "free PDF", the filing date as ISO text, the docket text
+ * through the search vector, and the dataset's own chronological ordinal. Every value that reaches the path is either
+ * a validated docket key, a real date, letters and digits of the search text, or a fixed word.
+ */
+export function timelinePath(mdl: string, filter: TimelineFilter, newestFirst: boolean): string {
+  const containment: Record<string, string> = { mdl };
+  if (filter.docketKey && DOCKET_KEY.test(filter.docketKey))
+    containment["docket_key"] = filter.docketKey;
+  if (filter.documents === "listed") containment["has_documents"] = "true";
+  const parts = [
+    "select=id,cells:item->cells,links:item->links,reg:detail->registry",
+    `dataset=eq.${REGISTRY_ENTRIES_DATASET}`,
+    `filters=cs.${enc(JSON.stringify(containment))}`,
+  ];
+  if (filter.documents === "free")
+    parts.push(
+      `or=(${FREE_PDF_AVAILABILITY.map((a) => `filters.cs.${enc(JSON.stringify({ availability: a }))}`).join(",")})`,
+    );
+  const { from, to } = normalizeRange(filter.from, filter.to);
+  if (from) parts.push(`item->cells->>date_filed=gte.${from}`);
+  if (to) parts.push(`item->cells->>date_filed=lte.${to}`);
+  const fts = ftsPrefixQuery(filter.q);
+  if (fts) parts.push(`search_vector=fts(simple).${enc(fts)}`);
+  parts.push(newestFirst ? "order=ordinal.desc,id.desc" : "order=ordinal.asc,id.asc");
+  return `corpus_records?${parts.join("&")}`;
+}
+
 /* ------------------------------------------------------------------ archive mapping */
 
 /**

@@ -61,11 +61,9 @@ import {
 } from "./registry";
 import {
   buildArchiveIndex,
-  FREE_PDF_AVAILABILITY,
-  ftsPrefixQuery,
   matchEntryDocuments,
-  normalizeRange,
   parseRegistryEntry,
+  timelinePath,
   type ArchiveIndex,
   type EntryArchive,
   type EntryWithheld,
@@ -658,25 +656,19 @@ type RegistryDocsCache = Map<string, { at: number; value: Promise<RegistryDocume
 /** Totals are tiny and asked for often; the row lists are large, so few are kept and for longer. */
 const registrySummaryCache: RegistryDocsCache = new Map();
 const registryRowsCache: RegistryDocsCache = new Map();
+/** A member docket's drawer reads a short list of its own; kept apart so it never evicts a matter's list. */
+const drawerDocsCache: RegistryDocsCache = new Map();
 
-/**
- * Verified-PDF registry rows for a matter's provider case ids (the matter registry's explicit ids first, derived
- * keys as a labelled supplement); degrades to `connected:false` if the reader is absent. The Documents tab, the header
- * numbers, the timeline's archive lookup and the drawers ask for the same lists, so results are cached (totals three
- * minutes, row lists ten, at most six lists), concurrent callers share one read, and the pages after the first are
- * read four at a time.
- */
-export function loadRegistryDocuments(
-  caseIds: CaseIdPlanEntry[],
-  summaryOnly = false,
+function cachedRegistryRead(
+  cache: RegistryDocsCache,
+  ttl: number,
+  max: number,
+  key: string,
+  read: () => Promise<RegistryDocumentsPayload>,
 ): Promise<RegistryDocumentsPayload> {
-  const cache = summaryOnly ? registrySummaryCache : registryRowsCache;
-  const ttl = summaryOnly ? 3 * 60_000 : 10 * 60_000;
-  const max = summaryOnly ? 80 : 6;
-  const key = caseIds.map((c) => c.id).join(",");
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < ttl) return hit.value;
-  const value = readRegistryDocuments(caseIds, summaryOnly);
+  const value = read();
   cache.set(key, { at: Date.now(), value });
   // An unconnected reader or a failed read is not worth remembering.
   value.then(
@@ -693,6 +685,34 @@ export function loadRegistryDocuments(
     cache.delete(oldest);
   }
   return value;
+}
+
+/**
+ * Verified-PDF registry rows for a matter's provider case ids (the matter registry's explicit ids first, derived
+ * keys as a labelled supplement); degrades to `connected:false` if the reader is absent. The Documents tab, the header
+ * numbers, the timeline's archive lookup and the drawers ask for the same lists, so results are cached (totals three
+ * minutes, row lists ten, at most six lists), concurrent callers share one read, and the pages after the first are
+ * read four at a time.
+ */
+export function loadRegistryDocuments(
+  caseIds: CaseIdPlanEntry[],
+  summaryOnly = false,
+): Promise<RegistryDocumentsPayload> {
+  return summaryOnly
+    ? cachedRegistryRead(
+        registrySummaryCache,
+        3 * 60_000,
+        80,
+        caseIds.map((c) => c.id).join(","),
+        () => readRegistryDocuments(caseIds, true),
+      )
+    : cachedRegistryRead(
+        registryRowsCache,
+        10 * 60_000,
+        6,
+        caseIds.map((c) => c.id).join(","),
+        () => readRegistryDocuments(caseIds, false),
+      );
 }
 
 async function readRegistryDocuments(
@@ -789,9 +809,13 @@ export async function loadCaseDocuments(
   if (!r.rows.length) return null;
   const ids = pdfLookupCaseIds(r.rows[0]?.ids);
   if (!ids.length) return { ids, documents: null };
+  const plan = ids.map((id) => ({ id, basis: "registry" as const }));
   return {
     ids,
-    documents: await loadRegistryDocuments(ids.map((id) => ({ id, basis: "registry" as const }))),
+    // The drawer lists at most 100 documents, so a short read is enough; the total comes from the archive's own summary.
+    documents: await cachedRegistryRead(drawerDocsCache, 3 * 60_000, 40, ids.join(","), () =>
+      readRegistryDocuments(plan, false, 1_000),
+    ),
   };
 }
 
@@ -829,8 +853,6 @@ function archiveIndexFor(payload: MatterOverviewPayload): Promise<ArchiveIndex |
   return index;
 }
 
-const DOCKET_KEY = /^[A-Za-z0-9:._-]{3,80}$/;
-
 /**
  * One page of the registry's docket-entry timeline for a matter, newest first. Filtering, counting and paging happen in
  * the database: containment on the indexed filters, the filing date as ISO text, the docket text through the search
@@ -845,29 +867,9 @@ export async function loadTimeline(
   if (!(await isPublished("sw_docket_entries_v1"))) return null;
   // Every provider of the matter's entries: CourtListener, and for a docket it does not publish GovInfo and the court's
   // own page (those rows are told apart by the provider chip on each entry).
-  const containment: Record<string, string> = { mdl: payload.overview.mdl };
-  if (filter.docketKey && DOCKET_KEY.test(filter.docketKey))
-    containment["docket_key"] = filter.docketKey;
-  if (filter.documents === "listed") containment["has_documents"] = "true";
-  const parts = [
-    "select=id,cells:item->cells,links:item->links,reg:detail->registry",
-    "dataset=eq.sw_docket_entries_v1",
-    `filters=cs.${enc(JSON.stringify(containment))}`,
-  ];
-  // A free PDF at the source is one of several availability values: an OR of containments on the indexed filters.
-  if (filter.documents === "free")
-    parts.push(
-      `or=(${FREE_PDF_AVAILABILITY.map((a) => `filters.cs.${enc(JSON.stringify({ availability: a }))}`).join(",")})`,
-    );
-  const { from, to } = normalizeRange(filter.from, filter.to);
-  if (from) parts.push(`item->cells->>date_filed=gte.${from}`);
-  if (to) parts.push(`item->cells->>date_filed=lte.${to}`);
-  const fts = ftsPrefixQuery(filter.q);
-  if (fts) parts.push(`search_vector=fts(simple).${enc(fts)}`);
-  parts.push(newestFirst ? "order=ordinal.desc,id.desc" : "order=ordinal.asc,id.asc");
   const start = Math.max(0, Math.floor(offset));
   const r = await restGet<{ id: string; cells: unknown; links: unknown; reg: unknown }[]>(
-    `corpus_records?${parts.join("&")}`,
+    timelinePath(payload.overview.mdl, filter, newestFirst),
     { count: true, range: [start, start + TIMELINE_PAGE - 1] },
   );
   const entries = r.rows.flatMap((row) => parseRegistryEntry(row) ?? []);
