@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canonicalSourceUrl, rankSearchMatches, searchDisplayTitle, searchQueryFilters, searchState, type SearchMatch } from "./searchQuality";
+import { canonicalSourceUrl, rankSearchMatches, searchDisplayTitle, searchIntent, searchQueryFilters, searchState, type SearchMatch } from "./searchQuality";
 import type { SearchRecord } from "./searchIdentity";
 
 function match(dataset: string, id: string, title: string, item: Record<string, unknown>, source_url: string | null = null): SearchMatch {
@@ -74,5 +74,68 @@ describe("published search quality", () => {
     expect(searchState(talcMdl, new Map())).toEqual({ state: null, stateBasis: null });
     const nameOnly = match("mdls", "no-court-id", "D. New Jersey talc", { court_name: "D. New Jersey" });
     expect(searchState(nameOnly, new Map([["njd", "NJ"]]))).toEqual({ state: null, stateBasis: null });
+  });
+});
+
+// Rows as read from the published corpus on 2026-10-03 (ids and titles only).
+const rodgersPerson = match("people", "2755", "Margaret Catharine Rodgers", { id: "2755", title: "Margaret Catharine Rodgers" });
+const otherRodgers = match("people", "4903", "Henry Lee Rodgers", { id: "4903", title: "Henry Lee Rodgers" });
+const peopleVRodgers = match("saved_pages", "6880", "5100140, People v. Rodgers", { id: "6880", title: "5100140, People v. Rodgers" }, "https://example.test/6880");
+const carlos = match("focused", "1c9b7c7e", "Carlos Rodgers |", { id: "1c9b7c7e", title: "Carlos Rodgers |" }, "https://example.test/carlos");
+const depoMdl = match("mdls", "3140", "IN RE: Depo-Provera (Depot Medroxyprogesterone Acetate) Products Liability Litigation", { id: "mdl:3140", mdl_number: 3140 });
+const depoRegistry = match("sw_matters_v1", "sw-matter:3140", "IN RE: Depo-Provera (Depot Medroxyprogesterone Acetate) Products Liability Litigation", {
+  id: "sw-matter:3140", cells: { mdl_number: 3140, tier: "tier1" },
+});
+
+describe("person-intent search", () => {
+  it("treats a leading honorific plus a short name as a search for a person and drops the honorific from the query", () => {
+    expect(searchIntent("Judge Rodgers")).toEqual({ honorific: true, query: "Rodgers" });
+    expect(searchIntent("  hon. Casey Rodgers ")).toEqual({ honorific: true, query: "Casey Rodgers" });
+    expect(searchIntent("Honorable Yvonne Gonzalez Rogers")).toEqual({ honorific: true, query: "Yvonne Gonzalez Rogers" });
+    expect(searchIntent("Magistrate Judge Cannon")).toEqual({ honorific: true, query: "Cannon" });
+    expect(searchIntent("Justice Kagan")).toEqual({ honorific: true, query: "Kagan" });
+  });
+
+  it("leaves everything else exactly as typed", () => {
+    for (const q of ["Rodgers", "judge", "Judge", "Justice for victims act", "judge and jury trial rules", "Judge Rodgers order granting motion to dismiss", 'Judge "Rodgers"', "talc", "Judgement Rodgers"])
+      expect(searchIntent(q)).toEqual({ honorific: false, query: q.trim() });
+  });
+
+  it("ranks the person who presides over an MDL first, then other people, then same-surname documents", () => {
+    const mdlJudges = new Set(["2755"]);
+    const result = rankSearchMatches([peopleVRodgers, carlos, otherRodgers, rodgersPerson], "Judge Rodgers", { mdlJudgePersonIds: mdlJudges });
+    expect(result.ranked.map((m) => m.record.id)).toEqual(["2755", "4903", "6880", "1c9b7c7e"]);
+  });
+
+  it("does not boost people when the query has no honorific, and does not need the MDL-judge set to rank people above documents", () => {
+    const plain = rankSearchMatches([peopleVRodgers, carlos, otherRodgers, rodgersPerson], "Rodgers");
+    expect(plain.ranked.slice(0, 2).map((m) => m.record.dataset).sort()).not.toEqual(["people", "people"]);
+    const withoutSet = rankSearchMatches([peopleVRodgers, carlos, otherRodgers, rodgersPerson], "Judge Rodgers");
+    expect(withoutSet.ranked.slice(0, 2).map((m) => m.record.dataset)).toEqual(["people", "people"]);
+  });
+
+  it("labels a matter-registry record with its MDL number", () => {
+    expect(searchDisplayTitle(depoRegistry)).toBe("MDL 3140 — IN RE: Depo-Provera (Depot Medroxyprogesterone Acetate) Products Liability Litigation");
+    expect(searchDisplayTitle(match("sw_matters_v1", "x", "Caption", { cells: {} }))).toBe("Caption");
+    const ranked = rankSearchMatches([depoRegistry, depoMdl], "Depo-Provera").ranked;
+    expect(ranked[0]!.record.dataset).toBe("mdls");
+    expect(ranked.map((m) => m.record.dataset)).toContain("sw_matters_v1");
+  });
+});
+
+describe("person-intent search: judge-directory records are joined by native id only", () => {
+  const directory = (id: string, name: string, entity: string) =>
+    match("judges", id, name, { id, name, role: "Judicial profile", entity_id: entity });
+  const presiding = directory("b7f3af1c913d", "Margaret Catharine Rodgers", "judge-entity-24222174cb13b7162bfcfcbc");
+  const namesake = directory("0aa11bb22cc3", "Margaret Catharine Rodgers", "judge-entity-ffffffffffffffffffff");
+  const aSurname = directory("0000aaaabbbb", "Edward Rodgers", "judge-entity-eeeeeeeeeeeeeeeeeeee");
+
+  it("lifts the directory profile whose entity id the MDL record links, not a namesake or another surname", () => {
+    const context = { mdlJudgeEntityIds: new Set(["judge-entity-24222174cb13b7162bfcfcbc"]) };
+    const ranked = rankSearchMatches([aSurname, namesake, presiding], "Judge Rodgers", context).ranked;
+    expect(ranked[0]!.record.id).toBe("b7f3af1c913d");
+    // Without the MDL link all three are equally people-intent hits and order falls back to the title.
+    const flat = rankSearchMatches([aSurname, namesake, presiding], "Judge Rodgers").ranked;
+    expect(flat[0]!.record.id).toBe("0000aaaabbbb");
   });
 });

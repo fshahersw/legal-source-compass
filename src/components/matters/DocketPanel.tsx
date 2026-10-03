@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
+import { DatasetBrowser } from "@/components/corpus/DatasetBrowser";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import {
   Chip,
@@ -160,14 +161,26 @@ export function DocketPanel({ payload }: { payload: MatterOverviewPayload }) {
   if (query.isLoading) return <Loading what="docket entries" />;
   if (query.error) return <ExternalError error={query.error} />;
   if (!data || (!data.available.activity && !data.available.clEntries)) {
+    const released = payload.registryReleased.entries;
+    // The matter registry's entries dataset, once released, is listed with the generic dataset browser.
+    if (released)
+      return (
+        <Panel
+          id="docket"
+          title="Docket entries"
+          note="Entries the matter registry captured for the master and JPML dockets, as released in its own dataset."
+        >
+          <DatasetBrowser key={released} dataset={released} initialFilters={{ mdl }} compact />
+        </Panel>
+      );
     const captures = (payload.registry?.entries ?? []).filter(
       (e) => e.captured !== null && e.captured > 0,
     );
     return (
       <Panel id="docket" title="Docket entries">
         <EmptyState>
-          No docket entries for this matter are published in the connected corpus yet. The master
-          docket
+          <span className="font-medium text-foreground">Not yet available.</span> The docket entries
+          for this matter are not released in the connected corpus yet. The master docket
           {payload.overview.masterDocket.number
             ? ` ${payload.overview.masterDocket.number}`
             : ""}{" "}
@@ -175,7 +188,7 @@ export function DocketPanel({ payload }: { payload: MatterOverviewPayload }) {
         </EmptyState>
         {captures.length ? (
           <div className="mt-3">
-            <Scope title="Captured, not yet published">
+            <Scope title="Captured, not released">
               {captures.map((e, i) => (
                 <span key={`${e.provider}-${e.docketKey ?? i}`} className="block">
                   The matter registry captured {e.captured!.toLocaleString()}
@@ -185,7 +198,7 @@ export function DocketPanel({ payload }: { payload: MatterOverviewPayload }) {
                   entries from {e.provider === "courtlistener" ? "CourtListener" : e.provider}
                   {e.complete === true ? " (complete at capture)" : ""}
                   {e.observedAt ? ` on ${e.observedAt.slice(0, 10)}` : ""}. They are not in a
-                  published dataset yet, so the timeline cannot be shown.
+                  released dataset yet, so the timeline cannot be shown.
                 </span>
               ))}
             </Scope>

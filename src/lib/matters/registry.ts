@@ -15,6 +15,7 @@ import {
   type RegistryCaseDetail,
   type RegistryLabels,
 } from "./cases";
+import { matterCaseKeys } from "./docketKeys";
 import type { CountSnapshot, MatterOverview } from "./overview";
 
 const isObj = (v: unknown): v is Record<string, unknown> =>
@@ -94,9 +95,33 @@ export type RegistryJpmlOrder = {
   altCopies: { url: string; rows: number | null; retrievedAt: string | null }[];
 };
 
+/** One DocketBird relationship-graph query for the master docket: what it returned versus what it reports indexed. */
+export type RegistryGraphQuery = {
+  retrievedAt: string | null;
+  masterCaseId: string | null;
+  returned: number | null;
+  totalMembers: number | null;
+  truncated: boolean | null;
+};
+
+/** The matter record's own fields (title, listing cells, detail facts), when the whole record was read. */
+export type RegistryRecordInfo = {
+  /** Caption as the JPML report prints it. */
+  caption: string | null;
+  status: "pending" | "terminated" | null;
+  /** CourtListener court id of the transferee court. */
+  transfereeCourt: string | null;
+  judgeAsPrinted: string | null;
+  dateCentralized: string | null;
+};
+
 export type RegistryMatter = {
   mdl: string;
   tier: string | null;
+  /** Null when only the machine block was read. */
+  record: RegistryRecordInfo | null;
+  /** DocketBird graph queries: provider-indexed totals, evidence and never a census. */
+  docketbirdGraph: RegistryGraphQuery[];
   caseIds: RegistryCaseIds[];
   /** Flat, de-duplicated list the registry says is ready to pass to the PDF reader. */
   pdfCaseIds: string[];
@@ -288,10 +313,24 @@ export function parseRegistryMatter(raw: unknown, expectedMdl?: string): Registr
     });
   }
 
+  const docketbirdGraph: RegistryGraphQuery[] = [];
+  for (const g of arr(raw["docketbird_graph"])) {
+    if (!isObj(g)) continue;
+    docketbirdGraph.push({
+      retrievedAt: str(g["retrieved_at"]),
+      masterCaseId: str(g["master_case_id"]),
+      returned: num(g["returned"]),
+      totalMembers: num(g["total_members"]),
+      truncated: typeof g["truncated"] === "boolean" ? g["truncated"] : null,
+    });
+  }
+
   const provenance = isObj(raw["provenance"]) ? raw["provenance"] : {};
   return {
     mdl,
     tier: str(raw["tier"]),
+    record: null,
+    docketbirdGraph,
     caseIds,
     pdfCaseIds,
     members: {
@@ -311,15 +350,117 @@ export function parseRegistryMatter(raw: unknown, expectedMdl?: string): Registr
   };
 }
 
+/**
+ * A whole `sw_matters_v1` record (title, listing cells, detail facts and the machine block). The record fields are
+ * read as published: status only from the closed vocabulary, everything else as the projection states it.
+ */
+export function parseRegistryRecord(
+  row: { title: unknown; cells: unknown; facts: unknown; registry: unknown },
+  expectedMdl?: string,
+): RegistryMatter | null {
+  const matter = parseRegistryMatter(row.registry, expectedMdl);
+  if (!matter) return null;
+  const cells = isObj(row.cells) ? row.cells : {};
+  const facts = new Map<string, string>();
+  for (const f of arr(row.facts))
+    if (Array.isArray(f) && typeof f[0] === "string" && f[1] != null) facts.set(f[0], String(f[1]));
+  const status = str(cells["status"]);
+  const centralized = [...facts.entries()].find(([k]) => /^Date centralized/i.test(k))?.[1];
+  return {
+    ...matter,
+    record: {
+      caption: str(row.title),
+      status: status === "pending" || status === "terminated" ? status : null,
+      transfereeCourt: str(cells["transferee_court"]),
+      judgeAsPrinted: str(cells["judge_as_printed"]),
+      dateCentralized:
+        centralized && /^\d{4}-\d{2}-\d{2}$/.test(centralized.trim()) ? centralized.trim() : null,
+    },
+  };
+}
+
+/**
+ * A matter page for an MDL the JPML pending-MDL directory (`mdls`) does not hold (a closed matter, for example) but
+ * the registry does. Only what the registry states is filled in; the rest stays unrecorded.
+ */
+export function overviewFromRegistry(reg: RegistryMatter): MatterOverview | null {
+  const rec = reg.record;
+  if (!rec || !rec.caption) return null;
+  const master = reg.caseIds.find((c) => c.role === "master") ?? null;
+  const clMaster = master?.nativeCaseIds.find((n) => n.provider === "courtlistener")?.id ?? null;
+  const assigned = reg.judges.find((j) => j.role === "assigned_to") ?? null;
+  const jpml = reg.jpml;
+  const snapshots: CountSnapshot[] =
+    jpml && jpml.asOf && /^\d{4}-\d{2}-\d{2}$/.test(jpml.asOf)
+      ? [
+          {
+            asOf: jpml.asOf,
+            total: jpml.historicalTotal,
+            pending: jpml.pending,
+            label: `JPML report ${jpml.asOf} (via the matter registry)`,
+          },
+        ]
+      : [];
+  const court = master?.courtId ?? rec.transfereeCourt;
+  const docket = master?.docketNumber ?? null;
+  return {
+    mdl: reg.mdl,
+    recordId: `sw-matter:${reg.mdl}`,
+    title: rec.caption,
+    titleBasis: "Caption as printed in the JPML report (matter registry)",
+    status: rec.status,
+    litigationType: null,
+    asOf: snapshots[0]?.asOf ?? null,
+    countsLabel: snapshots[0]?.label ?? null,
+    court: {
+      clId: court,
+      shortName: null,
+      fullName: null,
+      fjcName: null,
+      districtCode: null,
+      circuit: null,
+    },
+    masterDocket: { number: docket, clDocketId: clMaster },
+    dates: { filed: null, transferred: rec.dateCentralized, closed: null },
+    actions: {
+      total: snapshots[0]?.total ?? null,
+      pending: snapshots[0]?.pending ?? null,
+      snapshots,
+    },
+    judge: {
+      printedName: rec.judgeAsPrinted,
+      printedTitle: null,
+      profileName: null,
+      entityId: null,
+      fjcJid: null,
+      fjcNid: null,
+      clPersonId: assigned?.clPersonId ?? null,
+      linkBasis: null,
+      // No judge profile is linked from the registry alone; a name or a person id here is shown, never linked.
+      nativeIdEvidence: false,
+      evidenceNote: null,
+    },
+    reports: [],
+    cases: null,
+    docketDocuments: null,
+    activity: null,
+    counsel: null,
+    appearances: null,
+    expertRulingsTotal: null,
+    keys: matterCaseKeys(court, docket),
+  };
+}
+
 /* ------------------------------------------------------------------ PDF case ids */
 
 export type CaseIdBasis = "registry" | "derived";
 export type CaseIdPlanEntry = { id: string; basis: CaseIdBasis };
 
 /**
- * The provider case ids to ask the PDF reader for: the registry's explicit ids first, then any derived key
- * (exact court + docket-number normalization) the registry did not already supply. Each carries its basis so the UI
- * can say which is which.
+ * The provider case ids to ask the PDF reader for. A matter the registry covers uses ONLY the registry's explicit
+ * ids (`pdf_case_ids`): those are the relationships it records, and an id it did not attach to a docket is not guessed
+ * back in. A matter the registry does not cover yet falls back to keys derived from the exact court id and docket
+ * number, each labelled "derived".
  */
 export function caseIdPlan(
   registry: Pick<RegistryMatter, "pdfCaseIds"> | null,
@@ -332,7 +473,10 @@ export function caseIdPlan(
     seen.add(id);
     out.push({ id, basis });
   };
-  for (const id of registry?.pdfCaseIds ?? []) add(id, "registry");
+  if (registry && registry.pdfCaseIds.length) {
+    for (const id of registry.pdfCaseIds) add(id, "registry");
+    return out;
+  }
   for (const id of derived) add(id, "derived");
   return out;
 }

@@ -26,6 +26,11 @@ export type MatterOverviewPayload = {
   sw: { tier: 1 | 2 | null; shortName: string | null };
   /** The Seeger Weiss matter registry's record for this MDL, when the registry publishes one; null otherwise. */
   registry: RegistryMatter | null;
+  /**
+   * Registry datasets that are released (corpus_datasets.ready) and can be browsed for this matter with the generic
+   * dataset browser; null while they are held ("not yet available").
+   */
+  registryReleased: { entries: string | null; parties: string | null };
 };
 
 export type MatterCasesPayload = {

@@ -35,6 +35,28 @@ const PROVIDER_LABELS: Record<string, string> = {
   "official-court": "Court website",
 };
 
+/** Published entry counts first; the registry's own capture is named separately so the two are never confused. */
+function entryTileNote(
+  clEntries: number | null,
+  withText: number | null,
+  captured: number,
+  releasedByRegistry: boolean,
+): string {
+  const parts = [
+    clEntries ? `${clEntries.toLocaleString()} listed by CourtListener` : null,
+    withText ? `${withText.toLocaleString()} with docket text` : null,
+  ].filter((p): p is string => !!p);
+  if (!parts.length && releasedByRegistry)
+    return "Released in the matter registry's entries dataset";
+  if (!parts.length)
+    return captured
+      ? `Not yet available · ${captured.toLocaleString()} captured by the matter registry`
+      : "Not yet available";
+  if (captured > (clEntries ?? 0) && !releasedByRegistry)
+    parts.push(`registry captured ${captured.toLocaleString()} (not yet released)`);
+  return parts.join(" · ");
+}
+
 /** What the Seeger Weiss matter registry holds for this MDL: explicit relationships, coverage and gaps. */
 function RegistryCard({ payload }: { payload: MatterOverviewPayload }) {
   const reg = payload.registry;
@@ -106,6 +128,19 @@ function RegistryCard({ payload }: { payload: MatterOverviewPayload }) {
             />
           ) : null}
         </div>
+        {reg.docketbirdGraph.length ? (
+          <p className="text-[12px] text-muted-foreground">
+            DocketBird relationship graph:{" "}
+            {reg.docketbirdGraph
+              .map((g) =>
+                g.returned !== null && g.totalMembers !== null
+                  ? `${g.returned.toLocaleString()} of ${g.totalMembers.toLocaleString()} indexed members returned${g.truncated ? " (truncated)" : ""}`
+                  : "coverage not recorded",
+              )
+              .join("; ")}
+            . The provider&apos;s index is evidence for membership, not a census of the MDL.
+          </p>
+        ) : null}
         {reg.gaps.length ? (
           <Scope title="Known gaps">
             {reg.gaps.map((g, i) => (
@@ -213,19 +248,12 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
           }
           note={
             available
-              ? [
-                  available.clEntries
-                    ? `${available.clEntries.toLocaleString()} listed by CourtListener`
-                    : null,
-                  available.activity
-                    ? `${available.activity.toLocaleString()} with docket text`
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ") ||
-                (capturedEntries
-                  ? `${capturedEntries.toLocaleString()} captured by the matter registry, not published yet`
-                  : "None in the corpus yet")
+              ? entryTileNote(
+                  available.clEntries,
+                  available.activity,
+                  capturedEntries,
+                  payload.registryReleased.entries !== null,
+                )
               : undefined
           }
         />
@@ -331,8 +359,8 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
                     .filter(Boolean)
                     .join(", ") ||
                   (capturedEntries
-                    ? `${capturedEntries.toLocaleString()} captured, not published yet`
-                    : "none yet")
+                    ? `not yet available (${capturedEntries.toLocaleString()} captured)`
+                    : "not yet available")
                 : "loading"}
             </li>
             <li>

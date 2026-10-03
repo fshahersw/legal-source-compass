@@ -41,8 +41,9 @@ import {
   newerJpmlCounts,
   parseRegistryDocket,
   parseRegistryDocketDetail,
+  overviewFromRegistry,
   parseRegistryLabels,
-  parseRegistryMatter,
+  parseRegistryRecord,
   withRegistryJpml,
   type CaseIdPlanEntry,
   type RegistryDocketDetail,
@@ -81,6 +82,10 @@ const MATTER_DATASETS = [
   "jpml_html_reference",
   "sw_matters_v1",
   "sw_matter_dockets_v1",
+  // Planned and held until the owner decides; read only if/when they are released (corpus_datasets.ready).
+  "sw_matter_entries_v1",
+  "sw_docket_entries_v1",
+  "sw_matter_parties_v1",
 ] as const;
 type MatterDataset = (typeof MATTER_DATASETS)[number];
 
@@ -159,10 +164,11 @@ async function loadJpmlReferences(mdl: string): Promise<JpmlReference[]> {
 /** The matter registry's record for this MDL; null when the registry is not published or holds no record for it. */
 export async function loadRegistryMatter(mdl: string): Promise<RegistryMatter | null> {
   if (!(await isPublished("sw_matters_v1"))) return null;
-  const r = await restGet<{ registry: unknown }[]>(
-    `corpus_records?select=registry:detail->registry&dataset=eq.sw_matters_v1&id=eq.${enc(`sw-matter:${mdl}`)}&limit=1`,
+  const r = await restGet<{ title: unknown; cells: unknown; facts: unknown; registry: unknown }[]>(
+    `corpus_records?select=title,cells:item->cells,facts:detail->facts,registry:detail->registry&dataset=eq.sw_matters_v1&id=eq.${enc(`sw-matter:${mdl}`)}&limit=1`,
   );
-  return parseRegistryMatter(r.rows[0]?.registry, mdl);
+  const row = r.rows[0];
+  return row ? parseRegistryRecord(row, mdl) : null;
 }
 
 let labelsCache: { at: number; labels: RegistryLabels } | null = null;
@@ -239,23 +245,32 @@ export async function overviewFor(mdl: string): Promise<MatterOverviewPayload | 
 }
 
 export async function loadMatterOverview(mdl: string): Promise<MatterOverviewPayload | null> {
-  if (!(await isPublished("mdls"))) return null;
-  const raw = await rpcPost<unknown>("corpus_detail", {
-    p_id: mdl,
-    p_datasets: ["mdls"],
-    p_full: false,
-  });
-  const parsed = parseMdlDetail(raw);
-  if (!parsed || parsed.mdl !== mdl) return null;
-  const [master, judgeProfile, jpmlReferences, registry] = await Promise.all([
+  const registryRead = loadRegistryMatter(mdl).catch(() => null);
+  let fromDirectory: ReturnType<typeof parseMdlDetail> = null;
+  if (await isPublished("mdls")) {
+    const raw = await rpcPost<unknown>("corpus_detail", {
+      p_id: mdl,
+      p_datasets: ["mdls"],
+      p_full: false,
+    });
+    const p = parseMdlDetail(raw);
+    fromDirectory = p && p.mdl === mdl ? p : null;
+  }
+  const registry = await registryRead;
+  // An MDL the JPML directory does not hold (a closed matter, say) is still a matter page when the registry has it.
+  const parsed = fromDirectory ?? (registry ? overviewFromRegistry(registry) : null);
+  if (!parsed) return null;
+  const [master, judgeProfile, jpmlReferences] = await Promise.all([
     loadMasterMeta(parsed.masterDocket.clDocketId).catch(() => null),
     parsed.judge.nativeIdEvidence
       ? loadJudgeProfile(parsed.judge.entityId).catch(() => null)
       : Promise.resolve(null),
     loadJpmlReferences(mdl).catch(() => []),
-    loadRegistryMatter(mdl).catch(() => null),
   ]);
   const sw = SW_MATTERS.find((m) => String(m.mdl) === mdl) ?? null;
+  // Entries and parties are planned/held; once a dataset is released the generic browser can list its rows.
+  const ready = await publishedDatasets().catch(() => new Set<string>());
+  const released = (...ids: MatterDataset[]) => ids.find((id) => ready.has(id)) ?? null;
   return {
     overview: withRegistryJpml(parsed, registry),
     master,
@@ -263,6 +278,10 @@ export async function loadMatterOverview(mdl: string): Promise<MatterOverviewPay
     jpmlReferences,
     sw: { tier: sw?.tier ?? null, shortName: sw?.shortName ?? null },
     registry,
+    registryReleased: {
+      entries: released("sw_matter_entries_v1", "sw_docket_entries_v1"),
+      parties: released("sw_matter_parties_v1"),
+    },
   };
 }
 
@@ -774,25 +793,19 @@ export async function loadHub(): Promise<HubRow[]> {
     for (const row of a.rows)
       for (const m of row.filters?.mdl ?? []) sw.set(m, (sw.get(m) ?? 0) + 1);
   }
-  // The matter registry's per-matter block (explicit PDF case ids and docket counts) for the matters it covers.
-  const registryMatters = new Map<
-    string,
-    { pdfCaseIds: string[]; dockets: number | null; jpml: RegistryMatter["jpml"] }
-  >();
+  // The matter registry's records (explicit PDF case ids, docket counts, caption) for the matters it covers.
+  const registryMatters = new Map<string, RegistryMatter>();
   if (await isPublished("sw_matters_v1")) {
     try {
-      const reg = await restGet<{ id: string; block: unknown }[]>(
-        "corpus_records?select=id,block:detail->registry&dataset=eq.sw_matters_v1&limit=200",
+      const reg = await restGet<
+        { id: string; title: unknown; cells: unknown; facts: unknown; registry: unknown }[]
+      >(
+        "corpus_records?select=id,title,cells:item->cells,facts:detail->facts,registry:detail->registry&dataset=eq.sw_matters_v1&limit=200",
       );
       for (const row of reg.rows) {
         const mdl = /^sw-matter:(\d{1,6})$/.exec(row.id)?.[1];
-        const parsed = mdl ? parseRegistryMatter(row.block, mdl) : null;
-        if (!mdl || !parsed) continue;
-        registryMatters.set(mdl, {
-          pdfCaseIds: parsed.pdfCaseIds,
-          dockets: parsed.members.rows,
-          jpml: parsed.jpml,
-        });
+        const parsed = mdl ? parseRegistryRecord(row, mdl) : null;
+        if (mdl && parsed) registryMatters.set(mdl, parsed);
       }
     } catch {
       registryMatters.clear();
@@ -847,20 +860,23 @@ export async function loadHub(): Promise<HubRow[]> {
       },
       reg?.jpml,
     );
+    // A matter the JPML directory does not hold (a closed matter) still reads from the registry when it has it.
+    const rec = reg?.record ?? null;
+    const registryMaster = reg?.caseIds.find((c) => c.role === "master") ?? null;
     return {
       mdl: key,
       tier: m.tier,
       shortName: m.shortName,
-      inCorpus: !!row,
-      title: row?.title ?? null,
-      status: s ? str(s["status"]) : null,
-      courtName: s ? str(s["court_name"]) : null,
-      masterDocket: s ? str(s["master_docket"]) : null,
-      judgePrinted: s ? str(s["judge_name_as_printed"]) : null,
+      inCorpus: !!row || !!rec,
+      title: row?.title ?? rec?.caption ?? null,
+      status: s ? str(s["status"]) : (rec?.status ?? null),
+      courtName: s ? str(s["court_name"]) : (rec?.transfereeCourt ?? null),
+      masterDocket: s ? str(s["master_docket"]) : (registryMaster?.docketNumber ?? null),
+      judgePrinted: s ? str(s["judge_name_as_printed"]) : (rec?.judgeAsPrinted ?? null),
       totalActions: counts.total,
       pendingActions: counts.pending,
       asOf: counts.asOf,
-      registryDockets: reg?.dockets ?? null,
+      registryDockets: reg?.members.rows ?? null,
       casesInSample: row && typeof row.cases_total === "number" ? row.cases_total : null,
       docketEntriesInSample:
         row && typeof row.activity_total === "number" ? row.activity_total : null,

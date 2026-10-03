@@ -2,6 +2,7 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 
+import { DatasetBrowser } from "@/components/corpus/DatasetBrowser";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import {
   Chip,
@@ -201,9 +202,21 @@ export function PartiesPanel({ payload }: { payload: MatterOverviewPayload }) {
         title="Parties and counsel"
         note="Names exactly as the sources recorded them. Spellings are never merged, and an individual's name on the plaintiff side is counted rather than listed."
       >
-        {payload.registry?.parties.length ? (
+        {payload.registryReleased.parties ? (
+          <div className="mb-3 space-y-2">
+            <p className="text-[12px] font-medium text-muted-foreground">
+              Parties and counsel on the master docket (matter registry)
+            </p>
+            <DatasetBrowser
+              key={payload.registryReleased.parties}
+              dataset={payload.registryReleased.parties}
+              initialFilters={{ mdl }}
+              compact
+            />
+          </div>
+        ) : payload.registry?.parties.length ? (
           <div className="mb-3">
-            <Scope title="Matter registry capture">
+            <Scope title="Master-docket parties: not yet available">
               The matter registry captured{" "}
               {payload.registry.parties
                 .map(
@@ -215,8 +228,8 @@ export function PartiesPanel({ payload }: { payload: MatterOverviewPayload }) {
               {payload.registry.parties.every((p) => p.complete === true)
                 ? " (complete at capture)"
                 : ""}
-              . Names from that capture are not published yet, so the lists below come from the
-              saved firm-focused sample only.
+              . Names from that capture are not released yet, so the lists below come from the saved
+              firm-focused sample only.
             </Scope>
           </div>
         ) : null}

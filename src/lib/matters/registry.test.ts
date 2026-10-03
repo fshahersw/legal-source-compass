@@ -18,8 +18,10 @@ import {
   isNativeCaseId,
   parseRegistryDocket,
   parseRegistryDocketDetail,
+  overviewFromRegistry,
   parseRegistryLabels,
   parseRegistryMatter,
+  parseRegistryRecord,
   withRegistryJpml,
 } from "./registry";
 
@@ -197,21 +199,21 @@ describe("matter registry record", () => {
 describe("case-id plan for the PDF reader", () => {
   const registry = parseRegistryMatter(matterRegistry())!;
 
-  it("puts the registry's explicit ids first and adds only derived keys it does not already supply", () => {
-    const plan = caseIdPlan(registry, ["flnd-3:2025-md-03140", "3:25md3140"]);
+  it("uses only the registry's explicit ids for a matter the registry covers", () => {
+    const plan = caseIdPlan(registry, ["flnd-3:2025-md-03140", "3:25md3140", "9:99md1"]);
     expect(plan).toEqual([
       { id: "flnd-3:2025-md-03140", basis: "registry" },
       { id: "69674950", basis: "registry" },
       { id: "jpml-0:2024-md-03140", basis: "registry" },
-      { id: "3:25md3140", basis: "derived" },
     ]);
   });
 
-  it("falls back to the derived keys alone when the matter is not in the registry", () => {
+  it("falls back to the derived keys when the matter is not in the registry or lists no ids", () => {
     expect(caseIdPlan(null, ["a-1", "b-2"])).toEqual([
       { id: "a-1", basis: "derived" },
       { id: "b-2", basis: "derived" },
     ]);
+    expect(caseIdPlan({ pdfCaseIds: [] }, ["a-1"])).toEqual([{ id: "a-1", basis: "derived" }]);
     expect(caseIdPlan(null, [])).toEqual([]);
   });
 });
@@ -611,5 +613,129 @@ describe("registry docket detail (drawer)", () => {
     expect(parseRegistryDocketDetail(withConflict)!.hasConflict).toBe(true);
     expect(formatLocator({ a: null, b: "" })).toBeNull();
     expect(formatLocator("x")).toBeNull();
+  });
+});
+
+describe("matters the JPML directory does not hold", () => {
+  const record = () => ({
+    title: "IN RE: Equifax, Inc., Customer Data Security Breach Litigation",
+    cells: {
+      status: "terminated",
+      transferee_court: "gand",
+      judge_as_printed: "Thomas W. Thrash, Jr.",
+    },
+    facts: [
+      ["MDL number", "2800"],
+      ["Date centralized (earliest parsed JPML transfer order)", "2017-12-06"],
+    ],
+    registry: {
+      ...matterRegistry(),
+      mdl: "2800",
+      case_ids: [
+        {
+          role: "master",
+          docket_key: "gand:1:2017-md-02800",
+          court_id: "gand",
+          docket_number: "1:17-md-02800",
+          basis: ["jpml_master_docket_list"],
+          native_case_ids: [
+            {
+              id: "6254317",
+              provider: "courtlistener",
+              source_system: "courtlistener",
+              resolution_basis: "exact_docket_key",
+            },
+          ],
+        },
+      ],
+      judges: [
+        {
+          role: "assigned_to",
+          basis: "courtlistener docket resource assigned_to",
+          cl_person_id: "1234",
+          source_string: "Thomas W. Thrash, Jr.",
+        },
+      ],
+      docketbird_graph: [
+        {
+          retrieved_at: "2026-10-03T12:40:47Z",
+          master_case_id: "gand-1:2017-md-02800",
+          returned: 7,
+          total_members: 20,
+          truncated: true,
+        },
+        "not an object",
+      ],
+      jpml: {
+        as_of: "2026-10-01",
+        pending: 0,
+        historical_total: 481,
+        report_url: "https://www.jpml.uscourts.gov/x.pdf",
+      },
+    },
+  });
+
+  it("reads the record's own fields only from the closed vocabulary, and the DocketBird graph coverage", () => {
+    const m = parseRegistryRecord(record(), "2800")!;
+    expect(m.record).toEqual({
+      caption: "IN RE: Equifax, Inc., Customer Data Security Breach Litigation",
+      status: "terminated",
+      transfereeCourt: "gand",
+      judgeAsPrinted: "Thomas W. Thrash, Jr.",
+      dateCentralized: "2017-12-06",
+    });
+    expect(m.docketbirdGraph).toEqual([
+      {
+        retrievedAt: "2026-10-03T12:40:47Z",
+        masterCaseId: "gand-1:2017-md-02800",
+        returned: 7,
+        totalMembers: 20,
+        truncated: true,
+      },
+    ]);
+    const odd = parseRegistryRecord(
+      { ...record(), cells: { status: "wat" }, facts: [["Date centralized", "someday"]] },
+      "2800",
+    )!;
+    expect(odd.record).toMatchObject({
+      status: null,
+      dateCentralized: null,
+      transfereeCourt: null,
+      judgeAsPrinted: null,
+    });
+    expect(parseRegistryRecord(record(), "3140")).toBeNull();
+    expect(parseRegistryRecord({ ...record(), registry: null }, "2800")).toBeNull();
+  });
+
+  it("builds a matter page from the registry alone, with nothing the registry does not state", () => {
+    const o = overviewFromRegistry(parseRegistryRecord(record(), "2800")!)!;
+    expect(o).toMatchObject({
+      mdl: "2800",
+      title: "IN RE: Equifax, Inc., Customer Data Security Breach Litigation",
+      status: "terminated",
+      asOf: "2026-10-01",
+      court: { clId: "gand", shortName: null },
+      masterDocket: { number: "1:17-md-02800", clDocketId: "6254317" },
+      dates: { filed: null, transferred: "2017-12-06", closed: null },
+      actions: { total: 481, pending: 0 },
+      judge: {
+        printedName: "Thomas W. Thrash, Jr.",
+        clPersonId: "1234",
+        nativeIdEvidence: false,
+        entityId: null,
+      },
+      cases: null,
+      activity: null,
+      counsel: null,
+      reports: [],
+    });
+    expect(o.keys.all).toContain("gand-1:2017-md-02800");
+  });
+
+  it("returns nothing when the record has no caption or the machine block alone was read", () => {
+    expect(overviewFromRegistry(parseRegistryMatter(matterRegistry())!)).toBeNull();
+    expect(
+      overviewFromRegistry(parseRegistryRecord({ ...record(), title: "  " }, "2800")!),
+    ).toBeNull();
   });
 });

@@ -7,11 +7,46 @@ import {
   resolveSearchIdentities,
   type SearchRecord,
 } from "./searchIdentity";
-import { rankSearchMatches, searchCourtId, searchQueryFilters, searchState } from "./searchQuality";
+import {
+  rankSearchMatches,
+  searchCourtId,
+  searchIntent,
+  searchQueryFilters,
+  searchState,
+} from "./searchQuality";
 import { exactCourtLocations } from "@/lib/corpus/courtLocations";
 
 const SEARCH_CANDIDATES = 500;
 const PRIORITY_CANDIDATES = 250;
+/**
+ * Entity datasets that get their own bounded pass, so a matter, judge, court or registry hit never depends on its
+ * ordinal inside the 500 lowest-ordinal matches of a corpus-wide pass (corpus_query orders by ordinal when p_sort is null).
+ */
+const PRIORITY_DATASETS = ["mdls", "sw_matters_v1", "expert_rulings", "judges", "people", "court_spine"] as const;
+
+type MdlJudgeIds = { mdlJudgePersonIds: Set<string>; mdlJudgeEntityIds: Set<string> };
+let mdlJudgeCache: { at: number; ids: MdlJudgeIds } | null = null;
+
+/**
+ * Native ids of the judges who preside over an MDL (mdls.filters.cl_person_id and .entity_id); cached for ten minutes.
+ * Only used to rank a person-intent query, never to link or merge anything.
+ */
+async function mdlJudgeIds(): Promise<MdlJudgeIds> {
+  if (mdlJudgeCache && Date.now() - mdlJudgeCache.at < 10 * 60_000) return mdlJudgeCache.ids;
+  const r = await restGet<{ person: unknown; entity: unknown }[]>(
+    "corpus_records?select=person:filters->cl_person_id,entity:filters->entity_id&dataset=eq.mdls&limit=1000",
+  );
+  const many = (v: unknown) => (Array.isArray(v) ? v : [v]);
+  const ids: MdlJudgeIds = { mdlJudgePersonIds: new Set(), mdlJudgeEntityIds: new Set() };
+  for (const row of r.rows) {
+    for (const v of many(row.person))
+      if ((typeof v === "string" || typeof v === "number") && /^\d{1,12}$/.test(String(v))) ids.mdlJudgePersonIds.add(String(v));
+    for (const v of many(row.entity))
+      if (typeof v === "string" && /^judge-entity-[a-f0-9]{8,64}$/.test(v)) ids.mdlJudgeEntityIds.add(v);
+  }
+  mdlJudgeCache = { at: Date.now(), ids };
+  return ids;
+}
 
 export async function queryPublishedDataset(
   data: {
@@ -51,15 +86,22 @@ export async function searchPublishedCorpus(q: string, offset: number, pageSize:
   const datasets = catalog.rows.map((d) => d.id);
   const empty = { matches: [], unresolved: 0, total: 0, returned: 0, hasMore: false, rankedCandidates: 0, nativeCandidates: 0, groupedSourceRecords: 0, candidateLimit: SEARCH_CANDIDATES, candidateCapped: false };
   if (!datasets.length) return empty;
-  const priority = ["mdls", "expert_rulings"].filter((id) => datasets.includes(id));
+  const priority = PRIORITY_DATASETS.filter((id) => datasets.includes(id));
+  // A leading honorific ("Judge Rodgers") is intent to find a person; titles never contain it, so the database is
+  // asked for the name alone and ranking uses the intent (people datasets, then MDL transferee judges).
+  const intent = searchIntent(q);
+  const dbQuery = intent.query;
   // Every pass stays inside ready datasets. Re-score a stable bounded pool before pagination.
-  const passes = await Promise.all([datasets, ...priority.map((id) => [id])].map(async (scope, index) => {
-    const limit = index === 0 ? SEARCH_CANDIDATES : PRIORITY_CANDIDATES;
-    const result = await rpcPost<{ items: Record<string, unknown>[]; total: number | null }>("corpus_query", {
-      p_q: q.trim(), p_datasets: scope, p_filters: searchQueryFilters(q), p_limit: limit, p_offset: 0, p_sort: null,
-    });
-    return { scope, limit, items: result.items ?? [], total: result.total ?? null };
-  }));
+  const [context, ...passes] = await Promise.all([
+    intent.honorific ? mdlJudgeIds().catch(() => ({})) : Promise.resolve({}),
+    ...[datasets, ...priority.map((id) => [id])].map(async (scope, index) => {
+      const limit = index === 0 ? SEARCH_CANDIDATES : PRIORITY_CANDIDATES;
+      const result = await rpcPost<{ items: Record<string, unknown>[]; total: number | null }>("corpus_query", {
+        p_q: dbQuery, p_datasets: scope, p_filters: searchQueryFilters(dbQuery), p_limit: limit, p_offset: 0, p_sort: null,
+      });
+      return { scope, limit, items: result.items ?? [], total: result.total ?? null };
+    }),
+  ]);
   const items = passes.flatMap((pass) => pass.items);
   const ids = candidateRecordIds(items);
   const records: SearchRecord[] = [];
@@ -75,7 +117,7 @@ export async function searchPublishedCorpus(q: string, offset: number, pageSize:
     }
   }
   const resolved = passes.map((pass) => resolveSearchIdentities(pass.items, records.filter((record) => pass.scope.includes(record.dataset))));
-  const quality = rankSearchMatches(resolved.flatMap((pass) => pass.matches), q);
+  const quality = rankSearchMatches(resolved.flatMap((pass) => pass.matches), q, context);
   const pageMatches = quality.ranked.slice(offset, offset + pageSize);
   const courtIds = [...new Set(pageMatches.map(searchCourtId).filter((id): id is string => !!id))];
   let courtLocations = new Map<string, string>();
