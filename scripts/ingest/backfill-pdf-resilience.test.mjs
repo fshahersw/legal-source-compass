@@ -281,4 +281,6 @@ test('a refusal is described with a bounded, allow-listed slice of the response 
  assert.equal(info.status,429);assert.equal(info.body_snippet.length,300);
  assert.deepEqual(Object.keys(info.headers).sort(),['content-type','server','x-amz-cf-pop','x-cache']);
  assert.equal(JSON.stringify(info).includes('secret'),false);
+ // The worker cancels the body after describing it; a consumed body must not make that throw.
+ await assert.doesNotReject(async()=>{await response.body?.cancel().catch(()=>{});});
 });

@@ -111,3 +111,34 @@ test('queue additions: valid rows are frozen (urgent tiers ahead of the backlog)
  assert.equal(ledger.length,1);assert.equal(ledger[0].rejected_rows,1);
  const again=await run(args);assert.equal(JSON.parse(again.out).to_freeze,0,'an already frozen drop is ledgered and not queued twice');
 });
+
+test('additions watcher: an empty pass is a no-op, and a complete drop that arrives later is frozen on the next pass',async()=>{
+ const f=await backlogFixture(),drops=path.join(f.dir,'additions-watch');await fs.mkdir(drops,{recursive:true});
+ // Seed the priority map in the destination root first (watcher passes reuse it).
+ const seed=await run(['--mode=backlog','--provider=courtlistener','--from-root='+f.from,'--out-root='+f.out,'--receipts='+f.transfers,'--registry='+f.registry,'--parent-matters='+f.csv,'--dry-run']);assert.equal(seed.code,0,seed.err);
+ await fs.mkdir(f.out,{recursive:true});
+ const mapOnly=await run(['--mode=backlog','--provider=courtlistener','--from-root='+f.from,'--out-root='+f.out,'--receipts='+f.transfers,'--registry='+f.registry,'--parent-matters='+f.csv,'--prefix=m','--batch-size=100']);assert.equal(mapOnly.code,0,mapOnly.err);
+ const child=spawn(process.execPath,[freeze,'--watch','--max-passes=3','--interval-ms=400','--provider=courtlistener','--additions-dir='+drops,'--out-root='+f.out,'--receipts='+f.transfers],{stdio:['ignore','pipe','pipe']});
+ let err='';child.stderr.on('data',d=>err+=d);
+ await new Promise(r=>setTimeout(r,150));
+ await fs.writeFile(path.join(drops,'late.jsonl'),JSON.stringify(row(40,{caseId:'111',title:'ORDER'}))+'\n');
+ const code=await new Promise(resolve=>child.on('exit',resolve));assert.equal(code,0,err);
+ const batches=path.join(f.out,'courtlistener-pdf-batches'),names=(await fs.readdir(batches)).filter(n=>/^a-\d{4}\.queue\.jsonl$/.test(n));
+ assert.equal(names.length,1);
+ const ledger=(await fs.readFile(path.join(f.out,'additions-ledger.jsonl'),'utf8')).trim().split('\n');assert.equal(ledger.length,1);
+});
+
+test('rows flagged by the matter registry as priority evidence are urgent even for an unmapped matter; --ignore-ledger re-reads a ledgered drop without duplicating live rows',async()=>{
+ const f=await backlogFixture(),drops=path.join(f.dir,'additions-flag');await fs.mkdir(drops,{recursive:true});
+ const flagged={...row(50,{caseId:'555',title:'Conditional Transfer Order'}),scope_evidence:[{kind:'sw_matter_registry_priority',filter:'cto'}]};
+ await fs.writeFile(path.join(drops,'flag.jsonl'),[flagged,row(51,{caseId:'555',title:'Conditional Transfer Order'})].map(r=>JSON.stringify(r)).join('\n')+'\n');
+ const args=['--mode=additions','--provider=courtlistener','--additions-dir='+drops,'--out-root='+f.out,'--receipts='+f.transfers,'--registry='+f.registry,'--parent-matters='+f.csv];
+ const first=await run(args);assert.equal(first.code,0,first.err);
+ const batches=path.join(f.out,'courtlistener-pdf-batches'),count=async n=>(await fs.readFile(path.join(batches,n),'utf8')).trim().split('\n').length;
+ assert.equal(await count('a-0001.queue.jsonl'),1);assert.equal(await count('z-0001.queue.jsonl'),1);
+ const again=await run([...args,'--ignore-ledger']);assert.equal(again.code,0,again.err);
+ assert.equal(JSON.parse(again.out).to_freeze,0,'live queued rows are not frozen twice');
+ // Supersede the never-run z queue: its row is fresh again and is re-frozen (with --ignore-ledger) under the same rule.
+ await fs.writeFile(path.join(batches,'z-0001.queue.jsonl.manifest.json.done.json'),JSON.stringify({state:'superseded_before_execution'}));
+ const third=await run([...args,'--ignore-ledger']);assert.equal(JSON.parse(third.out).to_freeze,1);
+});

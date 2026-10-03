@@ -93,8 +93,10 @@ async function main(args){
   }
  }else{
   const addDir=path.resolve(args['additions-dir']),ledgerFile=path.join(outRoot,'additions-ledger.jsonl');
-  const seen=new Set(fs.existsSync(ledgerFile)?fs.readFileSync(ledgerFile,'utf8').split('\n').filter(Boolean).map(l=>JSON.parse(l).sha256):[]);
-  for(const name of fs.existsSync(addDir)?fs.readdirSync(addDir).filter(n=>n.endsWith('.jsonl')).sort():[]){
+  // --ignore-ledger re-reads drops that were already ledgered; rows already frozen in a live queue or verified are still excluded.
+  const seen=new Set(fs.existsSync(ledgerFile)&&!args['ignore-ledger']?fs.readFileSync(ledgerFile,'utf8').split('\n').filter(Boolean).map(l=>JSON.parse(l).sha256):[]);
+  // Files starting with "_" are contract notes/ledgers written back to the drop directory (e.g. _stored.jsonl), never queue drops.
+  for(const name of fs.existsSync(addDir)?fs.readdirSync(addDir).filter(n=>n.endsWith('.jsonl')&&!n.startsWith('_')).sort():[]){
    const file=path.join(addDir,name),bytes=fs.readFileSync(file);
    if(!bytes.length||seen.has(sha(bytes)))continue;
    // A drop that is still being written is not frozen: only complete lines count, and an empty tail is ignored.
@@ -102,6 +104,7 @@ async function main(args){
    sources.push(file);sourceInfo.push({queue:file,sha256:sha(bytes)});
   }
  }
+ if(!sources.length){console.log(JSON.stringify({mode,provider,source_queues:0,to_freeze:0}));return{to_freeze:0};}
  const {rows,rejected}=await readSourceRows(sources);
  const providerOf=r=>r.provider==='docketbird'?'docketbird':'courtlistener';
  const transferDirs=(args.receipts?String(args.receipts).split('|'):[]).map(d=>path.resolve(d));
@@ -119,12 +122,13 @@ async function main(args){
  const ordered=orderRows(fresh.map(x=>x.row),map);
  const lineOf=new Map(fresh.map(x=>[x.row,x.line]));
  const summary={mode,provider,source_queues:sourceInfo.length,source_rows:rows.length,rejected_rows:rejected.length,excluded_already_verified:excludedVerified,excluded_already_frozen:excludedQueued,excluded_duplicate:excludedDuplicate,excluded_other_provider:excludedOtherProvider,to_freeze:ordered.length,...summarize(ordered)};
- if(dry||!ordered.length){console.log(JSON.stringify({dry_run:dry,...summary,matters:summary.matters.slice(0,40)},null,1));return;}
+ if(dry||!ordered.length){console.log(JSON.stringify({dry_run:dry,...summary,matters:summary.matters.slice(0,40)},null,1));return summary;}
  const manifests=[],mapSha=sha(fs.readFileSync(mapFile));
- // Additions are split by provider family; tier 1-2 additions sort ahead of the backlog (a-), the rest after it (z-).
+ // Additions are split by provider family; Tier 1-2 additions, and rows the matter registry flagged as priority evidence
+ // (scope_evidence kind sw_matter_registry_priority), sort ahead of the backlog (a-); the rest after it (z-).
  const groups=new Map();
  for(const info of ordered){
-  const family=mode==='additions'?providerOf(info.row):provider,urgent=info.matter.tier<=2;
+  const family=mode==='additions'?providerOf(info.row):provider,urgent=info.matter.tier<=2||(info.row.scope_evidence??[]).some(e=>e.kind==='sw_matter_registry_priority');
   const prefix=mode==='additions'?(urgent?'a':'z'):(args.prefix??'p'),k=family+'|'+prefix;
   if(!groups.has(k))groups.set(k,[]);groups.get(k).push(info);
  }
@@ -143,8 +147,17 @@ async function main(args){
   if(rejected.length)fs.writeFileSync(path.join(outRoot,'additions-rejected-'+Date.now()+'.json'),JSON.stringify(rejected,null,2)+'\n',{flag:'wx'});
  }
  console.log(JSON.stringify({...summary,matters:undefined,queues:manifests.map(m=>({label:m.label,rows:m.rows,sha256:m.sha256}))},null,1));
+ return summary;
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href){
  const args=Object.fromEntries(process.argv.slice(2).map(v=>{const i=v.indexOf('=');return i<0?[v.slice(2),true]:[v.slice(2,i),v.slice(i+1)];}));
- await main(args);
+ if(!args.watch)await main(args);
+ else{
+  // Additions watcher: a pass only does real work when an unseen, complete drop exists. Errors are logged and retried next pass.
+  const interval=Number(args['interval-ms']??60000),maxPasses=Number(args['max-passes']??Infinity);
+  for(let pass=0;pass<maxPasses;pass++){
+   try{await main({...args,mode:'additions'});}catch(error){console.error(JSON.stringify({state:'additions_pass_failed',at:new Date().toISOString(),error:/^[A-Z_]+$/.test(error.message)?error.message:'FREEZE_PASS_FAILED'}));}
+   await new Promise(r=>setTimeout(r,interval));
+  }
+ }
 }
