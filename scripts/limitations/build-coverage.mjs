@@ -1,5 +1,5 @@
 import { readFile, writeFile, unlink } from "node:fs/promises";
-const root = "public/data/limitations";
+const root = "private/data/limitations";
 const sourceFile = `${root}/sources.json`;
 const source = JSON.parse(await readFile(sourceFile, "utf8"));
 try {
@@ -12,7 +12,7 @@ try {
   if (error.code !== "ENOENT") throw error;
 }
 const rules = JSON.parse(await readFile(`${root}/rules.json`, "utf8"));
-const inventory = JSON.parse(await readFile("public/data/research/state-resources.json", "utf8"));
+const inventory = JSON.parse(await readFile("private/data/research/state-resources.json", "utf8"));
 const publisherOverrides = JSON.parse(await readFile(`${root}/publisher-overrides.json`, "utf8"));
 const coverage = inventory.states
   .map((state) => {

@@ -1,4 +1,5 @@
-/** Read-only source catalog (catalog.json, split per jurisdiction under public/data/catalog/). No invented rows. */
+import { fetchBundleSnapshot } from "@/lib/private-data/client";
+/** Read-only source catalog (catalog.json, split per jurisdiction under private/data/catalog/). No invented rows. */
 
 export type CatalogEntry = {
   id: string;
@@ -27,7 +28,7 @@ export type StateCourtSection = { section: string; links: { title: string; url: 
 export type StateCourts = { source: string; states: Record<string, StateCourtSection[]> };
 
 async function getJson<T>(path: string): Promise<T> {
-  const res = await fetch(path);
+  const res = await fetchBundleSnapshot(path);
   if (!res.ok) throw new Error(`Could not load ${path} (${res.status}).`);
   const t = await res.text();
   if (t.trimStart().startsWith("<")) throw new Error(`${path} is missing from this build.`);

@@ -34,3 +34,6 @@ dist-ssr
 # Local metadata preparation caches
 __pycache__/
 *.pyc
+
+# Corpus source snapshots are private cloud objects, never public repository assets.
+/private/

@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 
-const directory = "public/data/research/raw";
+const directory = "private/data/research/raw";
 const sources = [
   {
     id: "fjc-demographics",
@@ -48,11 +48,11 @@ for (const source of sources) {
   });
   console.log(`${source.id}: ${bytes.length} bytes`);
 }
-const previous = await readFile("public/data/research/source-manifest.json", "utf8")
+const previous = await readFile("private/data/research/source-manifest.json", "utf8")
   .then(JSON.parse)
   .catch(() => ({ sources: [] }));
 const supplemental = previous.sources.filter((s) => !sources.some((native) => native.id === s.id));
 await writeFile(
-  "public/data/research/source-manifest.json",
+  "private/data/research/source-manifest.json",
   JSON.stringify({ sources: [...results, ...supplemental] }, null, 2) + "\n",
 );

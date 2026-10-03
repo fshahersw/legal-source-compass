@@ -13,7 +13,7 @@ import {
   type RegistryParty,
 } from "./registry";
 
-const dir = "public/data/matter-registry";
+const dir = "private/data/matter-registry";
 const matters = parseJsonl<RegistryMatter>(readFileSync(`${dir}/matters.jsonl`, "utf8"));
 const parties = parseJsonl<RegistryParty>(readFileSync(`${dir}/parties.jsonl`, "utf8"));
 const attorneys = parseJsonl<RegistryAttorney>(readFileSync(`${dir}/attorneys.jsonl`, "utf8"));

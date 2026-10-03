@@ -1,13 +1,19 @@
 /**
- * The corpussite saved case catalog (insights-data.js), read verbatim.
+ * The corpussite saved case catalog (insights-data.js), parsed without changing its source rows.
+ * Court-location views may add explicit derivation fields while retaining recorded_state.
  * Aggregations here are counts of catalog rows, not a national census —
  * the catalog's own `qualification` text must be shown alongside them.
  */
-export type Matter = {
+export type StateLocationTag = {
+  recorded_state?: string;
+  state_basis?: "exact_court_location" | "recorded_state" | "unresolved";
+  state_conflict?: boolean;
+};
+export type Matter = StateLocationTag & {
   year: string; mdl: string; mdl_name: string; firms: string[];
   court: string; state: string; kind: string; status: string;
 };
-export type Master = { year: string; kind: string; number: string; office: string; entries: number; copies: number; court: string; state: string };
+export type Master = StateLocationTag & { year: string; kind: string; number: string; office: string; entries: number; copies: number; court: string; state: string };
 export type Alias = { name: string; also: string[] };
 export type Insights = {
   qualification: string;

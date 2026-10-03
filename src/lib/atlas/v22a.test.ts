@@ -5,7 +5,7 @@ import { facet, parseBundle } from "./bundle";
 import { filterSources, defaultFilters } from "./filters";
 import { checkMetaClaims } from "./v22a";
 
-const PATH = resolve(__dirname, "../../../public/data/atlas-import-bundle.json");
+const PATH = resolve(__dirname, "../../../private/data/atlas-import-bundle.json");
 const has = existsSync(PATH);
 if (!has) throw new Error(`Bundled real dataset missing at ${PATH}`);
 

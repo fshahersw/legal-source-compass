@@ -61,6 +61,22 @@ export function inFilter(values: readonly string[]): string {
   );
 }
 
+/** Preserve exact IDs while bounding encoded lookup paths, including long source-qualified identities. */
+export function candidateIdChunks(ids: readonly string[], encodedBudget: number): string[][] {
+  const chunks: string[][] = [];
+  let chunk: string[] = [];
+  for (const id of ids) {
+    if (inFilter([id]).length > encodedBudget) throw new Error("A search identity exceeds the bounded lookup path.");
+    if (chunk.length && (chunk.length >= 40 || inFilter([...chunk, id]).length > encodedBudget)) {
+      chunks.push(chunk);
+      chunk = [];
+    }
+    chunk.push(id);
+  }
+  if (chunk.length) chunks.push(chunk);
+  return chunks;
+}
+
 /** Candidate retrieval aliases explicitly present in native items. Equality still decides the match. */
 export function candidateRecordIds(items: readonly Record<string, unknown>[]): string[] {
   const ids = new Set<string>();

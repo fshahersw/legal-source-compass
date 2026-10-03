@@ -1,3 +1,4 @@
+import { fetchBundleSnapshot } from "@/lib/private-data/client";
 /** Public-source supplement. Native document numbers and dates remain source-authored. */
 export type RegisterDocument = {
   document_number: string;
@@ -38,7 +39,7 @@ export type RegisterManifest = {
 const ROOT = "/data/quality/reference/federal-register-gap/";
 
 export async function loadRegisterManifest(): Promise<RegisterManifest> {
-  const r = await fetch(`${ROOT}manifest.json`);
+  const r = await fetchBundleSnapshot(`${ROOT}manifest.json`);
   if (!r.ok) throw new Error(`Register supplement: HTTP ${r.status}`);
   const m = (await r.json()) as RegisterManifest;
   if (
@@ -81,7 +82,7 @@ export async function loadRegisterDocuments(manifest: RegisterManifest) {
   const pages = await Promise.all(
     manifest.pages.map(async (page) => {
       if (!/^page-\d{3}\.json$/.test(page.name)) throw new Error("Invalid source page path.");
-      const r = await fetch(`${ROOT}${page.name}`);
+      const r = await fetchBundleSnapshot(`${ROOT}${page.name}`);
       if (!r.ok) throw new Error(`Register source page: HTTP ${r.status}`);
       const bytes = await r.arrayBuffer();
       const sha = [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))]

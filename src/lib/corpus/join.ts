@@ -1,6 +1,7 @@
 import type { Source } from "@/lib/atlas/types";
-import { stateByName, STATES } from "./geo";
+import { STATES } from "./geo";
 import type { Insights } from "./insights";
+import { recordedStateCode } from "./courtLocations";
 
 function jurisdictionValues(s: Source): string[] {
   const v = (s as Record<string, unknown>)["jurisdiction_values"];
@@ -8,13 +9,13 @@ function jurisdictionValues(s: Source): string[] {
   return s.jurisdiction ? s.jurisdiction.split("; ").filter(Boolean) : [];
 }
 
-/** USPS codes of a source, by EXACT state-name match of its imported jurisdiction values. */
+/** Explicit state names or USPS codes in imported jurisdiction fields; no URL/title inference. */
 export function statesOfSource(s: Source): { usps: string[]; unmatched: string[] } {
   const usps: string[] = [];
   const unmatched: string[] = [];
   for (const j of jurisdictionValues(s)) {
-    const st = stateByName.get(j.trim());
-    if (st) usps.push(st.usps);
+    const code = recordedStateCode(j);
+    if (code) usps.push(code);
     else unmatched.push(j);
   }
   return { usps: [...new Set(usps)], unmatched };

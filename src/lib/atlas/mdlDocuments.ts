@@ -1,3 +1,4 @@
+import { fetchBundleSnapshot } from "@/lib/private-data/client";
 /** Read-only MDL docket documents from the user-supplied documents.json (split per MDL / per court). */
 export type MdlDocument = {
   doc_uid: string;
@@ -73,7 +74,7 @@ export function filterDocs(docs: MdlDocument[], opts: { q?: string; category?: s
 
 export async function loadDocs(kind: "mdl" | "court", key: string): Promise<MdlDocument[]> {
   const safe = kind === "mdl" ? mdlKey(key) : courtKey(key);
-  const res = await fetch(`/data/mdl-documents/${kind}-${encodeURIComponent(safe)}.json`);
+  const res = await fetchBundleSnapshot(`/data/mdl-documents/${kind}-${encodeURIComponent(safe)}.json`);
   if (res.status === 404) return [];
   if (!res.ok) throw new Error(`Docket documents could not be loaded (${res.status}).`);
   const text = await res.text();

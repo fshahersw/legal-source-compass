@@ -1,0 +1,19 @@
+# P0 search and state accuracy
+
+Search cards now use stored headings and citations, rather than the numeric CFR `item.title` field. For the actual published talc section, the label is `21 C.F.R. § 73.1550 — Talc.`. Plain-word queries can retrieve prefix matches; quoted phrases and boolean/negative syntax retain the original database query semantics.
+
+Ranking uses published candidates only: up to 500 general matches plus 250 each from published MDL and expert-ruling collections. The same bounded pool is ranked before pagination. The UI distinguishes the database's matching-row total from ranked cards, reports truncated candidate coverage, and offers narrower queries. It does not claim complete relevance ranking beyond this pool.
+
+Native identity remains `(dataset,id)`. Source-document cards group only when their dataset, canonical HTTP(S) source URL, title, category, state and entire non-ID listing payload agree. Every grouped identity retains a separate record link. Source dates, qualification and provenance differences prevent grouping. Native cases, courts and people are never grouped by URL or title. Query values remain significant; credentials and unsupported URL schemes do not produce grouping keys.
+
+Actual ATSDR Acrylonitrile rows `3542`–`3547` reference different files (`tp125-a.pdf`, `tp125-c1.pdf` through `tp125-c5.pdf`). These remain distinct and display the literal source filename. Repeated titles alone are not evidence of duplicate documents.
+
+The actual published J&J talc MDL is stored as native record `mdls/2738` with listing ID `mdl:2738`, source-reported `cl_court_id=njd`, and a JPML snapshot dated 2026-09-01. A read-only `corpus_query` call for `talc` in the published MDL collection with the plain-word prefix filter returned this one MDL. Its search card obtains `Court location: NJ` through the ready `court_spine/njd` row, whose recorded state is `NJ`. Court names and captions do not infer state. The focused regression fixture places this MDL first among the actual CFR/ATSDR row projections. Live full-search browser verification belongs to integration testing.
+
+The published expert-ruling collection returned no talc FTS rows during the read-only review. No Daubert ruling was created or inferred to satisfy a benchmark. This remains an acquisition/coverage gap.
+
+Saved case state views now share an exact native court-ID lookup with the research comparisons. Conflicting or unknown duplicate directory locations stay unresolved. The derived view retains `recorded_state`, `state_basis` and `state_conflict`; the saved source JSON remains unchanged. For the actual 2,122-row insights snapshot, 869 previously blank states have exact directory locations, all 518 `njd` rows map to New Jersey, 99 rows remain unresolved, and there are zero contradictions with recorded valid state tags. This saved snapshot has no talc/2738 row; no MDL association was added. Court location is not a claim about governing law, claimant residence or complete state litigation coverage.
+
+Source state joins recognize only explicit state names and USPS codes in the imported jurisdiction field. Blank, federal and ambiguous labels remain unmapped.
+
+Validation: five focused suites passed 30 checks covering exact native identity, bounded encoded lookup paths, published retrieval, stable pagination, CFR labels, duplicate/version boundaries, chapter preservation, query semantics, held court directories, actual New Jersey counts, immutable originals and existing research analysis boundaries. The project TypeScript check passed before the final additions; its subsequent run reported only an unrelated private-data client test `Response` body type error for integration to fix. No database writes, publication changes, downloads or deletions were performed by this task.

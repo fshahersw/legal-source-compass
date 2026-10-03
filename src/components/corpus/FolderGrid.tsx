@@ -15,7 +15,7 @@ export function FolderGrid({ title, items, hint }: { title?: string | undefined;
   return (
     <section className="space-y-2">
       {title ? <div className="flex items-baseline gap-2"><h2 className="eyebrow">{title}</h2>{hint ? <span className="text-[11px] text-muted-foreground">{hint}</span> : null}</div> : null}
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {items.map((it) => {
           const body = (
             <>

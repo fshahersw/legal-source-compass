@@ -1,0 +1,53 @@
+# Round 3: controlled legal records and evidence graph
+
+The task is the user's attached round 3 memo, dated October 2, 2026. Search ranking is out of scope. Preserve the existing working tree and private source versions. Work in the current checkout because it contains retained acquisition evidence and substantial unrelated changes.
+
+Implement in this order: one controlled vocabulary and strict record validation; resumable source staging and year coverage; typed, evidenced relationships and review gating; source-linked MDL and opinion views; historical graph analyses; source and entity audits. Official identifiers remain intact. Unknown facts remain unknown; retrieval dates never masquerade as filing dates. A source's native table name is raw provenance, not an entity type.
+
+Acceptance is the memo's full definition of done, including bulk coverage from 2000, all 176 MDLs, 50 original-source checks per source, and 100 random records per entity type (98% type, 95% title, 100% working sources). Passing schema tests or acquiring an archive alone does not meet these criteria. Completion remains false until these checks have evidence.
+
+Baseline: existing Vitest suite, 43 files, 352 passing tests, one skipped. Log: `../audit/2026-10-02/round3-baseline-tests.log`. Existing working tree: 95 modified, 311 deleted, 199 untracked paths; do not restore or include unrelated changes.
+
+Verification: focused schema, adapter, graph and audit tests; TypeScript; existing full suite; production build; fresh source-link and MDL-2738 checks; database privilege/constraint checks after any additive migration. Audit reports count rejected inputs as well as accepted records. Never reset a regression baseline automatically.
+
+Current constraints: the retained CourtListener inventory lists a 55,252,643,429-byte opinion archive. The user has now instructed us to reclaim disk space and use Supabase as the primary store, superseding the earlier question about a larger local disk. Parties, attorneys, docket entries and RECAP documents have no corresponding CSV in that publisher inventory; do not fabricate archive URLs or claim them loaded. Administrative enrichment is authorized in AGENTS.md; this round explicitly expands the earlier metadata-only acquisition scope to case-law/document text. Existing held collections remain held.
+
+Progress ledger (October 2, 2026)
+
+- Shared `src/lib/legal/enums.json`, record/edge schemas, evidence visibility, historical-frequency functions, native adapters, and private authenticated UI panels are implemented. Search ranking is unchanged. Unicode evidence offsets use code points consistently with Python and PostgreSQL.
+- Additive private `legal_atlas` migrations are applied to the external corpus: strict validation, immutable staging, records/edges, coverage, audits, deployment baselines, administrative intake, and an 08:00 UTC nightly validation/coverage job. Anonymous/authenticated roles cannot call administrative intake. A reviewed deployment baseline is still outstanding; `npm run build` currently fails closed. `npm run build:verify` only checks the local production bundle and does not approve deployment.
+- Retained selected CourtListener/FR inputs: 30,063 candidates, 29,745 valid, 318 rejected docket entries lacking both a description and an entry number. These inputs were uploaded privately with review pending. Nine financial-disclosure archives contain 2,070,861 native rows; these are retained support data, not 2,070,861 mapped legal entities.
+- Federal Register acquisition completed: 808,268 publications in 322 monthly periods, January 2000 through October 2, 2026. Every monthly API count matched. Publisher document numbers reused on different dates are preserved as distinct versions. Mapping is running in a separate SQLite snapshot; source audits are not complete.
+- CAP catalog retained: 40,622 volumes, 10,196 candidate volumes covering 2000 onward. One US Reports volume (572) is downloaded and mapped to 2,187 valid CAP opinion records. CourtListener citation reconciliation and the remaining volumes are outstanding.
+- MDL-2738 has a private eight-record packet with five original PDFs, the current Michael Andre Shipp assignment, and two approved evidenced edges. Current leadership, complete docket coverage, images, and verified current status remain incomplete. The May 26, 2026 primary order records a PSC removal, so a 2016 roster cannot establish current leadership.
+- Eyecite 2.7.8 is installed in a private dependency directory. The five MDL PDF texts produced 55 retained citation spans, with unresolved targets left unresolved.
+- CAP texts produced another 6,572 citation spans in 30 decisions with citations. Resolution remains pending; many entries in that volume are short orders without citations.
+- FJC preparation now has 4,077 judges and 4,777 service records. Exact legacy-jid/nid/CourtListener-person joins resolved 3,710 judges with zero ambiguous native joins; 367 remain unmatched to CourtListener. The FJC adapter preserves their official nids, dates and source service records. Private Supabase upload is in progress.
+- Latest full verification: 50 test files, 389 passing tests, one existing skip. The additional FJC adapter regression also passed. 65 record-validator and 22 edge-validator database/JavaScript boundary cases agree; low-confidence LLM edges remain hidden after a rollback-only live test. TypeScript passed before the latest adapter change. Browser/build verification remains outstanding.
+
+Supabase-first cleanup (explicitly requested by the user during this goal)
+
+- Removed 3,202,895,872 bytes of obsolete derived SQLite files after verifying the original nine financial archives (46,034,492 bytes, all checksums matched) and confirming all 30,769 old native input rows exist unchanged in the replacement snapshot.
+- Packaged and verified every one of 972 Federal Register API pages plus acquisition/period metadata. The 184,406,503-byte archive has SHA-256 `48058674209a9f073e20402a667606b8eb971ada085159551eda59bf9eeea58b` and is fully read-back verified in the private Supabase `corpus-originals` bucket. Removed the redundant 7,213,514,752-byte acquisition database and 1,498,236,001 bytes of local response-page copies. Total reclaimed so far: 11,914,646,625 bytes. Receipts: `../audit/2026-10-02/round3-cleanup-{evidence,receipt}*.json`.
+- `archive-to-supabase.mjs` uploads immutable six-MiB chunks with full readback hashes and a whole-original manifest. `read-private-original.mjs` reads and verifies these originals directly without a monolithic local download; a complete cloud round-trip check passed. `register-cloud-archives.mjs` records immutable verified descriptors in private `legal_atlas.original_archives`.
+- Eleven retained CourtListener archives (9,094,264,080 bytes) are being moved to private storage. Delete local copies only after their `original_verified` receipt and database registration exist. Transfer plan: cache `courtlistener-cloud-archive-plan.json`; receipt journal adds `.receipts.jsonl`.
+- All 27 FR year files and agency records finished local mapping. The redundant local report revalidation was stopped to relieve memory pressure; the Supabase validator runs on intake. Do not rerun the stopped FR stage with changed adapter fingerprints. The mapped snapshot is still in use by its resumable uploader and must not be deleted until that upload and cloud preservation are verified.
+- FR cloud run: `34f77ab6-c74c-d7f9-83d5-5712ac3dfd26`. Three bounded upload requests can run concurrently; SQL now checks immutable conflicts after conflict waits. A 25-row replay, invalid-title rejection, canonical conflict, and privilege checks passed in a rolled-back transaction.
+- The coverage UI now reads the persisted Supabase quality report through authenticated server code. Removed the obsolete hard-coded quality JSON and its local-only snapshot builder. Coverage dates remain the report's timestamp; no silent zero totals or unaudited completion claims.
+
+Resume locations and commands
+
+- Cache: `C:\Users\firas\.codex\corpus-cache\legal-atlas-round3`. Originals and acquisition receipts remain immutable. `v2` is the selected retained-input snapshot; `federal-register` is the native acquisition; `federal-register-staging` is the full FR mapping; `cap` is the first CAP volume.
+- Runtime: Node 24 with built-in SQLite/TypeScript. Use `node --use-system-ca` for HTTPS acquisition/upload. Python is the bundled Codex Python; eyecite dependencies are in the cache's `python-deps` directory.
+- `scripts/legal/stage.ts stage <config>` stages and writes schema, coverage, and stable random audit samples. It reserves 5 GiB of disk space and fingerprints the mapper. Changed mapper code requires a new database snapshot.
+- `scripts/legal/upload-stage.mjs <config> <server-credential-file>` is resumable, private administrative intake. Credentials stay outside the repository. `upload-packet.mjs` uploads a reviewed packet and prepares an exact-payload approval query.
+- SQL installation order: generated contract, validation update (for existing initial installations), operations, coverage, edge intake, batch intake, original archive registry. Do not reapply enum creation blindly. `generate-db.ts --check` verifies the generated contract against the shared vocabulary. Later applied fixes corrected the edge-contract column to `kind` and added post-conflict immutable checks to batch intake.
+- Logs and audit evidence: `../audit/2026-10-02/round3-*`. No source is marked complete without 50 checks against originals. Entity acceptance still requires the memo's 100-record audits and thresholds.
+
+Outstanding work
+
+- Finish FJC upload/source checks and reconcile old CL-only judge mappings through the verified crosswalk; remaining CL opinion/docket/citation staging; remaining CAP archives and exact reporter-citation reconciliation.
+- RECAP coverage for all 176 MDLs and member cases; current appointment-order leadership and source-linked page content for every MDL; eCFR history, USC releases, Congress bills/laws.
+- Graph edge intake/review at scale, source audit evidence, 100-record entity audits, live quality UI, nightly persisted historical analyses, opinion hierarchy/chain views, and final verification.
+- Permission to use CourtListener metadata APIs for categories absent from its bulk inventory remains pending. The storage decision is resolved: use Supabase and reclaim redundant local caches. Continue independent work while waiting; do not assume API permission.
+- Goal remains active. Acquisition counts, schema success, and partial page content are not a completion claim.

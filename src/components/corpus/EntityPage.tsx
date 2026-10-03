@@ -7,6 +7,7 @@ import { buildEntityView, type EntitySection } from "@/lib/external/entityView";
 import { CaseCatalog } from "@/components/corpus/CaseCatalog";
 import { DocketDocuments } from "@/components/corpus/DocketDocuments";
 import { fileUrl, resolveLink } from "@/lib/external/groups";
+import { displayValue } from "@/lib/external/domainRegistry";
 
 export const entityQuery = (dataset: string, id: string) =>
   queryOptions({
@@ -57,6 +58,15 @@ export function EntityPage({
       title={v.title}
       {...(v.subtitle ? { description: v.subtitle } : {})}
     >
+      {v.qualification ? (
+        <section
+          aria-label="Source scope"
+          className="mb-4 rounded-lg border border-border bg-muted/30 p-3 text-[13px] leading-relaxed"
+        >
+          <p className="mb-1 text-[11px] font-medium text-muted-foreground">Source scope</p>
+          <p className="whitespace-pre-wrap">{v.qualification}</p>
+        </section>
+      ) : null}
       <div className="mb-5 flex flex-col gap-4 rounded-lg border border-border bg-surface p-4 shadow-card sm:flex-row">
         {v.photo ? (
           <Img
@@ -74,7 +84,7 @@ export function EntityPage({
           {key.map(([k, val], i) => (
             <div key={i} className="min-w-0">
               <dt className="text-[11px] text-muted-foreground">{k}</dt>
-              <dd className="break-words">{val}</dd>
+              <dd className="break-words">{displayValue(val)}</dd>
             </div>
           ))}
         </dl>
@@ -110,7 +120,7 @@ export function EntityPage({
               {rest.map(([k, val], i) => (
                 <div key={i}>
                   <dt className="text-[11px] text-muted-foreground">{k}</dt>
-                  <dd className="break-words">{val}</dd>
+                  <dd className="break-words">{displayValue(val)}</dd>
                 </div>
               ))}
             </dl>
@@ -155,7 +165,7 @@ export function EntityPage({
               {v.technical.map(([k, val], i) => (
                 <div key={i} className="contents">
                   <dt className="text-muted-foreground">{k}</dt>
-                  <dd className="break-words">{val}</dd>
+                  <dd className="break-words">{displayValue(val)}</dd>
                 </div>
               ))}
             </dl>
@@ -202,7 +212,7 @@ function SectionView({ s, aliases }: { s: EntitySection; aliases: Record<string,
           {s.facts.map(([k, v], i) => (
             <div key={i}>
               <dt className="text-[11px] text-muted-foreground">{k}</dt>
-              <dd className="break-words">{v}</dd>
+              <dd className="break-words">{displayValue(v)}</dd>
             </div>
           ))}
         </dl>
@@ -213,7 +223,7 @@ function SectionView({ s, aliases }: { s: EntitySection; aliases: Record<string,
       <Section id={s.key} label={s.label}>
         <ul className="list-disc space-y-1 pl-5 text-[13px]">
           {s.items.map((t, i) => (
-            <li key={i}>{t}</li>
+            <li key={i} className="break-words">{t}</li>
           ))}
         </ul>
       </Section>
@@ -224,9 +234,9 @@ function SectionView({ s, aliases }: { s: EntitySection; aliases: Record<string,
         <ul className="divide-y divide-border text-[13px]">
           {s.items.slice(0, all ? undefined : 25).map((it, i) => (
             <li key={i} className="py-1.5">
-              <div className="font-medium">{it.title}</div>
+              <div className="break-words font-medium">{it.title}</div>
               {it.subtitle ? (
-                <div className="text-[11px] text-muted-foreground">{it.subtitle}</div>
+                <div className="break-words text-[11px] text-muted-foreground">{it.subtitle}</div>
               ) : null}
               {it.links.length ? (
                 <div className="flex flex-wrap gap-x-3">
@@ -310,10 +320,10 @@ function SectionView({ s, aliases }: { s: EntitySection; aliases: Record<string,
               {it.link ? (
                 <CorpusLink url={it.link} label={it.title} aliases={aliases} />
               ) : (
-                <span className="font-medium">{it.title}</span>
+                <span className="break-words font-medium">{it.title}</span>
               )}
               {it.subtitle ? (
-                <span className="ml-2 text-[11px] text-muted-foreground">{it.subtitle}</span>
+                <span className="ml-2 break-words text-[11px] text-muted-foreground">{it.subtitle}</span>
               ) : null}
             </li>
           ))}

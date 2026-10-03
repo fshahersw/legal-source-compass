@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { buildEntityView, nameKey, possibleDuplicates } from "@/lib/external/entityView";
 import { countBy, coverageMatrix, jurisdictionLabel, parseRegistry } from "./registry";
 
-const text = readFileSync("public/data/registry_v06_1.jsonl", "utf8");
+const text = readFileSync("private/data/registry_v06_1.jsonl", "utf8");
 
 describe("registry", () => {
   const { entries, invalidLines } = parseRegistry(text);

@@ -1,3 +1,4 @@
+import { fetchBundleSnapshot } from "@/lib/private-data/client";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -32,7 +33,7 @@ export function CaseResearch({ data, cases, masters, state, search, update }: Wo
     queryKey: ["mdl-research-briefs"],
     staleTime: Infinity,
     queryFn: async () => {
-      const response = await fetch("/data/research/mdl-briefs.json");
+      const response = await fetchBundleSnapshot("/data/research/mdl-briefs.json");
       if (!response.ok) throw new Error("Court-order readings could not load.");
       return response.json() as Promise<{
         retrievedAt: string;

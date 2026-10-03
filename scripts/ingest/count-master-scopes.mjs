@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { CourtListenerClient, DEFAULT_CACHE } from './courtlistener-client.mjs';
-const masters=JSON.parse(await fs.readFile('public/data/mdl-documents/master-dockets.json','utf8'));
+const masters=JSON.parse(await fs.readFile('private/data/mdl-documents/master-dockets.json','utf8'));
 const client=new CourtListenerClient(DEFAULT_CACHE,30);const results=[];
 try{
  await client.initialize();

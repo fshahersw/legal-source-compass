@@ -6,7 +6,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 
-root = Path("public/data/quality")
+root = Path("private/data/quality")
 db = json.loads((root / "database-audit.json").read_text(encoding="utf-8"))
 register = json.loads((root / "reference/federal-register-gap/manifest.json").read_text(encoding="utf-8"))
 court = json.loads((root / "reference/uscourts-table-c-2025.json").read_text(encoding="utf-8"))

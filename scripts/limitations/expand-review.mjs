@@ -1,5 +1,5 @@
 import { readFile, writeFile } from "node:fs/promises";
-const file = "public/data/limitations/rules.json";
+const file = "private/data/limitations/rules.json";
 const data = JSON.parse(await readFile(file, "utf8"));
 const seed = data.rules.find((r) => r.id === "va-personal_injury-baseline-20261002");
 function add(

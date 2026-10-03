@@ -1,3 +1,5 @@
+import { PrivateDataLink } from "@/components/atlas/PrivateDataLink";
+import { fetchBundleSnapshot } from "@/lib/private-data/client";
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { BarList, Stat } from "./BarList";
@@ -56,7 +58,7 @@ export type DatabaseAudit = {
 };
 
 export async function loadDatabaseAudit(): Promise<DatabaseAudit> {
-  const response = await fetch("/data/quality/database-audit.json");
+  const response = await fetchBundleSnapshot("/data/quality/database-audit.json");
   if (!response.ok) throw new Error(`Database audit file: HTTP ${response.status}`);
   const data = (await response.json()) as DatabaseAudit;
   if (
@@ -178,13 +180,13 @@ export function DatabaseQuality({ audit }: { audit: DatabaseAudit }) {
         <h2 className="eyebrow">
           Connected corpus · exact count audit {audit.capturedAt.slice(0, 10)} UTC
         </h2>
-        <a
+        <PrivateDataLink
           className="text-[12px] text-primary hover:underline"
           href="/data/quality/database-audit.json"
           download
         >
           Download count audit JSON
-        </a>
+        </PrivateDataLink>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat

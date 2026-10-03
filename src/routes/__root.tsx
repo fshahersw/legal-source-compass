@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
   type ErrorComponentProps,
@@ -13,6 +14,8 @@ import { useEffect, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { AtlasProvider } from "@/lib/atlas/store";
 import { CorpusProvider } from "@/lib/corpus/store";
+import { CorpusAccessGate } from "@/components/auth/CorpusAccessGate";
+import { isPublicAuthPath } from "@/lib/auth/gateState";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -127,9 +130,20 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const publicAuthRoute = useRouterState({ select: (s) => isPublicAuthPath(s.location.pathname) });
+
+  if (publicAuthRoute)
+    // Sign-in / password-reset pages only talk to the auth provider; they stay reachable whatever the gate decides.
+    return (
+      <QueryClientProvider client={queryClient}>
+        <Outlet />
+        <Toaster position="bottom-right" />
+      </QueryClientProvider>
+    );
 
   return (
     <QueryClientProvider client={queryClient}>
+      <CorpusAccessGate>
       <AtlasProvider>
         <CorpusProvider>
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
@@ -137,6 +151,7 @@ function RootComponent() {
         <Toaster position="bottom-right" />
         </CorpusProvider>
       </AtlasProvider>
+      </CorpusAccessGate>
     </QueryClientProvider>
   );
 }

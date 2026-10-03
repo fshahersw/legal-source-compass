@@ -9,7 +9,7 @@ import {
   type RegisterManifest,
 } from "./registerUpdates";
 
-const root = "public/data/quality/reference/";
+const root = "private/data/quality/reference/";
 const manifest: RegisterManifest = JSON.parse(
   readFileSync(`${root}federal-register-gap/manifest.json`, "utf8"),
 );

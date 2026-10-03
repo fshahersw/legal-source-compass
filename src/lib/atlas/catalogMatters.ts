@@ -1,3 +1,4 @@
+import { fetchBundleSnapshot } from "@/lib/private-data/client";
 /** Read-only case catalog from the uploaded catalog-matters.json (2,122 dockets). */
 export type CatalogMatter = {
   docket_id: number;
@@ -58,7 +59,7 @@ export function summarizeMatters(rows: CatalogMatter[]) {
 }
 
 export async function loadCatalog(): Promise<{ rows: CatalogMatter[]; masterMap: Record<string, string> }> {
-  const [a, b] = await Promise.all([fetch("/data/catalog-matters.json"), fetch("/data/mdl-documents/master-dockets.json")]);
+  const [a, b] = await Promise.all([fetchBundleSnapshot("/data/catalog-matters.json"), fetchBundleSnapshot("/data/mdl-documents/master-dockets.json")]);
   if (!a.ok || !b.ok) throw new Error("The case catalog could not be loaded.");
   return { rows: (await a.json()) as CatalogMatter[], masterMap: (await b.json()) as Record<string, string> };
 }

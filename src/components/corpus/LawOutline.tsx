@@ -65,7 +65,7 @@ export function LawLevel({ state, kind, parent }: { state: string; kind: string;
         <li key={n.id}>
           <button
             disabled={n.total === 0}
-            onClick={() => setOpen((s) => { const x = new Set(s); x.has(n.id) ? x.delete(n.id) : x.add(n.id); return x; })}
+            onClick={() => setOpen((s) => { const x = new Set(s); if (x.has(n.id)) x.delete(n.id); else x.add(n.id); return x; })}
             className="flex w-full items-center gap-1 rounded px-1 py-0.5 text-left hover:bg-muted disabled:hover:bg-transparent"
           >
             <ChevronRight className={`h-3.5 w-3.5 shrink-0 transition-transform ${n.total > 0 ? "" : "opacity-0"} ${open.has(n.id) ? "rotate-90" : ""}`} />

@@ -6,7 +6,7 @@ import { parseBundle } from "./bundle";
 import { summarizeFamilies } from "./families";
 
 const realRaw = JSON.parse(
-  readFileSync(resolve(__dirname, "../../../public/data/atlas-import-bundle.json"), "utf8"),
+  readFileSync(resolve(__dirname, "../../../private/data/atlas-import-bundle.json"), "utf8"),
 );
 
 describe("summarizeFamilies on the real bundle", () => {

@@ -1,4 +1,5 @@
-/** Read-only matter-registry bundle (user-supplied JSONL in public/data/matter-registry/). No invented rows. */
+import { fetchBundleSnapshot } from "@/lib/private-data/client";
+/** Read-only matter-registry bundle (user-supplied JSONL in private/data/matter-registry/). No invented rows. */
 
 export type RegistryMatter = {
   matter_id: string;
@@ -90,7 +91,7 @@ export function formatBytes(n: number | null | undefined): string {
 }
 
 async function fetchJsonl<T>(name: string): Promise<T[]> {
-  const res = await fetch(`/data/matter-registry/${name}.jsonl`);
+  const res = await fetchBundleSnapshot(`/data/matter-registry/${name}.jsonl`);
   if (!res.ok) throw new Error(`Matter registry could not be loaded (${res.status}).`);
   const text = await res.text();
   if (text.trimStart().startsWith("<")) throw new Error("Matter registry data is missing from this build.");
@@ -116,7 +117,7 @@ export function loadRegistry(): Promise<Registry> {
 
 /** Documents for one matter (metadata only — the bundle has storage keys, not downloadable links). */
 export async function loadMatterDocs(matterId: string): Promise<RegistryDoc[]> {
-  const res = await fetch(`/data/matter-registry/docs/${encodeURIComponent(matterId)}.json`);
+  const res = await fetchBundleSnapshot(`/data/matter-registry/docs/${encodeURIComponent(matterId)}.json`);
   if (res.status === 404) return [];
   if (!res.ok) throw new Error(`Matter documents could not be loaded (${res.status}).`);
   const text = await res.text();

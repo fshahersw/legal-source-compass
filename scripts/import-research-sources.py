@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 import openpyxl
 
-ROOT = Path('public/data/research')
+ROOT = Path('private/data/research')
 RAW = ROOT / 'raw'
 manifest = json.loads((ROOT / 'source-manifest.json').read_text(encoding='utf-8'))
 as_of = max(s['fetchedAt'] for s in manifest['sources'])[:10]

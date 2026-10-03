@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { courtKey, filterDocs, isDownloadable, mdlKey, summarize, type MdlDocument } from "./mdlDocuments";
 
-const dir = "public/data/mdl-documents";
+const dir = "private/data/mdl-documents";
 const all: MdlDocument[] = readdirSync(dir)
   .filter((f) => f.startsWith("mdl-"))
   .flatMap((f) => JSON.parse(readFileSync(`${dir}/${f}`, "utf8")) as MdlDocument[]);

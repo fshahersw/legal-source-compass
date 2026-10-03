@@ -1,0 +1,296 @@
+{
+  "schemaVersion": "master-entry-filter-facets/4",
+  "preparedOnly": true,
+  "sourceSignatureSha256": "a9eeb88c2ac73f376ae6a18c8cbf5e491b8c2e236b32e24be5eecea49ad2145d",
+  "eligibleEntries": 32898,
+  "explicitlyUnsealedDocumentAssociations": 3318,
+  "filters": [
+    {
+      "name": "native_docket_id",
+      "type": "select",
+      "label": "Native source docket",
+      "placeholder": "All native source dockets",
+      "options": [
+        {
+          "value": "16284915",
+          "label": "Native docket 16284915",
+          "count": 5362
+        },
+        {
+          "value": "18753355",
+          "label": "Native docket 18753355",
+          "count": 419
+        },
+        {
+          "value": "4134359",
+          "label": "Native docket 4134359",
+          "count": 300
+        },
+        {
+          "value": "4264145",
+          "label": "Native docket 4264145",
+          "count": 4160
+        },
+        {
+          "value": "4270519",
+          "label": "Native docket 4270519",
+          "count": 2580
+        },
+        {
+          "value": "5838695",
+          "label": "Native docket 5838695",
+          "count": 1337
+        },
+        {
+          "value": "6102388",
+          "label": "Native docket 6102388",
+          "count": 57
+        },
+        {
+          "value": "6224301",
+          "label": "Native docket 6224301",
+          "count": 1263
+        },
+        {
+          "value": "6240169",
+          "label": "Native docket 6240169",
+          "count": 4040
+        },
+        {
+          "value": "65407433",
+          "label": "Native docket 65407433",
+          "count": 3986
+        },
+        {
+          "value": "67678440",
+          "label": "Native docket 67678440",
+          "count": 3340
+        },
+        {
+          "value": "68222905",
+          "label": "Native docket 68222905",
+          "count": 1034
+        },
+        {
+          "value": "7603829",
+          "label": "Native docket 7603829",
+          "count": 994
+        },
+        {
+          "value": "8408916",
+          "label": "Native docket 8408916",
+          "count": 4026
+        }
+      ]
+    },
+    {
+      "name": "source_unsealed_document_count",
+      "type": "select",
+      "label": "Explicitly unsealed documents (source)",
+      "placeholder": "All source unsealed-document counts",
+      "options": [
+        {
+          "value": "0",
+          "label": "0 explicitly unsealed documents (source)",
+          "count": 31626
+        },
+        {
+          "value": "1",
+          "label": "1 explicitly unsealed document (source)",
+          "count": 907
+        },
+        {
+          "value": "2",
+          "label": "2 explicitly unsealed documents (source)",
+          "count": 146
+        },
+        {
+          "value": "3",
+          "label": "3 explicitly unsealed documents (source)",
+          "count": 76
+        },
+        {
+          "value": "4",
+          "label": "4 explicitly unsealed documents (source)",
+          "count": 26
+        },
+        {
+          "value": "5",
+          "label": "5 explicitly unsealed documents (source)",
+          "count": 26
+        },
+        {
+          "value": "6",
+          "label": "6 explicitly unsealed documents (source)",
+          "count": 15
+        },
+        {
+          "value": "7",
+          "label": "7 explicitly unsealed documents (source)",
+          "count": 10
+        },
+        {
+          "value": "8",
+          "label": "8 explicitly unsealed documents (source)",
+          "count": 4
+        },
+        {
+          "value": "9",
+          "label": "9 explicitly unsealed documents (source)",
+          "count": 6
+        },
+        {
+          "value": "10",
+          "label": "10 explicitly unsealed documents (source)",
+          "count": 3
+        },
+        {
+          "value": "11",
+          "label": "11 explicitly unsealed documents (source)",
+          "count": 5
+        },
+        {
+          "value": "12",
+          "label": "12 explicitly unsealed documents (source)",
+          "count": 6
+        },
+        {
+          "value": "13",
+          "label": "13 explicitly unsealed documents (source)",
+          "count": 3
+        },
+        {
+          "value": "14",
+          "label": "14 explicitly unsealed documents (source)",
+          "count": 2
+        },
+        {
+          "value": "15",
+          "label": "15 explicitly unsealed documents (source)",
+          "count": 3
+        },
+        {
+          "value": "16",
+          "label": "16 explicitly unsealed documents (source)",
+          "count": 3
+        },
+        {
+          "value": "17",
+          "label": "17 explicitly unsealed documents (source)",
+          "count": 1
+        },
+        {
+          "value": "18",
+          "label": "18 explicitly unsealed documents (source)",
+          "count": 1
+        },
+        {
+          "value": "19",
+          "label": "19 explicitly unsealed documents (source)",
+          "count": 3
+        },
+        {
+          "value": "20",
+          "label": "20 explicitly unsealed documents (source)",
+          "count": 1
+        },
+        {
+          "value": "21",
+          "label": "21 explicitly unsealed documents (source)",
+          "count": 2
+        },
+        {
+          "value": "22",
+          "label": "22 explicitly unsealed documents (source)",
+          "count": 2
+        },
+        {
+          "value": "23",
+          "label": "23 explicitly unsealed documents (source)",
+          "count": 1
+        },
+        {
+          "value": "25",
+          "label": "25 explicitly unsealed documents (source)",
+          "count": 1
+        },
+        {
+          "value": "27",
+          "label": "27 explicitly unsealed documents (source)",
+          "count": 1
+        },
+        {
+          "value": "28",
+          "label": "28 explicitly unsealed documents (source)",
+          "count": 1
+        },
+        {
+          "value": "31",
+          "label": "31 explicitly unsealed documents (source)",
+          "count": 1
+        },
+        {
+          "value": "32",
+          "label": "32 explicitly unsealed documents (source)",
+          "count": 1
+        },
+        {
+          "value": "36",
+          "label": "36 explicitly unsealed documents (source)",
+          "count": 2
+        },
+        {
+          "value": "37",
+          "label": "37 explicitly unsealed documents (source)",
+          "count": 1
+        },
+        {
+          "value": "40",
+          "label": "40 explicitly unsealed documents (source)",
+          "count": 2
+        },
+        {
+          "value": "41",
+          "label": "41 explicitly unsealed documents (source)",
+          "count": 2
+        },
+        {
+          "value": "47",
+          "label": "47 explicitly unsealed documents (source)",
+          "count": 2
+        },
+        {
+          "value": "48",
+          "label": "48 explicitly unsealed documents (source)",
+          "count": 1
+        },
+        {
+          "value": "51",
+          "label": "51 explicitly unsealed documents (source)",
+          "count": 1
+        },
+        {
+          "value": "59",
+          "label": "59 explicitly unsealed documents (source)",
+          "count": 1
+        },
+        {
+          "value": "66",
+          "label": "66 explicitly unsealed documents (source)",
+          "count": 1
+        },
+        {
+          "value": "67",
+          "label": "67 explicitly unsealed documents (source)",
+          "count": 1
+        },
+        {
+          "value": "74",
+          "label": "74 explicitly unsealed documents (source)",
+          "count": 1
+        }
+      ]
+    }
+  ],
+  "qualification": "Facet counts cover eligible projected native entries in this pinned source snapshot. Explicitly unsealed document count omits unknown/true seal flags, is not total documents and does not establish availability."
+}

@@ -1,7 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 
-const root = "public/data/research";
+const root = "private/data/research";
 const manifest = JSON.parse(await readFile(`${root}/source-manifest.json`, "utf8"));
 const captures = [
   {

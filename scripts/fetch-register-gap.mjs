@@ -14,7 +14,7 @@ if (
   throw new Error("Use ISO dates for --after and --through.");
 const since = new Date(Date.parse(after) + 86400000).toISOString().slice(0, 10);
 if (since > through) throw new Error("The acquisition interval is empty.");
-const directory = value("--output", "public/data/quality/reference/federal-register-gap");
+const directory = value("--output", "private/data/quality/reference/federal-register-gap");
 const fields = [
   "document_number",
   "title",

@@ -1,17 +1,26 @@
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { useMemo } from "react";
 import { listCourtDirectory, listJudgeDirectory } from "./directory.functions";
 import { makeJudgeMatcher } from "./directoryTree";
 
 export function useCourtDirectory() {
-  const fn = useServerFn(listCourtDirectory);
-  return useQuery({ queryKey: ["dir", "courts"], queryFn: () => fn(), staleTime: Infinity, gcTime: Infinity });
+  return useQuery({
+    queryKey: ["dir", "courts"],
+    queryFn: () => listCourtDirectory(),
+    staleTime: Infinity,
+    gcTime: Infinity,
+  });
 }
 
 export function useJudgeDirectory(enabled = true) {
-  const fn = useServerFn(listJudgeDirectory);
-  return useQuery({ queryKey: ["dir", "judges"], queryFn: () => fn(), staleTime: Infinity, gcTime: Infinity, enabled });
+  // Version the compact row shape so a cached scalar-only directory is not reused.
+  return useQuery({
+    queryKey: ["dir", "judges", "profile-associations-v2"],
+    queryFn: () => listJudgeDirectory(),
+    staleTime: Infinity,
+    gcTime: Infinity,
+    enabled,
+  });
 }
 
 export function useJudgeMatcher() {

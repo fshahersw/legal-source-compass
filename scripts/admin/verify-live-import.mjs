@@ -7,7 +7,12 @@ const args=Object.fromEntries(process.argv.slice(2).map((s,i,a)=>s.startsWith('-
 if(!args.root||!args.receipt||!args.output)throw Error('Use --root prepared-batch-directory --receipt stable-file-receipts.json --output private-validation.json');
 const root=path.resolve(args.root);
 const finalReceipt=JSON.parse(await fs.readFile(path.resolve(args.receipt),'utf8'));
-const types=['dockets','docket-entries','parties','attorneys','recap-documents','mdl-source-pages'];
+const allowedTypes=['dockets','docket-entries','parties','attorneys','recap-documents','mdl-source-pages'];
+// A continuation can contain only the types it actually acquired. Defaults retain
+// the complete six-type first-pass contract; absent types are never fabricated.
+const types=args.types?args.types.split(','):allowedTypes;
+if(!types.length||new Set(types).size!==types.length||types.some(type=>!allowedTypes.includes(type)))throw Error('Invalid selected native metadata types');
+if(types.includes('recap-documents')&&!types.includes('docket-entries'))throw Error('Nested document verification requires containing entry observations');
 const digest=value=>createHash('sha256').update(value).digest('hex');
 const nativeKey=r=>JSON.stringify([r.source_system,r.entity_type,r.native_id,r.provenance.record_sha256,r.provenance.source_url,r.provenance.retrieved_at]);
 const resourceUrl=(value,type,id)=>{

@@ -1,5 +1,7 @@
 /** Pure: turn any corpus detail object into a top-down page model without inventing values. */
 import { fieldLabel } from "./domainRegistry";
+import { cleanText, decodeEntities } from "./entities";
+import { externalHref } from "./href";
 
 export type Cell = string;
 export type EntitySection =
@@ -31,6 +33,7 @@ export type EntitySection =
 export type EntityView = {
   title: string;
   subtitle: string | null;
+  qualification: string | null;
   photo: string | null;
   facts: [string, string][];
   links: { url: string; label: string }[];
@@ -55,11 +58,12 @@ const SKIP = new Set([
   "links",
   "sections",
   "summary",
+  "qualification",
 ]);
 
 function scalar(v: unknown): string | null {
   if (v == null || v === "") return null;
-  if (typeof v === "string") return v.replace(/\s+/g, " ").trim() || null;
+  if (typeof v === "string") return cleanText(v) || null;
   if (typeof v === "number") return v.toLocaleString("en-US");
   if (typeof v === "boolean") return v ? "Yes" : "No";
   if (
@@ -82,11 +86,15 @@ function titleOf(o: Record<string, unknown>) {
     "Record"
   );
 }
+/** Links are encoded for the href only (raw spaces in stored URLs); in-app links such as "#mdl/3140" pass through. */
+function hrefOf(url: string): string {
+  return /^https?:\/\//i.test(url) ? externalHref(url) : url;
+}
 function linkOf(o: Record<string, unknown>): string | null {
   for (const k of ["link", "url", "source_url"])
-    if (typeof o[k] === "string" && o[k]) return o[k] as string;
+    if (typeof o[k] === "string" && o[k]) return hrefOf(o[k] as string);
   if (Array.isArray(o["links"]) && isObj(o["links"][0]) && typeof o["links"][0]["url"] === "string")
-    return o["links"][0]["url"] as string;
+    return hrefOf(o["links"][0]["url"] as string);
   return null;
 }
 
@@ -120,10 +128,55 @@ function tableFrom(key: string, arr: Record<string, unknown>[]): EntitySection {
   };
 }
 
+/** eCFR section CITA and SOURCE excerpts are publisher text, never executable links. */
+function publisherSectionNotes(value: unknown): EntitySection[] {
+  if (!Array.isArray(value)) return [];
+  const citations: Extract<EntitySection, { kind: "items" }>["items"] = [];
+  const sources: Extract<EntitySection, { kind: "items" }>["items"] = [];
+  for (const section of value.filter(isObj)) {
+    const title =
+      [scalar(section["section_identifier"]), scalar(section["heading"])]
+        .filter((part): part is string => part != null)
+        .join(" — ") || "Section identifier not recorded";
+    if (Array.isArray(section["citation_notes"])) {
+      for (const citation of section["citation_notes"].filter(isObj)) {
+        const text = citation["text"];
+        if (typeof text === "string" && text.trim())
+          citations.push({ title, subtitle: decodeEntities(text), links: [] });
+      }
+    }
+    if (Array.isArray(section["source_notes"])) {
+      for (const text of section["source_notes"])
+        if (typeof text === "string" && text.trim())
+          sources.push({ title, subtitle: decodeEntities(text), links: [] });
+    }
+  }
+  const sections: EntitySection[] = [];
+  if (citations.length)
+    sections.push({
+      kind: "items",
+      key: "publisher_section_citations",
+      label: "Publisher section citation notes",
+      items: citations,
+    });
+  if (sources.length)
+    sections.push({
+      kind: "items",
+      key: "publisher_section_sources",
+      label: "Publisher section source notes",
+      items: sources,
+    });
+  return sections;
+}
+
 export function buildEntityView(raw: Record<string, unknown>): EntityView {
   const view: EntityView = {
     title: scalar(raw["title"]) ?? scalar(raw["name"]) ?? String(raw["id"] ?? "Record"),
     subtitle: scalar(raw["subtitle"]),
+    qualification:
+      typeof raw["qualification"] === "string" && raw["qualification"].trim()
+        ? decodeEntities(raw["qualification"])
+        : null,
     photo:
       typeof raw["photo_url"] === "string" && raw["photo_url"]
         ? (raw["photo_url"] as string)
@@ -134,13 +187,14 @@ export function buildEntityView(raw: Record<string, unknown>): EntityView {
     empty: [],
     technical: [],
     provenanceJson: isObj(raw["provenance"]) ? JSON.stringify(raw["provenance"], null, 2) : null,
-    text: typeof raw["text"] === "string" && raw["text"].trim() ? (raw["text"] as string) : null,
+    text:
+      typeof raw["text"] === "string" && raw["text"].trim() ? decodeEntities(raw["text"]) : null,
   };
   if (Array.isArray(raw["facts"])) {
     for (const f of raw["facts"])
       if (Array.isArray(f) && f.length >= 2) {
-        const v = typeof f[1] === "string" ? f[1] : JSON.stringify(f[1]);
-        (/\(|basis|snapshot|as recorded|saved \(utc\)|how the count/i.test(String(f[0]))
+        const v = typeof f[1] === "string" ? decodeEntities(f[1]) : JSON.stringify(f[1]);
+        (/basis|snapshot|saved \(utc\)|how the count|capture time/i.test(String(f[0]))
           ? view.technical
           : view.facts
         ).push([String(f[0]), v]);
@@ -150,7 +204,10 @@ export function buildEntityView(raw: Record<string, unknown>): EntityView {
     view.links = (raw["links"] as unknown[])
       .filter(isObj)
       .filter((l) => typeof l["url"] === "string")
-      .map((l) => ({ url: l["url"] as string, label: scalar(l["label"]) ?? (l["url"] as string) }));
+      .map((l) => ({
+        url: hrefOf(l["url"] as string),
+        label: scalar(l["label"]) ?? (l["url"] as string),
+      }));
   if (Array.isArray(raw["sections"])) {
     (raw["sections"] as unknown[]).filter(isObj).forEach((s, i) => {
       const label =
@@ -184,7 +241,10 @@ export function buildEntityView(raw: Record<string, unknown>): EntityView {
               ? (o["links"] as unknown[])
                   .filter(isObj)
                   .filter((l) => typeof l["url"] === "string")
-                  .map((l) => ({ url: l["url"] as string, label: scalar(l["label"]) ?? "Open" }))
+                  .map((l) => ({
+                    url: hrefOf(l["url"] as string),
+                    label: scalar(l["label"]) ?? "Open",
+                  }))
               : [],
           })),
         });
@@ -193,6 +253,7 @@ export function buildEntityView(raw: Record<string, unknown>): EntityView {
   }
   for (const [k, v] of Object.entries(raw)) {
     if (SKIP.has(k)) continue;
+    if (k === "section_source_notes") view.sections.push(...publisherSectionNotes(v));
     if (TECH.test(k)) {
       const s = scalar(v);
       if (s) view.technical.push([fieldLabel(k), s]);
@@ -204,7 +265,7 @@ export function buildEntityView(raw: Record<string, unknown>): EntityView {
     }
     const s = scalar(v);
     if (s != null) {
-      if (k === "source_url") view.links.push({ url: s, label: "Original source" });
+      if (k === "source_url") view.links.push({ url: hrefOf(s), label: "Original source" });
       else view.facts.push([fieldLabel(k), s]);
       continue;
     }
@@ -218,7 +279,7 @@ export function buildEntityView(raw: Record<string, unknown>): EntityView {
           kind: "list",
           key: k,
           label: fieldLabel(k),
-          items: objs.map((o) => o["text"] as string),
+          items: objs.map((o) => decodeEntities(o["text"] as string)),
         });
       else if (objs.length) view.sections.push(tableFrom(k, objs));
       continue;

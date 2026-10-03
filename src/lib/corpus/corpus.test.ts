@@ -7,7 +7,7 @@ import { classify, classifySource } from "./taxonomy";
 import { joinByState, statesOfSource } from "./join";
 import { parseBundle } from "@/lib/atlas/bundle";
 
-const read = (p: string) => readFileSync(`public/data/corpus/${p}`);
+const read = (p: string) => readFileSync(`private/data/corpus/${p}`);
 const prov = JSON.parse(read("PROVENANCE.json").toString());
 const topo = JSON.parse(read("us-counties-albers-10m.json").toString());
 const ins = parseInsights(JSON.parse(read("insights.json").toString()));
@@ -52,7 +52,7 @@ describe("taxonomy (port of categories.py)", () => {
 });
 
 describe("V2.2A join by exact state name", () => {
-  const raw = JSON.parse(readFileSync("public/data/atlas-import-bundle.json", "utf8"));
+  const raw = JSON.parse(readFileSync("private/data/atlas-import-bundle.json", "utf8"));
   const res = parseBundle(raw);
   if (!res.ok) throw new Error("bundle failed to parse");
   const sources = res.bundle.sources;

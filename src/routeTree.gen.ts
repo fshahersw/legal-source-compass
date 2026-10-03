@@ -31,7 +31,9 @@ import { Route as SourceDatasetsRouteImport } from './routes/source-datasets'
 import { Route as SourceFamiliesRouteImport } from './routes/source-families'
 import { Route as AgenciesIndexRouteImport } from './routes/agencies.index'
 import { Route as AgenciesIdRouteImport } from './routes/agencies.$id'
+import { Route as ApiBundlesRouteImport } from './routes/api/bundles'
 import { Route as ApiFilesRouteImport } from './routes/api/files'
+import { Route as ApiMatterPdfRouteImport } from './routes/api/matter-pdf'
 import { Route as CourtsIndexRouteImport } from './routes/courts.index'
 import { Route as CourtsIdRouteImport } from './routes/courts.$id'
 import { Route as DataIndexRouteImport } from './routes/data.index'
@@ -41,10 +43,13 @@ import { Route as JudgesIdRouteImport } from './routes/judges.$id'
 import { Route as MattersIndexRouteImport } from './routes/matters.index'
 import { Route as MattersIdRouteImport } from './routes/matters.$id'
 import { Route as MattersCasesRouteImport } from './routes/matters.cases'
+import { Route as MattersSeegerWeissRouteImport } from './routes/matters.seeger-weiss'
 import { Route as PlacesIndexRouteImport } from './routes/places.index'
 import { Route as PlacesStateRouteImport } from './routes/places.$state'
 import { Route as RegistryIndexRouteImport } from './routes/registry.index'
 import { Route as RegistryIdRouteImport } from './routes/registry.$id'
+import { Route as SourcesIndexRouteImport } from './routes/sources.index'
+import { Route as SourcesAnalysisRouteImport } from './routes/sources.analysis'
 import { Route as SourcesCatalogRouteImport } from './routes/sources.catalog'
 import { Route as SourcesCoverageRouteImport } from './routes/sources.coverage'
 import { Route as SourcesDetailRouteImport } from './routes/sources.detail'
@@ -52,6 +57,7 @@ import { Route as SourcesEnrichmentRouteImport } from './routes/sources.enrichme
 import { Route as SourcesLibraryRouteImport } from './routes/sources.library'
 import { Route as SourcesRegistryRouteImport } from './routes/sources.registry'
 import { Route as SourcesRegistryV22RouteImport } from './routes/sources.registry-v22'
+import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as DataTablesTableRouteImport } from './routes/data.tables.$table'
 import { Route as LawProvisionIdRouteImport } from './routes/law_.provision.$id'
 import { Route as PlacesStateCountyRouteImport } from './routes/places.$state.$county'
@@ -167,9 +173,19 @@ const AgenciesIdRoute = AgenciesIdRouteImport.update({
   path: '/agencies/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBundlesRoute = ApiBundlesRouteImport.update({
+  id: '/api/bundles',
+  path: '/api/bundles',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiFilesRoute = ApiFilesRouteImport.update({
   id: '/api/files',
   path: '/api/files',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMatterPdfRoute = ApiMatterPdfRouteImport.update({
+  id: '/api/matter-pdf',
+  path: '/api/matter-pdf',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CourtsIndexRoute = CourtsIndexRouteImport.update({
@@ -217,6 +233,11 @@ const MattersCasesRoute = MattersCasesRouteImport.update({
   path: '/matters/cases',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MattersSeegerWeissRoute = MattersSeegerWeissRouteImport.update({
+  id: '/matters/seeger-weiss',
+  path: '/matters/seeger-weiss',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlacesIndexRoute = PlacesIndexRouteImport.update({
   id: '/places/',
   path: '/places/',
@@ -235,6 +256,16 @@ const RegistryIndexRoute = RegistryIndexRouteImport.update({
 const RegistryIdRoute = RegistryIdRouteImport.update({
   id: '/registry/$id',
   path: '/registry/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SourcesIndexRoute = SourcesIndexRouteImport.update({
+  id: '/sources/',
+  path: '/sources/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SourcesAnalysisRoute = SourcesAnalysisRouteImport.update({
+  id: '/sources/analysis',
+  path: '/sources/analysis',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SourcesCatalogRoute = SourcesCatalogRouteImport.update({
@@ -270,6 +301,11 @@ const SourcesRegistryRoute = SourcesRegistryRouteImport.update({
 const SourcesRegistryV22Route = SourcesRegistryV22RouteImport.update({
   id: '/sources/registry-v22',
   path: '/sources/registry-v22',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
+  id: '/api/auth/logout',
+  path: '/api/auth/logout',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DataTablesTableRoute = DataTablesTableRouteImport.update({
@@ -315,14 +351,18 @@ export interface FileRoutesByFullPath {
   '/source-datasets': typeof SourceDatasetsRoute
   '/source-families': typeof SourceFamiliesRoute
   '/agencies/$id': typeof AgenciesIdRoute
+  '/api/bundles': typeof ApiBundlesRoute
   '/api/files': typeof ApiFilesRoute
+  '/api/matter-pdf': typeof ApiMatterPdfRoute
   '/courts/$id': typeof CourtsIdRoute
   '/data/$dataset': typeof DataDatasetRoute
   '/judges/$id': typeof JudgesIdRoute
   '/matters/$id': typeof MattersIdRoute
   '/matters/cases': typeof MattersCasesRoute
+  '/matters/seeger-weiss': typeof MattersSeegerWeissRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/registry/$id': typeof RegistryIdRoute
+  '/sources/analysis': typeof SourcesAnalysisRoute
   '/sources/catalog': typeof SourcesCatalogRoute
   '/sources/coverage': typeof SourcesCoverageRoute
   '/sources/detail': typeof SourcesDetailRoute
@@ -337,6 +377,8 @@ export interface FileRoutesByFullPath {
   '/matters/': typeof MattersIndexRoute
   '/places/': typeof PlacesIndexRoute
   '/registry/': typeof RegistryIndexRoute
+  '/sources/': typeof SourcesIndexRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/data/tables/$table': typeof DataTablesTableRoute
   '/law/provision/$id': typeof LawProvisionIdRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
@@ -364,14 +406,18 @@ export interface FileRoutesByTo {
   '/source-datasets': typeof SourceDatasetsRoute
   '/source-families': typeof SourceFamiliesRoute
   '/agencies/$id': typeof AgenciesIdRoute
+  '/api/bundles': typeof ApiBundlesRoute
   '/api/files': typeof ApiFilesRoute
+  '/api/matter-pdf': typeof ApiMatterPdfRoute
   '/courts/$id': typeof CourtsIdRoute
   '/data/$dataset': typeof DataDatasetRoute
   '/judges/$id': typeof JudgesIdRoute
   '/matters/$id': typeof MattersIdRoute
   '/matters/cases': typeof MattersCasesRoute
+  '/matters/seeger-weiss': typeof MattersSeegerWeissRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/registry/$id': typeof RegistryIdRoute
+  '/sources/analysis': typeof SourcesAnalysisRoute
   '/sources/catalog': typeof SourcesCatalogRoute
   '/sources/coverage': typeof SourcesCoverageRoute
   '/sources/detail': typeof SourcesDetailRoute
@@ -386,6 +432,8 @@ export interface FileRoutesByTo {
   '/matters': typeof MattersIndexRoute
   '/places': typeof PlacesIndexRoute
   '/registry': typeof RegistryIndexRoute
+  '/sources': typeof SourcesIndexRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/data/tables/$table': typeof DataTablesTableRoute
   '/law/provision/$id': typeof LawProvisionIdRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
@@ -414,14 +462,18 @@ export interface FileRoutesById {
   '/source-datasets': typeof SourceDatasetsRoute
   '/source-families': typeof SourceFamiliesRoute
   '/agencies/$id': typeof AgenciesIdRoute
+  '/api/bundles': typeof ApiBundlesRoute
   '/api/files': typeof ApiFilesRoute
+  '/api/matter-pdf': typeof ApiMatterPdfRoute
   '/courts/$id': typeof CourtsIdRoute
   '/data/$dataset': typeof DataDatasetRoute
   '/judges/$id': typeof JudgesIdRoute
   '/matters/$id': typeof MattersIdRoute
   '/matters/cases': typeof MattersCasesRoute
+  '/matters/seeger-weiss': typeof MattersSeegerWeissRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/registry/$id': typeof RegistryIdRoute
+  '/sources/analysis': typeof SourcesAnalysisRoute
   '/sources/catalog': typeof SourcesCatalogRoute
   '/sources/coverage': typeof SourcesCoverageRoute
   '/sources/detail': typeof SourcesDetailRoute
@@ -436,6 +488,8 @@ export interface FileRoutesById {
   '/matters/': typeof MattersIndexRoute
   '/places/': typeof PlacesIndexRoute
   '/registry/': typeof RegistryIndexRoute
+  '/sources/': typeof SourcesIndexRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/data/tables/$table': typeof DataTablesTableRoute
   '/law_/provision/$id': typeof LawProvisionIdRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
@@ -465,14 +519,18 @@ export interface FileRouteTypes {
     | '/source-datasets'
     | '/source-families'
     | '/agencies/$id'
+    | '/api/bundles'
     | '/api/files'
+    | '/api/matter-pdf'
     | '/courts/$id'
     | '/data/$dataset'
     | '/judges/$id'
     | '/matters/$id'
     | '/matters/cases'
+    | '/matters/seeger-weiss'
     | '/places/$state'
     | '/registry/$id'
+    | '/sources/analysis'
     | '/sources/catalog'
     | '/sources/coverage'
     | '/sources/detail'
@@ -487,6 +545,8 @@ export interface FileRouteTypes {
     | '/matters/'
     | '/places/'
     | '/registry/'
+    | '/sources/'
+    | '/api/auth/logout'
     | '/data/tables/$table'
     | '/law/provision/$id'
     | '/places/$state/$county'
@@ -514,14 +574,18 @@ export interface FileRouteTypes {
     | '/source-datasets'
     | '/source-families'
     | '/agencies/$id'
+    | '/api/bundles'
     | '/api/files'
+    | '/api/matter-pdf'
     | '/courts/$id'
     | '/data/$dataset'
     | '/judges/$id'
     | '/matters/$id'
     | '/matters/cases'
+    | '/matters/seeger-weiss'
     | '/places/$state'
     | '/registry/$id'
+    | '/sources/analysis'
     | '/sources/catalog'
     | '/sources/coverage'
     | '/sources/detail'
@@ -536,6 +600,8 @@ export interface FileRouteTypes {
     | '/matters'
     | '/places'
     | '/registry'
+    | '/sources'
+    | '/api/auth/logout'
     | '/data/tables/$table'
     | '/law/provision/$id'
     | '/places/$state/$county'
@@ -563,14 +629,18 @@ export interface FileRouteTypes {
     | '/source-datasets'
     | '/source-families'
     | '/agencies/$id'
+    | '/api/bundles'
     | '/api/files'
+    | '/api/matter-pdf'
     | '/courts/$id'
     | '/data/$dataset'
     | '/judges/$id'
     | '/matters/$id'
     | '/matters/cases'
+    | '/matters/seeger-weiss'
     | '/places/$state'
     | '/registry/$id'
+    | '/sources/analysis'
     | '/sources/catalog'
     | '/sources/coverage'
     | '/sources/detail'
@@ -585,6 +655,8 @@ export interface FileRouteTypes {
     | '/matters/'
     | '/places/'
     | '/registry/'
+    | '/sources/'
+    | '/api/auth/logout'
     | '/data/tables/$table'
     | '/law_/provision/$id'
     | '/places/$state/$county'
@@ -613,14 +685,18 @@ export interface RootRouteChildren {
   SourceDatasetsRoute: typeof SourceDatasetsRoute
   SourceFamiliesRoute: typeof SourceFamiliesRoute
   AgenciesIdRoute: typeof AgenciesIdRoute
+  ApiBundlesRoute: typeof ApiBundlesRoute
   ApiFilesRoute: typeof ApiFilesRoute
+  ApiMatterPdfRoute: typeof ApiMatterPdfRoute
   CourtsIdRoute: typeof CourtsIdRoute
   DataDatasetRoute: typeof DataDatasetRoute
   JudgesIdRoute: typeof JudgesIdRoute
   MattersIdRoute: typeof MattersIdRoute
   MattersCasesRoute: typeof MattersCasesRoute
+  MattersSeegerWeissRoute: typeof MattersSeegerWeissRoute
   PlacesStateRoute: typeof PlacesStateRouteWithChildren
   RegistryIdRoute: typeof RegistryIdRoute
+  SourcesAnalysisRoute: typeof SourcesAnalysisRoute
   SourcesCatalogRoute: typeof SourcesCatalogRoute
   SourcesCoverageRoute: typeof SourcesCoverageRoute
   SourcesDetailRoute: typeof SourcesDetailRoute
@@ -635,6 +711,8 @@ export interface RootRouteChildren {
   MattersIndexRoute: typeof MattersIndexRoute
   PlacesIndexRoute: typeof PlacesIndexRoute
   RegistryIndexRoute: typeof RegistryIndexRoute
+  SourcesIndexRoute: typeof SourcesIndexRoute
+  ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
   DataTablesTableRoute: typeof DataTablesTableRoute
   LawProvisionIdRoute: typeof LawProvisionIdRoute
   RecordsDatasetIdRoute: typeof RecordsDatasetIdRoute
@@ -796,11 +874,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AgenciesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/bundles': {
+      id: '/api/bundles'
+      path: '/api/bundles'
+      fullPath: '/api/bundles'
+      preLoaderRoute: typeof ApiBundlesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/files': {
       id: '/api/files'
       path: '/api/files'
       fullPath: '/api/files'
       preLoaderRoute: typeof ApiFilesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/matter-pdf': {
+      id: '/api/matter-pdf'
+      path: '/api/matter-pdf'
+      fullPath: '/api/matter-pdf'
+      preLoaderRoute: typeof ApiMatterPdfRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/courts/': {
@@ -866,6 +958,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MattersCasesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/matters/seeger-weiss': {
+      id: '/matters/seeger-weiss'
+      path: '/matters/seeger-weiss'
+      fullPath: '/matters/seeger-weiss'
+      preLoaderRoute: typeof MattersSeegerWeissRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/places/': {
       id: '/places/'
       path: '/places'
@@ -892,6 +991,20 @@ declare module '@tanstack/react-router' {
       path: '/registry/$id'
       fullPath: '/registry/$id'
       preLoaderRoute: typeof RegistryIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sources/': {
+      id: '/sources/'
+      path: '/sources'
+      fullPath: '/sources/'
+      preLoaderRoute: typeof SourcesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sources/analysis': {
+      id: '/sources/analysis'
+      path: '/sources/analysis'
+      fullPath: '/sources/analysis'
+      preLoaderRoute: typeof SourcesAnalysisRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sources/catalog': {
@@ -941,6 +1054,13 @@ declare module '@tanstack/react-router' {
       path: '/sources/registry-v22'
       fullPath: '/sources/registry-v22'
       preLoaderRoute: typeof SourcesRegistryV22RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/logout': {
+      id: '/api/auth/logout'
+      path: '/api/auth/logout'
+      fullPath: '/api/auth/logout'
+      preLoaderRoute: typeof ApiAuthLogoutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/data/tables/$table': {
@@ -1008,14 +1128,18 @@ const rootRouteChildren: RootRouteChildren = {
   SourceDatasetsRoute: SourceDatasetsRoute,
   SourceFamiliesRoute: SourceFamiliesRoute,
   AgenciesIdRoute: AgenciesIdRoute,
+  ApiBundlesRoute: ApiBundlesRoute,
   ApiFilesRoute: ApiFilesRoute,
+  ApiMatterPdfRoute: ApiMatterPdfRoute,
   CourtsIdRoute: CourtsIdRoute,
   DataDatasetRoute: DataDatasetRoute,
   JudgesIdRoute: JudgesIdRoute,
   MattersIdRoute: MattersIdRoute,
   MattersCasesRoute: MattersCasesRoute,
+  MattersSeegerWeissRoute: MattersSeegerWeissRoute,
   PlacesStateRoute: PlacesStateRouteWithChildren,
   RegistryIdRoute: RegistryIdRoute,
+  SourcesAnalysisRoute: SourcesAnalysisRoute,
   SourcesCatalogRoute: SourcesCatalogRoute,
   SourcesCoverageRoute: SourcesCoverageRoute,
   SourcesDetailRoute: SourcesDetailRoute,
@@ -1030,6 +1154,8 @@ const rootRouteChildren: RootRouteChildren = {
   MattersIndexRoute: MattersIndexRoute,
   PlacesIndexRoute: PlacesIndexRoute,
   RegistryIndexRoute: RegistryIndexRoute,
+  SourcesIndexRoute: SourcesIndexRoute,
+  ApiAuthLogoutRoute: ApiAuthLogoutRoute,
   DataTablesTableRoute: DataTablesTableRoute,
   LawProvisionIdRoute: LawProvisionIdRoute,
   RecordsDatasetIdRoute: RecordsDatasetIdRoute,

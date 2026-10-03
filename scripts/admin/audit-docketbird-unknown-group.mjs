@@ -1,0 +1,11 @@
+import fs from 'node:fs';
+import {createHash} from 'node:crypto';
+const root='C:/Users/firas/.codex/corpus-cache/seeger-weiss/2026-10-02/docketbird/private-intake-v1/';
+const receipt=JSON.parse(fs.readFileSync(root+'root-full-receipt-v1.json')),unknown=receipt.jobs.at(-1);
+if(unknown.outcome!=='unknown'||unknown.status!==undefined)throw Error('Unknown body required');
+const plan=JSON.parse(fs.readFileSync(root+'root-bound-plan-v1.json')),job=plan.jobs.find(x=>x.jobIndex===unknown.jobIndex),raw=fs.readFileSync(job.path),sha=x=>createHash('sha256').update(x).digest('hex');
+if(sha(raw)!==job.sha256||raw.length!==job.bytes)throw Error('Group changed');const body=JSON.stringify({p_run:plan.runId,p_rows:JSON.parse(raw)});if(sha(body)!==unknown.bodySha256)throw Error('Body changed');
+const cfg=JSON.parse(fs.readFileSync('C:/Users/firas/.codex/private/legal-source-compass.preview.json','utf8'));if(cfg.EXTERNAL_SUPABASE_URL!=='https://xosqzzsnhxcyehcnirpa.supabase.co')throw Error('Wrong project');const token=cfg.EXTERNAL_SUPABASE_KEY;
+const response=await fetch(cfg.EXTERNAL_SUPABASE_URL+'/rest/v1/rpc/corpus_admin_docketbird_evidence_status_v1',{method:'POST',headers:{apikey:token,'Content-Type':'application/json',...(!token.startsWith('sb_')?{Authorization:'Bearer '+token}:{})},body,redirect:'error',signal:AbortSignal.timeout(60000)});const proof=await response.json();
+if(!response.ok||proof.expected!==unknown.records||proof.conflicts!==0||![0,unknown.records].includes(proof.matched))throw Error('Exact outcome unresolved');
+fs.writeFileSync(root+'root-unknown-group-77-proof-v1.json',JSON.stringify({runId:plan.runId,jobIndex:unknown.jobIndex,bodySha256:sha(body),checkedAt:new Date().toISOString(),proof},null,2)+'\n',{flag:'wx'});console.log(JSON.stringify({jobIndex:unknown.jobIndex,...proof}));

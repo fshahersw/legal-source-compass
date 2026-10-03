@@ -54,7 +54,7 @@ export async function fetchArtifact(route: string): Promise<Response> {
   if (!a) return new Response("File not available in the corpus", { status: 404 });
   const obj = await fetch(`${url}/storage/v1/object/corpus-originals/${a.object_key.split("/").map(encodeURIComponent).join("/")}`, { headers });
   if (!obj.ok || !obj.body) return new Response("File not available in storage", { status: 404 });
-  const safeName = (a.filename ?? "file").replace(/[^\w.\-]+/g, "_");
+  const safeName = (a.filename ?? "file").replace(/[^\w.-]+/g, "_");
   return new Response(obj.body, {
     headers: {
       "Content-Type": a.mime ?? "application/octet-stream",
