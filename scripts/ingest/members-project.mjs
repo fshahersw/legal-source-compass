@@ -182,9 +182,25 @@ const datasets = [
 
 console.log(JSON.stringify({ matters: matterRecords.length, dockets: docketRecords.length, links: links.length, conflicts: [...byDocket].filter(([, v]) => v.length > 1).length, dry }));
 fs.writeFileSync(path.join(staging, 'projection-preview.json'), JSON.stringify({ datasets, matters: matterRecords.length, dockets: docketRecords.length, links: links.length }, null, 1));
+// Canonical JSON (sorted keys, undefined dropped) so a PostgREST read-back (jsonb re-orders keys) can be compared with what was sent.
+const canon = x => Array.isArray(x) ? '[' + x.map(v => (v === undefined ? 'null' : canon(v))).join(',') + ']'
+  : (x && typeof x === 'object') ? '{' + Object.keys(x).filter(k => x[k] !== undefined).sort().map(k => JSON.stringify(k) + ':' + canon(x[k])).join(',') + '}' : JSON.stringify(x);
+const digest = recs => sha256(canon([...recs].sort((a, b) => a.ordinal - b.ordinal).map(r => [r.id, r.title, r.item, r.detail, r.filters, r.ordinal])));
+async function readBack(dataset) {
+  const out = [];
+  for (let off = 0; ; off += 400) {
+    const page = (await rest(`corpus_records?select=id,title,item,detail,filters,ordinal&dataset=eq.${dataset}&order=ordinal.asc&limit=400&offset=${off}`)).data;
+    out.push(...page);
+    if (page.length < 400) break;
+  }
+  return out;
+}
+
 if (!dry) {
+  // A dataset that is already ready stays ready while it is re-projected (no flap for readers); a new one starts not ready.
   for (const ds of datasets) {
-    await rest('corpus_datasets?on_conflict=id', { method: 'POST', prefer: 'resolution=merge-duplicates,return=minimal', body: [{ id: ds.id, label: ds.label, ready: false, expected_records: ds.expected_records, imported_records: ds.imported_records, metadata: ds.metadata, updated_at: PROJECTED_AT }] });
+    const existing = (await rest(`corpus_datasets?select=id,ready&id=eq.${ds.id}`)).data[0] ?? null;
+    await rest('corpus_datasets?on_conflict=id', { method: 'POST', prefer: 'resolution=merge-duplicates,return=minimal', body: [{ id: ds.id, label: ds.label, ...(existing ? {} : { ready: false }), expected_records: ds.expected_records, imported_records: ds.imported_records, metadata: ds.metadata, updated_at: PROJECTED_AT }] });
   }
   const upsert = async (table, conflict, recs) => {
     for (let i = 0; i < recs.length; i += 150) await rest(`${table}?on_conflict=${conflict}`, { method: 'POST', prefer: 'resolution=merge-duplicates,return=minimal', body: recs.slice(i, i + 150) });
@@ -193,6 +209,19 @@ if (!dry) {
   await upsert('corpus_records', 'dataset,id', docketRecords);
   // workspace links count only for ready datasets (see corpus_workspace_dockets); insert always, they appear once the dataset is ready
   await upsert('corpus_workspace_docket_links', 'source_dataset,source_record_id,mdl', links.map(l => ({ ...l, refreshed_at: PROJECTED_AT })));
-  if (setReady) for (const ds of datasets) await rest(`corpus_datasets?id=eq.${ds.id}`, { method: 'PATCH', prefer: 'return=minimal', body: { ready: true, updated_at: new Date().toISOString() } });
-  console.log(JSON.stringify({ event: 'projected', ready: setReady }));
+  // read-back verification: what the app will read equals what was projected (canonical sha256 over id, title, item, detail, filters, ordinal)
+  const validation = {};
+  for (const [id, recs] of [[DS_MATTERS, matterRecords], [DS_DOCKETS, docketRecords]]) {
+    const remote = await readBack(id);
+    validation[id] = { records: remote.length, local_records: recs.length, verified: remote.length === recs.length && digest(remote) === digest(recs), full_fields_sha256: digest(recs) };
+  }
+  for (const ds of datasets) {
+    const v = validation[ds.id];
+    const projection_validation = { records: v.records, verified: v.verified, validated_at: new Date().toISOString(), contract_version: 'sw-matter-registry-view/1', full_fields_sha256: v.full_fields_sha256, method: 'PostgREST read-back of id,title,item,detail,filters,ordinal compared as canonical JSON (sorted keys) sha256' };
+    await rest(`corpus_datasets?id=eq.${ds.id}`, { method: 'PATCH', prefer: 'return=minimal', body: { metadata: { ...ds.metadata, projection_validation }, updated_at: new Date().toISOString() } });
+  }
+  const allVerified = Object.values(validation).every(v => v.verified);
+  if (setReady && allVerified) for (const ds of datasets) await rest(`corpus_datasets?id=eq.${ds.id}`, { method: 'PATCH', prefer: 'return=minimal', body: { ready: true, updated_at: new Date().toISOString() } });
+  console.log(JSON.stringify({ event: 'projected', ready: setReady && allVerified, validation }));
+  if (!allVerified) { console.error('projection read-back did not match; datasets left in their previous ready state'); process.exitCode = 2; }
 }
