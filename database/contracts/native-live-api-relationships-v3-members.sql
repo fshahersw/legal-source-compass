@@ -1,0 +1,31 @@
+-- Native API relationships for CourtListener REST dockets / parties / attorneys written by mdl-members (complements -v2-members.sql).
+-- Same field-path conventions as the existing graph (courtlistener namespace, inferred=false, unresolved targets stay target_present=false):
+--   dockets    : court, assigned_to, referred_to, parent_docket, appeal_from (resource URLs) ; panel[i] ; clusters[i]
+--   parties    : party_types[i].docket -> dockets ; attorneys[i].docket -> dockets ; attorneys[i].attorney -> attorneys
+--   attorneys  : parties_represented[i].docket -> dockets ; parties_represented[i].party -> parties
+-- Each association keeps its OWN native docket id; the query docket is never substituted. Substitute __RUN__ and execute once per entity type.
+
+-- (A) parties
+with scoped as (select v.* from corpus_ingest.entity_versions v where v.source_system='courtlistener' and v.entity_type='parties' and v.first_run='__RUN__'::uuid),
+edges as (
+  select s.source_system, s.entity_type, s.native_id, s.payload_sha256, 'party_types['||(a.n-1)||'].docket' as field, 'dockets' as to_type,
+    substring(a.d->>'docket' from '^https://www[.]courtlistener[.]com/api/rest/v4/dockets/([0-9]+)/$') as to_id
+  from scoped s cross join lateral jsonb_array_elements(case when jsonb_typeof(s.data->'party_types')='array' then s.data->'party_types' else '[]'::jsonb end) with ordinality a(d,n)
+  union all
+  select s.source_system, s.entity_type, s.native_id, s.payload_sha256, 'attorneys['||(a.n-1)||'].docket', 'dockets',
+    substring(a.d->>'docket' from '^https://www[.]courtlistener[.]com/api/rest/v4/dockets/([0-9]+)/$')
+  from scoped s cross join lateral jsonb_array_elements(case when jsonb_typeof(s.data->'attorneys')='array' then s.data->'attorneys' else '[]'::jsonb end) with ordinality a(d,n)
+  union all
+  select s.source_system, s.entity_type, s.native_id, s.payload_sha256, 'attorneys['||(a.n-1)||'].attorney', 'attorneys',
+    substring(a.d->>'attorney' from '^https://www[.]courtlistener[.]com/api/rest/v4/attorneys/([0-9]+)/$')
+  from scoped s cross join lateral jsonb_array_elements(case when jsonb_typeof(s.data->'attorneys')='array' then s.data->'attorneys' else '[]'::jsonb end) with ordinality a(d,n)
+), written as (
+  insert into corpus_ingest.relationships(source_system, from_type, from_id, field, to_type, to_id, evidence_sha256, inferred, target_present, run_id)
+  select distinct e.source_system, e.entity_type, e.native_id, e.field, e.to_type, e.to_id, e.payload_sha256, false,
+    exists(select 1 from corpus_ingest.entities t where t.source_system=e.source_system and t.entity_type=e.to_type and t.native_id=e.to_id and t.review_status<>'quarantined'), '__RUN__'::uuid
+  from edges e where nullif(e.to_id,'') is not null
+  on conflict(source_system, from_type, from_id, field, to_type, to_id, evidence_sha256) do update set target_present=excluded.target_present
+  returning to_type, target_present)
+select jsonb_build_object('entity_type','parties','source_versions',(select count(*) from scoped),'recorded_field_edges',(select count(*) from edges),'unparsed',(select count(*) from edges where nullif(to_id,'') is null),'written_edges',(select count(*) from written),'unresolved_edges',(select count(*) from written where not target_present),'checked_at',now()) as receipt;
+
+-- (B) attorneys: same shape with parties_represented[i].docket / .party ; (C) dockets: same as native-live-api-relationships-v1.sql with first_run scoping.
