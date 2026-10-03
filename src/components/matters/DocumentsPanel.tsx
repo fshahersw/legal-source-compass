@@ -1,7 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Eye } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import {
@@ -27,25 +27,19 @@ import { Input } from "@/components/ui/input";
 import {
   SOURCE_LABELS,
   REGISTRY_SOURCES,
-  countDocuments,
-  filterDocuments,
   formatBytes,
   matterPdfUrl,
-  sortDocuments,
   type Availability,
-  type DocumentFilter,
   type DocumentSort,
   type MatterDocument,
   type RegistrySource,
 } from "@/lib/matters/documents";
-import { getMatterDocuments } from "@/lib/matters/matters.functions";
+import { getMatterDocuments, getMatterDocumentsPage } from "@/lib/matters/matters.functions";
 import type { JpmlReport } from "@/lib/matters/overview";
 import type { CaseIdPlanEntry } from "@/lib/matters/registry";
 import type { LegacyDocument, MatterOverviewPayload } from "@/lib/matters/types";
 
 const PAGE = 50;
-/** A stable empty list, so memoised filters do not re-run on every render while data loads. */
-const NO_DOCS: MatterDocument[] = [];
 
 /** The provider case ids the registry was asked for, each marked as recorded by the matter registry or derived. */
 function CaseIdList({ ids }: { ids: CaseIdPlanEntry[] }) {
@@ -160,54 +154,47 @@ function RegistrySection({
   viewKey: string | null;
   onView: (key: string | null) => void;
 }) {
-  const fn = useServerFn(getMatterDocuments);
+  const fn = useServerFn(getMatterDocumentsPage);
   const mdl = payload.overview.mdl;
-  const q = useQuery({
-    queryKey: ["matter-documents", mdl],
-    queryFn: () => fn({ data: { id: mdl } }),
-    staleTime: 5 * 60_000,
-  });
   const [filter, setFilter] = useState<{
     q: string;
     source: RegistrySource | "";
     availability: Availability | "";
     caseId: string;
   }>({ q: "", source: "", availability: "", caseId: "" });
+  const [draft, setDraft] = useState("");
   const [sort, setSort] = useState<DocumentSort>("entry-desc");
   const [offset, setOffset] = useState(0);
-  const registry = q.data?.registry;
-  const docs = registry && registry.connected ? registry.rows : NO_DOCS;
-  const { q: text, source, availability, caseId } = filter;
-  const filtered = useMemo(() => {
-    const f: DocumentFilter = { q: text, source, availability, entry, caseId };
-    return sortDocuments(filterDocuments(docs, f), sort);
-  }, [docs, text, source, availability, entry, caseId, sort]);
-  // Each facet ignores its own filter but honours the others, so option counts match the table.
-  const sourceCounts = useMemo(
-    () =>
-      countDocuments(filterDocuments(docs, { q: text, source: "", availability, entry, caseId }))
-        .bySource,
-    [docs, text, availability, entry, caseId],
-  );
-  const availCounts = useMemo(
-    () =>
-      countDocuments(filterDocuments(docs, { q: text, source, availability: "", entry, caseId })),
-    [docs, text, source, entry, caseId],
-  );
-  const caseCounts = useMemo(
-    () =>
-      countDocuments(filterDocuments(docs, { q: text, source, availability, entry, caseId: "" }))
-        .byCase,
-    [docs, text, source, availability, entry],
-  );
-  const page = filtered.slice(offset, offset + PAGE);
-  const viewed = viewKey
-    ? (docs.find((d) => `${d.sourceSystem}|${d.nativeDocumentId}` === viewKey) ?? null)
-    : null;
+  // A document opened by a link (?view=...) is looked up once, on the first read; a document opened from a row is
+  // already in hand, so opening and closing the viewer never asks the server for the page again.
+  const [initialView] = useState(viewKey);
+  const [clicked, setClicked] = useState<MatterDocument | null>(null);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const text = draft.trim();
+      setFilter((f) => (f.q === text ? f : { ...f, q: text }));
+      setOffset(0);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [draft]);
+  const q = useQuery({
+    queryKey: ["matter-documents-page", mdl, filter, entry, sort, offset, initialView],
+    queryFn: () => fn({ data: { id: mdl, ...filter, entry, sort, offset, view: initialView } }),
+    placeholderData: keepPreviousData,
+    staleTime: 3 * 60_000,
+  });
   const set = (patch: Partial<typeof filter>) => {
     setFilter((f) => ({ ...f, ...patch }));
     setOffset(0);
   };
+  const data = q.data;
+  const keyOf = (d: MatterDocument) => `${d.sourceSystem}|${d.nativeDocumentId}`;
+  const viewed =
+    viewKey && clicked && keyOf(clicked) === viewKey
+      ? clicked
+      : viewKey && data && data.connected && data.viewed && keyOf(data.viewed) === viewKey
+        ? data.viewed
+        : null;
 
   if (q.isLoading)
     return (
@@ -221,8 +208,8 @@ function RegistrySection({
         <ExternalError error={q.error} />
       </Panel>
     );
-  if (!registry) return null;
-  if (!registry.connected)
+  if (!data) return null;
+  if (!data.connected)
     return (
       <Panel
         id="registry"
@@ -230,17 +217,26 @@ function RegistrySection({
         note="PDF originals held in the private archive, listed from the verified registry."
       >
         <EmptyState>
-          {registry.reason}
-          {registry.caseIds.length ? (
+          {data.reason}
+          {data.caseIds.length ? (
             <span className="mt-1 block text-[11px]">
-              Case ids asked for: <CaseIdList ids={registry.caseIds} />
+              Case ids asked for: <CaseIdList ids={data.caseIds} />
             </span>
           ) : null}
         </EmptyState>
       </Panel>
     );
-  const s = registry.summary;
-  const caseIdsWithDocs = registry.caseIds.filter((c) => (caseCounts[c.id] ?? 0) > 0);
+  const s = data.summary;
+  const { page } = data;
+  const facets = page.facets;
+  const caseIdsWithDocs = data.caseIds.filter((c) => (facets.byCase[c.id] ?? 0) > 0);
+  const active = !!(
+    filter.q ||
+    filter.source ||
+    filter.availability ||
+    filter.caseId ||
+    entry !== null
+  );
   return (
     <Panel
       id="registry"
@@ -249,9 +245,8 @@ function RegistrySection({
         <>
           Originals held in the private archive, listed from the verified registry for this
           matter&apos;s master and JPML dockets. Case id
-          {registry.caseIds.length === 1 ? "" : "s"} asked for:{" "}
-          <CaseIdList ids={registry.caseIds} />.{" "}
-          {registry.caseIds.some((c) => c.basis === "derived")
+          {data.caseIds.length === 1 ? "" : "s"} asked for: <CaseIdList ids={data.caseIds} />.{" "}
+          {data.caseIds.some((c) => c.basis === "derived")
             ? "A derived id comes from an exact match on court and docket number; the matter registry does not cover this matter yet."
             : "Each id is an explicit provider id the matter registry records for the docket."}
         </>
@@ -279,12 +274,14 @@ function RegistrySection({
             note="Seal or availability not confirmed; listed without a link"
           />
           <StatTile
-            label="Listed below"
-            value={docs.length.toLocaleString()}
+            label={active ? "Matching" : "Listed"}
+            value={page.total.toLocaleString()}
             note={
-              registry.truncated
-                ? `First ${docs.length.toLocaleString()} of ${s.total.toLocaleString()}`
-                : "All rows loaded"
+              data.truncated
+                ? `First ${data.loaded.toLocaleString()} of ${s.total.toLocaleString()} read from the archive`
+                : active
+                  ? `of ${data.loaded.toLocaleString()} documents`
+                  : "All documents read"
             }
           />
         </div>
@@ -293,13 +290,13 @@ function RegistrySection({
           or hash. It is held when the source did not confirm that the document is unsealed and
           available (for example a search-only locator).
         </Scope>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
           <FilterField label="Search">
             <Input
               aria-label="Search verified PDFs"
               className="h-8 text-[12px]"
-              value={filter.q}
-              onChange={(e) => set({ q: e.target.value })}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
               placeholder="Entry number or file name"
             />
           </FilterField>
@@ -313,7 +310,7 @@ function RegistrySection({
                 <option value="">All case ids</option>
                 {caseIdsWithDocs.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.id} ({(caseCounts[c.id] ?? 0).toLocaleString()})
+                    {c.id} ({(facets.byCase[c.id] ?? 0).toLocaleString()})
                   </option>
                 ))}
               </select>
@@ -327,10 +324,10 @@ function RegistrySection({
             >
               <option value="">All sources</option>
               {REGISTRY_SOURCES.filter(
-                (src) => (sourceCounts[src] ?? 0) > 0 || filter.source === src,
+                (src) => (facets.bySource[src] ?? 0) > 0 || filter.source === src,
               ).map((src) => (
                 <option key={src} value={src}>
-                  {SOURCE_LABELS[src]} ({(sourceCounts[src] ?? 0).toLocaleString()})
+                  {SOURCE_LABELS[src]} ({(facets.bySource[src] ?? 0).toLocaleString()})
                 </option>
               ))}
             </select>
@@ -342,8 +339,8 @@ function RegistrySection({
               onChange={(e) => set({ availability: e.target.value as Availability | "" })}
             >
               <option value="">Open and held</option>
-              <option value="open">Open ({availCounts.open.toLocaleString()})</option>
-              <option value="held">Held ({availCounts.held.toLocaleString()})</option>
+              <option value="open">Open ({facets.availability.open.toLocaleString()})</option>
+              <option value="held">Held ({facets.availability.held.toLocaleString()})</option>
             </select>
           </FilterField>
           <FilterField label="Docket entry number">
@@ -364,7 +361,10 @@ function RegistrySection({
             <select
               className={selectClass}
               value={sort}
-              onChange={(e) => setSort(e.target.value as DocumentSort)}
+              onChange={(e) => {
+                setSort(e.target.value as DocumentSort);
+                setOffset(0);
+              }}
             >
               <option value="entry-desc">Entry number, newest first</option>
               <option value="entry-asc">Entry number, oldest first</option>
@@ -374,16 +374,17 @@ function RegistrySection({
         </div>
         <p className="text-[12px] text-muted-foreground" aria-live="polite">
           <span className="font-medium text-foreground tabular-nums">
-            {filtered.length.toLocaleString()}
+            {page.total.toLocaleString()}
           </span>{" "}
-          of {docs.length.toLocaleString()} documents match
-          {filter.q || filter.source || filter.availability || filter.caseId || entry !== null ? (
+          of {data.loaded.toLocaleString()} documents match
+          {active || draft ? (
             <Button
               variant="ghost"
               size="sm"
               className="ml-2 h-7 px-2"
               onClick={() => {
                 setFilter({ q: "", source: "", availability: "", caseId: "" });
+                setDraft("");
                 onEntry(null);
                 setOffset(0);
               }}
@@ -392,25 +393,36 @@ function RegistrySection({
             </Button>
           ) : null}
         </p>
-        {filtered.length ? (
-          <RegistryTable
-            docs={page}
-            onView={(d) => onView(`${d.sourceSystem}|${d.nativeDocumentId}`)}
-          />
+        {page.rows.length ? (
+          <div className={q.isFetching ? "opacity-70 transition-opacity" : ""}>
+            <RegistryTable
+              docs={page.rows}
+              onView={(d) => {
+                setClicked(d);
+                onView(keyOf(d));
+              }}
+            />
+          </div>
         ) : (
           <EmptyState>No document matches these filters.</EmptyState>
         )}
-        {filtered.length > PAGE ? (
+        {page.total > page.pageSize ? (
           <RangePager
-            offset={offset}
-            pageSize={PAGE}
-            shown={page.length}
-            total={filtered.length}
+            offset={page.offset}
+            pageSize={page.pageSize}
+            shown={page.rows.length}
+            total={page.total}
             onOffset={setOffset}
           />
         ) : null}
       </div>
-      <PdfViewer doc={viewed} onClose={() => onView(null)} />
+      <PdfViewer
+        doc={viewed}
+        onClose={() => {
+          setClicked(null);
+          onView(null);
+        }}
+      />
     </Panel>
   );
 }

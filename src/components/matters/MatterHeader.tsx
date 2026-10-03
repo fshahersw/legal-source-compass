@@ -1,7 +1,15 @@
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 
-import { Chip, Fact, LinkOut } from "@/components/matters/common";
-import { orNotRecorded } from "@/lib/matters/overview";
+import { CorpusRecordLink } from "@/components/corpus/DatasetBrowser";
+import { Chip, Fact, LinkOut, NotRecorded } from "@/components/matters/common";
+import { evidenceKindLabel } from "@/lib/matters/cases";
+import { formatBytes } from "@/lib/matters/documents";
+import { getMatterDocumentsSummary } from "@/lib/matters/matters.functions";
+import { judgeLinkBasisLabel, judgePersonBasisLabel, orNotRecorded } from "@/lib/matters/overview";
+import { registryMetrics } from "@/lib/matters/registry";
 import type { MatterOverviewPayload } from "@/lib/matters/types";
 
 const REFERENCE_LABELS: Record<string, string> = {
@@ -17,7 +25,193 @@ function statusTone(status: string | null): "success" | "neutral" | "warning" {
   return "warning";
 }
 
-/** Master docket header: court, docket number, presiding judge, dates, status, JPML counts and source links. */
+/** One cell of the metrics band: a label, the number, and one line saying what it counts. */
+function Metric({
+  label,
+  value,
+  note,
+  title,
+}: {
+  label: string;
+  value: ReactNode;
+  note?: ReactNode;
+  title?: string;
+}) {
+  return (
+    <div className="min-w-0 px-4 py-2.5" title={title}>
+      <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {label}
+      </div>
+      <div className="mt-0.5 break-words text-[15px] font-semibold leading-tight tabular-nums">
+        {value}
+      </div>
+      {note ? (
+        <div className="mt-0.5 break-words text-[11px] leading-snug text-muted-foreground">
+          {note}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+const n = (v: number | null) => (v === null ? null : v.toLocaleString());
+
+/**
+ * The matter's numbers in one band, every one computed from the corpus: JPML counts (as of the report date), the
+ * registry's dockets and their evidence, entries captured against what the provider reports, parties published, and
+ * the verified PDFs open and held. Nothing here is the size of the MDL except the JPML counts.
+ */
+function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
+  const o = payload.overview;
+  const docsFn = useServerFn(getMatterDocumentsSummary);
+  const docs = useQuery({
+    queryKey: ["matter-documents-summary", o.mdl],
+    queryFn: () => docsFn({ data: { id: o.mdl } }),
+    staleTime: 5 * 60_000,
+  });
+  const m = registryMetrics(payload.registry);
+  const pdf = docs.data && docs.data.connected ? docs.data.summary : null;
+  const topKinds = (m?.byBasis ?? []).slice(0, 3);
+  const moreKinds = (m?.byBasis.length ?? 0) - topKinds.length;
+  return (
+    <div
+      aria-label="Matter metrics"
+      role="group"
+      className="grid divide-y divide-border border-b border-border sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-5 lg:divide-x"
+    >
+      <Metric
+        label="Actions (JPML)"
+        title="Counts from the JPML report; the size of the MDL."
+        value={
+          o.actions.pending !== null || o.actions.total !== null ? (
+            <>
+              {orNotRecorded(o.actions.pending)} pending
+              <span className="font-normal text-muted-foreground">
+                {" "}
+                / {orNotRecorded(o.actions.total)} total
+              </span>
+            </>
+          ) : (
+            <NotRecorded />
+          )
+        }
+        note={o.asOf ? `JPML report ${o.asOf}` : (o.countsLabel ?? undefined)}
+      />
+      <Metric
+        label="Member-like dockets"
+        title="Member and transferor dockets the Seeger Weiss matter registry holds for this MDL, each with its evidence. The master docket and the JPML panel proceeding are listed on the Member cases tab but are not counted here; never the size of the MDL."
+        value={m && m.dockets !== null ? n(m.dockets) : <NotRecorded />}
+        note={
+          m && topKinds.length
+            ? `${topKinds.map((k) => `${evidenceKindLabel(k.kind)} ${k.count.toLocaleString()}`).join(" · ")}${moreKinds > 0 ? ` · +${moreKinds} more` : ""}`
+            : m
+              ? "No evidence recorded"
+              : "Not in the matter registry"
+        }
+      />
+      <Metric
+        label="Docket entries"
+        title="CourtListener entries the registry captured for the master docket against the total the provider reports."
+        value={
+          m?.entries && m.entries.captured !== null ? (
+            <>
+              {n(m.entries.captured)}
+              {m.entries.providerTotal !== null ? (
+                <span className="font-normal text-muted-foreground">
+                  {" "}
+                  / {n(m.entries.providerTotal)} reported
+                </span>
+              ) : null}
+            </>
+          ) : (
+            <span className="font-normal text-muted-foreground">Not yet available</span>
+          )
+        }
+        note={
+          m?.entries
+            ? [
+                m.entries.complete === true
+                  ? "complete at capture"
+                  : m.entries.complete === false
+                    ? "capture continues"
+                    : null,
+                m.entries.published !== null ? `${n(m.entries.published)} published` : null,
+                m.entries.withheld ? `${n(m.entries.withheld)} without text` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ") || undefined
+            : undefined
+        }
+      />
+      <Metric
+        label="Parties and counsel"
+        title="Parties of the master docket the registry published, and the counsel entries on them."
+        value={
+          m?.parties && m.parties.published !== null ? (
+            <>
+              {n(m.parties.published)}
+              <span className="font-normal text-muted-foreground"> parties</span>
+            </>
+          ) : (
+            <span className="font-normal text-muted-foreground">Not yet available</span>
+          )
+        }
+        note={
+          m?.parties && m.parties.counselLinks !== null
+            ? `${n(m.parties.counselLinks)} counsel entries`
+            : undefined
+        }
+      />
+      <Metric
+        label="Verified PDFs"
+        title="Documents in the private verified PDF archive for the master and JPML dockets: open (linkable) and held (no link)."
+        value={
+          pdf ? (
+            <>
+              {pdf.open.toLocaleString()} open
+              <span className="font-normal text-muted-foreground">
+                {" "}
+                · {pdf.held.toLocaleString()} held
+              </span>
+            </>
+          ) : docs.isLoading ? (
+            <span className="font-normal text-muted-foreground">…</span>
+          ) : (
+            <NotRecorded />
+          )
+        }
+        note={
+          pdf
+            ? `${pdf.total.toLocaleString()} documents${pdf.openBytes ? ` · ${formatBytes(pdf.openBytes)}` : ""}`
+            : docs.data && !docs.data.connected
+              ? "Archive not connected"
+              : undefined
+        }
+      />
+      {m?.lastCaptured || payload.master?.dateLastFiling ? (
+        <div className="flex flex-wrap gap-x-5 gap-y-0.5 border-t border-border px-4 py-1.5 text-[11px] text-muted-foreground sm:col-span-2 lg:col-span-5">
+          {payload.master?.dateLastFiling ? (
+            <span>
+              Last filing on the master docket{" "}
+              <span className="font-mono text-foreground">{payload.master.dateLastFiling}</span>
+              {payload.master.sourceAsOf
+                ? ` (CourtListener metadata as of ${payload.master.sourceAsOf})`
+                : ""}
+            </span>
+          ) : null}
+          {m?.lastCaptured ? (
+            <span>
+              Registry captures last observed{" "}
+              <span className="font-mono text-foreground">{m.lastCaptured}</span>
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** Master docket header: court, docket number, presiding judge, dates, status, the matter's numbers and source links. */
 export function MatterHeader({ payload }: { payload: MatterOverviewPayload }) {
   const { overview: o, master, judgeProfile, jpmlReferences, sw } = payload;
   const filed = master?.dateFiled ?? null;
@@ -41,6 +235,8 @@ export function MatterHeader({ payload }: { payload: MatterOverviewPayload }) {
   const referred =
     payload.registry?.judges.find((j) => j.role === "referred_to" && j.sourceString) ?? null;
   const registry = payload.registry;
+  const profileBasis = judgeLinkBasisLabel(judge.profileLinkBasis) ?? judge.evidenceNote;
+  const personBasis = judgePersonBasisLabel(judge.clPersonBasis);
 
   return (
     <section
@@ -84,7 +280,7 @@ export function MatterHeader({ payload }: { payload: MatterOverviewPayload }) {
             >
               In the matter registry
               {registry.members.rows !== null
-                ? ` · ${registry.members.rows.toLocaleString()} dockets`
+                ? ` · ${registry.members.rows.toLocaleString()} member-like dockets`
                 : ""}
             </Chip>
           </Link>
@@ -96,6 +292,8 @@ export function MatterHeader({ payload }: { payload: MatterOverviewPayload }) {
           Seeger Weiss matters hub
         </Link>
       </div>
+
+      <MetricsBand payload={payload} />
 
       <dl className="grid gap-x-6 gap-y-3 px-4 py-3 sm:grid-cols-2 lg:grid-cols-3">
         <Fact label="Court">
@@ -128,7 +326,7 @@ export function MatterHeader({ payload }: { payload: MatterOverviewPayload }) {
           ) : null}
         </Fact>
         <Fact label="Presiding (transferee) judge">
-          {judge.printedName || judge.profileName ? (
+          {judge.printedName || judge.profileName || judgeProfile ? (
             <>
               {judgeProfile ? (
                 <Link
@@ -147,9 +345,22 @@ export function MatterHeader({ payload }: { payload: MatterOverviewPayload }) {
                   ? `Printed by the JPML as “${judge.printedName}”. `
                   : ""}
                 {judgeProfile
-                  ? `Profile linked by native id${judge.evidenceNote ? ` — ${judge.evidenceNote}` : ""}.`
-                  : "No profile link: no native-id evidence ties a judge profile to this MDL."}
+                  ? `Profile linked${profileBasis ? `: ${profileBasis}` : ""}.`
+                  : "No profile link: no profile id is recorded for this MDL's judge."}
               </span>
+              {judge.clPersonId ? (
+                <span className="block text-[11px] text-muted-foreground">
+                  CourtListener person{" "}
+                  <CorpusRecordLink
+                    dataset="cl_people"
+                    id={`cl:people:${judge.clPersonId}`}
+                    className="text-primary underline-offset-2 hover:underline"
+                  >
+                    {judge.clPersonId}
+                  </CorpusRecordLink>
+                  {personBasis ? ` (${personBasis})` : ""}
+                </span>
+              ) : null}
               {referred ? (
                 <span className="block text-[11px] text-muted-foreground">
                   Referred to (CourtListener docket): {referred.sourceString}
@@ -166,18 +377,6 @@ export function MatterHeader({ payload }: { payload: MatterOverviewPayload }) {
         </Fact>
         <Fact label="Transferred (JPML order)">{o.dates.transferred}</Fact>
         <Fact label="Terminated / closed">{closed}</Fact>
-        <Fact label="Last filing on master docket">{master?.dateLastFiling ?? null}</Fact>
-        <Fact label="Actions (JPML)">
-          {o.actions.total !== null || o.actions.pending !== null ? (
-            <>
-              <span className="tabular-nums">{orNotRecorded(o.actions.total)}</span> total ·{" "}
-              <span className="tabular-nums">{orNotRecorded(o.actions.pending)}</span> pending
-              <span className="block text-[11px] text-muted-foreground">
-                {o.countsLabel ?? (o.asOf ? `as of ${o.asOf}` : null)}
-              </span>
-            </>
-          ) : null}
-        </Fact>
       </dl>
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border px-4 py-2 text-[12px]">

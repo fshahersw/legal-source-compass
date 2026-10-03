@@ -80,3 +80,25 @@ test('a fully valid group is registered with a single call',async()=>{
  const total=await registerWithIsolation(items,{call:async rows=>{calls++;return{ok:true,status:200,data:JSON.parse(ack(rows.length)),batch_sha256:sha('x')};},record:async()=>{},acknowledged,rejected:new Map()});
  assert.equal(total,5);assert.equal(calls,1);assert.equal(acknowledged.size,5);
 });
+
+function dedupReceipt(n,overrides={}){
+ const base=receipt(n);
+ return{...base,state:'dedup_matched',dedup_basis:'provider_sha1_equals_stored_sha1',download_skipped:true,byte_verification:'earlier_hash_checked_cloud_readback',
+  object_first_verified_at:'2026-10-02T14:00:45.213Z',dedup_index_loaded_at:'2026-10-03T15:30:00.000Z',recorded_at:'2026-10-03T15:31:00.000Z',source_sha1_claim_matched:true,source_size_claim_matched:false,...overrides};
+}
+
+test('a dedup receipt registers as a cloud-verified association carrying the earlier verification time and the dedup basis',()=>{
+ const row=transportRow(dedupReceipt(7));
+ assert.equal(row.state,'cloud_verified');assert.equal(row.verified_at,'2026-10-02T14:00:45.213Z');
+ assert.equal(row.dedup_basis,'provider_sha1_equals_stored_sha1');assert.equal(row.download_skipped,true);
+ assert.equal(row.association_receipt_state,'dedup_matched');assert.equal(row.association_recorded_at,'2026-10-03T15:31:00.000Z');
+ assert.equal(row.sha256,receipt(7).sha256);assert.equal(JSON.stringify(row).includes('download_url'),false);
+ assert.equal(transportRow(dedupReceipt(8,{dedup_basis:'exact_url_previously_verified'})).dedup_basis,'exact_url_previously_verified');
+});
+
+test('dedup receipts without explicit evidence, with an unknown basis or with a wrong object identity are refused',()=>{
+ assert.throws(()=>transportRow(dedupReceipt(1,{dedup_basis:'because_it_looked_similar'})),/Dedup receipt evidence mismatch/);
+ assert.throws(()=>transportRow(dedupReceipt(2,{download_skipped:false})),/Dedup receipt evidence mismatch/);
+ assert.throws(()=>transportRow(dedupReceipt(3,{object_first_verified_at:'not a time'})),/Dedup receipt evidence mismatch/);
+ assert.throws(()=>transportRow(dedupReceipt(4,{sha256:'a'.repeat(64)})),/Verified transfer identity mismatch/);
+});

@@ -143,7 +143,22 @@ export type RegistryCaseDetail = {
   nativeCaseIds: string[];
   /** Links as the registry projects them (CourtListener, DocketBird, JPML order). */
   links: { url: string; label: string }[];
+  /** Which source printed the caption (`courtlistener_header`, `docketbird`, `docketbird_jpml`, `jpml_schedule`). */
+  captionSource: string | null;
 };
+
+/** Where a published caption comes from; shown beside the caption so it is never mistaken for a registry statement. */
+export const CAPTION_SOURCE_LABELS: Record<string, string> = {
+  courtlistener_header: "CourtListener docket header",
+  docketbird: "DocketBird case title",
+  docketbird_jpml: "DocketBird, JPML docket",
+  jpml_schedule: "JPML order schedule, as printed",
+};
+
+export function captionSourceLabel(source: string | null | undefined): string | null {
+  if (!source) return null;
+  return CAPTION_SOURCE_LABELS[source] ?? source.replace(/_/g, " ");
+}
 
 export type CaseRow = {
   id: string;
@@ -505,6 +520,8 @@ export function scopedFacets(rows: CaseRow[], f: CaseFilter, labels?: RegistryLa
 
 export type CaseSort = "filed-desc" | "filed-asc" | "docket";
 
+export const CASE_SORTS: readonly CaseSort[] = ["filed-desc", "filed-asc", "docket"];
+
 export function sortCases(rows: CaseRow[], sort: CaseSort): CaseRow[] {
   const out = [...rows];
   const docketCmp = (a: CaseRow, b: CaseRow) =>
@@ -518,4 +535,43 @@ export function sortCases(rows: CaseRow[], sort: CaseSort): CaseRow[] {
     if (!a.dateFiled && b.dateFiled) return 1;
     return docketCmp(a, b);
   });
+}
+
+/** Rows per page of the member-case list. */
+export const CASE_PAGE_SIZE = 50;
+
+export type CasesPage = {
+  /** The requested page of the filtered, sorted list. */
+  rows: CaseRow[];
+  /** Rows matching the filter (all pages). */
+  total: number;
+  /** Facets that each ignore their own filter and honour the others, so counts match the table. */
+  facets: CaseFacets;
+  offset: number;
+  pageSize: number;
+};
+
+/**
+ * One page of a matter's cases: filter, sort, count and facet the full list, return only the slice asked for. The
+ * server runs this over its cached list so the browser never receives the whole list.
+ */
+export function pageCases(
+  rows: CaseRow[],
+  filter: CaseFilter,
+  sort: CaseSort,
+  offset: number,
+  pageSize: number = CASE_PAGE_SIZE,
+  labels?: RegistryLabels,
+): CasesPage {
+  const filtered = sortCases(filterCases(rows, filter), sort);
+  const start = Math.min(Math.max(0, Math.floor(offset)), Math.max(0, filtered.length - 1));
+  // A page always starts on a page boundary, so "Next" and "Previous" never leave a short page in the middle.
+  const aligned = start - (start % pageSize);
+  return {
+    rows: filtered.slice(aligned, aligned + pageSize),
+    total: filtered.length,
+    facets: scopedFacets(rows, filter, labels),
+    offset: aligned,
+    pageSize,
+  };
 }

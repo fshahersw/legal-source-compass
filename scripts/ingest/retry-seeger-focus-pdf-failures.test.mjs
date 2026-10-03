@@ -35,3 +35,20 @@ test('merging transfer directories keeps the most recent failure regardless of d
  const map=new Map();outcomes([newer],map);outcomes([old],map);
  assert.equal(map.get('courtlistener|1').error,'SOURCE_SHA1_MISMATCH');assert.equal(map.get('courtlistener|1').permanent,true);
 });
+
+test('a dedup-registered document counts as verified, so it is never retried',()=>{
+ const r=(state,extra={})=>({provider:'courtlistener',native_document_id:'9',state,...extra});
+ const map=outcomes([r('failed',{error:'SOURCE_HTTP_503'}),r('dedup_matched')]);
+ assert.equal(map.get('courtlistener|9').verified,true);
+ const later=outcomes([r('dedup_matched'),r('failed',{error:'SOURCE_HTTP_503'})]);
+ assert.equal(later.get('courtlistener|9').verified,true);
+});
+
+test('the retry worker only retries hosts the runners own: official court providers are ignored with a notice',async()=>{
+ const {spawn}=await import('node:child_process'),{fileURLToPath}=await import('node:url');
+ const script=path.join(path.dirname(fileURLToPath(import.meta.url)),'retry-seeger-focus-pdf-failures.mjs'),root=fs.mkdtempSync(path.join(os.tmpdir(),'retry-guard-'));
+ const result=await new Promise(resolve=>{const child=spawn(process.execPath,[script,'--root='+root,'--credentials=unused','--no-wait','--providers=official-court,docketbird,courtlistener'],{stdio:['ignore','pipe','pipe']});let out='',err='';child.stdout.on('data',d=>out+=d);child.stderr.on('data',d=>err+=d);child.on('exit',code=>resolve({code,out,err}));});
+ assert.equal(result.code,0,result.err);
+ assert.deepEqual(JSON.parse(result.err.trim().split('\n')[0]),{ignored_provider:'official-court',reason:'not_owned_by_pdf_backfill'});
+ assert.equal(JSON.parse(result.out).finished,true);
+});

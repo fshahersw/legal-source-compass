@@ -5,13 +5,20 @@ import {createHash,randomUUID} from 'node:crypto';
 import {Readable,Transform} from 'node:stream';
 import {pipeline} from 'node:stream/promises';
 import {pathToFileURL} from 'node:url';
+import {loadDedupIndex,dedupReceiptFields} from './pdf-dedup.mjs';
+import {hostAllowed,sourceHostOf} from './pdf-source-hosts.mjs';
 
 const PROJECT='xosqzzsnhxcyehcnirpa',BUCKET='corpus-originals';
 const sha=x=>createHash('sha256').update(x).digest('hex');
+// GovInfo USCOURTS ids: package USCOURTS-<court>-<office>_<yy>-<type>-<seq> (type is lower case for courts, "F" for the JPML), granule = package + "-" + part number.
+export const GOVINFO_PACKAGE_ID=/^USCOURTS-[a-z0-9]+-[0-9]{1,2}_[0-9]{2}-[A-Za-z]{1,5}-[0-9]{3,6}$/;
+export const GOVINFO_GRANULE_ID=/^USCOURTS-[a-z0-9]+-[0-9]{1,2}_[0-9]{2}-[A-Za-z]{1,5}-[0-9]{3,6}-[0-9]{1,6}$/;
+export const govinfoPackageOf=granuleId=>String(granuleId).replace(/-[0-9]{1,6}$/,'');
 const defaultPause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 export function validateDownloadUrl(value,provider){
  const u=new URL(value);if(u.protocol!=='https:'||u.username||u.password||u.port)throw Error('PDF_URL_INVALID');
- const allowed=provider==='docketbird'?u.hostname==='docketbird-case-documents.s3.amazonaws.com':['courtlistener','courtlistener-public-locator'].includes(provider)?u.hostname==='storage.courtlistener.com':provider==='official-court'?/^[a-z0-9.-]+\.uscourts\.gov$/.test(u.hostname):false;
+ // govinfo: the U.S. Government Publishing Office USCOURTS collection (published court opinions/orders), granule PDFs only: https://www.govinfo.gov/content/pkg/USCOURTS-.../pdf/USCOURTS-....pdf
+ const allowed=provider==='docketbird'?u.hostname==='docketbird-case-documents.s3.amazonaws.com':['courtlistener','courtlistener-public-locator'].includes(provider)?u.hostname==='storage.courtlistener.com':provider==='official-court'?/^[a-z0-9.-]+\.uscourts\.gov$/.test(u.hostname):provider==='govinfo'?u.hostname==='www.govinfo.gov'&&u.pathname.startsWith('/content/pkg/USCOURTS-'):false;
  if(!allowed)throw Error('PDF_HOST_NOT_ALLOWED');return u;
 }
 export function validateQueueRow(row){
@@ -42,6 +49,13 @@ export function validateQueueRow(row){
   const target=new URL(row.download_url);if(target.search||target.hash||!target.pathname.startsWith('/recap/')||!target.pathname.toLowerCase().endsWith('.pdf'))throw Error('PUBLIC_RECAP_LOCATOR_REQUIRED');
  }
  if(row.provider==='official-court'&&row.provider_flags?.sealing_related_locator_held!==false)throw Error('SEALING_RELATED_SOURCE_HELD');
+ if(row.provider==='govinfo'){
+  // identity: granule id (native_document_id) = package id + '-' + part number, URL = exactly that granule's PDF; native_case_id is the case number as printed
+  // (the same string the matter's official-court documents use; "MDL No. <n>" for JPML packages), never empty
+  if(row.provider_flags?.sealing_related_locator_held!==false)throw Error('SEALING_RELATED_SOURCE_HELD');
+  if(typeof row.native_case_id!=='string'||!row.native_case_id.trim()||row.native_case_id.length>200||!GOVINFO_GRANULE_ID.test(row.native_document_id)
+   ||row.durable_url!==row.download_url||row.download_url!=='https://www.govinfo.gov/content/pkg/'+govinfoPackageOf(row.native_document_id)+'/pdf/'+row.native_document_id+'.pdf')throw Error('GOVINFO_GRANULE_IDENTITY_MISMATCH');
+ }
  return row;
 }
 export function sourcePrivacyQualification(row){
@@ -289,37 +303,52 @@ export function createCloudStore({project=PROJECT,bucket=BUCKET,storage,tusEndpo
  }
  return{ensureObject,verifyObject};
 }
-async function main(){
- const args=Object.fromEntries(process.argv.slice(2).map(x=>{const at=x.indexOf('=');return at<0?[x.slice(2),true]:[x.slice(2,at),x.slice(at+1)];}));
+// argv: CLI arguments. deps.fetch: test seam for every network call (source, storage, index RPC). Returns {stopped,state}; the CLI wrapper sets the exit code.
+export async function runTransfer(argv=process.argv.slice(2),deps={}){
+ const fetchImpl=deps.fetch??fetch;
+ const args=Object.fromEntries(argv.map(x=>{const at=x.indexOf('=');return at<0?[x.slice(2),true]:[x.slice(2,at),x.slice(at+1)];}));
  const queuePath=path.resolve(String(args.queue)),queueBytes=await fs.readFile(queuePath);
  if(sha(queueBytes)!==args['queue-sha256'])throw Error('QUEUE_HASH_MISMATCH');
  const all=queueBytes.toString().trim().split('\n').map(x=>JSON.parse(x));
- const rows=all.filter(x=>x.eligible).map(validateQueueRow);
+ const eligibleRows=all.filter(x=>x.eligible);
+ // Host guard (--allowed-hosts=host1,host2): a row aimed at a host this runner does not own (e.g. official court sites with their own robots.txt
+ // Crawl-delay) is skipped BEFORE validation with receipt reason --host-skip-reason, and is never fetched. Unset = no guard (unchanged behavior).
+ const allowedHosts=typeof args['allowed-hosts']==='string'?args['allowed-hosts'].split(',').map(h=>h.trim().toLowerCase()).filter(Boolean):null;
+ if(allowedHosts&&!allowedHosts.length)throw Error('ALLOWED_HOSTS_INVALID');
+ const hostSkipReason=/^[a-z0-9_]{3,64}$/.test(String(args['host-skip-reason']??''))?args['host-skip-reason']:'non_allowed_host';
+ const hostSkipped=allowedHosts?eligibleRows.filter(row=>!hostAllowed(row,allowedHosts)):[];
+ const rows=(allowedHosts?eligibleRows.filter(row=>hostAllowed(row,allowedHosts)):eligibleRows).map(validateQueueRow);
  const root=path.resolve(String(args.cache)),receiptPath=path.join(root,'transfer-receipts.jsonl'),statusPath=path.join(root,'progress.json');
  await fs.mkdir(path.join(root,'staging'),{recursive:true});
  let existing=[];try{existing=(await fs.readFile(receiptPath,'utf8')).trim().split('\n').filter(Boolean).map(x=>JSON.parse(x));}catch(e){if(e.code!=='ENOENT')throw Error('RECEIPT_READ_FAILED');}
  const versionOf=row=>row.selected_source_record_sha256??[...(row.origins??[])].sort((a,b)=>b.retrieved_at.localeCompare(a.retrieved_at))[0]?.native_record_sha256;
  const rowMap=new Map(rows.map(row=>[row.provider+'|'+row.native_document_id,row]));
+ // A row is done when a cloud-verified receipt, or a dedup receipt (bytes verified earlier, no source request), exists for the same source version.
  const done=new Set(existing.filter(x=>{
   const row=rowMap.get(x.provider+'|'+x.native_document_id);if(!row)return false;
   const version=x.selected_source_record_sha256??[...(x.source_origins??[])].sort((a,b)=>b.retrieved_at.localeCompare(a.retrieved_at))[0]?.native_record_sha256;
-  return x.state==='cloud_verified'&&x.project_id===PROJECT&&x.bucket===BUCKET&&/^[a-f0-9]{64}$/.test(x.sha256??'')&&x.storage_key==='seeger-weiss/pdf-sha256/'+x.sha256.slice(0,2)+'/'+x.sha256+'.pdf'&&Number.isSafeInteger(x.bytes)&&x.bytes>0&&version&&version===versionOf(row);
+  return (x.state==='cloud_verified'||x.state==='dedup_matched')&&x.project_id===PROJECT&&x.bucket===BUCKET&&/^[a-f0-9]{64}$/.test(x.sha256??'')&&x.storage_key==='seeger-weiss/pdf-sha256/'+x.sha256.slice(0,2)+'/'+x.sha256+'.pdf'&&Number.isSafeInteger(x.bytes)&&x.bytes>0&&version&&version===versionOf(row);
  }).map(x=>x.provider+'|'+x.native_document_id));
+ const alreadySkipped=new Set(existing.filter(x=>x.state==='skipped'&&x.reason===hostSkipReason).map(x=>x.provider+'|'+x.native_document_id));
  const maxFiles=Number(args['max-files']??1000),concurrency=Number(args.concurrency??8),maxBytes=Number(args['max-file-mb']??512)*1024**2;
  if(!Number.isSafeInteger(maxFiles)||maxFiles<1||!Number.isSafeInteger(concurrency)||concurrency<1||concurrency>12||!Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>2*1024**3)throw Error('TRANSFER_BOUNDS_INVALID');
+ const diskReserveBytes=Number(args['disk-reserve-gb']??20)*1024**3;
+ if(!Number.isFinite(diskReserveBytes)||diskReserveBytes<0)throw Error('TRANSFER_BOUNDS_INVALID');
  const pending=rows.filter(x=>!done.has(x.provider+'|'+x.native_document_id)).slice(0,maxFiles);
  const sourceDelayMs=Number(args['source-delay-ms']??0),initialWaitMs=Number(args['initial-wait-ms']??0),workerDelayMs=Number(args['worker-delay-ms']??0);
  if(!Number.isSafeInteger(sourceDelayMs)||sourceDelayMs<0||!Number.isSafeInteger(initialWaitMs)||initialWaitMs<0||!Number.isSafeInteger(workerDelayMs)||workerDelayMs<0)throw Error('INVALID_SOURCE_PACING');
- if(!args.execute){console.log(JSON.stringify({state:'verified_dry_run',queued:rows.length,held:all.length-rows.length,alreadyVerified:done.size,pending:pending.length}));return;}
+ if(!args.execute){console.log(JSON.stringify({state:'verified_dry_run',queued:rows.length,held:all.length-eligibleRows.length,skippedHost:hostSkipped.length,alreadyVerified:done.size,pending:pending.length}));return{stopped:false,state:null};}
  const cfg=JSON.parse(await fs.readFile(String(args.credentials),'utf8'));
  if(cfg.EXTERNAL_SUPABASE_URL!=='https://'+PROJECT+'.supabase.co')throw Error('WRONG_PROJECT');
  const token=cfg.EXTERNAL_SUPABASE_KEY;if(typeof token!=='string')throw Error('SERVER_KEY_MISSING');
  if(token.startsWith('ey')){const claims=JSON.parse(Buffer.from(token.split('.')[1],'base64url'));if(claims.role!=='service_role'||claims.ref!==PROJECT)throw Error('WRONG_SERVER_ROLE');}else if(!token.startsWith('sb_secret_'))throw Error('SERVER_ROLE_REQUIRED');
  const storage=cfg.EXTERNAL_SUPABASE_URL+'/storage/v1',headers={apikey:token,...(!token.startsWith('sb_')?{Authorization:'Bearer '+token}:{})};
- const bucketResponse=await withBackoff(async()=>{const response=await fetch(storage+'/bucket/'+BUCKET,{headers,signal:AbortSignal.timeout(30000),redirect:'error'});if(!response.ok){const error=Error('BUCKET_READ_FAILED');error.transient=isTransientHttpStatus(response.status);throw error;}return response;},{attempts:4,baseMs:2000,isRetryable:e=>e.transient===true||isTransientNetworkError(e)});
+ const bucketResponse=await withBackoff(async()=>{const response=await fetchImpl(storage+'/bucket/'+BUCKET,{headers,signal:AbortSignal.timeout(30000),redirect:'error'});if(!response.ok){const error=Error('BUCKET_READ_FAILED');error.transient=isTransientHttpStatus(response.status);throw error;}return response;},{attempts:4,baseMs:2000,isRetryable:e=>e.transient===true||isTransientNetworkError(e)});
  const info=await bucketResponse.json();if(info.id!==BUCKET||info.public!==false)throw Error('PRIVATE_BUCKET_REQUIRED');
  let writeQueue=Promise.resolve(),statusQueue=Promise.resolve(),cursor=0,stopped=false;
- const state={schema_version:'pdf-cloud-backfill-progress/1',project_id:PROJECT,bucket:BUCKET,queue_sha256:sha(queueBytes),started_at:new Date().toISOString(),eligible:rows.length,held:all.length-rows.length,initially_verified:done.size,selected:pending.length,processed:0,cloud_verified:0,bytes_verified:0,failed:0,failed_retryable:0,failed_permanent:0,cloud_breaker_trips:0,source_breaker_trips:0,stop_reason:null,complete:false};
+ const state={schema_version:'pdf-cloud-backfill-progress/1',project_id:PROJECT,bucket:BUCKET,queue_sha256:sha(queueBytes),started_at:new Date().toISOString(),eligible:eligibleRows.length,held:all.length-eligibleRows.length,skipped:0,initially_verified:done.size,selected:pending.length,processed:0,cloud_verified:0,bytes_verified:0,
+  new_objects:0,new_object_bytes:0,verified_existing:0,dedup_registered:0,dedup_by_basis:{},dedup_conflicts:0,
+  failed:0,failed_retryable:0,failed_permanent:0,cloud_breaker_trips:0,source_breaker_trips:0,stop_reason:null,complete:false};
  const save=()=>{state.updated_at=new Date().toISOString();const body=JSON.stringify(state,null,2)+'\n';statusQueue=statusQueue.then(async()=>{await retryTransferFileOperation('progress_snapshot_write',()=>fs.writeFile(statusPath+'.part',body));await retryTransferFileOperation('progress_snapshot_replace',()=>fs.rename(statusPath+'.part',statusPath));});return statusQueue;};
  const record=event=>{writeQueue=writeQueue.then(async()=>{
   const fd=await retryTransferFileOperation('receipt_open',()=>fs.open(receiptPath,'a'));
@@ -330,7 +359,7 @@ async function main(){
    await retryTransferFileOperation('receipt_fsync',()=>fd.sync());
   }finally{await retryTransferFileOperation('receipt_close',()=>fd.close());}
  });return writeQueue;};
- const pause=defaultPause;
+ const pause=deps.pause??defaultPause;
  // The learned 429 level is shared across batches/restarts through --pacing-file (a refused pace is not re-probed at every batch start).
  const pacingFile=typeof args['pacing-file']==='string'?path.resolve(args['pacing-file']):null;
  let startLevel=0;if(pacingFile)try{startLevel=Number(JSON.parse(await fs.readFile(pacingFile,'utf8')).level)||0;}catch{/* first run */}
@@ -345,7 +374,33 @@ async function main(){
  const sourceBreaker=new FailureBreaker({stopCode:'SOURCE_UNAVAILABLE',threshold:8,baseCooldownMs:30000,maxTrips:8,pause,onTrip:t=>{state.source_breaker_trips++;state.source_breaker_resume_after=t.resume_after;record({state:'breaker_tripped',breaker:'source',...t}).catch(()=>{});save().catch(()=>{});}});
  const resumableLocations=new Map(existing.filter(x=>x.state==='resumable_upload_created'&&/^[a-f0-9]{64}$/.test(x.sha256??'')&&x.storage_key==='seeger-weiss/pdf-sha256/'+x.sha256.slice(0,2)+'/'+x.sha256+'.pdf').map(x=>[x.storage_key,x]));
  existing=[];
- const cloud=createCloudStore({storage,headers,record,maxBytes,resumableLocations,breaker:cloudBreaker,pause});
+ const cloud=createCloudStore({storage,headers,fetchImpl,record,maxBytes,resumableLocations,breaker:cloudBreaker,pause});
+ await save();
+ if(hostSkipped.length){
+  const hostCounts={};
+  for(const row of hostSkipped){
+   const host=sourceHostOf(row)??'(unparsable)';hostCounts[host]=(hostCounts[host]??0)+1;
+   if(!alreadySkipped.has(row.provider+'|'+row.native_document_id))await record({provider:row.provider,native_document_id:String(row.native_document_id).slice(0,500),native_case_id:row.native_case_id??null,queue_sha256:sha(queueBytes),selected_source_record_sha256:versionOf(row)??null,state:'skipped',reason:hostSkipReason,host});
+  }
+  state.skipped=hostSkipped.length;state.skipped_by_reason={[hostSkipReason]:hostSkipped.length};state.skipped_hosts=hostCounts;await save();
+ }
+ // Pre-download de-duplication (see pdf-dedup.mjs): rows whose bytes are already stored and hash-verified are registered without a source request.
+ // They are processed first (no pacing slot is consumed), then the rows that really need a download, in their original order.
+ const storedThisRun=new Set();
+ let index=null,ordered=pending;
+ if(!args['no-dedup']){
+  try{index=await loadDedupIndex({baseUrl:cfg.EXTERNAL_SUPABASE_URL,headers,fetchImpl,pause});}
+  catch(error){
+   // Without the index the run would spend the scarce source budget on bytes that are already stored; stop loudly (restartable) instead.
+   stopped=true;state.stop_reason='DEDUP_INDEX_UNAVAILABLE';state.dedup_index_error=/^[A-Z_0-9]+$/.test(error.message)?error.message:'DEDUP_INDEX_FAILURE';ordered=[];
+   await record({state:'dedup_index_unavailable',error:state.dedup_index_error,failure:error.failure??null});
+  }
+  if(index){
+   const dedupRows=[],downloadRows=[];
+   for(const row of pending)(index.classify(row).action==='dedup'?dedupRows:downloadRows).push(row);
+   ordered=[...dedupRows,...downloadRows];state.dedup_candidates=dedupRows.length;state.download_candidates=downloadRows.length;state.dedup_index={...index.stats(),load_ms:index.load?.ms??null};
+  }
+ }else state.dedup_enabled=false;
  await save();
  // HTTP 429 from the source: honor Retry-After for every worker; the fourth consecutive 429 for one file stops the run.
  async function rateLimited(context,response,final){
@@ -358,20 +413,33 @@ async function main(){
  }
  async function worker(){
   const pace={nextAt:0};
-  for(;;){if(stopped)return;const row=pending[cursor++];if(!row)return;
-   const context={provider:row.provider,native_document_id:row.native_document_id,native_document_identity_kind:row.native_document_identity_kind??null,native_case_id:row.native_case_id,durable_url:row.durable_url??null,queue_sha256:sha(queueBytes),selected_source_record_sha256:versionOf(row),source_origins:row.origins,provider_flags:row.provider_flags,source_privacy_qualification:sourcePrivacyQualification(row)};
+  for(;;){if(stopped)return;const row=ordered[cursor++];if(!row)return;
+   let context={provider:row.provider,native_document_id:row.native_document_id,native_document_identity_kind:row.native_document_identity_kind??null,native_case_id:row.native_case_id,durable_url:row.durable_url??null,queue_sha256:sha(queueBytes),selected_source_record_sha256:versionOf(row),source_origins:row.origins,provider_flags:row.provider_flags,source_privacy_qualification:sourcePrivacyQualification(row)};
+   // Decided again at processing time: earlier rows of this run may have stored the very bytes this row points to.
+   const plan=index?index.classify(row):{action:'download',reason:'dedup_disabled'};
+   if(plan.conflict){context={...context,dedup_conflict:plan.conflict};state.dedup_conflicts++;await record({...context,state:'dedup_conflict_noted',conflict:plan.conflict});}
+   if(plan.action==='dedup'){
+    await record({...context,...dedupReceiptFields(row,plan,index,BUCKET,PROJECT)});
+    done.add(row.provider+'|'+row.native_document_id);state.dedup_registered++;state.dedup_by_basis[plan.basis]=(state.dedup_by_basis[plan.basis]??0)+1;
+    state.processed++;await save();continue;
+   }
    const temp=path.join(root,'staging',randomUUID()+'.part');
    try{
-    const disk=await fs.statfs(root);if(disk.bavail*disk.bsize<20*1024**3+maxBytes*concurrency){stopped=true;state.stop_reason='LOCAL_DISK_RESERVE';return;}
+    const disk=await fs.statfs(root);if(disk.bavail*disk.bsize<diskReserveBytes+maxBytes*concurrency){stopped=true;state.stop_reason='LOCAL_DISK_RESERVE';return;}
     await record({...context,state:'download_pending'});
-    const digest=await fetchSourcePdf({row,temp,maxBytes,slot:()=>pacer.slot(pace),breaker:sourceBreaker,onPenalty:()=>{pacer.penalize();state.source_penalty_ms=pacer.penaltyMs;},onSuccess:()=>{accessDenied=0;pacer.success();},onAccessDenied:status=>{if(++accessDenied>=8){stopped=true;state.stop_reason='SOURCE_ACCESS_DENIED_REPEATED';}},
+    const digest=await fetchSourcePdf({row,temp,maxBytes,fetchImpl,slot:()=>pacer.slot(pace),breaker:sourceBreaker,onPenalty:()=>{pacer.penalize();state.source_penalty_ms=pacer.penaltyMs;},onSuccess:()=>{accessDenied=0;pacer.success();},onAccessDenied:status=>{if(++accessDenied>=8){stopped=true;state.stop_reason='SOURCE_ACCESS_DENIED_REPEATED';}},
      onRateLimit:(response,attempt,final)=>rateLimited(context,response,final),pause});
     const handle=await fs.open(temp,'r+');try{await handle.sync();}finally{await handle.close();}
     const key='seeger-weiss/pdf-sha256/'+digest.sha256.slice(0,2)+'/'+digest.sha256+'.pdf';
     await record({...context,state:'local_pdf_verified',storage_key:key,...digest});
     const stored=await cloud.ensureObject(key,temp,digest,context);
-    await record({...context,state:'cloud_verified',bucket:BUCKET,project_id:PROJECT,storage_key:key,...digest,...stored});
+    // New object = these bytes were not stored before this transfer (index) and the upload did not report "already exists".
+    const created=stored.upload_http_status!==400&&stored.method!=='tus_existing_object_audit',existed=(index?index.hasObject(digest.sha256):false)||storedThisRun.has(digest.sha256);storedThisRun.add(digest.sha256);
+    const objectOrigin=created&&!existed?'new_object':'existing_object';
+    await record({...context,state:'cloud_verified',bucket:BUCKET,project_id:PROJECT,storage_key:key,...digest,...stored,object_origin:objectOrigin});
     hardCloudFailures=0;done.add(row.provider+'|'+row.native_document_id);state.cloud_verified++;state.bytes_verified+=digest.bytes;state.last_verified_at=new Date().toISOString();
+    if(objectOrigin==='new_object'){state.new_objects++;state.new_object_bytes+=digest.bytes;state.last_new_object_at=state.last_verified_at;}else state.verified_existing++;
+    if(index){index.addObject({sha256:digest.sha256,sha1:digest.sha1,bytes:digest.bytes,first_verified_at:stored.verified_at});index.addVerifiedUrl(row.download_url,digest.sha256);}
     // Only this worker-created temporary file is removed, after the durable cloud receipt.
     try{await retryTransferFileOperation('verified_temporary_cache_unlink',()=>fs.unlink(temp));}catch(cleanupError){
      state.cleanup_deferred=(state.cleanup_deferred??0)+1;
@@ -389,14 +457,14 @@ async function main(){
     // A non-transport cloud rejection (credentials, bucket policy) that repeats is systemic, not per file.
     else if(/^CLOUD_/.test(failure.error)&&!isTransientCloudError(e)&&++hardCloudFailures>=3){stopped=true;state.stop_reason=failure.error;}
    }
-   state.processed++;await save();if(state.processed%25===0)console.log(JSON.stringify({processed:state.processed,cloudVerified:state.cloud_verified,bytesVerified:state.bytes_verified,failed:state.failed,selected:pending.length}));
+   state.processed++;await save();if(state.processed%25===0)console.log(JSON.stringify({processed:state.processed,cloudVerified:state.cloud_verified,newObjects:state.new_objects,dedupRegistered:state.dedup_registered,bytesVerified:state.bytes_verified,failed:state.failed,selected:pending.length}));
   }
  }
  await Promise.all(Array.from({length:concurrency},worker));await writeQueue;state.complete=state.processed===pending.length&&!stopped;state.finished_at=new Date().toISOString();await save();
- console.log(JSON.stringify({state:state.complete?'selected_batch_finished':'stopped_with_receipts',cloudVerified:state.cloud_verified,bytesVerified:state.bytes_verified,failed:state.failed,pendingRemaining:rows.length-done.size,stopReason:state.stop_reason}));
- if(stopped)process.exitCode=1;
+ console.log(JSON.stringify({state:state.complete?'selected_batch_finished':'stopped_with_receipts',cloudVerified:state.cloud_verified,newObjects:state.new_objects,dedupRegistered:state.dedup_registered,verifiedExisting:state.verified_existing,skipped:state.skipped,bytesVerified:state.bytes_verified,failed:state.failed,pendingRemaining:rows.length-done.size,stopReason:state.stop_reason}));
+ return{stopped,state};
 }
-if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href)main().catch(async error=>{
+if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href)runTransfer().then(result=>{if(result?.stopped)process.exitCode=1;}).catch(async error=>{
  const allowedCodes=new Set(['EPERM','EACCES','EBUSY','ENOENT','ENOSPC','ECONNRESET','ETIMEDOUT','UND_ERR_SOCKET']);
  const operations=new Set(['progress_snapshot_write','progress_snapshot_replace','receipt_open','receipt_append','receipt_fsync','receipt_close','verified_temporary_cache_unlink','partial_temp_unlink']);
  const summary={state:'worker_fatal',recorded_at:new Date().toISOString(),error:typeof error.message==='string'&&/^[A-Z_]+(?:_\d+)?$/.test(error.message)?error.message:'FATAL_TRANSFER_OR_PROGRESS_FAILURE',code:allowedCodes.has(error.code)?error.code:null,operation:operations.has(error.operation)?error.operation:null};

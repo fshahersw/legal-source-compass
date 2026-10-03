@@ -19,6 +19,7 @@ import {
 } from "@/components/matters/common";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { evidenceKindLabel } from "@/lib/matters/cases";
 import { getMatterHub } from "@/lib/matters/matters.functions";
 import { TIER_LABELS, type SwTier } from "@/lib/matters/tiers";
 import type { HubRow } from "@/lib/matters/types";
@@ -30,15 +31,43 @@ const NO_HUB_ROWS: HubRow[] = [];
 function Coverage({ row }: { row: HubRow }) {
   const chips: { key: string; node: React.ReactNode }[] = [];
   const num = (n: number | null) => (n === null ? null : n.toLocaleString());
+  const mix = (row.metrics?.byBasis ?? [])
+    .slice(0, 4)
+    .map((k) => `${evidenceKindLabel(k.kind)} ${k.count.toLocaleString()}`)
+    .join(" · ");
   if (row.registryDockets !== null)
     chips.push({
       key: "registry",
       node: (
         <Chip
           tone="success"
-          title="Member-like dockets in the Seeger Weiss matter registry, each with its evidence. Not the size of the MDL."
+          title={`Member-like dockets in the Seeger Weiss matter registry, each with its evidence. Not the size of the MDL.${mix ? ` By evidence: ${mix}.` : ""}`}
         >
-          Registry dockets {num(row.registryDockets)}
+          Member-like dockets {num(row.registryDockets)}
+        </Chip>
+      ),
+    });
+  const entries = row.metrics?.entries ?? null;
+  if (entries && entries.captured !== null)
+    chips.push({
+      key: "registry-entries",
+      node: (
+        <Chip
+          tone={entries.complete === true ? "success" : "neutral"}
+          title={`Docket entries the matter registry captured for the master docket${entries.providerTotal !== null ? ` against ${entries.providerTotal.toLocaleString()} reported by the provider` : " (provider total not recorded)"}${entries.complete === true ? "; complete at capture" : entries.complete === false ? "; capture continues" : ""}${entries.published !== null ? `. ${entries.published.toLocaleString()} published` : ""}.`}
+        >
+          Entries {num(entries.captured)}
+          {entries.providerTotal !== null ? ` of ${num(entries.providerTotal)}` : ""}
+        </Chip>
+      ),
+    });
+  const parties = row.metrics?.parties ?? null;
+  if (parties && parties.published !== null)
+    chips.push({
+      key: "registry-parties",
+      node: (
+        <Chip title="Parties of the master docket the matter registry published, with their counsel.">
+          Parties {num(parties.published)}
         </Chip>
       ),
     });
@@ -51,7 +80,7 @@ function Coverage({ row }: { row: HubRow }) {
         </Chip>
       ),
     });
-  if (row.docketEntriesInSample !== null)
+  if (row.docketEntriesInSample !== null && !(entries && entries.captured !== null))
     chips.push({
       key: "entries",
       node: (
@@ -97,10 +126,17 @@ function Coverage({ row }: { row: HubRow }) {
   if (!chips.length)
     return <span className="text-[11px] text-muted-foreground">No corpus coverage yet</span>;
   return (
-    <div className="flex flex-wrap gap-1">
-      {chips.map((c) => (
-        <span key={c.key}>{c.node}</span>
-      ))}
+    <div>
+      <div className="flex flex-wrap gap-1">
+        {chips.map((c) => (
+          <span key={c.key}>{c.node}</span>
+        ))}
+      </div>
+      {row.metrics?.lastCaptured ? (
+        <div className="mt-1 text-[10px] text-muted-foreground">
+          Registry captures last observed {row.metrics.lastCaptured}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -168,7 +204,25 @@ function TierTable({ tier, rows }: { tier: SwTier; rows: HubRow[] }) {
                   {r.masterDocket ?? "master docket not recorded"}
                 </div>
                 <div className="text-[11px] text-muted-foreground">
-                  {r.judgePrinted ? `Judge ${r.judgePrinted}` : "Judge not recorded"}
+                  {r.judgePrinted ? (
+                    r.judgeProfileId ? (
+                      <>
+                        Judge{" "}
+                        <Link
+                          to="/judges/$id"
+                          params={{ id: r.judgeProfileId }}
+                          className="text-primary underline-offset-2 hover:underline"
+                          title="Judge profile linked to this MDL's record"
+                        >
+                          {r.judgePrinted}
+                        </Link>
+                      </>
+                    ) : (
+                      `Judge ${r.judgePrinted}`
+                    )
+                  ) : (
+                    "Judge not recorded"
+                  )}
                 </div>
               </td>
               <td className={td}>

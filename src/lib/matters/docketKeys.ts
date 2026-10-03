@@ -69,13 +69,18 @@ export function matterCaseKeys(
   };
 }
 
-/** "flnd-3:2025-md-03140-00771" -> { caseKey: "flnd-3:2025-md-03140", sequence: 771 }. */
+/**
+ * A DocketBird document id is the case id, the docket entry number as five digits and, for an attachment, a three-digit
+ * attachment number: "flnd-3:2025-md-03140-00771" is entry 771; "njd-3:2026-md-03180-00009-002" is attachment 2 of
+ * entry 9. (Checked against a DocketBird docket sheet: the sequence equals the entry's docket-sheet number. Text-only
+ * clerk entries have ids ending "-t001" and no document.)
+ */
 export function parseDocketBirdDocumentId(
   id: string,
-): { caseKey: string; sequence: number } | null {
-  const m = /^(.+)-(\d{5})$/.exec(id);
+): { caseKey: string; sequence: number; attachment: number | null } | null {
+  const m = /^(.+?)-(\d{5})(?:-(\d{3}))?$/.exec(id);
   if (!m) return null;
-  return { caseKey: m[1]!, sequence: Number(m[2]) };
+  return { caseKey: m[1]!, sequence: Number(m[2]), attachment: m[3] ? Number(m[3]) : null };
 }
 
 /** The file name a court-hosted document URL ends with, decoded exactly once; falls back to the raw URL. */

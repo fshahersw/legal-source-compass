@@ -92,6 +92,8 @@ export const SOURCE_LABELS: Record<RegistrySource, string> = {
 export type MatterDocument = RegistryDocument & {
   /** Docket-sheet number for DocketBird documents, otherwise null. */
   entryNumber: number | null;
+  /** Attachment number within the entry (DocketBird ids ending "-001"), otherwise null. */
+  attachment: number | null;
   /** Date printed in a court file name (court website items), otherwise null. */
   printedDate: string | null;
   label: string;
@@ -102,12 +104,17 @@ export type MatterDocument = RegistryDocument & {
 export function describeDocument(doc: RegistryDocument): MatterDocument {
   let label = doc.nativeDocumentId;
   let entryNumber: number | null = null;
+  let attachment: number | null = null;
   let printedDate: string | null = null;
   if (doc.sourceSystem === "docketbird") {
     const parsed = parseDocketBirdDocumentId(doc.nativeDocumentId);
     if (parsed) {
       entryNumber = parsed.sequence;
-      label = `Docket entry ${parsed.sequence}`;
+      attachment = parsed.attachment;
+      label =
+        parsed.attachment === null
+          ? `Docket entry ${parsed.sequence}`
+          : `Docket entry ${parsed.sequence} · attachment ${parsed.attachment}`;
     }
   } else if (
     doc.sourceSystem === "official-court" ||
@@ -118,7 +125,14 @@ export function describeDocument(doc: RegistryDocument): MatterDocument {
   } else if (doc.sourceSystem === "courtlistener") {
     label = `CourtListener document ${doc.nativeDocumentId}`;
   }
-  return { ...doc, entryNumber, printedDate, label, sourceLabel: SOURCE_LABELS[doc.sourceSystem] };
+  return {
+    ...doc,
+    entryNumber,
+    attachment,
+    printedDate,
+    label,
+    sourceLabel: SOURCE_LABELS[doc.sourceSystem],
+  };
 }
 
 /** In-app URL that streams an open document; null for held items so no link can exist. */
@@ -191,6 +205,63 @@ export function countDocuments(docs: MatterDocument[]) {
     else held++;
   }
   return { total: docs.length, open, held, bySource, byCase };
+}
+
+/** Rows per page of the verified-PDF list. */
+export const DOCUMENT_PAGE_SIZE = 50;
+
+export const DOCUMENT_SORTS: readonly DocumentSort[] = ["entry-desc", "entry-asc", "name"];
+
+export type DocumentFacets = {
+  /** Counts per source, with every filter except the source applied. */
+  bySource: Record<string, number>;
+  /** Open / held counts, with every filter except the availability applied. */
+  availability: { open: number; held: number };
+  /** Counts per exact provider case id, with every filter except the case id applied. */
+  byCase: Record<string, number>;
+};
+
+export type DocumentsPage = {
+  rows: MatterDocument[];
+  /** Documents matching the filter (all pages). */
+  total: number;
+  facets: DocumentFacets;
+  offset: number;
+  pageSize: number;
+};
+
+/**
+ * One page of a matter's verified PDFs: filter, sort, count and facet the whole list, return the slice asked for. The
+ * server runs this over its cached list so the browser never receives thousands of rows (3047 has 8,000).
+ */
+export function pageDocuments(
+  docs: MatterDocument[],
+  filter: DocumentFilter,
+  sort: DocumentSort,
+  offset: number,
+  pageSize: number = DOCUMENT_PAGE_SIZE,
+): DocumentsPage {
+  const filtered = sortDocuments(filterDocuments(docs, filter), sort);
+  const start = Math.min(Math.max(0, Math.floor(offset)), Math.max(0, filtered.length - 1));
+  const aligned = start - (start % pageSize);
+  // Each facet ignores its own filter but honours the others, so option counts match the table.
+  const without = (key: keyof DocumentFilter): DocumentFilter => {
+    const copy = { ...filter };
+    delete copy[key];
+    return copy;
+  };
+  const avail = countDocuments(filterDocuments(docs, without("availability")));
+  return {
+    rows: filtered.slice(aligned, aligned + pageSize),
+    total: filtered.length,
+    facets: {
+      bySource: countDocuments(filterDocuments(docs, without("source"))).bySource,
+      availability: { open: avail.open, held: avail.held },
+      byCase: countDocuments(filterDocuments(docs, without("caseId"))).byCase,
+    },
+    offset: aligned,
+    pageSize,
+  };
 }
 
 export function formatBytes(bytes: number | null | undefined): string {

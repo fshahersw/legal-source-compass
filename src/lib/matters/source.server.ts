@@ -11,18 +11,26 @@
  */
 import { restGet, rpcPost } from "@/lib/external/rest.server";
 import {
+  CASE_PAGE_SIZE,
+  computeFacets,
   masterCase,
   mergeCases,
+  pageCases,
   parseFjcCase,
   parseInventoryCase,
+  type CaseFilter,
   type CaseRow,
+  type CaseSort,
   type RegistryLabels,
 } from "./cases";
 import { matterCaseKeys } from "./docketKeys";
 import {
   describeDocument,
+  pageDocuments,
   parseRegistryDocument,
   parseRegistrySummary,
+  type DocumentFilter,
+  type DocumentSort,
   type MatterDocument,
   type RegistrySummary,
 } from "./documents";
@@ -41,27 +49,56 @@ import {
   newerJpmlCounts,
   parseRegistryDocket,
   parseRegistryDocketDetail,
+  pdfLookupCaseIds,
   overviewFromRegistry,
   parseRegistryLabels,
   parseRegistryRecord,
+  registryMetrics,
   withRegistryJpml,
   type CaseIdPlanEntry,
   type RegistryDocketDetail,
   type RegistryMatter,
 } from "./registry";
+import {
+  buildArchiveIndex,
+  matchEntryDocuments,
+  parseRegistryEntry,
+  timelinePath,
+  type ArchiveIndex,
+  type EntryArchive,
+  type EntryWithheld,
+  type TimelineFilter,
+} from "./timeline";
+import {
+  buildPartiesModel,
+  groupParties,
+  parseRegistryPartyRow,
+  pickFirms,
+  pickParties,
+  type ParsedPartyRow,
+  type PartiesModel,
+} from "./registryParties";
 import { SW_MATTERS } from "./tiers";
 import type {
   AppearancesPayload,
+  CaseDocumentsPayload,
+  CasesScope,
   EntriesPayload,
   FjcCasesPage,
   HubRow,
   JpmlReference,
   LegacyDocument,
   MasterDocketMeta,
-  MatterCasesPayload,
+  MatterCasesPageResponse,
   MatterOverviewPayload,
   PartiesPayload,
+  RegistryCounselList,
   RegistryDocumentsPayload,
+  RegistryPartiesList,
+  RegistryDocumentsPageResponse,
+  RegistryPartiesSummary,
+  TimelineArchivePayload,
+  TimelinePayload,
 } from "./types";
 
 const isObj = (v: unknown): v is Record<string, unknown> =>
@@ -141,6 +178,18 @@ async function loadJudgeProfile(
   return r.rows.length === 1 && r.rows[0]
     ? { id: r.rows[0].id, name: r.rows[0].title ?? r.rows[0].id }
     : null;
+}
+
+/** The `judges` profile with exactly this id (the id the data-quality passes linked to the MDL), if it exists. */
+async function loadJudgeProfileById(
+  profileId: string | null,
+): Promise<{ id: string; name: string } | null> {
+  if (!profileId || !/^[A-Za-z0-9_-]{6,80}$/.test(profileId)) return null;
+  const r = await restGet<{ id: string; title: string | null }[]>(
+    `corpus_records?select=id,title&dataset=eq.judges&id=eq.${enc(profileId)}&limit=1`,
+  );
+  const row = r.rows[0];
+  return row ? { id: row.id, name: row.title ?? row.id } : null;
 }
 
 async function loadJpmlReferences(mdl: string): Promise<JpmlReference[]> {
@@ -262,9 +311,13 @@ export async function loadMatterOverview(mdl: string): Promise<MatterOverviewPay
   if (!parsed) return null;
   const [master, judgeProfile, jpmlReferences] = await Promise.all([
     loadMasterMeta(parsed.masterDocket.clDocketId).catch(() => null),
-    parsed.judge.nativeIdEvidence
-      ? loadJudgeProfile(parsed.judge.entityId).catch(() => null)
-      : Promise.resolve(null),
+    // The profile id on the MDL record first; the older native-id entity lookup only when the record carries none.
+    loadJudgeProfileById(parsed.judge.profileId)
+      .then(
+        (p) =>
+          p ?? (parsed.judge.nativeIdEvidence ? loadJudgeProfile(parsed.judge.entityId) : null),
+      )
+      .catch(() => null),
     loadJpmlReferences(mdl).catch(() => []),
   ]);
   const sw = SW_MATTERS.find((m) => String(m.mdl) === mdl) ?? null;
@@ -287,7 +340,10 @@ export async function loadMatterOverview(mdl: string): Promise<MatterOverviewPay
 
 /* ------------------------------------------------------------------ cases */
 
-export async function loadMatterCases(payload: MatterOverviewPayload): Promise<MatterCasesPayload> {
+/** The merged member-case list of one matter plus how it was assembled; built once and cached on the server. */
+type CasesState = { rows: CaseRow[]; scope: CasesScope };
+
+async function buildCasesState(payload: MatterOverviewPayload): Promise<CasesState> {
   const { overview, master } = payload;
   const rows: CaseRow[] = [];
   const m = masterCase({
@@ -300,42 +356,94 @@ export async function loadMatterCases(payload: MatterOverviewPayload): Promise<M
   });
   if (m) rows.push(m);
 
-  let registryDockets: MatterCasesPayload["registryDockets"] = null;
-  if (await isPublished("sw_matter_dockets_v1")) {
+  // The three sources are independent, so they are read at the same time.
+  const registryRead = (async () => {
+    if (!(await isPublished("sw_matter_dockets_v1"))) return null;
     try {
       const [reg, labels] = await Promise.all([
         loadRegistryDockets(overview.mdl),
         registryLabels(),
       ]);
-      if (reg.total > 0 || reg.rows.length > 0) {
-        rows.push(...reg.rows);
-        registryDockets = { total: reg.total, truncated: reg.truncated, labels };
-      }
+      return reg.total > 0 || reg.rows.length > 0 ? { ...reg, labels } : null;
     } catch {
-      registryDockets = null;
+      return null;
     }
-  }
-
-  let inventoryTotal = 0;
-  const inventoryPublished = await isPublished("mdl_case_inventory");
-  if (inventoryPublished) {
+  })();
+  const inventoryRead = (async () => {
+    if (!(await isPublished("mdl_case_inventory"))) return null;
     const r = await restGet<{ id: string; item: unknown; facts: unknown }[]>(
       `corpus_records?select=id,item,facts:detail->facts&dataset=eq.mdl_case_inventory&filters=cs.${containsMdl(overview.mdl)}&order=ordinal.asc,id.asc&limit=1000`,
     );
-    for (const row of r.rows) {
-      const parsed = parseInventoryCase(row.item, row.facts);
-      if (parsed) {
-        rows.push(parsed);
-        inventoryTotal++;
-      }
-    }
-  }
+    return r.rows.flatMap((row) => parseInventoryCase(row.item, row.facts) ?? []);
+  })();
+  const fjcRead = (async (): Promise<CasesScope["fjc"]> =>
+    (await isPublished("cl_docket_metadata"))
+      ? { total: await exactFjcCount(overview.mdl, null), capped: false }
+      : null)();
+  const [registry, inventory, fjc] = await Promise.all([registryRead, inventoryRead, fjcRead]);
+  if (registry) rows.push(...registry.rows);
+  if (inventory) rows.push(...inventory);
 
-  let fjc: MatterCasesPayload["fjc"] = null;
-  if (await isPublished("cl_docket_metadata")) {
-    fjc = { total: await exactFjcCount(overview.mdl, null), capped: false };
+  const merged = mergeCases(rows);
+  const facets = computeFacets(merged, registry?.labels);
+  return {
+    rows: merged,
+    scope: {
+      listed: merged.length,
+      registryRows: registry ? registry.total : 0,
+      registryTruncated: registry ? registry.truncated : false,
+      labels: registry?.labels,
+      inventoryPublished: inventory !== null,
+      inventoryTotal: inventory ? inventory.length : 0,
+      roles: facets.role,
+      actionRows: facets.actionRows,
+      fjc,
+    },
+  };
+}
+
+const casesCache = new Map<string, { at: number; state: Promise<CasesState> }>();
+const CASES_TTL_MS = 5 * 60_000;
+const CASES_CACHE_MAX = 12;
+
+/**
+ * The matter's merged list, cached for five minutes (concurrent callers share one read; a failed read is not cached).
+ * Only a page of it ever leaves the server.
+ */
+function casesStateFor(payload: MatterOverviewPayload): Promise<CasesState> {
+  const key = payload.overview.mdl;
+  const hit = casesCache.get(key);
+  if (hit && Date.now() - hit.at < CASES_TTL_MS) return hit.state;
+  const state = buildCasesState(payload);
+  casesCache.set(key, { at: Date.now(), state });
+  state.catch(() => {
+    if (casesCache.get(key)?.state === state) casesCache.delete(key);
+  });
+  while (casesCache.size > CASES_CACHE_MAX) {
+    const oldest = casesCache.keys().next().value;
+    if (oldest === undefined) break;
+    casesCache.delete(oldest);
   }
-  return { rows: mergeCases(rows), inventoryTotal, fjc, inventoryPublished, registryDockets };
+  return state;
+}
+
+/** One page of the matter's member cases, filtered and sorted on the server. */
+export async function loadCasesPage(
+  payload: MatterOverviewPayload,
+  filter: CaseFilter,
+  sort: CaseSort,
+  offset: number,
+): Promise<MatterCasesPageResponse> {
+  const state = await casesStateFor(payload);
+  return {
+    ...pageCases(state.rows, filter, sort, offset, CASE_PAGE_SIZE, state.scope.labels),
+    scope: state.scope,
+  };
+}
+
+/** The composition of the list without any row (overview tiles). */
+export async function loadCasesScope(payload: MatterOverviewPayload): Promise<CasesScope> {
+  return (await casesStateFor(payload)).scope;
 }
 
 /** Exact (uncapped) number of cl_docket_metadata rows selected by an FJC MDL number, optionally in one exact court. */
@@ -540,15 +648,77 @@ export async function loadEntryText(entryId: string): Promise<{ text: string | n
 
 /* ------------------------------------------------------------------ documents */
 
-const REGISTRY_ROW_CAP = 5000;
+/** The most archive rows read for one matter (the largest, MDL 3047, holds about 8,200; the server keeps them, the browser gets pages). */
+const REGISTRY_ROW_CAP = 20_000;
+const REGISTRY_PAGE = 500;
+
+type RegistryDocsCache = Map<string, { at: number; value: Promise<RegistryDocumentsPayload> }>;
+/** Totals are tiny and asked for often; the row lists are large, so few are kept and for longer. */
+const registrySummaryCache: RegistryDocsCache = new Map();
+const registryRowsCache: RegistryDocsCache = new Map();
+/** A member docket's drawer reads a short list of its own; kept apart so it never evicts a matter's list. */
+const drawerDocsCache: RegistryDocsCache = new Map();
+
+function cachedRegistryRead(
+  cache: RegistryDocsCache,
+  ttl: number,
+  max: number,
+  key: string,
+  read: () => Promise<RegistryDocumentsPayload>,
+): Promise<RegistryDocumentsPayload> {
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.at < ttl) return hit.value;
+  const value = read();
+  cache.set(key, { at: Date.now(), value });
+  // An unconnected reader or a failed read is not worth remembering.
+  value.then(
+    (v) => {
+      if (!v.connected && cache.get(key)?.value === value) cache.delete(key);
+    },
+    () => {
+      if (cache.get(key)?.value === value) cache.delete(key);
+    },
+  );
+  while (cache.size > max) {
+    const oldest = cache.keys().next().value;
+    if (oldest === undefined) break;
+    cache.delete(oldest);
+  }
+  return value;
+}
 
 /**
  * Verified-PDF registry rows for a matter's provider case ids (the matter registry's explicit ids first, derived
- * keys as a labelled supplement); degrades to `connected:false` if the reader is absent.
+ * keys as a labelled supplement); degrades to `connected:false` if the reader is absent. The Documents tab, the header
+ * numbers, the timeline's archive lookup and the drawers ask for the same lists, so results are cached (totals three
+ * minutes, row lists ten, at most six lists), concurrent callers share one read, and the pages after the first are
+ * read four at a time.
  */
-export async function loadRegistryDocuments(
+export function loadRegistryDocuments(
   caseIds: CaseIdPlanEntry[],
   summaryOnly = false,
+): Promise<RegistryDocumentsPayload> {
+  return summaryOnly
+    ? cachedRegistryRead(
+        registrySummaryCache,
+        3 * 60_000,
+        80,
+        caseIds.map((c) => c.id).join(","),
+        () => readRegistryDocuments(caseIds, true),
+      )
+    : cachedRegistryRead(
+        registryRowsCache,
+        10 * 60_000,
+        6,
+        caseIds.map((c) => c.id).join(","),
+        () => readRegistryDocuments(caseIds, false),
+      );
+}
+
+async function readRegistryDocuments(
+  caseIds: CaseIdPlanEntry[],
+  summaryOnly: boolean,
+  rowCap: number = REGISTRY_ROW_CAP,
 ): Promise<RegistryDocumentsPayload> {
   if (!caseIds.length) {
     return {
@@ -558,31 +728,33 @@ export async function loadRegistryDocuments(
     };
   }
   const caseKeys = caseIds.map((c) => c.id);
-  const rows: MatterDocument[] = [];
-  let summary: RegistrySummary | null = null;
+  const readPage = async (offset: number, limit: number) => {
+    const page = await rpcPost<unknown>("corpus_matter_pdf_documents_v1", {
+      p_native_case_ids: caseKeys,
+      p_limit: limit,
+      p_offset: offset,
+    });
+    if (!isObj(page)) throw new Error("Unexpected registry response");
+    const raw = Array.isArray(page["rows"]) ? page["rows"] : [];
+    const parsed = raw
+      .map((r) => parseRegistryDocument(r))
+      .filter((r): r is NonNullable<typeof r> => !!r)
+      // A row is accepted only if its case id is exactly one of the ids asked for.
+      .filter((r) => r.nativeCaseId !== null && caseKeys.includes(r.nativeCaseId))
+      .map(describeDocument);
+    return { summary: page["summary"], parsed };
+  };
   try {
-    for (let offset = 0; offset < REGISTRY_ROW_CAP; offset += 500) {
-      const page = await rpcPost<unknown>("corpus_matter_pdf_documents_v1", {
-        p_native_case_ids: caseKeys,
-        p_limit: summaryOnly ? 1 : 500,
-        p_offset: offset,
-      });
-      if (!isObj(page)) throw new Error("Unexpected registry response");
-      const raw = Array.isArray(page["rows"]) ? page["rows"] : [];
-      const parsed = raw
-        .map((r) => parseRegistryDocument(r))
-        .filter((r): r is NonNullable<typeof r> => !!r)
-        // A row is accepted only if its case id is exactly one of the ids asked for.
-        .filter((r) => r.nativeCaseId !== null && caseKeys.includes(r.nativeCaseId))
-        .map(describeDocument);
-      rows.push(...parsed);
-      if (offset === 0) summary = parseRegistrySummary(page["summary"], parsed);
-      if (summaryOnly) {
-        rows.length = 0;
-        break;
-      }
-      if (raw.length < 500 || rows.length >= (summary?.total ?? 0)) break;
-    }
+    const first = await readPage(0, summaryOnly ? 1 : REGISTRY_PAGE);
+    const summary = parseRegistrySummary(first.summary, first.parsed);
+    if (summaryOnly) return { connected: true, summary, rows: [], truncated: false, caseIds };
+    const rows: MatterDocument[] = [...first.parsed];
+    const offsets: number[] = [];
+    for (let o = REGISTRY_PAGE; o < Math.min(summary.total, rowCap); o += REGISTRY_PAGE)
+      offsets.push(o);
+    for (const page of await mapLimit(offsets, 4, (o) => readPage(o, REGISTRY_PAGE)))
+      rows.push(...page.parsed);
+    return { connected: true, summary, rows, truncated: rows.length < summary.total, caseIds };
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     return {
@@ -593,14 +765,156 @@ export async function loadRegistryDocuments(
       caseIds,
     };
   }
-  const resolved = summary ?? parseRegistrySummary(null, rows);
+}
+
+/**
+ * One page of a matter's verified PDFs, filtered, sorted, counted and faceted on the server over the cached list. The
+ * open document of the viewer (`viewKey`, "<source>|<native document id>") is found in the whole list.
+ */
+export async function loadDocumentsPage(
+  payload: MatterOverviewPayload,
+  filter: DocumentFilter,
+  sort: DocumentSort,
+  offset: number,
+  viewKey: string | null,
+): Promise<RegistryDocumentsPageResponse> {
+  const docs = await loadRegistryDocuments(caseIdPlan(payload.registry, payload.overview.keys.all));
+  if (!docs.connected) return docs;
+  const viewed = viewKey
+    ? (docs.rows.find((d) => `${d.sourceSystem}|${d.nativeDocumentId}` === viewKey) ?? null)
+    : null;
   return {
     connected: true,
-    summary: resolved,
-    rows,
-    truncated: !summaryOnly && rows.length < resolved.total,
-    caseIds,
+    summary: docs.summary,
+    truncated: docs.truncated,
+    caseIds: docs.caseIds,
+    loaded: docs.rows.length,
+    page: pageDocuments(docs.rows, filter, sort, offset),
+    viewed,
   };
+}
+
+/**
+ * The verified PDFs filed under one registry docket's own provider case ids (a member case's drawer). The ids come from
+ * the registry row on the server, never from the browser, so a request can only ask for a docket the registry lists.
+ */
+export async function loadCaseDocuments(
+  mdl: string,
+  rowId: string,
+): Promise<CaseDocumentsPayload | null> {
+  if (!isRegistryRowOf(rowId, mdl) || !(await isPublished("sw_matter_dockets_v1"))) return null;
+  const r = await restGet<{ ids: unknown }[]>(
+    `corpus_records?select=ids:detail->registry->native_case_ids&dataset=eq.sw_matter_dockets_v1&id=eq.${enc(rowId)}&limit=1`,
+  );
+  if (!r.rows.length) return null;
+  const ids = pdfLookupCaseIds(r.rows[0]?.ids);
+  if (!ids.length) return { ids, documents: null };
+  const plan = ids.map((id) => ({ id, basis: "registry" as const }));
+  return {
+    ids,
+    // The drawer lists at most 100 documents, so a short read is enough; the total comes from the archive's own summary.
+    documents: await cachedRegistryRead(drawerDocsCache, 3 * 60_000, 40, ids.join(","), () =>
+      readRegistryDocuments(plan, false, 1_000),
+    ),
+  };
+}
+
+/* ------------------------------------------------------------------ timeline (matter registry entries) */
+
+const TIMELINE_PAGE = 50;
+const ARCHIVE_TTL_MS = 10 * 60_000;
+
+const archiveCache = new Map<string, { at: number; index: Promise<ArchiveIndex | string> }>();
+
+/**
+ * The matter's archive rows (master + JPML docket ids, the same list the Documents tab pages), indexed for exact
+ * entry-to-PDF lookups; a string is the reason the archive could not be read. Cached ten minutes, concurrent callers
+ * share one read.
+ */
+function archiveIndexFor(payload: MatterOverviewPayload): Promise<ArchiveIndex | string> {
+  const plan = caseIdPlan(payload.registry, payload.overview.keys.all);
+  const key = plan.map((c) => c.id).join(",");
+  const hit = archiveCache.get(key);
+  if (hit && Date.now() - hit.at < ARCHIVE_TTL_MS) return hit.index;
+  const index = loadRegistryDocuments(plan).then((docs) =>
+    docs.connected ? buildArchiveIndex(docs.rows, !docs.truncated) : docs.reason,
+  );
+  archiveCache.set(key, { at: Date.now(), index });
+  const forget = () => {
+    if (archiveCache.get(key)?.index === index) archiveCache.delete(key);
+  };
+  // A failed or unconnected read is not remembered.
+  index.then((v) => (typeof v === "string" ? forget() : undefined), forget);
+  while (archiveCache.size > 6) {
+    const oldest = archiveCache.keys().next().value;
+    if (oldest === undefined) break;
+    archiveCache.delete(oldest);
+  }
+  return index;
+}
+
+/**
+ * One page of the registry's docket-entry timeline for a matter, newest first. Filtering, counting and paging happen in
+ * the database: containment on the indexed filters, the filing date as ISO text, the docket text through the search
+ * vector (prefix match on each word), and the dataset's own ordinal, which is chronological.
+ */
+export async function loadTimeline(
+  payload: MatterOverviewPayload,
+  filter: TimelineFilter,
+  offset: number,
+  newestFirst = true,
+): Promise<TimelinePayload | null> {
+  if (!(await isPublished("sw_docket_entries_v1"))) return null;
+  // Every provider of the matter's entries: CourtListener, and for a docket it does not publish GovInfo and the court's
+  // own page (those rows are told apart by the provider chip on each entry).
+  const start = Math.max(0, Math.floor(offset));
+  const r = await restGet<{ id: string; cells: unknown; links: unknown; reg: unknown }[]>(
+    timelinePath(payload.overview.mdl, filter, newestFirst),
+    { count: true, range: [start, start + TIMELINE_PAGE - 1] },
+  );
+  const entries = r.rows.flatMap((row) => parseRegistryEntry(row) ?? []);
+  return { entries, total: r.total ?? entries.length, offset: start, pageSize: TIMELINE_PAGE };
+}
+
+/** One entry of a timeline page as the browser reports it back for the archive lookup. */
+export type TimelineArchiveItem = {
+  id: string;
+  provider: string | null;
+  docketKey: string | null;
+  entryNumber: number | null;
+  withheld: EntryWithheld | null;
+  documentIds: string[];
+};
+
+/**
+ * The archive documents of the entries on one timeline page. Each entry is tied to the archive only by exact keys: the
+ * RECAP document ids it lists, and (for the same docket) the DocketBird documents carrying its own entry number.
+ */
+export async function loadTimelineArchive(
+  payload: MatterOverviewPayload,
+  items: TimelineArchiveItem[],
+): Promise<TimelineArchivePayload> {
+  const index = await archiveIndexFor(payload);
+  if (typeof index === "string") return { connected: false, reason: index };
+  const caseIdFor = (docketKey: string | null): string | null => {
+    if (!docketKey) return null;
+    const docket = payload.registry?.caseIds.find((c) => c.docketKey === docketKey);
+    return docket?.nativeCaseIds.find((n) => n.provider === "docketbird")?.id ?? null;
+  };
+  const byEntry: Record<string, EntryArchive> = {};
+  for (const item of items) {
+    byEntry[item.id] = matchEntryDocuments(
+      {
+        provider: item.provider,
+        entryNumber: item.entryNumber,
+        withheld: item.withheld,
+        documentIds: item.documentIds,
+      },
+      caseIdFor(item.docketKey),
+      index,
+    );
+  }
+  return { connected: true, complete: index.complete, byEntry };
 }
 
 export type RegistryObject =
@@ -700,7 +1014,122 @@ export async function loadLegacyDocuments(
   };
 }
 
-/* ------------------------------------------------------------------ parties and counsel */
+/* ------------------------------------------------------------------ parties and counsel (matter registry) */
+
+const PARTIES_TTL_MS = 10 * 60_000;
+const PARTIES_PAGE = 50;
+const FIRMS_PAGE = 20;
+/** Attorneys listed under one firm before the rest are only counted. */
+const FIRM_ATTORNEY_CAP = 60;
+const PARTIES_PER_GROUP = 8;
+
+const partiesCache = new Map<string, { at: number; model: Promise<PartiesModel | null> }>();
+
+/**
+ * Every party row of the matter's master docket with its counsel, read once (three pages at a time), reduced to a lean
+ * model and cached for ten minutes. A matter with no rows (or a dataset that is not released) has no model.
+ */
+function partiesModelFor(mdl: string): Promise<PartiesModel | null> {
+  const hit = partiesCache.get(mdl);
+  if (hit && Date.now() - hit.at < PARTIES_TTL_MS) return hit.model;
+  const model = readPartiesModel(mdl);
+  partiesCache.set(mdl, { at: Date.now(), model });
+  model.then(
+    (m) => {
+      if (!m && partiesCache.get(mdl)?.model === model) partiesCache.delete(mdl);
+    },
+    () => {
+      if (partiesCache.get(mdl)?.model === model) partiesCache.delete(mdl);
+    },
+  );
+  while (partiesCache.size > 8) {
+    const oldest = partiesCache.keys().next().value;
+    if (oldest === undefined) break;
+    partiesCache.delete(oldest);
+  }
+  return model;
+}
+
+async function readPartiesModel(mdl: string): Promise<PartiesModel | null> {
+  if (!(await isPublished("sw_matter_parties_v1"))) return null;
+  const path = `corpus_records?select=id,cells:item->cells,counsel:detail->registry->counsel&dataset=eq.sw_matter_parties_v1&filters=cs.${enc(JSON.stringify({ mdl }))}&order=ordinal.asc,id.asc`;
+  const PAGE = 1000;
+  type PartyRow = { id: string; cells: unknown; counsel: unknown };
+  const first = await restGet<PartyRow[]>(path, { count: true, range: [0, PAGE - 1] });
+  const rows = [...first.rows];
+  const total = Math.min(first.total ?? rows.length, 6000);
+  const starts: number[] = [];
+  for (let s = PAGE; s < total; s += PAGE) starts.push(s);
+  for (const page of await mapLimit(starts, 3, (s) =>
+    restGet<PartyRow[]>(path, { range: [s, s + PAGE - 1] }),
+  ))
+    rows.push(...page.rows);
+  const parsed: ParsedPartyRow[] = [];
+  for (const r of rows) {
+    const party = parseRegistryPartyRow(r);
+    if (party) parsed.push(party);
+  }
+  return parsed.length ? buildPartiesModel(parsed) : null;
+}
+
+/** Counts, party types and the Seeger Weiss summary for the matter; null when the registry holds no parties for it. */
+export async function loadRegistryPartiesSummary(
+  mdl: string,
+): Promise<RegistryPartiesSummary | null> {
+  const model = await partiesModelFor(mdl);
+  return model
+    ? { counts: model.counts, types: model.types, seegerWeiss: model.seegerWeiss }
+    : null;
+}
+
+/** Parties of the master docket: grouped by type when unfiltered, otherwise one filtered page. */
+export async function loadRegistryParties(
+  mdl: string,
+  type: string,
+  q: string,
+  offset: number,
+): Promise<RegistryPartiesList | null> {
+  const model = await partiesModelFor(mdl);
+  if (!model) return null;
+  const rows = pickParties(model, { type, q });
+  const start = Math.max(0, Math.min(Math.floor(offset), Math.max(0, rows.length - 1)));
+  const aligned = start - (start % PARTIES_PAGE);
+  const overview = !type && !q.trim() && aligned === 0;
+  return {
+    total: rows.length,
+    offset: aligned,
+    pageSize: PARTIES_PAGE,
+    rows: rows.slice(aligned, aligned + PARTIES_PAGE),
+    groups: overview ? groupParties(model, PARTIES_PER_GROUP) : null,
+  };
+}
+
+/** Counsel grouped by the firm line as printed, the exact Seeger Weiss firm first. */
+export async function loadRegistryCounsel(
+  mdl: string,
+  q: string,
+  offset: number,
+): Promise<RegistryCounselList | null> {
+  const model = await partiesModelFor(mdl);
+  if (!model) return null;
+  const firms = pickFirms(model, q);
+  const start = Math.max(0, Math.min(Math.floor(offset), Math.max(0, firms.length - 1)));
+  const aligned = start - (start % FIRMS_PAGE);
+  return {
+    total: firms.length,
+    offset: aligned,
+    pageSize: FIRMS_PAGE,
+    firms: firms.slice(aligned, aligned + FIRMS_PAGE).map((g) => ({
+      firm: g.firm,
+      seegerWeiss: g.seegerWeiss,
+      parties: g.parties,
+      attorneyCount: g.attorneys.length,
+      attorneys: g.attorneys.slice(0, FIRM_ATTORNEY_CAP),
+    })),
+  };
+}
+
+/* ------------------------------------------------------------------ parties and counsel (saved sample) */
 
 export async function loadCounsel(
   mdl: string,
@@ -756,6 +1185,12 @@ type HubSummaryRow = {
 };
 
 let hubRegistryCache: { at: number; byMdl: Map<string, HubRow["registry"]> } | null = null;
+
+/** The `judges` profile id on an MDL record's summary, when it is an id and not something else. */
+function judgeProfileId(summary: Record<string, unknown> | null): string | null {
+  const id = summary ? str(summary["judge_profile_id"]) : null;
+  return id && /^[A-Za-z0-9_-]{6,80}$/.test(id) ? id : null;
+}
 
 async function mapLimit<T, R>(
   items: T[],
@@ -873,6 +1308,8 @@ export async function loadHub(): Promise<HubRow[]> {
       courtName: s ? str(s["court_name"]) : (rec?.transfereeCourt ?? null),
       masterDocket: s ? str(s["master_docket"]) : (registryMaster?.docketNumber ?? null),
       judgePrinted: s ? str(s["judge_name_as_printed"]) : (rec?.judgeAsPrinted ?? null),
+      judgeProfileId: judgeProfileId(s),
+      metrics: registryMetrics(reg),
       totalActions: counts.total,
       pendingActions: counts.pending,
       asOf: counts.asOf,

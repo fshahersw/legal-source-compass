@@ -104,7 +104,7 @@ for (const clId of clMasterIds) {
   const num = parseDocketNumber(h.data.docket_number);
   const k = num ? docketKey(h.data.court_id, num) : null;
   if (k === masterKey) {
-    addProvider(masterDk, { provider: 'courtlistener', source_system: 'courtlistener', id: clId, url: `https://www.courtlistener.com/docket/${clId}/`, resolution_basis: clAmbiguous ? 'ambiguous_same_docket_key_multiple_courtlistener_dockets' : 'exact_docket_key', pacer_case_id: h.data.pacer_case_id ?? null, header_retrieved_at: h.provenance.retrieved_at, header_date_filed: h.data.date_filed ?? null, header_date_terminated: h.data.date_terminated ?? null });
+    addProvider(masterDk, { provider: 'courtlistener', source_system: 'courtlistener', id: clId, url: `https://www.courtlistener.com/docket/${clId}/`, resolution_basis: clAmbiguous ? 'ambiguous_same_docket_key_multiple_courtlistener_dockets' : 'exact_docket_key', pacer_case_id: h.data.pacer_case_id ?? null, header_retrieved_at: h.provenance.retrieved_at, header_date_filed: h.data.date_filed ?? null, header_date_terminated: h.data.date_terminated ?? null, blocked: h.data.blocked === true });
     addNumber(masterDk, h.data.docket_number, 'courtlistener_header');
     if (h.data.blocked === true) masterDk.notes.push(`CourtListener docket ${clId} is flagged blocked at source (blocked=true): relations (entries, parties, attorneys) are not collected`);
     masterDk.captions.push({ value: h.data.case_name, source: 'courtlistener_header', institutional: instCaption(h.data.case_name) });
@@ -143,11 +143,18 @@ if (exists(officialFile)) {
 // db-results/jpml-dockets.json holds batches of transcribed search_cases results ({retrieved_at, by_mdl: {mdl: [ids]}}); several JPML dockets can carry one MDL number
 const jpmlFile = path.join(work, 'db-results', 'jpml-dockets.json');
 const jpmlHits = []; // { id, retrieved_at }
-if (exists(jpmlFile)) for (const b of readJson(jpmlFile).batches ?? []) for (const id of (b.by_mdl ?? {})[String(mdl)] ?? []) jpmlHits.push({ id, retrieved_at: b.retrieved_at });
+const jpmlTitles = new Map(); // DocketBird id -> { title, retrieved_at } (latest observation)
+if (exists(jpmlFile)) {
+  const jf = readJson(jpmlFile);
+  for (const b of jf.batches ?? []) for (const id of (b.by_mdl ?? {})[String(mdl)] ?? []) jpmlHits.push({ id, retrieved_at: b.retrieved_at });
+  for (const o of jf.title_observations ?? []) for (const [id, title] of Object.entries(o.titles ?? {})) { const prev = jpmlTitles.get(id); if (!prev || String(o.retrieved_at) >= String(prev.retrieved_at)) jpmlTitles.set(id, { title, retrieved_at: o.retrieved_at }); }
+}
 for (const hit of jpmlHits) {
   const p = parseDocketbirdId(hit.id);
   if (!p) continue;
   const d = dk(p.docket_key);
+  const jt = jpmlTitles.get(hit.id);
+  if (jt?.title) d.captions.push({ value: jt.title, source: 'docketbird_jpml', institutional: instCaption(jt.title), retrieved_at: jt.retrieved_at });
   addNumber(d, p.docket_number, 'docketbird_id');
   addProvider(d, { provider: 'jpml', source_system: 'docketbird', id: hit.id, url: `https://www.docketbird.com/cases?case_id=${hit.id}`, resolution_basis: 'provider_native_id' });
   addEvidence({ kind: 'docketbird_search_exact', claim: { asserted_role: 'jpml_panel', asserted_route: 'unknown', member_docket_key: p.docket_key, master_docket_key: masterKey },
@@ -241,7 +248,7 @@ if (exists(parseDir)) {
       if (!r.docket_key) continue;
       const d = dk(r.docket_key);
       addNumber(d, r.docket_number_as_printed, 'jpml_schedule_as_printed');
-      d.captions.push({ value: r.caption, source: 'jpml_schedule', institutional: false });
+      d.captions.push({ value: r.caption, source: 'jpml_schedule', institutional: false, doc_type: j.doc_type });
       const inTransferee = r.court_id === transfereeCourt;
       const kind = negative ? (j.doc_type === 'order_denying_transfer' ? 'transfer_denied' : 'cto_vacated') : j.doc_type === 'cto' ? 'jpml_cto_schedule' : 'jpml_schedule_a';
       const id = addEvidence({ kind, id_source: `jpml-order:${mdl}:${orderKey}`,
@@ -322,6 +329,7 @@ for (const row of xwalk) {
     locator: { source_record_id: row.id, role_in_release: roleFact }, quote: null, native_ids: { cl_docket_id: clId },
     qualification: 'Firm-focused docket sample (AWS release 2026-08-24, SW-BULK): the MDL link comes from a member_of_mdl edge or catalog mdl_master_docket_id of that release. It is the firm collection, not an MDL member census.' + (headerConflict ? ' The CourtListener header of this docket id has a different PACER case id and a party-v-party caption than the institutionally captioned docket with the same number; the conflict is recorded, not resolved.' : ''), retrieved_at: '2026-09-30T13:11:32Z' });
 }
+
 
 // ---------- roles, links, counts ----------
 const memberRows = [];

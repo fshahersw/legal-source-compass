@@ -2,13 +2,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {spawn} from 'node:child_process';
 import {pathToFileURL} from 'node:url';
+import {RUNNER_HOSTS} from './pdf-source-hosts.mjs';
 // Supervisor for frozen PDF batches: <root>/<provider>-pdf-batches/*.queue.jsonl(.manifest.json), processed in name order.
 // 2026-10-03: a stopped or crashed transfer no longer kills the supervisor (the Oct 2 runner threw "PDF worker failed" on a
 // single Supabase HTTP 520 and took its registration child with it). The batch resumes from its durable receipts after a
 // cool-down; only integrity/access problems halt, because those need a person.
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 // stop_reason written by backfill-pdfs-to-supabase.mjs -> cool-down before the batch is resumed from its receipts
-export const RESTART_COOLDOWN_MS={PROVIDER_RATE_LIMIT_REPEATED:30*60e3,SOURCE_UNAVAILABLE:10*60e3,CLOUD_STORAGE_UNAVAILABLE:10*60e3,LOCAL_DISK_RESERVE:5*60e3};
+export const RESTART_COOLDOWN_MS={PROVIDER_RATE_LIMIT_REPEATED:30*60e3,SOURCE_UNAVAILABLE:10*60e3,CLOUD_STORAGE_UNAVAILABLE:10*60e3,LOCAL_DISK_RESERVE:5*60e3,DEDUP_INDEX_UNAVAILABLE:5*60e3};
 export function disposition({progress,exitCode,idleRestarts=0,maxIdleRestarts=4}){
  if(progress?.complete===true&&!progress.stop_reason)return{action:'done'};
  const reason=progress?.stop_reason??null;
@@ -33,6 +34,8 @@ async function main(args){
  fs.mkdirSync(dir,{recursive:true});
  const transferScript=args['transfer-script']??'scripts/ingest/backfill-pdfs-to-supabase.mjs',registrationScript=args['registration-script']??'scripts/admin/register-private-pdf-assets.mjs';
  const scale=Number(args['cooldown-scale']??1),pollMs=Number(args['poll-ms']??10000),maxIdleRestarts=Number(args['max-idle-restarts']??4);
+ // Host guard: this runner only fetches the hosts it owns; rows aimed anywhere else (official court sites ...) are skipped, never fetched.
+ const guard=RUNNER_HOSTS[provider],allowedHosts=args['allowed-hosts']??guard.hosts.join(','),hostSkipReason=args['host-skip-reason']??guard.skip_reason;
  const concurrency=args.concurrency??(provider==='docketbird'?'6':'4'),sourceDelay=args['source-delay-ms']??(provider==='docketbird'?'150':'1000'),workerDelay=args['worker-delay-ms']??(provider==='docketbird'?'0':'1000');
  const writeStatus=value=>fs.writeFileSync(status,JSON.stringify({provider,pid:process.pid,...value,at:new Date().toISOString()},null,2));
  let batches=0,halted=null;
@@ -61,7 +64,7 @@ async function main(args){
    writeStatus({state:'transferring',queue:manifest.queue,transfers:transfer,batch:label,attempt,batches_completed:batches});
    const transferRun=launch(transferScript,[
     '--queue='+manifest.queue,'--queue-sha256='+manifest.sha256,'--cache='+transfer,'--credentials='+args.credentials,
-    '--max-files=200000','--concurrency='+concurrency,'--source-delay-ms='+sourceDelay,'--worker-delay-ms='+workerDelay,'--pacing-file='+path.join(root,provider+'-pacing.json'),'--execute'
+    '--max-files=200000','--allowed-hosts='+allowedHosts,'--host-skip-reason='+hostSkipReason,'--concurrency='+concurrency,'--source-delay-ms='+sourceDelay,'--worker-delay-ms='+workerDelay,'--pacing-file='+path.join(root,provider+'-pacing.json'),'--execute'
    ],path.join(dir,label+'.transfer.log'));
    const registrationRun=launch(registrationScript,[
     '--transfers='+transfer,'--out='+registration,'--credentials='+args.credentials,'--watch','--stop-file='+stopFile

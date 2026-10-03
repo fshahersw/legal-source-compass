@@ -5,6 +5,7 @@ import {
   filterDocuments,
   formatBytes,
   matterPdfUrl,
+  pageDocuments,
   parsePdfRequest,
   parseRegistryDocument,
   parseRegistrySummary,
@@ -36,9 +37,28 @@ describe("registry rows", () => {
     });
     expect(describeDocument(d)).toMatchObject({
       entryNumber: 771,
+      attachment: null,
       label: "Docket entry 771",
       sourceLabel: "DocketBird docket",
     });
+  });
+
+  it("reads an attachment as part of its entry, so entry filters and labels include it", () => {
+    const d = describeDocument(
+      parseRegistryDocument(
+        row({
+          native_document_id: "njd-3:2026-md-03180-00009-002",
+          native_case_id: "njd-3:2026-md-03180",
+        }),
+      )!,
+    );
+    expect(d).toMatchObject({
+      entryNumber: 9,
+      attachment: 2,
+      label: "Docket entry 9 · attachment 2",
+    });
+    expect(filterDocuments([d], { entry: 9 })).toHaveLength(1);
+    expect(filterDocuments([d], { entry: 2 })).toHaveLength(0);
   });
 
   it("holds anything that is not explicitly open, and strips identifiers from held rows", () => {
@@ -213,5 +233,89 @@ describe("summary and helpers", () => {
     ]) {
       expect(parsePdfRequest(new URLSearchParams(q))).toBeNull();
     }
+  });
+});
+
+describe("server-side paging of the verified PDFs", () => {
+  const docs: MatterDocument[] = Array.from({ length: 137 }, (_, i) =>
+    describeDocument(
+      parseRegistryDocument(
+        row({
+          // Entry numbers 1..137; every third document is held; every fifth is a CourtListener row (no entry number).
+          native_document_id: `flnd-3:2025-md-03140-${String(i + 1).padStart(5, "0")}`,
+          native_case_id: i % 2 ? "flnd-3:2025-md-03140" : "69674950",
+          source_system: i % 5 === 0 ? "courtlistener" : "docketbird",
+          availability: i % 3 === 0 ? "held" : "open",
+        }),
+      )!,
+    ),
+  );
+
+  it("returns one page and the exact total of the filtered list", () => {
+    const p = pageDocuments(docs, {}, "entry-asc", 0, 50);
+    expect(p.rows).toHaveLength(50);
+    expect(p.total).toBe(137);
+    expect(p.pageSize).toBe(50);
+    const last = pageDocuments(docs, {}, "entry-asc", 100, 50);
+    expect(last.rows).toHaveLength(37);
+    expect(last.offset).toBe(100);
+  });
+
+  it("filters before it pages and clamps an offset past the end to the last page", () => {
+    const open = pageDocuments(docs, { availability: "open" }, "entry-desc", 0, 10);
+    expect(open.total).toBe(docs.filter((d) => d.availability === "open").length);
+    expect(open.rows.every((d) => d.availability === "open")).toBe(true);
+    const beyond = pageDocuments(docs, {}, "entry-asc", 9999, 50);
+    expect(beyond.offset).toBe(100);
+    expect(pageDocuments([], {}, "entry-asc", 40, 50)).toMatchObject({
+      rows: [],
+      total: 0,
+      offset: 0,
+    });
+  });
+
+  it("walks the whole sorted list page by page without losing or repeating a document", () => {
+    const seen: string[] = [];
+    for (let o = 0; o < 137; o += 25)
+      seen.push(
+        ...pageDocuments(docs, {}, "entry-desc", o, 25).rows.map((d) => d.nativeDocumentId),
+      );
+    expect(seen).toHaveLength(137);
+    expect(new Set(seen).size).toBe(137);
+    expect(seen).toEqual(sortDocuments(docs, "entry-desc").map((d) => d.nativeDocumentId));
+  });
+
+  it("counts each facet with every other filter applied, so options match the table", () => {
+    const p = pageDocuments(
+      docs,
+      { availability: "open", source: "docketbird" },
+      "entry-asc",
+      0,
+      50,
+    );
+    // The source facet ignores the source filter itself but honours availability.
+    expect(p.facets.bySource).toEqual(
+      countDocuments(filterDocuments(docs, { availability: "open" })).bySource,
+    );
+    // The availability facet ignores the availability filter but honours the source.
+    const bySource = countDocuments(filterDocuments(docs, { source: "docketbird" }));
+    expect(p.facets.availability).toEqual({ open: bySource.open, held: bySource.held });
+    expect(p.total).toBe(
+      filterDocuments(docs, { availability: "open", source: "docketbird" }).length,
+    );
+  });
+
+  it("finds an entry's documents on any page and never leaves a held one linkable", () => {
+    const p = pageDocuments(docs, { entry: 3 }, "entry-asc", 0, 50);
+    expect(p.rows.map((d) => d.entryNumber)).toEqual([3]);
+    for (const d of pageDocuments(docs, { availability: "held" }, "entry-asc", 0, 50).rows) {
+      expect(d).toMatchObject({ availability: "held", sha256: null, bytes: null });
+      expect(matterPdfUrl(d)).toBeNull();
+    }
+  });
+
+  it("ships a small page instead of the whole list", () => {
+    const p = pageDocuments(docs, {}, "entry-asc", 0, 50);
+    expect(JSON.stringify(p.rows).length).toBeLessThan(JSON.stringify(docs).length / 2);
   });
 });

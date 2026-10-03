@@ -3,6 +3,7 @@ import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {spawn} from 'node:child_process';
 import {pathToFileURL} from 'node:url';
+import {RUNNER_HOSTS,runnerFamilyOf} from './pdf-source-hosts.mjs';
 // Retries recorded PDF failures twice. 2026-10-03: also reads failures from earlier runs (--sources-file), skips answers the
 // source gave permanently (HTTP 404/403/410, not a PDF, checksum conflicts: those stay held and are reported, not hammered),
 // can run on demand (--no-wait), and a stopped retry attempt no longer aborts the remaining providers.
@@ -16,7 +17,7 @@ export function lines(file){if(!fs.existsSync(file))return[];const text=fs.readF
 export function outcomes(receiptLines,into=new Map()){
  for(const r of receiptLines){
   const key=r.provider+'|'+r.native_document_id,current=into.get(key);
-  if(r.state==='cloud_verified')into.set(key,{verified:true});
+  if(r.state==='cloud_verified'||r.state==='dedup_matched')into.set(key,{verified:true});
   else if(r.state==='failed'&&!current?.verified&&(!current||String(r.recorded_at??'')>=String(current.at??'')))into.set(key,{verified:false,error:r.error,permanent:isPermanentFailure(r),at:r.recorded_at});
  }
  return into;
@@ -28,7 +29,11 @@ function launch(script,values,log){return new Promise((resolve,reject)=>{
 async function main(args){
  const root=path.resolve(args.root),out=path.join(root,'final-retries');fs.mkdirSync(out,{recursive:true});
  const runId=args['run-id']??'r1',marker=args.marker??'pdf-retries-finished.json',attempts=Number(args.attempts??2);
- const providers=(args.providers??'docketbird,courtlistener-public-locator,courtlistener,official-court').split(',');
+ // Official court hosts (*.uscourts.gov ...) belong to the official-mdl agent (robots.txt Crawl-delay); this worker retries only the hosts the runners own.
+ const OWNED=new Set(['docketbird','courtlistener-public-locator','courtlistener']);
+ const requested=(args.providers??'docketbird,courtlistener-public-locator,courtlistener').split(',');
+ const providers=requested.filter(p=>OWNED.has(p));
+ for(const p of requested.filter(p=>!OWNED.has(p)))console.error(JSON.stringify({ignored_provider:p,reason:'not_owned_by_pdf_backfill'}));
  const transferDirs=()=>[...fs.readdirSync(root,{withFileTypes:true}).filter(d=>d.isDirectory()&&d.name.endsWith('-transfers')).map(d=>path.join(root,d.name)),...extra.map(e=>e.transfers)];
  const extra=args['sources-file']?JSON.parse(fs.readFileSync(args['sources-file'],'utf8')).map(e=>({transfers:path.resolve(e.transfers),queue:e.queue?path.resolve(e.queue):null})):[];
  if(!args['no-wait'])for(;;){
@@ -65,7 +70,7 @@ async function main(args){
   const transfers=path.join(root,'final-retry-'+label+'-transfers');
   fs.writeFileSync(path.join(out,'progress.json'),JSON.stringify({state:'retrying',provider,attempt,documents:rows.length,started_at:new Date().toISOString()},null,2));
   const slow=provider!=='docketbird';
-  const code=await launch('scripts/ingest/backfill-pdfs-to-supabase.mjs',['--queue='+queue,'--queue-sha256='+sha(bytes),'--cache='+transfers,'--credentials='+args.credentials,'--max-files=200000','--concurrency=3','--source-delay-ms='+(slow?'400':'250'),'--worker-delay-ms='+(slow?'1500':'0'),'--pacing-file='+path.join(root,(slow?'courtlistener':'docketbird')+'-pacing.json'),'--execute'],path.join(out,label+'.log'));
+  const code=await launch('scripts/ingest/backfill-pdfs-to-supabase.mjs',['--queue='+queue,'--queue-sha256='+sha(bytes),'--cache='+transfers,'--credentials='+args.credentials,'--max-files=200000','--concurrency=3','--source-delay-ms='+(slow?'400':'250'),'--worker-delay-ms='+(slow?'1500':'0'),'--pacing-file='+path.join(root,(slow?'courtlistener':'docketbird')+'-pacing.json'),'--allowed-hosts='+RUNNER_HOSTS[runnerFamilyOf(provider)].hosts.join(','),'--host-skip-reason='+RUNNER_HOSTS[runnerFamilyOf(provider)].skip_reason,'--execute'],path.join(out,label+'.log'));
   // A stopped attempt keeps its receipts; registration still runs for everything that verified, and later attempts/providers continue.
   const registration=await launch('scripts/admin/register-private-pdf-assets.mjs',['--transfers='+transfers,'--out='+path.join(out,label+'-registration'),'--credentials='+args.credentials],path.join(out,label+'-registration.log'));
   fs.writeFileSync(path.join(out,'progress.json'),JSON.stringify({state:'attempt_finished',provider,attempt,transfer_exit_code:code,registration_exit_code:registration,finished_at:new Date().toISOString()},null,2));

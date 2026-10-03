@@ -113,6 +113,12 @@ export type RegistryRecordInfo = {
   transfereeCourt: string | null;
   judgeAsPrinted: string | null;
   dateCentralized: string | null;
+  /** Rows of the entries dataset held for the matter, and of those how many are published without their text (v1.3). */
+  entriesPublished: number | null;
+  entriesWithheld: number | null;
+  /** Rows of the parties dataset held for the matter, and the counsel entries on them (v1.3). */
+  partiesPublished: number | null;
+  counselLinks: number | null;
 };
 
 export type RegistryMatter = {
@@ -172,6 +178,26 @@ const strings = (v: unknown): string[] =>
     const s = str(x);
     return s ? [s] : [];
   });
+
+/**
+ * The provider case ids of one docket (`detail.registry.native_case_ids`) that may be passed to the PDF reader. An id
+ * whose own provider header conflicts with the docket identity is shown for transparency in the registry but is never a
+ * source of this docket's PDFs (contract §6.5), so it is dropped here.
+ */
+export function pdfLookupCaseIds(raw: unknown, limit = 30): string[] {
+  const out: string[] = [];
+  for (const entry of arr(raw)) {
+    if (!isObj(entry)) continue;
+    const id = idStr(entry["id"]);
+    if (!id || !isNativeCaseId(id) || out.includes(id)) continue;
+    if (entry["pdf_lookup"] === false) continue;
+    const basis = str(entry["resolution_basis"]);
+    if (basis && /header_conflicts$/.test(basis)) continue;
+    out.push(id);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
 
 /**
  * `detail.registry` of a `sw_matters_v1` record. Returns null when the block is absent, is not the registry schema
@@ -375,6 +401,10 @@ export function parseRegistryRecord(
       judgeAsPrinted: str(cells["judge_as_printed"]),
       dateCentralized:
         centralized && /^\d{4}-\d{2}-\d{2}$/.test(centralized.trim()) ? centralized.trim() : null,
+      entriesPublished: num(cells["entries_published"]),
+      entriesWithheld: num(cells["entries_withheld"]),
+      partiesPublished: num(cells["parties_published"]),
+      counselLinks: num(cells["counsel_links"]),
     },
   };
 }
@@ -432,6 +462,9 @@ export function overviewFromRegistry(reg: RegistryMatter): MatterOverview | null
       printedTitle: null,
       profileName: null,
       entityId: null,
+      profileId: null,
+      profileLinkBasis: null,
+      clPersonBasis: null,
       fjcJid: null,
       fjcNid: null,
       clPersonId: assigned?.clPersonId ?? null,
@@ -448,6 +481,83 @@ export function overviewFromRegistry(reg: RegistryMatter): MatterOverview | null
     appearances: null,
     expertRulingsTotal: null,
     keys: matterCaseKeys(court, docket),
+  };
+}
+
+/* ------------------------------------------------------------------ metrics */
+
+export type RegistryMetrics = {
+  /**
+   * Member and transferor dockets the registry holds for the matter (the master docket and the JPML panel proceeding are
+   * listed beside them but not counted here); never the size of the MDL.
+   */
+  dockets: number | null;
+  /** Of those, rows counted as one action each. */
+  actions: number | null;
+  /** Evidence kinds of those dockets, most frequent first (a docket with several kinds counts under each). */
+  byBasis: { kind: string; count: number }[];
+  /** CourtListener entries: captured vs the provider's own total, and how many the projection published / withheld. */
+  entries: {
+    captured: number | null;
+    providerTotal: number | null;
+    complete: boolean | null;
+    published: number | null;
+    withheld: number | null;
+  } | null;
+  /** Parties of the master docket the projection published, and the counsel entries on them. */
+  parties: { published: number | null; counselLinks: number | null } | null;
+  /** Newest day any capture was observed (yyyy-mm-dd), from the captures' own timestamps. */
+  lastCaptured: string | null;
+};
+
+/**
+ * The matter's registry numbers, all computed from the record (nothing is estimated): entries captured against what
+ * the provider reports, publication counts, evidence mix and when the newest capture was observed. Null when the
+ * registry has no record for the matter.
+ */
+export function registryMetrics(reg: RegistryMatter | null): RegistryMetrics | null {
+  if (!reg) return null;
+  const caps = reg.entries.filter((e) => e.captured !== null);
+  const captured = caps.length ? caps.reduce((n, e) => n + (e.captured ?? 0), 0) : null;
+  const totals = reg.entries.map((e) => e.providerTotal);
+  const providerTotal =
+    totals.length && totals.every((t): t is number => t !== null)
+      ? totals.reduce((n, t) => n + t, 0)
+      : null;
+  const completes = reg.entries.map((e) => e.complete);
+  const complete = !completes.length
+    ? null
+    : completes.every((c) => c === true)
+      ? true
+      : completes.some((c) => c === false)
+        ? false
+        : null;
+  const observed = reg.entries
+    .map((e) => e.observedAt?.slice(0, 10) ?? null)
+    .filter((d): d is string => !!d && /^\d{4}-\d{2}-\d{2}$/.test(d))
+    .sort();
+  const rec = reg.record;
+  const hasEntries = captured !== null || (rec !== null && rec.entriesPublished !== null);
+  const hasParties = rec !== null && (rec.partiesPublished !== null || rec.counselLinks !== null);
+  return {
+    dockets: reg.members.rows,
+    actions: reg.members.actions,
+    byBasis: Object.entries(reg.members.byBasis)
+      .map(([kind, count]) => ({ kind, count }))
+      .sort((a, b) => b.count - a.count || a.kind.localeCompare(b.kind)),
+    entries: hasEntries
+      ? {
+          captured,
+          providerTotal,
+          complete,
+          published: rec ? rec.entriesPublished : null,
+          withheld: rec ? rec.entriesWithheld : null,
+        }
+      : null,
+    parties: hasParties
+      ? { published: rec!.partiesPublished, counselLinks: rec!.counselLinks }
+      : null,
+    lastCaptured: observed.length ? observed[observed.length - 1]! : null,
   };
 }
 
@@ -581,8 +691,9 @@ export function parseRegistryDocket(row: {
   const nativeIds = strings(filters["native_case_id"]);
   const clId = clDocketIdFrom(links, nativeIds);
   const basisKinds = strings(filters["basis"]);
-  const badges = JSON.stringify(row.item["badges"] ?? []);
-  const withheld = /caption withheld/i.test(badges);
+  // v1.3: the caption as the court (or the cited source) prints it, when a publishable one exists. Whitespace only is
+  // collapsed; the text is otherwise shown exactly as published.
+  const caption = cleaned(cells["caption"])?.replace(/\s+/g, " ") ?? null;
   const routeRaw = str(cells["route"]);
   const detail: RegistryCaseDetail = {
     rowId: id,
@@ -601,13 +712,15 @@ export function parseRegistryDocket(row: {
     conflict: filters["conflict"] === "true",
     nativeCaseIds: nativeIds,
     links,
+    captionSource: caption ? str(cells["caption_source"]) : null,
   };
   return {
     id: `registry:${id}`,
     clDocketId: clId,
     docketNumber: cleaned(cells["docket_number"]),
-    caption: null,
-    captionWithheld: withheld,
+    caption,
+    // No publishable caption: no source prints one, or the printed one matched the publication exclusion.
+    captionWithheld: caption === null,
     courtId: cleaned(cells["court_id"]),
     dateFiled: cleaned(cells["filed"]),
     dateTerminated: cleaned(cells["terminated"]),

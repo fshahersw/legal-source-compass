@@ -3,7 +3,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 
-import { DatasetBrowser } from "@/components/corpus/DatasetBrowser";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import {
   Chip,
@@ -17,6 +16,7 @@ import {
   SegmentedControl,
   selectClass,
 } from "@/components/matters/common";
+import { RegistryTimeline } from "@/components/matters/RegistryTimeline";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -120,7 +120,8 @@ function EntryRow({ entry, mdl }: { entry: DocketEntry; mdl: string }) {
   );
 }
 
-export function DocketPanel({ payload }: { payload: MatterOverviewPayload }) {
+/** The saved docket sample and CourtListener's entry list: the sources used for a matter the registry has no entries for. */
+function SampleDocket({ payload }: { payload: MatterOverviewPayload }) {
   const mdl = payload.overview.mdl;
   const fn = useServerFn(getMatterEntries);
   const [source, setSource] = useState<"auto" | "activity" | "cl_entries">("auto");
@@ -161,18 +162,6 @@ export function DocketPanel({ payload }: { payload: MatterOverviewPayload }) {
   if (query.isLoading) return <Loading what="docket entries" />;
   if (query.error) return <ExternalError error={query.error} />;
   if (!data || (!data.available.activity && !data.available.clEntries)) {
-    const released = payload.registryReleased.entries;
-    // The matter registry's entries dataset, once released, is listed with the generic dataset browser.
-    if (released)
-      return (
-        <Panel
-          id="docket"
-          title="Docket entries"
-          note="Entries the matter registry captured for the master and JPML dockets, as released in its own dataset."
-        >
-          <DatasetBrowser key={released} dataset={released} initialFilters={{ mdl }} compact />
-        </Panel>
-      );
     const captures = (payload.registry?.entries ?? []).filter(
       (e) => e.captured !== null && e.captured > 0,
     );
@@ -197,8 +186,8 @@ export function DocketPanel({ payload }: { payload: MatterOverviewPayload }) {
                     : ""}{" "}
                   entries from {e.provider === "courtlistener" ? "CourtListener" : e.provider}
                   {e.complete === true ? " (complete at capture)" : ""}
-                  {e.observedAt ? ` on ${e.observedAt.slice(0, 10)}` : ""}. They are not in a
-                  released dataset yet, so the timeline cannot be shown.
+                  {e.observedAt ? ` on ${e.observedAt.slice(0, 10)}` : ""}. None of them is
+                  published yet, so the timeline cannot be shown.
                 </span>
               ))}
             </Scope>
@@ -353,4 +342,16 @@ export function DocketPanel({ payload }: { payload: MatterOverviewPayload }) {
       </div>
     </Panel>
   );
+}
+
+/**
+ * The docket tab. A matter with entries in the matter registry shows the registry timeline (docket text as published,
+ * server-side filters, documents from the archive); any other matter keeps the sources it had before.
+ */
+export function DocketPanel({ payload }: { payload: MatterOverviewPayload }) {
+  const published = payload.registry?.record?.entriesPublished ?? null;
+  // The dataset is released and the matter has rows (or the count is not filled in yet): try the registry timeline.
+  if (payload.registryReleased.entries && published !== 0)
+    return <RegistryTimeline payload={payload} fallback={<SampleDocket payload={payload} />} />;
+  return <SampleDocket payload={payload} />;
 }

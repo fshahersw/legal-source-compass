@@ -34,6 +34,15 @@ export type JudgeInfo = {
   profileName: string | null;
   /** judge_entities id of the single linked profile, or null. */
   entityId: string | null;
+  /**
+   * Id of the `judges` profile the data-quality passes linked to this MDL (`summary.judge_profile_id`, or the single
+   * "#judge/<id>" link of the record); shown as a link once the profile is confirmed to exist.
+   */
+  profileId: string | null;
+  /** How that profile was tied to the MDL ("cl_person_native_bridge", "jpml_name_court"); shown with the link. */
+  profileLinkBasis: string | null;
+  /** How the CourtListener person id was established ("judge_profile_native_bridge", "cl_docket_assigned_to"...). */
+  clPersonBasis: string | null;
   fjcJid: string | null;
   fjcNid: string | null;
   clPersonId: string | null;
@@ -162,6 +171,24 @@ export function parseReports(value: unknown): JpmlReport[] {
   return out;
 }
 
+const PROFILE_ID = /^[A-Za-z0-9_-]{6,80}$/;
+
+/** The `judges` profile id: the summary field, else the one "#judge/<id>" link on the record; null when ambiguous. */
+function profileIdOf(
+  summary: Record<string, unknown>,
+  links: Record<string, unknown>[],
+): string | null {
+  const direct = idStr(summary["judge_profile_id"]);
+  if (direct && PROFILE_ID.test(direct)) return direct;
+  if (links.length !== 1) return null;
+  const raw = links[0]!["links"];
+  const ids = (Array.isArray(raw) ? raw : [])
+    .filter(isObj)
+    .map((l) => /^#judge\/([A-Za-z0-9_-]{6,80})$/.exec(str(l["url"]) ?? "")?.[1])
+    .filter((id): id is string => !!id);
+  return ids.length === 1 ? ids[0]! : null;
+}
+
 /**
  * The judge profile is linked only when exactly one profile is linked AND a native identifier supports it:
  * an explicit CourtListener-person bridge, or a CourtListener docket assigned_to person that agrees with the
@@ -177,6 +204,9 @@ export function parseJudge(detail: Record<string, unknown>): JudgeInfo {
     printedTitle: str(printed["title_as_printed"]) ?? str(summary["judge_title_as_printed"]),
     profileName: null,
     entityId: null,
+    profileId: profileIdOf(summary, links),
+    profileLinkBasis: str(summary["judge_link_basis"]),
+    clPersonBasis: str(summary["judge_cl_person_basis"]),
     fjcJid: null,
     fjcNid: null,
     clPersonId: null,
@@ -184,13 +214,16 @@ export function parseJudge(detail: Record<string, unknown>): JudgeInfo {
     nativeIdEvidence: false,
     evidenceNote: null,
   };
+  // The person id the data-quality passes recorded on the MDL record (FJC bridge or the docket's assigned_to).
+  info.clPersonId = idStr(summary["judge_cl_person_id"]);
   if (links.length !== 1) return info;
   const link = links[0]!;
   const entityId = str(link["entity_id"]);
   info.profileName = str(link["display_name"]) ?? str(link["fjc_name"]);
   info.fjcJid = idStr(link["fjc_jid"]);
   info.fjcNid = idStr(link["fjc_nid"]);
-  info.clPersonId = idStr(link["cl_person_id"]) ?? idStr(summary["cl_assigned_to_id"]);
+  info.clPersonId =
+    info.clPersonId ?? idStr(link["cl_person_id"]) ?? idStr(summary["cl_assigned_to_id"]);
   info.linkBasis = str(link["basis"]);
   if (!entityId) return info;
   info.entityId = entityId;
@@ -206,6 +239,28 @@ export function parseJudge(detail: Record<string, unknown>): JudgeInfo {
     info.evidenceNote = `CourtListener docket assigned_to person ${idStr(summary["cl_assigned_to_id"])} agrees with the FJC judge link`;
   }
   return info;
+}
+
+/** What the basis of a judge link means, in words (the data-quality passes record these strings on the MDL record). */
+const JUDGE_LINK_BASIS_LABELS: Record<string, string> = {
+  cl_person_native_bridge: "native-id bridge between the CourtListener person and the FJC judge",
+  jpml_name_court: "the JPML-printed name and the transferee court match the profile exactly",
+};
+const JUDGE_PERSON_BASIS_LABELS: Record<string, string> = {
+  judge_profile_native_bridge: "FJC judge id bridged to the CourtListener person id",
+  cl_docket_assigned_to: "assigned_to on the CourtListener docket",
+  "judge_profile_native_bridge+cl_docket_assigned_to":
+    "FJC bridge, confirmed by the docket's assigned_to",
+  same_judge_entity_cl_docket_assigned_to:
+    "assigned_to on the CourtListener docket, same judge entity",
+};
+
+export function judgeLinkBasisLabel(basis: string | null): string | null {
+  return basis ? (JUDGE_LINK_BASIS_LABELS[basis] ?? basis.replace(/_/g, " ")) : null;
+}
+
+export function judgePersonBasisLabel(basis: string | null): string | null {
+  return basis ? (JUDGE_PERSON_BASIS_LABELS[basis] ?? basis.replace(/[_+]/g, " ")) : null;
 }
 
 function parseCases(v: unknown): CasesSummary | null {
