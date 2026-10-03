@@ -22,12 +22,12 @@ select
   (select count(*) from corpus_ingest.relationships where source_system='sw-matter-registry' and (inferred or not target_present)) as inferred_or_unresolved_edges;
 
 -- (2) privacy: non-institutional captions held in the private registry must not appear in any projected row
-with caps as (select c->>'value' as cap from corpus_ingest.entities e cross join lateral jsonb_array_elements(e.data->'captions') c
+-- (materialized form: the lower-cased projected text is built once; the unmaterialized cross product times out as the registry grows)
+with recs as materialized (select lower(item::text || detail::text || text || title) as t from public.corpus_records where dataset in ('sw_matters_v1','sw_matter_dockets_v1')),
+caps as materialized (select distinct lower(c->>'value') as cap from corpus_ingest.entities e cross join lateral jsonb_array_elements(e.data->'captions') c
               where e.source_system='sw-matter-registry' and e.entity_type='docket' and coalesce((c->>'institutional')::boolean,false)=false and length(c->>'value')>=8)
-select count(*) as member_captions_checked,
-       count(*) filter (where exists (select 1 from public.corpus_records r where r.dataset in ('sw_matters_v1','sw_matter_dockets_v1')
-         and position(lower(caps.cap) in lower(r.item::text||r.detail::text||r.text||r.title)) > 0)) as leaked
-from caps;
+select (select count(*) from caps) as member_captions_checked_distinct,
+       (select count(*) from caps where exists (select 1 from recs where position(caps.cap in recs.t) > 0)) as leaked;
 
 -- (3) every evidence row the projection quotes exists in the registry with the same kind
 select count(*) as projected_evidence_without_registry_row
