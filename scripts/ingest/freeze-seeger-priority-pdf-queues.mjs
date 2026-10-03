@@ -21,9 +21,9 @@ export async function verifiedKeys(transferDirs){
  for(const dir of transferDirs){
   const file=path.join(dir,'transfer-receipts.jsonl');if(!fs.existsSync(file))continue;
   for await(const line of jsonlLines(file)){
-   if(!line.includes('"state":"cloud_verified"'))continue;
+   if(!line.includes('"state":"cloud_verified"')&&!line.includes('"state":"dedup_matched"'))continue;
    let r;try{r=JSON.parse(line);}catch{continue;}
-   if(r.state!=='cloud_verified'||!/^[a-f0-9]{64}$/.test(r.sha256??''))continue;
+   if((r.state!=='cloud_verified'&&r.state!=='dedup_matched')||!/^[a-f0-9]{64}$/.test(r.sha256??''))continue;
    const version=r.selected_source_record_sha256??[...(r.source_origins??[])].sort((a,b)=>b.retrieved_at.localeCompare(a.retrieved_at))[0]?.native_record_sha256;
    keys.add(r.provider+'|'+r.native_document_id+'|'+version);
   }

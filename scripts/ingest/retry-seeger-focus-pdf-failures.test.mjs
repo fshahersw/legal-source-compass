@@ -35,3 +35,11 @@ test('merging transfer directories keeps the most recent failure regardless of d
  const map=new Map();outcomes([newer],map);outcomes([old],map);
  assert.equal(map.get('courtlistener|1').error,'SOURCE_SHA1_MISMATCH');assert.equal(map.get('courtlistener|1').permanent,true);
 });
+
+test('a dedup-registered document counts as verified, so it is never retried',()=>{
+ const r=(state,extra={})=>({provider:'courtlistener',native_document_id:'9',state,...extra});
+ const map=outcomes([r('failed',{error:'SOURCE_HTTP_503'}),r('dedup_matched')]);
+ assert.equal(map.get('courtlistener|9').verified,true);
+ const later=outcomes([r('dedup_matched'),r('failed',{error:'SOURCE_HTTP_503'})]);
+ assert.equal(later.get('courtlistener|9').verified,true);
+});

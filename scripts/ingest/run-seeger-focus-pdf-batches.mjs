@@ -8,7 +8,7 @@ import {pathToFileURL} from 'node:url';
 // cool-down; only integrity/access problems halt, because those need a person.
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 // stop_reason written by backfill-pdfs-to-supabase.mjs -> cool-down before the batch is resumed from its receipts
-export const RESTART_COOLDOWN_MS={PROVIDER_RATE_LIMIT_REPEATED:30*60e3,SOURCE_UNAVAILABLE:10*60e3,CLOUD_STORAGE_UNAVAILABLE:10*60e3,LOCAL_DISK_RESERVE:5*60e3};
+export const RESTART_COOLDOWN_MS={PROVIDER_RATE_LIMIT_REPEATED:30*60e3,SOURCE_UNAVAILABLE:10*60e3,CLOUD_STORAGE_UNAVAILABLE:10*60e3,LOCAL_DISK_RESERVE:5*60e3,DEDUP_INDEX_UNAVAILABLE:5*60e3};
 export function disposition({progress,exitCode,idleRestarts=0,maxIdleRestarts=4}){
  if(progress?.complete===true&&!progress.stop_reason)return{action:'done'};
  const reason=progress?.stop_reason??null;

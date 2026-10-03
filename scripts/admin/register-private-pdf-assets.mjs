@@ -3,7 +3,20 @@ import path from 'node:path';
 import{createHash}from'node:crypto';
 import{pathToFileURL}from'node:url';
 const PROJECT='xosqzzsnhxcyehcnirpa',BUCKET='corpus-originals',sha=x=>createHash('sha256').update(x).digest('hex');
+const DEDUP_BASES=new Set(['provider_sha1_equals_stored_sha1','exact_url_previously_verified']);
+// A dedup receipt registers a new source-native association against an object whose bytes were hash-verified by an EARLIER transfer; no
+// bytes moved this time. The registry still sees a cloud-verified row (the object exists, privately, at that size), with the earlier
+// verification time as verified_at and the dedup basis kept in the stored observation.
+function dedupTransportRow(source){
+ if(!DEDUP_BASES.has(source.dedup_basis)||source.download_skipped!==true||!Number.isFinite(Date.parse(source.object_first_verified_at)))throw Error('Dedup receipt evidence mismatch');
+ const identity={...source,state:'cloud_verified'};
+ const row=transportRow(identity);
+ row.verified_at=new Date(source.object_first_verified_at).toISOString();
+ row.association_receipt_state='dedup_matched';row.association_recorded_at=source.recorded_at??null;
+ return row;
+}
 export function transportRow(source){
+ if(source.state==='dedup_matched')return dedupTransportRow(source);
  if(source.state!=='cloud_verified'||source.project_id!==PROJECT||source.bucket!==BUCKET||!/^[a-f0-9]{64}$/.test(source.sha256??'')||!/^[a-f0-9]{40}$/.test(source.sha1??'')||!Number.isSafeInteger(source.bytes)||source.bytes<1||source.storage_key!=='seeger-weiss/pdf-sha256/'+source.sha256.slice(0,2)+'/'+source.sha256+'.pdf')throw Error('Verified transfer identity mismatch');
  const row={...source};delete row.upload_location;
  row.selected_source_record_sha256??=[...row.source_origins].sort((a,b)=>b.retrieved_at.localeCompare(a.retrieved_at))[0].native_record_sha256;
@@ -91,8 +104,8 @@ async function main(){
    for(const dir of dirs){
     for(const line of await readNewReceiptLines(path.join(dir,'transfer-receipts.jsonl'),cursors.get(dir))){
      // Cheap pre-filter; the parsed state is checked again below. Only complete, durable JSONL lines are read while the transfer is active.
-     if(!line.includes('"state":"cloud_verified"'))continue;
-     const receipt=JSON.parse(line);if(receipt.state!=='cloud_verified')continue;const hash=sha(line);if(acknowledged.has(hash))continue;
+     if(!line.includes('"state":"cloud_verified"')&&!line.includes('"state":"dedup_matched"'))continue;
+     const receipt=JSON.parse(line);if(receipt.state!=='cloud_verified'&&receipt.state!=='dedup_matched')continue;const hash=sha(line);if(acknowledged.has(hash))continue;
      let row;try{row=transportRow(receipt);}catch(error){
       // A receipt that cannot form a valid registration row is isolated, never allowed to block the others.
       const why={status:null,error_code:'TRANSPORT_ROW_INVALID',message:String(error.message).slice(0,200)};rejected.set(hash,why);
