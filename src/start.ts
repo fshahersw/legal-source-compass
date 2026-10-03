@@ -31,7 +31,8 @@ const csrfMiddleware = createCsrfMiddleware({
 });
 
 export const startInstance = createStart(() => ({
-  // Data providers mount after the verified account check. No corpus loader runs in anonymous SSR.
+  // Data providers mount after the client gate's account probe (open when CORPUS_REQUIRE_AUTH is unset,
+  // verified-account when it is on). No corpus loader runs during SSR.
   defaultSsr: false,
   functionMiddleware: [attachSupabaseAuth, requireAccountCorpusFunction],
   requestMiddleware: [

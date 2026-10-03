@@ -1,7 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
-import { corpusRequestToken, isAllowedCorpusUser } from "./accessPolicy";
+import { corpusAuthRequired, corpusRequestToken, isAllowedCorpusUser } from "./accessPolicy";
 
 export type CorpusIdentity = { userId: string; email: string | null };
+
+/** Identity reported while account enforcement is off (CORPUS_REQUIRE_AUTH unset): no account is implied. */
+export const OPEN_ACCESS_IDENTITY: CorpusIdentity = { userId: "open-access", email: null };
 
 export class CorpusAccessError extends Error {
   constructor(public readonly statusCode: 401 | 403 | 503) {
@@ -59,8 +62,13 @@ async function verifyAccess(request: Request): Promise<CorpusIdentity> {
   return { userId: user.id, email: user.email ?? null };
 }
 
-/** Admit verified, non-anonymous accounts with confirmed email. Never decode-and-trust a JWT. */
+/**
+ * Admit verified, non-anonymous accounts with confirmed email. Never decode-and-trust a JWT.
+ * When CORPUS_REQUIRE_AUTH is not enabled the check is skipped entirely: no provider client is created,
+ * no credential is read and the open-access identity is returned.
+ */
 export function requireCorpusAccess(request: Request): Promise<CorpusIdentity> {
+  if (!corpusAuthRequired()) return Promise.resolve(OPEN_ACCESS_IDENTITY);
   let check = requestChecks.get(request);
   if (!check) {
     check = verifyAccess(request);

@@ -1,7 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { corpusRequestToken, corpusSessionCookie, isAllowedCorpusUser } from "./accessPolicy";
+import {
+  corpusAuthRequired,
+  corpusRequestToken,
+  corpusSessionCookie,
+  isAllowedCorpusUser,
+} from "./accessPolicy";
 import { corpusLogoutResponse } from "./logout.server";
-import { corpusAccessErrorResponse, requireCorpusAccess } from "./access.server";
+import {
+  OPEN_ACCESS_IDENTITY,
+  corpusAccessErrorResponse,
+  requireCorpusAccess,
+} from "./access.server";
 
 const auth = vi.hoisted(() => ({ getUser: vi.fn(), createClient: vi.fn() }));
 vi.mock("@supabase/supabase-js", () => ({ createClient: auth.createClient }));
@@ -18,8 +27,42 @@ beforeEach(() => {
   auth.getUser.mockResolvedValue({ data: { user: verified }, error: null });
   vi.stubEnv("SUPABASE_URL", "https://auth.example.test");
   vi.stubEnv("SUPABASE_PUBLISHABLE_KEY", "offline-test-publishable-key");
+  // The enforcement suites below run with account enforcement ON whatever the surrounding environment says.
+  vi.stubEnv("CORPUS_REQUIRE_AUTH", "1");
 });
 afterEach(() => vi.unstubAllEnvs());
+
+describe("CORPUS_REQUIRE_AUTH switch", () => {
+  it.each([undefined, "", "0", "false", "off", "no", "yes", "2", " "])("is off for %j", (value) => {
+    expect(corpusAuthRequired({ CORPUS_REQUIRE_AUTH: value })).toBe(false);
+  });
+  it.each(["1", "true", "TRUE", " True "])("is on for %j", (value) => {
+    expect(corpusAuthRequired({ CORPUS_REQUIRE_AUTH: value })).toBe(true);
+  });
+  it("reads the process environment by default and is off when unset", () => {
+    vi.stubEnv("CORPUS_REQUIRE_AUTH", "");
+    expect(corpusAuthRequired()).toBe(false);
+    vi.stubEnv("CORPUS_REQUIRE_AUTH", "1");
+    expect(corpusAuthRequired()).toBe(true);
+  });
+  it("skips every credential and provider call while enforcement is off", async () => {
+    vi.stubEnv("CORPUS_REQUIRE_AUTH", "");
+    vi.stubEnv("SUPABASE_URL", "not-a-url");
+    await expect(requireCorpusAccess(request({}))).resolves.toEqual(OPEN_ACCESS_IDENTITY);
+    await expect(requireCorpusAccess(request({ authorization: "Bearer forged" }))).resolves.toEqual(
+      OPEN_ACCESS_IDENTITY,
+    );
+    expect(auth.createClient).not.toHaveBeenCalled();
+    expect(auth.getUser).not.toHaveBeenCalled();
+    expect(OPEN_ACCESS_IDENTITY.email).toBeNull();
+  });
+  it("enforces the verified-account rules again as soon as the switch is on", async () => {
+    vi.stubEnv("CORPUS_REQUIRE_AUTH", "");
+    await expect(requireCorpusAccess(request({}))).resolves.toEqual(OPEN_ACCESS_IDENTITY);
+    vi.stubEnv("CORPUS_REQUIRE_AUTH", "true");
+    await expect(requireCorpusAccess(request({}))).rejects.toMatchObject({ statusCode: 401 });
+  });
+});
 
 describe("verified account policy", () => {
   it("admits a confirmed account without requiring an invitation list", () => {

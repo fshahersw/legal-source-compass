@@ -1,70 +1,86 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
-import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { getCorpusSession } from "@/lib/auth/access.functions";
+import {
+  probeFromSession,
+  resolveAccess,
+  type AccessState,
+  type GateProbe,
+} from "@/lib/auth/gateState";
+import { signOutEverywhere } from "@/lib/auth/session";
+import { AuthCard } from "@/components/auth/AuthCard";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
-type Access = { state: "checking" | "signed-out" | "allowed" | "denied"; email: string | null };
+/** "open": the server does not require an account (CORPUS_REQUIRE_AUTH unset). "enforced": it does. */
+export type CorpusAccessMode = "unknown" | "open" | "enforced";
+const ModeContext = createContext<CorpusAccessMode>("unknown");
+export const useCorpusAccessMode = () => useContext(ModeContext);
 
-/** A presentation gate only: the server independently validates every corpus request. */
+/**
+ * A presentation gate only: the server independently validates every corpus request when enforcement is on.
+ * With CORPUS_REQUIRE_AUTH unset the server reports `required: false` and this component renders its children
+ * as soon as that one probe returns; sign-in stays optional (see AccountBox and /auth).
+ */
 export function CorpusAccessGate({ children }: { children: ReactNode }) {
-  const [access, setAccess] = useState<Access>({ state: "checking", email: null });
-  const [email, setEmail] = useState("");
+  const [access, setAccess] = useState<AccessState>({ state: "checking" });
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const allowedId = useRef<string | null>(null);
+  const enforced = useRef(false);
   const queryClient = useQueryClient();
   const router = useRouter();
 
   useEffect(() => {
     let live = true;
     let generation = 0;
-    const check = async (session: Session | null) => {
+    const check = async () => {
       const attempt = ++generation;
-      if (!session) {
-        allowedId.current = null;
-        if (live) {
-          queryClient.clear();
-          setAccess({ state: "signed-out", email: null });
-        }
+      let probe: GateProbe;
+      try {
+        probe = probeFromSession(await getCorpusSession());
+      } catch {
+        probe = { kind: "rejected" };
+      }
+      if (!live || generation !== attempt) return;
+      if (probe.kind === "open") {
+        enforced.current = false;
+        setAccess({ state: "open" });
         return;
       }
+      enforced.current = true;
+      let session = { present: false, email: null as string | null };
       try {
-        const identity = await getCorpusSession();
-        if (!live || generation !== attempt) return;
-        const changed = allowedId.current !== identity.userId;
-        allowedId.current = identity.userId;
-        if (changed) queryClient.clear();
-        setAccess({ state: "allowed", email: identity.email });
+        const { data } = await supabase.auth.getSession();
+        session = { present: !!data.session, email: data.session?.user.email ?? null };
+      } catch {
+        // Treated as "no browser session"; the server decision above still stands.
+      }
+      if (!live || generation !== attempt) return;
+      const next = resolveAccess(probe, session);
+      const nextId = probe.kind === "allowed" ? probe.userId : null;
+      const changed = allowedId.current !== nextId;
+      allowedId.current = nextId;
+      if (changed) queryClient.clear();
+      setAccess(next);
+      if (next.state === "allowed") {
         setNotice(null);
         if (changed) void router.invalidate();
-      } catch {
-        if (!live || generation !== attempt) return;
-        allowedId.current = null;
-        queryClient.clear();
-        setAccess({ state: "denied", email: session.user.email ?? null });
       }
     };
+    void check();
     let unsubscribe: (() => void) | undefined;
     try {
-      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      const { data } = supabase.auth.onAuthStateChange(() => {
         // Leave the auth callback before requesting another session through function middleware.
         window.setTimeout(() => {
-          if (live) void check(session);
+          if (live && enforced.current) void check();
         }, 0);
       });
       unsubscribe = () => data.subscription.unsubscribe();
-      void supabase.auth
-        .getSession()
-        .then(({ data: sessionData }) => check(sessionData.session))
-        .catch(() => {
-          if (live) setAccess({ state: "denied", email: null });
-        });
     } catch {
-      setAccess({ state: "denied", email: null });
+      // No auth client available: the probe above already decided.
     }
     return () => {
       live = false;
@@ -73,38 +89,15 @@ export function CorpusAccessGate({ children }: { children: ReactNode }) {
     };
   }, [queryClient, router]);
 
-  const signIn = async (event: FormEvent) => {
-    event.preventDefault();
-    setBusy(true);
-    setNotice(null);
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
-        options: { shouldCreateUser: true, emailRedirectTo: window.location.origin },
-      });
-      if (error) throw error;
-      setNotice("Check your email for a sign-in link. New accounts can use the same link.");
-    } catch {
-      setNotice("The sign-in link could not be requested. Check your email and try again.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const signOut = async () => {
     setBusy(true);
     setNotice(null);
     try {
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "same-origin",
-      });
-      if (!response.ok) throw new Error("Session could not be cleared");
-      const { error } = await supabase.auth.signOut({ scope: "local" });
+      const { error } = await signOutEverywhere();
       if (error) throw error;
       allowedId.current = null;
       queryClient.clear();
-      setAccess({ state: "signed-out", email: null });
+      setAccess({ state: "signed-out" });
     } catch {
       setNotice("Sign out could not complete. Please try again.");
     } finally {
@@ -112,82 +105,60 @@ export function CorpusAccessGate({ children }: { children: ReactNode }) {
     }
   };
 
-  if (access.state === "allowed")
+  if (access.state === "open" || access.state === "allowed")
     return (
-      <>
-        <div
-          className="flex items-center justify-end gap-3 border-b border-border bg-background px-4 py-1 text-xs text-muted-foreground"
-          aria-label="Workspace account"
-        >
-          <span>{access.email ?? "Signed-in account"}</span>
-          <Button size="sm" variant="ghost" disabled={busy} onClick={() => void signOut()}>
-            Sign out
-          </Button>
-          {notice && <span role="status">{notice}</span>}
-        </div>
+      <ModeContext.Provider value={access.state === "open" ? "open" : "enforced"}>
         {children}
-      </>
+      </ModeContext.Provider>
+    );
+
+  if (access.state === "signed-out")
+    return (
+      <ModeContext.Provider value="enforced">
+        <main className="flex min-h-screen items-center justify-center bg-background px-4">
+          <AuthCard notice="Sign in or create an account to open the private research workspace." />
+        </main>
+      </ModeContext.Provider>
     );
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background px-6">
-      <section className="w-full max-w-sm space-y-5 rounded-lg border border-border bg-surface p-7">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Private research workspace
-          </p>
-          <h1 className="mt-2 text-2xl font-semibold">Legal Source Atlas</h1>
-        </div>
-        {access.state === "checking" ? (
-          <p role="status" className="text-sm text-muted-foreground">
-            Checking workspace access…
-          </p>
-        ) : access.state === "denied" ? (
-          <>
+    <ModeContext.Provider value={access.state === "checking" ? "unknown" : "enforced"}>
+      <main className="flex min-h-screen items-center justify-center bg-background px-6">
+        <section className="w-full max-w-sm space-y-5 rounded-lg border border-border bg-surface p-7">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Private research workspace
+            </p>
+            <h1 className="mt-2 text-2xl font-semibold">Legal Source Atlas</h1>
+          </div>
+          {access.state === "checking" ? (
             <p role="status" className="text-sm text-muted-foreground">
-              {access.email
-                ? `Confirm the email for ${access.email}, then sign in again to open the workspace.`
-                : "Workspace access is not available. Ask the workspace owner to check the sign-in configuration."}
+              Checking workspace access…
             </p>
-            {access.email && (
-              <Button variant="outline" disabled={busy} onClick={() => void signOut()}>
-                Use another account
+          ) : (
+            <>
+              <p role="status" className="text-sm text-muted-foreground">
+                {access.email
+                  ? `Confirm the email for ${access.email}, then sign in again to open the workspace.`
+                  : "Workspace access is not available. Ask the workspace owner to check the sign-in configuration."}
+              </p>
+              {access.email && (
+                <Button variant="outline" disabled={busy} onClick={() => void signOut()}>
+                  Use another account
+                </Button>
+              )}
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                Check again
               </Button>
-            )}
-            <Button variant="outline" onClick={() => window.location.reload()}>
-              Check again
-            </Button>
-          </>
-        ) : (
-          <form onSubmit={(event) => void signIn(event)} className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Sign in or create an account with your email to open the research corpus.
+            </>
+          )}
+          {notice && (
+            <p role="status" className="text-sm text-muted-foreground">
+              {notice}
             </p>
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="corpus-sign-in-email">
-                Email
-              </label>
-              <Input
-                id="corpus-sign-in-email"
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-                disabled={busy}
-              />
-            </div>
-            <Button className="w-full" type="submit" disabled={busy}>
-              {busy ? "Sending…" : "Send sign-in link"}
-            </Button>
-          </form>
-        )}
-        {notice && (
-          <p role="status" className="text-sm text-muted-foreground">
-            {notice}
-          </p>
-        )}
-      </section>
-    </main>
+          )}
+        </section>
+      </main>
+    </ModeContext.Provider>
   );
 }

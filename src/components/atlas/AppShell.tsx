@@ -14,7 +14,8 @@ import {
 } from "lucide-react";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 
-import { supabase } from "@/integrations/supabase/client";
+import { useCorpusAccessMode } from "@/components/auth/CorpusAccessGate";
+import { signOutEverywhere } from "@/lib/auth/session";
 import { useSessionUser } from "@/lib/auth/useSession";
 import { useAtlas } from "@/lib/atlas/store";
 import { reviewCounts } from "@/lib/atlas/review";
@@ -103,6 +104,7 @@ function AccountBox({ collapsed }: { collapsed: boolean }) {
   const { user, ready } = useSessionUser();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const accessMode = useCorpusAccessMode();
   if (!ready) return null;
   const center = collapsed ? "justify-center px-0" : "";
   if (!user)
@@ -119,8 +121,9 @@ function AccountBox({ collapsed }: { collapsed: boolean }) {
     );
   const signOut = async () => {
     await queryClient.cancelQueries();
-    await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
+    await signOutEverywhere();
+    // Sign-in is optional unless the server enforces accounts (CORPUS_REQUIRE_AUTH); then return to the sign-in page.
+    if (accessMode === "enforced") navigate({ to: "/auth", replace: true });
   };
   return (
     <div className={collapsed ? "flex justify-center" : "space-y-1"}>
@@ -353,7 +356,10 @@ export function AppShell({
           </nav>
         ) : null}
 
-        <nav className="flex gap-1 overflow-x-auto border-b border-border bg-surface px-3 py-2 lg:hidden">
+        <nav
+          aria-label="Sections"
+          className="flex items-center gap-1 overflow-x-auto border-b border-border bg-surface px-3 py-2 lg:hidden"
+        >
           {NAV.map((item) => (
             <Link
               key={item.to}
@@ -364,6 +370,9 @@ export function AppShell({
               {item.label}
             </Link>
           ))}
+          <div className="ml-auto shrink-0 pl-1">
+            <AccountBox collapsed />
+          </div>
         </nav>
 
         <main className="px-5 py-6 lg:px-8">

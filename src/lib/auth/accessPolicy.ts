@@ -5,6 +5,21 @@ export type VerifiedCorpusUser = {
   is_anonymous?: boolean;
 };
 
+/** Name of the ONE server-side switch for corpus account enforcement. Never exposed to the browser. */
+export const CORPUS_REQUIRE_AUTH_ENV = "CORPUS_REQUIRE_AUTH";
+
+/**
+ * Account enforcement is OFF unless the server environment sets CORPUS_REQUIRE_AUTH to "1" or "true".
+ * Off: every page, server function, snapshot bundle and artifact route works without a session.
+ * On: the verified-account checks (access.server / access.middleware) apply unchanged.
+ */
+export function corpusAuthRequired(
+  env: Record<string, string | undefined> = process.env as Record<string, string | undefined>,
+): boolean {
+  const value = env[CORPUS_REQUIRE_AUTH_ENV]?.trim().toLowerCase();
+  return value === "1" || value === "true";
+}
+
 /** The auth provider must verify this account; browser profile metadata cannot confirm its email. */
 export function isAllowedCorpusUser(user: VerifiedCorpusUser): boolean {
   return Boolean(
