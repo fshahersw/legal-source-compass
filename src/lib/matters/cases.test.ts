@@ -4,6 +4,7 @@ import {
   filterCases,
   masterCase,
   mergeCases,
+  pageCases,
   parseFjcCase,
   parseInventoryCase,
   scopedFacets,
@@ -232,5 +233,97 @@ describe("filters and facets are scoped to the matter's own rows", () => {
       "1:20-cv-2",
       "1:20-cv-10",
     ]);
+  });
+});
+
+describe("server-side paging of the member-case list", () => {
+  const mk = (n: number, over: Partial<CaseRow> = {}): CaseRow => ({
+    id: `row-${n}`,
+    clDocketId: null,
+    docketNumber: `1:22-cv-${String(n).padStart(5, "0")}`,
+    caption: null,
+    captionWithheld: true,
+    courtId: n % 3 === 0 ? "njd" : "cand",
+    // Row 0 has no filing date; the others are one day apart, newest = highest number.
+    dateFiled:
+      n === 0
+        ? null
+        : `2023-${String(1 + (n % 12)).padStart(2, "0")}-${String(1 + (n % 27)).padStart(2, "0")}`,
+    dateTerminated: null,
+    status: "active",
+    role: n % 5 === 0 ? "transferor" : "member",
+    evidence: "registry",
+    evidenceDetail: null,
+    route: n % 2 === 0 ? "transferred" : null,
+    defendant: null,
+    sourceUrl: null,
+    source: "registry",
+    registry: {
+      rowId: `sw-md:9001:cand:1:22-cv-${n}`,
+      docketKey: `cand:1:22-cv-${n}`,
+      basisKinds: n % 4 === 0 ? ["jpml_schedule_a", "native_crosswalk"] : ["native_crosswalk"],
+      evidenceCount: 1,
+      countsAsAction: n % 5 !== 0,
+      actionId: null,
+      conflict: false,
+      nativeCaseIds: [],
+      links: [],
+    },
+    ...over,
+  });
+  const rows = Array.from({ length: 137 }, (_, i) => mk(i));
+
+  it("returns one page and the exact total of the filtered list", () => {
+    const page = pageCases(rows, {}, "docket", 0, 50);
+    expect(page.rows).toHaveLength(50);
+    expect(page.total).toBe(137);
+    expect(page.offset).toBe(0);
+    expect(page.pageSize).toBe(50);
+    expect(page.rows[0]!.docketNumber).toBe("1:22-cv-00000");
+    const last = pageCases(rows, {}, "docket", 100, 50);
+    expect(last.rows).toHaveLength(37);
+    expect(last.offset).toBe(100);
+    expect(last.rows.at(-1)!.docketNumber).toBe("1:22-cv-00136");
+  });
+
+  it("filters before it pages, so totals and pages describe the same rows", () => {
+    const filtered = filterCases(rows, { court: "njd", role: "member" });
+    const page = pageCases(rows, { court: "njd", role: "member" }, "docket", 0, 10);
+    expect(page.total).toBe(filtered.length);
+    expect(page.rows.every((r) => r.courtId === "njd" && r.role === "member")).toBe(true);
+    expect(page.rows).toHaveLength(Math.min(10, filtered.length));
+  });
+
+  it("walks the whole sorted list page by page without losing or repeating a row", () => {
+    const seen: string[] = [];
+    for (let offset = 0; offset < 137; offset += 25) {
+      seen.push(...pageCases(rows, {}, "filed-desc", offset, 25).rows.map((r) => r.id));
+    }
+    expect(seen).toHaveLength(137);
+    expect(new Set(seen).size).toBe(137);
+    expect(seen).toEqual(sortCases(rows, "filed-desc").map((r) => r.id));
+  });
+
+  it("clamps an offset past the end to the last page and aligns it to a page boundary", () => {
+    const beyond = pageCases(rows, {}, "docket", 9999, 50);
+    expect(beyond.offset).toBe(100);
+    expect(beyond.rows).toHaveLength(37);
+    const unaligned = pageCases(rows, {}, "docket", 61, 50);
+    expect(unaligned.offset).toBe(50);
+    expect(pageCases([], {}, "docket", 40, 50)).toMatchObject({ rows: [], total: 0, offset: 0 });
+  });
+
+  it("scopes the facets to the other filters exactly as the table is scoped", () => {
+    const page = pageCases(rows, { court: "njd" }, "docket", 0, 50);
+    expect(page.facets).toEqual(scopedFacets(rows, { court: "njd" }));
+    // The court facet ignores its own filter; the role facet reflects only the njd rows.
+    expect(page.facets.court.map((o) => o.value).sort()).toEqual(["cand", "njd"]);
+    const njdRoles = filterCases(rows, { court: "njd" }).length;
+    expect(page.facets.role.reduce((n, o) => n + o.count, 0)).toBe(njdRoles);
+  });
+
+  it("ships a small page instead of the whole list", () => {
+    const page = pageCases(rows, {}, "docket", 0, 50);
+    expect(JSON.stringify(page.rows).length).toBeLessThan(JSON.stringify(rows).length / 2);
   });
 });

@@ -174,6 +174,26 @@ const strings = (v: unknown): string[] =>
   });
 
 /**
+ * The provider case ids of one docket (`detail.registry.native_case_ids`) that may be passed to the PDF reader. An id
+ * whose own provider header conflicts with the docket identity is shown for transparency in the registry but is never a
+ * source of this docket's PDFs (contract §6.5), so it is dropped here.
+ */
+export function pdfLookupCaseIds(raw: unknown, limit = 30): string[] {
+  const out: string[] = [];
+  for (const entry of arr(raw)) {
+    if (!isObj(entry)) continue;
+    const id = idStr(entry["id"]);
+    if (!id || !isNativeCaseId(id) || out.includes(id)) continue;
+    if (entry["pdf_lookup"] === false) continue;
+    const basis = str(entry["resolution_basis"]);
+    if (basis && /header_conflicts$/.test(basis)) continue;
+    out.push(id);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+/**
  * `detail.registry` of a `sw_matters_v1` record. Returns null when the block is absent, is not the registry schema
  * or names a different MDL than the one requested.
  */

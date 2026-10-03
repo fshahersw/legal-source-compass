@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { CASE_ROLES, CASE_SORTS, type CaseFilter, type CaseRole } from "./cases";
 import { normalizeMdlNumber, type JpmlReport } from "./overview";
 import { caseIdPlan } from "./registry";
 import {
@@ -8,9 +9,11 @@ import {
   loadEntries,
   loadEntryText,
   loadFjcCases,
+  loadCaseDocuments,
+  loadCasesPage,
+  loadCasesScope,
   loadHub,
   loadLegacyDocuments,
-  loadMatterCases,
   loadRegistryDocketDetail,
   loadRegistryDocuments,
   overviewFor,
@@ -25,11 +28,75 @@ export const getMatterOverview = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ id: mdlInput }).parse(d))
   .handler(async ({ data }) => overviewFor(mdlOf(data.id)));
 
-export const getMatterCases = createServerFn({ method: "GET" })
+const caseFilterInput = z.object({
+  q: z.string().max(120).default(""),
+  court: z
+    .string()
+    .regex(/^[a-z0-9]{2,12}$/)
+    .optional(),
+  year: z
+    .string()
+    .regex(/^\d{4}$/)
+    .optional(),
+  status: z.string().max(60).optional(),
+  evidence: z
+    .string()
+    .regex(/^[a-z0-9_]{1,60}$/)
+    .optional(),
+  role: z
+    .string()
+    .refine((v) => v === "" || (CASE_ROLES as readonly string[]).includes(v))
+    .optional(),
+  route: z
+    .string()
+    .regex(/^[a-z0-9_]{1,60}$/)
+    .optional(),
+  actions: z.enum(["", "action"]).optional(),
+});
+
+/** The validated filter as the pure filter type (only the keys that carry a value). */
+function toCaseFilter(input: z.infer<typeof caseFilterInput>): CaseFilter {
+  const f: CaseFilter = {};
+  if (input.q.trim()) f.q = input.q.trim();
+  if (input.court) f.court = input.court;
+  if (input.year) f.year = input.year;
+  if (input.status) f.status = input.status;
+  if (input.evidence) f.evidence = input.evidence;
+  if (input.role) f.role = input.role as CaseRole;
+  if (input.route) f.route = input.route;
+  if (input.actions === "action") f.actions = "action";
+  return f;
+}
+
+/** One page of a matter's member cases; the server filters, sorts, counts and facets the whole list. */
+export const getMatterCasesPage = createServerFn({ method: "GET" })
+  .inputValidator((d) =>
+    z
+      .object({
+        id: mdlInput,
+        filter: caseFilterInput.default({ q: "" }),
+        sort: z.enum(CASE_SORTS as unknown as [string, ...string[]]).default("filed-desc"),
+        offset: z.number().int().min(0).max(100000).default(0),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    const overview = await overviewFor(mdlOf(data.id));
+    if (!overview) return null;
+    return loadCasesPage(
+      overview,
+      toCaseFilter(data.filter),
+      data.sort as (typeof CASE_SORTS)[number],
+      data.offset,
+    );
+  });
+
+/** What the member-case list is made of (no rows): the overview tiles use this instead of the whole list. */
+export const getMatterCasesScope = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ id: mdlInput }).parse(d))
   .handler(async ({ data }) => {
     const overview = await overviewFor(mdlOf(data.id));
-    return overview ? loadMatterCases(overview) : null;
+    return overview ? loadCasesScope(overview) : null;
   });
 
 export const getMatterFjcCases = createServerFn({ method: "GET" })
@@ -112,6 +179,11 @@ export const getMatterDocumentsSummary = createServerFn({ method: "GET" })
       ? loadRegistryDocuments(caseIdPlan(overview.registry, overview.overview.keys.all), true)
       : null;
   });
+
+/** The verified PDFs filed under one registry docket's own case ids, for the detail drawer. */
+export const getMatterCaseDocuments = createServerFn({ method: "GET" })
+  .inputValidator((d) => z.object({ id: mdlInput, rowId: z.string().min(8).max(200) }).parse(d))
+  .handler(async ({ data }) => loadCaseDocuments(mdlOf(data.id), data.rowId));
 
 /** The evidence behind one matter-registry docket, for the detail drawer. */
 export const getMatterRegistryDocket = createServerFn({ method: "GET" })

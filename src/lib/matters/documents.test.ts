@@ -36,9 +36,28 @@ describe("registry rows", () => {
     });
     expect(describeDocument(d)).toMatchObject({
       entryNumber: 771,
+      attachment: null,
       label: "Docket entry 771",
       sourceLabel: "DocketBird docket",
     });
+  });
+
+  it("reads an attachment as part of its entry, so entry filters and labels include it", () => {
+    const d = describeDocument(
+      parseRegistryDocument(
+        row({
+          native_document_id: "njd-3:2026-md-03180-00009-002",
+          native_case_id: "njd-3:2026-md-03180",
+        }),
+      )!,
+    );
+    expect(d).toMatchObject({
+      entryNumber: 9,
+      attachment: 2,
+      label: "Docket entry 9 · attachment 2",
+    });
+    expect(filterDocuments([d], { entry: 9 })).toHaveLength(1);
+    expect(filterDocuments([d], { entry: 2 })).toHaveLength(0);
   });
 
   it("holds anything that is not explicitly open, and strips identifiers from held rows", () => {

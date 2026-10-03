@@ -18,7 +18,7 @@ import { evidenceKindLabel } from "@/lib/matters/cases";
 import { formatBytes } from "@/lib/matters/documents";
 import { entryTypeLabel } from "@/lib/matters/entries";
 import {
-  getMatterCases,
+  getMatterCasesScope,
   getMatterDocumentsSummary,
   getMatterEntries,
 } from "@/lib/matters/matters.functions";
@@ -187,10 +187,10 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
     queryFn: () => entriesFn({ data: { id: o.mdl, source: "auto", type: null, q: "", offset: 0 } }),
     staleTime: 2 * 60_000,
   });
-  // Same query key as the Cases tab, so opening that tab afterwards is instant.
-  const casesFn = useServerFn(getMatterCases);
+  // Only the size of the list is needed here, not its rows (the Cases tab pages them on the server).
+  const casesFn = useServerFn(getMatterCasesScope);
   const caseList = useQuery({
-    queryKey: ["matter-cases", o.mdl],
+    queryKey: ["matter-cases-scope", o.mdl],
     queryFn: () => casesFn({ data: { id: o.mdl } }),
     staleTime: 5 * 60_000,
   });
@@ -199,7 +199,7 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
   const cases = o.cases;
   const counsel = o.counsel;
   const reg = payload.registry;
-  const listedCases = caseList.data ? caseList.data.rows.length : null;
+  const listedCases = caseList.data ? caseList.data.listed : null;
   const capturedEntries = reg ? reg.entries.reduce((n, e) => n + (e.captured ?? 0), 0) : 0;
 
   return (

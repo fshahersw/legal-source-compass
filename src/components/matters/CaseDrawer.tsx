@@ -1,9 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
+import { Eye } from "lucide-react";
+import { useState } from "react";
 
 import { ExternalError } from "@/components/corpus/ExternalBadge";
-import { Chip, Fact, LinkOut, Loading, NotRecorded } from "@/components/matters/common";
+import { Chip, Fact, HeldBadge, LinkOut, Loading, NotRecorded } from "@/components/matters/common";
+import { PdfViewer } from "@/components/matters/PdfViewer";
+import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
@@ -19,8 +23,169 @@ import {
   type CaseRow,
   type RegistryLabels,
 } from "@/lib/matters/cases";
-import { getMatterRegistryDocket } from "@/lib/matters/matters.functions";
+import { formatBytes, sortDocuments, type MatterDocument } from "@/lib/matters/documents";
+import { getMatterCaseDocuments, getMatterRegistryDocket } from "@/lib/matters/matters.functions";
 import { formatUtc, type EvidenceItem } from "@/lib/matters/registry";
+
+/** Documents a docket's drawer lists at first, and the most it lists when expanded (the Documents tab has the rest). */
+const DRAWER_DOCS = 12;
+const DRAWER_ALL_DOCS = 100;
+
+/**
+ * The verified PDFs filed under this docket's own provider case ids (the ids come from the registry row on the
+ * server). Open items open in the same inline viewer as the Documents tab; held items are listed with no link.
+ */
+function CaseDocuments({ mdl, rowId }: { mdl: string; rowId: string }) {
+  const fn = useServerFn(getMatterCaseDocuments);
+  const q = useQuery({
+    queryKey: ["matter-case-documents", mdl, rowId],
+    queryFn: () => fn({ data: { id: mdl, rowId } }),
+    staleTime: 5 * 60_000,
+  });
+  const [showAll, setShowAll] = useState(false);
+  const [viewed, setViewed] = useState<MatterDocument | null>(null);
+  const heading = (
+    <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+      Documents filed on this docket
+    </h3>
+  );
+  if (q.isLoading)
+    return (
+      <section aria-label="Documents">
+        {heading}
+        <Loading what="documents" />
+      </section>
+    );
+  if (q.error)
+    return (
+      <section aria-label="Documents">
+        {heading}
+        <ExternalError error={q.error} />
+      </section>
+    );
+  const data = q.data;
+  if (!data) return null;
+  if (!data.documents) {
+    return (
+      <section aria-label="Documents">
+        {heading}
+        <p className="text-[12px] text-muted-foreground">
+          The registry records no provider case id that can be matched to the verified PDF archive
+          for this docket, so no document is listed. This is a coverage gap, not evidence that none
+          exist.
+        </p>
+      </section>
+    );
+  }
+  const docs = data.documents;
+  if (!docs.connected) {
+    return (
+      <section aria-label="Documents">
+        {heading}
+        <p className="text-[12px] text-muted-foreground">{docs.reason}</p>
+      </section>
+    );
+  }
+  const rows = sortDocuments(docs.rows, "entry-desc");
+  const shown = rows.slice(0, showAll ? DRAWER_ALL_DOCS : DRAWER_DOCS);
+  return (
+    <section aria-label="Documents">
+      {heading}
+      <p className="mb-2 text-[12px] text-muted-foreground">
+        <span className="font-medium text-foreground tabular-nums">
+          {docs.summary.total.toLocaleString()}
+        </span>{" "}
+        {docs.summary.total === 1 ? "document" : "documents"} in the verified PDF archive under{" "}
+        {data.ids.map((id, i) => (
+          <span key={id}>
+            {i ? ", " : ""}
+            <span className="font-mono text-[11px]">{id}</span>
+          </span>
+        ))}
+        {docs.summary.total ? (
+          <>
+            {" "}
+            · {docs.summary.open.toLocaleString()} open · {docs.summary.held.toLocaleString()} held
+          </>
+        ) : null}
+        .
+      </p>
+      {rows.length ? (
+        <>
+          <ul className="divide-y divide-border rounded-md border border-border text-[12px]">
+            {shown.map((d) => (
+              <li
+                key={`${d.sourceSystem}:${d.nativeDocumentId}`}
+                className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2.5 py-1.5"
+              >
+                <span className="min-w-0">
+                  <span className="font-medium">{d.label}</span>
+                  <span className="ml-2 text-muted-foreground">
+                    {d.sourceLabel}
+                    {d.availability === "open" && d.bytes !== null
+                      ? ` · ${formatBytes(d.bytes)}`
+                      : ""}
+                  </span>
+                </span>
+                {d.availability === "open" ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 px-2 text-[12px]"
+                    onClick={() => setViewed(d)}
+                  >
+                    <Eye aria-hidden /> View
+                  </Button>
+                ) : (
+                  <HeldBadge />
+                )}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px]">
+            {rows.length > DRAWER_DOCS ? (
+              <button
+                type="button"
+                aria-expanded={showAll}
+                className="text-primary underline-offset-2 hover:underline"
+                onClick={() => setShowAll((v) => !v)}
+              >
+                {showAll
+                  ? "Show fewer"
+                  : `Show ${Math.min(rows.length, DRAWER_ALL_DOCS).toLocaleString()} documents`}
+              </button>
+            ) : null}
+            {rows.length > shown.length ? (
+              <span className="text-muted-foreground">
+                {shown.length.toLocaleString()} of {rows.length.toLocaleString()} shown.
+              </span>
+            ) : null}
+            {rows.length > DRAWER_DOCS ? (
+              <Link
+                to="/matters/$id"
+                params={{ id: mdl }}
+                search={{ tab: "documents" }}
+                className="text-primary underline-offset-2 hover:underline"
+              >
+                All documents of the matter (Documents tab)
+              </Link>
+            ) : null}
+          </div>
+          {docs.truncated ? (
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              The archive holds more documents than the {rows.length.toLocaleString()} read here.
+            </p>
+          ) : null}
+        </>
+      ) : (
+        <p className="text-[12px] text-muted-foreground">
+          The verified PDF archive holds no document for these case ids yet.
+        </p>
+      )}
+      <PdfViewer doc={viewed} onClose={() => setViewed(null)} />
+    </section>
+  );
+}
 
 function EvidenceCard({
   item,
@@ -174,6 +339,8 @@ export function CaseDrawer({
                 ))}
               </div>
             ) : null}
+
+            {reg ? <CaseDocuments mdl={mdl} rowId={reg.rowId} /> : null}
 
             {q.isLoading ? <Loading what="the evidence" /> : null}
             {q.error ? <ExternalError error={q.error} /> : null}

@@ -1,5 +1,5 @@
 /** Payload shapes shared by the matter server functions and the matter UI (no server code lives here). */
-import type { CaseRow, RegistryLabels } from "./cases";
+import type { CasesPage, CaseRow, RegistryLabels } from "./cases";
 import type { MatterDocument, RegistrySummary } from "./documents";
 import type { DocketEntry } from "./entries";
 import type { MatterOverview } from "./overview";
@@ -33,16 +33,31 @@ export type MatterOverviewPayload = {
   registryReleased: { entries: string | null; parties: string | null };
 };
 
-export type MatterCasesPayload = {
+/**
+ * What the member-case list is made of, computed once per matter on the server: the unfiltered composition, which
+ * sources contributed and how many rows each did. Small enough to ship with every page.
+ */
+export type CasesScope = {
   /** Master docket + registry dockets + saved-docket-sample members, merged by CourtListener docket id. */
-  rows: CaseRow[];
+  listed: number;
+  /** Rows read from the matter registry's docket projection (its own total when the read was cut short). */
+  registryRows: number;
+  /** The registry read stopped at its row limit, so `registryRows` is more than the rows in hand. */
+  registryTruncated: boolean;
+  /** Evidence-kind and role labels as the registry dataset itself publishes them. */
+  labels: RegistryLabels | undefined;
+  inventoryPublished: boolean;
   inventoryTotal: number;
+  /** Role composition of the whole list (unfiltered), most frequent first. */
+  roles: { value: string; label: string; count: number }[];
+  /** Rows the registry counts as one action each. */
+  actionRows: number;
   /** Dockets whose FJC IDB record carries this MDL number (historical/administrative); null when not published. */
   fjc: { total: number | null; capped: boolean } | null;
-  inventoryPublished: boolean;
-  /** Rows read from the matter registry's docket projection; null when that dataset is not published. */
-  registryDockets: { total: number; truncated: boolean; labels: RegistryLabels } | null;
 };
+
+/** One page of the member-case list plus the scope it was cut from. */
+export type MatterCasesPageResponse = CasesPage & { scope: CasesScope };
 
 export type FjcCasesPage = {
   rows: CaseRow[];
@@ -75,6 +90,14 @@ export type RegistryDocumentsPayload =
       caseIds: CaseIdPlanEntry[];
     }
   | { connected: false; reason: string; caseIds: CaseIdPlanEntry[] };
+
+/** The verified PDFs filed under one registry docket's own provider case ids (the member-case drawer). */
+export type CaseDocumentsPayload = {
+  /** Provider case ids asked for (never the ones the registry marks as conflicting with the docket identity). */
+  ids: string[];
+  /** Null when the registry records no usable case id for the docket. */
+  documents: RegistryDocumentsPayload | null;
+};
 
 export type LegacyDocument = {
   id: string;

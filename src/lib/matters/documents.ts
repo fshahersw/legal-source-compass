@@ -92,6 +92,8 @@ export const SOURCE_LABELS: Record<RegistrySource, string> = {
 export type MatterDocument = RegistryDocument & {
   /** Docket-sheet number for DocketBird documents, otherwise null. */
   entryNumber: number | null;
+  /** Attachment number within the entry (DocketBird ids ending "-001"), otherwise null. */
+  attachment: number | null;
   /** Date printed in a court file name (court website items), otherwise null. */
   printedDate: string | null;
   label: string;
@@ -102,12 +104,17 @@ export type MatterDocument = RegistryDocument & {
 export function describeDocument(doc: RegistryDocument): MatterDocument {
   let label = doc.nativeDocumentId;
   let entryNumber: number | null = null;
+  let attachment: number | null = null;
   let printedDate: string | null = null;
   if (doc.sourceSystem === "docketbird") {
     const parsed = parseDocketBirdDocumentId(doc.nativeDocumentId);
     if (parsed) {
       entryNumber = parsed.sequence;
-      label = `Docket entry ${parsed.sequence}`;
+      attachment = parsed.attachment;
+      label =
+        parsed.attachment === null
+          ? `Docket entry ${parsed.sequence}`
+          : `Docket entry ${parsed.sequence} · attachment ${parsed.attachment}`;
     }
   } else if (
     doc.sourceSystem === "official-court" ||
@@ -118,7 +125,14 @@ export function describeDocument(doc: RegistryDocument): MatterDocument {
   } else if (doc.sourceSystem === "courtlistener") {
     label = `CourtListener document ${doc.nativeDocumentId}`;
   }
-  return { ...doc, entryNumber, printedDate, label, sourceLabel: SOURCE_LABELS[doc.sourceSystem] };
+  return {
+    ...doc,
+    entryNumber,
+    attachment,
+    printedDate,
+    label,
+    sourceLabel: SOURCE_LABELS[doc.sourceSystem],
+  };
 }
 
 /** In-app URL that streams an open document; null for held items so no link can exist. */

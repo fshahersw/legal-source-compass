@@ -1,7 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { CaseDrawer } from "@/components/matters/CaseDrawer";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
@@ -26,13 +26,9 @@ import {
   BASIS_NOTES,
   EVIDENCE_NOTES,
   ROLE_LABELS,
-  computeFacets,
   evidenceKindLabel,
   evidenceKindsOf,
-  filterCases,
   routeLabel,
-  scopedFacets,
-  sortCases,
   type CaseEvidence,
   type CaseFilter,
   type CaseRole,
@@ -41,12 +37,12 @@ import {
   type FacetOption,
   type RegistryLabels,
 } from "@/lib/matters/cases";
-import { getMatterCases, getMatterFjcCases } from "@/lib/matters/matters.functions";
-import type { MatterOverviewPayload } from "@/lib/matters/types";
-
-const PAGE = 50;
-/** A stable empty list, so memoised filters do not re-run on every render while data loads. */
-const NO_ROWS: CaseRow[] = [];
+import {
+  getMatterCasesPage,
+  getMatterCasesScope,
+  getMatterFjcCases,
+} from "@/lib/matters/matters.functions";
+import type { CasesScope, MatterOverviewPayload } from "@/lib/matters/types";
 
 function Facet({
   label,
@@ -115,9 +111,9 @@ function EvidenceCell({
           size="sm"
           className="h-6 px-1.5 text-[11px]"
           onClick={() => onOpen(row)}
-          aria-label={`Evidence for ${row.docketNumber ?? "this docket"}`}
+          aria-label={`Evidence and documents for ${row.docketNumber ?? "this docket"}`}
         >
-          Evidence{row.registry.evidenceCount ? ` (${row.registry.evidenceCount})` : ""}
+          Evidence{row.registry.evidenceCount ? ` (${row.registry.evidenceCount})` : ""} · PDFs
         </Button>
       ) : null}
     </div>
@@ -256,52 +252,41 @@ function CaseTable({
   );
 }
 
-function ScopeNote({
-  payload,
-  rows,
-  registryRows,
-  inventoryPublished,
-  truncated,
-  labels,
-}: {
-  payload: MatterOverviewPayload;
-  rows: CaseRow[];
-  registryRows: number;
-  inventoryPublished: boolean;
-  truncated: boolean;
-  labels: RegistryLabels | undefined;
-}) {
+function ScopeNote({ payload, scope }: { payload: MatterOverviewPayload; scope: CasesScope }) {
   const o = payload.overview;
   const jpmlTotal = o.actions.total;
   const jpmlPending = o.actions.pending;
-  const roles = computeFacets(rows, labels).role;
-  const actionRows = rows.filter((r) => r.registry?.countsAsAction === true).length;
+  const registryRows = scope.registryRows;
+  const savedSample = scope.listed - registryRows;
   return (
     <Scope title="Scope">
       {registryRows > 0 ? (
         <>
           The matter registry lists {registryRows.toLocaleString()}{" "}
           {registryRows === 1 ? "docket" : "dockets"} for this MDL (
-          {roles.map((r) => `${r.label.toLowerCase()} ${r.count.toLocaleString()}`).join(", ")}).{" "}
-          {actionRows > 0 ? (
+          {scope.roles
+            .map((r) => `${r.label.toLowerCase()} ${r.count.toLocaleString()}`)
+            .join(", ")}
+          ).{" "}
+          {scope.actionRows > 0 ? (
             <>
-              {actionRows.toLocaleString()} {actionRows === 1 ? "is" : "are"} counted as an action:
-              a transferred action appears as a transferor and a transferee row, and only one
-              carries the count.{" "}
+              {scope.actionRows.toLocaleString()} {scope.actionRows === 1 ? "is" : "are"} counted as
+              an action: a transferred action appears as a transferor and a transferee row, and only
+              one carries the count.{" "}
             </>
           ) : null}
-          {rows.length > registryRows
-            ? `${(rows.length - registryRows).toLocaleString()} more come from the saved docket sample. `
+          {savedSample > 0
+            ? `${savedSample.toLocaleString()} more come from the saved docket sample. `
             : ""}
         </>
       ) : (
         <>
-          The corpus lists {rows.length.toLocaleString()} {rows.length === 1 ? "docket" : "dockets"}{" "}
-          for this MDL: the master docket
-          {rows.length > 1
-            ? ` and ${(rows.length - rows.filter((r) => r.role === "master").length).toLocaleString()} from the saved docket sample`
+          The corpus lists {scope.listed.toLocaleString()}{" "}
+          {scope.listed === 1 ? "docket" : "dockets"} for this MDL: the master docket
+          {scope.listed > 1
+            ? ` and ${(scope.listed - 1).toLocaleString()} from the saved docket sample`
             : ""}
-          {inventoryPublished ? "" : " (the saved docket sample is not published)"}.{" "}
+          {scope.inventoryPublished ? "" : " (the saved docket sample is not published)"}.{" "}
         </>
       )}
       {jpmlTotal !== null || jpmlPending !== null ? (
@@ -315,7 +300,7 @@ function ScopeNote({
           these lists are never the size of the MDL.{" "}
         </>
       ) : null}
-      {truncated ? "The list is truncated at the registry read limit. " : ""}
+      {scope.registryTruncated ? "The list is truncated at the registry read limit. " : ""}
       <span className="block pt-1">
         Membership comes from the evidence shown on each row. A parent-docket reference is not
         membership, and no row was added by guessing.
@@ -324,45 +309,60 @@ function ScopeNote({
   );
 }
 
-/** Member cases (matter registry + saved docket sample), with evidence-scoped facets computed from this matter's rows only. */
+/** A filter without one key (the optional keys cannot hold undefined). */
+function without(filter: CaseFilter, key: keyof CaseFilter): CaseFilter {
+  const next = { ...filter };
+  delete next[key];
+  return next;
+}
+
+/**
+ * Member cases (matter registry + saved docket sample). The server filters, sorts, counts and facets the whole list and
+ * returns one page, so the browser never holds the list; facet counts are scoped to this matter's rows.
+ */
 function SampleCases({ payload }: { payload: MatterOverviewPayload }) {
   const mdl = payload.overview.mdl;
-  const fn = useServerFn(getMatterCases);
-  const q = useQuery({
-    queryKey: ["matter-cases", mdl],
-    queryFn: () => fn({ data: { id: mdl } }),
-    staleTime: 5 * 60_000,
-  });
+  const fn = useServerFn(getMatterCasesPage);
   const [filter, setFilter] = useState<CaseFilter>({});
+  const [draft, setDraft] = useState("");
   const [sort, setSort] = useState<CaseSort>("filed-desc");
   const [offset, setOffset] = useState(0);
   const [open, setOpen] = useState<CaseRow | null>(null);
-  const rows = q.data?.rows ?? NO_ROWS;
-  const labels = q.data?.registryDockets?.labels;
-  const filtered = useMemo(() => sortCases(filterCases(rows, filter), sort), [rows, filter, sort]);
-  const facets = useMemo(() => scopedFacets(rows, filter, labels), [rows, filter, labels]);
+  // The search box is debounced into the filter so each keystroke is not a server round trip.
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const text = draft.trim();
+      setFilter((f) => ((f.q ?? "") === text ? f : text ? { ...f, q: text } : without(f, "q")));
+      setOffset(0);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [draft]);
+  const q = useQuery({
+    queryKey: ["matter-cases-page", mdl, filter, sort, offset],
+    queryFn: () => fn({ data: { id: mdl, filter: { q: "", ...filter }, sort, offset } }),
+    placeholderData: keepPreviousData,
+    staleTime: 2 * 60_000,
+  });
   const set = (patch: Partial<CaseFilter>) => {
-    setFilter((f) => ({ ...f, ...patch }));
+    setFilter((f) => {
+      const next: CaseFilter = { ...f, ...patch };
+      for (const k of Object.keys(next) as (keyof CaseFilter)[]) if (!next[k]) delete next[k];
+      return next;
+    });
     setOffset(0);
   };
+  const data = q.data;
   const active = Object.values(filter).some((v) => v);
-  const page = filtered.slice(offset, offset + PAGE);
-  const registryRows = rows.filter((r) => r.registry).length;
 
   if (q.isLoading) return <Loading what="member cases" />;
   if (q.error) return <ExternalError error={q.error} />;
-  if (!q.data) return <EmptyState>This matter has no cases in the connected corpus.</EmptyState>;
+  if (!data) return <EmptyState>This matter has no cases in the connected corpus.</EmptyState>;
+  const { facets, scope } = data;
+  const labels = scope.labels;
 
   return (
     <div className="space-y-3">
-      <ScopeNote
-        payload={payload}
-        rows={rows}
-        registryRows={q.data.registryDockets?.total ?? registryRows}
-        inventoryPublished={q.data.inventoryPublished}
-        truncated={!!q.data.registryDockets?.truncated}
-        labels={labels}
-      />
+      <ScopeNote payload={payload} scope={scope} />
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">
         <div className="sm:col-span-2">
           <FilterField label="Search">
@@ -370,8 +370,8 @@ function SampleCases({ payload }: { payload: MatterOverviewPayload }) {
               aria-label="Search member cases"
               className="h-8 text-[12px]"
               placeholder="Docket number, court or provider case id"
-              value={filter.q ?? ""}
-              onChange={(e) => set({ q: e.target.value })}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
             />
           </FilterField>
         </div>
@@ -439,7 +439,10 @@ function SampleCases({ payload }: { payload: MatterOverviewPayload }) {
           <select
             className={selectClass}
             value={sort}
-            onChange={(e) => setSort(e.target.value as CaseSort)}
+            onChange={(e) => {
+              setSort(e.target.value as CaseSort);
+              setOffset(0);
+            }}
           >
             <option value="filed-desc">Filed, newest first</option>
             <option value="filed-asc">Filed, oldest first</option>
@@ -450,17 +453,18 @@ function SampleCases({ payload }: { payload: MatterOverviewPayload }) {
       <div className="flex flex-wrap items-center gap-2 text-[12px] text-muted-foreground">
         <span aria-live="polite">
           <span className="font-medium text-foreground tabular-nums">
-            {filtered.length.toLocaleString()}
+            {data.total.toLocaleString()}
           </span>{" "}
-          of {rows.length.toLocaleString()} dockets match
+          of {scope.listed.toLocaleString()} dockets match
         </span>
-        {active ? (
+        {active || draft ? (
           <Button
             variant="ghost"
             size="sm"
             className="h-7 px-2 text-[12px]"
             onClick={() => {
               setFilter({});
+              setDraft("");
               setOffset(0);
             }}
           >
@@ -468,8 +472,15 @@ function SampleCases({ payload }: { payload: MatterOverviewPayload }) {
           </Button>
         ) : null}
       </div>
-      {filtered.length ? (
-        <CaseTable rows={page} showRoute={facets.routeRecorded} labels={labels} onOpen={setOpen} />
+      {data.rows.length ? (
+        <div className={q.isFetching ? "opacity-70 transition-opacity" : ""}>
+          <CaseTable
+            rows={data.rows}
+            showRoute={facets.routeRecorded}
+            labels={labels}
+            onOpen={setOpen}
+          />
+        </div>
       ) : (
         <EmptyState>No docket matches these filters.</EmptyState>
       )}
@@ -479,18 +490,18 @@ function SampleCases({ payload }: { payload: MatterOverviewPayload }) {
           sources currently loaded, so it is not shown or filterable.
         </p>
       ) : null}
-      {facets.evidence.reduce((n, o) => n + o.count, 0) > filtered.length ? (
+      {facets.evidence.reduce((n, o) => n + o.count, 0) > data.total ? (
         <p className="text-[11px] text-muted-foreground">
           A docket with several kinds of evidence is counted once under each kind, so the evidence
           counts can add up to more than the number of dockets.
         </p>
       ) : null}
-      {filtered.length > PAGE ? (
+      {data.total > data.pageSize ? (
         <RangePager
-          offset={offset}
-          pageSize={PAGE}
-          shown={page.length}
-          total={filtered.length}
+          offset={data.offset}
+          pageSize={data.pageSize}
+          shown={data.rows.length}
+          total={data.total}
           onOffset={setOffset}
         />
       ) : null}
@@ -597,9 +608,10 @@ function FjcCases({ mdl, total, capped }: { mdl: string; total: number | null; c
 }
 
 export function CasesPanel({ payload }: { payload: MatterOverviewPayload }) {
-  const fn = useServerFn(getMatterCases);
-  const q = useQuery({
-    queryKey: ["matter-cases", payload.overview.mdl],
+  const fn = useServerFn(getMatterCasesScope);
+  // Same cached server list as the pages; only the FJC count is needed here.
+  const scope = useQuery({
+    queryKey: ["matter-cases-scope", payload.overview.mdl],
     queryFn: () => fn({ data: { id: payload.overview.mdl } }),
     staleTime: 5 * 60_000,
   });
@@ -612,8 +624,12 @@ export function CasesPanel({ payload }: { payload: MatterOverviewPayload }) {
       >
         <SampleCases payload={payload} />
       </Panel>
-      {q.data?.fjc ? (
-        <FjcCases mdl={payload.overview.mdl} total={q.data.fjc.total} capped={q.data.fjc.capped} />
+      {scope.data?.fjc ? (
+        <FjcCases
+          mdl={payload.overview.mdl}
+          total={scope.data.fjc.total}
+          capped={scope.data.fjc.capped}
+        />
       ) : null}
     </div>
   );

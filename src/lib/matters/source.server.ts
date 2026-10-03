@@ -11,11 +11,16 @@
  */
 import { restGet, rpcPost } from "@/lib/external/rest.server";
 import {
+  CASE_PAGE_SIZE,
+  computeFacets,
   masterCase,
   mergeCases,
+  pageCases,
   parseFjcCase,
   parseInventoryCase,
+  type CaseFilter,
   type CaseRow,
+  type CaseSort,
   type RegistryLabels,
 } from "./cases";
 import { matterCaseKeys } from "./docketKeys";
@@ -41,6 +46,7 @@ import {
   newerJpmlCounts,
   parseRegistryDocket,
   parseRegistryDocketDetail,
+  pdfLookupCaseIds,
   overviewFromRegistry,
   parseRegistryLabels,
   parseRegistryRecord,
@@ -52,13 +58,15 @@ import {
 import { SW_MATTERS } from "./tiers";
 import type {
   AppearancesPayload,
+  CaseDocumentsPayload,
+  CasesScope,
   EntriesPayload,
   FjcCasesPage,
   HubRow,
   JpmlReference,
   LegacyDocument,
   MasterDocketMeta,
-  MatterCasesPayload,
+  MatterCasesPageResponse,
   MatterOverviewPayload,
   PartiesPayload,
   RegistryDocumentsPayload,
@@ -287,7 +295,10 @@ export async function loadMatterOverview(mdl: string): Promise<MatterOverviewPay
 
 /* ------------------------------------------------------------------ cases */
 
-export async function loadMatterCases(payload: MatterOverviewPayload): Promise<MatterCasesPayload> {
+/** The merged member-case list of one matter plus how it was assembled; built once and cached on the server. */
+type CasesState = { rows: CaseRow[]; scope: CasesScope };
+
+async function buildCasesState(payload: MatterOverviewPayload): Promise<CasesState> {
   const { overview, master } = payload;
   const rows: CaseRow[] = [];
   const m = masterCase({
@@ -300,42 +311,91 @@ export async function loadMatterCases(payload: MatterOverviewPayload): Promise<M
   });
   if (m) rows.push(m);
 
-  let registryDockets: MatterCasesPayload["registryDockets"] = null;
-  if (await isPublished("sw_matter_dockets_v1")) {
+  // The three sources are independent, so they are read at the same time.
+  const registryRead = (async () => {
+    if (!(await isPublished("sw_matter_dockets_v1"))) return null;
     try {
       const [reg, labels] = await Promise.all([
         loadRegistryDockets(overview.mdl),
         registryLabels(),
       ]);
-      if (reg.total > 0 || reg.rows.length > 0) {
-        rows.push(...reg.rows);
-        registryDockets = { total: reg.total, truncated: reg.truncated, labels };
-      }
+      return reg.total > 0 || reg.rows.length > 0 ? { ...reg, labels } : null;
     } catch {
-      registryDockets = null;
+      return null;
     }
-  }
-
-  let inventoryTotal = 0;
-  const inventoryPublished = await isPublished("mdl_case_inventory");
-  if (inventoryPublished) {
+  })();
+  const inventoryRead = (async () => {
+    if (!(await isPublished("mdl_case_inventory"))) return null;
     const r = await restGet<{ id: string; item: unknown; facts: unknown }[]>(
       `corpus_records?select=id,item,facts:detail->facts&dataset=eq.mdl_case_inventory&filters=cs.${containsMdl(overview.mdl)}&order=ordinal.asc,id.asc&limit=1000`,
     );
-    for (const row of r.rows) {
-      const parsed = parseInventoryCase(row.item, row.facts);
-      if (parsed) {
-        rows.push(parsed);
-        inventoryTotal++;
-      }
-    }
-  }
+    return r.rows.flatMap((row) => parseInventoryCase(row.item, row.facts) ?? []);
+  })();
+  const fjcRead = (async (): Promise<CasesScope["fjc"]> =>
+    (await isPublished("cl_docket_metadata"))
+      ? { total: await exactFjcCount(overview.mdl, null), capped: false }
+      : null)();
+  const [registry, inventory, fjc] = await Promise.all([registryRead, inventoryRead, fjcRead]);
+  if (registry) rows.push(...registry.rows);
+  if (inventory) rows.push(...inventory);
 
-  let fjc: MatterCasesPayload["fjc"] = null;
-  if (await isPublished("cl_docket_metadata")) {
-    fjc = { total: await exactFjcCount(overview.mdl, null), capped: false };
+  const merged = mergeCases(rows);
+  const facets = computeFacets(merged, registry?.labels);
+  return {
+    rows: merged,
+    scope: {
+      listed: merged.length,
+      registryRows: registry ? registry.total : 0,
+      registryTruncated: registry ? registry.truncated : false,
+      labels: registry?.labels,
+      inventoryPublished: inventory !== null,
+      inventoryTotal: inventory ? inventory.length : 0,
+      roles: facets.role,
+      actionRows: facets.actionRows,
+      fjc,
+    },
+  };
+}
+
+const casesCache = new Map<string, { at: number; state: Promise<CasesState> }>();
+const CASES_TTL_MS = 5 * 60_000;
+const CASES_CACHE_MAX = 12;
+
+/**
+ * The matter's merged list, cached for five minutes (concurrent callers share one read; a failed read is not cached).
+ * Only a page of it ever leaves the server.
+ */
+function casesStateFor(payload: MatterOverviewPayload): Promise<CasesState> {
+  const key = payload.overview.mdl;
+  const hit = casesCache.get(key);
+  if (hit && Date.now() - hit.at < CASES_TTL_MS) return hit.state;
+  const state = buildCasesState(payload);
+  casesCache.set(key, { at: Date.now(), state });
+  state.catch(() => {
+    if (casesCache.get(key)?.state === state) casesCache.delete(key);
+  });
+  while (casesCache.size > CASES_CACHE_MAX) {
+    const oldest = casesCache.keys().next().value;
+    if (oldest === undefined) break;
+    casesCache.delete(oldest);
   }
-  return { rows: mergeCases(rows), inventoryTotal, fjc, inventoryPublished, registryDockets };
+  return state;
+}
+
+/** One page of the matter's member cases, filtered and sorted on the server. */
+export async function loadCasesPage(
+  payload: MatterOverviewPayload,
+  filter: CaseFilter,
+  sort: CaseSort,
+  offset: number,
+): Promise<MatterCasesPageResponse> {
+  const state = await casesStateFor(payload);
+  return { ...pageCases(state.rows, filter, sort, offset, CASE_PAGE_SIZE, state.scope.labels), scope: state.scope };
+}
+
+/** The composition of the list without any row (overview tiles). */
+export async function loadCasesScope(payload: MatterOverviewPayload): Promise<CasesScope> {
+  return (await casesStateFor(payload)).scope;
 }
 
 /** Exact (uncapped) number of cl_docket_metadata rows selected by an FJC MDL number, optionally in one exact court. */
@@ -541,14 +601,45 @@ export async function loadEntryText(entryId: string): Promise<{ text: string | n
 /* ------------------------------------------------------------------ documents */
 
 const REGISTRY_ROW_CAP = 5000;
+const REGISTRY_PAGE = 500;
 
 /**
  * Verified-PDF registry rows for a matter's provider case ids (the matter registry's explicit ids first, derived
- * keys as a labelled supplement); degrades to `connected:false` if the reader is absent.
+ * keys as a labelled supplement); degrades to `connected:false` if the reader is absent. Results are cached for three
+ * minutes (the Documents tab, the overview tiles, the timeline and the drawers ask for the same lists), and the pages
+ * after the first are read four at a time.
  */
-export async function loadRegistryDocuments(
+const registryDocsCache = new Map<string, { at: number; value: Promise<RegistryDocumentsPayload> }>();
+
+export function loadRegistryDocuments(
   caseIds: CaseIdPlanEntry[],
   summaryOnly = false,
+): Promise<RegistryDocumentsPayload> {
+  const key = `${summaryOnly ? "summary" : "rows"}|${caseIds.map((c) => c.id).join(",")}`;
+  const hit = registryDocsCache.get(key);
+  if (hit && Date.now() - hit.at < 3 * 60_000) return hit.value;
+  const value = readRegistryDocuments(caseIds, summaryOnly);
+  registryDocsCache.set(key, { at: Date.now(), value });
+  // An unconnected reader or a failed read is not worth remembering.
+  value.then(
+    (v) => {
+      if (!v.connected && registryDocsCache.get(key)?.value === value) registryDocsCache.delete(key);
+    },
+    () => {
+      if (registryDocsCache.get(key)?.value === value) registryDocsCache.delete(key);
+    },
+  );
+  while (registryDocsCache.size > 80) {
+    const oldest = registryDocsCache.keys().next().value;
+    if (oldest === undefined) break;
+    registryDocsCache.delete(oldest);
+  }
+  return value;
+}
+
+async function readRegistryDocuments(
+  caseIds: CaseIdPlanEntry[],
+  summaryOnly: boolean,
 ): Promise<RegistryDocumentsPayload> {
   if (!caseIds.length) {
     return {
@@ -558,31 +649,33 @@ export async function loadRegistryDocuments(
     };
   }
   const caseKeys = caseIds.map((c) => c.id);
-  const rows: MatterDocument[] = [];
-  let summary: RegistrySummary | null = null;
+  const readPage = async (offset: number, limit: number) => {
+    const page = await rpcPost<unknown>("corpus_matter_pdf_documents_v1", {
+      p_native_case_ids: caseKeys,
+      p_limit: limit,
+      p_offset: offset,
+    });
+    if (!isObj(page)) throw new Error("Unexpected registry response");
+    const raw = Array.isArray(page["rows"]) ? page["rows"] : [];
+    const parsed = raw
+      .map((r) => parseRegistryDocument(r))
+      .filter((r): r is NonNullable<typeof r> => !!r)
+      // A row is accepted only if its case id is exactly one of the ids asked for.
+      .filter((r) => r.nativeCaseId !== null && caseKeys.includes(r.nativeCaseId))
+      .map(describeDocument);
+    return { summary: page["summary"], parsed };
+  };
   try {
-    for (let offset = 0; offset < REGISTRY_ROW_CAP; offset += 500) {
-      const page = await rpcPost<unknown>("corpus_matter_pdf_documents_v1", {
-        p_native_case_ids: caseKeys,
-        p_limit: summaryOnly ? 1 : 500,
-        p_offset: offset,
-      });
-      if (!isObj(page)) throw new Error("Unexpected registry response");
-      const raw = Array.isArray(page["rows"]) ? page["rows"] : [];
-      const parsed = raw
-        .map((r) => parseRegistryDocument(r))
-        .filter((r): r is NonNullable<typeof r> => !!r)
-        // A row is accepted only if its case id is exactly one of the ids asked for.
-        .filter((r) => r.nativeCaseId !== null && caseKeys.includes(r.nativeCaseId))
-        .map(describeDocument);
-      rows.push(...parsed);
-      if (offset === 0) summary = parseRegistrySummary(page["summary"], parsed);
-      if (summaryOnly) {
-        rows.length = 0;
-        break;
-      }
-      if (raw.length < 500 || rows.length >= (summary?.total ?? 0)) break;
-    }
+    const first = await readPage(0, summaryOnly ? 1 : REGISTRY_PAGE);
+    const summary = parseRegistrySummary(first.summary, first.parsed);
+    if (summaryOnly) return { connected: true, summary, rows: [], truncated: false, caseIds };
+    const rows: MatterDocument[] = [...first.parsed];
+    const offsets: number[] = [];
+    for (let o = REGISTRY_PAGE; o < Math.min(summary.total, REGISTRY_ROW_CAP); o += REGISTRY_PAGE)
+      offsets.push(o);
+    for (const page of await mapLimit(offsets, 4, (o) => readPage(o, REGISTRY_PAGE)))
+      rows.push(...page.parsed);
+    return { connected: true, summary, rows, truncated: rows.length < summary.total, caseIds };
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     return {
@@ -593,13 +686,26 @@ export async function loadRegistryDocuments(
       caseIds,
     };
   }
-  const resolved = summary ?? parseRegistrySummary(null, rows);
+}
+
+/**
+ * The verified PDFs filed under one registry docket's own provider case ids (a member case's drawer). The ids come from
+ * the registry row on the server, never from the browser, so a request can only ask for a docket the registry lists.
+ */
+export async function loadCaseDocuments(
+  mdl: string,
+  rowId: string,
+): Promise<CaseDocumentsPayload | null> {
+  if (!isRegistryRowOf(rowId, mdl) || !(await isPublished("sw_matter_dockets_v1"))) return null;
+  const r = await restGet<{ ids: unknown }[]>(
+    `corpus_records?select=ids:detail->registry->native_case_ids&dataset=eq.sw_matter_dockets_v1&id=eq.${enc(rowId)}&limit=1`,
+  );
+  if (!r.rows.length) return null;
+  const ids = pdfLookupCaseIds(r.rows[0]?.ids);
+  if (!ids.length) return { ids, documents: null };
   return {
-    connected: true,
-    summary: resolved,
-    rows,
-    truncated: !summaryOnly && rows.length < resolved.total,
-    caseIds,
+    ids,
+    documents: await loadRegistryDocuments(ids.map((id) => ({ id, basis: "registry" as const }))),
   };
 }
 

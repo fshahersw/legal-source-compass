@@ -88,7 +88,20 @@ describe("native document ids", () => {
     expect(parseDocketBirdDocumentId("flnd-3:2025-md-03140-00771")).toEqual({
       caseKey: "flnd-3:2025-md-03140",
       sequence: 771,
+      attachment: null,
     });
+    // An attachment keeps the entry number of its parent and says which attachment it is.
+    expect(parseDocketBirdDocumentId("njd-3:2026-md-03180-00009-002")).toEqual({
+      caseKey: "njd-3:2026-md-03180",
+      sequence: 9,
+      attachment: 2,
+    });
+    expect(parseDocketBirdDocumentId("njd-3:2026-md-03180-00023-001")).toMatchObject({
+      sequence: 23,
+      attachment: 1,
+    });
+    // Text-only clerk entries are not documents.
+    expect(parseDocketBirdDocumentId("njd-3:2026-md-03180-00010-t001")).toBeNull();
     expect(parseDocketBirdDocumentId("flnd-3:2025-md-03140-1")).toBeNull();
     expect(parseDocketBirdDocumentId("https://example.test/a.pdf")).toBeNull();
   });

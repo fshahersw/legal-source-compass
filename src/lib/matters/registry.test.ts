@@ -22,6 +22,7 @@ import {
   parseRegistryLabels,
   parseRegistryMatter,
   parseRegistryRecord,
+  pdfLookupCaseIds,
   withRegistryJpml,
 } from "./registry";
 
@@ -215,6 +216,40 @@ describe("case-id plan for the PDF reader", () => {
     ]);
     expect(caseIdPlan({ pdfCaseIds: [] }, ["a-1"])).toEqual([{ id: "a-1", basis: "derived" }]);
     expect(caseIdPlan(null, [])).toEqual([]);
+  });
+});
+
+describe("provider case ids of one docket for the PDF reader", () => {
+  it("keeps every usable id in order and drops duplicates", () => {
+    expect(
+      pdfLookupCaseIds([
+        { provider: "courtlistener", id: "62613213", resolution_basis: "exact_docket_key" },
+        { provider: "docketbird", id: "cand-4:2022-cv-00401" },
+        { provider: "courtlistener", id: 62613213 },
+        { provider: "official-court", id: "4:22cv401" },
+      ]),
+    ).toEqual(["62613213", "cand-4:2022-cv-00401", "4:22cv401"]);
+  });
+
+  it("drops an id whose own header conflicts with the docket, and anything unsafe", () => {
+    expect(
+      pdfLookupCaseIds([
+        { id: "63571952", resolution_basis: "firm_crosswalk_only_courtlistener_header_conflicts" },
+        { id: "70000001", pdf_lookup: false },
+        { id: "../etc/passwd" },
+        { id: "" },
+        { id: "60866823", resolution_basis: "exact_docket_key", pdf_lookup: true },
+      ]),
+    ).toEqual(["60866823"]);
+  });
+
+  it("returns nothing for a missing or malformed list and caps the number of ids", () => {
+    expect(pdfLookupCaseIds(null)).toEqual([]);
+    expect(pdfLookupCaseIds("x")).toEqual([]);
+    expect(pdfLookupCaseIds([null, 5, "a"])).toEqual([]);
+    const many = Array.from({ length: 50 }, (_, i) => ({ id: `id${i}` }));
+    expect(pdfLookupCaseIds(many)).toHaveLength(30);
+    expect(pdfLookupCaseIds(many, 3)).toEqual(["id0", "id1", "id2"]);
   });
 });
 
