@@ -5,6 +5,7 @@ import {createHash} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
 import {validateQueueRow} from './backfill-pdfs-to-supabase.mjs';
 import {buildPriorityMap,orderRows,summarize} from './seeger-pdf-priority.mjs';
+import {hostAllowedForFamily,runnerFamilyOf,sourceHostOf,RUNNER_HOSTS} from './pdf-source-hosts.mjs';
 // Freezes NEW priority-ordered queues + sha256 manifests from (a) the unexecuted/partly executed backlog of an earlier run or
 // (b) locator rows dropped by other agents. Source queues and manifests are never edited; rows already verified or already
 // frozen elsewhere are excluded; every output is created with flag 'wx'. No network access, no CourtListener API requests.
@@ -21,9 +22,9 @@ export async function verifiedKeys(transferDirs){
  for(const dir of transferDirs){
   const file=path.join(dir,'transfer-receipts.jsonl');if(!fs.existsSync(file))continue;
   for await(const line of jsonlLines(file)){
-   if(!line.includes('"state":"cloud_verified"'))continue;
+   if(!line.includes('"state":"cloud_verified"')&&!line.includes('"state":"dedup_matched"'))continue;
    let r;try{r=JSON.parse(line);}catch{continue;}
-   if(r.state!=='cloud_verified'||!/^[a-f0-9]{64}$/.test(r.sha256??''))continue;
+   if((r.state!=='cloud_verified'&&r.state!=='dedup_matched')||!/^[a-f0-9]{64}$/.test(r.sha256??''))continue;
    const version=r.selected_source_record_sha256??[...(r.source_origins??[])].sort((a,b)=>b.retrieved_at.localeCompare(a.retrieved_at))[0]?.native_record_sha256;
    keys.add(r.provider+'|'+r.native_document_id+'|'+version);
   }
@@ -110,9 +111,16 @@ async function main(args){
  const transferDirs=(args.receipts?String(args.receipts).split('|'):[]).map(d=>path.resolve(d));
  for(const root of [outRoot])if(fs.existsSync(root))for(const d of fs.readdirSync(root,{withFileTypes:true}))if(d.isDirectory()&&d.name.endsWith('-transfers'))transferDirs.push(path.join(root,d.name));
  const verified=await verifiedKeys(transferDirs),queued=await queuedKeys(outRoot);
- const seenKeys=new Set(),fresh=[];let excludedVerified=0,excludedQueued=0,excludedDuplicate=0,excludedOtherProvider=0;
+ const seenKeys=new Set(),fresh=[],hostCounts={},hostRows=[];let excludedVerified=0,excludedQueued=0,excludedDuplicate=0,excludedOtherProvider=0,excludedHost=0;
  for(const item of rows){
   if(mode==='backlog'&&providerOf(item.row)!==provider){excludedOtherProvider++;continue;}
+  // Hosts a runner does not own are never queued: official court sites (*.uscourts.gov, jpml, govinfo.gov) belong to the official-mdl agent and its robots.txt
+  // Crawl-delay; the CourtListener runner owns only storage.courtlistener.com and the DocketBird runner only its own S3 host.
+  if(!hostAllowedForFamily(item.row)){
+   const host=sourceHostOf(item.row)??'(unparsable)';excludedHost++;hostCounts[host]=(hostCounts[host]??0)+1;
+   if(hostRows.length<5000)hostRows.push({provider:item.row.provider,host,reason:RUNNER_HOSTS[runnerFamilyOf(item.row.provider)].skip_reason,native_document_id:String(item.row.native_document_id).slice(0,300)});
+   continue;
+  }
   const key=rowKey(item.row);
   if(verified.has(key)){excludedVerified++;continue;}
   if(queued.has(key)){excludedQueued++;continue;}
@@ -121,8 +129,17 @@ async function main(args){
  }
  const ordered=orderRows(fresh.map(x=>x.row),map);
  const lineOf=new Map(fresh.map(x=>[x.row,x.line]));
- const summary={mode,provider,source_queues:sourceInfo.length,source_rows:rows.length,rejected_rows:rejected.length,excluded_already_verified:excludedVerified,excluded_already_frozen:excludedQueued,excluded_duplicate:excludedDuplicate,excluded_other_provider:excludedOtherProvider,to_freeze:ordered.length,...summarize(ordered)};
- if(dry||!ordered.length){console.log(JSON.stringify({dry_run:dry,...summary,matters:summary.matters.slice(0,40)},null,1));return summary;}
+ const summary={mode,provider,source_queues:sourceInfo.length,source_rows:rows.length,rejected_rows:rejected.length,excluded_already_verified:excludedVerified,excluded_already_frozen:excludedQueued,excluded_duplicate:excludedDuplicate,excluded_other_provider:excludedOtherProvider,excluded_non_allowed_host:excludedHost,excluded_hosts:hostCounts,to_freeze:ordered.length,...summarize(ordered)};
+ // Additions mode remembers every complete drop it has read (ledger), whether or not any row was frozen, so an all-excluded drop is never re-read.
+ const finishAdditions=manifests=>{
+  if(mode!=='additions')return;
+  const ledger=path.join(outRoot,'additions-ledger.jsonl');
+  for(const s of sourceInfo)fs.appendFileSync(ledger,JSON.stringify({at:new Date().toISOString(),file:s.queue,sha256:s.sha256,frozen_into:manifests.map(m=>m.label),rejected_rows:rejected.length,excluded_non_allowed_host:excludedHost})+'\n');
+  if(rejected.length)fs.writeFileSync(path.join(outRoot,'additions-rejected-'+Date.now()+'.json'),JSON.stringify(rejected,null,2)+'\n',{flag:'wx'});
+  if(hostRows.length)fs.writeFileSync(path.join(outRoot,'additions-excluded-hosts-'+Date.now()+'.json'),JSON.stringify({note:'Rows aimed at hosts the pdf-backfill runners do not own; never fetched or queued here.',hosts:hostCounts,rows:hostRows},null,2)+'\n',{flag:'wx'});
+ };
+ if(dry){console.log(JSON.stringify({dry_run:true,...summary,matters:summary.matters.slice(0,40)},null,1));return summary;}
+ if(!ordered.length){finishAdditions([]);console.log(JSON.stringify({dry_run:false,...summary,matters:summary.matters.slice(0,40)},null,1));return summary;}
  const manifests=[],mapSha=sha(fs.readFileSync(mapFile));
  // Additions are split by provider family; Tier 1-2 additions, and rows the matter registry flagged as priority evidence
  // (scope_evidence kind sw_matter_registry_priority), sort ahead of the backlog (a-); the rest after it (z-).
@@ -141,11 +158,7 @@ async function main(args){
     excluded:{already_verified:excludedVerified,already_frozen:excludedQueued,duplicate:excludedDuplicate,rejected:rejected.length}}}));
   }
  }
- if(mode==='additions'){
-  const ledger=path.join(outRoot,'additions-ledger.jsonl');
-  for(const s of sourceInfo)fs.appendFileSync(ledger,JSON.stringify({at:new Date().toISOString(),file:s.queue,sha256:s.sha256,frozen_into:manifests.map(m=>m.label),rejected_rows:rejected.length})+'\n');
-  if(rejected.length)fs.writeFileSync(path.join(outRoot,'additions-rejected-'+Date.now()+'.json'),JSON.stringify(rejected,null,2)+'\n',{flag:'wx'});
- }
+ finishAdditions(manifests);
  console.log(JSON.stringify({...summary,matters:undefined,queues:manifests.map(m=>({label:m.label,rows:m.rows,sha256:m.sha256}))},null,1));
  return summary;
 }

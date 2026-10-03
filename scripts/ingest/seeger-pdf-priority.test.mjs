@@ -142,3 +142,61 @@ test('rows flagged by the matter registry as priority evidence are urgent even f
  await fs.writeFile(path.join(batches,'z-0001.queue.jsonl.manifest.json.done.json'),JSON.stringify({state:'superseded_before_execution'}));
  const third=await run([...args,'--ignore-ledger']);assert.equal(JSON.parse(third.out).to_freeze,1);
 });
+
+test('rows with a dedup receipt are excluded from re-freezing exactly like cloud-verified rows',async()=>{
+ const {verifiedKeys,rowKey}=await import('./freeze-seeger-priority-pdf-queues.mjs');
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),'prio-dedup-')),r1=row(60,{caseId:'111'}),r2=row(61,{caseId:'111'}),r3=row(62,{caseId:'111'});
+ const rec=(r,state)=>({state,provider:r.provider,native_document_id:r.native_document_id,selected_source_record_sha256:r.selected_source_record_sha256,sha256:'c'.repeat(64)});
+ await fs.writeFile(path.join(dir,'transfer-receipts.jsonl'),[rec(r1,'cloud_verified'),rec(r2,'dedup_matched'),{...rec(r3,'download_pending')}].map(x=>JSON.stringify(x)).join('\n')+'\n');
+ const keys=await verifiedKeys([dir]);
+ assert.equal(keys.has(rowKey(r1)),true);assert.equal(keys.has(rowKey(r2)),true);assert.equal(keys.has(rowKey(r3)),false);
+});
+
+function officialRow(n){
+ const record=sha('official-freeze'+n),u='https://www.njd.uscourts.gov/sites/njd/files/CaseMO'+n+'.pdf';
+ return{schema_version:'source-qualified-pdf-queue/1',provider:'official-court',native_document_id:u,native_document_identity_kind:'publisher_observed_pdf_locator_url',native_case_id:'3:16-md-02738',durable_url:u,download_url:u,
+  expected_sha1:null,expected_bytes:null,title:'CMO '+n,filing_date:null,selected_source_record_sha256:record,eligible:true,
+  provider_flags:{sealing_related_locator_held:false,pdf_http_access_verified:false,pdf_content_verified:false},
+  scope_evidence:[{kind:'sw_matter_registry_priority',filter:'official_court_mdl_page'}],
+  origins:[{native_record_sha256:record,retrieved_at:'2026-10-03T16:00:00.000Z',native_case_id:'3:16-md-02738',source_response_sha256:sha('official page '+n)}]};
+}
+
+test('additions: rows aimed at hosts the runners do not own (official court sites) are never queued, are listed in a sidecar, and the drop is ledgered',async()=>{
+ const f=await backlogFixture(),drops=path.join(f.dir,'additions-official');await fs.mkdir(drops,{recursive:true});
+ await fs.writeFile(path.join(drops,'mix.jsonl'),[row(70,{caseId:'111',title:'ORDER'}),officialRow(1),officialRow(2)].map(r=>JSON.stringify(r)).join('\n')+'\n');
+ const args=['--mode=additions','--provider=courtlistener','--additions-dir='+drops,'--out-root='+f.out,'--receipts='+f.transfers,'--registry='+f.registry,'--parent-matters='+f.csv];
+ const result=await run(args);assert.equal(result.code,0,result.err);
+ const summary=JSON.parse(result.out);assert.equal(summary.to_freeze,1);assert.equal(summary.excluded_non_allowed_host,2);assert.deepEqual(summary.excluded_hosts,{'www.njd.uscourts.gov':2});
+ const batches=path.join(f.out,'courtlistener-pdf-batches'),names=(await fs.readdir(batches)).filter(n=>n.endsWith('.queue.jsonl')&&/^[az]-/.test(n));
+ assert.equal(names.length,1);
+ const queued=(await fs.readFile(path.join(batches,names[0]),'utf8')).trim().split('\n').map(JSON.parse);
+ assert.deepEqual(queued.map(r=>r.provider),['courtlistener-public-locator']);assert.equal(queued.some(r=>r.download_url.includes('uscourts.gov')),false);
+ const sidecar=(await fs.readdir(f.out)).find(n=>n.startsWith('additions-excluded-hosts-'));assert.ok(sidecar);
+ const side=JSON.parse(await fs.readFile(path.join(f.out,sidecar),'utf8'));
+ assert.equal(side.rows.length,2);assert.equal(side.rows[0].reason,'non_courtlistener_host');assert.equal(side.rows[0].host,'www.njd.uscourts.gov');
+ const ledger=(await fs.readFile(path.join(f.out,'additions-ledger.jsonl'),'utf8')).trim().split('\n').map(JSON.parse);
+ assert.equal(ledger.at(-1).excluded_non_allowed_host,2);
+});
+
+test('additions: a drop made only of excluded rows is still ledgered, so the next pass does not re-read it',async()=>{
+ const f=await backlogFixture(),drops=path.join(f.dir,'additions-only-official');await fs.mkdir(drops,{recursive:true});
+ await fs.writeFile(path.join(drops,'official.jsonl'),[officialRow(31),officialRow(32)].map(r=>JSON.stringify(r)).join('\n')+'\n');
+ const args=['--mode=additions','--provider=courtlistener','--additions-dir='+drops,'--out-root='+f.out,'--receipts='+f.transfers,'--registry='+f.registry,'--parent-matters='+f.csv];
+ const first=await run(args);assert.equal(first.code,0,first.err);
+ assert.equal(JSON.parse(first.out).to_freeze,0);assert.equal(JSON.parse(first.out).excluded_non_allowed_host,2);
+ const ledger=(await fs.readFile(path.join(f.out,'additions-ledger.jsonl'),'utf8')).trim().split('\n').map(JSON.parse);
+ assert.equal(ledger.length,1);assert.deepEqual(ledger[0].frozen_into,[]);
+ const batches=path.join(f.out,'courtlistener-pdf-batches');
+ assert.equal((await fs.readdir(batches).catch(()=>[])).filter(n=>/^[az]-/.test(n)).length,0,'nothing was queued');
+ const second=await run(args);assert.equal(JSON.parse(second.out).source_queues,0,'the ledgered drop is not read again');
+});
+
+test('a held or superseded queue keeps its rows counted as frozen so they are not re-queued, unless it was superseded before execution',async()=>{
+ const {queuedKeys,rowKey}=await import('./freeze-seeger-priority-pdf-queues.mjs');
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'prio-held-')),dir=path.join(root,'courtlistener-pdf-batches');await fs.mkdir(dir,{recursive:true});
+ const a=row(80,{caseId:'111'}),b=row(81,{caseId:'111'}),c=row(82,{caseId:'111'});
+ const put=async(label,r,state)=>{const queue=path.join(dir,label+'.queue.jsonl');await fs.writeFile(queue,JSON.stringify(r)+'\n');await fs.writeFile(queue+'.manifest.json',JSON.stringify({queue,sha256:'0'.repeat(64)}));if(state)await fs.writeFile(queue+'.manifest.json.done.json',JSON.stringify({state}));};
+ await put('a-0001',a,'superseded_by_official_mdl_b001-njd');await put('a-0002',b,'superseded_before_execution');await put('a-0003',c,null);
+ const keys=await queuedKeys(root);
+ assert.equal(keys.has(rowKey(a)),true);assert.equal(keys.has(rowKey(b)),false);assert.equal(keys.has(rowKey(c)),true);
+});

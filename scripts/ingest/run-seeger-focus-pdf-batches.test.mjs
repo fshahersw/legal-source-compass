@@ -26,7 +26,7 @@ test('stop reasons: outages and rate limits resume after a cool-down; integrity 
 const fakeTransfer=`
 import fs from 'node:fs';import path from 'node:path';
 const args=Object.fromEntries(process.argv.slice(2).map(v=>{const i=v.indexOf('=');return[v.slice(2,i),v.slice(i+1)];}));
-fs.mkdirSync(args.cache,{recursive:true});
+fs.mkdirSync(args.cache,{recursive:true});fs.writeFileSync(path.join(args.cache,'argv.json'),JSON.stringify(process.argv.slice(2)));
 const counter=path.join(args.cache,'attempts.txt');const n=(fs.existsSync(counter)?Number(fs.readFileSync(counter,'utf8')):0)+1;fs.writeFileSync(counter,String(n));
 const plan=JSON.parse(fs.readFileSync(path.join(path.dirname(args.queue),'plan.json'),'utf8'))[path.basename(args.queue)]??[{complete:true,processed:2,cloud_verified:2}];
 const step=plan[Math.min(n-1,plan.length-1)];
@@ -43,17 +43,17 @@ const receipts=()=>{try{return fs.readFileSync(path.join(args.transfers,'transfe
 while(args['stop-file']&&!fs.existsSync(args['stop-file']))await new Promise(r=>setTimeout(r,20));
 fs.writeFileSync(path.join(args.out,'completion.json'),JSON.stringify({registered_receipts:receipts()}));
 `;
-async function fixture(plan){
- const root=await fs.mkdtemp(path.join(os.tmpdir(),'runner-')),dir=path.join(root,'courtlistener-pdf-batches');await fs.mkdir(dir,{recursive:true});
+async function fixture(plan,provider='courtlistener'){
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'runner-')),dir=path.join(root,provider+'-pdf-batches');await fs.mkdir(dir,{recursive:true});
  await fs.writeFile(path.join(root,'fake-transfer.mjs'),fakeTransfer);await fs.writeFile(path.join(root,'fake-registration.mjs'),fakeRegistration);
  for(const name of Object.keys(plan)){
   const queue=path.join(dir,name);await fs.writeFile(queue,'{}\n');await fs.writeFile(queue+'.manifest.json',JSON.stringify({queue,sha256:'0'.repeat(64)}));
  }
  await fs.writeFile(path.join(dir,'plan.json'),JSON.stringify(plan));return{root,dir};
 }
-function run(root,extra=[]){
+function run(root,extra=[],provider='courtlistener'){
  return new Promise(resolve=>{
-  const child=spawn(process.execPath,[runner,'--root='+root,'--provider=courtlistener','--credentials=unused','--exit-when-idle','--cooldown-scale=0.0005','--poll-ms=20','--transfer-script='+path.join(root,'fake-transfer.mjs'),'--registration-script='+path.join(root,'fake-registration.mjs'),...extra],{stdio:['ignore','pipe','pipe']});
+  const child=spawn(process.execPath,[runner,'--root='+root,'--provider='+provider,'--credentials=unused','--exit-when-idle','--cooldown-scale=0.0005','--poll-ms=20','--transfer-script='+path.join(root,'fake-transfer.mjs'),'--registration-script='+path.join(root,'fake-registration.mjs'),...extra],{stdio:['ignore','pipe','pipe']});
   let out='',err='';child.stdout.on('data',d=>out+=d);child.stderr.on('data',d=>err+=d);child.on('exit',code=>resolve({code,out,err}));
  });
 }
@@ -97,4 +97,21 @@ test('a worker that keeps crashing before it writes progress is retried a bounde
  assert.equal(result.code,1);
  const halted=await readJson(path.join(dir,'p1-0001.queue.jsonl.manifest.json.halted.json'));
  assert.equal(halted.reason,'NO_PROGRESS_AFTER_RESTARTS');assert.equal(halted.attempts,3);
+});
+
+test('every transfer is started with the host allow-list of the runner that owns it, and the DocketBird runner gets its own',async()=>{
+ const cl=await fixture({'p1-0001.queue.jsonl':[{complete:true,processed:1,cloud_verified:1}]});
+ assert.equal((await run(cl.root)).code,0);
+ const clArgv=await readJson(path.join(cl.root,'courtlistener-batch-p1-0001-transfers','argv.json'));
+ assert.ok(clArgv.includes('--allowed-hosts=storage.courtlistener.com'),clArgv.join(' '));assert.ok(clArgv.includes('--host-skip-reason=non_courtlistener_host'));
+ assert.ok(clArgv.includes('--source-delay-ms=1000'));assert.ok(clArgv.includes('--worker-delay-ms=1000'));
+ const db=await fixture({'p1-0001.queue.jsonl':[{complete:true,processed:1,cloud_verified:1}]},'docketbird');
+ assert.equal((await run(db.root,[],'docketbird')).code,0);
+ const dbArgv=await readJson(path.join(db.root,'docketbird-batch-p1-0001-transfers','argv.json'));
+ assert.ok(dbArgv.includes('--allowed-hosts=docketbird-case-documents.s3.amazonaws.com'),dbArgv.join(' '));assert.ok(dbArgv.includes('--host-skip-reason=non_docketbird_host'));
+ // an explicit override is honored
+ const custom=await fixture({'p1-0001.queue.jsonl':[{complete:true,processed:1,cloud_verified:1}]});
+ assert.equal((await run(custom.root,['--allowed-hosts=storage.courtlistener.com,example.org','--host-skip-reason=other_host'])).code,0);
+ const customArgv=await readJson(path.join(custom.root,'courtlistener-batch-p1-0001-transfers','argv.json'));
+ assert.ok(customArgv.includes('--allowed-hosts=storage.courtlistener.com,example.org'));assert.ok(customArgv.includes('--host-skip-reason=other_host'));
 });
