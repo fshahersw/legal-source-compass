@@ -312,7 +312,7 @@ begin
     )
   );
 end
-$official_mdl_documents_v1$;;
+$official_mdl_documents_v1$;
 
 -- grants re-asserted exactly as live (service_role only)
 revoke all on function public.corpus_pdf_availability_v1(text, jsonb) from public, anon, authenticated;
