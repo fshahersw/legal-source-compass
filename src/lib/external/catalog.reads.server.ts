@@ -1,3 +1,4 @@
+import type { Json } from "./json";
 import { restGet, rpcPost } from "./rest.server";
 import {
   candidateRecordIds,
@@ -22,7 +23,7 @@ export async function queryPublishedDataset(
   pageSize: number,
 ) {
   const res = await rpcPost<{
-    items: Record<string, unknown>[];
+    items: Record<string, Json>[];
     total: number | null;
     total_capped: boolean;
   }>("corpus_query_bounded", {

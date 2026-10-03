@@ -39,7 +39,7 @@ export function typedNeighbors(node: RecordRef, edges: readonly LegalEdge[], rec
   return groups;
 }
 
-const markdownText = (s: string) => s.replace(/[\\`*_{}\[\]()<>#|]/g, "\\$&").replace(/[\r\n]+/g, " ");
+const markdownText = (s: string) => s.replace(/[\\`*_{}[\]()<>#|]/g, "\\$&").replace(/[\r\n]+/g, " ");
 export function exportCitedPath(nodes: readonly LegalRecord[], edges: readonly LegalEdge[], evidenceRecords?: ReadonlyMap<string, LegalRecord>): string {
   if (!nodes.length || edges.length !== nodes.length - 1) throw new Error("A path needs one relationship between each adjacent pair");
   const records = evidenceRecords ?? new Map(nodes.map((n) => [recordKey(n), n]));

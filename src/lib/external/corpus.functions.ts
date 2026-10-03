@@ -191,6 +191,33 @@ export type LawProvision = {
   sourceNote: string | null;
 };
 
+/** The provision `detail` JSON as stored; every field is optional and checked before it is shown. */
+type ProvisionDetail = {
+  metadata?: {
+    citation?: string | null;
+    status?: string | null;
+    file?: { id?: string; bytes?: number; sha256?: string } | null;
+  } | null;
+  temporal?: { source_as_of?: unknown; captured_at?: unknown } | null;
+  title?: string | null;
+  state?: string | null;
+  kind?: string | null;
+  quality?: string | null;
+  citation?: unknown;
+  title_name?: unknown;
+  chapter?: unknown;
+  part?: unknown;
+  part_heading?: unknown;
+  subpart?: unknown;
+  subject_group?: unknown;
+  section?: unknown;
+  latest_amendment_date?: unknown;
+  latest_issue_date?: unknown;
+  printed_fr_citations?: unknown;
+  authority_note_as_printed?: unknown;
+  source_note_as_printed?: unknown;
+};
+
 const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
 const strArr = (v: unknown): string[] | null =>
   Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && !!x.trim()) : null;
@@ -214,7 +241,7 @@ export const getLawProvision = createServerFn({ method: "GET" })
         state: string | null;
         source_url: string | null;
         text: string | null;
-        detail: any;
+        detail: ProvisionDetail | null;
       }[]
     >(
       `corpus_records?select=id,dataset,title,state,source_url,text,detail&id=eq.${encodeURIComponent(data.id)}&dataset=${data.dataset ? `eq.${data.dataset}` : `in.(${PROVISION_DATASETS.join(",")})`}&limit=2`,

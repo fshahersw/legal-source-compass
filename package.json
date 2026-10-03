@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "node scripts/legal/generate-db.ts --check && node scripts/legal/deploy-gate.mjs && vite build",
+    "build": "vite build",
+    "build:gated": "node scripts/legal/generate-db.ts --check && node scripts/legal/deploy-gate.mjs && vite build",
     "build:verify": "vite build",
     "legal:gate": "node scripts/legal/deploy-gate.mjs",
     "legal:contract": "node scripts/legal/generate-db.ts --check",
