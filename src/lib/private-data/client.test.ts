@@ -16,11 +16,33 @@ function pageResponse(bytes: Uint8Array, page: number, sha: string, total: numbe
 }
 
 describe("authenticated snapshot assembly", () => {
-  it("does not request any source bytes without a session", async () => {
+  it("sends no credential without a session and surfaces the server's refusal when accounts are enforced", async () => {
     auth.getSession.mockResolvedValue({ data: { session: null } });
-    const fetcher = vi.fn(); vi.stubGlobal("fetch", fetcher);
+    const fetcher = vi.fn(async (_url: string, init: RequestInit) => {
+      expect(new Headers(init.headers).has("Authorization")).toBe(false);
+      return new Response("Sign in to access this workspace.", { status: 401 });
+    });
+    vi.stubGlobal("fetch", fetcher);
     expect((await fetchBundleSnapshot("/data/catalog/nj.json")).status).toBe(401);
-    expect(fetcher).not.toHaveBeenCalled();
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+  it("assembles snapshot bytes without a session when the server does not require accounts", async () => {
+    auth.getSession.mockResolvedValue({ data: { session: null } });
+    const bytes = new TextEncoder().encode('{"open":true}');
+    const sha = createHash("sha256").update(bytes).digest("hex");
+    const fetcher = vi.fn(async (_url: string, init: RequestInit) => {
+      expect(new Headers(init.headers).has("Authorization")).toBe(false);
+      return pageResponse(bytes, 0, sha, bytes.length);
+    });
+    vi.stubGlobal("fetch", fetcher);
+    expect(new Uint8Array(await (await fetchBundleSnapshot("/data/catalog/nj.json")).arrayBuffer())).toEqual(bytes);
+  });
+  it("still reads snapshots when the auth client throws", async () => {
+    auth.getSession.mockRejectedValue(new Error("storage unavailable"));
+    const bytes = new TextEncoder().encode("[]");
+    const sha = createHash("sha256").update(bytes).digest("hex");
+    vi.stubGlobal("fetch", vi.fn(async () => pageResponse(bytes, 0, sha, bytes.length)));
+    expect((await fetchBundleSnapshot("/data/catalog/nj.json")).status).toBe(200);
   });
   it("reassembles exact UTF-8 bytes across a page boundary and sends credentials only in headers", async () => {
     auth.getSession.mockResolvedValue({ data: { session: { access_token: "test-session" } } });

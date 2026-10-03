@@ -1,13 +1,18 @@
 import { supabase } from "@/integrations/supabase/client";
 import { MAX_SNAPSHOT_BYTES, snapshotName, snapshotPageBounds } from "./protocol";
 
-/** Fetch an authenticated snapshot in bounded pages, preserving its exact bytes. */
+/**
+ * Fetch a snapshot in bounded pages, preserving its exact bytes. A session token is attached when one exists;
+ * whether an account is required is decided by the server (CORPUS_REQUIRE_AUTH), which answers 401 when it is.
+ */
 export async function fetchBundleSnapshot(url: string, _options?: RequestInit): Promise<Response> {
   const file = snapshotName(url);
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  if (!token) return new Response("Sign in to read Atlas data.", { status: 401 });
-  const headers = { Authorization: `Bearer ${token}` };
+  const session = await supabase.auth
+    .getSession()
+    .then(({ data }) => data.session)
+    .catch(() => null);
+  const token = session?.access_token;
+  const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
   const request = (page: number, version?: string) => fetch(
     `/api/bundles?${new URLSearchParams({ file, page: String(page), ...(version ? { version } : {}) })}`,
     { headers, cache: "no-store", credentials: "same-origin", ...(_options?.signal ? { signal: _options.signal } : {}) },
