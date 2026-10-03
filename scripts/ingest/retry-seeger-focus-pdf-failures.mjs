@@ -16,7 +16,7 @@ export function lines(file){if(!fs.existsSync(file))return[];const text=fs.readF
 export function outcomes(receiptLines,into=new Map()){
  for(const r of receiptLines){
   const key=r.provider+'|'+r.native_document_id,current=into.get(key);
-  if(r.state==='cloud_verified')into.set(key,{verified:true});
+  if(r.state==='cloud_verified'||r.state==='dedup_matched')into.set(key,{verified:true});
   else if(r.state==='failed'&&!current?.verified&&(!current||String(r.recorded_at??'')>=String(current.at??'')))into.set(key,{verified:false,error:r.error,permanent:isPermanentFailure(r),at:r.recorded_at});
  }
  return into;

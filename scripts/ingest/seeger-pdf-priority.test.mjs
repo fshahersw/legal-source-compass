@@ -142,3 +142,12 @@ test('rows flagged by the matter registry as priority evidence are urgent even f
  await fs.writeFile(path.join(batches,'z-0001.queue.jsonl.manifest.json.done.json'),JSON.stringify({state:'superseded_before_execution'}));
  const third=await run([...args,'--ignore-ledger']);assert.equal(JSON.parse(third.out).to_freeze,1);
 });
+
+test('rows with a dedup receipt are excluded from re-freezing exactly like cloud-verified rows',async()=>{
+ const {verifiedKeys,rowKey}=await import('./freeze-seeger-priority-pdf-queues.mjs');
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),'prio-dedup-')),r1=row(60,{caseId:'111'}),r2=row(61,{caseId:'111'}),r3=row(62,{caseId:'111'});
+ const rec=(r,state)=>({state,provider:r.provider,native_document_id:r.native_document_id,selected_source_record_sha256:r.selected_source_record_sha256,sha256:'c'.repeat(64)});
+ await fs.writeFile(path.join(dir,'transfer-receipts.jsonl'),[rec(r1,'cloud_verified'),rec(r2,'dedup_matched'),{...rec(r3,'download_pending')}].map(x=>JSON.stringify(x)).join('\n')+'\n');
+ const keys=await verifiedKeys([dir]);
+ assert.equal(keys.has(rowKey(r1)),true);assert.equal(keys.has(rowKey(r2)),true);assert.equal(keys.has(rowKey(r3)),false);
+});
