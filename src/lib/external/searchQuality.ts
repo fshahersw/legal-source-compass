@@ -123,13 +123,24 @@ function personBoost(match: RankedSearchMatch, context: SearchContext): number {
   const presides = (id && context.mdlJudgePersonIds?.has(id)) || (entity && context.mdlJudgeEntityIds?.has(entity));
   return 250 + (presides ? 250 : 0);
 }
+/** Corporate-form words that do not change which entity a name is ("Seeger Weiss" = "Seeger Weiss LLP"). */
+const ENTITY_FORM_WORDS = new Set(["llp", "llc", "inc", "incorporated", "corp", "corporation", "co", "company", "lp", "pc", "pllc", "ltd", "limited", "the"]);
+const withoutFormWords = (ws: string[]) => ws.filter((w) => !ENTITY_FORM_WORDS.has(w));
+/** The title IS the searched name (ignoring corporate-form words): a firm named "Seeger Weiss LLP" for the query "Seeger Weiss". */
+function isNameMatch(titleWords: string[], queryWords: string[]): boolean {
+  const t = withoutFormWords(titleWords);
+  const q = withoutFormWords(queryWords);
+  return q.length > 0 && t.length === q.length && q.every((w, i) => t[i] === w);
+}
 function score(match: RankedSearchMatch, queryWords: string[], boost: number): number {
   const titleWords = words(match.displayTitle);
   const exact = queryWords.filter((word) => titleWords.includes(word)).length;
   const prefix = queryWords.filter((word) => !titleWords.includes(word) && titleWords.some((title) => title.startsWith(word))).length;
   const all = queryWords.length > 0 && exact + prefix === queryWords.length;
   const phrase = queryWords.length > 0 && titleWords.join(" ").includes(queryWords.join(" "));
-  return exact * 100 + prefix * 70 + (all ? 200 : 0) + (phrase ? 200 : 0) + (legalPriority[match.record.dataset] ?? 0) + boost;
+  // A record whose whole title is the searched name outranks a long title that merely contains it.
+  const name = isNameMatch(titleWords, queryWords) ? 300 : 0;
+  return exact * 100 + prefix * 70 + (all ? 200 : 0) + (phrase ? 200 : 0) + name + (legalPriority[match.record.dataset] ?? 0) + boost;
 }
 
 // Presentation grouping is limited to source-document rows. Native court/case/judge identities stay separate.

@@ -139,3 +139,24 @@ describe("person-intent search: judge-directory records are joined by native id 
     expect(flat[0]!.record.id).toBe("0000aaaabbbb");
   });
 });
+
+describe("entity-name queries", () => {
+  const firm = match("counsel_directory", "firm:3f24b0b7635a81a8", "Seeger Weiss LLP", { id: "firm:3f24b0b7635a81a8" });
+  const orderText = "CASE MANAGEMENT ORDER NO. 5. THE FOLLOWING THREE COUNSEL ARE APPOINTED AS CO-LEAD COUNSEL FOR PLAINTIFFS: PARVIN AMINOLROAYA OF SEEGER WEISS LLP, JONATHAN D. ORENT OF MOTLEY RICE LLC";
+  const order = match("mdl_docket_documents", "doc:68222905:56:56:6962", orderText, { id: "doc:68222905:56:56:6962" });
+  const attorney = match("mdl_appearances", "02fa9016", "Christopher A Seeger", { id: "02fa9016" });
+
+  it("puts the record named by the query ahead of a long title that merely contains the name", () => {
+    expect(rankSearchMatches([order, attorney, firm], "Seeger Weiss").ranked[0]!.record.id).toBe("firm:3f24b0b7635a81a8");
+    expect(rankSearchMatches([order, firm], "seeger weiss llp").ranked[0]!.record.id).toBe("firm:3f24b0b7635a81a8");
+  });
+
+  it("does not reward a partial or reordered name", () => {
+    const partial = match("people", "9", "Seeger", { id: "9" });
+    const ranked = rankSearchMatches([partial, firm], "Seeger Weiss").ranked;
+    expect(ranked[0]!.record.id).toBe("firm:3f24b0b7635a81a8");
+    const reordered = match("people", "10", "Weiss Seeger", { id: "10" });
+    const r2 = rankSearchMatches([reordered, firm], "Seeger Weiss").ranked;
+    expect(r2[0]!.record.id).toBe("firm:3f24b0b7635a81a8");
+  });
+});

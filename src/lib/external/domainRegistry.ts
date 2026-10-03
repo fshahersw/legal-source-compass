@@ -67,6 +67,8 @@ const LABELS: Record<string, string> = {
   mdl_case_inventory: "Related cases",
   mdl_counsel: "Counsel",
   mdl_crosswalk: "Matter crosswalk",
+  sw_matters_v1: "Seeger Weiss matter registry — MDL matters",
+  sw_matter_dockets_v1: "Seeger Weiss matter registry — dockets in matters",
   settlements: "Settlements",
   verdict_reports: "Reported verdicts",
   expert_rulings: "Expert-admissibility docket entries (keyword scan)",
