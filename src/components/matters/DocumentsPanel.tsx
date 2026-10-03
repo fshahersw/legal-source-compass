@@ -250,9 +250,10 @@ function RegistrySection({
           Originals held in the private archive, listed from the verified registry for this
           matter&apos;s master and JPML dockets. Case id
           {registry.caseIds.length === 1 ? "" : "s"} asked for:{" "}
-          <CaseIdList ids={registry.caseIds} />. An id from the matter registry is the explicit
-          provider id it records for the docket; a derived id comes from an exact match on court and
-          docket number.
+          <CaseIdList ids={registry.caseIds} />.{" "}
+          {registry.caseIds.some((c) => c.basis === "derived")
+            ? "A derived id comes from an exact match on court and docket number; the matter registry does not cover this matter yet."
+            : "Each id is an explicit provider id the matter registry records for the docket."}
         </>
       }
     >

@@ -223,7 +223,7 @@ function SectionView({ s, aliases }: { s: EntitySection; aliases: Record<string,
       <Section id={s.key} label={s.label}>
         <ul className="list-disc space-y-1 pl-5 text-[13px]">
           {s.items.map((t, i) => (
-            <li key={i}>{t}</li>
+            <li key={i} className="break-words">{t}</li>
           ))}
         </ul>
       </Section>
@@ -234,9 +234,9 @@ function SectionView({ s, aliases }: { s: EntitySection; aliases: Record<string,
         <ul className="divide-y divide-border text-[13px]">
           {s.items.slice(0, all ? undefined : 25).map((it, i) => (
             <li key={i} className="py-1.5">
-              <div className="font-medium">{it.title}</div>
+              <div className="break-words font-medium">{it.title}</div>
               {it.subtitle ? (
-                <div className="text-[11px] text-muted-foreground">{it.subtitle}</div>
+                <div className="break-words text-[11px] text-muted-foreground">{it.subtitle}</div>
               ) : null}
               {it.links.length ? (
                 <div className="flex flex-wrap gap-x-3">
@@ -320,10 +320,10 @@ function SectionView({ s, aliases }: { s: EntitySection; aliases: Record<string,
               {it.link ? (
                 <CorpusLink url={it.link} label={it.title} aliases={aliases} />
               ) : (
-                <span className="font-medium">{it.title}</span>
+                <span className="break-words font-medium">{it.title}</span>
               )}
               {it.subtitle ? (
-                <span className="ml-2 text-[11px] text-muted-foreground">{it.subtitle}</span>
+                <span className="ml-2 break-words text-[11px] text-muted-foreground">{it.subtitle}</span>
               ) : null}
             </li>
           ))}

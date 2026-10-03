@@ -9,6 +9,7 @@ import { UsMap } from "@/components/corpus/UsMap";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { useJudgeMatcher } from "@/lib/external/useDirectory";
 import { surnameLetter } from "@/lib/external/directoryTree";
+import { externalHref } from "@/lib/external/href";
 
 function Box({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -108,10 +109,10 @@ export function CountyProfile({ fips, county, state }: { fips: string; county?: 
         <div className="eyebrow">County profile</div>
         {q.data.items.length ? (
           <ul className="mt-1 divide-y divide-border rounded border border-border bg-surface text-[12px]">{q.data.items.map((it, i) => (
-            <li key={i} className="flex items-baseline gap-3 px-2 py-1.5">
-              <span className="w-36 shrink-0 truncate text-[11px] text-muted-foreground">{it.kind_label ?? "—"}</span>
-              <a href={it.url} target="_blank" rel="noreferrer" className="min-w-0 flex-1 truncate underline">{it.title}</a>
-              <span className="shrink-0 text-[11px] text-muted-foreground">{it.publisher ?? ""}{it.as_of ? ` · captured ${it.as_of}` : ""}</span>
+            <li key={i} className="flex flex-col gap-0.5 px-2 py-1.5 sm:flex-row sm:items-baseline sm:gap-3">
+              <span className="truncate text-[11px] text-muted-foreground sm:w-36 sm:shrink-0">{it.kind_label ?? "—"}</span>
+              <a href={externalHref(it.url)} target="_blank" rel="noreferrer" className="min-w-0 break-words underline sm:flex-1 sm:truncate">{it.title}</a>
+              <span className="text-[11px] text-muted-foreground sm:shrink-0">{it.publisher ?? ""}{it.as_of ? ` · captured ${it.as_of}` : ""}</span>
             </li>))}</ul>
         ) : <p className="text-[12px] text-muted-foreground">Not recorded</p>}
       </div>

@@ -113,6 +113,9 @@
 @layer base {
   * {
     border-color: var(--color-border);
+    /* Thin scrollbars without the classic arrow buttons Windows draws on every scroller (nav strips, tables, lists). */
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklch, var(--color-foreground) 30%, transparent) transparent;
   }
 
   body {
@@ -132,6 +135,13 @@
 
   table {
     font-variant-numeric: tabular-nums;
+  }
+
+  /* A grid without explicit columns has one implicit `auto` column, which grows to its widest unbreakable child
+     (a truncated title, a long identifier) and pushes the whole page wider than a phone. Let that column shrink to
+     the container. This is the base layer, so every grid-cols-* utility still wins. */
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

@@ -99,7 +99,7 @@ function StatePage() {
           ]}
         />
       </div>
-      <div className="mt-5 grid gap-5 xl:grid-cols-[1fr_22rem]">
+      <div className="mt-5 grid grid-cols-[minmax(0,1fr)] gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <section className="rounded-lg border border-border bg-surface p-3 shadow-card">
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <h2 className="eyebrow">Counties</h2>
