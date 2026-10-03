@@ -17,13 +17,9 @@ import {
 import { evidenceKindLabel } from "@/lib/matters/cases";
 import { formatBytes } from "@/lib/matters/documents";
 import { entryTypeLabel } from "@/lib/matters/entries";
-import {
-  getMatterCasesScope,
-  getMatterDocumentsSummary,
-  getMatterEntries,
-} from "@/lib/matters/matters.functions";
+import { getMatterDocumentsSummary } from "@/lib/matters/matters.functions";
 import { orNotRecorded } from "@/lib/matters/overview";
-import { formatUtc } from "@/lib/matters/registry";
+import { formatUtc, registryMetrics } from "@/lib/matters/registry";
 import type { MatterOverviewPayload } from "@/lib/matters/types";
 
 type TabSearch = "cases" | "docket" | "documents" | "parties" | "evidence";
@@ -34,28 +30,6 @@ const PROVIDER_LABELS: Record<string, string> = {
   jpml: "JPML",
   "official-court": "Court website",
 };
-
-/** Published entry counts first; the registry's own capture is named separately so the two are never confused. */
-function entryTileNote(
-  clEntries: number | null,
-  withText: number | null,
-  captured: number,
-  releasedByRegistry: boolean,
-): string {
-  const parts = [
-    clEntries ? `${clEntries.toLocaleString()} listed by CourtListener` : null,
-    withText ? `${withText.toLocaleString()} with docket text` : null,
-  ].filter((p): p is string => !!p);
-  if (!parts.length && releasedByRegistry)
-    return "Released in the matter registry's entries dataset";
-  if (!parts.length)
-    return captured
-      ? `Not yet available · ${captured.toLocaleString()} captured by the matter registry`
-      : "Not yet available";
-  if (captured > (clEntries ?? 0) && !releasedByRegistry)
-    parts.push(`registry captured ${captured.toLocaleString()} (not yet released)`);
-  return parts.join(" · ");
-}
 
 /** What the Seeger Weiss matter registry holds for this MDL: explicit relationships, coverage and gaps. */
 function RegistryCard({ payload }: { payload: MatterOverviewPayload }) {
@@ -175,118 +149,23 @@ const asRows = (m: Record<string, number>) =>
 
 export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
   const o = payload.overview;
+  // The matter's key numbers live in the header band on every tab; this tab adds the detail behind them. The PDF
+  // summary is the same query the band makes, so it is asked for once.
   const docsFn = useServerFn(getMatterDocumentsSummary);
-  const entriesFn = useServerFn(getMatterEntries);
   const docs = useQuery({
     queryKey: ["matter-documents-summary", o.mdl],
     queryFn: () => docsFn({ data: { id: o.mdl } }),
     staleTime: 5 * 60_000,
   });
-  const entries = useQuery({
-    queryKey: ["matter-entries", o.mdl, "auto", "", "", 0],
-    queryFn: () => entriesFn({ data: { id: o.mdl, source: "auto", type: null, q: "", offset: 0 } }),
-    staleTime: 2 * 60_000,
-  });
-  // Only the size of the list is needed here, not its rows (the Cases tab pages them on the server).
-  const casesFn = useServerFn(getMatterCasesScope);
-  const caseList = useQuery({
-    queryKey: ["matter-cases-scope", o.mdl],
-    queryFn: () => casesFn({ data: { id: o.mdl } }),
-    staleTime: 5 * 60_000,
-  });
   const registry = docs.data && docs.data.connected ? docs.data.summary : null;
-  const available = entries.data?.available;
   const cases = o.cases;
   const counsel = o.counsel;
   const reg = payload.registry;
-  const listedCases = caseList.data ? caseList.data.listed : null;
+  const metrics = registryMetrics(reg);
   const capturedEntries = reg ? reg.entries.reduce((n, e) => n + (e.captured ?? 0), 0) : 0;
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-        <StatTile
-          label="Actions pending (JPML)"
-          value={o.actions.pending !== null ? o.actions.pending.toLocaleString() : <NotRecorded />}
-          note={
-            o.actions.total !== null
-              ? `${o.actions.total.toLocaleString()} total${o.asOf ? ` · JPML report ${o.asOf}` : ""}`
-              : o.asOf
-                ? `JPML report ${o.asOf}`
-                : undefined
-          }
-        />
-        <StatTile
-          label="Dockets listed"
-          value={
-            listedCases !== null ? (
-              listedCases.toLocaleString()
-            ) : caseList.isLoading ? (
-              "…"
-            ) : cases?.total !== null && cases?.total !== undefined ? (
-              cases.total.toLocaleString()
-            ) : (
-              <NotRecorded />
-            )
-          }
-          note={
-            reg
-              ? "Master and JPML dockets, the matter registry's member dockets and the saved sample; never the size of the MDL"
-              : "Master docket plus the saved docket sample; never the size of the MDL"
-          }
-        />
-        <StatTile
-          label="Docket entries"
-          value={
-            available ? (
-              (available.clEntries ?? available.activity ?? 0).toLocaleString()
-            ) : entries.isLoading ? (
-              "…"
-            ) : (
-              <NotRecorded />
-            )
-          }
-          note={
-            available
-              ? entryTileNote(
-                  available.clEntries,
-                  available.activity,
-                  capturedEntries,
-                  payload.registryReleased.entries !== null,
-                )
-              : undefined
-          }
-        />
-        <StatTile
-          label="Verified PDFs"
-          value={
-            registry ? registry.total.toLocaleString() : docs.isLoading ? "…" : <NotRecorded />
-          }
-          note={
-            registry
-              ? `${registry.open.toLocaleString()} open · ${registry.held.toLocaleString()} held${registry.openBytes ? ` · ${formatBytes(registry.openBytes)}` : ""}`
-              : docs.data && !docs.data.connected
-                ? "Registry not connected"
-                : undefined
-          }
-        />
-        <StatTile
-          label="Counsel records"
-          value={
-            counsel?.totalFirms !== null && counsel?.totalFirms !== undefined ? (
-              `${counsel.totalFirms.toLocaleString()} firms`
-            ) : (
-              <NotRecorded />
-            )
-          }
-          note={
-            counsel?.totalAttorneys
-              ? `${counsel.totalAttorneys.toLocaleString()} attorneys in the saved sample`
-              : "Open the Parties tab for the master-docket counsel records"
-          }
-        />
-      </div>
-
       <RegistryCard payload={payload} />
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -351,17 +230,11 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
                 Docket entries
               </TabLink>{" "}
               —{" "}
-              {available
-                ? [
-                    available.clEntries ? `${available.clEntries.toLocaleString()} listed` : null,
-                    available.activity ? `${available.activity.toLocaleString()} with text` : null,
-                  ]
-                    .filter(Boolean)
-                    .join(", ") ||
-                  (capturedEntries
-                    ? `not yet available (${capturedEntries.toLocaleString()} captured)`
-                    : "not yet available")
-                : "loading"}
+              {metrics?.entries && metrics.entries.published
+                ? `${metrics.entries.published.toLocaleString()} entries with the docket text as published, filterable by date and text`
+                : capturedEntries
+                  ? `not yet available (${capturedEntries.toLocaleString()} captured)`
+                  : "the saved docket sample, where the registry has none"}
             </li>
             <li>
               <TabLink id={o.mdl} tab="documents">
@@ -376,7 +249,10 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
               <TabLink id={o.mdl} tab="parties">
                 Parties and counsel
               </TabLink>{" "}
-              — firms, attorneys and tracked-firm appearances
+              —{" "}
+              {metrics?.parties && metrics.parties.published
+                ? `${metrics.parties.published.toLocaleString()} parties of the master docket and ${(metrics.parties.counselLinks ?? 0).toLocaleString()} counsel entries, by role and firm`
+                : "firms, attorneys and tracked-firm appearances"}
             </li>
             <li>
               <TabLink id={o.mdl} tab="evidence">

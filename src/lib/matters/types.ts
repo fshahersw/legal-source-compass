@@ -12,7 +12,7 @@ import type {
   PartyView,
   SeegerWeissSummary,
 } from "./registryParties";
-import type { CaseIdPlanEntry, RegistryMatter } from "./registry";
+import type { CaseIdPlanEntry, RegistryMatter, RegistryMetrics } from "./registry";
 
 export type MasterDocketMeta = {
   docketNumber: string | null;
@@ -200,6 +200,8 @@ export type HubRow = {
   courtName: string | null;
   masterDocket: string | null;
   judgePrinted: string | null;
+  /** Id of the `judges` profile linked to the MDL record (data-quality native links); null when none. */
+  judgeProfileId: string | null;
   totalActions: number | null;
   pendingActions: number | null;
   asOf: string | null;
@@ -210,4 +212,6 @@ export type HubRow = {
   registry: HubRegistry;
   /** Dockets the matter registry holds for this MDL (all roles); null when the registry has no record for it. */
   registryDockets: number | null;
+  /** The matter registry's computed numbers (evidence mix, entries captured vs reported, last capture); null without a record. */
+  metrics: RegistryMetrics | null;
 };

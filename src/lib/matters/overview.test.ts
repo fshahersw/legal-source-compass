@@ -197,6 +197,62 @@ describe("presiding judge link policy", () => {
   });
 });
 
+describe("judge profile link from the data-quality fields", () => {
+  const withSummary = (extra: Record<string, unknown>, links: unknown = []) =>
+    detail({
+      summary: {
+        id: "mdl:9001",
+        as_of: "2026-10-01",
+        cl_docket_id: 111222333,
+        judge_name_as_printed: "A. Example Judge",
+        ...extra,
+      },
+      judge_links: links,
+    });
+
+  it("takes the profile id, its basis and the CourtListener person id from the MDL record", () => {
+    const j = parseJudge(
+      withSummary({
+        judge_profile_id: "b7f3af1c913d14602267679c9ebeb8fb",
+        judge_cl_person_id: "2755",
+        judge_link_basis: "jpml_name_court",
+        judge_cl_person_basis: "judge_profile_native_bridge+cl_docket_assigned_to",
+      }),
+    );
+    expect(j).toMatchObject({
+      profileId: "b7f3af1c913d14602267679c9ebeb8fb",
+      profileLinkBasis: "jpml_name_court",
+      clPersonId: "2755",
+      clPersonBasis: "judge_profile_native_bridge+cl_docket_assigned_to",
+      printedName: "A. Example Judge",
+    });
+  });
+
+  it("falls back to the one #judge/<id> link on the record and ignores an unusable id", () => {
+    const viaLink = parseJudge(
+      withSummary({}, [
+        {
+          basis: "cl_person_native_bridge",
+          links: [{ url: "#judge/abcdef1234567890", label: "Judge profile" }],
+        },
+      ]),
+    );
+    expect(viaLink.profileId).toBe("abcdef1234567890");
+    expect(parseJudge(withSummary({ judge_profile_id: "../x" })).profileId).toBeNull();
+    expect(parseJudge(withSummary({ judge_profile_id: "ab" })).profileId).toBeNull();
+    // Two candidate links are ambiguous: no profile.
+    expect(
+      parseJudge(
+        withSummary({}, [
+          { links: [{ url: "#judge/aaaaaaaa" }] },
+          { links: [{ url: "#judge/bbbbbbbb" }] },
+        ]),
+      ).profileId,
+    ).toBeNull();
+    expect(parseJudge(withSummary({})).profileId).toBeNull();
+  });
+});
+
 describe("JPML statistics reports", () => {
   it("keeps the publisher URL only when it is https and never invents a stored copy", () => {
     const [r] = parseReports(detail()["documents"]);

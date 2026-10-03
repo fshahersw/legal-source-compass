@@ -50,6 +50,7 @@ import {
   overviewFromRegistry,
   parseRegistryLabels,
   parseRegistryRecord,
+  registryMetrics,
   withRegistryJpml,
   type CaseIdPlanEntry,
   type RegistryDocketDetail,
@@ -176,6 +177,18 @@ async function loadJudgeProfile(
     : null;
 }
 
+/** The `judges` profile with exactly this id (the id the data-quality passes linked to the MDL), if it exists. */
+async function loadJudgeProfileById(
+  profileId: string | null,
+): Promise<{ id: string; name: string } | null> {
+  if (!profileId || !/^[A-Za-z0-9_-]{6,80}$/.test(profileId)) return null;
+  const r = await restGet<{ id: string; title: string | null }[]>(
+    `corpus_records?select=id,title&dataset=eq.judges&id=eq.${enc(profileId)}&limit=1`,
+  );
+  const row = r.rows[0];
+  return row ? { id: row.id, name: row.title ?? row.id } : null;
+}
+
 async function loadJpmlReferences(mdl: string): Promise<JpmlReference[]> {
   if (!(await isPublished("jpml_html_reference"))) return [];
   const r = await restGet<
@@ -295,9 +308,14 @@ export async function loadMatterOverview(mdl: string): Promise<MatterOverviewPay
   if (!parsed) return null;
   const [master, judgeProfile, jpmlReferences] = await Promise.all([
     loadMasterMeta(parsed.masterDocket.clDocketId).catch(() => null),
-    parsed.judge.nativeIdEvidence
-      ? loadJudgeProfile(parsed.judge.entityId).catch(() => null)
-      : Promise.resolve(null),
+    // The profile id on the MDL record first; the older native-id entity lookup only when the record carries none.
+    loadJudgeProfileById(parsed.judge.profileId)
+      .then(
+        (p) =>
+          p ??
+          (parsed.judge.nativeIdEvidence ? loadJudgeProfile(parsed.judge.entityId) : null),
+      )
+      .catch(() => null),
     loadJpmlReferences(mdl).catch(() => []),
   ]);
   const sw = SW_MATTERS.find((m) => String(m.mdl) === mdl) ?? null;
@@ -1134,6 +1152,12 @@ type HubSummaryRow = {
 
 let hubRegistryCache: { at: number; byMdl: Map<string, HubRow["registry"]> } | null = null;
 
+/** The `judges` profile id on an MDL record's summary, when it is an id and not something else. */
+function judgeProfileId(summary: Record<string, unknown> | null): string | null {
+  const id = summary ? str(summary["judge_profile_id"]) : null;
+  return id && /^[A-Za-z0-9_-]{6,80}$/.test(id) ? id : null;
+}
+
 async function mapLimit<T, R>(
   items: T[],
   limit: number,
@@ -1250,6 +1274,8 @@ export async function loadHub(): Promise<HubRow[]> {
       courtName: s ? str(s["court_name"]) : (rec?.transfereeCourt ?? null),
       masterDocket: s ? str(s["master_docket"]) : (registryMaster?.docketNumber ?? null),
       judgePrinted: s ? str(s["judge_name_as_printed"]) : (rec?.judgeAsPrinted ?? null),
+      judgeProfileId: judgeProfileId(s),
+      metrics: registryMetrics(reg),
       totalActions: counts.total,
       pendingActions: counts.pending,
       asOf: counts.asOf,

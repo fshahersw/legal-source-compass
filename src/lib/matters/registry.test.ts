@@ -23,6 +23,7 @@ import {
   parseRegistryMatter,
   parseRegistryRecord,
   pdfLookupCaseIds,
+  registryMetrics,
   withRegistryJpml,
 } from "./registry";
 
@@ -250,6 +251,92 @@ describe("provider case ids of one docket for the PDF reader", () => {
     const many = Array.from({ length: 50 }, (_, i) => ({ id: `id${i}` }));
     expect(pdfLookupCaseIds(many)).toHaveLength(30);
     expect(pdfLookupCaseIds(many, 3)).toEqual(["id0", "id1", "id2"]);
+  });
+});
+
+describe("registry metrics", () => {
+  it("computes the matter's numbers from the record: evidence mix, entries captured vs reported, last capture", () => {
+    const reg = parseRegistryRecord(
+      {
+        title: "IN RE: Depo-Provera",
+        cells: {
+          status: "pending",
+          entries_published: 1057,
+          entries_withheld: 85,
+          parties_published: 11,
+          counsel_links: 53,
+        },
+        facts: [],
+        registry: matterRegistry(),
+      },
+      "3140",
+    )!;
+    expect(registryMetrics(reg)).toEqual({
+      dockets: 35,
+      actions: 35,
+      byBasis: [
+        { kind: "jpml_schedule_a", count: 28 },
+        { kind: "docketbird_relationship", count: 7 },
+      ],
+      entries: {
+        captured: 1057,
+        providerTotal: 1057,
+        complete: true,
+        published: 1057,
+        withheld: 85,
+      },
+      parties: { published: 11, counselLinks: 53 },
+      lastCaptured: "2026-10-03",
+    });
+  });
+
+  it("leaves what the record does not state unknown, never zero", () => {
+    const reg = parseRegistryMatter(
+      { ...matterRegistry(), entries: [], members: {}, parties_summary: [] },
+      "3140",
+    )!;
+    expect(registryMetrics(reg)).toEqual({
+      dockets: null,
+      actions: null,
+      byBasis: [],
+      entries: null,
+      parties: null,
+      lastCaptured: null,
+    });
+    expect(registryMetrics(null)).toBeNull();
+  });
+
+  it("sums several captures, reports a partial one as partial and a missing provider total as unknown", () => {
+    const reg = parseRegistryMatter(
+      {
+        ...matterRegistry(),
+        entries: [
+          {
+            provider: "courtlistener",
+            docket_key: "a",
+            captured: 100,
+            provider_total: 400,
+            complete: false,
+            observed_at: "2026-10-02T01:00:00Z",
+          },
+          {
+            provider: "courtlistener",
+            docket_key: "b",
+            captured: 50,
+            provider_total: null,
+            complete: true,
+            observed_at: "2026-10-03T09:00:00Z",
+          },
+        ],
+      },
+      "3140",
+    )!;
+    expect(registryMetrics(reg)!.entries).toMatchObject({
+      captured: 150,
+      providerTotal: null,
+      complete: false,
+    });
+    expect(registryMetrics(reg)!.lastCaptured).toBe("2026-10-03");
   });
 });
 

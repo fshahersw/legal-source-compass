@@ -462,6 +462,9 @@ export function overviewFromRegistry(reg: RegistryMatter): MatterOverview | null
       printedTitle: null,
       profileName: null,
       entityId: null,
+      profileId: null,
+      profileLinkBasis: null,
+      clPersonBasis: null,
       fjcJid: null,
       fjcNid: null,
       clPersonId: assigned?.clPersonId ?? null,
@@ -478,6 +481,80 @@ export function overviewFromRegistry(reg: RegistryMatter): MatterOverview | null
     appearances: null,
     expertRulingsTotal: null,
     keys: matterCaseKeys(court, docket),
+  };
+}
+
+/* ------------------------------------------------------------------ metrics */
+
+export type RegistryMetrics = {
+  /** Dockets the registry holds for the matter (all roles); never the size of the MDL. */
+  dockets: number | null;
+  /** Of those, rows counted as one action each. */
+  actions: number | null;
+  /** Evidence kinds of those dockets, most frequent first (a docket with several kinds counts under each). */
+  byBasis: { kind: string; count: number }[];
+  /** CourtListener entries: captured vs the provider's own total, and how many the projection published / withheld. */
+  entries: {
+    captured: number | null;
+    providerTotal: number | null;
+    complete: boolean | null;
+    published: number | null;
+    withheld: number | null;
+  } | null;
+  /** Parties of the master docket the projection published, and the counsel entries on them. */
+  parties: { published: number | null; counselLinks: number | null } | null;
+  /** Newest day any capture was observed (yyyy-mm-dd), from the captures' own timestamps. */
+  lastCaptured: string | null;
+};
+
+/**
+ * The matter's registry numbers, all computed from the record (nothing is estimated): entries captured against what
+ * the provider reports, publication counts, evidence mix and when the newest capture was observed. Null when the
+ * registry has no record for the matter.
+ */
+export function registryMetrics(reg: RegistryMatter | null): RegistryMetrics | null {
+  if (!reg) return null;
+  const caps = reg.entries.filter((e) => e.captured !== null);
+  const captured = caps.length ? caps.reduce((n, e) => n + (e.captured ?? 0), 0) : null;
+  const totals = reg.entries.map((e) => e.providerTotal);
+  const providerTotal =
+    totals.length && totals.every((t): t is number => t !== null)
+      ? totals.reduce((n, t) => n + t, 0)
+      : null;
+  const completes = reg.entries.map((e) => e.complete);
+  const complete = !completes.length
+    ? null
+    : completes.every((c) => c === true)
+      ? true
+      : completes.some((c) => c === false)
+        ? false
+        : null;
+  const observed = reg.entries
+    .map((e) => e.observedAt?.slice(0, 10) ?? null)
+    .filter((d): d is string => !!d && /^\d{4}-\d{2}-\d{2}$/.test(d))
+    .sort();
+  const rec = reg.record;
+  const hasEntries = captured !== null || (rec !== null && rec.entriesPublished !== null);
+  const hasParties = rec !== null && (rec.partiesPublished !== null || rec.counselLinks !== null);
+  return {
+    dockets: reg.members.rows,
+    actions: reg.members.actions,
+    byBasis: Object.entries(reg.members.byBasis)
+      .map(([kind, count]) => ({ kind, count }))
+      .sort((a, b) => b.count - a.count || a.kind.localeCompare(b.kind)),
+    entries: hasEntries
+      ? {
+          captured,
+          providerTotal,
+          complete,
+          published: rec ? rec.entriesPublished : null,
+          withheld: rec ? rec.entriesWithheld : null,
+        }
+      : null,
+    parties: hasParties
+      ? { published: rec!.partiesPublished, counselLinks: rec!.counselLinks }
+      : null,
+    lastCaptured: observed.length ? observed[observed.length - 1]! : null,
   };
 }
 
