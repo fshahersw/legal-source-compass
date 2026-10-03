@@ -5,7 +5,7 @@
 -- Modes (each pinned to the open run's scope->>'source_system'):
 --   courtlistener-rest  -> source_system 'courtlistener'     (dockets, docket-entries, parties, attorneys, recap-documents, originating-court-information)
 --   docketbird-capture  -> source_system 'docketbird-mcp'    (litigation_relationship_observation, member_case_header, member_docket_sheet_observation, ...)
---   sw-registry         -> source_system 'sw-matter-registry' (matter, docket, matter-docket, membership-evidence, transfer-link, entry-capture, party-capture)
+--   sw-registry         -> source_system 'sw-matter-registry' (matter, docket, matter-docket, membership-evidence, transfer-link, entry-capture, party-capture, external-entry [v1.3: docket entries of blocked dockets from DocketBird / GovInfo / official court pages])
 --   jpml-site           -> source_system 'jpml-site'         (source-document, schedule-a-row)
 -- Registry namespaces must carry record_sha256 = corpus_ingest.canonical_integer_jsonb_sha256_v1(data).
 
@@ -21,7 +21,7 @@ begin
   allowed := case p_mode
     when 'courtlistener-rest' then array['dockets','docket-entries','parties','attorneys','recap-documents','originating-court-information']
     when 'docketbird-capture' then array['litigation_relationship_observation','member_case_header','member_docket_sheet_observation','member_case_search_observation']
-    when 'sw-registry' then array['matter','docket','matter-docket','membership-evidence','transfer-link','entry-capture','party-capture']
+    when 'sw-registry' then array['matter','docket','matter-docket','membership-evidence','transfer-link','entry-capture','party-capture','external-entry']
     when 'jpml-site' then array['source-document','schedule-a-row'] end;
   if ns is null or jsonb_typeof(p_rows) is distinct from 'array' or jsonb_array_length(p_rows) not between 1 and 10000
      or octet_length(p_rows::text) > 4194304 then
