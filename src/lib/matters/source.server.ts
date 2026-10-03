@@ -26,8 +26,11 @@ import {
 import { matterCaseKeys } from "./docketKeys";
 import {
   describeDocument,
+  pageDocuments,
   parseRegistryDocument,
   parseRegistrySummary,
+  type DocumentFilter,
+  type DocumentSort,
   type MatterDocument,
   type RegistrySummary,
 } from "./documents";
@@ -94,6 +97,7 @@ import type {
   RegistryCounselList,
   RegistryDocumentsPayload,
   RegistryPartiesList,
+  RegistryDocumentsPageResponse,
   RegistryPartiesSummary,
   TimelineArchivePayload,
   TimelinePayload,
@@ -646,43 +650,47 @@ export async function loadEntryText(entryId: string): Promise<{ text: string | n
 
 /* ------------------------------------------------------------------ documents */
 
-const REGISTRY_ROW_CAP = 5000;
+/** The most archive rows read for one matter (the largest, MDL 3047, holds about 8,200; the server keeps them, the browser gets pages). */
+const REGISTRY_ROW_CAP = 20_000;
 const REGISTRY_PAGE = 500;
+
+type RegistryDocsCache = Map<string, { at: number; value: Promise<RegistryDocumentsPayload> }>;
+/** Totals are tiny and asked for often; the row lists are large, so few are kept and for longer. */
+const registrySummaryCache: RegistryDocsCache = new Map();
+const registryRowsCache: RegistryDocsCache = new Map();
 
 /**
  * Verified-PDF registry rows for a matter's provider case ids (the matter registry's explicit ids first, derived
- * keys as a labelled supplement); degrades to `connected:false` if the reader is absent. Results are cached for three
- * minutes (the Documents tab, the overview tiles, the timeline and the drawers ask for the same lists), and the pages
- * after the first are read four at a time.
+ * keys as a labelled supplement); degrades to `connected:false` if the reader is absent. The Documents tab, the header
+ * numbers, the timeline's archive lookup and the drawers ask for the same lists, so results are cached (totals three
+ * minutes, row lists ten, at most six lists), concurrent callers share one read, and the pages after the first are
+ * read four at a time.
  */
-const registryDocsCache = new Map<
-  string,
-  { at: number; value: Promise<RegistryDocumentsPayload> }
->();
-
 export function loadRegistryDocuments(
   caseIds: CaseIdPlanEntry[],
   summaryOnly = false,
 ): Promise<RegistryDocumentsPayload> {
-  const key = `${summaryOnly ? "summary" : "rows"}|${caseIds.map((c) => c.id).join(",")}`;
-  const hit = registryDocsCache.get(key);
-  if (hit && Date.now() - hit.at < 3 * 60_000) return hit.value;
+  const cache = summaryOnly ? registrySummaryCache : registryRowsCache;
+  const ttl = summaryOnly ? 3 * 60_000 : 10 * 60_000;
+  const max = summaryOnly ? 80 : 6;
+  const key = caseIds.map((c) => c.id).join(",");
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.at < ttl) return hit.value;
   const value = readRegistryDocuments(caseIds, summaryOnly);
-  registryDocsCache.set(key, { at: Date.now(), value });
+  cache.set(key, { at: Date.now(), value });
   // An unconnected reader or a failed read is not worth remembering.
   value.then(
     (v) => {
-      if (!v.connected && registryDocsCache.get(key)?.value === value)
-        registryDocsCache.delete(key);
+      if (!v.connected && cache.get(key)?.value === value) cache.delete(key);
     },
     () => {
-      if (registryDocsCache.get(key)?.value === value) registryDocsCache.delete(key);
+      if (cache.get(key)?.value === value) cache.delete(key);
     },
   );
-  while (registryDocsCache.size > 80) {
-    const oldest = registryDocsCache.keys().next().value;
+  while (cache.size > max) {
+    const oldest = cache.keys().next().value;
     if (oldest === undefined) break;
-    registryDocsCache.delete(oldest);
+    cache.delete(oldest);
   }
   return value;
 }
@@ -740,6 +748,33 @@ async function readRegistryDocuments(
 }
 
 /**
+ * One page of a matter's verified PDFs, filtered, sorted, counted and faceted on the server over the cached list. The
+ * open document of the viewer (`viewKey`, "<source>|<native document id>") is found in the whole list.
+ */
+export async function loadDocumentsPage(
+  payload: MatterOverviewPayload,
+  filter: DocumentFilter,
+  sort: DocumentSort,
+  offset: number,
+  viewKey: string | null,
+): Promise<RegistryDocumentsPageResponse> {
+  const docs = await loadRegistryDocuments(caseIdPlan(payload.registry, payload.overview.keys.all));
+  if (!docs.connected) return docs;
+  const viewed = viewKey
+    ? (docs.rows.find((d) => `${d.sourceSystem}|${d.nativeDocumentId}` === viewKey) ?? null)
+    : null;
+  return {
+    connected: true,
+    summary: docs.summary,
+    truncated: docs.truncated,
+    caseIds: docs.caseIds,
+    loaded: docs.rows.length,
+    page: pageDocuments(docs.rows, filter, sort, offset),
+    viewed,
+  };
+}
+
+/**
  * The verified PDFs filed under one registry docket's own provider case ids (a member case's drawer). The ids come from
  * the registry row on the server, never from the browser, so a request can only ask for a docket the registry lists.
  */
@@ -763,23 +798,21 @@ export async function loadCaseDocuments(
 /* ------------------------------------------------------------------ timeline (matter registry entries) */
 
 const TIMELINE_PAGE = 50;
-/** The most archive rows indexed for one matter (the largest holds about 8,000). */
-const ARCHIVE_INDEX_CAP = 20_000;
 const ARCHIVE_TTL_MS = 10 * 60_000;
 
 const archiveCache = new Map<string, { at: number; index: Promise<ArchiveIndex | string> }>();
 
 /**
- * The matter's archive rows (master + JPML docket ids), indexed for exact entry-to-PDF lookups; a string is the reason
- * the archive could not be read. Cached ten minutes, concurrent callers share one read, and only the lean index is
- * kept (not the row list).
+ * The matter's archive rows (master + JPML docket ids, the same list the Documents tab pages), indexed for exact
+ * entry-to-PDF lookups; a string is the reason the archive could not be read. Cached ten minutes, concurrent callers
+ * share one read.
  */
 function archiveIndexFor(payload: MatterOverviewPayload): Promise<ArchiveIndex | string> {
   const plan = caseIdPlan(payload.registry, payload.overview.keys.all);
   const key = plan.map((c) => c.id).join(",");
   const hit = archiveCache.get(key);
   if (hit && Date.now() - hit.at < ARCHIVE_TTL_MS) return hit.index;
-  const index = readRegistryDocuments(plan, false, ARCHIVE_INDEX_CAP).then((docs) =>
+  const index = loadRegistryDocuments(plan).then((docs) =>
     docs.connected ? buildArchiveIndex(docs.rows, !docs.truncated) : docs.reason,
   );
   archiveCache.set(key, { at: Date.now(), index });

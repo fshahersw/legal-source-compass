@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { CASE_ROLES, CASE_SORTS, type CaseFilter, type CaseRole } from "./cases";
+import { REGISTRY_SOURCES, type DocumentFilter } from "./documents";
 import { normalizeMdlNumber, type JpmlReport } from "./overview";
 import { DOCUMENT_ID_PATTERN, isRealDate, type TimelineFilter } from "./timeline";
 import { caseIdPlan } from "./registry";
@@ -13,6 +14,7 @@ import {
   loadCaseDocuments,
   loadCasesPage,
   loadCasesScope,
+  loadDocumentsPage,
   loadHub,
   loadLegacyDocuments,
   loadRegistryCounsel,
@@ -227,17 +229,50 @@ export const getMatterEntryText = createServerFn({ method: "GET" })
   )
   .handler(async ({ data }) => loadEntryText(data.id));
 
+/** The saved-sample documents and JPML reports of a matter (the verified PDFs are paged apart). */
 export const getMatterDocuments = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ id: mdlInput }).parse(d))
   .handler(async ({ data }) => {
     const overview = await overviewFor(mdlOf(data.id));
     if (!overview) return null;
-    const [registry, legacy] = await Promise.all([
-      loadRegistryDocuments(caseIdPlan(overview.registry, overview.overview.keys.all)),
-      loadLegacyDocuments(overview.overview.mdl).catch(() => ({ rows: [], published: false })),
-    ]);
+    const legacy = await loadLegacyDocuments(overview.overview.mdl).catch(() => ({
+      rows: [],
+      published: false,
+    }));
     const reports: JpmlReport[] = overview.overview.reports;
-    return { registry, legacy, reports };
+    return { legacy, reports };
+  });
+
+/** One page of the verified PDFs of a matter's master and JPML dockets; the server filters, sorts and counts. */
+export const getMatterDocumentsPage = createServerFn({ method: "GET" })
+  .inputValidator((d) =>
+    z
+      .object({
+        id: mdlInput,
+        q: z.string().max(120).default(""),
+        source: z.enum(["", ...REGISTRY_SOURCES]).default(""),
+        availability: z.enum(["", "open", "held"]).default(""),
+        entry: z.number().int().min(0).max(9_999_999).nullable().default(null),
+        caseId: z
+          .string()
+          .regex(/^[A-Za-z0-9:._-]{0,120}$/)
+          .default(""),
+        sort: z.enum(["entry-desc", "entry-asc", "name"]).default("entry-desc"),
+        offset: z.number().int().min(0).max(100000).default(0),
+        view: z.string().max(520).nullable().default(null),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    const overview = await overviewFor(mdlOf(data.id));
+    if (!overview) return null;
+    const filter: DocumentFilter = {};
+    if (data.q.trim()) filter.q = data.q.trim();
+    if (data.source) filter.source = data.source;
+    if (data.availability) filter.availability = data.availability;
+    if (data.entry !== null) filter.entry = data.entry;
+    if (data.caseId) filter.caseId = data.caseId;
+    return loadDocumentsPage(overview, filter, data.sort, data.offset, data.view);
   });
 
 /** PDF registry totals only (one cheap call) for the overview tiles. */

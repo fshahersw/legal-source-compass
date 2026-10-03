@@ -1,6 +1,6 @@
 /** Payload shapes shared by the matter server functions and the matter UI (no server code lives here). */
 import type { CasesPage, CaseRow, RegistryLabels } from "./cases";
-import type { MatterDocument, RegistrySummary } from "./documents";
+import type { DocumentsPage, MatterDocument, RegistrySummary } from "./documents";
 import type { DocketEntry } from "./entries";
 import type { EntryArchive, RegistryEntry } from "./timeline";
 import type { MatterOverview } from "./overview";
@@ -128,6 +128,25 @@ export type CaseDocumentsPayload = {
   /** Null when the registry records no usable case id for the docket. */
   documents: RegistryDocumentsPayload | null;
 };
+
+/**
+ * One page of the matter's verified PDFs with the facets and totals of the whole list. The server holds the list (up
+ * to 5,000 rows) and sends 50 at a time; the open document of the viewer is looked up in the whole list.
+ */
+export type RegistryDocumentsPageResponse =
+  | {
+      connected: true;
+      summary: RegistrySummary;
+      /** The archive holds more rows than the server read. */
+      truncated: boolean;
+      caseIds: CaseIdPlanEntry[];
+      /** Rows the server holds for this matter (before any filter). */
+      loaded: number;
+      page: DocumentsPage;
+      /** The document named by the viewer's key, wherever it is in the list; null when it is not in it. */
+      viewed: MatterDocument | null;
+    }
+  | { connected: false; reason: string; caseIds: CaseIdPlanEntry[] };
 
 export type LegacyDocument = {
   id: string;

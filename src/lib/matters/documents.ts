@@ -207,6 +207,63 @@ export function countDocuments(docs: MatterDocument[]) {
   return { total: docs.length, open, held, bySource, byCase };
 }
 
+/** Rows per page of the verified-PDF list. */
+export const DOCUMENT_PAGE_SIZE = 50;
+
+export const DOCUMENT_SORTS: readonly DocumentSort[] = ["entry-desc", "entry-asc", "name"];
+
+export type DocumentFacets = {
+  /** Counts per source, with every filter except the source applied. */
+  bySource: Record<string, number>;
+  /** Open / held counts, with every filter except the availability applied. */
+  availability: { open: number; held: number };
+  /** Counts per exact provider case id, with every filter except the case id applied. */
+  byCase: Record<string, number>;
+};
+
+export type DocumentsPage = {
+  rows: MatterDocument[];
+  /** Documents matching the filter (all pages). */
+  total: number;
+  facets: DocumentFacets;
+  offset: number;
+  pageSize: number;
+};
+
+/**
+ * One page of a matter's verified PDFs: filter, sort, count and facet the whole list, return the slice asked for. The
+ * server runs this over its cached list so the browser never receives thousands of rows (3047 has 8,000).
+ */
+export function pageDocuments(
+  docs: MatterDocument[],
+  filter: DocumentFilter,
+  sort: DocumentSort,
+  offset: number,
+  pageSize: number = DOCUMENT_PAGE_SIZE,
+): DocumentsPage {
+  const filtered = sortDocuments(filterDocuments(docs, filter), sort);
+  const start = Math.min(Math.max(0, Math.floor(offset)), Math.max(0, filtered.length - 1));
+  const aligned = start - (start % pageSize);
+  // Each facet ignores its own filter but honours the others, so option counts match the table.
+  const without = (key: keyof DocumentFilter): DocumentFilter => {
+    const copy = { ...filter };
+    delete copy[key];
+    return copy;
+  };
+  const avail = countDocuments(filterDocuments(docs, without("availability")));
+  return {
+    rows: filtered.slice(aligned, aligned + pageSize),
+    total: filtered.length,
+    facets: {
+      bySource: countDocuments(filterDocuments(docs, without("source"))).bySource,
+      availability: { open: avail.open, held: avail.held },
+      byCase: countDocuments(filterDocuments(docs, without("caseId"))).byCase,
+    },
+    offset: aligned,
+    pageSize,
+  };
+}
+
 export function formatBytes(bytes: number | null | undefined): string {
   if (bytes == null || !Number.isFinite(bytes) || bytes < 0) return "Not recorded";
   if (bytes < 1024) return `${bytes} B`;
