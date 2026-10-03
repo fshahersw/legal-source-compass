@@ -57,7 +57,7 @@ for (const d of bundle.dockets) {
   const caseType = d.key.match(/-([a-z]+)-\d{5}$/)?.[1] ?? null;
   const data = {
     docket_key: d.key, court_id: d.court_id, case_type: caseType, docket_number_as_recorded: d.docket_numbers, provider_ids: providerIds,
-    captions: d.captions.map(c => ({ value: c.value, source: c.source, institutional: c.institutional === true })),
+    captions: d.captions.map(c => ({ value: c.value, source: c.source, institutional: c.institutional === true, ...(c.doc_type ? { doc_type: c.doc_type } : {}) })),
     date_filed: d.date_filed ?? null, year_filed: d.year_filed ?? null, date_terminated: d.date_terminated ?? null, header_termination_note: d.cl_header_date_terminated_note ?? null,
     judge_refs: d.judge_refs, held: d.notes.length ? d.notes : [], schema_note: 'Provider ids are linked only by exact court + docket key; no cross-provider merge of native entities.',
   };

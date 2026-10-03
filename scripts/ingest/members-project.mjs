@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { rest } from './members-pgrest.mjs';
 import { sha256, ROLE_LABEL, EVIDENCE_LABEL, docketbirdIdFromKey, docketNumberFromKey, courtOfKey } from './members-registry-lib.mjs';
+import { excluded, ws, scheduleCaptionQuality } from './members-publish-rules.mjs';
 
 const args = Object.fromEntries(process.argv.slice(2).map(x => { const i = x.indexOf('='); return i < 0 ? [x.replace(/^--/, ''), 'true'] : [x.slice(2, i), x.slice(i + 1)]; }));
 const mdls = (args.mdls ?? '').split(',').filter(Boolean).map(Number);
@@ -21,6 +22,8 @@ const staging = path.join(work, 'registry-staging');
 const PROJECTED_AT = new Date().toISOString();
 const DS_MATTERS = 'sw_matters_v1', DS_DOCKETS = 'sw_matter_dockets_v1';
 const bundles = mdls.map(m => JSON.parse(fs.readFileSync(path.join(staging, `bundle-${m}.json`), 'utf8')));
+// per-matter projection counts of the entries/parties datasets (written by members-project-extras.mjs; absent before the first run)
+const extras = fs.existsSync(path.join(staging, 'extras-summary.json')) ? JSON.parse(fs.readFileSync(path.join(staging, 'extras-summary.json'), 'utf8')) : { matters: {} };
 const tierOrder = { tier1: 0, tier2: 1, other: 2 };
 bundles.sort((a, b) => (tierOrder[a.seed.tier] - tierOrder[b.seed.tier]) || a.mdl - b.mdl);
 
@@ -29,8 +32,12 @@ const byDocket = new Map();
 for (const b of bundles) for (const d of b.dockets) if (d.role !== 'master' && d.role !== 'jpml_panel') byDocket.set(d.key, [...(byDocket.get(d.key) ?? []), b.mdl]);
 const conflictsOf = key => (byDocket.get(key) ?? []);
 
-const PRIORITY_NUM = ['courtlistener_header', 'docketbird_id', 'firm_crosswalk', 'jpml_schedule_as_printed'];
-const bestNumber = d => [...d.docket_numbers].sort((a, b) => PRIORITY_NUM.indexOf(a.source) - PRIORITY_NUM.indexOf(b.source))[0]?.value ?? docketNumberFromKey(d.key);
+const PRIORITY_NUM = ['courtlistener_header', 'docketbird_id', 'firm_crosswalk', 'jpml_schedule_as_printed', 'official_court_page', 'master_party_list'];
+const numRank = s => { const i = PRIORITY_NUM.indexOf(s); return i < 0 ? 99 : i; };
+const CAP_RANK = { courtlistener_header: 0, docketbird: 1, docketbird_jpml: 1, jpml_schedule: 2 };
+const CAP_LABEL = { courtlistener_header: 'CourtListener docket header', docketbird: 'DocketBird case title', docketbird_jpml: 'DocketBird JPML docket title', jpml_schedule: 'JPML order schedule, as printed' };
+const capLabel = c => (c.source === 'jpml_schedule' ? (c.doc_type === 'cto' ? 'JPML conditional transfer order table, as printed' : c.doc_type === 'transfer_order' ? 'JPML transfer order Schedule A, as printed' : CAP_LABEL.jpml_schedule) : CAP_LABEL[c.source] ?? c.source);
+const bestNumber = d => [...d.docket_numbers].sort((a, b) => numRank(a.source) - numRank(b.source))[0]?.value ?? docketNumberFromKey(d.key);
 const clUrl = id => `https://www.courtlistener.com/docket/${id}/`;
 const nativeIdsFlat = d => d.provider_ids.map(p => p.id);
 const year = v => (v ? String(v).slice(0, 4) : null);
@@ -63,7 +70,8 @@ for (const b of bundles) {
   const pdfCaseIds = [...new Set(caseIds.flatMap(c => c.native_case_ids.filter(n => !/header_conflicts/.test(n.resolution_basis ?? '')).map(n => n.id)))];
   const status = jp?.scope?.startsWith('active') ? (jp.pending === 0 ? 'no_pending_actions' : 'pending') : jp?.scope?.startsWith('terminated') ? 'terminated' : 'unknown';
   const mid = `sw-matter:${mdl}`;
-  const cells = { mdl_number: mdl, status, tier: b.seed.tier, transferee_court: courtOfKey(masterD.key), judge_as_printed: judgeLine ?? 'Not recorded', jpml_pending: jp?.pending ?? null, jpml_total: jp?.historical ?? null, registry_members: members.length, registry_actions: actions, entries_captured: entry?.captured_manifest_records ?? null, entries_total: entry?.provider_total ?? null, masters: 1 };
+  const ex = extras.matters?.[String(mdl)] ?? null;
+  const cells = { mdl_number: mdl, status, tier: b.seed.tier, transferee_court: courtOfKey(masterD.key), judge_as_printed: judgeLine ?? 'Not recorded', jpml_pending: jp?.pending ?? null, jpml_total: jp?.historical ?? null, registry_members: members.length, registry_actions: actions, entries_captured: entry?.captured_manifest_records ?? null, entries_total: entry?.provider_total ?? null, entries_published: ex?.entries?.projected ?? null, entries_withheld: ex?.entries ? ex.entries.withheld_sealed_document + ex.entries.withheld_text : null, parties_published: ex?.parties?.projected ?? null, counsel_links: ex?.parties?.counsel_links ?? null, masters: 1 };
   const links0 = [{ url: clUrl(masterD.provider_ids.find(p => p.provider === 'courtlistener')?.id ?? ''), label: 'CourtListener master docket' }].filter(l => !l.url.endsWith('//'));
   const dbMaster = masterD.provider_ids.find(p => p.provider === 'docketbird');
   if (dbMaster) links0.push({ url: dbMaster.url, label: 'DocketBird master docket' });
@@ -83,6 +91,11 @@ for (const b of bundles) {
   if (jp?.pending != null) gaps.push(`Registry holds ${members.length} distinct member-like dockets (all roles) versus ${jp.pending.toLocaleString('en-US')} actions pending and ${jp.historical?.toLocaleString('en-US')} historical per JPML (${jp.report_date}); it is evidence-backed, not a census.`);
   for (const e of b.entry_captures) if (!e.complete) gaps.push(`CourtListener entries for docket ${e.cl_docket_id}: ${e.captured_manifest_records} captured of ${e.provider_total ?? 'an unrecorded'} total; collection continues.`);
   if (!jpmlD.length) gaps.push('No JPML panel docket found in DocketBird for this MDL number.');
+  for (const p of masterD.provider_ids.filter(x => x.provider === 'courtlistener' && x.blocked)) {
+    const extN = Object.entries(ex?.entries?.external ?? {}).map(([k, n]) => `${n} from ${k}`).join(', ');
+    gaps.push(`CourtListener docket ${p.id} is blocked at the source: its entries, parties and attorneys are not collected or published. Entries shown come from the remaining routes${extN ? ` (${extN})` : ''} and are partial.`);
+  }
+  for (const [k, n] of Object.entries(ex?.entries?.external ?? {})) registry.entries.push({ docket_key: masterD.key, provider: k, cl_docket_id: null, captured: n, provider_total: null, complete: false, observed_at: extras.projected_at ?? null });
   for (const g of b.docketbird_graph ?? []) gaps.push(`DocketBird member graph (${g.retrieved_at}): ${g.returned} member dockets returned${g.total_members != null && g.total_members !== g.returned ? ` of ${g.total_members} indexed` : ''}${g.truncated ? ' (truncated by the row limit)' : ''}; a short or empty answer describes DocketBird's index, not membership.`);
   if (b.candidate_identity_links.length) gaps.push(`${b.candidate_identity_links.length} pair(s) of dockets share court, year, type and sequence but differ in office digit (possible divisional renumbering); not merged.`);
   registry.gaps = gaps;
@@ -103,7 +116,7 @@ for (const b of bundles) {
   const detail = {
     id: mid, title: b.seed.caption, subtitle: `MDL ${mdl} · ${courtOfKey(masterD.key)} · ${status}`, facts, links: links0, sections, registry,
     provenance: { source_system: 'sw-matter-registry', run_ids: [run], projection_schema: 'sw-matter-registry-view/1', projected_at: PROJECTED_AT, source_urls: [jp?.url].filter(Boolean) },
-    qualification: 'Evidence-backed registry for a Seeger Weiss tracked MDL. Roles are as stated by sources; master/member role stays unknown unless a source states it. Member lists are partial and never a census; JPML counts are the MDL size. No party names of individuals and no PDFs are exposed here.',
+    qualification: 'Evidence-backed registry for a Seeger Weiss tracked MDL. Roles are as stated by sources; master/member role stays unknown unless a source states it. Member lists are partial and never a census; JPML counts are the MDL size. Captions, docket entries and parties are shown as the court record shows them in the companion datasets (excluding sealed, restricted, in camera, ex parte and redacted material); no PDFs are exposed here.',
   };
   matterRecords.push({
     dataset: DS_MATTERS, id: mid, category: 'sw_matter', state: null, county_geoids: [], title: b.seed.caption, source_url: links0[0]?.url ?? jp?.url ?? null, ordinal: matterOrdinal++,
@@ -122,9 +135,22 @@ for (const b of bundles) {
     const isInst = d.role === 'master' || d.role === 'jpml_panel';
     const conf = conflictsOf(d.key).filter(m => m !== mdl);
     const dstatus = d.date_terminated ? 'header_terminated' : 'no_termination_date_recorded';
-    const title = `${num} (${d.court_id}) — ${ROLE_LABEL[d.role]}`;
+    // Captions are published as the court record shows them (show-as-published, owner decision 2026-10-03) except text that is sealed, restricted,
+    // in camera, ex parte or redacted. Preference: CourtListener header, DocketBird title, then the JPML schedule as printed.
+    const capSeen = new Set(); const caps = []; let capExcluded = 0; let capUnreliable = 0;
+    for (const c of [...d.captions].sort((x, y) => (CAP_RANK[x.source] ?? 9) - (CAP_RANK[y.source] ?? 9))) {
+      const v = ws(c.value);
+      if (!v) continue;
+      if (excluded(v)) { capExcluded++; continue; }
+      // text extracted from JPML schedule PDFs is published only when it is a single well-formed caption (see members-publish-rules.mjs)
+      if (c.source === 'jpml_schedule' && scheduleCaptionQuality(v) !== 'ok') { capUnreliable++; continue; }
+      if (capSeen.has(v.toLowerCase())) continue;
+      capSeen.add(v.toLowerCase()); caps.push({ value: v, source: c.source, ...(c.doc_type ? { doc_type: c.doc_type } : {}) });
+    }
+    const caption = caps[0]?.value ?? null;
+    const title = caption ? `${caption} — ${num} (${d.court_id})` : `${num} (${d.court_id}) — ${ROLE_LABEL[d.role]}`;
     const sourceUrl = cl ? clUrl(cl.id) : d.provider_ids[0]?.url ?? evs[0]?.source?.url ?? null;
-    const dCells = { mdl: String(mdl), role: d.role, route: d.route, docket_number: num, court_id: d.court_id, filed: d.date_filed ?? 'Not recorded', terminated: d.date_terminated ?? 'Not recorded', status: dstatus, basis: [...d.basis].map(k => EVIDENCE_LABEL[k] ?? k).join('; '), evidence_count: evs.length, action_id: 'act:' + sha256(d.key).slice(0, 16), counts_as_action: !isInst && d.role !== 'not_member' && !d.membership_conflict };
+    const dCells = { mdl: String(mdl), role: d.role, route: d.route, docket_number: num, court_id: d.court_id, caption, caption_source: caps[0]?.source ?? null, filed: d.date_filed ?? 'Not recorded', terminated: d.date_terminated ?? 'Not recorded', status: dstatus, basis: [...d.basis].map(k => EVIDENCE_LABEL[k] ?? k).join('; '), evidence_count: evs.length, action_id: 'act:' + sha256(d.key).slice(0, 16), counts_as_action: !isInst && d.role !== 'not_member' && !d.membership_conflict };
     const dLinks = [];
     if (cl) dLinks.push({ url: clUrl(cl.id), label: 'CourtListener docket' });
     const dbp = d.provider_ids.find(p => p.provider === 'docketbird' || p.provider === 'jpml');
@@ -134,7 +160,7 @@ for (const b of bundles) {
       schema: 'sw-matter-registry/1', mdl: String(mdl), docket_key: d.key, role: d.role, roles_stated: d.roles_stated, route: d.route, membership_basis: [...d.basis],
       native_case_ids: d.provider_ids.map(p => ({ provider: p.provider, source_system: p.source_system, id: p.id, resolution_basis: p.resolution_basis, ...(p.pacer_case_id ? { pacer_case_id: p.pacer_case_id } : {}) })),
       evidence: evs.map(e => ({ evidence_id: e.id, kind: e.kind, label: e.label, asserted_role: e.claim.asserted_role, asserted_route: e.claim.asserted_route, source_url: e.source.url ?? null, source_sha256: e.source.document_sha256 ?? null, source_id: e.source.id ?? null, locator: e.locator, quote: e.quote ?? null, retrieved_at: e.retrieved_at, as_of: e.source.as_of ?? null, qualification: e.qualification })),
-      action_id: dCells.action_id, counts_as_action: dCells.counts_as_action, linked_dockets: [], judges: d.judge_refs.map(j => ({ role: j.role, cl_person_id: j.cl_person_id, source_string: j.source_string, basis: j.basis })), caption_withheld: !(isInst && d.captions.some(c => c.institutional)),
+      action_id: dCells.action_id, counts_as_action: dCells.counts_as_action, linked_dockets: [], judges: d.judge_refs.map(j => ({ role: j.role, cl_person_id: j.cl_person_id, source_string: j.source_string, basis: j.basis })), caption, captions: caps, caption_withheld: !caption, caption_excluded_count: capExcluded, caption_unreliable_count: capUnreliable,
       conflicts: conf.length ? [{ other_mdl: conf, note: 'This docket is asserted as a member of more than one MDL by different sources; shown, not resolved.' }] : [], held: d.notes,
       possible_identity_links: b.candidate_identity_links.filter(c => c.keys.includes(d.key)).map(c => ({ keys: c.keys.filter(k => k !== d.key), basis: c.basis, merged: false })),
     };
@@ -143,20 +169,20 @@ for (const b of bundles) {
       ['Filed', d.date_filed ?? 'Not recorded'], ['Docket header termination date', d.date_terminated ?? 'Not recorded'], ['Evidence kinds', [...d.basis].map(k => EVIDENCE_LABEL[k] ?? k).join('; ') || 'Not recorded'],
       ['Provider case ids', d.provider_ids.map(p => `${p.provider}: ${p.id}`).join('; ')],
     ];
-    // Only a caption flagged institutional (MDL / subject-matter name, no "X v. Y" party form) is shown; a person-v-company caption on a master
-    // docket stays in the private registry. The MDL's own name is shown from the JPML report instead.
-    const instCap = isInst ? d.captions.find(c => c.institutional) : null;
-    if (instCap) dFacts.push(['Caption (institutional)', instCap.value]);
+    if (caption) dFacts.push(['Caption (as published)', caption], ['Caption source', capLabel(caps[0])]);
+    if (caps.length > 1) dFacts.push(['Other captions recorded', caps.slice(1).map(c => `${c.value} (${capLabel(c)})`).join(' | ')]);
+    if (!caption && capExcluded) dFacts.push(['Caption', 'Withheld (sealed, restricted or redacted in the record)']);
+    if (!caption && !capExcluded && capUnreliable) dFacts.push(['Caption', 'Not shown: the JPML schedule text for this row could not be read reliably']);
     if (d.role === 'master') dFacts.push(['MDL caption (JPML report)', b.seed.caption]);
     if (isInst && d.judge_refs.length) dFacts.push(['Judges (CourtListener docket)', d.judge_refs.map(j => `${j.role.replace('_', ' ')}: ${j.source_string ?? 'Not recorded'}${j.cl_person_id ? ` (CourtListener person ${j.cl_person_id})` : ''}`).join('; ')]);
     if (conf.length) dFacts.push(['Also asserted for MDL', conf.join(', ')]);
     docketRecords.push({
       dataset: DS_DOCKETS, id, category: 'sw_matter_docket', state: null, county_geoids: [], title, source_url: sourceUrl, ordinal: docketOrdinal++,
-      item: itemOf(id, title, `MDL ${mdl} · filed ${d.date_filed ?? 'not recorded'}`, dCells, dLinks, [ROLE_LABEL[d.role], ...(d.route !== 'unknown' ? [d.route.replace(/_/g, ' ')] : []), ...(conf.length ? ['Conflicting MDL assertion'] : []), ...(isInst ? [] : ['Caption withheld'])]),
+      item: itemOf(id, title, `MDL ${mdl} · filed ${d.date_filed ?? 'not recorded'}`, dCells, dLinks, [ROLE_LABEL[d.role], ...(d.route !== 'unknown' ? [d.route.replace(/_/g, ' ')] : []), ...(conf.length ? ['Conflicting MDL assertion'] : []), ...(!caption && capExcluded ? ['Caption withheld'] : [])]),
       detail: { id, title, subtitle: `MDL ${mdl} · ${d.court_id}`, facts: dFacts, links: dLinks, sections: [{ heading: 'Evidence', header: ['Kind', 'Source', 'Locator', 'Retrieved'], rows: reg.evidence.map(e => [e.label, e.source_url ?? 'Not recorded', JSON.stringify(e.locator), e.retrieved_at]) }], registry: reg,
-        provenance: { source_system: 'sw-matter-registry', run_ids: [run], projection_schema: 'sw-matter-registry-view/1', projected_at: PROJECTED_AT }, qualification: 'One docket-in-matter. Roles and routes are as stated by the evidence listed; a transferor and a transferee docket are two records of one action. Captions of member dockets are withheld.' },
-      text: `${num} ${d.court_id} MDL ${mdl} ${ROLE_LABEL[d.role]} ${nativeIdsFlat(d).join(' ')} ${[...d.basis].join(' ')}`.replace(/\s+/g, ' ').trim(),
-      filters: { _listing: 'true', native_id: id, mdl: String(mdl), role: d.role, route: d.route, basis: [...d.basis], court_id: d.court_id, year: year(d.date_filed) ?? String(d.key.match(/:(\d{4})-/)?.[1] ?? ''), status: dstatus, counts_as_action: String(dCells.counts_as_action), tier: b.seed.tier, native_case_id: nativeIdsFlat(d), conflict: conf.length ? 'true' : 'false' },
+        provenance: { source_system: 'sw-matter-registry', run_ids: [run], projection_schema: 'sw-matter-registry-view/1', projected_at: PROJECTED_AT }, qualification: 'One docket-in-matter. Roles and routes are as stated by the evidence listed; a transferor and a transferee docket are two records of one action. Captions are shown as the court record or the cited source prints them (JPML schedules print them in capitals); captions that are sealed, restricted or redacted are not shown.' },
+      text: `${caps.map(c => c.value).join(' ')} ${num} ${d.court_id} MDL ${mdl} ${ROLE_LABEL[d.role]} ${nativeIdsFlat(d).join(' ')} ${[...d.basis].join(' ')}`.replace(/\s+/g, ' ').trim(),
+      filters: { _listing: 'true', native_id: id, mdl: String(mdl), role: d.role, route: d.route, basis: [...d.basis], court_id: d.court_id, year: year(d.date_filed) ?? String(d.key.match(/:(\d{4})-/)?.[1] ?? ''), status: dstatus, counts_as_action: String(dCells.counts_as_action), tier: b.seed.tier, native_case_id: nativeIdsFlat(d), conflict: conf.length ? 'true' : 'false', has_caption: caption ? 'true' : 'false' },
     });
     bump(optionCounts.dockets.mdl, String(mdl)); bump(optionCounts.dockets.role, d.role); bump(optionCounts.dockets.route, d.route); bump(optionCounts.dockets.court_id, d.court_id); bump(optionCounts.dockets.status, dstatus);
     for (const k of d.basis) bump(optionCounts.dockets.basis, k);
@@ -168,14 +194,14 @@ const opt = (counts, labeler = x => x) => Object.entries(counts).sort((a, b) => 
 const datasets = [
   { id: DS_MATTERS, label: 'Seeger Weiss matter registry — MDL matters', expected_records: matterRecords.length, imported_records: matterRecords.length, metadata: {
     grain: 'One tracked MDL matter (JPML MDL number)', aliases: [DS_MATTERS, 'sw-matters'], source_system: 'sw-matter-registry', schema_version: 'sw-matter-registry-view/1', source_runs: [run],
-    qualification: 'Evidence-backed registry rows for firm-tracked MDLs. Roles are as stated by sources; JPML counts are the MDL size; member lists are partial. No individual party names and no PDFs are exposed. Not legal advice.',
-    privacy_policy: 'Institutional captions only; member-case captions (natural-person plaintiffs) are withheld; judge strings are source strings; native person ids only from CourtListener docket resources.',
+    qualification: 'Evidence-backed registry rows for firm-tracked MDLs. Roles are as stated by sources; JPML counts are the MDL size; member lists are partial. Dockets, captions, entries and parties are shown as the court record shows them in the companion datasets; no PDFs are exposed here. Not legal advice.',
+    privacy_policy: 'Show as published (owner decision 2026-10-03): excluded are sealed, restricted, in camera, ex parte and redacted material and source-blocked dockets; no contact fields; judge strings are source strings; native person ids only from CourtListener docket resources.',
     listing: { columns: [{ key: 'mdl_number', label: 'MDL' }, { key: 'status', label: 'Status' }, { key: 'tier', label: 'Tier' }, { key: 'transferee_court', label: 'Transferee court' }, { key: 'judge_as_printed', label: 'Judge' }, { key: 'jpml_pending', label: 'JPML pending' }, { key: 'jpml_total', label: 'JPML historical' }, { key: 'registry_members', label: 'Registry dockets' }],
       filters: [{ name: 'tier', type: 'select', label: 'Tier', options: opt(optionCounts.matters.tier, v => v.replace('tier', 'Tier ')), placeholder: 'All tiers' }, { name: 'status', type: 'select', label: 'Status', options: opt(optionCounts.matters.status), placeholder: 'All statuses' }, { name: 'court_id', type: 'select', label: 'Transferee court', options: opt(optionCounts.matters.court_id), placeholder: 'All courts' }] } } },
   { id: DS_DOCKETS, label: 'Seeger Weiss matter registry — dockets in matters', expected_records: docketRecords.length, imported_records: docketRecords.length, metadata: {
     grain: 'One docket within one MDL matter (master, JPML panel, member, transferor)', aliases: [DS_DOCKETS, 'sw-matter-dockets'], source_system: 'sw-matter-registry', schema_version: 'sw-matter-registry-view/1', source_runs: [run],
-    qualification: 'One docket-in-matter with the evidence behind its role and route. A transferor and a transferee docket are two records of one action (action_id). Member captions are withheld. Not a member census.',
-    privacy_policy: 'Institutional captions only on master and JPML rows; member captions withheld; no contact fields.',
+    qualification: 'One docket-in-matter with the evidence behind its role and route. A transferor and a transferee docket are two records of one action (action_id). Captions are shown as the court record or the cited source prints them. Not a member census.',
+    privacy_policy: 'Show as published (owner decision 2026-10-03): captions as printed by the cited source, except sealed, restricted, in camera, ex parte or redacted text; no contact fields.',
     listing: { columns: [{ key: 'docket_number', label: 'Docket' }, { key: 'court_id', label: 'Court' }, { key: 'role', label: 'Role' }, { key: 'route', label: 'Route' }, { key: 'basis', label: 'Evidence' }, { key: 'filed', label: 'Filed' }, { key: 'evidence_count', label: 'Evidence rows' }],
       filters: [{ name: 'mdl', type: 'select', label: 'MDL', options: opt(optionCounts.dockets.mdl, v => `MDL ${v}`), placeholder: 'All MDLs' }, { name: 'role', type: 'select', label: 'Role', options: opt(optionCounts.dockets.role, v => ROLE_LABEL[v] ?? v), placeholder: 'All roles' }, { name: 'route', type: 'select', label: 'Route', options: opt(optionCounts.dockets.route), placeholder: 'All routes' }, { name: 'basis', type: 'select', label: 'Evidence kind', options: opt(optionCounts.dockets.basis, v => EVIDENCE_LABEL[v] ?? v), placeholder: 'All evidence kinds' }, { name: 'court_id', type: 'select', label: 'Court', options: opt(optionCounts.dockets.court_id), placeholder: 'All courts' }] } } },
 ];

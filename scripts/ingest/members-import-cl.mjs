@@ -17,6 +17,8 @@ const types = (args.types ?? 'dockets,docket-entries,parties,attorneys,recap-doc
 const dry = args['dry-run'] === 'true';
 const maxBytes = Number(args['max-bytes'] ?? 1_500_000);
 const maxRows = Number(args['max-rows'] ?? 2000);
+// --only=<native id>[,<native id>...] sends just those native ids (used to import a row that was held as too large with a higher --max-bytes)
+const only = args.only ? new Set(args.only.split(',').filter(Boolean)) : null;
 const receiptPath = path.resolve(args.receipt ?? path.join(pass, `import-receipt-${run}.jsonl`));
 const credentialsFile = args.credentials ?? 'C:/Users/firas/.codex/private/legal-source-compass.preview.json';
 const sha = x => createHash('sha256').update(x).digest('hex');
@@ -109,6 +111,7 @@ for (const type of types) {
   for await (const entry of lines(file)) {
     const recs = type === 'recap-documents' ? deriveDocs(entry) : [entry];
     for (const rec of recs) {
+      if (only && !only.has(rec.native_id)) continue;
       totals.read++;
       const key = `${rec.entity_type}|${rec.native_id}|${rec.provenance.record_sha256}|${rec.provenance.source_url}`;
       if (seenKeys.has(key)) continue; seenKeys.add(key);

@@ -71,6 +71,11 @@ export class CourtListenerClient {
           if(recent.length+initial>=Math.max(1,limit.limit-safety))delay=Math.max(delay,recent.length?Math.max(250,recent[0]+windowMs-now+200):limit.checkedAt+windowMs-now+200);
         }
         if(delay>0){if(!this.lastRateLog||now-this.lastRateLog>15_000){this.lastRateLog=now;console.log(JSON.stringify({event:'rate_wait',seconds:Math.ceil(delay/1000)}));}await sleep(Math.min(delay,60_000));continue;}
+        // Optional pacing (CL_MIN_GAP_MS): the 2026-10-03 service run was stopped by a 429 (Retry-After=1) after four requests inside one second; a minimum gap
+        // between requests removes the burst without changing the ledger limits.
+        const minGap=Number(process.env.CL_MIN_GAP_MS??0);
+        if(minGap>0&&this.lastRequestAt&&now-this.lastRequestAt<minGap){await sleep(minGap-(now-this.lastRequestAt));continue;}
+        this.lastRequestAt=now;
         this.ledger.timestamps.push(now);await fs.writeFile(path.join(this.cache,'rate-ledger.json'),JSON.stringify(this.ledger));this.requests++;return;
       }
     });this.queue=work.catch(()=>{});return work;
