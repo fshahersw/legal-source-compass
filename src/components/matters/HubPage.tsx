@@ -43,7 +43,7 @@ function Coverage({ row }: { row: HubRow }) {
           tone="success"
           title={`Member-like dockets in the Seeger Weiss matter registry, each with its evidence. Not the size of the MDL.${mix ? ` By evidence: ${mix}.` : ""}`}
         >
-          Registry dockets {num(row.registryDockets)}
+          Member-like dockets {num(row.registryDockets)}
         </Chip>
       ),
     });

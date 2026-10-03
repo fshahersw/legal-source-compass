@@ -55,8 +55,8 @@ function RegistryCard({ payload }: { payload: MatterOverviewPayload }) {
             value={reg.members.rows !== null ? reg.members.rows.toLocaleString() : <NotRecorded />}
             note={
               reg.members.actions !== null
-                ? `${reg.members.actions.toLocaleString()} counted as actions · all roles, not a census`
-                : "All roles, not a census"
+                ? `${reg.members.actions.toLocaleString()} counted as actions · members and transferors, not a census`
+                : "Members and transferors, not a census"
             }
           />
           <div className="rounded-md border border-border bg-background p-3 sm:col-span-1">

@@ -87,7 +87,8 @@ function EntryDocuments({
               key={`${doc.sourceSystem}:${doc.nativeDocumentId}`}
               className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2.5 py-1.5"
             >
-              <span className="min-w-0">
+              {/* A file name has no break points, so it may wrap anywhere rather than push the page wider. */}
+              <span className="min-w-0 [overflow-wrap:anywhere]">
                 <span className="font-medium">{documentLabel(entry, doc, via)}</span>
                 <span className="ml-2 text-muted-foreground">
                   {doc.sourceLabel}

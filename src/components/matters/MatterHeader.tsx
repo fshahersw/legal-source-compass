@@ -98,8 +98,8 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
         note={o.asOf ? `JPML report ${o.asOf}` : (o.countsLabel ?? undefined)}
       />
       <Metric
-        label="Registry dockets"
-        title="Dockets the Seeger Weiss matter registry holds for this MDL, each with its evidence; never the size of the MDL."
+        label="Member-like dockets"
+        title="Member and transferor dockets the Seeger Weiss matter registry holds for this MDL, each with its evidence. The master docket and the JPML panel proceeding are listed on the Member cases tab but are not counted here; never the size of the MDL."
         value={m && m.dockets !== null ? n(m.dockets) : <NotRecorded />}
         note={
           m && topKinds.length
@@ -280,7 +280,7 @@ export function MatterHeader({ payload }: { payload: MatterOverviewPayload }) {
             >
               In the matter registry
               {registry.members.rows !== null
-                ? ` · ${registry.members.rows.toLocaleString()} dockets`
+                ? ` · ${registry.members.rows.toLocaleString()} member-like dockets`
                 : ""}
             </Chip>
           </Link>

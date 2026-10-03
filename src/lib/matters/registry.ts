@@ -487,7 +487,10 @@ export function overviewFromRegistry(reg: RegistryMatter): MatterOverview | null
 /* ------------------------------------------------------------------ metrics */
 
 export type RegistryMetrics = {
-  /** Dockets the registry holds for the matter (all roles); never the size of the MDL. */
+  /**
+   * Member and transferor dockets the registry holds for the matter (the master docket and the JPML panel proceeding are
+   * listed beside them but not counted here); never the size of the MDL.
+   */
   dockets: number | null;
   /** Of those, rows counted as one action each. */
   actions: number | null;

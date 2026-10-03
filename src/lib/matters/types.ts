@@ -229,7 +229,7 @@ export type HubRow = {
   savedDocuments: number | null;
   swAppearances: number | null;
   registry: HubRegistry;
-  /** Dockets the matter registry holds for this MDL (all roles); null when the registry has no record for it. */
+  /** Member and transferor dockets the matter registry holds for this MDL; null when the registry has no record for it. */
   registryDockets: number | null;
   /** The matter registry's computed numbers (evidence mix, entries captured vs reported, last capture); null without a record. */
   metrics: RegistryMetrics | null;

@@ -290,7 +290,7 @@ function RegistrySection({
           or hash. It is held when the source did not confirm that the document is unsealed and
           available (for example a search-only locator).
         </Scope>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
           <FilterField label="Search">
             <Input
               aria-label="Search verified PDFs"
