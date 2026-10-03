@@ -10,10 +10,15 @@ import {hostAllowed,sourceHostOf} from './pdf-source-hosts.mjs';
 
 const PROJECT='xosqzzsnhxcyehcnirpa',BUCKET='corpus-originals';
 const sha=x=>createHash('sha256').update(x).digest('hex');
+// GovInfo USCOURTS ids: package USCOURTS-<court>-<office>_<yy>-<type>-<seq> (type is lower case for courts, "F" for the JPML), granule = package + "-" + part number.
+export const GOVINFO_PACKAGE_ID=/^USCOURTS-[a-z0-9]+-[0-9]{1,2}_[0-9]{2}-[A-Za-z]{1,5}-[0-9]{3,6}$/;
+export const GOVINFO_GRANULE_ID=/^USCOURTS-[a-z0-9]+-[0-9]{1,2}_[0-9]{2}-[A-Za-z]{1,5}-[0-9]{3,6}-[0-9]{1,6}$/;
+export const govinfoPackageOf=granuleId=>String(granuleId).replace(/-[0-9]{1,6}$/,'');
 const defaultPause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 export function validateDownloadUrl(value,provider){
  const u=new URL(value);if(u.protocol!=='https:'||u.username||u.password||u.port)throw Error('PDF_URL_INVALID');
- const allowed=provider==='docketbird'?u.hostname==='docketbird-case-documents.s3.amazonaws.com':['courtlistener','courtlistener-public-locator'].includes(provider)?u.hostname==='storage.courtlistener.com':provider==='official-court'?/^[a-z0-9.-]+\.uscourts\.gov$/.test(u.hostname):false;
+ // govinfo: the U.S. Government Publishing Office USCOURTS collection (published court opinions/orders), granule PDFs only: https://www.govinfo.gov/content/pkg/USCOURTS-.../pdf/USCOURTS-....pdf
+ const allowed=provider==='docketbird'?u.hostname==='docketbird-case-documents.s3.amazonaws.com':['courtlistener','courtlistener-public-locator'].includes(provider)?u.hostname==='storage.courtlistener.com':provider==='official-court'?/^[a-z0-9.-]+\.uscourts\.gov$/.test(u.hostname):provider==='govinfo'?u.hostname==='www.govinfo.gov'&&u.pathname.startsWith('/content/pkg/USCOURTS-'):false;
  if(!allowed)throw Error('PDF_HOST_NOT_ALLOWED');return u;
 }
 export function validateQueueRow(row){
@@ -44,6 +49,13 @@ export function validateQueueRow(row){
   const target=new URL(row.download_url);if(target.search||target.hash||!target.pathname.startsWith('/recap/')||!target.pathname.toLowerCase().endsWith('.pdf'))throw Error('PUBLIC_RECAP_LOCATOR_REQUIRED');
  }
  if(row.provider==='official-court'&&row.provider_flags?.sealing_related_locator_held!==false)throw Error('SEALING_RELATED_SOURCE_HELD');
+ if(row.provider==='govinfo'){
+  // identity: granule id (native_document_id) = package id + '-' + part number, URL = exactly that granule's PDF; native_case_id is the case number as printed
+  // (the same string the matter's official-court documents use; "MDL No. <n>" for JPML packages), never empty
+  if(row.provider_flags?.sealing_related_locator_held!==false)throw Error('SEALING_RELATED_SOURCE_HELD');
+  if(typeof row.native_case_id!=='string'||!row.native_case_id.trim()||row.native_case_id.length>200||!GOVINFO_GRANULE_ID.test(row.native_document_id)
+   ||row.durable_url!==row.download_url||row.download_url!=='https://www.govinfo.gov/content/pkg/'+govinfoPackageOf(row.native_document_id)+'/pdf/'+row.native_document_id+'.pdf')throw Error('GOVINFO_GRANULE_IDENTITY_MISMATCH');
+ }
  return row;
 }
 export function sourcePrivacyQualification(row){
