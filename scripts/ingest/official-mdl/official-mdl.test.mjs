@@ -237,3 +237,31 @@ test('GovInfo PREMIS: only granule PDFs with their GPO SHA-256 fixity and size; 
   assert.deepEqual([g.granule_id, g.date_issued, g.docket_text, g.docket_number_published, g.pdf_url], [PKG + '-1', '2024-01-10', 'OPINION and ORDER No. 17 (Granting). Signed on 1/9/2024. (kht)', '3:16-md-02738', `https://www.govinfo.gov/content/pkg/${PKG}/pdf/${PKG}-1.pdf`]);
   assert.ok(!JSON.stringify(parsed).includes('lastName'));
 });
+
+// ---------- GovInfo queue rows ----------
+import { buildRows as buildGovinfoRows } from './build-govinfo-queue.mjs';
+test('GovInfo queue rows: granule id is the identity, printed case number is the case id, sealing wording is held, already-registered rows are skipped, provenance names the PREMIS and MODS captures', () => {
+  const pkg = 'USCOURTS-njd-3_16-md-02738';
+  const premis = { status: 200, sha256: 'c'.repeat(64), bytes: 9000, retrieved_at: '2026-10-03T17:11:25.052Z', body_file: 'captures/www.govinfo.gov/p.xml' };
+  const mods = { status: 200, sha256: 'd'.repeat(64), bytes: 1e6, retrieved_at: '2026-10-03T17:11:28.971Z', body_file: 'captures/www.govinfo.gov/m.xml.gz' };
+  const summary = { package_id: pkg, package_title: { case_title: 'JOHNSON & JOHNSON TALCUM', docket_number_published: '3:16-md-02738' }, premis, mods };
+  const granule = (part, text, date) => ({ mdl: '2738', court: 'njd', package_id: pkg, native_case_id: '3:16-md-02738', granule_id: pkg + '-' + part, part, problems: [],
+    premis: { sha256: String(part).repeat(64).slice(0, 64), bytes: 1000 + part, fdsys_id: 'D' + part, original_name: pkg + '-' + part + '.pdf', file: premis },
+    mods: { docket_text: text, date_issued: date, case_title: 'JOHNSON & JOHNSON TALCUM', docket_number_published: '3:16-md-02738', court_name: 'United States District Court District of New Jersey', pdf_url: `https://www.govinfo.gov/content/pkg/${pkg}/pdf/${pkg}-${part}.pdf` },
+    pdf_url: `https://www.govinfo.gov/content/pkg/${pkg}/pdf/${pkg}-${part}.pdf` });
+  const granules = [granule(1, 'OPINION and ORDER No. 17 (Granting). Signed on 1/9/2024. (kht)', '2024-01-10'), granule(2, 'ORDER sealing Exhibit A (Filed Under Seal).', '2024-02-01'), granule(3, 'ORDER No. 18.', '2024-03-01')];
+  const first = buildGovinfoRows({ runDir: 'C:/run', key: '2738', rows: granules, summary });
+  assert.equal(first.rows.length, 2);
+  assert.deepEqual(first.held.map(h => [h.granule_id, h.reason]), [[pkg + '-2', 'sealing_related_wording']]);
+  const row = first.rows[0];
+  assert.deepEqual([row.provider, row.native_document_id, row.native_case_id, row.expected_bytes, row.provider_flags.sealing_related_locator_held], ['govinfo', pkg + '-1', '3:16-md-02738', 1001, false]);
+  assert.equal(row.download_url, `https://www.govinfo.gov/content/pkg/${pkg}/pdf/${pkg}-1.pdf`);
+  assert.equal(row.title, 'OPINION and ORDER No. 17 (Granting). Signed on 1/9/2024. (kht)');
+  assert.equal(row.origins[0].listing.date_iso_basis, 'govinfo_mods_dateIssued');
+  assert.equal(row.origins[0].govinfo.premis_url, `https://www.govinfo.gov/metadata/pkg/${pkg}/premis.xml`);
+  assert.equal(row.origins[0].govinfo.provider_fixity_sha256, granules[0].premis.sha256);
+  assert.equal(row.origins[0].source_url, `https://www.govinfo.gov/metadata/pkg/${pkg}/mods.xml`);
+  assert.ok(!/lastName|firstName|"parties"|"party"\s*:/i.test(JSON.stringify(row)), 'no party data is carried');
+  const again = buildGovinfoRows({ runDir: 'C:/run', key: '2738', rows: granules, summary, registered: new Set(['govinfo|' + pkg + '-1|3:16-md-02738|' + row.selected_source_record_sha256]) });
+  assert.deepEqual([again.rows.length, again.skipped.length, again.held.length], [1, 1, 1]);
+});

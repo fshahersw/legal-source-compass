@@ -11,7 +11,7 @@ import { pathToFileURL } from 'node:url';
 import { canonicalIntegerJson, hashBytes } from '../../admin/local-catalog-evidence-contract.mjs';
 import { validateQueueRow, sourcePrivacyQualification } from '../backfill-pdfs-to-supabase.mjs';
 import { SEAL_PATTERN, docKind, orderLabel } from './parsers.mjs';
-import { granuleDetailsUrl, packageModsUrl, GOVINFO_MASTERS } from './govinfo.mjs';
+import { granuleDetailsUrl, packageModsUrl, premisUrl, GOVINFO_MASTERS } from './govinfo.mjs';
 import { resolveRunDir, parseArgs, readJsonl } from './store.mjs';
 
 const sha256 = x => createHash('sha256').update(x).digest('hex');
@@ -54,7 +54,7 @@ export function buildRows({ runDir, key, rows: granules, summary, registered = n
         source_response_hash_semantics: 'SHA256 of the UNCOMPRESSED package MODS response bytes as received; the private run dir keeps them gzip-compressed', http_status: summary.mods.status ?? 200, retrieved_at: summary.mods.retrieved_at,
         retrieved_at_basis: 'http_response_time_of_package_mods_capture', capture_file: path.join(runDir, summary.mods.body_file), capture_file_sha256: summary.mods.sha256,
         source_locator: { kind: 'mods_constituent', granule_id: g.granule_id, part: g.part }, listing: record,
-        govinfo: { package_id: g.package_id, granule_id: g.granule_id, premis_url: summary.premis.file ? 'https://www.govinfo.gov/metadata/pkg/' + g.package_id + '/premis.xml' : null, premis_sha256: summary.premis.sha256, premis_retrieved_at: summary.premis.retrieved_at, provider_fixity_sha256: g.premis.sha256, provider_bytes: g.premis.bytes, fdsys_id: g.premis.fdsys_id } }],
+        govinfo: { package_id: g.package_id, granule_id: g.granule_id, premis_url: premisUrl(g.package_id), premis_sha256: summary.premis.sha256, premis_retrieved_at: summary.premis.retrieved_at, provider_fixity_sha256: g.premis.sha256, provider_bytes: g.premis.bytes, fdsys_id: g.premis.fdsys_id } }],
       provenance: { adapter_version: 'official-mdl-govinfo-queue/1', matter: 'mdl:' + g.mdl, court_id: g.court, court_host: 'www.govinfo.gov', package_id: g.package_id, listing_record_codec: GOVINFO_CODEC, native_document_identity_is_source_locator: true,
         expected_pdf_checksum_and_size: 'size from GPO PREMIS; SHA-256 fixity compared by qa-govinfo.mjs', exact_official_host_allowlist: ['www.govinfo.gov'], new_api_requests: 0, pdf_transfers: 0 },
     };
