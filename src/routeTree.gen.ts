@@ -33,6 +33,7 @@ import { Route as AgenciesIndexRouteImport } from './routes/agencies.index'
 import { Route as AgenciesIdRouteImport } from './routes/agencies.$id'
 import { Route as ApiBundlesRouteImport } from './routes/api/bundles'
 import { Route as ApiFilesRouteImport } from './routes/api/files'
+import { Route as ApiMatterPdfRouteImport } from './routes/api/matter-pdf'
 import { Route as CourtsIndexRouteImport } from './routes/courts.index'
 import { Route as CourtsIdRouteImport } from './routes/courts.$id'
 import { Route as DataIndexRouteImport } from './routes/data.index'
@@ -42,6 +43,7 @@ import { Route as JudgesIdRouteImport } from './routes/judges.$id'
 import { Route as MattersIndexRouteImport } from './routes/matters.index'
 import { Route as MattersIdRouteImport } from './routes/matters.$id'
 import { Route as MattersCasesRouteImport } from './routes/matters.cases'
+import { Route as MattersSeegerWeissRouteImport } from './routes/matters.seeger-weiss'
 import { Route as PlacesIndexRouteImport } from './routes/places.index'
 import { Route as PlacesStateRouteImport } from './routes/places.$state'
 import { Route as RegistryIndexRouteImport } from './routes/registry.index'
@@ -181,6 +183,11 @@ const ApiFilesRoute = ApiFilesRouteImport.update({
   path: '/api/files',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMatterPdfRoute = ApiMatterPdfRouteImport.update({
+  id: '/api/matter-pdf',
+  path: '/api/matter-pdf',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CourtsIndexRoute = CourtsIndexRouteImport.update({
   id: '/courts/',
   path: '/courts/',
@@ -224,6 +231,11 @@ const MattersIdRoute = MattersIdRouteImport.update({
 const MattersCasesRoute = MattersCasesRouteImport.update({
   id: '/matters/cases',
   path: '/matters/cases',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MattersSeegerWeissRoute = MattersSeegerWeissRouteImport.update({
+  id: '/matters/seeger-weiss',
+  path: '/matters/seeger-weiss',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PlacesIndexRoute = PlacesIndexRouteImport.update({
@@ -341,11 +353,13 @@ export interface FileRoutesByFullPath {
   '/agencies/$id': typeof AgenciesIdRoute
   '/api/bundles': typeof ApiBundlesRoute
   '/api/files': typeof ApiFilesRoute
+  '/api/matter-pdf': typeof ApiMatterPdfRoute
   '/courts/$id': typeof CourtsIdRoute
   '/data/$dataset': typeof DataDatasetRoute
   '/judges/$id': typeof JudgesIdRoute
   '/matters/$id': typeof MattersIdRoute
   '/matters/cases': typeof MattersCasesRoute
+  '/matters/seeger-weiss': typeof MattersSeegerWeissRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/registry/$id': typeof RegistryIdRoute
   '/sources/analysis': typeof SourcesAnalysisRoute
@@ -394,11 +408,13 @@ export interface FileRoutesByTo {
   '/agencies/$id': typeof AgenciesIdRoute
   '/api/bundles': typeof ApiBundlesRoute
   '/api/files': typeof ApiFilesRoute
+  '/api/matter-pdf': typeof ApiMatterPdfRoute
   '/courts/$id': typeof CourtsIdRoute
   '/data/$dataset': typeof DataDatasetRoute
   '/judges/$id': typeof JudgesIdRoute
   '/matters/$id': typeof MattersIdRoute
   '/matters/cases': typeof MattersCasesRoute
+  '/matters/seeger-weiss': typeof MattersSeegerWeissRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/registry/$id': typeof RegistryIdRoute
   '/sources/analysis': typeof SourcesAnalysisRoute
@@ -448,11 +464,13 @@ export interface FileRoutesById {
   '/agencies/$id': typeof AgenciesIdRoute
   '/api/bundles': typeof ApiBundlesRoute
   '/api/files': typeof ApiFilesRoute
+  '/api/matter-pdf': typeof ApiMatterPdfRoute
   '/courts/$id': typeof CourtsIdRoute
   '/data/$dataset': typeof DataDatasetRoute
   '/judges/$id': typeof JudgesIdRoute
   '/matters/$id': typeof MattersIdRoute
   '/matters/cases': typeof MattersCasesRoute
+  '/matters/seeger-weiss': typeof MattersSeegerWeissRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/registry/$id': typeof RegistryIdRoute
   '/sources/analysis': typeof SourcesAnalysisRoute
@@ -503,11 +521,13 @@ export interface FileRouteTypes {
     | '/agencies/$id'
     | '/api/bundles'
     | '/api/files'
+    | '/api/matter-pdf'
     | '/courts/$id'
     | '/data/$dataset'
     | '/judges/$id'
     | '/matters/$id'
     | '/matters/cases'
+    | '/matters/seeger-weiss'
     | '/places/$state'
     | '/registry/$id'
     | '/sources/analysis'
@@ -556,11 +576,13 @@ export interface FileRouteTypes {
     | '/agencies/$id'
     | '/api/bundles'
     | '/api/files'
+    | '/api/matter-pdf'
     | '/courts/$id'
     | '/data/$dataset'
     | '/judges/$id'
     | '/matters/$id'
     | '/matters/cases'
+    | '/matters/seeger-weiss'
     | '/places/$state'
     | '/registry/$id'
     | '/sources/analysis'
@@ -609,11 +631,13 @@ export interface FileRouteTypes {
     | '/agencies/$id'
     | '/api/bundles'
     | '/api/files'
+    | '/api/matter-pdf'
     | '/courts/$id'
     | '/data/$dataset'
     | '/judges/$id'
     | '/matters/$id'
     | '/matters/cases'
+    | '/matters/seeger-weiss'
     | '/places/$state'
     | '/registry/$id'
     | '/sources/analysis'
@@ -663,11 +687,13 @@ export interface RootRouteChildren {
   AgenciesIdRoute: typeof AgenciesIdRoute
   ApiBundlesRoute: typeof ApiBundlesRoute
   ApiFilesRoute: typeof ApiFilesRoute
+  ApiMatterPdfRoute: typeof ApiMatterPdfRoute
   CourtsIdRoute: typeof CourtsIdRoute
   DataDatasetRoute: typeof DataDatasetRoute
   JudgesIdRoute: typeof JudgesIdRoute
   MattersIdRoute: typeof MattersIdRoute
   MattersCasesRoute: typeof MattersCasesRoute
+  MattersSeegerWeissRoute: typeof MattersSeegerWeissRoute
   PlacesStateRoute: typeof PlacesStateRouteWithChildren
   RegistryIdRoute: typeof RegistryIdRoute
   SourcesAnalysisRoute: typeof SourcesAnalysisRoute
@@ -862,6 +888,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiFilesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/matter-pdf': {
+      id: '/api/matter-pdf'
+      path: '/api/matter-pdf'
+      fullPath: '/api/matter-pdf'
+      preLoaderRoute: typeof ApiMatterPdfRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/courts/': {
       id: '/courts/'
       path: '/courts'
@@ -923,6 +956,13 @@ declare module '@tanstack/react-router' {
       path: '/matters/cases'
       fullPath: '/matters/cases'
       preLoaderRoute: typeof MattersCasesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/matters/seeger-weiss': {
+      id: '/matters/seeger-weiss'
+      path: '/matters/seeger-weiss'
+      fullPath: '/matters/seeger-weiss'
+      preLoaderRoute: typeof MattersSeegerWeissRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/places/': {
@@ -1090,11 +1130,13 @@ const rootRouteChildren: RootRouteChildren = {
   AgenciesIdRoute: AgenciesIdRoute,
   ApiBundlesRoute: ApiBundlesRoute,
   ApiFilesRoute: ApiFilesRoute,
+  ApiMatterPdfRoute: ApiMatterPdfRoute,
   CourtsIdRoute: CourtsIdRoute,
   DataDatasetRoute: DataDatasetRoute,
   JudgesIdRoute: JudgesIdRoute,
   MattersIdRoute: MattersIdRoute,
   MattersCasesRoute: MattersCasesRoute,
+  MattersSeegerWeissRoute: MattersSeegerWeissRoute,
   PlacesStateRoute: PlacesStateRouteWithChildren,
   RegistryIdRoute: RegistryIdRoute,
   SourcesAnalysisRoute: SourcesAnalysisRoute,

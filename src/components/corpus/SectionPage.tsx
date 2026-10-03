@@ -23,11 +23,14 @@ export function SectionPage({
   path,
   ds,
   extraTabs = [],
+  callout,
 }: {
   section: SectionId;
   path: "/courts" | "/judges" | "/matters" | "/law" | "/safety" | "/source-datasets";
   ds: string | undefined;
   extraTabs?: { id: string; label: string; render: () => ReactNode }[];
+  /** Optional block shown above the record view (for example a link to a curated hub). */
+  callout?: ReactNode;
 }) {
   const meta = SECTIONS.find((s) => s.id === section)!;
   const navigate = useNavigate();
@@ -48,6 +51,7 @@ export function SectionPage({
       description={sectionDescription(section)}
     >
       {datasets.error ? <ExternalError error={datasets.error} /> : null}
+      {callout ? <div className="mb-4">{callout}</div> : null}
       <div className="mb-4 flex flex-wrap items-end gap-3 border-b border-border pb-3">
         <div className="min-w-[17rem] max-w-lg flex-1">
           <label className="eyebrow mb-1 block" htmlFor={`${section}-view`}>

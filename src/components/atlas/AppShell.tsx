@@ -66,6 +66,7 @@ const CONTEXT_NAV = [
       { to: "/courts", label: "1 · Courts" },
       { to: "/judges", label: "2 · Judges" },
       { to: "/matters", label: "3 · Matters (MDLs)" },
+      { to: "/matters/seeger-weiss", label: "Seeger Weiss hub" },
       { to: "/matters/cases", label: "4 · Cases & analytics" },
       { to: "/insights", label: "Research workbench" },
       { to: "/registry", label: "5 · Case registry" },
