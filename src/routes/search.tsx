@@ -30,7 +30,7 @@ function SearchPage() {
   const query = useQuery({ queryKey: ["corpus-search", q, offset], queryFn: () => fn({ data: { q, offset } }), enabled: q.trim().length >= 2, placeholderData: keepPreviousData });
   const d = query.data;
   return (
-    <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Search" }]} title="Search the corpus" description="Search published records. Matching headings, MDLs and expert-admissibility docket entries appear first; duplicate source cards keep their original record links.">
+    <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Search" }]} title="Search the corpus" description="Search published records. Names, headings and MDL matters that match appear first, and a search that starts with Judge or Hon. looks for the person; duplicate source cards keep their original record links.">
       <form className="mb-3 flex flex-wrap items-center gap-2" onSubmit={(e) => { e.preventDefault(); setOffset(0); navigate({ search: { q: draft } }); }}>
         <Input aria-label="Search the corpus" value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="e.g. asbestos, talc, Harris County" className="max-w-md" />
         <Button type="submit" size="sm">Search</Button>
@@ -38,7 +38,7 @@ function SearchPage() {
         {d?.total != null ? <span className="text-[12px] text-muted-foreground">{d.total.toLocaleString()} matching published rows · {d.rankedCandidates.toLocaleString()} ranked cards{d.groupedSourceRecords ? ` · ${d.groupedSourceRecords.toLocaleString()} duplicate source rows grouped` : ""}</span> : null}
       </form>
       {query.error ? <ExternalError error={query.error} /> : null}
-      {d?.candidateCapped ? <p role="status" className="mb-3 text-[12px] text-muted-foreground">Ranking covers a bounded set of up to {d.candidateLimit.toLocaleString()} candidate rows, including targeted MDL and expert-admissibility matches. Refine your search to see a narrower set.</p> : null}
+      {d?.candidateCapped ? <p role="status" className="mb-3 text-[12px] text-muted-foreground">Ranking covers a bounded set of up to {d.candidateLimit.toLocaleString()} candidate rows, including targeted matches in MDLs, Seeger Weiss matters, judges and people, courts, and expert-admissibility entries. Refine your search to see a narrower set.</p> : null}
       {d?.unresolved ? <p role="status" className="mb-3 text-[12px] text-muted-foreground">{d.unresolved.toLocaleString()} candidate occurrences could not be linked to an exact dataset and record. Their identity is not inferred.</p> : null}
       {q.trim().length < 2 ? <p className="text-[13px] text-muted-foreground">Enter at least two characters.</p> : null}
       <ul className="divide-y divide-border rounded-lg border border-border bg-surface shadow-card">
