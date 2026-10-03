@@ -3,7 +3,7 @@ import path from 'node:path';
 import { DEFAULT_CACHE, sha256 } from './courtlistener-client.mjs';
 const cache=DEFAULT_CACHE;
 const keys=JSON.parse(await fs.readFile(process.env.CORPUS_INGEST_CREDENTIALS??'C:/Users/firas/.codex/private/legal-source-compass.ingest.json','utf8'));
-const briefs=JSON.parse(await fs.readFile('public/data/research/mdl-briefs.json','utf8')).briefs;
+const briefs=JSON.parse(await fs.readFile('private/data/research/mdl-briefs.json','utf8')).briefs;
 const identityAudit=process.argv.includes('--identity-audit');
 const identityUrls=['https://www.ohsd.uscourts.gov/multidistrict-litigation-2846','https://www.njd.uscourts.gov/benicar-olmesartan-litigation','https://www.gand.uscourts.gov/17md2782','https://www.ilnd.uscourts.gov/mdl.aspx'];
 const urls=identityAudit?identityUrls:[...new Set([

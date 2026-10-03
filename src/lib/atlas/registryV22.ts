@@ -1,3 +1,4 @@
+import { fetchBundleSnapshot } from "@/lib/private-data/client";
 /** Read-only Comprehensive U.S. Litigation Source Registry V2.2 (4,846 records), split per jurisdiction. */
 export type RegistryV22Record = {
   id: string;
@@ -51,13 +52,13 @@ export function distinct(rows: RegistryV22Record[], pick: (r: RegistryV22Record)
 }
 
 export async function loadRegistryIndex(): Promise<RegistryV22Index> {
-  const r = await fetch("/data/registry-v22/index.json");
+  const r = await fetchBundleSnapshot("/data/registry-v22/index.json");
   if (!r.ok) throw new Error("Registry index could not be loaded.");
   return (await r.json()) as RegistryV22Index;
 }
 
 export async function loadRegistryJurisdiction(code: string): Promise<RegistryV22Record[]> {
-  const r = await fetch(`/data/registry-v22/${codeFile(code)}.json`);
+  const r = await fetchBundleSnapshot(`/data/registry-v22/${codeFile(code)}.json`);
   if (!r.ok) throw new Error("Registry records could not be loaded.");
   const t = await r.text();
   return t.trimStart().startsWith("<") ? [] : (JSON.parse(t) as RegistryV22Record[]);

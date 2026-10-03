@@ -29,6 +29,7 @@ import { Route as SourceDatasetsRouteImport } from './routes/source-datasets'
 import { Route as SourceFamiliesRouteImport } from './routes/source-families'
 import { Route as AgenciesIndexRouteImport } from './routes/agencies.index'
 import { Route as AgenciesIdRouteImport } from './routes/agencies.$id'
+import { Route as ApiBundlesRouteImport } from './routes/api/bundles'
 import { Route as ApiFilesRouteImport } from './routes/api/files'
 import { Route as CourtsIndexRouteImport } from './routes/courts.index'
 import { Route as CourtsIdRouteImport } from './routes/courts.$id'
@@ -43,6 +44,8 @@ import { Route as PlacesIndexRouteImport } from './routes/places.index'
 import { Route as PlacesStateRouteImport } from './routes/places.$state'
 import { Route as RegistryIndexRouteImport } from './routes/registry.index'
 import { Route as RegistryIdRouteImport } from './routes/registry.$id'
+import { Route as SourcesIndexRouteImport } from './routes/sources.index'
+import { Route as SourcesAnalysisRouteImport } from './routes/sources.analysis'
 import { Route as SourcesCatalogRouteImport } from './routes/sources.catalog'
 import { Route as SourcesCoverageRouteImport } from './routes/sources.coverage'
 import { Route as SourcesDetailRouteImport } from './routes/sources.detail'
@@ -50,6 +53,7 @@ import { Route as SourcesEnrichmentRouteImport } from './routes/sources.enrichme
 import { Route as SourcesLibraryRouteImport } from './routes/sources.library'
 import { Route as SourcesRegistryRouteImport } from './routes/sources.registry'
 import { Route as SourcesRegistryV22RouteImport } from './routes/sources.registry-v22'
+import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as DataTablesTableRouteImport } from './routes/data.tables.$table'
 import { Route as LawProvisionIdRouteImport } from './routes/law_.provision.$id'
 import { Route as PlacesStateCountyRouteImport } from './routes/places.$state.$county'
@@ -155,6 +159,11 @@ const AgenciesIdRoute = AgenciesIdRouteImport.update({
   path: '/agencies/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBundlesRoute = ApiBundlesRouteImport.update({
+  id: '/api/bundles',
+  path: '/api/bundles',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiFilesRoute = ApiFilesRouteImport.update({
   id: '/api/files',
   path: '/api/files',
@@ -225,6 +234,16 @@ const RegistryIdRoute = RegistryIdRouteImport.update({
   path: '/registry/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SourcesIndexRoute = SourcesIndexRouteImport.update({
+  id: '/sources/',
+  path: '/sources/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SourcesAnalysisRoute = SourcesAnalysisRouteImport.update({
+  id: '/sources/analysis',
+  path: '/sources/analysis',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SourcesCatalogRoute = SourcesCatalogRouteImport.update({
   id: '/sources/catalog',
   path: '/sources/catalog',
@@ -258,6 +277,11 @@ const SourcesRegistryRoute = SourcesRegistryRouteImport.update({
 const SourcesRegistryV22Route = SourcesRegistryV22RouteImport.update({
   id: '/sources/registry-v22',
   path: '/sources/registry-v22',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
+  id: '/api/auth/logout',
+  path: '/api/auth/logout',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DataTablesTableRoute = DataTablesTableRouteImport.update({
@@ -301,6 +325,7 @@ export interface FileRoutesByFullPath {
   '/source-datasets': typeof SourceDatasetsRoute
   '/source-families': typeof SourceFamiliesRoute
   '/agencies/$id': typeof AgenciesIdRoute
+  '/api/bundles': typeof ApiBundlesRoute
   '/api/files': typeof ApiFilesRoute
   '/courts/$id': typeof CourtsIdRoute
   '/data/$dataset': typeof DataDatasetRoute
@@ -309,6 +334,7 @@ export interface FileRoutesByFullPath {
   '/matters/cases': typeof MattersCasesRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/registry/$id': typeof RegistryIdRoute
+  '/sources/analysis': typeof SourcesAnalysisRoute
   '/sources/catalog': typeof SourcesCatalogRoute
   '/sources/coverage': typeof SourcesCoverageRoute
   '/sources/detail': typeof SourcesDetailRoute
@@ -323,6 +349,8 @@ export interface FileRoutesByFullPath {
   '/matters/': typeof MattersIndexRoute
   '/places/': typeof PlacesIndexRoute
   '/registry/': typeof RegistryIndexRoute
+  '/sources/': typeof SourcesIndexRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/data/tables/$table': typeof DataTablesTableRoute
   '/law/provision/$id': typeof LawProvisionIdRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
@@ -348,6 +376,7 @@ export interface FileRoutesByTo {
   '/source-datasets': typeof SourceDatasetsRoute
   '/source-families': typeof SourceFamiliesRoute
   '/agencies/$id': typeof AgenciesIdRoute
+  '/api/bundles': typeof ApiBundlesRoute
   '/api/files': typeof ApiFilesRoute
   '/courts/$id': typeof CourtsIdRoute
   '/data/$dataset': typeof DataDatasetRoute
@@ -356,6 +385,7 @@ export interface FileRoutesByTo {
   '/matters/cases': typeof MattersCasesRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/registry/$id': typeof RegistryIdRoute
+  '/sources/analysis': typeof SourcesAnalysisRoute
   '/sources/catalog': typeof SourcesCatalogRoute
   '/sources/coverage': typeof SourcesCoverageRoute
   '/sources/detail': typeof SourcesDetailRoute
@@ -370,6 +400,8 @@ export interface FileRoutesByTo {
   '/matters': typeof MattersIndexRoute
   '/places': typeof PlacesIndexRoute
   '/registry': typeof RegistryIndexRoute
+  '/sources': typeof SourcesIndexRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/data/tables/$table': typeof DataTablesTableRoute
   '/law/provision/$id': typeof LawProvisionIdRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
@@ -396,6 +428,7 @@ export interface FileRoutesById {
   '/source-datasets': typeof SourceDatasetsRoute
   '/source-families': typeof SourceFamiliesRoute
   '/agencies/$id': typeof AgenciesIdRoute
+  '/api/bundles': typeof ApiBundlesRoute
   '/api/files': typeof ApiFilesRoute
   '/courts/$id': typeof CourtsIdRoute
   '/data/$dataset': typeof DataDatasetRoute
@@ -404,6 +437,7 @@ export interface FileRoutesById {
   '/matters/cases': typeof MattersCasesRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/registry/$id': typeof RegistryIdRoute
+  '/sources/analysis': typeof SourcesAnalysisRoute
   '/sources/catalog': typeof SourcesCatalogRoute
   '/sources/coverage': typeof SourcesCoverageRoute
   '/sources/detail': typeof SourcesDetailRoute
@@ -418,6 +452,8 @@ export interface FileRoutesById {
   '/matters/': typeof MattersIndexRoute
   '/places/': typeof PlacesIndexRoute
   '/registry/': typeof RegistryIndexRoute
+  '/sources/': typeof SourcesIndexRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/data/tables/$table': typeof DataTablesTableRoute
   '/law_/provision/$id': typeof LawProvisionIdRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
@@ -445,6 +481,7 @@ export interface FileRouteTypes {
     | '/source-datasets'
     | '/source-families'
     | '/agencies/$id'
+    | '/api/bundles'
     | '/api/files'
     | '/courts/$id'
     | '/data/$dataset'
@@ -453,6 +490,7 @@ export interface FileRouteTypes {
     | '/matters/cases'
     | '/places/$state'
     | '/registry/$id'
+    | '/sources/analysis'
     | '/sources/catalog'
     | '/sources/coverage'
     | '/sources/detail'
@@ -467,6 +505,8 @@ export interface FileRouteTypes {
     | '/matters/'
     | '/places/'
     | '/registry/'
+    | '/sources/'
+    | '/api/auth/logout'
     | '/data/tables/$table'
     | '/law/provision/$id'
     | '/places/$state/$county'
@@ -492,6 +532,7 @@ export interface FileRouteTypes {
     | '/source-datasets'
     | '/source-families'
     | '/agencies/$id'
+    | '/api/bundles'
     | '/api/files'
     | '/courts/$id'
     | '/data/$dataset'
@@ -500,6 +541,7 @@ export interface FileRouteTypes {
     | '/matters/cases'
     | '/places/$state'
     | '/registry/$id'
+    | '/sources/analysis'
     | '/sources/catalog'
     | '/sources/coverage'
     | '/sources/detail'
@@ -514,6 +556,8 @@ export interface FileRouteTypes {
     | '/matters'
     | '/places'
     | '/registry'
+    | '/sources'
+    | '/api/auth/logout'
     | '/data/tables/$table'
     | '/law/provision/$id'
     | '/places/$state/$county'
@@ -539,6 +583,7 @@ export interface FileRouteTypes {
     | '/source-datasets'
     | '/source-families'
     | '/agencies/$id'
+    | '/api/bundles'
     | '/api/files'
     | '/courts/$id'
     | '/data/$dataset'
@@ -547,6 +592,7 @@ export interface FileRouteTypes {
     | '/matters/cases'
     | '/places/$state'
     | '/registry/$id'
+    | '/sources/analysis'
     | '/sources/catalog'
     | '/sources/coverage'
     | '/sources/detail'
@@ -561,6 +607,8 @@ export interface FileRouteTypes {
     | '/matters/'
     | '/places/'
     | '/registry/'
+    | '/sources/'
+    | '/api/auth/logout'
     | '/data/tables/$table'
     | '/law_/provision/$id'
     | '/places/$state/$county'
@@ -587,6 +635,7 @@ export interface RootRouteChildren {
   SourceDatasetsRoute: typeof SourceDatasetsRoute
   SourceFamiliesRoute: typeof SourceFamiliesRoute
   AgenciesIdRoute: typeof AgenciesIdRoute
+  ApiBundlesRoute: typeof ApiBundlesRoute
   ApiFilesRoute: typeof ApiFilesRoute
   CourtsIdRoute: typeof CourtsIdRoute
   DataDatasetRoute: typeof DataDatasetRoute
@@ -595,6 +644,7 @@ export interface RootRouteChildren {
   MattersCasesRoute: typeof MattersCasesRoute
   PlacesStateRoute: typeof PlacesStateRouteWithChildren
   RegistryIdRoute: typeof RegistryIdRoute
+  SourcesAnalysisRoute: typeof SourcesAnalysisRoute
   SourcesCatalogRoute: typeof SourcesCatalogRoute
   SourcesCoverageRoute: typeof SourcesCoverageRoute
   SourcesDetailRoute: typeof SourcesDetailRoute
@@ -609,6 +659,8 @@ export interface RootRouteChildren {
   MattersIndexRoute: typeof MattersIndexRoute
   PlacesIndexRoute: typeof PlacesIndexRoute
   RegistryIndexRoute: typeof RegistryIndexRoute
+  SourcesIndexRoute: typeof SourcesIndexRoute
+  ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
   DataTablesTableRoute: typeof DataTablesTableRoute
   LawProvisionIdRoute: typeof LawProvisionIdRoute
   RecordsDatasetIdRoute: typeof RecordsDatasetIdRoute
@@ -756,6 +808,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AgenciesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/bundles': {
+      id: '/api/bundles'
+      path: '/api/bundles'
+      fullPath: '/api/bundles'
+      preLoaderRoute: typeof ApiBundlesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/files': {
       id: '/api/files'
       path: '/api/files'
@@ -854,6 +913,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegistryIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sources/': {
+      id: '/sources/'
+      path: '/sources'
+      fullPath: '/sources/'
+      preLoaderRoute: typeof SourcesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sources/analysis': {
+      id: '/sources/analysis'
+      path: '/sources/analysis'
+      fullPath: '/sources/analysis'
+      preLoaderRoute: typeof SourcesAnalysisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sources/catalog': {
       id: '/sources/catalog'
       path: '/sources/catalog'
@@ -901,6 +974,13 @@ declare module '@tanstack/react-router' {
       path: '/sources/registry-v22'
       fullPath: '/sources/registry-v22'
       preLoaderRoute: typeof SourcesRegistryV22RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/logout': {
+      id: '/api/auth/logout'
+      path: '/api/auth/logout'
+      fullPath: '/api/auth/logout'
+      preLoaderRoute: typeof ApiAuthLogoutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/data/tables/$table': {
@@ -966,6 +1046,7 @@ const rootRouteChildren: RootRouteChildren = {
   SourceDatasetsRoute: SourceDatasetsRoute,
   SourceFamiliesRoute: SourceFamiliesRoute,
   AgenciesIdRoute: AgenciesIdRoute,
+  ApiBundlesRoute: ApiBundlesRoute,
   ApiFilesRoute: ApiFilesRoute,
   CourtsIdRoute: CourtsIdRoute,
   DataDatasetRoute: DataDatasetRoute,
@@ -974,6 +1055,7 @@ const rootRouteChildren: RootRouteChildren = {
   MattersCasesRoute: MattersCasesRoute,
   PlacesStateRoute: PlacesStateRouteWithChildren,
   RegistryIdRoute: RegistryIdRoute,
+  SourcesAnalysisRoute: SourcesAnalysisRoute,
   SourcesCatalogRoute: SourcesCatalogRoute,
   SourcesCoverageRoute: SourcesCoverageRoute,
   SourcesDetailRoute: SourcesDetailRoute,
@@ -988,6 +1070,8 @@ const rootRouteChildren: RootRouteChildren = {
   MattersIndexRoute: MattersIndexRoute,
   PlacesIndexRoute: PlacesIndexRoute,
   RegistryIndexRoute: RegistryIndexRoute,
+  SourcesIndexRoute: SourcesIndexRoute,
+  ApiAuthLogoutRoute: ApiAuthLogoutRoute,
   DataTablesTableRoute: DataTablesTableRoute,
   LawProvisionIdRoute: LawProvisionIdRoute,
   RecordsDatasetIdRoute: RecordsDatasetIdRoute,

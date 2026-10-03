@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   candidateRecordIds,
+  candidateIdChunks,
   inFilter,
   resolveSearchIdentities,
   type SearchRecord,
@@ -69,5 +70,12 @@ describe("global search identity", () => {
         [record("mdls", { id: "mdl:2738", title: "Talc" })],
       ).unresolved,
     ).toBe(1);
+  });
+  it("keeps long and delimiter-containing identities intact within each encoded URL budget", () => {
+    const ids = ["a,b)", 'quote"slash\\', ...Array.from({ length: 85 }, (_, index) => `${index}:${"界".repeat(40)}`)];
+    const chunks = candidateIdChunks(ids, 1800);
+    expect(chunks.flat()).toEqual(ids);
+    expect(chunks.every((chunk) => chunk.length <= 40 && inFilter(chunk).length <= 1800)).toBe(true);
+    expect(() => candidateIdChunks(["界".repeat(40)], 50)).toThrow("bounded lookup path");
   });
 });

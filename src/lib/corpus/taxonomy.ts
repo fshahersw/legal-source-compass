@@ -21,7 +21,7 @@ export const CATEGORY_LABELS = {
   other: "Other / not matched by rule",
 } as const;
 export type CategoryId = keyof typeof CATEGORY_LABELS;
-export const TAXONOMY_VERSION = "2026-10-02.1";
+export const TAXONOMY_VERSION = "2026-10-02.4";
 
 const STATUTES = new Set([
   "statutes",
@@ -57,8 +57,9 @@ const GUIDANCE = new Set([
 /** Exact observed vocabularies and documented record kinds; unknown values stay unmatched. */
 export function classify(kind: string | null | undefined): CategoryId {
   const v = (kind ?? "").trim().toLowerCase();
-  if (RECORD_CATEGORIES[v]) return RECORD_CATEGORIES[v];
-  const heading = HEADING_CATEGORIES[v.replace(/\s+/g, " ").toUpperCase()];
+  const recorded = mappedCategory(RECORD_CATEGORIES, v);
+  if (recorded) return recorded;
+  const heading = mappedCategory(HEADING_CATEGORIES, v.replace(/\s+/g, " ").toUpperCase());
   if (heading) return heading;
   if (["constitution", "constitutions", "state_constitution", "federal_constitution"].includes(v))
     return "constitutions";
@@ -102,6 +103,14 @@ export function classify(kind: string | null | undefined): CategoryId {
   )
     return "directories";
   return "other";
+}
+
+/** Only explicit crosswalk keys match; inherited object properties are not source categories. */
+function mappedCategory(
+  map: Readonly<Record<string, CategoryId>>,
+  key: string,
+): CategoryId | undefined {
+  return Object.hasOwn(map, key) ? map[key] : undefined;
 }
 
 /** Exact, reviewable crosswalk for the supplied heading vocabulary. No keyword guesses. */
@@ -212,6 +221,12 @@ export const RECORD_CATEGORIES: Readonly<Record<string, CategoryId>> = {
   mixed: "mixed",
   other: "other",
   agency_safety: "safety",
+  openfda_device_classification_metadata: "data",
+  openfda_device_enforcement_metadata: "enforcement",
+  openfda_drug_enforcement_metadata: "enforcement",
+  openfda_device_recall_metadata: "safety",
+  mass_tort_authority_evidence: "mixed",
+  jpml_html_reference: "mixed",
   agency_science_documents: "safety",
   citation_index: "data",
   citation_reference: "guidance",
@@ -234,6 +249,8 @@ export const RECORD_CATEGORIES: Readonly<Record<string, CategoryId>> = {
   expert_rulings: "opinions",
   federal_register_history: "mixed",
   regulatory_backfill: "mixed",
+  ecfr_hierarchy: "data",
+  ecfr_authority_notes: "data",
   fee_schedule: "guidance",
   filing_guidance: "guidance",
   indiana_code: "statutes",
@@ -246,6 +263,7 @@ export const RECORD_CATEGORIES: Readonly<Record<string, CategoryId>> = {
   mdl_appearances: "dockets",
   mdl_case_inventory: "dockets",
   docket_metadata: "dockets",
+  master_docket_entry: "dockets",
   mdl_counsel: "directories",
   mdl_crosswalk: "data",
   mdl_docket_activity: "dockets",
@@ -278,8 +296,8 @@ export function classifySource(headings: string[]): CategoryId[] {
   for (const h of headings) {
     const normalized = h.trim().replace(/\s+/g, " ");
     out.add(
-      HEADING_CATEGORIES[normalized.toUpperCase()] ??
-        RESOURCE_CATEGORIES[normalized.toLowerCase()] ??
+      mappedCategory(HEADING_CATEGORIES, normalized.toUpperCase()) ??
+        mappedCategory(RESOURCE_CATEGORIES, normalized.toLowerCase()) ??
         (KNOWN_KINDS.has(normalized.toLowerCase()) ? classify(normalized) : "other"),
     );
   }

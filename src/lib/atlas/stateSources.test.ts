@@ -6,9 +6,9 @@ import type { Source } from "./types";
 import type { CatalogEntry } from "./catalog";
 import type { RegistryV22Record } from "./registryV22";
 
-const dir = JSON.parse(readFileSync("public/data/atlas-import-bundle.json", "utf8")) as { directorySources: Source[] };
-const catalogTx = JSON.parse(readFileSync("public/data/catalog/tx.json", "utf8")) as CatalogEntry[];
-const registryTx = JSON.parse(readFileSync("public/data/registry-v22/MS.json", "utf8")) as RegistryV22Record[];
+const dir = JSON.parse(readFileSync("private/data/atlas-import-bundle.json", "utf8")) as { directorySources: Source[] };
+const catalogTx = JSON.parse(readFileSync("private/data/catalog/tx.json", "utf8")) as CatalogEntry[];
+const registryTx = JSON.parse(readFileSync("private/data/registry-v22/MS.json", "utf8")) as RegistryV22Record[];
 
 describe("mergeStateSources", () => {
   it("dedupes only on exact URLs and records every collection", () => {

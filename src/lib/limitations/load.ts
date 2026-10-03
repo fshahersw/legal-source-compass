@@ -1,7 +1,8 @@
+import { fetchBundleSnapshot } from "@/lib/private-data/client";
 import type { LimitationsSnapshot } from "./types";
 
 async function json(path: string): Promise<Record<string, unknown>> {
-  const response = await fetch(path);
+  const response = await fetchBundleSnapshot(path);
   if (!response.ok) throw new Error(`Limitations source failed to load (${response.status}).`);
   const value: unknown = await response.json();
   if (!value || typeof value !== "object" || Array.isArray(value))

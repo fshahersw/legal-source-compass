@@ -7,6 +7,7 @@ import { buildEntityView, type EntitySection } from "@/lib/external/entityView";
 import { CaseCatalog } from "@/components/corpus/CaseCatalog";
 import { DocketDocuments } from "@/components/corpus/DocketDocuments";
 import { fileUrl, resolveLink } from "@/lib/external/groups";
+import { displayValue } from "@/lib/external/domainRegistry";
 
 export const entityQuery = (dataset: string, id: string) =>
   queryOptions({
@@ -57,6 +58,15 @@ export function EntityPage({
       title={v.title}
       {...(v.subtitle ? { description: v.subtitle } : {})}
     >
+      {v.qualification ? (
+        <section
+          aria-label="Source scope"
+          className="mb-4 rounded-lg border border-border bg-muted/30 p-3 text-[13px] leading-relaxed"
+        >
+          <p className="mb-1 text-[11px] font-medium text-muted-foreground">Source scope</p>
+          <p className="whitespace-pre-wrap">{v.qualification}</p>
+        </section>
+      ) : null}
       <div className="mb-5 flex flex-col gap-4 rounded-lg border border-border bg-surface p-4 shadow-card sm:flex-row">
         {v.photo ? (
           <Img
@@ -74,7 +84,7 @@ export function EntityPage({
           {key.map(([k, val], i) => (
             <div key={i} className="min-w-0">
               <dt className="text-[11px] text-muted-foreground">{k}</dt>
-              <dd className="break-words">{val}</dd>
+              <dd className="break-words">{displayValue(val)}</dd>
             </div>
           ))}
         </dl>
@@ -110,7 +120,7 @@ export function EntityPage({
               {rest.map(([k, val], i) => (
                 <div key={i}>
                   <dt className="text-[11px] text-muted-foreground">{k}</dt>
-                  <dd className="break-words">{val}</dd>
+                  <dd className="break-words">{displayValue(val)}</dd>
                 </div>
               ))}
             </dl>
@@ -155,7 +165,7 @@ export function EntityPage({
               {v.technical.map(([k, val], i) => (
                 <div key={i} className="contents">
                   <dt className="text-muted-foreground">{k}</dt>
-                  <dd className="break-words">{val}</dd>
+                  <dd className="break-words">{displayValue(val)}</dd>
                 </div>
               ))}
             </dl>
@@ -202,7 +212,7 @@ function SectionView({ s, aliases }: { s: EntitySection; aliases: Record<string,
           {s.facts.map(([k, v], i) => (
             <div key={i}>
               <dt className="text-[11px] text-muted-foreground">{k}</dt>
-              <dd className="break-words">{v}</dd>
+              <dd className="break-words">{displayValue(v)}</dd>
             </div>
           ))}
         </dl>

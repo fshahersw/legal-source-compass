@@ -24,8 +24,8 @@ def open_csv(filename):
     return io.TextIOWrapper(io.BufferedReader(indexed_bzip2.open(str(filename),parallelization=args.parallel),buffer_size=512*1024),encoding='utf-8',newline='')
 cache=pathlib.Path(args.cache).resolve();out=pathlib.Path(args.output).resolve();out.mkdir(parents=True,exist_ok=True)
 captures={x['type']:x for x in json.loads((cache/'download-manifest.json').read_text())['captures'] if x['status']=='downloaded'}
-cases=json.loads(pathlib.Path('public/data/catalog-matters.json').read_text(encoding='utf-8'))
-masters=json.loads(pathlib.Path('public/data/mdl-documents/master-dockets.json').read_text(encoding='utf-8'))
+cases=json.loads(pathlib.Path('private/data/catalog-matters.json').read_text(encoding='utf-8'))
+masters=json.loads(pathlib.Path('private/data/mdl-documents/master-dockets.json').read_text(encoding='utf-8'))
 saved_ids={str(x['docket_id']) for x in cases}|set(masters)
 known_mdls={str(int(x)) for x in masters.values()}
 known_mdls.update(str(int(value)) for value in args.additional_mdl_numbers.split(',') if value.strip())

@@ -1,3 +1,4 @@
+import { PrivateDataLink } from "@/components/atlas/PrivateDataLink";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -17,6 +18,7 @@ import {
 import { BarList, Stat } from "@/components/corpus/BarList";
 import { Button } from "@/components/ui/button";
 import { SourceSupplements } from "@/components/corpus/SourceSupplements";
+import { LegalCoverage } from "@/components/legal/LegalCoverage";
 
 export const Route = createFileRoute("/sources/coverage")({
   head: () =>
@@ -74,6 +76,7 @@ function CoveragePage() {
       description="Counts, categories and relationships from the supplied files and a dated, read-only database audit. A registry gap is not proof that a legal source does not exist."
     >
       <div className="space-y-7">
+        <LegalCoverage />
         <DirectoryQuality sources={atlas.bundle?.sources ?? []} status={atlas.status} />
         {audit.isLoading ? (
           <p role="status" className="text-[13px] text-muted-foreground">
@@ -150,13 +153,13 @@ function CoveragePage() {
                     {audit.data?.capturedAt.slice(0, 10) ?? "Not recorded"} UTC. These populations
                     are not added together.
                   </p>
-                  <a
+                  <PrivateDataLink
                     className="mt-3 inline-block text-[12px] text-primary hover:underline"
                     href="/data/quality/bundled-audit.json"
                     download
                   >
                     Download bundled audit and file hashes
-                  </a>
+                  </PrivateDataLink>
                 </div>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-2 text-[12px]">

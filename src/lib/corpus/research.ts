@@ -1,6 +1,7 @@
-import { STATES } from "./geo";
+import { fetchBundleSnapshot } from "@/lib/private-data/client";
 import type { CatalogMatter } from "@/lib/atlas/catalogMatters";
 import { mdlForMatter } from "@/lib/atlas/catalogMatters";
+import { exactCourtLocations } from "./courtLocations";
 
 export type ResearchSource = {
   id: string;
@@ -86,7 +87,7 @@ export type ResearchData = {
 };
 
 async function json<T>(url: string): Promise<T> {
-  const response = await fetch(url);
+  const response = await fetchBundleSnapshot(url);
   if (!response.ok) throw new Error(`Research source could not load (${response.status}).`);
   return response.json() as Promise<T>;
 }
@@ -169,24 +170,9 @@ export function ongoingJudges(judges: FjcJudge[], state: string, asOf: string) {
   );
 }
 
-function stateCode(value: string): string | null {
-  return (
-    STATES.find((s) => s.usps === value.trim().toUpperCase() || s.name === value.trim())?.usps ??
-    null
-  );
-}
 /** Ambiguous native court IDs stay unmapped, even if both rows have familiar titles. */
 export function courtStates(courts: ResearchData["courts"]["records"]): Map<string, string> {
-  const grouped = new Map<string, Set<string>>();
-  for (const court of courts) {
-    const state = stateCode(court.state);
-    if (state) grouped.set(court.id, new Set([...(grouped.get(court.id) ?? []), state]));
-  }
-  return new Map(
-    [...grouped]
-      .filter(([, states]) => states.size === 1)
-      .map(([id, states]) => [id, [...states][0]!]),
-  );
+  return exactCourtLocations(courts);
 }
 export function casesForState(
   rows: CatalogMatter[],

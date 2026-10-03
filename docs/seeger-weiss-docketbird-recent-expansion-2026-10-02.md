@@ -1,0 +1,19 @@
+# Recent firm-query docket expansion, October 2, 2026
+
+The prepared collection targets exact source-qualified docket references from the frozen CourtListener firm query. Of 1,810 native docket hits, 417 have filing dates in 2025 or 2026 and 96 have an explicit `-md-` docket-number type. Their union is 509 source docket IDs. The case type alone does not establish an MDL master role, current representation or complete firm portfolio coverage.
+
+The plan subtracts 147 references with a complete unique exact provider search and matching native case ID/court header: 96 have complete provider-snapshot sheet coverage and 51 retain partial or inconsistent end views. The tool cannot paginate the missing middle, so those 51 remain partial. Two further previously verified native headers have no sheet capture and are retained as sheet-only targets. Thirteen source identities lack a usable qualified court/division/year/type/sequence key and remain held. The resulting work is 347 exact searches plus two sheet-only native cases. Source-key multiplicity is checked against all 1,810 hits before creating any definitive cross-provider reference; none of the ambiguous source IDs falls in this current union.
+
+The frozen plan is `C:/Users/firas/.codex/corpus-cache/seeger-weiss/2026-10-02/docketbird/recent-expansion-v1/collection-plan-v4.json`, SHA256 `ca2f0927cb38f69bda8e918a6ccfdee407bbf22e76573d6578205889159ed6f5`. Earlier preparation iterations remain unchanged and are superseded for execution. All retained inputs have file hashes. Firm-hit validation requires the exact CourtListener firm query, HTTPS API origin/path, HTTP200 GET provenance, retrieval time and exact native record digest.
+
+`scripts/ingest/collect-docketbird-recent-expansion.mjs` implements an execution ceiling of 1,400 total RPC attempts, including protocol setup, with three workers. Root authorized that ceiling for this bounded scope. Only `search_cases`, `get_case` and `get_docket_sheet` are used. A complete search response is required for a definitive exact reference; multiple provider identities and inconsistent native headers remain held. Missing header docket numbers remain missing, with identity supported by the actual matched search row and exact native header ID/court. Account tracking, name joins, PDFs, text retrieval and database writes are outside this collector.
+
+`remaining_today` is observed separately by tool and must be a nonnegative integer when present. Any observed zero, invalid quota or HTTP401/403/429 stops new requests. In-flight observations are retained. The ceiling does not authorize bypassing provider limits or treating a tool quota as a universal account limit. Runtime attempts, stages, qualification and quota receipts are persisted; successful native source captures retain original response bytes/hash and retrieval time. Resuming preserves the original source versions and attempt budget. A quota/access-stopped run requires an explicit new checkpoint.
+
+Execution requires the separately reviewed plan digest:
+
+```powershell
+node --use-system-ca scripts/ingest/collect-docketbird-recent-expansion.mjs --execute C:/Users/firas/.codex/corpus-cache/seeger-weiss/2026-10-02/docketbird/recent-expansion-v1/collection-plan-v4.json --plan-sha256=ca2f0927cb38f69bda8e918a6ccfdee407bbf22e76573d6578205889159ed6f5
+```
+
+Eighteen focused tests passed for source identity, native ambiguity in both directions, end-view coverage, exact search completeness, provider quota, firm-query provenance, external plan hashing and the RPC ceiling. Contradictory qualified source dockets returned as one provider identity are held before header or sheet acquisition, including conflicts with an excluded prior reference. Preparation made zero provider calls. Actual acquisition counts require the root-run runtime receipt; this document does not claim that the prepared scope has been acquired.

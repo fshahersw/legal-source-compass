@@ -1,3 +1,5 @@
+import { PrivateDataLink } from "@/components/atlas/PrivateDataLink";
+import { fetchBundleSnapshot } from "@/lib/private-data/client";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BarList, Stat } from "./BarList";
@@ -31,7 +33,7 @@ type Benchmark = {
   }[];
 };
 async function loadBenchmark(): Promise<Benchmark> {
-  const r = await fetch("/data/quality/reference/uscourts-table-c-2025.json");
+  const r = await fetchBundleSnapshot("/data/quality/reference/uscourts-table-c-2025.json");
   if (!r.ok) throw new Error(`Court benchmark: HTTP ${r.status}`);
   const b = (await r.json()) as Benchmark;
   if (b.schemaVersion !== 1 || !Array.isArray(b.jurisdictions))
@@ -159,13 +161,13 @@ export function SourceSupplements() {
             unit="publisher district rows summed by jurisdiction; circuit subtotals excluded"
           />
           <p className="text-[12px] text-muted-foreground">{b.qualification}</p>
-          <a
+          <PrivateDataLink
             className="text-[12px] text-primary hover:underline"
             href="/data/quality/reference/uscourts-table-c-2025.json"
             download
           >
             Download benchmark, district rows and workbook hash
-          </a>
+          </PrivateDataLink>
         </>
       ) : null}
     </section>

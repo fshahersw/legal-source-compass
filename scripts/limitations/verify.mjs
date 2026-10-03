@@ -2,7 +2,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
 
-const root = path.resolve("public/data/limitations");
+const root = path.resolve("private/data/limitations");
 const sourcePath = path.join(root, "sources.json");
 const snapshot = JSON.parse(await readFile(sourcePath, "utf8"));
 const ids = new Set();

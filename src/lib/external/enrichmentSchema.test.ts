@@ -1,7 +1,198 @@
 import { describe, expect, it } from "vitest";
-import { enrichmentSchema } from "./enrichmentSchema";
+import { enrichmentSchema, isLocalRelationshipSource } from "./enrichmentSchema";
 
 describe("public enrichment checkpoint boundary", () => {
+  it("preserves historical HTTP aliases and separates local occurrences from relationship grains", () => {
+    const checkpoint = {
+      schemaVersion: "corpus-enrichment/1",
+      status: "partial",
+      metadataOnly: true,
+      counts: {
+        sourceRecords: 100,
+        observations: 100,
+        httpSourceObservations: 100,
+        localFileOccurrences: 20,
+        nativeRelationships: 50,
+        sourceRecordedRelationships: 40,
+        localPointerRelationships: 10,
+      },
+      relationshipCoverage: [
+        {
+          source: "courtlistener",
+          from: "dockets",
+          to: "courts",
+          records: 40,
+          unresolvedEdges: 1,
+          inferredEdges: 0,
+        },
+        {
+          source: "local-sw-catalog",
+          from: "regulatory-edges",
+          to: "regulatory-nodes",
+          records: 10,
+          unresolvedEdges: 0,
+          inferredEdges: 0,
+        },
+      ],
+    };
+    expect(enrichmentSchema.parse(checkpoint).counts).toEqual(checkpoint.counts);
+    for (const changed of [
+      { httpSourceObservations: 120 },
+      { localFileOccurrences: -1 },
+      { sourceRecordedRelationships: 41 },
+      { sourceRecordedRelationships: 35, localPointerRelationships: 15 },
+    ]) {
+      expect(
+        enrichmentSchema.safeParse({ ...checkpoint, counts: { ...checkpoint.counts, ...changed } })
+          .success,
+      ).toBe(false);
+    }
+    expect(isLocalRelationshipSource("local-sw-catalog")).toBe(true);
+    expect(isLocalRelationshipSource("courtlistener")).toBe(false);
+  });
+  it("accepts historical checkpoints without fabricated local metrics and preserves unknown counts", () => {
+    const base = {
+      schemaVersion: "corpus-enrichment/1",
+      status: "partial",
+      metadataOnly: true,
+      counts: { sourceRecords: 100, observations: 100, nativeRelationships: 50 },
+    };
+    const historical = enrichmentSchema.parse(base);
+    expect(historical.counts?.localFileOccurrences).toBeUndefined();
+    expect(historical.counts?.httpSourceObservations).toBeUndefined();
+    expect(
+      enrichmentSchema.parse({ ...base, counts: { ...base.counts, localFileOccurrences: null } })
+        .counts?.localFileOccurrences,
+    ).toBeNull();
+    expect(
+      enrichmentSchema.safeParse({
+        ...base,
+        counts: {
+          sourceRecordedRelationships: Number.MAX_SAFE_INTEGER,
+          localPointerRelationships: 1,
+        },
+      }).success,
+    ).toBe(false);
+  });
+  it("retains exact native opinion-join type names without admitting private scalar paths", () => {
+    const relationshipCoverage = [
+      {
+        source: "courtlistener",
+        from: "search_opinion_joined_by",
+        to: "opinions",
+        records: 1028,
+        unresolvedEdges: 1028,
+        inferredEdges: 0,
+      },
+      {
+        source: "courtlistener",
+        from: "search_opinion_joined_by",
+        to: "people",
+        records: 1028,
+        unresolvedEdges: 0,
+        inferredEdges: 0,
+      },
+      {
+        source: "courtlistener",
+        from: "search_opinioncluster_panel",
+        to: "clusters",
+        records: 3,
+        unresolvedEdges: 0,
+        inferredEdges: 0,
+      },
+      {
+        source: "courtlistener",
+        from: "search_opinioncluster_panel",
+        to: "people",
+        records: 3,
+        unresolvedEdges: 0,
+        inferredEdges: 0,
+      },
+    ];
+    const checkpoint = {
+      schemaVersion: "corpus-enrichment/1",
+      status: "partial",
+      metadataOnly: true,
+      counts: { nativeRelationships: 2062 },
+      relationshipCoverage,
+    };
+    expect(enrichmentSchema.parse(checkpoint).relationshipCoverage).toEqual(relationshipCoverage);
+    for (const from of [
+      "private_person@email.invalid",
+      "https://example.invalid/private_path",
+      "private person",
+      "x".repeat(121),
+    ]) {
+      expect(
+        enrichmentSchema.safeParse({
+          ...checkpoint,
+          relationshipCoverage: [
+            { ...relationshipCoverage[0], from },
+            ...relationshipCoverage.slice(1),
+          ],
+        }).success,
+      ).toBe(false);
+    }
+  });
+  it("exposes only aggregate reference paths and rejects impossible or duplicate relationship totals", () => {
+    const base = {
+      schemaVersion: "corpus-enrichment/1",
+      status: "partial",
+      metadataOnly: true,
+      counts: { nativeRelationships: 10 },
+      relationshipCoverage: [
+        {
+          source: "courtlistener",
+          from: "attorneys",
+          to: "parties",
+          records: 10,
+          unresolvedEdges: 3,
+          inferredEdges: 0,
+          privateNames: ["withheld"],
+        },
+      ],
+    };
+    const result = enrichmentSchema.parse(base);
+    expect(result.relationshipCoverage?.[0]).not.toHaveProperty("privateNames");
+    expect(
+      enrichmentSchema.safeParse({ ...base, counts: { nativeRelationships: 11 } }).success,
+    ).toBe(false);
+    expect(
+      enrichmentSchema.safeParse({
+        ...base,
+        relationshipCoverage: [{ ...base.relationshipCoverage[0], unresolvedEdges: 11 }],
+      }).success,
+    ).toBe(false);
+    expect(
+      enrichmentSchema.safeParse({
+        ...base,
+        relationshipCoverage: [{ ...base.relationshipCoverage[0], inferredEdges: 11 }],
+      }).success,
+    ).toBe(false);
+    expect(
+      enrichmentSchema.safeParse({
+        ...base,
+        counts: { nativeRelationships: null },
+        relationshipCoverage: [
+          { ...base.relationshipCoverage[0], records: Number.MAX_SAFE_INTEGER },
+          { ...base.relationshipCoverage[0], to: "dockets", records: 10 },
+        ],
+      }).success,
+    ).toBe(false);
+    expect(
+      enrichmentSchema.safeParse({
+        ...base,
+        relationshipCoverage: [{ ...base.relationshipCoverage[0], from: "private@email.invalid" }],
+      }).success,
+    ).toBe(false);
+    expect(
+      enrichmentSchema.safeParse({
+        ...base,
+        counts: { nativeRelationships: 20 },
+        relationshipCoverage: [...base.relationshipCoverage, ...base.relationshipCoverage],
+      }).success,
+    ).toBe(false);
+  });
   it("retains unknown counts as unknown and strips private records at every level", () => {
     const result = enrichmentSchema.parse({
       schemaVersion: "corpus-enrichment/1",

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import { countField, filterCatalog, type CatalogEntry, type CatalogIndex, type StateCourts } from "./catalog";
 
-const dir = "public/data/catalog";
+const dir = "private/data/catalog";
 const idx = JSON.parse(readFileSync(`${dir}/index.json`, "utf8")) as CatalogIndex;
 
 describe("source catalog bundle", () => {
@@ -19,7 +19,7 @@ describe("source catalog bundle", () => {
     expect(filterCatalog(mn, { category: cats[0]!.key }).length).toBe(cats[0]!.count);
   });
   it("has 2,956 state court links for 55 places", () => {
-    const s = JSON.parse(readFileSync("public/data/state-courts.json", "utf8")) as StateCourts;
+    const s = JSON.parse(readFileSync("private/data/state-courts.json", "utf8")) as StateCourts;
     expect(Object.keys(s.states).length).toBe(55);
     expect(Object.values(s.states).flat().reduce((a, x) => a + x.links.length, 0)).toBe(2956);
   });
@@ -30,7 +30,7 @@ describe("docket summaries match the case catalog", () => {
   let graph: { counts: Record<string, number>; filings_by_year: Record<string, number> } | null = null;
   try { graph = JSON.parse(readFileSync(`${up}/graph.json`, "utf8")); } catch { /* uploads absent */ }
   it.skipIf(!graph)("totals and per-year filings agree", () => {
-    const rows = JSON.parse(readFileSync("public/data/catalog-matters.json", "utf8")) as { status: string; date_filed: string | null }[];
+    const rows = JSON.parse(readFileSync("private/data/catalog-matters.json", "utf8")) as { status: string; date_filed: string | null }[];
     expect(rows.length).toBe(graph!.counts["unique_dockets"]);
     expect(rows.filter((r) => r.status === "terminated").length).toBe(graph!.counts["terminated"]);
     const years: Record<string, number> = {};

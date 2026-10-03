@@ -1,0 +1,29 @@
+{
+  "version": "legal-atlas/3.1",
+  "data_source": {"courtlistener": "CourtListener", "cap": "Caselaw Access Project", "recap": "RECAP", "federalregister": "Federal Register", "ecfr": "eCFR", "uscode": "US Code", "congress": "Congress.gov", "fjc": "Federal Judicial Center"},
+  "mdl_section": {"jpml": "JPML orders", "pinned": "Pinned orders", "docket": "Docket", "related": "Related sources"},
+  "document_role": {"brief": "Brief", "transfer_order": "Transfer order", "appointment_order": "Appointment order", "order": "Order", "case_page": "Court case page", "other": "Other document"},
+  "entity_type": {
+    "court": "Court", "judge": "Judge", "case": "Case", "docket": "Docket", "docket_entry": "Docket entry", "opinion": "Opinion", "mdl": "MDL", "state_coordinated_proceeding": "State coordinated proceeding", "law_firm": "Law firm", "attorney": "Attorney", "party": "Party", "product": "Product", "agency": "Agency", "fr_document": "Federal Register document", "cfr_section": "CFR section", "usc_section": "USC section", "state_statute_section": "State statute section", "bill": "Bill", "public_law": "Public law", "rule_proceeding": "Rule proceeding", "agency_action": "Agency action", "science_doc": "Scientific document", "source_doc": "Source document", "image": "Image"
+  },
+  "title_source": {"pdf_meta": "PDF metadata", "heading": "Heading", "parent_label": "Parent label", "filename": "Filename", "api": "Publisher structured metadata"},
+  "date_type": {"filed": "Filed", "decided": "Decided", "published": "Published", "effective": "Effective", "retrieved": "Retrieved"},
+  "jurisdiction": {
+    "US": "Federal", "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas", "CA": "California", "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware", "DC": "District of Columbia", "FL": "Florida", "GA": "Georgia", "HI": "Hawaii", "ID": "Idaho", "IL": "Illinois", "IN": "Indiana", "IA": "Iowa", "KS": "Kansas", "KY": "Kentucky", "LA": "Louisiana", "ME": "Maine", "MD": "Maryland", "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota", "MS": "Mississippi", "MO": "Missouri", "MT": "Montana", "NE": "Nebraska", "NV": "Nevada", "NH": "New Hampshire", "NJ": "New Jersey", "NM": "New Mexico", "NY": "New York", "NC": "North Carolina", "ND": "North Dakota", "OH": "Ohio", "OK": "Oklahoma", "OR": "Oregon", "PA": "Pennsylvania", "RI": "Rhode Island", "SC": "South Carolina", "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas", "UT": "Utah", "VT": "Vermont", "VA": "Virginia", "WA": "Washington", "WV": "West Virginia", "WI": "Wisconsin", "WY": "Wyoming", "AS": "American Samoa", "GU": "Guam", "MP": "Northern Mariana Islands", "PR": "Puerto Rico", "VI": "Virgin Islands", "MULTI": "Multiple jurisdictions", "INTL": "International", "UNKNOWN": "Not recorded"
+  },
+  "id_authority": {"courtlistener": "CourtListener", "fjc": "Federal Judicial Center", "jpml": "JPML", "federal_register": "Federal Register", "ecfr": "eCFR", "uscode": "Office of the Law Revision Counsel", "congress": "Congress.gov", "regulations_gov": "Regulations.gov", "cap": "Caselaw Access Project", "publisher": "Original publisher"},
+  "extraction_method": {"api": "API", "bulk": "Bulk structured data", "eyecite": "eyecite", "regex": "Regular expression", "llm": "Language model", "manual": "Manual review", "pdf_text": "PDF text", "html": "HTML"},
+  "edge_method": {"api": "API", "eyecite": "eyecite", "regex": "Regular expression", "llm": "Language model"},
+  "edge_type": {"cites": "Cites", "cites_statute": "Cites statute", "cites_regulation": "Cites regulation", "authority_for": "Authority for", "amends": "Amends", "affects": "Affects", "proposes": "Proposes", "finalizes": "Finalizes", "enacts": "Enacts", "regulates": "Regulates", "mentions": "Mentions", "presided_by": "Presided by", "filed_in": "Filed in", "member_of": "Member of", "transferred_by": "Transferred by", "coordinated_with": "Coordinated with", "represents": "Represents", "appeal_of": "Appeal of", "same_as": "Same as"},
+  "treatment": {"follows": "Follows", "distinguishes": "Distinguishes", "overrules": "Overrules", "criticizes": "Criticizes", "questions": "Questions"},
+  "counsel_role": {"lead": "Lead counsel", "liaison": "Liaison counsel", "PSC": "Plaintiffs' steering committee", "PEC": "Plaintiffs' executive committee", "defense": "Defense counsel"},
+  "order_class": {"cmo": "Case management order", "pto": "Pretrial order", "daubert": "Daubert ruling", "msj": "Summary judgment", "bellwether": "Bellwether order", "settlement": "Settlement order", "remand": "Remand order", "other": "Other order"},
+  "fr_document_type": {"RULE": "Rule", "PRORULE": "Proposed rule", "NOTICE": "Notice", "PRESDOCU": "Presidential document"},
+  "review_status": {"pending": "Awaiting review", "approved": "Reviewed", "rejected": "Rejected"},
+  "court_level": {"supreme": "Supreme Court", "circuit": "Circuit", "district": "District", "state_supreme": "State supreme", "state_appellate": "State appellate", "state_trial": "State trial", "other": "Other"},
+  "law_scope": {"federal": "Federal law", "state": "State law", "unknown": "Not recorded"},
+  "evidence_outcome": {"admitted": "Admitted", "excluded": "Excluded", "partial": "Partially admitted"},
+  "image_kind": {"judge_portrait": "Judge portrait", "court_seal": "Court seal"},
+  "image_origin": {"court_website": "Court website", "wikimedia_commons": "Wikimedia Commons"},
+  "load_status": {"not_started": "Not started", "running": "Loading", "partial": "Partial", "awaiting_audit": "Awaiting source audit", "verified": "Verified", "unavailable": "Not supplied by publisher", "blocked": "Blocked"}
+}

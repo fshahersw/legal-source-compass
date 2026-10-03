@@ -4,7 +4,7 @@ import { directoryQuality, registryQuality } from "../src/lib/corpus/quality.ts"
 import { STATES } from "../src/lib/corpus/geo.ts";
 
 const inputs = ["atlas-import-bundle.json", "registry_v06_1.jsonl", "corpus/insights.json"];
-const bytes = inputs.map((p) => readFileSync(`public/data/${p}`));
+const bytes = inputs.map((p) => readFileSync(`private/data/${p}`));
 const [atlas, insights] = [JSON.parse(bytes[0]), JSON.parse(bytes[2])];
 const entries = [];
 let invalidLines = 0;
@@ -59,14 +59,14 @@ const report = {
     qualification: insights.qualification,
   },
 };
-const output = "public/data/quality/bundled-audit.json";
+const output = "private/data/quality/bundled-audit.json";
 const serialized = JSON.stringify(report, null, 2) + "\n";
 if (process.argv.includes("--check")) {
   if (readFileSync(output, "utf8") !== serialized)
     throw new Error("Bundled audit is stale. Run npm run audit:corpus.");
   console.log("Bundled audit matches the original file bytes.");
 } else {
-  mkdirSync("public/data/quality", { recursive: true });
+  mkdirSync("private/data/quality", { recursive: true });
   writeFileSync(output, serialized);
   console.log(
     JSON.stringify({

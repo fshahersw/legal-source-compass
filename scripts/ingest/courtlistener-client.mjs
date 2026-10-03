@@ -6,7 +6,7 @@ export const DEFAULT_CACHE = path.resolve('../audit/2026-10-02/metadata');
 export const API_ORIGIN = 'https://www.courtlistener.com';
 export const sha256 = x => crypto.createHash('sha256').update(x).digest('hex');
 export const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-const allowedEndpoints = new Set(['dockets','docket-entries','recap-documents','courts','clusters','opinions','opinions-cited','people','positions','retention-events','educations','schools','political-affiliations','sources','aba-ratings','parties','attorneys','originating-court-information','fjc-integrated-database','bankruptcy-information']);
+const allowedEndpoints = new Set(['search','dockets','docket-entries','recap-documents','courts','clusters','opinions','opinions-cited','people','positions','retention-events','educations','schools','political-affiliations','sources','aba-ratings','parties','attorneys','originating-court-information','fjc-integrated-database','bankruptcy-information']);
 
 export class CourtListenerClient {
   constructor(cache=DEFAULT_CACHE, maxRequests=450) { this.cache=cache; this.maxRequests=maxRequests; this.requests=0; this.queue=Promise.resolve(); }

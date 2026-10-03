@@ -1,3 +1,4 @@
+import { PrivateDataLink } from "@/components/atlas/PrivateDataLink";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -8,6 +9,7 @@ import { getEnrichmentSnapshot } from "@/lib/external/enrichment.functions";
 import { pageHead } from "@/lib/corpus/head";
 import { downloadText } from "@/lib/atlas/exports";
 import { CATEGORY_LABELS, TAXONOMY_VERSION } from "@/lib/corpus/taxonomy";
+import { RelationshipCoverage } from "@/components/corpus/RelationshipCoverage";
 
 export const Route = createFileRoute("/sources/enrichment")({
   head: () =>
@@ -55,9 +57,40 @@ function EnrichmentPage() {
         <Link to="/insights" className="text-primary underline">
           Research workbench
         </Link>
-        <a href="/data/quality/taxonomy-review-2026-10-02.json" className="text-primary underline">
+        <Link
+          to="/data/$dataset"
+          params={{ dataset: "ecfr_hierarchy" }}
+          className="text-primary underline"
+        >
+          National regulatory hierarchy
+        </Link>
+        <Link
+          to="/data/$dataset"
+          params={{ dataset: "ecfr_authority_notes" }}
+          className="text-primary underline"
+        >
+          Regulatory authority and version notes
+        </Link>
+        <Link
+          to="/data/$dataset"
+          params={{ dataset: "cl_master_entries" }}
+          className="text-primary underline"
+        >
+          Master docket entries
+        </Link>
+        <Link to="/sources/analysis" className="text-primary underline">
+          Master docket timelines
+        </Link>
+        <Link
+          to="/data/$dataset"
+          params={{ dataset: "mass_tort_authority_evidence" }}
+          className="text-primary underline"
+        >
+          Mass-tort authority and treatment evidence
+        </Link>
+        <PrivateDataLink href="/data/quality/taxonomy-review-2026-10-02.json" className="text-primary underline">
           Download identity and taxonomy review
-        </a>
+        </PrivateDataLink>
       </div>
       {query.isLoading ? (
         <p role="status" className="text-[13px]">
@@ -94,13 +127,20 @@ function EnrichmentPage() {
               </Button>
             </div>
           </section>
-          <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+          <div className="mb-3 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
             {[
-              ["Imported source records", data.counts?.sourceRecords],
-              ["Distinct native records", data.counts?.canonicalEntities],
-              ["Source versions", data.counts?.sourceVersions],
-              ["Observations", data.counts?.observations],
-              ["Versioned native edges", data.counts?.nativeRelationships],
+              [
+                "HTTP-source observations",
+                data.counts?.httpSourceObservations ??
+                  data.counts?.observations ??
+                  data.counts?.sourceRecords,
+              ],
+              ["Local-file occurrences", data.counts?.localFileOccurrences],
+              ["Source-qualified identities", data.counts?.canonicalEntities],
+              ["Source payload versions", data.counts?.sourceVersions],
+              ["Source-qualified relationship edges", data.counts?.nativeRelationships],
+              ["Source-recorded edges", data.counts?.sourceRecordedRelationships],
+              ["Local producer / extraction pointers", data.counts?.localPointerRelationships],
               ["PDFs downloaded", data.counts?.pdfDownloads],
             ].map(([label, count]) => (
               <div key={String(label)} className="rounded-lg border border-border bg-surface p-3">
@@ -111,6 +151,62 @@ function EnrichmentPage() {
               </div>
             ))}
           </div>
+          <p className="mb-6 text-[12px] text-muted-foreground">
+            HTTP observations and local-file occurrences are separate evidence rows. Identities,
+            payload versions and relationship edges include their recorded source namespaces;
+            repeated versions can repeat a relationship. These counts do not measure unique cases or
+            verified legal outcomes. Local pointers retain producer and extraction qualifications.
+          </p>
+          {data.relationshipCoverage?.length ? (
+            <RelationshipCoverage rows={data.relationshipCoverage} />
+          ) : null}
+          {data.coverage?.some((c) => c.id === "ecfr_authority_notes") ? (
+            <section className="mb-6 rounded-lg border border-border bg-surface p-4">
+              <h2 className="text-[16px] font-semibold">Version-sensitive regulatory research</h2>
+              <p className="mt-2 text-[13px] leading-relaxed">
+                FDA identifies February 2, 2026 as the effective date of the QMSR amendments to 21
+                CFR Part 820. The retained February 1 and September 30 snapshots let you inspect the
+                different headings, authorities and source notes. The snapshot date alone does not
+                establish which version governs a device, event or claim.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-4 text-[13px]">
+                <PrivateDataLink
+                  href="/data/quality/ecfr-acquisition-2026-10-02.json"
+                  className="text-primary underline"
+                >
+                  Regulatory source hashes and coverage
+                </PrivateDataLink>
+                <Link
+                  to="/records/$dataset/$id"
+                  params={{
+                    dataset: "ecfr_authority_notes",
+                    id: "ecfr:notes:title-21/part-820/as-of-2026-02-01",
+                  }}
+                  className="text-primary underline"
+                >
+                  Part 820 before QMSR
+                </Link>
+                <Link
+                  to="/records/$dataset/$id"
+                  params={{
+                    dataset: "ecfr_authority_notes",
+                    id: "ecfr:notes:title-21/part-820/as-of-2026-09-30",
+                  }}
+                  className="text-primary underline"
+                >
+                  Part 820 later snapshot
+                </Link>
+                <a
+                  href="https://www.fda.gov/medical-devices/postmarket-requirements-devices/quality-management-system-regulation-qmsr"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary underline"
+                >
+                  FDA effective-date explanation
+                </a>
+              </div>
+            </section>
+          ) : null}
           {data.mdlAssociations?.length ? (
             <section className="mb-6 rounded-lg border border-border bg-surface p-4">
               <h2 className="text-[16px] font-semibold">Native MDL administrative associations</h2>
@@ -178,6 +274,25 @@ function EnrichmentPage() {
                         </td>
                         <td className="p-2">
                           {number(row.masterEntriesCaptured)} / {number(row.masterEntriesObserved)}
+                          {data.coverage?.some((c) => c.id === "cl_master_entries") &&
+                          (row.masterEntriesCaptured ?? 0) > 0 &&
+                          /\/dockets\/([0-9]+)\/$/.test(row.sourceUrl) ? (
+                            <div>
+                              <Link
+                                to="/data/$dataset"
+                                params={{ dataset: "cl_master_entries" }}
+                                search={{
+                                  f: {
+                                    native_docket_id:
+                                      row.sourceUrl.match(/\/dockets\/([0-9]+)\/$/)![1]!,
+                                  },
+                                }}
+                                className="text-primary underline"
+                              >
+                                Browse eligible entry metadata
+                              </Link>
+                            </div>
+                          ) : null}
                         </td>
                         <td className="p-2">
                           <a
@@ -278,17 +393,18 @@ function EnrichmentPage() {
               <h2 className="text-[15px] font-semibold">Legal review and calculator coverage</h2>
               <dl className="mt-3 space-y-1 text-[13px]">
                 <div>
-                  Referenced sources: <strong>{number(data.legalReview?.sources)}</strong>
+                  Statutory / federal source captures:{" "}
+                  <strong>{number(data.legalReview?.sources)}</strong>
                 </div>
                 <div>
                   Cited rule records: <strong>{number(data.legalReview?.rules)}</strong>
                 </div>
                 <div>
-                  Jurisdictions with research:{" "}
+                  Jurisdictions with primary statutory text:{" "}
                   {jurisdiction(data.legalReview?.jurisdictionsCovered)}
                 </div>
                 <div>
-                  Calculator jurisdictions:{" "}
+                  Jurisdictions with conditional baselines:{" "}
                   {jurisdiction(data.legalReview?.calculatorJurisdictions)}
                 </div>
               </dl>

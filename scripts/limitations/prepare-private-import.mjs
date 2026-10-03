@@ -1,7 +1,7 @@
 import { readFile, writeFile, mkdir, stat } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { resolve, join } from "node:path";
-const root = resolve("public/data/limitations");
+const root = resolve("private/data/limitations");
 const output = resolve(process.argv[2] ?? "../private/legal-review-import-20261002");
 await mkdir(output, { recursive: true });
 const hash = (v) => createHash("sha256").update(v).digest("hex");

@@ -1,5 +1,6 @@
 /** Pure helpers for the connected corpus: section grouping, item normalisation and link resolution. */
 import { isProvisionDataset } from "./lawTree";
+import { RECORD_ID_MAX_LENGTH, RECORD_TOKEN_MAX_ENCODED_LENGTH } from "./recordIdentity";
 
 /** An exact collection identity selects a permanent detail page. IDs are never inferred from names. */
 export function recordDestination(dataset: string, id: string) {
@@ -60,6 +61,7 @@ const EXPLICIT: Record<string, SectionId> = {
   cl_race_choices: "judges",
   cl_dockets: "matters",
   cl_docket_entries: "matters",
+  cl_master_entries: "matters",
   cl_recap_documents: "matters",
   cl_parties: "matters",
   cl_attorneys: "matters",
@@ -69,6 +71,10 @@ const EXPLICIT: Record<string, SectionId> = {
   cl_reporter_citations: "law",
   statutory_limitations_review: "law",
   regulatory_backfill: "law",
+  ecfr_hierarchy: "law",
+  ecfr_authority_notes: "law",
+  mass_tort_authority_evidence: "law",
+  jpml_html_reference: "law",
   court_spine: "courts",
   court_reference: "courts",
   court_statistics: "courts",
@@ -237,6 +243,7 @@ export type ResolvedLink =
   | { kind: "search"; q: string }
   | { kind: "entity"; type: "mdl" | "court" | "judge"; id: string }
   | { kind: "provision"; dataset: "open_us_law"; id: string }
+  | { kind: "record"; dataset: string; id: string }
   | { kind: "unmapped"; raw: string };
 
 /** Map a corpus link to where it lives in this app. `aliases` maps alias -> dataset id. */
@@ -248,12 +255,24 @@ export function resolveLink(url: string, aliases: Record<string, string>): Resol
     // Preserve its collection identity; do not guess from a citation string.
     const provision = /^#record\/(oul:[0-9a-f]{64})$/.exec(url);
     if (provision) return { kind: "provision", dataset: "open_us_law", id: provision[1]! };
+    // Full native record identities: encodeURIComponent(id), decoded exactly once.
+    // Slashes may be part of an encoded publisher path, never extra token segments.
+    if (url.startsWith("#record/")) {
+      const record = /^#record\/([a-z0-9_]{1,80})\/([^/?#]+)$/.exec(url);
+      const id = record
+        ? decodeNativeId(record[2]!, RECORD_ID_MAX_LENGTH, RECORD_TOKEN_MAX_ENCODED_LENGTH)
+        : null;
+      return record && id
+        ? { kind: "record", dataset: record[1]!, id }
+        : { kind: "unmapped", raw: url };
+    }
     const ent = /^#(mdl|court|judge)\/([^?#]{1,120})$/.exec(url);
-    if (ent)
+    const entityId = ent ? decodeNativeId(ent[2]!, 120) : null;
+    if (ent && entityId)
       return {
         kind: "entity",
         type: ent[1] as "mdl" | "court" | "judge",
-        id: decodeURIComponent(ent[2]!),
+        id: entityId,
       };
     const [name = "", qs = ""] = url.slice(1).split("?");
     const params = Object.fromEntries(new URLSearchParams(qs));
@@ -265,6 +284,28 @@ export function resolveLink(url: string, aliases: Record<string, string>): Resol
     if (ds) return { kind: "dataset", dataset: ds, q, filters: params };
   }
   return { kind: "unmapped", raw: url };
+}
+
+/** Invalid escapes and URL/traversal syntax remain inert; native punctuation is preserved. */
+function decodeNativeId(encoded: string, max: number, encodedMax = max * 12): string | null {
+  if (encoded.length > encodedMax) return null;
+  try {
+    const id = decodeURIComponent(encoded);
+    if (
+      !id ||
+      id.length > max ||
+      id !== id.trim() ||
+      /[?#\\]/.test(id) ||
+      Array.from(id).some(
+        (c) => c.charCodeAt(0) < 32 || (c.charCodeAt(0) >= 127 && c.charCodeAt(0) <= 159),
+      )
+    )
+      return null;
+    if (id.split("/").some((part) => part === "." || part === "..")) return null;
+    return id;
+  } catch {
+    return null;
+  }
 }
 
 export function fileUrl(route: string) {

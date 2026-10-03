@@ -109,7 +109,7 @@ describe("research analysis boundaries", () => {
 
 const load = <T>(path: string): T => JSON.parse(readFileSync(path, "utf8")) as T;
 describe("real downloaded source reconciliation", () => {
-  const root = "public/data/research/";
+  const root = "private/data/research/";
   const data: ResearchData = {
     population: load(root + "population.json"),
     judiciary: load(root + "judicial-service.json"),
@@ -117,7 +117,7 @@ describe("real downloaded source reconciliation", () => {
     resources: load(root + "state-resources.json"),
     courts: load(root + "court-crosswalk.json"),
     sources: load(root + "source-manifest.json"),
-    workload: load("public/data/quality/reference/uscourts-table-c-2025.json"),
+    workload: load("private/data/quality/reference/uscourts-table-c-2025.json"),
   };
   it("preserves all official source bytes and reconciles Census, FJC and district timing counts", () => {
     for (const source of data.sources.sources) {
@@ -144,7 +144,7 @@ describe("real downloaded source reconciliation", () => {
     ).toBeNull();
   });
   it("maps the catalog through native court IDs and keeps federal district rates separate from catalog counts", () => {
-    const cases = load<CatalogMatter[]>("public/data/catalog-matters.json");
+    const cases = load<CatalogMatter[]>("private/data/catalog-matters.json");
     const states = stateComparisons(data, cases);
     expect(states).toHaveLength(51);
     expect(states.every((s) => s.districtJudges > 0)).toBe(true);
@@ -178,7 +178,7 @@ describe("real downloaded source reconciliation", () => {
     const reads = load<{
       pages: { url: string; markdown: string; metadata: { statusCode: number } }[];
     }>(root + "raw/mdl-research.json");
-    const masters = load<Record<string, string>>("public/data/mdl-documents/master-dockets.json");
+    const masters = load<Record<string, string>>("private/data/mdl-documents/master-dockets.json");
     expect(briefs.briefs).toHaveLength(4);
     for (const brief of briefs.briefs) {
       const read = reads.pages.find((p) => p.url === brief.sourceUrl);

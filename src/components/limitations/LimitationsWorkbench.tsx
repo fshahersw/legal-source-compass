@@ -1,3 +1,4 @@
+import { PrivateDataLink } from "@/components/atlas/PrivateDataLink";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -55,14 +56,14 @@ function JudicialEvidence({ reference }: { reference: JudicialReference }) {
           Subsequent treatment: {reference.subsequentTreatment.replaceAll("_", " ")}. Copy:{" "}
           {reference.copyPublisher}.
         </p>
-        <a
+        <PrivateDataLink
           className="mt-1 block text-primary underline"
           href={reference.textPath}
           target="_blank"
           rel="noreferrer"
         >
           Stored opinion text
-        </a>
+        </PrivateDataLink>
         <p className="mt-1 break-all">SHA-256: {reference.sha256}</p>
         {reference.officialPdfUrl && (
           <a
@@ -899,14 +900,14 @@ export function LimitationsWorkbench({
                 <p className="mt-1 text-[12px]">
                   {s.publisher} · captured {s.capturedAt} · {s.method}
                 </p>
-                <a
+                <PrivateDataLink
                   href={s.textPath}
                   target="_blank"
                   rel="noreferrer"
                   className="mt-2 inline-block text-[12px] text-primary underline"
                 >
                   Inspect stored extraction
-                </a>
+                </PrivateDataLink>
                 <p className="mt-2 break-all font-mono text-[10px] text-muted-foreground">
                   SHA-256 {s.sha256} · {s.byteLength.toLocaleString()} bytes · schema{" "}
                   {s.schemaVersion}
@@ -934,22 +935,22 @@ export function LimitationsWorkbench({
           Data exports and source versions
         </summary>
         <div className="mt-2 flex flex-wrap gap-4">
-          <a
+          <PrivateDataLink
             href="/data/limitations/rules.json"
             target="_blank"
             rel="noreferrer"
             className="text-primary underline"
           >
             Versioned rules JSON
-          </a>
-          <a
+          </PrivateDataLink>
+          <PrivateDataLink
             href="/data/limitations/sources.json"
             target="_blank"
             rel="noreferrer"
             className="text-primary underline"
           >
             Source manifest
-          </a>
+          </PrivateDataLink>
         </div>
       </details>
     </div>

@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import type { CatalogMatter } from "./catalogMatters";
 import { byState, byYearStatus, closedWithDates, defendants, firmRoles, median, medianCloseBy } from "./caseAnalytics";
 
-const rows = JSON.parse(readFileSync("public/data/catalog-matters.json", "utf8")) as CatalogMatter[];
-const map = JSON.parse(readFileSync("public/data/mdl-documents/master-dockets.json", "utf8")) as Record<string, string>;
+const rows = JSON.parse(readFileSync("private/data/catalog-matters.json", "utf8")) as CatalogMatter[];
+const map = JSON.parse(readFileSync("private/data/mdl-documents/master-dockets.json", "utf8")) as Record<string, string>;
 
 describe("case analytics (real catalog)", () => {
   it("year × status sums to dated rows", () => {

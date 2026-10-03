@@ -31,6 +31,7 @@ export type EntitySection =
 export type EntityView = {
   title: string;
   subtitle: string | null;
+  qualification: string | null;
   photo: string | null;
   facts: [string, string][];
   links: { url: string; label: string }[];
@@ -55,6 +56,7 @@ const SKIP = new Set([
   "links",
   "sections",
   "summary",
+  "qualification",
 ]);
 
 function scalar(v: unknown): string | null {
@@ -120,10 +122,55 @@ function tableFrom(key: string, arr: Record<string, unknown>[]): EntitySection {
   };
 }
 
+/** eCFR section CITA and SOURCE excerpts are publisher text, never executable links. */
+function publisherSectionNotes(value: unknown): EntitySection[] {
+  if (!Array.isArray(value)) return [];
+  const citations: Extract<EntitySection, { kind: "items" }>["items"] = [];
+  const sources: Extract<EntitySection, { kind: "items" }>["items"] = [];
+  for (const section of value.filter(isObj)) {
+    const title =
+      [scalar(section["section_identifier"]), scalar(section["heading"])]
+        .filter((part): part is string => part != null)
+        .join(" — ") || "Section identifier not recorded";
+    if (Array.isArray(section["citation_notes"])) {
+      for (const citation of section["citation_notes"].filter(isObj)) {
+        const text = citation["text"];
+        if (typeof text === "string" && text.trim())
+          citations.push({ title, subtitle: text, links: [] });
+      }
+    }
+    if (Array.isArray(section["source_notes"])) {
+      for (const text of section["source_notes"])
+        if (typeof text === "string" && text.trim())
+          sources.push({ title, subtitle: text, links: [] });
+    }
+  }
+  const sections: EntitySection[] = [];
+  if (citations.length)
+    sections.push({
+      kind: "items",
+      key: "publisher_section_citations",
+      label: "Publisher section citation notes",
+      items: citations,
+    });
+  if (sources.length)
+    sections.push({
+      kind: "items",
+      key: "publisher_section_sources",
+      label: "Publisher section source notes",
+      items: sources,
+    });
+  return sections;
+}
+
 export function buildEntityView(raw: Record<string, unknown>): EntityView {
   const view: EntityView = {
     title: scalar(raw["title"]) ?? scalar(raw["name"]) ?? String(raw["id"] ?? "Record"),
     subtitle: scalar(raw["subtitle"]),
+    qualification:
+      typeof raw["qualification"] === "string" && raw["qualification"].trim()
+        ? raw["qualification"]
+        : null,
     photo:
       typeof raw["photo_url"] === "string" && raw["photo_url"]
         ? (raw["photo_url"] as string)
@@ -140,7 +187,7 @@ export function buildEntityView(raw: Record<string, unknown>): EntityView {
     for (const f of raw["facts"])
       if (Array.isArray(f) && f.length >= 2) {
         const v = typeof f[1] === "string" ? f[1] : JSON.stringify(f[1]);
-        (/\(|basis|snapshot|as recorded|saved \(utc\)|how the count/i.test(String(f[0]))
+        (/basis|snapshot|saved \(utc\)|how the count|capture time/i.test(String(f[0]))
           ? view.technical
           : view.facts
         ).push([String(f[0]), v]);
@@ -193,6 +240,7 @@ export function buildEntityView(raw: Record<string, unknown>): EntityView {
   }
   for (const [k, v] of Object.entries(raw)) {
     if (SKIP.has(k)) continue;
+    if (k === "section_source_notes") view.sections.push(...publisherSectionNotes(v));
     if (TECH.test(k)) {
       const s = scalar(v);
       if (s) view.technical.push([fieldLabel(k), s]);

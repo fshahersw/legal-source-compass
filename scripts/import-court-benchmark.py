@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 import openpyxl
 
-source = Path("public/data/quality/reference/uscourts-table-c-2025.xlsx")
+source = Path("private/data/quality/reference/uscourts-table-c-2025.xlsx")
 sheet = openpyxl.load_workbook(source, data_only=True).active
 columns = {"filed2024": 1, "filed2025": 2, "terminated2024": 4, "terminated2025": 5, "pending2024": 7, "pending2025": 8}
 districts = []

@@ -1,0 +1,13 @@
+import fs from 'node:fs';
+import crypto from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
+import { adminClient } from './admin-client.mjs';
+import { mdlPacket } from '../../src/lib/legal/packets.ts';
+const [packetFile, credentials] = process.argv.slice(2);
+const packet = mdlPacket.parse(JSON.parse(fs.readFileSync(packetFile, 'utf8')));
+const hash = crypto.createHash('sha256').update(JSON.stringify(packet)).digest('hex');
+const rpc = adminClient(credentials);
+const result = await rpc('corpus_legal_register_mdl_v3', { p_packet: packet, p_sha256: hash });
+const readback = mdlPacket.parse(await rpc('corpus_legal_mdl_v3', { p_id: packet.mdl.id }));
+if (!isDeepStrictEqual(readback, packet)) throw Error('Supabase MDL packet differs from reviewed source packet');
+console.log(JSON.stringify({ ...result, readback: 'validated', complete: packet.complete }));

@@ -2,6 +2,11 @@ import { createStart, createCsrfMiddleware, createMiddleware } from "@tanstack/r
 
 import { renderErrorPage } from "./lib/error-page";
 import { attachSupabaseAuth } from "@/integrations/supabase/auth-attacher";
+import {
+  requireAccountCorpusFunction,
+  requireAccountCorpusRequest,
+  rejectObsoleteDataAssets,
+} from "@/lib/auth/access.middleware";
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {
@@ -26,6 +31,13 @@ const csrfMiddleware = createCsrfMiddleware({
 });
 
 export const startInstance = createStart(() => ({
-  functionMiddleware: [attachSupabaseAuth],
-  requestMiddleware: [errorMiddleware, csrfMiddleware],
+  // Data providers mount after the verified account check. No corpus loader runs in anonymous SSR.
+  defaultSsr: false,
+  functionMiddleware: [attachSupabaseAuth, requireAccountCorpusFunction],
+  requestMiddleware: [
+    errorMiddleware,
+    rejectObsoleteDataAssets,
+    csrfMiddleware,
+    requireAccountCorpusRequest,
+  ],
 }));

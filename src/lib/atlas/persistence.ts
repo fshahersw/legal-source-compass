@@ -1,3 +1,4 @@
+import { fetchBundleSnapshot } from "@/lib/private-data/client";
 import { parseBundle } from "./bundle";
 import type { KeyValueStorage } from "./localState";
 import type { Bundle } from "./types";
@@ -264,7 +265,7 @@ export async function resolveStartupBundle(deps: {
 }
 
 export async function fetchBundledDefault(): Promise<ArrayBuffer> {
-  const res = await fetch(BUNDLED_DEFAULT_URL, { cache: "no-cache" });
+  const res = await fetchBundleSnapshot(BUNDLED_DEFAULT_URL, { cache: "no-cache" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.arrayBuffer();
 }

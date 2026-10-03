@@ -1,0 +1,139 @@
+{
+  "schemaVersion": "master-entry-privacy-review/4",
+  "preparedAt": "2026-10-02T12:47:54.737Z",
+  "executed": false,
+  "sourceRuns": [
+    "494cfa52-74c5-42ac-a770-80e46b9a3035",
+    "377d9b7a-f895-4314-a5bc-98279ec3c2fb",
+    "ba13564a-e8f6-4c56-b4f0-c39aeded6fff",
+    "46cb2e66-2593-4cfb-ba4e-1b1e3a882db1"
+  ],
+  "sourceNativeEntries": 33033,
+  "blockedEntries": 40,
+  "explicitlySealedEntries": 95,
+  "unknownDocumentSealEntries": 31720,
+  "eligibleEntries": 32898,
+  "explicitlyUnsealedDocumentAssociations": 3318,
+  "sourceSignatureSha256": "a9eeb88c2ac73f376ae6a18c8cbf5e491b8c2e236b32e24be5eecea49ad2145d",
+  "pdfDownloads": 0,
+  "sourceFiles": [
+    {
+      "path": "C:\\Users\\firas\\OneDrive\\Documents\\ChatGPT\\corpusss\\audit\\2026-10-02\\metadata\\live-normalized\\docket-entries.jsonl",
+      "bytes": 12853510,
+      "sha256": "3810b53ac375ac7a4bbd5d600dfcb89cb71b6dd56bc5b76d67f7b05d934de944"
+    },
+    {
+      "path": "C:\\Users\\firas\\OneDrive\\Documents\\ChatGPT\\corpusss\\audit\\2026-10-02\\metadata\\live-normalized\\dockets.jsonl",
+      "bytes": 247638,
+      "sha256": "82da2b34260b2e50fc4a0ad4dbdabacc12e1490da18a24a743ff37fbaeb2a9c5"
+    },
+    {
+      "path": "C:\\Users\\firas\\.codex\\corpus-cache\\courtlistener\\passes\\2026-10-02T101805Z\\live-normalized\\docket-entries.jsonl",
+      "bytes": 27469882,
+      "sha256": "3500b5279aaa1c66fb62e4a5ab8d0e3d31246d796d701abb258c6b0d7ba60d2a"
+    },
+    {
+      "path": "C:\\Users\\firas\\.codex\\corpus-cache\\courtlistener\\passes\\2026-10-02T112700Z\\live-normalized\\docket-entries.jsonl",
+      "bytes": 20838583,
+      "sha256": "df69981a1985edccc7400351d5ad57e913244930774577e37ba8edc25ad163ff"
+    },
+    {
+      "path": "C:\\Users\\firas\\.codex\\corpus-cache\\courtlistener\\passes\\2026-10-02T115000Z\\live-normalized\\docket-entries.jsonl",
+      "bytes": 21781146,
+      "sha256": "a86f415e80f6ef081962018c7d8eab926a5eee95d7af64ac7c297917efc8b1ea"
+    }
+  ],
+  "privacyByDocket": {
+    "4134359": {
+      "sourceEntries": 300,
+      "sourceBlocked": 0,
+      "explicitlySealed": 0,
+      "eligibleEntries": 300
+    },
+    "4264145": {
+      "sourceEntries": 4160,
+      "sourceBlocked": 0,
+      "explicitlySealed": 0,
+      "eligibleEntries": 4160
+    },
+    "4270519": {
+      "sourceEntries": 2580,
+      "sourceBlocked": 0,
+      "explicitlySealed": 0,
+      "eligibleEntries": 2580
+    },
+    "5838695": {
+      "sourceEntries": 1337,
+      "sourceBlocked": 0,
+      "explicitlySealed": 0,
+      "eligibleEntries": 1337
+    },
+    "6102388": {
+      "sourceEntries": 80,
+      "sourceBlocked": 0,
+      "explicitlySealed": 23,
+      "eligibleEntries": 57
+    },
+    "6224301": {
+      "sourceEntries": 1263,
+      "sourceBlocked": 0,
+      "explicitlySealed": 0,
+      "eligibleEntries": 1263
+    },
+    "6240169": {
+      "sourceEntries": 4040,
+      "sourceBlocked": 0,
+      "explicitlySealed": 0,
+      "eligibleEntries": 4040
+    },
+    "7603829": {
+      "sourceEntries": 994,
+      "sourceBlocked": 0,
+      "explicitlySealed": 0,
+      "eligibleEntries": 994
+    },
+    "8408916": {
+      "sourceEntries": 4040,
+      "sourceBlocked": 0,
+      "explicitlySealed": 14,
+      "eligibleEntries": 4026
+    },
+    "14916674": {
+      "sourceEntries": 40,
+      "sourceBlocked": 40,
+      "explicitlySealed": 0,
+      "eligibleEntries": 0
+    },
+    "16284915": {
+      "sourceEntries": 5373,
+      "sourceBlocked": 0,
+      "explicitlySealed": 11,
+      "eligibleEntries": 5362
+    },
+    "18753355": {
+      "sourceEntries": 419,
+      "sourceBlocked": 0,
+      "explicitlySealed": 0,
+      "eligibleEntries": 419
+    },
+    "65407433": {
+      "sourceEntries": 4033,
+      "sourceBlocked": 0,
+      "explicitlySealed": 47,
+      "eligibleEntries": 3986
+    },
+    "67678440": {
+      "sourceEntries": 3340,
+      "sourceBlocked": 0,
+      "explicitlySealed": 0,
+      "eligibleEntries": 3340
+    },
+    "68222905": {
+      "sourceEntries": 1034,
+      "sourceBlocked": 0,
+      "explicitlySealed": 0,
+      "eligibleEntries": 1034
+    }
+  },
+  "policy": "Exclude a source-blocked docket and any entry containing an explicitly sealed document. Entries with unknown document seal flags may expose only minimal entry metadata; document ID arrays/count include explicit is_sealed=false IDs only. Unknown flags never establish unsealed status, availability or total document count."
+}

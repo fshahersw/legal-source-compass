@@ -5,7 +5,7 @@ import { baselineRule, calculateBaseline, calendarAnniversary, parseCivilDate } 
 import type { BaselineInput, LimitationsSnapshot } from "./types";
 
 const json = (name: string) =>
-  JSON.parse(readFileSync(`public/data/limitations/${name}.json`, "utf8"));
+  JSON.parse(readFileSync(`private/data/limitations/${name}.json`, "utf8"));
 const snapshot: LimitationsSnapshot = {
   ...json("rules"),
   sources: json("sources").sources,
@@ -259,7 +259,7 @@ describe("versioned legal evidence integrity", () => {
   it("judicial sources have checksums and rule links and exclude publisher summaries", () => {
     expect(new Set(snapshot.cases.map((c) => c.id)).size).toBe(snapshot.cases.length);
     for (const reference of snapshot.cases) {
-      const bytes = readFileSync(`public${reference.textPath}`);
+      const bytes = readFileSync(`private${reference.textPath}`);
       expect(createHash("sha256").update(bytes).digest("hex")).toBe(reference.sha256);
       expect(bytes.byteLength).toBe(reference.byteLength);
       expect(bytes.byteLength).toBeGreaterThan(2000);
@@ -272,7 +272,7 @@ describe("versioned legal evidence integrity", () => {
       ).toBe(true);
   });
   it("does not retain the unrelated WV provider response or wrong Alabama claim mapping", () => {
-    const text = readFileSync("public/data/limitations/text/wv-55-2-12.txt", "utf8");
+    const text = readFileSync("private/data/limitations/text/wv-55-2-12.txt", "utf8");
     expect(text).toContain("damages for personal injuries");
     expect(text).not.toContain("FBI");
     const rule = baselineRule(snapshot.rules, "AL", "personal_injury")!;
@@ -282,7 +282,7 @@ describe("versioned legal evidence integrity", () => {
   it("every rule links unique primary-source IDs with stored checksums and text", () => {
     expect(new Set(snapshot.rules.map((r) => r.id)).size).toBe(snapshot.rules.length);
     for (const source of snapshot.sources) {
-      const bytes = readFileSync(`public${source.textPath}`);
+      const bytes = readFileSync(`private${source.textPath}`);
       expect(createHash("sha256").update(bytes).digest("hex")).toBe(source.sha256);
       expect(bytes.byteLength).toBe(source.byteLength);
       expect(source.url).not.toMatch(/\.pdf(?:$|\?)/i);

@@ -20,7 +20,7 @@ import {
 
 // The real supplied V2.2A file is bundled in the project, so these tests can
 // never be silently skipped: a missing file is a hard failure.
-const BUNDLED_PATH = resolve(__dirname, "../../../public/data/atlas-import-bundle.json");
+const BUNDLED_PATH = resolve(__dirname, "../../../private/data/atlas-import-bundle.json");
 const bytesBuf = readFileSync(BUNDLED_PATH);
 const realBytes = bytesBuf.buffer.slice(bytesBuf.byteOffset, bytesBuf.byteOffset + bytesBuf.byteLength);
 const realRaw = JSON.parse(bytesBuf.toString("utf8"));

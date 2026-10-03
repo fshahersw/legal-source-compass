@@ -1,6 +1,8 @@
+import { fetchBundleSnapshot } from "@/lib/private-data/client";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { decodeTopology, type GeoData } from "./geo";
 import { parseInsights, type Insights } from "./insights";
+import { deriveCourtLocationInsights, type CourtLocation } from "./courtLocations";
 
 type Status = "loading" | "ready" | "error";
 type CorpusState = { status: Status; error: string | null; geo: GeoData | null; insights: Insights | null; retry: () => void };
@@ -15,10 +17,11 @@ export function CorpusProvider({ children }: { children: ReactNode }) {
     let live = true;
     setState((s) => ({ ...s, status: "loading", error: null }));
     Promise.all([
-      fetch("/data/corpus/us-counties-albers-10m.json").then((r) => { if (!r.ok) throw new Error(`Map file: HTTP ${r.status}`); return r.json(); }),
-      fetch("/data/corpus/insights.json").then((r) => { if (!r.ok) throw new Error(`Insights file: HTTP ${r.status}`); return r.json(); }),
+      fetchBundleSnapshot("/data/corpus/us-counties-albers-10m.json").then((r) => { if (!r.ok) throw new Error(`Map file: HTTP ${r.status}`); return r.json(); }),
+      fetchBundleSnapshot("/data/corpus/insights.json").then((r) => { if (!r.ok) throw new Error(`Insights file: HTTP ${r.status}`); return r.json(); }),
+      fetchBundleSnapshot("/data/research/court-crosswalk.json").then((r) => { if (!r.ok) throw new Error(`Court locations: HTTP ${r.status}`); return r.json() as Promise<{ records: CourtLocation[] }>; }),
     ])
-      .then(([topo, ins]) => { if (live) setState({ status: "ready", error: null, geo: decodeTopology(topo), insights: parseInsights(ins) }); })
+      .then(([topo, ins, courts]) => { if (live) setState({ status: "ready", error: null, geo: decodeTopology(topo), insights: deriveCourtLocationInsights(parseInsights(ins), courts.records) }); })
       .catch((e: unknown) => { if (live) setState({ status: "error", error: e instanceof Error ? e.message : String(e), geo: null, insights: null }); });
     return () => { live = false; };
   }, [attempt]);

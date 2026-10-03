@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import { filterMatters, mdlForMatter, summarizeMatters, type CatalogMatter } from "./catalogMatters";
 import { filterRegistry, type RegistryV22Record } from "./registryV22";
 
-const rows = JSON.parse(readFileSync("public/data/catalog-matters.json", "utf8")) as CatalogMatter[];
-const map = JSON.parse(readFileSync("public/data/mdl-documents/master-dockets.json", "utf8")) as Record<string, string>;
+const rows = JSON.parse(readFileSync("private/data/catalog-matters.json", "utf8")) as CatalogMatter[];
+const map = JSON.parse(readFileSync("private/data/mdl-documents/master-dockets.json", "utf8")) as Record<string, string>;
 
 describe("case catalog (real uploaded data)", () => {
   it("has all rows and honest counts", () => {
@@ -24,7 +24,7 @@ describe("case catalog (real uploaded data)", () => {
 
 describe("registry V2.2 split", () => {
   it("keeps all 4,846 records once", () => {
-    const dir = "public/data/registry-v22";
+    const dir = "private/data/registry-v22";
     const all = readdirSync(dir).filter((f) => f !== "index.json").flatMap((f) => JSON.parse(readFileSync(`${dir}/${f}`, "utf8")) as RegistryV22Record[]);
     expect(all.length).toBe(4846);
     expect(new Set(all.map((r) => r.id)).size).toBe(4846);
@@ -35,7 +35,7 @@ describe("registry V2.2 split", () => {
 import { taskCounts, taskLabel } from "./registryV22";
 describe("registry task folders", () => {
   it("counts Texas sources per task from real data", () => {
-    const tx = JSON.parse(readFileSync("public/data/registry-v22/TX.json", "utf8")) as RegistryV22Record[];
+    const tx = JSON.parse(readFileSync("private/data/registry-v22/TX.json", "utf8")) as RegistryV22Record[];
     expect(tx.length).toBe(104);
     const c = taskCounts(tx);
     expect(c[0]).toEqual({ task: "courts-procedure", count: 70 });

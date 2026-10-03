@@ -1,3 +1,4 @@
+import { PrivateDataLink } from "@/components/atlas/PrivateDataLink";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { exportJson } from "@/lib/corpus/research";
@@ -132,13 +133,13 @@ export function SourceResearch({ data, state, update }: WorkbenchProps) {
                   </td>
                   <td className="whitespace-nowrap">{s.fetchedAt.slice(0, 10)}</td>
                   <td>
-                    <a
+                    <PrivateDataLink
                       className="text-primary underline"
                       href={`/data/research/raw/${s.file}`}
                       download
                     >
                       {s.file}
-                    </a>
+                    </PrivateDataLink>
                   </td>
                   <td>{fmt(s.bytes)}</td>
                 </tr>

@@ -1,3 +1,4 @@
+import { fetchBundleSnapshot } from "@/lib/private-data/client";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -45,7 +46,7 @@ export function StateResearch({ data, cases, state, update }: WorkbenchProps) {
     queryKey: ["research-geometry"],
     staleTime: Infinity,
     queryFn: async () => {
-      const response = await fetch("/data/corpus/us-counties-albers-10m.json");
+      const response = await fetchBundleSnapshot("/data/corpus/us-counties-albers-10m.json");
       if (!response.ok) throw new Error("Map geometry could not load.");
       return decodeTopology(await response.json());
     },

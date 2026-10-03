@@ -11,7 +11,7 @@ import {
 import { classifySource } from "./taxonomy";
 
 const parsed = parseBundle(
-  JSON.parse(readFileSync("public/data/atlas-import-bundle.json", "utf8")),
+  JSON.parse(readFileSync("private/data/atlas-import-bundle.json", "utf8")),
 );
 if (!parsed.ok) throw new Error("Bundled source import failed");
 const directory = parsed.bundle.sources.map((s) => ({
@@ -22,7 +22,7 @@ const directory = parsed.bundle.sources.map((s) => ({
   headings: valuesOf(s, "heading_category"),
   occurrences: s.occurrences,
 }));
-const report = JSON.parse(readFileSync("public/data/quality/bundled-audit.json", "utf8"));
+const report = JSON.parse(readFileSync("private/data/quality/bundled-audit.json", "utf8"));
 
 describe("reproducible quality measures", () => {
   it("reconciles runtime directory measures to original-file audit measures", () => {
@@ -40,7 +40,7 @@ describe("reproducible quality measures", () => {
     expect(directoryJurisdictionCounts(directory).get("California")).toBe(105);
   });
   it("reconciles the registry hierarchy and historical observations", () => {
-    const registry = parseRegistry(readFileSync("public/data/registry_v06_1.jsonl", "utf8"));
+    const registry = parseRegistry(readFileSync("private/data/registry_v06_1.jsonl", "utf8"));
     const { invalidLines, ...expected } = report.registry;
     expect(registry.invalidLines).toBe(invalidLines);
     expect(registryQuality(registry.entries)).toEqual(expected);
@@ -61,7 +61,7 @@ describe("reproducible quality measures", () => {
     expect(classifySource(["REGULATIONS & RULEMAKING"])).toEqual(["regulations"]);
   });
   it("reconciles dataset counts, category/state counts and the release partition", () => {
-    const db = JSON.parse(readFileSync("public/data/quality/database-audit.json", "utf8"));
+    const db = JSON.parse(readFileSync("private/data/quality/database-audit.json", "utf8"));
     expect(
       db.datasets.reduce((n: number, d: { actualRecords: number }) => n + d.actualRecords, 0),
     ).toBe(db.totals.records);

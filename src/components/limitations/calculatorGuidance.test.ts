@@ -8,7 +8,7 @@ import { guidedDateFields, unconfirmedClaimInput } from "./calculatorGuidance";
 import { LimitationsWorkbench } from "./LimitationsWorkbench";
 
 const json = (name: string) =>
-  JSON.parse(readFileSync(`public/data/limitations/${name}.json`, "utf8"));
+  JSON.parse(readFileSync(`private/data/limitations/${name}.json`, "utf8"));
 const snapshot: LimitationsSnapshot = {
   ...json("rules"),
   sources: json("sources").sources,
