@@ -113,3 +113,68 @@ test('eligibility is unchanged: a held row is never dedup-registered or download
  await assert.rejects(runTransfer(argv('cache'),{fetch:w.fetchImpl,pause:async()=>{}}),/SEALED_OR_UNAVAILABLE_PDF/);
  assert.equal(w.sourceCalls.length,0);
 });
+
+// ---- host guard (--allowed-hosts) ------------------------------------------------------------
+const OFFICIAL='https://www.njd.uscourts.gov/sites/njd/files/';
+function officialRow(n){
+ const record=sha('official'+n),u=OFFICIAL+'CaseMO'+n+'.pdf';
+ return{schema_version:'source-qualified-pdf-queue/1',provider:'official-court',native_document_id:u,native_document_identity_kind:'publisher_observed_pdf_locator_url',native_case_id:'3:16-md-02738',durable_url:u,download_url:u,
+  expected_sha1:null,expected_bytes:null,title:'Case Management Order '+n,filing_date:null,selected_source_record_sha256:record,eligible:true,
+  provider_flags:{sealing_related_locator_held:false,pdf_http_access_verified:false,pdf_content_verified:false},
+  origins:[{native_record_sha256:record,retrieved_at:'2026-10-03T16:00:00.000Z',native_case_id:'3:16-md-02738',source_response_sha256:sha('official page '+n)}]};
+}
+const GUARD=['--allowed-hosts=storage.courtlistener.com','--host-skip-reason=non_courtlistener_host'];
+function guardedWorld(pdfs){
+ const w=world({pdfs}),inner=w.fetchImpl,otherCalls=[];
+ w.otherCalls=otherCalls;
+ w.fetchImpl=async(target,init)=>{const u=String(target);if(!u.startsWith(SUPABASE)&&!u.startsWith('https://storage.courtlistener.com/'))otherCalls.push(u);return inner(target,init);};
+ return w;
+}
+
+test('the host guard skips rows aimed at hosts the runner does not own: never fetched, never failed, receipt reason non_courtlistener_host',async()=>{
+ const B=pdf('guard B'),w=guardedWorld({[url(1)]:B}),{dir,argv}=await setup([nativeRow(1,B),officialRow(1),officialRow(2)]);
+ const result=await runTransfer(argv('cache',GUARD),{fetch:w.fetchImpl,pause:async()=>{}});
+ const s=result.state;
+ assert.equal(result.stopped,false);assert.equal(s.complete,true);
+ assert.equal(s.eligible,3);assert.equal(s.held,0);assert.equal(s.selected,1);assert.equal(s.processed,1);assert.equal(s.failed,0);
+ assert.equal(s.skipped,2);assert.deepEqual(s.skipped_by_reason,{non_courtlistener_host:2});assert.deepEqual(s.skipped_hosts,{'www.njd.uscourts.gov':2});
+ assert.deepEqual(w.sourceCalls,[url(1)]);assert.deepEqual(w.otherCalls,[],'no request of any kind reaches an official court host');
+ const r=await receipts(dir,'cache'),skipped=r.filter(x=>x.state==='skipped');
+ assert.equal(skipped.length,2);
+ for(const x of skipped){assert.equal(x.reason,'non_courtlistener_host');assert.equal(x.host,'www.njd.uscourts.gov');assert.equal(x.provider,'official-court');assert.equal(x.queue_sha256.length,64);}
+ assert.equal(r.filter(x=>x.state==='failed').length,0);
+ assert.equal(r.some(x=>x.state==='cloud_verified'&&x.provider==='official-court'),false,'a skipped row is never reported as verified');
+ assert.equal(JSON.stringify(skipped).includes('download_url'),false);
+});
+
+test('resuming a guarded batch does not repeat skipped receipts or fetch anything',async()=>{
+ const B=pdf('guard resume'),w=guardedWorld({[url(1)]:B}),{dir,argv}=await setup([nativeRow(1,B),officialRow(3)]);
+ await runTransfer(argv('cache',GUARD),{fetch:w.fetchImpl,pause:async()=>{}});
+ const calls=w.sourceCalls.length,second=await runTransfer(argv('cache',GUARD),{fetch:w.fetchImpl,pause:async()=>{}});
+ assert.equal(second.state.selected,0);assert.equal(second.state.skipped,1);assert.equal(second.state.complete,true);
+ assert.equal(w.sourceCalls.length,calls);assert.deepEqual(w.otherCalls,[]);
+ assert.equal((await receipts(dir,'cache')).filter(x=>x.state==='skipped').length,1);
+});
+
+test('a batch made only of skipped rows completes with nothing transferred',async()=>{
+ const w=guardedWorld({}),{dir,argv}=await setup(Array.from({length:9},(_,i)=>officialRow(10+i)));
+ const result=await runTransfer(argv('cache',GUARD),{fetch:w.fetchImpl,pause:async()=>{}});
+ assert.equal(result.state.complete,true);assert.equal(result.state.processed,0);assert.equal(result.state.selected,0);assert.equal(result.state.skipped,9);
+ assert.equal(w.sourceCalls.length,0);assert.deepEqual(w.otherCalls,[]);assert.equal(result.state.new_objects+result.state.dedup_registered+result.state.cloud_verified,0);
+ assert.equal((await receipts(dir,'cache')).filter(x=>x.state==='skipped').length,9);
+});
+
+test('under the guard even a row whose host fails provider validation is skipped instead of aborting the whole batch; without the guard behavior is unchanged',async()=>{
+ const B=pdf('guard foreign'),foreign=nativeRow(2,B,{download_url:'https://evil.example/recap/x.pdf'}),w=guardedWorld({[url(1)]:B}),{argv}=await setup([nativeRow(1,B),foreign]);
+ const guarded=await runTransfer(argv('cache',GUARD),{fetch:w.fetchImpl,pause:async()=>{}});
+ assert.equal(guarded.state.skipped,1);assert.equal(guarded.state.cloud_verified+guarded.state.dedup_registered,1);assert.deepEqual(w.otherCalls,[]);
+ await assert.rejects(runTransfer(argv('unguarded'),{fetch:w.fetchImpl,pause:async()=>{}}),/PDF_HOST_NOT_ALLOWED/);
+});
+
+test('an empty allow-list is refused rather than silently skipping everything; the dry run reports the skipped count',async()=>{
+ const {argv}=await setup([officialRow(20)]);
+ await assert.rejects(runTransfer(argv('cache',['--allowed-hosts=']),{fetch:async()=>{throw Error('no network');},pause:async()=>{}}),/ALLOWED_HOSTS_INVALID/);
+ const lines=[],log=console.log;console.log=x=>lines.push(x);
+ try{await runTransfer(argv('dry',GUARD).filter(a=>a!=='--execute'),{fetch:async()=>{throw Error('no network');}});}finally{console.log=log;}
+ assert.deepEqual(JSON.parse(lines.at(-1)),{state:'verified_dry_run',queued:0,held:0,skippedHost:1,alreadyVerified:0,pending:0});
+});

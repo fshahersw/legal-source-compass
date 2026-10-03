@@ -6,6 +6,7 @@ import {Readable,Transform} from 'node:stream';
 import {pipeline} from 'node:stream/promises';
 import {pathToFileURL} from 'node:url';
 import {loadDedupIndex,dedupReceiptFields} from './pdf-dedup.mjs';
+import {hostAllowed,sourceHostOf} from './pdf-source-hosts.mjs';
 
 const PROJECT='xosqzzsnhxcyehcnirpa',BUCKET='corpus-originals';
 const sha=x=>createHash('sha256').update(x).digest('hex');
@@ -297,7 +298,14 @@ export async function runTransfer(argv=process.argv.slice(2),deps={}){
  const queuePath=path.resolve(String(args.queue)),queueBytes=await fs.readFile(queuePath);
  if(sha(queueBytes)!==args['queue-sha256'])throw Error('QUEUE_HASH_MISMATCH');
  const all=queueBytes.toString().trim().split('\n').map(x=>JSON.parse(x));
- const rows=all.filter(x=>x.eligible).map(validateQueueRow);
+ const eligibleRows=all.filter(x=>x.eligible);
+ // Host guard (--allowed-hosts=host1,host2): a row aimed at a host this runner does not own (e.g. official court sites with their own robots.txt
+ // Crawl-delay) is skipped BEFORE validation with receipt reason --host-skip-reason, and is never fetched. Unset = no guard (unchanged behavior).
+ const allowedHosts=typeof args['allowed-hosts']==='string'?args['allowed-hosts'].split(',').map(h=>h.trim().toLowerCase()).filter(Boolean):null;
+ if(allowedHosts&&!allowedHosts.length)throw Error('ALLOWED_HOSTS_INVALID');
+ const hostSkipReason=/^[a-z0-9_]{3,64}$/.test(String(args['host-skip-reason']??''))?args['host-skip-reason']:'non_allowed_host';
+ const hostSkipped=allowedHosts?eligibleRows.filter(row=>!hostAllowed(row,allowedHosts)):[];
+ const rows=(allowedHosts?eligibleRows.filter(row=>hostAllowed(row,allowedHosts)):eligibleRows).map(validateQueueRow);
  const root=path.resolve(String(args.cache)),receiptPath=path.join(root,'transfer-receipts.jsonl'),statusPath=path.join(root,'progress.json');
  await fs.mkdir(path.join(root,'staging'),{recursive:true});
  let existing=[];try{existing=(await fs.readFile(receiptPath,'utf8')).trim().split('\n').filter(Boolean).map(x=>JSON.parse(x));}catch(e){if(e.code!=='ENOENT')throw Error('RECEIPT_READ_FAILED');}
@@ -309,6 +317,7 @@ export async function runTransfer(argv=process.argv.slice(2),deps={}){
   const version=x.selected_source_record_sha256??[...(x.source_origins??[])].sort((a,b)=>b.retrieved_at.localeCompare(a.retrieved_at))[0]?.native_record_sha256;
   return (x.state==='cloud_verified'||x.state==='dedup_matched')&&x.project_id===PROJECT&&x.bucket===BUCKET&&/^[a-f0-9]{64}$/.test(x.sha256??'')&&x.storage_key==='seeger-weiss/pdf-sha256/'+x.sha256.slice(0,2)+'/'+x.sha256+'.pdf'&&Number.isSafeInteger(x.bytes)&&x.bytes>0&&version&&version===versionOf(row);
  }).map(x=>x.provider+'|'+x.native_document_id));
+ const alreadySkipped=new Set(existing.filter(x=>x.state==='skipped'&&x.reason===hostSkipReason).map(x=>x.provider+'|'+x.native_document_id));
  const maxFiles=Number(args['max-files']??1000),concurrency=Number(args.concurrency??8),maxBytes=Number(args['max-file-mb']??512)*1024**2;
  if(!Number.isSafeInteger(maxFiles)||maxFiles<1||!Number.isSafeInteger(concurrency)||concurrency<1||concurrency>12||!Number.isSafeInteger(maxBytes)||maxBytes<1||maxBytes>2*1024**3)throw Error('TRANSFER_BOUNDS_INVALID');
  const diskReserveBytes=Number(args['disk-reserve-gb']??20)*1024**3;
@@ -316,7 +325,7 @@ export async function runTransfer(argv=process.argv.slice(2),deps={}){
  const pending=rows.filter(x=>!done.has(x.provider+'|'+x.native_document_id)).slice(0,maxFiles);
  const sourceDelayMs=Number(args['source-delay-ms']??0),initialWaitMs=Number(args['initial-wait-ms']??0),workerDelayMs=Number(args['worker-delay-ms']??0);
  if(!Number.isSafeInteger(sourceDelayMs)||sourceDelayMs<0||!Number.isSafeInteger(initialWaitMs)||initialWaitMs<0||!Number.isSafeInteger(workerDelayMs)||workerDelayMs<0)throw Error('INVALID_SOURCE_PACING');
- if(!args.execute){console.log(JSON.stringify({state:'verified_dry_run',queued:rows.length,held:all.length-rows.length,alreadyVerified:done.size,pending:pending.length}));return{stopped:false,state:null};}
+ if(!args.execute){console.log(JSON.stringify({state:'verified_dry_run',queued:rows.length,held:all.length-eligibleRows.length,skippedHost:hostSkipped.length,alreadyVerified:done.size,pending:pending.length}));return{stopped:false,state:null};}
  const cfg=JSON.parse(await fs.readFile(String(args.credentials),'utf8'));
  if(cfg.EXTERNAL_SUPABASE_URL!=='https://'+PROJECT+'.supabase.co')throw Error('WRONG_PROJECT');
  const token=cfg.EXTERNAL_SUPABASE_KEY;if(typeof token!=='string')throw Error('SERVER_KEY_MISSING');
@@ -325,7 +334,7 @@ export async function runTransfer(argv=process.argv.slice(2),deps={}){
  const bucketResponse=await withBackoff(async()=>{const response=await fetchImpl(storage+'/bucket/'+BUCKET,{headers,signal:AbortSignal.timeout(30000),redirect:'error'});if(!response.ok){const error=Error('BUCKET_READ_FAILED');error.transient=isTransientHttpStatus(response.status);throw error;}return response;},{attempts:4,baseMs:2000,isRetryable:e=>e.transient===true||isTransientNetworkError(e)});
  const info=await bucketResponse.json();if(info.id!==BUCKET||info.public!==false)throw Error('PRIVATE_BUCKET_REQUIRED');
  let writeQueue=Promise.resolve(),statusQueue=Promise.resolve(),cursor=0,stopped=false;
- const state={schema_version:'pdf-cloud-backfill-progress/1',project_id:PROJECT,bucket:BUCKET,queue_sha256:sha(queueBytes),started_at:new Date().toISOString(),eligible:rows.length,held:all.length-rows.length,initially_verified:done.size,selected:pending.length,processed:0,cloud_verified:0,bytes_verified:0,
+ const state={schema_version:'pdf-cloud-backfill-progress/1',project_id:PROJECT,bucket:BUCKET,queue_sha256:sha(queueBytes),started_at:new Date().toISOString(),eligible:eligibleRows.length,held:all.length-eligibleRows.length,skipped:0,initially_verified:done.size,selected:pending.length,processed:0,cloud_verified:0,bytes_verified:0,
   new_objects:0,new_object_bytes:0,verified_existing:0,dedup_registered:0,dedup_by_basis:{},dedup_conflicts:0,
   failed:0,failed_retryable:0,failed_permanent:0,cloud_breaker_trips:0,source_breaker_trips:0,stop_reason:null,complete:false};
  const save=()=>{state.updated_at=new Date().toISOString();const body=JSON.stringify(state,null,2)+'\n';statusQueue=statusQueue.then(async()=>{await retryTransferFileOperation('progress_snapshot_write',()=>fs.writeFile(statusPath+'.part',body));await retryTransferFileOperation('progress_snapshot_replace',()=>fs.rename(statusPath+'.part',statusPath));});return statusQueue;};
@@ -355,6 +364,14 @@ export async function runTransfer(argv=process.argv.slice(2),deps={}){
  existing=[];
  const cloud=createCloudStore({storage,headers,fetchImpl,record,maxBytes,resumableLocations,breaker:cloudBreaker,pause});
  await save();
+ if(hostSkipped.length){
+  const hostCounts={};
+  for(const row of hostSkipped){
+   const host=sourceHostOf(row)??'(unparsable)';hostCounts[host]=(hostCounts[host]??0)+1;
+   if(!alreadySkipped.has(row.provider+'|'+row.native_document_id))await record({provider:row.provider,native_document_id:String(row.native_document_id).slice(0,500),native_case_id:row.native_case_id??null,queue_sha256:sha(queueBytes),selected_source_record_sha256:versionOf(row)??null,state:'skipped',reason:hostSkipReason,host});
+  }
+  state.skipped=hostSkipped.length;state.skipped_by_reason={[hostSkipReason]:hostSkipped.length};state.skipped_hosts=hostCounts;await save();
+ }
  // Pre-download de-duplication (see pdf-dedup.mjs): rows whose bytes are already stored and hash-verified are registered without a source request.
  // They are processed first (no pacing slot is consumed), then the rows that really need a download, in their original order.
  const storedThisRun=new Set();
@@ -432,7 +449,7 @@ export async function runTransfer(argv=process.argv.slice(2),deps={}){
   }
  }
  await Promise.all(Array.from({length:concurrency},worker));await writeQueue;state.complete=state.processed===pending.length&&!stopped;state.finished_at=new Date().toISOString();await save();
- console.log(JSON.stringify({state:state.complete?'selected_batch_finished':'stopped_with_receipts',cloudVerified:state.cloud_verified,newObjects:state.new_objects,dedupRegistered:state.dedup_registered,verifiedExisting:state.verified_existing,bytesVerified:state.bytes_verified,failed:state.failed,pendingRemaining:rows.length-done.size,stopReason:state.stop_reason}));
+ console.log(JSON.stringify({state:state.complete?'selected_batch_finished':'stopped_with_receipts',cloudVerified:state.cloud_verified,newObjects:state.new_objects,dedupRegistered:state.dedup_registered,verifiedExisting:state.verified_existing,skipped:state.skipped,bytesVerified:state.bytes_verified,failed:state.failed,pendingRemaining:rows.length-done.size,stopReason:state.stop_reason}));
  return{stopped,state};
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href)runTransfer().then(result=>{if(result?.stopped)process.exitCode=1;}).catch(async error=>{
