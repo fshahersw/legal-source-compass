@@ -8,7 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { listDatasets, queryDataset, type DatasetInfo } from "@/lib/external/catalog.functions";
-import { fileUrl, normalizeItem, resolveLink, recordDestination } from "@/lib/external/groups";
+import {
+  duplicateLookingIds,
+  fileUrl,
+  normalizeItem,
+  recordDestination,
+  resolveLink,
+  shortRecordId,
+} from "@/lib/external/groups";
 import {
   datasetDisplayName,
   datasetRecordGrain,
@@ -168,6 +175,8 @@ export function DatasetBrowser({
     placeholderData: keepPreviousData,
   });
   const items = useMemo(() => (query.data?.items ?? []).map((i) => normalizeItem(i)), [query.data]);
+  // Rows that look the same are distinct native records; show their ids rather than leave them indistinguishable.
+  const lookAlike = useMemo(() => duplicateLookingIds(items), [items]);
   const columns = useMemo(() => {
     if (info?.columns.length)
       return info.columns
@@ -187,6 +196,10 @@ export function DatasetBrowser({
   const d = query.data;
   const total = d?.total ?? null;
   const grain = datasetRecordGrain(dataset);
+  // Option counts in the dataset metadata describe the WHOLE dataset. Once a search or a filter narrows the result
+  // set (or the browser is embedded for one matter, court or judge) they would describe a different set than the
+  // rows shown, so they are hidden rather than shown as if they were scoped.
+  const scoped = q.trim() !== "" || Object.keys(filters).length > 0;
 
   return (
     <div>
@@ -235,7 +248,7 @@ export function DatasetBrowser({
             {f.options?.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
-                {o.count != null ? ` (${o.count.toLocaleString()})` : ""}
+                {!scoped && o.count != null ? ` (${o.count.toLocaleString()})` : ""}
               </option>
             ))}
           </select>
@@ -257,6 +270,14 @@ export function DatasetBrowser({
               </button>
             </Badge>
           ))}
+        {scoped && info?.filters.some((f) => f.options?.some((o) => o.count != null)) ? (
+          <span
+            className="text-[11px] text-muted-foreground"
+            title="The counts in the filter menus describe the whole dataset, so they are hidden while a search or filter is applied."
+          >
+            Filter counts hidden while narrowed
+          </span>
+        ) : null}
         <span className="ml-auto text-[12px] text-muted-foreground">
           {total != null
             ? `${total.toLocaleString()}${d?.capped ? "+" : ""} matching ${grain?.unit ?? "records"}`
@@ -304,6 +325,14 @@ export function DatasetBrowser({
                   </CorpusRecordLink>
                   {i.subtitle ? (
                     <div className="truncate text-[11px] text-muted-foreground">{i.subtitle}</div>
+                  ) : null}
+                  {lookAlike.has(i.id) ? (
+                    <div
+                      className="truncate font-mono text-[10px] text-muted-foreground"
+                      title={`A separate record that looks the same as another on this page. Record id ${i.id}`}
+                    >
+                      Record {shortRecordId(i.id)}
+                    </div>
                   ) : null}
                   {i.cells["reviewed_doc_type"] ? (
                     <Badge

@@ -2,6 +2,7 @@ import { ExternalLink, Lock } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import { externalHref } from "@/lib/external/href";
 import { cn } from "@/lib/utils";
 
 /** A titled block of a matter page. */
@@ -160,7 +161,7 @@ export function LinkOut({
 }) {
   return (
     <a
-      href={href}
+      href={externalHref(href)}
       target="_blank"
       rel="noreferrer noopener"
       className={cn(

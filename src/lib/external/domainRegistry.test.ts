@@ -69,6 +69,26 @@ describe("domain registry", () => {
     expect(datasetDisplayName("cl_master_entries")).toBe("Native master-docket entry metadata");
   });
 
+  it("shows the label the corpus publishes, and keeps the fallback names truthful about the rows", () => {
+    // Published label wins over the fallback table.
+    expect(datasetDisplayName("mdls", "JPML multidistrict litigation")).toBe(
+      "JPML multidistrict litigation",
+    );
+    expect(datasetDisplayName("mdl_appearances", " MDL counsel appearances ")).toBe(
+      "MDL counsel appearances",
+    );
+    // A stored label that is just the raw id falls back.
+    expect(datasetDisplayName("mdl_appearances", "mdl_appearances")).toBe(
+      "MDL counsel appearances",
+    );
+    // The rows of these datasets are counsel appearances, consolidated profiles and keyword-scanned entries.
+    expect(datasetDisplayName("mdl_appearances")).toBe("MDL counsel appearances");
+    expect(datasetDisplayName("judge_entities")).toBe("Consolidated judge profiles");
+    expect(datasetDisplayName("expert_rulings")).toBe(
+      "Expert-admissibility docket entries (keyword scan)",
+    );
+  });
+
   it("keeps every unknown dataset reachable with readable fallbacks", () => {
     expect(datasetDisplayName("new_legal_rows", null)).toBe("New Legal Rows");
     expect(datasetPurpose("new_legal_rows")).toBe("Reference");

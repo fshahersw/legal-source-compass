@@ -2,7 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { ilikeTerm, restGet, rpcPost } from "./rest.server";
 import { PROVISION_DATASETS } from "./lawTree";
+import { cleanText, decodeEntities } from "./entities";
+import { externalHref } from "./href";
 import { RECORD_ID_MAX_LENGTH } from "./recordIdentity";
+import { stateQueryValue } from "./stateMatch";
 
 const DIRECTORY_DATASET = "counties";
 const ROW_CAP = 5000;
@@ -26,8 +29,11 @@ export type StateCountyData = {
 export const getStateCountyRecords = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ stateName: z.string().min(2).max(40) }).parse(d))
   .handler(async ({ data }): Promise<StateCountyData> => {
+    // The state column holds the name in some datasets and the USPS code in others; ask for both spellings.
+    const stateValue = stateQueryValue(data.stateName);
+    if (!stateValue) return { counts: {}, records: [], truncated: false, directoryCounties: 0 };
     const dir = await restGet<{ county_geoids: string[] }[]>(
-      `corpus_records?select=county_geoids&dataset=eq.${DIRECTORY_DATASET}&state=eq.${encodeURIComponent(data.stateName)}&limit=1000`,
+      `corpus_records?select=county_geoids&dataset=eq.${DIRECTORY_DATASET}&state=${stateValue}&limit=1000`,
     );
     const geoids = [...new Set(dir.rows.flatMap((r) => r.county_geoids ?? []))].filter((g) =>
       /^\d{5}$/.test(g),
@@ -76,7 +82,12 @@ export const listJudges = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     let p = `corpus_records?select=id,title,state,source_url,role:detail->>role,system:detail->>system,courts:detail->courts,mdl_total:detail->mdls->total&dataset=eq.judges&order=title.asc`;
     if (data.q.trim()) p += `&title=ilike.${ilikeTerm(data.q)}`;
-    if (data.state) p += `&state=eq.${encodeURIComponent(data.state)}`;
+    if (data.state) {
+      // Name and USPS code are both stored; a value that is not a state (e.g. "US") matches nothing.
+      const stateValue = stateQueryValue(data.state);
+      if (!stateValue) return { rows: [] as JudgeRow[], total: 0, pageSize: PAGE };
+      p += `&state=${stateValue}`;
+    }
     const r = await restGet<JudgeRow[]>(p, {
       count: true,
       range: [data.offset, data.offset + PAGE - 1],
@@ -105,8 +116,45 @@ export const listMdls = createServerFn({ method: "GET" })
     return { rows: r.rows, total: r.total, pageSize: PAGE };
   });
 
+const LAW_OUTLINE_HELD_REASON =
+  "The categorized law catalog and outline have not passed hosted publication checks.";
+let lawOutlineGate: { at: number; available: boolean } | null = null;
+
+/**
+ * Whether the categorized law outline is published. This is the condition the corpus's own `corpus_law_outline`
+ * RPC applies (corpus_context['law_outline'].ready AND corpus_datasets['open_us_law'].ready). The collection and
+ * node views and `corpus_law_provision_rows` do not check it, so every outline read below checks it first. Fails
+ * closed: any error reads as "not published".
+ */
+async function lawOutlineAvailable(): Promise<boolean> {
+  if (lawOutlineGate && Date.now() - lawOutlineGate.at < 60_000) return lawOutlineGate.available;
+  let available = false;
+  try {
+    const [ctx, ds] = await Promise.all([
+      restGet<{ ready: string | null }[]>(
+        "corpus_context?select=ready:data->>ready&key=eq.law_outline&limit=1",
+      ),
+      restGet<{ ready: boolean }[]>("corpus_datasets?select=ready&id=eq.open_us_law&limit=1"),
+    ]);
+    available = ctx.rows[0]?.ready === "true" && ds.rows[0]?.ready === true;
+  } catch {
+    available = false;
+  }
+  lawOutlineGate = { at: Date.now(), available };
+  return available;
+}
+
+export type LawOutlineStatus = { available: boolean; reason: string | null };
+export const getLawOutlineStatus = createServerFn({ method: "GET" }).handler(
+  async (): Promise<LawOutlineStatus> => {
+    const available = await lawOutlineAvailable();
+    return { available, reason: available ? null : LAW_OUTLINE_HELD_REASON };
+  },
+);
+
 export type LawCollection = { state: string; kind: string; provisions: number; headings: number };
 export const listLawCollections = createServerFn({ method: "GET" }).handler(async () => {
+  if (!(await lawOutlineAvailable())) return [] as LawCollection[];
   const r = await restGet<LawCollection[]>(
     `corpus_law_collections?select=state,kind,provisions,headings&order=state.asc,kind.asc&limit=1000`,
   );
@@ -125,6 +173,7 @@ export const listLawNodes = createServerFn({ method: "GET" })
       .parse(d),
   )
   .handler(async ({ data }) => {
+    if (!(await lawOutlineAvailable())) return [] as LawNode[];
     const r = await restGet<LawNode[]>(
       `corpus_law_nodes?select=id,label,total,has_children&state=eq.${encodeURIComponent(data.state)}&kind=eq.${encodeURIComponent(data.kind)}&parent=eq.${data.parent}&order=position.asc&limit=500`,
     );
@@ -149,12 +198,17 @@ export const listLawProvisions = createServerFn({ method: "GET" })
       .parse(d),
   )
   .handler(async ({ data }) => {
+    if (!(await lawOutlineAvailable())) return [] as LawProvisionRow[];
     const rows = await rpcPost<LawProvisionRow[]>("corpus_law_provision_rows", {
       p_node: data.node,
       p_offset: data.offset,
       p_limit: data.limit,
     });
-    return rows ?? [];
+    return (rows ?? []).map((r) => ({
+      ...r,
+      title: r.title === null ? null : cleanText(r.title),
+      citation: r.citation === null ? null : cleanText(r.citation),
+    }));
   });
 
 export type LawProvision = {
@@ -218,9 +272,13 @@ type ProvisionDetail = {
   source_note_as_printed?: unknown;
 };
 
-const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
+/** One-line display value: entities decoded and whitespace collapsed; the stored value is not changed. */
+const str = (v: unknown): string | null =>
+  typeof v === "string" && cleanText(v) ? cleanText(v) : null;
 const strArr = (v: unknown): string[] | null =>
-  Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && !!x.trim()) : null;
+  Array.isArray(v)
+    ? v.filter((x): x is string => typeof x === "string" && !!x.trim()).map(cleanText)
+    : null;
 
 /** One provision: stored text and the publisher's own http(s) link. Internal file paths are not exposed. */
 export const getLawProvision = createServerFn({ method: "GET" })
@@ -255,7 +313,7 @@ export const getLawProvision = createServerFn({ method: "GET" })
     const md = d.metadata ?? {};
     const src =
       typeof row.source_url === "string" && /^https?:\/\//i.test(row.source_url)
-        ? row.source_url
+        ? externalHref(row.source_url)
         : null;
     const t = d.temporal ?? {};
     const frame =
@@ -284,14 +342,14 @@ export const getLawProvision = createServerFn({ method: "GET" })
         typeof publication.rows[0]?.ready === "boolean" ? publication.rows[0].ready : null,
       id: row.id,
       dataset: row.dataset,
-      title: row.title ?? d.title ?? null,
+      title: str(row.title) ?? str(d.title),
       state: row.state ?? d.state ?? null,
       kind: d.kind ?? null,
-      citation: md.citation ?? str(d.citation),
+      citation: str(md.citation) ?? str(d.citation),
       status: md.status ?? null,
       quality: d.quality ?? null,
       sourceUrl: src,
-      text: row.text && row.text.trim() ? row.text : null,
+      text: row.text && row.text.trim() ? decodeEntities(row.text) : null,
       file: md.file ?? null,
       frame,
       dates,
@@ -313,9 +371,12 @@ export const getStateRecordCounts = createServerFn({ method: "GET" })
     for (let i = 0; i < data.states.length; i += CHUNK) {
       const part = await Promise.all(
         data.states.slice(i, i + CHUNK).map(async (state): Promise<StateRecordCount> => {
+          // Both stored spellings (name and USPS code) count; "US" is a country, so it has no state count.
+          const stateValue = stateQueryValue(state);
+          if (!stateValue) return { state, total: null };
           try {
             const r = await restGet<unknown[]>(
-              `corpus_records?select=id&state=eq.${encodeURIComponent(state)}&limit=1`,
+              `corpus_records?select=id&state=${stateValue}&limit=1`,
               { count: true },
             );
             return { state, total: r.total ?? null };

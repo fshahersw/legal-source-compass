@@ -57,7 +57,9 @@ describe("visible source-qualified record facts", () => {
       ],
     };
     const original = JSON.stringify(raw);
-    expect(buildEntityView(raw).facts.map(([label, value]) => [label, displayValue(value)])).toEqual([
+    expect(
+      buildEntityView(raw).facts.map(([label, value]) => [label, displayValue(value)]),
+    ).toEqual([
       ["FDA review code", "Not recorded"],
       ["FDA classification reason", "Not recorded"],
       ["Source count", "0"],
@@ -160,5 +162,30 @@ describe("publisher section citation notes", () => {
     expect(buildEntityView(raw).links).toEqual([]);
     expect(JSON.stringify(raw)).toBe(original);
     expect(buildEntityView({ section_source_notes: [] }).sections).toEqual([]);
+  });
+});
+
+describe("display-time clean-up in record pages", () => {
+  it("decodes entities in titles, facts and text and encodes raw spaces in link hrefs", () => {
+    const view = buildEntityView({
+      id: "disc-1",
+      title: "Financial disclosure &amp; investments",
+      text: "Part 21 &#8212; Protection of privacy &lt;reserved&gt;",
+      source_url: "https://www.uscourts.gov/files/Smith, John 2024.pdf",
+      facts: [["Filer", "Smith &amp; Jones"]],
+      links: [{ url: "https://example.test/a b.pdf", label: "Copy" }],
+    });
+    expect(view.title).toBe("Financial disclosure & investments");
+    expect(view.text).toBe("Part 21 — Protection of privacy <reserved>");
+    expect(view.facts).toContainEqual(["Filer", "Smith & Jones"]);
+    expect(view.links).toEqual(
+      expect.arrayContaining([
+        { url: "https://example.test/a%20b.pdf", label: "Copy" },
+        {
+          url: "https://www.uscourts.gov/files/Smith,%20John%202024.pdf",
+          label: "Original source",
+        },
+      ]),
+    );
   });
 });

@@ -1,4 +1,6 @@
 /** Pure helpers for the connected corpus: section grouping, item normalisation and link resolution. */
+import { cleanText } from "./entities";
+import { externalHref } from "./href";
 import { isProvisionDataset } from "./lawTree";
 import { RECORD_ID_MAX_LENGTH, RECORD_TOKEN_MAX_ENCODED_LENGTH } from "./recordIdentity";
 
@@ -7,6 +9,9 @@ export function recordDestination(dataset: string, id: string) {
   if (dataset === "court_spine") return { kind: "court" as const, id };
   if (dataset === "judges") return { kind: "judge" as const, id };
   if (dataset === "mdls") return { kind: "mdl" as const, id: id.replace(/^mdl:/, "") };
+  // A matter-registry record is the same MDL matter: open the matter page, not the generic record view.
+  if (dataset === "sw_matters_v1" && /^sw-matter:\d{1,6}$/.test(id))
+    return { kind: "mdl" as const, id: id.slice("sw-matter:".length) };
   if (isProvisionDataset(dataset)) return { kind: "provision" as const, dataset, id };
   return { kind: "record" as const, dataset, id };
 }
@@ -27,7 +32,7 @@ export const SECTIONS: { id: SectionId; label: string; blurb: string }[] = [
   {
     id: "matters",
     label: "Matters",
-    blurb: "MDLs, dockets, cases, counsel, settlements, verdicts and expert rulings.",
+    blurb: "MDLs, dockets, cases, counsel, settlements, verdicts and expert-admissibility entries.",
   },
   {
     id: "law",
@@ -165,7 +170,8 @@ export type NormItem = {
 
 function scalar(v: unknown): string | null {
   if (v == null || v === "") return null;
-  if (typeof v === "string") return v.replace(/\s+/g, " ").trim() || null;
+  // Entities are decoded and whitespace collapsed at display time; the stored value is never rewritten.
+  if (typeof v === "string") return cleanText(v) || null;
   if (typeof v === "number" || typeof v === "boolean") return String(v);
   if (Array.isArray(v) && v.every((x) => typeof x === "string" || typeof x === "number"))
     return v.length ? v.join("; ") : null;
@@ -236,6 +242,29 @@ export function normalizeItem(
   };
 }
 
+/**
+ * Ids of listing rows that look identical to another row on the same page (same title, subtitle, cells and badges).
+ * They are distinct native records (for example one attorney's separate appearances) and are never merged; the
+ * listing shows their record ids so they can be told apart.
+ */
+export function duplicateLookingIds(items: readonly NormItem[]): Set<string> {
+  const byLook = new Map<string, string[]>();
+  for (const i of items) {
+    const look = JSON.stringify([i.title, i.subtitle, Object.entries(i.cells).sort(), i.badges]);
+    byLook.set(look, [...(byLook.get(look) ?? []), i.id]);
+  }
+  const out = new Set<string>();
+  for (const ids of byLook.values()) if (ids.length > 1) for (const id of ids) out.add(id);
+  return out;
+}
+
+/** A short, recognisable form of a native record id for display ("004171ce…", "firm:3f24b0b7635a81a8"). */
+export function shortRecordId(id: string): string {
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id))
+    return `${id.slice(0, 8)}…`;
+  return id.length > 28 ? `${id.slice(0, 26)}…` : id;
+}
+
 export type ResolvedLink =
   | { kind: "external"; href: string }
   | { kind: "file"; href: string }
@@ -248,7 +277,8 @@ export type ResolvedLink =
 
 /** Map a corpus link to where it lives in this app. `aliases` maps alias -> dataset id. */
 export function resolveLink(url: string, aliases: Record<string, string>): ResolvedLink {
-  if (/^https?:\/\//i.test(url)) return { kind: "external", href: url };
+  // The stored URL may contain raw spaces; only the href is encoded, the stored value stays as provenance.
+  if (/^https?:\/\//i.test(url)) return { kind: "external", href: externalHref(url) };
   if (url.startsWith("/")) return { kind: "file", href: fileUrl(url) };
   if (url.startsWith("#")) {
     // Citation detail emits this native ID for an exact saved-law match.

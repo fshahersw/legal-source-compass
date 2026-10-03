@@ -5,11 +5,31 @@ import {
   createRoute,
   createRouter,
 } from "@tanstack/react-router";
-import { normalizeItem, resolveLink, sectionOf, datasetLabel, recordDestination } from "./groups";
+import {
+  datasetLabel,
+  duplicateLookingIds,
+  normalizeItem,
+  recordDestination,
+  resolveLink,
+  sectionOf,
+  shortRecordId,
+} from "./groups";
 
 describe("permanent record destinations", () => {
   it("preserves exact collection identity and native IDs", () => {
     expect(recordDestination("mdls", "mdl:2873")).toEqual({ kind: "mdl", id: "2873" });
+    // The matter registry's MDL record opens the matter page; its docket rows keep the generic record view.
+    expect(recordDestination("sw_matters_v1", "sw-matter:3140")).toEqual({ kind: "mdl", id: "3140" });
+    expect(recordDestination("sw_matters_v1", "sw-matter:oops")).toEqual({
+      kind: "record",
+      dataset: "sw_matters_v1",
+      id: "sw-matter:oops",
+    });
+    expect(recordDestination("sw_matter_dockets_v1", "sw-md:3140:flnd:3:2025-md-03140")).toEqual({
+      kind: "record",
+      dataset: "sw_matter_dockets_v1",
+      id: "sw-md:3140:flnd:3:2025-md-03140",
+    });
     expect(recordDestination("mdl_docket_activity", "mdl:2873")).toEqual({
       kind: "record",
       dataset: "mdl_docket_activity",
@@ -191,5 +211,49 @@ describe("resolveLink", () => {
       href: "https://x.gov/a?b=1#c",
     });
     expect(resolveLink("#unknown", aliases)).toEqual({ kind: "unmapped", raw: "#unknown" });
+  });
+});
+
+describe("display-time clean-up of stored strings", () => {
+  it("decodes entities and collapses whitespace in titles and cells, leaving the input untouched", () => {
+    const raw = {
+      id: "ecfr:21:74",
+      title: "  Part 74 &#8212;  Listing of color additives &amp;   exemptions \n",
+      cells: { heading: "&lt;Reserved&gt;", note: "AT&amp;T" },
+    };
+    const item = normalizeItem(raw);
+    expect(item.title).toBe("Part 74 — Listing of color additives & exemptions");
+    expect(item.cells).toEqual({ heading: "<Reserved>", note: "AT&T" });
+    expect(raw.title).toContain("&#8212;");
+  });
+
+  it("encodes raw spaces in an external href without altering the stored url", () => {
+    const stored = "https://www.uscourts.gov/files/Smith, John 2024.pdf";
+    expect(resolveLink(stored, {})).toEqual({
+      kind: "external",
+      href: "https://www.uscourts.gov/files/Smith,%20John%202024.pdf",
+    });
+    expect(stored).toContain(" ");
+  });
+
+  it("flags rows that look identical on a page so they can be told apart by record id", () => {
+    const row = (id: string, cells: Record<string, string>) =>
+      normalizeItem({
+        id,
+        title: "David R Buchanan",
+        subtitle: "Seeger Weiss",
+        cells,
+        badges: ["MDL 2873"],
+      });
+    const items = [
+      row("a1", { mdl: "2873", role: "Attorney to be noticed" }),
+      row("a2", { mdl: "2873", role: "Attorney to be noticed" }),
+      row("a3", { mdl: "2873", role: "Lead attorney" }),
+    ];
+    expect([...duplicateLookingIds(items)].sort()).toEqual(["a1", "a2"]);
+    expect(duplicateLookingIds([])).toEqual(new Set());
+    expect(shortRecordId("004171ce-e2c1-5d3c-8371-54d9e04b721a")).toBe("004171ce…");
+    expect(shortRecordId("firm:3f24b0b7635a81a8")).toBe("firm:3f24b0b7635a81a8");
+    expect(shortRecordId("x".repeat(40))).toBe(`${"x".repeat(26)}…`);
   });
 });

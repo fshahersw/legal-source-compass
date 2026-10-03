@@ -7,7 +7,7 @@ export const Route = createFileRoute("/matters/")({
   head: () =>
     pageHead(
       "Matters",
-      "MDLs, dockets, case inventories, counsel, settlements, verdicts and expert rulings.",
+      "MDLs, dockets, case inventories, counsel, settlements, verdicts and expert-admissibility docket entries.",
     ),
   component: MattersPage,
 });

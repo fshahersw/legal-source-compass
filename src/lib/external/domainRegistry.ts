@@ -58,9 +58,9 @@ const LABELS: Record<string, string> = {
   judges: "Judge directory",
   judge_enrichment: "Judge profiles",
   judge_disclosures: "Financial disclosures",
-  judge_entities: "Judge relationships",
+  judge_entities: "Consolidated judge profiles",
   judge_portraits: "Judge portraits",
-  mdl_appearances: "Judge MDL appearances",
+  mdl_appearances: "MDL counsel appearances",
   mdls: "MDL directory",
   mdl_docket_activity: "Docket activity",
   mdl_docket_documents: "Docket documents",
@@ -69,7 +69,7 @@ const LABELS: Record<string, string> = {
   mdl_crosswalk: "Matter crosswalk",
   settlements: "Settlements",
   verdict_reports: "Reported verdicts",
-  expert_rulings: "Expert rulings",
+  expert_rulings: "Expert-admissibility docket entries (keyword scan)",
   state_proceedings: "State proceedings",
   counsel_directory: "Counsel directory",
   open_us_law: "U.S. law collection",
@@ -111,15 +111,23 @@ const LABELS: Record<string, string> = {
 
 const DESCRIPTIONS: Partial<Record<SectionId, string>> = {
   courts: "Court profiles, seals, statistics, forms, rules, and documents.",
-  judges: "Judicial profiles, disclosures, relationships, portraits, and matter appearances.",
-  matters: "MDLs, dockets, related cases, counsel, settlements, verdicts, and experts.",
+  judges: "Judicial profiles, consolidated profile records, financial disclosures, and portraits.",
+  matters:
+    "MDLs, dockets, related cases, counsel and counsel appearances, settlements, verdicts, and expert-admissibility docket entries.",
   law: "Statutes, regulations, public laws, notices, limitation periods, and citations.",
   safety: "FDA and CPSC recalls, enforcement, science, and injury records.",
   sources: "Source directories, captured pages, documents, coverage, and provenance.",
   other: "Additional imported corpus records that do not yet have a dedicated domain.",
 };
 
+/**
+ * The label the corpus publishes for a dataset (`corpus_datasets.label`) is the source of truth and wins whenever the
+ * caller has it. The table above is only the fallback for call sites that do not have the stored label and for a
+ * stored label that is just the raw id, so a corrected label in the database never needs a code change.
+ */
 export function datasetDisplayName(id: string, storedLabel?: string | null) {
+  const stored = storedLabel?.trim();
+  if (stored && stored !== id) return stored;
   return LABELS[id] ?? datasetLabel(id, storedLabel);
 }
 

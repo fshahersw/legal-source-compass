@@ -6,6 +6,7 @@ import { pageHead } from "@/lib/corpus/head";
 import { useStateCounty } from "./places.$state";
 import { CountyProfile } from "@/components/corpus/LinkedPanels";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
+import { externalHref } from "@/lib/external/href";
 
 export const Route = createFileRoute("/places/$state/$county")({
   head: ({ params }) => pageHead(`County ${params.county}`, `County detail within ${stateByUsps.get(params.state.toUpperCase())?.name ?? params.state}.`),
@@ -40,7 +41,7 @@ function CountyDetail() {
               <li key={r.id} className="flex items-baseline gap-3 px-2 py-1.5">
                 <span className="w-32 shrink-0 truncate text-[11px] text-muted-foreground">{r.category ?? r.dataset}</span>
                 <span className="min-w-0 flex-1 truncate">{r.title || r.id}</span>
-                {r.source_url ? <a href={r.source_url} target="_blank" rel="noreferrer" className="max-w-[40%] truncate font-mono text-[11px] underline">{r.source_url}</a> : null}
+                {r.source_url ? <a href={externalHref(r.source_url)} target="_blank" rel="noreferrer" className="max-w-[40%] truncate font-mono text-[11px] underline">{r.source_url}</a> : null}
               </li>
             ))}
             {rows.length === 0 ? <li className="px-2 py-1.5 text-muted-foreground">No county-tagged records.</li> : null}
