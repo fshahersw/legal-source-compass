@@ -109,17 +109,17 @@ Total edges 1,543,885; target present 1,474,148; **dangling 69,737** (the 64,002
 
 Action for the owner (mdl-members; not run by this agent): the bounded `corpus-native-target-presence/2` refresh (`database/contracts/refresh-native-target-presence-v2-20261002.sql`) would flip **1,640** stale `target_present=false` flags to true (68,097 dangling remain). The rest are intentional gaps of a scoped snapshot; the UI should show them as "not in the saved snapshot" rather than as broken links.
 
-## 6. Awaiting approval (all within the cost guard)
+## 6. Decisions on the round-2 proposals (coordinator review, applied in round 3; see `data-quality-round3-2026-10-03.md`)
 
-| Proposal | Rows | Est. cost |
-|---|---|---|
-| Apply the `corpus_query` relevance proposal (function replacement, no rows) and the client scoring change | 0 | none; needs review + EXPLAIN |
-| Remove the unparseable parsed year (not in 1750-2026) from subtitle + "Year as parsed" fact of citation rows | 64 | < 1 MB |
-| Remove the "Court as parsed" fact when the court id is not a CourtListener court (`vaccappomattox` 460, `supctdc` 10) | 470 | ~3 MB |
-| Distinguishing titles for `mdl_docket_documents` (description + entry) | 5,016 | ~25 MB |
-| Docket number + court in `cl_master_entries` titles | 23,919 | ~120 MB |
-| `(court_id)` on ambiguous `cl_docket_metadata` titles | 30,453 | ~150 MB |
-| Facet alternate-abbreviation mapping (`Fed. Reg.`/`FR`, `Fed. Appx.`/`F. App'x` ...) | 1,353 | ~7 MB |
+| Proposal | Rows proposed | Decision | Round 3 result |
+|---|---|---|---|
+| Apply the `corpus_query` relevance proposal (function replacement, no rows) and the client scoring change | 0 | **REJECTED** (benchmark: `2885` 266 to 676 ms, `court` 3.0 to 5.0 s); routed to ui-integration as client-side honorific stripping, judge boost and targeted entity-dataset passes, no database change | not applied |
+| Remove the unparseable parsed year (not in 1750-2026) from subtitle + "Year as parsed" fact of citation rows | 64 | approved | applied: 66 rows matched the stated rule at apply time |
+| Remove the "Court as parsed" fact when the court id is not a CourtListener court (`vaccappomattox` 460, `supctdc` 10) | 470 | approved | applied: 470 |
+| Distinguishing titles for `mdl_docket_documents` (description + entry) | 5,016 | approved (original docket label kept as `docket_label`) | applied: 5,016 |
+| Docket number + court in `cl_master_entries` titles | 23,919 | approved | applied: 23,919 |
+| `(court_id)` on ambiguous `cl_docket_metadata` titles | 30,453 | approved (shared-title rows only) | applied: 30,453 |
+| Facet alternate-abbreviation mapping (`Fed. Reg.`/`FR`, `Fed. Appx.`/`F. App'x` ...) | 1,353 | approved (canonical form from reporters-db, originals in the before-images) | applied: 1,332 (21 not provable by reporters-db were skipped) |
 
 Year proposal shape (not run): for `citation_index` rows whose `detail.facts` entry `Year as parsed from the text` is not a four-digit number in 1750-2026, drop that fact and remove the trailing ` · <year>` from `item.subtitle` / `detail.subtitle`; before-image into `cleanup_decisions`.
 

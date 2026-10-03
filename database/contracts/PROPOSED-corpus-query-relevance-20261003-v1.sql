@@ -1,5 +1,12 @@
--- PROPOSAL ONLY - NOT APPLIED.  corpus-query-relevance/2026-10-03.r2.1 (data-quality agent, work item B)
--- For review by the orchestrator / ui-integration / whoever owns the corpus_query RPC.
+-- REJECTED BY THE COORDINATOR (round-2 review, 2026-10-03) - NOT APPLIED AND NOT TO BE APPLIED.  corpus-query-relevance/2026-10-03.r2.1 (data-quality agent, work item B)
+-- Decision: benchmarked as a temporary function with exactly this body: '2885' 266 ms -> 676 ms, 'court' 3.0 s -> 5.0 s - too costly for every search.
+-- Routed to ui-integration as a client-side change (honorific stripping, judge boost, targeted entity-dataset passes) with no database change.
+-- Round 3 supplies the data side of the judge boost: mdls.item.judge_profile_id / judge_cl_person_id and filters.cl_person_id now exist for 172 / 143 of the 176 MDLs
+-- (see mdls-judge-native-links-r3-20261003-v1.sql); the comment below that says "176 ids" for mdls.filters.cl_person_id was wrong at the time (17), it is 143 now.
+-- Kept only as the record of what was measured and proposed.
+--
+-- (original header follows)
+-- PROPOSAL ONLY - NOT APPLIED.  For review by the orchestrator / ui-integration / whoever owns the corpus_query RPC.
 --
 -- WHAT THE MEASUREMENTS SHOW (src/lib/external/catalog.reads.server.ts calls corpus_query with p_sort = NULL, p_limit = 500):
 --   * With p_sort NULL the RPC orders matches by (ordinal, id) only. There is no relevance signal in the database: the 500 "candidates"
