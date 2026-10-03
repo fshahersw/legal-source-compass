@@ -1,0 +1,78 @@
+// Official transferee-court MDL pages for Seeger Weiss matters (discovered 2026-10-03; see _work/agents/official-mdl/PROGRESS.md).
+// `case_number` is the case number AS PRINTED on the court's page: `literal` must be found verbatim in the captured page (checked at queue-build time).
+// A matter with `pages: []` has no official MDL page that could be located; the reason is recorded in `note` and in the progress log, never guessed around.
+export const MATTERS = {
+  '2738': {
+    name: 'In re Johnson & Johnson Talcum Powder Products Marketing, Sales Practices and Products Liability Litigation', court_id: 'njd', host: 'www.njd.uscourts.gov', tier: 1,
+    case_number: { literal: '3:16-md-02738', page_id: 'njd-2738-main', note: 'printed in "Log into PACER for Master Docket 3:16-md-02738"' },
+    pages: [
+      { id: 'njd-2738-main', role: 'mdl_page', family: 'njd-body', url: 'https://www.njd.uscourts.gov/johnson-johnson-talcum-powder-litigation' },
+      { id: 'njd-2738-orders', role: 'orders_and_opinions', family: 'njd-body', url: 'https://www.njd.uscourts.gov/j-j-talcum-powder-orders' },
+      { id: 'njd-2738-panel-orders', role: 'panel_orders', family: 'njd-body', url: 'https://www.njd.uscourts.gov/j-j-talcum-powder-panel-orders' },
+      { id: 'njd-2738-scheduling-orders', role: 'scheduling_orders', family: 'njd-body', url: 'https://www.njd.uscourts.gov/j-j-talcum-upcoming-court-proceedings-scheduling-orders' },
+    ],
+    index_pages: ['njd-mdl-cases'],
+  },
+  '3060': {
+    name: 'In re Hair Relaxer Marketing, Sales Practices, and Products Liability Litigation', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 1,
+    case_number: { literal: '1:23-cv-00818', page_id: 'ilnd-3060-mdl', note: 'the court states "Orders are also entered in the lead case docket, 23-cv-00818" and its Member Cases table prints 1:23-cv-00818' },
+    pages: [{ id: 'ilnd-3060-mdl', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?91eSFtoI+ycFmA6482wQKA==' }],
+    index_pages: ['ilnd-mdl-index'],
+  },
+  '3114': {
+    name: 'In re AT&T Inc. Customer Data Security Breach Litigation', court_id: 'txnd', host: 'www.txnd.uscourts.gov', tier: 1,
+    case_number: { literal: '3:24-md-03114-D', page_id: 'txnd-3114-mdl', note: 'printed under the caption and in the page title "MDL 3:24-md-03114-D"' },
+    pages: [{ id: 'txnd-3114-mdl', role: 'mdl_page', family: 'txnd-docket-table', url: 'https://www.txnd.uscourts.gov/mdl-324-md-03114' }],
+    index_pages: [],
+  },
+  '3163': {
+    name: 'In re Glucagon-like Peptide-1 Receptor Agonists (GLP-1 RAs) Non-Arteritic Anterior Ischemic Optic Neuropathy (NAION) Products Liability Litigation', court_id: 'paed', host: 'www.paed.uscourts.gov', tier: 1,
+    // The court's listing pages print only "MDL 3163". Every court PDF carries the ECF stamp "Case 2:25-md-03163-KSM Document <n> Filed <date> Page x of y";
+    // the literal below was read from page 1 of CMO No. 1 (PyMuPDF text extraction) and is re-checked against every stored PDF after transfer.
+    case_number: { literal: '2:25-md-03163-KSM', note: 'printed in the ECF header stamp of the court PDFs (not on the listing page)',
+      pdf_evidence: { url: 'https://www.paed.uscourts.gov/sites/paed/files/mdl-orders/25md3163_cm-ord_1.pdf', sha256: 'b166df052dd902849d56984e23b45a536a863a5738bce54f492f102e7e639f43', page: 1, context: 'Case 2:25-md-03163-KSM Document 2 Filed 12/23/25 Page 1 of 5', retrieved_at: null } },
+    printed_mdl_literal: 'MDL 3163',
+    pages: [
+      { id: 'paed-3163-orders', role: 'orders_table', family: 'paed-orders-table', url: 'https://www.paed.uscourts.gov/mdl/mdl3163/orders' },
+      { id: 'paed-3163-landing', role: 'mdl_page', family: 'index-links', url: 'https://www.paed.uscourts.gov/mdl/mdl3163' },
+    ],
+    index_pages: [],
+  },
+  '3185': {
+    name: 'In re Cognizant Technology Solutions Corporation and TriZetto Provider Solutions, LLC, Data Breach Security Litigation', court_id: 'moed', host: 'www.moed.uscourts.gov', tier: 1,
+    case_number: { literal: '4:26-md-3185', page_id: 'moed-3185-mdl', note: 'the page heading' },
+    pages: [{ id: 'moed-3185-mdl', role: 'mdl_page', family: 'moed-mdl-page', url: 'https://www.moed.uscourts.gov/mdl/426-md-3185' }],
+    index_pages: ['moed-mdl-index'],
+  },
+  '3180': {
+    name: 'In re Dupixent (Dupilumab) Products Liability Litigation', court_id: 'njd', host: 'www.njd.uscourts.gov', tier: 1,
+    case_number: null, pages: [], index_pages: ['njd-mdl-cases', 'jpml-panel-orders'],
+    note: 'No MDL 3180 page on the D.N.J. site as of capture: the "MDL Cases" index lists Invokana 2750, Talc 2738, Plavix 2418, PPI 2789, Valsartan 2875, AMCA 2904, Biocell 2921, Elmiron 2973, Samsung 3055, Insulin 3080, Apple 3113.',
+  },
+  '3125': {
+    name: 'In re AngioDynamics, Inc., and Navilyst Medical, Inc., Port Catheter Products Liability Litigation', court_id: 'casd', host: 'www.casd.uscourts.gov', tier: 1,
+    case_number: null, pages: [], index_pages: ['jpml-panel-orders'],
+    note: 'No S.D. Cal. MDL page found: the court site menu is ASP.NET postback only, search finds none, and judge pages sit under /Judges/, which robots.txt Disallows for all crawlers.',
+  },
+};
+
+// Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
+export const INDEX_PAGES = {
+  'njd-mdl-cases': { id: 'njd-mdl-cases', role: 'court_mdl_index', family: 'index-links', url: 'https://www.njd.uscourts.gov/mdl-cases' },
+  'ilnd-mdl-index': { id: 'ilnd-mdl-index', role: 'court_mdl_index', family: 'index-links', url: 'https://www.ilnd.uscourts.gov/mdl.aspx' },
+  'moed-mdl-index': { id: 'moed-mdl-index', role: 'court_mdl_index', family: 'index-links', url: 'https://www.moed.uscourts.gov/mdl-multidistrict-litigation-cases' },
+  // JPML lists only the CURRENT hearing session's orders here (older PDFs stay on the site under predictable file names, see build-jpml-queue.mjs).
+  'jpml-panel-orders': { id: 'jpml-panel-orders', role: 'jpml_panel_orders', family: 'jpml-panel-orders', url: 'https://www.jpml.uscourts.gov/panel-orders' },
+};
+
+export function pagesFor(mdls, { includeIndex = true } = {}) {
+  const out = [], seen = new Set();
+  for (const mdl of mdls) {
+    const matter = MATTERS[mdl];
+    if (!matter) throw Error('UNKNOWN_MDL ' + mdl);
+    const list = [...matter.pages.map(p => ({ ...p, mdl, host: new URL(p.url).hostname }))];
+    if (includeIndex) for (const id of matter.index_pages) list.push({ ...INDEX_PAGES[id], mdl, host: new URL(INDEX_PAGES[id].url).hostname });
+    for (const p of list) { if (seen.has(p.url)) continue; seen.add(p.url); out.push(p); }
+  }
+  return out;
+}
