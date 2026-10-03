@@ -268,6 +268,7 @@ describe("server-side paging of the member-case list", () => {
       conflict: false,
       nativeCaseIds: [],
       links: [],
+      captionSource: null,
     },
     ...over,
   });

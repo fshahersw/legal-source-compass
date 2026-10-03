@@ -369,6 +369,26 @@ describe("registry docket rows", () => {
     });
   });
 
+  it("shows a published caption exactly as printed, with whitespace collapsed and its source kept", () => {
+    const item = rowItem();
+    (item.item.cells as Record<string, unknown>)["caption"] = "JONES  v.\n PFIZER INC., ET AL.";
+    (item.item.cells as Record<string, unknown>)["caption_source"] = "jpml_schedule";
+    const c = parseRegistryDocket(item)!;
+    expect(c.caption).toBe("JONES v. PFIZER INC., ET AL.");
+    expect(c.captionWithheld).toBe(false);
+    expect(c.registry?.captionSource).toBe("jpml_schedule");
+  });
+
+  it("reports no caption (not a guessed one) when the projection publishes none", () => {
+    const none = parseRegistryDocket(rowItem())!;
+    expect(none.caption).toBeNull();
+    expect(none.captionWithheld).toBe(true);
+    expect(none.registry?.captionSource).toBeNull();
+    const item = rowItem();
+    (item.item.cells as Record<string, unknown>)["caption"] = "Not recorded";
+    expect(parseRegistryDocket(item)!.caption).toBeNull();
+  });
+
   it("reads a CourtListener docket id only from a CourtListener link or a purely numeric provider id", () => {
     const withLink = parseRegistryDocket(
       rowItem({
@@ -718,6 +738,10 @@ describe("matters the JPML directory does not hold", () => {
       transfereeCourt: "gand",
       judgeAsPrinted: "Thomas W. Thrash, Jr.",
       dateCentralized: "2017-12-06",
+      entriesPublished: null,
+      entriesWithheld: null,
+      partiesPublished: null,
+      counselLinks: null,
     });
     expect(m.docketbirdGraph).toEqual([
       {
@@ -740,6 +764,34 @@ describe("matters the JPML directory does not hold", () => {
     });
     expect(parseRegistryRecord(record(), "3140")).toBeNull();
     expect(parseRegistryRecord({ ...record(), registry: null }, "2800")).toBeNull();
+  });
+
+  it("reads how much of the timeline and the party list the projection published for the matter", () => {
+    const m = parseRegistryRecord(
+      {
+        ...record(),
+        cells: {
+          status: "pending",
+          entries_published: 4033,
+          entries_withheld: 698,
+          parties_published: 2160,
+          counsel_links: 4726,
+        },
+      },
+      "2800",
+    )!;
+    expect(m.record).toMatchObject({
+      entriesPublished: 4033,
+      entriesWithheld: 698,
+      partiesPublished: 2160,
+      counselLinks: 4726,
+    });
+    // Cells the projection has not filled yet stay unknown rather than zero.
+    const early = parseRegistryRecord(
+      { ...record(), cells: { status: "pending", entries_published: null } },
+      "2800",
+    )!;
+    expect(early.record).toMatchObject({ entriesPublished: null, partiesPublished: null });
   });
 
   it("builds a matter page from the registry alone, with nothing the registry does not state", () => {

@@ -143,7 +143,22 @@ export type RegistryCaseDetail = {
   nativeCaseIds: string[];
   /** Links as the registry projects them (CourtListener, DocketBird, JPML order). */
   links: { url: string; label: string }[];
+  /** Which source printed the caption (`courtlistener_header`, `docketbird`, `docketbird_jpml`, `jpml_schedule`). */
+  captionSource: string | null;
 };
+
+/** Where a published caption comes from; shown beside the caption so it is never mistaken for a registry statement. */
+export const CAPTION_SOURCE_LABELS: Record<string, string> = {
+  courtlistener_header: "CourtListener docket header",
+  docketbird: "DocketBird case title",
+  docketbird_jpml: "DocketBird, JPML docket",
+  jpml_schedule: "JPML order schedule, as printed",
+};
+
+export function captionSourceLabel(source: string | null | undefined): string | null {
+  if (!source) return null;
+  return CAPTION_SOURCE_LABELS[source] ?? source.replace(/_/g, " ");
+}
 
 export type CaseRow = {
   id: string;

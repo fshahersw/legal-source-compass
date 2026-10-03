@@ -113,6 +113,12 @@ export type RegistryRecordInfo = {
   transfereeCourt: string | null;
   judgeAsPrinted: string | null;
   dateCentralized: string | null;
+  /** Rows of the entries dataset held for the matter, and of those how many are published without their text (v1.3). */
+  entriesPublished: number | null;
+  entriesWithheld: number | null;
+  /** Rows of the parties dataset held for the matter, and the counsel entries on them (v1.3). */
+  partiesPublished: number | null;
+  counselLinks: number | null;
 };
 
 export type RegistryMatter = {
@@ -395,6 +401,10 @@ export function parseRegistryRecord(
       judgeAsPrinted: str(cells["judge_as_printed"]),
       dateCentralized:
         centralized && /^\d{4}-\d{2}-\d{2}$/.test(centralized.trim()) ? centralized.trim() : null,
+      entriesPublished: num(cells["entries_published"]),
+      entriesWithheld: num(cells["entries_withheld"]),
+      partiesPublished: num(cells["parties_published"]),
+      counselLinks: num(cells["counsel_links"]),
     },
   };
 }
@@ -601,8 +611,9 @@ export function parseRegistryDocket(row: {
   const nativeIds = strings(filters["native_case_id"]);
   const clId = clDocketIdFrom(links, nativeIds);
   const basisKinds = strings(filters["basis"]);
-  const badges = JSON.stringify(row.item["badges"] ?? []);
-  const withheld = /caption withheld/i.test(badges);
+  // v1.3: the caption as the court (or the cited source) prints it, when a publishable one exists. Whitespace only is
+  // collapsed; the text is otherwise shown exactly as published.
+  const caption = cleaned(cells["caption"])?.replace(/\s+/g, " ") ?? null;
   const routeRaw = str(cells["route"]);
   const detail: RegistryCaseDetail = {
     rowId: id,
@@ -621,13 +632,15 @@ export function parseRegistryDocket(row: {
     conflict: filters["conflict"] === "true",
     nativeCaseIds: nativeIds,
     links,
+    captionSource: caption ? str(cells["caption_source"]) : null,
   };
   return {
     id: `registry:${id}`,
     clDocketId: clId,
     docketNumber: cleaned(cells["docket_number"]),
-    caption: null,
-    captionWithheld: withheld,
+    caption,
+    // No publishable caption: no source prints one, or the printed one matched the publication exclusion.
+    captionWithheld: caption === null,
     courtId: cleaned(cells["court_id"]),
     dateFiled: cleaned(cells["filed"]),
     dateTerminated: cleaned(cells["terminated"]),

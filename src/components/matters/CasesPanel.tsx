@@ -26,6 +26,7 @@ import {
   BASIS_NOTES,
   EVIDENCE_NOTES,
   ROLE_LABELS,
+  captionSourceLabel,
   evidenceKindLabel,
   evidenceKindsOf,
   routeLabel,
@@ -181,10 +182,26 @@ function CaseTable({
                 {r.docketNumber ?? <NotRecorded />}
               </div>
               {r.caption ? (
-                <div className="max-w-[22rem] text-[11px] text-muted-foreground">{r.caption}</div>
+                <div
+                  className="max-w-[24rem] text-[12px] leading-snug"
+                  title={
+                    captionSourceLabel(r.registry?.captionSource)
+                      ? `Caption as published by: ${captionSourceLabel(r.registry?.captionSource)}`
+                      : undefined
+                  }
+                >
+                  {r.caption}
+                </div>
               ) : r.captionWithheld ? (
-                <div className="text-[10px] text-muted-foreground">
-                  Caption withheld by the source
+                <div
+                  className="text-[10px] text-muted-foreground"
+                  title={
+                    r.registry
+                      ? "No source prints a caption for this docket, or the printed one is withheld under the publication rule (sealed, restricted, in camera, ex parte or redacted wording)."
+                      : undefined
+                  }
+                >
+                  {r.registry ? "No caption published" : "Caption withheld by the source"}
                 </div>
               ) : null}
               {r.registry?.links.length ? (

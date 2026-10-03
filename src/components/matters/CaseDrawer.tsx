@@ -18,6 +18,7 @@ import {
 import {
   BASIS_NOTES,
   ROLE_LABELS,
+  captionSourceLabel,
   evidenceKindLabel,
   routeLabel,
   type CaseRow,
@@ -281,11 +282,26 @@ export function CaseDrawer({
           </SheetTitle>
           <SheetDescription className="text-[12px]">
             MDL {mdl} · {row ? (labels?.role?.[row.role] ?? ROLE_LABELS[row.role]) : ""}
-            {row?.captionWithheld ? " · caption withheld by the source" : ""}
           </SheetDescription>
         </SheetHeader>
         {row ? (
           <div className="space-y-4">
+            {row.caption ? (
+              <p className="text-[13px] font-medium leading-snug">
+                {row.caption}
+                {captionSourceLabel(row.registry?.captionSource) ? (
+                  <span className="mt-0.5 block text-[11px] font-normal text-muted-foreground">
+                    Caption as published · {captionSourceLabel(row.registry?.captionSource)}
+                  </span>
+                ) : null}
+              </p>
+            ) : (
+              <p className="text-[12px] text-muted-foreground">
+                {row.registry
+                  ? "No caption published for this docket: no source prints one, or the printed one is withheld under the publication rule."
+                  : "Caption withheld by the source."}
+              </p>
+            )}
             <dl className="grid gap-x-4 gap-y-2 sm:grid-cols-2">
               <Fact label="Court">
                 {row.courtId ? (
