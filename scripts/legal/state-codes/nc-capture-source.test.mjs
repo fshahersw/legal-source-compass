@@ -178,6 +178,18 @@ test("transport error writes a failure receipt and does not proceed to the next 
   });
 });
 
+test("unsolicited partial content is retained as an error, never a complete capture", async () => {
+  await withTempDirectory(async (base) => {
+    const item = source();
+    await assert.rejects(captureSources({ base, sources: [item],
+      fetchImpl: async () => new Response("partial", { status: 206 }),
+    }), /HTTP 206/);
+    const receipt = JSON.parse(await readFile(path.join(base, item.receiptPath), "utf8"));
+    assert.equal(receipt.outcome, "http_error_body_preserved");
+    assert.equal(receipt.httpStatus, 206);
+  });
+});
+
 test("non-2xx body and receipt are preserved, and additional sources are not fetched", async () => {
   await withTempDirectory(async (base) => {
     let calls = 0;

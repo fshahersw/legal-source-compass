@@ -79,6 +79,3 @@ const verification={createdAt:new Date().toISOString(),validation:'read-only loc
 const outputs=[['publisher-chapter-inventory.json',JSON.stringify(inventory,null,2)+'\n'],['reconciled-2025-sections.jsonl',combinedJsonl],['source-checksums.json',JSON.stringify(sourceFiles,null,2)+'\n']];for(const [name,body] of outputs)await fs.writeFile(`${out}/${name}`,body,{flag:'wx'});
 verification.outputs=outputs.map(([name,body])=>({path:`${out}/${name}`,bytes:Buffer.byteLength(body),sha256:sha(Buffer.from(body))}));await fs.writeFile(`${out}/verification.json`,JSON.stringify(verification,null,2)+'\n',{flag:'wx'});
 console.log(JSON.stringify({counts:verification.counts,inventoryComplete:inventory.inventoryComplete,outputs:verification.outputs,verificationPath:`${out}/verification.json`}));
-
-
-
