@@ -1,5 +1,7 @@
 # Imported source bytes and their provenance hashes must survive Windows checkouts.
 public/data/** -text
+# Checksum-pinned test evidence must retain repository bytes on Windows too.
+src/lib/corpus/__fixtures__/entry-analysis-v4.json -text
 # Publisher capture formatting is evidence; retain whitespace with its checksum.
 public/data/limitations/text/** -whitespace
 public/data/limitations/opinion-text/** -whitespace
