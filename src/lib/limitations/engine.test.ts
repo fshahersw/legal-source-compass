@@ -314,7 +314,12 @@ describe("versioned legal evidence integrity", () => {
       expect(bytes.byteLength).toBe(reference.byteLength);
       expect(bytes.byteLength).toBeGreaterThan(2000);
       expect(bytes.toString()).not.toContain("Some case metadata and case summaries");
-      expect(reference.pdfDownloaded).toBe(false);
+      expect(typeof reference.pdfDownloaded).toBe("boolean");
+      if (reference.pdfDownloaded) {
+        expect(reference.officialPdfUrl).toMatch(/^https:\/\//);
+        expect(reference.rawCapture?.sha256).toMatch(/^[a-f0-9]{64}$/);
+        expect(reference.rawCapture?.contentType).toContain("application/pdf");
+      }
     }
     for (const rule of snapshot.rules)
       expect(

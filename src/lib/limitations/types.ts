@@ -1,5 +1,11 @@
 export const CLAIM_TYPES = ["personal_injury", "product_liability", "wrongful_death"] as const;
 export type ClaimType = (typeof CLAIM_TYPES)[number];
+export type AuthorityCapture = {
+  sha256: string;
+  byteLength: number;
+  contentType: string;
+  retrievedAt: string;
+};
 export const CLAIM_LABELS: Record<ClaimType, string> = {
   personal_injury: "Ordinary personal injury",
   product_liability: "Product / mass-tort injury",
@@ -65,12 +71,7 @@ export type LimitationSource = {
   authorityKind: "statute";
   validity: string;
   historicalApplicability: string;
-  rawCapture?: {
-    sha256: string;
-    byteLength: number;
-    contentType: string;
-    retrievedAt: string;
-  };
+  rawCapture?: AuthorityCapture;
 };
 export type CoverageRow = {
   state: string;
@@ -104,7 +105,8 @@ export type JudicialReference = {
   sha256: string;
   byteLength: number;
   capturedAt: string;
-  pdfDownloaded: false;
+  pdfDownloaded: boolean;
+  rawCapture?: AuthorityCapture;
 };
 export type LimitationsSnapshot = {
   schemaVersion: "1.0.0";

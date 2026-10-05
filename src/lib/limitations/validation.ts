@@ -137,6 +137,9 @@ type KnownField =
   | "subsequentTreatment"
   | "officialPdfUrl"
   | "pdfDownloaded"
+  | "rawCapture"
+  | "contentType"
+  | "retrievedAt"
   | "name"
   | "sourceStatus"
   | "coverage"
@@ -201,7 +204,8 @@ function timestamp(value: unknown, label: string): asserts value is string {
   string(value, label);
   if (
     !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/.test(value) ||
-    !Number.isFinite(Date.parse(value))
+    !Number.isFinite(Date.parse(value)) ||
+    new Date(value).toISOString().slice(0, 19) !== value.slice(0, 19)
   )
     fail(`${label} must be a UTC ISO timestamp`);
 }
@@ -360,6 +364,15 @@ function validateRules(values: unknown): LimitationRule[] {
   return values as LimitationRule[];
 }
 
+function validateRawCapture(value: unknown, label: string): UnknownRecord {
+  const capture = record(value, label);
+  digest(capture.sha256, `${label}.sha256`);
+  positiveInteger(capture.byteLength, `${label}.byteLength`, Number.MAX_SAFE_INTEGER);
+  string(capture.contentType, `${label}.contentType`);
+  timestamp(capture.retrievedAt, `${label}.retrievedAt`);
+  return capture;
+}
+
 function validateSources(values: unknown): LimitationSource[] {
   if (!Array.isArray(values)) fail("sources must be an array");
   const ids = new Set<string>();
@@ -387,6 +400,7 @@ function validateSources(values: unknown): LimitationSource[] {
     textPath(s.textPath, `${label}.textPath`);
     digest(s.sha256, `${label}.sha256`);
     positiveInteger(s.byteLength, `${label}.byteLength`, Number.MAX_SAFE_INTEGER);
+    if (s.rawCapture !== undefined) validateRawCapture(s.rawCapture, `${label}.rawCapture`);
     if (ids.has(s.id as string)) fail(`duplicate source ID ${String(s.id)}`);
     if (paths.has(s.textPath as string)) fail(`duplicate source text path ${String(s.textPath)}`);
     ids.add(s.id as string);
@@ -424,7 +438,22 @@ function validateCases(values: unknown): JudicialReference[] {
     textPath(c.textPath, `${label}.textPath`);
     digest(c.sha256, `${label}.sha256`);
     positiveInteger(c.byteLength, `${label}.byteLength`, Number.MAX_SAFE_INTEGER);
-    if (c.pdfDownloaded !== false) fail(`${label} has an unsupported PDF download state`);
+    if (typeof c.pdfDownloaded !== "boolean")
+      fail(`${label} has an unsupported PDF download state`);
+    const raw =
+      c.rawCapture === undefined ? null : validateRawCapture(c.rawCapture, `${label}.rawCapture`);
+    const capturedPdf =
+      typeof raw?.contentType === "string" &&
+      raw.contentType.split(";")[0]?.trim().toLowerCase() === "application/pdf";
+    if (
+      c.pdfDownloaded &&
+      (!capturedPdf ||
+        typeof c.officialPdfUrl !== "string" ||
+        !c.officialPdfUrl.startsWith("https://"))
+    )
+      fail(`${label} has a PDF download claim without official HTTPS URL and raw PDF provenance`);
+    if (!c.pdfDownloaded && capturedPdf)
+      fail(`${label} contradicts its captured raw PDF provenance`);
     if (ids.has(c.id as string)) fail(`duplicate case ID ${String(c.id)}`);
     if (paths.has(c.textPath as string)) fail(`duplicate case text path ${String(c.textPath)}`);
     ids.add(c.id as string);

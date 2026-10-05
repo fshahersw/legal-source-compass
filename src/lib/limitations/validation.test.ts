@@ -84,4 +84,45 @@ describe("limitations snapshot validation", () => {
     coverage.find((row) => row["state"] === "AL")!["baselineRuleIds"] = [];
     expect(() => validateLimitationsSnapshot(wrongFacet)).toThrow(/baseline links do not match/);
   });
+
+  it("requires distinct raw provenance for a downloaded judicial PDF", () => {
+    const input = fixture();
+    const cases = input.cases["cases"] as TestRecord[];
+    const reference = cases[0]!;
+    reference["pdfDownloaded"] = true;
+    expect(() => validateLimitationsSnapshot(input)).toThrow(/PDF download claim/);
+    reference["officialPdfUrl"] = "https://www.govinfo.gov/example-test-opinion.pdf";
+    reference["rawCapture"] = {
+      sha256: "a".repeat(64),
+      byteLength: 123,
+      contentType: "application/pdf",
+      retrievedAt: "2026-10-05T11:25:51.000Z",
+    };
+    expect(validateLimitationsSnapshot(input).cases[0]!.pdfDownloaded).toBe(true);
+    reference["officialPdfUrl"] = "http://www.govinfo.gov/example-test-opinion.pdf";
+    expect(() => validateLimitationsSnapshot(input)).toThrow(/official HTTPS URL/);
+    reference["officialPdfUrl"] = "https://www.govinfo.gov/example-test-opinion.pdf";
+    reference["pdfDownloaded"] = false;
+    expect(() => validateLimitationsSnapshot(input)).toThrow(/contradicts/);
+    reference["pdfDownloaded"] = true;
+    (reference["rawCapture"] as TestRecord)["sha256"] = "invalid";
+    expect(() => validateLimitationsSnapshot(input)).toThrow(/SHA-256/);
+  });
+
+  it("rejects invalid raw authority metadata instead of trusting the text hash", () => {
+    const input = fixture();
+    const source = (input.sources["sources"] as TestRecord[])[0]!;
+    source["rawCapture"] = {
+      sha256: "b".repeat(64),
+      byteLength: 0,
+      contentType: "text/html",
+      retrievedAt: "2026-10-05T11:25:51.000Z",
+    };
+    expect(() => validateLimitationsSnapshot(input)).toThrow(/positive integer/);
+    (source["rawCapture"] as TestRecord)["byteLength"] = 456;
+    (source["rawCapture"] as TestRecord)["retrievedAt"] = "2026-02-30T12:00:00Z";
+    expect(() => validateLimitationsSnapshot(input)).toThrow(/UTC ISO timestamp/);
+    (source["rawCapture"] as TestRecord)["retrievedAt"] = "not-a-timestamp";
+    expect(() => validateLimitationsSnapshot(input)).toThrow(/retrievedAt/);
+  });
 });

@@ -2,18 +2,37 @@ import { readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
 
-const root = path.resolve("private/data/limitations");
+const rootArgument = process.argv.slice(2).find((argument) => argument.startsWith("--root="));
+if (rootArgument === "--root=") throw new Error("--root requires a directory");
+const root = path.resolve(rootArgument?.slice("--root=".length) ?? "private/data/limitations");
+const isPdf = (capture) =>
+  capture?.contentType?.split(";")[0].trim().toLowerCase() === "application/pdf";
+function verifyRawMetadata(capture, id) {
+  if (capture === undefined) return;
+  if (
+    !capture ||
+    !/^[a-f0-9]{64}$/.test(capture.sha256) ||
+    !Number.isSafeInteger(capture.byteLength) ||
+    capture.byteLength < 1 ||
+    typeof capture.contentType !== "string" ||
+    !capture.contentType.trim() ||
+    typeof capture.retrievedAt !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?Z$/.test(capture.retrievedAt) ||
+    !Number.isFinite(Date.parse(capture.retrievedAt)) ||
+    new Date(capture.retrievedAt).toISOString().slice(0, 19) !== capture.retrievedAt.slice(0, 19)
+  )
+    throw new Error(`Invalid raw-capture metadata: ${id}`);
+}
 const sourcePath = path.join(root, "sources.json");
 const snapshot = JSON.parse(await readFile(sourcePath, "utf8"));
 const ids = new Set();
 for (const source of snapshot.sources) {
   if (ids.has(source.id)) throw new Error(`Duplicate source ${source.id}`);
   ids.add(source.id);
+  verifyRawMetadata(source.rawCapture, source.id);
   if (
     !source.url.startsWith("https://") ||
-    (/\.pdf(?:$|\?)/i.test(source.url) &&
-      (!source.rawCapture?.contentType?.includes("application/pdf") ||
-        !/^[a-f0-9]{64}$/.test(source.rawCapture?.sha256)))
+    (/\.pdf(?:$|\?)/i.test(source.url) && !isPdf(source.rawCapture))
   )
     throw new Error(`Unexpected source URL ${source.id}`);
   const bytes = await readFile(path.join(root, "text", `${source.id}.txt`));
@@ -34,7 +53,14 @@ const caseIds = new Set();
 for (const reference of judicial.cases) {
   if (caseIds.has(reference.id)) throw new Error(`Duplicate judicial reference ${reference.id}`);
   caseIds.add(reference.id);
-  if (!reference.url.startsWith("https://") || reference.pdfDownloaded !== false)
+  verifyRawMetadata(reference.rawCapture, reference.id);
+  if (
+    !reference.url.startsWith("https://") ||
+    typeof reference.pdfDownloaded !== "boolean" ||
+    (reference.pdfDownloaded &&
+      (!reference.officialPdfUrl?.startsWith("https://") || !isPdf(reference.rawCapture))) ||
+    (!reference.pdfDownloaded && isPdf(reference.rawCapture))
+  )
     throw new Error(`Invalid judicial provenance ${reference.id}`);
   const bytes = await readFile(path.join(root, "opinion-text", `${reference.id}.txt`));
   const hash = createHash("sha256").update(bytes).digest("hex");
@@ -57,8 +83,8 @@ console.log(
     federalStatutes: snapshot.sources.filter((s) => s.state === "US").length,
     judicialReferences: caseIds.size,
     checksums: "passed",
-    retainedOfficialPdfCaptures: snapshot.sources.filter((s) =>
-      s.rawCapture?.contentType?.includes("application/pdf"),
-    ).length,
+    rawCaptureMetadata: "validated; raw bytes require separate receipt verification",
+    declaredOfficialPdfCaptures: snapshot.sources.filter((s) => isPdf(s.rawCapture)).length,
+    declaredJudicialPdfCaptures: judicial.cases.filter((c) => c.pdfDownloaded).length,
   }),
 );
