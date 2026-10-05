@@ -274,55 +274,67 @@ function ScopeNote({ payload, scope }: { payload: MatterOverviewPayload; scope: 
   const jpmlTotal = o.actions.total;
   const jpmlPending = o.actions.pending;
   const registryRows = scope.registryRows;
-  const savedSample = scope.listed - registryRows;
   return (
-    <Scope title="Scope">
-      {registryRows > 0 ? (
-        <>
-          The matter registry lists {registryRows.toLocaleString()}{" "}
-          {registryRows === 1 ? "docket" : "dockets"} for this MDL (
-          {scope.roles
-            .map((r) => `${r.label.toLowerCase()} ${r.count.toLocaleString()}`)
-            .join(", ")}
-          ).{" "}
-          {scope.actionRows > 0 ? (
-            <>
-              {scope.actionRows.toLocaleString()} {scope.actionRows === 1 ? "is" : "are"} counted as
-              an action: a transferred action appears as a transferor and a transferee row, and only
-              one carries the count.{" "}
-            </>
-          ) : null}
-          {savedSample > 0
-            ? `${savedSample.toLocaleString()} more come from the saved docket sample. `
-            : ""}
-        </>
-      ) : (
-        <>
-          The corpus lists {scope.listed.toLocaleString()}{" "}
-          {scope.listed === 1 ? "docket" : "dockets"} for this MDL: the master docket
-          {scope.listed > 1
-            ? ` and ${(scope.listed - 1).toLocaleString()} from the saved docket sample`
-            : ""}
-          {scope.inventoryPublished ? "" : " (the saved docket sample is not published)"}.{" "}
-        </>
-      )}
-      {jpmlTotal !== null || jpmlPending !== null ? (
-        <>
-          The JPML counts{" "}
-          {jpmlPending !== null
-            ? `${jpmlPending.toLocaleString()} pending`
-            : "pending actions not recorded"}
-          {jpmlTotal !== null ? ` and ${jpmlTotal.toLocaleString()} historical` : ""} actions
-          {o.asOf ? ` as of ${o.asOf}` : ""}; the corpus holds only the dockets listed below, so
-          these lists are never the size of the MDL.{" "}
-        </>
+    <div className="space-y-2">
+      {scope.registryTruncated ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-warning/50 bg-warning/10 px-3 py-2.5 text-[13px] text-foreground">
+          <p>
+            Searching <strong>{scope.listed.toLocaleString()} loaded dockets</strong> of{" "}
+            <strong>{registryRows.toLocaleString()} registry records</strong>. Filters and counts on
+            this page cover the loaded dockets only.
+          </p>
+          <Link
+            to="/data/$dataset"
+            params={{ dataset: "sw_matter_dockets_v1" }}
+            search={{ f: { mdl: payload.overview.mdl } }}
+            className="font-semibold text-primary underline underline-offset-2"
+          >
+            Search all registry records
+          </Link>
+        </div>
       ) : null}
-      {scope.registryTruncated ? "The list is truncated at the registry read limit. " : ""}
-      <span className="block pt-1">
-        Membership comes from the evidence shown on each row. A parent-docket reference is not
-        membership, and no row was added by guessing.
-      </span>
-    </Scope>
+      <details className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-[12px] leading-relaxed text-muted-foreground">
+        <summary className="cursor-pointer font-medium text-foreground">
+          About this list’s coverage and membership
+        </summary>
+        <div className="mt-2 space-y-1.5">
+          {registryRows > 0 ? (
+            <p>
+              The matter registry records {registryRows.toLocaleString()} dockets for this MDL.
+              {scope.registryTruncated
+                ? ` Role counts here describe the ${scope.listed.toLocaleString()} loaded dockets: ${scope.roles.map((r) => `${r.label.toLowerCase()} ${r.count.toLocaleString()}`).join(", ")}.`
+                : ` Roles: ${scope.roles.map((r) => `${r.label.toLowerCase()} ${r.count.toLocaleString()}`).join(", ")}.`}
+            </p>
+          ) : (
+            <p>
+              The corpus lists {scope.listed.toLocaleString()} dockets for this MDL
+              {scope.inventoryPublished ? "." : "; the saved docket sample is not published."}
+            </p>
+          )}
+          {scope.actionRows > 0 ? (
+            <p>
+              {scope.registryTruncated ? "Among loaded dockets, " : ""}
+              {scope.actionRows.toLocaleString()} {scope.actionRows === 1 ? "row is" : "rows are"}{" "}
+              counted as actions. A transferred action may have transferor and transferee rows, but
+              only one carries the count.
+            </p>
+          ) : null}
+          {jpmlTotal !== null || jpmlPending !== null ? (
+            <p>
+              JPML report{o.asOf ? ` dated ${o.asOf}` : ""}:{" "}
+              {jpmlPending !== null
+                ? `${jpmlPending.toLocaleString()} pending`
+                : "pending count not recorded"}
+              {jpmlTotal !== null ? ` and ${jpmlTotal.toLocaleString()} historical actions` : ""}.
+            </p>
+          ) : null}
+          <p>
+            Membership is supported by the evidence shown on each row; a parent-docket reference
+            alone does not establish membership.
+          </p>
+        </div>
+      </details>
+    </div>
   );
 }
 
@@ -472,7 +484,9 @@ function SampleCases({ payload }: { payload: MatterOverviewPayload }) {
           <span className="font-medium text-foreground tabular-nums">
             {data.total.toLocaleString()}
           </span>{" "}
-          of {scope.listed.toLocaleString()} dockets match
+          {scope.registryTruncated
+            ? `matches among ${scope.listed.toLocaleString()} loaded dockets`
+            : `of ${scope.listed.toLocaleString()} dockets match`}
         </span>
         {active || draft ? (
           <Button

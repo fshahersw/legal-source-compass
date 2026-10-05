@@ -6,12 +6,13 @@
 // Rows are upserted by (dataset, id) and only when their content hash or ordinal changed; rows are never deleted. A dataset that is already
 // ready stays ready while it is re-projected.
 //
-// node --use-system-ca scripts/ingest/members-project-extras.mjs --mdls=3047,3140,... --run=<registry run uuid> [--only=entries|parties] [--ready=true] [--dry-run=true]
+// node --use-system-ca scripts/ingest/members-project-extras.mjs --mdls=3047,3140,... --run=<registry run uuid> [--only=entries|parties] [--native-entry-ids-file=<JSON array>] [--ready=true] [--dry-run=true] [--work=<private work dir>|--staging=<private staging dir>]
 import fs from 'node:fs';
 import path from 'node:path';
 import { rest, rpc } from './members-pgrest.mjs';
 import { docketNumberFromKey, courtOfKey } from './members-registry-lib.mjs';
 import { sha256, canon, excluded, hasContact, ws, clipDescription, ATTORNEY_ROLE, ROLE_SEALED, ROLE_TERMINATED, firmFromLines, entryOrdinal, partyOrdinal } from './members-publish-rules.mjs';
+import { beforeImagePayload, mergeProjectionMetadata, mergeProjectionRows } from './members-projection-metadata.mjs';
 
 const args = Object.fromEntries(process.argv.slice(2).map(x => { const i = x.indexOf('='); return i < 0 ? [x.replace(/^--/, ''), 'true'] : [x.slice(2, i), x.slice(i + 1)]; }));
 const mdls = (args.mdls ?? '').split(',').filter(Boolean).map(Number);
@@ -20,8 +21,19 @@ const dry = args['dry-run'] === 'true';
 const setReady = args.ready === 'true';
 const only = args.only ?? 'all';
 if (!mdls.length || !/^[0-9a-f-]{36}$/.test(run ?? '')) throw new Error('--mdls and --run are required');
-const work = 'C:/Users/firas/Downloads/sw-platform-ui-refined/sw-platform-ui-refined/_work/agents/mdl-members';
-const staging = path.join(work, 'registry-staging');
+let nativeEntryIds = null;
+if (Object.hasOwn(args, 'native-entry-ids-file')) {
+  if (only !== 'entries') throw new Error('--native-entry-ids-file is valid only with --only=entries');
+  const file = args['native-entry-ids-file'];
+  if (!file || file === 'true') throw new Error('--native-entry-ids-file must name a JSON file');
+  const values = JSON.parse(fs.readFileSync(path.resolve(file), 'utf8'));
+  if (!Array.isArray(values) || values.length === 0 || values.some(id => typeof id !== 'string' || !/^[1-9]\d*$/.test(id))) {
+    throw new Error('--native-entry-ids-file must contain a non-empty JSON array of positive numeric string IDs');
+  }
+  nativeEntryIds = new Set(values);
+}
+const work = path.resolve(args.work ?? 'C:/Users/firas/Downloads/sw-platform-ui-refined/sw-platform-ui-refined/_work/agents/mdl-members');
+const staging = path.resolve(args.staging ?? path.join(work, 'registry-staging'));
 const PROJECTED_AT = new Date().toISOString();
 const DS_ENTRIES = 'sw_docket_entries_v1', DS_PARTIES = 'sw_matter_parties_v1';
 const SCHEMA = 'sw-matter-registry-view/1';
@@ -228,11 +240,47 @@ function partyRecords(partyRows, attorneyMap) {
 async function remoteMap(dataset) {
   const map = new Map();
   for (let off = 0; ; off += 1000) {
-    const page = (await rest(`corpus_records?select=id,ordinal,h:detail->provenance->>projection_row_sha256&dataset=eq.${dataset}&order=id.asc&limit=1000&offset=${off}`)).data;
-    for (const r of page) map.set(r.id, { ordinal: Number(r.ordinal), h: r.h });
+    const page = (await rest(`corpus_records?select=id,ordinal,filters,h:detail->provenance->>projection_row_sha256&dataset=eq.${dataset}&order=id.asc&limit=1000&offset=${off}`)).data;
+    for (const r of page) map.set(r.id, { ordinal: Number(r.ordinal), h: r.h, filters: r.filters ?? {} });
     if (page.length < 1000) break;
   }
   return map;
+}
+async function remoteRowsByIds(dataset, ids) {
+  const rows = [];
+  for (let i = 0; i < ids.length; i += 100) {
+    const quoted = ids.slice(i, i + 100).map(id => `"${String(id).replaceAll('"', '\\"')}"`).join(',');
+    const filter = encodeURIComponent(`(${quoted})`);
+    const page = (await rest(`corpus_records?select=*&dataset=eq.${encodeURIComponent(dataset)}&id=in.${filter}`)).data;
+    rows.push(...page);
+  }
+  return rows;
+}
+function writeBeforeImages(dataset, sourceRows) {
+  if (!sourceRows.length) return null;
+  const file = path.join(staging, 'before-images', `${run}-${dataset}.json`);
+  const checksumFile = `${file}.sha256`;
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  if (fs.existsSync(file)) {
+    const existing = fs.readFileSync(file, 'utf8');
+    const digest = sha256(existing);
+    let prior;
+    try { prior = JSON.parse(existing); } catch { throw new Error(`Invalid existing before-images at ${file}`); }
+    const savedIds = new Set((prior.changed_existing_rows ?? []).map(row => row.id));
+    let expected;
+    try { expected = fs.readFileSync(checksumFile, 'utf8').trim(); } catch { throw new Error(`Missing before-image checksum at ${checksumFile}`); }
+    if (digest !== expected || prior.dataset !== dataset || prior.run !== run || sourceRows.some(row => !savedIds.has(row.id))) throw new Error(`Existing before-images do not cover or verify this projection at ${file}`);
+    return { sha256: digest, rows: prior.changed_existing_rows.length, verified: true };
+  }
+  const payload = beforeImagePayload({ dataset, run, rows: sourceRows, capturedAt: new Date().toISOString() });
+  const content = `${JSON.stringify(payload, null, 2)}\n`;
+  const digest = sha256(content);
+  fs.writeFileSync(file, content, { flag: 'wx' });
+  fs.writeFileSync(checksumFile, `${digest}\n`, { flag: 'wx' });
+  const readBack = fs.readFileSync(file, 'utf8');
+  const checksumReadBack = fs.readFileSync(checksumFile, 'utf8').trim();
+  if (sha256(readBack) !== digest || checksumReadBack !== digest) throw new Error(`Before-image read-back hash mismatch at ${file}`);
+  return { sha256: digest, rows: sourceRows.length, verified: true };
 }
 async function syncDataset(dataset, label, records, metadata) {
   const local = new Map(records.map(r => [r.id, r]));
@@ -241,8 +289,14 @@ async function syncDataset(dataset, label, records, metadata) {
   const remoteOnly = [...before.keys()].filter(id => !local.has(id));
   console.log(JSON.stringify({ dataset, local: records.length, remote_before: before.size, to_upsert: todo.length, remote_only: remoteOnly.length, dry }));
   if (dry) return { upserted: 0, verified: null, remote_only: remoteOnly.length };
-  const existing = (await rest(`corpus_datasets?select=id,ready&id=eq.${dataset}`)).data[0] ?? null;
-  await rest('corpus_datasets?on_conflict=id', { method: 'POST', prefer: 'resolution=merge-duplicates,return=minimal', body: [{ id: dataset, label, ...(existing ? {} : { ready: false }), expected_records: records.length, imported_records: records.length, metadata, updated_at: PROJECTED_AT }] });
+  const existing = (await rest(`corpus_datasets?select=id,ready,expected_records,imported_records,metadata&id=eq.${dataset}`)).data[0] ?? null;
+  const projectedTotal = mergeProjectionRows([...before].map(([id, value]) => ({ id, ...value })), records).size;
+  const changedExistingIds = todo.map(r => r.id).filter(id => before.has(id));
+  const changedExistingRows = await remoteRowsByIds(dataset, changedExistingIds);
+  const beforeImageIds = new Set(changedExistingRows.map(row => row.id));
+  if (changedExistingRows.length !== changedExistingIds.length || changedExistingIds.some(id => !beforeImageIds.has(id))) throw new Error(`Could not read every changed existing ${dataset} row for its before-image`);
+  const beforeImages = writeBeforeImages(dataset, changedExistingRows);
+  await rest('corpus_datasets?on_conflict=id', { method: 'POST', prefer: 'resolution=merge-duplicates,return=minimal', body: [{ id: dataset, label, ...(existing ? {} : { ready: false, expected_records: projectedTotal, imported_records: projectedTotal }), updated_at: PROJECTED_AT }] });
   for (let i = 0, cur = [], bytes = 0; i <= todo.length; i++) {
     const r = todo[i];
     const size = r ? Buffer.byteLength(JSON.stringify(r)) : 0;
@@ -252,9 +306,11 @@ async function syncDataset(dataset, label, records, metadata) {
   const after = await remoteMap(dataset);
   const mismatched = records.filter(r => { const x = after.get(r.id); return !x || x.h !== r.detail.provenance.projection_row_sha256 || x.ordinal !== r.ordinal; }).length;
   const rowsSha = sha256([...local.keys()].sort().map(id => `${id}:${local.get(id).detail.provenance.projection_row_sha256}`).join('\n'));
-  const verified = mismatched === 0 && after.size >= records.length;
-  const projection_validation = { records: records.length, remote_records: after.size, verified, validated_at: new Date().toISOString(), contract_version: SCHEMA, rows_sha256: rowsSha, method: 'PostgREST read-back of (id, ordinal, projection_row_sha256) for every row compared with the projected set' };
-  await rest(`corpus_datasets?id=eq.${dataset}`, { method: 'PATCH', prefer: 'return=minimal', body: { metadata: { ...metadata, projection_validation }, updated_at: new Date().toISOString() } });
+  const verified = mismatched === 0 && after.size === projectedTotal;
+  const projection_validation = { projected_records: records.length, remote_records: after.size, verified, validated_at: new Date().toISOString(), contract_version: SCHEMA, rows_sha256: rowsSha, before_images: beforeImages, method: 'PostgREST read-back of every projected row and exact retained catalog count' };
+  const mergedRows = mergeProjectionRows([...after].map(([id, value]) => ({ id, ...value })), []);
+  const mergedMetadata = mergeProjectionMetadata(existing?.metadata, metadata, mergedRows, projection_validation);
+  await rest(`corpus_datasets?id=eq.${dataset}`, { method: 'PATCH', prefer: 'return=minimal', body: { expected_records: after.size, imported_records: after.size, metadata: mergedMetadata, updated_at: new Date().toISOString() } });
   if (setReady && verified) await rest(`corpus_datasets?id=eq.${dataset}`, { method: 'PATCH', prefer: 'return=minimal', body: { ready: true, updated_at: new Date().toISOString() } });
   console.log(JSON.stringify({ event: 'synced', dataset, upserted: todo.length, mismatched, verified, ready: setReady && verified ? true : (existing?.ready ?? false) }));
   return { upserted: todo.length, verified, remote_only: remoteOnly.length };
@@ -266,12 +322,15 @@ const bump = (o, k) => { o[k] = (o[k] ?? 0) + 1; };
 // ---------- run ----------
 const summary = { projected_at: PROJECTED_AT, run, matters: {} };
 if (only === 'all' || only === 'entries') {
-  const records = []; const seen = new Set(); const byMdl = {}; const years = {}; const avail = {};
+  const records = []; const seen = new Set(); const foundNativeEntryIds = new Set(); const byMdl = {}; const years = {}; const avail = {};
   for await (const row of lakePages('docket-entries', { p_docket_ids: allDocketIds })) {
-    if (seen.has(row.native_id)) continue; seen.add(row.native_id);
+    const nativeId = String(row.native_id);
+    if (nativeEntryIds && !nativeEntryIds.has(nativeId)) continue;
+    if (seen.has(nativeId)) continue; seen.add(nativeId);
     const clDocketId = (row.data.docket ?? '').match(/\/dockets\/(\d+)\//)?.[1];
     const ctx = ctxByDocket.get(clDocketId);
     if (!ctx) continue;
+    if (nativeEntryIds) foundNativeEntryIds.add(nativeId);
     ctx.stats.entries.lake++;
     const { rec, withheld, truncated } = entryRecord(row, ctx);
     ctx.stats.entries.projected++;
@@ -281,19 +340,25 @@ if (only === 'all' || only === 'entries') {
     bump(byMdl, rec.filters.mdl); bump(years, rec.filters.year || 'undated'); bump(avail, rec.filters.availability);
     records.push(rec);
   }
+  if (nativeEntryIds) {
+    const missing = [...nativeEntryIds].filter(id => !foundNativeEntryIds.has(id));
+    if (missing.length) throw new Error(`Requested CourtListener docket-entry IDs were not found within the validated master docket scopes: ${missing.join(', ')}`);
+  }
   // entries of CourtListener-blocked dockets from the remaining routes (registry external-entry entities)
   const seenExt = new Set();
-  for await (const row of lakePages('external-entries', { p_ids: mdls.map(m => `mdl:${m}`) })) {
-    if (seenExt.has(row.native_id)) continue; seenExt.add(row.native_id);
-    const ctx = ctxByMdl.get(String(row.data.matter).replace(/^mdl:/, ''));
-    if (!ctx) continue;
-    const { rec, withheld, truncated } = externalEntryRecord(row, ctx);
-    ctx.stats.entries.external[row.data.provider] = (ctx.stats.entries.external[row.data.provider] ?? 0) + 1;
-    ctx.stats.entries.projected++;
-    if (withheld === 'sealed_or_restricted_text') ctx.stats.entries.withheld_text++;
-    if (truncated) ctx.stats.entries.truncated++;
-    bump(byMdl, rec.filters.mdl); bump(years, rec.filters.year || 'undated'); bump(avail, rec.filters.availability);
-    records.push(rec);
+  if (!nativeEntryIds) {
+    for await (const row of lakePages('external-entries', { p_ids: mdls.map(m => `mdl:${m}`) })) {
+      if (seenExt.has(row.native_id)) continue; seenExt.add(row.native_id);
+      const ctx = ctxByMdl.get(String(row.data.matter).replace(/^mdl:/, ''));
+      if (!ctx) continue;
+      const { rec, withheld, truncated } = externalEntryRecord(row, ctx);
+      ctx.stats.entries.external[row.data.provider] = (ctx.stats.entries.external[row.data.provider] ?? 0) + 1;
+      ctx.stats.entries.projected++;
+      if (withheld === 'sealed_or_restricted_text') ctx.stats.entries.withheld_text++;
+      if (truncated) ctx.stats.entries.truncated++;
+      bump(byMdl, rec.filters.mdl); bump(years, rec.filters.year || 'undated'); bump(avail, rec.filters.availability);
+      records.push(rec);
+    }
   }
   const metadata = {
     grain: 'One docket entry of a master docket (CourtListener docket-entries)', aliases: [DS_ENTRIES, 'sw-docket-entries'], source_system: 'sw-matter-registry', schema_version: SCHEMA, source_runs: [run],
