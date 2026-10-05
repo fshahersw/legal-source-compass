@@ -14,7 +14,7 @@ import zipfile
 from urllib.parse import urlsplit
 from lxml import html
 
-PARSER = 'texas-publisher-html/2'
+PARSER = 'texas-publisher-html/3'
 
 
 def sha(data):
@@ -31,6 +31,8 @@ def parse_chapter(raw, code, member):
     containers = doc.xpath('//body/pre')
     if len(containers) != 1:
         raise ValueError('Expected one publisher chapter pre element')
+    if (containers[0].text or '').strip() or any((node.tail or '').strip() for node in containers[0]):
+        raise ValueError('Unmapped text outside publisher block elements')
     blocks, chunks, offset = [], [], 0
     for ordinal, node in enumerate(containers[0]):
         if node.tag in ('script', 'style'):
@@ -48,6 +50,18 @@ def parse_chapter(raw, code, member):
                     and u.fragment and re.match(r'^(Sec\.|Art\.|SECTION)\s', link['text'], re.I)
                     and text.startswith(link['text'])):
                 heads.append(link)
+        # Older publisher files have a separate, empty named-anchor paragraph
+        # immediately before a plain heading. Require the printed identity and
+        # exact source anchor to agree; never manufacture an HTTP chapter URL.
+        named_heading = re.match(r'^((?:Sec\.|Art\.|SECTION)\s+([^\s]+)\.)\s', text, re.I)
+        previous = node.getprevious()
+        if not heads and named_heading and previous is not None and not ''.join(previous.itertext()).strip():
+            names = previous.xpath('.//a/@name') + previous.xpath('.//a/@id')
+            anchor = named_heading[2]
+            if names.count(anchor) == 1:
+                heads.append({'text': named_heading[1], 'href': None,
+                              'native_anchor': anchor, 'identity_evidence': 'preceding_named_anchor',
+                              'anchor_element_ordinal': ordinal - 1})
         if len(heads) > 1:
             raise ValueError('Ambiguous section heading')
         kind = 'section_heading' if heads else 'paragraph'
@@ -78,13 +92,16 @@ def parse_chapter(raw, code, member):
         if block['kind'] != 'section_heading':
             continue
         head = block['heading']
-        anchor = urlsplit(head['href']).fragment
+        anchor = head.get('native_anchor') or urlsplit(head['href']).fragment
         occurrence[anchor] += 1
         stop = next((j for j in range(ix + 1, len(blocks))
                      if blocks[j]['kind'] in ('section_heading', 'hierarchy', 'publisher_note')), len(blocks))
         end = blocks[stop - 1]['end']
         text = full_text[block['start']:end]
         sections.append({'native_section_anchor': anchor, 'source_url': head['href'],
+                         'identity_evidence': head.get('identity_evidence', 'publisher_heading_link'),
+                         'anchor_element_ordinal': head.get('anchor_element_ordinal'),
+                         'anchor_whitespace_anomaly': anchor != anchor.strip(),
                          'citation_heading': head['text'], 'publisher_member': member,
                          'occurrence': occurrence[anchor], 'text_start': block['start'], 'text_end': end,
                          'text_sha256': sha(text.encode('utf8')), 'hierarchy': dict(hierarchy),
@@ -92,11 +109,13 @@ def parse_chapter(raw, code, member):
     return full_text, blocks, sections
 
 
-def main(root):
+def main(root, output_name='parsed-v3'):
     root = pathlib.Path(root)
     inventory = json.loads((root / 'download-index.json').read_bytes())['StatuteCode']
-    target = root / 'parsed'
-    target.mkdir(exist_ok=True)
+    if not re.fullmatch(r'[a-zA-Z0-9_-]+', output_name):
+        raise ValueError('Output must be a new child directory name')
+    target = root / output_name
+    target.mkdir(exist_ok=False)
     chapters, sections, failures = [], [], []
     native_counts = collections.Counter()
     uncompressed_bytes = 0
@@ -127,7 +146,9 @@ def main(root):
                     text_file = target / (text_hash + '.txt')
                     if text_file.exists() and text_file.read_bytes() != text_bytes:
                         raise ValueError('Derivative hash collision')
-                    text_file.write_bytes(text_bytes)
+                    if not text_file.exists():
+                        with text_file.open('xb') as text_out:
+                            text_out.write(text_bytes)
                     chapter_id = code['code'] + ':' + member.filename
                     chapter = {'id': chapter_id, 'code': code['code'], 'code_name': code['CodeName'],
                                'publisher_member': member.filename, 'raw_member_sha256': member_hash,
@@ -169,4 +190,5 @@ def main(root):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1] if len(sys.argv) > 1 else 'private/audit-2026-10-05/full-state-codes/tx')
+    main(sys.argv[1] if len(sys.argv) > 1 else 'private/audit-2026-10-05/full-state-codes/tx',
+         sys.argv[2] if len(sys.argv) > 2 else 'parsed-v3')

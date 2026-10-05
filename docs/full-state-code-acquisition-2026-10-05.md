@@ -14,6 +14,12 @@ The publisher describes its statutes as incorporating the 89th Second Called Ses
 
 Evidence: ignored `private/audit-2026-10-05/full-state-codes/tx/`, especially `download-index.receipt.json`, `receipts/`, `acquisition-summary.json`, and `parsed/summary.json`. Raw archives remain unchanged. Scripts: `scripts/legal/state-codes/tx-acquire.mjs`, `tx-parse.py`, `test_tx_parse.py`. Acquisition reruns verify existing captures; a new source observation needs a new evidence directory.
 
+### Texas parser correction, subsequent continuation
+
+Parser `texas-publisher-html/3` now recognizes an exact named anchor immediately before a plain section heading, the format used in nine older-format publisher files. It requires the printed citation and the adjacent source anchor to agree and does not invent an HTTP section URL. The separate `parsed-v3/` output preserves `parsed/` unchanged. All 4,993 chapter-text hashes and all 120,909 earlier section spans are unchanged. The new parse adds **932 occurrences**: 27 from `es.1054.htm`, six from `es.254.v2.htm`, and 899 from the seven filename-marked old/copy files. These older versions remain separate, not current-law replacements.
+
+The corrected total is **121,841 occurrences / 120,673 citation keys**, including 791 repeated keys. Only the two constitutional appendix/preamble members and the expressly repealed chapter remain without section headings. `parser-v3-comparison-audit.json` verifies every section span hash, prior-row preservation and chapter-text equality. The new section JSONL SHA-256 is `484fa17df5fd5542f7a1f2a1a990fcc0080a68b738c47262fd5e07593ceb1902`; chapter JSONL is `f8b0e0df5b50a2c7b815794908cd60d2d11b8867ec8042aa60c1ac2091077a75`. Nine parser tests pass. Unmapped text outside block elements now stops parsing instead of disappearing. The whitespace anomaly in CR 38.435 remains explicitly flagged. Registration, legal currentness review and publication remain outstanding.
+
 ## North Carolina
 
 All 396 chapter HTML links in the captured NCGA table of contents returned HTTP 200, totaling 78,003,827 bytes. All raw files match their receipt hashes and lengths. The source says it includes changes through S.L. 2026-30 and expressly says website statutes are not official. The current-modifications page is separately captured; neither its existence nor the TOC label resolves every uncodified change.

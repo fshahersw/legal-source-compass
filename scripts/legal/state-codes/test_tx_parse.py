@@ -53,6 +53,32 @@ class TexasParserTest(unittest.TestCase):
         with self.assertRaises(UnicodeDecodeError):
             parser.parse_chapter(chapter('valid') + b'\xff', 'CP', 'cp.16.htm')
 
+    def test_named_anchor_and_plain_heading_retain_exact_identity_and_body(self):
+        raw = chapter('<p><a name="254.001"></a><a name="132929.120935"></a></p>'
+                      '<p>Sec. 254.001. DEVISES TO TRUSTEES. (a) A testator may devise property.</p>'
+                      '<p>Added by Acts 2009.</p>')
+        text, _, rows = parser.parse_chapter(raw, 'ES', 'es.254.v2.htm')
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['native_section_anchor'], '254.001')
+        self.assertEqual(rows[0]['identity_evidence'], 'preceding_named_anchor')
+        self.assertEqual(rows[0]['anchor_element_ordinal'], 0)
+        self.assertIsNone(rows[0]['source_url'])
+        self.assertIn('A testator may devise property.', text[rows[0]['text_start']:rows[0]['text_end']])
+
+    def test_plain_heading_requires_matching_adjacent_source_anchor(self):
+        for body in [
+            '<p><a name="254.002"></a></p><p>Sec. 254.001. WRONG ANCHOR.</p>',
+            '<p><a name="254.001"></a></p><p>Intervening text</p><p>Sec. 254.001. UNBOUND.</p>',
+            '<p>Sec. 254.001. NO ANCHOR.</p>',
+        ]:
+            _, _, rows = parser.parse_chapter(chapter(body), 'ES', 'es.254.v2.htm')
+            self.assertEqual(rows, [])
+
+    def test_unmapped_pre_text_is_rejected_instead_of_dropped(self):
+        for body in ['Orphan text<p>A paragraph</p>', '<p>A paragraph</p>Orphan tail']:
+            with self.assertRaisesRegex(ValueError, 'Unmapped text'):
+                parser.parse_chapter(chapter(body), 'ES', 'es.254.v2.htm')
+
 
 if __name__ == '__main__':
     unittest.main()
