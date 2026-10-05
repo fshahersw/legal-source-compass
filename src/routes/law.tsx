@@ -11,6 +11,7 @@ import { pageHead } from "@/lib/corpus/head";
 import { STATES, stateByUsps } from "@/lib/corpus/geo";
 import { loadStateLawDirectory, type StateLawDirectoryEntry } from "@/lib/corpus/lawSources";
 import { PrivateDataLink } from "@/components/atlas/PrivateDataLink";
+import { TexasCodeBrowser } from "@/components/corpus/TexasCodeBrowser";
 import { getLawOutlineStatus, listLawCollections } from "@/lib/external/corpus.functions";
 import { datasetDisplayName } from "@/lib/external/domainRegistry";
 import { sectionOf } from "@/lib/external/groups";
@@ -63,6 +64,8 @@ function OutlineUnavailable() {
 }
 
 const NO_COLLECTIONS: Awaited<ReturnType<typeof listLawCollections>> = [];
+// Flip on only when the corresponding private snapshot manifest entries exist.
+const TEXAS_BROWSE_RELEASE_AVAILABLE = true;
 
 function LawPage() {
   const s = Route.useSearch();
@@ -146,7 +149,18 @@ function LawPage() {
   let body: React.ReactNode;
   const savedLawError = colls.error ?? status.error ?? datasets.error;
   const err = s.scope === "states" ? stateSources.error : savedLawError;
-  if (err) body = <ExternalError error={err} />;
+  if (s.scope === "states" && s.state === "TX" && s.view === "tx-code") {
+    body = TEXAS_BROWSE_RELEASE_AVAILABLE ? (
+      <TexasCodeBrowser />
+    ) : (
+      <p
+        role="status"
+        className="rounded-lg border border-border bg-surface p-4 text-sm text-muted-foreground"
+      >
+        Texas code text is not available here yet.
+      </p>
+    );
+  } else if (err) body = <ExternalError error={err} />;
   else if (s.scope !== "states" && (colls.isLoading || status.isLoading || datasets.isLoading))
     body = <p className="text-[13px] text-muted-foreground">Loading law collections…</p>;
   else if (s.scope === "states" && stateSources.isLoading)
@@ -306,6 +320,19 @@ function LawPage() {
     body = (
       <div className="space-y-5">
         {stateResource ? <StateLawSources entry={stateResource} /> : null}
+        {s.state === "TX" && TEXAS_BROWSE_RELEASE_AVAILABLE ? (
+          <FolderGrid
+            title="Full code text"
+            items={[
+              {
+                key: "texas-code-text",
+                label: "Texas code",
+                note: "Publisher-captured chapter and section text",
+                link: { to: "/law", search: { scope: "states", state: "TX", view: "tx-code" } },
+              },
+            ]}
+          />
+        ) : null}
         {savedLawError ? (
           <ExternalError error={savedLawError} />
         ) : colls.isLoading || status.isLoading || datasets.isLoading ? (
@@ -337,13 +364,16 @@ function LawPage() {
     );
   }
 
-  const title = s.kind
-    ? kindLabel(s.kind)
-    : s.ds
-      ? datasetDisplayName(s.ds, lawDs.find((d) => d.id === s.ds)?.label)
-      : s.state
-        ? `${stName(s.state)} law`
-        : (scopeLabel ?? "Law & regulation");
+  const title =
+    s.view === "tx-code"
+      ? "Texas code text"
+      : s.kind
+        ? kindLabel(s.kind)
+        : s.ds
+          ? datasetDisplayName(s.ds, lawDs.find((d) => d.id === s.ds)?.label)
+          : s.state
+            ? `${stName(s.state)} law`
+            : (scopeLabel ?? "Law & regulation");
   return (
     <AppShell
       breadcrumbs={crumbs}
