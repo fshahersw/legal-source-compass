@@ -74,8 +74,8 @@ function EntryDocuments({
     archive && archive.connected ? archive.byEntry[entry.id] : undefined;
   const docs = match?.documents ?? [];
   const shown = all ? docs : docs.slice(0, ENTRY_DOCS);
-  // Said only when the archive holds nothing for the entry: CourtListener's document ids and the archive's own copies
-  // (a DocketBird PDF of the same entry) are different records, so a count of "missing" ones next to a held PDF would mislead.
+  // A missing match is not proof of absence when archive lookup is incomplete.
+  // Do not show a missing count beside a matched copy from another provider.
   const noneArchived = !!match && !docs.length && match.notArchived > 0;
   if (!docs.length && !noneArchived) return null;
   return (
@@ -164,8 +164,9 @@ function EntryDocuments({
         ) : null}
         {noneArchived ? (
           <span>
-            Not in the archive
-            {archive && archive.connected && !archive.complete ? " (archive read incomplete)" : ""}
+            {archive && archive.connected && !archive.complete
+              ? "PDF match not verified"
+              : "No archived PDF"}
           </span>
         ) : null}
       </div>
@@ -234,6 +235,11 @@ function EntryRow({
               {entryProviderLabel(entry.provider)}
             </Chip>
           ) : null}
+          {entry.descriptionTruncated ? (
+            <Chip title="This is an excerpt. Open the source link for the full docket text.">
+              Excerpt
+            </Chip>
+          ) : null}
           {entry.withheld ? (
             <Chip tone="warning" title={WITHHELD_NOTES[entry.withheld]}>
               {entry.withheld === "sealed_document" ? "Sealed document" : "Text withheld"}
@@ -253,16 +259,6 @@ function EntryRow({
             No docket text recorded for this entry.
           </p>
         )}
-        {entry.descriptionTruncated ? (
-          <p className="text-[11px] text-muted-foreground">
-            The published text stops at {text ? Array.from(text).length.toLocaleString() : "500"}{" "}
-            characters
-            {entry.descriptionChars !== null
-              ? `; the court's text is ${entry.descriptionChars.toLocaleString()}`
-              : ""}
-            . The full text is on the court record.
-          </p>
-        ) : null}
         <EntryDocuments entry={entry} archive={archive} onView={onView} />
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]">
           {long ? (
@@ -272,7 +268,7 @@ function EntryRow({
               className="text-primary underline-offset-2 hover:underline"
               onClick={() => setOpen((v) => !v)}
             >
-              {open ? "Show less" : "Show full text"}
+              {open ? "Show less" : "Show more"}
             </button>
           ) : null}
           {entry.entryNumber !== null ? (
