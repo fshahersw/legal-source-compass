@@ -437,6 +437,7 @@ function validateCases(values: unknown): JudicialReference[] {
     timestamp(c.capturedAt, `${label}.capturedAt`);
     url(c.url, `${label}.url`);
     if (c.officialPdfUrl !== undefined) url(c.officialPdfUrl, `${label}.officialPdfUrl`);
+    if (c["textScope"] !== undefined) string(c["textScope"], `${label}.textScope`);
     textPath(c.textPath, `${label}.textPath`);
     digest(c.sha256, `${label}.sha256`);
     positiveInteger(c.byteLength, `${label}.byteLength`, Number.MAX_SAFE_INTEGER);

@@ -98,6 +98,7 @@ function JudicialEvidence({ reference }: { reference: JudicialReference }) {
       <details className="mt-3">
         <summary className="cursor-pointer">Application and source limits</summary>
         <p className="mt-2">{reference.applicationLimits}</p>
+        {reference.textScope && <p className="mt-2">{reference.textScope}</p>}
         <PrivateDataLink
           className="mt-2 block text-primary underline"
           href={reference.textPath}
@@ -1099,8 +1100,7 @@ export function LimitationsWorkbench({
         <section className={box}>
           <h2 className="text-xl font-semibold">Sources · {stateName || "choose a state"}</h2>
           <p className="mt-2 text-sm leading-relaxed">
-            Stored statutory text is an extraction of official HTML or XML. It does not establish
-            that all historical amendments and case law have been verified.
+            Read the stored source text and review its capture details.
           </p>
           {stateCoverage && !stateSources.some((item) => item.state === state) && (
             <div className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
@@ -1154,7 +1154,7 @@ export function LimitationsWorkbench({
                 </a>
                 <p className="mt-1 text-sm">
                   {item.authorityKind.replaceAll("_", " ")} · {item.publisher} · captured{" "}
-                  {item.capturedAt} · {item.method}
+                  {item.capturedAt}
                 </p>
                 <PrivateDataLink
                   href={item.textPath}
@@ -1165,7 +1165,8 @@ export function LimitationsWorkbench({
                   Inspect stored text
                 </PrivateDataLink>
                 <details className="mt-2 text-xs text-muted-foreground">
-                  <summary className="min-h-9 cursor-pointer py-2">Source file details</summary>
+                  <summary className="min-h-9 cursor-pointer py-2">Capture details</summary>
+                  <p>{item.method}</p>
                   <p className="break-all">
                     SHA-256 {item.sha256} · {item.byteLength.toLocaleString()} bytes · schema{" "}
                     {item.schemaVersion}

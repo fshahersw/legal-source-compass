@@ -109,6 +109,7 @@ export type JudicialReference = {
   holding: string;
   applicationLimits: string;
   subsequentTreatment: string;
+  textScope?: string;
   textPath: string;
   sha256: string;
   byteLength: number;
