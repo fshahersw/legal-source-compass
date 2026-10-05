@@ -20,3 +20,11 @@ Starting commit: `4fb7b8d`. The owner requested accuracy in matters, MDLs, docke
 5. Run relevant tests, TypeScript and the production build; verify the resulting UI; commit and push checkpoints to the Lovable-connected branch.
 
 Private audit outputs are in ignored `private/audit-2026-10-05/`. Credentials and raw corpus records must remain out of Git. A saved or imported record is not automatically a complete or current docket.
+
+## Verified docket refresh
+
+Run `b11bce32-fa58-4c07-a4ac-7cf830f44da0` completed on October 5 at 07:24 UTC. All 41 frozen priority master-docket IDs matched the expected full court/office/year/type/sequence key. Four source-blocked headers remain excluded from public refreshes. The native registry saved 41 observations and six new source versions.
+
+The bounded SQL contract in `database/contracts/priority-docket-metadata-refresh-20261005.sql` refreshed dates and checked-at provenance on exactly 34 already-public, unblocked metadata rows. All 34 resulting records match their audited replacement fields. Full before-images remain in `corpus_ingest.cleanup_decisions`, with a guarded rollback documented in the contract. The update does not change captions, party records, membership evidence, PDF availability, or historical selection provenance. Fresh headers do not establish a current full-docket or member census.
+
+Validation so far: full Vitest suite passed (613 passed, one skipped before the final additional regressions); TypeScript passed; production Vite build passed. Private test snapshots were restored from the existing hash-verified private bundle manifest. The byte-sensitive entry-analysis fixture is now protected against Windows newline conversion through `.gitattributes`.
