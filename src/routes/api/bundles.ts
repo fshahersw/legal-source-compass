@@ -7,7 +7,8 @@ export const Route = createFileRoute("/api/bundles")({
     try {
       const { serveSnapshotPage } = await import("@/lib/private-data/snapshot.server");
       return await serveSnapshotPage(request);
-    } catch {
+    } catch (error) {
+      console.error("Snapshot serving failed:", error instanceof Error ? error.message : String(error));
       return new Response("Private snapshot is temporarily unavailable.", { status: 503, headers: { "Cache-Control": "private, no-store", Vary: "Authorization, Cookie" } });
     }
   } } },
