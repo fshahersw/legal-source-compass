@@ -38,10 +38,10 @@ const excluded = new Set((excludeArg?.split('=')[1] || '').split(',').map(x => x
 let chapterIds = listArg ? listArg.split('=')[1].split(',').map(x => x.trim()).filter(Boolean) : [];
 if (nextArg) {
   const count = Number(nextArg.split('=')[1]);
-  if (!Number.isSafeInteger(count) || count < 1 || count > 50) throw new Error('--next-uncaptured count must be from 1 through 50.');
+  if (!Number.isSafeInteger(count) || count < 1 || count > 100) throw new Error('--next-uncaptured count must be from 1 through 100.');
   chapterIds = orderedIds.filter(id => !excluded.has(id)).slice(0, count);
 }
-if (!chapterIds.length || chapterIds.length > 50 || new Set(chapterIds).size !== chapterIds.length) throw new Error('Supply 1–50 unique chapter IDs.');
+if (!chapterIds.length || chapterIds.length > 100 || new Set(chapterIds).size !== chapterIds.length) throw new Error('Supply 1–100 unique chapter IDs.');
 for (const id of chapterIds) if (!byId.has(id)) throw new Error(`Pilot chapter ${id} is not present in the captured native inventory.`);
 const rawDir = path.join(base, 'raw');
 const receiptsDir = path.join(base, 'receipts');

@@ -61,7 +61,7 @@ async function dbFor(f = fixture()) {
     create schema storage; create table storage.buckets(id text primary key, public boolean not null);
     create table storage.objects(bucket_id text, name text, metadata jsonb);
     insert into storage.buckets values('corpus-originals',false);`);
-  for (const file of ['corpus-ingest-v1.sql', 'canonical-integer-jsonb-v1.sql', 'corpus-publisher-code-intake-v1.sql']) {
+  for (const file of ['corpus-ingest-v1.sql', 'canonical-integer-jsonb-v1.sql', 'corpus-publisher-code-intake-v1.sql', 'corpus-publisher-code-progress-v1.sql']) {
     await db.exec(await fs.readFile(`database/contracts/${file}`, 'utf8'));
   }
   await db.query('insert into corpus_ingest.runs(id,status,scope) values($1,$2,$3)', [run, 'running', {
@@ -72,6 +72,8 @@ async function dbFor(f = fixture()) {
 }
 const register = (db, f, id = run) => db.query('select public.corpus_publisher_code_register_v1($1,$2,$3,$4) as receipt', [id, f.manifest, f.assets, f.readbacks]);
 const ingest = (db, f, i, id = run) => db.query('select public.corpus_publisher_code_intake_v1($1,$2,$3) as receipt', [id, i, f.batches[i]]);
+const progress = async (db, f) => (await db.query('select public.corpus_publisher_code_status_v1($1,$2) value', [run, hash(f.manifest)])).rows[0].value;
+const proof = async (db, f, i) => (await db.query('select public.corpus_publisher_code_verify_batch_v1($1,$2,$3) value', [run, i, f.batches[i]])).rows[0].value;
 function repin(f) {
   f.manifest.assets.sha256 = hash(f.assets);
   f.manifest.batches = f.batches.map((b, i) => {
@@ -81,6 +83,39 @@ function repin(f) {
   });
 }
 async function withDb(fn, f = fixture()) { const db = await dbFor(f); try { await fn(db, f); } finally { await db.close(); } }
+
+test('read-only progress resolves registration, exact version proof and completed runs', async () => withDb(async (db, f) => {
+  await db.exec('set role service_role');
+  assert.equal((await progress(db, f)).registered, false);
+  const absent = (await db.query('select public.corpus_publisher_code_status_v1($1,$2) value', ['dddddddd-dddd-4ddd-8ddd-dddddddddddd', hash(f.manifest)])).rows[0].value;
+  assert.equal(absent.run_exists, false);
+  await assert.rejects(db.query('select public.corpus_publisher_code_status_v1($1,$2)', [run, '0'.repeat(64)]), /Run scope differs/);
+  await register(db, f);
+  assert.equal((await progress(db, f)).objects, 2);
+  assert.equal((await proof(db, f, 0)).verified, false);
+  await ingest(db, f, 0); await ingest(db, f, 1);
+  assert.equal((await proof(db, f, 0)).verified, true);
+  assert.equal((await proof(db, f, 1)).verified, true);
+  assert.deepEqual((await progress(db, f)).observation_counts, f.manifest.counts);
+  await db.exec('reset role');
+  await db.exec("update corpus_ingest.runs set status='completed'");
+  await db.exec('set role service_role');
+  assert.equal((await progress(db, f)).run_status, 'completed');
+  assert.equal((await proof(db, f, 1)).verified, true);
+}));
+
+test('a batch receipt cannot conceal missing observations, changed payload or absent private objects', async () => withDb(async (db, f) => {
+  await register(db, f); await ingest(db, f, 0); await ingest(db, f, 1);
+  const changed = structuredClone(f); changed.batches[1][0].data.citation_heading = 'Wrong text';
+  await assert.rejects(proof(db, changed, 1), /immutable batch/);
+  await db.query("delete from corpus_ingest.observations where entity_type='code-section-occurrence'");
+  const missing = await proof(db, f, 1);
+  assert.equal(missing.receipt_present, true); assert.equal(missing.matched, 0); assert.equal(missing.verified, false);
+  await db.exec("update corpus_ingest.entity_versions set data=data||'{\"code_name\":\"Corrupted\"}'::jsonb where entity_type='code-chapter-document'");
+  assert.equal((await proof(db, f, 0)).verified, false);
+  await db.exec('delete from storage.objects');
+  assert.equal((await progress(db, f)).objects_missing_from_private_catalog, 2);
+}));
 
 test('imports ordered reviewed batches, preserves exact payloads, and replays without duplicate observations', async () => withDb(async (db, f) => {
   await db.exec('set role service_role');
@@ -100,6 +135,8 @@ test('anon and authenticated cannot register, ingest or read private packet tabl
     await db.exec(`set role ${role}`);
     await assert.rejects(register(db, fixture()), /permission denied/);
     await assert.rejects(ingest(db, fixture(), 0), /permission denied/);
+    await assert.rejects(db.query('select public.corpus_publisher_code_status_v1($1,$2)', [run, hash(fixture().manifest)]), /permission denied/);
+    await assert.rejects(db.query('select public.corpus_publisher_code_verify_batch_v1($1,0,$2)', [run, fixture().batches[0]]), /permission denied/);
     await assert.rejects(db.query('select * from corpus_ingest.publisher_code_packets_v1'), /permission denied/);
     await db.exec('reset role');
   }

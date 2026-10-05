@@ -1,0 +1,32 @@
+# Publisher-code resumable intake — October 5, 2026
+
+The resumable Texas importer is prepared. It has made **no production uploads or database writes**. The complete reviewed local packet passes its preflight: 126,895 records, 254 batches, 5,023 objects and 165,260,936 asset bytes. The packet remains private-intake-v3 with manifest hash `87b76b96ba6ce3130167193a474f992307c0856cc9a162f2848aeb8ed711a5da`; earlier packets are not eligible.
+
+## Concrete deployment gap
+
+A target-pinned read-only OpenAPI request at 17:45:49 UTC returned HTTP 200 and 61 exposed RPCs. None of the four prepared publisher-code registration, intake, status or per-batch verification RPCs appears in that service-role-visible schema. This is evidence of unavailable Data API capabilities, not a claim that an unknown internal database object is absent. No Supabase or Lovable methods were callable in this chat's tool catalog. The owner has already reconnected; do not request another sign-in merely because these bindings are missing.
+
+Private probe evidence: `private/audit-2026-10-05/publisher-code-api-probe-1737.json`, SHA-256 `bb45c5e325177f0107f713f652dc93b5021fd944f8901d18886a7ba37dfffe3c`. The response body hash and exact observed administrative RPC names are recorded there; no credentials are stored in it. The probe used the existing private server credential and made no mutation. The dedicated intake must be deployed through available authorized database administration and an actual matching private run opened before this runner can upload a file.
+
+## Import and recovery behavior
+
+`scripts/legal/state-codes/run-publisher-code-intake.mjs` validates the complete packet and every local asset before obtaining credentials or sending requests. It rejects paths outside the real private directory, changed canonical bytes, duplicate native occurrences, wrong source/parser/project, unsupported flags, and publication/calculation activation. Execute mode additionally requires an explicit run, output directory and credential-file argument. The output binds the run and packet hash, has an exclusive process lock and appends durable receipt events. Existing locks and truncated journals require inspection; they are never silently cleared.
+
+The additive `database/contracts/corpus-publisher-code-progress-v1.sql` provides two service-role-only, read-only RPCs with an empty search path. The first validates the exact run scope and reads registration, batch receipts, private object-catalog rows and observation counts. The second compares a pinned batch with the actual retained source versions and observations, including exact data, payload hashes, source identity, retrieval timestamp and provenance. It still works when a database run has been administratively completed. A batch receipt alone is insufficient for a successful verification.
+
+The runner confirms the actual scoped database run before any Storage write. It resumes from retained whole-object readback receipts and uploads only unresolved assets using the separately tested immutable transport. Objects are byte-deduplicated; source references remain distinct. A bounded asset pass can stop without attempting registration. Once all receipts exist, registration binds the full packet. Each batch gets independent database verification before a possible write and immediately afterward. A lost or rejected acknowledgement stops the process. On a later resume, exact database proof resolves an already committed batch without submitting it again. Partial or inconsistent evidence stops for audit.
+
+Completion means only that the selected private packet has exact per-batch proof and reconciled database counts. The runner does not finish a database run, publish collections, release holds, activate calculator rules, establish current legal effect, or certify statewide historical completeness. Cloud object bytes must have actual authenticated full readbacks; local simulation receipts are never eligible production evidence.
+
+## Validation and commands
+
+Ten isolated PostgreSQL tests and seven coordinator tests pass. The existing eight storage transport tests cover complete-object verification and immutable reuse. New checks exercise absent/mismatched runs, anonymous access rejection, missing observations, changed stored data, missing private objects, bounded upload/import resume, a committed batch whose response is lost, partial proof, wrong-project credentials and journal failure.
+
+The first local runner simulation is in progress under `full-state-codes/tx/runner-simulation-v1/`. It uses PGlite, a local Storage catalog test double and an injected RPC transport; it has no network or real credentials. Its result is not yet a pass and never proves cloud verification. The earlier complete intake-contract simulation remains separately preserved.
+
+```powershell
+node --test scripts/legal/state-codes/publisher-code-intake.test.mjs scripts/legal/state-codes/publisher-code-storage.test.mjs scripts/legal/state-codes/run-publisher-code-intake.test.mjs
+node scripts/legal/state-codes/run-publisher-code-intake.mjs --packet=private/audit-2026-10-05/full-state-codes/tx/private-intake-v3 --manifest-sha256=87b76b96ba6ce3130167193a474f992307c0856cc9a162f2848aeb8ed711a5da
+```
+
+Actual execution must additionally specify the independently verified live run ID, a private receipt directory and the existing private credential file, with `--execute`. Use bounded `--max-objects` and `--max-batches` values. No production invocation is authorized by a test receipt or by merely inventing a run UUID. Before deployment, compare live dependency definitions/grants and preserve schema before-images. After private intake, independently reconcile holds, versions, source dates and current public counts before any separate publication work.
