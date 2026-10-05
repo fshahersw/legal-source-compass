@@ -74,6 +74,18 @@ class TexasParserTest(unittest.TestCase):
             _, _, rows = parser.parse_chapter(chapter(body), 'ES', 'es.254.v2.htm')
             self.assertEqual(rows, [])
 
+    def test_amendment_notice_between_named_anchor_and_heading_is_retained(self):
+        raw = chapter('<p><a name="51.217"></a><a name="127385.115526"></a></p>'
+                      '<p class="center">The following section was amended by the 89th Legislature. Pending publication, see H.B. 33.</p>'
+                      '<br/><p>Sec. 51.217. EMERGENCY OPERATIONS PLAN. (a) Operative body.</p>')
+        text, blocks, rows = parser.parse_chapter(raw, 'ED', 'ed.51-old.htm')
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['native_section_anchor'], '51.217')
+        self.assertEqual(rows[0]['anchor_element_ordinal'], 0)
+        self.assertEqual(blocks[0]['kind'], 'publisher_note')
+        self.assertIn('Pending publication', text)
+        self.assertNotIn('Pending publication', text[rows[0]['text_start']:rows[0]['text_end']])
+
     def test_unmapped_pre_text_is_rejected_instead_of_dropped(self):
         for body in ['Orphan text<p>A paragraph</p>', '<p>A paragraph</p>Orphan tail']:
             with self.assertRaisesRegex(ValueError, 'Unmapped text'):

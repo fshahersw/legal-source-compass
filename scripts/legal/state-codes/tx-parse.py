@@ -14,7 +14,11 @@ import zipfile
 from urllib.parse import urlsplit
 from lxml import html
 
-PARSER = 'texas-publisher-html/3'
+PARSER = 'texas-publisher-html/4'
+
+
+def publisher_note(text):
+    return bool(re.match(r'^(Text of |For (?:another|text of)|This (?:section|article|chapter) (?:was|is)|The following)', text, re.I))
 
 
 def sha(data):
@@ -51,23 +55,33 @@ def parse_chapter(raw, code, member):
                     and text.startswith(link['text'])):
                 heads.append(link)
         # Older publisher files have a separate, empty named-anchor paragraph
-        # immediately before a plain heading. Require the printed identity and
-        # exact source anchor to agree; never manufacture an HTTP chapter URL.
+        # before a plain heading, sometimes separated by an amendment notice.
+        # Cross only empty elements and explicit publisher notices; ordinary
+        # text is an identity boundary. Never manufacture an HTTP chapter URL.
         named_heading = re.match(r'^((?:Sec\.|Art\.|SECTION)\s+([^\s]+)\.)\s', text, re.I)
         previous = node.getprevious()
-        if not heads and named_heading and previous is not None and not ''.join(previous.itertext()).strip():
+        previous_ordinal = ordinal - 1
+        for _ in range(8):
+            if previous is None or heads or not named_heading:
+                break
+            preceding_text = re.sub(r'\s+', ' ', ''.join(previous.itertext())).strip()
             names = previous.xpath('.//a/@name') + previous.xpath('.//a/@id')
             anchor = named_heading[2]
-            if names.count(anchor) == 1:
+            if not preceding_text and names.count(anchor) == 1:
                 heads.append({'text': named_heading[1], 'href': None,
                               'native_anchor': anchor, 'identity_evidence': 'preceding_named_anchor',
-                              'anchor_element_ordinal': ordinal - 1})
+                              'anchor_element_ordinal': previous_ordinal})
+                break
+            if names or (preceding_text and not publisher_note(preceding_text)):
+                break
+            previous = previous.getprevious()
+            previous_ordinal -= 1
         if len(heads) > 1:
             raise ValueError('Ambiguous section heading')
         kind = 'section_heading' if heads else 'paragraph'
         if node.get('class') == 'center' and re.match(r'^(TITLE|SUBTITLE|CHAPTER|SUBCHAPTER|ARTICLE)\s', text):
             kind = 'hierarchy'
-        if re.match(r'^(Text of |For (?:another|text of)|This (?:section|article|chapter) (?:was|is)|The following)', text, re.I):
+        if publisher_note(text):
             kind = 'publisher_note'
         block = {'source_element_ordinal': ordinal, 'start': offset, 'end': offset + len(text),
                  'kind': kind, 'links': links}
@@ -109,7 +123,7 @@ def parse_chapter(raw, code, member):
     return full_text, blocks, sections
 
 
-def main(root, output_name='parsed-v3'):
+def main(root, output_name='parsed-v4'):
     root = pathlib.Path(root)
     inventory = json.loads((root / 'download-index.json').read_bytes())['StatuteCode']
     if not re.fullmatch(r'[a-zA-Z0-9_-]+', output_name):
@@ -191,4 +205,4 @@ def main(root, output_name='parsed-v3'):
 
 if __name__ == '__main__':
     main(sys.argv[1] if len(sys.argv) > 1 else 'private/audit-2026-10-05/full-state-codes/tx',
-         sys.argv[2] if len(sys.argv) > 2 else 'parsed-v3')
+         sys.argv[2] if len(sys.argv) > 2 else 'parsed-v4')

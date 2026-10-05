@@ -94,16 +94,19 @@ def section_record(section, chapter, text):
     return envelope('code-section-occurrence', section['id'], data, chapter)
 
 
-def main(root, destination):
+def main(root, destination, parser_version='4'):
     root = pathlib.Path(root).resolve()
     destination = pathlib.Path(destination).resolve()
     if root not in destination.parents:
         raise ValueError('Packet must be a new directory under its source evidence root')
-    parsed = root / 'parsed-v3'
-    audit = json.loads((root / 'parser-v3-comparison-audit.json').read_bytes())
+    if parser_version not in ('3', '4'):
+        raise ValueError('Reviewed parser version required')
+    parsed = root / ('parsed-v' + parser_version)
+    audit_file = root / ('parser-v' + parser_version + '-comparison-audit.json')
+    audit = json.loads(audit_file.read_bytes())
     summary = json.loads((parsed / 'summary.json').read_bytes())
-    if summary['parser'] != 'texas-publisher-html/3' or summary['parse_failures']:
-        raise ValueError('Verified parser v3 is required')
+    if summary['parser'] != 'texas-publisher-html/' + parser_version or summary['parse_failures']:
+        raise ValueError('Verified parser output required')
     for name in ['chapters', 'sections']:
         if sha((parsed / (name + '.jsonl')).read_bytes()) != audit[name + '_jsonl_sha256']:
             raise ValueError('Audited derivative changed')
@@ -187,7 +190,7 @@ def main(root, destination):
         'source_system': SOURCE, 'parser': summary['parser'], 'counts': dict(counts),
         'batches': batches, 'assets': {'file': 'assets.json', 'sha256': sha(asset_raw),
           'unique_objects': len(assets), 'unique_bytes': sum(a['bytes'] for a in assets.values())},
-        'input_audit_sha256': sha((root / 'parser-v3-comparison-audit.json').read_bytes()),
+        'input_audit_sha256': sha(audit_file.read_bytes()),
         'registered': False, 'published': False, 'cloud_verified': False,
         'requires': ['Whole-object cloud verification and private source registration',
                      'Dedicated publisher-code corpus_ingest wrapper and actual open run',
@@ -201,4 +204,4 @@ def main(root, destination):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1], sys.argv[2])
+    main(*sys.argv[1:])
