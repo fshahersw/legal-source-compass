@@ -8,7 +8,9 @@ import { DatasetBrowser, useDatasets } from "@/components/corpus/DatasetBrowser"
 import { LawLevel } from "@/components/corpus/LawOutline";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { pageHead } from "@/lib/corpus/head";
-import { stateByUsps } from "@/lib/corpus/geo";
+import { STATES, stateByUsps } from "@/lib/corpus/geo";
+import { loadStateLawDirectory, type StateLawDirectoryEntry } from "@/lib/corpus/lawSources";
+import { PrivateDataLink } from "@/components/atlas/PrivateDataLink";
 import { getLawOutlineStatus, listLawCollections } from "@/lib/external/corpus.functions";
 import { datasetDisplayName } from "@/lib/external/domainRegistry";
 import { sectionOf } from "@/lib/external/groups";
@@ -82,6 +84,12 @@ function LawPage() {
     staleTime: 60_000,
   });
   const datasets = useDatasets();
+  const stateSources = useQuery({
+    queryKey: ["state-law-directory"],
+    queryFn: loadStateLawDirectory,
+    staleTime: 60_000,
+    enabled: s.scope === "states",
+  });
   if (s.view === "list" || s.ds === "outline")
     return <SectionPage section="law" path="/law" ds={s.ds === "outline" ? undefined : s.ds} />;
 
@@ -136,10 +144,13 @@ function LawPage() {
   }
 
   let body: React.ReactNode;
-  const err = colls.error ?? status.error ?? datasets.error;
+  const savedLawError = colls.error ?? status.error ?? datasets.error;
+  const err = s.scope === "states" ? stateSources.error : savedLawError;
   if (err) body = <ExternalError error={err} />;
-  else if (colls.isLoading || status.isLoading || datasets.isLoading)
+  else if (s.scope !== "states" && (colls.isLoading || status.isLoading || datasets.isLoading))
     body = <p className="text-[13px] text-muted-foreground">Loading law collections…</p>;
+  else if (s.scope === "states" && stateSources.isLoading)
+    body = <p className="text-[13px] text-muted-foreground">Loading state law sources…</p>;
   else if (s.ds) body = <DatasetBrowser key={s.ds} dataset={s.ds} />;
   else if (s.kind) {
     const code = s.scope === "federal" ? "FEDERAL" : (s.state ?? "");
@@ -157,7 +168,6 @@ function LawPage() {
     );
   } else if (!s.scope) {
     const fedProv = coll.filter((c) => c.state === "FEDERAL").reduce((a, c) => a + c.provisions, 0);
-    const states = new Set(coll.filter((c) => c.state !== "FEDERAL").map((c) => c.state));
     body = (
       <div className="space-y-4">
         {outlineOn ? null : <OutlineHeld reason={status.data?.reason ?? null} />}
@@ -176,10 +186,7 @@ function LawPage() {
             {
               key: "states",
               label: "States",
-              note: outlineOn
-                ? `${states.size} jurisdictions with law outlines`
-                : "Code datasets · outline held",
-              count: outlineOn ? states.size : undefined,
+              note: "Official sources for all 50 states and DC",
               link: { to: "/law", search: { scope: "states" } },
             },
             {
@@ -277,33 +284,39 @@ function LawPage() {
       />
     );
   } else if (!s.state) {
-    const codes = [
-      ...new Set(coll.filter((c) => c.state !== "FEDERAL").map((c) => c.state)),
-      ...Object.values(STATE_DATASETS),
-    ];
-    const uniq = [...new Set(codes)].sort((a, b) => stName(a).localeCompare(stName(b)));
+    const directory = stateSources.data ?? [];
     body = (
-      <FolderGrid
-        title="Pick a state"
-        hint={
-          outlineOn
-            ? "outline provisions; separate code datasets are not added to this count"
-            : "states with a published code dataset; the categorized outline is not published"
-        }
-        items={uniq.map((code) => ({
-          key: code,
-          label: stName(code),
-          count: coll.some((c) => c.state === code)
-            ? coll.filter((c) => c.state === code).reduce((a, c) => a + c.provisions, 0)
-            : undefined,
-          link: { to: "/law", search: { scope: "states", state: code } },
-        }))}
-      />
+      <div className="space-y-3">
+        <p className="text-[13px] text-muted-foreground">
+          Choose a state to open its official code and available saved statutes.
+        </p>
+        <FolderGrid
+          title="States and DC"
+          items={[...STATES]
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((state) => {
+              const entry = directory.find((item) => item.code === state.usps);
+              return {
+                key: state.usps,
+                label: state.name,
+                note: entry?.codeLink?.label ?? "Official source directory",
+                link: { to: "/law", search: { scope: "states", state: state.usps } },
+              };
+            })}
+        />
+      </div>
     );
   } else {
     const own = lawDs.filter((d) => STATE_DATASETS[d.id] === s.state);
+    const stateResource = stateSources.data?.find((item) => item.code === s.state);
     body = (
       <div className="space-y-5">
+        {stateResource ? <StateLawSources entry={stateResource} /> : null}
+        {savedLawError ? (
+          <ExternalError error={savedLawError} />
+        ) : colls.isLoading || status.isLoading || datasets.isLoading ? (
+          <p className="text-[12px] text-muted-foreground">Loading saved law records…</p>
+        ) : null}
         {outlineOn ? (
           <FolderGrid
             title="Type of law"
@@ -317,9 +330,9 @@ function LawPage() {
                 link: { to: "/law", search: { scope: "states", state: s.state, kind: c.kind } },
               }))}
           />
-        ) : (
+        ) : coll.some((item) => item.state === s.state) ? (
           <OutlineHeld reason={status.data?.reason ?? null} />
-        )}
+        ) : null}
         {own.length ? (
           <FolderGrid
             title="State code datasets"
@@ -341,9 +354,88 @@ function LawPage() {
     <AppShell
       breadcrumbs={crumbs}
       title={title}
-      description="Open a folder to narrow down: jurisdiction, then type of law, then collection and provision."
+      {...(s.scope === "states"
+        ? {}
+        : {
+            description:
+              "Open a folder to narrow down: jurisdiction, type of law, collection, and provision.",
+          })}
     >
       {body}
     </AppShell>
+  );
+}
+
+function StateLawSources({ entry }: { entry: StateLawDirectoryEntry }) {
+  return (
+    <section className="rounded-lg border border-border bg-surface p-4 shadow-card">
+      <h2 className="text-sm font-semibold">Official law source</h2>
+      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px]">
+        {entry.codeLink ? (
+          <a
+            href={entry.codeLink.url}
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-primary underline"
+          >
+            {entry.codeLink.label}
+          </a>
+        ) : (
+          <a
+            href={entry.directoryUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-primary underline"
+          >
+            State law resources
+          </a>
+        )}
+        {entry.codeLink && entry.codeLink.url !== entry.directoryUrl ? (
+          <a
+            href={entry.directoryUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="text-muted-foreground underline"
+            title={`DOJ directory retrieved ${entry.directoryRetrievedAt.slice(0, 10)}; linked pages may have changed.`}
+          >
+            DOJ state directory
+          </a>
+        ) : null}
+      </div>
+      {entry.capturedSources.length ? (
+        <details className="mt-3 border-t border-border pt-3">
+          <summary className="cursor-pointer text-[12px] font-medium">
+            Saved statutes ({entry.capturedSources.length})
+          </summary>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Selected statutes; full state code not stored.
+          </p>
+          <ul className="mt-2 space-y-2 text-[12px]">
+            {entry.capturedSources.map((source) => (
+              <li key={source.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <a
+                  href={source.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary underline"
+                >
+                  {source.title}
+                </a>
+                <PrivateDataLink
+                  href={source.textPath}
+                  download
+                  className="text-muted-foreground underline"
+                >
+                  View captured text
+                </PrivateDataLink>
+                <span className="text-muted-foreground">
+                  Captured {source.capturedAt.slice(0, 10)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
+    </section>
   );
 }

@@ -1,5 +1,7 @@
 # Corpus continuation checkpoint — October 5, 2026
 
+Read [the state-law release checkpoint](state-law-release-checkpoint-2026-10-05.md) first for the latest prepared release and browser publication blocker. Release .2 is tested and privately uploaded but **not registered/published**; .1 remains the active manifest. Do not recreate the two owner-deleted peripheral collections.
+
 ## Latest calculator and consolidation checkpoint
 
 The owner prioritized calculator accuracy and duplicate collection navigation during this continuation. See [the October 5 calculator review](limitations-production-review-2026-10-05.md). The protected limitations release is now `2026-10-05.1`: 118 rule records, 81 statutory captures, and 13 judicial references. Administrative run `841cf6a6-5210-4380-8283-eeb9027541ef` completed with zero projection/hash/citation mismatches and preserved earlier versions. Do not replay the older 79-source publication assertion. Florida and Maine transition boundaries are enforced; other historical applicability still requires review. The frontend groups the audited FDA classification and CourtListener people snapshot pairs, with earlier versions preserved. These changes do not close any of the docket acquisition or held-publication gaps below.

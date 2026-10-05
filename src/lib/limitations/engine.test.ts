@@ -360,4 +360,85 @@ describe("versioned legal evidence integrity", () => {
       ),
     ).toBe(true);
   });
+
+  it("keeps ordinary injury and death periods distinct in the expanded state coverage", () => {
+    for (const [state, injuryYears, deathYears] of [
+      ["DC", 3, 2],
+      ["MO", 5, 3],
+      ["NE", 4, 2],
+      ["UT", 4, 2],
+      ["WY", 4, 2],
+    ] as const) {
+      for (const [claimType, years] of [
+        ["personal_injury", injuryYears],
+        ["wrongful_death", deathYears],
+      ] as const) {
+        const result = calculateBaseline(snapshot, {
+          ...confirmed,
+          jurisdiction: state,
+          claimType,
+        });
+        expect(result.status, `${state}/${claimType}`).toBe("baseline");
+        expect(result.date).toBe(`${2024 + years}-03-01`);
+      }
+      expect(
+        calculateBaseline(snapshot, {
+          ...confirmed,
+          jurisdiction: state,
+          claimType: "product_liability",
+        }).date,
+      ).toBeNull();
+    }
+  });
+
+  it("withholds Kentucky historical dates and Louisiana's transition boundary", () => {
+    expect(
+      calculateBaseline(snapshot, { ...confirmed, jurisdiction: "KY", accrualDate: "2026-07-14" })
+        .date,
+    ).toBeNull();
+    expect(
+      calculateBaseline(snapshot, { ...confirmed, jurisdiction: "KY", accrualDate: "2026-07-15" })
+        .date,
+    ).toBe("2027-07-15");
+    expect(baselineRule(snapshot.rules, "KY", "personal_injury")!.exclusions.join(" ")).toContain(
+      "304.39-230",
+    );
+    expect(
+      calculateBaseline(snapshot, { ...confirmed, jurisdiction: "LA", accrualDate: "2024-07-01" })
+        .date,
+    ).toBeNull();
+    expect(
+      calculateBaseline(snapshot, { ...confirmed, jurisdiction: "LA", accrualDate: "2024-07-02" })
+        .date,
+    ).toBe("2026-07-02");
+    expect(
+      calculateBaseline(snapshot, {
+        ...confirmed,
+        jurisdiction: "LA",
+        claimType: "wrongful_death",
+        accrualDate: "2026-01-01",
+      }).date,
+    ).toBeNull();
+  });
+
+  it("does not calculate through unresolved Wyoming representative tolling", () => {
+    const rule = baselineRule(snapshot.rules, "WY", "wrongful_death")!;
+    expect(rule.conditions.join(" ")).toContain("1-38-103(b)(ii)");
+    expect(
+      calculateBaseline(snapshot, {
+        ...confirmed,
+        jurisdiction: "WY",
+        claimType: "wrongful_death",
+        issues: ["tolling"],
+      }).date,
+    ).toBeNull();
+    expect(
+      calculateBaseline(snapshot, {
+        ...confirmed,
+        jurisdiction: "WY",
+        claimType: "wrongful_death",
+        exceptionReview: "unresolved",
+      }).date,
+    ).toBeNull();
+  });
 });
