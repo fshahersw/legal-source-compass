@@ -6,6 +6,8 @@ The owner-ordered financial-disclosure and URL-directory removals are complete; 
 
 The browser connection repeatedly timed out, including an inventory request. No Supabase SQL or Lovable publishing action was attempted after those failures. The user was asked asynchronously to reconnect the extension. Direct target-pinned REST access and private Storage access remain functional, so docket continuation can proceed independently when quota permits. Do not call Git push proof of Lovable sync or production publication.
 
+At 11:17 UTC, an independent audit reconfirmed the exact frozen SQL checksum, all 14 uploaded-file receipts, all rule/source/coverage references, and all 91 statutory plus 13 judicial text-file hashes. The user reconnected Chrome, but commands still time out; SQL registration and publication remain pending. A local preview verified 51 unique state choices and a source-text response against the active manifest. The state list was further simplified to names only and misleading “full code not stored” copy was removed. TypeScript, scoped ESLint and the production build passed after that final copy/layout change. See `corpus-continuation-1055-2026-10-05.md` for the 620 newly captured docket entries and their separate pending-registration status.
+
 ## Prepared calculator release
 
 | Measure | Published .1 | Prepared .2 |

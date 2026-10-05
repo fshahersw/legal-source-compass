@@ -284,25 +284,20 @@ function LawPage() {
       />
     );
   } else if (!s.state) {
-    const directory = stateSources.data ?? [];
     body = (
       <div className="space-y-3">
         <p className="text-[13px] text-muted-foreground">
-          Choose a state to open its official code and available saved statutes.
+          Choose a state to browse its official sources and saved statutes.
         </p>
         <FolderGrid
           title="States and DC"
           items={[...STATES]
             .sort((a, b) => a.name.localeCompare(b.name))
-            .map((state) => {
-              const entry = directory.find((item) => item.code === state.usps);
-              return {
-                key: state.usps,
-                label: state.name,
-                note: entry?.codeLink?.label ?? "Official source directory",
-                link: { to: "/law", search: { scope: "states", state: state.usps } },
-              };
-            })}
+            .map((state) => ({
+              key: state.usps,
+              label: state.name,
+              link: { to: "/law", search: { scope: "states", state: state.usps } },
+            }))}
         />
       </div>
     );
@@ -407,9 +402,7 @@ function StateLawSources({ entry }: { entry: StateLawDirectoryEntry }) {
           <summary className="cursor-pointer text-[12px] font-medium">
             Saved statutes ({entry.capturedSources.length})
           </summary>
-          <p className="mt-2 text-[11px] text-muted-foreground">
-            Selected statutes; full state code not stored.
-          </p>
+          <p className="mt-2 text-[11px] text-muted-foreground">Selected statute extracts.</p>
           <ul className="mt-2 space-y-2 text-[12px]">
             {entry.capturedSources.map((source) => (
               <li key={source.id} className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
