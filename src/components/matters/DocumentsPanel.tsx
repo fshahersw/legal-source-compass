@@ -230,7 +230,7 @@ function RegistrySection({
     source: RegistrySource | "";
     availability: Availability | "";
     caseId: string;
-  }>({ q: "", source: "", availability: "", caseId: "" });
+  }>({ q: "", source: "", availability: "open", caseId: "" });
   const [draft, setDraft] = useState("");
   const [sort, setSort] = useState<DocumentSort>("entry-desc");
   const [offset, setOffset] = useState(0);
@@ -302,7 +302,7 @@ function RegistrySection({
   const active = !!(
     filter.q ||
     filter.source ||
-    filter.availability ||
+    filter.availability !== "open" ||
     filter.caseId ||
     entry !== null
   );
@@ -460,13 +460,13 @@ function RegistrySection({
               size="sm"
               className="ml-2 h-7 px-2"
               onClick={() => {
-                setFilter({ q: "", source: "", availability: "", caseId: "" });
+                setFilter({ q: "", source: "", availability: "open", caseId: "" });
                 setDraft("");
                 onEntry(null);
                 setOffset(0);
               }}
             >
-              Clear filters
+              Reset filters
             </Button>
           ) : null}
         </p>

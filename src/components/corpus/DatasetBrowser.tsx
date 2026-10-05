@@ -41,6 +41,20 @@ export function useDatasets() {
   return { ...q, aliases };
 }
 
+function displayDatasetCellValue(
+  value: string | undefined,
+  key: string,
+  filters: DatasetInfo["filters"] | undefined,
+) {
+  if (typeof value === "string") {
+    const label = filters
+      ?.find((filter) => filter.name === key)
+      ?.options?.find((option) => option.value === value)?.label;
+    if (label !== undefined) return label;
+  }
+  return displayValue(value);
+}
+
 /** Renders a corpus link as an in-app link, a file link or an external link. Unmapped links are labelled, not hidden. */
 export function CorpusLink({
   url,
@@ -350,7 +364,7 @@ export function DatasetBrowser({
                     className="max-w-[16rem] truncate px-3 py-1.5"
                     title={i.cells[c.key]}
                   >
-                    {displayValue(i.cells[c.key])}
+                    {displayDatasetCellValue(i.cells[c.key], c.key, info?.filters)}
                   </td>
                 ))}
               </tr>
