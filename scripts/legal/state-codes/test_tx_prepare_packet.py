@@ -14,7 +14,7 @@ class PublisherPacketTest(unittest.TestCase):
         chapter = {'id': 'CP:' + member, 'code': 'CP', 'publisher_member': member,
             'text_sha256': packet.sha(text.encode()), 'archive_sha256': 'a' * 64,
             'raw_member_sha256': 'b' * 64, 'archive_source_url': 'https://tcss.legis.texas.gov/resources/Zips/CP.htm.zip',
-            'retrieved_at': '2026-10-05T15:00:00Z', 'parser': 'texas-publisher-html/3',
+            'retrieved_at': '2026-10-05T15:00:00Z', 'parser': 'texas-publisher-html/5',
             'publisher_filename_legacy_hint': 'old' in member}
         section = {'id': chapter['id'] + ':16.003:1', 'chapter_id': chapter['id'],
             'native_section_anchor': '16.003', 'native_citation_key': 'CP:16.003', 'occurrence': 1,
@@ -61,6 +61,18 @@ class PublisherPacketTest(unittest.TestCase):
         for value in [1.5, 9007199254740992, '\x00', '\ud800', {'é': 'value'}]:
             with self.assertRaises(ValueError):
                 packet.canonical(value)
+
+    def test_subdivision_labels_are_bound_to_the_parent_text(self):
+        section, chapter, text = self.fixture()
+        start = text.index('Operative')
+        section['subdivisions'] = [{'label': 'Operative', 'text_start': start, 'text_end': start + 9,
+                                    'source_element_ordinal': 1}]
+        row = packet.section_record(section, chapter, text)
+        self.assertEqual(row['data']['subdivision_span_unit'], 'unicode_code_points')
+        self.assertEqual(row['data']['subdivisions'], section['subdivisions'])
+        section['subdivisions'][0]['text_end'] += 1
+        with self.assertRaisesRegex(ValueError, 'Subdivision outside'):
+            packet.section_record(section, chapter, text)
 
 
 if __name__ == '__main__':

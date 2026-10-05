@@ -91,19 +91,28 @@ def section_record(section, chapter, text):
         'text_span': {'unit': 'unicode_code_points', 'start': start, 'end': end},
         'following_context_start': section['following_context_start'],
     }
+    if section.get('subdivisions'):
+        for child in section['subdivisions']:
+            a, b = child['text_start'], child['text_end']
+            if type(a) is not int or type(b) is not int or not start <= a < b <= end or text[a:b] != child['label']:
+                raise ValueError('Subdivision outside verified parent text')
+        data['subdivisions'] = section['subdivisions']
+        data['subdivision_span_unit'] = 'unicode_code_points'
     return envelope('code-section-occurrence', section['id'], data, chapter)
 
 
-def main(root, destination, parser_version='4'):
+def main(root, destination, parser_version='5'):
     root = pathlib.Path(root).resolve()
     destination = pathlib.Path(destination).resolve()
     if root not in destination.parents:
         raise ValueError('Packet must be a new directory under its source evidence root')
-    if parser_version not in ('3', '4'):
-        raise ValueError('Reviewed parser version required')
+    if parser_version != '5':
+        raise ValueError('Parser v5 required: prior derivatives clip embedded compound statutes')
     parsed = root / ('parsed-v' + parser_version)
     audit_file = root / ('parser-v' + parser_version + '-comparison-audit.json')
     audit = json.loads(audit_file.read_bytes())
+    if audit.get('outcome') != 'passed' or audit.get('parser') != 'texas-publisher-html/5':
+        raise ValueError('Successful v5 subdivision audit required')
     summary = json.loads((parsed / 'summary.json').read_bytes())
     if summary['parser'] != 'texas-publisher-html/' + parser_version or summary['parse_failures']:
         raise ValueError('Verified parser output required')

@@ -7,8 +7,8 @@ import { parseChapter, classifyNoSectionSource } from './nc-parser-core.mjs';
 const root = process.cwd();
 const base = path.join(root, 'private/audit-2026-10-05/full-state-codes/nc');
 const inventoryPath = path.join(base, 'inventory.json');
-const parsedDir = path.join(base, 'parsed/v7/chapters');
-const reportPath = path.join(base, 'parse-report-v7.json');
+const parsedDir = path.join(base, 'parsed/v15/chapters');
+const reportPath = path.join(base, 'parse-report-v15.json');
 await fs.mkdir(parsedDir, { recursive: true });
 
 const sha256 = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
@@ -41,6 +41,15 @@ for (const chapter of inventory.chapters) {
       rawSpanSha256: sha256(rawSpanBytes),
     };
   });
+  const notices = parsed.sourceNotices.map(row => {
+    const rawSpan = rawText.slice(row.sourceOffset, row.sourceEndCharacterOffset);
+    const rawSpanBytes = Buffer.from(rawSpan, 'utf8');
+    return {
+      ...row,
+      rawSpanBytes: rawSpanBytes.length,
+      rawSpanSha256: sha256(rawSpanBytes),
+    };
+  });
   const outputPath = path.join(parsedDir, `chapter-${chapter.chapterId}.jsonl`);
   const body = parsed.sections.map(row => JSON.stringify(row)).join('\n') + (parsed.sections.length ? '\n' : '');
   await fs.writeFile(outputPath, body, { flag: 'wx' });
@@ -53,8 +62,11 @@ for (const chapter of inventory.chapters) {
     rawBytes: bytes.length,
     chapterTitle: parsed.chapterTitle,
     paragraphCount: parsed.paragraphCount,
+    paragraphDispositionCounts: parsed.paragraphDispositionCounts,
+    unassignedParagraphCount: parsed.unassignedParagraphCount,
     sectionCount: parsed.sections.length,
     unparsedSingleSectionMarkerRows: unresolvedHeadings,
+    sourceNotices: notices,
     hierarchyHeadingCount: parsed.hierarchyHeadings.length,
     repeatedSectionIds: parsed.repeatedSectionIds,
     parsedPath: path.relative(root, outputPath).replaceAll('\\', '/'),
@@ -87,7 +99,8 @@ const repeatedSectionIdentities = [...identityGroups]
     })),
   }));
 const report = {
-  schemaVersion: 'nc-general-statutes-parse-report/7',
+  schemaVersion: 'nc-general-statutes-parse-report/15',
+  parserRevision: 15,
   parser: 'scripts/legal/state-codes/nc-parser-core.mjs',
   parsedAt: new Date().toISOString(),
   sourceInventory: inventory.counts,
@@ -97,17 +110,32 @@ const report = {
   counts: {
     chaptersInSourceInventory: inventory.chapters.length,
     chaptersParsed: results.length,
+    extractedSourceParagraphRows: results.reduce((sum, x) => sum + x.paragraphCount, 0),
+    unassignedSourceParagraphCount: results.reduce((sum, x) => sum + x.unassignedParagraphCount, 0),
+    sourceParagraphDispositionCounts: Object.fromEntries([...new Set(results.flatMap(x => Object.keys(x.paragraphDispositionCounts)))].map(role => [role, results.reduce((sum, x) => sum + (x.paragraphDispositionCounts[role] || 0), 0)])),
     chaptersWithSections: results.filter(x => x.sectionCount > 0).length,
     chaptersWithExplicitStatusStub: results.filter(x => x.parseStatus === 'source_explicit_status_stub').length,
     chaptersWithNonemptyUnparsedText: results.filter(x => x.parseStatus === 'nonempty_no_section_heading_review').length,
     chapterHeadingOnlyWithoutBody: results.filter(x => x.parseStatus === 'chapter_heading_only_no_body_text').length,
-    parserFailureCount: results.filter(x => x.parseStatus === 'nonempty_no_section_heading_review').length,
+    parserFailureCount: results.filter(x => x.parseStatus === 'nonempty_no_section_heading_review' || x.unassignedParagraphCount > 0).length,
     unresolvedSingleSectionMarkerCount: results.reduce((sum, x) => sum + x.unparsedSingleSectionMarkerRows.length, 0),
     unresolvedSingleSectionMarkerRows: results.flatMap(x => x.unparsedSingleSectionMarkerRows.map(row => ({ chapterId: x.chapterId, ...row }))),
+    sourceNoticeCount: results.reduce((sum, x) => sum + x.sourceNotices.length, 0),
+    sourceNoticeKinds: Object.fromEntries([...new Set(results.flatMap(x => x.sourceNotices.map(row => row.kind)))].map(kind => [kind, results.reduce((sum, x) => sum + x.sourceNotices.filter(row => row.kind === kind).length, 0)])),
+    sourceNotices: results.flatMap(x => x.sourceNotices.map(row => ({ chapterId: x.chapterId, ...row }))),
     sourceStubCount: results.filter(x => x.parseStatus === 'source_explicit_status_stub').length,
     statutorySectionOccurrences: allSections.length,
     uniqueSectionCitationIdentities: identityGroups.size,
     repeatedCitationIdentityCount: repeatedSectionIdentities.length,
+    sourceIdentityReconciliationCount: allSections.filter(row => row.sourceIdentityReconciliation).length,
+    sourceIdentityReconciliations: allSections.filter(row => row.sourceIdentityReconciliation).map(row => ({
+      chapterId: row.chapterId,
+      sectionId: row.sectionId,
+      citationIdentity: row.citationIdentity,
+      sourceHeadingText: row.sourceHeadingText,
+      reconciliation: row.sourceIdentityReconciliation,
+      source: row.source,
+    })),
     additionalSourceOccurrencesWithinRepeatedIdentities: repeatedSectionIdentities.reduce((sum, x) => sum + x.occurrences.length - 1, 0),
     repeatedSectionIdentities,
     sectionIdAcrossChapterCollisions: [...sectionIdChapters]

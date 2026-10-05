@@ -38,10 +38,12 @@ async function verifySection(chapterId, sectionId) {
     rawPath: source.rawPath,
     rawBytes: source.bytes,
     rawSha256: source.sha256,
-    parsedPath: `private/audit-2026-10-05/full-state-codes/nc/parsed/v7/chapters/chapter-${chapterId}.jsonl`,
+    parsedPath: `private/audit-2026-10-05/full-state-codes/nc/parsed/v15/chapters/chapter-${chapterId}.jsonl`,
     sectionOccurrence: row.occurrenceWithinCitation,
     heading: row.heading,
+    sourceHeadingText: row.sourceHeadingText,
     headingContainsEffectiveVersionQualifier: row.sourceVersionQualifier,
+    sourceIdentityReconciliation: row.sourceIdentityReconciliation,
     sourceStartCharacterOffset: row.source.htmlCharacterOffset,
     sourceStartByteOffset: Buffer.byteLength(raw.slice(0, row.source.htmlCharacterOffset), 'utf8'),
     sourceEndCharacterOffset: spanEnd,
@@ -58,7 +60,7 @@ async function verifySection(chapterId, sectionId) {
 const samples = [];
 for (const [chapterId, sectionId] of [
   ['1', '1-15'], ['1', '1-52'], ['105', '105-164.13'],
-  ['20', '20-123.2'], ['105', '105-130.1'], ['163', '163-278.2'],
+  ['20', '20-123.2'], ['105', '105-130.1'], ['163', '163-278.2'], ['78A', '78A-13'],
 ]) {
   samples.push(await verifySection(chapterId, sectionId));
 }
@@ -71,7 +73,7 @@ const stubStatus = classifyNoSectionSource(stubParsed);
 if (stubParsed.sections.length || stubStatus.parseStatus !== 'source_explicit_status_stub') throw new Error('Chapter 2 no longer classifies as an explicit source stub');
 
 const report = {
-  schemaVersion: 'nc-manual-source-review/5',
+  schemaVersion: 'nc-manual-source-review/15',
   reviewedAt: new Date().toISOString(),
   sourceInventoryPath: 'private/audit-2026-10-05/full-state-codes/nc/inventory.json',
   sourceInventorySha256: sha256(await fs.readFile(path.join(base, 'inventory.json'))),
@@ -89,6 +91,6 @@ const report = {
   },
   limitations: 'Manual checks compare parser-extracted source paragraph text with the exact captured chapter HTML span from each section heading through the next section heading. These checks validate extraction and provenance, not the legal currency or official status of the code text.',
 };
-const out = path.join(base, 'manual-source-review-v5.json');
+const out = path.join(base, 'manual-source-review-v14.json');
 await fs.writeFile(out, `${JSON.stringify(report, null, 2)}\n`, { flag: 'wx' });
 console.log(JSON.stringify({ output: path.relative(root, out), sampleCount: samples.length, repealStub: report.repealStubSample.parseStatus }, null, 2));

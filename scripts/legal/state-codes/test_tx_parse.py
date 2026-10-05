@@ -1,6 +1,7 @@
 import importlib.util
 import pathlib
 import unittest
+from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location('tx_parse', pathlib.Path(__file__).with_name('tx-parse.py'))
 parser = importlib.util.module_from_spec(spec)
@@ -90,6 +91,38 @@ class TexasParserTest(unittest.TestCase):
         for body in ['Orphan text<p>A paragraph</p>', '<p>A paragraph</p>Orphan tail']:
             with self.assertRaisesRegex(ValueError, 'Unmapped text'):
                 parser.parse_chapter(chapter(body), 'ES', 'es.254.v2.htm')
+
+    def test_reviewed_embedded_articles_extend_parent_without_leaking_hierarchy(self):
+        raw = chapter(heading('16.003', 'COMPACT.') + '<p class="center">ARTICLE I</p>'
+                      '<p>First compact clause.</p><p class="center">ARTICLE II</p>'
+                      '<p>Last compact clause.</p>' + heading('16.004', 'NEXT.'))
+        evidence = [{'code': 'CP', 'member': 'cp.16.htm', 'native_anchor': '16.003',
+                     'raw_member_sha256': parser.sha(raw), 'article_headings': 2}]
+        with patch.object(parser, 'REVIEWED_SUBDIVISIONS', evidence):
+            text, blocks, rows = parser.parse_chapter(raw, 'CP', 'cp.16.htm')
+        self.assertIn('Last compact clause.', text[rows[0]['text_start']:rows[0]['text_end']])
+        self.assertNotIn('NEXT.', text[rows[0]['text_start']:rows[0]['text_end']])
+        self.assertEqual([s['label'] for s in rows[0]['subdivisions']], ['ARTICLE I', 'ARTICLE II'])
+        self.assertNotIn('ARTICLE', rows[1]['hierarchy'])
+        self.assertEqual(sum(b['kind'] == 'subdivision_heading' for b in blocks), 2)
+
+    def test_outer_article_or_changed_source_is_never_assumed_embedded(self):
+        raw = chapter(heading('16.003', 'FIRST.') + '<p class="center">ARTICLE II</p>'
+                      '<p>Outer text.</p>' + heading('16.004', 'NEXT.'))
+        for evidence in [[], [{'code': 'CP', 'member': 'cp.16.htm', 'native_anchor': '16.003',
+                              'raw_member_sha256': '0' * 64, 'article_headings': 1}]]:
+            with patch.object(parser, 'REVIEWED_SUBDIVISIONS', evidence):
+                text, _, rows = parser.parse_chapter(raw, 'CP', 'cp.16.htm')
+            self.assertNotIn('Outer text.', text[rows[0]['text_start']:rows[0]['text_end']])
+            self.assertEqual(rows[1]['hierarchy']['ARTICLE'], 'ARTICLE II')
+
+    def test_reviewed_article_count_must_match_the_bound_source(self):
+        raw = chapter(heading('16.003', 'COMPACT.') + '<p class="center">ARTICLE I</p>')
+        evidence = [{'code': 'CP', 'member': 'cp.16.htm', 'native_anchor': '16.003',
+                     'raw_member_sha256': parser.sha(raw), 'article_headings': 2}]
+        with patch.object(parser, 'REVIEWED_SUBDIVISIONS', evidence):
+            with self.assertRaisesRegex(ValueError, 'subdivision count mismatch'):
+                parser.parse_chapter(raw, 'CP', 'cp.16.htm')
 
 
 if __name__ == '__main__':

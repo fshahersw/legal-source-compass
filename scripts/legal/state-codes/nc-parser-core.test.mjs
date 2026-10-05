@@ -50,12 +50,76 @@ test('parses dotted native section identifiers without truncating them at the de
   assert.deepEqual(malformedIdentifier.unparsedSingleSectionMarkerRows.map(row => row.text), ['§ 143.215.74H. Assistance.']);
 });
 
+test('resolves exact chapter-specific printed identifier exceptions backed by publisher section records', () => {
+  const html = [
+    '<p>G.S. 78A-13 applies to this transaction.</p>',
+    '<p>§ 78A -13. Disclosures required in offer and sale of viaticals.</p>',
+    '<p>Disclosures must be provided.</p>',
+  ].join('');
+  const parsed = parseChapter({ ...chapter, chapterId: '78A' }, html, '7'.repeat(64));
+  assert.equal(parsed.sections.length, 1);
+  assert.equal(parsed.sections[0].sectionId, '78A-13');
+  assert.equal(parsed.sections[0].sourceHeadingText, '§ 78A -13. Disclosures required in offer and sale of viaticals.');
+  assert.equal(parsed.sections[0].sourceIdentityReconciliation.kind, 'exact-publisher-section-record-confirms-printed-identifier');
+  assert.equal(parsed.sections[0].sourceIdentityReconciliation.publisherSectionRecord.htmlSha256, '4f8087c23d1eae915fcce1ee462542f4d715712302ffa65bb4c11456b0bbd245');
+  assert.equal(parsed.sections[0].sourceHeadingText, '§ 78A -13. Disclosures required in offer and sale of viaticals.');
+  assert.equal(parsed.sections[0].heading, 'Disclosures required in offer and sale of viaticals.');
+
+  const mismatchedChapter = parseChapter({ ...chapter, chapterId: '99' }, html, '9'.repeat(64));
+  assert.equal(mismatchedChapter.sections.length, 0);
+  assert.equal(mismatchedChapter.unparsedSingleSectionMarkerRows[0].text, '§ 78A -13. Disclosures required in offer and sale of viaticals.');
+
+  const taxRepeal = parseChapter({ ...chapter, chapterId: '105' }, '<p>§ 105 151.11. Repealed by Session Laws 2013-316, s. 1.1(b), effective for taxable years beginning on or after January 1, 2014.</p>', '8'.repeat(64));
+  assert.equal(taxRepeal.sections[0].sectionId, '105-151.11');
+  assert.equal(taxRepeal.sections[0].sourceHeadingText, '§ 105 151.11. Repealed by Session Laws 2013-316, s. 1.1(b), effective for taxable years beginning on or after January 1, 2014.');
+  assert.match(taxRepeal.sections[0].sourceIdentityReconciliation.publisherSectionRecord.indexUrl, /Chapter105$/);
+
+  const assistance = parseChapter({ ...chapter, chapterId: '143' }, '<p>§ 143.215.74H. Assistance.</p><p>Department assistance text.</p>', 'a'.repeat(64));
+  assert.equal(assistance.sections[0].sectionId, '143-215.74H');
+  assert.equal(assistance.sections[0].bodyText, 'Department assistance text.');
+  assert.equal(assistance.sections[0].sourceHeadingText, '§ 143.215.74H. Assistance.');
+
+  const unsupportedSpacing = parseChapter({ ...chapter, chapterId: '78A' }, '<p>§ 78A -14. Different heading.</p>', 'b'.repeat(64));
+  assert.equal(unsupportedSpacing.sections.length, 0);
+  assert.equal(unsupportedSpacing.unparsedSingleSectionMarkerRows[0].text, '§ 78A -14. Different heading.');
+
+  const distantCrossReference = parseChapter({ ...chapter, chapterId: '78A' }, [
+    '<p>G.S. 78A-13 is referenced elsewhere on this page.</p>',
+    '<p>§ 78A -13. A title not present in the publisher section record.</p>',
+  ].join(''), 'c'.repeat(64));
+  assert.equal(distantCrossReference.sections.length, 0);
+  assert.equal(distantCrossReference.unparsedSingleSectionMarkerRows[0].text, '§ 78A -13. A title not present in the publisher section record.');
+});
+
 test('classifies explicit chapter repeal/transfer language as a source stub', () => {
   const parsed = parseChapter(chapter, '<h1>Chapter 2</h1><p>General Statutes Commission</p><p>§§ 2-1 through 2-60. Repealed and transferred to Chapter 150B.</p>', 'b'.repeat(64));
   assert.equal(parsed.sections.length, 0);
   const status = classifyNoSectionSource(parsed);
   assert.equal(status.parseStatus, 'source_explicit_status_stub');
   assert.ok(status.evidence.some(text => text.includes('Repealed and transferred')));
+});
+
+test('keeps range and multi-citation status notices out of section bodies without inventing IDs', () => {
+  const html = [
+    '<p>§ 58-76-30. Officer liable for negligence in collecting debt.</p><p>When a claim is placed in the hands of any sheriff or coroner for collection, and he does not use due diligence in collecting the same.</p>',
+    '<p>§ 58-77-1, 58-77-5. Repealed by Session Laws 1999-132, s. 12.1, effective June 4, 1999.</p>',
+    '<p>§ 58-78-1. State Fire and Rescue Commission created; membership.</p><p>(a) There is created the State Fire and Rescue Commission of the Department.</p>',
+  ].join('');
+  const parsed = parseChapter({ ...chapter, chapterId: '58' }, html, '4'.repeat(64));
+  assert.deepEqual(parsed.sections.map(row => [row.sectionId, row.bodyText]), [
+    ['58-76-30', 'When a claim is placed in the hands of any sheriff or coroner for collection, and he does not use due diligence in collecting the same.'],
+    ['58-78-1', '(a) There is created the State Fire and Rescue Commission of the Department.'],
+  ]);
+  assert.deepEqual(parsed.sourceNotices.map(row => row.kind), ['multi_citation_source_notice']);
+  assert.equal(parsed.sourceNotices[0].text, '§ 58-77-1, 58-77-5. Repealed by Session Laws 1999-132, s. 12.1, effective June 4, 1999.');
+  assert.equal(parsed.unparsedSingleSectionMarkerRows.length, 0);
+  const range = parseChapter({ ...chapter, chapterId: '1' }, '<p>§§ 1-63 through 1-64. Repealed by Session Laws 1967, c. 954, s. 4.</p>', '5'.repeat(64));
+  assert.equal(range.sections.length, 0);
+  assert.equal(range.sourceNotices[0].kind, 'multi_section_source_notice');
+  assert.equal(range.sourceNotices[0].text, '§§ 1-63 through 1-64. Repealed by Session Laws 1967, c. 954, s. 4.');
+  const compactRange = parseChapter({ ...chapter, chapterId: '1' }, '<p>§§1-63 through 1-64. Repealed by Session Laws 1967, c. 954, s. 4.</p>', '6'.repeat(64));
+  assert.equal(compactRange.sourceNotices.length, 1);
+  assert.equal(compactRange.sourceNotices[0].kind, 'multi_section_source_notice');
 });
 
 test('flags a nonempty chapter with no section headings for review, not as a stub', () => {

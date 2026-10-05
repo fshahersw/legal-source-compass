@@ -14,7 +14,10 @@ import zipfile
 from urllib.parse import urlsplit
 from lxml import html
 
-PARSER = 'texas-publisher-html/4'
+PARSER = 'texas-publisher-html/5'
+# Reviewed compound statutes only. A changed publisher file requires a fresh
+# review; centered ARTICLE text alone never proves section membership.
+REVIEWED_SUBDIVISIONS = json.loads(pathlib.Path(__file__).with_name('tx-reviewed-subdivisions.json').read_bytes())
 
 
 def publisher_note(text):
@@ -93,6 +96,27 @@ def parse_chapter(raw, code, member):
     full_text = '\n\n'.join(chunks)
     if not full_text:
         raise ValueError('Empty chapter text')
+    member_hash = sha(raw)
+    reviewed = {r['native_anchor']: r for r in REVIEWED_SUBDIVISIONS
+                if r['code'] == code and r['member'] == member and r['raw_member_sha256'] == member_hash}
+    parent, subdivision_counts = None, collections.Counter()
+    for block in blocks:
+        if block['kind'] == 'section_heading':
+            head = block['heading']
+            parent = head.get('native_anchor') or urlsplit(head['href']).fragment
+        elif block['kind'] == 'hierarchy':
+            label = full_text[block['start']:block['end']]
+            if label.startswith('ARTICLE ') and parent in reviewed:
+                block['kind'] = 'subdivision_heading'
+                block['parent_native_anchor'] = parent
+                block['mapping_evidence'] = 'reviewed_exact_member_hash_and_parent_anchor'
+                subdivision_counts[parent] += 1
+            else:
+                parent = None
+        elif block['kind'] == 'publisher_note':
+            parent = None
+    if any(subdivision_counts[anchor] != evidence['article_headings'] for anchor, evidence in reviewed.items()):
+        raise ValueError('Reviewed subdivision count mismatch')
     sections, occurrence = [], collections.Counter()
     hierarchy = {}
     levels = ['TITLE', 'SUBTITLE', 'CHAPTER', 'SUBCHAPTER', 'ARTICLE']
@@ -112,18 +136,24 @@ def parse_chapter(raw, code, member):
                      if blocks[j]['kind'] in ('section_heading', 'hierarchy', 'publisher_note')), len(blocks))
         end = blocks[stop - 1]['end']
         text = full_text[block['start']:end]
-        sections.append({'native_section_anchor': anchor, 'source_url': head['href'],
+        section = {'native_section_anchor': anchor, 'source_url': head['href'],
                          'identity_evidence': head.get('identity_evidence', 'publisher_heading_link'),
                          'anchor_element_ordinal': head.get('anchor_element_ordinal'),
                          'anchor_whitespace_anomaly': anchor != anchor.strip(),
                          'citation_heading': head['text'], 'publisher_member': member,
                          'occurrence': occurrence[anchor], 'text_start': block['start'], 'text_end': end,
                          'text_sha256': sha(text.encode('utf8')), 'hierarchy': dict(hierarchy),
-                         'following_context_start': blocks[stop]['start'] if stop < len(blocks) else None})
+                         'following_context_start': blocks[stop]['start'] if stop < len(blocks) else None}
+        subdivisions = [{'label': full_text[b['start']:b['end']], 'text_start': b['start'],
+                         'text_end': b['end'], 'source_element_ordinal': b['source_element_ordinal']}
+                        for b in blocks[ix + 1:stop] if b['kind'] == 'subdivision_heading']
+        if subdivisions:
+            section['subdivisions'] = subdivisions
+        sections.append(section)
     return full_text, blocks, sections
 
 
-def main(root, output_name='parsed-v4'):
+def main(root, output_name='parsed-v5'):
     root = pathlib.Path(root)
     inventory = json.loads((root / 'download-index.json').read_bytes())['StatuteCode']
     if not re.fullmatch(r'[a-zA-Z0-9_-]+', output_name):
@@ -205,4 +235,4 @@ def main(root, output_name='parsed-v4'):
 
 if __name__ == '__main__':
     main(sys.argv[1] if len(sys.argv) > 1 else 'private/audit-2026-10-05/full-state-codes/tx',
-         sys.argv[2] if len(sys.argv) > 2 else 'parsed-v4')
+         sys.argv[2] if len(sys.argv) > 2 else 'parsed-v5')
