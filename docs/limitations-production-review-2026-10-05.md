@@ -1,5 +1,9 @@
 # Limitations calculator review — October 5, 2026
 
+## 14:28 continuation: exception prompt
+
+The existing tolling checklist now explicitly includes criminal proceedings and emergency orders, alongside concealment, agreements, class actions and bankruptcy. These are possible review issues, not automatic extensions. The existing `tolling` selection still withholds a date. The Georgia primary-source review supporting the prompt is recorded in [the state-law source checkpoint](state-law-source-review-2026-10-05.md). All 46 focused engine, repose and guidance tests passed; TypeScript, scoped ESLint and the production build also passed. Authenticated Chrome timed out again, so Lovable synchronization and publication of this copy change remain unverified. The prepared .2/.3 law releases remain inactive; this prompt change adds no calculator coverage. Earlier publication evidence below applies only to the earlier release.
+
 The calculator remains a conditional statutory anniversary calculator. It does not certify a filing deadline, calculate tolling, choose governing law, or apply court calendars/service rules. There are 118 rule records: 73 supported branches across 37 jurisdictions and 45 research-only records. Primary statutory text is available for 46 jurisdictions, which is different from calculator coverage. The five statutory-text gaps and unsupported claim branches remain explicit.
 
 ## Corrected legal boundaries

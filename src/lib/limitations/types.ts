@@ -130,7 +130,11 @@ export const SPECIAL_ISSUES = [
     label: "Unresolved product delivery / sale, warranty or repose question",
   },
   { id: "disability", label: "Minority, legal disability or servicemember protection" },
-  { id: "tolling", label: "Concealment, tolling agreement, class action or bankruptcy" },
+  {
+    id: "tolling",
+    label:
+      "Tolling: criminal proceedings, emergency orders, concealment, agreements, class actions or bankruptcy",
+  },
   {
     id: "prior_filing",
     label: "Prior filing, dismissal, nonsuit, MDL order or registry submission",
