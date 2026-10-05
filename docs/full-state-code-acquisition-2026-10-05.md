@@ -1,5 +1,7 @@
 # Full state-code acquisition — October 5, 2026
 
+Latest full-source additions: [DC's dated complete code](district-columbia-full-code-capture-2026-10-05.md) has 28,272 independently matched article texts; [California's official bulk archive](california-full-code-capture-2026-10-05.md) is captured and every ZIP member passes CRC/length verification. California's code-table parsing and native-section reconciliation remain open. These acquisitions follow the owner's full-code priority; individual calculator rules do not stand in for full code coverage.
+
 The owner requires downloaded, parsed, versioned and cited full state-code text for all 50 states and DC, integrated into one state-law browser and an accurate limitations calculator. Links and selected excerpts do not satisfy that requirement. This checkpoint records private acquisition and parsing. Texas cloud upload has now started through the deployed private importer; see [the connected checkpoint](connected-release-2026-10-05.md) for actual receipts and failure/resume status. None of these full-code captures is yet published as a completed state code.
 
 **Latest owner correction: full-code acquisition and browsable integration lead this work.** Selected calculator authorities do not meet the requirement. Collection of whole codes proceeds separately from approving individual calculations. One source-labelled entry per jurisdiction must expose available captured code text with its actual edition and update gaps.
