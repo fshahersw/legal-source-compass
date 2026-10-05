@@ -45,8 +45,9 @@ test('corrupt existing object stops without replacing it or issuing a verificati
 });
 test('blocked responses and public buckets stop without an upload', async () => {
   for (const status of [401, 403, 429, 500]) {
-    const { calls, pending } = await exercise([privateBucket, new Response(null, { status })]);
+    const { calls, events, pending } = await exercise([privateBucket, new Response(null, { status })]);
     await assert.rejects(pending, /WHOLE_OBJECT_HTTP_REQUIRED/); assert.equal(calls.length, 2);
+    assert.equal(events.at(-1).state, 'object_readback_response'); assert.equal(events.at(-1).http_status, status);
   }
   const { calls, pending } = await exercise([Response.json({ id: 'corpus-originals', public: true })]);
   await assert.rejects(pending, /PRIVATE_BUCKET_CHECK_FAILED/); assert.equal(calls.length, 1);

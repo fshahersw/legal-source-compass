@@ -49,12 +49,14 @@ export async function ensurePublisherObject({ asset, bytes, credentials, record,
   const request = (url, init = {}) => fetcher(url, { ...init, headers: { ...auth, ...init.headers }, redirect: 'error', signal: AbortSignal.timeout(45000) });
   const journal = event => record({ ...event, project_id: project, bucket, sha256: asset.sha256, object_key: key, at: clock() });
   const bucketResponse = await request(`${base}/bucket/${bucket}`);
+  await journal({ state: 'private_bucket_response', http_status: bucketResponse.status });
   if (bucketResponse.status !== 200) { await bucketResponse.body?.cancel(); fail('PUBLISHER_PRIVATE_BUCKET_CHECK_FAILED'); }
   let metadata; try { metadata = JSON.parse((await boundedBytes(bucketResponse, 65536)).toString('utf8')); } catch { fail('PUBLISHER_PRIVATE_BUCKET_CHECK_FAILED'); }
   if (metadata.id !== bucket || metadata.public !== false) fail('PUBLISHER_PRIVATE_BUCKET_CHECK_FAILED');
 
   const read = async () => {
     const response = await request(`${base}/object/authenticated/${bucket}/${key}`);
+    await journal({ state: 'object_readback_response', http_status: response.status });
     if (response.status === 404) { await response.body?.cancel(); return null; }
     if (response.status === 400) {
       let details; try { details = JSON.parse((await boundedBytes(response, 65536)).toString('utf8')); } catch { fail('PUBLISHER_READBACK_HTTP_400'); }
