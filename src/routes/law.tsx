@@ -42,27 +42,22 @@ export const Route = createFileRoute("/law")({
     kind: str(s["kind"]),
     group: str(s["group"]),
   }),
-  head: () =>
-    pageHead(
-      "Law & regulation",
-      "Browse law top-down: federal or a state, then type of law, then collection and provision.",
-    ),
+  head: () => pageHead("Law & regulation", "Browse law by jurisdiction."),
   component: LawPage,
 });
 
 const FED_GROUPS: LawGroup[] = ["statutes", "regulations", "register", "notices", "other"];
 const stName = (c: string) => (c === "FEDERAL" ? "Federal" : (stateByUsps.get(c)?.name ?? c));
 
-/** Shown wherever the categorized outline would be: it is held until it passes publication checks. */
-function OutlineHeld({ reason }: { reason: string | null }) {
+/** Shows a concise pointer to the collections available while the outline is unavailable. */
+function OutlineUnavailable() {
   return (
     <p
       role="note"
       className="rounded-md border border-border bg-muted/40 px-3 py-2 text-[12px] leading-relaxed text-muted-foreground"
     >
-      <span className="mr-1 font-semibold text-foreground">Categorized outline not published.</span>
-      {reason ?? "The categorized law catalog and outline have not passed publication checks."} Law
-      record sets are listed by dataset below; none of the held outline is shown.
+      <span className="mr-1 font-semibold text-foreground">Categorized outline unavailable.</span>
+      Browse the available law collections.
     </p>
   );
 }
@@ -103,7 +98,12 @@ function LawPage() {
     key: d.id,
     label: datasetDisplayName(d.id, d.label),
     count: d.records ?? undefined,
-    note: d.ready === false ? "Imported · not cleared for publication" : "Imported records",
+    note:
+      d.ready === false
+        ? "Not currently available"
+        : d.ready === true
+          ? "Available records"
+          : "Availability not recorded",
     link: { to: "/law", search: { ...extra, ds: d.id } },
   });
 
@@ -164,13 +164,12 @@ function LawPage() {
         <LawLevel key={`${code}-${s.kind}`} state={code} kind={s.kind} parent={0} />
       </div>
     ) : (
-      <OutlineHeld reason={status.data?.reason ?? null} />
+      <OutlineUnavailable />
     );
   } else if (!s.scope) {
     const fedProv = coll.filter((c) => c.state === "FEDERAL").reduce((a, c) => a + c.provisions, 0);
     body = (
       <div className="space-y-4">
-        {outlineOn ? null : <OutlineHeld reason={status.data?.reason ?? null} />}
         <FolderGrid
           title="Jurisdiction"
           items={[
@@ -179,7 +178,7 @@ function LawPage() {
               label: "Federal",
               note: outlineOn
                 ? "Outline provisions · record sets listed separately"
-                : "Record sets · outline held",
+                : "Browse available collections",
               count: outlineOn ? fedProv : undefined,
               link: { to: "/law", search: { scope: "federal" } },
             },
@@ -247,7 +246,7 @@ function LawPage() {
               }))}
           />
         ) : (
-          <OutlineHeld reason={status.data?.reason ?? null} />
+          <OutlineUnavailable />
         )}
         <FolderGrid
           title="Federal record sets"
@@ -326,7 +325,7 @@ function LawPage() {
               }))}
           />
         ) : coll.some((item) => item.state === s.state) ? (
-          <OutlineHeld reason={status.data?.reason ?? null} />
+          <OutlineUnavailable />
         ) : null}
         {own.length ? (
           <FolderGrid
@@ -352,8 +351,7 @@ function LawPage() {
       {...(s.scope === "states"
         ? {}
         : {
-            description:
-              "Open a folder to narrow down: jurisdiction, type of law, collection, and provision.",
+            description: "Browse law by jurisdiction.",
           })}
     >
       {body}

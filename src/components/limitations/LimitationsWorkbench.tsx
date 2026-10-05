@@ -28,6 +28,8 @@ type Navigation = { state: string; claim?: ClaimType; view: View };
 const control =
   "mt-1 block min-h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
 const box = "rounded-xl border border-border bg-surface p-5";
+const calendarPeriodLabel = (amount: number) =>
+  `${amount} calendar ${amount === 1 ? "year" : "years"}`;
 const subtypeLabels: Record<string, string> = {
   general: "General claim",
   latent_toxic: "Latent substance / toxic injury",
@@ -394,7 +396,7 @@ export function LimitationsWorkbench({
                 <div className="mt-5 rounded-lg border border-border bg-muted/40 p-4">
                   <p className="text-base font-semibold">
                     {rule.period
-                      ? rule.period.amount + " calendar years"
+                      ? calendarPeriodLabel(rule.period.amount)
                       : "Period requires legal review"}
                   </p>
                   {reposeLabel && <p className="mt-1 text-sm font-medium">{reposeLabel}</p>}
@@ -478,7 +480,7 @@ export function LimitationsWorkbench({
                   <div className="mb-5 rounded-lg border border-border bg-muted/40 p-4">
                     <p className="text-sm font-semibold">
                       {rule.period
-                        ? rule.period.amount + " calendar years · conditional baseline"
+                        ? `${calendarPeriodLabel(rule.period.amount)} · conditional baseline`
                         : "Further legal review required"}
                     </p>
                     {reposeLabel && <p className="mt-1 text-sm font-medium">{reposeLabel}</p>}
@@ -819,7 +821,7 @@ export function LimitationsWorkbench({
                   <p className="text-sm font-semibold">
                     {stateName} · {claim ? CLAIM_LABELS[claim] : ""} ·{" "}
                     {result.rule.period
-                      ? result.rule.period.amount + " calendar years"
+                      ? calendarPeriodLabel(result.rule.period.amount)
                       : "Period requires review"}
                   </p>
                   {reposeCapLabel(result.rule) && (

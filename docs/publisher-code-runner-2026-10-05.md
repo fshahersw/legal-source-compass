@@ -1,5 +1,7 @@
 # Publisher-code resumable intake — October 5, 2026
 
+**Current status supersedes the preparation history below:** see [the connected deployment checkpoint](connected-release-2026-10-05.md). The four private publisher RPCs and four RLS tables are deployed and verified. Actual run `f0fc7010-2a8e-4cd2-a72e-c681934b7699` is open. Real cloud acquisition has begun; the durable journal, not an earlier result file, controls its verified-object count and stopped/resumed status. No publication or calculator activation follows from this private intake.
+
 The resumable Texas importer is prepared. It has made **no production uploads or database writes**. The complete reviewed local packet passes its preflight: 126,895 records, 254 batches, 5,023 objects and 165,260,936 asset bytes. The packet remains private-intake-v3 with manifest hash `87b76b96ba6ce3130167193a474f992307c0856cc9a162f2848aeb8ed711a5da`; earlier packets are not eligible.
 
 ## Concrete deployment gap
