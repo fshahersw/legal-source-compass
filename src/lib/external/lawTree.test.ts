@@ -58,7 +58,7 @@ describe("law & safety folders", () => {
   it("groups safety datasets by agency", () => {
     expect(sectionOf("agency_safety_openfda_device_classification_20261002")).toBe("safety");
     expect(safetyKind("agency_safety_openfda_device_classification_20261002")).toBe(
-      "Device category metadata (October 2, 2026)",
+      "Device classifications",
     );
     expect(safetyKind("agency_safety_openfda_device_enforcement_20260928")).toBe(
       "Device enforcement metadata (September 28, 2026)",

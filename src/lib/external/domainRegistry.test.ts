@@ -18,7 +18,7 @@ describe("domain registry", () => {
   });
   it("keeps dated FDA source grains separate from device and legal findings", () => {
     expect(datasetRecordGrain("agency_safety_openfda_device_classification_20261002")?.unit).toBe(
-      "native FDA product-category code records",
+      "FDA product categories",
     );
     expect(
       datasetRecordGrain("agency_safety_openfda_device_classification_20261002")?.description,

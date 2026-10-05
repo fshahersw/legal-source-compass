@@ -80,8 +80,7 @@ export function safetyAgency(id: string): SafetyAgency {
 /** Readable record kind from a safety dataset ID, e.g. agency_safety_openfda_drug_enforcement → "Drug enforcement (openFDA)". */
 export function safetyKind(id: string): string {
   const datedLabels: Record<string, string> = {
-    agency_safety_openfda_device_classification_20261002:
-      "Device category metadata (October 2, 2026)",
+    agency_safety_openfda_device_classification_20261002: "Device classifications",
     agency_safety_openfda_device_enforcement_20260928:
       "Device enforcement metadata (September 28, 2026)",
     agency_safety_openfda_drug_enforcement_20260928:

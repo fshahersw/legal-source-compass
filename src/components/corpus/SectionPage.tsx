@@ -85,7 +85,7 @@ export function SectionPage({
         <p className="mb-4 rounded-md border border-border bg-muted/40 px-3 py-2 text-[12px] leading-relaxed text-muted-foreground">
           You are viewing source records
           {allDatasets.find((row) => row.id === ds)?.ready === false
-            ? " and is held from publication"
+            ? " held from publication"
             : ""}
           . Use the calculator for reviewed rules; historical summaries do not determine its
           results.

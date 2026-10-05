@@ -84,15 +84,15 @@ function SafetyPage() {
               note:
                 count == null
                   ? `${a.note} · Count not recorded`
-                  : `${a.note} · Imported snapshot rows`,
+                  : `${a.note} · Records may overlap`,
               count: count ?? undefined,
               link: { to: "/safety", search: { agency: a.key } },
             };
           }),
           {
             key: "list",
-            label: "All safety datasets (list)",
-            note: "Every safety record set, with audited source snapshots grouped",
+            label: "All safety collections",
+            note: "Browse recalls, notices, approvals and product classifications",
             link: { to: "/safety", search: { view: "list" } },
           },
         ]}

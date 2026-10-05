@@ -85,8 +85,7 @@ const LABELS: Record<string, string> = {
   regulatory_backfill: "Federal Register metadata backfill",
   mass_tort_authority_evidence: "Selected mass-tort authority evidence",
   jpml_html_reference: "JPML source reference metadata",
-  agency_safety_openfda_device_classification_20261002:
-    "FDA device category metadata — October 2, 2026",
+  agency_safety_openfda_device_classification_20261002: "FDA device classifications",
   agency_safety_openfda_device_enforcement_20260928:
     "FDA device enforcement metadata — September 28, 2026",
   agency_safety_openfda_drug_enforcement_20260928:
@@ -150,7 +149,7 @@ const RECORD_GRAINS: Readonly<Record<string, { unit: string; description: string
       "Opinion bodies, federal provisions, research routes, access gaps and legislative-status evidence retain their separate source kinds. A research route or gap is not a case holding, binding-authority finding or activated calculator rule.",
   },
   agency_safety_openfda_device_classification_20261002: {
-    unit: "native FDA product-category code records",
+    unit: "FDA product categories",
     description:
       "Dated product-category metadata counts category codes, not individual devices, approvals or recalls. Device regulatory class 1/2/3 is separate from recall hazard class I/II/III; native flags and CFR locators do not establish historical or current legal applicability.",
   },
