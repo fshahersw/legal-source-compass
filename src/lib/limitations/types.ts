@@ -39,10 +39,14 @@ export type LimitationRule = {
   caseReferenceIds?: string[];
   subtype?: string;
   calculation?: {
-    mode: "discovery_min" | "diagnosis" | "death_cause_min";
+    mode: "discovery_min" | "diagnosis" | "death_cause_min" | "accrual_repose_min";
     deathCapYears?: number;
     secondaryCapYears?: number;
     requiresExposureWithinDeliveryYears?: number;
+    reposeYears?: number;
+    reposeTrigger?: "last_act_or_omission" | "act_or_omission";
+    reposeEffectiveFrom?: string;
+    reposeEffectiveThrough?: string;
   };
 };
 export type LimitationSource = {
@@ -156,6 +160,8 @@ export type BaselineInput = {
   vitalStatus?: "alive" | "deceased" | "unknown";
   firstProductDeliveryDate?: string;
   qualifyingExposureDate?: string;
+  reposeActDate?: string;
+  reposeApplicabilityConfirmed?: boolean;
   governingLawConfirmed: boolean;
   accrualConfirmed: boolean;
   applicabilityConfirmed: boolean;

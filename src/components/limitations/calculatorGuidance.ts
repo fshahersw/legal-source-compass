@@ -10,9 +10,11 @@ export function unconfirmedClaimInput(
     claimType: claimType || "product_liability",
     subtype,
     accrualDate: "",
+    reposeActDate: "",
     governingLawConfirmed: false,
     accrualConfirmed: false,
     applicabilityConfirmed: false,
+    reposeApplicabilityConfirmed: false,
     exceptionReview: "unresolved",
     issues: [],
     vitalStatus: "unknown",
@@ -22,6 +24,7 @@ export function unconfirmedClaimInput(
 export type GuidedDateField = {
   key:
     | "accrualDate"
+    | "reposeActDate"
     | "actualDiscoveryDate"
     | "constructiveDiscoveryDate"
     | "diagnosisCommunicationDate"
@@ -33,6 +36,42 @@ export type GuidedDateField = {
   help: string;
 };
 
+type ReposeRuleCalculation = {
+  mode: "accrual_repose_min";
+  reposeYears: number;
+  reposeTrigger: "last_act_or_omission" | "act_or_omission";
+};
+
+function reposeCalculation(rule: LimitationRule | null): ReposeRuleCalculation | null {
+  const calculation = rule?.calculation;
+  if (
+    calculation?.mode !== "accrual_repose_min" ||
+    typeof calculation.reposeYears !== "number" ||
+    (calculation.reposeTrigger !== "last_act_or_omission" &&
+      calculation.reposeTrigger !== "act_or_omission")
+  )
+    return null;
+  return {
+    mode: "accrual_repose_min",
+    reposeYears: calculation.reposeYears,
+    reposeTrigger: calculation.reposeTrigger,
+  };
+}
+
+export function isAccrualReposeRule(rule: LimitationRule | null): boolean {
+  return reposeCalculation(rule) !== null;
+}
+
+export function reposeCapLabel(rule: LimitationRule | null): string | null {
+  const calculation = reposeCalculation(rule);
+  if (!calculation) return null;
+  const trigger =
+    calculation.reposeTrigger === "last_act_or_omission"
+      ? "the last act or omission"
+      : "the act or omission complained of";
+  return `Outer repose cap: ${calculation.reposeYears} calendar years from ${trigger}.`;
+}
+
 export function guidedDateFields(
   rule: LimitationRule | null,
   state: string,
@@ -40,6 +79,36 @@ export function guidedDateFields(
 ): GuidedDateField[] {
   if (!rule) return [];
   const mode = rule.calculation?.mode;
+  if (mode === "accrual_repose_min") {
+    const repose = reposeCalculation(rule);
+    if (!repose) return [];
+    const claim =
+      rule.claimType === "wrongful_death"
+        ? "wrongful-death"
+        : rule.claimType === "product_liability"
+          ? "product-injury"
+          : "personal-injury";
+    const triggerLabel =
+      repose.reposeTrigger === "last_act_or_omission"
+        ? "Date of the last act or omission"
+        : "Date of the act or omission complained of";
+    const triggerHelp =
+      repose.reposeTrigger === "last_act_or_omission"
+        ? `For this ${claim} claim, identify the last act or omission legally attributable to this defendant. A later event is not assumed to qualify or restart repose.`
+        : `For this ${claim} claim, identify the act or omission complained of for this defendant. Do not substitute the latest event or assume a later event resets repose.`;
+    return [
+      {
+        key: "accrualDate",
+        label: "Confirmed accrual date",
+        help: "Enter the accrual date established under the cited limitations rule. This is separate from the repose act or omission date.",
+      },
+      {
+        key: "reposeActDate",
+        label: triggerLabel,
+        help: triggerHelp,
+      },
+    ];
+  }
   const dates: GuidedDateField[] =
     mode === "discovery_min"
       ? [

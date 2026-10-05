@@ -5,7 +5,12 @@ import { Button } from "@/components/ui/button";
 import { STATES } from "@/lib/corpus/geo";
 import { loadLimitations } from "@/lib/limitations/load";
 import { baselineRule, calculateBaseline, sourceReviewDate } from "@/lib/limitations/engine";
-import { guidedDateFields, unconfirmedClaimInput } from "./calculatorGuidance";
+import {
+  guidedDateFields,
+  isAccrualReposeRule,
+  reposeCapLabel,
+  unconfirmedClaimInput,
+} from "./calculatorGuidance";
 import {
   CLAIM_LABELS,
   CLAIM_TYPES,
@@ -194,7 +199,13 @@ export function LimitationsWorkbench({
       ].includes(reason),
   );
   const update = (patch: Partial<BaselineInput>) => {
-    setInput((old) => ({ ...old, ...patch }));
+    setInput((old) => ({
+      ...old,
+      ...patch,
+      ...(Object.hasOwn(patch, "reposeActDate") || Object.hasOwn(patch, "accrualDate")
+        ? { reposeApplicabilityConfirmed: false }
+        : {}),
+    }));
     setResult(null);
     setSubmitted(false);
   };
@@ -241,17 +252,19 @@ export function LimitationsWorkbench({
     (item) => item.sourceStatus === "primary_text_retrieved",
   ).length;
   const dates = guidedDateFields(rule, state, input.subtype);
+  const reposeMode = isAccrualReposeRule(rule);
+  const reposeLabel = reposeCapLabel(rule);
   const ruleSourceCutoff = rule ? sourceReviewDate(snapshot, rule) : null;
   const requiredKeys = dates.map((item) => item.key);
   if (rule?.calculation?.deathCapYears && input.vitalStatus === "deceased")
     requiredKeys.push("deathDate");
-  const missingKeys = submitted
-    ? requiredKeys.filter((key) => !(input as unknown as Record<string, string>)[key])
-    : [];
+  const missingKeys = submitted ? requiredKeys.filter((key) => !input[key]) : [];
+  const missingReposeConfirmation =
+    submitted && reposeMode && input.reposeApplicabilityConfirmed !== true;
   const stateName = STATES.find((item) => item.usps === state)?.name ?? state;
   const calculate = () => {
     setSubmitted(true);
-    const missing = requiredKeys.find((key) => !(input as unknown as Record<string, string>)[key]);
+    const missing = requiredKeys.find((key) => !input[key]);
     if (missing) {
       document.getElementById("date-" + missing)?.focus();
       return;
@@ -384,6 +397,7 @@ export function LimitationsWorkbench({
                       ? rule.period.amount + " calendar years"
                       : "Period requires legal review"}
                   </p>
+                  {reposeLabel && <p className="mt-1 text-sm font-medium">{reposeLabel}</p>}
                   <p className="mt-1 text-sm leading-relaxed">{rule.scope}</p>
                   <Citations snapshot={snapshot} rule={rule} />
                 </div>
@@ -467,6 +481,7 @@ export function LimitationsWorkbench({
                         ? rule.period.amount + " calendar years · conditional baseline"
                         : "Further legal review required"}
                     </p>
+                    {reposeLabel && <p className="mt-1 text-sm font-medium">{reposeLabel}</p>}
                     <p className="mt-1 text-sm leading-relaxed">{rule.scope}</p>
                     <Citations snapshot={snapshot} rule={rule} />
                   </div>
@@ -493,7 +508,7 @@ export function LimitationsWorkbench({
                   </div>
                   <div className="grid gap-5 md:grid-cols-2">
                     {dates.map((field) => {
-                      const value = (input as unknown as Record<string, string>)[field.key] ?? "";
+                      const value = input[field.key] ?? "";
                       const missing = missingKeys.includes(field.key);
                       return (
                         <label key={field.key} className="block text-sm font-semibold">
@@ -572,6 +587,35 @@ export function LimitationsWorkbench({
                       </>
                     )}
                   </div>
+                  {reposeMode && (
+                    <label className="mt-5 flex min-h-11 items-start gap-3 text-sm leading-relaxed">
+                      <input
+                        id="repose-applicability-confirmed"
+                        type="checkbox"
+                        className="mt-1 h-4 w-4"
+                        checked={input.reposeApplicabilityConfirmed === true}
+                        aria-invalid={missingReposeConfirmation}
+                        aria-describedby={
+                          missingReposeConfirmation ? "repose-applicability-error" : undefined
+                        }
+                        onChange={(event) =>
+                          update({ reposeApplicabilityConfirmed: event.target.checked })
+                        }
+                      />
+                      <span>
+                        I confirmed this repose rule applies to this claim and defendant, and that
+                        the act or omission date above is legally relevant.
+                        {missingReposeConfirmation && (
+                          <span
+                            id="repose-applicability-error"
+                            className="mt-1 block font-medium text-destructive"
+                          >
+                            Confirm applicability and the act or omission date to continue.
+                          </span>
+                        )}
+                      </span>
+                    </label>
+                  )}
                   <fieldset className="mt-7 space-y-3">
                     <legend className="mb-3 text-base font-semibold">
                       Confirm the legal framework
@@ -712,10 +756,10 @@ export function LimitationsWorkbench({
                       type="button"
                       onClick={() => {
                         setSubmitted(true);
-                        const missing = requiredKeys.find(
-                          (key) => !(input as unknown as Record<string, string>)[key],
-                        );
+                        const missing = requiredKeys.find((key) => !input[key]);
                         if (missing) document.getElementById("date-" + missing)?.focus();
+                        else if (reposeMode && input.reposeApplicabilityConfirmed !== true)
+                          document.getElementById("repose-applicability-confirmed")?.focus();
                         else {
                           setResult(calculateBaseline(snapshot, input));
                           setStep(3);
@@ -778,6 +822,9 @@ export function LimitationsWorkbench({
                       ? result.rule.period.amount + " calendar years"
                       : "Period requires review"}
                   </p>
+                  {reposeCapLabel(result.rule) && (
+                    <p className="mt-1 text-sm font-medium">{reposeCapLabel(result.rule)}</p>
+                  )}
                   <Citations snapshot={snapshot} rule={result.rule} />
                 </div>
               )}

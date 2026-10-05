@@ -77,7 +77,12 @@ const ACCRUAL_BASES = new Set([
   "discovery_of_death",
   "requires_review",
 ]);
-const CALCULATION_MODES = new Set(["discovery_min", "diagnosis", "death_cause_min"]);
+const CALCULATION_MODES = new Set([
+  "discovery_min",
+  "diagnosis",
+  "death_cause_min",
+  "accrual_repose_min",
+]);
 
 // Every value is checked field-by-field below before the raw snapshot is cast to the app type.
 type KnownField =
@@ -106,6 +111,10 @@ type KnownField =
   | "deathCapYears"
   | "secondaryCapYears"
   | "requiresExposureWithinDeliveryYears"
+  | "reposeYears"
+  | "reposeTrigger"
+  | "reposeEffectiveFrom"
+  | "reposeEffectiveThrough"
   | "title"
   | "publisher"
   | "method"
@@ -302,9 +311,43 @@ function validateRules(values: unknown): LimitationRule[] {
         "deathCapYears",
         "secondaryCapYears",
         "requiresExposureWithinDeliveryYears",
+        "reposeYears",
       ])
         if (calculation[field] !== undefined)
           positiveInteger(calculation[field], `${label}.calculation.${field}`, 100);
+      if (calculation.mode === "accrual_repose_min") {
+        positiveInteger(calculation.reposeYears, `${label}.calculation.reposeYears`, 100);
+        civilDate(calculation.reposeEffectiveFrom, `${label}.calculation.reposeEffectiveFrom`);
+        if (calculation.reposeEffectiveThrough !== undefined) {
+          civilDate(
+            calculation.reposeEffectiveThrough,
+            `${label}.calculation.reposeEffectiveThrough`,
+          );
+          if (
+            (calculation.reposeEffectiveFrom as string) >
+            (calculation.reposeEffectiveThrough as string)
+          )
+            fail(`${label} has a reversed repose applicability window`);
+        }
+        if (
+          !["last_act_or_omission", "act_or_omission"].includes(
+            calculation.reposeTrigger as string,
+          ) ||
+          r.claimType !== "personal_injury" ||
+          r.accrualBasis !== "confirmed_accrual" ||
+          calculation.deathCapYears !== undefined ||
+          calculation.secondaryCapYears !== undefined ||
+          calculation.requiresExposureWithinDeliveryYears !== undefined
+        )
+          fail(`${label} has an unsupported accrual/repose combination`);
+      } else if (
+        calculation.reposeYears !== undefined ||
+        calculation.reposeTrigger !== undefined ||
+        calculation.reposeEffectiveFrom !== undefined ||
+        calculation.reposeEffectiveThrough !== undefined
+      ) {
+        fail(`${label} has repose fields without the accrual/repose calculation mode`);
+      }
     }
     if (r.computation === "baseline_only") {
       const key = `${r.jurisdiction}|${r.claimType}|${r.subtype ?? "general"}`;
