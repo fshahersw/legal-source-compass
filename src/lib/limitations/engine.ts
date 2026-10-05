@@ -166,7 +166,7 @@ export function calculateBaseline(
     );
   if (rule.effectiveFrom && trigger < rule.effectiveFrom)
     reasons.push(
-      `This calculator branch supports trigger dates on or after ${rule.effectiveFrom}. Earlier dates require the historical statute and transition analysis. ${rule.historicalApplicability}`,
+      `This calculator branch supports trigger dates on or after ${rule.effectiveFrom}. Earlier dates require the historical statute and transition analysis; the current period cannot be applied automatically.`,
     );
   if (rule.effectiveThrough && trigger > rule.effectiveThrough)
     reasons.push(

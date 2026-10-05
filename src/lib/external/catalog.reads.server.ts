@@ -15,6 +15,7 @@ import {
   searchState,
 } from "./searchQuality";
 import { exactCourtLocations } from "@/lib/corpus/courtLocations";
+import { canonicalSearchDatasetIds } from "./datasetVersions";
 
 const SEARCH_CANDIDATES = 500;
 const PRIORITY_CANDIDATES = 250;
@@ -22,7 +23,15 @@ const PRIORITY_CANDIDATES = 250;
  * Entity datasets that get their own bounded pass, so a matter, judge, court or registry hit never depends on its
  * ordinal inside the 500 lowest-ordinal matches of a corpus-wide pass (corpus_query orders by ordinal when p_sort is null).
  */
-const PRIORITY_DATASETS = ["mdls", "sw_matters_v1", "expert_rulings", "judges", "people", "court_spine"] as const;
+const PRIORITY_DATASETS = [
+  "mdls",
+  "sw_matters_v1",
+  "expert_rulings",
+  "judges",
+  "people",
+  "cl_people",
+  "court_spine",
+] as const;
 
 type MdlJudgeIds = { mdlJudgePersonIds: Set<string>; mdlJudgeEntityIds: Set<string> };
 let mdlJudgeCache: { at: number; ids: MdlJudgeIds } | null = null;
@@ -40,9 +49,11 @@ async function mdlJudgeIds(): Promise<MdlJudgeIds> {
   const ids: MdlJudgeIds = { mdlJudgePersonIds: new Set(), mdlJudgeEntityIds: new Set() };
   for (const row of r.rows) {
     for (const v of many(row.person))
-      if ((typeof v === "string" || typeof v === "number") && /^\d{1,12}$/.test(String(v))) ids.mdlJudgePersonIds.add(String(v));
+      if ((typeof v === "string" || typeof v === "number") && /^\d{1,12}$/.test(String(v)))
+        ids.mdlJudgePersonIds.add(String(v));
     for (const v of many(row.entity))
-      if (typeof v === "string" && /^judge-entity-[a-f0-9]{8,64}$/.test(v)) ids.mdlJudgeEntityIds.add(v);
+      if (typeof v === "string" && /^judge-entity-[a-f0-9]{8,64}$/.test(v))
+        ids.mdlJudgeEntityIds.add(v);
   }
   mdlJudgeCache = { at: Date.now(), ids };
   return ids;
@@ -80,11 +91,24 @@ export async function queryPublishedDataset(
 }
 
 export async function searchPublishedCorpus(q: string, offset: number, pageSize: number) {
-  const catalog = await restGet<{ id: string }[]>(
-    "corpus_datasets?select=id&ready=eq.true&order=id.asc",
+  const catalog = await restGet<{ id: string; imported_records: number | null }[]>(
+    "corpus_datasets?select=id,imported_records&ready=eq.true&order=id.asc",
   );
-  const datasets = catalog.rows.map((d) => d.id);
-  const empty = { matches: [], unresolved: 0, total: 0, returned: 0, hasMore: false, rankedCandidates: 0, nativeCandidates: 0, groupedSourceRecords: 0, candidateLimit: SEARCH_CANDIDATES, candidateCapped: false };
+  const datasets = canonicalSearchDatasetIds(
+    catalog.rows.map((d) => ({ id: d.id, ready: true, records: d.imported_records })),
+  );
+  const empty = {
+    matches: [],
+    unresolved: 0,
+    total: 0,
+    returned: 0,
+    hasMore: false,
+    rankedCandidates: 0,
+    nativeCandidates: 0,
+    groupedSourceRecords: 0,
+    candidateLimit: SEARCH_CANDIDATES,
+    candidateCapped: false,
+  };
   if (!datasets.length) return empty;
   const priority = PRIORITY_DATASETS.filter((id) => datasets.includes(id));
   // A leading honorific ("Judge Rodgers") is intent to find a person; titles never contain it, so the database is
@@ -96,9 +120,17 @@ export async function searchPublishedCorpus(q: string, offset: number, pageSize:
     intent.honorific ? mdlJudgeIds().catch(() => ({})) : Promise.resolve({}),
     ...[datasets, ...priority.map((id) => [id])].map(async (scope, index) => {
       const limit = index === 0 ? SEARCH_CANDIDATES : PRIORITY_CANDIDATES;
-      const result = await rpcPost<{ items: Record<string, unknown>[]; total: number | null }>("corpus_query", {
-        p_q: dbQuery, p_datasets: scope, p_filters: searchQueryFilters(dbQuery), p_limit: limit, p_offset: 0, p_sort: null,
-      });
+      const result = await rpcPost<{ items: Record<string, unknown>[]; total: number | null }>(
+        "corpus_query",
+        {
+          p_q: dbQuery,
+          p_datasets: scope,
+          p_filters: searchQueryFilters(dbQuery),
+          p_limit: limit,
+          p_offset: 0,
+          p_sort: null,
+        },
+      );
       return { scope, limit, items: result.items ?? [], total: result.total ?? null };
     }),
   ]);
@@ -106,7 +138,8 @@ export async function searchPublishedCorpus(q: string, offset: number, pageSize:
   const ids = candidateRecordIds(items);
   const records: SearchRecord[] = [];
   // Bound URL size as well as row count; reused IDs may occur in multiple published datasets.
-  const lookupPrefix = "corpus_records?select=id,dataset,title,state,source_url,category,item&id=in.";
+  const lookupPrefix =
+    "corpus_records?select=id,dataset,title,state,source_url,category,item&id=in.";
   const lookupSuffix = `&dataset=in.${inFilter(datasets)}&order=dataset.asc,id.asc`;
   for (const chunk of candidateIdChunks(ids, 7000 - lookupPrefix.length - lookupSuffix.length)) {
     const path = `${lookupPrefix}${inFilter(chunk)}${lookupSuffix}`;
@@ -116,14 +149,27 @@ export async function searchPublishedCorpus(q: string, offset: number, pageSize:
       if (page.rows.length < 500) break;
     }
   }
-  const resolved = passes.map((pass) => resolveSearchIdentities(pass.items, records.filter((record) => pass.scope.includes(record.dataset))));
-  const quality = rankSearchMatches(resolved.flatMap((pass) => pass.matches), q, context);
+  const resolved = passes.map((pass) =>
+    resolveSearchIdentities(
+      pass.items,
+      records.filter((record) => pass.scope.includes(record.dataset)),
+    ),
+  );
+  const quality = rankSearchMatches(
+    resolved.flatMap((pass) => pass.matches),
+    q,
+    context,
+  );
   const pageMatches = quality.ranked.slice(offset, offset + pageSize);
   const courtIds = [...new Set(pageMatches.map(searchCourtId).filter((id): id is string => !!id))];
   let courtLocations = new Map<string, string>();
   if (datasets.includes("court_spine") && courtIds.length) {
-    const courts = await restGet<{ id: string; state: string | null }[]>(`corpus_records?select=id,state&dataset=eq.court_spine&id=in.${inFilter(courtIds)}&order=id.asc&limit=500`);
-    courtLocations = exactCourtLocations(courts.rows.map((court) => ({ id: court.id, state: court.state ?? "" })));
+    const courts = await restGet<{ id: string; state: string | null }[]>(
+      `corpus_records?select=id,state&dataset=eq.court_spine&id=in.${inFilter(courtIds)}&order=id.asc&limit=500`,
+    );
+    courtLocations = exactCourtLocations(
+      courts.rows.map((court) => ({ id: court.id, state: court.state ?? "" })),
+    );
   }
   const matches = pageMatches.map((match) => ({ ...match, ...searchState(match, courtLocations) }));
   return {
@@ -136,6 +182,8 @@ export async function searchPublishedCorpus(q: string, offset: number, pageSize:
     nativeCandidates: quality.nativeRecords,
     groupedSourceRecords: quality.groupedSourceRecords,
     candidateLimit: SEARCH_CANDIDATES + priority.length * PRIORITY_CANDIDATES,
-    candidateCapped: passes.some((pass) => pass.total === null ? pass.items.length === pass.limit : pass.total > pass.limit),
+    candidateCapped: passes.some((pass) =>
+      pass.total === null ? pass.items.length === pass.limit : pass.total > pass.limit,
+    ),
   };
 }

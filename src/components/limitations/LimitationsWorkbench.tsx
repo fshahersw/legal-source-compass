@@ -1,11 +1,10 @@
 import { PrivateDataLink } from "@/components/atlas/PrivateDataLink";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { STATES } from "@/lib/corpus/geo";
 import { loadLimitations } from "@/lib/limitations/load";
-import { baselineRule, calculateBaseline } from "@/lib/limitations/engine";
+import { baselineRule, calculateBaseline, sourceReviewDate } from "@/lib/limitations/engine";
 import { guidedDateFields, unconfirmedClaimInput } from "./calculatorGuidance";
 import {
   CLAIM_LABELS,
@@ -19,9 +18,11 @@ import {
   type LimitationsSnapshot,
 } from "@/lib/limitations/types";
 
+type View = "calculator" | "coverage" | "sources";
+type Navigation = { state: string; claim?: ClaimType; view: View };
 const control =
-  "mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-[13px]";
-const box = "rounded-xl border border-border bg-surface p-4";
+  "mt-1 block min-h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
+const box = "rounded-xl border border-border bg-surface p-5";
 const subtypeLabels: Record<string, string> = {
   general: "General claim",
   latent_toxic: "Latent substance / toxic injury",
@@ -34,9 +35,47 @@ const subtypeLabels: Record<string, string> = {
   synthetic_estrogen: "DES / nonsteroidal synthetic estrogen exposure",
 };
 
+function Citations({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule: LimitationRule }) {
+  return (
+    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm">
+      {rule.sourceIds.map((id) => {
+        const source = snapshot.sources.find((item) => item.id === id);
+        return source ? (
+          <a
+            key={id}
+            href={source.url}
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-primary underline"
+          >
+            {source.title}
+          </a>
+        ) : (
+          <span key={id}>Source not recorded</span>
+        );
+      })}
+      <span className="text-muted-foreground">{rule.pinpoint}</span>
+      {rule.caseReferenceIds?.map((id) => {
+        const item = snapshot.cases.find((c) => c.id === id);
+        return item ? (
+          <a
+            key={id}
+            href={item.url}
+            target="_blank"
+            rel="noreferrer"
+            className="text-primary underline"
+          >
+            {item.citation}
+          </a>
+        ) : null;
+      })}
+    </div>
+  );
+}
+
 function JudicialEvidence({ reference }: { reference: JudicialReference }) {
   return (
-    <article className="rounded-md border border-border p-3 text-[12px]">
+    <article className="rounded-lg border border-border p-4 text-sm">
       <a
         href={reference.url}
         target="_blank"
@@ -48,249 +87,127 @@ function JudicialEvidence({ reference }: { reference: JudicialReference }) {
       <p className="mt-1 text-muted-foreground">
         {reference.court} · {reference.decidedAt} · {reference.pinpoint}
       </p>
-      <p className="mt-2 leading-relaxed">{reference.holding}</p>
-      <details className="mt-2 text-muted-foreground">
+      <p className="mt-3 leading-relaxed">{reference.holding}</p>
+      <details className="mt-3">
         <summary className="cursor-pointer">Application and source limits</summary>
         <p className="mt-2">{reference.applicationLimits}</p>
-        <p className="mt-1">
-          Subsequent treatment: {reference.subsequentTreatment.replaceAll("_", " ")}. Copy:{" "}
-          {reference.copyPublisher}.
-        </p>
         <PrivateDataLink
-          className="mt-1 block text-primary underline"
+          className="mt-2 block text-primary underline"
           href={reference.textPath}
           target="_blank"
           rel="noreferrer"
         >
           Stored opinion text
         </PrivateDataLink>
-        <p className="mt-1 break-all">SHA-256: {reference.sha256}</p>
-        {reference.officialPdfUrl && (
-          <a
-            className="mt-1 block text-primary underline"
-            href={reference.officialPdfUrl}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Official opinion PDF URL · metadata only, not downloaded
-          </a>
-        )}
+        <p className="mt-1 break-all text-xs text-muted-foreground">SHA-256 {reference.sha256}</p>
+      </details>
+    </article>
+  );
+}
+
+function RuleEvidence({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule: LimitationRule }) {
+  return (
+    <article className="rounded-lg border border-border p-4">
+      <h3 className="text-base font-semibold">
+        {CLAIM_LABELS[rule.claimType]} · {rule.ruleKind.replaceAll("_", " ")}
+        {rule.subtype ? " · " + (subtypeLabels[rule.subtype] ?? rule.subtype) : ""}
+      </h3>
+      <p className="mt-2 text-sm leading-relaxed">{rule.summary}</p>
+      {rule.conditions.length > 0 && (
+        <ul className="mt-2 list-disc pl-5 text-sm">
+          {rule.conditions.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      )}
+      <Citations snapshot={snapshot} rule={rule} />
+      <details className="mt-3 text-sm">
+        <summary className="cursor-pointer">Rule version and application limits</summary>
+        <p className="mt-2">
+          {rule.id} · {rule.ruleVersion} · {rule.reviewStatus.replaceAll("_", " ")}
+        </p>
+        <p>
+          {rule.validity} {rule.historicalApplicability}
+        </p>
       </details>
     </article>
   );
 }
 
 function exportJson(value: unknown, name: string) {
-  const blob = new Blob([JSON.stringify(value, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob),
-    anchor = document.createElement("a");
+  const url = URL.createObjectURL(
+    new Blob([JSON.stringify(value, null, 2)], { type: "application/json" }),
+  );
+  const anchor = document.createElement("a");
   anchor.href = url;
   anchor.download = name;
   anchor.click();
   URL.revokeObjectURL(url);
 }
 
-function Citations({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule: LimitationRule }) {
-  return (
-    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[12px]">
-      {rule.sourceIds.map((id) => {
-        const source = snapshot.sources.find((s) => s.id === id);
-        return source ? (
-          <a
-            key={id}
-            href={source.url}
-            target="_blank"
-            rel="noreferrer"
-            className="text-primary underline underline-offset-2"
-          >
-            {source.title}
-          </a>
-        ) : (
-          <span key={id}>Source not recorded</span>
-        );
-      })}
-      <span className="text-muted-foreground">{rule.pinpoint}</span>
-      {rule.caseReferenceIds?.map((id) => {
-        const reference = snapshot.cases.find((c) => c.id === id);
-        return reference ? (
-          <a
-            key={id}
-            href={reference.url}
-            target="_blank"
-            rel="noreferrer"
-            className="text-primary underline"
-          >
-            {reference.citation}
-          </a>
-        ) : null;
-      })}
-    </div>
-  );
-}
-
-function RuleEvidence({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule: LimitationRule }) {
-  return (
-    <article className={box}>
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <h3 className="text-[14px] font-semibold">
-          {CLAIM_LABELS[rule.claimType]} · {rule.ruleKind.replaceAll("_", " ")}
-          {rule.subtype ? ` · ${subtypeLabels[rule.subtype] ?? rule.subtype}` : ""}
-        </h3>
-        <span className="rounded bg-muted px-2 py-1 text-[10px]">
-          {rule.computation === "baseline_only" ? "Conditional baseline" : "Further legal review"}
-        </span>
-      </div>
-      <p className="mt-2 text-[13px] leading-relaxed">{rule.summary}</p>
-      {rule.conditions.length > 0 && (
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-[12px] text-muted-foreground">
-          {rule.conditions.map((c) => (
-            <li key={c}>{c}</li>
-          ))}
-        </ul>
-      )}
-      {rule.ruleKind === "validity" && (
-        <p className="mt-2 rounded border border-warning/40 bg-warning/10 p-2 text-[12px]">
-          {rule.validity}
-        </p>
-      )}
-      <Citations snapshot={snapshot} rule={rule} />
-      <details className="mt-3 text-[11px] text-muted-foreground">
-        <summary className="cursor-pointer">Rule version & application limits</summary>
-        <p className="mt-2">
-          {rule.id} · {rule.ruleVersion} · {rule.reviewStatus.replaceAll("_", " ")}
-        </p>
-        <p className="mt-1">
-          {rule.validity}. {rule.historicalApplicability}.
-        </p>
-        <p className="mt-1">
-          Effective window: {rule.effectiveFrom ?? "Not independently established"} →{" "}
-          {rule.effectiveThrough ?? "Not independently established"}.
-        </p>
-        {rule.exclusions.length > 0 && (
-          <ul className="mt-1 list-disc pl-5">
-            {rule.exclusions.map((x) => (
-              <li key={x}>{x}</li>
-            ))}
-          </ul>
-        )}
-      </details>
-    </article>
-  );
-}
-
-function Result({
-  snapshot,
-  result,
-  input,
-}: {
-  snapshot: LimitationsSnapshot;
-  result: BaselineResult;
-  input: BaselineInput;
-}) {
-  return (
-    <section
-      aria-live="polite"
-      className={`${box} mt-4 ${result.status === "baseline" ? "border-primary/40" : "border-warning/40"}`}
-    >
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <div className="eyebrow">
-            {result.status === "baseline" ? "Conditional calendar baseline" : "No date issued"}
-          </div>
-          <h2 className="mt-2 text-2xl">
-            {result.date ??
-              (result.status === "invalid" ? "Check the dates" : "Legal facts need review")}
-          </h2>
-        </div>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() =>
-            exportJson(
-              {
-                schemaVersion: snapshot.schemaVersion,
-                snapshotDate: snapshot.snapshotDate,
-                ruleVersion: snapshot.ruleVersion,
-                facts: input,
-                analysis: result,
-                sources: snapshot.sources.filter((s) => result.rule?.sourceIds.includes(s.id)),
-                cases: snapshot.cases.filter((c) => result.rule?.caseReferenceIds?.includes(c.id)),
-              },
-              "limitations-analysis.json",
-            )
-          }
-        >
-          Export cited analysis
-        </Button>
-      </div>
-      {result.reasons.length > 0 && (
-        <ul className="mt-3 list-disc space-y-1 pl-5 text-[13px]">
-          {result.reasons.map((x) => (
-            <li key={x}>{x}</li>
-          ))}
-        </ul>
-      )}
-      {result.steps.length > 0 && (
-        <ol className="mt-4 list-decimal space-y-3 pl-5 text-[13px]">
-          {result.steps.map((step, i) => (
-            <li key={i}>
-              {step.text}
-              <div className="mt-1 text-[11px] text-muted-foreground">{step.pinpoint}</div>
-            </li>
-          ))}
-        </ol>
-      )}
-      {result.rule && <Citations snapshot={snapshot} rule={result.rule} />}
-      <p className="mt-3 text-[12px] text-muted-foreground">
-        {STATES.find((state) => state.usps === input.jurisdiction)?.name} ·{" "}
-        {CLAIM_LABELS[input.claimType]} · source version {snapshot.snapshotDate}.
-        {result.status === "baseline"
-          ? " Governing law, the legal start dates, rule applicability and exception review were explicitly confirmed for this result. Calendar, filing and service adjustments still require verification."
-          : " A date stays withheld while required dates or legal facts remain unresolved."}
-      </p>
-    </section>
-  );
+function formatCivilDate(value: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "long",
+    timeZone: "UTC",
+  }).format(new Date(value + "T00:00:00Z"));
 }
 
 export function LimitationsWorkbench({
-  initialState,
-  initialClaim,
-  initialView,
+  state,
+  claim,
+  view,
+  onNavigate,
 }: {
-  initialState: string;
-  initialClaim: ClaimType | undefined;
-  initialView: "calculator" | "coverage" | "sources";
+  state: string;
+  claim: ClaimType | undefined;
+  view: View;
+  onNavigate: (next: Navigation) => void;
 }) {
   const query = useQuery({
     queryKey: ["limitations-snapshot-1"],
     queryFn: loadLimitations,
     staleTime: Infinity,
   });
-  const [state, setState] = useState(initialState),
-    [claim, setClaim] = useState<ClaimType | "">(initialClaim ?? ""),
-    [view, setView] = useState(initialView);
-  const empty = (): BaselineInput => unconfirmedClaimInput(state, claim);
-  const [showIssues, setShowIssues] = useState(false);
-  const [input, setInput] = useState<BaselineInput>(empty),
-    [result, setResult] = useState<BaselineResult | null>(null);
+  const [step, setStep] = useState(1);
+  const [input, setInput] = useState<BaselineInput>(() =>
+    unconfirmedClaimInput(state, claim ?? ""),
+  );
+  const [result, setResult] = useState<BaselineResult | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [issuesExpanded, setIssuesExpanded] = useState(false);
+  const [exceptionAnswer, setExceptionAnswer] = useState<"unreviewed" | "issue" | "complete">(
+    "unreviewed",
+  );
+  const resultRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (step === 3 && resultRef.current) {
+      resultRef.current.focus({ preventScroll: true });
+      resultRef.current.scrollIntoView({ block: "start", behavior: "instant" });
+    }
+  }, [step, result]);
+  const visibleReasons = (result?.reasons ?? []).filter(
+    (reason) =>
+      !result?.date ||
+      ![
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed.",
+      ].includes(reason),
+  );
   const update = (patch: Partial<BaselineInput>) => {
-    setInput((previous) => ({ ...previous, ...patch }));
+    setInput((old) => ({ ...old, ...patch }));
     setResult(null);
+    setSubmitted(false);
   };
-  const reset = (jurisdiction: string, claimType: ClaimType | "", subtype = "general") => {
-    setInput(unconfirmedClaimInput(jurisdiction, claimType, subtype));
-    setShowIssues(false);
-    setResult(null);
-  };
+  const navigate = (
+    nextView: View = "calculator",
+    nextState = state,
+    nextClaim: ClaimType | null | undefined = claim,
+  ) => onNavigate({ state: nextState, ...(nextClaim ? { claim: nextClaim } : {}), view: nextView });
   if (query.isPending)
-    return (
-      <p className="py-8 text-[13px] text-muted-foreground">
-        Loading statutory sources and coverage inventory…
-      </p>
-    );
+    return <p className="py-8 text-base text-muted-foreground">Loading cited state rules…</p>;
   if (query.error || !query.data)
     return (
-      <div className={box}>
+      <div className={box} role="alert">
         <p>
           Limitations research could not load.{" "}
           {query.error instanceof Error ? query.error.message : "Please retry."}
@@ -300,407 +217,721 @@ export function LimitationsWorkbench({
         </Button>
       </div>
     );
+
   const snapshot = query.data;
-  const rule = state && claim ? baselineRule(snapshot.rules, state, claim, input.subtype) : null;
+  const selectedClaim = claim ?? "";
+  const rule =
+    state && selectedClaim
+      ? baselineRule(snapshot.rules, state, selectedClaim, input.subtype)
+      : null;
   const stateRules = snapshot.rules.filter(
-    (r) => r.jurisdiction === state && r.claimType === claim,
+    (item) => item.jurisdiction === state && item.claimType === selectedClaim,
   );
-  const subtypes = [...new Set(["general", ...stateRules.map((r) => r.subtype ?? "general")])];
-  const stateSources = snapshot.sources.filter((s) => s.state === state || s.state === "US");
+  const subtypes = [
+    ...new Set(["general", ...stateRules.map((item) => item.subtype ?? "general")]),
+  ];
+  const stateSources = snapshot.sources.filter(
+    (item) => item.state === state || item.state === "US",
+  );
   const stateCases = snapshot.cases.filter(
-    (c) => c.jurisdiction === state || c.jurisdiction === "US",
+    (item) => item.jurisdiction === state || item.jurisdiction === "US",
   );
-  const stateCoverage = snapshot.coverage.find((c) => c.state === state);
-  const sourceStates = snapshot.coverage.filter(
-    (c) => c.sourceStatus === "primary_text_retrieved",
+  const stateCoverage = snapshot.coverage.find((item) => item.state === state);
+  const retrievedStates = snapshot.coverage.filter(
+    (item) => item.sourceStatus === "primary_text_retrieved",
   ).length;
   const dates = guidedDateFields(rule, state, input.subtype);
-  const researchNavigation = (
-    <details className={`${box} mb-4`} open={view !== "calculator"}>
-      <summary className="cursor-pointer text-[13px] font-medium">
-        Research sources, coverage and versions
-      </summary>
-      <div className="mb-4 mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {[
-          ["Jurisdiction inventory", "51"],
-          ["Primary text retrieved", `${sourceStates} / 51`],
-          ["Cited rule records", String(snapshot.rules.length)],
-          ["Source version", snapshot.snapshotDate],
-        ].map(([label, value]) => (
-          <div key={label} className={box}>
-            <div className="eyebrow">{label}</div>
-            <div className="mt-1 text-xl font-semibold">{value}</div>
-          </div>
-        ))}
-      </div>
-      <nav aria-label="Limitations views" className="mb-4 flex flex-wrap gap-2">
-        {(["calculator", "coverage", "sources"] as const).map((v) => (
-          <Button
-            key={v}
-            size="sm"
-            variant={view === v ? "default" : "outline"}
-            aria-pressed={view === v}
-            onClick={() => setView(v)}
-          >
-            {v === "calculator"
-              ? "Back to calculator"
-              : v === "coverage"
-                ? "All-state coverage"
-                : "Statutory sources"}
-          </Button>
-        ))}
-      </nav>
-      <p className="text-[12px] text-muted-foreground">{snapshot.reviewMeaning}</p>
-    </details>
+  const ruleSourceCutoff = rule ? sourceReviewDate(snapshot, rule) : null;
+  const requiredKeys = dates.map((item) => item.key);
+  if (rule?.calculation?.deathCapYears && input.vitalStatus === "deceased")
+    requiredKeys.push("deathDate");
+  const missingKeys = submitted
+    ? requiredKeys.filter((key) => !(input as unknown as Record<string, string>)[key])
+    : [];
+  const stateName = STATES.find((item) => item.usps === state)?.name ?? state;
+  const calculate = () => {
+    setSubmitted(true);
+    const missing = requiredKeys.find((key) => !(input as unknown as Record<string, string>)[key]);
+    if (missing) {
+      document.getElementById("date-" + missing)?.focus();
+      return;
+    }
+    setResult(calculateBaseline(snapshot, input));
+    setStep(3);
+  };
+  const nav = (
+    <nav aria-label="Limitations research views" className="mb-5 flex flex-wrap gap-2">
+      {(["calculator", "coverage", "sources"] as const).map((item) => (
+        <Button
+          key={item}
+          size="sm"
+          variant={view === item ? "default" : "outline"}
+          aria-pressed={view === item}
+          onClick={() => navigate(item)}
+        >
+          {item === "calculator"
+            ? "Calculator"
+            : item === "coverage"
+              ? "State coverage"
+              : "Sources"}
+        </Button>
+      ))}
+    </nav>
   );
-  const mdlContext = (
-    <details className={`${box} mb-4`}>
-      <summary className="cursor-pointer text-[13px] font-medium">
-        How MDL transfer, direct filing and prior filings affect this research
-      </summary>
-      <p className="mt-2 text-[13px] leading-relaxed">
-        Centralization is for coordinated or consolidated pretrial proceedings. The transferor
-        forum, governing state law, direct-filing terms and prior orders require separate analysis.
-        A master complaint, registry entry or MDL transfer is not treated here as proof of tolling
-        or a timely individual claim.
-      </p>
-      <div className="mt-2 flex flex-wrap gap-3 text-[12px]">
-        {snapshot.sources
-          .filter((s) => s.state === "US")
-          .map((s) => (
-            <a
-              key={s.id}
-              href={s.url}
-              target="_blank"
-              rel="noreferrer"
-              className="text-primary underline"
-            >
-              {s.title}
-            </a>
-          ))}
-      </div>
-      <details className="mt-3">
-        <summary className="cursor-pointer text-[12px] font-medium">
-          Primary decisions on transfer, direct filing and governing law
-        </summary>
-        <div className="mt-3 grid gap-3 lg:grid-cols-2">
-          {snapshot.cases
-            .filter((c) => c.jurisdiction === "US")
-            .map((reference) => (
-              <JudicialEvidence key={reference.id} reference={reference} />
-            ))}
-        </div>
-      </details>
-    </details>
-  );
+
   return (
     <div>
-      {view !== "calculator" && researchNavigation}
-      <div className="mb-4 rounded-xl border border-primary/25 bg-primary/5 p-4 text-[13px] leading-relaxed">
-        <strong>A cited starting point for review.</strong> Any date shown is a conditional calendar
-        baseline, not a verified filing deadline. Required legal facts and exceptions must be
-        checked first. Sources captured through {snapshot.snapshotDate}.
-      </div>
-
-      {view !== "coverage" && (
-        <section className={`${box} mb-4`} aria-label="Choose state and claim">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="text-[12px] font-medium">
-              1. Which state's law are you reviewing?
-              <select
-                className={control}
-                value={state}
-                onChange={(e) => {
-                  setState(e.target.value);
-                  reset(e.target.value, claim);
-                }}
-              >
-                <option value="">Choose a state or DC</option>
-                {[...STATES]
-                  .sort((a, b) => a.name.localeCompare(b.name))
-                  .map((s) => (
-                    <option key={s.usps} value={s.usps}>
-                      {s.name}
-                    </option>
-                  ))}
-              </select>
-              <span className="mt-2 block font-normal text-muted-foreground">
-                Residence, injury location and MDL venue do not automatically select the governing
-                law.
-              </span>
-            </label>
-            {state && (
-              <label className="text-[12px] font-medium">
-                2. What type of claim?
-                <select
-                  className={control}
-                  value={claim}
-                  onChange={(e) => {
-                    const c = e.target.value as ClaimType;
-                    setClaim(c);
-                    reset(state, c);
-                  }}
-                >
-                  <option value="">Choose a claim type</option>
-                  {CLAIM_TYPES.map((c) => (
-                    <option key={c} value={c}>
-                      {CLAIM_LABELS[c]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-          </div>
-        </section>
-      )}
-      {view === "calculator" && state && claim && (
+      {view !== "calculator" && nav}
+      {view === "calculator" && (
         <>
-          <form
-            className={box}
-            onSubmit={(e) => {
-              e.preventDefault();
-              setResult(calculateBaseline(snapshot, input));
-            }}
-          >
-            <h2 className="text-base font-semibold">3. Enter the dates this rule needs</h2>
-            {subtypes.length > 1 && (
-              <label className="mt-3 block text-[12px] font-medium">
-                Which fact pattern fits this claim?
-                <select
-                  className={control}
-                  value={input.subtype ?? "general"}
-                  onChange={(e) => reset(state, claim, e.target.value)}
-                >
-                  {subtypes.map((s) => (
-                    <option key={s} value={s}>
-                      {subtypeLabels[s] ?? s}
-                      {baselineRule(snapshot.rules, state, claim, s) ? "" : " · needs legal review"}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-            {rule ? (
-              <div className="mt-3 rounded-md border border-border bg-muted/35 p-3">
-                <p className="text-[13px] font-medium">
-                  {rule.period
-                    ? `${rule.period.amount} calendar years`
-                    : "Period requires legal review"}{" "}
-                  · conditional statutory baseline
-                </p>
-                <p className="mt-1 text-[13px]">{rule.scope}</p>
-                <Citations snapshot={snapshot} rule={rule} />
-                {rule.conditions.length > 0 && (
-                  <ul className="mt-2 list-disc space-y-1 pl-5 text-[12px] text-muted-foreground">
-                    {rule.conditions.map((c) => (
-                      <li key={c}>{c}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ) : (
-              <div
-                role="status"
-                className="mt-3 rounded-md border border-warning/40 bg-warning/10 p-3 text-[13px]"
-              >
-                <p>
-                  This claim and fact pattern need further legal review. No uniquely supported rule
-                  is available, so no date will be calculated.
-                </p>
-                <Button
-                  className="mt-2"
-                  size="sm"
-                  variant="outline"
+          <nav aria-label="Calculator steps" className="mb-5 grid gap-2 sm:grid-cols-3">
+            {["Claim", "Dates and review", "Result"].map((label, index) => {
+              const number = index + 1;
+              return (
+                <button
+                  key={label}
                   type="button"
-                  onClick={() => setView("sources")}
+                  aria-current={step === number ? "step" : undefined}
+                  disabled={number > step}
+                  onClick={() => setStep(number)}
+                  className={
+                    "min-h-11 rounded-lg border px-4 py-2 text-left text-sm font-semibold " +
+                    (step === number
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background hover:bg-muted")
+                  }
                 >
-                  View this state's sources
-                </Button>
-              </div>
-            )}
-            {rule && (
-              <>
-                <div className="mt-4 grid gap-4 md:grid-cols-2">
-                  {dates.map((d) => (
-                    <label key={d.key} className="text-[12px] font-medium">
-                      {d.label}
-                      <input
-                        className={control}
-                        type="date"
-                        aria-required="true"
-                        aria-describedby={`date-help-${d.key}`}
-                        value={(input as unknown as Record<string, string>)[d.key] ?? ""}
-                        min="1900-01-01"
-                        max={snapshot.snapshotDate}
-                        onChange={(e) => update({ [d.key]: e.target.value })}
-                      />
-                      <span
-                        id={`date-help-${d.key}`}
-                        className="mt-1 block font-normal leading-relaxed text-muted-foreground"
-                      >
-                        {d.help}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-                {rule?.calculation?.deathCapYears && (
-                  <div className="mt-4 grid gap-4 md:grid-cols-2">
-                    <label className="text-[12px] font-medium">
-                      Is the injured person living?
-                      <select
-                        className={control}
-                        value={input.vitalStatus ?? "unknown"}
-                        onChange={(e) =>
-                          update({
-                            vitalStatus: e.target.value as NonNullable<
-                              BaselineInput["vitalStatus"]
-                            >,
-                            deathDate: "",
-                          })
-                        }
-                      >
-                        <option value="unknown">Choose a status · required for this rule</option>
-                        <option value="alive">Alive</option>
-                        <option value="deceased">Deceased</option>
-                      </select>
-                    </label>
-                    {input.vitalStatus === "deceased" && (
-                      <label className="text-[12px] font-medium">
-                        Date of death · required for this rule's cap
-                        <input
-                          type="date"
-                          className={control}
-                          value={input.deathDate ?? ""}
-                          max={snapshot.snapshotDate}
-                          onChange={(e) => update({ deathDate: e.target.value })}
-                        />
-                      </label>
-                    )}
-                  </div>
-                )}
-                <fieldset className="mt-5 space-y-3">
-                  <legend className="mb-2 text-[13px] font-semibold">
-                    4. Check the legal facts before calculating
-                  </legend>
-                  {(
-                    [
-                      [
-                        "governingLawConfirmed",
-                        "I have checked that this state's law governs the claim, including any transfer, direct-filing or borrowing issues.",
-                      ],
-                      [
-                        "accrualConfirmed",
-                        "I have verified the start / discovery dates under the cited rule, rather than assuming the exposure or diagnosis date applies.",
-                      ],
-                      [
-                        "applicabilityConfirmed",
-                        "I have checked that this claim type, statutory version and the listed rule conditions apply to these facts.",
-                      ],
-                    ] as const
-                  ).map(([key, label]) => (
-                    <label key={key} className="flex items-start gap-2 text-[12px] leading-relaxed">
-                      <input
-                        type="checkbox"
-                        className="mt-1"
-                        checked={input[key]}
-                        onChange={(e) => update({ [key]: e.target.checked })}
-                      />
-                      <span>{label}</span>
-                    </label>
-                  ))}
-                </fieldset>
-                <fieldset className="mt-5">
-                  <legend className="mb-2 text-[13px] font-semibold">
-                    Has the exception review been completed?
-                  </legend>
-                  <p
-                    id="exception-help"
-                    className="mb-2 text-[12px] leading-relaxed text-muted-foreground"
-                  >
-                    Check tolling, age or disability, product repose, earlier filings or MDL orders,
-                    other states' law and special claims. An unresolved issue prevents a date.
-                  </p>
+                  <span className="mr-2 opacity-75">{number}</span>
+                  {label}
+                </button>
+              );
+            })}
+          </nav>
+          {step === 1 && (
+            <section className={box}>
+              <h2 className="text-xl font-semibold">1. Choose the law and claim</h2>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                Select the state law and claim category. Venue or residence alone does not determine
+                governing law.
+              </p>
+              <div className="mt-5 grid gap-5 sm:grid-cols-2">
+                <label className="text-sm font-semibold">
+                  State or District of Columbia
                   <select
                     className={control}
-                    aria-label="Exception review status"
-                    aria-describedby="exception-help"
-                    value={
-                      input.exceptionReview === "no_unresolved_issues"
-                        ? "none"
-                        : showIssues || input.issues.length
-                          ? "issues"
-                          : ""
+                    value={state}
+                    aria-label="Choose governing state"
+                    onChange={(event) => navigate("calculator", event.target.value, null)}
+                  >
+                    <option value="">Choose a state</option>
+                    {[...STATES]
+                      .sort((a, b) => a.name.localeCompare(b.name))
+                      .map((item) => (
+                        <option key={item.usps} value={item.usps}>
+                          {item.name}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+                <label className="text-sm font-semibold">
+                  Claim type
+                  <select
+                    className={control}
+                    value={claim ?? ""}
+                    aria-label="Choose claim type"
+                    disabled={!state}
+                    onChange={(event) =>
+                      navigate("calculator", state, (event.target.value as ClaimType) || null)
                     }
-                    onChange={(e) => {
-                      setShowIssues(e.target.value === "issues");
-                      update({
-                        exceptionReview:
-                          e.target.value === "none" && !input.issues.length
-                            ? "no_unresolved_issues"
-                            : "unresolved",
-                      });
+                  >
+                    <option value="">Choose a claim</option>
+                    {CLAIM_TYPES.map((item) => (
+                      <option key={item} value={item}>
+                        {CLAIM_LABELS[item]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              {state && claim && subtypes.length > 1 && (
+                <label className="mt-5 block text-sm font-semibold">
+                  Fact pattern
+                  <select
+                    className={control}
+                    value={input.subtype ?? "general"}
+                    onChange={(event) => {
+                      setInput(unconfirmedClaimInput(state, claim, event.target.value));
+                      setResult(null);
+                      setSubmitted(false);
+                      setExceptionAnswer("unreviewed");
                     }}
                   >
-                    <option value="">Not reviewed / not sure</option>
-                    <option value="issues">An issue may apply · review required</option>
-                    <option value="none" disabled={input.issues.length > 0}>
-                      Review completed · no unresolved issues
-                    </option>
+                    {subtypes.map((item) => (
+                      <option key={item} value={item}>
+                        {subtypeLabels[item] ?? item}
+                        {baselineRule(snapshot.rules, state, claim, item)
+                          ? ""
+                          : " · legal review needed"}
+                      </option>
+                    ))}
                   </select>
-                  <details
-                    className="mt-3 rounded-md border border-border p-3"
-                    open={showIssues || input.issues.length > 0}
-                    onToggle={(e) => setShowIssues(e.currentTarget.open)}
-                  >
-                    <summary className="cursor-pointer text-[12px] font-medium">
-                      Review the possible exceptions and special claims
-                    </summary>
-                    <div className="mt-3 grid gap-2 md:grid-cols-2">
-                      {SPECIAL_ISSUES.map((issue) => (
-                        <label
-                          key={issue.id}
-                          className="flex items-start gap-2 text-[12px] leading-relaxed"
-                        >
+                </label>
+              )}
+              {state && claim && rule && (
+                <div className="mt-5 rounded-lg border border-border bg-muted/40 p-4">
+                  <p className="text-base font-semibold">
+                    {rule.period
+                      ? rule.period.amount + " calendar years"
+                      : "Period requires legal review"}
+                  </p>
+                  <p className="mt-1 text-sm leading-relaxed">{rule.scope}</p>
+                  <Citations snapshot={snapshot} rule={rule} />
+                </div>
+              )}
+              {state && claim && !rule && (
+                <p className="mt-5 rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
+                  No unique baseline is available for this selection. No date will be calculated.
+                </p>
+              )}
+              <div className="mt-6 flex justify-end">
+                <Button disabled={!state || !claim} onClick={() => setStep(2)}>
+                  {state && claim && !rule ? "View available research" : "Continue to dates"}
+                </Button>
+              </div>
+            </section>
+          )}
+
+          {step === 2 && (
+            <section className={box}>
+              <h2 className="text-xl font-semibold">
+                {rule ? "2. Enter dates and review legal facts" : "2. Review available research"}
+              </h2>
+              {rule && (
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  Enter only dates required by the cited rule. Leave unknown dates blank; none are
+                  inferred.
+                </p>
+              )}
+              <div className="my-5 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-muted/50 p-4">
+                <p className="text-sm font-semibold">
+                  {stateName} · {claim ? CLAIM_LABELS[claim] : "Claim not selected"}
+                </p>
+                <Button type="button" variant="outline" onClick={() => setStep(1)}>
+                  Change claim
+                </Button>
+              </div>
+              {!state || !claim ? (
+                <p className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
+                  Choose a state and claim first.
+                  <Button className="ml-3" variant="outline" onClick={() => setStep(1)}>
+                    Back to claim
+                  </Button>
+                </p>
+              ) : !rule ? (
+                <p className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
+                  No unique baseline rule is available for this selection. No date will be
+                  calculated.
+                  <Button className="ml-3" variant="outline" onClick={() => navigate("sources")}>
+                    Review sources
+                  </Button>
+                </p>
+              ) : (
+                <>
+                  {subtypes.length > 1 && (
+                    <label className="mb-5 block text-sm font-semibold">
+                      Fact pattern
+                      <select
+                        className={control}
+                        value={input.subtype ?? "general"}
+                        onChange={(event) => {
+                          setInput(unconfirmedClaimInput(state, claim, event.target.value));
+                          setResult(null);
+                          setSubmitted(false);
+                          setExceptionAnswer("unreviewed");
+                        }}
+                      >
+                        {subtypes.map((item) => (
+                          <option key={item} value={item}>
+                            {subtypeLabels[item] ?? item}
+                            {baselineRule(snapshot.rules, state, claim, item)
+                              ? ""
+                              : " · legal review needed"}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
+                  <div className="mb-5 rounded-lg border border-border bg-muted/40 p-4">
+                    <p className="text-sm font-semibold">
+                      {rule.period
+                        ? rule.period.amount + " calendar years · conditional baseline"
+                        : "Further legal review required"}
+                    </p>
+                    <p className="mt-1 text-sm leading-relaxed">{rule.scope}</p>
+                    <Citations snapshot={snapshot} rule={rule} />
+                  </div>
+                  <div className="mb-5 rounded-lg border border-border p-4 text-sm">
+                    <h3 className="font-semibold">Supported trigger dates</h3>
+                    {rule.effectiveFrom && (
+                      <p className="mt-1">
+                        Use this branch from {formatCivilDate(rule.effectiveFrom)}. Earlier dates
+                        need historical-law review.
+                      </p>
+                    )}
+                    {rule.effectiveThrough && (
+                      <p className="mt-1">
+                        This branch ends {formatCivilDate(rule.effectiveThrough)}.
+                      </p>
+                    )}
+                    <p className="mt-1 text-muted-foreground">
+                      Sources checked through{" "}
+                      {ruleSourceCutoff ? formatCivilDate(ruleSourceCutoff) : "a date not recorded"}
+                      .
+                      {!rule.effectiveFrom &&
+                        " Confirm the statutory version that applies to your dates."}
+                    </p>
+                  </div>
+                  <div className="grid gap-5 md:grid-cols-2">
+                    {dates.map((field) => {
+                      const value = (input as unknown as Record<string, string>)[field.key] ?? "";
+                      const missing = missingKeys.includes(field.key);
+                      return (
+                        <label key={field.key} className="block text-sm font-semibold">
+                          {field.label}
                           <input
-                            type="checkbox"
-                            className="mt-1"
-                            checked={input.issues.includes(issue.id)}
-                            onChange={(e) =>
+                            id={"date-" + field.key}
+                            className={control}
+                            type="date"
+                            min="1900-01-01"
+                            max={snapshot.snapshotDate}
+                            value={value}
+                            aria-invalid={missing}
+                            aria-describedby={
+                              field.key + "-help" + (missing ? " " + field.key + "-error" : "")
+                            }
+                            onChange={(event) => update({ [field.key]: event.target.value })}
+                          />
+                          <span
+                            id={field.key + "-help"}
+                            className="mt-1 block text-sm font-normal leading-relaxed text-muted-foreground"
+                          >
+                            {field.help}
+                          </span>
+                          {missing && (
+                            <span
+                              id={field.key + "-error"}
+                              className="mt-1 block text-sm font-medium text-destructive"
+                            >
+                              Enter this date to continue.
+                            </span>
+                          )}
+                        </label>
+                      );
+                    })}
+                    {rule.calculation?.deathCapYears && (
+                      <>
+                        <label className="block text-sm font-semibold">
+                          Is the injured person living?
+                          <select
+                            className={control}
+                            value={input.vitalStatus ?? "unknown"}
+                            onChange={(event) =>
                               update({
-                                issues: e.target.checked
-                                  ? [...input.issues, issue.id]
-                                  : input.issues.filter((x) => x !== issue.id),
-                                exceptionReview: "unresolved",
+                                vitalStatus: event.target.value as NonNullable<
+                                  BaselineInput["vitalStatus"]
+                                >,
+                                deathDate: "",
                               })
                             }
-                          />
-                          <span>{issue.label}</span>
+                          >
+                            <option value="unknown">Select status</option>
+                            <option value="alive">Alive</option>
+                            <option value="deceased">Deceased</option>
+                          </select>
                         </label>
-                      ))}
+                        {input.vitalStatus === "deceased" && (
+                          <label className="block text-sm font-semibold">
+                            Date of death
+                            <input
+                              id="date-deathDate"
+                              className={control}
+                              type="date"
+                              min="1900-01-01"
+                              max={snapshot.snapshotDate}
+                              value={input.deathDate ?? ""}
+                              aria-invalid={missingKeys.includes("deathDate")}
+                              onChange={(event) => update({ deathDate: event.target.value })}
+                            />
+                            {missingKeys.includes("deathDate") && (
+                              <span className="mt-1 block text-sm text-destructive">
+                                Enter this date to continue.
+                              </span>
+                            )}
+                          </label>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <fieldset className="mt-7 space-y-3">
+                    <legend className="mb-3 text-base font-semibold">
+                      Confirm the legal framework
+                    </legend>
+                    {(
+                      [
+                        [
+                          "governingLawConfirmed",
+                          "I checked that this state’s law governs, including transfer, direct-filing, or borrowing-law questions.",
+                        ],
+                        [
+                          "accrualConfirmed",
+                          "I checked the legally relevant start or discovery dates under the cited rule.",
+                        ],
+                        [
+                          "applicabilityConfirmed",
+                          "I checked that this claim category, statutory version, and listed conditions fit these facts.",
+                        ],
+                      ] as const
+                    ).map(([key, label]) => (
+                      <div key={key} className="text-sm leading-relaxed">
+                        <label className="flex min-h-11 items-start gap-3">
+                          <input
+                            type="checkbox"
+                            className="mt-1 h-4 w-4"
+                            checked={input[key]}
+                            onChange={(event) => update({ [key]: event.target.checked })}
+                          />
+                          <span>{label}</span>
+                        </label>
+                        {key === "applicabilityConfirmed" && rule && (
+                          <details className="ml-7 mt-1 rounded-md border border-border px-3">
+                            <summary className="min-h-10 cursor-pointer py-2 font-medium">
+                              Check this rule’s conditions
+                            </summary>
+                            <div className="pb-3 text-sm">
+                              {rule.conditions.length > 0 ? (
+                                <ul className="list-disc space-y-1 pl-5">
+                                  {rule.conditions.map((condition) => (
+                                    <li key={condition}>{condition}</li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <p>No additional conditions are recorded for this rule.</p>
+                              )}
+                              {rule.exclusions.length > 0 && (
+                                <>
+                                  <p className="mt-3 font-semibold">Exclusions</p>
+                                  <ul className="mt-1 list-disc space-y-1 pl-5">
+                                    {rule.exclusions.map((exclusion) => (
+                                      <li key={exclusion}>{exclusion}</li>
+                                    ))}
+                                  </ul>
+                                </>
+                              )}
+                            </div>
+                          </details>
+                        )}
+                      </div>
+                    ))}
+                  </fieldset>
+                  <fieldset className="mt-7">
+                    <legend className="text-base font-semibold">
+                      Review exceptions and other issues
+                    </legend>
+                    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                      An unresolved issue prevents a date. Consider prior filings or orders,
+                      tolling, age or disability, repose, other-state law, and special claim
+                      requirements.
+                    </p>
+                    <label className="mt-4 block text-sm font-semibold">
+                      Review status
+                      <select
+                        className={control}
+                        value={exceptionAnswer}
+                        onChange={(event) => {
+                          const answer = event.target.value as typeof exceptionAnswer;
+                          setExceptionAnswer(answer);
+                          if (answer === "issue") setIssuesExpanded(true);
+                          update({
+                            exceptionReview:
+                              answer === "complete" && input.issues.length === 0
+                                ? "no_unresolved_issues"
+                                : "unresolved",
+                          });
+                        }}
+                      >
+                        <option value="unreviewed">Not reviewed / not sure</option>
+                        <option value="issue">An issue may apply · review needed</option>
+                        <option value="complete" disabled={input.issues.length > 0}>
+                          Reviewed · no unresolved issues
+                        </option>
+                      </select>
+                    </label>
+                    <button
+                      type="button"
+                      className="mt-4 min-h-11 text-left text-sm font-semibold text-primary underline"
+                      aria-expanded={issuesExpanded}
+                      onClick={() => setIssuesExpanded((open) => !open)}
+                    >
+                      {issuesExpanded
+                        ? "Hide possible issue checklist"
+                        : "Show possible issue checklist"}
+                      {input.issues.length ? " · " + input.issues.length + " selected" : ""}
+                    </button>
+                    {issuesExpanded && (
+                      <div className="mt-3 grid gap-3 rounded-lg border border-border p-4 md:grid-cols-2">
+                        {SPECIAL_ISSUES.map((issue) => (
+                          <label
+                            key={issue.id}
+                            className="flex min-h-11 items-start gap-3 text-sm leading-relaxed"
+                          >
+                            <input
+                              type="checkbox"
+                              className="mt-1 h-4 w-4"
+                              checked={input.issues.includes(issue.id)}
+                              onChange={(event) => (
+                                event.target.checked && setExceptionAnswer("issue"),
+                                update({
+                                  issues: event.target.checked
+                                    ? [...input.issues, issue.id]
+                                    : input.issues.filter((item) => item !== issue.id),
+                                  exceptionReview: "unresolved",
+                                })
+                              )}
+                            />
+                            <span>{issue.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </fieldset>
+                  <div className="mt-8 flex justify-between gap-3">
+                    <Button type="button" variant="outline" onClick={() => setStep(1)}>
+                      Back
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        setSubmitted(true);
+                        const missing = requiredKeys.find(
+                          (key) => !(input as unknown as Record<string, string>)[key],
+                        );
+                        if (missing) document.getElementById("date-" + missing)?.focus();
+                        else {
+                          setResult(calculateBaseline(snapshot, input));
+                          setStep(3);
+                        }
+                      }}
+                    >
+                      Review result
+                    </Button>
+                  </div>
+                </>
+              )}
+            </section>
+          )}
+
+          {step === 3 && result && (
+            <section
+              ref={resultRef}
+              tabIndex={-1}
+              id="limitations-result"
+              aria-live="polite"
+              className={
+                "scroll-mt-56 rounded-2xl border-2 p-6 outline-none " +
+                (result.date ? "border-primary bg-primary/5" : "border-warning/60 bg-warning/5")
+              }
+            >
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                    {result.date ? "Statutory anniversary · conditional" : "No date issued"}
+                  </p>
+                  <h2 className="mt-2 text-3xl font-bold tracking-tight">
+                    {result.date ? (
+                      <time dateTime={result.date}>{formatCivilDate(result.date)}</time>
+                    ) : result.status === "invalid" ? (
+                      "Check the information"
+                    ) : (
+                      "Legal review needed"
+                    )}
+                  </h2>
+                  {result.date && (
+                    <div className="mt-2 space-y-1 text-sm">
+                      <p className="font-medium">
+                        Unadjusted calendar anniversary · not a verified filing deadline
+                      </p>
+                      <p>
+                        Check court calendars, filing and service requirements, and local cutoffs.
+                      </p>
                     </div>
-                  </details>
-                </fieldset>
-                <Button className="mt-4" type="submit">
-                  Check cited baseline
+                  )}
+                </div>
+                <Button type="button" variant="outline" onClick={() => setStep(2)}>
+                  Edit answers
                 </Button>
-                <p className="mt-2 text-[12px] text-muted-foreground">
-                  No date is issued until every required date and legal assumption is confirmed.
-                  Court calendars, filing, service and cutoff adjustments still need separate
-                  verification.
+              </div>
+              {result.rule && (
+                <div className="mt-5 rounded-lg bg-background p-4">
+                  <p className="text-sm font-semibold">
+                    {stateName} · {claim ? CLAIM_LABELS[claim] : ""} ·{" "}
+                    {result.rule.period
+                      ? result.rule.period.amount + " calendar years"
+                      : "Period requires review"}
+                  </p>
+                  <Citations snapshot={snapshot} rule={result.rule} />
+                </div>
+              )}
+              {visibleReasons.length > 0 && (
+                <div className="mt-5">
+                  <h3 className="text-base font-semibold">
+                    {result.date ? "Cautions" : "What needs attention"}
+                  </h3>
+                  <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-relaxed">
+                    {visibleReasons.map((reason) => (
+                      <li key={reason}>{reason}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <details className="mt-5 rounded-lg border border-border bg-background p-4">
+                <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold">
+                  Calculation steps and assumptions
+                </summary>
+                <p className="mt-2 text-sm">
+                  Governing law: {input.governingLawConfirmed ? "marked checked" : "not confirmed"};
+                  start dates: {input.accrualConfirmed ? "marked checked" : "not confirmed"}; rule
+                  applicability: {input.applicabilityConfirmed ? "marked checked" : "not confirmed"}
+                  ; exception review:{" "}
+                  {exceptionAnswer === "complete"
+                    ? "marked complete"
+                    : exceptionAnswer === "issue"
+                      ? "an issue may apply"
+                      : "not reviewed"}
+                  .{input.issues.length ? " Selected issues require separate review." : ""} These
+                  are user-provided confirmations, not independent verification.
                 </p>
-              </>
-            )}
-          </form>
-          {result && <Result snapshot={snapshot} result={result} input={input} />}
-          <details className={`${box} mt-6`}>
-            <summary className="cursor-pointer text-[13px] font-medium">
-              Detailed authority and claim research · {STATES.find((s) => s.usps === state)?.name}
-            </summary>
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-base font-semibold">
-                {STATES.find((s) => s.usps === state)?.name} · cited claim evidence
-              </h2>
+                {result.steps.length > 0 && (
+                  <ol className="mt-4 list-decimal space-y-3 pl-5 text-sm leading-relaxed">
+                    {result.steps.map((item, index) => (
+                      <li key={index}>
+                        {item.text}
+                        <p className="mt-1 text-sm text-muted-foreground">{item.pinpoint}</p>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Rule version {result.rule?.ruleVersion ?? "not recorded"} · required source review
+                  through{" "}
+                  {result.rule
+                    ? (sourceReviewDate(snapshot, result.rule) ?? "not recorded")
+                    : "not applicable"}
+                  .
+                </p>
+              </details>
+            </section>
+          )}
+
+          {state && claim && (
+            <details className="mt-5 rounded-xl border border-border bg-surface p-5">
+              <summary className="min-h-11 cursor-pointer py-2 text-base font-semibold">
+                Sources &amp; methodology
+              </summary>
+              <p className="mt-3 text-sm leading-relaxed">
+                {snapshot.reviewMeaning} Source version: {snapshot.snapshotDate}. Retrieval and
+                legal review are separate.
+              </p>
+              <div className="mt-4 space-y-3">
+                {stateRules.map((item) => (
+                  <RuleEvidence key={item.id} snapshot={snapshot} rule={item} />
+                ))}
+                {!stateRules.length && (
+                  <p className="text-sm">Claim-specific source review is pending.</p>
+                )}
+              </div>
+              <details className="mt-4">
+                <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold">
+                  Coverage and source inventory
+                </summary>
+                <p className="mt-2 text-sm">
+                  {retrievedStates} of 51 jurisdictions have primary text retrieved ·{" "}
+                  {snapshot.rules.length} cited rule records.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-3">
+                  <Button size="sm" variant="outline" onClick={() => navigate("coverage")}>
+                    All-state coverage
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => navigate("sources")}>
+                    Source snapshots
+                  </Button>
+                  <PrivateDataLink
+                    href="/data/limitations/rules.json"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex min-h-9 items-center text-sm text-primary underline"
+                  >
+                    Versioned rules
+                  </PrivateDataLink>
+                  <PrivateDataLink
+                    href="/data/limitations/sources.json"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex min-h-9 items-center text-sm text-primary underline"
+                  >
+                    Source manifest
+                  </PrivateDataLink>
+                </div>
+              </details>
+              <details className="mt-3">
+                <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold">
+                  Historical third-party summaries
+                </summary>
+                <p className="text-sm leading-relaxed">
+                  These historical records are secondary context and do not replace the cited
+                  current rule or case-specific legal review.
+                </p>
+                <a
+                  href="/law?ds=limitation_periods"
+                  className="mt-2 inline-block min-h-10 py-2 text-sm font-medium text-primary underline"
+                >
+                  Browse historical limitation-period records
+                </a>
+              </details>
+              <details className="mt-3">
+                <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold">
+                  MDL, transfer, and prior filing considerations
+                </summary>
+                <p className="mt-2 text-sm leading-relaxed">
+                  Centralization coordinates pretrial proceedings. Transferor forum, governing state
+                  law, direct-filing terms, and prior orders require separate analysis. A master
+                  complaint, registry entry, or MDL transfer is not treated as proof of tolling or a
+                  timely individual claim.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-3">
+                  {snapshot.sources
+                    .filter((item) => item.state === "US")
+                    .map((item) => (
+                      <a
+                        key={item.id}
+                        href={item.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-sm text-primary underline"
+                      >
+                        {item.title}
+                      </a>
+                    ))}
+                </div>
+                <div className="mt-3 space-y-3">
+                  {snapshot.cases
+                    .filter((item) => item.jurisdiction === "US")
+                    .map((item) => (
+                      <JudicialEvidence key={item.id} reference={item} />
+                    ))}
+                </div>
+              </details>
               <Button
+                className="mt-4"
                 size="sm"
                 variant="outline"
                 onClick={() =>
@@ -708,121 +939,101 @@ export function LimitationsWorkbench({
                     {
                       schemaVersion: snapshot.schemaVersion,
                       snapshotDate: snapshot.snapshotDate,
+                      ruleVersion: snapshot.ruleVersion,
                       rules: stateRules,
                       sources: stateSources,
                       cases: stateCases,
                       coverage: stateCoverage,
                     },
-                    `limitations-${state}-${claim}.json`,
+                    "limitations-research.json",
                   )
                 }
               >
-                Export rule evidence
+                Export research details
               </Button>
-            </div>
-            <div className="space-y-3">
-              {stateRules.map((r) => (
-                <RuleEvidence key={r.id} snapshot={snapshot} rule={r} />
-              ))}
-              {!stateRules.length && (
-                <p className={box}>
-                  Claim-level primary-source review is pending. Consult the statutory-source and
-                  all-state inventory views.
-                </p>
-              )}
-            </div>
-          </details>
+            </details>
+          )}
         </>
       )}
+
       {view === "coverage" && (
         <section className={box}>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-base font-semibold">50 states + District of Columbia</h2>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-xl font-semibold">Coverage by state and DC</h2>
             <Button
               size="sm"
               variant="outline"
               onClick={() => exportJson(snapshot.coverage, "limitations-all-state-coverage.json")}
             >
-              Export coverage inventory
+              Export coverage
             </Button>
           </div>
-          <p className="mt-2 text-[12px] text-muted-foreground">
-            Source retrieval and computation are separate. No state is represented as having a
-            complete legal review.
+          <p className="mt-2 text-sm leading-relaxed">
+            Source retrieval and computation are separate. Coverage does not represent a complete
+            legal review.
           </p>
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-left text-[12px]">
+          <div className="mt-5 overflow-x-auto">
+            <table className="w-full min-w-[700px] text-left text-sm">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="p-2">Jurisdiction</th>
-                  <th className="p-2">Primary text</th>
-                  <th className="p-2">Conditional baselines</th>
-                  <th className="p-2">Coverage & unresolved work</th>
+                  <th className="p-3">Jurisdiction</th>
+                  <th className="p-3">Primary text</th>
+                  <th className="p-3">Conditional baselines</th>
+                  <th className="p-3">Coverage and unresolved work</th>
                 </tr>
               </thead>
               <tbody>
-                {snapshot.coverage.map((c) => (
-                  <tr key={c.state} className="border-b border-border align-top">
-                    <td className="p-2">
+                {snapshot.coverage.map((item) => (
+                  <tr key={item.state} className="border-b border-border align-top">
+                    <td className="p-3">
                       <button
-                        className="text-primary underline"
+                        className="min-h-10 text-primary underline"
                         onClick={() => {
-                          setState(c.state);
-                          reset(c.state, claim);
-                          setView("calculator");
+                          navigate("calculator", item.state, claim);
+                          setStep(1);
                         }}
                       >
-                        {c.name}
+                        {item.name}
                       </button>
-                      {c.publisherLinks.slice(0, 2).map((p) => (
+                      {item.publisherLinks.slice(0, 2).map((source) => (
                         <a
-                          key={p.url}
-                          href={p.url}
+                          key={source.url}
+                          href={source.url}
                           target="_blank"
                           rel="noreferrer"
                           className="mt-1 block text-primary underline"
                         >
-                          {p.title}
+                          {source.title}
                         </a>
                       ))}
-                      <div className="mt-1">
-                        <a
-                          href={c.discoverySource}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-muted-foreground underline"
-                        >
-                          DOJ source directory
-                        </a>
-                      </div>
                     </td>
-                    <td className="p-2">
-                      {c.sourceIds.length
-                        ? `${c.sourceIds.length} source records`
+                    <td className="p-3">
+                      {item.sourceIds.length
+                        ? item.sourceIds.length + " source records"
                         : "Retrieval pending"}
                     </td>
-                    <td className="p-2">{c.baselineRuleIds.length || "No reviewed branch"}</td>
-                    <td className="p-2">
+                    <td className="p-3">{item.baselineRuleIds.length || "No reviewed branch"}</td>
+                    <td className="p-3">
                       <details>
-                        <summary className="cursor-pointer">
-                          {c.coverage.replaceAll("_", " ")}
+                        <summary className="min-h-10 cursor-pointer py-2">
+                          {item.coverage.replaceAll("_", " ")}
                         </summary>
-                        <ul className="mt-2 list-disc space-y-1 pl-4">
-                          {c.gaps.map((g) => (
-                            <li key={g}>{g}</li>
+                        <ul className="mt-2 list-disc pl-5">
+                          {item.gaps.map((gap) => (
+                            <li key={gap}>{gap}</li>
                           ))}
                         </ul>
-                        {c.metadataOnlyReferences.map((m) => (
-                          <p key={m.url} className="mt-2">
+                        {item.metadataOnlyReferences.map((ref) => (
+                          <p key={ref.url} className="mt-2">
                             <a
-                              href={m.url}
+                              href={ref.url}
                               target="_blank"
                               rel="noreferrer"
                               className="text-primary underline"
                             >
-                              {m.title} · {m.format} URL only
+                              {ref.title} · {ref.format}
                             </a>{" "}
-                            — {m.note}
+                            · {ref.note}
                           </p>
                         ))}
                       </details>
@@ -834,125 +1045,88 @@ export function LimitationsWorkbench({
           </div>
         </section>
       )}
+
       {view === "sources" && (
         <section className={box}>
-          <h2 className="text-base font-semibold">
-            Source snapshots · {state} and federal context
-          </h2>
-          <p className="mt-2 text-[12px] text-muted-foreground">
-            The stored statute text is an extraction of official HTML or XML, with its own SHA-256.
-            It is not a downloaded PDF or a claim that all historical amendments and case law have
-            been verified.
+          <h2 className="text-xl font-semibold">Sources · {stateName || "choose a state"}</h2>
+          <p className="mt-2 text-sm leading-relaxed">
+            Stored statutory text is an extraction of official HTML or XML. It does not establish
+            that all historical amendments and case law have been verified.
           </p>
-          {!stateSources.some((s) => s.state === state) && stateCoverage && (
-            <div className="mt-3 rounded-md border border-warning/40 p-3 text-[12px]">
-              <p>
-                Statutory text capture is pending. Official publication routes and format
-                constraints:
-              </p>
-              {stateCoverage.publisherLinks.map((p) => (
+          {stateCoverage && !stateSources.some((item) => item.state === state) && (
+            <div className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
+              <p>State-specific text capture is pending. Official publication sources:</p>
+              {stateCoverage.publisherLinks.map((item) => (
                 <a
-                  key={p.url}
-                  href={p.url}
+                  key={item.url}
+                  href={item.url}
                   target="_blank"
                   rel="noreferrer"
                   className="mt-2 block text-primary underline"
                 >
-                  {p.title} · {p.status.replaceAll("_", " ")}
+                  {item.title} · {item.status.replaceAll("_", " ")}
                 </a>
               ))}
-              {stateCoverage.metadataOnlyReferences.map((m) => (
-                <p key={m.url} className="mt-2">
+              {stateCoverage.metadataOnlyReferences.map((item) => (
+                <p key={item.url} className="mt-2">
                   <a
-                    href={m.url}
+                    href={item.url}
                     target="_blank"
                     rel="noreferrer"
                     className="text-primary underline"
                   >
-                    {m.title} · URL only
+                    {item.title}
                   </a>{" "}
-                  — {m.note}
+                  · {item.note}
                 </p>
               ))}
             </div>
           )}
-          <details className="mt-4">
-            <summary className="cursor-pointer text-[13px] font-semibold">
-              Judicial references · {stateCases.length} selected opinions
+          <details className="mt-5">
+            <summary className="min-h-11 cursor-pointer py-2 text-base font-semibold">
+              Judicial references · {stateCases.length}
             </summary>
             <div className="mt-3 space-y-3">
-              {stateCases.map((reference) => (
-                <JudicialEvidence key={reference.id} reference={reference} />
+              {stateCases.map((item) => (
+                <JudicialEvidence key={item.id} reference={item} />
               ))}
             </div>
           </details>
-          <div className="mt-4 space-y-4">
-            {stateSources.map((s) => (
-              <article key={s.id} className="rounded-lg border border-border p-3">
+          <div className="mt-5 space-y-4">
+            {stateSources.map((item) => (
+              <article key={item.id} className="rounded-lg border border-border p-4">
                 <a
-                  href={s.url}
+                  href={item.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-[14px] font-semibold text-primary underline"
+                  className="text-base font-semibold text-primary underline"
                 >
-                  {s.title}
+                  {item.title}
                 </a>
-                <p className="mt-1 text-[12px]">
-                  {s.publisher} · captured {s.capturedAt} · {s.method}
+                <p className="mt-1 text-sm">
+                  {item.publisher} · captured {item.capturedAt} · {item.method}
                 </p>
                 <PrivateDataLink
-                  href={s.textPath}
+                  href={item.textPath}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-2 inline-block text-[12px] text-primary underline"
+                  className="mt-2 inline-block text-sm text-primary underline"
                 >
-                  Inspect stored extraction
+                  Inspect stored text
                 </PrivateDataLink>
-                <p className="mt-2 break-all font-mono text-[10px] text-muted-foreground">
-                  SHA-256 {s.sha256} · {s.byteLength.toLocaleString()} bytes · schema{" "}
-                  {s.schemaVersion}
-                </p>
+                <details className="mt-2 text-xs text-muted-foreground">
+                  <summary className="min-h-9 cursor-pointer py-2">Source file details</summary>
+                  <p className="break-all">
+                    SHA-256 {item.sha256} · {item.byteLength.toLocaleString()} bytes · schema{" "}
+                    {item.schemaVersion}
+                  </p>
+                </details>
               </article>
             ))}
-            {!stateSources.some((s) => s.state === state) && (
-              <p className="text-[13px]">Jurisdiction-specific statutory text remains pending.</p>
-            )}
           </div>
         </section>
       )}
-      {view === "calculator" && researchNavigation}
-      {mdlContext}
-      <div className="mt-5 flex flex-wrap gap-4 text-[12px]">
-        <Link to="/insights" className="text-primary underline">
-          Research workbench
-        </Link>
-        <Link to="/law" className="text-primary underline">
-          Law & regulation
-        </Link>
-      </div>
-      <details className="mt-3 text-[12px]">
-        <summary className="cursor-pointer text-muted-foreground">
-          Data exports and source versions
-        </summary>
-        <div className="mt-2 flex flex-wrap gap-4">
-          <PrivateDataLink
-            href="/data/limitations/rules.json"
-            target="_blank"
-            rel="noreferrer"
-            className="text-primary underline"
-          >
-            Versioned rules JSON
-          </PrivateDataLink>
-          <PrivateDataLink
-            href="/data/limitations/sources.json"
-            target="_blank"
-            rel="noreferrer"
-            className="text-primary underline"
-          >
-            Source manifest
-          </PrivateDataLink>
-        </div>
-      </details>
+      {view !== "calculator" && <div className="mt-5">{nav}</div>}
     </div>
   );
 }

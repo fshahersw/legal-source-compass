@@ -25,34 +25,36 @@ vi.mock("@tanstack/react-router", () => ({
 const markup = (state: string, claim?: ClaimType) =>
   renderToStaticMarkup(
     createElement(LimitationsWorkbench, {
-      initialState: state,
-      initialClaim: claim,
-      initialView: "calculator",
+      state,
+      claim,
+      view: "calculator",
+      onNavigate: () => undefined,
     }),
   );
 
 describe("guided limitations calculator", () => {
   it("starts with state selection and no inferred claim, dates or legal confirmations", () => {
     const html = markup("");
-    expect(html).toContain("Choose a state or DC");
-    expect(html).not.toContain("Choose a claim type");
+    expect(html).toContain("Choose the law and claim");
+    expect(html).toContain("Choose a state");
     expect(html).not.toContain('type="date"');
     expect(html).not.toContain('checked=""');
-    expect(html).toContain("not a verified filing deadline");
+    expect(html).not.toContain("statutory anniversary");
   });
-  it("keeps confirmations empty even when an explicit state and claim are prefilled", () => {
+  it("keeps prefilled choices on step one so a conditional fact pattern can be selected", () => {
     const html = markup("IN", "personal_injury");
-    expect(html).toContain('type="date"');
-    expect(html).toContain("Date the claim legally arose");
+    expect(html).toContain("Choose the law and claim");
+    expect(html).not.toContain('type="date"');
     expect(html).not.toContain('checked=""');
-    expect(html).toContain("Not reviewed / not sure");
-    expect(html).toContain("No date is issued until");
+    const ohio = markup("OH", "product_liability");
+    expect(ohio).toContain("Fact pattern");
+    expect(ohio).toContain("Latent substance / toxic injury");
   });
   it("unsupported claims offer source review without date inputs or a calculation action", () => {
     const html = markup("HI", "product_liability");
-    expect(html).toContain("no date will be calculated");
+    expect(html).toContain("No unique baseline is available");
     expect(html).not.toContain('type="date"');
-    expect(html).not.toContain("Check cited baseline");
+    expect(html).not.toContain("Review result");
   });
   it("shows every required discovery and product-history date without replacing them with one date", () => {
     const rule = baselineRule(snapshot.rules, "OH", "product_liability", "latent_toxic");

@@ -1,13 +1,15 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
 import { SectionPage } from "@/components/corpus/SectionPage";
 import { FolderGrid } from "@/components/corpus/FolderGrid";
-import { DatasetBrowser, useDatasets } from "@/components/corpus/DatasetBrowser";
+import { useDatasets } from "@/components/corpus/DatasetBrowser";
+import { DatasetVersionBrowser } from "@/components/corpus/SectionPage";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { pageHead } from "@/lib/corpus/head";
 import { sectionOf } from "@/lib/external/groups";
 import { safetyAgency, safetyKind } from "@/lib/external/lawTree";
 import { inventoryRecordTotal, datasetRecordGrain } from "@/lib/external/domainRegistry";
+import { resolveDatasetVersion, visibleDatasetChoices } from "@/lib/external/datasetVersions";
 
 type S = { ds?: string | undefined; view?: string | undefined; agency?: string | undefined };
 const str = (v: unknown) =>
@@ -35,10 +37,13 @@ const AGENCIES = [
 
 function SafetyPage() {
   const s = Route.useSearch();
+  const navigate = useNavigate({ from: "/safety" });
   const datasets = useDatasets();
   if (s.view === "list") return <SectionPage section="safety" path="/safety" ds={undefined} />;
-  const list = (datasets.data ?? []).filter((d) => sectionOf(d.id) === "safety");
+  const allDatasets = datasets.data ?? [];
+  const list = visibleDatasetChoices(allDatasets).filter((d) => sectionOf(d.id) === "safety");
   const agency = s.agency ?? (s.ds ? safetyAgency(s.ds) : undefined);
+  const resolved = s.ds ? resolveDatasetVersion(s.ds, allDatasets) : null;
 
   const crumbs: { label: string; to?: string; search?: Record<string, string> }[] = [
     { label: "Atlas", to: "/" },
@@ -56,7 +61,16 @@ function SafetyPage() {
   if (datasets.error) body = <ExternalError error={datasets.error} />;
   else if (datasets.isLoading)
     body = <p className="text-[13px] text-muted-foreground">Loading safety records…</p>;
-  else if (s.ds) body = <DatasetBrowser key={s.ds} dataset={s.ds} />;
+  else if (s.ds && resolved)
+    body = (
+      <DatasetVersionBrowser
+        key={`${resolved.canonicalId}-${resolved.selectedId}`}
+        dataset={resolved.canonicalId}
+        requestedDataset={resolved.selectedId}
+        datasets={allDatasets}
+        onVersionChange={(value) => navigate({ search: { ds: value, agency } })}
+      />
+    );
   else if (!agency) {
     body = (
       <FolderGrid
@@ -78,7 +92,7 @@ function SafetyPage() {
           {
             key: "list",
             label: "All safety datasets (list)",
-            note: "Every safety record set in one list",
+            note: "Every safety record set, with audited source snapshots grouped",
             link: { to: "/safety", search: { view: "list" } },
           },
         ]}
@@ -110,7 +124,7 @@ function SafetyPage() {
     <AppShell
       breadcrumbs={crumbs}
       title={s.ds ? safetyKind(s.ds) : agency ? `${agency} safety records` : "Product safety"}
-      description="Open an agency, then a record kind, then a record. Counts describe imported source rows across separate snapshots; held collections require publication review."
+      description="Browse recalls, safety notices and product classifications by agency."
     >
       {body}
     </AppShell>

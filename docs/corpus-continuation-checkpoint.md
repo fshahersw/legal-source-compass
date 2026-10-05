@@ -1,5 +1,9 @@
 # Corpus continuation checkpoint — October 5, 2026
 
+## Latest calculator and consolidation checkpoint
+
+The owner prioritized calculator accuracy and duplicate collection navigation during this continuation. See [the October 5 calculator review](limitations-production-review-2026-10-05.md). The protected limitations release is now `2026-10-05.1`: 118 rule records, 81 statutory captures, and 13 judicial references. Administrative run `841cf6a6-5210-4380-8283-eeb9027541ef` completed with zero projection/hash/citation mismatches and preserved earlier versions. Do not replay the older 79-source publication assertion. Florida and Maine transition boundaries are enforced; other historical applicability still requires review. The frontend groups the audited FDA classification and CourtListener people snapshot pairs, with earlier versions preserved. These changes do not close any of the docket acquisition or held-publication gaps below.
+
 This checkpoint is for the hourly heartbeat automation `continue-legal-source-compass` (ACTIVE). The latest pass IDs are `b11bce32-fa58-4c07-a4ac-7cf830f44da0` and `65881579-a4ad-462a-a4ca-70aa36063a62`. It projected 405 docket-entry records into a 63,973-record global catalog; 345 changed existing source rows have hash-verified before-images. The refresh covered 17 matter records: 12 of 12 strictly eligible current PDF versions are registered, one native docket-entry scope is complete (MDL 3114, 85 records), and 16 remain partial at 20 records each. Four source headers are blocked. The secondary CourtListener ID `63571952` for MDL 3014 is invalid/mismatched and excluded.
 
 ## Resume the 16 docket-entry cursors

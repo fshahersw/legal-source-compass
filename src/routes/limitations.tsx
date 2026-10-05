@@ -32,6 +32,9 @@ export const Route = createFileRoute("/limitations")({
 
 function Page() {
   const search = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const state = search.state ?? "";
+  const claim = search.claim;
   return (
     <AppShell
       breadcrumbs={[
@@ -43,9 +46,19 @@ function Page() {
       description="Choose a state and claim, enter the relevant dates, then review a cited conditional baseline."
     >
       <LimitationsWorkbench
-        initialState={search.state ?? ""}
-        initialClaim={search.claim}
-        initialView={search.view ?? "calculator"}
+        key={`${state}:${claim ?? ""}`}
+        state={state}
+        claim={claim}
+        view={search.view ?? "calculator"}
+        onNavigate={(next) =>
+          void navigate({
+            search: () => ({
+              ...(next.state ? { state: next.state } : {}),
+              ...(next.claim ? { claim: next.claim } : {}),
+              view: next.view,
+            }),
+          })
+        }
       />
     </AppShell>
   );

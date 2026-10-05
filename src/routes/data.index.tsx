@@ -4,6 +4,7 @@ import { ExternalBadge, ExternalError } from "@/components/corpus/ExternalBadge"
 import { useDatasets } from "@/components/corpus/DatasetBrowser";
 import { SECTIONS, sectionOf } from "@/lib/external/groups";
 import { datasetDisplayName, datasetPurpose } from "@/lib/external/domainRegistry";
+import { datasetVersionLabel } from "@/lib/external/datasetVersions";
 import { pageHead } from "@/lib/corpus/head";
 import { EXTRA_TABLES } from "@/lib/external/tables.functions";
 
@@ -29,14 +30,16 @@ function Catalog() {
         { label: "Dataset inventory" },
       ]}
       title="Dataset inventory"
-      description="Advanced inventory of every connected corpus dataset. Record counts are the corpus's own imported counts; no coverage is inferred."
+      description="Advanced inventory of every connected corpus dataset and source snapshot. Counts are imported source rows, not deduplicated people, products, or coverage."
     >
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <ExternalBadge />
         {all.length ? (
           <span className="text-[12px] text-muted-foreground">
             {all.length} datasets ·{" "}
-            {hasUnknownCount ? "Total not recorded" : `${total.toLocaleString()} imported records`}
+            {hasUnknownCount
+              ? "Total not recorded"
+              : `${total.toLocaleString()} imported source rows across snapshots (overlaps included)`}
           </span>
         ) : null}
       </div>
@@ -66,7 +69,7 @@ function Catalog() {
                   >
                     <div className="flex flex-col gap-1">
                       <span className="text-[13px] font-medium">
-                        {datasetDisplayName(d.id, d.label)}
+                        {datasetVersionLabel(d.id, datasetDisplayName(d.id, d.label))}
                       </span>
                       <span className="shrink-0 tabular-nums text-[12px] text-muted-foreground">
                         {d.records == null
