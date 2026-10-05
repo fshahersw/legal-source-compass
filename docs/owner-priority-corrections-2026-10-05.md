@@ -29,5 +29,5 @@ Keep the bulk hold while repairing access to independently recorded official sou
 
 - Expand calculator rules only from identified primary authority, with correct claim scope, accrual, version transitions, repose and tolling treatment.
 - Restore one state entry per jurisdiction with official-source access and available captured statutes.
-- Resume the 15 still-incomplete CourtListener cursors after a fresh actual quota check. The original 16-ID target set is preserved, but MDL 3144's API traversal reached its terminal page; freshness and public/document coverage remain separate. Preserve all lock, reserve, blocked-source and native-identity safeguards in `corpus-continuation-checkpoint.md` and the latest linked checkpoint.
+- Resume the 11 still-incomplete CourtListener cursors after a fresh actual quota check. The original 16-ID target set is preserved; MDLs 3108, 3113, 3144, 3149 and 3166 have exhausted their observed API pagination. First-page freshness and public/document coverage remain separate. Preserve all lock, reserve, blocked-source and native-identity safeguards in `corpus-continuation-checkpoint.md` and the latest linked checkpoint.
 - Keep the staged legal graph held and reconcile every bounded projection before describing it as published.

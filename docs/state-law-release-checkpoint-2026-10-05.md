@@ -1,5 +1,7 @@
 # State-law restoration release checkpoint — October 5, 2026
 
+Latest status: the [13:23 continuation](corpus-continuation-1324-2026-10-05.md) reconfirmed 118 published rules at 14:11 UTC. `.1` remains active. The unchanged `.2` and the separately reviewed [NC `.3` candidate](limitations-nc-candidate-2026-10-05.md) are privately uploaded and prepared, but neither is registered or published. The [state-law source review](state-law-source-review-2026-10-05.md) supersedes the older GA/NJ/AR/MS/OR/TN research descriptions below; historical captures and bounded amendment searches do not by themselves activate calculations.
+
 ## Status at 10:52 UTC
 
 The owner-ordered financial-disclosure and URL-directory removals are complete; see `owner-priority-corrections-2026-10-05.md`. State-source navigation is repaired in code. The expanded calculator release is prepared and tested, **not registered or published**. The active application manifest still points to release `2026-10-05.1` (37 jurisdictions with conditional baselines).
