@@ -14,7 +14,6 @@ import {
   Loading,
   Panel,
   RangePager,
-  Scope,
   selectClass,
 } from "@/components/matters/common";
 import { PdfViewer } from "@/components/matters/PdfViewer";
@@ -37,7 +36,7 @@ import {
 } from "@/lib/matters/timeline";
 import type { MatterOverviewPayload, TimelineArchivePayload } from "@/lib/matters/types";
 
-/** Characters of docket text shown before "Show full text". */
+/** Characters of docket text shown before "Show more". */
 const CLAMP_CHARS = 260;
 /** Documents listed under an entry before "show all". */
 const ENTRY_DOCS = 4;
@@ -292,52 +291,113 @@ function EntryRow({
   );
 }
 
-/** What the registry captured and published for this matter's timeline, in words. */
+/** A compact source-coverage summary with the full collection qualifications available on demand. */
 function CoverageNote({ payload }: { payload: MatterOverviewPayload }) {
   const reg = payload.registry;
   const rec = reg?.record ?? null;
-  const caps = (reg?.entries ?? []).filter((e) => e.captured !== null);
+  const captures = reg?.entries ?? [];
+  const caps = captures.filter((e) => e.captured !== null);
   const captured = caps.reduce((n, e) => n + (e.captured ?? 0), 0);
-  const behind = rec && rec.entriesPublished !== null && captured > rec.entriesPublished;
   return (
-    <Scope title="Scope">
-      Docket text is shown exactly as the court record prints it. Entries are the master docket's
-      CourtListener entries collected by the matter registry or, for a docket CourtListener does not
-      publish, what GovInfo and the court's own page publish (a partial list by construction). Text
-      that mentions sealing, restriction, in camera, ex parte or redaction is not published: those
-      entries keep their number, date and document count and say so. A sealed document is never
-      listed.{" "}
-      {caps.length
-        ? caps.map((e, i) => (
-            <span key={`${e.provider}-${e.docketKey ?? i}`}>
-              {entryProviderLabel(e.provider) ?? e.provider} entries captured:{" "}
-              <span className="font-medium text-foreground tabular-nums">
-                {e.captured!.toLocaleString()}
+    <div className="space-y-1.5">
+      <div className="flex flex-wrap gap-x-3 gap-y-1 rounded-md border border-border bg-muted/25 px-3 py-2 text-[12px] text-muted-foreground">
+        {captures.length ? (
+          captures.map((capture, index) => {
+            const docket = reg?.caseIds.find((c) => c.docketKey === capture.docketKey);
+            const status =
+              capture.complete === true
+                ? "Complete at capture"
+                : capture.complete === false
+                  ? "Partial"
+                  : "Completeness not recorded";
+            return (
+              <span key={`${capture.provider}-${capture.docketKey ?? index}`}>
+                <span className="font-medium text-foreground">
+                  {entryProviderLabel(capture.provider) ?? capture.provider}
+                </span>
+                {` · ${docket?.docketNumber ?? capture.docketKey ?? "Docket not recorded"} · ${status} · ${capture.observedAt ? `observed ${capture.observedAt.slice(0, 10)}` : "observation date not recorded"}`}
               </span>
-              {e.providerTotal !== null
-                ? ` of ${e.providerTotal.toLocaleString()} reported by the provider`
-                : " (provider total not recorded)"}
-              {e.complete === true
-                ? ", complete at capture"
-                : e.complete === false
-                  ? ", capture continues"
-                  : ""}
-              {e.observedAt ? `, observed ${e.observedAt.slice(0, 10)}` : ""}.{" "}
-            </span>
-          ))
-        : null}
-      {behind
-        ? `${rec.entriesPublished!.toLocaleString()} of the ${captured.toLocaleString()} captured entries are published so far; the rest follow as the projection runs. `
-        : ""}
-      {rec &&
-      rec.entriesWithheld !== null &&
-      rec.entriesPublished !== null &&
-      rec.entriesWithheld > 0
-        ? `${rec.entriesWithheld.toLocaleString()} of ${rec.entriesPublished.toLocaleString()} published entries have no text under that rule (the rule is deliberately broad: it also catches words such as “unsealed” or “motion to seal”). `
-        : ""}
-      Documents listed here are the ones the source lists; the archive chips show which of them the
-      verified PDF archive holds.
-    </Scope>
+            );
+          })
+        ) : (
+          <span>Source coverage not recorded</span>
+        )}
+      </div>
+      <details className="rounded-md border border-border bg-muted/20 px-3 py-2 text-[12px] leading-relaxed text-muted-foreground">
+        <summary className="cursor-pointer font-medium text-foreground">Docket coverage</summary>
+        <div className="mt-2 space-y-2">
+          <p>
+            {caps.length
+              ? `${captured.toLocaleString()} source-capture rows are recorded across the scopes below.`
+              : "Source capture counts are not recorded."}{" "}
+            {rec?.entriesPublished === null || rec?.entriesPublished === undefined
+              ? "The published timeline row count is not recorded."
+              : `${rec.entriesPublished.toLocaleString()} rows are published in this timeline.`}{" "}
+            {caps.length === captures.length &&
+            captures.length > 0 &&
+            rec?.entriesPublished !== null &&
+            rec?.entriesPublished !== undefined &&
+            captured !== rec.entriesPublished
+              ? "Captured and published row counts differ."
+              : null}
+          </p>
+          <p>
+            Docket text is shown exactly as printed. Entries come from the master docket’s
+            CourtListener record or, where CourtListener does not publish, from GovInfo or the court
+            site; those alternate-provider lists are partial by design. Text indicating sealing,
+            restriction, in camera, ex parte or redaction is withheld. Such entries retain their
+            number, date and document count; sealed documents are not listed. Source-listed
+            documents are separate from PDFs the verified archive can serve.
+          </p>
+          {captures.length ? (
+            <ul className="space-y-1">
+              {captures.map((capture, index) => {
+                const docket = reg?.caseIds.find((c) => c.docketKey === capture.docketKey);
+                const count =
+                  capture.captured === null
+                    ? "count not recorded"
+                    : `${capture.captured.toLocaleString()} captured`;
+                const total =
+                  capture.providerTotal === null
+                    ? "provider total not recorded"
+                    : `${capture.providerTotal.toLocaleString()} reported by provider`;
+                const status =
+                  capture.complete === true
+                    ? "complete at capture"
+                    : capture.complete === false
+                      ? "partial at capture"
+                      : "completeness not recorded";
+                const observedAt = capture.observedAt
+                  ? `observed ${capture.observedAt.slice(0, 10)}`
+                  : "observation date not recorded";
+                return (
+                  <li key={`${capture.provider}-${capture.docketKey ?? index}`}>
+                    <span className="font-medium text-foreground">
+                      {entryProviderLabel(capture.provider) ?? capture.provider}
+                    </span>
+                    {" · "}
+                    {docket?.docketNumber ?? capture.docketKey ?? "Docket not recorded"}: {count};{" "}
+                    {total}; {status}; {observedAt}.
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p>Per-docket capture counts and dates are not recorded.</p>
+          )}
+          {rec?.entriesWithheld !== null &&
+          rec?.entriesWithheld !== undefined &&
+          rec.entriesWithheld > 0 ? (
+            <p>
+              {rec.entriesWithheld.toLocaleString()} of{" "}
+              {rec.entriesPublished?.toLocaleString() ?? "an unknown number of"} published entries
+              have no text under the withholding rule. The rule is intentionally broad and can also
+              match words such as “unsealed” or “motion to seal.”
+            </p>
+          ) : null}
+        </div>
+      </details>
+    </div>
   );
 }
 
