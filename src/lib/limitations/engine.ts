@@ -46,6 +46,20 @@ export function baselineRule(
   return matches.length === 1 ? matches[0]! : null;
 }
 
+/** A bundle release does not refresh its authorities. Use the oldest required statute review. */
+export function sourceReviewDate(
+  snapshot: LimitationsSnapshot,
+  rule: LimitationRule,
+): string | null {
+  if (!parseCivilDate(snapshot.snapshotDate) || !rule.sourceIds.length) return null;
+  const dates = rule.sourceIds.map((id) => {
+    const sources = snapshot.sources.filter((s) => s.id === id);
+    return sources.length === 1 ? sources[0]!.verifiedAt?.slice(0, 10) : undefined;
+  });
+  if (dates.some((date) => !date || !parseCivilDate(date))) return null;
+  return [snapshot.snapshotDate, ...(dates as string[])].sort()[0]!;
+}
+
 export function calculateBaseline(
   snapshot: LimitationsSnapshot,
   input: BaselineInput,
@@ -61,6 +75,16 @@ export function calculateBaseline(
   if (!rule)
     return finish("needs_review", [
       "This jurisdiction and claim have no uniquely supported baseline rule. Consult the source inventory and claim-specific research below.",
+    ]);
+  if (
+    (rule.calculation &&
+      !["discovery_min", "diagnosis", "death_cause_min"].includes(rule.calculation.mode)) ||
+    (rule.effectiveFrom && !parseCivilDate(rule.effectiveFrom)) ||
+    (rule.effectiveThrough && !parseCivilDate(rule.effectiveThrough)) ||
+    (rule.effectiveFrom && rule.effectiveThrough && rule.effectiveFrom > rule.effectiveThrough)
+  )
+    return finish("needs_review", [
+      "This rule's calculation or applicability window is not supported.",
     ]);
   const triggerDates =
     rule?.calculation?.mode === "discovery_min"
@@ -80,10 +104,6 @@ export function calculateBaseline(
     return finish("invalid", [
       "Supply each legally relevant real civil date in YYYY-MM-DD format (1900–2199).",
     ]);
-  if ([...requiredDates, input.deathDate].filter(Boolean).some((d) => d! > snapshot.snapshotDate))
-    return finish("needs_review", [
-      "A selected date is later than the legal-source snapshot. Future-law applicability needs review.",
-    ]);
   if (input.deathDate && !parseCivilDate(input.deathDate))
     return finish("invalid", ["The death date is invalid."]);
   if (
@@ -94,16 +114,23 @@ export function calculateBaseline(
     rule.caseReferenceIds?.some((id) => !snapshot.cases.some((c) => c.id === id))
   )
     return finish("needs_review", ["The rule's period or primary-source evidence is incomplete."]);
+  const reviewedThrough = sourceReviewDate(snapshot, rule);
+  if (!reviewedThrough)
+    return finish("needs_review", ["The required statutory sources have no reliable review date."]);
+  if ([...requiredDates, input.deathDate].filter(Boolean).some((d) => d! > reviewedThrough))
+    return finish("needs_review", [
+      `A selected date is later than ${reviewedThrough}, the oldest review date among this rule's required statutes. Confirm subsequent law before calculating.`,
+    ]);
   const reasons: string[] = [];
-  if (!input.governingLawConfirmed)
+  if (input.governingLawConfirmed !== true)
     reasons.push(
       "Confirm the governing state's limitations law; residence, injury location and MDL venue alone do not establish it.",
     );
-  if (!input.accrualConfirmed)
+  if (input.accrualConfirmed !== true)
     reasons.push(
       "Confirm the legally relevant accrual date under this rule; exposure, diagnosis and discovery are not interchangeable.",
     );
-  if (!input.applicabilityConfirmed)
+  if (input.applicabilityConfirmed !== true)
     reasons.push(
       "Confirm this current statutory rule and its claim category apply to the facts and historical dates.",
     );
@@ -138,9 +165,13 @@ export function calculateBaseline(
       "Post-death knowledge requires separate representative / accrual analysis; this branch does not resolve it.",
     );
   if (rule.effectiveFrom && trigger < rule.effectiveFrom)
-    reasons.push("The date precedes this rule version's recorded effective window.");
+    reasons.push(
+      `This calculator branch supports trigger dates on or after ${rule.effectiveFrom}. Earlier dates require the historical statute and transition analysis. ${rule.historicalApplicability}`,
+    );
   if (rule.effectiveThrough && trigger > rule.effectiveThrough)
-    reasons.push("The date follows this rule version's recorded effective window.");
+    reasons.push(
+      `This calculator branch ends on ${rule.effectiveThrough}. Later dates require a supported statutory version.`,
+    );
   if (rule.calculation?.requiresExposureWithinDeliveryYears) {
     const lastExposure = calendarAnniversary(
       input.firstProductDeliveryDate!,

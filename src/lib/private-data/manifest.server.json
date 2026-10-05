@@ -2,7 +2,7 @@
   "schema_version": "atlas-private-snapshots/1",
   "project_id": "xosqzzsnhxcyehcnirpa",
   "bucket": "corpus-originals",
-  "created_at": "2026-10-02T17:44:46.771Z",
+  "created_at": "2026-10-05T09:42:37.778Z",
   "files": {
     "atlas-import-bundle.json": {
       "sha256": "acb1355f66463d76e865e582a2a3cc3e62a235fe0ffa19eb69ea80fb3e7b7b3e",
@@ -310,14 +310,14 @@
       "storage_key": "atlas-private-data/sha256/a6/a674dfa31b625e92635f32684a61ae135b05a91507f17f2d5164833237fecf46.bin"
     },
     "limitations/case-references.json": {
-      "sha256": "7171fb658ae4756710700ea09970f3cddb51df1dfa5000bfb9925f0c760c4812",
+      "sha256": "da552ad37c388dbc91a4e511b60779a14042dfa8448ef06d3a799236ae5468ec",
       "bytes": 22877,
-      "storage_key": "atlas-private-data/sha256/71/7171fb658ae4756710700ea09970f3cddb51df1dfa5000bfb9925f0c760c4812.bin"
+      "storage_key": "atlas-private-data/sha256/da/da552ad37c388dbc91a4e511b60779a14042dfa8448ef06d3a799236ae5468ec.bin"
     },
     "limitations/coverage.json": {
-      "sha256": "95e3fa3fcd288c91cb0a44b688556b04c151c6c7f07ce5ae6a99380d0efd199e",
-      "bytes": 90710,
-      "storage_key": "atlas-private-data/sha256/95/95e3fa3fcd288c91cb0a44b688556b04c151c6c7f07ce5ae6a99380d0efd199e.bin"
+      "sha256": "e37c7325333d975a923f26f016af27e5f4c805fb87a5a3c87e9d9ce4ec44e89e",
+      "bytes": 91150,
+      "storage_key": "atlas-private-data/sha256/e3/e37c7325333d975a923f26f016af27e5f4c805fb87a5a3c87e9d9ce4ec44e89e.bin"
     },
     "limitations/followup/access-retry-20261002-v4.json": {
       "sha256": "728547d0b0fccd652b71788b90e6ffd4040c7efe3d303ae3668945dff9e33736",
@@ -460,14 +460,14 @@
       "storage_key": "atlas-private-data/sha256/ab/ab9a1d53a546941dbcf697490b6a332c0f34753566acbba44f1fb519a930e239.bin"
     },
     "limitations/rules.json": {
-      "sha256": "00210e24d746d33885113d9e30ce5e76d832b3619267d7472b26f2d0a26910e6",
-      "bytes": 201349,
-      "storage_key": "atlas-private-data/sha256/00/00210e24d746d33885113d9e30ce5e76d832b3619267d7472b26f2d0a26910e6.bin"
+      "sha256": "246698ef17033e2d1241f19ad6d67152b7713a9ae93db052e51db7e81cf34a3e",
+      "bytes": 202275,
+      "storage_key": "atlas-private-data/sha256/24/246698ef17033e2d1241f19ad6d67152b7713a9ae93db052e51db7e81cf34a3e.bin"
     },
     "limitations/sources.json": {
-      "sha256": "16e7adaa2012eade1af6327d72f995b3aa09da4b7cba392e744def1a0d630ff3",
-      "bytes": 69074,
-      "storage_key": "atlas-private-data/sha256/16/16e7adaa2012eade1af6327d72f995b3aa09da4b7cba392e744def1a0d630ff3.bin"
+      "sha256": "269256f177f0b158f21341970b3c5d8e21c4a667ca73baaebfd757a78937aff2",
+      "bytes": 71574,
+      "storage_key": "atlas-private-data/sha256/26/269256f177f0b158f21341970b3c5d8e21c4a667ca73baaebfd757a78937aff2.bin"
     },
     "limitations/text/ak-9-10-070.txt": {
       "sha256": "2be64c3240efeaa39cbc46f84ff6ce2f8376a3bcc627f992db51b999399a03b0",
@@ -535,9 +535,9 @@
       "storage_key": "atlas-private-data/sha256/c7/c7b80641cf0f670b88c4bf5c102438c0cf7d5eefbc6ba466e84b36d9754f8eec.bin"
     },
     "limitations/text/fl-95-11.txt": {
-      "sha256": "590dc9047ccfa960fe69d4220c6189fb9ad5562588010ce8f3d08f24e3710621",
-      "bytes": 58629,
-      "storage_key": "atlas-private-data/sha256/59/590dc9047ccfa960fe69d4220c6189fb9ad5562588010ce8f3d08f24e3710621.bin"
+      "sha256": "2032e4a7e4ae1f400fef7ced57a0f22089701d0189d41dc220b3ab83de1e0835",
+      "bytes": 16044,
+      "storage_key": "atlas-private-data/sha256/20/2032e4a7e4ae1f400fef7ced57a0f22089701d0189d41dc220b3ab83de1e0835.bin"
     },
     "limitations/text/hi-657-7.txt": {
       "sha256": "689ff4fd1ef461ea0a4de692321fbb66ae084f1207fad0fa4de0801e5650ce34",
@@ -1623,6 +1623,16 @@
       "sha256": "2f591378d19eee9ff468b9ac1fe242eefbf7728cfae48c17ac72a28e09738528",
       "bytes": 285161,
       "storage_key": "atlas-private-data/sha256/2f/2f591378d19eee9ff468b9ac1fe242eefbf7728cfae48c17ac72a28e09738528.bin"
+    },
+    "limitations/text/fl-2023-15.txt": {
+      "sha256": "f576892fa6835a3e39615ec27d868e5700e9b083faf08e038674d96cf17796b6",
+      "bytes": 54429,
+      "storage_key": "atlas-private-data/sha256/f5/f576892fa6835a3e39615ec27d868e5700e9b083faf08e038674d96cf17796b6.bin"
+    },
+    "limitations/text/me-2023-c390.txt": {
+      "sha256": "b2681c5b2ce060757f12aebbba2fbc58166b5be175faccb473c98f613214fb55",
+      "bytes": 11742,
+      "storage_key": "atlas-private-data/sha256/b2/b2681c5b2ce060757f12aebbba2fbc58166b5be175faccb473c98f613214fb55.bin"
     }
   }
 }

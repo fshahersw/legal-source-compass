@@ -61,6 +61,12 @@ export type LimitationSource = {
   authorityKind: "statute";
   validity: string;
   historicalApplicability: string;
+  rawCapture?: {
+    sha256: string;
+    byteLength: number;
+    contentType: string;
+    retrievedAt: string;
+  };
 };
 export type CoverageRow = {
   state: string;

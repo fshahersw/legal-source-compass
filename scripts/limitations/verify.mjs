@@ -9,7 +9,12 @@ const ids = new Set();
 for (const source of snapshot.sources) {
   if (ids.has(source.id)) throw new Error(`Duplicate source ${source.id}`);
   ids.add(source.id);
-  if (!source.url.startsWith("https://") || /\.pdf(?:$|\?)/i.test(source.url))
+  if (
+    !source.url.startsWith("https://") ||
+    (/\.pdf(?:$|\?)/i.test(source.url) &&
+      (!source.rawCapture?.contentType?.includes("application/pdf") ||
+        !/^[a-f0-9]{64}$/.test(source.rawCapture?.sha256)))
+  )
     throw new Error(`Unexpected source URL ${source.id}`);
   const bytes = await readFile(path.join(root, "text", `${source.id}.txt`));
   const hash = createHash("sha256").update(bytes).digest("hex");
@@ -52,6 +57,8 @@ console.log(
     federalStatutes: snapshot.sources.filter((s) => s.state === "US").length,
     judicialReferences: caseIds.size,
     checksums: "passed",
-    pdfBinaries: 0,
+    retainedOfficialPdfCaptures: snapshot.sources.filter((s) =>
+      s.rawCapture?.contentType?.includes("application/pdf"),
+    ).length,
   }),
 );

@@ -233,6 +233,56 @@ describe("civil dates and conditional legal baselines", () => {
 });
 
 describe("versioned legal evidence integrity", () => {
+  it("does not apply Florida's two-year amendment to pre-transition or same-day claims", () => {
+    for (const accrualDate of ["2020-01-01", "2023-03-23", "2023-03-24"])
+      expect(
+        calculateBaseline(snapshot, { ...confirmed, jurisdiction: "FL", accrualDate }).date,
+      ).toBeNull();
+    expect(
+      calculateBaseline(snapshot, { ...confirmed, jurisdiction: "FL", accrualDate: "2023-03-25" })
+        .date,
+    ).toBe("2025-03-25");
+  });
+  it("withholds Maine's newer wrongful-death period when the earlier death needs transition review", () => {
+    expect(
+      calculateBaseline(snapshot, {
+        ...confirmed,
+        jurisdiction: "ME",
+        claimType: "wrongful_death",
+        accrualDate: "2023-10-24",
+      }).date,
+    ).toBeNull();
+    expect(
+      calculateBaseline(snapshot, {
+        ...confirmed,
+        jurisdiction: "ME",
+        claimType: "wrongful_death",
+        accrualDate: "2023-10-25",
+      }).date,
+    ).toBe("2026-10-25");
+  });
+  it("does not treat a new bundle date as a fresh review of every underlying source", () => {
+    expect(
+      calculateBaseline(
+        { ...snapshot, snapshotDate: "2026-10-10" },
+        { ...confirmed, accrualDate: "2026-10-09" },
+      ).date,
+    ).toBeNull();
+  });
+  it("fails closed for unsupported computation modes and missing source review dates", () => {
+    const copy = structuredClone(snapshot);
+    const rule = baselineRule(copy.rules, "IN", "personal_injury")!;
+    rule.calculation = { mode: "unsupported" as never };
+    expect(calculateBaseline(copy, confirmed).date).toBeNull();
+    delete rule.calculation;
+    copy.sources.find((s) => s.id === rule.sourceIds[0])!.verifiedAt = "";
+    expect(calculateBaseline(copy, confirmed).date).toBeNull();
+  });
+  it("requires actual boolean confirmations, not truthy strings", () => {
+    expect(
+      calculateBaseline(snapshot, { ...confirmed, applicabilityConfirmed: "false" as never }).date,
+    ).toBeNull();
+  });
   it("keeps Florida product-injury and ordinary-negligence periods distinct", () => {
     const facts = { ...confirmed, jurisdiction: "FL", accrualDate: "2024-05-01" };
     const injury = calculateBaseline(snapshot, facts);
@@ -285,7 +335,11 @@ describe("versioned legal evidence integrity", () => {
       const bytes = readFileSync(`private${source.textPath}`);
       expect(createHash("sha256").update(bytes).digest("hex")).toBe(source.sha256);
       expect(bytes.byteLength).toBe(source.byteLength);
-      expect(source.url).not.toMatch(/\.pdf(?:$|\?)/i);
+      expect(new URL(source.url).protocol).toBe("https:");
+      if (/\.pdf(?:$|\?)/i.test(source.url)) {
+        expect(source.rawCapture?.contentType).toContain("application/pdf");
+        expect(source.rawCapture?.sha256).toMatch(/^[a-f0-9]{64}$/);
+      }
       expect(bytes.byteLength).toBeLessThan(10_000_000);
     }
     for (const rule of snapshot.rules)
