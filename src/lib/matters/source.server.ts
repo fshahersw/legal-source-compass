@@ -34,6 +34,7 @@ import {
   type DocumentFilter,
   type DocumentSort,
   type MatterDocument,
+  type RegistrySource,
   type RegistrySummary,
 } from "./documents";
 import { pageFromEnd, parseActivityEntry, parseClEntry, type DocketEntry } from "./entries";
@@ -62,6 +63,7 @@ import {
   type RegistryMatter,
 } from "./registry";
 import {
+  archiveSourcesFor,
   buildArchiveIndex,
   matchEntryDocuments,
   parseRegistryEntry,
@@ -915,6 +917,79 @@ export type TimelineArchiveItem = {
   documentIds: string[];
 };
 
+/** Fetch exact document identities named on visible entries without scanning the whole matter archive. */
+async function readTimelineDocumentsById(
+  payload: MatterOverviewPayload,
+  items: TimelineArchiveItem[],
+): Promise<MatterDocument[] | null> {
+  const requested = new Map<RegistrySource, Map<string, Set<string>>>();
+  const registryDockets = payload.registry?.caseIds ?? [];
+  for (const item of items) {
+    if (item.withheld || !item.docketKey) continue;
+    const docket = registryDockets.find((candidate) => candidate.docketKey === item.docketKey);
+    // Without a registry relationship tying this entry to the matter's native docket ids,
+    // fall back to the existing matter-scoped archive index instead of probing document ids.
+    if (!docket?.nativeCaseIds.length) continue;
+    for (const id of item.documentIds) {
+      const sources = archiveSourcesFor(id, item.provider);
+      for (const source of sources) {
+        const expectedProvider =
+          source === "docketbird" || source === "courtlistener" ? source : null;
+        const sourceCaseIds = new Set(
+          docket?.nativeCaseIds
+            .filter((caseId) => !expectedProvider || caseId.provider === expectedProvider)
+            .map((caseId) => caseId.id) ?? [],
+        );
+        if (!sourceCaseIds.size) continue;
+        let ids = requested.get(source);
+        if (!ids) requested.set(source, (ids = new Map()));
+        let contexts = ids.get(id);
+        if (!contexts) ids.set(id, (contexts = new Set()));
+        for (const caseId of sourceCaseIds) contexts.add(caseId);
+      }
+    }
+  }
+
+  if (!requested.size) return null;
+  const docs: MatterDocument[] = [];
+  try {
+    for (const [source, idContexts] of requested) {
+      const ids = [...idContexts.keys()];
+      for (let start = 0; start < ids.length; start += 500) {
+        const chunk = ids.slice(start, start + 500);
+        const raw = await rpcPost<unknown>("corpus_pdf_documents_by_id_v1", {
+          p_source_system: source,
+          p_native_document_ids: chunk,
+        });
+        if (!isObj(raw) || !Array.isArray(raw["rows"]))
+          throw new Error("Unexpected exact PDF registry response");
+        const chunkIds = new Set(chunk);
+        for (const row of raw["rows"]) {
+          const parsed = parseRegistryDocument(row);
+          if (
+            !parsed ||
+            parsed.sourceSystem !== source ||
+            !chunkIds.has(parsed.nativeDocumentId) ||
+            !idContexts.has(parsed.nativeDocumentId) ||
+            !parsed.nativeCaseId ||
+            !idContexts.get(parsed.nativeDocumentId)!.has(parsed.nativeCaseId)
+          )
+            continue;
+          docs.push(describeDocument(parsed));
+        }
+      }
+    }
+    return docs;
+  } catch {
+    // Keep the broader matter-scoped index as a fallback; its completeness flag stays authoritative.
+    return null;
+  }
+}
+
+function uniqueArchiveRows(index: ArchiveIndex): MatterDocument[] {
+  return [...new Set(index.byDocumentId.values())];
+}
+
 /**
  * The archive documents of the entries on one timeline page. Each entry is tied to the archive only by exact keys: the
  * RECAP document ids it lists, and (for the same docket) the DocketBird documents carrying its own entry number.
@@ -923,8 +998,25 @@ export async function loadTimelineArchive(
   payload: MatterOverviewPayload,
   items: TimelineArchiveItem[],
 ): Promise<TimelineArchivePayload> {
-  const index = await archiveIndexFor(payload);
-  if (typeof index === "string") return { connected: false, reason: index };
+  const [broadIndex, exactDocuments] = await Promise.all([
+    archiveIndexFor(payload),
+    readTimelineDocumentsById(payload, items),
+  ]);
+  if (typeof broadIndex === "string" && exactDocuments === null)
+    return { connected: false, reason: broadIndex };
+  const broadRows = typeof broadIndex === "string" ? [] : uniqueArchiveRows(broadIndex);
+  const exactIdentityKeys = new Set(
+    (exactDocuments ?? []).map((doc) => `${doc.sourceSystem}|${doc.nativeDocumentId}`),
+  );
+  const broadCopies = broadRows
+    .flatMap(documentCopies)
+    .filter((copy) => !exactIdentityKeys.has(`${copy.sourceSystem}|${copy.nativeDocumentId}`));
+  const index = buildArchiveIndex(
+    deduplicateDocuments([...broadCopies, ...(exactDocuments ?? [])]),
+    typeof broadIndex !== "string" && broadIndex.complete,
+  );
+  // The explicit IDs can remain complete for their rows even when the broad index hit its cap;
+  // the matter-wide flag remains false so missing DocketBird entry-number matches are not implied absent.
   const caseIdFor = (docketKey: string | null): string | null => {
     if (!docketKey) return null;
     const docket = payload.registry?.caseIds.find((c) => c.docketKey === docketKey);

@@ -7,7 +7,12 @@
  * drops the document list of an entry with a sealed document; this module honours those flags and never lists a
  * document the projection marks sealed. Unknown values stay null and render "Not recorded".
  */
-import { documentCopies, type MatterDocument, type MatterDocumentCopy } from "./documents";
+import {
+  documentCopies,
+  type MatterDocument,
+  type MatterDocumentCopy,
+  type RegistrySource,
+} from "./documents";
 
 const isObj = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === "object" && !Array.isArray(v);
@@ -342,7 +347,7 @@ export type EntryArchive = {
 };
 
 /** Archive source systems a listed document id can belong to, by the kind of id and the entry's provider. */
-function archiveSourcesFor(id: string, provider: string | null): readonly string[] {
+export function archiveSourcesFor(id: string, provider: string | null): readonly RegistrySource[] {
   // An external entry's document is the PDF URL; the archive keys court-hosted files by that URL.
   if (/^https:\/\//i.test(id)) return ["official-court", "courtlistener-public-locator"];
   return provider === "docketbird" ? ["docketbird"] : ["courtlistener"];

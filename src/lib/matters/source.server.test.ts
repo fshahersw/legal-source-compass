@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { loadDocumentsPage, parseLegacyDocument } from "./source.server";
+import { loadDocumentsPage, loadTimelineArchive, parseLegacyDocument } from "./source.server";
 import type { MatterOverviewPayload } from "./types";
 
 const item = (links: unknown) => ({
@@ -153,6 +153,122 @@ describe("verified PDF page assembly", () => {
         nativeCaseId: "flnd-3:2025-md-03140",
         nativeDocumentId: "flnd-3:2025-md-03140-00001",
       });
+    } finally {
+      vi.unstubAllGlobals();
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("loads exact timeline document ids beyond the broad archive cap and rejects unrequested or wrong-docket rows", async () => {
+    vi.stubEnv("EXTERNAL_SUPABASE_URL", "https://corpus.example");
+    vi.stubEnv("EXTERNAL_SUPABASE_KEY", "test-key");
+    const row = (
+      native_document_id: string,
+      native_case_id: string,
+      availability = "open",
+      source_system = "courtlistener",
+    ) => ({
+      source_system,
+      native_document_id,
+      native_case_id,
+      availability,
+      sha256: availability === "open" ? "a".repeat(64) : null,
+      bytes: availability === "open" ? 250 : null,
+      public_url: null,
+      verified_at: "2026-10-05T00:00:00Z",
+    });
+    const targetCase = "69679999";
+    const fetchMock = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      if (String(url).includes("corpus_pdf_documents_by_id_v1")) {
+        return new Response(
+          JSON.stringify({
+            rows: [
+              row("beyond-cap", targetCase),
+              row("held-exact", targetCase, "held"),
+              row("wrong-docket", "unrelated-case"),
+              row("not-requested", targetCase),
+              row("wrong-source", "flnd-3:2025-md-03140", "open", "docketbird"),
+            ],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      expect(String(url)).toContain("corpus_matter_pdf_documents_v1");
+      expect(body["p_native_case_ids"]).toEqual(["flnd-3:2026-md-09999", targetCase]);
+      return new Response(
+        JSON.stringify({
+          rows: body["p_offset"] === 0 ? [row("held-exact", targetCase, "open")] : [],
+          summary: { total: 20_001, open: 20_001, held: 0, open_bytes: 0 },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const payload = {
+      overview: { mdl: "exact-id-cap-test-2026-10-05", keys: { all: [] } },
+      registry: {
+        pdfCaseIds: ["flnd-3:2026-md-09999", targetCase],
+        caseIds: [
+          {
+            docketKey: "flnd:3:2026-md-09999",
+            nativeCaseIds: [
+              { provider: "docketbird", id: "flnd-3:2026-md-09999" },
+              { provider: "courtlistener", id: targetCase },
+            ],
+          },
+        ],
+      },
+    } as unknown as MatterOverviewPayload;
+    const item = (id: string, docIds: string[]) => ({
+      id,
+      provider: "courtlistener",
+      docketKey: "flnd:3:2026-md-09999",
+      entryNumber: 12,
+      withheld: null,
+      documentIds: docIds,
+    });
+    const overLimitIds = Array.from({ length: 498 }, (_, index) => `unmatched-${index}`);
+
+    try {
+      const result = await loadTimelineArchive(payload, [
+        item("entry-beyond-cap", ["beyond-cap", ...overLimitIds]),
+        item("entry-held", ["held-exact"]),
+        item("entry-wrong-docket", ["wrong-docket"]),
+        item("entry-wrong-source", ["wrong-source"]),
+      ]);
+      expect(result.connected).toBe(true);
+      if (!result.connected) return;
+      expect(result.complete).toBe(false);
+      expect(
+        result.byEntry["entry-beyond-cap"]?.documents.map((d) => d.doc.nativeDocumentId),
+      ).toEqual(["beyond-cap"]);
+      expect(result.byEntry["entry-held"]?.documents[0]?.doc).toMatchObject({
+        nativeDocumentId: "held-exact",
+        availability: "held",
+        sha256: null,
+        bytes: null,
+        publicUrl: null,
+      });
+      expect(result.byEntry["entry-wrong-docket"]).toMatchObject({ documents: [], notArchived: 1 });
+      expect(result.byEntry["entry-wrong-source"]).toMatchObject({ documents: [], notArchived: 1 });
+      expect(
+        Object.values(result.byEntry)
+          .flatMap((entry) => entry.documents)
+          .some((d) => d.doc.nativeDocumentId === "not-requested"),
+      ).toBe(false);
+      const exactRequests = fetchMock.mock.calls.filter(([url]) =>
+        String(url).includes("corpus_pdf_documents_by_id_v1"),
+      );
+      const exactBodies = exactRequests.map(
+        ([, init]) => JSON.parse(String(init?.body)) as Record<string, unknown>,
+      );
+      expect(exactBodies.map((body) => (body["p_native_document_ids"] as string[]).length)).toEqual(
+        [500, 2],
+      );
+      expect(
+        exactBodies.every((body) => (body["p_native_document_ids"] as string[]).length <= 500),
+      ).toBe(true);
     } finally {
       vi.unstubAllGlobals();
       vi.unstubAllEnvs();
