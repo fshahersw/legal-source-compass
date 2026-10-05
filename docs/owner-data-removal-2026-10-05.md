@@ -17,7 +17,9 @@ These are unique-object measurements, not sums of overlapping route references. 
 
 ## Execution status
 
-In progress. The CPSC full-row recovery export is complete and locally hash-verified; its guarded removal has started. The Open US Law export is continuing through four concurrent readers over exact native-ID partitions. All Open US Law outline rows and its dedicated context have complete local before-images. Storage removal has not yet started at this checkpoint.
+In progress. CPSC removal is complete: all 479,534 records and its catalog entry are independently verified absent. Its complete raw/gzip recovery export remains local. All 818,617 Open US Law outline segments, 196,458 nodes, 224 collection entries, and the dedicated `law_outline` context are independently verified absent. Three additional contexts belonging exclusively to the deleted collections were removed and verified absent; mixed coverage/federal contexts remain preserved.
+
+The Open US Law record export is continuing through four concurrent readers over exact native-ID partitions. The guarded Storage job is running; object-removal completion is not yet claimed.
 
 Private inventories, raw/gzip row backups, protected/eligible file manifests, and deletion intent/receipt journals are under `private/audit-2026-10-05/owner-removal-openus-cpsc/` and are excluded from Git. Storage inventory metadata is a before-image of object identities and versions; it is not a claim that every deleted binary has a local recovery copy.
 
