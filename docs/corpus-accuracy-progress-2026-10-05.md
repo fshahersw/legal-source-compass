@@ -35,3 +35,11 @@ The checked UI through commit `85b0cd8` is synced through the connected Lovable 
 The user authorized automatic continuation in this chat. Hourly heartbeat `continue-legal-source-compass` is ACTIVE; it checks current quota before resuming the exact saved cursors. `corpus-continuation-checkpoint.md` records commands, remaining scopes and publication holds. Broad corpus completion is still in progress.
 
 Raw evidence, private before-images, source payloads, and validation logs remain in the ignored `private/audit-2026-10-05/` directory. Credentials are outside the repository. Broad corpus completeness and nationwide legal currency are not claimed.
+
+## First continuation heartbeat
+
+The 08:56 UTC heartbeat left source acquisition deferred until the required 10:55 UTC threshold and made no CourtListener calls. Network-disabled validation confirmed all 21 saved response/provenance pairs and all 16 remaining cursors. No source counts, memberships, publication holds or storage objects changed.
+
+The collector now verifies cached raw hashes and exact receipt identity, preserves immutable response versions and retrieval receipts before refreshing, and forces actual source requests for header refreshes. Relation scopes require a current unblocked header (at most 24 hours old); known holds stay held. Fresh checks with unchanged bytes survive service restarts, and header selection follows retrieval time instead of file order. Quota waits longer than 60 seconds defer the pass with its task and cursor intact. Thirty-five local regression tests passed, including archive readback failures, tampered evidence, stale headers, source stops and quota stops; this is mocked/local validation, not a new source acquisition.
+
+The seven listing-total exceptions were reconciled against exact target-project row counts. Five counts use documented different record units; two are intentionally empty held collections with historical snapshot metadata. The dataset inventory now identifies imported record counts and labels held/unpublished collections. Unknown totals remain unrecorded, and source titles wrap on narrow displays. Exact read-only catalog before-images and validation evidence are retained privately under `heartbeat-0857`.

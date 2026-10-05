@@ -8,6 +8,38 @@ export const sha256 = x => crypto.createHash('sha256').update(x).digest('hex');
 export const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const allowedEndpoints = new Set(['search','dockets','docket-entries','recap-documents','courts','clusters','opinions','opinions-cited','people','positions','retention-events','educations','schools','political-affiliations','sources','aba-ratings','parties','attorneys','originating-court-information','fjc-integrated-database','bankruptcy-information']);
 
+async function readOptional(filename) {
+  try { return await fs.readFile(filename); }
+  catch (error) { if (error.code === 'ENOENT') return null; throw error; }
+}
+
+/** Fail closed on a torn pair or changed bytes; a cache hit is source evidence. */
+function verifyCachedResponse(bytes, provenance, url, method) {
+  if (provenance?.source_url !== url || provenance.request_method !== method
+      || provenance.http_status !== 200 || provenance.schema_version !== 'courtlistener-rest-v4.7/1'
+      || !Number.isFinite(Date.parse(provenance.retrieved_at))
+      || provenance.source_sha256 !== sha256(bytes)) throw new Error('CACHE_EVIDENCE_MISMATCH');
+  try { return JSON.parse(bytes.toString('utf8')); }
+  catch { throw new Error('CACHE_EVIDENCE_INVALID_JSON'); }
+}
+
+async function writeImmutable(filename, bytes) {
+  try { await fs.writeFile(filename, bytes, {flag: 'wx'}); }
+  catch (error) { if (error.code !== 'EEXIST') throw error; }
+  if (!(await fs.readFile(filename)).equals(bytes)) throw new Error('CACHE_ARCHIVE_READBACK_MISMATCH');
+}
+
+/** Deduplicate exact bytes while retaining every distinct retrieval receipt. */
+async function archiveResponse(cache, bytes, provenance) {
+  const raw = path.join(cache, 'api', 'raw');
+  const observations = path.join(cache, 'api', 'observations');
+  await fs.mkdir(raw, {recursive: true});
+  await fs.mkdir(observations, {recursive: true});
+  const receipt = Buffer.from(JSON.stringify(provenance));
+  await writeImmutable(path.join(raw, `${provenance.source_sha256}.json`), bytes);
+  await writeImmutable(path.join(observations, `${sha256(receipt)}.json`), receipt);
+}
+
 export class CourtListenerClient {
   constructor(cache=DEFAULT_CACHE, maxRequests=450) { this.cache=cache; this.maxRequests=maxRequests; this.requests=0; this.queue=Promise.resolve(); }
   async initialize() {
@@ -70,7 +102,8 @@ export class CourtListenerClient {
           const safety=limit.window_seconds===60?5:limit.window_seconds===3600?30:20;
           if(recent.length+initial>=Math.max(1,limit.limit-safety))delay=Math.max(delay,recent.length?Math.max(250,recent[0]+windowMs-now+200):limit.checkedAt+windowMs-now+200);
         }
-        if(delay>0){if(!this.lastRateLog||now-this.lastRateLog>15_000){this.lastRateLog=now;console.log(JSON.stringify({event:'rate_wait',seconds:Math.ceil(delay/1000)}));}await sleep(Math.min(delay,60_000));continue;}
+        if(delay>60_000){this.stopped=`RATE_WINDOW_DEFERRED Retry-After=${Math.ceil(delay/1000)}`;throw new Error(this.stopped);}
+        if(delay>0){if(!this.lastRateLog||now-this.lastRateLog>15_000){this.lastRateLog=now;console.log(JSON.stringify({event:'rate_wait',seconds:Math.ceil(delay/1000)}));}await sleep(delay);continue;}
         // Optional pacing (CL_MIN_GAP_MS): the 2026-10-03 service run was stopped by a 429 (Retry-After=1) after four requests inside one second; a minimum gap
         // between requests removes the burst without changing the ledger limits.
         const minGap=Number(process.env.CL_MIN_GAP_MS??0);
@@ -82,7 +115,18 @@ export class CourtListenerClient {
   }
   async request(url,{method='GET',refresh=false}={}){
     this.validate(url,method);const key=sha256(`${method} ${url}`);const filename=path.join(this.cache,'api',`${key}.json`);const provenanceFile=path.join(this.cache,'api',`${key}.provenance.json`);
-    if(!refresh){const existing=await fs.readFile(filename).catch(()=>null);if(existing){const provenance=JSON.parse(await fs.readFile(provenanceFile,'utf8'));return {data:JSON.parse(existing),provenance,cached:true};}}
+    if(this.stopped)throw new Error(this.stopped);
+    const existing=await readOptional(filename), existingReceipt=await readOptional(provenanceFile);
+    if(Boolean(existing)!==Boolean(existingReceipt))throw new Error('CACHE_EVIDENCE_MISSING_PAIR');
+    if(existing){
+      let provenance;
+      try { provenance=JSON.parse(existingReceipt.toString('utf8')); }
+      catch { throw new Error('CACHE_EVIDENCE_INVALID_RECEIPT'); }
+      const data=verifyCachedResponse(existing,provenance,url,method);
+      if(!refresh)return {data,provenance,cached:true};
+      // Preserve the previous successful pair before any attempt to replace it.
+      await archiveResponse(this.cache,existing,provenance);
+    }
     await this.reserve();
     const response=await fetch(url,{method,headers:{Authorization:`Token ${this.keys.COURTLISTENER_API_KEY}`,Accept:'application/json'},redirect:'error',signal:AbortSignal.timeout(120_000)});
     const bytes=Buffer.from(await response.arrayBuffer());
@@ -92,6 +136,8 @@ export class CourtListenerClient {
     if(response.status===401||response.status===403){this.stopped=`AUTHORIZATION_STOP ${response.status} ${url}`;throw new Error(this.stopped);}
     if(!response.ok)throw new Error(`HTTP ${response.status} ${url}`);
     let data;try{data=JSON.parse(bytes.toString());}catch{throw new Error(`Non-JSON metadata response ${url}`);}
+    if(response.status!==200)throw new Error(`Unexpected metadata status ${response.status}`);
+    await archiveResponse(this.cache,bytes,provenance);
     await fs.writeFile(filename,bytes);await fs.writeFile(provenanceFile,JSON.stringify(provenance,null,2));
     return {data,provenance,cached:false};
   }

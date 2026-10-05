@@ -26,7 +26,7 @@ After the quota check and source-header audit, this PowerShell here-string creat
 ```powershell
 @'
 import fs from 'node:fs';
-import { verifiedNativeDocketHeader, sourceDocketAllowsRelations } from './scripts/ingest/metadata-workflow.mjs';
+import { rememberDocketHeader, sourceDocketAllowsRelations } from './scripts/ingest/metadata-workflow.mjs';
 const pass = 'private/audit-2026-10-05/recent-entries';
 const expected = new Set(['5981306','6224301','8408916','60866823','61690868','65407433','66801859','67665081','67678440','68222905','68837976','68869775','69255166','69871659','69912599','72030009']);
 const manifest = JSON.parse(fs.readFileSync(`${pass}/live-backfill-manifest.json`, 'utf8'));
@@ -36,15 +36,18 @@ const scopes = targets.filter(([, s]) => !s.complete);
 if (scopes.some(([, s]) => !s.next)) throw Error('Incomplete target has no retained cursor');
 if (!scopes.length) { console.log(JSON.stringify({ queued: 0, complete: true })); process.exit(0); }
 const headers = new Map();
-for (const line of fs.readFileSync(`${pass}/source-docket-headers.jsonl`, 'utf8').split(/\r?\n/).filter(Boolean)) {
-  const r = JSON.parse(line); const h = verifiedNativeDocketHeader(r); headers.set(h.id ? String(h.id) : r.native_id, h);
+for (const file of [`${pass}/source-docket-headers.jsonl`, `${pass}/live-normalized/dockets.jsonl`]) {
+  if (!fs.existsSync(file)) continue;
+  for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/).filter(Boolean)) {
+    rememberDocketHeader(headers, JSON.parse(line));
+  }
 }
 const queue = `${pass}/queue`; fs.mkdirSync(queue, { recursive: true });
 const old = fs.readdirSync(queue).filter(name => name.endsWith('.json'));
 if (old.some(name => !/^continue-entry-(5981306|6224301|8408916|60866823|61690868|65407433|66801859|67665081|67678440|68222905|68837976|68869775|69255166|69871659|69912599|72030009)\.json$/.test(name))) throw Error(`Unexpected task files; inspect and preserve them: ${old.join(', ')}`);
 for (const [key, s] of scopes) {
   const id = key.split(':')[1], header = headers.get(id);
-  if (!sourceDocketAllowsRelations(header)) throw Error(`Source header missing, unverifiable or blocked: ${id}`);
+  if (!sourceDocketAllowsRelations(header?.data)) throw Error(`Source header missing, unverifiable or blocked: ${id}`);
   const task = { type: 'scope', kind: 'docket-entries', docket_id: Number(id), max_pages: 50, page_size: 100, priority: 2 };
   const file = `${queue}/continue-entry-${id}.json`;
   if (fs.existsSync(file)) {
@@ -123,4 +126,14 @@ UI commit `85b0cd8` is published through Lovable to `https://firastest1.com`. Th
 
 The completed storage run `af9b4c2b-30a7-4044-8db1-3f3121228467` removed 29 byte-identical legacy copies, reclaiming 9,833,011 bytes, and preserved 30 artifact routes and all holds. Retained objects passed whole-body hash readback; the affected public download is unchanged. All 2,612 preservation originals and the one duplicate pair with two immutable references remain intact. Do not rerun the completed consolidation script. Read `storage-residual-review-2026-10-05.md` for proof and recovery locations.
 
-On later days, source headers older than 24 hours should be refreshed against their exact native identity within the available request budget before continuing relation acquisition. Keep successful raw captures and import/projection receipts even when a later source becomes unavailable. Further work must report new eligible/captured/published counts separately from these October 5 checkpoints.
+On later days, the service refreshes unblocked source headers older than 24 hours against their exact native identity within the available request budget before continuing relation acquisition. A known blocked or unknown-flag header remains held; relation work does not automatically refresh away that hold. The newest validated retrieval controls header selection regardless of file order, and unchanged header bodies retain each new check time across service restarts. Keep successful raw captures and import/projection receipts even when a later source becomes unavailable. Further work must report new eligible/captured/published counts separately from these October 5 checkpoints.
+
+## 08:56 UTC heartbeat — preparation before quota renewal
+
+No CourtListener usage or acquisition request was made before the 10:55 UTC threshold. A network-disabled verification at 09:11 UTC checked all 21 saved response pairs against their exact source URL, request method, status, schema and raw-byte SHA-256. All 16 incomplete docket-entry scopes still have their saved cursors and current verified unblocked headers. Their captured and published counts are unchanged.
+
+Explicit header refreshes now force a source request using the existing quota and lock. Before changing the compatibility cache, the client preserves both the previous and new response in immutable `api/raw/<source_sha256>.json` bodies and `api/observations/<receipt_sha256>.json` retrieval receipts, with full-byte readback. Equal bodies share one raw file while distinct retrieval receipts remain separate. A mismatched, missing or corrupted cache pair stops acquisition rather than being silently replaced. Priority header observations are append-only. Authorization/throttle stops cannot return a cached fallback.
+
+When a rolling quota requires more than 60 seconds of waiting, the client returns `RATE_WINDOW_DEFERRED`; the service retains the queued task and cursor and exits. Treat this as a normal pause for a later heartbeat, never a reason to reconstruct a cursor or start a different pass directory. Cache-evidence failures similarly preserve the task, but require review of the retained pair and immutable copies before resuming. The forced-refresh and preservation changes passed 35 focused local regression tests without network calls; source behavior will be checked only after the acquisition window opens.
+
+The seven catalog listing-unit exceptions were rechecked through the target-pinned, read-only Supabase catalog. Five describe valid different units; the two zero-row collections remain held. Their historical metadata and all holds are preserved. The inventory now labels imported counts and held publication status explicitly. Private evidence is in `private/audit-2026-10-05/heartbeat-0857/`.

@@ -19,7 +19,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { CourtListenerClient, sha256, sleep } from './courtlistener-client.mjs';
-import { nativeObservationKey, sourceDocketAllowsRelations, verifiedNativeDocketHeader } from './metadata-workflow.mjs';
+import { nativeObservationKey, sourceDocketAllowsRelations, rememberDocketHeader, docketHeaderState, fetchFreshDocketHeader } from './metadata-workflow.mjs';
 
 const args = Object.fromEntries(process.argv.slice(2).map(x => { const i = x.indexOf('='); return i < 0 ? [x.replace(/^--/, ''), 'true'] : [x.slice(2, i), x.slice(i + 1)]; }));
 if (!args.pass) throw new Error('--pass=<pass directory> is required');
@@ -50,15 +50,19 @@ const log = obj => console.log(JSON.stringify({ t: new Date().toISOString(), ...
 
 // ---- sinks (append-only, dedupe on the observation key) ----
 const sinks = new Map(); const seen = new Map();
+// An unchanged header still has a new check time, needed across service restarts.
+const observationKey = record => record.entity_type === 'dockets'
+  ? JSON.stringify([nativeObservationKey(record), record.provenance.retrieved_at])
+  : nativeObservationKey(record);
 async function sink(record) {
   const kind = record.entity_type;
   if (!sinks.has(kind)) {
     const filename = path.join(dirs.out, `${kind}.jsonl`);
     const previous = await fs.readFile(filename, 'utf8').catch(() => '');
-    seen.set(kind, new Set(previous.trim().split('\n').filter(Boolean).map(x => nativeObservationKey(JSON.parse(x)))));
+    seen.set(kind, new Set(previous.trim().split('\n').filter(Boolean).map(x => observationKey(JSON.parse(x)))));
     sinks.set(kind, filename);
   }
-  const key = nativeObservationKey(record);
+  const key = observationKey(record);
   if (seen.get(kind).has(key)) return false;
   await fs.appendFile(sinks.get(kind), JSON.stringify(record) + '\n');
   seen.get(kind).add(key);
@@ -70,7 +74,7 @@ const envelope = (entityType, item, provenance) => ({ schema_version: 'courtlist
 const docketHeaders = new Map();
 async function loadHeaders(file) {
   for (const line of (await fs.readFile(file, 'utf8').catch(() => '')).split('\n').filter(Boolean)) {
-    try { const r = JSON.parse(line); docketHeaders.set(r.native_id, verifiedNativeDocketHeader(r)); } catch { /* unverifiable header is ignored */ }
+    try { rememberDocketHeader(docketHeaders, JSON.parse(line)); } catch { /* unverifiable header is ignored */ }
   }
 }
 await loadHeaders(path.join(pass, 'source-docket-headers.jsonl'));
@@ -79,10 +83,9 @@ await loadHeaders(path.join(dirs.out, 'dockets.jsonl'));
 const client = new CourtListenerClient(pass, maxRequests);
 
 async function fetchDocket(id) {
-  const { data, provenance } = await client.request(`${API}/dockets/${id}/`);
-  if (String(data.id) !== String(id)) throw new Error('Native docket ID mismatch');
-  const rec = envelope('dockets', data, provenance);
-  docketHeaders.set(String(id), verifiedNativeDocketHeader(rec));
+  const rec = await fetchFreshDocketHeader(client, id);
+  const {data, provenance} = rec;
+  rememberDocketHeader(docketHeaders, rec);
   await sink(rec);
   manifest.dockets[id] = { status: 'complete', retrieved_at: provenance.retrieved_at, source_modified_at: data.date_modified ?? null, court_id: data.court_id ?? null, docket_number: data.docket_number ?? null };
   await saveManifest();
@@ -97,7 +100,7 @@ async function docketLookup(task) {
   const rows = [];
   for (const item of data.results) {
     const rec = envelope('dockets', item, provenance);
-    try { docketHeaders.set(String(item.id), verifiedNativeDocketHeader(rec)); } catch { /* keep going; header unverifiable */ }
+    try { rememberDocketHeader(docketHeaders, rec); } catch { /* keep going; header unverifiable */ }
     await sink(rec);
     manifest.dockets[item.id] = { status: 'complete', via: 'lookup', retrieved_at: provenance.retrieved_at, source_modified_at: item.date_modified ?? null, court_id: item.court_id ?? null, docket_number: item.docket_number ?? null };
     rows.push({ id: item.id, court_id: item.court_id, docket_number: item.docket_number, case_name: item.case_name, assigned_to_id: item.assigned_to_id ?? null, date_filed: item.date_filed, date_terminated: item.date_terminated, pacer_case_id: item.pacer_case_id ?? null, blocked: item.blocked });
@@ -127,8 +130,9 @@ async function runScope(task) {
   if (!['docket-entries', 'parties', 'attorneys'].includes(kind)) throw new Error('Unsupported scope kind');
   const key = `${kind}:${id}`;
   if (manifest.scopes[key]?.complete && !task.force) return { scope: key, skipped: 'already complete' };
-  if (!docketHeaders.has(String(id))) await fetchDocket(id);
-  if (!sourceDocketAllowsRelations(docketHeaders.get(String(id)))) {
+  const headerState = docketHeaderState(docketHeaders.get(String(id)));
+  if (headerState === 'missing' || headerState === 'stale') await fetchDocket(id);
+  if (!sourceDocketAllowsRelations(docketHeaders.get(String(id))?.data)) {
     manifest.scopes[key] = { ...(manifest.scopes[key] ?? {}), complete: false, status: 'source_blocked_or_missing_header', docket_id: id, updated_at: new Date().toISOString() };
     await saveManifest();
     return { scope: key, held: 'source_blocked_or_missing_header' };
@@ -208,7 +212,7 @@ try {
     } catch (e) {
       const msg = String(e.message ?? e);
       log({ event: 'task_error', name, attempt, error: msg });
-      if (/RATE_LIMIT_STOP|AUTHORIZATION_STOP|REQUEST_BUDGET_REACHED/.test(msg)) { state.stop_reason = msg; break; }
+      if (/RATE_LIMIT_STOP|AUTHORIZATION_STOP|REQUEST_BUDGET_REACHED|RATE_WINDOW_DEFERRED|CACHE_EVIDENCE_|CACHE_ARCHIVE_/.test(msg)) { state.stop_reason = msg; break; }
       if (attempt >= 3) {
         await fs.writeFile(path.join(dirs.failed, name), JSON.stringify({ task, error: msg, attempts: attempt, failed_at: new Date().toISOString() }, null, 1));
         await fs.unlink(path.join(dirs.queue, name)); state.tasks_failed++;

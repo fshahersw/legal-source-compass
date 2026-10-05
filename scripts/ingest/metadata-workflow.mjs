@@ -53,3 +53,37 @@ export function verifiedNativeDocketHeader(record) {
   }
   return record.data;
 }
+
+export const DOCKET_HEADER_MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+/** A known source hold is never automatically refreshed away by a relation task. */
+export function docketHeaderState(record, now = Date.now()) {
+  if (!record) return 'missing';
+  const data = verifiedNativeDocketHeader(record);
+  if (!sourceDocketAllowsRelations(data)) return 'held';
+  const age = now - Date.parse(record.provenance.retrieved_at);
+  return age < 0 || age > DOCKET_HEADER_MAX_AGE_MS ? 'stale' : 'current';
+}
+
+/** File order cannot make an older unblocked header supersede a newer hold. */
+export function rememberDocketHeader(headers, record, now = Date.now()) {
+  verifiedNativeDocketHeader(record);
+  const retrieved = Date.parse(record.provenance.retrieved_at);
+  if (retrieved > now) throw new Error('Future native docket support timestamp');
+  const previous = headers.get(record.native_id);
+  const oldTime = previous ? Date.parse(previous.provenance.retrieved_at) : -Infinity;
+  if (retrieved > oldTime || (retrieved === oldTime && !sourceDocketAllowsRelations(record.data))) {
+    headers.set(record.native_id, record);
+  }
+}
+
+/** Explicit header checks must reach the source within the client's normal quota. */
+export async function fetchFreshDocketHeader(client, id) {
+  if (!/^[1-9]\d*$/.test(String(id))) throw new Error('Invalid native docket ID');
+  const {data, provenance} = await client.request(`https://www.courtlistener.com/api/rest/v4/dockets/${id}/`, {refresh: true});
+  const record = {schema_version: 'courtlistener-rest-v4.7/1', source_system: 'courtlistener',
+    entity_type: 'dockets', native_id: String(id), data,
+    provenance: {...provenance, record_sha256: createHash('sha256').update(JSON.stringify(data)).digest('hex')}};
+  verifiedNativeDocketHeader(record);
+  return record;
+}

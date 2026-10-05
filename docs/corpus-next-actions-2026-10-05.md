@@ -34,10 +34,16 @@ Other explicit gaps in current documentation include eight partial CourtListener
 
 ## Priority actions
 
-1. Refresh the public catalog audit from exact read-only counts and reconcile the seven listing-unit exceptions with the app's display contract. Keep the two held count mismatches labelled staged/quarantined.
+1. The seven listing-unit exceptions were reconciled during the 08:56 UTC heartbeat (details below). Preserve historical source units and holds; use imported counts and visible publication status in the inventory. Do not replace qualified listing counts with mixed-unit row totals.
 2. Refresh the official CourtListener bulk inventory and checksums against the live publisher listing; then continue the unacquired exports and API-only scopes with native IDs, raw versions and cursors. Review privacy before any disclosure data or public projection.
 3. Rebuild dated Seeger Weiss queue coverage and resume partial native scopes. Report provider-specific metadata, eligible PDFs, verified object hashes, and held/unresolved rows as separate denominators.
 4. The all-key storage reconciliation and bounded 29-copy consolidation are complete for this snapshot. Preserve all canonical objects, source associations and private preservation ledgers. The retained immutable duplicate pair is documented in [the storage review](storage-residual-review-2026-10-05.md); it is not an orphan.
 5. Continue explicit held-collection review, especially `open_us_law` (2,968,623 rows) and the zero-row `verdict_reports` hold. Keep national completeness and legal currency claims out of UI copy until evidence supports them.
 
 The repository was on `main` at `4fb7b8d` (`Fixed bundle address check`) with no tracked changes before this audit note was added. No code, live data, or published history was changed by the audit.
+
+## Listing-unit reconciliation — first heartbeat
+
+Exact read-only counts confirmed Counsel Directory's 4,585 rows comprise 2,170 firm rows, 2,378 attorney rows and 37 Philadelphia liaison rows. MDL Counsel's 6,940 rows comprise 2,213 firm-text rows, 295 party rows and 4,432 attorney rows. Court Statistics has 92 listing artifacts plus 282 normalized detail rows, totaling 374. CPSC has 410,201 NEISS sample rows plus 69,333 SaferProducts incident reports, totaling 479,534; the NEISS sample is not an injury census. DocsUpload has 270 court rows and 11,181 document rows, totaling 11,451. These five qualified source units reconcile and should not be overwritten.
+
+Staged regulatory links still have zero live rows and retain a 38-row historical listing from before their move to the published collection. Verdict Reports has zero live rows and retains its 3,312-row quarantined snapshot metadata under the source-license hold. Both remain `ready=false`. The current app reads `imported_records` for inventory counts and bounded published-query results for matching counts, not these historical `listing.total` values. The inventory now marks every held collection as not published, so these old metadata values are not presented as available records. No catalog mutation or hold release was needed. Exact before-images and source count responses are private in `private/audit-2026-10-05/heartbeat-0857/before-images.json`.

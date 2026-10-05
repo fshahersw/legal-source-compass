@@ -3,9 +3,9 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { CourtListenerClient, sha256 } from './courtlistener-client.mjs';
+import { CourtListenerClient } from './courtlistener-client.mjs';
 import { docketKeyFromNumber as keyFromNumber } from './members-registry-lib.mjs';
-import { verifiedNativeDocketHeader } from './metadata-workflow.mjs';
+import { verifiedNativeDocketHeader, fetchFreshDocketHeader } from './metadata-workflow.mjs';
 
 export function compareDocketIdentity(expected, record) {
   const header = verifiedNativeDocketHeader(record);
@@ -49,20 +49,16 @@ async function main() {
   try {
     await client.initialize();
     for (const id of ids) {
-      const {data, provenance} = await client.request(`https://www.courtlistener.com/api/rest/v4/dockets/${id}/`);
-      const record = {schema_version: 'courtlistener-rest-v4.7/1', source_system: 'courtlistener',
-        entity_type: 'dockets', native_id: id, data,
-        provenance: {...provenance, record_sha256: sha256(JSON.stringify(data))}};
+      const record = await fetchFreshDocketHeader(client, id);
       // Validate resource URI, native ID, raw payload and provenance before saving an import row.
       const matches = expected.filter(e => e.id === id).map(e => compareDocketIdentity(e, record));
+      await fs.appendFile(path.join(output, 'live-normalized/dockets.jsonl'), JSON.stringify(record) + '\n');
       await fs.writeFile(path.join(output, `header-${id}.json`), JSON.stringify(record));
       receipt.rows.push(...matches); await save();
       console.log(JSON.stringify({completed: new Set(receipt.rows.map(r => r.native_id)).size,
         requested: ids.length, id, identity_matches: matches.every(m => m.identity_matches),
         blocked: matches.some(m => m.blocked)}));
     }
-    const records = await Promise.all(ids.map(id => fs.readFile(path.join(output, `header-${id}.json`), 'utf8')));
-    await fs.writeFile(path.join(output, 'live-normalized/dockets.jsonl'), records.join('\n') + '\n');
     receipt.complete = true; await save();
   } finally { await client.close(); }
 }
