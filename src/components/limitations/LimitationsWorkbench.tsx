@@ -44,38 +44,45 @@ const subtypeLabels: Record<string, string> = {
 
 function Citations({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule: LimitationRule }) {
   return (
-    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm">
-      {rule.sourceIds.map((id) => {
-        const source = snapshot.sources.find((item) => item.id === id);
-        return source ? (
-          <a
-            key={id}
-            href={source.url}
-            target="_blank"
-            rel="noreferrer"
-            className="font-medium text-primary underline"
-          >
-            {source.title}
-          </a>
-        ) : (
-          <span key={id}>Source not recorded</span>
-        );
-      })}
-      <span className="text-muted-foreground">{rule.pinpoint}</span>
-      {rule.caseReferenceIds?.map((id) => {
-        const item = snapshot.cases.find((c) => c.id === id);
-        return item ? (
-          <a
-            key={id}
-            href={item.url}
-            target="_blank"
-            rel="noreferrer"
-            className="text-primary underline"
-          >
-            {item.citation}
-          </a>
-        ) : null;
-      })}
+    <div className="mt-3 text-sm">
+      <p className="text-muted-foreground">{rule.pinpoint}</p>
+      <details className="mt-2">
+        <summary className="min-h-9 cursor-pointer py-2 font-medium text-primary">
+          View cited authorities
+        </summary>
+        <div className="mt-1 flex flex-col items-start gap-2">
+          {rule.sourceIds.map((id) => {
+            const source = snapshot.sources.find((item) => item.id === id);
+            return source ? (
+              <a
+                key={id}
+                href={source.url}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-primary underline"
+              >
+                {source.title}
+              </a>
+            ) : (
+              <span key={id}>Source not recorded</span>
+            );
+          })}
+          {rule.caseReferenceIds?.map((id) => {
+            const item = snapshot.cases.find((c) => c.id === id);
+            return item ? (
+              <a
+                key={id}
+                href={item.url}
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary underline"
+              >
+                {item.citation}
+              </a>
+            ) : null;
+          })}
+        </div>
+      </details>
     </div>
   );
 }
