@@ -2,7 +2,11 @@
 
 The owner requires downloaded, parsed, versioned and cited full state-code text for all 50 states and DC, integrated into one state-law browser and an accurate limitations calculator. Links and selected excerpts do not satisfy that requirement. This checkpoint records private acquisition and parsing. Texas cloud upload has now started through the deployed private importer; see [the connected checkpoint](connected-release-2026-10-05.md) for actual receipts and failure/resume status. None of these full-code captures is yet published as a completed state code.
 
-Latest additional state: [New Jersey bulk statutes](new-jersey-full-code-capture-2026-10-05.md) now has original TXT/RTF archives and independently verified spans for 56,331 statutory section occurrences in 70 title/appendix blocks. Its compilation marker stops at P.L.2026, c.30; currentness, detailed TOC reconciliation, registration and publication remain open.
+**Latest owner correction: full-code acquisition and browsable integration lead this work.** Selected calculator authorities do not meet the requirement. Collection of whole codes proceeds separately from approving individual calculations. One source-labelled entry per jurisdiction must expose available captured code text with its actual edition and update gaps.
+
+[DC's whole publisher archive](district-columbia-full-code-capture-2026-10-05.md) is now captured and hash-verified at its May 19, 2026 codification commit; complete article/TOC reconciliation is running. California's exact official bulk archive is being acquired in a separate bounded stream. The private 51-jurisdiction inventory distinguishes official bulk options, actual captures, existing external collections, and missing work; an unvisited directory link never becomes full-code coverage.
+
+[New Jersey bulk statutes](new-jersey-full-code-capture-2026-10-05.md) has original TXT/RTF archives and independently verified spans for 56,331 statutory section occurrences in 70 title/appendix blocks. Its compilation marker stops at P.L.2026, c.30; all 20 observed later chapter laws through c.50 are captured, with legal reconciliation, registration and publication still open.
 
 ## Texas
 

@@ -2,6 +2,14 @@
 
 State-law coverage, calculator accuracy and incomplete matter dockets take priority over peripheral acquisitions and cosmetic work.
 
+## Latest owner correction: full codes first
+
+The owner again rejected selective extraction of a few limitation sections per state. The primary state-law deliverable is **the full code of every state and DC**, downloaded, versioned, mapped and made browsable through one consolidated state entry. That includes complete limitations chapters and related exceptions, tolling, repose, special claims and transition provisions, plus the remaining titles of each code.
+
+Full-text acquisition and source-labelled browsing must proceed independently of calculator rule approval. A publisher's complete code can be shown with its exact edition/codification date and known update gaps; it must not be labelled current legal effect merely because it was downloaded today. Unreviewed calculations remain unavailable. Do not hold all full-code access behind completion of a few calculator baselines, and do not release the separately held Open US Law collection by implication.
+
+The previous sequencing spent too much effort on individually reviewed calculator sections while full-code acquisitions remained private and inaccessible. Both missing acquisitions and app integration now require concrete delivery. See [full state-code acquisition](full-state-code-acquisition-2026-10-05.md) and the latest Texas/Washington checkpoints; calculator release `.4` is a bounded result, not satisfaction of this requirement.
+
 ## Completed removals
 
 The owner explicitly instructed removal of judge financial disclosures and the URL directory. At 10:28:26 UTC, target-pinned verification confirmed:
