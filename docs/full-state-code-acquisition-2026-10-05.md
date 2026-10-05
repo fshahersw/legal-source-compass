@@ -2,6 +2,8 @@
 
 The owner requires downloaded, parsed, versioned and cited full state-code text for all 50 states and DC, integrated into one state-law browser and an accurate limitations calculator. Links and selected excerpts do not satisfy that requirement. This checkpoint records private acquisition and parsing. Texas cloud upload has now started through the deployed private importer; see [the connected checkpoint](connected-release-2026-10-05.md) for actual receipts and failure/resume status. None of these full-code captures is yet published as a completed state code.
 
+Latest additional state: [New Jersey bulk statutes](new-jersey-full-code-capture-2026-10-05.md) now has original TXT/RTF archives and independently verified spans for 56,331 statutory section occurrences in 70 title/appendix blocks. Its compilation marker stops at P.L.2026, c.30; currentness, detailed TOC reconciliation, registration and publication remain open.
+
 ## Texas
 
 All 31 HTML ZIP archives in the retained legislature inventory are captured: 41,625,919 compressed bytes, 4,993 HTML members, 221,797,571 uncompressed bytes. Source URLs, receipts, SHA-256, byte counts and ZIP CRCs are retained. The publisher describes statutes through the 89th Second Called Session (2025), and constitutional amendments through November 2025; that statement does not independently certify present legal effect.
