@@ -1,5 +1,7 @@
 # Accuracy and interface progress — October 5, 2026
 
+Latest continuation: [the 12:52 pass checkpoint](corpus-continuation-1252-2026-10-05.md) records 5,385 newly captured and audited entries, one terminal CourtListener pagination scope (MDL 3144, 465 observations), 15 remaining cursors, and two separate frozen import cohorts. These captures have **not** been registered or projected. The hourly reserve was reached. [The NC candidate](limitations-nc-candidate-2026-10-05.md) is separately tested and local only; release .2 and Lovable publication still await working authenticated browser control. The shipped counts below remain the live baseline, not a claim that the later captures or candidate have shipped.
+
 ## Shipped source corrections
 
 The bounded CourtListener refresh checked 41 pinned native docket identities. Four access-blocked scopes remain blocked. The guarded public projection refreshed 34 existing master-docket records with source checks and retained before-images; 17 last-filing dates changed. Original selection dates remain separate from source-check dates. This does not establish complete or current member-case coverage.

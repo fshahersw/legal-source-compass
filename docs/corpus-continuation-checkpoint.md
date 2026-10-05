@@ -1,6 +1,6 @@
 # Corpus continuation checkpoint — October 5, 2026
 
-Read [the 11:56 continuation checkpoint](corpus-continuation-1156-2026-10-05.md) first. Two further passes captured and audited 1,260 additional entries; the new frozen import packet contains 2,200 target entries and supersedes the unexecuted 10:55 draft. **No new records were registered or projected**, and all 16 target scopes remain partial. Quota was not exhausted at the latest sample; recheck it before the next bounded pass. Then read [the state-law release checkpoint](state-law-release-checkpoint-2026-10-05.md) and [the separate repose review](limitations-repose-review-2026-10-05.md). Release .2 is tested and privately uploaded but **not registered/published**; .1 remains active. Chrome still times out after reconnection. Do not recreate the two owner-deleted peripheral collections. Instructions and counts below are historical where superseded by these linked checkpoints.
+Read [the 12:52 continuation checkpoint](corpus-continuation-1252-2026-10-05.md) first. Three new bounded passes captured and audited 5,385 additional entries. The frozen 11:45 import packet is unchanged; a separate later delta is prepared with an explicit predecessor dependency. **No new records were registered or projected.** MDL 3144's observed API pagination reached its terminal page at 465 records; 15 target cursors remain partial. This does not establish PDF, membership or immutable current-snapshot completeness. The hourly safety reserve was reached at 12:57 UTC; recheck actual quota before further acquisition. Read [the state-law release checkpoint](state-law-release-checkpoint-2026-10-05.md) and [the separate NC candidate](limitations-nc-candidate-2026-10-05.md): .1 remains active, .2 is privately uploaded but unregistered/unpublished, and .3 is local only. Chrome still times out after reconnection. Do not recreate the two owner-deleted collections. Instructions and counts below are historical where superseded by these checkpoints.
 
 ## Latest calculator and consolidation checkpoint
 
@@ -10,22 +10,24 @@ The calculator and grouping release at commit `47081aa2af0dffea5b8e3fb87846f7efd
 
 This checkpoint is for the hourly heartbeat automation `continue-legal-source-compass` (ACTIVE). The latest pass IDs are `b11bce32-fa58-4c07-a4ac-7cf830f44da0` and `65881579-a4ad-462a-a4ca-70aa36063a62`. It projected 405 docket-entry records into a 63,973-record global catalog; 345 changed existing source rows have hash-verified before-images. The refresh covered 17 matter records: 12 of 12 strictly eligible current PDF versions are registered, one native docket-entry scope is complete (MDL 3114, 85 records), and 16 remain partial at 20 records each. Four source headers are blocked. The secondary CourtListener ID `63571952` for MDL 3014 is invalid/mismatched and excluded.
 
-## Resume the 16 docket-entry cursors
+## Resume the remaining docket-entry cursors
+
+The original target set below remains the identity audit boundary. As of the 12:52 pass, skip completed API scope **69871659 / MDL 3144** and resume only the **15 incomplete** cursors. Its first-page/header freshness and document coverage remain separate checks. The old initial waiting threshold and quota sample below are superseded by the latest linked checkpoint.
 
 Do not resume acquisition before **2026-10-05 10:55 UTC**. The last saved quota sample is from 07:31 UTC and is stale for this decision. At or after the threshold, first confirm the automation is still ACTIVE, inspect the current manifest and service state, and check that no live collector owns `api-collector.lock`. Do not remove a lock while its recorded process is alive or its status is uncertain. The persisted quota ledger and live limits include safety reserves of 20/day, 30/hour and 5/minute; budget against the fresh remaining amounts after those reserves, with a hard pass cap of 300 requests. If the resulting allowance is zero or the API reports blocked/unavailable, stop and leave the cursors intact.
 
 Use only the 16 incomplete `docket-entries` scopes in `private/audit-2026-10-05/recent-entries/live-backfill-manifest.json`:
 
-| MDL | CourtListener docket ID | MDL | CourtListener docket ID |
-|---:|---:|---:|---:|
-| 2741 | 5981306 | 3026 | 61690868 |
-| 2789 | 6224301 | 3047 | 65407433 |
-| 2873 | 8408916 | 3060 | 66801859 |
-| 3014 | 60866823 | 3080 | 67665081 |
-| 3081 | 67678440 | 3094 | 68222905 |
-| 3108 | 68837976 | 3113 | 68869775 |
-| 3125 | 69255166 | 3144 | 69871659 |
-| 3149 | 69912599 | 3166 | 72030009 |
+|  MDL | CourtListener docket ID |  MDL | CourtListener docket ID |
+| ---: | ----------------------: | ---: | ----------------------: |
+| 2741 |                 5981306 | 3026 |                61690868 |
+| 2789 |                 6224301 | 3047 |                65407433 |
+| 2873 |                 8408916 | 3060 |                66801859 |
+| 3014 |                60866823 | 3080 |                67665081 |
+| 3081 |                67678440 | 3094 |                68222905 |
+| 3108 |                68837976 | 3113 |                68869775 |
+| 3125 |                69255166 | 3144 |                69871659 |
+| 3149 |                69912599 | 3166 |                72030009 |
 
 Generate one `scope` task per listed docket from the manifest’s existing `next` cursor; use `kind: docket-entries`, `page_size: 100`, `max_pages: 50`, and do not replace or reconstruct a cursor. Exclude complete scopes, the four source-blocked headers and ID `63571952`. Relation access requires a verified native docket header with `blocked === false` and `date_blocked == null`; missing, unverifiable or unknown header flags remain held. If any target fails this check, leave its task unqueued and report its docket ID and source status. A request-budget stop is a normal bounded pause: retain all remaining tasks and continue from the updated manifest on a later heartbeat.
 

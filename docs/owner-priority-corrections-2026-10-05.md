@@ -6,10 +6,10 @@ State-law coverage, calculator accuracy and incomplete matter dockets take prior
 
 The owner explicitly instructed removal of judge financial disclosures and the URL directory. At 10:28:26 UTC, target-pinned verification confirmed:
 
-| Dataset | Records removed | Remaining records |
-| --- | ---: | ---: |
-| `judge_disclosures` | 21,832 | 0 |
-| `url_directory` | 131,743 | 0 |
+| Dataset             | Records removed | Remaining records |
+| ------------------- | --------------: | ----------------: |
+| `judge_disclosures` |          21,832 |                 0 |
+| `url_directory`     |         131,743 |                 0 |
 
 Both catalog entries are removed; 94 datasets remain. Every other catalog row is byte-for-byte equivalent as parsed JSON to its before-image. All 11 publication holds, raw provenance and stored originals remain unchanged. No Storage objects were deleted. Do not acquire replacement financial-disclosure exports or recreate either removed collection without a new owner instruction.
 
@@ -29,5 +29,5 @@ Keep the bulk hold while repairing access to independently recorded official sou
 
 - Expand calculator rules only from identified primary authority, with correct claim scope, accrual, version transitions, repose and tolling treatment.
 - Restore one state entry per jurisdiction with official-source access and available captured statutes.
-- Resume the 16 saved CourtListener cursors only at or after 10:55 UTC and after a fresh actual quota check. Preserve all lock, reserve, blocked-source and native-identity safeguards in `corpus-continuation-checkpoint.md`.
+- Resume the 15 still-incomplete CourtListener cursors after a fresh actual quota check. The original 16-ID target set is preserved, but MDL 3144's API traversal reached its terminal page; freshness and public/document coverage remain separate. Preserve all lock, reserve, blocked-source and native-identity safeguards in `corpus-continuation-checkpoint.md` and the latest linked checkpoint.
 - Keep the staged legal graph held and reconcile every bounded projection before describing it as published.
