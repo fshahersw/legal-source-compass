@@ -21,6 +21,7 @@ export type MasterDocketMeta = {
   dateTerminated: string | null;
   dateLastFiling: string | null;
   sourceAsOf: string | null;
+  sourceCheckedAt: string | null;
 };
 
 export type JpmlReference = { id: string; kind: string; title: string; url: string };
@@ -115,6 +116,9 @@ export type RegistryDocumentsPayload =
       connected: true;
       summary: RegistrySummary;
       rows: MatterDocument[];
+      /** Source-native records read before byte-identical PDFs are grouped. */
+      sourceRecordsLoaded: number;
+      sourceRecordsExcluded: number;
       truncated: boolean;
       /** Provider case ids asked for, each marked as supplied by the matter registry or derived. */
       caseIds: CaseIdPlanEntry[];
@@ -142,6 +146,9 @@ export type RegistryDocumentsPageResponse =
       caseIds: CaseIdPlanEntry[];
       /** Rows the server holds for this matter (before any filter). */
       loaded: number;
+      /** Source-native records read, comparable to summary.total even after PDF grouping. */
+      sourceRecordsLoaded: number;
+      sourceRecordsExcluded: number;
       page: DocumentsPage;
       /** The document named by the viewer's key, wherever it is in the list; null when it is not in it. */
       viewed: MatterDocument | null;

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   countDocuments,
+  deduplicateDocuments,
   describeDocument,
+  documentCopies,
   filterDocuments,
   formatBytes,
   matterPdfUrl,
@@ -27,6 +29,39 @@ const row = (over: Record<string, unknown> = {}) => ({
 });
 
 describe("registry rows", () => {
+  it("keeps GovInfo court documents and groups verified copies across providers", () => {
+    const gov = describeDocument(
+      parseRegistryDocument(
+        row({
+          source_system: "govinfo",
+          native_document_id: "USCOURTS-cand-4_22-md-03047-0",
+          native_case_id: "4:22-md-03047",
+        }),
+      )!,
+    );
+    const cl = describeDocument(
+      parseRegistryDocument(
+        row({
+          source_system: "courtlistener",
+          native_document_id: "12345",
+          native_case_id: "65407433",
+        }),
+      )!,
+    );
+    const grouped = deduplicateDocuments([gov, cl]);
+    expect(grouped).toHaveLength(1);
+    expect(documentCopies(grouped[0]!).map((d) => d.sourceSystem)).toEqual([
+      "courtlistener",
+      "govinfo",
+    ]);
+    expect(filterDocuments(grouped, { source: "govinfo" })[0]!.nativeDocumentId).toBe(
+      gov.nativeDocumentId,
+    );
+    expect(
+      parsePdfRequest(new URLSearchParams({ source: "govinfo", doc: gov.nativeDocumentId }))
+        ?.source,
+    ).toBe("govinfo");
+  });
   it("parses an open DocketBird row and keeps byte identity server-side facts", () => {
     const d = parseRegistryDocument(row())!;
     expect(d).toMatchObject({
@@ -78,6 +113,9 @@ describe("registry rows", () => {
   it("treats an open row without a valid sha-256 as held", () => {
     for (const bad of [null, "", "xyz", "A".repeat(64), "a".repeat(63)]) {
       expect(parseRegistryDocument(row({ sha256: bad }))!.availability).toBe("held");
+      expect(
+        parseRegistryDocument(row({ sha256: bad, public_url: "https://example.org/document.pdf" })),
+      ).toMatchObject({ bytes: null, publicUrl: null });
     }
   });
 
@@ -171,6 +209,108 @@ describe("document labels, links and ordering", () => {
   });
 });
 
+describe("verified-byte duplicate grouping", () => {
+  it("groups only exact open hashes and retains every source-native filing identity", () => {
+    const docketbird = describeDocument(parseRegistryDocument(row())!);
+    const courtlistener = describeDocument(
+      parseRegistryDocument(
+        row({
+          source_system: "courtlistener",
+          native_document_id: "495058040",
+          native_case_id: "69674950",
+        }),
+      )!,
+    );
+    const anotherDocket = describeDocument(
+      parseRegistryDocument(
+        row({
+          source_system: "docketbird",
+          native_document_id: "cand-4:2022-md-03047-00770",
+          native_case_id: "cand-4:2022-md-03047",
+        }),
+      )!,
+    );
+    const sameProviderIdDifferentCase = describeDocument(
+      parseRegistryDocument(
+        row({
+          native_case_id: "other-case-key",
+        }),
+      )!,
+    );
+    const differentBytes = describeDocument(
+      parseRegistryDocument(row({ sha256: "c".repeat(64) }))!,
+    );
+    const held = describeDocument(
+      parseRegistryDocument(
+        row({ native_document_id: "flnd-3:2025-md-03140-00772", availability: "held" }),
+      )!,
+    );
+
+    const grouped = deduplicateDocuments([
+      docketbird,
+      courtlistener,
+      anotherDocket,
+      sameProviderIdDifferentCase,
+      differentBytes,
+      held,
+    ]);
+    expect(grouped).toHaveLength(3);
+    expect(grouped[0]).toMatchObject({
+      sourceSystem: "courtlistener",
+      nativeDocumentId: courtlistener.nativeDocumentId,
+      sha256: sha,
+    });
+    expect(documentCopies(grouped[0]!)).toEqual([
+      courtlistener,
+      anotherDocket,
+      docketbird,
+      sameProviderIdDifferentCase,
+    ]);
+    expect(
+      documentCopies(grouped[0]!).map((d) => [d.sourceSystem, d.nativeCaseId, d.nativeDocumentId]),
+    ).toEqual([
+      ["courtlistener", "69674950", "495058040"],
+      ["docketbird", "cand-4:2022-md-03047", "cand-4:2022-md-03047-00770"],
+      ["docketbird", "flnd-3:2025-md-03140", "flnd-3:2025-md-03140-00771"],
+      ["docketbird", "other-case-key", "flnd-3:2025-md-03140-00771"],
+    ]);
+    expect(filterDocuments(grouped, { source: "courtlistener" })).toEqual([grouped[0]]);
+    expect(filterDocuments(grouped, { caseId: "cand-4:2022-md-03047" })[0]).toMatchObject({
+      sourceSystem: "docketbird",
+      nativeCaseId: "cand-4:2022-md-03047",
+      nativeDocumentId: "cand-4:2022-md-03047-00770",
+    });
+    expect(filterDocuments(grouped, { source: "docketbird" })[0]).toMatchObject({
+      sourceSystem: "docketbird",
+      nativeCaseId: "cand-4:2022-md-03047",
+    });
+    expect(countDocuments(grouped.slice(0, 1))).toEqual({
+      total: 1,
+      open: 1,
+      held: 0,
+      bySource: { courtlistener: 1, docketbird: 3 },
+      byCase: {
+        "69674950": 1,
+        "cand-4:2022-md-03047": 1,
+        "other-case-key": 1,
+        "flnd-3:2025-md-03140": 1,
+      },
+    });
+    expect(
+      documentCopies(deduplicateDocuments([docketbird, anotherDocket, courtlistener])[0]!),
+    ).toEqual(documentCopies(deduplicateDocuments([courtlistener, anotherDocket, docketbird])[0]!));
+    expect(grouped[2]!.availability).toBe("held");
+    expect(grouped[2]!.sha256).toBeNull();
+  });
+
+  it("does not repeat the same native identity when duplicate rows are encountered", () => {
+    const original = describeDocument(parseRegistryDocument(row())!);
+    const grouped = deduplicateDocuments([original, original]);
+    expect(grouped).toHaveLength(1);
+    expect(documentCopies(grouped[0]!)).toEqual([original]);
+  });
+});
+
 describe("summary and helpers", () => {
   it("uses the registry's exact totals and falls back to the rows in hand", () => {
     const rows = [parseRegistryDocument(row())!];
@@ -191,6 +331,24 @@ describe("summary and helpers", () => {
       held: 44,
       openBytes: 571797776,
       bySource: { docketbird: 830, "official-court": 54 },
+    });
+    expect(
+      parseRegistrySummary(
+        {
+          total: -2,
+          open: 1.5,
+          held: 0,
+          open_bytes: -100,
+          by_source: { docketbird: 1.2, courtlistener: 4 },
+        },
+        rows,
+      ),
+    ).toEqual({
+      total: 1,
+      open: 1,
+      held: 0,
+      openBytes: null,
+      bySource: { courtlistener: 4 },
     });
     expect(parseRegistrySummary(null, rows)).toEqual({
       total: 1,

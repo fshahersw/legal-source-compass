@@ -24,7 +24,12 @@ import {
   type CaseRow,
   type RegistryLabels,
 } from "@/lib/matters/cases";
-import { formatBytes, sortDocuments, type MatterDocument } from "@/lib/matters/documents";
+import {
+  documentCopies,
+  formatBytes,
+  sortDocuments,
+  type MatterDocument,
+} from "@/lib/matters/documents";
 import { getMatterCaseDocuments, getMatterRegistryDocket } from "@/lib/matters/matters.functions";
 import { formatUtc, type EvidenceItem } from "@/lib/matters/registry";
 
@@ -96,7 +101,8 @@ function CaseDocuments({ mdl, rowId }: { mdl: string; rowId: string }) {
         <span className="font-medium text-foreground tabular-nums">
           {docs.summary.total.toLocaleString()}
         </span>{" "}
-        {docs.summary.total === 1 ? "document" : "documents"} in the verified PDF archive under{" "}
+        {docs.summary.total === 1 ? "source record" : "source records"} in the verified PDF archive
+        under{" "}
         {data.ids.map((id, i) => (
           <span key={id}>
             {i ? ", " : ""}
@@ -106,10 +112,13 @@ function CaseDocuments({ mdl, rowId }: { mdl: string; rowId: string }) {
         {docs.summary.total ? (
           <>
             {" "}
-            · {docs.summary.open.toLocaleString()} open · {docs.summary.held.toLocaleString()} held
+            · {docs.summary.open.toLocaleString()} open records ·{" "}
+            {docs.summary.held.toLocaleString()} held records
           </>
         ) : null}
-        .
+        . The list below groups identical verified PDFs (
+        {rows.filter((r) => r.availability === "open").length.toLocaleString()} unique files, plus
+        held records).
       </p>
       {docs.truncated ? (
         // A partial read is not a list worth showing (it would be the first rows the archive returns, not the newest).
@@ -130,10 +139,10 @@ function CaseDocuments({ mdl, rowId }: { mdl: string; rowId: string }) {
           <ul className="divide-y divide-border rounded-md border border-border text-[12px]">
             {shown.map((d) => (
               <li
-                key={`${d.sourceSystem}:${d.nativeDocumentId}`}
+                key={`${d.sourceSystem}:${d.nativeCaseId}:${d.nativeDocumentId}`}
                 className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2.5 py-1.5"
               >
-                <span className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <span className="font-medium">{d.label}</span>
                   <span className="ml-2 text-muted-foreground">
                     {d.sourceLabel}
@@ -141,13 +150,53 @@ function CaseDocuments({ mdl, rowId }: { mdl: string; rowId: string }) {
                       ? ` · ${formatBytes(d.bytes)}`
                       : ""}
                   </span>
-                </span>
+                  <span className="block truncate font-mono text-[10px] text-muted-foreground">
+                    {d.nativeCaseId ? `${d.nativeCaseId} / ` : ""}
+                    {d.nativeDocumentId}
+                  </span>
+                  {documentCopies(d).length > 1 ? (
+                    <details className="mt-1">
+                      <summary className="cursor-pointer text-[10px] text-primary">
+                        Same file also recorded at {documentCopies(d).length - 1} other source{" "}
+                        {documentCopies(d).length === 2 ? "location" : "locations"}
+                      </summary>
+                      <ul className="mt-1 space-y-1">
+                        {documentCopies(d)
+                          .slice(1)
+                          .map((copy) => (
+                            <li
+                              key={`${copy.sourceSystem}:${copy.nativeCaseId}:${copy.nativeDocumentId}`}
+                              className="flex items-center gap-2 text-[10px]"
+                            >
+                              <span className="truncate font-mono text-muted-foreground">
+                                {copy.sourceLabel} ·{" "}
+                                {copy.nativeCaseId ? `${copy.nativeCaseId} / ` : ""}
+                                {copy.nativeDocumentId}
+                              </span>
+                              {copy.availability === "open" ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 px-2 text-[12px]"
+                                  onClick={() => setViewed(copy)}
+                                  aria-label={`View ${copy.sourceLabel} ${copy.nativeDocumentId}`}
+                                >
+                                  <Eye aria-hidden /> View
+                                </Button>
+                              ) : null}
+                            </li>
+                          ))}
+                      </ul>
+                    </details>
+                  ) : null}
+                </div>
                 {d.availability === "open" ? (
                   <Button
                     size="sm"
                     variant="outline"
                     className="h-7 px-2 text-[12px]"
                     onClick={() => setViewed(d)}
+                    aria-label={`View ${d.sourceLabel} ${d.nativeDocumentId}`}
                   >
                     <Eye aria-hidden /> View
                   </Button>
@@ -167,7 +216,7 @@ function CaseDocuments({ mdl, rowId }: { mdl: string; rowId: string }) {
               >
                 {showAll
                   ? "Show fewer"
-                  : `Show ${Math.min(rows.length, DRAWER_ALL_DOCS).toLocaleString()} documents`}
+                  : `Show ${Math.min(rows.length, DRAWER_ALL_DOCS).toLocaleString()} unique PDFs`}
               </button>
             ) : null}
             {rows.length > shown.length ? (

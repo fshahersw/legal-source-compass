@@ -21,7 +21,8 @@ import type { CountSnapshot, MatterOverview } from "./overview";
 const isObj = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === "object" && !Array.isArray(v);
 const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
-const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
+const num = (v: unknown): number | null =>
+  typeof v === "number" && Number.isSafeInteger(v) && v >= 0 ? v : null;
 const idStr = (v: unknown): string | null =>
   typeof v === "number" && Number.isFinite(v) ? String(v) : str(v);
 const arr = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
@@ -73,7 +74,10 @@ export type RegistryEntryCapture = {
   docketKey: string | null;
   captured: number | null;
   providerTotal: number | null;
+  /** Capture completeness after checking any known captured/provider totals. */
   complete: boolean | null;
+  /** The provider's raw completeness flag before count consistency checks. */
+  reportedComplete: boolean | null;
   observedAt: string | null;
 };
 
@@ -235,8 +239,10 @@ export function parseRegistryMatter(raw: unknown, expectedMdl?: string): Registr
   const membersRaw = isObj(raw["members"]) ? raw["members"] : {};
   const byBasis: Record<string, number> = {};
   if (isObj(membersRaw["by_basis"]))
-    for (const [k, n] of Object.entries(membersRaw["by_basis"]))
-      if (typeof n === "number" && Number.isFinite(n)) byBasis[k] = n;
+    for (const [k, n] of Object.entries(membersRaw["by_basis"])) {
+      const count = num(n);
+      if (count !== null) byBasis[k] = count;
+    }
 
   const judges: RegistryJudge[] = [];
   for (const j of arr(raw["judges"])) {
@@ -257,12 +263,22 @@ export function parseRegistryMatter(raw: unknown, expectedMdl?: string): Registr
     if (!isObj(e)) continue;
     const provider = str(e["provider"]);
     if (!provider) continue;
+    const captured = num(e["captured"]);
+    const providerTotal = num(e["provider_total"]);
+    const reportedComplete = typeof e["complete"] === "boolean" ? e["complete"] : null;
     entries.push({
       provider,
       docketKey: str(e["docket_key"]),
-      captured: num(e["captured"]),
-      providerTotal: num(e["provider_total"]),
-      complete: typeof e["complete"] === "boolean" ? e["complete"] : null,
+      captured,
+      providerTotal,
+      complete:
+        reportedComplete === true &&
+        captured !== null &&
+        providerTotal !== null &&
+        captured < providerTotal
+          ? false
+          : reportedComplete,
+      reportedComplete,
       observedAt: str(e["observed_at"]),
     });
   }
@@ -532,6 +548,7 @@ export function registryMetrics(reg: RegistryMatter | null): RegistryMetrics | n
       : completes.some((c) => c === false)
         ? false
         : null;
+  const countMismatch = captured !== null && providerTotal !== null && captured < providerTotal;
   const observed = reg.entries
     .map((e) => e.observedAt?.slice(0, 10) ?? null)
     .filter((d): d is string => !!d && /^\d{4}-\d{2}-\d{2}$/.test(d))
@@ -549,7 +566,7 @@ export function registryMetrics(reg: RegistryMatter | null): RegistryMetrics | n
       ? {
           captured,
           providerTotal,
-          complete,
+          complete: countMismatch ? false : complete,
           published: rec ? rec.entriesPublished : null,
           withheld: rec ? rec.entriesWithheld : null,
         }

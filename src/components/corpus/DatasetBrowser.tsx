@@ -282,7 +282,7 @@ export function DatasetBrowser({
           {total != null
             ? `${total.toLocaleString()}${d?.capped ? "+" : ""} matching ${grain?.unit ?? "records"}`
             : info?.records != null
-              ? `${info.records.toLocaleString()} imported ${grain?.unit ?? "records"}`
+              ? `${info.records.toLocaleString()} ${grain?.unit ?? "records"}`
               : ""}
         </span>
       </div>

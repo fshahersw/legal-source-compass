@@ -20,7 +20,7 @@ import {
 import { PdfViewer } from "@/components/matters/PdfViewer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatBytes, type MatterDocument } from "@/lib/matters/documents";
+import { documentCopies, formatBytes, type MatterDocument } from "@/lib/matters/documents";
 import { groupEntriesByMonth } from "@/lib/matters/entries";
 import { getMatterTimeline, getMatterTimelineArchive } from "@/lib/matters/matters.functions";
 import {
@@ -91,21 +91,59 @@ function EntryDocuments({
               <span className="min-w-0 [overflow-wrap:anywhere]">
                 <span className="font-medium">{documentLabel(entry, doc, via)}</span>
                 <span className="ml-2 text-muted-foreground">
-                  {doc.sourceLabel}
+                  {documentCopies(doc).length > 1
+                    ? `Same verified bytes in ${documentCopies(doc).length} source records`
+                    : doc.sourceLabel}
                   {doc.availability === "open" && doc.bytes !== null
                     ? ` · ${formatBytes(doc.bytes)}`
                     : ""}
                 </span>
               </span>
               {doc.availability === "open" ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 px-2 text-[12px]"
-                  onClick={() => onView(doc)}
-                >
-                  <Eye aria-hidden /> View
-                </Button>
+                documentCopies(doc).length > 1 ? (
+                  <details className="w-full sm:w-auto">
+                    <summary className="cursor-pointer text-right text-[11px] text-primary">
+                      Same file also recorded at {documentCopies(doc).length - 1} other source{" "}
+                      {documentCopies(doc).length === 2 ? "location" : "locations"}
+                    </summary>
+                    <ul className="mt-1 space-y-1">
+                      {documentCopies(doc).map((copy) => (
+                        <li
+                          key={`${copy.sourceSystem}:${copy.nativeCaseId}:${copy.nativeDocumentId}`}
+                          className="flex items-center justify-end gap-2 text-[10px]"
+                        >
+                          <span className="font-mono text-muted-foreground">
+                            {copy.sourceSystem === doc.sourceSystem &&
+                            copy.nativeCaseId === doc.nativeCaseId &&
+                            copy.nativeDocumentId === doc.nativeDocumentId
+                              ? "This entry's source record"
+                              : `Same file also recorded at ${copy.sourceLabel}`}{" "}
+                            · {copy.nativeCaseId ? `${copy.nativeCaseId} / ` : ""}
+                            {copy.nativeDocumentId}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-[12px]"
+                            onClick={() => onView(copy)}
+                            aria-label={`View ${copy.sourceLabel} ${copy.nativeDocumentId}`}
+                          >
+                            <Eye aria-hidden /> View
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 px-2 text-[12px]"
+                    onClick={() => onView(doc)}
+                  >
+                    <Eye aria-hidden /> View
+                  </Button>
+                )
               ) : (
                 <HeldBadge />
               )}

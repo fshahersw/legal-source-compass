@@ -25,7 +25,9 @@ import {
 } from "./cases";
 import { matterCaseKeys } from "./docketKeys";
 import {
+  deduplicateDocuments,
   describeDocument,
+  documentCopies,
   pageDocuments,
   parseRegistryDocument,
   parseRegistrySummary,
@@ -164,6 +166,7 @@ async function loadMasterMeta(clDocketId: string | null): Promise<MasterDocketMe
     dateTerminated: str(cells["date_terminated"]),
     dateLastFiling: str(cells["date_last_filing"]),
     sourceAsOf: str(cells["source_as_of"]),
+    sourceCheckedAt: str(cells["source_checked_at"]),
   };
 }
 
@@ -742,19 +745,41 @@ async function readRegistryDocuments(
       // A row is accepted only if its case id is exactly one of the ids asked for.
       .filter((r) => r.nativeCaseId !== null && caseKeys.includes(r.nativeCaseId))
       .map(describeDocument);
-    return { summary: page["summary"], parsed };
+    return { summary: page["summary"], parsed, rawCount: raw.length };
   };
   try {
     const first = await readPage(0, summaryOnly ? 1 : REGISTRY_PAGE);
     const summary = parseRegistrySummary(first.summary, first.parsed);
-    if (summaryOnly) return { connected: true, summary, rows: [], truncated: false, caseIds };
+    if (summaryOnly)
+      return {
+        connected: true,
+        summary,
+        rows: [],
+        sourceRecordsLoaded: 0,
+        sourceRecordsExcluded: 0,
+        truncated: false,
+        caseIds,
+      };
     const rows: MatterDocument[] = [...first.parsed];
+    let sourceRecordsLoaded = first.rawCount;
     const offsets: number[] = [];
     for (let o = REGISTRY_PAGE; o < Math.min(summary.total, rowCap); o += REGISTRY_PAGE)
       offsets.push(o);
-    for (const page of await mapLimit(offsets, 4, (o) => readPage(o, REGISTRY_PAGE)))
+    for (const page of await mapLimit(offsets, 4, (o) => readPage(o, REGISTRY_PAGE))) {
       rows.push(...page.parsed);
-    return { connected: true, summary, rows, truncated: rows.length < summary.total, caseIds };
+      sourceRecordsLoaded += page.rawCount;
+    }
+    // Pagination and completeness are measured in source records. Only after every
+    // requested page is read can byte-identical files be grouped for presentation.
+    return {
+      connected: true,
+      summary,
+      rows: deduplicateDocuments(rows),
+      sourceRecordsLoaded,
+      sourceRecordsExcluded: sourceRecordsLoaded - rows.length,
+      truncated: sourceRecordsLoaded < summary.total || rows.length < sourceRecordsLoaded,
+      caseIds,
+    };
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     return {
@@ -781,7 +806,9 @@ export async function loadDocumentsPage(
   const docs = await loadRegistryDocuments(caseIdPlan(payload.registry, payload.overview.keys.all));
   if (!docs.connected) return docs;
   const viewed = viewKey
-    ? (docs.rows.find((d) => `${d.sourceSystem}|${d.nativeDocumentId}` === viewKey) ?? null)
+    ? (docs.rows
+        .flatMap(documentCopies)
+        .find((d) => `${d.sourceSystem}|${d.nativeDocumentId}` === viewKey) ?? null)
     : null;
   return {
     connected: true,
@@ -789,6 +816,8 @@ export async function loadDocumentsPage(
     truncated: docs.truncated,
     caseIds: docs.caseIds,
     loaded: docs.rows.length,
+    sourceRecordsLoaded: docs.sourceRecordsLoaded,
+    sourceRecordsExcluded: docs.sourceRecordsExcluded,
     page: pageDocuments(docs.rows, filter, sort, offset),
     viewed,
   };

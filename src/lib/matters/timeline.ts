@@ -7,7 +7,7 @@
  * drops the document list of an entry with a sealed document; this module honours those flags and never lists a
  * document the projection marks sealed. Unknown values stay null and render "Not recorded".
  */
-import type { MatterDocument } from "./documents";
+import { documentCopies, type MatterDocument, type MatterDocumentCopy } from "./documents";
 
 const isObj = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === "object" && !Array.isArray(v);
@@ -285,7 +285,9 @@ export function timelinePath(mdl: string, filter: TimelineFilter, newestFirst: b
  */
 export type ArchiveIndex = {
   byDocumentId: Map<string, MatterDocument>;
-  byCaseEntry: Map<string, MatterDocument[]>;
+  /** The exact source-native copy for each document id. */
+  byDocumentCopy: Map<string, MatterDocumentCopy>;
+  byCaseEntry: Map<string, { doc: MatterDocument; copy: MatterDocumentCopy }[]>;
   /** Rows indexed. */
   size: number;
   /** False when the archive holds more rows than were indexed, so a missing document may only be unread. */
@@ -297,17 +299,36 @@ const entryKey = (caseId: string, entry: number) => `${caseId}|${entry}`;
 
 export function buildArchiveIndex(docs: MatterDocument[], complete: boolean): ArchiveIndex {
   const byDocumentId = new Map<string, MatterDocument>();
-  const byCaseEntry = new Map<string, MatterDocument[]>();
+  const byDocumentCopy = new Map<string, MatterDocumentCopy>();
+  const byCaseEntry = new Map<string, { doc: MatterDocument; copy: MatterDocumentCopy }[]>();
   for (const d of docs) {
-    byDocumentId.set(docKey(d.sourceSystem, d.nativeDocumentId), d);
-    if (d.sourceSystem === "docketbird" && d.nativeCaseId && d.entryNumber !== null) {
-      const key = entryKey(d.nativeCaseId, d.entryNumber);
-      const list = byCaseEntry.get(key);
-      if (list) list.push(d);
-      else byCaseEntry.set(key, [d]);
+    for (const copy of documentCopies(d)) {
+      const documentKey = docKey(copy.sourceSystem, copy.nativeDocumentId);
+      byDocumentId.set(documentKey, d);
+      byDocumentCopy.set(documentKey, copy);
+      if (copy.sourceSystem === "docketbird" && copy.nativeCaseId && copy.entryNumber !== null) {
+        const key = entryKey(copy.nativeCaseId, copy.entryNumber);
+        const list = byCaseEntry.get(key);
+        if (list) {
+          if (!list.some((hit) => hit.doc === d && copyIdentity(hit.copy) === copyIdentity(copy)))
+            list.push({ doc: d, copy });
+        } else byCaseEntry.set(key, [{ doc: d, copy }]);
+      }
     }
   }
-  return { byDocumentId, byCaseEntry, size: docs.length, complete };
+  return { byDocumentId, byDocumentCopy, byCaseEntry, size: docs.length, complete };
+}
+
+const copyIdentity = (copy: MatterDocumentCopy) =>
+  `${copy.sourceSystem}|${copy.nativeCaseId ?? ""}|${copy.nativeDocumentId}`;
+
+/** Retain the occurrence that proved this entry join as the visible primary identity. */
+function forOccurrence(doc: MatterDocument, copy: MatterDocumentCopy): MatterDocument {
+  const identity = copyIdentity(copy);
+  return {
+    ...copy,
+    copies: documentCopies(doc).filter((candidate) => copyIdentity(candidate) !== identity),
+  };
 }
 
 /** How an archive document was tied to an entry. Both are exact joins, never a name or description match. */
@@ -345,27 +366,35 @@ export function matchEntryDocuments(
   if (entry.withheld) return { documents: [], notArchived: 0 };
   const out: EntryArchiveDocument[] = [];
   const seen = new Set<string>();
+  const seenFiles = new Set<MatterDocument>();
   let notArchived = 0;
   for (const id of entry.documentIds) {
     const hit = archiveSourcesFor(id, entry.provider ?? null)
-      .map((source) => index.byDocumentId.get(docKey(source, id)))
-      .find((d): d is MatterDocument => !!d);
+      .map((source) => {
+        const key = docKey(source, id);
+        const doc = index.byDocumentId.get(key);
+        const copy = index.byDocumentCopy.get(key);
+        return doc && copy ? { doc, copy } : null;
+      })
+      .find((match): match is { doc: MatterDocument; copy: MatterDocumentCopy } => !!match);
     if (!hit) {
       notArchived++;
       continue;
     }
-    const key = docKey(hit.sourceSystem, hit.nativeDocumentId);
-    if (!seen.has(key)) {
+    const key = docKey(hit.copy.sourceSystem, hit.copy.nativeDocumentId);
+    if (!seen.has(key) && !seenFiles.has(hit.doc)) {
       seen.add(key);
-      out.push({ doc: hit, via: "document_id" });
+      seenFiles.add(hit.doc);
+      out.push({ doc: forOccurrence(hit.doc, hit.copy), via: "document_id" });
     }
   }
   if (docketbirdCaseId && entry.entryNumber !== null) {
     for (const hit of index.byCaseEntry.get(entryKey(docketbirdCaseId, entry.entryNumber)) ?? []) {
-      const key = docKey(hit.sourceSystem, hit.nativeDocumentId);
-      if (!seen.has(key)) {
+      const key = docKey(hit.copy.sourceSystem, hit.copy.nativeDocumentId);
+      if (!seen.has(key) && !seenFiles.has(hit.doc)) {
         seen.add(key);
-        out.push({ doc: hit, via: "entry_number" });
+        seenFiles.add(hit.doc);
+        out.push({ doc: forOccurrence(hit.doc, hit.copy), via: "entry_number" });
       }
     }
   }

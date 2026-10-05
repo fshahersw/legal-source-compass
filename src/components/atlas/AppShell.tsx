@@ -45,10 +45,10 @@ const SOURCES = [
   "/data-exports",
 ];
 const NAV: NavItem[] = [
+  { to: "/matters", label: "Matters", icon: Landmark, paths: LITIGATION },
   { to: "/places", label: "Explore", icon: MapIcon, paths: EXPLORE },
-  { to: "/courts", label: "Litigation", icon: Landmark, paths: LITIGATION },
   { to: "/law", label: "Law & Safety", icon: BookOpen, paths: LAW },
-  { to: "/sources/library", label: "Sources & Work", icon: Library, paths: SOURCES },
+  { to: "/sources/library", label: "Sources", icon: Library, paths: SOURCES },
 ];
 
 const CONTEXT_NAV = [
@@ -56,31 +56,26 @@ const CONTEXT_NAV = [
     paths: EXPLORE,
     items: [
       { to: "/", label: "Map" },
-      { to: "/search", label: "Search everything" },
-      { to: "/insights", label: "Research workbench" },
+      { to: "/search", label: "Search" },
     ],
   },
   {
     paths: LITIGATION,
     items: [
-      { to: "/courts", label: "1 · Courts" },
-      { to: "/judges", label: "2 · Judges" },
-      { to: "/matters", label: "3 · Matters (MDLs)" },
-      { to: "/matters/seeger-weiss", label: "Seeger Weiss hub" },
-      { to: "/matters/cases", label: "4 · Cases & analytics" },
-      { to: "/insights", label: "Research workbench" },
-      { to: "/registry", label: "5 · Case registry" },
-      { to: "/people", label: "People A–Z" },
+      { to: "/matters", label: "Matters & MDLs" },
+      { to: "/matters/cases", label: "Cases & dockets" },
+      { to: "/courts", label: "Courts" },
+      { to: "/judges", label: "Judges" },
+      { to: "/people", label: "People" },
     ],
   },
   {
     paths: LAW,
     items: [
       { to: "/law", label: "Law & regulation" },
-      { to: "/limitations", label: "Cited limitations" },
+      { to: "/limitations", label: "Time limits" },
       { to: "/safety", label: "Product safety" },
       { to: "/agencies", label: "Agencies" },
-      { to: "/insights", label: "Research workbench" },
     ],
   },
   {
@@ -88,15 +83,7 @@ const CONTEXT_NAV = [
     items: [
       { to: "/sources/library", label: "Source library" },
       { to: "/sources/catalog", label: "Source catalog" },
-      { to: "/sources/registry-v22", label: "Registry V2.2" },
-      { to: "/sources/registry", label: "Registry v0.6" },
-      { to: "/sources/coverage", label: "Quality & coverage" },
-      { to: "/source-datasets", label: "Corpus records" },
-      { to: "/data", label: "All datasets" },
-      { to: "/sources/enrichment", label: "Enrichment" },
       { to: "/saved-sources", label: "Saved" },
-      { to: "/review-queue", label: "Review queue" },
-      { to: "/data-exports", label: "Imports & exports" },
     ],
   },
 ];
@@ -129,7 +116,7 @@ function AccountBox({ collapsed }: { collapsed: boolean }) {
   return (
     <div className={collapsed ? "flex justify-center" : "space-y-1"}>
       {!collapsed && (
-        <div className="truncate text-[11px] text-muted-foreground" title={user.email ?? ""}>
+        <div className="truncate text-[11px] text-sidebar-foreground/75" title={user.email ?? ""}>
           {user.email}
         </div>
       )}
@@ -195,11 +182,7 @@ export function AppShell({
         }`}
       >
         {collapsed ? (
-          <Link
-            to="/"
-            className="mb-4 flex justify-center"
-            aria-label="Legal Source Atlas — home"
-          >
+          <Link to="/" className="mb-4 flex justify-center" aria-label="Legal Source Atlas — home">
             <span
               aria-hidden
               className="flex size-8 items-center justify-center rounded-md bg-sidebar-accent font-display text-[13px] font-semibold text-sidebar-primary"
@@ -209,7 +192,7 @@ export function AppShell({
           </Link>
         ) : (
           <Link to="/" className="mb-4 block px-2">
-            <div className="eyebrow">Corpus + source directory</div>
+            <div className="eyebrow text-sidebar-foreground/75">Legal research</div>
             <div className="mt-1 font-display text-lg leading-tight text-sidebar-primary">
               Legal Source
               <br />
@@ -221,7 +204,8 @@ export function AppShell({
         <nav className="flex flex-col gap-0.5 overflow-y-auto">
           {NAV.map((item) => {
             const active = item.paths.some((path) => pathMatches(pathname, path));
-            const badgeCount = item.label === "Sources & Work" ? counts.total + Object.keys(bookmarks).length : 0;
+            const badgeCount =
+              item.label === "Sources" ? counts.total + Object.keys(bookmarks).length : 0;
             return (
               <Link
                 key={item.to}
@@ -253,13 +237,9 @@ export function AppShell({
         <div className={`mt-auto space-y-3 pt-6 ${collapsed ? "px-0" : "px-2"}`}>
           <AccountBox collapsed={collapsed} />
           {!collapsed && (
-            <p className="flex gap-1.5 text-[10px] leading-relaxed text-muted-foreground">
+            <p className="flex gap-1.5 text-[11px] leading-relaxed text-sidebar-foreground/75">
               <ShieldAlert className="mt-px size-3.5 shrink-0" strokeWidth={1.75} />
-              <span>
-                The directory is public-source data shipped with this build. Your reviews, bookmarks
-                and any file you import are stored in{" "}
-                <strong className="font-semibold text-foreground">this browser only</strong>.
-              </span>
+              <span>Saved items stay in this browser.</span>
             </p>
           )}
         </div>
@@ -283,33 +263,33 @@ export function AppShell({
               )}
             </button>
             <nav aria-label="Breadcrumb" className="min-w-0">
-              <ol className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
-              {breadcrumbs.map((crumb, i) => (
-                <li key={`${crumb.label}-${i}`} className="flex items-center gap-1.5">
-                  {i > 0 ? (
-                    <span aria-hidden className="opacity-50">
-                      /
-                    </span>
-                  ) : null}
-                  {crumb.to ? (
-                    <Link
-                      to={crumb.to}
-                      {...(crumb.search ? { search: crumb.search as never } : {})}
-                      className="hover:text-foreground hover:underline"
-                    >
-                      {crumb.label}
-                    </Link>
-                  ) : (
-                    <span className="font-medium text-foreground">{crumb.label}</span>
-                  )}
-                </li>
-              ))}
+              <ol className="flex flex-wrap items-center gap-1.5 text-[12px] text-muted-foreground">
+                {breadcrumbs.map((crumb, i) => (
+                  <li key={`${crumb.label}-${i}`} className="flex items-center gap-1.5">
+                    {i > 0 ? (
+                      <span aria-hidden className="opacity-50">
+                        /
+                      </span>
+                    ) : null}
+                    {crumb.to ? (
+                      <Link
+                        to={crumb.to}
+                        {...(crumb.search ? { search: crumb.search as never } : {})}
+                        className="hover:text-foreground hover:underline"
+                      >
+                        {crumb.label}
+                      </Link>
+                    ) : (
+                      <span className="font-medium text-foreground">{crumb.label}</span>
+                    )}
+                  </li>
+                ))}
               </ol>
             </nav>
           </div>
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div className="min-w-0">
-              <h1 className="text-xl leading-tight">{title}</h1>
+              <h1 className="text-2xl leading-tight">{title}</h1>
               {description ? (
                 <p className="mt-1 max-w-3xl text-[13px] leading-relaxed text-muted-foreground">
                   {description}
@@ -323,14 +303,14 @@ export function AppShell({
               aria-label="Search all corpus data"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search courts, judges, matters, law, and sources"
-              className="h-8 bg-background text-[12px]"
+              placeholder="Search matters, dockets, documents, courts, and law"
+              className="h-9 bg-background text-[13px]"
             />
             <Button
               type="submit"
               size="icon"
               variant="outline"
-              className="size-8"
+              className="size-9"
               aria-label="Search"
             >
               <Search />
@@ -338,7 +318,7 @@ export function AppShell({
           </form>
         </header>
 
-        {context ? (
+        {context && pathname !== "/" ? (
           <nav
             aria-label="Section"
             className="flex gap-1 overflow-x-auto border-b border-border bg-surface px-5 py-2 lg:px-8"
@@ -359,7 +339,7 @@ export function AppShell({
 
         <nav
           aria-label="Sections"
-          className="flex items-center gap-1 overflow-x-auto border-b border-border bg-surface px-3 py-2 lg:hidden"
+          className="flex items-center gap-1 overflow-x-auto border-b border-sidebar-border bg-sidebar px-3 py-2 text-sidebar-foreground lg:hidden"
         >
           {NAV.map((item) => (
             <Link

@@ -1,16 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 
 import { CorpusRecordLink } from "@/components/corpus/DatasetBrowser";
 import { Chip, Fact, LinkOut, NotRecorded } from "@/components/matters/common";
-import { evidenceKindLabel } from "@/lib/matters/cases";
 import { formatBytes } from "@/lib/matters/documents";
 import { getMatterDocumentsSummary } from "@/lib/matters/matters.functions";
 import { judgeLinkBasisLabel, judgePersonBasisLabel, orNotRecorded } from "@/lib/matters/overview";
 import { registryMetrics } from "@/lib/matters/registry";
 import type { MatterOverviewPayload } from "@/lib/matters/types";
+import { getEntity } from "@/lib/external/entity.functions";
+import { buildEntityView } from "@/lib/external/entityView";
+import { fileUrl } from "@/lib/external/groups";
 
 const REFERENCE_LABELS: Record<string, string> = {
   "court-master-references": "Court's MDL information page",
@@ -59,7 +61,7 @@ const n = (v: number | null) => (v === null ? null : v.toLocaleString());
 /**
  * The matter's numbers in one band, every one computed from the corpus: JPML counts (as of the report date), the
  * registry's dockets and their evidence, entries captured against what the provider reports, parties published, and
- * the verified PDFs open and held. Nothing here is the size of the MDL except the JPML counts.
+ * verified PDF source records open and held. Nothing here is the size of the MDL except the JPML counts.
  */
 function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
   const o = payload.overview;
@@ -71,8 +73,6 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
   });
   const m = registryMetrics(payload.registry);
   const pdf = docs.data && docs.data.connected ? docs.data.summary : null;
-  const topKinds = (m?.byBasis ?? []).slice(0, 3);
-  const moreKinds = (m?.byBasis.length ?? 0) - topKinds.length;
   return (
     <div
       aria-label="Matter metrics"
@@ -80,7 +80,7 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
       className="grid divide-y divide-border border-b border-border sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-5 lg:divide-x"
     >
       <Metric
-        label="Actions (JPML)"
+        label="JPML actions"
         title="Counts from the JPML report; the size of the MDL."
         value={
           o.actions.pending !== null || o.actions.total !== null ? (
@@ -101,13 +101,7 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
         label="Member-like dockets"
         title="Member and transferor dockets the Seeger Weiss matter registry holds for this MDL, each with its evidence. The master docket and the JPML panel proceeding are listed on the Member cases tab but are not counted here; never the size of the MDL."
         value={m && m.dockets !== null ? n(m.dockets) : <NotRecorded />}
-        note={
-          m && topKinds.length
-            ? `${topKinds.map((k) => `${evidenceKindLabel(k.kind)} ${k.count.toLocaleString()}`).join(" · ")}${moreKinds > 0 ? ` · +${moreKinds} more` : ""}`
-            : m
-              ? "No evidence recorded"
-              : "Not in the matter registry"
-        }
+        note={m ? "Evidence-backed; partial count" : "Not in the matter registry"}
       />
       <Metric
         label="Docket entries"
@@ -131,9 +125,9 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
           m?.entries
             ? [
                 m.entries.complete === true
-                  ? "complete at capture"
+                  ? "complete at last check"
                   : m.entries.complete === false
-                    ? "capture continues"
+                    ? "partial"
                     : null,
                 m.entries.published !== null ? `${n(m.entries.published)} published` : null,
                 m.entries.withheld ? `${n(m.entries.withheld)} without text` : null,
@@ -144,7 +138,7 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
         }
       />
       <Metric
-        label="Parties and counsel"
+        label="Parties & counsel"
         title="Parties of the master docket the registry published, and the counsel entries on them."
         value={
           m?.parties && m.parties.published !== null ? (
@@ -163,15 +157,15 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
         }
       />
       <Metric
-        label="Verified PDFs"
-        title="Documents in the private verified PDF archive for the master and JPML dockets: open (linkable) and held (no link)."
+        label="Verified PDF source records"
+        title="Provider-native records in the private verified PDF archive for the master and JPML dockets: open (linkable) and held (no link). Duplicate bytes can appear under multiple source records."
         value={
           pdf ? (
             <>
-              {pdf.open.toLocaleString()} open
+              {pdf.open.toLocaleString()} open records
               <span className="font-normal text-muted-foreground">
                 {" "}
-                · {pdf.held.toLocaleString()} held
+                · {pdf.held.toLocaleString()} held records
               </span>
             </>
           ) : docs.isLoading ? (
@@ -182,32 +176,119 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
         }
         note={
           pdf
-            ? `${pdf.total.toLocaleString()} documents${pdf.openBytes ? ` · ${formatBytes(pdf.openBytes)}` : ""}`
+            ? `${pdf.total.toLocaleString()} source records${pdf.openBytes ? ` · ${formatBytes(pdf.openBytes)}` : ""}`
             : docs.data && !docs.data.connected
               ? "Archive not connected"
               : undefined
         }
       />
-      {m?.lastCaptured || payload.master?.dateLastFiling ? (
+      {m?.lastCaptured || payload.master?.dateLastFiling || payload.master?.sourceCheckedAt ? (
         <div className="flex flex-wrap gap-x-5 gap-y-0.5 border-t border-border px-4 py-1.5 text-[11px] text-muted-foreground sm:col-span-2 lg:col-span-5">
           {payload.master?.dateLastFiling ? (
             <span>
               Last filing on the master docket{" "}
               <span className="font-mono text-foreground">{payload.master.dateLastFiling}</span>
-              {payload.master.sourceAsOf
-                ? ` (CourtListener metadata as of ${payload.master.sourceAsOf})`
-                : ""}
+            </span>
+          ) : null}
+          {payload.master?.sourceCheckedAt ? (
+            <span>
+              CourtListener checked —{" "}
+              <span className="font-mono text-foreground">
+                {payload.master.sourceCheckedAt.slice(0, 10)}
+              </span>
             </span>
           ) : null}
           {m?.lastCaptured ? (
             <span>
-              Registry captures last observed{" "}
+              Registry coverage updated{" "}
               <span className="font-mono text-foreground">{m.lastCaptured}</span>
             </span>
           ) : null}
         </div>
       ) : null}
     </div>
+  );
+}
+
+const officialCourtMarks: Record<
+  string,
+  { src: string; source: string; shape: "seal" | "banner" }
+> = {
+  cand: {
+    src: "/court-marks/cand.svg",
+    source: "https://cand.uscourts.gov/",
+    shape: "seal",
+  },
+  njd: {
+    src: "/court-marks/njd.png",
+    source: "https://www.njd.uscourts.gov/",
+    shape: "seal",
+  },
+  paed: {
+    src: "/court-marks/paed.png",
+    source: "https://www.paed.uscourts.gov/",
+    shape: "seal",
+  },
+  flsd: {
+    src: "/court-marks/flsd.png",
+    source: "https://www.flsd.uscourts.gov/",
+    shape: "seal",
+  },
+  scd: {
+    src: "/court-marks/scd.gif",
+    source: "https://www.scd.uscourts.gov/",
+    shape: "banner",
+  },
+};
+
+/** Uses an official, locally stored mark only for an exact CourtListener court ID. */
+function CourtSeal({ id, title }: { id: string; title: string }) {
+  const officialMark = officialCourtMarks[id];
+  const getEntityFn = useServerFn(getEntity);
+  const court = useQuery({
+    queryKey: ["court-profile-image", id],
+    queryFn: async () => (await getEntityFn({ data: { dataset: "court_spine", id } })).json,
+    staleTime: Infinity,
+    enabled: !officialMark,
+  });
+  const src = useMemo(() => {
+    if (!court.data) return null;
+    try {
+      const raw = JSON.parse(court.data) as Record<string, unknown>;
+      const links = buildEntityView(raw).links.filter(
+        (link) => link.url.startsWith("/") && /seal|image|logo/i.test(link.label),
+      );
+      const source = links.find((link) => /seal/i.test(link.label)) ?? links[0];
+      return source ? { src: source.url, label: source.label } : null;
+    } catch {
+      return null;
+    }
+  }, [court.data]);
+  const [failed, setFailed] = useState(false);
+  if (officialMark) {
+    return (
+      <img
+        src={officialMark.src}
+        alt={`${title} official court ${officialMark.shape === "banner" ? "mark" : "seal"}`}
+        title={`Official court artwork · ${officialMark.source}`}
+        className={`size-9 shrink-0 border border-border bg-white ${
+          officialMark.shape === "banner"
+            ? "rounded-md object-cover object-left"
+            : "rounded-full object-contain p-1"
+        }`}
+        loading="lazy"
+      />
+    );
+  }
+  if (!src || failed) return null;
+  return (
+    <img
+      src={fileUrl(src.src)}
+      alt={`${title} ${src.label}`}
+      className="size-9 shrink-0 rounded-full border border-border bg-white object-contain p-1"
+      loading="lazy"
+      onError={() => setFailed(true)}
+    />
   );
 }
 
@@ -263,7 +344,7 @@ export function MatterHeader({ payload }: { payload: MatterOverviewPayload }) {
             tone="primary"
             title="Seeger Weiss priority tier; orders the hub and never asserts a firm role."
           >
-            SW tier {sw.tier}
+            Priority tier {sw.tier}
           </Chip>
         ) : null}
         {o.litigationType ? <Chip title="JPML docket type">{o.litigationType}</Chip> : null}
@@ -278,7 +359,7 @@ export function MatterHeader({ payload }: { payload: MatterOverviewPayload }) {
               tone="success"
               title="The Seeger Weiss matter registry holds explicit case ids and evidence-backed dockets for this MDL."
             >
-              In the matter registry
+              Membership evidence
               {registry.members.rows !== null
                 ? ` · ${registry.members.rows.toLocaleString()} member-like dockets`
                 : ""}
@@ -297,17 +378,25 @@ export function MatterHeader({ payload }: { payload: MatterOverviewPayload }) {
 
       <dl className="grid gap-x-6 gap-y-3 px-4 py-3 sm:grid-cols-2 lg:grid-cols-3">
         <Fact label="Court">
-          {o.court.clId ? (
-            <Link
-              to="/courts/$id"
-              params={{ id: o.court.clId }}
-              className="text-primary underline-offset-2 hover:underline"
-            >
-              {o.court.shortName ?? o.court.fullName ?? o.court.clId}
-            </Link>
-          ) : (
-            orNotRecorded(o.court.shortName)
-          )}
+          <div className="flex items-center gap-2">
+            {o.court.clId ? (
+              <CourtSeal
+                id={o.court.clId}
+                title={o.court.shortName ?? o.court.fullName ?? "Court"}
+              />
+            ) : null}
+            {o.court.clId ? (
+              <Link
+                to="/courts/$id"
+                params={{ id: o.court.clId }}
+                className="text-primary underline-offset-2 hover:underline"
+              >
+                {o.court.shortName ?? o.court.fullName ?? o.court.clId}
+              </Link>
+            ) : (
+              orNotRecorded(o.court.shortName)
+            )}
+          </div>
           <span className="block text-[11px] text-muted-foreground">
             {[
               o.court.fullName && o.court.fullName !== o.court.shortName ? o.court.fullName : null,
@@ -325,7 +414,7 @@ export function MatterHeader({ payload }: { payload: MatterOverviewPayload }) {
             </span>
           ) : null}
         </Fact>
-        <Fact label="Presiding (transferee) judge">
+        <Fact label="Transferee judge">
           {judge.printedName || judge.profileName || judgeProfile ? (
             <>
               {judgeProfile ? (
@@ -339,34 +428,38 @@ export function MatterHeader({ payload }: { payload: MatterOverviewPayload }) {
               ) : (
                 <span>{judge.profileName ?? judge.printedName}</span>
               )}
-              <span className="block text-[11px] text-muted-foreground">
-                {judge.printedName &&
-                judge.printedName !== (judgeProfile?.name ?? judge.profileName)
-                  ? `Printed by the JPML as “${judge.printedName}”. `
-                  : ""}
-                {judgeProfile
-                  ? `Profile linked${profileBasis ? `: ${profileBasis}` : ""}.`
-                  : "No profile link: no profile id is recorded for this MDL's judge."}
-              </span>
-              {judge.clPersonId ? (
-                <span className="block text-[11px] text-muted-foreground">
-                  CourtListener person{" "}
-                  <CorpusRecordLink
-                    dataset="cl_people"
-                    id={`cl:people:${judge.clPersonId}`}
-                    className="text-primary underline-offset-2 hover:underline"
-                  >
-                    {judge.clPersonId}
-                  </CorpusRecordLink>
-                  {personBasis ? ` (${personBasis})` : ""}
-                </span>
-              ) : null}
-              {referred ? (
-                <span className="block text-[11px] text-muted-foreground">
-                  Referred to (CourtListener docket): {referred.sourceString}
-                  {referred.clPersonId ? ` · person ${referred.clPersonId}` : ""}
-                </span>
-              ) : null}
+              <details className="mt-1 text-[11px] text-muted-foreground">
+                <summary className="w-fit cursor-pointer underline decoration-dotted underline-offset-2">
+                  Judge record details
+                </summary>
+                <div className="mt-1 space-y-0.5">
+                  {judge.printedName &&
+                  judge.printedName !== (judgeProfile?.name ?? judge.profileName) ? (
+                    <div>JPML lists the judge as “{judge.printedName}”.</div>
+                  ) : null}
+                  <div>
+                    {judgeProfile
+                      ? `Profile linked${profileBasis ? `: ${profileBasis}` : ""}.`
+                      : "No linked judge profile is recorded."}
+                  </div>
+                  {judge.clPersonId ? (
+                    <div>
+                      CourtListener person{" "}
+                      <CorpusRecordLink
+                        dataset="cl_people"
+                        id={`cl:people:${judge.clPersonId}`}
+                        className="text-primary underline-offset-2 hover:underline"
+                      >
+                        {judge.clPersonId}
+                      </CorpusRecordLink>
+                      {personBasis ? ` (${personBasis})` : ""}
+                    </div>
+                  ) : null}
+                  {referred ? (
+                    <div>Referred to on the CourtListener docket: {referred.sourceString}</div>
+                  ) : null}
+                </div>
+              </details>
             </>
           ) : (
             <span className="text-muted-foreground">Not recorded</span>
@@ -379,24 +472,38 @@ export function MatterHeader({ payload }: { payload: MatterOverviewPayload }) {
         <Fact label="Terminated / closed">{closed}</Fact>
       </dl>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-border px-4 py-2 text-[12px]">
-        <span className="font-medium text-muted-foreground">Sources</span>
-        {clUrl ? <LinkOut href={clUrl}>CourtListener master docket</LinkOut> : null}
-        {byNumberReport?.officialUrl ? (
-          <LinkOut href={byNumberReport.officialUrl}>
-            JPML MDL statistics (by MDL number
-            {byNumberReport.reportDate ? `, ${byNumberReport.reportDate}` : ""})
-          </LinkOut>
-        ) : null}
-        {uniqueReferences.map((r) => (
-          <LinkOut key={r.id} href={r.url}>
-            {REFERENCE_LABELS[r.kind] ?? r.kind}
-          </LinkOut>
-        ))}
-        {!clUrl && !byNumberReport && !uniqueReferences.length ? (
-          <span className="text-muted-foreground">No source links recorded</span>
-        ) : null}
-      </div>
+      <details className="border-t border-border px-4 py-2 text-[12px]">
+        <summary className="w-fit cursor-pointer font-medium text-primary underline-offset-2 hover:underline">
+          Source & coverage details
+        </summary>
+        <p className="mt-2 max-w-3xl text-muted-foreground">
+          JPML action totals describe the MDL. Member-like dockets have recorded relationship
+          evidence and are a partial count, not a census.
+          {payload.master?.sourceAsOf
+            ? ` Original selection snapshot: ${payload.master.sourceAsOf}.`
+            : ""}
+          {payload.master?.sourceCheckedAt
+            ? ` CourtListener checked ${payload.master.sourceCheckedAt.slice(0, 10)}.`
+            : ""}
+        </p>
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+          {clUrl ? <LinkOut href={clUrl}>CourtListener master docket</LinkOut> : null}
+          {byNumberReport?.officialUrl ? (
+            <LinkOut href={byNumberReport.officialUrl}>
+              JPML MDL statistics
+              {byNumberReport.reportDate ? ` · ${byNumberReport.reportDate}` : ""}
+            </LinkOut>
+          ) : null}
+          {uniqueReferences.map((r) => (
+            <LinkOut key={r.id} href={r.url}>
+              {REFERENCE_LABELS[r.kind] ?? r.kind}
+            </LinkOut>
+          ))}
+          {!clUrl && !byNumberReport && !uniqueReferences.length ? (
+            <span className="text-muted-foreground">No source links recorded</span>
+          ) : null}
+        </div>
+      </details>
     </section>
   );
 }

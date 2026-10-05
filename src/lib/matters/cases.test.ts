@@ -73,6 +73,21 @@ describe("saved-docket-sample cases", () => {
     expect(parseInventoryCase(null, inventoryFacts("member_of_mdl"))).toBeNull();
   });
 
+  it("uses only positive decimal CourtListener docket ids as merge identities", () => {
+    const row = parseInventoryCase(
+      inventoryItem({ id: "aws:case-a" }),
+      inventoryFacts("member_of_mdl", { "CourtListener docket id": "unknown" }),
+    )!;
+    expect(row.clDocketId).toBeNull();
+    expect(row.sourceUrl).toBeNull();
+    const fjc = parseFjcCase({
+      cells: { native_id: "not-a-docket-id", docket_number: "1:20-cv-1" },
+    })!;
+    expect(fjc.clDocketId).toBeNull();
+    expect(fjc.id).toBe("fjc:1:20-cv-1");
+    expect(mergeCases([row, { ...row, id: "inventory:aws:case-b" }])).toHaveLength(2);
+  });
+
   it("shows a real collective caption but never the projected placeholder title", () => {
     const facts = inventoryFacts("master_docket_of_mdl", { Caption: "In re the EXXON VALDEZ" });
     const row = parseInventoryCase(
@@ -99,6 +114,7 @@ describe("FJC IDB cases and the master docket", () => {
     expect(row).toMatchObject({
       clDocketId: "222",
       courtId: "njd",
+      role: "associated_unspecified",
       evidence: "fjc_idb",
       status: "terminated",
       caption: null,
@@ -134,6 +150,16 @@ describe("FJC IDB cases and the master docket", () => {
         title: null,
       }),
     ).toBeNull();
+    expect(
+      masterCase({
+        clDocketId: "not-a-docket-id",
+        docketNumber: "3:25-md-9001",
+        courtId: "flnd",
+        dateFiled: null,
+        dateTerminated: null,
+        title: "IN RE: Example",
+      }),
+    ).toMatchObject({ id: "master:3:25-md-9001", clDocketId: null, sourceUrl: null });
   });
 
   it("merges by CourtListener docket id and lets the strongest evidence win without losing a filing date", () => {

@@ -5,10 +5,7 @@ import { pageHead } from "@/lib/corpus/head";
 export const Route = createFileRoute("/matters/")({
   validateSearch: dsSearch,
   head: () =>
-    pageHead(
-      "Matters",
-      "MDLs, dockets, case inventories, counsel, settlements, verdicts and expert-admissibility docket entries.",
-    ),
+    pageHead("Matters", "Browse multidistrict litigations, cases, dockets and documents."),
   component: MattersPage,
 });
 
@@ -20,19 +17,20 @@ function MattersPage() {
       path="/matters"
       ds={ds}
       callout={
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/25 bg-primary/5 px-4 py-3 text-[13px]">
-          <span>
-            <span className="font-semibold">Seeger Weiss matters hub.</span>{" "}
-            <span className="text-muted-foreground">
-              Priority MDLs, Tier 1 first, with master docket, cases, docket entries, verified
-              documents and counsel for each.
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary bg-primary p-4 text-primary-foreground shadow-card">
+          <span className="min-w-0">
+            <span className="block font-display text-xl font-semibold">
+              Seeger Weiss priority matters
+            </span>
+            <span className="mt-1 block text-[13px] text-primary-foreground/85">
+              Cases, docket entries, available documents, and counsel.
             </span>
           </span>
           <Link
             to="/matters/seeger-weiss"
-            className="font-medium text-primary underline-offset-2 hover:underline"
+            className="rounded-md border border-primary-foreground/40 px-3 py-2 text-[13px] font-semibold hover:bg-primary-foreground/10"
           >
-            Open the hub
+            Browse priority matters
           </Link>
         </div>
       }

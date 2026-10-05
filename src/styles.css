@@ -6,7 +6,7 @@
 
 /*
  * Legal Source Atlas design system.
- * Restrained navy / graphite / warm-paper palette, white sidebar.
+ * Restrained navy / graphite / warm-paper palette with a high-contrast navigation rail.
  * All colors are oklch tokens. Never hardcode colors in components.
  */
 
@@ -81,7 +81,7 @@
   --secondary-foreground: oklch(0.31 0.062 262);
 
   --muted: oklch(0.962 0.005 252);
-  --muted-foreground: oklch(0.52 0.02 255);
+  --muted-foreground: oklch(0.43 0.02 255);
 
   --accent: oklch(0.945 0.013 254);
   --accent-foreground: oklch(0.31 0.062 262);
@@ -95,19 +95,19 @@
   --success: oklch(0.52 0.09 158);
   --success-foreground: oklch(0.985 0.003 250);
 
-  --border: oklch(0.912 0.008 252);
-  --border-strong: oklch(0.845 0.012 252);
-  --input: oklch(0.9 0.009 252);
+  --border: oklch(0.88 0.008 252);
+  --border-strong: oklch(0.78 0.012 252);
+  --input: oklch(0.84 0.009 252);
   --ring: oklch(0.55 0.055 260);
 
-  --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.32 0.028 258);
-  --sidebar-primary: oklch(0.31 0.062 262);
-  --sidebar-primary-foreground: oklch(0.98 0.004 250);
-  --sidebar-accent: oklch(0.958 0.008 252);
-  --sidebar-accent-foreground: oklch(0.28 0.055 262);
-  --sidebar-border: oklch(0.918 0.008 252);
-  --sidebar-ring: oklch(0.55 0.055 260);
+  --sidebar: oklch(0.235 0.034 258);
+  --sidebar-foreground: oklch(0.96 0.006 250);
+  --sidebar-primary: oklch(0.78 0.12 82);
+  --sidebar-primary-foreground: oklch(0.22 0.035 258);
+  --sidebar-accent: oklch(0.32 0.04 258);
+  --sidebar-accent-foreground: oklch(0.99 0 0);
+  --sidebar-border: oklch(0.37 0.035 258);
+  --sidebar-ring: oklch(0.78 0.12 82);
 }
 
 @layer base {
@@ -180,10 +180,15 @@
     color: var(--color-sidebar-accent-foreground);
   }
 
+  &:focus-visible {
+    outline: 2px solid var(--color-sidebar-ring);
+    outline-offset: 2px;
+  }
+
   &[data-status="active"] {
     background-color: var(--color-sidebar-accent);
     color: var(--color-sidebar-accent-foreground);
     font-weight: 600;
-    box-shadow: inset 2px 0 0 var(--color-sidebar-primary);
+    box-shadow: inset 3px 0 0 var(--color-sidebar-primary);
   }
 }

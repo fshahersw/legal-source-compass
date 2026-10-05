@@ -2,6 +2,10 @@
 public/data/** -text
 # Checksum-pinned test evidence must retain repository bytes on Windows too.
 src/lib/corpus/__fixtures__/entry-analysis-v4.json -text
+# The generated SQL gate compares bytes with its LF-only source template.
+database/contracts/legal-atlas-v3.body.sql text eol=lf
+database/contracts/legal-atlas-v3.generated.sql text eol=lf
+public/court-marks/* -text
 # Publisher capture formatting is evidence; retain whitespace with its checksum.
 public/data/limitations/text/** -whitespace
 public/data/limitations/opinion-text/** -whitespace

@@ -12,7 +12,6 @@ import {
   FilterField,
   Loading,
   NotRecorded,
-  Scope,
   selectClass,
   td,
   th,
@@ -104,9 +103,9 @@ function Coverage({ row }: { row: HubRow }) {
       node: (
         <Chip
           tone="success"
-          title="Verified PDFs on the master docket: open (linkable) and held (status unconfirmed, no link)."
+          title="Verified PDF source records on the master docket: open (linkable) and held (status unconfirmed, no link). Identical bytes can have multiple source records."
         >
-          PDFs {row.registry.open.toLocaleString()} open
+          PDF records {row.registry.open.toLocaleString()} open
           {row.registry.held ? ` · ${row.registry.held.toLocaleString()} held` : ""}
         </Chip>
       ),
@@ -124,7 +123,7 @@ function Coverage({ row }: { row: HubRow }) {
       ),
     });
   if (!chips.length)
-    return <span className="text-[11px] text-muted-foreground">No corpus coverage yet</span>;
+    return <span className="text-[11px] text-muted-foreground">No matter record available</span>;
   return (
     <div>
       <div className="flex flex-wrap gap-1">
@@ -134,7 +133,7 @@ function Coverage({ row }: { row: HubRow }) {
       </div>
       {row.metrics?.lastCaptured ? (
         <div className="mt-1 text-[10px] text-muted-foreground">
-          Registry captures last observed {row.metrics.lastCaptured}
+          Registry coverage updated {row.metrics.lastCaptured}
         </div>
       ) : null}
     </div>
@@ -168,7 +167,7 @@ function TierTable({ tier, rows }: { tier: SwTier; rows: HubRow[] }) {
               Actions (JPML)
             </th>
             <th className={th} scope="col">
-              In the corpus
+              Coverage
             </th>
           </tr>
         </thead>
@@ -194,7 +193,7 @@ function TierTable({ tier, rows }: { tier: SwTier; rows: HubRow[] }) {
                   <div className="line-clamp-2 text-[11px] text-muted-foreground">{r.title}</div>
                 ) : (
                   <div className="text-[11px] text-muted-foreground">
-                    No MDL record in the corpus (outside the JPML pending list captured 2026-09-01)
+                    No matter profile · JPML list as of 2026-09-01
                   </div>
                 )}
               </td>
@@ -335,16 +334,26 @@ export function HubPage() {
         { label: "Matters", to: "/matters" },
         { label: "Seeger Weiss hub" },
       ]}
-      title="Seeger Weiss matters"
-      description="Priority MDLs for the firm, Tier 1 first. Each row shows what the corpus holds for the matter and links to its master docket, cases, docket entries, documents and counsel."
+      title="Seeger Weiss priority matters"
+      description="Priority matters, grouped by tier. Open a matter for its cases, docket entries, documents, and counsel."
     >
       <div className="space-y-4">
-        <Scope title="How to read this page">
-          Tiers order the list only; they do not assert that the firm represents anyone in a matter.
-          Coverage chips count what the corpus holds (never the size of the MDL). “SW appearances”
-          counts attorney appearances for the tracked firm in the saved docket sample, which is
-          incomplete. Unknown values read “Not recorded”.
-        </Scope>
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-surface px-3 py-2 text-[12px]">
+          <span>
+            JPML action totals show MDL size as of the report date. Coverage values describe
+            available records.
+          </span>
+          <details>
+            <summary className="cursor-pointer font-medium text-primary">
+              About tiers & coverage
+            </summary>
+            <p className="mt-1 max-w-2xl text-muted-foreground">
+              Tiers order this list and do not indicate representation. Member-like docket counts
+              require recorded relationship evidence and are not a full MDL census. Seeger Weiss
+              appearances come from an incomplete saved docket sample.
+            </p>
+          </details>
+        </div>
         <div className="grid gap-2 sm:grid-cols-4">
           <FilterField label="Search">
             <Input
@@ -364,7 +373,7 @@ export function HubPage() {
               <option value="">Any status</option>
               <option value="pending">Pending</option>
               <option value="terminated">Terminated</option>
-              <option value="missing">No MDL record</option>
+              <option value="missing">No matter profile</option>
             </select>
           </FilterField>
           <FilterField label="Order">

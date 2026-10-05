@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { describeDocument, parseRegistryDocument, type MatterDocument } from "./documents";
+import {
+  deduplicateDocuments,
+  describeDocument,
+  parseRegistryDocument,
+  type MatterDocument,
+} from "./documents";
 import { groupEntriesByMonth } from "./entries";
 import {
   archiveCounts,
@@ -440,6 +445,46 @@ describe("entry to archive mapping", () => {
     ]);
     expect(m.notArchived).toBe(0);
     expect(archiveCounts(m.documents)).toEqual({ open: 2, held: 0 });
+  });
+
+  it("deduplicates byte-identical CourtListener and DocketBird copies while preserving both exact joins", () => {
+    const recapCopy = doc({
+      source_system: "courtlistener",
+      native_document_id: "495058040",
+      native_case_id: "69674950",
+    });
+    const docketbirdCopy = doc({
+      native_document_id: "flnd-3:2025-md-03140-00770",
+      native_case_id: "flnd-3:2025-md-03140",
+    });
+    const grouped = deduplicateDocuments([recapCopy, docketbirdCopy]);
+    const groupedIndex = buildArchiveIndex(grouped, true);
+    const recapEntry = matchEntryDocuments(entry(), "flnd-3:2025-md-03140", groupedIndex);
+    const docketbirdEntry = matchEntryDocuments(
+      entry({ documentIds: [] }),
+      "flnd-3:2025-md-03140",
+      groupedIndex,
+    );
+
+    expect(grouped).toHaveLength(1);
+    expect(recapEntry.documents).toHaveLength(1);
+    expect(docketbirdEntry.documents).toHaveLength(1);
+    expect(recapEntry.documents[0]!.doc).toMatchObject({
+      sourceSystem: "courtlistener",
+      nativeCaseId: recapCopy.nativeCaseId,
+      nativeDocumentId: recapCopy.nativeDocumentId,
+    });
+    expect(docketbirdEntry.documents[0]!.doc).toMatchObject({
+      sourceSystem: "docketbird",
+      nativeCaseId: docketbirdCopy.nativeCaseId,
+      nativeDocumentId: docketbirdCopy.nativeDocumentId,
+    });
+    expect(archiveCounts(recapEntry.documents)).toEqual({ open: 1, held: 0 });
+    expect(recapEntry.documents[0]!.doc.copies).toMatchObject([
+      { sourceSystem: "docketbird", nativeDocumentId: docketbirdCopy.nativeDocumentId },
+    ]);
+    expect(groupedIndex.byDocumentId.get("courtlistener|495058040")).toBe(grouped[0]);
+    expect(groupedIndex.byDocumentId.get("docketbird|flnd-3:2025-md-03140-00770")).toBe(grouped[0]);
   });
 
   it("keeps attachments with their entry, main document first, and reports held ones as held", () => {

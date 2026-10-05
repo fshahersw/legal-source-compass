@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { parseLegacyDocument } from "./source.server";
+import { describe, expect, it, vi } from "vitest";
+import { loadDocumentsPage, parseLegacyDocument } from "./source.server";
+import type { MatterOverviewPayload } from "./types";
 
 const item = (links: unknown) => ({
   id: "doc:65407433:1754:1754:14594",
@@ -68,5 +69,93 @@ describe("saved-sample document links", () => {
   it("drops rows without an id", () => {
     expect(parseLegacyDocument({ cells: {} }, [])).toBeNull();
     expect(parseLegacyDocument(null, [])).toBeNull();
+  });
+});
+
+describe("verified PDF page assembly", () => {
+  it("groups identical files across RPC pages and keeps raw source-record coverage and alias lookups", async () => {
+    vi.stubEnv("EXTERNAL_SUPABASE_URL", "https://corpus.example");
+    vi.stubEnv("EXTERNAL_SUPABASE_KEY", "test-key");
+    const duplicateHash = "f".repeat(64);
+    const sourceRow = (
+      source_system: string,
+      native_document_id: string,
+      native_case_id: string,
+      sha256: string,
+    ) => ({
+      source_system,
+      native_document_id,
+      native_case_id,
+      availability: "open",
+      sha256,
+      bytes: 1024,
+      public_url: null,
+      verified_at: "2026-10-04T00:00:00Z",
+    });
+    const firstPage = [
+      sourceRow("docketbird", "flnd-3:2025-md-03140-00001", "flnd-3:2025-md-03140", duplicateHash),
+      ...Array.from({ length: 499 }, (_, i) =>
+        sourceRow(
+          "docketbird",
+          `flnd-3:2025-md-03140-${String(i + 2).padStart(5, "0")}`,
+          "flnd-3:2025-md-03140",
+          (i + 1).toString(16).padStart(64, "0"),
+        ),
+      ),
+    ];
+    const secondPage = [sourceRow("courtlistener", "987654321", "69674950", duplicateHash)];
+    const fetchMock = vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body)) as { p_offset: number };
+      const rows = body.p_offset === 0 ? firstPage : secondPage;
+      return new Response(
+        JSON.stringify({
+          rows,
+          summary: {
+            total: 501,
+            open: 501,
+            held: 0,
+            open_bytes: 513024,
+            by_source: { docketbird: 500, courtlistener: 1 },
+          },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const payload = {
+      overview: {
+        mdl: "dedup-test-2026-10-05",
+        keys: { all: [] },
+      },
+      registry: { pdfCaseIds: ["flnd-3:2025-md-03140", "69674950"] },
+    } as unknown as MatterOverviewPayload;
+
+    try {
+      const result = await loadDocumentsPage(
+        payload,
+        { q: "", source: "", availability: "", caseId: "" },
+        "entry-desc",
+        0,
+        "docketbird|flnd-3:2025-md-03140-00001",
+      );
+      expect(result.connected).toBe(true);
+      if (!result.connected) return;
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(result.summary.total).toBe(501);
+      expect(result.sourceRecordsLoaded).toBe(501);
+      expect(result.truncated).toBe(false);
+      expect(result.loaded).toBe(500);
+      expect(result.page.total).toBe(500);
+      expect(result.page.facets.availability.open).toBe(500);
+      expect(result.page.facets.bySource).toEqual({ docketbird: 500, courtlistener: 1 });
+      expect(result.viewed).toMatchObject({
+        sourceSystem: "docketbird",
+        nativeCaseId: "flnd-3:2025-md-03140",
+        nativeDocumentId: "flnd-3:2025-md-03140-00001",
+      });
+    } finally {
+      vi.unstubAllGlobals();
+      vi.unstubAllEnvs();
+    }
   });
 });

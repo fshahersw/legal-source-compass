@@ -11,6 +11,7 @@ export const REGISTRY_SOURCES = [
   "courtlistener",
   "official-court",
   "courtlistener-public-locator",
+  "govinfo",
 ] as const;
 export type RegistrySource = (typeof REGISTRY_SOURCES)[number];
 export type Availability = "open" | "held";
@@ -39,7 +40,8 @@ export type RegistrySummary = {
 const isObj = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === "object" && !Array.isArray(v);
 const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v : null);
-const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
+const num = (v: unknown): number | null =>
+  typeof v === "number" && Number.isSafeInteger(v) && v >= 0 ? v : null;
 
 /** Parse one registry row. Anything malformed is dropped; an unknown availability is HELD (fail closed). */
 export function parseRegistryDocument(raw: unknown): RegistryDocument | null {
@@ -53,15 +55,16 @@ export function parseRegistryDocument(raw: unknown): RegistryDocument | null {
       ? raw["sha256"]
       : null;
   const publicUrl = open ? str(raw["public_url"]) : null;
+  const verifiedOpen = open && sha !== null;
   return {
     sourceSystem,
     nativeDocumentId,
     nativeCaseId: str(raw["native_case_id"]),
     // An "open" row without verifiable byte identity is not displayable.
-    availability: open && sha ? "open" : "held",
-    sha256: open ? sha : null,
-    bytes: open ? num(raw["bytes"]) : null,
-    publicUrl: publicUrl && /^https:\/\//i.test(publicUrl) ? publicUrl : null,
+    availability: verifiedOpen ? "open" : "held",
+    sha256: verifiedOpen ? sha : null,
+    bytes: verifiedOpen ? num(raw["bytes"]) : null,
+    publicUrl: verifiedOpen && publicUrl && /^https:\/\//i.test(publicUrl) ? publicUrl : null,
     verifiedAt: str(raw["verified_at"]),
   };
 }
@@ -70,7 +73,10 @@ export function parseRegistrySummary(raw: unknown, rows: RegistryDocument[]): Re
   const s = isObj(raw) ? raw : {};
   const bySource: Record<string, number> = {};
   if (isObj(s["by_source"]))
-    for (const [k, v] of Object.entries(s["by_source"])) if (typeof v === "number") bySource[k] = v;
+    for (const [k, v] of Object.entries(s["by_source"])) {
+      const count = num(v);
+      if (count !== null) bySource[k] = count;
+    }
   const open = num(s["open"]) ?? rows.filter((r) => r.availability === "open").length;
   const held = num(s["held"]) ?? rows.filter((r) => r.availability === "held").length;
   return {
@@ -87,9 +93,10 @@ export const SOURCE_LABELS: Record<RegistrySource, string> = {
   courtlistener: "CourtListener / RECAP",
   "official-court": "Court website",
   "courtlistener-public-locator": "RECAP public link",
+  govinfo: "GovInfo court opinion / order",
 };
 
-export type MatterDocument = RegistryDocument & {
+export type MatterDocumentCopy = RegistryDocument & {
   /** Docket-sheet number for DocketBird documents, otherwise null. */
   entryNumber: number | null;
   /** Attachment number within the entry (DocketBird ids ending "-001"), otherwise null. */
@@ -99,6 +106,65 @@ export type MatterDocument = RegistryDocument & {
   label: string;
   sourceLabel: string;
 };
+
+/** One display row for byte-identical documents, with every source-native occurrence retained. */
+export type MatterDocument = MatterDocumentCopy & {
+  /** Other source-native rows with the same verified bytes. The primary row is the document itself. */
+  copies?: MatterDocumentCopy[];
+};
+
+/** Expand a deduplicated row back to its full set of source-native identities. */
+export function documentCopies(doc: MatterDocument): MatterDocumentCopy[] {
+  const { copies, ...primary } = doc;
+  return [primary, ...(copies ?? [])];
+}
+
+/**
+ * Group only documents whose full verified SHA-256 matches. Held rows have no trusted hash and remain separate.
+ * A stable source/case/document ordering picks the representative; every other native identity and its source metadata
+ * stays attached.
+ */
+export function deduplicateDocuments(docs: MatterDocument[]): MatterDocument[] {
+  const byHash = new Map<string, MatterDocument>();
+  const out: MatterDocument[] = [];
+  for (const doc of docs) {
+    if (doc.availability !== "open" || !doc.sha256 || !/^[a-f0-9]{64}$/.test(doc.sha256)) {
+      out.push(doc);
+      continue;
+    }
+    let existing = byHash.get(doc.sha256);
+    if (!existing) {
+      existing = { ...doc, copies: [] };
+      byHash.set(doc.sha256, existing);
+      out.push(existing);
+    }
+    const known = new Set(documentCopies(existing).map(copyIdentity));
+    for (const copy of documentCopies(doc)) {
+      const key = copyIdentity(copy);
+      if (known.has(key)) continue;
+      known.add(key);
+      // The representative remains selected below from a stable, source-native order.
+      existing.copies!.push(copy);
+    }
+  }
+  return out.map((group) => {
+    const copies = documentCopies(group).sort(compareDocumentCopies);
+    const [primary, ...aliases] = copies;
+    return { ...primary!, copies: aliases };
+  });
+}
+
+const copyIdentity = (copy: MatterDocumentCopy) =>
+  `${copy.sourceSystem}|${copy.nativeCaseId ?? ""}|${copy.nativeDocumentId}`;
+
+/** Stable representative: provider, then exact native case and document ids. */
+function compareDocumentCopies(a: MatterDocumentCopy, b: MatterDocumentCopy): number {
+  return (
+    a.sourceSystem.localeCompare(b.sourceSystem) ||
+    (a.nativeCaseId ?? "").localeCompare(b.nativeCaseId ?? "") ||
+    a.nativeDocumentId.localeCompare(b.nativeDocumentId)
+  );
+}
 
 /** Human label for a registry document without inventing a title: entry number or the court's own file name. */
 export function describeDocument(doc: RegistryDocument): MatterDocument {
@@ -124,6 +190,8 @@ export function describeDocument(doc: RegistryDocument): MatterDocument {
     printedDate = courtFilenameDate(label);
   } else if (doc.sourceSystem === "courtlistener") {
     label = `CourtListener document ${doc.nativeDocumentId}`;
+  } else if (doc.sourceSystem === "govinfo") {
+    label = `GovInfo ${doc.nativeDocumentId}`;
   }
   return {
     ...doc,
@@ -155,36 +223,57 @@ export type DocumentFilter = {
   caseId?: string;
 };
 
-export function filterDocuments(docs: MatterDocument[], f: DocumentFilter): MatterDocument[] {
+function matchesCopy(copy: MatterDocumentCopy, f: DocumentFilter): boolean {
+  if (f.source && copy.sourceSystem !== f.source) return false;
+  if (f.availability && copy.availability !== f.availability) return false;
+  if (f.entry != null && copy.entryNumber !== f.entry) return false;
+  if (f.caseId && copy.nativeCaseId !== f.caseId) return false;
   const q = (f.q ?? "").trim().toLowerCase();
-  return docs.filter((d) => {
-    if (f.source && d.sourceSystem !== f.source) return false;
-    if (f.availability && d.availability !== f.availability) return false;
-    if (f.entry != null && d.entryNumber !== f.entry) return false;
-    if (f.caseId && d.nativeCaseId !== f.caseId) return false;
-    if (q && !`${d.label} ${d.nativeDocumentId} ${d.entryNumber ?? ""}`.toLowerCase().includes(q))
-      return false;
-    return true;
-  });
+  return (
+    !q ||
+    `${copy.label} ${copy.nativeDocumentId} ${copy.entryNumber ?? ""}`.toLowerCase().includes(q)
+  );
+}
+
+export function filterDocuments(docs: MatterDocument[], f: DocumentFilter): MatterDocument[] {
+  const out: MatterDocument[] = [];
+  for (const doc of docs) {
+    const copies = documentCopies(doc);
+    const primary = copies.find((copy) => matchesCopy(copy, f));
+    if (primary) {
+      const identity = copyIdentity(primary);
+      const aliases = copies.filter((copy) => copyIdentity(copy) !== identity);
+      out.push(aliases.length ? { ...primary, copies: aliases } : primary);
+    }
+  }
+  return out;
 }
 
 export type DocumentSort = "entry-desc" | "entry-asc" | "name";
 
 /** Newest docket entries first by default; court-website items (no entry number) sort by their printed date. */
-export function sortDocuments(docs: MatterDocument[], sort: DocumentSort): MatterDocument[] {
+export function sortDocuments(
+  docs: MatterDocument[],
+  sort: DocumentSort,
+  filter: DocumentFilter = {},
+): MatterDocument[] {
   const byName = (a: MatterDocument, b: MatterDocument) =>
-    a.label.localeCompare(b.label, "en", { numeric: true });
+    representative(a).label.localeCompare(representative(b).label, "en", { numeric: true });
+  const representative = (doc: MatterDocument) =>
+    documentCopies(doc).find((copy) => matchesCopy(copy, filter)) ?? doc;
   const out = [...docs];
   if (sort === "name") return out.sort(byName);
   const dir = sort === "entry-desc" ? -1 : 1;
   return out.sort((a, b) => {
-    const ae = a.entryNumber;
-    const be = b.entryNumber;
+    const aa = representative(a);
+    const bb = representative(b);
+    const ae = aa.entryNumber;
+    const be = bb.entryNumber;
     if (ae != null && be != null && ae !== be) return (ae - be) * dir;
     if (ae != null && be == null) return -1;
     if (ae == null && be != null) return 1;
-    const ad = a.printedDate;
-    const bd = b.printedDate;
+    const ad = aa.printedDate;
+    const bd = bb.printedDate;
     if (ad && bd && ad !== bd) return ad.localeCompare(bd) * dir;
     if (ad && !bd) return -1;
     if (!ad && bd) return 1;
@@ -199,8 +288,10 @@ export function countDocuments(docs: MatterDocument[]) {
   let open = 0;
   let held = 0;
   for (const d of docs) {
-    bySource[d.sourceSystem] = (bySource[d.sourceSystem] ?? 0) + 1;
-    if (d.nativeCaseId) byCase[d.nativeCaseId] = (byCase[d.nativeCaseId] ?? 0) + 1;
+    for (const copy of documentCopies(d)) {
+      bySource[copy.sourceSystem] = (bySource[copy.sourceSystem] ?? 0) + 1;
+      if (copy.nativeCaseId) byCase[copy.nativeCaseId] = (byCase[copy.nativeCaseId] ?? 0) + 1;
+    }
     if (d.availability === "open") open++;
     else held++;
   }
@@ -241,7 +332,7 @@ export function pageDocuments(
   offset: number,
   pageSize: number = DOCUMENT_PAGE_SIZE,
 ): DocumentsPage {
-  const filtered = sortDocuments(filterDocuments(docs, filter), sort);
+  const filtered = sortDocuments(filterDocuments(docs, filter), sort, filter);
   const start = Math.min(Math.max(0, Math.floor(offset)), Math.max(0, filtered.length - 1));
   const aligned = start - (start % pageSize);
   // Each facet ignores its own filter but honours the others, so option counts match the table.

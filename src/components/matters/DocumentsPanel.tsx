@@ -15,7 +15,6 @@ import {
   NotRecorded,
   Panel,
   RangePager,
-  Scope,
   StatTile,
   selectClass,
   td,
@@ -27,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import {
   SOURCE_LABELS,
   REGISTRY_SOURCES,
+  documentCopies,
   formatBytes,
   matterPdfUrl,
   type Availability,
@@ -72,7 +72,7 @@ function RegistryTable({
             Document
           </th>
           <th className={th} scope="col">
-            Source
+            Source records
           </th>
           <th className={`${th} text-right`} scope="col">
             Size
@@ -88,23 +88,91 @@ function RegistryTable({
       <tbody>
         {docs.map((d) => {
           const open = d.availability === "open";
+          const copies = documentCopies(d);
           return (
-            <tr key={`${d.sourceSystem}:${d.nativeDocumentId}`} className="hover:bg-muted/40">
+            <tr
+              key={`${d.sourceSystem}:${d.nativeCaseId}:${d.nativeDocumentId}`}
+              className="hover:bg-muted/40"
+            >
               <td className={td}>
                 <div className="font-medium">{d.label}</div>
                 <div
                   className="max-w-[28rem] truncate font-mono text-[10px] text-muted-foreground"
                   title={d.nativeDocumentId}
                 >
-                  {d.sourceSystem === "docketbird" ? d.nativeDocumentId : (d.nativeCaseId ?? "")}
+                  {d.nativeDocumentId}
                 </div>
+                {d.nativeCaseId ? (
+                  <div className="max-w-[28rem] truncate font-mono text-[10px] text-muted-foreground">
+                    Case {d.nativeCaseId}
+                  </div>
+                ) : null}
+                {copies.length > 1 ? (
+                  <div className="text-[10px] text-muted-foreground">
+                    Same verified bytes across {copies.length} source records
+                  </div>
+                ) : null}
                 {d.printedDate ? (
                   <div className="text-[11px] text-muted-foreground">
                     Date printed in the file name: {d.printedDate}
                   </div>
                 ) : null}
               </td>
-              <td className={`${td} whitespace-nowrap`}>{d.sourceLabel}</td>
+              <td className={`${td} min-w-48`}>
+                {copies.length === 1 ? (
+                  copies[0]!.sourceLabel
+                ) : (
+                  <details>
+                    <summary className="cursor-pointer text-[11px] text-primary">
+                      {copies.length} source records
+                    </summary>
+                    <ul className="mt-1 space-y-1">
+                      {copies.map((copy) => (
+                        <li
+                          key={`${copy.sourceSystem}:${copy.nativeCaseId}:${copy.nativeDocumentId}`}
+                          className="flex flex-wrap items-center gap-2 text-[11px]"
+                          title={copy.nativeDocumentId}
+                        >
+                          <span>
+                            {copy.sourceSystem === d.sourceSystem &&
+                            copy.nativeCaseId === d.nativeCaseId &&
+                            copy.nativeDocumentId === d.nativeDocumentId
+                              ? "This row"
+                              : copy.sourceLabel}
+                          </span>
+                          <span className="font-mono text-muted-foreground">
+                            · {copy.nativeCaseId ? `${copy.nativeCaseId} / ` : ""}
+                            {copy.nativeDocumentId}
+                          </span>
+                          {copy.sourceSystem !== d.sourceSystem ||
+                          copy.nativeCaseId !== d.nativeCaseId ||
+                          copy.nativeDocumentId !== d.nativeDocumentId ? (
+                            <span className="inline-flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 px-2 text-[12px]"
+                                onClick={() => onView(copy)}
+                                aria-label={`View ${copy.sourceLabel} ${copy.nativeDocumentId}`}
+                              >
+                                <Eye aria-hidden /> View
+                              </Button>
+                              {matterPdfUrl(copy) ? (
+                                <a
+                                  className="text-[12px] text-primary underline-offset-2 hover:underline"
+                                  href={matterPdfUrl(copy, true) ?? undefined}
+                                >
+                                  Download
+                                </a>
+                              ) : null}
+                            </span>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+              </td>
               <td className={`${td} whitespace-nowrap text-right tabular-nums`}>
                 {open ? formatBytes(d.bytes) : <span className="text-muted-foreground">—</span>}
               </td>
@@ -117,6 +185,7 @@ function RegistryTable({
                       variant="outline"
                       className="h-7 px-2 text-[12px]"
                       onClick={() => onView(d)}
+                      aria-label={`View ${d.sourceLabel} ${d.nativeDocumentId}`}
                     >
                       <Eye aria-hidden /> View
                     </Button>
@@ -241,21 +310,12 @@ function RegistrySection({
     <Panel
       id="registry"
       title="Verified PDFs"
-      note={
-        <>
-          Originals held in the private archive, listed from the verified registry for this
-          matter&apos;s master and JPML dockets. Case id
-          {data.caseIds.length === 1 ? "" : "s"} asked for: <CaseIdList ids={data.caseIds} />.{" "}
-          {data.caseIds.some((c) => c.basis === "derived")
-            ? "A derived id comes from an exact match on court and docket number; the matter registry does not cover this matter yet."
-            : "Each id is an explicit provider id the matter registry records for the docket."}
-        </>
-      }
+      note="Original documents for this matter’s master and JPML dockets. Identical verified files share one row."
     >
       <div className="space-y-3">
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <StatTile
-            label="Verified PDFs"
+            label="Source records"
             value={s.total.toLocaleString()}
             note={
               Object.entries(s.bySource)
@@ -264,32 +324,45 @@ function RegistrySection({
             }
           />
           <StatTile
-            label="Open"
+            label="Open source records"
             value={s.open.toLocaleString()}
             note={s.openBytes !== null ? `${formatBytes(s.openBytes)} in the archive` : undefined}
           />
           <StatTile
-            label="Held"
+            label="Held source records"
             value={s.held.toLocaleString()}
             note="Seal or availability not confirmed; listed without a link"
           />
           <StatTile
-            label={active ? "Matching" : "Listed"}
-            value={page.total.toLocaleString()}
+            label="Unique PDFs"
+            value={facets.availability.open.toLocaleString()}
             note={
               data.truncated
-                ? `First ${data.loaded.toLocaleString()} of ${s.total.toLocaleString()} read from the archive`
+                ? `Partial list from ${data.sourceRecordsLoaded.toLocaleString()} source records read`
                 : active
-                  ? `of ${data.loaded.toLocaleString()} documents`
-                  : "All documents read"
+                  ? "Verified files matching the search and source filters"
+                  : "Verified file hashes; held records excluded"
             }
           />
         </div>
-        <Scope title="Held">
-          A held item is listed so the docket is not silently incomplete, but it has no link, size
-          or hash. It is held when the source did not confirm that the document is unsealed and
-          available (for example a search-only locator).
-        </Scope>
+        <details className="text-[12px] text-muted-foreground">
+          <summary className="w-fit cursor-pointer font-medium text-primary">
+            Source & availability details
+          </summary>
+          <p className="mt-2">
+            Docket identifiers: <CaseIdList ids={data.caseIds} />.
+          </p>
+          <p className="mt-1">
+            Held records have no document link because public availability has not been confirmed.
+            They remain listed to show coverage gaps.
+          </p>
+          {data.sourceRecordsExcluded > 0 ? (
+            <p className="mt-1">
+              {data.sourceRecordsExcluded.toLocaleString()} source records could not be displayed
+              because their identity or docket mapping could not be validated.
+            </p>
+          ) : null}
+        </details>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
           <FilterField label="Search">
             <Input
@@ -310,7 +383,7 @@ function RegistrySection({
                 <option value="">All case ids</option>
                 {caseIdsWithDocs.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.id} ({(facets.byCase[c.id] ?? 0).toLocaleString()})
+                    {c.id} ({(facets.byCase[c.id] ?? 0).toLocaleString()} source records)
                   </option>
                 ))}
               </select>
@@ -327,7 +400,7 @@ function RegistrySection({
                 (src) => (facets.bySource[src] ?? 0) > 0 || filter.source === src,
               ).map((src) => (
                 <option key={src} value={src}>
-                  {SOURCE_LABELS[src]} ({(facets.bySource[src] ?? 0).toLocaleString()})
+                  {SOURCE_LABELS[src]} ({(facets.bySource[src] ?? 0).toLocaleString()} records)
                 </option>
               ))}
             </select>
@@ -339,8 +412,12 @@ function RegistrySection({
               onChange={(e) => set({ availability: e.target.value as Availability | "" })}
             >
               <option value="">Open and held</option>
-              <option value="open">Open ({facets.availability.open.toLocaleString()})</option>
-              <option value="held">Held ({facets.availability.held.toLocaleString()})</option>
+              <option value="open">
+                Open unique PDFs ({facets.availability.open.toLocaleString()})
+              </option>
+              <option value="held">
+                Held records ({facets.availability.held.toLocaleString()})
+              </option>
             </select>
           </FilterField>
           <FilterField label="Docket entry number">
@@ -632,8 +709,22 @@ export function DocumentsPanel({
         viewKey={viewKey}
         onView={onView}
       />
-      {q.data ? <LegacySection rows={q.data.legacy.rows} /> : null}
-      {q.data ? <ReportsSection reports={q.data.reports} /> : null}
+      {q.data?.legacy.rows.length ? (
+        <details className="rounded-md border border-border bg-card">
+          <summary className="cursor-pointer px-4 py-3 text-sm font-medium">
+            Earlier document sample · {q.data.legacy.rows.length.toLocaleString()} records
+          </summary>
+          <LegacySection rows={q.data.legacy.rows} />
+        </details>
+      ) : null}
+      {q.data?.reports.length ? (
+        <details className="rounded-md border border-border bg-card">
+          <summary className="cursor-pointer px-4 py-3 text-sm font-medium">
+            JPML statistical reports · {q.data.reports.length}
+          </summary>
+          <ReportsSection reports={q.data.reports} />
+        </details>
+      ) : null}
     </div>
   );
 }

@@ -44,6 +44,15 @@ beforeEach(() => {
 });
 
 describe("matter PDF streaming route", () => {
+  it("serves registered GovInfo PDFs through the same verified-object guard", async () => {
+    const doc = "USCOURTS-cand-4_22-md-03047-0";
+    const response = await handler({
+      request: get(`https://workspace.example/api/matter-pdf?source=govinfo&doc=${doc}`),
+    });
+    expect(response.status).toBe(200);
+    expect(mocks.lookupRegistryObject).toHaveBeenCalledWith("govinfo", doc);
+    expect(mocks.fetchStoredPdf).toHaveBeenCalledWith(open.storageKey, null);
+  });
   it.each([401, 403, 503])(
     "stops at the account guard with status %s before touching the registry",
     async (status) => {

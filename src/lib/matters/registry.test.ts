@@ -180,6 +180,22 @@ describe("matter registry record", () => {
     ]);
   });
 
+  it("rejects negative and fractional registry counts as unrecorded", () => {
+    const m = parseRegistryMatter({
+      ...matterRegistry(),
+      members: {
+        rows: -1,
+        actions: 2.5,
+        by_basis: { jpml_schedule_a: 3.25, docketbird_relationship: 4 },
+      },
+    })!;
+    expect(m.members).toEqual({
+      rows: null,
+      actions: null,
+      byBasis: { docketbird_relationship: 4 },
+    });
+  });
+
   it("fails closed on a foreign schema, a missing block or a different MDL", () => {
     expect(parseRegistryMatter(null)).toBeNull();
     expect(parseRegistryMatter({ ...matterRegistry(), schema: "other/1" })).toBeNull();
@@ -337,6 +353,36 @@ describe("registry metrics", () => {
       complete: false,
     });
     expect(registryMetrics(reg)!.lastCaptured).toBe("2026-10-03");
+  });
+
+  it("does not call a capture complete when it contains fewer entries than the provider total", () => {
+    const reg = parseRegistryMatter(
+      {
+        ...matterRegistry(),
+        entries: [
+          {
+            provider: "courtlistener",
+            docket_key: "flnd:3:2025-md-03140",
+            captured: 16_745,
+            provider_total: 16_807,
+            complete: true,
+            observed_at: "2026-10-04T12:00:00Z",
+          },
+        ],
+      },
+      "3140",
+    )!;
+    expect(reg.entries[0]).toMatchObject({
+      captured: 16_745,
+      providerTotal: 16_807,
+      complete: false,
+      reportedComplete: true,
+    });
+    expect(registryMetrics(reg)!.entries).toMatchObject({
+      captured: 16_745,
+      providerTotal: 16_807,
+      complete: false,
+    });
   });
 });
 

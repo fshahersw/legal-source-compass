@@ -202,6 +202,10 @@ export function evidenceKindLabel(kind: string, labels?: RegistryLabels): string
 const isObj = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === "object" && !Array.isArray(v);
 const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
+const nativeCourtListenerDocketId = (v: unknown): string | null => {
+  const s = str(v);
+  return s && /^[1-9]\d*$/.test(s) ? s : null;
+};
 const NOT_RECORDED_TEXT = /^(not recorded|—|-|none|n\/a|unknown)$/i;
 const cleaned = (v: unknown): string | null => {
   const s = str(v);
@@ -237,8 +241,8 @@ export function parseInventoryCase(item: unknown, facts: unknown): CaseRow | nul
   if (!evidence) return null;
   const idText = str(item["id"]);
   const clId =
-    str(f.get("CourtListener docket id")) ??
-    (idText?.startsWith("cl_docket:") ? idText.slice(10) : null);
+    nativeCourtListenerDocketId(f.get("CourtListener docket id")) ??
+    (idText?.startsWith("cl_docket:") ? nativeCourtListenerDocketId(idText.slice(10)) : null);
   const captionFact = f.get("Caption") ?? "";
   const withheld =
     /^withheld\b/i.test(captionFact) ||
@@ -272,7 +276,7 @@ export function parseInventoryCase(item: unknown, facts: unknown): CaseRow | nul
 export function parseFjcCase(item: unknown): CaseRow | null {
   if (!isObj(item)) return null;
   const cells = isObj(item["cells"]) ? item["cells"] : {};
-  const nativeId = str(cells["native_id"]);
+  const nativeId = nativeCourtListenerDocketId(cells["native_id"]);
   const docket = cleaned(cells["docket_number"]);
   if (!nativeId && !docket) return null;
   return {
@@ -285,7 +289,8 @@ export function parseFjcCase(item: unknown): CaseRow | null {
     dateFiled: cleaned(cells["date_filed"]),
     dateTerminated: cleaned(cells["date_terminated"]),
     status: cleaned(cells["date_terminated"]) ? "terminated" : null,
-    role: "member",
+    // The FJC MDL number is an administrative association; it does not state a transfer or member role.
+    role: "associated_unspecified",
     evidence: "fjc_idb",
     evidenceDetail: cleaned(cells["mdl_number_raw"])
       ? `FJC multidistrict_litigation_docket_number ${String(cells["mdl_number_raw"])}`
@@ -307,10 +312,11 @@ export type MasterDocketInput = {
 };
 
 export function masterCase(m: MasterDocketInput): CaseRow | null {
-  if (!m.clDocketId && !m.docketNumber) return null;
+  const clDocketId = nativeCourtListenerDocketId(m.clDocketId);
+  if (!clDocketId && !m.docketNumber) return null;
   return {
-    id: `master:${m.clDocketId ?? m.docketNumber}`,
-    clDocketId: m.clDocketId,
+    id: `master:${clDocketId ?? m.docketNumber}`,
+    clDocketId,
     docketNumber: m.docketNumber,
     caption: m.title,
     captionWithheld: false,

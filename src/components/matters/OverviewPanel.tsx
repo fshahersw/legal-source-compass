@@ -1,7 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { Link } from "@tanstack/react-router";
-
 import { BarList } from "@/components/corpus/BarList";
 import {
   Chip,
@@ -15,14 +11,10 @@ import {
   th,
 } from "@/components/matters/common";
 import { evidenceKindLabel } from "@/lib/matters/cases";
-import { formatBytes } from "@/lib/matters/documents";
 import { entryTypeLabel } from "@/lib/matters/entries";
-import { getMatterDocumentsSummary } from "@/lib/matters/matters.functions";
 import { orNotRecorded } from "@/lib/matters/overview";
-import { formatUtc, registryMetrics } from "@/lib/matters/registry";
+import { formatUtc } from "@/lib/matters/registry";
 import type { MatterOverviewPayload } from "@/lib/matters/types";
-
-type TabSearch = "cases" | "docket" | "documents" | "parties" | "evidence";
 
 const PROVIDER_LABELS: Record<string, string> = {
   courtlistener: "CourtListener",
@@ -31,7 +23,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   "official-court": "Court website",
 };
 
-/** What the Seeger Weiss matter registry holds for this MDL: explicit relationships, coverage and gaps. */
+/** Source-backed member relationships and the recorded coverage for this matter. */
 function RegistryCard({ payload }: { payload: MatterOverviewPayload }) {
   const reg = payload.registry;
   if (!reg) return null;
@@ -39,12 +31,12 @@ function RegistryCard({ payload }: { payload: MatterOverviewPayload }) {
   return (
     <Panel
       id="registry-coverage"
-      title="Matter registry"
-      note="Evidence-backed relationships the Seeger Weiss matter registry holds for this MDL. It is partial by design: the JPML counts are the size of the MDL, the registry is the evidence it can show."
+      title="Membership & coverage"
+      note="Member-like dockets have recorded relationship evidence. This is a partial count, not the size of the MDL."
       aside={
         <>
           {reg.tier ? <Chip tone="primary">{reg.tier.replace(/^tier/, "Tier ")}</Chip> : null}
-          {reg.projectedAt ? <span>Projected {formatUtc(reg.projectedAt)}</span> : null}
+          {reg.projectedAt ? <span>Coverage as of {formatUtc(reg.projectedAt)}</span> : null}
         </>
       }
     >
@@ -55,13 +47,13 @@ function RegistryCard({ payload }: { payload: MatterOverviewPayload }) {
             value={reg.members.rows !== null ? reg.members.rows.toLocaleString() : <NotRecorded />}
             note={
               reg.members.actions !== null
-                ? `${reg.members.actions.toLocaleString()} counted as actions · members and transferors, not a census`
-                : "Members and transferors, not a census"
+                ? `${reg.members.actions.toLocaleString()} counted as actions · not a census`
+                : "Partial count, not a census"
             }
           />
           <div className="rounded-md border border-border bg-background p-3 sm:col-span-1">
             <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-              By evidence kind
+              Membership evidence
             </div>
             {byBasis.length ? (
               <ul className="mt-1 space-y-0.5 text-[12px]">
@@ -80,65 +72,61 @@ function RegistryCard({ payload }: { payload: MatterOverviewPayload }) {
             reg.entries.map((e) => (
               <StatTile
                 key={`${e.provider}-${e.docketKey}`}
-                label={`Docket entries captured (${PROVIDER_LABELS[e.provider] ?? e.provider})`}
+                label={`Docket entries · ${PROVIDER_LABELS[e.provider] ?? e.provider}`}
                 value={e.captured !== null ? e.captured.toLocaleString() : <NotRecorded />}
                 note={
                   e.providerTotal !== null
-                    ? `of ${e.providerTotal.toLocaleString()} reported by the provider${e.complete ? " · complete at capture" : e.complete === false ? " · incomplete" : ""}`
+                    ? `of ${e.providerTotal.toLocaleString()} reported${e.complete ? " · complete at last check" : e.complete === false ? " · partial" : ""}`
                     : "Provider total not recorded"
                 }
               />
             ))
           ) : (
-            <StatTile label="Docket entries captured" value={<NotRecorded />} />
+            <StatTile label="Docket entries" value={<NotRecorded />} />
           )}
           {reg.parties.length ? (
             <StatTile
-              label="Parties / attorneys captured"
+              label="Parties & counsel"
               value={reg.parties
                 .map((p) => (p.captured !== null ? p.captured.toLocaleString() : "—"))
                 .join(" / ")}
-              note={`${reg.parties.map((p) => p.kind).join(" / ")} on the master docket${reg.parties.every((p) => p.complete) ? " · complete at capture" : ""}`}
+              note={`${reg.parties.map((p) => p.kind).join(" / ")} on the master docket${reg.parties.every((p) => p.complete) ? " · complete at last check" : ""}`}
             />
           ) : null}
         </div>
-        {reg.docketbirdGraph.length ? (
-          <p className="text-[12px] text-muted-foreground">
-            DocketBird relationship graph:{" "}
-            {reg.docketbirdGraph
-              .map((g) =>
-                g.returned !== null && g.totalMembers !== null
-                  ? `${g.returned.toLocaleString()} of ${g.totalMembers.toLocaleString()} indexed members returned${g.truncated ? " (truncated)" : ""}`
-                  : "coverage not recorded",
-              )
-              .join("; ")}
-            . The provider&apos;s index is evidence for membership, not a census of the MDL.
-          </p>
-        ) : null}
-        {reg.gaps.length ? (
-          <Scope title="Known gaps">
-            {reg.gaps.map((g, i) => (
-              <span key={i} className="block">
-                {g}
-              </span>
-            ))}
-          </Scope>
+        {reg.docketbirdGraph.length || reg.gaps.length ? (
+          <details className="rounded-md border border-border bg-background px-3 py-2 text-[12px]">
+            <summary className="w-fit cursor-pointer font-medium">
+              Source & coverage details
+            </summary>
+            <div className="mt-2 space-y-2 text-muted-foreground">
+              {reg.docketbirdGraph.length ? (
+                <p>
+                  DocketBird index:{" "}
+                  {reg.docketbirdGraph
+                    .map((g) =>
+                      g.returned !== null && g.totalMembers !== null
+                        ? `${g.returned.toLocaleString()} of ${g.totalMembers.toLocaleString()} indexed members${g.truncated ? " (partial results)" : ""}`
+                        : "coverage not recorded",
+                    )
+                    .join("; ")}
+                  . This index supports relationships; it is not a full MDL count.
+                </p>
+              ) : null}
+              {reg.gaps.length ? (
+                <Scope title="Known limits">
+                  {reg.gaps.map((g, i) => (
+                    <span key={i} className="block">
+                      {g}
+                    </span>
+                  ))}
+                </Scope>
+              ) : null}
+            </div>
+          </details>
         ) : null}
       </div>
     </Panel>
-  );
-}
-
-function TabLink({ id, tab, children }: { id: string; tab: TabSearch; children: React.ReactNode }) {
-  return (
-    <Link
-      to="/matters/$id"
-      params={{ id }}
-      search={{ tab }}
-      className="text-primary underline-offset-2 hover:underline"
-    >
-      {children}
-    </Link>
   );
 }
 
@@ -149,30 +137,16 @@ const asRows = (m: Record<string, number>) =>
 
 export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
   const o = payload.overview;
-  // The matter's key numbers live in the header band on every tab; this tab adds the detail behind them. The PDF
-  // summary is the same query the band makes, so it is asked for once.
-  const docsFn = useServerFn(getMatterDocumentsSummary);
-  const docs = useQuery({
-    queryKey: ["matter-documents-summary", o.mdl],
-    queryFn: () => docsFn({ data: { id: o.mdl } }),
-    staleTime: 5 * 60_000,
-  });
-  const registry = docs.data && docs.data.connected ? docs.data.summary : null;
   const cases = o.cases;
   const counsel = o.counsel;
   const reg = payload.registry;
-  const metrics = registryMetrics(reg);
-  const capturedEntries = reg ? reg.entries.reduce((n, e) => n + (e.captured ?? 0), 0) : 0;
 
   return (
     <div className="space-y-4">
       <RegistryCard payload={payload} />
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel
-          title="JPML counts over time"
-          note="Each row is a separate JPML report; the figures count actions, not the cases in this corpus."
-        >
+        <Panel title="JPML action counts" note="Each dated report counts actions in this MDL.">
           {o.actions.snapshots.length ? (
             <DataTable caption="JPML action counts by report date" narrow>
               <thead>
@@ -191,14 +165,7 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
               <tbody>
                 {o.actions.snapshots.map((s) => (
                   <tr key={s.asOf}>
-                    <td className={`${td} font-mono`}>
-                      {s.asOf}
-                      {s.label && /matter registry/i.test(s.label) ? (
-                        <span className="block font-sans text-[10px] text-muted-foreground">
-                          via the matter registry
-                        </span>
-                      ) : null}
-                    </td>
+                    <td className={`${td} font-mono`}>{s.asOf}</td>
                     <td className={`${td} text-right tabular-nums`}>{orNotRecorded(s.total)}</td>
                     <td className={`${td} text-right tabular-nums`}>{orNotRecorded(s.pending)}</td>
                   </tr>
@@ -207,60 +174,9 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
             </DataTable>
           ) : (
             <p className="text-[13px] text-muted-foreground">
-              No dated JPML count snapshots are recorded for this MDL.
+              No dated JPML action reports are recorded for this MDL.
             </p>
           )}
-        </Panel>
-
-        <Panel title="Where to look" note="What the corpus holds for this matter, tab by tab.">
-          <ul className="space-y-1.5 text-[13px]">
-            <li>
-              <TabLink id={o.mdl} tab="cases">
-                Member cases
-              </TabLink>{" "}
-              —{" "}
-              {reg && reg.members.rows !== null
-                ? `${reg.members.rows.toLocaleString()} member-like dockets in the matter registry, each with its evidence`
-                : cases?.total
-                  ? `${cases.total.toLocaleString()} dockets with membership evidence`
-                  : "none beyond the master docket"}
-            </li>
-            <li>
-              <TabLink id={o.mdl} tab="docket">
-                Docket entries
-              </TabLink>{" "}
-              —{" "}
-              {metrics?.entries && metrics.entries.published
-                ? `${metrics.entries.published.toLocaleString()} entries with the docket text as published, filterable by date and text`
-                : capturedEntries
-                  ? `not yet available (${capturedEntries.toLocaleString()} captured)`
-                  : "the saved docket sample, where the registry has none"}
-            </li>
-            <li>
-              <TabLink id={o.mdl} tab="documents">
-                Documents
-              </TabLink>{" "}
-              —{" "}
-              {registry
-                ? `${registry.open.toLocaleString()} open and ${registry.held.toLocaleString()} held verified PDFs`
-                : "verified PDFs, saved-sample documents and JPML reports"}
-            </li>
-            <li>
-              <TabLink id={o.mdl} tab="parties">
-                Parties and counsel
-              </TabLink>{" "}
-              —{" "}
-              {metrics?.parties && metrics.parties.published
-                ? `${metrics.parties.published.toLocaleString()} parties of the master docket and ${(metrics.parties.counselLinks ?? 0).toLocaleString()} counsel entries, by role and firm`
-                : "firms, attorneys and tracked-firm appearances"}
-            </li>
-            <li>
-              <TabLink id={o.mdl} tab="evidence">
-                Evidence and sources
-              </TabLink>{" "}
-              — reviewed MDL packet, JPML references and provenance
-            </li>
-          </ul>
         </Panel>
       </div>
 
@@ -284,21 +200,26 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
 
       {o.activity && Object.keys(o.activity.byEntryType).length ? (
         <BarList
-          title="Docket entries by type (saved sample)"
+          title="Docket entries by type"
           rows={asRows(o.activity.byEntryType).map((r) => ({
             ...r,
             label: entryTypeLabel(r.label),
           }))}
           limit={9}
-          unit="docket entries in the saved sample, classified from the docket text"
+          unit="docket entries in the saved sample"
         />
       ) : null}
 
-      <Panel
-        title="Scope of this page"
-        note="Every list on a matter page says which source it comes from and what it leaves out."
-      >
-        <div className="space-y-2">
+      <details className="rounded-lg border border-border bg-surface px-4 py-3 shadow-card">
+        <summary className="cursor-pointer font-medium">
+          Source & coverage details
+          {payload.master?.sourceAsOf ? (
+            <span className="ml-2 text-[12px] font-normal text-muted-foreground">
+              Selection snapshot {payload.master.sourceAsOf}
+            </span>
+          ) : null}
+        </summary>
+        <div className="mt-3 space-y-2">
           {[
             { title: "Cases", text: cases?.qualification },
             { title: "Docket text", text: o.activity?.qualification },
@@ -319,10 +240,15 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
               No source qualifications are recorded for this matter's lists.
             </p>
           ) : null}
-          {payload.master?.sourceAsOf ? (
+          {payload.master?.sourceAsOf || payload.master?.sourceCheckedAt ? (
             <p className="text-[12px] text-muted-foreground">
-              Master-docket dates come from CourtListener docket metadata as of{" "}
-              {payload.master.sourceAsOf}.{" "}
+              {payload.master.sourceAsOf
+                ? `Original selection snapshot: ${payload.master.sourceAsOf}. `
+                : ""}
+              {payload.master.sourceCheckedAt ? (
+                <>CourtListener checked — {payload.master.sourceCheckedAt.slice(0, 10)}. </>
+              ) : null}
+              Master-docket dates and filing information are from CourtListener metadata.{" "}
               {o.masterDocket.clDocketId ? (
                 <LinkOut
                   href={`https://www.courtlistener.com/docket/${o.masterDocket.clDocketId}/`}
@@ -333,7 +259,7 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
             </p>
           ) : null}
         </div>
-      </Panel>
+      </details>
     </div>
   );
 }
