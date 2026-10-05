@@ -19,6 +19,7 @@ Evidence is under `private/audit-2026-10-05/continuation-1055/`:
 - `import-plan.json`, `open-run.sql`: new run **`68fcc730-2104-4713-bb7e-cf323d66a119`**, prepared but not opened.
 - `native-entry-ids.json`: 940 exact target IDs for the bounded public projection.
 - `quota-after.json`, `checkpoint.json`: fresh post-pass quota and explicit registration/publication status.
+- `pdf-candidate-review.json`: 716 pinned document-reference rows. Mutually exclusive captured-metadata dispositions are 85 restricted/held, 497 unavailable, 75 available with unknown seal status, and 59 explicit-unsealed candidates that also pass the existing entry/document-text and header checks. The 59 still require acquisition review and verified stored-byte comparison; none was downloaded or registered in this pass. Independent unavailable and missing-path flags each count 556 and overlap the held group, so do not add them to the exclusive totals.
 
 When SQL access returns, inspect the pinned `open-run.sql`, verify its checksum against `import-plan.json`, independently confirm the run is absent, and create it in **xosqzzsnhxcyehcnirpa only**. Then run the existing importer against `recent-entries` with that run ID and `--types=docket-entries,recap-documents --max-rows=2000 --max-bytes=1500000`. Inspect every acknowledgement and held-row count. The importer includes the earlier saved observations; distinguish new versions from additional observation receipts.
 
@@ -37,6 +38,8 @@ This pass used `max_pages: 2` per task to distribute the small allowance. The ex
 The prepared calculator release remains `2026-10-05.2`: 124 rules, 85 conditional baselines in 44 jurisdictions, 39 research-only rules, 91 statutory captures covering 47 jurisdictions, and 13 judicial references. The active manifest remains `.1` until the guarded SQL transaction passes. See `state-law-release-checkpoint-2026-10-05.md` for the exact transaction checksum and publication sequence.
 
 The user reconnected the browser, but Chrome commands still time out. The in-app browser works and has no Supabase login. The user has been asked to restart the extension connection; no new permissions or credentials were requested. Lovable publication remains unverified.
+
+A fresh target-pinned REST read at 11:20:41 UTC confirmed all 118 currently published rule rows still exactly match their preserved before-images, Open US Law remains held, and both owner-deleted collections have zero records and no catalog entries. This read does not establish whether the prepared private run exists; check that independently in SQL before executing the frozen transaction.
 
 Local UI verification confirmed one state choice each for all 50 states and DC, working source links, and a captured-statute API response with exact whole-body manifest hash. The 390px viewport has no horizontal overflow. The in-app browser emitted no download event, so a browser-save result is not claimed. The state cards now show only state names, and the inaccurate claim that full state codes were not stored has been removed. Private screenshots and `local-ui-verification.json` retain the evidence. Local checks do not establish production publication.
 
