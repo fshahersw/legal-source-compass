@@ -5,7 +5,9 @@ import test from "node:test";
 import {
   PROJECT,
   TARGETS,
+  parseConcurrency,
   parseDatasetSelection,
+  runBoundedPageWorkers,
   runRemoval,
   validateCatalogDeleteIntent,
   validateCompletionReceipt,
@@ -72,6 +74,37 @@ test("dataset selection supports one target and rejects duplicates or unknown co
   );
   assert.throws(() => parseDatasetSelection("other"), /DATASET_SELECTION_INVALID/);
   assert.throws(() => parseDatasetSelection(""), /DATASET_SELECTION_INVALID/);
+});
+
+test("page concurrency defaults to serial and is capped at four", () => {
+  assert.equal(parseConcurrency(undefined), 1);
+  assert.equal(parseConcurrency("4"), 4);
+  for (const invalid of ["0", "5", "04", "1.5", "-1", "four", ""]) {
+    assert.throws(() => parseConcurrency(invalid), /CONCURRENCY_INVALID/);
+  }
+});
+
+test("bounded workers stop assigning pages after failure and drain in-flight work", async () => {
+  const started = [];
+  const finished = [];
+  let active = 0;
+  let maxActive = 0;
+  await assert.rejects(
+    runBoundedPageWorkers([0, 1, 2, 3, 4], 2, async (page) => {
+      started.push(page);
+      active++;
+      maxActive = Math.max(maxActive, active);
+      await new Promise((resolve) => setTimeout(resolve, page === 0 ? 5 : 20));
+      active--;
+      finished.push(page);
+      if (page === 0) throw new Error("failed page");
+    }),
+    /failed page/,
+  );
+  assert.deepEqual(started, [0, 1]);
+  assert.deepEqual(finished.sort(), [0, 1]);
+  assert.equal(maxActive, 2);
+  assert.equal(active, 0);
 });
 
 test("dry run is local-only and reports only the selected dataset", async () => {

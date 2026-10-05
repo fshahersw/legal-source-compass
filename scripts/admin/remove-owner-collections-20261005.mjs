@@ -36,6 +36,41 @@ export function parseDatasetSelection(raw) {
   return Object.keys(TARGETS).filter((dataset) => requested.includes(dataset));
 }
 
+export function parseConcurrency(raw) {
+  if (raw === undefined) return 1;
+  if (!/^[1-4]$/.test(raw)) fail("CONCURRENCY_INVALID");
+  return Number(raw);
+}
+
+export async function runBoundedPageWorkers(items, concurrency, worker) {
+  if (
+    !Array.isArray(items) ||
+    !Number.isSafeInteger(concurrency) ||
+    concurrency < 1 ||
+    concurrency > 4 ||
+    typeof worker !== "function"
+  )
+    fail("CONCURRENCY_INVALID");
+  let next = 0;
+  let failed = false;
+  let firstError;
+  const runWorker = async () => {
+    while (!failed) {
+      const index = next++;
+      if (index >= items.length) return;
+      try {
+        await worker(items[index], index);
+      } catch (error) {
+        if (!failed) firstError = error;
+        failed = true;
+        return;
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, runWorker));
+  if (failed) throw firstError;
+}
+
 function safeResolve(root, relativePath, code) {
   if (typeof relativePath !== "string" || !relativePath || path.isAbsolute(relativePath))
     fail(code);
@@ -402,6 +437,7 @@ async function executeRemoval({
   restClient = rest,
   fetcher = fetch,
   cfg,
+  concurrency = 1,
 }) {
   const manifestSha256 = sha(manifestBytes);
   const receiptsDir = path.join(BASE, "collection-removal-receipts");
@@ -615,7 +651,7 @@ async function executeRemoval({
           }),
         );
     };
-    for (const page of state.pages) {
+    const removePage = async (page) => {
       const expected = validateRecoveryPage(
         dataset,
         page,
@@ -651,7 +687,7 @@ async function executeRemoval({
         if (liveCount !== 0 || !Array.isArray(live.data) || live.data.length !== 0)
           fail("RECEIPTED_PAGE_REAPPEARED");
         reportPageProgress(page);
-        continue;
+        return;
       }
       if (liveCount === 0 && (await fileExists(intentFile))) {
         const intent = validatePageIntent(await readJson(intentFile, "PAGE_INTENT_INVALID"), {
@@ -677,7 +713,7 @@ async function executeRemoval({
           intent,
         });
         reportPageProgress(page);
-        continue;
+        return;
       }
       if (
         liveCount !== expected.length ||
@@ -719,7 +755,12 @@ async function executeRemoval({
       validatePageReceipt(receipt, { dataset, page, manifestSha256, identitySha, intent });
       await save(receiptFile, receipt);
       reportPageProgress(page);
-    }
+    };
+    await runBoundedPageWorkers(
+      state.pages,
+      dataset === "open_us_law" ? concurrency : 1,
+      removePage,
+    );
 
     if ((await count(dataset)) !== 0) fail("TARGET_ROWS_REMAIN");
     current = await queryCatalog(dataset);
@@ -782,12 +823,15 @@ export async function runRemoval({
   manifestSha256,
   datasets,
   execute = false,
+  concurrency = 1,
   restClient = rest,
   fetcher = fetch,
   base = BASE,
   credentialsLoader = loadCredentials,
 } = {}) {
   const selected = parseDatasetSelection(datasets);
+  if (!Number.isSafeInteger(concurrency) || concurrency < 1 || concurrency > 4)
+    fail("CONCURRENCY_INVALID");
   if (execute !== true && manifestPath === undefined && manifestSha256 === undefined)
     return {
       state: "dry_run_only",
@@ -815,7 +859,7 @@ export async function runRemoval({
     // Credential loading is inside the lock-protected try/finally so every failure releases it.
     const cfg = await credentialsLoader();
     if (cfg.EXTERNAL_SUPABASE_URL !== `https://${PROJECT}.supabase.co`) fail("WRONG_PROJECT");
-    await executeRemoval({ ...verified, restClient, fetcher, cfg });
+    await executeRemoval({ ...verified, restClient, fetcher, cfg, concurrency });
     return { state: "removal_complete", datasets: selected, remote_writes: "performed" };
   } finally {
     await releaseLock();
@@ -830,7 +874,7 @@ function parseArgs(argv) {
       args.execute = true;
       continue;
     }
-    const match = /^--(manifest|manifest-sha256|datasets)=(.+)$/.exec(arg);
+    const match = /^--(manifest|manifest-sha256|datasets|concurrency)=(.+)$/.exec(arg);
     if (!match || Object.hasOwn(args, match[1])) fail("UNEXPECTED_ARGUMENT");
     args[match[1]] = match[2];
   }
@@ -843,6 +887,7 @@ async function main() {
     manifestPath: args.manifest,
     manifestSha256: args["manifest-sha256"],
     datasets: args.datasets,
+    concurrency: parseConcurrency(args.concurrency),
     execute: args.execute === true,
   });
   console.log(JSON.stringify(result));
