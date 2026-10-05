@@ -32,7 +32,7 @@ const transportCauseCodes = new Set([
 const fail = (code) => {
   throw new Error(code);
 };
-function transportDiagnostic(error) {
+export function publisherTransportDiagnostic(error) {
   const readString = (object, property) => {
     try {
       const value = object?.[property];
@@ -207,7 +207,10 @@ export async function ensurePublisherObject({
     } catch (error) {
       // An unknown upload outcome is resolved by one full readback, never an
       // automatic second write. A later resumed run checks the same key first.
-      await journal({ state: "upload_transport_outcome_unknown", ...transportDiagnostic(error) });
+      await journal({
+        state: "upload_transport_outcome_unknown",
+        ...publisherTransportDiagnostic(error),
+      });
     }
     if (response) {
       uploadStatus = response.status;

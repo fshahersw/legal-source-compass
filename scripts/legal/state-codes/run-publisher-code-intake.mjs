@@ -3,11 +3,16 @@
 // before the first object upload. This runner never opens/closes a database run,
 // changes a public collection, releases holds, or activates calculator rules.
 import fs from "node:fs/promises";
+import https from "node:https";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { canonicalIntegerJson, hashBytes } from "../../admin/local-catalog-evidence-contract.mjs";
-import { ensurePublisherObject, publisherObjectKey } from "./publisher-code-storage.mjs";
+import {
+  ensurePublisherObject,
+  publisherObjectKey,
+  publisherTransportDiagnostic,
+} from "./publisher-code-storage.mjs";
 
 const PROJECT = "xosqzzsnhxcyehcnirpa",
   SOURCE = "texas-legislature-code";
@@ -16,6 +21,119 @@ const HASH = /^[a-f0-9]{64}$/,
 const fail = (code) => {
   throw new Error(code);
 };
+const RPC_RESPONSE_READ_FAILURE = Symbol("rpc response read failure");
+const MAX_RPC_RESPONSE_BYTES = 2 * 1024 * 1024;
+const OBJECT_REFRESH_CONCURRENCY = 4;
+const RPC_PATHS = new Set(
+  [
+    "corpus_publisher_code_status_v1",
+    "corpus_publisher_code_register_v1",
+    "corpus_publisher_code_verify_batch_v1",
+    "corpus_publisher_code_intake_v1",
+  ].map((name) => `/rest/v1/rpc/${name}`),
+);
+
+/** Each administrative RPC uses its own verified TLS socket. `agent: false`
+ * prevents Node from reusing a pooled connection after an ambiguous transport
+ * result. Tests inject the existing fetcher instead of reaching the network. */
+export function requestPublisherRpc(url, init, requestImpl = https.request) {
+  const parsed = new URL(url);
+  if (
+    parsed.protocol !== "https:" ||
+    parsed.origin !== `https://${PROJECT}.supabase.co` ||
+    parsed.username ||
+    parsed.password ||
+    parsed.search ||
+    parsed.hash ||
+    !RPC_PATHS.has(parsed.pathname) ||
+    init?.method !== "POST" ||
+    typeof init.body !== "string"
+  )
+    fail("PINNED_PUBLISHER_RPC_REQUEST_REQUIRED");
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const rejectOnce = (error) => {
+      if (settled) return;
+      settled = true;
+      reject(error);
+    };
+    const req = requestImpl(
+      parsed,
+      {
+        method: "POST",
+        headers: {
+          ...init.headers,
+          "Content-Length": String(Buffer.byteLength(init.body)),
+        },
+        agent: false,
+        rejectUnauthorized: true,
+        signal: init.signal,
+      },
+      (response) => {
+        const chunks = [];
+        let bytes = 0;
+        response.on("data", (chunk) => {
+          bytes += chunk.length;
+          if (bytes > MAX_RPC_RESPONSE_BYTES) {
+            const error = new Error("RPC_RESPONSE_LIMIT");
+            response.destroy(error);
+            req.destroy(error);
+            rejectOnce(error);
+            return;
+          }
+          chunks.push(Buffer.from(chunk));
+        });
+        response.on("error", (error) => {
+          try {
+            error[RPC_RESPONSE_READ_FAILURE] = true;
+          } catch {
+            // Classification remains transport-only if an unusual error cannot be tagged.
+          }
+          rejectOnce(error);
+        });
+        response.on("aborted", () => {
+          const error = new Error("RPC_RESPONSE_ABORTED");
+          error[RPC_RESPONSE_READ_FAILURE] = true;
+          rejectOnce(error);
+        });
+        response.on("close", () => {
+          if (!settled && response.complete !== true) {
+            const error = new Error("RPC_RESPONSE_CLOSED_EARLY");
+            error[RPC_RESPONSE_READ_FAILURE] = true;
+            rejectOnce(error);
+          }
+        });
+        response.on("end", () => {
+          if (settled) return;
+          const body = Buffer.concat(chunks);
+          try {
+            const result = new Response(body, {
+              status: response.statusCode,
+              headers: response.headers,
+            });
+            settled = true;
+            resolve(result);
+          } catch (error) {
+            try {
+              error[RPC_RESPONSE_READ_FAILURE] = true;
+            } catch {
+              // Still reject the request without exposing the error value.
+            }
+            rejectOnce(error);
+          }
+        });
+      },
+    );
+    req.setTimeout(90000, () => {
+      const error = new Error("RPC_TIMEOUT");
+      error.name = "TimeoutError";
+      error.cause = Object.assign(new Error(), { code: "ETIMEDOUT" });
+      req.destroy(error);
+    });
+    req.on("error", rejectOnce);
+    req.end(init.body);
+  });
+}
 const digest = (value) => hashBytes(canonicalIntegerJson(value));
 async function privatePath(file, existing = true) {
   const root = await fs.realpath("private");
@@ -249,7 +367,7 @@ export async function runPublisherIntake({
   priorReadbacks = [],
   maxObjects = 500,
   maxBatches = 25,
-  fetcher = fetch,
+  fetcher,
   ensureObject = ensurePublisherObject,
 }) {
   if (
@@ -276,13 +394,32 @@ export async function runPublisherIntake({
       body_sha256: hashBytes(payload),
       batch_index: body.p_batch_index ?? null,
     });
-    const response = await fetcher(`${credentials.url}/rest/v1/rpc/${name}`, {
-      method: "POST",
-      headers: { ...credentials.headers, "Content-Type": "application/json" },
-      body: payload,
-      redirect: "error",
-      signal: AbortSignal.timeout(90000),
-    });
+    const request = fetcher ?? requestPublisherRpc;
+    let response;
+    try {
+      response = await request(`${credentials.url}/rest/v1/rpc/${name}`, {
+        method: "POST",
+        headers: { ...credentials.headers, "Content-Type": "application/json" },
+        body: payload,
+        redirect: "error",
+        signal: AbortSignal.timeout(90000),
+      });
+    } catch (error) {
+      let responseReadFailed = false;
+      try {
+        responseReadFailed = error?.[RPC_RESPONSE_READ_FAILURE] === true;
+      } catch {
+        // Treat an uninspectable error as a transport failure, without exposing it.
+      }
+      await record({
+        state: responseReadFailed
+          ? "rpc_response_read_outcome_unknown"
+          : "rpc_transport_outcome_unknown",
+        rpc: name,
+        ...publisherTransportDiagnostic(error),
+      });
+      fail("UNKNOWN_OUTCOME_REQUIRES_AUDIT");
+    }
     await record({ state: "rpc_http_response", rpc: name, http_status: response.status });
     if (!response.ok) {
       await response.body?.cancel();
@@ -290,10 +427,20 @@ export async function runPublisherIntake({
     }
     const chunks = [];
     let bytes = 0;
-    for await (const chunk of response.body ?? []) {
-      bytes += chunk.length;
-      if (bytes > 2 * 1024 * 1024) fail("RPC_RESPONSE_LIMIT");
-      chunks.push(Buffer.from(chunk));
+    try {
+      for await (const chunk of response.body ?? []) {
+        bytes += chunk.length;
+        if (bytes > MAX_RPC_RESPONSE_BYTES) fail("RPC_RESPONSE_LIMIT");
+        chunks.push(Buffer.from(chunk));
+      }
+    } catch (error) {
+      await record({
+        state: "rpc_response_read_outcome_unknown",
+        rpc: name,
+        http_status: response.status,
+        ...publisherTransportDiagnostic(error),
+      });
+      fail("UNKNOWN_OUTCOME_REQUIRES_AUDIT");
     }
     let value;
     try {
@@ -356,22 +503,29 @@ export async function runPublisherIntake({
   // authorize registration or further intake. Re-read all previously verified
   // objects in this invocation. Missing/corrupt objects stop without repair.
   // This bounded refresh can read at most the packet's complete asset plan.
-  for (const asset of packet.assets) {
-    if (freshObjectHashes.has(asset.sha256)) continue;
-    const bytes = await readPinned(asset.path, asset.sha256, asset.bytes);
-    const receipt = await ensureObject({
-      asset,
-      bytes,
-      credentials,
-      record,
-      fetcher,
-      allowUpload: false,
-    });
-    validateReadback(receipt, asset);
-    await record({ state: "publisher_object_receipt", receipt });
-    readbacks.set(asset.sha256, receipt);
-    freshObjectHashes.add(asset.sha256);
-    objectsVerifiedThisPass++;
+  const refreshAssets = packet.assets.filter((asset) => !freshObjectHashes.has(asset.sha256));
+  for (let offset = 0; offset < refreshAssets.length; offset += OBJECT_REFRESH_CONCURRENCY) {
+    const chunk = refreshAssets.slice(offset, offset + OBJECT_REFRESH_CONCURRENCY);
+    const outcomes = await Promise.allSettled(
+      chunk.map(async (asset) => {
+        const bytes = await readPinned(asset.path, asset.sha256, asset.bytes);
+        const receipt = await ensureObject({
+          asset,
+          bytes,
+          credentials,
+          record,
+          fetcher,
+          allowUpload: false,
+        });
+        validateReadback(receipt, asset);
+        await record({ state: "publisher_object_receipt", receipt });
+        readbacks.set(asset.sha256, receipt);
+        freshObjectHashes.add(asset.sha256);
+        objectsVerifiedThisPass++;
+      }),
+    );
+    const failed = outcomes.find((outcome) => outcome.status === "rejected");
+    if (failed) throw failed.reason;
   }
   if (!status.registered) {
     const result = await rpc("corpus_publisher_code_register_v1", {
@@ -515,11 +669,15 @@ async function main() {
       if (event.run_id !== args.run || event.manifest_sha256 !== packet.manifestHash)
         fail("JOURNAL_IDENTITY_MISMATCH");
     journal = await fs.open(journalPath, "a");
-    record = async (event) => {
-      await journal.writeFile(
-        JSON.stringify({ ...event, ...identity, at: new Date().toISOString() }) + "\n",
-      );
-      await journal.sync();
+    let journalWrites = Promise.resolve();
+    record = (event) => {
+      const line = JSON.stringify({ ...event, ...identity, at: new Date().toISOString() }) + "\n";
+      const pending = journalWrites.then(async () => {
+        await journal.writeFile(line);
+        await journal.sync();
+      });
+      journalWrites = pending;
+      return pending;
     };
     await record({ state: "attempt_started", nonce, pid: process.pid });
     const result = await runPublisherIntake({

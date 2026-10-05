@@ -2,11 +2,13 @@
 // injected transports make no network requests and cannot reach production.
 import test from "node:test";
 import assert from "node:assert/strict";
+import { EventEmitter } from "node:events";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { canonicalIntegerJson, hashBytes } from "../../admin/local-catalog-evidence-contract.mjs";
 import {
   loadPublisherPacket,
+  requestPublisherRpc,
   runPublisherIntake,
   publisherCredentials,
 } from "./run-publisher-code-intake.mjs";
@@ -163,9 +165,22 @@ function server(packet, options = {}) {
     } else if (name === "corpus_publisher_code_intake_v1") {
       assert.equal(written.has(body.p_batch_index), false, "No duplicate mutation allowed");
       written.add(body.p_batch_index);
+      if (options.transportFailure) throw options.transportFailure;
+      if (options.responseReadFailure) {
+        const error = options.responseReadFailure;
+        return new Response(
+          new ReadableStream({
+            start(controller) {
+              controller.error(error);
+            },
+          }),
+        );
+      }
       if (lostAck) {
         lostAck = false;
-        throw Error("synthetic transport failure after commit");
+        throw Object.assign(new Error("synthetic transport failure after commit"), {
+          cause: Object.assign(new Error(), { code: "ECONNRESET" }),
+        });
       }
       value = { received: 1, published: false };
     } else throw Error("Unexpected RPC");
@@ -259,14 +274,156 @@ test("bounded upload resumes from actual retained receipts and verifies every im
 test("unknown post-commit acknowledgement stops and later exact proof prevents repeat mutation", async (t) => {
   const { packet } = await fixture(t),
     s = server(packet, { registered: true, lostAck: true });
-  await assert.rejects(run(packet, s), /synthetic transport failure/);
+  await assert.rejects(run(packet, s), /UNKNOWN_OUTCOME_REQUIRES_AUDIT/);
   assert.deepEqual([...s.written], [0]);
+  const diagnostic = s.events.find((event) => event.state === "rpc_transport_outcome_unknown");
+  assert.equal(diagnostic.rpc, "corpus_publisher_code_intake_v1");
+  assert.equal(diagnostic.error_name, "Error");
+  assert.equal(diagnostic.error_cause_code, "ECONNRESET");
   assert.equal((await run(packet, s)).complete, true);
   assert.equal(
     s.calls.filter(
       (c) => c.name === "corpus_publisher_code_intake_v1" && c.body.p_batch_index === 0,
     ).length,
     1,
+  );
+});
+
+test("RPC transport and response-read diagnostics are allowlisted and stop after one ambiguous write", async (t) => {
+  const { packet } = await fixture(t);
+  const secret = "Bearer DO_NOT_LOG https://attacker.invalid/private-key";
+  for (const [option, state, errorName, causeCode] of [
+    [
+      {
+        transportFailure: Object.assign(new Error(secret), {
+          name: secret,
+          cause: Object.assign(new Error(secret), { code: "ECONNRESET" }),
+        }),
+      },
+      "rpc_transport_outcome_unknown",
+      "UnknownError",
+      "ECONNRESET",
+    ],
+    [
+      {
+        responseReadFailure: Object.assign(new TypeError(secret), {
+          cause: Object.assign(new Error(secret), { code: "UND_ERR_SOCKET" }),
+        }),
+      },
+      "rpc_response_read_outcome_unknown",
+      "TypeError",
+      "UND_ERR_SOCKET",
+    ],
+  ]) {
+    const s = server(packet, { registered: true, ...option });
+    await assert.rejects(run(packet, s), /UNKNOWN_OUTCOME_REQUIRES_AUDIT/);
+    assert.deepEqual([...s.written], [0]);
+    assert.equal(
+      s.calls.filter((call) => call.name === "corpus_publisher_code_intake_v1").length,
+      1,
+    );
+    const diagnostic = s.events.find((event) => event.state === state);
+    assert.equal(diagnostic.error_name, errorName);
+    assert.equal(diagnostic.error_cause_code, causeCode);
+    assert.equal(JSON.stringify(diagnostic).includes(secret), false);
+  }
+});
+
+test("isolated RPC request pins host, POST method, verified TLS signal, and disables socket pooling", async () => {
+  let observed;
+  const fakeRequest = (url, options, onResponse) => {
+    observed = { url: String(url), options };
+    const req = new EventEmitter();
+    req.setTimeout = (milliseconds, callback) => {
+      observed.timeout = milliseconds;
+      observed.onTimeout = callback;
+    };
+    req.end = (body) => {
+      observed.body = body;
+      const response = new EventEmitter();
+      response.statusCode = 200;
+      response.headers = { "content-type": "application/json" };
+      response.destroy = (error) => response.emit("error", error);
+      onResponse(response);
+      response.emit("data", Buffer.from('{"ok":true}'));
+      response.emit("end");
+    };
+    req.destroy = (error) => req.emit("error", error);
+    return req;
+  };
+  const response = await requestPublisherRpc(
+    `https://${PROJECT}.supabase.co/rest/v1/rpc/corpus_publisher_code_status_v1`,
+    {
+      method: "POST",
+      headers: { apikey: "synthetic-only" },
+      body: "{}",
+      signal: AbortSignal.timeout(90000),
+    },
+    fakeRequest,
+  );
+  assert.deepEqual(await response.json(), { ok: true });
+  assert.equal(observed.options.method, "POST");
+  assert.equal(observed.options.agent, false);
+  assert.equal(observed.options.rejectUnauthorized, true);
+  assert.equal(observed.timeout, 90000);
+  assert.ok(observed.options.signal instanceof AbortSignal);
+  assert.equal(observed.options.headers["Content-Length"], "2");
+  assert.equal(observed.body, "{}");
+  assert.equal(observed.url.includes(PROJECT), true);
+  assert.throws(
+    () =>
+      requestPublisherRpc(
+        "https://wrong.supabase.co/rest/v1/rpc/status",
+        { method: "POST", body: "{}" },
+        fakeRequest,
+      ),
+    /PINNED_PUBLISHER_RPC_REQUEST_REQUIRED/,
+  );
+  for (const invalidUrl of [
+    `https://${PROJECT}.supabase.co:8443/rest/v1/rpc/corpus_publisher_code_status_v1`,
+    `https://${PROJECT}.supabase.co/rest/v1/rpc/unreviewed_v1`,
+    `https://${PROJECT}.supabase.co/rest/v1/rpc/corpus_publisher_code_status_v1?redirect=1`,
+  ]) {
+    assert.throws(
+      () => requestPublisherRpc(invalidUrl, { method: "POST", body: "{}" }, fakeRequest),
+      /PINNED_PUBLISHER_RPC_REQUEST_REQUIRED/,
+    );
+  }
+});
+
+test("isolated RPC rejects bodyless statuses and incomplete or aborted responses without hanging", async () => {
+  const requestWithResponse = (status, emitResponseEvents) =>
+    requestPublisherRpc(
+      `https://${PROJECT}.supabase.co/rest/v1/rpc/corpus_publisher_code_status_v1`,
+      { method: "POST", headers: {}, body: "{}", signal: AbortSignal.timeout(90000) },
+      (url, options, onResponse) => {
+        const req = new EventEmitter();
+        req.setTimeout = () => {};
+        req.end = () => {
+          const response = new EventEmitter();
+          response.statusCode = status;
+          response.headers = {};
+          response.complete = false;
+          response.destroy = (error) => response.emit("error", error);
+          onResponse(response);
+          emitResponseEvents(response);
+        };
+        req.destroy = (error) => req.emit("error", error);
+        return req;
+      },
+    );
+  for (const status of [204, 205, 304])
+    await assert.rejects(
+      requestWithResponse(status, (response) => response.emit("end")),
+      TypeError,
+    );
+  await assert.rejects(
+    requestWithResponse(200, (response) => response.emit("close")),
+    /RPC_RESPONSE_CLOSED_EARLY/,
+  );
+  await assert.rejects(
+    requestWithResponse(200, (response) => response.emit("aborted")),
+    /RPC_RESPONSE_ABORTED/,
   );
 });
 test("conflicting partial batch proof and simulated prior readbacks stop before mutation", async (t) => {
@@ -326,4 +483,43 @@ test("old receipts or registered metadata cannot conceal changed Storage bytes",
     other.calls.some((c) => c.name === "corpus_publisher_code_register_v1"),
     false,
   );
+});
+
+test("parallel read-only object refresh drains in-flight checks and blocks registration on one missing object", async (t) => {
+  const { packet } = await fixture(t),
+    s = server(packet);
+  const priorReadbacks = [];
+  for (const asset of packet.assets)
+    priorReadbacks.push(
+      await s.ensureObject({ asset, bytes: await fs.readFile(asset.path), allowUpload: false }),
+    );
+  let active = 0,
+    maxActive = 0,
+    completed = 0;
+  const ensureObject = async (args) => {
+    active++;
+    maxActive = Math.max(maxActive, active);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      if (args.asset.sha256 === packet.assets[1].sha256)
+        throw new Error("PUBLISHER_READ_ONLY_OBJECT_MISSING");
+      const receipt = await s.ensureObject(args);
+      completed++;
+      return receipt;
+    } finally {
+      active--;
+    }
+  };
+  await assert.rejects(
+    run(packet, { ...s, ensureObject }, { priorReadbacks }),
+    /PUBLISHER_READ_ONLY_OBJECT_MISSING/,
+  );
+  assert.equal(maxActive, 2);
+  assert.equal(completed, 1, "the successful sibling finishes before the pass stops");
+  assert.equal(active, 0, "all in-flight checks have drained before return");
+  assert.deepEqual(
+    s.calls.map((call) => call.name),
+    ["corpus_publisher_code_status_v1"],
+  );
+  assert.equal(s.written.size, 0);
 });
