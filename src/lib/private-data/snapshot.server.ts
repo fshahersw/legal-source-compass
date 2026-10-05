@@ -15,7 +15,7 @@ async function loadVerified(entry: Snapshot): Promise<Uint8Array> {
   const running = pending.get(entry.sha256);
   if (running) return running;
   const operation = (async () => {
-    const url = process.env["EXTERNAL_SUPABASE_URL"];
+    const url = process.env["EXTERNAL_SUPABASE_URL"]?.replace(/\/+$/, "");
     const key = process.env["EXTERNAL_SUPABASE_KEY"];
     if (url !== "https://xosqzzsnhxcyehcnirpa.supabase.co" || !key) throw new Error("Private snapshot storage is not configured");
     const headers: Record<string, string> = { apikey: key };
