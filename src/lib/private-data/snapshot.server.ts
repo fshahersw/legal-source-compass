@@ -21,8 +21,9 @@ async function loadVerified(entry: Snapshot): Promise<Uint8Array> {
     const headers: Record<string, string> = { apikey: key };
     if (!key.startsWith("sb_")) headers["Authorization"] = `Bearer ${key}`;
     const response = await fetch(`${url}/storage/v1/object/corpus-originals/${entry.storage_key}`, {
-      headers, redirect: "error", signal: AbortSignal.timeout(30000),
+      headers, redirect: "manual", signal: AbortSignal.timeout(30000),
     });
+    if (response.status >= 300 && response.status < 400) throw new Error("Private snapshot unexpected redirect");
     if (!response.ok || !response.body) throw new Error("Private snapshot unavailable");
     const reader = response.body.getReader();
     const bytes = new Uint8Array(entry.bytes);
