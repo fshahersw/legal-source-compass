@@ -501,7 +501,7 @@ export function LimitationsWorkbench({
                       </p>
                     )}
                     <p className="mt-1 text-muted-foreground">
-                      Sources checked through{" "}
+                      Authorities checked through{" "}
                       {ruleSourceCutoff ? formatCivilDate(ruleSourceCutoff) : "a date not recorded"}
                       .
                       {!rule.effectiveFrom &&
@@ -870,8 +870,8 @@ export function LimitationsWorkbench({
                   </ol>
                 )}
                 <p className="mt-3 text-sm text-muted-foreground">
-                  Rule version {result.rule?.ruleVersion ?? "not recorded"} · required source review
-                  through{" "}
+                  Rule version {result.rule?.ruleVersion ?? "not recorded"} · required authority
+                  review through{" "}
                   {result.rule
                     ? (sourceReviewDate(snapshot, result.rule) ?? "not recorded")
                     : "not applicable"}
@@ -1153,7 +1153,8 @@ export function LimitationsWorkbench({
                   {item.title}
                 </a>
                 <p className="mt-1 text-sm">
-                  {item.publisher} · captured {item.capturedAt} · {item.method}
+                  {item.authorityKind.replaceAll("_", " ")} · {item.publisher} · captured{" "}
+                  {item.capturedAt} · {item.method}
                 </p>
                 <PrivateDataLink
                   href={item.textPath}

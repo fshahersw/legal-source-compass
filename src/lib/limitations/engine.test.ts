@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { baselineRule, calculateBaseline, calendarAnniversary, parseCivilDate } from "./engine";
+import {
+  baselineRule,
+  calculateBaseline,
+  calendarAnniversary,
+  parseCivilDate,
+  sourceReviewDate,
+} from "./engine";
 import type { BaselineInput, LimitationsSnapshot } from "./types";
 
 const json = (name: string) =>
@@ -87,6 +93,29 @@ describe("civil dates and conditional legal baselines", () => {
         "personal_injury",
       ),
     ).toBeNull();
+  });
+  it("defensively withholds a baseline if its linked authorities contain no statute", () => {
+    const rule = snapshot.rules.find(
+      (item) => item.jurisdiction === "IN" && item.computation === "baseline_only",
+    )!;
+    const guidance = {
+      ...snapshot.sources.find((source) => source.id === rule.sourceIds[0])!,
+      id: "engine-only-guidance",
+      authorityKind: "publisher_guidance" as const,
+      verifiedAt: "2026-10-05",
+    };
+    const untrusted: LimitationsSnapshot = {
+      ...snapshot,
+      rules: snapshot.rules.map((item) =>
+        item.id === rule.id ? { ...item, sourceIds: [guidance.id] } : item,
+      ),
+      sources: [...snapshot.sources, guidance],
+    };
+    const untrustedRule = untrusted.rules.find((item) => item.id === rule.id)!;
+    expect(sourceReviewDate(untrusted, untrustedRule)).toBeNull();
+    const result = calculateBaseline(untrusted, { ...confirmed, jurisdiction: "IN" });
+    expect(result.status).toBe("needs_review");
+    expect(result.date).toBeNull();
   });
   it("allows the computed anniversary to exceed the source snapshot", () => {
     expect(

@@ -5,6 +5,7 @@ import {
   type LimitationRule,
   type LimitationSource,
   type LimitationsSnapshot,
+  LIMITATION_SOURCE_AUTHORITY_KINDS,
 } from "./types";
 
 const STATE_CODES = new Set([
@@ -71,6 +72,7 @@ const RULE_KINDS = new Set([
   "transition",
 ]);
 const COMPUTATIONS = new Set(["baseline_only", "research_only"]);
+const SOURCE_AUTHORITY_KINDS = new Set<string>(LIMITATION_SOURCE_AUTHORITY_KINDS);
 const ACCRUAL_BASES = new Set([
   "confirmed_accrual",
   "death",
@@ -390,7 +392,7 @@ function validateSources(values: unknown): LimitationSource[] {
       "historicalApplicability",
     ])
       string(s[field], `${label}.${field}`);
-    if (s.schemaVersion !== "1.0.0" || s.authorityKind !== "statute")
+    if (s.schemaVersion !== "1.0.0" || !SOURCE_AUTHORITY_KINDS.has(s.authorityKind as string))
       fail(`${label} has unsupported source metadata`);
     if (s.state !== "US" && !STATE_CODES.has(s.state as string))
       fail(`${label} has an unknown jurisdiction code`);
@@ -540,6 +542,13 @@ export function validateLimitationsSnapshot(input: {
   for (const rule of rules) {
     if (rule.sourceIds.some((id) => !sourceIds.has(id)))
       fail(`rule ${rule.id} links to a missing source`);
+    if (
+      rule.computation === "baseline_only" &&
+      !rule.sourceIds.some((id) =>
+        sources.some((source) => source.id === id && source.authorityKind === "statute"),
+      )
+    )
+      fail(`baseline rule ${rule.id} must link to at least one statute source`);
     if (rule.caseReferenceIds?.some((id) => !caseIds.has(id)))
       fail(`rule ${rule.id} links to a missing case`);
   }

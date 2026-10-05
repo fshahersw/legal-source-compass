@@ -6,6 +6,14 @@ export type AuthorityCapture = {
   contentType: string;
   retrievedAt: string;
 };
+export const LIMITATION_SOURCE_AUTHORITY_KINDS = [
+  "statute",
+  "constitution",
+  "legislative_history",
+  "publisher_guidance",
+  "publisher_table",
+] as const;
+export type LimitationSourceAuthorityKind = (typeof LIMITATION_SOURCE_AUTHORITY_KINDS)[number];
 export const CLAIM_LABELS: Record<ClaimType, string> = {
   personal_injury: "Ordinary personal injury",
   product_liability: "Product / mass-tort injury",
@@ -68,7 +76,7 @@ export type LimitationSource = {
   textPath: string;
   sha256: string;
   byteLength: number;
-  authorityKind: "statute";
+  authorityKind: LimitationSourceAuthorityKind;
   validity: string;
   historicalApplicability: string;
   rawCapture?: AuthorityCapture;

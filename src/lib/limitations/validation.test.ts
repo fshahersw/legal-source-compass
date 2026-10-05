@@ -125,4 +125,73 @@ describe("limitations snapshot validation", () => {
     (source["rawCapture"] as TestRecord)["retrievedAt"] = "not-a-timestamp";
     expect(() => validateLimitationsSnapshot(input)).toThrow(/retrievedAt/);
   });
+
+  it("accepts the supported authority kinds and requires a statute on every baseline", () => {
+    const unsupportedKind = clone(fixture());
+    const unsupportedSources = unsupportedKind.sources["sources"] as TestRecord[];
+    unsupportedSources[0]!["authorityKind"] = "case_law";
+    expect(() => validateLimitationsSnapshot(unsupportedKind)).toThrow(
+      /unsupported source metadata/,
+    );
+
+    const guidanceSource = (state: string, id: string): TestRecord => ({
+      id,
+      state,
+      title: "Publisher historical table",
+      publisher: "Example official publisher",
+      url: "https://example.gov/history",
+      method: "official-page-capture",
+      schemaVersion: "1.0.0",
+      capturedAt: "2026-10-05T12:00:00Z",
+      verifiedAt: "2026-10-05",
+      textPath: `/data/limitations/text/${id}.txt`,
+      sha256: "c".repeat(64),
+      byteLength: 42,
+      authorityKind: "publisher_table",
+      validity: "Support evidence only",
+      historicalApplicability: "Does not independently state a limitations period",
+    });
+
+    const guidanceOnly = clone(fixture());
+    const guidanceOnlyRules = guidanceOnly.rules["rules"] as TestRecord[];
+    const guidanceOnlyBaseline = guidanceOnlyRules.find(
+      (rule) => rule["computation"] === "baseline_only",
+    )!;
+    const guidanceOnlySource = guidanceSource(
+      guidanceOnlyBaseline["jurisdiction"] as string,
+      "test-publisher-table-only",
+    );
+    (guidanceOnly.sources["sources"] as TestRecord[]).push(guidanceOnlySource);
+    guidanceOnlyBaseline["sourceIds"] = [guidanceOnlySource["id"]];
+    const guidanceOnlyCoverage = (guidanceOnly.coverage["coverage"] as TestRecord[]).find(
+      (row) => row["state"] === guidanceOnlyBaseline["jurisdiction"],
+    )!;
+    (guidanceOnlyCoverage["sourceIds"] as string[]).push(guidanceOnlySource["id"] as string);
+    expect(() => validateLimitationsSnapshot(guidanceOnly)).toThrow(
+      /must link to at least one statute source/,
+    );
+
+    const mixed = clone(fixture());
+    const mixedRules = mixed.rules["rules"] as TestRecord[];
+    const mixedBaseline = mixedRules.find((rule) => rule["computation"] === "baseline_only")!;
+    const statuteId = (mixedBaseline["sourceIds"] as string[])[0]!;
+    const statute = (mixed.sources["sources"] as TestRecord[]).find(
+      (source) => source["id"] === statuteId,
+    )!;
+    const support = guidanceSource(
+      mixedBaseline["jurisdiction"] as string,
+      "test-publisher-table-mixed",
+    );
+    support["authorityKind"] = "publisher_guidance";
+    (mixed.sources["sources"] as TestRecord[]).push(support);
+    mixedBaseline["sourceIds"] = [statuteId, support["id"]];
+    const mixedCoverage = (mixed.coverage["coverage"] as TestRecord[]).find(
+      (row) => row["state"] === mixedBaseline["jurisdiction"],
+    )!;
+    (mixedCoverage["sourceIds"] as string[]).push(support["id"] as string);
+    expect(statute["authorityKind"]).toBe("statute");
+    expect(
+      validateLimitationsSnapshot(mixed).sources.find((source) => source.id === support["id"]),
+    ).toMatchObject({ authorityKind: "publisher_guidance" });
+  });
 });

@@ -46,16 +46,22 @@ export function baselineRule(
   return matches.length === 1 ? matches[0]! : null;
 }
 
-/** A bundle release does not refresh its authorities. Use the oldest required statute review. */
+/** A bundle release does not refresh its authorities. Use the oldest required-authority review. */
 export function sourceReviewDate(
   snapshot: LimitationsSnapshot,
   rule: LimitationRule,
 ): string | null {
   if (!parseCivilDate(snapshot.snapshotDate) || !rule.sourceIds.length) return null;
-  const dates = rule.sourceIds.map((id) => {
+  const linked = rule.sourceIds.map((id) => {
     const sources = snapshot.sources.filter((s) => s.id === id);
-    return sources.length === 1 ? sources[0]!.verifiedAt?.slice(0, 10) : undefined;
+    return sources.length === 1 ? sources[0] : undefined;
   });
+  if (
+    linked.some((source) => !source) ||
+    !linked.some((source) => source?.authorityKind === "statute")
+  )
+    return null;
+  const dates = linked.map((source) => source?.verifiedAt?.slice(0, 10));
   if (dates.some((date) => !date || !parseCivilDate(date))) return null;
   return [snapshot.snapshotDate, ...(dates as string[])].sort()[0]!;
 }
@@ -138,15 +144,18 @@ export function calculateBaseline(
     rule.period.unit !== "calendar_years" ||
     !rule.sourceIds.length ||
     rule.sourceIds.some((id) => !snapshot.sources.some((s) => s.id === id)) ||
+    !rule.sourceIds.some((id) =>
+      snapshot.sources.some((source) => source.id === id && source.authorityKind === "statute"),
+    ) ||
     rule.caseReferenceIds?.some((id) => !snapshot.cases.some((c) => c.id === id))
   )
     return finish("needs_review", ["The rule's period or primary-source evidence is incomplete."]);
   const reviewedThrough = sourceReviewDate(snapshot, rule);
   if (!reviewedThrough)
-    return finish("needs_review", ["The required statutory sources have no reliable review date."]);
+    return finish("needs_review", ["The required authorities have no reliable review date."]);
   if ([...requiredDates, input.deathDate].filter(Boolean).some((d) => d! > reviewedThrough))
     return finish("needs_review", [
-      `A selected date is later than ${reviewedThrough}, the oldest review date among this rule's required statutes. Confirm subsequent law before calculating.`,
+      `A selected date is later than ${reviewedThrough}, the oldest review date among this rule's required authorities. Confirm subsequent law before calculating.`,
     ]);
   const reasons: string[] = [];
   if (input.governingLawConfirmed !== true)
