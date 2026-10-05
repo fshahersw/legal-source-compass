@@ -31,10 +31,13 @@ The full reviewed Texas packet also passed an isolated PostgreSQL simulation fro
 
 The simulation used a **local Storage test double**. It proves contract acceptance and count reconciliation, not a cloud upload, deployed RPC or production readback. Its output is ignored under `private/audit-2026-10-05/full-state-codes/tx/sql-simulation-v1/`; its contract hash is `dee7770b812244f42db7fd16622789be2a540ca8a4e0124dd20096bb41dfce95`. Do not use its test database or test-only receipts for production intake.
 
+The prepared `publisher-code-storage.mjs` transport adapter has eight additional offline tests. It hashes pinned local bytes, checks the private bucket, attempts authenticated whole-object reuse first, writes only after a proven missing-object response with `x-upsert:false`, and requires a complete hash-matching readback even after a conflict or unknown upload outcome. It rejects partial, oversized, truncated and mismatched bodies; public buckets; blocked responses; wrong projects; and failed journal writes. It never overwrites or deletes an object. The adapter has no CLI and has not made a production request; the reviewed, resumable uploader/intake coordinator is still required.
+
 Reproduction:
 
 ```powershell
 node --test scripts/legal/state-codes/publisher-code-intake.test.mjs
+node --test scripts/legal/state-codes/publisher-code-storage.test.mjs
 node scripts/legal/state-codes/simulate-publisher-code-intake.mjs private/audit-2026-10-05/full-state-codes/tx/private-intake-v3 private/audit-2026-10-05/full-state-codes/tx/NEW-SIMULATION-DIRECTORY 87b76b96ba6ce3130167193a474f992307c0856cc9a162f2848aeb8ed711a5da
 ```
 
