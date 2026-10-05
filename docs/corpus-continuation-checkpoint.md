@@ -118,6 +118,10 @@ node --use-system-ca scripts/ingest/members-project-extras.mjs --mdls=2741,2789,
 
 Reconcile source IDs, expected upserts, retained remote-only rows, all catalog counts and all filter facets. For an approved bounded projection, rerun the same command without `--dry-run=true`; preserve and hash-verify changed-row before-images first. Do not set `--ready=true` as part of this continuation. Keep filesystem locations and private source details out of public dataset metadata; publish only appropriate aggregate counts, hashes and qualifications. Do not replay the October 5 coverage SQL unchanged after acquiring more rows: its assertions pin the earlier 405 observations and 63,973 global rows, so render and review a fresh scoped contract with exact updated evidence before any coverage transaction.
 
+## October 5 owner priority override
+
+Read `owner-priority-corrections-2026-10-05.md` before further work. Judge financial disclosures and the URL directory were explicitly removed and verified empty at 10:28 UTC. Do not backfill or recreate them. State-law/calculator coverage and missing matter dockets are the owner's current priorities. The `open_us_law` rows remain stored and held; restoring official state-source access must not imply that the bulk code corpus is current or cleared.
+
 ## Current bounds and broader gaps
 
 The 405-row refresh preserves the other source scopes and catalog facets. Only MDL 3114 exhausted its docket-entry pagination; the 16 cursors do not establish current provider totals or complete dockets. Do not describe the 12 eligible PDFs as all available docket PDFs. Keep the four blocked headers held and keep the invalid secondary 3014 ID out of matching, acquisition and membership claims. MDL membership still requires explicit docket relationship evidence; captions, parent docket IDs and similar labels are insufficient.
