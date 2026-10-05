@@ -1,0 +1,51 @@
+# Full state-code acquisition — October 5, 2026
+
+The owner requires downloaded, parsed, versioned and cited state-code text for all states, integrated into one consolidated state-law browser and an accurate limitations calculator. Links and selected excerpts do not satisfy this requirement. This checkpoint records acquisition work; none of the new full-code captures is registered in Supabase or published yet.
+
+## Texas
+
+All 31 HTML ZIP archives listed in the legislature's retained download inventory were captured: 41,625,919 compressed bytes and 4,993 HTML members totaling 221,797,571 uncompressed bytes. Each archive has a source URL, retrieval receipt, SHA-256 and byte count. ZIP member CRCs are verified during parsing. The files include the Constitution, codified statutes and the publisher's other listed code collections.
+
+Parser `texas-publisher-html/2` produced full chapter-text derivatives and 120,909 section occurrences, with exact heading links and hash-bound character spans. The 120,670 citation keys include 213 repeated keys; occurrences and differently named publisher files remain separate. Twelve members have no recognized section headings and remain explicitly listed for review. Some filenames indicate old/copy material. These files are preserved and are not silently treated as current law. In particular, the publisher has two different Chapter 100B texts; number-only deduplication would destroy a distinction.
+
+An independent audit checked all 31 archive hashes/CRCs, all 4,993 chapter derivatives and all 120,909 section spans. The twelve no-heading members comprise two constitutional appendix/preamble files, seven filename-marked old/copy files, one expressly repealed chapter, and **two unresolved Estates Code parsing gaps** (`es.1054.htm`, `es.254.v2.htm`). Their complete text is retained, but section spans still need extraction. One publisher link in `cr.38.htm` has a leading space in `# 38.435`; its exact value is preserved and flagged, not silently normalized into a verified identity. The independent audit is `independent-audit.json` and `.md` in the evidence directory.
+
+The publisher describes its statutes as incorporating the 89th Second Called Session (2025), and its Constitution as incorporating November 2025 amendments. That statement is preserved from the information page; it is not an independent certification of every provision's present effect. Six parser tests passed, covering repeated citations, source spans, operative heading text, notices, hierarchy changes and rejection of malformed input.
+
+Evidence: ignored `private/audit-2026-10-05/full-state-codes/tx/`, especially `download-index.receipt.json`, `receipts/`, `acquisition-summary.json`, and `parsed/summary.json`. Raw archives remain unchanged. Scripts: `scripts/legal/state-codes/tx-acquire.mjs`, `tx-parse.py`, `test_tx_parse.py`. Acquisition reruns verify existing captures; a new source observation needs a new evidence directory.
+
+## North Carolina
+
+All 396 chapter HTML links in the captured NCGA table of contents returned HTTP 200, totaling 78,003,827 bytes. All raw files match their receipt hashes and lengths. The source says it includes changes through S.L. 2026-30 and expressly says website statutes are not official. The current-modifications page is separately captured; neither its existence nor the TOC label resolves every uncodified change.
+
+Parser v7 retains full source paragraphs, section citations, hierarchy, effective-date qualifiers and repeated occurrences. Root review found and corrected a decimal-citation truncation defect and stale hierarchy fields. The corrected parse records **39,609 section occurrences / 39,513 citation identities**, with 94 repeated identity groups and 96 additional occurrences. There are 85 explicit chapter stubs and five unresolved single-section markers: two multi-citation notices and three source-format anomalies. Each unresolved span is retained with offsets and a hash, and terminates the preceding section body rather than being silently appended to it. No missing or corrected native identity was invented.
+
+Use `parse-report-v7.json`, `capture-audit-v8.json` and `.md`, and `manual-source-review-v5.json`; older v3–v6 derivatives are provisional. All seven parser tests passed. Raw-source spot checks include the previously truncated 20-123.2, 105-130.1 and 163-278.2, Chapter 1 limitations sections, Chapter 105's long exemption section and a repeal stub. The five unresolved markers still require exact source review. The raw captures remain valid and need no repeat download.
+
+The original two-worker capture did not achieve its advertised global one-second request spacing: 198 of 395 adjacent starts were closer than one second. All responses were successful. The reusable collector was corrected to serialize request-start reservations and stop/defer on 401, 403 or 429 after preserving the response body. It does not wait indefinitely on Retry-After. This correction does not retroactively change the original receipts.
+
+Evidence and later corrected parse reports: ignored `private/audit-2026-10-05/full-state-codes/nc/`. Reusable acquisition, parser, audit and source-review scripts are under `scripts/legal/state-codes/nc-*`.
+
+## Oregon
+
+The 2025 edition candidate collector **exited** after 686 requests: **622 accepted chapter pages**, 59 HTTP 404s at derived paths and five unresolved responses (chapters 21, 30, 33 and 35 timed out; chapter 5 had a body-marker mismatch). Captured raw files total 148,213,776 bytes. The final acquisition manifest SHA-256 is `60f259e23ee9eb02a695d3e16724be26c7b444d419cf1cbf23f2e47ad904f81f`. PID 23464 was the collector; the earlier running snapshot is historical. Verify the final manifest and journal before preparing a separate additive pass, and preserve the exclusive-write evidence.
+
+**The 686-item list is incomplete as a chapter inventory.** It was expanded from a Table of Titles' numeric ranges, which omit internal suffixed chapters. The captured official Chapter 161 page, for example, explicitly lists Chapter 163A, absent from that expansion. Reconcile a separate exact chapter inventory from publisher chapter/title tables before claiming coverage. HTTP 404 or a missing heading at a derived path is not proof a provision is absent.
+
+The final additive `actual-chapter-inventory-from-captured-pages.json` enumerates 56 of 60 title-group TOCs from the saved pages, with 552 exact chapter IDs. It identifies **33 omitted IDs**: 72A, 74A, 79A, 86A, 131A, 163A, 181A, 197A, 238A, 276A, 279A, 279B, 279C, 308A, 317A, 329A, 419A, 419B, 419C, 420A, 431A, 459A, 468A, 468B, 469A, 469B, 543A, 646A, 657B, 659A, 708A, 743A and 743B. Every item has raw-file and byte-span evidence. Title groups 2, 3, 27 and 54 have no captured TOC, and 31 of 56 title counts differ from the publisher index document counts. This remains an incomplete, unreconciled inventory. The earlier 44-title/27-omission inventory is superseded.
+
+The parser verifies the declared source encoding and raw byte spans; four passing tests cover TOC exclusion, repeated body versions, exact title/chapter inventory and Windows-1252 text. All 622 captured pages yielded **66,898 section rows / 66,582 distinct citations**. The 300 repeated-citation groups retain 316 additional occurrences as distinct source spans. Independent verification found zero parser errors, raw-hash failures or invalid source-span/receipt rows. Ten pages without section headings are publisher-labeled Former Provisions/history pages; two also contain reserved placeholders. Spot checks included ORS 12, 285C and 18. These totals describe only captured pages and do not establish complete Oregon coverage.
+
+The section JSONL totals 100,267,436 bytes, SHA-256 `71d1732785b046a067770b70bfda6bcecfa4a94d0d2e54e3585b1d3c536c5d77`. Use `ors-2025-section-inventory-report.json` and `ors-2025-section-inventory-verification.json` for the final captured-scope parse and audit.
+
+The publisher's 2026 Update instructions say the 2025 edition omits 2025 special-session and 2026 regular-session changes and repeals. Instructions and Volume 01 were captured; Volumes 02 and 03 timed out, and the other update volumes remain outstanding. The small `2025.pdf` is a disposition table, not a complete code. Supplements must be reconciled before claiming a consolidated 2026 text.
+
+Evidence: ignored `private/audit-2026-10-05/full-state-codes/or/`, including `chapter-fetch-receipts.jsonl`, the final `chapter-acquisition-manifest.json`, `actual-chapter-inventory-status.json`, retained title table, and separate update evidence. The completed collector is `collect-ors-chapters.mjs` in that private directory. Do not rerun it against existing files. Verify its final manifest, raw hashes, unresolved responses and true chapter inventory before preparing a separate resume.
+
+## Publication and remaining coverage
+
+The all-jurisdiction `acquisition-inventory.json` covers 50 states plus DC and distinguishes source links, selected text captures and held Open US Law records. It does not represent nationwide full-code acquisition. Its initial status predates the downloads above.
+
+Keep one state entry per jurisdiction. When full text is registered, connect publisher-native sections and their versions to that entry instead of creating competing state collections. Preserve full-text sources separately from reviewed calculator rules: a downloaded section alone does not establish accrual, tolling, repose, historical application or claim coverage. Do not auto-activate rules from parser output.
+
+Full code acquisition outside these bounded sources, Oregon's missing inventory/supplements, parse-quality reviews, private source registration, stored-byte deduplication, app text access and reviewed calculator expansion remain outstanding. Open US Law's publication hold and the staged legal graph remain unchanged. No further storage deletion was performed.
