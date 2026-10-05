@@ -5,9 +5,55 @@ import { hashBytes } from "../../admin/local-catalog-evidence-contract.mjs";
 const project = "xosqzzsnhxcyehcnirpa",
   bucket = "corpus-originals";
 const base = `https://${project}.storage.supabase.co/storage/v1`;
+const transportErrorNames = new Set([
+  "AbortError",
+  "ConnectTimeoutError",
+  "Error",
+  "HeadersTimeoutError",
+  "SocketError",
+  "TimeoutError",
+  "TypeError",
+]);
+const transportCauseCodes = new Set([
+  "EAI_AGAIN",
+  "ECONNREFUSED",
+  "ECONNRESET",
+  "EHOSTUNREACH",
+  "ENETUNREACH",
+  "ENOTFOUND",
+  "ETIMEDOUT",
+  "ERR_TLS_CERT_ALTNAME_INVALID",
+  "UND_ERR_ABORTED",
+  "UND_ERR_BODY_TIMEOUT",
+  "UND_ERR_CONNECT_TIMEOUT",
+  "UND_ERR_HEADERS_TIMEOUT",
+  "UND_ERR_SOCKET",
+]);
 const fail = (code) => {
   throw new Error(code);
 };
+function transportDiagnostic(error) {
+  const readString = (object, property) => {
+    try {
+      const value = object?.[property];
+      return typeof value === "string" ? value : null;
+    } catch {
+      return null;
+    }
+  };
+  const name = readString(error, "name");
+  let cause;
+  try {
+    cause = error?.cause;
+  } catch {
+    cause = undefined;
+  }
+  const causeCode = readString(cause, "code");
+  return {
+    error_name: transportErrorNames.has(name) ? name : "UnknownError",
+    ...(transportCauseCodes.has(causeCode) ? { error_cause_code: causeCode } : {}),
+  };
+}
 export function publisherObjectKey(hash) {
   if (!/^[a-f0-9]{64}$/.test(hash ?? "")) fail("INVALID_PUBLISHER_OBJECT_HASH");
   return `state-codes/sha256/${hash.slice(0, 2)}/${hash}`;
@@ -158,10 +204,10 @@ export async function ensurePublisherObject({
           "x-upsert": "false",
         },
       });
-    } catch {
+    } catch (error) {
       // An unknown upload outcome is resolved by one full readback, never an
       // automatic second write. A later resumed run checks the same key first.
-      await journal({ state: "upload_transport_outcome_unknown" });
+      await journal({ state: "upload_transport_outcome_unknown", ...transportDiagnostic(error) });
     }
     if (response) {
       uploadStatus = response.status;

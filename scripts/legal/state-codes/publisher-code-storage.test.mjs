@@ -91,6 +91,43 @@ test("conflicts and unknown write outcomes require a matching complete readback"
     assert.equal(calls.filter((c) => c.method === "POST").length, 1);
   }
 });
+test("unknown transport logs only allowlisted error name and cause code", async () => {
+  const secretText =
+      "https://attacker.invalid/storage?apikey=DO_NOT_LOG Authorization: Bearer DO_NOT_LOG object-key=DO_NOT_LOG",
+    error = new TypeError(secretText, { cause: Object.assign(new Error(secretText), { code: "ECONNRESET" }) }),
+    { calls, events, pending } = await exercise([
+      privateBucket,
+      new Response(null, { status: 404 }),
+      error,
+      body,
+    ]);
+
+  const receipt = await pending;
+  const diagnostic = events.find((event) => event.state === "upload_transport_outcome_unknown");
+  assert.equal(diagnostic.error_name, "TypeError");
+  assert.equal(diagnostic.error_cause_code, "ECONNRESET");
+  assert.equal(JSON.stringify(diagnostic).includes(secretText), false);
+  assert.equal(receipt.disposition, "upload_outcome_resolved_by_full_readback");
+  assert.equal(calls.filter((call) => call.method === "POST").length, 1);
+  assert.equal(calls.filter((call) => call.method === "GET").length, 3);
+});
+test("untrusted transport name, cause code and message are replaced or omitted", async () => {
+  const hostile = "Authorization: Bearer PRIVATE https://attacker.invalid/key/SECRET",
+    error = new Error(hostile, { cause: { code: hostile, message: hostile } });
+  error.name = hostile;
+  const { events, pending } = await exercise([
+    privateBucket,
+    new Response(null, { status: 404 }),
+    error,
+    body,
+  ]);
+
+  await pending;
+  const diagnostic = events.find((event) => event.state === "upload_transport_outcome_unknown");
+  assert.equal(diagnostic.error_name, "UnknownError");
+  assert.equal(Object.hasOwn(diagnostic, "error_cause_code"), false);
+  assert.equal(JSON.stringify(diagnostic).includes(hostile), false);
+});
 test("corrupt existing object stops without replacing it or issuing a verification receipt", async () => {
   const { calls, events, pending } = await exercise([
     privateBucket,
