@@ -1,6 +1,14 @@
 # Connected deployment checkpoint — October 5, 2026
 
-The authenticated in-app browser now works for the existing Supabase project `xosqzzsnhxcyehcnirpa` and Lovable project `0eaa0e9a-7dcd-41f1-a5ef-3a5305288c1c`. Dedicated connector bindings were still absent from this chat's tool catalog. The working browser connection removes the earlier SQL-administration blocker; another sign-in is not needed. Lovable visibly lists GitHub commit message “Verify resumed code bytes and preserve exact source recovery evidence” (local commit `04b0071`). This is synchronization evidence, not publication.
+## Current verified release
+
+Lovable synchronized copy commit `84f306e` and reported “Your website was updated.” The production law header now reads “Browse law by jurisdiction,” without the internal publication/hold banner. The calculator displays “1 calendar year” for KY’s one-year period. Screenshots: `private/audit-2026-10-05/state-law-next/release-3/live-law-navigation-simplified.png` and `live-ky-singular-year.png`. Full production readbacks of the four limitations snapshots and NC 1-52 text match the `.3` manifest; receipt: `private/audit-2026-10-05/state-law-next/production-readback-2026-10-05T1845Z/production-readback.json`.
+
+The first docket import/projection pass at 11:45 UTC processed 5,152 observed records, including 476 new source versions and 2,200 docket-entry records. Projection reported zero mismatches at 64,135 global records. The finish guard is still being checked, so this must not be described as a completed run. The evidence checkpoint is forthcoming at [docket-first-frozen-import-2026-10-05.md](docket-first-frozen-import-2026-10-05.md).
+
+## Earlier connection preflight
+
+The authenticated in-app browser became available for Supabase project `xosqzzsnhxcyehcnirpa` and Lovable project `0eaa0e9a-7dcd-41f1-a5ef-3a5305288c1c` during the earlier preflight. Dedicated connector bindings were absent from that chat's tool catalog. At that point Lovable visibly listed GitHub commit “Verify resumed code bytes and preserve exact source recovery evidence” (local commit `04b0071`); that was synchronization evidence only. The later publication result is recorded above.
 
 ## Private Texas import
 
@@ -16,7 +24,7 @@ Private evidence: `private/audit-2026-10-05/publisher-browser-preflight-1816/`, 
 
 The current Unicode-aware SQL contract also completed a separate isolated simulation of all 254 batches, 126,895 records and 5,023 simulated asset receipts. Its exact contract SHA-256 is `599f411c775eaecf27141544974d6766c806857c055fcf591a1dc9194bd11150`; the report SHA-256 is `ed795c219247336962d645c1c09700e657d01f94a9c79b0eb035f39b1cd0371c`. The older full runner simulation remains revision-specific evidence and cannot validate later changes or real cloud bytes.
 
-## State-law release preflight
+## Historical state-law release preflight (before `.2` and `.3` commits)
 
 Fresh live preflight found exactly 118 public and private rule records. All 118 private payload hashes matched the preserved release `.1` before-image, and all public rule payloads equaled their private source rows. There were no missing, changed, quarantined or unexpected IDs. Neither proposed `.2` nor `.3` run existed. Open US Law remained held.
 
@@ -34,7 +42,7 @@ The complete corrected `.2` transaction passed an actual database test ending in
 
 The unchanged frozen `.3` v2 transaction also passed a full rollback test before commit. Run `0547dd04-0941-43e1-aed7-811d3d42c5b4` is completed with five ingested entities, one changed NC rule, 124 projected rules, 92 statutory sources, 14 judicial references, 86 conditional baselines across 45 jurisdictions and 38 research-only rules. Independent SQL validation reports zero field, native citation, source-version, stored-version, text-storage, raw-capture, opinion-schema or judicial-text-hash mismatches. Direct REST comparison confirmed all 124 expected rule payloads and citation links. Open US Law remains held.
 
-The app manifest has been advanced locally to `.3`, exact SHA-256 `b3bb3c19dc4f5b73dea1d256ef7b510b909651006d0afea7f6a66e868d4b1834`, only after those proofs. The 47 focused limitations tests, 18 candidate boundary cases, TypeScript and production build passed. Lovable publication and actual public-site interaction checks are still pending at this checkpoint. This coverage remains conditional statutory arithmetic, not complete full-code coverage or case-specific filing advice.
+The app manifest was advanced locally to `.3`, exact SHA-256 `b3bb3c19dc4f5b73dea1d256ef7b510b909651006d0afea7f6a66e868d4b1834`, only after those proofs. The 47 focused limitations tests, 18 candidate boundary cases, TypeScript and production build passed. At that earlier checkpoint, Lovable publication and public-site checks were pending; the later verified publication is recorded above. This coverage remains conditional statutory arithmetic, not complete full-code coverage or case-specific filing advice.
 
 Evidence: `state-law-restoration/live-commit-result-v2.json`, `live-independent-projection-v2.json`, and corresponding files in `state-law-next/release-3/`; independent REST evidence under `live-law-release-2-2026-10-05T183502953Z/` and `live-law-release-3-2026-10-05T183659644Z/`. Runtime rollback receipts are explicitly labelled and never substitute for the later commit evidence.
 
@@ -49,4 +57,4 @@ Live browser checks confirmed:
 - LA July 1, 2024 trigger: no date, preserving the unresolved transition-day boundary.
 - State-law navigation: exactly 51 distinct jurisdiction links, one per state and DC. NC expands to five saved statute extracts with official citations and capture dates.
 
-Screenshots are preserved as `lovable-published-1842.png`, `live-nc-two-clock-result.png`, `live-ky-before-effective.png` and `live-la-transition.png` in `state-law-next/release-3/`. A subsequent copy-only patch corrects “1 calendar years” and removes internal publication/hold explanations from ordinary law navigation; its deployment is tracked separately. Full state-code integration, six general-baseline jurisdictions (AR, GA, MS, NJ, OR, TN), special-claim coverage, and the recorded docket gaps remain open.
+Screenshots are preserved as `lovable-published-1842.png`, `live-nc-two-clock-result.png`, `live-ky-before-effective.png` and `live-la-transition.png` in `state-law-next/release-3/`; the published copy follow-up screenshots are listed above. Full state-code integration, six general-baseline jurisdictions (AR, GA, MS, NJ, OR, TN), special-claim coverage, and the recorded docket gaps remain open.
