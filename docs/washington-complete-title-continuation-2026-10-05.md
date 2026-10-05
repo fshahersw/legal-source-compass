@@ -1,5 +1,17 @@
 # Washington Complete Title continuation — October 5, 2026
 
+## Final remaining-link pass (21:08Z)
+
+The final bounded pass captured all 19 exact, previously unattempted Complete Title URLs from the pinned inventory: Titles 74, 76–80, 79A, 81–84, 82A, 85–91. All 19 returned HTTP 200; the collector exited 0 with no stop condition, failure, or unattempted request. Request starts were at least 1,454 ms apart. The stored PDF bodies total 56,039,633 bytes.
+
+An independent offline audit rehashed all 19 source bodies, checked their pinned URLs and native title identities, and reparsed the PDFs with pypdf 6.10.0. The page-ordered UTF-8 derivative contains 5,491 pages; no page was empty or under 30 characters, and no replacement or control characters were found. All 374 native chapter links for these titles matched the `Chapter <id> RCW` heading pattern. OCR was not performed. These checks establish capture and extraction integrity, not section completeness, current legal effect, or publication readiness.
+
+Across the 99 exact URLs in the pinned 2026 Complete Title plan, the final denominator is **96 captured from that plan + 3 prior transport failures + 0 never attempted = 99**. Including the separately retained Title 1 PDF, **97 PDFs are captured**. The preserved failures are Title 43 (HTTP 200 headers were received, but body transfer timed out; no partial body saved), Title 44 (`fetch failed` before an HTTP status/body), and Title 54 (`fetch failed` before an HTTP status/body). None was retried. The three native chapter-heading pattern misses from the prior Titles 66–73 pass remain documented in that pass; they are pattern results, not proof that text is absent.
+
+Title 25 remains outside the denominator: the 2026 archive's Title 25 Partnerships row points to the Title 26 Domestic Relations page, and there is no verified 2026 Title 25 chapter inventory or Complete Title PDF link. A separately captured 2024 archived Title 25 page lists chapters 25.05, 25.10, 25.12, and 25.15; it does not establish 2026 mapping or current text. No Title 25 URL was inferred.
+
+The new pass plan is SHA-256 `6b16156327b26fe9d1bd758e6a21a98a568b1f7b2097852c2dc55ead8399aa0f`, capture receipt `dc5bc00be91a111a589fabf2281d3aafdf72998dbf8a533f53be59e4399c2fca`, extraction manifest `ef82e919feadec5967f99ea71bed06482951548bb140633ce3de5db5daa748b9`, and independent capture audit `a83a72831f6b76475338dcd394d46676a5d234d8bd2ee13f42838891940f7708`. Artifacts are under `private/audit-2026-10-05/full-state-codes/wa/complete-title-pdfs-continuation-2108/`.
+
 This bounded pass captured ten exact publisher-observed 2026 Complete Title PDF links: Titles 55, 57, 58, 59, 60, 61, 62A, 63, 64 and 65. All returned HTTP 200; 19,749,816 raw bytes were stored. The collector exited successfully with no stop condition, no failed request and no unattempted request in this pass. Actual request starts were at least 1,930 ms apart.
 
 The ten raw PDFs were independently rehashed and reparsed with pypdf 6.10.0 into page-ordered UTF-8 text. The derivative contains 1,661 pages and 4,877,513 extracted characters; no page was empty or under 30 characters, and no replacement or control characters were found. OCR was not performed. The native title inventory check found 13 exact `Chapter <id> RCW` heading-pattern misses, all for Title 62A. The Title 62A material uses an Article/section-list structure; these pattern misses do not establish that its chapter text is absent. The check is not section-completeness or current-law certification.
