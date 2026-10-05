@@ -1,5 +1,7 @@
 # Corpus audit and next actions — October 5, 2026
 
+Current owner priorities and exact remaining work are in [the 11:56 checkpoint](corpus-continuation-1156-2026-10-05.md) and [owner corrections](owner-priority-corrections-2026-10-05.md): state-law/calculator coverage and important matter dockets. The judge-disclosure and URL-directory removals are complete; do not follow older peripheral-acquisition suggestions below for either collection. The audit and priority list below are historical where superseded.
+
 This section records the initial read-only live-catalog audit. The credential file was checked in memory to ensure that every query went to project `xosqzzsnhxcyehcnirpa`; no credentials or source payloads were printed. The sanitized per-dataset result is retained in the ignored `private/audit-2026-10-05/live-read-only-summary.json`. Subsequent source refreshes, projections, storage consolidation and publication are documented in [the progress report](corpus-accuracy-progress-2026-10-05.md); the counts below remain a timestamped baseline.
 
 ## Current catalog evidence

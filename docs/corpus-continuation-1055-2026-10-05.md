@@ -1,5 +1,7 @@
 # October 5, 10:55 UTC docket continuation
 
+**Historical checkpoint:** the collector subsequently advanced. [The 11:56 checkpoint](corpus-continuation-1156-2026-10-05.md) supplies the new frozen import cohort and supersedes this unexecuted run draft. Do not execute the old run against the changing collector directory. Quota observations below are historical.
+
 ## Verified source capture; registration pending
 
 The bounded pass ran from 10:56:15 to 11:01:46 UTC against the 16 saved incomplete native docket cursors. The fresh opening quota was 52/day, leaving 32 requests after the 20/day reserve. Thirty-one successful pages and one retried HTTP 502 used the 32-request budget.
