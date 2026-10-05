@@ -2,6 +2,8 @@
 
 At 21:21 UTC, independent Supabase SQL verification confirmed **293 new exact native-document/source-version associations**, each backed by an existing private PDF and a new whole-object verification receipt. No source PDF requests, uploads or new stored objects were needed. The verified objects total **152,946,562 bytes**. All 293 asset identities, object hashes and registration observations matched; none was rejected.
 
+The existing read-only application PDF lookup subsequently returned all 293 repaired identities as open, with the exact native case identity, SHA-256, byte count and public URL. `app-pdf-lookup-response.json` and `app-pdf-lookup-verification.json` preserve that check. No access rule or publication hold was changed to make the links resolve.
+
 The frozen 12:52 docket packet contains 909 documents that explicitly report available and unsealed status, have a stored PDF hash match, and pass the restricted-description check. Before this repair, 596 had an association to their exact current native source version; **889 now do**. Current registered native versions and docket-header eligibility were independently reconciled for all 909. This is a bounded metadata scope, not a fresh CourtListener acquisition or a claim that every matter document is present.
 
 | CourtListener docket | MDL | Qualified candidates | Exact current-version assets after repair |

@@ -1154,7 +1154,7 @@ export function LimitationsWorkbench({
                 </a>
                 <p className="mt-1 text-sm">
                   {item.authorityKind.replaceAll("_", " ")} · {item.publisher} · captured{" "}
-                  {item.capturedAt}
+                  {item.capturedAt.slice(0, 10)}
                 </p>
                 <PrivateDataLink
                   href={item.textPath}
@@ -1166,6 +1166,7 @@ export function LimitationsWorkbench({
                 </PrivateDataLink>
                 <details className="mt-2 text-xs text-muted-foreground">
                   <summary className="min-h-9 cursor-pointer py-2">Capture details</summary>
+                  <p>Retrieved {item.capturedAt}</p>
                   <p>{item.method}</p>
                   <p className="break-all">
                     SHA-256 {item.sha256} · {item.byteLength.toLocaleString()} bytes · schema{" "}
@@ -1177,7 +1178,6 @@ export function LimitationsWorkbench({
           </div>
         </section>
       )}
-      {view !== "calculator" && <div className="mt-5">{nav}</div>}
     </div>
   );
 }

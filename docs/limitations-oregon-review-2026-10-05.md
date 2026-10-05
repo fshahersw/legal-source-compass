@@ -1,6 +1,10 @@
 # Oregon ordinary-injury review — October 5, 2026
 
-The separate `.4` candidate adds a conditional ordinary-negligence bodily-injury calculation: two years from independently confirmed accrual, compared with ten years from the defendant's qualifying act or omission complained of. It is not yet registered or published. The current published release remains `.3`; Oregon remains research-only there until the candidate passes independent review, registration, storage verification and publication.
+Release `.4` adds a conditional ordinary-negligence bodily-injury calculation: two years from independently confirmed accrual, compared with ten years from the defendant's qualifying act or omission complained of. At 21:40 UTC its private registration and guarded public database projection completed, with independent SQL reconciliation passing. Application bundle activation and Lovable publication are being verified separately; database projection alone is not proof of the production calculator release.
+
+The completed run is `f67c885a-3b3e-4e14-9ec4-e907968edcc4`. Its 11 exact candidate entities, 18 native citation relationships, three private before-images and 125 public before-images were verified. Validation contract v7 reconciles 124 rules, 87 conditional baselines across 46 jurisdictions, 37 research rules, 99 authorities (93 statutes and six supporting authorities), and 15 judicial references, with zero field, hash, citation or storage mismatches. Open US Law remains held. All 124 original public record hashes and the catalog hash matched after the full rollback rehearsal and before the actual commit.
+
+The SQL editor's size limit was resolved with 12 hash-pinned chunks in the private run scope followed by atomic reconstruction and registration. The final committed projection is `preparation-20261005/publication-v7-v5/project-reviewed-or-v4.sql`, SHA-256 `9354bb89d64c23af3c0a076c7c13bd0cdd402bc08bb74300fc23a8a13fed5c6c`. Independent post-publication readback v8 passed. Earlier drafts, failed validator expectations and rollback evidence remain private and must not be replayed. The historical preparation notes below describe their original stage, not the current database state.
 
 ## What resolved the earlier historical gap
 
