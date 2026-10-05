@@ -4,7 +4,7 @@
 
 Lovable synchronized copy commit `84f306e` and reported “Your website was updated.” The production law header now reads “Browse law by jurisdiction,” without the internal publication/hold banner. The calculator displays “1 calendar year” for KY’s one-year period. Screenshots: `private/audit-2026-10-05/state-law-next/release-3/live-law-navigation-simplified.png` and `live-ky-singular-year.png`. Full production readbacks of the four limitations snapshots and NC 1-52 text match the `.3` manifest; receipt: `private/audit-2026-10-05/state-law-next/production-readback-2026-10-05T1845Z/production-readback.json`.
 
-The first docket import/projection pass at 11:45 UTC processed 5,152 observed records, including 476 new source versions and 2,200 docket-entry records. Projection reported zero mismatches at 64,135 global records. The finish guard is still being checked, so this must not be described as a completed run. The evidence checkpoint is forthcoming at [docket-first-frozen-import-2026-10-05.md](docket-first-frozen-import-2026-10-05.md).
+The first frozen packet (`continuation-1145`, source capture through 11:49 UTC) has now been imported, projected and finalized during this later connected session. It contains 5,152 observations, 476 new source versions and 2,200 verified public entry updates, with 162 new entries and a 64,135-row global catalog. All 16 matter summaries and the completed bounded run passed independent database/REST checks. The scopes remain partial and this packet acquired no PDFs. See [the first frozen import](docket-first-frozen-import-2026-10-05.md) for the exact before-images, commit, rollback and production evidence.
 
 ## Earlier connection preflight
 
@@ -58,3 +58,6 @@ Live browser checks confirmed:
 - State-law navigation: exactly 51 distinct jurisdiction links, one per state and DC. NC expands to five saved statute extracts with official citations and capture dates.
 
 Screenshots are preserved as `lovable-published-1842.png`, `live-nc-two-clock-result.png`, `live-ky-before-effective.png` and `live-la-transition.png` in `state-law-next/release-3/`; the published copy follow-up screenshots are listed above. Full state-code integration, six general-baseline jurisdictions (AR, GA, MS, NJ, OR, TN), special-claim coverage, and the recorded docket gaps remain open.
+
+
+The older full runner simulation finished at 2026-10-05T19:15:23.792Z and exited successfully: 5,023 local assets, 126,895 records, 254 intake calls, 508 batch verifications and one injected lost acknowledgement, with no batch mutated twice. The report is `full-state-codes/tx/runner-simulation-v1/simulation-report.json`, SHA-256 `0bef7136f289b2e83caff685fc158cdba1a377babf3eb50729777449c06ffa49`. It pins runner `942a048a863b556613f2dd0da37a7d8ede82e880efb13fa653678ed1a3d8da88` loaded before later fresh-readback/Unicode changes; this remains historical local-test evidence, never current-code or real-cloud verification. Terminal 98154 / process 2160 has exited and is no longer a live workload.
