@@ -1,0 +1,60 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {createHash} from 'node:crypto';
+import {createRequire} from 'node:module';
+import {reconstructPdfJsPage} from './wa-pdf-layout.mjs';
+
+const require = createRequire(import.meta.url);
+const PDFJS = require('pdf-parse/lib/pdf.js/v1.10.100/build/pdf.js');
+PDFJS.disableWorker = true;
+const wa = process.argv[2] ?? 'private/audit-2026-10-05/full-state-codes/wa';
+const captureDir = process.argv[3] ?? path.join(wa, 'complete-title-pdfs-20261005', 'capture-v2');
+const outputDir = process.argv[4] ?? path.join(wa, 'complete-title-pdfs-20261005', 'text-v3-position');
+const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
+const receipt = JSON.parse(await fs.readFile(path.join(captureDir, 'receipt.json'), 'utf8'));
+const planBytes = await fs.readFile(path.join(captureDir, 'capture-plan.json'));
+const plan = JSON.parse(planBytes);
+if (receipt.planSha256 !== sha256(planBytes) || receipt.requestedCount !== 99 || receipt.storedBodies !== 47 || receipt.stopped !== true || receipt.stopReason !== 'transport-error') throw new Error('Capture receipt does not match the reviewed 47-body stopped pass.');
+const planById = new Map(plan.requests.map(row => [row.id, row]));
+const captured = receipt.results.filter(row => row.outcome === 'captured');
+if (captured.length !== 47 || captured.some(row => row.status !== 200 || row.contentType?.split(';')[0].trim().toLowerCase() !== 'application/pdf')) throw new Error('Captured objects are not the expected 47 HTTP 200 PDFs.');
+const pilot = JSON.parse(await fs.readFile(path.join(wa, 'capture-pilot-20261005', 'receipt.json'), 'utf8'));
+const titleOne = pilot.results.find(row => row.id === 'title-1-complete-pdf');
+if (!titleOne || titleOne.outcome !== 'captured' || titleOne.status !== 200 || titleOne.contentType?.split(';')[0].trim().toLowerCase() !== 'application/pdf') throw new Error('Retained Title 1 PDF is unavailable.');
+const records = [{...titleOne, id: 'complete-title-1', titleOnePreviouslyCaptured: true}, ...captured];
+await fs.mkdir(outputDir, {recursive: false});
+const textDir = path.join(outputDir, 'text');
+await fs.mkdir(textDir);
+const results = [];
+for (const record of records) {
+  const planned = planById.get(record.id);
+  const titleId = record.titleOnePreviouslyCaptured ? '1' : planned?.titleId;
+  if ((!record.titleOnePreviouslyCaptured && !planned) || (planned && planned.url !== record.url) || titleId !== record.id.slice('complete-title-'.length)) throw new Error(`Plan/receipt identity mismatch for ${record.id}.`);
+  const bytes = await fs.readFile(record.rawPath);
+  if (bytes.length !== record.bytes || sha256(bytes) !== record.sha256 || bytes.length > plan.maxObjectBytes) throw new Error(`Raw PDF integrity/cap check failed for ${record.id}.`);
+  const document = await PDFJS.getDocument(bytes);
+  const pages = [];
+  for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber++) {
+    const page = await document.getPage(pageNumber);
+    const content = await page.getTextContent({normalizeWhitespace: true, disableCombineTextItems: false});
+    pages.push(reconstructPdfJsPage(content.items));
+  }
+  const pdfPages = document.numPages;
+  await document.destroy();
+  if (pages.length !== pdfPages) throw new Error(`Page extraction count mismatch for ${record.id}.`);
+  const text = pages.join('\n\n');
+  const textBytes = Buffer.from(text, 'utf8');
+  const textPath = path.join(textDir, `${record.id}.txt`);
+  await fs.writeFile(textPath, textBytes, {flag: 'wx'});
+  const pageMetrics = pages.map((pageText, index) => ({page: index + 1, chars: pageText.trim().length, hasText: pageText.trim().length > 0, replacementChars: (pageText.match(/\uFFFD/g) ?? []).length, controlChars: (pageText.match(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g) ?? []).length}));
+  const totalChars = pages.reduce((sum, value) => sum + value.length, 0);
+  const nonemptyPages = pageMetrics.filter(page => page.hasText).length;
+  const lowTextPages = pageMetrics.filter(page => page.chars > 0 && page.chars < 30).length;
+  const citationLines = (text.match(/\bRCW\s+\d+[A-Z]?\.\d+[A-Z]?\.\d+[A-Z]?(?:\.\d+[A-Z]?)?\b/gi) ?? []).length;
+  results.push({id: record.id, titleId, sourceUrl: record.url, finalUrl: record.finalUrl, rawPath: record.rawPath, rawBytes: record.bytes, rawSha256: record.sha256, contentType: record.contentType, sourceLastModified: record.lastModified, sourceEtag: record.etag, existingPriorCapture: Boolean(record.titleOnePreviouslyCaptured), pdfPages, extractedPages: pages.length, textPath: path.relative(process.cwd(), textPath).replaceAll('\\', '/'), textBytes: textBytes.length, textSha256: sha256(textBytes), textChars: totalChars, nonemptyPages, emptyPages: pdfPages - nonemptyPages, lowTextPages, replacementChars: pageMetrics.reduce((sum, page) => sum + page.replacementChars, 0), controlChars: pageMetrics.reduce((sum, page) => sum + page.controlChars, 0), apparentRcwCitationOccurrences: citationLines, pageMetrics});
+  console.log(JSON.stringify({id: record.id, pdfPages, textChars: totalChars, emptyPages: pdfPages - nonemptyPages}));
+}
+const manifest = {schemaVersion: 1, createdAt: new Date().toISOString(), scope: 'Position-reconstructed PDF text from the retained Title 1 PDF plus the 47 fully captured PDFs in the stopped 2026 WA Complete Title pass; extraction metrics are not legal completeness/currentness proof.', captureReceiptPath: path.join(captureDir, 'receipt.json'), captureReceiptSha256: sha256(await fs.readFile(path.join(captureDir, 'receipt.json'))), priorTitle1ReceiptPath: path.join(wa, 'capture-pilot-20261005', 'receipt.json'), priorTitle1ReceiptSha256: sha256(await fs.readFile(path.join(wa, 'capture-pilot-20261005', 'receipt.json'))), extractionLibrary: 'PDF.js v1.10.100; page loop in ascending page number, positioned items grouped by y baseline and x coordinate', results, totals: {pdfs: results.length, rawBytes: results.reduce((sum, row) => sum + row.rawBytes, 0), textBytes: results.reduce((sum, row) => sum + row.textBytes, 0), textChars: results.reduce((sum, row) => sum + row.textChars, 0), pages: results.reduce((sum, row) => sum + row.pdfPages, 0), emptyPages: results.reduce((sum, row) => sum + row.emptyPages, 0), lowTextPages: results.reduce((sum, row) => sum + row.lowTextPages, 0), replacementChars: results.reduce((sum, row) => sum + row.replacementChars, 0), controlChars: results.reduce((sum, row) => sum + row.controlChars, 0), apparentRcwCitationOccurrences: results.reduce((sum, row) => sum + row.apparentRcwCitationOccurrences, 0), extractionErrors: 0}};
+const manifestBytes = Buffer.from(JSON.stringify(manifest, null, 2) + '\n');
+await fs.writeFile(path.join(outputDir, 'extraction-manifest.json'), manifestBytes, {flag: 'wx'});
+console.log(JSON.stringify({manifestPath: path.join(outputDir, 'extraction-manifest.json'), manifestSha256: sha256(manifestBytes), totals: manifest.totals}));
