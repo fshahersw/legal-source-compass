@@ -12,6 +12,7 @@ import {
 import type { MatterOverview } from "./overview";
 import {
   caseIdPlan,
+  currentRegistryGapText,
   formatLocator,
   isLinkableSource,
   isRegistryRowOf,
@@ -211,6 +212,94 @@ describe("matter registry record", () => {
     expect(parseRegistryMatter(raw)!.pdfCaseIds).toEqual(["flnd-3:2025-md-03140", "69674950"]);
     expect(isNativeCaseId("3:25md3140")).toBe(true);
     expect(isNativeCaseId("../etc")).toBe(false);
+  });
+});
+
+describe("stale generated CourtListener coverage gaps", () => {
+  const stale =
+    "CourtListener entries for docket 5981306: 0 captured of 23135 total; collection continues.";
+  const rawDocket = {
+    role: "master",
+    docket_key: "cand:3:2016-md-02741",
+    native_case_ids: [
+      {
+        provider: "courtlistener",
+        source_system: "courtlistener",
+        id: "5981306",
+      },
+    ],
+  };
+  const rawCapture = {
+    provider: "courtlistener",
+    docket_key: "cand:3:2016-md-02741",
+    cl_docket_id: "5981306",
+    captured: 480,
+    provider_total: null,
+    complete: false,
+    observed_at: "2026-10-05T17:00:00Z",
+  };
+  const registry = (overrides: Record<string, unknown> = {}) =>
+    parseRegistryMatter({
+      ...matterRegistry(),
+      gaps: [stale],
+      case_ids: [rawDocket],
+      entries: [rawCapture],
+      ...overrides,
+    })!;
+
+  it("replaces the stale count only from the exact unique native docket's current coverage row", () => {
+    const current = registry();
+    expect(current.gaps).toEqual([
+      "CourtListener entries for docket 5981306: 480 captured; partial at last check; observed 2026-10-05; provider total not recorded.",
+    ]);
+    expect(currentRegistryGapText(stale, current.entries, current.caseIds)).toBe(
+      "CourtListener entries for docket 5981306: 480 captured; partial at last check; observed 2026-10-05; provider total not recorded.",
+    );
+  });
+
+  it("preserves the recorded gap when the docket or current coverage row is missing or ambiguous", () => {
+    const noNativeMatch = registry({ case_ids: [] });
+    expect(currentRegistryGapText(stale, noNativeMatch.entries, noNativeMatch.caseIds)).toBe(stale);
+
+    const duplicateNativeMatch = registry({
+      case_ids: [rawDocket, { ...rawDocket, docket_key: "another:docket" }],
+    });
+    expect(duplicateNativeMatch.caseIds).toHaveLength(2);
+    expect(
+      currentRegistryGapText(stale, duplicateNativeMatch.entries, duplicateNativeMatch.caseIds),
+    ).toBe(stale);
+
+    const duplicateCapture = registry({
+      entries: [rawCapture, { ...rawCapture, captured: 481 }],
+    });
+    expect(duplicateCapture.entries).toHaveLength(2);
+    expect(currentRegistryGapText(stale, duplicateCapture.entries, duplicateCapture.caseIds)).toBe(
+      stale,
+    );
+  });
+
+  it("requires the capture's CourtListener docket id to agree with the native id", () => {
+    for (const clDocketId of [undefined, "5981307"]) {
+      const withoutExactDocketId = registry({
+        entries: [{ ...rawCapture, cl_docket_id: clDocketId }],
+      });
+      expect(
+        currentRegistryGapText(stale, withoutExactDocketId.entries, withoutExactDocketId.caseIds),
+      ).toBe(stale);
+    }
+  });
+
+  it("leaves unrelated or differently worded gap prose untouched", () => {
+    const current = registry();
+    const unrelated = "CourtListener entries for docket 5981306 are not available.";
+    expect(currentRegistryGapText(unrelated, current.entries, current.caseIds)).toBe(unrelated);
+    expect(
+      currentRegistryGapText(
+        "A JPML report may omit closed cases.",
+        current.entries,
+        current.caseIds,
+      ),
+    ).toBe("A JPML report may omit closed cases.");
   });
 });
 

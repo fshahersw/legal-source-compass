@@ -72,6 +72,7 @@ export type RegistryJudge = {
 export type RegistryEntryCapture = {
   provider: string;
   docketKey: string | null;
+  clDocketId: string | null;
   captured: number | null;
   providerTotal: number | null;
   /** Capture completeness after checking any known captured/provider totals. */
@@ -80,6 +81,58 @@ export type RegistryEntryCapture = {
   reportedComplete: boolean | null;
   observedAt: string | null;
 };
+
+/** Replaces only the registry generator's exact stale CourtListener capture sentence when identity is unambiguous. */
+export function currentRegistryGapText(
+  gap: string,
+  entries: RegistryEntryCapture[],
+  caseIds: RegistryCaseIds[],
+): string {
+  const match =
+    /^CourtListener entries for docket ([1-9]\d*): \d+ captured of \d+ total; collection continues\.$/.exec(
+      gap,
+    );
+  if (!match) return gap;
+
+  const nativeId = match[1]!;
+  const matchingDockets = caseIds.filter((docket) =>
+    docket.nativeCaseIds.some(
+      (id) =>
+        id.provider === "courtlistener" &&
+        id.sourceSystem === "courtlistener" &&
+        id.id === nativeId,
+    ),
+  );
+  if (matchingDockets.length !== 1) return gap;
+
+  const docketKey = matchingDockets[0]!.docketKey;
+  const matchingCaptures = entries.filter(
+    (entry) =>
+      entry.provider === "courtlistener" &&
+      entry.docketKey === docketKey &&
+      entry.clDocketId === nativeId,
+  );
+  if (matchingCaptures.length !== 1) return gap;
+
+  const capture = matchingCaptures[0]!;
+  const count =
+    capture.captured === null
+      ? "count not recorded"
+      : `${capture.captured.toLocaleString()} captured`;
+  const completeness =
+    capture.complete === true
+      ? "complete at last check"
+      : capture.complete === false
+        ? "partial at last check"
+        : "completeness not recorded";
+  const observed = capture.observedAt?.slice(0, 10);
+  const observedText = observed && /^\d{4}-\d{2}-\d{2}$/.test(observed) ? observed : null;
+  const providerTotal =
+    capture.providerTotal === null
+      ? "provider total not recorded"
+      : `${capture.providerTotal.toLocaleString()} reported by provider`;
+  return `CourtListener entries for docket ${nativeId}: ${count}; ${completeness}; ${observedText ? `observed ${observedText}` : "observation date not recorded"}; ${providerTotal}.`;
+}
 
 export type RegistryPartyCapture = {
   kind: string;
@@ -269,6 +322,7 @@ export function parseRegistryMatter(raw: unknown, expectedMdl?: string): Registr
     entries.push({
       provider,
       docketKey: str(e["docket_key"]),
+      clDocketId: idStr(e["cl_docket_id"]),
       captured,
       providerTotal,
       complete:
@@ -386,7 +440,7 @@ export function parseRegistryMatter(raw: unknown, expectedMdl?: string): Registr
     jpml,
     jpmlOrders,
     unassignedNativeCaseIds: strings(raw["unassigned_native_case_ids"]),
-    gaps: strings(raw["gaps"]),
+    gaps: strings(raw["gaps"]).map((gap) => currentRegistryGapText(gap, entries, caseIds)),
     projectedAt: str(provenance["projected_at"]),
     runIds: strings(provenance["run_ids"]),
   };
