@@ -122,6 +122,11 @@ begin
    or v->>'readback_sha256' is distinct from a->>'sha256' or v->'readback_bytes' is distinct from a->'bytes'
    or v->>'verification_method' is distinct from 'authenticated-whole-object-get-sha256'
    or v->'http_status' is distinct from '200'::jsonb or coalesce(v->>'verified_at','')=''
+   or (a->>'kind'='chapter_text_derivative' and (
+    v->>'readback_text_encoding' is distinct from 'utf-8'
+    or jsonb_typeof(v->'readback_text_code_points') is distinct from 'number'
+    or coalesce(v->>'readback_text_code_points','') !~ '^[1-9][0-9]{0,8}$'
+    or (v->>'readback_text_code_points')::bigint>(a->>'bytes')::bigint))
    or not exists(select 1 from storage.objects o join storage.buckets b on b.id=o.bucket_id
      where b.id='corpus-originals' and b.public is false and o.name=v->>'object_key'
       and o.metadata->>'size'=a->>'bytes') then
@@ -227,7 +232,10 @@ begin
     or d->'text_span'->>'unit' is distinct from 'unicode_code_points'
     or coalesce(d->'text_span'->>'start','') !~ '^[0-9]{1,9}$' or coalesce(d->'text_span'->>'end','') !~ '^[0-9]{1,9}$'
     or (d->'text_span'->>'start')::bigint>=(d->'text_span'->>'end')::bigint
-    or (d->'text_span'->>'end')::bigint>(parent->>'text_bytes')::bigint
+    or not exists(select 1 from corpus_ingest.publisher_code_packet_objects_v1 a where a.run_id=p_run
+     and a.sha256=parent->>'text_sha256' and a.asset->>'kind'='chapter_text_derivative'
+     and a.readback_receipt->>'readback_text_encoding'='utf-8'
+     and (a.readback_receipt->>'readback_text_code_points')::bigint >= (d->'text_span'->>'end')::bigint)
     or coalesce(d->>'text_sha256','') !~ '^[a-f0-9]{64}$' then
     raise exception 'Section composite identity or parent span mismatch' using errcode='22023';
    end if;
