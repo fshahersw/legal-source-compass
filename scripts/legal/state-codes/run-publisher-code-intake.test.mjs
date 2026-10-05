@@ -297,12 +297,14 @@ test("RPC transport and response-read diagnostics are allowlisted and stop after
       {
         transportFailure: Object.assign(new Error(secret), {
           name: secret,
+          code: "EHOSTUNREACH",
           cause: Object.assign(new Error(secret), { code: "ECONNRESET" }),
         }),
       },
       "rpc_transport_outcome_unknown",
       "UnknownError",
       "ECONNRESET",
+      "EHOSTUNREACH",
     ],
     [
       {
@@ -313,6 +315,7 @@ test("RPC transport and response-read diagnostics are allowlisted and stop after
       "rpc_response_read_outcome_unknown",
       "TypeError",
       "UND_ERR_SOCKET",
+      undefined,
     ],
   ]) {
     const s = server(packet, { registered: true, ...option });
@@ -325,6 +328,7 @@ test("RPC transport and response-read diagnostics are allowlisted and stop after
     const diagnostic = s.events.find((event) => event.state === state);
     assert.equal(diagnostic.error_name, errorName);
     assert.equal(diagnostic.error_cause_code, causeCode);
+    assert.equal(diagnostic.error_code, option.transportFailure?.code);
     assert.equal(JSON.stringify(diagnostic).includes(secret), false);
   }
 });

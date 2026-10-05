@@ -16,13 +16,19 @@ const transportErrorNames = new Set([
 ]);
 const transportCauseCodes = new Set([
   "EAI_AGAIN",
+  "EADDRNOTAVAIL",
+  "ECONNABORTED",
   "ECONNREFUSED",
   "ECONNRESET",
   "EHOSTUNREACH",
   "ENETUNREACH",
   "ENOTFOUND",
+  "EPIPE",
+  "EPROTO",
   "ETIMEDOUT",
   "ERR_TLS_CERT_ALTNAME_INVALID",
+  "ERR_TLS_HANDSHAKE_TIMEOUT",
+  "ERR_STREAM_PREMATURE_CLOSE",
   "UND_ERR_ABORTED",
   "UND_ERR_BODY_TIMEOUT",
   "UND_ERR_CONNECT_TIMEOUT",
@@ -48,9 +54,11 @@ export function publisherTransportDiagnostic(error) {
   } catch {
     cause = undefined;
   }
+  const errorCode = readString(error, "code");
   const causeCode = readString(cause, "code");
   return {
     error_name: transportErrorNames.has(name) ? name : "UnknownError",
+    ...(transportCauseCodes.has(errorCode) ? { error_code: errorCode } : {}),
     ...(transportCauseCodes.has(causeCode) ? { error_cause_code: causeCode } : {}),
   };
 }
