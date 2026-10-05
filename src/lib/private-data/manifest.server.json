@@ -2,7 +2,7 @@
   "schema_version": "atlas-private-snapshots/1",
   "project_id": "xosqzzsnhxcyehcnirpa",
   "bucket": "corpus-originals",
-  "created_at": "2026-10-05T09:42:37.778Z",
+  "created_at": "2026-10-05T13:38:06.394Z",
   "files": {
     "atlas-import-bundle.json": {
       "sha256": "acb1355f66463d76e865e582a2a3cc3e62a235fe0ffa19eb69ea80fb3e7b7b3e",
@@ -310,14 +310,14 @@
       "storage_key": "atlas-private-data/sha256/a6/a674dfa31b625e92635f32684a61ae135b05a91507f17f2d5164833237fecf46.bin"
     },
     "limitations/case-references.json": {
-      "sha256": "da552ad37c388dbc91a4e511b60779a14042dfa8448ef06d3a799236ae5468ec",
-      "bytes": 22877,
-      "storage_key": "atlas-private-data/sha256/da/da552ad37c388dbc91a4e511b60779a14042dfa8448ef06d3a799236ae5468ec.bin"
+      "sha256": "853ffca866158aacc27910a46bed27e9618a44fae0e35bae4ed015bc9e35fba5",
+      "bytes": 24941,
+      "storage_key": "atlas-private-data/sha256/85/853ffca866158aacc27910a46bed27e9618a44fae0e35bae4ed015bc9e35fba5.bin"
     },
     "limitations/coverage.json": {
-      "sha256": "e37c7325333d975a923f26f016af27e5f4c805fb87a5a3c87e9d9ce4ec44e89e",
-      "bytes": 91150,
-      "storage_key": "atlas-private-data/sha256/e3/e37c7325333d975a923f26f016af27e5f4c805fb87a5a3c87e9d9ce4ec44e89e.bin"
+      "sha256": "e46437d6f3310c97e4e7df6e2b0a6e7a42b795b2210c5c3b944cd09f1b83c0cc",
+      "bytes": 92353,
+      "storage_key": "atlas-private-data/sha256/e4/e46437d6f3310c97e4e7df6e2b0a6e7a42b795b2210c5c3b944cd09f1b83c0cc.bin"
     },
     "limitations/followup/access-retry-20261002-v4.json": {
       "sha256": "728547d0b0fccd652b71788b90e6ffd4040c7efe3d303ae3668945dff9e33736",
@@ -450,9 +450,9 @@
       "storage_key": "atlas-private-data/sha256/30/306f6f8e1fe556a083fcc7d06fa8272211681d30694ba0eede5454afd900b897.bin"
     },
     "limitations/publisher-overrides.json": {
-      "sha256": "67d0f5370dd350482be51541403599997188ff9bb6e762753cccf0f698ba6404",
-      "bytes": 8396,
-      "storage_key": "atlas-private-data/sha256/67/67d0f5370dd350482be51541403599997188ff9bb6e762753cccf0f698ba6404.bin"
+      "sha256": "72f7fe888dd06bf05dec99d1d5a25636bdd84f23ff7ef7e0fceb8a8beb1d8ea9",
+      "bytes": 7733,
+      "storage_key": "atlas-private-data/sha256/72/72f7fe888dd06bf05dec99d1d5a25636bdd84f23ff7ef7e0fceb8a8beb1d8ea9.bin"
     },
     "limitations/rejected-captures.json": {
       "sha256": "ab9a1d53a546941dbcf697490b6a332c0f34753566acbba44f1fb519a930e239",
@@ -460,14 +460,14 @@
       "storage_key": "atlas-private-data/sha256/ab/ab9a1d53a546941dbcf697490b6a332c0f34753566acbba44f1fb519a930e239.bin"
     },
     "limitations/rules.json": {
-      "sha256": "246698ef17033e2d1241f19ad6d67152b7713a9ae93db052e51db7e81cf34a3e",
-      "bytes": 202275,
-      "storage_key": "atlas-private-data/sha256/24/246698ef17033e2d1241f19ad6d67152b7713a9ae93db052e51db7e81cf34a3e.bin"
+      "sha256": "4c9d401f6d0d1e3c97d489854b4d2ecd5c3d78f9f459455fc4fc79326af03cba",
+      "bytes": 218930,
+      "storage_key": "atlas-private-data/sha256/4c/4c9d401f6d0d1e3c97d489854b4d2ecd5c3d78f9f459455fc4fc79326af03cba.bin"
     },
     "limitations/sources.json": {
-      "sha256": "269256f177f0b158f21341970b3c5d8e21c4a667ca73baaebfd757a78937aff2",
-      "bytes": 71574,
-      "storage_key": "atlas-private-data/sha256/26/269256f177f0b158f21341970b3c5d8e21c4a667ca73baaebfd757a78937aff2.bin"
+      "sha256": "6e53502e8a63a08eb72df89dde2c79564fea89043f6e1027f376e30950abce30",
+      "bytes": 83584,
+      "storage_key": "atlas-private-data/sha256/6e/6e53502e8a63a08eb72df89dde2c79564fea89043f6e1027f376e30950abce30.bin"
     },
     "limitations/text/ak-9-10-070.txt": {
       "sha256": "2be64c3240efeaa39cbc46f84ff6ce2f8376a3bcc627f992db51b999399a03b0",
@@ -650,9 +650,9 @@
       "storage_key": "atlas-private-data/sha256/3e/3e7e0fe40ed2ea7ee7edf7951797499f745bc5bd97fe6ec13dad66a1c2044897.bin"
     },
     "limitations/text/nc-1-52.txt": {
-      "sha256": "ceb5ae27f4467211ea0e8f0883d34110a3734988cb2167b0a0323c916620460e",
-      "bytes": 5526,
-      "storage_key": "atlas-private-data/sha256/ce/ceb5ae27f4467211ea0e8f0883d34110a3734988cb2167b0a0323c916620460e.bin"
+      "sha256": "5d7c7ed7e6e27af7154e47d817ce9b9fb23f8855d6de1d8dbb3bb4e35bbe79a1",
+      "bytes": 5444,
+      "storage_key": "atlas-private-data/sha256/5d/5d7c7ed7e6e27af7154e47d817ce9b9fb23f8855d6de1d8dbb3bb4e35bbe79a1.bin"
     },
     "limitations/text/nc-1-53.txt": {
       "sha256": "b032694f3fc89b85e33fc4750e5f1608537d6f1706da64525d261ac9cebad6dc",
@@ -1633,6 +1633,66 @@
       "sha256": "b2681c5b2ce060757f12aebbba2fbc58166b5be175faccb473c98f613214fb55",
       "bytes": 11742,
       "storage_key": "atlas-private-data/sha256/b2/b2681c5b2ce060757f12aebbba2fbc58166b5be175faccb473c98f613214fb55.bin"
+    },
+    "limitations/text/ky-413-140.txt": {
+      "sha256": "3f59d80649fd94e192844dd31d4f6086fa23c4bc3e24da8625266ec53b3558f7",
+      "bytes": 5016,
+      "storage_key": "atlas-private-data/sha256/3f/3f59d80649fd94e192844dd31d4f6086fa23c4bc3e24da8625266ec53b3558f7.bin"
+    },
+    "limitations/text/dc-16-2702.txt": {
+      "sha256": "8edb4780d070b92571ffc3b61bd77e98c3c4fb42f97f612dc45e86662c1b75bd",
+      "bytes": 1290,
+      "storage_key": "atlas-private-data/sha256/8e/8edb4780d070b92571ffc3b61bd77e98c3c4fb42f97f612dc45e86662c1b75bd.bin"
+    },
+    "limitations/text/mo-516-100.txt": {
+      "sha256": "53d05a2729ec3cab4b55fa6fd25477b534145918bf8f79e781a8387d57042e56",
+      "bytes": 1663,
+      "storage_key": "atlas-private-data/sha256/53/53d05a2729ec3cab4b55fa6fd25477b534145918bf8f79e781a8387d57042e56.bin"
+    },
+    "limitations/text/mo-537-100.txt": {
+      "sha256": "c057800331652a32abd78d162544f82c8d1f1d6e54a5461a6a1976f4330a79f7",
+      "bytes": 2183,
+      "storage_key": "atlas-private-data/sha256/c0/c057800331652a32abd78d162544f82c8d1f1d6e54a5461a6a1976f4330a79f7.bin"
+    },
+    "limitations/text/ne-30-810.txt": {
+      "sha256": "00f99fc2cb919e7068176d14c4a3be94a4b86b28475011a467a96b1736244e4f",
+      "bytes": 19276,
+      "storage_key": "atlas-private-data/sha256/00/00f99fc2cb919e7068176d14c4a3be94a4b86b28475011a467a96b1736244e4f.bin"
+    },
+    "limitations/text/ut-title78b-ch2-2026.txt": {
+      "sha256": "e6045e5e62b3d3776fd1475a97ae5d662ea35dd9d8b85db6b5f20265c62cad00",
+      "bytes": 51928,
+      "storage_key": "atlas-private-data/sha256/e6/e6045e5e62b3d3776fd1475a97ae5d662ea35dd9d8b85db6b5f20265c62cad00.bin"
+    },
+    "limitations/text/la-2024-423.txt": {
+      "sha256": "dac51a87ada134c5d226350585b63b80ab96165eee9d32542071dc3c9223b8d4",
+      "bytes": 2195,
+      "storage_key": "atlas-private-data/sha256/da/dac51a87ada134c5d226350585b63b80ab96165eee9d32542071dc3c9223b8d4.bin"
+    },
+    "limitations/text/la-2315-2.txt": {
+      "sha256": "c36840b33c0511d9779ec3599a1e7dce2d7fda7feab85229eca6bed2c3b75532",
+      "bytes": 2165,
+      "storage_key": "atlas-private-data/sha256/c3/c36840b33c0511d9779ec3599a1e7dce2d7fda7feab85229eca6bed2c3b75532.bin"
+    },
+    "limitations/text/la-2025-176.txt": {
+      "sha256": "082674a03187f51134f8ff7af6e49f3941005a016ca6161ee80a1c045d7c1d35",
+      "bytes": 2245,
+      "storage_key": "atlas-private-data/sha256/08/082674a03187f51134f8ff7af6e49f3941005a016ca6161ee80a1c045d7c1d35.bin"
+    },
+    "limitations/text/wy-1-38-102.txt": {
+      "sha256": "889557a7a68a5918cadb66632348e79b9fe2b988866c42859309bff0b4302ad0",
+      "bytes": 5721,
+      "storage_key": "atlas-private-data/sha256/88/889557a7a68a5918cadb66632348e79b9fe2b988866c42859309bff0b4302ad0.bin"
+    },
+    "limitations/opinion-text/us-cts-waldburger-2014.txt": {
+      "sha256": "0e7201da019627162163e281d18c466344c94066b7a4279876952c98402bcd2c",
+      "bytes": 49987,
+      "storage_key": "atlas-private-data/sha256/0e/0e7201da019627162163e281d18c466344c94066b7a4279876952c98402bcd2c.bin"
+    },
+    "limitations/text/nc-1979-c654.txt": {
+      "sha256": "77e3ca27d76b146c8c02cb4b3724b65d1aa89bd616db5ea96ec546347f8d0ab2",
+      "bytes": 7872,
+      "storage_key": "atlas-private-data/sha256/77/77e3ca27d76b146c8c02cb4b3724b65d1aa89bd616db5ea96ec546347f8d0ab2.bin"
     }
   }
 }

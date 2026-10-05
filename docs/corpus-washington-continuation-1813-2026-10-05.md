@@ -1,0 +1,11 @@
+# Washington Complete Title follow-up — October 5, 2026
+
+This additive pass was planned from the verified 2026 archive title inventory, without replacing earlier source captures. The inventory contained 100 distinct native Complete Title links and rehashed to `268052732386672b46978baa0e23333dda1394fc443e2f727bcaf05078b31e94`. Before planning, all 47 successfully captured PDFs in the earlier stopped pass and the retained Title 1 PDF were re-read and SHA/byte-count verified (48 bodies total). The earlier pass also contains a failed transport attempt for Title 43; that title was explicitly excluded and not retried.
+
+The first ten otherwise-unattempted exact inventory links were pinned in `private/audit-2026-10-05/full-state-codes/wa/complete-title-pdfs-continuation-1813/source-plan.json` (SHA-256 `5c82dd2f87832efc92e2dd7b02ff848c169be52a362cd4df6ddcfd63dd63d755`). They correspond to Titles 44, 46, 47, 48, 49, 50, 50A, 50B, 51, and 52. Each link came from its title page’s verified native link record; no URL was constructed. The preflight proof records the input receipt hashes and the 48 verified prior bodies.
+
+The existing sequential collector attempted only Title 44, from 18:12:33.911Z to 18:12:35.399Z. Fetch failed at transport level (`fetch failed`); no HTTP status or response bytes were received. It stopped immediately as designed. The request journal and final receipt are preserved in `.../complete-title-pdfs-continuation-1813/capture/`; the capture-plan SHA-256 is `5c82dd2f87832efc92e2dd7b02ff848c169be52a362cd4df6ddcfd63dd63d755`, and receipt SHA-256 is `161445ba35bee36c4ae8cdf5b86414c95107c158cd35e2444be5f769021f20ce`. Result: 1 of 10 requests attempted, 0 PDFs captured, 0 bytes stored, and 9 links left unattempted. No pypdf extraction was run because this pass produced no PDF body.
+
+The pass used the existing collector with a 25 MiB object cap, 500 MiB aggregate cap, 45-second request timeout, and 1-second minimum spacing. The earlier Title 43 failure and its evidence remain untouched. These are capture outcomes for a publisher archive labeled 2026, not findings that any text is complete or current law. No database, application, calculator, or published data was changed.
+
+
