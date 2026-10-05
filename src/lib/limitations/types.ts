@@ -133,7 +133,7 @@ export const SPECIAL_ISSUES = [
   {
     id: "tolling",
     label:
-      "Tolling: criminal proceedings, emergency orders, concealment, agreements, class actions or bankruptcy",
+      "Tolling: alleged crimes, emergency orders, concealment, agreements, class actions or bankruptcy",
   },
   {
     id: "prior_filing",

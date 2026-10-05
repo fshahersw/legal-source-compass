@@ -1,6 +1,6 @@
 # Corpus continuation checkpoint — October 5, 2026
 
-Read [the 13:23 continuation checkpoint](corpus-continuation-1324-2026-10-05.md) first. Three further bounded passes captured and audited 5,109 additional native entry IDs, bringing the frozen traversal to 12,779. A third frozen import packet separately includes four observed metadata-version updates; the two predecessor packets remain unchanged. **These later captures have not been registered or projected.** Five original API traversals are exhausted and **11 cursors remain partial**. This does not establish complete court dockets, PDFs, membership or current deeper pages. The 14:19 UTC quota check left zero usable calls after reserves; recheck actual quota before acquisition. Read [the state-law release checkpoint](state-law-release-checkpoint-2026-10-05.md), [the NC candidate](limitations-nc-candidate-2026-10-05.md) and [the source research checkpoint](state-law-source-review-2026-10-05.md): .1 remains active; .2 and .3 are privately uploaded and prepared, not registered or published. Use only the corrected NC v2 transaction. Authenticated Chrome still times out. Do not recreate the owner-deleted collections. Instructions and counts below are historical where superseded.
+Read [the 14:28 continuation checkpoint](corpus-continuation-1429-2026-10-05.md) first. Three bounded passes captured 3,161 further traversal IDs and a separate fresh sample added one more, for 3,162 additional captured IDs. The canonical traversal has 15,940 IDs; eight original scopes are exhausted and eight retained cursors remain partial. Four frozen import packets remain unregistered and unprojected. At 15:22 UTC actual quota allowed 90 further calls with the extra cushion; capacity was not exhausted. Release .1 remains active while .2 and NC .3 await authenticated administration and publication. Chrome timed out again, and public assets still served the older tolling checklist at 14:58. Preserve all packet dependencies and source distinctions. Do not recreate owner-deleted collections or release holds. Instructions and counts below are historical where superseded.
 
 ## Latest calculator and consolidation checkpoint
 
@@ -12,11 +12,11 @@ This checkpoint is for the hourly heartbeat automation `continue-legal-source-co
 
 ## Resume the remaining docket-entry cursors
 
-The original target set below remains the identity audit boundary. Skip exhausted API scopes **68837976 / MDL 3108**, **68869775 / MDL 3113**, **69871659 / MDL 3144**, **69912599 / MDL 3149** and **72030009 / MDL 3166**. Resume only the **11 incomplete** cursors. Separate header/first-page freshness observations are preserved; they do not refresh every deeper page or establish document coverage. The old initial waiting threshold and quota sample below are superseded by the latest linked checkpoint.
+The original target set below remains the identity audit boundary. Skip exhausted API scopes **61690868 / MDL 3026**, **68222905 / MDL 3094**, **68837976 / MDL 3108**, **68869775 / MDL 3113**, **69255166 / MDL 3125**, **69871659 / MDL 3144**, **69912599 / MDL 3149** and **72030009 / MDL 3166**. Resume only the **eight incomplete** cursors. MDL 3026 has one additional separately observed first-page entry; preserve it outside the canonical traversal. Separate header/first-page freshness observations are preserved; they do not refresh every deeper page or establish document coverage. The old initial waiting threshold and quota sample below are superseded by the latest linked checkpoint.
 
-Do not resume acquisition before **2026-10-05 10:55 UTC**. The last saved quota sample is from 07:31 UTC and is stale for this decision. At or after the threshold, first confirm the automation is still ACTIVE, inspect the current manifest and service state, and check that no live collector owns `api-collector.lock`. Do not remove a lock while its recorded process is alive or its status is uncertain. The persisted quota ledger and live limits include safety reserves of 20/day, 30/hour and 5/minute; budget against the fresh remaining amounts after those reserves, with a hard pass cap of 300 requests. If the resulting allowance is zero or the API reports blocked/unavailable, stop and leave the cursors intact.
+Do not resume acquisition before **2026-10-05 10:55 UTC**. The last saved quota sample is from 07:31 UTC and is stale for this decision. At or after the threshold, first confirm the automation is still ACTIVE, inspect the current manifest and service state, and check that no live collector owns `api-collector.lock`. Do not remove a lock while its recorded process is alive or its status is uncertain. The persisted quota ledger and live limits include safety reserves of 20/day, 30/hour and 5/minute; budget against the fresh remaining amounts after those reserves, with a hard pass cap of 300 requests and an additional five-call cushion above the configured day/hour reserves. If the resulting allowance is zero or the API reports blocked/unavailable, stop and leave the cursors intact.
 
-Use the original 16-ID identity boundary below, filtering to the 11 still-incomplete `docket-entries` scopes in `private/audit-2026-10-05/recent-entries/live-backfill-manifest.json`:
+Use the original 16-ID identity boundary below, filtering to the eight still-incomplete `docket-entries` scopes in `private/audit-2026-10-05/recent-entries/live-backfill-manifest.json`:
 
 |  MDL | CourtListener docket ID |  MDL | CourtListener docket ID |
 | ---: | ----------------------: | ---: | ----------------------: |
@@ -68,7 +68,7 @@ console.log(JSON.stringify({ queued: scopes.length, docket_ids: [...expected].so
 '@ | node --input-type=module
 ```
 
-The relevant commands and safeguards are:
+The acquisition commands and safeguards below remain examples. For intake, use the four immutable packet plans linked in the latest checkpoint; do not import the mutable collector folder or bypass actual run-opening/predecessor checks. The older intake/projection examples below are superseded.
 
 ```powershell
 # From the repository root, after 10:55 UTC and after confirming the lock is free:
@@ -83,7 +83,7 @@ $limits = @($daily[0],$hourly[0],$minute[0])
 if ($daily.Count -ne 1 -or $hourly.Count -ne 1 -or $minute.Count -ne 1 -or @($limits | Where-Object { $_.blocked -or $null -eq $_.remaining }).Count -gt 0) { throw 'Fresh CourtListener user limits are incomplete or blocked' }
 # Minute pacing is enforced throughout the pass by the collector; it is not an hourly pass cap.
 if ([int]$minute[0].remaining -le 5) { throw 'Wait for a fresh minute window before starting a pass' }
-$requestBudget = [Math]::Min(300, [Math]::Min([int]$daily[0].remaining - 20, [int]$hourly[0].remaining - 30))
+$requestBudget = [Math]::Min(300, [Math]::Min([int]$daily[0].remaining - 25, [int]$hourly[0].remaining - 35))
 if ($requestBudget -le 0) { throw 'No request budget remains after safety reserves' }
 $env:CL_MIN_GAP_MS = '3000'
 node --use-system-ca scripts/ingest/members-cl-service.mjs --pass=private/audit-2026-10-05/recent-entries --max-requests=$requestBudget --idle-exit-minutes=1 --poll-seconds=5
