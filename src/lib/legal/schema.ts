@@ -108,6 +108,3 @@ export type LegalEdge = z.infer<typeof legalEdge>;
 export function edgeNeedsReview(edge: LegalEdge): boolean {
   return edge.review_status === "pending" || (edge.extraction_method === "llm" && edge.confidence < 0.8);
 }
-export function imageDisplayable(record: LegalRecord): boolean {
-  return record.type === "image" && record.attributes["review_status"] === "approved" && record.attributes["origin_verified"] === true;
-}

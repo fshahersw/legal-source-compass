@@ -11,7 +11,7 @@ type Search = { j?: string | undefined };
 
 export const Route = createFileRoute("/sources/catalog")({
   validateSearch: (s: Record<string, unknown>): Search => ({ j: typeof s["j"] === "string" ? s["j"] : undefined }),
-  head: () => pageHead("Source catalog", "9,348 imported legal and regulatory sources by jurisdiction, category and access method."),
+  head: () => pageHead("Source catalog", "Imported legal and regulatory sources by jurisdiction, category and access method."),
   component: CatalogPage,
 });
 

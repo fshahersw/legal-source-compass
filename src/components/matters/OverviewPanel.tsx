@@ -139,7 +139,6 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
   const o = payload.overview;
   const cases = o.cases;
   const counsel = o.counsel;
-  const reg = payload.registry;
 
   return (
     <div className="space-y-4">

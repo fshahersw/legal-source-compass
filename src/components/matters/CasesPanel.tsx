@@ -15,7 +15,6 @@ import {
   NotRecorded,
   Panel,
   RangePager,
-  Scope,
   selectClass,
   td,
   th,

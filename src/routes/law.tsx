@@ -199,7 +199,7 @@ function LawPage() {
             {
               key: "states",
               label: "States",
-              note: "Official sources for all 50 states and DC",
+              note: "Official state sources, by state",
               link: { to: "/law", search: { scope: "states" } },
             },
             {

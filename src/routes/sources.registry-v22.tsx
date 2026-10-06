@@ -15,7 +15,7 @@ const str = (v: unknown) => (typeof v === "string" && v.length <= 120 ? v : unde
 
 export const Route = createFileRoute("/sources/registry-v22")({
   validateSearch: (s: Record<string, unknown>): S => ({ j: str(s["j"]), task: str(s["task"]), q: str(s["q"]), all: str(s["all"]) }),
-  head: () => pageHead("Litigation source registry V2.2", "4,846 U.S. litigation sources by jurisdiction and research task, with source type, access and format."),
+  head: () => pageHead("Litigation source registry V2.2", "U.S. litigation sources by jurisdiction and research task, with source type, access and format."),
   component: Page,
 });
 

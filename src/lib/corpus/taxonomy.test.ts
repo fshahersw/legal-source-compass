@@ -29,7 +29,7 @@ describe("recorded resource crosswalk", () => {
       "other",
     ]);
     expect(classifySource(["opinions_decisions", "administrative-decision"])).toEqual(["opinions"]);
-    expect(TAXONOMY_VERSION).toBe("2026-10-02.4");
+    expect(TAXONOMY_VERSION).toBe("2026-10-06.1");
   });
   it("deduplicates harmless heading spelling differences without broad keyword guesses", () => {
     expect(headingIdentity("  COURT   Rules ")).toBe(headingIdentity("court rules"));

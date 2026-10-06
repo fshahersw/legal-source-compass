@@ -57,15 +57,6 @@ export function aliasResolver(aliases: Alias[]): (name: string) => string {
   return (n) => map.get(n) ?? n;
 }
 
-export function firmCounts(ins: Insights): Count[] {
-  const canon = aliasResolver(ins.firm_aliases);
-  return countBy(ins.matters, (m) => m.firms.map(canon));
-}
-
-export function mattersByYear(ins: Insights): Count[] {
-  return countBy(ins.matters, (m) => m.year).sort((a, b) => a.label.localeCompare(b.label));
-}
-
 export function mattersForState(ins: Insights, usps: string): Matter[] {
   return ins.matters.filter((m) => m.state === usps);
 }

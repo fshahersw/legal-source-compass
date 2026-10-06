@@ -31,7 +31,7 @@ export const Route = createFileRoute("/safety")({
 
 const AGENCIES = [
   { key: "FDA", note: "Recalls, enforcement, approvals, warning letters" },
-  { key: "CPSC", note: "Consumer product recalls and injury data" },
+  { key: "CPSC", note: "Consumer product recalls" },
   { key: "Other", note: "Agency science documents" },
 ] as const;
 
