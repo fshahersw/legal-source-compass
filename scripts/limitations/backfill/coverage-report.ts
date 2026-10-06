@@ -88,7 +88,7 @@ const built = existsSync(join(outDir, "coverage.json"))
   ? (JSON.parse(readFileSync(join(outDir, "coverage.json"), "utf8")).coverage as {
       state: string;
       claimCoverage?: { claimType: string; status: string }[];
-      timeComputation?: { extendsWhenLastDayIsWeekend: boolean };
+      timeComputation?: { extendsWhenLastDayIsWeekend: boolean; status: string };
     }[])
   : [];
 const builtCells = built.flatMap((c) => c.claimCoverage ?? []);
@@ -122,7 +122,7 @@ const block = [
   `| Cells research-only: period recorded, no date issued (R) | ${count(before, "R")} | ${builtCount("research_only")} (verified, e.g. repose not modelled) |`,
   `| Cells recorded with open issues, no date issued | n/a | ${builtCount("flagged")} |`,
   `| Cells Not recorded in built bundle | n/a | ${builtCount("not_recorded")} |`,
-  `| States with a recorded weekend-extension counting rule | 0 | ${timeRules.length} (${timeRules.filter((c) => c.timeComputation!.extendsWhenLastDayIsWeekend).length} extend, ${timeRules.filter((c) => !c.timeComputation!.extendsWhenLastDayIsWeekend).length} do not) |`,
+  `| States whose weekend extension is applied (verified counting rule, extends) | 0 | ${timeRules.filter((c) => c.timeComputation!.status === "verified" && c.timeComputation!.extendsWhenLastDayIsWeekend).length} (${timeRules.filter((c) => c.timeComputation!.status !== "verified").length} more recorded but flagged, not applied) |`,
   `| Cells verified from primary source (V) | n/a | ${count(after, "V")} |`,
   `| Cells flagged (F) | n/a | ${count(after, "F")} |`,
   `| Cells Not recorded (N) | n/a | ${count(after, "N")} |`,

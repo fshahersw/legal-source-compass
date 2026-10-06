@@ -345,6 +345,14 @@ describe("weekend extension from a recorded state counting rule", () => {
     expect(result.steps.at(-1)?.text).toContain("Saturday");
   });
 
+  it("does not adjust a date from a flagged counting rule whose reach to limitations is unproven", () => {
+    const data = withTimeRule(true);
+    data.coverage.find((c) => c.state === "TX")!.timeComputation!.status = "flagged";
+    const result = calculateBaseline(data, input("fraud", "2023-05-02"));
+    expect(result.date).toBe("2026-05-02");
+    expect(result.adjustedDate).toBeNull();
+  });
+
   it("does not adjust weekday anniversaries or states without a recorded rule", () => {
     expect(
       calculateBaseline(withTimeRule(true), input("fraud", "2023-05-04")).adjustedDate,
