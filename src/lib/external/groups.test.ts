@@ -52,7 +52,7 @@ describe("permanent record destinations", () => {
 describe("sectionOf", () => {
   it("groups datasets by explicit id and prefix", () => {
     expect(sectionOf("court_spine")).toBe("courts");
-    expect(sectionOf("judge_disclosures")).toBe("judges");
+    expect(sectionOf("judge_entities")).toBe("judges");
     expect(sectionOf("mdl_docket_activity")).toBe("matters");
     expect(sectionOf("cl_master_entries")).toBe("matters");
     expect(sectionOf("agency_safety_openfda_crl")).toBe("safety");
@@ -97,6 +97,26 @@ describe("normalizeItem", () => {
     expect(n.title).toBe("Alice");
     expect(n.cells).toEqual({ role: "Judge", courts: "C1; C2" });
     expect(n.photo).toBe("/judge-images/p");
+  });
+  it("flattens a dates object and drops producer bookkeeping fields when no cells are published", () => {
+    const n = normalizeItem({
+      id: "fda-wl:1",
+      title: "CGMP/Finished Pharmaceuticals/Adulterated",
+      firm: "Example Pharma",
+      dates: { posted_date: "2022-01-11", letter_issue_date: "2021-11-23" },
+      published_at: "2022-01-11",
+      sort_date: "2022-01-11",
+      dataset: "fda_warning_letters",
+      group: "warning_letters",
+      firm_id: "firm:example-pharma",
+      firm_norm: "EXAMPLE PHARMA",
+      native_id: "1",
+    });
+    expect(n.cells).toEqual({
+      firm: "Example Pharma",
+      posted_date: "2022-01-11",
+      letter_issue_date: "2021-11-23",
+    });
   });
 });
 

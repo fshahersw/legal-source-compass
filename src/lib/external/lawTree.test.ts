@@ -36,7 +36,7 @@ describe("law & safety folders", () => {
     }
     expect(lawGroup("federal_regulations_parts")).toBe("regulations");
     expect(lawGroup("public_laws")).toBe("statutes");
-    expect(lawGroup("provider_laws")).toBe("other");
+    expect(lawGroup("provider_laws")).toBe("state");
     expect(sectionOf("statutory_limitations_review")).toBe("law");
     expect(lawGroup("statutory_limitations_review")).toBe("reference");
     for (const id of [
@@ -57,8 +57,8 @@ describe("law & safety folders", () => {
     expect(safetyKind("agency_safety_openfda_device_classification_20261002")).toBe(
       "Device classifications",
     );
-    expect(safetyKind("agency_safety_openfda_device_enforcement_20260928")).toBe(
-      "Device enforcement metadata (September 28, 2026)",
+    expect(safetyKind("agency_safety_openfda_device_enforcement")).toBe(
+      "Device enforcement (openFDA)",
     );
     for (const id of SAFETY) expect(sectionOf(id)).toBe("safety");
     expect(safetyAgency("agency_safety_cpsc_recalls_local")).toBe("CPSC");

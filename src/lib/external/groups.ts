@@ -61,16 +61,7 @@ const EXPLICIT: Record<string, SectionId> = {
   cl_positions: "judges",
   cl_educations: "judges",
   cl_schools: "judges",
-  cl_political_affiliations: "judges",
-  cl_races: "judges",
-  cl_race_choices: "judges",
-  cl_dockets: "matters",
-  cl_docket_entries: "matters",
   cl_master_entries: "matters",
-  cl_recap_documents: "matters",
-  cl_parties: "matters",
-  cl_attorneys: "matters",
-  cl_party_roles: "matters",
   cl_docket_metadata: "matters",
   sw_matters_v1: "matters",
   sw_matter_dockets_v1: "matters",
@@ -100,7 +91,6 @@ const EXPLICIT: Record<string, SectionId> = {
   trellis_receipts: "courts",
   judges: "judges",
   judge_enrichment: "judges",
-  judge_disclosures: "judges",
   judge_entities: "judges",
   judge_portraits: "judges",
   judge_vendor: "judges",
@@ -133,13 +123,11 @@ const EXPLICIT: Record<string, SectionId> = {
   federal: "law",
   agency_science_documents: "safety",
   sources: "sources",
-  url_directory: "sources",
   saved_pages: "sources",
   source_documents: "sources",
   docsupload_coverage: "sources",
   coverage_labels: "sources",
   coverage_topics: "sources",
-  library_assets: "sources",
   large_text_assets: "sources",
   gap_enrichment_20260927: "sources",
   focused: "sources",
@@ -198,6 +186,16 @@ const SKIP = new Set([
   "snippet",
 ]);
 
+/** Producer bookkeeping fields that are not meaningful to a reader when a dataset publishes no listing columns. */
+const INTERNAL_KEYS = new Set([
+  "dataset",
+  "group",
+  "firm_id",
+  "firm_norm",
+  "native_id",
+  "sort_date",
+]);
+
 /** Normalise any corpus listing item (they vary by dataset) without inventing values. */
 export function normalizeItem(
   raw: Record<string, unknown> & {
@@ -221,11 +219,17 @@ export function normalizeItem(
       if (s != null) cells[k] = s;
     }
   } else {
+    const dated = !!raw["dates"] && typeof raw["dates"] === "object";
     for (const [k, v] of Object.entries(raw)) {
-      if (SKIP.has(k)) continue;
+      if (SKIP.has(k) || INTERNAL_KEYS.has(k) || (dated && k === "published_at")) continue;
       const s = scalar(v);
       if (s != null && s.length <= 200) cells[k] = s;
     }
+    if (dated)
+      for (const [k, v] of Object.entries(raw["dates"] as Record<string, unknown>)) {
+        const s = scalar(v);
+        if (s != null && s.length <= 200) cells[k] = s;
+      }
   }
   const links = Array.isArray(raw.links)
     ? (raw.links as unknown[])

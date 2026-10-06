@@ -12,12 +12,7 @@ import { PrivateDataLink } from "@/components/atlas/PrivateDataLink";
 import { TexasCodeBrowser } from "@/components/corpus/TexasCodeBrowser";
 import { datasetDisplayName } from "@/lib/external/domainRegistry";
 import { sectionOf } from "@/lib/external/groups";
-import {
-  LAW_GROUP_LABELS,
-  lawGroup,
-  STATE_DATASETS,
-  type LawGroup,
-} from "@/lib/external/lawTree";
+import { LAW_GROUP_LABELS, lawGroup, STATE_DATASETS, type LawGroup } from "@/lib/external/lawTree";
 
 type S = {
   ds?: string | undefined;
@@ -228,7 +223,14 @@ function LawPage() {
       </div>
     );
   } else {
-    const own = lawDs.filter((d) => STATE_DATASETS[d.id] === s.state);
+    const codeIndex = lawDs.find((d) => d.id === "state_codes");
+    const hasCodeIndex = !!codeIndex?.filters.some(
+      (f) =>
+        f.name === "state" && f.options?.some((o) => o.value === s.state && (o.count ?? 0) > 0),
+    );
+    const own = lawDs.filter(
+      (d) => STATE_DATASETS[d.id] === s.state || (hasCodeIndex && d.id === "state_codes"),
+    );
     const stateResource = stateSources.data?.find((item) => item.code === s.state);
     body = (
       <div className="space-y-5">
@@ -265,10 +267,10 @@ function LawPage() {
     s.view === "tx-code"
       ? "Texas code text"
       : s.ds
-          ? datasetDisplayName(s.ds, lawDs.find((d) => d.id === s.ds)?.label)
-          : s.state
-            ? `${stName(s.state)} law`
-            : (scopeLabel ?? "Law & regulation");
+        ? datasetDisplayName(s.ds, lawDs.find((d) => d.id === s.ds)?.label)
+        : s.state
+          ? `${stName(s.state)} law`
+          : (scopeLabel ?? "Law & regulation");
   return (
     <AppShell
       breadcrumbs={crumbs}

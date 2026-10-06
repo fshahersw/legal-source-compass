@@ -50,7 +50,8 @@ const NAV: NavItem[] = [
   { to: "/sources/library", label: "Sources", icon: Library, paths: SOURCES },
 ];
 
-const CONTEXT_NAV = [
+type ContextItem = { to: string; label: string; search?: { ds: string } };
+const CONTEXT_NAV: { paths: string[]; items: ContextItem[] }[] = [
   {
     paths: EXPLORE,
     items: [
@@ -63,6 +64,7 @@ const CONTEXT_NAV = [
     items: [
       { to: "/matters", label: "Matters & MDLs" },
       { to: "/matters/cases", label: "Cases & dockets" },
+      { to: "/matters", label: "Expert rulings", search: { ds: "expert_rulings" } },
       { to: "/courts", label: "Courts" },
       { to: "/judges", label: "Judges" },
       { to: "/people", label: "People" },
@@ -326,9 +328,10 @@ export function AppShell({
           >
             {context.items.map((item) => (
               <Link
-                key={item.to}
+                key={`${item.to}${item.search?.ds ?? ""}`}
                 to={item.to}
-                activeOptions={{ exact: item.to === "/" }}
+                {...(item.search ? { search: item.search } : {})}
+                activeOptions={{ exact: item.to === "/", includeSearch: !!item.search }}
                 className="rounded-md px-2 py-1 text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground"
                 activeProps={{ className: "bg-muted font-semibold text-foreground" }}
               >
