@@ -1,0 +1,51 @@
+{
+  "jurisdiction": "VT",
+  "publisher": "Vermont General Assembly",
+  "publisher_url": "https://legislature.vermont.gov/statutes/",
+  "source_system": "vt-statutes-online",
+  "code_title": "Vermont Statutes Annotated (online edition)",
+  "parser": {
+    "name": "vt-statutes-fullchapter",
+    "version": "1"
+  },
+  "methods": [
+    "publisher_page"
+  ],
+  "source_url_patterns": [
+    "^https://legislature\\.vermont\\.gov/statutes/$",
+    "^https://legislature\\.vermont\\.gov/statutes/fullchapter/[^/]+/[^/]+$",
+    "^https://legislature\\.vermont\\.gov/statutes/chapter/[0-9A-Za-z]+/[0-9A-Za-z]+$",
+    "^https://legislature\\.vermont\\.gov/statutes/section/[0-9A-Za-z]+/[0-9A-Za-z]+/[0-9A-Za-z.]+$",
+    "^https://legislature\\.vermont\\.gov/statutes/constitution-of-the-state-of-vermont$"
+  ],
+  "rate_limit_ms": 1000,
+  "structure": {
+    "levels": [
+      "title",
+      "chapter",
+      "section"
+    ],
+    "unit": "one official fullchapter HTML page (statutes-detail list) per chapter"
+  },
+  "section_id": {
+    "scheme": "official_citation_path",
+    "regex": "^[^/]+/[0-9A-Za-z]+/[0-9A-Za-z.]+(#[0-9]+)?$",
+    "example": "01/007/00371",
+    "citation_format": "<title>/<chapter>/<section_key> from the publisher fullchapter page; #N marks repeated paths"
+  },
+  "currency": {
+    "basis": "publisher_statement",
+    "location": "alert-warning block on Vermont Statutes Online pages"
+  },
+  "review": {
+    "reviewed_by": "state-codes batch 4 lead (bc-747cabdb)",
+    "reviewed_at": "2026-10-06"
+  },
+  "unit_kind": "vt_fullchapter_html",
+  "currency_defaults": {
+    "basis": "publisher_statement",
+    "statement": "The Statutes below include the actions of the 2025 session of the General Assembly. NOTE: The Vermont Statutes Online is an unofficial copy of the Vermont Statutes Annotated that is provided as a convenience.",
+    "through_date": null,
+    "edition": null
+  }
+}

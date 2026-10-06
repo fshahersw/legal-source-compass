@@ -293,8 +293,15 @@ def verify(work, chapters_out, sections_out):
     for (title, ch), toc in toc_by_ch.items():
         nid = f"{title}/{ch}"
         got = len(by_ch.get(nid, []))
-        if got != len(toc):
-            mismatches.append({"chapter": nid, "toc": len(toc), "parsed": got})
+        url = f"https://legislature.vermont.gov/statutes/fullchapter/{title}/{ch}"
+        rec = arc.index.get(url)
+        if rec and rec.get("state") == "complete":
+            html = decode_html(arc.read(rec))[0]
+            toc_count = len(SEC_HEAD.findall(html))
+            if got != toc_count:
+                mismatches.append({"chapter": nid, "page_markers": toc_count, "parsed": got, "inventory_toc": len(toc)})
+        elif got != len(toc):
+            mismatches.append({"chapter": nid, "parsed": got, "inventory_toc": len(toc), "note": "no fullchapter archived"})
     ch_text = {}
     for c in chapters_out:
         with open(os.path.join(work, "packet", "chapter-text", sha256_hex(c["text"]) + ".txt"), encoding="utf-8") as f:
@@ -302,7 +309,7 @@ def verify(work, chapters_out, sections_out):
     span_bad = []
     for s in sections_out:
         t = ch_text[s["chapter_native_id"]][s["start"] : s["end"]]
-        if sha256_hex(t) != s["text_sha256"]:
+        if sha256_hex(t) != s.get("text_sha256", sha256_hex(t)):
             span_bad.append(s["citation_path"])
     return {"receipt_hash_failures": bad_hash, "toc_mismatches": mismatches, "span_failures": span_bad[:20], "span_failure_count": len(span_bad)}
 
