@@ -61,7 +61,9 @@ function SearchPage() {
       row.datasetId ? [[row.datasetId, row.state] as const] : [],
     ),
   );
-  const snapshotHits = (codes.data?.hits ?? []).filter((hit) => hit.kind === "snapshot");
+  const snapshotHits = (codes.data?.hits ?? []).filter(
+    (hit) => hit.kind === "snapshot" || hit.kind === "projection",
+  );
   const d = query.data;
   return (
     <AppShell
