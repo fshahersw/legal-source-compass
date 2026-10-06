@@ -83,6 +83,19 @@ export const MATTERS = {
   '2614': { name: 'MDL No. 2614 (N.D. Tex.)', court_id: 'txnd', host: 'www.txnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2614', pages: [{ id: 'txnd-2614-mdl', role: 'mdl_page', family: 'txnd-docket-table', url: 'https://www.txnd.uscourts.gov/mdl-315-md-02614' }], index_pages: [] },
   '2835': { name: 'MDL No. 2835 (N.D. Tex.)', court_id: 'txnd', host: 'www.txnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2835', pages: [{ id: 'txnd-2835-mdl', role: 'mdl_page', family: 'txnd-docket-table', url: 'https://www.txnd.uscourts.gov/mdl-318-md-02835' }], index_pages: [] },
   '1983': { name: 'MDL No. 1983 (N.D. Tex.)', court_id: 'txnd', host: 'www.txnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 1983', pages: [{ id: 'txnd-1983-mdl', role: 'mdl_page', family: 'txnd-docket-table', url: 'https://www.txnd.uscourts.gov/mdl-308-md-01983' }], index_pages: [] },
+  // N.D. Fla. MDL orders-by-date tables (Firecrawl map; paed-orders-table with PDF + stub HTML links per row).
+  '3140': {
+    name: 'In re Depo-Provera Products Liability Litigation', court_id: 'flnd', host: 'www.flnd.uscourts.gov', tier: 1,
+    case_number: null, printed_mdl_literal: 'MDL 3140',
+    pages: [{ id: 'flnd-3140-orders', role: 'orders_table', family: 'paed-orders-table', url: 'https://www.flnd.uscourts.gov/mdl3140-orders-by-date' }],
+    index_pages: [],
+  },
+  '2885': {
+    name: 'In re 3M Combat Arms Earplug Products Liability Litigation', court_id: 'flnd', host: 'www.flnd.uscourts.gov', tier: 2,
+    case_number: null, printed_mdl_literal: 'MDL 2885',
+    pages: [{ id: 'flnd-2885-orders', role: 'orders_table', family: 'paed-orders-table', url: 'https://www.flnd.uscourts.gov/mdl2885-orders-by-date' }],
+    index_pages: [],
+  },
 };
 
 // Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
