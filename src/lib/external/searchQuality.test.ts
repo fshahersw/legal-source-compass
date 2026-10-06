@@ -78,8 +78,8 @@ describe("published search quality", () => {
 });
 
 // Rows as read from the published corpus on 2026-10-03 (ids and titles only).
-const rodgersPerson = match("people", "2755", "Margaret Catharine Rodgers", { id: "2755", title: "Margaret Catharine Rodgers" });
-const otherRodgers = match("people", "4903", "Henry Lee Rodgers", { id: "4903", title: "Henry Lee Rodgers" });
+const rodgersPerson = match("cl_people", "2755", "Margaret Catharine Rodgers", { id: "2755", title: "Margaret Catharine Rodgers" });
+const otherRodgers = match("cl_people", "4903", "Henry Lee Rodgers", { id: "4903", title: "Henry Lee Rodgers" });
 const peopleVRodgers = match("saved_pages", "6880", "5100140, People v. Rodgers", { id: "6880", title: "5100140, People v. Rodgers" }, "https://example.test/6880");
 const carlos = match("focused", "1c9b7c7e", "Carlos Rodgers |", { id: "1c9b7c7e", title: "Carlos Rodgers |" }, "https://example.test/carlos");
 const depoMdl = match("mdls", "3140", "IN RE: Depo-Provera (Depot Medroxyprogesterone Acetate) Products Liability Litigation", { id: "mdl:3140", mdl_number: 3140 });
@@ -109,9 +109,9 @@ describe("person-intent search", () => {
 
   it("does not boost people when the query has no honorific, and does not need the MDL-judge set to rank people above documents", () => {
     const plain = rankSearchMatches([peopleVRodgers, carlos, otherRodgers, rodgersPerson], "Rodgers");
-    expect(plain.ranked.slice(0, 2).map((m) => m.record.dataset).sort()).not.toEqual(["people", "people"]);
+    expect(plain.ranked.slice(0, 2).map((m) => m.record.dataset).sort()).not.toEqual(["cl_people", "cl_people"]);
     const withoutSet = rankSearchMatches([peopleVRodgers, carlos, otherRodgers, rodgersPerson], "Judge Rodgers");
-    expect(withoutSet.ranked.slice(0, 2).map((m) => m.record.dataset)).toEqual(["people", "people"]);
+    expect(withoutSet.ranked.slice(0, 2).map((m) => m.record.dataset)).toEqual(["cl_people", "cl_people"]);
   });
 
   it("labels a matter-registry record with its MDL number", () => {
@@ -152,10 +152,10 @@ describe("entity-name queries", () => {
   });
 
   it("does not reward a partial or reordered name", () => {
-    const partial = match("people", "9", "Seeger", { id: "9" });
+    const partial = match("cl_people", "9", "Seeger", { id: "9" });
     const ranked = rankSearchMatches([partial, firm], "Seeger Weiss").ranked;
     expect(ranked[0]!.record.id).toBe("firm:3f24b0b7635a81a8");
-    const reordered = match("people", "10", "Weiss Seeger", { id: "10" });
+    const reordered = match("cl_people", "10", "Weiss Seeger", { id: "10" });
     const r2 = rankSearchMatches([reordered, firm], "Seeger Weiss").ranked;
     expect(r2[0]!.record.id).toBe("firm:3f24b0b7635a81a8");
   });

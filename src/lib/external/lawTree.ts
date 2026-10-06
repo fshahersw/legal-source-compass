@@ -32,7 +32,6 @@ export function lawGroup(id: string): LawGroup {
     id === "limitation_periods" ||
     id === "statutory_limitations_review" ||
     id === "cl_reporter_citations" ||
-    id === "cl_citation_edges" ||
     id === "regulatory_backfill" ||
     id === "mass_tort_authority_evidence" ||
     id === "jpml_html_reference"

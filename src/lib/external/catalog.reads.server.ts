@@ -28,7 +28,6 @@ const PRIORITY_DATASETS = [
   "sw_matters_v1",
   "expert_rulings",
   "judges",
-  "people",
   "cl_people",
   "court_spine",
 ] as const;

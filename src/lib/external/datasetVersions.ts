@@ -74,7 +74,7 @@ export function visibleDatasetChoices<T extends DatasetVersionRow>(datasets: rea
   return datasets.filter((dataset) => !hidden.has(dataset.id));
 }
 
-/** Resolve a direct prior-dataset link to the canonical view while retaining the requested version. */
+/** Resolve a direct prior-dataset link to its current collection. */
 export function resolveDatasetVersion(
   requestedId: string,
   datasets: readonly DatasetVersionRow[],
@@ -82,11 +82,7 @@ export function resolveDatasetVersion(
   const family = datasetVersionFamily(requestedId);
   if (!family || !isAvailableCurrent(family, datasets))
     return { canonicalId: requestedId, selectedId: requestedId, family };
-  return {
-    canonicalId: family.current,
-    selectedId: requestedId === family.previous ? family.previous : family.current,
-    family,
-  };
+  return { canonicalId: family.current, selectedId: family.current, family };
 }
 
 /** Ready catalog rows used before search RPC pagination; exact prior IDs do not duplicate hits. */

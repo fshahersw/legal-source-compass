@@ -39,14 +39,14 @@ describe("audited dataset snapshot families", () => {
     ).toEqual(["people", "cl_people"]);
   });
 
-  it("preserves direct prior-version links inside the canonical view", () => {
+  it("resolves direct prior-version links to the current collection", () => {
     const datasets = [
       { id: "people", ready: true, records: 16_191 },
       { id: "cl_people", ready: true, records: 16_191 },
     ];
     expect(resolveDatasetVersion("people", datasets)).toEqual({
       canonicalId: "cl_people",
-      selectedId: "people",
+      selectedId: "cl_people",
       family: datasetVersionFamily("people"),
     });
     expect(resolveDatasetVersion("cl_people", datasets)).toEqual({

@@ -35,7 +35,6 @@ const PURPOSES: Record<string, DatasetPurpose> = {
   cl_docket_metadata: "Reference",
   cl_master_entries: "Activity",
   cl_reporter_citations: "Reference",
-  cl_citation_edges: "Reference",
   public_laws: "Documents",
   sources: "Directory",
   saved_pages: "Documents",
@@ -50,6 +49,7 @@ const LABELS: Record<string, string> = {
   court_forms_expansion_20260912: "Court forms",
   uscourts_pages: "U.S. Courts pages",
   judges: "Judge directory",
+  cl_people: "CourtListener people",
   judge_enrichment: "Judge profiles",
   judge_entities: "Consolidated judge profiles",
   judge_portraits: "Judge portraits",
@@ -83,7 +83,6 @@ const LABELS: Record<string, string> = {
   cl_docket_metadata: "Native docket metadata",
   cl_master_entries: "Native master-docket entry metadata",
   cl_reporter_citations: "Native reporter citations",
-  cl_citation_edges: "Directed citation mentions",
   citation_reference: "Citation reference",
   citation_index: "Citation index",
   agency_science_documents: "Agency science documents",
@@ -226,11 +225,6 @@ const RECORD_GRAINS: Readonly<Record<string, { unit: string; description: string
     unit: "reporter citation records",
     description:
       "Reporter locators are separate from opinions; an opinion can have several citation records. Citation counts do not establish precedential weight.",
-  },
-  cl_citation_edges: {
-    unit: "directed citation mention records",
-    description:
-      "Native citation links record a mention between opinions. They do not establish positive treatment, binding authority or a legal outcome.",
   },
   court_forms_expansion_20260912: {
     unit: "saved document records",

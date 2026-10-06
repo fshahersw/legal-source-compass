@@ -69,7 +69,7 @@ export function searchIntent(q: string): SearchIntent {
 }
 
 /** Datasets whose records are people; with an honorific in the query these rank above same-surname matches elsewhere. */
-export const PERSON_DATASETS: ReadonlySet<string> = new Set(["judges", "people", "cl_people", "judge_entities", "judge_enrichment"]);
+export const PERSON_DATASETS: ReadonlySet<string> = new Set(["judges", "cl_people", "judge_entities"]);
 export type SearchContext = {
   /** CourtListener person ids of judges who preside over an MDL (mdls.filters.cl_person_id). */
   mdlJudgePersonIds?: ReadonlySet<string> | undefined;

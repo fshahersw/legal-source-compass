@@ -129,83 +129,29 @@ export function SectionPage({
           dataset={active}
           requestedDataset={selected ? (ds ?? active) : active}
           datasets={allDatasets}
-          onVersionChange={(value) => navigate({ to: path, search: { ds: value } })}
         />
       ) : null}
     </AppShell>
   );
 }
 
-/** One user-facing collection with an explicit snapshot selector for the two audited overlaps. */
+/** One user-facing collection. An audited earlier snapshot resolves to its current collection; it is not offered. */
 export function DatasetVersionBrowser({
   dataset,
   requestedDataset,
   datasets,
-  onVersionChange,
 }: {
   dataset: string;
   requestedDataset: string;
   datasets: readonly DatasetInfo[];
-  onVersionChange: (datasetId: string) => void;
 }) {
   const family = datasetVersionFamily(dataset);
-  const resolution = resolveDatasetVersion(requestedDataset, datasets);
-  const selectedId = resolution.selectedId;
-  const current = family ? datasets.find((row) => row.id === family.current) : undefined;
-  const previous = family ? datasets.find((row) => row.id === family.previous) : undefined;
-  const options = [
-    current?.ready === true && current.records !== 0
-      ? { id: family!.current, label: family!.currentLabel }
-      : null,
-    previous?.ready === true && previous.records !== 0
-      ? { id: family!.previous, label: family!.previousLabel }
-      : null,
-    selectedId === family?.previous && previous?.ready === false
-      ? { id: family.previous, label: `${family.previousLabel} · held` }
-      : null,
-  ].filter((option): option is { id: string; label: string } => option !== null);
-  const canSelectVersions = !!family && options.length > 1;
-  const showingPrevious = !!family && selectedId === family.previous;
+  const selectedId = resolveDatasetVersion(requestedDataset, datasets).selectedId;
   const selectedReady = datasets.find((row) => row.id === selectedId)?.ready;
-
   return (
     <div>
-      {canSelectVersions ? (
-        <div className="mb-3 flex flex-wrap items-center gap-3">
-          <label className="eyebrow" htmlFor="dataset-source-snapshot">
-            Source snapshot
-          </label>
-          <Select value={selectedId} onValueChange={onVersionChange}>
-            <SelectTrigger
-              id="dataset-source-snapshot"
-              className="h-9 max-w-xl bg-surface text-[13px]"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {options.map((option) => (
-                <SelectItem key={option.id} value={option.id}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      ) : family && selectedReady === true ? (
-        <p className="mb-3 text-[12px] text-muted-foreground">
-          {showingPrevious ? family.previousLabel : family.currentLabel}
-        </p>
-      ) : null}
-      {family && showingPrevious && selectedReady === true ? (
-        <p className="mb-3 rounded-md border border-border bg-muted/40 px-3 py-2 text-[12px] leading-relaxed text-muted-foreground">
-          Earlier source version. {family.note}
-        </p>
-      ) : null}
-      {family && selectedReady !== true && showingPrevious ? (
-        <p className="mb-3 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-[12px] leading-relaxed">
-          This prior snapshot is not cleared for publication. Its source rows remain in the raw
-          inventory.
-        </p>
+      {family && selectedId === family.current && selectedReady === true ? (
+        <p className="mb-3 text-[12px] text-muted-foreground">{family.currentLabel}</p>
       ) : null}
       <DatasetBrowser key={selectedId} dataset={selectedId} />
     </div>
