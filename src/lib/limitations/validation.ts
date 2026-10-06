@@ -85,6 +85,7 @@ const CALCULATION_MODES = new Set([
   "diagnosis",
   "death_cause_min",
   "accrual_repose_min",
+  "clocks_min",
 ]);
 
 // Every value is checked field-by-field below before the raw snapshot is cast to the app type.
@@ -163,6 +164,11 @@ type KnownField =
   | "baselineRuleIds"
   | "researchRuleIds"
   | "gaps"
+  | "limbs"
+  | "combine"
+  | "clocks"
+  | "unit"
+  | "from"
   | "fetchRoute"
   | "kind"
   | "proxy"
@@ -419,7 +425,58 @@ function validateRules(values: unknown): LimitationRule[] {
       ])
         if (calculation[field] !== undefined)
           positiveInteger(calculation[field], `${label}.calculation.${field}`, 100);
-      if (calculation.mode === "accrual_repose_min") {
+      if (calculation.mode === "clocks_min") {
+        const limbs = calculation["limbs"];
+        const clocks = calculation["clocks"] ?? [];
+        if (!Array.isArray(limbs) || limbs.length < 1 || limbs.length > 2 || !Array.isArray(clocks))
+          fail(`${label} has an unsupported clock configuration`);
+        for (const [i, item] of (limbs as unknown[]).entries()) {
+          const limb = record(item, `${label}.calculation.limbs[${i}]`);
+          positiveInteger(limb["amount"], `${label}.calculation.limbs[${i}].amount`, 36500);
+          if (
+            !["calendar_years", "calendar_months", "calendar_days"].includes(limb["unit"] as string)
+          )
+            fail(`${label}.calculation.limbs[${i}] has an unsupported unit`);
+          if (!["accrual", "discovery", "injury_date", "death"].includes(limb["from"] as string))
+            fail(`${label}.calculation.limbs[${i}] has an unsupported start`);
+        }
+        if (
+          (limbs as unknown[]).length === 2 &&
+          !["earlier", "later"].includes(calculation["combine"] as string)
+        )
+          fail(`${label} has two period limbs without an earlier/later rule`);
+        for (const [i, item] of (clocks as unknown[]).entries()) {
+          const clock = record(item, `${label}.calculation.clocks[${i}]`);
+          positiveInteger(clock["years"], `${label}.calculation.clocks[${i}].years`, 100);
+          if (
+            ![
+              "act_or_omission",
+              "last_act_or_omission",
+              "injury_date",
+              "substantial_completion",
+              "first_delivery",
+            ].includes(clock["from"] as string)
+          )
+            fail(`${label}.calculation.clocks[${i}] has an unsupported start`);
+          civilDate(clock["effectiveFrom"], `${label}.calculation.clocks[${i}].effectiveFrom`);
+          if (clock["effectiveThrough"] !== undefined) {
+            civilDate(
+              clock["effectiveThrough"],
+              `${label}.calculation.clocks[${i}].effectiveThrough`,
+            );
+            if ((clock["effectiveFrom"] as string) > (clock["effectiveThrough"] as string))
+              fail(`${label} has a reversed repose applicability window`);
+          }
+        }
+        if (
+          !["confirmed_accrual", "death"].includes(r.accrualBasis as string) ||
+          calculation.deathCapYears !== undefined ||
+          calculation.secondaryCapYears !== undefined ||
+          calculation.requiresExposureWithinDeliveryYears !== undefined ||
+          calculation.reposeYears !== undefined
+        )
+          fail(`${label} has an unsupported clocks combination`);
+      } else if (calculation.mode === "accrual_repose_min") {
         positiveInteger(calculation.reposeYears, `${label}.calculation.reposeYears`, 100);
         civilDate(calculation.reposeEffectiveFrom, `${label}.calculation.reposeEffectiveFrom`);
         if (calculation.reposeEffectiveThrough !== undefined) {

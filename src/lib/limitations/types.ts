@@ -115,6 +115,26 @@ export type ClaimCoverage = {
   variants?: ClaimVariantCoverage[];
 };
 
+/** One alternative period of a two-limb statute ("three years from injury or one year from discovery"). */
+export type PeriodLimb = {
+  amount: number;
+  unit: PeriodUnit;
+  from: "accrual" | "discovery" | "injury_date" | "death";
+};
+
+/** An independent outer bar. Each clock needs its own start date and a printed effective date. */
+export type ReposeClock = {
+  years: number;
+  from:
+    | "act_or_omission"
+    | "last_act_or_omission"
+    | "injury_date"
+    | "substantial_completion"
+    | "first_delivery";
+  effectiveFrom: string;
+  effectiveThrough?: string;
+};
+
 export type LimitationRule = {
   id: string;
   schemaVersion: string;
@@ -150,7 +170,11 @@ export type LimitationRule = {
   caseReferenceIds?: string[];
   subtype?: string;
   calculation?: {
-    mode: "discovery_min" | "diagnosis" | "death_cause_min" | "accrual_repose_min";
+    mode: "discovery_min" | "diagnosis" | "death_cause_min" | "accrual_repose_min" | "clocks_min";
+    /** clocks_min: one or two period limbs combined by `combine`, then capped by every repose clock. */
+    limbs?: PeriodLimb[];
+    combine?: "earlier" | "later";
+    clocks?: ReposeClock[];
     deathCapYears?: number;
     secondaryCapYears?: number;
     requiresExposureWithinDeliveryYears?: number;
@@ -279,6 +303,8 @@ export type BaselineInput = {
   vitalStatus?: "alive" | "deceased" | "unknown";
   firstProductDeliveryDate?: string;
   qualifyingExposureDate?: string;
+  injuryDate?: string;
+  substantialCompletionDate?: string;
   reposeActDate?: string;
   reposeApplicabilityConfirmed?: boolean;
   governingLawConfirmed: boolean;

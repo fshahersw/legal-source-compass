@@ -68,6 +68,17 @@ export type MatrixEntryInput = {
   notRecordedReason?: string;
   /** Open issues that cannot be resolved from official text, each with the precise reason. */
   blockers?: { issue: string; why: string }[];
+  /**
+   * Alternative period limbs for a statute that states two periods joined by "whichever is earlier/later"
+   * (for example three years from injury or one year from discovery). `period` is the first limb.
+   */
+  periodLimbs?: {
+    amount: number;
+    unit: string;
+    from: "accrual" | "discovery" | "injury_date" | "death";
+    evidence: string;
+  }[];
+  periodCombine?: "earlier" | "later";
 };
 
 const UNITS = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
@@ -198,6 +209,13 @@ export function checkEntry(
     return out;
   }
   const { meta, text } = capture;
+  const inEvidenceEarly = (needle: string) =>
+    [
+      text,
+      ...(entry.crossChecks ?? []).flatMap((c) =>
+        lookup(c.captureId) ? [lookup(c.captureId)!.text] : [],
+      ),
+    ].some((t) => containsLiteral(t, needle));
   if (meta.state !== jurisdiction)
     err(`capture ${meta.id} belongs to ${meta.state}, not ${jurisdiction}`);
   if (meta.status !== 200) err("capture did not return HTTP 200");
@@ -216,6 +234,23 @@ export function checkEntry(
       err(
         `periodEvidence states ${quantities.map((q) => `${q.amount} ${q.unit}`).join(", ") || "no parseable period"}; entry says ${wanted}`,
       );
+  }
+  if ((entry.periodLimbs?.length ?? 0) > 0) {
+    if (entry.periodLimbs!.length !== 2) err("periodLimbs needs exactly two limbs");
+    if (entry.periodCombine !== "earlier" && entry.periodCombine !== "later")
+      err("periodCombine must be earlier or later when periodLimbs is set");
+    for (const [i, limb] of entry.periodLimbs!.entries()) {
+      if (!inEvidenceEarly(limb.evidence))
+        err(
+          `periodLimbs[${i}].evidence is not a literal substring of the primary or a cross-check capture`,
+        );
+      else if (
+        !parsePeriodQuantities(limb.evidence).some(
+          (q) => q.amount === limb.amount && q.unit === limb.unit,
+        )
+      )
+        err(`periodLimbs[${i}].evidence does not state ${limb.amount} ${limb.unit}`);
+    }
   }
   if (!ACCRUAL_KINDS.includes(entry.accrual?.kind as (typeof ACCRUAL_KINDS)[number]))
     err("invalid accrual.kind");
