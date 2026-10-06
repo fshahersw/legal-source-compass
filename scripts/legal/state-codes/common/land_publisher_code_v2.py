@@ -213,13 +213,15 @@ def main():
     ap.add_argument("packet")
     ap.add_argument("--execute", action="store_true")
     ap.add_argument("--run-id")
+    ap.add_argument("--attempt", type=int, default=1, help="a closed run cannot reopen; attempt N>1 derives a new deterministic run id")
     ap.add_argument("--workers", type=int, default=4)
     a = ap.parse_args()
     manifest = json.load(open(os.path.join(a.packet, "manifest.json"), encoding="utf-8"))
     manifest_sha = sha(manifest)
     objects = list(jsonl(os.path.join(a.packet, "objects.jsonl")))
     unit_rows, section_rows = build_rows(a.packet, manifest_sha, manifest)
-    run_id = a.run_id or str(uuid.uuid5(NS, f"{manifest['jurisdiction']}:{manifest_sha}"))
+    suffix = "" if a.attempt == 1 else f":{a.attempt}"
+    run_id = a.run_id or str(uuid.uuid5(NS, f"{manifest['jurisdiction']}:{manifest_sha}{suffix}"))
     summary = {"jurisdiction": manifest["jurisdiction"], "manifest_sha256": manifest_sha, "run_id": run_id,
                "objects": len(objects), "object_bytes": sum(o["bytes"] for o in objects), "units": len(unit_rows), "sections": len(section_rows)}
     print(json.dumps(summary))
@@ -238,7 +240,7 @@ def main():
                 receipts[o["sha256"]] = rec
         chunk, size = [], 0
         for o in objects:
-            item = {"sha256": o["sha256"], "bytes": o["bytes"], "kind": o["kind"], "sources": o["sources"], "readback": receipts[o["sha256"]]}
+            item = {"sha256": o["sha256"], "bytes": o["bytes"], "kind": o["kind"], "sources": [{**x, "http_status": 200} for x in o["sources"]], "readback": receipts[o["sha256"]]}
             n = len(canon(item))
             if chunk and (len(chunk) >= 1000 or size + n > 6_000_000):
                 cloud.rpc("corpus_publisher_code_register_objects_v2", {"p_run": run_id, "p_objects": chunk})
