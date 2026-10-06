@@ -139,7 +139,11 @@ def put_object(cloud, o):
         ust, msg = cloud.upload(key, data, ctype)
         if ust not in (200, 201) and "already exists" not in msg and "Duplicate" not in msg:
             raise RuntimeError(f"upload {ust} {msg}")
-        st, body = cloud.readback(key)
+        for attempt in range(6):
+            st, body = cloud.readback(key)
+            if st == 200 and hashlib.sha256(body).hexdigest() == o["sha256"] and len(body) == o["bytes"]:
+                break
+            time.sleep(min(30, 2 ** attempt))
     if st != 200 or hashlib.sha256(body).hexdigest() != o["sha256"] or len(body) != o["bytes"]:
         raise RuntimeError(f"readback mismatch {o['sha256'][:12]} status={st}")
     rec = {"bytes": o["bytes"], "bucket": BUCKET, "object_key": key, "readback_sha256": o["sha256"], "readback_bytes": len(body),
