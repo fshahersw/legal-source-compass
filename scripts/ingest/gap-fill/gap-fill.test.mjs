@@ -9,7 +9,7 @@ import {stripContactFields, Runner, taskId} from './run-gap-fill.mjs';
 import {gapTable} from './analyze-snapshots.mjs';
 import {blankFilter} from './gap-analysis-live.mjs';
 import {plan} from './plan-internal-crosswalk.mjs';
-import {batches} from './send-staged-docketbird.mjs';
+import {batches} from './send-staged.mjs';
 import {CourtListener, DocketBird, Stop} from './clients.mjs';
 
 test('canonical json sorts keys, keeps unicode, rejects floats', () => {
@@ -133,4 +133,30 @@ test('runner resumes from its checkpoint without duplicating staged rows', async
 test('clRow keeps the verbatim API object and its native id', () => {
   const r = clRow('dockets', {id: 5, x: 1}, {source_url: 'https://www.courtlistener.com/api/rest/v4/dockets/5/', retrieved_at: 't', http_status: 200, source_sha256: 'a'.repeat(64)});
   assert.equal(r.native_id, '5'); assert.deepEqual(r.data, {id: 5, x: 1}); assert.equal(r.provenance.record_sha256, sha256(JSON.stringify({id: 5, x: 1})));
+});
+
+import {decide, evidenceRow, fjcRows} from './build-bulk-evidence.mjs';
+
+const bulk = (id, key, extra = {}) => ({id, docket_key: key, court_id: 'njd', docket_number: '2:18-cv-05195', date_filed: '2018-04-02', date_terminated: '2018-08-02', blocked: 'f', source_row_ordinal: 1, ...extra});
+
+test('bulk decisions fill blanks only from a unique exact key, record conflicts, hold ambiguity and blocked dockets', () => {
+  const reg = [
+    {id: 'a', docket_key: 'njd:2:2018-cv-05195', court_id: 'njd', docket_number: '2:18-05195', filed: 'Not recorded', terminated: 'Not recorded', native_case_ids: []},
+    {id: 'b', docket_key: 'njd:2:2018-cv-00002', court_id: 'njd', docket_number: '2:18-cv-00002', filed: '2019-03-07', terminated: 'Not recorded', native_case_ids: [{id: 'dbird:1'}]},
+    {id: 'c', docket_key: 'njd:2:2018-cv-00003', court_id: 'njd', docket_number: '2:18-cv-00003', filed: 'Not recorded', terminated: 'Not recorded', native_case_ids: []},
+    {id: 'd', docket_key: 'njd:2:2018-cv-00004', court_id: 'njd', docket_number: '2:18-cv-00004', filed: 'Not recorded', terminated: 'Not recorded', native_case_ids: []}];
+  const matches = [bulk('1', 'njd:2:2018-cv-05195'), bulk('2', 'njd:2:2018-cv-00002'), bulk('3', 'njd:2:2018-cv-00003'), bulk('4', 'njd:2:2018-cv-00003'), bulk('5', 'njd:2:2018-cv-00004', {blocked: 't'})];
+  const {stats, decisions, evidence} = decide(reg, matches);
+  assert.equal(stats.filed_fill, 1); assert.equal(stats.native_id_fill, 2); assert.equal(stats.ambiguous_key, 1);
+  assert.equal(stats.filed_conflict, 1); assert.equal(stats.blocked_unique_skipped, 1);
+  assert.ok(decisions.every(d => d.applied === false || d.result));
+  assert.ok(decisions.find(d => d.registry_id === 'b' && d.action === 'conflict' && d.field === 'filed'));
+  assert.equal(decisions.filter(d => d.registry_id === 'c' && d.action === 'fill').length, 0);
+  const row = evidenceRow(evidence.get('1'), {archive_sha256: 'f'.repeat(64), snapshot_date: '2026-09-30', archive_bytes: 1, rows_scanned: 2}, '2026-10-06T00:00:00Z');
+  assert.equal(row.native_id, '1'); assert.equal(row.data.docket_id, '1'); assert.equal(row.provenance.record_sha256, sha256(canonicalIntegerJson(row.data)));
+});
+
+test('FJC MDL evidence rows are exact idb joins labelled historical, and blank MDL values are skipped', () => {
+  const rows = fjcRows({archive_sha256: 'a'.repeat(64), rows_scanned: 1, found_rows: {'1': {mdl: '2789', origin: '1', date_filed: '2018-01-01'}, '2': {mdl: null, origin: '1', date_filed: '2018-01-01'}}}, {1: '99'}, 't');
+  assert.equal(rows.length, 1); assert.equal(rows[0].data.join_rule, 'exact idb_data_id'); assert.match(rows[0].data.label, /historical/);
 });
