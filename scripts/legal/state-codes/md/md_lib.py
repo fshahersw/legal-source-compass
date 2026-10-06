@@ -92,11 +92,21 @@ def clean_lines(text: str) -> str:
     return "\n".join(lines).strip()
 
 
+def _opening_section_chunk(body: str) -> str:
+    """Publisher puts the section marker on the first § line; later § tokens are cross-references."""
+    lines = body.splitlines()
+    for index, line in enumerate(lines):
+        if line.strip().startswith("§"):
+            return "\n".join(lines[index:])
+    raise ValueError("no section marker in StatuteText")
+
+
 def _match_section_marker(body: str) -> tuple[str, str, str]:
     """Return (section_number, remainder, inline_heading_after_marker)."""
+    opening = _opening_section_chunk(body)
     for pattern in (SECTION_MARK_DECIMAL, SECTION_MARK_ARTICLE):
-        match = pattern.search(body)
-        if not match:
+        match = pattern.search(opening)
+        if not match or match.start() > 2:
             continue
         if pattern is SECTION_MARK_ARTICLE:
             return (
@@ -106,17 +116,21 @@ def _match_section_marker(body: str) -> tuple[str, str, str]:
             )
         section_number = normalize_section_number(match.group(1))
         remainder = (match.group(2) or "").strip()
+        if not remainder:
+            remainder = opening[match.end() :].strip()
         return section_number, remainder, ""
-    match = SECTION_MARK.search(body)
-    if match:
+    match = SECTION_MARK.search(opening)
+    if match and match.start() <= 2:
         section_number = normalize_section_number(match.group(1))
-        remainder = body[match.end() :].strip()
+        remainder = opening[match.end() :].strip()
         inline_heading = (match.group(2) or "").strip()
         return section_number, remainder, inline_heading
-    match = SECTION_MARK_NO_TRAILING_DOT.search(body)
-    if match:
+    match = SECTION_MARK_NO_TRAILING_DOT.search(opening)
+    if match and match.start() <= 2:
         section_number = normalize_section_number(match.group(1))
         remainder = (match.group(2) or "").strip()
+        if not remainder:
+            remainder = opening[match.end() :].strip()
         return section_number, remainder, ""
     raise ValueError("no section marker in StatuteText")
 
