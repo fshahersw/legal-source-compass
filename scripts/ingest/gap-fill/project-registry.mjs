@@ -127,6 +127,7 @@ export function planDocket(row, d, evByNative, phase, now) {
     const c = d.conflict;
     if (!c || c.field !== 'filed') return {patch, applied, held, gapfill};
     const header = c.incoming;
+    if (curFiled === header) return {patch, applied, held, gapfill};
     const locs = (row.detail?.registry?.evidence ?? []).filter(e => e.kind === 'fjc_idb_mdl_number').map(e => e.locator).filter(Boolean);
     const qual = locs.filter(l => ORIGINAL_ORIGINS.has(String(l.origin)) && l.date_filed);
     const earliestQual = qual.length ? qual.map(l => l.date_filed).sort()[0] : null;

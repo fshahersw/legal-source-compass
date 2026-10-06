@@ -4,12 +4,16 @@
 //   public.corpus_workspace_docket_links  rows with source_dataset='sw_matter_dockets_v1' only
 // Rows are upserted (never deleted). Datasets stay ready=false until --ready=true is passed after verification.
 //
-// node --use-system-ca scripts/ingest/members-project.mjs --mdls=3047,3140,... --run=<registry run> [--ready=true] [--dry-run=true]
+// node --use-system-ca scripts/ingest/members-project.mjs --mdls=3047,3140,... --run=<registry run> [--ready=true] [--dry-run=true] [--gapfill-evidence=<dir>]
+// --gapfill-evidence=<dir> (dir with stage-bulk/docket-bulk-match.jsonl and fjc-idb-mdl-match.jsonl, the rows landed in corpus_ingest) re-applies the approved
+// gap-fill values, source provenance and the date-semantics rule to every rebuilt docket so a re-run reproduces them instead of overwriting them.
+// Required whenever gap-fill values have been projected (see docs/docket-backfill.md); the run refuses to continue without it unless --no-gapfill=true.
 import fs from 'node:fs';
 import path from 'node:path';
 import { rest } from './members-pgrest.mjs';
 import { sha256, ROLE_LABEL, EVIDENCE_LABEL, docketbirdIdFromKey, docketNumberFromKey, courtOfKey } from './members-registry-lib.mjs';
 import { excluded, ws, scheduleCaptionQuality } from './members-publish-rules.mjs';
+import { loadEvidenceDir, overlayRecords } from './gap-fill/gapfill-overlay.mjs';
 
 const args = Object.fromEntries(process.argv.slice(2).map(x => { const i = x.indexOf('='); return i < 0 ? [x.replace(/^--/, ''), 'true'] : [x.slice(2, i), x.slice(i + 1)]; }));
 const mdls = (args.mdls ?? '').split(',').filter(Boolean).map(Number);
@@ -17,6 +21,7 @@ const run = args.run;
 const dry = args['dry-run'] === 'true';
 const setReady = args.ready === 'true';
 if (!mdls.length || !/^[0-9a-f-]{36}$/.test(run ?? '')) throw new Error('--mdls and --run are required');
+if (!args['gapfill-evidence'] && args['no-gapfill'] !== 'true') throw new Error('--gapfill-evidence=<dir> is required so a re-run reproduces the gap-fill values; pass --no-gapfill=true only to deliberately drop them');
 const work = 'C:/Users/firas/Downloads/sw-platform-ui-refined/sw-platform-ui-refined/_work/agents/mdl-members';
 const staging = path.join(work, 'registry-staging');
 const PROJECTED_AT = new Date().toISOString();
@@ -206,6 +211,11 @@ const datasets = [
       filters: [{ name: 'mdl', type: 'select', label: 'MDL', options: opt(optionCounts.dockets.mdl, v => `MDL ${v}`), placeholder: 'All MDLs' }, { name: 'role', type: 'select', label: 'Role', options: opt(optionCounts.dockets.role, v => ROLE_LABEL[v] ?? v), placeholder: 'All roles' }, { name: 'route', type: 'select', label: 'Route', options: opt(optionCounts.dockets.route), placeholder: 'All routes' }, { name: 'basis', type: 'select', label: 'Evidence kind', options: opt(optionCounts.dockets.basis, v => EVIDENCE_LABEL[v] ?? v), placeholder: 'All evidence kinds' }, { name: 'court_id', type: 'select', label: 'Court', options: opt(optionCounts.dockets.court_id), placeholder: 'All courts' }] } } },
 ];
 
+if (args['gapfill-evidence']) {
+  const overlaid = overlayRecords(docketRecords, loadEvidenceDir(args['gapfill-evidence']), PROJECTED_AT);
+  docketRecords.splice(0, docketRecords.length, ...overlaid.records);
+  console.log(JSON.stringify({ gapfill_overlay: { dockets_changed: overlaid.changed, held: overlaid.held } }));
+}
 console.log(JSON.stringify({ matters: matterRecords.length, dockets: docketRecords.length, links: links.length, conflicts: [...byDocket].filter(([, v]) => v.length > 1).length, dry }));
 fs.writeFileSync(path.join(staging, 'projection-preview.json'), JSON.stringify({ datasets, matters: matterRecords.length, dockets: docketRecords.length, links: links.length }, null, 1));
 // Canonical JSON (sorted keys, undefined dropped) so a PostgREST read-back (jsonb re-orders keys) can be compared with what was sent.
