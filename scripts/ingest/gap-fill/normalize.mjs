@@ -28,7 +28,7 @@ export function dbCaseRow(header, receipt, {complaint = null} = {}) {
   const field_map = Object.fromEntries(Object.keys(data).map(k => [k, `docketbird.case.${k === 'court_case_url' ? 'url' : k}`]));
   return {schema_version: DB_SCHEMA, source_system: 'docketbird-rest', entity_type: 'case', native_id: header.id, data,
     provenance: dbProv(receipt, 'GET /documents', header.id, {record_sha256: sha256(canonicalIntegerJson(data)), record_sha256_codec: 'canonical-integer-jsonb/1',
-      field_map, excluded_source_fields: ['client_code']})};
+      field_map, excluded_source_fields: ['client_code'], pdf_downloaded: false})};
 }
 
 /**
