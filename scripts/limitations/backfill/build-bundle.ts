@@ -277,6 +277,8 @@ for (const file of files) {
       repose.length > 0 &&
       kinds.every((k) => k !== null) &&
       repose.every((r) => r.effectiveFrom !== null);
+    /** Recorded in provenance/conditions but not applied in calculation (unmodelled trigger or no effectiveFrom). */
+    const reposeRecordedNotComputed = repose.length > 0 && !reposeModelled;
     const limbs = entry.periodLimbs ?? [];
     const legacySingle =
       limbs.length === 0 &&
@@ -299,7 +301,9 @@ for (const file of files) {
       "not_recorded",
     ].includes(entry.accrual.kind);
     const baseline =
-      entry.status === "verified" && accrualOk && (repose.length === 0 || reposeModelled);
+      entry.status === "verified" &&
+      accrualOk &&
+      (repose.length === 0 || reposeModelled || reposeRecordedNotComputed);
     const existing = rules.filter(
       (r) =>
         r.jurisdiction === state &&
