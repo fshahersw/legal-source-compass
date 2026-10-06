@@ -27,6 +27,8 @@ export type DocketDocument = {
   sha256: string | null;
   /** The provider supplies no category, so this is null on every row today. */
   label: string | null;
+  /** Recorded fact "Parties of the matter in the registry"; null when that fact is absent. */
+  parties: string | null;
   /** In-app, authorised PDF route; only for a stored, unrestricted document. */
   pdfUrl: string | null;
 };
@@ -39,14 +41,31 @@ export const AVAILABILITY_LABELS: Record<DocketDocumentAvailability, string> = {
 
 const SHA256 = /^[a-f0-9]{64}$/;
 
-export function parseDocketDocument(item: unknown): DocketDocument | null {
+function partiesFact(facts: unknown): string | null {
+  if (!Array.isArray(facts)) return null;
+  for (const fact of facts) {
+    if (!Array.isArray(fact) || fact.length < 2 || typeof fact[0] !== "string") continue;
+    if (fact[0] !== "Parties of the matter in the registry") continue;
+    if (typeof fact[1] === "string" && fact[1].trim()) return fact[1].trim();
+    if (typeof fact[1] === "number" && Number.isFinite(fact[1])) return String(fact[1]);
+  }
+  return null;
+}
+
+/** A description withheld only because it carries contact data stays a row, without that text. */
+const CONTACT_WITHHELD = "contact_or_access_data";
+
+export function parseDocketDocument(item: unknown, facts?: unknown): DocketDocument | null {
   if (!isObj(item)) return null;
   const cells = isObj(item["cells"]) ? item["cells"] : null;
   if (!cells) return null;
   const nativeDocumentId = str(cells["native_document_id"]);
   if (!nativeDocumentId) return null;
-  const restricted = cells["restricted"] === true;
-  const withheld = restricted || !!cells["description_withheld"];
+  // Sealed, restricted, and unknown-seal rows are not listed. The projection omits them; this is the same rule.
+  if (cells["restricted"] === true) return null;
+  const withheldRaw = str(cells["description_withheld"]);
+  if (withheldRaw && withheldRaw !== CONTACT_WITHHELD) return null;
+  const contactWithheld = withheldRaw === CONTACT_WITHHELD;
   const rawAvailability = str(cells["availability"]);
   const availability: DocketDocumentAvailability =
     rawAvailability === "stored"
@@ -57,11 +76,7 @@ export function parseDocketDocument(item: unknown): DocketDocument | null {
   const sha256 = str(cells["sha256"]);
   const entry = cells["entry_number"];
   const canOpen =
-    availability === "stored" &&
-    !restricted &&
-    cells["stored"] === true &&
-    !!sha256 &&
-    SHA256.test(sha256);
+    availability === "stored" && cells["stored"] === true && !!sha256 && SHA256.test(sha256);
   return {
     nativeDocumentId,
     nativeCaseId: str(cells["native_case_id"]),
@@ -69,13 +84,14 @@ export function parseDocketDocument(item: unknown): DocketDocument | null {
     mdl: str(cells["mdl"]),
     entryNumber: typeof entry === "number" && Number.isInteger(entry) && entry >= 0 ? entry : null,
     dateFiled: nonBlank(cells["date_filed"]),
-    description: withheld ? null : str(cells["description"]),
-    descriptionWithheld: withheld,
-    fileName: restricted ? null : str(cells["file_name"]),
+    description: contactWithheld ? null : str(cells["description"]),
+    descriptionWithheld: contactWithheld,
+    fileName: str(cells["file_name"]),
     availability,
     bytes: safeUint(cells["bytes"]),
     sha256: sha256 && SHA256.test(sha256) ? sha256 : null,
     label: str(cells["label"]),
+    parties: partiesFact(facts),
     pdfUrl: canOpen
       ? matterPdfUrl({ sourceSystem: "docketbird", nativeDocumentId, availability: "open" })
       : null,
@@ -150,14 +166,66 @@ export function casesFromMetadata(
 }
 
 /** Live counts for one matter's docket-sheet documents. */
+export type ExactCount = {
+  value: number | null;
+  /** exact: value is the corpus count. too-large: the count was not returned. not-recorded: there was nothing to count. */
+  gap: "exact" | "too-large" | "not-recorded";
+};
+
 export type MatterDocketDocumentsSummary = {
   /** Rows in the dataset for the matter's cases. */
-  listed: number;
+  listed: ExactCount;
   /** Of those, rows whose PDF is stored. */
-  stored: number;
+  stored: ExactCount;
+  /** Docket entries of the same cases, from sw_docket_entries_v1. */
+  entries: ExactCount;
   /** Documents counted but not listed under the sealed/restricted rule; null when the dataset does not say. */
   withheld: number | null;
-  cases: { caseId: string; docketKey: string | null; rows: number; entries: number }[];
-  /** Rows on cases with no registry entries, which cannot appear under an entry. */
-  unlisted: number;
+  cases: {
+    caseId: string;
+    docketKey: string | null;
+    rows: number | null;
+    entries: number | null;
+  }[];
+  /** Rows on cases with no registry entries, which cannot appear under an entry. Null when that count is not exact. */
+  unlisted: number | null;
 };
+
+/** Sum only when every part came back. A missing part is too large to count, never a partial total. */
+export function exactSum(values: (number | null)[]): ExactCount {
+  if (values.some((value) => value === null)) return { value: null, gap: "too-large" };
+  return { value: values.reduce<number>((sum, value) => sum + (value ?? 0), 0), gap: "exact" };
+}
+
+/**
+ * Entries of the document cases. A missing docket key means the entries were not recorded.
+ * A failed count is too large to count. Neither case is filled in from the other cases.
+ */
+export function entriesExact(
+  parts: { docketKey: string | null; count: number | null }[],
+): ExactCount {
+  if (parts.some((part) => !part.docketKey)) return { value: null, gap: "not-recorded" };
+  return exactSum(parts.map((part) => part.count));
+}
+
+/** Documents that cannot sit under a registry entry. Null unless every case's pieces are exact. */
+export function unlistedTotal(
+  parts: { rows: number | null; entries: number | null; unnumbered: number | null }[],
+): number | null {
+  let total = 0;
+  for (const part of parts) {
+    if (part.rows === null || part.entries === null) return null;
+    if (part.entries === 0) total += part.rows;
+    else if (part.unnumbered === null) return null;
+    else total += part.unnumbered;
+  }
+  return total;
+}
+
+/** Exact number, "too large to count", or "Not recorded". Never a guessed total. */
+export function formatExactCount(count: ExactCount | null | undefined): string {
+  if (!count || count.gap === "not-recorded" || (count.gap === "exact" && count.value === null))
+    return "Not recorded";
+  if (count.gap === "too-large" || count.value === null) return "too large to count";
+  return count.value.toLocaleString();
+}

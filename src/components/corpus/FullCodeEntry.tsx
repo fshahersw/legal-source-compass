@@ -47,13 +47,13 @@ export function FullCodeEntry({ state }: { state: string }) {
           </div>
         ) : landed?.status === "landed-private" ? (
           <p className="mt-2 text-[13px] text-muted-foreground">
-            Landed privately.
+            Landed privately. Publisher: {showRecorded(landed.publisher)}. Edition:{" "}
+            {showRecorded(landed.edition)}.
             {landed.sections == null
               ? " Section count: Not recorded."
               : ` ${landed.sections.toLocaleString()} sections are in the private intake.`}{" "}
-            Section text is not shown until the review flag allows it. Edition:{" "}
-            {showRecorded(landed.edition)}. Currency: {showRecorded(landed.currency)}. Review
-            status: {showRecorded(landed.reviewStatus)}.
+            Section text is not shown until the review flag allows it. Currency:{" "}
+            {showRecorded(landed.currency)}. Review status: {showRecorded(landed.reviewStatus)}.
           </p>
         ) : (
           <p className="mt-2 text-[13px] text-muted-foreground">Not yet captured</p>

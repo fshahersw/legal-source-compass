@@ -5,6 +5,7 @@ import { useMemo, useState, type ReactNode } from "react";
 
 import { CorpusRecordLink } from "@/components/corpus/DatasetBrowser";
 import { Chip, Fact, LinkOut, NotRecorded } from "@/components/matters/common";
+import { formatExactCount } from "@/lib/matters/docketDocuments";
 import { formatBytes } from "@/lib/matters/documents";
 import {
   getMatterDocketDocumentsSummary,
@@ -192,15 +193,15 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
       />
       <Metric
         label="Documents"
-        title="Docket-sheet documents of this matter's cases in the docket-documents dataset (DocketBird-tracked cases), counted live: listed rows, rows with a stored PDF, and documents withheld under the sealed/restricted rule, which are counted and never listed."
+        title="Docket-sheet documents of this matter's cases in the docket-documents dataset (DocketBird-tracked cases), counted live. Listed and stored are exact corpus counts. Sealed and restricted documents are not listed."
         value={
-          docSum.data ? (
+          docSum.isLoading ? (
+            <span className="font-normal text-muted-foreground">…</span>
+          ) : docSum.data ? (
             <>
-              {n(docSum.data.listed)}
+              {formatExactCount(docSum.data.listed)}
               <span className="font-normal text-muted-foreground"> listed</span>
             </>
-          ) : docSum.isLoading ? (
-            <span className="font-normal text-muted-foreground">…</span>
           ) : (
             <NotRecorded />
           )
@@ -208,14 +209,14 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
         note={
           docSum.data
             ? [
-                `${n(docSum.data.stored)} stored`,
-                docSum.data.withheld !== null ? `${n(docSum.data.withheld)} withheld` : null,
+                `${formatExactCount(docSum.data.stored)} stored`,
+                docSum.data.withheld !== null
+                  ? `${docSum.data.withheld.toLocaleString()} withheld`
+                  : null,
               ]
                 .filter(Boolean)
                 .join(" · ")
-            : docSum.isLoading
-              ? undefined
-              : "No rows for this matter in the docket-documents dataset"
+            : undefined
         }
       />
       <Metric
@@ -268,6 +269,13 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
           ) : null}
         </div>
       ) : null}
+      <div className="border-t border-border px-4 py-1.5 text-[12px] text-muted-foreground sm:col-span-2 lg:col-span-6">
+        <span className="font-medium text-foreground">Backfill coverage</span>
+        {" · Docket entries "}
+        {docSum.isLoading ? "…" : formatExactCount(docSum.data?.entries)}
+        {" · Documents stored "}
+        {docSum.isLoading ? "…" : formatExactCount(docSum.data?.stored)}
+      </div>
     </div>
   );
 }

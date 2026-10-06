@@ -19,8 +19,8 @@ import {
 import { PdfViewer } from "@/components/matters/PdfViewer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DocketSheetOnly } from "@/components/matters/DocketSheetDocuments";
-import { AVAILABILITY_LABELS, type DocketDocument } from "@/lib/matters/docketDocuments";
+import { DocketDocumentFields, DocketSheetOnly } from "@/components/matters/DocketSheetDocuments";
+import { formatExactCount, type DocketDocument } from "@/lib/matters/docketDocuments";
 import { documentCopies, formatBytes, type MatterDocument } from "@/lib/matters/documents";
 import { groupEntriesByMonth } from "@/lib/matters/entries";
 import {
@@ -197,41 +197,10 @@ function DocketSheetDocuments({
       <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
         Docket-sheet documents · {extra.length}
       </div>
-      <ul className="space-y-1">
+      <ul className="space-y-2">
         {shown.map((d) => (
-          <li
-            key={d.nativeDocumentId}
-            className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[12px]"
-          >
-            <span className="min-w-0 break-words">
-              {d.description ??
-                (d.descriptionWithheld ? "Description withheld" : "Description not recorded")}
-            </span>
-            <Chip
-              tone={d.availability === "stored" ? "primary" : "warning"}
-              title="Availability as the dataset records it."
-            >
-              {AVAILABILITY_LABELS[d.availability]}
-            </Chip>
-            {d.fileName ? (
-              <span className="font-mono text-[11px] text-muted-foreground">{d.fileName}</span>
-            ) : null}
-            {d.bytes !== null ? (
-              <span className="text-[11px] text-muted-foreground">{formatBytes(d.bytes)}</span>
-            ) : null}
-            <span className="text-[11px] text-muted-foreground">
-              Category: {d.label ?? "Not recorded"}
-            </span>
-            {d.pdfUrl ? (
-              <a
-                href={d.pdfUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-primary underline-offset-2 hover:underline"
-              >
-                Open PDF
-              </a>
-            ) : null}
+          <li key={d.nativeDocumentId} className="text-[12px]">
+            <DocketDocumentFields d={d} />
           </li>
         ))}
       </ul>
@@ -258,17 +227,19 @@ function DocketDocumentsNote({ mdl }: { mdl: string }) {
   });
   const sum = q.data;
   if (!sum) return null;
+  const unlistedNote =
+    sum.unlisted === null
+      ? " The count of documents that cannot sit under an entry is Not recorded."
+      : sum.unlisted > 0
+        ? ` ${sum.unlisted.toLocaleString()} cannot sit under an entry (the docket has no entries in the registry, or the document carries no entry number); they are in the list below with the rest.`
+        : "";
   return (
     <div className="space-y-1">
       <p className="text-[12px] text-muted-foreground">
-        Docket-sheet documents for this matter: {sum.listed.toLocaleString()} listed (
-        {sum.stored.toLocaleString()} with a stored PDF)
-        {sum.unlisted > 0
-          ? `; ${sum.unlisted.toLocaleString()} cannot sit under an entry (the docket has no entries in the registry, or the document carries no entry number) and are listed below, the rest appear under the entry with the same number`
-          : ""}
-        .{" "}
+        Docket-sheet documents for this matter: {formatExactCount(sum.listed)} listed (
+        {formatExactCount(sum.stored)} with a stored PDF).{unlistedNote}{" "}
         {sum.withheld !== null
-          ? `${sum.withheld.toLocaleString()} documents are withheld under the sealed/restricted rule; they are counted and never listed. `
+          ? `${sum.withheld.toLocaleString()} documents are withheld under the sealed/restricted rule and are not listed. `
           : ""}
         <Link
           to="/sources/docket-documents"
@@ -278,14 +249,7 @@ function DocketDocumentsNote({ mdl }: { mdl: string }) {
           Browse the documents
         </Link>
       </p>
-      {sum.unlisted > 0 ? (
-        <DocketSheetOnly
-          mdl={mdl}
-          scope="unlisted"
-          title="Documents on other dockets of this matter"
-          intro="Documents that cannot sit under a registry entry: dockets of this matter with no entries (for example a JPML or streamlined docket), and documents without an entry number."
-        />
-      ) : null}
+      <DocketSheetOnly mdl={mdl} />
     </div>
   );
 }

@@ -57,6 +57,7 @@ export function StateCodeCoverage() {
                   <th className="px-3 py-2">Status</th>
                   <th className="px-3 py-2">Review</th>
                   <th className="px-3 py-2">Sections</th>
+                  <th className="px-3 py-2">Publisher</th>
                   <th className="px-3 py-2">Edition</th>
                   <th className="px-3 py-2">Currency</th>
                   <th className="px-3 py-2">Browser</th>
@@ -70,6 +71,12 @@ export function StateCodeCoverage() {
                     <td className="px-3 py-1.5">{showRecorded(row.reviewStatus)}</td>
                     <td className="px-3 py-1.5 font-mono text-[12px]">
                       {row.sections == null ? "Not recorded" : row.sections.toLocaleString()}
+                    </td>
+                    <td
+                      className="max-w-[16rem] truncate px-3 py-1.5"
+                      title={row.publisher ?? undefined}
+                    >
+                      {showRecorded(row.publisher)}
                     </td>
                     <td
                       className="max-w-[16rem] truncate px-3 py-1.5"
