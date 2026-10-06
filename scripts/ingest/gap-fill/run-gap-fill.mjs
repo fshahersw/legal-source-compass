@@ -10,6 +10,7 @@
 //   {"kind":"cl-docket","docket_id":123}                       GET /dockets/123/
 //   {"kind":"cl-find","court":"njd","docket_number":"2:24-md-03113"}   GET /dockets/?court=&docket_number= (exact filters)
 //   {"kind":"cl-entries","docket_id":123,"max_pages":2}        GET /docket-entries/?docket=123 (cursor-paged, checkpointed per page)
+//   {"kind":"cl-entry","entry_id":123}                    GET /docket-entries/123/ (one native entry; used to re-check blank descriptions)
 //   {"kind":"cl-parties","docket_id":123,"max_pages":2}        GET /parties/?docket=123&filter_nested_results=True
 //   {"kind":"db-case","case_id":"njd-2:2024-md-03113"}          GET /documents?case_id=  (tracked cases only; never follows a case)
 import fs from 'node:fs/promises';
@@ -95,6 +96,13 @@ export class Runner {
     st.candidate_native_ids = results.map(d => String(d.id));
     if (data?.next) st.note = 'more candidates exist beyond first page; resolution held';
   }
+  async runClEntry(t, st) {
+    const {data, receipt} = await this.cl.get(`${CL_ORIGIN}/api/rest/v4/docket-entries/${Number(t.entry_id)}/`);
+    if (!data) { st.status = 'held'; st.note = 'HTTP 404 from source'; return; }
+    if (String(data.id) !== String(t.entry_id)) throw new Stop('IDENTITY_MISMATCH', String(t.entry_id));
+    await this.emit('live-normalized/docket-entries.jsonl', clRow('docket-entries', data, receipt));
+    st.status = 'complete'; st.records = 1; st.description_present = !isBlank(data.description);
+  }
   async runClPaged(t, st, endpoint, entityType, file, transform = x => x) {
     const maxPages = t.max_pages ?? 1;
     let next = st.next ?? (endpoint === 'docket-entries'
@@ -139,6 +147,7 @@ export class Runner {
     try {
       if (t.kind === 'cl-docket') await this.runClDocket(t, st);
       else if (t.kind === 'cl-find') await this.runClFind(t, st);
+      else if (t.kind === 'cl-entry') await this.runClEntry(t, st);
       else if (t.kind === 'cl-entries') await this.runClPaged(t, st, 'docket-entries', 'docket-entries', 'live-normalized/docket-entries.jsonl');
       else if (t.kind === 'cl-parties') await this.runClPaged(t, st, 'parties', 'parties', 'live-normalized/parties.jsonl', (x, removed) => stripContactFields(x, removed));
       else if (t.kind === 'db-case') await this.runDbCase(t, st);

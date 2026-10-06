@@ -160,3 +160,13 @@ test('FJC MDL evidence rows are exact idb joins labelled historical, and blank M
   const rows = fjcRows({archive_sha256: 'a'.repeat(64), rows_scanned: 1, found_rows: {'1': {mdl: '2789', origin: '1', date_filed: '2018-01-01'}, '2': {mdl: null, origin: '1', date_filed: '2018-01-01'}}}, {1: '99'}, 't');
   assert.equal(rows.length, 1); assert.equal(rows[0].data.join_rule, 'exact idb_data_id'); assert.match(rows[0].data.label, /historical/);
 });
+
+test('cl-entry fetches one native entry, stages it verbatim and records whether the source description is present', async () => {
+  const work = await tmp();
+  const cl = {requests: 0, get: async url => ({data: {id: 256350793, description: '', recap_documents: []}, receipt: {source_url: url, retrieved_at: '2026-10-06T00:00:00Z', http_status: 200, source_sha256: 'a'.repeat(64)}})};
+  const r = await new Runner({work, cl, db: null}).init();
+  const st = await r.runTask({kind: 'cl-entry', entry_id: 256350793});
+  assert.equal(st.status, 'complete'); assert.equal(st.description_present, false);
+  const line = JSON.parse((await fs.readFile(path.join(work, 'stage/live-normalized/docket-entries.jsonl'), 'utf8')).trim());
+  assert.equal(line.native_id, '256350793'); assert.match(line.provenance.source_url, /docket-entries\/256350793\/$/);
+});
