@@ -2,6 +2,7 @@ import { STATES, stateByUsps } from "@/lib/corpus/geo";
 import { ilikeTerm, restGet, rpcPost, rpcPostOptional } from "@/lib/external/rest.server";
 import { STATE_DATASETS } from "@/lib/external/lawTree";
 import { listSnapshotNames, readPrivateSnapshot } from "@/lib/private-data/snapshot.server";
+import { exactCitationPaths } from "./exactCitationPath";
 import {
   classifyDataset,
   coverageStatus,
@@ -9,6 +10,7 @@ import {
   parseListing,
   projectedCurrency,
   projectedEdition,
+  publishedSectionBody,
   sectionFieldsFromRecord,
   snapshotReleasePaths,
   summarizeBrowseRoot,
@@ -531,29 +533,35 @@ async function searchProjection(
   };
 }
 
+function parseOutlineSections(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    const section = item && typeof item === "object" ? (item as Record<string, unknown>) : null;
+    const id = section ? asText(section["native_id"]) : null;
+    if (!section || !id) return [];
+    return [
+      {
+        native_id: id,
+        citation: asText(section["citation"]),
+        heading: asText(section["heading"]),
+        status_note: asText(section["status_note"]),
+      },
+    ];
+  });
+}
+
 function parseOutline(value: unknown): ProjectedOutline {
   const row = value && typeof value === "object" ? (value as Record<string, unknown>) : null;
   if (!row || row["available"] !== true) return { available: false };
   if (row["kind"] === "sections" && Array.isArray(row["sections"])) {
+    const sections = parseOutlineSections(row["sections"]);
     return {
       available: true,
       kind: "sections",
       level: "section",
-      total: typeof row["total"] === "number" ? row["total"] : row["sections"].length,
+      total: typeof row["total"] === "number" ? row["total"] : sections.length,
       truncated: row["truncated"] === true,
-      sections: row["sections"].flatMap((item) => {
-        const section = item && typeof item === "object" ? (item as Record<string, unknown>) : null;
-        const id = section ? asText(section["native_id"]) : null;
-        if (!section || !id) return [];
-        return [
-          {
-            native_id: id,
-            citation: asText(section["citation"]),
-            heading: asText(section["heading"]),
-            status_note: asText(section["status_note"]),
-          },
-        ];
-      }),
+      sections,
     };
   }
   if (
@@ -561,6 +569,7 @@ function parseOutline(value: unknown): ProjectedOutline {
     Array.isArray(row["groups"]) &&
     typeof row["level"] === "string"
   ) {
+    const directSections = parseOutlineSections(row["direct_sections"]);
     return {
       available: true,
       kind: "groups",
@@ -578,6 +587,10 @@ function parseOutline(value: unknown): ProjectedOutline {
           },
         ];
       }),
+      directSections,
+      directTotal:
+        typeof row["direct_total"] === "number" ? row["direct_total"] : directSections.length,
+      directTruncated: row["direct_truncated"] === true,
     };
   }
   return { available: false };
@@ -618,12 +631,86 @@ export async function projectedSection(
   return { id: row["native_id"], ...fields };
 }
 
+export type PublicStatuteSection = {
+  nativeId: string;
+  citationPath: string;
+  heading: string | null;
+  text: string | null;
+  sourceUrl: string | null;
+  currency: string | null;
+  status: string | null;
+};
+
+let publicStatesCache: { at: number; states: Set<string> } | null = null;
+
+async function publicProjectionStates(): Promise<Set<string>> {
+  if (publicStatesCache && Date.now() - publicStatesCache.at < CATALOG_TTL)
+    return publicStatesCache.states;
+  const rows = await rpcPostOptional<{ jurisdiction?: unknown }[]>(
+    "corpus_publisher_code_projected_states_v2",
+    {},
+  );
+  const states = new Set<string>();
+  if (Array.isArray(rows)) {
+    for (const row of rows) {
+      const state = asText(row?.jurisdiction)?.toUpperCase();
+      if (state) states.add(state);
+    }
+  }
+  publicStatesCache = { at: Date.now(), states };
+  return states;
+}
+
+/** Sections whose native id is exactly `ST:<citation_path>` and whose state is in the public projection. */
+export async function publicStatuteSections(
+  state: string,
+  citation: string,
+): Promise<PublicStatuteSection[]> {
+  const usps = state.toUpperCase();
+  const paths = exactCitationPaths(usps, citation);
+  if (!paths?.length) return [];
+  if (!(await publicProjectionStates()).has(usps)) return [];
+  const sections: PublicStatuteSection[] = [];
+  for (const citationPath of paths) {
+    const nativeId = `${usps}:${citationPath}`;
+    const row = await rpcPostOptional<Record<string, unknown> | null>(
+      "corpus_publisher_code_projected_section_v2",
+      { p_jurisdiction: usps, p_native_id: nativeId },
+    );
+    if (!row || row["native_id"] !== nativeId || asText(row["citation_path"]) !== citationPath)
+      continue;
+    const fields = sectionFieldsFromRecord({
+      title: asText(row["citation"]),
+      source_url: asText(row["source_url"]),
+      detail: {
+        citation: row["citation"],
+        heading: row["heading"],
+        text: row["text"],
+        history: row["history"],
+        status_note: row["status_note"],
+        currency: row["currency"],
+      },
+    });
+    sections.push({
+      nativeId,
+      citationPath,
+      heading: fields.heading,
+      text: publishedSectionBody(fields),
+      sourceUrl: fields.sourceUrl,
+      currency: fields.currency,
+      status: fields.status,
+    });
+  }
+  return sections;
+}
+
 export type StateCodeCoverageRow = {
   state: string;
   name: string;
   status: ReturnType<typeof coverageStatus>;
   reviewStatus: string | null;
   sections: number | null;
+  publisher: string | null;
   edition: string | null;
   currency: string | null;
   contract: string | null;
@@ -655,6 +742,7 @@ export async function stateCodeCoverage(): Promise<StateCodeCoverageRow[]> {
       ),
       reviewStatus: row ? asText(row["review_status"]) : null,
       sections: row && typeof row["sections"] === "number" ? row["sections"] : null,
+      publisher: row ? asText(row["publisher"]) : null,
       edition: row ? projectedEdition(row["currency"]) : null,
       currency: row ? projectedCurrency(row["currency"]) : null,
       contract: row ? asText(row["contract"]) : null,

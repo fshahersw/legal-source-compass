@@ -47,6 +47,7 @@ import {
   type VerdictRecord,
 } from "../../../src/lib/limitations/backfill/grades";
 import { claimCoverageFor } from "../../../src/lib/limitations/backfill/cellCoverage";
+import { buildEntryRuleConditions } from "../../../src/lib/limitations/backfill/ruleConditions";
 
 const work = process.env.LIM_WORK ?? "/tmp/lim/backfill";
 const bundle = process.env.LIM_BUNDLE ?? "/tmp/lim/data/limitations";
@@ -85,13 +86,33 @@ const UNIT: Record<string, PeriodUnit> = {
   days: "calendar_days",
 };
 
-const reposeTrigger = (text: string): "last_act_or_omission" | "act_or_omission" | null => {
-  const t = text.toLowerCase();
-  if (/last act/.test(t)) return "last_act_or_omission";
+type ClockKind =
+  | "act_or_omission"
+  | "last_act_or_omission"
+  | "injury_date"
+  | "substantial_completion"
+  | "first_delivery";
+/** Entries begin a repose trigger with one canonical phrase; older entries are matched by their wording. */
+const reposeTrigger = (text: string): ClockKind | null => {
+  const t = text.toLowerCase().trim();
+  if (t.startsWith("the last act or omission") || /^last act/.test(t) || /\blast act\b/.test(t))
+    return "last_act_or_omission";
+  if (t.startsWith("the date of injury")) return "injury_date";
+  if (t.startsWith("substantial completion")) return "substantial_completion";
+  if (t.startsWith("first delivery or sale")) return "first_delivery";
+  if (t.startsWith("the act or omission")) return "act_or_omission";
   if (
-    /act or omission|act, omission|act or failure|date of the (act|omission)|act complained/.test(t)
+    /act or omission|act, omission|act or failure|date of the (act|omission)|act complained|perpetration of the (fraud|act)/.test(
+      t,
+    )
   )
     return "act_or_omission";
+  if (
+    /first (purchase|sale|delivery)|delivery (of the product )?to (its |the )?(first|initial)|initial purchaser|first purchaser|time of delivery|date of delivery/.test(
+      t,
+    )
+  )
+    return "first_delivery";
   return null;
 };
 
@@ -246,9 +267,30 @@ for (const file of files) {
       );
 
     const repose = entry.repose ?? [];
-    const trigger = repose.length === 1 ? reposeTrigger(repose[0]!.trigger) : null;
+    const productClaim = entry.claimType === "product_liability" || /product/.test(variant);
+    // Delivery-based repose is a product-claim concept: never apply it to an injury variant that only
+    // sometimes is a product claim.
+    const kinds = repose.map((r) => {
+      const k = reposeTrigger(r.trigger);
+      return k === "first_delivery" && !productClaim ? null : k;
+    });
     const reposeModelled =
-      repose.length === 1 && trigger !== null && repose[0]!.effectiveFrom !== null;
+      repose.length > 0 &&
+      kinds.every((k) => k !== null) &&
+      repose.every((r) => r.effectiveFrom !== null);
+    /** Recorded in provenance/conditions but not applied in calculation (unmodelled trigger or no effectiveFrom). */
+    const reposeRecordedNotComputed = repose.length > 0 && !reposeModelled;
+    const limbs = entry.periodLimbs ?? [];
+    const legacySingle =
+      limbs.length === 0 &&
+      repose.length === 1 &&
+      reposeModelled &&
+      ["act_or_omission", "last_act_or_omission", "first_delivery"].includes(kinds[0]!);
+    const needsClocks =
+      limbs.length > 0 ||
+      (reposeModelled && !legacySingle) ||
+      (repose.length === 0 && limbs.length > 0);
+    const trigger = legacySingle ? (kinds[0] as ClockKind) : null;
     const accrualOk = [
       "accrual",
       "discovery",
@@ -262,7 +304,7 @@ for (const file of files) {
     const baseline =
       entry.status === "verified" &&
       accrualOk &&
-      (repose.length === 0 || (reposeModelled && entry.accrual.kind !== "death"));
+      (repose.length === 0 || reposeModelled || reposeRecordedNotComputed);
     const existing = rules.filter(
       (r) =>
         r.jurisdiction === state &&
@@ -280,22 +322,24 @@ for (const file of files) {
         current.period.unit === unit;
       if (same) {
         entryRoute.set(current.id, entryIntermediaryOnly);
-        // A legacy rule that starts the clock at death contradicts an entry whose official text starts it at
-        // discovery (for example Wisconsin wrongful death): follow the verified entry.
+        // Period unchanged: still refresh metadata from the entry (cross-check gloss, blockers, tolling).
         if (current.accrualBasis === "death" && entry.accrual.kind === "discovery") {
           current.accrualBasis = "confirmed_accrual";
-          current.conditions = [
-            ...new Set([
-              ...current.conditions,
-              `Accrual under the cited rule: ${entry.accrual.text}`,
-            ]),
-          ];
         }
-        if (!current.provenance) {
-          current.provenance = provenance;
-          if (entry.status === "verified") current.pinpoint = entry.citation;
-          attached++;
-        }
+        current.conditions = buildEntryRuleConditions(
+          entry,
+          provenance,
+          baseline,
+          repose,
+          reposeRecordedNotComputed,
+        );
+        const hadProvenance = Boolean(current.provenance);
+        current.provenance = provenance;
+        current.sourceIds = [
+          ...new Set([primaryId, ...crossIds, ...(current.sourceIds ?? [])]),
+        ];
+        if (entry.status === "verified") current.pinpoint = entry.citation;
+        if (!hadProvenance) attached++;
         const upgrade =
           current.computation === "research_only" &&
           baseline &&
@@ -321,25 +365,13 @@ for (const file of files) {
       }
     }
 
-    const notes = [
-      entry.accrual.kind === "not_recorded"
-        ? "The cited provision does not state when the claim accrues (Not recorded). The accrual date must be confirmed under controlling case law before relying on any date."
-        : `Accrual under the cited rule: ${provenance.accrualText}`,
-      ...(repose.length && !baseline
-        ? repose.map(
-            (r) =>
-              `Statute of repose not computed here: ${r.years} years (${r.citation}); trigger: ${r.trigger}.`,
-          )
-        : []),
-      ...provenance.tolling.map(
-        (t) => `Statutory tolling (not applied by the calculator): ${t.text} (${t.citation}).`,
-      ),
-      ...(entry.blockers ?? []).map((b) => `Cannot issue a date: ${b.issue}. ${b.why}`),
-      ...(entry.crossChecks ?? []).map(
-        (c) => `Related provision or cross-check (capture ${c.captureId}): ${c.note}`,
-      ),
-      ...provenance.flags.map((f) => `Flag: ${f}`),
-    ];
+    const notes = buildEntryRuleConditions(
+      entry,
+      provenance,
+      baseline,
+      repose,
+      reposeRecordedNotComputed,
+    );
     const rule: LimitationRule = {
       id: `${state.toLowerCase()}-${entry.claimType}-${variant}-bf${idStamp}`.replaceAll("_", "-"),
       schemaVersion: "1.0.0",
@@ -379,13 +411,47 @@ for (const file of files) {
         "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed.",
       ],
       ...(variant === "general" ? {} : { subtype: variant }),
-      ...(baseline && repose.length === 1
+      ...(baseline && legacySingle
         ? {
             calculation: {
               mode: "accrual_repose_min" as const,
               reposeYears: repose[0]!.years,
-              reposeTrigger: trigger!,
+              reposeTrigger: trigger as
+                "last_act_or_omission" | "act_or_omission" | "first_delivery",
               reposeEffectiveFrom: repose[0]!.effectiveFrom!,
+            },
+          }
+        : {}),
+      ...(baseline && needsClocks
+        ? {
+            calculation: {
+              mode: "clocks_min" as const,
+              ...(limbs.length
+                ? {
+                    limbs: limbs.map((l) => ({
+                      amount: l.amount,
+                      unit: UNIT[l.unit]!,
+                      from: l.from,
+                    })),
+                    combine: entry.periodCombine!,
+                  }
+                : {
+                    limbs: [
+                      {
+                        amount: entry.period!.amount,
+                        unit,
+                        from:
+                          entry.accrual.kind === "death"
+                            ? ("death" as const)
+                            : ("accrual" as const),
+                      },
+                    ],
+                  }),
+              clocks: repose.map((r, i) => ({
+                years: r.years,
+                from: kinds[i] as ClockKind,
+                effectiveFrom: r.effectiveFrom!,
+              })),
             },
           }
         : {}),

@@ -79,7 +79,7 @@ create or replace function public.corpus_publisher_code_projected_outline_v2(
   p_path jsonb default '[]'::jsonb
 )
 returns jsonb language plpgsql stable security definer set search_path = '' as $$
-declare gate record; levels jsonb; depth integer; next_level text; total bigint;
+declare gate record; levels jsonb; depth integer; next_level text; total bigint; direct_total bigint;
 begin
   if coalesce(p_jurisdiction, '') !~ '^[A-Z]{2}$'
     or jsonb_typeof(p_path) is distinct from 'array'
@@ -141,6 +141,15 @@ begin
       ), '[]'::jsonb));
   end if;
 
+  -- A declared level is optional. Sections that sit here, with no part/article/division
+  -- between them and the path, are listed instead of an empty group menu.
+  select count(*) into direct_total from corpus_ingest.entities e
+  where e.source_system = gate.source_system
+    and e.entity_type = 'code-section'
+    and e.review_status <> 'quarantined'
+    and e.schema_version = 'publisher-code-evidence/2'
+    and corpus_ingest.publisher_code_path_matches_v2(e.data->'hierarchy', p_path)
+    and e.data->'hierarchy'->depth->>'level' = 'section';
   select count(*) into total from (
     select 1 from corpus_ingest.entities e
     where e.source_system = gate.source_system
@@ -151,6 +160,30 @@ begin
       and e.data->'hierarchy'->depth->>'level' = next_level
     group by e.data->'hierarchy'->depth->>'number', e.data->'hierarchy'->depth->>'heading'
   ) g;
+  if total = 0 and direct_total > 0 then
+    return jsonb_build_object(
+      'available', true, 'kind', 'sections', 'level', 'section', 'total', direct_total,
+      'truncated', direct_total > 5000,
+      'sections', coalesce((
+        select jsonb_agg(jsonb_build_object(
+          'native_id', s.native_id,
+          'citation', s.data->>'citation',
+          'heading', s.data->>'heading',
+          'status_note', s.data->>'status_note'
+        ) order by s.native_id)
+        from (
+          select e.native_id, e.data from corpus_ingest.entities e
+          where e.source_system = gate.source_system
+            and e.entity_type = 'code-section'
+            and e.review_status <> 'quarantined'
+            and e.schema_version = 'publisher-code-evidence/2'
+            and corpus_ingest.publisher_code_path_matches_v2(e.data->'hierarchy', p_path)
+            and e.data->'hierarchy'->depth->>'level' = 'section'
+          order by e.native_id
+          limit 5000
+        ) s
+      ), '[]'::jsonb));
+  end if;
   return jsonb_build_object(
     'available', true, 'kind', 'groups', 'level', next_level, 'total', total,
     'truncated', total > 2000,
@@ -173,7 +206,28 @@ begin
         order by 1, 2
         limit 2000
       ) g
-    ), '[]'::jsonb));
+    ), '[]'::jsonb),
+    'direct_total', direct_total,
+    'direct_truncated', direct_total > 5000,
+    'direct_sections', case when direct_total = 0 then '[]'::jsonb else coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'native_id', s.native_id,
+        'citation', s.data->>'citation',
+        'heading', s.data->>'heading',
+        'status_note', s.data->>'status_note'
+      ) order by s.native_id)
+      from (
+        select e.native_id, e.data from corpus_ingest.entities e
+        where e.source_system = gate.source_system
+          and e.entity_type = 'code-section'
+          and e.review_status <> 'quarantined'
+          and e.schema_version = 'publisher-code-evidence/2'
+          and corpus_ingest.publisher_code_path_matches_v2(e.data->'hierarchy', p_path)
+          and e.data->'hierarchy'->depth->>'level' = 'section'
+        order by e.native_id
+        limit 5000
+      ) s
+    ), '[]'::jsonb) end);
 end $$;
 
 -- One published section. Null when the state is not projected or the id is not one of its sections.

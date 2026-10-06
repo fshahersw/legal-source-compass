@@ -169,3 +169,30 @@ test('unknown entities remain visible and malformed numeric entities fail closed
   assert.throws(() => decodeHtmlEntities('bad &#999999999999999999999; entity'), RangeError);
   assert.throws(() => parseChapter(chapter, '<p>§ 1-8. Heading</p><p>malformed &#x110000; source</p>', '0'.repeat(64)), RangeError);
 });
+
+test('keeps justified body lines that begin like Article/Part/Chapter headings inside the section body', () => {
+  const style = '<style>.c{text-align:center;} .h{text-align:justify;} .b{text-align:justify;}</style>';
+  const html = [
+    style,
+    '<h3 class="c">Chapter 113.</h3><h3 class="c">Conservation.</h3>',
+    '<p class="c">Article 1.</p><p class="c">General Provisions.</p>',
+    '<p class="h">§ 113-403.  Judicial review.</p>',
+    '<p class="b">Article 4 of Chapter 150B of the General Statutes governs judicial review.</p>',
+    '<p class="b">Part 7 of Article 10 applies. part of Wilson, as described.</p>',
+    '<p class="b">part of another document)</p>',
+    '<p class="c">Article 2.</p><p class="c">Licenses.</p>',
+    '<p class="h">§ 113-404.  Next.</p>',
+    '<p class="b">Next text.</p>',
+  ].join('');
+  const parsed = parseChapter({ chapterId: '113', sourceUrl: 'https://example.test/c113.html' }, html, 'b'.repeat(64));
+  assert.deepEqual(parsed.sections.map(row => row.sectionId), ['113-403', '113-404']);
+  assert.equal(parsed.sections[0].bodyText, [
+    'Article 4 of Chapter 150B of the General Statutes governs judicial review.',
+    'Part 7 of Article 10 applies. part of Wilson, as described.',
+    'part of another document)',
+  ].join('\n'));
+  assert.equal(parsed.sections[0].textFromHeadingFallback, false);
+  assert.equal(parsed.sections[1].hierarchy.articleNumber, '2');
+  assert.equal(parsed.sections[1].hierarchy.articleTitle, 'Licenses.');
+  assert.equal(parsed.unassignedParagraphCount, 0);
+});

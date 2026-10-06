@@ -5,12 +5,13 @@ import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/atlas/AppShell";
 import { DatasetCodeBrowser } from "@/components/corpus/DatasetCodeBrowser";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
+import { FullCodeEntry } from "@/components/corpus/FullCodeEntry";
 import { ProjectionCodeBrowser } from "@/components/corpus/ProjectionCodeBrowser";
 import { TexasCodeBrowser } from "@/components/corpus/TexasCodeBrowser";
 import { pageHead } from "@/lib/corpus/head";
 import { stateByUsps } from "@/lib/corpus/geo";
 import { listStateCodes } from "@/lib/law/stateCode.functions";
-import type { HierarchyStep } from "@/lib/law/stateCodeContract";
+import { parseHierarchyPath, type HierarchyStep } from "@/lib/law/stateCodeContract";
 
 type CodeSearch = {
   code?: string | undefined;
@@ -20,26 +21,6 @@ type CodeSearch = {
   q?: string | undefined;
   path?: string | undefined;
 };
-
-function hierarchyPath(value: unknown): HierarchyStep[] {
-  if (typeof value !== "string" || !value.startsWith("[")) return [];
-  try {
-    const parsed = JSON.parse(value) as unknown;
-    if (!Array.isArray(parsed) || parsed.length > 12) return [];
-    const steps: HierarchyStep[] = [];
-    for (const item of parsed) {
-      if (!item || typeof item !== "object") return [];
-      const level = (item as { level?: unknown }).level;
-      const number = (item as { number?: unknown }).number;
-      if (typeof level !== "string" || !/^[a-z][a-z_]{1,40}$/.test(level)) return [];
-      if (number !== null && typeof number !== "string") return [];
-      steps.push({ level, number });
-    }
-    return steps;
-  } catch {
-    return [];
-  }
-}
 
 const text = (value: unknown, max: number) => {
   const raw =
@@ -59,7 +40,10 @@ export const Route = createFileRoute("/law_/codes/$state")({
     section: text(search["section"], 512),
     title: text(search["title"], 200),
     q: text(search["q"], 120),
-    path: text(search["path"], 2000),
+    path: (() => {
+      const steps = parseHierarchyPath(search["path"]);
+      return steps.length ? JSON.stringify(steps) : undefined;
+    })(),
   }),
   head: ({ params }) => {
     const name = stateByUsps.get(params.state.toUpperCase())?.name ?? params.state;
@@ -113,14 +97,9 @@ function StateCodePage() {
   else if (codes.isLoading)
     body = <p className="text-sm text-muted-foreground">Loading full code status…</p>;
   else if (codes.error) body = <ExternalError error={codes.error} />;
-  else if (!listing)
-    body = (
-      <p className="rounded-lg border border-border bg-surface p-4 text-sm text-muted-foreground">
-        Not yet captured
-      </p>
-    );
+  else if (!listing) body = <FullCodeEntry state={usps} />;
   else if (listing.kind === "projection") {
-    const steps = hierarchyPath(search.path);
+    const steps = parseHierarchyPath(search.path);
     body = (
       <ProjectionCodeBrowser
         listing={listing}

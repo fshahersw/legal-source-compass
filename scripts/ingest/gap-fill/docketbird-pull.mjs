@@ -90,5 +90,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     }
     st.complete = Object.keys(st.details_done).length >= st.search.ids.length; await save();
     console.log(JSON.stringify({case: caseId, complete: st.complete, totals: ck.totals}));
-  } catch (e) { if (e instanceof Stop) { await save(); console.log(JSON.stringify({stopped: e.message, totals: ck.totals})); process.exitCode = 3; } else throw e; }
+  } catch (e) { if (e instanceof Stop) { await save(); await atomicWriteJson(path.join(work, 'last-stop.json'), {stopped: e.message, case_id: caseId, at: new Date().toISOString(), totals: ck.totals}); console.log(JSON.stringify({stopped: e.message, totals: ck.totals})); process.exitCode = 3; } else throw e; }
 }

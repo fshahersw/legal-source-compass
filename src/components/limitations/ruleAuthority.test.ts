@@ -79,7 +79,7 @@ describe("rule authority facts", () => {
     } as unknown as LimitationsSnapshot;
     const facts = ruleAuthorityFacts(proxied, base);
     expect(facts.sources[0]?.route).toContain("firecrawl proxy");
-    expect(ruleAuthorityFacts(snapshot, base).sources[0]?.route).toBeNull();
+    expect(ruleAuthorityFacts(snapshot, base).sources[0]?.route).toBe("Not recorded");
   });
 
   it("shows the verification grade and its basis beside the citation", () => {

@@ -4,12 +4,17 @@
 Packet directory (all UTF-8 JSONL, produced by a state's staging script, no credentials):
   manifest.json   publisher-code-manifest/2 document
   objects.jsonl   {sha256, bytes, kind: publisher_original|unit_text_derivative, path, code_points?,
-                   sources: [{source_url, retrieved_at, retrieval_method, proxy}]}
+                   sources: [{source_url, retrieved_at, http_status, retrieval_method, proxy}]}
   units.jsonl     {unit_key, unit_kind, heading, original_sha256, publisher_member, raw_member_sha256,
                    text_sha256, text_code_points, sections_expected, currency,
                    source_url, retrieved_at, retrieval_method, proxy}
   sections.jsonl  {citation_path, citation, heading, text, hierarchy, history, status_note,
                    unit_key, span, currency}
+  toc-proof.json  {marker, pages: [{url, markers, sections}], unfetched_child_pages: []}
+Empty unit or section text is not a row: the packet author records it in gaps.json and leaves it out.
+toc-proof.json compares the publisher's own section markers on every retained page with the parsed
+sections. unfetched_child_pages must be present and empty (Delaware chapter indexes linked 350
+subchapter pages that were never fetched). Dry-run and --execute both refuse a packet that fails this.
 Credentials come from EXTERNAL_SUPABASE_URL / EXTERNAL_SUPABASE_SERVICE_ROLE_KEY in the environment
 only; nothing is printed. Dry run (default) validates and counts; --execute uploads and lands.
 The run is always closed in a finally.
@@ -208,20 +213,83 @@ def put_object(cloud, o):
     return rec
 
 
+def preflight_packet(packet):
+    """Refuse a packet before any run is opened.
+
+    Every source needs http_status 200. Empty unit or section text is a gap, not a row.
+    toc-proof.json must show the publisher's own section-marker count matching the parsed
+    sections on every unit page, and must list no unfetched child pages.
+    """
+    objects = list(jsonl(os.path.join(packet, "objects.jsonl")))
+    units = list(jsonl(os.path.join(packet, "units.jsonl")))
+    sections = list(jsonl(os.path.join(packet, "sections.jsonl")))
+    if not objects or not units:
+        raise RuntimeError("packet has no objects or units")
+    derivatives = {}
+    for obj in objects:
+        sources = obj.get("sources") or []
+        if not sources:
+            raise RuntimeError(f"object {obj.get('sha256', '')[:12]} has no sources")
+        for source in sources:
+            if source.get("http_status") != 200:
+                raise RuntimeError(f"source http_status must be 200: {source.get('source_url')}")
+        if obj.get("kind") == "unit_text_derivative":
+            if int(obj.get("bytes") or 0) < 1:
+                raise RuntimeError(f"empty unit derivative {obj['sha256'][:12]}; record it as a gap")
+            with open(obj["path"], encoding="utf-8") as handle:
+                body = handle.read()
+            if not body.strip() or "\x00" in body:
+                raise RuntimeError(f"empty unit text {obj['sha256'][:12]}; record it as a gap")
+            derivatives[obj["sha256"]] = body
+    for unit in units:
+        if int(unit.get("text_code_points") or 0) < 1:
+            raise RuntimeError(f"empty unit {unit.get('unit_key')}; record it as a gap")
+        if unit.get("text_sha256") not in derivatives:
+            raise RuntimeError(f"unit {unit.get('unit_key')} has no text derivative")
+    for section in sections:
+        if not str(section.get("text") or "").strip():
+            raise RuntimeError(f"empty section text {section.get('citation_path')}; record it as a gap")
+    proof_path = os.path.join(packet, "toc-proof.json")
+    if not os.path.isfile(proof_path):
+        raise RuntimeError("toc-proof.json is required: publisher section markers per page, including child pages")
+    with open(proof_path, encoding="utf-8") as handle:
+        proof = json.load(handle)
+    if "unfetched_child_pages" not in proof:
+        raise RuntimeError("toc-proof.json must include unfetched_child_pages")
+    pending = proof.get("unfetched_child_pages") or []
+    if pending:
+        raise RuntimeError(f"toc-proof lists {len(pending)} unfetched child pages; do not land")
+    pages = proof.get("pages") or []
+    if not pages or not str(proof.get("marker") or "").strip():
+        raise RuntimeError("toc-proof.json needs a marker description and one entry per page")
+    mismatched = [page for page in pages if page.get("markers") != page.get("sections")]
+    if mismatched:
+        raise RuntimeError(f"toc marker mismatch on {len(mismatched)} pages; first {mismatched[0].get('url')}")
+    covered = {page.get("url") for page in pages}
+    missing = sorted({unit["source_url"] for unit in units} - covered)
+    if missing:
+        raise RuntimeError(f"toc-proof.json omits {len(missing)} unit pages; first {missing[0]}")
+    return {"objects": len(objects), "units": len(units), "sections": len(sections), "toc_pages": len(pages)}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("packet")
     ap.add_argument("--execute", action="store_true")
     ap.add_argument("--run-id")
+    ap.add_argument("--attempt", type=int, default=1, help="a closed run cannot reopen; attempt N>1 derives a new deterministic run id")
     ap.add_argument("--workers", type=int, default=4)
     a = ap.parse_args()
+    checked = preflight_packet(a.packet)
     manifest = json.load(open(os.path.join(a.packet, "manifest.json"), encoding="utf-8"))
     manifest_sha = sha(manifest)
     objects = list(jsonl(os.path.join(a.packet, "objects.jsonl")))
     unit_rows, section_rows = build_rows(a.packet, manifest_sha, manifest)
-    run_id = a.run_id or str(uuid.uuid5(NS, f"{manifest['jurisdiction']}:{manifest_sha}"))
+    suffix = "" if a.attempt == 1 else f":{a.attempt}"
+    run_id = a.run_id or str(uuid.uuid5(NS, f"{manifest['jurisdiction']}:{manifest_sha}{suffix}"))
     summary = {"jurisdiction": manifest["jurisdiction"], "manifest_sha256": manifest_sha, "run_id": run_id,
-               "objects": len(objects), "object_bytes": sum(o["bytes"] for o in objects), "units": len(unit_rows), "sections": len(section_rows)}
+               "objects": len(objects), "object_bytes": sum(o["bytes"] for o in objects), "units": len(unit_rows),
+               "sections": len(section_rows), "toc_pages": checked["toc_pages"]}
     print(json.dumps(summary))
     if not a.execute:
         return 0
@@ -238,7 +306,7 @@ def main():
                 receipts[o["sha256"]] = rec
         chunk, size = [], 0
         for o in objects:
-            item = {"sha256": o["sha256"], "bytes": o["bytes"], "kind": o["kind"], "sources": o["sources"], "readback": receipts[o["sha256"]]}
+            item = {"sha256": o["sha256"], "bytes": o["bytes"], "kind": o["kind"], "sources": [{**x, "http_status": 200} for x in o["sources"]], "readback": receipts[o["sha256"]]}
             n = len(canon(item))
             if chunk and (len(chunk) >= 1000 or size + n > 6_000_000):
                 cloud.rpc("corpus_publisher_code_register_objects_v2", {"p_run": run_id, "p_objects": chunk})
