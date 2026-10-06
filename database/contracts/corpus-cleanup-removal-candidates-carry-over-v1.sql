@@ -6,7 +6,7 @@
 -- (2) corpus_ingest.cleanup_carry_over_v1(merge, limit): ledgered, md5-guarded, idempotent, batched projections into the survivor; rollback restores exactly.
 --     merges: cl_courts, cl_court_appeals_to (-> court_spine facts), device_classification (-> definition fact), cl_people_education, cl_people_positions
 --     (-> sections on cl_people), and row moves county_enrichment_20260928 / pending_publication (-> county_litigation), gap_enrichment_20260927 (-> focused),
---     cl_reporter_citations (-> citation_index). people (-> cl_people cells courts/career_summary/education_summary/has_photo_reference + photo facts). judge_enrichment carries no provenance the judges rows lack (all 11,926 source URLs are already on the profiles) so it needs no carry-over; cl_master_entries waits for its code repoint.
+--     cl_reporter_citations (-> citation_index). regulatory_backfill (-> federal_register_history facts/links: dates as printed, recorded effective date, correction_of, related documents, GovInfo edition link, full title when the survivor's is a truncation), people (-> cl_people cells courts/career_summary/education_summary/has_photo_reference + photo facts). judge_enrichment carries no provenance the judges rows lack (all 11,926 source URLs are already on the profiles) so it needs no carry-over; cl_master_entries waits for its code repoint.
 -- (3) wrapper ops: carry_over {merge, limit}, carry_over_rollback {merge} (all earlier ops kept).
 -- Order per merge: carry_over until remaining = 0 -> verify -> removal procedure of 09 (records, groups, contexts, counts/apply, fix_counters, catalog).
 
@@ -245,7 +245,7 @@ declare
   src text; moved bigint := 0; before_n bigint; after_n bigint; src_count bigint := null;
 begin
   if p_limit < 1 or p_limit > 10000 then raise exception 'p_limit must be 1..10000' using errcode = '22023'; end if;
-  create temp table if not exists _carry(ds text, id text, old_detail jsonb, new_detail jsonb, row_md5 text, old_item jsonb, new_item jsonb, primary key (ds, id)) on commit drop;
+  create temp table if not exists _carry(ds text, id text, old_detail jsonb, new_detail jsonb, row_md5 text, old_item jsonb, new_item jsonb, old_title text, new_title text, primary key (ds, id)) on commit drop;
   truncate _carry;
 
   if p_merge = 'cl_courts' then
@@ -329,6 +329,26 @@ begin
     from public.corpus_records p join public.corpus_records s on s.dataset = 'cl_people' and s.id = 'cl:people:' || p.id
     where p.dataset = 'people' and not exists (select 1 from corpus_ingest.cleanup_decisions d where d.dataset = 'cl_people' and d.record_id = s.id and d.issue = v_issue)
     limit p_limit;
+  elsif p_merge = 'regulatory_backfill' then
+    surv := 'federal_register_history';
+    insert into _carry(ds, id, old_title, new_title, old_detail, new_detail, row_md5)
+    select surv, s.id,
+           s.title, case when length(p.title) > length(s.title) and left(p.title, length(s.title)) = s.title then p.title end,
+           s.detail,
+           jsonb_set(s.detail, '{facts}', coalesce(s.detail->'facts', '[]'::jsonb)
+             || case when btrim(coalesce(p.item->'cells'->>'dates', '')) <> '' then jsonb_build_array(jsonb_build_array('Dates as printed (federalregister.gov API, extract 2026-10-02)', btrim(p.item->'cells'->>'dates'))) else '[]'::jsonb end
+             || case when btrim(coalesce(p.item->'cells'->>'effective_on', '')) <> '' and position(left(p.item->'cells'->>'effective_on', 10) in s.detail::text) = 0
+                     then jsonb_build_array(jsonb_build_array('Recorded effective date (API field, extract 2026-10-02)', left(p.item->'cells'->>'effective_on', 10))) else '[]'::jsonb end
+             || case when btrim(coalesce(p.item->'cells'->>'correction_of', '')) <> '' then jsonb_build_array(jsonb_build_array('Correction of (API field)', p.item->'cells'->>'correction_of')) else '[]'::jsonb end
+             || case when jsonb_typeof(p.item->'cells'->'related_documents') = 'object' and p.item->'cells'->'related_documents' <> '{}'::jsonb then
+                  jsonb_build_array(jsonb_build_array('Related documents (API, by docket)', (select string_agg(k || ': ' || (select string_agg(d->>'document_number', ', ' order by d->>'publication_date', d->>'document_number') from jsonb_array_elements(v) d), '; ' order by k) from jsonb_each(p.item->'cells'->'related_documents') e(k, v)))) else '[]'::jsonb end)
+           || case when btrim(coalesce(p.item->'cells'->>'pdf_url', '')) <> '' and position(p.item->'cells'->>'pdf_url' in s.detail::text) = 0
+                   then jsonb_build_object('links', coalesce(s.detail->'links', '[]'::jsonb) || jsonb_build_array(jsonb_build_object('url', p.item->'cells'->>'pdf_url', 'label', 'Official GovInfo edition (not downloaded)'))) else '{}'::jsonb end,
+           md5(to_jsonb(s)::text)
+    from public.corpus_records p join public.corpus_records s on s.dataset = surv and s.source_url = 'https://www.federalregister.gov/d/' || substr(p.id, 4)
+    where p.dataset = 'regulatory_backfill' and left(p.id, 3) = 'fr:'
+      and not exists (select 1 from corpus_ingest.cleanup_decisions d where d.dataset = surv and d.record_id = s.id and d.issue = v_issue)
+    limit p_limit;
   elsif p_merge in ('county_enrichment_20260928', 'pending_publication', 'gap_enrichment_20260927', 'cl_reporter_citations') then
     src := p_merge;
     surv := case p_merge when 'county_enrichment_20260928' then 'county_litigation' when 'pending_publication' then 'county_litigation' when 'gap_enrichment_20260927' then 'focused' else 'citation_index' end;
@@ -370,10 +390,10 @@ begin
   select count(*) into n_cand from _carry;
   insert into corpus_ingest.cleanup_decisions(dataset, record_id, issue, disposition, reason, evidence, original_record, replacement, run_id)
     select c.ds, c.id, v_issue, 'label_override', 'Field carried into the survivor before its source collection is removed', jsonb_build_object('merge', p_merge, 'version', 'carry-over/2026-10-06.1'),
-           jsonb_build_object('detail', c.old_detail, 'row_md5', c.row_md5) || case when c.new_item is not null then jsonb_build_object('item', c.old_item) else '{}'::jsonb end,
-           jsonb_build_object('detail_md5', md5(c.new_detail::text)) || case when c.new_item is not null then jsonb_build_object('item_md5', md5(c.new_item::text)) else '{}'::jsonb end, run from _carry c
+           jsonb_build_object('detail', c.old_detail, 'row_md5', c.row_md5) || case when c.new_item is not null then jsonb_build_object('item', c.old_item) else '{}'::jsonb end || case when c.new_title is not null then jsonb_build_object('title', c.old_title) else '{}'::jsonb end,
+           jsonb_build_object('detail_md5', md5(c.new_detail::text)) || case when c.new_item is not null then jsonb_build_object('item_md5', md5(c.new_item::text)) else '{}'::jsonb end || case when c.new_title is not null then jsonb_build_object('title', c.new_title) else '{}'::jsonb end, run from _carry c
     on conflict (dataset, record_id, issue) do nothing;
-  update public.corpus_records r set detail = c.new_detail, item = coalesce(c.new_item, r.item) from _carry c
+  update public.corpus_records r set detail = c.new_detail, item = coalesce(c.new_item, r.item), title = coalesce(c.new_title, r.title) from _carry c
    where r.dataset = c.ds and r.id = c.id and md5(to_jsonb(r)::text) = c.row_md5;
   get diagnostics n_done = row_count;
   return jsonb_build_object('merge', p_merge, 'survivor', surv, 'candidates', n_cand, 'updated', n_done, 'more_may_remain', n_cand = p_limit);
@@ -384,7 +404,7 @@ grant execute on function corpus_ingest.cleanup_carry_over_v1(text, integer) to 
 create or replace function corpus_ingest.cleanup_carry_over_rollback_v1(p_merge text) returns jsonb language plpgsql set search_path = '' as $$
 declare v_issue text := 'cleanup_20261006_carry_' || p_merge; n bigint; m bigint := 0;
 begin
-  update public.corpus_records r set detail = d.original_record->'detail', item = coalesce(d.original_record->'item', r.item)
+  update public.corpus_records r set detail = d.original_record->'detail', item = coalesce(d.original_record->'item', r.item), title = coalesce(d.original_record->>'title', r.title)
     from corpus_ingest.cleanup_decisions d
    where d.issue = v_issue and d.original_record ? 'detail' and r.dataset = d.dataset and r.id = d.record_id and md5(r.detail::text) = d.replacement->>'detail_md5'
      and (d.replacement->>'item_md5' is null or md5(r.item::text) = d.replacement->>'item_md5');
