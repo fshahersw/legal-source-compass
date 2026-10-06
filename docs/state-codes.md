@@ -25,7 +25,7 @@ Every source on a landed object carries `http_status` 200 from its receipt. A un
 
 Review is `scripts/legal/state-codes/common/review_state.py` (20 live sections, then `corpus_publisher_code_review_v2`). That file is not in the tree yet. No batch A state was flipped. A mismatch stays `held` with projection off.
 
-Coverage read on 2026-10-06, without a recount: Michigan 43,891 sections and 205 units, Pennsylvania 14,741 sections and 75 units, North Carolina 39,612 sections and 396 units, Missouri 30,435 sections and 458 units. All four are `landed` with `public_projection_allowed` false.
+Coverage read on 2026-10-06, without a recount: Michigan 43,891 sections and 205 units, Pennsylvania 14,741 sections and 75 units, North Carolina 39,612 sections and 396 units, Missouri 30,435 sections and 458 units, Florida 24,993 sections and 638 units. All five are `landed` with `public_projection_allowed` false.
 
 Michigan's official directory lists 241 `Chapter N.xml` files. All 241 were fetched with HTTP 200. `MCLSectionInfo` counts 43,891 and the parser emits 43,891. Thirty-six of those files contain no section marker and were not landed as units. 3,077 sections have an empty `BodyText`; the landed text is the publisher's printed catchline. The Chapter Index HTML links 227 of the 241 files. The other 14 are on the directory listing and were fetched with the rest. Currency printed on the index: "Michigan Compiled Laws Complete Through PA 103 of 2026" (not an ISO date, so `through_date` is null and edition is null). This is not a review.
 
@@ -38,3 +38,7 @@ Nothing was landed. No manifest was registered and no run was opened. The Genera
 Missouri's chapter tables of contents matched the parsed sections on the 458 chapters that list sections. Ten chapter pages list no section links (chapter 203 is printed "Transferred to Chapter 643"). Their "view entire chapter" URL did not return a section list. Edition is null. The site says the posted statutes are uncertified and unofficial. This is not a review.
 
 Pennsylvania is landed and private. Each title document carries a `revised` meta timestamp; the index page prints no "current through" line and no edition. `through_date` is null. This is not a review.
+
+## Florida
+
+Landed and private. Run `c01932d4-eb99-4e27-8957-405d668e0884` completed with 24,993 sections and 638 chapter units. Every chapter page prints "The 2026 Florida Statutes". Edition is 2026. No through-date is printed, so `through_date` is null. The October 6, 2026 page date is the display date. The TOC proof covers 2,833 pages: the 638 full chapters and 2,195 contents indexes, including the part and subpart indexes those chapters link to. Marker counts match on every page, and `unfetched_child_pages` is empty. All 2,883 direct fetches returned HTTP 200. The review RPC was not called.
