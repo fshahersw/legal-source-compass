@@ -46,25 +46,40 @@ def inventory(f):
             print('chapters', n, '/', len(todo), flush=True)
 
 
-def section_urls(f):
-    idx = f.get(BASE, label='title-index')
-    chapters = parse_index.parse_index(f.read(idx))['chapters']
+def section_urls(f, successful=None):
+    if successful is None:
+        successful = {
+            r['url']: r
+            for r in f.receipts()
+            if r.get('ok') and r.get('retrieval_method') == 'direct'
+        }
+    if BASE not in successful:
+        idx = f.get(BASE, label='title-index')
+        if not idx['ok']:
+            raise SystemExit('title index missing')
+        successful[BASE] = idx
+    chapters = parse_index.parse_index(f.read(successful[BASE]))['chapters']
     seen = {}
     for c in chapters:
         if not c['href']:
             continue
-        r = f.get(chapter_url(c['href']), label='chapter')
-        if not r['ok']:
+        unit_url = chapter_url(c['href'])
+        if unit_url not in successful:
             raise SystemExit('chapter missing: %s' % c['href'])
-        for s in parse_index.parse_chapter(f.read(r))['sections']:
+        for s in parse_index.parse_chapter(f.read(successful[unit_url]))['sections']:
             seen.setdefault(BASE + s['href'], c['href'])
     return list(seen)
 
 
 def sections(f, shard_index=0, shard_count=1):
-    urls = section_urls(f)
+    successful = {
+        r['url']: r
+        for r in f.receipts()
+        if r.get('ok') and r.get('retrieval_method') == 'direct'
+    }
+    urls = section_urls(f, successful)
     print('section urls', len(urls), flush=True)
-    done = {r['url'] for r in f.receipts() if r.get('ok') and r.get('retrieval_method') == 'direct'}
+    done = set(successful)
     todo = sorted(u for u in urls if u not in done)
     if shard_count > 1:
         start = len(todo) * shard_index // shard_count
