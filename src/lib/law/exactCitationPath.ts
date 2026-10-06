@@ -11,15 +11,25 @@ export function exactCitationPaths(state: string, citation: string): string[] | 
   const usps = state.toUpperCase();
   if (!text || /\b(?:to|through)\b/i.test(text)) return null;
   if (usps === "OK") return oklahomaPaths(text);
-  const paths = omitDottedPrefix([
-    ...new Set([
-      ...(hyphenPaths(text) ?? []),
-      ...(dottedHyphenPaths(text) ?? []),
-      ...(sectionSignPaths(text) ?? []),
-      ...(DOTTED_PATH_STATES.has(usps) ? (dottedPaths(text) ?? []) : []),
+  const paths = omitSectionHalf(
+    omitDottedPrefix([
+      ...new Set([
+        ...(hyphenPaths(text) ?? []),
+        ...(dottedHyphenPaths(text) ?? []),
+        ...(sectionSignPaths(text) ?? []),
+        ...(vermontTitleSections(text) ?? []),
+        ...(DOTTED_PATH_STATES.has(usps) ? (dottedPaths(text) ?? []) : []),
+      ]),
     ]),
-  ]);
+  );
   return paths.length ? paths : null;
+}
+
+/** A bare section number that is already the section half of a title/section token is not a second section. */
+function omitSectionHalf(paths: string[]): string[] {
+  return paths.filter(
+    (path) => !paths.some((other) => other !== path && other.endsWith(`/${path}`)),
+  );
 }
 
 /** A dotted token that is only the front of a longer dotted-hyphen token is not a second section. */
@@ -86,6 +96,20 @@ function sectionSignPaths(citation: string): string[] | null {
   return paths.length ? paths : null;
 }
 
+/** `12 V.S.A. § 512(4)` names title 12 and section 512. The parenthetical is not part of the section. */
+function vermontTitleSections(citation: string): string[] | null {
+  const paths: string[] = [];
+  const re = /\b(\d+[A-Za-z]?)\s+V\.S\.A\.\s*§§?\s*(\d+)(?!\d)/gi;
+  for (const match of citation.matchAll(re)) {
+    const title = match[1];
+    const section = match[2];
+    if (!title || !section) continue;
+    const path = `${title}/${section}`;
+    if (!paths.includes(path)) paths.push(path);
+  }
+  return paths.length ? paths : null;
+}
+
 function hyphenPaths(citation: string): string[] | null {
   const paths: string[] = [];
   const re = /(?<!\d\.)\b(\d{1,2}[A-Z]?(?:-\d{1,4}[A-Za-z]?){1,8}(?:\.\d{1,4})?)(?!\d)/g;
@@ -137,20 +161,25 @@ export function sectionTokenAfterSec(citationPath: string): string | null {
   return match?.[1] ?? null;
 }
 
-/** Section numbers recorded on the hierarchy. Chapter and title numbers are not included. */
-export function storedSectionNumbers(hierarchy: unknown): string[] {
+/** Numbers recorded on one hierarchy level. */
+export function storedHierarchyNumbers(hierarchy: unknown, level: string): string[] {
   if (!Array.isArray(hierarchy)) return [];
   const numbers: string[] = [];
   for (const item of hierarchy) {
     if (!item || typeof item !== "object") continue;
     const row = item as Record<string, unknown>;
-    if (row["level"] !== "section") continue;
+    if (row["level"] !== level) continue;
     const number = row["number"];
     if (typeof number !== "string") continue;
     const trimmed = number.trim();
     if (trimmed) numbers.push(trimmed);
   }
   return numbers;
+}
+
+/** Section numbers recorded on the hierarchy. Chapter and title numbers are not included. */
+export function storedSectionNumbers(hierarchy: unknown): string[] {
+  return storedHierarchyNumbers(hierarchy, "section");
 }
 
 /**
@@ -162,8 +191,11 @@ export function tokenEqualsStoredSection(
   token: string,
   citationPath: string,
   sectionNumbers: readonly string[],
+  titleNumbers: readonly string[] = [],
 ): boolean {
   if (!token) return false;
+  const titled = /^(\d+[A-Za-z]?)\/(\d+)$/.exec(token);
+  if (titled) return titleNumbers.includes(titled[1]!) && sectionNumbers.includes(titled[2]!);
   if (sectionTokenAfterSec(citationPath) === token) return true;
   if (lastHyphenSegment(citationPath) === token) return true;
   return sectionNumbers.includes(token);
@@ -171,10 +203,14 @@ export function tokenEqualsStoredSection(
 
 /** The one stored section the token names. Zero or several matches stay unlinked. */
 export function onlyExactStoredSection<
-  T extends { citationPath: string; sectionNumbers: readonly string[] },
+  T extends {
+    citationPath: string;
+    sectionNumbers: readonly string[];
+    titleNumbers?: readonly string[];
+  },
 >(token: string, rows: readonly T[]): T | null {
   const matches = rows.filter((row) =>
-    tokenEqualsStoredSection(token, row.citationPath, row.sectionNumbers),
+    tokenEqualsStoredSection(token, row.citationPath, row.sectionNumbers, row.titleNumbers ?? []),
   );
   return matches.length === 1 ? matches[0]! : null;
 }
