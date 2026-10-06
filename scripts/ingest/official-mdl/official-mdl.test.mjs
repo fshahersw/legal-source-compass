@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseHtml, findAll, findFirst, textOf, decodeEntities, collapse } from './html-lite.mjs';
-import { parseDate, pageProvesMonthFirst, classifyUrl, orderLabel, docKind, SEAL_PATTERN, parseNjdBody, parsePaedOrders, parseIlndMdlDetails, parseMoedMdl, parseTxndDocket, parseJpmlPanelOrders, printedCaseNumbers } from './parsers.mjs';
+import { parseDate, pageProvesMonthFirst, classifyUrl, orderLabel, docKind, SEAL_PATTERN, parseNjdBody, parseMndMdl, parsePaedOrders, parseIlndMdlDetails, parseMoedMdl, parseTxndDocket, parseJpmlPanelOrders, printedCaseNumbers } from './parsers.mjs';
 import { parseRobots, robotsPolicy, robotsAllows, createPoliteClient, HostStopped, RobotsDisallowed } from './polite-fetch.mjs';
 import { parseDocket, packageId, caseIdOf, GOVINFO_MASTERS, parsePremis, parsePackageMods } from './govinfo.mjs';
 import { queueDecision, listingRecord, recordSha256 } from './build-listings.mjs';
@@ -71,6 +71,18 @@ const NJD = `<h1 id="page-title">Orders</h1><div class="field field--name-body">
 <p><a href="/sites/njd/files/Order9.pdf">ORDER</a></p><p>Date: 9/7/17</p><p>Description: Case Managment Order #9</p>
 <p><a href="/sites/njd/files/JohnsonTransferOrder.pdf">Johnson Transfer Order</a><br /><a href="/sites/njd/files/JohnsonCTO-1.pdf">Johnson Conditional Transfer Order (CTO-1)</a></p>
 <p><a href="/sites/njd/files/Minutes-1-23-2017.pdf">Minutes of 1-23-2017</a></p><p><a href="/j-j-talcum-powder-orders">Orders &amp; Opinions</a></p><p><a href="https://ecf.njd.uscourts.gov/cgi-bin/ShowIndex.pl">Log into PACER</a></p></div></div>`;
+test('MND MDL node parser: PDF links in tab field groups with leading dates; site menu PDFs ignored', () => {
+  const html = `<div class="node node--mdl"><h1>Change Healthcare, Inc. Customer Data Security Breach Litigation, MDL No. 3108</h1>
+<ul class="menu"><li><a href="/sites/mnd/files/MN-Division-of-Counties.pdf">Counties</a></li></ul>
+<p>09/24/2026 <a href="/sites/mnd/files/2026-0924_MDL243108_Pretrial_Order_no_3.pdf"><span>ORDER</span></a><br />THIRD AMENDED PRETRIAL ORDER NO. 3.</p>
+<p>02/23/2026 Document Number: <a href="/sites/mnd/files/24md3108%2624cv2363%20OrdDismiss%2002.13.2026.pdf">513</a></p></div>`;
+  const { rows } = parseMndMdl({ html, pageUrl: 'https://www.mnd.uscourts.gov/content/change-healthcare-inc-data-breach' });
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].url_kind, 'pdf_direct');
+  assert.match(rows[0].printed_title, /THIRD AMENDED PRETRIAL ORDER NO\. 3/);
+  assert.equal(rows[0].date_iso, '2026-09-24');
+  assert.equal(rows[1].printed_date, '02/23/2026');
+});
 test('NJD body parser: Date/Description paragraphs, several links per paragraph, dates printed in link text, navigation links ignored', () => {
   const { rows } = parseNjdBody({ html: NJD, pageUrl: 'https://www.njd.uscourts.gov/j-j-talcum-upcoming' });
   assert.equal(rows.length, 5);

@@ -97,6 +97,13 @@ export const MATTERS = {
     pages: [{ id: 'azd-3081-mdl', role: 'orders_table', family: 'paed-orders-table', url: 'https://www.azd.uscourts.gov/re-bard-implanted-port-catheter-products-liability-litigation' }],
     index_pages: [],
   },
+  // D. Minn. MDL 3108 (mdl-cases index; direct PDFs on Drupal MDL content page).
+  '3108': {
+    name: 'In re Change Healthcare, Inc. Customer Data Security Breach Litigation', court_id: 'mnd', host: 'www.mnd.uscourts.gov', tier: 1,
+    case_number: null, printed_mdl_literal: 'MDL 3108',
+    pages: [{ id: 'mnd-3108-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.mnd.uscourts.gov/content/change-healthcare-inc-data-breach' }],
+    index_pages: ['mnd-mdl-cases'],
+  },
 };
 
 // Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
@@ -106,6 +113,7 @@ export const INDEX_PAGES = {
   'moed-mdl-index': { id: 'moed-mdl-index', role: 'court_mdl_index', family: 'index-links', url: 'https://www.moed.uscourts.gov/mdl-multidistrict-litigation-cases' },
   'paed-mdl-hub': { id: 'paed-mdl-hub', role: 'court_mdl_index', family: 'index-links', url: 'https://www.paed.uscourts.gov/mdl' },
   'txnd-mdl-cases': { id: 'txnd-mdl-cases', role: 'court_mdl_index', family: 'index-links', url: 'https://www.txnd.uscourts.gov/mdl-cases' },
+  'mnd-mdl-cases': { id: 'mnd-mdl-cases', role: 'court_mdl_index', family: 'index-links', url: 'https://www.mnd.uscourts.gov/mdl-cases' },
   // JPML lists only the CURRENT hearing session's orders here (older PDFs stay on the site under predictable file names, see build-jpml-queue.mjs).
   'jpml-panel-orders': { id: 'jpml-panel-orders', role: 'jpml_panel_orders', family: 'jpml-panel-orders', url: 'https://www.jpml.uscourts.gov/panel-orders' },
 };
