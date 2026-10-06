@@ -58,6 +58,57 @@ class LanderTest(unittest.TestCase):
         a = str(uuid.uuid5(L.NS, "ZZ:" + "c" * 64))
         self.assertEqual(a, str(uuid.uuid5(L.NS, "ZZ:" + "c" * 64)))
 
+    def test_preflight_requires_http_status_text_and_toc_proof(self):
+        with tempfile.TemporaryDirectory() as root:
+            text = "Text é"
+            deriv = os.path.join(root, "unit.txt")
+            with open(deriv, "w", encoding="utf-8") as handle:
+                handle.write(text)
+            digest = L.sha(text.encode("utf-8"))
+            original = "a" * 64
+            objects = [
+                {"sha256": original, "bytes": 4, "kind": "publisher_original", "path": deriv,
+                 "sources": [{"source_url": "https://example.gov/c1", "retrieved_at": "2026-10-06T00:00:00Z",
+                              "retrieval_method": "publisher_page", "proxy": None}]},
+                {"sha256": digest, "bytes": len(text.encode("utf-8")), "kind": "unit_text_derivative", "path": deriv,
+                 "sources": [{"source_url": "https://example.gov/c1", "retrieved_at": "2026-10-06T00:00:00Z",
+                              "http_status": 200, "retrieval_method": "publisher_page", "proxy": None}]},
+            ]
+            with open(os.path.join(root, "objects.jsonl"), "w", encoding="utf-8") as handle:
+                for row in objects:
+                    handle.write(json.dumps(row) + "\n")
+            write_packet(root)
+            with open(os.path.join(root, "units.jsonl"), encoding="utf-8") as handle:
+                unit = json.loads(handle.read())
+            unit["text_sha256"] = digest
+            unit["text_code_points"] = len(text)
+            with open(os.path.join(root, "units.jsonl"), "w", encoding="utf-8") as handle:
+                handle.write(json.dumps(unit) + "\n")
+            with self.assertRaisesRegex(RuntimeError, "http_status"):
+                L.preflight_packet(root)
+            objects[0]["sources"][0]["http_status"] = 200
+            with open(os.path.join(root, "objects.jsonl"), "w", encoding="utf-8") as handle:
+                for row in objects:
+                    handle.write(json.dumps(row) + "\n")
+            with self.assertRaisesRegex(RuntimeError, "toc-proof"):
+                L.preflight_packet(root)
+            proof = {"marker": "section id", "pages": [{"url": "https://example.gov/c1", "markers": 1, "sections": 1}],
+                     "unfetched_child_pages": ["https://example.gov/c1/sc01"]}
+            with open(os.path.join(root, "toc-proof.json"), "w", encoding="utf-8") as handle:
+                json.dump(proof, handle)
+            with self.assertRaisesRegex(RuntimeError, "unfetched"):
+                L.preflight_packet(root)
+            proof["unfetched_child_pages"] = []
+            proof["pages"][0]["markers"] = 0
+            with open(os.path.join(root, "toc-proof.json"), "w", encoding="utf-8") as handle:
+                json.dump(proof, handle)
+            with self.assertRaisesRegex(RuntimeError, "mismatch"):
+                L.preflight_packet(root)
+            proof["pages"][0]["markers"] = 1
+            with open(os.path.join(root, "toc-proof.json"), "w", encoding="utf-8") as handle:
+                json.dump(proof, handle)
+            self.assertEqual(L.preflight_packet(root)["toc_pages"], 1)
+
     def test_sb_key_uses_apikey_header_only(self):
         os.environ["EXTERNAL_SUPABASE_URL"] = "https://x.supabase.co"
         os.environ["EXTERNAL_SUPABASE_SERVICE_ROLE_KEY"] = "sb_secret_test"

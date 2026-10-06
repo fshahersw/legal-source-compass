@@ -8,7 +8,7 @@ Nothing below is a count of landed sections.
 
 | Batch | States                                         | Status                                     |
 | ----- | ---------------------------------------------- | ------------------------------------------ |
-| A     | NY, PA, FL, IL, OH, MI, GA, NC, MA, AZ, MO, LA | in progress 2026-10-06; nothing landed yet |
+| A     | NY, PA, FL, IL, OH, MI, GA, NC, MA, AZ, MO, LA | MI, PA, NC, and MO are landed and still private. No batch A state has been reviewed. |
 | B     | MN, WI, IN, TN, CO, MD, VA, SC, AL, KY, OK, OR | staging against the mapping                |
 | C     | CT, NV, IA, MS, AR, KS, UT, NE, NM, WV, ID, HI | staging against the mapping                |
 | 4     | NH, ME, MT, RI, DE, SD, ND, AK, VT, WY         | later                                      |
@@ -17,4 +17,20 @@ Nothing below is a count of landed sections.
 
 Official source: New York State Senate OpenLegislation, [Consolidated Laws](https://www.nysenate.gov/legislation/laws/CONSOLIDATED). On 2026-10-06 a Chrome 131 User-Agent, with client hints, still received HTTP 403 and `cf-mitigated: challenge` for the consolidated index and for the Alcoholic Beverage Control law. The identifying capture agent gets the same challenge. That is not a terms gate, and it is not the empty-shell CDN behavior Indiana saw. Direct fetch is still unavailable, so the capture stays `proxied:firecrawl`. The Assembly's own laws link, `public.leginfo.state.ny.us`, does not connect from here.
 
-The publisher does not print one code-wide edition. Each page says "Viewing most recent revision (from YYYY-MM-DD)". Environmental Conservation is 2025-10-31. Abandoned Property Law § 101 is 2014-09-22, which is that section's own latest revision, not a statement that the code stopped in 2014. The 94 law tables of contents are captured first, then articles, then sections. Nothing has been landed.
+The publisher does not print one code-wide edition. Each page says "Viewing most recent revision (from YYYY-MM-DD)". Environmental Conservation is 2025-10-31. Abandoned Property Law § 101 is 2014-09-22, which is that section's own latest revision, not a statement that the code stopped in 2014. The 94 law tables of contents are captured. Article capture is still running. Nothing for New York has been landed.
+
+## Before a state is landed or reviewed
+
+Every source on a landed object carries `http_status` 200 from its receipt. A unit or section with no text is a gap, not a row. TOC completeness is the publisher's own section markers on each page, including child pages the page links to. Delaware's chapter indexes linked subchapter pages that were not fetched, and 350 of 1,326 chapters were missing. The shared lander (`scripts/legal/state-codes/common/land_publisher_code_v2.py`) refuses a packet, before it opens a run, when a source lacks `http_status` 200, a unit or section text is empty, or `toc-proof.json` is missing, disagrees, or lists unfetched child pages.
+
+Review is `scripts/legal/state-codes/common/review_state.py` (20 live sections, then `corpus_publisher_code_review_v2`). That file is not in the tree yet. No batch A state was flipped. A mismatch stays `held` with projection off.
+
+Coverage read on 2026-10-06, without a recount: Michigan 43,891 sections and 205 units, Pennsylvania 14,741 sections and 75 units, North Carolina 39,612 sections and 396 units, Missouri 30,435 sections and 458 units. All four are `landed` with `public_projection_allowed` false.
+
+Michigan's official directory lists 241 `Chapter N.xml` files. All 241 were fetched with HTTP 200. `MCLSectionInfo` counts 43,891 and the parser emits 43,891. Thirty-six of those files contain no section marker and were not landed as units. 3,077 sections have an empty `BodyText`; the landed text is the publisher's printed catchline. The Chapter Index HTML links 227 of the 241 files. The other 14 are on the directory listing and were fetched with the rest. Currency printed on the index: "Michigan Compiled Laws Complete Through PA 103 of 2026" (not an ISO date, so `through_date` is null and edition is null). This is not a review.
+
+North Carolina's landing record says 396 chapter pages were captured at HTTP 200, matching the table of contents, with 85 explicit status stubs and no unresolved markers. The publisher statement is "The General Statutes include changes through S.L. 2026-30." Edition is null. This is not a review.
+
+Missouri's chapter tables of contents matched the parsed sections on the 458 chapters that list sections. Ten chapter pages list no section links (chapter 203 is printed "Transferred to Chapter 643"). Their "view entire chapter" URL did not return a section list. Edition is null. The site says the posted statutes are uncertified and unofficial. This is not a review.
+
+Pennsylvania is landed and private. Each title document carries a `revised` meta timestamp; the index page prints no "current through" line and no edition. `through_date` is null. This is not a review.

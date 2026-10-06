@@ -6,8 +6,11 @@ scripts/legal/state-codes/common/land_publisher_code_v2.py (spec: internal/state
 
 landing.json carries the reviewed publisher-code-manifest/2 fields plus `currency_defaults` {basis, statement, through_date, edition}
 (used when a section has no own currency) and optional `unit_kind`, `default_method`, `method_rules` [{pattern, method}].
-Output: <work>/landing/{manifest,objects,units,sections}.jsonl|json. Sections with no printed text are listed in landing/gaps.json
-and never invented. Repeated official citations get an occurrence suffix `~N` (the manifest regex must allow it).
+Output: <work>/landing/{manifest,objects,units,sections}.jsonl|json. Every object source carries http_status 200.
+A unit whose text is empty, or whose receipt is not HTTP 200, is listed in landing/gaps.json and is not a row.
+Sections with no printed text are listed there too and never invented. Repeated official citations get an
+occurrence suffix `~N` (the manifest regex must allow it). toc-proof.json is not written here: the batch
+lead adds it after comparing the publisher's section markers, including child pages, before landing.
 """
 import argparse
 import json
@@ -68,13 +71,20 @@ def convert(work, cfg):
             raise SystemExit(f"{c['native_id']}: a unit must come from exactly one retained original; split it")
         raw = by_sha[shas[0]]
         method, proxy = method_for(cfg, raw["url"], raw["route"])
-        src = {"source_url": raw["url"], "retrieved_at": raw["retrieved_at"], "retrieval_method": method, "proxy": proxy}
-        objects[shas[0]] = {"sha256": shas[0], "bytes": raw["bytes"], "kind": "publisher_original",
-                            "path": os.path.abspath(os.path.join(work, raw["file"])), "sources": [src]}
+        if raw.get("http_status") != 200:
+            gaps.append({"unit": c["native_id"], "reason": "http_status %s" % raw.get("http_status")})
+            continue
+        src = {"source_url": raw["url"], "retrieved_at": raw["retrieved_at"], "http_status": 200,
+               "retrieval_method": method, "proxy": proxy}
         tpath = os.path.abspath(os.path.join(pk, "chapter-text", c["text_sha256"] + ".txt"))
         body = open(tpath, encoding="utf-8").read()
         if sc.sha256_hex(body) != c["text_sha256"] or len(body) != c["text_codepoints"]:
             raise SystemExit("chapter text failed hash/length: " + c["native_id"])
+        if not body.strip() or "\x00" in body:
+            gaps.append({"unit": c["native_id"], "reason": "empty unit text" if not body.strip() else "NUL in unit text"})
+            continue
+        objects[shas[0]] = {"sha256": shas[0], "bytes": raw["bytes"], "kind": "publisher_original",
+                            "path": os.path.abspath(os.path.join(work, raw["file"])), "sources": [src]}
         text[c["native_id"]] = body
         o = objects.setdefault(c["text_sha256"], {"sha256": c["text_sha256"], "bytes": len(body.encode("utf-8")), "kind": "unit_text_derivative",
                                                   "path": tpath, "sources": []})
@@ -88,6 +98,9 @@ def convert(work, cfg):
     regex = re.compile(cfg["section_id"]["regex"])
     seen = {}
     for s in sections:
+        if s["chapter_native_id"] not in text:
+            gaps.append({"citation_path": s["citation_path"], "reason": "unit not landed"})
+            continue
         t = text[s["chapter_native_id"]][s["start"]:s["end"]]
         if sc.sha256_hex(t) != s["text_sha256"]:
             raise SystemExit("section span hash mismatch: " + s["citation_path"])
