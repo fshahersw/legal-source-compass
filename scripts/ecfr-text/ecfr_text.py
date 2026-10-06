@@ -27,7 +27,21 @@ import pgrest  # noqa: E402
 from ecfr_text_lib import raw_object_key, sha256_hex  # noqa: E402
 
 RUN_ID = "f71cd778-f3b5-4674-942a-4979554e1e05"
+USC_RUN_ID = "3412a1b2-0ace-40fc-9271-2fc705ce3308"
 BUCKET = "corpus-originals"
+FAMILY = {"name": "ecfr", "packets": "packets"}
+
+
+def usc_raw_key(sha):
+    return f"uscode-text/sha256/{sha[:2]}/{sha}.htm"
+
+
+def rpc_name(op):
+    return f"corpus_{FAMILY['name']}_text_{op}_v1"
+
+
+def packets_dir(work):
+    return os.path.join(work, FAMILY["packets"])
 
 
 def load_json(path, default=None):
@@ -65,58 +79,67 @@ def storage_request(method, key, body=None, timeout=300):
         return e.code, e.read()
 
 
-def cmd_upload_raw(a):
-    man = load_json(os.path.join(a.work, "acquisition.json"))
-    receipts_path = os.path.join(a.work, "raw_storage_receipts.json")
-    receipts = load_json(receipts_path, {})
-    items = {}
-    for e in man["parts"].values():
-        if e.get("state") == "complete":
-            items[e["sha256"]] = e["file"]
+def raw_items(work):
+    """{sha256: (relative file, storage key)} of every retained original for the selected family."""
+    if FAMILY["name"] == "uscode":
+        man = load_json(os.path.join(work, "usc_acquisition.json"))
+        return {e["sha256"]: (e["file"], usc_raw_key(e["sha256"])) for e in man["granules"].values() if e.get("state") == "complete"}
+    man = load_json(os.path.join(work, "acquisition.json"))
+    items = {e["sha256"]: (e["file"], raw_object_key(e["sha256"])) for e in man["parts"].values() if e.get("state") == "complete"}
     t = man["titles"]
-    items[t["sha256"]] = t["file"]
-    done = failed = 0
-    for sha, rel in sorted(items.items()):
-        if receipts.get(sha, {}).get("verified"):
-            continue
+    items[t["sha256"]] = (t["file"], f"ecfr-text/sha256/{t['sha256'][:2]}/{t['sha256']}.json")
+    return items
+
+
+def cmd_upload_raw(a):
+    import concurrent.futures
+    import threading
+    receipts_path = os.path.join(a.work, "raw_storage_receipts.json" if FAMILY["name"] == "ecfr" else "usc_raw_storage_receipts.json")
+    receipts = load_json(receipts_path, {})
+    items = raw_items(a.work)
+    lock = threading.Lock()
+    counts = {"ok": 0, "failed": 0}
+
+    def one(sha, rel, key):
         with open(os.path.join(a.work, rel), "rb") as f:
             body = f.read()
         if sha256_hex(body) != sha:
             raise SystemExit("local original changed: " + rel)
-        key = raw_object_key(sha) if rel.endswith(".xml") else f"ecfr-text/sha256/{sha[:2]}/{sha}.json"
         status, _ = storage_request("POST", key, body)
         if status not in (200, 201, 400, 409):
             time.sleep(3)
             status, _ = storage_request("POST", key, body)
         gstatus, back = storage_request("GET", key)
         ok = gstatus == 200 and sha256_hex(back) == sha and len(back) == len(body)
-        receipts[sha] = {"key": key, "bytes": len(body), "verified": ok, "upload_http_status": status,
-                         "verified_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
-        done += 1 if ok else 0
-        failed += 0 if ok else 1
-        if (done + failed) % 25 == 0:
-            save_json(receipts_path, receipts)
+        with lock:
+            receipts[sha] = {"key": key, "bytes": len(body), "verified": ok, "upload_http_status": status,
+                             "verified_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+            counts["ok" if ok else "failed"] += 1
+            if (counts["ok"] + counts["failed"]) % 25 == 0:
+                save_json(receipts_path, receipts)
+
+    todo = [(sha, rel, key) for sha, (rel, key) in sorted(items.items()) if not receipts.get(sha, {}).get("verified")]
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as ex:
+        for f in [ex.submit(one, *t) for t in todo]:
+            f.result()
     save_json(receipts_path, receipts)
-    out({"objects": len(items), "verified": sum(1 for r in receipts.values() if r["verified"]), "failed_now": failed})
-    if failed:
+    out({"objects": len(items), "verified": sum(1 for r in receipts.values() if r["verified"]), "failed_now": counts["failed"]})
+    if counts["failed"]:
         raise SystemExit(1)
 
 
 def cmd_restore_raw(a):
-    """Re-download retained originals named in acquisition.json from private storage (checksum verified)."""
-    man = load_json(os.path.join(a.work, "acquisition.json"))
+    """Re-download retained originals from private storage (checksum verified)."""
     restored = 0
-    for e in man["parts"].values():
-        if e.get("state") != "complete":
-            continue
-        dest = os.path.join(a.work, e["file"])
+    for sha, (rel, key) in raw_items(a.work).items():
+        dest = os.path.join(a.work, rel)
         if os.path.exists(dest):
             with open(dest, "rb") as f:
-                if sha256_hex(f.read()) == e["sha256"]:
+                if sha256_hex(f.read()) == sha:
                     continue
-        status, body = storage_request("GET", raw_object_key(e["sha256"]))
-        if status != 200 or sha256_hex(body) != e["sha256"]:
-            raise SystemExit("retained original not restorable: " + e["file"])
+        status, body = storage_request("GET", key)
+        if status != 200 or sha256_hex(body) != sha:
+            raise SystemExit("retained original not restorable: " + rel)
         os.makedirs(os.path.dirname(dest), exist_ok=True)
         with open(dest, "wb") as f:
             f.write(body)
@@ -126,9 +149,9 @@ def cmd_restore_raw(a):
 
 # ---------------------------------------------------------------------------------------------------- intake
 def batches(work):
-    man = load_json(os.path.join(work, "packets", "manifest.json"))
+    man = load_json(os.path.join(packets_dir(work), "manifest.json"))
     for b in man["batches"]:
-        with open(os.path.join(work, "packets", "batches", b["name"]), encoding="utf-8") as f:
+        with open(os.path.join(packets_dir(work), "batches", b["name"]), encoding="utf-8") as f:
             body = f.read()
         if sha256_hex(body) != b["sha256"]:
             raise SystemExit("batch changed after build: " + b["name"])
@@ -136,14 +159,14 @@ def batches(work):
 
 
 def cmd_intake(a):
-    ck_path = os.path.join(a.work, "intake_checkpoint.json")
+    ck_path = os.path.join(a.work, "intake_checkpoint.json" if FAMILY["name"] == "ecfr" else "usc_intake_checkpoint.json")
     ck = load_json(ck_path, {"run_id": a.run, "batches": {}})
     total = {"received": 0, "new_versions": 0, "new_observations": 0, "entities_written": 0}
     done = 0
     for b, body in batches(a.work):
         if b["sha256"] in ck["batches"]:
             continue
-        res = pgrest.rpc("corpus_ecfr_text_intake_v1", {"p_run": a.run, "p_rows": json.loads(body)})
+        res = pgrest.rpc(rpc_name("intake"), {"p_run": a.run, "p_rows": json.loads(body)})
         if res.get("received") != b["records"]:
             raise SystemExit(f"batch {b['name']}: server received {res.get('received')} of {b['records']}")
         ck["batches"][b["sha256"]] = {"name": b["name"], "records": b["records"], "result": res,
@@ -158,11 +181,11 @@ def cmd_intake(a):
 
 
 def cmd_verify(a):
-    man = load_json(os.path.join(a.work, "packets", "manifest.json"))
+    man = load_json(os.path.join(packets_dir(a.work), "manifest.json"))
     after, mism, rows = None, {"hash": 0, "text": 0, "storage": 0}, 0
     status = None
     while True:
-        status = pgrest.rpc("corpus_ecfr_text_status_v1", {"p_run": a.run, "p_after": after, "p_limit": 2000})
+        status = pgrest.rpc(rpc_name("status"), {"p_run": a.run, "p_after": after, "p_limit": 2000})
         pg = status["page"]
         rows += pg["rows"]
         mism["hash"] += pg["hash_mismatches"]
@@ -173,7 +196,7 @@ def cmd_verify(a):
         after = pg["last"]
     expected = man["summary"]["entities"]
     local = {}
-    with open(os.path.join(a.work, "packets", "entities.jsonl"), encoding="utf-8") as f:
+    with open(os.path.join(packets_dir(a.work), "entities.jsonl"), encoding="utf-8") as f:
         for line in f:
             e = json.loads(line)
             local[e["native_id"]] = e
@@ -181,7 +204,7 @@ def cmd_verify(a):
     ids = sorted(local)
     for i in range(0, len(ids), 1000):
         chunk = ids[i:i + 1000]
-        back = {r["native_id"]: r for r in pgrest.rpc("corpus_ecfr_text_readback_v1", {"p_run": a.run, "p_native_ids": chunk})}
+        back = {r["native_id"]: r for r in pgrest.rpc(rpc_name("readback"), {"p_run": a.run, "p_native_ids": chunk})}
         for nid in chunk:
             e, r = local[nid], back.get(nid)
             if (not r or r["payload_sha256"] != e["provenance"]["record_sha256"] or r["source_sha256"] != e["provenance"]["source_sha256"]
@@ -202,7 +225,7 @@ def cmd_verify(a):
 def cmd_publish(a):
     total = 0
     while True:
-        r = pgrest.rpc("corpus_ecfr_text_publish_v1", {"p_run": a.run, "p_limit": a.batch, "p_dry": a.dry})
+        r = pgrest.rpc(rpc_name("publish"), {"p_run": a.run, "p_limit": a.batch, "p_dry": a.dry})
         if a.dry:
             out(r)
             return
@@ -216,7 +239,7 @@ def cmd_publish(a):
 def cmd_finalize(a):
     after, pages, rows = None, 0, 0
     while True:
-        v = pgrest.rpc("corpus_ecfr_text_verify_v1", {"p_run": a.run, "p_after": after, "p_limit": 1000})
+        v = pgrest.rpc(rpc_name("verify"), {"p_run": a.run, "p_after": after, "p_limit": 1000})
         pages += 1
         rows += v["entities"]
         print(json.dumps(v), flush=True)
@@ -225,7 +248,7 @@ def cmd_finalize(a):
         if v["entities"] < 1000:
             break
         after = v["last"]
-    r = pgrest.rpc("corpus_ecfr_text_finalize_v1", {"p_run": a.run})
+    r = pgrest.rpc(rpc_name("finalize"), {"p_run": a.run})
     r["verify_pages"], r["verify_rows"] = pages, rows
     out(r)
     if not r["verified"]:
@@ -234,7 +257,7 @@ def cmd_finalize(a):
 
 def build_plan_items(work):
     targets = load_json(os.path.join(work, "targets.json"))
-    resolution = {(r["title"], r["part"], r["section"]): r for r in load_json(os.path.join(work, "packets", "resolution.json"))}
+    resolution = {(r["title"], r["part"], r["section"]): r for r in load_json(os.path.join(packets_dir(work), "resolution.json"))}
     items, counts = [], {"section_row": {"repoint": 0, "unavailable": 0, "no_oul": 0}, "citation_row": {"repoint": 0, "unavailable": 0}}
     import re
     oul = re.compile(r"oul:[0-9a-f]{64}")
@@ -271,16 +294,40 @@ def build_plan_items(work):
     return items, counts
 
 
+def build_usc_plan_items(work):
+    targets = load_json(os.path.join(work, "usc_targets.json"))
+    by_key = {(t["title"], t["section"]): t for t in targets}
+    resolution = {(r["title"], r["section"]): r for r in load_json(os.path.join(packets_dir(work), "resolution.json"))}
+    links = load_json(os.path.join(work, "targets.json"))["citation_links"]
+    items, counts = [], {"repoint": 0, "unavailable": 0}
+    for cid, lk in sorted(links.items()):
+        if lk["class"] != "usc":
+            continue
+        res = resolution[(lk["title"], lk["section"])]
+        it = {"kind": "citation_row", "dataset": "citation_index", "record_id": cid, "oul_ids": [lk["oul_id"]]}
+        if res["status"] == "acquired":
+            it["native_id"] = res["native_id"]
+            counts["repoint"] += 1
+        else:
+            it["native_id"], it["unavailable_reason"] = None, "identity_mismatch" if res["status"] == "identity_mismatch" else "granule_not_found"
+            counts["unavailable"] += 1
+        items.append(it)
+    assert by_key
+    return items, counts
+
+
 def cmd_plan(a):
     if a.items_file:
         items, counts = load_json(a.items_file), {"from_file": a.items_file}
+    elif FAMILY["name"] == "uscode":
+        items, counts = build_usc_plan_items(a.work)
     else:
         items, counts = build_plan_items(a.work)
     if a.export_items:
         save_json(a.export_items, items)
     total = {"planned": 0, "rejected": []}
     for i in range(0, len(items), 500):
-        r = pgrest.rpc("corpus_ecfr_text_plan_v1", {"p_run": a.run, "p_items": items[i:i + 500]})
+        r = pgrest.rpc(rpc_name("plan"), {"p_run": a.run, "p_items": items[i:i + 500]})
         total["planned"] += r["planned"]
         total["rejected"] += r["rejected"]
         print(json.dumps({"chunk": i // 500, "planned": r["planned"], "rejected": len(r["rejected"])}), flush=True)
@@ -291,7 +338,7 @@ def cmd_plan(a):
 def cmd_apply(a):
     total = {"applied": 0, "would_apply": 0, "skipped": 0}
     while True:
-        r = pgrest.rpc("corpus_ecfr_text_apply_v1", {"p_run": a.run, "p_limit": a.batch, "p_dry": a.dry})
+        r = pgrest.rpc(rpc_name("apply"), {"p_run": a.run, "p_limit": a.batch, "p_dry": a.dry})
         for k in total:
             total[k] += r[k]
         print(json.dumps(r), flush=True)
@@ -303,7 +350,7 @@ def cmd_apply(a):
 def cmd_rollback(a):
     total = {"restored": 0, "skipped": 0}
     while True:
-        r = pgrest.rpc("corpus_ecfr_text_rollback_v1", {"p_run": a.run, "p_limit": a.batch, "p_dry": a.dry})
+        r = pgrest.rpc(rpc_name("rollback"), {"p_run": a.run, "p_limit": a.batch, "p_dry": a.dry})
         for k in total:
             total[k] += r[k]
         print(json.dumps(r), flush=True)
@@ -322,7 +369,8 @@ def cmd_recheck(a):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--work", required=True)
-    ap.add_argument("--run", default=RUN_ID)
+    ap.add_argument("--family", choices=["ecfr", "uscode"], default="ecfr")
+    ap.add_argument("--run", default=None)
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("upload-raw").set_defaults(fn=cmd_upload_raw)
     p = sub.add_parser("intake"); p.add_argument("--limit", type=int, default=0); p.set_defaults(fn=cmd_intake)
@@ -335,6 +383,9 @@ def main():
     p = sub.add_parser("rollback"); p.add_argument("--batch", type=int, default=250); p.add_argument("--dry", action="store_true"); p.set_defaults(fn=cmd_rollback)
     p = sub.add_parser("recheck"); p.add_argument("--deep", action="store_true"); p.add_argument("--dataset", choices=["federal_regulations_sections", "citation_index"]); p.set_defaults(fn=cmd_recheck)
     a = ap.parse_args()
+    FAMILY["name"] = a.family
+    FAMILY["packets"] = "packets" if a.family == "ecfr" else "usc_packets"
+    a.run = a.run or (RUN_ID if a.family == "ecfr" else USC_RUN_ID)
     a.fn(a)
 
 

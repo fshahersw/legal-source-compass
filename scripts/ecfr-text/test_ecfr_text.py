@@ -115,5 +115,67 @@ class BuildPackets(unittest.TestCase):
             self.assertEqual([e["native_id"] for e in batch], ["title-1/part-9/section-9.1", "title-1/part-9/section-9.2-9.3"])
 
 
+PAGE = """<html><head><title>U.S.C. Title 9 - ARBITRATION</title></head><body>
+<span style="font-weight:bold;font-size:12pt;">9 U.S.C. </span><br/>
+<span style="font-size:10pt">United States Code, 2024 Edition</span><br/>
+<span style="font-size:10pt">Title 9 - ARBITRATION</span><br/>
+<span style="font-size:10pt">CHAPTER 1 - GENERAL PROVISIONS</span><br/>
+<span style="font-size:10pt">Sec. 2 - Validity, irrevocability, and enforcement of agreements to arbitrate</span><br/>
+<span style="font-size:10pt">From the U.S. Government Publishing Office, <a href="http://www.gpo.gov">www.gpo.gov</a></span><br/><br/>
+<!-- documentid:9_2  usckey:090000000000200000000000000000000 currentthrough:20250106 documentPDFPage:1 -->
+<!-- field-start:head -->
+<h3 class="section-head">&sect;2. Validity &amp; enforcement</h3>
+<!-- field-end:head -->
+<!-- field-start:statute -->
+<p class="statutory-body">A written provision&mdash;</p>
+<p class="statutory-body-1em">(1) shall be <i>valid</i>;</p>
+<table><tr><th>A</th><td>B</td></tr></table>
+<!-- field-end:statute -->
+<!-- field-start:sourcecredit -->
+<p class="source-credit">(Pub. L. 1, Feb. 12, 1925.)</p>
+<!-- field-end:sourcecredit -->
+<!-- field-start:notes -->
+<!-- field-start:amendment-note -->
+<p class="note-body">Amendments text.</p>
+<!-- field-end:amendment-note -->
+<!-- field-end:notes -->
+<!-- field-start:footnote -->
+<p class="footnote"><sup>1</sup> So in original.</p>
+<!-- field-end:footnote -->
+</body></html>"""
+
+
+class UsCode(unittest.TestCase):
+    def test_page_parse_and_entity(self):
+        import uscode_text_lib as u
+        p = u.parse_section_page(PAGE)
+        self.assertEqual((p["title_number"], p["section_number"], p["current_through"], p["edition"]), ("9", "2", "2025-01-06", "2024"))
+        self.assertEqual(p["hierarchy"], ["Title 9 - ARBITRATION", "CHAPTER 1 - GENERAL PROVISIONS"])
+        self.assertEqual(p["heading"], "\u00a72. Validity & enforcement")
+        self.assertEqual(p["text"], "A written provision\u2014\n(1) shall be valid;\nA | B")
+        self.assertEqual(p["source_credit"], "(Pub. L. 1, Feb. 12, 1925.)")
+        self.assertEqual(p["note_kinds"], ["amendment-note"])
+        self.assertFalse(p["repealed"])
+        target = {"granule": "USCODE-2024-title9-chap1-sec2", "package": "USCODE-2024-title9"}
+        e = u.build_entity(parsed=p, target=target, raw_sha256=lib.sha256_hex(PAGE), raw_bytes_len=len(PAGE),
+                           source_url="https://www.govinfo.gov/content/pkg/USCODE-2024-title9/html/USCODE-2024-title9-chap1-sec2.htm",
+                           retrieved_at="2026-10-06T00:00:00Z", http_status=200, route="direct")
+        self.assertEqual(e["native_id"], "title-9/section-2")
+        self.assertFalse(e["data"]["proxied_fetch"])
+        self.assertEqual(e["provenance"]["record_sha256"], lib.record_sha256(e["data"]))
+        self.assertTrue(e["provenance"]["raw_object_key"].endswith(".htm"))
+        lib.assert_integer_domain(e["data"])
+
+    def test_identity_rules(self):
+        import uscode_build_packets as b
+        mk = lambda sec: {"title_number": "2", "section_number": sec}
+        t = {"title": "2", "section": "261"}
+        self.assertTrue(b.identity_ok(mk("261"), t))
+        self.assertTrue(b.identity_ok(mk("261_to_270"), t))
+        self.assertTrue(b.identity_ok(mk("[261"), t))
+        self.assertFalse(b.identity_ok(mk("2610"), t))
+        self.assertFalse(b.identity_ok({"title_number": "3", "section_number": "261"}, t))
+
+
 if __name__ == "__main__":
     unittest.main()
