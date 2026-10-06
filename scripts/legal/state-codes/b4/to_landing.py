@@ -124,6 +124,15 @@ def convert(work, cfg):
         secs.append({"unit_key": unit_key(s["chapter_native_id"]), "citation_path": path, "citation": s["citation"], "heading": s.get("heading"),
                      "text": t, "hierarchy": s["hierarchy"], "history": s.get("history"), "status_note": s.get("status_label"),
                      "span": span, "currency": cur})
+    pats = [re.compile(x) for x in manifest["retrieval"]["source_url_patterns"]]
+    for o in objects.values():
+        for src in o["sources"]:
+            if not any(p.search(src["source_url"]) for p in pats):
+                raise SystemExit("source URL not covered by the manifest patterns: " + src["source_url"])
+            if src["retrieval_method"] not in manifest["retrieval"]["methods"]:
+                raise SystemExit("retrieval method not declared in the manifest: " + src["retrieval_method"])
+    if not re.search(manifest["section_id"]["regex"], manifest["section_id"]["example"]):
+        raise SystemExit("section_id example does not match its regex")
     json.dump(manifest, open(os.path.join(out, "manifest.json"), "w"), indent=1, sort_keys=True)
     write(os.path.join(out, "objects.jsonl"), sorted(objects.values(), key=lambda o: o["sha256"]))
     write(os.path.join(out, "units.jsonl"), units)
