@@ -108,7 +108,7 @@ const reposeTrigger = (text: string): ClockKind | null => {
   )
     return "act_or_omission";
   if (
-    /first (purchase|sale|delivery)|delivery (of the product )?to (its |the )?(first|initial)|initial purchaser|first purchaser|time of delivery|date of delivery/.test(
+    /first (purchase|sale|delivery)|delivery (of the product )?to (its |the )?(first|initial)|initial purchas(e|er)|first purchaser|time of delivery|date of delivery/.test(
       t,
     )
   )
