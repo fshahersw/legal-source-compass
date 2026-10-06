@@ -338,7 +338,8 @@ export async function runTransfer(argv=process.argv.slice(2),deps={}){
  const sourceDelayMs=Number(args['source-delay-ms']??0),initialWaitMs=Number(args['initial-wait-ms']??0),workerDelayMs=Number(args['worker-delay-ms']??0);
  if(!Number.isSafeInteger(sourceDelayMs)||sourceDelayMs<0||!Number.isSafeInteger(initialWaitMs)||initialWaitMs<0||!Number.isSafeInteger(workerDelayMs)||workerDelayMs<0)throw Error('INVALID_SOURCE_PACING');
  if(!args.execute){console.log(JSON.stringify({state:'verified_dry_run',queued:rows.length,held:all.length-eligibleRows.length,skippedHost:hostSkipped.length,alreadyVerified:done.size,pending:pending.length}));return{stopped:false,state:null};}
- const cfg=JSON.parse(await fs.readFile(String(args.credentials),'utf8'));
+ // Credentials come from --credentials=<private file> or, when absent, from EXTERNAL_SUPABASE_URL / EXTERNAL_SUPABASE_KEY in the environment (nothing is written to disk).
+ const cfg=args.credentials?JSON.parse(await fs.readFile(String(args.credentials),'utf8')):{EXTERNAL_SUPABASE_URL:process.env.EXTERNAL_SUPABASE_URL,EXTERNAL_SUPABASE_KEY:process.env.EXTERNAL_SUPABASE_KEY??process.env.EXTERNAL_SUPABASE_SERVICE_ROLE_KEY};
  if(cfg.EXTERNAL_SUPABASE_URL!=='https://'+PROJECT+'.supabase.co')throw Error('WRONG_PROJECT');
  const token=cfg.EXTERNAL_SUPABASE_KEY;if(typeof token!=='string')throw Error('SERVER_KEY_MISSING');
  if(token.startsWith('ey')){const claims=JSON.parse(Buffer.from(token.split('.')[1],'base64url'));if(claims.role!=='service_role'||claims.ref!==PROJECT)throw Error('WRONG_SERVER_ROLE');}else if(!token.startsWith('sb_secret_'))throw Error('SERVER_ROLE_REQUIRED');

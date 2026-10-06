@@ -170,3 +170,16 @@ test('cl-entry fetches one native entry, stages it verbatim and records whether 
   const line = JSON.parse((await fs.readFile(path.join(work, 'stage/live-normalized/docket-entries.jsonl'), 'utf8')).trim());
   assert.equal(line.native_id, '256350793'); assert.match(line.provenance.source_url, /docket-entries\/256350793\/$/);
 });
+
+test('CourtListener client waits for a closed minute or hour window instead of provoking a 429', async () => {
+  const work = await tmp(); let usageCalls = 0; const waits = [];
+  const mk = hourRemaining => ({current_usage: [{scope: 'user', rate: '1400/day', used: 0, limit: 1400, remaining: 1000, window_seconds: 86400, reset_at: 'x', blocked: false}, {scope: 'user', rate: '300/hour', used: 299, limit: 300, remaining: hourRemaining, window_seconds: 3600, reset_at: null, blocked: false}]});
+  const fetchImpl = async url => {
+    if (String(url).includes('api-usage')) { usageCalls++; return new Response(JSON.stringify(mk(usageCalls >= 3 ? 250 : 1)), {status: 200}); }
+    return new Response(JSON.stringify({id: 1}), {status: 200});
+  };
+  const cl = new CourtListener({cacheDir: work, token: 't', fetchImpl, reserve: 5});
+  cl.sleepFn = async ms => { waits.push(ms); };
+  const out = await cl.get('https://www.courtlistener.com/api/rest/v4/dockets/1/');
+  assert.equal(out.data.id, 1); assert.deepEqual(waits, [300000, 300000]); assert.equal(cl.requests, 1);
+});
