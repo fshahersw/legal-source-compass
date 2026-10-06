@@ -119,6 +119,25 @@ describe("exact statute citation paths", () => {
     expect(onlyExactStoredSection("512", [titleTwelve, titleOne])).toBeNull();
   });
 
+  it("reads Nevada 11.190 without the parenthetical or a longer section", () => {
+    expect(exactCitationPaths("NV", "Nev. Rev. Stat. § 11.190(4)(e)")).toEqual(["11.190"]);
+    expect(exactCitationPaths("NV", "Nev. Rev. Stat. § 11.190(4)(e)")?.includes("11.19")).toBe(
+      false,
+    );
+    expect(exactCitationPaths("NV", "Nev. Rev. Stat. § 11.190(4)(e)")?.includes("111.190")).toBe(
+      false,
+    );
+    expect(exactCitationPaths("NV", "NRS 111.190")).toEqual(["111.190"]);
+    expect(
+      onlyExactStoredSection("11.190", [
+        { citationPath: "11.190", sectionNumbers: ["11.190"] },
+        { citationPath: "111.190", sectionNumbers: ["111.190"] },
+        { citationPath: "211.190", sectionNumbers: ["211.190"] },
+      ])?.citationPath,
+    ).toBe("11.190");
+    expect(statuteNativeId("NV", "11.190")).toBe("NV:11.190");
+  });
+
   it("reads Oregon 12.110 without the parenthetical", () => {
     expect(exactCitationPaths("OR", "ORS 12.110(1)")).toEqual(["12.110"]);
     expect(exactCitationPaths("OR", "ORS 12.110(1)")?.includes("12.11")).toBe(false);
