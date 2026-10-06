@@ -65,7 +65,10 @@ def section_urls(f, successful=None):
             continue
         unit_url = chapter_url(c['href'])
         if unit_url not in successful:
-            raise SystemExit('chapter missing: %s' % c['href'])
+            r = f.get(unit_url, label='chapter:%s' % c['chapter_label'])
+            if not r['ok']:
+                raise SystemExit('chapter missing: %s' % c['href'])
+            successful[unit_url] = r
         for s in parse_index.parse_chapter(f.read(successful[unit_url]))['sections']:
             seen.setdefault(BASE + s['href'], c['href'])
     return list(seen)
