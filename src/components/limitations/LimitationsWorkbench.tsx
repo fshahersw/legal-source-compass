@@ -437,6 +437,10 @@ export function LimitationsWorkbench({
           {step === 1 && (
             <section className={box}>
               <h2 className="text-xl font-semibold">1. Choose the law and claim</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Rule release {snapshot.ruleVersion}. Source version {snapshot.snapshotDate}. Both
+                come from the loaded limitations snapshot.
+              </p>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                 Select the state law and claim category. Venue or residence alone does not determine
                 governing law.
