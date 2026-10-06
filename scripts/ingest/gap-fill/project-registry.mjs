@@ -128,6 +128,15 @@ export function planDocket(row, d, evByNative, phase, now) {
       setFact(patch, 'Provider case ids', cur ? `${cur}; courtlistener: ${n.native_id}` : `courtlistener: ${n.native_id}`);
       insertFactAfter(patch, 'Provider case ids', 'Provider case ids — source', `${sourceText('CourtListener docket id', n)}${n.key_match_rule ? `; rule: ${n.key_match_rule}` : ''}`);
       gapfill.push({field: 'native_case_id', value: n.native_id, g: n});
+    } else if (n && clIds.length) {
+      const entries = clone(row.detail?.registry?.native_case_ids ?? []);
+      const mine = entries.find(x => String(x?.id) === String(n.native_id) && (x.pacer_case_id ?? null) === null);
+      const pacer = evByNative.get(n.native_id)?.pacer_case_id ?? null;
+      if (mine && pacer) {
+        mine.pacer_case_id = pacer;
+        patch.set(['detail', 'registry', 'native_case_ids'], entries);
+        applied.push({field: 'pacer_case_id', value: pacer});
+      }
     }
   } else if (phase === 'dates') {
     const c = d.conflict;
@@ -308,7 +317,7 @@ export async function main(argv) {
   }
   if (phase === 'variants' || phase === 'termination-note') {
     const ev = await readJsonl(path.join(dir, 'stage-bulk/docket-bulk-match.jsonl'));
-    const byReg = new Map();
+    const byReg = new Map(), evByNative = new Map(ev.map(r => [r.native_id, r.data]));
     for (const r of ev) {
       if (r.data.blocked) continue;
       const want = phase === 'variants' ? r.data.key_match_rule === VARIANT_RULE : (r.data.purposes ?? []).includes('no_termination_recorded');
@@ -321,7 +330,7 @@ export async function main(argv) {
       const rows = await fetchRows(live, 'sw_matter_dockets_v1', ids.slice(i, i + 200)), writes = [];
       for (const row of rows) {
         const c = byReg.get(row.id);
-        const r = phase === 'variants' ? planDocket(row, {native: {...c, action: 'fill', field: 'native_case_id', value: c.native_id}}, new Map(), 'blanks', now) : planTerminationNote(row, c, now);
+        const r = phase === 'variants' ? planDocket(row, {native: {...c, action: 'fill', field: 'native_case_id', value: c.native_id}}, evByNative, 'blanks', now) : planTerminationNote(row, c, now);
         for (const h of r.held) { stats.held++; await appendJsonl(`${args.ledger}.held`, {id: row.id, phase, ...h}); }
         if (!r.patch.ops.length) { stats.unchanged++; continue; }
         await appendJsonl(args.ledger, {id: row.id, dataset: 'sw_matter_dockets_v1', phase, applied: r.applied, projected_at: now, ops: r.patch.ops});

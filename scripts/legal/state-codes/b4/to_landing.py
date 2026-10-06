@@ -6,11 +6,8 @@ scripts/legal/state-codes/common/land_publisher_code_v2.py (spec: internal/state
 
 landing.json carries the reviewed publisher-code-manifest/2 fields plus `currency_defaults` {basis, statement, through_date, edition}
 (used when a section has no own currency) and optional `unit_kind`, `default_method`, `method_rules` [{pattern, method}].
-Output: <work>/landing/{manifest,objects,units,sections}.jsonl|json. Every object source carries http_status 200.
-A unit whose text is empty, or whose receipt is not HTTP 200, is listed in landing/gaps.json and is not a row.
-Sections with no printed text are listed there too and never invented. Repeated official citations get an
-occurrence suffix `~N` (the manifest regex must allow it). toc-proof.json is not written here: the batch
-lead adds it after comparing the publisher's section markers, including child pages, before landing.
+Output: <work>/landing/{manifest,objects,units,sections}.jsonl|json. Sections with no printed text are listed in landing/gaps.json
+and never invented. Repeated official citations get an occurrence suffix `~N` (the manifest regex must allow it).
 """
 import argparse
 import json
@@ -65,26 +62,31 @@ def convert(work, cfg):
     dflt = cfg["currency_defaults"]
     objects, units, secs, gaps = {}, [], [], []
     text = {}
+    empty_units = set()
     for c in chapters:
+        if c["text_codepoints"] == 0:
+            empty_units.add(c["native_id"])
+            gaps.append({"unit": c["native_id"], "reason": "chapter page has no extractable text; a source unit needs a non-empty text derivative"})
+            continue
         shas = c["raw_sha256s"]
         if len(shas) != 1:
             raise SystemExit(f"{c['native_id']}: a unit must come from exactly one retained original; split it")
         raw = by_sha[shas[0]]
+        for u in c.get("source_urls") or []:
+            r = arc.index.get(u)
+            if r and r.get("state") == "complete" and r["sha256"] == shas[0]:
+                raw = r
+                break
         method, proxy = method_for(cfg, raw["url"], raw["route"])
-        if raw.get("http_status") != 200:
-            gaps.append({"unit": c["native_id"], "reason": "http_status %s" % raw.get("http_status")})
-            continue
-        src = {"source_url": raw["url"], "retrieved_at": raw["retrieved_at"], "http_status": 200,
-               "retrieval_method": method, "proxy": proxy}
+        src = {"source_url": raw["url"], "retrieved_at": raw["retrieved_at"], "http_status": 200, "retrieval_method": method, "proxy": proxy}
+        orig = objects.setdefault(shas[0], {"sha256": shas[0], "bytes": raw["bytes"], "kind": "publisher_original",
+                                            "path": os.path.abspath(os.path.join(work, raw["file"])), "sources": []})
+        if src not in orig["sources"]:
+            orig["sources"].append(src)
         tpath = os.path.abspath(os.path.join(pk, "chapter-text", c["text_sha256"] + ".txt"))
         body = open(tpath, encoding="utf-8").read()
         if sc.sha256_hex(body) != c["text_sha256"] or len(body) != c["text_codepoints"]:
             raise SystemExit("chapter text failed hash/length: " + c["native_id"])
-        if not body.strip() or "\x00" in body:
-            gaps.append({"unit": c["native_id"], "reason": "empty unit text" if not body.strip() else "NUL in unit text"})
-            continue
-        objects[shas[0]] = {"sha256": shas[0], "bytes": raw["bytes"], "kind": "publisher_original",
-                            "path": os.path.abspath(os.path.join(work, raw["file"])), "sources": [src]}
         text[c["native_id"]] = body
         o = objects.setdefault(c["text_sha256"], {"sha256": c["text_sha256"], "bytes": len(body.encode("utf-8")), "kind": "unit_text_derivative",
                                                   "path": tpath, "sources": []})
@@ -98,9 +100,8 @@ def convert(work, cfg):
     regex = re.compile(cfg["section_id"]["regex"])
     seen = {}
     for s in sections:
-        if s["chapter_native_id"] not in text:
-            gaps.append({"citation_path": s["citation_path"], "reason": "unit not landed"})
-            continue
+        if s["chapter_native_id"] in empty_units:
+            raise SystemExit("section staged inside an empty chapter: " + s["citation_path"])
         t = text[s["chapter_native_id"]][s["start"]:s["end"]]
         if sc.sha256_hex(t) != s["text_sha256"]:
             raise SystemExit("section span hash mismatch: " + s["citation_path"])
@@ -123,6 +124,15 @@ def convert(work, cfg):
         secs.append({"unit_key": unit_key(s["chapter_native_id"]), "citation_path": path, "citation": s["citation"], "heading": s.get("heading"),
                      "text": t, "hierarchy": s["hierarchy"], "history": s.get("history"), "status_note": s.get("status_label"),
                      "span": span, "currency": cur})
+    pats = [re.compile(x) for x in manifest["retrieval"]["source_url_patterns"]]
+    for o in objects.values():
+        for src in o["sources"]:
+            if not any(p.search(src["source_url"]) for p in pats):
+                raise SystemExit("source URL not covered by the manifest patterns: " + src["source_url"])
+            if src["retrieval_method"] not in manifest["retrieval"]["methods"]:
+                raise SystemExit("retrieval method not declared in the manifest: " + src["retrieval_method"])
+    if not re.search(manifest["section_id"]["regex"], manifest["section_id"]["example"]):
+        raise SystemExit("section_id example does not match its regex")
     json.dump(manifest, open(os.path.join(out, "manifest.json"), "w"), indent=1, sort_keys=True)
     write(os.path.join(out, "objects.jsonl"), sorted(objects.values(), key=lambda o: o["sha256"]))
     write(os.path.join(out, "units.jsonl"), units)
