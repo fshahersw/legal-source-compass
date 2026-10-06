@@ -25,16 +25,16 @@ export const SPECS = [
     {label: 'native case ids (none)', raw: 'filters->native_case_id=eq.%5B%5D'}]},
   {entity: 'dockets (CourtListener native)', dataset: 'cl_docket_metadata', fields: [
     {label: 'filing date', path: cells('date_filed')}, {label: 'termination date', path: cells('date_terminated')}, {label: 'docket number', path: cells('docket_number')},
-    {label: 'court', path: cells('court_id')}, {label: 'FJC IDB association id', path: cells('idb_data_id')}, {label: 'last filing date', path: cells('date_last_filing')}]},
+    {label: 'court', path: cells('court_id')}, {label: 'FJC IDB association id', path: cells('idb_data_id')}, {label: 'last filing date', path: cells('date_last_filing')}, {label: 'MDL number (explicit FJC value only)', path: cells('mdl_number')}]},
   {entity: 'docket entries (master dockets)', dataset: 'sw_docket_entries_v1', fields: [
     {label: 'filing date', path: cells('date_filed')}, {label: 'description', path: cells('description')}, {label: 'entry number', path: cells('entry_number')},
-    {label: 'time filed', path: cells('time_filed')}, {label: 'no documents attached', raw: `${cells('documents')}=eq.0`},
+    {label: 'time filed', path: cells('time_filed')}, {label: 'document ids (none)', raw: `${cells('document_ids')}=eq.%5B%5D`}, {label: 'no documents attached', raw: `${cells('documents')}=eq.0`},
     {label: 'description withheld (policy)', raw: `${cells('description_withheld')}=not.is.null`}]},
   {entity: 'documents (MDL docket documents)', dataset: 'mdl_docket_documents', fields: [
     {label: 'filing date', path: cells('entry_date_filed')}, {label: 'description', path: cells('description')}, {label: 'label (doc_type)', path: cells('doc_type')}]},
   {entity: 'parties (master dockets)', dataset: 'sw_matter_parties_v1', fields: [
     {label: 'party name', path: cells('party_name')}, {label: 'label (party_types)', path: cells('party_types')},
-    {label: 'native party id', path: cells('native_party_id')}, {label: 'no counsel linked', raw: `${cells('counsel_count')}=eq.0`}, {label: 'name withheld', raw: `${cells('name_withheld')}=eq.true`}]},
+    {label: 'native party id', path: cells('native_party_id')}, {label: 'extra info', path: cells('extra_info')}, {label: 'no counsel linked', raw: `${cells('counsel_count')}=eq.0`}, {label: 'name withheld', raw: `${cells('name_withheld')}=eq.true`}]},
   {entity: 'matters (JPML MDLs)', dataset: 'mdls', fields: [
     {label: 'status', path: 'item->>status'}, {label: 'CourtListener master docket id', path: 'item->>cl_docket_id'}, {label: 'date transferred', path: 'item->>date_transferred'},
     {label: 'master docket number', path: 'item->>master_docket'}, {label: 'transferee court (cl_court_id)', path: 'item->>cl_court_id'}, {label: 'judge unresolved', raw: 'item->>judge_resolved=eq.false'}]},
