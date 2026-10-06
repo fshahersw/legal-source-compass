@@ -191,3 +191,29 @@ test('DocketBird client paces requests, backs off on 429 and retries instead of 
   const r = await db.get('/cases/x-1:2024-cv-00001');
   assert.equal(r.data.ok, 2); assert.equal(db.rateLimited, 1); assert.ok(waits.length >= 1); assert.equal(db.stopped, null);
 });
+
+import {amountsIn, chargeText} from './docketbird-follow.mjs';
+test('only explicit money in a provider message counts as a charge; filing titles are never scanned', () => {
+  assert.deepEqual(amountsIn('Charges may apply. This follow costs $3.50 to unlock.'), ['$3.50']);
+  assert.deepEqual(amountsIn('{"status":"success"}'), []);
+  assert.deepEqual(amountsIn(chargeText({document: {title: 'Order re fees and costs 11/13, $5,000 sanction'}, message: 'ok'})), []);
+  assert.deepEqual(amountsIn(chargeText({message: 'Balance charged 2.5 USD'})), ['2.5 USD']);
+});
+
+test('DocketBird "document not found" is a recorded miss, not a stop', async () => {
+  const work = await tmp();
+  const fetchImpl = async () => new Response('{"status": "error", "message": "document not found"}', {status: 400});
+  const db = new DocketBird({cacheDir: work, key: 'K', fetchImpl});
+  const r = await db.get('/documents/x-1:2024-cv-00001-00009-001');
+  assert.equal(r.notFound, true); assert.equal(db.stopped, null);
+});
+
+test('cl-find queries the docket_number_core and classifies exact vs type-variant candidates locally', async () => {
+  const work = await tmp(); const urls = [];
+  const cl = {requests: 0, get: async url => { urls.push(String(url)); return {data: {results: [{id: 11, docket_number: '1:18-op-45090'}, {id: 12, docket_number: '2:18-cv-45090'}], next: null}, receipt: {source_url: url, retrieved_at: 't', http_status: 200, source_sha256: 'a'.repeat(64)}}; }};
+  const r = await new Runner({work, cl, db: null}).init();
+  const a = await r.runTask({kind: 'cl-find', court: 'ohnd', docket_number: '1:18-45090'});
+  assert.match(urls[0], /docket_number_core=1845090/); assert.equal(a.resolution, 'unique_type_variant_candidate_not_accepted'); assert.deepEqual(a.candidate_native_ids, ['11']);
+  const b = await r.runTask({kind: 'cl-find', court: 'ohnd', docket_number: '1:18-op-45090'});
+  assert.equal(b.resolution, 'unique_exact_court_office_year_type_sequence');
+});

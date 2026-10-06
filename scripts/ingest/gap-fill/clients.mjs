@@ -109,6 +109,7 @@ export class DocketBird {
     if (res.status === 403 && /does not have access to this case/i.test(body?.message ?? '')) return {untracked: true, data: null, receipt};
     if (res.status === 403) { this.stopped = 'AUTHORIZATION_STOP 403'; throw new Stop(this.stopped); }
     if (res.status === 504) return {timeout: true, data: null, receipt};
+    if ((res.status === 400 || res.status === 404) && /not found/i.test(body?.message ?? '')) return {notFound: true, data: null, receipt};
     if (res.status === 502 || res.status === 503) return {transient: true, data: null, receipt};
     if (res.status !== 200 || body?.status !== 'success') throw new Stop('HTTP_ERROR', String(res.status));
     return {data: body.data, receipt};

@@ -126,8 +126,11 @@ async function registryFor(caseId) {
 export async function main(argv) {
   const args = Object.fromEntries(argv.map(a => { const i = a.indexOf('='); return i < 0 ? [a.replace(/^--/, ''), 'true'] : [a.slice(2, i), a.slice(i + 1)]; }));
   const dry = args['dry-run'] === 'true';
-  const caseRows = await readJsonl(path.join(args.stage, 'docketbird-rest/case.jsonl'));
-  const docRows = await readJsonl(path.join(args.stage, 'docketbird-rest/docket-document.jsonl'));
+  // --stage accepts several stage directories (comma separated); the last row for a native id wins.
+  const uniq = rows => [...new Map(rows.map(r => [r.native_id, r])).values()];
+  const stages = String(args.stage).split(',').filter(Boolean);
+  const caseRows = uniq((await Promise.all(stages.map(d => readJsonl(path.join(d, 'docketbird-rest/case.jsonl')).catch(() => [])))).flat());
+  const docRows = uniq((await Promise.all(stages.map(d => readJsonl(path.join(d, 'docketbird-rest/docket-document.jsonl')).catch(() => [])))).flat());
   const registry = {};
   for (const c of new Set(docRows.map(d => d.data.case_id))) registry[c] = await registryFor(c);
   const mdlRows = (await rest('corpus_records?select=id,item&dataset=eq.mdls&limit=1000')).data;

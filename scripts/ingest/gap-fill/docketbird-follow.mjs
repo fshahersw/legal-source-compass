@@ -6,7 +6,11 @@ import fs from 'node:fs/promises';
 import {appendJsonl, sleep} from './lib.mjs';
 
 const BASE = 'https://api.docketbird.com';
-const AMOUNT = /\$\s?\d[\d,]*(?:\.\d{1,2})?|\b\d+(?:\.\d{1,2})?\s?(?:usd|dollars?)\b|(?:charge|fee|cost|price)[^"\n]{0,60}\d/gi;
+// Only explicit money: a dollar amount, or a number followed by usd/dollars. Docket titles are never scanned (see chargeText).
+const AMOUNT = /\$\s?\d[\d,]*(?:\.\d{1,2})?|\b\d+(?:\.\d{1,2})?\s?(?:usd|dollars?)\b/gi;
+const TEXT_KEYS = new Set(['title', 'description', 'document_title', 'case_title', 'custom_filename', 'snippets', 'canonical_url']);
+/** The part of a response that can carry a provider message about money: everything except filing text. */
+export const chargeText = value => JSON.stringify(value, (k, v) => (TEXT_KEYS.has(k) ? undefined : v));
 export const amountsIn = text => [...new Set(String(text ?? '').match(AMOUNT) ?? [])].map(s => s.trim());
 
 async function call(method, path, {key, body, fetchImpl = fetch, timeout = 60000} = {}) {

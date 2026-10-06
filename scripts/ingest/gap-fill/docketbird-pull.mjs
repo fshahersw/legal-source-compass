@@ -11,12 +11,13 @@ import {fileURLToPath} from 'node:url';
 import {DocketBird, Stop} from './clients.mjs';
 import {atomicWriteJson, readJson, appendJsonl, sha256} from './lib.mjs';
 import {dbCaseRow, dbDocumentRow} from './normalize.mjs';
-import {amountsIn} from './docketbird-follow.mjs';
+import {amountsIn, chargeText} from './docketbird-follow.mjs';
 import {excluded} from '../members-publish-rules.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const run = (cmd, args) => new Promise((resolve, reject) => { const p = spawn(cmd, args, {stdio: ['ignore', 'inherit', 'inherit']}); p.on('error', reject); p.on('exit', c => c === 0 ? resolve() : reject(new Error(`${path.basename(args[0])} exited ${c}`))); });
-const pool = async (items, n, fn) => { let i = 0; await Promise.all(Array.from({length: n}, async () => { while (i < items.length && !pool.stop) await fn(items[i++]); })); };
+/** Workers stop taking items as soon as one fails (a Stop must end the whole run, not leave siblings running). */
+const pool = async (items, n, fn) => { let i = 0; pool.stop = false; await Promise.all(Array.from({length: n}, async () => { while (i < items.length && !pool.stop) { try { await fn(items[i++]); } catch (e) { pool.stop = true; throw e; } } })); };
 
 /** Eligibility for a PDF fetch: explicit provider flags plus the broad exclusion rule on the title. */
 export function pdfEligible(doc) {
@@ -51,7 +52,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     for (const a of amountsIn(text)) if (!ck.totals.charge_amounts_seen.includes(a)) { ck.totals.charge_amounts_seen.push(a); await appendJsonl(ledger, {event: 'charge_amount_reported', where, amount: a, at: new Date().toISOString()}); await save(); throw new Stop('NEW_CHARGE_AMOUNT', a); }
   };
   try {
-    if (!st.header) { const {data, receipt} = await db.get(`/cases/${caseId}`); await noteCharges('GET /cases', JSON.stringify(data)); await appendJsonl(path.join(stage, 'case.jsonl'), dbCaseRow(data.case, receipt)); st.header = true; await save(); }
+    if (!st.header) { const {data, receipt} = await db.get(`/cases/${caseId}`); await noteCharges('GET /cases', chargeText(data)); await appendJsonl(path.join(stage, 'case.jsonl'), dbCaseRow(data.case, receipt)); st.header = true; await save(); }
     const ids = await enumerate({db, caseId, st, save});
     console.log(JSON.stringify({case: caseId, found: st.search.found, enumerated: ids.length}));
     const todo = ids.filter(id => !st.details_done[id]);
@@ -59,8 +60,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     for (let b = 0; b < todo.length && ck.totals.pdfs_cloud_verified < stopAt; b += batchSize) {
       const batch = todo.slice(b, b + batchSize), queue = [], rows = [];
       await pool(batch, conc, async id => {
-        const {data, receipt} = await db.get(`/documents/${id}`);
-        await noteCharges('GET /documents/{id}', JSON.stringify(data));
+        const {data, receipt, notFound} = await db.get(`/documents/${id}`);
+        if (notFound) { st.details_done[id] = {not_found: true}; (st.not_found ??= []).push(id); return; }
+        await noteCharges('GET /documents/{id}', chargeText(data));
         const doc = data.document;
         const row = dbDocumentRow(caseId, doc, receipt); rows.push(row);
         st.details_done[id] = {restricted: doc.restricted, downloaded: doc.downloaded, queued: false};
