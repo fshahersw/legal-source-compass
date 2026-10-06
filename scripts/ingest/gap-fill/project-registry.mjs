@@ -11,6 +11,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {isBlank, appendJsonl, sha256} from './lib.mjs';
 import {Live} from './gap-analysis-live.mjs';
+import {excluded, ws} from '../members-publish-rules.mjs';
 
 export const RUN_ID = '05eea679-6570-4812-989a-53369021ab6d';
 export const ARCHIVE_SHA = 'f40588851cee0d95696c40b8740106473f83ea3ffd8745799e03c42a15b9399b';
@@ -160,6 +161,39 @@ export function planDocket(row, d, evByNative, phase, now) {
   return {patch, applied, held, gapfill};
 }
 
+/**
+ * Caption from the bulk docket header, shown exactly as published (whitespace collapsed only), blanks only. Text that is sealed, restricted,
+ * in camera, ex parte or redacted is held, as are blank, ambiguous (never indexed) and blocked dockets. `c` = {value, native_id, source_row_ordinal}.
+ */
+export function planCaption(row, c, now) {
+  const patch = new Patch({item: row.item, detail: row.detail, filters: row.filters, title: row.title, text: row.text});
+  const cells = row.item?.cells ?? {}, held = [];
+  if (!c || !isBlank(cells.caption)) return {patch, applied: [], held, gapfill: []};
+  const value = ws(c.value);
+  if (!value) { held.push({field: 'caption', reason: 'bulk caption blank'}); return {patch, applied: [], held, gapfill: []}; }
+  if (excluded(value)) { held.push({field: 'caption', reason: 'caption text matches the seal/restricted/in camera/ex parte/redact exclusion', native_id: c.native_id}); return {patch, applied: [], held, gapfill: []}; }
+  const num = cells.docket_number, court = cells.court_id;
+  const title = `${value} — ${num} (${court})`;
+  patch.set(['item', 'cells', 'caption'], value);
+  patch.set(['item', 'cells', 'caption_source'], 'courtlistener_header');
+  patch.set(['item', 'title'], title);
+  patch.set(['title'], title);
+  patch.set(['detail', 'title'], title);
+  patch.set(['text'], `${value} ${row.text ?? ''}`.trim());
+  patch.set(['filters', 'has_caption'], 'true');
+  patch.set(['detail', 'registry', 'caption'], value);
+  patch.set(['detail', 'registry', 'caption_withheld'], false);
+  patch.set(['detail', 'registry', 'captions'], [...(row.detail?.registry?.captions ?? []), {value, source: 'courtlistener_header', institutional: false, cl_docket_id: c.native_id}]);
+  const facts = clone(patch.get(['detail', 'facts'])) ?? [];
+  const add = [['Caption (as published)', value], ['Caption source', 'CourtListener docket header'], ['Caption — source', sourceText('Caption', c)]];
+  const at = facts.findIndex(f => f[0] === 'Provider case ids — source') >= 0 ? facts.findIndex(f => f[0] === 'Provider case ids — source') : facts.findIndex(f => f[0] === 'Provider case ids');
+  const rest = add.filter(([k]) => !facts.some(f => f[0] === k));
+  facts.splice(at >= 0 ? at + 1 : facts.length, 0, ...rest);
+  patch.set(['detail', 'facts'], facts);
+  patch.set(['detail', 'provenance', 'gapfill'], [...(row.detail?.provenance?.gapfill ?? []), {field: 'caption', value, phase: 'captions', source: 'courtlistener-bulk', archive_sha256: ARCHIVE_SHA, archive_url: BULK_URL, source_row_ordinal: c.source_row_ordinal, native_docket_id: c.native_id, run_id: RUN_ID, projected_at: now}]);
+  return {patch, applied: [{field: 'caption', value}], held, gapfill: [{field: 'caption'}]};
+}
+
 /** cl_docket_metadata MDL number from an exact FJC IDB join; labelled historical administrative association. */
 export function planMdl(row, fjc, now) {
   const patch = new Patch({item: row.item, detail: row.detail, filters: row.filters});
@@ -187,7 +221,7 @@ async function fetchRows(live, dataset, ids) {
   const out = [];
   for (let i = 0; i < ids.length; i += 40) {
     const q = ids.slice(i, i + 40).map(x => `"${x}"`).join(',');
-    const r = await live.fetchImpl(`${live.url}/rest/v1/corpus_records?select=id,item,detail,filters&dataset=eq.${dataset}&id=in.(${encodeURIComponent(q)})`, {headers: live.headers, signal: AbortSignal.timeout(120000)});
+    const r = await live.fetchImpl(`${live.url}/rest/v1/corpus_records?select=id,title,text,item,detail,filters&dataset=eq.${dataset}&id=in.(${encodeURIComponent(q)})`, {headers: live.headers, signal: AbortSignal.timeout(120000)});
     if (!r.ok) throw new Error(`HTTP ${r.status} read`);
     out.push(...await r.json());
   }
@@ -225,7 +259,7 @@ export async function main(argv) {
     console.log(JSON.stringify({revert: true, apply, ...stats})); return;
   }
   const dir = args.decisions, phase = args.phase;
-  if (!dir || !args.ledger || !['blanks', 'dates', 'mdl'].includes(phase)) throw new Error('--decisions=<dir> --ledger=<file> --phase=blanks|dates|mdl required');
+  if (!dir || !args.ledger || !['blanks', 'dates', 'mdl', 'captions'].includes(phase)) throw new Error('--decisions=<dir> --ledger=<file> --phase=blanks|dates|mdl required');
   const done = new Set((await readJsonl(args.ledger)).filter(l => l.phase === phase && l.ops).map(l => l.id));
   const now = new Date().toISOString();
   const stats = {phase, apply, candidates: 0, already_done: 0, changed: 0, held: 0, unchanged: 0, gone: 0, by_field: {}, held_reasons: {}};
@@ -241,6 +275,26 @@ export async function main(argv) {
       await appendJsonl(args.ledger, {id: row.id, dataset: 'cl_docket_metadata', phase, applied: r.applied, projected_at: now, ops: r.patch.ops});
       if (apply) await patchRow(live, 'cl_docket_metadata', row.id, {item: r.patch.cols.item, detail: r.patch.cols.detail, filters: r.patch.cols.filters});
       stats.changed++; stats.by_field.mdl_number = (stats.by_field.mdl_number ?? 0) + 1;
+    }
+    console.log(JSON.stringify(stats)); return;
+  }
+  if (phase === 'captions') {
+    const ev = await readJsonl(path.join(dir, 'stage-bulk/docket-bulk-match.jsonl'));
+    const byReg = new Map();
+    for (const r of ev) { if (!r.data.key_unique_in_bulk || r.data.blocked || !r.data.case_name || !(r.data.purposes ?? []).includes('fills_caption')) continue; for (const id of r.data.registry_dockets ?? []) byReg.set(id, {value: r.data.case_name, native_id: r.native_id, source_row_ordinal: r.data.source_row_ordinal}); }
+    const ids = [...byReg.keys()].filter(id => !done.has(id)).slice(0, limit);
+    stats.candidates = ids.length;
+    for (let i = 0; i < ids.length; i += 200) {
+      const rows = await fetchRows(live, 'sw_matter_dockets_v1', ids.slice(i, i + 200)), writes = [];
+      for (const row of rows) {
+        const r = planCaption(row, byReg.get(row.id), now);
+        for (const h of r.held) { stats.held++; stats.held_reasons[h.reason.slice(0, 80)] = (stats.held_reasons[h.reason.slice(0, 80)] ?? 0) + 1; await appendJsonl(`${args.ledger}.held`, {id: row.id, phase, ...h}); }
+        if (!r.patch.ops.length) { stats.unchanged++; continue; }
+        await appendJsonl(args.ledger, {id: row.id, dataset: 'sw_matter_dockets_v1', phase, applied: r.applied, projected_at: now, ops: r.patch.ops});
+        writes.push({id: row.id, cols: {item: r.patch.cols.item, detail: r.patch.cols.detail, filters: r.patch.cols.filters, title: r.patch.cols.title, text: r.patch.cols.text}});
+        stats.changed++; stats.by_field.caption = (stats.by_field.caption ?? 0) + 1;
+      }
+      if (apply) await pool(writes, 8, w => patchRow(live, 'sw_matter_dockets_v1', w.id, w.cols));
     }
     console.log(JSON.stringify(stats)); return;
   }

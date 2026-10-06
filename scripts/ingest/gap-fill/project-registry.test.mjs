@@ -84,3 +84,36 @@ test('FJC MDL number is projected only for an exact idb join and carries the his
   assert.equal(planMdl(row, {idb_data_id: '999', mdl_number_raw: '2789', origin: '1'}, 't').patch.ops.length, 0);
   assert.equal(planMdl({...row, item: {cells: {mdl_number: '2100', idb_data_id: '22251429'}}}, {idb_data_id: '22251429', mdl_number_raw: '2789'}, 't').patch.ops.length, 0);
 });
+
+import {planCaption} from './project-registry.mjs';
+import {captionCandidates, mergeEvidence} from './build-caption-evidence.mjs';
+
+const capRow = () => ({id: 'sw-md:2545:ilnd:1:2016-cv-03654', title: '1:16-03654 (ilnd) — MDL member case', text: '1:16-03654 ilnd MDL 2545',
+  item: {title: 'x', cells: {caption: null, caption_source: null, docket_number: '1:16-03654', court_id: 'ilnd'}}, detail: {title: 'x', facts: [['Provider case ids', 'courtlistener: 1'], ['Provider case ids — source', 's']], registry: {caption: null, captions: [], caption_withheld: true}, provenance: {}}, filters: {has_caption: 'false'}});
+
+test('caption is filled exactly as published (whitespace only), with title, text, facts and provenance; blanks only', () => {
+  const r = planCaption(capRow(), {value: '  Fabian   v. Actavis ', native_id: '13304142', source_row_ordinal: 7}, 't');
+  const c = r.patch.cols;
+  assert.equal(c.item.cells.caption, 'Fabian v. Actavis'); assert.equal(c.title, 'Fabian v. Actavis — 1:16-03654 (ilnd)'); assert.equal(c.filters.has_caption, 'true');
+  assert.equal(c.detail.registry.caption_withheld, false); assert.match(c.text, /^Fabian v\. Actavis 1:16-03654/);
+  assert.ok(c.detail.facts.some(f => f[0] === 'Caption — source' && /source row 7/.test(f[1])));
+  assert.equal(c.detail.provenance.gapfill[0].archive_sha256, ARCHIVE_SHA);
+  const populated = capRow(); populated.item.cells.caption = 'Existing v. Caption';
+  assert.equal(planCaption(populated, {value: 'Other', native_id: '1', source_row_ordinal: 1}, 't').patch.ops.length, 0);
+});
+
+test('captions that are sealed/restricted/redacted text are held, never written', () => {
+  for (const v of ['Doe v. Sealed Air Corp', 'In re Restricted Matter', 'Ex Parte Smith', 'REDACTED v. X', 'In camera Co']) {
+    const r = planCaption(capRow(), {value: v, native_id: '1', source_row_ordinal: 1}, 't');
+    assert.equal(r.patch.ops.length, 0); assert.match(r.held[0].reason, /exclusion/);
+  }
+});
+
+test('caption candidates need a unique, unblocked bulk row; evidence rows gain fills_caption as a new payload', () => {
+  const reg = [{id: 'a', docket_key: 'k1', caption: null}, {id: 'b', docket_key: 'k2', caption: ''}, {id: 'c', docket_key: 'k3', caption: null}, {id: 'd', docket_key: 'k4', caption: 'Has v. Caption'}];
+  const m = (id, key, extra = {}) => ({id, docket_key: key, court_id: 'njd', docket_number: '2:18-cv-00001', case_name: 'A v. B', blocked: 'f', source_row_ordinal: 1, ...extra});
+  const r = captionCandidates(reg, [m('1', 'k1'), m('2', 'k2'), m('3', 'k2'), m('4', 'k3', {blocked: 't'}), m('5', 'k4')]);
+  assert.equal(r.stats.candidates, 1); assert.equal(r.stats.ambiguous, 1); assert.equal(r.stats.blocked, 1);
+  const out = mergeEvidence([], r.cands, {archive_sha256: 'f'.repeat(64), snapshot_date: '2026-09-30', archive_bytes: 1, rows_scanned: 1}, 't');
+  assert.equal(out.delta.length, 1); assert.ok(out.delta[0].data.purposes.includes('fills_caption')); assert.deepEqual(out.delta[0].data.registry_dockets, ['a']);
+});
