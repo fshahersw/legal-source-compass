@@ -57,6 +57,7 @@ class ToLanding(unittest.TestCase):
     def test_literally_empty_section_is_a_gap_and_proxy_is_recorded(self):
         with tempfile.TemporaryDirectory() as work:
             stage(work, route="firecrawl")
+            cfg_proxy = dict(CFG, methods=["publisher_page", "proxied_fetch"])
             sp = os.path.join(work, "packet", "sections.jsonl")
             rows = [json.loads(x) for x in open(sp, encoding="utf-8")]
             ch = json.loads(open(os.path.join(work, "packet", "chapters.jsonl"), encoding="utf-8").readline())
@@ -65,7 +66,9 @@ class ToLanding(unittest.TestCase):
             rows[1]["text_sha256"] = sc.sha256_hex("")
             rows[1]["citation_path"] = "1.03"
             open(sp, "w", encoding="utf-8").write("".join(json.dumps(r) + "\n" for r in rows))
-            r = to_landing.convert(work, CFG)
+            with self.assertRaises(SystemExit):  # method not declared in the manifest
+                to_landing.convert(work, CFG)
+            r = to_landing.convert(work, cfg_proxy)
             self.assertEqual((r["sections"], r["gaps_no_text"]), (2, 1))
             unit = json.loads(open(os.path.join(work, "landing", "units.jsonl")).readline())
             self.assertEqual((unit["retrieval_method"], unit["proxy"]), ("proxied_fetch", "firecrawl"))

@@ -6,13 +6,13 @@
  "code_title": "Wyoming Statutes",
  "parser": {
   "name": "wy-lso-pdf",
-  "version": "2"
+  "version": "3"
  },
  "methods": [
   "publisher_bulk_download"
  ],
  "source_url_patterns": [
-  "^https://wyoleg\\.gov/statutes/compress/title[0-9A-Za-z]+\\.pdf$"
+  "^https://wyoleg\\.gov/statutes/compress/title[0-9A-Za-z.]+\\.pdf$"
  ],
  "rate_limit_ms": 1000,
  "default_method": "publisher_bulk_download",
