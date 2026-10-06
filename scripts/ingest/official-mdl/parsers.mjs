@@ -331,6 +331,28 @@ export function parseJpmlPanelOrders({ html, pageUrl }) {
   return { page, rows };
 }
 
+// ---- SCD (classic ASP MDL subsite): <ul><li><a href=".../orders/*.pdf"> on orders.asp ----
+export function parseScdMdlOrders({ html, pageUrl }) {
+  const root = parseHtml(html);
+  const page = { title: pageTitle(root) };
+  const ctx = ctxOf(html, pageUrl, []);
+  const rows = []; let ordinal = 0;
+  const seen = new Set();
+  for (const a of findAll(root, n => n.tag === 'a' && n.attrs.href)) {
+    const cls = classifyUrl(a.attrs.href, pageUrl);
+    if (cls.kind !== 'pdf_direct') continue;
+    if (!/\/mdl-\d+\/orders\//i.test(cls.url) || seen.has(cls.url)) continue;
+    seen.add(cls.url);
+    const holder = ancestorOf(a, n => n.tag === 'li') ?? a;
+    ordinal++;
+    const label = textOf(a);
+    rows.push(rowBase({ ctx, node: holder, section: 'Case Management Orders', ordinal, href: a.attrs.href, label,
+      title: a.attrs.title?.trim() ? a.attrs.title.trim() : label, dateText: null, docNumber: null,
+      extra: { title_source: a.attrs.title ? 'link_title_attribute' : 'link_text' } }));
+  }
+  return { page, rows };
+}
+
 // Index pages (lists of MDLs): anchors whose text names an MDL. Used only to prove which MDL pages a court currently lists.
 export function parseIndexLinks({ html, pageUrl }) {
   const root = parseHtml(html);
@@ -344,4 +366,4 @@ export function parseIndexLinks({ html, pageUrl }) {
   return { page: { title: textOf(findFirst(root, n => n.tag === 'title') ?? NODE_NONE) || null }, rows: [], index_links: [...seen.values()] };
 }
 
-export const FAMILIES = { 'njd-body': parseNjdBody, 'paed-orders-table': parsePaedOrders, 'ilnd-mdl-details': parseIlndMdlDetails, 'moed-mdl-page': parseMoedMdl, 'txnd-docket-table': parseTxndDocket, 'jpml-panel-orders': parseJpmlPanelOrders, 'index-links': parseIndexLinks };
+export const FAMILIES = { 'njd-body': parseNjdBody, 'paed-orders-table': parsePaedOrders, 'ilnd-mdl-details': parseIlndMdlDetails, 'moed-mdl-page': parseMoedMdl, 'txnd-docket-table': parseTxndDocket, 'scd-mdl-orders': parseScdMdlOrders, 'jpml-panel-orders': parseJpmlPanelOrders, 'index-links': parseIndexLinks };
