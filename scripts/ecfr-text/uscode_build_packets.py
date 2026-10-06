@@ -25,7 +25,7 @@ def identity_ok(parsed, target):
         return False
     have = normalize_section_number(parsed["section_number"]).lstrip("[")
     want = normalize_section_number(target["section"])
-    return have == want or have.startswith(want + "_to_")
+    return have == want or have.startswith(want + "_to_") or have.startswith(want + ",_")
 
 
 def main():

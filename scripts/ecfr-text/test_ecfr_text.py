@@ -173,6 +173,7 @@ class UsCode(unittest.TestCase):
         self.assertTrue(b.identity_ok(mk("261"), t))
         self.assertTrue(b.identity_ok(mk("261_to_270"), t))
         self.assertTrue(b.identity_ok(mk("[261"), t))
+        self.assertTrue(b.identity_ok(mk("261,_262"), t))
         self.assertFalse(b.identity_ok(mk("2610"), t))
         self.assertFalse(b.identity_ok({"title_number": "3", "section_number": "261"}, t))
 
