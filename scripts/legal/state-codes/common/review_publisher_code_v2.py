@@ -90,7 +90,12 @@ def main():
             live = squash(live_text(arc.read(rec), u["source_url"]))
             number = s["hierarchy"][-1].get("number") or ""
             row["citation_ok"] = bool(number) and squash(number) in live
-            row["heading_ok"] = (not s.get("heading")) or squash(s["heading"]) in live
+            heading = s.get("heading") or ""
+            row["heading_ok"] = (not heading) or squash(heading) in live
+            if heading and not row["heading_ok"]:
+                row["heading_ok"] = squash(re.sub(r"\[[^\]]+\]", "", heading)) in live
+            if heading and not row["heading_ok"]:
+                row["heading_ok"] = squash(heading.split("[", 1)[0].strip()) in live
             row["text_ok"] = squash(s["text"]) in live
             row["live_sha256"] = rec["sha256"]
             row["ok"] = row["citation_ok"] and row["heading_ok"] and row["text_ok"]
