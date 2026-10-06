@@ -160,6 +160,9 @@ export type LimitationRule = {
     reposeEffectiveThrough?: string;
   };
 };
+/** How the official page was obtained. A proxied fetch is used only where the official host blocks direct requests. */
+export type FetchRoute = { kind: "direct" | "proxied" | "extraction"; proxy?: string };
+
 export type LimitationSource = {
   id: string;
   state: string;
@@ -177,6 +180,7 @@ export type LimitationSource = {
   validity: string;
   historicalApplicability: string;
   rawCapture?: AuthorityCapture;
+  fetchRoute?: FetchRoute;
 };
 export type CoverageRow = {
   state: string;

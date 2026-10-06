@@ -163,7 +163,7 @@ export function gradeRule(input: GradeInput): GradeResult {
       verification: {
         grade: "lower_evidence_grade",
         basis:
-          "The official text was read through an extraction intermediary or cached route with no direct official response to cross-check; checked only by the builder's literal-evidence comparison against that extraction.",
+          "The official text was fetched through a proxy, extraction or cached route (the route is recorded on the source record) rather than as a direct official response; checked only by the builder's literal-evidence comparison against that text.",
       },
     };
   }

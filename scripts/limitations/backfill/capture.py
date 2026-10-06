@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
 """Capture one official primary-source page for the limitations backfill.
 
-Usage: capture.py ST CAPTURE_ID URL [--render] [--text-file PATH --method NAME]
+Usage: capture.py ST CAPTURE_ID URL [--render] [--via firecrawl|tavily] [--text-file PATH --method NAME]
 
 --render loads the page in headless Chrome (no login, no clicks, no terms acceptance) and stores the rendered
 DOM, for official sites that only deliver text through JavaScript. The capture is marked rendered=true.
+
+--via firecrawl|tavily fetches an official page through a fetch proxy, ONLY for hosts that block direct
+requests (bot challenges). Keys come from FIRECRAWL_API_KEY / TAVILY_API_KEY in the environment and are never
+written. The proxy's JSON response is stored as the "raw" capture and the capture records route={kind:"proxied",
+proxy:...}; the builder grades such captures as a lower evidence grade. Publisher click-through gates (Lexis,
+Westlaw, terms pages) are refused for every route, and the proxy is never used to get past one.
 
 With --text-file the page text came from a rendering/extraction intermediary (for JavaScript-only official
 sites). The extraction is stored as the "raw" capture, marked intermediary=true, and entries relying only on it
@@ -34,6 +40,7 @@ import requests
 WORK = os.environ.get("LIM_WORK", "/tmp/lim/backfill")
 UA = "LegalSourceAtlas-primary-source-review/1.0"
 
+GATED_PUBLISHERS = ("lexisnexis.com", "lexis.com", "westlaw.com", "casetext.com", "fastcase.com", "vlex.com")
 BLOCKED_HOSTS = (
     "justia.com", "law.cornell.edu", "findlaw.com", "casetext.com", "public.law", "casemine.com",
     "leagle.com", "courtlistener.com", "ballotpedia.org", "nolo.com", "lawserver.com", "wikipedia.org",
@@ -136,11 +143,55 @@ def main():
     cls = host_class(parsed.hostname or "")
     if cls == "blocked_secondary":
         sys.exit(f"REFUSED: {parsed.hostname} is a secondary publisher, not a primary legal source")
+    via = args[args.index("--via") + 1] if "--via" in args else None
     text_file = args[args.index("--text-file") + 1] if "--text-file" in args else None
     method = args[args.index("--method") + 1] if "--method" in args else "intermediary-extraction"
     out_dir = os.path.join(WORK, "captures", st)
     os.makedirs(out_dir, exist_ok=True)
     retrieved = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.") + f"{int(time.time()*1000)%1000:03d}Z"
+    if via:
+        if via not in ("firecrawl", "tavily"):
+            sys.exit("--via must be firecrawl or tavily")
+        if any((parsed.hostname or "").endswith(h) for h in GATED_PUBLISHERS):
+            sys.exit(f"REFUSED: {parsed.hostname} is a publisher terms gate; no route may be used to pass it")
+        if cls not in ("official", "official_designated"):
+            sys.exit(f"REFUSED: {parsed.hostname} is not a listed official host")
+        key = os.environ.get("FIRECRAWL_API_KEY" if via == "firecrawl" else "TAVILY_API_KEY")
+        if not key:
+            sys.exit("API key not set in the environment")
+        if via == "firecrawl":
+            resp = requests.post("https://api.firecrawl.dev/v1/scrape", headers={"Authorization": f"Bearer {key}"},
+                                 json={"url": url, "formats": ["markdown"], "onlyMainContent": False}, timeout=120)
+            body = resp.json() if resp.ok else {}
+            text = ((body.get("data") or {}).get("markdown")) or ""
+        else:
+            resp = requests.post("https://api.tavily.com/extract", headers={"Authorization": f"Bearer {key}"},
+                                 json={"urls": [url], "extract_depth": "advanced"}, timeout=120)
+            body = resp.json() if resp.ok else {}
+            results = body.get("results") or []
+            text = (results[0].get("raw_content") if results else "") or ""
+        if not resp.ok or len(text) < 200:
+            print(json.dumps({"ok": False, "via": via, "status": resp.status_code, "reason": "proxy returned no usable page text"}))
+            sys.exit(1)
+        lowered = text[:4000].lower()
+        if re.search(r"(accept|agree)[^\n]{0,60}(terms|conditions)|verify you are human|checking your browser", lowered):
+            print(json.dumps({"ok": False, "via": via, "reason": "page looks like a terms or bot gate; not stored"}))
+            sys.exit(1)
+        raw = resp.content
+        text = text.replace("\xa0", " ")
+        meta = {
+            "id": cid, "state": st, "url": url, "finalUrl": url, "status": 200, "contentType": "application/json",
+            "hostClass": cls, "finalHostClass": cls, "retrievedAt": retrieved, "intermediary": True,
+            "extraction": f"proxied fetch via {via} of the official page",
+            "route": {"kind": "proxied", "proxy": via},
+            "rawSha256": hashlib.sha256(raw).hexdigest(), "rawBytes": len(raw),
+            "textSha256": hashlib.sha256(text.encode("utf-8")).hexdigest(), "textBytes": len(text.encode("utf-8")),
+        }
+        for suffix, data in ((".raw", raw), (".txt", text.encode("utf-8")), (".json", json.dumps(meta, indent=1).encode())):
+            with open(os.path.join(out_dir, cid + suffix), "wb") as f:
+                f.write(data)
+        print(json.dumps({"ok": True, "id": cid, "via": via, "textBytes": meta["textBytes"], "retrievedAt": retrieved}))
+        return
     if text_file:
         raw = open(text_file, "rb").read()
         text = raw.decode("utf-8", errors="replace").replace("\xa0", " ")
