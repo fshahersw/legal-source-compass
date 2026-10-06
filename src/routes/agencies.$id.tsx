@@ -34,7 +34,7 @@ function AgencyPage() {
       {all.data && !a ? <p className="text-[13px]">This agency is not in the Federal Register agency list.</p> : (
         <>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <Stat label="Federal Register documents" value={a?.count ?? "…"} note="1994–2026 index" />
+            <Stat label="Federal Register documents" value={a?.count ?? "…"} note="In the Federal Register history" />
             <Stat label="Rules" value={num(counts.data?.["Rule"])} note="Documents typed as a rule" />
             <Stat label="Proposed rules" value={num(counts.data?.["Proposed Rule"])} />
             <Stat label="Notices" value={num(counts.data?.["Notice"])} />
