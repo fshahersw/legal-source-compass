@@ -3,7 +3,6 @@ import { AppShell } from "@/components/atlas/AppShell";
 import { ExternalBadge } from "@/components/corpus/ExternalBadge";
 import { DatasetBrowser, useDatasets } from "@/components/corpus/DatasetBrowser";
 import { SECTIONS, datasetLabel, sectionOf } from "@/lib/external/groups";
-import { datasetVersionLabel } from "@/lib/external/datasetVersions";
 import { pageHead } from "@/lib/corpus/head";
 
 type S = { q?: string | undefined; f?: Record<string, string> | undefined };
@@ -41,7 +40,7 @@ function DatasetPage() {
   const { q, f } = Route.useSearch();
   const ds = useDatasets();
   const info = ds.data?.find((d) => d.id === dataset);
-  const label = datasetVersionLabel(dataset, datasetLabel(dataset, info?.label));
+  const label = datasetLabel(dataset, info?.label);
   const section = SECTIONS.find((s) => s.id === sectionOf(dataset))!;
   return (
     <AppShell

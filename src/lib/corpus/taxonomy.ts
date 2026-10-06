@@ -21,7 +21,7 @@ export const CATEGORY_LABELS = {
   other: "Other / not matched by rule",
 } as const;
 export type CategoryId = keyof typeof CATEGORY_LABELS;
-export const TAXONOMY_VERSION = "2026-10-06.2";
+export const TAXONOMY_VERSION = "2026-10-06.3";
 
 const STATUTES = new Set([
   "statutes",
@@ -244,7 +244,6 @@ export const RECORD_CATEGORIES: Readonly<Record<string, CategoryId>> = {
   docsupload_coverage: "data",
   expert_rulings: "opinions",
   federal_register_history: "mixed",
-  regulatory_backfill: "mixed",
   ecfr_hierarchy: "data",
   ecfr_authority_notes: "data",
   fee_schedule: "guidance",

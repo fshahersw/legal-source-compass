@@ -19,7 +19,10 @@ describe("permanent record destinations", () => {
   it("preserves exact collection identity and native IDs", () => {
     expect(recordDestination("mdls", "mdl:2873")).toEqual({ kind: "mdl", id: "2873" });
     // The matter registry's MDL record opens the matter page; its docket rows keep the generic record view.
-    expect(recordDestination("sw_matters_v1", "sw-matter:3140")).toEqual({ kind: "mdl", id: "3140" });
+    expect(recordDestination("sw_matters_v1", "sw-matter:3140")).toEqual({
+      kind: "mdl",
+      id: "3140",
+    });
     expect(recordDestination("sw_matters_v1", "sw-matter:oops")).toEqual({
       kind: "record",
       dataset: "sw_matters_v1",
@@ -54,7 +57,6 @@ describe("sectionOf", () => {
     expect(sectionOf("court_spine")).toBe("courts");
     expect(sectionOf("judge_entities")).toBe("judges");
     expect(sectionOf("mdl_docket_activity")).toBe("matters");
-    expect(sectionOf("cl_master_entries")).toBe("matters");
     expect(sectionOf("agency_safety_openfda_crl")).toBe("safety");
     expect(sectionOf("indiana_code")).toBe("law");
     expect(sectionOf("mass_tort_authority_evidence")).toBe("law");
@@ -157,9 +159,11 @@ describe("resolveLink", () => {
       id,
     });
     const literalEscape = "native:%2F";
-    expect(resolveLink(`#record/cl_courts/${encodeURIComponent(literalEscape)}`, aliases)).toEqual({
+    expect(
+      resolveLink(`#record/court_spine/${encodeURIComponent(literalEscape)}`, aliases),
+    ).toEqual({
       kind: "record",
-      dataset: "cl_courts",
+      dataset: "court_spine",
       id: literalEscape,
     });
     expect(recordDestination("ecfr_hierarchy", id)).toEqual({

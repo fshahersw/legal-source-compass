@@ -293,6 +293,29 @@ export async function overviewFor(mdl: string): Promise<MatterOverviewPayload | 
   return value;
 }
 
+const liveCountCache = new Map<string, { at: number; n: number | null }>();
+
+/** Exact row count of one registry dataset for an MDL, cached for five minutes; null when it cannot be read. */
+async function liveMdlCount(dataset: string, mdl: string): Promise<number | null> {
+  const key = `${dataset}:${mdl}`;
+  const hit = liveCountCache.get(key);
+  if (hit && Date.now() - hit.at < 5 * 60_000) return hit.n;
+  let n: number | null = null;
+  try {
+    const cell = encodeURIComponent("item->cells->>mdl");
+    const r = await restGet<unknown[]>(
+      `corpus_records?select=id&dataset=eq.${dataset}&${cell}=eq.${encodeURIComponent(mdl)}`,
+      { count: true, range: [0, 0] },
+    );
+    n = r.total;
+  } catch {
+    n = null;
+  }
+  if (liveCountCache.size > 200) liveCountCache.clear();
+  liveCountCache.set(key, { at: Date.now(), n });
+  return n;
+}
+
 export async function loadMatterOverview(mdl: string): Promise<MatterOverviewPayload | null> {
   const registryRead = loadRegistryMatter(mdl).catch(() => null);
   let fromDirectory: ReturnType<typeof parseMdlDetail> = null;
@@ -324,6 +347,14 @@ export async function loadMatterOverview(mdl: string): Promise<MatterOverviewPay
   // Entries and parties are planned/held; once a dataset is released the generic browser can list its rows.
   const ready = await publishedDatasets().catch(() => new Set<string>());
   const released = (...ids: MatterDataset[]) => ids.find((id) => ready.has(id)) ?? null;
+  const entriesDataset = released("sw_matter_entries_v1", "sw_docket_entries_v1");
+  const partiesDataset = released("sw_matter_parties_v1");
+  const liveRegistry = registry
+    ? { entries: null, parties: null }
+    : {
+        entries: entriesDataset ? await liveMdlCount(entriesDataset, mdl) : null,
+        parties: partiesDataset ? await liveMdlCount(partiesDataset, mdl) : null,
+      };
   return {
     overview: withRegistryJpml(parsed, registry),
     master,
@@ -331,10 +362,8 @@ export async function loadMatterOverview(mdl: string): Promise<MatterOverviewPay
     jpmlReferences,
     sw: { tier: sw?.tier ?? null, shortName: sw?.shortName ?? null },
     registry,
-    registryReleased: {
-      entries: released("sw_matter_entries_v1", "sw_docket_entries_v1"),
-      parties: released("sw_matter_parties_v1"),
-    },
+    registryReleased: { entries: entriesDataset, parties: partiesDataset },
+    liveRegistry,
   };
 }
 

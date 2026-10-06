@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { formatLawText, markerDepth } from "./formatLawText";
 
 // Opening of the stored text of Cal. R. Ct. 10.1 (corpus record oul:15cb3fd9…).
-const RULE = "(a) The Judicial Council (1) The Judicial Council of California is a state entity established by the California Constitution and chaired by the Chief Justice of California. The Judicial Council sets the direction. (2) The council establishes policies and sets priorities for the judicial branch of government. (3) The Judicial Council Governance Policies are located in Appendix D of these rules of court.";
+const RULE =
+  "(a) The Judicial Council (1) The Judicial Council of California is a state entity established by the California Constitution and chaired by the Chief Justice of California. The Judicial Council sets the direction. (2) The council establishes policies and sets priorities for the judicial branch of government. (3) The Judicial Council Governance Policies are located in Appendix D of these rules of court.";
 
 describe("formatLawText", () => {
   it("splits at subsection markers without losing text", () => {
@@ -17,6 +18,12 @@ describe("formatLawText", () => {
     expect(formatLawText("   ")).toEqual([]);
   });
   it("indents by marker type", () => {
-    expect([markerDepth("(a) x"), markerDepth("(1) x"), markerDepth("(A) x"), markerDepth("(iv) x"), markerDepth("x")]).toEqual([0, 1, 2, 3, 0]);
+    expect([
+      markerDepth("(a) x"),
+      markerDepth("(1) x"),
+      markerDepth("(A) x"),
+      markerDepth("(iv) x"),
+      markerDepth("x"),
+    ]).toEqual([0, 1, 2, 3, 0]);
   });
 });
