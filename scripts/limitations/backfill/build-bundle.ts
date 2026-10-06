@@ -85,13 +85,23 @@ const UNIT: Record<string, PeriodUnit> = {
   days: "calendar_days",
 };
 
-const reposeTrigger = (text: string): "last_act_or_omission" | "act_or_omission" | null => {
+const reposeTrigger = (
+  text: string,
+): "last_act_or_omission" | "act_or_omission" | "first_delivery" | null => {
   const t = text.toLowerCase();
   if (/last act/.test(t)) return "last_act_or_omission";
   if (
-    /act or omission|act, omission|act or failure|date of the (act|omission)|act complained/.test(t)
+    /act or omission|act, omission|act or failure|date of the (act|omission)|act complained|perpetration of the (fraud|act)/.test(
+      t,
+    )
   )
     return "act_or_omission";
+  if (
+    /first (purchase|sale|delivery)|delivery (of the product )?to (its |the )?(first|initial)|initial purchaser|first purchaser|time of delivery|date of delivery/.test(
+      t,
+    )
+  )
+    return "first_delivery";
   return null;
 };
 
@@ -246,7 +256,14 @@ for (const file of files) {
       );
 
     const repose = entry.repose ?? [];
-    const trigger = repose.length === 1 ? reposeTrigger(repose[0]!.trigger) : null;
+    const rawTrigger = repose.length === 1 ? reposeTrigger(repose[0]!.trigger) : null;
+    // Delivery-based repose is a product-claim concept: never apply it to an injury variant that only
+    // sometimes is a product claim.
+    const trigger =
+      rawTrigger === "first_delivery" &&
+      !(entry.claimType === "product_liability" || /product/.test(variant))
+        ? null
+        : rawTrigger;
     const reposeModelled =
       repose.length === 1 && trigger !== null && repose[0]!.effectiveFrom !== null;
     const accrualOk = [
@@ -260,9 +277,7 @@ for (const file of files) {
       "not_recorded",
     ].includes(entry.accrual.kind);
     const baseline =
-      entry.status === "verified" &&
-      accrualOk &&
-      (repose.length === 0 || (reposeModelled && entry.accrual.kind !== "death"));
+      entry.status === "verified" && accrualOk && (repose.length === 0 || reposeModelled);
     const existing = rules.filter(
       (r) =>
         r.jurisdiction === state &&
@@ -334,7 +349,20 @@ for (const file of files) {
       ...provenance.tolling.map(
         (t) => `Statutory tolling (not applied by the calculator): ${t.text} (${t.citation}).`,
       ),
-      ...(entry.blockers ?? []).map((b) => `Cannot issue a date: ${b.issue}. ${b.why}`),
+      ...(entry.blockers ?? [])
+        // A blocker that only says the repose could not be modelled is moot once the calculator models it.
+        .filter(
+          (b) =>
+            !baseline ||
+            !/calculator.?model|not (be )?modell?able|cannot be modell?ed|death-(triggered|based) accrual|runs from (delivery|first)|does not run from|not .?act or omission/i.test(
+              `${b.issue} ${b.why}`,
+            ),
+        )
+        .map((b) =>
+          baseline
+            ? `Open item (does not prevent a date): ${b.issue}. ${b.why}`
+            : `Cannot issue a date: ${b.issue}. ${b.why}`,
+        ),
       ...(entry.crossChecks ?? []).map(
         (c) => `Related provision or cross-check (capture ${c.captureId}): ${c.note}`,
       ),

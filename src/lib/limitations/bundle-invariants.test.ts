@@ -21,7 +21,6 @@ const snapshot = validateLimitationsSnapshot({
 const simple = (r: LimitationRule) =>
   r.computation === "baseline_only" &&
   (!r.calculation || r.calculation.mode === "accrual_repose_min") &&
-  r.accrualBasis !== "death" &&
   !r.calculation?.deathCapYears;
 
 function inputFor(rule: LimitationRule): BaselineInput {
@@ -36,6 +35,7 @@ function inputFor(rule: LimitationRule): BaselineInput {
     ...(rule.subtype ? { subtype: rule.subtype } : {}),
     accrualDate: accrual,
     reposeActDate: accrual,
+    firstProductDeliveryDate: accrual,
     reposeApplicabilityConfirmed: true,
     governingLawConfirmed: true,
     accrualConfirmed: true,
@@ -63,7 +63,13 @@ describe("every simple baseline rule in the protected bundle", () => {
     }
     const ordinary = addCivilPeriod(input.accrualDate, rule.period!.amount, rule.period!.unit);
     const repose = rule.calculation?.reposeYears
-      ? addCivilPeriod(input.reposeActDate!, rule.calculation.reposeYears, "calendar_years")
+      ? addCivilPeriod(
+          rule.calculation.reposeTrigger === "first_delivery"
+            ? input.firstProductDeliveryDate!
+            : input.reposeActDate!,
+          rule.calculation.reposeYears,
+          "calendar_years",
+        )
       : null;
     const expected = [ordinary, repose].filter((d): d is string => d !== null).sort()[0];
     expect(result.date).toBe(expected);
