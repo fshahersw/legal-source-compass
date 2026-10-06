@@ -340,6 +340,22 @@ for (const file of files) {
         ];
         if (entry.status === "verified") current.pinpoint = entry.citation;
         if (!hadProvenance) attached++;
+        const legacyId = `${state.toLowerCase()}-${entry.claimType}-general-review-20261002`;
+        const legacy = rules.find((r) => r.id === legacyId);
+        if (
+          legacy &&
+          !legacy.period &&
+          variant === "general" &&
+          entry.period &&
+          (entry.status === "verified" || entry.status === "flagged") &&
+          current.computation === "baseline_only" &&
+          current.id !== legacyId
+        ) {
+          legacy.period = { amount: entry.period.amount, unit };
+          legacy.provenance = provenance;
+          legacy.sourceIds = [...new Set([primaryId, ...crossIds, ...(legacy.sourceIds ?? [])])];
+          legacy.pinpoint = entry.citation;
+        }
         const upgrade =
           current.computation === "research_only" &&
           baseline &&
