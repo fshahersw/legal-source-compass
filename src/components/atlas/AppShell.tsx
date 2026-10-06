@@ -74,6 +74,7 @@ const CONTEXT_NAV: { paths: string[]; items: ContextItem[] }[] = [
     paths: LAW,
     items: [
       { to: "/law", label: "Law & regulation" },
+      { to: "/law/codes", label: "State codes" },
       { to: "/limitations", label: "Time limits" },
       { to: "/safety", label: "Product safety" },
       { to: "/agencies", label: "Agencies" },

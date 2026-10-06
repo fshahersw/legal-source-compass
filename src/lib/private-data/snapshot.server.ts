@@ -71,3 +71,16 @@ export async function serveSnapshotPage(request: Request): Promise<Response> {
     "X-Atlas-Snapshot-Bytes": String(entry.bytes), "X-Atlas-Page": String(page), "X-Atlas-Page-Count": String(bounds.pages),
   } });
 }
+
+/** Manifest paths only. Callers still have to pass corpus access before reading bytes. */
+export function listSnapshotNames(): string[] {
+  return Object.keys(entries);
+}
+
+/** Hash-verified bytes for one manifest entry. */
+export async function readPrivateSnapshot(file: string): Promise<Uint8Array> {
+  const name = snapshotName(file);
+  const entry = Object.hasOwn(entries, name) ? entries[name] : undefined;
+  if (!entry || entry.bytes > MAX_SNAPSHOT_BYTES) throw new Error("Snapshot not found");
+  return loadVerified(entry);
+}
