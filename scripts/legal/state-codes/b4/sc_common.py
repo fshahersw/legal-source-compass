@@ -19,6 +19,14 @@ import urllib.parse
 import urllib.request
 
 UA = "LegalSourceAtlas-statecodes/1 (official-source acquisition; sequential, rate-limited)"
+# Some official CDNs serve an empty shell page to non-browser agents and the real file to a browser-style agent (HTTP 200, no gate).
+BROWSER_UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
+
+
+def resolve_ua(value):
+    """None -> $SC4_USER_AGENT or the project agent; 'browser' -> BROWSER_UA; anything else is a literal UA string."""
+    value = value or os.environ.get("SC4_USER_AGENT") or ""
+    return BROWSER_UA if value == "browser" else (value or UA)
 KEY_PREFIX = "state-codes/sha256"
 
 
@@ -42,7 +50,8 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
 
 
 class Archive:
-    def __init__(self, work, min_interval=1.0, max_redirects=5):
+    def __init__(self, work, min_interval=1.0, max_redirects=5, user_agent=None):
+        self.ua = resolve_ua(user_agent)
         self.work = work
         self.raw = os.path.join(work, "raw")
         os.makedirs(self.raw, exist_ok=True)
@@ -66,13 +75,13 @@ class Archive:
         if at > now:
             time.sleep(at - now)
 
-    def _http(self, url, accept="*/*", timeout=180, extra=None):
+    def _http(self, url, accept="*/*", timeout=180, extra=None, ua=None):
         opener = urllib.request.build_opener(_NoRedirect)
         hops = []
         cur = url
         for _ in range(self.max_redirects + 1):
             self._wait(urllib.parse.urlparse(cur).hostname)
-            h = {"User-Agent": UA, "Accept": accept, "Accept-Encoding": "gzip"}
+            h = {"User-Agent": ua or self.ua, "Accept": accept, "Accept-Encoding": "gzip"}
             h.update(extra or {})
             req = urllib.request.Request(cur, headers=h)
             try:
@@ -91,16 +100,22 @@ class Archive:
                                           "content_type": e.headers.get("Content-Type")}
         return 310, b"", {"final_url": cur, "redirects": hops, "error": "too many redirects"}
 
-    def fetch(self, url, rel=None, accept="*/*", force=False, attempts=5, route="direct", accept_status=(200,)):
-        """Capture one URL. Returns the receipt (dict); body at os.path.join(self.work, receipt['file']) when state == 'complete'."""
+    def fetch(self, url, rel=None, accept="*/*", force=False, attempts=5, route="direct", accept_status=(200,), user_agent=None,
+              browser_ua_on=(403, 406), min_bytes=0):
+        """Capture one URL. Returns the receipt (dict); body at os.path.join(self.work, receipt['file']) when state == 'complete'.
+
+        Every receipt records `user_agent`. A 403/406 (or a 200 body shorter than `min_bytes`, e.g. an empty shell page) is retried once with
+        the browser-style agent; the receipt then records that agent and `ua_retry: true`."""
         old = self.index.get(url)
         if old and old.get("state") == "complete" and not force:
             return old
         status, body, meta, retrieved = 0, b"", {}, None
+        ua = resolve_ua(user_agent) if user_agent else self.ua
+        ua_retry = False
         for attempt in range(attempts):
             try:
                 if route == "direct":
-                    status, body, meta = self._http(url, accept=accept)
+                    status, body, meta = self._http(url, accept=accept, ua=ua)
                 else:
                     status, body, meta = proxied_fetch(url, route)
             except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as e:
@@ -108,13 +123,18 @@ class Archive:
                 time.sleep(min(120, 5 * 2 ** attempt))
                 continue
             retrieved = utc_now()
+            if route == "direct" and ua != BROWSER_UA and not ua_retry and (status in browser_ua_on or (status == 200 and len(body) < min_bytes)):
+                ua, ua_retry = BROWSER_UA, True
+                continue
             if status in (429, 500, 502, 503, 504):
                 ra = meta.get("retry_after")
                 time.sleep(float(ra) if ra and str(ra).isdigit() else min(300, 10 * 2 ** attempt))
                 continue
             break
         rec = {"url": url, "http_status": status, "retrieved_at": retrieved or utc_now(), "bytes": len(body), "route": route,
+               "user_agent": ua if route == "direct" else None, "ua_retry": ua_retry or None,
                **{k: v for k, v in meta.items() if v not in (None, [])}}
+        rec = {k: v for k, v in rec.items() if v is not None}
         if status in accept_status and body:
             sha = sha256_hex(body)
             rel = rel or f"{sha[:2]}/{sha}"
@@ -279,3 +299,22 @@ def write_packet(work, state, *, source, edition, chapters, sections, extra=None
     with open(os.path.join(out, "manifest.json"), "w") as f:
         json.dump(man, f, indent=1, sort_keys=True)
     return man
+
+
+def backfill_user_agent(work):
+    """Receipts written before `user_agent` was recorded were all made by Archive._http with the project UA (no other agent was sent).
+    Rewrite receipts.jsonl so every direct receipt names its agent; proxied receipts are untouched. Returns the number updated."""
+    path = os.path.join(work, "receipts.jsonl")
+    rows, n = [], 0
+    with open(path) as f:
+        for line in f:
+            r = json.loads(line)
+            if r.get("route") == "direct" and "user_agent" not in r:
+                r["user_agent"] = UA
+                n += 1
+            rows.append(r)
+    with open(path + ".tmp", "w") as f:
+        for r in rows:
+            f.write(json.dumps(r, sort_keys=True) + "\n")
+    os.replace(path + ".tmp", path)
+    return n

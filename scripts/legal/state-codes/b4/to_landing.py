@@ -62,15 +62,27 @@ def convert(work, cfg):
     dflt = cfg["currency_defaults"]
     objects, units, secs, gaps = {}, [], [], []
     text = {}
+    empty_units = set()
     for c in chapters:
+        if c["text_codepoints"] == 0:
+            empty_units.add(c["native_id"])
+            gaps.append({"unit": c["native_id"], "reason": "chapter page has no extractable text; a source unit needs a non-empty text derivative"})
+            continue
         shas = c["raw_sha256s"]
         if len(shas) != 1:
             raise SystemExit(f"{c['native_id']}: a unit must come from exactly one retained original; split it")
         raw = by_sha[shas[0]]
+        for u in c.get("source_urls") or []:
+            r = arc.index.get(u)
+            if r and r.get("state") == "complete" and r["sha256"] == shas[0]:
+                raw = r
+                break
         method, proxy = method_for(cfg, raw["url"], raw["route"])
-        src = {"source_url": raw["url"], "retrieved_at": raw["retrieved_at"], "retrieval_method": method, "proxy": proxy}
-        objects[shas[0]] = {"sha256": shas[0], "bytes": raw["bytes"], "kind": "publisher_original",
-                            "path": os.path.abspath(os.path.join(work, raw["file"])), "sources": [src]}
+        src = {"source_url": raw["url"], "retrieved_at": raw["retrieved_at"], "http_status": 200, "retrieval_method": method, "proxy": proxy}
+        orig = objects.setdefault(shas[0], {"sha256": shas[0], "bytes": raw["bytes"], "kind": "publisher_original",
+                                            "path": os.path.abspath(os.path.join(work, raw["file"])), "sources": []})
+        if src not in orig["sources"]:
+            orig["sources"].append(src)
         tpath = os.path.abspath(os.path.join(pk, "chapter-text", c["text_sha256"] + ".txt"))
         body = open(tpath, encoding="utf-8").read()
         if sc.sha256_hex(body) != c["text_sha256"] or len(body) != c["text_codepoints"]:
@@ -88,6 +100,8 @@ def convert(work, cfg):
     regex = re.compile(cfg["section_id"]["regex"])
     seen = {}
     for s in sections:
+        if s["chapter_native_id"] in empty_units:
+            raise SystemExit("section staged inside an empty chapter: " + s["citation_path"])
         t = text[s["chapter_native_id"]][s["start"]:s["end"]]
         if sc.sha256_hex(t) != s["text_sha256"]:
             raise SystemExit("section span hash mismatch: " + s["citation_path"])
