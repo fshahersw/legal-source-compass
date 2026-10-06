@@ -3,6 +3,7 @@
  * ACTIVATION STEP (not run by staging). Merges a staged limitations release into the live private-snapshot
  * manifest so the calculator starts serving it after the next deploy.
  *
+ *   node scripts/admin/activate-limitations-release.mjs --from-storage --release=limitations-2026-10-06.1 --sha256=EXPECTED_SHA --verify
  *   node scripts/admin/activate-limitations-release.mjs --staged=PATH_TO_staged-manifest.json --sha256=EXPECTED_SHA [--verify]
  *
  * Requires the code of the same release (claim types, month/day periods, provenance fields) to be deployed first.
@@ -19,7 +20,20 @@ const args = Object.fromEntries(
   }),
 );
 const live = "src/lib/private-data/manifest.server.json";
-const stagedBytes = await readFile(args.staged);
+let stagedBytes;
+if (args["from-storage"]) {
+  const url = process.env.EXTERNAL_SUPABASE_URL?.replace(/\/+$/, "");
+  const key = process.env.EXTERNAL_SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key || !args.release) throw new Error("CREDENTIALS_AND_RELEASE_REQUIRED");
+  const objectKey = `atlas-private-data/staged-releases/${args.release}/manifest.${args.sha256}.json`;
+  const r = await fetch(`${url}/storage/v1/object/corpus-originals/${objectKey}`, {
+    headers: { apikey: key },
+  });
+  if (!r.ok) throw new Error(`STAGED_MANIFEST_NOT_FOUND_${r.status}`);
+  stagedBytes = Buffer.from(await r.arrayBuffer());
+} else {
+  stagedBytes = await readFile(args.staged);
+}
 if (createHash("sha256").update(stagedBytes).digest("hex") !== args.sha256)
   throw new Error("STAGED_MANIFEST_HASH_MISMATCH");
 const staged = JSON.parse(stagedBytes);
@@ -49,6 +63,9 @@ if (args.verify) {
     if (!r.ok) throw new Error(`MISSING_OBJECT ${name}`);
   }
 }
+manifest.files = Object.fromEntries(
+  Object.entries(manifest.files).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
+);
 manifest.created_at = new Date().toISOString();
 await writeFile(live, `${JSON.stringify(manifest, null, 2)}\n`);
 console.log(
