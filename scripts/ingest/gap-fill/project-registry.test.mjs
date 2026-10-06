@@ -165,6 +165,18 @@ test('variant native id is projected with the rule name in provenance and a dist
   assert.equal(c.item.cells.filed, 'Not recorded');
 });
 
+test('variant projection repairs a landed id entry whose pacer_case_id is blank, and only that field', () => {
+  const landed = planDocket(baseRow(), {native: {native_id: '55', source_row_ordinal: 9, key_match_rule: VARIANT_RULE}}, new Map(), 'blanks', 't');
+  assert.equal(landed.patch.cols.detail.registry.native_case_ids[0].pacer_case_id, null);
+  const row = {...baseRow(), item: landed.patch.cols.item, detail: landed.patch.cols.detail, filters: landed.patch.cols.filters};
+  const fix = planDocket(row, {native: {native_id: '55', source_row_ordinal: 9, key_match_rule: VARIANT_RULE}}, new Map([['55', {pacer_case_id: '238508'}]]), 'blanks', 't2');
+  assert.deepEqual(fix.patch.ops.map(o => o.path.join('.')), ['detail.registry.native_case_ids']);
+  assert.equal(fix.patch.cols.detail.registry.native_case_ids[0].pacer_case_id, '238508');
+  assert.equal(fix.patch.cols.detail.registry.native_case_ids.length, 1);
+  const again = planDocket({...row, detail: fix.patch.cols.detail}, {native: {native_id: '55', source_row_ordinal: 9, key_match_rule: VARIANT_RULE}}, new Map([['55', {pacer_case_id: '238508'}]]), 'blanks', 't3');
+  assert.equal(again.patch.ops.length, 0);
+});
+
 test('looser caption rule: whitespace/case, trailing ET AL on either side of the v., punctuation; never truncation prefixes', () => {
   assert.equal(normCaptionLoose('CITY OF LORAIN v. PURDUE PHARMA L.P., ET AL'), normCaptionLoose('City of Lorain v. Purdue Pharma L.P.'));
   assert.equal(normCaptionLoose('SMITH, ET AL v. ACME, INC., ET AL.'), normCaptionLoose('Smith v. Acme Inc.'));
