@@ -73,7 +73,7 @@ export function StateResearch({ data, cases, state, update }: WorkbenchProps) {
         <Stat
           label="Civil filings · FY 2025"
           value={totals.filed}
-          note="50 states + DC; territories excluded"
+          note="Federal district civil workload; territories excluded"
         />
         <Stat
           label="Filings per 100,000 residents"
@@ -89,7 +89,7 @@ export function StateResearch({ data, cases, state, update }: WorkbenchProps) {
       <div className="grid gap-4 xl:grid-cols-[1.15fr_1fr]">
         <Panel
           title="Compare the states"
-          note="Select a metric and a state. Color shows its value within this 51-jurisdiction comparison."
+          note={`Select a metric and a state. Color shows its value within this ${rows.length}-jurisdiction comparison.`}
         >
           <Field label="Map and ranking metric">
             <select

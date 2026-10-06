@@ -12,7 +12,7 @@ export const Route = createFileRoute("/courts/$id")({
   head: ({ loaderData }) => {
     const raw = (loaderData as { raw?: unknown } | undefined)?.raw as Record<string, unknown> | null | undefined;
     const name = String(raw?.["title"] ?? raw?.["name"] ?? "Court profile");
-    return pageHead(name, `Court profile for ${name}: every linked record in the connected corpus on one page.`);
+    return pageHead(name, `Court profile for ${name}: linked records from the connected corpus on one page.`);
   },
   component: Page,
   errorComponent: ({ error }) => <EntityError error={error instanceof Error ? error : new Error(String(error))} /> ,

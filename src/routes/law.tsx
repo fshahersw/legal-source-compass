@@ -156,7 +156,7 @@ function LawPage() {
             {
               key: "list",
               label: "All law datasets (list)",
-              note: "Every law record set in one list",
+              note: "Law record sets in one list",
               link: { to: "/law", search: { view: "list" } },
             },
           ]}

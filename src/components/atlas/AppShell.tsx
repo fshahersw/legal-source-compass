@@ -83,7 +83,6 @@ const CONTEXT_NAV = [
       { to: "/sources/library", label: "Source library" },
       { to: "/sources/catalog", label: "Source catalog" },
       { to: "/sources/coverage", label: "Quality & coverage" },
-      { to: "/sources/enrichment", label: "Enrichment status" },
       { to: "/sources/analysis", label: "Docket timelines" },
       { to: "/saved-sources", label: "Saved" },
     ],
