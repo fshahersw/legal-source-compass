@@ -1,0 +1,50 @@
+{
+  "jurisdiction": "RI",
+  "publisher": "Rhode Island General Assembly",
+  "publisher_url": "https://webserver.rilegislature.gov/Statutes/",
+  "source_system": "ri-statutes-web",
+  "code_title": "Rhode Island General Laws",
+  "parser": {
+    "name": "ri-genlaws-section-html",
+    "version": "1"
+  },
+  "methods": [
+    "publisher_page"
+  ],
+  "source_url_patterns": [
+    "^https://webserver\\.rilegislature\\.gov/Statutes/$",
+    "^https://webserver\\.rilegislature\\.gov/Statutes/TITLE[0-9A-Z.]+/INDEX\\.htm$",
+    "^https://webserver\\.rilegislature\\.gov/Statutes/TITLE[0-9A-Z.]+/[^/]+/INDEX\\.htm$",
+    "^https://webserver\\.rilegislature\\.gov/Statutes/TITLE[0-9A-Z.]+/[^/]+/[^/]+\\.htm$"
+  ],
+  "rate_limit_ms": 1000,
+  "structure": {
+    "levels": [
+      "title",
+      "chapter",
+      "section"
+    ],
+    "unit": "one official section HTML page (Lexis-hosted statutory web edition)"
+  },
+  "section_id": {
+    "scheme": "official_citation_path",
+    "regex": "^[0-9A-Z][0-9A-Z._-]{0,200}(@[0-9]+)?(~[0-9]+)?$",
+    "example": "10-5-2_10-5-2",
+    "citation_format": "R.I. Gen. Laws § <path>; @N marks repeated occurrences within a chapter; ~N marks duplicate citation_path rows in the landing packet"
+  },
+  "currency": {
+    "basis": "publisher_statement",
+    "location": "No edition date or current-through statement located on captured Statutes index, title, chapter, or section pages at acquisition."
+  },
+  "review": {
+    "reviewed_by": "state-codes batch 4 lead (bc-747cabdb)",
+    "reviewed_at": "2026-10-06"
+  },
+  "unit_kind": "ri_section_html",
+  "currency_defaults": {
+    "basis": "none",
+    "statement": "",
+    "through_date": null,
+    "edition": null
+  }
+}
