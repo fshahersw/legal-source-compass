@@ -348,7 +348,8 @@ for (const file of files) {
           variant === "general" &&
           entry.period &&
           (entry.status === "verified" || entry.status === "flagged") &&
-          current.computation === "baseline_only" &&
+          (current.computation === "baseline_only" ||
+            (current.computation === "research_only" && current.id.endsWith("bf20261006"))) &&
           current.id !== legacyId
         ) {
           legacy.period = { amount: entry.period.amount, unit };
