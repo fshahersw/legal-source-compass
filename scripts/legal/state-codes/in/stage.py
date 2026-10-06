@@ -184,7 +184,7 @@ def main(argv=None):
             'publisher_url': BASE,
             'source_system': 'in-code',
             'code_title': 'Indiana Code',
-            'parser': {'name': 'indiana-official-html', 'version': '1.0.0'},
+            'parser': {'name': 'indiana-official-html', 'version': '1'},
             'retrieval': {
                 'methods': ['publisher_bulk_download'],
                 'source_url_patterns': [
