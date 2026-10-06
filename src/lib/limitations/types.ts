@@ -14,6 +14,9 @@ export type AuthorityCapture = {
   byteLength: number;
   contentType: string;
   retrievedAt: string;
+  /** Private content-addressed object holding the exact bytes of the official response. */
+  storageBucket?: string;
+  storageKey?: string;
 };
 export const LIMITATION_SOURCE_AUTHORITY_KINDS = [
   "statute",

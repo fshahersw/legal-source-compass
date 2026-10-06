@@ -66,31 +66,31 @@ export type MatrixEntryInput = {
   confidenceNote: string;
   flags: string[];
   notRecordedReason?: string;
+  /** Open issues that cannot be resolved from official text, each with the precise reason. */
+  blockers?: { issue: string; why: string }[];
 };
 
+const UNITS = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
+const TEENS = [
+  "ten",
+  "eleven",
+  "twelve",
+  "thirteen",
+  "fourteen",
+  "fifteen",
+  "sixteen",
+  "seventeen",
+  "eighteen",
+  "nineteen",
+];
+const TENS = ["twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
 const NUMBER_WORDS: Record<string, number> = {
-  one: 1,
-  two: 2,
-  three: 3,
-  four: 4,
-  five: 5,
-  six: 6,
-  seven: 7,
-  eight: 8,
-  nine: 9,
-  ten: 10,
-  eleven: 11,
-  twelve: 12,
-  thirteen: 13,
-  fourteen: 14,
-  fifteen: 15,
-  sixteen: 16,
-  eighteen: 18,
-  twenty: 20,
-  "twenty-five": 25,
-  thirty: 30,
-  sixty: 60,
-  ninety: 90,
+  ...Object.fromEntries(UNITS.map((w, i) => [w, i + 1])),
+  ...Object.fromEntries(TEENS.map((w, i) => [w, i + 10])),
+  ...Object.fromEntries(TENS.map((w, i) => [w, (i + 2) * 10])),
+  ...Object.fromEntries(
+    TENS.flatMap((t, ti) => UNITS.map((u, ui) => [`${t}-${u}`, (ti + 2) * 10 + ui + 1] as const)),
+  ),
   "one hundred eighty": 180,
 };
 
@@ -223,17 +223,37 @@ export function checkEntry(
     warn("accrual rule not recorded");
   } else {
     if (!entry.accrual.text?.trim()) err("accrual.text required");
-    if (!entry.accrual.evidence || !containsLiteral(text, entry.accrual.evidence))
-      err("accrual.evidence is not a literal substring of the capture text");
+    if (
+      !entry.accrual.evidence ||
+      ![
+        text,
+        ...(entry.crossChecks ?? []).flatMap((c) =>
+          lookup(c.captureId) ? [lookup(c.captureId)!.text] : [],
+        ),
+      ].some((t) => containsLiteral(t, entry.accrual.evidence))
+    )
+      err("accrual.evidence is not a literal substring of the primary or a cross-check capture");
   }
+  const evidenceTexts = [
+    text,
+    ...(entry.crossChecks ?? []).flatMap((c) => {
+      const other = lookup(c.captureId);
+      return other && other.meta.hostClass !== "blocked_secondary" ? [other.text] : [];
+    }),
+  ];
+  const inEvidence = (needle: string) => evidenceTexts.some((t) => containsLiteral(t, needle));
   for (const [i, t] of (entry.tolling ?? []).entries()) {
-    if (!t.evidence || !containsLiteral(text, t.evidence))
-      err(`tolling[${i}].evidence is not a literal substring of the capture text`);
+    if (!t.evidence || !inEvidence(t.evidence))
+      err(
+        `tolling[${i}].evidence is not a literal substring of the primary or a cross-check capture`,
+      );
   }
   for (const [i, r] of (entry.repose ?? []).entries()) {
     if (!Number.isInteger(r.years) || r.years < 1) err(`repose[${i}].years invalid`);
-    if (!r.evidence || !containsLiteral(text, r.evidence))
-      err(`repose[${i}].evidence is not a literal substring of the capture text`);
+    if (!r.evidence || !inEvidence(r.evidence))
+      err(
+        `repose[${i}].evidence is not a literal substring of the primary or a cross-check capture`,
+      );
     else if (
       !parsePeriodQuantities(r.evidence).some((q) => q.unit === "years" && q.amount === r.years)
     )
@@ -241,8 +261,8 @@ export function checkEntry(
     if (r.effectiveFrom !== null && !isoDate(r.effectiveFrom))
       err(`repose[${i}].effectiveFrom invalid`);
   }
-  if (entry.lastAmended?.evidence && !containsLiteral(text, entry.lastAmended.evidence))
-    err("lastAmended.evidence is not a literal substring of the capture text");
+  if (entry.lastAmended?.evidence && !inEvidence(entry.lastAmended.evidence))
+    err("lastAmended.evidence is not a literal substring of the primary or a cross-check capture");
   if (
     entry.lastAmended?.date !== null &&
     entry.lastAmended?.date !== undefined &&
@@ -304,8 +324,11 @@ export function checkTimeRule(
     return out;
   }
   if (!rule.citation?.trim()) err("citation is required");
-  if (typeof rule.extendsWhenLastDayIsWeekend !== "boolean")
-    err("extendsWhenLastDayIsWeekend must be true or false");
+  if (
+    typeof rule.extendsWhenLastDayIsWeekend !== "boolean" &&
+    !(rule.status === "flagged" && rule.extendsWhenLastDayIsWeekend === null)
+  )
+    err("extendsWhenLastDayIsWeekend must be true or false (null only when flagged)");
   if (rule.status === "flagged" && !rule.flags?.length) err("flagged needs flags");
   const capture = lookup(rule.captureId);
   if (!capture) return [...out, { level: "error", message: `capture ${rule.captureId} not found` }];

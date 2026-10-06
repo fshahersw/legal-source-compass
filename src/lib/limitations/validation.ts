@@ -162,6 +162,8 @@ type KnownField =
   | "baselineRuleIds"
   | "researchRuleIds"
   | "gaps"
+  | "storageKey"
+  | "storageBucket"
   | "note"
   | "sourceId"
   | "extendsWhenLastDayIsHoliday"
@@ -453,6 +455,17 @@ function validateRawCapture(value: unknown, label: string): UnknownRecord {
   positiveInteger(capture.byteLength, `${label}.byteLength`, Number.MAX_SAFE_INTEGER);
   string(capture.contentType, `${label}.contentType`);
   timestamp(capture.retrievedAt, `${label}.retrievedAt`);
+  if (capture["storageKey"] !== undefined || capture["storageBucket"] !== undefined) {
+    const key = capture["storageKey"];
+    if (
+      capture["storageBucket"] !== "corpus-originals" ||
+      typeof key !== "string" ||
+      !/^limitations-raw-captures\/sha256\/[0-9a-f]{2}\/[0-9a-f]{64}\.bin$/.test(key) ||
+      key !==
+        `limitations-raw-captures/sha256/${String(capture.sha256).slice(0, 2)}/${String(capture.sha256)}.bin`
+    )
+      fail(`${label} has an invalid raw-capture storage location`);
+  }
   return capture;
 }
 
