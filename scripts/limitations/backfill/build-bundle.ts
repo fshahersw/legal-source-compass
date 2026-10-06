@@ -257,13 +257,16 @@ for (const file of files) {
       "treatment_end",
       "other",
       "death",
+      "not_recorded",
     ].includes(entry.accrual.kind);
     const baseline =
       entry.status === "verified" &&
       accrualOk &&
       (repose.length === 0 || (reposeModelled && entry.accrual.kind !== "death"));
     const notes = [
-      `Accrual under the cited rule: ${provenance.accrualText}`,
+      entry.accrual.kind === "not_recorded"
+        ? "The cited provision does not state when the claim accrues (Not recorded). The accrual date must be confirmed under controlling case law before relying on any date."
+        : `Accrual under the cited rule: ${provenance.accrualText}`,
       ...(repose.length && !baseline
         ? repose.map(
             (r) =>
@@ -374,7 +377,9 @@ const coverage: CoverageRow[] = (coverageDoc.coverage as CoverageRow[]).map((row
   const baselineIds = stateRules.filter((r) => r.computation === "baseline_only").map((r) => r.id);
   const researchIds = stateRules.filter((r) => r.computation === "research_only").map((r) => r.id);
   const claimCoverage: ClaimCoverage[] = CLAIM_TYPES.map((claim) => {
-    const cell = stateRules.filter((r) => r.claimType === claim);
+    const cell = stateRules
+      .filter((r) => r.claimType === claim)
+      .sort((a, b) => Number(Boolean(a.subtype)) - Number(Boolean(b.subtype)));
     const base = cell.find((r) => r.computation === "baseline_only");
     if (base) return { claimType: claim, status: "baseline", ruleId: base.id };
     const limitation = cell.find((r) => r.ruleKind === "limitations" && r.period) ?? cell[0];

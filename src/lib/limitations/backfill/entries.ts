@@ -123,6 +123,17 @@ export function parsePeriodQuantities(text: string): { amount: number; unit: Per
     "g",
   );
   const found: { amount: number; unit: PeriodUnit }[] = [];
+  const compound = new RegExp(
+    `(?:\\b(${words})\\b|\\b(\\d{1,3})\\b)(?:\\s*\\(\\s*\\d{1,3}\\s*\\))?[\\s-]+years?,?\\s+and\\s+(?:\\b(${words})\\b|\\b(\\d{1,3})\\b)(?:\\s*\\(\\s*\\d{1,3}\\s*\\))?[\\s-]+months?\\b`,
+    "g",
+  );
+  const num = (word: string | undefined, digits: string | undefined) =>
+    word ? (NUMBER_WORDS[word.replace(" ", "-")] ?? NUMBER_WORDS[word]) : Number(digits);
+  for (const m of t.matchAll(compound)) {
+    const years = num(m[1], m[2]);
+    const months = num(m[3], m[4]);
+    if (years && months) found.push({ amount: years * 12 + months, unit: "months" });
+  }
   for (const m of t.matchAll(re)) {
     const amount = m[1]
       ? (NUMBER_WORDS[m[1].replace(" ", "-")] ?? NUMBER_WORDS[m[1]])

@@ -66,6 +66,10 @@ describe("period parsing", () => {
     ]);
     expect(parsePeriodQuantities("twenty-five years")).toEqual([{ amount: 25, unit: "years" }]);
     expect(parsePeriodQuantities("no period here")).toEqual([]);
+    expect(parsePeriodQuantities("within two years and six months of the act")).toContainEqual({
+      amount: 30,
+      unit: "months",
+    });
   });
 });
 

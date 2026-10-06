@@ -83,6 +83,19 @@ for (const file of existsSync(dir) ? readdirSync(dir).sort() : []) {
   }
 }
 
+const outDir = process.env.LIM_OUT ?? "/tmp/lim/out/limitations";
+const built = existsSync(join(outDir, "coverage.json"))
+  ? (JSON.parse(readFileSync(join(outDir, "coverage.json"), "utf8")).coverage as {
+      state: string;
+      claimCoverage?: { claimType: string; status: string }[];
+      timeComputation?: { extendsWhenLastDayIsWeekend: boolean };
+    }[])
+  : [];
+const builtCells = built.flatMap((c) => c.claimCoverage ?? []);
+const builtCount = (status: string) =>
+  built.length ? String(builtCells.filter((c) => c.status === status).length) : "not built";
+const timeRules = built.filter((c) => c.timeComputation);
+
 const count = (f: (s: string, c: string) => string, v: string) =>
   states.flatMap((s) => CLAIM_TYPES.map((c) => f(s, c))).filter((x) => x === v).length;
 const after = (s: string, c: string): string => cells.get(`${s}|${c}`) ?? "-";
@@ -105,8 +118,11 @@ const block = [
   "",
   "| | Before (production bundle 2026-10-05.4) | Now (backfill entries) |",
   "|---|--:|--:|",
-  `| Cells with a calculator baseline (B) | ${count(before, "B")} | not yet published |`,
-  `| Cells research-only (R) | ${count(before, "R")} | not yet published |`,
+  `| Cells with a calculator baseline (B) | ${count(before, "B")} | ${builtCount("baseline")} (built bundle, unpublished) |`,
+  `| Cells research-only: period recorded, no date issued (R) | ${count(before, "R")} | ${builtCount("research_only")} (verified, e.g. repose not modelled) |`,
+  `| Cells recorded with open issues, no date issued | n/a | ${builtCount("flagged")} |`,
+  `| Cells Not recorded in built bundle | n/a | ${builtCount("not_recorded")} |`,
+  `| States with a recorded weekend-extension counting rule | 0 | ${timeRules.length} (${timeRules.filter((c) => c.timeComputation!.extendsWhenLastDayIsWeekend).length} extend, ${timeRules.filter((c) => !c.timeComputation!.extendsWhenLastDayIsWeekend).length} do not) |`,
   `| Cells verified from primary source (V) | n/a | ${count(after, "V")} |`,
   `| Cells flagged (F) | n/a | ${count(after, "F")} |`,
   `| Cells Not recorded (N) | n/a | ${count(after, "N")} |`,
