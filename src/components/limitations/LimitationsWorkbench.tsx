@@ -88,6 +88,7 @@ function Authority({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule: Li
                 className="break-all text-primary underline"
               >
                 {source.url}
+                {source.route ? ` (${source.route})` : ""}
               </a>
             ))
           ) : (
