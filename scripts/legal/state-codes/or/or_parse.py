@@ -55,7 +55,10 @@ def load_receipts(root: pathlib.Path) -> list[dict]:
 def chapter_receipts(receipts: list[dict]) -> dict[str, dict]:
     by_chapter: dict[str, dict] = {}
     for receipt in receipts:
-        if not receipt.get("ok") or receipt.get("label") != "chapter-html":
+        if not receipt.get("ok"):
+            continue
+        label = receipt.get("label") or ""
+        if label not in ("chapter-html", "toc-probe"):
             continue
         match = re.search(r"/ors(\d{3})([a-z]*)\.html$", receipt["url"], re.I)
         chapter = None
@@ -282,10 +285,23 @@ def main(argv: list[str] | None = None) -> int:
     index_groups = json.loads((root / "index-groups.json").read_text(encoding="utf8"))
     receipts = load_receipts(root)
     by_chapter = chapter_receipts(receipts)
+    chapter_keys = set(chapter_list) | set(by_chapter)
     missing = sorted(set(chapter_list) - set(by_chapter), key=chapter_sort_key)
     if missing:
         raise SystemExit(
             f"missing chapter-html capture for {len(missing)} chapters; first: {missing[0]}"
+        )
+    extra = sorted(set(by_chapter) - set(chapter_list), key=chapter_sort_key)
+    if extra:
+        print(
+            json.dumps(
+                {
+                    "chapters_in_receipts_not_in_chapter_list": len(extra),
+                    "sample": extra[:10],
+                },
+                sort_keys=True,
+            ),
+            flush=True,
         )
 
     parsed_dir = root / "parsed"
@@ -300,11 +316,11 @@ def main(argv: list[str] | None = None) -> int:
     sections_path = parsed_dir / "sections.jsonl"
 
     with inventory_path.open("wb") as inventory_handle, sections_path.open("wb") as sections_handle:
-        for chapter in sorted(chapter_list, key=chapter_sort_key):
+        for chapter in sorted(chapter_keys, key=chapter_sort_key):
             receipt = by_chapter[chapter]
             raw = (root / receipt["stored_path"]).read_bytes()
             parsed = parse_chapter_html(raw, chapter)
-            title_meta = chapter_list[chapter]
+            title_meta = chapter_list.get(chapter) or {}
             if not title_meta.get("title_number"):
                 title_meta = title_group_for_chapter(index_groups, chapter)
                 title_meta = {
@@ -373,13 +389,13 @@ def main(argv: list[str] | None = None) -> int:
         "jurisdiction": "OR",
         "parser": {"name": PARSER_NAME, "version": PARSER_VERSION},
         "counts": {
-            "chapters": len(chapter_list),
+            "chapters": len(chapter_keys),
             "sections": len(all_rows),
             "rows": len(all_rows),
             "empty_chapters": len(empty_chapters),
         },
         "expected_vs_parsed": {
-            "expected_chapters": len(chapter_list),
+            "expected_chapters": len(chapter_keys),
             "parsed_chapters": len(chapter_reports),
             "empty_chapters": empty_chapters,
         },

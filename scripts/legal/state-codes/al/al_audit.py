@@ -4,18 +4,25 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
+import re
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
+from al_lib import SECTION_ID_REGEX  # noqa: E402
 from al_parse import api_page_receipts, discover_last_page, load_receipts  # noqa: E402
+
+SECTION_ID_RE = re.compile(SECTION_ID_REGEX)
 
 
 def count_sections_with_content(data: list[dict]) -> int:
     return sum(
         1
         for row in data
-        if row.get("type") == "Section" and str(row.get("content") or "").strip()
+        if row.get("type") == "Section"
+        and str(row.get("content") or "").strip()
+        and " through " not in str(row.get("displayId") or "").lower()
+        and SECTION_ID_RE.match(str(row.get("displayId") or "").strip() or "")
     )
 
 

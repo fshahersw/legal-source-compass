@@ -59,7 +59,10 @@ def main(argv: list[str] | None = None) -> int:
     raw_markers = 0
     chapter_mismatches = []
     for receipt in load_receipts(root):
-        if not receipt.get("ok") or receipt.get("label") != "chapter-html":
+        if not receipt.get("ok"):
+            continue
+        label = receipt.get("label") or ""
+        if label not in ("chapter-html", "toc-probe"):
             continue
         chapter = chapter_from_url(receipt["url"])
         if not chapter:

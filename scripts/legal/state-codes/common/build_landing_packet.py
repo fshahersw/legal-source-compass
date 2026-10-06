@@ -34,6 +34,9 @@ def method_for(receipt):
     how = receipt.get('retrieval_method', 'direct')
     if how.startswith('proxied:'):
         return 'proxied_fetch', how.split(':', 1)[1]
+    url = receipt.get('url') or ''
+    if url.endswith('.html') or '/ors/' in url or '/api/' in url or '.aspx' in url.lower():
+        return 'publisher_page', None
     ctype = (receipt.get('headers') or {}).get('content-type', '')
     if 'html' in ctype:
         return 'publisher_page', None
@@ -89,7 +92,8 @@ def main():
             if key in seen:
                 continue
             seen.add(key)
-            items.append({'source_url': r['url'], 'retrieved_at': r['retrieved_at'], 'retrieval_method': method, 'proxy': proxy})
+            items.append({'source_url': r['url'], 'retrieved_at': r['retrieved_at'], 'retrieval_method': method,
+                          'proxy': proxy, 'http_status': r.get('status') or 200})
         if not items and fallback:
             items = fallback
         return items[:50]
@@ -102,7 +106,7 @@ def main():
     for sha, f in originals.items():
         if True:
             src = sources_for(sha, [{'source_url': f['url'], 'retrieved_at': f['retrieved_at'],
-                                     'retrieval_method': 'publisher_bulk_download', 'proxy': None}])
+                                     'retrieval_method': 'publisher_bulk_download', 'proxy': None, 'http_status': 200}])
             original_sources[sha] = src
             objects.append({'sha256': sha, 'bytes': f['bytes'], 'kind': 'publisher_original',
                             'path': os.path.join(root, f['path']), 'sources': src})
@@ -195,6 +199,9 @@ def main():
         if not any(o['sha256'] == u['text_sha256'] for o in objects):
             objects.append({'sha256': u['text_sha256'], 'bytes': u['_bytes'], 'kind': 'unit_text_derivative',
                             'path': u['_path'], 'sources': derivative_sources})
+
+    used_shas = {u['original_sha256'] for u in units.values()} | {u['text_sha256'] for u in units.values()}
+    objects = [o for o in objects if o['sha256'] in used_shas]
 
     def dump(name, rows):
         with open(os.path.join(out, name), 'w', encoding='utf-8') as handle:

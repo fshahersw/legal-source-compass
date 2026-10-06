@@ -152,19 +152,21 @@ def numeric_chapter_ids(start: str, end: str) -> list[str]:
     return [str(value) for value in range(first, last + 1)]
 
 
-def title_group_for_chapter(groups: list[dict], chapter_id: str) -> dict:
-    match = re.fullmatch(r"(\d+)", str(chapter_id))
+def chapter_num_key(chapter_id: str) -> tuple[int, str]:
+    match = re.fullmatch(r"(\d+)([A-Z]*)", str(chapter_id), re.I)
     if not match:
         raise ValueError(chapter_id)
-    number = int(match.group(1))
-    matches = [
-        group
-        for group in groups
-        if number
-        >= int(re.fullmatch(r"(\d+)", group["chapter_start"], re.I).group(1))
-        and number
-        <= int(re.fullmatch(r"(\d+)", group["chapter_end"], re.I).group(1))
-    ]
+    return int(match.group(1)), match.group(2).upper()
+
+
+def title_group_for_chapter(groups: list[dict], chapter_id: str) -> dict:
+    number, suffix = chapter_num_key(chapter_id)
+    matches = []
+    for group in groups:
+        start_n, start_s = chapter_num_key(group["chapter_start"])
+        end_n, end_s = chapter_num_key(group["chapter_end"])
+        if (start_n, start_s) <= (number, suffix) <= (end_n, end_s):
+            matches.append(group)
     if len(matches) != 1:
         raise ValueError(f"chapter {chapter_id} maps to {len(matches)} index groups")
     return matches[0]

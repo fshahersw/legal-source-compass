@@ -20,6 +20,7 @@ from al_lib import (  # noqa: E402
     LANDING,
     PARSER_NAME,
     PARSER_VERSION,
+    SECTION_ID_REGEX,
     html_to_text,
     section_heading,
     status_note_for,
@@ -105,6 +106,9 @@ def api_page_receipts(receipts: list[dict], last_page: int) -> dict[int, dict]:
     return {page: row[1] for page, row in by_page.items()}
 
 
+SECTION_ID_RE = re.compile(SECTION_ID_REGEX)
+
+
 def parse_display_id(display_id: str) -> tuple[str | None, str | None]:
     parts = display_id.split("-", 2)
     if len(parts) < 3:
@@ -123,6 +127,7 @@ def parse_api_page(
     section_nodes = 0
     sections_with_content = 0
     skipped_empty = 0
+    skipped_non_citation = 0
 
     for node in data:
         node_type = node.get("type")
@@ -138,6 +143,9 @@ def parse_api_page(
         section_nodes += 1
         display_id = str(node.get("displayId") or "").strip()
         if not display_id:
+            continue
+        if " through " in display_id.lower() or not SECTION_ID_RE.match(display_id):
+            skipped_non_citation += 1
             continue
         content_html = node.get("content") or ""
         if not str(content_html).strip():
@@ -173,6 +181,7 @@ def parse_api_page(
         "section_nodes": section_nodes,
         "sections_with_content": sections_with_content,
         "skipped_empty_sections": skipped_empty,
+        "skipped_non_citation_sections": skipped_non_citation,
         "parsed_rows": len(rows),
     }
     return rows, summary
@@ -286,6 +295,7 @@ def main(argv: list[str] | None = None) -> int:
     all_rows: list[dict] = []
     page_reports: list[dict] = []
     derivatives: dict[str, dict] = {}
+    global_occurrences: Counter[str] = Counter()
     inventory_path = parsed_dir / "inventory.jsonl"
     sections_path = parsed_dir / "sections.jsonl"
 
@@ -315,10 +325,9 @@ def main(argv: list[str] | None = None) -> int:
                 )
             )
             derivative, rows = build_derivative_and_spans(page_rows, page, receipt)
-            occurrences = Counter()
             for row in rows:
-                occurrences[row["citation"]] += 1
-                occurrence = occurrences[row["citation"]]
+                global_occurrences[row["citation"]] += 1
+                occurrence = global_occurrences[row["citation"]]
                 if occurrence > 1:
                     row["native_id"] = f"{row['citation']}:occurrence:{occurrence}"
                     row["identity_kind"] = "official_citation_with_occurrence"
