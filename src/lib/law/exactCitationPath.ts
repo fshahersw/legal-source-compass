@@ -70,3 +70,50 @@ function oklahomaPaths(citation: string): string[] | null {
   }
   return paths.length ? paths : null;
 }
+
+/** Last path segment after a literal `sec_` prefix. A `secs_` range is not a section token. */
+export function sectionTokenAfterSec(citationPath: string): string | null {
+  const segment = citationPath.split("/").pop() ?? "";
+  const match = /^sec_(.+)$/.exec(segment);
+  return match?.[1] ?? null;
+}
+
+/** Section numbers recorded on the hierarchy. Chapter and title numbers are not included. */
+export function storedSectionNumbers(hierarchy: unknown): string[] {
+  if (!Array.isArray(hierarchy)) return [];
+  const numbers: string[] = [];
+  for (const item of hierarchy) {
+    if (!item || typeof item !== "object") continue;
+    const row = item as Record<string, unknown>;
+    if (row["level"] !== "section") continue;
+    const number = row["number"];
+    if (typeof number !== "string") continue;
+    const trimmed = number.trim();
+    if (trimmed) numbers.push(trimmed);
+  }
+  return numbers;
+}
+
+/**
+ * True when the citation token equals the path segment after `sec_`
+ * or equals a stored section number. A heading, a chapter number, or a nearby number does not match.
+ */
+export function tokenEqualsStoredSection(
+  token: string,
+  citationPath: string,
+  sectionNumbers: readonly string[],
+): boolean {
+  if (!token) return false;
+  if (sectionTokenAfterSec(citationPath) === token) return true;
+  return sectionNumbers.includes(token);
+}
+
+/** The one stored section the token names. Zero or several matches stay unlinked. */
+export function onlyExactStoredSection<
+  T extends { citationPath: string; sectionNumbers: readonly string[] },
+>(token: string, rows: readonly T[]): T | null {
+  const matches = rows.filter((row) =>
+    tokenEqualsStoredSection(token, row.citationPath, row.sectionNumbers),
+  );
+  return matches.length === 1 ? matches[0]! : null;
+}

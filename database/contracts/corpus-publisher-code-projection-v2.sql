@@ -8,7 +8,10 @@
 -- payload hashes, receipts or proxy metadata.
 --
 -- A section's public identity is the intake native id <JURISDICTION>:<citation_path>
--- (official_citation_path), for example FL:95.11. The state list's edition and currency are the
+-- (official_citation_path), for example FL:95.11. A citation token that is not itself that path
+-- resolves only through corpus_publisher_code_projected_section_for_token_v2, and only when the
+-- token equals the last path segment after sec_ or the stored section number and exactly one
+-- published section matches. The state list's edition and currency are the
 -- summary from publisher_code_summarize_state_v2 (editions, through_min, through_max).
 -- Apply after corpus-publisher-code-intake-v2.sql. Service role only.
 begin;
@@ -264,6 +267,73 @@ begin
   );
 end $$;
 
+-- One published section whose last path segment after sec_ or whose stored section number
+-- equals the citation token. Null when the state is private, or when zero or several sections match.
+create or replace function public.corpus_publisher_code_projected_section_for_token_v2(
+  p_jurisdiction text,
+  p_token text
+)
+returns jsonb language plpgsql stable security definer set search_path = '' as $$
+declare gate record; ids text[]; section_row corpus_ingest.entities; source text;
+begin
+  if coalesce(p_jurisdiction, '') !~ '^[A-Z]{2}$'
+     or p_token is null
+     or length(p_token) < 1
+     or length(p_token) > 80
+     or p_token !~ '^[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*$' then
+    raise exception 'Jurisdiction and section token are required' using errcode = '22023';
+  end if;
+  select * into gate from corpus_ingest.publisher_code_projected_gate_v2(p_jurisdiction);
+  if gate.jurisdiction is null then return null; end if;
+  select coalesce(array_agg(hit.native_id), '{}'::text[]) into ids
+  from (
+    select e.native_id
+    from corpus_ingest.entities e
+    where e.source_system = gate.source_system
+      and e.entity_type = 'code-section'
+      and e.review_status <> 'quarantined'
+      and e.schema_version = 'publisher-code-evidence/2'
+      and (
+        substring(regexp_replace(coalesce(e.data->>'citation_path', ''), '^.*/', '') from '^sec_(.+)$') = p_token
+        or exists (
+          select 1
+          from jsonb_array_elements(
+            case
+              when jsonb_typeof(e.data->'hierarchy') = 'array' then e.data->'hierarchy'
+              else '[]'::jsonb
+            end
+          ) h
+          where h->>'level' = 'section'
+            and h->>'number' = p_token
+        )
+      )
+    limit 2
+  ) hit;
+  if coalesce(array_length(ids, 1), 0) <> 1 then return null; end if;
+  select * into section_row from corpus_ingest.entities e
+  where e.source_system = gate.source_system
+    and e.entity_type = 'code-section'
+    and e.native_id = ids[1]
+    and e.review_status <> 'quarantined'
+    and e.schema_version = 'publisher-code-evidence/2';
+  if not found then return null; end if;
+  source := section_row.provenance->>'source_url';
+  if source is null or source !~ '^https://' then source := null; end if;
+  return jsonb_build_object(
+    'native_id', section_row.native_id,
+    'jurisdiction', p_jurisdiction,
+    'citation', section_row.data->>'citation',
+    'citation_path', section_row.data->>'citation_path',
+    'heading', section_row.data->>'heading',
+    'text', section_row.data->>'text',
+    'history', section_row.data->'history',
+    'status_note', section_row.data->'status_note',
+    'hierarchy', section_row.data->'hierarchy',
+    'currency', section_row.data->'currency',
+    'source_url', source
+  );
+end $$;
+
 -- Citation or heading search across one projected state, or every projected state when p_jurisdiction is null.
 create or replace function public.corpus_publisher_code_projected_search_v2(
   p_q text,
@@ -324,16 +394,20 @@ revoke all on function corpus_ingest.publisher_code_projected_gate_v2(text) from
 revoke all on function public.corpus_publisher_code_projected_states_v2() from public, anon, authenticated;
 revoke all on function public.corpus_publisher_code_projected_outline_v2(text, jsonb) from public, anon, authenticated;
 revoke all on function public.corpus_publisher_code_projected_section_v2(text, text) from public, anon, authenticated;
+revoke all on function public.corpus_publisher_code_projected_section_for_token_v2(text, text) from public, anon, authenticated;
 revoke all on function public.corpus_publisher_code_projected_search_v2(text, text, integer) from public, anon, authenticated;
 grant execute on function public.corpus_publisher_code_projected_states_v2() to service_role;
 grant execute on function public.corpus_publisher_code_projected_outline_v2(text, jsonb) to service_role;
 grant execute on function public.corpus_publisher_code_projected_section_v2(text, text) to service_role;
+grant execute on function public.corpus_publisher_code_projected_section_for_token_v2(text, text) to service_role;
 grant execute on function public.corpus_publisher_code_projected_search_v2(text, text, integer) to service_role;
 
 comment on function public.corpus_publisher_code_projected_states_v2() is
   'Service-role read of full state codes whose review flag public_projection_allowed is true. Edition and currency are the intake currency summary.';
 comment on function public.corpus_publisher_code_projected_section_v2(text, text) is
   'One published section (native id JURISDICTION:citation_path) from a state with public_projection_allowed. Null when the state is private.';
+comment on function public.corpus_publisher_code_projected_section_for_token_v2(text, text) is
+  'One published section whose sec_ path suffix or stored section number equals the citation token. Null unless exactly one section matches.';
 
 notify pgrst, 'reload schema';
 commit;
