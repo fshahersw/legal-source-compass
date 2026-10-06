@@ -31,7 +31,9 @@ export type GuidedDateField = {
     | "deathDate"
     | "causeDiscoveryDate"
     | "firstProductDeliveryDate"
-    | "qualifyingExposureDate";
+    | "qualifyingExposureDate"
+    | "injuryDate"
+    | "substantialCompletionDate";
   label: string;
   help: string;
 };
@@ -60,10 +62,85 @@ function reposeCalculation(rule: LimitationRule | null): ReposeRuleCalculation |
 }
 
 export function isAccrualReposeRule(rule: LimitationRule | null): boolean {
-  return reposeCalculation(rule) !== null;
+  return (
+    reposeCalculation(rule) !== null ||
+    (rule?.calculation?.mode === "clocks_min" && (rule.calculation.clocks?.length ?? 0) > 0)
+  );
+}
+
+const CLOCK_PHRASE: Record<string, string> = {
+  act_or_omission: "the act or omission complained of",
+  last_act_or_omission: "the last act or omission",
+  injury_date: "the date of injury",
+  substantial_completion: "substantial completion of the improvement",
+  first_delivery: "first delivery of the product to a purchaser or lessee",
+};
+
+function clocksFields(rule: LimitationRule): GuidedDateField[] {
+  const calc = rule.calculation!;
+  const fields: GuidedDateField[] = [];
+  const add = (field: GuidedDateField) => {
+    if (!fields.some((f) => f.key === field.key)) fields.push(field);
+  };
+  for (const limb of calc.limbs ?? []) {
+    if (limb.from === "accrual")
+      add({
+        key: "accrualDate",
+        label: "Confirmed accrual date",
+        help: "Enter the accrual date established under the cited limitations rule. Repose dates are separate.",
+      });
+    if (limb.from === "death")
+      add({
+        key: "accrualDate",
+        label: "Date of death",
+        help: "Use the death date required by this wrongful-death rule. Repose dates are separate.",
+      });
+    if (limb.from === "discovery") {
+      add({
+        key: "actualDiscoveryDate",
+        label: "When the injury and its cause were actually discovered",
+        help: "Use the knowledge the cited rule requires. Leave an unknown date blank rather than guessing.",
+      });
+      add({
+        key: "constructiveDiscoveryDate",
+        label: "When reasonable diligence should have revealed that knowledge",
+        help: "Both discovery dates are required; the earlier controls the discovery limb.",
+      });
+    }
+    if (limb.from === "injury_date")
+      add({
+        key: "injuryDate",
+        label: "Date of the injury",
+        help: "The date the injury or incident occurred, as the cited rule measures it. This is not the discovery date.",
+      });
+  }
+  for (const clock of calc.clocks ?? []) {
+    const phrase = CLOCK_PHRASE[clock.from] ?? clock.from;
+    const key =
+      clock.from === "injury_date"
+        ? "injuryDate"
+        : clock.from === "substantial_completion"
+          ? "substantialCompletionDate"
+          : clock.from === "first_delivery"
+            ? "firstProductDeliveryDate"
+            : "reposeActDate";
+    add({
+      key,
+      label: `Date of ${phrase}`,
+      help: `Enter the date the repose clock starts: ${phrase}. A later event is not assumed to qualify or restart repose.`,
+    });
+  }
+  return fields;
 }
 
 export function reposeCapLabel(rule: LimitationRule | null): string | null {
+  if (rule?.calculation?.mode === "clocks_min") {
+    const clocks = rule.calculation.clocks ?? [];
+    if (!clocks.length) return null;
+    return `Outer repose caps (the earliest applies): ${clocks
+      .map((c) => `${c.years} calendar years from ${CLOCK_PHRASE[c.from] ?? c.from}`)
+      .join("; ")}.`;
+  }
   const calculation = reposeCalculation(rule);
   if (!calculation) return null;
   const trigger =
@@ -82,6 +159,7 @@ export function guidedDateFields(
 ): GuidedDateField[] {
   if (!rule) return [];
   const mode = rule.calculation?.mode;
+  if (mode === "clocks_min") return clocksFields(rule);
   if (mode === "accrual_repose_min") {
     const repose = reposeCalculation(rule);
     if (!repose) return [];

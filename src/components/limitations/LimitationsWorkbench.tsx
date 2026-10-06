@@ -318,6 +318,8 @@ export function LimitationsWorkbench({
       ...patch,
       ...(Object.hasOwn(patch, "reposeActDate") ||
       Object.hasOwn(patch, "firstProductDeliveryDate") ||
+      Object.hasOwn(patch, "injuryDate") ||
+      Object.hasOwn(patch, "substantialCompletionDate") ||
       Object.hasOwn(patch, "accrualDate")
         ? { reposeApplicabilityConfirmed: false }
         : {}),

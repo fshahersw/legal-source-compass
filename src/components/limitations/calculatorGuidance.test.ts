@@ -4,7 +4,12 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { baselineRule, calculateBaseline } from "@/lib/limitations/engine";
 import type { ClaimType, LimitationRule, LimitationsSnapshot } from "@/lib/limitations/types";
-import { guidedDateFields, reposeCapLabel, unconfirmedClaimInput } from "./calculatorGuidance";
+import {
+  guidedDateFields,
+  isAccrualReposeRule,
+  reposeCapLabel,
+  unconfirmedClaimInput,
+} from "./calculatorGuidance";
 import { LimitationsWorkbench } from "./LimitationsWorkbench";
 
 const json = (name: string) =>
@@ -124,5 +129,55 @@ describe("guided limitations calculator", () => {
     expect(result.date).toBeNull();
     expect(result.reasons.join(" ")).toContain("governing");
     expect(result.reasons.join(" ")).toContain("exceptions");
+  });
+});
+
+describe("clocks_min guidance", () => {
+  const clocksRule = {
+    claimType: "medical_malpractice",
+    accrualBasis: "confirmed_accrual",
+    calculation: {
+      mode: "clocks_min",
+      combine: "earlier",
+      limbs: [
+        { amount: 3, unit: "calendar_years", from: "injury_date" },
+        { amount: 1, unit: "calendar_years", from: "discovery" },
+      ],
+      clocks: [
+        { years: 7, from: "injury_date", effectiveFrom: "1977-07-01" },
+        { years: 10, from: "substantial_completion", effectiveFrom: "1990-01-01" },
+      ],
+    },
+  } as unknown as LimitationRule;
+
+  it("asks once for each date a limb or repose clock needs", () => {
+    const keys = guidedDateFields(clocksRule, "VT").map((f) => f.key);
+    expect(keys).toEqual([
+      "injuryDate",
+      "actualDiscoveryDate",
+      "constructiveDiscoveryDate",
+      "substantialCompletionDate",
+    ]);
+  });
+
+  it("describes every repose clock and counts as a repose rule", () => {
+    expect(isAccrualReposeRule(clocksRule)).toBe(true);
+    const label = reposeCapLabel(clocksRule)!;
+    expect(label).toContain("7 calendar years from the date of injury");
+    expect(label).toContain("10 calendar years from substantial completion");
+  });
+
+  it("labels a death-based accrual date as the date of death", () => {
+    const rule = {
+      claimType: "wrongful_death",
+      accrualBasis: "death",
+      calculation: {
+        mode: "accrual_repose_min",
+        reposeYears: 5,
+        reposeTrigger: "act_or_omission",
+        reposeEffectiveFrom: "1991-10-01",
+      },
+    } as unknown as LimitationRule;
+    expect(guidedDateFields(rule, "CT")[0]?.label).toBe("Date of death");
   });
 });
