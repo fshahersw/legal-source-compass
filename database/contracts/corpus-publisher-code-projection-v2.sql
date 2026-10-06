@@ -267,7 +267,7 @@ begin
   );
 end $$;
 
--- One published section whose last path segment after sec_ or whose stored section number
+-- One published section whose sec_ suffix, final hyphen segment, or stored section number
 -- equals the citation token. Null when the state is private, or when zero or several sections match.
 create or replace function public.corpus_publisher_code_projected_section_for_token_v2(
   p_jurisdiction text,
@@ -295,6 +295,11 @@ begin
       and e.schema_version = 'publisher-code-evidence/2'
       and (
         substring(regexp_replace(coalesce(e.data->>'citation_path', ''), '^.*/', '') from '^sec_(.+)$') = p_token
+        or (
+          strpos(coalesce(e.data->>'citation_path', ''), '/') = 0
+          and strpos(coalesce(e.data->>'citation_path', ''), '-') > 0
+          and regexp_replace(e.data->>'citation_path', '^.*-', '') = p_token
+        )
         or exists (
           select 1
           from jsonb_array_elements(
@@ -407,7 +412,7 @@ comment on function public.corpus_publisher_code_projected_states_v2() is
 comment on function public.corpus_publisher_code_projected_section_v2(text, text) is
   'One published section (native id JURISDICTION:citation_path) from a state with public_projection_allowed. Null when the state is private.';
 comment on function public.corpus_publisher_code_projected_section_for_token_v2(text, text) is
-  'One published section whose sec_ path suffix or stored section number equals the citation token. Null unless exactly one section matches.';
+  'One published section whose sec_ suffix, final hyphen segment, or stored section number equals the citation token. Null unless exactly one section matches.';
 
 notify pgrst, 'reload schema';
 commit;
