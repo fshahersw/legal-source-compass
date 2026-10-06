@@ -1,0 +1,14 @@
+{
+  "jurisdiction": "SC",
+  "publisher": "South Carolina Legislature (scstatehouse.gov)",
+  "publisher_url": "https://www.scstatehouse.gov/code/statmast.php",
+  "source_system": "sc-code-of-laws",
+  "code_title": "Code of Laws of South Carolina 1976",
+  "parser_version": "2",
+  "unit": "chapter page",
+  "rate_limit_ms": 1000,
+  "source_url_patterns": ["^https://www\\.scstatehouse\\.gov/.*$"],
+  "section_id": {"scheme": "official_citation_path", "regex": "^[0-9]+[A-Za-z]?-[0-9]+[A-Za-z]?-[0-9A-Za-z.]+(?::occurrence:[2-9][0-9]*)?$",
+                 "example": "1-1-10", "citation_format": "Title-Chapter-Section as printed (S.C. Code Ann. § 1-1-10)"},
+  "currency": {"basis": "publisher_statement", "location": "https://www.scstatehouse.gov/code/statmast.php"}
+}
