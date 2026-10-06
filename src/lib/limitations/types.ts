@@ -79,11 +79,19 @@ export type TimeComputationRule = {
 };
 
 export type ClaimCoverageStatus = "baseline" | "research_only" | "flagged" | "not_recorded";
+export type ClaimVariantCoverage = {
+  subtype: string;
+  ruleId: string;
+  status: ClaimCoverageStatus;
+};
+
+/** Status of the claim type's GENERAL rule. Variants compute only when selected and never stand in for it. */
 export type ClaimCoverage = {
   claimType: ClaimType;
   status: ClaimCoverageStatus;
   ruleId?: string;
   reason?: string;
+  variants?: ClaimVariantCoverage[];
 };
 
 export type LimitationRule = {

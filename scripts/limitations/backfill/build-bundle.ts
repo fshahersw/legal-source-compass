@@ -37,12 +37,13 @@ import {
   type RuleProvenance,
 } from "../../../src/lib/limitations/types";
 import { validateLimitationsSnapshot } from "../../../src/lib/limitations/validation";
+import { claimCoverageFor } from "../../../src/lib/limitations/backfill/cellCoverage";
 
 const work = process.env.LIM_WORK ?? "/tmp/lim/backfill";
 const bundle = process.env.LIM_BUNDLE ?? "/tmp/lim/data/limitations";
 const out = process.env.LIM_OUT ?? "/tmp/lim/out/limitations";
 const snapshotDate = process.env.LIM_SNAPSHOT_DATE ?? "2026-10-06";
-const ruleVersion = `${snapshotDate}.1`;
+const ruleVersion = `${snapshotDate}.${process.env.LIM_RULE_SEQ ?? "2"}`;
 const idStamp = snapshotDate.replaceAll("-", "");
 
 const readJson = (file: string) => JSON.parse(readFileSync(join(bundle, file), "utf8"));
@@ -51,7 +52,16 @@ const sourcesDoc = readJson("sources.json");
 const coverageDoc = readJson("coverage.json");
 const casesDoc = readJson("case-references.json");
 
-const rules: LimitationRule[] = [...rulesDoc.rules];
+/** Production rules the independent verifier found wrong and whose content is carried by a corrected entry. */
+const RETIRED_LEGACY_RULES = new Map([
+  [
+    "mn-repose-1-20261002",
+    "ruleKind repose with a 3-year period; Minn. Stat. 573.02 subd. 1 gives a 3-year limitation after death and a 6-year cap from the act or omission, which the wrongful-death entry now carries.",
+  ],
+]);
+const rules: LimitationRule[] = (rulesDoc.rules as LimitationRule[]).filter(
+  (r) => !RETIRED_LEGACY_RULES.has(r.id),
+);
 const sources: LimitationSource[] = [...sourcesDoc.sources];
 const sourceIds = new Set(sources.map((s) => s.id));
 const newTexts: { id: string; text: string }[] = [];
@@ -148,6 +158,7 @@ const files = existsSync(entryDir)
       .sort()
   : [];
 let added = 0;
+let upgraded = 0;
 let attached = 0;
 
 for (const file of files) {
@@ -212,41 +223,6 @@ for (const file of files) {
     };
     if (entry.status === "flagged") flaggedCells.add(k);
 
-    const existing = rules.filter(
-      (r) =>
-        r.jurisdiction === state &&
-        r.claimType === entry.claimType &&
-        (r.subtype ?? "general") === variant &&
-        r.ruleKind === "limitations",
-    );
-    const current =
-      existing.find((r) => r.computation === "baseline_only") ?? existing.find((r) => r.period);
-    if (current) {
-      const same =
-        current.period &&
-        current.period.amount === entry.period!.amount &&
-        current.period.unit === unit;
-      if (same) {
-        if (!current.provenance) {
-          current.provenance = provenance;
-          attached++;
-        }
-      } else {
-        discrepancies.push({
-          cell: k,
-          existingRuleId: current.id,
-          existingPeriod: current.period,
-          existingPinpoint: current.pinpoint,
-          entryPeriod: entry.period,
-          entryCitation: entry.citation,
-          entryStatus: entry.status,
-          captureId: entry.captureId,
-          note: "Existing production rule left unchanged; owner/legal review required before either value is trusted.",
-        });
-      }
-      continue;
-    }
-
     const repose = entry.repose ?? [];
     const trigger = repose.length === 1 ? reposeTrigger(repose[0]!.trigger) : null;
     const reposeModelled =
@@ -265,6 +241,52 @@ for (const file of files) {
       entry.status === "verified" &&
       accrualOk &&
       (repose.length === 0 || (reposeModelled && entry.accrual.kind !== "death"));
+    const existing = rules.filter(
+      (r) =>
+        r.jurisdiction === state &&
+        r.claimType === entry.claimType &&
+        (r.subtype ?? "general") === variant &&
+        r.ruleKind === "limitations",
+    );
+    let replaced: LimitationRule | null = null;
+    const current =
+      existing.find((r) => r.computation === "baseline_only") ?? existing.find((r) => r.period);
+    if (current) {
+      const same =
+        current.period &&
+        current.period.amount === entry.period!.amount &&
+        current.period.unit === unit;
+      if (same) {
+        if (!current.provenance) {
+          current.provenance = provenance;
+          if (entry.status === "verified") current.pinpoint = entry.citation;
+          attached++;
+        }
+        const upgrade =
+          current.computation === "research_only" &&
+          baseline &&
+          (current.subtype ?? "general") === "general" &&
+          current.id.endsWith("20261002");
+        if (!upgrade) continue;
+        replaced = current;
+        rules.splice(rules.indexOf(current), 1);
+        upgraded++;
+      } else {
+        discrepancies.push({
+          cell: k,
+          existingRuleId: current.id,
+          existingPeriod: current.period,
+          existingPinpoint: current.pinpoint,
+          entryPeriod: entry.period,
+          entryCitation: entry.citation,
+          entryStatus: entry.status,
+          captureId: entry.captureId,
+          note: "Existing production rule left unchanged; owner/legal review required before either value is trusted.",
+        });
+        continue;
+      }
+    }
+
     const notes = [
       entry.accrual.kind === "not_recorded"
         ? "The cited provision does not state when the claim accrues (Not recorded). The accrual date must be confirmed under controlling case law before relying on any date."
@@ -295,11 +317,14 @@ for (const file of files) {
       reviewStatus: "statutory_text_verified",
       period: { amount: entry.period!.amount, unit },
       provenance,
-      sourceIds: [...new Set([primaryId, ...crossIds])],
+      sourceIds: [...new Set([primaryId, ...crossIds, ...(replaced?.sourceIds ?? [])])],
+      ...(replaced?.caseReferenceIds?.length
+        ? { caseReferenceIds: replaced.caseReferenceIds }
+        : {}),
       pinpoint: entry.citation,
       scope: `${CLAIM_LABELS[entry.claimType as ClaimType]}${variant === "general" ? "" : ` (${variant.replaceAll("_", " ")})`}: as stated in the cited provision; special statutory claims excluded.`,
       accrualBasis: entry.accrual.kind === "death" ? "death" : "confirmed_accrual",
-      conditions: [...new Set(notes)],
+      conditions: [...new Set([...notes, ...(replaced?.conditions ?? [])])],
       exclusions: [
         "Governmental defendants, special statutory claims and intentional / sexual-abuse claims unless the cited provision expressly covers them",
         "Unresolved minority, disability, concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues",
@@ -383,31 +408,16 @@ const coverage: CoverageRow[] = (coverageDoc.coverage as CoverageRow[]).map((row
   const stateRules = rules.filter((r) => r.jurisdiction === row.state);
   const baselineIds = stateRules.filter((r) => r.computation === "baseline_only").map((r) => r.id);
   const researchIds = stateRules.filter((r) => r.computation === "research_only").map((r) => r.id);
-  const claimCoverage: ClaimCoverage[] = CLAIM_TYPES.map((claim) => {
-    const cell = stateRules
-      .filter((r) => r.claimType === claim)
-      .sort((a, b) => Number(Boolean(a.subtype)) - Number(Boolean(b.subtype)));
-    const base = cell.find((r) => r.computation === "baseline_only");
-    if (base) return { claimType: claim, status: "baseline", ruleId: base.id };
-    const limitation = cell.find((r) => r.ruleKind === "limitations" && r.period) ?? cell[0];
-    if (limitation) {
-      const flagged = limitation.provenance?.entryStatus === "flagged";
-      return {
-        claimType: claim,
-        status: flagged ? "flagged" : "research_only",
-        ruleId: limitation.id,
-      };
-    }
-    return {
-      claimType: claim,
-      status: "not_recorded",
-      reason:
-        notRecorded.get(key(row.state, claim, "general")) ??
+  const claimCoverage: ClaimCoverage[] = CLAIM_TYPES.map((claim) =>
+    claimCoverageFor(
+      stateRules,
+      claim,
+      notRecorded.get(key(row.state, claim, "general")) ??
         "No primary-source entry has been verified for this claim.",
-    };
-  });
+    ),
+  );
   const lacking = CLAIM_TYPES.filter(
-    (c) => !stateRules.some((r) => r.claimType === c && r.computation === "baseline_only"),
+    (c) => claimCoverage.find((x) => x.claimType === c)?.status !== "baseline",
   );
   const gaps = [
     ...row.gaps.filter(
@@ -467,7 +477,7 @@ writeFileSync(join(out, "coverage.json"), `${JSON.stringify(files4.coverage, nul
 writeFileSync(join(out, "case-references.json"), `${JSON.stringify(files4.cases, null, 2)}\n`);
 writeFileSync(
   join(out, "backfill-discrepancies.json"),
-  `${JSON.stringify({ discrepancies, rejected }, null, 2)}\n`,
+  `${JSON.stringify({ discrepancies, rejected, retiredLegacyRules: Object.fromEntries(RETIRED_LEGACY_RULES) }, null, 2)}\n`,
 );
 
 const cells = coverage.flatMap((c) => c.claimCoverage ?? []);
@@ -480,6 +490,7 @@ console.log(
     sources: snapshot.sources.length,
     addedRules: added,
     provenanceAttachedToExisting: attached,
+    legacyResearchRulesUpgraded: upgraded,
     cells: {
       baseline: tally("baseline"),
       research_only: tally("research_only"),

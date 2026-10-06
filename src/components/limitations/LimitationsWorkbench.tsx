@@ -47,6 +47,10 @@ const subtypeLabels: Record<string, string> = {
   synthetic_estrogen: "DES / nonsteroidal synthetic estrogen exposure",
 };
 
+const patternLabel = (slug: string) =>
+  slug === "general"
+    ? "General rule for this claim type"
+    : `Variant, only if this fact pattern fits: ${subtypeLabels[slug] ?? humanize(slug)}`;
 function Authority({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule: LimitationRule }) {
   const facts = ruleAuthorityFacts(snapshot, rule);
   return (
@@ -476,7 +480,7 @@ export function LimitationsWorkbench({
                   >
                     {subtypes.map((item) => (
                       <option key={item} value={item}>
-                        {subtypeLabels[item] ?? humanize(item)}
+                        {patternLabel(item)}
                         {baselineRule(snapshot.rules, state, claim, item)
                           ? ""
                           : " · legal review needed"}
@@ -490,6 +494,13 @@ export function LimitationsWorkbench({
                   <p className="text-base font-semibold">
                     {rule.period ? periodLabel(rule.period) : "Period requires legal review"}
                   </p>
+                  {rule.subtype && rule.subtype !== "general" && (
+                    <p className="mt-1 text-sm font-medium">
+                      Variant rule: applies only to{" "}
+                      {subtypeLabels[rule.subtype] ?? humanize(rule.subtype)}, not to the claim type
+                      generally.
+                    </p>
+                  )}
                   {reposeLabel && <p className="mt-1 text-sm font-medium">{reposeLabel}</p>}
                   <p className="mt-1 text-sm leading-relaxed">{rule.scope}</p>
                   <Citations snapshot={snapshot} rule={rule} />
@@ -501,7 +512,12 @@ export function LimitationsWorkbench({
                     No unique baseline is available for this selection. No date will be calculated.
                   </p>
                   {(() => {
-                    const recorded = stateRules.find((item) => item.period);
+                    const recorded = stateRules.find(
+                      (item) =>
+                        (item.subtype ?? "general") === (input.subtype ?? "general") &&
+                        item.ruleKind === "limitations" &&
+                        item.period,
+                    );
                     const cell = stateCoverage?.claimCoverage?.find(
                       (item) => item.claimType === claim,
                     );
@@ -581,7 +597,7 @@ export function LimitationsWorkbench({
                       >
                         {subtypes.map((item) => (
                           <option key={item} value={item}>
-                            {subtypeLabels[item] ?? humanize(item)}
+                            {patternLabel(item)}
                             {baselineRule(snapshot.rules, state, claim, item)
                               ? ""
                               : " · legal review needed"}
@@ -1200,6 +1216,9 @@ export function LimitationsWorkbench({
                                       ? "recorded with open issues"
                                       : "Not recorded"}
                               </span>
+                              {cell.variants?.length
+                                ? ` · ${cell.variants.length} narrow variant${cell.variants.length === 1 ? "" : "s"} selectable`
+                                : ""}
                             </li>
                           ))}
                         </ul>

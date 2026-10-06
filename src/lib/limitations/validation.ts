@@ -162,6 +162,7 @@ type KnownField =
   | "baselineRuleIds"
   | "researchRuleIds"
   | "gaps"
+  | "variants"
   | "storageKey"
   | "storageBucket"
   | "note"
@@ -613,6 +614,17 @@ function validateCoverage(values: unknown): CoverageRow[] {
           fail(`${label}.claimCoverage[${i}] has an unsupported status`);
         if (cc.status === "not_recorded") string(cc.reason, `${label}.claimCoverage[${i}].reason`);
         else string(cc.ruleId, `${label}.claimCoverage[${i}].ruleId`);
+        if (cc["variants"] !== undefined) {
+          if (!Array.isArray(cc["variants"]))
+            fail(`${label}.claimCoverage[${i}].variants must be an array`);
+          for (const [j, v] of (cc["variants"] as unknown[]).entries()) {
+            const variant = record(v, `${label}.claimCoverage[${i}].variants[${j}]`);
+            string(variant["subtype"], `${label}.claimCoverage[${i}].variants[${j}].subtype`);
+            string(variant.ruleId, `${label}.claimCoverage[${i}].variants[${j}].ruleId`);
+            if (!["baseline", "research_only", "flagged"].includes(variant.status as string))
+              fail(`${label}.claimCoverage[${i}].variants[${j}] has an unsupported status`);
+          }
+        }
       }
     }
     c.discoveryLinks.forEach((link, i) => validLink(link, `${label}.discoveryLinks[${i}]`));
