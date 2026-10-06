@@ -11,7 +11,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-from sc_common import Archive, decode_html  # noqa: E402
+from sc_common import Archive, decode_html, worker_slice  # noqa: E402
 
 BASE = "https://legislature.maine.gov/statutes/"
 HOME = BASE + "homepage.html"
@@ -137,10 +137,8 @@ def build_inventory(arc):
     return inv
 
 
-def fetch_all(arc):
-    inv_path = os.path.join(arc.work, "inventory.json")
-    if not os.path.exists(inv_path):
-        raise SystemExit("run inventory first")
+def all_fetch_urls(work):
+    inv_path = os.path.join(work, "inventory.json")
     inv = json.load(open(inv_path))
     urls = {HOME}
     for t in inv["titles"]:
@@ -149,7 +147,14 @@ def fetch_all(arc):
         urls.add(ch["chapter_url"])
         for s in ch.get("sections") or []:
             urls.add(s["url"])
-    urls = sorted(urls)
+    return sorted(urls)
+
+
+def fetch_all(arc):
+    inv_path = os.path.join(arc.work, "inventory.json")
+    if not os.path.exists(inv_path):
+        raise SystemExit("run inventory first")
+    urls = all_fetch_urls(arc.work)
     failed = []
     for i, u in enumerate(urls, 1):
         rec = grab(arc, u)
@@ -162,10 +167,28 @@ def fetch_all(arc):
     print("fetch done", len(urls), "failed", len(failed), flush=True)
 
 
+def fetch_parallel(arc, worker, workers):
+    pending = [u for u in all_fetch_urls(arc.work) if arc.index.get(u, {}).get("state") != "complete"]
+    chunk = worker_slice(pending, worker, workers)
+    failed = []
+    print(f"me worker {worker}/{workers} chunk {len(chunk)} of {len(pending)} pending", flush=True)
+    for i, u in enumerate(chunk, 1):
+        rec = grab(arc, u)
+        if rec["state"] != "complete":
+            failed.append({"url": u, "http_status": rec.get("http_status"), "route": rec.get("route")})
+        if i % 100 == 0:
+            print(f"me w{worker}", i, len(chunk), len(failed), flush=True)
+    out = os.path.join(arc.work, f"acquire_failed_w{worker}.json")
+    json.dump(failed, open(out, "w"), indent=1)
+    print(f"me w{worker} done chunk {len(chunk)} failed {len(failed)}", flush=True)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--work", default="/tmp/sc4/me")
-    ap.add_argument("--phase", default="all", choices=("all", "inventory", "fetch"))
+    ap.add_argument("--phase", default="all", choices=("all", "inventory", "fetch", "fetch-parallel"))
+    ap.add_argument("--worker", type=int, default=0, help="parallel fetch worker index (0 .. workers-1)")
+    ap.add_argument("--workers", type=int, default=4, help="parallel fetch worker count")
     a = ap.parse_args()
     arc = Archive(a.work, min_interval=1.0)
     if a.phase in ("all", "inventory"):
@@ -177,7 +200,11 @@ def main():
             inv["section_count"],
             flush=True,
         )
-    if a.phase in ("all", "fetch"):
+    if a.phase == "fetch":
+        fetch_all(arc)
+    elif a.phase == "fetch-parallel":
+        fetch_parallel(arc, a.worker, a.workers)
+    elif a.phase == "all":
         fetch_all(arc)
 
 
