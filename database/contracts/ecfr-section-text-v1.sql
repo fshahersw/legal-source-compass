@@ -148,7 +148,7 @@ declare
   item jsonb := p_row->'item';
   filt jsonb := coalesce(p_row->'filters', '{}'::jsonb);
   gpo jsonb; has_gpo boolean; gpo_text text; official jsonb; texts jsonb; recon jsonb; sources jsonb;
-  cmp text; cat text; new_text text; dts jsonb; token text;
+  cmp text; cat text; new_text text; dts jsonb; token text; as_of_txt text;
 begin
   select coalesce(jsonb_agg(x.t order by x.o), '[]'::jsonb) into gpo
     from jsonb_array_elements(coalesce(detail->'texts', '[]'::jsonb)) with ordinality x(t, o)
@@ -217,6 +217,17 @@ begin
     filt := filt || jsonb_build_object('ecfr_text_as_of', jsonb_build_array(p_ent->>'as_of'));
   end if;
 
+  if p_ent is null then
+    select max(e.data->>'as_of') into as_of_txt from corpus_ingest.entities e
+     where e.source_system = 'ecfr' and e.entity_type = 'section-text' and e.data->>'title_number' = p_row->'item'->>'title';
+    detail := jsonb_set(detail, '{facts}', coalesce(detail->'facts', '[]'::jsonb) || jsonb_build_array(
+      jsonb_build_array('Official eCFR text', 'Not recorded'),
+      jsonb_build_array('Why the official text is not recorded', case coalesce(p_reason, '')
+        when 'section_not_in_ecfr' then 'This section is not in the current eCFR as of ' || coalesce(as_of_txt, 'the acquisition date')
+        when 'part_not_in_ecfr' then 'This part is not in the current eCFR as of ' || coalesce(as_of_txt, 'the acquisition date')
+        when 'title_unavailable' then 'This title is not available in the eCFR as of ' || coalesce(as_of_txt, 'the acquisition date')
+        else 'The eCFR did not return official text for this section' end)));
+  end if;
   new_text := case when p_ent is not null then p_ent->>'text' else coalesce(gpo_text, '') end;
   return jsonb_build_object('item', item, 'detail', detail, 'filters', filt, 'text', new_text);
 end $$;
