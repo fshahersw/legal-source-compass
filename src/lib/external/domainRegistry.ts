@@ -11,7 +11,6 @@ const PURPOSES: Record<string, DatasetPurpose> = {
   court_forms_expansion_20260912: "Documents",
   judges: "Directory",
   judge_enrichment: "Reference",
-  judge_disclosures: "Documents",
   judge_entities: "Reference",
   judge_portraits: "Documents",
   mdls: "Directory",
@@ -30,9 +29,6 @@ const PURPOSES: Record<string, DatasetPurpose> = {
   mass_tort_authority_evidence: "Reference",
   jpml_html_reference: "Reference",
   agency_safety_openfda_device_classification_20261002: "Reference",
-  agency_safety_openfda_device_enforcement_20260928: "Reference",
-  agency_safety_openfda_drug_enforcement_20260928: "Reference",
-  agency_safety_openfda_device_recalls_20261002: "Reference",
   ecfr_hierarchy: "Reference",
   ecfr_authority_notes: "Reference",
   statutory_limitations_review: "Reference",
@@ -42,7 +38,6 @@ const PURPOSES: Record<string, DatasetPurpose> = {
   cl_citation_edges: "Reference",
   public_laws: "Documents",
   sources: "Directory",
-  url_directory: "Directory",
   saved_pages: "Documents",
   source_documents: "Documents",
 };
@@ -56,7 +51,6 @@ const LABELS: Record<string, string> = {
   uscourts_pages: "U.S. Courts pages",
   judges: "Judge directory",
   judge_enrichment: "Judge profiles",
-  judge_disclosures: "Financial disclosures",
   judge_entities: "Consolidated judge profiles",
   judge_portraits: "Judge portraits",
   mdl_appearances: "MDL counsel appearances",
@@ -84,11 +78,6 @@ const LABELS: Record<string, string> = {
   mass_tort_authority_evidence: "Selected mass-tort authority evidence",
   jpml_html_reference: "JPML source reference metadata",
   agency_safety_openfda_device_classification_20261002: "FDA device classifications",
-  agency_safety_openfda_device_enforcement_20260928:
-    "FDA device enforcement metadata — September 28, 2026",
-  agency_safety_openfda_drug_enforcement_20260928:
-    "FDA drug enforcement metadata — September 28, 2026",
-  agency_safety_openfda_device_recalls_20261002: "FDA device recall metadata — October 2, 2026",
   ecfr_hierarchy: "Dated eCFR hierarchy metadata",
   ecfr_authority_notes: "Selected eCFR authority and citation metadata",
   cl_docket_metadata: "Native docket metadata",
@@ -98,13 +87,11 @@ const LABELS: Record<string, string> = {
   citation_reference: "Citation reference",
   citation_index: "Citation index",
   agency_science_documents: "Agency science documents",
-  url_directory: "URL directory",
   saved_pages: "Saved source pages",
   source_documents: "Source documents",
   docsupload_coverage: "Document coverage",
   coverage_labels: "Coverage labels",
   coverage_topics: "Coverage topics",
-  library_assets: "Library files",
 };
 
 const DESCRIPTIONS: Partial<Record<SectionId, string>> = {
@@ -150,20 +137,15 @@ const RECORD_GRAINS: Readonly<Record<string, { unit: string; description: string
     description:
       "Dated product-category metadata counts category codes, not individual devices, approvals or recalls. Device regulatory class 1/2/3 is separate from recall hazard class I/II/III; native flags and CFR locators do not establish historical or current legal applicability.",
   },
-  agency_safety_openfda_device_enforcement_20260928: {
+  agency_safety_openfda_device_enforcement: {
     unit: "native recall enforcement-report records",
     description:
-      "Dated FDA device enforcement reports retain their native recall tracking designation. Source status is not a current recall-lifecycle or public-alert finding; counts do not describe unique products, affected patients, liability or litigation membership.",
+      "FDA device enforcement reports retain their native recall tracking designation. Source status is not a current recall-lifecycle or public-alert finding; counts do not describe unique products, affected patients, liability or litigation membership.",
   },
-  agency_safety_openfda_drug_enforcement_20260928: {
+  agency_safety_openfda_drug_enforcement: {
     unit: "native recall enforcement-report records",
     description:
-      "Dated FDA drug enforcement reports retain their native recall tracking designation. Source status is not a current recall-lifecycle or public-alert finding; counts do not describe unique products, affected patients, liability or litigation membership.",
-  },
-  agency_safety_openfda_device_recalls_20261002: {
-    unit: "documented native cfRes recall records",
-    description:
-      "Dated FDA recall metadata retains the documented cfRes identifier and source-reported general cause category. Alternate references without that identifier are held; categories do not establish independent causation, defect, medical advice, liability or litigation membership.",
+      "FDA drug enforcement reports retain their native recall tracking designation. Source status is not a current recall-lifecycle or public-alert finding; counts do not describe unique products, affected patients, liability or litigation membership.",
   },
   ecfr_hierarchy: {
     unit: "publisher hierarchy nodes",

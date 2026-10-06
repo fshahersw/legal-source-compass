@@ -52,7 +52,7 @@ describe("permanent record destinations", () => {
 describe("sectionOf", () => {
   it("groups datasets by explicit id and prefix", () => {
     expect(sectionOf("court_spine")).toBe("courts");
-    expect(sectionOf("judge_disclosures")).toBe("judges");
+    expect(sectionOf("judge_entities")).toBe("judges");
     expect(sectionOf("mdl_docket_activity")).toBe("matters");
     expect(sectionOf("cl_master_entries")).toBe("matters");
     expect(sectionOf("agency_safety_openfda_crl")).toBe("safety");

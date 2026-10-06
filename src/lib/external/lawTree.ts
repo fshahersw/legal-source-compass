@@ -78,11 +78,6 @@ export function safetyAgency(id: string): SafetyAgency {
 export function safetyKind(id: string): string {
   const datedLabels: Record<string, string> = {
     agency_safety_openfda_device_classification_20261002: "Device classifications",
-    agency_safety_openfda_device_enforcement_20260928:
-      "Device enforcement metadata (September 28, 2026)",
-    agency_safety_openfda_drug_enforcement_20260928:
-      "Drug enforcement metadata (September 28, 2026)",
-    agency_safety_openfda_device_recalls_20261002: "Device recall metadata (October 2, 2026)",
   };
   if (Object.hasOwn(datedLabels, id)) return datedLabels[id]!;
   let s = id.replace(/^agency_safety_/, "").replace(/_local$/, "");

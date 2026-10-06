@@ -23,12 +23,10 @@ describe("domain registry", () => {
     expect(
       datasetRecordGrain("agency_safety_openfda_device_classification_20261002")?.description,
     ).toContain("recall hazard class I/II/III");
-    expect(
-      datasetRecordGrain("agency_safety_openfda_device_enforcement_20260928")?.description,
-    ).toContain("not a current recall-lifecycle");
-    expect(datasetRecordGrain("agency_safety_openfda_device_recalls_20261002")?.unit).toBe(
-      "documented native cfRes recall records",
+    expect(datasetRecordGrain("agency_safety_openfda_device_enforcement")?.description).toContain(
+      "not a current recall-lifecycle",
     );
+    expect(datasetRecordGrain("agency_safety_openfda_device_recalls_20261002")).toBeNull();
     expect(datasetRecordGrain("mass_tort_authority_evidence")?.description).toContain(
       "not a case holding",
     );
@@ -36,9 +34,6 @@ describe("domain registry", () => {
       "Panel membership is not MDL judicial assignment",
     );
     expect(datasetDisplayName("jpml_html_reference")).toBe("JPML source reference metadata");
-    expect(datasetDisplayName("agency_safety_openfda_device_enforcement_20260928")).toContain(
-      "September 28, 2026",
-    );
   });
   it("keeps people, positions, court locations and citations at their native count grains", () => {
     expect(datasetRecordGrain("cl_people")?.unit).toBe("native person reference records");

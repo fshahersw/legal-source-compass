@@ -156,7 +156,7 @@ function score(match: RankedSearchMatch, queryWords: string[], boost: number): n
 }
 
 // Presentation grouping is limited to source-document rows. Native court/case/judge identities stay separate.
-const sourceDocumentDatasets = new Set(["agency_science_documents", "source_documents", "saved_pages", "sources", "url_directory"]);
+const sourceDocumentDatasets = new Set(["agency_science_documents", "source_documents", "saved_pages", "sources"]);
 function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
   if (value && typeof value === "object") return `{${Object.entries(value).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => `${JSON.stringify(key)}:${canonical(item)}`).join(",")}}`;

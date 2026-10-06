@@ -1,7 +1,7 @@
 /**
  * Render-time URL safety for links built from stored source URLs.
  *
- * Some stored `source_url` values contain raw spaces (19,165 of 21,832 judge_disclosures rows) or other characters a
+ * Some stored `source_url` values contain raw spaces (for example in some judge financial-disclosure source links) or other characters a
  * URL may not contain. The stored value is provenance and is never rewritten; the `href` shown to the browser is
  * percent-encoded. Existing `%XX` escapes are kept exactly (so nothing is double-encoded), a `%` that is not part of
  * an escape becomes `%25`, and `#`, `?`, `&`, `=` and `/` keep their meaning.
