@@ -69,8 +69,10 @@ def convert(work, cfg):
         raw = by_sha[shas[0]]
         method, proxy = method_for(cfg, raw["url"], raw["route"])
         src = {"source_url": raw["url"], "retrieved_at": raw["retrieved_at"], "retrieval_method": method, "proxy": proxy}
-        objects[shas[0]] = {"sha256": shas[0], "bytes": raw["bytes"], "kind": "publisher_original",
-                            "path": os.path.abspath(os.path.join(work, raw["file"])), "sources": [src]}
+        orig = objects.setdefault(shas[0], {"sha256": shas[0], "bytes": raw["bytes"], "kind": "publisher_original",
+                                            "path": os.path.abspath(os.path.join(work, raw["file"])), "sources": []})
+        if src not in orig["sources"]:
+            orig["sources"].append(src)
         tpath = os.path.abspath(os.path.join(pk, "chapter-text", c["text_sha256"] + ".txt"))
         body = open(tpath, encoding="utf-8").read()
         if sc.sha256_hex(body) != c["text_sha256"] or len(body) != c["text_codepoints"]:
