@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  FIELDS, SCHEMA_VERSION, addDays, compareNewestFirst, eachDay, entityRow, legacyQualification, pickFields, projectRecord, qualification, recordSha256, splitBounded,
+  FIELDS, GOVINFO_LABEL, SCHEMA_VERSION, addDays, compareNewestFirst, eachDay, entityRow, govinfoLink, legacyQualification, pickFields, projectRecord, qualification, recordSha256, splitBounded,
 } from './lib.mjs';
 
 // Test-only documents: structure mirrors the API fields; the content is synthetic and never stored.
@@ -41,6 +41,7 @@ test('projection follows the collection conventions', () => {
   assert.deepEqual(r.filters.cfr_pair, ['5:1']);
   assert.equal(r.detail.facts.find((f) => f[0] === 'Citation')[1], '91 FR 100 (pages 100)');
   assert.equal(r.detail.links.filter((l) => l.label.startsWith('Other documents citing')).length, 1);
+  assert.deepEqual(r.detail.links.map((l) => l.label), ['Open on federalregister.gov', 'Plain text (federalregister.gov)', 'Other documents citing 5 CFR 1', GOVINFO_LABEL]);
 });
 
 test('lists are capped like the existing rows and corrections are labelled', () => {
@@ -62,6 +63,16 @@ test('qualification never claims later documents are absent from a continued col
   assert.ok(!q.includes('documents published later, and any later correction, are not included'));
   assert.ok(legacyQualification('a', 'b', 'c').includes('are not included'));
   assert.equal(projectRecord(doc(), ctx).detail.qualification, qualification(ctx.coverage.from, ctx.coverage.through, ctx.collected));
+});
+
+test('GovInfo edition link comes only from the retained pdf_url and sits last in detail.links', () => {
+  const r = projectRecord(doc(), ctx);
+  assert.deepEqual(r.detail.links.at(-1), { url: 'https://www.govinfo.gov/x.pdf', label: GOVINFO_LABEL });
+  assert.equal(r.item.links.length, 1);
+  assert.ok(!r.text.includes(GOVINFO_LABEL));
+  assert.ok(!projectRecord(doc({ pdf_url: null }), ctx).detail.links.some((l) => l.label === GOVINFO_LABEL));
+  assert.ok(!projectRecord(doc({ pdf_url: 'https://example.invalid/x.pdf' }), ctx).detail.links.some((l) => l.label === GOVINFO_LABEL));
+  assert.equal(govinfoLink({ pdf_url: 'not a url' }), null);
 });
 
 test('ordering is publication date, first page, then document number, newest first', () => {

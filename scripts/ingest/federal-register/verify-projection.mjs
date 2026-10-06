@@ -4,10 +4,14 @@
  * and compares every projected field with the live row (matched by document URL).
  *
  *   node verify-projection.mjs --from 2026-08-10 --through 2026-08-20 --dir PRIVATE_DIR
+ *     [--collected 2026-08-20] [--coverage-through 2026-08-20]
+ *
+ * Historical rows predate the GovInfo edition link; when a live row lacks it, the projected
+ * link is ignored for that row and counted under `govinfoLinkOnlyProjected`.
  */
 import { acquireRange, loadCheckpoint, readPage } from './acquire.mjs';
 import { corpusClient } from './corpus.mjs';
-import { projectRecord, DATASET, pickFields, compareNewestFirst, qualification, legacyQualification } from './lib.mjs';
+import { projectRecord, DATASET, GOVINFO_LABEL, pickFields, compareNewestFirst, qualification, legacyQualification } from './lib.mjs';
 
 const arg = (name) => { const i = process.argv.indexOf(name); return i < 0 ? undefined : process.argv[i + 1]; };
 const from = arg('--from'), through = arg('--through'), dir = arg('--dir');
@@ -29,14 +33,15 @@ for (let offset = 0; ; offset += 1000) {
   }
   if (!rows.length || rows.at(-1).item?.cells?.published < from) break;
 }
-const collected = '2026-08-20';
-const coverage = { from: '1994-01-03', through: '2026-08-20' };
+const collected = arg('--collected') ?? '2026-08-20';
+const coverage = { from: '1994-01-03', through: arg('--coverage-through') ?? '2026-08-20' };
 const stable = (v) => JSON.stringify(v, (k, x) => (x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort()) : x));
 // The historical rows' `text` still ends with the pre-rewrite sentence (only detail.qualification was
 // rewritten), so `text` is compared without its qualification suffix.
 const suffixes = [qualification(coverage.from, coverage.through, collected), legacyQualification(coverage.from, coverage.through, collected)];
 const stripQualification = (t) => { for (const s of suffixes) if (t.endsWith(s)) return t.slice(0, -s.length); return t; };
-let matched = 0, missing = 0;
+let matched = 0, missing = 0, govinfoOnlyProjected = 0;
+const hasGovinfo = (detail) => (detail?.links ?? []).some((l) => l.label === GOVINFO_LABEL);
 const diffs = {};
 const examples = {};
 for (const d of fetched) {
@@ -44,6 +49,10 @@ for (const d of fetched) {
   const row = live.get(url);
   if (!row) { missing++; continue; }
   const p = projectRecord(d, { id: row.id, ordinal: row.ordinal, collected, coverage });
+  if (hasGovinfo(p.detail) && !hasGovinfo(row.detail)) {
+    govinfoOnlyProjected++;
+    p.detail = { ...p.detail, links: p.detail.links.filter((l) => l.label !== GOVINFO_LABEL) };
+  }
   let exact = true;
   for (const k of ['category', 'state', 'county_geoids', 'title', 'source_url', 'item', 'detail', 'text', 'filters']) {
     const a = k === 'text' ? stripQualification(p[k]) : stable(p[k]);
@@ -62,5 +71,5 @@ for (const d of fetched) {
 const liveOrder = [...live.values()].sort((a, b) => a.ordinal - b.ordinal).map((r) => r.source_url.split('/').pop());
 const ourOrder = [...fetched].sort(compareNewestFirst).map((d) => d.document_number);
 const orderMismatches = liveOrder.filter((n, i) => n !== ourOrder[i]).length;
-console.log(JSON.stringify({ window: [from, through], fetched: fetched.length, live: live.size, matchedExact: matched, notInLive: missing, fieldDiffs: diffs, orderRuleMismatches: orderMismatches }));
+console.log(JSON.stringify({ window: [from, through], fetched: fetched.length, live: live.size, matchedExact: matched, notInLive: missing, fieldDiffs: diffs, govinfoLinkOnlyProjected: govinfoOnlyProjected, orderRuleMismatches: orderMismatches }));
 if (Object.keys(examples).length) console.log(JSON.stringify(examples, null, 1).slice(0, 5000));
