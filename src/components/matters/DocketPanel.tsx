@@ -13,7 +13,6 @@ import {
   Panel,
   RangePager,
   Scope,
-  SegmentedControl,
   selectClass,
 } from "@/components/matters/common";
 import { RegistryTimeline } from "@/components/matters/RegistryTimeline";
@@ -120,11 +119,10 @@ function EntryRow({ entry, mdl }: { entry: DocketEntry; mdl: string }) {
   );
 }
 
-/** The saved docket sample and CourtListener's entry list: the sources used for a matter the registry has no entries for. */
+/** The saved docket sample: the source used for a matter the registry has no entries for. */
 function SampleDocket({ payload }: { payload: MatterOverviewPayload }) {
   const mdl = payload.overview.mdl;
   const fn = useServerFn(getMatterEntries);
-  const [source, setSource] = useState<"auto" | "activity" | "cl_entries">("auto");
   const [type, setType] = useState("");
   const [draft, setDraft] = useState("");
   const [q, setQ] = useState("");
@@ -136,8 +134,8 @@ function SampleDocket({ payload }: { payload: MatterOverviewPayload }) {
     return () => window.clearTimeout(t);
   }, [draft]);
   const query = useQuery({
-    queryKey: ["matter-entries", mdl, source, type, q, offset],
-    queryFn: () => fn({ data: { id: mdl, source, type: type || null, q, offset } }),
+    queryKey: ["matter-entries", mdl, type, q, offset],
+    queryFn: () => fn({ data: { id: mdl, type: type || null, q, offset } }),
     placeholderData: keepPreviousData,
     staleTime: 2 * 60_000,
   });
@@ -150,18 +148,12 @@ function SampleDocket({ payload }: { payload: MatterOverviewPayload }) {
         .sort((a, b) => b[1] - a[1]),
     [payload.overview.activity],
   );
-  const both = !!data?.available.activity && !!data?.available.clEntries;
   const active = data?.source;
   const note = active ? ENTRY_SOURCE_NOTES[active] : null;
-  const newer =
-    both &&
-    data!.coverage.clLast &&
-    data!.coverage.activityLast &&
-    data!.coverage.clLast > data!.coverage.activityLast;
 
   if (query.isLoading) return <Loading what="docket entries" />;
   if (query.error) return <ExternalError error={query.error} />;
-  if (!data || (!data.available.activity && !data.available.clEntries)) {
+  if (!data || !data.available.activity) {
     const captures = (payload.registry?.entries ?? []).filter(
       (e) => e.captured !== null && e.captured > 0,
     );
@@ -198,63 +190,12 @@ function SampleDocket({ payload }: { payload: MatterOverviewPayload }) {
   }
 
   return (
-    <Panel
-      id="docket"
-      title="Docket entries"
-      note={note?.title}
-      aside={
-        both ? (
-          <SegmentedControl
-            label="Docket entry source"
-            value={active ?? "activity"}
-            onChange={(s) => {
-              setSource(s);
-              setOffset(0);
-              if (s === "cl_entries") {
-                setType("");
-                setDraft("");
-                setQ("");
-              }
-            }}
-            options={[
-              {
-                value: "activity",
-                label: "With docket text",
-                hint: `${data.available.activity?.toLocaleString()} entries from the saved sample`,
-              },
-              {
-                value: "cl_entries",
-                label: "Complete list",
-                hint: `${data.available.clEntries?.toLocaleString()} entries, numbers and dates only`,
-              },
-            ]}
-          />
-        ) : null
-      }
-    >
+    <Panel id="docket" title="Docket entries" note={note?.title}>
       <div className="space-y-3">
         {note ? <Scope>{note.scope}</Scope> : null}
-        {data.coverage.activityLast && active === "activity" ? (
+        {data.coverage.activityLast ? (
           <p className="text-[12px] text-muted-foreground">
             Sample coverage ends {data.coverage.activityLast}.
-            {newer ? (
-              <>
-                {" "}
-                CourtListener lists entries through{" "}
-                <span className="font-medium text-foreground">{data.coverage.clLast}</span>;{" "}
-                <button
-                  type="button"
-                  className="text-primary underline-offset-2 hover:underline"
-                  onClick={() => {
-                    setSource("cl_entries");
-                    setOffset(0);
-                  }}
-                >
-                  show the complete list
-                </button>
-                .
-              </>
-            ) : null}
           </p>
         ) : null}
         {active === "activity" ? (

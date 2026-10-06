@@ -2,7 +2,7 @@
  * Server-only data access for matter pages. ONE module reads the corpus; the UI never touches REST directly.
  *
  * Sources: the public read model (`mdls`, `mdl_case_inventory`, `mdl_docket_activity`, `mdl_docket_documents`,
- * `mdl_counsel`, `mdl_appearances`, `cl_master_entries`, `cl_docket_metadata`, `jpml_html_reference`), the verified PDF
+ * `mdl_counsel`, `mdl_appearances`, `cl_docket_metadata`, `jpml_html_reference`), the verified PDF
  * registry through `corpus_matter_pdf_*_v1`, and the Seeger Weiss matter registry projection (`sw_matters_v1`,
  * `sw_matter_dockets_v1`; contract in _work/contracts/sw-matter-registry.md) which supplies explicit provider case ids
  * and evidence-backed member dockets for the matters it covers. A matter the registry does not cover keeps working
@@ -36,7 +36,7 @@ import {
   type MatterDocument,
   type RegistrySource,
 } from "./documents";
-import { pageFromEnd, parseActivityEntry, parseClEntry, type DocketEntry } from "./entries";
+import { parseActivityEntry, type DocketEntry } from "./entries";
 import { parseMdlDetail } from "./overview";
 import {
   parseAppearanceRow,
@@ -105,7 +105,6 @@ import type {
 } from "./types";
 import { isObj, str } from "./values";
 
-
 /* ------------------------------------------------------------------ publication */
 
 const MATTER_DATASETS = [
@@ -115,7 +114,6 @@ const MATTER_DATASETS = [
   "mdl_docket_documents",
   "mdl_counsel",
   "mdl_appearances",
-  "cl_master_entries",
   "cl_docket_metadata",
   "jpml_html_reference",
   "sw_matters_v1",
@@ -501,44 +499,9 @@ async function boundedItems(
   );
 }
 
-const clProbeCache = new Map<string, { at: number; total: number | null; last: string | null }>();
-
-/** Entry count and newest filing date of a master docket's CourtListener list, cached for a minute. */
-async function probeClEntries(
-  clDocket: string,
-): Promise<{ total: number | null; last: string | null }> {
-  const hit = clProbeCache.get(clDocket);
-  if (hit && Date.now() - hit.at < 60_000) return hit;
-  const probe = await boundedItems(
-    "cl_master_entries",
-    { native_docket_id: clDocket },
-    "",
-    1,
-    0,
-    100000,
-  );
-  const total = typeof probe.total === "number" && probe.total > 0 ? probe.total : null;
-  let last: string | null = null;
-  if (total) {
-    const tail = await boundedItems(
-      "cl_master_entries",
-      { native_docket_id: clDocket },
-      "",
-      1,
-      total - 1,
-      100000,
-    );
-    last = parseClEntry(tail.items?.[0])?.date ?? null;
-  }
-  if (clProbeCache.size > 200) clProbeCache.clear();
-  clProbeCache.set(clDocket, { at: Date.now(), total, last });
-  return { total, last };
-}
-
 export async function loadEntries(
   payload: MatterOverviewPayload,
   opts: {
-    source: "activity" | "cl_entries" | "auto";
     type: string | null;
     q: string;
     offset: number;
@@ -547,55 +510,12 @@ export async function loadEntries(
   const { overview } = payload;
   const pageSize = 50;
   const activityPublished = await isPublished("mdl_docket_activity");
-  const clPublished = await isPublished("cl_master_entries");
-  const clDocket = overview.masterDocket.clDocketId;
-
   const activityTotal = activityPublished ? (overview.activity?.total ?? null) : null;
-  let clTotal: number | null = null;
-  let clLast: string | null = null;
-  if (clPublished && clDocket) ({ total: clTotal, last: clLast } = await probeClEntries(clDocket));
-  const available = {
-    activity: activityTotal && activityTotal > 0 ? activityTotal : null,
-    clEntries: clTotal,
-  };
-  const coverage = { activityLast: overview.activity?.dateLast ?? null, clLast };
-  const source: "activity" | "cl_entries" =
-    opts.source === "activity" && available.activity
-      ? "activity"
-      : opts.source === "cl_entries" && available.clEntries
-        ? "cl_entries"
-        : available.activity
-          ? "activity"
-          : "cl_entries";
-
-  if (source === "activity") {
-    const filters: Record<string, string> = { mdl: overview.mdl };
-    if (opts.type && /^[a-z0-9_]{1,60}$/.test(opts.type)) filters["entry_type"] = opts.type;
-    const res = await boundedItems(
-      "mdl_docket_activity",
-      filters,
-      opts.q,
-      pageSize,
-      opts.offset,
-      10000,
-    );
-    const entries = (res.items ?? [])
-      .map((i) => parseActivityEntry(i))
-      .filter((e): e is DocketEntry => !!e);
+  const available = { activity: activityTotal && activityTotal > 0 ? activityTotal : null };
+  const coverage = { activityLast: overview.activity?.dateLast ?? null };
+  if (!available.activity) {
     return {
-      source,
-      entries,
-      total: res.total,
-      capped: !!res.total_capped,
-      offset: opts.offset,
-      pageSize,
-      available,
-      coverage,
-    };
-  }
-  if (!clDocket || !clTotal) {
-    return {
-      source,
+      source: "activity",
       entries: [],
       total: null,
       capped: false,
@@ -605,28 +525,24 @@ export async function loadEntries(
       coverage,
     };
   }
-  const pageIndex = Math.floor(opts.offset / pageSize);
-  const { start, length } = pageFromEnd(clTotal, pageIndex, pageSize);
-  const res =
-    length > 0
-      ? await boundedItems(
-          "cl_master_entries",
-          { native_docket_id: clDocket },
-          "",
-          length,
-          start,
-          100000,
-        )
-      : { items: [] };
+  const filters: Record<string, string> = { mdl: overview.mdl };
+  if (opts.type && /^[a-z0-9_]{1,60}$/.test(opts.type)) filters["entry_type"] = opts.type;
+  const res = await boundedItems(
+    "mdl_docket_activity",
+    filters,
+    opts.q,
+    pageSize,
+    opts.offset,
+    10000,
+  );
   const entries = (res.items ?? [])
-    .map((i) => parseClEntry(i))
-    .filter((e): e is DocketEntry => !!e)
-    .reverse();
+    .map((i) => parseActivityEntry(i))
+    .filter((e): e is DocketEntry => !!e);
   return {
-    source,
+    source: "activity",
     entries,
-    total: clTotal,
-    capped: false,
+    total: res.total,
+    capped: !!res.total_capped,
     offset: opts.offset,
     pageSize,
     available,

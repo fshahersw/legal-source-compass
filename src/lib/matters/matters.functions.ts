@@ -128,7 +128,6 @@ export const getMatterEntries = createServerFn({ method: "GET" })
     z
       .object({
         id: mdlInput,
-        source: z.enum(["auto", "activity", "cl_entries"]).default("auto"),
         type: z
           .string()
           .regex(/^[a-z0-9_]{1,60}$/)
@@ -143,7 +142,6 @@ export const getMatterEntries = createServerFn({ method: "GET" })
     const overview = await overviewFor(mdlOf(data.id));
     return overview
       ? loadEntries(overview, {
-          source: data.source,
           type: data.type,
           q: data.q,
           offset: data.offset,

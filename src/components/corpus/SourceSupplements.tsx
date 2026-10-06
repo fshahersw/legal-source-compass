@@ -1,17 +1,9 @@
 import { PrivateDataLink } from "@/components/atlas/PrivateDataLink";
 import { fetchBundleSnapshot } from "@/lib/private-data/client";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BarList, Stat } from "./BarList";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { stateByUsps } from "@/lib/corpus/geo";
-import {
-  filterRegisterDocuments,
-  loadRegisterDocuments,
-  loadRegisterManifest,
-  publicationLabel,
-} from "@/lib/corpus/registerUpdates";
 
 type Benchmark = {
   schemaVersion: number;
@@ -42,11 +34,6 @@ async function loadBenchmark(): Promise<Benchmark> {
 }
 
 export function SourceSupplements() {
-  const register = useQuery({
-    queryKey: ["register-gap-manifest"],
-    queryFn: loadRegisterManifest,
-    staleTime: Infinity,
-  });
   const benchmark = useQuery({
     queryKey: ["court-benchmark-2025"],
     queryFn: loadBenchmark,
@@ -60,51 +47,8 @@ export function SourceSupplements() {
     pending2025: "Pending at period end",
   };
   return (
-    <section className="space-y-4" aria-label="Verified public source supplements">
-      <h2 className="eyebrow">Public source supplements · separate populations</h2>
-      {register.isLoading ? (
-        <p className="text-[13px] text-muted-foreground">Loading the regulatory update index…</p>
-      ) : register.error ? (
-        <p className="text-[13px] text-muted-foreground">Regulatory update index: Not recorded.</p>
-      ) : register.data ? (
-        <>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <Stat
-              label="New Federal Register index records"
-              value={register.data.records}
-              note={`${register.data.publicationFrom} through ${register.data.publicationThrough}`}
-            />
-            <Stat
-              label="Documents with CFR references"
-              value={register.data.cfrReferenceRecords}
-              note="Publisher-provided references, not inferred links"
-            />
-            <Stat
-              label="Publisher effective dates recorded"
-              value={register.data.effectiveDateRecords}
-              note="Dates are distinct from publication and legal currency"
-            />
-            <Stat
-              label="Corrections with native references"
-              value={register.data.correctionRecords}
-              note="Native correction identifiers remain intact"
-            />
-          </div>
-          <BarList
-            title="Publication types in the new index"
-            rows={register.data.typeCounts.map((r) => ({
-              ...r,
-              label: publicationLabel(r.label),
-            }))}
-            unit="documents in this bounded publication interval"
-          />
-          <p className="text-[12px] text-muted-foreground">
-            {register.data.qualification} These records are a bundled supplement and are not added
-            to the external database total.
-          </p>
-          <RegisterBrowser />
-        </>
-      ) : null}
+    <section className="space-y-4" aria-label="Official court workload statistics">
+      <h2 className="eyebrow">Official court workload statistics</h2>
       {benchmark.isLoading ? (
         <p className="text-[13px] text-muted-foreground">Loading the court workload benchmark…</p>
       ) : benchmark.error ? (
@@ -171,164 +115,5 @@ export function SourceSupplements() {
         </>
       ) : null}
     </section>
-  );
-}
-
-function RegisterBrowser() {
-  const manifest = useQuery({
-    queryKey: ["register-gap-manifest"],
-    queryFn: loadRegisterManifest,
-    staleTime: Infinity,
-  });
-  const [show, setShow] = useState(false);
-  const [q, setQ] = useState("");
-  const [type, setType] = useState("");
-  const [page, setPage] = useState(0);
-  const data = useQuery({
-    queryKey: ["register-gap-documents"],
-    enabled: show && !!manifest.data,
-    queryFn: () => loadRegisterDocuments(manifest.data!),
-    staleTime: Infinity,
-  });
-  const filtered = useMemo(
-    () =>
-      [...filterRegisterDocuments(data.data ?? [], q, type)].sort(
-        (a, b) =>
-          b.publication_date.localeCompare(a.publication_date) ||
-          b.document_number.localeCompare(a.document_number),
-      ),
-    [data.data, q, type],
-  );
-  return (
-    <div className="space-y-3">
-      <Button size="sm" variant="outline" onClick={() => setShow((s) => !s)}>
-        {show ? "Hide" : "Browse"} regulatory update index
-      </Button>
-      {show ? (
-        <>
-          <p className="text-[11px] text-muted-foreground">
-            Original API pages load on demand and are checked against their hashes. Links open the
-            publisher's entry or official GovInfo PDF.
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <Input
-              aria-label="Search regulatory update index"
-              placeholder="Document number, title or agency"
-              value={q}
-              onChange={(e) => {
-                setQ(e.target.value);
-                setPage(0);
-              }}
-              className="h-8 max-w-sm"
-            />
-            <select
-              aria-label="Regulatory publication type"
-              value={type}
-              onChange={(e) => {
-                setType(e.target.value);
-                setPage(0);
-              }}
-              className="rounded border border-input bg-surface p-1 text-[12px]"
-            >
-              <option value="">All publication types</option>
-              {manifest.data?.typeCounts.map((r) => (
-                <option key={r.label} value={r.label}>
-                  {publicationLabel(r.label)}
-                </option>
-              ))}
-            </select>
-            {data.isSuccess ? (
-              <span className="text-[12px] text-muted-foreground">
-                {filtered.length.toLocaleString()} matching documents
-              </span>
-            ) : null}
-          </div>
-          {data.isLoading ? (
-            <p role="status" className="text-[13px] text-muted-foreground">
-              Loading and verifying source pages…
-            </p>
-          ) : data.error ? (
-            <p role="alert" className="text-[13px] text-muted-foreground">
-              Source pages could not be verified.{" "}
-              <button className="underline" onClick={() => data.refetch()}>
-                Retry
-              </button>
-            </p>
-          ) : data.isSuccess ? (
-            <>
-              <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-                <table className="w-full text-left text-[12px]">
-                  <thead className="bg-muted/60">
-                    <tr>
-                      <th className="p-2">Document</th>
-                      <th className="p-2">Type</th>
-                      <th className="p-2">Published</th>
-                      <th className="p-2">Effective date as recorded</th>
-                      <th className="p-2">CFR references</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {filtered.slice(page * 50, page * 50 + 50).map((r) => (
-                      <tr key={r.document_number}>
-                        <td className="min-w-72 p-2">
-                          <a
-                            href={r.pdf_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-primary hover:underline"
-                          >
-                            {r.document_number} · {r.title}
-                          </a>
-                          <div className="mt-1 text-[11px] text-muted-foreground">
-                            {r.agencies.map((a) => a.name).join("; ")}
-                          </div>
-                        </td>
-                        <td className="p-2">{publicationLabel(r.type)}</td>
-                        <td className="p-2">{r.publication_date}</td>
-                        <td className="p-2">{r.effective_on ?? "Not recorded"}</td>
-                        <td className="p-2">
-                          {r.cfr_references?.length
-                            ? r.cfr_references
-                                .map((c) => `${c.title} CFR${c.part == null ? "" : ` ${c.part}`}`)
-                                .join("; ")
-                            : "Not recorded"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {filtered.length === 0 ? (
-                <p className="text-[13px] text-muted-foreground">No index documents match.</p>
-              ) : null}
-              <div className="flex items-center gap-2 text-[12px]">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={page === 0}
-                  onClick={() => setPage((p) => p - 1)}
-                >
-                  Previous documents
-                </Button>
-                <span>
-                  {filtered.length
-                    ? `${page * 50 + 1}–${Math.min((page + 1) * 50, filtered.length)}`
-                    : "0"}{" "}
-                  of {filtered.length.toLocaleString()}
-                </span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={(page + 1) * 50 >= filtered.length}
-                  onClick={() => setPage((p) => p + 1)}
-                >
-                  Next documents
-                </Button>
-              </div>
-            </>
-          ) : null}
-        </>
-      ) : null}
-    </div>
   );
 }

@@ -16,7 +16,7 @@ export class Stop extends Error { constructor(code, detail) { super(code + (deta
 export class CourtListener {
   constructor({cacheDir, token = process.env.COURTLISTENER_API_TOKEN, fetchImpl = fetch, reserve = 25, maxRequests = 40, now = Date.now} = {}) {
     if (!token) throw new Stop('MISSING_CREDENTIAL', 'COURTLISTENER_API_TOKEN');
-    Object.assign(this, {cacheDir, token, fetchImpl, reserve, maxRequests, now, requests: 0, usage: null, usageAt: 0, stopped: null});
+    Object.assign(this, {cacheDir, token, fetchImpl, reserve, maxRequests, now, sleepFn: sleep, requests: 0, usage: null, usageAt: 0, stopped: null});
   }
   validate(url) {
     const u = new URL(url);
@@ -44,8 +44,13 @@ export class CourtListener {
     if (blocked) throw new Stop('RATE_BLOCKED', blocked.rate);
     const day = this.usage.current_usage.find(x => x.scope === 'user' && x.window_seconds === 86400);
     if (day && day.remaining <= this.reserve) throw new Stop('DAILY_RESERVE_REACHED', `remaining=${day.remaining} reserve=${this.reserve} reset_at=${day.reset_at}`);
-    const minute = this.usage.current_usage.find(x => x.scope === 'user' && x.window_seconds === 60);
-    if (minute && minute.remaining <= 2) await sleep(61000);
+    // Per-minute and per-hour windows: wait for them to reopen instead of provoking a 429 (waits are bounded; the live usage is re-read after each).
+    for (let waits = 0; waits < 20; waits++) {
+      const win = this.usage.current_usage.filter(x => x.scope === 'user' && x.window_seconds < 86400 && x.remaining <= 2).sort((a, b) => b.window_seconds - a.window_seconds)[0];
+      if (!win) break;
+      await this.sleepFn(win.window_seconds >= 3600 ? 300000 : 61000);
+      await this.refreshUsage();
+    }
   }
   /** One retained GET. Returns {data, receipt}; stops the whole scope on 401/403/429. */
   async get(url) {

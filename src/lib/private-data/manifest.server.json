@@ -1214,31 +1214,6 @@
       "bytes": 8500,
       "storage_key": "atlas-private-data/sha256/87/8765946e37fb6219da0ad04e25f92f47b44229ed011eb78b34bc63dc45a6ebc2.bin"
     },
-    "quality/reference/federal-register-gap/manifest.json": {
-      "sha256": "b92219b2561a523b34ab3dcd58bbe0e20426d7f6997c35622e2105283cd49a32",
-      "bytes": 3872,
-      "storage_key": "atlas-private-data/sha256/b9/b92219b2561a523b34ab3dcd58bbe0e20426d7f6997c35622e2105283cd49a32.bin"
-    },
-    "quality/reference/federal-register-gap/page-001.json": {
-      "sha256": "1e98bbc5f6cdad07493472c17af7c8831fdb7f32c833c7c85a521426313b77f8",
-      "bytes": 3304400,
-      "storage_key": "atlas-private-data/sha256/1e/1e98bbc5f6cdad07493472c17af7c8831fdb7f32c833c7c85a521426313b77f8.bin"
-    },
-    "quality/reference/federal-register-gap/page-002.json": {
-      "sha256": "165397bbe5d6a77d348f8da1cf1c6a2925eb8b36063705c8a5899233c1e53a45",
-      "bytes": 3350180,
-      "storage_key": "atlas-private-data/sha256/16/165397bbe5d6a77d348f8da1cf1c6a2925eb8b36063705c8a5899233c1e53a45.bin"
-    },
-    "quality/reference/federal-register-gap/page-003.json": {
-      "sha256": "51c4f40f26e1d8b4372ad10b902e62651826c82bf2177d9e982eb142b8563f5e",
-      "bytes": 3592680,
-      "storage_key": "atlas-private-data/sha256/51/51c4f40f26e1d8b4372ad10b902e62651826c82bf2177d9e982eb142b8563f5e.bin"
-    },
-    "quality/reference/federal-register-gap/page-004.json": {
-      "sha256": "8e5ffadbd1d18109d4d8900d7eb4a7ef70b92d396011ef74d08dab9603f61b6e",
-      "bytes": 88303,
-      "storage_key": "atlas-private-data/sha256/8e/8e5ffadbd1d18109d4d8900d7eb4a7ef70b92d396011ef74d08dab9603f61b6e.bin"
-    },
     "quality/reference/uscourts-table-c-2025.json": {
       "sha256": "71573c278c0ebfe548a2e62e27849ab6f7cd5b597d9ec7b1e8d08848fe8ea1ff",
       "bytes": 35244,

@@ -153,19 +153,29 @@ async function land() {
   const opened = await corpus.rpc('corpus_federal_register_open_run_v1', { p_run: runId, p_scope: run.scope });
   pending = pending.filter((r) => r.data.publication_date >= run.scope.publication_from && r.data.publication_date <= run.scope.publication_through);
   const totals = { received: 0, new_versions: 0, new_observations: 0, entities_written: 0 };
-  for (const [index, batch] of splitBounded(pending).entries()) {
-    const batchSha = sha256(JSON.stringify(batch.map((r) => [r.native_id, r.provenance.record_sha256])));
-    const result = await corpus.rpc('corpus_federal_register_intake_v1', { p_run: runId, p_rows: batch });
-    if (result.received !== batch.length) throw new Error('Intake aggregate count mismatch');
-    const proof = await corpus.rpc('corpus_federal_register_status_v1', { p_run: runId, p_rows: batch });
-    if (proof.expected !== batch.length || proof.versions_matched !== batch.length || proof.observations_matched !== batch.length || proof.conflicts !== 0) {
-      throw new Error('Readback verification failed; the batch is idempotent and may be replayed after audit');
+  // A run must never stay 'running': any failure closes it as 'partial' with the counts landed so far.
+  try {
+    for (const [index, batch] of splitBounded(pending).entries()) {
+      const batchSha = sha256(JSON.stringify(batch.map((r) => [r.native_id, r.provenance.record_sha256])));
+      const result = await corpus.rpc('corpus_federal_register_intake_v1', { p_run: runId, p_rows: batch });
+      if (result.received !== batch.length) throw new Error('Intake aggregate count mismatch');
+      const proof = await corpus.rpc('corpus_federal_register_status_v1', { p_run: runId, p_rows: batch });
+      if (proof.expected !== batch.length || proof.versions_matched !== batch.length || proof.observations_matched !== batch.length || proof.conflicts !== 0) {
+        throw new Error('Readback verification failed; the batch is idempotent and may be replayed after audit');
+      }
+      for (const r of batch) (cp.landed[r.native_id] ??= []).push(r.provenance.record_sha256);
+      run.batches[index] = { sha256: batchSha, records: batch.length, result, proof };
+      for (const k of Object.keys(totals)) totals[k] += result[k];
+      saveCheckpoint(dir, cp);
+      log({ batch: index, records: batch.length, result, proof });
     }
-    for (const r of batch) (cp.landed[r.native_id] ??= []).push(r.provenance.record_sha256);
-    run.batches[index] = { sha256: batchSha, records: batch.length, result, proof };
-    for (const k of Object.keys(totals)) totals[k] += result[k];
-    saveCheckpoint(dir, cp);
-    log({ batch: index, records: batch.length, result, proof });
+  } catch (error) {
+    try {
+      await corpus.rpc('corpus_federal_register_finish_run_v1', { p_run: runId, p_status: 'partial', p_counts: { ...totals, documents: pending.length, stopped: true } });
+      run.status = 'partial';
+      saveCheckpoint(dir, cp);
+    } catch { /* the original failure is reported below */ }
+    throw error;
   }
   const closed = await corpus.rpc('corpus_federal_register_finish_run_v1', { p_run: runId, p_status: 'completed', p_counts: { ...totals, documents: pending.length } });
   run.status = 'completed';
