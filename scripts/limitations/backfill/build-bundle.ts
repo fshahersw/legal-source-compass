@@ -272,6 +272,17 @@ for (const file of files) {
         current.period.unit === unit;
       if (same) {
         entryRoute.set(current.id, entryIntermediaryOnly);
+        // A legacy rule that starts the clock at death contradicts an entry whose official text starts it at
+        // discovery (for example Wisconsin wrongful death): follow the verified entry.
+        if (current.accrualBasis === "death" && entry.accrual.kind === "discovery") {
+          current.accrualBasis = "confirmed_accrual";
+          current.conditions = [
+            ...new Set([
+              ...current.conditions,
+              `Accrual under the cited rule: ${entry.accrual.text}`,
+            ]),
+          ];
+        }
         if (!current.provenance) {
           current.provenance = provenance;
           if (entry.status === "verified") current.pinpoint = entry.citation;
