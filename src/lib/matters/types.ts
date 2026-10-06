@@ -77,16 +77,14 @@ export type FjcCasesPage = {
 };
 
 export type EntriesPayload = {
-  source: "activity" | "cl_entries";
+  source: "activity";
   entries: DocketEntry[];
   total: number | null;
   capped: boolean;
   offset: number;
   pageSize: number;
-  /** Totals per available source so the UI can offer the switch. */
-  available: { activity: number | null; clEntries: number | null };
-  /** Newest date of each available source, when known. */
-  coverage: { activityLast: string | null; clLast: string | null };
+  available: { activity: number | null };
+  coverage: { activityLast: string | null };
 };
 
 /** One page of the matter registry's docket-entry timeline, newest first. */

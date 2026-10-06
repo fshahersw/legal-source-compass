@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  entryTypeLabel,
-  groupEntriesByMonth,
-  pageFromEnd,
-  parseActivityEntry,
-  parseClEntry,
-} from "./entries";
+import { entryTypeLabel, groupEntriesByMonth, parseActivityEntry } from "./entries";
 
 describe("activity entries", () => {
   const item = {
@@ -60,32 +54,6 @@ describe("activity entries", () => {
   });
 });
 
-describe("CourtListener entry metadata", () => {
-  it("carries number, filing date and the source-listed unsealed document count only", () => {
-    const e = parseClEntry({
-      id: "cl:docket-entries:208461390",
-      cells: {
-        native_entry_id: "208461390",
-        entry_number: 1,
-        date_filed: "2022-10-06",
-        source_unsealed_document_count: 0,
-        source_docket_url: "https://www.courtlistener.com/docket/111/",
-      },
-    })!;
-    expect(e).toMatchObject({
-      id: "cl:208461390",
-      source: "cl_entries",
-      entryNumber: 1,
-      date: "2022-10-06",
-      dateBasis: "filed",
-      description: null,
-      entryType: null,
-      documentCount: 0,
-    });
-    expect(parseClEntry({ cells: {} })).toBeNull();
-  });
-});
-
 describe("timeline grouping", () => {
   it("groups by month in order, with undated entries last", () => {
     const mk = (id: string, date: string | null) => ({
@@ -116,16 +84,5 @@ describe("timeline grouping", () => {
   it("labels entry types from their stored keys", () => {
     expect(entryTypeLabel("case_management_order")).toBe("Case management order");
     expect(entryTypeLabel("daubert")).toBe("Daubert");
-  });
-});
-
-describe("paging newest-first over an ascending list", () => {
-  it("windows the tail first and exhausts the head last", () => {
-    expect(pageFromEnd(120, 0, 50)).toEqual({ start: 70, length: 50 });
-    expect(pageFromEnd(120, 1, 50)).toEqual({ start: 20, length: 50 });
-    expect(pageFromEnd(120, 2, 50)).toEqual({ start: 0, length: 20 });
-    expect(pageFromEnd(120, 3, 50)).toEqual({ start: 0, length: 0 });
-    expect(pageFromEnd(0, 0, 50)).toEqual({ start: 0, length: 0 });
-    expect(pageFromEnd(5, 0, 50)).toEqual({ start: 0, length: 5 });
   });
 });

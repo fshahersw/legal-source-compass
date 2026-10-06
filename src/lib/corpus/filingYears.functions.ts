@@ -6,7 +6,6 @@ import { restGet } from "@/lib/external/rest.server";
 const DATE_CELLS = {
   sw_matter_dockets_v1: "filed",
   sw_docket_entries_v1: "date_filed",
-  cl_master_entries: "date_filed",
 } as const;
 export type FilingYearDataset = keyof typeof DATE_CELLS;
 const DATASETS = Object.keys(DATE_CELLS) as [FilingYearDataset, ...FilingYearDataset[]];
@@ -44,10 +43,13 @@ export const getFilingYears = createServerFn({ method: "GET" })
     const meta = await restGet<{ imported_records: number | null }[]>(
       `corpus_datasets?select=imported_records&id=eq.${data.dataset}&limit=1`,
     );
-    const total = typeof meta.rows[0]?.imported_records === "number" ? meta.rows[0].imported_records : null;
+    const total =
+      typeof meta.rows[0]?.imported_records === "number" ? meta.rows[0].imported_records : null;
     const decades: number[] = [];
     for (let y = FIRST_YEAR; y <= LAST_YEAR; y += 10) decades.push(y);
-    const decadeCounts = await Promise.all(decades.map((y) => countBetween(data.dataset, y, y + 10)));
+    const decadeCounts = await Promise.all(
+      decades.map((y) => countBetween(data.dataset, y, y + 10)),
+    );
     const years: { year: number; count: number }[] = [];
     const queue: number[] = [];
     decades.forEach((start, i) => {
@@ -74,3 +76,45 @@ export const getFilingYears = createServerFn({ method: "GET" })
     cache.set(data.dataset, { at: Date.now(), value });
     return value;
   });
+
+const PROVIDERS = ["courtlistener", "docketbird", "govinfo", "official-court"] as const;
+export type EntryProviders = {
+  total: number | null;
+  providers: { provider: string; count: number }[];
+  /** Rows whose provider is none of the listed ones. */
+  other: number | null;
+  readAt: string;
+};
+let providersCache: { at: number; value: EntryProviders } | null = null;
+
+/** Exact docket-entry counts by source provider, read from the corpus. */
+export const getEntryProviders = createServerFn({ method: "GET" }).handler(
+  async (): Promise<EntryProviders> => {
+    if (providersCache && Date.now() - providersCache.at < TTL_MS) return providersCache.value;
+    const dataset = "sw_docket_entries_v1";
+    const meta = await restGet<{ imported_records: number | null }[]>(
+      `corpus_datasets?select=imported_records&id=eq.${dataset}&limit=1`,
+    );
+    const total =
+      typeof meta.rows[0]?.imported_records === "number" ? meta.rows[0].imported_records : null;
+    const cell = encodeURIComponent("item->cells->>provider");
+    const counts = await Promise.all(
+      PROVIDERS.map(async (provider) => {
+        const r = await restGet<unknown[]>(
+          `corpus_records?select=id&dataset=eq.${dataset}&${cell}=eq.${provider}`,
+          { count: true, range: [0, 0] },
+        );
+        return { provider, count: r.total ?? 0 };
+      }),
+    );
+    const listed = counts.reduce((n, r) => n + r.count, 0);
+    const value: EntryProviders = {
+      total,
+      providers: counts.filter((r) => r.count > 0).sort((a, b) => b.count - a.count),
+      other: total === null ? null : Math.max(0, total - listed),
+      readAt: new Date().toISOString(),
+    };
+    providersCache = { at: Date.now(), value };
+    return value;
+  },
+);
