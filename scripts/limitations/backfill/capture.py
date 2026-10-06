@@ -60,7 +60,7 @@ OFFICIAL_HOSTS = (
     "kslegislature.org", "kslegislature.gov", "courts.ca.gov", "ujs.sd.gov", "sdlegislature.gov",
     "govt.westlaw.com",  # official public-access host for states that designate it (Tennessee Code, etc.)
     "lexisnexis.com",   # accepted only where the state designates it as the official code (verify per use)
-    "advance.lexis.com", "olls.info", "colorado.gov",
+    "advance.lexis.com", "olls.info", "colorado.gov", "gasupreme.us", "gaappeals.us", "vermontjudiciary.org", "pacourts.us", "lasc.org", "flrules.org", "sccourts.org", "kycourts.net", "wvcourts.gov", "courts.state.hi.us", "nmonesource.com",
 )
 
 

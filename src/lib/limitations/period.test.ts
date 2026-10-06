@@ -345,6 +345,14 @@ describe("weekend extension from a recorded state counting rule", () => {
     expect(result.steps.at(-1)?.text).toContain("Saturday");
   });
 
+  it("does not adjust a date from a flagged counting rule whose reach to limitations is unproven", () => {
+    const data = withTimeRule(true);
+    data.coverage.find((c) => c.state === "TX")!.timeComputation!.status = "flagged";
+    const result = calculateBaseline(data, input("fraud", "2023-05-02"));
+    expect(result.date).toBe("2026-05-02");
+    expect(result.adjustedDate).toBeNull();
+  });
+
   it("does not adjust weekday anniversaries or states without a recorded rule", () => {
     expect(
       calculateBaseline(withTimeRule(true), input("fraud", "2023-05-04")).adjustedDate,
@@ -354,5 +362,81 @@ describe("weekend extension from a recorded state counting rule", () => {
     ).toBeNull();
     const none = snapshotWith([rule("fraud", 3, "calendar_years")]);
     expect(calculateBaseline(none, input("fraud", "2023-05-02")).adjustedDate).toBeNull();
+  });
+});
+
+describe("raw-capture storage locations", () => {
+  const withCapture = (rawCapture: Record<string, unknown>) => {
+    const sources = STATES.map(source);
+    (sources[0] as unknown as { rawCapture: unknown }).rawCapture = rawCapture;
+    return () =>
+      validateLimitationsSnapshot({
+        rules: {
+          schemaVersion: "1.0.0",
+          snapshotDate: "2026-10-05",
+          ruleVersion: "t",
+          reviewMeaning: "t",
+          dateMeaning: "t",
+          rules: [],
+        },
+        sources: { schemaVersion: "1.0.0", snapshotDate: "2026-10-05", sources },
+        cases: {
+          schemaVersion: "1.0.0",
+          snapshotDate: "2026-10-05",
+          referenceMeaning: "t",
+          cases: [],
+        },
+        coverage: {
+          schemaVersion: "1.0.0",
+          snapshotDate: "2026-10-05",
+          coverage: STATES.map((state) => ({
+            state,
+            name: state,
+            sourceStatus: "primary_text_retrieved",
+            sourceIds: [`${state.toLowerCase()}-src`],
+            baselineRuleIds: [],
+            researchRuleIds: [],
+            coverage: "research_only",
+            discoverySource: "https://legislature.example.gov/",
+            discoveryLinks: [],
+            gaps: ["t"],
+            publisherLinks: [],
+            metadataOnlyReferences: [],
+          })),
+        },
+      });
+  };
+  const sha = "ab".repeat(32);
+  const base = {
+    sha256: sha,
+    byteLength: 5,
+    contentType: "text/html",
+    retrievedAt: "2026-10-06T00:00:00.000Z",
+  };
+
+  it("accepts the content-addressed key for the capture's own digest", () => {
+    expect(
+      withCapture({
+        ...base,
+        storageBucket: "corpus-originals",
+        storageKey: `limitations-raw-captures/sha256/ab/${sha}.bin`,
+      }),
+    ).not.toThrow();
+  });
+  it("rejects a key that does not match the digest or bucket", () => {
+    expect(
+      withCapture({
+        ...base,
+        storageBucket: "corpus-originals",
+        storageKey: `limitations-raw-captures/sha256/cd/${"cd".repeat(32)}.bin`,
+      }),
+    ).toThrow(/storage location/);
+    expect(
+      withCapture({
+        ...base,
+        storageBucket: "public",
+        storageKey: `limitations-raw-captures/sha256/ab/${sha}.bin`,
+      }),
+    ).toThrow(/storage location/);
   });
 });

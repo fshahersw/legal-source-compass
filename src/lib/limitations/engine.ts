@@ -324,7 +324,9 @@ export function calculateBaseline(
   const timeRule = snapshot.coverage.find((c) => c.state === input.jurisdiction)?.timeComputation;
   const weekday = civilWeekday(date);
   const rolled =
-    timeRule?.extendsWhenLastDayIsWeekend && (weekday === 6 || weekday === 0)
+    timeRule?.status === "verified" &&
+    timeRule.extendsWhenLastDayIsWeekend &&
+    (weekday === 6 || weekday === 0)
       ? nextWeekday(date)
       : null;
   return {
