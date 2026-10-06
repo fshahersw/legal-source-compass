@@ -280,7 +280,10 @@ begin
      or p_token is null
      or length(p_token) < 1
      or length(p_token) > 80
-     or p_token !~ '^[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*$' then
+     or not (
+       p_token ~ '^[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*$'
+       or p_token ~ '^[0-9]+[A-Za-z]?/[0-9]+$'
+     ) then
     raise exception 'Jurisdiction and section token are required' using errcode = '22023';
   end if;
   select * into gate from corpus_ingest.publisher_code_projected_gate_v2(p_jurisdiction);
@@ -310,6 +313,31 @@ begin
           ) h
           where h->>'level' = 'section'
             and h->>'number' = p_token
+        )
+        or (
+          p_token ~ '^[0-9]+[A-Za-z]?/[0-9]+$'
+          and split_part(p_token, '/', 1) = (
+            select h->>'number'
+            from jsonb_array_elements(
+              case
+                when jsonb_typeof(e.data->'hierarchy') = 'array' then e.data->'hierarchy'
+                else '[]'::jsonb
+              end
+            ) h
+            where h->>'level' = 'title'
+            limit 1
+          )
+          and split_part(p_token, '/', 2) = (
+            select h->>'number'
+            from jsonb_array_elements(
+              case
+                when jsonb_typeof(e.data->'hierarchy') = 'array' then e.data->'hierarchy'
+                else '[]'::jsonb
+              end
+            ) h
+            where h->>'level' = 'section'
+            limit 1
+          )
         )
       )
     limit 2
@@ -412,7 +440,7 @@ comment on function public.corpus_publisher_code_projected_states_v2() is
 comment on function public.corpus_publisher_code_projected_section_v2(text, text) is
   'One published section (native id JURISDICTION:citation_path) from a state with public_projection_allowed. Null when the state is private.';
 comment on function public.corpus_publisher_code_projected_section_for_token_v2(text, text) is
-  'One published section whose sec_ suffix, final hyphen segment, or stored section number equals the citation token. Null unless exactly one section matches.';
+  'One published section whose sec_ suffix, final hyphen segment, stored section number, or title/section pair equals the citation token. Null unless exactly one section matches.';
 
 notify pgrst, 'reload schema';
 commit;

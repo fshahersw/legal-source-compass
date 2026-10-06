@@ -4,6 +4,7 @@ import { STATE_DATASETS } from "@/lib/external/lawTree";
 import { listSnapshotNames, readPrivateSnapshot } from "@/lib/private-data/snapshot.server";
 import {
   exactCitationPaths,
+  storedHierarchyNumbers,
   storedSectionNumbers,
   tokenEqualsStoredSection,
 } from "./exactCitationPath";
@@ -738,6 +739,7 @@ export async function publicStatuteSections(
         token,
         numberedPath,
         storedSectionNumbers(numberedRow?.["hierarchy"]),
+        storedHierarchyNumbers(numberedRow?.["hierarchy"], "title"),
       )
     ) {
       continue;

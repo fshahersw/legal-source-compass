@@ -100,6 +100,25 @@ describe("exact statute citation paths", () => {
     expect(statuteNativeId("VA", "8.01-243")).toBe("VA:8.01-243");
   });
 
+  it("links Vermont title 12 section 512 without the subsection", () => {
+    expect(exactCitationPaths("VT", "12 V.S.A. § 512(4)")).toEqual(["12/512"]);
+    expect(exactCitationPaths("VT", "12 V.S.A. § 512(4)")?.includes("512")).toBe(false);
+    const titleTwelve = {
+      citationPath: "12/023/00512",
+      sectionNumbers: ["512"],
+      titleNumbers: ["12"],
+    };
+    const titleOne = {
+      citationPath: "1/011/00512",
+      sectionNumbers: ["512"],
+      titleNumbers: ["1"],
+    };
+    expect(onlyExactStoredSection("12/512", [titleTwelve, titleOne])?.citationPath).toBe(
+      "12/023/00512",
+    );
+    expect(onlyExactStoredSection("512", [titleTwelve, titleOne])).toBeNull();
+  });
+
   it("reads Oregon 12.110 without the parenthetical", () => {
     expect(exactCitationPaths("OR", "ORS 12.110(1)")).toEqual(["12.110"]);
     expect(exactCitationPaths("OR", "ORS 12.110(1)")?.includes("12.11")).toBe(false);
