@@ -6,7 +6,8 @@
  *   node run.mjs archive                      upload retained raw pages to private storage (sha256 readback)
  *   node run.mjs land    [--dry-run]          corpus_ingest intake in bounded, verified batches
  *   node run.mjs project [--dry-run]          project landed documents to federal_register_history
- *   node run.mjs daily                        acquire -> archive -> land -> project -> verify
+ *   node run.mjs check [--from D]             fresh API count == acquired == projected, per day (fails on any mismatch)
+ *   node run.mjs daily                        acquire -> archive -> land -> project -> check
  *
  * Environment (never written to disk or logs):
  *   FR_PRIVATE_DIR                private working directory (default ~/.cache/legal-source-atlas/federal-register)
@@ -16,10 +17,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { acquireRange, loadCheckpoint, readPage, saveCheckpoint } from './acquire.mjs';
+import { acquireRange, apiGet, loadCheckpoint, readPage, saveCheckpoint } from './acquire.mjs';
 import { corpusClient } from './corpus.mjs';
 import {
-  CONTRACT, DATASET, SCHEMA_VERSION, compareNewestFirst, entityRow, pickFields, projectRecord, sha256, splitBounded,
+  CONTRACT, DATASET, SCHEMA_VERSION, addDays, compareNewestFirst, entityRow, pickFields, projectRecord, sha256, splitBounded,
 } from './lib.mjs';
 
 const args = process.argv.slice(2);
@@ -31,6 +32,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 const log = (o) => console.log(JSON.stringify(o));
 const BUCKET = 'corpus-originals';
 const HISTORY_FIRST_DAY = '1994-01-03';
+const HISTORY_COLLECTED = '2026-08-20';
 
 /* ---- state helpers ---- */
 
@@ -75,8 +77,9 @@ async function acquire() {
   const cp = loadCheckpoint(dir);
   const days = Object.keys(cp.days).sort();
   const held = (await corpusHead(corpus)).publishedThrough;
-  // Resume from the checkpoint; the last held date is itself re-read so late additions are caught.
-  const from = flag('--from') ?? (days.length ? days.at(-1) : held);
+  // Resume from the checkpoint (or, on a fresh machine, from the corpus's newest date). The last
+  // three days are always re-read so late additions and corrections are caught.
+  const from = flag('--from') ?? addDays(days.length ? days.at(-1) : held, -2);
   const through = flag('--through') ?? today();
   log({ step: 'acquire', from, through });
   const next = await acquireRange(dir, from, through, { recheckDays: 3, log: (m) => console.log(m) });
@@ -255,13 +258,12 @@ async function updateDatasetMetadata(corpus, cp, added, coverage, collected) {
       for (const t of new Set((d.cfr_references ?? []).filter((r) => r.part != null).map((r) => r.title))) bump(filters.find((f) => f.name === 'cfr_title')?.options, t, 1);
     }
   }
-  const text = `${coverage.from} to ${coverage.through}`;
   meta.listing.total = total;
   if (meta.listing_modes?.default) meta.listing_modes.default.total = total;
   if (meta.summary) Object.assign(meta.summary, { records: total, listing_records: total, native_default_records: total });
-  for (const l of [meta.listing, meta.listing_modes?.default]) {
-    if (l?.qualification) l.qualification = l.qualification.replace(/published \d{4}-\d{2}-\d{2} to \d{4}-\d{2}-\d{2}/, `published ${text}`).replace(/collected on \d{4}-\d{2}-\d{2}/, `collected on ${collected}`);
-  }
+  const tail = ' CFR parts, agencies, docket identifiers and RINs are the ones the API lists for each document; documents published later, and any later correction, are not included. A document that cites a CFR part may propose, amend, correct or merely discuss it: read the document.';
+  const qualificationText = `Federal Register documents published ${coverage.from} to ${coverage.through} as listed by the federalregister.gov API and GovInfo. The historical index was collected on ${HISTORY_COLLECTED}; later publication days are added by daily continuation runs from the same API (latest collection ${collected}, each document records its own collection date).${tail}`;
+  for (const l of [meta.listing, meta.listing_modes?.default]) if (l) l.qualification = qualificationText;
   meta.continuations = [...(meta.continuations ?? []), {
     contract: CONTRACT, schema_version: SCHEMA_VERSION, source: 'FederalRegister.gov API v1', published_from: pendingMeta.length ? pendingMeta.map((x) => x.d.publication_date).sort()[0] : null,
     published_through: coverage.through, records_added: pendingMeta.length, collected, runs: Object.keys(cp.runs).filter((id) => cp.runs[id].status === 'completed'), applied_at: new Date().toISOString(),
@@ -272,16 +274,44 @@ async function updateDatasetMetadata(corpus, cp, added, coverage, collected) {
   log({ step: 'dataset-metadata', before: ds.imported_records, after, liveRecordCount: total });
 }
 
+/**
+ * Independent per-day count check: a fresh API count, the acquired pages and the projected
+ * corpus rows must all agree. Any mismatch fails the run.
+ */
+async function check() {
+  const corpus = corpusClient();
+  const cp = loadCheckpoint(dir);
+  const through = flag('--through') ?? today();
+  const from = flag('--from') ?? addDays(through, -6);
+  const failures = [];
+  for (const day of Object.keys(cp.days).sort()) {
+    if (day < from || day > through) continue;
+    const u = new URL('https://www.federalregister.gov/api/v1/documents.json');
+    u.searchParams.set('per_page', '1');
+    u.searchParams.set('conditions[publication_date][gte]', day);
+    u.searchParams.set('conditions[publication_date][lte]', day);
+    const api = JSON.parse((await apiGet(u.href)).bytes).count;
+    const acquired = cp.days[day].actual;
+    const projected = await corpus.count(`corpus_records?dataset=eq.${DATASET}&item->cells->>published=eq.${day}`);
+    const ok = api === acquired && acquired === projected;
+    log({ check: day, api, acquired, projected, ok });
+    if (!ok) failures.push({ day, api, acquired, projected });
+  }
+  if (failures.length) throw new Error(`Day counts disagree: ${JSON.stringify(failures)}`);
+  log({ step: 'check', from, through, result: 'all day counts agree' });
+}
+
 async function daily() {
   await acquire();
   await archive();
   await land();
   await project();
+  await check();
 }
 
-const commands = { status, acquire, archive, land, project, daily };
+const commands = { status, acquire, archive, land, project, check, daily };
 if (!commands[command]) {
-  console.error('Usage: run.mjs status|acquire|archive|land|project|daily [--from D] [--through D] [--dry-run]');
+  console.error('Usage: run.mjs status|acquire|archive|land|project|check|daily [--from D] [--through D] [--dry-run]');
   process.exit(2);
 }
 try {
