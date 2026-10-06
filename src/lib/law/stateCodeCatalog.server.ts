@@ -533,29 +533,35 @@ async function searchProjection(
   };
 }
 
+function parseOutlineSections(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    const section = item && typeof item === "object" ? (item as Record<string, unknown>) : null;
+    const id = section ? asText(section["native_id"]) : null;
+    if (!section || !id) return [];
+    return [
+      {
+        native_id: id,
+        citation: asText(section["citation"]),
+        heading: asText(section["heading"]),
+        status_note: asText(section["status_note"]),
+      },
+    ];
+  });
+}
+
 function parseOutline(value: unknown): ProjectedOutline {
   const row = value && typeof value === "object" ? (value as Record<string, unknown>) : null;
   if (!row || row["available"] !== true) return { available: false };
   if (row["kind"] === "sections" && Array.isArray(row["sections"])) {
+    const sections = parseOutlineSections(row["sections"]);
     return {
       available: true,
       kind: "sections",
       level: "section",
-      total: typeof row["total"] === "number" ? row["total"] : row["sections"].length,
+      total: typeof row["total"] === "number" ? row["total"] : sections.length,
       truncated: row["truncated"] === true,
-      sections: row["sections"].flatMap((item) => {
-        const section = item && typeof item === "object" ? (item as Record<string, unknown>) : null;
-        const id = section ? asText(section["native_id"]) : null;
-        if (!section || !id) return [];
-        return [
-          {
-            native_id: id,
-            citation: asText(section["citation"]),
-            heading: asText(section["heading"]),
-            status_note: asText(section["status_note"]),
-          },
-        ];
-      }),
+      sections,
     };
   }
   if (
@@ -563,6 +569,7 @@ function parseOutline(value: unknown): ProjectedOutline {
     Array.isArray(row["groups"]) &&
     typeof row["level"] === "string"
   ) {
+    const directSections = parseOutlineSections(row["direct_sections"]);
     return {
       available: true,
       kind: "groups",
@@ -580,6 +587,10 @@ function parseOutline(value: unknown): ProjectedOutline {
           },
         ];
       }),
+      directSections,
+      directTotal:
+        typeof row["direct_total"] === "number" ? row["direct_total"] : directSections.length,
+      directTruncated: row["direct_truncated"] === true,
     };
   }
   return { available: false };

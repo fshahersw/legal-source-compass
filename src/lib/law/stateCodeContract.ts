@@ -547,6 +547,15 @@ export type ProjectedOutline =
       total: number;
       truncated: boolean;
       groups: { number: string | null; heading: string | null; count: number }[];
+      /** Sections whose next hierarchy step is already a section, beside deeper groups. */
+      directSections: {
+        native_id: string;
+        citation: string | null;
+        heading: string | null;
+        status_note: string | null;
+      }[];
+      directTotal: number;
+      directTruncated: boolean;
     }
   | {
       available: true;
