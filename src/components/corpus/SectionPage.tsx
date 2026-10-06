@@ -3,14 +3,8 @@ import type { ReactNode } from "react";
 import { AppShell } from "@/components/atlas/AppShell";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { DatasetBrowser, useDatasets } from "@/components/corpus/DatasetBrowser";
-import type { DatasetInfo } from "@/lib/external/catalog.functions";
 import { SECTIONS, sectionOf, type SectionId } from "@/lib/external/groups";
 import { datasetDisplayName, sectionDescription } from "@/lib/external/domainRegistry";
-import {
-  datasetVersionFamily,
-  resolveDatasetVersion,
-  visibleDatasetChoices,
-} from "@/lib/external/datasetVersions";
 import {
   Select,
   SelectContent,
@@ -39,7 +33,7 @@ export function SectionPage({
   const datasets = useDatasets();
   const allDatasets = datasets.data ?? [];
   const limitationsSources = new Set(["limitation_periods", "statutory_limitations_review"]);
-  const list = visibleDatasetChoices(allDatasets)
+  const list = allDatasets
     .filter(
       (d) =>
         sectionOf(d.id) === section &&
@@ -50,8 +44,7 @@ export function SectionPage({
     .sort((a, b) => (b.records ?? -1) - (a.records ?? -1));
   const primary = PRIMARY[section];
   if (primary) list.sort((a, b) => (a.id === primary ? -1 : b.id === primary ? 1 : 0));
-  const resolved = ds ? resolveDatasetVersion(ds, allDatasets) : null;
-  const selectedId = resolved?.canonicalId ?? ds;
+  const selectedId = ds;
   const selected =
     selectedId &&
     (list.some((d) => d.id === selectedId) || extraTabs.some((t) => t.id === selectedId));
@@ -121,40 +114,8 @@ export function SectionPage({
       {datasets.isLoading ? (
         <p className="text-[13px] text-muted-foreground">Loading collections…</p>
       ) : null}
-      {extra ? (
-        extra.render()
-      ) : active ? (
-        <DatasetVersionBrowser
-          key={`${active}-${ds ?? active}`}
-          dataset={active}
-          requestedDataset={selected ? (ds ?? active) : active}
-          datasets={allDatasets}
-        />
-      ) : null}
+      {extra ? extra.render() : active ? <DatasetBrowser key={active} dataset={active} /> : null}
     </AppShell>
-  );
-}
-
-/** One user-facing collection. An audited earlier snapshot resolves to its current collection; it is not offered. */
-export function DatasetVersionBrowser({
-  dataset,
-  requestedDataset,
-  datasets,
-}: {
-  dataset: string;
-  requestedDataset: string;
-  datasets: readonly DatasetInfo[];
-}) {
-  const family = datasetVersionFamily(dataset);
-  const selectedId = resolveDatasetVersion(requestedDataset, datasets).selectedId;
-  const selectedReady = datasets.find((row) => row.id === selectedId)?.ready;
-  return (
-    <div>
-      {family && selectedId === family.current && selectedReady === true ? (
-        <p className="mb-3 text-[12px] text-muted-foreground">{family.currentLabel}</p>
-      ) : null}
-      <DatasetBrowser key={selectedId} dataset={selectedId} />
-    </div>
   );
 }
 

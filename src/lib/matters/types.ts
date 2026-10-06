@@ -40,6 +40,11 @@ export type MatterOverviewPayload = {
    * dataset browser; null while they are held ("not yet available").
    */
   registryReleased: { entries: string | null; parties: string | null };
+  /**
+   * Exact row counts in the released registry datasets for this MDL, read live. Only filled when the MDL has no
+   * `sw_matters_v1` record (otherwise the record's own counts are used); null when the dataset is held or unread.
+   */
+  liveRegistry: { entries: number | null; parties: number | null };
 };
 
 /**

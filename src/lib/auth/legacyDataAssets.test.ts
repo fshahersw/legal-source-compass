@@ -23,7 +23,7 @@ it.each([
   "/data",
   "/data/",
   "/data/mdls",
-  "/data/cl_master_entries?f=example",
+  "/data/sw_docket_entries_v1?f=example",
   "/data/tables/corpus_context",
   "/sources/library",
   "/api/bundles?file=source.json",

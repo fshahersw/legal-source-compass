@@ -346,3 +346,39 @@ export const getMatterParties = createServerFn({ method: "GET" })
   });
 
 export const getMatterHub = createServerFn({ method: "GET" }).handler(async () => loadHub());
+
+export const getMatterEntryDocuments = createServerFn({ method: "POST" })
+  .inputValidator((d) =>
+    z
+      .object({
+        id: mdlInput,
+        items: z
+          .array(
+            z.object({
+              id: z.string().min(8).max(140),
+              docketKey: docketKeyInput.nullable(),
+              entryNumber: z.number().int().min(0).max(9_999_999).nullable(),
+            }),
+          )
+          .max(80),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { loadEntryDocuments } = await import("./docketDocuments.server");
+    return loadEntryDocuments(data.items);
+  });
+
+export const getDocketDocumentsOverview = createServerFn({ method: "GET" }).handler(async () => {
+  const { loadDocketDocumentsOverview } = await import("./docketDocuments.server");
+  return loadDocketDocumentsOverview();
+});
+
+export const getMatterDocketDocuments = createServerFn({ method: "GET" })
+  .inputValidator((d) =>
+    z.object({ id: mdlInput, offset: z.number().int().min(0).max(100000).default(0) }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { loadMatterDocketDocuments } = await import("./docketDocuments.server");
+    return loadMatterDocketDocuments(mdlOf(data.id), data.offset);
+  });

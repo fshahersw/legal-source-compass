@@ -72,6 +72,8 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
     staleTime: 5 * 60_000,
   });
   const m = registryMetrics(payload.registry);
+  const live = payload.liveRegistry;
+  const notInRegistry = "MDL not in the matter registry";
   const pdf = docs.data && docs.data.connected ? docs.data.summary : null;
   return (
     <div
@@ -98,14 +100,26 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
         note={o.asOf ? `JPML report ${o.asOf}` : (o.countsLabel ?? undefined)}
       />
       <Metric
-        label="Member-like dockets"
-        title="Member and transferor dockets the Seeger Weiss matter registry holds for this MDL, each with its evidence. The master docket and the JPML panel proceeding are listed on the Member cases tab but are not counted here; never the size of the MDL."
-        value={m && m.dockets !== null ? n(m.dockets) : <NotRecorded />}
-        note={m ? "Evidence-backed; partial count" : "Not in the matter registry"}
+        label={m ? "Member-like dockets" : "Dockets in the saved sample"}
+        title={
+          m
+            ? "Member and transferor dockets the Seeger Weiss matter registry holds for this MDL, each with its evidence. The master docket and the JPML panel proceeding are listed on the Member cases tab but are not counted here; never the size of the MDL."
+            : "Dockets in this matter's saved sample (the same list as the Member cases tab). Not the size of the MDL."
+        }
+        value={
+          m && m.dockets !== null ? (
+            n(m.dockets)
+          ) : !m && o.cases?.total != null ? (
+            n(o.cases.total)
+          ) : (
+            <NotRecorded />
+          )
+        }
+        note={m ? "Evidence-backed; partial count" : `Saved sample · ${notInRegistry}`}
       />
       <Metric
         label="Docket entries"
-        title="CourtListener entries the registry captured for the master docket against the total the provider reports."
+        title="Entries the registry holds for the master docket (against the total the provider reports, when the matter record has it). Counted from the registry's docket entries, the same rows as the Docket entries tab."
         value={
           m?.entries && m.entries.captured !== null ? (
             <>
@@ -117,24 +131,28 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
                 </span>
               ) : null}
             </>
+          ) : live.entries ? (
+            n(live.entries)
           ) : (
             <span className="font-normal text-muted-foreground">Not yet available</span>
           )
         }
         note={
-          m?.entries
-            ? [
-                m.entries.complete === true
-                  ? "complete at last check"
-                  : m.entries.complete === false
-                    ? "partial"
-                    : null,
-                m.entries.published !== null ? `${n(m.entries.published)} published` : null,
-                m.entries.withheld ? `${n(m.entries.withheld)} without text` : null,
-              ]
-                .filter(Boolean)
-                .join(" · ") || undefined
-            : undefined
+          !m?.entries && live.entries
+            ? `Registry docket entries · ${notInRegistry}`
+            : m?.entries
+              ? [
+                  m.entries.complete === true
+                    ? "complete at last check"
+                    : m.entries.complete === false
+                      ? "partial"
+                      : null,
+                  m.entries.published !== null ? `${n(m.entries.published)} published` : null,
+                  m.entries.withheld ? `${n(m.entries.withheld)} without text` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ") || undefined
+              : undefined
         }
       />
       <Metric
@@ -146,6 +164,11 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
               {n(m.parties.published)}
               <span className="font-normal text-muted-foreground"> parties</span>
             </>
+          ) : live.parties ? (
+            <>
+              {n(live.parties)}
+              <span className="font-normal text-muted-foreground"> parties</span>
+            </>
           ) : (
             <span className="font-normal text-muted-foreground">Not yet available</span>
           )
@@ -153,7 +176,9 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
         note={
           m?.parties && m.parties.counselLinks !== null
             ? `${n(m.parties.counselLinks)} counsel entries`
-            : undefined
+            : !m?.parties && live.parties
+              ? `Registry parties · ${notInRegistry}`
+              : undefined
         }
       />
       <Metric

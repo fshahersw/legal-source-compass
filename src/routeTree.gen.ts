@@ -52,6 +52,7 @@ import { Route as SourcesAnalysisRouteImport } from './routes/sources.analysis'
 import { Route as SourcesCatalogRouteImport } from './routes/sources.catalog'
 import { Route as SourcesCoverageRouteImport } from './routes/sources.coverage'
 import { Route as SourcesDetailRouteImport } from './routes/sources.detail'
+import { Route as SourcesDocketDocumentsRouteImport } from './routes/sources.docket-documents'
 import { Route as SourcesLibraryRouteImport } from './routes/sources.library'
 import { Route as SourcesRegistryRouteImport } from './routes/sources.registry'
 import { Route as SourcesRegistryV22RouteImport } from './routes/sources.registry-v22'
@@ -276,6 +277,11 @@ const SourcesDetailRoute = SourcesDetailRouteImport.update({
   path: '/sources/detail',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SourcesDocketDocumentsRoute = SourcesDocketDocumentsRouteImport.update({
+  id: '/sources/docket-documents',
+  path: '/sources/docket-documents',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SourcesLibraryRoute = SourcesLibraryRouteImport.update({
   id: '/sources/library',
   path: '/sources/library',
@@ -353,6 +359,7 @@ export interface FileRoutesByFullPath {
   '/sources/catalog': typeof SourcesCatalogRoute
   '/sources/coverage': typeof SourcesCoverageRoute
   '/sources/detail': typeof SourcesDetailRoute
+  '/sources/docket-documents': typeof SourcesDocketDocumentsRoute
   '/sources/library': typeof SourcesLibraryRoute
   '/sources/registry': typeof SourcesRegistryRoute
   '/sources/registry-v22': typeof SourcesRegistryV22Route
@@ -406,6 +413,7 @@ export interface FileRoutesByTo {
   '/sources/catalog': typeof SourcesCatalogRoute
   '/sources/coverage': typeof SourcesCoverageRoute
   '/sources/detail': typeof SourcesDetailRoute
+  '/sources/docket-documents': typeof SourcesDocketDocumentsRoute
   '/sources/library': typeof SourcesLibraryRoute
   '/sources/registry': typeof SourcesRegistryRoute
   '/sources/registry-v22': typeof SourcesRegistryV22Route
@@ -460,6 +468,7 @@ export interface FileRoutesById {
   '/sources/catalog': typeof SourcesCatalogRoute
   '/sources/coverage': typeof SourcesCoverageRoute
   '/sources/detail': typeof SourcesDetailRoute
+  '/sources/docket-documents': typeof SourcesDocketDocumentsRoute
   '/sources/library': typeof SourcesLibraryRoute
   '/sources/registry': typeof SourcesRegistryRoute
   '/sources/registry-v22': typeof SourcesRegistryV22Route
@@ -515,6 +524,7 @@ export interface FileRouteTypes {
     | '/sources/catalog'
     | '/sources/coverage'
     | '/sources/detail'
+    | '/sources/docket-documents'
     | '/sources/library'
     | '/sources/registry'
     | '/sources/registry-v22'
@@ -568,6 +578,7 @@ export interface FileRouteTypes {
     | '/sources/catalog'
     | '/sources/coverage'
     | '/sources/detail'
+    | '/sources/docket-documents'
     | '/sources/library'
     | '/sources/registry'
     | '/sources/registry-v22'
@@ -621,6 +632,7 @@ export interface FileRouteTypes {
     | '/sources/catalog'
     | '/sources/coverage'
     | '/sources/detail'
+    | '/sources/docket-documents'
     | '/sources/library'
     | '/sources/registry'
     | '/sources/registry-v22'
@@ -675,6 +687,7 @@ export interface RootRouteChildren {
   SourcesCatalogRoute: typeof SourcesCatalogRoute
   SourcesCoverageRoute: typeof SourcesCoverageRoute
   SourcesDetailRoute: typeof SourcesDetailRoute
+  SourcesDocketDocumentsRoute: typeof SourcesDocketDocumentsRoute
   SourcesLibraryRoute: typeof SourcesLibraryRoute
   SourcesRegistryRoute: typeof SourcesRegistryRoute
   SourcesRegistryV22Route: typeof SourcesRegistryV22Route
@@ -995,6 +1008,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SourcesDetailRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sources/docket-documents': {
+      id: '/sources/docket-documents'
+      path: '/sources/docket-documents'
+      fullPath: '/sources/docket-documents'
+      preLoaderRoute: typeof SourcesDocketDocumentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sources/library': {
       id: '/sources/library'
       path: '/sources/library'
@@ -1102,6 +1122,7 @@ const rootRouteChildren: RootRouteChildren = {
   SourcesCatalogRoute: SourcesCatalogRoute,
   SourcesCoverageRoute: SourcesCoverageRoute,
   SourcesDetailRoute: SourcesDetailRoute,
+  SourcesDocketDocumentsRoute: SourcesDocketDocumentsRoute,
   SourcesLibraryRoute: SourcesLibraryRoute,
   SourcesRegistryRoute: SourcesRegistryRoute,
   SourcesRegistryV22Route: SourcesRegistryV22Route,
