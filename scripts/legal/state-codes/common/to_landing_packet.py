@@ -45,6 +45,9 @@ def main():
     ap.add_argument("--sections", help="override sections.jsonl path")
     ap.add_argument("--placeholders-as-printed-line", action="store_true",
                     help="empty-body placeholders (repealed/transferred...) land with the printed heading line as text (as batch B did); default records them as gaps")
+    ap.add_argument("--member-from", default="source.member",
+                    choices=("source.member", "title", "id-chapter"),
+                    help="how to key staged unit derivatives (default source.member)")
     a = ap.parse_args()
     st = a.state.upper()
     root = a.root or f"/tmp/sc/{st}"
@@ -60,6 +63,24 @@ def main():
     rx = re.compile(a.regex)
     assert rx.match(a.example), "example must match regex"
 
+    def row_member(row):
+        if a.member_from == "source.member":
+            return row["source"]["member"]
+        if a.member_from == "title":
+            for item in row.get("citation_path") or []:
+                if item.get("level") == "title":
+                    return str(item.get("number"))
+            return None
+        title = chapter = None
+        for item in row.get("citation_path") or []:
+            if item.get("level") == "title":
+                title = item.get("number")
+            elif item.get("level") == "chapter":
+                chapter = item.get("number")
+        if title is None or chapter is None:
+            return None
+        return "%s-%s" % (title, chapter)
+
     gaps = collections.Counter()
     gap_rows = open(os.path.join(out, "gaps.jsonl"), "w", encoding="utf-8")
     sections, units, levels = [], {}, []
@@ -67,7 +88,7 @@ def main():
     currency_stmt = set()
     for s in jl(a.sections or os.path.join(root, "parsed/sections.jsonl")):
         src = s["source"]
-        member, orig = src["member"], src["receipt_sha256"]
+        member, orig = row_member(s), src["receipt_sha256"]
 
         def gap(kind):
             gaps[kind] += 1
@@ -83,6 +104,8 @@ def main():
             gap("nul_in_text"); continue
         if orig not in receipts:
             gap("original_without_http_200_receipt"); continue
+        if member is None:
+            gap("no_unit_member"); continue
         if member not in deriv:
             gap("no_unit_derivative"); continue
         key = f"{member}" if True else ""
