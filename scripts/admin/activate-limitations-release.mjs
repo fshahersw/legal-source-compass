@@ -45,27 +45,32 @@ if (
   throw new Error("NOT_A_STAGED_RELEASE_FOR_THIS_PROJECT");
 const manifest = JSON.parse(await readFile(live, "utf8"));
 if (manifest.project_id !== staged.project_id) throw new Error("PROJECT_MISMATCH");
-for (const name of Object.keys(manifest.files))
-  if (name.startsWith("limitations/")) delete manifest.files[name];
-for (const [name, entry] of Object.entries(staged.files)) {
+for (const name of Object.keys(staged.files))
   if (!name.startsWith("limitations/")) throw new Error(`UNEXPECTED_FILE ${name}`);
-  manifest.files[name] = entry;
+// Keep the existing key order so the one-file diff stays small: update in place, drop retired limitations
+// entries, append new ones.
+const files = {};
+for (const [name, entry] of Object.entries(manifest.files)) {
+  if (!name.startsWith("limitations/")) files[name] = entry;
+  else if (staged.files[name]) files[name] = staged.files[name];
 }
+for (const [name, entry] of Object.entries(staged.files)) if (!files[name]) files[name] = entry;
+manifest.files = files;
 if (args.verify) {
   const url = process.env.EXTERNAL_SUPABASE_URL?.replace(/\/+$/, "");
   const key = process.env.EXTERNAL_SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) throw new Error("CREDENTIALS_REQUIRED_IN_ENVIRONMENT");
   for (const [name, entry] of Object.entries(staged.files)) {
     const r = await fetch(`${url}/storage/v1/object/info/${manifest.bucket}/${entry.storage_key}`, {
-      headers: { apikey: key },
+      headers: {
+        apikey: key,
+        ...(key.startsWith("sb_") ? {} : { Authorization: `Bearer ${key}` }),
+      },
     });
     await r.body?.cancel();
     if (!r.ok) throw new Error(`MISSING_OBJECT ${name}`);
   }
 }
-manifest.files = Object.fromEntries(
-  Object.entries(manifest.files).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
-);
 manifest.created_at = new Date().toISOString();
 await writeFile(live, `${JSON.stringify(manifest, null, 2)}\n`);
 console.log(
