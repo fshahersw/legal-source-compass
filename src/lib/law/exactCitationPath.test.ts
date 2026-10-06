@@ -45,6 +45,24 @@ describe("exact statute citation paths", () => {
     expect(exactCitationPaths("MI", "MCL 600.5805")?.includes("600.580")).toBe(false);
   });
 
+  it("reads Virginia 8.01-243 without the parenthetical or the next decimal section", () => {
+    expect(exactCitationPaths("VA", "Va. Code § 8.01-243(A)")).toEqual(["8.01-243"]);
+    expect(exactCitationPaths("VA", "Va. Code § 8.01-243(A)")?.includes("8.01-243.1")).toBe(false);
+    expect(exactCitationPaths("VA", "Va. Code § 8.01-243(A)")?.includes("01-243")).toBe(false);
+    expect(exactCitationPaths("VA", "Va. Code § 8.01-243(D1)")).toEqual(["8.01-243"]);
+    expect(exactCitationPaths("VA", "Va. Code § 8.01-243.1")).toEqual(["8.01-243.1"]);
+    expect(statuteNativeId("VA", "8.01-243")).toBe("VA:8.01-243");
+  });
+
+  it("reads Minnesota 541.05 without the subdivision or the next section", () => {
+    expect(exactCitationPaths("MN", "Minn. Stat. § 541.05, subd. 1(5)")).toEqual(["541.05"]);
+    expect(exactCitationPaths("MN", "Minn. Stat. § 541.05, subd. 1(5)")?.includes("541.051")).toBe(
+      false,
+    );
+    expect(exactCitationPaths("MN", "Minn. Stat. § 541.051")).toEqual(["541.051"]);
+    expect(statuteNativeId("MN", "541.05")).toBe("MN:541.05");
+  });
+
   it("keeps the trailing letter on Michigan 600.5851b", () => {
     expect(
       exactCitationPaths("MI", "Mich. Comp. Laws § 600.5805(6); minor victims also § 600.5851b(1)"),

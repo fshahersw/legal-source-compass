@@ -4,20 +4,29 @@
  * A range, a second title, or an unrecognized form returns null so nothing is linked.
  */
 /** Publishers whose citation_path is the dotted section number printed after the section sign. */
-const DOTTED_PATH_STATES = new Set(["FL", "MI", "MO", "WI"]);
+const DOTTED_PATH_STATES = new Set(["FL", "MI", "MN", "MO", "WI"]);
 
 export function exactCitationPaths(state: string, citation: string): string[] | null {
   const text = citation.trim();
   const usps = state.toUpperCase();
   if (!text || /\b(?:to|through)\b/i.test(text)) return null;
   if (usps === "OK") return oklahomaPaths(text);
-  const paths = [
+  const paths = omitDottedPrefix([
     ...new Set([
       ...(hyphenPaths(text) ?? []),
+      ...(dottedHyphenPaths(text) ?? []),
       ...(DOTTED_PATH_STATES.has(usps) ? (dottedPaths(text) ?? []) : []),
     ]),
-  ];
+  ]);
   return paths.length ? paths : null;
+}
+
+/** A dotted token that is only the front of a longer dotted-hyphen token is not a second section. */
+function omitDottedPrefix(paths: string[]): string[] {
+  return paths.filter(
+    (path) =>
+      !paths.some((other) => other !== path && other.startsWith(`${path}-`) && path.includes(".")),
+  );
 }
 
 export function statuteNativeId(state: string, citationPath: string): string {
@@ -36,9 +45,21 @@ function dottedPaths(citation: string): string[] | null {
   return paths.length ? paths : null;
 }
 
+/** Title-and-section numbers such as Va. Code § 8.01-243. A parenthetical or later subdivision is not included. */
+function dottedHyphenPaths(citation: string): string[] | null {
+  const paths: string[] = [];
+  const re = /\b(\d{1,4}\.\d{1,4}-\d{1,4}(?:\.\d{1,4})?)(?![A-Za-z0-9.])/g;
+  for (const match of citation.matchAll(re)) {
+    const path = match[1];
+    if (!path || paths.includes(path)) continue;
+    paths.push(path);
+  }
+  return paths.length ? paths : null;
+}
+
 function hyphenPaths(citation: string): string[] | null {
   const paths: string[] = [];
-  const re = /\b(\d{1,2}[A-Z]?(?:-\d{1,4}[A-Za-z]?){1,8}(?:\.\d{1,4})?)(?!\d)/g;
+  const re = /(?<!\d\.)\b(\d{1,2}[A-Z]?(?:-\d{1,4}[A-Za-z]?){1,8}(?:\.\d{1,4})?)(?!\d)/g;
   for (const match of citation.matchAll(re)) {
     const path = match[1];
     if (!path || paths.includes(path)) continue;
