@@ -1,4 +1,13 @@
-export const CLAIM_TYPES = ["personal_injury", "product_liability", "wrongful_death"] as const;
+export const CLAIM_TYPES = [
+  "personal_injury",
+  "product_liability",
+  "wrongful_death",
+  "medical_malpractice",
+  "contract_written",
+  "contract_oral",
+  "fraud",
+  "property_damage",
+] as const;
 export type ClaimType = (typeof CLAIM_TYPES)[number];
 export type AuthorityCapture = {
   sha256: string;
@@ -18,6 +27,48 @@ export const CLAIM_LABELS: Record<ClaimType, string> = {
   personal_injury: "Ordinary personal injury",
   product_liability: "Product / mass-tort injury",
   wrongful_death: "Wrongful death",
+  medical_malpractice: "Medical malpractice",
+  contract_written: "Breach of written contract",
+  contract_oral: "Breach of oral contract",
+  fraud: "Fraud / misrepresentation",
+  property_damage: "Property damage",
+};
+
+export type PeriodUnit = "calendar_years" | "calendar_months" | "calendar_days";
+
+/** Primary-source evidence recorded for a backfilled rule. Every field is optional-by-"Not recorded", never guessed. */
+export type RuleProvenance = {
+  citation: string;
+  excerpt: string;
+  periodEvidence: string;
+  accrualKind:
+    | "accrual"
+    | "discovery"
+    | "occurrence"
+    | "death"
+    | "treatment_end"
+    | "breach"
+    | "other"
+    | "not_recorded";
+  accrualText: string;
+  tolling: { text: string; citation: string }[];
+  repose: { years: number; citation: string; trigger: string; effectiveFrom: string | null }[];
+  lastAmended: { text: string; date: string | null };
+  effectiveDate: string | null;
+  retrievedAt: string;
+  entryStatus: "verified" | "flagged";
+  confidence: "high" | "medium" | "low";
+  confidenceNote: string;
+  flags: string[];
+  crossCheckSourceIds: string[];
+};
+
+export type ClaimCoverageStatus = "baseline" | "research_only" | "flagged" | "not_recorded";
+export type ClaimCoverage = {
+  claimType: ClaimType;
+  status: ClaimCoverageStatus;
+  ruleId?: string;
+  reason?: string;
 };
 
 export type LimitationRule = {
@@ -37,7 +88,8 @@ export type LimitationRule = {
     | "transition";
   computation: "baseline_only" | "research_only";
   reviewStatus: "statutory_text_verified";
-  period: { amount: number; unit: "calendar_years" } | null;
+  period: { amount: number; unit: PeriodUnit } | null;
+  provenance?: RuleProvenance;
   sourceIds: string[];
   pinpoint: string;
   scope: string;
@@ -94,6 +146,7 @@ export type CoverageRow = {
   gaps: string[];
   publisherLinks: { title: string; url: string; status: string }[];
   metadataOnlyReferences: { title: string; url: string; format: string; note: string }[];
+  claimCoverage?: ClaimCoverage[];
 };
 export type JudicialReference = {
   id: string;
