@@ -103,7 +103,9 @@ class Cloud:
     def __init__(self):
         self.url = os.environ["EXTERNAL_SUPABASE_URL"].rstrip("/")
         key = os.environ["EXTERNAL_SUPABASE_SERVICE_ROLE_KEY"]
-        self.h = {"apikey": key, "Authorization": f"Bearer {key}"}
+        self.h = {"apikey": key}
+        if not key.startswith("sb_"):
+            self.h["Authorization"] = f"Bearer {key}"
         self.s = requests.Session()
 
     def rpc(self, name, args):
