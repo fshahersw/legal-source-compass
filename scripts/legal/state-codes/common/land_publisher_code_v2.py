@@ -15,6 +15,7 @@ only; nothing is printed. Dry run (default) validates and counts; --execute uplo
 The run is always closed in a finally.
 """
 import argparse
+import base64
 import hashlib
 import json
 import os
@@ -27,6 +28,8 @@ import requests
 BUCKET = "corpus-originals"
 MAX_ROWS = 500
 MAX_BYTES = 6_000_000
+STANDARD_UPLOAD_LIMIT = 45 * 1024 * 1024
+TUS_CHUNK = 6 * 1024 * 1024
 NS = uuid.UUID("5b6f1c58-2a56-4e6a-9f7a-1c0de5a7c0de")
 
 
@@ -61,6 +64,8 @@ def build_rows(packet, manifest_sha, manifest):
                 "heading": u["heading"], "original_sha256": u["original_sha256"], "publisher_member": u["publisher_member"],
                 "raw_member_sha256": u["raw_member_sha256"], "text_sha256": u["text_sha256"],
                 "text_code_points": u["text_code_points"], "sections_expected": u["sections_expected"], "currency": u["currency"]}
+        if u.get("parent_archive_sha256"):
+            data["parent_archive_sha256"] = u["parent_archive_sha256"]
         prov = {"source_url": u["source_url"], "source_sha256": u["original_sha256"], "retrieved_at": u["retrieved_at"],
                 "retrieval_method": u["retrieval_method"], "proxy": u["proxy"], "source_as_of": u["currency"]["through_date"],
                 "record_hash_codec": "canonical-integer-jsonb/1", "record_sha256": sha(data), "parser": parser,
@@ -99,19 +104,13 @@ def batches(rows):
         yield cur
 
 
-def service_headers(key):
-    """Storage rejects Authorization: Bearer when the key is an sb_ secret. Send apikey only then."""
-    headers = {"apikey": key}
-    if not str(key).startswith("sb_"):
-        headers["Authorization"] = f"Bearer {key}"
-    return headers
-
-
 class Cloud:
     def __init__(self):
         self.url = os.environ["EXTERNAL_SUPABASE_URL"].rstrip("/")
         key = os.environ["EXTERNAL_SUPABASE_SERVICE_ROLE_KEY"]
-        self.h = service_headers(key)
+        self.h = {"apikey": key}
+        if not key.startswith("sb_"):
+            self.h["Authorization"] = f"Bearer {key}"
         self.s = requests.Session()
 
     def rpc(self, name, args):
@@ -125,14 +124,56 @@ class Cloud:
                 raise RuntimeError(f"{name} {r.status_code}: {r.text[:500]}")
             return r.json()
 
+    def _retry(self, call):
+        for attempt in range(4):
+            try:
+                r = call()
+            except requests.RequestException:
+                if attempt == 3:
+                    raise
+                time.sleep(2 ** (attempt + 1))
+                continue
+            if r.status_code in (429, 502, 503, 504, 522, 524) and attempt < 3:
+                time.sleep(2 ** (attempt + 1))
+                continue
+            return r
+
     def readback(self, key):
-        r = self.s.get(f"{self.url}/storage/v1/object/authenticated/{BUCKET}/{key}", headers=self.h, timeout=600)
+        r = self._retry(lambda: self.s.get(f"{self.url}/storage/v1/object/authenticated/{BUCKET}/{key}",
+                                           headers=self.h, timeout=600))
         return r.status_code, r.content
 
     def upload(self, key, data, ctype):
-        r = self.s.post(f"{self.url}/storage/v1/object/{BUCKET}/{key}", data=data, timeout=1200,
-                        headers={**self.h, "x-upsert": "false", "Content-Type": ctype})
+        r = self._retry(lambda: self.s.post(f"{self.url}/storage/v1/object/{BUCKET}/{key}", data=data, timeout=1200,
+                                            headers={**self.h, "x-upsert": "false", "Content-Type": ctype}))
         return r.status_code, r.text[:200]
+
+
+def tus_upload(cloud, key, path, ctype):
+    """Resumable (TUS) upload for originals above the standard cap; same object key, never upserts."""
+    size = os.path.getsize(path)
+    meta = ",".join(f"{k} {base64.b64encode(v.encode()).decode()}" for k, v in
+                    (("bucketName", BUCKET), ("objectName", key), ("contentType", ctype), ("cacheControl", "3600")))
+    endpoint = cloud.url + "/storage/v1/upload/resumable"
+    head = {**cloud.h, "Tus-Resumable": "1.0.0", "x-upsert": "false"}
+    r = cloud._retry(lambda: cloud.s.post(endpoint, headers={**head, "Upload-Length": str(size), "Upload-Metadata": meta},
+                                          timeout=120))
+    if r.status_code not in (200, 201):
+        return r.status_code, r.text[:200]
+    location = r.headers["Location"]
+    if location.startswith("/"):
+        location = cloud.url + location
+    offset = 0
+    with open(path, "rb") as handle:
+        while offset < size:
+            handle.seek(offset)
+            chunk = handle.read(TUS_CHUNK)
+            r = cloud._retry(lambda: cloud.s.patch(location, data=chunk, timeout=600, headers={
+                **head, "Content-Type": "application/offset+octet-stream", "Upload-Offset": str(offset)}))
+            if r.status_code not in (200, 204):
+                return r.status_code, r.text[:200]
+            offset = int(r.headers.get("Upload-Offset", offset + len(chunk)))
+    return 201, ""
 
 
 def put_object(cloud, o):
@@ -140,11 +181,20 @@ def put_object(cloud, o):
     key = f"state-codes/sha256/{o['sha256'][:2]}/{o['sha256']}"
     st, body = cloud.readback(key)
     if st != 200:
-        data = open(o["path"], "rb").read()
-        if hashlib.sha256(data).hexdigest() != o["sha256"] or len(data) != o["bytes"]:
+        digest = hashlib.sha256()
+        with open(o["path"], "rb") as handle:
+            for block in iter(lambda: handle.read(1 << 20), b""):
+                digest.update(block)
+        if digest.hexdigest() != o["sha256"] or os.path.getsize(o["path"]) != o["bytes"]:
             raise RuntimeError(f"local file does not match plan {o['sha256'][:12]}")
         ctype = "text/plain; charset=utf-8" if o["kind"] == "unit_text_derivative" else "application/octet-stream"
-        ust, msg = cloud.upload(key, data, ctype)
+        if o["bytes"] > STANDARD_UPLOAD_LIMIT:
+            ust, msg = tus_upload(cloud, key, o["path"], ctype)
+        else:
+            with open(o["path"], "rb") as handle:
+                ust, msg = cloud.upload(key, handle.read(), ctype)
+            if ust == 413:
+                ust, msg = tus_upload(cloud, key, o["path"], ctype)
         if ust not in (200, 201) and "already exists" not in msg and "Duplicate" not in msg:
             raise RuntimeError(f"upload {ust} {msg}")
         st, body = cloud.readback(key)
