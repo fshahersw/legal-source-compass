@@ -122,7 +122,7 @@ export function searchState(match: SearchMatch, courtLocations: ReadonlyMap<stri
 
 const legalPriority: Record<string, number> = {
   mdls: 350, sw_matters_v1: 200, expert_rulings: 300, cl_dockets: 150, mdl_docket_documents: 130,
-  court_documents: 100, state_proceedings: 120, cl_master_entries: 80,
+  court_documents: 100, state_proceedings: 120, sw_docket_entries_v1: 80,
   federal_regulations_sections: 20,
 };
 function words(value: string): string[] { return value.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []; }

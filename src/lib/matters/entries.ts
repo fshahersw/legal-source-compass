@@ -1,15 +1,13 @@
 /**
  * Pure: docket entries for the matter timeline.
  *
- * Two sources exist and are never merged silently:
- * - "activity": the saved firm-focused docket sample (entry type, date entered, docket text snippet);
- * - "cl_entries": CourtListener's own entry list for the master docket (number, filing date, source-listed
- *   unsealed document count) with no descriptions.
+ * The saved firm-focused docket sample (entry type, date entered, docket text snippet). The registry timeline
+ * (`timeline.ts`) is the reader for matters whose entries are in the matter registry.
  */
 
 import { isObj, str } from "./values";
 
-export type EntrySource = "activity" | "cl_entries";
+export type EntrySource = "activity";
 
 export type DocketEntry = {
   id: string;
@@ -66,25 +64,6 @@ export function parseActivityEntry(item: unknown): DocketEntry | null {
     description: str(item["subtitle"]),
     documentCount: docBadge ? Number(docBadge[1]) : null,
     sourceUrl: firstHttps(item["links"], (u) => u.includes("courtlistener.com/docket/")),
-  };
-}
-
-/** Item from CourtListener's master-docket entry metadata (no descriptions, captions or contents). */
-export function parseClEntry(item: unknown): DocketEntry | null {
-  if (!isObj(item)) return null;
-  const cells = isObj(item["cells"]) ? item["cells"] : {};
-  const native = str(cells["native_entry_id"]) ?? str(item["id"]);
-  if (!native) return null;
-  return {
-    id: `cl:${native}`,
-    source: "cl_entries",
-    entryNumber: intOf(cells["entry_number"]),
-    date: isoDate(cells["date_filed"]),
-    dateBasis: "filed",
-    entryType: null,
-    description: null,
-    documentCount: intOf(cells["source_unsealed_document_count"]),
-    sourceUrl: str(cells["source_docket_url"]),
   };
 }
 
@@ -153,24 +132,4 @@ export const ENTRY_SOURCE_NOTES: Record<EntrySource, EntrySourceNote> = {
     scope:
       "Entries from the firm-focused docket sample, with the court's docket text snippet. Dates are the date entered, parsed from the docket text. Coverage ends when the sample was built and can lag the live docket.",
   },
-  cl_entries: {
-    source: "cl_entries",
-    title: "CourtListener entry list (numbers and dates only)",
-    scope:
-      "One row per source-native docket entry on the master docket. No descriptions, captions or document contents are projected, and the document count is only the unsealed documents the source itself lists.",
-  },
 };
-
-/**
- * Page `pageIndex` (zero-based) counted from the END of an ascending list: the [start, length] window to request,
- * which the caller then reverses so the newest entries come first.
- */
-export function pageFromEnd(
-  total: number,
-  pageIndex: number,
-  pageSize: number,
-): { start: number; length: number } {
-  const end = Math.max(0, total - pageIndex * pageSize);
-  const start = Math.max(0, end - pageSize);
-  return { start, length: end - start };
-}
