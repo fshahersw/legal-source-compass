@@ -101,6 +101,13 @@ export const MATTERS = {
   '3030': { name: 'MDL No. 3030 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 3030', pages: [{ id: 'ilnd-3030-mdl', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?uTU+z1lws6Mhwc03FEqvrg==' }], index_pages: [] },
   '2967': { name: 'MDL No. 2967 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2967', pages: [{ id: 'ilnd-2967-mdl', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?oPAvB95Dk3B80hctYPQzdQ==' }], index_pages: [] },
   '3037': { name: 'MDL No. 3037 (N.D. Ill.)', court_id: 'ilnd', host: 'www.ilnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 3037', pages: [{ id: 'ilnd-3037-mdl', role: 'mdl_page', family: 'ilnd-mdl-details', url: 'https://www.ilnd.uscourts.gov/mdl-details.aspx?Y/EMwl0+f9LcVNqgbUFRDw==' }], index_pages: [] },
+  // S.D. Ohio MDL 2846 (Firecrawl map; direct public PDFs on select-orders page).
+  '2846': {
+    name: 'In re E.I. du Pont de Nemours and Company C-8 Personal Injury Litigation', court_id: 'ohsd', host: 'www.ohsd.uscourts.gov', tier: 1,
+    case_number: null, printed_mdl_literal: 'MDL 2846',
+    pages: [{ id: 'ohsd-2846-orders-by-date', role: 'orders_table', family: 'njd-body', url: 'https://www.ohsd.uscourts.gov/select-orders-date-mdl-2846' }],
+    index_pages: [],
+  },
 };
 
 // Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
