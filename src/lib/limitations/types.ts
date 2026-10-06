@@ -78,12 +78,41 @@ export type TimeComputationRule = {
   note: string;
 };
 
+export const VERIFICATION_GRADES = [
+  "independently_verified",
+  "official_capture_verified",
+  "lower_evidence_grade",
+] as const;
+export type VerificationGrade = (typeof VERIFICATION_GRADES)[number];
+export const VERIFICATION_GRADE_LABELS: Record<VerificationGrade, string> = {
+  independently_verified: "Independently verified",
+  official_capture_verified: "Verified from official capture",
+  lower_evidence_grade: "Lower evidence grade",
+};
+
+/** How strongly a rule's content was checked against official text. Never implies legal sign-off. */
+export type RuleVerification = {
+  grade: VerificationGrade;
+  basis: string;
+  verifiedRuleVersion?: string;
+  verifiedOn?: string;
+};
+
 export type ClaimCoverageStatus = "baseline" | "research_only" | "flagged" | "not_recorded";
+export type ClaimVariantCoverage = {
+  subtype: string;
+  ruleId: string;
+  status: ClaimCoverageStatus;
+};
+
+/** Status of the claim type's GENERAL rule. Variants compute only when selected and never stand in for it. */
 export type ClaimCoverage = {
   claimType: ClaimType;
   status: ClaimCoverageStatus;
   ruleId?: string;
   reason?: string;
+  grade?: VerificationGrade;
+  variants?: ClaimVariantCoverage[];
 };
 
 export type LimitationRule = {
@@ -105,6 +134,7 @@ export type LimitationRule = {
   reviewStatus: "statutory_text_verified";
   period: { amount: number; unit: PeriodUnit } | null;
   provenance?: RuleProvenance;
+  verification?: RuleVerification;
   sourceIds: string[];
   pinpoint: string;
   scope: string;

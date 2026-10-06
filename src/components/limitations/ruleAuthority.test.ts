@@ -64,6 +64,17 @@ describe("rule authority facts", () => {
     expect(facts.entryStatus).toBe("flagged");
   });
 
+  it("shows the verification grade and its basis beside the citation", () => {
+    const graded = {
+      ...base,
+      verification: { grade: "lower_evidence_grade", basis: "Read through a cached route." },
+    } as unknown as LimitationRule;
+    const facts = ruleAuthorityFacts(snapshot, graded);
+    expect(facts.grade).toBe("Lower evidence grade");
+    expect(facts.gradeBasis).toBe("Read through a cached route.");
+    expect(ruleAuthorityFacts(snapshot, base).grade).toBe("Verification grade not recorded");
+  });
+
   it("shows Not recorded for an accrual rule the source did not state", () => {
     const rule = {
       ...base,

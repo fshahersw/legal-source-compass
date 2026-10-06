@@ -37,12 +37,19 @@ import {
   type RuleProvenance,
 } from "../../../src/lib/limitations/types";
 import { validateLimitationsSnapshot } from "../../../src/lib/limitations/validation";
+import {
+  gradeRule,
+  ruleFingerprint,
+  type RetryRecord,
+  type VerdictRecord,
+} from "../../../src/lib/limitations/backfill/grades";
+import { claimCoverageFor } from "../../../src/lib/limitations/backfill/cellCoverage";
 
 const work = process.env.LIM_WORK ?? "/tmp/lim/backfill";
 const bundle = process.env.LIM_BUNDLE ?? "/tmp/lim/data/limitations";
 const out = process.env.LIM_OUT ?? "/tmp/lim/out/limitations";
 const snapshotDate = process.env.LIM_SNAPSHOT_DATE ?? "2026-10-06";
-const ruleVersion = `${snapshotDate}.1`;
+const ruleVersion = `${snapshotDate}.${process.env.LIM_RULE_SEQ ?? "2"}`;
 const idStamp = snapshotDate.replaceAll("-", "");
 
 const readJson = (file: string) => JSON.parse(readFileSync(join(bundle, file), "utf8"));
@@ -51,7 +58,16 @@ const sourcesDoc = readJson("sources.json");
 const coverageDoc = readJson("coverage.json");
 const casesDoc = readJson("case-references.json");
 
-const rules: LimitationRule[] = [...rulesDoc.rules];
+/** Production rules the independent verifier found wrong and whose content is carried by a corrected entry. */
+const RETIRED_LEGACY_RULES = new Map([
+  [
+    "mn-repose-1-20261002",
+    "ruleKind repose with a 3-year period; Minn. Stat. 573.02 subd. 1 gives a 3-year limitation after death and a 6-year cap from the act or omission, which the wrongful-death entry now carries.",
+  ],
+]);
+const rules: LimitationRule[] = (rulesDoc.rules as LimitationRule[]).filter(
+  (r) => !RETIRED_LEGACY_RULES.has(r.id),
+);
 const sources: LimitationSource[] = [...sourcesDoc.sources];
 const sourceIds = new Set(sources.map((s) => s.id));
 const newTexts: { id: string; text: string }[] = [];
@@ -147,7 +163,9 @@ const files = existsSync(entryDir)
       .filter((f) => f.endsWith(".json"))
       .sort()
   : [];
+const entryRoute = new Map<string, boolean>();
 let added = 0;
+let upgraded = 0;
 let attached = 0;
 
 for (const file of files) {
@@ -211,41 +229,13 @@ for (const file of files) {
       crossCheckSourceIds: [...new Set(crossIds)].filter((id) => id !== primaryId),
     };
     if (entry.status === "flagged") flaggedCells.add(k);
-
-    const existing = rules.filter(
-      (r) =>
-        r.jurisdiction === state &&
-        r.claimType === entry.claimType &&
-        (r.subtype ?? "general") === variant &&
-        r.ruleKind === "limitations",
-    );
-    const current =
-      existing.find((r) => r.computation === "baseline_only") ?? existing.find((r) => r.period);
-    if (current) {
-      const same =
-        current.period &&
-        current.period.amount === entry.period!.amount &&
-        current.period.unit === unit;
-      if (same) {
-        if (!current.provenance) {
-          current.provenance = provenance;
-          attached++;
-        }
-      } else {
-        discrepancies.push({
-          cell: k,
-          existingRuleId: current.id,
-          existingPeriod: current.period,
-          existingPinpoint: current.pinpoint,
-          entryPeriod: entry.period,
-          entryCitation: entry.citation,
-          entryStatus: entry.status,
-          captureId: entry.captureId,
-          note: "Existing production rule left unchanged; owner/legal review required before either value is trusted.",
-        });
-      }
-      continue;
-    }
+    // A third-party extraction, cached page or search snippet is a lower evidence route even when other
+    // authorities (for example court opinions) are cross-checked; concatenations of direct captures are not.
+    const entryIntermediaryOnly =
+      Boolean(primary.meta.intermediary) &&
+      /tavily|firecrawl|webfetch|web-fetch|websearch|search-engine|snippet|cached/i.test(
+        String((primary.meta as { extraction?: string }).extraction ?? ""),
+      );
 
     const repose = entry.repose ?? [];
     const trigger = repose.length === 1 ? reposeTrigger(repose[0]!.trigger) : null;
@@ -265,6 +255,53 @@ for (const file of files) {
       entry.status === "verified" &&
       accrualOk &&
       (repose.length === 0 || (reposeModelled && entry.accrual.kind !== "death"));
+    const existing = rules.filter(
+      (r) =>
+        r.jurisdiction === state &&
+        r.claimType === entry.claimType &&
+        (r.subtype ?? "general") === variant &&
+        r.ruleKind === "limitations",
+    );
+    let replaced: LimitationRule | null = null;
+    const current =
+      existing.find((r) => r.computation === "baseline_only") ?? existing.find((r) => r.period);
+    if (current) {
+      const same =
+        current.period &&
+        current.period.amount === entry.period!.amount &&
+        current.period.unit === unit;
+      if (same) {
+        entryRoute.set(current.id, entryIntermediaryOnly);
+        if (!current.provenance) {
+          current.provenance = provenance;
+          if (entry.status === "verified") current.pinpoint = entry.citation;
+          attached++;
+        }
+        const upgrade =
+          current.computation === "research_only" &&
+          baseline &&
+          (current.subtype ?? "general") === "general" &&
+          current.id.endsWith("20261002");
+        if (!upgrade) continue;
+        replaced = current;
+        rules.splice(rules.indexOf(current), 1);
+        upgraded++;
+      } else {
+        discrepancies.push({
+          cell: k,
+          existingRuleId: current.id,
+          existingPeriod: current.period,
+          existingPinpoint: current.pinpoint,
+          entryPeriod: entry.period,
+          entryCitation: entry.citation,
+          entryStatus: entry.status,
+          captureId: entry.captureId,
+          note: "Existing production rule left unchanged; owner/legal review required before either value is trusted.",
+        });
+        continue;
+      }
+    }
+
     const notes = [
       entry.accrual.kind === "not_recorded"
         ? "The cited provision does not state when the claim accrues (Not recorded). The accrual date must be confirmed under controlling case law before relying on any date."
@@ -295,11 +332,14 @@ for (const file of files) {
       reviewStatus: "statutory_text_verified",
       period: { amount: entry.period!.amount, unit },
       provenance,
-      sourceIds: [...new Set([primaryId, ...crossIds])],
+      sourceIds: [...new Set([primaryId, ...crossIds, ...(replaced?.sourceIds ?? [])])],
+      ...(replaced?.caseReferenceIds?.length
+        ? { caseReferenceIds: replaced.caseReferenceIds }
+        : {}),
       pinpoint: entry.citation,
       scope: `${CLAIM_LABELS[entry.claimType as ClaimType]}${variant === "general" ? "" : ` (${variant.replaceAll("_", " ")})`}: as stated in the cited provision; special statutory claims excluded.`,
       accrualBasis: entry.accrual.kind === "death" ? "death" : "confirmed_accrual",
-      conditions: [...new Set(notes)],
+      conditions: [...new Set([...notes, ...(replaced?.conditions ?? [])])],
       exclusions: [
         "Governmental defendants, special statutory claims and intentional / sexual-abuse claims unless the cited provision expressly covers them",
         "Unresolved minority, disability, concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues",
@@ -340,11 +380,100 @@ for (const file of files) {
       continue;
     }
     rules.push(rule);
+    entryRoute.set(rule.id, entryIntermediaryOnly);
     added++;
   }
 }
 
 const unresolvedTime: string[] = [];
+/** Rules corrected after the independent verifier's findings (id -> reason). */
+const RETIRED_CASE_REFERENCES = new Map([
+  [
+    "ca-fox-2005",
+    "The reference pointed to a Justia reproduction, which breaches the primary-source rule; the official opinion could not be retrieved from the California courts' archive (S121173 returns 404 on courts.ca.gov and www4.courts.ca.gov).",
+  ],
+]);
+const caCrossRef = rules.find((r) => r.id === "ca-product_liability-general-review-20261002");
+if (caCrossRef) {
+  caCrossRef.caseReferenceIds = (caCrossRef.caseReferenceIds ?? []).filter(
+    (id) => !RETIRED_CASE_REFERENCES.has(id),
+  );
+  if (!caCrossRef.caseReferenceIds.length) delete caCrossRef.caseReferenceIds;
+  caCrossRef.pinpoint = "Cal. Code Civ. Proc. § 335.1";
+  caCrossRef.conditions = [
+    ...caCrossRef.conditions.filter((c) => !/^Discovery accrual:/.test(c)),
+    "Discovery accrual: Not recorded (judicial rule; official opinion not retrievable). The two-year period is verified against § 335.1; the discovery rule is a court-made rule whose official opinion could not be retrieved, so the discovery dates must be confirmed under controlling case law.",
+  ];
+  if (caCrossRef.provenance) {
+    caCrossRef.provenance.accrualText =
+      "Not recorded (judicial rule; official opinion not retrievable)";
+    caCrossRef.provenance.accrualKind = "other";
+  }
+}
+const cases = (casesDoc.cases as { id: string }[]).filter(
+  (c) => !RETIRED_CASE_REFERENCES.has(c.id),
+);
+
+// Verification grades from the independent verifier (rule .1 content) with a fingerprint carry-over check.
+const readJsonMaybe = (path: string | undefined) =>
+  path && existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : null;
+const verdictFile = readJsonMaybe(
+  process.env.LIM_VERDICTS ??
+    "/cursor/stores/self/internal/limitations-verification/verdicts-2026-10-06.1.json",
+);
+const retryFile = readJsonMaybe(
+  process.env.LIM_VERDICTS_RETRY ??
+    "/cursor/stores/self/internal/limitations-verification/verdicts-2026-10-06.1-retry.json",
+);
+const previousRules = readJsonMaybe(
+  join(process.env.LIM_PREV_BUNDLE ?? "/tmp/lim/prev1/limitations", "rules.json"),
+);
+const verdictById = new Map<string, VerdictRecord>(
+  (verdictFile?.rules ?? []).map((r: { ruleId: string } & VerdictRecord) => [r.ruleId, r]),
+);
+const retryById = new Map<string, RetryRecord>(
+  (retryFile?.rules ?? []).map((r: { ruleId: string } & RetryRecord) => [r.ruleId, r]),
+);
+const previousFingerprint = new Map<string, string>(
+  ((previousRules?.rules ?? []) as LimitationRule[]).map((r) => [r.id, ruleFingerprint(r)]),
+);
+const sourceMap = new Map(sources.map((x) => [x.id, x]));
+void sourceMap;
+const isIntermediary = (id: string) =>
+  /intermediar|firecrawl|tavily|webfetch/i.test(sourceMap.get(id)?.method ?? "");
+const intermediaryOnlyRule = (rule: LimitationRule) => {
+  if (entryRoute.has(rule.id)) return entryRoute.get(rule.id)!;
+  const primary =
+    rule.sourceIds.find((id) => sourceMap.get(id)?.authorityKind === "statute") ??
+    rule.sourceIds[0];
+  if (!primary || !isIntermediary(primary)) return false;
+  return !rule.sourceIds.some((id) => id !== primary && !isIntermediary(id));
+};
+const gradeCounts: Record<string, number> = {};
+let withheld = 0;
+for (const rule of rules) {
+  const graded = gradeRule({
+    fingerprint: ruleFingerprint(rule),
+    previousFingerprint: previousFingerprint.get(rule.id) ?? null,
+    verdict: verdictById.get(rule.id),
+    retry: retryById.get(rule.id),
+    verifiedRuleVersion: "2026-10-06.1",
+    verifiedOn: "2026-10-06",
+    intermediaryOnly: intermediaryOnlyRule(rule),
+  });
+  rule.verification = graded.verification;
+  gradeCounts[graded.verification.grade] = (gradeCounts[graded.verification.grade] ?? 0) + 1;
+  if (graded.withhold && rule.computation === "baseline_only") {
+    rule.computation = "research_only";
+    delete rule.calculation;
+    rule.conditions = [
+      ...rule.conditions,
+      "Cannot issue a date: the independent verifier disputed this rule's content and it has not been corrected.",
+    ];
+    withheld++;
+  }
+}
+
 const timeRules = new Map<string, NonNullable<CoverageRow["timeComputation"]>>();
 const timeDir = join(work, "time");
 for (const file of existsSync(timeDir)
@@ -383,31 +512,16 @@ const coverage: CoverageRow[] = (coverageDoc.coverage as CoverageRow[]).map((row
   const stateRules = rules.filter((r) => r.jurisdiction === row.state);
   const baselineIds = stateRules.filter((r) => r.computation === "baseline_only").map((r) => r.id);
   const researchIds = stateRules.filter((r) => r.computation === "research_only").map((r) => r.id);
-  const claimCoverage: ClaimCoverage[] = CLAIM_TYPES.map((claim) => {
-    const cell = stateRules
-      .filter((r) => r.claimType === claim)
-      .sort((a, b) => Number(Boolean(a.subtype)) - Number(Boolean(b.subtype)));
-    const base = cell.find((r) => r.computation === "baseline_only");
-    if (base) return { claimType: claim, status: "baseline", ruleId: base.id };
-    const limitation = cell.find((r) => r.ruleKind === "limitations" && r.period) ?? cell[0];
-    if (limitation) {
-      const flagged = limitation.provenance?.entryStatus === "flagged";
-      return {
-        claimType: claim,
-        status: flagged ? "flagged" : "research_only",
-        ruleId: limitation.id,
-      };
-    }
-    return {
-      claimType: claim,
-      status: "not_recorded",
-      reason:
-        notRecorded.get(key(row.state, claim, "general")) ??
+  const claimCoverage: ClaimCoverage[] = CLAIM_TYPES.map((claim) =>
+    claimCoverageFor(
+      stateRules,
+      claim,
+      notRecorded.get(key(row.state, claim, "general")) ??
         "No primary-source entry has been verified for this claim.",
-    };
-  });
+    ),
+  );
   const lacking = CLAIM_TYPES.filter(
-    (c) => !stateRules.some((r) => r.claimType === c && r.computation === "baseline_only"),
+    (c) => claimCoverage.find((x) => x.claimType === c)?.status !== "baseline",
   );
   const gaps = [
     ...row.gaps.filter(
@@ -442,7 +556,7 @@ const files4 = {
   rules: { ...rulesDoc, snapshotDate, ruleVersion, rules },
   sources: { ...sourcesDoc, snapshotDate, sources },
   coverage: { ...coverageDoc, snapshotDate, coverage },
-  cases: { ...casesDoc, snapshotDate },
+  cases: { ...casesDoc, snapshotDate, cases },
 };
 const snapshot: LimitationsSnapshot = validateLimitationsSnapshot({
   rules: files4.rules,
@@ -467,7 +581,7 @@ writeFileSync(join(out, "coverage.json"), `${JSON.stringify(files4.coverage, nul
 writeFileSync(join(out, "case-references.json"), `${JSON.stringify(files4.cases, null, 2)}\n`);
 writeFileSync(
   join(out, "backfill-discrepancies.json"),
-  `${JSON.stringify({ discrepancies, rejected }, null, 2)}\n`,
+  `${JSON.stringify({ discrepancies, rejected, retiredLegacyRules: Object.fromEntries(RETIRED_LEGACY_RULES) }, null, 2)}\n`,
 );
 
 const cells = coverage.flatMap((c) => c.claimCoverage ?? []);
@@ -480,6 +594,9 @@ console.log(
     sources: snapshot.sources.length,
     addedRules: added,
     provenanceAttachedToExisting: attached,
+    legacyResearchRulesUpgraded: upgraded,
+    verificationGrades: gradeCounts,
+    withheldFailedVerification: withheld,
     cells: {
       baseline: tally("baseline"),
       research_only: tally("research_only"),

@@ -20,13 +20,13 @@ import { join, relative } from "node:path";
 
 const PROJECT = "xosqzzsnhxcyehcnirpa";
 const BUCKET = "corpus-originals";
-const RELEASE = "2026-10-06.1";
 const args = Object.fromEntries(
   process.argv.slice(2).map((a) => {
     const i = a.indexOf("=");
     return i < 0 ? [a.slice(2), true] : [a.slice(2, i), a.slice(i + 1)];
   }),
 );
+const RELEASE = args.release ?? "2026-10-06.2";
 const bundle = args.bundle ?? "/tmp/lim/out/limitations";
 const captures = args.captures ?? "/tmp/lim/backfill/captures";
 const out = args.out ?? "/tmp/lim/out/staging";
