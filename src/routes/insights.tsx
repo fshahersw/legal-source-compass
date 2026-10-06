@@ -132,7 +132,7 @@ function Page() {
             </Field>
             {view === "citations" && (
               <p className="mt-1 text-[10px] text-muted-foreground">
-                Citation paths search the full published corpus.
+                Citation paths search the published citation index.
               </p>
             )}
           </div>

@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { mdlPacket, qualityFromSupabase } from "@/lib/legal/packets";
+import { mdlPacket } from "@/lib/legal/packets";
 
 export const getLegalMdlPacket = createServerFn({ method: "GET" })
   .inputValidator((data) => z.object({ id: z.string().regex(/^(?:MDL[:-])?0*[1-9]\d{0,5}$/i) }).parse(data))
@@ -15,13 +15,3 @@ export const getLegalMdlPacket = createServerFn({ method: "GET" })
     if (source === null) return { json: null };
     return { json: JSON.stringify(mdlPacket.parse(source)) };
   });
-
-export const getLegalStagingQuality = createServerFn({ method: "GET" }).handler(async () => {
-  const { getRequest, setResponseHeader } = await import("@tanstack/react-start/server");
-  const { requireCorpusAccess } = await import("@/lib/auth/access.server");
-  await requireCorpusAccess(getRequest());
-  setResponseHeader("Cache-Control", "private, no-store");
-  const { rpcPost } = await import("@/lib/external/rest.server");
-  const source = await rpcPost<unknown>("corpus_legal_quality_v3", {});
-  return { json: JSON.stringify(qualityFromSupabase(source)) };
-});

@@ -1,4 +1,3 @@
-import { PrivateDataLink } from "@/components/atlas/PrivateDataLink";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/atlas/AppShell";
@@ -9,10 +8,10 @@ import { useAtlas } from "@/lib/atlas/store";
 import { valuesOf } from "@/lib/atlas/bundle";
 import { directoryJurisdictionCounts, registryQuality } from "@/lib/corpus/quality";
 import { DatabaseQuality, DirectoryQuality } from "@/components/corpus/CorpusQuality";
-import { BarList, Stat } from "@/components/corpus/BarList";
+import { Stat } from "@/components/corpus/BarList";
 import { Button } from "@/components/ui/button";
 import { SourceSupplements } from "@/components/corpus/SourceSupplements";
-import { LegalCoverage } from "@/components/legal/LegalCoverage";
+import { FilingYears } from "@/components/corpus/FilingYears";
 
 export const Route = createFileRoute("/sources/coverage")({
   head: () =>
@@ -52,12 +51,17 @@ function CoveragePage() {
       description="Counts, categories and relationships from the supplied files and current corpus collection counts. A registry gap is not proof that a legal source does not exist."
     >
       <div className="space-y-7">
-        <LegalCoverage />
+        <FilingYears
+          dataset="sw_matter_dockets_v1"
+          title="Matter registry dockets · filing year"
+          rowLabel="dockets"
+          note="Dockets in the matter registry, counted by the filing date on the docket's own record. Rows without a filing date are shown separately. This counts registry rows, not all cases filed in a court, and does not establish coverage of any source."
+        />
         <DirectoryQuality sources={atlas.bundle?.sources ?? []} status={atlas.status} />
         <DatabaseQuality />
         <SourceSupplements />
         <section className="space-y-3" aria-label="Registry quality and coverage">
-          <h2 className="eyebrow">Registry observations · historical checks</h2>
+          <h2 className="eyebrow">Registry coverage by jurisdiction</h2>
           {reg.isLoading ? (
             <p role="status" className="text-[13px] text-muted-foreground">
               Loading registry coverage…
@@ -71,7 +75,7 @@ function CoveragePage() {
             </p>
           ) : (
             <>
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="grid gap-3 sm:grid-cols-3">
                 <Stat
                   label="Registry URLs"
                   value={quality.uniqueUrls}
@@ -87,42 +91,12 @@ function CoveragePage() {
                   value={quality.withoutCategory}
                   note="Includes navigation and parent resources; types are not guessed"
                 />
-                <Stat
-                  label="Recorded non-2xx responses"
-                  value={quality.recordedNon2xx}
-                  note={
-                    "Historical observations; " +
-                    quality.withoutCheckDate.toLocaleString() +
-                    " rows lack a check date"
-                  }
-                />
               </div>
-              <div className="grid gap-3 lg:grid-cols-2">
-                <BarList
-                  title="HTTP status as recorded in the registry"
-                  rows={quality.statuses}
-                  unit="historical observations, including redirects and crawler blocks"
-                />
-                <div className="rounded-lg border border-border bg-surface p-4 text-[13px] shadow-card">
-                  <h3 className="eyebrow mb-2">Interpret the gaps</h3>
-                  <p>
-                    The latest dated registry check is {quality.latestCheckDate ?? "Not recorded"}.
-                    A 403, 401 or timeout can reflect crawler access restrictions. It does not show
-                    that a source is unavailable to the public or that its law is outdated.
-                  </p>
-                  <p className="mt-2">
-                    Directory columns count tagged URLs. Registry columns count categorized URLs.
-                    These populations are not added together.
-                  </p>
-                  <PrivateDataLink
-                    className="mt-3 inline-block text-[12px] text-primary hover:underline"
-                    href="/data/quality/bundled-audit.json"
-                    download
-                  >
-                    Download bundled audit and file hashes
-                  </PrivateDataLink>
-                </div>
-              </div>
+              <p className="text-[12px] text-muted-foreground">
+                Directory columns count tagged URLs. Registry columns count categorized URLs. These
+                populations are not added together. A registry gap is not proof that a legal source
+                does not exist.
+              </p>
               <div className="flex flex-wrap items-center justify-between gap-2 text-[12px]">
                 <label className="flex items-center gap-2">
                   Jurisdiction

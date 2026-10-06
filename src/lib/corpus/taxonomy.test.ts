@@ -29,7 +29,7 @@ describe("recorded resource crosswalk", () => {
       "other",
     ]);
     expect(classifySource(["opinions_decisions", "administrative-decision"])).toEqual(["opinions"]);
-    expect(TAXONOMY_VERSION).toBe("2026-10-06.1");
+    expect(TAXONOMY_VERSION).toBe("2026-10-06.2");
   });
   it("deduplicates harmless heading spelling differences without broad keyword guesses", () => {
     expect(headingIdentity("  COURT   Rules ")).toBe(headingIdentity("court rules"));
@@ -40,9 +40,14 @@ describe("recorded resource crosswalk", () => {
   });
   it("keeps mixed publisher histories and third-party summaries distinct from operative law", () => {
     expect(classify("openfda_device_classification_metadata")).toBe("data");
-    expect(classify("openfda_device_enforcement_metadata")).toBe("enforcement");
-    expect(classify("openfda_drug_enforcement_metadata")).toBe("enforcement");
-    expect(classify("openfda_device_recall_metadata")).toBe("safety");
+    for (const removed of [
+      "openfda_device_enforcement_metadata",
+      "openfda_drug_enforcement_metadata",
+      "openfda_device_recall_metadata",
+      "judge_disclosures",
+      "url_directory",
+    ])
+      expect(classify(removed)).toBe("other");
     expect(classify("mass_tort_authority_evidence")).toBe("mixed");
     expect(classify("jpml_html_reference")).toBe("mixed");
     expect(classify("federal_register_history")).toBe("mixed");
