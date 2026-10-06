@@ -7,8 +7,10 @@
  * Env: LIM_WORK (entries + captures), LIM_BUNDLE (current protected limitations dir), LIM_OUT (output dir),
  *      LIM_SNAPSHOT_DATE (default 2026-10-06)
  */
+import { createHash } from "node:crypto";
 import {
   copyFileSync,
+  rmSync,
   existsSync,
   mkdirSync,
   readdirSync,
@@ -20,6 +22,7 @@ import { addCivilPeriod, periodLabel } from "../../../src/lib/limitations/engine
 import {
   checkEntry,
   checkTimeRule,
+  containsLiteral,
   type CaptureMeta,
   type MatrixEntryInput,
   type TimeRuleInput,
@@ -49,7 +52,7 @@ const work = process.env.LIM_WORK ?? "/tmp/lim/backfill";
 const bundle = process.env.LIM_BUNDLE ?? "/tmp/lim/data/limitations";
 const out = process.env.LIM_OUT ?? "/tmp/lim/out/limitations";
 const snapshotDate = process.env.LIM_SNAPSHOT_DATE ?? "2026-10-06";
-const ruleVersion = `${snapshotDate}.${process.env.LIM_RULE_SEQ ?? "2"}`;
+const ruleVersion = `${snapshotDate}.${process.env.LIM_RULE_SEQ ?? "3"}`;
 const idStamp = snapshotDate.replaceAll("-", "");
 
 const readJson = (file: string) => JSON.parse(readFileSync(join(bundle, file), "utf8"));
@@ -426,9 +429,107 @@ if (caCrossRef) {
     caCrossRef.provenance.accrualKind = "other";
   }
 }
-const cases = (casesDoc.cases as { id: string }[]).filter(
-  (c) => !RETIRED_CASE_REFERENCES.has(c.id),
-);
+type CaseFile = {
+  id: string;
+  status: "official" | "retired";
+  captureState?: string;
+  captureId?: string;
+  officialUrl?: string;
+  pinpoint?: string;
+  passages?: { claim: string; quote: string }[];
+  reason?: string;
+};
+const caseDir = join(work, "cases");
+const caseFiles: CaseFile[] = existsSync(caseDir)
+  ? readdirSync(caseDir)
+      .filter((f) => f.endsWith(".json"))
+      .map((f) => JSON.parse(readFileSync(join(caseDir, f), "utf8")) as CaseFile)
+  : [];
+const caseTexts = new Map<string, string>();
+const caseNotes: { id: string; outcome: string; detail: string }[] = [];
+const retiredCases = new Set<string>(RETIRED_CASE_REFERENCES.keys());
+const replacementCases = new Map<string, Record<string, unknown>>();
+for (const cf of caseFiles) {
+  if (cf.status === "retired") {
+    retiredCases.add(cf.id);
+    caseNotes.push({ id: cf.id, outcome: "retired", detail: cf.reason ?? "" });
+    continue;
+  }
+  const cap = cf.captureState && cf.captureId ? capture(cf.captureState, cf.captureId) : undefined;
+  const bad = (why: string) =>
+    caseNotes.push({ id: cf.id, outcome: "rejected_kept_previous", detail: why });
+  if (!cap || !cf.officialUrl) {
+    bad("capture or official URL missing");
+    continue;
+  }
+  if (cap.meta.hostClass === "blocked_secondary" || cap.meta.status !== 200) {
+    bad("capture is not an official 200 response");
+    continue;
+  }
+  if (cap.text.length < 1000) {
+    bad("capture text is too short to be an opinion");
+    continue;
+  }
+  const missing = (cf.passages ?? []).filter((p) => !containsLiteral(cap.text, p.quote));
+  if (!(cf.passages ?? []).length || missing.length) {
+    bad(
+      `passages not literal in the official text: ${missing.map((p) => p.claim).join("; ") || "none supplied"}`,
+    );
+    continue;
+  }
+  const old = (casesDoc.cases as Record<string, unknown>[]).find((c) => c["id"] === cf.id);
+  if (!old) {
+    bad("no existing case record");
+    continue;
+  }
+  const meta = cap.meta as typeof cap.meta & { route?: { kind: string; proxy: string } };
+  const isPdf = /pdf/i.test(meta.contentType) && !meta.intermediary;
+  const sha = createHash("sha256").update(cap.text, "utf8").digest("hex");
+  const host = new URL(cf.officialUrl).hostname;
+  replacementCases.set(cf.id, {
+    ...old,
+    url: cf.officialUrl,
+    ...(isPdf ? { officialPdfUrl: meta.url } : {}),
+    pinpoint: cf.pinpoint?.trim() || "Not recorded (official pagination not verified)",
+    copyPublisher: `Official court website (${host})`,
+    referenceVersion: `${snapshotDate}.${process.env.LIM_RULE_SEQ ?? "3"}`,
+    textScope: `Official opinion text from ${meta.route ? `a proxied fetch through ${meta.route.proxy}` : "a direct fetch"} of ${meta.url}; the cited passages were matched literally to this text.`,
+    textPath: `/data/limitations/opinion-text/${cf.id}.txt`,
+    sha256: sha,
+    byteLength: Buffer.byteLength(cap.text, "utf8"),
+    capturedAt: meta.retrievedAt,
+    pdfDownloaded: isPdf,
+    rawCapture: {
+      sha256: meta.rawSha256,
+      byteLength: meta.rawBytes,
+      contentType: meta.contentType || "text/html",
+      retrievedAt: meta.retrievedAt,
+      storageBucket: "corpus-originals",
+      storageKey: `limitations-raw-captures/sha256/${meta.rawSha256.slice(0, 2)}/${meta.rawSha256}.bin`,
+    },
+    fetchRoute: meta.route
+      ? { kind: "proxied", proxy: meta.route.proxy }
+      : meta.intermediary
+        ? { kind: "extraction" }
+        : { kind: "direct" },
+  });
+  caseTexts.set(cf.id, cap.text);
+  caseNotes.push({ id: cf.id, outcome: "official", detail: cf.officialUrl });
+}
+const cases = (casesDoc.cases as { id: string }[])
+  .filter((c) => !retiredCases.has(c.id))
+  .map((c) => (replacementCases.get(c.id) as { id: string }) ?? c);
+for (const rule of rules) {
+  if (!rule.caseReferenceIds?.some((id) => retiredCases.has(id))) continue;
+  rule.caseReferenceIds = rule.caseReferenceIds.filter((id) => !retiredCases.has(id));
+  if (!rule.caseReferenceIds.length) delete rule.caseReferenceIds;
+  rule.conditions = [
+    ...new Set([
+      ...rule.conditions,
+      "A judicial reference formerly cited here was withdrawn: Not recorded (official opinion not retrievable).",
+    ]),
+  ];
+}
 
 // Verification grades from the independent verifier (rule .1 content) with a fingerprint carry-over check.
 const readJsonMaybe = (path: string | undefined) =>
@@ -581,12 +682,15 @@ const snapshot: LimitationsSnapshot = validateLimitationsSnapshot({
   cases: files4.cases,
 });
 
+rmSync(out, { recursive: true, force: true });
 mkdirSync(join(out, "text"), { recursive: true });
 mkdirSync(join(out, "opinion-text"), { recursive: true });
 for (const dir of ["text", "opinion-text"])
   for (const f of readdirSync(join(bundle, dir)))
     copyFileSync(join(bundle, dir, f), join(out, dir, f));
 for (const t of newTexts) writeFileSync(join(out, "text", `${t.id}.txt`), t.text);
+for (const [id, text] of caseTexts) writeFileSync(join(out, "opinion-text", `${id}.txt`), text);
+for (const id of retiredCases) rmSync(join(out, "opinion-text", `${id}.txt`), { force: true });
 for (const f of readdirSync(bundle)) {
   if (["publisher-overrides.json", "rejected-captures.json"].includes(f))
     copyFileSync(join(bundle, f), join(out, f));
@@ -597,7 +701,7 @@ writeFileSync(join(out, "coverage.json"), `${JSON.stringify(files4.coverage, nul
 writeFileSync(join(out, "case-references.json"), `${JSON.stringify(files4.cases, null, 2)}\n`);
 writeFileSync(
   join(out, "backfill-discrepancies.json"),
-  `${JSON.stringify({ discrepancies, rejected, retiredLegacyRules: Object.fromEntries(RETIRED_LEGACY_RULES) }, null, 2)}\n`,
+  `${JSON.stringify({ discrepancies, rejected, caseReferences: caseNotes, retiredLegacyRules: Object.fromEntries(RETIRED_LEGACY_RULES) }, null, 2)}\n`,
 );
 
 const cells = coverage.flatMap((c) => c.claimCoverage ?? []);

@@ -219,6 +219,7 @@ export type JudicialReference = {
   capturedAt: string;
   pdfDownloaded: boolean;
   rawCapture?: AuthorityCapture;
+  fetchRoute?: FetchRoute;
 };
 export type LimitationsSnapshot = {
   schemaVersion: "1.0.0";
