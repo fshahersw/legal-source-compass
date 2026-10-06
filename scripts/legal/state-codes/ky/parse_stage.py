@@ -129,8 +129,12 @@ def build_plan(root: pathlib.Path, successful: dict):
         )
     if currencies != collections.Counter({CURRENCY_SESSION: sum(currencies.values())}):
         raise ValueError("unit currency statements are inconsistent: %r" % currencies)
-    if run_dates != collections.Counter({"10/05/2026": sum(run_dates.values())}):
-        raise ValueError("unit database update dates are inconsistent: %r" % run_dates)
+    if len(run_dates) > 1:
+        majority_date, majority_count = run_dates.most_common(1)[0]
+        outlier_count = sum(count for date, count in run_dates.items() if date != majority_date)
+        # Sharded section capture can finish on the next calendar day; allow a small tail.
+        if outlier_count > max(3, len(units) // 40):
+            raise ValueError("unit database update dates are inconsistent: %r" % run_dates)
     return index, units, plan
 
 
@@ -170,11 +174,12 @@ def normalized_layout_text(value: str, *, with_end_map=False):
     return normalized
 
 
-def split_section_text(raw_text: str, citation_path: str, heading: str):
+def split_section_text(raw_text: str, citation_path: str, heading: str | None):
     """Split one publisher PDF text while retaining body offsets in ``raw_text``."""
     raw_text = raw_text.replace("\r\n", "\n").replace("\r", "\n")
     normalized, end_map = normalized_layout_text(raw_text, with_end_map=True)
-    expected = normalized_layout_text(citation_path + " " + heading)
+    heading = heading or ""
+    expected = normalized_layout_text((citation_path + " " + heading).strip())
     if not normalized.startswith(expected):
         raise ValueError("PDF heading does not match inventory heading")
     content_start = end_map[len(expected) - 1]
@@ -265,7 +270,9 @@ def hierarchy(unit: dict, citation_path: str, section_heading: str):
     return values
 
 
-def status_label(heading: str):
+def status_label(heading: str | None):
+    if not heading:
+        return None
     return heading if STATUS_RE.match(heading) else None
 
 
