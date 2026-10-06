@@ -24,8 +24,21 @@ STATUTE_URL_PATTERN = (
 PDF_URL_PATTERN = r"^https://mgaleg\.maryland\.gov/\d+RS/Statute_Web/[a-z0-9]+/[a-z0-9]+\.pdf$"
 
 DASHES = ("\u2013", "\u2014", "\u2212")
+_DASH_CLASS = "".join(DASHES)
+# Default publisher marker: §14. (period ends the marker, not part of the section id).
 SECTION_MARK = re.compile(
-    r"§\s*([0-9][0-9A-Za-z." + "".join(DASHES) + r"\-]*)\s*\.(?:\s*(.*))?",
+    r"§\s*([0-9][0-9A-Za-z." + _DASH_CLASS + r"\-]*)\s*\.(?:\s*(.*))?",
+    re.S,
+)
+# Decimal sections where the trailing period is part of the section number (§15–1628.2).
+SECTION_MARK_DECIMAL = re.compile(
+    r"§\s*([0-9][0-9A-Za-z" + _DASH_CLASS + r"\-]*\.[0-9]+)\s+(?:\s*(.*))?",
+    re.S,
+)
+SECTION_MARK_ARTICLE = re.compile(r"§\s*Article\s+(\d+)\.\s*(.*)", re.S)
+# Rare pages omit the period before body text (§9–1602).
+SECTION_MARK_NO_TRAILING_DOT = re.compile(
+    r"§\s*([0-9][0-9A-Za-z" + _DASH_CLASS + r"\-]+)\s+(.*)",
     re.S,
 )
 STATUS = re.compile(
@@ -79,6 +92,35 @@ def clean_lines(text: str) -> str:
     return "\n".join(lines).strip()
 
 
+def _match_section_marker(body: str) -> tuple[str, str, str]:
+    """Return (section_number, remainder, inline_heading_after_marker)."""
+    for pattern in (SECTION_MARK_DECIMAL, SECTION_MARK_ARTICLE):
+        match = pattern.search(body)
+        if not match:
+            continue
+        if pattern is SECTION_MARK_ARTICLE:
+            return (
+                normalize_section_number(match.group(1)),
+                (match.group(2) or "").strip(),
+                "",
+            )
+        section_number = normalize_section_number(match.group(1))
+        remainder = (match.group(2) or "").strip()
+        return section_number, remainder, ""
+    match = SECTION_MARK.search(body)
+    if match:
+        section_number = normalize_section_number(match.group(1))
+        remainder = body[match.end() :].strip()
+        inline_heading = (match.group(2) or "").strip()
+        return section_number, remainder, inline_heading
+    match = SECTION_MARK_NO_TRAILING_DOT.search(body)
+    if match:
+        section_number = normalize_section_number(match.group(1))
+        remainder = (match.group(2) or "").strip()
+        return section_number, remainder, ""
+    raise ValueError("no section marker in StatuteText")
+
+
 def parse_statute_html(html: str) -> dict:
     """Return article_heading, section_number, heading, text, status_note from StatuteText HTML."""
     soup = BeautifulSoup(html, "lxml")
@@ -97,12 +139,7 @@ def parse_statute_html(html: str) -> dict:
     for br in node.find_all("br"):
         br.replace_with("\n")
     body = clean_lines(node.get_text("\n"))
-    match = SECTION_MARK.search(body)
-    if not match:
-        raise ValueError("no section marker in StatuteText")
-    section_number = normalize_section_number(match.group(1))
-    remainder = body[match.end() :].strip()
-    inline_heading = (match.group(2) or "").strip()
+    section_number, remainder, inline_heading = _match_section_marker(body)
     if inline_heading and not remainder.startswith("("):
         heading = inline_heading
         text = remainder

@@ -30,10 +30,22 @@ import sc_common as sc  # noqa: E402
 
 def live_text(body, url):
     if body[:5] == b"%PDF-":
-        with tempfile.NamedTemporaryFile(suffix=".pdf") as f:
-            f.write(body)
-            f.flush()
-            return subprocess.run(["pdftotext", "-layout", f.name, "-"], capture_output=True, text=True, check=True).stdout
+        try:
+            import pymupdf
+
+            with pymupdf.open(stream=body, filetype="pdf") as document:
+                return "".join(page.get_text("text") for page in document)
+        except Exception as exc:
+            import shutil
+
+            if not shutil.which("pdftotext"):
+                raise RuntimeError("PDF live text requires pymupdf or pdftotext") from exc
+            with tempfile.NamedTemporaryFile(suffix=".pdf") as f:
+                f.write(body)
+                f.flush()
+                return subprocess.run(
+                    ["pdftotext", "-layout", f.name, "-"], capture_output=True, text=True, check=True
+                ).stdout
     s, _ = sc.decode_html(body)
     if s.lstrip()[:1] in "{[":
         try:
@@ -144,6 +156,8 @@ def main():
         out["rpc"] = pgrest.rpc("corpus_publisher_code_review_v2", {"p_jurisdiction": a.state, "p_review_status": decision,
                                                                   "p_public_projection_allowed": decision == "reviewed", "p_notes": note})
     print(json.dumps(out, indent=1, default=str))
+    if decision != "reviewed":
+        sys.exit(1)
 
 
 if __name__ == "__main__":

@@ -110,7 +110,7 @@ def toc_proof_ky(landing: pathlib.Path) -> None:
     )
 
 
-def land_state(state: str, landing: pathlib.Path, toc_note: str, report: pathlib.Path) -> None:
+def land_state(state: str, landing: pathlib.Path, toc_note: str, report: pathlib.Path) -> str:
     run(
         [
             sys.executable,
@@ -121,21 +121,25 @@ def land_state(state: str, landing: pathlib.Path, toc_note: str, report: pathlib
             "6",
         ]
     )
-    run(
-        [
-            sys.executable,
-            str(COMMON / "review_publisher_code_v2.py"),
-            "--landing",
-            str(landing),
-            "--state",
-            state,
-            "--toc-ok",
-            toc_note,
-            "--report",
-            str(report),
-            "--apply",
-        ]
-    )
+    review_cmd = [
+        sys.executable,
+        str(COMMON / "review_publisher_code_v2.py"),
+        "--landing",
+        str(landing),
+        "--state",
+        state,
+        "--toc-ok",
+        toc_note,
+        "--report",
+        str(report),
+        "--apply",
+    ]
+    completed = subprocess.run(review_cmd, check=True, text=True, capture_output=True)
+    decision = json.loads(completed.stdout.strip().splitlines()[-1])["decision"]
+    if decision != "reviewed":
+        raise SystemExit(f"{state} review decision {decision!r}; not writing .landed")
+    print(completed.stdout, end="", flush=True)
+    return decision
 
 
 def pipeline_ky(root: pathlib.Path) -> None:
