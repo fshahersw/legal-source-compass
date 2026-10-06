@@ -434,10 +434,10 @@ function validateRules(values: unknown): LimitationRule[] {
             fail(`${label} has a reversed repose applicability window`);
         }
         if (
-          !["last_act_or_omission", "act_or_omission"].includes(
+          !["last_act_or_omission", "act_or_omission", "first_delivery"].includes(
             calculation.reposeTrigger as string,
           ) ||
-          r.accrualBasis !== "confirmed_accrual" ||
+          !["confirmed_accrual", "death"].includes(r.accrualBasis as string) ||
           calculation.deathCapYears !== undefined ||
           calculation.secondaryCapYears !== undefined ||
           calculation.requiresExposureWithinDeliveryYears !== undefined

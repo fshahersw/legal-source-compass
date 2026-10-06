@@ -132,6 +132,11 @@ export function calculateBaseline(
       "This jurisdiction and claim have no uniquely supported baseline rule. Consult the source inventory and claim-specific research below.",
     ]);
   const hasRepose = rule.calculation?.mode === "accrual_repose_min";
+  /** The repose clock starts at the act/omission date, or at first delivery to a purchaser for product repose. */
+  const reposeStart =
+    rule.calculation?.reposeTrigger === "first_delivery"
+      ? input.firstProductDeliveryDate
+      : input.reposeActDate;
   const reposeYears = rule.calculation?.reposeYears;
   if (
     (rule.calculation &&
@@ -143,14 +148,14 @@ export function calculateBaseline(
         !reposeYears ||
         reposeYears < 1 ||
         reposeYears > 100 ||
-        !["last_act_or_omission", "act_or_omission"].includes(
+        !["last_act_or_omission", "act_or_omission", "first_delivery"].includes(
           rule.calculation?.reposeTrigger ?? "",
         ) ||
         !parseCivilDate(rule.calculation?.reposeEffectiveFrom ?? "") ||
         (rule.calculation?.reposeEffectiveThrough !== undefined &&
           (!parseCivilDate(rule.calculation.reposeEffectiveThrough) ||
             rule.calculation.reposeEffectiveFrom! > rule.calculation.reposeEffectiveThrough)) ||
-        rule.accrualBasis !== "confirmed_accrual" ||
+        !["confirmed_accrual", "death"].includes(rule.accrualBasis) ||
         rule.calculation?.deathCapYears !== undefined ||
         rule.calculation?.secondaryCapYears !== undefined ||
         rule.calculation?.requiresExposureWithinDeliveryYears !== undefined)) ||
@@ -176,7 +181,7 @@ export function calculateBaseline(
           : [input.accrualDate];
   const requiredDates = [
     ...triggerDates,
-    ...(hasRepose ? [input.reposeActDate] : []),
+    ...(hasRepose ? [reposeStart] : []),
     ...(rule?.calculation?.requiresExposureWithinDeliveryYears
       ? [input.firstProductDeliveryDate, input.qualifyingExposureDate]
       : []),
@@ -244,18 +249,18 @@ export function calculateBaseline(
         : rule.calculation?.mode === "death_cause_min"
           ? input.causeDiscoveryDate!
           : input.accrualDate;
-  if (hasRepose && input.reposeActDate! > trigger)
+  if (hasRepose && reposeStart! > trigger)
     reasons.push(
       "The qualifying act or omission date follows the confirmed accrual date. Review the claim and defendant chronology; a later event does not automatically restart repose.",
     );
-  if (hasRepose && input.reposeActDate! < rule.calculation!.reposeEffectiveFrom!)
+  if (hasRepose && reposeStart! < rule.calculation!.reposeEffectiveFrom!)
     reasons.push(
       `The act or omission predates ${rule.calculation!.reposeEffectiveFrom}, the supported historical range for this repose rule. Review the earlier statutory version and transition before calculating.`,
     );
   if (
     hasRepose &&
     rule.calculation!.reposeEffectiveThrough &&
-    input.reposeActDate! > rule.calculation!.reposeEffectiveThrough
+    reposeStart! > rule.calculation!.reposeEffectiveThrough
   )
     reasons.push(
       `The act or omission follows ${rule.calculation!.reposeEffectiveThrough}, the end of the supported historical range for this repose rule. Review the later statutory version before calculating.`,
@@ -301,7 +306,7 @@ export function calculateBaseline(
   const ordinaryDate = addCivilPeriod(trigger, rule.period.amount, rule.period.unit);
   const capYears = rule.calculation?.deathCapYears ?? rule.calculation?.secondaryCapYears;
   const cap = capYears && input.deathDate ? calendarAnniversary(input.deathDate, capYears) : null;
-  const reposeCap = hasRepose ? calendarAnniversary(input.reposeActDate!, reposeYears!) : null;
+  const reposeCap = hasRepose ? calendarAnniversary(reposeStart!, reposeYears!) : null;
   if (hasRepose && !reposeCap)
     return finish("needs_review", [
       "The repose date has no exact calendar anniversary. A verified jurisdiction-specific counting rule is required.",
@@ -376,7 +381,7 @@ export function calculateBaseline(
       ...(reposeCap
         ? [
             {
-              text: `The confirmed ${rule.calculation?.reposeTrigger === "last_act_or_omission" ? "last act or omission" : "act or omission complained of"} (${input.reposeActDate}) produces a separate ${reposeYears}-year repose cutoff of ${reposeCap}. Compare it with the accrual-based anniversary (${ordinaryDate}); the earlier date controls this conditional calculation.`,
+              text: `The confirmed ${rule.calculation?.reposeTrigger === "last_act_or_omission" ? "last act or omission" : rule.calculation?.reposeTrigger === "first_delivery" ? "first delivery to a purchaser" : "act or omission complained of"} (${reposeStart}) produces a separate ${reposeYears}-year repose cutoff of ${reposeCap}. Compare it with the accrual-based anniversary (${ordinaryDate}); the earlier date controls this conditional calculation.`,
               sourceIds: rule.sourceIds,
               pinpoint: rule.pinpoint,
             },

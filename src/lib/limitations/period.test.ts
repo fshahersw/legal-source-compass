@@ -440,3 +440,72 @@ describe("raw-capture storage locations", () => {
     ).toThrow(/storage location/);
   });
 });
+
+describe("repose from first delivery and death-based accrual", () => {
+  const reposeRule = (
+    claim: ClaimType,
+    trigger: "first_delivery" | "act_or_omission",
+    basis: LimitationRule["accrualBasis"],
+  ) =>
+    rule(claim, 2, "calendar_years", {
+      accrualBasis: basis,
+      calculation: {
+        mode: "accrual_repose_min",
+        reposeYears: 10,
+        reposeTrigger: trigger,
+        reposeEffectiveFrom: "2005-04-07",
+      },
+    });
+
+  it("caps a product claim at ten years from first delivery to a purchaser", () => {
+    const data = snapshotWith([
+      reposeRule("product_liability", "first_delivery", "confirmed_accrual"),
+    ]);
+    const base = input("product_liability", "2023-06-01", {
+      firstProductDeliveryDate: "2015-09-01",
+      reposeApplicabilityConfirmed: true,
+    });
+    const result = calculateBaseline(data, base);
+    expect(result.date).toBe("2025-06-01");
+    expect(result.steps.some((s) => s.text.includes("first delivery to a purchaser"))).toBe(true);
+    const earlyDelivery = calculateBaseline(data, {
+      ...base,
+      accrualDate: "2024-01-01",
+      firstProductDeliveryDate: "2013-01-01",
+    });
+    expect(earlyDelivery.status).toBe("needs_review");
+    expect(earlyDelivery.date).toBeNull();
+  });
+
+  it("requires the delivery date and withholds a delivery after accrual or before the supported start", () => {
+    const data = snapshotWith([
+      reposeRule("product_liability", "first_delivery", "confirmed_accrual"),
+    ]);
+    const base = input("product_liability", "2023-06-01", { reposeApplicabilityConfirmed: true });
+    expect(calculateBaseline(data, base).status).toBe("invalid");
+    expect(
+      calculateBaseline(data, { ...base, firstProductDeliveryDate: "2024-01-01" }).date,
+    ).toBeNull();
+    expect(
+      calculateBaseline(data, { ...base, firstProductDeliveryDate: "2004-01-01" }).date,
+    ).toBeNull();
+  });
+
+  it("combines a two-year period from death with a repose from the act or omission", () => {
+    const data = snapshotWith([reposeRule("wrongful_death", "act_or_omission", "death")]);
+    const base = input("wrongful_death", "2023-02-01", {
+      reposeActDate: "2014-03-01",
+      reposeApplicabilityConfirmed: true,
+    });
+    expect(calculateBaseline(data, base).date).toBe("2024-03-01");
+    expect(calculateBaseline(data, { ...base, reposeActDate: "2022-01-01" }).date).toBe(
+      "2025-02-01",
+    );
+  });
+
+  it("validates the new trigger and rejects an unknown one", () => {
+    const bad = reposeRule("product_liability", "first_delivery", "confirmed_accrual");
+    (bad.calculation as { reposeTrigger: string }).reposeTrigger = "first_whim";
+    expect(() => snapshotWith([bad])).toThrow(/accrual\/repose/);
+  });
+});
