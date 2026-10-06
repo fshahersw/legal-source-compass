@@ -23,8 +23,9 @@ BASE = "https://docs.legis.wisconsin.gov"
 CODE_ID = "wi-statutes"
 CODE_NAME = "Wisconsin Statutes"
 PARSER_NAME = "wi-official-toc-text"
-PARSER_VERSION = "1.0.0"
+PARSER_VERSION = "2.0.0"
 CHAPTER_RE = re.compile(r"^([0-9]+[A-Za-z]*)\.\s+(.+)$")
+TXT_SUBCHAPTER_RE = re.compile(r"^SUBCHAPTER\s+(.+)$", re.I)
 STATUS_RE = re.compile(r"^(?:Repealed|Reserved|Renumbered|Expired|Vacant)\.?$", re.I)
 EFFECTIVE_RE = re.compile(
     r"\b(effective|takes effect|expires?|expiration|applies? (?:first |only )?to)\b", re.I
@@ -147,6 +148,70 @@ def currency_metadata(prefaces_json: dict) -> tuple[str, dict]:
     statement = "\n".join(line.strip() for line in lines[:4])
     # The contract mapping forbids parsing a prose date into through_date.
     return edition, {"statement": statement, "as_of": None}
+
+
+def txt_section_line_re(chapter: str) -> re.Pattern[str]:
+    return re.compile(rf"^{re.escape(chapter)}\.(\S+)\s+(.+)$")
+
+
+def inventory_from_txt_toc_region(content: str, chapter: str) -> list[dict]:
+    """Section list from the plain-text chapter TOC block (before body headings repeat)."""
+    section_re = txt_section_line_re(chapter)
+    sections: list[dict] = []
+    seen: set[str] = set()
+    current_subchapter = None
+    pending_subchapter_number = None
+    for raw in content.splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        subchapter_match = TXT_SUBCHAPTER_RE.match(line)
+        if subchapter_match:
+            pending_subchapter_number = subchapter_match.group(1)
+            continue
+        if pending_subchapter_number is not None and not section_re.match(line):
+            current_subchapter = {
+                "number": pending_subchapter_number,
+                "heading": normalized(line),
+            }
+            pending_subchapter_number = None
+            continue
+        section_match = section_re.match(line)
+        if not section_match:
+            continue
+        citation = f"{chapter}.{section_match.group(1)}"
+        if citation in seen:
+            break
+        seen.add(citation)
+        sections.append(
+            {
+                "citation": citation,
+                "heading": normalized(section_match.group(2)),
+                "subchapter": current_subchapter,
+                "url": f"{BASE}/statutes/statutes/{citation}",
+            }
+        )
+    return sections
+
+
+def merge_toc_sections(html_toc: list[dict], txt_toc: list[dict]) -> list[dict]:
+    """Prefer HTML headings/subchapters; fill gaps from the plain-text TOC inventory."""
+    html_by_citation = {item["citation"]: item for item in html_toc}
+    merged: list[dict] = []
+    for item in txt_toc:
+        html_item = html_by_citation.get(item["citation"])
+        if html_item:
+            merged.append(
+                {
+                    **item,
+                    "heading": html_item["heading"],
+                    "subchapter": html_item.get("subchapter") or item.get("subchapter"),
+                    "url": html_item["url"],
+                }
+            )
+        else:
+            merged.append(item)
+    return merged
 
 
 def chapter_toc(soup: BeautifulSoup) -> tuple[list[dict], list[dict]]:
@@ -669,9 +734,19 @@ def build(root: pathlib.Path, store: pathlib.Path | None = None) -> dict:
             }
             chapter_meta = chapters[chapter]
             toc_soup = BeautifulSoup(read_receipt(root, toc_html_receipt), "lxml")
-            toc_sections, subchapters = chapter_toc(toc_soup)
+            html_toc_sections, subchapters = chapter_toc(toc_soup)
             chapter_json = json.loads(read_receipt(root, json_receipt))
             txt_content = read_receipt(root, txt_receipt).decode("utf8")
+            txt_toc_sections = inventory_from_txt_toc_region(txt_content, chapter)
+            toc_sections = html_toc_sections
+            txt_toc_fallback = None
+            if len(txt_toc_sections) > len(html_toc_sections):
+                toc_sections = merge_toc_sections(html_toc_sections, txt_toc_sections)
+                txt_toc_fallback = {
+                    "html_toc_sections": len(html_toc_sections),
+                    "txt_toc_sections": len(txt_toc_sections),
+                    "merged_sections": len(toc_sections),
+                }
             rows, chapter_stats, derivative = parse_chapter_text(
                 txt_content,
                 chapter,
@@ -683,6 +758,8 @@ def build(root: pathlib.Path, store: pathlib.Path | None = None) -> dict:
                 txt_receipt,
             )
             display_heading = chapter_json.get("description")
+            if txt_toc_fallback:
+                chapter_stats["txt_toc_fallback"] = txt_toc_fallback
             chapter_stats["chapter_display_heading"] = display_heading
             if (
                 display_heading
@@ -1006,6 +1083,86 @@ def build(root: pathlib.Path, store: pathlib.Path | None = None) -> dict:
             for index in sample_indexes:
                 handle.write(canonical_line(all_rows[index]))
     return result
+
+
+def parse_single_chapter(root: pathlib.Path, chapter: str) -> dict:
+    """Re-parse one chapter from retained receipts (txt TOC fallback when HTML TOC is truncated)."""
+    receipts = load_receipts(root)
+    by_url, by_label = receipt_maps(receipts)
+    prefaces = json.loads(read_receipt(root, by_label["prefaces-toc-json"]))
+    edition, currency = currency_metadata(prefaces)
+    toc_text = read_receipt(root, by_label["prefaces-toc-txt"]).decode("utf8")
+    _, chapters = parse_master_toc(toc_text)
+    if chapter not in chapters:
+        raise ValueError(f"chapter {chapter} not in master TOC")
+    capture_plan = json.loads((root / "extract" / "capture-plan.json").read_text(encoding="utf8"))
+    if chapter not in capture_plan["chapters_index_page"]:
+        raise ValueError(f"chapter {chapter} not in capture plan")
+
+    toc_html_url = f"{BASE}/statutes/statutes/{chapter}"
+    json_url = toc_html_url + ".json"
+    txt_url = toc_html_url + ".txt"
+    pdf_url = toc_html_url + ".pdf"
+    for url in (toc_html_url, json_url, txt_url, pdf_url):
+        if url not in by_url:
+            raise ValueError(f"missing successful capture: {url}")
+    toc_html_receipt = by_url[toc_html_url]
+    json_receipt = by_url[json_url]
+    txt_receipt = by_url[txt_url]
+    chapter_meta = chapters[chapter]
+    toc_soup = BeautifulSoup(read_receipt(root, toc_html_receipt), "lxml")
+    html_toc_sections, subchapters = chapter_toc(toc_soup)
+    chapter_json = json.loads(read_receipt(root, json_receipt))
+    txt_content = read_receipt(root, txt_receipt).decode("utf8")
+    txt_toc_sections = inventory_from_txt_toc_region(txt_content, chapter)
+    toc_sections = html_toc_sections
+    txt_toc_fallback = None
+    if len(txt_toc_sections) > len(html_toc_sections):
+        toc_sections = merge_toc_sections(html_toc_sections, txt_toc_sections)
+        txt_toc_fallback = {
+            "html_toc_sections": len(html_toc_sections),
+            "txt_toc_sections": len(txt_toc_sections),
+            "merged_sections": len(toc_sections),
+        }
+    rows, chapter_stats, derivative = parse_chapter_text(
+        txt_content,
+        chapter,
+        chapter_meta,
+        toc_sections,
+        subchapters,
+        edition,
+        currency,
+        txt_receipt,
+    )
+    display_heading = chapter_json.get("description")
+    if txt_toc_fallback:
+        chapter_stats["txt_toc_fallback"] = txt_toc_fallback
+    chapter_stats["chapter_display_heading"] = display_heading
+    json_marker_counts = json_section_marker_counts(chapter_json, toc_sections)
+    independent_ids = [
+        item["citation"] for item in toc_sections if json_marker_counts[item["citation"]] >= 2
+    ]
+    chapter_stats["independent_json_sections"] = len(independent_ids)
+    chapter_stats["json_marker_count_anomalies"] = {
+        citation: count for citation, count in json_marker_counts.items() if count < 2
+    }
+    toc_ids = chapter_stats["toc_citations"]
+    body_ids = chapter_stats["body_citations"]
+    chapter_stats["toc_minus_body"] = sorted(Counter(toc_ids) - Counter(body_ids))
+    chapter_stats["body_minus_toc"] = sorted(Counter(body_ids) - Counter(toc_ids))
+    if chapter_stats["toc_minus_body"] or chapter_stats["body_minus_toc"]:
+        raise ValueError(f"chapter {chapter} TOC/body mismatch: {chapter_stats['toc_minus_body']} / {chapter_stats['body_minus_toc']}")
+    return {
+        "chapter": chapter,
+        "rows": rows,
+        "toc_sections": toc_sections,
+        "stats": chapter_stats,
+        "derivative": derivative,
+        "txt_receipt": txt_receipt,
+        "edition": edition,
+        "currency": currency,
+        "chapter_meta": chapter_meta,
+    }
 
 
 def main() -> int:

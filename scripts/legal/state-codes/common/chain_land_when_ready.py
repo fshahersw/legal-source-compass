@@ -181,9 +181,25 @@ def pipeline_md(root: pathlib.Path) -> None:
     (root / "landing" / ".landed").write_text(time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()) + "\n")
 
 
+def pipeline_wi_ch893_supplement(wi_root: pathlib.Path) -> None:
+    landing = wi_root / "supplement" / "893" / "landing"
+    if (landing / ".landed").exists():
+        return
+    run(
+        [
+            sys.executable,
+            str(ROOT / "wi" / "wi_supplement_ch893.py"),
+            "--root",
+            str(wi_root),
+            "--land",
+        ]
+    )
+
+
 def main() -> int:
     ky_root = pathlib.Path("/tmp/sc/KY")
     md_root = pathlib.Path("/tmp/sc/MD")
+    wi_root = pathlib.Path("/tmp/sc/WI")
     while True:
         try:
             if ky_root.exists() and not (ky_root / "landing" / ".landed").exists():
@@ -209,6 +225,14 @@ def main() -> int:
             print("pipeline error", exc, flush=True)
         if (ky_root / "landing" / ".landed").exists() and (md_root / "landing" / ".landed").exists():
             print("KY and MD landed", flush=True)
+            if wi_root.exists() and not (wi_root / "supplement" / "893" / "landing" / ".landed").exists():
+                print("WI ch.893 supplement starting", flush=True)
+                try:
+                    pipeline_wi_ch893_supplement(wi_root)
+                except subprocess.CalledProcessError as exc:
+                    print("WI supplement error", exc, flush=True)
+            if (wi_root / "supplement" / "893" / "landing" / ".landed").exists():
+                print("KY, MD, and WI ch.893 supplement landed", flush=True)
             return 0
         time.sleep(120)
 
