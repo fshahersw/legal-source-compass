@@ -13,6 +13,7 @@ import {isBlank, appendJsonl, sha256} from './lib.mjs';
 import {Live} from './gap-analysis-live.mjs';
 import {excluded, ws} from '../members-publish-rules.mjs';
 
+export const VARIANT_RULE = 'court+office+year+sequence, civil-series type variant, caption-confirmed';
 export const RUN_ID = '05eea679-6570-4812-989a-53369021ab6d';
 export const ARCHIVE_SHA = 'f40588851cee0d95696c40b8740106473f83ea3ffd8745799e03c42a15b9399b';
 export const FJC_SHA = '7615684b31e06199a20f0ecd1424398f4cca0f17fd3797ccd637e0669492d957';
@@ -66,7 +67,9 @@ function insertFactAfter(patch, afterLabel, label, value) {
   patch.set(['detail', 'facts'], facts);
 }
 const keyYear = id => (id.match(/:(\d{4})-[a-z]{2,4}-\d+$/) ?? [])[1] ?? null;
-const sourceText = (what, g) => `${what}: CourtListener bulk 2026-09-30, archive sha256 ${ARCHIVE_SHA.slice(0, 12)}…, source row ${g.source_row_ordinal}, native docket ${g.native_id}`;
+/** The archive a decision came from (the evidence carries it); the 2026-09-30 archive is the default for decisions built before refreshes existed. */
+export const archiveOf = g => ({sha: g?.archive_sha256 ?? ARCHIVE_SHA, url: g?.archive_url ?? BULK_URL, asOf: g?.snapshot_date ?? '2026-09-30'});
+const sourceText = (what, g) => { const a = archiveOf(g); return `${what}: CourtListener bulk ${a.asOf}, archive sha256 ${a.sha.slice(0, 12)}…, source row ${g.source_row_ordinal}, native docket ${g.native_id}`; };
 
 /**
  * Plan one registry docket. `d` = {filed, terminated, native, conflict} decisions (bulk), `ev` = bulk evidence data by native id.
@@ -99,6 +102,7 @@ export function planDocket(row, d, evByNative, phase, now) {
       setFact(patch, 'Filed', fillFiled);
     }
     if (fillTerm) {
+      if (cells.termination_note) { patch.set(['item', 'cells', 'termination_note'], undefined); patch.set(['item', 'cells', 'termination_note_as_of'], undefined); }
       patch.set(['item', 'cells', 'terminated'], fillTerm);
       patch.set(['item', 'cells', 'status'], 'header_terminated');
       patch.set(['filters', 'status'], 'header_terminated');
@@ -109,7 +113,8 @@ export function planDocket(row, d, evByNative, phase, now) {
     const clIds = (row.detail?.registry?.native_case_ids ?? []).filter(x => /^\d+$/.test(String(x?.id)));
     if (n && !clIds.length) {
       const pacer = evByNative.get(n.native_id)?.pacer_case_id ?? null;
-      const entry = {id: n.native_id, provider: 'courtlistener', source_system: 'courtlistener', pacer_case_id: pacer, resolution_basis: 'exact_docket_key_bulk_2026-09-30'};
+      const variant = Boolean(n.key_match_rule);
+      const entry = {id: n.native_id, provider: 'courtlistener', source_system: 'courtlistener', pacer_case_id: pacer, resolution_basis: variant ? 'civil_series_type_variant_bulk_2026-09-30' : 'exact_docket_key_bulk_2026-09-30', ...(variant ? {key_match_rule: n.key_match_rule} : {})};
       patch.set(['detail', 'registry', 'native_case_ids'], [...(row.detail?.registry?.native_case_ids ?? []), entry]);
       const strings = [...(row.filters?.native_case_id ?? []), n.native_id];
       patch.set(['filters', 'native_case_id'], strings);
@@ -121,7 +126,7 @@ export function planDocket(row, d, evByNative, phase, now) {
       const facts = patch.get(['detail', 'facts']) ?? [];
       const cur = (facts.find(f => f[0] === 'Provider case ids') ?? [])[1] ?? '';
       setFact(patch, 'Provider case ids', cur ? `${cur}; courtlistener: ${n.native_id}` : `courtlistener: ${n.native_id}`);
-      insertFactAfter(patch, 'Provider case ids', 'Provider case ids — source', sourceText('CourtListener docket id', n));
+      insertFactAfter(patch, 'Provider case ids', 'Provider case ids — source', `${sourceText('CourtListener docket id', n)}${n.key_match_rule ? `; rule: ${n.key_match_rule}` : ''}`);
       gapfill.push({field: 'native_case_id', value: n.native_id, g: n});
     }
   } else if (phase === 'dates') {
@@ -155,7 +160,7 @@ export function planDocket(row, d, evByNative, phase, now) {
   }
   if (gapfill.length) {
     const prev = patch.get(['detail', 'provenance', 'gapfill']) ?? [];
-    patch.set(['detail', 'provenance', 'gapfill'], [...prev, ...gapfill.map(x => ({field: x.field, value: x.value, phase, source: 'courtlistener-bulk', archive_sha256: ARCHIVE_SHA, archive_url: BULK_URL, source_row_ordinal: x.g.source_row_ordinal, native_docket_id: x.g.native_id, run_id: RUN_ID, projected_at: now, ...(x.displaced ? {displaced: x.displaced} : {})}))]);
+    patch.set(['detail', 'provenance', 'gapfill'], [...prev, ...gapfill.map(x => ({field: x.field, value: x.value, phase, source: 'courtlistener-bulk', archive_sha256: archiveOf(x.g).sha, archive_url: archiveOf(x.g).url, source_row_ordinal: x.g.source_row_ordinal, native_docket_id: x.g.native_id, run_id: RUN_ID, projected_at: now, ...(x.g.key_match_rule ? {key_match_rule: x.g.key_match_rule} : {}), ...(x.displaced ? {displaced: x.displaced} : {})}))]);
   }
   for (const x of gapfill) applied.push({field: x.field, value: x.value});
   return {patch, applied, held, gapfill};
@@ -190,8 +195,31 @@ export function planCaption(row, c, now) {
   const rest = add.filter(([k]) => !facts.some(f => f[0] === k));
   facts.splice(at >= 0 ? at + 1 : facts.length, 0, ...rest);
   patch.set(['detail', 'facts'], facts);
-  patch.set(['detail', 'provenance', 'gapfill'], [...(row.detail?.provenance?.gapfill ?? []), {field: 'caption', value, phase: 'captions', source: 'courtlistener-bulk', archive_sha256: ARCHIVE_SHA, archive_url: BULK_URL, source_row_ordinal: c.source_row_ordinal, native_docket_id: c.native_id, run_id: RUN_ID, projected_at: now}]);
+  patch.set(['detail', 'provenance', 'gapfill'], [...(row.detail?.provenance?.gapfill ?? []), {field: 'caption', value, phase: 'captions', source: 'courtlistener-bulk', archive_sha256: archiveOf(c).sha, archive_url: archiveOf(c).url, source_row_ordinal: c.source_row_ordinal, native_docket_id: c.native_id, run_id: RUN_ID, projected_at: now}]);
   return {patch, applied: [{field: 'caption', value}], held, gapfill: [{field: 'caption'}]};
+}
+
+export const TERMINATION_NOTE = asOf => `No termination recorded (CourtListener bulk ${asOf})`;
+/**
+ * Factual termination status for a docket whose termination date is blank: the unique bulk row for it carries no termination date at the snapshot.
+ * The date stays "Not recorded"; nothing is inferred about whether the docket is open. `c` = {native_id, source_row_ordinal, as_of}.
+ */
+export function planTerminationNote(row, c, now) {
+  const patch = new Patch({item: row.item, detail: row.detail, filters: row.filters});
+  const cells = row.item?.cells ?? {};
+  if (!c || !blank(cells.terminated) || cells.termination_note_as_of >= c.as_of) return {patch, applied: [], held: [], gapfill: []};
+  const note = TERMINATION_NOTE(c.as_of);
+  patch.set(['item', 'cells', 'termination_note'], note);
+  patch.set(['item', 'cells', 'termination_note_as_of'], c.as_of);
+  const facts = clone(patch.get(['detail', 'facts'])) ?? [];
+  const at = facts.findIndex(f => f[0] === 'Docket header termination date');
+  for (const [k, v] of [['Termination status', note], ['Termination status — source', sourceText('No termination date in the bulk row', {...c, snapshot_date: c.as_of})]]) {
+    const i = facts.findIndex(f => f[0] === k);
+    if (i >= 0) facts[i] = [k, v]; else facts.splice((at >= 0 ? at + 1 : facts.length) + (k.endsWith('source') ? 1 : 0), 0, [k, v]);
+  }
+  patch.set(['detail', 'facts'], facts);
+  patch.set(['detail', 'provenance', 'gapfill'], [...(row.detail?.provenance?.gapfill ?? []), {field: 'termination_note', value: note, phase: 'termination-note', source: 'courtlistener-bulk', archive_sha256: archiveOf(c).sha, archive_url: archiveOf(c).url, source_row_ordinal: c.source_row_ordinal, native_docket_id: c.native_id, run_id: RUN_ID, projected_at: now}]);
+  return {patch, applied: [{field: 'termination_note', value: note}], held: [], gapfill: [{field: 'termination_note'}]};
 }
 
 /** cl_docket_metadata MDL number from an exact FJC IDB join; labelled historical administrative association. */
@@ -259,7 +287,7 @@ export async function main(argv) {
     console.log(JSON.stringify({revert: true, apply, ...stats})); return;
   }
   const dir = args.decisions, phase = args.phase;
-  if (!dir || !args.ledger || !['blanks', 'dates', 'mdl', 'captions'].includes(phase)) throw new Error('--decisions=<dir> --ledger=<file> --phase=blanks|dates|mdl required');
+  if (!dir || !args.ledger || !['blanks', 'dates', 'mdl', 'captions', 'variants', 'termination-note'].includes(phase)) throw new Error('--decisions=<dir> --ledger=<file> --phase=blanks|dates|mdl required');
   const done = new Set((await readJsonl(args.ledger)).filter(l => l.phase === phase && l.ops).map(l => l.id));
   const now = new Date().toISOString();
   const stats = {phase, apply, candidates: 0, already_done: 0, changed: 0, held: 0, unchanged: 0, gone: 0, by_field: {}, held_reasons: {}};
@@ -278,10 +306,36 @@ export async function main(argv) {
     }
     console.log(JSON.stringify(stats)); return;
   }
+  if (phase === 'variants' || phase === 'termination-note') {
+    const ev = await readJsonl(path.join(dir, 'stage-bulk/docket-bulk-match.jsonl'));
+    const byReg = new Map();
+    for (const r of ev) {
+      if (r.data.blocked) continue;
+      const want = phase === 'variants' ? r.data.key_match_rule === VARIANT_RULE : (r.data.purposes ?? []).includes('no_termination_recorded');
+      if (!want) continue;
+      for (const id of r.data.registry_dockets ?? []) byReg.set(id, {native_id: r.native_id, source_row_ordinal: r.data.source_row_ordinal, as_of: r.data.snapshot_date, snapshot_date: r.data.snapshot_date, archive_sha256: r.data.archive_sha256, ...(phase === 'variants' ? {key_match_rule: VARIANT_RULE} : {})});
+    }
+    const ids = [...byReg.keys()].filter(id => !done.has(id)).slice(0, limit);
+    stats.candidates = ids.length;
+    for (let i = 0; i < ids.length; i += 200) {
+      const rows = await fetchRows(live, 'sw_matter_dockets_v1', ids.slice(i, i + 200)), writes = [];
+      for (const row of rows) {
+        const c = byReg.get(row.id);
+        const r = phase === 'variants' ? planDocket(row, {native: {...c, action: 'fill', field: 'native_case_id', value: c.native_id}}, new Map(), 'blanks', now) : planTerminationNote(row, c, now);
+        for (const h of r.held) { stats.held++; await appendJsonl(`${args.ledger}.held`, {id: row.id, phase, ...h}); }
+        if (!r.patch.ops.length) { stats.unchanged++; continue; }
+        await appendJsonl(args.ledger, {id: row.id, dataset: 'sw_matter_dockets_v1', phase, applied: r.applied, projected_at: now, ops: r.patch.ops});
+        writes.push({id: row.id, cols: {item: r.patch.cols.item, detail: r.patch.cols.detail, filters: r.patch.cols.filters}});
+        stats.changed++; const f = r.applied[0]?.field; stats.by_field[f] = (stats.by_field[f] ?? 0) + 1;
+      }
+      if (apply) await pool(writes, 8, w => patchRow(live, 'sw_matter_dockets_v1', w.id, w.cols));
+    }
+    console.log(JSON.stringify(stats)); return;
+  }
   if (phase === 'captions') {
     const ev = await readJsonl(path.join(dir, 'stage-bulk/docket-bulk-match.jsonl'));
     const byReg = new Map();
-    for (const r of ev) { if (!r.data.key_unique_in_bulk || r.data.blocked || !r.data.case_name || !(r.data.purposes ?? []).includes('fills_caption')) continue; for (const id of r.data.registry_dockets ?? []) byReg.set(id, {value: r.data.case_name, native_id: r.native_id, source_row_ordinal: r.data.source_row_ordinal}); }
+    for (const r of ev) { if (!r.data.key_unique_in_bulk || r.data.blocked || !r.data.case_name || !(r.data.purposes ?? []).includes('fills_caption')) continue; for (const id of r.data.registry_dockets ?? []) byReg.set(id, {value: r.data.case_name, native_id: r.native_id, source_row_ordinal: r.data.source_row_ordinal, snapshot_date: r.data.snapshot_date, archive_sha256: r.data.archive_sha256}); }
     const ids = [...byReg.keys()].filter(id => !done.has(id)).slice(0, limit);
     stats.candidates = ids.length;
     for (let i = 0; i < ids.length; i += 200) {

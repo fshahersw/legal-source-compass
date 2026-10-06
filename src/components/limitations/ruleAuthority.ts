@@ -11,7 +11,14 @@ export type RuleAuthorityFacts = {
   effective: string;
   lastAmended: string;
   retrieved: string;
-  sources: { id: string; title: string; url: string; retrieved: string; kind: string }[];
+  sources: {
+    id: string;
+    title: string;
+    url: string;
+    retrieved: string;
+    kind: string;
+    route: string | null;
+  }[];
   excerpt: string | null;
   accrual: string;
   tolling: string[];
@@ -34,7 +41,19 @@ export function ruleAuthorityFacts(
   const sources = rule.sourceIds.flatMap((id) => {
     const s = snapshot.sources.find((item) => item.id === id);
     return s
-      ? [{ id, title: s.title, url: s.url, retrieved: day(s.capturedAt), kind: s.authorityKind }]
+      ? [
+          {
+            id,
+            title: s.title,
+            url: s.url,
+            retrieved: day(s.capturedAt),
+            kind: s.authorityKind,
+            route:
+              s.fetchRoute?.kind === "proxied"
+                ? `fetched through the ${s.fetchRoute.proxy} proxy because the host blocks direct requests`
+                : null,
+          },
+        ]
       : [];
   });
   const statute = sources.find((s) => s.kind === "statute") ?? sources[0];

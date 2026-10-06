@@ -130,6 +130,11 @@ function ensureSource(
     validity: `Official page text as retrieved ${meta.retrievedAt.slice(0, 10)}. Period and quoted passages were mechanically matched to this text; current-law, case-law and transition review was not completed.`,
     historicalApplicability:
       "Version history is recorded only where the page itself shows a history note; otherwise Not recorded.",
+    fetchRoute: (meta as { route?: { kind: "proxied"; proxy: string } }).route
+      ? { kind: "proxied", proxy: (meta as { route: { proxy: string } }).route.proxy }
+      : meta.intermediary
+        ? { kind: "extraction" }
+        : { kind: "direct" },
     rawCapture: {
       sha256: meta.rawSha256,
       byteLength: meta.rawBytes,
@@ -233,7 +238,7 @@ for (const file of files) {
     // authorities (for example court opinions) are cross-checked; concatenations of direct captures are not.
     const entryIntermediaryOnly =
       Boolean(primary.meta.intermediary) &&
-      /tavily|firecrawl|webfetch|web-fetch|websearch|search-engine|snippet|cached/i.test(
+      /tavily|firecrawl|webfetch|web-fetch|websearch|search-engine|snippet|cached|proxied/i.test(
         String((primary.meta as { extraction?: string }).extraction ?? ""),
       );
 
@@ -272,6 +277,17 @@ for (const file of files) {
         current.period.unit === unit;
       if (same) {
         entryRoute.set(current.id, entryIntermediaryOnly);
+        // A legacy rule that starts the clock at death contradicts an entry whose official text starts it at
+        // discovery (for example Wisconsin wrongful death): follow the verified entry.
+        if (current.accrualBasis === "death" && entry.accrual.kind === "discovery") {
+          current.accrualBasis = "confirmed_accrual";
+          current.conditions = [
+            ...new Set([
+              ...current.conditions,
+              `Accrual under the cited rule: ${entry.accrual.text}`,
+            ]),
+          ];
+        }
         if (!current.provenance) {
           current.provenance = provenance;
           if (entry.status === "verified") current.pinpoint = entry.citation;

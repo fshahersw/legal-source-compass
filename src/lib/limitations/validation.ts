@@ -163,6 +163,9 @@ type KnownField =
   | "baselineRuleIds"
   | "researchRuleIds"
   | "gaps"
+  | "fetchRoute"
+  | "kind"
+  | "proxy"
   | "verification"
   | "grade"
   | "basis"
@@ -508,6 +511,16 @@ function validateSources(values: unknown): LimitationSource[] {
     digest(s.sha256, `${label}.sha256`);
     positiveInteger(s.byteLength, `${label}.byteLength`, Number.MAX_SAFE_INTEGER);
     if (s.rawCapture !== undefined) validateRawCapture(s.rawCapture, `${label}.rawCapture`);
+    if (s["fetchRoute"] !== undefined) {
+      const route = record(s["fetchRoute"], `${label}.fetchRoute`);
+      if (!["direct", "proxied", "extraction"].includes(route["kind"] as string))
+        fail(`${label}.fetchRoute has an unsupported kind`);
+      if (
+        route["kind"] === "proxied" &&
+        !["firecrawl", "tavily"].includes(route["proxy"] as string)
+      )
+        fail(`${label}.fetchRoute names an unsupported proxy`);
+    }
     if (ids.has(s.id as string)) fail(`duplicate source ID ${String(s.id)}`);
     if (paths.has(s.textPath as string)) fail(`duplicate source text path ${String(s.textPath)}`);
     ids.add(s.id as string);

@@ -59,9 +59,11 @@ export function evidenceRow(ev, receipt, retrievedAt) {
     case_name: m.blocked === 't' ? null : (m.case_name_full || m.case_name || null), blocked: m.blocked === 't',
     source_row_ordinal: m.source_row_ordinal, archive_sha256: receipt.archive_sha256, snapshot_date: receipt.snapshot_date,
     key_match_rule: 'exact court id + exact docket key', key_unique_in_bulk: ev.unique, registry_dockets: [...ev.regs].sort(), purposes: [...ev.purposes].sort()};
-  return {schema_version: SCHEMA, source_system: 'courtlistener', entity_type: 'docket-bulk-match', native_id: m.id, data,
-    provenance: {source_url: SOURCE_URL, source_sha256: receipt.archive_sha256, source_as_of: receipt.snapshot_date, retrieved_at: retrievedAt, http_status: 200,
-      schema_version: SCHEMA, record_sha256: sha256(canonicalIntegerJson(data)), record_sha256_codec: 'canonical-integer-jsonb/1', archive_bytes: receipt.archive_bytes, rows_scanned: receipt.rows_scanned}};
+  // The 2026-09-30 archive keeps the v1 schema; every later quarterly archive uses schema /2 (wrapper corpus_admin_gapfill_bulk_v1, v2 migration).
+  const schema = receipt.snapshot_date === '2026-09-30' ? SCHEMA : 'courtlistener-bulk-match/2';
+  return {schema_version: schema, source_system: 'courtlistener', entity_type: 'docket-bulk-match', native_id: m.id, data,
+    provenance: {source_url: receipt.source_url ?? SOURCE_URL, source_sha256: receipt.archive_sha256, source_as_of: receipt.snapshot_date, retrieved_at: retrievedAt, http_status: 200,
+      schema_version: schema, record_sha256: sha256(canonicalIntegerJson(data)), record_sha256_codec: 'canonical-integer-jsonb/1', archive_bytes: receipt.archive_bytes, rows_scanned: receipt.rows_scanned}};
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
