@@ -4,6 +4,7 @@ import { RECORD_ID_MAX_LENGTH } from "@/lib/external/recordIdentity";
 import {
   listFullStateCodes,
   projectedOutline,
+  publicStatuteSections,
   searchFullStateCodes,
   stateCodeChapters,
   stateCodeCoverage,
@@ -60,6 +61,12 @@ export const getProjectedOutline = createServerFn({ method: "GET" })
 export const getStateCodeCoverage = createServerFn({ method: "GET" }).handler(async () =>
   stateCodeCoverage(),
 );
+
+export const getPublicStatuteSections = createServerFn({ method: "GET" })
+  .inputValidator((data: unknown) =>
+    z.object({ state: stateCode, citation: z.string().trim().min(1).max(400) }).parse(data),
+  )
+  .handler(async ({ data }) => publicStatuteSections(data.state, data.citation));
 
 export const searchStateCodes = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) =>
