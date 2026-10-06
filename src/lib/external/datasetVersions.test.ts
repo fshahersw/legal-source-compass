@@ -16,12 +16,12 @@ describe("audited dataset snapshot families", () => {
         { id: "agency_safety_openfda_device_classification_20261002", ready: true, records: 7_094 },
         { id: "people", ready: true, records: 16_191 },
         { id: "cl_people", ready: true, records: 16_191 },
-        { id: "cpsc_injury_data", ready: true, records: 20 },
+        { id: "agency_science_documents", ready: true, records: 20 },
       ]),
     ).toEqual([
       "agency_safety_openfda_device_classification_20261002",
       "cl_people",
-      "cpsc_injury_data",
+      "agency_science_documents",
     ]);
   });
 
@@ -63,15 +63,15 @@ describe("audited dataset snapshot families", () => {
     const rows = [
       { id: "agency_safety_openfda_device_classification", ready: true, records: 7_093 },
       { id: "agency_safety_openfda_device_classification_20261002", ready: true, records: 7_094 },
-      { id: "cpsc_injury_data", ready: false, records: 479_534 },
+      { id: "agency_science_documents", ready: false, records: 479_534 },
     ];
     expect(visibleDatasetChoices(rows).map((row) => row.id)).toEqual([
       "agency_safety_openfda_device_classification_20261002",
-      "cpsc_injury_data",
+      "agency_science_documents",
     ]);
     expect(datasetVersionLabel("people", "Historical biographies")).toContain("prior snapshot");
     expect(datasetVersionLabel("cl_people", "CourtListener people")).toContain("current snapshot");
-    expect(datasetVersionFamily("cpsc_injury_data")).toBeNull();
+    expect(datasetVersionFamily("agency_science_documents")).toBeNull();
   });
 
   it("does not hide a prior snapshot when its canonical row has no records", () => {

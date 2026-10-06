@@ -43,7 +43,7 @@ export const SECTIONS: { id: SectionId; label: string; blurb: string }[] = [
   {
     id: "safety",
     label: "Safety",
-    blurb: "FDA, openFDA and CPSC recall, enforcement and injury data.",
+    blurb: "FDA, openFDA and CPSC recall and enforcement records.",
   },
   {
     id: "sources",
@@ -118,7 +118,6 @@ const EXPLICIT: Record<string, SectionId> = {
   state_proceedings: "matters",
   counsel_directory: "matters",
   seeger: "matters",
-  open_us_law: "law",
   state_codes: "law",
   indiana_code: "law",
   sd_statutes: "law",
@@ -132,7 +131,6 @@ const EXPLICIT: Record<string, SectionId> = {
   federal_regulations_documents: "law",
   federal_register_history: "law",
   federal: "law",
-  cpsc_injury_data: "safety",
   agency_science_documents: "safety",
   sources: "sources",
   url_directory: "sources",
@@ -278,7 +276,6 @@ export type ResolvedLink =
   | { kind: "dataset"; dataset: string; q: string; filters: Record<string, string> }
   | { kind: "search"; q: string }
   | { kind: "entity"; type: "mdl" | "court" | "judge"; id: string }
-  | { kind: "provision"; dataset: "open_us_law"; id: string }
   | { kind: "record"; dataset: string; id: string }
   | { kind: "unmapped"; raw: string };
 
@@ -288,10 +285,6 @@ export function resolveLink(url: string, aliases: Record<string, string>): Resol
   if (/^https?:\/\//i.test(url)) return { kind: "external", href: externalHref(url) };
   if (url.startsWith("/")) return { kind: "file", href: fileUrl(url) };
   if (url.startsWith("#")) {
-    // Citation detail emits this native ID for an exact saved-law match.
-    // Preserve its collection identity; do not guess from a citation string.
-    const provision = /^#record\/(oul:[0-9a-f]{64})$/.exec(url);
-    if (provision) return { kind: "provision", dataset: "open_us_law", id: provision[1]! };
     // Full native record identities: encodeURIComponent(id), decoded exactly once.
     // Slashes may be part of an encoded publisher path, never extra token segments.
     if (url.startsWith("#record/")) {

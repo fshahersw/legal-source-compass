@@ -22,7 +22,6 @@ const PURPOSES: Record<string, DatasetPurpose> = {
   settlements: "Analysis",
   verdict_reports: "Analysis",
   expert_rulings: "Analysis",
-  open_us_law: "Directory",
   federal_regulations_sections: "Directory",
   federal_regulations_parts: "Directory",
   federal_regulations_documents: "Documents",
@@ -74,7 +73,6 @@ const LABELS: Record<string, string> = {
   expert_rulings: "Expert-admissibility docket entries (keyword scan)",
   state_proceedings: "State proceedings",
   counsel_directory: "Counsel directory",
-  open_us_law: "U.S. law collection",
   federal_regulations_sections: "CFR sections",
   federal_regulations_parts: "CFR parts",
   federal_regulations_documents: "CFR source documents",
@@ -99,7 +97,6 @@ const LABELS: Record<string, string> = {
   cl_citation_edges: "Directed citation mentions",
   citation_reference: "Citation reference",
   citation_index: "Citation index",
-  cpsc_injury_data: "CPSC injury data",
   agency_science_documents: "Agency science documents",
   url_directory: "URL directory",
   saved_pages: "Saved source pages",
@@ -116,7 +113,7 @@ const DESCRIPTIONS: Partial<Record<SectionId, string>> = {
   matters:
     "MDLs, dockets, related cases, counsel and counsel appearances, settlements, verdicts, and expert-admissibility docket entries.",
   law: "Statutes, regulations, public laws, notices, limitation periods, and citations.",
-  safety: "FDA and CPSC recalls, enforcement, science, and injury records.",
+  safety: "FDA and CPSC recalls, enforcement, and science records.",
   sources: "Source directories, captured pages, documents, coverage, and provenance.",
   other: "Additional imported corpus records that do not yet have a dedicated domain.",
 };

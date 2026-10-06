@@ -1,23 +1,21 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { queryOptions, useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
+import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Copy, ExternalLink } from "lucide-react";
 import { AppShell } from "@/components/atlas/AppShell";
 import { Button } from "@/components/ui/button";
 import { pageHead } from "@/lib/corpus/head";
 import { stateByName, stateByUsps } from "@/lib/corpus/geo";
-import { getLawProvision, listLawProvisions } from "@/lib/external/corpus.functions";
+import { getLawProvision } from "@/lib/external/corpus.functions";
 import { formatLawText, markerDepth } from "@/lib/external/formatLawText";
 import { isProvisionDataset, kindLabel, type PROVISION_DATASETS } from "@/lib/external/lawTree";
 
 type ProvisionDataset = (typeof PROVISION_DATASETS)[number];
-type S = { dataset?: ProvisionDataset | undefined; node?: number | undefined; i?: number | undefined };
-const num = (v: unknown) => { const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN; return Number.isInteger(n) && n >= 0 && n < 1e9 ? n : undefined; };
+type S = { dataset?: ProvisionDataset | undefined };
 const provQuery = (id: string, dataset?: ProvisionDataset) => queryOptions({ queryKey: ["law-provision", dataset ?? null, id], queryFn: () => getLawProvision({ data: { id, dataset: dataset ?? null } }), staleTime: Infinity });
 
 export const Route = createFileRoute("/law_/provision/$id")({
-  validateSearch: (s: Record<string, unknown>): S => ({ dataset: typeof s["dataset"] === "string" && isProvisionDataset(s["dataset"]) ? s["dataset"] as ProvisionDataset : undefined, node: num(s["node"]), i: num(s["i"]) }),
+  validateSearch: (s: Record<string, unknown>): S => ({ dataset: typeof s["dataset"] === "string" && isProvisionDataset(s["dataset"]) ? s["dataset"] as ProvisionDataset : undefined }),
   loaderDeps: ({ search }) => ({ dataset: search.dataset }),
   loader: ({ context, params, deps }) => context.queryClient.ensureQueryData(provQuery(params.id, deps.dataset)),
   head: ({ loaderData }) => {
@@ -30,15 +28,8 @@ export const Route = createFileRoute("/law_/provision/$id")({
 
 function ProvisionPage() {
   const { id } = Route.useParams();
-  const { dataset, node, i } = Route.useSearch();
+  const { dataset } = Route.useSearch();
   const { data: p } = useSuspenseQuery(provQuery(id, dataset));
-  const listFn = useServerFn(listLawProvisions);
-  const idx = i ?? null;
-  const around = useQuery({
-    queryKey: ["law-prov-around", node, idx],
-    enabled: node != null && idx != null,
-    queryFn: () => listFn({ data: { node: Number(node), offset: Math.max(0, idx! - 1), limit: 3 } }),
-  });
   const [copied, setCopied] = useState(false);
   const [copiedCite, setCopiedCite] = useState(false);
 
@@ -48,18 +39,11 @@ function ProvisionPage() {
   const federal = p.state != null && ["US", "FEDERAL", "Federal"].includes(p.state);
   const crumbs: { label: string; to?: string; search?: Record<string, string> }[] = [{ label: "Atlas", to: "/" }, { label: "Law & regulation", to: "/law" }];
   crumbs.push(federal ? { label: "Federal", to: "/law", search: { scope: "federal" } } : usps ? { label: p.state!, to: "/law", search: { scope: "states", state: usps } } : { label: p.state ?? "Jurisdiction not recorded" });
-  if (p.kind) crumbs.push(federal || usps ? { label: kindLabel(p.kind), to: "/law", search: federal ? { scope: "federal", kind: p.kind } : { scope: "states", state: usps!, kind: p.kind } } : { label: kindLabel(p.kind) });
+  if (p.kind) crumbs.push({ label: kindLabel(p.kind) });
   crumbs.push({ label: p.citation ?? "Provision" });
 
   const cite = p.citation ?? (/^cfr:\d+:/.test(p.id) ? p.id.replace(/^cfr:(\d+):/, "$1 CFR ") : null);
   const paras = p.text ? formatLawText(p.text) : [];
-  const rows = around.data ?? [];
-  const pos = idx != null ? idx - Math.max(0, idx - 1) : -1;
-  const prev = pos > 0 ? rows[pos - 1] : undefined;
-  const next = pos >= 0 ? rows[pos + 1] : undefined;
-  const nav = (r: { id: string; citation: string | null; title: string | null } | undefined, d: number, label: string) =>
-    r ? <Link to="/law/provision/$id" params={{ id: r.id }} search={{ dataset: p.dataset as ProvisionDataset, node, i: idx! + d }} className="min-w-0 truncate rounded border border-border px-2 py-1 text-[12px] hover:bg-muted">{label} {r.citation ?? r.title}</Link> : <span />;
-
   const frameParts = p.frame
     ? [
         p.frame.titleName ?? (p.frame.part ? `Title ${p.frame.part.replace(/:.*/, "")}` : null),
@@ -98,8 +82,6 @@ function ProvisionPage() {
           <p className="text-[13px] text-muted-foreground">{p.sourceUrl ? "The corpus has no saved text for this provision. Use “Official source” to read it on the publisher's site." : "No text or source link recorded for this provision."}</p>
         )}
       </section>
-
-      {node && idx != null ? <div className="mt-4 flex items-center justify-between gap-3">{nav(prev, -1, "←")}{nav(next, 1, "→")}</div> : null}
 
       {p.dates || p.frCitations?.length || p.authorityNote || p.sourceNote ? (
         <section className="mt-4 rounded-lg border border-border bg-surface p-4 shadow-card">
