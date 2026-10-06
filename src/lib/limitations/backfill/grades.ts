@@ -65,6 +65,8 @@ export type GradeInput = {
   retry: RetryRecord | undefined;
   verifiedRuleVersion: string;
   verifiedOn: string;
+  /** Whether the official text behind the rule was read through an extraction intermediary with no direct official cross-check. */
+  intermediaryOnly?: boolean;
 };
 
 export type GradeResult = {
@@ -134,6 +136,16 @@ export function gradeRule(input: GradeInput): GradeResult {
         },
       };
     }
+    if (input.verdict.verdict === "unable-to-verify" && input.intermediaryOnly) {
+      return {
+        withhold: false,
+        verification: {
+          grade: "lower_evidence_grade",
+          basis:
+            "The independent verifier could not read the official text, and the builder's own source is an extraction intermediary with no direct official cross-check.",
+        },
+      };
+    }
     if (input.verdict.verdict === "unable-to-verify") {
       return {
         withhold: false,
@@ -144,6 +156,16 @@ export function gradeRule(input: GradeInput): GradeResult {
         },
       };
     }
+  }
+  if (input.intermediaryOnly) {
+    return {
+      withhold: false,
+      verification: {
+        grade: "lower_evidence_grade",
+        basis:
+          "The official text was read through an extraction intermediary or cached route with no direct official response to cross-check; checked only by the builder's literal-evidence comparison against that extraction.",
+      },
+    };
   }
   return {
     withhold: false,

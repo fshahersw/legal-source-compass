@@ -427,6 +427,16 @@ const retryById = new Map<string, RetryRecord>(
 const previousFingerprint = new Map<string, string>(
   ((previousRules?.rules ?? []) as LimitationRule[]).map((r) => [r.id, ruleFingerprint(r)]),
 );
+const sourceMap = new Map(sources.map((x) => [x.id, x]));
+const isIntermediary = (id: string) =>
+  /intermediar|firecrawl|tavily|webfetch/i.test(sourceMap.get(id)?.method ?? "");
+const intermediaryOnlyRule = (rule: LimitationRule) => {
+  const primary =
+    rule.sourceIds.find((id) => sourceMap.get(id)?.authorityKind === "statute") ??
+    rule.sourceIds[0];
+  if (!primary || !isIntermediary(primary)) return false;
+  return !rule.sourceIds.some((id) => id !== primary && !isIntermediary(id));
+};
 const gradeCounts: Record<string, number> = {};
 let withheld = 0;
 for (const rule of rules) {
@@ -437,6 +447,7 @@ for (const rule of rules) {
     retry: retryById.get(rule.id),
     verifiedRuleVersion: "2026-10-06.1",
     verifiedOn: "2026-10-06",
+    intermediaryOnly: intermediaryOnlyRule(rule),
   });
   rule.verification = graded.verification;
   gradeCounts[graded.verification.grade] = (gradeCounts[graded.verification.grade] ?? 0) + 1;

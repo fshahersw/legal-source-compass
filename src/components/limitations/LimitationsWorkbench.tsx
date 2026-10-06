@@ -68,8 +68,10 @@ function Authority({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule: Li
             {facts.grade}
           </span>
         </dd>
-        <dt className="font-medium">Verification</dt>
-        <dd>{facts.gradeBasis}</dd>
+        <dt className="font-medium">Evidence grade</dt>
+        <dd>
+          {facts.grade}. {facts.gradeBasis}
+        </dd>
         <dt className="font-medium">Effective date</dt>
         <dd>{facts.effective}</dd>
         <dt className="font-medium">Last amended</dt>

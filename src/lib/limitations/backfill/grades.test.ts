@@ -99,6 +99,24 @@ describe("verification grades", () => {
     expect(g.withhold).toBe(false);
     expect(g.verification.grade).toBe("independently_verified");
   });
+  it("grades builder-only rules read through an intermediary as lower evidence", () => {
+    const g = gradeRule({
+      ...base,
+      fingerprint: fp,
+      previousFingerprint: null,
+      verdict: undefined,
+      intermediaryOnly: true,
+    });
+    expect(g.verification.grade).toBe("lower_evidence_grade");
+    const verified = gradeRule({
+      ...base,
+      fingerprint: fp,
+      previousFingerprint: fp,
+      verdict: { verdict: "confirmed" },
+      intermediaryOnly: true,
+    });
+    expect(verified.verification.grade).toBe("independently_verified");
+  });
   it("a rule the verifier never saw is builder-only", () => {
     const g = gradeRule({
       ...base,
