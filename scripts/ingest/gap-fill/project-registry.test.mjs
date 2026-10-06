@@ -117,3 +117,50 @@ test('caption candidates need a unique, unblocked bulk row; evidence rows gain f
   const out = mergeEvidence([], r.cands, {archive_sha256: 'f'.repeat(64), snapshot_date: '2026-09-30', archive_bytes: 1, rows_scanned: 1}, 't');
   assert.equal(out.delta.length, 1); assert.ok(out.delta[0].data.purposes.includes('fills_caption')); assert.deepEqual(out.delta[0].data.registry_dockets, ['a']);
 });
+
+import {planTerminationNote, VARIANT_RULE, TERMINATION_NOTE} from './project-registry.mjs';
+import {decideVariants, variantRow, RULE, normCaption} from './build-variant-evidence.mjs';
+
+test('termination note is factual: date stays Not recorded, note carries the snapshot date, nothing about open/closed', () => {
+  const row = baseRow();
+  const r = planTerminationNote(row, {native_id: '8272189', source_row_ordinal: 7, as_of: '2026-09-30'}, 't');
+  const c = r.patch.cols;
+  assert.equal(c.item.cells.terminated, 'Not recorded'); assert.equal(c.item.cells.termination_note, 'No termination recorded (CourtListener bulk 2026-09-30)');
+  assert.equal(c.item.cells.termination_note, TERMINATION_NOTE('2026-09-30')); assert.equal(c.item.cells.status, 'no_termination_date_recorded');
+  assert.doesNotMatch(JSON.stringify(c.item.cells), /\bopen\b/i);
+  assert.ok(c.detail.facts.some(f => f[0] === 'Termination status — source' && /source row 7/.test(f[1])));
+  const withDate = baseRow(); withDate.item.cells.terminated = '2012-01-01';
+  assert.equal(planTerminationNote(withDate, {native_id: '1', source_row_ordinal: 1, as_of: '2026-09-30'}, 't').patch.ops.length, 0);
+});
+
+test('a later termination fill removes the note', () => {
+  const noted = planTerminationNote(baseRow(), {native_id: '8272189', source_row_ordinal: 7, as_of: '2026-09-30'}, 't').patch.cols;
+  const row = {id: baseRow().id, ...noted};
+  const r = planDocket(row, {terminated: g('2012-02-07')}, ev, 'blanks', 't');
+  assert.equal(r.patch.cols.item.cells.terminated, '2012-02-07'); assert.equal(r.patch.cols.item.cells.termination_note, undefined);
+});
+
+const reg = (id, key, extra = {}) => ({id, docket_key: key, court_id: key.split(':')[0], caption: null, native_case_ids: [], ...extra});
+const bulk = (id, relaxed, type, extra = {}) => ({id, relaxed, type, docket_number: `1:18-${type}-45090`, case_name: 'A v. B', blocked: 'f', source_row_ordinal: 5, date_filed: '2018-01-01', date_terminated: null, ...extra});
+
+test('variant rule A1: unique relaxed key, civil-series type letter, caption confirmed or registry caption blank', () => {
+  const R = [reg('r1', 'ohnd:1:2018-cv-45090'), reg('r2', 'ohnd:1:2018-cv-45091', {caption: ' a  V. b '}), reg('r3', 'ohnd:1:2018-cv-45092', {caption: 'Other v. Name'}),
+    reg('r4', 'ohnd:1:2018-cv-45093'), reg('r5', 'ohnd:1:2018-cv-45094'), reg('r6', 'ohnd:1:2018-cv-45095'), reg('r7', 'ohnd:1:2018-cv-45096', {native_case_ids: [{id: '123'}]})];
+  const B = [bulk('1', 'ohnd:1:2018-45090', 'op'), bulk('2', 'ohnd:1:2018-45091', 'op'), bulk('3', 'ohnd:1:2018-45092', 'op'), bulk('4', 'ohnd:1:2018-45093', 'op'), bulk('5', 'ohnd:1:2018-45093', 'cv'),
+    bulk('6', 'ohnd:1:2018-45094', 'cr'), bulk('7', 'ohnd:1:2018-45095', 'op', {blocked: 't'}), bulk('8', 'ohnd:1:2018-45096', 'op')];
+  const {stats, accepted, held} = decideVariants(R, B, new Set());
+  assert.deepEqual(accepted.map(a => a.registry.id), ['r1', 'r2']);
+  assert.equal(stats.caption_mismatch_held, 1); assert.equal(stats.ambiguous_relaxed_key, 1); assert.equal(stats.type_not_civil_series, 1); assert.equal(stats.blocked, 1);
+  assert.equal(normCaption('  A   V. B '), 'a v. b');
+  const row = variantRow(accepted[0], {archive_sha256: 'f'.repeat(64), snapshot_date: '2026-09-30', archive_bytes: 1, rows_scanned: 1}, 't');
+  assert.equal(row.data.key_match_rule, RULE); assert.equal(row.data.key_match_rule, VARIANT_RULE); assert.deepEqual(row.data.type_variant, {registry_type: 'cv', bulk_type: 'op'});
+  assert.equal(held.length, 4);
+});
+
+test('variant native id is projected with the rule name in provenance and a distinct resolution basis', () => {
+  const r = planDocket(baseRow(), {native: {native_id: '55', source_row_ordinal: 9, key_match_rule: VARIANT_RULE}}, new Map([['55', {pacer_case_id: '1'}]]), 'blanks', 't');
+  const c = r.patch.cols;
+  assert.equal(c.detail.registry.native_case_ids[0].resolution_basis, 'civil_series_type_variant_bulk_2026-09-30'); assert.equal(c.detail.registry.native_case_ids[0].key_match_rule, VARIANT_RULE);
+  assert.equal(c.detail.provenance.gapfill[0].key_match_rule, VARIANT_RULE);
+  assert.equal(c.item.cells.filed, 'Not recorded');
+});
