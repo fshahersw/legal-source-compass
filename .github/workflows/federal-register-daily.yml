@@ -25,12 +25,13 @@ jobs:
     env:
       EXTERNAL_SUPABASE_URL: ${{ secrets.EXTERNAL_SUPABASE_URL }}
       EXTERNAL_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.EXTERNAL_SUPABASE_SERVICE_ROLE_KEY }}
-      FR_PRIVATE_DIR: ${{ runner.temp }}/federal-register
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Private working directory
+        run: echo "FR_PRIVATE_DIR=$RUNNER_TEMP/federal-register" >> "$GITHUB_ENV"
       - name: Require repository secrets
         run: |
           missing=0
