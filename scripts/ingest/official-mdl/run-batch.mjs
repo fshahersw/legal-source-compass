@@ -5,7 +5,7 @@
 // Pacing: the host's robots Crawl-delay + 0.5 s when robots.txt asked for one (njd, paed, moed, jpml publish `Crawl-delay: 10`), else 2.5 s. One worker, one request at a time.
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { disposition } from '../run-seeger-focus-pdf-batches.mjs';
 import { resolveRunDir, parseArgs, readJsonl, appendJsonl } from './store.mjs';
@@ -19,9 +19,10 @@ export function hostDelayMs(runDir, host, override = null) {
   const crawl = robots?.robots_policy?.crawl_delay_s;
   return Math.max(2500, crawl ? Math.ceil(crawl * 1000) + 500 : 0);
 }
+const NODE_SYSTEM_CA = spawnSync(process.execPath, ['--use-system-ca', '-e', '0'], { encoding: 'utf8' }).status === 0;
 function launch(script, values, log) {
   const fd = fs.openSync(log, 'a');
-  const child = spawn(process.execPath, ['--use-system-ca', script, ...values], { windowsHide: true, stdio: ['ignore', fd, fd] });
+  const child = spawn(process.execPath, [...(NODE_SYSTEM_CA ? ['--use-system-ca'] : []), script, ...values], { windowsHide: true, stdio: ['ignore', fd, fd] });
   const done = new Promise((resolve, reject) => { child.once('error', e => { fs.closeSync(fd); reject(e); }); child.once('exit', (code, signal) => { fs.closeSync(fd); resolve(code ?? (signal ? 128 : 1)); }); });
   return { child, done };
 }
