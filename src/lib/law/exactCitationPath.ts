@@ -24,10 +24,10 @@ export function statuteNativeId(state: string, citationPath: string): string {
   return `${state.toUpperCase()}:${citationPath}`;
 }
 
-/** Dotted official paths such as Fla. Stat. § 95.11 and MCL 600.5805. The whole number only. */
+/** Dotted official paths such as Fla. Stat. § 95.11 and MCL 600.5851b. The whole token, including a trailing letter. */
 function dottedPaths(citation: string): string[] | null {
   const paths: string[] = [];
-  const re = /\b(\d{1,4}\.\d{1,4})(?!\d)/g;
+  const re = /\b(\d{1,4}\.\d{1,4}[A-Za-z]*)(?![A-Za-z0-9])/g;
   for (const match of citation.matchAll(re)) {
     const path = match[1];
     if (!path || paths.includes(path)) continue;

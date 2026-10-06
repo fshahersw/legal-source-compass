@@ -45,6 +45,15 @@ describe("exact statute citation paths", () => {
     expect(exactCitationPaths("MI", "MCL 600.5805")?.includes("600.580")).toBe(false);
   });
 
+  it("keeps the trailing letter on Michigan 600.5851b", () => {
+    expect(
+      exactCitationPaths("MI", "Mich. Comp. Laws § 600.5805(6); minor victims also § 600.5851b(1)"),
+    ).toEqual(["600.5805", "600.5851b"]);
+    expect(exactCitationPaths("MI", "MCL 600.5851b(1)")).toEqual(["600.5851b"]);
+    expect(exactCitationPaths("MI", "MCL 600.5851b(1)")?.includes("600.5851")).toBe(false);
+    expect(statuteNativeId("MI", "600.5851b")).toBe("MI:600.5851b");
+  });
+
   it("does not shorten a path or accept a range", () => {
     expect(exactCitationPaths("WY", "Wyo. Stat. § 1-3-1050")).toEqual(["1-3-1050"]);
     expect(exactCitationPaths("WY", "Wyo. Stat. § 1-3-1050")?.includes("1-3-105")).toBe(false);
