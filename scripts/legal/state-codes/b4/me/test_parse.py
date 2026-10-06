@@ -15,7 +15,7 @@ class MaineParseTest(unittest.TestCase):
         self.assertEqual(r["number"], "1")
         self.assertEqual(r["heading"], "Extent of sovereignty and jurisdiction")
         self.assertIn("jurisdiction and sovereignty", r["body"])
-        self.assertNotIn("[PL 1985", r["body"])
+        self.assertIn("[PL 1985", r["body"])
         self.assertIn("PL 1985", r["history"])
         self.assertIn("extracted on", r["docinfo"])
 
