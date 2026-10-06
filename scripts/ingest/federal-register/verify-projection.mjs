@@ -7,7 +7,7 @@
  */
 import { acquireRange, loadCheckpoint, readPage } from './acquire.mjs';
 import { corpusClient } from './corpus.mjs';
-import { projectRecord, DATASET, pickFields, compareNewestFirst } from './lib.mjs';
+import { projectRecord, DATASET, pickFields, compareNewestFirst, qualification, legacyQualification } from './lib.mjs';
 
 const arg = (name) => { const i = process.argv.indexOf(name); return i < 0 ? undefined : process.argv[i + 1]; };
 const from = arg('--from'), through = arg('--through'), dir = arg('--dir');
@@ -32,6 +32,10 @@ for (let offset = 0; ; offset += 1000) {
 const collected = '2026-08-20';
 const coverage = { from: '1994-01-03', through: '2026-08-20' };
 const stable = (v) => JSON.stringify(v, (k, x) => (x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort()) : x));
+// The historical rows' `text` still ends with the pre-rewrite sentence (only detail.qualification was
+// rewritten), so `text` is compared without its qualification suffix.
+const suffixes = [qualification(coverage.from, coverage.through, collected), legacyQualification(coverage.from, coverage.through, collected)];
+const stripQualification = (t) => { for (const s of suffixes) if (t.endsWith(s)) return t.slice(0, -s.length); return t; };
 let matched = 0, missing = 0;
 const diffs = {};
 const examples = {};
@@ -42,7 +46,9 @@ for (const d of fetched) {
   const p = projectRecord(d, { id: row.id, ordinal: row.ordinal, collected, coverage });
   let exact = true;
   for (const k of ['category', 'state', 'county_geoids', 'title', 'source_url', 'item', 'detail', 'text', 'filters']) {
-    if (stable(p[k]) !== stable(row[k])) {
+    const a = k === 'text' ? stripQualification(p[k]) : stable(p[k]);
+    const b = k === 'text' ? stripQualification(row[k]) : stable(row[k]);
+    if (a !== b) {
       exact = false;
       diffs[k] = (diffs[k] ?? 0) + 1;
       const a = stable(p[k]), b = stable(row[k]);

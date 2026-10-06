@@ -4,7 +4,6 @@ import { ExternalBadge, ExternalError } from "@/components/corpus/ExternalBadge"
 import { useDatasets } from "@/components/corpus/DatasetBrowser";
 import { SECTIONS, sectionOf } from "@/lib/external/groups";
 import { datasetDisplayName, datasetPurpose } from "@/lib/external/domainRegistry";
-import { datasetVersionLabel } from "@/lib/external/datasetVersions";
 import { pageHead } from "@/lib/corpus/head";
 import { EXTRA_TABLES } from "@/lib/external/tables.functions";
 
@@ -69,7 +68,7 @@ function Catalog() {
                   >
                     <div className="flex flex-col gap-1">
                       <span className="text-[13px] font-medium">
-                        {datasetVersionLabel(d.id, datasetDisplayName(d.id, d.label))}
+                        {datasetDisplayName(d.id, d.label)}
                       </span>
                       <span className="shrink-0 tabular-nums text-[12px] text-muted-foreground">
                         {d.records == null

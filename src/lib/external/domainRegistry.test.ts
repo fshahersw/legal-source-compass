@@ -35,22 +35,14 @@ describe("domain registry", () => {
     );
     expect(datasetDisplayName("jpml_html_reference")).toBe("JPML source reference metadata");
   });
-  it("keeps people, positions, court locations and citations at their native count grains", () => {
+  it("keeps people, court locations and the eCFR at their native count grains", () => {
     expect(datasetRecordGrain("cl_people")?.unit).toBe("native person reference records");
-    expect(datasetRecordGrain("cl_positions")?.unit).toBe("position records");
     expect(datasetRecordGrain("cl_courthouses")?.unit).toBe("courthouse reference records");
-    expect(datasetRecordGrain("cl_citation_edges")).toBeNull();
     expect(datasetRecordGrain("unreviewed_future_dataset")).toBeNull();
     expect(datasetRecordGrain("constructor")).toBeNull();
     expect(datasetRecordGrain("ecfr_hierarchy")?.unit).toBe("publisher hierarchy nodes");
     expect(datasetRecordGrain("ecfr_authority_notes")?.unit).toBe(
       "selected XML metadata snapshots",
-    );
-    expect(datasetRecordGrain("cl_master_entries")?.unit).toBe(
-      "native docket-entry metadata records",
-    );
-    expect(datasetRecordGrain("cl_master_entries")?.description).toContain(
-      "does not establish MDL member status",
     );
   });
   it("gives important datasets clear names and purposes", () => {
@@ -58,8 +50,6 @@ describe("domain registry", () => {
       "CFR parts",
     );
     expect(datasetPurpose("mdl_docket_activity")).toBe("Activity");
-    expect(datasetPurpose("cl_master_entries")).toBe("Activity");
-    expect(datasetDisplayName("cl_master_entries")).toBe("Native master-docket entry metadata");
   });
 
   it("shows the label the corpus publishes, and keeps the fallback names truthful about the rows", () => {

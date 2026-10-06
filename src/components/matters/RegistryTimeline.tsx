@@ -19,9 +19,20 @@ import {
 import { PdfViewer } from "@/components/matters/PdfViewer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  AVAILABILITY_LABELS,
+  caseBelongsToMdl,
+  type DocketDocument,
+  type DocketDocumentsOverview,
+} from "@/lib/matters/docketDocuments";
 import { documentCopies, formatBytes, type MatterDocument } from "@/lib/matters/documents";
 import { groupEntriesByMonth } from "@/lib/matters/entries";
-import { getMatterTimeline, getMatterTimelineArchive } from "@/lib/matters/matters.functions";
+import {
+  getDocketDocumentsOverview,
+  getMatterEntryDocuments,
+  getMatterTimeline,
+  getMatterTimelineArchive,
+} from "@/lib/matters/matters.functions";
 import {
   EMPTY_TIMELINE_FILTER,
   WITHHELD_NOTES,
@@ -173,15 +184,114 @@ function EntryDocuments({
   );
 }
 
+/** Docket-sheet documents (DocketBird-tracked cases) for one entry, except those the verified archive already lists. */
+function DocketSheetDocuments({
+  docs,
+  archiveIds,
+}: {
+  docs: DocketDocument[];
+  archiveIds: Set<string>;
+}) {
+  const [all, setAll] = useState(false);
+  const extra = docs.filter((d) => !archiveIds.has(d.nativeDocumentId));
+  if (!extra.length) return null;
+  const shown = all ? extra : extra.slice(0, ENTRY_DOCS);
+  return (
+    <div className="space-y-1" aria-label="Docket-sheet documents">
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        Docket-sheet documents · {extra.length}
+      </div>
+      <ul className="space-y-1">
+        {shown.map((d) => (
+          <li
+            key={d.nativeDocumentId}
+            className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[12px]"
+          >
+            <span className="min-w-0 break-words">
+              {d.description ??
+                (d.descriptionWithheld ? "Description withheld" : "Description not recorded")}
+            </span>
+            <Chip
+              tone={d.availability === "stored" ? "primary" : "warning"}
+              title="Availability as the dataset records it."
+            >
+              {AVAILABILITY_LABELS[d.availability]}
+            </Chip>
+            {d.fileName ? (
+              <span className="font-mono text-[11px] text-muted-foreground">{d.fileName}</span>
+            ) : null}
+            {d.bytes !== null ? (
+              <span className="text-[11px] text-muted-foreground">{formatBytes(d.bytes)}</span>
+            ) : null}
+            <span className="text-[11px] text-muted-foreground">
+              Category: {d.label ?? "Not recorded"}
+            </span>
+            {d.pdfUrl ? (
+              <a
+                href={d.pdfUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary underline-offset-2 hover:underline"
+              >
+                Open PDF
+              </a>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+      {extra.length > ENTRY_DOCS ? (
+        <button
+          type="button"
+          className="text-[12px] text-primary underline-offset-2 hover:underline"
+          onClick={() => setAll((v) => !v)}
+        >
+          {all ? "Show fewer" : `Show all ${extra.length}`}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+/** What the docket-documents dataset holds for this matter, including what it withholds. */
+function DocketDocumentsNote({ mdl }: { mdl: string }) {
+  const fn = useServerFn(getDocketDocumentsOverview);
+  const q = useQuery({
+    queryKey: ["docket-documents-overview"],
+    queryFn: () => fn(),
+    staleTime: 5 * 60_000,
+  });
+  const overview: DocketDocumentsOverview | null | undefined = q.data;
+  const cases = overview?.cases.filter((c) => caseBelongsToMdl(c, mdl)) ?? [];
+  if (!overview || !cases.length) return null;
+  const rows = cases.reduce((n, c) => n + c.rows, 0);
+  const withheld = cases.reduce((n, c) => n + (c.withheld ?? 0), 0);
+  return (
+    <p className="text-[12px] text-muted-foreground">
+      Docket-sheet documents for this matter: {rows.toLocaleString()} listed under their entries (or
+      in the verified archive below). {withheld.toLocaleString()} documents are withheld under the
+      sealed/restricted rule; they are counted here and never listed.{" "}
+      <Link
+        to="/sources/docket-documents"
+        search={{ mdl }}
+        className="text-primary underline-offset-2 hover:underline"
+      >
+        Browse the documents
+      </Link>
+    </p>
+  );
+}
+
 function EntryRow({
   entry,
   mdl,
   archive,
+  docketDocs,
   onView,
 }: {
   entry: RegistryEntry;
   mdl: string;
   archive: Archive;
+  docketDocs: DocketDocument[] | undefined;
   onView: (d: MatterDocument) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -259,6 +369,19 @@ function EntryRow({
           </p>
         )}
         <EntryDocuments entry={entry} archive={archive} onView={onView} />
+        {docketDocs && entry.withheld !== "sealed_document" ? (
+          <DocketSheetDocuments
+            docs={docketDocs}
+            archiveIds={
+              new Set(
+                (archive && archive.connected
+                  ? (archive.byEntry[entry.id]?.documents ?? [])
+                  : []
+                ).map((a) => a.doc.nativeDocumentId),
+              )
+            }
+          />
+        ) : null}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]">
           {long ? (
             <button
@@ -412,6 +535,7 @@ export function RegistryTimeline({
   const mdl = payload.overview.mdl;
   const timelineFn = useServerFn(getMatterTimeline);
   const archiveFn = useServerFn(getMatterTimelineArchive);
+  const docsFn = useServerFn(getMatterEntryDocuments);
   const [draft, setDraft] = useState("");
   const [filter, setFilter] = useState<TimelineFilter>({
     q: "",
@@ -459,6 +583,22 @@ export function RegistryTimeline({
     queryKey: ["matter-timeline-archive", mdl, items.map((i) => i.id).join(",")],
     enabled: items.length > 0,
     queryFn: () => archiveFn({ data: { id: mdl, items } }),
+    staleTime: 10 * 60_000,
+  });
+  const docketDocs = useQuery({
+    queryKey: ["matter-entry-documents", mdl, items.map((i) => i.id).join(",")],
+    enabled: items.length > 0,
+    queryFn: () =>
+      docsFn({
+        data: {
+          id: mdl,
+          items: items.map((i) => ({
+            id: i.id,
+            docketKey: i.docketKey,
+            entryNumber: i.entryNumber,
+          })),
+        },
+      }),
     staleTime: 10 * 60_000,
   });
   const groups = useMemo(() => groupEntriesByMonth(entries ?? []), [entries]);
@@ -598,6 +738,7 @@ export function RegistryTimeline({
           </p>
         ) : null}
         {archiveNote}
+        <DocketDocumentsNote mdl={mdl} />
         {entries && entries.length ? (
           <div className={page.isFetching ? "opacity-70 transition-opacity" : ""}>
             {groups.map((g) => (
@@ -613,6 +754,7 @@ export function RegistryTimeline({
                       entry={e}
                       mdl={mdl}
                       archive={archive.data}
+                      docketDocs={docketDocs.data?.[e.id]}
                       onView={setViewed}
                     />
                   ))}

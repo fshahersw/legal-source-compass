@@ -10,7 +10,6 @@ const PURPOSES: Record<string, DatasetPurpose> = {
   court_documents: "Documents",
   court_forms_expansion_20260912: "Documents",
   judges: "Directory",
-  judge_enrichment: "Reference",
   judge_entities: "Reference",
   judge_portraits: "Documents",
   mdls: "Directory",
@@ -25,7 +24,6 @@ const PURPOSES: Record<string, DatasetPurpose> = {
   federal_regulations_parts: "Directory",
   federal_regulations_documents: "Documents",
   federal_register_history: "Activity",
-  regulatory_backfill: "Reference",
   mass_tort_authority_evidence: "Reference",
   jpml_html_reference: "Reference",
   agency_safety_openfda_device_classification_20261002: "Reference",
@@ -33,8 +31,6 @@ const PURPOSES: Record<string, DatasetPurpose> = {
   ecfr_authority_notes: "Reference",
   statutory_limitations_review: "Reference",
   cl_docket_metadata: "Reference",
-  cl_master_entries: "Activity",
-  cl_reporter_citations: "Reference",
   public_laws: "Documents",
   sources: "Directory",
   saved_pages: "Documents",
@@ -50,7 +46,6 @@ const LABELS: Record<string, string> = {
   uscourts_pages: "U.S. Courts pages",
   judges: "Judge directory",
   cl_people: "CourtListener people",
-  judge_enrichment: "Judge profiles",
   judge_entities: "Consolidated judge profiles",
   judge_portraits: "Judge portraits",
   mdl_appearances: "MDL counsel appearances",
@@ -74,15 +69,12 @@ const LABELS: Record<string, string> = {
   public_laws: "Public laws",
   limitation_periods: "Historical limitations summaries",
   statutory_limitations_review: "Limitations calculator rule records",
-  regulatory_backfill: "Federal Register metadata backfill",
   mass_tort_authority_evidence: "Selected mass-tort authority evidence",
   jpml_html_reference: "JPML source reference metadata",
   agency_safety_openfda_device_classification_20261002: "FDA device classifications",
   ecfr_hierarchy: "Dated eCFR hierarchy metadata",
   ecfr_authority_notes: "Selected eCFR authority and citation metadata",
   cl_docket_metadata: "Native docket metadata",
-  cl_master_entries: "Native master-docket entry metadata",
-  cl_reporter_citations: "Native reporter citations",
   citation_reference: "Citation reference",
   citation_index: "Citation index",
   agency_science_documents: "Agency science documents",
@@ -166,65 +158,25 @@ const RECORD_GRAINS: Readonly<Record<string, { unit: string; description: string
     description:
       "Consolidated entity profiles retain their source evidence. This is not a census of currently serving judges.",
   },
-  people: {
-    unit: "native person reference records",
-    description:
-      "Source-native person IDs include historical biographies and aliases. Different IDs remain distinct; the count is not a verified unique-person or current-judge census.",
-  },
   cl_people: {
     unit: "native person reference records",
     description:
       "Source-native person IDs include historical biographies and aliases. Different IDs remain distinct; the count is not a verified unique-person or current-judge census.",
-  },
-  cl_positions: {
-    unit: "position records",
-    description:
-      "Native employment/service positions may have multiple rows per person, including historical and nonjudicial positions. Position counts are not judge counts.",
-  },
-  cl_educations: {
-    unit: "education records",
-    description:
-      "Native education rows may have multiple entries per person. These counts describe education records, not people or schools.",
-  },
-  cl_schools: {
-    unit: "school reference records",
-    description:
-      "Source-native school IDs describe institutional references, not enrollment, education events or unique people.",
   },
   court_spine: {
     unit: "court registry records",
     description:
       "The source registry includes historical and other court references. Its size does not establish the number of currently operating courts.",
   },
-  cl_courts: {
-    unit: "native court reference records",
-    description:
-      "Source-native court IDs include historical or inactive references. Current operation and precedential hierarchy require separate source evidence.",
-  },
   cl_courthouses: {
     unit: "courthouse reference records",
     description:
       "Courthouse location records are separate from court identities; several locations can refer to one court.",
   },
-  cl_court_appeals_to: {
-    unit: "directed appellate relationship records",
-    description:
-      "Recorded appeals-to links describe native court relationships. They do not establish the binding effect or treatment of a particular decision.",
-  },
   cl_docket_metadata: {
     unit: "native docket metadata records",
     description:
       "Approved source-native docket IDs retain their recorded metadata and explicit FJC MDL selection. This coverage is not a complete member-case census or a determination of governing law.",
-  },
-  cl_master_entries: {
-    unit: "native docket-entry metadata records",
-    description:
-      "Privacy-reviewed entry IDs retain their native docket, filing date, entry number and document locators. A master-docket association does not establish MDL member status, a complete docket history or a legal outcome; document bytes are not included.",
-  },
-  cl_reporter_citations: {
-    unit: "reporter citation records",
-    description:
-      "Reporter locators are separate from opinions; an opinion can have several citation records. Citation counts do not establish precedential weight.",
   },
   court_forms_expansion_20260912: {
     unit: "saved document records",

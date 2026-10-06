@@ -86,6 +86,7 @@ const CONTEXT_NAV: { paths: string[]; items: ContextItem[] }[] = [
       { to: "/sources/catalog", label: "Source catalog" },
       { to: "/sources/coverage", label: "Quality & coverage" },
       { to: "/sources/analysis", label: "Docket timelines" },
+      { to: "/sources/docket-documents", label: "Docket documents" },
       { to: "/saved-sources", label: "Saved" },
     ],
   },

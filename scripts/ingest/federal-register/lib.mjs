@@ -120,7 +120,17 @@ export function compareNewestFirst(a, b) {
   );
 }
 
+/**
+ * Per-row qualification. Same sentence form as the ledgered 2026-10-06 rewrite of the
+ * historical rows: the collection is continued daily, so a row never claims that later
+ * documents are absent from the collection; only its own collection date bounds it.
+ */
 export function qualification(from, through, collected) {
+  return `Federal Register documents published ${from} to ${through} as listed by the federalregister.gov API and GovInfo when the index was collected on ${collected}. Later publication days are added from daily collections; each document's own "Index collected" fact gives its collection date. CFR parts, agencies, docket identifiers and RINs are the ones the API lists for each document; a correction issued after a document's collection date is not included in it. A document that cites a CFR part may propose, amend, correct or merely discuss it: read the document.`;
+}
+
+/** The sentence form the collection used before the 2026-10-06 rewrite (kept for verification and rollback only). */
+export function legacyQualification(from, through, collected) {
   return `Federal Register documents published ${from} to ${through} as listed by the federalregister.gov API and GovInfo when the index was collected on ${collected}. CFR parts, agencies, docket identifiers and RINs are the ones the API lists for each document; documents published later, and any later correction, are not included. A document that cites a CFR part may propose, amend, correct or merely discuss it: read the document.`;
 }
 
