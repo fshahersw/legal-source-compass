@@ -41,7 +41,6 @@ describe("law & safety folders", () => {
     expect(lawGroup("statutory_limitations_review")).toBe("reference");
     for (const id of [
       "cl_reporter_citations",
-      "cl_citation_edges",
       "regulatory_backfill",
       "ecfr_hierarchy",
       "ecfr_authority_notes",

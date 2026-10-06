@@ -39,9 +39,7 @@ describe("domain registry", () => {
     expect(datasetRecordGrain("cl_people")?.unit).toBe("native person reference records");
     expect(datasetRecordGrain("cl_positions")?.unit).toBe("position records");
     expect(datasetRecordGrain("cl_courthouses")?.unit).toBe("courthouse reference records");
-    expect(datasetRecordGrain("cl_citation_edges")?.description).toContain(
-      "do not establish positive treatment",
-    );
+    expect(datasetRecordGrain("cl_citation_edges")).toBeNull();
     expect(datasetRecordGrain("unreviewed_future_dataset")).toBeNull();
     expect(datasetRecordGrain("constructor")).toBeNull();
     expect(datasetRecordGrain("ecfr_hierarchy")?.unit).toBe("publisher hierarchy nodes");

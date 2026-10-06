@@ -70,7 +70,6 @@ const EXPLICIT: Record<string, SectionId> = {
   sw_matter_parties_v1: "matters",
   sw_matter_regulatory_links_v1: "matters",
   sw_matter_regulatory_links_v1_staged: "matters",
-  cl_citation_edges: "law",
   cl_reporter_citations: "law",
   statutory_limitations_review: "law",
   regulatory_backfill: "law",

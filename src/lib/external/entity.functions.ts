@@ -22,7 +22,7 @@ export const getEntity = createServerFn({ method: "GET" })
   });
 
 export type NameRow = { id: string; title: string; state: string | null; subtitle: string | null };
-const NAME_DATASETS = ["judges", "mdl_counsel", "counsel_directory", "people"] as const;
+const NAME_DATASETS = ["judges", "mdl_counsel", "counsel_directory"] as const;
 
 /** A–Z name index for a people dataset: names starting with a letter, paginated, with a real count. */
 export const listNames = createServerFn({ method: "GET" })

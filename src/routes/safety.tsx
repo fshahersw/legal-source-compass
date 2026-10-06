@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
 import { SectionPage } from "@/components/corpus/SectionPage";
 import { FolderGrid } from "@/components/corpus/FolderGrid";
@@ -37,7 +37,6 @@ const AGENCIES = [
 
 function SafetyPage() {
   const s = Route.useSearch();
-  const navigate = useNavigate({ from: "/safety" });
   const datasets = useDatasets();
   if (s.view === "list") return <SectionPage section="safety" path="/safety" ds={undefined} />;
   const allDatasets = datasets.data ?? [];
@@ -68,7 +67,6 @@ function SafetyPage() {
         dataset={resolved.canonicalId}
         requestedDataset={resolved.selectedId}
         datasets={allDatasets}
-        onVersionChange={(value) => navigate({ search: { ds: value, agency } })}
       />
     );
   else if (!agency) {
