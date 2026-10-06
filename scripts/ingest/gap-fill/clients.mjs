@@ -5,7 +5,9 @@ import {archiveRaw, sleep, sha256} from './lib.mjs';
 export const CL_ORIGIN = 'https://www.courtlistener.com';
 export const DB_ORIGIN = 'https://api.docketbird.com';
 const CL_READ = new Set(['search', 'dockets', 'docket-entries', 'recap-documents', 'parties', 'attorneys', 'courts', 'originating-court-information', 'api-usage']);
-const DB_READ = new Set(['/cases', '/documents']);
+const DB_READ = new Set(['/cases', '/documents', '/documents/search']);
+/** Read paths of the DocketBird REST API: the three list routes plus one case or one document by id. */
+const DB_READ_ID = /^\/(cases|documents)\/[A-Za-z0-9._:-]+$/;
 
 export class Stop extends Error { constructor(code, detail) { super(code + (detail ? ` ${detail}` : '')); this.code = code; } }
 
@@ -74,23 +76,31 @@ export class CourtListener {
  * a PDF, and records that answer as `untracked` instead of retrying.
  */
 export class DocketBird {
-  constructor({cacheDir, key = process.env.DOCKETBIRD_API_KEY, fetchImpl = fetch, maxRequests = 60, retryMs = 2000} = {}) {
+  constructor({cacheDir, key = process.env.DOCKETBIRD_API_KEY, fetchImpl = fetch, maxRequests = 60, retryMs = 2000, minGapMs = 0, sleepFn = sleep} = {}) {
     if (!key) throw new Stop('MISSING_CREDENTIAL', 'DOCKETBIRD_API_KEY');
-    Object.assign(this, {cacheDir, key, fetchImpl, maxRequests, retryMs, requests: 0, stopped: null});
+    Object.assign(this, {cacheDir, key, fetchImpl, maxRequests, retryMs, minGapMs, sleepFn, nextAt: 0, rateLimited: 0, requests: 0, stopped: null});
   }
   async get(pathname, params) {
-    if (!DB_READ.has(pathname)) throw new Stop('REFUSED_PATH', pathname);
+    if (!DB_READ.has(pathname) && !(DB_READ_ID.test(pathname) && pathname !== '/documents/search')) throw new Stop('REFUSED_PATH', pathname);
     if (this.stopped) throw new Stop(this.stopped);
     if (this.requests >= this.maxRequests) throw new Stop('REQUEST_BUDGET_REACHED', String(this.maxRequests));
     const u = new URL(DB_ORIGIN + pathname);
     for (const [k, v] of Object.entries(params ?? {})) u.searchParams.set(k, v);
-    let res, bytes;
+    let res, bytes, rateTries = 0;
     for (let attempt = 0; ; attempt++) {
+      // Global pacing: one request slot every minGapMs across all workers.
+      const due = Math.max(Date.now(), this.nextAt); this.nextAt = due + this.minGapMs; if (due > Date.now()) await this.sleepFn(due - Date.now());
       res = await this.fetchImpl(u, {headers: {Authorization: `Bearer ${this.key}`, Accept: 'application/json'}, redirect: 'error', signal: AbortSignal.timeout(60000)});
       this.requests++;
       bytes = Buffer.from(await res.arrayBuffer());
+      if (res.status === 429 && rateTries < 6) {
+        // Back off (the provider sends no Retry-After): 20 s, 40 s, ... capped at 5 min, and slow the shared pace.
+        this.rateLimited++; rateTries++; this.minGapMs = Math.min(5000, Math.max(this.minGapMs * 2, 500));
+        await archiveRaw(this.cacheDir, bytes, {source: 'docketbird', source_url: u.toString(), request_method: 'GET', http_status: 429, retrieved_at: new Date().toISOString(), schema_version: 'docketbird-rest/1'});
+        const wait = Math.min(300000, 20000 * 2 ** (rateTries - 1)); this.nextAt = Math.max(this.nextAt, Date.now() + wait); attempt--; continue;
+      }
       if (res.status < 502 || res.status > 504 || attempt >= 3) break;
-      await sleep(this.retryMs * 2 ** attempt);
+      await this.sleepFn(this.retryMs * 2 ** attempt);
     }
     const receipt = await archiveRaw(this.cacheDir, bytes, {source: 'docketbird', source_url: u.toString(), request_method: 'GET', http_status: res.status, retrieved_at: new Date().toISOString(), schema_version: 'docketbird-rest/1'});
     let body = null; try { body = JSON.parse(bytes.toString('utf8')); } catch { /* non-JSON body */ }
