@@ -276,6 +276,9 @@ for (const file of files) {
       ...provenance.tolling.map(
         (t) => `Statutory tolling (not applied by the calculator): ${t.text} (${t.citation}).`,
       ),
+      ...(entry.crossChecks ?? []).map(
+        (c) => `Related provision or cross-check (capture ${c.captureId}): ${c.note}`,
+      ),
       ...provenance.flags.map((f) => `Flag: ${f}`),
     ];
     const rule: LimitationRule = {
@@ -293,7 +296,7 @@ for (const file of files) {
       pinpoint: entry.citation,
       scope: `${CLAIM_LABELS[entry.claimType as ClaimType]}${variant === "general" ? "" : ` (${variant.replaceAll("_", " ")})`}: as stated in the cited provision; special statutory claims excluded.`,
       accrualBasis: entry.accrual.kind === "death" ? "death" : "confirmed_accrual",
-      conditions: notes,
+      conditions: [...new Set(notes)],
       exclusions: [
         "Governmental defendants, special statutory claims and intentional / sexual-abuse claims unless the cited provision expressly covers them",
         "Unresolved minority, disability, concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues",
@@ -338,6 +341,7 @@ for (const file of files) {
   }
 }
 
+const unresolvedTime: string[] = [];
 const timeRules = new Map<string, NonNullable<CoverageRow["timeComputation"]>>();
 const timeDir = join(work, "time");
 for (const file of existsSync(timeDir)
@@ -480,6 +484,7 @@ console.log(
       not_recorded: tally("not_recorded"),
     },
     timeRules: timeRules.size,
+    timeRulesUnresolved: unresolvedTime,
     discrepancies: discrepancies.length,
     rejected: rejected.length,
   }),

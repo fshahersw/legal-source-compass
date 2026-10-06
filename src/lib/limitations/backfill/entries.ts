@@ -68,29 +68,27 @@ export type MatrixEntryInput = {
   notRecordedReason?: string;
 };
 
+const UNITS = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
+const TEENS = [
+  "ten",
+  "eleven",
+  "twelve",
+  "thirteen",
+  "fourteen",
+  "fifteen",
+  "sixteen",
+  "seventeen",
+  "eighteen",
+  "nineteen",
+];
+const TENS = ["twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
 const NUMBER_WORDS: Record<string, number> = {
-  one: 1,
-  two: 2,
-  three: 3,
-  four: 4,
-  five: 5,
-  six: 6,
-  seven: 7,
-  eight: 8,
-  nine: 9,
-  ten: 10,
-  eleven: 11,
-  twelve: 12,
-  thirteen: 13,
-  fourteen: 14,
-  fifteen: 15,
-  sixteen: 16,
-  eighteen: 18,
-  twenty: 20,
-  "twenty-five": 25,
-  thirty: 30,
-  sixty: 60,
-  ninety: 90,
+  ...Object.fromEntries(UNITS.map((w, i) => [w, i + 1])),
+  ...Object.fromEntries(TEENS.map((w, i) => [w, i + 10])),
+  ...Object.fromEntries(TENS.map((w, i) => [w, (i + 2) * 10])),
+  ...Object.fromEntries(
+    TENS.flatMap((t, ti) => UNITS.map((u, ui) => [`${t}-${u}`, (ti + 2) * 10 + ui + 1] as const)),
+  ),
   "one hundred eighty": 180,
 };
 
@@ -304,8 +302,11 @@ export function checkTimeRule(
     return out;
   }
   if (!rule.citation?.trim()) err("citation is required");
-  if (typeof rule.extendsWhenLastDayIsWeekend !== "boolean")
-    err("extendsWhenLastDayIsWeekend must be true or false");
+  if (
+    typeof rule.extendsWhenLastDayIsWeekend !== "boolean" &&
+    !(rule.status === "flagged" && rule.extendsWhenLastDayIsWeekend === null)
+  )
+    err("extendsWhenLastDayIsWeekend must be true or false (null only when flagged)");
   if (rule.status === "flagged" && !rule.flags?.length) err("flagged needs flags");
   const capture = lookup(rule.captureId);
   if (!capture) return [...out, { level: "error", message: `capture ${rule.captureId} not found` }];
