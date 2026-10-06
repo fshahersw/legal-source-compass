@@ -1,0 +1,371 @@
+/**
+ * Build an import-ready limitations bundle (rules/sources/coverage/case-references + text) from the existing
+ * protected bundle plus mechanically verified backfill entries. Output stays outside the repository; publishing
+ * goes through the private bundle pipeline with administrator credentials this script never touches.
+ *
+ * Usage: bun scripts/limitations/backfill/build-bundle.ts
+ * Env: LIM_WORK (entries + captures), LIM_BUNDLE (current protected limitations dir), LIM_OUT (output dir),
+ *      LIM_SNAPSHOT_DATE (default 2026-10-06)
+ */
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { addCivilPeriod, periodLabel } from "../../../src/lib/limitations/engine";
+import {
+  checkEntry,
+  type CaptureMeta,
+  type MatrixEntryInput,
+} from "../../../src/lib/limitations/backfill/entries";
+import {
+  CLAIM_LABELS,
+  CLAIM_TYPES,
+  type ClaimCoverage,
+  type ClaimType,
+  type CoverageRow,
+  type LimitationRule,
+  type LimitationSource,
+  type LimitationsSnapshot,
+  type PeriodUnit,
+  type RuleProvenance,
+} from "../../../src/lib/limitations/types";
+import { validateLimitationsSnapshot } from "../../../src/lib/limitations/validation";
+
+const work = process.env.LIM_WORK ?? "/tmp/lim/backfill";
+const bundle = process.env.LIM_BUNDLE ?? "/tmp/lim/data/limitations";
+const out = process.env.LIM_OUT ?? "/tmp/lim/out/limitations";
+const snapshotDate = process.env.LIM_SNAPSHOT_DATE ?? "2026-10-06";
+const ruleVersion = `${snapshotDate}.1`;
+const idStamp = snapshotDate.replaceAll("-", "");
+
+const readJson = (file: string) => JSON.parse(readFileSync(join(bundle, file), "utf8"));
+const rulesDoc = readJson("rules.json");
+const sourcesDoc = readJson("sources.json");
+const coverageDoc = readJson("coverage.json");
+const casesDoc = readJson("case-references.json");
+
+const rules: LimitationRule[] = [...rulesDoc.rules];
+const sources: LimitationSource[] = [...sourcesDoc.sources];
+const sourceIds = new Set(sources.map((s) => s.id));
+const newTexts: { id: string; text: string }[] = [];
+const discrepancies: Record<string, unknown>[] = [];
+const rejected: { state: string; claim: string; reason: string }[] = [];
+const notRecorded = new Map<string, string>();
+const flaggedCells = new Set<string>();
+
+const UNIT: Record<string, PeriodUnit> = {
+  years: "calendar_years",
+  months: "calendar_months",
+  days: "calendar_days",
+};
+
+const reposeTrigger = (text: string): "last_act_or_omission" | "act_or_omission" | null => {
+  const t = text.toLowerCase();
+  if (/last act/.test(t)) return "last_act_or_omission";
+  if (/act or omission|act, omission|act or failure|date of the (act|omission)|act complained/.test(t))
+    return "act_or_omission";
+  return null;
+};
+
+function ensureSource(
+  state: string,
+  captureId: string,
+  meta: CaptureMeta & { seededFrom?: string; rendered?: boolean },
+  text: string,
+  kind: LimitationSource["authorityKind"],
+  citations: string[],
+): string {
+  if (meta.seededFrom) return meta.seededFrom;
+  const id = `bf-${captureId}`;
+  if (sourceIds.has(id)) {
+    const existing = sources.find((x) => x.id === id)!;
+    if (kind === "statute") existing.authorityKind = "statute";
+    return id;
+  }
+  const host = new URL(meta.url).hostname;
+  const how = meta.intermediary
+    ? `Text obtained through an extraction intermediary (${meta.extraction ?? "unspecified"}); not a direct HTTP response`
+    : meta.rendered
+      ? "Official page rendered in headless Chrome without login or terms acceptance; DOM text extracted"
+      : "Direct HTTPS GET of the official page; HTML block text extraction (scripts/styles/head omitted) or PDF text extraction; no OCR";
+  sources.push({
+    id,
+    state,
+    title: citations.length ? citations.slice(0, 3).join("; ") : `Official capture ${captureId}`,
+    publisher: host,
+    url: meta.url,
+    method: how,
+    schemaVersion: "1.0.0",
+    capturedAt: meta.retrievedAt,
+    verifiedAt: meta.retrievedAt,
+    textPath: `/data/limitations/text/${id}.txt`,
+    sha256: meta.textSha256,
+    byteLength: meta.textBytes,
+    authorityKind: kind,
+    validity: `Official page text as retrieved ${meta.retrievedAt.slice(0, 10)}. Period and quoted passages were mechanically matched to this text; current-law, case-law and transition review was not completed.`,
+    historicalApplicability: "Version history is recorded only where the page itself shows a history note; otherwise Not recorded.",
+    rawCapture: {
+      sha256: meta.rawSha256,
+      byteLength: meta.rawBytes,
+      contentType: meta.contentType || "text/html",
+      retrievedAt: meta.retrievedAt,
+    },
+  });
+  sourceIds.add(id);
+  newTexts.push({ id, text });
+  return id;
+}
+
+const capture = (state: string, id: string) => {
+  const base = join(work, "captures", state, id);
+  if (!existsSync(`${base}.json`)) return undefined;
+  return {
+    meta: JSON.parse(readFileSync(`${base}.json`, "utf8")) as CaptureMeta & {
+      seededFrom?: string;
+      rendered?: boolean;
+    },
+    text: readFileSync(`${base}.txt`, "utf8"),
+  };
+};
+
+const key = (state: string, claim: string, variant: string) => `${state}|${claim}|${variant}`;
+const entryDir = join(work, "entries");
+const files = existsSync(entryDir) ? readdirSync(entryDir).filter((f) => f.endsWith(".json")).sort() : [];
+let added = 0;
+let attached = 0;
+
+for (const file of files) {
+  const state = file.replace(".json", "").toUpperCase();
+  const doc = JSON.parse(readFileSync(join(entryDir, file), "utf8")) as { entries: MatrixEntryInput[] };
+  for (const entry of doc.entries) {
+    const variant = entry.variant ?? "general";
+    const k = key(state, entry.claimType, variant);
+    const problems = checkEntry(state, entry, (id) => capture(state, id));
+    const errs = problems.filter((p) => p.level === "error");
+    if (errs.length) {
+      rejected.push({ state, claim: `${entry.claimType}/${variant}`, reason: errs[0]!.message });
+      continue;
+    }
+    if (entry.status === "not_recorded") {
+      if (variant === "general") notRecorded.set(k, entry.notRecordedReason ?? "Not recorded");
+      continue;
+    }
+    const primary = capture(state, entry.captureId)!;
+    const primaryId = ensureSource(state, entry.captureId, primary.meta, primary.text, "statute", [entry.citation]);
+    const crossIds = (entry.crossChecks ?? []).map((c) => {
+      const cc = capture(state, c.captureId)!;
+      const courtPage = /court|judicial/i.test(new URL(cc.meta.url).hostname);
+      return ensureSource(state, c.captureId, cc.meta, cc.text, courtPage ? "publisher_guidance" : "statute", [`Cross-check: ${c.note}`.slice(0, 160)]);
+    });
+    const unit = UNIT[entry.period!.unit]!;
+    const provenance: RuleProvenance = {
+      citation: entry.citation,
+      excerpt: entry.excerpt,
+      periodEvidence: entry.periodEvidence,
+      accrualKind: entry.accrual.kind as RuleProvenance["accrualKind"],
+      accrualText: entry.accrual.text?.trim() || "Not recorded",
+      tolling: (entry.tolling ?? []).map((t) => ({ text: t.text, citation: t.citation })),
+      repose: (entry.repose ?? []).map((r) => ({
+        years: r.years,
+        citation: r.citation,
+        trigger: r.trigger,
+        effectiveFrom: r.effectiveFrom,
+      })),
+      lastAmended: { text: entry.lastAmended?.text?.trim() || "Not recorded", date: entry.lastAmended?.date ?? null },
+      effectiveDate: entry.effectiveDate ?? null,
+      retrievedAt: primary.meta.retrievedAt,
+      entryStatus: entry.status as "verified" | "flagged",
+      confidence: entry.confidence as RuleProvenance["confidence"],
+      confidenceNote: entry.confidenceNote,
+      flags: entry.flags ?? [],
+      crossCheckSourceIds: crossIds,
+    };
+    if (entry.status === "flagged") flaggedCells.add(k);
+
+    const existing = rules.filter(
+      (r) =>
+        r.jurisdiction === state &&
+        r.claimType === entry.claimType &&
+        (r.subtype ?? "general") === variant &&
+        r.ruleKind === "limitations",
+    );
+    const current = existing.find((r) => r.computation === "baseline_only") ?? existing.find((r) => r.period);
+    if (current) {
+      const same =
+        current.period && current.period.amount === entry.period!.amount && current.period.unit === unit;
+      if (same) {
+        if (!current.provenance) {
+          current.provenance = provenance;
+          attached++;
+        }
+      } else {
+        discrepancies.push({
+          cell: k,
+          existingRuleId: current.id,
+          existingPeriod: current.period,
+          existingPinpoint: current.pinpoint,
+          entryPeriod: entry.period,
+          entryCitation: entry.citation,
+          entryStatus: entry.status,
+          captureId: entry.captureId,
+          note: "Existing production rule left unchanged; owner/legal review required before either value is trusted.",
+        });
+      }
+      continue;
+    }
+
+    const repose = entry.repose ?? [];
+    const trigger = repose.length === 1 ? reposeTrigger(repose[0]!.trigger) : null;
+    const reposeModelled = repose.length === 1 && trigger !== null && repose[0]!.effectiveFrom !== null;
+    const accrualOk = ["accrual", "discovery", "occurrence", "breach", "treatment_end", "other", "death"].includes(
+      entry.accrual.kind,
+    );
+    const baseline =
+      entry.status === "verified" &&
+      accrualOk &&
+      (repose.length === 0 || (reposeModelled && entry.accrual.kind !== "death"));
+    const notes = [
+      `Accrual under the cited rule: ${provenance.accrualText}`,
+      ...(repose.length && !baseline
+        ? repose.map((r) => `Statute of repose not computed here: ${r.years} years (${r.citation}); trigger: ${r.trigger}.`)
+        : []),
+      ...provenance.tolling.map((t) => `Statutory tolling (not applied by the calculator): ${t.text} (${t.citation}).`),
+      ...provenance.flags.map((f) => `Flag: ${f}`),
+    ];
+    const rule: LimitationRule = {
+      id: `${state.toLowerCase()}-${entry.claimType}-${variant}-bf${idStamp}`.replaceAll("_", "-"),
+      schemaVersion: "1.0.0",
+      ruleVersion,
+      jurisdiction: state,
+      claimType: entry.claimType as ClaimType,
+      ruleKind: "limitations",
+      computation: baseline ? "baseline_only" : "research_only",
+      reviewStatus: "statutory_text_verified",
+      period: { amount: entry.period!.amount, unit },
+      provenance,
+      sourceIds: [primaryId, ...crossIds],
+      pinpoint: entry.citation,
+      scope: `${CLAIM_LABELS[entry.claimType as ClaimType]}${variant === "general" ? "" : ` (${variant.replaceAll("_", " ")})`}: as stated in the cited provision; special statutory claims excluded.`,
+      accrualBasis: entry.accrual.kind === "death" ? "death" : "confirmed_accrual",
+      conditions: notes,
+      exclusions: [
+        "Governmental defendants, special statutory claims and intentional / sexual-abuse claims unless the cited provision expressly covers them",
+        "Unresolved minority, disability, concealment, tolling, class action, previous filing, service, borrowing or choice-of-law issues",
+      ],
+      effectiveFrom: entry.effectiveDate ?? null,
+      effectiveThrough: null,
+      validity:
+        entry.status === "verified"
+          ? "Statutory text verified against the official capture; no comprehensive operative-law or case-specific review completed"
+          : "Recorded with open issues (see conditions); no date is issued from a flagged entry",
+      historicalApplicability:
+        provenance.lastAmended.text === "Not recorded"
+          ? "Not recorded; historical amendments and transitional applicability must be confirmed"
+          : `Official history note: ${provenance.lastAmended.text}`,
+      summary: `${periodLabel({ amount: entry.period!.amount, unit })} statutory baseline (${entry.citation}), subject to the cited scope and exceptions.`,
+      warnings: [
+        "This is an unadjusted calendar anniversary, not a verified last day for filing.",
+        "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed.",
+      ],
+      ...(variant === "general" ? {} : { subtype: variant }),
+      ...(baseline && repose.length === 1
+        ? {
+            calculation: {
+              mode: "accrual_repose_min" as const,
+              reposeYears: repose[0]!.years,
+              reposeTrigger: trigger!,
+              reposeEffectiveFrom: repose[0]!.effectiveFrom!,
+            },
+          }
+        : {}),
+    };
+    if (!addCivilPeriod("2000-06-15", rule.period!.amount, unit)) {
+      rejected.push({ state, claim: `${entry.claimType}/${variant}`, reason: "period not representable" });
+      continue;
+    }
+    rules.push(rule);
+    added++;
+  }
+}
+
+const labelFor = (c: ClaimType) => CLAIM_LABELS[c].toLowerCase();
+const coverage: CoverageRow[] = (coverageDoc.coverage as CoverageRow[]).map((row) => {
+  const stateSources = sources.filter((s) => s.state === row.state).map((s) => s.id);
+  const stateRules = rules.filter((r) => r.jurisdiction === row.state);
+  const baselineIds = stateRules.filter((r) => r.computation === "baseline_only").map((r) => r.id);
+  const researchIds = stateRules.filter((r) => r.computation === "research_only").map((r) => r.id);
+  const claimCoverage: ClaimCoverage[] = CLAIM_TYPES.map((claim) => {
+    const cell = stateRules.filter((r) => r.claimType === claim);
+    const base = cell.find((r) => r.computation === "baseline_only");
+    if (base) return { claimType: claim, status: "baseline", ruleId: base.id };
+    const limitation = cell.find((r) => r.ruleKind === "limitations" && r.period) ?? cell[0];
+    if (limitation) {
+      const flagged = limitation.provenance?.entryStatus === "flagged";
+      return { claimType: claim, status: flagged ? "flagged" : "research_only", ruleId: limitation.id };
+    }
+    return {
+      claimType: claim,
+      status: "not_recorded",
+      reason: notRecorded.get(key(row.state, claim, "general")) ?? "No primary-source entry has been verified for this claim.",
+    };
+  });
+  const lacking = CLAIM_TYPES.filter((c) => !stateRules.some((r) => r.claimType === c && r.computation === "baseline_only"));
+  const gaps = [
+    ...row.gaps.filter(
+      (g) => !/no automatically computable reviewed baseline|Primary statutory text still needs retrieval/.test(g),
+    ),
+    ...(stateSources.length ? [] : ["Primary statutory text still needs retrieval and claim-level verification."]),
+    ...lacking.map((c) => `${labelFor(c)}: no automatically computable reviewed baseline.`),
+  ];
+  return {
+    ...row,
+    sourceStatus: stateSources.length ? "primary_text_retrieved" : "primary_text_pending",
+    sourceIds: stateSources,
+    baselineRuleIds: baselineIds,
+    researchRuleIds: researchIds,
+    coverage: baselineIds.length ? "conditional_baselines" : stateSources.length ? "research_only" : "pending",
+    gaps,
+    claimCoverage,
+  };
+});
+
+const files4 = {
+  rules: { ...rulesDoc, snapshotDate, ruleVersion, rules },
+  sources: { ...sourcesDoc, snapshotDate, sources },
+  coverage: { ...coverageDoc, snapshotDate, coverage },
+  cases: { ...casesDoc, snapshotDate },
+};
+const snapshot: LimitationsSnapshot = validateLimitationsSnapshot({
+  rules: files4.rules,
+  sources: files4.sources,
+  coverage: files4.coverage,
+  cases: files4.cases,
+});
+
+mkdirSync(join(out, "text"), { recursive: true });
+mkdirSync(join(out, "opinion-text"), { recursive: true });
+for (const dir of ["text", "opinion-text"])
+  for (const f of readdirSync(join(bundle, dir))) copyFileSync(join(bundle, dir, f), join(out, dir, f));
+for (const t of newTexts) writeFileSync(join(out, "text", `${t.id}.txt`), t.text);
+for (const f of readdirSync(bundle)) {
+  if (["publisher-overrides.json", "rejected-captures.json"].includes(f)) copyFileSync(join(bundle, f), join(out, f));
+}
+writeFileSync(join(out, "rules.json"), `${JSON.stringify(files4.rules, null, 2)}\n`);
+writeFileSync(join(out, "sources.json"), `${JSON.stringify(files4.sources, null, 2)}\n`);
+writeFileSync(join(out, "coverage.json"), `${JSON.stringify(files4.coverage, null, 2)}\n`);
+writeFileSync(join(out, "case-references.json"), `${JSON.stringify(files4.cases, null, 2)}\n`);
+writeFileSync(join(out, "backfill-discrepancies.json"), `${JSON.stringify({ discrepancies, rejected }, null, 2)}\n`);
+
+const cells = coverage.flatMap((c) => c.claimCoverage ?? []);
+const tally = (s: string) => cells.filter((c) => c.status === s).length;
+console.log(
+  JSON.stringify({
+    out,
+    ruleVersion,
+    rules: snapshot.rules.length,
+    sources: snapshot.sources.length,
+    addedRules: added,
+    provenanceAttachedToExisting: attached,
+    cells: { baseline: tally("baseline"), research_only: tally("research_only"), flagged: tally("flagged"), not_recorded: tally("not_recorded") },
+    discrepancies: discrepancies.length,
+    rejected: rejected.length,
+  }),
+);
