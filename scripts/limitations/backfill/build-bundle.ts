@@ -347,7 +347,7 @@ for (const file of files) {
           !legacy.period &&
           variant === "general" &&
           entry.period &&
-          entry.status === "verified" &&
+          (entry.status === "verified" || entry.status === "flagged") &&
           current.computation === "baseline_only" &&
           current.id !== legacyId
         ) {
