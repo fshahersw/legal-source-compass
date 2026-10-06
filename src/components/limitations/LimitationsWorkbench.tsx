@@ -922,6 +922,16 @@ export function LimitationsWorkbench({
                       <p>
                         Check court calendars, filing and service requirements, and local cutoffs.
                       </p>
+                      {result.adjustedDate && (
+                        <p className="rounded-md border border-border bg-background p-2 font-medium">
+                          This date falls on a weekend. Under {result.adjustedDate.citation} the
+                          period extends to{" "}
+                          <time dateTime={result.adjustedDate.date}>
+                            {formatCivilDate(result.adjustedDate.date)}
+                          </time>
+                          . Legal holidays are not computed.
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>

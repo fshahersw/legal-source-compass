@@ -162,6 +162,11 @@ type KnownField =
   | "baselineRuleIds"
   | "researchRuleIds"
   | "gaps"
+  | "note"
+  | "sourceId"
+  | "extendsWhenLastDayIsHoliday"
+  | "extendsWhenLastDayIsWeekend"
+  | "timeComputation"
   | "accrualKind"
   | "entryStatus"
   | "confidence"
@@ -565,6 +570,21 @@ function validateCoverage(values: unknown): CoverageRow[] {
       !Array.isArray(c.metadataOnlyReferences)
     )
       fail(`${label} has malformed source link collections`);
+    if (c.timeComputation !== undefined) {
+      const t = record(c.timeComputation, `${label}.timeComputation`);
+      if (!["verified", "flagged"].includes(t.status as string))
+        fail(`${label}.timeComputation has an unsupported status`);
+      if (typeof t.extendsWhenLastDayIsWeekend !== "boolean")
+        fail(`${label}.timeComputation.extendsWhenLastDayIsWeekend must be a boolean`);
+      if (
+        t.extendsWhenLastDayIsHoliday !== null &&
+        typeof t.extendsWhenLastDayIsHoliday !== "boolean"
+      )
+        fail(`${label}.timeComputation.extendsWhenLastDayIsHoliday must be a boolean or null`);
+      for (const f of ["citation", "excerpt", "sourceId", "note"])
+        string(t[f], `${label}.timeComputation.${f}`);
+      timestamp(t.retrievedAt, `${label}.timeComputation.retrievedAt`);
+    }
     if (c.claimCoverage !== undefined) {
       if (!Array.isArray(c.claimCoverage)) fail(`${label}.claimCoverage must be an array`);
       const seenClaims = new Set<string>();
@@ -647,6 +667,8 @@ export function validateLimitationsSnapshot(input: {
       fail(`rule ${rule.id} links to a missing case`);
   }
   for (const row of coverage) {
+    if (row.timeComputation && !sourceIds.has(row.timeComputation.sourceId))
+      fail(`${row.state} timeComputation links to a missing source`);
     const expectedSources = sources
       .filter((source) => source.state === row.state)
       .map((source) => source.id)

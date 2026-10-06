@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { addCivilPeriod, calculateBaseline, periodLabel } from "./engine";
+import {
+  addCivilPeriod,
+  calculateBaseline,
+  civilWeekday,
+  nextWeekday,
+  periodLabel,
+} from "./engine";
 import type {
   BaselineInput,
   ClaimType,
@@ -299,5 +305,54 @@ describe("snapshot validation of backfill fields", () => {
     const unit = rule("contract_written", 4, "calendar_years");
     (unit.period as { unit: string }).unit = "fortnights";
     expect(() => snapshotWith([unit])).toThrow(/period unit/);
+  });
+});
+
+describe("weekend extension from a recorded state counting rule", () => {
+  const withTimeRule = (extend: boolean) => {
+    const data = snapshotWith([rule("fraud", 3, "calendar_years")]);
+    const row = data.coverage.find((c) => c.state === "TX")!;
+    row.timeComputation = {
+      status: "verified",
+      extendsWhenLastDayIsWeekend: extend,
+      extendsWhenLastDayIsHoliday: null,
+      citation: "Test Code § 16.072",
+      excerpt: "next day that the county offices are open",
+      sourceId: "tx-src",
+      retrievedAt: "2026-10-05T00:00:00.000Z",
+      note: "test",
+    };
+    return data;
+  };
+
+  it("finds weekdays without time-zone drift", () => {
+    expect(civilWeekday("2026-05-02")).toBe(6);
+    expect(civilWeekday("2026-05-03")).toBe(0);
+    expect(civilWeekday("2026-05-04")).toBe(1);
+    expect(nextWeekday("2026-05-02")).toBe("2026-05-04");
+    expect(nextWeekday("2026-05-03")).toBe("2026-05-04");
+    expect(nextWeekday("2026-05-04")).toBe("2026-05-04");
+  });
+
+  it("reports the extended date beside, never instead of, the unadjusted anniversary", () => {
+    const result = calculateBaseline(withTimeRule(true), input("fraud", "2023-05-02"));
+    expect(result.date).toBe("2026-05-02");
+    expect(result.adjustedDate).toEqual({
+      date: "2026-05-04",
+      citation: "Test Code § 16.072",
+      holidaysComputed: false,
+    });
+    expect(result.steps.at(-1)?.text).toContain("Saturday");
+  });
+
+  it("does not adjust weekday anniversaries or states without a recorded rule", () => {
+    expect(
+      calculateBaseline(withTimeRule(true), input("fraud", "2023-05-04")).adjustedDate,
+    ).toBeNull();
+    expect(
+      calculateBaseline(withTimeRule(false), input("fraud", "2023-05-02")).adjustedDate,
+    ).toBeNull();
+    const none = snapshotWith([rule("fraud", 3, "calendar_years")]);
+    expect(calculateBaseline(none, input("fraud", "2023-05-02")).adjustedDate).toBeNull();
   });
 });

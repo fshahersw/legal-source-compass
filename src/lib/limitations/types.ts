@@ -63,6 +63,18 @@ export type RuleProvenance = {
   crossCheckSourceIds: string[];
 };
 
+/** State rule for a limitations period whose last day falls on a weekend or legal holiday. */
+export type TimeComputationRule = {
+  status: "verified" | "flagged";
+  extendsWhenLastDayIsWeekend: boolean;
+  extendsWhenLastDayIsHoliday: boolean | null;
+  citation: string;
+  excerpt: string;
+  sourceId: string;
+  retrievedAt: string;
+  note: string;
+};
+
 export type ClaimCoverageStatus = "baseline" | "research_only" | "flagged" | "not_recorded";
 export type ClaimCoverage = {
   claimType: ClaimType;
@@ -147,6 +159,7 @@ export type CoverageRow = {
   publisherLinks: { title: string; url: string; status: string }[];
   metadataOnlyReferences: { title: string; url: string; format: string; note: string }[];
   claimCoverage?: ClaimCoverage[];
+  timeComputation?: TimeComputationRule;
 };
 export type JudicialReference = {
   id: string;
@@ -239,6 +252,8 @@ export type BaselineInput = {
 export type BaselineResult = {
   status: "baseline" | "needs_review" | "invalid";
   date: string | null;
+  /** Next weekday when the anniversary is a Saturday or Sunday and the state's recorded rule extends it. */
+  adjustedDate?: { date: string; citation: string; holidaysComputed: false } | null;
   rule: LimitationRule | null;
   reasons: string[];
   steps: { text: string; sourceIds: string[]; pinpoint: string }[];

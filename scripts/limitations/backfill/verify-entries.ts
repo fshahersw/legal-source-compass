@@ -6,8 +6,10 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   checkEntry,
+  checkTimeRule,
   type CaptureMeta,
   type MatrixEntryInput,
+  type TimeRuleInput,
 } from "../../../src/lib/limitations/backfill/entries";
 
 const work = process.env.LIM_WORK ?? "/tmp/lim/backfill";
@@ -50,6 +52,28 @@ for (const file of files.filter((f) => f.endsWith(".json")).sort()) {
       if (p.level === "error" || process.env.SHOW_WARNINGS)
         console.log(`${state} ${key} [${p.level}] ${p.message}`);
     }
+  }
+}
+const timeDir = join(work, "time");
+for (const file of existsSync(timeDir)
+  ? readdirSync(timeDir)
+      .filter((f) => f.endsWith(".json"))
+      .sort()
+  : []) {
+  const state = file.replace(".json", "").toUpperCase();
+  if (only.size && !only.has(state)) continue;
+  const rule = JSON.parse(readFileSync(join(timeDir, file), "utf8")) as TimeRuleInput;
+  tally[`time_${rule.status}`] = (tally[`time_${rule.status}`] ?? 0) + 1;
+  for (const p of checkTimeRule(state, rule, (id) => {
+    const base = join(work, "captures", state, id);
+    if (!existsSync(`${base}.json`)) return undefined;
+    return {
+      meta: JSON.parse(readFileSync(`${base}.json`, "utf8")) as CaptureMeta,
+      text: readFileSync(`${base}.txt`, "utf8"),
+    };
+  })) {
+    if (p.level === "error") errors++;
+    console.log(`${state} time-computation [${p.level}] ${p.message}`);
   }
 }
 console.log(JSON.stringify({ files: files.length, entriesByStatus: tally, errors, warnings }));

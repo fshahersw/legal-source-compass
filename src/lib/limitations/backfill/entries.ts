@@ -264,3 +264,45 @@ export type MatrixEntry = MatrixEntryInput & {
   variant: string;
   primary: { url: string; retrievedAt: string; rawSha256: string; textSha256: string };
 };
+
+export type TimeRuleInput = {
+  status: string;
+  citation: string;
+  excerpt: string;
+  evidence: string;
+  captureId: string;
+  extendsWhenLastDayIsWeekend: boolean | null;
+  extendsWhenLastDayIsHoliday: boolean | null;
+  confidence: string;
+  confidenceNote: string;
+  flags: string[];
+  notRecordedReason?: string;
+};
+
+/** Verify a state's computation-of-time rule (last day on a weekend or legal holiday) against its capture. */
+export function checkTimeRule(
+  jurisdiction: string,
+  rule: TimeRuleInput,
+  lookup: CaptureLookup,
+): EntryProblem[] {
+  const out: EntryProblem[] = [];
+  const err = (message: string) => out.push({ level: "error", message });
+  if (!(ENTRY_STATUSES as readonly string[]).includes(rule.status)) err("invalid status");
+  if (rule.status === "not_recorded") {
+    if (!rule.notRecordedReason?.trim()) err("not_recorded needs notRecordedReason");
+    return out;
+  }
+  if (!rule.citation?.trim()) err("citation is required");
+  if (typeof rule.extendsWhenLastDayIsWeekend !== "boolean")
+    err("extendsWhenLastDayIsWeekend must be true or false");
+  if (rule.status === "flagged" && !rule.flags?.length) err("flagged needs flags");
+  const capture = lookup(rule.captureId);
+  if (!capture) return [...out, { level: "error", message: `capture ${rule.captureId} not found` }];
+  if (capture.meta.state !== jurisdiction) err("capture belongs to another jurisdiction");
+  if (capture.meta.hostClass === "blocked_secondary") err("secondary source");
+  if (!containsLiteral(capture.text, rule.excerpt))
+    err("excerpt is not a literal substring of the capture text");
+  if (!containsLiteral(rule.excerpt, rule.evidence))
+    err("evidence is not a literal substring of the excerpt");
+  return out;
+}

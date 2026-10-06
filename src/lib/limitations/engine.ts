@@ -58,6 +58,22 @@ export function addCivilPeriod(
   return parseCivilDate(result) ? result : null;
 }
 
+/** Day of week for a civil date: 0 = Sunday ... 6 = Saturday. */
+export function civilWeekday(value: string): number | null {
+  const d = parseCivilDate(value);
+  return d ? new Date(Date.UTC(d.year, d.month - 1, d.day)).getUTCDay() : null;
+}
+
+/** Next weekday on or after the date (Saturday -> Monday, Sunday -> Monday). Legal holidays are not known here. */
+export function nextWeekday(value: string): string | null {
+  const weekday = civilWeekday(value);
+  if (weekday === null) return null;
+  return (
+    addCivilPeriod(value, weekday === 6 ? 2 : weekday === 0 ? 1 : 0, "calendar_days") ??
+    (weekday === 6 || weekday === 0 ? null : value)
+  );
+}
+
 export function periodLabel(period: { amount: number; unit: string }): string {
   const unit = period.unit.replace("calendar_", "").replace(/s$/, "");
   return `${period.amount} calendar ${unit}${period.amount === 1 ? "" : "s"}`;
@@ -305,9 +321,18 @@ export function calculateBaseline(
     return finish("needs_review", [
       "This date has no exact calendar anniversary. A verified jurisdiction-specific leap-day / counting rule is required.",
     ]);
+  const timeRule = snapshot.coverage.find((c) => c.state === input.jurisdiction)?.timeComputation;
+  const weekday = civilWeekday(date);
+  const rolled =
+    timeRule?.extendsWhenLastDayIsWeekend && (weekday === 6 || weekday === 0)
+      ? nextWeekday(date)
+      : null;
   return {
     status: "baseline",
     date,
+    adjustedDate: rolled
+      ? { date: rolled, citation: timeRule!.citation, holidaysComputed: false }
+      : null,
     rule,
     reasons: [...rule.warnings],
     steps: [
@@ -356,7 +381,9 @@ export function calculateBaseline(
           ]
         : []),
       {
-        text: `The unadjusted calendar anniversary is ${date}. Holiday / closure, commencement, service and filing-cutoff adjustments remain uncomputed.`,
+        text: rolled
+          ? `The unadjusted calendar anniversary is ${date}, a ${weekday === 6 ? "Saturday" : "Sunday"}. The recorded state counting rule (${timeRule!.citation}) extends a last day that falls on a weekend to the next weekday, ${rolled}. Legal holidays, closures, commencement, service and filing-cutoff adjustments remain uncomputed.`
+          : `The unadjusted calendar anniversary is ${date}. Holiday / closure, commencement, service and filing-cutoff adjustments remain uncomputed.`,
         sourceIds: rule.sourceIds,
         pinpoint: rule.pinpoint,
       },
