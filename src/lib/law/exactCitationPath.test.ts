@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { exactCitationPaths, statuteNativeId } from "./exactCitationPath";
+import {
+  exactCitationPaths,
+  onlyExactStoredSection,
+  sectionTokenAfterSec,
+  statuteNativeId,
+  storedSectionNumbers,
+  tokenEqualsStoredSection,
+} from "./exactCitationPath";
 
 describe("exact statute citation paths", () => {
   it("reads each Oklahoma section number under one title", () => {
@@ -44,5 +51,70 @@ describe("exact statute citation paths", () => {
     expect(exactCitationPaths("OK", "Okla. Stat. tit. 12, §§ 95–96")).toBeNull();
     expect(exactCitationPaths("OK", "Okla. Stat. tit. 12 and tit. 76, § 95")).toBeNull();
     expect(exactCitationPaths("TX", "Tex. Civ. Prac. & Rem. Code § 16.003(a)")).toBeNull();
+  });
+
+  it("links Connecticut personal injury only when one stored section has that exact number", () => {
+    expect(exactCitationPaths("CT", "Conn. Gen. Stat. § 52-584")).toEqual(["52-584"]);
+    const injury = {
+      citationPath: "2025/title_52/chap_926/sec_52-584",
+      sectionNumbers: ["52-584"],
+    };
+    const nearby = {
+      citationPath: "2025/title_52/chap_926/sec_52-584a",
+      sectionNumbers: ["52-584a"],
+    };
+    expect(sectionTokenAfterSec(injury.citationPath)).toBe("52-584");
+    expect(sectionTokenAfterSec("2025/title_01/chap_001/secs_1-1o_to_1-1s")).toBeNull();
+    expect(
+      storedSectionNumbers([
+        { level: "title", number: "52*", heading: "CIVIL ACTIONS" },
+        { level: "chapter", number: "52-598a", heading: "STATUTE OF LIMITATIONS" },
+        {
+          level: "section",
+          number: "52-584",
+          heading: "Limitation of action for injury to person or property",
+        },
+      ]),
+    ).toEqual(["52-584"]);
+    expect(onlyExactStoredSection("52-584", [injury, nearby])?.citationPath).toBe(
+      injury.citationPath,
+    );
+    expect(tokenEqualsStoredSection("52-584", nearby.citationPath, nearby.sectionNumbers)).toBe(
+      false,
+    );
+    expect(tokenEqualsStoredSection("926", injury.citationPath, injury.sectionNumbers)).toBe(false);
+    expect(tokenEqualsStoredSection("52-598a", injury.citationPath, injury.sectionNumbers)).toBe(
+      false,
+    );
+    expect(tokenEqualsStoredSection("52-584", injury.citationPath, [])).toBe(true);
+    expect(
+      tokenEqualsStoredSection("52-584", nearby.citationPath, [
+        "Limitation of action for injury to person or property",
+      ]),
+    ).toBe(false);
+    expect(
+      onlyExactStoredSection("1-125", [
+        {
+          citationPath: "2025/title_01/chap_012/sec_1-125",
+          sectionNumbers: ["1-125"],
+        },
+        {
+          citationPath: "2026sup/title_01/chap_012/sec_1-125",
+          sectionNumbers: ["1-125"],
+        },
+      ]),
+    ).toBeNull();
+    expect(
+      onlyExactStoredSection("17a-175", [
+        {
+          citationPath: "2025/title_17a/chap_319a/sec_17a-175",
+          sectionNumbers: ["17a-175"],
+        },
+        {
+          citationPath: "2025/title_17a/chap_319i/sec_17a-175",
+          sectionNumbers: ["17a-615"],
+        },
+      ]),
+    ).toBeNull();
   });
 });
