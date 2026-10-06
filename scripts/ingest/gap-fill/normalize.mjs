@@ -16,8 +16,11 @@ export function clRow(entityType, item, receipt, extra = {}) {
       schema_version: CL_SCHEMA, request_method: 'GET', record_sha256: sha256(JSON.stringify(item)), ...extra}};
 }
 
-const dbProv = (receipt, tool, caseId, extra = {}) => ({source_url: receipt.source_url.split('?')[0], request: receipt.source_url, retrieved_at: receipt.retrieved_at,
-  http_status: receipt.http_status, source_sha256: receipt.source_sha256, schema_version: DB_SCHEMA, source_tool: tool, source_tool_case_id: caseId, ...extra});
+/** The intake wrapper pins source_url to the provider's docket-sheet family endpoint; the exact request and tool stay in `request` / `source_tool`. */
+export const DB_SOURCE_URL = 'https://api.docketbird.com/documents';
+export const dbToolOf = url => { const p = new URL(url).pathname; return /^\/documents\/search$/.test(p) ? 'GET /documents/search' : /^\/documents\/./.test(p) ? 'GET /documents/{id}' : /^\/cases\/./.test(p) ? 'GET /cases/{id}' : 'GET /documents'; };
+const dbProv = (receipt, tool, caseId, extra = {}) => ({source_url: DB_SOURCE_URL, request: receipt.source_url, retrieved_at: receipt.retrieved_at,
+  http_status: receipt.http_status, source_sha256: receipt.source_sha256, schema_version: DB_SCHEMA, source_tool: dbToolOf(receipt.source_url), source_tool_case_id: caseId, ...extra});
 
 function intOrNull(v) { return Number.isSafeInteger(v) ? v : null; }
 

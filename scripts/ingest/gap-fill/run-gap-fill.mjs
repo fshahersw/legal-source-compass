@@ -87,13 +87,22 @@ export class Runner {
     st.status = 'complete'; st.records = 1;
   }
   async runClFind(t, st) {
-    const q = new URLSearchParams({court: t.court, docket_number: t.docket_number});
+    // The registry prints docket numbers without zero padding or case type ("1:18-45090"); CourtListener stores "1:18-op-45090". Query the court's
+    // docket_number_core (yy + 5-digit sequence) and classify the candidates locally on court + office + year + sequence + type.
+    const m = String(t.docket_number).match(/^(\d{1,2}):(\d{2}|\d{4})-?(?:([a-z]{2,4})-?)?(\d{1,6})/i);
+    const core = m ? `${m[2].slice(-2)}${m[4].padStart(5, '0')}` : null;
+    const q = new URLSearchParams(core ? {court: t.court, docket_number_core: core} : {court: t.court, docket_number: t.docket_number});
     const {data, receipt} = await this.cl.get(`${CL_ORIGIN}/api/rest/v4/dockets/?${q}`);
     const results = data?.results ?? [];
     for (const d of results) await this.emit('live-normalized/dockets.jsonl', clRow('dockets', d, receipt));
     st.status = 'complete'; st.records = results.length;
-    st.resolution = results.length === 1 ? 'unique_exact_court_and_docket_number' : results.length === 0 ? 'no_exact_match' : 'ambiguous_multiple_native_dockets_held';
-    st.candidate_native_ids = results.map(d => String(d.id));
+    const key = d => { const x = String(d.docket_number ?? '').match(/^(\d{1,2}):(\d{2}|\d{4})-?([a-z]{2,4})?-?(\d{1,6})/i); return x ? {office: Number(x[1]), year: x[2].slice(-2), type: (x[3] ?? '').toLowerCase(), seq: String(Number(x[4]))} : null; };
+    const want = m ? {office: Number(m[1]), year: m[2].slice(-2), type: (m[3] ?? '').toLowerCase(), seq: String(Number(m[4]))} : null;
+    const same = results.filter(d => { const k = key(d); return want && k && k.office === want.office && k.year === want.year && k.seq === want.seq; });
+    // A number printed without a case type is assumed civil (`cv`) by the registry; a different CourtListener type is a variant, never an exact match.
+    const exact = same.filter(d => key(d).type === (want?.type || 'cv'));
+    st.resolution = exact.length === 1 && same.length === 1 ? 'unique_exact_court_office_year_type_sequence' : same.length === 1 ? 'unique_type_variant_candidate_not_accepted' : same.length === 0 ? 'no_exact_match' : 'ambiguous_multiple_native_dockets_held';
+    st.candidate_native_ids = same.map(d => String(d.id)); st.candidate_types = same.map(d => key(d).type);
     if (data?.next) st.note = 'more candidates exist beyond first page; resolution held';
   }
   async runClEntry(t, st) {
