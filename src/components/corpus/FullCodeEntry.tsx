@@ -11,7 +11,7 @@ export function FullCodeEntry({ state }: { state: string }) {
   const query = useQuery({
     queryKey: ["full-state-codes"],
     queryFn: () => fn(),
-    staleTime: 60_000,
+    staleTime: 0,
   });
   const usps = state.toUpperCase();
   const rows = (query.data ?? []).filter((row) => row.state === usps);
