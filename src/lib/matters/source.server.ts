@@ -596,7 +596,11 @@ export async function loadEntryText(entryId: string): Promise<{ text: string | n
 
 /* ------------------------------------------------------------------ documents */
 
-/** The most archive rows read for one matter (the largest, MDL 3047, holds about 8,200; the server keeps them, the browser gets pages). */
+/**
+ * The most archive rows read for one matter. The reader interleaves requested case ids, so one
+ * docket cannot fill this cap before another requested id is read. The summary still counts every
+ * source record; a larger docket is not read in full just to reach a later case id.
+ */
 const REGISTRY_ROW_CAP = 20_000;
 const REGISTRY_PAGE = 500;
 
