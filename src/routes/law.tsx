@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/atlas/AppShell";
 import { SectionPage } from "@/components/corpus/SectionPage";
@@ -9,7 +9,7 @@ import { pageHead } from "@/lib/corpus/head";
 import { STATES, stateByUsps } from "@/lib/corpus/geo";
 import { loadStateLawDirectory, type StateLawDirectoryEntry } from "@/lib/corpus/lawSources";
 import { PrivateDataLink } from "@/components/atlas/PrivateDataLink";
-import { TexasCodeBrowser } from "@/components/corpus/TexasCodeBrowser";
+import { FullCodeEntry } from "@/components/corpus/FullCodeEntry";
 import { datasetDisplayName } from "@/lib/external/domainRegistry";
 import { sectionOf } from "@/lib/external/groups";
 import { LAW_GROUP_LABELS, lawGroup, STATE_DATASETS, type LawGroup } from "@/lib/external/lawTree";
@@ -33,14 +33,16 @@ export const Route = createFileRoute("/law")({
     group: str(s["group"]),
   }),
   head: () => pageHead("Law & regulation", "Browse law by jurisdiction."),
+  beforeLoad: ({ search }) => {
+    if (search.view === "tx-code") {
+      throw redirect({ to: "/law/codes/$state", params: { state: "TX" }, search: { q: "" } });
+    }
+  },
   component: LawPage,
 });
 
 const FED_GROUPS: LawGroup[] = ["statutes", "regulations", "register", "notices", "other"];
 const stName = (c: string) => (c === "FEDERAL" ? "Federal" : (stateByUsps.get(c)?.name ?? c));
-
-// Flip on only when the corresponding private snapshot manifest entries exist.
-const TEXAS_BROWSE_RELEASE_AVAILABLE = true;
 
 function LawPage() {
   const s = Route.useSearch();
@@ -107,18 +109,7 @@ function LawPage() {
   let body: React.ReactNode;
   const savedLawError = datasets.error;
   const err = s.scope === "states" ? stateSources.error : savedLawError;
-  if (s.scope === "states" && s.state === "TX" && s.view === "tx-code") {
-    body = TEXAS_BROWSE_RELEASE_AVAILABLE ? (
-      <TexasCodeBrowser />
-    ) : (
-      <p
-        role="status"
-        className="rounded-lg border border-border bg-surface p-4 text-sm text-muted-foreground"
-      >
-        Texas code text is not available here yet.
-      </p>
-    );
-  } else if (err) body = <ExternalError error={err} />;
+  if (err) body = <ExternalError error={err} />;
   else if (s.scope !== "states" && datasets.isLoading)
     body = <p className="text-[13px] text-muted-foreground">Loading law collections…</p>;
   else if (s.scope === "states" && stateSources.isLoading)
@@ -147,6 +138,12 @@ function LawPage() {
               label: "Reference tools",
               note: "Limitations calculator and citations",
               link: { to: "/law", search: { scope: "reference" } },
+            },
+            {
+              key: "codes",
+              label: "State codes",
+              note: "Full codes that have been captured",
+              link: { to: "/law/codes" },
             },
             {
               key: "list",
@@ -235,19 +232,7 @@ function LawPage() {
     body = (
       <div className="space-y-5">
         {stateResource ? <StateLawSources entry={stateResource} /> : null}
-        {s.state === "TX" && TEXAS_BROWSE_RELEASE_AVAILABLE ? (
-          <FolderGrid
-            title="Full code text"
-            items={[
-              {
-                key: "texas-code-text",
-                label: "Texas code",
-                note: "Publisher-captured chapter and section text",
-                link: { to: "/law", search: { scope: "states", state: "TX", view: "tx-code" } },
-              },
-            ]}
-          />
-        ) : null}
+        <FullCodeEntry state={s.state} />
         {savedLawError ? (
           <ExternalError error={savedLawError} />
         ) : datasets.isLoading ? (
@@ -263,14 +248,11 @@ function LawPage() {
     );
   }
 
-  const title =
-    s.view === "tx-code"
-      ? "Texas code text"
-      : s.ds
-        ? datasetDisplayName(s.ds, lawDs.find((d) => d.id === s.ds)?.label)
-        : s.state
-          ? `${stName(s.state)} law`
-          : (scopeLabel ?? "Law & regulation");
+  const title = s.ds
+    ? datasetDisplayName(s.ds, lawDs.find((d) => d.id === s.ds)?.label)
+    : s.state
+      ? `${stName(s.state)} law`
+      : (scopeLabel ?? "Law & regulation");
   return (
     <AppShell
       breadcrumbs={crumbs}

@@ -183,3 +183,11 @@ test('CourtListener client waits for a closed minute or hour window instead of p
   const out = await cl.get('https://www.courtlistener.com/api/rest/v4/dockets/1/');
   assert.equal(out.data.id, 1); assert.deepEqual(waits, [300000, 300000]); assert.equal(cl.requests, 1);
 });
+
+test('DocketBird client paces requests, backs off on 429 and retries instead of stopping', async () => {
+  const work = await tmp(); const waits = []; let n = 0;
+  const fetchImpl = async () => { n++; return n === 1 ? new Response('{"message":"Too Many Requests"}', {status: 429}) : new Response(JSON.stringify({status: 'success', data: {ok: n}}), {status: 200}); };
+  const db = new DocketBird({cacheDir: work, key: 'K', fetchImpl, minGapMs: 100, sleepFn: async ms => { waits.push(ms); }});
+  const r = await db.get('/cases/x-1:2024-cv-00001');
+  assert.equal(r.data.ok, 2); assert.equal(db.rateLimited, 1); assert.ok(waits.length >= 1); assert.equal(db.stopped, null);
+});

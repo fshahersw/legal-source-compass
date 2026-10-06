@@ -39,6 +39,7 @@ import { Route as DataIndexRouteImport } from './routes/data.index'
 import { Route as DataDatasetRouteImport } from './routes/data.$dataset'
 import { Route as JudgesIndexRouteImport } from './routes/judges.index'
 import { Route as JudgesIdRouteImport } from './routes/judges.$id'
+import { Route as LawCodesRouteImport } from './routes/law_.codes'
 import { Route as MattersIndexRouteImport } from './routes/matters.index'
 import { Route as MattersIdRouteImport } from './routes/matters.$id'
 import { Route as MattersCasesRouteImport } from './routes/matters.cases'
@@ -58,6 +59,8 @@ import { Route as SourcesRegistryRouteImport } from './routes/sources.registry'
 import { Route as SourcesRegistryV22RouteImport } from './routes/sources.registry-v22'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as DataTablesTableRouteImport } from './routes/data.tables.$table'
+import { Route as LawCodesIndexRouteImport } from './routes/law_.codes.index'
+import { Route as LawCodesStateRouteImport } from './routes/law_.codes.$state'
 import { Route as LawProvisionIdRouteImport } from './routes/law_.provision.$id'
 import { Route as PlacesStateCountyRouteImport } from './routes/places.$state.$county'
 import { Route as RecordsDatasetIdRouteImport } from './routes/records.$dataset.$id'
@@ -212,6 +215,11 @@ const JudgesIdRoute = JudgesIdRouteImport.update({
   path: '/judges/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LawCodesRoute = LawCodesRouteImport.update({
+  id: '/law_/codes',
+  path: '/law/codes',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MattersIndexRoute = MattersIndexRouteImport.update({
   id: '/matters/',
   path: '/matters/',
@@ -307,6 +315,16 @@ const DataTablesTableRoute = DataTablesTableRouteImport.update({
   path: '/data/tables/$table',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LawCodesIndexRoute = LawCodesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LawCodesRoute,
+} as any)
+const LawCodesStateRoute = LawCodesStateRouteImport.update({
+  id: '/$state',
+  path: '/$state',
+  getParentRoute: () => LawCodesRoute,
+} as any)
 const LawProvisionIdRoute = LawProvisionIdRouteImport.update({
   id: '/law_/provision/$id',
   path: '/law/provision/$id',
@@ -350,6 +368,7 @@ export interface FileRoutesByFullPath {
   '/courts/$id': typeof CourtsIdRoute
   '/data/$dataset': typeof DataDatasetRoute
   '/judges/$id': typeof JudgesIdRoute
+  '/law/codes': typeof LawCodesRouteWithChildren
   '/matters/$id': typeof MattersIdRoute
   '/matters/cases': typeof MattersCasesRoute
   '/matters/seeger-weiss': typeof MattersSeegerWeissRoute
@@ -373,9 +392,11 @@ export interface FileRoutesByFullPath {
   '/sources/': typeof SourcesIndexRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/data/tables/$table': typeof DataTablesTableRoute
+  '/law/codes/$state': typeof LawCodesStateRoute
   '/law/provision/$id': typeof LawProvisionIdRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
   '/records/$dataset/$id': typeof RecordsDatasetIdRoute
+  '/law/codes/': typeof LawCodesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -427,9 +448,11 @@ export interface FileRoutesByTo {
   '/sources': typeof SourcesIndexRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/data/tables/$table': typeof DataTablesTableRoute
+  '/law/codes/$state': typeof LawCodesStateRoute
   '/law/provision/$id': typeof LawProvisionIdRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
   '/records/$dataset/$id': typeof RecordsDatasetIdRoute
+  '/law/codes': typeof LawCodesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -459,6 +482,7 @@ export interface FileRoutesById {
   '/courts/$id': typeof CourtsIdRoute
   '/data/$dataset': typeof DataDatasetRoute
   '/judges/$id': typeof JudgesIdRoute
+  '/law_/codes': typeof LawCodesRouteWithChildren
   '/matters/$id': typeof MattersIdRoute
   '/matters/cases': typeof MattersCasesRoute
   '/matters/seeger-weiss': typeof MattersSeegerWeissRoute
@@ -482,9 +506,11 @@ export interface FileRoutesById {
   '/sources/': typeof SourcesIndexRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
   '/data/tables/$table': typeof DataTablesTableRoute
+  '/law_/codes/$state': typeof LawCodesStateRoute
   '/law_/provision/$id': typeof LawProvisionIdRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
   '/records/$dataset/$id': typeof RecordsDatasetIdRoute
+  '/law_/codes/': typeof LawCodesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -515,6 +541,7 @@ export interface FileRouteTypes {
     | '/courts/$id'
     | '/data/$dataset'
     | '/judges/$id'
+    | '/law/codes'
     | '/matters/$id'
     | '/matters/cases'
     | '/matters/seeger-weiss'
@@ -538,9 +565,11 @@ export interface FileRouteTypes {
     | '/sources/'
     | '/api/auth/logout'
     | '/data/tables/$table'
+    | '/law/codes/$state'
     | '/law/provision/$id'
     | '/places/$state/$county'
     | '/records/$dataset/$id'
+    | '/law/codes/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -592,9 +621,11 @@ export interface FileRouteTypes {
     | '/sources'
     | '/api/auth/logout'
     | '/data/tables/$table'
+    | '/law/codes/$state'
     | '/law/provision/$id'
     | '/places/$state/$county'
     | '/records/$dataset/$id'
+    | '/law/codes'
   id:
     | '__root__'
     | '/'
@@ -623,6 +654,7 @@ export interface FileRouteTypes {
     | '/courts/$id'
     | '/data/$dataset'
     | '/judges/$id'
+    | '/law_/codes'
     | '/matters/$id'
     | '/matters/cases'
     | '/matters/seeger-weiss'
@@ -646,9 +678,11 @@ export interface FileRouteTypes {
     | '/sources/'
     | '/api/auth/logout'
     | '/data/tables/$table'
+    | '/law_/codes/$state'
     | '/law_/provision/$id'
     | '/places/$state/$county'
     | '/records/$dataset/$id'
+    | '/law_/codes/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -678,6 +712,7 @@ export interface RootRouteChildren {
   CourtsIdRoute: typeof CourtsIdRoute
   DataDatasetRoute: typeof DataDatasetRoute
   JudgesIdRoute: typeof JudgesIdRoute
+  LawCodesRoute: typeof LawCodesRouteWithChildren
   MattersIdRoute: typeof MattersIdRoute
   MattersCasesRoute: typeof MattersCasesRoute
   MattersSeegerWeissRoute: typeof MattersSeegerWeissRoute
@@ -917,6 +952,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JudgesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/law_/codes': {
+      id: '/law_/codes'
+      path: '/law/codes'
+      fullPath: '/law/codes'
+      preLoaderRoute: typeof LawCodesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/matters/': {
       id: '/matters/'
       path: '/matters'
@@ -1050,6 +1092,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DataTablesTableRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/law_/codes/': {
+      id: '/law_/codes/'
+      path: '/'
+      fullPath: '/law/codes/'
+      preLoaderRoute: typeof LawCodesIndexRouteImport
+      parentRoute: typeof LawCodesRoute
+    }
+    '/law_/codes/$state': {
+      id: '/law_/codes/$state'
+      path: '/$state'
+      fullPath: '/law/codes/$state'
+      preLoaderRoute: typeof LawCodesStateRouteImport
+      parentRoute: typeof LawCodesRoute
+    }
     '/law_/provision/$id': {
       id: '/law_/provision/$id'
       path: '/law/provision/$id'
@@ -1073,6 +1129,20 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface LawCodesRouteChildren {
+  LawCodesStateRoute: typeof LawCodesStateRoute
+  LawCodesIndexRoute: typeof LawCodesIndexRoute
+}
+
+const LawCodesRouteChildren: LawCodesRouteChildren = {
+  LawCodesStateRoute: LawCodesStateRoute,
+  LawCodesIndexRoute: LawCodesIndexRoute,
+}
+
+const LawCodesRouteWithChildren = LawCodesRoute._addFileChildren(
+  LawCodesRouteChildren,
+)
 
 interface PlacesStateRouteChildren {
   PlacesStateCountyRoute: typeof PlacesStateCountyRoute
@@ -1113,6 +1183,7 @@ const rootRouteChildren: RootRouteChildren = {
   CourtsIdRoute: CourtsIdRoute,
   DataDatasetRoute: DataDatasetRoute,
   JudgesIdRoute: JudgesIdRoute,
+  LawCodesRoute: LawCodesRouteWithChildren,
   MattersIdRoute: MattersIdRoute,
   MattersCasesRoute: MattersCasesRoute,
   MattersSeegerWeissRoute: MattersSeegerWeissRoute,

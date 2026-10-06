@@ -1,0 +1,74 @@
+name: CourtListener quarterly bulk re-match
+
+# CourtListener regenerates its bulk files on the last day of March, June, September and December (FLP wiki). The next archive is 2026-12-31; the job runs
+# on the 2nd of January, April, July and October (the files are finished by then) and picks the newest quarter-end dockets archive. A hash mismatch fails the job.
+on:
+  schedule:
+    - cron: "0 9 2 1,4,7,10 *"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Optional quarter-end snapshot date to (re)process, YYYY-MM-DD. Default: the newest quarter-end archive."
+        required: false
+        type: string
+      dry_run:
+        description: "Download and verify the archive only (no database call)"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: courtlistener-bulk-rematch
+  cancel-in-progress: false
+
+jobs:
+  rematch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      EXTERNAL_SUPABASE_URL: ${{ secrets.EXTERNAL_SUPABASE_URL }}
+      EXTERNAL_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.EXTERNAL_SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Private working directory
+        run: echo "CL_BULK_DIR=$RUNNER_TEMP/courtlistener-bulk" >> "$GITHUB_ENV"
+      - name: Require repository secrets
+        run: |
+          missing=0
+          for name in EXTERNAL_SUPABASE_URL EXTERNAL_SUPABASE_SERVICE_ROLE_KEY; do
+            if [ -z "${!name}" ]; then echo "::error::Repository secret $name is not set"; missing=1; fi
+          done
+          exit $missing
+      - name: Unit tests
+        run: node --test scripts/ingest/courtlistener-bulk/lib.test.mjs scripts/ingest/gap-fill/*.test.mjs
+      - name: Parallel bzip2 reader
+        run: python -m pip install --target "$RUNNER_TEMP/pydeps" indexed_bzip2
+      - name: Download, verify (size + S3 ETag), match, land, project
+        # Fails the job on: no quarterly archive, size or ETag mismatch, a different sha256 for an already-opened snapshot,
+        # matcher/archive hash disagreement, any intake rejection, or a re-send that is not byte-identical (readback).
+        run: |
+          set -euo pipefail
+          args=(--work "$CL_BULK_DIR" --python-deps "$RUNNER_TEMP/pydeps")
+          if [ -n "${{ inputs.date }}" ]; then args+=(--date "${{ inputs.date }}"); fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then args+=(--dry-run); fi
+          node scripts/ingest/courtlistener-bulk/rematch.mjs "${args[@]}"
+      - name: Upload checkpoint and ledgers (no credentials, no archive)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: courtlistener-bulk-rematch
+          path: |
+            ${{ runner.temp }}/courtlistener-bulk/rematch-checkpoint.json
+            ${{ runner.temp }}/courtlistener-bulk/projection/
+            ${{ runner.temp }}/courtlistener-bulk/match/receipt.json
+          if-no-files-found: ignore
+          retention-days: 90
