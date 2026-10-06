@@ -7,6 +7,8 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from sc_common import Archive, collapse, html_text, sha256_hex, write_packet  # noqa: E402
 
+from chapter_html import section_html_fragments  # noqa: E402
+
 STATE = "SD"
 EDITION = "South Dakota Codified Laws"
 SOURCE = "https://sdlegislature.gov/Statutes"
@@ -59,6 +61,46 @@ def parse_section_html(html: str, citation: str, catchline: str | None):
         "history": history,
         "status_label": status_label,
     }
+
+
+def load_section_payload(arc: Archive, citation: str, ch_stat: str):
+    """Section JSON receipt, or a slice from the archived chapter bundle."""
+    url = f"https://sdlegislature.gov/api/Statutes/Statute/{citation}"
+    rec = arc.index.get(url)
+    if rec and rec.get("state") == "complete":
+        data = json.loads(arc.read(rec))
+        if data.get("Type") == "Section":
+            return data, url, rec["sha256"]
+    ch_url = f"https://sdlegislature.gov/api/Statutes/Statute/{ch_stat}"
+    ch_rec = arc.index.get(ch_url)
+    if not ch_rec or ch_rec.get("state") != "complete":
+        return None, url, None
+    ch_data = json.loads(arc.read(ch_rec))
+    if ch_data.get("Type") != "Chapter":
+        return None, url, None
+    frag = section_html_fragments(ch_data.get("Html") or "").get(citation)
+    if not frag:
+        return None, url, None
+    inv_path = os.path.join(arc.work, "inventory.json")
+    catch = None
+    repealed = None
+    if os.path.exists(inv_path):
+        inv = json.load(open(inv_path))
+        for s in inv.get("sections") or []:
+            if s.get("statute") == citation:
+                catch = s.get("catchline")
+                repealed = s.get("repealed")
+                break
+    data = {
+        "Type": "Section",
+        "Statute": citation,
+        "CatchLine": catch,
+        "Html": frag,
+        "Repealed": repealed,
+        "Title": ch_data.get("Title"),
+        "Chapter": ch_data.get("Chapter"),
+    }
+    return data, ch_url, ch_rec["sha256"]
 
 
 def parse_section_json(data: dict, url: str, receipt_sha: str):
@@ -154,13 +196,12 @@ def stage(work: str):
         raw_shas = []
         source_urls = []
         for s in sorted(sec_list, key=lambda x: x["statute"]):
-            url = f"https://sdlegislature.gov/api/Statutes/Statute/{s['statute']}"
-            rec = arc.index.get(url)
-            if not rec or rec.get("state") != "complete":
+            loaded = load_section_payload(arc, s["statute"], ch_stat)
+            data, url, receipt_sha = loaded
+            if not data:
                 missing_body.append({"citation": s["statute"], "reason": "not archived"})
                 continue
-            data = json.loads(arc.read(rec))
-            parsed = parse_section_json(data, url, rec["sha256"])
+            parsed = parse_section_json(data, url, receipt_sha)
             if not parsed:
                 missing_body.append({"citation": s["statute"], "reason": "parse failed"})
                 continue
