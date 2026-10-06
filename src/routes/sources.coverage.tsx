@@ -1,7 +1,6 @@
 import { PrivateDataLink } from "@/components/atlas/PrivateDataLink";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/atlas/AppShell";
 import { pageHead } from "@/lib/corpus/head";
 import { coverageMatrix, humanize, jurisdictionLabel } from "@/lib/atlas/registry";
@@ -9,12 +8,7 @@ import { useRegistry } from "@/lib/atlas/useRegistry";
 import { useAtlas } from "@/lib/atlas/store";
 import { valuesOf } from "@/lib/atlas/bundle";
 import { directoryJurisdictionCounts, registryQuality } from "@/lib/corpus/quality";
-import { stateByName, stateByUsps } from "@/lib/corpus/geo";
-import {
-  DatabaseQuality,
-  DirectoryQuality,
-  loadDatabaseAudit,
-} from "@/components/corpus/CorpusQuality";
+import { DatabaseQuality, DirectoryQuality } from "@/components/corpus/CorpusQuality";
 import { BarList, Stat } from "@/components/corpus/BarList";
 import { Button } from "@/components/ui/button";
 import { SourceSupplements } from "@/components/corpus/SourceSupplements";
@@ -34,11 +28,6 @@ function CoveragePage() {
   const atlas = useAtlas();
   const [jurisdiction, setJurisdiction] = useState("");
   const [categoryPage, setCategoryPage] = useState(0);
-  const audit = useQuery({
-    queryKey: ["database-quality-audit"],
-    queryFn: loadDatabaseAudit,
-    staleTime: Infinity,
-  });
   const m = useMemo(() => coverageMatrix(reg.data?.entries ?? []), [reg.data]);
   const quality = useMemo(() => registryQuality(reg.data?.entries ?? []), [reg.data]);
   const directory = useMemo(
@@ -50,19 +39,6 @@ function CoveragePage() {
       ),
     [atlas.bundle],
   );
-  const dbByState = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const row of audit.data?.categoryStateCounts ?? []) {
-      const state = row.state ? (stateByName.get(row.state) ?? stateByUsps.get(row.state)) : null;
-      const label =
-        state?.name ??
-        (row.state && ["US", "FEDERAL", "Federal"].includes(row.state)
-          ? "Federal / national"
-          : row.state);
-      if (label) counts.set(label, (counts.get(label) ?? 0) + row.records);
-    }
-    return counts;
-  }, [audit.data]);
   const cats = m.categories.slice(categoryPage * 12, categoryPage * 12 + 12);
   const rows = m.rows.filter((r) => !jurisdiction || r.jurisdiction === jurisdiction);
   return (
@@ -73,25 +49,12 @@ function CoveragePage() {
         { label: "Quality & coverage" },
       ]}
       title="Quality & coverage"
-      description="Counts, categories and relationships from the supplied files and a dated, read-only database audit. A registry gap is not proof that a legal source does not exist."
+      description="Counts, categories and relationships from the supplied files and current corpus collection counts. A registry gap is not proof that a legal source does not exist."
     >
       <div className="space-y-7">
         <LegalCoverage />
         <DirectoryQuality sources={atlas.bundle?.sources ?? []} status={atlas.status} />
-        {audit.isLoading ? (
-          <p role="status" className="text-[13px] text-muted-foreground">
-            Loading the exact database audit…
-          </p>
-        ) : audit.error ? (
-          <p role="alert" className="text-[13px] text-muted-foreground">
-            Database audit: Not recorded.{" "}
-            <button className="underline" onClick={() => audit.refetch()}>
-              Retry
-            </button>
-          </p>
-        ) : audit.data ? (
-          <DatabaseQuality audit={audit.data} />
-        ) : null}
+        <DatabaseQuality />
         <SourceSupplements />
         <section className="space-y-3" aria-label="Registry quality and coverage">
           <h2 className="eyebrow">Registry observations · historical checks</h2>
@@ -149,9 +112,7 @@ function CoveragePage() {
                   </p>
                   <p className="mt-2">
                     Directory columns count tagged URLs. Registry columns count categorized URLs.
-                    Database columns count imported records, including held collections, as of{" "}
-                    {audit.data?.capturedAt.slice(0, 10) ?? "Not recorded"} UTC. These populations
-                    are not added together.
+                    These populations are not added together.
                   </p>
                   <PrivateDataLink
                     className="mt-3 inline-block text-[12px] text-primary hover:underline"
@@ -213,7 +174,6 @@ function CoveragePage() {
                       <th className="p-2">Jurisdiction</th>
                       <th className="p-2">Tagged directory URLs</th>
                       <th className="p-2">Categorized registry URLs</th>
-                      <th className="p-2">Imported database records (audit)</th>
                       {cats.map((c) => (
                         <th key={c} className="p-2">
                           {humanize(c)}
@@ -225,7 +185,6 @@ function CoveragePage() {
                   <tbody className="divide-y divide-border">
                     {rows.map((r) => {
                       const name = jurisdictionLabel(r.jurisdiction);
-                      const db = dbByState.get(name);
                       return (
                         <tr key={r.jurisdiction}>
                           <td className="p-2 font-medium">
@@ -245,9 +204,6 @@ function CoveragePage() {
                                 : "Not recorded"}
                           </td>
                           <td className="p-2 font-mono">{r.total.toLocaleString()}</td>
-                          <td className="p-2 font-mono">
-                            {audit.isLoading ? "…" : (db?.toLocaleString() ?? "Not recorded")}
-                          </td>
                           {cats.map((c) => {
                             const n = r.counts.get(c) ?? 0;
                             return (

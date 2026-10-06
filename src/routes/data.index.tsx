@@ -30,7 +30,7 @@ function Catalog() {
         { label: "Dataset inventory" },
       ]}
       title="Dataset inventory"
-      description="Advanced inventory of every connected corpus dataset and source snapshot. Counts are imported source rows, not deduplicated people, products, or coverage."
+      description="Advanced inventory of connected corpus datasets and source snapshots. Counts are imported source rows, not deduplicated people, products, or coverage."
     >
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <ExternalBadge />

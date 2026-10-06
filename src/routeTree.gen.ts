@@ -52,7 +52,6 @@ import { Route as SourcesAnalysisRouteImport } from './routes/sources.analysis'
 import { Route as SourcesCatalogRouteImport } from './routes/sources.catalog'
 import { Route as SourcesCoverageRouteImport } from './routes/sources.coverage'
 import { Route as SourcesDetailRouteImport } from './routes/sources.detail'
-import { Route as SourcesEnrichmentRouteImport } from './routes/sources.enrichment'
 import { Route as SourcesLibraryRouteImport } from './routes/sources.library'
 import { Route as SourcesRegistryRouteImport } from './routes/sources.registry'
 import { Route as SourcesRegistryV22RouteImport } from './routes/sources.registry-v22'
@@ -277,11 +276,6 @@ const SourcesDetailRoute = SourcesDetailRouteImport.update({
   path: '/sources/detail',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SourcesEnrichmentRoute = SourcesEnrichmentRouteImport.update({
-  id: '/sources/enrichment',
-  path: '/sources/enrichment',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SourcesLibraryRoute = SourcesLibraryRouteImport.update({
   id: '/sources/library',
   path: '/sources/library',
@@ -359,7 +353,6 @@ export interface FileRoutesByFullPath {
   '/sources/catalog': typeof SourcesCatalogRoute
   '/sources/coverage': typeof SourcesCoverageRoute
   '/sources/detail': typeof SourcesDetailRoute
-  '/sources/enrichment': typeof SourcesEnrichmentRoute
   '/sources/library': typeof SourcesLibraryRoute
   '/sources/registry': typeof SourcesRegistryRoute
   '/sources/registry-v22': typeof SourcesRegistryV22Route
@@ -413,7 +406,6 @@ export interface FileRoutesByTo {
   '/sources/catalog': typeof SourcesCatalogRoute
   '/sources/coverage': typeof SourcesCoverageRoute
   '/sources/detail': typeof SourcesDetailRoute
-  '/sources/enrichment': typeof SourcesEnrichmentRoute
   '/sources/library': typeof SourcesLibraryRoute
   '/sources/registry': typeof SourcesRegistryRoute
   '/sources/registry-v22': typeof SourcesRegistryV22Route
@@ -468,7 +460,6 @@ export interface FileRoutesById {
   '/sources/catalog': typeof SourcesCatalogRoute
   '/sources/coverage': typeof SourcesCoverageRoute
   '/sources/detail': typeof SourcesDetailRoute
-  '/sources/enrichment': typeof SourcesEnrichmentRoute
   '/sources/library': typeof SourcesLibraryRoute
   '/sources/registry': typeof SourcesRegistryRoute
   '/sources/registry-v22': typeof SourcesRegistryV22Route
@@ -524,7 +515,6 @@ export interface FileRouteTypes {
     | '/sources/catalog'
     | '/sources/coverage'
     | '/sources/detail'
-    | '/sources/enrichment'
     | '/sources/library'
     | '/sources/registry'
     | '/sources/registry-v22'
@@ -578,7 +568,6 @@ export interface FileRouteTypes {
     | '/sources/catalog'
     | '/sources/coverage'
     | '/sources/detail'
-    | '/sources/enrichment'
     | '/sources/library'
     | '/sources/registry'
     | '/sources/registry-v22'
@@ -632,7 +621,6 @@ export interface FileRouteTypes {
     | '/sources/catalog'
     | '/sources/coverage'
     | '/sources/detail'
-    | '/sources/enrichment'
     | '/sources/library'
     | '/sources/registry'
     | '/sources/registry-v22'
@@ -687,7 +675,6 @@ export interface RootRouteChildren {
   SourcesCatalogRoute: typeof SourcesCatalogRoute
   SourcesCoverageRoute: typeof SourcesCoverageRoute
   SourcesDetailRoute: typeof SourcesDetailRoute
-  SourcesEnrichmentRoute: typeof SourcesEnrichmentRoute
   SourcesLibraryRoute: typeof SourcesLibraryRoute
   SourcesRegistryRoute: typeof SourcesRegistryRoute
   SourcesRegistryV22Route: typeof SourcesRegistryV22Route
@@ -1008,13 +995,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SourcesDetailRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/sources/enrichment': {
-      id: '/sources/enrichment'
-      path: '/sources/enrichment'
-      fullPath: '/sources/enrichment'
-      preLoaderRoute: typeof SourcesEnrichmentRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/sources/library': {
       id: '/sources/library'
       path: '/sources/library'
@@ -1122,7 +1102,6 @@ const rootRouteChildren: RootRouteChildren = {
   SourcesCatalogRoute: SourcesCatalogRoute,
   SourcesCoverageRoute: SourcesCoverageRoute,
   SourcesDetailRoute: SourcesDetailRoute,
-  SourcesEnrichmentRoute: SourcesEnrichmentRoute,
   SourcesLibraryRoute: SourcesLibraryRoute,
   SourcesRegistryRoute: SourcesRegistryRoute,
   SourcesRegistryV22Route: SourcesRegistryV22Route,

@@ -26,6 +26,14 @@ const views: { id: ResearchView; label: string }[] = [
   { id: "citations", label: "Citation paths" },
   { id: "sources", label: "Court & rules hierarchy" },
 ];
+function retrievedLabel(sources: { fetchedAt: string }[]): string {
+  const days = [...new Set(sources.map((x) => x.fetchedAt.slice(0, 10)).filter(Boolean))].sort();
+  if (days.length === 0) return "retrieval date Not recorded";
+  return days.length === 1
+    ? `sources retrieved ${days[0]}`
+    : `sources retrieved ${days[0]} to ${days[days.length - 1]}`;
+}
+
 export const Route = createFileRoute("/insights")({
   validateSearch: (input: Record<string, unknown>): ResearchSearch => ({
     view: views.some((v) => v.id === input["view"]) ? (input["view"] as ResearchView) : undefined,
@@ -99,8 +107,9 @@ function Page() {
           <div>
             <div className="eyebrow text-primary">Evidence you can inspect</div>
             <p className="mt-1 text-[12px] text-muted-foreground">
-              FY 2025 court benchmarks · 2025 Census population · FJC and DOJ sources retrieved
-              October 2, 2026
+              {research.data
+                ? `Population as of ${research.data.population.referenceDate} · judiciary data as of ${research.data.judiciary.asOf} · ${retrievedLabel(research.data.sources.sources)}`
+                : "Loading source dates…"}
             </p>
           </div>
           <div className="w-full sm:w-64">

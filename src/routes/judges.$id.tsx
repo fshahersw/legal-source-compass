@@ -13,7 +13,7 @@ export const Route = createFileRoute("/judges/$id")({
     const name = String(raw?.["title"] ?? raw?.["name"] ?? "Judge profile");
     return pageHead(
       name,
-      `Judge profile for ${name}: every linked record in the connected corpus on one page.`,
+      `Judge profile for ${name}: linked records from the connected corpus on one page.`,
     );
   },
   component: Page,
