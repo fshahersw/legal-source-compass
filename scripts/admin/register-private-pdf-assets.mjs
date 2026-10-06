@@ -88,7 +88,8 @@ async function main(){
  await fs.mkdir(out,{recursive:true});
  const log=path.join(out,'registration-receipts.jsonl');let acknowledgements=[];try{const bytes=await fs.readFile(log,'utf8');acknowledgements=bytes.trim().split('\n').filter(Boolean).map(JSON.parse);}catch(e){if(e.code!=='ENOENT')throw e;}
  const acknowledged=new Set(acknowledgements.filter(x=>x.state==='registration_acknowledged').flatMap(x=>x.transfer_receipt_sha256s));
- const cfg=JSON.parse(await fs.readFile(String(args.credentials),'utf8'));
+ // --credentials=<private file>, or EXTERNAL_SUPABASE_URL / EXTERNAL_SUPABASE_KEY from the environment (nothing is written to disk).
+ const cfg=args.credentials?JSON.parse(await fs.readFile(String(args.credentials),'utf8')):{EXTERNAL_SUPABASE_URL:process.env.EXTERNAL_SUPABASE_URL,EXTERNAL_SUPABASE_KEY:process.env.EXTERNAL_SUPABASE_KEY??process.env.EXTERNAL_SUPABASE_SERVICE_ROLE_KEY};
  if(cfg.EXTERNAL_SUPABASE_URL!=='https://'+PROJECT+'.supabase.co')throw Error('Wrong project');
  const token=cfg.EXTERNAL_SUPABASE_KEY;if(typeof token!=='string')throw Error('Missing server key');
  if(token.startsWith('ey')){const claims=JSON.parse(Buffer.from(token.split('.')[1],'base64url'));if(claims.ref!==PROJECT||claims.role!=='service_role')throw Error('Service role required');}else if(!token.startsWith('sb_secret_'))throw Error('Service role required');
