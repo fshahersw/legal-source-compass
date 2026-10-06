@@ -12,6 +12,7 @@ import { Stat } from "@/components/corpus/BarList";
 import { Button } from "@/components/ui/button";
 import { SourceSupplements } from "@/components/corpus/SourceSupplements";
 import { FilingYears } from "@/components/corpus/FilingYears";
+import { StateCodeCoverage } from "@/components/corpus/StateCodeCoverage";
 
 export const Route = createFileRoute("/sources/coverage")({
   head: () =>
@@ -51,6 +52,7 @@ function CoveragePage() {
       description="Counts, categories and relationships from the supplied files and current corpus collection counts. A registry gap is not proof that a legal source does not exist."
     >
       <div className="space-y-7">
+        <StateCodeCoverage />
         <FilingYears
           dataset="sw_matter_dockets_v1"
           title="Matter registry dockets · filing year"

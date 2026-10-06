@@ -2,19 +2,27 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
-import { listStateCodes } from "@/lib/law/stateCode.functions";
+import { getStateCodeCoverage, listStateCodes } from "@/lib/law/stateCode.functions";
 import { showRecorded } from "@/lib/law/stateCodeContract";
 
 /** Live full-code entry for one state, or the literal "Not yet captured". */
 export function FullCodeEntry({ state }: { state: string }) {
   const fn = useServerFn(listStateCodes);
+  const coverageFn = useServerFn(getStateCodeCoverage);
   const query = useQuery({
     queryKey: ["full-state-codes"],
     queryFn: () => fn(),
-    staleTime: 60_000,
+    staleTime: 0,
   });
   const usps = state.toUpperCase();
   const rows = (query.data ?? []).filter((row) => row.state === usps);
+  const coverage = useQuery({
+    queryKey: ["state-code-coverage"],
+    queryFn: () => coverageFn(),
+    staleTime: 0,
+    enabled: !query.isLoading && !query.error && rows.length === 0,
+  });
+  const landed = coverage.data?.find((row) => row.state === usps);
 
   return (
     <section
@@ -31,7 +39,25 @@ export function FullCodeEntry({ state }: { state: string }) {
         </div>
       ) : null}
       {!query.isLoading && !query.error && rows.length === 0 ? (
-        <p className="mt-2 text-[13px] text-muted-foreground">Not yet captured</p>
+        coverage.isLoading ? (
+          <p className="mt-2 text-[13px] text-muted-foreground">Loading full code status…</p>
+        ) : coverage.error ? (
+          <div className="mt-2">
+            <ExternalError error={coverage.error} />
+          </div>
+        ) : landed?.status === "landed-private" ? (
+          <p className="mt-2 text-[13px] text-muted-foreground">
+            Landed privately.
+            {landed.sections == null
+              ? " Section count: Not recorded."
+              : ` ${landed.sections.toLocaleString()} sections are in the private intake.`}{" "}
+            Section text is not shown until the review flag allows it. Edition:{" "}
+            {showRecorded(landed.edition)}. Currency: {showRecorded(landed.currency)}. Review
+            status: {showRecorded(landed.reviewStatus)}.
+          </p>
+        ) : (
+          <p className="mt-2 text-[13px] text-muted-foreground">Not yet captured</p>
+        )
       ) : null}
       {rows.map((row) => (
         <div key={`${row.kind}-${row.datasetId ?? row.state}`} className="mt-2 text-[13px]">

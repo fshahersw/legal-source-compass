@@ -316,7 +316,9 @@ export function LimitationsWorkbench({
     setInput((old) => ({
       ...old,
       ...patch,
-      ...(Object.hasOwn(patch, "reposeActDate") || Object.hasOwn(patch, "accrualDate")
+      ...(Object.hasOwn(patch, "reposeActDate") ||
+      Object.hasOwn(patch, "firstProductDeliveryDate") ||
+      Object.hasOwn(patch, "accrualDate")
         ? { reposeApplicabilityConfirmed: false }
         : {}),
     }));
@@ -437,6 +439,10 @@ export function LimitationsWorkbench({
           {step === 1 && (
             <section className={box}>
               <h2 className="text-xl font-semibold">1. Choose the law and claim</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Rule release {snapshot.ruleVersion}. Source version {snapshot.snapshotDate}. Both
+                come from the loaded limitations snapshot.
+              </p>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                 Select the state law and claim category. Venue or residence alone does not determine
                 governing law.
@@ -750,7 +756,7 @@ export function LimitationsWorkbench({
                       />
                       <span>
                         I confirmed this repose rule applies to this claim and defendant, and that
-                        the act or omission date above is legally relevant.
+                        the repose date above is legally relevant.
                         {missingReposeConfirmation && (
                           <span
                             id="repose-applicability-error"

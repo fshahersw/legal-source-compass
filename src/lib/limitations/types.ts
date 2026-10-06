@@ -155,7 +155,7 @@ export type LimitationRule = {
     secondaryCapYears?: number;
     requiresExposureWithinDeliveryYears?: number;
     reposeYears?: number;
-    reposeTrigger?: "last_act_or_omission" | "act_or_omission";
+    reposeTrigger?: "last_act_or_omission" | "act_or_omission" | "first_delivery";
     reposeEffectiveFrom?: string;
     reposeEffectiveThrough?: string;
   };
@@ -219,6 +219,7 @@ export type JudicialReference = {
   capturedAt: string;
   pdfDownloaded: boolean;
   rawCapture?: AuthorityCapture;
+  fetchRoute?: FetchRoute;
 };
 export type LimitationsSnapshot = {
   schemaVersion: "1.0.0";

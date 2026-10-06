@@ -26,7 +26,7 @@ const args = Object.fromEntries(
     return i < 0 ? [a.slice(2), true] : [a.slice(2, i), a.slice(i + 1)];
   }),
 );
-const RELEASE = args.release ?? "2026-10-06.2";
+const RELEASE = args.release ?? "2026-10-06.3";
 const bundle = args.bundle ?? "/tmp/lim/out/limitations";
 const captures = args.captures ?? "/tmp/lim/backfill/captures";
 const out = args.out ?? "/tmp/lim/out/staging";

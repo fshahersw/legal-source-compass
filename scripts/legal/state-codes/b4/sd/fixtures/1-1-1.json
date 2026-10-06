@@ -1,0 +1,48 @@
+{
+  "parents": [
+    {
+      "StatuteId": 2030342,
+      "Type": "Title",
+      "Statute": "1"
+    },
+    {
+      "StatuteId": 2030377,
+      "Type": "Chapter",
+      "Statute": "1"
+    },
+    {
+      "StatuteId": 2030343,
+      "Type": "Section",
+      "Statute": "1"
+    }
+  ],
+  "Previous": "1-1",
+  "Next": "1-1-1.1",
+  "StatuteId": 2030343,
+  "Statute": "1-1-1",
+  "Type": "Section",
+  "CatchLine": "Territorial extent of sovereignty and jurisdiction--Cessions to United States. ",
+  "FilePath": null,
+  "FileName": null,
+  "Htmlpath": null,
+  "Htmlfilename": null,
+  "Title": 1,
+  "TitleLetter": null,
+  "Chapter": 1,
+  "ChapterLetter": null,
+  "Section": 1,
+  "SubSec": 0,
+  "SubSection": null,
+  "Word": null,
+  "Html": "<html xmlns=\"http://www.w3.org/1999/xhtml\"><head><meta charset=\"UTF-8\"><title></title><meta name=\"Generator\" content=\"PowerTools for Open XML\"><style>span { white-space: pre-wrap; }\r\np.s2030343Normal {\r\n    margin-top: 0;\r\n    margin-bottom: 0;\r\n    text-align: justify;\r\n    font-family: 'Times New Roman', 'serif';\r\n    font-size: 12pt;\r\n    line-height: 108%;\r\n    margin-left: 0;\r\n    margin-right: 0;\r\n}\r\nspan.s2030343SENU {\r\n    font-family: 'Times New Roman', 'serif';\r\n    font-size: 12pt;\r\n    font-style: normal;\r\n    font-weight: bold;\r\n    margin: 0;\r\n    padding: 0;\r\n}\r\nspan.s2030343CL {\r\n    font-family: 'Times New Roman', 'serif';\r\n    font-size: 12pt;\r\n    font-style: normal;\r\n    font-weight: bold;\r\n    margin: 0;\r\n    padding: 0;\r\n}\r\np.s2030343Normal-000000 {\r\n    margin-top: 0;\r\n    margin-bottom: 0;\r\n    text-indent: 0.50in;\r\n    text-align: justify;\r\n    font-family: 'Times New Roman', 'serif';\r\n    font-size: 12pt;\r\n    line-height: 108%;\r\n    margin-left: 0;\r\n    margin-right: 0;\r\n}\r\nspan.s2030343DefaultParagraphFont {\r\n    font-family: 'Times New Roman', 'serif';\r\n    font-size: 12pt;\r\n    font-style: normal;\r\n    font-weight: normal;\r\n    margin: 0;\r\n    padding: 0;\r\n}\r\nspan.s2030343000001 {\r\n    font-size: 12pt;\r\n    font-style: normal;\r\n    font-weight: normal;\r\n    margin: 0;\r\n    padding: 0;\r\n}\r\nspan.s2030343SCL {\r\n    font-family: 'Times New Roman', 'serif';\r\n    font-size: 12pt;\r\n    font-style: normal;\r\n    font-weight: bold;\r\n    margin: 0;\r\n    padding: 0;\r\n}\r\nspan.s2030343SCL-000002 {\r\n    font-family: 'Times New Roman', 'serif';\r\n    font-size: 12pt;\r\n    font-style: normal;\r\n    font-weight: normal;\r\n    margin: 0;\r\n    padding: 0;\r\n}\r\n</style></head><body><div style=\"font-family: 'Times New Roman', 'serif'; font-size: 12pt; line-height: 1;\"><div><p dir=\"ltr\" class=\"s2030343Normal\"><a href=\"https://sdlegislature.gov/Statutes/Codified_Laws/DisplayStatute.aspx?Type=Statute&amp;Statute=1-1-1\"><span class=\"s2030343SENU\">1-1-1</span></a><span xml:space=\"preserve\" class=\"s2030343SENU\">.\u00a0</span><span class=\"s2030343CL\">Territorial extent of sovereignty and jurisdiction--Cessions to United States.</span></p><p dir=\"ltr\" class=\"s2030343Normal-000000\"><span class=\"s2030343DefaultParagraphFont\">The sovereignty and jurisdiction of this state extend to all territory within its established boundaries except as to such places wherein jurisdiction is expressly ceded to the United States by the State Constitution, or wherein jurisdiction has been heretofore or may be hereafter ceded to the United States, with the consent of the people of this state, expressed by their Legislature and the consent of the United States.</span></p><p dir=\"ltr\" class=\"s2030343Normal\"><span xml:space=\"preserve\" class=\"s2030343000001\"> </span></p><p dir=\"ltr\" class=\"s2030343Normal\"><span class=\"s2030343SCL\">Source:</span><span xml:space=\"preserve\" class=\"s2030343SCL-000002\">  SDC 1939, \u00a7\u00a055.0101.</span></p></div></div></body></html>",
+  "Credits": null,
+  "StatuteText": null,
+  "Article": null,
+  "Created": null,
+  "CreatedById": null,
+  "LastUpdated": null,
+  "LastUpdatedBy": null,
+  "Repealed": false,
+  "StatuteReferencesReferencesStatute": [],
+  "StatuteReferencesStatute": []
+}
