@@ -100,6 +100,13 @@ describe("exact statute citation paths", () => {
     expect(statuteNativeId("VA", "8.01-243")).toBe("VA:8.01-243");
   });
 
+  it("reads Oregon 12.110 without the parenthetical", () => {
+    expect(exactCitationPaths("OR", "ORS 12.110(1)")).toEqual(["12.110"]);
+    expect(exactCitationPaths("OR", "ORS 12.110(1)")?.includes("12.11")).toBe(false);
+    expect(exactCitationPaths("OR", "ORS 12.110(1)")?.includes("12.1101")).toBe(false);
+    expect(statuteNativeId("OR", "12.110")).toBe("OR:12.110");
+  });
+
   it("reads Minnesota 541.05 without the subdivision or the next section", () => {
     expect(exactCitationPaths("MN", "Minn. Stat. § 541.05, subd. 1(5)")).toEqual(["541.05"]);
     expect(exactCitationPaths("MN", "Minn. Stat. § 541.05, subd. 1(5)")?.includes("541.051")).toBe(
