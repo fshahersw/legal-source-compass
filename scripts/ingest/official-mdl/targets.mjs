@@ -83,6 +83,13 @@ export const MATTERS = {
   '2614': { name: 'MDL No. 2614 (N.D. Tex.)', court_id: 'txnd', host: 'www.txnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2614', pages: [{ id: 'txnd-2614-mdl', role: 'mdl_page', family: 'txnd-docket-table', url: 'https://www.txnd.uscourts.gov/mdl-315-md-02614' }], index_pages: [] },
   '2835': { name: 'MDL No. 2835 (N.D. Tex.)', court_id: 'txnd', host: 'www.txnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2835', pages: [{ id: 'txnd-2835-mdl', role: 'mdl_page', family: 'txnd-docket-table', url: 'https://www.txnd.uscourts.gov/mdl-318-md-02835' }], index_pages: [] },
   '1983': { name: 'MDL No. 1983 (N.D. Tex.)', court_id: 'txnd', host: 'www.txnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 1983', pages: [{ id: 'txnd-1983-mdl', role: 'mdl_page', family: 'txnd-docket-table', url: 'https://www.txnd.uscourts.gov/mdl-308-md-01983' }], index_pages: [] },
+  // D.S.C. MDL 2873 (Firecrawl map; direct PDFs on orders.asp).
+  '2873': {
+    name: 'In re Aqueous Film-Forming Foam Products Liability Litigation', court_id: 'scd', host: 'www.scd.uscourts.gov', tier: 1,
+    case_number: null, printed_mdl_literal: 'MDL 2873',
+    pages: [{ id: 'scd-2873-orders', role: 'orders_table', family: 'scd-mdl-orders', url: 'https://www.scd.uscourts.gov/mdl-2873/orders.asp' }],
+    index_pages: [],
+  },
 };
 
 // Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
