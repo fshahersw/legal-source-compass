@@ -2,10 +2,90 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 
+import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { RangePager } from "@/components/matters/common";
-import { AVAILABILITY_LABELS } from "@/lib/matters/docketDocuments";
+import { AVAILABILITY_LABELS, type DocketDocument } from "@/lib/matters/docketDocuments";
 import { formatBytes } from "@/lib/matters/documents";
 import { getMatterDocketDocuments } from "@/lib/matters/matters.functions";
+
+function recorded(value: string | null | undefined): string {
+  return value && value.trim() ? value : "Not recorded";
+}
+
+/** One docket-sheet document: the published fields, with "Not recorded" wherever the row is blank. */
+export function DocketDocumentFields({ d }: { d: DocketDocument }) {
+  const status = d.availability === "other" ? "Not recorded" : AVAILABILITY_LABELS[d.availability];
+  return (
+    <dl className="grid min-w-0 flex-1 gap-x-4 gap-y-1 sm:grid-cols-2">
+      <div className="min-w-0 sm:col-span-2">
+        <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Entry
+        </dt>
+        <dd className="font-mono">
+          {d.entryNumber !== null ? `#${d.entryNumber}` : "Not recorded"}
+        </dd>
+      </div>
+      <div className="min-w-0">
+        <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          File name
+        </dt>
+        <dd className="break-all font-mono text-[11px]">{recorded(d.fileName)}</dd>
+      </div>
+      <div className="min-w-0">
+        <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Date
+        </dt>
+        <dd className="font-mono">{recorded(d.dateFiled)}</dd>
+      </div>
+      <div className="min-w-0 sm:col-span-2">
+        <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Description
+        </dt>
+        <dd className="break-words">{recorded(d.description)}</dd>
+      </div>
+      <div className="min-w-0">
+        <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Status
+        </dt>
+        <dd>
+          {status}
+          {d.bytes !== null ? ` · ${formatBytes(d.bytes)}` : ""}
+        </dd>
+      </div>
+      <div className="min-w-0">
+        <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Label
+        </dt>
+        <dd>{recorded(d.label)}</dd>
+      </div>
+      <div className="min-w-0">
+        <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Parties
+        </dt>
+        <dd title="Parties of the matter in the registry">{recorded(d.parties)}</dd>
+      </div>
+      <div className="min-w-0">
+        <dt className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          PDF
+        </dt>
+        <dd>
+          {d.pdfUrl ? (
+            <a
+              href={d.pdfUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-primary underline-offset-2 hover:underline"
+            >
+              Open PDF
+            </a>
+          ) : (
+            "Not recorded"
+          )}
+        </dd>
+      </div>
+    </dl>
+  );
+}
 
 /**
  * Docket-sheet documents of a matter listed by the entry number they carry. `all` lists every document of the matter's
@@ -31,48 +111,28 @@ export function DocketSheetOnly({
     placeholderData: keepPreviousData,
     staleTime: 5 * 60_000,
   });
+  if (q.isLoading && !q.data)
+    return (
+      <p className="mt-3 text-[12px] text-muted-foreground">Loading docket-sheet documents…</p>
+    );
+  if (q.error) return <ExternalError error={q.error} />;
   const data = q.data;
-  if (!data || !data.total) return null;
+  if (!data || (data.total === 0 && data.documents.length === 0)) return null;
+  const countLabel = data.total == null ? "too large to count" : data.total.toLocaleString();
   return (
     <div className="mt-3 space-y-2">
       <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-        {title} · {data.total.toLocaleString()}
+        {title} · {countLabel}
       </h3>
       <p className="text-[12px] text-muted-foreground">
         {intro ??
           "Documents of the cases tracked in DocketBird, as the provider's docket sheet shows them, by entry number."}{" "}
-        Documents withheld under the sealed/restricted rule are counted and never listed.
+        Sealed and restricted documents are not listed. A blank field is Not recorded.
       </p>
       <ul className="divide-y divide-border rounded-lg border border-border">
         {data.documents.map((d) => (
-          <li
-            key={d.nativeDocumentId}
-            className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 p-2 text-[12px]"
-          >
-            <span className="w-14 font-mono">
-              {d.entryNumber !== null ? `#${d.entryNumber}` : "—"}
-            </span>
-            <span className="font-mono text-muted-foreground">
-              {d.dateFiled ?? "Date not recorded"}
-            </span>
-            <span className="min-w-0 flex-1 break-words">
-              {d.description ??
-                (d.descriptionWithheld ? "Description withheld" : "Description not recorded")}
-            </span>
-            <span className="text-muted-foreground">{AVAILABILITY_LABELS[d.availability]}</span>
-            {d.bytes !== null ? (
-              <span className="text-muted-foreground">{formatBytes(d.bytes)}</span>
-            ) : null}
-            {d.pdfUrl ? (
-              <a
-                href={d.pdfUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-primary underline-offset-2 hover:underline"
-              >
-                Open PDF
-              </a>
-            ) : null}
+          <li key={d.nativeDocumentId} className="p-2 text-[12px]">
+            <DocketDocumentFields d={d} />
           </li>
         ))}
       </ul>

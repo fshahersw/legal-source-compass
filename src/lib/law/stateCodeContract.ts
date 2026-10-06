@@ -433,6 +433,30 @@ export function showRecorded(value: string | null | undefined): string {
   return value && value.trim() ? value : "Not recorded";
 }
 
+/**
+ * The section body. A publisher status line stored as the text or the heading is that text.
+ * A one-character fragment is not used in place of a longer printed status line.
+ */
+export function publishedSectionBody(fields: {
+  text: string | null;
+  heading: string | null;
+  status: string | null;
+}): string | null {
+  const text = fields.text?.trim() || null;
+  const heading = fields.heading?.trim() || null;
+  const status = fields.status?.trim().replace(/\.+$/, "") || null;
+  if (!text) return heading;
+  if (
+    status &&
+    heading &&
+    heading.toLowerCase().includes(status.toLowerCase()) &&
+    text.length + 8 < heading.length &&
+    !heading.startsWith(text)
+  )
+    return heading;
+  return text;
+}
+
 /** Edition labels copied from the intake currency summary. Several labels stay several labels. */
 export function projectedEdition(currency: unknown): string | null {
   const row = asObject(currency);

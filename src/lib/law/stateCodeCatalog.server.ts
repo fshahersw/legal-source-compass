@@ -624,6 +624,7 @@ export type StateCodeCoverageRow = {
   status: ReturnType<typeof coverageStatus>;
   reviewStatus: string | null;
   sections: number | null;
+  publisher: string | null;
   edition: string | null;
   currency: string | null;
   contract: string | null;
@@ -655,6 +656,7 @@ export async function stateCodeCoverage(): Promise<StateCodeCoverageRow[]> {
       ),
       reviewStatus: row ? asText(row["review_status"]) : null,
       sections: row && typeof row["sections"] === "number" ? row["sections"] : null,
+      publisher: row ? asText(row["publisher"]) : null,
       edition: row ? projectedEdition(row["currency"]) : null,
       currency: row ? projectedCurrency(row["currency"]) : null,
       contract: row ? asText(row["contract"]) : null,

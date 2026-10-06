@@ -1,4 +1,8 @@
-import { showRecorded, type SectionFields } from "@/lib/law/stateCodeContract";
+import {
+  publishedSectionBody,
+  showRecorded,
+  type SectionFields,
+} from "@/lib/law/stateCodeContract";
 
 function Row({ label, value, href }: { label: string; value: string | null; href?: boolean }) {
   const shown = showRecorded(value);
@@ -25,7 +29,7 @@ function Row({ label, value, href }: { label: string; value: string | null; href
 
 /** The fields every full-code section page shows. Missing source fields read "Not recorded". */
 export function SectionReadout({ fields, text }: { fields: SectionFields; text?: string | null }) {
-  const body = text !== undefined ? text : fields.text;
+  const body = text !== undefined ? text : publishedSectionBody(fields);
   return (
     <article className="space-y-4">
       <header>
@@ -33,7 +37,9 @@ export function SectionReadout({ fields, text }: { fields: SectionFields; text?:
           {showRecorded(fields.heading ?? fields.citation)}
         </h3>
         {fields.status ? (
-          <p className="mt-1 text-xs text-muted-foreground">Status as printed: {fields.status}</p>
+          <p className="mt-2 rounded-md border border-border bg-muted/50 px-3 py-2 text-sm font-semibold">
+            Status as printed: {fields.status}
+          </p>
         ) : null}
       </header>
       <dl className="grid gap-y-1 text-sm sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-x-3">
