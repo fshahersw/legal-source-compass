@@ -9,7 +9,7 @@ const DOTTED_PATH_STATES = new Set(["FL", "KY", "MI", "MN", "MO", "NV", "OR", "W
 export function exactCitationPaths(state: string, citation: string): string[] | null {
   const text = citation.trim();
   const usps = state.toUpperCase();
-  if (!text || /\b(?:to|through)\b/i.test(text)) return null;
+  if (!text || citesSectionRange(text)) return null;
   if (usps === "OK") return oklahomaPaths(text);
   const paths = omitSectionHalf(
     omitDottedPrefix([
@@ -23,6 +23,14 @@ export function exactCitationPaths(state: string, citation: string): string[] | 
     ]),
   );
   return paths.length ? paths : null;
+}
+
+/**
+ * "to" or "through" between section numbers is a range, so nothing is linked.
+ * The same words in ordinary prose, such as "applied to", are not a range.
+ */
+function citesSectionRange(text: string): boolean {
+  return /(?:§§?\s*)?\d[\dA-Za-z.]*(?:\([^)]*\))*\s+(?:to|through)\s+(?:§§?\s*)?\d/i.test(text);
 }
 
 /** A bare section number that is already the section half of a title/section token is not a second section. */

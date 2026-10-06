@@ -180,6 +180,16 @@ describe("exact statute citation paths", () => {
     expect(statuteNativeId("KY", "413.140")).toBe("KY:413.140");
   });
 
+  it("reads Kentucky wrongful death sections and ignores prose to", () => {
+    const citation =
+      "Ky. Rev. Stat. § 413.140(1)(a) (applied to the KRS 411.130 wrongful death action by Estate of Wittich v. Flick, 2015-SC-000114-DG (Ky. 2017)); § 413.180(1)-(2)";
+    expect(exactCitationPaths("KY", citation)).toEqual(["413.140", "411.130", "413.180"]);
+    expect(exactCitationPaths("KY", citation)?.includes("413.14")).toBe(false);
+    expect(exactCitationPaths("KY", "KRS 413.090 to 413.160")).toBeNull();
+    expect(exactCitationPaths("FL", "Fla. Stat. §§ 95.11 to 95.12")).toBeNull();
+    expect(exactCitationPaths("MI", "MCL 600.5805 through 600.5806")).toBeNull();
+  });
+
   it("reads Oregon 12.110 without the parenthetical", () => {
     expect(exactCitationPaths("OR", "ORS 12.110(1)")).toEqual(["12.110"]);
     expect(exactCitationPaths("OR", "ORS 12.110(1)")?.includes("12.11")).toBe(false);
