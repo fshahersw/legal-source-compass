@@ -13,7 +13,7 @@ export function SourceResearch({ data, state, update }: WorkbenchProps) {
     <div className="space-y-4">
       <Panel
         title="State court and legal-resource hierarchy"
-        note={`Fresh retrieval of DOJ Library Staff’s jurisdiction pages: ${fmt(count)} resource links across 50 states and DC, collected ${data.resources.retrievedAt.slice(0, 10)}. Select a state to browse its hierarchy.`}
+        note={`DOJ Library Staff’s jurisdiction pages: ${fmt(count)} resource links in ${data.resources.states.length} jurisdictions, collected ${data.resources.retrievedAt.slice(0, 10)}. Select a state to browse its hierarchy.`}
       >
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-0 flex-1">

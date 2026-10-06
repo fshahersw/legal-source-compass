@@ -193,7 +193,7 @@ function TierTable({ tier, rows }: { tier: SwTier; rows: HubRow[] }) {
                   <div className="line-clamp-2 text-[11px] text-muted-foreground">{r.title}</div>
                 ) : (
                   <div className="text-[11px] text-muted-foreground">
-                    No matter profile · JPML list as of 2026-09-01
+                    No matter profile{r.asOf ? ` · JPML list as of ${r.asOf}` : ""}
                   </div>
                 )}
               </td>

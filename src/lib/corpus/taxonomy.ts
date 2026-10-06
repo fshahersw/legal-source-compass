@@ -21,7 +21,7 @@ export const CATEGORY_LABELS = {
   other: "Other / not matched by rule",
 } as const;
 export type CategoryId = keyof typeof CATEGORY_LABELS;
-export const TAXONOMY_VERSION = "2026-10-06.1";
+export const TAXONOMY_VERSION = "2026-10-06.2";
 
 const STATUTES = new Set([
   "statutes",
@@ -222,9 +222,6 @@ export const RECORD_CATEGORIES: Readonly<Record<string, CategoryId>> = {
   other: "other",
   agency_safety: "safety",
   openfda_device_classification_metadata: "data",
-  openfda_device_enforcement_metadata: "enforcement",
-  openfda_drug_enforcement_metadata: "enforcement",
-  openfda_device_recall_metadata: "safety",
   mass_tort_authority_evidence: "mixed",
   jpml_html_reference: "mixed",
   agency_science_documents: "safety",
@@ -253,7 +250,6 @@ export const RECORD_CATEGORIES: Readonly<Record<string, CategoryId>> = {
   fee_schedule: "guidance",
   filing_guidance: "guidance",
   indiana_code: "statutes",
-  judge_disclosures: "data",
   judge_profile: "directories",
   judges: "directories",
   limitation_periods: "guidance",
@@ -279,7 +275,6 @@ export const RECORD_CATEGORIES: Readonly<Record<string, CategoryId>> = {
   state_codes: "statutes",
   state_proceedings: "dockets",
   transfer_order: "rules",
-  url_directory: "directories",
   uscourts_pages: "mixed",
   verdict_reports: "data",
 };

@@ -80,7 +80,7 @@ export function CitationResearch({ search, update }: WorkbenchProps) {
         </p>
         <p className="mt-2 text-[11px] text-muted-foreground">
           Search uses the corpus’s native authority-and-document index; results can match
-          citing-document text. Citation paths cover the full published corpus.
+          citing-document text.
         </p>
         {datasets.error || listing.error ? (
           <p className="mt-3 text-[12px] text-destructive">

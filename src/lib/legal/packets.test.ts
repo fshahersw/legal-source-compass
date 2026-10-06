@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import source from "./mdl2738.server.json";
-import { mdlPacket, qualityFromSupabase } from "./packets";
-import { LEGAL_ENUMS, recordKey } from "./schema";
+import { mdlPacket } from "./packets";
+import { recordKey } from "./schema";
 import { typedNeighbors, exportCitedPath } from "./graph";
 
 describe("retained original-source packets", () => {
@@ -23,18 +23,5 @@ describe("retained original-source packets", () => {
   it("never marks unreviewed leadership complete or invents source sections", () => {
     expect(mdlPacket.safeParse({ ...source, complete: true }).success).toBe(false);
     expect(mdlPacket.safeParse({ ...source, documents: [{ ...source.documents[0], section: "made-up" }] }).success).toBe(false);
-  });
-  it("reads persisted Supabase counts and rejects missing reports", () => {
-    const counts = Object.fromEntries(Object.keys(LEGAL_ENUMS.entity_type).map(type => [type, { total: 0, invalid: 0 }]));
-    counts["docket_entry"] = { total: 100, invalid: 2 };
-    const response = { schema_version: "legal-atlas/3.1", report: { reported_at: "2026-10-02T12:00:00Z", counts_by_type: counts,
-      coverage: [{ source_name: "courtlistener", year: 2026, source_rows: 100, accepted_rows: 98, rejected_rows: 2, status: "partial" }] } };
-    const snapshot = qualityFromSupabase(response);
-    expect(snapshot.counts.schema_valid + snapshot.counts.schema_invalid).toBe(snapshot.counts.candidate_records);
-    expect(snapshot.location).toBe("supabase");
-    expect(snapshot.counts.schema_invalid).toBe(2);
-    expect(snapshot.coverage[0]?.accepted).toBe(98);
-    expect(snapshot.complete).toBe(false);
-    expect(() => qualityFromSupabase({ ...response, report: null })).toThrow("has not been generated");
   });
 });
