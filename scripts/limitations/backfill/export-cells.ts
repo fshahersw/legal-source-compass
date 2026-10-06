@@ -56,6 +56,7 @@ const cells = coverage.flatMap((row) =>
         ruleKind: r.ruleKind,
         computation: r.computation,
         entryStatus: r.provenance?.entryStatus ?? "legacy_production_rule_not_re_verified_by_entry",
+        verification: r.verification ?? null,
         period: r.period,
         citation: r.provenance?.citation ?? r.pinpoint,
         excerpt: r.provenance?.excerpt ?? null,
@@ -81,6 +82,8 @@ const cells = coverage.flatMap((row) =>
       claimType,
       cellStatus: claim?.status ?? "not_recorded",
       cellRuleId: claim?.ruleId ?? null,
+      cellGrade: claim?.grade ?? null,
+      variants: claim?.variants ?? [],
       notRecordedReason: claim?.status === "not_recorded" ? (claim.reason ?? "Not recorded") : null,
       entries,
     };

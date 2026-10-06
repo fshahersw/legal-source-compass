@@ -20,6 +20,7 @@ import {
 import {
   CLAIM_LABELS,
   CLAIM_TYPES,
+  VERIFICATION_GRADE_LABELS,
   SPECIAL_ISSUES,
   type BaselineInput,
   type BaselineResult,
@@ -47,13 +48,30 @@ const subtypeLabels: Record<string, string> = {
   synthetic_estrogen: "DES / nonsteroidal synthetic estrogen exposure",
 };
 
+const patternLabel = (slug: string) =>
+  slug === "general"
+    ? "General rule for this claim type"
+    : `Variant, only if this fact pattern fits: ${subtypeLabels[slug] ?? humanize(slug)}`;
 function Authority({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule: LimitationRule }) {
   const facts = ruleAuthorityFacts(snapshot, rule);
   return (
     <div className="mt-3 rounded-lg border border-border p-3 text-sm" data-testid="rule-authority">
       <dl className="grid gap-x-4 gap-y-1 sm:grid-cols-[10rem_1fr]">
         <dt className="font-medium">Citation</dt>
-        <dd>{facts.citation}</dd>
+        <dd>
+          {facts.citation}
+          <span
+            className="ml-2 inline-block rounded border border-border bg-muted px-1.5 py-0.5 text-xs font-medium"
+            title={facts.gradeBasis}
+            data-testid="verification-grade"
+          >
+            {facts.grade}
+          </span>
+        </dd>
+        <dt className="font-medium">Evidence grade</dt>
+        <dd>
+          {facts.grade}. {facts.gradeBasis}
+        </dd>
         <dt className="font-medium">Effective date</dt>
         <dd>{facts.effective}</dd>
         <dt className="font-medium">Last amended</dt>
@@ -476,7 +494,7 @@ export function LimitationsWorkbench({
                   >
                     {subtypes.map((item) => (
                       <option key={item} value={item}>
-                        {subtypeLabels[item] ?? humanize(item)}
+                        {patternLabel(item)}
                         {baselineRule(snapshot.rules, state, claim, item)
                           ? ""
                           : " · legal review needed"}
@@ -490,6 +508,13 @@ export function LimitationsWorkbench({
                   <p className="text-base font-semibold">
                     {rule.period ? periodLabel(rule.period) : "Period requires legal review"}
                   </p>
+                  {rule.subtype && rule.subtype !== "general" && (
+                    <p className="mt-1 text-sm font-medium">
+                      Variant rule: applies only to{" "}
+                      {subtypeLabels[rule.subtype] ?? humanize(rule.subtype)}, not to the claim type
+                      generally.
+                    </p>
+                  )}
                   {reposeLabel && <p className="mt-1 text-sm font-medium">{reposeLabel}</p>}
                   <p className="mt-1 text-sm leading-relaxed">{rule.scope}</p>
                   <Citations snapshot={snapshot} rule={rule} />
@@ -501,7 +526,12 @@ export function LimitationsWorkbench({
                     No unique baseline is available for this selection. No date will be calculated.
                   </p>
                   {(() => {
-                    const recorded = stateRules.find((item) => item.period);
+                    const recorded = stateRules.find(
+                      (item) =>
+                        (item.subtype ?? "general") === (input.subtype ?? "general") &&
+                        item.ruleKind === "limitations" &&
+                        item.period,
+                    );
                     const cell = stateCoverage?.claimCoverage?.find(
                       (item) => item.claimType === claim,
                     );
@@ -581,7 +611,7 @@ export function LimitationsWorkbench({
                       >
                         {subtypes.map((item) => (
                           <option key={item} value={item}>
-                            {subtypeLabels[item] ?? humanize(item)}
+                            {patternLabel(item)}
                             {baselineRule(snapshot.rules, state, claim, item)
                               ? ""
                               : " · legal review needed"}
@@ -1200,6 +1230,10 @@ export function LimitationsWorkbench({
                                       ? "recorded with open issues"
                                       : "Not recorded"}
                               </span>
+                              {cell.grade ? ` · ${VERIFICATION_GRADE_LABELS[cell.grade]}` : ""}
+                              {cell.variants?.length
+                                ? ` · ${cell.variants.length} narrow variant${cell.variants.length === 1 ? "" : "s"} selectable`
+                                : ""}
                             </li>
                           ))}
                         </ul>
