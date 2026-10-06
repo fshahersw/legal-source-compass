@@ -1,17 +1,17 @@
 # Full state codes
 
-`publisher-code-intake/2` is applied. Coverage currently reports Texas only, still on `publisher-code-intake/1`. The website reads a state only after its review flag is on, through `database/contracts/corpus-publisher-code-projection-v2.sql` (apply that file next). Working rules: the project store `internal/state-codes/README.md`. Contract: `database/contracts/corpus-publisher-code-intake-v2.sql` (PR #45, merged).
+`publisher-code-intake/2` is applied. The public read `database/contracts/corpus-publisher-code-projection-v2.sql` is applied as well (migration `corpus_publisher_code_projection_v2`). The website shows section text only for a state whose review flag `public_projection_allowed` is on. States that have landed but are still private appear on Sources → Quality & coverage as landed-private, with no section text. Working rules: the project store `internal/state-codes/README.md`. Contract: `database/contracts/corpus-publisher-code-intake-v2.sql` (PR #45, merged).
 
 Isolated tests (`node --test scripts/legal/state-codes/publisher-code-intake-v2.test.mjs`, PGlite 0.5.8): 5/5 pass. They cover a manifest, one run, a unit and a section landing with exact readback, coverage counts, a terms gate, a bad section id, a foreign host, a section before its unit, projection before review, a second open run, anonymous denial, a reused payload hash, and the public projection staying empty until the review flag is allowed.
 
 Nothing below is a count of landed sections.
 
-| Batch | States | Status |
-|---|---|---|
-| A | NY, PA, FL, IL, OH, MI, GA, NC, MA, AZ, MO, LA | in progress 2026-10-06; nothing landed yet |
-| B | MN, WI, IN, TN, CO, MD, VA, SC, AL, KY, OK, OR | staging against the mapping |
-| C | CT, NV, IA, MS, AR, KS, UT, NE, NM, WV, ID, HI | staging against the mapping |
-| 4 | NH, ME, MT, RI, DE, SD, ND, AK, VT, WY | later |
+| Batch | States                                         | Status                                     |
+| ----- | ---------------------------------------------- | ------------------------------------------ |
+| A     | NY, PA, FL, IL, OH, MI, GA, NC, MA, AZ, MO, LA | in progress 2026-10-06; nothing landed yet |
+| B     | MN, WI, IN, TN, CO, MD, VA, SC, AL, KY, OK, OR | staging against the mapping                |
+| C     | CT, NV, IA, MS, AR, KS, UT, NE, NM, WV, ID, HI | staging against the mapping                |
+| 4     | NH, ME, MT, RI, DE, SD, ND, AK, VT, WY         | later                                      |
 
 ## New York
 

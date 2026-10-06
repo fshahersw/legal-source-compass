@@ -486,6 +486,32 @@ export type StateCodeListing = {
 
 export type HierarchyStep = { level: string; number: string | null };
 
+/** Accept a JSON string or an already-parsed search param. A bad path is empty, not a guess. */
+export function parseHierarchyPath(value: unknown): HierarchyStep[] {
+  let parsed = value;
+  if (typeof value === "string") {
+    if (!value.startsWith("[")) return [];
+    try {
+      parsed = JSON.parse(value) as unknown;
+    } catch {
+      return [];
+    }
+  }
+  if (!Array.isArray(parsed) || parsed.length > 12) return [];
+  const steps: HierarchyStep[] = [];
+  for (const item of parsed) {
+    if (!item || typeof item !== "object") return [];
+    const level = (item as { level?: unknown }).level;
+    const number = (item as { number?: unknown }).number;
+    if (typeof level !== "string" || !/^[a-z][a-z_]{1,40}$/.test(level)) return [];
+    if (number == null) steps.push({ level, number: null });
+    else if (typeof number === "string" || (typeof number === "number" && Number.isFinite(number)))
+      steps.push({ level, number: String(number) });
+    else return [];
+  }
+  return steps;
+}
+
 export type ProjectedOutline =
   | {
       available: false;

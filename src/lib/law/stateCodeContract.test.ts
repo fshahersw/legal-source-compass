@@ -4,6 +4,7 @@ import {
   coverageStatus,
   matchesCitationOrHeading,
   parseFullCode,
+  parseHierarchyPath,
   projectedCurrency,
   projectedEdition,
   sectionFieldsFromRecord,
@@ -206,6 +207,13 @@ describe("full state code contract", () => {
     expect(coverageStatus(undefined)).toBe("not yet captured");
     expect(coverageStatus({ public_projection_allowed: false })).toBe("landed-private");
     expect(coverageStatus({ public_projection_allowed: true })).toBe("captured");
+    expect(parseHierarchyPath([{ level: "title", number: 1 }])).toEqual([
+      { level: "title", number: "1" },
+    ]);
+    expect(parseHierarchyPath('[{"level":"title","number":null}]')).toEqual([
+      { level: "title", number: null },
+    ]);
+    expect(parseHierarchyPath("not-json")).toEqual([]);
   });
 
   it("matches a citation or a heading and ignores a one-character query", () => {
