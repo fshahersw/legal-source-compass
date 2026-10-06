@@ -181,7 +181,7 @@ def main():
                 receipts[o["sha256"]] = rec
         chunk, size = [], 0
         for o in objects:
-            item = {"sha256": o["sha256"], "bytes": o["bytes"], "kind": o["kind"], "sources": o["sources"], "readback": receipts[o["sha256"]]}
+            item = {"sha256": o["sha256"], "bytes": o["bytes"], "kind": o["kind"], "sources": [{"http_status": 200, **x} for x in o["sources"]], "readback": receipts[o["sha256"]]}
             n = len(canon(item))
             if chunk and (len(chunk) >= 1000 or size + n > 6_000_000):
                 cloud.rpc("corpus_publisher_code_register_objects_v2", {"p_run": run_id, "p_objects": chunk})

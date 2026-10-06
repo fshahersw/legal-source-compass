@@ -43,6 +43,8 @@ def main():
     ap.add_argument("--structure-unit", required=True)
     ap.add_argument("--reviewed-by", default="batch-c lead (Cursor agent)")
     ap.add_argument("--sections", help="override sections.jsonl path")
+    ap.add_argument("--placeholders-as-printed-line", action="store_true",
+                    help="empty-body placeholders (repealed/transferred...) land with the printed heading line as text (as batch B did); default records them as gaps")
     a = ap.parse_args()
     st = a.state.upper()
     root = a.root or f"/tmp/sc/{st}"
@@ -72,7 +74,11 @@ def main():
             gap_rows.write(json.dumps({"kind": kind, "native_id": s["native_id"], "citation": s["citation"], "member": member,
                                        "source_url": src["url"]}, ensure_ascii=False) + "\n")
         if not s["text"]:
-            gap("empty_text"); continue
+            if a.placeholders_as_printed_line and s.get("heading"):
+                s = dict(s, text=s["heading"])
+                gaps["placeholder_landed_as_printed_line"] += 1
+            else:
+                gap("empty_text"); continue
         if "\x00" in s["text"]:
             gap("nul_in_text"); continue
         if orig not in receipts:
