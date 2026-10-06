@@ -1,5 +1,6 @@
 import {
   VERIFICATION_GRADE_LABELS,
+  type FetchRoute,
   type LimitationRule,
   type LimitationsSnapshot,
 } from "@/lib/limitations/types";
@@ -17,7 +18,7 @@ export type RuleAuthorityFacts = {
     url: string;
     retrieved: string;
     kind: string;
-    route: string | null;
+    route: string;
   }[];
   excerpt: string | null;
   accrual: string;
@@ -31,6 +32,15 @@ export type RuleAuthorityFacts = {
 };
 
 const day = (value: string | undefined | null) => (value ? value.slice(0, 10) : NOT_RECORDED);
+
+export function fetchRouteLabel(route: FetchRoute | undefined): string {
+  if (!route) return NOT_RECORDED;
+  if (route.kind === "direct") return "Direct fetch from the publisher";
+  if (route.kind === "extraction") return "Extraction from the captured publisher file";
+  if (route.kind === "proxied" && route.proxy)
+    return `Fetched through the ${route.proxy} proxy because the host blocks direct requests`;
+  return NOT_RECORDED;
+}
 
 /** Facts shown beside every result: nothing is inferred, absent values read "Not recorded". */
 export function ruleAuthorityFacts(
@@ -48,10 +58,7 @@ export function ruleAuthorityFacts(
             url: s.url,
             retrieved: day(s.capturedAt),
             kind: s.authorityKind,
-            route:
-              s.fetchRoute?.kind === "proxied"
-                ? `fetched through the ${s.fetchRoute.proxy} proxy because the host blocks direct requests`
-                : null,
+            route: fetchRouteLabel(s.fetchRoute),
           },
         ]
       : [];

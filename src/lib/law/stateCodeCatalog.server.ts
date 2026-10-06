@@ -2,6 +2,7 @@ import { STATES, stateByUsps } from "@/lib/corpus/geo";
 import { ilikeTerm, restGet, rpcPost, rpcPostOptional } from "@/lib/external/rest.server";
 import { STATE_DATASETS } from "@/lib/external/lawTree";
 import { listSnapshotNames, readPrivateSnapshot } from "@/lib/private-data/snapshot.server";
+import { exactCitationPaths } from "./exactCitationPath";
 import {
   classifyDataset,
   coverageStatus,
@@ -9,6 +10,7 @@ import {
   parseListing,
   projectedCurrency,
   projectedEdition,
+  publishedSectionBody,
   sectionFieldsFromRecord,
   snapshotReleasePaths,
   summarizeBrowseRoot,
@@ -616,6 +618,79 @@ export async function projectedSection(
     },
   });
   return { id: row["native_id"], ...fields };
+}
+
+export type PublicStatuteSection = {
+  nativeId: string;
+  citationPath: string;
+  heading: string | null;
+  text: string | null;
+  sourceUrl: string | null;
+  currency: string | null;
+  status: string | null;
+};
+
+let publicStatesCache: { at: number; states: Set<string> } | null = null;
+
+async function publicProjectionStates(): Promise<Set<string>> {
+  if (publicStatesCache && Date.now() - publicStatesCache.at < CATALOG_TTL)
+    return publicStatesCache.states;
+  const rows = await rpcPostOptional<{ jurisdiction?: unknown }[]>(
+    "corpus_publisher_code_projected_states_v2",
+    {},
+  );
+  const states = new Set<string>();
+  if (Array.isArray(rows)) {
+    for (const row of rows) {
+      const state = asText(row?.jurisdiction)?.toUpperCase();
+      if (state) states.add(state);
+    }
+  }
+  publicStatesCache = { at: Date.now(), states };
+  return states;
+}
+
+/** Sections whose native id is exactly `ST:<citation_path>` and whose state is in the public projection. */
+export async function publicStatuteSections(
+  state: string,
+  citation: string,
+): Promise<PublicStatuteSection[]> {
+  const usps = state.toUpperCase();
+  const paths = exactCitationPaths(usps, citation);
+  if (!paths?.length) return [];
+  if (!(await publicProjectionStates()).has(usps)) return [];
+  const sections: PublicStatuteSection[] = [];
+  for (const citationPath of paths) {
+    const nativeId = `${usps}:${citationPath}`;
+    const row = await rpcPostOptional<Record<string, unknown> | null>(
+      "corpus_publisher_code_projected_section_v2",
+      { p_jurisdiction: usps, p_native_id: nativeId },
+    );
+    if (!row || row["native_id"] !== nativeId || asText(row["citation_path"]) !== citationPath)
+      continue;
+    const fields = sectionFieldsFromRecord({
+      title: asText(row["citation"]),
+      source_url: asText(row["source_url"]),
+      detail: {
+        citation: row["citation"],
+        heading: row["heading"],
+        text: row["text"],
+        history: row["history"],
+        status_note: row["status_note"],
+        currency: row["currency"],
+      },
+    });
+    sections.push({
+      nativeId,
+      citationPath,
+      heading: fields.heading,
+      text: publishedSectionBody(fields),
+      sourceUrl: fields.sourceUrl,
+      currency: fields.currency,
+      status: fields.status,
+    });
+  }
+  return sections;
 }
 
 export type StateCodeCoverageRow = {
