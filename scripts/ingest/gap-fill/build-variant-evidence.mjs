@@ -13,13 +13,22 @@ export const SERIES = new Set(['op', 'md', 'cv', 'mc']);
 export const SCHEMA_V2 = 'courtlistener-bulk-match/2';
 const SOURCE_URL = 'https://com-courtlistener-storage.s3-us-west-2.amazonaws.com/bulk-data/dockets-2026-09-30.csv.bz2';
 export const normCaption = s => String(s ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
+/**
+ * (b) + (c): on EACH side of the "v." drop a trailing ", et al" / " et al." (repeatedly), then drop punctuation; both sides must be equal. Never truncation-prefix matching.
+ */
+const stripSide = x => x.replace(/(?:[\s,;]*\bet\s+al\.?)+\s*$/i, '').replace(/[^a-z0-9 ]+/g, '').replace(/\s+/g, ' ').trim();
+export const normCaptionLoose = s => {
+  const parts = normCaption(s).split(/\s(?:v|vs)\.?\s/i);
+  return parts.map(stripSide).join(' v ');
+};
+export const CAPTION_BASIS = {blank: 'registry_caption_blank', strict: 'equal_after_whitespace_case_normalisation', loose: 'equal_after_et_al_and_punctuation_normalisation'};
 const readJsonl = async f => (await fs.readFile(f, 'utf8')).split('\n').filter(Boolean).map(l => JSON.parse(l));
 const parts = key => { const [court, office, rest] = key.split(':'); const [year, type, seq] = rest.split('-'); return {court, office, year, type, seq: String(Number(seq))}; };
 
 export function decideVariants(registry, bulkRows, existingNatives) {
   const byRelaxed = new Map();
   for (const m of bulkRows) (byRelaxed.get(m.relaxed) ?? byRelaxed.set(m.relaxed, []).get(m.relaxed)).push(m);
-  const stats = {registry_rows_without_cl_id: 0, no_bulk_row: 0, ambiguous_relaxed_key: 0, blocked: 0, type_not_civil_series: 0, same_type_not_a_variant: 0, caption_mismatch_held: 0, native_collision_held: 0, accepted: 0, accepted_registry_caption_blank: 0, accepted_caption_equal: 0, by_bulk_type: {}};
+  const stats = {registry_rows_without_cl_id: 0, no_bulk_row: 0, ambiguous_relaxed_key: 0, blocked: 0, type_not_civil_series: 0, same_type_not_a_variant: 0, caption_mismatch_held: 0, native_collision_held: 0, accepted: 0, accepted_registry_caption_blank: 0, accepted_caption_equal: 0, accepted_caption_equal_after_et_al_and_punctuation: 0, by_bulk_type: {}};
   const accepted = [], held = [];
   const claimed = new Map();
   for (const r of registry) {
@@ -35,11 +44,13 @@ export function decideVariants(registry, bulkRows, existingNatives) {
     if (!SERIES.has(m.type) || !SERIES.has(p.type)) { stats.type_not_civil_series++; held.push({registry_id: r.id, reason: 'type letter outside the civil-series codes', registry_type: p.type, bulk_type: m.type, native_id: m.id}); continue; }
     if (m.type === p.type) { stats.same_type_not_a_variant++; continue; }
     const registryBlank = isBlank(r.caption);
-    if (!registryBlank && normCaption(r.caption) !== normCaption(m.case_name)) { stats.caption_mismatch_held++; held.push({registry_id: r.id, reason: 'caption differs after whitespace/case normalisation', registry_caption: r.caption, bulk_case_name: m.case_name, native_id: m.id}); continue; }
+    const strict = !registryBlank && normCaption(r.caption) === normCaption(m.case_name);
+    const loose = !registryBlank && !strict && normCaptionLoose(r.caption) !== '' && normCaptionLoose(r.caption) === normCaptionLoose(m.case_name);
+    if (!registryBlank && !strict && !loose) { stats.caption_mismatch_held++; held.push({registry_id: r.id, reason: 'caption differs after whitespace/case normalisation', registry_caption: r.caption, bulk_case_name: m.case_name, native_id: m.id}); continue; }
     if (existingNatives.has(m.id) || claimed.has(m.id)) { stats.native_collision_held++; held.push({registry_id: r.id, reason: 'native docket already matched another registry docket', native_id: m.id}); continue; }
     claimed.set(m.id, r.id);
-    stats.accepted++; stats[registryBlank ? 'accepted_registry_caption_blank' : 'accepted_caption_equal']++; stats.by_bulk_type[m.type] = (stats.by_bulk_type[m.type] ?? 0) + 1;
-    accepted.push({registry: r, bulk: m, registry_type: p.type, caption_basis: registryBlank ? 'registry_caption_blank' : 'equal_after_whitespace_case_normalisation'});
+    stats.accepted++; stats[registryBlank ? 'accepted_registry_caption_blank' : strict ? 'accepted_caption_equal' : 'accepted_caption_equal_after_et_al_and_punctuation']++; stats.by_bulk_type[m.type] = (stats.by_bulk_type[m.type] ?? 0) + 1;
+    accepted.push({registry: r, bulk: m, registry_type: p.type, caption_basis: registryBlank ? CAPTION_BASIS.blank : strict ? CAPTION_BASIS.strict : CAPTION_BASIS.loose});
   }
   return {stats, accepted, held};
 }
