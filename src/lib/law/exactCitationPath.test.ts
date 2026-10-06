@@ -79,6 +79,18 @@ describe("exact statute citation paths", () => {
     expect(tokenEqualsStoredSection("09.10.070", "09.10.070", ["09.10.070"])).toBe(true);
   });
 
+  it("reads New Hampshire 508:4 without the paragraph or the lettered neighbor", () => {
+    expect(exactCitationPaths("NH", "N.H. Rev. Stat. Ann. § 508:4, I")).toEqual(["508:4"]);
+    expect(exactCitationPaths("NH", "N.H. Rev. Stat. Ann. § 508:4, I")?.includes("508:4-b")).toBe(
+      false,
+    );
+    expect(exactCitationPaths("NH", "N.H. Rev. Stat. Ann. § 508:4-b, I")).toEqual(["508:4-b"]);
+    expect(exactCitationPaths("NH", "N.H. Rev. Stat. Ann. § 508:4-b, I")?.includes("508:4")).toBe(
+      false,
+    );
+    expect(statuteNativeId("NH", "508:4")).toBe("NH:508:4");
+  });
+
   it("reads Virginia 8.01-243 without the parenthetical or the next decimal section", () => {
     expect(exactCitationPaths("VA", "Va. Code § 8.01-243(A)")).toEqual(["8.01-243"]);
     expect(exactCitationPaths("VA", "Va. Code § 8.01-243(A)")?.includes("8.01-243.1")).toBe(false);

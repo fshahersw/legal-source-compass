@@ -60,7 +60,8 @@ function dottedHyphenPaths(citation: string): string[] | null {
 
 /**
  * Section numbers written after a section sign.
- * A bare number such as § 8119, or a multi-part number such as § 09.10.070.
+ * A bare number such as § 8119, a multi-part number such as § 09.10.070,
+ * or a colon number such as § 508:4. A following paragraph, such as ", I", is not part of the number.
  * A parenthetical is not part of the number. A one- or two-digit session-law section is not taken.
  */
 function sectionSignPaths(citation: string): string[] | null {
@@ -74,7 +75,12 @@ function sectionSignPaths(citation: string): string[] | null {
         .replace(/(?:\([^)]*\))+$/g, "")
         .replace(/\.$/, "");
       if (!token || paths.includes(token)) continue;
-      if (/^\d{3,}$/.test(token) || /^\d{1,2}(?:\.\d{2,3}){2,}$/.test(token)) paths.push(token);
+      if (
+        /^\d{3,}$/.test(token) ||
+        /^\d{1,2}(?:\.\d{2,3}){2,}$/.test(token) ||
+        /^\d+(?:-[A-Z])?:\d+(?:-[A-Za-z])?$/.test(token)
+      )
+        paths.push(token);
     }
   }
   return paths.length ? paths : null;
