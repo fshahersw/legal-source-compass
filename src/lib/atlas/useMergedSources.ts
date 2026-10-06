@@ -5,7 +5,7 @@ import { useAtlas } from "@/lib/atlas/store";
 
 /**
  * Bundle sources merged with the source catalog (exact-URL dedupe).
- * Used by Saved Sources and the Review Queue so browser-local bookmarks and
+ * Used by Saved Sources so browser-local bookmarks and
  * review decisions recorded against catalog-only rows still resolve.
  */
 export function useMergedSources() {

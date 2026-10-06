@@ -23,7 +23,6 @@ import { Route as MdlsRouteImport } from './routes/mdls'
 import { Route as OverviewRouteImport } from './routes/overview'
 import { Route as PeopleRouteImport } from './routes/people'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as ReviewQueueRouteImport } from './routes/review-queue'
 import { Route as SafetyRouteImport } from './routes/safety'
 import { Route as SavedSourcesRouteImport } from './routes/saved-sources'
 import { Route as SearchRouteImport } from './routes/search'
@@ -131,11 +130,6 @@ const PeopleRoute = PeopleRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReviewQueueRoute = ReviewQueueRouteImport.update({
-  id: '/review-queue',
-  path: '/review-queue',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SafetyRoute = SafetyRouteImport.update({
@@ -344,7 +338,6 @@ export interface FileRoutesByFullPath {
   '/overview': typeof OverviewRoute
   '/people': typeof PeopleRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/review-queue': typeof ReviewQueueRoute
   '/safety': typeof SafetyRoute
   '/saved-sources': typeof SavedSourcesRoute
   '/search': typeof SearchRoute
@@ -399,7 +392,6 @@ export interface FileRoutesByTo {
   '/overview': typeof OverviewRoute
   '/people': typeof PeopleRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/review-queue': typeof ReviewQueueRoute
   '/safety': typeof SafetyRoute
   '/saved-sources': typeof SavedSourcesRoute
   '/search': typeof SearchRoute
@@ -455,7 +447,6 @@ export interface FileRoutesById {
   '/overview': typeof OverviewRoute
   '/people': typeof PeopleRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/review-queue': typeof ReviewQueueRoute
   '/safety': typeof SafetyRoute
   '/saved-sources': typeof SavedSourcesRoute
   '/search': typeof SearchRoute
@@ -512,7 +503,6 @@ export interface FileRouteTypes {
     | '/overview'
     | '/people'
     | '/reset-password'
-    | '/review-queue'
     | '/safety'
     | '/saved-sources'
     | '/search'
@@ -567,7 +557,6 @@ export interface FileRouteTypes {
     | '/overview'
     | '/people'
     | '/reset-password'
-    | '/review-queue'
     | '/safety'
     | '/saved-sources'
     | '/search'
@@ -622,7 +611,6 @@ export interface FileRouteTypes {
     | '/overview'
     | '/people'
     | '/reset-password'
-    | '/review-queue'
     | '/safety'
     | '/saved-sources'
     | '/search'
@@ -678,7 +666,6 @@ export interface RootRouteChildren {
   OverviewRoute: typeof OverviewRoute
   PeopleRoute: typeof PeopleRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
-  ReviewQueueRoute: typeof ReviewQueueRoute
   SafetyRoute: typeof SafetyRoute
   SavedSourcesRoute: typeof SavedSourcesRoute
   SearchRoute: typeof SearchRoute
@@ -816,13 +803,6 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/review-queue': {
-      id: '/review-queue'
-      path: '/review-queue'
-      fullPath: '/review-queue'
-      preLoaderRoute: typeof ReviewQueueRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/safety': {
@@ -1121,7 +1101,6 @@ const rootRouteChildren: RootRouteChildren = {
   OverviewRoute: OverviewRoute,
   PeopleRoute: PeopleRoute,
   ResetPasswordRoute: ResetPasswordRoute,
-  ReviewQueueRoute: ReviewQueueRoute,
   SafetyRoute: SafetyRoute,
   SavedSourcesRoute: SavedSourcesRoute,
   SearchRoute: SearchRoute,
