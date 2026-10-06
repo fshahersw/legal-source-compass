@@ -187,7 +187,14 @@ const SKIP = new Set([
 ]);
 
 /** Producer bookkeeping fields that are not meaningful to a reader when a dataset publishes no listing columns. */
-const INTERNAL_KEYS = new Set(["dataset", "group", "firm_id", "firm_norm", "native_id", "sort_date"]);
+const INTERNAL_KEYS = new Set([
+  "dataset",
+  "group",
+  "firm_id",
+  "firm_norm",
+  "native_id",
+  "sort_date",
+]);
 
 /** Normalise any corpus listing item (they vary by dataset) without inventing values. */
 export function normalizeItem(

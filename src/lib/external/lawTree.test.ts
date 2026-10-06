@@ -57,7 +57,9 @@ describe("law & safety folders", () => {
     expect(safetyKind("agency_safety_openfda_device_classification_20261002")).toBe(
       "Device classifications",
     );
-    expect(safetyKind("agency_safety_openfda_device_enforcement")).toBe("Device enforcement (openFDA)");
+    expect(safetyKind("agency_safety_openfda_device_enforcement")).toBe(
+      "Device enforcement (openFDA)",
+    );
     for (const id of SAFETY) expect(sectionOf(id)).toBe("safety");
     expect(safetyAgency("agency_safety_cpsc_recalls_local")).toBe("CPSC");
     expect(safetyAgency("agency_safety_openfda_crl")).toBe("FDA");
