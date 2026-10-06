@@ -206,7 +206,7 @@ for (const file of files) {
       confidence: entry.confidence as RuleProvenance["confidence"],
       confidenceNote: entry.confidenceNote,
       flags: entry.flags ?? [],
-      crossCheckSourceIds: crossIds,
+      crossCheckSourceIds: [...new Set(crossIds)].filter((id) => id !== primaryId),
     };
     if (entry.status === "flagged") flaggedCells.add(k);
 
@@ -286,7 +286,7 @@ for (const file of files) {
       reviewStatus: "statutory_text_verified",
       period: { amount: entry.period!.amount, unit },
       provenance,
-      sourceIds: [primaryId, ...crossIds],
+      sourceIds: [...new Set([primaryId, ...crossIds])],
       pinpoint: entry.citation,
       scope: `${CLAIM_LABELS[entry.claimType as ClaimType]}${variant === "general" ? "" : ` (${variant.replaceAll("_", " ")})`}: as stated in the cited provision; special statutory claims excluded.`,
       accrualBasis: entry.accrual.kind === "death" ? "death" : "confirmed_accrual",
