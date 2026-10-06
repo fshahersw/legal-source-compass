@@ -31,7 +31,7 @@ function StateCodesPage() {
   const codes = useQuery({
     queryKey: ["full-state-codes"],
     queryFn: () => listFn(),
-    staleTime: 60_000,
+    staleTime: 0,
   });
   const found = useQuery({
     queryKey: ["state-code-search", q],

@@ -5,10 +5,12 @@ import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/atlas/AppShell";
 import { DatasetCodeBrowser } from "@/components/corpus/DatasetCodeBrowser";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
+import { ProjectionCodeBrowser } from "@/components/corpus/ProjectionCodeBrowser";
 import { TexasCodeBrowser } from "@/components/corpus/TexasCodeBrowser";
 import { pageHead } from "@/lib/corpus/head";
 import { stateByUsps } from "@/lib/corpus/geo";
 import { listStateCodes } from "@/lib/law/stateCode.functions";
+import type { HierarchyStep } from "@/lib/law/stateCodeContract";
 
 type CodeSearch = {
   code?: string | undefined;
@@ -16,7 +18,28 @@ type CodeSearch = {
   section?: string | undefined;
   title?: string | undefined;
   q?: string | undefined;
+  path?: string | undefined;
 };
+
+function hierarchyPath(value: unknown): HierarchyStep[] {
+  if (typeof value !== "string" || !value.startsWith("[")) return [];
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (!Array.isArray(parsed) || parsed.length > 12) return [];
+    const steps: HierarchyStep[] = [];
+    for (const item of parsed) {
+      if (!item || typeof item !== "object") return [];
+      const level = (item as { level?: unknown }).level;
+      const number = (item as { number?: unknown }).number;
+      if (typeof level !== "string" || !/^[a-z][a-z_]{1,40}$/.test(level)) return [];
+      if (number !== null && typeof number !== "string") return [];
+      steps.push({ level, number });
+    }
+    return steps;
+  } catch {
+    return [];
+  }
+}
 
 const text = (value: unknown, max: number) => {
   const raw =
@@ -36,6 +59,7 @@ export const Route = createFileRoute("/law_/codes/$state")({
     section: text(search["section"], 512),
     title: text(search["title"], 200),
     q: text(search["q"], 120),
+    path: text(search["path"], 2000),
   }),
   head: ({ params }) => {
     const name = stateByUsps.get(params.state.toUpperCase())?.name ?? params.state;
@@ -54,7 +78,7 @@ function StateCodePage() {
   const codes = useQuery({
     queryKey: ["full-state-codes"],
     queryFn: () => listFn(),
-    staleTime: 60_000,
+    staleTime: 0,
   });
   const listing = codes.data?.find((row) => row.state === usps);
   const crumbs = [
@@ -73,6 +97,7 @@ function StateCodePage() {
       search: {
         code: search.code,
         q: search.q,
+        path: search.path,
         title: next.title,
         chapter: next.chapter,
         section: next.section,
@@ -94,7 +119,25 @@ function StateCodePage() {
         Not yet captured
       </p>
     );
-  else if (listing.kind === "snapshot") {
+  else if (listing.kind === "projection") {
+    const steps = hierarchyPath(search.path);
+    body = (
+      <ProjectionCodeBrowser
+        listing={listing}
+        path={steps}
+        section={search.section}
+        onNavigate={(next) => {
+          void navigate({
+            search: {
+              q: search.q,
+              path: next.path.length ? JSON.stringify(next.path) : undefined,
+              section: next.section,
+            },
+          });
+        }}
+      />
+    );
+  } else if (listing.kind === "snapshot") {
     body = (
       <TexasCodeBrowser
         state={listing.state}

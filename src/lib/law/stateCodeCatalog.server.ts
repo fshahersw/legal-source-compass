@@ -1,16 +1,21 @@
-import { stateByUsps } from "@/lib/corpus/geo";
-import { ilikeTerm, restGet } from "@/lib/external/rest.server";
+import { STATES, stateByUsps } from "@/lib/corpus/geo";
+import { ilikeTerm, restGet, rpcPost, rpcPostOptional } from "@/lib/external/rest.server";
 import { STATE_DATASETS } from "@/lib/external/lawTree";
 import { listSnapshotNames, readPrivateSnapshot } from "@/lib/private-data/snapshot.server";
 import {
   classifyDataset,
+  coverageStatus,
   matchesCitationOrHeading,
   parseListing,
+  projectedCurrency,
+  projectedEdition,
   sectionFieldsFromRecord,
   snapshotReleasePaths,
   summarizeBrowseRoot,
   type CodeIndexRow,
   type DatasetCandidate,
+  type HierarchyStep,
+  type ProjectedOutline,
   type SectionFields,
   type StateCodeHit,
   type StateCodeListing,
@@ -106,6 +111,7 @@ async function snapshotListings(): Promise<StateCodeListing[]> {
       hasSnapshot: true,
       titleFilter: null,
       chapterField: null,
+      levels: null,
     });
   }
   return listings;
@@ -154,25 +160,33 @@ async function datasetListings(index: CodeIndexRow[]): Promise<StateCodeListing[
         hasSnapshot: false,
         titleFilter: classified.titleFilter,
         chapterField: classified.chapterField,
+        levels: null,
       },
     ];
   });
 }
 
 function mergeListings(rows: StateCodeListing[]): StateCodeListing[] {
+  const projections = new Map<string, StateCodeListing>();
   const snapshots = new Map<string, StateCodeListing>();
   const datasets = new Map<string, StateCodeListing[]>();
   for (const row of rows) {
-    if (row.hasSnapshot && row.kind === "snapshot") snapshots.set(row.state, row);
+    if (row.kind === "projection") projections.set(row.state, row);
+    else if (row.hasSnapshot && row.kind === "snapshot") snapshots.set(row.state, row);
     else {
       const list = datasets.get(row.state) ?? [];
       list.push(row);
       datasets.set(row.state, list);
     }
   }
-  const states = new Set([...snapshots.keys(), ...datasets.keys()]);
+  const states = new Set([...projections.keys(), ...snapshots.keys(), ...datasets.keys()]);
   const merged: StateCodeListing[] = [];
   for (const state of states) {
+    const projection = projections.get(state);
+    if (projection) {
+      merged.push(projection);
+      continue;
+    }
     const snapshot = snapshots.get(state);
     const sets = datasets.get(state) ?? [];
     if (snapshot && sets.length === 1) {
@@ -198,13 +212,66 @@ function mergeListings(rows: StateCodeListing[]): StateCodeListing[] {
   );
 }
 
-export async function listFullStateCodes(): Promise<StateCodeListing[]> {
+async function publishedListings(): Promise<StateCodeListing[]> {
   if (catalogCache && Date.now() - catalogCache.at < CATALOG_TTL) return catalogCache.value;
   const index = await codeIndex();
   const [snapshots, datasets] = await Promise.all([snapshotListings(), datasetListings(index)]);
   const value = mergeListings([...snapshots, ...datasets]);
   catalogCache = { at: Date.now(), value };
   return value;
+}
+
+type ProjectedStateRow = {
+  jurisdiction?: unknown;
+  code_title?: unknown;
+  publisher?: unknown;
+  publisher_url?: unknown;
+  sections?: unknown;
+  currency?: unknown;
+  structure_levels?: unknown;
+};
+
+function asText(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+async function projectedListings(): Promise<StateCodeListing[]> {
+  const rows = await rpcPostOptional<ProjectedStateRow[]>(
+    "corpus_publisher_code_projected_states_v2",
+    {},
+  );
+  if (!rows) return [];
+  return rows.flatMap((row) => {
+    const state = asText(row.jurisdiction)?.toUpperCase() ?? "";
+    const place = stateByUsps.get(state);
+    if (!place) return [];
+    const levels = Array.isArray(row.structure_levels)
+      ? row.structure_levels.filter((level): level is string => typeof level === "string")
+      : [];
+    return [
+      {
+        state,
+        name: place.name,
+        kind: "projection" as const,
+        codeName: asText(row.code_title) ?? `${place.name} code`,
+        sectionCount: typeof row.sections === "number" ? row.sections : null,
+        edition: projectedEdition(row.currency),
+        currency: projectedCurrency(row.currency),
+        sourceUrl: asText(row.publisher_url),
+        note: asText(row.publisher),
+        datasetId: null,
+        hasSnapshot: false,
+        titleFilter: null,
+        chapterField: null,
+        levels,
+      },
+    ];
+  });
+}
+
+export async function listFullStateCodes(): Promise<StateCodeListing[]> {
+  const [published, projected] = await Promise.all([publishedListings(), projectedListings()]);
+  return mergeListings([...published, ...projected]);
 }
 
 async function listingFor(state: string): Promise<StateCodeListing | null> {
@@ -313,8 +380,12 @@ export async function stateCodeSectionList(
 export async function stateCodeSection(
   state: string,
   id: string,
-): Promise<(SectionFields & { id: string; datasetId: string }) | null> {
+): Promise<(SectionFields & { id: string; datasetId: string | null }) | null> {
   const listing = await listingFor(state);
+  if (listing?.kind === "projection") {
+    const section = await projectedSection(state, id);
+    return section ? { ...section, datasetId: null } : null;
+  }
   if (!listing?.datasetId || !datasetIdOk(listing.datasetId)) return null;
   const rows = await restGet<
     {
@@ -423,6 +494,174 @@ async function searchDataset(
   };
 }
 
+async function searchProjection(
+  q: string,
+  state?: string,
+): Promise<{ hits: StateCodeHit[]; total: number }> {
+  const result = await rpcPostOptional<{
+    total?: unknown;
+    hits?: { jurisdiction?: unknown; native_id?: unknown; citation?: unknown; heading?: unknown }[];
+  }>("corpus_publisher_code_projected_search_v2", {
+    p_q: q,
+    p_jurisdiction: state ?? null,
+    p_limit: SEARCH_LIMIT,
+  });
+  if (!result || !Array.isArray(result.hits)) return { hits: [], total: 0 };
+  return {
+    total: typeof result.total === "number" ? result.total : result.hits.length,
+    hits: result.hits.flatMap((hit) => {
+      const jurisdiction = asText(hit.jurisdiction)?.toUpperCase() ?? "";
+      const id = asText(hit.native_id);
+      if (!stateByUsps.has(jurisdiction) || !id) return [];
+      return [
+        {
+          state: jurisdiction,
+          kind: "projection" as const,
+          id,
+          citation: asText(hit.citation),
+          heading: asText(hit.heading) ?? id,
+          code: null,
+          chapterId: null,
+          titleValue: null,
+          chapterLabel: null,
+          datasetId: null,
+        },
+      ];
+    }),
+  };
+}
+
+function parseOutline(value: unknown): ProjectedOutline {
+  const row = value && typeof value === "object" ? (value as Record<string, unknown>) : null;
+  if (!row || row["available"] !== true) return { available: false };
+  if (row["kind"] === "sections" && Array.isArray(row["sections"])) {
+    return {
+      available: true,
+      kind: "sections",
+      level: "section",
+      total: typeof row["total"] === "number" ? row["total"] : row["sections"].length,
+      truncated: row["truncated"] === true,
+      sections: row["sections"].flatMap((item) => {
+        const section = item && typeof item === "object" ? (item as Record<string, unknown>) : null;
+        const id = section ? asText(section["native_id"]) : null;
+        if (!section || !id) return [];
+        return [
+          {
+            native_id: id,
+            citation: asText(section["citation"]),
+            heading: asText(section["heading"]),
+            status_note: asText(section["status_note"]),
+          },
+        ];
+      }),
+    };
+  }
+  if (
+    row["kind"] === "groups" &&
+    Array.isArray(row["groups"]) &&
+    typeof row["level"] === "string"
+  ) {
+    return {
+      available: true,
+      kind: "groups",
+      level: row["level"],
+      total: typeof row["total"] === "number" ? row["total"] : row["groups"].length,
+      truncated: row["truncated"] === true,
+      groups: row["groups"].flatMap((item) => {
+        const group = item && typeof item === "object" ? (item as Record<string, unknown>) : null;
+        if (!group || typeof group["count"] !== "number") return [];
+        return [
+          {
+            number: asText(group["number"]),
+            heading: asText(group["heading"]),
+            count: group["count"],
+          },
+        ];
+      }),
+    };
+  }
+  return { available: false };
+}
+
+export async function projectedOutline(
+  state: string,
+  path: HierarchyStep[],
+): Promise<ProjectedOutline> {
+  const value = await rpcPostOptional<unknown>("corpus_publisher_code_projected_outline_v2", {
+    p_jurisdiction: state,
+    p_path: path.map((step) => ({ level: step.level, number: step.number })),
+  });
+  return parseOutline(value);
+}
+
+export async function projectedSection(
+  state: string,
+  id: string,
+): Promise<(SectionFields & { id: string }) | null> {
+  const row = await rpcPostOptional<Record<string, unknown> | null>(
+    "corpus_publisher_code_projected_section_v2",
+    { p_jurisdiction: state, p_native_id: id },
+  );
+  if (!row || typeof row["native_id"] !== "string") return null;
+  const fields = sectionFieldsFromRecord({
+    title: asText(row["citation"]),
+    source_url: asText(row["source_url"]),
+    detail: {
+      citation: row["citation"],
+      heading: row["heading"],
+      text: row["text"],
+      history: row["history"],
+      status_note: row["status_note"],
+      currency: row["currency"],
+    },
+  });
+  return { id: row["native_id"], ...fields };
+}
+
+export type StateCodeCoverageRow = {
+  state: string;
+  name: string;
+  status: ReturnType<typeof coverageStatus>;
+  reviewStatus: string | null;
+  sections: number | null;
+  edition: string | null;
+  currency: string | null;
+  contract: string | null;
+};
+
+export async function stateCodeCoverage(): Promise<StateCodeCoverageRow[]> {
+  const payload = await rpcPost<{ states?: unknown }>("corpus_publisher_code_coverage_v2", {
+    p_recount: false,
+  });
+  const landed = new Map<string, Record<string, unknown>>();
+  if (Array.isArray(payload.states)) {
+    for (const item of payload.states) {
+      if (!item || typeof item !== "object") continue;
+      const row = item as Record<string, unknown>;
+      const state = asText(row["jurisdiction"])?.toUpperCase();
+      if (state) landed.set(state, row);
+    }
+  }
+  const known = new Set(STATES.map((item) => item.usps));
+  const extras = [...landed.keys()].filter((state) => !known.has(state)).sort();
+  return [...STATES.map((item) => item.usps), ...extras].map((state) => {
+    const row = landed.get(state);
+    const place = stateByUsps.get(state);
+    return {
+      state,
+      name: place?.name ?? state,
+      status: coverageStatus(
+        row ? { public_projection_allowed: row["public_projection_allowed"] === true } : null,
+      ),
+      reviewStatus: row ? asText(row["review_status"]) : null,
+      sections: row && typeof row["sections"] === "number" ? row["sections"] : null,
+      edition: row ? projectedEdition(row["currency"]) : null,
+      currency: row ? projectedCurrency(row["currency"]) : null,
+      contract: row ? asText(row["contract"]) : null,
+    };
+  });
+}
+
 export async function searchFullStateCodes(
   q: string,
   state?: string,
@@ -461,8 +700,9 @@ export async function searchFullStateCodes(
       return { hits, total };
     }),
   );
+  const projected = await searchProjection(q, state);
   return {
-    hits: groups.flatMap((group) => group.hits).slice(0, SEARCH_LIMIT),
-    total: groups.reduce((sum, group) => sum + group.total, 0),
+    hits: [...projected.hits, ...groups.flatMap((group) => group.hits)].slice(0, SEARCH_LIMIT),
+    total: projected.total + groups.reduce((sum, group) => sum + group.total, 0),
   };
 }

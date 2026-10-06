@@ -1,8 +1,9 @@
 """Resume a proxied capture of the NY Senate consolidated-law pages.
 
-Direct requests to www.nysenate.gov from this environment get a Cloudflare
-challenge, and public.leginfo.state.ny.us does not connect. Firecrawl is the
-recorded fallback (retrieval_method proxied:firecrawl). It is not a terms gate.
+Direct requests to www.nysenate.gov get a Cloudflare challenge (HTTP 403,
+cf-mitigated: challenge) even with a Chrome 131 User-Agent and client hints,
+checked 2026-10-06. public.leginfo.state.ny.us does not connect. Firecrawl is
+the recorded fallback (retrieval_method proxied:firecrawl). It is not a terms gate.
 """
 import sys
 import time
