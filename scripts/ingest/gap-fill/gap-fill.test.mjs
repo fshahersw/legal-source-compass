@@ -9,7 +9,7 @@ import {stripContactFields, Runner, taskId} from './run-gap-fill.mjs';
 import {gapTable} from './analyze-snapshots.mjs';
 import {blankFilter} from './gap-analysis-live.mjs';
 import {plan} from './plan-internal-crosswalk.mjs';
-import {batches} from './send-staged.mjs';
+import {batches, expandCourtListenerRows} from './send-staged.mjs';
 import {CourtListener, DocketBird, Stop} from './clients.mjs';
 
 test('canonical json sorts keys, keeps unicode, rejects floats', () => {
@@ -92,6 +92,20 @@ test('internal crosswalk fills only on a unique exact key and records conflicts 
 test('batches respect row and byte bounds', () => {
   const rows = Array.from({length: 5}, (_, i) => ({entity_type: 'case', native_id: String(i), provenance: {record_sha256: 'a', source_sha256: 'b'}, data: {}}));
   assert.equal(batches(rows, 2).length, 3);
+});
+
+test('expandCourtListenerRows splits oversized docket-entries', () => {
+  const fat = {
+    schema_version: 'courtlistener-rest-v4.7/1', source_system: 'courtlistener', entity_type: 'docket-entries', native_id: '9',
+    data: {id: 9, docket: 'https://www.courtlistener.com/api/rest/v4/dockets/1/', recap_documents: [{id: 42, plain_text: 'x'.repeat(2_000_000)}]},
+    provenance: {record_sha256: 'a'.repeat(64), source_sha256: 'b'.repeat(64)},
+  };
+  const out = expandCourtListenerRows([fat], 100_000);
+  assert.equal(out.length, 2);
+  assert.equal(out[0].entity_type, 'docket-entries');
+  assert.deepEqual(out[0].data.recap_documents, []);
+  assert.equal(out[1].entity_type, 'recap-documents');
+  assert.equal(out[1].native_id, '42');
 });
 
 const tmp = () => fs.mkdtemp(path.join(os.tmpdir(), 'gapfill-'));
