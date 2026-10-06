@@ -13,6 +13,7 @@ batch can run it after landing. `--toc-ok` is the proof that parsed section coun
 (index/subchapter pages with zero sections are a red flag, not a pass); leave it empty and the state is held.
 """
 import argparse
+import html as html_mod
 import json
 import os
 import random
@@ -56,7 +57,10 @@ def live_text(body, url):
 
 
 def squash(t):
+    t = html_mod.unescape(t)
     t = t.replace("\u2019", "'").replace("\u2018", "'").replace("\u201c", '"').replace("\u201d", '"')
+    for dash in ("\u2013", "\u2014", "\u2012", "\u2212"):
+        t = t.replace(dash, "-")
     return re.sub(r"\s+", "", t)
 
 
