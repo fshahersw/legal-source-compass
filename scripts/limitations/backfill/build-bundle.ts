@@ -163,6 +163,7 @@ const files = existsSync(entryDir)
       .filter((f) => f.endsWith(".json"))
       .sort()
   : [];
+const entryRoute = new Map<string, boolean>();
 let added = 0;
 let upgraded = 0;
 let attached = 0;
@@ -228,6 +229,13 @@ for (const file of files) {
       crossCheckSourceIds: [...new Set(crossIds)].filter((id) => id !== primaryId),
     };
     if (entry.status === "flagged") flaggedCells.add(k);
+    // A third-party extraction, cached page or search snippet is a lower evidence route even when other
+    // authorities (for example court opinions) are cross-checked; concatenations of direct captures are not.
+    const entryIntermediaryOnly =
+      Boolean(primary.meta.intermediary) &&
+      /tavily|firecrawl|webfetch|web-fetch|websearch|search-engine|snippet|cached/i.test(
+        String((primary.meta as { extraction?: string }).extraction ?? ""),
+      );
 
     const repose = entry.repose ?? [];
     const trigger = repose.length === 1 ? reposeTrigger(repose[0]!.trigger) : null;
@@ -263,6 +271,7 @@ for (const file of files) {
         current.period.amount === entry.period!.amount &&
         current.period.unit === unit;
       if (same) {
+        entryRoute.set(current.id, entryIntermediaryOnly);
         if (!current.provenance) {
           current.provenance = provenance;
           if (entry.status === "verified") current.pinpoint = entry.citation;
@@ -371,6 +380,7 @@ for (const file of files) {
       continue;
     }
     rules.push(rule);
+    entryRoute.set(rule.id, entryIntermediaryOnly);
     added++;
   }
 }
@@ -428,9 +438,11 @@ const previousFingerprint = new Map<string, string>(
   ((previousRules?.rules ?? []) as LimitationRule[]).map((r) => [r.id, ruleFingerprint(r)]),
 );
 const sourceMap = new Map(sources.map((x) => [x.id, x]));
+void sourceMap;
 const isIntermediary = (id: string) =>
   /intermediar|firecrawl|tavily|webfetch/i.test(sourceMap.get(id)?.method ?? "");
 const intermediaryOnlyRule = (rule: LimitationRule) => {
+  if (entryRoute.has(rule.id)) return entryRoute.get(rule.id)!;
   const primary =
     rule.sourceIds.find((id) => sourceMap.get(id)?.authorityKind === "statute") ??
     rule.sourceIds[0];
