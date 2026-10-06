@@ -66,6 +66,9 @@ def main():
                 continue
             queue.extend(links(BeautifulSoup(body(fetcher, receipt), "lxml"), "section"))
     pending = [url for url in queue if url not in done]
+    if len(sys.argv) > 2:
+        shard, shards = (int(x) for x in sys.argv[2].split("/"))
+        pending = pending[shard::shards]
     print({"phase": phase, "queued": len(queue), "pending": len(pending)}, flush=True)
     for index, url in enumerate(pending, 1):
         receipt = fetcher.proxied(url, label=phase)
