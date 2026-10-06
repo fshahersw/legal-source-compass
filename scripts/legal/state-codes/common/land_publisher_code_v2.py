@@ -99,11 +99,19 @@ def batches(rows):
         yield cur
 
 
+def service_headers(key):
+    """Storage rejects Authorization: Bearer when the key is an sb_ secret. Send apikey only then."""
+    headers = {"apikey": key}
+    if not str(key).startswith("sb_"):
+        headers["Authorization"] = f"Bearer {key}"
+    return headers
+
+
 class Cloud:
     def __init__(self):
         self.url = os.environ["EXTERNAL_SUPABASE_URL"].rstrip("/")
         key = os.environ["EXTERNAL_SUPABASE_SERVICE_ROLE_KEY"]
-        self.h = {"apikey": key, "Authorization": f"Bearer {key}"}
+        self.h = service_headers(key)
         self.s = requests.Session()
 
     def rpc(self, name, args):
