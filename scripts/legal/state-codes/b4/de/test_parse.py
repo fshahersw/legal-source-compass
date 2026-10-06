@@ -34,9 +34,10 @@ REC = {"sha256": "abc123" * 10 + "abcd"}
 
 class DelawareParseTest(unittest.TestCase):
     def test_chapter_sections_and_spans(self):
-        ch, secs, inv = de_parse.parse_chapter_page(
+        ch, secs, inv = de_parse.parse_unit_page(
             FIXTURE, "https://delcode.delaware.gov/title22/c009/index.html", REC
         )
+        de_parse.assign_citation_paths(secs)
         self.assertEqual(inv["toc_count"], 2)
         self.assertEqual(inv["parsed_count"], 2)
         self.assertEqual(len(secs), 2)

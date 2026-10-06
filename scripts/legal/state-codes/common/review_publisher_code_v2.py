@@ -6,7 +6,11 @@ sections re-fetched LIVE from the publisher (fresh requests, not the retained or
 currency/edition as landed, and the retrieval routes (proxied content is graded and flagged). Any mismatch -> 'held' (quarantine, not public).
 All checks pass -> `corpus_publisher_code_review_v2(state, 'reviewed', true, note)`.
 
-    review_state.py --work /tmp/sc4/de --state DE --toc-ok "reason/evidence" [--n 20] [--seed 1] [--apply] --report path.md
+    review_publisher_code_v2.py --landing /tmp/sc4/de/landing --state DE --toc-ok "evidence" --report path.md [--n 20] [--seed 1] [--apply]
+
+State-agnostic: reads the shared landing packet (manifest/units/sections.jsonl, see batch-c LANDING-PACKET.md) of any batch, so every
+batch can run it after landing. `--toc-ok` is the proof that parsed section counts equal the publisher's own section markers PER PAGE
+(index/subchapter pages with zero sections are a red flag, not a pass); leave it empty and the state is held.
 """
 import argparse
 import json
@@ -17,8 +21,9 @@ import subprocess
 import sys
 import tempfile
 
-sys.path.insert(0, os.path.dirname(__file__))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "..", "ecfr-text"))
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(HERE, "..", "b4"))          # sc_common (archive/fetch helpers, browser-UA retry)
+sys.path.insert(0, os.path.join(HERE, "..", "..", "..", "ecfr-text"))  # pgrest (service-role PostgREST from the environment)
 import sc_common as sc  # noqa: E402
 
 
@@ -57,7 +62,7 @@ def squash(t):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--work", required=True)
+    ap.add_argument("--landing", required=True, help="landing packet directory (manifest.json, units.jsonl, sections.jsonl)")
     ap.add_argument("--state", required=True)
     ap.add_argument("--n", type=int, default=20)
     ap.add_argument("--seed", type=int, default=20261006)
@@ -65,7 +70,7 @@ def main():
     ap.add_argument("--report", required=True)
     ap.add_argument("--apply", action="store_true", help="call corpus_publisher_code_review_v2 (service role from the environment)")
     a = ap.parse_args()
-    land = os.path.join(a.work, "landing")
+    land = a.landing
     units = {u["unit_key"]: u for u in map(json.loads, open(os.path.join(land, "units.jsonl"), encoding="utf-8"))}
     secs = [json.loads(x) for x in open(os.path.join(land, "sections.jsonl"), encoding="utf-8")]
     manifest = json.load(open(os.path.join(land, "manifest.json")))
