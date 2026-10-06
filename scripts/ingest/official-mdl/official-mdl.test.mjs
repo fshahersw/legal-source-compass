@@ -71,6 +71,13 @@ const NJD = `<h1 id="page-title">Orders</h1><div class="field field--name-body">
 <p><a href="/sites/njd/files/Order9.pdf">ORDER</a></p><p>Date: 9/7/17</p><p>Description: Case Managment Order #9</p>
 <p><a href="/sites/njd/files/JohnsonTransferOrder.pdf">Johnson Transfer Order</a><br /><a href="/sites/njd/files/JohnsonCTO-1.pdf">Johnson Conditional Transfer Order (CTO-1)</a></p>
 <p><a href="/sites/njd/files/Minutes-1-23-2017.pdf">Minutes of 1-23-2017</a></p><p><a href="/j-j-talcum-powder-orders">Orders &amp; Opinions</a></p><p><a href="https://ecf.njd.uscourts.gov/cgi-bin/ShowIndex.pl">Log into PACER</a></p></div></div>`;
+test('mnd-mdl-page parser: NYSM hub uses div#main-content when node--mdl is absent', () => {
+  const html = `<div id="main-content"><p><a href="/sites/default/files/pdf/MDL/22mc3043/2022.12.01%20Order.pdf">Order</a></p></div>
+<a href="/sites/default/files/notice.pdf">skip</a>`;
+  const { rows } = parseMndMdl({ html, pageUrl: 'https://www.nysd.uscourts.gov/MDL/22md3043' });
+  assert.equal(rows.length, 1);
+  assert.match(rows[0].url, /22mc3043/);
+});
 test('MND MDL node parser: PDF links in tab field groups with leading dates; site menu PDFs ignored', () => {
   const html = `<div class="node node--mdl"><h1>Change Healthcare, Inc. Customer Data Security Breach Litigation, MDL No. 3108</h1>
 <ul class="menu"><li><a href="/sites/mnd/files/MN-Division-of-Counties.pdf">Counties</a></li></ul>
