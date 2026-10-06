@@ -80,7 +80,7 @@ def phase_pdf(fetcher, out, editions):
         print(row['edition_key'], row['article_code'], rec.get('status'), rec.get('bytes'), rec.get('error'))
 
 
-def phase_sections(fetcher, out, edition_key, limit):
+def phase_sections(fetcher, out, edition_key, limit, shard_index=0, shard_count=1):
     enact = [k for k, v in EDITIONS.items() if v == edition_key][0]
     inv = json.load(open(out / 'index-capture.json', encoding='utf8'))
     jobs = []
@@ -92,6 +92,11 @@ def phase_sections(fetcher, out, edition_key, limit):
     random.Random(20261006).shuffle(jobs)
     done = {r['url'] for r in fetcher.receipts() if r.get('ok') and r.get('retrieval_method') == 'direct'}
     todo = [(a, s) for a, s in jobs if url_statute_text(a, s, enact) not in done]
+    if shard_count > 1:
+        start = len(todo) * shard_index // shard_count
+        end = len(todo) * (shard_index + 1) // shard_count
+        todo = todo[start:end]
+        print('shard', shard_index, '/', shard_count, 'todo', len(todo), 'range', start, end, flush=True)
     print('jobs', len(jobs), 'todo', len(todo), flush=True)
     for n, (art, sec) in enumerate(todo):
         if limit and n >= limit:
@@ -111,7 +116,11 @@ def main():
     ap.add_argument('--edition', default='oct1')
     ap.add_argument('--editions', default='oct1,jan1')
     ap.add_argument('--limit', type=int, default=0)
+    ap.add_argument('--shard-index', type=int, default=0)
+    ap.add_argument('--shard-count', type=int, default=1)
     args = ap.parse_args()
+    if args.shard_count < 1 or args.shard_index < 0 or args.shard_index >= args.shard_count:
+        raise SystemExit('invalid --shard-index / --shard-count')
     root = pathlib.Path(args.root)
     out = root / 'extract'
     out.mkdir(parents=True, exist_ok=True)
@@ -121,7 +130,7 @@ def main():
     elif args.phase == 'pdf':
         phase_pdf(fetcher, out, args.editions.split(','))
     elif args.phase == 'sections':
-        phase_sections(fetcher, out, args.edition, args.limit)
+        phase_sections(fetcher, out, args.edition, args.limit, args.shard_index, args.shard_count)
     else:
         checked, problems = verify_store(root)
         print('verified', checked, 'problems', problems)
