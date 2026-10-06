@@ -8,7 +8,7 @@ Nothing below is a count of landed sections.
 
 | Batch | States                                         | Status                                     |
 | ----- | ---------------------------------------------- | ------------------------------------------ |
-| A     | NY, PA, FL, IL, OH, MI, GA, NC, MA, AZ, MO, LA | MI, PA, NC, and MO are landed and still private. No batch A state has been reviewed. |
+| A     | NY, PA, FL, IL, OH, MI, GA, NC, MA, AZ, MO, LA | MI, NC, MO and FL landed and reviewed 2026-10-06 (public). PA landed, held. IL partial. NY, MA, AZ, LA capturing. OH blocked, GA gated. |
 | B     | MN, WI, IN, TN, CO, MD, VA, SC, AL, KY, OK, OR | staging against the mapping                |
 | C     | CT, NV, IA, MS, AR, KS, UT, NE, NM, WV, ID, HI | staging against the mapping                |
 | 4     | NH, ME, MT, RI, DE, SD, ND, AK, VT, WY         | later                                      |
@@ -23,7 +23,7 @@ The publisher does not print one code-wide edition. Each page says "Viewing most
 
 Every source on a landed object carries `http_status` 200 from its receipt. A unit or section with no text is a gap, not a row. TOC completeness is the publisher's own section markers on each page, including child pages the page links to. Delaware's chapter indexes linked subchapter pages that were not fetched, and 350 of 1,326 chapters were missing. The shared lander (`scripts/legal/state-codes/common/land_publisher_code_v2.py`) refuses a packet, before it opens a run, when a source lacks `http_status` 200, a unit or section text is empty, or `toc-proof.json` is missing, disagrees, or lists unfetched child pages.
 
-Review is `scripts/legal/state-codes/common/review_state.py` (20 live sections, then `corpus_publisher_code_review_v2`). That file is not in the tree yet. No batch A state was flipped. A mismatch stays `held` with projection off.
+Review is `scripts/legal/state-codes/common/review_publisher_code_v2.py` (20 seeded random sections re-fetched live and diffed, then `corpus_publisher_code_review_v2`). `scripts/legal/state-codes/batch-a-review/make_packets.py` rebuilds the review packet for states that landed through their own landers. A mismatch, missing TOC evidence or proxied content stays `held` with projection off.
 
 Coverage read on 2026-10-06, without a recount: Michigan 43,891 sections and 205 units, Pennsylvania 14,741 sections and 75 units, North Carolina 39,612 sections and 396 units, Missouri 30,435 sections and 458 units, Florida 24,993 sections and 638 units. All five are `landed` with `public_projection_allowed` false.
 
@@ -42,3 +42,13 @@ Pennsylvania is landed and private. Each title document carries a `revised` meta
 ## Florida
 
 Landed and private. Run `c01932d4-eb99-4e27-8957-405d668e0884` completed with 24,993 sections and 638 chapter units. Every chapter page prints "The 2026 Florida Statutes". Edition is 2026. No through-date is printed, so `through_date` is null. The October 6, 2026 page date is the display date. The TOC proof covers 2,833 pages: the 638 full chapters and 2,195 contents indexes, including the part and subpart indexes those chapters link to. Marker counts match on every page, and `unfetched_child_pages` is empty. All 2,883 direct fetches returned HTTP 200. The review RPC was not called.
+
+## Review of batch A, 2026-10-06
+
+Michigan, North Carolina, Missouri and Florida passed the shared review (20 of 20 live diffs each, direct HTTP 200, TOC evidence recorded, no proxied units) and are `reviewed` with projection allowed. Reports: `internal/state-codes/batch-a/<st>/review.md`. Printed repeal and status lines are kept as text with `status_note` set (Michigan 3,077, North Carolina 11,514, none missing). Michigan's 281 Constitution sections have no per-section page and were not diffed. Missouri's publisher calls its posted statutes uncertified and unofficial.
+
+Pennsylvania stays held: its captures are `proxied:firecrawl`, and direct requests to palegis.us time out from here.
+
+## Ohio
+
+`codes.ohio.gov/robots.txt` is `User-agent: * / Disallow: /`, so the Revised Code is not captured, directly or through a proxy. An official bulk download was searched for on 2026-10-06: Tavily searches limited to ohio.gov hosts, and Firecrawl maps of `lsc.ohio.gov` and `legislature.ohio.gov`, found bill analyses, digests and bill text but no Revised Code bulk, XML, ZIP or API. `lsc.ohio.gov` has no robots.txt (404) and `legislature.ohio.gov/robots.txt` allows all; neither hosts the code. The Legislative Service Commission technical contact (codes@lsc.ohio.gov, on codes.ohio.gov/contact) is the route to written permission or an export. Nothing is landed.
