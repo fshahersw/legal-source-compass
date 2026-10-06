@@ -4,7 +4,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { STATES } from "@/lib/corpus/geo";
 import { loadLimitations } from "@/lib/limitations/load";
-import { baselineRule, calculateBaseline, sourceReviewDate } from "@/lib/limitations/engine";
+import {
+  baselineRule,
+  calculateBaseline,
+  periodLabel,
+  sourceReviewDate,
+} from "@/lib/limitations/engine";
+import { ruleAuthorityFacts } from "./ruleAuthority";
 import {
   guidedDateFields,
   isAccrualReposeRule,
@@ -28,8 +34,7 @@ type Navigation = { state: string; claim?: ClaimType; view: View };
 const control =
   "mt-1 block min-h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm";
 const box = "rounded-xl border border-border bg-surface p-5";
-const calendarPeriodLabel = (amount: number) =>
-  `${amount} calendar ${amount === 1 ? "year" : "years"}`;
+const humanize = (slug: string) => slug.replaceAll("_", " ").replace(/^./, (c) => c.toUpperCase());
 const subtypeLabels: Record<string, string> = {
   general: "General claim",
   latent_toxic: "Latent substance / toxic injury",
@@ -42,10 +47,90 @@ const subtypeLabels: Record<string, string> = {
   synthetic_estrogen: "DES / nonsteroidal synthetic estrogen exposure",
 };
 
+function Authority({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule: LimitationRule }) {
+  const facts = ruleAuthorityFacts(snapshot, rule);
+  return (
+    <div className="mt-3 rounded-lg border border-border p-3 text-sm" data-testid="rule-authority">
+      <dl className="grid gap-x-4 gap-y-1 sm:grid-cols-[10rem_1fr]">
+        <dt className="font-medium">Citation</dt>
+        <dd>{facts.citation}</dd>
+        <dt className="font-medium">Effective date</dt>
+        <dd>{facts.effective}</dd>
+        <dt className="font-medium">Last amended</dt>
+        <dd>{facts.lastAmended}</dd>
+        <dt className="font-medium">Source</dt>
+        <dd className="flex flex-col gap-1">
+          {facts.sources.length ? (
+            facts.sources.map((source) => (
+              <a
+                key={source.id}
+                href={source.url}
+                target="_blank"
+                rel="noreferrer"
+                className="break-all text-primary underline"
+              >
+                {source.url}
+              </a>
+            ))
+          ) : (
+            <span>Not recorded</span>
+          )}
+        </dd>
+        <dt className="font-medium">Retrieved</dt>
+        <dd>{facts.retrieved}</dd>
+        {facts.entryStatus !== "legacy" && (
+          <>
+            <dt className="font-medium">Accrual</dt>
+            <dd>{facts.accrual}</dd>
+            <dt className="font-medium">Verification</dt>
+            <dd>
+              {facts.entryStatus === "verified"
+                ? "Period and quoted text matched to the official capture"
+                : "Recorded with open issues; no date is issued"}
+              {facts.confidence ? ` · confidence ${facts.confidence}` : ""}
+            </dd>
+          </>
+        )}
+      </dl>
+      {facts.excerpt && (
+        <blockquote className="mt-2 border-l-2 border-border pl-3 italic leading-relaxed">
+          {facts.excerpt}
+        </blockquote>
+      )}
+      {facts.repose.length > 0 && (
+        <p className="mt-2">
+          <span className="font-medium">Statute of repose: </span>
+          {facts.repose.join("; ")}
+        </p>
+      )}
+      {facts.tolling.length > 0 && (
+        <div className="mt-2">
+          <p className="font-medium">Statutory tolling (not applied by the calculator)</p>
+          <ul className="list-disc pl-5">
+            {facts.tolling.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {facts.flags.length > 0 && (
+        <div className="mt-2">
+          <p className="font-medium">Open issues</p>
+          <ul className="list-disc pl-5">
+            {facts.flags.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Citations({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule: LimitationRule }) {
   return (
     <div className="mt-3 text-sm">
-      <p className="text-muted-foreground">{rule.pinpoint}</p>
+      <Authority snapshot={snapshot} rule={rule} />
       <details className="mt-2">
         <summary className="min-h-9 cursor-pointer py-2 font-medium text-primary">
           View cited authorities
@@ -125,7 +210,7 @@ function RuleEvidence({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule:
     <article className="rounded-lg border border-border p-4">
       <h3 className="text-base font-semibold">
         {CLAIM_LABELS[rule.claimType]} · {rule.ruleKind.replaceAll("_", " ")}
-        {rule.subtype ? " · " + (subtypeLabels[rule.subtype] ?? rule.subtype) : ""}
+        {rule.subtype ? " · " + (subtypeLabels[rule.subtype] ?? humanize(rule.subtype)) : ""}
       </h3>
       <p className="mt-2 text-sm leading-relaxed">{rule.summary}</p>
       {rule.conditions.length > 0 && (
@@ -391,7 +476,7 @@ export function LimitationsWorkbench({
                   >
                     {subtypes.map((item) => (
                       <option key={item} value={item}>
-                        {subtypeLabels[item] ?? item}
+                        {subtypeLabels[item] ?? humanize(item)}
                         {baselineRule(snapshot.rules, state, claim, item)
                           ? ""
                           : " · legal review needed"}
@@ -403,9 +488,7 @@ export function LimitationsWorkbench({
               {state && claim && rule && (
                 <div className="mt-5 rounded-lg border border-border bg-muted/40 p-4">
                   <p className="text-base font-semibold">
-                    {rule.period
-                      ? calendarPeriodLabel(rule.period.amount)
-                      : "Period requires legal review"}
+                    {rule.period ? periodLabel(rule.period) : "Period requires legal review"}
                   </p>
                   {reposeLabel && <p className="mt-1 text-sm font-medium">{reposeLabel}</p>}
                   <p className="mt-1 text-sm leading-relaxed">{rule.scope}</p>
@@ -413,9 +496,31 @@ export function LimitationsWorkbench({
                 </div>
               )}
               {state && claim && !rule && (
-                <p className="mt-5 rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
-                  No unique baseline is available for this selection. No date will be calculated.
-                </p>
+                <div className="mt-5 rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
+                  <p>
+                    No unique baseline is available for this selection. No date will be calculated.
+                  </p>
+                  {(() => {
+                    const recorded = stateRules.find((item) => item.period);
+                    const cell = stateCoverage?.claimCoverage?.find(
+                      (item) => item.claimType === claim,
+                    );
+                    return recorded?.period ? (
+                      <div className="mt-3">
+                        <p className="font-semibold">
+                          Recorded statutory period: {periodLabel(recorded.period)}
+                          {recorded.provenance?.entryStatus === "flagged" ? " · open issues" : ""}
+                        </p>
+                        <Citations snapshot={snapshot} rule={recorded} />
+                      </div>
+                    ) : (
+                      <p className="mt-2 font-medium">
+                        Not recorded
+                        {cell?.reason ? `: ${cell.reason}` : ": no verified primary-source entry."}
+                      </p>
+                    );
+                  })()}
+                </div>
               )}
               <div className="mt-6 flex justify-end">
                 <Button disabled={!state || !claim} onClick={() => setStep(2)}>
@@ -476,7 +581,7 @@ export function LimitationsWorkbench({
                       >
                         {subtypes.map((item) => (
                           <option key={item} value={item}>
-                            {subtypeLabels[item] ?? item}
+                            {subtypeLabels[item] ?? humanize(item)}
                             {baselineRule(snapshot.rules, state, claim, item)
                               ? ""
                               : " · legal review needed"}
@@ -488,7 +593,7 @@ export function LimitationsWorkbench({
                   <div className="mb-5 rounded-lg border border-border bg-muted/40 p-4">
                     <p className="text-sm font-semibold">
                       {rule.period
-                        ? `${calendarPeriodLabel(rule.period.amount)} · conditional baseline`
+                        ? `${periodLabel(rule.period)} · conditional baseline`
                         : "Further legal review required"}
                     </p>
                     {reposeLabel && <p className="mt-1 text-sm font-medium">{reposeLabel}</p>}
@@ -817,6 +922,16 @@ export function LimitationsWorkbench({
                       <p>
                         Check court calendars, filing and service requirements, and local cutoffs.
                       </p>
+                      {result.adjustedDate && (
+                        <p className="rounded-md border border-border bg-background p-2 font-medium">
+                          This date falls on a weekend. Under {result.adjustedDate.citation} the
+                          period extends to{" "}
+                          <time dateTime={result.adjustedDate.date}>
+                            {formatCivilDate(result.adjustedDate.date)}
+                          </time>
+                          . Legal holidays are not computed.
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -829,7 +944,7 @@ export function LimitationsWorkbench({
                   <p className="text-sm font-semibold">
                     {stateName} · {claim ? CLAIM_LABELS[claim] : ""} ·{" "}
                     {result.rule.period
-                      ? calendarPeriodLabel(result.rule.period.amount)
+                      ? periodLabel(result.rule.period)
                       : "Period requires review"}
                   </p>
                   {reposeCapLabel(result.rule) && (
@@ -1069,7 +1184,27 @@ export function LimitationsWorkbench({
                         ? item.sourceIds.length + " source records"
                         : "Retrieval pending"}
                     </td>
-                    <td className="p-3">{item.baselineRuleIds.length || "No reviewed branch"}</td>
+                    <td className="p-3">
+                      {item.baselineRuleIds.length || "No reviewed branch"}
+                      {item.claimCoverage && (
+                        <ul className="mt-2 space-y-1 text-xs" aria-label="Coverage by claim type">
+                          {item.claimCoverage.map((cell) => (
+                            <li key={cell.claimType}>
+                              {CLAIM_LABELS[cell.claimType]}:{" "}
+                              <span className="font-medium">
+                                {cell.status === "baseline"
+                                  ? "baseline"
+                                  : cell.status === "research_only"
+                                    ? "period recorded, no date"
+                                    : cell.status === "flagged"
+                                      ? "recorded with open issues"
+                                      : "Not recorded"}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </td>
                     <td className="p-3">
                       <details>
                         <summary className="min-h-10 cursor-pointer py-2">

@@ -87,7 +87,9 @@ export function guidedDateFields(
         ? "wrongful-death"
         : rule.claimType === "product_liability"
           ? "product-injury"
-          : "personal-injury";
+          : rule.claimType === "personal_injury"
+            ? "personal-injury"
+            : rule.claimType.replaceAll("_", " ");
     const triggerLabel =
       repose.reposeTrigger === "last_act_or_omission"
         ? "Date of the last act or omission"

@@ -30,6 +30,55 @@ export function calendarAnniversary(value: string, years: number): string | null
   return parseCivilDate(result) ? result : null;
 }
 
+const pad = (n: number) => String(n).padStart(2, "0");
+
+/**
+ * Civil-date period arithmetic. Years and months keep the day of month; a target day that does not exist
+ * (Feb 29 + 1 year, Aug 31 + 6 months) returns null so the caller withholds the date instead of clamping.
+ */
+export function addCivilPeriod(
+  value: string,
+  amount: number,
+  unit: "calendar_years" | "calendar_months" | "calendar_days",
+): string | null {
+  const date = parseCivilDate(value);
+  if (!date || !Number.isInteger(amount) || amount < 1) return null;
+  if (unit === "calendar_years") return calendarAnniversary(value, amount);
+  if (unit === "calendar_months") {
+    if (amount > 1200) return null;
+    const index = date.year * 12 + (date.month - 1) + amount;
+    const year = Math.floor(index / 12);
+    const month = (index % 12) + 1;
+    const result = `${year}-${pad(month)}-${pad(date.day)}`;
+    return parseCivilDate(result) ? result : null;
+  }
+  if (amount > 36500) return null;
+  const moved = new Date(Date.UTC(date.year, date.month - 1, date.day + amount));
+  const result = `${moved.getUTCFullYear()}-${pad(moved.getUTCMonth() + 1)}-${pad(moved.getUTCDate())}`;
+  return parseCivilDate(result) ? result : null;
+}
+
+/** Day of week for a civil date: 0 = Sunday ... 6 = Saturday. */
+export function civilWeekday(value: string): number | null {
+  const d = parseCivilDate(value);
+  return d ? new Date(Date.UTC(d.year, d.month - 1, d.day)).getUTCDay() : null;
+}
+
+/** Next weekday on or after the date (Saturday -> Monday, Sunday -> Monday). Legal holidays are not known here. */
+export function nextWeekday(value: string): string | null {
+  const weekday = civilWeekday(value);
+  if (weekday === null) return null;
+  return (
+    addCivilPeriod(value, weekday === 6 ? 2 : weekday === 0 ? 1 : 0, "calendar_days") ??
+    (weekday === 6 || weekday === 0 ? null : value)
+  );
+}
+
+export function periodLabel(period: { amount: number; unit: string }): string {
+  const unit = period.unit.replace("calendar_", "").replace(/s$/, "");
+  return `${period.amount} calendar ${unit}${period.amount === 1 ? "" : "s"}`;
+}
+
 export function baselineRule(
   rules: LimitationRule[],
   jurisdiction: string,
@@ -101,7 +150,6 @@ export function calculateBaseline(
         (rule.calculation?.reposeEffectiveThrough !== undefined &&
           (!parseCivilDate(rule.calculation.reposeEffectiveThrough) ||
             rule.calculation.reposeEffectiveFrom! > rule.calculation.reposeEffectiveThrough)) ||
-        rule.claimType !== "personal_injury" ||
         rule.accrualBasis !== "confirmed_accrual" ||
         rule.calculation?.deathCapYears !== undefined ||
         rule.calculation?.secondaryCapYears !== undefined ||
@@ -141,7 +189,7 @@ export function calculateBaseline(
     return finish("invalid", ["The death date is invalid."]);
   if (
     !rule.period ||
-    rule.period.unit !== "calendar_years" ||
+    !["calendar_years", "calendar_months", "calendar_days"].includes(rule.period.unit) ||
     !rule.sourceIds.length ||
     rule.sourceIds.some((id) => !snapshot.sources.some((s) => s.id === id)) ||
     !rule.sourceIds.some((id) =>
@@ -250,7 +298,7 @@ export function calculateBaseline(
       );
   }
   if (reasons.length) return finish("needs_review", reasons);
-  const ordinaryDate = calendarAnniversary(trigger, rule.period.amount);
+  const ordinaryDate = addCivilPeriod(trigger, rule.period.amount, rule.period.unit);
   const capYears = rule.calculation?.deathCapYears ?? rule.calculation?.secondaryCapYears;
   const cap = capYears && input.deathDate ? calendarAnniversary(input.deathDate, capYears) : null;
   const reposeCap = hasRepose ? calendarAnniversary(input.reposeActDate!, reposeYears!) : null;
@@ -273,9 +321,18 @@ export function calculateBaseline(
     return finish("needs_review", [
       "This date has no exact calendar anniversary. A verified jurisdiction-specific leap-day / counting rule is required.",
     ]);
+  const timeRule = snapshot.coverage.find((c) => c.state === input.jurisdiction)?.timeComputation;
+  const weekday = civilWeekday(date);
+  const rolled =
+    timeRule?.extendsWhenLastDayIsWeekend && (weekday === 6 || weekday === 0)
+      ? nextWeekday(date)
+      : null;
   return {
     status: "baseline",
     date,
+    adjustedDate: rolled
+      ? { date: rolled, citation: timeRule!.citation, holidaysComputed: false }
+      : null,
     rule,
     reasons: [...rule.warnings],
     steps: [
@@ -292,7 +349,7 @@ export function calculateBaseline(
         pinpoint: rule.pinpoint,
       },
       {
-        text: `The cited statutory baseline is ${rule.period.amount} calendar years.`,
+        text: `The cited statutory baseline is ${periodLabel(rule.period)}.`,
         sourceIds: rule.sourceIds,
         pinpoint: rule.pinpoint,
       },
@@ -324,7 +381,9 @@ export function calculateBaseline(
           ]
         : []),
       {
-        text: `The unadjusted calendar anniversary is ${date}. Holiday / closure, commencement, service and filing-cutoff adjustments remain uncomputed.`,
+        text: rolled
+          ? `The unadjusted calendar anniversary is ${date}, a ${weekday === 6 ? "Saturday" : "Sunday"}. The recorded state counting rule (${timeRule!.citation}) extends a last day that falls on a weekend to the next weekday, ${rolled}. Legal holidays, closures, commencement, service and filing-cutoff adjustments remain uncomputed.`
+          : `The unadjusted calendar anniversary is ${date}. Holiday / closure, commencement, service and filing-cutoff adjustments remain uncomputed.`,
         sourceIds: rule.sourceIds,
         pinpoint: rule.pinpoint,
       },

@@ -161,7 +161,34 @@ type KnownField =
   | "cases"
   | "baselineRuleIds"
   | "researchRuleIds"
-  | "gaps";
+  | "gaps"
+  | "note"
+  | "sourceId"
+  | "extendsWhenLastDayIsHoliday"
+  | "extendsWhenLastDayIsWeekend"
+  | "timeComputation"
+  | "accrualKind"
+  | "entryStatus"
+  | "confidence"
+  | "effectiveDate"
+  | "lastAmended"
+  | "text"
+  | "date"
+  | "tolling"
+  | "repose"
+  | "flags"
+  | "years"
+  | "trigger"
+  | "crossCheckSourceIds"
+  | "provenance"
+  | "claimCoverage"
+  | "ruleId"
+  | "reason"
+  | "excerpt"
+  | "periodEvidence"
+  | "accrualText"
+  | "confidenceNote"
+  | "claimType";
 type UnknownRecord = Record<string, unknown> & Partial<Record<KnownField, unknown>>;
 
 function record(value: unknown, label: string): UnknownRecord {
@@ -257,6 +284,53 @@ function validLink(value: unknown, label: string, hasStatus = false): void {
   if (hasStatus) string(link.status, `${label}.status`);
 }
 
+const ACCRUAL_KINDS = new Set([
+  "accrual",
+  "discovery",
+  "occurrence",
+  "death",
+  "treatment_end",
+  "breach",
+  "other",
+  "not_recorded",
+]);
+
+function validateProvenance(value: unknown, label: string): void {
+  const p = record(value, `${label}.provenance`);
+  for (const field of ["citation", "excerpt", "periodEvidence", "accrualText", "confidenceNote"])
+    string(p[field], `${label}.provenance.${field}`);
+  if (!ACCRUAL_KINDS.has(p.accrualKind as string))
+    fail(`${label}.provenance has an unsupported accrual kind`);
+  if (!["verified", "flagged"].includes(p.entryStatus as string))
+    fail(`${label}.provenance has an unsupported entry status`);
+  if (!["high", "medium", "low"].includes(p.confidence as string))
+    fail(`${label}.provenance has an unsupported confidence`);
+  timestamp(p.retrievedAt, `${label}.provenance.retrievedAt`);
+  if (p.effectiveDate !== null) civilDate(p.effectiveDate, `${label}.provenance.effectiveDate`);
+  const amended = record(p.lastAmended, `${label}.provenance.lastAmended`);
+  if (typeof amended.text !== "string")
+    fail(`${label}.provenance.lastAmended.text must be a string`);
+  if (amended.date !== null) civilDate(amended.date, `${label}.provenance.lastAmended.date`);
+  if (!Array.isArray(p.tolling) || !Array.isArray(p.repose) || !Array.isArray(p.flags))
+    fail(`${label}.provenance has malformed tolling, repose or flags`);
+  for (const item of p.tolling as unknown[]) {
+    const t = record(item, `${label}.provenance.tolling`);
+    string(t.text, `${label}.provenance.tolling.text`);
+    string(t.citation, `${label}.provenance.tolling.citation`);
+  }
+  for (const item of p.repose as unknown[]) {
+    const r = record(item, `${label}.provenance.repose`);
+    positiveInteger(r.years, `${label}.provenance.repose.years`, 100);
+    string(r.citation, `${label}.provenance.repose.citation`);
+    string(r.trigger, `${label}.provenance.repose.trigger`);
+    if (r.effectiveFrom !== null)
+      civilDate(r.effectiveFrom, `${label}.provenance.repose.effectiveFrom`);
+  }
+  if ((p.flags as unknown[]).some((f) => typeof f !== "string" || !f.trim()))
+    fail(`${label}.provenance.flags must be nonempty strings`);
+  strings(p.crossCheckSourceIds, `${label}.provenance.crossCheckSourceIds`);
+}
+
 function validateRules(values: unknown): LimitationRule[] {
   if (!Array.isArray(values)) fail("rules must be an array");
   const ids = new Set<string>();
@@ -289,8 +363,15 @@ function validateRules(values: unknown): LimitationRule[] {
       fail(`${label} has an unsupported accrual basis`);
     if (r.period !== null) {
       const period = record(r.period, `${label}.period`);
-      positiveInteger(period.amount, `${label}.period.amount`, 100);
-      if (period.unit !== "calendar_years") fail(`${label} has an unsupported period unit`);
+      positiveInteger(period.amount, `${label}.period.amount`, 36500);
+      if (!["calendar_years", "calendar_months", "calendar_days"].includes(period.unit as string))
+        fail(`${label} has an unsupported period unit`);
+      if (period.unit === "calendar_years" && (period.amount as number) > 100)
+        fail(`${label} period is out of range`);
+      if (period.unit === "calendar_months" && (period.amount as number) > 1200)
+        fail(`${label} period is out of range`);
+      if (period.unit === "calendar_days" && (period.amount as number) > 36500)
+        fail(`${label} period is out of range`);
     }
     if (r.computation === "baseline_only" && r.period === null)
       fail(`${label} baseline has no period`);
@@ -308,6 +389,7 @@ function validateRules(values: unknown): LimitationRule[] {
     )
       fail(`${label} has an inverted effective window`);
     if (r.caseReferenceIds !== undefined) strings(r.caseReferenceIds, `${label}.caseReferenceIds`);
+    if (r.provenance !== undefined) validateProvenance(r.provenance, label);
     if (r.subtype !== undefined) string(r.subtype, `${label}.subtype`);
     if (r.calculation !== undefined) {
       const calculation = record(r.calculation, `${label}.calculation`);
@@ -339,7 +421,6 @@ function validateRules(values: unknown): LimitationRule[] {
           !["last_act_or_omission", "act_or_omission"].includes(
             calculation.reposeTrigger as string,
           ) ||
-          r.claimType !== "personal_injury" ||
           r.accrualBasis !== "confirmed_accrual" ||
           calculation.deathCapYears !== undefined ||
           calculation.secondaryCapYears !== undefined ||
@@ -489,6 +570,38 @@ function validateCoverage(values: unknown): CoverageRow[] {
       !Array.isArray(c.metadataOnlyReferences)
     )
       fail(`${label} has malformed source link collections`);
+    if (c.timeComputation !== undefined) {
+      const t = record(c.timeComputation, `${label}.timeComputation`);
+      if (!["verified", "flagged"].includes(t.status as string))
+        fail(`${label}.timeComputation has an unsupported status`);
+      if (typeof t.extendsWhenLastDayIsWeekend !== "boolean")
+        fail(`${label}.timeComputation.extendsWhenLastDayIsWeekend must be a boolean`);
+      if (
+        t.extendsWhenLastDayIsHoliday !== null &&
+        typeof t.extendsWhenLastDayIsHoliday !== "boolean"
+      )
+        fail(`${label}.timeComputation.extendsWhenLastDayIsHoliday must be a boolean or null`);
+      for (const f of ["citation", "excerpt", "sourceId", "note"])
+        string(t[f], `${label}.timeComputation.${f}`);
+      timestamp(t.retrievedAt, `${label}.timeComputation.retrievedAt`);
+    }
+    if (c.claimCoverage !== undefined) {
+      if (!Array.isArray(c.claimCoverage)) fail(`${label}.claimCoverage must be an array`);
+      const seenClaims = new Set<string>();
+      for (const [i, item] of (c.claimCoverage as unknown[]).entries()) {
+        const cc = record(item, `${label}.claimCoverage[${i}]`);
+        if (
+          !CLAIM_TYPES.includes(cc.claimType as (typeof CLAIM_TYPES)[number]) ||
+          seenClaims.has(cc.claimType as string)
+        )
+          fail(`${label}.claimCoverage[${i}] has an unknown or duplicate claim type`);
+        seenClaims.add(cc.claimType as string);
+        if (!["baseline", "research_only", "flagged", "not_recorded"].includes(cc.status as string))
+          fail(`${label}.claimCoverage[${i}] has an unsupported status`);
+        if (cc.status === "not_recorded") string(cc.reason, `${label}.claimCoverage[${i}].reason`);
+        else string(cc.ruleId, `${label}.claimCoverage[${i}].ruleId`);
+      }
+    }
     c.discoveryLinks.forEach((link, i) => validLink(link, `${label}.discoveryLinks[${i}]`));
     c.publisherLinks.forEach((link, i) => validLink(link, `${label}.publisherLinks[${i}]`, true));
     c.metadataOnlyReferences.forEach((value, i) => {
@@ -554,6 +667,8 @@ export function validateLimitationsSnapshot(input: {
       fail(`rule ${rule.id} links to a missing case`);
   }
   for (const row of coverage) {
+    if (row.timeComputation && !sourceIds.has(row.timeComputation.sourceId))
+      fail(`${row.state} timeComputation links to a missing source`);
     const expectedSources = sources
       .filter((source) => source.state === row.state)
       .map((source) => source.id)

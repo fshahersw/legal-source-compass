@@ -172,10 +172,19 @@ describe("separate accrual and repose cutoffs", () => {
     );
   });
 
-  it("leaves the actual protected NC and OR bundles research-only", () => {
+  it("the actual protected NC and OR bundles issue dates only with a separately confirmed repose act", () => {
     const actual = validateLimitationsSnapshot(files());
     for (const jurisdiction of ["NC", "OR"]) {
-      expect(calculateBaseline(actual, { ...reviewed, jurisdiction }).status).toBe("needs_review");
+      const withoutRepose = calculateBaseline(actual, {
+        ...reviewed,
+        jurisdiction,
+        reposeApplicabilityConfirmed: false,
+      });
+      expect(withoutRepose.status).toBe("needs_review");
+      expect(withoutRepose.date).toBeNull();
+      const confirmed = calculateBaseline(actual, { ...reviewed, jurisdiction });
+      expect(confirmed.status).toBe("baseline");
+      expect(confirmed.date).toBe("2026-05-01");
     }
   });
 });
