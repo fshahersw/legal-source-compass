@@ -92,7 +92,7 @@ export function CaseResearch({ data, cases, masters, state, search, update }: Wo
     <div className="space-y-4">
       <Panel
         title="Court-order research"
-        note="Readings of four identified MDL orders, freshly retrieved from the courts. Select a litigation to inspect its saved cases and sourced procedural context."
+        note="Readings of four identified MDL orders from the courts. Select a litigation to inspect its saved cases and sourced procedural context."
       >
         <div className="grid gap-2 sm:grid-cols-2">
           {research.data?.briefs.map((b) => {

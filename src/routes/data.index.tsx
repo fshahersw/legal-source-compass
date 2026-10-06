@@ -12,7 +12,7 @@ export const Route = createFileRoute("/data/")({
   head: () =>
     pageHead(
       "Data catalog",
-      "Every dataset in the connected corpus with its imported record count, grouped by section.",
+      "Datasets in the connected corpus with their imported record counts, grouped by section.",
     ),
   component: Catalog,
 });
