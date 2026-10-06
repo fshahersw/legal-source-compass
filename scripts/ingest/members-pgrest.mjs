@@ -6,7 +6,10 @@ const credentialsFile = process.env.CORPUS_PREVIEW_CREDENTIALS ?? 'C:/Users/fira
 let cfg;
 function load() {
   if (cfg) return cfg;
-  const c = JSON.parse(fs.readFileSync(credentialsFile, 'utf8'));
+  // Environment variables win over the private credentials file (nothing is written to disk).
+  const c = process.env.EXTERNAL_SUPABASE_URL && (process.env.EXTERNAL_SUPABASE_KEY ?? process.env.EXTERNAL_SUPABASE_SERVICE_ROLE_KEY)
+    ? { EXTERNAL_SUPABASE_URL: process.env.EXTERNAL_SUPABASE_URL, EXTERNAL_SUPABASE_KEY: process.env.EXTERNAL_SUPABASE_KEY ?? process.env.EXTERNAL_SUPABASE_SERVICE_ROLE_KEY }
+    : JSON.parse(fs.readFileSync(credentialsFile, 'utf8'));
   if (c.EXTERNAL_SUPABASE_URL !== 'https://xosqzzsnhxcyehcnirpa.supabase.co' || typeof c.EXTERNAL_SUPABASE_KEY !== 'string') throw new Error('Wrong server credentials project');
   const token = c.EXTERNAL_SUPABASE_KEY;
   cfg = { url: c.EXTERNAL_SUPABASE_URL, headers: { apikey: token, 'Content-Type': 'application/json', ...(token.startsWith('sb_') ? {} : { Authorization: `Bearer ${token}` }) } };
