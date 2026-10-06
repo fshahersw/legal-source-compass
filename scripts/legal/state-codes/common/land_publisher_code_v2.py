@@ -151,6 +151,7 @@ def put_object(cloud, o):
 
 
 def main():
+    sys.stdout.reconfigure(line_buffering=True)
     ap = argparse.ArgumentParser()
     ap.add_argument("packet")
     ap.add_argument("--execute", action="store_true")
