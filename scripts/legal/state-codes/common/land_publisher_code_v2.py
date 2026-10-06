@@ -119,28 +119,13 @@ class Cloud:
                 raise RuntimeError(f"{name} {r.status_code}: {r.text[:500]}")
             return r.json()
 
-    def _retry(self, call):
-        for attempt in range(4):
-            try:
-                r = call()
-            except requests.RequestException:
-                if attempt == 3:
-                    raise
-                time.sleep(2 ** (attempt + 1))
-                continue
-            if r.status_code in (429, 502, 503, 504, 522, 524) and attempt < 3:
-                time.sleep(2 ** (attempt + 1))
-                continue
-            return r
-
     def readback(self, key):
-        r = self._retry(lambda: self.s.get(f"{self.url}/storage/v1/object/authenticated/{BUCKET}/{key}",
-                                           headers=self.h, timeout=600))
+        r = self.s.get(f"{self.url}/storage/v1/object/authenticated/{BUCKET}/{key}", headers=self.h, timeout=600)
         return r.status_code, r.content
 
     def upload(self, key, data, ctype):
-        r = self._retry(lambda: self.s.post(f"{self.url}/storage/v1/object/{BUCKET}/{key}", data=data, timeout=1200,
-                                            headers={**self.h, "x-upsert": "false", "Content-Type": ctype}))
+        r = self.s.post(f"{self.url}/storage/v1/object/{BUCKET}/{key}", data=data, timeout=1200,
+                        headers={**self.h, "x-upsert": "false", "Content-Type": ctype})
         return r.status_code, r.text[:200]
 
 
