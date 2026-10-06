@@ -73,13 +73,28 @@ def main():
     ap.add_argument("--toc-ok", default="", help="evidence that parsed section counts equal the publisher TOC (empty = not established)")
     ap.add_argument("--report", required=True)
     ap.add_argument("--apply", action="store_true", help="call corpus_publisher_code_review_v2 (service role from the environment)")
+    ap.add_argument(
+        "--must-include",
+        action="append",
+        default=[],
+        help="citation_path or citation values always included in the live sample",
+    )
     a = ap.parse_args()
     land = a.landing
     units = {u["unit_key"]: u for u in map(json.loads, open(os.path.join(land, "units.jsonl"), encoding="utf-8"))}
     secs = [json.loads(x) for x in open(os.path.join(land, "sections.jsonl"), encoding="utf-8")]
     manifest = json.load(open(os.path.join(land, "manifest.json")))
     rnd = random.Random(a.seed)
-    sample = rnd.sample(secs, min(a.n, len(secs)))
+    must_rows = []
+    for token in a.must_include:
+        for s in secs:
+            if s["citation_path"] == token or s.get("citation") == token:
+                must_rows.append(s)
+                break
+    pool = [s for s in secs if s not in must_rows]
+    sample_size = min(a.n, len(secs))
+    extra = max(0, sample_size - len(must_rows))
+    sample = must_rows + (rnd.sample(pool, min(extra, len(pool))) if pool and extra else [])
     tmp = tempfile.mkdtemp(prefix="review-")
     arc = sc.Archive(tmp, min_interval=1.0)
     results = []
