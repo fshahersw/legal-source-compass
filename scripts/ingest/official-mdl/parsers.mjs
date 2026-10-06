@@ -179,7 +179,11 @@ export function parsePaedOrders({ html, pageUrl }) {
   const ctx = ctxOf(html, pageUrl, dateTexts);
   const rows = []; let ordinal = 0;
   for (const tr of trs) {
-    const tds = findAll(tr, n => n.tag === 'td'), a = findFirst(tr, n => n.tag === 'a' && n.attrs.href);
+    const tds = findAll(tr, n => n.tag === 'td');
+    const anchors = findAll(tr, n => n.tag === 'a' && n.attrs.href);
+    const a = anchors.find(x => classifyUrl(x.attrs.href, pageUrl).kind === 'pdf_direct')
+      ?? anchors.find(x => !['ecf_login', 'html_page'].includes(classifyUrl(x.attrs.href, pageUrl).kind))
+      ?? anchors[0];
     if (!a) continue;
     const span = findFirst(tr, n => n.tag === 'span' && n.attrs.content && /^\d{4}-\d{2}-\d{2}/.test(n.attrs.content));
     ordinal++;

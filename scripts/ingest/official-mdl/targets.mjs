@@ -83,6 +83,20 @@ export const MATTERS = {
   '2614': { name: 'MDL No. 2614 (N.D. Tex.)', court_id: 'txnd', host: 'www.txnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2614', pages: [{ id: 'txnd-2614-mdl', role: 'mdl_page', family: 'txnd-docket-table', url: 'https://www.txnd.uscourts.gov/mdl-315-md-02614' }], index_pages: [] },
   '2835': { name: 'MDL No. 2835 (N.D. Tex.)', court_id: 'txnd', host: 'www.txnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2835', pages: [{ id: 'txnd-2835-mdl', role: 'mdl_page', family: 'txnd-docket-table', url: 'https://www.txnd.uscourts.gov/mdl-318-md-02835' }], index_pages: [] },
   '1983': { name: 'MDL No. 1983 (N.D. Tex.)', court_id: 'txnd', host: 'www.txnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 1983', pages: [{ id: 'txnd-1983-mdl', role: 'mdl_page', family: 'txnd-docket-table', url: 'https://www.txnd.uscourts.gov/mdl-308-md-01983' }], index_pages: [] },
+  // N.D. Ohio MDL 2804 (Firecrawl map; njd-body link list on mdl-2804 hub).
+  '2804': {
+    name: 'In re National Prescription Opiate Litigation', court_id: 'ohnd', host: 'www.ohnd.uscourts.gov', tier: 1,
+    case_number: null, printed_mdl_literal: 'MDL 2804',
+    pages: [{ id: 'ohnd-2804-mdl', role: 'mdl_page', family: 'njd-body', url: 'https://www.ohnd.uscourts.gov/mdl-2804' }],
+    index_pages: [],
+  },
+  // D. Ariz. MDL 3081 (Firecrawl map; paed-orders-table on litigation landing page).
+  '3081': {
+    name: 'In re Bard Implanted Port Catheter Products Liability Litigation', court_id: 'azd', host: 'www.azd.uscourts.gov', tier: 1,
+    case_number: null, printed_mdl_literal: 'MDL 3081',
+    pages: [{ id: 'azd-3081-mdl', role: 'orders_table', family: 'paed-orders-table', url: 'https://www.azd.uscourts.gov/re-bard-implanted-port-catheter-products-liability-litigation' }],
+    index_pages: [],
+  },
 };
 
 // Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
