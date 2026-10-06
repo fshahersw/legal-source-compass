@@ -4,7 +4,7 @@
 // and FJC IDB MDL numbers. Evidence = the same `docket-bulk-match` / `fjc-idb-mdl-match` rows that were landed in corpus_ingest.
 import fs from 'node:fs';
 import path from 'node:path';
-import {planDocket, planMdl} from './project-registry.mjs';
+import {planDocket, planMdl, planCaption} from './project-registry.mjs';
 
 const readJsonl = f => (fs.existsSync(f) ? fs.readFileSync(f, 'utf8').split('\n').filter(Boolean).map(l => JSON.parse(l)) : []);
 
@@ -21,6 +21,7 @@ export function indexEvidence(bulkRows, fjcRows = []) {
       if (d.date_filed) { e.filed = {...base, action: 'fill', field: 'filed', value: d.date_filed}; e.conflict = {...base, action: 'conflict', field: 'filed', incoming: d.date_filed}; }
       if (d.date_terminated) e.terminated = {...base, action: 'fill', field: 'terminated', value: d.date_terminated};
       e.native = {...base, action: 'fill', field: 'native_case_id', value: r.native_id};
+      if (d.case_name) e.caption = {native_id: r.native_id, source_row_ordinal: d.source_row_ordinal, value: d.case_name};
     }
   }
   const fjcByDocket = new Map(fjcRows.filter(r => r.data.docket_id).map(r => [`cl:dockets:${r.data.docket_id}`, r.data]));
@@ -42,7 +43,12 @@ export function overlayDocket(record, index, now) {
     held.push(...r.held);
     if (r.patch.ops.length) { cur = {id: record.id, ...r.patch.cols}; changed = true; }
   }
-  return {record: changed ? {...record, item: cur.item, detail: cur.detail, filters: cur.filters} : record, changed, held};
+  if (d.caption) {
+    const r = planCaption({id: record.id, title: record.title, text: record.text, ...cur}, d.caption, now);
+    held.push(...r.held);
+    if (r.patch.ops.length) { cur = {id: record.id, ...r.patch.cols}; changed = true; }
+  }
+  return {record: changed ? {...record, ...(cur.title !== undefined ? {title: cur.title} : {}), ...(cur.text !== undefined ? {text: cur.text} : {}), item: cur.item, detail: cur.detail, filters: cur.filters} : record, changed, held};
 }
 
 export function overlayMdl(record, index, now) {
