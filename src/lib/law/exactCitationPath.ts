@@ -44,10 +44,10 @@ export function statuteNativeId(state: string, citationPath: string): string {
   return `${state.toUpperCase()}:${citationPath}`;
 }
 
-/** Dotted official paths such as Fla. Stat. § 95.11, MCL 600.5851b, NRS 11.190, and ORS 12.110. The whole token, including a trailing letter. A parenthetical is not included. */
+/** Dotted official paths such as Fla. Stat. § 95.11, MCL 600.5851b, NRS 11.190, NRS 41A.097, and ORS 12.110. The whole token, including one chapter letter and a trailing letter. A parenthetical is not included. */
 function dottedPaths(citation: string): string[] | null {
   const paths: string[] = [];
-  const re = /\b(\d{1,4}\.\d{1,4}[A-Za-z]*)(?![A-Za-z0-9])/g;
+  const re = /\b(\d{1,4}[A-Za-z]?\.\d{1,4}[A-Za-z]*)(?![A-Za-z0-9])/g;
   for (const match of citation.matchAll(re)) {
     const path = match[1];
     if (!path || paths.includes(path)) continue;

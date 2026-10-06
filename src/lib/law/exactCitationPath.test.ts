@@ -138,6 +138,27 @@ describe("exact statute citation paths", () => {
     expect(statuteNativeId("NV", "11.190")).toBe("NV:11.190");
   });
 
+  it("reads Nevada 41A.097 with the chapter letter and without the parenthetical", () => {
+    expect(exactCitationPaths("NV", "Nev. Rev. Stat. § 41A.097(3)")).toEqual(["41A.097"]);
+    expect(exactCitationPaths("NV", "Nev. Rev. Stat. § 41A.097(2)")).toEqual(["41A.097"]);
+    expect(exactCitationPaths("NV", "Nev. Rev. Stat. § 41A.097(1)")).toEqual(["41A.097"]);
+    expect(exactCitationPaths("NV", "Nev. Rev. Stat. § 41A.097(3)")?.includes("41.097")).toBe(
+      false,
+    );
+    expect(exactCitationPaths("NV", "Nev. Rev. Stat. § 41A.097(3)")?.includes("41A.09")).toBe(
+      false,
+    );
+    expect(exactCitationPaths("NV", "NRS 41A.098")).toEqual(["41A.098"]);
+    expect(
+      onlyExactStoredSection("41A.097", [
+        { citationPath: "41A.097", sectionNumbers: ["41A.097"] },
+        { citationPath: "41.097", sectionNumbers: ["41.097"] },
+        { citationPath: "41A.098", sectionNumbers: ["41A.098"] },
+      ])?.citationPath,
+    ).toBe("41A.097");
+    expect(statuteNativeId("NV", "41A.097")).toBe("NV:41A.097");
+  });
+
   it("reads Oregon 12.110 without the parenthetical", () => {
     expect(exactCitationPaths("OR", "ORS 12.110(1)")).toEqual(["12.110"]);
     expect(exactCitationPaths("OR", "ORS 12.110(1)")?.includes("12.11")).toBe(false);
