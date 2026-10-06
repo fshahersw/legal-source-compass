@@ -20,6 +20,7 @@ import {
 import {
   CLAIM_LABELS,
   CLAIM_TYPES,
+  VERIFICATION_GRADE_LABELS,
   SPECIAL_ISSUES,
   type BaselineInput,
   type BaselineResult,
@@ -57,7 +58,18 @@ function Authority({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule: Li
     <div className="mt-3 rounded-lg border border-border p-3 text-sm" data-testid="rule-authority">
       <dl className="grid gap-x-4 gap-y-1 sm:grid-cols-[10rem_1fr]">
         <dt className="font-medium">Citation</dt>
-        <dd>{facts.citation}</dd>
+        <dd>
+          {facts.citation}
+          <span
+            className="ml-2 inline-block rounded border border-border bg-muted px-1.5 py-0.5 text-xs font-medium"
+            title={facts.gradeBasis}
+            data-testid="verification-grade"
+          >
+            {facts.grade}
+          </span>
+        </dd>
+        <dt className="font-medium">Verification</dt>
+        <dd>{facts.gradeBasis}</dd>
         <dt className="font-medium">Effective date</dt>
         <dd>{facts.effective}</dd>
         <dt className="font-medium">Last amended</dt>
@@ -1216,6 +1228,7 @@ export function LimitationsWorkbench({
                                       ? "recorded with open issues"
                                       : "Not recorded"}
                               </span>
+                              {cell.grade ? ` · ${VERIFICATION_GRADE_LABELS[cell.grade]}` : ""}
                               {cell.variants?.length
                                 ? ` · ${cell.variants.length} narrow variant${cell.variants.length === 1 ? "" : "s"} selectable`
                                 : ""}

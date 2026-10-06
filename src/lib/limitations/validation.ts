@@ -1,5 +1,6 @@
 import {
   CLAIM_TYPES,
+  VERIFICATION_GRADES,
   type CoverageRow,
   type JudicialReference,
   type LimitationRule,
@@ -162,6 +163,9 @@ type KnownField =
   | "baselineRuleIds"
   | "researchRuleIds"
   | "gaps"
+  | "verification"
+  | "grade"
+  | "basis"
   | "variants"
   | "storageKey"
   | "storageBucket"
@@ -393,6 +397,12 @@ function validateRules(values: unknown): LimitationRule[] {
       fail(`${label} has an inverted effective window`);
     if (r.caseReferenceIds !== undefined) strings(r.caseReferenceIds, `${label}.caseReferenceIds`);
     if (r.provenance !== undefined) validateProvenance(r.provenance, label);
+    if (r["verification"] !== undefined) {
+      const v = record(r["verification"], `${label}.verification`);
+      if (!VERIFICATION_GRADES.includes(v["grade"] as (typeof VERIFICATION_GRADES)[number]))
+        fail(`${label}.verification has an unsupported grade`);
+      string(v["basis"], `${label}.verification.basis`);
+    }
     if (r.subtype !== undefined) string(r.subtype, `${label}.subtype`);
     if (r.calculation !== undefined) {
       const calculation = record(r.calculation, `${label}.calculation`);
@@ -614,6 +624,11 @@ function validateCoverage(values: unknown): CoverageRow[] {
           fail(`${label}.claimCoverage[${i}] has an unsupported status`);
         if (cc.status === "not_recorded") string(cc.reason, `${label}.claimCoverage[${i}].reason`);
         else string(cc.ruleId, `${label}.claimCoverage[${i}].ruleId`);
+        if (
+          cc["grade"] !== undefined &&
+          !VERIFICATION_GRADES.includes(cc["grade"] as (typeof VERIFICATION_GRADES)[number])
+        )
+          fail(`${label}.claimCoverage[${i}] has an unsupported grade`);
         if (cc["variants"] !== undefined) {
           if (!Array.isArray(cc["variants"]))
             fail(`${label}.claimCoverage[${i}].variants must be an array`);

@@ -41,6 +41,7 @@ export function claimCoverageFor(
     claimType,
     status: statusOf(chosen),
     ruleId: chosen.id,
+    ...(chosen.verification ? { grade: chosen.verification.grade } : {}),
     ...(variants.length ? { variants } : {}),
   };
 }

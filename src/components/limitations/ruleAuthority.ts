@@ -1,4 +1,8 @@
-import type { LimitationRule, LimitationsSnapshot } from "@/lib/limitations/types";
+import {
+  VERIFICATION_GRADE_LABELS,
+  type LimitationRule,
+  type LimitationsSnapshot,
+} from "@/lib/limitations/types";
 
 export const NOT_RECORDED = "Not recorded";
 
@@ -15,6 +19,8 @@ export type RuleAuthorityFacts = {
   confidence: string | null;
   flags: string[];
   entryStatus: "verified" | "flagged" | "legacy";
+  grade: string;
+  gradeBasis: string;
 };
 
 const day = (value: string | undefined | null) => (value ? value.slice(0, 10) : NOT_RECORDED);
@@ -54,5 +60,9 @@ export function ruleAuthorityFacts(
     confidence: p ? `${p.confidence}: ${p.confidenceNote}` : null,
     flags: p?.flags ?? [],
     entryStatus: p ? p.entryStatus : "legacy",
+    grade: rule.verification
+      ? VERIFICATION_GRADE_LABELS[rule.verification.grade]
+      : "Verification grade not recorded",
+    gradeBasis: rule.verification?.basis ?? NOT_RECORDED,
   };
 }

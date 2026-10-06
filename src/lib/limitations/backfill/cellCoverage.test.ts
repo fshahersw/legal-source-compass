@@ -44,7 +44,9 @@ describe("claimCoverageFor", () => {
   it("marks a flagged general rule as flagged", () => {
     const flagged = rule({
       id: "g",
-      provenance: { entryStatus: "flagged" } as unknown as NonNullable<LimitationRule["provenance"]>,
+      provenance: { entryStatus: "flagged" } as unknown as NonNullable<
+        LimitationRule["provenance"]
+      >,
     });
     expect(claimCoverageFor([flagged], "personal_injury", "none").status).toBe("flagged");
   });

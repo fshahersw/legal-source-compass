@@ -37,6 +37,12 @@ import {
   type RuleProvenance,
 } from "../../../src/lib/limitations/types";
 import { validateLimitationsSnapshot } from "../../../src/lib/limitations/validation";
+import {
+  gradeRule,
+  ruleFingerprint,
+  type RetryRecord,
+  type VerdictRecord,
+} from "../../../src/lib/limitations/backfill/grades";
 import { claimCoverageFor } from "../../../src/lib/limitations/backfill/cellCoverage";
 
 const work = process.env.LIM_WORK ?? "/tmp/lim/backfill";
@@ -370,6 +376,81 @@ for (const file of files) {
 }
 
 const unresolvedTime: string[] = [];
+/** Rules corrected after the independent verifier's findings (id -> reason). */
+const RETIRED_CASE_REFERENCES = new Map([
+  [
+    "ca-fox-2005",
+    "The reference pointed to a Justia reproduction, which breaches the primary-source rule; the official opinion could not be retrieved from the California courts' archive (S121173 returns 404 on courts.ca.gov and www4.courts.ca.gov).",
+  ],
+]);
+const caCrossRef = rules.find((r) => r.id === "ca-product_liability-general-review-20261002");
+if (caCrossRef) {
+  caCrossRef.caseReferenceIds = (caCrossRef.caseReferenceIds ?? []).filter(
+    (id) => !RETIRED_CASE_REFERENCES.has(id),
+  );
+  if (!caCrossRef.caseReferenceIds.length) delete caCrossRef.caseReferenceIds;
+  caCrossRef.pinpoint = "Cal. Code Civ. Proc. § 335.1";
+  caCrossRef.conditions = [
+    ...caCrossRef.conditions.filter((c) => !/^Discovery accrual:/.test(c)),
+    "Discovery accrual: Not recorded (judicial rule; official opinion not retrievable). The two-year period is verified against § 335.1; the discovery rule is a court-made rule whose official opinion could not be retrieved, so the discovery dates must be confirmed under controlling case law.",
+  ];
+  if (caCrossRef.provenance) {
+    caCrossRef.provenance.accrualText =
+      "Not recorded (judicial rule; official opinion not retrievable)";
+    caCrossRef.provenance.accrualKind = "other";
+  }
+}
+const cases = (casesDoc.cases as { id: string }[]).filter(
+  (c) => !RETIRED_CASE_REFERENCES.has(c.id),
+);
+
+// Verification grades from the independent verifier (rule .1 content) with a fingerprint carry-over check.
+const readJsonMaybe = (path: string | undefined) =>
+  path && existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : null;
+const verdictFile = readJsonMaybe(
+  process.env.LIM_VERDICTS ??
+    "/cursor/stores/self/internal/limitations-verification/verdicts-2026-10-06.1.json",
+);
+const retryFile = readJsonMaybe(
+  process.env.LIM_VERDICTS_RETRY ??
+    "/cursor/stores/self/internal/limitations-verification/verdicts-2026-10-06.1-retry.json",
+);
+const previousRules = readJsonMaybe(
+  join(process.env.LIM_PREV_BUNDLE ?? "/tmp/lim/prev1/limitations", "rules.json"),
+);
+const verdictById = new Map<string, VerdictRecord>(
+  (verdictFile?.rules ?? []).map((r: { ruleId: string } & VerdictRecord) => [r.ruleId, r]),
+);
+const retryById = new Map<string, RetryRecord>(
+  (retryFile?.rules ?? []).map((r: { ruleId: string } & RetryRecord) => [r.ruleId, r]),
+);
+const previousFingerprint = new Map<string, string>(
+  ((previousRules?.rules ?? []) as LimitationRule[]).map((r) => [r.id, ruleFingerprint(r)]),
+);
+const gradeCounts: Record<string, number> = {};
+let withheld = 0;
+for (const rule of rules) {
+  const graded = gradeRule({
+    fingerprint: ruleFingerprint(rule),
+    previousFingerprint: previousFingerprint.get(rule.id) ?? null,
+    verdict: verdictById.get(rule.id),
+    retry: retryById.get(rule.id),
+    verifiedRuleVersion: "2026-10-06.1",
+    verifiedOn: "2026-10-06",
+  });
+  rule.verification = graded.verification;
+  gradeCounts[graded.verification.grade] = (gradeCounts[graded.verification.grade] ?? 0) + 1;
+  if (graded.withhold && rule.computation === "baseline_only") {
+    rule.computation = "research_only";
+    delete rule.calculation;
+    rule.conditions = [
+      ...rule.conditions,
+      "Cannot issue a date: the independent verifier disputed this rule's content and it has not been corrected.",
+    ];
+    withheld++;
+  }
+}
+
 const timeRules = new Map<string, NonNullable<CoverageRow["timeComputation"]>>();
 const timeDir = join(work, "time");
 for (const file of existsSync(timeDir)
@@ -452,7 +533,7 @@ const files4 = {
   rules: { ...rulesDoc, snapshotDate, ruleVersion, rules },
   sources: { ...sourcesDoc, snapshotDate, sources },
   coverage: { ...coverageDoc, snapshotDate, coverage },
-  cases: { ...casesDoc, snapshotDate },
+  cases: { ...casesDoc, snapshotDate, cases },
 };
 const snapshot: LimitationsSnapshot = validateLimitationsSnapshot({
   rules: files4.rules,
@@ -491,6 +572,8 @@ console.log(
     addedRules: added,
     provenanceAttachedToExisting: attached,
     legacyResearchRulesUpgraded: upgraded,
+    verificationGrades: gradeCounts,
+    withheldFailedVerification: withheld,
     cells: {
       baseline: tally("baseline"),
       research_only: tally("research_only"),
