@@ -376,9 +376,22 @@ export const getDocketDocumentsOverview = createServerFn({ method: "GET" }).hand
 
 export const getMatterDocketDocuments = createServerFn({ method: "GET" })
   .inputValidator((d) =>
-    z.object({ id: mdlInput, offset: z.number().int().min(0).max(100000).default(0) }).parse(d),
+    z
+      .object({
+        id: mdlInput,
+        offset: z.number().int().min(0).max(100000).default(0),
+        scope: z.enum(["all", "unlisted"]).default("all"),
+      })
+      .parse(d),
   )
   .handler(async ({ data }) => {
     const { loadMatterDocketDocuments } = await import("./docketDocuments.server");
-    return loadMatterDocketDocuments(mdlOf(data.id), data.offset);
+    return loadMatterDocketDocuments(mdlOf(data.id), data.offset, data.scope);
+  });
+
+export const getMatterDocketDocumentsSummary = createServerFn({ method: "GET" })
+  .inputValidator((d) => z.object({ id: mdlInput }).parse(d))
+  .handler(async ({ data }) => {
+    const { loadMatterDocketDocumentsSummary } = await import("./docketDocuments.server");
+    return loadMatterDocketDocumentsSummary(mdlOf(data.id));
   });

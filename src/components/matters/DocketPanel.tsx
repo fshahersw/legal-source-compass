@@ -15,6 +15,7 @@ import {
   Scope,
   selectClass,
 } from "@/components/matters/common";
+import { DocketSheetOnly } from "@/components/matters/DocketSheetDocuments";
 import { RegistryTimeline } from "@/components/matters/RegistryTimeline";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,13 +25,7 @@ import {
   groupEntriesByMonth,
   type DocketEntry,
 } from "@/lib/matters/entries";
-import {
-  getMatterDocketDocuments,
-  getMatterEntries,
-  getMatterEntryText,
-} from "@/lib/matters/matters.functions";
-import { AVAILABILITY_LABELS } from "@/lib/matters/docketDocuments";
-import { formatBytes } from "@/lib/matters/documents";
+import { getMatterEntries, getMatterEntryText } from "@/lib/matters/matters.functions";
 import type { MatterOverviewPayload } from "@/lib/matters/types";
 
 function EntryText({ id }: { id: string }) {
@@ -122,72 +117,6 @@ function EntryRow({ entry, mdl }: { entry: DocketEntry; mdl: string }) {
         {open && sampleId ? <EntryText id={sampleId} /> : null}
       </div>
     </li>
-  );
-}
-
-/** Docket-sheet documents of a matter whose entries are not released, listed by the entry number they carry. */
-function DocketSheetOnly({ mdl }: { mdl: string }) {
-  const fn = useServerFn(getMatterDocketDocuments);
-  const [offset, setOffset] = useState(0);
-  const q = useQuery({
-    queryKey: ["matter-docket-documents", mdl, offset],
-    queryFn: () => fn({ data: { id: mdl, offset } }),
-    placeholderData: keepPreviousData,
-    staleTime: 5 * 60_000,
-  });
-  const data = q.data;
-  if (!data || !data.total) return null;
-  return (
-    <div className="mt-3 space-y-2">
-      <h3 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-        Docket-sheet documents · {data.total.toLocaleString()}
-      </h3>
-      <p className="text-[12px] text-muted-foreground">
-        Documents of the cases tracked in DocketBird, as the provider's docket sheet shows them, by
-        entry number. Documents withheld under the sealed/restricted rule are counted on the
-        documents page and never listed.
-      </p>
-      <ul className="divide-y divide-border rounded-lg border border-border">
-        {data.documents.map((d) => (
-          <li
-            key={d.nativeDocumentId}
-            className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 p-2 text-[12px]"
-          >
-            <span className="w-14 font-mono">
-              {d.entryNumber !== null ? `#${d.entryNumber}` : "—"}
-            </span>
-            <span className="font-mono text-muted-foreground">
-              {d.dateFiled ?? "Date not recorded"}
-            </span>
-            <span className="min-w-0 flex-1 break-words">
-              {d.description ??
-                (d.descriptionWithheld ? "Description withheld" : "Description not recorded")}
-            </span>
-            <span className="text-muted-foreground">{AVAILABILITY_LABELS[d.availability]}</span>
-            {d.bytes !== null ? (
-              <span className="text-muted-foreground">{formatBytes(d.bytes)}</span>
-            ) : null}
-            {d.pdfUrl ? (
-              <a
-                href={d.pdfUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="text-primary underline-offset-2 hover:underline"
-              >
-                Open PDF
-              </a>
-            ) : null}
-          </li>
-        ))}
-      </ul>
-      <RangePager
-        offset={data.offset}
-        pageSize={data.pageSize}
-        shown={data.documents.length}
-        total={data.total}
-        onOffset={setOffset}
-      />
-    </div>
   );
 }
 
