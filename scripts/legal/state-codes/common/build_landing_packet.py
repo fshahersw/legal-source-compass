@@ -53,8 +53,16 @@ def main():
     staged = os.path.join(root, 'staged')
     out = os.path.join(root, 'landing')
     os.makedirs(out, exist_ok=True)
-    stm = json.load(open(os.path.join(staged, 'manifest.json'), encoding='utf-8'))
+    raw_stm = json.load(open(os.path.join(staged, 'manifest.json'), encoding='utf-8'))
     cfg = json.load(open(a.config, encoding='utf-8')) if a.config else {}
+    pack_objects = raw_stm.get('objects') or []
+    skip_object_kinds = {'sections_jsonl_gzip', 'source_metadata', 'parse_report', 'audit_report'}
+    if raw_stm.get('intake_manifest'):
+        stm = raw_stm['intake_manifest']
+        file_entries = [o for o in pack_objects if o.get('kind') not in skip_object_kinds]
+    else:
+        stm = raw_stm
+        file_entries = stm.get('files') or [o for o in pack_objects if o.get('kind') not in skip_object_kinds]
     levels_seen = []
     if 'jurisdiction' not in stm:
         for r in jsonl_gz(os.path.join(staged, 'sections.jsonl.gz')):
@@ -98,18 +106,42 @@ def main():
             items = fallback
         return items[:50]
 
-    originals = {f['sha256']: f for f in stm['files'] if f['kind'] in ORIGINAL_KINDS}
+    def object_path(entry):
+        rel = entry['path']
+        for base in (root, staged):
+            candidate = os.path.join(base, rel)
+            if os.path.exists(candidate):
+                return candidate
+        return os.path.join(root, rel)
+
+    def entry_url(entry):
+        if entry.get('url'):
+            return entry['url']
+        for src in entry.get('sources') or []:
+            if src.get('url'):
+                return src['url']
+        return None
+
+    originals = {f['sha256']: f for f in file_entries if f.get('kind') in ORIGINAL_KINDS}
     files = dict(originals)
-    files.update({f['sha256']: dict(f, kind='unit_text_derivative') for f in stm['files'] if f['kind'].endswith('_derivative')})
+    files.update(
+        {
+            f['sha256']: dict(f, kind='unit_text_derivative')
+            for f in file_entries
+            if f.get('kind') == 'unit_text_derivative' or str(f.get('kind', '')).endswith('_derivative')
+        }
+    )
     objects = []
     original_sources = {}
     for sha, f in originals.items():
         if True:
-            src = sources_for(sha, [{'source_url': f['url'], 'retrieved_at': f['retrieved_at'],
-                                     'retrieval_method': 'publisher_bulk_download', 'proxy': None, 'http_status': 200}])
+            fb_url = entry_url(f)
+            fb_method = 'publisher_page' if fb_url and '.aspx' in fb_url.lower() else 'publisher_bulk_download'
+            src = sources_for(sha, [{'source_url': fb_url, 'retrieved_at': f.get('retrieved_at'),
+                                     'retrieval_method': fb_method, 'proxy': None, 'http_status': 200}] if fb_url else None)
             original_sources[sha] = src
             objects.append({'sha256': sha, 'bytes': f['bytes'], 'kind': 'publisher_original',
-                            'path': os.path.join(root, f['path']), 'sources': src})
+                            'path': object_path(f), 'sources': src})
 
     units, sections, gaps = {}, [], []
     derivative_remap = {}
@@ -119,13 +151,13 @@ def main():
     for r in jsonl_gz(os.path.join(staged, 'sections.jsonl.gz')):
         s = r['source']
         orig, member, deriv = s['receipt_sha256'], s.get('member'), s['derivative_sha256']
-        ukey = member or s['url'].rstrip('/').rsplit('/', 1)[-1] or ('unit-' + deriv[:16])
+        ukey = s.get('unit_key') or member or s['url'].rstrip('/').rsplit('/', 1)[-1] or ('unit-' + deriv[:16])
         ukey = re.sub(r'[^A-Za-z0-9._:-]', '_', ukey)
         ident = (orig, member, deriv)
         if ident not in units:
             if orig not in original_sources or deriv not in files:
                 raise SystemExit('unit without registered original/derivative: %r' % (ident,))
-            dpath = os.path.join(root, files[deriv]['path'])
+            dpath = object_path(files[deriv])
             if not os.path.exists(dpath):
                 dpath = os.path.join(staged, files[deriv]['path'])
             raw = open(dpath, 'rb').read()
@@ -157,7 +189,7 @@ def main():
         currency = {'basis': base, 'statement': cur.get('statement') or '', 'through_date': through, 'edition': r.get('edition')}
         if unit['currency'] is None:
             unit['currency'] = currency
-        path = r['native_id']
+        path = r.get('intake_citation_path') or r['native_id']
         if not regex.match(path):
             m = re.match(r'^(.*):([2-9][0-9]*)$', path)
             if m and ':occurrence:' not in path:
