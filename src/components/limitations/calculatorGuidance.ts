@@ -39,7 +39,7 @@ export type GuidedDateField = {
 type ReposeRuleCalculation = {
   mode: "accrual_repose_min";
   reposeYears: number;
-  reposeTrigger: "last_act_or_omission" | "act_or_omission";
+  reposeTrigger: "last_act_or_omission" | "act_or_omission" | "first_delivery";
 };
 
 function reposeCalculation(rule: LimitationRule | null): ReposeRuleCalculation | null {
@@ -48,7 +48,8 @@ function reposeCalculation(rule: LimitationRule | null): ReposeRuleCalculation |
     calculation?.mode !== "accrual_repose_min" ||
     typeof calculation.reposeYears !== "number" ||
     (calculation.reposeTrigger !== "last_act_or_omission" &&
-      calculation.reposeTrigger !== "act_or_omission")
+      calculation.reposeTrigger !== "act_or_omission" &&
+      calculation.reposeTrigger !== "first_delivery")
   )
     return null;
   return {
@@ -68,7 +69,9 @@ export function reposeCapLabel(rule: LimitationRule | null): string | null {
   const trigger =
     calculation.reposeTrigger === "last_act_or_omission"
       ? "the last act or omission"
-      : "the act or omission complained of";
+      : calculation.reposeTrigger === "first_delivery"
+        ? "first delivery of the product to a purchaser or lessee"
+        : "the act or omission complained of";
   return `Outer repose cap: ${calculation.reposeYears} calendar years from ${trigger}.`;
 }
 
@@ -93,19 +96,27 @@ export function guidedDateFields(
     const triggerLabel =
       repose.reposeTrigger === "last_act_or_omission"
         ? "Date of the last act or omission"
-        : "Date of the act or omission complained of";
+        : repose.reposeTrigger === "first_delivery"
+          ? "Date of first delivery to a purchaser or lessee"
+          : "Date of the act or omission complained of";
     const triggerHelp =
       repose.reposeTrigger === "last_act_or_omission"
         ? `For this ${claim} claim, identify the last act or omission legally attributable to this defendant. A later event is not assumed to qualify or restart repose.`
-        : `For this ${claim} claim, identify the act or omission complained of for this defendant. Do not substitute the latest event or assume a later event resets repose.`;
+        : repose.reposeTrigger === "first_delivery"
+          ? `For this ${claim} claim, enter the date the product was first delivered to its initial purchaser or lessee, as the cited repose provision defines it. Later resales do not restart repose.`
+          : `For this ${claim} claim, identify the act or omission complained of for this defendant. Do not substitute the latest event or assume a later event resets repose.`;
+    const fromDeath = rule.accrualBasis === "death";
     return [
       {
         key: "accrualDate",
-        label: "Confirmed accrual date",
-        help: "Enter the accrual date established under the cited limitations rule. This is separate from the repose act or omission date.",
+        label: fromDeath ? "Date of death" : "Confirmed accrual date",
+        help: fromDeath
+          ? "Use the death date required by this wrongful-death rule. The repose date below is separate."
+          : "Enter the accrual date established under the cited limitations rule. This is separate from the repose date.",
       },
       {
-        key: "reposeActDate",
+        key:
+          repose.reposeTrigger === "first_delivery" ? "firstProductDeliveryDate" : "reposeActDate",
         label: triggerLabel,
         help: triggerHelp,
       },
