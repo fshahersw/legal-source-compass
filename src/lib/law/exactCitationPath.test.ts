@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   exactCitationPaths,
   onlyExactStoredSection,
+  lastHyphenSegment,
   sectionTokenAfterSec,
   statuteNativeId,
   storedSectionNumbers,
@@ -43,6 +44,39 @@ describe("exact statute citation paths", () => {
     expect(exactCitationPaths("WI", "Wis. Stat. § 893.54(1m)(a)")).toEqual(["893.54"]);
     expect(exactCitationPaths("FL", "Fla. Stat. § 95.11")?.includes("95.1")).toBe(false);
     expect(exactCitationPaths("MI", "MCL 600.5805")?.includes("600.580")).toBe(false);
+  });
+
+  it("links Delaware 8119 when that number is the only last path segment", () => {
+    expect(exactCitationPaths("DE", "10 Del. C. § 8119")).toEqual(["8119"]);
+    expect(exactCitationPaths("DE", "10 Del. C. § 8119")?.includes("10")).toBe(false);
+    expect(exactCitationPaths("DE", "10 Del. C. §§ 8119, 8121, 8127")).toEqual([
+      "8119",
+      "8121",
+      "8127",
+    ]);
+    expect(exactCitationPaths("DE", "10 Del. C. § 8131(a)")).toEqual(["8131"]);
+    expect(lastHyphenSegment("10-81-8119")).toBe("8119");
+    expect(tokenEqualsStoredSection("8119", "10-81-8119", [])).toBe(true);
+    expect(
+      onlyExactStoredSection("8119", [{ citationPath: "10-81-8119", sectionNumbers: ["8119"] }])
+        ?.citationPath,
+    ).toBe("10-81-8119");
+    expect(
+      onlyExactStoredSection("8121", [
+        { citationPath: "10-81-8121", sectionNumbers: ["8121"] },
+        { citationPath: "15-81-8121", sectionNumbers: ["8121"] },
+      ]),
+    ).toBeNull();
+  });
+
+  it("links Alaska 09.10.070 without the parenthetical", () => {
+    expect(exactCitationPaths("AK", "Alaska Stat. § 09.10.070(a)(2)")).toEqual(["09.10.070"]);
+    expect(exactCitationPaths("AK", "Alaska Stat. § 09.10.070(a)(2)")?.includes("09.10")).toBe(
+      false,
+    );
+    expect(exactCitationPaths("AK", "Alaska Stat. § 09.10.070(a)(2)")?.includes("070")).toBe(false);
+    expect(statuteNativeId("AK", "09.10.070")).toBe("AK:09.10.070");
+    expect(tokenEqualsStoredSection("09.10.070", "09.10.070", ["09.10.070"])).toBe(true);
   });
 
   it("reads Virginia 8.01-243 without the parenthetical or the next decimal section", () => {

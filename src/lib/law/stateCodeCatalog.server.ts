@@ -701,8 +701,8 @@ function projectedStatuteSection(
 /**
  * Public sections named by a limitations citation.
  * A token whose native id is `ST:<token>` is that section.
- * Any other token links only when it equals the last path segment after `sec_`
- * or the stored section number, and exactly one published section matches.
+ * Any other token links only when it equals the last path segment after `sec_`,
+ * the final hyphen segment, or the stored section number, and exactly one published section matches.
  */
 export async function publicStatuteSections(
   state: string,

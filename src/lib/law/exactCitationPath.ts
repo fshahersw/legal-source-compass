@@ -15,6 +15,7 @@ export function exactCitationPaths(state: string, citation: string): string[] | 
     ...new Set([
       ...(hyphenPaths(text) ?? []),
       ...(dottedHyphenPaths(text) ?? []),
+      ...(sectionSignPaths(text) ?? []),
       ...(DOTTED_PATH_STATES.has(usps) ? (dottedPaths(text) ?? []) : []),
     ]),
   ]);
@@ -57,6 +58,28 @@ function dottedHyphenPaths(citation: string): string[] | null {
   return paths.length ? paths : null;
 }
 
+/**
+ * Section numbers written after a section sign.
+ * A bare number such as § 8119, or a multi-part number such as § 09.10.070.
+ * A parenthetical is not part of the number. A one- or two-digit session-law section is not taken.
+ */
+function sectionSignPaths(citation: string): string[] | null {
+  const paths: string[] = [];
+  for (const match of citation.matchAll(/§§?\s*([^;]+)/g)) {
+    const chunk = match[1] ?? "";
+    for (const raw of chunk.split(",")) {
+      const token = raw
+        .trim()
+        .replace(/\s+/g, "")
+        .replace(/(?:\([^)]*\))+$/g, "")
+        .replace(/\.$/, "");
+      if (!token || paths.includes(token)) continue;
+      if (/^\d{3,}$/.test(token) || /^\d{1,2}(?:\.\d{2,3}){2,}$/.test(token)) paths.push(token);
+    }
+  }
+  return paths.length ? paths : null;
+}
+
 function hyphenPaths(citation: string): string[] | null {
   const paths: string[] = [];
   const re = /(?<!\d\.)\b(\d{1,2}[A-Z]?(?:-\d{1,4}[A-Za-z]?){1,8}(?:\.\d{1,4})?)(?!\d)/g;
@@ -92,6 +115,15 @@ function oklahomaPaths(citation: string): string[] | null {
   return paths.length ? paths : null;
 }
 
+/** The final hyphen piece of a path such as `10-81-8119`. Slash paths stay with the sec_ rule. */
+export function lastHyphenSegment(citationPath: string): string | null {
+  if (citationPath.includes("/")) return null;
+  const pieces = citationPath.split("-");
+  if (pieces.length < 2) return null;
+  const segment = pieces[pieces.length - 1] ?? "";
+  return segment || null;
+}
+
 /** Last path segment after a literal `sec_` prefix. A `secs_` range is not a section token. */
 export function sectionTokenAfterSec(citationPath: string): string | null {
   const segment = citationPath.split("/").pop() ?? "";
@@ -116,8 +148,9 @@ export function storedSectionNumbers(hierarchy: unknown): string[] {
 }
 
 /**
- * True when the citation token equals the path segment after `sec_`
- * or equals a stored section number. A heading, a chapter number, or a nearby number does not match.
+ * True when the citation token equals the path segment after `sec_`,
+ * the final hyphen segment, or a stored section number.
+ * A heading, a chapter number, or a nearby number does not match.
  */
 export function tokenEqualsStoredSection(
   token: string,
@@ -126,6 +159,7 @@ export function tokenEqualsStoredSection(
 ): boolean {
   if (!token) return false;
   if (sectionTokenAfterSec(citationPath) === token) return true;
+  if (lastHyphenSegment(citationPath) === token) return true;
   return sectionNumbers.includes(token);
 }
 
