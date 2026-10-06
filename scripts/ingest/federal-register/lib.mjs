@@ -125,6 +125,22 @@ export function compareNewestFirst(a, b) {
  * historical rows: the collection is continued daily, so a row never claims that later
  * documents are absent from the collection; only its own collection date bounds it.
  */
+export const GOVINFO_LABEL = 'Official GovInfo edition (not downloaded)';
+
+/**
+ * Official edition locator, only from the retained API `pdf_url` (never derived from a pattern:
+ * the publisher lists no PDF for some early documents, e.g. 1994). Last entry of detail.links,
+ * the position the 2026-10-06 carry-over used.
+ */
+export function govinfoLink(d) {
+  const url = d.pdf_url;
+  if (typeof url !== 'string' || !url) return null;
+  let host;
+  try { host = new URL(url).hostname; } catch { return null; }
+  if (host !== 'www.govinfo.gov') return null;
+  return { url, label: GOVINFO_LABEL };
+}
+
 export function qualification(from, through, collected) {
   return `Federal Register documents published ${from} to ${through} as listed by the federalregister.gov API and GovInfo when the index was collected on ${collected}. Later publication days are added from daily collections; each document's own "Index collected" fact gives its collection date. CFR parts, agencies, docket identifiers and RINs are the ones the API lists for each document; a correction issued after a document's collection date is not included in it. A document that cites a CFR part may propose, amend, correct or merely discuss it: read the document.`;
 }
@@ -171,9 +187,13 @@ export function projectRecord(d, { id, ordinal, collected, coverage }) {
     links.push({ url: `#federal-register?cfr_title=${r.title}&cfr_part=${r.part}`, label: `Other documents citing ${cfrLabel(r)}` });
   }
   const qual = qualification(coverage.from, coverage.through, collected);
+  // Search text is built before the GovInfo link is appended: the enriched rows (carry-over from
+  // regulatory_backfill) carry that link in detail.links only, and the label is not search content.
+  const text = [title, subtitle, ...facts.flat(), '', ...links.map((l) => l.label), qual].join(' ');
+  const govinfo = govinfoLink(d);
+  if (govinfo) links.push(govinfo);
   const item = { id, cells, links: [links[0]], title, badges, subtitle };
   const detail = { facts, links, title, sections: [], subtitle, qualification: qual };
-  const text = [title, subtitle, ...facts.flat(), '', ...links.map((l) => l.label), qual].join(' ');
   const filters = {
     type: [d.type],
     year: [d.publication_date.slice(0, 4)],
