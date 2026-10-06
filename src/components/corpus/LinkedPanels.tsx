@@ -7,8 +7,6 @@ import { useCorpus } from "@/lib/corpus/store";
 import { stateByUsps } from "@/lib/corpus/geo";
 import { UsMap } from "@/components/corpus/UsMap";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
-import { useJudgeMatcher } from "@/lib/external/useDirectory";
-import { surnameLetter } from "@/lib/external/directoryTree";
 import { externalHref } from "@/lib/external/href";
 
 function Box({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
@@ -73,26 +71,6 @@ export function RelatedDockets({ by, id }: { by: "court" | "mdl"; id: string }) 
           <button disabled={offset + 50 >= total} onClick={() => setOffset(offset + 50)} className="underline disabled:opacity-40">Next</button>
         </div>
       ) : null}
-    </Box>
-  );
-}
-
-/** Judge names printed in an MDL record; link only on a unique exact profile match. */
-export function MdlJudges({ raw }: { raw: Record<string, unknown> | null }) {
-  const match = useJudgeMatcher();
-  const names = useMemo(() => {
-    const s = JSON.stringify(raw ?? {});
-    const out = new Set<string>();
-    for (const m of s.matchAll(/\\?"judge_name_as_printed\\?":\s*\\?"([^"\\]+)/g)) out.add(m[1]!.trim());
-    return [...out].filter(Boolean);
-  }, [raw]);
-  if (!names.length) return null;
-  return (
-    <Box title="Judges named on this MDL" hint="Linked only when exactly one judge profile has that exact name">
-      <div className="flex flex-wrap gap-x-4 gap-y-1 text-[13px]">{names.map((n) => {
-        const id = match?.(n);
-        return id ? <Link key={n} to="/judges/$id" params={{ id }} className="underline">{n}</Link> : <Link key={n} to="/people" search={{ kind: "judges", letter: surnameLetter(n), offset: 0 }} className="underline decoration-dotted" title="No single exact profile match; opens the A–Z index">{n}</Link>;
-      })}</div>
     </Box>
   );
 }

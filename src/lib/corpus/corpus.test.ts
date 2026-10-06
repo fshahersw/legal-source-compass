@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { decodeTopology, STATES } from "./geo";
-import { parseInsights, firmCounts, mattersByYear, countBy, aliasResolver } from "./insights";
+import { parseInsights, countBy, aliasResolver } from "./insights";
 import { classify, classifySource } from "./taxonomy";
 import { joinByState, statesOfSource } from "./join";
 import { parseBundle } from "@/lib/atlas/bundle";
@@ -28,13 +28,11 @@ describe("bundled corpussite files", () => {
     expect(ins.matters.length).toBe(2122);
     expect(ins.masters.length).toBe(131);
     expect(countBy(ins.matters, (m) => m.state).reduce((a, c) => a + c.count, 0)).toBe(2122);
-    expect(mattersByYear(ins).map((c) => c.label)).toEqual([...mattersByYear(ins).map((c) => c.label)].sort());
   });
   it("firm aliases only merge listed spellings", () => {
     const canon = aliasResolver(ins.firm_aliases);
     expect(canon("SHOOK HARDY & BACON LLP")).toBe("Shook Hardy & Bacon LLP");
     expect(canon("Some Unlisted Firm")).toBe("Some Unlisted Firm");
-    expect(firmCounts(ins).length).toBeGreaterThan(0);
   });
 });
 

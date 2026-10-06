@@ -12,7 +12,7 @@ const str = (v: unknown) => (typeof v === "string" && v.length <= 120 ? v : unde
 
 export const Route = createFileRoute("/sources/registry")({
   validateSearch: (s: Record<string, unknown>): S => ({ j: str(s["j"]), layer: str(s["layer"]), cat: str(s["cat"]), q: str(s["q"]) }),
-  head: () => pageHead("Source registry", "9,348 official and secondary legal sources organized by jurisdiction, layer and record category."),
+  head: () => pageHead("Source registry", "Official and secondary legal sources organized by jurisdiction, layer and record category."),
   component: RegistryPage,
 });
 

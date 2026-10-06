@@ -56,39 +56,3 @@ export function exportCitedPath(nodes: readonly LegalRecord[], edges: readonly L
     return `${title} — ${citation}\n   ${LEGAL_ENUMS.edge_type[edge.type]} (${direction}); evidence dated ${edge.date}: [Relationship source](<${encodeURI(edge.source_url).replaceAll(">", "%3E")}>)`;
   }).join("\n");
 }
-
-export type CourtAuthority = {
-  id: string;
-  level: keyof typeof LEGAL_ENUMS.court_level;
-  jurisdiction: keyof typeof LEGAL_ENUMS.jurisdiction;
-  circuit_id: string | null;
-  parent_ids: string[];
-};
-export type PrecedentWeight = { weight: "binding" | "persuasive" | "undetermined"; reason: string };
-/** Structural authority only. Subject matter, publication status and subsequent treatment still matter. */
-export function precedentWeight(cited: CourtAuthority | null, citing: CourtAuthority | null,
-  lawScope: keyof typeof LEGAL_ENUMS.law_scope, precedential: boolean | null): PrecedentWeight {
-  if (!cited || !citing || lawScope === "unknown" || precedential === null || cited.jurisdiction === "UNKNOWN" || citing.jurisdiction === "UNKNOWN") return { weight: "undetermined", reason: "Court, governing law or precedential status is not recorded." };
-  if (lawScope === "state" && citing.jurisdiction === "US") return { weight: "undetermined", reason: "The governing state's law must be identified before comparing state authority in a federal case." };
-  if (!precedential) return { weight: "persuasive", reason: "The source marks this opinion nonprecedential." };
-  if (lawScope === "federal" && cited.level === "supreme") return { weight: "binding", reason: "Supreme Court authority on federal law, subject to the holding and subsequent treatment." };
-  if (lawScope === "federal" && cited.level === "circuit" && ["circuit", "district"].includes(citing.level)
-      && !!cited.circuit_id && cited.circuit_id === citing.circuit_id) return { weight: "binding", reason: "Precedential circuit authority within the same circuit; panel and en banc rules still apply." };
-  if (lawScope === "state" && cited.level === "state_supreme" && cited.jurisdiction === citing.jurisdiction) return { weight: "binding", reason: "The state's highest court controls its own state law." };
-  if (lawScope === "state" && cited.level === "state_appellate" && citing.level === "state_trial" && citing.parent_ids.includes(cited.id)) return { weight: "binding", reason: "Recorded state appellate hierarchy for this trial court, subject to state-specific rules." };
-  return { weight: "persuasive", reason: "No controlling relationship is established by the recorded hierarchy and governing law." };
-}
-
-export function authorityTree(courtId: string, courts: ReadonlyMap<string, CourtAuthority>): { id: string; depth: number; cycle: boolean }[] {
-  const result: { id: string; depth: number; cycle: boolean }[] = [];
-  const visit = (id: string, depth: number, branch: Set<string>) => {
-    if (depth > 20) return;
-    const cycle = branch.has(id);
-    result.push({ id, depth, cycle });
-    if (cycle) return;
-    const next = new Set(branch).add(id);
-    for (const parent of courts.get(id)?.parent_ids ?? []) visit(parent, depth + 1, next);
-  };
-  visit(courtId, 0, new Set());
-  return result;
-}

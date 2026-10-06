@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { EntityType, edgeNeedsReview, legalEdge, legalRecord, recordKey } from "./schema";
 import type { LegalEdge, LegalRecord } from "./schema";
 import { auditAcceptance, coverageByYear, schemaRegressions, schemaReport } from "./audit";
-import { exportCitedPath, precedentWeight, typedNeighbors, visibleEdge } from "./graph";
+import { exportCitedPath, typedNeighbors, visibleEdge } from "./graph";
 
 const court = (): LegalRecord => legalRecord.parse({ id: "njd", type: "court", id_authority: "courtlistener", title: "District of New Jersey", title_source: "api", jurisdiction: "US", court_id: "njd", date: "2026-10-02", date_type: "retrieved", source_url: "https://www.courtlistener.com/c/njd/", source_name: "CourtListener", licence: "Public Domain Mark 1.0", retrieved_at: "2026-10-02T12:00:00Z", version: "2026-09-30", confidence: 1, extraction_method: "bulk", identifiers: { courtlistener_court_id: "njd" }, attributes: {} });
 const caseRecord = (): LegalRecord => legalRecord.parse({ ...court(), id: "1234", type: "case", title: "Example case", date_type: "filed", date: "2001-03-02", identifiers: { courtlistener_docket_id: "1234" }, attributes: { text: "Filed in the District of New Jersey.", paragraphs: { court_id: "njd" } } });
@@ -63,14 +63,6 @@ describe("typed evidence graph", () => {
     expect(typedNeighbors(court(), [relation()], records).get("filed_in")?.[0]?.direction).toBe("incoming");
     expect(exportCitedPath([caseRecord(), court()], [relation()])).toContain("Relationship source");
     expect(() => exportCitedPath([court(), court()], [relation()])).toThrow("disconnected");
-  });
-  it("does not call district decisions binding or assert authority with unknown governing law", () => {
-    const njd = { id: "njd", jurisdiction: "US" as const, level: "district" as const, circuit_id: "ca3", parent_ids: ["ca3"] };
-    const ca3 = { ...njd, id: "ca3", level: "circuit" as const };
-    expect(precedentWeight(ca3, njd, "federal", true).weight).toBe("binding");
-    expect(precedentWeight(njd, njd, "federal", true).weight).toBe("persuasive");
-    expect(precedentWeight(ca3, { ...njd, circuit_id: "ca2" }, "federal", true).weight).toBe("persuasive");
-    expect(precedentWeight(ca3, njd, "unknown", true).weight).toBe("undetermined");
   });
 });
 describe("audit gates", () => {

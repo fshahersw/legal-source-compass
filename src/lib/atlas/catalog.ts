@@ -59,11 +59,6 @@ export function countField(rows: CatalogEntry[], key: "category" | "access_metho
   return [...m].map(([key, count]) => ({ key, count })).sort((a, b) => b.count - a.count);
 }
 
-/** Exact-URL overlap with the library; no normalisation beyond identity. */
-export function inLibrary(rows: CatalogEntry[], libraryUrls: Set<string>): number {
-  return rows.filter((r) => libraryUrls.has(r.url)).length;
-}
-
 /** Federal court id from an official uscourts.gov host, e.g. http://www.akd.uscourts.gov/ → "akd". Exact host pattern only. */
 export function uscourtsId(url: string): string | null {
   try {

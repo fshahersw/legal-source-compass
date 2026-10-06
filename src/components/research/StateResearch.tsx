@@ -18,7 +18,6 @@ import {
   courtStates,
   exportJson,
   stateComparisons,
-  type StateComparison,
 } from "@/lib/corpus/research";
 import { decodeTopology } from "@/lib/corpus/geo";
 import { control, Field, fmt, Panel, pct, Source, tableClass, type WorkbenchProps } from "./shared";
