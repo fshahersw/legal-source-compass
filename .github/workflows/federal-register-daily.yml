@@ -1,0 +1,58 @@
+name: Federal Register daily continuation
+
+# Federal Register publishes in the early morning US Eastern time; 16:00 UTC is after publication.
+on:
+  schedule:
+    - cron: "0 16 * * *"
+  workflow_dispatch:
+    inputs:
+      from:
+        description: "Optional first publication day to (re)read, YYYY-MM-DD. Default: three days before the newest held date."
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: federal-register-daily
+  cancel-in-progress: false
+
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      EXTERNAL_SUPABASE_URL: ${{ secrets.EXTERNAL_SUPABASE_URL }}
+      EXTERNAL_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.EXTERNAL_SUPABASE_SERVICE_ROLE_KEY }}
+      FR_PRIVATE_DIR: ${{ runner.temp }}/federal-register
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Require repository secrets
+        run: |
+          missing=0
+          for name in EXTERNAL_SUPABASE_URL EXTERNAL_SUPABASE_SERVICE_ROLE_KEY; do
+            if [ -z "${!name}" ]; then echo "::error::Repository secret $name is not set"; missing=1; fi
+          done
+          exit $missing
+      - name: Unit tests
+        run: node --test scripts/ingest/federal-register/lib.test.mjs
+      - name: Acquire, land, project and check the day counts
+        # Fails the job if a day's API count, acquired pages and projected rows disagree, or if
+        # any intake/projection readback verification fails.
+        run: |
+          set -euo pipefail
+          args=()
+          if [ -n "${{ inputs.from }}" ]; then args+=(--from "${{ inputs.from }}"); fi
+          node scripts/ingest/federal-register/run.mjs daily "${args[@]}"
+      - name: Upload checkpoint (no credentials, no document bodies)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: federal-register-checkpoint
+          path: ${{ runner.temp }}/federal-register/checkpoint.json
+          if-no-files-found: ignore
+          retention-days: 30
