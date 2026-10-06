@@ -22,9 +22,6 @@ def run(cmd: list[str], *, cwd: pathlib.Path | None = None) -> None:
 
 
 def ky_section_plan(root: pathlib.Path) -> int:
-    cache = root / "extract" / "section-plan-count.json"
-    if cache.exists():
-        return int(json.loads(cache.read_text(encoding="utf8"))["expected"])
     sys.path.insert(0, str(ROOT / "ky"))
     sys.path.insert(0, str(ROOT / "common"))
     import parse_index  # noqa: E402
@@ -53,6 +50,7 @@ def ky_section_plan(root: pathlib.Path) -> int:
         chapter = parse_index.parse_chapter((root / by_url[url]["stored_path"]).read_bytes())
         for s in chapter["sections"]:
             seen.add(base + s["href"])
+    cache = root / "extract" / "section-plan-count.json"
     cache.parent.mkdir(parents=True, exist_ok=True)
     cache.write_text(json.dumps({"expected": len(seen)}, indent=2) + "\n", encoding="utf8")
     return len(seen)
