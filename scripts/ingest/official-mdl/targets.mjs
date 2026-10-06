@@ -36,7 +36,7 @@ export const MATTERS = {
       { id: 'paed-3163-orders', role: 'orders_table', family: 'paed-orders-table', url: 'https://www.paed.uscourts.gov/mdl/mdl3163/orders' },
       { id: 'paed-3163-landing', role: 'mdl_page', family: 'index-links', url: 'https://www.paed.uscourts.gov/mdl/mdl3163' },
     ],
-    index_pages: [],
+    index_pages: ['paed-mdl-hub'],
   },
   '3185': {
     name: 'In re Cognizant Technology Solutions Corporation and TriZetto Provider Solutions, LLC, Data Breach Security Litigation', court_id: 'moed', host: 'www.moed.uscourts.gov', tier: 1,
@@ -54,6 +54,17 @@ export const MATTERS = {
     case_number: null, pages: [], index_pages: ['jpml-panel-orders'],
     note: 'No S.D. Cal. MDL page found: the court site menu is ASP.NET postback only, search finds none, and judge pages sit under /Judges/, which robots.txt Disallows for all crawlers.',
   },
+  // D.N.J. MDL pages linked from njd-mdl-cases (not in the tier-1 Seeger focus set).
+  '2750': { name: 'In re Invokana (Canagliflozin) Products Liability Litigation', court_id: 'njd', host: 'www.njd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2750', pages: [{ id: 'njd-2750-main', role: 'mdl_page', family: 'njd-body', url: 'https://www.njd.uscourts.gov/invokana-litigation' }], index_pages: [] },
+  '2418': { name: 'In re Plavix Products Liability and Marketing Litigation', court_id: 'njd', host: 'www.njd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2418', pages: [{ id: 'njd-2418-main', role: 'mdl_page', family: 'njd-body', url: 'https://www.njd.uscourts.gov/plavix-product-liability-and-marketing-litigation' }], index_pages: [] },
+  '2789': { name: 'In re Proton-Pump Inhibitor Products Liability Litigation', court_id: 'njd', host: 'www.njd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2789', pages: [{ id: 'njd-2789-main', role: 'mdl_page', family: 'njd-body', url: 'https://www.njd.uscourts.gov/proton-pump-mdl-2789' }], index_pages: [] },
+  '2875': { name: 'In re Valsartan Products Liability Litigation', court_id: 'njd', host: 'www.njd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2875', pages: [{ id: 'njd-2875-main', role: 'mdl_page', family: 'njd-body', url: 'https://www.njd.uscourts.gov/valsartan-mdl-2875' }], index_pages: [] },
+  '2904': { name: 'In re American Medical Collection Agency, Inc., Customer Data Security Breach Litigation', court_id: 'njd', host: 'www.njd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2904', pages: [{ id: 'njd-2904-main', role: 'mdl_page', family: 'njd-body', url: 'https://www.njd.uscourts.gov/american-medical-collection-agency-inc-customer-data-security-breach-litigation-2904' }], index_pages: [] },
+  '2921': { name: 'In re Allergan Biocell Textured Breast Implant Products Liability Litigation', court_id: 'njd', host: 'www.njd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2921', pages: [{ id: 'njd-2921-main', role: 'mdl_page', family: 'njd-body', url: 'https://www.njd.uscourts.gov/allergan-biocell-textured-breast-implant-products-liability-litigation' }], index_pages: [] },
+  '2973': { name: 'In re Elmiron (Pentosan Polysulfate Sodium) Products Liability Litigation', court_id: 'njd', host: 'www.njd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2973', pages: [{ id: 'njd-2973-main', role: 'mdl_page', family: 'njd-body', url: 'https://www.njd.uscourts.gov/elmiron-pentosan-polysulfate-sodium-products-liability-litigation' }], index_pages: [] },
+  '3055': { name: 'In re Samsung Customer Data Security Breach Litigation', court_id: 'njd', host: 'www.njd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 3055', pages: [{ id: 'njd-3055-main', role: 'mdl_page', family: 'njd-body', url: 'https://www.njd.uscourts.gov/samsung-customer-data-security-breach-litigation' }], index_pages: [] },
+  '3080': { name: 'In re Insulin Pricing Litigation', court_id: 'njd', host: 'www.njd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 3080', pages: [{ id: 'njd-3080-main', role: 'mdl_page', family: 'njd-body', url: 'https://www.njd.uscourts.gov/insulin-pricing-litigation' }], index_pages: [] },
+  '3113': { name: 'In re Apple Inc. Smartphone Antitrust Litigation', court_id: 'njd', host: 'www.njd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 3113', pages: [{ id: 'njd-3113-main', role: 'mdl_page', family: 'njd-body', url: 'https://www.njd.uscourts.gov/apple-inc-smartphone-antitrust-litigation' }], index_pages: [] },
 };
 
 // Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
@@ -61,6 +72,7 @@ export const INDEX_PAGES = {
   'njd-mdl-cases': { id: 'njd-mdl-cases', role: 'court_mdl_index', family: 'index-links', url: 'https://www.njd.uscourts.gov/mdl-cases' },
   'ilnd-mdl-index': { id: 'ilnd-mdl-index', role: 'court_mdl_index', family: 'index-links', url: 'https://www.ilnd.uscourts.gov/mdl.aspx' },
   'moed-mdl-index': { id: 'moed-mdl-index', role: 'court_mdl_index', family: 'index-links', url: 'https://www.moed.uscourts.gov/mdl-multidistrict-litigation-cases' },
+  'paed-mdl-hub': { id: 'paed-mdl-hub', role: 'court_mdl_index', family: 'index-links', url: 'https://www.paed.uscourts.gov/mdl' },
   // JPML lists only the CURRENT hearing session's orders here (older PDFs stay on the site under predictable file names, see build-jpml-queue.mjs).
   'jpml-panel-orders': { id: 'jpml-panel-orders', role: 'jpml_panel_orders', family: 'jpml-panel-orders', url: 'https://www.jpml.uscourts.gov/panel-orders' },
 };
