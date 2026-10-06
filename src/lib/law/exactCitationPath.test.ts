@@ -159,6 +159,27 @@ describe("exact statute citation paths", () => {
     expect(statuteNativeId("NV", "41A.097")).toBe("NV:41A.097");
   });
 
+  it("reads Kentucky 413.140 and 413.120 as separate sections", () => {
+    expect(exactCitationPaths("KY", "Ky. Rev. Stat. § 413.140(1)(a)")).toEqual(["413.140"]);
+    expect(exactCitationPaths("KY", "Ky. Rev. Stat. § 413.140(1)(a)")?.includes("413.14")).toBe(
+      false,
+    );
+    expect(exactCitationPaths("KY", "Ky. Rev. Stat. § 413.140(1)(a)")?.includes("413.120")).toBe(
+      false,
+    );
+    expect(exactCitationPaths("KY", "Ky. Rev. Stat. § 413.120(13)")).toEqual(["413.120"]);
+    expect(exactCitationPaths("KY", "Ky. Rev. Stat. § 413.120(13)")?.includes("413.12")).toBe(
+      false,
+    );
+    expect(
+      onlyExactStoredSection("413.140", [
+        { citationPath: "413.140", sectionNumbers: ["413.140"] },
+        { citationPath: "413.120", sectionNumbers: ["413.120"] },
+      ])?.citationPath,
+    ).toBe("413.140");
+    expect(statuteNativeId("KY", "413.140")).toBe("KY:413.140");
+  });
+
   it("reads Oregon 12.110 without the parenthetical", () => {
     expect(exactCitationPaths("OR", "ORS 12.110(1)")).toEqual(["12.110"]);
     expect(exactCitationPaths("OR", "ORS 12.110(1)")?.includes("12.11")).toBe(false);
