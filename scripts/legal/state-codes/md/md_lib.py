@@ -27,8 +27,7 @@ DASHES = ("\u2013", "\u2014", "\u2212")
 _DASH_CLASS = "".join(DASHES)
 # Default publisher marker: §14. (period ends the marker, not part of the section id).
 SECTION_MARK = re.compile(
-    r"§\s*([0-9][0-9A-Za-z." + _DASH_CLASS + r"\-]*)\s*\.(?:\s*(.*))?",
-    re.S,
+    r"§\s*([0-9][0-9A-Za-z." + _DASH_CLASS + r"\-]*)\s*\.(?:[ \t]*([^\n\r]*))?",
 )
 # Decimal sections where the trailing period is part of the section number (§15–1628.2).
 SECTION_MARK_DECIMAL = re.compile(
@@ -46,6 +45,7 @@ STATUS = re.compile(
     r"Not in effect|Superseded)\b",
     re.I,
 )
+_BODY_START = re.compile(r"^\([a-zA-Z0-9]")
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -122,8 +122,11 @@ def _match_section_marker(body: str) -> tuple[str, str, str]:
     match = SECTION_MARK.search(opening)
     if match and match.start() <= 2:
         section_number = normalize_section_number(match.group(1))
-        remainder = opening[match.end() :].strip()
         inline_heading = (match.group(2) or "").strip()
+        remainder = opening[match.end() :].strip()
+        if inline_heading and _BODY_START.match(inline_heading):
+            remainder = (inline_heading + "\n" + remainder).strip() if remainder else inline_heading
+            inline_heading = ""
         return section_number, remainder, inline_heading
     match = SECTION_MARK_NO_TRAILING_DOT.search(opening)
     if match and match.start() <= 2:
@@ -154,7 +157,7 @@ def parse_statute_html(html: str) -> dict:
         br.replace_with("\n")
     body = clean_lines(node.get_text("\n"))
     section_number, remainder, inline_heading = _match_section_marker(body)
-    if inline_heading and not remainder.startswith("("):
+    if inline_heading and not _BODY_START.match(inline_heading) and not remainder.startswith("("):
         heading = inline_heading
         text = remainder
     else:

@@ -418,6 +418,7 @@ def main(argv: list[str] | None = None) -> int:
                 "status_note": row.get("status_note") or row.get("status_label"),
                 "span": span,
                 "currency": currency,
+                "source_url": row["source"]["url"],
             }
         )
 

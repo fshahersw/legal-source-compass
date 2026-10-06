@@ -112,13 +112,14 @@ def main():
     results = []
     for s in sample:
         u = units[s["unit_key"]]
-        rec = arc.fetch(u["source_url"], accept="*/*", min_bytes=0)
-        row = {"citation_path": s["citation_path"], "citation": s["citation"], "url": u["source_url"], "live_status": rec["http_status"],
+        live_url = s.get("source_url") or u["source_url"]
+        rec = arc.fetch(live_url, accept="*/*", min_bytes=0)
+        row = {"citation_path": s["citation_path"], "citation": s["citation"], "url": live_url, "live_status": rec["http_status"],
                "route": rec["route"], "user_agent": rec.get("user_agent"), "ua_retry": rec.get("ua_retry", False)}
         if rec["state"] != "complete":
             row.update(ok=False, why="live fetch failed")
         else:
-            live = squash(live_text(arc.read(rec), u["source_url"]))
+            live = squash(live_text(arc.read(rec), live_url))
             number = s["hierarchy"][-1].get("number") or ""
             row["citation_ok"] = bool(number) and squash(number) in live
             heading = s.get("heading") or ""
