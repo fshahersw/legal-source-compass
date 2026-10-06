@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { caseBelongsToMdl, parseDocketDocument } from "./docketDocuments";
+import { casesFromMetadata, caseBelongsToMdl, parseDocketDocument } from "./docketDocuments";
 
 const sha = "a".repeat(64);
 const row = (cells: Record<string, unknown>) => ({
@@ -63,5 +63,27 @@ describe("docket documents", () => {
     expect(caseBelongsToMdl({ caseId: "paed-2:2001-md-03094", mdl: null }, "3094")).toBe(true);
     expect(caseBelongsToMdl({ caseId: "jpml-0:2024-md-03113", mdl: null }, "3094")).toBe(false);
     expect(caseBelongsToMdl({ caseId: "paed-2:2024-md-030941", mdl: null }, "3094")).toBe(false);
+  });
+  it("ties the unlabeled streamlined and JPML dockets to their MDL by the number in the exact case id", () => {
+    const streamlined = { caseId: "paed-2:2001-md-03094", mdl: null };
+    const jpml = { caseId: "jpml-0:2024-md-03113", mdl: null };
+    expect(caseBelongsToMdl(streamlined, "3094")).toBe(true);
+    expect(caseBelongsToMdl(jpml, "3113")).toBe(true);
+    expect(caseBelongsToMdl(jpml, "3094")).toBe(false);
+  });
+  it("reads the cases from the dataset's own metadata, with the case filter as a fallback", () => {
+    expect(
+      casesFromMetadata(
+        { by_case: { "a-1:2024-md-00001": { rows: 5, sheet_documents: 6, withheld_no_row: 1 } } },
+        [],
+      ),
+    ).toEqual([{ caseId: "a-1:2024-md-00001", rows: 5, sheetDocuments: 6, withheld: 1 }]);
+    expect(
+      casesFromMetadata({}, [
+        { name: "case_id", options: [{ value: "b-2:2025-md-00002", count: 7 }, { value: "" }] },
+        { name: "mdl", options: [{ value: "9", count: 1 }] },
+      ]),
+    ).toEqual([{ caseId: "b-2:2025-md-00002", rows: 7, sheetDocuments: null, withheld: null }]);
+    expect(casesFromMetadata(null, null)).toEqual([]);
   });
 });

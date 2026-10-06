@@ -19,16 +19,12 @@ import {
 import { PdfViewer } from "@/components/matters/PdfViewer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  AVAILABILITY_LABELS,
-  caseBelongsToMdl,
-  type DocketDocument,
-  type DocketDocumentsOverview,
-} from "@/lib/matters/docketDocuments";
+import { DocketSheetOnly } from "@/components/matters/DocketSheetDocuments";
+import { AVAILABILITY_LABELS, type DocketDocument } from "@/lib/matters/docketDocuments";
 import { documentCopies, formatBytes, type MatterDocument } from "@/lib/matters/documents";
 import { groupEntriesByMonth } from "@/lib/matters/entries";
 import {
-  getDocketDocumentsOverview,
+  getMatterDocketDocumentsSummary,
   getMatterEntryDocuments,
   getMatterTimeline,
   getMatterTimelineArchive,
@@ -252,32 +248,45 @@ function DocketSheetDocuments({
   );
 }
 
-/** What the docket-documents dataset holds for this matter, including what it withholds. */
+/** What the docket-documents dataset holds for this matter, counted live, including what it withholds. */
 function DocketDocumentsNote({ mdl }: { mdl: string }) {
-  const fn = useServerFn(getDocketDocumentsOverview);
+  const fn = useServerFn(getMatterDocketDocumentsSummary);
   const q = useQuery({
-    queryKey: ["docket-documents-overview"],
-    queryFn: () => fn(),
+    queryKey: ["matter-docket-documents-summary", mdl],
+    queryFn: () => fn({ data: { id: mdl } }),
     staleTime: 5 * 60_000,
   });
-  const overview: DocketDocumentsOverview | null | undefined = q.data;
-  const cases = overview?.cases.filter((c) => caseBelongsToMdl(c, mdl)) ?? [];
-  if (!overview || !cases.length) return null;
-  const rows = cases.reduce((n, c) => n + c.rows, 0);
-  const withheld = cases.reduce((n, c) => n + (c.withheld ?? 0), 0);
+  const sum = q.data;
+  if (!sum) return null;
   return (
-    <p className="text-[12px] text-muted-foreground">
-      Docket-sheet documents for this matter: {rows.toLocaleString()} listed under their entries (or
-      in the verified archive below). {withheld.toLocaleString()} documents are withheld under the
-      sealed/restricted rule; they are counted here and never listed.{" "}
-      <Link
-        to="/sources/docket-documents"
-        search={{ mdl }}
-        className="text-primary underline-offset-2 hover:underline"
-      >
-        Browse the documents
-      </Link>
-    </p>
+    <div className="space-y-1">
+      <p className="text-[12px] text-muted-foreground">
+        Docket-sheet documents for this matter: {sum.listed.toLocaleString()} listed (
+        {sum.stored.toLocaleString()} with a stored PDF)
+        {sum.unlisted > 0
+          ? `; ${sum.unlisted.toLocaleString()} cannot sit under an entry (the docket has no entries in the registry, or the document carries no entry number) and are listed below, the rest appear under the entry with the same number`
+          : ""}
+        .{" "}
+        {sum.withheld !== null
+          ? `${sum.withheld.toLocaleString()} documents are withheld under the sealed/restricted rule; they are counted and never listed. `
+          : ""}
+        <Link
+          to="/sources/docket-documents"
+          search={{ mdl }}
+          className="text-primary underline-offset-2 hover:underline"
+        >
+          Browse the documents
+        </Link>
+      </p>
+      {sum.unlisted > 0 ? (
+        <DocketSheetOnly
+          mdl={mdl}
+          scope="unlisted"
+          title="Documents on other dockets of this matter"
+          intro="Documents that cannot sit under a registry entry: dockets of this matter with no entries (for example a JPML or streamlined docket), and documents without an entry number."
+        />
+      ) : null}
+    </div>
   );
 }
 

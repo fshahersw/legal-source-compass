@@ -6,7 +6,10 @@ import { useMemo, useState, type ReactNode } from "react";
 import { CorpusRecordLink } from "@/components/corpus/DatasetBrowser";
 import { Chip, Fact, LinkOut, NotRecorded } from "@/components/matters/common";
 import { formatBytes } from "@/lib/matters/documents";
-import { getMatterDocumentsSummary } from "@/lib/matters/matters.functions";
+import {
+  getMatterDocketDocumentsSummary,
+  getMatterDocumentsSummary,
+} from "@/lib/matters/matters.functions";
 import { judgeLinkBasisLabel, judgePersonBasisLabel, orNotRecorded } from "@/lib/matters/overview";
 import { registryMetrics } from "@/lib/matters/registry";
 import type { MatterOverviewPayload } from "@/lib/matters/types";
@@ -73,13 +76,19 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
   });
   const m = registryMetrics(payload.registry);
   const live = payload.liveRegistry;
+  const docSumFn = useServerFn(getMatterDocketDocumentsSummary);
+  const docSum = useQuery({
+    queryKey: ["matter-docket-documents-summary", o.mdl],
+    queryFn: () => docSumFn({ data: { id: o.mdl } }),
+    staleTime: 5 * 60_000,
+  });
   const notInRegistry = "MDL not in the matter registry";
   const pdf = docs.data && docs.data.connected ? docs.data.summary : null;
   return (
     <div
       aria-label="Matter metrics"
       role="group"
-      className="grid divide-y divide-border border-b border-border sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-5 lg:divide-x"
+      className="grid divide-y divide-border border-b border-border sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-6 lg:divide-x"
     >
       <Metric
         label="JPML actions"
@@ -182,6 +191,34 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
         }
       />
       <Metric
+        label="Documents"
+        title="Docket-sheet documents of this matter's cases in the docket-documents dataset (DocketBird-tracked cases), counted live: listed rows, rows with a stored PDF, and documents withheld under the sealed/restricted rule, which are counted and never listed."
+        value={
+          docSum.data ? (
+            <>
+              {n(docSum.data.listed)}
+              <span className="font-normal text-muted-foreground"> listed</span>
+            </>
+          ) : docSum.isLoading ? (
+            <span className="font-normal text-muted-foreground">…</span>
+          ) : (
+            <NotRecorded />
+          )
+        }
+        note={
+          docSum.data
+            ? [
+                `${n(docSum.data.stored)} stored`,
+                docSum.data.withheld !== null ? `${n(docSum.data.withheld)} withheld` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")
+            : docSum.isLoading
+              ? undefined
+              : "No rows for this matter in the docket-documents dataset"
+        }
+      />
+      <Metric
         label="Verified PDF source records"
         title="Provider-native records in the private verified PDF archive for the master and JPML dockets: open (linkable) and held (no link). Duplicate bytes can appear under multiple source records."
         value={
@@ -208,7 +245,7 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
         }
       />
       {m?.lastCaptured || payload.master?.dateLastFiling || payload.master?.sourceCheckedAt ? (
-        <div className="flex flex-wrap gap-x-5 gap-y-0.5 border-t border-border px-4 py-1.5 text-[11px] text-muted-foreground sm:col-span-2 lg:col-span-5">
+        <div className="flex flex-wrap gap-x-5 gap-y-0.5 border-t border-border px-4 py-1.5 text-[11px] text-muted-foreground sm:col-span-2 lg:col-span-6">
           {payload.master?.dateLastFiling ? (
             <span>
               Last filing on the master docket{" "}
