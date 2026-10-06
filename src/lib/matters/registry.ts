@@ -17,20 +17,8 @@ import {
 } from "./cases";
 import { matterCaseKeys } from "./docketKeys";
 import type { CountSnapshot, MatterOverview } from "./overview";
+import { arr, cleaned, idStr, isObj, safeUint as num, str } from "./values";
 
-const isObj = (v: unknown): v is Record<string, unknown> =>
-  !!v && typeof v === "object" && !Array.isArray(v);
-const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
-const num = (v: unknown): number | null =>
-  typeof v === "number" && Number.isSafeInteger(v) && v >= 0 ? v : null;
-const idStr = (v: unknown): string | null =>
-  typeof v === "number" && Number.isFinite(v) ? String(v) : str(v);
-const arr = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
-const NOT_RECORDED_TEXT = /^(not recorded|—|-|none|n\/a|unknown)$/i;
-const cleaned = (v: unknown): string | null => {
-  const s = str(v);
-  return s && !NOT_RECORDED_TEXT.test(s) ? s : null;
-};
 
 export const REGISTRY_SCHEMA_PREFIX = "sw-matter-registry/";
 export const REGISTRY_MATTERS_DATASET = "sw_matters_v1";

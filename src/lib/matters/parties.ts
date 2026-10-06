@@ -5,6 +5,8 @@
  * rule, a party row whose name does not read as an organization, committee or role is counted, not listed.
  */
 
+import { isObj, str } from "./values";
+
 export type PartyKind = "firm" | "attorney" | "party";
 
 export type CounselRow = {
@@ -32,9 +34,6 @@ export type AppearanceRow = {
   matterId: string | null;
 };
 
-const isObj = (v: unknown): v is Record<string, unknown> =>
-  !!v && typeof v === "object" && !Array.isArray(v);
-const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
 const UNKNOWN_ROLE = /^(not (returned|retrieved)|not recorded|unknown)\b/i;
 
 function roleOf(v: unknown): string | null {

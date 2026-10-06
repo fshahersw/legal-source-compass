@@ -5,6 +5,7 @@
  * or a locator the registry holds). Held items are listed but never get a link, a hash or a size.
  */
 import { courtDocumentFilename, courtFilenameDate, parseDocketBirdDocumentId } from "./docketKeys";
+import { isObj, nonBlank as str, safeUint as num } from "./values";
 
 export const REGISTRY_SOURCES = [
   "docketbird",
@@ -37,11 +38,6 @@ export type RegistrySummary = {
   bySource: Record<string, number>;
 };
 
-const isObj = (v: unknown): v is Record<string, unknown> =>
-  !!v && typeof v === "object" && !Array.isArray(v);
-const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v : null);
-const num = (v: unknown): number | null =>
-  typeof v === "number" && Number.isSafeInteger(v) && v >= 0 ? v : null;
 
 /** Parse one registry row. Anything malformed is dropped; an unknown availability is HELD (fail closed). */
 export function parseRegistryDocument(raw: unknown): RegistryDocument | null {
@@ -154,7 +150,7 @@ export function deduplicateDocuments(docs: MatterDocument[]): MatterDocument[] {
   });
 }
 
-const copyIdentity = (copy: MatterDocumentCopy) =>
+export const copyIdentity = (copy: MatterDocumentCopy) =>
   `${copy.sourceSystem}|${copy.nativeCaseId ?? ""}|${copy.nativeDocumentId}`;
 
 /** Stable representative: provider, then exact native case and document ids. */

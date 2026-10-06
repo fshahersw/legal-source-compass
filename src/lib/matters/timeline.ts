@@ -8,19 +8,14 @@
  * document the projection marks sealed. Unknown values stay null and render "Not recorded".
  */
 import {
+  copyIdentity,
   documentCopies,
   type MatterDocument,
   type MatterDocumentCopy,
   type RegistrySource,
 } from "./documents";
+import { idStr, isObj, nonBlank as str, uint as int } from "./values";
 
-const isObj = (v: unknown): v is Record<string, unknown> =>
-  !!v && typeof v === "object" && !Array.isArray(v);
-const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v : null);
-const int = (v: unknown): number | null =>
-  typeof v === "number" && Number.isInteger(v) && v >= 0 ? v : null;
-const idStr = (v: unknown): string | null =>
-  typeof v === "number" && Number.isFinite(v) ? String(v) : str(v)?.trim() || null;
 const isoDate = (v: unknown): string | null => {
   const s = str(v);
   if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
@@ -323,9 +318,6 @@ export function buildArchiveIndex(docs: MatterDocument[], complete: boolean): Ar
   }
   return { byDocumentId, byDocumentCopy, byCaseEntry, size: docs.length, complete };
 }
-
-const copyIdentity = (copy: MatterDocumentCopy) =>
-  `${copy.sourceSystem}|${copy.nativeCaseId ?? ""}|${copy.nativeDocumentId}`;
 
 /** Retain the occurrence that proved this entry join as the visible primary identity. */
 function forOccurrence(doc: MatterDocument, copy: MatterDocumentCopy): MatterDocument {

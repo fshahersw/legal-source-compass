@@ -35,7 +35,6 @@ import {
   type DocumentSort,
   type MatterDocument,
   type RegistrySource,
-  type RegistrySummary,
 } from "./documents";
 import { pageFromEnd, parseActivityEntry, parseClEntry, type DocketEntry } from "./entries";
 import { parseMdlDetail } from "./overview";
@@ -104,10 +103,8 @@ import type {
   TimelineArchivePayload,
   TimelinePayload,
 } from "./types";
+import { isObj, str } from "./values";
 
-const isObj = (v: unknown): v is Record<string, unknown> =>
-  !!v && typeof v === "object" && !Array.isArray(v);
-const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
 
 /* ------------------------------------------------------------------ publication */
 
