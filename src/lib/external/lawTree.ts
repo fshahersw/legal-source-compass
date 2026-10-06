@@ -13,8 +13,12 @@ export const LAW_GROUP_LABELS: Record<LawGroup, string> = {
   other: "Other law records",
 };
 
-/** State code for state-specific law datasets (only where the dataset itself is one state's code). */
-export const STATE_DATASETS: Record<string, string> = { indiana_code: "IN", sd_statutes: "SD" };
+/** State code for state-specific law datasets (only where the dataset itself is one state's law). */
+export const STATE_DATASETS: Record<string, string> = {
+  indiana_code: "IN",
+  sd_statutes: "SD",
+  provider_laws: "NY",
+};
 
 export function lawGroup(id: string): LawGroup {
   if (id === "public_laws") return "statutes";

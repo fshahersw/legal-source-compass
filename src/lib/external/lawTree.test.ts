@@ -36,7 +36,7 @@ describe("law & safety folders", () => {
     }
     expect(lawGroup("federal_regulations_parts")).toBe("regulations");
     expect(lawGroup("public_laws")).toBe("statutes");
-    expect(lawGroup("provider_laws")).toBe("other");
+    expect(lawGroup("provider_laws")).toBe("state");
     expect(sectionOf("statutory_limitations_review")).toBe("law");
     expect(lawGroup("statutory_limitations_review")).toBe("reference");
     for (const id of [

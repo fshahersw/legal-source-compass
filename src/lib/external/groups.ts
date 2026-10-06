@@ -186,6 +186,9 @@ const SKIP = new Set([
   "snippet",
 ]);
 
+/** Producer bookkeeping fields that are not meaningful to a reader when a dataset publishes no listing columns. */
+const INTERNAL_KEYS = new Set(["dataset", "group", "firm_id", "firm_norm", "native_id", "sort_date"]);
+
 /** Normalise any corpus listing item (they vary by dataset) without inventing values. */
 export function normalizeItem(
   raw: Record<string, unknown> & {
@@ -209,11 +212,17 @@ export function normalizeItem(
       if (s != null) cells[k] = s;
     }
   } else {
+    const dated = !!raw["dates"] && typeof raw["dates"] === "object";
     for (const [k, v] of Object.entries(raw)) {
-      if (SKIP.has(k)) continue;
+      if (SKIP.has(k) || INTERNAL_KEYS.has(k) || (dated && k === "published_at")) continue;
       const s = scalar(v);
       if (s != null && s.length <= 200) cells[k] = s;
     }
+    if (dated)
+      for (const [k, v] of Object.entries(raw["dates"] as Record<string, unknown>)) {
+        const s = scalar(v);
+        if (s != null && s.length <= 200) cells[k] = s;
+      }
   }
   const links = Array.isArray(raw.links)
     ? (raw.links as unknown[])
