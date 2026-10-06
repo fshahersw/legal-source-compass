@@ -208,7 +208,7 @@ def stage(work: str):
             if not parsed.get("body") and not parsed.get("status_label") and not s.get("repealed"):
                 missing_body.append({"citation": s["statute"], "reason": "empty body"})
             parsed_secs.append(parsed)
-            raw_shas.append(rec["sha256"])
+            raw_shas.append(receipt_sha)
             source_urls.append(url)
 
         if not parsed_secs:
