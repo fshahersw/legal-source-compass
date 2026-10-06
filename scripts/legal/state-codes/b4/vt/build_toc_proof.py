@@ -2,13 +2,12 @@
 """Write landing/toc-proof.json for VT from fullchapter § markers vs landed sections."""
 import json
 import os
-import re
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from sc_common import Archive, decode_html  # noqa: E402
-
-SEC_HEAD = re.compile(r"<b>\s*§\s*([^<]+?)\.\s*(.*?)\s*</b>", re.S | re.I)
+from parse import SEC_HEAD, chapter_body_slice  # noqa: E402
 
 
 def build(work: str, landing: str | None = None) -> dict:
@@ -24,7 +23,7 @@ def build(work: str, landing: str | None = None) -> dict:
         url = unit["source_url"]
         rec = arc.index[url]
         html = decode_html(arc.read(rec))[0]
-        markers = len(SEC_HEAD.findall(html))
+        markers = len(SEC_HEAD.findall(chapter_body_slice(html)))
         sections = sec_by.get(unit["unit_key"], 0)
         pages.append({"url": url, "markers": markers, "sections": sections})
         if markers != sections:

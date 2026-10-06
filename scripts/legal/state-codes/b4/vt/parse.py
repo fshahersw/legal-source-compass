@@ -83,44 +83,73 @@ def citation_display(title_num, sec_num):
     return f"{title_num} V.S.A. § {sec}"
 
 
-def parse_fullchapter(html, *, title, chapter, source_url, receipt_sha):
+def chapter_body_slice(html):
+    """Publisher section text lives after the chapter heading (not only in an empty detail <ul>)."""
+    m = re.search(
+        r'<h3 class="statute-chapter">.*?</h3>(.*?)(?=<div class="sidebar">|\Z)',
+        html,
+        re.S | re.I,
+    )
+    return m.group(1) if m else html
+
+
+def section_from_chunk(chunk, *, tnum, cnum, cur, source_url, receipt_sha, thead, chead):
+    hm = SEC_HEAD.search(chunk)
+    if not hm:
+        return None
+    num, head = section_header_parts(f"§ {hm.group(1)}. {hm.group(2)}")
+    body = html_text(chunk)
+    if not body:
+        return None
+    hist, status = extract_history(body)
+    cite = citation_display(tnum, num)
+    return {
+        "number": num,
+        "heading": head or None,
+        "citation": cite,
+        "text": body,
+        "history": hist,
+        "status_label": status,
+        "source_url": source_url,
+        "source_receipt_sha256": receipt_sha,
+        "currency": cur,
+        "title_num": tnum,
+        "title_heading": thead,
+        "chapter_num": cnum,
+        "chapter_heading": chead,
+    }
+
+
+def parse_fullchapter(html, *, title, chapter, source_url, receipt_sha, toc_keys=None):
     cur = publisher_currency(html)
     tnum, thead, cnum, chead = parse_title_chapter_heads(html)
     if not tnum:
         tnum = title
     if not cnum:
         cnum = chapter
-    dm = DETAIL.search(html)
-    if not dm:
-        return []
+    body = chapter_body_slice(html)
+    headers = list(SEC_HEAD.finditer(body))
     sections = []
-    for li in LI.findall(dm.group(1)):
-        hm = SEC_HEAD.search(li)
-        if not hm:
-            continue
-        num, head = section_header_parts(f"§ {hm.group(1)}. {hm.group(2)}")
-        body = html_text(li)
-        if not body:
-            continue
-        hist, status = extract_history(body)
-        cite = citation_display(tnum, num)
-        sections.append(
-            {
-                "number": num,
-                "heading": head or None,
-                "citation": cite,
-                "text": body,
-                "history": hist,
-                "status_label": status,
-                "source_url": source_url,
-                "source_receipt_sha256": receipt_sha,
-                "currency": cur,
-                "title_num": tnum,
-                "title_heading": thead,
-                "chapter_num": cnum,
-                "chapter_heading": chead,
-            }
+    for i, hm in enumerate(headers):
+        start = hm.start()
+        end = headers[i + 1].start() if i + 1 < len(headers) else len(body)
+        row = section_from_chunk(
+            body[start:end],
+            tnum=tnum,
+            cnum=cnum,
+            cur=cur,
+            source_url=source_url,
+            receipt_sha=receipt_sha,
+            thead=thead,
+            chead=chead,
         )
+        if row:
+            sections.append(row)
+    if toc_keys and len(sections) == 1 and len(toc_keys) > 1 and sections[0].get("status_label"):
+        lone = sections[0]
+        sections = []
+        for key in toc_keys:
+            sections.append({**lone, "number": key.lstrip("0") or key, "inventory_key": key})
     return sections
 
 
@@ -195,7 +224,7 @@ def build_packet(work):
         text_parts = []
         span_rows = []
         for i, s in enumerate(parsed):
-            key = toc_keys[i] if toc_keys and i < len(toc_keys) else s["number"]
+            key = toc_keys[i] if toc_keys and i < len(toc_keys) else s.get("inventory_key") or s["number"]
             citation_path = f"{s['title_num']}/{s['chapter_num']}/{key}"
             if citation_path in seen_citation:
                 seen_citation[citation_path] += 1
@@ -254,7 +283,14 @@ def build_packet(work):
             continue
         title, chapter = m.group(1), m.group(2)
         html = decode_html(arc.read(rec))[0]
-        parsed = parse_fullchapter(html, title=title, chapter=chapter, source_url=url, receipt_sha=rec["sha256"])
+        parsed = parse_fullchapter(
+            html,
+            title=title,
+            chapter=chapter,
+            source_url=url,
+            receipt_sha=rec["sha256"],
+            toc_keys=toc_by_ch.get((title, chapter)),
+        )
         add_sections(parsed, f"{title}/{chapter}", rec["sha256"], [url], toc_by_ch.get((title, chapter)))
 
     const_url = STATUTES + "constitution-of-the-state-of-vermont"
@@ -297,7 +333,7 @@ def verify(work, chapters_out, sections_out):
         rec = arc.index.get(url)
         if rec and rec.get("state") == "complete":
             html = decode_html(arc.read(rec))[0]
-            toc_count = len(SEC_HEAD.findall(html))
+            toc_count = len(SEC_HEAD.findall(chapter_body_slice(html)))
             if got != toc_count:
                 mismatches.append({"chapter": nid, "page_markers": toc_count, "parsed": got, "inventory_toc": len(toc)})
         elif got != len(toc):
