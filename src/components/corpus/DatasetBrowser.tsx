@@ -82,17 +82,6 @@ export function CorpusLink({
         {label}
       </a>
     );
-  if (r.kind === "provision")
-    return (
-      <Link
-        className={cls}
-        to="/law/provision/$id"
-        params={{ id: r.id }}
-        search={{ dataset: r.dataset }}
-      >
-        {label}
-      </Link>
-    );
   if (r.kind === "record")
     return (
       <CorpusRecordLink className={cls} dataset={r.dataset} id={r.id}>

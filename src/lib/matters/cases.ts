@@ -9,6 +9,8 @@
  * - Unknown values stay null and render as "Not recorded".
  */
 
+import { cleaned, isObj, str } from "./values";
+
 export type CaseEvidence =
   | "master_docket"
   | "crosswalk_master"
@@ -199,17 +201,9 @@ export function evidenceKindLabel(kind: string, labels?: RegistryLabels): string
   );
 }
 
-const isObj = (v: unknown): v is Record<string, unknown> =>
-  !!v && typeof v === "object" && !Array.isArray(v);
-const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
 const nativeCourtListenerDocketId = (v: unknown): string | null => {
   const s = str(v);
   return s && /^[1-9]\d*$/.test(s) ? s : null;
-};
-const NOT_RECORDED_TEXT = /^(not recorded|—|-|none|n\/a|unknown)$/i;
-const cleaned = (v: unknown): string | null => {
-  const s = str(v);
-  return s && !NOT_RECORDED_TEXT.test(s) ? s : null;
 };
 
 function factMap(facts: unknown): Map<string, string> {

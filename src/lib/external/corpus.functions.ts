@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { ilikeTerm, restGet, rpcPost } from "./rest.server";
+import { ilikeTerm, restGet } from "./rest.server";
 import { PROVISION_DATASETS } from "./lawTree";
 import { cleanText, decodeEntities } from "./entities";
 import { externalHref } from "./href";
@@ -114,101 +114,6 @@ export const listMdls = createServerFn({ method: "GET" })
       range: [data.offset, data.offset + PAGE - 1],
     });
     return { rows: r.rows, total: r.total, pageSize: PAGE };
-  });
-
-const LAW_OUTLINE_HELD_REASON =
-  "The categorized law catalog and outline have not passed hosted publication checks.";
-let lawOutlineGate: { at: number; available: boolean } | null = null;
-
-/**
- * Whether the categorized law outline is published. This is the condition the corpus's own `corpus_law_outline`
- * RPC applies (corpus_context['law_outline'].ready AND corpus_datasets['open_us_law'].ready). The collection and
- * node views and `corpus_law_provision_rows` do not check it, so every outline read below checks it first. Fails
- * closed: any error reads as "not published".
- */
-async function lawOutlineAvailable(): Promise<boolean> {
-  if (lawOutlineGate && Date.now() - lawOutlineGate.at < 60_000) return lawOutlineGate.available;
-  let available = false;
-  try {
-    const [ctx, ds] = await Promise.all([
-      restGet<{ ready: string | null }[]>(
-        "corpus_context?select=ready:data->>ready&key=eq.law_outline&limit=1",
-      ),
-      restGet<{ ready: boolean }[]>("corpus_datasets?select=ready&id=eq.open_us_law&limit=1"),
-    ]);
-    available = ctx.rows[0]?.ready === "true" && ds.rows[0]?.ready === true;
-  } catch {
-    available = false;
-  }
-  lawOutlineGate = { at: Date.now(), available };
-  return available;
-}
-
-export type LawOutlineStatus = { available: boolean; reason: string | null };
-export const getLawOutlineStatus = createServerFn({ method: "GET" }).handler(
-  async (): Promise<LawOutlineStatus> => {
-    const available = await lawOutlineAvailable();
-    return { available, reason: available ? null : LAW_OUTLINE_HELD_REASON };
-  },
-);
-
-export type LawCollection = { state: string; kind: string; provisions: number; headings: number };
-export const listLawCollections = createServerFn({ method: "GET" }).handler(async () => {
-  if (!(await lawOutlineAvailable())) return [] as LawCollection[];
-  const r = await restGet<LawCollection[]>(
-    `corpus_law_collections?select=state,kind,provisions,headings&order=state.asc,kind.asc&limit=1000`,
-  );
-  return r.rows;
-});
-
-export type LawNode = { id: number; label: string; total: number; has_children: boolean };
-export const listLawNodes = createServerFn({ method: "GET" })
-  .inputValidator((d) =>
-    z
-      .object({
-        state: z.string().regex(/^[A-Za-z0-9_]{2,40}$/),
-        kind: z.string().regex(/^[A-Za-z0-9_]{2,60}$/),
-        parent: z.number().int().min(0),
-      })
-      .parse(d),
-  )
-  .handler(async ({ data }) => {
-    if (!(await lawOutlineAvailable())) return [] as LawNode[];
-    const r = await restGet<LawNode[]>(
-      `corpus_law_nodes?select=id,label,total,has_children&state=eq.${encodeURIComponent(data.state)}&kind=eq.${encodeURIComponent(data.kind)}&parent=eq.${data.parent}&order=position.asc&limit=500`,
-    );
-    return r.rows;
-  });
-
-export type LawProvisionRow = {
-  id: string;
-  title: string | null;
-  citation: string | null;
-  status: string | null;
-};
-/** Provisions under one lowest-level outline heading, 50 per page, from the corpus's own ordered list. */
-export const listLawProvisions = createServerFn({ method: "GET" })
-  .inputValidator((d) =>
-    z
-      .object({
-        node: z.number().int().min(1),
-        offset: z.number().int().min(0).max(1_000_000).default(0),
-        limit: z.number().int().min(1).max(50).default(50),
-      })
-      .parse(d),
-  )
-  .handler(async ({ data }) => {
-    if (!(await lawOutlineAvailable())) return [] as LawProvisionRow[];
-    const rows = await rpcPost<LawProvisionRow[]>("corpus_law_provision_rows", {
-      p_node: data.node,
-      p_offset: data.offset,
-      p_limit: data.limit,
-    });
-    return (rows ?? []).map((r) => ({
-      ...r,
-      title: r.title === null ? null : cleanText(r.title),
-      citation: r.citation === null ? null : cleanText(r.citation),
-    }));
   });
 
 export type LawProvision = {

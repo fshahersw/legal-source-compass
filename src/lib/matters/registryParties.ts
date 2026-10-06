@@ -9,11 +9,8 @@
  * Luxenberg, P.C." and "Weitz and Luxenberg, P.C." are two firms here, as on the docket.
  */
 
-const isObj = (v: unknown): v is Record<string, unknown> =>
-  !!v && typeof v === "object" && !Array.isArray(v);
-const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v : null);
-const int = (v: unknown): number | null =>
-  typeof v === "number" && Number.isInteger(v) && v >= 0 ? v : null;
+import { isObj, nonBlank as str, uint as int } from "./values";
+
 const idStr = (v: unknown): string | null =>
   typeof v === "number" && Number.isFinite(v) ? String(v) : (str(v)?.trim() ?? null);
 const collapse = (s: string) => s.replace(/\s+/g, " ").trim();

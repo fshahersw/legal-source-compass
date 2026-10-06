@@ -7,7 +7,7 @@ vi.mock("./rest.server", () => ({ restGet: vi.fn(), rpcPost: vi.fn() }));
 
 describe("authoritative corpus listing", () => {
   beforeEach(() => vi.resetAllMocks());
-  it.each(["open_us_law", "court_spine"])(
+  it.each(["state_codes", "court_spine"])(
     "keeps an empty result for %s without reading raw unpublished or unrelated records",
     async (dataset) => {
       vi.mocked(rpcPost).mockResolvedValue({

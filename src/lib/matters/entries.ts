@@ -7,6 +7,8 @@
  *   unsealed document count) with no descriptions.
  */
 
+import { isObj, str } from "./values";
+
 export type EntrySource = "activity" | "cl_entries";
 
 export type DocketEntry = {
@@ -25,9 +27,6 @@ export type DocketEntry = {
   sourceUrl: string | null;
 };
 
-const isObj = (v: unknown): v is Record<string, unknown> =>
-  !!v && typeof v === "object" && !Array.isArray(v);
-const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
 const isoDate = (v: unknown): string | null => {
   const s = str(v);
   return s && /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null;

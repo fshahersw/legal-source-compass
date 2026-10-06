@@ -36,10 +36,10 @@ describe("permanent record destinations", () => {
       id: "mdl:2873",
     });
     expect(recordDestination("court_spine", "cand")).toEqual({ kind: "court", id: "cand" });
-    expect(recordDestination("open_us_law", "oul:abc")).toEqual({
+    expect(recordDestination("indiana_code", "in:abc")).toEqual({
       kind: "provision",
-      dataset: "open_us_law",
-      id: "oul:abc",
+      dataset: "indiana_code",
+      id: "in:abc",
     });
     expect(recordDestination("citation_index", "1956")).toEqual({
       kind: "record",
@@ -56,7 +56,7 @@ describe("sectionOf", () => {
     expect(sectionOf("mdl_docket_activity")).toBe("matters");
     expect(sectionOf("cl_master_entries")).toBe("matters");
     expect(sectionOf("agency_safety_openfda_crl")).toBe("safety");
-    expect(sectionOf("open_us_law")).toBe("law");
+    expect(sectionOf("indiana_code")).toBe("law");
     expect(sectionOf("mass_tort_authority_evidence")).toBe("law");
     expect(sectionOf("something_new")).toBe("other");
   });
@@ -169,12 +169,11 @@ describe("resolveLink", () => {
     ])
       expect(resolveLink(token, aliases)).toEqual({ kind: "unmapped", raw: token });
   });
-  it("opens an exact native saved-law target without guessing other record identities", () => {
+  it("does not guess record identities from unknown native tokens", () => {
     const id = "oul:ba1dac985d5bad2c6fa80ecaa19261a8e2b1f45102c91f1e4c053ce835f2ef52";
     expect(resolveLink(`#record/${id}`, aliases)).toEqual({
-      kind: "provision",
-      dataset: "open_us_law",
-      id,
+      kind: "unmapped",
+      raw: `#record/${id}`,
     });
     expect(resolveLink("#record/unknown:123", aliases)).toEqual({
       kind: "unmapped",

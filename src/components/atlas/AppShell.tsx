@@ -41,7 +41,6 @@ const SOURCES = [
   "/source-datasets",
   "/data",
   "/saved-sources",
-  "/review-queue",
   "/data-exports",
 ];
 const NAV: NavItem[] = [
@@ -83,6 +82,9 @@ const CONTEXT_NAV = [
     items: [
       { to: "/sources/library", label: "Source library" },
       { to: "/sources/catalog", label: "Source catalog" },
+      { to: "/sources/coverage", label: "Quality & coverage" },
+      { to: "/sources/enrichment", label: "Enrichment status" },
+      { to: "/sources/analysis", label: "Docket timelines" },
       { to: "/saved-sources", label: "Saved" },
     ],
   },

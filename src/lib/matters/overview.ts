@@ -3,13 +3,8 @@
  * Nothing is inferred: absent or malformed values stay null and render as "Not recorded".
  */
 import { matterCaseKeys, type MatterCaseKeys } from "./docketKeys";
+import { finiteNumber as num, idStr, isObj, str } from "./values";
 
-const isObj = (v: unknown): v is Record<string, unknown> =>
-  !!v && typeof v === "object" && !Array.isArray(v);
-const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
-const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
-const idStr = (v: unknown): string | null =>
-  typeof v === "number" && Number.isFinite(v) ? String(v) : str(v);
 
 export type JpmlReport = {
   documentId: string;
