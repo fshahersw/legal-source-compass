@@ -66,6 +66,8 @@ export type MatrixEntryInput = {
   confidenceNote: string;
   flags: string[];
   notRecordedReason?: string;
+  /** Open issues that cannot be resolved from official text, each with the precise reason. */
+  blockers?: { issue: string; why: string }[];
 };
 
 const UNITS = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
@@ -221,17 +223,37 @@ export function checkEntry(
     warn("accrual rule not recorded");
   } else {
     if (!entry.accrual.text?.trim()) err("accrual.text required");
-    if (!entry.accrual.evidence || !containsLiteral(text, entry.accrual.evidence))
-      err("accrual.evidence is not a literal substring of the capture text");
+    if (
+      !entry.accrual.evidence ||
+      ![
+        text,
+        ...(entry.crossChecks ?? []).flatMap((c) =>
+          lookup(c.captureId) ? [lookup(c.captureId)!.text] : [],
+        ),
+      ].some((t) => containsLiteral(t, entry.accrual.evidence))
+    )
+      err("accrual.evidence is not a literal substring of the primary or a cross-check capture");
   }
+  const evidenceTexts = [
+    text,
+    ...(entry.crossChecks ?? []).flatMap((c) => {
+      const other = lookup(c.captureId);
+      return other && other.meta.hostClass !== "blocked_secondary" ? [other.text] : [];
+    }),
+  ];
+  const inEvidence = (needle: string) => evidenceTexts.some((t) => containsLiteral(t, needle));
   for (const [i, t] of (entry.tolling ?? []).entries()) {
-    if (!t.evidence || !containsLiteral(text, t.evidence))
-      err(`tolling[${i}].evidence is not a literal substring of the capture text`);
+    if (!t.evidence || !inEvidence(t.evidence))
+      err(
+        `tolling[${i}].evidence is not a literal substring of the primary or a cross-check capture`,
+      );
   }
   for (const [i, r] of (entry.repose ?? []).entries()) {
     if (!Number.isInteger(r.years) || r.years < 1) err(`repose[${i}].years invalid`);
-    if (!r.evidence || !containsLiteral(text, r.evidence))
-      err(`repose[${i}].evidence is not a literal substring of the capture text`);
+    if (!r.evidence || !inEvidence(r.evidence))
+      err(
+        `repose[${i}].evidence is not a literal substring of the primary or a cross-check capture`,
+      );
     else if (
       !parsePeriodQuantities(r.evidence).some((q) => q.unit === "years" && q.amount === r.years)
     )
@@ -239,8 +261,8 @@ export function checkEntry(
     if (r.effectiveFrom !== null && !isoDate(r.effectiveFrom))
       err(`repose[${i}].effectiveFrom invalid`);
   }
-  if (entry.lastAmended?.evidence && !containsLiteral(text, entry.lastAmended.evidence))
-    err("lastAmended.evidence is not a literal substring of the capture text");
+  if (entry.lastAmended?.evidence && !inEvidence(entry.lastAmended.evidence))
+    err("lastAmended.evidence is not a literal substring of the primary or a cross-check capture");
   if (
     entry.lastAmended?.date !== null &&
     entry.lastAmended?.date !== undefined &&

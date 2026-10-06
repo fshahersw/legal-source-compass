@@ -158,6 +158,36 @@ describe("entry verification", () => {
       ).length,
     ).toBeGreaterThan(0);
   });
+  it("accepts tolling and repose evidence found in a cross-check capture", () => {
+    const other = {
+      meta: { ...meta, id: "tx-other" },
+      text: "A minor's claim is tolled until age eighteen. Repose: ten years after the act.",
+    };
+    const both = (id: string) => (id === "tx-other" ? other : lookup(id));
+    const e = entry({
+      crossChecks: [{ captureId: "tx-other", note: "tolling and repose sections" }],
+      tolling: [
+        {
+          text: "minority",
+          citation: "§ 1",
+          evidence: "A minor's claim is tolled until age eighteen.",
+        },
+      ],
+      repose: [
+        {
+          years: 10,
+          citation: "§ 2",
+          trigger: "act",
+          evidence: "ten years after the act",
+          effectiveFrom: "2003-09-01",
+        },
+      ],
+    });
+    expect(checkEntry("TX", e, both).filter((p) => p.level === "error")).toEqual([]);
+    expect(checkEntry("TX", e, lookup).filter((p) => p.level === "error").length).toBeGreaterThan(
+      0,
+    );
+  });
   it("blocks intermediary-only high confidence and secondary hosts", () => {
     const intermediary = (id: string) =>
       id === "tx-cap" ? { meta: { ...meta, intermediary: true }, text } : undefined;
