@@ -375,6 +375,8 @@ def title_from_markdown(text):
     why = quality_reason(title, require_vocab=True)
     if why:
         return None, None, why
+    if len(title) > 100 or re.match(r"^COMMITTEE ON RULES OF PRACTICE AND PROCEDURE\b", title, re.I):
+        return None, None, "letterhead_or_court_caption"
     if re.search(r"WASHINGTON,? D\.? ?C\.?", title, re.I) or re.search(r"\b\d{5}(?:-\d{4})?$", title) or re.match(r"^(?:STATE OF|IN THE|FOR THE|CIRCUIT COURT|[A-Z0-9 ]+ JUDICIAL CIRCUIT)\b", title, re.I):
         return None, None, "letterhead_or_court_caption"
     if H1_BOILERPLATE_RE.match(title) or DATE_ONLY_RE.match(title):

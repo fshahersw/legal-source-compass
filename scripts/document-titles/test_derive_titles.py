@@ -83,6 +83,10 @@ class Markdown(unittest.TestCase):
         self.assertIsNotNone(D.title_from_markdown("# THIS PAGE INTENTIONALLY BLANK\n")[2])
         self.assertIsNotNone(D.title_from_markdown("# September 29, 1971\n")[2])
 
+    def test_committee_letterhead_and_run_on_lines_rejected(self):
+        self.assertEqual(D.title_from_markdown("# COMMITTEE ON RULES OF PRACTICE AND PROCEDURE\n")[2], "letterhead_or_court_caption")
+        self.assertEqual(D.title_from_markdown("# " + "Annual Report of the Committee on Rules " * 4 + "\n")[2], "letterhead_or_court_caption")
+
     def test_markup_removed_wording_kept(self):
         self.assertEqual(D.title_from_markdown("# **Notice of Hearing**\n")[0], "Notice of Hearing")
 
