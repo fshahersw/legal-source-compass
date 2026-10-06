@@ -119,7 +119,7 @@ test('caption candidates need a unique, unblocked bulk row; evidence rows gain f
 });
 
 import {planTerminationNote, VARIANT_RULE, TERMINATION_NOTE} from './project-registry.mjs';
-import {decideVariants, variantRow, RULE, normCaption} from './build-variant-evidence.mjs';
+import {decideVariants, variantRow, RULE, normCaption, normCaptionLoose, CAPTION_BASIS} from './build-variant-evidence.mjs';
 
 test('termination note is factual: date stays Not recorded, note carries the snapshot date, nothing about open/closed', () => {
   const row = baseRow();
@@ -163,4 +163,15 @@ test('variant native id is projected with the rule name in provenance and a dist
   assert.equal(c.detail.registry.native_case_ids[0].resolution_basis, 'civil_series_type_variant_bulk_2026-09-30'); assert.equal(c.detail.registry.native_case_ids[0].key_match_rule, VARIANT_RULE);
   assert.equal(c.detail.provenance.gapfill[0].key_match_rule, VARIANT_RULE);
   assert.equal(c.item.cells.filed, 'Not recorded');
+});
+
+test('looser caption rule: whitespace/case, trailing ET AL on either side of the v., punctuation; never truncation prefixes', () => {
+  assert.equal(normCaptionLoose('CITY OF LORAIN v. PURDUE PHARMA L.P., ET AL'), normCaptionLoose('City of Lorain v. Purdue Pharma L.P.'));
+  assert.equal(normCaptionLoose('SMITH, ET AL v. ACME, INC., ET AL.'), normCaptionLoose('Smith v. Acme Inc.'));
+  assert.notEqual(normCaptionLoose('LOCAL NO. 38 IBEW HEALTH AND W v. PURDUE PHARMA L.P., ET AL'), normCaptionLoose('Local No. 38 IBEW Health and Welfare Fund v. Purdue Pharma L.P.'));
+  assert.notEqual(normCaptionLoose('CUYAHOGA COUNTY OF OHIO, ET AL v. PURDUE'), normCaptionLoose('County of Cuyahoga v. Purdue'));
+  const R = [reg('r1', 'ohnd:1:2018-cv-45090', {caption: 'CITY OF LORAIN v. PURDUE PHARMA L.P., ET AL'}), reg('r2', 'ohnd:1:2018-cv-45091', {caption: 'LOCAL NO. 38 IBEW HEALTH AND W v. PURDUE PHARMA L.P., ET AL'})];
+  const B = [bulk('1', 'ohnd:1:2018-45090', 'op', {case_name: 'City of Lorain v. Purdue Pharma L.P.'}), bulk('2', 'ohnd:1:2018-45091', 'op', {case_name: 'Local No. 38 IBEW Health and Welfare Fund v. Purdue Pharma L.P.'})];
+  const {accepted, stats} = decideVariants(R, B, new Set());
+  assert.deepEqual(accepted.map(a => [a.registry.id, a.caption_basis]), [['r1', CAPTION_BASIS.loose]]); assert.equal(stats.caption_mismatch_held, 1);
 });
