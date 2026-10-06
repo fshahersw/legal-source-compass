@@ -2,6 +2,7 @@
 """Driver for the ecfr-section-text/1 contract (database/contracts/ecfr-section-text-v1.sql).
 
 Subcommands (credentials only from the environment; nothing secret is printed or written):
+  restore-raw  re-download retained originals from private storage (checksum verified)
   upload-raw   retained eCFR responses -> private storage (content-addressed), whole-object hash readback
   intake       packet batches -> corpus_ecfr_text_intake_v1 (checkpointed, resumable, idempotent)
   verify       status + paged server-side hash check + per-row readback against the local packets
@@ -99,6 +100,28 @@ def cmd_upload_raw(a):
     out({"objects": len(items), "verified": sum(1 for r in receipts.values() if r["verified"]), "failed_now": failed})
     if failed:
         raise SystemExit(1)
+
+
+def cmd_restore_raw(a):
+    """Re-download retained originals named in acquisition.json from private storage (checksum verified)."""
+    man = load_json(os.path.join(a.work, "acquisition.json"))
+    restored = 0
+    for e in man["parts"].values():
+        if e.get("state") != "complete":
+            continue
+        dest = os.path.join(a.work, e["file"])
+        if os.path.exists(dest):
+            with open(dest, "rb") as f:
+                if sha256_hex(f.read()) == e["sha256"]:
+                    continue
+        status, body = storage_request("GET", raw_object_key(e["sha256"]))
+        if status != 200 or sha256_hex(body) != e["sha256"]:
+            raise SystemExit("retained original not restorable: " + e["file"])
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        with open(dest, "wb") as f:
+            f.write(body)
+        restored += 1
+    out({"restored": restored})
 
 
 # ---------------------------------------------------------------------------------------------------- intake
@@ -249,7 +272,12 @@ def build_plan_items(work):
 
 
 def cmd_plan(a):
-    items, counts = build_plan_items(a.work)
+    if a.items_file:
+        items, counts = load_json(a.items_file), {"from_file": a.items_file}
+    else:
+        items, counts = build_plan_items(a.work)
+    if a.export_items:
+        save_json(a.export_items, items)
     total = {"planned": 0, "rejected": []}
     for i in range(0, len(items), 500):
         r = pgrest.rpc("corpus_ecfr_text_plan_v1", {"p_run": a.run, "p_items": items[i:i + 500]})
@@ -301,7 +329,8 @@ def main():
     sub.add_parser("verify").set_defaults(fn=cmd_verify)
     p = sub.add_parser("publish"); p.add_argument("--batch", type=int, default=500); p.add_argument("--dry", action="store_true"); p.set_defaults(fn=cmd_publish)
     sub.add_parser("finalize").set_defaults(fn=cmd_finalize)
-    sub.add_parser("plan").set_defaults(fn=cmd_plan)
+    p = sub.add_parser("plan"); p.add_argument("--items-file"); p.add_argument("--export-items"); p.set_defaults(fn=cmd_plan)
+    sub.add_parser("restore-raw").set_defaults(fn=cmd_restore_raw)
     p = sub.add_parser("apply"); p.add_argument("--batch", type=int, default=250); p.add_argument("--dry", action="store_true"); p.set_defaults(fn=cmd_apply)
     p = sub.add_parser("rollback"); p.add_argument("--batch", type=int, default=250); p.add_argument("--dry", action="store_true"); p.set_defaults(fn=cmd_rollback)
     p = sub.add_parser("recheck"); p.add_argument("--deep", action="store_true"); p.add_argument("--dataset", choices=["federal_regulations_sections", "citation_index"]); p.set_defaults(fn=cmd_recheck)
