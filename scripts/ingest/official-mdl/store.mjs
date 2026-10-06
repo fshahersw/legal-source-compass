@@ -3,8 +3,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
 
-export const DEFAULT_RUN_DIR = 'C:/Users/firas/.codex/corpus-cache/seeger-weiss/2026-10-03/official-mdl';
-export const PRIVATE_CACHE_PREFIX = 'c:/users/firas/.codex/corpus-cache/';
+export const DEFAULT_RUN_DIR = process.env.CORPUS_PRIVATE_CACHE_DEFAULT_RUN
+  ?? 'C:/Users/firas/.codex/corpus-cache/seeger-weiss/2026-10-03/official-mdl';
+export const PRIVATE_CACHE_PREFIX = (process.env.CORPUS_PRIVATE_CACHE_PREFIX ?? 'c:/users/firas/.codex/corpus-cache/').replaceAll('\\', '/').toLowerCase();
 
 export function resolveRunDir(value) {
   const dir = path.resolve(String(value ?? DEFAULT_RUN_DIR));
