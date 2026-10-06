@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  FIELDS, SCHEMA_VERSION, addDays, compareNewestFirst, eachDay, entityRow, pickFields, projectRecord, recordSha256, splitBounded,
+  FIELDS, SCHEMA_VERSION, addDays, compareNewestFirst, eachDay, entityRow, legacyQualification, pickFields, projectRecord, qualification, recordSha256, splitBounded,
 } from './lib.mjs';
 
 // Test-only documents: structure mirrors the API fields; the content is synthetic and never stored.
@@ -53,6 +53,15 @@ test('lists are capped like the existing rows and corrections are labelled', () 
   assert.equal(r.title.length, 600);
   assert.ok(r.item.badges.includes('Correction'));
   assert.ok(r.detail.facts.some((f) => f[0] === 'Corrects document'));
+});
+
+test('qualification never claims later documents are absent from a continued collection', () => {
+  const q = qualification('1994-01-03', '2026-10-05', '2026-10-06');
+  assert.ok(q.startsWith('Federal Register documents published 1994-01-03 to 2026-10-05 as listed by the federalregister.gov API and GovInfo when the index was collected on 2026-10-06.'));
+  assert.ok(q.includes('Later publication days are added from daily collections'));
+  assert.ok(!q.includes('documents published later, and any later correction, are not included'));
+  assert.ok(legacyQualification('a', 'b', 'c').includes('are not included'));
+  assert.equal(projectRecord(doc(), ctx).detail.qualification, qualification(ctx.coverage.from, ctx.coverage.through, ctx.collected));
 });
 
 test('ordering is publication date, first page, then document number, newest first', () => {
