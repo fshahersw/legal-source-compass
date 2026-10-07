@@ -34,6 +34,11 @@ describe("exact statute citation paths", () => {
       "15-3-530",
       "15-3-535",
     ]);
+    const death = "S.C. Code § 15-3-530(6) (action under §§ 15-51-10 to 15-51-60)";
+    expect(exactCitationPaths("SC", death)).toEqual(["15-3-530"]);
+    expect(exactCitationPaths("SC", death)?.includes("15-51-10")).toBe(false);
+    expect(exactCitationPaths("SC", death)?.includes("15-51-60")).toBe(false);
+    expect(exactCitationPaths("SC", death)?.includes("15-3-53")).toBe(false);
   });
 
   it("reads dotted official paths without taking a chapter number or a session-law range", () => {
