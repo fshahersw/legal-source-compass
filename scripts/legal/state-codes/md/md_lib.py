@@ -164,6 +164,12 @@ def parse_statute_html(html: str) -> dict:
         heading = ""
         text = (inline_heading + "\n" + remainder).strip() if inline_heading else remainder
     text = clean_lines(text)
+    if not text and not heading:
+        for line in _opening_section_chunk(body).splitlines():
+            stripped = line.strip()
+            if stripped.startswith("§"):
+                text = stripped
+                break
     status_note = None
     if not text and heading:
         text = heading
