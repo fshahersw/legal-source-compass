@@ -130,11 +130,15 @@ def parse_chapter(raw, code, member):
         if block['kind'] != 'section_heading':
             continue
         head = block['heading']
-        anchor = head.get('native_anchor') or urlsplit(head['href']).fragment
+        anchor = (head.get('native_anchor') or urlsplit(head['href']).fragment).strip()
         occurrence[anchor] += 1
         stop = next((j for j in range(ix + 1, len(blocks))
                      if blocks[j]['kind'] in ('section_heading', 'hierarchy', 'publisher_note')), len(blocks))
         end = blocks[stop - 1]['end']
+        if stop < len(blocks) and blocks[stop]['kind'] == 'publisher_note':
+            note = full_text[blocks[stop]['start']:blocks[stop]['end']]
+            if re.match(r'^Text of section effective on ', note, re.I):
+                end = blocks[stop]['end']
         text = full_text[block['start']:end]
         section = {'native_section_anchor': anchor, 'source_url': head['href'],
                          'identity_evidence': head.get('identity_evidence', 'publisher_heading_link'),

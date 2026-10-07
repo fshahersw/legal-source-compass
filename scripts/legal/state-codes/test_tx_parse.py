@@ -12,8 +12,8 @@ def chapter(body):
     return ('<html><body><pre>' + body + '</pre></body></html>').encode('utf8')
 
 
-def heading(anchor, caption):
-    return f'<p><a href="https://statutes.capitol.texas.gov/Docs/CP/htm/CP.16.htm#{anchor}">Sec. {anchor}. {caption}</a> (a) Operative body.</p>'
+def heading(anchor, caption, code='CP', member='cp.16.htm'):
+    return f'<p><a href="https://statutes.capitol.texas.gov/Docs/{code}/htm/{member}#{anchor}">Sec. {anchor}. {caption}</a> (a) Operative body.</p>'
 
 
 class TexasParserTest(unittest.TestCase):
@@ -36,6 +36,19 @@ class TexasParserTest(unittest.TestCase):
         self.assertIn('effective before', text)
         self.assertNotIn('effective before', text[rows[0]['text_start']:rows[0]['text_end']])
         self.assertEqual(blocks[1]['kind'], 'publisher_note')
+
+    def test_future_effective_on_note_is_part_of_section_text(self):
+        raw = chapter(
+            '<p><a href="https://statutes.capitol.texas.gov/Docs/SD/htm/sd.9092.htm#9092.0509">Sec. 9092.0509. TRUST INDENTURE.</a></p>'
+            + '<p>(a) Operative body.</p>'
+            + '<p>Added by Acts 2025, eff. April 1, 2027.</p>'
+            + '<p>Text of section effective on April 01, 2027</p>'
+            + '<p><a href="https://statutes.capitol.texas.gov/Docs/SD/htm/sd.9092.htm#9092.0510">Sec. 9092.0510. NEXT SECTION.</a></p>'
+        )
+        text, _, rows = parser.parse_chapter(raw, 'SD', 'sd.9092.htm')
+        body = text[rows[0]['text_start'] : rows[0]['text_end']]
+        self.assertIn('Operative body.', body)
+        self.assertIn('Text of section effective on April 01, 2027', body)
 
     def test_parent_transition_clears_child_hierarchy(self):
         raw = chapter('<p class="center">CHAPTER 16. LIMITATIONS</p><p class="center">SUBCHAPTER A. FIRST</p>' + heading('16.001', 'FIRST.') + '<p class="center">CHAPTER 17. NEXT</p>' + heading('17.001', 'NEXT.'))
