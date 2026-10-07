@@ -23,6 +23,7 @@ export function exactCitationPaths(state: string, citation: string): string[] | 
         ...(usps === "ME" ? (mainePaths(text) ?? []) : []),
         ...(usps === "DE" ? (delawarePaths(text) ?? []) : []),
         ...(usps === "MD" ? (marylandPaths(text) ?? []) : []),
+        ...(usps === "LA" ? (louisianaRevisedStatutePaths(text) ?? []) : []),
         ...(DOTTED_PATH_STATES.has(usps) ? (dottedPaths(text) ?? []) : []),
       ]),
     ]),
@@ -156,6 +157,24 @@ function marylandPaths(citation: string): string[] | null {
     const section = match[1];
     if (!section) continue;
     const path = `gcj ${section}`;
+    if (!paths.includes(path)) paths.push(path);
+  }
+  return paths.length ? paths : null;
+}
+
+/**
+ * Louisiana Revised Statutes paths such as `La. R.S. 9:5628(A)`.
+ * The title and the section are one path, `9:5628`. A parenthetical is not included.
+ * `9:5628` is not `9:5628.1`. A Civil Code article is not a Revised Statutes section.
+ */
+function louisianaRevisedStatutePaths(citation: string): string[] | null {
+  const paths: string[] = [];
+  const re = /\bR\.S\.\s*(\d+[A-Z]?):(\d+(?:\.\d+)?)(?![A-Za-z0-9.])/gi;
+  for (const match of citation.matchAll(re)) {
+    const title = match[1]?.toUpperCase();
+    const section = match[2];
+    if (!title || !section) continue;
+    const path = `${title}:${section}`;
     if (!paths.includes(path)) paths.push(path);
   }
   return paths.length ? paths : null;

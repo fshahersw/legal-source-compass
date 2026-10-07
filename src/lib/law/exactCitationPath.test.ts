@@ -313,6 +313,15 @@ describe("exact statute citation paths", () => {
     expect(statuteNativeId("MD", "gcj 5-101")).toBe("MD:gcj 5-101");
   });
 
+  it("reads Louisiana Revised Statutes 9:5628 without the decimal neighbor", () => {
+    expect(exactCitationPaths("LA", "La. R.S. 9:5628(A)")).toEqual(["9:5628"]);
+    expect(exactCitationPaths("LA", "La. R.S. 9:5628(A)")?.includes("5628")).toBe(false);
+    expect(exactCitationPaths("LA", "La. R.S. 9:5628(A)")?.includes("9:5628.1")).toBe(false);
+    expect(exactCitationPaths("LA", "La. R.S. 9:5628.1")).toEqual(["9:5628.1"]);
+    expect(exactCitationPaths("LA", "La. Civ. Code art. 2315.2(F)")).toBeNull();
+    expect(statuteNativeId("LA", "9:5628")).toBe("LA:9:5628");
+  });
+
   it("reads Kentucky 413.140 and 413.120 as separate sections", () => {
     expect(exactCitationPaths("KY", "Ky. Rev. Stat. § 413.140(1)(a)")).toEqual(["413.140"]);
     expect(exactCitationPaths("KY", "Ky. Rev. Stat. § 413.140(1)(a)")?.includes("413.14")).toBe(
