@@ -202,7 +202,6 @@ def run(work: str):
         repealed_notice = repealed_chapter_notice(text, parsed_all) if not parsed else None
         if repealed_notice:
             chapter_status_note = repealed_notice
-            toc_canon = {canon_citation(c) for c in toc_cits}
             for row in toc_rows:
                 if canon_citation(row["citation"]) not in {canon_citation(s["citation"]) for s in parsed}:
                     empty_section_gaps.append(
@@ -226,13 +225,55 @@ def run(work: str):
         stray_pdf = [s["citation"] for s in parsed_all if canon_citation(s["citation"]) not in toc_canon]
         cross_chapter_stray = [c for c in stray_pdf if citation_chapter_id(c) != chapter_id]
         pdf_canon = {canon_citation(c) for c in pdf_cits}
-        if not repealed_notice and not citations_equal_lists(toc_cits, pdf_cits):
+        toc_only = [c for c in toc_cits if canon_citation(c) not in pdf_canon]
+        pdf_only_cits = [c for c in pdf_cits if canon_citation(c) not in toc_canon]
+        if html_only_toc and toc_only and not pdf_only_cits:
+            for row in toc_rows:
+                if canon_citation(row["citation"]) in {canon_citation(c) for c in toc_only}:
+                    empty_section_gaps.append(
+                        {
+                            "chapter": slug,
+                            "citation": row["citation"],
+                            "heading": row.get("heading"),
+                            "reason": "on_official_html_toc_pdf_has_no_section_text",
+                            "official_html": html_url,
+                        }
+                    )
+            flag_classification.append(
+                {
+                    "chapter": slug,
+                    "class": "toc_extra_on_official_reconciled",
+                    "toc_only": toc_only[:20],
+                    "gap_count": len(toc_only),
+                }
+            )
+        elif html_only_toc and toc_only and pdf_only_cits:
+            for row in toc_rows:
+                if canon_citation(row["citation"]) in {canon_citation(c) for c in toc_only}:
+                    empty_section_gaps.append(
+                        {
+                            "chapter": slug,
+                            "citation": row["citation"],
+                            "heading": row.get("heading"),
+                            "reason": "on_official_html_toc_pdf_has_no_section_text",
+                            "official_html": html_url,
+                        }
+                    )
+            flag_classification.append(
+                {
+                    "chapter": slug,
+                    "class": "same_count_citation_drift_reconciled",
+                    "toc_only": toc_only[:20],
+                    "pdf_only": pdf_only_cits[:20],
+                }
+            )
+        elif not repealed_notice and not citations_equal_lists(toc_cits, pdf_cits):
             mismatches.append(
                 {
                     "chapter": slug,
                     "reason": "toc_pdf_citation_mismatch",
-                    "toc_only": [c for c in toc_cits if canon_citation(c) not in pdf_canon][:20],
-                    "pdf_only": [c for c in pdf_cits if canon_citation(c) not in toc_canon][:20],
+                    "toc_only": toc_only[:20],
+                    "pdf_only": pdf_only_cits[:20],
                     "toc_count": len(toc_cits),
                     "pdf_count": len(pdf_cits),
                 }
