@@ -1,6 +1,7 @@
+import re
 import unittest
 
-from md_lib import citation_path, normalize_section_number, parse_statute_html
+from md_lib import SECTION_ID_REGEX, citation_path, normalize_section_number, parse_statute_html
 
 SAMPLE = """
 <div id="StatuteText">
@@ -28,6 +29,11 @@ class MdParseTest(unittest.TestCase):
 
     def test_citation_path(self):
         self.assertEqual(citation_path("gcr", "2-101"), "gcr 2-101")
+
+    def test_section_id_regex_allows_single_digit_sections(self):
+        pattern = re.compile(SECTION_ID_REGEX)
+        self.assertTrue(pattern.fullmatch("c0 1"))
+        self.assertTrue(pattern.fullmatch("gcr 2-101"))
 
     def test_constitution_section_number(self):
         parsed = parse_statute_html(CONSTITUTION)
