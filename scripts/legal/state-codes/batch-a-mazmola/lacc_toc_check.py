@@ -19,29 +19,39 @@ from bs4 import BeautifulSoup
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lacc_parse as P  # noqa: E402
 
-ROOT = pathlib.Path('/tmp/sc/LACC')
+CODE = os.environ.get('LA_CODE', 'cc')
+CONFIG = {
+    'cc': {'root': '/tmp/sc/LACC', 'folder': 67, 'prefix': 'CC', 'banner': None, 'toc_label': 'cc-toc',
+           'source_system': 'la-civil-code', 'parser': 'la-civil-code-lawprint', 'title': 'Louisiana Civil Code',
+           'example': '2315', 'cite': 'La. C.C. art. <path>', 'regex': r'^[0-9]+(\.[0-9]+)?(-[A-Z])?$'},
+    'ccp': {'root': '/tmp/sc/LACP', 'folder': 68, 'prefix': 'CCP', 'banner': 'LOUISIANA CODE OF CIVIL PROCEDURE', 'toc_label': 'ccp-toc',
+            'source_system': 'la-code-civil-procedure', 'parser': 'la-ccp-lawprint', 'title': 'Louisiana Code of Civil Procedure',
+            'example': '1', 'cite': 'La. C.C.P. art. <path>', 'regex': r'^[0-9]+(\.[0-9]+)*(-[A-Z])?$'},
+}[CODE]
+ROOT = pathlib.Path(CONFIG['root'])
 OUT = ROOT / 'landing'
-TOC_URL = 'https://legis.la.gov/legis/Laws_Toc.aspx?folder=67&level=Parent'
-SECTION_PATH = r'^[0-9]+(\.[0-9]+)?(-[A-Z])?$'
+TOC_URL = 'https://legis.la.gov/legis/Laws_Toc.aspx?folder=%d&level=Parent' % CONFIG['folder']
+SECTION_PATH = CONFIG['regex']
+LEVEL_ORDER = ['book', 'title', 'subtitle', 'chapter', 'part', 'section_group', 'subpart', 'subsection_group']
 
-MANIFEST = {
-    'schema_version': 'publisher-code-manifest/2', 'jurisdiction': 'LA',
-    'publisher': 'Louisiana State Legislature (legis.la.gov Louisiana Laws)',
-    'publisher_url': 'https://legis.la.gov/legis/LawSearch.aspx', 'source_system': 'la-civil-code',
-    'code_title': 'Louisiana Civil Code',
-    'parser': {'name': 'la-civil-code-lawprint', 'version': '1'},
-    'retrieval': {'methods': ['publisher_page'],
-                  'source_url_patterns': [r'^https://legis\.la\.gov/legis/LawPrint\.aspx\?d=[0-9]+$',
-                                          r'^https://legis\.la\.gov/legis/Laws_Toc\.aspx\?folder=67&level=Parent$',
-                                          r'^https://legis\.la\.gov/legis/LawSearch\.aspx$'],
-                  'terms_gate': False, 'official_source': True, 'rate_limit_ms': 1000},
-    'structure': {'levels': ['book', 'title', 'chapter', 'section_group', 'subsection_group', 'section'],
-                  'unit': 'one LawPrint.aspx article page'},
-    'section_id': {'scheme': 'official_citation_path', 'regex': SECTION_PATH, 'example': '2315', 'citation_format': 'La. C.C. art. <path>'},
-    'currency': {'basis': 'publisher_statement',
-                 'location': 'LawSearch.aspx notice: laws have been updated through a stated session, and the site is not official or authoritative'},
-    'review': {'reviewed_by': 'batch A lead', 'reviewed_at': '2026-10-07'},
-}
+def manifest(levels):
+    return {
+        'schema_version': 'publisher-code-manifest/2', 'jurisdiction': 'LA',
+        'publisher': 'Louisiana State Legislature (legis.la.gov Louisiana Laws)',
+        'publisher_url': 'https://legis.la.gov/legis/LawSearch.aspx', 'source_system': CONFIG['source_system'],
+        'code_title': CONFIG['title'],
+        'parser': {'name': CONFIG['parser'], 'version': '1'},
+        'retrieval': {'methods': ['publisher_page'],
+                      'source_url_patterns': [r'^https://legis\.la\.gov/legis/LawPrint\.aspx\?d=[0-9]+$',
+                                              r'^https://legis\.la\.gov/legis/Laws_Toc\.aspx\?folder=%d&level=Parent$' % CONFIG['folder'],
+                                              r'^https://legis\.la\.gov/legis/LawSearch\.aspx$'],
+                      'terms_gate': False, 'official_source': True, 'rate_limit_ms': 1000},
+        'structure': {'levels': levels + ['section'], 'unit': 'one LawPrint.aspx article page'},
+        'section_id': {'scheme': 'official_citation_path', 'regex': SECTION_PATH, 'example': CONFIG['example'], 'citation_format': CONFIG['cite']},
+        'currency': {'basis': 'publisher_statement',
+                     'location': 'LawSearch.aspx notice: laws have been updated through a stated session, and the site is not official or authoritative'},
+        'review': {'reviewed_by': 'batch A lead', 'reviewed_at': '2026-10-07'},
+    }
 
 
 def norm(s):
@@ -66,7 +76,7 @@ def runs(nums):
 
 def main():
     receipts = [json.loads(x) for x in open(ROOT / 'receipts.jsonl') if x.strip()]
-    toc_rec = next(r for r in receipts if r.get('label') == 'cc-toc' and r.get('ok'))
+    toc_rec = next(r for r in receipts if r.get('label') == CONFIG['toc_label'] and r.get('ok'))
     toc = (ROOT / toc_rec['stored_path']).read_text(encoding='utf8', errors='replace')
     soup = BeautifulSoup(toc, 'html.parser')
     anchors = [(re.search(r'd=(\d+)', a['href']).group(1), norm(a.get_text(' '))) for a in soup.find_all('a', href=re.compile(r'^Law\.aspx\?d=\d+$'))]
@@ -83,7 +93,7 @@ def main():
         if d not in pages:
             problems['not_retained'].append(d)
             continue
-        pg = P.parse_page((ROOT / pages[d]['stored_path']).read_text(encoding='utf8', errors='replace'))
+        pg = P.parse_page((ROOT / pages[d]['stored_path']).read_text(encoding='utf8', errors='replace'), CONFIG['prefix'], CONFIG['banner'])
         rec = P.article_record(pg)
         parsed[d] = (pg, rec)
         label, heading = texts[0], texts[-1]
@@ -98,8 +108,12 @@ def main():
             else:
                 problems['heading_wording'].append((d, pg['label'], heading, printed))
     nums = collections.defaultdict(list)
+    observed = set()
     for d, (pg, rec) in parsed.items():
         nums[pg['path']].append(d)
+        observed.update(h[0] for h in pg['headers'])
+    levels = [x for x in LEVEL_ORDER if x in observed]
+    unknown = sorted(observed - set(LEVEL_ORDER))
     covered = set()
     ranges = []
     for d, (pg, rec) in parsed.items():
@@ -108,7 +122,7 @@ def main():
             lo, hi = int(m.group(1)), int(m.group(2))
             ranges.append((pg['label'], lo, hi))
             covered.update(range(lo, hi + 1))
-    present = {int(float(p.split('-')[0])) for p in nums}
+    present = {int(p.split('-')[0].split('.')[0]) for p in nums}
     top = max(present)
     gaps = [n for n in range(1, top + 1) if n not in present and n not in covered]
     result = {
@@ -125,7 +139,9 @@ def main():
                          and not problems['label'] and not problems['heading'] and not problems['not_retained']
                          and not result['duplicate_article_paths'])
     OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / 'manifest.json').write_text(json.dumps(MANIFEST, indent=1, sort_keys=True))
+    result['levels_observed'] = levels
+    result['unknown_levels'] = unknown
+    (OUT / 'manifest.json').write_text(json.dumps(manifest(levels), indent=1, sort_keys=True))
     json.dump(result, open(OUT / 'toc-check.json', 'w'), indent=1)
     print(json.dumps({k: (v if not isinstance(v, (list, dict)) or len(v) < 8 else '%d items' % len(v)) for k, v in result.items()}, default=str))
 

@@ -23,12 +23,16 @@ HISTORY = re.compile(r'^(Acts\s+\d{4}|Amended by|Added by|Amended and reenacted|
 HEADER = re.compile(r'^(PRELIMINARY TITLE|BOOK|SUBTITLE|TITLE|CHAPTER|SECTION|SUBSECTION|PART|SUBPART)\b'
                     r'(?:\s+([IVXLCDM]+|[0-9]+(?:-[A-Z])?|[A-Z])(?![A-Za-z]))?\s*(?:\.|--|-|\u2013|\u2014)?\s*(.*)$', re.I)
 SECTION_SIGN_HEADER = re.compile(r'^§\s*([0-9]+(?:-[A-Z])?)\s*(?:--|\u2013|\u2014|-|\.)\s*(.+)$')
-ARTICLE = re.compile(r'^Art\.?\s*([0-9]+(?:\.[0-9]+)?(?:-[A-Z])?)\s*\.?\s*(.*)$')
-SIGN_ARTICLE = re.compile(r'^§\s*([0-9]+(?:\.[0-9]+)?(?:-[A-Z])?)\.\s*(.*)$')
+ARTICLE = re.compile(r'^Art\.?\s*([0-9]+(?:\.[0-9]+)*(?:-[A-Z])?)\s*\.?\s*(.*)$')
+SIGN_ARTICLE = re.compile(r'^§\s*([0-9]+(?:\.[0-9]+)*(?:-[A-Z])?)\.\s*(.*)$')
 LEVEL = {'BOOK': ('book', 0), 'PRELIMINARY TITLE': ('title', 1), 'TITLE': ('title', 1), 'SUBTITLE': ('subtitle', 2),
          'CHAPTER': ('chapter', 3), 'SECTION': ('section_group', 4), 'SUBSECTION': ('subsection_group', 5),
          'PART': ('part', 4), 'SUBPART': ('subpart', 5)}
-LABEL = re.compile(r'^CC ([0-9]+(?:\.[0-9]+)?(?:-[A-Z])?)$')
+LABEL = re.compile(r'^CC ([0-9]+(?:\.[0-9]+)*(?:-[A-Z])?)$')
+
+
+def label_pattern(prefix):
+    return re.compile(r'^%s ([0-9]+(?:\.[0-9]+)*(?:-[A-Z])?)$' % re.escape(prefix))
 
 
 def clean(s):
@@ -49,10 +53,10 @@ def page_lines(html):
     return clean(name.get_text(' ')), lines
 
 
-def parse_page(html):
+def parse_page(html, prefix='CC', banner=None):
     """-> dict(label, path, headers=[[level, rank, number, heading]], notes, art_no, heading, body, history, repeal_only)."""
     label, lines = page_lines(html)
-    m = LABEL.match(label)
+    m = (LABEL if prefix == 'CC' else label_pattern(prefix)).match(label)
     if not m:
         raise ValueError('unexpected label %r' % label)
     article = ARTICLE
@@ -64,6 +68,8 @@ def parse_page(html):
         raise ValueError('no article line on %s' % label)
     headers, notes = [], []
     for ln in lines[:idx]:
+        if banner and ln == banner:
+            continue
         if ln.startswith('NOTE:'):
             notes.append(ln)
             continue

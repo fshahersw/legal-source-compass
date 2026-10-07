@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the shared landing packet for the Louisiana Civil Code from /tmp/sc/LACC (one unit per article page).
+"""Build the shared landing packet for a Louisiana code (LA_CODE=cc|ccp) from its /tmp/sc root (one unit per article page).
 
     lacc_packet.py  ->  /tmp/sc/LACC/landing/{manifest.json,objects.jsonl,units.jsonl,sections.jsonl,toc-proof.json}
 
@@ -19,8 +19,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lacc_parse as P  # noqa: E402
 import lacc_toc_check as T  # noqa: E402
 
-ROOT = pathlib.Path('/tmp/sc/LACC')
-OUT = ROOT / 'landing'
+ROOT = T.ROOT
+OUT = T.OUT
+CFG = T.CONFIG
 SEARCH_URL = 'https://legis.la.gov/legis/LawSearch.aspx'
 
 
@@ -39,7 +40,7 @@ def main():
     for r in receipts:
         if 'LawPrint.aspx?d=' in r['url'] and r.get('ok') and r.get('status') == 200:
             pages[r['url'].rsplit('=', 1)[1]] = r
-    toc_rec = next(r for r in receipts if r.get('label') == 'cc-toc' and r.get('ok'))
+    toc_rec = next(r for r in receipts if r.get('label') == CFG['toc_label'] and r.get('ok'))
     search_rec, stmt = statement(receipts)
     currency = {'basis': 'publisher_statement', 'statement': stmt, 'through_date': None, 'edition': None}
     (OUT / 'text').mkdir(parents=True, exist_ok=True)
@@ -55,7 +56,7 @@ def main():
     state = []
     for d in docs:
         rec = pages[d]
-        pg = P.parse_page((ROOT / rec['stored_path']).read_text(encoding='utf8', errors='replace'))
+        pg = P.parse_page((ROOT / rec['stored_path']).read_text(encoding='utf8', errors='replace'), CFG['prefix'], CFG['banner'])
         art = P.article_record(pg)
         state = P.apply_headers(state, pg['headers'])
         unit_lines = list(pg['lines_before']) + [pg['article_line']] + list(pg['body']) + list(pg['history'])
@@ -70,24 +71,28 @@ def main():
             tpath.write_bytes(deriv)
         add_source(rec['sha256'], rec['bytes'], 'publisher_original', ROOT / rec['stored_path'], rec)
         add_source(tsha, len(deriv), 'unit_text_derivative', tpath, rec)
-        key = 'cc-%s' % pg['path']
+        key = '%s-%s' % (CFG['prefix'].lower(), pg['path'])
         hier = [{'level': lv, 'number': num, 'heading': hd or None} for lv, _rk, num, hd in state]
         hier.append({'level': 'section', 'number': pg['path'], 'heading': art['heading']})
         units.append({'unit_key': key, 'unit_kind': 'article_page', 'heading': art['heading'], 'original_sha256': rec['sha256'],
                       'publisher_member': None, 'raw_member_sha256': None, 'text_sha256': tsha, 'text_code_points': len(unit_text),
                       'sections_expected': 1, 'currency': currency, 'source_url': rec['url'], 'retrieved_at': rec['retrieved_at'],
                       'retrieval_method': 'publisher_page', 'proxy': None})
-        sections.append({'unit_key': key, 'citation_path': pg['path'], 'citation': 'La. C.C. art. %s' % pg['path'], 'heading': art['heading'],
+        sections.append({'unit_key': key, 'citation_path': pg['path'], 'citation': CFG['cite'].replace('<path>', pg['path']), 'heading': art['heading'],
                          'text': art['text'], 'hierarchy': hier, 'history': art['history'], 'status_note': art['status_note'],
                          'span': span, 'currency': currency})
         proof_pages.append({'url': rec['url'], 'markers': 1, 'sections': 1})
     for rec in (toc_rec, search_rec):
         data = (ROOT / rec['stored_path']).read_bytes()
         add_source(rec['sha256'], len(data), 'publisher_original', ROOT / rec['stored_path'], rec)
-    proof = {'marker': 'Civil Code contents page: article links (2 anchors per article, one article document each); each article page prints one article line',
+    proof = {'marker': 'contents page: article links (2 anchors per article, one article document each); each article page prints one article line',
              'pages': [{'url': toc_rec['url'], 'markers': len(docs), 'sections': len(sections)}] + proof_pages,
              'unfetched_child_pages': [], 'empty_text_pages': []}
     manifest = json.loads((OUT / 'manifest.json').read_text())
+    levels = set(manifest['structure']['levels'])
+    stray = sorted({h['level'] for sec in sections for h in sec['hierarchy']} - levels)
+    if stray:
+        raise SystemExit('hierarchy levels not in the manifest: %s' % stray)
     with open(OUT / 'objects.jsonl', 'w', encoding='utf-8') as f:
         for o in sorted(objects.values(), key=lambda x: x['sha256']):
             f.write(json.dumps(o, ensure_ascii=False, separators=(',', ':')) + '\n')
