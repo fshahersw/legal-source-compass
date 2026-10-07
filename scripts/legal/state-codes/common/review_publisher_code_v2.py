@@ -461,14 +461,10 @@ def _stored_covers_live_line(line, row):
 
 def _excuse_repealer_crossref(piece, row):
     """Notes on repealed sibling sections (e.g. NC chapter chrome), not this row's operative text."""
-    if "repealed" not in piece.lower():
+    low = piece.lower()
+    if "repealed by session laws" not in low and "repealed by" not in low:
         return False
-    if not re.search(r"§§?\s*[\d.\-]+\s+through\s+[\d.\-]+", piece, re.I):
-        return False
-    own = (_printed_number(row) or "").strip()
-    if own and re.search(r"§§?\s*" + re.escape(own) + r"\.[0-9]", piece):
-        return False
-    return True
+    return bool(re.search(r"§§?\s*[\d.\-]+\s+through\s+[\d.\-]+", piece, re.I))
 
 
 def texas_unit_member(unit):
