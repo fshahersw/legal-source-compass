@@ -318,8 +318,22 @@ describe("exact statute citation paths", () => {
     expect(exactCitationPaths("LA", "La. R.S. 9:5628(A)")?.includes("5628")).toBe(false);
     expect(exactCitationPaths("LA", "La. R.S. 9:5628(A)")?.includes("9:5628.1")).toBe(false);
     expect(exactCitationPaths("LA", "La. R.S. 9:5628.1")).toEqual(["9:5628.1"]);
-    expect(exactCitationPaths("LA", "La. Civ. Code art. 2315.2(F)")).toBeNull();
     expect(statuteNativeId("LA", "9:5628")).toBe("LA:9:5628");
+  });
+
+  it("reads a Louisiana Civil Code article without its neighbor", () => {
+    expect(exactCitationPaths("LA", "La. Civ. Code art. 2315.1(A)")).toEqual(["2315.1"]);
+    expect(exactCitationPaths("LA", "La. Civ. Code art. 2315.2(B)")).toEqual(["2315.2"]);
+    expect(exactCitationPaths("LA", "La. Civ. Code art. 2315.2(F)")).toEqual(["2315.2"]);
+    expect(exactCitationPaths("LA", "La. Civ. Code art. 2315.1(A)")?.includes("2315.10")).toBe(
+      false,
+    );
+    expect(exactCitationPaths("LA", "La. Civ. Code art. 2315.2(B)")?.includes("2315.1")).toBe(
+      false,
+    );
+    expect(exactCitationPaths("LA", "La. Civ. Code art. 2315.2(B)")?.includes("2315")).toBe(false);
+    expect(statuteNativeId("LA", "2315.1")).toBe("LA:2315.1");
+    expect(statuteNativeId("LA", "2315.2")).toBe("LA:2315.2");
   });
 
   it("reads Kentucky 413.140 and 413.120 as separate sections", () => {

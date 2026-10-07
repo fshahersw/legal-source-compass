@@ -24,6 +24,7 @@ export function exactCitationPaths(state: string, citation: string): string[] | 
         ...(usps === "DE" ? (delawarePaths(text) ?? []) : []),
         ...(usps === "MD" ? (marylandPaths(text) ?? []) : []),
         ...(usps === "LA" ? (louisianaRevisedStatutePaths(text) ?? []) : []),
+        ...(usps === "LA" ? (louisianaCivilCodePaths(text) ?? []) : []),
         ...(DOTTED_PATH_STATES.has(usps) ? (dottedPaths(text) ?? []) : []),
       ]),
     ]),
@@ -176,6 +177,23 @@ function louisianaRevisedStatutePaths(citation: string): string[] | null {
     if (!title || !section) continue;
     const path = `${title}:${section}`;
     if (!paths.includes(path)) paths.push(path);
+  }
+  return paths.length ? paths : null;
+}
+
+/**
+ * Louisiana Civil Code articles such as `La. Civ. Code art. 2315.2(B)`.
+ * The article number is the path. A parenthetical is not included.
+ * `2315.2` is not `2315.1` or `2315.10`.
+ */
+function louisianaCivilCodePaths(citation: string): string[] | null {
+  if (!/\bCiv\.?\s+Code\b/i.test(citation)) return null;
+  const paths: string[] = [];
+  const re = /\bart\.?\s*(\d+(?:\.\d+)?)(?![A-Za-z0-9.])/gi;
+  for (const match of citation.matchAll(re)) {
+    const path = match[1];
+    if (!path || paths.includes(path)) continue;
+    paths.push(path);
   }
   return paths.length ? paths : null;
 }
