@@ -122,9 +122,21 @@ class SectionPageTest(unittest.TestCase):
     def test_section_id_regex(self):
         import re
         rx = re.compile(mt_parse.SECTION_ID_REGEX)
-        for ok in ("27-2-204", "15-30-2101", "1-1-101~2", "const-II-1", "const-preamble-1", "30-9A-101"):
+        for ok in ("27-2-204", "15-30-2101", "1-1-101~2", "const-II-1", "const-preamble-1", "30-9A-101", "20-7-302.1",
+                   "25-20:Rule-4.1", "26-10:Rule-401", "25-30A:Appendix-of-Forms", "25-20:No-Montana-Rule-65.1"):
             self.assertTrue(rx.match(ok), ok)
         self.assertFalse(rx.match("27-2"))
+        self.assertFalse(rx.match("Rule 1"))
+
+    def test_rule_paths(self):
+        self.assertEqual(mt_parse.rule_slug("Rule 7."), "Rule-7")
+        self.assertEqual(mt_parse.rule_slug("***No Montana Rule 65.1.***"), "No-Montana-Rule-65.1")
+        self.assertEqual(mt_parse.rule_slug("Appendix of Forms"), "Appendix-of-Forms")
+        self.assertTrue(mt_parse.STATUTE_RE.match("20-7-302.1"))
+        self.assertFalse(mt_parse.STATUTE_RE.match("Rule 4.1"))
+        self.assertTrue(mt_parse.STATUS_HEADING_RE.match("***No Montana Rules 73-76.***"))
+        self.assertEqual(mt_parse.toc_heading("***No Montana Rule 65.1.*** ***No Montana Rule 65.1.***",
+                                              "***No Montana Rule 65.1.***"), "***No Montana Rule 65.1.***")
 
 
 class TocTest(unittest.TestCase):
@@ -135,6 +147,14 @@ class TocTest(unittest.TestCase):
         self.assertEqual(entries[0]["label"], "27-2-201 Actions upon judgments")
         self.assertIsNone(entries[1]["href"])
         self.assertTrue(entries[1]["reserved"])
+
+    def test_link_with_space_before_extension(self):
+        toc = PART_TOC.replace("./section_0010/0270-0020-0020-0010.html", "./section_0070/0610-0050-0010-0070 .html")
+        entries = mt_acquire.toc_entries("part", toc)
+        self.assertEqual(entries[0]["href"], "section_0070/0610-0050-0010-0070 .html")
+        url = mt_acquire.join(BASE + "title_0610/chapter_0050/part_0010/sections_index.html", entries[0]["href"])
+        self.assertTrue(url.endswith("/section_0070/0610-0050-0010-0070%20.html"))
+        self.assertEqual(mt_parse.SECTION_URL_RE.match(url).group(5), "0610-0050-0010-0070")
 
     def test_validity(self):
         self.assertTrue(mt_acquire.valid("section", TWO_VERSIONS))

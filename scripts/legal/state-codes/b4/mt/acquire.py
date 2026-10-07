@@ -42,7 +42,8 @@ CHILD_RE = {
     "home": re.compile(r"^title_\w+/chapters_index\.html$", re.I),
     "title": re.compile(r"^(?:chapter|article)_\w+/parts_index\.html$", re.I),
     "chapter": re.compile(r"^part_\w+/sections_index\.html$", re.I),
-    "part": re.compile(r"^section_\w+/[\w-]+\.html$", re.I),
+    # one published link has a space before ".html" (61-5-107); it is fetched percent-encoded
+    "part": re.compile(r"^section_\w+/[\w-]+ ?\.html$", re.I),
 }
 CHILD_LEVEL = {"home": "title", "title": "chapter", "chapter": "part", "part": "section"}
 LI_RE = re.compile(r"<li\b[^>]*>(.*?)</li>", re.S | re.I)
@@ -128,7 +129,7 @@ def toc_entries(level, text):
 
 
 def join(page_url, href):
-    return page_url.rsplit("/", 1)[0] + "/" + href
+    return page_url.rsplit("/", 1)[0] + "/" + href.replace(" ", "%20")
 
 
 def build_inventory(arc, workers):
