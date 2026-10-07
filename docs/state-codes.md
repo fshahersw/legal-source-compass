@@ -8,7 +8,7 @@ Nothing below is a count of landed sections.
 
 | Batch | States                                         | Status                                     |
 | ----- | ---------------------------------------------- | ------------------------------------------ |
-| A     | NY, PA, FL, IL, OH, MI, GA, NC, MA, AZ, MO, LA | MI, NC, MO and FL landed and reviewed 2026-10-06 (public). PA landed, held. IL partial. NY, MA, AZ, LA capturing. OH blocked, GA gated. |
+| A     | NY, PA, FL, IL, OH, MI, GA, NC, MA, AZ, MO, LA | MI, NC, MO, FL (2026-10-06) and IL (2026-10-07) landed and reviewed (public). PA and NY landed, held (proxied captures). MA landed, not yet reviewed. AZ, LA capturing. OH blocked, GA gated. |
 | B     | MN, WI, IN, TN, CO, MD, VA, SC, AL, KY, OK, OR | staging against the mapping                |
 | C     | CT, NV, IA, MS, AR, KS, UT, NE, NM, WV, ID, HI | staging against the mapping                |
 | 4     | NH, ME, MT, RI, DE, SD, ND, AK, VT, WY         | later                                      |
@@ -52,3 +52,9 @@ Pennsylvania stays held: its captures are `proxied:firecrawl`, and direct reques
 ## Ohio
 
 `codes.ohio.gov/robots.txt` is `User-agent: * / Disallow: /`, so the Revised Code is not captured, directly or through a proxy. An official bulk download was searched for on 2026-10-06: Tavily searches limited to ohio.gov hosts, and Firecrawl maps of `lsc.ohio.gov` and `legislature.ohio.gov`, found bill analyses, digests and bill text but no Revised Code bulk, XML, ZIP or API. `lsc.ohio.gov` has no robots.txt (404) and `legislature.ohio.gov/robots.txt` allows all; neither hosts the code. The Legislative Service Commission technical contact (codes@lsc.ohio.gov, on codes.ohio.gov/contact) is the route to written permission or an export. Nothing is landed.
+
+## Illinois and New York
+
+Illinois: 72,813 sections in 2,817 act units, run `1020fbf4-bbe0-49be-b4c5-148bf2e14787`, 20 of 20 live diffs, `reviewed` with projection allowed. 669 acts with no section text are gaps. ilga.gov serves an incomplete certificate chain; the review used the intermediates with verification on, at the publisher's 10-second delay.
+
+New York: 21,429 sections, one per nysenate.gov section page, run `f5fb6fd1-6930-56ba-8409-bd2033fa1f05`, landed and `held`. Every capture is `proxied:firecrawl` because the publisher challenges direct requests, so the review could not diff live pages. `ENV/13-0901` prints no text and is a gap.

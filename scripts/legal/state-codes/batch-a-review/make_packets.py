@@ -128,6 +128,42 @@ def mi():
     write("MI", man, us, ss)
 
 
+def il():
+    import importlib.util
+    sys.path.insert(0, str(SC / "il"))
+    spec = importlib.util.spec_from_file_location("il_land", SC / "il" / "land.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    rec = mod.load_receipts()
+    acts = mod.act_index(rec)
+    first = next(r for r in rec.values() if r.get("label") == "act-full-text")
+    statement = mod.currency_statement(mod.read(first).decode("utf8", "replace"))
+    currency = {"basis": "publisher_statement", "statement": statement, "through_date": None, "edition": None}
+    counts = {}
+    us, ss = [], []
+    for url, info in acts.items():
+        found, _ = mod.page_for_act(rec, url)
+        if found is None:
+            continue
+        r, docs = found
+        secs = [d for d in docs if d["kind"] == "section" and d["text"]]
+        key = "act-%s" % info["act_id"]
+        if not secs:
+            continue
+        us.append({"unit_key": key, "source_url": r["url"], "retrieval_method": "publisher_page"})
+        for d in secs:
+            n = counts.get(d["citation"], 0) + 1
+            counts[d["citation"]] = n
+            path = mod.path_for(d["citation"], n)
+            hier = [{"level": "chapter", "number": info["chapter"]["number"], "heading": info["chapter"]["heading"]},
+                    {"level": "act", "number": info["act_number"], "heading": info["act_heading"]}]
+            hier += [{"level": "heading", "number": c["number"], "heading": c["heading"]} for c in d["context"]]
+            hier.append({"level": "section", "number": d["citation"].split("/", 1)[1], "heading": None})
+            ss.append({"unit_key": key, "citation_path": path, "citation": d["citation"], "heading": None, "text": d["text"],
+                       "hierarchy": hier, "currency": currency})
+    write("IL", {"parser": {"name": "il-ilcs-act-pages", "version": "1"}}, us, ss)
+
+
 def mo():
     import mo_land
     import mo_parse as P
