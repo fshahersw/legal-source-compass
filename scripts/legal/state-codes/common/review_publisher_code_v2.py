@@ -38,6 +38,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import xml.etree.ElementTree as ET
 import zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -153,6 +154,178 @@ def texas_zip_chapter_live(arc, code: str, publisher_member: str) -> str | None:
         return None
     with zipfile.ZipFile(io.BytesIO(arc.read(rec))) as zf:
         return zf.read(publisher_member).decode("utf-8-sig", "replace")
+
+
+def publisher_section_number(body):
+    """Section number as printed by the publisher on the live page (not derived from landed text)."""
+    raw = body.lstrip() if isinstance(body, bytes) else body.encode("utf-8", "replace").lstrip()
+    if not (raw.startswith(b"<?xml") or raw.startswith(b"<section") or raw.startswith(b"<SECTION")):
+        return None
+    try:
+        root = ET.fromstring(body if isinstance(body, bytes) else body.encode("utf-8", "replace"))
+    except ET.ParseError:
+        return None
+    tag = root.tag.split("}", 1)[-1] if root.tag else ""
+    if tag.lower() != "section":
+        return None
+    num = root.get("number")
+    return num.strip() if num else None
+
+
+def live_ia_section_row(body, url, section):
+    """Re-parse Iowa slim chapter XML and return the matching section row."""
+    if "_slim.xml" not in url:
+        return None
+    ia_dir = os.path.join(HERE, "..", "ia")
+    if ia_dir not in sys.path:
+        sys.path.insert(0, ia_dir)
+    from ia_parse import parse_chapter  # noqa: WPS433
+    hier = section.get("hierarchy") or []
+    title = next((x["number"] for x in hier if x.get("level") == "title"), "I")
+    chapter = next((x["number"] for x in hier if x.get("level") == "chapter"), None)
+    if not chapter:
+        cp = section.get("citation_path") or section.get("citation") or ""
+        chapter = cp.split(".", 1)[0] if cp else None
+    chapter_row = {"title": title, "title_heading": None, "chapter": chapter}
+    raw = body if isinstance(body, bytes) else body.encode("utf-8", "replace")
+    parsed = parse_chapter(raw, chapter_row)
+    target = section.get("citation_path") or section.get("citation")
+    for row in parsed["sections"]:
+        if row["number"] == target:
+            return row
+    return None
+
+
+def live_wv_section_row(body, url, section):
+    """Extract one section from get_all_sections JSON/HTML (West Virginia)."""
+    if "get_all_sections" not in url:
+        return None
+    wv_dir = os.path.join(HERE, "..", "wv")
+    if wv_dir not in sys.path:
+        sys.path.insert(0, wv_dir)
+    from wv_common import norm_slug, sections_from_article_html  # noqa: WPS433
+    raw = body.decode("utf-8", "replace") if isinstance(body, bytes) else body
+    try:
+        doc = json.loads(raw)
+        html = doc.get("html") or ""
+    except ValueError:
+        html = raw
+    token = norm_slug((section.get("citation_path") or section.get("citation") or "").replace("§", ""))
+    for item in sections_from_article_html(html):
+        if norm_slug(item["citation_token"]) == token:
+            return {
+                "citation_token": item["citation_token"],
+                "heading": item.get("catchline"),
+                "text": item.get("text") or "",
+                "status_label": item.get("catchline") if not (item.get("text") or "").strip() else None,
+            }
+    return None
+
+
+def live_fetch(arc, url, state):
+    """Live publisher fetch; WV ajax needs XHR (Firecrawl fallback when empty)."""
+    import ssl
+    import urllib.request
+
+    extra = None
+    min_bytes = 0
+    if "admin-ajax.php" in url and "get_all_sections" in url:
+        extra = {"X-Requested-With": "XMLHttpRequest"}
+        min_bytes = 80
+    if extra and state == "WV":
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        req = urllib.request.Request(url, headers={**extra, "User-Agent": arc.ua}, method="GET")
+        try:
+            with urllib.request.urlopen(req, context=ctx, timeout=120) as resp:
+                status, body = resp.status, resp.read()
+            meta = {}
+        except Exception as exc:  # noqa: BLE001
+            status, body, meta = 0, b"", {"error": str(exc)[:200]}
+    elif extra:
+        try:
+            status, body, meta = arc._http(url, accept="*/*", extra=extra)
+        except Exception as exc:  # noqa: BLE001
+            status, body, meta = 0, b"", {"error": str(exc)[:200]}
+    else:
+        return arc.fetch(url, accept="*/*", min_bytes=min_bytes)
+    retrieved = sc.utc_now()
+    rec = {"url": url, "http_status": status, "retrieved_at": retrieved, "bytes": len(body), "route": "direct",
+           "user_agent": arc.ua, **{k: v for k, v in meta.items() if v not in (None, [])}}
+    if status == 200 and len(body) >= min_bytes:
+        sha = sc.sha256_hex(body)
+        rel = f"{sha[:2]}/{sha}"
+        path = os.path.join(arc.raw, rel)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "wb") as f:
+            f.write(body)
+        rec.update({"state": "complete", "sha256": sha, "file": os.path.join("raw", rel)})
+    else:
+        rec.update({"state": "failed"})
+    if state == "WV" and os.environ.get("FIRECRAWL_API_KEY"):
+        empty = rec.get("state") != "complete" or rec.get("http_status") != 200
+        if not empty:
+            try:
+                body = arc.read(rec)
+                doc = json.loads(body.decode("utf-8", "replace"))
+                empty = len((doc.get("html") or "").strip()) < 40
+            except (ValueError, KeyError, json.JSONDecodeError):
+                empty = len(body) < 40
+        if empty:
+            rec = arc.fetch(url, route="firecrawl", force=True, min_bytes=40)
+    return rec
+
+
+def live_hi_section_row(body, url, section):
+    """Re-parse Hawaii HRS section HTML with the same parser as landing."""
+    html = body.decode("utf-8", "replace") if isinstance(body, bytes) else body
+    if "capitol.hawaii.gov" not in url or ".htm" not in url.lower():
+        return None
+    hi_dir = os.path.join(HERE, "..", "hi")
+    if hi_dir not in sys.path:
+        sys.path.insert(0, hi_dir)
+    from parse_hrs import parse_section_html  # noqa: WPS433
+    name = os.path.basename(url.split("?", 1)[0])
+    parsed = parse_section_html(html, name)
+    if not parsed.get("citation") and not parsed.get("text"):
+        return None
+    return {
+        "citation": parsed.get("citation"),
+        "heading": parsed.get("heading"),
+        "text": parsed.get("text") or "",
+        "status_label": parsed.get("status_label"),
+        "history": parsed.get("history"),
+    }
+
+
+def live_ks_section_row(body, url, section):
+    """Re-parse Kansas Revisor section HTML with the same parser as landing."""
+    html = body.decode("utf-8", "replace") if isinstance(body, bytes) else body
+    if "ksrevisor.gov/statutes" not in url or 'id="print"' not in html:
+        return None
+    ks_dir = os.path.join(HERE, "..", "ks")
+    if ks_dir not in sys.path:
+        sys.path.insert(0, ks_dir)
+    from ks_parse import parse_section_html  # noqa: WPS433
+    meta = {"heading": section.get("heading"), "citation": section.get("citation")}
+    rows, _ = parse_section_html(html, url, "review-live", meta)
+    return rows[0] if rows else None
+
+
+def live_section_body(body):
+    """Operative section text from the live publisher file (Utah section XML uses parse_ut.section_body)."""
+    if publisher_section_number(body) is None:
+        return None
+    ut_dir = os.path.join(HERE, "..", "ut")
+    if ut_dir not in sys.path:
+        sys.path.insert(0, ut_dir)
+    from parse_ut import load_section, section_body  # noqa: WPS433
+    section, _ = load_section(body)
+    tag = section.tag.split("}", 1)[-1] if section.tag else ""
+    if tag.lower() != "section":
+        return None
+    return section_body(section)
 
 
 def html_blocks(body, classes):
@@ -410,6 +583,59 @@ def _strip_labels(piece, tokens):
     return re.sub(r"[^0-9A-Za-z).]+$", "", rest)
 
 
+def excuses_section_lead(line, row):
+    """Printed section number and catchline on the live page may appear only in stored citation/heading."""
+    sq = squash(line)
+    if not sq:
+        return True
+    citation = row.get("citation") or ""
+    heading = row.get("heading") or ""
+    head_sq = squash(heading)
+    cit_sq = squash(citation)
+    path_sq = squash((row.get("citation_path") or "").replace("§", ""))
+    if head_sq and sq == head_sq:
+        return True
+    if head_sq and head_sq in sq:
+        cit_in = cit_sq and cit_sq in sq
+        path_in = path_sq and path_sq in re.sub(r"[^0-9A-Za-z.\-]", "", sq)
+        if cit_in or path_in or not cit_sq:
+            return True
+    if cit_sq and cit_sq in sq and (not head_sq or head_sq in sq):
+        return True
+    bracket = re.search(r"§[\dA-Za-z.\-]+", line)
+    if bracket and head_sq:
+        if squash(bracket.group(0)) in cit_sq and head_sq in sq:
+            return True
+    return False
+
+
+def reverse_check_section_body(parsed_row, row):
+    """Reverse diff on the section body only (same scope as the forward publisher parsers)."""
+    stored = squash((row.get("text") or "") + "\n" + (row.get("history") or ""))
+    live_body = (parsed_row.get("text") or "").strip()
+    if not live_body:
+        live_body = (parsed_row.get("status_label") or "").strip()
+    if not live_body and not stored:
+        return {"ok": True, "checked": 0, "excused_chrome": 0, "missing": []}
+    if not live_body:
+        return {"ok": False, "checked": 0, "excused_chrome": 0, "missing": ["no live section body"]}
+    lines = [ln.strip() for ln in live_body.replace("\r\n", "\n").split("\n") if ln.strip()]
+    missing = []
+    checked = excused = 0
+    for line in lines:
+        if excuses_section_lead(line, row):
+            excused += 1
+            continue
+        checked += 1
+        sq = squash(line)
+        if sq in stored:
+            continue
+        if len(sq) >= 25 and sq[:80] in stored:
+            continue
+        missing.append(line[:240])
+    return {"ok": not missing, "checked": checked, "excused_chrome": excused, "missing": missing}
+
+
 def reverse_check(lines, row, siblings, chrome=frozenset(), levels=None):
     """Every live line of the row's region must be stored. Returns {ok, checked, excused_chrome, missing:[...]}."""
     region = section_region(lines, row, siblings, levels)
@@ -529,7 +755,10 @@ def main():
     for s in sample:
         u = units[s["unit_key"]]
         live_url = s.get("source_url") or u["source_url"]
-        rec = arc.fetch(live_url, accept="*/*", min_bytes=0)
+        if a.state in ("IA", "WV", "KS"):
+            rec = live_fetch(arc, live_url, a.state)
+        else:
+            rec = arc.fetch(live_url, accept="*/*", min_bytes=0)
         row = {"citation_path": s["citation_path"], "citation": s["citation"], "url": live_url, "live_status": rec["http_status"],
                "route": rec["route"], "user_agent": rec.get("user_agent"), "ua_retry": rec.get("ua_retry", False)}
         live_body = live_raw = None
@@ -567,26 +796,75 @@ def main():
                     live_raw = zip_html.encode("utf-8")
                     live = squash(live_text(live_raw, bulk_url))
                     row["live_route"] = "publisher_zip_member"
-            live_docs[live_url] = live_lines(live_raw, live_url)
+            lines_body = live_raw
+            parsed_row = (
+                live_ks_section_row(live_raw, live_url, s)
+                or live_ia_section_row(live_raw, live_url, s)
+                or live_wv_section_row(live_raw, live_url, s)
+                or live_hi_section_row(live_raw, live_url, s)
+            )
+            if parsed_row is not None:
+                row["_parsed_row"] = parsed_row
+            if a.state == "WV" and parsed_row:
+                try:
+                    lines_body = (json.loads(live_raw.decode("utf-8", "replace")).get("html") or "").encode("utf-8") or live_raw
+                except (ValueError, AttributeError, json.JSONDecodeError):
+                    lines_body = live_raw
+            live_docs[live_url] = live_lines(lines_body, live_url)
             row["_lines_url"] = live_url
-            row["_container"] = container_lines(live_raw, s)
+            row["_container"] = container_lines(lines_body, s)
             number = s["hierarchy"][-1].get("number") or ""
-            row["citation_ok"] = bool(number) and squash(number) in live
-            if a.state == "TX" and not row["citation_ok"]:
-                anchor = s["citation_path"].split("~", 1)[0].split(":", 1)[-1].strip()
-                row["citation_ok"] = bool(anchor) and squash(anchor) in live
-            if a.state == "CA" and not row["citation_ok"]:
-                anchor = s["citation_path"].split("~", 1)[0].split(":", 1)[-1].strip().rstrip(".")
-                row["citation_ok"] = bool(anchor) and squash(anchor) in live
             heading = s.get("heading") or ""
-            row["heading_ok"] = (not heading) or squash(heading) in live
-            if heading and not row["heading_ok"]:
-                row["heading_ok"] = squash(re.sub(r"\[[^\]]+\]", "", heading)) in live
-            if heading and not row["heading_ok"]:
-                row["heading_ok"] = squash(heading.split("[", 1)[0].strip()) in live
-            if a.state == "CA" and heading and not row["heading_ok"]:
-                row["heading_ok"] = squash(heading.split("(", 1)[0].strip()) in live
-            row["text_ok"] = squash(s["text"]) in live
+            citation = s.get("citation") or ""
+            if parsed_row is not None:
+                if parsed_row.get("citation_token"):
+                    wv_dir = os.path.join(HERE, "..", "wv")
+                    if wv_dir not in sys.path:
+                        sys.path.insert(0, wv_dir)
+                    from wv_common import norm_slug  # noqa: WPS433
+                    row["citation_ok"] = norm_slug(parsed_row["citation_token"]) == norm_slug(
+                        (s.get("citation_path") or citation or "").replace("§", "")
+                    )
+                else:
+                    pub_num = parsed_row.get("number") or publisher_section_number(live_raw)
+                    if pub_num:
+                        sp, sn, sqc = squash(pub_num), squash(number), squash(citation)
+                        row["citation_ok"] = (bool(sn) and sp == sn) or (bool(sqc) and sp == sqc)
+                    else:
+                        row["citation_ok"] = bool(number) and squash(number) in live
+                lh = parsed_row.get("heading") or ""
+                live_section_text = parsed_row.get("text") or ""
+                if not live_section_text.strip():
+                    live_section_text = parsed_row.get("status_label") or lh
+                row["heading_ok"] = (not heading) or squash(heading) == squash(lh) or squash(heading) in squash(lh)
+                if heading and not row["heading_ok"]:
+                    row["heading_ok"] = squash(re.sub(r"\[[^\]]+\]", "", heading)) in squash(lh)
+                row["text_ok"] = squash(s["text"]) == squash(live_section_text) if live_section_text.strip() else squash(s["text"]) in live
+            else:
+                pub_num = publisher_section_number(live_raw)
+                if pub_num:
+                    sp, sn, sqc = squash(pub_num), squash(number), squash(citation)
+                    row["citation_ok"] = (bool(sn) and sp == sn) or (bool(sqc) and sp == sqc)
+                else:
+                    row["citation_ok"] = bool(number) and squash(number) in live
+                if a.state == "TX" and not row["citation_ok"]:
+                    anchor = s["citation_path"].split("~", 1)[0].split(":", 1)[-1].strip()
+                    row["citation_ok"] = bool(anchor) and squash(anchor) in live
+                if a.state == "CA" and not row["citation_ok"]:
+                    anchor = s["citation_path"].split("~", 1)[0].split(":", 1)[-1].strip().rstrip(".")
+                    row["citation_ok"] = bool(anchor) and squash(anchor) in live
+                row["heading_ok"] = (not heading) or squash(heading) in live
+                if heading and not row["heading_ok"]:
+                    row["heading_ok"] = squash(re.sub(r"\[[^\]]+\]", "", heading)) in live
+                if heading and not row["heading_ok"]:
+                    row["heading_ok"] = squash(heading.split("[", 1)[0].strip()) in live
+                if a.state == "CA" and heading and not row["heading_ok"]:
+                    row["heading_ok"] = squash(heading.split("(", 1)[0].strip()) in live
+                live_body_parsed = live_section_body(live_raw)
+                if live_body_parsed is not None:
+                    row["text_ok"] = squash(s["text"]) == squash(live_body_parsed)
+                else:
+                    row["text_ok"] = squash(s["text"]) in live
             if rec.get("sha256"):
                 row["live_sha256"] = rec["sha256"]
             note = s.get("status_note") or ""
@@ -615,13 +893,17 @@ def main():
     for s, row in zip(sample, results):
         url = row.pop("_lines_url", None)
         container = row.pop("_container", None)
+        parsed_row = row.pop("_parsed_row", None)
         if url is None:
             row["reverse_ok"] = False
             continue
-        sibs = ordered_siblings(s, neighbors if neighbors is not None else secs)
-        host = re.sub(r"^https?://([^/]+).*$", r"\1", url)
-        rev = reverse_check(container or live_docs[url], s, sibs, chrome.get(host, frozenset()),
-                            (manifest.get("structure") or {}).get("levels"))
+        if parsed_row is not None:
+            rev = reverse_check_section_body(parsed_row, s)
+        else:
+            sibs = ordered_siblings(s, neighbors if neighbors is not None else secs)
+            host = re.sub(r"^https?://([^/]+).*$", r"\1", url)
+            rev = reverse_check(container or live_docs[url], s, sibs, chrome.get(host, frozenset()),
+                                (manifest.get("structure") or {}).get("levels"))
         row.update(reverse_ok=rev["ok"], reverse_lines=rev["checked"], reverse_chrome=rev["excused_chrome"],
                    reverse_missing=rev["missing"][:3])
         row["ok"] = row["ok"] and rev["ok"]
@@ -658,7 +940,7 @@ def main():
                      + (f" {r.get('blocks', 0) - r.get('blocks_missing', 0)}/{r.get('blocks', 0)} |" if block_classes else ""))
     misses = [(r["citation_path"], m) for r in results for m in r.get("reverse_missing") or []]
     if misses:
-        lines += ["", "Live lines not found in the stored row (first three per section):", ""]
+        lines += ["", "Live body lines not found in stored text/history (first three per section):", ""]
         lines += [f"- `{p}`: {m.replace('|', '/')}" for p, m in misses]
     with open(a.report, "a", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n\n")
