@@ -339,6 +339,20 @@ for (const file of files) {
           ...new Set([primaryId, ...crossIds, ...(current.sourceIds ?? [])]),
         ];
         if (entry.status === "verified") current.pinpoint = entry.citation;
+        current.effectiveFrom = entry.effectiveDate ?? null;
+        const limbDefs = entry.periodLimbs ?? [];
+        if (baseline && limbDefs.length > 0 && entry.periodCombine) {
+          current.calculation = {
+            mode: "clocks_min" as const,
+            limbs: limbDefs.map((l) => ({
+              amount: l.amount,
+              unit: UNIT[l.unit]!,
+              from: l.from,
+            })),
+            combine: entry.periodCombine,
+            clocks: [],
+          };
+        }
         if (!hadProvenance) attached++;
         const legacyId = `${state.toLowerCase()}-${entry.claimType}-general-review-20261002`;
         const legacy = rules.find((r) => r.id === legacyId);
