@@ -7,9 +7,9 @@
 const DOTTED_PATH_STATES = new Set(["FL", "KY", "MI", "MN", "MO", "NV", "OR", "WI"]);
 
 export function exactCitationPaths(state: string, citation: string): string[] | null {
-  const text = citation.trim();
+  const text = withoutSectionRanges(citation.trim());
   const usps = state.toUpperCase();
-  if (!text || citesSectionRange(text)) return null;
+  if (!text.trim()) return null;
   if (usps === "OK") return oklahomaPaths(text);
   const paths = omitSectionHalf(
     omitDottedPrefix([
@@ -31,11 +31,15 @@ export function exactCitationPaths(state: string, citation: string): string[] | 
 }
 
 /**
- * "to" or "through" between section numbers is a range, so nothing is linked.
- * The same words in ordinary prose, such as "applied to", are not a range.
+ * A written range such as "15-51-10 to 15-51-60" is removed and not linked.
+ * An exact section beside that range is still linked.
+ * "to" in ordinary prose, such as "applied to", is not a range.
  */
-function citesSectionRange(text: string): boolean {
-  return /(?:§§?\s*)?\d[\dA-Za-z.]*(?:\([^)]*\))*\s+(?:to|through)\s+(?:§§?\s*)?\d/i.test(text);
+function withoutSectionRanges(text: string): string {
+  return text.replace(
+    /(?:§§?\s*)?\d[\dA-Za-z.-]*(?:\([^)]*\))*\s+(?:to|through)\s+(?:§§?\s*)?\d[\dA-Za-z.-]*(?:\([^)]*\))*/gi,
+    " ",
+  );
 }
 
 /** A bare section number that is already the section half of a title or article token is not a second section. */
