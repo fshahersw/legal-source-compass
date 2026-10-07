@@ -10,7 +10,7 @@ import tempfile
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from sc_common import Archive, collapse, decode_html, html_text, sha256_hex, write_packet  # noqa: E402
 
-from citation import canon_citation, citations_equal_lists  # noqa: E402
+from citation import canon_citation, citations_equal_lists, filter_sections_to_official_toc  # noqa: E402
 
 STATE = "ND"
 BASE = "https://ndlegis.gov/cencode/"
@@ -118,6 +118,13 @@ def chapter_id_from_slug(slug: str) -> str | None:
     return f"{int(m.group(1))}-{int(m.group(2)):02d}" if len(m.group(2)) <= 2 else f"{int(m.group(1))}-{int(m.group(2))}"
 
 
+def citation_chapter_id(citation: str) -> str | None:
+    parts = citation.strip().split("-")
+    if len(parts) < 3:
+        return None
+    return f"{int(parts[0])}-{int(parts[1]):02d}"
+
+
 def run(work: str):
     arc = Archive(work)
     inv = json.load(open(os.path.join(work, "inventory.json")))
@@ -140,10 +147,10 @@ def run(work: str):
         pdf_body = arc.read(prec)
         text = pdf_text(pdf_body)
         parsed = split_pdf_sections(text)
-        pdf_counts[slug] = len(parsed)
         if html_only_toc:
             html, _ = decode_html(arc.read(hrec))
             chapter_id, chapter_heading, toc_rows = parse_toc(html)
+            parsed, _ = filter_sections_to_official_toc(parsed, toc_rows)
         else:
             if slug not in pdf_only and not html_only_toc:
                 pdf_only.add(slug)
@@ -152,6 +159,7 @@ def run(work: str):
                 chapter_id = "-".join(parsed[0]["citation"].split("-")[:2])
             chapter_heading = None
             toc_rows = [{"citation": s["citation"], "heading": s["heading"]} for s in parsed]
+        pdf_counts[slug] = len(parsed)
         toc_counts[slug] = len(toc_rows)
         toc_cits = [r["citation"] for r in toc_rows]
         pdf_cits = [s["citation"] for s in parsed]
