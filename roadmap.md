@@ -22,3 +22,4 @@
 - [x] Source catalog integrated into library; court website links on state pages
 - [x] Email/password sign-up, sign-in, reset; sidebar AccountBox
 - [x] Collapsible sidebar (icon rail, persisted choice, header toggle)
+- [x] Court artwork on every court profile (verified exact-ID marks, honest court-type fallbacks, shared matter-page treatment)
