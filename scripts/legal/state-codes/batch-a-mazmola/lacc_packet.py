@@ -54,9 +54,14 @@ def main():
             o['sources'].append(src)
 
     state = []
+    empty_pages = []
     for d in docs:
         rec = pages[d]
-        pg = P.parse_page((ROOT / rec['stored_path']).read_text(encoding='utf8', errors='replace'), CFG['prefix'], CFG['banner'])
+        try:
+            pg = P.parse_page((ROOT / rec['stored_path']).read_text(encoding='utf8', errors='replace'), CFG['prefix'], CFG['banner'])
+        except P.EmptyArticlePage:
+            empty_pages.append(rec['url'])
+            continue
         art = P.article_record(pg)
         state = P.apply_headers(state, pg['headers'])
         unit_lines = list(pg['lines_before']) + [pg['article_line']] + list(pg['body']) + list(pg['history'])
@@ -86,8 +91,8 @@ def main():
         data = (ROOT / rec['stored_path']).read_bytes()
         add_source(rec['sha256'], len(data), 'publisher_original', ROOT / rec['stored_path'], rec)
     proof = {'marker': 'contents page: article links (2 anchors per article, one article document each); each article page prints one article line',
-             'pages': [{'url': toc_rec['url'], 'markers': len(docs), 'sections': len(sections)}] + proof_pages,
-             'unfetched_child_pages': [], 'empty_text_pages': []}
+             'pages': [{'url': toc_rec['url'], 'markers': len(docs) - len(empty_pages), 'sections': len(sections)}] + proof_pages,
+             'unfetched_child_pages': [], 'empty_text_pages': empty_pages}
     manifest = json.loads((OUT / 'manifest.json').read_text())
     levels = set(manifest['structure']['levels'])
     stray = sorted({h['level'] for sec in sections for h in sec['hierarchy']} - levels)

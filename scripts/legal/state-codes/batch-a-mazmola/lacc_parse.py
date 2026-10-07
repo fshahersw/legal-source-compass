@@ -35,6 +35,10 @@ def label_pattern(prefix):
     return re.compile(r'^%s ([0-9]+(?:\.[0-9]+)*(?:-[A-Z])?)$' % re.escape(prefix))
 
 
+class EmptyArticlePage(ValueError):
+    """The page has a label and no printed text at all. A gap, not a row; nothing is invented from the contents heading."""
+
+
 def clean(s):
     return WS.sub(' ', NBSP.sub(' ', s)).strip()
 
@@ -56,6 +60,8 @@ def page_lines(html):
 def parse_page(html, prefix='CC', banner=None):
     """-> dict(label, path, headers=[[level, rank, number, heading]], notes, art_no, heading, body, history, repeal_only)."""
     label, lines = page_lines(html)
+    if not lines:
+        raise EmptyArticlePage(label)
     m = (LABEL if prefix == 'CC' else label_pattern(prefix)).match(label)
     if not m:
         raise ValueError('unexpected label %r' % label)

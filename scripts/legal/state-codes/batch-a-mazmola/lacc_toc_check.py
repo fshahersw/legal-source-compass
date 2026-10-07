@@ -89,11 +89,16 @@ def main():
             pages[r['url'].rsplit('=', 1)[1]] = r
     problems = collections.defaultdict(list)
     parsed = {}
+    empties = []
     for d, texts in by_doc.items():
         if d not in pages:
             problems['not_retained'].append(d)
             continue
-        pg = P.parse_page((ROOT / pages[d]['stored_path']).read_text(encoding='utf8', errors='replace'), CONFIG['prefix'], CONFIG['banner'])
+        try:
+            pg = P.parse_page((ROOT / pages[d]['stored_path']).read_text(encoding='utf8', errors='replace'), CONFIG['prefix'], CONFIG['banner'])
+        except P.EmptyArticlePage as e:
+            empties.append({'doc': d, 'label': str(e), 'contents_heading': texts[-1], 'bytes': pages[d]['bytes']})
+            continue
         rec = P.article_record(pg)
         parsed[d] = (pg, rec)
         label, heading = texts[0], texts[-1]
@@ -128,14 +133,14 @@ def main():
     result = {
         'toc_url': TOC_URL, 'toc_sha256': toc_rec['sha256'], 'toc_bytes': toc_rec['bytes'], 'toc_retrieved_at': toc_rec['retrieved_at'],
         'anchors': len(anchors), 'distinct_documents': len(by_doc), 'anchors_per_document': sorted(set(len(v) for v in by_doc.values())),
-        'retained_pages': len([d for d in by_doc if d in pages]), 'parsed_pages': len(parsed),
+        'retained_pages': len([d for d in by_doc if d in pages]), 'parsed_pages': len(parsed), 'empty_text_pages': empties,
         'duplicate_article_paths': [p for p, v in nums.items() if len(v) > 1],
         'label_mismatches': problems['label'], 'heading_missing_anchor': problems['heading'],
         'heading_punctuation_only': len(problems['heading_punctuation_only']), 'heading_wording_differences': problems['heading_wording'], 'not_retained': problems['not_retained'],
         'article_number_range': [min(present), top], 'range_rows': ranges, 'unexplained_number_gaps': gaps, 'unexplained_gap_runs': runs(gaps),
         'child_toc_folders_linked': sorted(set(re.findall(r'Laws_Toc\.aspx\?folder=(\d+)', toc))),
     }
-    result['matches'] = (result['anchors'] == 2 * result['distinct_documents'] == 2 * result['retained_pages'] == 2 * result['parsed_pages']
+    result['matches'] = (result['anchors'] == 2 * result['distinct_documents'] == 2 * result['retained_pages'] and result['parsed_pages'] + len(empties) == result['distinct_documents']
                          and not problems['label'] and not problems['heading'] and not problems['not_retained']
                          and not result['duplicate_article_paths'])
     OUT.mkdir(parents=True, exist_ok=True)
