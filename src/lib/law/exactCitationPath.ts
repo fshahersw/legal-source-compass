@@ -125,6 +125,7 @@ function mainePaths(citation: string): string[] | null {
 /**
  * Delaware paths such as `10 Del. C. § 8119` and `10 Del. C. § 8131(a)`.
  * The title and the section are one path. A parenthetical is not included.
+ * A note such as `(narrow variant: …, …)` is not a second section.
  * Title 10 section 8131 is not the section 8131 in another title.
  */
 function delawarePaths(citation: string): string[] | null {
@@ -133,7 +134,8 @@ function delawarePaths(citation: string): string[] | null {
   for (const match of citation.matchAll(re)) {
     const title = match[1]?.toUpperCase();
     if (!title) continue;
-    for (const raw of (match[2] ?? "").split(",")) {
+    const listed = (match[2] ?? "").replace(/\s+\(.*$/s, "");
+    for (const raw of listed.split(",")) {
       const section = raw
         .trim()
         .replace(/\s+/g, "")

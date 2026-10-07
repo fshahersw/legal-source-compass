@@ -71,6 +71,51 @@ describe("exact statute citation paths", () => {
     expect(exactCitationPaths("DE", "10 Del. C. § 8131(a)")?.includes("8131")).toBe(false);
     expect(exactCitationPaths("DE", "10 Del. C. § 8131(a)")?.includes("15/8131")).toBe(false);
     expect(exactCitationPaths("DE", "10 Del. C. § 8131(a)")?.includes("9/8131")).toBe(false);
+    expect(
+      exactCitationPaths(
+        "DE",
+        "10 Del. C. § 8106(a) (narrow variant: trespass / injury to real property, and detention of personal chattels)",
+      ),
+    ).toEqual(["10/8106"]);
+    expect(
+      exactCitationPaths(
+        "DE",
+        "10 Del. C. § 8106(a) (narrow variant: trespass / injury to real property, and detention of personal chattels)",
+      )?.includes("8106"),
+    ).toBe(false);
+    expect(
+      onlyExactStoredSection("10/8106", [
+        {
+          citationPath: "10-81-8106",
+          sectionNumbers: ["8106"],
+          titleNumbers: ["10"],
+        },
+        {
+          citationPath: "9-81-8106",
+          sectionNumbers: ["8106"],
+          titleNumbers: ["9"],
+        },
+        {
+          citationPath: "15-81-8106",
+          sectionNumbers: ["8106"],
+          titleNumbers: ["15"],
+        },
+      ])?.citationPath,
+    ).toBe("10-81-8106");
+    expect(
+      onlyExactStoredSection("8106", [
+        {
+          citationPath: "10-81-8106",
+          sectionNumbers: ["8106"],
+          titleNumbers: ["10"],
+        },
+        {
+          citationPath: "9-81-8106",
+          sectionNumbers: ["8106"],
+          titleNumbers: ["9"],
+        },
+      ]),
+    ).toBeNull();
     const herbicide = {
       citationPath: "10-81-8131",
       sectionNumbers: ["8131"],
