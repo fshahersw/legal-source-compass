@@ -26,6 +26,7 @@ export function exactCitationPaths(state: string, citation: string): string[] | 
         ...(usps === "LA" ? (louisianaRevisedStatutePaths(text) ?? []) : []),
         ...(usps === "LA" ? (louisianaCivilCodePaths(text) ?? []) : []),
         ...(usps === "TX" ? (texasCodePaths(text) ?? []) : []),
+        ...(usps === "WA" ? (washingtonPaths(text) ?? []) : []),
         ...(DOTTED_PATH_STATES.has(usps) ? (dottedPaths(text) ?? []) : []),
       ]),
     ]),
@@ -244,6 +245,22 @@ function texasCodePaths(citation: string): string[] | null {
         rest = rest.slice(next[0].length);
       }
     }
+  }
+  return paths.length ? paths : null;
+}
+
+/**
+ * Washington Revised Code paths such as `RCW 4.16.080(2)`.
+ * The whole three-part number is the path. A parenthetical is not included.
+ * `4.16.080` is not `4.16`, `16.080`, or `14.16.080`.
+ */
+function washingtonPaths(citation: string): string[] | null {
+  const paths: string[] = [];
+  const re = /\bRCW\s+(\d+\.\d+\.\d+)(?!\d)/gi;
+  for (const match of citation.matchAll(re)) {
+    const path = match[1];
+    if (!path || paths.includes(path)) continue;
+    paths.push(path);
   }
   return paths.length ? paths : null;
 }
