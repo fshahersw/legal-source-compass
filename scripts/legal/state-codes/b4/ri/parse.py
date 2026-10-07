@@ -11,7 +11,7 @@ from sc_common import Archive, collapse, decode_html, html_text, write_packet  #
 
 H3_CITE = re.compile(r"R\.I\.\s*Gen\.\s*Laws\s*§\s*([0-9A-Z.]+(?:-[0-9A-Z.]+)*)", re.I)
 SEC_HEAD = re.compile(
-    r"<p[^>]*>\s*<b>\s*§\s*&nbsp;([^.<]+)\.\s*&nbsp;([^<]*)</b>\s*</p>",
+    r"<p[^>]*>\s*<b>\s*§\s*&nbsp;([0-9A-Z.-]+)\.\s*&nbsp;([^<]*)</b>\s*</p>",
     re.S | re.I,
 )
 HIST = re.compile(r"History of Section\.<br\s*/?>(.*?)</p>", re.S | re.I)
@@ -64,7 +64,15 @@ def section_body_text(block):
     for para in re.findall(r"<p[^>]*>(.*?)</p>", body, re.S | re.I):
         if "History of Section" in para:
             continue
+        if H3_CITE.search(para) and not SEC_HEAD.search(para):
+            continue
         t = html_text(para)
+        if not t:
+            continue
+        if re.match(r"^R\.I\.\s*Gen\.\s*Laws\s*§", t, re.I):
+            continue
+        if parts and t.strip().startswith("§") and collapse(t).startswith(collapse(parts[0])):
+            continue
         if t and (not parts or t != parts[0]):
             parts.append(t)
     return "\n".join(parts).strip()

@@ -55,11 +55,7 @@ def parse_section_page(page, url):
     body_html = block
     body_html = HEADING_RE.sub("", body_html, count=1)
     body_html = QHISTORY_RE.sub("", body_html)
-    body_html = re.sub(r'<span class="bhistory">.*?</span>', "", body_html, flags=re.S | re.I)
-    body_parts = []
-    for m in re.finditer(r'<div class="mrs-text[^"]*">(.*?)</div>', body_html, re.S | re.I):
-        body_parts.append(collapse(html_text(m.group(1))))
-    body = "\n".join(p for p in body_parts if p)
+    body = collapse(html_text(body_html))
     inline_hist = [collapse(html_text(m.group(1))) for m in BHISTORY_RE.finditer(block)]
     qh = QHISTORY_RE.search(block)
     history = None
