@@ -162,6 +162,7 @@ export async function landCaseInventory({work, caseId, stageDir, runId, apply = 
     if (!row.document_id.startsWith(caseId + '-')) continue;
     const ingest = csvToDocument(caseId, row, receipt, source);
     ingest.data.inventory_record_sha256 = sha256(canonicalIntegerJson(ingest.data));
+    ingest.provenance.record_sha256 = sha256(canonicalIntegerJson(ingest.data));
     await appendJsonl(docFile, ingest);
     staged++;
   }
