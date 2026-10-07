@@ -647,6 +647,54 @@ export type PublicStatuteSection = {
 };
 
 let publicStatesCache: { at: number; states: Set<string> } | null = null;
+let publicCodesCache: { at: number; rows: ProjectedCodeRow[] } | null = null;
+
+type ProjectedCodeRow = {
+  jurisdiction?: unknown;
+  source_system?: unknown;
+  primary_code?: unknown;
+};
+
+async function publicSecondaryCodes(usps: string): Promise<string[]> {
+  if (!publicCodesCache || Date.now() - publicCodesCache.at >= CATALOG_TTL) {
+    const rows = await rpcPostOptional<ProjectedCodeRow[]>(
+      "corpus_publisher_code_projected_codes_v3",
+      {},
+    );
+    publicCodesCache = { at: Date.now(), rows: Array.isArray(rows) ? rows : [] };
+  }
+  return publicCodesCache.rows.flatMap((row) => {
+    if (row.primary_code === true) return [];
+    const state = asText(row.jurisdiction)?.toUpperCase();
+    const source = asText(row.source_system);
+    if (state !== usps || !source) return [];
+    return [source];
+  });
+}
+
+async function secondaryExactSection(
+  usps: string,
+  token: string,
+): Promise<PublicStatuteSection | null> {
+  const hits: PublicStatuteSection[] = [];
+  for (const source of await publicSecondaryCodes(usps)) {
+    const section = projectedStatuteSection(
+      usps,
+      await rpcPostOptional<Record<string, unknown> | null>(
+        "corpus_publisher_code_projected_section_v3",
+        {
+          p_jurisdiction: usps,
+          p_source_system: source,
+          p_native_id: `${usps}:${token}`,
+        },
+      ),
+      (citationPath) => citationPath === token,
+    );
+    if (section) hits.push(section);
+    if (hits.length > 1) return null;
+  }
+  return hits.length === 1 ? hits[0]! : null;
+}
 
 async function publicProjectionStates(): Promise<Set<string>> {
   if (publicStatesCache && Date.now() - publicStatesCache.at < CATALOG_TTL)
@@ -701,7 +749,9 @@ function projectedStatuteSection(
 
 /**
  * Public sections named by a limitations citation.
- * A token whose native id is `ST:<token>` is that section.
+ * A token whose native id is `ST:<token>` is that section in the primary code.
+ * A public secondary code is read only when that code itself is reviewed and projection is allowed,
+ * and only when the primary code does not already match.
  * Any other token links only when it equals the last path segment after `sec_`,
  * the final hyphen segment, or the stored section number, and exactly one published section matches.
  */
@@ -743,6 +793,8 @@ export async function publicStatuteSections(
         storedHierarchyNumbers(numberedRow?.["hierarchy"], "title"),
       )
     ) {
+      const secondary = await secondaryExactSection(usps, token);
+      if (secondary) sections.push(secondary);
       continue;
     }
     const numbered = projectedStatuteSection(usps, numberedRow, () => true);
