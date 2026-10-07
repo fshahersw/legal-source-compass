@@ -323,6 +323,9 @@ def parse_title(
     node = soup.find(id="va_code")
     if node is None:
         raise ValueError(f"title {title_number}: missing #va_code")
+    # The publisher's stylesheet hides these (.hiddenTable {display: none !important}); they are not part of the printed text.
+    for hidden in node.select(".hiddenTable"):
+        hidden.decompose()
 
     hierarchy: dict = {"title_heading": None}
     inventory: list[dict] = [

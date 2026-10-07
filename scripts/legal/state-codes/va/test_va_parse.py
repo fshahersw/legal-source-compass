@@ -8,8 +8,8 @@ from va_parse import count_section_markers, count_section_versions, parse_title 
 PAGE = """<html><body><div id="va_code"><h2>Title 8.9A. Commercial Code</h2><h3>Chapter 3. Perfection and Priority.</h3>
 <b>\u00a7 8.9A-322. Priorities.</b><p>(a) General rule.</p><p>(c) Proceeds rule.</p>(d) First-to-file rule under \u00a7 <a href='/vacode/8.9A-203/'>8.9A-203</a>. For purposes.
 <p>(e) Applicability.</p><p>2000, c. 1007.</p>
-<b>\u00a7 8.9A-323. Salaries.</b><p>Boards may set salaries not to exceed:</p><table><tr><td>Population</td><td>Annual Salary</td></tr>
-<tr><td>200,000 and over</td><td>$15,000</td></tr></table><p>1984, c. 221.</p>
+<b>\u00a7 8.9A-323. Salaries.</b><p>Boards may set salaries not to exceed:</p><table><tr><td class="hiddenTable">a</td><td>Population</td><td>Annual Salary</td></tr>
+<tr><td class="hiddenTable">b</td><td>200,000 and over</td><td>$15,000</td></tr></table><p>1984, c. 221.</p>
 <b>\u00a7 8.9A-324. (Effective until July 1, 2027) Purchase-money.</b><p>(a) Old version.</p><p>2001, c. 5.</p>
 <b>\u00a7 8.9A-324. (Effective July 1, 2027) Purchase-money.</b><p>(a) New version.</p><p>2026, c. 7.</p>
 <b>\u00a7\u00a7 8.9A-325, 8.9A-326. Repealed.</b><p>Repealed by Acts 2001, c. 1.</p>
