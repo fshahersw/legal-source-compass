@@ -45,8 +45,8 @@ export function CourtArtwork({
 }: {
   courtId: string;
   title: string;
-  system?: string | null;
-  type?: string | null;
+  system?: string | null | undefined;
+  type?: string | null | undefined;
   recordedLinks?: readonly { url: string; label: string }[];
   compact?: boolean;
 }) {
