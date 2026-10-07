@@ -27,6 +27,8 @@ import requests
 BUCKET = "corpus-originals"
 MAX_ROWS = 500
 MAX_BYTES = 6_000_000
+READBACK_TIMEOUT = 1800
+READBACK_ATTEMPTS = 8
 NS = uuid.UUID("5b6f1c58-2a56-4e6a-9f7a-1c0de5a7c0de")
 
 
@@ -118,8 +120,19 @@ class Cloud:
             return r.json()
 
     def readback(self, key):
-        r = self.s.get(f"{self.url}/storage/v1/object/authenticated/{BUCKET}/{key}", headers=self.h, timeout=600)
-        return r.status_code, r.content
+        url = f"{self.url}/storage/v1/object/authenticated/{BUCKET}/{key}"
+        last_err = None
+        for attempt in range(READBACK_ATTEMPTS):
+            try:
+                r = self.s.get(url, headers=self.h, timeout=READBACK_TIMEOUT)
+                return r.status_code, r.content
+            except (requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError) as e:
+                last_err = e
+                if attempt < READBACK_ATTEMPTS - 1:
+                    time.sleep(min(120, 2 ** attempt))
+                    continue
+                raise
+        raise last_err  # pragma: no cover
 
     def upload(self, key, data, ctype):
         r = self.s.post(f"{self.url}/storage/v1/object/{BUCKET}/{key}", data=data, timeout=1200,
@@ -145,11 +158,11 @@ def put_object(cloud, o):
                 time.sleep(min(60, 2 ** attempt))
                 continue
             raise RuntimeError(f"upload {ust} {msg}")
-        for attempt in range(6):
+        for attempt in range(READBACK_ATTEMPTS):
             st, body = cloud.readback(key)
             if st == 200 and hashlib.sha256(body).hexdigest() == o["sha256"] and len(body) == o["bytes"]:
                 break
-            time.sleep(min(30, 2 ** attempt))
+            time.sleep(min(120, 2 ** attempt))
     if st != 200 or hashlib.sha256(body).hexdigest() != o["sha256"] or len(body) != o["bytes"]:
         raise RuntimeError(f"readback mismatch {o['sha256'][:12]} status={st}")
     rec = {"bytes": o["bytes"], "bucket": BUCKET, "object_key": key, "readback_sha256": o["sha256"], "readback_bytes": len(body),
