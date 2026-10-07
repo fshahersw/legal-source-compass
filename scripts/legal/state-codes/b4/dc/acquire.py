@@ -89,7 +89,7 @@ def build_inventory(arc: Archive) -> dict:
     }
 
 
-def fetch_sections(arc: Archive, inv: dict, max_sections: int | None):
+def fetch_sections(arc: Archive, inv: dict, inv_path: str, max_sections: int | None):
     n = 0
     for sec in inv["sections"]:
         if sec.get("receipt_sha256"):
@@ -105,6 +105,7 @@ def fetch_sections(arc: Archive, inv: dict, max_sections: int | None):
         sec["receipt_sha256"] = rec["sha256"]
         if n % 500 == 0:
             print("sections", n, flush=True)
+            json.dump(inv, open(inv_path, "w"), indent=1)
 
 
 def main():
@@ -124,7 +125,7 @@ def main():
         print("inventory sections", len(inv["sections"]), "toc_json_docs", inv["toc_json_documents"], flush=True)
     if a.inventory_only:
         return
-    fetch_sections(arc, inv, a.max_sections)
+    fetch_sections(arc, inv, inv_path, a.max_sections)
     json.dump(inv, open(inv_path, "w"), indent=1)
     ok = sum(1 for s in inv["sections"] if s.get("receipt_sha256"))
     fail = sum(1 for s in inv["sections"] if s.get("fetch_failed"))
