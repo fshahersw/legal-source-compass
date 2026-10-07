@@ -54,6 +54,7 @@ export function CourtArtwork({
   const recorded = verified ? null : recordedCourtArtwork(recordedLinks);
   const [failed, setFailed] = useState(false);
   const source = !failed ? verified?.assetPath ?? recorded?.url ?? null : null;
+  const imageSource = verified?.assetPath ?? (recorded ? fileUrl(recorded.url) : null);
   const officialLabel = verified ? "Verified official court artwork" : recorded ? "Recorded court image" : null;
   const group = classifyCourtType(system, type);
   const Icon = typeIcons[group];
@@ -62,7 +63,7 @@ export function CourtArtwork({
     if (source) {
       const image = (
         <img
-          src={source.startsWith("/") ? fileUrl(source) : source}
+          src={imageSource ?? source}
           alt={`${title} ${verified?.kind === "banner" ? "official court mark" : "court artwork"}`}
           className={cn(
             "size-9 shrink-0 border border-border bg-surface object-contain",
@@ -100,7 +101,7 @@ export function CourtArtwork({
       <div className="grid h-32 w-full place-items-center overflow-hidden rounded-md border border-border bg-muted/40 p-3">
         {source ? (
           <img
-            src={source.startsWith("/") ? fileUrl(source) : source}
+            src={imageSource ?? source}
             alt={`${title} ${verified?.kind === "banner" ? "official court mark" : "court artwork"}`}
             className="max-h-full max-w-full object-contain"
             loading="lazy"
