@@ -70,13 +70,20 @@ def live_text(body, url):
     return sc.html_text(s)
 
 
-def california_leginfo_live_html(url: str) -> tuple[str | None, str]:
-    """Official section HTML when Cloudflare blocks direct fetch (Firecrawl CLI)."""
-    import subprocess
-    import tempfile
+def california_leginfo_section_text(raw: str) -> str:
+    block = re.search(r"```html\s*(.*?)```", raw, re.I | re.S)
+    if block:
+        return sc.html_text(block.group(1))
+    if "<h6" in raw or "Normal-Level" in raw:
+        return sc.html_text(raw)
+    return sc.html_text(raw)
 
+
+def california_leginfo_live_html(url: str, heading: str = "") -> tuple[str | None, str]:
+    """Official leginfo HTML via Firecrawl (direct fetch is Cloudflare-blocked)."""
     tmp = tempfile.mkdtemp(prefix="ca-leginfo-")
     out = os.path.join(tmp, "page.html")
+    env = os.environ.copy()
     cmd = [
         "npx",
         "--yes",
@@ -91,12 +98,43 @@ def california_leginfo_live_html(url: str) -> tuple[str | None, str]:
         out,
     ]
     try:
-        subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=180)
+        subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=180, env=env)
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
         return None, "firecrawl_cli_failed"
     if not os.path.isfile(out):
         return None, "firecrawl_cli_empty"
-    return open(out, encoding="utf-8", errors="replace").read(), "firecrawl_cli"
+    html = open(out, encoding="utf-8", errors="replace").read()
+    if "selectFromMultiples" in html and heading.strip():
+        interact_out = os.path.join(tmp, "interact.txt")
+        prompt = (
+            f'Click the link whose text is exactly: "{heading.strip()}". '
+            "Then return only the raw HTML of the statute section body (the h6 section number and following paragraphs)."
+        )
+        try:
+            subprocess.run(
+                [
+                    "npx",
+                    "--yes",
+                    "firecrawl-cli@latest",
+                    "interact",
+                    "--prompt",
+                    prompt,
+                    "-o",
+                    interact_out,
+                    "--timeout",
+                    "120",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=200,
+                env=env,
+            )
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            return None, "firecrawl_cli_interact_failed"
+        if os.path.isfile(interact_out):
+            return open(interact_out, encoding="utf-8", errors="replace").read(), "firecrawl_cli_interact"
+    return html, "firecrawl_cli"
 
 
 def texas_zip_chapter_live(arc, code: str, publisher_member: str) -> str | None:
@@ -154,40 +192,55 @@ def main():
     for s in sample:
         u = units[s["unit_key"]]
         live_url = s.get("source_url") or u["source_url"]
-        rec = arc.fetch(live_url, accept="*/*", min_bytes=0)
-        row = {"citation_path": s["citation_path"], "citation": s["citation"], "url": live_url, "live_status": rec["http_status"],
-               "route": rec["route"], "user_agent": rec.get("user_agent"), "ua_retry": rec.get("ua_retry", False)}
+        row = {"citation_path": s["citation_path"], "citation": s["citation"], "url": live_url, "live_status": None,
+               "route": "direct", "user_agent": None, "ua_retry": False}
         live_body = None
         raw_body = None
-        if rec["state"] == "complete":
-            raw_body = arc.read(rec)
-            live_body = live_text(raw_body, live_url) if a.state != "NJ" else raw_body.decode("utf-8", errors="replace")
-        elif a.state == "CA" and "leginfo.legislature.ca.gov" in live_url:
-            html, route = california_leginfo_live_html(live_url)
-            if html:
-                live_body = live_text(html.encode("utf-8"), live_url)
-                row["live_status"] = 200
-                row["route"] = route
-        if live_body is None:
-            row.update(ok=False, why="live fetch failed")
-        elif a.state == "NJ":
+        if a.state == "NJ":
             nj_dir = os.path.join(HERE, "..", "b4", "nj")
             sys.path.insert(0, nj_dir)
-            from lis_page_diff import body_matches_staged, citation_in_page, page_title  # noqa: E402
-            from lis_resolve import lis_html_to_text  # noqa: E402
+            from lis_page_diff import body_matches_staged, citation_in_page, page_title, squash as nj_squash  # noqa: E402
+            from lis_resolve import fetch_page, lis_html_to_text, resolve  # noqa: E402
 
-            page_html = live_body if isinstance(live_body, str) else (raw_body or b"").decode("utf-8", errors="replace")
+            occurrence = int(s.get("occurrence") or 1)
+            if "~" in s["citation_path"]:
+                occurrence = int(s["citation_path"].rsplit("~", 1)[-1])
+            lis_row = resolve(s["citation"], occurrence, s.get("heading") or "")
+            if not lis_row:
+                row.update(ok=False, why="lis resolve miss", live_status=0)
+                results.append(row)
+                continue
+            live_url = lis_row["url"]
+            row["url"] = live_url
+            row["live_status"] = 200
+            page_html = fetch_page(live_url)
             live_raw = lis_html_to_text(page_html)
             title = page_title(page_html)
-            hay = squash(title + " " + live_raw)
+            hay = nj_squash(title + " " + live_raw)
             number = s["hierarchy"][-1].get("number") or s.get("citation") or ""
             row["citation_ok"] = citation_in_page(number, page_html, live_raw)
             heading = s.get("heading") or ""
-            row["heading_ok"] = (not heading) or squash(heading) in hay
+            row["heading_ok"] = (not heading) or nj_squash(heading) in hay
             row["text_ok"] = body_matches_staged(s["text"], live_raw)
             row["ok"] = row["citation_ok"] and row["heading_ok"] and row["text_ok"]
             results.append(row)
             continue
+        rec = arc.fetch(live_url, accept="*/*", min_bytes=0)
+        row["live_status"] = rec["http_status"]
+        row["route"] = rec["route"]
+        row["user_agent"] = rec.get("user_agent")
+        row["ua_retry"] = rec.get("ua_retry", False)
+        if rec["state"] == "complete":
+            raw_body = arc.read(rec)
+            live_body = live_text(raw_body, live_url)
+        elif a.state == "CA" and "leginfo.legislature.ca.gov" in live_url:
+            html, route = california_leginfo_live_html(live_url, s.get("heading") or "")
+            if html:
+                live_body = california_leginfo_section_text(html)
+                row["live_status"] = 200
+                row["route"] = route
+        if live_body is None:
+            row.update(ok=False, why="live fetch failed")
         else:
             live = squash(live_body)
             if (
