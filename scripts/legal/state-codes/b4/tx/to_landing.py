@@ -29,9 +29,9 @@ def hierarchy_list(code: str, anchor: str, heading: str, labels: dict) -> list:
     return out
 
 
-def citation_path(code: str, anchor: str, occurrence: int) -> str:
+def citation_path(code: str, anchor: str, global_occurrence: int) -> str:
     base = f"{code}:{anchor}"
-    return base if occurrence == 1 else f"{base}~{occurrence}"
+    return base if global_occurrence == 1 else f"{base}~{global_occurrence}"
 
 
 def convert(root: str, parsed_name: str, cfg: dict):
@@ -140,6 +140,7 @@ def convert(root: str, parsed_name: str, cfg: dict):
             }
         )
 
+    cite_global: dict[str, int] = {}
     for sec in sections:
         ch = next(c for c in chapters if c["id"] == sec["chapter_id"])
         text = texts[sec["chapter_id"]]
@@ -150,7 +151,9 @@ def convert(root: str, parsed_name: str, cfg: dict):
             gaps.append({"citation_path": sec["id"], "reason": "no printed text"})
             continue
         anchor = sec["native_section_anchor"].strip()
-        path = citation_path(ch["code"], anchor, sec["occurrence"])
+        base = f"{ch['code']}:{anchor}"
+        cite_global[base] = cite_global.get(base, 0) + 1
+        path = citation_path(ch["code"], anchor, cite_global[base])
         if not regex.search(path):
             raise SystemExit(f"citation_path {path!r} does not match manifest regex")
         live_url = sec["source_url"] or chapter_page_url(ch["code"], ch["publisher_member"])
