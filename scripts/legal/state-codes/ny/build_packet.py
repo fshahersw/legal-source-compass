@@ -20,6 +20,7 @@ import json
 import pathlib
 import re
 import sys
+from concurrent.futures import ProcessPoolExecutor
 
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
@@ -43,6 +44,11 @@ def usable(r):
             and r.get("source_status") == 200)
 
 
+def parse_receipt(job):
+    root, r = job
+    return parse_page((pathlib.Path(root) / r["stored_path"]).read_bytes().decode("utf8", "replace"), r["url"])
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default="/tmp/sc/NY")
@@ -53,12 +59,11 @@ def main():
     (out / "text").mkdir(parents=True, exist_ok=True)
     fetcher = Fetcher("NY", root, min_interval=0)
     pages, receipts = {}, {}
-    for r in fetcher.receipts():
-        if r["url"] in pages or not usable(r):
-            continue
-        page = parse_page(fetcher.read(r).decode("utf8", "replace"), r["url"])
-        if page["statute_page"] and not page["not_found"]:
-            pages[r["url"]], receipts[r["url"]] = page, r
+    candidates = [r for r in fetcher.receipts() if usable(r)]
+    with ProcessPoolExecutor() as ex:
+        for r, page in zip(candidates, ex.map(parse_receipt, [(str(root), r) for r in candidates], chunksize=64)):
+            if r["url"] not in pages and page["statute_page"] and not page["not_found"]:
+                pages[r["url"]], receipts[r["url"]] = page, r
     law_names = {}
     parent, order, seen, frontier = {}, [], {INDEX}, [INDEX]
     while frontier:
