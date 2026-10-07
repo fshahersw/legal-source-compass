@@ -25,6 +25,7 @@ export function exactCitationPaths(state: string, citation: string): string[] | 
         ...(usps === "MD" ? (marylandPaths(text) ?? []) : []),
         ...(usps === "LA" ? (louisianaRevisedStatutePaths(text) ?? []) : []),
         ...(usps === "LA" ? (louisianaCivilCodePaths(text) ?? []) : []),
+        ...(usps === "TX" ? (texasCivilPracticePaths(text) ?? []) : []),
         ...(DOTTED_PATH_STATES.has(usps) ? (dottedPaths(text) ?? []) : []),
       ]),
     ]),
@@ -206,6 +207,24 @@ function louisianaCivilCodePaths(citation: string): string[] | null {
       if (!/^\d+(?:\.\d+)?$/.test(path) || paths.includes(path)) continue;
       paths.push(path);
     }
+  }
+  return paths.length ? paths : null;
+}
+
+/**
+ * Texas Civil Practice and Remedies Code paths such as `Tex. Civ. Prac. & Rem. Code § 16.003(a)`.
+ * The code and the section are one path, `CP:16.003`. A parenthetical is not included.
+ * `§ 16.003` is not `§ 16.0031`. The same section number in another code is not a second path.
+ */
+function texasCivilPracticePaths(citation: string): string[] | null {
+  if (!/\bCiv\.?\s*Prac\.?\s*&\s*Rem\.?\s*Code\b/i.test(citation)) return null;
+  const paths: string[] = [];
+  const re = /§§?\s*(\d+\.\d+)(?!\d)/g;
+  for (const match of citation.matchAll(re)) {
+    const section = match[1];
+    if (!section) continue;
+    const path = `CP:${section}`;
+    if (!paths.includes(path)) paths.push(path);
   }
   return paths.length ? paths : null;
 }
