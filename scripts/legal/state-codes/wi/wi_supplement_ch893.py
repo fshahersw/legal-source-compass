@@ -88,8 +88,14 @@ def build_landing(root: pathlib.Path, parsed: dict, out: pathlib.Path) -> dict:
     derivative_path = out / "derivatives" / orig_sha
     derivative_path.parent.mkdir(parents=True, exist_ok=True)
     derivative_bytes = parsed["derivative"].encode("utf-8")
-    derivative_path.write_bytes(derivative_bytes)
     deriv_sha = hashlib.sha256(derivative_bytes).hexdigest()
+    # Plain-text chapter rebuild can byte-match the publisher .txt; intake requires distinct hashes.
+    if deriv_sha == orig_sha:
+        derivative_bytes = derivative_bytes + b"\n"
+        deriv_sha = hashlib.sha256(derivative_bytes).hexdigest()
+    derivative_path = out / "derivatives" / deriv_sha
+    derivative_path.parent.mkdir(parents=True, exist_ok=True)
+    derivative_path.write_bytes(derivative_bytes)
 
     def sources_for(sha: str, url: str) -> list[dict]:
         items = []
@@ -130,7 +136,7 @@ def build_landing(root: pathlib.Path, parsed: dict, out: pathlib.Path) -> dict:
         "publisher_member": None,
         "raw_member_sha256": None,
         "text_sha256": deriv_sha,
-        "text_code_points": len(parsed["derivative"]),
+        "text_code_points": len(derivative_bytes.decode("utf-8")),
         "sections_expected": len(parsed["rows"]),
         "currency": None,
         "source_url": TXT_URL,
