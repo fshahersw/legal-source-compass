@@ -149,6 +149,13 @@ export const MATTERS = {
     pages: [{ id: 'nysd-3043-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.nysd.uscourts.gov/MDL/22md3043' }],
     index_pages: [],
   },
+  // E.D. Ky. MDL 2809 (Onglyza/Kombiglyze; orders node only — main hub has generic MDL_Attorneys.pdf skipped).
+  '2809': {
+    name: 'In re Onglyza (Saxagliptin) and Kombiglyze XR (Saxagliptin and Metformin) Products Liability Litigation', court_id: 'kyed', host: 'www.kyed.uscourts.gov', tier: 2,
+    case_number: { literal: '5:18-md-02809-KKC', page_id: 'kyed-2809-orders', note: 'printed in the orders page title' },
+    pages: [{ id: 'kyed-2809-orders', role: 'orders_table', family: 'njd-body', url: 'https://www.kyed.uscourts.gov/518-md-02809-kkc-orders' }],
+    index_pages: [],
+  },
 };
 
 // Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
