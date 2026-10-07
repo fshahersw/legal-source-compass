@@ -39,6 +39,11 @@ def main():
     ap.add_argument("--n", type=int, default=20)
     ap.add_argument("--seed", type=int, default=20261007)
     ap.add_argument("--out", default=None, help="JSON results path (default <work>/live_diff_preland.json)")
+    ap.add_argument(
+        "--replay",
+        default=None,
+        help="Repeat the citation_path list from a prior live_diff_preland.json (ignores --n/--seed sampling)",
+    )
     a = ap.parse_args()
     _, texts = load_chapter_texts(a.work)
     secs = []
@@ -50,8 +55,18 @@ def main():
         s = dict(s)
         s["_text"] = t
         secs.append(s)
-    rnd = random.Random(a.seed)
-    sample = rnd.sample(secs, min(a.n, len(secs)))
+    if a.replay:
+        prev = json.load(open(a.replay))
+        by_path = {s["citation_path"]: s for s in secs}
+        sample = []
+        for row in prev["results"]:
+            s = by_path.get(row["citation_path"])
+            if not s:
+                raise SystemExit(f"replay missing citation_path {row['citation_path']}")
+            sample.append(s)
+    else:
+        rnd = random.Random(a.seed)
+        sample = rnd.sample(secs, min(a.n, len(secs)))
     arc = sc.Archive(os.path.join(a.work, "live_diff_archive"), min_interval=1.0)
     results = []
     for s in sample:
