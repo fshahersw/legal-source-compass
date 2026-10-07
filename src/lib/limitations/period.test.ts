@@ -547,6 +547,34 @@ describe("clocks_min: two-limb periods and several repose clocks", () => {
     expect(lateDiscovery.date).toBe("2026-01-10");
   });
 
+  it("LA wrongful death: same-day death and injury uses two years from injury when later controls", () => {
+    const data = snapshotWith([
+      clocksRule(
+        "wrongful_death",
+        {
+          mode: "clocks_min",
+          combine: "later",
+          limbs: [
+            { amount: 1, unit: "calendar_years", from: "death" },
+            { amount: 2, unit: "calendar_years", from: "injury_date" },
+          ],
+          clocks: [],
+        },
+        { jurisdiction: "LA", accrualBasis: "death", id: "la-wrongful-death-clocks-min-test" },
+      ),
+    ]);
+    const day = "2024-06-01";
+    const base = input("wrongful_death", day, {
+      jurisdiction: "LA",
+      injuryDate: day,
+      deathDate: day,
+    });
+    const result = calculateBaseline(data, base);
+    expect(result.status).toBe("baseline");
+    expect(result.date).toBe("2026-06-01");
+    expect(result.steps[0]?.text).toContain("later");
+  });
+
   it("takes the later of the two limbs when the statute says whichever is later", () => {
     const data = snapshotWith([
       clocksRule("medical_malpractice", {
