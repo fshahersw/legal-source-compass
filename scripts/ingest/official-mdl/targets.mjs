@@ -47,13 +47,13 @@ export const MATTERS = {
   // E.D. Mo. court MDL index pages (moed-mdl-page on embedded node--mdl-orders; docket literals from page titles).
   '424520': {
     name: 'MOED multidistrict page 4:24-cv-00520', court_id: 'moed', host: 'www.moed.uscourts.gov', tier: 2,
-    case_number: { literal: '4:24-cv-00520', page_id: 'moed-424-mdl', note: 'page title h1' },
+    case_number: { literal: '4:24-CV-00520', page_id: 'moed-424-mdl', note: 'page title h1' },
     pages: [{ id: 'moed-424-mdl', role: 'mdl_page', family: 'moed-mdl-page', url: 'https://www.moed.uscourts.gov/mdl/424-cv-00520' }],
     index_pages: [],
   },
   '4251580': {
     name: 'MOED multidistrict page 4:25-cv-01580', court_id: 'moed', host: 'www.moed.uscourts.gov', tier: 2,
-    case_number: { literal: '4:25-cv-01580', page_id: 'moed-425-mdl', note: 'page title h1' },
+    case_number: { literal: '4:25-cv-01580', page_id: 'moed-425-mdl', note: 'page title h1' }, // title prints lowercase cv
     pages: [{ id: 'moed-425-mdl', role: 'mdl_page', family: 'moed-mdl-page', url: 'https://www.moed.uscourts.gov/mdl/425-cv-01580' }],
     index_pages: [],
   },
