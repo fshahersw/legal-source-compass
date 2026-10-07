@@ -92,7 +92,8 @@ def parse_page(html):
         start -= 1
     body, history = rest[:start], rest[start:]
     return {'label': label, 'path': m.group(1), 'headers': headers, 'notes': notes, 'art_no': art_no,
-            'heading': heading or None, 'body': body, 'history': history, 'article_line': lines[idx]}
+            'heading': heading or None, 'body': body, 'history': history, 'article_line': lines[idx],
+            'lines_before': lines[:idx]}
 
 
 def article_record(page):
