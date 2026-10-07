@@ -3,13 +3,12 @@ import { AppShell } from "@/components/atlas/AppShell";
 import { SectionPage } from "@/components/corpus/SectionPage";
 import { FolderGrid } from "@/components/corpus/FolderGrid";
 import { useDatasets } from "@/components/corpus/DatasetBrowser";
-import { DatasetVersionBrowser } from "@/components/corpus/SectionPage";
+import { DatasetBrowser } from "@/components/corpus/DatasetBrowser";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { pageHead } from "@/lib/corpus/head";
 import { sectionOf } from "@/lib/external/groups";
 import { safetyAgency, safetyKind } from "@/lib/external/lawTree";
 import { inventoryRecordTotal, datasetRecordGrain } from "@/lib/external/domainRegistry";
-import { resolveDatasetVersion, visibleDatasetChoices } from "@/lib/external/datasetVersions";
 
 type S = { ds?: string | undefined; view?: string | undefined; agency?: string | undefined };
 const str = (v: unknown) =>
@@ -40,9 +39,8 @@ function SafetyPage() {
   const datasets = useDatasets();
   if (s.view === "list") return <SectionPage section="safety" path="/safety" ds={undefined} />;
   const allDatasets = datasets.data ?? [];
-  const list = visibleDatasetChoices(allDatasets).filter((d) => sectionOf(d.id) === "safety");
+  const list = allDatasets.filter((d) => sectionOf(d.id) === "safety");
   const agency = s.agency ?? (s.ds ? safetyAgency(s.ds) : undefined);
-  const resolved = s.ds ? resolveDatasetVersion(s.ds, allDatasets) : null;
 
   const crumbs: { label: string; to?: string; search?: Record<string, string> }[] = [
     { label: "Atlas", to: "/" },
@@ -60,15 +58,7 @@ function SafetyPage() {
   if (datasets.error) body = <ExternalError error={datasets.error} />;
   else if (datasets.isLoading)
     body = <p className="text-[13px] text-muted-foreground">Loading safety records…</p>;
-  else if (s.ds && resolved)
-    body = (
-      <DatasetVersionBrowser
-        key={`${resolved.canonicalId}-${resolved.selectedId}`}
-        dataset={resolved.canonicalId}
-        requestedDataset={resolved.selectedId}
-        datasets={allDatasets}
-      />
-    );
+  else if (s.ds) body = <DatasetBrowser key={s.ds} dataset={s.ds} />;
   else if (!agency) {
     body = (
       <FolderGrid

@@ -40,6 +40,11 @@ export type MatterOverviewPayload = {
    * dataset browser; null while they are held ("not yet available").
    */
   registryReleased: { entries: string | null; parties: string | null };
+  /**
+   * Exact row counts in the released registry datasets for this MDL, read live. Only filled when the MDL has no
+   * `sw_matters_v1` record (otherwise the record's own counts are used); null when the dataset is held or unread.
+   */
+  liveRegistry: { entries: number | null; parties: number | null };
 };
 
 /**
@@ -118,7 +123,7 @@ export type RegistryDocumentsPayload =
       sourceRecordsLoaded: number;
       sourceRecordsExcluded: number;
       truncated: boolean;
-      /** Provider case ids asked for, each marked as supplied by the matter registry or derived. */
+      /** Provider case ids asked for: matter registry, derived docket keys, or a registered spelling of one of those. */
       caseIds: CaseIdPlanEntry[];
     }
   | { connected: false; reason: string; caseIds: CaseIdPlanEntry[] };

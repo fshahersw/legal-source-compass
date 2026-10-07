@@ -9,7 +9,7 @@ import {stripContactFields, Runner, taskId} from './run-gap-fill.mjs';
 import {gapTable} from './analyze-snapshots.mjs';
 import {blankFilter} from './gap-analysis-live.mjs';
 import {plan} from './plan-internal-crosswalk.mjs';
-import {batches} from './send-staged.mjs';
+import {batches, expandCourtListenerRows} from './send-staged.mjs';
 import {CourtListener, DocketBird, Stop} from './clients.mjs';
 
 test('canonical json sorts keys, keeps unicode, rejects floats', () => {
@@ -92,6 +92,20 @@ test('internal crosswalk fills only on a unique exact key and records conflicts 
 test('batches respect row and byte bounds', () => {
   const rows = Array.from({length: 5}, (_, i) => ({entity_type: 'case', native_id: String(i), provenance: {record_sha256: 'a', source_sha256: 'b'}, data: {}}));
   assert.equal(batches(rows, 2).length, 3);
+});
+
+test('expandCourtListenerRows splits oversized docket-entries', () => {
+  const fat = {
+    schema_version: 'courtlistener-rest-v4.7/1', source_system: 'courtlistener', entity_type: 'docket-entries', native_id: '9',
+    data: {id: 9, docket: 'https://www.courtlistener.com/api/rest/v4/dockets/1/', recap_documents: [{id: 42, plain_text: 'x'.repeat(2_000_000)}]},
+    provenance: {record_sha256: 'a'.repeat(64), source_sha256: 'b'.repeat(64)},
+  };
+  const out = expandCourtListenerRows([fat], 100_000);
+  assert.equal(out.length, 2);
+  assert.equal(out[0].entity_type, 'docket-entries');
+  assert.deepEqual(out[0].data.recap_documents, []);
+  assert.equal(out[1].entity_type, 'recap-documents');
+  assert.equal(out[1].native_id, '42');
 });
 
 const tmp = () => fs.mkdtemp(path.join(os.tmpdir(), 'gapfill-'));
@@ -182,4 +196,38 @@ test('CourtListener client waits for a closed minute or hour window instead of p
   cl.sleepFn = async ms => { waits.push(ms); };
   const out = await cl.get('https://www.courtlistener.com/api/rest/v4/dockets/1/');
   assert.equal(out.data.id, 1); assert.deepEqual(waits, [300000, 300000]); assert.equal(cl.requests, 1);
+});
+
+test('DocketBird client paces requests, backs off on 429 and retries instead of stopping', async () => {
+  const work = await tmp(); const waits = []; let n = 0;
+  const fetchImpl = async () => { n++; return n === 1 ? new Response('{"message":"Too Many Requests"}', {status: 429}) : new Response(JSON.stringify({status: 'success', data: {ok: n}}), {status: 200}); };
+  const db = new DocketBird({cacheDir: work, key: 'K', fetchImpl, minGapMs: 100, sleepFn: async ms => { waits.push(ms); }});
+  const r = await db.get('/cases/x-1:2024-cv-00001');
+  assert.equal(r.data.ok, 2); assert.equal(db.rateLimited, 1); assert.ok(waits.length >= 1); assert.equal(db.stopped, null);
+});
+
+import {amountsIn, chargeText} from './docketbird-follow.mjs';
+test('only explicit money in a provider message counts as a charge; filing titles are never scanned', () => {
+  assert.deepEqual(amountsIn('Charges may apply. This follow costs $3.50 to unlock.'), ['$3.50']);
+  assert.deepEqual(amountsIn('{"status":"success"}'), []);
+  assert.deepEqual(amountsIn(chargeText({document: {title: 'Order re fees and costs 11/13, $5,000 sanction'}, message: 'ok'})), []);
+  assert.deepEqual(amountsIn(chargeText({message: 'Balance charged 2.5 USD'})), ['2.5 USD']);
+});
+
+test('DocketBird "document not found" is a recorded miss, not a stop', async () => {
+  const work = await tmp();
+  const fetchImpl = async () => new Response('{"status": "error", "message": "document not found"}', {status: 400});
+  const db = new DocketBird({cacheDir: work, key: 'K', fetchImpl});
+  const r = await db.get('/documents/x-1:2024-cv-00001-00009-001');
+  assert.equal(r.notFound, true); assert.equal(db.stopped, null);
+});
+
+test('cl-find queries the docket_number_core and classifies exact vs type-variant candidates locally', async () => {
+  const work = await tmp(); const urls = [];
+  const cl = {requests: 0, get: async url => { urls.push(String(url)); return {data: {results: [{id: 11, docket_number: '1:18-op-45090'}, {id: 12, docket_number: '2:18-cv-45090'}], next: null}, receipt: {source_url: url, retrieved_at: 't', http_status: 200, source_sha256: 'a'.repeat(64)}}; }};
+  const r = await new Runner({work, cl, db: null}).init();
+  const a = await r.runTask({kind: 'cl-find', court: 'ohnd', docket_number: '1:18-45090'});
+  assert.match(urls[0], /docket_number_core=1845090/); assert.equal(a.resolution, 'unique_type_variant_candidate_not_accepted'); assert.deepEqual(a.candidate_native_ids, ['11']);
+  const b = await r.runTask({kind: 'cl-find', court: 'ohnd', docket_number: '1:18-op-45090'});
+  assert.equal(b.resolution, 'unique_exact_court_office_year_type_sequence');
 });

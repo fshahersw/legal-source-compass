@@ -19,9 +19,16 @@ import {
 import { PdfViewer } from "@/components/matters/PdfViewer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DocketDocumentFields, DocketSheetOnly } from "@/components/matters/DocketSheetDocuments";
+import { formatExactCount, type DocketDocument } from "@/lib/matters/docketDocuments";
 import { documentCopies, formatBytes, type MatterDocument } from "@/lib/matters/documents";
 import { groupEntriesByMonth } from "@/lib/matters/entries";
-import { getMatterTimeline, getMatterTimelineArchive } from "@/lib/matters/matters.functions";
+import {
+  getMatterDocketDocumentsSummary,
+  getMatterEntryDocuments,
+  getMatterTimeline,
+  getMatterTimelineArchive,
+} from "@/lib/matters/matters.functions";
 import {
   EMPTY_TIMELINE_FILTER,
   WITHHELD_NOTES,
@@ -173,15 +180,91 @@ function EntryDocuments({
   );
 }
 
+/** Docket-sheet documents (DocketBird-tracked cases) for one entry, except those the verified archive already lists. */
+function DocketSheetDocuments({
+  docs,
+  archiveIds,
+}: {
+  docs: DocketDocument[];
+  archiveIds: Set<string>;
+}) {
+  const [all, setAll] = useState(false);
+  const extra = docs.filter((d) => !archiveIds.has(d.nativeDocumentId));
+  if (!extra.length) return null;
+  const shown = all ? extra : extra.slice(0, ENTRY_DOCS);
+  return (
+    <div className="space-y-1" aria-label="Docket-sheet documents">
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        Docket-sheet documents · {extra.length}
+      </div>
+      <ul className="space-y-2">
+        {shown.map((d) => (
+          <li key={d.nativeDocumentId} className="text-[12px]">
+            <DocketDocumentFields d={d} />
+          </li>
+        ))}
+      </ul>
+      {extra.length > ENTRY_DOCS ? (
+        <button
+          type="button"
+          className="text-[12px] text-primary underline-offset-2 hover:underline"
+          onClick={() => setAll((v) => !v)}
+        >
+          {all ? "Show fewer" : `Show all ${extra.length}`}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+/** What the docket-documents dataset holds for this matter, counted live, including what it withholds. */
+function DocketDocumentsNote({ mdl }: { mdl: string }) {
+  const fn = useServerFn(getMatterDocketDocumentsSummary);
+  const q = useQuery({
+    queryKey: ["matter-docket-documents-summary", mdl],
+    queryFn: () => fn({ data: { id: mdl } }),
+    staleTime: 5 * 60_000,
+  });
+  const sum = q.data;
+  if (!sum) return null;
+  const unlistedNote =
+    sum.unlisted === null
+      ? " The count of documents that cannot sit under an entry is Not recorded."
+      : sum.unlisted > 0
+        ? ` ${sum.unlisted.toLocaleString()} cannot sit under an entry (the docket has no entries in the registry, or the document carries no entry number); they are in the list below with the rest.`
+        : "";
+  return (
+    <div className="space-y-1">
+      <p className="text-[12px] text-muted-foreground">
+        Docket-sheet documents for this matter: {formatExactCount(sum.listed)} listed (
+        {formatExactCount(sum.stored)} with a stored PDF).{unlistedNote}{" "}
+        {sum.withheld !== null
+          ? `${sum.withheld.toLocaleString()} documents are withheld under the sealed/restricted rule and are not listed. `
+          : ""}
+        <Link
+          to="/sources/docket-documents"
+          search={{ mdl }}
+          className="text-primary underline-offset-2 hover:underline"
+        >
+          Browse the documents
+        </Link>
+      </p>
+      <DocketSheetOnly mdl={mdl} />
+    </div>
+  );
+}
+
 function EntryRow({
   entry,
   mdl,
   archive,
+  docketDocs,
   onView,
 }: {
   entry: RegistryEntry;
   mdl: string;
   archive: Archive;
+  docketDocs: DocketDocument[] | undefined;
   onView: (d: MatterDocument) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -259,6 +342,19 @@ function EntryRow({
           </p>
         )}
         <EntryDocuments entry={entry} archive={archive} onView={onView} />
+        {docketDocs && entry.withheld !== "sealed_document" ? (
+          <DocketSheetDocuments
+            docs={docketDocs}
+            archiveIds={
+              new Set(
+                (archive && archive.connected
+                  ? (archive.byEntry[entry.id]?.documents ?? [])
+                  : []
+                ).map((a) => a.doc.nativeDocumentId),
+              )
+            }
+          />
+        ) : null}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]">
           {long ? (
             <button
@@ -412,6 +508,7 @@ export function RegistryTimeline({
   const mdl = payload.overview.mdl;
   const timelineFn = useServerFn(getMatterTimeline);
   const archiveFn = useServerFn(getMatterTimelineArchive);
+  const docsFn = useServerFn(getMatterEntryDocuments);
   const [draft, setDraft] = useState("");
   const [filter, setFilter] = useState<TimelineFilter>({
     q: "",
@@ -459,6 +556,22 @@ export function RegistryTimeline({
     queryKey: ["matter-timeline-archive", mdl, items.map((i) => i.id).join(",")],
     enabled: items.length > 0,
     queryFn: () => archiveFn({ data: { id: mdl, items } }),
+    staleTime: 10 * 60_000,
+  });
+  const docketDocs = useQuery({
+    queryKey: ["matter-entry-documents", mdl, items.map((i) => i.id).join(",")],
+    enabled: items.length > 0,
+    queryFn: () =>
+      docsFn({
+        data: {
+          id: mdl,
+          items: items.map((i) => ({
+            id: i.id,
+            docketKey: i.docketKey,
+            entryNumber: i.entryNumber,
+          })),
+        },
+      }),
     staleTime: 10 * 60_000,
   });
   const groups = useMemo(() => groupEntriesByMonth(entries ?? []), [entries]);
@@ -598,6 +711,7 @@ export function RegistryTimeline({
           </p>
         ) : null}
         {archiveNote}
+        <DocketDocumentsNote mdl={mdl} />
         {entries && entries.length ? (
           <div className={page.isFetching ? "opacity-70 transition-opacity" : ""}>
             {groups.map((g) => (
@@ -613,6 +727,7 @@ export function RegistryTimeline({
                       entry={e}
                       mdl={mdl}
                       archive={archive.data}
+                      docketDocs={docketDocs.data?.[e.id]}
                       onView={setViewed}
                     />
                   ))}

@@ -4,6 +4,8 @@
 // `docketbird-rest/1` namespace (database/contracts/corpus-gapfill-docketbird-rest-v1.sql).
 import {canonicalIntegerJson, sha256, sanitizeUrl, isDisplayWithheld, isBlank, docketKeyFromDocketBirdId, docketKey} from './lib.mjs';
 
+const ws = s => String(s ?? '').replace(/\s+/g, ' ').trim();
+
 export const CL_SCHEMA = 'courtlistener-rest-v4.7/1';
 export const DB_SCHEMA = 'docketbird-rest/1';
 
@@ -14,8 +16,11 @@ export function clRow(entityType, item, receipt, extra = {}) {
       schema_version: CL_SCHEMA, request_method: 'GET', record_sha256: sha256(JSON.stringify(item)), ...extra}};
 }
 
-const dbProv = (receipt, tool, caseId, extra = {}) => ({source_url: receipt.source_url.split('?')[0], request: receipt.source_url, retrieved_at: receipt.retrieved_at,
-  http_status: receipt.http_status, source_sha256: receipt.source_sha256, schema_version: DB_SCHEMA, source_tool: tool, source_tool_case_id: caseId, ...extra});
+/** The intake wrapper pins source_url to the provider's docket-sheet family endpoint; the exact request and tool stay in `request` / `source_tool`. */
+export const DB_SOURCE_URL = 'https://api.docketbird.com/documents';
+export const dbToolOf = url => { const p = new URL(url).pathname; return /^\/documents\/search$/.test(p) ? 'GET /documents/search' : /^\/documents\/./.test(p) ? 'GET /documents/{id}' : /^\/cases\/./.test(p) ? 'GET /cases/{id}' : 'GET /documents'; };
+const dbProv = (receipt, tool, caseId, extra = {}) => ({source_url: DB_SOURCE_URL, request: receipt.source_url, retrieved_at: receipt.retrieved_at,
+  http_status: receipt.http_status, source_sha256: receipt.source_sha256, schema_version: DB_SCHEMA, source_tool: dbToolOf(receipt.source_url), source_tool_case_id: caseId, ...extra});
 
 function intOrNull(v) { return Number.isSafeInteger(v) ? v : null; }
 
@@ -44,11 +49,11 @@ export function dbDocumentRow(caseId, doc, receipt) {
   const pacer = sanitizeUrl(doc.pacer_document_url), court = sanitizeUrl(doc.court_document_url);
   const data = {id: doc.id, case_id: caseId, title: doc.title ?? null, filing_date: doc.filing_date ?? null, restricted: typeof doc.restricted === 'boolean' ? doc.restricted : null,
     docket_sheet_number: intOrNull(doc.primary_docket_sheet_number), pacer_document_url: pacer.url, court_document_url: court.url,
-    downloaded_by_provider: doc.downloaded === 1 ? true : doc.downloaded === 0 ? false : null, docketbird_object_name: objectName,
+    downloaded_by_provider: doc.downloaded === 1 ? true : doc.downloaded === 0 ? false : null, docketbird_object_name: objectName, docketbird_custom_filename: typeof doc.custom_filename === 'string' && doc.custom_filename.trim() ? ws(doc.custom_filename) : null,
     display_withheld: isDisplayWithheld({restricted: doc.restricted, text: doc.title})};
   const field_map = {id: 'docketbird.documents[].id', title: 'docketbird.documents[].title', filing_date: 'docketbird.documents[].filing_date', restricted: 'docketbird.documents[].restricted',
     docket_sheet_number: 'docketbird.documents[].primary_docket_sheet_number', pacer_document_url: 'docketbird.documents[].pacer_document_url', court_document_url: 'docketbird.documents[].court_document_url',
-    downloaded_by_provider: 'docketbird.documents[].downloaded', docketbird_object_name: 'docketbird.documents[].docketbird_document_url (path only)'};
+    downloaded_by_provider: 'docketbird.documents[].downloaded', docketbird_object_name: 'docketbird.documents[].docketbird_document_url (path only)', docketbird_custom_filename: 'docketbird.documents[].custom_filename'};
   return {schema_version: DB_SCHEMA, source_system: 'docketbird-rest', entity_type: 'docket-document', native_id: doc.id, data,
     provenance: dbProv(receipt, 'GET /documents', caseId, {record_sha256: sha256(canonicalIntegerJson(data)), record_sha256_codec: 'canonical-integer-jsonb/1', field_map,
       signed_query_removed: stored.removed || pacer.removed || court.removed, pdf_downloaded: false})};

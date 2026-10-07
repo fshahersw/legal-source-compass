@@ -15,6 +15,7 @@ import {
   Scope,
   selectClass,
 } from "@/components/matters/common";
+import { DocketSheetOnly } from "@/components/matters/DocketSheetDocuments";
 import { RegistryTimeline } from "@/components/matters/RegistryTimeline";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -167,6 +168,7 @@ function SampleDocket({ payload }: { payload: MatterOverviewPayload }) {
             : ""}{" "}
           is listed in the header, and the Documents tab shows any verified PDFs filed on it.
         </EmptyState>
+        <DocketSheetOnly mdl={mdl} />
         {captures.length ? (
           <div className="mt-3">
             <Scope title="Captured, not released">
@@ -280,6 +282,7 @@ function SampleDocket({ payload }: { payload: MatterOverviewPayload }) {
           capped={data.capped}
           onOffset={setOffset}
         />
+        <DocketSheetOnly mdl={mdl} />
       </div>
     </Panel>
   );

@@ -1,0 +1,41 @@
+{
+  "jurisdiction": "SD",
+  "publisher": "South Dakota Legislature (sdlegislature.gov Statutes API)",
+  "publisher_url": "https://sdlegislature.gov/Statutes",
+  "source_system": "sd-sdcl-api",
+  "code_title": "South Dakota Codified Laws",
+  "parser": {
+    "name": "sd-statute-json",
+    "version": "1"
+  },
+  "methods": ["publisher_page"],
+  "source_url_patterns": [
+    "^https://sdlegislature\\.gov/api/Statutes/Statute/[0-9]+-[0-9A-Za-z.]+(-[0-9][0-9.]*)?$"
+  ],
+  "rate_limit_ms": 1000,
+  "structure": {
+    "levels": ["title", "chapter", "section"],
+    "unit": "one official Statute JSON object (chapter bundle or per-section Statute/{citation})"
+  },
+  "section_id": {
+    "scheme": "official_citation_path",
+    "regex": "^T[0-9]+/C[0-9]+-[0-9A-Za-z.]+/[0-9]+-[0-9A-Za-z.]+-[0-9][0-9.]*(#[0-9]+)?$",
+    "example": "T1/C1-1/1-1-1",
+    "citation_format": "T<title>/C<chapter-statute>/<section-statute>"
+  },
+  "currency": {
+    "basis": "publisher_statement",
+    "location": "GET /api/Statutes/LastStatuesEffectiveDate"
+  },
+  "review": {
+    "reviewed_by": "state-codes batch 4 (pre-land live diff)",
+    "reviewed_at": "2026-10-07"
+  },
+  "unit_kind": "sd_statute_json",
+  "currency_defaults": {
+    "basis": "publisher_statement",
+    "statement": "Last statutes effective date published by SD Legislature API: 2026-09-03T00:00:00-05:00",
+    "through_date": "2026-09-03",
+    "edition": "South Dakota Codified Laws"
+  }
+}

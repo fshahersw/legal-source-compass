@@ -1,0 +1,50 @@
+{
+ "jurisdiction": "WY",
+ "publisher": "Wyoming Legislative Service Office",
+ "publisher_url": "https://wyoleg.gov/",
+ "source_system": "wy-statutes",
+ "code_title": "Wyoming Statutes",
+ "parser": {
+  "name": "wy-lso-pdf",
+  "version": "3"
+ },
+ "methods": [
+  "publisher_bulk_download"
+ ],
+ "source_url_patterns": [
+  "^https://wyoleg\\.gov/statutes/compress/title[0-9A-Za-z.]+\\.pdf$"
+ ],
+ "rate_limit_ms": 1000,
+ "default_method": "publisher_bulk_download",
+ "structure": {
+  "levels": [
+   "title",
+   "chapter",
+   "article",
+   "part",
+   "section"
+  ],
+  "unit": "one chapter (or constitution article) cut from an official per-title PDF; the title PDF is the retained original"
+ },
+ "section_id": {
+  "scheme": "official_citation_path",
+  "regex": "^[0-9][0-9A-Za-z.-]*(:[0-9]+)?(~[0-9]+)?$",
+  "example": "1-3-105",
+  "citation_format": "Wyo. Stat. \u00a7 <path> (:N marks a printed repeat of the same citation)"
+ },
+ "currency": {
+  "basis": "publisher_statement",
+  "location": "wyoleg.gov State Statutes download page statement"
+ },
+ "review": {
+  "reviewed_by": "state-codes batch 4 lead (bc-747cabdb)",
+  "reviewed_at": "2026-10-06"
+ },
+ "unit_kind": "title_pdf_chapter",
+ "currency_defaults": {
+  "basis": "publisher_statement",
+  "statement": "This version of the Wyoming Statutes contains changes from the 2026 Budget Session and reflects the contents of the statutes as they exist as of July 1, 2026.",
+  "through_date": null,
+  "edition": null
+ }
+}

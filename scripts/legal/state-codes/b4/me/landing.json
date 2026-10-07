@@ -1,0 +1,51 @@
+{
+  "jurisdiction": "ME",
+  "publisher": "Maine Legislature — Office of the Revisor of Statutes",
+  "publisher_url": "https://legislature.maine.gov/statutes/",
+  "source_system": "me-mrs-html",
+  "code_title": "Maine Revised Statutes",
+  "parser": {
+    "name": "me-mrs-section-html",
+    "version": "1"
+  },
+  "methods": [
+    "publisher_page"
+  ],
+  "source_url_patterns": [
+    "^https://legislature\\.maine\\.gov/statutes/$",
+    "^https://legislature\\.maine\\.gov/statutes/[^/]+/title[^/]+ch0sec0\\.html$",
+    "^https://legislature\\.maine\\.gov/statutes/[^/]+/title[^/]+ch[0-9A-Z.-]+sec0\\.html$",
+    "^https://legislature\\.maine\\.gov/statutes/[^/]+/title[^/]+sec[0-9A-Z.-]+\\.html$"
+  ],
+  "rate_limit_ms": 1000,
+  "structure": {
+    "levels": [
+      "title",
+      "part",
+      "chapter",
+      "section"
+    ],
+    "unit": "one official section HTML page from legislature.maine.gov"
+  },
+  "section_id": {
+    "scheme": "official_citation_path",
+    "regex": "^Title [^/]+/(?:Part [^/]+/)?(?:Chapter [^/]+/)?§[^/]+(#[0-9]+)?(~[0-9]+)?$",
+    "example": "Title 11/§1-101",
+    "citation_format": "Maine path Title/Part/Chapter/§section; #N marks repeated printed occurrences; ~N marks duplicate citation_path rows in the landing packet"
+  },
+  "currency": {
+    "basis": "publisher_statement",
+    "location": "homepage.html and title TOC pages (currency_blocks in inventory.json at acquisition)"
+  },
+  "review": {
+    "reviewed_by": "state-codes batch 4 lead (bc-747cabdb)",
+    "reviewed_at": "2026-10-06"
+  },
+  "unit_kind": "me_mrs_section_html",
+  "currency_defaults": {
+    "basis": "publisher_statement",
+    "statement": "The text reflects changes made through the First Special Session of the 132nd Maine Legislature, and is current through October 1, 2025. The text is subject to change without notice.",
+    "through_date": "2025-10-01",
+    "edition": "Maine Revised Statutes"
+  }
+}

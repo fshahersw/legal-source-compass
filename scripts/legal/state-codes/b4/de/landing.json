@@ -1,0 +1,50 @@
+{
+ "jurisdiction": "DE",
+ "publisher": "Delaware Code Revisors and Division of Legislative Services (Delaware Code Online)",
+ "publisher_url": "https://delcode.delaware.gov/",
+ "source_system": "de-delaware-code",
+ "code_title": "Delaware Code",
+ "parser": {
+  "name": "de-delcode-html",
+  "version": "2"
+ },
+ "methods": [
+  "publisher_page"
+ ],
+ "source_url_patterns": [
+  "^https://delcode\\.delaware\\.gov/title[0-9]+[A-Za-z]*/c[0-9A-Za-z_]+/index\\.html$",
+  "^https://delcode\\.delaware\\.gov/title[0-9]+[A-Za-z]*/c[0-9A-Za-z_]+/[^/]+/index\\.html$",
+  "^https://delcode\\.delaware\\.gov/index\\.html$"
+ ],
+ "rate_limit_ms": 1000,
+ "structure": {
+  "levels": [
+   "title",
+   "chapter",
+   "subchapter",
+   "section"
+  ],
+  "unit": "one delcode.delaware.gov HTML page that carries section text (chapter index or nested subchapter page)"
+ },
+ "section_id": {
+  "scheme": "official_citation_path",
+  "regex": "^[0-9]+-[0-9A-Za-z_]+-[^\\s]+$",
+  "example": "10-81-8106",
+  "citation_format": "<title> Del. C. \u00a7 <section> (path = title-chapter-section; @N marks a repeated printed section within one chapter)"
+ },
+ "currency": {
+  "basis": "publisher_statement",
+  "location": "delcode.delaware.gov home page notice (retained original index.html)"
+ },
+ "review": {
+  "reviewed_by": "state-codes batch 4 lead (bc-747cabdb)",
+  "reviewed_at": "2026-10-06"
+ },
+ "unit_kind": "delcode_html_page",
+ "currency_defaults": {
+  "basis": "publisher_statement",
+  "statement": "The Delaware Code appearing on this site is prepared by the Delaware Code Revisors and the editorial staff of LexisNexis in cooperation with the Division of Legislative Services of the General Assembly, and is considered an official version of the State of Delaware statutory code. This version includes all acts enacted as of September 04, 2026, up to and including 85 Del. Laws, c. 480, 482-484, 486-490, 492-494, 514-515.",
+  "through_date": null,
+  "edition": null
+ }
+}

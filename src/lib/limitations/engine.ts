@@ -1,5 +1,7 @@
 import {
   SPECIAL_ISSUES,
+  type PeriodLimb,
+  type ReposeClock,
   type BaselineInput,
   type BaselineResult,
   type LimitationRule,
@@ -131,7 +133,13 @@ export function calculateBaseline(
     return finish("needs_review", [
       "This jurisdiction and claim have no uniquely supported baseline rule. Consult the source inventory and claim-specific research below.",
     ]);
+  if (rule.calculation?.mode === "clocks_min") return calculateClocks(snapshot, input, rule);
   const hasRepose = rule.calculation?.mode === "accrual_repose_min";
+  /** The repose clock starts at the act/omission date, or at first delivery to a purchaser for product repose. */
+  const reposeStart =
+    rule.calculation?.reposeTrigger === "first_delivery"
+      ? input.firstProductDeliveryDate
+      : input.reposeActDate;
   const reposeYears = rule.calculation?.reposeYears;
   if (
     (rule.calculation &&
@@ -143,14 +151,14 @@ export function calculateBaseline(
         !reposeYears ||
         reposeYears < 1 ||
         reposeYears > 100 ||
-        !["last_act_or_omission", "act_or_omission"].includes(
+        !["last_act_or_omission", "act_or_omission", "first_delivery"].includes(
           rule.calculation?.reposeTrigger ?? "",
         ) ||
         !parseCivilDate(rule.calculation?.reposeEffectiveFrom ?? "") ||
         (rule.calculation?.reposeEffectiveThrough !== undefined &&
           (!parseCivilDate(rule.calculation.reposeEffectiveThrough) ||
             rule.calculation.reposeEffectiveFrom! > rule.calculation.reposeEffectiveThrough)) ||
-        rule.accrualBasis !== "confirmed_accrual" ||
+        !["confirmed_accrual", "death"].includes(rule.accrualBasis) ||
         rule.calculation?.deathCapYears !== undefined ||
         rule.calculation?.secondaryCapYears !== undefined ||
         rule.calculation?.requiresExposureWithinDeliveryYears !== undefined)) ||
@@ -176,7 +184,7 @@ export function calculateBaseline(
           : [input.accrualDate];
   const requiredDates = [
     ...triggerDates,
-    ...(hasRepose ? [input.reposeActDate] : []),
+    ...(hasRepose ? [reposeStart] : []),
     ...(rule?.calculation?.requiresExposureWithinDeliveryYears
       ? [input.firstProductDeliveryDate, input.qualifyingExposureDate]
       : []),
@@ -244,18 +252,18 @@ export function calculateBaseline(
         : rule.calculation?.mode === "death_cause_min"
           ? input.causeDiscoveryDate!
           : input.accrualDate;
-  if (hasRepose && input.reposeActDate! > trigger)
+  if (hasRepose && reposeStart! > trigger)
     reasons.push(
       "The qualifying act or omission date follows the confirmed accrual date. Review the claim and defendant chronology; a later event does not automatically restart repose.",
     );
-  if (hasRepose && input.reposeActDate! < rule.calculation!.reposeEffectiveFrom!)
+  if (hasRepose && reposeStart! < rule.calculation!.reposeEffectiveFrom!)
     reasons.push(
       `The act or omission predates ${rule.calculation!.reposeEffectiveFrom}, the supported historical range for this repose rule. Review the earlier statutory version and transition before calculating.`,
     );
   if (
     hasRepose &&
     rule.calculation!.reposeEffectiveThrough &&
-    input.reposeActDate! > rule.calculation!.reposeEffectiveThrough
+    reposeStart! > rule.calculation!.reposeEffectiveThrough
   )
     reasons.push(
       `The act or omission follows ${rule.calculation!.reposeEffectiveThrough}, the end of the supported historical range for this repose rule. Review the later statutory version before calculating.`,
@@ -301,7 +309,7 @@ export function calculateBaseline(
   const ordinaryDate = addCivilPeriod(trigger, rule.period.amount, rule.period.unit);
   const capYears = rule.calculation?.deathCapYears ?? rule.calculation?.secondaryCapYears;
   const cap = capYears && input.deathDate ? calendarAnniversary(input.deathDate, capYears) : null;
-  const reposeCap = hasRepose ? calendarAnniversary(input.reposeActDate!, reposeYears!) : null;
+  const reposeCap = hasRepose ? calendarAnniversary(reposeStart!, reposeYears!) : null;
   if (hasRepose && !reposeCap)
     return finish("needs_review", [
       "The repose date has no exact calendar anniversary. A verified jurisdiction-specific counting rule is required.",
@@ -376,7 +384,7 @@ export function calculateBaseline(
       ...(reposeCap
         ? [
             {
-              text: `The confirmed ${rule.calculation?.reposeTrigger === "last_act_or_omission" ? "last act or omission" : "act or omission complained of"} (${input.reposeActDate}) produces a separate ${reposeYears}-year repose cutoff of ${reposeCap}. Compare it with the accrual-based anniversary (${ordinaryDate}); the earlier date controls this conditional calculation.`,
+              text: `The confirmed ${rule.calculation?.reposeTrigger === "last_act_or_omission" ? "last act or omission" : rule.calculation?.reposeTrigger === "first_delivery" ? "first delivery to a purchaser" : "act or omission complained of"} (${reposeStart}) produces a separate ${reposeYears}-year repose cutoff of ${reposeCap}. Compare it with the accrual-based anniversary (${ordinaryDate}); the earlier date controls this conditional calculation.`,
               sourceIds: rule.sourceIds,
               pinpoint: rule.pinpoint,
             },
@@ -388,6 +396,224 @@ export function calculateBaseline(
           : `The unadjusted calendar anniversary is ${date}. Holiday / closure, commencement, service and filing-cutoff adjustments remain uncomputed.`,
         sourceIds: rule.sourceIds,
         pinpoint: rule.pinpoint,
+      },
+    ],
+  };
+}
+
+const CLOCK_START_LABEL: Record<ReposeClock["from"], string> = {
+  act_or_omission: "act or omission complained of",
+  last_act_or_omission: "last act or omission",
+  injury_date: "date of injury",
+  substantial_completion: "substantial completion of the improvement",
+  first_delivery: "first delivery to a purchaser",
+};
+
+/** Input date that starts a repose clock. */
+function clockStart(input: BaselineInput, from: ReposeClock["from"]): string | undefined {
+  if (from === "injury_date") return input.injuryDate;
+  if (from === "substantial_completion") return input.substantialCompletionDate;
+  if (from === "first_delivery") return input.firstProductDeliveryDate;
+  return input.reposeActDate;
+}
+
+/** Input date that starts a period limb. */
+function limbStart(input: BaselineInput, from: PeriodLimb["from"]): string | undefined {
+  if (from === "injury_date") return input.injuryDate;
+  if (from === "discovery") {
+    const dates = [input.actualDiscoveryDate, input.constructiveDiscoveryDate];
+    return dates.every((d) => d && parseCivilDate(d)) ? (dates as string[]).sort()[0] : undefined;
+  }
+  return input.accrualDate;
+}
+
+/**
+ * clocks_min: one or two period limbs joined by "earlier" or "later", then capped by every repose clock; the
+ * earliest resulting date is issued. Nothing is clamped, guessed or inferred: a missing start date, an
+ * unsupported historical start, an impossible anniversary or a bar that already ran withholds the date.
+ */
+function calculateClocks(
+  snapshot: LimitationsSnapshot,
+  input: BaselineInput,
+  rule: LimitationRule,
+): BaselineResult {
+  const finish = (
+    status: BaselineResult["status"],
+    reasons: string[],
+    date: string | null = null,
+  ): BaselineResult => ({ status, date, rule, reasons, steps: [] });
+  const calc = rule.calculation!;
+  const limbs = calc.limbs ?? [];
+  const clocks = calc.clocks ?? [];
+  const unsupported =
+    limbs.length < 1 ||
+    limbs.length > 2 ||
+    (limbs.length === 2 && calc.combine !== "earlier" && calc.combine !== "later") ||
+    limbs.some(
+      (l) =>
+        !Number.isSafeInteger(l.amount) ||
+        l.amount < 1 ||
+        !["calendar_years", "calendar_months", "calendar_days"].includes(l.unit) ||
+        !["accrual", "discovery", "injury_date", "death"].includes(l.from),
+    ) ||
+    clocks.some(
+      (c) =>
+        !Number.isSafeInteger(c.years) ||
+        c.years < 1 ||
+        c.years > 100 ||
+        !Object.hasOwn(CLOCK_START_LABEL, c.from) ||
+        !parseCivilDate(c.effectiveFrom) ||
+        (c.effectiveThrough !== undefined &&
+          (!parseCivilDate(c.effectiveThrough) || c.effectiveFrom > c.effectiveThrough)),
+    ) ||
+    calc.deathCapYears !== undefined ||
+    calc.secondaryCapYears !== undefined ||
+    calc.requiresExposureWithinDeliveryYears !== undefined ||
+    !["confirmed_accrual", "death"].includes(rule.accrualBasis) ||
+    (rule.effectiveFrom && !parseCivilDate(rule.effectiveFrom)) ||
+    (rule.effectiveThrough && !parseCivilDate(rule.effectiveThrough));
+  if (unsupported)
+    return finish("needs_review", [
+      "This rule's calculation or applicability window is not supported.",
+    ]);
+  if (
+    !rule.sourceIds.length ||
+    rule.sourceIds.some((id) => !snapshot.sources.some((s) => s.id === id)) ||
+    !rule.sourceIds.some((id) =>
+      snapshot.sources.some((source) => source.id === id && source.authorityKind === "statute"),
+    ) ||
+    rule.caseReferenceIds?.some((id) => !snapshot.cases.some((c) => c.id === id))
+  )
+    return finish("needs_review", ["The rule's period or primary-source evidence is incomplete."]);
+
+  const limbDates = limbs.map((l) => limbStart(input, l.from));
+  const clockDates = clocks.map((c) => clockStart(input, c.from));
+  const required = [...limbDates, ...clockDates];
+  if (required.some((d) => !d || !parseCivilDate(d)))
+    return finish("invalid", [
+      "Supply each legally relevant real civil date in YYYY-MM-DD format (1900–2199).",
+    ]);
+  const reviewedThrough = sourceReviewDate(snapshot, rule);
+  if (!reviewedThrough)
+    return finish("needs_review", ["The required authorities have no reliable review date."]);
+  if (required.some((d) => d! > reviewedThrough))
+    return finish("needs_review", [
+      `A selected date is later than ${reviewedThrough}, the oldest review date among this rule's required authorities. Confirm subsequent law before calculating.`,
+    ]);
+
+  const reasons: string[] = [];
+  if (input.governingLawConfirmed !== true)
+    reasons.push(
+      "Confirm the governing state's limitations law; residence, injury location and MDL venue alone do not establish it.",
+    );
+  if (input.accrualConfirmed !== true)
+    reasons.push(
+      "Confirm the legally relevant accrual date under this rule; exposure, diagnosis and discovery are not interchangeable.",
+    );
+  if (input.applicabilityConfirmed !== true)
+    reasons.push(
+      "Confirm this current statutory rule and its claim category apply to the facts and historical dates.",
+    );
+  if (clocks.length && input.reposeApplicabilityConfirmed !== true)
+    reasons.push(
+      "Confirm that each cited repose rule applies to this claim and defendant, and verify the dates that start them.",
+    );
+  if (input.exceptionReview !== "no_unresolved_issues")
+    reasons.push(
+      "Resolve exceptions, special claims, tolling, repose and previous filings before computing a baseline.",
+    );
+  for (const id of input.issues)
+    reasons.push(
+      `${SPECIAL_ISSUES.find((x) => x.id === id)?.label ?? "Unrecognized special issue"}: this issue requires separate legal review.`,
+    );
+  const earliestStart = [...(limbDates as string[])].sort()[0]!;
+  const latestStart = [...(limbDates as string[])].sort().at(-1)!;
+  clocks.forEach((c, i) => {
+    const start = clockDates[i]!;
+    if (start < c.effectiveFrom)
+      reasons.push(
+        `The ${CLOCK_START_LABEL[c.from]} (${start}) predates ${c.effectiveFrom}, the supported historical start of this repose rule. Review the earlier statutory version and transition before calculating.`,
+      );
+    if (c.effectiveThrough && start > c.effectiveThrough)
+      reasons.push(
+        `The ${CLOCK_START_LABEL[c.from]} follows ${c.effectiveThrough}, the end of the supported historical range of this repose rule. Review the later statutory version before calculating.`,
+      );
+    if (start > latestStart)
+      reasons.push(
+        `The ${CLOCK_START_LABEL[c.from]} follows the confirmed accrual or discovery date. Review the chronology; a later event does not restart repose.`,
+      );
+  });
+  if (rule.effectiveFrom && earliestStart < rule.effectiveFrom)
+    reasons.push(
+      `This calculator branch supports trigger dates on or after ${rule.effectiveFrom}. Earlier dates require the historical statute and transition analysis.`,
+    );
+  if (rule.effectiveThrough && latestStart > rule.effectiveThrough)
+    reasons.push(
+      `This calculator branch ends on ${rule.effectiveThrough}. Later dates require a supported statutory version.`,
+    );
+  if (reasons.length) return finish("needs_review", reasons);
+
+  const limbEnds = limbs.map((l, i) => addCivilPeriod(limbDates[i]!, l.amount, l.unit));
+  if (limbEnds.some((d) => !d))
+    return finish("needs_review", [
+      "A limitations anniversary has no exact calendar date. A verified jurisdiction-specific counting rule is required.",
+    ]);
+  const ends = limbEnds as string[];
+  const combined =
+    ends.length === 2
+      ? calc.combine === "later"
+        ? [...ends].sort()[1]!
+        : [...ends].sort()[0]!
+      : ends[0]!;
+  const caps = clocks.map((c, i) => calendarAnniversary(clockDates[i]!, c.years));
+  if (caps.some((d) => !d))
+    return finish("needs_review", [
+      "A repose date has no exact calendar anniversary. A verified jurisdiction-specific counting rule is required.",
+    ]);
+  const barred = clocks.findIndex((_, i) => (caps[i] as string) < earliestStart);
+  if (barred >= 0)
+    return finish("needs_review", [
+      `The cited repose cutoff (${caps[barred]}) precedes the confirmed accrual or discovery date (${earliestStart}). Review whether repose bars this claim before relying on an accrual-based period.`,
+    ]);
+  const date = [combined, ...(caps as string[])].sort()[0]!;
+  const limbText = limbs
+    .map(
+      (l, i) =>
+        `${periodLabel({ amount: l.amount, unit: l.unit })} from ${l.from.replaceAll("_", " ")} (${limbDates[i]}) = ${ends[i]}`,
+    )
+    .join(calc.combine === "later" ? "; the later of: " : "; the earlier of: ");
+  const sources = { sourceIds: rule.sourceIds, pinpoint: rule.pinpoint };
+  const timeRule = snapshot.coverage.find((c) => c.state === input.jurisdiction)?.timeComputation;
+  const weekday = civilWeekday(date);
+  const rolled =
+    timeRule?.status === "verified" &&
+    timeRule.extendsWhenLastDayIsWeekend &&
+    (weekday === 6 || weekday === 0)
+      ? nextWeekday(date)
+      : null;
+  return {
+    status: "baseline",
+    date,
+    adjustedDate: rolled
+      ? { date: rolled, citation: timeRule!.citation, holidaysComputed: false }
+      : null,
+    rule,
+    reasons: [...rule.warnings],
+    steps: [
+      {
+        text:
+          limbs.length === 2
+            ? `Limitations limbs: ${limbText}. ${calc.combine === "later" ? "The later" : "The earlier"} controls: ${combined}.`
+            : `The cited statutory baseline is ${limbText}.`,
+        ...sources,
+      },
+      ...clocks.map((c, i) => ({
+        text: `Repose: ${c.years} calendar years from the ${CLOCK_START_LABEL[c.from]} (${clockDates[i]}) is ${caps[i]}.`,
+        ...sources,
+      })),
+      {
+        text: `The earliest applicable date is ${date}. Holiday / closure, commencement, service and filing-cutoff adjustments remain uncomputed.`,
+        ...sources,
       },
     ],
   };

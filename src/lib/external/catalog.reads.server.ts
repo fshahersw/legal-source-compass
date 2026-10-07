@@ -15,7 +15,6 @@ import {
   searchState,
 } from "./searchQuality";
 import { exactCourtLocations } from "@/lib/corpus/courtLocations";
-import { canonicalSearchDatasetIds } from "./datasetVersions";
 
 const SEARCH_CANDIDATES = 500;
 const PRIORITY_CANDIDATES = 250;
@@ -93,9 +92,7 @@ export async function searchPublishedCorpus(q: string, offset: number, pageSize:
   const catalog = await restGet<{ id: string; imported_records: number | null }[]>(
     "corpus_datasets?select=id,imported_records&ready=eq.true&order=id.asc",
   );
-  const datasets = canonicalSearchDatasetIds(
-    catalog.rows.map((d) => ({ id: d.id, ready: true, records: d.imported_records })),
-  );
+  const datasets = catalog.rows.map((d) => d.id);
   const empty = {
     matches: [],
     unresolved: 0,

@@ -85,6 +85,7 @@ const CALCULATION_MODES = new Set([
   "diagnosis",
   "death_cause_min",
   "accrual_repose_min",
+  "clocks_min",
 ]);
 
 // Every value is checked field-by-field below before the raw snapshot is cast to the app type.
@@ -163,6 +164,14 @@ type KnownField =
   | "baselineRuleIds"
   | "researchRuleIds"
   | "gaps"
+  | "limbs"
+  | "combine"
+  | "clocks"
+  | "unit"
+  | "from"
+  | "fetchRoute"
+  | "kind"
+  | "proxy"
   | "verification"
   | "grade"
   | "basis"
@@ -416,7 +425,58 @@ function validateRules(values: unknown): LimitationRule[] {
       ])
         if (calculation[field] !== undefined)
           positiveInteger(calculation[field], `${label}.calculation.${field}`, 100);
-      if (calculation.mode === "accrual_repose_min") {
+      if (calculation.mode === "clocks_min") {
+        const limbs = calculation["limbs"];
+        const clocks = calculation["clocks"] ?? [];
+        if (!Array.isArray(limbs) || limbs.length < 1 || limbs.length > 2 || !Array.isArray(clocks))
+          fail(`${label} has an unsupported clock configuration`);
+        for (const [i, item] of (limbs as unknown[]).entries()) {
+          const limb = record(item, `${label}.calculation.limbs[${i}]`);
+          positiveInteger(limb["amount"], `${label}.calculation.limbs[${i}].amount`, 36500);
+          if (
+            !["calendar_years", "calendar_months", "calendar_days"].includes(limb["unit"] as string)
+          )
+            fail(`${label}.calculation.limbs[${i}] has an unsupported unit`);
+          if (!["accrual", "discovery", "injury_date", "death"].includes(limb["from"] as string))
+            fail(`${label}.calculation.limbs[${i}] has an unsupported start`);
+        }
+        if (
+          (limbs as unknown[]).length === 2 &&
+          !["earlier", "later"].includes(calculation["combine"] as string)
+        )
+          fail(`${label} has two period limbs without an earlier/later rule`);
+        for (const [i, item] of (clocks as unknown[]).entries()) {
+          const clock = record(item, `${label}.calculation.clocks[${i}]`);
+          positiveInteger(clock["years"], `${label}.calculation.clocks[${i}].years`, 100);
+          if (
+            ![
+              "act_or_omission",
+              "last_act_or_omission",
+              "injury_date",
+              "substantial_completion",
+              "first_delivery",
+            ].includes(clock["from"] as string)
+          )
+            fail(`${label}.calculation.clocks[${i}] has an unsupported start`);
+          civilDate(clock["effectiveFrom"], `${label}.calculation.clocks[${i}].effectiveFrom`);
+          if (clock["effectiveThrough"] !== undefined) {
+            civilDate(
+              clock["effectiveThrough"],
+              `${label}.calculation.clocks[${i}].effectiveThrough`,
+            );
+            if ((clock["effectiveFrom"] as string) > (clock["effectiveThrough"] as string))
+              fail(`${label} has a reversed repose applicability window`);
+          }
+        }
+        if (
+          !["confirmed_accrual", "death"].includes(r.accrualBasis as string) ||
+          calculation.deathCapYears !== undefined ||
+          calculation.secondaryCapYears !== undefined ||
+          calculation.requiresExposureWithinDeliveryYears !== undefined ||
+          calculation.reposeYears !== undefined
+        )
+          fail(`${label} has an unsupported clocks combination`);
+      } else if (calculation.mode === "accrual_repose_min") {
         positiveInteger(calculation.reposeYears, `${label}.calculation.reposeYears`, 100);
         civilDate(calculation.reposeEffectiveFrom, `${label}.calculation.reposeEffectiveFrom`);
         if (calculation.reposeEffectiveThrough !== undefined) {
@@ -431,10 +491,10 @@ function validateRules(values: unknown): LimitationRule[] {
             fail(`${label} has a reversed repose applicability window`);
         }
         if (
-          !["last_act_or_omission", "act_or_omission"].includes(
+          !["last_act_or_omission", "act_or_omission", "first_delivery"].includes(
             calculation.reposeTrigger as string,
           ) ||
-          r.accrualBasis !== "confirmed_accrual" ||
+          !["confirmed_accrual", "death"].includes(r.accrualBasis as string) ||
           calculation.deathCapYears !== undefined ||
           calculation.secondaryCapYears !== undefined ||
           calculation.requiresExposureWithinDeliveryYears !== undefined
@@ -508,6 +568,16 @@ function validateSources(values: unknown): LimitationSource[] {
     digest(s.sha256, `${label}.sha256`);
     positiveInteger(s.byteLength, `${label}.byteLength`, Number.MAX_SAFE_INTEGER);
     if (s.rawCapture !== undefined) validateRawCapture(s.rawCapture, `${label}.rawCapture`);
+    if (s["fetchRoute"] !== undefined) {
+      const route = record(s["fetchRoute"], `${label}.fetchRoute`);
+      if (!["direct", "proxied", "extraction"].includes(route["kind"] as string))
+        fail(`${label}.fetchRoute has an unsupported kind`);
+      if (
+        route["kind"] === "proxied" &&
+        !["firecrawl", "tavily"].includes(route["proxy"] as string)
+      )
+        fail(`${label}.fetchRoute names an unsupported proxy`);
+    }
     if (ids.has(s.id as string)) fail(`duplicate source ID ${String(s.id)}`);
     if (paths.has(s.textPath as string)) fail(`duplicate source text path ${String(s.textPath)}`);
     ids.add(s.id as string);

@@ -1,18 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
-import { useMemo, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 
+import { CourtArtwork } from "@/components/corpus/CourtArtwork";
 import { CorpusRecordLink } from "@/components/corpus/DatasetBrowser";
 import { Chip, Fact, LinkOut, NotRecorded } from "@/components/matters/common";
+import { formatExactCount } from "@/lib/matters/docketDocuments";
 import { formatBytes } from "@/lib/matters/documents";
-import { getMatterDocumentsSummary } from "@/lib/matters/matters.functions";
+import {
+  getMatterDocketDocumentsSummary,
+  getMatterDocumentsSummary,
+} from "@/lib/matters/matters.functions";
 import { judgeLinkBasisLabel, judgePersonBasisLabel, orNotRecorded } from "@/lib/matters/overview";
 import { registryMetrics } from "@/lib/matters/registry";
 import type { MatterOverviewPayload } from "@/lib/matters/types";
-import { getEntity } from "@/lib/external/entity.functions";
-import { buildEntityView } from "@/lib/external/entityView";
-import { fileUrl } from "@/lib/external/groups";
 
 const REFERENCE_LABELS: Record<string, string> = {
   "court-master-references": "Court's MDL information page",
@@ -72,12 +74,20 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
     staleTime: 5 * 60_000,
   });
   const m = registryMetrics(payload.registry);
+  const live = payload.liveRegistry;
+  const docSumFn = useServerFn(getMatterDocketDocumentsSummary);
+  const docSum = useQuery({
+    queryKey: ["matter-docket-documents-summary", o.mdl],
+    queryFn: () => docSumFn({ data: { id: o.mdl } }),
+    staleTime: 5 * 60_000,
+  });
+  const notInRegistry = "MDL not in the matter registry";
   const pdf = docs.data && docs.data.connected ? docs.data.summary : null;
   return (
     <div
       aria-label="Matter metrics"
       role="group"
-      className="grid divide-y divide-border border-b border-border sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-5 lg:divide-x"
+      className="grid divide-y divide-border border-b border-border sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-6 lg:divide-x"
     >
       <Metric
         label="JPML actions"
@@ -98,14 +108,26 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
         note={o.asOf ? `JPML report ${o.asOf}` : (o.countsLabel ?? undefined)}
       />
       <Metric
-        label="Member-like dockets"
-        title="Member and transferor dockets the Seeger Weiss matter registry holds for this MDL, each with its evidence. The master docket and the JPML panel proceeding are listed on the Member cases tab but are not counted here; never the size of the MDL."
-        value={m && m.dockets !== null ? n(m.dockets) : <NotRecorded />}
-        note={m ? "Evidence-backed; partial count" : "Not in the matter registry"}
+        label={m ? "Member-like dockets" : "Dockets in the saved sample"}
+        title={
+          m
+            ? "Member and transferor dockets the Seeger Weiss matter registry holds for this MDL, each with its evidence. The master docket and the JPML panel proceeding are listed on the Member cases tab but are not counted here; never the size of the MDL."
+            : "Dockets in this matter's saved sample (the same list as the Member cases tab). Not the size of the MDL."
+        }
+        value={
+          m && m.dockets !== null ? (
+            n(m.dockets)
+          ) : !m && o.cases?.total != null ? (
+            n(o.cases.total)
+          ) : (
+            <NotRecorded />
+          )
+        }
+        note={m ? "Evidence-backed; partial count" : `Saved sample · ${notInRegistry}`}
       />
       <Metric
         label="Docket entries"
-        title="CourtListener entries the registry captured for the master docket against the total the provider reports."
+        title="Entries the registry holds for the master docket (against the total the provider reports, when the matter record has it). Counted from the registry's docket entries, the same rows as the Docket entries tab."
         value={
           m?.entries && m.entries.captured !== null ? (
             <>
@@ -117,24 +139,28 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
                 </span>
               ) : null}
             </>
+          ) : live.entries ? (
+            n(live.entries)
           ) : (
             <span className="font-normal text-muted-foreground">Not yet available</span>
           )
         }
         note={
-          m?.entries
-            ? [
-                m.entries.complete === true
-                  ? "complete at last check"
-                  : m.entries.complete === false
-                    ? "partial"
-                    : null,
-                m.entries.published !== null ? `${n(m.entries.published)} published` : null,
-                m.entries.withheld ? `${n(m.entries.withheld)} without text` : null,
-              ]
-                .filter(Boolean)
-                .join(" · ") || undefined
-            : undefined
+          !m?.entries && live.entries
+            ? `Registry docket entries · ${notInRegistry}`
+            : m?.entries
+              ? [
+                  m.entries.complete === true
+                    ? "complete at last check"
+                    : m.entries.complete === false
+                      ? "partial"
+                      : null,
+                  m.entries.published !== null ? `${n(m.entries.published)} published` : null,
+                  m.entries.withheld ? `${n(m.entries.withheld)} without text` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ") || undefined
+              : undefined
         }
       />
       <Metric
@@ -146,6 +172,11 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
               {n(m.parties.published)}
               <span className="font-normal text-muted-foreground"> parties</span>
             </>
+          ) : live.parties ? (
+            <>
+              {n(live.parties)}
+              <span className="font-normal text-muted-foreground"> parties</span>
+            </>
           ) : (
             <span className="font-normal text-muted-foreground">Not yet available</span>
           )
@@ -153,6 +184,36 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
         note={
           m?.parties && m.parties.counselLinks !== null
             ? `${n(m.parties.counselLinks)} counsel entries`
+            : !m?.parties && live.parties
+              ? `Registry parties · ${notInRegistry}`
+              : undefined
+        }
+      />
+      <Metric
+        label="Documents"
+        title="Docket-sheet documents of this matter's cases in the docket-documents dataset (DocketBird-tracked cases), counted live. Listed and stored are exact corpus counts. Sealed and restricted documents are not listed."
+        value={
+          docSum.isLoading ? (
+            <span className="font-normal text-muted-foreground">…</span>
+          ) : docSum.data ? (
+            <>
+              {formatExactCount(docSum.data.listed)}
+              <span className="font-normal text-muted-foreground"> listed</span>
+            </>
+          ) : (
+            <NotRecorded />
+          )
+        }
+        note={
+          docSum.data
+            ? [
+                `${formatExactCount(docSum.data.stored)} stored`,
+                docSum.data.withheld !== null
+                  ? `${docSum.data.withheld.toLocaleString()} withheld`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")
             : undefined
         }
       />
@@ -183,7 +244,7 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
         }
       />
       {m?.lastCaptured || payload.master?.dateLastFiling || payload.master?.sourceCheckedAt ? (
-        <div className="flex flex-wrap gap-x-5 gap-y-0.5 border-t border-border px-4 py-1.5 text-[11px] text-muted-foreground sm:col-span-2 lg:col-span-5">
+        <div className="flex flex-wrap gap-x-5 gap-y-0.5 border-t border-border px-4 py-1.5 text-[11px] text-muted-foreground sm:col-span-2 lg:col-span-6">
           {payload.master?.dateLastFiling ? (
             <span>
               Last filing on the master docket{" "}
@@ -206,89 +267,14 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
           ) : null}
         </div>
       ) : null}
+      <div className="border-t border-border px-4 py-1.5 text-[12px] text-muted-foreground sm:col-span-2 lg:col-span-6">
+        <span className="font-medium text-foreground">Backfill coverage</span>
+        {" · Docket entries "}
+        {docSum.isLoading ? "…" : formatExactCount(docSum.data?.entries)}
+        {" · Documents stored "}
+        {docSum.isLoading ? "…" : formatExactCount(docSum.data?.stored)}
+      </div>
     </div>
-  );
-}
-
-const officialCourtMarks: Record<
-  string,
-  { src: string; source: string; shape: "seal" | "banner" }
-> = {
-  cand: {
-    src: "/court-marks/cand.svg",
-    source: "https://cand.uscourts.gov/",
-    shape: "seal",
-  },
-  njd: {
-    src: "/court-marks/njd.png",
-    source: "https://www.njd.uscourts.gov/",
-    shape: "seal",
-  },
-  paed: {
-    src: "/court-marks/paed.png",
-    source: "https://www.paed.uscourts.gov/",
-    shape: "seal",
-  },
-  flsd: {
-    src: "/court-marks/flsd.png",
-    source: "https://www.flsd.uscourts.gov/",
-    shape: "seal",
-  },
-  scd: {
-    src: "/court-marks/scd.gif",
-    source: "https://www.scd.uscourts.gov/",
-    shape: "banner",
-  },
-};
-
-/** Uses an official, locally stored mark only for an exact CourtListener court ID. */
-function CourtSeal({ id, title }: { id: string; title: string }) {
-  const officialMark = officialCourtMarks[id];
-  const getEntityFn = useServerFn(getEntity);
-  const court = useQuery({
-    queryKey: ["court-profile-image", id],
-    queryFn: async () => (await getEntityFn({ data: { dataset: "court_spine", id } })).json,
-    staleTime: Infinity,
-    enabled: !officialMark,
-  });
-  const src = useMemo(() => {
-    if (!court.data) return null;
-    try {
-      const raw = JSON.parse(court.data) as Record<string, unknown>;
-      const links = buildEntityView(raw).links.filter(
-        (link) => link.url.startsWith("/") && /seal|image|logo/i.test(link.label),
-      );
-      const source = links.find((link) => /seal/i.test(link.label)) ?? links[0];
-      return source ? { src: source.url, label: source.label } : null;
-    } catch {
-      return null;
-    }
-  }, [court.data]);
-  const [failed, setFailed] = useState(false);
-  if (officialMark) {
-    return (
-      <img
-        src={officialMark.src}
-        alt={`${title} official court ${officialMark.shape === "banner" ? "mark" : "seal"}`}
-        title={`Official court artwork · ${officialMark.source}`}
-        className={`size-9 shrink-0 border border-border bg-white ${
-          officialMark.shape === "banner"
-            ? "rounded-md object-cover object-left"
-            : "rounded-full object-contain p-1"
-        }`}
-        loading="lazy"
-      />
-    );
-  }
-  if (!src || failed) return null;
-  return (
-    <img
-      src={fileUrl(src.src)}
-      alt={`${title} ${src.label}`}
-      className="size-9 shrink-0 rounded-full border border-border bg-white object-contain p-1"
-      loading="lazy"
-      onError={() => setFailed(true)}
-    />
   );
 }
 
@@ -380,10 +366,7 @@ export function MatterHeader({ payload }: { payload: MatterOverviewPayload }) {
         <Fact label="Court">
           <div className="flex items-center gap-2">
             {o.court.clId ? (
-              <CourtSeal
-                id={o.court.clId}
-                title={o.court.shortName ?? o.court.fullName ?? "Court"}
-              />
+              <CourtArtwork courtId={o.court.clId} title={o.court.shortName ?? o.court.fullName ?? "Court"} compact />
             ) : null}
             {o.court.clId ? (
               <Link

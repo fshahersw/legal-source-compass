@@ -64,6 +64,24 @@ describe("rule authority facts", () => {
     expect(facts.entryStatus).toBe("flagged");
   });
 
+  it("records when a source was fetched through a proxy", () => {
+    const proxied = {
+      sources: [
+        {
+          id: "s1",
+          title: "t",
+          url: "https://www.palegis.us/x",
+          capturedAt: "2026-10-06T01:02:03.000Z",
+          authorityKind: "statute",
+          fetchRoute: { kind: "proxied", proxy: "firecrawl" },
+        },
+      ],
+    } as unknown as LimitationsSnapshot;
+    const facts = ruleAuthorityFacts(proxied, base);
+    expect(facts.sources[0]?.route).toContain("firecrawl proxy");
+    expect(ruleAuthorityFacts(snapshot, base).sources[0]?.route).toBe("Not recorded");
+  });
+
   it("shows the verification grade and its basis beside the citation", () => {
     const graded = {
       ...base,
