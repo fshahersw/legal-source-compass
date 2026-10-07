@@ -186,18 +186,20 @@ function louisianaRevisedStatutePaths(citation: string): string[] | null {
 }
 
 /**
- * Louisiana Civil Code articles such as `La. Civ. Code art. 2315.2(B)`.
- * The article number is the path. A parenthetical is not included.
- * `2315.2` is not `2315.1` or `2315.10`.
+ * Louisiana Civil Code articles such as `La. Civ. Code art. 2315.2(B)`
+ * and `La. Civ. Code arts. 3492 and 3493`.
+ * Each article number is one path. A parenthetical is not included.
+ * `2315.2` is not `2315.1` or `2315.10`. `arts.` names each listed article.
  */
 function louisianaCivilCodePaths(citation: string): string[] | null {
   if (!/\bCiv\.?\s+Code\b/i.test(citation)) return null;
   const paths: string[] = [];
-  const re = /\bart\.?\s*(\d+(?:\.\d+)?)(?![A-Za-z0-9.])/gi;
+  const re = /\barts?\.?\s*((?:\d+(?:\.\d+)?)(?:\s*(?:,|and)\s*\d+(?:\.\d+)?)*)/gi;
   for (const match of citation.matchAll(re)) {
-    const path = match[1];
-    if (!path || paths.includes(path)) continue;
-    paths.push(path);
+    for (const path of (match[1] ?? "").split(/\s*(?:,|and)\s*/i)) {
+      if (!/^\d+(?:\.\d+)?$/.test(path) || paths.includes(path)) continue;
+      paths.push(path);
+    }
   }
   return paths.length ? paths : null;
 }
@@ -271,7 +273,8 @@ function vermontTitleSections(citation: string): string[] | null {
 
 function hyphenPaths(citation: string): string[] | null {
   const paths: string[] = [];
-  const re = /(?<!\d\.)\b(\d{1,2}[A-Z]?(?:-\d{1,4}[A-Za-z]?){1,8}(?:\.\d{1,4})?)(?!\d)/g;
+  // A month-day tail of a date such as 2024-07-01 is not a section number.
+  const re = /(?<!\d\.)(?<!\d-)\b(\d{1,2}[A-Z]?(?:-\d{1,4}[A-Za-z]?){1,8}(?:\.\d{1,4})?)(?!\d)/g;
   for (const match of citation.matchAll(re)) {
     const path = match[1];
     if (!path || paths.includes(path)) continue;
