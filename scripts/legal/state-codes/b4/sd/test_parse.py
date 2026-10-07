@@ -21,6 +21,17 @@ class SouthDakotaParseTest(unittest.TestCase):
         self.assertEqual(parse.chapter_from_citation("1-1A-3")[1], "1-1A")
         self.assertEqual(parse.chapter_from_citation("1-1-1.1")[0], 1)
 
+    def test_superseded_heading_sets_status(self):
+        html = (
+            '<p><a href="https://sdlegislature.gov/Statutes/Codified_Laws/DisplayStatute.aspx?'
+            'Type=Statute&amp;Statute=1-10-3"><span>1-10-3</span></a>'
+            '<span>. Superseded by § 3-8-2.1.</span></p>'
+        )
+        r = parse.parse_section_html(html, "1-10-3", None)
+        self.assertIsNotNone(r)
+        self.assertEqual(r["status_label"], "Superseded")
+        self.assertIsNone(r["body"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -60,6 +60,14 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
+def _quote_url_path_spaces(url):
+    """Some official hosts redirect to paths with literal spaces; HTTP clients reject those unless re-encoded."""
+    p = urllib.parse.urlparse(url)
+    if " " not in p.path:
+        return url
+    return urllib.parse.urlunparse((p.scheme, p.netloc, p.path.replace(" ", "%20"), p.params, p.query, p.fragment))
+
+
 class Archive:
     def __init__(self, work, min_interval=1.0, max_redirects=5, user_agent=None):
         self.ua = resolve_ua(user_agent)
@@ -89,7 +97,7 @@ class Archive:
     def _http(self, url, accept="*/*", timeout=180, extra=None, ua=None):
         opener = urllib.request.build_opener(_NoRedirect)
         hops = []
-        cur = url
+        cur = _quote_url_path_spaces(url)
         for _ in range(self.max_redirects + 1):
             self._wait(urllib.parse.urlparse(cur).hostname)
             h = {"User-Agent": ua or self.ua, "Accept": accept, "Accept-Encoding": "gzip"}
@@ -105,7 +113,7 @@ class Archive:
             except urllib.error.HTTPError as e:
                 if e.code in (301, 302, 303, 307, 308) and e.headers.get("Location"):
                     hops.append({"status": e.code, "location": e.headers["Location"]})
-                    cur = urllib.parse.urljoin(cur, e.headers["Location"])
+                    cur = _quote_url_path_spaces(urllib.parse.urljoin(cur, e.headers["Location"]))
                     continue
                 return e.code, e.read(), {"final_url": cur, "redirects": hops, "retry_after": e.headers.get("Retry-After"),
                                           "content_type": e.headers.get("Content-Type")}
