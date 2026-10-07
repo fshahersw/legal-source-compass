@@ -278,6 +278,21 @@ def live_fetch(arc, url, state):
     return rec
 
 
+def live_pa_section_row(body, url, section):
+    """Re-parse a palegis.us title page and return only the sampled section's body lines."""
+    if "palegis.us" not in url:
+        return None
+    html = body.decode("utf-8", "replace") if isinstance(body, bytes) else body
+    pa_dir = os.path.join(HERE, "..", "pa")
+    if pa_dir not in sys.path:
+        sys.path.insert(0, pa_dir)
+    from review_region import section_body_lines  # noqa: WPS433
+    lines = section_body_lines(html, section["citation_path"])
+    if not lines:
+        return None
+    return {"text": "\n".join(lines), "heading": section.get("heading")}
+
+
 def live_hi_section_row(body, url, section):
     """Re-parse Hawaii HRS section HTML with the same parser as landing."""
     html = body.decode("utf-8", "replace") if isinstance(body, bytes) else body
@@ -765,7 +780,7 @@ def excuses_section_lead(line, row):
     return False
 
 
-def reverse_check_section_body(parsed_row, row):
+def reverse_check_section_body(parsed_row, row, skip_line=None):
     """Reverse diff on the section body only (same scope as the forward publisher parsers)."""
     stored = squash((row.get("text") or "") + "\n" + (row.get("history") or ""))
     live_body = (parsed_row.get("text") or "").strip()
@@ -779,6 +794,9 @@ def reverse_check_section_body(parsed_row, row):
     missing = []
     checked = excused = 0
     for line in lines:
+        if skip_line and skip_line(line):
+            excused += 1
+            continue
         if excuses_section_lead(line, row):
             excused += 1
             continue
@@ -958,6 +976,7 @@ def main():
                 or live_ia_section_row(live_raw, live_url, s)
                 or live_wv_section_row(live_raw, live_url, s)
                 or live_hi_section_row(live_raw, live_url, s)
+                or live_pa_section_row(live_raw, live_url, s)
                 or live_vt_section_row(live_raw, live_url, s, u.get("source_url"))
                 or live_ut_section_row(live_raw, live_url, s)
             )
@@ -1056,7 +1075,14 @@ def main():
             row["reverse_ok"] = False
             continue
         if parsed_row is not None:
-            rev = reverse_check_section_body(parsed_row, s)
+            skip_line = None
+            if (manifest.get("parser") or {}).get("name") == "pa-palegis-title-html":
+                pa_dir = os.path.join(HERE, "..", "pa")
+                if pa_dir not in sys.path:
+                    sys.path.insert(0, pa_dir)
+                from review_region import is_publisher_annotation_line  # noqa: WPS433
+                skip_line = is_publisher_annotation_line
+            rev = reverse_check_section_body(parsed_row, s, skip_line=skip_line)
         else:
             sibs = ordered_siblings(s, neighbors if neighbors is not None else secs)
             host = re.sub(r"^https?://([^/]+).*$", r"\1", url)
