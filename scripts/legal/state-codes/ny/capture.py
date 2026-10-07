@@ -24,10 +24,17 @@ HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 sys.path.insert(0, str(HERE))
 from common.provenance_fetch import Fetcher  # noqa: E402
-from parse import INDEX, parse_page  # noqa: E402
+from parse import INDEX, NOT_FOUND, parse_page  # noqa: E402
 
 OPTIONS = {"maxAge": 0}
 ATTEMPTS = 6
+# The site keeps a stale "could not be found" answer for some printed entries (CPL 690.36 on 2026-10-07); the same page
+# with ?view=all is served fresh and parses identically to the plain URL on pages that do answer.
+UNCACHED = "?view=all"
+
+
+def page_url(url):
+    return url[:-len(UNCACHED)] if url.endswith(UNCACHED) else url
 
 
 class CreditsExhausted(RuntimeError):
@@ -38,7 +45,7 @@ def usable(fetcher, receipt):
     if not (receipt.get("ok") and receipt.get("retrieval_method") == "proxied:firecrawl"
             and receipt.get("status") == 200 and receipt.get("source_status") == 200):
         return None
-    page = parse_page(fetcher.read(receipt).decode("utf8", "replace"), receipt["url"])
+    page = parse_page(fetcher.read(receipt).decode("utf8", "replace"), page_url(receipt["url"]))
     if not page["statute_page"] or page["not_found"]:
         return None
     return page
@@ -52,11 +59,11 @@ def main():
     fetcher = Fetcher("NY", a.root, min_interval=0)
     pages, receipts = {}, {}
     for r in fetcher.receipts():
-        if r["url"] in pages:
+        if page_url(r["url"]) in pages:
             continue
         page = usable(fetcher, r)
         if page:
-            pages[r["url"]], receipts[r["url"]] = page, r
+            pages[page_url(r["url"])], receipts[page_url(r["url"])] = page, r
     print(json.dumps({"resumed_pages": len(pages)}), flush=True)
     lock = threading.Lock()
     stats = {"fetched": 0, "retries": 0, "credits": 0}
@@ -67,8 +74,9 @@ def main():
         if url in pages or stop.is_set():
             return url
         last = None
+        target = url
         for attempt in range(1, ATTEMPTS + 1):
-            r = fetcher.proxied(url, label="toc-walk", options=OPTIONS)
+            r = fetcher.proxied(target, label="toc-walk", options=OPTIONS)
             with lock:
                 stats["credits"] += 1
             if r.get("status") == 402:
@@ -85,6 +93,8 @@ def main():
             if r.get("ok") and r.get("source_status") == 200:
                 with lock:
                     not_found[url] = {"url": url, "attempts": attempt, "retrieved_at": r["retrieved_at"], "sha256": r.get("sha256")}
+                if NOT_FOUND.encode() in fetcher.read(r):
+                    target = url + UNCACHED
             with lock:
                 stats["retries"] += 1
             time.sleep(min(60, 2 ** attempt) if r.get("status") == 429 else attempt)

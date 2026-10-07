@@ -20,18 +20,20 @@ import json
 import pathlib
 import re
 import sys
+from concurrent.futures import ProcessPoolExecutor
 
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 sys.path.insert(0, str(HERE))
 from common.provenance_fetch import Fetcher  # noqa: E402
+from capture import page_url  # noqa: E402
 from parse import INDEX, LEAF_TYPES, parse_page, split_url  # noqa: E402
 
 SECTION_PATH = r"^[A-Z][A-Z0-9]{1,6}/[A-Z0-9][A-Za-z0-9.*-]*$"
 URL_PATTERNS = [r"^https://www\.nysenate\.gov/legislation/laws/CONSOLIDATED$",
-                r"^https://www\.nysenate\.gov/legislation/laws/[A-Z][A-Z0-9]{1,6}(/[A-Za-z0-9][A-Za-z0-9.*-]*)?$"]
-STATUS = re.compile(r"^(?:§+\s*[\w.*-]+\.?\s*)?(?:\[|\()?(?:Repealed|Renumbered|Transferred|Expired|Omitted|Reserved|"
-                    r"Deemed repealed|Unconstitutional|Blank|No section)\b", re.I)
+                r"^https://www\.nysenate\.gov/legislation/laws/[A-Z][A-Z0-9]{1,6}(/[A-Za-z0-9][A-Za-z0-9.*-]*)?(\?view=all)?$"]
+STATUS = re.compile(r"^(?:(?:§+|Section\.?)\s*[\w.*-]+\.?\s*)?[\[(]?(?:Repealed|Renumbered|Transferred|Expired|Omitted|Reserved|"
+                    r"Deemed repealed|Unconstitutional|Blank)(?=\s*(?:[\])\.,;:]|$)|\s+(?:by|and|eff|pursuant|as|to|L\.|ch\.)\b)", re.I)
 
 
 def level_name(word):
@@ -41,6 +43,11 @@ def level_name(word):
 def usable(r):
     return (r.get("ok") and r.get("retrieval_method") == "proxied:firecrawl" and r.get("status") == 200
             and r.get("source_status") == 200)
+
+
+def parse_receipt(job):
+    root, r = job
+    return parse_page((pathlib.Path(root) / r["stored_path"]).read_bytes().decode("utf8", "replace"), page_url(r["url"]))
 
 
 def main():
@@ -53,12 +60,12 @@ def main():
     (out / "text").mkdir(parents=True, exist_ok=True)
     fetcher = Fetcher("NY", root, min_interval=0)
     pages, receipts = {}, {}
-    for r in fetcher.receipts():
-        if r["url"] in pages or not usable(r):
-            continue
-        page = parse_page(fetcher.read(r).decode("utf8", "replace"), r["url"])
-        if page["statute_page"] and not page["not_found"]:
-            pages[r["url"]], receipts[r["url"]] = page, r
+    candidates = [r for r in fetcher.receipts() if usable(r)]
+    with ProcessPoolExecutor() as ex:
+        for r, page in zip(candidates, ex.map(parse_receipt, [(str(root), r) for r in candidates], chunksize=64)):
+            key = page_url(r["url"])
+            if key not in pages and page["statute_page"] and not page["not_found"]:
+                pages[key], receipts[key] = page, r
     law_names = {}
     parent, order, seen, frontier = {}, [], {INDEX}, [INDEX]
     while frontier:
@@ -114,13 +121,13 @@ def main():
         text = page["text"]
         types[page["type"]] += 1
         if not text.strip():
-            gaps.append({"citation_path": path, "url": url, "reason": "section page prints no text"})
+            gaps.append({"citation_path": path, "url": r["url"], "reason": "section page prints no text"})
             continue
         if not re.match(SECTION_PATH, path):
-            gaps.append({"citation_path": path, "url": url, "reason": "citation path outside the manifest regex"})
+            gaps.append({"citation_path": path, "url": r["url"], "reason": "citation path outside the manifest regex"})
             continue
         if not page["currency_statement"]:
-            gaps.append({"citation_path": path, "url": url, "reason": "no revision statement"})
+            gaps.append({"citation_path": path, "url": r["url"], "reason": "no revision statement"})
             continue
         currency = {"basis": "publisher_statement", "statement": page["currency_statement"],
                     "through_date": page["revision_date"], "edition": None}
@@ -129,7 +136,7 @@ def main():
         tpath = out / "text" / (tsha + ".txt")
         if not tpath.exists():
             tpath.write_bytes(deriv)
-        src = {"source_url": url, "retrieved_at": r["retrieved_at"], "http_status": 200,
+        src = {"source_url": r["url"], "retrieved_at": r["retrieved_at"], "http_status": 200,
                "retrieval_method": "proxied_fetch", "proxy": "firecrawl"}
         add_object(r["sha256"], r["bytes"], "publisher_original", root / r["stored_path"], src)
         add_object(tsha, len(deriv), "unit_text_derivative", tpath, src)
@@ -148,26 +155,33 @@ def main():
         mark = "Rule" if page["type"] == "RULE" else "§"
         units.append({"unit_key": path, "unit_kind": "section_page", "heading": page["heading"], "original_sha256": r["sha256"],
                       "publisher_member": None, "raw_member_sha256": None, "text_sha256": tsha, "text_code_points": len(text),
-                      "sections_expected": 1, "currency": currency, "source_url": url, "retrieved_at": r["retrieved_at"],
+                      "sections_expected": 1, "currency": currency, "source_url": r["url"], "retrieved_at": r["retrieved_at"],
                       "retrieval_method": "proxied_fetch", "proxy": "firecrawl"})
         sections.append({"unit_key": path, "citation_path": path,
                          "citation": "N.Y. %s %s %s" % (law_names.get(law) or law, mark, page["number"]),
                          "heading": page["heading"], "text": text, "hierarchy": hier, "history": None, "status_note": status_note,
                          "span": {"unit": "unicode_code_points", "start": 0, "end": len(text)}, "currency": currency})
-        proof_pages.append({"url": url, "markers": page["text_blocks"], "sections": 1})
+        proof_pages.append({"url": r["url"], "markers": page["text_blocks"], "sections": 1})
         landed.add(url)
     gap_urls = {g["url"] for g in gaps}
+    no_text = {page_url(u) for u in gap_urls if pages.get(page_url(u), {}).get("text_blocks") == 0}
     for url in order:
         page = pages.get(url)
         if not page or page["leaf"]:
             continue
         r = receipts[url]
         add_object(r["sha256"], r["bytes"], "publisher_original", root / r["stored_path"],
-                   {"source_url": url, "retrieved_at": r["retrieved_at"], "http_status": 200,
+                   {"source_url": r["url"], "retrieved_at": r["retrieved_at"], "http_status": 200,
                     "retrieval_method": "proxied_fetch", "proxy": "firecrawl"})
         printed = [c for c, _l, w in page["toc"] if w in LEAF_TYPES]
-        proof_pages.append({"url": url, "markers": len(printed), "sections": sum(1 for c in printed if c in landed),
-                            "printed_entries": len(page["toc"])})
+        blank = [c for c in printed if c in no_text]
+        entry = {"url": r["url"], "markers": len(printed) - len(blank), "sections": sum(1 for c in printed if c in landed),
+                 "printed_entries": len(page["toc"])}
+        if blank:
+            entry["printed_without_text"] = blank
+        proof_pages.append(entry)
+    for url in sorted(no_text):
+        proof_pages.append({"url": receipts[url]["url"], "markers": 0, "sections": 0, "text_blocks": 0})
     levels.append("section")
     duplicates = [p for p, n in collections.Counter(s["citation_path"] for s in sections).items() if n > 1]
     manifest = {"schema_version": "publisher-code-manifest/2", "jurisdiction": "NY",
@@ -183,7 +197,9 @@ def main():
                              "location": "each section page prints 'Viewing most recent revision (from YYYY-MM-DD)'"},
                 "review": {"reviewed_by": a.reviewer, "reviewed_at": datetime.date.today().isoformat()}}
     proof = {"marker": "publisher table of contents: SECTION/RULE entries (li.nys-openleg-result-item-container) printed on "
-                       "each law/container page, and .nys-openleg-result-text blocks on each section page",
+                       "each law/container page whose section page prints a .nys-openleg-result-text block, and those blocks on "
+                       "each section page; entries whose page prints no text block are listed per page in printed_without_text "
+                       "and in empty_text_pages (gaps, not rows)",
              "pages": proof_pages, "unfetched_child_pages": unfetched, "empty_text_pages": sorted(gap_urls)}
     (out / "manifest.json").write_text(json.dumps(manifest, indent=1, sort_keys=True))
     for name, rows in (("objects.jsonl", sorted(objects.values(), key=lambda x: x["sha256"])), ("units.jsonl", units),
@@ -196,6 +212,7 @@ def main():
     per_law = collections.Counter(s["citation_path"].split("/", 1)[0] for s in sections)
     toc_per_law = collections.Counter(split_url(u)[0] for u in leaf_entries)
     inventory = {"laws": len(law_names), "printed_leaf_entries": len(leaf_entries), "parsed_sections": len(sections),
+                 "printed_without_text": sorted(g["citation_path"] for g in gaps),
                  "per_law": {law: {"name": law_names[law], "toc_entries": toc_per_law.get(law, 0), "parsed": per_law.get(law, 0)}
                              for law in sorted(law_names)}}
     (out / "inventory.json").write_text(json.dumps(inventory, indent=1))
