@@ -4,6 +4,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from review_publisher_code_v2 import (  # noqa: E402
+    _excuse_tx_publisher_divider,
     _stored_covers_live_line,
     live_lines,
     ordered_siblings,
@@ -104,6 +105,10 @@ class ReverseCheck(unittest.TestCase):
         self.assertEqual([x["citation_path"] for x in ordered_siblings(rows[0], rows)], ["b", "c"])
         rows[2]["span"] = None
         self.assertEqual(len(ordered_siblings(rows[0], rows)), 2)
+
+    def test_tx_publisher_center_divider_excused(self):
+        self.assertTrue(_excuse_tx_publisher_divider("EMINENT DOMAIN PROCEEDINGS"))
+        self.assertFalse(_excuse_tx_publisher_divider("Sec. 2206.002. LIMITATIONS ON EASEMENTS."))
 
     def test_body_and_history_on_one_live_line(self):
         r = row(

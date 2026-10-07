@@ -371,6 +371,51 @@ def live_ut_section_row(body, url, section):
     }
 
 
+def live_tx_section_row(body, section, code, member):
+    """Re-parse a Texas publisher ZIP member <pre> chapter for the matching section row."""
+    if not code or not member:
+        return None
+    tx_parse_path = os.path.join(HERE, "..", "tx-parse.py")
+    if not os.path.isfile(tx_parse_path):
+        return None
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("tx_parse_review", tx_parse_path)
+    tx_parse = importlib.util.module_from_spec(spec)
+    assert spec.loader
+    spec.loader.exec_module(tx_parse)
+    raw = body if isinstance(body, bytes) else body.encode("utf-8", "replace")
+    try:
+        full, _, secs = tx_parse.parse_chapter(raw, code, member)
+    except (ValueError, OSError):
+        return None
+    cp = (section.get("citation_path") or "").split("#", 1)[0]
+    if ":" not in cp:
+        return None
+    _, anchor = cp.split(":", 1)
+    anchor = anchor.split("~", 1)[0].strip()
+    want_occ = 1
+    if "~" in cp:
+        try:
+            want_occ = int(cp.split("~", 1)[1])
+        except ValueError:
+            want_occ = 1
+    seen = 0
+    for row in secs:
+        if row["native_section_anchor"].strip() != anchor:
+            continue
+        seen += 1
+        if seen == want_occ:
+            text = full[row["text_start"] : row["text_end"]]
+            return {
+                "number": anchor,
+                "heading": row["citation_heading"],
+                "text": text,
+                "history": None,
+            }
+    return None
+
+
 def live_vt_section_row(body, url, section, unit_url=None):
     """Re-parse Vermont fullchapter HTML for the matching section row."""
     page_url = unit_url or url
@@ -472,6 +517,14 @@ def _stored_covers_live_line(line, row):
     if sh and sh not in hist and sh not in body and sh not in combined:
         return False
     return bool(sb or sh)
+
+
+def _excuse_tx_publisher_divider(line):
+    """Centered all-caps bridge lines on Texas chapter <pre> pages, not section operative text."""
+    sq = squash(line)
+    if sq == squash("EMINENT DOMAIN PROCEEDINGS"):
+        return True
+    return False
 
 
 def _excuse_repealer_crossref(piece, row):
@@ -852,6 +905,9 @@ def reverse_check(lines, row, siblings, chrome=frozenset(), levels=None):
         if _excuse_repealer_crossref(lines[i], row):
             excused += 1
             continue
+        if _excuse_tx_publisher_divider(lines[i]):
+            excused += 1
+            continue
         if sq[i] in chrome:
             excused += 1
             continue
@@ -959,9 +1015,11 @@ def main():
             row.update(ok=False, why="live fetch failed")
         else:
             live = squash(live_body)
+            tx_code = tx_member = None
             if a.state == "TX":
                 code = texas_code_from_section(s, u)
                 member = texas_unit_member(u)
+                tx_code, tx_member = code, member
                 if code and member:
                     zip_html = texas_zip_chapter_live(arc, code, member)
                     if zip_html:
@@ -979,6 +1037,11 @@ def main():
                 or live_pa_section_row(live_raw, live_url, s)
                 or live_vt_section_row(live_raw, live_url, s, u.get("source_url"))
                 or live_ut_section_row(live_raw, live_url, s)
+                or (
+                    live_tx_section_row(live_raw, s, tx_code, tx_member)
+                    if a.state == "TX" and tx_code and tx_member
+                    else None
+                )
             )
             if parsed_row is not None:
                 row["_parsed_row"] = parsed_row
@@ -1009,6 +1072,20 @@ def main():
                         row["citation_ok"] = (bool(sn) and sp == sn) or (bool(sqc) and sp == sqc)
                     else:
                         row["citation_ok"] = bool(number) and squash(number) in live
+                    if a.state == "TX" and not row["citation_ok"]:
+                        anchor = (s.get("citation_path") or "").split("~", 1)[0].split(":", 1)[-1].strip()
+                        row["citation_ok"] = bool(anchor) and squash(anchor) in live
+                        if not row["citation_ok"] and "." in anchor:
+                            tail = anchor.rsplit(".", 1)[-1]
+                            row["citation_ok"] = bool(tail) and squash(tail) in live
+                        if not row["citation_ok"]:
+                            hm = re.search(
+                                r"Sec\.\s*([0-9]+[a-zA-Z]?(?:\.[0-9]+[a-zA-Z]?)?)",
+                                parsed_row.get("heading") or heading or "",
+                                re.I,
+                            )
+                            if hm:
+                                row["citation_ok"] = squash(hm.group(1)) in live
                 lh = parsed_row.get("heading") or ""
                 live_section_text = parsed_row.get("text") or ""
                 if not live_section_text.strip():
@@ -1027,6 +1104,15 @@ def main():
                 if a.state == "TX" and not row["citation_ok"]:
                     anchor = s["citation_path"].split("~", 1)[0].split(":", 1)[-1].strip()
                     row["citation_ok"] = bool(anchor) and squash(anchor) in live
+                    if not row["citation_ok"] and "." in anchor:
+                        tail = anchor.rsplit(".", 1)[-1]
+                        row["citation_ok"] = bool(tail) and (
+                            squash(tail) in live or squash(f"Sec.{tail}") in live or squash(f"Sec. {tail}") in live
+                        )
+                    if not row["citation_ok"] and heading:
+                        hm = re.search(r"Sec\.\s*([0-9]+[a-zA-Z]?(?:\.[0-9]+[a-zA-Z]?)?)", heading, re.I)
+                        if hm:
+                            row["citation_ok"] = squash(hm.group(1)) in live
                 if a.state == "CA" and not row["citation_ok"]:
                     anchor = s["citation_path"].split("~", 1)[0].split(":", 1)[-1].strip().rstrip(".")
                     row["citation_ok"] = bool(anchor) and squash(anchor) in live
