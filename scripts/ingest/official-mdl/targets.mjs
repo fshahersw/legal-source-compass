@@ -115,6 +115,15 @@ export const MATTERS = {
     pages: [{ id: 'flnd-2885-orders', role: 'orders_table', family: 'paed-orders-table', url: 'https://www.flnd.uscourts.gov/mdl2885-orders-by-date' }],
     index_pages: [],
   },
+  '2734': {
+    name: 'In re Abilify (Aripiprazole) Products Liability Litigation', court_id: 'flnd', host: 'www.flnd.uscourts.gov', tier: 2,
+    case_number: { literal: '3:16-md-2734', page_id: 'flnd-2734-mdl', note: 'master docket printed on the MDL landing page' },
+    pages: [
+      { id: 'flnd-2734-mdl', role: 'mdl_page', family: 'njd-body', url: 'https://www.flnd.uscourts.gov/abilify-products-liability-litigation-mdl-no-2734' },
+      { id: 'flnd-2734-orders', role: 'orders_table', family: 'paed-orders-table', url: 'https://www.flnd.uscourts.gov/mdl2734-orders-by-date' },
+    ],
+    index_pages: [],
+  },
   // N.D. Ohio MDL 2804 (Firecrawl map; njd-body link list on mdl-2804 hub).
   '2804': {
     name: 'In re National Prescription Opiate Litigation', court_id: 'ohnd', host: 'www.ohnd.uscourts.gov', tier: 1,
