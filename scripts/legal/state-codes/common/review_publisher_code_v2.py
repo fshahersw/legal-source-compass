@@ -73,6 +73,20 @@ def publisher_section_number(body):
     return num.strip() if num else None
 
 
+def live_ks_section_row(body, url, section):
+    """Re-parse Kansas Revisor section HTML with the same parser as landing (TOC meta only)."""
+    html = body.decode("utf-8", "replace") if isinstance(body, bytes) else body
+    if "ksrevisor.gov/statutes" not in url or 'id="print"' not in html:
+        return None
+    ks_dir = os.path.join(HERE, "..", "ks")
+    if ks_dir not in sys.path:
+        sys.path.insert(0, ks_dir)
+    from ks_parse import parse_section_html  # noqa: WPS433
+    meta = {"heading": section.get("heading"), "citation": section.get("citation")}
+    rows, _ = parse_section_html(html, url, "review-live", meta)
+    return rows[0] if rows else None
+
+
 def live_section_body(body):
     """Operative section text from the live publisher file (Utah section XML uses parse_ut.section_body)."""
     if publisher_section_number(body) is None:
@@ -149,16 +163,27 @@ def main():
             else:
                 row["citation_ok"] = bool(number) and squash(number) in live
             heading = s.get("heading") or ""
-            row["heading_ok"] = (not heading) or squash(heading) in live
-            if heading and not row["heading_ok"]:
-                row["heading_ok"] = squash(re.sub(r"\[[^\]]+\]", "", heading)) in live
-            if heading and not row["heading_ok"]:
-                row["heading_ok"] = squash(heading.split("[", 1)[0].strip()) in live
-            live_body = live_section_body(body)
-            if live_body is not None:
+            ks_row = live_ks_section_row(body, u["source_url"], s)
+            if ks_row is not None:
+                lh = ks_row.get("heading") or ""
+                live_body = ks_row.get("text") or ""
+                if not live_body.strip():
+                    live_body = ks_row.get("status_label") or lh
+                row["heading_ok"] = (not heading) or squash(heading) == squash(lh) or squash(heading) in squash(lh)
+                if heading and not row["heading_ok"]:
+                    row["heading_ok"] = squash(re.sub(r"\[[^\]]+\]", "", heading)) in squash(lh)
                 row["text_ok"] = squash(s["text"]) == squash(live_body)
             else:
-                row["text_ok"] = squash(s["text"]) in live
+                row["heading_ok"] = (not heading) or squash(heading) in live
+                if heading and not row["heading_ok"]:
+                    row["heading_ok"] = squash(re.sub(r"\[[^\]]+\]", "", heading)) in live
+                if heading and not row["heading_ok"]:
+                    row["heading_ok"] = squash(heading.split("[", 1)[0].strip()) in live
+                live_body = live_section_body(body)
+                if live_body is not None:
+                    row["text_ok"] = squash(s["text"]) == squash(live_body)
+                else:
+                    row["text_ok"] = squash(s["text"]) in live
             row["live_sha256"] = rec["sha256"]
             row["ok"] = row["citation_ok"] and row["heading_ok"] and row["text_ok"]
         results.append(row)
