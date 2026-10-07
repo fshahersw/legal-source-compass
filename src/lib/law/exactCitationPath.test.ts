@@ -251,6 +251,15 @@ describe("exact statute citation paths", () => {
     expect(statuteNativeId("OH", "2305.10")).toBe("OH:2305.10");
   });
 
+  it("reads Washington RCW 4.16.080 as the whole section number", () => {
+    expect(exactCitationPaths("WA", "RCW 4.16.080(2)")).toEqual(["4.16.080"]);
+    expect(exactCitationPaths("WA", "RCW 4.16.080(2)")?.includes("4.16")).toBe(false);
+    expect(exactCitationPaths("WA", "RCW 4.16.080(2)")?.includes("16.080")).toBe(false);
+    expect(exactCitationPaths("WA", "RCW 4.16.080(2)")?.includes("14.16.080")).toBe(false);
+    expect(exactCitationPaths("WA", "RCW 14.16.080")).toEqual(["14.16.080"]);
+    expect(statuteNativeId("WA", "4.16.080")).toBe("WA:4.16.080");
+  });
+
   it("reads Nevada 41A.097 with the chapter letter and without the parenthetical", () => {
     expect(exactCitationPaths("NV", "Nev. Rev. Stat. § 41A.097(3)")).toEqual(["41A.097"]);
     expect(exactCitationPaths("NV", "Nev. Rev. Stat. § 41A.097(2)")).toEqual(["41A.097"]);
