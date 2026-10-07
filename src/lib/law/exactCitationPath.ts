@@ -4,7 +4,7 @@
  * A range, a second title, or an unrecognized form returns null so nothing is linked.
  */
 /** Publishers whose citation_path is the dotted section number printed after the section sign. */
-const DOTTED_PATH_STATES = new Set(["FL", "KY", "MI", "MN", "MO", "NV", "OH", "OR", "WI"]);
+const DOTTED_PATH_STATES = new Set(["FL", "IA", "KY", "MI", "MN", "MO", "NV", "OH", "OR", "WI"]);
 
 export function exactCitationPaths(state: string, citation: string): string[] | null {
   const text = withoutSectionRanges(citation.trim());
