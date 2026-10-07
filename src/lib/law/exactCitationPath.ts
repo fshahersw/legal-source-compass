@@ -75,16 +75,32 @@ export function statuteNativeId(state: string, citationPath: string): string {
 /**
  * Illinois compiled-statute paths such as `735 ILCS 5/13-202`.
  * The chapter, act, and section are one path. A parenthetical is not included.
+ * A later section number in the same citation keeps that act: `735 ILCS 5/13-202, 13-213`.
  * `735 ILCS 5/13-202` is not `735 ILCS 5/13-202.1` or `220 ILCS 5/13-202`.
  */
 function illinoisPaths(citation: string): string[] | null {
   const paths: string[] = [];
-  const re =
-    /\b(\d{1,4} ILCS \d+[A-Za-z]?\/\d+[A-Za-z]*(?:-\d+[A-Za-z]*)*(?:\.\d+[A-Za-z]*)?)(?![A-Za-z0-9])/g;
+  const section = String.raw`\d+[A-Za-z]*(?:-\d+[A-Za-z]*)*(?:\.\d+[A-Za-z]*)?`;
+  const re = new RegExp(
+    String.raw`\b(\d{1,4} ILCS \d+[A-Za-z]?)\/(${section})(?![A-Za-z0-9])`,
+    "g",
+  );
+  const more = new RegExp(String.raw`\s*,\s*(${section})(?![A-Za-z0-9])`, "y");
   for (const match of citation.matchAll(re)) {
-    const path = match[1];
-    if (!path || paths.includes(path)) continue;
-    paths.push(path);
+    const act = match[1];
+    const first = match[2];
+    if (!act || !first) continue;
+    const path = `${act}/${first}`;
+    if (!paths.includes(path)) paths.push(path);
+    let cursor = (match.index ?? 0) + match[0].length;
+    for (;;) {
+      more.lastIndex = cursor;
+      const next = more.exec(citation);
+      if (!next || next.index !== cursor || !next[1]) break;
+      const extra = `${act}/${next[1]}`;
+      if (!paths.includes(extra)) paths.push(extra);
+      cursor = more.lastIndex;
+    }
   }
   return paths.length ? paths : null;
 }
