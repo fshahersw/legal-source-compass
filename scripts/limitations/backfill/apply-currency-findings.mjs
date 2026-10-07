@@ -110,6 +110,24 @@ function fetchCapture(state, captureId, sourceUrl) {
   return parsed;
 }
 
+function verifySourceCapture(state, sourceUrl, excerpt, captureIdHint) {
+  if (!excerpt) throw new Error(`EXCERPT_REQUIRED_WITH_SOURCE_URL ${state}`);
+  let captureId = captureIdHint ?? captureIdFromUrl(state, sourceUrl);
+  const metaPath = join(capturesDir, state, `${captureId}.json`);
+  const hadMeta = existsSync(metaPath);
+  if (!hadMeta) {
+    if (dryRun) return { captureId, fetched: true, dryRun: true, ok: true };
+    fetchCapture(state, captureId, sourceUrl);
+  } else {
+    const meta = JSON.parse(readFileSync(metaPath, "utf8"));
+    if (meta.url !== sourceUrl && meta.finalUrl !== sourceUrl)
+      throw new Error(`CAPTURE_ID_URL_MISMATCH ${captureId}`);
+  }
+  const text = readFileSync(join(capturesDir, state, `${captureId}.txt`), "utf8");
+  if (!containsLiteral(text, excerpt)) return { captureId, fetched: !hadMeta, ok: false };
+  return { captureId, fetched: !hadMeta, ok: true };
+}
+
 function resolveCapture(state, correction) {
   const patch = correction.patch ?? {};
   const sourceUrl = correction.sourceUrl ?? patch.sourceUrl;
@@ -117,22 +135,32 @@ function resolveCapture(state, correction) {
   let captureId = correction.captureId ?? patch.captureId;
 
   if (sourceUrl) {
-    if (!excerpt) throw new Error(`EXCERPT_REQUIRED_WITH_SOURCE_URL ${state}`);
-    captureId = captureId ?? captureIdFromUrl(state, sourceUrl);
-    const metaPath = join(capturesDir, state, `${captureId}.json`);
-    const hadMeta = existsSync(metaPath);
-    if (!hadMeta) {
-      if (dryRun) return { captureId, fetched: true, dryRun: true };
-      fetchCapture(state, captureId, sourceUrl);
-    } else {
-      const meta = JSON.parse(readFileSync(metaPath, "utf8"));
-      if (meta.url !== sourceUrl && meta.finalUrl !== sourceUrl)
-        throw new Error(`CAPTURE_ID_URL_MISMATCH ${captureId}`);
+    const excerptAttempts = [excerpt];
+    if (correction.supportingSource?.excerpt)
+      excerptAttempts.push(correction.supportingSource.excerpt);
+    if (patch.lastAmended?.evidence) excerptAttempts.push(patch.lastAmended.evidence);
+    const reduc = excerpt?.match(/Reducing statute of limitations[\s\S]+/);
+    if (reduc) excerptAttempts.push(reduc[0]);
+    const billHist = excerpt?.includes("Bill History For")
+      ? "Bill History For §55-2-6"
+      : null;
+    if (billHist) excerptAttempts.push(billHist);
+
+    const urlAttempts = [
+      { sourceUrl, captureId },
+      ...(correction.supportingSource?.sourceUrl
+        ? [{ sourceUrl: correction.supportingSource.sourceUrl, captureId: null }]
+        : []),
+    ];
+    let lastCaptureId = null;
+    for (const u of urlAttempts) {
+      for (const ex of [...new Set(excerptAttempts.filter(Boolean))]) {
+        const r = verifySourceCapture(state, u.sourceUrl, ex, u.captureId);
+        lastCaptureId = r.captureId;
+        if (r.ok) return { captureId: r.captureId, fetched: r.fetched };
+      }
     }
-    const text = readFileSync(join(capturesDir, state, `${captureId}.txt`), "utf8");
-    if (!containsLiteral(text, excerpt))
-      throw new Error(`EXCERPT_NOT_IN_CAPTURE ${state} ${captureId}`);
-    return { captureId, fetched: !hadMeta };
+    throw new Error(`EXCERPT_NOT_IN_CAPTURE ${state} ${lastCaptureId}`);
   }
 
   if (captureId) {
@@ -151,6 +179,74 @@ function resolveCapture(state, correction) {
   return { captureId: null, fetched: false };
 }
 
+function calendarUnit(unit) {
+  if (unit === "calendar_years" || unit === "years") return "years";
+  if (unit === "calendar_months" || unit === "months") return "months";
+  return unit;
+}
+
+function applyCalculationPatch(entry, calculation, accrualEvidence) {
+  if (!calculation || calculation.mode !== "clocks_min")
+    throw new Error("UNSUPPORTED_CALCULATION_PATCH");
+  const limbs = calculation.limbs ?? [];
+  if (limbs.length !== 2) throw new Error("CALCULATION_NEEDS_TWO_LIMBS");
+  const evidence =
+    accrualEvidence ??
+    entry.accrual?.evidence ??
+    "prescribes one year from the death of the deceased or two years from the day that injury or damage is sustained, whichever is longer";
+  entry.periodLimbs = limbs.map((l) => ({
+    amount: l.amount,
+    unit: calendarUnit(l.unit),
+    from: l.from,
+    evidence,
+  }));
+  if (calculation.combine !== "earlier" && calculation.combine !== "later")
+    throw new Error("CALCULATION_COMBINE_REQUIRED");
+  entry.periodCombine = calculation.combine;
+}
+
+function mergeTolling(entry, incoming) {
+  const cur = [...(entry.tolling ?? [])];
+  for (const t of incoming) {
+    if (t.replacesText) {
+      const idx = cur.findIndex((x) => x.text === t.replacesText);
+      if (idx < 0) {
+        if (cur.some((x) => x.text === t.text)) continue;
+        throw new Error(`TOLLING_REPLACE_NOT_FOUND ${t.replacesText.slice(0, 40)}`);
+      }
+      cur[idx] = { citation: t.citation ?? cur[idx].citation, text: t.text };
+    } else {
+      cur.push(t);
+    }
+  }
+  return cur;
+}
+
+function crossCheckConditionLine(cc) {
+  return `Related provision or cross-check (capture ${cc.captureId}): ${cc.note}`;
+}
+
+function applyConditionsReplace(entry, replacements) {
+  for (const { from, to } of replacements ?? []) {
+    let hit = false;
+    for (const cc of entry.crossChecks ?? []) {
+      if (cc.note === from || crossCheckConditionLine(cc) === from) {
+        cc.note = to.startsWith("Related provision:")
+          ? to.replace(/^Related provision:\s*/, "")
+          : to;
+        hit = true;
+      }
+    }
+    if (!hit) {
+      const targetNote = to.startsWith("Related provision:")
+        ? to.replace(/^Related provision:\s*/, "")
+        : to;
+      if ((entry.crossChecks ?? []).some((cc) => cc.note === targetNote)) continue;
+      throw new Error(`CONDITIONS_REPLACE_NOT_FOUND ${from.slice(0, 48)}`);
+    }
+  }
+}
+
 function applyPatch(state, entry, patch) {
   const allowed = new Set([
     "citation",
@@ -163,6 +259,8 @@ function applyPatch(state, entry, patch) {
     "repose",
     "effectiveDate",
     "lastAmended",
+    "periodLimbs",
+    "periodCombine",
     "status",
     "confidence",
     "confidenceNote",
@@ -171,12 +269,24 @@ function applyPatch(state, entry, patch) {
     "blockers",
     "crossChecks",
   ]);
-  for (const key of Object.keys(patch)) {
+  const working = { ...patch };
+  if (working.calculation) {
+    applyCalculationPatch(entry, working.calculation, working.accrual?.evidence);
+    delete working.calculation;
+  }
+  if (working.conditionsReplace) {
+    applyConditionsReplace(entry, working.conditionsReplace);
+    delete working.conditionsReplace;
+  }
+  if (working.tolling) {
+    working.tolling = mergeTolling(entry, working.tolling);
+  }
+  for (const key of Object.keys(working)) {
     if (key === "clearFlags" || key === "clearBlockers" || key === "sourceUrl") continue;
     if (!allowed.has(key)) throw new Error(`DISALLOWED_PATCH_FIELD ${key}`);
   }
   for (const key of allowed) {
-    if (patch[key] !== undefined) entry[key] = patch[key];
+    if (Object.prototype.hasOwnProperty.call(working, key)) entry[key] = working[key];
   }
   if (patch.clearFlags?.length) {
     const remove = new Set(patch.clearFlags);
