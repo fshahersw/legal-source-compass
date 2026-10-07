@@ -96,6 +96,33 @@ export const MATTERS = {
     pages: [{ id: 'flnd-2885-orders', role: 'orders_table', family: 'paed-orders-table', url: 'https://www.flnd.uscourts.gov/mdl2885-orders-by-date' }],
     index_pages: [],
   },
+  // N.D. Ohio MDL 2804 (Firecrawl map; njd-body link list on mdl-2804 hub).
+  '2804': {
+    name: 'In re National Prescription Opiate Litigation', court_id: 'ohnd', host: 'www.ohnd.uscourts.gov', tier: 1,
+    case_number: null, printed_mdl_literal: 'MDL 2804',
+    pages: [{ id: 'ohnd-2804-mdl', role: 'mdl_page', family: 'njd-body', url: 'https://www.ohnd.uscourts.gov/mdl-2804' }],
+    index_pages: [],
+  },
+  // D. Ariz. MDL 3081 (Firecrawl map; paed-orders-table on litigation landing page).
+  '3081': {
+    name: 'In re Bard Implanted Port Catheter Products Liability Litigation', court_id: 'azd', host: 'www.azd.uscourts.gov', tier: 1,
+    case_number: null, printed_mdl_literal: 'MDL 3081',
+    pages: [{ id: 'azd-3081-mdl', role: 'orders_table', family: 'paed-orders-table', url: 'https://www.azd.uscourts.gov/re-bard-implanted-port-catheter-products-liability-litigation' }],
+    index_pages: [],
+  },
+  // D. Minn. MDL pages (mdl-cases index; mnd-mdl-page on Drupal content nodes).
+  '3108': {
+    name: 'In re Change Healthcare, Inc. Customer Data Security Breach Litigation', court_id: 'mnd', host: 'www.mnd.uscourts.gov', tier: 1,
+    case_number: null, printed_mdl_literal: 'MDL 3108',
+    pages: [{ id: 'mnd-3108-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.mnd.uscourts.gov/content/change-healthcare-inc-data-breach' }],
+    index_pages: ['mnd-mdl-cases'],
+  },
+  '2998': { name: 'In re Pork Antitrust Litigation', court_id: 'mnd', host: 'www.mnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2998', pages: [{ id: 'mnd-2998-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.mnd.uscourts.gov/content/pork-antitrust-litigation-mdl' }], index_pages: [] },
+  '2642': { name: 'In re Fluoroquinolone Products Liability Litigation', court_id: 'mnd', host: 'www.mnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2642', pages: [{ id: 'mnd-2642-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.mnd.uscourts.gov/content/Fluoroquinolone' }], index_pages: [] },
+  '2441': { name: 'In re Stryker Rejuvenate and ABG II Modular-Neck Hip Stem Products Liability Litigation', court_id: 'mnd', host: 'www.mnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 2441', pages: [{ id: 'mnd-2441-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.mnd.uscourts.gov/content/stryker-rejuvenate' }], index_pages: [] },
+  '3110': { name: 'In re Granulated Sugar Antitrust Litigation', court_id: 'mnd', host: 'www.mnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 3110', pages: [{ id: 'mnd-3110-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.mnd.uscourts.gov/content/granulated-sugar-antitrust-litigation' }], index_pages: [] },
+  '3155': { name: 'In re Air Crash at Toronto Pearson International Airport on January 5, 2025', court_id: 'mnd', host: 'www.mnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 3155', pages: [{ id: 'mnd-3155-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.mnd.uscourts.gov/content/air-crash-toronto-pearson-international-airport' }], index_pages: [] },
+  '3128': { name: 'In re Dividend Solar Finance LLC and Fifth Third Bank Sales and Lending Practices Litigation', court_id: 'mnd', host: 'www.mnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 3128', pages: [{ id: 'mnd-3128-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.mnd.uscourts.gov/content/dividend-solar-finance-llc-and-fifth-third-bank-sales-and-lending-practices-litigation' }], index_pages: [] },
 };
 
 // Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
@@ -105,6 +132,7 @@ export const INDEX_PAGES = {
   'moed-mdl-index': { id: 'moed-mdl-index', role: 'court_mdl_index', family: 'index-links', url: 'https://www.moed.uscourts.gov/mdl-multidistrict-litigation-cases' },
   'paed-mdl-hub': { id: 'paed-mdl-hub', role: 'court_mdl_index', family: 'index-links', url: 'https://www.paed.uscourts.gov/mdl' },
   'txnd-mdl-cases': { id: 'txnd-mdl-cases', role: 'court_mdl_index', family: 'index-links', url: 'https://www.txnd.uscourts.gov/mdl-cases' },
+  'mnd-mdl-cases': { id: 'mnd-mdl-cases', role: 'court_mdl_index', family: 'index-links', url: 'https://www.mnd.uscourts.gov/mdl-cases' },
   // JPML lists only the CURRENT hearing session's orders here (older PDFs stay on the site under predictable file names, see build-jpml-queue.mjs).
   'jpml-panel-orders': { id: 'jpml-panel-orders', role: 'jpml_panel_orders', family: 'jpml-panel-orders', url: 'https://www.jpml.uscourts.gov/panel-orders' },
 };
