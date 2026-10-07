@@ -31,6 +31,14 @@ Michigan's official directory lists 241 `Chapter N.xml` files. All 241 were fetc
 
 North Carolina's landing record says 396 chapter pages were captured at HTTP 200, matching the table of contents, with 85 explicit status stubs and no unresolved markers. The publisher statement is "The General Statutes include changes through S.L. 2026-30." Edition is null. The landed text for § 113-403, § 104E-28, and § 105-113.110A keeps the body sentences that begin "Article" or "Part". The review RPC was not called.
 
+## Delaware
+
+Recaptured and reviewed on 2026-10-07. The home-page notice had moved from "all acts enacted as of September 04, 2026" to "all acts enacted as of September 10, 2026, up to and including 85 Del. Laws, c. 518". Run `fc86f47c-79c9-580b-83c1-5f3852851bae` (parser `de-delcode-html/3`, manifest `674758989217…`) landed 23,444 sections and 2,453 units with projection off. 25,897 rows were verified. `toc-proof.json` matches the publisher's `SectionHead` markers on all 2,453 pages, and no child page is unfetched. The shared review passed 20 of 20 live sections and turned projection back on.
+
+Parser v2 ended a section at the first `</div>` after its heading. A table inside `<div class="code-table">` therefore ended the section, and the text after the table was lost: 87 of the first 18,263 sections, 31,531 words. Version 3 ends a section at its balanced `</div>` and keeps tables as section text. `b4/de/reverse_check.py` found no section whose live text is missing from the stored text.
+
+Sixteen sections and five units the publisher no longer prints are still rows from the previous run: 4 Del. C. ch. 4, the old 31 Del. C. ch. 28 subchapters, and 21 Del. C. § 2121. A land adds and updates rows; it does not remove them. They need a ledgered quarantine before they leave the projection.
+
 ## Georgia
 
 Nothing was landed. No manifest was registered and no run was opened. The General Assembly's Georgia Code link goes to `http://www.lexisnexis.com/hottopics/gacode`, which redirects into an `advance.lexis.com` container. A direct fetch returns HTTP 200 and a JavaScript cookie bootstrap with no statute text. A rendered fetch, with no clicks, ends on `signin.lexisnexis.com` with "Unable to Complete Your Request." The gate was not accepted or bypassed. The 2026 General Statutes Summary is a session summary, not the code. Session-law pages are not the code. A Secretary of State PDF is one chapter of Title 43, current through the 2020 regular session, and the direct fetch returns HTTP 403. Landing the current code needs a Code Revision Commission or Lexis arrangement, or a later owner decision on the gated site.

@@ -1,0 +1,50 @@
+{
+  "jurisdiction": "NH",
+  "publisher": "New Hampshire General Court",
+  "publisher_url": "https://www.gencourt.state.nh.us/rsa/html/NHTOC.htm",
+  "source_system": "nh-rsa-html",
+  "code_title": "New Hampshire Revised Statutes Annotated",
+  "parser": {
+    "name": "nh-rsa-mrg-html",
+    "version": "1"
+  },
+  "methods": [
+    "publisher_page"
+  ],
+  "source_url_patterns": [
+    "^https://(www\\.gencourt\\.state\\.nh\\.us|gc\\.nh\\.gov)/rsa/html/NHTOC\\.htm$",
+    "^https://(www\\.gencourt\\.state\\.nh\\.us|gc\\.nh\\.gov)/rsa/html/NHTOC/NHTOC-[^/]+\\.htm$",
+    "^https://(www\\.gencourt\\.state\\.nh\\.us|gc\\.nh\\.gov)/rsa/html/[^/]+/[^/]+/[^/]+-mrg\\.htm$",
+    "^https://(www\\.gencourt\\.state\\.nh\\.us|gc\\.nh\\.gov)/rsa/html/robots\\.txt$"
+  ],
+  "rate_limit_ms": 1000,
+  "structure": {
+    "levels": [
+      "title",
+      "chapter",
+      "section"
+    ],
+    "unit": "one official merged chapter HTML page (*-mrg.htm) from the RSA HTML edition"
+  },
+  "section_id": {
+    "scheme": "official_citation_path",
+    "regex": "^[0-9][0-9A-Za-z-]*:[0-9A-Za-z.-]+(~[0-9]+)?$",
+    "example": "1:1",
+    "citation_format": "RSA <title>:<section> (merged chapter HTML; ~N marks repeated occurrences)"
+  },
+  "currency": {
+    "basis": "publisher_statement",
+    "location": "NHTOC.htm and per-title TOC pages (no through-date or edition prose found at acquisition)"
+  },
+  "review": {
+    "reviewed_by": "state-codes batch 4 lead (bc-747cabdb)",
+    "reviewed_at": "2026-10-06"
+  },
+  "unit_kind": "nh_rsa_mrg_html",
+  "currency_defaults": {
+    "basis": "none",
+    "statement": "",
+    "through_date": null,
+    "edition": null
+  }
+}

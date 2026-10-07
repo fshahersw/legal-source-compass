@@ -65,7 +65,9 @@ OFFICIAL_HOSTS = (
     "capitol.tn.gov", "njleg.state.nj.us", "njleg.gov", "pub.njleg.gov", "lis.njleg.state.nj.us",
     "nysenate.gov", "nycourts.gov", "legislation.nysenate.gov", "malegislature.gov", "cga.ct.gov",
     "kslegislature.org", "kslegislature.gov", "courts.ca.gov", "ujs.sd.gov", "sdlegislature.gov",
+    "appellate.nccourts.org", "nccourts.org", "appellate-records.courts.alaska.gov",
     "govt.westlaw.com",  # official public-access host for states that designate it (Tennessee Code, etc.)
+    "cdm17027.contentdm.oclc.org", "ojd.contentdm.oclc.org",  # Oregon Judicial Dept. / State Law Library opinion digital collection (linked from courts.oregon.gov)
     "lexisnexis.com",   # accepted only where the state designates it as the official code (verify per use)
     "advance.lexis.com", "olls.info", "colorado.gov", "gasupreme.us", "gaappeals.us", "vermontjudiciary.org", "pacourts.us", "lasc.org", "flrules.org", "sccourts.org", "kycourts.net", "wvcourts.gov", "courts.state.hi.us", "nmonesource.com",
 )

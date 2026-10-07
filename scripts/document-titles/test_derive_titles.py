@@ -91,5 +91,43 @@ class Markdown(unittest.TestCase):
         self.assertEqual(D.title_from_markdown("# **Notice of Hearing**\n")[0], "Notice of Hearing")
 
 
+def OL(text, size, y, conf=0.99):
+    return {"t": text, "s": size, "b": False, "y": y, "x": 72.0, "x1": 300.0, "c": conf}
+
+
+class Ocr(unittest.TestCase):
+    body = [OL("body text line number %d is long enough to dominate" % i, 12, 200 + i * 14) for i in range(8)]
+
+    def derive(self, *head):
+        return D.title_from_ocr_first_page(list(head) + self.body, 792.0)
+
+    def test_doctype_heading_with_caption(self):
+        t, m, why = self.derive(OL("IN THE SUPREME COURT OF ALABAMA", 12.3, 40), OL("April 27, 2011", 15, 60), OL("ORDER", 12.3, 80))
+        self.assertEqual((t, m), ("ORDER — IN THE SUPREME COURT OF ALABAMA", D.METHOD_OCR_DOCTYPE))
+
+    def test_title_block_by_height(self):
+        t, m, why = self.derive(OL("Standing Order Regarding", 24, 60), OL("Third-Party Litigation Funding Arrangements", 24, 90))
+        self.assertEqual((t, m), ("Standing Order Regarding Third-Party Litigation Funding Arrangements", D.METHOD_OCR_BLOCK))
+
+    def test_low_confidence_rejected(self):
+        self.assertEqual(self.derive(OL("Standing Order Regarding", 24, 60, 0.8), OL("Funding Arrangements", 24, 90))[2], "ocr_low_confidence")
+
+    def test_run_together_and_digit_confusions_rejected(self):
+        self.assertEqual(D.ocr_gate("AMENDEDOPERATINGBUDGETFORFISCAL", []), "ocr_run_together_words")
+        self.assertEqual(D.ocr_gate("Apri1 General Order", []), "ocr_letter_digit_confusion")
+        self.assertIsNone(D.ocr_gate("Table C-1. Civil Cases 12-Month 5th", []))
+
+    def test_no_text(self):
+        self.assertEqual(D.title_from_ocr_first_page([], 792.0)[2], "ocr_no_text")
+
+    def test_second_pass_must_agree_exactly(self):
+        first = [OL("Standing Order Regarding", 24, 60), OL("Funding Arrangements", 24, 90)] + self.body
+        same = [dict(l, c=0.97) for l in first]
+        diff = [OL("Standing Order Regarding", 24, 60), OL("Funding Arrangernents", 24, 90)] + self.body
+        title = D.title_from_ocr_first_page(first, 792.0)[0]
+        self.assertTrue(D.ocr_second_pass_agrees(title, same, 792.0))
+        self.assertFalse(D.ocr_second_pass_agrees(title, diff, 792.0))
+
+
 if __name__ == "__main__":
     unittest.main()

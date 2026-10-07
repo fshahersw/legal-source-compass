@@ -193,14 +193,23 @@ def put_object(cloud, o):
         if digest.hexdigest() != o["sha256"] or os.path.getsize(o["path"]) != o["bytes"]:
             raise RuntimeError(f"local file does not match plan {o['sha256'][:12]}")
         ctype = "text/plain; charset=utf-8" if o["kind"] == "unit_text_derivative" else "application/octet-stream"
-        if o["bytes"] > STANDARD_UPLOAD_LIMIT:
-            ust, msg = tus_upload(cloud, key, o["path"], ctype)
-        else:
-            with open(o["path"], "rb") as handle:
-                ust, msg = cloud.upload(key, handle.read(), ctype)
-            if ust == 413:
+        for attempt in range(7):
+            if o["bytes"] > STANDARD_UPLOAD_LIMIT:
                 ust, msg = tus_upload(cloud, key, o["path"], ctype)
-        if ust not in (200, 201) and "already exists" not in msg and "Duplicate" not in msg:
+            else:
+                with open(o["path"], "rb") as handle:
+                    ust, msg = cloud.upload(key, handle.read(), ctype)
+                if ust == 413:
+                    ust, msg = tus_upload(cloud, key, o["path"], ctype)
+            # Storage answers LockTimeout when many uploads contend for the same lock; back off and try again.
+            if ust not in (200, 201) and "LockTimeout" in str(msg) and attempt < 6:
+                time.sleep(min(60, 2 ** (attempt + 1)))
+                st, body = cloud.readback(key)
+                if st == 200:
+                    break
+                continue
+            break
+        if ust not in (200, 201) and "already exists" not in msg and "Duplicate" not in msg and not (ust != 200 and "LockTimeout" in str(msg) and cloud.readback(key)[0] == 200):
             raise RuntimeError(f"upload {ust} {msg}")
         st, body = cloud.readback(key)
     if st != 200 or hashlib.sha256(body).hexdigest() != o["sha256"] or len(body) != o["bytes"]:
@@ -279,7 +288,11 @@ def main():
     ap.add_argument("--run-id")
     ap.add_argument("--attempt", type=int, default=1, help="a closed run cannot reopen; attempt N>1 derives a new deterministic run id")
     ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--multicode", action="store_true",
+                    help="register, open and finish through the v3 multi-code functions, so a second code can land under a jurisdiction "
+                         "that already has one; intake, objects and verification are the v2 functions either way. Never reviews anything.")
     a = ap.parse_args()
+    fn = "_v3" if a.multicode else "_v2"
     checked = preflight_packet(a.packet)
     manifest = json.load(open(os.path.join(a.packet, "manifest.json"), encoding="utf-8"))
     manifest_sha = sha(manifest)
@@ -294,9 +307,9 @@ def main():
     if not a.execute:
         return 0
     cloud = Cloud()
-    reg = cloud.rpc("corpus_publisher_code_register_manifest_v2", {"p_manifest": manifest})
+    reg = cloud.rpc("corpus_publisher_code_register_manifest" + fn, {"p_manifest": manifest})
     assert reg["manifest_sha256"] == manifest_sha, "server manifest hash differs from local canonical hash"
-    cloud.rpc("corpus_publisher_code_open_run_v2", {"p_run": run_id, "p_manifest_sha256": manifest_sha})
+    cloud.rpc("corpus_publisher_code_open_run" + fn, {"p_run": run_id, "p_manifest_sha256": manifest_sha})
     status, counts = "failed", dict(summary)
     try:
         from concurrent.futures import ThreadPoolExecutor
@@ -326,7 +339,7 @@ def main():
         counts.update(landed_rows=landed, verified_rows=verified)
         status = "completed" if landed == len(unit_rows) + len(section_rows) else "partial"
     finally:
-        fin = cloud.rpc("corpus_publisher_code_finish_run_v2", {"p_run": run_id, "p_status": status, "p_counts": counts})
+        fin = cloud.rpc("corpus_publisher_code_finish_run" + fn, {"p_run": run_id, "p_status": status, "p_counts": counts})
         print(json.dumps({"finish": fin}))
     return 0 if status == "completed" else 1
 

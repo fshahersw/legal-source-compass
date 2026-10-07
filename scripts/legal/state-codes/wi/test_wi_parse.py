@@ -127,6 +127,29 @@ Criminal Code.
         }
         self.assertEqual(wi_parse.json_top_level_sections(source, "12"), ["12.01", "12.02"])
 
+    def test_txt_toc_inventory_merges_when_html_truncates(self):
+        content = """CHAPTER 99\nTITLE\n99.01 First.\n99.02 Second.\n99.03 Third.\n\n99.01 First.  Body one.\n99.02 Second.\n99.03 Third.  Body three.\n"""
+        html_toc = [
+            {
+                "citation": "99.01",
+                "heading": "First.",
+                "subchapter": None,
+                "url": "https://example/99.01",
+            },
+            {
+                "citation": "99.02",
+                "heading": "Second.",
+                "subchapter": None,
+                "url": "https://example/99.02",
+            },
+        ]
+        txt_toc = wi_parse.inventory_from_txt_toc_region(content, "99")
+        self.assertEqual([item["citation"] for item in txt_toc], ["99.01", "99.02", "99.03"])
+        merged = wi_parse.merge_toc_sections(html_toc, txt_toc)
+        self.assertEqual(len(merged), 3)
+        self.assertEqual(merged[0]["heading"], "First.")
+        self.assertEqual(merged[2]["heading"], "Third.")
+
     def test_complete_plain_text_parser_uses_exact_spans_and_excludes_annotations(self):
         content = """\nCHAPTER 12\nELECTIONS\n12.01 Definitions.\n12.02 Repealed.\n\n12.01 Definitions.  In this chapter:\n(1) “Board” means the board.\nHistory:  2025 a. 1.\nAn annotation that is not statutory text.\nNOTE: This section takes effect on January 1, 2027.\n12.02 Repealed.\nHistory:  1999 a. 1.\n"""
         toc = [

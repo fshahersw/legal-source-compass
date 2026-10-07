@@ -23,15 +23,17 @@ from de_site import (  # noqa: E402
     section_head_count,
 )
 
-SECTION_RE = re.compile(
-    r'<div class="Section">\s*<div class="SectionHead" id="([^"]*)">(.*?)</div>(.*?)</div>\s*(?:<br\s*/?>)?',
-    re.S | re.I,
-)
+SECTION_START_RE = re.compile(r'<div class="Section">', re.I)
+SECTION_HEAD_RE = re.compile(r'\s*<div class="SectionHead" id="([^"]*)">(.*?)</div>', re.S | re.I)
+DIV_TAG_RE = re.compile(r"<(/?)div\b[^>]*>", re.I)
 TOC_ITEM_RE = re.compile(r'<ul class="chaptersections">(.*?)</ul>', re.S | re.I)
 TOC_LINK_RE = re.compile(r'<a\s+href="#([^"]+)"[^>]*>\s*(.*?)\s*</a>', re.S | re.I)
 TITLE_HEAD_RE = re.compile(r'<div id="TitleHead">(.*?)</div>', re.S | re.I)
 H_TAG_RE = re.compile(r"<h([1-6])[^>]*>(.*?)</h[1-6]>", re.S | re.I)
-BODY_RE = re.compile(r"(?is)(<p\b.*?</p>)")
+BODY_RE = re.compile(r"(?is)(<p\b.*?</p>|<table\b.*?</table>)")
+TABLE_ROW_SPLIT_RE = re.compile(r"(?i)<tr\b[^>]*>|</tr>")
+COMMENT_RE = re.compile(r"(?s)<!--.*?-->")
+TABLE_CELL_RE = re.compile(r"(?is)<t[dh]\b[^>]*>(.*?)</t[dh]>")
 HISTORY_START_RE = re.compile(r"\d+\s+Del\.\s+C\.|^\s*\d+\s+Del\.\s+Laws", re.I | re.M)
 STATUS_IN_HEADING_RE = re.compile(r"\b(repealed|reserved|expired|transferred)\b", re.I)
 
@@ -66,12 +68,52 @@ def published_body_fallback(body, heading, status_label, history=None):
     return body or ""
 
 
+def section_blocks(body_html):
+    """(anchor, head_html, inner_html) per div.Section, ended at its balanced </div>.
+
+    Tables sit inside a nested <div class="code-table">, so the first </div> after the head is not the end of the section.
+    """
+    pos = 0
+    while True:
+        m = SECTION_START_RE.search(body_html, pos)
+        if not m:
+            return
+        depth, end = 0, None
+        for t in DIV_TAG_RE.finditer(body_html, m.start()):
+            depth += -1 if t.group(1) else 1
+            if depth == 0:
+                end, pos = t.start(), t.end()
+                break
+        if end is None:
+            raise ValueError("unbalanced div.Section at offset %d" % m.start())
+        inner = body_html[m.end():end]
+        head = SECTION_HEAD_RE.match(inner)
+        if head:
+            yield head.group(1), head.group(2), inner[head.end():]
+
+
+def table_text(table_html):
+    """One line per row, cells tab-separated. Some publisher rows have <td> cells outside any <tr>, so every <tr>/</tr> starts a row."""
+    rows = []
+    for chunk in TABLE_ROW_SPLIT_RE.split(table_html):
+        cells = [" ".join(html_text(c).split("\n")) for c in TABLE_CELL_RE.findall(chunk)]
+        line = "\t".join(cells).rstrip("\t")
+        if line.strip():
+            rows.append(line)
+    return "\n".join(rows) if rows else html_text(table_html)
+
+
+def block_text(fragment):
+    return table_text(fragment) if fragment.lstrip()[:6].lower() == "<table" else html_text(fragment)
+
+
 def split_body_history(inner):
+    inner = COMMENT_RE.sub("", inner)
     paras = BODY_RE.findall(inner)
     if not paras:
         rest = html_text(inner).strip()
         return rest, rest or None
-    body = "\n\n".join(t for p in paras for t in [html_text(p)] if t).strip()
+    body = "\n\n".join(t for p in paras for t in [block_text(p)] if t).strip()
     if not body:
         body = html_text(re.sub(r"(?is)<p\b[^>]*>\s*</p>", "", inner)).strip()
     tail_html = BODY_RE.split(inner, maxsplit=len(paras))[-1]
@@ -133,7 +175,7 @@ def parse_unit_page(html, url, receipt):
     sep = "\n\n"
     occ = {}
 
-    for anchor, head_raw, tail in SECTION_RE.findall(body_html):
+    for anchor, head_raw, tail in section_blocks(body_html):
         anchor = anchor.strip()
         sec_num, heading, head_line = parse_section_head(head_raw)
         if not sec_num:

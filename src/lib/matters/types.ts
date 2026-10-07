@@ -123,7 +123,7 @@ export type RegistryDocumentsPayload =
       sourceRecordsLoaded: number;
       sourceRecordsExcluded: number;
       truncated: boolean;
-      /** Provider case ids asked for, each marked as supplied by the matter registry or derived. */
+      /** Provider case ids asked for: matter registry, derived docket keys, or a registered spelling of one of those. */
       caseIds: CaseIdPlanEntry[];
     }
   | { connected: false; reason: string; caseIds: CaseIdPlanEntry[] };

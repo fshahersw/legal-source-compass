@@ -41,16 +41,20 @@ import type { LegacyDocument, MatterOverviewPayload } from "@/lib/matters/types"
 
 const PAGE = 50;
 
-/** The provider case ids the registry was asked for, each marked as recorded by the matter registry or derived. */
+/** The provider case ids the document query used, with why each one was included. */
 function CaseIdList({ ids }: { ids: CaseIdPlanEntry[] }) {
+  const basis = (kind: CaseIdPlanEntry["basis"]) =>
+    kind === "registry"
+      ? "matter registry"
+      : kind === "registered"
+        ? "registered case id"
+        : "derived from the docket number";
   return (
     <span className="inline-flex flex-wrap gap-x-3 gap-y-0.5">
       {ids.map((c) => (
         <span key={c.id} className="whitespace-nowrap">
           <span className="font-mono">{c.id}</span>{" "}
-          <span className="text-muted-foreground">
-            ({c.basis === "registry" ? "matter registry" : "derived from the docket number"})
-          </span>
+          <span className="text-muted-foreground">({basis(c.basis)})</span>
         </span>
       ))}
     </span>

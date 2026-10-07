@@ -1,228 +1,222 @@
-"""Acquire Montana Code Annotated HTML from mca.legmt.gov (official).
+"""Acquire the Montana Code Annotated from the official MCA site (mca.legmt.gov), in parallel.
 
-Phases: inventory (TOC crawl → inventory.json), fetch (every section + index page via Archive).
-Usage: python3 acquire.py [--work /tmp/sc4/mt] [--phase all|inventory|fetch]
+Every page (home, help, title/chapter/part indexes and every section page) is retained verbatim through
+sc_common.Archive (sha256 + retrieval time + status + route + user agent in receipts.jsonl). A 200 body that is not
+an MCA page (bot-defense interstitial, truncated body) is re-fetched; only a page carrying the publisher's own
+content markers counts as captured.
+
+    python3 acquire.py --work /tmp/sc4/mt --workers 12 [--phase all|inventory|fetch]
+
+Outputs: <work>/inventory.json (full official TOC: titles, chapters/articles, parts, section links, reserved lines),
+<work>/acquire_failed.json (URLs never captured).
 """
 import argparse
+import concurrent.futures
 import html as html_mod
 import json
 import os
 import re
 import sys
+import threading
+import time
+import urllib.parse
+
+import requests
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-from sc_common import Archive, decode_html  # noqa: E402
+import sc_common as sc  # noqa: E402
 
 BASE = "https://mca.legmt.gov/bills/mca/"
 HOME = BASE + "index.html"
 HELP = BASE + "help.html"
 
-TITLE_LINK_RE = re.compile(r'href="\./(title_\d+/chapters_index\.html)"', re.I)
-SUBUNIT_LINK_RE = re.compile(
-    r'href="\./((?:chapter|article)_\w+/parts_index\.html)"', re.I
-)
-PART_LINK_RE = re.compile(r'href="\./(part_\d+/sections_index\.html)"', re.I)
-SECTION_LINK_RE = re.compile(r'href="\./(section_\d+/[^"]+\.html)"', re.I)
-RESERVED_RE = re.compile(r'<span[^>]*class="[^"]*reserved[^"]*"[^>]*>(.*?)</span>', re.S | re.I)
-CITATION_IN_TOC_RE = re.compile(r'<span class="citation">([^<]+)</span>', re.I)
-EDITION_RE = re.compile(
-    r"<h1>\s*Montana Code Annotated\s+(\d{4})\s*</h1>\s*<p><strong>(.*?)</strong></p>",
-    re.S | re.I,
-)
+LINK_RE = re.compile(r'<a\b[^>]*href="\./([^"#]+)"[^>]*>(.*?)</a>', re.S | re.I)
+RESERVED_RE = re.compile(r'<span[^>]*class="[^"]*\breserved\b[^"]*"[^>]*>(.*?)</span>', re.S | re.I)
+TOC_BLOCK_RE = {
+    "home": re.compile(r'<div class="title-toc-content">(.*?)</div>', re.S | re.I),
+    "title": re.compile(r'<div class="chapter-toc-content">(.*?)</div>', re.S | re.I),
+    "chapter": re.compile(r'<div class="part-toc-content">(.*?)</div>', re.S | re.I),
+    "part": re.compile(r'<div class="section-toc-content">(.*?)</div>', re.S | re.I),
+}
+CHILD_RE = {
+    "home": re.compile(r"^title_\w+/chapters_index\.html$", re.I),
+    "title": re.compile(r"^(?:chapter|article)_\w+/parts_index\.html$", re.I),
+    "chapter": re.compile(r"^part_\w+/sections_index\.html$", re.I),
+    # one published link has a space before ".html" (61-5-107); it is fetched percent-encoded
+    "part": re.compile(r"^section_\w+/[\w-]+ ?\.html$", re.I),
+}
+CHILD_LEVEL = {"home": "title", "title": "chapter", "chapter": "part", "part": "section"}
+LI_RE = re.compile(r"<li\b[^>]*>(.*?)</li>", re.S | re.I)
+CITATION_RE = re.compile(r'<span class="citation">(.*?)</span>', re.S | re.I)
 
 
-def norm_ws(s):
-    return re.sub(r"\s+", " ", html_mod.unescape(s or "")).strip()
+def norm(s):
+    return sc.collapse(html_mod.unescape(re.sub(r"<[^>]+>", " ", s or "")))
 
 
-def grab(arc, url, **kw):
-    rec = arc.fetch(url, accept="text/html,*/*", **kw)
-    if rec["state"] != "complete" and rec["http_status"] in (403, 406) and os.environ.get(
-        "FIRECRAWL_API_KEY"
-    ):
-        rec = arc.fetch(url, route="firecrawl", force=True, **kw)
-    return rec
+def valid(level, text):
+    if 'class="mca-content' not in text or "</html>" not in text.lower():
+        return False
+    if level == "section":
+        return 'class="section-doc"' in text
+    return bool(TOC_BLOCK_RE[level].search(text)) if level in TOC_BLOCK_RE else True
 
 
-def page_text(arc, rec):
-    return decode_html(arc.read(rec))[0]
+class McaArchive(sc.Archive):
+    """sc_common.Archive over one persistent keep-alive connection per worker thread.
+
+    The MCA front end stalls new TCP connections when many open per second, so connections are reused rather than
+    opened per request. Redirects are followed by hand exactly as in sc_common (hops recorded in the receipt)."""
+
+    _local = threading.local()
+
+    def _session(self):
+        s = getattr(self._local, "s", None)
+        if s is None:
+            s = self._local.s = requests.Session()
+        return s
+
+    def _http(self, url, accept="*/*", timeout=60, extra=None, ua=None):
+        hops = []
+        cur = url
+        for _ in range(self.max_redirects + 1):
+            self._wait(urllib.parse.urlparse(cur).hostname)
+            h = {"User-Agent": ua or self.ua, "Accept": accept, "Accept-Encoding": "gzip"}
+            h.update(extra or {})
+            try:
+                r = self._session().get(cur, headers=h, timeout=(15, timeout), allow_redirects=False)
+                body = r.content
+            except requests.RequestException as e:
+                self._local.s = None
+                raise ConnectionError(str(e)[:200]) from e
+            if r.status_code in (301, 302, 303, 307, 308) and r.headers.get("Location"):
+                hops.append({"status": r.status_code, "location": r.headers["Location"]})
+                cur = urllib.parse.urljoin(cur, r.headers["Location"])
+                continue
+            meta = {"final_url": cur, "redirects": hops, "content_type": r.headers.get("Content-Type"),
+                    "etag": r.headers.get("ETag"), "last_modified": r.headers.get("Last-Modified")}
+            if r.status_code != 200:
+                meta["retry_after"] = r.headers.get("Retry-After")
+            return r.status_code, body, meta
+        return 310, b"", {"final_url": cur, "redirects": hops, "error": "too many redirects"}
+
+    def capture(self, url, level, tries=6):
+        rec = self.fetch(url, accept="text/html,*/*")
+        for attempt in range(tries):
+            if rec.get("state") == "complete" and valid(level, sc.decode_html(self.read(rec))[0]):
+                return rec, True
+            if rec.get("state") != "complete" and rec.get("http_status") == 404:
+                return rec, False
+            time.sleep(min(60, 3 * 2 ** attempt))
+            rec = self.fetch(url, accept="text/html,*/*", force=True, user_agent="browser" if attempt else None)
+        return rec, False
 
 
-def join_path(*parts):
-    return "/".join(p.strip("/") for p in parts if p)
+def toc_entries(level, text):
+    """Every line of the page's own TOC block: linked children plus unlinked (reserved) lines."""
+    block = TOC_BLOCK_RE[level].search(text)
+    out = []
+    for li in LI_RE.findall(block.group(1) if block else ""):
+        link = LINK_RE.search(li)
+        if link and CHILD_RE[level].match(link.group(1)):
+            cit = CITATION_RE.search(link.group(2))
+            out.append({"href": link.group(1), "label": norm(link.group(2)),
+                        "citation": norm(cit.group(1)) if cit else None})
+        else:
+            out.append({"href": None, "label": norm(li),
+                        "reserved": bool(RESERVED_RE.search(li)), "unlinked_html": li.strip()[:500]})
+    return out
 
 
-def parse_edition_from_index(html):
-    m = EDITION_RE.search(html)
-    if not m:
-        return {"edition_year": None, "currency_statement": None}
-    return {"edition_year": m.group(1), "currency_statement": norm_ws(m.group(2))}
+def join(page_url, href):
+    return page_url.rsplit("/", 1)[0] + "/" + href.replace(" ", "%20")
 
 
-def build_inventory(arc):
-    grab(arc, HOME)
-    grab(arc, HELP)
-    home = page_text(arc, arc.index[HOME])
-    edition = parse_edition_from_index(home)
-
-    titles = []
-    for m in TITLE_LINK_RE.finditer(home):
-        rel = m.group(1)
-        title_dir = rel.split("/")[0]
-        titles.append({"title_dir": title_dir, "chapters_index_url": BASE + rel})
-
-    reserved_titles = [norm_ws(m.group(1)) for m in RESERVED_RE.finditer(home)]
-
+def build_inventory(arc, workers):
+    for u in (HOME, HELP):
+        rec, ok = arc.capture(u, "home" if u == HOME else "help")
+        if not ok:
+            raise SystemExit("home/help not captured: %s %s" % (u, rec.get("http_status")))
+    pages = {}
+    failed = []
+    frontier = [(HOME, "home", None)]
+    while frontier:
+        level = frontier[0][1]
+        print("inventory level", level, len(frontier), flush=True)
+        with concurrent.futures.ThreadPoolExecutor(workers) as ex:
+            results = list(ex.map(lambda item: (item, arc.capture(item[0], item[1])), frontier))
+        nxt = []
+        for (url, lvl, parent), (rec, ok) in results:
+            if not ok:
+                failed.append({"url": url, "level": lvl, "http_status": rec.get("http_status")})
+                continue
+            text = sc.decode_html(arc.read(rec))[0]
+            entries = toc_entries(lvl, text)
+            for e in entries:
+                if e["href"]:
+                    e["url"] = join(url, e["href"])
+            pages[url] = {"url": url, "level": lvl, "parent": parent, "sha256": rec["sha256"], "entries": entries}
+            if CHILD_LEVEL[lvl] != "section":
+                nxt.extend((e["url"], CHILD_LEVEL[lvl], url) for e in entries if e.get("url"))
+        frontier = nxt
+    home_text = sc.decode_html(arc.read(arc.index[HOME]))[0]
+    h1 = re.search(r"<h1>\s*(Montana Code Annotated\s+\d{4})\s*</h1>\s*<p><strong>(.*?)</strong></p>", home_text, re.S | re.I)
+    sections = [{"url": e["url"], "toc_page": p["url"], "citation_toc": e["citation"], "toc_label": e["label"]}
+                for p in pages.values() if p["level"] == "part" for e in p["entries"] if e.get("url")]
     inventory = {
         "source_base": BASE,
-        "edition": edition,
-        "reserved_on_index": reserved_titles,
-        "titles": [],
-        "parts": [],
-        "sections": [],
-        "toc_pages": [],
+        "home_sha256": arc.index[HOME]["sha256"],
+        "edition": {"edition": norm(h1.group(1)) if h1 else None, "statement": norm(h1.group(2)) if h1 else None},
+        "pages": list(pages.values()),
+        "sections": sections,
+        "index_failures": failed,
+        "counts": {lvl: sum(1 for p in pages.values() if p["level"] == lvl) for lvl in ("home", "title", "chapter", "part")},
     }
-
-    for ti, t in enumerate(titles, 1):
-        title_dir = t["title_dir"]
-        if ti % 5 == 0:
-            print(f"inventory title {ti}/{len(titles)} sections {len(inventory['sections'])}", flush=True)
-        rec = grab(arc, t["chapters_index_url"])
-        toc_url = t["chapters_index_url"]
-        inventory["toc_pages"].append(toc_url)
-        title_entry = {
-            "title_dir": title_dir,
-            "chapters_index_url": toc_url,
-            "reserved": [],
-            "subunits": [],
-        }
-        if rec["state"] != "complete":
-            title_entry["fetch_error"] = rec.get("http_status")
-            inventory["titles"].append(title_entry)
-            continue
-        ch_html = page_text(arc, rec)
-        title_entry["reserved"] = [norm_ws(x) for x in RESERVED_RE.findall(ch_html)]
-        for sm in SUBUNIT_LINK_RE.finditer(ch_html):
-            sub_rel = sm.group(1)
-            sub_url = BASE + join_path(title_dir, sub_rel)
-            sub_rec = grab(arc, sub_url)
-            inventory["toc_pages"].append(sub_url)
-            sub_dir = sub_rel.split("/")[0]
-            sub_entry = {
-                "title_dir": title_dir,
-                "subunit_dir": sub_dir,
-                "parts_index_url": sub_url,
-                "reserved": [],
-                "parts": [],
-            }
-            if sub_rec["state"] != "complete":
-                sub_entry["fetch_error"] = sub_rec.get("http_status")
-                title_entry["subunits"].append(sub_entry)
-                continue
-            p_html = page_text(arc, sub_rec)
-            sub_entry["reserved"] = [norm_ws(x) for x in RESERVED_RE.findall(p_html)]
-            for pm in PART_LINK_RE.finditer(p_html):
-                part_rel = pm.group(1)
-                part_url = BASE + join_path(title_dir, sub_dir, part_rel)
-                part_rec = grab(arc, part_url)
-                inventory["toc_pages"].append(part_url)
-                part_dir = part_rel.split("/")[0]
-                part_entry = {
-                    "title_dir": title_dir,
-                    "subunit_dir": sub_dir,
-                    "part_dir": part_dir,
-                    "sections_index_url": part_url,
-                    "native_id": join_path(title_dir, sub_dir, part_dir),
-                    "reserved": [],
-                    "sections": [],
-                }
-                if part_rec["state"] != "complete":
-                    part_entry["fetch_error"] = part_rec.get("http_status")
-                    sub_entry["parts"].append(part_entry)
-                    inventory["parts"].append(part_entry)
-                    continue
-                s_html = page_text(arc, part_rec)
-                part_entry["reserved"] = [norm_ws(x) for x in RESERVED_RE.findall(s_html)]
-                for sec_m in SECTION_LINK_RE.finditer(s_html):
-                    sec_rel = sec_m.group(1)
-                    sec_url = BASE + join_path(title_dir, sub_dir, part_dir, sec_rel)
-                    label_m = re.search(
-                        rf'href="\./{re.escape(sec_rel)}"[^>]*>(.*?)</a>',
-                        s_html,
-                        re.S | re.I,
-                    )
-                    toc_label = norm_ws(re.sub(r"<[^>]+>", " ", label_m.group(1))) if label_m else None
-                    cit_m = CITATION_IN_TOC_RE.search(label_m.group(1) if label_m else "")
-                    citation = cit_m.group(1).strip() if cit_m else None
-                    sec_row = {
-                        "native_id": part_entry["native_id"],
-                        "url": sec_url,
-                        "citation_toc": citation,
-                        "toc_label": toc_label,
-                    }
-                    part_entry["sections"].append(sec_row)
-                    inventory["sections"].append(sec_row)
-                sub_entry["parts"].append(part_entry)
-                inventory["parts"].append(part_entry)
-            title_entry["subunits"].append(sub_entry)
-        inventory["titles"].append(title_entry)
-
-    path = os.path.join(arc.work, "inventory.json")
-    with open(path, "w") as f:
+    inventory["counts"]["section_links"] = len(sections)
+    inventory["counts"]["unique_section_urls"] = len({s["url"] for s in sections})
+    with open(os.path.join(arc.work, "inventory.json"), "w") as f:
         json.dump(inventory, f, indent=1)
-    print(
-        json.dumps(
-            {
-                "titles": len(inventory["titles"]),
-                "parts": len(inventory["parts"]),
-                "sections": len(inventory["sections"]),
-                "toc_pages": len(inventory["toc_pages"]),
-                "edition": edition,
-            },
-            indent=1,
-        ),
-        flush=True,
-    )
+    print(json.dumps({"counts": inventory["counts"], "edition": inventory["edition"], "index_failures": len(failed)}), flush=True)
     return inventory
 
 
-def fetch_sections(arc, inventory=None):
-    inv_path = os.path.join(arc.work, "inventory.json")
-    if inventory is None:
-        inventory = json.load(open(inv_path))
-    urls = []
-    seen = set()
-    for u in inventory.get("toc_pages", []):
-        if u not in seen:
-            seen.add(u)
-            urls.append(u)
-    for s in inventory["sections"]:
-        if s["url"] not in seen:
-            seen.add(s["url"])
-            urls.append(s["url"])
+def fetch_sections(arc, workers, inventory=None):
+    inventory = inventory or json.load(open(os.path.join(arc.work, "inventory.json")))
+    urls = list(dict.fromkeys(s["url"] for s in inventory["sections"]))
+    done = [0]
     failed = []
-    for i, u in enumerate(urls, 1):
-        rec = grab(arc, u)
-        if rec["state"] != "complete":
+    t0 = time.time()
+
+    def one(u):
+        rec, ok = arc.capture(u, "section")
+        done[0] += 1
+        if done[0] % 500 == 0:
+            rate = done[0] / max(1, time.time() - t0)
+            print("sections %d/%d failed %d %.1f/s" % (done[0], len(urls), len(failed), rate), flush=True)
+        if not ok:
             failed.append({"url": u, "http_status": rec.get("http_status")})
-        if i % 100 == 0:
-            print(i, len(urls), len(failed), flush=True)
-    out = os.path.join(arc.work, "acquire_failed.json")
-    with open(out, "w") as f:
+
+    with concurrent.futures.ThreadPoolExecutor(workers) as ex:
+        list(ex.map(one, urls))
+    with open(os.path.join(arc.work, "acquire_failed.json"), "w") as f:
         json.dump(failed, f, indent=1)
     print("fetch done", len(urls), "failed", len(failed), flush=True)
+    return failed
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--work", default="/tmp/sc4/mt")
     ap.add_argument("--phase", default="all", choices=("all", "inventory", "fetch"))
+    ap.add_argument("--workers", type=int, default=12)
+    ap.add_argument("--min-interval", type=float, default=0.03, help="seconds between request starts to the host")
     a = ap.parse_args()
-    arc = Archive(a.work, min_interval=1.0)
+    arc = McaArchive(a.work, min_interval=a.min_interval)
+    inv = None
     if a.phase in ("all", "inventory"):
-        build_inventory(arc)
+        inv = build_inventory(arc, a.workers)
     if a.phase in ("all", "fetch"):
-        fetch_sections(arc)
+        fetch_sections(arc, a.workers, inv)
 
 
 if __name__ == "__main__":

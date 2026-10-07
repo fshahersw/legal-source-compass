@@ -14,6 +14,7 @@ import json
 import os
 import re
 import sys
+import urllib.parse
 
 sys.path.insert(0, os.path.dirname(__file__))
 import sc_common as sc  # noqa: E402
@@ -69,17 +70,50 @@ def convert(work, cfg):
             gaps.append({"unit": c["native_id"], "reason": "chapter page has no extractable text; a source unit needs a non-empty text derivative"})
             continue
         shas = c["raw_sha256s"]
-        if len(shas) != 1:
-            raise SystemExit(f"{c['native_id']}: a unit must come from exactly one retained original; split it")
-        raw = by_sha[shas[0]]
+        raw = None
+        ch_stat = c["native_id"].rsplit("/", 1)[-1]
+        ch_api = f"https://sdlegislature.gov/api/Statutes/Statute/{urllib.parse.quote(str(ch_stat), safe='-.')}"
+        ch_rec = arc.index.get(ch_api)
+        if ch_rec and ch_rec.get("state") == "complete":
+            data = json.loads(arc.read(ch_rec))
+            if data.get("Type") == "Chapter" and data.get("Statute") == ch_stat:
+                raw = ch_rec
+        ch_suffix = f"/Statute/{ch_stat}"
+        encoded_suffix = f"/Statute/{urllib.parse.quote(str(ch_stat), safe='-.')}"
         for u in c.get("source_urls") or []:
+            if not (u.endswith(ch_suffix) or u.endswith(encoded_suffix)):
+                continue
             r = arc.index.get(u)
-            if r and r.get("state") == "complete" and r["sha256"] == shas[0]:
-                raw = r
-                break
+            if r and r.get("state") == "complete":
+                data = json.loads(arc.read(r))
+                if data.get("Type") == "Chapter" and data.get("Statute") == ch_stat:
+                    raw = r
+                    break
+        if raw is None:
+            for u in c.get("source_urls") or []:
+                r = arc.index.get(u)
+                if not r or r.get("state") != "complete":
+                    continue
+                try:
+                    data = json.loads(arc.read(r))
+                except ValueError:
+                    continue
+                if isinstance(data, dict) and data.get("Type") == "Chapter" and data.get("Statute") == ch_stat:
+                    raw = r
+                    break
+        if raw is None:
+            if len(shas) != 1:
+                raise SystemExit(f"{c['native_id']}: a unit must come from exactly one retained original; split it")
+            raw = by_sha[shas[0]]
+            for u in c.get("source_urls") or []:
+                r = arc.index.get(u)
+                if r and r.get("state") == "complete" and r["sha256"] == shas[0]:
+                    raw = r
+                    break
         method, proxy = method_for(cfg, raw["url"], raw["route"])
+        orig_sha = raw["sha256"]
         src = {"source_url": raw["url"], "retrieved_at": raw["retrieved_at"], "http_status": 200, "retrieval_method": method, "proxy": proxy}
-        orig = objects.setdefault(shas[0], {"sha256": shas[0], "bytes": raw["bytes"], "kind": "publisher_original",
+        orig = objects.setdefault(orig_sha, {"sha256": orig_sha, "bytes": raw["bytes"], "kind": "publisher_original",
                                             "path": os.path.abspath(os.path.join(work, raw["file"])), "sources": []})
         if src not in orig["sources"]:
             orig["sources"].append(src)
@@ -93,7 +127,7 @@ def convert(work, cfg):
         if src not in o["sources"]:
             o["sources"].append(src)
         units.append({"unit_key": unit_key(c["native_id"]), "unit_kind": cfg.get("unit_kind", "page"), "heading": c.get("heading"),
-                      "original_sha256": shas[0], "publisher_member": c.get("publisher_member"), "raw_member_sha256": c.get("raw_member_sha256"),
+                      "original_sha256": orig_sha, "publisher_member": c.get("publisher_member"), "raw_member_sha256": c.get("raw_member_sha256"),
                       "text_sha256": c["text_sha256"], "text_code_points": c["text_codepoints"], "sections_expected": c.get("sections_expected"),
                       "currency": {"basis": dflt["basis"], "statement": dflt["statement"], "through_date": dflt["through_date"], "edition": dflt["edition"]},
                       "source_url": raw["url"], "retrieved_at": raw["retrieved_at"], "retrieval_method": method, "proxy": proxy})

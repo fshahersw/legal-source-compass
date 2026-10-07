@@ -22,3 +22,4 @@
 - Sidebar has exactly 4 sections in `AppShell`; everything else is contextual sub-navigation. Home `/` is the map; the library is `/sources/library`.
 - Names link to a profile only on a unique exact match; never fuzzy-merge people.
 - Unknown or uncountable values show as "Not recorded"/"too large to count", never a guessed number.
+- Court artwork uses exact court IDs and recorded court types only; generic emblems are always labeled as court types, never official seals.

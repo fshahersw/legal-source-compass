@@ -47,6 +47,7 @@ import {
   type VerdictRecord,
 } from "../../../src/lib/limitations/backfill/grades";
 import { claimCoverageFor } from "../../../src/lib/limitations/backfill/cellCoverage";
+import { buildEntryRuleConditions } from "../../../src/lib/limitations/backfill/ruleConditions";
 
 const work = process.env.LIM_WORK ?? "/tmp/lim/backfill";
 const bundle = process.env.LIM_BUNDLE ?? "/tmp/lim/data/limitations";
@@ -107,7 +108,7 @@ const reposeTrigger = (text: string): ClockKind | null => {
   )
     return "act_or_omission";
   if (
-    /first (purchase|sale|delivery)|delivery (of the product )?to (its |the )?(first|initial)|initial purchaser|first purchaser|time of delivery|date of delivery/.test(
+    /first (purchase|sale|delivery)|delivery (of the product )?to (its |the )?(first|initial)|initial purchas(e|er)|first purchaser|time of delivery|date of delivery/.test(
       t,
     )
   )
@@ -277,6 +278,8 @@ for (const file of files) {
       repose.length > 0 &&
       kinds.every((k) => k !== null) &&
       repose.every((r) => r.effectiveFrom !== null);
+    /** Recorded in provenance/conditions but not applied in calculation (unmodelled trigger or no effectiveFrom). */
+    const reposeRecordedNotComputed = repose.length > 0 && !reposeModelled;
     const limbs = entry.periodLimbs ?? [];
     const legacySingle =
       limbs.length === 0 &&
@@ -299,7 +302,9 @@ for (const file of files) {
       "not_recorded",
     ].includes(entry.accrual.kind);
     const baseline =
-      entry.status === "verified" && accrualOk && (repose.length === 0 || reposeModelled);
+      entry.status === "verified" &&
+      accrualOk &&
+      (repose.length === 0 || reposeModelled || reposeRecordedNotComputed);
     const existing = rules.filter(
       (r) =>
         r.jurisdiction === state &&
@@ -317,21 +322,54 @@ for (const file of files) {
         current.period.unit === unit;
       if (same) {
         entryRoute.set(current.id, entryIntermediaryOnly);
-        // A legacy rule that starts the clock at death contradicts an entry whose official text starts it at
-        // discovery (for example Wisconsin wrongful death): follow the verified entry.
+        // Period unchanged: still refresh metadata from the entry (cross-check gloss, blockers, tolling).
         if (current.accrualBasis === "death" && entry.accrual.kind === "discovery") {
           current.accrualBasis = "confirmed_accrual";
-          current.conditions = [
-            ...new Set([
-              ...current.conditions,
-              `Accrual under the cited rule: ${entry.accrual.text}`,
-            ]),
-          ];
         }
-        if (!current.provenance) {
-          current.provenance = provenance;
-          if (entry.status === "verified") current.pinpoint = entry.citation;
-          attached++;
+        current.conditions = buildEntryRuleConditions(
+          entry,
+          provenance,
+          baseline,
+          repose,
+          reposeRecordedNotComputed,
+        );
+        const hadProvenance = Boolean(current.provenance);
+        current.provenance = provenance;
+        current.sourceIds = [
+          ...new Set([primaryId, ...crossIds, ...(current.sourceIds ?? [])]),
+        ];
+        if (entry.status === "verified") current.pinpoint = entry.citation;
+        current.effectiveFrom = entry.effectiveDate ?? null;
+        const limbDefs = entry.periodLimbs ?? [];
+        if (baseline && limbDefs.length > 0 && entry.periodCombine) {
+          current.calculation = {
+            mode: "clocks_min" as const,
+            limbs: limbDefs.map((l) => ({
+              amount: l.amount,
+              unit: UNIT[l.unit]!,
+              from: l.from,
+            })),
+            combine: entry.periodCombine,
+            clocks: [],
+          };
+        }
+        if (!hadProvenance) attached++;
+        const legacyId = `${state.toLowerCase()}-${entry.claimType}-general-review-20261002`;
+        const legacy = rules.find((r) => r.id === legacyId);
+        if (
+          legacy &&
+          !legacy.period &&
+          variant === "general" &&
+          entry.period &&
+          (entry.status === "verified" || entry.status === "flagged") &&
+          (current.computation === "baseline_only" ||
+            (current.computation === "research_only" && current.id.endsWith("bf20261006"))) &&
+          current.id !== legacyId
+        ) {
+          legacy.period = { amount: entry.period.amount, unit };
+          legacy.provenance = provenance;
+          legacy.sourceIds = [...new Set([primaryId, ...crossIds, ...(legacy.sourceIds ?? [])])];
+          legacy.pinpoint = entry.citation;
         }
         const upgrade =
           current.computation === "research_only" &&
@@ -358,38 +396,13 @@ for (const file of files) {
       }
     }
 
-    const notes = [
-      entry.accrual.kind === "not_recorded"
-        ? "The cited provision does not state when the claim accrues (Not recorded). The accrual date must be confirmed under controlling case law before relying on any date."
-        : `Accrual under the cited rule: ${provenance.accrualText}`,
-      ...(repose.length && !baseline
-        ? repose.map(
-            (r) =>
-              `Statute of repose not computed here: ${r.years} years (${r.citation}); trigger: ${r.trigger}.`,
-          )
-        : []),
-      ...provenance.tolling.map(
-        (t) => `Statutory tolling (not applied by the calculator): ${t.text} (${t.citation}).`,
-      ),
-      ...(entry.blockers ?? [])
-        // A blocker that only says the repose could not be modelled is moot once the calculator models it.
-        .filter(
-          (b) =>
-            !baseline ||
-            !/calculator.?model|not (be )?modell?able|cannot be modell?ed|death-(triggered|based) accrual|runs from (delivery|first)|does not run from|not .?act or omission/i.test(
-              `${b.issue} ${b.why}`,
-            ),
-        )
-        .map((b) =>
-          baseline
-            ? `Open item (does not prevent a date): ${b.issue}. ${b.why}`
-            : `Cannot issue a date: ${b.issue}. ${b.why}`,
-        ),
-      ...(entry.crossChecks ?? []).map(
-        (c) => `Related provision or cross-check (capture ${c.captureId}): ${c.note}`,
-      ),
-      ...provenance.flags.map((f) => `Flag: ${f}`),
-    ];
+    const notes = buildEntryRuleConditions(
+      entry,
+      provenance,
+      baseline,
+      repose,
+      reposeRecordedNotComputed,
+    );
     const rule: LimitationRule = {
       id: `${state.toLowerCase()}-${entry.claimType}-${variant}-bf${idStamp}`.replaceAll("_", "-"),
       schemaVersion: "1.0.0",

@@ -19,7 +19,6 @@ import { matterCaseKeys } from "./docketKeys";
 import type { CountSnapshot, MatterOverview } from "./overview";
 import { arr, cleaned, idStr, isObj, safeUint as num, str } from "./values";
 
-
 export const REGISTRY_SCHEMA_PREFIX = "sw-matter-registry/";
 export const REGISTRY_MATTERS_DATASET = "sw_matters_v1";
 export const REGISTRY_DOCKETS_DATASET = "sw_matter_dockets_v1";
@@ -622,7 +621,7 @@ export function registryMetrics(reg: RegistryMatter | null): RegistryMetrics | n
 
 /* ------------------------------------------------------------------ PDF case ids */
 
-export type CaseIdBasis = "registry" | "derived";
+export type CaseIdBasis = "registry" | "derived" | "registered";
 export type CaseIdPlanEntry = { id: string; basis: CaseIdBasis };
 
 /**

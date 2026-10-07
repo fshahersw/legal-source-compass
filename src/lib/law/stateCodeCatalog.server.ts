@@ -2,7 +2,12 @@ import { STATES, stateByUsps } from "@/lib/corpus/geo";
 import { ilikeTerm, restGet, rpcPost, rpcPostOptional } from "@/lib/external/rest.server";
 import { STATE_DATASETS } from "@/lib/external/lawTree";
 import { listSnapshotNames, readPrivateSnapshot } from "@/lib/private-data/snapshot.server";
-import { exactCitationPaths } from "./exactCitationPath";
+import {
+  exactCitationPaths,
+  storedHierarchyNumbers,
+  storedSectionNumbers,
+  tokenEqualsStoredSection,
+} from "./exactCitationPath";
 import {
   classifyDataset,
   coverageStatus,
@@ -533,29 +538,35 @@ async function searchProjection(
   };
 }
 
+function parseOutlineSections(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    const section = item && typeof item === "object" ? (item as Record<string, unknown>) : null;
+    const id = section ? asText(section["native_id"]) : null;
+    if (!section || !id) return [];
+    return [
+      {
+        native_id: id,
+        citation: asText(section["citation"]),
+        heading: asText(section["heading"]),
+        status_note: asText(section["status_note"]),
+      },
+    ];
+  });
+}
+
 function parseOutline(value: unknown): ProjectedOutline {
   const row = value && typeof value === "object" ? (value as Record<string, unknown>) : null;
   if (!row || row["available"] !== true) return { available: false };
   if (row["kind"] === "sections" && Array.isArray(row["sections"])) {
+    const sections = parseOutlineSections(row["sections"]);
     return {
       available: true,
       kind: "sections",
       level: "section",
-      total: typeof row["total"] === "number" ? row["total"] : row["sections"].length,
+      total: typeof row["total"] === "number" ? row["total"] : sections.length,
       truncated: row["truncated"] === true,
-      sections: row["sections"].flatMap((item) => {
-        const section = item && typeof item === "object" ? (item as Record<string, unknown>) : null;
-        const id = section ? asText(section["native_id"]) : null;
-        if (!section || !id) return [];
-        return [
-          {
-            native_id: id,
-            citation: asText(section["citation"]),
-            heading: asText(section["heading"]),
-            status_note: asText(section["status_note"]),
-          },
-        ];
-      }),
+      sections,
     };
   }
   if (
@@ -563,6 +574,7 @@ function parseOutline(value: unknown): ProjectedOutline {
     Array.isArray(row["groups"]) &&
     typeof row["level"] === "string"
   ) {
+    const directSections = parseOutlineSections(row["direct_sections"]);
     return {
       available: true,
       kind: "groups",
@@ -580,6 +592,10 @@ function parseOutline(value: unknown): ProjectedOutline {
           },
         ];
       }),
+      directSections,
+      directTotal:
+        typeof row["direct_total"] === "number" ? row["direct_total"] : directSections.length,
+      directTruncated: row["direct_truncated"] === true,
     };
   }
   return { available: false };
@@ -631,6 +647,54 @@ export type PublicStatuteSection = {
 };
 
 let publicStatesCache: { at: number; states: Set<string> } | null = null;
+let publicCodesCache: { at: number; rows: ProjectedCodeRow[] } | null = null;
+
+type ProjectedCodeRow = {
+  jurisdiction?: unknown;
+  source_system?: unknown;
+  primary_code?: unknown;
+};
+
+async function publicSecondaryCodes(usps: string): Promise<string[]> {
+  if (!publicCodesCache || Date.now() - publicCodesCache.at >= CATALOG_TTL) {
+    const rows = await rpcPostOptional<ProjectedCodeRow[]>(
+      "corpus_publisher_code_projected_codes_v3",
+      {},
+    );
+    publicCodesCache = { at: Date.now(), rows: Array.isArray(rows) ? rows : [] };
+  }
+  return publicCodesCache.rows.flatMap((row) => {
+    if (row.primary_code === true) return [];
+    const state = asText(row.jurisdiction)?.toUpperCase();
+    const source = asText(row.source_system);
+    if (state !== usps || !source) return [];
+    return [source];
+  });
+}
+
+async function secondaryExactSection(
+  usps: string,
+  token: string,
+): Promise<PublicStatuteSection | null> {
+  const hits: PublicStatuteSection[] = [];
+  for (const source of await publicSecondaryCodes(usps)) {
+    const section = projectedStatuteSection(
+      usps,
+      await rpcPostOptional<Record<string, unknown> | null>(
+        "corpus_publisher_code_projected_section_v3",
+        {
+          p_jurisdiction: usps,
+          p_source_system: source,
+          p_native_id: `${usps}:${token}`,
+        },
+      ),
+      (citationPath) => citationPath === token,
+    );
+    if (section) hits.push(section);
+    if (hits.length > 1) return null;
+  }
+  return hits.length === 1 ? hits[0]! : null;
+}
 
 async function publicProjectionStates(): Promise<Set<string>> {
   if (publicStatesCache && Date.now() - publicStatesCache.at < CATALOG_TTL)
@@ -650,7 +714,47 @@ async function publicProjectionStates(): Promise<Set<string>> {
   return states;
 }
 
-/** Sections whose native id is exactly `ST:<citation_path>` and whose state is in the public projection. */
+function projectedStatuteSection(
+  usps: string,
+  row: Record<string, unknown> | null,
+  accept: (citationPath: string) => boolean,
+): PublicStatuteSection | null {
+  if (!row) return null;
+  const citationPath = asText(row["citation_path"]);
+  const nativeId = asText(row["native_id"]);
+  if (!citationPath || !nativeId || nativeId !== `${usps}:${citationPath}`) return null;
+  if (!accept(citationPath)) return null;
+  const fields = sectionFieldsFromRecord({
+    title: asText(row["citation"]),
+    source_url: asText(row["source_url"]),
+    detail: {
+      citation: row["citation"],
+      heading: row["heading"],
+      text: row["text"],
+      history: row["history"],
+      status_note: row["status_note"],
+      currency: row["currency"],
+    },
+  });
+  return {
+    nativeId,
+    citationPath,
+    heading: fields.heading,
+    text: publishedSectionBody(fields),
+    sourceUrl: fields.sourceUrl,
+    currency: fields.currency,
+    status: fields.status,
+  };
+}
+
+/**
+ * Public sections named by a limitations citation.
+ * A token whose native id is `ST:<token>` is that section in the primary code.
+ * A public secondary code is read only when that code itself is reviewed and projection is allowed,
+ * and only when the primary code does not already match.
+ * Any other token links only when it equals the last path segment after `sec_`,
+ * the final hyphen segment, or the stored section number, and exactly one published section matches.
+ */
 export async function publicStatuteSections(
   state: string,
   citation: string,
@@ -660,35 +764,41 @@ export async function publicStatuteSections(
   if (!paths?.length) return [];
   if (!(await publicProjectionStates()).has(usps)) return [];
   const sections: PublicStatuteSection[] = [];
-  for (const citationPath of paths) {
-    const nativeId = `${usps}:${citationPath}`;
-    const row = await rpcPostOptional<Record<string, unknown> | null>(
-      "corpus_publisher_code_projected_section_v2",
-      { p_jurisdiction: usps, p_native_id: nativeId },
+  for (const token of paths) {
+    const nativeId = `${usps}:${token}`;
+    const direct = projectedStatuteSection(
+      usps,
+      await rpcPostOptional<Record<string, unknown> | null>(
+        "corpus_publisher_code_projected_section_v2",
+        { p_jurisdiction: usps, p_native_id: nativeId },
+      ),
+      (citationPath) => citationPath === token,
     );
-    if (!row || row["native_id"] !== nativeId || asText(row["citation_path"]) !== citationPath)
+    if (direct) {
+      sections.push(direct);
       continue;
-    const fields = sectionFieldsFromRecord({
-      title: asText(row["citation"]),
-      source_url: asText(row["source_url"]),
-      detail: {
-        citation: row["citation"],
-        heading: row["heading"],
-        text: row["text"],
-        history: row["history"],
-        status_note: row["status_note"],
-        currency: row["currency"],
-      },
-    });
-    sections.push({
-      nativeId,
-      citationPath,
-      heading: fields.heading,
-      text: publishedSectionBody(fields),
-      sourceUrl: fields.sourceUrl,
-      currency: fields.currency,
-      status: fields.status,
-    });
+    }
+    if (/\s/.test(token)) continue;
+    const numberedRow = await rpcPostOptional<Record<string, unknown> | null>(
+      "corpus_publisher_code_projected_section_for_token_v2",
+      { p_jurisdiction: usps, p_token: token },
+    );
+    const numberedPath = numberedRow ? asText(numberedRow["citation_path"]) : null;
+    if (
+      !numberedPath ||
+      !tokenEqualsStoredSection(
+        token,
+        numberedPath,
+        storedSectionNumbers(numberedRow?.["hierarchy"]),
+        storedHierarchyNumbers(numberedRow?.["hierarchy"], "title"),
+      )
+    ) {
+      const secondary = await secondaryExactSection(usps, token);
+      if (secondary) sections.push(secondary);
+      continue;
+    }
+    const numbered = projectedStatuteSection(usps, numberedRow, () => true);
+    if (numbered) sections.push(numbered);
   }
   return sections;
 }

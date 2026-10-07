@@ -1,0 +1,55 @@
+{
+  "jurisdiction": "CA",
+  "publisher": "California Legislature (Legislative Counsel)",
+  "publisher_url": "https://leginfo.legislature.ca.gov/",
+  "source_system": "ca-leginfo-pubinfo",
+  "code_title": "California Codes",
+  "parser": {
+    "name": "california-pubinfo-xml",
+    "version": "1"
+  },
+  "methods": [
+    "publisher_page",
+    "publisher_bulk_download",
+    "publisher_zip_member"
+  ],
+  "source_url_patterns": [
+    "^https://downloads\\.leginfo\\.legislature\\.ca\\.gov/pubinfo_\\d{4}\\.zip$",
+    "^https://downloads\\.leginfo\\.legislature\\.ca\\.gov/$",
+    "^https://leginfo\\.legislature\\.ca\\.gov/faces/codes_displaySection\\.xhtml\\?lawCode=[A-Z]{2,5}&sectionNum=.+$"
+  ],
+  "rate_limit_ms": 1000,
+  "structure": {
+    "levels": [
+      "division",
+      "title",
+      "part",
+      "chapter",
+      "article",
+      "section"
+    ],
+    "unit": "one official LAW_SECTION_TBL large-object (.lob) XML payload from the publisher pubinfo export"
+  },
+  "section_id": {
+    "scheme": "official_citation_path",
+    "regex": "^[A-Z]{2,5}:[^~]+(~[0-9]+)?$",
+    "example": "CONS:SECTION 1.",
+    "citation_format": "<lawCode>:<sectionNum> as in leginfo displaySection URLs (~N when the publisher repeats the citation)"
+  },
+  "currency": {
+    "basis": "publisher_statement",
+    "location": "pubinfo_Readme.pdf and leginfo.legislature.ca.gov California Law pages"
+  },
+  "review": {
+    "reviewed_by": "state-codes batch 4 (pre-land dry run)",
+    "reviewed_at": "2026-10-07"
+  },
+  "unit_kind": "ca_pubinfo_section_lob",
+  "default_method": "publisher_page",
+  "currency_defaults": {
+    "basis": "publisher_statement",
+    "statement": "Publisher pubinfo_yyyy.zip export (pubinfo_2025 captured 2026-10-07). README describes current-session data export; filename and README do not certify codification cutoff or present legal effect.",
+    "through_date": null,
+    "edition": null
+  }
+}
