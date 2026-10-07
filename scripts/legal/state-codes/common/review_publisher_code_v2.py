@@ -158,8 +158,10 @@ def main():
         row = {"citation_path": s["citation_path"], "citation": s["citation"], "url": live_url, "live_status": rec["http_status"],
                "route": rec["route"], "user_agent": rec.get("user_agent"), "ua_retry": rec.get("ua_retry", False)}
         live_body = None
+        raw_body = None
         if rec["state"] == "complete":
-            live_body = live_text(arc.read(rec), live_url)
+            raw_body = arc.read(rec)
+            live_body = live_text(raw_body, live_url) if a.state != "NJ" else raw_body.decode("utf-8", errors="replace")
         elif a.state == "CA" and "leginfo.legislature.ca.gov" in live_url:
             html, route = california_leginfo_live_html(live_url)
             if html:
@@ -168,6 +170,24 @@ def main():
                 row["route"] = route
         if live_body is None:
             row.update(ok=False, why="live fetch failed")
+        elif a.state == "NJ":
+            nj_dir = os.path.join(HERE, "..", "b4", "nj")
+            sys.path.insert(0, nj_dir)
+            from lis_page_diff import body_matches_staged, citation_in_page, page_title  # noqa: E402
+            from lis_resolve import lis_html_to_text  # noqa: E402
+
+            page_html = live_body if isinstance(live_body, str) else (raw_body or b"").decode("utf-8", errors="replace")
+            live_raw = lis_html_to_text(page_html)
+            title = page_title(page_html)
+            hay = squash(title + " " + live_raw)
+            number = s["hierarchy"][-1].get("number") or s.get("citation") or ""
+            row["citation_ok"] = citation_in_page(number, page_html, live_raw)
+            heading = s.get("heading") or ""
+            row["heading_ok"] = (not heading) or squash(heading) in hay
+            row["text_ok"] = body_matches_staged(s["text"], live_raw)
+            row["ok"] = row["citation_ok"] and row["heading_ok"] and row["text_ok"]
+            results.append(row)
+            continue
         else:
             live = squash(live_body)
             if (
