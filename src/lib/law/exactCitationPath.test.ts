@@ -159,6 +159,24 @@ describe("exact statute citation paths", () => {
     expect(statuteNativeId("NV", "41A.097")).toBe("NV:41A.097");
   });
 
+  it("reads Illinois 735 ILCS 5/13-202 without a neighboring section", () => {
+    expect(exactCitationPaths("IL", "735 ILCS 5/13-202")).toEqual(["735 ILCS 5/13-202"]);
+    expect(exactCitationPaths("IL", "735 ILCS 5/13-202")?.includes("13-202")).toBe(false);
+    expect(exactCitationPaths("IL", "735 ILCS 5/13-202")?.includes("735 ILCS 5/13-202.1")).toBe(
+      false,
+    );
+    expect(exactCitationPaths("IL", "735 ILCS 5/13-202")?.includes("220 ILCS 5/13-202")).toBe(
+      false,
+    );
+    expect(exactCitationPaths("IL", "735 ILCS 5/13-202(b)")).toEqual(["735 ILCS 5/13-202"]);
+    expect(exactCitationPaths("IL", "735 ILCS 5/13-202.1")).toEqual(["735 ILCS 5/13-202.1"]);
+    expect(exactCitationPaths("IL", "735 ILCS 5/13-202.1")?.includes("735 ILCS 5/13-202")).toBe(
+      false,
+    );
+    expect(exactCitationPaths("IL", "40 ILCS 5/13-202")).toEqual(["40 ILCS 5/13-202"]);
+    expect(statuteNativeId("IL", "735 ILCS 5/13-202")).toBe("IL:735 ILCS 5/13-202");
+  });
+
   it("reads Kentucky 413.140 and 413.120 as separate sections", () => {
     expect(exactCitationPaths("KY", "Ky. Rev. Stat. § 413.140(1)(a)")).toEqual(["413.140"]);
     expect(exactCitationPaths("KY", "Ky. Rev. Stat. § 413.140(1)(a)")?.includes("413.14")).toBe(
