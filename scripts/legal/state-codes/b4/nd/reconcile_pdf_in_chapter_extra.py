@@ -10,7 +10,13 @@ from sc_common import Archive, decode_html  # noqa: E402
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from citation import canon_citation, filter_sections_to_official_toc  # noqa: E402
-from parse import BASE, parse_toc, pdf_text, split_pdf_sections, sections_for_chapter, chapter_id_from_slug  # noqa: E402
+from parse import BASE, parse_toc, pdf_text, split_pdf_sections, chapter_id_from_slug, citation_chapter_id  # noqa: E402
+
+
+def sections_for_chapter(parsed: list[dict], chapter_id: str | None) -> list[dict]:
+    if not chapter_id:
+        return parsed
+    return [s for s in parsed if citation_chapter_id(s["citation"]) == chapter_id]
 
 
 def run(work: str):
