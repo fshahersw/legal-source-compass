@@ -388,6 +388,25 @@ describe("exact statute citation paths", () => {
       false,
     );
     expect(exactCitationPaths("LA", "La. Civ. Code art. 2315.2(B)")?.includes("2315")).toBe(false);
+    expect(
+      exactCitationPaths(
+        "LA",
+        "La. Civ. Code arts. 3492 and 3493 (repealed eff. 2024-07-01 by Acts 2024, No. 423, §2)",
+      ),
+    ).toEqual(["3492", "3493"]);
+    expect(
+      exactCitationPaths(
+        "LA",
+        "La. Civ. Code arts. 3492 and 3493 (repealed eff. 2024-07-01 by Acts 2024, No. 423, §2)",
+      )?.includes("3493.1"),
+    ).toBe(false);
+    expect(
+      exactCitationPaths(
+        "LA",
+        "La. Civ. Code arts. 3492 and 3493 (repealed eff. 2024-07-01 by Acts 2024, No. 423, §2)",
+      )?.includes("2"),
+    ).toBe(false);
+    expect(exactCitationPaths("LA", "La. Civ. Code arts. 3492 to 3493")).toBeNull();
     expect(statuteNativeId("LA", "2315.1")).toBe("LA:2315.1");
     expect(statuteNativeId("LA", "2315.2")).toBe("LA:2315.2");
   });
