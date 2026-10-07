@@ -33,7 +33,7 @@
     "scheme": "official_citation_path",
     "regex": "^[A-Z0-9]{1,2}:[0-9A-Za-z._()+-]+(~[0-9]+)?$",
     "example": "CP:16.003",
-    "citation_format": "<code>:<section-anchor> (~N marks a repeated publisher occurrence in the same chapter file)"
+    "citation_format": "<code>:<section-anchor> (~N marks a repeated official citation across chapter HTML files or within one file)"
   },
   "currency": {
     "basis": "publisher_statement",
