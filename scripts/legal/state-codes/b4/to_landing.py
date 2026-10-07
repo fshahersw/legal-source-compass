@@ -94,8 +94,11 @@ def convert(work, cfg):
                 r = arc.index.get(u)
                 if not r or r.get("state") != "complete":
                     continue
-                data = json.loads(arc.read(r))
-                if data.get("Type") == "Chapter" and data.get("Statute") == ch_stat:
+                try:
+                    data = json.loads(arc.read(r))
+                except ValueError:
+                    continue
+                if isinstance(data, dict) and data.get("Type") == "Chapter" and data.get("Statute") == ch_stat:
                     raw = r
                     break
         if raw is None:
