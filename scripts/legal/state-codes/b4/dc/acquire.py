@@ -14,7 +14,7 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from sc_common import Archive, decode_html  # noqa: E402
 
-from dc_lib import HOST, CODE_PREFIX  # noqa: E402
+from dc_lib import HOST, CODE_PREFIX, section_fetch_url  # noqa: E402
 
 INDEX_JSON = HOST + CODE_PREFIX + "index.json"
 
@@ -52,7 +52,7 @@ def walk_toc(arc: Archive, root: dict, toc_docs: dict, sections: list, outlines:
                 sections.append(
                     {
                         "native_id": p,
-                        "source_url": HOST + p,
+                        "source_url": section_fetch_url(p),
                         "toc_title": node.get("t") or "",
                         "parent_outline": parent_outline,
                         "et": node.get("et"),
@@ -89,6 +89,17 @@ def build_inventory(arc: Archive) -> dict:
     }
 
 
+def sync_receipts(arc: Archive, inv: dict):
+    for sec in inv["sections"]:
+        if sec.get("receipt_sha256"):
+            continue
+        url = sec.get("source_url") or section_fetch_url(sec["native_id"])
+        rec = arc.index.get(url) or arc.index.get(HOST + sec["native_id"])
+        if rec and rec.get("state") == "complete":
+            sec["receipt_sha256"] = rec["sha256"]
+            sec["source_url"] = url
+
+
 def fetch_sections(arc: Archive, inv: dict, inv_path: str, max_sections: int | None):
     n = 0
     for sec in inv["sections"]:
@@ -96,7 +107,14 @@ def fetch_sections(arc: Archive, inv: dict, inv_path: str, max_sections: int | N
             continue
         if max_sections is not None and n >= max_sections:
             break
-        rec = grab(arc, sec["source_url"])
+        url = sec.get("source_url") or section_fetch_url(sec["native_id"])
+        sec["source_url"] = url
+        try:
+            rec = grab(arc, url)
+        except UnicodeEncodeError as exc:
+            sec["fetch_failed"] = True
+            sec["fetch_error"] = str(exc)
+            continue
         n += 1
         if rec.get("state") != "complete":
             sec["fetch_failed"] = True
@@ -125,6 +143,7 @@ def main():
         print("inventory sections", len(inv["sections"]), "toc_json_docs", inv["toc_json_documents"], flush=True)
     if a.inventory_only:
         return
+    sync_receipts(arc, inv)
     fetch_sections(arc, inv, inv_path, a.max_sections)
     json.dump(inv, open(inv_path, "w"), indent=1)
     ok = sum(1 for s in inv["sections"] if s.get("receipt_sha256"))

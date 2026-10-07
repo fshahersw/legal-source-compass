@@ -15,6 +15,18 @@ HOST = dc.HOST
 CODE_PREFIX = "/us/dc/council/code/"
 parse_article = dc.parse_article
 
+from urllib.parse import quote  # noqa: E402
+
+
+def section_fetch_url(native_id: str) -> str:
+    """ASCII-safe request URL (publisher uses UTF-8 en-dash in some section ids)."""
+    if native_id.startswith("http"):
+        native_id = native_id.split(HOST, 1)[-1]
+    if not native_id.startswith(CODE_PREFIX + "sections/"):
+        raise ValueError(f"not a section native_id: {native_id}")
+    tail = native_id.split("/sections/", 1)[1]
+    return f"{HOST}{CODE_PREFIX}sections/{quote(tail, safe='')}"
+
 
 def section_citation_path(native_id: str) -> str:
     """e.g. /us/dc/council/code/sections/28:2-725 -> 28:2-725"""
