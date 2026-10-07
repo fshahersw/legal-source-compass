@@ -179,7 +179,10 @@ function inSiteChrome(node) {
 // ---- MND (Drupal 7 MDL node): orders in horizontal-tab field groups; PDF anchors sit in <p> blocks outside field--name-body ----
 export function parseMndMdl({ html, pageUrl }) {
   const root = parseHtml(html);
-  const scope = findFirst(root, n => hasClass(n, 'node--mdl')) ?? findFirst(root, n => n.attrs?.id === 'main-content') ?? root;
+  const scope = findFirst(root, n => hasClass(n, 'node--mdl'))
+    ?? findFirst(root, n => n.tag === 'div' && n.attrs?.id === 'main-content')
+    ?? findFirst(root, n => hasClass(n, 'region-content'))
+    ?? root;
   const page = { title: pageTitle(root), mdl_node_found: scope !== root && hasClass(scope, 'node--mdl') };
   const paragraphs = findAll(scope, n => n.tag === 'p');
   const dateTexts = paragraphs.map(p => /^(\d{1,2}\/\d{1,2}\/\d{4})\b/.exec(textOf(p))?.[1]).filter(Boolean);
