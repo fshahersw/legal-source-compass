@@ -71,7 +71,7 @@ def live_text(body, url):
 def squash(t):
     t = html_mod.unescape(t)
     t = t.replace("\u2019", "'").replace("\u2018", "'").replace("\u201c", '"').replace("\u201d", '"')
-    for dash in ("\u2013", "\u2014", "\u2012", "\u2212"):
+    for dash in ("\u2010", "\u2011", "\u2012", "\u2013", "\u2014", "\u2212"):
         t = t.replace(dash, "-")
     return re.sub(r"\s+", "", t)
 
@@ -130,6 +130,18 @@ def main():
                 row["heading_ok"] = squash(heading.split("[", 1)[0].strip()) in live
             row["text_ok"] = squash(s["text"]) in live
             row["live_sha256"] = rec["sha256"]
+            note = s.get("status_note") or ""
+            if note and "[Repealed" in note and row.get("text_ok") and live_url.lower().endswith(".pdf"):
+                html_url = live_url[:-4] + ".html"
+                hrec = arc.fetch(html_url, accept="*/*", min_bytes=0)
+                if hrec["state"] == "complete":
+                    live_h = squash(live_text(arc.read(hrec), html_url))
+                    if number:
+                        row["citation_ok"] = squash(number) in live_h
+                    if heading and not row["heading_ok"]:
+                        row["heading_ok"] = squash(heading) in live_h
+                    if heading and not row["heading_ok"]:
+                        row["heading_ok"] = squash(re.sub(r"\[[^\]]+\]", "", heading)) in live_h
             row["ok"] = row["citation_ok"] and row["heading_ok"] and row["text_ok"]
         results.append(row)
     cur = sorted({(x["currency"]["basis"], x["currency"]["statement"][:200], x["currency"]["through_date"], x["currency"]["edition"]) for x in secs})

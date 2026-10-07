@@ -138,8 +138,14 @@ def status_and_history(body: str):
     status = None
     history = None
     if REPEALED.search(body):
-        status = "Repealed"
-        history = collapse(body.split("\n", 1)[-1]) if "\n" in body else collapse(body)
+        for line in body.splitlines():
+            if REPEALED.search(line):
+                history = collapse(line)
+                status = history
+                break
+        if not status:
+            status = "Repealed"
+            history = collapse(body)
     elif SL_HISTORY.search(body):
         for line in body.splitlines():
             if SL_HISTORY.search(line):
@@ -247,17 +253,6 @@ def run(work: str):
         repealed_notice = repealed_chapter_notice(text, parsed_all) if not parsed else None
         if repealed_notice:
             chapter_status_note = repealed_notice
-            for row in toc_rows:
-                if canon_citation(row["citation"]) not in {canon_citation(s["citation"]) for s in parsed}:
-                    empty_section_gaps.append(
-                        {
-                            "chapter": slug,
-                            "citation": row["citation"],
-                            "heading": row.get("heading"),
-                            "reason": "chapter_repealed_pdf_has_no_section_text",
-                            "chapter_status_note": chapter_status_note,
-                        }
-                    )
             flag_classification.append(
                 {
                     "chapter": slug,
@@ -325,6 +320,38 @@ def run(work: str):
         native = chapter_native_id(slug)
         ch_text = text
         if repealed_notice and not parsed:
+            notice = chapter_status_note or ""
+            nstart = ch_text.find(notice) if notice else -1
+            if nstart < 0:
+                nstart = 0
+                nend = len(ch_text)
+            else:
+                nend = nstart + len(notice)
+            for row in toc_rows:
+                cit = row["citation"]
+                heading = normalize_pdf_heading(row.get("heading") or cit)
+                sections_out.append(
+                    {
+                        "chapter_native_id": native,
+                        "citation": cit,
+                        "citation_path": cit,
+                        "number": cit,
+                        "heading": heading,
+                        "start": nstart,
+                        "end": nend,
+                        "history": None,
+                        "status_label": notice,
+                        "state": STATE,
+                        "hierarchy": hierarchy_for(chapter_id, chapter_heading, cit, heading),
+                        "edition": None,
+                        "currency": {"statement": OFFICIAL_STATEMENT + " " + UPDATE_STATEMENT, "as_of": None},
+                        "effective": None,
+                        "source_url": pdf_url,
+                        "source_receipt_sha256": prec["sha256"],
+                        "duplicate_occurrence": False,
+                        "text_source": "official_chapter_repeal_notice",
+                    }
+                )
             chapters_out.append(
                 {
                     "native_id": native,

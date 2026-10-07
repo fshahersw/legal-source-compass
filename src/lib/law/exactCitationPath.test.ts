@@ -34,6 +34,11 @@ describe("exact statute citation paths", () => {
       "15-3-530",
       "15-3-535",
     ]);
+    const death = "S.C. Code § 15-3-530(6) (action under §§ 15-51-10 to 15-51-60)";
+    expect(exactCitationPaths("SC", death)).toEqual(["15-3-530"]);
+    expect(exactCitationPaths("SC", death)?.includes("15-51-10")).toBe(false);
+    expect(exactCitationPaths("SC", death)?.includes("15-51-60")).toBe(false);
+    expect(exactCitationPaths("SC", death)?.includes("15-3-53")).toBe(false);
   });
 
   it("reads dotted official paths without taking a chapter number or a session-law range", () => {
@@ -132,6 +137,13 @@ describe("exact statute citation paths", () => {
     expect(exactCitationPaths("NH", "N.H. Rev. Stat. Ann. § 508:4-b, I")?.includes("508:4")).toBe(
       false,
     );
+    const wood =
+      "Anderson v. Estate of Wood, 171 N.H. 524 (2018), No. 2017-0559 (construing N.H. Rev. Stat. Ann. § 556:11)";
+    expect(exactCitationPaths("NH", wood)).toEqual(["556:11"]);
+    expect(exactCitationPaths("NH", wood)?.includes("171")).toBe(false);
+    expect(exactCitationPaths("NH", wood)?.includes("524")).toBe(false);
+    expect(exactCitationPaths("NH", wood)?.includes("2017-0559")).toBe(false);
+    expect(statuteNativeId("NH", "556:11")).toBe("NH:556:11");
     expect(statuteNativeId("NH", "508:4")).toBe("NH:508:4");
   });
 
@@ -299,6 +311,15 @@ describe("exact statute citation paths", () => {
       ]),
     ).toBeNull();
     expect(statuteNativeId("MD", "gcj 5-101")).toBe("MD:gcj 5-101");
+  });
+
+  it("reads Louisiana Revised Statutes 9:5628 without the decimal neighbor", () => {
+    expect(exactCitationPaths("LA", "La. R.S. 9:5628(A)")).toEqual(["9:5628"]);
+    expect(exactCitationPaths("LA", "La. R.S. 9:5628(A)")?.includes("5628")).toBe(false);
+    expect(exactCitationPaths("LA", "La. R.S. 9:5628(A)")?.includes("9:5628.1")).toBe(false);
+    expect(exactCitationPaths("LA", "La. R.S. 9:5628.1")).toEqual(["9:5628.1"]);
+    expect(exactCitationPaths("LA", "La. Civ. Code art. 2315.2(F)")).toBeNull();
+    expect(statuteNativeId("LA", "9:5628")).toBe("LA:9:5628");
   });
 
   it("reads Kentucky 413.140 and 413.120 as separate sections", () => {

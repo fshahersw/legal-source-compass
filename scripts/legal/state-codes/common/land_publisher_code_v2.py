@@ -279,7 +279,11 @@ def main():
     ap.add_argument("--run-id")
     ap.add_argument("--attempt", type=int, default=1, help="a closed run cannot reopen; attempt N>1 derives a new deterministic run id")
     ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--multicode", action="store_true",
+                    help="register, open and finish through the v3 multi-code functions, so a second code can land under a jurisdiction "
+                         "that already has one; intake, objects and verification are the v2 functions either way. Never reviews anything.")
     a = ap.parse_args()
+    fn = "_v3" if a.multicode else "_v2"
     checked = preflight_packet(a.packet)
     manifest = json.load(open(os.path.join(a.packet, "manifest.json"), encoding="utf-8"))
     manifest_sha = sha(manifest)
@@ -294,9 +298,9 @@ def main():
     if not a.execute:
         return 0
     cloud = Cloud()
-    reg = cloud.rpc("corpus_publisher_code_register_manifest_v2", {"p_manifest": manifest})
+    reg = cloud.rpc("corpus_publisher_code_register_manifest" + fn, {"p_manifest": manifest})
     assert reg["manifest_sha256"] == manifest_sha, "server manifest hash differs from local canonical hash"
-    cloud.rpc("corpus_publisher_code_open_run_v2", {"p_run": run_id, "p_manifest_sha256": manifest_sha})
+    cloud.rpc("corpus_publisher_code_open_run" + fn, {"p_run": run_id, "p_manifest_sha256": manifest_sha})
     status, counts = "failed", dict(summary)
     try:
         from concurrent.futures import ThreadPoolExecutor
@@ -326,7 +330,7 @@ def main():
         counts.update(landed_rows=landed, verified_rows=verified)
         status = "completed" if landed == len(unit_rows) + len(section_rows) else "partial"
     finally:
-        fin = cloud.rpc("corpus_publisher_code_finish_run_v2", {"p_run": run_id, "p_status": status, "p_counts": counts})
+        fin = cloud.rpc("corpus_publisher_code_finish_run" + fn, {"p_run": run_id, "p_status": status, "p_counts": counts})
         print(json.dumps({"finish": fin}))
     return 0 if status == "completed" else 1
 

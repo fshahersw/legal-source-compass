@@ -109,6 +109,53 @@ class LanderTest(unittest.TestCase):
                 json.dump(proof, handle)
             self.assertEqual(L.preflight_packet(root)["toc_pages"], 1)
 
+    def test_multicode_flag_uses_the_v3_register_open_and_finish_and_never_a_review(self):
+        calls = []
+
+        class FakeCloud:
+            def rpc(self, name, args):
+                calls.append(name)
+                if name.startswith("corpus_publisher_code_register_manifest"):
+                    return {"manifest_sha256": args["p_manifest"]["_sha"]}
+                return {"ok": True, "matched": len(args.get("p_rows", [])), "verified": True}
+
+        with tempfile.TemporaryDirectory() as root:
+            text = "Text"
+            deriv = os.path.join(root, "unit.txt")
+            with open(deriv, "w", encoding="utf-8") as handle:
+                handle.write(text)
+            digest = L.sha(text.encode("utf-8"))
+            src = [{"source_url": "https://example.gov/c1", "retrieved_at": "2026-10-06T00:00:00Z", "http_status": 200,
+                    "retrieval_method": "publisher_page", "proxy": None}]
+            with open(os.path.join(root, "objects.jsonl"), "w", encoding="utf-8") as handle:
+                for row in ({"sha256": "a" * 64, "bytes": 4, "kind": "publisher_original", "path": deriv, "sources": src},
+                            {"sha256": digest, "bytes": 4, "kind": "unit_text_derivative", "path": deriv, "sources": src}):
+                    handle.write(json.dumps(row) + "\n")
+            manifest = write_packet(root)
+            with open(os.path.join(root, "units.jsonl"), encoding="utf-8") as handle:
+                unit = json.loads(handle.read())
+            unit["text_sha256"], unit["text_code_points"] = digest, len(text)
+            with open(os.path.join(root, "units.jsonl"), "w", encoding="utf-8") as handle:
+                handle.write(json.dumps(unit) + "\n")
+            with open(os.path.join(root, "toc-proof.json"), "w", encoding="utf-8") as handle:
+                json.dump({"marker": "x", "pages": [{"url": "https://example.gov/c1", "markers": 1, "sections": 1}],
+                           "unfetched_child_pages": []}, handle)
+            manifest["_sha"] = L.sha(manifest)
+            with open(os.path.join(root, "manifest.json"), "w", encoding="utf-8") as handle:
+                json.dump(manifest, handle)
+            for flag, suffix in (([], "_v2"), (["--multicode"], "_v3")):
+                calls.clear()
+                saved = (L.Cloud, L.put_object, sys.argv)
+                try:
+                    L.Cloud = FakeCloud
+                    L.put_object = lambda cloud, o: {"bytes": o["bytes"]}
+                    sys.argv = ["land", root, "--execute"] + flag
+                    with self.assertRaises(AssertionError):
+                        L.main()
+                finally:
+                    L.Cloud, L.put_object, sys.argv = saved
+                self.assertEqual(calls[0], "corpus_publisher_code_register_manifest" + suffix)
+
     def test_sb_key_uses_apikey_header_only(self):
         os.environ["EXTERNAL_SUPABASE_URL"] = "https://x.supabase.co"
         os.environ["EXTERNAL_SUPABASE_SERVICE_ROLE_KEY"] = "sb_secret_test"

@@ -92,6 +92,8 @@ class TestNdParse(unittest.TestCase):
         ]
         kept = sections_for_chapter(parsed, "6-13")
         self.assertEqual([s["citation"] for s in kept], ["6-13-01"])
+
+    def test_citation_chapter_id(self):
         self.assertEqual(citation_chapter_id("6-13-01"), "6-13")
 
 

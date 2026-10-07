@@ -7,9 +7,9 @@
 const DOTTED_PATH_STATES = new Set(["FL", "KY", "MI", "MN", "MO", "NV", "OR", "WI"]);
 
 export function exactCitationPaths(state: string, citation: string): string[] | null {
-  const text = citation.trim();
+  const text = withoutSectionRanges(citation.trim());
   const usps = state.toUpperCase();
-  if (!text || citesSectionRange(text)) return null;
+  if (!text.trim()) return null;
   if (usps === "OK") return oklahomaPaths(text);
   const paths = omitSectionHalf(
     omitDottedPrefix([
@@ -23,6 +23,7 @@ export function exactCitationPaths(state: string, citation: string): string[] | 
         ...(usps === "ME" ? (mainePaths(text) ?? []) : []),
         ...(usps === "DE" ? (delawarePaths(text) ?? []) : []),
         ...(usps === "MD" ? (marylandPaths(text) ?? []) : []),
+        ...(usps === "LA" ? (louisianaRevisedStatutePaths(text) ?? []) : []),
         ...(DOTTED_PATH_STATES.has(usps) ? (dottedPaths(text) ?? []) : []),
       ]),
     ]),
@@ -31,11 +32,15 @@ export function exactCitationPaths(state: string, citation: string): string[] | 
 }
 
 /**
- * "to" or "through" between section numbers is a range, so nothing is linked.
- * The same words in ordinary prose, such as "applied to", are not a range.
+ * A written range such as "15-51-10 to 15-51-60" is removed and not linked.
+ * An exact section beside that range is still linked.
+ * "to" in ordinary prose, such as "applied to", is not a range.
  */
-function citesSectionRange(text: string): boolean {
-  return /(?:§§?\s*)?\d[\dA-Za-z.]*(?:\([^)]*\))*\s+(?:to|through)\s+(?:§§?\s*)?\d/i.test(text);
+function withoutSectionRanges(text: string): string {
+  return text.replace(
+    /(?:§§?\s*)?\d[\dA-Za-z.-]*(?:\([^)]*\))*\s+(?:to|through)\s+(?:§§?\s*)?\d[\dA-Za-z.-]*(?:\([^)]*\))*/gi,
+    " ",
+  );
 }
 
 /** A bare section number that is already the section half of a title or article token is not a second section. */
@@ -157,6 +162,24 @@ function marylandPaths(citation: string): string[] | null {
   return paths.length ? paths : null;
 }
 
+/**
+ * Louisiana Revised Statutes paths such as `La. R.S. 9:5628(A)`.
+ * The title and the section are one path, `9:5628`. A parenthetical is not included.
+ * `9:5628` is not `9:5628.1`. A Civil Code article is not a Revised Statutes section.
+ */
+function louisianaRevisedStatutePaths(citation: string): string[] | null {
+  const paths: string[] = [];
+  const re = /\bR\.S\.\s*(\d+[A-Z]?):(\d+(?:\.\d+)?)(?![A-Za-z0-9.])/gi;
+  for (const match of citation.matchAll(re)) {
+    const title = match[1]?.toUpperCase();
+    const section = match[2];
+    if (!title || !section) continue;
+    const path = `${title}:${section}`;
+    if (!paths.includes(path)) paths.push(path);
+  }
+  return paths.length ? paths : null;
+}
+
 /** Dotted official paths such as Fla. Stat. § 95.11, KRS 413.140, MCL 600.5851b, NRS 11.190, NRS 41A.097, and ORS 12.110. The whole token, including one chapter letter and a trailing letter. A parenthetical is not included. */
 function dottedPaths(citation: string): string[] | null {
   const paths: string[] = [];
@@ -196,6 +219,7 @@ function sectionSignPaths(citation: string): string[] | null {
         .trim()
         .replace(/\s+/g, "")
         .replace(/(?:\([^)]*\))+$/g, "")
+        .replace(/\)+$/, "")
         .replace(/\.$/, "");
       if (!token || paths.includes(token)) continue;
       if (
