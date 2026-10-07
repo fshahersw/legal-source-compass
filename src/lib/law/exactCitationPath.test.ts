@@ -239,6 +239,18 @@ describe("exact statute citation paths", () => {
     expect(statuteNativeId("NV", "11.190")).toBe("NV:11.190");
   });
 
+  it("reads Ohio 2305.10 without the neighboring section", () => {
+    expect(exactCitationPaths("OH", "Ohio Rev. Code § 2305.10(A)")).toEqual(["2305.10"]);
+    expect(exactCitationPaths("OH", "Ohio Rev. Code § 2305.10(A)")?.includes("2305.1")).toBe(
+      false,
+    );
+    expect(exactCitationPaths("OH", "Ohio Rev. Code § 2305.10(A)")?.includes("2305.101")).toBe(
+      false,
+    );
+    expect(exactCitationPaths("OH", "Ohio Rev. Code § 2305.101")).toEqual(["2305.101"]);
+    expect(statuteNativeId("OH", "2305.10")).toBe("OH:2305.10");
+  });
+
   it("reads Nevada 41A.097 with the chapter letter and without the parenthetical", () => {
     expect(exactCitationPaths("NV", "Nev. Rev. Stat. § 41A.097(3)")).toEqual(["41A.097"]);
     expect(exactCitationPaths("NV", "Nev. Rev. Stat. § 41A.097(2)")).toEqual(["41A.097"]);
