@@ -4,6 +4,7 @@
     "cand": {
       "name": "U.S. District Court for the Northern District of California",
       "file": "cand.svg",
+      "kind": "seal",
       "sourcePage": "https://cand.uscourts.gov/",
       "sourceImage": "https://cand.uscourts.gov/sites/default/files/images/Northern-District-of-California-Court---Full-Color.svg",
       "sha256": "39c8d5df694f50f5a45259250c923a16f7777fe8b7c82a9862fc94ec9d24dadd",
@@ -12,6 +13,7 @@
     "njd": {
       "name": "U.S. District Court for the District of New Jersey",
       "file": "njd.png",
+      "kind": "seal",
       "sourcePage": "https://www.njd.uscourts.gov/",
       "sourceImage": "https://www.njd.uscourts.gov/sites/njd/files/small_njdis_courtseal_color.png",
       "sha256": "1eb0f9bc0981a9bbf19935a533cb493def87c7b7abf1f95505175df3eeb1f454",
@@ -20,6 +22,7 @@
     "paed": {
       "name": "U.S. District Court for the Eastern District of Pennsylvania",
       "file": "paed.png",
+      "kind": "seal",
       "sourcePage": "https://www.paed.uscourts.gov/",
       "sourceImage": "https://www.paed.uscourts.gov/sites/paed/files/courtseal.png",
       "sha256": "6670aab43d7826084174ca6afe573583fa199447ef74e9fb8f24d578918e6e06",
@@ -28,6 +31,7 @@
     "flsd": {
       "name": "U.S. District Court for the Southern District of Florida",
       "file": "flsd.png",
+      "kind": "seal",
       "sourcePage": "https://www.flsd.uscourts.gov/",
       "sourceImage": "https://www.flsd.uscourts.gov/sites/flsd/files/SOUTHERN%20DISTRICT%20OF%20FLORIDA_color1_0_0.png",
       "sha256": "eada1e9badb6ed9ff6dc85a3ad3c9844e8333e00d31b6cd3eaa854b8c806a7bc",
@@ -36,6 +40,7 @@
     "scd": {
       "name": "U.S. District Court for the District of South Carolina",
       "file": "scd.gif",
+      "kind": "banner",
       "sourcePage": "https://www.scd.uscourts.gov/",
       "sourceImage": "https://www.scd.uscourts.gov/Graphics/top_grey.gif",
       "sha256": "d76fe5fdf3e1e82a45cd3951d22d122781f6cf8b0dad736660b6c749efe59a5f",

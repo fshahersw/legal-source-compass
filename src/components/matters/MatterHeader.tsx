@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
-import { useMemo, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 
+import { CourtArtwork } from "@/components/corpus/CourtArtwork";
 import { CorpusRecordLink } from "@/components/corpus/DatasetBrowser";
 import { Chip, Fact, LinkOut, NotRecorded } from "@/components/matters/common";
+import { formatExactCount } from "@/lib/matters/docketDocuments";
 import { formatBytes } from "@/lib/matters/documents";
 import {
   getMatterDocketDocumentsSummary,
@@ -13,9 +15,6 @@ import {
 import { judgeLinkBasisLabel, judgePersonBasisLabel, orNotRecorded } from "@/lib/matters/overview";
 import { registryMetrics } from "@/lib/matters/registry";
 import type { MatterOverviewPayload } from "@/lib/matters/types";
-import { getEntity } from "@/lib/external/entity.functions";
-import { buildEntityView } from "@/lib/external/entityView";
-import { fileUrl } from "@/lib/external/groups";
 
 const REFERENCE_LABELS: Record<string, string> = {
   "court-master-references": "Court's MDL information page",
@@ -192,15 +191,15 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
       />
       <Metric
         label="Documents"
-        title="Docket-sheet documents of this matter's cases in the docket-documents dataset (DocketBird-tracked cases), counted live: listed rows, rows with a stored PDF, and documents withheld under the sealed/restricted rule, which are counted and never listed."
+        title="Docket-sheet documents of this matter's cases in the docket-documents dataset (DocketBird-tracked cases), counted live. Listed and stored are exact corpus counts. Sealed and restricted documents are not listed."
         value={
-          docSum.data ? (
+          docSum.isLoading ? (
+            <span className="font-normal text-muted-foreground">…</span>
+          ) : docSum.data ? (
             <>
-              {n(docSum.data.listed)}
+              {formatExactCount(docSum.data.listed)}
               <span className="font-normal text-muted-foreground"> listed</span>
             </>
-          ) : docSum.isLoading ? (
-            <span className="font-normal text-muted-foreground">…</span>
           ) : (
             <NotRecorded />
           )
@@ -208,14 +207,14 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
         note={
           docSum.data
             ? [
-                `${n(docSum.data.stored)} stored`,
-                docSum.data.withheld !== null ? `${n(docSum.data.withheld)} withheld` : null,
+                `${formatExactCount(docSum.data.stored)} stored`,
+                docSum.data.withheld !== null
+                  ? `${docSum.data.withheld.toLocaleString()} withheld`
+                  : null,
               ]
                 .filter(Boolean)
                 .join(" · ")
-            : docSum.isLoading
-              ? undefined
-              : "No rows for this matter in the docket-documents dataset"
+            : undefined
         }
       />
       <Metric
@@ -268,89 +267,14 @@ function MetricsBand({ payload }: { payload: MatterOverviewPayload }) {
           ) : null}
         </div>
       ) : null}
+      <div className="border-t border-border px-4 py-1.5 text-[12px] text-muted-foreground sm:col-span-2 lg:col-span-6">
+        <span className="font-medium text-foreground">Backfill coverage</span>
+        {" · Docket entries "}
+        {docSum.isLoading ? "…" : formatExactCount(docSum.data?.entries)}
+        {" · Documents stored "}
+        {docSum.isLoading ? "…" : formatExactCount(docSum.data?.stored)}
+      </div>
     </div>
-  );
-}
-
-const officialCourtMarks: Record<
-  string,
-  { src: string; source: string; shape: "seal" | "banner" }
-> = {
-  cand: {
-    src: "/court-marks/cand.svg",
-    source: "https://cand.uscourts.gov/",
-    shape: "seal",
-  },
-  njd: {
-    src: "/court-marks/njd.png",
-    source: "https://www.njd.uscourts.gov/",
-    shape: "seal",
-  },
-  paed: {
-    src: "/court-marks/paed.png",
-    source: "https://www.paed.uscourts.gov/",
-    shape: "seal",
-  },
-  flsd: {
-    src: "/court-marks/flsd.png",
-    source: "https://www.flsd.uscourts.gov/",
-    shape: "seal",
-  },
-  scd: {
-    src: "/court-marks/scd.gif",
-    source: "https://www.scd.uscourts.gov/",
-    shape: "banner",
-  },
-};
-
-/** Uses an official, locally stored mark only for an exact CourtListener court ID. */
-function CourtSeal({ id, title }: { id: string; title: string }) {
-  const officialMark = officialCourtMarks[id];
-  const getEntityFn = useServerFn(getEntity);
-  const court = useQuery({
-    queryKey: ["court-profile-image", id],
-    queryFn: async () => (await getEntityFn({ data: { dataset: "court_spine", id } })).json,
-    staleTime: Infinity,
-    enabled: !officialMark,
-  });
-  const src = useMemo(() => {
-    if (!court.data) return null;
-    try {
-      const raw = JSON.parse(court.data) as Record<string, unknown>;
-      const links = buildEntityView(raw).links.filter(
-        (link) => link.url.startsWith("/") && /seal|image|logo/i.test(link.label),
-      );
-      const source = links.find((link) => /seal/i.test(link.label)) ?? links[0];
-      return source ? { src: source.url, label: source.label } : null;
-    } catch {
-      return null;
-    }
-  }, [court.data]);
-  const [failed, setFailed] = useState(false);
-  if (officialMark) {
-    return (
-      <img
-        src={officialMark.src}
-        alt={`${title} official court ${officialMark.shape === "banner" ? "mark" : "seal"}`}
-        title={`Official court artwork · ${officialMark.source}`}
-        className={`size-9 shrink-0 border border-border bg-white ${
-          officialMark.shape === "banner"
-            ? "rounded-md object-cover object-left"
-            : "rounded-full object-contain p-1"
-        }`}
-        loading="lazy"
-      />
-    );
-  }
-  if (!src || failed) return null;
-  return (
-    <img
-      src={fileUrl(src.src)}
-      alt={`${title} ${src.label}`}
-      className="size-9 shrink-0 rounded-full border border-border bg-white object-contain p-1"
-      loading="lazy"
-      onError={() => setFailed(true)}
-    />
   );
 }
 
@@ -442,10 +366,7 @@ export function MatterHeader({ payload }: { payload: MatterOverviewPayload }) {
         <Fact label="Court">
           <div className="flex items-center gap-2">
             {o.court.clId ? (
-              <CourtSeal
-                id={o.court.clId}
-                title={o.court.shortName ?? o.court.fullName ?? "Court"}
-              />
+              <CourtArtwork courtId={o.court.clId} title={o.court.shortName ?? o.court.fullName ?? "Court"} compact />
             ) : null}
             {o.court.clId ? (
               <Link

@@ -7,8 +7,10 @@
  * Env: LIM_WORK (entries + captures), LIM_BUNDLE (current protected limitations dir), LIM_OUT (output dir),
  *      LIM_SNAPSHOT_DATE (default 2026-10-06)
  */
+import { createHash } from "node:crypto";
 import {
   copyFileSync,
+  rmSync,
   existsSync,
   mkdirSync,
   readdirSync,
@@ -20,6 +22,7 @@ import { addCivilPeriod, periodLabel } from "../../../src/lib/limitations/engine
 import {
   checkEntry,
   checkTimeRule,
+  containsLiteral,
   type CaptureMeta,
   type MatrixEntryInput,
   type TimeRuleInput,
@@ -44,12 +47,13 @@ import {
   type VerdictRecord,
 } from "../../../src/lib/limitations/backfill/grades";
 import { claimCoverageFor } from "../../../src/lib/limitations/backfill/cellCoverage";
+import { buildEntryRuleConditions } from "../../../src/lib/limitations/backfill/ruleConditions";
 
 const work = process.env.LIM_WORK ?? "/tmp/lim/backfill";
 const bundle = process.env.LIM_BUNDLE ?? "/tmp/lim/data/limitations";
 const out = process.env.LIM_OUT ?? "/tmp/lim/out/limitations";
 const snapshotDate = process.env.LIM_SNAPSHOT_DATE ?? "2026-10-06";
-const ruleVersion = `${snapshotDate}.${process.env.LIM_RULE_SEQ ?? "2"}`;
+const ruleVersion = `${snapshotDate}.${process.env.LIM_RULE_SEQ ?? "3"}`;
 const idStamp = snapshotDate.replaceAll("-", "");
 
 const readJson = (file: string) => JSON.parse(readFileSync(join(bundle, file), "utf8"));
@@ -82,13 +86,33 @@ const UNIT: Record<string, PeriodUnit> = {
   days: "calendar_days",
 };
 
-const reposeTrigger = (text: string): "last_act_or_omission" | "act_or_omission" | null => {
-  const t = text.toLowerCase();
-  if (/last act/.test(t)) return "last_act_or_omission";
+type ClockKind =
+  | "act_or_omission"
+  | "last_act_or_omission"
+  | "injury_date"
+  | "substantial_completion"
+  | "first_delivery";
+/** Entries begin a repose trigger with one canonical phrase; older entries are matched by their wording. */
+const reposeTrigger = (text: string): ClockKind | null => {
+  const t = text.toLowerCase().trim();
+  if (t.startsWith("the last act or omission") || /^last act/.test(t) || /\blast act\b/.test(t))
+    return "last_act_or_omission";
+  if (t.startsWith("the date of injury")) return "injury_date";
+  if (t.startsWith("substantial completion")) return "substantial_completion";
+  if (t.startsWith("first delivery or sale")) return "first_delivery";
+  if (t.startsWith("the act or omission")) return "act_or_omission";
   if (
-    /act or omission|act, omission|act or failure|date of the (act|omission)|act complained/.test(t)
+    /act or omission|act, omission|act or failure|date of the (act|omission)|act complained|perpetration of the (fraud|act)/.test(
+      t,
+    )
   )
     return "act_or_omission";
+  if (
+    /first (purchase|sale|delivery)|delivery (of the product )?to (its |the )?(first|initial)|initial purchas(e|er)|first purchaser|time of delivery|date of delivery/.test(
+      t,
+    )
+  )
+    return "first_delivery";
   return null;
 };
 
@@ -243,9 +267,30 @@ for (const file of files) {
       );
 
     const repose = entry.repose ?? [];
-    const trigger = repose.length === 1 ? reposeTrigger(repose[0]!.trigger) : null;
+    const productClaim = entry.claimType === "product_liability" || /product/.test(variant);
+    // Delivery-based repose is a product-claim concept: never apply it to an injury variant that only
+    // sometimes is a product claim.
+    const kinds = repose.map((r) => {
+      const k = reposeTrigger(r.trigger);
+      return k === "first_delivery" && !productClaim ? null : k;
+    });
     const reposeModelled =
-      repose.length === 1 && trigger !== null && repose[0]!.effectiveFrom !== null;
+      repose.length > 0 &&
+      kinds.every((k) => k !== null) &&
+      repose.every((r) => r.effectiveFrom !== null);
+    /** Recorded in provenance/conditions but not applied in calculation (unmodelled trigger or no effectiveFrom). */
+    const reposeRecordedNotComputed = repose.length > 0 && !reposeModelled;
+    const limbs = entry.periodLimbs ?? [];
+    const legacySingle =
+      limbs.length === 0 &&
+      repose.length === 1 &&
+      reposeModelled &&
+      ["act_or_omission", "last_act_or_omission", "first_delivery"].includes(kinds[0]!);
+    const needsClocks =
+      limbs.length > 0 ||
+      (reposeModelled && !legacySingle) ||
+      (repose.length === 0 && limbs.length > 0);
+    const trigger = legacySingle ? (kinds[0] as ClockKind) : null;
     const accrualOk = [
       "accrual",
       "discovery",
@@ -259,7 +304,7 @@ for (const file of files) {
     const baseline =
       entry.status === "verified" &&
       accrualOk &&
-      (repose.length === 0 || (reposeModelled && entry.accrual.kind !== "death"));
+      (repose.length === 0 || reposeModelled || reposeRecordedNotComputed);
     const existing = rules.filter(
       (r) =>
         r.jurisdiction === state &&
@@ -277,21 +322,54 @@ for (const file of files) {
         current.period.unit === unit;
       if (same) {
         entryRoute.set(current.id, entryIntermediaryOnly);
-        // A legacy rule that starts the clock at death contradicts an entry whose official text starts it at
-        // discovery (for example Wisconsin wrongful death): follow the verified entry.
+        // Period unchanged: still refresh metadata from the entry (cross-check gloss, blockers, tolling).
         if (current.accrualBasis === "death" && entry.accrual.kind === "discovery") {
           current.accrualBasis = "confirmed_accrual";
-          current.conditions = [
-            ...new Set([
-              ...current.conditions,
-              `Accrual under the cited rule: ${entry.accrual.text}`,
-            ]),
-          ];
         }
-        if (!current.provenance) {
-          current.provenance = provenance;
-          if (entry.status === "verified") current.pinpoint = entry.citation;
-          attached++;
+        current.conditions = buildEntryRuleConditions(
+          entry,
+          provenance,
+          baseline,
+          repose,
+          reposeRecordedNotComputed,
+        );
+        const hadProvenance = Boolean(current.provenance);
+        current.provenance = provenance;
+        current.sourceIds = [
+          ...new Set([primaryId, ...crossIds, ...(current.sourceIds ?? [])]),
+        ];
+        if (entry.status === "verified") current.pinpoint = entry.citation;
+        current.effectiveFrom = entry.effectiveDate ?? null;
+        const limbDefs = entry.periodLimbs ?? [];
+        if (baseline && limbDefs.length > 0 && entry.periodCombine) {
+          current.calculation = {
+            mode: "clocks_min" as const,
+            limbs: limbDefs.map((l) => ({
+              amount: l.amount,
+              unit: UNIT[l.unit]!,
+              from: l.from,
+            })),
+            combine: entry.periodCombine,
+            clocks: [],
+          };
+        }
+        if (!hadProvenance) attached++;
+        const legacyId = `${state.toLowerCase()}-${entry.claimType}-general-review-20261002`;
+        const legacy = rules.find((r) => r.id === legacyId);
+        if (
+          legacy &&
+          !legacy.period &&
+          variant === "general" &&
+          entry.period &&
+          (entry.status === "verified" || entry.status === "flagged") &&
+          (current.computation === "baseline_only" ||
+            (current.computation === "research_only" && current.id.endsWith("bf20261006"))) &&
+          current.id !== legacyId
+        ) {
+          legacy.period = { amount: entry.period.amount, unit };
+          legacy.provenance = provenance;
+          legacy.sourceIds = [...new Set([primaryId, ...crossIds, ...(legacy.sourceIds ?? [])])];
+          legacy.pinpoint = entry.citation;
         }
         const upgrade =
           current.computation === "research_only" &&
@@ -318,25 +396,13 @@ for (const file of files) {
       }
     }
 
-    const notes = [
-      entry.accrual.kind === "not_recorded"
-        ? "The cited provision does not state when the claim accrues (Not recorded). The accrual date must be confirmed under controlling case law before relying on any date."
-        : `Accrual under the cited rule: ${provenance.accrualText}`,
-      ...(repose.length && !baseline
-        ? repose.map(
-            (r) =>
-              `Statute of repose not computed here: ${r.years} years (${r.citation}); trigger: ${r.trigger}.`,
-          )
-        : []),
-      ...provenance.tolling.map(
-        (t) => `Statutory tolling (not applied by the calculator): ${t.text} (${t.citation}).`,
-      ),
-      ...(entry.blockers ?? []).map((b) => `Cannot issue a date: ${b.issue}. ${b.why}`),
-      ...(entry.crossChecks ?? []).map(
-        (c) => `Related provision or cross-check (capture ${c.captureId}): ${c.note}`,
-      ),
-      ...provenance.flags.map((f) => `Flag: ${f}`),
-    ];
+    const notes = buildEntryRuleConditions(
+      entry,
+      provenance,
+      baseline,
+      repose,
+      reposeRecordedNotComputed,
+    );
     const rule: LimitationRule = {
       id: `${state.toLowerCase()}-${entry.claimType}-${variant}-bf${idStamp}`.replaceAll("_", "-"),
       schemaVersion: "1.0.0",
@@ -376,13 +442,47 @@ for (const file of files) {
         "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed.",
       ],
       ...(variant === "general" ? {} : { subtype: variant }),
-      ...(baseline && repose.length === 1
+      ...(baseline && legacySingle
         ? {
             calculation: {
               mode: "accrual_repose_min" as const,
               reposeYears: repose[0]!.years,
-              reposeTrigger: trigger!,
+              reposeTrigger: trigger as
+                "last_act_or_omission" | "act_or_omission" | "first_delivery",
               reposeEffectiveFrom: repose[0]!.effectiveFrom!,
+            },
+          }
+        : {}),
+      ...(baseline && needsClocks
+        ? {
+            calculation: {
+              mode: "clocks_min" as const,
+              ...(limbs.length
+                ? {
+                    limbs: limbs.map((l) => ({
+                      amount: l.amount,
+                      unit: UNIT[l.unit]!,
+                      from: l.from,
+                    })),
+                    combine: entry.periodCombine!,
+                  }
+                : {
+                    limbs: [
+                      {
+                        amount: entry.period!.amount,
+                        unit,
+                        from:
+                          entry.accrual.kind === "death"
+                            ? ("death" as const)
+                            : ("accrual" as const),
+                      },
+                    ],
+                  }),
+              clocks: repose.map((r, i) => ({
+                years: r.years,
+                from: kinds[i] as ClockKind,
+                effectiveFrom: r.effectiveFrom!,
+              })),
             },
           }
         : {}),
@@ -426,9 +526,107 @@ if (caCrossRef) {
     caCrossRef.provenance.accrualKind = "other";
   }
 }
-const cases = (casesDoc.cases as { id: string }[]).filter(
-  (c) => !RETIRED_CASE_REFERENCES.has(c.id),
-);
+type CaseFile = {
+  id: string;
+  status: "official" | "retired";
+  captureState?: string;
+  captureId?: string;
+  officialUrl?: string;
+  pinpoint?: string;
+  passages?: { claim: string; quote: string }[];
+  reason?: string;
+};
+const caseDir = join(work, "cases");
+const caseFiles: CaseFile[] = existsSync(caseDir)
+  ? readdirSync(caseDir)
+      .filter((f) => f.endsWith(".json"))
+      .map((f) => JSON.parse(readFileSync(join(caseDir, f), "utf8")) as CaseFile)
+  : [];
+const caseTexts = new Map<string, string>();
+const caseNotes: { id: string; outcome: string; detail: string }[] = [];
+const retiredCases = new Set<string>(RETIRED_CASE_REFERENCES.keys());
+const replacementCases = new Map<string, Record<string, unknown>>();
+for (const cf of caseFiles) {
+  if (cf.status === "retired") {
+    retiredCases.add(cf.id);
+    caseNotes.push({ id: cf.id, outcome: "retired", detail: cf.reason ?? "" });
+    continue;
+  }
+  const cap = cf.captureState && cf.captureId ? capture(cf.captureState, cf.captureId) : undefined;
+  const bad = (why: string) =>
+    caseNotes.push({ id: cf.id, outcome: "rejected_kept_previous", detail: why });
+  if (!cap || !cf.officialUrl) {
+    bad("capture or official URL missing");
+    continue;
+  }
+  if (cap.meta.hostClass === "blocked_secondary" || cap.meta.status !== 200) {
+    bad("capture is not an official 200 response");
+    continue;
+  }
+  if (cap.text.length < 1000) {
+    bad("capture text is too short to be an opinion");
+    continue;
+  }
+  const missing = (cf.passages ?? []).filter((p) => !containsLiteral(cap.text, p.quote));
+  if (!(cf.passages ?? []).length || missing.length) {
+    bad(
+      `passages not literal in the official text: ${missing.map((p) => p.claim).join("; ") || "none supplied"}`,
+    );
+    continue;
+  }
+  const old = (casesDoc.cases as Record<string, unknown>[]).find((c) => c["id"] === cf.id);
+  if (!old) {
+    bad("no existing case record");
+    continue;
+  }
+  const meta = cap.meta as typeof cap.meta & { route?: { kind: string; proxy: string } };
+  const isPdf = /pdf/i.test(meta.contentType) && !meta.intermediary;
+  const sha = createHash("sha256").update(cap.text, "utf8").digest("hex");
+  const host = new URL(cf.officialUrl).hostname;
+  replacementCases.set(cf.id, {
+    ...old,
+    url: cf.officialUrl,
+    ...(isPdf ? { officialPdfUrl: meta.url } : {}),
+    pinpoint: cf.pinpoint?.trim() || "Not recorded (official pagination not verified)",
+    copyPublisher: `Official court website (${host})`,
+    referenceVersion: `${snapshotDate}.${process.env.LIM_RULE_SEQ ?? "3"}`,
+    textScope: `Official opinion text from ${meta.route ? `a proxied fetch through ${meta.route.proxy}` : "a direct fetch"} of ${meta.url}; the cited passages were matched literally to this text.`,
+    textPath: `/data/limitations/opinion-text/${cf.id}.txt`,
+    sha256: sha,
+    byteLength: Buffer.byteLength(cap.text, "utf8"),
+    capturedAt: meta.retrievedAt,
+    pdfDownloaded: isPdf,
+    rawCapture: {
+      sha256: meta.rawSha256,
+      byteLength: meta.rawBytes,
+      contentType: meta.contentType || "text/html",
+      retrievedAt: meta.retrievedAt,
+      storageBucket: "corpus-originals",
+      storageKey: `limitations-raw-captures/sha256/${meta.rawSha256.slice(0, 2)}/${meta.rawSha256}.bin`,
+    },
+    fetchRoute: meta.route
+      ? { kind: "proxied", proxy: meta.route.proxy }
+      : meta.intermediary
+        ? { kind: "extraction" }
+        : { kind: "direct" },
+  });
+  caseTexts.set(cf.id, cap.text);
+  caseNotes.push({ id: cf.id, outcome: "official", detail: cf.officialUrl });
+}
+const cases = (casesDoc.cases as { id: string }[])
+  .filter((c) => !retiredCases.has(c.id))
+  .map((c) => (replacementCases.get(c.id) as { id: string }) ?? c);
+for (const rule of rules) {
+  if (!rule.caseReferenceIds?.some((id) => retiredCases.has(id))) continue;
+  rule.caseReferenceIds = rule.caseReferenceIds.filter((id) => !retiredCases.has(id));
+  if (!rule.caseReferenceIds.length) delete rule.caseReferenceIds;
+  rule.conditions = [
+    ...new Set([
+      ...rule.conditions,
+      "A judicial reference formerly cited here was withdrawn: Not recorded (official opinion not retrievable).",
+    ]),
+  ];
+}
 
 // Verification grades from the independent verifier (rule .1 content) with a fingerprint carry-over check.
 const readJsonMaybe = (path: string | undefined) =>
@@ -581,12 +779,15 @@ const snapshot: LimitationsSnapshot = validateLimitationsSnapshot({
   cases: files4.cases,
 });
 
+rmSync(out, { recursive: true, force: true });
 mkdirSync(join(out, "text"), { recursive: true });
 mkdirSync(join(out, "opinion-text"), { recursive: true });
 for (const dir of ["text", "opinion-text"])
   for (const f of readdirSync(join(bundle, dir)))
     copyFileSync(join(bundle, dir, f), join(out, dir, f));
 for (const t of newTexts) writeFileSync(join(out, "text", `${t.id}.txt`), t.text);
+for (const [id, text] of caseTexts) writeFileSync(join(out, "opinion-text", `${id}.txt`), text);
+for (const id of retiredCases) rmSync(join(out, "opinion-text", `${id}.txt`), { force: true });
 for (const f of readdirSync(bundle)) {
   if (["publisher-overrides.json", "rejected-captures.json"].includes(f))
     copyFileSync(join(bundle, f), join(out, f));
@@ -597,7 +798,7 @@ writeFileSync(join(out, "coverage.json"), `${JSON.stringify(files4.coverage, nul
 writeFileSync(join(out, "case-references.json"), `${JSON.stringify(files4.cases, null, 2)}\n`);
 writeFileSync(
   join(out, "backfill-discrepancies.json"),
-  `${JSON.stringify({ discrepancies, rejected, retiredLegacyRules: Object.fromEntries(RETIRED_LEGACY_RULES) }, null, 2)}\n`,
+  `${JSON.stringify({ discrepancies, rejected, caseReferences: caseNotes, retiredLegacyRules: Object.fromEntries(RETIRED_LEGACY_RULES) }, null, 2)}\n`,
 );
 
 const cells = coverage.flatMap((c) => c.claimCoverage ?? []);

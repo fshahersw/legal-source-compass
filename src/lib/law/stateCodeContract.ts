@@ -433,11 +433,67 @@ export function showRecorded(value: string | null | undefined): string {
   return value && value.trim() ? value : "Not recorded";
 }
 
+/**
+ * The section body. A publisher status line stored as the text or the heading is that text.
+ * A one-character fragment is not used in place of a longer printed status line.
+ */
+export function publishedSectionBody(fields: {
+  text: string | null;
+  heading: string | null;
+  status: string | null;
+}): string | null {
+  const text = fields.text?.trim() || null;
+  const heading = fields.heading?.trim() || null;
+  const status = fields.status?.trim().replace(/\.+$/, "") || null;
+  if (!text) return heading;
+  if (
+    status &&
+    heading &&
+    heading.toLowerCase().includes(status.toLowerCase()) &&
+    text.length + 8 < heading.length &&
+    !heading.startsWith(text)
+  )
+    return heading;
+  return text;
+}
+
+/** Edition labels copied from the intake currency summary. Several labels stay several labels. */
+export function projectedEdition(currency: unknown): string | null {
+  const row = asObject(currency);
+  if (!row || !Array.isArray(row["editions"])) return null;
+  const editions = row["editions"].filter(
+    (item): item is string => typeof item === "string" && item.trim().length > 0,
+  );
+  return editions.length ? editions.join("; ") : null;
+}
+
+/** Publisher through-dates from the intake currency summary. A range stays a range. */
+export function projectedCurrency(currency: unknown): string | null {
+  const row = asObject(currency);
+  if (!row) return null;
+  const min = asString(row["through_min"]);
+  const max = asString(row["through_max"]);
+  if (min && max && min !== max) return `${min} to ${max}`;
+  return max ?? min;
+}
+
+/**
+ * Coverage-panel status from one corpus_publisher_code_coverage_v2 state row.
+ * No row means the intake has not captured that state. A row with the projection
+ * flag off is private even when sections have landed.
+ */
+export function coverageStatus(
+  row: { public_projection_allowed?: boolean } | null | undefined,
+): CodeCoverageStatus {
+  if (!row) return "not yet captured";
+  return row.public_projection_allowed === true ? "captured" : "landed-private";
+}
+
 export type StateCodeListing = {
   state: string;
   name: string;
-  /** Snapshot text is preferred when a state has both a bundle and a dataset. */
-  kind: "snapshot" | "dataset";
+  /** A reviewed public projection wins over a snapshot or an older dataset for the same state. */
+  kind: "projection" | "snapshot" | "dataset";
   codeName: string;
   sectionCount: number | null;
   edition: string | null;
@@ -448,11 +504,78 @@ export type StateCodeListing = {
   hasSnapshot: boolean;
   titleFilter: string | null;
   chapterField: string | null;
+  /** Declared hierarchy levels for a projected code, ending in "section". */
+  levels: string[] | null;
 };
+
+export type HierarchyStep = { level: string; number: string | null };
+
+/** Accept a JSON string or an already-parsed search param. A bad path is empty, not a guess. */
+export function parseHierarchyPath(value: unknown): HierarchyStep[] {
+  let parsed = value;
+  if (typeof value === "string") {
+    if (!value.startsWith("[")) return [];
+    try {
+      parsed = JSON.parse(value) as unknown;
+    } catch {
+      return [];
+    }
+  }
+  if (!Array.isArray(parsed) || parsed.length > 12) return [];
+  const steps: HierarchyStep[] = [];
+  for (const item of parsed) {
+    if (!item || typeof item !== "object") return [];
+    const level = (item as { level?: unknown }).level;
+    const number = (item as { number?: unknown }).number;
+    if (typeof level !== "string" || !/^[a-z][a-z_]{1,40}$/.test(level)) return [];
+    if (number == null) steps.push({ level, number: null });
+    else if (typeof number === "string" || (typeof number === "number" && Number.isFinite(number)))
+      steps.push({ level, number: String(number) });
+    else return [];
+  }
+  return steps;
+}
+
+export type ProjectedOutline =
+  | {
+      available: false;
+    }
+  | {
+      available: true;
+      kind: "groups";
+      level: string;
+      total: number;
+      truncated: boolean;
+      groups: { number: string | null; heading: string | null; count: number }[];
+      /** Sections whose next hierarchy step is already a section, beside deeper groups. */
+      directSections: {
+        native_id: string;
+        citation: string | null;
+        heading: string | null;
+        status_note: string | null;
+      }[];
+      directTotal: number;
+      directTruncated: boolean;
+    }
+  | {
+      available: true;
+      kind: "sections";
+      level: "section";
+      total: number;
+      truncated: boolean;
+      sections: {
+        native_id: string;
+        citation: string | null;
+        heading: string | null;
+        status_note: string | null;
+      }[];
+    };
+
+export type CodeCoverageStatus = "captured" | "landed-private" | "not yet captured";
 
 export type StateCodeHit = {
   state: string;
-  kind: "snapshot" | "dataset";
+  kind: "projection" | "snapshot" | "dataset";
   id: string;
   citation: string | null;
   heading: string;

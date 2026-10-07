@@ -26,12 +26,31 @@ export function plainTextOf(markup) {
     .trim());
 }
 
+// ncleg.gov chapter pages style hierarchy headings (Article/Part/SUBCHAPTER) as centred blocks and
+// section body text as justified blocks. A justified body line that merely begins with "Article 4 of
+// Chapter 150B ..." or "part of ..." is body text, not a heading. Pages that carry no style rules at all
+// give no signal, so every row is then allowed to be a heading (the previous behaviour).
+function centredClassNames(html) {
+  const styles = [...html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)].map(match => match[1]).join('\n');
+  if (!/text-align\s*:/i.test(styles)) return null;
+  const names = new Set();
+  for (const rule of styles.matchAll(/\.([A-Za-z0-9_-]+)\s*\{([^}]*)\}/g)) {
+    if (/text-align\s*:\s*center/i.test(rule[2])) names.add(rule[1]);
+  }
+  return names;
+}
+
 export function extractParagraphs(html) {
   const rows = [];
-  const pattern = /<(h[1-6]|p)\b[^>]*>([\s\S]*?)<\/\1\s*>/gi;
+  const centred = centredClassNames(html);
+  const pattern = /<(h[1-6]|p)\b([^>]*)>([\s\S]*?)<\/\1\s*>/gi;
   for (const match of html.matchAll(pattern)) {
-    const value = plainTextOf(match[2]);
-    if (value) rows.push({ tag: match[1].toLowerCase(), text: value, sourceOffset: match.index });
+    const value = plainTextOf(match[3]);
+    if (!value) continue;
+    const tag = match[1].toLowerCase();
+    const classes = (match[2].match(/\bclass\s*=\s*"([^"]*)"/i)?.[1] || '').split(/\s+/).filter(Boolean);
+    const headingStyle = centred === null || tag !== 'p' || classes.some(name => centred.has(name));
+    rows.push({ tag, text: value, sourceOffset: match.index, headingStyle });
   }
   return rows;
 }
@@ -188,7 +207,7 @@ export function parseChapter(chapter, html, rawSha256) {
       });
       continue;
     }
-    const subchapter = row.text.match(/^SUBCHAPTER\s+([IVXLCDM0-9A-Z]+)\.?\s*(.*)$/i);
+    const subchapter = !row.headingStyle ? null : row.text.match(/^SUBCHAPTER\s+([IVXLCDM0-9A-Z]+)\.?\s*(.*)$/i);
     if (subchapter) {
       markParagraph(index, 'subchapter_heading');
       finish();
@@ -200,7 +219,7 @@ export function parseChapter(chapter, html, rawSha256) {
       otherHeadings.push({ chapterId: chapter.chapterId, kind: 'subchapter', text: row.text, sourceOffset: row.sourceOffset });
       continue;
     }
-    const article = row.text.match(/^Article\s+([A-Za-z0-9.-]+)\.?\s*(.*)$/i);
+    const article = !row.headingStyle ? null : row.text.match(/^Article\s+([A-Za-z0-9.-]+)\.?\s*(.*)$/i);
     if (article) {
       markParagraph(index, 'article_heading');
       finish();
@@ -218,7 +237,7 @@ export function parseChapter(chapter, html, rawSha256) {
       pendingArticle = false;
       continue;
     }
-    const part = row.text.match(/^Part\s+([A-Za-z0-9.-]+)\.?\s*(.*)$/i);
+    const part = !row.headingStyle ? null : row.text.match(/^Part\s+([A-Za-z0-9.-]+)\.?\s*(.*)$/i);
     if (part) {
       markParagraph(index, 'part_heading');
       finish();
@@ -227,7 +246,7 @@ export function parseChapter(chapter, html, rawSha256) {
       otherHeadings.push({ chapterId: chapter.chapterId, kind: 'part', text: row.text, sourceOffset: row.sourceOffset });
       continue;
     }
-    if (/^Chapter\s+[0-9A-Z]/i.test(row.text) && !chapterTitle) {
+    if (row.headingStyle && /^Chapter\s+[0-9A-Z]/i.test(row.text) && !chapterTitle) {
       markParagraph(index, 'chapter_header');
       const following = rows[index + 1]?.text;
       if (following && !sectionHeadings[index + 1]) {

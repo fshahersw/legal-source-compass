@@ -4,6 +4,7 @@ import { CASE_ROLES, CASE_SORTS, type CaseFilter, type CaseRole } from "./cases"
 import { REGISTRY_SOURCES, type DocumentFilter } from "./documents";
 import { normalizeMdlNumber, type JpmlReport } from "./overview";
 import { DOCUMENT_ID_PATTERN, isRealDate, type TimelineFilter } from "./timeline";
+import { isDocumentQueryCaseId } from "./docketVariants";
 import { caseIdPlan } from "./registry";
 import {
   loadAppearances,
@@ -253,7 +254,8 @@ export const getMatterDocumentsPage = createServerFn({ method: "GET" })
         entry: z.number().int().min(0).max(9_999_999).nullable().default(null),
         caseId: z
           .string()
-          .regex(/^[A-Za-z0-9:._-]{0,120}$/)
+          .max(120)
+          .refine((id) => id === "" || isDocumentQueryCaseId(id))
           .default(""),
         sort: z.enum(["entry-desc", "entry-asc", "name"]).default("entry-desc"),
         offset: z.number().int().min(0).max(100000).default(0),
@@ -279,7 +281,11 @@ export const getMatterDocumentsSummary = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const overview = await overviewFor(mdlOf(data.id));
     return overview
-      ? loadRegistryDocuments(caseIdPlan(overview.registry, overview.overview.keys.all), true)
+      ? loadRegistryDocuments(
+          caseIdPlan(overview.registry, overview.overview.keys.all),
+          true,
+          overview.overview.mdl,
+        )
       : null;
   });
 

@@ -24,6 +24,7 @@ import {
   type RegistryLabels,
 } from "./cases";
 import { matterCaseKeys } from "./docketKeys";
+import { acceptsRegisteredCaseId, matterMdlNumber } from "./docketVariants";
 import {
   deduplicateDocuments,
   describeDocument,
@@ -595,7 +596,11 @@ export async function loadEntryText(entryId: string): Promise<{ text: string | n
 
 /* ------------------------------------------------------------------ documents */
 
-/** The most archive rows read for one matter (the largest, MDL 3047, holds about 8,200; the server keeps them, the browser gets pages). */
+/**
+ * The most archive rows read for one matter. The reader interleaves requested case ids, so one
+ * docket cannot fill this cap before another requested id is read. The summary still counts every
+ * source record; a larger docket is not read in full just to reach a later case id.
+ */
 const REGISTRY_ROW_CAP = 20_000;
 const REGISTRY_PAGE = 500;
 
@@ -641,24 +646,55 @@ function cachedRegistryRead(
  * minutes, row lists ten, at most six lists), concurrent callers share one read, and the pages after the first are
  * read four at a time.
  */
+function registryCacheKey(caseIds: CaseIdPlanEntry[], mdl: string | null): string {
+  return `${matterMdlNumber(mdl) ?? ""}|${caseIds.map((c) => c.id).join(",")}`;
+}
+
+/**
+ * Registered case ids to add to a matter document query: formatting variants of a docket id already
+ * requested, and an `MDL` / `MDL No.` label for this matter's number. A failed lookup leaves the
+ * original ids in place. Member-docket drawers do not call this.
+ */
+async function expandRegisteredCaseIds(
+  caseIds: CaseIdPlanEntry[],
+  mdl: string | null,
+): Promise<CaseIdPlanEntry[]> {
+  const matter = matterMdlNumber(mdl);
+  let raw: unknown;
+  try {
+    raw = await rpcPost<unknown>("corpus_pdf_case_aliases_v1", {
+      p_case_ids: caseIds.map((c) => c.id),
+      p_mdl: matter,
+    });
+  } catch {
+    return caseIds;
+  }
+  if (!Array.isArray(raw)) return caseIds;
+  const asked = caseIds.map((c) => c.id);
+  const out = [...caseIds];
+  const seen = new Set(asked);
+  for (const id of raw) {
+    if (out.length >= 50) break;
+    if (typeof id !== "string" || seen.has(id) || !acceptsRegisteredCaseId(id, asked, matter))
+      continue;
+    seen.add(id);
+    out.push({ id, basis: "registered" });
+  }
+  return out;
+}
+
 export function loadRegistryDocuments(
   caseIds: CaseIdPlanEntry[],
   summaryOnly = false,
+  mdl: string | null = null,
 ): Promise<RegistryDocumentsPayload> {
+  const key = registryCacheKey(caseIds, mdl);
   return summaryOnly
-    ? cachedRegistryRead(
-        registrySummaryCache,
-        3 * 60_000,
-        80,
-        caseIds.map((c) => c.id).join(","),
-        () => readRegistryDocuments(caseIds, true),
+    ? cachedRegistryRead(registrySummaryCache, 3 * 60_000, 80, key, () =>
+        readRegistryDocuments(caseIds, true, REGISTRY_ROW_CAP, mdl),
       )
-    : cachedRegistryRead(
-        registryRowsCache,
-        10 * 60_000,
-        6,
-        caseIds.map((c) => c.id).join(","),
-        () => readRegistryDocuments(caseIds, false),
+    : cachedRegistryRead(registryRowsCache, 10 * 60_000, 6, key, () =>
+        readRegistryDocuments(caseIds, false, REGISTRY_ROW_CAP, mdl),
       );
 }
 
@@ -666,6 +702,7 @@ async function readRegistryDocuments(
   caseIds: CaseIdPlanEntry[],
   summaryOnly: boolean,
   rowCap: number = REGISTRY_ROW_CAP,
+  mdl: string | null = null,
 ): Promise<RegistryDocumentsPayload> {
   if (!caseIds.length) {
     return {
@@ -674,7 +711,10 @@ async function readRegistryDocuments(
       caseIds,
     };
   }
-  const caseKeys = caseIds.map((c) => c.id);
+  // Matter pages also ask for a registered spelling of a docket they already request, and for
+  // this MDL's own label. Drawers pass no MDL number and keep the docket's own ids.
+  const queried = mdl === null ? caseIds : await expandRegisteredCaseIds(caseIds, mdl);
+  const caseKeys = queried.map((c) => c.id);
   const readPage = async (offset: number, limit: number) => {
     const page = await rpcPost<unknown>("corpus_matter_pdf_documents_v1", {
       p_native_case_ids: caseKeys,
@@ -702,7 +742,7 @@ async function readRegistryDocuments(
         sourceRecordsLoaded: 0,
         sourceRecordsExcluded: 0,
         truncated: false,
-        caseIds,
+        caseIds: queried,
       };
     const rows: MatterDocument[] = [...first.parsed];
     let sourceRecordsLoaded = first.rawCount;
@@ -722,7 +762,7 @@ async function readRegistryDocuments(
       sourceRecordsLoaded,
       sourceRecordsExcluded: sourceRecordsLoaded - rows.length,
       truncated: sourceRecordsLoaded < summary.total || rows.length < sourceRecordsLoaded,
-      caseIds,
+      caseIds: queried,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
@@ -731,7 +771,7 @@ async function readRegistryDocuments(
       reason: /\((404|400)\)/.test(message)
         ? "The verified PDF registry reader is not installed on the corpus database."
         : "The verified PDF registry could not be read.",
-      caseIds,
+      caseIds: queried,
     };
   }
 }
@@ -747,7 +787,11 @@ export async function loadDocumentsPage(
   offset: number,
   viewKey: string | null,
 ): Promise<RegistryDocumentsPageResponse> {
-  const docs = await loadRegistryDocuments(caseIdPlan(payload.registry, payload.overview.keys.all));
+  const docs = await loadRegistryDocuments(
+    caseIdPlan(payload.registry, payload.overview.keys.all),
+    false,
+    payload.overview.mdl,
+  );
   if (!docs.connected) return docs;
   const viewed = viewKey
     ? (docs.rows
@@ -806,10 +850,10 @@ const archiveCache = new Map<string, { at: number; index: Promise<ArchiveIndex |
  */
 function archiveIndexFor(payload: MatterOverviewPayload): Promise<ArchiveIndex | string> {
   const plan = caseIdPlan(payload.registry, payload.overview.keys.all);
-  const key = plan.map((c) => c.id).join(",");
+  const key = registryCacheKey(plan, payload.overview.mdl);
   const hit = archiveCache.get(key);
   if (hit && Date.now() - hit.at < ARCHIVE_TTL_MS) return hit.index;
-  const index = loadRegistryDocuments(plan).then((docs) =>
+  const index = loadRegistryDocuments(plan, false, payload.overview.mdl).then((docs) =>
     docs.connected ? buildArchiveIndex(docs.rows, !docs.truncated) : docs.reason,
   );
   archiveCache.set(key, { at: Date.now(), index });
@@ -1320,27 +1364,21 @@ export async function loadHub(): Promise<HubRow[]> {
       const s = summaries.get(key)?.summary;
       const derived = s ? matterCaseKeys(str(s["cl_court_id"]), str(s["master_docket"])).all : [];
       const plan = caseIdPlan(registryMatters.get(key) ?? null, derived);
-      const caseKeys = plan.map((c) => c.id);
-      if (!caseKeys.length) {
+      if (!plan.length) {
         byMdl.set(key, null);
         return;
       }
-      try {
-        const page = await rpcPost<unknown>("corpus_matter_pdf_documents_v1", {
-          p_native_case_ids: caseKeys,
-          p_limit: 1,
-          p_offset: 0,
-        });
-        const sum = isObj(page) ? parseRegistrySummary(page["summary"], []) : null;
-        byMdl.set(
-          key,
-          sum && sum.total > 0
-            ? { open: sum.open, held: sum.held, total: sum.total }
-            : { none: true },
-        );
-      } catch {
+      const docs = await loadRegistryDocuments(plan, true, key);
+      if (!docs.connected) {
         byMdl.set(key, { notConnected: true });
+        return;
       }
+      byMdl.set(
+        key,
+        docs.summary.total > 0
+          ? { open: docs.summary.open, held: docs.summary.held, total: docs.summary.total }
+          : { none: true },
+      );
     });
     hubRegistryCache = { at: Date.now(), byMdl };
   }

@@ -24,12 +24,14 @@ export function EntityPage({
   id,
   crumbs,
   docket,
+  lead,
   extra,
 }: {
   dataset: string;
   id: string;
   crumbs: { label: string; to?: string; search?: Record<string, string> | undefined }[];
   docket?: { kind: "mdl" | "court"; id: string } | undefined;
+  lead?: (raw: Record<string, unknown>, view: ReturnType<typeof buildEntityView>) => React.ReactNode;
   extra?: (raw: Record<string, unknown>) => React.ReactNode;
 }) {
   const { data } = useSuspenseQuery(entityQuery(dataset, id));
@@ -68,18 +70,12 @@ export function EntityPage({
         </section>
       ) : null}
       <div className="mb-5 flex flex-col gap-4 rounded-lg border border-border bg-surface p-4 shadow-card sm:flex-row">
-        {v.photo ? (
+        {lead ? lead(data.raw, v) : v.photo ? (
           <Img
             src={v.photo}
             className="h-36 w-28 shrink-0 rounded-md border border-border object-cover"
           />
         ) : null}
-        {v.links
-          .filter((l) => l.url.startsWith("/") && /seal|image|logo/i.test(l.label))
-          .slice(0, 1)
-          .map((l) => (
-            <Img key={l.url} src={l.url} className="h-28 w-28 shrink-0 object-contain" />
-          ))}
         <dl className="grid flex-1 grid-cols-1 gap-x-6 gap-y-1.5 text-[13px] sm:grid-cols-2">
           {key.map(([k, val], i) => (
             <div key={i} className="min-w-0">

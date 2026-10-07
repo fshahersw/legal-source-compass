@@ -5,10 +5,13 @@ import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/atlas/AppShell";
 import { DatasetCodeBrowser } from "@/components/corpus/DatasetCodeBrowser";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
+import { FullCodeEntry } from "@/components/corpus/FullCodeEntry";
+import { ProjectionCodeBrowser } from "@/components/corpus/ProjectionCodeBrowser";
 import { TexasCodeBrowser } from "@/components/corpus/TexasCodeBrowser";
 import { pageHead } from "@/lib/corpus/head";
 import { stateByUsps } from "@/lib/corpus/geo";
 import { listStateCodes } from "@/lib/law/stateCode.functions";
+import { parseHierarchyPath, type HierarchyStep } from "@/lib/law/stateCodeContract";
 
 type CodeSearch = {
   code?: string | undefined;
@@ -16,6 +19,7 @@ type CodeSearch = {
   section?: string | undefined;
   title?: string | undefined;
   q?: string | undefined;
+  path?: string | undefined;
 };
 
 const text = (value: unknown, max: number) => {
@@ -36,6 +40,10 @@ export const Route = createFileRoute("/law_/codes/$state")({
     section: text(search["section"], 512),
     title: text(search["title"], 200),
     q: text(search["q"], 120),
+    path: (() => {
+      const steps = parseHierarchyPath(search["path"]);
+      return steps.length ? JSON.stringify(steps) : undefined;
+    })(),
   }),
   head: ({ params }) => {
     const name = stateByUsps.get(params.state.toUpperCase())?.name ?? params.state;
@@ -54,7 +62,7 @@ function StateCodePage() {
   const codes = useQuery({
     queryKey: ["full-state-codes"],
     queryFn: () => listFn(),
-    staleTime: 60_000,
+    staleTime: 0,
   });
   const listing = codes.data?.find((row) => row.state === usps);
   const crumbs = [
@@ -73,6 +81,7 @@ function StateCodePage() {
       search: {
         code: search.code,
         q: search.q,
+        path: search.path,
         title: next.title,
         chapter: next.chapter,
         section: next.section,
@@ -88,13 +97,26 @@ function StateCodePage() {
   else if (codes.isLoading)
     body = <p className="text-sm text-muted-foreground">Loading full code status…</p>;
   else if (codes.error) body = <ExternalError error={codes.error} />;
-  else if (!listing)
+  else if (!listing) body = <FullCodeEntry state={usps} />;
+  else if (listing.kind === "projection") {
+    const steps = parseHierarchyPath(search.path);
     body = (
-      <p className="rounded-lg border border-border bg-surface p-4 text-sm text-muted-foreground">
-        Not yet captured
-      </p>
+      <ProjectionCodeBrowser
+        listing={listing}
+        path={steps}
+        section={search.section}
+        onNavigate={(next) => {
+          void navigate({
+            search: {
+              q: search.q,
+              path: next.path.length ? JSON.stringify(next.path) : undefined,
+              section: next.section,
+            },
+          });
+        }}
+      />
     );
-  else if (listing.kind === "snapshot") {
+  } else if (listing.kind === "snapshot") {
     body = (
       <TexasCodeBrowser
         state={listing.state}

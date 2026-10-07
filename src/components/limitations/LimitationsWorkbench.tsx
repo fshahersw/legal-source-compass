@@ -10,7 +10,8 @@ import {
   periodLabel,
   sourceReviewDate,
 } from "@/lib/limitations/engine";
-import { ruleAuthorityFacts } from "./ruleAuthority";
+import { NOT_RECORDED, ruleAuthorityFacts } from "./ruleAuthority";
+import { StatuteCitation } from "./StatuteCitation";
 import {
   guidedDateFields,
   isAccrualReposeRule,
@@ -59,18 +60,28 @@ function Authority({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule: Li
       <dl className="grid gap-x-4 gap-y-1 sm:grid-cols-[10rem_1fr]">
         <dt className="font-medium">Citation</dt>
         <dd>
-          {facts.citation}
+          <StatuteCitation state={rule.jurisdiction} citation={facts.citation} />
+        </dd>
+        <dt className="font-medium">Verification grade</dt>
+        <dd>
           <span
-            className="ml-2 inline-block rounded border border-border bg-muted px-1.5 py-0.5 text-xs font-medium"
+            className="inline-block rounded border border-border bg-muted px-1.5 py-0.5 text-xs font-medium"
             title={facts.gradeBasis}
             data-testid="verification-grade"
           >
             {facts.grade}
           </span>
+          <span className="mt-1 block">{facts.gradeBasis}</span>
         </dd>
-        <dt className="font-medium">Evidence grade</dt>
-        <dd>
-          {facts.grade}. {facts.gradeBasis}
+        <dt className="font-medium">Fetch route</dt>
+        <dd data-testid="fetch-route">
+          {facts.sources.length
+            ? facts.sources.map((source) => (
+                <span key={source.id} className="block">
+                  {source.route}
+                </span>
+              ))
+            : NOT_RECORDED}
         </dd>
         <dt className="font-medium">Effective date</dt>
         <dd>{facts.effective}</dd>
@@ -88,7 +99,7 @@ function Authority({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule: Li
                 className="break-all text-primary underline"
               >
                 {source.url}
-                {source.route ? ` (${source.route})` : ""}
+                {source.route !== NOT_RECORDED ? ` (${source.route})` : ""}
               </a>
             ))
           ) : (
@@ -316,7 +327,11 @@ export function LimitationsWorkbench({
     setInput((old) => ({
       ...old,
       ...patch,
-      ...(Object.hasOwn(patch, "reposeActDate") || Object.hasOwn(patch, "accrualDate")
+      ...(Object.hasOwn(patch, "reposeActDate") ||
+      Object.hasOwn(patch, "firstProductDeliveryDate") ||
+      Object.hasOwn(patch, "injuryDate") ||
+      Object.hasOwn(patch, "substantialCompletionDate") ||
+      Object.hasOwn(patch, "accrualDate")
         ? { reposeApplicabilityConfirmed: false }
         : {}),
     }));
@@ -437,6 +452,10 @@ export function LimitationsWorkbench({
           {step === 1 && (
             <section className={box}>
               <h2 className="text-xl font-semibold">1. Choose the law and claim</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Rule release {snapshot.ruleVersion}. Source version {snapshot.snapshotDate}. Both
+                come from the loaded limitations snapshot.
+              </p>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                 Select the state law and claim category. Venue or residence alone does not determine
                 governing law.
@@ -750,7 +769,7 @@ export function LimitationsWorkbench({
                       />
                       <span>
                         I confirmed this repose rule applies to this claim and defendant, and that
-                        the act or omission date above is legally relevant.
+                        the repose date above is legally relevant.
                         {missingReposeConfirmation && (
                           <span
                             id="repose-applicability-error"
@@ -954,14 +973,15 @@ export function LimitationsWorkbench({
                         Check court calendars, filing and service requirements, and local cutoffs.
                       </p>
                       {result.adjustedDate && (
-                        <p className="rounded-md border border-border bg-background p-2 font-medium">
-                          This date falls on a weekend. Under {result.adjustedDate.citation} the
-                          period extends to{" "}
+                        <div className="rounded-md border border-border bg-background p-2 font-medium">
+                          This date falls on a weekend. Under{" "}
+                          <StatuteCitation state={state} citation={result.adjustedDate.citation} />{" "}
+                          the period extends to{" "}
                           <time dateTime={result.adjustedDate.date}>
                             {formatCivilDate(result.adjustedDate.date)}
                           </time>
                           . Legal holidays are not computed.
-                        </p>
+                        </div>
                       )}
                     </div>
                   )}

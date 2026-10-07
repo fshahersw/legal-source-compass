@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   classifyDataset,
+  coverageStatus,
   matchesCitationOrHeading,
   parseFullCode,
+  parseHierarchyPath,
+  projectedCurrency,
+  projectedEdition,
+  publishedSectionBody,
   sectionFieldsFromRecord,
   summarizeBrowseRoot,
 } from "./stateCodeContract";
@@ -185,6 +190,65 @@ describe("full state code contract", () => {
     expect(fields.edition).toBe("2025");
     expect(fields.currency).toBe("2025 Florida Statutes");
     expect(fields.status).toBeNull();
+  });
+
+  it("keeps a repealed publisher status line as the text", () => {
+    const fields = sectionFieldsFromRecord({
+      title: "§12-1704.01",
+      source_url: "https://www.oklegislature.gov/OK_Statutes/CompleteTitles/os12.rtf",
+      detail: {
+        citation: "§12-1704.01",
+        heading: "Repealed by Laws 1980, c. 9, § 3.",
+        text: "Repealed by Laws 1980, c. 9, § 3.",
+        history: null,
+        status_note: "Repealed",
+        currency: { edition: null, statement: null, through_date: null },
+      },
+    });
+    expect(fields.status).toBe("Repealed");
+    expect(publishedSectionBody(fields)).toBe("Repealed by Laws 1980, c. 9, § 3.");
+    expect(fields.sourceUrl).toBe(
+      "https://www.oklegislature.gov/OK_Statutes/CompleteTitles/os12.rtf",
+    );
+    expect(
+      publishedSectionBody({
+        status: "Repealed",
+        heading: "Repealed by Laws 1965, c. 396, § 1309, eff. July 1, 1965.",
+        text: "c",
+      }),
+    ).toBe("Repealed by Laws 1965, c. 396, § 1309, eff. July 1, 1965.");
+    expect(
+      publishedSectionBody({
+        status: "Transferred",
+        heading: "Transferred employees - Partial payment of moving expenses.",
+        text: "It is the purpose of this act to provide partial payment by the State.",
+      }),
+    ).toMatch(/purpose of this act/);
+  });
+
+  it("reads the intake currency summary and the coverage gate", () => {
+    const currency = {
+      editions: ["2025", "2026"],
+      through_min: "2025-01-01",
+      through_max: "2026-10-01",
+      bases: ["publisher_statement"],
+    };
+    expect(projectedEdition(currency)).toBe("2025; 2026");
+    expect(projectedCurrency(currency)).toBe("2025-01-01 to 2026-10-01");
+    expect(projectedCurrency({ through_max: "2026-10-01", through_min: "2026-10-01" })).toBe(
+      "2026-10-01",
+    );
+    expect(projectedEdition({ editions: [] })).toBeNull();
+    expect(coverageStatus(undefined)).toBe("not yet captured");
+    expect(coverageStatus({ public_projection_allowed: false })).toBe("landed-private");
+    expect(coverageStatus({ public_projection_allowed: true })).toBe("captured");
+    expect(parseHierarchyPath([{ level: "title", number: 1 }])).toEqual([
+      { level: "title", number: "1" },
+    ]);
+    expect(parseHierarchyPath('[{"level":"title","number":null}]')).toEqual([
+      { level: "title", number: null },
+    ]);
+    expect(parseHierarchyPath("not-json")).toEqual([]);
   });
 
   it("matches a citation or a heading and ignores a one-character query", () => {

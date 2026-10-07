@@ -168,6 +168,42 @@ export function parseNjdBody({ html, pageUrl }) {
   return { page, rows };
 }
 
+function inSiteChrome(node) {
+  for (let p = node.parent; p; p = p.parent) {
+    if (p.type !== 'element') continue;
+    if (hasClass(p, 'menu') || p.attrs?.id === 'header' || hasClass(p, 'region-sidebar')) return true;
+  }
+  return false;
+}
+
+// ---- MND (Drupal 7 MDL node): orders in horizontal-tab field groups; PDF anchors sit in <p> blocks outside field--name-body ----
+export function parseMndMdl({ html, pageUrl }) {
+  const root = parseHtml(html);
+  const scope = findFirst(root, n => hasClass(n, 'node--mdl'))
+    ?? findFirst(root, n => n.tag === 'div' && n.attrs?.id === 'main-content')
+    ?? findFirst(root, n => hasClass(n, 'region-content'))
+    ?? root;
+  const page = { title: pageTitle(root), mdl_node_found: scope !== root && hasClass(scope, 'node--mdl') };
+  const paragraphs = findAll(scope, n => n.tag === 'p');
+  const dateTexts = paragraphs.map(p => /^(\d{1,2}\/\d{1,2}\/\d{4})\b/.exec(textOf(p))?.[1]).filter(Boolean);
+  const ctx = ctxOf(html, pageUrl, dateTexts);
+  const rows = []; let ordinal = 0;
+  for (const a of findAll(scope, n => n.tag === 'a' && n.attrs.href && !/^(mailto:|tel:|#|javascript:)/i.test(n.attrs.href))) {
+    if (inSiteChrome(a)) continue;
+    const cls = classifyUrl(a.attrs.href, pageUrl);
+    if (!DOCUMENT_KINDS.has(cls.kind)) continue;
+    const label = textOf(a);
+    const paragraph = ancestorOf(a, n => n.tag === 'p') ?? a;
+    const paraText = textOf(paragraph);
+    const dateText = /^(\d{1,2}\/\d{1,2}\/\d{4})\b/.exec(paraText)?.[1] ?? null;
+    const title = paraText && paraText !== label ? paraText : label;
+    ordinal++;
+    rows.push(rowBase({ ctx, node: paragraph, section: page.title, ordinal, href: a.attrs.href, label, title, dateText, docNumber: null,
+      extra: { title_source: paraText !== label ? 'paragraph_text' : 'link_text', date_source: dateText ? 'paragraph_leading_date' : null } }));
+  }
+  return { page, rows };
+}
+
 // ---- PAED (Drupal 7 views table): Date | linked title; machine-readable date in <span content="YYYY-MM-DDT..."> ----
 export function parsePaedOrders({ html, pageUrl }) {
   const root = parseHtml(html);
@@ -179,7 +215,11 @@ export function parsePaedOrders({ html, pageUrl }) {
   const ctx = ctxOf(html, pageUrl, dateTexts);
   const rows = []; let ordinal = 0;
   for (const tr of trs) {
-    const tds = findAll(tr, n => n.tag === 'td'), a = findFirst(tr, n => n.tag === 'a' && n.attrs.href);
+    const tds = findAll(tr, n => n.tag === 'td');
+    const anchors = findAll(tr, n => n.tag === 'a' && n.attrs.href);
+    const a = anchors.find(x => classifyUrl(x.attrs.href, pageUrl).kind === 'pdf_direct')
+      ?? anchors.find(x => !['ecf_login', 'html_page'].includes(classifyUrl(x.attrs.href, pageUrl).kind))
+      ?? anchors[0];
     if (!a) continue;
     const span = findFirst(tr, n => n.tag === 'span' && n.attrs.content && /^\d{4}-\d{2}-\d{2}/.test(n.attrs.content));
     ordinal++;
@@ -344,4 +384,4 @@ export function parseIndexLinks({ html, pageUrl }) {
   return { page: { title: textOf(findFirst(root, n => n.tag === 'title') ?? NODE_NONE) || null }, rows: [], index_links: [...seen.values()] };
 }
 
-export const FAMILIES = { 'njd-body': parseNjdBody, 'paed-orders-table': parsePaedOrders, 'ilnd-mdl-details': parseIlndMdlDetails, 'moed-mdl-page': parseMoedMdl, 'txnd-docket-table': parseTxndDocket, 'jpml-panel-orders': parseJpmlPanelOrders, 'index-links': parseIndexLinks };
+export const FAMILIES = { 'njd-body': parseNjdBody, 'mnd-mdl-page': parseMndMdl, 'paed-orders-table': parsePaedOrders, 'ilnd-mdl-details': parseIlndMdlDetails, 'moed-mdl-page': parseMoedMdl, 'txnd-docket-table': parseTxndDocket, 'jpml-panel-orders': parseJpmlPanelOrders, 'index-links': parseIndexLinks };

@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { casesFromMetadata, caseBelongsToMdl, parseDocketDocument } from "./docketDocuments";
+import {
+  casesFromMetadata,
+  caseBelongsToMdl,
+  entriesExact,
+  exactSum,
+  formatExactCount,
+  parseDocketDocument,
+  unlistedTotal,
+} from "./docketDocuments";
 
 const sha = "a".repeat(64);
 const row = (cells: Record<string, unknown>) => ({
@@ -42,17 +50,44 @@ describe("docket documents", () => {
     expect(d.availability).toBe("provider_not_downloaded");
     expect(d.pdfUrl).toBeNull();
   });
-  it("never shows text, file name or link for a restricted or withheld document", () => {
-    const restricted = parseDocketDocument(row({ restricted: true }))!;
-    expect(restricted).toMatchObject({
-      description: null,
-      descriptionWithheld: true,
-      fileName: null,
-      pdfUrl: null,
+  it("never lists a restricted or sealed document", () => {
+    expect(parseDocketDocument(row({ restricted: true }))).toBeNull();
+    expect(
+      parseDocketDocument(row({ description_withheld: "sealed_or_restricted_text" })),
+    ).toBeNull();
+    expect(parseDocketDocument(row({ description_withheld: "sealed_document" }))).toBeNull();
+  });
+  it("keeps a contact-withheld description off the row and still links a stored PDF", () => {
+    const d = parseDocketDocument(
+      row({ description: "call 215-779-6437", description_withheld: "contact_or_access_data" }),
+      [["Parties of the matter in the registry", "83"]],
+    )!;
+    expect(d.description).toBeNull();
+    expect(d.descriptionWithheld).toBe(true);
+    expect(d.fileName).toBe("paed-2:2024-md-03094-00698-029.pdf");
+    expect(d.parties).toBe("83");
+    expect(d.pdfUrl).toBe("/api/matter-pdf?source=docketbird&doc=paed-2%3A2024-md-03094-00698-029");
+  });
+  it("leaves parties Not recorded when the registry fact is absent", () => {
+    expect(parseDocketDocument(row({}))!.parties).toBeNull();
+  });
+  it("does not add a partial count", () => {
+    expect(exactSum([2, null])).toEqual({ value: null, gap: "too-large" });
+    expect(exactSum([2, 3])).toEqual({ value: 5, gap: "exact" });
+    expect(entriesExact([{ docketKey: null, count: 4 }])).toEqual({
+      value: null,
+      gap: "not-recorded",
     });
-    const withheld = parseDocketDocument(row({ description_withheld: "sealed_wording" }))!;
-    expect(withheld.description).toBeNull();
-    expect(withheld.descriptionWithheld).toBe(true);
+    expect(entriesExact([{ docketKey: "paed:2:2024-md-03094", count: null }])).toEqual({
+      value: null,
+      gap: "too-large",
+    });
+    expect(unlistedTotal([{ rows: 4, entries: null, unnumbered: 1 }])).toBeNull();
+    expect(unlistedTotal([{ rows: 4, entries: 0, unnumbered: null }])).toBe(4);
+    expect(formatExactCount({ value: 12, gap: "exact" })).toBe("12");
+    expect(formatExactCount({ value: null, gap: "too-large" })).toBe("too large to count");
+    expect(formatExactCount({ value: null, gap: "not-recorded" })).toBe("Not recorded");
+    expect(formatExactCount(null)).toBe("Not recorded");
   });
   it("rejects a row without a native document id and a stored row without a valid hash link", () => {
     expect(parseDocketDocument({ cells: {} })).toBeNull();

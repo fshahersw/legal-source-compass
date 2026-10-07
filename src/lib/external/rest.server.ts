@@ -43,6 +43,41 @@ export async function rpcPost<T>(fn: string, body: Record<string, unknown>): Pro
   return (await res.json()) as T;
 }
 
+/**
+ * Like rpcPost, but a missing function (the projection SQL has not been applied yet) returns null
+ * instead of failing the whole page. Any other failure still throws.
+ */
+export async function rpcPostOptional<T>(
+  fn: string,
+  body: Record<string, unknown>,
+): Promise<T | null> {
+  const { url, key } = creds();
+  const headers: Record<string, string> = {
+    apikey: key,
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  };
+  if (!key.startsWith("sb_")) headers["Authorization"] = `Bearer ${key}`;
+  const res = await fetch(`${url}/rest/v1/rpc/${fn}`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  });
+  if (res.status === 404) {
+    const text = await res.text();
+    if (text.includes("PGRST202") || text.includes("Could not find the function")) return null;
+    console.error(`External corpus rpc ${fn} failed [${res.status}]: ${text.slice(0, 500)}`);
+    throw new Error(`External corpus read failed (${res.status}).`);
+  }
+  if (!res.ok) {
+    console.error(
+      `External corpus rpc ${fn} failed [${res.status}]: ${(await res.text()).slice(0, 500)}`,
+    );
+    throw new Error(`External corpus read failed (${res.status}).`);
+  }
+  return (await res.json()) as T;
+}
+
 /** Look up a stored corpus file by its route and stream it from the private bucket. */
 export async function fetchArtifact(route: string): Promise<Response> {
   const { url, key } = creds();

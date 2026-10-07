@@ -105,6 +105,9 @@ describe("verified PDF page assembly", () => {
     ];
     const secondPage = [sourceRow("courtlistener", "987654321", "69674950", duplicateHash)];
     const fetchMock = vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
+      if (String(_url).includes("corpus_pdf_case_aliases_v1")) {
+        return new Response("[]", { status: 200, headers: { "Content-Type": "application/json" } });
+      }
       const body = JSON.parse(String(init?.body)) as { p_offset: number };
       const rows = body.p_offset === 0 ? firstPage : secondPage;
       return new Response(
@@ -140,7 +143,7 @@ describe("verified PDF page assembly", () => {
       );
       expect(result.connected).toBe(true);
       if (!result.connected) return;
-      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(fetchMock).toHaveBeenCalledTimes(3);
       expect(result.summary.total).toBe(501);
       expect(result.sourceRecordsLoaded).toBe(501);
       expect(result.truncated).toBe(false);
@@ -179,6 +182,9 @@ describe("verified PDF page assembly", () => {
     });
     const targetCase = "69679999";
     const fetchMock = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      if (String(url).includes("corpus_pdf_case_aliases_v1")) {
+        return new Response("[]", { status: 200, headers: { "Content-Type": "application/json" } });
+      }
       const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
       if (String(url).includes("corpus_pdf_documents_by_id_v1")) {
         return new Response(

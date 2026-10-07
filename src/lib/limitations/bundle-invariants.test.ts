@@ -20,12 +20,18 @@ const snapshot = validateLimitationsSnapshot({
 
 const simple = (r: LimitationRule) =>
   r.computation === "baseline_only" &&
-  (!r.calculation || r.calculation.mode === "accrual_repose_min") &&
-  r.accrualBasis !== "death" &&
+  (!r.calculation ||
+    r.calculation.mode === "accrual_repose_min" ||
+    r.calculation.mode === "clocks_min") &&
   !r.calculation?.deathCapYears;
 
 function inputFor(rule: LimitationRule): BaselineInput {
-  const floor = [rule.effectiveFrom, rule.calculation?.reposeEffectiveFrom, "2015-03-15"]
+  const floor = [
+    rule.effectiveFrom,
+    rule.calculation?.reposeEffectiveFrom,
+    ...(rule.calculation?.clocks ?? []).map((c) => c.effectiveFrom),
+    "2015-03-15",
+  ]
     .filter((d): d is string => !!d)
     .sort()
     .at(-1)!;
@@ -36,6 +42,11 @@ function inputFor(rule: LimitationRule): BaselineInput {
     ...(rule.subtype ? { subtype: rule.subtype } : {}),
     accrualDate: accrual,
     reposeActDate: accrual,
+    firstProductDeliveryDate: accrual,
+    injuryDate: accrual,
+    substantialCompletionDate: accrual,
+    actualDiscoveryDate: accrual,
+    constructiveDiscoveryDate: accrual,
     reposeApplicabilityConfirmed: true,
     governingLawConfirmed: true,
     accrualConfirmed: true,
@@ -61,11 +72,33 @@ describe("every simple baseline rule in the protected bundle", () => {
       expect(result.reasons.length).toBeGreaterThan(0);
       return;
     }
-    const ordinary = addCivilPeriod(input.accrualDate, rule.period!.amount, rule.period!.unit);
-    const repose = rule.calculation?.reposeYears
-      ? addCivilPeriod(input.reposeActDate!, rule.calculation.reposeYears, "calendar_years")
-      : null;
-    const expected = [ordinary, repose].filter((d): d is string => d !== null).sort()[0];
+    let expected: string | undefined;
+    if (rule.calculation?.mode === "clocks_min") {
+      const calc = rule.calculation;
+      const ends = calc.limbs!.map((l) => addCivilPeriod(input.accrualDate, l.amount, l.unit)!);
+      const combined =
+        ends.length === 2
+          ? calc.combine === "later"
+            ? [...ends].sort()[1]
+            : [...ends].sort()[0]
+          : ends[0];
+      const caps = (calc.clocks ?? []).map((c) =>
+        addCivilPeriod(input.accrualDate, c.years, "calendar_years")!,
+      );
+      expected = [combined!, ...caps].sort()[0];
+    } else {
+      const ordinary = addCivilPeriod(input.accrualDate, rule.period!.amount, rule.period!.unit);
+      const repose = rule.calculation?.reposeYears
+        ? addCivilPeriod(
+            rule.calculation.reposeTrigger === "first_delivery"
+              ? input.firstProductDeliveryDate!
+              : input.reposeActDate!,
+            rule.calculation.reposeYears,
+            "calendar_years",
+          )
+        : null;
+      expected = [ordinary, repose].filter((d): d is string => d !== null).sort()[0];
+    }
     expect(result.date).toBe(expected);
     expect(result.date! > input.accrualDate).toBe(true);
   });

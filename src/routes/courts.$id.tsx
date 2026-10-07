@@ -6,6 +6,7 @@ import { CourtContext, RelatedDockets } from "@/components/corpus/LinkedPanels";
 import { RegistryMatters } from "@/components/corpus/RegistryMatters";
 import { buildEntityView } from "@/lib/external/entityView";
 import { useCourtDirectory } from "@/lib/external/useDirectory";
+import { CourtArtwork } from "@/components/corpus/CourtArtwork";
 
 export const Route = createFileRoute("/courts/$id")({
   loader: ({ context, params }) => context.queryClient.ensureQueryData(entityQuery("court_spine", params.id)),
@@ -29,5 +30,5 @@ function Page() {
     if (c.system !== "Federal") crumbs.push({ label: `${stateByUsps.get(c.state)?.name ?? c.state} courts`, to: "/courts", search: { system: c.system, state: c.state } });
     crumbs.push({ label: c.type, to: "/courts", search: c.system === "Federal" ? { system: c.system, type: c.type } : { system: c.system, state: c.state, type: c.type } });
   }
-  return <EntityPage dataset="court_spine" id={id} docket={{ kind: "court", id }} crumbs={crumbs} extra={(raw) => <><CourtContext courtId={id} fallbackState={c?.state} known={new Set(buildEntityView(raw).facts.slice(0, 8).map(([k]) => k))} /><RegistryMatters courtId={id} /><RelatedDockets by="court" id={id} /></>} />;
+  return <EntityPage dataset="court_spine" id={id} docket={{ kind: "court", id }} crumbs={crumbs} lead={(_raw, view) => <CourtArtwork courtId={id} title={view.title} system={c?.system} type={c?.type} recordedLinks={view.links} />} extra={(raw) => <><CourtContext courtId={id} fallbackState={c?.state} known={new Set(buildEntityView(raw).facts.slice(0, 8).map(([k]) => k))} /><RegistryMatters courtId={id} /><RelatedDockets by="court" id={id} /></>} />;
 }

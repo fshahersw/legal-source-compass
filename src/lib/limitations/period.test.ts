@@ -440,3 +440,290 @@ describe("raw-capture storage locations", () => {
     ).toThrow(/storage location/);
   });
 });
+
+describe("repose from first delivery and death-based accrual", () => {
+  const reposeRule = (
+    claim: ClaimType,
+    trigger: "first_delivery" | "act_or_omission",
+    basis: LimitationRule["accrualBasis"],
+  ) =>
+    rule(claim, 2, "calendar_years", {
+      accrualBasis: basis,
+      calculation: {
+        mode: "accrual_repose_min",
+        reposeYears: 10,
+        reposeTrigger: trigger,
+        reposeEffectiveFrom: "2005-04-07",
+      },
+    });
+
+  it("caps a product claim at ten years from first delivery to a purchaser", () => {
+    const data = snapshotWith([
+      reposeRule("product_liability", "first_delivery", "confirmed_accrual"),
+    ]);
+    const base = input("product_liability", "2023-06-01", {
+      firstProductDeliveryDate: "2015-09-01",
+      reposeApplicabilityConfirmed: true,
+    });
+    const result = calculateBaseline(data, base);
+    expect(result.date).toBe("2025-06-01");
+    expect(result.steps.some((s) => s.text.includes("first delivery to a purchaser"))).toBe(true);
+    const earlyDelivery = calculateBaseline(data, {
+      ...base,
+      accrualDate: "2024-01-01",
+      firstProductDeliveryDate: "2013-01-01",
+    });
+    expect(earlyDelivery.status).toBe("needs_review");
+    expect(earlyDelivery.date).toBeNull();
+  });
+
+  it("requires the delivery date and withholds a delivery after accrual or before the supported start", () => {
+    const data = snapshotWith([
+      reposeRule("product_liability", "first_delivery", "confirmed_accrual"),
+    ]);
+    const base = input("product_liability", "2023-06-01", { reposeApplicabilityConfirmed: true });
+    expect(calculateBaseline(data, base).status).toBe("invalid");
+    expect(
+      calculateBaseline(data, { ...base, firstProductDeliveryDate: "2024-01-01" }).date,
+    ).toBeNull();
+    expect(
+      calculateBaseline(data, { ...base, firstProductDeliveryDate: "2004-01-01" }).date,
+    ).toBeNull();
+  });
+
+  it("combines a two-year period from death with a repose from the act or omission", () => {
+    const data = snapshotWith([reposeRule("wrongful_death", "act_or_omission", "death")]);
+    const base = input("wrongful_death", "2023-02-01", {
+      reposeActDate: "2014-03-01",
+      reposeApplicabilityConfirmed: true,
+    });
+    expect(calculateBaseline(data, base).date).toBe("2024-03-01");
+    expect(calculateBaseline(data, { ...base, reposeActDate: "2022-01-01" }).date).toBe(
+      "2025-02-01",
+    );
+  });
+
+  it("validates the new trigger and rejects an unknown one", () => {
+    const bad = reposeRule("product_liability", "first_delivery", "confirmed_accrual");
+    (bad.calculation as { reposeTrigger: string }).reposeTrigger = "first_whim";
+    expect(() => snapshotWith([bad])).toThrow(/accrual\/repose/);
+  });
+});
+
+describe("clocks_min: two-limb periods and several repose clocks", () => {
+  const clocksRule = (
+    claim: ClaimType,
+    calculation: NonNullable<LimitationRule["calculation"]>,
+    extra: Partial<LimitationRule> = {},
+  ) => rule(claim, 3, "calendar_years", { calculation, ...extra });
+  const confirmed = { reposeApplicabilityConfirmed: true };
+
+  it("takes the earlier of three years from injury and one year from discovery", () => {
+    const data = snapshotWith([
+      clocksRule("medical_malpractice", {
+        mode: "clocks_min",
+        combine: "earlier",
+        limbs: [
+          { amount: 3, unit: "calendar_years", from: "injury_date" },
+          { amount: 1, unit: "calendar_years", from: "discovery" },
+        ],
+        clocks: [],
+      }),
+    ]);
+    const base = input("medical_malpractice", "2024-02-01", {
+      injuryDate: "2023-01-10",
+      actualDiscoveryDate: "2024-02-01",
+      constructiveDiscoveryDate: "2024-03-01",
+    });
+    const result = calculateBaseline(data, base);
+    expect(result.date).toBe("2025-02-01");
+    expect(result.steps[0]?.text).toContain("earlier");
+    const lateDiscovery = calculateBaseline(data, {
+      ...base,
+      actualDiscoveryDate: "2025-06-01",
+      constructiveDiscoveryDate: "2025-06-01",
+    });
+    expect(lateDiscovery.status).toBe("baseline");
+    expect(lateDiscovery.date).toBe("2026-01-10");
+  });
+
+  it("LA wrongful death: same-day death and injury uses two years from injury when later controls", () => {
+    const data = snapshotWith([
+      clocksRule(
+        "wrongful_death",
+        {
+          mode: "clocks_min",
+          combine: "later",
+          limbs: [
+            { amount: 1, unit: "calendar_years", from: "death" },
+            { amount: 2, unit: "calendar_years", from: "injury_date" },
+          ],
+          clocks: [],
+        },
+        { jurisdiction: "LA", accrualBasis: "death", id: "la-wrongful-death-clocks-min-test" },
+      ),
+    ]);
+    const day = "2024-06-01";
+    const base = input("wrongful_death", day, {
+      jurisdiction: "LA",
+      injuryDate: day,
+      deathDate: day,
+    });
+    const result = calculateBaseline(data, base);
+    expect(result.status).toBe("baseline");
+    expect(result.date).toBe("2026-06-01");
+    expect(result.steps[0]?.text).toContain("later");
+  });
+
+  it("takes the later of the two limbs when the statute says whichever is later", () => {
+    const data = snapshotWith([
+      clocksRule("medical_malpractice", {
+        mode: "clocks_min",
+        combine: "later",
+        limbs: [
+          { amount: 3, unit: "calendar_years", from: "injury_date" },
+          { amount: 2, unit: "calendar_years", from: "discovery" },
+        ],
+        clocks: [{ years: 7, from: "injury_date", effectiveFrom: "1977-07-01" }],
+      }),
+    ]);
+    const base = input("medical_malpractice", "2025-01-01", {
+      injuryDate: "2021-06-15",
+      actualDiscoveryDate: "2024-05-01",
+      constructiveDiscoveryDate: "2024-05-01",
+      ...confirmed,
+    });
+    expect(calculateBaseline(data, base).date).toBe("2026-05-01");
+    const capped = calculateBaseline(data, {
+      ...base,
+      injuryDate: "2019-01-15",
+      actualDiscoveryDate: "2025-12-01",
+      constructiveDiscoveryDate: "2025-12-01",
+      accrualDate: "2025-12-01",
+    });
+    expect(capped.date).toBe("2026-01-15");
+    expect(
+      capped.steps.some((s) =>
+        s.text.startsWith("Repose: 7 calendar years from the date of injury"),
+      ),
+    ).toBe(true);
+  });
+
+  it("applies every repose clock and issues the earliest", () => {
+    const data = snapshotWith([
+      clocksRule("product_liability", {
+        mode: "clocks_min",
+        limbs: [{ amount: 2, unit: "calendar_years", from: "accrual" }],
+        clocks: [
+          { years: 12, from: "first_delivery", effectiveFrom: "2009-10-01" },
+          { years: 10, from: "last_act_or_omission", effectiveFrom: "1979-10-01" },
+        ],
+      }),
+    ]);
+    const base = input("product_liability", "2024-01-01", {
+      firstProductDeliveryDate: "2013-06-01",
+      reposeActDate: "2015-09-01",
+      ...confirmed,
+    });
+    const result = calculateBaseline(data, base);
+    expect(result.date).toBe("2025-06-01");
+    expect(result.steps.filter((s) => s.text.startsWith("Repose:"))).toHaveLength(2);
+  });
+
+  it("models a substantial-completion repose only from its own date", () => {
+    const data = snapshotWith([
+      clocksRule("property_damage", {
+        mode: "clocks_min",
+        limbs: [{ amount: 3, unit: "calendar_years", from: "accrual" }],
+        clocks: [{ years: 10, from: "substantial_completion", effectiveFrom: "2015-01-01" }],
+      }),
+    ]);
+    const base = input("property_damage", "2024-04-01", {
+      substantialCompletionDate: "2016-07-01",
+      ...confirmed,
+    });
+    expect(calculateBaseline(data, base).date).toBe("2026-07-01");
+    expect(
+      calculateBaseline(data, { ...base, substantialCompletionDate: "2014-07-01" }).date,
+    ).toBeNull();
+    expect(
+      calculateBaseline(data, {
+        ...base,
+        substantialCompletionDate: undefined as unknown as string,
+      }).status,
+    ).toBe("invalid");
+  });
+
+  it("withholds when a clock already ran, a date is impossible or confirmations are missing", () => {
+    const data = snapshotWith([
+      clocksRule("medical_malpractice", {
+        mode: "clocks_min",
+        limbs: [{ amount: 2, unit: "calendar_years", from: "accrual" }],
+        clocks: [{ years: 5, from: "injury_date", effectiveFrom: "1990-01-01" }],
+      }),
+    ]);
+    const base = input("medical_malpractice", "2024-01-01", {
+      injuryDate: "2015-01-01",
+      ...confirmed,
+    });
+    const barred = calculateBaseline(data, base);
+    expect(barred.date).toBeNull();
+    expect(barred.reasons.join(" ")).toContain("precedes the confirmed accrual or discovery date");
+    expect(
+      calculateBaseline(data, { ...base, injuryDate: "2020-02-29", accrualDate: "2024-01-01" })
+        .date,
+    ).toBeNull();
+    expect(
+      calculateBaseline(data, {
+        ...base,
+        injuryDate: "2022-01-01",
+        reposeApplicabilityConfirmed: false,
+      }).date,
+    ).toBeNull();
+    expect(
+      calculateBaseline(data, { ...base, injuryDate: "2022-01-01", issues: ["tolling"] }).date,
+    ).toBeNull();
+  });
+
+  it("requires both discovery dates for a discovery limb", () => {
+    const data = snapshotWith([
+      clocksRule("fraud", {
+        mode: "clocks_min",
+        limbs: [{ amount: 3, unit: "calendar_years", from: "discovery" }],
+        clocks: [],
+      }),
+    ]);
+    expect(
+      calculateBaseline(data, input("fraud", "2024-01-01", { actualDiscoveryDate: "2024-01-01" }))
+        .status,
+    ).toBe("invalid");
+    expect(
+      calculateBaseline(
+        data,
+        input("fraud", "2024-01-01", {
+          actualDiscoveryDate: "2024-01-01",
+          constructiveDiscoveryDate: "2023-05-01",
+        }),
+      ).date,
+    ).toBe("2026-05-01");
+  });
+
+  it("rejects malformed clock configurations at validation", () => {
+    const bad = clocksRule("fraud", {
+      mode: "clocks_min",
+      limbs: [{ amount: 3, unit: "calendar_years", from: "discovery" }],
+      combine: "earlier",
+      clocks: [{ years: 5, from: "act_or_omission", effectiveFrom: "2000-13-01" }],
+    });
+    expect(() => snapshotWith([bad])).toThrow();
+    const noCombine = clocksRule("fraud", {
+      mode: "clocks_min",
+      limbs: [
+        { amount: 3, unit: "calendar_years", from: "discovery" },
+        { amount: 1, unit: "calendar_years", from: "accrual" },
+      ],
+      clocks: [],
+    });
+    expect(() => snapshotWith([noCombine])).toThrow(/earlier\/later/);
+  });
+});

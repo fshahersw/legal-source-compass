@@ -1,0 +1,51 @@
+{
+  "jurisdiction": "ND",
+  "publisher": "North Dakota Legislative Branch",
+  "publisher_url": "https://ndlegis.gov/general-information/north-dakota-century-code/index.html",
+  "source_system": "nd-cencode-chapter-pdf-html",
+  "code_title": "North Dakota Century Code",
+  "parser": {
+    "name": "nd-cencode-chapter-pdf-html",
+    "version": "1"
+  },
+  "methods": [
+    "publisher_page"
+  ],
+  "source_url_patterns": [
+    "^https://ndlegis\\.gov/cencode/index\\.html$",
+    "^https://ndlegis\\.gov/cencode/t\\d+c\\d+\\.html$",
+    "^https://ndlegis\\.gov/cencode/t\\d+c\\d+\\.pdf$",
+    "^https://ndlegis\\.gov/cencode/t\\d+c\\d+\\.html\\?section=.+$"
+  ],
+  "rate_limit_ms": 1000,
+  "structure": {
+    "levels": [
+      "title",
+      "chapter",
+      "section"
+    ],
+    "unit": "one official chapter PDF with HTML TOC"
+  },
+  "section_id": {
+    "scheme": "official_citation_path",
+    "regex": "^[0-9]{1,2}-[0-9]{2}-[0-9]{1,4}(?:\\.[0-9]+)?(#[0-9]+)?(~[0-9]+)?$",
+    "example": "1-01-01",
+    "citation_format": "North Dakota Century Code section citation as printed in the chapter TOC/PDF"
+  },
+  "currency": {
+    "basis": "publisher_statement",
+    "location": "ndlegis.gov Century Code info page and chapter pages"
+  },
+  "review": {
+    "reviewed_by": "state-codes batch 4 (pre-land dry run)",
+    "reviewed_at": "2026-10-07"
+  },
+  "unit_kind": "nd_cencode_chapter",
+  "default_method": "publisher_page",
+  "currency_defaults": {
+    "basis": "publisher_statement",
+    "statement": "North Dakota Century Code published on this website is the official version of the North Dakota Century Code and may vary from any printed or online versions of the North Dakota Century Code available from private publishers. 07/01/25 UPDATE: All statutory changes approved by the 69th Legislative Assembly are now reflected on this website regardless of the statute becoming effective earlier than July 1, due to an emergency clause, or on August 1, due to operation of law.",
+    "through_date": null,
+    "edition": "North Dakota Century Code"
+  }
+}
