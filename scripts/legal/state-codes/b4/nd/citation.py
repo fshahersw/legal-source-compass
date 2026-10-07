@@ -16,6 +16,10 @@ def citations_equal_lists(toc_cits: list[str], pdf_cits: list[str]) -> bool:
     return [canon_citation(c) for c in toc_cits] == [canon_citation(c) for c in pdf_cits]
 
 
+def citations_equal_multisets(toc_cits: list[str], pdf_cits: list[str]) -> bool:
+    return Counter(canon_citation(c) for c in toc_cits) == Counter(canon_citation(c) for c in pdf_cits)
+
+
 def filter_sections_to_official_toc(pdf_sections: list[dict], toc_rows: list[dict]) -> tuple[list[dict], list[dict]]:
     """Keep PDF sections only when the official HTML chapter TOC lists that citation (respecting multiplicity)."""
     allowed = Counter(canon_citation(r["citation"]) for r in toc_rows)

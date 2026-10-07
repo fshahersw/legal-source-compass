@@ -10,7 +10,7 @@ import tempfile
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from sc_common import Archive, collapse, decode_html, html_text, sha256_hex, write_packet  # noqa: E402
 
-from citation import canon_citation, citations_equal_lists, filter_sections_to_official_toc  # noqa: E402
+from citation import canon_citation, citations_equal_lists, citations_equal_multisets, filter_sections_to_official_toc  # noqa: E402
 
 STATE = "ND"
 BASE = "https://ndlegis.gov/cencode/"
@@ -267,7 +267,7 @@ def run(work: str):
                     "pdf_only": pdf_only_cits[:20],
                 }
             )
-        elif not repealed_notice and not citations_equal_lists(toc_cits, pdf_cits):
+        elif not repealed_notice and not citations_equal_multisets(toc_cits, pdf_cits):
             mismatches.append(
                 {
                     "chapter": slug,
@@ -284,6 +284,10 @@ def run(work: str):
                 flag_classification.append({"chapter": slug, "class": "pdf_extra_in_chapter"})
             else:
                 flag_classification.append({"chapter": slug, "class": "same_count_citation_drift"})
+        elif not repealed_notice and citations_equal_multisets(toc_cits, pdf_cits) and not citations_equal_lists(
+            toc_cits, pdf_cits
+        ):
+            flag_classification.append({"chapter": slug, "class": "citation_order_only_reconciled"})
         elif cross_chapter_stray:
             flag_classification.append(
                 {

@@ -1,7 +1,7 @@
 import os
 import unittest
 
-from citation import canon_citation, citations_equal_lists, filter_sections_to_official_toc
+from citation import canon_citation, citations_equal_lists, citations_equal_multisets, filter_sections_to_official_toc
 from parse import OFFICIAL_STATEMENT, parse_toc, sections_for_chapter, split_pdf_sections, citation_chapter_id
 
 FIX = os.path.join(os.path.dirname(__file__), "fixtures")
@@ -29,6 +29,12 @@ class TestNdParse(unittest.TestCase):
     def test_canon_citation_leading_zeros(self):
         self.assertEqual(canon_citation("1-03-19"), canon_citation("01-03-19"))
         self.assertTrue(citations_equal_lists(["5-02-10.1"], ["05-02-10.1"]))
+
+    def test_citations_equal_multisets_ignores_order(self):
+        a = ["8-10-01", "8-10-02"]
+        b = ["8-10-02", "8-10-01"]
+        self.assertFalse(citations_equal_lists(a, b))
+        self.assertTrue(citations_equal_multisets(a, b))
 
     def test_filter_sections_to_official_toc_drops_pdf_duplicate(self):
         toc = [{"citation": "8-10-11", "heading": "A"}]
