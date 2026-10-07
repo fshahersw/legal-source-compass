@@ -15,6 +15,13 @@ describe("exact statute citation paths", () => {
       "12-95",
       "12-96",
     ]);
+    const subsectionRange = "Okla. Stat. tit. 12, §§ 95(A)(4), 95(A)(6)\u2013(7), 95(A)(11), 96";
+    expect(exactCitationPaths("OK", subsectionRange)).toEqual(["12-95", "12-96"]);
+    expect(exactCitationPaths("OK", subsectionRange)?.includes("12-951")).toBe(false);
+    expect(exactCitationPaths("OK", subsectionRange)?.includes("12-960")).toBe(false);
+    expect(exactCitationPaths("OK", subsectionRange)?.includes("12-6")).toBe(false);
+    expect(exactCitationPaths("OK", subsectionRange)?.includes("12-7")).toBe(false);
+    expect(exactCitationPaths("OK", subsectionRange)?.includes("95")).toBe(false);
     expect(statuteNativeId("OK", "12-95")).toBe("OK:12-95");
   });
 

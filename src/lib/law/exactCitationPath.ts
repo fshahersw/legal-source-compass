@@ -249,7 +249,11 @@ function oklahomaPaths(citation: string): string[] | null {
     for (const raw of chunk.split(",")) {
       const token = raw.trim().replace(/\s+/g, "");
       if (!token) continue;
-      const bare = token.replace(/(?:\([0-9A-Za-z]+\))+$/g, "");
+      // A parenthetical, including a subsection range such as (6)–(7), is not another section.
+      const bare = token.replace(
+        /(?:\([0-9A-Za-z]+\)(?:\s*[\u2013\u2014-]\s*\([0-9A-Za-z]+\))?)+$/g,
+        "",
+      );
       if (!bare || !/^[0-9]+(?:\.[0-9]+)?(?:-[0-9A-Za-z.]+)*$/.test(bare)) return null;
       const path = bare.startsWith(`${title}-`) ? bare : `${title}-${bare}`;
       if (!paths.includes(path)) paths.push(path);
