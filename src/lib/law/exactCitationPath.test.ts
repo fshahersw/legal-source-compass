@@ -46,15 +46,52 @@ describe("exact statute citation paths", () => {
     expect(exactCitationPaths("MI", "MCL 600.5805")?.includes("600.580")).toBe(false);
   });
 
-  it("links Delaware 8119 when that number is the only last path segment", () => {
-    expect(exactCitationPaths("DE", "10 Del. C. § 8119")).toEqual(["8119"]);
+  it("links Delaware title 10 sections without another title's section", () => {
+    expect(exactCitationPaths("DE", "10 Del. C. § 8119")).toEqual(["10/8119"]);
+    expect(exactCitationPaths("DE", "10 Del. C. § 8119")?.includes("8119")).toBe(false);
     expect(exactCitationPaths("DE", "10 Del. C. § 8119")?.includes("10")).toBe(false);
     expect(exactCitationPaths("DE", "10 Del. C. §§ 8119, 8121, 8127")).toEqual([
-      "8119",
-      "8121",
-      "8127",
+      "10/8119",
+      "10/8121",
+      "10/8127",
     ]);
-    expect(exactCitationPaths("DE", "10 Del. C. § 8131(a)")).toEqual(["8131"]);
+    expect(exactCitationPaths("DE", "10 Del. C. § 8131(a)")).toEqual(["10/8131"]);
+    expect(exactCitationPaths("DE", "10 Del. C. § 8131(a)")?.includes("8131")).toBe(false);
+    expect(exactCitationPaths("DE", "10 Del. C. § 8131(a)")?.includes("15/8131")).toBe(false);
+    expect(exactCitationPaths("DE", "10 Del. C. § 8131(a)")?.includes("9/8131")).toBe(false);
+    const herbicide = {
+      citationPath: "10-81-8131",
+      sectionNumbers: ["8131"],
+      titleNumbers: ["10"],
+    };
+    const elections = {
+      citationPath: "15-81-8131",
+      sectionNumbers: ["8131"],
+      titleNumbers: ["15"],
+    };
+    const counties = {
+      citationPath: "9-81-8131",
+      sectionNumbers: ["8131"],
+      titleNumbers: ["9"],
+    };
+    expect(onlyExactStoredSection("10/8131", [herbicide, elections, counties])?.citationPath).toBe(
+      herbicide.citationPath,
+    );
+    expect(onlyExactStoredSection("8131", [herbicide, elections, counties])).toBeNull();
+    expect(
+      onlyExactStoredSection("10/8121", [
+        {
+          citationPath: "10-81-8121",
+          sectionNumbers: ["8121"],
+          titleNumbers: ["10"],
+        },
+        {
+          citationPath: "15-81-8121",
+          sectionNumbers: ["8121"],
+          titleNumbers: ["15"],
+        },
+      ])?.citationPath,
+    ).toBe("10-81-8121");
     expect(lastHyphenSegment("10-81-8119")).toBe("8119");
     expect(tokenEqualsStoredSection("8119", "10-81-8119", [])).toBe(true);
     expect(
@@ -229,6 +266,32 @@ describe("exact statute citation paths", () => {
     );
     expect(onlyExactStoredSection("752-B", [ski, otherLetter])).toBeNull();
     expect(statuteNativeId("ME", "14/752")).toBe("ME:14/752");
+  });
+
+  it("reads Maryland Courts article sections without another article's number", () => {
+    expect(exactCitationPaths("MD", "Md. Code, Cts. & Jud. Proc. § 5-101")).toEqual(["gcj 5-101"]);
+    expect(exactCitationPaths("MD", "Md. Code, Cts. & Jud. Proc. § 5-101")?.includes("5-101")).toBe(
+      false,
+    );
+    expect(
+      exactCitationPaths("MD", "Md. Code, Cts. & Jud. Proc. § 5-101")?.includes("gab 5-101"),
+    ).toBe(false);
+    expect(exactCitationPaths("MD", "Md. Code, Cts. & Jud. Proc. § 5-105")).toEqual(["gcj 5-105"]);
+    expect(exactCitationPaths("MD", "Md. Code, Cts. & Jud. Proc. § 5-108(a)-(c), (e)")).toEqual([
+      "gcj 5-108",
+    ]);
+    expect(
+      exactCitationPaths("MD", "Md. Code, Cts. & Jud. Proc. § 5-108(a)-(c), (e)")?.includes(
+        "5-108",
+      ),
+    ).toBe(false);
+    expect(
+      onlyExactStoredSection("5-101", [
+        { citationPath: "gcj 5-101", sectionNumbers: ["5-101"] },
+        { citationPath: "gab 5-101", sectionNumbers: ["5-101"] },
+      ]),
+    ).toBeNull();
+    expect(statuteNativeId("MD", "gcj 5-101")).toBe("MD:gcj 5-101");
   });
 
   it("reads Kentucky 413.140 and 413.120 as separate sections", () => {

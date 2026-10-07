@@ -21,6 +21,8 @@ export function exactCitationPaths(state: string, citation: string): string[] | 
         ...(usps === "IL" ? (illinoisPaths(text) ?? []) : []),
         ...(usps === "MA" ? (massachusettsPaths(text) ?? []) : []),
         ...(usps === "ME" ? (mainePaths(text) ?? []) : []),
+        ...(usps === "DE" ? (delawarePaths(text) ?? []) : []),
+        ...(usps === "MD" ? (marylandPaths(text) ?? []) : []),
         ...(DOTTED_PATH_STATES.has(usps) ? (dottedPaths(text) ?? []) : []),
       ]),
     ]),
@@ -36,10 +38,13 @@ function citesSectionRange(text: string): boolean {
   return /(?:§§?\s*)?\d[\dA-Za-z.]*(?:\([^)]*\))*\s+(?:to|through)\s+(?:§§?\s*)?\d/i.test(text);
 }
 
-/** A bare section number that is already the section half of a title/section token is not a second section. */
+/** A bare section number that is already the section half of a title or article token is not a second section. */
 function omitSectionHalf(paths: string[]): string[] {
   return paths.filter(
-    (path) => !paths.some((other) => other !== path && other.endsWith(`/${path}`)),
+    (path) =>
+      !paths.some(
+        (other) => other !== path && (other.endsWith(`/${path}`) || other.endsWith(` ${path}`)),
+      ),
   );
 }
 
@@ -104,6 +109,49 @@ function mainePaths(citation: string): string[] | null {
     const section = match[2]?.toUpperCase();
     if (!title || !section) continue;
     const path = `${title}/${section}`;
+    if (!paths.includes(path)) paths.push(path);
+  }
+  return paths.length ? paths : null;
+}
+
+/**
+ * Delaware paths such as `10 Del. C. § 8119` and `10 Del. C. § 8131(a)`.
+ * The title and the section are one path. A parenthetical is not included.
+ * Title 10 section 8131 is not the section 8131 in another title.
+ */
+function delawarePaths(citation: string): string[] | null {
+  const paths: string[] = [];
+  const re = /\b(\d+[A-Za-z]?)\s+Del\.?\s+C\.?\s*§§?\s*([^.;]+)/gi;
+  for (const match of citation.matchAll(re)) {
+    const title = match[1]?.toUpperCase();
+    if (!title) continue;
+    for (const raw of (match[2] ?? "").split(",")) {
+      const section = raw
+        .trim()
+        .replace(/\s+/g, "")
+        .replace(/(?:\([^)]*\))+$/g, "")
+        .replace(/\.$/, "");
+      if (!/^\d{3,}$/.test(section)) continue;
+      const path = `${title}/${section}`;
+      if (!paths.includes(path)) paths.push(path);
+    }
+  }
+  return paths.length ? paths : null;
+}
+
+/**
+ * Maryland Courts and Judicial Proceedings paths such as `Md. Code, Cts. & Jud. Proc. § 5-101`.
+ * The article and the section are one path, `gcj 5-101`. A parenthetical is not included.
+ * The bare number `5-101` is also published in other articles, so it is not a second path.
+ */
+function marylandPaths(citation: string): string[] | null {
+  if (!/\bCts\.\s*&\s*Jud\.\s*Proc\./i.test(citation)) return null;
+  const paths: string[] = [];
+  const re = /§§?\s*(\d+(?:\.\d+)?-\d+(?:\.\d+)?)(?![A-Za-z0-9.])/g;
+  for (const match of citation.matchAll(re)) {
+    const section = match[1];
+    if (!section) continue;
+    const path = `gcj ${section}`;
     if (!paths.includes(path)) paths.push(path);
   }
   return paths.length ? paths : null;

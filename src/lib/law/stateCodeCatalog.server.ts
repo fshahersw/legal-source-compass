@@ -728,6 +728,7 @@ export async function publicStatuteSections(
       sections.push(direct);
       continue;
     }
+    if (/\s/.test(token)) continue;
     const numberedRow = await rpcPostOptional<Record<string, unknown> | null>(
       "corpus_publisher_code_projected_section_for_token_v2",
       { p_jurisdiction: usps, p_token: token },
