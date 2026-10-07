@@ -34,3 +34,15 @@ npm i --prefix /tmp/pgt @electric-sql/pglite && PGLITE_DIR=/tmp/pgt node scripts
 ```
 
 `test-contract.mjs` runs the contract on a throwaway in-memory database with synthetic rows: plan, dry run (writes nothing), apply, idempotent re-apply, md5 guard (a row edited after planning is skipped), verify, exact rollback (whole-table md5 equals the pre-apply md5), and rollback holding a hand-edited row.
+
+## OCR stage (owner-authorised 2026-10-07)
+
+Rows whose saved PDF has no text layer on page 1 (1,192, applied as `<file name> (title not recorded)`, reason `no_text_layer`; the PDF-text pipeline holds no text for any of them) are read by OCR, with the same rules:
+
+| Step | Tool |
+|---|---|
+| OCR top 60% of page 1 at 200 dpi (RapidOCR ONNX, local; `pip install rapidocr-onnxruntime pymupdf`) | `ocr-first-pages.py` |
+| Derive: box heights quantised to body/emphasised, text-layer rules, plus OCR gates (line confidence >= 0.93, no run-together words, no letter/digit confusions, no stray symbols) | `derive_titles.title_from_ocr_first_page`, `build_ocr_plan.py` |
+| Contract `database/contracts/document-titles-v2-ocr.sql` (methods `first_page_ocr_title_block`, `first_page_ocr_doctype_heading`; eligibility only for rows still `(title not recorded)` with an applied `no_text_layer` v1 plan row; separate ledger issue `doc_titles_20261007_ocr_title`; unresolved rows planned as `not_recorded` with reason `ocr_*` so their Title basis no longer says no OCR was applied) | `push-plan.py` unchanged |
+
+Verification: `python3 -m unittest discover -s scripts/document-titles -p 'test_*.py'`; `PGLITE_DIR=/tmp/pgt node scripts/document-titles/test-contract-ocr.mjs` (v1 run, v2 over it, OCR plan with rejects, apply, verify, rollback restores the exact post-v1 state).

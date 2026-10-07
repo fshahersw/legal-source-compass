@@ -388,3 +388,53 @@ def title_from_markdown(text):
 
 def is_placeholder_title(title):
     return (title or "").strip().lower() in ("(untitled)", "untitled")
+
+
+METHOD_OCR_BLOCK = "first_page_ocr_title_block"
+METHOD_OCR_DOCTYPE = "first_page_ocr_doctype_heading"
+OCR_MIN_CONFIDENCE = 0.93
+OCR_EMPHASIS_RATIO = 1.3
+_OCR_MIXED_TOKEN_RE = re.compile(r"[A-Za-z]+\d+[A-Za-z]+|\d+[A-Za-z]{4,}|[A-Za-z]{4,}\d+")
+_OCR_ALLOWED_ALNUM_RE = re.compile(r"^(?:\d+(?:st|nd|rd|th)|[A-Za-z]{1,3}-?\d+[A-Za-z]?(?:\.|,)?)$", re.I)
+
+
+def ocr_gate(title, lines):
+    """Extra gates for OCR text: recognition confidence, run-together words, letter/digit confusions, stray symbols."""
+    for w in title.split():
+        letters = re.sub(r"[^A-Za-z]", "", w)
+        if len(letters) >= 16 or re.search(r"[a-z][A-Z][a-z]", w) or (len(letters) >= 15 and letters.islower()):
+            return "ocr_run_together_words"
+        if _OCR_MIXED_TOKEN_RE.search(w) and not _OCR_ALLOWED_ALNUM_RE.match(w.strip(".,;:()")):
+            return "ocr_letter_digit_confusion"
+    if re.search(r"[|{}\[\]<>~^_*=\\\\]", title):
+        return "ocr_stray_symbols"
+    flat = clean(title)
+    for l in lines:
+        t = clean(l["t"])
+        if len(t) >= 3 and t in flat and l.get("c", 1.0) < OCR_MIN_CONFIDENCE:
+            return "ocr_low_confidence"
+    return None
+
+
+def title_from_ocr_first_page(lines, page_h):
+    """OCR lines have box heights, no bold: heights are quantised to body / emphasised, then the text-layer rules and OCR gates apply."""
+    lines = [dict(l) for l in lines if clean(l["t"])]
+    if not lines:
+        return None, None, "ocr_no_text"
+    body = body_size(lines)
+    q = [dict(l, s=20.0 if l["s"] >= body * OCR_EMPHASIS_RATIO else 10.0, b=False) for l in lines]
+    title, method, reason = title_from_first_page(q, page_h)
+    if not title:
+        return None, None, "ocr_" + (reason or "no_title_found")
+    if policy_withheld(lines, title):
+        return None, None, "ocr_policy_withheld"
+    why = ocr_gate(title, lines)
+    if why:
+        return None, None, why
+    return title, (METHOD_OCR_BLOCK if method == METHOD_BLOCK else METHOD_OCR_DOCTYPE), None
+
+
+def ocr_second_pass_agrees(title, lines_second, page_h):
+    """Precision gate: an independent OCR pass at a different resolution must derive exactly the same title."""
+    t2, _, _ = title_from_ocr_first_page(lines_second, page_h)
+    return t2 == title
