@@ -78,6 +78,12 @@ class CivilCodeParse(unittest.TestCase):
         with self.assertRaises(P.EmptyArticlePage):
             P.parse_page((FX / 'ccp-1067-empty.html').read_text(encoding='utf8'), 'CCP', 'LOUISIANA CODE OF CIVIL PROCEDURE')
 
+    def test_a_range_labelled_page_reads_its_printed_range_line(self):
+        pg = P.parse_page((FX / 'chc-201-300-range-reserved.html').read_text(encoding='utf8'), 'CHC', "LOUISIANA CHILDREN'S CODE")
+        self.assertEqual((pg['path'], pg['art_no']), ('201-300', '201-300'))
+        rec = P.article_record(pg)
+        self.assertEqual((rec['text'], rec['heading']), ('(Reserved)', None))
+
     def test_an_unplaced_line_raises(self):
         html = ('<span id="LabelName">CC 5</span><div id="LabelDocument"><p>stray words<br/>Art. 5. Ignorance of law</p>'
                 '<p>Body.</p></div>')
