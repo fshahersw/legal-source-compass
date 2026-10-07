@@ -149,6 +149,25 @@ export const MATTERS = {
     pages: [{ id: 'nysd-3043-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.nysd.uscourts.gov/MDL/22md3043' }],
     index_pages: [],
   },
+  // E.D. Va. MDL pages (Drupal field--name-body; direct PDFs under /sites/vaed/files/).
+  '3111': {
+    name: 'In re Capital One 360 Savings Account Interest Rate Litigation', court_id: 'vaed', host: 'www.vaed.uscourts.gov', tier: 2,
+    case_number: { literal: '1:24-md-3111', page_id: 'vaed-3111-mdl', note: 'printed in the page title and body' },
+    pages: [{ id: 'vaed-3111-mdl', role: 'mdl_page', family: 'njd-body', url: 'https://www.vaed.uscourts.gov/capital-one-360-savings-account-interest-rate-litigation-124-md-3111' }],
+    index_pages: [],
+  },
+  '2915': {
+    name: 'In re Capital One Data Security Breach Litigation', court_id: 'vaed', host: 'www.vaed.uscourts.gov', tier: 2,
+    case_number: { literal: '1:19MD2915', page_id: 'vaed-2915-mdl', note: 'printed in the page title (site nav may mention other MDLs; PDFs on this page are 2915-specific)' },
+    pages: [{ id: 'vaed-2915-mdl', role: 'mdl_page', family: 'njd-body', url: 'https://www.vaed.uscourts.gov/119md2915-capital-one' }],
+    index_pages: [],
+  },
+  '2836': {
+    name: 'In re Zetia (Ezetimibe) Antitrust Litigation', court_id: 'vaed', host: 'www.vaed.uscourts.gov', tier: 2,
+    case_number: { literal: '2:18md2836', page_id: 'vaed-2836-mdl', note: 'printed in the page title and body' },
+    pages: [{ id: 'vaed-2836-mdl', role: 'mdl_page', family: 'njd-body', url: 'https://www.vaed.uscourts.gov/zetia-ezetimibe-antitrust-litigation-218md2836' }],
+    index_pages: [],
+  },
 };
 
 // Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
