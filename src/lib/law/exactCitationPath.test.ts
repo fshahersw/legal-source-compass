@@ -268,6 +268,32 @@ describe("exact statute citation paths", () => {
     expect(statuteNativeId("ME", "14/752")).toBe("ME:14/752");
   });
 
+  it("reads Maryland Courts article sections without another article's number", () => {
+    expect(exactCitationPaths("MD", "Md. Code, Cts. & Jud. Proc. § 5-101")).toEqual(["gcj 5-101"]);
+    expect(exactCitationPaths("MD", "Md. Code, Cts. & Jud. Proc. § 5-101")?.includes("5-101")).toBe(
+      false,
+    );
+    expect(
+      exactCitationPaths("MD", "Md. Code, Cts. & Jud. Proc. § 5-101")?.includes("gab 5-101"),
+    ).toBe(false);
+    expect(exactCitationPaths("MD", "Md. Code, Cts. & Jud. Proc. § 5-105")).toEqual(["gcj 5-105"]);
+    expect(exactCitationPaths("MD", "Md. Code, Cts. & Jud. Proc. § 5-108(a)-(c), (e)")).toEqual([
+      "gcj 5-108",
+    ]);
+    expect(
+      exactCitationPaths("MD", "Md. Code, Cts. & Jud. Proc. § 5-108(a)-(c), (e)")?.includes(
+        "5-108",
+      ),
+    ).toBe(false);
+    expect(
+      onlyExactStoredSection("5-101", [
+        { citationPath: "gcj 5-101", sectionNumbers: ["5-101"] },
+        { citationPath: "gab 5-101", sectionNumbers: ["5-101"] },
+      ]),
+    ).toBeNull();
+    expect(statuteNativeId("MD", "gcj 5-101")).toBe("MD:gcj 5-101");
+  });
+
   it("reads Kentucky 413.140 and 413.120 as separate sections", () => {
     expect(exactCitationPaths("KY", "Ky. Rev. Stat. § 413.140(1)(a)")).toEqual(["413.140"]);
     expect(exactCitationPaths("KY", "Ky. Rev. Stat. § 413.140(1)(a)")?.includes("413.14")).toBe(
