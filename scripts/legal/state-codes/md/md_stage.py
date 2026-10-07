@@ -368,14 +368,17 @@ def main(argv: list[str] | None = None) -> int:
                 )
             article_row = inventory_by_article[article_code]
             markers = [normalize_section_number(sec["display"]) for sec in article_row["sections"]]
-            landed = sorted(sections_by_unit.get(unit_key, []))
+            landed_set = set(sections_by_unit.get(unit_key, []))
+            # toc-proof requires publisher marker order, not lexical sort (land preflight compares lists).
+            landed = [m for m in markers if m in landed_set]
+            landed.extend(sorted(landed_set - set(markers)))
             units.append(
                 {
                     "unit_key": unit_key,
                     "unit_kind": "article",
                     "heading": article_heading_from_display(article_row["article_display"]),
                     "original_sha256": pdf_sha,
-                    "publisher_member": article_code,
+                    "publisher_member": None,
                     "raw_member_sha256": None,
                     "text_sha256": deriv_sha,
                     "text_code_points": meta["text_code_points"],
@@ -395,7 +398,7 @@ def main(argv: list[str] | None = None) -> int:
                 }
             )
             for display in markers:
-                if display not in landed:
+                if display not in landed_set:
                     gaps.append(
                         {
                             "unit_key": unit_key,
@@ -418,6 +421,7 @@ def main(argv: list[str] | None = None) -> int:
                 "status_note": row.get("status_note") or row.get("status_label"),
                 "span": span,
                 "currency": currency,
+                "source_url": row["source"]["url"],
             }
         )
 

@@ -30,10 +30,22 @@ import sc_common as sc  # noqa: E402
 
 def live_text(body, url):
     if body[:5] == b"%PDF-":
-        with tempfile.NamedTemporaryFile(suffix=".pdf") as f:
-            f.write(body)
-            f.flush()
-            return subprocess.run(["pdftotext", "-layout", f.name, "-"], capture_output=True, text=True, check=True).stdout
+        try:
+            import pymupdf
+
+            with pymupdf.open(stream=body, filetype="pdf") as document:
+                return "".join(page.get_text("text") for page in document)
+        except Exception as exc:
+            import shutil
+
+            if not shutil.which("pdftotext"):
+                raise RuntimeError("PDF live text requires pymupdf or pdftotext") from exc
+            with tempfile.NamedTemporaryFile(suffix=".pdf") as f:
+                f.write(body)
+                f.flush()
+                return subprocess.run(
+                    ["pdftotext", "-layout", f.name, "-"], capture_output=True, text=True, check=True
+                ).stdout
     s, _ = sc.decode_html(body)
     if s.lstrip()[:1] in "{[":
         try:
@@ -100,13 +112,14 @@ def main():
     results = []
     for s in sample:
         u = units[s["unit_key"]]
-        rec = arc.fetch(u["source_url"], accept="*/*", min_bytes=0)
-        row = {"citation_path": s["citation_path"], "citation": s["citation"], "url": u["source_url"], "live_status": rec["http_status"],
+        live_url = s.get("source_url") or u["source_url"]
+        rec = arc.fetch(live_url, accept="*/*", min_bytes=0)
+        row = {"citation_path": s["citation_path"], "citation": s["citation"], "url": live_url, "live_status": rec["http_status"],
                "route": rec["route"], "user_agent": rec.get("user_agent"), "ua_retry": rec.get("ua_retry", False)}
         if rec["state"] != "complete":
             row.update(ok=False, why="live fetch failed")
         else:
-            live = squash(live_text(arc.read(rec), u["source_url"]))
+            live = squash(live_text(arc.read(rec), live_url))
             number = s["hierarchy"][-1].get("number") or ""
             row["citation_ok"] = bool(number) and squash(number) in live
             heading = s.get("heading") or ""
@@ -144,6 +157,8 @@ def main():
         out["rpc"] = pgrest.rpc("corpus_publisher_code_review_v2", {"p_jurisdiction": a.state, "p_review_status": decision,
                                                                   "p_public_projection_allowed": decision == "reviewed", "p_notes": note})
     print(json.dumps(out, indent=1, default=str))
+    if decision != "reviewed":
+        sys.exit(1)
 
 
 if __name__ == "__main__":

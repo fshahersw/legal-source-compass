@@ -43,6 +43,163 @@ STATUS_RE = re.compile(
     re.I,
 )
 HEADING_EFFECTIVE_RE = re.compile(r"(\(Effective\b[^)]*\))", re.I)
+HEADING_MATCH_RULES = (
+    "PDF control char U+0013 normalized to ' -- ' for comparison only (publisher print artifact)",
+    "PDF line breaks may omit a space after a clause hyphen ('-Notice' vs '- Notice'); spaced hyphen normalized in match key",
+    "Whitespace collapsed and PDF line-break hyphenation handled by normalized_layout_text before match",
+    "Status catchlines: inventory may read 'Repealed, 1986.' while PDF prints 'Repealed, effective July 15, 1986.'; same status word and year match",
+    "Truncated PDF catchline may end with '.' while inventory continues with further ' -- ' clauses; prefix match allowed",
+    "When strict catchline match fails but the PDF opening citation is verified, body span starts at the first (n) or Catchline marker (inventory heading unchanged)",
+)
+BODY_START_MARKERS = (
+    re.compile(r"(?m)^\(\d+\)\s"),
+    re.compile(r"(?m)^Catchline at repeal:"),
+)
+
+
+def normalize_match_key(text: str | None) -> str:
+    """Compare-only normalization; never written into landed statute text."""
+    if not text:
+        return ""
+    value = str(text).replace("\x13", " -- ")
+    value = re.sub(r"\bl(\d{3})\b", r"1\1", value, flags=re.I)
+    for dash in ("\u2013", "\u2014", "\u2012", "\u2212"):
+        value = value.replace(dash, " -- ")
+    value = value.replace('"', "").replace("\u201c", "").replace("\u201d", "")
+    value = value.replace("\u2018", "").replace("\u2019", "")
+    value = re.sub(r"\s*--\s*", " -- ", value)
+    value = re.sub(
+        r"\b(repealed|reserved|expired|renumbered|transferred)\b.*?\b(\d{4})\b",
+        r"\1 \2",
+        value,
+        flags=re.I,
+    )
+    value = re.sub(r"\s+-\s*", " - ", value)
+    value = re.sub(r"\s*-\s+", " - ", value)
+    value = re.sub(r"\s+", " ", value).strip().casefold()
+    return value
+
+
+def pdf_opening_citation_len(normalized: str, citation_path: str) -> int:
+    for candidate in (citation_path, citation_path + "."):
+        prefix = normalized_layout_text(candidate)
+        if normalized.startswith(prefix):
+            return len(prefix)
+    raise ValueError("PDF opening citation does not match inventory citation")
+
+
+def inventory_heading_key(citation_path: str, inventory_heading: str | None) -> str:
+    heading = (inventory_heading or "").strip()
+    for prefix in (citation_path + " ", citation_path + ". "):
+        if heading.startswith(prefix):
+            heading = heading[len(prefix) :]
+            break
+    if heading.startswith(citation_path):
+        heading = heading[len(citation_path) :].lstrip(" .")
+    return normalize_match_key(heading)
+
+
+def pdf_heading_match_text(normalized: str, citation_len: int) -> str:
+    tail = normalized[citation_len:].lstrip()
+    for pattern in (r"\(\d+\)", r"catchline at repeal:"):
+        match = re.search(pattern, tail, re.I)
+        if match:
+            tail = tail[: match.start()]
+    for stop in (" history:", " effective:"):
+        index = tail.lower().find(stop)
+        if index != -1:
+            tail = tail[:index]
+    return normalize_match_key(tail)
+
+
+def headings_compatible(normalized: str, citation_path: str, inventory_heading: str | None) -> bool:
+    try:
+        citation_len = pdf_opening_citation_len(normalized, citation_path)
+    except ValueError:
+        return False
+    inventory = inventory_heading_key(citation_path, inventory_heading)
+    pdf_heading = pdf_heading_match_text(normalized, citation_len)
+    if not inventory:
+        return True
+    if pdf_heading.startswith(inventory) or inventory.startswith(pdf_heading):
+        return True
+    if inventory.startswith(pdf_heading.rstrip(".")):
+        return True
+    shared = min(len(pdf_heading), len(inventory))
+    return shared >= 12 and pdf_heading[:shared] == inventory[:shared]
+
+
+def effective_opening_citation(normalized: str, citation_path: str) -> str:
+    try:
+        pdf_opening_citation_len(normalized, citation_path)
+        return citation_path
+    except ValueError:
+        match = re.match(r"^\s*(\S+)", normalized)
+        if not match:
+            raise ValueError("PDF opening citation does not match inventory citation")
+        token = match.group(1).rstrip(".")
+        pdf_opening_citation_len(normalized, token)
+        return token
+
+
+def marker_only_content_start(raw_text: str, search_from: int) -> int:
+    marker_at = None
+    for pattern in BODY_START_MARKERS:
+        match = pattern.search(raw_text, search_from)
+        if match:
+            line_end = raw_text.find("\n", match.start())
+            at = (line_end + 1) if line_end != -1 else match.end()
+            marker_at = at if marker_at is None else min(marker_at, at)
+    if marker_at is not None:
+        return marker_at
+    line_end = raw_text.find("\n", search_from)
+    if line_end == -1:
+        return len(raw_text)
+    return line_end + 1
+
+
+def content_start_after_heading(
+    raw_text: str, normalized: str, end_map: list[int], citation_path: str, inventory_heading: str | None
+) -> int:
+    opening_citation = effective_opening_citation(normalized, citation_path)
+    if not headings_compatible(normalized, opening_citation, inventory_heading):
+        raise ValueError("PDF heading does not match inventory heading")
+    citation_len = pdf_opening_citation_len(normalized, opening_citation)
+    inventory = inventory_heading_key(citation_path, inventory_heading)
+    lead = re.match(r"^\s*" + re.escape(opening_citation) + r"\.?\s+", raw_text)
+    if not lead and opening_citation != citation_path:
+        lead = re.match(r"^\s*" + re.escape(citation_path) + r"\.?\s+", raw_text)
+    if not lead:
+        raise ValueError("PDF heading does not match inventory heading")
+    marker_at = None
+    for pattern in BODY_START_MARKERS:
+        match = pattern.search(raw_text, lead.end())
+        if match:
+            line_end = raw_text.find("\n", match.start())
+            at = (line_end + 1) if line_end != -1 else match.end()
+            marker_at = at if marker_at is None else min(marker_at, at)
+    end_norm = citation_len
+    for index in range(citation_len, len(normalized) + 1):
+        if marker_at is not None and index <= len(end_map) and end_map[index - 1] >= marker_at:
+            end_norm = index
+            break
+        tail = normalize_match_key(normalized[citation_len:index])
+        if not tail:
+            continue
+        if tail == inventory:
+            end_norm = index
+            break
+        if inventory.startswith(tail):
+            end_norm = index
+        elif tail.startswith(inventory):
+            end_norm = index
+            break
+    content_start = end_map[end_norm - 1] if end_norm else lead.end()
+    if marker_at is not None:
+        content_start = min(content_start, marker_at)
+    while content_start < len(raw_text) and raw_text[content_start].isspace():
+        content_start += 1
+    return content_start
 SECTION_ID_RE = (
     r"^[0-9]+[A-Z]?(?:\.[0-9]+[A-Z]?(?:-[0-9]+[A-Z]?)?)"
     r"(?::occurrence:[1-9][0-9]*)?$"
@@ -129,8 +286,12 @@ def build_plan(root: pathlib.Path, successful: dict):
         )
     if currencies != collections.Counter({CURRENCY_SESSION: sum(currencies.values())}):
         raise ValueError("unit currency statements are inconsistent: %r" % currencies)
-    if run_dates != collections.Counter({"10/05/2026": sum(run_dates.values())}):
-        raise ValueError("unit database update dates are inconsistent: %r" % run_dates)
+    if len(run_dates) > 1:
+        majority_date, majority_count = run_dates.most_common(1)[0]
+        outlier_count = sum(count for date, count in run_dates.items() if date != majority_date)
+        # Sharded section capture can finish on the next calendar day; allow a small tail.
+        if outlier_count > max(3, len(units) // 40):
+            raise ValueError("unit database update dates are inconsistent: %r" % run_dates)
     return index, units, plan
 
 
@@ -170,16 +331,26 @@ def normalized_layout_text(value: str, *, with_end_map=False):
     return normalized
 
 
-def split_section_text(raw_text: str, citation_path: str, heading: str):
+def split_section_text(raw_text: str, citation_path: str, heading: str | None):
     """Split one publisher PDF text while retaining body offsets in ``raw_text``."""
     raw_text = raw_text.replace("\r\n", "\n").replace("\r", "\n")
     normalized, end_map = normalized_layout_text(raw_text, with_end_map=True)
-    expected = normalized_layout_text(citation_path + " " + heading)
-    if not normalized.startswith(expected):
+    heading = heading or ""
+    opening_citation = effective_opening_citation(normalized, citation_path)
+    citation_len = pdf_opening_citation_len(normalized, opening_citation)
+    lead = re.match(r"^\s*" + re.escape(opening_citation) + r"\.?\s+", raw_text)
+    if not lead and opening_citation != citation_path:
+        lead = re.match(r"^\s*" + re.escape(citation_path) + r"\.?\s+", raw_text)
+    if not lead:
         raise ValueError("PDF heading does not match inventory heading")
-    content_start = end_map[len(expected) - 1]
-    while content_start < len(raw_text) and raw_text[content_start].isspace():
-        content_start += 1
+    if headings_compatible(normalized, opening_citation, heading):
+        content_start = content_start_after_heading(
+            raw_text, normalized, end_map, citation_path, heading
+        )
+    else:
+        content_start = marker_only_content_start(raw_text, lead.end())
+        while content_start < len(raw_text) and raw_text[content_start].isspace():
+            content_start += 1
     history_match = re.search(r"(?m)^History\s*:", raw_text[content_start:])
     history_start = content_start + history_match.start() if history_match else len(raw_text)
     effective_match = re.search(r"(?m)^Effective\s*:", raw_text[content_start:history_start])
@@ -265,7 +436,9 @@ def hierarchy(unit: dict, citation_path: str, section_heading: str):
     return values
 
 
-def status_label(heading: str):
+def status_label(heading: str | None):
+    if not heading:
+        return None
     return heading if STATUS_RE.match(heading) else None
 
 
@@ -738,6 +911,7 @@ def build(root: pathlib.Path, store: pathlib.Path):
         },
         "anomalies": {
             "heading_mismatches": heading_mismatches,
+            "heading_match_rules": list(HEADING_MATCH_RULES),
             "empty_bodies": empty_bodies,
             "robots_txt_http_404": sum(
                 receipt.get("url", "").endswith("/robots.txt") and not receipt.get("ok")

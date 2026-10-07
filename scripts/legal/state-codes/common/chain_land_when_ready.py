@@ -22,9 +22,6 @@ def run(cmd: list[str], *, cwd: pathlib.Path | None = None) -> None:
 
 
 def ky_section_plan(root: pathlib.Path) -> int:
-    cache = root / "extract" / "section-plan-count.json"
-    if cache.exists():
-        return int(json.loads(cache.read_text(encoding="utf8"))["expected"])
     sys.path.insert(0, str(ROOT / "ky"))
     sys.path.insert(0, str(ROOT / "common"))
     import parse_index  # noqa: E402
@@ -53,6 +50,7 @@ def ky_section_plan(root: pathlib.Path) -> int:
         chapter = parse_index.parse_chapter((root / by_url[url]["stored_path"]).read_bytes())
         for s in chapter["sections"]:
             seen.add(base + s["href"])
+    cache = root / "extract" / "section-plan-count.json"
     cache.parent.mkdir(parents=True, exist_ok=True)
     cache.write_text(json.dumps({"expected": len(seen)}, indent=2) + "\n", encoding="utf8")
     return len(seen)
@@ -112,7 +110,7 @@ def toc_proof_ky(landing: pathlib.Path) -> None:
     )
 
 
-def land_state(state: str, landing: pathlib.Path, toc_note: str, report: pathlib.Path) -> None:
+def land_state(state: str, landing: pathlib.Path, toc_note: str, report: pathlib.Path) -> str:
     run(
         [
             sys.executable,
@@ -123,21 +121,25 @@ def land_state(state: str, landing: pathlib.Path, toc_note: str, report: pathlib
             "6",
         ]
     )
-    run(
-        [
-            sys.executable,
-            str(COMMON / "review_publisher_code_v2.py"),
-            "--landing",
-            str(landing),
-            "--state",
-            state,
-            "--toc-ok",
-            toc_note,
-            "--report",
-            str(report),
-            "--apply",
-        ]
-    )
+    review_cmd = [
+        sys.executable,
+        str(COMMON / "review_publisher_code_v2.py"),
+        "--landing",
+        str(landing),
+        "--state",
+        state,
+        "--toc-ok",
+        toc_note,
+        "--report",
+        str(report),
+        "--apply",
+    ]
+    completed = subprocess.run(review_cmd, check=True, text=True, capture_output=True)
+    decision = json.loads(completed.stdout.strip().splitlines()[-1])["decision"]
+    if decision != "reviewed":
+        raise SystemExit(f"{state} review decision {decision!r}; not writing .landed")
+    print(completed.stdout, end="", flush=True)
+    return decision
 
 
 def pipeline_ky(root: pathlib.Path) -> None:
