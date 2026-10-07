@@ -38,6 +38,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import urllib.parse
 import xml.etree.ElementTree as ET
 import zipfile
 
@@ -328,6 +329,68 @@ def live_section_body(body):
     return section_body(section)
 
 
+def live_ut_section_row(body, url, section):
+    """Re-parse Utah xcode section XML for section-scoped forward/reverse checks."""
+    if publisher_section_number(body) is None or "le.utah.gov" not in url:
+        return None
+    ut_dir = os.path.join(HERE, "..", "ut")
+    if ut_dir not in sys.path:
+        sys.path.insert(0, ut_dir)
+    from parse_ut import load_section, section_body, section_history  # noqa: WPS433
+    root, _ = load_section(body)
+    tag = root.tag.split("}", 1)[-1] if root.tag else ""
+    if tag.lower() != "section":
+        return None
+    catch = root.find("catchline")
+    if catch is None:
+        for el in root.iter():
+            if el.tag.split("}", 1)[-1].lower() == "catchline":
+                catch = el
+                break
+    heading = (catch.text or "").strip() if catch is not None else (section.get("heading") or "")
+    return {
+        "number": root.get("number") or "",
+        "heading": heading,
+        "text": section_body(root),
+        "history": section_history(root),
+    }
+
+
+def live_vt_section_row(body, url, section, unit_url=None):
+    """Re-parse Vermont fullchapter HTML for the matching section row."""
+    page_url = unit_url or url
+    if "legislature.vermont.gov" not in page_url or "/fullchapter/" not in page_url:
+        return None
+    vt_dir = os.path.join(HERE, "..", "b4", "vt")
+    b4_dir = os.path.join(HERE, "..", "b4")
+    for d in (b4_dir, vt_dir):
+        if d not in sys.path:
+            sys.path.insert(0, d)
+    from parse import parse_fullchapter  # noqa: WPS433
+    raw = body if isinstance(body, bytes) else body.encode("utf-8", "replace")
+    html = raw.decode("utf-8", "replace")
+    m = re.search(r"/fullchapter/([^/]+)/([^/?#]+)", page_url)
+    if not m:
+        return None
+    title, chapter = m.group(1), m.group(2)
+    title = urllib.parse.unquote(title)
+    cp = (section.get("citation_path") or "").split("#", 1)[0]
+    parts = cp.split("/")
+    if len(parts) < 3:
+        return None
+    key = parts[2]
+    parsed = parse_fullchapter(html, title=title, chapter=chapter, source_url=page_url, receipt_sha="review-live")
+    for row in parsed:
+        inv = (row.get("inventory_key") or row["number"]).replace("—", "-")
+        if inv == key or row["number"].replace("—", "-") == key.replace("—", "-"):
+            return row
+    hier_num = (section.get("hierarchy") or [{}])[-1].get("number") or ""
+    for row in parsed:
+        if squash(row["number"]) == squash(hier_num):
+            return row
+    return None
+
+
 def html_blocks(body, classes):
     """Text of every <p> paragraph and <td>/<th> cell inside the page's <div class="..."> containers named in `classes`."""
     s, _ = sc.decode_html(body)
@@ -357,6 +420,75 @@ def squash(t):
     for dash in ("\u2010", "\u2011", "\u2012", "\u2013", "\u2014", "\u2212"):
         t = t.replace(dash, "-")
     return re.sub(r"\s+", "", t)
+
+
+HISTORY_TAIL_INLINE = re.compile(
+    r"\s+\((?:Added|Amended|Repealed|Renumbered|Transferred|Expired|Reserved)[^)]*\)\.?\s*$",
+    re.I,
+)
+
+
+def _split_body_history_line(line):
+    """When the publisher prints the history parenthetical on the same line as the last body sentence."""
+    m = HISTORY_TAIL_INLINE.search(line)
+    if not m:
+        return line.strip(), ""
+    return line[: m.start()].strip(), line[m.start() :].strip()
+
+
+def _stored_text_blobs(row):
+    body = squash((row.get("text") or "") + (row.get("heading") or ""))
+    hist = squash(row.get("history") or "")
+    return body, hist, body + hist
+
+
+def _stored_covers_live_line(line, row):
+    """True when every squashed fragment of a live line is in stored body and/or history."""
+    sq = squash(line)
+    body, hist, combined = _stored_text_blobs(row)
+    if not sq:
+        return True
+    if sq in combined or (len(sq) >= 25 and sq[:80] in combined):
+        return True
+    bpart, hpart = _split_body_history_line(line)
+    sb, sh = squash(bpart), squash(hpart)
+    if sb and sb not in body and sb not in hist and not (len(sb) >= 20 and sb[:60] in combined):
+        return False
+    if sh and sh not in hist and sh not in body and sh not in combined:
+        return False
+    return bool(sb or sh)
+
+
+def _excuse_repealer_crossref(piece, row):
+    """Notes on repealed sibling sections (e.g. NC chapter chrome), not this row's operative text."""
+    if "repealed" not in piece.lower():
+        return False
+    if not re.search(r"§§?\s*[\d.\-]+\s+through\s+[\d.\-]+", piece, re.I):
+        return False
+    own = (_printed_number(row) or "").strip()
+    if own and re.search(r"§§?\s*" + re.escape(own) + r"\.[0-9]", piece):
+        return False
+    return True
+
+
+def texas_unit_member(unit):
+    member = unit.get("publisher_member")
+    if member:
+        return member
+    uk = unit.get("unit_key") or ""
+    if ":" in uk:
+        return uk.split(":", 1)[1]
+    return None
+
+
+def texas_code_from_section(section, unit):
+    cp = section.get("citation_path") or ""
+    if ":" in cp:
+        return cp.split(":", 1)[0]
+    uk = unit.get("unit_key") or ""
+    if ":" in uk:
+        return uk.split(":", 1)[0]
+    return None
 
 
 LINE_BLOCKS = ("p", "div", "br", "li", "tr", "td", "th", "caption", "pre", "blockquote",
@@ -651,10 +783,7 @@ def reverse_check_section_body(parsed_row, row):
             excused += 1
             continue
         checked += 1
-        sq = squash(line)
-        if sq in stored:
-            continue
-        if len(sq) >= 25 and sq[:80] in stored:
+        if _stored_covers_live_line(line, row):
             continue
         missing.append(line[:240])
     return {"ok": not missing, "checked": checked, "excused_chrome": excused, "missing": missing}
@@ -693,12 +822,17 @@ def reverse_check(lines, row, siblings, chrome=frozenset(), levels=None):
         if not piece:
             continue
         checked += 1
+        if _stored_covers_live_line(lines[i], row):
+            continue
         if piece in body or any(piece in t for t in tokens if len(t) >= len(piece)):
             continue
         rest = _strip_labels(piece, tokens)
         if len(re.sub(r"[^0-9A-Za-z]", "", rest)) <= 4 or rest in body or any(rest in t for t in tokens):
             continue
         if PAGE_NUMBER.match(piece):
+            continue
+        if _excuse_repealer_crossref(lines[i], row):
+            excused += 1
             continue
         if sq[i] in chrome:
             excused += 1
@@ -807,25 +941,25 @@ def main():
             row.update(ok=False, why="live fetch failed")
         else:
             live = squash(live_body)
-            if (
-                a.state == "TX"
-                and u.get("publisher_member")
-                and squash(s["text"]) not in live
-                and "statutes.capitol.texas.gov" in live_url
-            ):
-                code = s["citation_path"].split(":", 1)[0]
-                zip_html = texas_zip_chapter_live(arc, code, u["publisher_member"])
-                if zip_html:
-                    bulk_url = f"https://tcss.legis.texas.gov/resources/Zips/{code}.htm.zip"
-                    live_raw = zip_html.encode("utf-8")
-                    live = squash(live_text(live_raw, bulk_url))
-                    row["live_route"] = "publisher_zip_member"
+            if a.state == "TX":
+                code = texas_code_from_section(s, u)
+                member = texas_unit_member(u)
+                if code and member:
+                    zip_html = texas_zip_chapter_live(arc, code, member)
+                    if zip_html:
+                        bulk_url = f"https://tcss.legis.texas.gov/resources/Zips/{code}.htm.zip"
+                        live_raw = zip_html.encode("utf-8")
+                        live_body = live_text(live_raw, bulk_url)
+                        live = squash(live_body)
+                        row["live_route"] = "publisher_zip_member"
             lines_body = live_raw
             parsed_row = (
                 live_ks_section_row(live_raw, live_url, s)
                 or live_ia_section_row(live_raw, live_url, s)
                 or live_wv_section_row(live_raw, live_url, s)
                 or live_hi_section_row(live_raw, live_url, s)
+                or live_vt_section_row(live_raw, live_url, s, u.get("source_url"))
+                or live_ut_section_row(live_raw, live_url, s)
             )
             if parsed_row is not None:
                 row["_parsed_row"] = parsed_row
