@@ -200,8 +200,8 @@ BLOCK_TAGS = {"p", "div", "table", "ul", "ol", "li", "section", "article", "pre"
 
 def container_lines(body, row):
     """Lines of the publisher's HTML element that holds the row's text: the deepest element containing the opening of the stored
-    text, widened past paragraph-level tags (so later paragraphs, tables and bare text of the same body stay inside). None when the
-    page is not HTML or the opening is not found."""
+    text, widened past paragraph-level tags that hold no block children (so later paragraphs, tables and bare text of the same body
+    stay inside). None when the page is not HTML or the opening is not found."""
     if body[:5] in (b"%PDF-", b"{\\rtf"):
         return None
     s, _ = sc.decode_html(body)
