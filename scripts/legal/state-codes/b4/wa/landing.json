@@ -1,0 +1,51 @@
+{
+  "jurisdiction": "WA",
+  "publisher": "Washington State Legislature (Code Reviser)",
+  "publisher_url": "https://leg.wa.gov/state-laws-and-rules/state-laws-rcw/past-versions-of-state-laws/2026-rcw-archive/",
+  "source_system": "wa-rcw-archive-2026-pdf",
+  "code_title": "Revised Code of Washington",
+  "parser": {
+    "name": "wa-combined-chapter-pdf",
+    "version": "1"
+  },
+  "methods": [
+    "publisher_page"
+  ],
+  "source_url_patterns": [
+    "^https://leg\\.wa\\.gov/state-laws-and-rules/state-laws-rcw/past-versions-of-state-laws/2026-rcw-archive/",
+    "^https://lawfilesext\\.leg\\.wa\\.gov/law/RCWArchive/2026/RCW%20%20%20[0-9A-Z]+%20%20%20TITLE\\.htm$",
+    "^https://lawfilesext\\.leg\\.wa\\.gov/law/RCWArchive/2026/RCW%20%20%20[0-9A-Z]+%20\\.[0-9A-Z]+%20%20CHAPTER\\.htm$",
+    "^https://lawfilesext\\.leg\\.wa\\.gov/law/RCWArchive/2026/pdf/.+COMBINEDCHAPTER\\.pdf$"
+  ],
+  "rate_limit_ms": 1000,
+  "structure": {
+    "levels": [
+      "title",
+      "chapter",
+      "section"
+    ],
+    "unit": "one official Complete Chapter PDF per RCW chapter (2026 archive)"
+  },
+  "section_id": {
+    "scheme": "official_citation_path",
+    "regex": "^[0-9]+[A-Z]?(?:\\.[0-9]+[A-Z]?){1,2}(~[0-9]+)?$",
+    "example": "1.04.010",
+    "citation_format": "RCW <chapter>.<section>; ~N marks duplicate citation_path rows in the landing packet"
+  },
+  "currency": {
+    "basis": "publisher_statement",
+    "location": "2026 RCW Archive edition statement on lawfilesext.leg.wa.gov pages"
+  },
+  "review": {
+    "reviewed_by": "state-codes batch 4 (pre-land live diff)",
+    "reviewed_at": "2026-10-07"
+  },
+  "unit_kind": "wa_combined_chapter_pdf",
+  "default_method": "publisher_page",
+  "currency_defaults": {
+    "basis": "publisher_statement",
+    "statement": "2026 RCW Archive official publication (Code Reviser)",
+    "through_date": null,
+    "edition": "2026 RCW Archive"
+  }
+}

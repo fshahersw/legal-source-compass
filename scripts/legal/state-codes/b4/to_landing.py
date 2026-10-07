@@ -33,6 +33,13 @@ def unit_key(cid):
     return re.sub(r"[^A-Za-z0-9._:-]+", "_", cid)[:300]
 
 
+def canon_source_url(url):
+    """Publisher intake requires anchored https patterns; lawfilesext serves the same paths on https."""
+    if url.startswith("http://lawfilesext.leg.wa.gov/"):
+        return "https://" + url[len("http://") :]
+    return url
+
+
 def manifest_from_config(cfg):
     return {"schema_version": "publisher-code-manifest/2", "jurisdiction": cfg["jurisdiction"], "publisher": cfg["publisher"],
             "publisher_url": cfg["publisher_url"], "source_system": cfg["source_system"], "code_title": cfg["code_title"],
@@ -73,30 +80,38 @@ def convert(work, cfg):
         raw = None
         ch_stat = c["native_id"].rsplit("/", 1)[-1]
         ch_api = f"https://sdlegislature.gov/api/Statutes/Statute/{urllib.parse.quote(str(ch_stat), safe='-.')}"
-        ch_rec = arc.index.get(ch_api)
-        if ch_rec and ch_rec.get("state") == "complete":
-            data = json.loads(arc.read(ch_rec))
+        def _sd_chapter_rec(rec):
+            if not rec or rec.get("state") != "complete":
+                return None
+            body = arc.read(rec)
+            if not body.lstrip().startswith(b"{"):
+                return None
+            try:
+                data = json.loads(body)
+            except (UnicodeDecodeError, ValueError, json.JSONDecodeError):
+                return None
             if data.get("Type") == "Chapter" and data.get("Statute") == ch_stat:
-                raw = ch_rec
+                return rec
+            return None
+
+        ch_rec = arc.index.get(ch_api)
+        raw = _sd_chapter_rec(ch_rec) or raw
         ch_suffix = f"/Statute/{ch_stat}"
         encoded_suffix = f"/Statute/{urllib.parse.quote(str(ch_stat), safe='-.')}"
         for u in c.get("source_urls") or []:
             if not (u.endswith(ch_suffix) or u.endswith(encoded_suffix)):
                 continue
             r = arc.index.get(u)
-            if r and r.get("state") == "complete":
-                data = json.loads(arc.read(r))
-                if data.get("Type") == "Chapter" and data.get("Statute") == ch_stat:
-                    raw = r
-                    break
+            hit = _sd_chapter_rec(r)
+            if hit:
+                raw = hit
+                break
         if raw is None:
             for u in c.get("source_urls") or []:
                 r = arc.index.get(u)
-                if not r or r.get("state") != "complete":
-                    continue
-                data = json.loads(arc.read(r))
-                if data.get("Type") == "Chapter" and data.get("Statute") == ch_stat:
-                    raw = r
+                hit = _sd_chapter_rec(r)
+                if hit:
+                    raw = hit
                     break
         if raw is None:
             if len(shas) != 1:
@@ -109,7 +124,7 @@ def convert(work, cfg):
                     break
         method, proxy = method_for(cfg, raw["url"], raw["route"])
         orig_sha = raw["sha256"]
-        src = {"source_url": raw["url"], "retrieved_at": raw["retrieved_at"], "http_status": 200, "retrieval_method": method, "proxy": proxy}
+        src = {"source_url": canon_source_url(raw["url"]), "retrieved_at": raw["retrieved_at"], "http_status": 200, "retrieval_method": method, "proxy": proxy}
         orig = objects.setdefault(orig_sha, {"sha256": orig_sha, "bytes": raw["bytes"], "kind": "publisher_original",
                                             "path": os.path.abspath(os.path.join(work, raw["file"])), "sources": []})
         if src not in orig["sources"]:
@@ -127,7 +142,7 @@ def convert(work, cfg):
                       "original_sha256": orig_sha, "publisher_member": c.get("publisher_member"), "raw_member_sha256": c.get("raw_member_sha256"),
                       "text_sha256": c["text_sha256"], "text_code_points": c["text_codepoints"], "sections_expected": c.get("sections_expected"),
                       "currency": {"basis": dflt["basis"], "statement": dflt["statement"], "through_date": dflt["through_date"], "edition": dflt["edition"]},
-                      "source_url": raw["url"], "retrieved_at": raw["retrieved_at"], "retrieval_method": method, "proxy": proxy})
+                      "source_url": canon_source_url(raw["url"]), "retrieved_at": raw["retrieved_at"], "retrieval_method": method, "proxy": proxy})
     regex = re.compile(cfg["section_id"]["regex"])
     seen = {}
     for s in sections:
@@ -147,7 +162,10 @@ def convert(work, cfg):
             raise SystemExit(f"citation_path {path!r} does not match the manifest regex")
         scur = s.get("currency") or {}
         stmt = scur.get("statement") or dflt["statement"]
-        cur = {"basis": dflt["basis"] if stmt else "none", "statement": stmt or "", "through_date": scur.get("as_of") or dflt["through_date"],
+        through_date = scur.get("as_of") or dflt["through_date"]
+        if through_date and re.fullmatch(r"\d{4}", str(through_date)):
+            through_date = dflt["through_date"]
+        cur = {"basis": dflt["basis"] if stmt else "none", "statement": stmt or "", "through_date": through_date,
                "edition": s.get("edition") or dflt["edition"]}
         if cur["basis"] == "none":
             cur["through_date"] = None
