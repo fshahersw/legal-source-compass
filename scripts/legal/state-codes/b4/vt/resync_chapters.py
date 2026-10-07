@@ -16,6 +16,7 @@ import re
 import subprocess
 import sys
 import urllib.parse
+import uuid
 
 import requests
 
@@ -204,7 +205,7 @@ def land_batch(work: str, execute: bool, attempt: int):
     )
     subprocess.run([sys.executable, TOC_SCRIPT, work], check=True)
     landing = os.path.join(work, "landing")
-    cmd = [sys.executable, LAND_SCRIPT, landing]
+    cmd = [sys.executable, LAND_SCRIPT, landing, "--run-id", str(uuid.uuid4())]
     if execute:
         cmd += ["--execute", "--attempt", str(attempt)]
     subprocess.run(cmd, check=True)
