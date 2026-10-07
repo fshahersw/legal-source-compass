@@ -399,6 +399,25 @@ describe("exact statute citation paths", () => {
     );
     expect(exactCitationPaths("IL", "40 ILCS 5/13-202")).toEqual(["40 ILCS 5/13-202"]);
     expect(statuteNativeId("IL", "735 ILCS 5/13-202")).toBe("IL:735 ILCS 5/13-202");
+    const sameAct = "735 ILCS 5/13-202, 13-213, text WITHOUT P.A. 89-7 changes";
+    expect(exactCitationPaths("IL", sameAct)?.includes("735 ILCS 5/13-202")).toBe(true);
+    expect(exactCitationPaths("IL", sameAct)?.includes("735 ILCS 5/13-213")).toBe(true);
+    expect(exactCitationPaths("IL", sameAct)?.includes("13-213")).toBe(false);
+    expect(exactCitationPaths("IL", sameAct)?.includes("220 ILCS 5/13-213")).toBe(false);
+    expect(exactCitationPaths("IL", sameAct)?.includes("40 ILCS 5/13-213")).toBe(false);
+    expect(exactCitationPaths("IL", "735 ILCS 5/13-213(b), (d)")).toEqual(["735 ILCS 5/13-213"]);
+    expect(exactCitationPaths("IL", "740 ILCS 180/2(d)")).toEqual(["740 ILCS 180/2"]);
+    expect(exactCitationPaths("IL", "740 ILCS 180/2(d)")?.includes("2")).toBe(false);
+    expect(exactCitationPaths("IL", "815 ILCS 505/10a(e)")).toEqual(["815 ILCS 505/10a"]);
+    expect(exactCitationPaths("IL", "815 ILCS 505/10a(e)")?.includes("10a")).toBe(false);
+    expect(exactCitationPaths("IL", "5 ILCS 70/1.11")).toEqual(["5 ILCS 70/1.11"]);
+    expect(exactCitationPaths("IL", "5 ILCS 70/1.11")?.includes("1.11")).toBe(false);
+    expect(
+      exactCitationPaths(
+        "IL",
+        "735 ILCS 5/13-205; 735 ILCS 5/13-215 (fraudulent concealment)",
+      ),
+    ).toEqual(["735 ILCS 5/13-205", "735 ILCS 5/13-215"]);
   });
 
   it("reads Massachusetts chapter 260 section 2A without a neighbor", () => {
