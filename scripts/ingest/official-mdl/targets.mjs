@@ -142,6 +142,13 @@ export const MATTERS = {
   '3110': { name: 'In re Granulated Sugar Antitrust Litigation', court_id: 'mnd', host: 'www.mnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 3110', pages: [{ id: 'mnd-3110-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.mnd.uscourts.gov/content/granulated-sugar-antitrust-litigation' }], index_pages: [] },
   '3155': { name: 'In re Air Crash at Toronto Pearson International Airport on January 5, 2025', court_id: 'mnd', host: 'www.mnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 3155', pages: [{ id: 'mnd-3155-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.mnd.uscourts.gov/content/air-crash-toronto-pearson-international-airport' }], index_pages: [] },
   '3128': { name: 'In re Dividend Solar Finance LLC and Fifth Third Bank Sales and Lending Practices Litigation', court_id: 'mnd', host: 'www.mnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 3128', pages: [{ id: 'mnd-3128-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.mnd.uscourts.gov/content/dividend-solar-finance-llc-and-fifth-third-bank-sales-and-lending-practices-litigation' }], index_pages: [] },
+  // S.D. Fla. MDL 3015 (J&J aerosol sunscreen; dedicated case page with direct PDFs under /sites/flsd/files/).
+  '3015': {
+    name: 'In re Johnson & Johnson Aerosol Sunscreen Marketing, Sales Practices and Products Liability Litigation', court_id: 'flsd', host: 'www.flsd.uscourts.gov', tier: 2,
+    case_number: null, printed_mdl_literal: 'MDL 3015',
+    pages: [{ id: 'flsd-3015-mdl', role: 'mdl_page', family: 'njd-body', url: 'https://www.flsd.uscourts.gov/21-md-3015-singhal-%E2%80%93-re-johnson-johnson-aerosol-sunscreen-marketing-sales-practices-and-products' }],
+    index_pages: [],
+  },
   // S.D.N.Y. MDL 3043 (Drupal MDL hub; PDFs under /sites/default/files/pdf/MDL/).
   '3043': {
     name: 'In re Acetaminophen – ASD-ADHD Products Liability Litigation', court_id: 'nysd', host: 'www.nysd.uscourts.gov', tier: 1,
