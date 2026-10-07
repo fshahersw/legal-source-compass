@@ -212,19 +212,33 @@ function louisianaCivilCodePaths(citation: string): string[] | null {
 }
 
 /**
- * Texas Civil Practice and Remedies Code paths such as `Tex. Civ. Prac. & Rem. Code § 16.003(a)`.
- * The code and the section are one path, `CP:16.003`. A parenthetical is not included.
+ * Texas Civil Practice and Remedies Code paths such as `§ 16.003(a)`
+ * and `§§ 16.003(a), 16.012(b)`.
+ * The code and each section are one path. A parenthetical is not another section.
  * `§ 16.003` is not `§ 16.0031`. The same section number in another code is not a second path.
+ * A section sign that belongs to a different code is not a Civil Practice section.
  */
 function texasCivilPracticePaths(citation: string): string[] | null {
-  if (!/\bCiv\.?\s*Prac\.?\s*&\s*Rem\.?\s*Code\b/i.test(citation)) return null;
   const paths: string[] = [];
-  const re = /§§?\s*(\d+\.\d+)(?!\d)/g;
-  for (const match of citation.matchAll(re)) {
-    const section = match[1];
-    if (!section) continue;
+  const add = (section: string) => {
     const path = `CP:${section}`;
     if (!paths.includes(path)) paths.push(path);
+  };
+  for (const clause of citation.split(";")) {
+    if (!/\bCiv\.?\s*Prac\.?\s*&\s*Rem\.?\s*Code\b/i.test(clause)) continue;
+    for (const match of clause.matchAll(/§§?\s*(\d+\.\d+)(?!\d)/g)) {
+      const first = match[1];
+      if (!first) continue;
+      add(first);
+      let rest = clause.slice((match.index ?? 0) + match[0].length);
+      for (;;) {
+        const next = /^\s*(?:\([^)]*\))*\s*,\s*(\d+\.\d+)(?!\d)/.exec(rest);
+        const section = next?.[1];
+        if (!next || !section) break;
+        add(section);
+        rest = rest.slice(next[0].length);
+      }
+    }
   }
   return paths.length ? paths : null;
 }
