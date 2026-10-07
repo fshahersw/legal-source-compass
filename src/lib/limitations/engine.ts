@@ -419,6 +419,7 @@ function clockStart(input: BaselineInput, from: ReposeClock["from"]): string | u
 
 /** Input date that starts a period limb. */
 function limbStart(input: BaselineInput, from: PeriodLimb["from"]): string | undefined {
+  if (from === "death") return input.deathDate;
   if (from === "injury_date") return input.injuryDate;
   if (from === "discovery") {
     const dates = [input.actualDiscoveryDate, input.constructiveDiscoveryDate];
