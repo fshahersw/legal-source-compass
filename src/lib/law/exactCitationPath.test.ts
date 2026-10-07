@@ -292,6 +292,24 @@ describe("exact statute citation paths", () => {
     expect(statuteNativeId("WA", "4.16.080")).toBe("WA:4.16.080");
   });
 
+  it("reads West Virginia section numbers, including the stored capital letter", () => {
+    expect(exactCitationPaths("WV", "W. Va. Code § 55-2-12(b)")).toEqual(["55-2-12"]);
+    expect(exactCitationPaths("WV", "W. Va. Code § 55-2-12(a)-(b)")).toEqual(["55-2-12"]);
+    expect(exactCitationPaths("WV", "W. Va. Code § 55-2-6")).toEqual(["55-2-6"]);
+    expect(exactCitationPaths("WV", "W. Va. Code § 55-2-6")?.includes("55-2-6A")).toBe(false);
+    expect(exactCitationPaths("WV", "W. Va. Code § 55-2-6a")).toEqual(["55-2-6A"]);
+    expect(exactCitationPaths("WV", "W. Va. Code § 55-2-6a")?.includes("55-2-6")).toBe(false);
+    expect(exactCitationPaths("WV", "W. Va. Code § 55-2-6a")?.includes("55-2-6a")).toBe(false);
+    expect(exactCitationPaths("WV", "W. Va. Code § 55-7B-4(a)")).toEqual(["55-7B-4"]);
+    expect(exactCitationPaths("WV", "W. Va. Code § 55-7-6(d)")).toEqual(["55-7-6"]);
+    expect(exactCitationPaths("WV", "W. Va. Code § 2-2-1(d)")).toEqual(["2-2-1"]);
+    expect(statuteNativeId("WV", "55-2-12")).toBe("WV:55-2-12");
+    expect(statuteNativeId("WV", "55-2-6A")).toBe("WV:55-2-6A");
+    expect(statuteNativeId("WV", "55-7B-4")).toBe("WV:55-7B-4");
+    expect(statuteNativeId("WV", "55-7-6")).toBe("WV:55-7-6");
+    expect(statuteNativeId("WV", "2-2-1")).toBe("WV:2-2-1");
+  });
+
   it("reads Nevada 41A.097 with the chapter letter and without the parenthetical", () => {
     expect(exactCitationPaths("NV", "Nev. Rev. Stat. § 41A.097(3)")).toEqual(["41A.097"]);
     expect(exactCitationPaths("NV", "Nev. Rev. Stat. § 41A.097(2)")).toEqual(["41A.097"]);
