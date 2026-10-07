@@ -6,7 +6,7 @@
   "code_title": "Texas Statutes",
   "parser": {
     "name": "texas-publisher-html",
-    "version": "5"
+    "version": "6"
   },
   "methods": [
     "publisher_page",

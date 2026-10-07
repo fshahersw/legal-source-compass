@@ -6,7 +6,7 @@
   "code_title": "Vermont Statutes Annotated (online edition)",
   "parser": {
     "name": "vt-statutes-fullchapter",
-    "version": "2"
+    "version": "3"
   },
   "methods": [
     "publisher_page"
