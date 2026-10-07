@@ -70,6 +70,35 @@ def live_text(body, url):
     return sc.html_text(s)
 
 
+def california_leginfo_live_html(url: str) -> tuple[str | None, str]:
+    """Official section HTML when Cloudflare blocks direct fetch (Firecrawl CLI)."""
+    import subprocess
+    import tempfile
+
+    tmp = tempfile.mkdtemp(prefix="ca-leginfo-")
+    out = os.path.join(tmp, "page.html")
+    cmd = [
+        "npx",
+        "--yes",
+        "firecrawl-cli@latest",
+        "scrape",
+        url,
+        "--wait-for",
+        "8000",
+        "--format",
+        "rawHtml",
+        "-o",
+        out,
+    ]
+    try:
+        subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=180)
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return None, "firecrawl_cli_failed"
+    if not os.path.isfile(out):
+        return None, "firecrawl_cli_empty"
+    return open(out, encoding="utf-8", errors="replace").read(), "firecrawl_cli"
+
+
 def texas_zip_chapter_live(arc, code: str, publisher_member: str) -> str | None:
     """Official HTML chapter member from the live publisher code ZIP (tcss.legis.texas.gov)."""
     zip_url = f"https://tcss.legis.texas.gov/resources/Zips/{code}.htm.zip"
@@ -128,10 +157,18 @@ def main():
         rec = arc.fetch(live_url, accept="*/*", min_bytes=0)
         row = {"citation_path": s["citation_path"], "citation": s["citation"], "url": live_url, "live_status": rec["http_status"],
                "route": rec["route"], "user_agent": rec.get("user_agent"), "ua_retry": rec.get("ua_retry", False)}
-        if rec["state"] != "complete":
+        live_body = None
+        if rec["state"] == "complete":
+            live_body = live_text(arc.read(rec), live_url)
+        elif a.state == "CA" and "leginfo.legislature.ca.gov" in live_url:
+            html, route = california_leginfo_live_html(live_url)
+            if html:
+                live_body = live_text(html.encode("utf-8"), live_url)
+                row["live_status"] = 200
+                row["route"] = route
+        if live_body is None:
             row.update(ok=False, why="live fetch failed")
         else:
-            live_body = live_text(arc.read(rec), live_url)
             live = squash(live_body)
             if (
                 a.state == "TX"
@@ -150,14 +187,20 @@ def main():
             if a.state == "TX" and not row["citation_ok"]:
                 anchor = s["citation_path"].split("~", 1)[0].split(":", 1)[-1].strip()
                 row["citation_ok"] = bool(anchor) and squash(anchor) in live
+            if a.state == "CA" and not row["citation_ok"]:
+                anchor = s["citation_path"].split("~", 1)[0].split(":", 1)[-1].strip().rstrip(".")
+                row["citation_ok"] = bool(anchor) and squash(anchor) in live
             heading = s.get("heading") or ""
             row["heading_ok"] = (not heading) or squash(heading) in live
             if heading and not row["heading_ok"]:
                 row["heading_ok"] = squash(re.sub(r"\[[^\]]+\]", "", heading)) in live
             if heading and not row["heading_ok"]:
                 row["heading_ok"] = squash(heading.split("[", 1)[0].strip()) in live
+            if a.state == "CA" and heading and not row["heading_ok"]:
+                row["heading_ok"] = squash(heading.split("(", 1)[0].strip()) in live
             row["text_ok"] = squash(s["text"]) in live
-            row["live_sha256"] = rec["sha256"]
+            if rec.get("sha256"):
+                row["live_sha256"] = rec["sha256"]
             note = s.get("status_note") or ""
             if note and "[Repealed" in note and row.get("text_ok") and live_url.lower().endswith(".pdf"):
                 html_url = live_url[:-4] + ".html"
