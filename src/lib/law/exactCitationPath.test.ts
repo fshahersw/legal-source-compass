@@ -177,6 +177,22 @@ describe("exact statute citation paths", () => {
     expect(statuteNativeId("IL", "735 ILCS 5/13-202")).toBe("IL:735 ILCS 5/13-202");
   });
 
+  it("reads Massachusetts chapter 260 section 2A without a neighbor", () => {
+    expect(exactCitationPaths("MA", "Mass. Gen. Laws ch. 260, § 2A")).toEqual(["260:2A"]);
+    expect(exactCitationPaths("MA", "Mass. Gen. Laws ch. 260, § 2A")?.includes("260:2")).toBe(
+      false,
+    );
+    expect(exactCitationPaths("MA", "Mass. Gen. Laws ch. 260, § 2A")?.includes("260:2B")).toBe(
+      false,
+    );
+    expect(exactCitationPaths("MA", "Mass. Gen. Laws ch. 260, § 2A")?.includes("2A")).toBe(false);
+    expect(exactCitationPaths("MA", "Mass. Gen. Laws ch. 260, § 2")).toEqual(["260:2"]);
+    expect(exactCitationPaths("MA", "Mass. Gen. Laws ch. 260, § 2B")).toEqual(["260:2B"]);
+    expect(exactCitationPaths("MA", "Mass. Gen. Laws ch. 260, § 2A(a)")).toEqual(["260:2A"]);
+    expect(exactCitationPaths("MA", "Mass. Gen. Laws ch. 260, §§ 2A to 2B")).toBeNull();
+    expect(statuteNativeId("MA", "260:2A")).toBe("MA:260:2A");
+  });
+
   it("reads Kentucky 413.140 and 413.120 as separate sections", () => {
     expect(exactCitationPaths("KY", "Ky. Rev. Stat. § 413.140(1)(a)")).toEqual(["413.140"]);
     expect(exactCitationPaths("KY", "Ky. Rev. Stat. § 413.140(1)(a)")?.includes("413.14")).toBe(

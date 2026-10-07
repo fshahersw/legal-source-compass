@@ -19,6 +19,7 @@ export function exactCitationPaths(state: string, citation: string): string[] | 
         ...(sectionSignPaths(text) ?? []),
         ...(vermontTitleSections(text) ?? []),
         ...(usps === "IL" ? (illinoisPaths(text) ?? []) : []),
+        ...(usps === "MA" ? (massachusettsPaths(text) ?? []) : []),
         ...(DOTTED_PATH_STATES.has(usps) ? (dottedPaths(text) ?? []) : []),
       ]),
     ]),
@@ -66,6 +67,25 @@ function illinoisPaths(citation: string): string[] | null {
     const path = match[1];
     if (!path || paths.includes(path)) continue;
     paths.push(path);
+  }
+  return paths.length ? paths : null;
+}
+
+/**
+ * Massachusetts paths such as `Mass. Gen. Laws ch. 260, § 2A`.
+ * The chapter and the section are one path, `260:2A`. A parenthetical is not included.
+ * `§ 2A` is not `§ 2` or `§ 2B`.
+ */
+function massachusettsPaths(citation: string): string[] | null {
+  const paths: string[] = [];
+  const re =
+    /\b(?:ch(?:apter)?|c)\.?\s+(\d+[A-Za-z]*)\s*,?\s*§§?\s*(\d+[A-Za-z]*)(?![A-Za-z0-9])/gi;
+  for (const match of citation.matchAll(re)) {
+    const chapter = match[1]?.toUpperCase();
+    const section = match[2]?.toUpperCase();
+    if (!chapter || !section) continue;
+    const path = `${chapter}:${section}`;
+    if (!paths.includes(path)) paths.push(path);
   }
   return paths.length ? paths : null;
 }
