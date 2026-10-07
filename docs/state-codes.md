@@ -8,7 +8,7 @@ Nothing below is a count of landed sections.
 
 | Batch | States                                         | Status                                     |
 | ----- | ---------------------------------------------- | ------------------------------------------ |
-| A     | NY, PA, FL, IL, OH, MI, GA, NC, MA, AZ, MO, LA | MI, NC, MO, FL (2026-10-06) and IL (2026-10-07) landed and reviewed (public). PA and NY landed, held (proxied captures). MA landed, not yet reviewed. AZ, LA capturing. OH blocked, GA gated. |
+| A     | NY, PA, FL, IL, OH, MI, GA, NC, MA, AZ, MO, LA | MI, NC, MO, FL (2026-10-06), IL and MA (2026-10-07) landed and reviewed (public). PA and NY landed, held (proxied captures). MA landed and reviewed (2026-10-07). AZ, LA capturing. OH blocked, GA gated. |
 | B     | MN, WI, IN, TN, CO, MD, VA, SC, AL, KY, OK, OR | staging against the mapping                |
 | C     | CT, NV, IA, MS, AR, KS, UT, NE, NM, WV, ID, HI | staging against the mapping                |
 | 4     | NH, ME, MT, RI, DE, SD, ND, AK, VT, WY         | later                                      |
@@ -64,3 +64,7 @@ New York: 21,429 sections, one per nysenate.gov section page, run `f5fb6fd1-6930
 Arizona: `azleg.gov/robots.txt` sets a 120-second crawl delay for all agents, and the capture honors it, about 30 section pages an hour. 376 pages were retained by 2026-10-07 (titles 1 and 3 in progress). No official bulk file was found (Tavily searches limited to azleg.gov, a Firecrawl map of the site). Fetching through Firecrawl would route around the delay and produce proxied content that could not be published, so it was not done. Nothing is landed.
 
 Louisiana: the document capture was at 45,000 of 46,432 on 2026-10-07 with no failures; it lands once it finishes and its TOC proof is written.
+
+## Massachusetts
+
+26,812 sections, one per General Laws section document, run `be8d73fd-7c6c-4d99-b1d4-f28d97688200`, 20 of 20 live diffs against the General Court's JSON API, `reviewed` with projection allowed. The chapter indexes list 26,815 section links. Three are gaps: two the publisher's own section endpoint reports as not found (c. 111 § 513/4, c. 112 § 87DDD1/2) and one URL listed twice. The site calls itself an unofficial version, and that notice is the stored currency statement.

@@ -164,6 +164,44 @@ def il():
     write("IL", {"parser": {"name": "il-ilcs-act-pages", "version": "1"}}, us, ss)
 
 
+def ma():
+    import collections
+    import ma_land
+    info = ma_land.build()
+    proof = ma_land.toc_proof(info)
+    absent = [u for pg in proof["pages"] for u in (pg.get("publisher_absent") or [])]
+    _, statement = ma_land.statement_info()
+    codes = collections.Counter("%s:%s" % (c, sc_) for c, sc_, u in info["expected"])
+    seen = collections.Counter()
+    us, ss, gaps = [], [], []
+    for c, sec, u in info["expected"]:
+        rec = info["sec_recs"].get(u)
+        if rec is None:
+            gaps.append({"url": u, "chapter": c, "section": sec, "reason": "publisher_absent" if u in absent else "not captured"})
+            continue
+        d = json.loads(ma_land.body(rec))
+        heading, text, status = ma_land.parse_section(d, rec)
+        if not (text or "").strip():
+            gaps.append({"url": u, "chapter": c, "section": sec, "reason": "empty text"})
+            continue
+        key = "%s:%s" % (c, sec)
+        path = key
+        if codes[key] > 1:
+            seen[key] += 1
+            path = "%s@%d" % (key, seen[key])
+        pcode = d["Part"]["Code"]
+        title = info["tmap"][c]
+        hier = [{"level": "part", "number": pcode, "heading": info["part_json"][pcode]["Name"]},
+                {"level": "title", "number": title[0], "heading": title[1]},
+                {"level": "chapter", "number": c, "heading": info["chap_json"][c]["Name"]},
+                {"level": "section", "number": sec, "heading": heading}]
+        us.append({"unit_key": path, "source_url": u, "retrieval_method": "publisher_api"})
+        ss.append({"unit_key": path, "citation_path": path, "citation": "G.L. c. %s, § %s" % (c, sec), "heading": heading, "text": text,
+                   "hierarchy": hier, "currency": {"basis": "publisher_statement", "statement": statement, "through_date": None, "edition": None}})
+    json.dump({"listed": info["listed_total"], "distinct": len(info["expected"]), "gaps": gaps}, open("/tmp/rv/MA-gaps.json", "w"), indent=1)
+    write("MA", {"parser": {"name": "ma-legislature-api", "version": "1"}}, us, ss)
+
+
 def mo():
     import mo_land
     import mo_parse as P
