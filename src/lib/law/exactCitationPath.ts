@@ -44,12 +44,14 @@ function withoutSectionRanges(text: string): string {
   );
 }
 
-/** A bare section number that is already the section half of a title or article token is not a second section. */
+/** A bare section number that is already the section half of a title, chapter, or article token is not a second section. */
 function omitSectionHalf(paths: string[]): string[] {
   return paths.filter(
     (path) =>
       !paths.some(
-        (other) => other !== path && (other.endsWith(`/${path}`) || other.endsWith(` ${path}`)),
+        (other) =>
+          other !== path &&
+          (other.endsWith(`/${path}`) || other.endsWith(` ${path}`) || other.endsWith(`:${path}`)),
       ),
   );
 }
@@ -84,14 +86,14 @@ function illinoisPaths(citation: string): string[] | null {
 }
 
 /**
- * Massachusetts paths such as `Mass. Gen. Laws ch. 260, § 2A`.
- * The chapter and the section are one path, `260:2A`. A parenthetical is not included.
- * `§ 2A` is not `§ 2` or `§ 2B`.
+ * Massachusetts paths such as `Mass. Gen. Laws ch. 260, § 2A` and `ch. 106, § 2-318`.
+ * The chapter and the section are one path. A parenthetical is not included.
+ * `§ 2-318` is not `§ 2`. `§ 2A` is not `§ 2` or `§ 2B`.
  */
 function massachusettsPaths(citation: string): string[] | null {
   const paths: string[] = [];
   const re =
-    /\b(?:ch(?:apter)?|c)\.?\s+(\d+[A-Za-z]*)\s*,?\s*§§?\s*(\d+[A-Za-z]*)(?![A-Za-z0-9])/gi;
+    /\b(?:ch(?:apter)?|c)\.?\s+(\d+[A-Za-z]*)\s*,?\s*§§?\s*(\d+(?:-\d+)?[A-Za-z]*)(?![A-Za-z0-9-])/gi;
   for (const match of citation.matchAll(re)) {
     const chapter = match[1]?.toUpperCase();
     const section = match[2]?.toUpperCase();

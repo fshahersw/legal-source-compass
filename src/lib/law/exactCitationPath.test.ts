@@ -245,6 +245,17 @@ describe("exact statute citation paths", () => {
     expect(exactCitationPaths("MA", "Mass. Gen. Laws ch. 260, § 2")).toEqual(["260:2"]);
     expect(exactCitationPaths("MA", "Mass. Gen. Laws ch. 260, § 2B")).toEqual(["260:2B"]);
     expect(exactCitationPaths("MA", "Mass. Gen. Laws ch. 260, § 2A(a)")).toEqual(["260:2A"]);
+    expect(exactCitationPaths("MA", "Mass. Gen. Laws ch. 106, § 2-318")).toEqual(["106:2-318"]);
+    expect(exactCitationPaths("MA", "Mass. Gen. Laws ch. 106, § 2-318")?.includes("106:2")).toBe(
+      false,
+    );
+    expect(exactCitationPaths("MA", "Mass. Gen. Laws ch. 106, § 2-318")?.includes("2-318")).toBe(
+      false,
+    );
+    expect(exactCitationPaths("MA", "Mass. Gen. Laws ch. 106, § 2-725(1)")).toEqual(["106:2-725"]);
+    const both = "Mass. Gen. Laws ch. 106, § 2-318; see also ch. 260, § 2A";
+    expect(exactCitationPaths("MA", both)).toEqual(["106:2-318", "260:2A"]);
+    expect(statuteNativeId("MA", "106:2-318")).toBe("MA:106:2-318");
     expect(exactCitationPaths("MA", "Mass. Gen. Laws ch. 260, §§ 2A to 2B")).toBeNull();
     expect(statuteNativeId("MA", "260:2A")).toBe("MA:260:2A");
   });
