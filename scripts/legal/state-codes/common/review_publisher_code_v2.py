@@ -73,6 +73,21 @@ def publisher_section_number(body):
     return num.strip() if num else None
 
 
+def live_section_body(body):
+    """Operative section text from the live publisher file (Utah section XML uses parse_ut.section_body)."""
+    if publisher_section_number(body) is None:
+        return None
+    ut_dir = os.path.join(HERE, "..", "ut")
+    if ut_dir not in sys.path:
+        sys.path.insert(0, ut_dir)
+    from parse_ut import load_section, section_body  # noqa: WPS433
+    section, _ = load_section(body)
+    tag = section.tag.split("}", 1)[-1] if section.tag else ""
+    if tag.lower() != "section":
+        return None
+    return section_body(section)
+
+
 def squash(t):
     t = html_mod.unescape(t)
     t = t.replace("\u2019", "'").replace("\u2018", "'").replace("\u201c", '"').replace("\u201d", '"')
@@ -139,7 +154,11 @@ def main():
                 row["heading_ok"] = squash(re.sub(r"\[[^\]]+\]", "", heading)) in live
             if heading and not row["heading_ok"]:
                 row["heading_ok"] = squash(heading.split("[", 1)[0].strip()) in live
-            row["text_ok"] = squash(s["text"]) in live
+            live_body = live_section_body(body)
+            if live_body is not None:
+                row["text_ok"] = squash(s["text"]) == squash(live_body)
+            else:
+                row["text_ok"] = squash(s["text"]) in live
             row["live_sha256"] = rec["sha256"]
             row["ok"] = row["citation_ok"] and row["heading_ok"] and row["text_ok"]
         results.append(row)
