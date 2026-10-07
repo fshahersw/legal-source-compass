@@ -3,7 +3,14 @@ import unittest
 
 from citation import canon_citation, citations_equal_lists, citations_equal_multisets, filter_sections_to_official_toc
 from html_section_bodies import section_bodies_from_chapter_html
-from parse import OFFICIAL_STATEMENT, parse_toc, sections_for_chapter, split_pdf_sections, citation_chapter_id
+from parse import (
+    OFFICIAL_STATEMENT,
+    parse_toc,
+    printed_heading_from_pdf_body,
+    sections_for_chapter,
+    split_pdf_sections,
+    citation_chapter_id,
+)
 
 FIX = os.path.join(os.path.dirname(__file__), "fixtures")
 
@@ -35,6 +42,17 @@ class TestNdParse(unittest.TestCase):
         text = "    10-33-100. Procedure in dissolution.\n    1. When a notice.\n"
         secs = split_pdf_sections(text)
         self.assertEqual(secs[0]["citation"], "10-33-100")
+
+    def test_printed_heading_from_wrapped_pdf_lines(self):
+        body = (
+            "15-19-01.1. Distance education courses - Course lists to school districts -\n"
+            "Notification.\n"
+            "     The center for distance education shall provide.\n"
+        )
+        self.assertEqual(
+            printed_heading_from_pdf_body("15-19-01.1", body),
+            "Distance education courses - Course lists to school districts - Notification",
+        )
 
     def test_official_statement_present(self):
         self.assertIn("official version", OFFICIAL_STATEMENT.lower())

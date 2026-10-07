@@ -31,6 +31,7 @@ REPEALED = re.compile(r"^\s*Repealed\b", re.I | re.M)
 CHAPTER_REPEALED = re.compile(r"\[Repealed\b", re.I)
 SL_HISTORY = re.compile(r"\bS\.L\.\s+\d{4}", re.I)
 TOC_EFFECTIVE_SUNSET = re.compile(r"Effective through\s+July\s+31,\s*2019", re.I)
+PDF_HYPHENS = ("\u2010", "\u2011", "\u2012", "\u2013", "\u2014", "\u2212", "\u00ad")
 
 OFFICIAL_STATEMENT = (
     "North Dakota Century Code published on this website is the official version of the "
@@ -71,6 +72,41 @@ def parse_toc(html: str):
         name = collapse(html_text(name))
         rows.append({"citation": cit, "heading": name})
     return chapter_id, chapter_heading, rows
+
+
+def normalize_pdf_heading(text: str) -> str:
+    for ch in PDF_HYPHENS:
+        text = text.replace(ch, "-")
+    return collapse(text)
+
+
+def printed_heading_from_pdf_body(citation: str, body: str) -> str | None:
+    """Heading as printed in the chapter PDF (may wrap across lines before the body paragraph)."""
+    text = body.strip()
+    prefix = citation + "."
+    if not text.startswith(prefix):
+        return None
+    rest = text[len(prefix) :].lstrip("\n")
+    if not rest:
+        return None
+    parts: list[str] = []
+    for line in rest.splitlines():
+        if not line.strip():
+            if parts:
+                break
+            continue
+        if (line.startswith("    ") or line.startswith("\t")) and parts:
+            break
+        parts.append(line.strip())
+        joined = " ".join(parts)
+        if joined.endswith(".") and not joined.rstrip(".").endswith("-"):
+            break
+    if not parts:
+        return None
+    heading = collapse(" ".join(parts))
+    if heading.endswith("."):
+        heading = heading[:-1].strip()
+    return normalize_pdf_heading(heading)
 
 
 def split_pdf_sections(text: str):
@@ -310,8 +346,12 @@ def run(work: str):
             occ = seen[cit]
             citation_path = cit if occ == 1 else f"{cit}#{occ}"
             toc_row = toc_by.get(canon_citation(cit), {})
-            heading = toc_row.get("heading") or sec["heading"]
             body = sec["body"]
+            heading = (
+                printed_heading_from_pdf_body(cit, body)
+                or normalize_pdf_heading(sec["heading"])
+                or toc_row.get("heading")
+            )
             start = ch_text.find(body)
             if start < 0:
                 start = ch_text.find(cit + ".")
