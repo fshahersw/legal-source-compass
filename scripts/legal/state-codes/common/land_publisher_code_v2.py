@@ -193,14 +193,23 @@ def put_object(cloud, o):
         if digest.hexdigest() != o["sha256"] or os.path.getsize(o["path"]) != o["bytes"]:
             raise RuntimeError(f"local file does not match plan {o['sha256'][:12]}")
         ctype = "text/plain; charset=utf-8" if o["kind"] == "unit_text_derivative" else "application/octet-stream"
-        if o["bytes"] > STANDARD_UPLOAD_LIMIT:
-            ust, msg = tus_upload(cloud, key, o["path"], ctype)
-        else:
-            with open(o["path"], "rb") as handle:
-                ust, msg = cloud.upload(key, handle.read(), ctype)
-            if ust == 413:
+        for attempt in range(7):
+            if o["bytes"] > STANDARD_UPLOAD_LIMIT:
                 ust, msg = tus_upload(cloud, key, o["path"], ctype)
-        if ust not in (200, 201) and "already exists" not in msg and "Duplicate" not in msg:
+            else:
+                with open(o["path"], "rb") as handle:
+                    ust, msg = cloud.upload(key, handle.read(), ctype)
+                if ust == 413:
+                    ust, msg = tus_upload(cloud, key, o["path"], ctype)
+            # Storage answers LockTimeout when many uploads contend for the same lock; back off and try again.
+            if ust not in (200, 201) and "LockTimeout" in str(msg) and attempt < 6:
+                time.sleep(min(60, 2 ** (attempt + 1)))
+                st, body = cloud.readback(key)
+                if st == 200:
+                    break
+                continue
+            break
+        if ust not in (200, 201) and "already exists" not in msg and "Duplicate" not in msg and not (ust != 200 and "LockTimeout" in str(msg) and cloud.readback(key)[0] == 200):
             raise RuntimeError(f"upload {ust} {msg}")
         st, body = cloud.readback(key)
     if st != 200 or hashlib.sha256(body).hexdigest() != o["sha256"] or len(body) != o["bytes"]:

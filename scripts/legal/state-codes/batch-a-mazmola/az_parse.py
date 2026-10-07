@@ -15,7 +15,7 @@ import re
 from bs4 import BeautifulSoup
 
 WS = re.compile(r'[ \t\r\n\f\v\u00a0\u2002\u2003\u2009]+')
-URL_PATH = re.compile(r'/ars/([0-9]+[A-Za-z]?)/([0-9A-Za-z.]+)\.htm$')
+URL_PATH = re.compile(r'/ars/([0-9]+[A-Za-z]?)/([0-9A-Za-z.\-]+)\.htm$')
 NUMBER = re.compile(r'^([0-9]+[A-Za-z]?)-([0-9A-Za-z.]+)$')
 DOC = re.compile(r'docName=(https://www\.azleg\.gov/ars/[^"&]+\.htm)')
 
