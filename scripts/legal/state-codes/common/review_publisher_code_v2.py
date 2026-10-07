@@ -465,8 +465,8 @@ def _excuse_repealer_crossref(piece, row):
         return False
     if not re.search(r"§§?\s*[\d.\-]+\s+through\s+[\d.\-]+", piece, re.I):
         return False
-    own = squash(_printed_number(row) or "")
-    if own and own in squash(piece):
+    own = (_printed_number(row) or "").strip()
+    if own and re.search(r"§§?\s*" + re.escape(own) + r"\.[0-9]", piece):
         return False
     return True
 
