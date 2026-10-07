@@ -146,8 +146,12 @@ def citation_path_for(anchor: str, occurrence: int) -> str:
 def citation_as_printed(sec: dict) -> str:
     line = sec["header_line"] or ""
     if line.lower().startswith(("sec", "§")):
-        return line
-    return f"AS {sec['anchor']}" + (f". {sec['heading']}" if sec.get("heading") else "")
+        cit = line
+    else:
+        cit = f"AS {sec['anchor']}" + (f". {sec['heading']}" if sec.get("heading") else "")
+    if len(cit) > 400:
+        cit = cit[:397] + "..."
+    return cit
 
 
 def reconcile_chapter(

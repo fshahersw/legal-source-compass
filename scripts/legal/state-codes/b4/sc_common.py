@@ -40,6 +40,17 @@ def utc_now():
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
 
+def worker_slice(items, worker, workers):
+    """Disjoint index ranges for parallel fetch workers (worker in 0 .. workers-1)."""
+    n = len(items)
+    if workers < 1 or worker < 0 or worker >= workers:
+        raise ValueError("worker must be in 0 .. workers-1")
+    base, extra = divmod(n, workers)
+    start = worker * base + min(worker, extra)
+    end = start + base + (1 if worker < extra else 0)
+    return items[start:end]
+
+
 def object_key(sha):
     return f"{KEY_PREFIX}/{sha[:2]}/{sha}"
 

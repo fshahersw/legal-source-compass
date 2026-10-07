@@ -13,7 +13,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-from sc_common import Archive, collapse, decode_html  # noqa: E402
+from sc_common import Archive, collapse, decode_html, worker_slice  # noqa: E402
 
 BASE = "https://webserver.rilegislature.gov/Statutes/"
 TITLE_HREF = re.compile(r'href="(TITLE[^"]+/INDEX\.HTM)"', re.I)
@@ -121,10 +121,30 @@ def fetch_sections(arc, inv):
     return failed
 
 
+def fetch_sections_parallel(arc, inv, worker, workers):
+    pending = [u for u in inv["section_urls"] if arc.index.get(u, {}).get("state") != "complete"]
+    chunk = worker_slice(pending, worker, workers)
+    failed = []
+    print(f"ri worker {worker}/{workers} chunk {len(chunk)} of {len(pending)} pending", flush=True)
+    for i, u in enumerate(chunk, 1):
+        rec = grab(arc, u)
+        if rec["state"] != "complete":
+            failed.append({"url": u, "http_status": rec.get("http_status")})
+        if i % 200 == 0:
+            print(f"ri w{worker}", i, len(chunk), "failed", len(failed), flush=True)
+    out = os.path.join(arc.work, f"acquire_failed_w{worker}.json")
+    json.dump(failed, open(out, "w"), indent=1)
+    print(f"ri w{worker} done chunk {len(chunk)} failed {len(failed)}", flush=True)
+    return failed
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--work", default="/tmp/sc4/ri")
     ap.add_argument("--inventory-only", action="store_true")
+    ap.add_argument("--fetch-parallel", action="store_true", help="fetch pending section URLs using --worker/--workers")
+    ap.add_argument("--worker", type=int, default=0)
+    ap.add_argument("--workers", type=int, default=4)
     a = ap.parse_args()
     os.makedirs(a.work, exist_ok=True)
     arc = Archive(a.work, min_interval=1.0)
@@ -137,9 +157,12 @@ def main():
         json.dump(inv, open(inv_path, "w"), indent=1)
         print("wrote inventory", inv_path, flush=True)
     if not a.inventory_only:
-        failed = fetch_sections(arc, inv)
-        json.dump(failed, open(os.path.join(a.work, "acquire_failed.json"), "w"), indent=1)
-        print("section fetch done; failed", len(failed), flush=True)
+        if a.fetch_parallel:
+            fetch_sections_parallel(arc, inv, a.worker, a.workers)
+        else:
+            failed = fetch_sections(arc, inv)
+            json.dump(failed, open(os.path.join(a.work, "acquire_failed.json"), "w"), indent=1)
+            print("section fetch done; failed", len(failed), flush=True)
 
 
 if __name__ == "__main__":

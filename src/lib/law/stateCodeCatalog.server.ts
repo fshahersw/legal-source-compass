@@ -3,12 +3,19 @@ import { ilikeTerm, restGet, rpcPost, rpcPostOptional } from "@/lib/external/res
 import { STATE_DATASETS } from "@/lib/external/lawTree";
 import { listSnapshotNames, readPrivateSnapshot } from "@/lib/private-data/snapshot.server";
 import {
+  exactCitationPaths,
+  storedHierarchyNumbers,
+  storedSectionNumbers,
+  tokenEqualsStoredSection,
+} from "./exactCitationPath";
+import {
   classifyDataset,
   coverageStatus,
   matchesCitationOrHeading,
   parseListing,
   projectedCurrency,
   projectedEdition,
+  publishedSectionBody,
   sectionFieldsFromRecord,
   snapshotReleasePaths,
   summarizeBrowseRoot,
@@ -531,29 +538,35 @@ async function searchProjection(
   };
 }
 
+function parseOutlineSections(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    const section = item && typeof item === "object" ? (item as Record<string, unknown>) : null;
+    const id = section ? asText(section["native_id"]) : null;
+    if (!section || !id) return [];
+    return [
+      {
+        native_id: id,
+        citation: asText(section["citation"]),
+        heading: asText(section["heading"]),
+        status_note: asText(section["status_note"]),
+      },
+    ];
+  });
+}
+
 function parseOutline(value: unknown): ProjectedOutline {
   const row = value && typeof value === "object" ? (value as Record<string, unknown>) : null;
   if (!row || row["available"] !== true) return { available: false };
   if (row["kind"] === "sections" && Array.isArray(row["sections"])) {
+    const sections = parseOutlineSections(row["sections"]);
     return {
       available: true,
       kind: "sections",
       level: "section",
-      total: typeof row["total"] === "number" ? row["total"] : row["sections"].length,
+      total: typeof row["total"] === "number" ? row["total"] : sections.length,
       truncated: row["truncated"] === true,
-      sections: row["sections"].flatMap((item) => {
-        const section = item && typeof item === "object" ? (item as Record<string, unknown>) : null;
-        const id = section ? asText(section["native_id"]) : null;
-        if (!section || !id) return [];
-        return [
-          {
-            native_id: id,
-            citation: asText(section["citation"]),
-            heading: asText(section["heading"]),
-            status_note: asText(section["status_note"]),
-          },
-        ];
-      }),
+      sections,
     };
   }
   if (
@@ -561,6 +574,7 @@ function parseOutline(value: unknown): ProjectedOutline {
     Array.isArray(row["groups"]) &&
     typeof row["level"] === "string"
   ) {
+    const directSections = parseOutlineSections(row["direct_sections"]);
     return {
       available: true,
       kind: "groups",
@@ -578,6 +592,10 @@ function parseOutline(value: unknown): ProjectedOutline {
           },
         ];
       }),
+      directSections,
+      directTotal:
+        typeof row["direct_total"] === "number" ? row["direct_total"] : directSections.length,
+      directTruncated: row["direct_truncated"] === true,
     };
   }
   return { available: false };
@@ -616,6 +634,120 @@ export async function projectedSection(
     },
   });
   return { id: row["native_id"], ...fields };
+}
+
+export type PublicStatuteSection = {
+  nativeId: string;
+  citationPath: string;
+  heading: string | null;
+  text: string | null;
+  sourceUrl: string | null;
+  currency: string | null;
+  status: string | null;
+};
+
+let publicStatesCache: { at: number; states: Set<string> } | null = null;
+
+async function publicProjectionStates(): Promise<Set<string>> {
+  if (publicStatesCache && Date.now() - publicStatesCache.at < CATALOG_TTL)
+    return publicStatesCache.states;
+  const rows = await rpcPostOptional<{ jurisdiction?: unknown }[]>(
+    "corpus_publisher_code_projected_states_v2",
+    {},
+  );
+  const states = new Set<string>();
+  if (Array.isArray(rows)) {
+    for (const row of rows) {
+      const state = asText(row?.jurisdiction)?.toUpperCase();
+      if (state) states.add(state);
+    }
+  }
+  publicStatesCache = { at: Date.now(), states };
+  return states;
+}
+
+function projectedStatuteSection(
+  usps: string,
+  row: Record<string, unknown> | null,
+  accept: (citationPath: string) => boolean,
+): PublicStatuteSection | null {
+  if (!row) return null;
+  const citationPath = asText(row["citation_path"]);
+  const nativeId = asText(row["native_id"]);
+  if (!citationPath || !nativeId || nativeId !== `${usps}:${citationPath}`) return null;
+  if (!accept(citationPath)) return null;
+  const fields = sectionFieldsFromRecord({
+    title: asText(row["citation"]),
+    source_url: asText(row["source_url"]),
+    detail: {
+      citation: row["citation"],
+      heading: row["heading"],
+      text: row["text"],
+      history: row["history"],
+      status_note: row["status_note"],
+      currency: row["currency"],
+    },
+  });
+  return {
+    nativeId,
+    citationPath,
+    heading: fields.heading,
+    text: publishedSectionBody(fields),
+    sourceUrl: fields.sourceUrl,
+    currency: fields.currency,
+    status: fields.status,
+  };
+}
+
+/**
+ * Public sections named by a limitations citation.
+ * A token whose native id is `ST:<token>` is that section.
+ * Any other token links only when it equals the last path segment after `sec_`,
+ * the final hyphen segment, or the stored section number, and exactly one published section matches.
+ */
+export async function publicStatuteSections(
+  state: string,
+  citation: string,
+): Promise<PublicStatuteSection[]> {
+  const usps = state.toUpperCase();
+  const paths = exactCitationPaths(usps, citation);
+  if (!paths?.length) return [];
+  if (!(await publicProjectionStates()).has(usps)) return [];
+  const sections: PublicStatuteSection[] = [];
+  for (const token of paths) {
+    const nativeId = `${usps}:${token}`;
+    const direct = projectedStatuteSection(
+      usps,
+      await rpcPostOptional<Record<string, unknown> | null>(
+        "corpus_publisher_code_projected_section_v2",
+        { p_jurisdiction: usps, p_native_id: nativeId },
+      ),
+      (citationPath) => citationPath === token,
+    );
+    if (direct) {
+      sections.push(direct);
+      continue;
+    }
+    const numberedRow = await rpcPostOptional<Record<string, unknown> | null>(
+      "corpus_publisher_code_projected_section_for_token_v2",
+      { p_jurisdiction: usps, p_token: token },
+    );
+    const numberedPath = numberedRow ? asText(numberedRow["citation_path"]) : null;
+    if (
+      !numberedPath ||
+      !tokenEqualsStoredSection(
+        token,
+        numberedPath,
+        storedSectionNumbers(numberedRow?.["hierarchy"]),
+        storedHierarchyNumbers(numberedRow?.["hierarchy"], "title"),
+      )
+    ) {
+      continue;
+    }
+    const numbered = projectedStatuteSection(usps, numberedRow, () => true);
+    if (numbered) sections.push(numbered);
+  }
+  return sections;
 }
 
 export type StateCodeCoverageRow = {

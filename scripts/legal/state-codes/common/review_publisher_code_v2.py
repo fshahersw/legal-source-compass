@@ -13,6 +13,7 @@ batch can run it after landing. `--toc-ok` is the proof that parsed section coun
 (index/subchapter pages with zero sections are a red flag, not a pass); leave it empty and the state is held.
 """
 import argparse
+import html as html_mod
 import json
 import os
 import random
@@ -56,7 +57,10 @@ def live_text(body, url):
 
 
 def squash(t):
+    t = html_mod.unescape(t)
     t = t.replace("\u2019", "'").replace("\u2018", "'").replace("\u201c", '"').replace("\u201d", '"')
+    for dash in ("\u2013", "\u2014", "\u2012", "\u2212"):
+        t = t.replace(dash, "-")
     return re.sub(r"\s+", "", t)
 
 
@@ -69,13 +73,28 @@ def main():
     ap.add_argument("--toc-ok", default="", help="evidence that parsed section counts equal the publisher TOC (empty = not established)")
     ap.add_argument("--report", required=True)
     ap.add_argument("--apply", action="store_true", help="call corpus_publisher_code_review_v2 (service role from the environment)")
+    ap.add_argument(
+        "--must-include",
+        action="append",
+        default=[],
+        help="citation_path or citation values always included in the live sample",
+    )
     a = ap.parse_args()
     land = a.landing
     units = {u["unit_key"]: u for u in map(json.loads, open(os.path.join(land, "units.jsonl"), encoding="utf-8"))}
     secs = [json.loads(x) for x in open(os.path.join(land, "sections.jsonl"), encoding="utf-8")]
     manifest = json.load(open(os.path.join(land, "manifest.json")))
     rnd = random.Random(a.seed)
-    sample = rnd.sample(secs, min(a.n, len(secs)))
+    must_rows = []
+    for token in a.must_include:
+        for s in secs:
+            if s["citation_path"] == token or s.get("citation") == token:
+                must_rows.append(s)
+                break
+    pool = [s for s in secs if s not in must_rows]
+    sample_size = min(a.n, len(secs))
+    extra = max(0, sample_size - len(must_rows))
+    sample = must_rows + (rnd.sample(pool, min(extra, len(pool))) if pool and extra else [])
     tmp = tempfile.mkdtemp(prefix="review-")
     arc = sc.Archive(tmp, min_interval=1.0)
     results = []
@@ -90,7 +109,12 @@ def main():
             live = squash(live_text(arc.read(rec), u["source_url"]))
             number = s["hierarchy"][-1].get("number") or ""
             row["citation_ok"] = bool(number) and squash(number) in live
-            row["heading_ok"] = (not s.get("heading")) or squash(s["heading"]) in live
+            heading = s.get("heading") or ""
+            row["heading_ok"] = (not heading) or squash(heading) in live
+            if heading and not row["heading_ok"]:
+                row["heading_ok"] = squash(re.sub(r"\[[^\]]+\]", "", heading)) in live
+            if heading and not row["heading_ok"]:
+                row["heading_ok"] = squash(heading.split("[", 1)[0].strip()) in live
             row["text_ok"] = squash(s["text"]) in live
             row["live_sha256"] = rec["sha256"]
             row["ok"] = row["citation_ok"] and row["heading_ok"] and row["text_ok"]

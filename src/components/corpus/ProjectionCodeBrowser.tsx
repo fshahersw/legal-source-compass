@@ -142,6 +142,35 @@ export function ProjectionCodeBrowser({
           ) : null}
           {outline.data?.available && outline.data.kind === "groups" ? (
             <>
+              {outline.data.directSections.length ? (
+                <>
+                  <label className="block text-sm font-semibold" htmlFor="projected-section">
+                    Section
+                  </label>
+                  <select
+                    id="projected-section"
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={section ?? ""}
+                    onChange={(event) =>
+                      onNavigate({ path, section: event.target.value || undefined })
+                    }
+                  >
+                    <option value="">Choose a section</option>
+                    {outline.data.directSections.map((item) => (
+                      <option key={item.native_id} value={item.native_id}>
+                        {item.citation ?? item.heading ?? item.native_id}
+                        {item.status_note ? ` · ${item.status_note}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                  {outline.data.directTruncated ? (
+                    <p className="text-xs text-muted-foreground">
+                      Showing 5,000 of {outline.data.directTotal.toLocaleString()} sections at this
+                      level.
+                    </p>
+                  ) : null}
+                </>
+              ) : null}
               <label className="block text-sm font-semibold" htmlFor="projected-level">
                 {level}
               </label>
