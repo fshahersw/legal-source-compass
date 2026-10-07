@@ -91,7 +91,7 @@ function clocksFields(rule: LimitationRule): GuidedDateField[] {
       });
     if (limb.from === "death")
       add({
-        key: "accrualDate",
+        key: "deathDate",
         label: "Date of death",
         help: "Use the death date required by this wrongful-death rule. Repose dates are separate.",
       });
