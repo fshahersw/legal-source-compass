@@ -149,11 +149,39 @@ export const MATTERS = {
     pages: [{ id: 'nysd-3043-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.nysd.uscourts.gov/MDL/22md3043' }],
     index_pages: [],
   },
-  // D. Mass. MDL 3083 (shared court MDL hub; order PDFs scoped by path /caseinfo/pdf/mdl/3083/).
+  // D. Mass. MDL hub (shared HTML; each matter’s order PDFs live under /caseinfo/pdf/mdl/<mdl>/ only).
   '3083': {
     name: 'In re MOVEit Customer Data Security Breach Litigation', court_id: 'mad', host: 'www.mad.uscourts.gov', tier: 2,
     case_number: { literal: '1:23-md-3083', page_id: 'mad-mdl-hub', note: 'printed as the lead case number in the MDL 3083 case-information tab on the court MDL hub' },
     printed_mdl_literal: 'MDL 3083', listing_href_substring: 'pdf/mdl/3083',
+    pages: [{ id: 'mad-mdl-hub', role: 'mdl_page', family: 'mnd-mdl-page', url: 'https://www.mad.uscourts.gov/caseinfo/multi-district-litigation.htm' }],
+    index_pages: [],
+  },
+  '3029': {
+    name: 'In re Covidien Hernia Mesh Products Liability Litigation', court_id: 'mad', host: 'www.mad.uscourts.gov', tier: 2,
+    case_number: { literal: '1:22-md-03029', page_id: 'mad-mdl-hub', note: 'printed as the lead case number in the MDL 3029 case-information tab on the court MDL hub' },
+    printed_mdl_literal: 'MDL 3029', listing_href_substring: 'pdf/mdl/3029',
+    pages: [{ id: 'mad-mdl-hub', role: 'mdl_page', family: 'mnd-mdl-page', url: 'https://www.mad.uscourts.gov/caseinfo/multi-district-litigation.htm' }],
+    index_pages: [],
+  },
+  '2938': {
+    name: 'In re Evenflo Company, Inc., Products Liability Litigation', court_id: 'mad', host: 'www.mad.uscourts.gov', tier: 2,
+    case_number: { literal: '1:20-md-02938', page_id: 'mad-mdl-hub', note: 'printed as the lead case number in the MDL 2938 case-information tab on the court MDL hub' },
+    printed_mdl_literal: 'MDL 2938', listing_href_substring: 'pdf/mdl/2938',
+    pages: [{ id: 'mad-mdl-hub', role: 'mdl_page', family: 'mnd-mdl-page', url: 'https://www.mad.uscourts.gov/caseinfo/multi-district-litigation.htm' }],
+    index_pages: [],
+  },
+  '2768': {
+    name: 'In re Stryker LFIT V40 Femoral Head Products Liability Litigation', court_id: 'mad', host: 'www.mad.uscourts.gov', tier: 2,
+    case_number: { literal: '1:17-md-02768', page_id: 'mad-mdl-hub', note: 'printed as the lead case number in the MDL 2768 case-information tab on the court MDL hub' },
+    printed_mdl_literal: 'MDL 2768', listing_href_substring: 'pdf/mdl/2768',
+    pages: [{ id: 'mad-mdl-hub', role: 'mdl_page', family: 'mnd-mdl-page', url: 'https://www.mad.uscourts.gov/caseinfo/multi-district-litigation.htm' }],
+    index_pages: [],
+  },
+  '2566': {
+    name: 'In re Telexfree Securities Litigation', court_id: 'mad', host: 'www.mad.uscourts.gov', tier: 2,
+    case_number: { literal: '4:14-md-2566', page_id: 'mad-mdl-hub', note: 'printed as the lead case number in the MDL 2566 case-information tab on the court MDL hub' },
+    printed_mdl_literal: 'MDL 2566', listing_href_substring: 'pdf/mdl/2566',
     pages: [{ id: 'mad-mdl-hub', role: 'mdl_page', family: 'mnd-mdl-page', url: 'https://www.mad.uscourts.gov/caseinfo/multi-district-litigation.htm' }],
     index_pages: [],
   },
