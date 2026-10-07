@@ -58,3 +58,9 @@ Pennsylvania stays held: its captures are `proxied:firecrawl`, and direct reques
 Illinois: 72,813 sections in 2,817 act units, run `1020fbf4-bbe0-49be-b4c5-148bf2e14787`, 20 of 20 live diffs, `reviewed` with projection allowed. 669 acts with no section text are gaps. ilga.gov serves an incomplete certificate chain; the review used the intermediates with verification on, at the publisher's 10-second delay.
 
 New York: 21,429 sections, one per nysenate.gov section page, run `f5fb6fd1-6930-56ba-8409-bd2033fa1f05`, landed and `held`. Every capture is `proxied:firecrawl` because the publisher challenges direct requests, so the review could not diff live pages. `ENV/13-0901` prints no text and is a gap.
+
+## Arizona and Louisiana
+
+Arizona: `azleg.gov/robots.txt` sets a 120-second crawl delay for all agents, and the capture honors it, about 30 section pages an hour. 376 pages were retained by 2026-10-07 (titles 1 and 3 in progress). No official bulk file was found (Tavily searches limited to azleg.gov, a Firecrawl map of the site). Fetching through Firecrawl would route around the delay and produce proxied content that could not be published, so it was not done. Nothing is landed.
+
+Louisiana: the document capture was at 45,000 of 46,432 on 2026-10-07 with no failures; it lands once it finishes and its TOC proof is written.
