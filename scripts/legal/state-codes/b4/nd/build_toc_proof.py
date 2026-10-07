@@ -31,7 +31,15 @@ def build(work: str, landing: str | None = None) -> dict:
         _, _, rows = parse_toc(html)
         markers = len(rows)
         sections = sec_by.get(unit["unit_key"], 0)
-        pages.append({"url": html_url, "unit_key": unit["unit_key"], "markers": markers, "sections": sections})
+        pages.append(
+            {
+                "url": pdf_url,
+                "toc_url": html_url,
+                "unit_key": unit["unit_key"],
+                "markers": markers,
+                "sections": sections,
+            }
+        )
         if markers != sections:
             raise SystemExit(f"TOC mismatch {html_url}: markers={markers} sections={sections}")
     proof = {
