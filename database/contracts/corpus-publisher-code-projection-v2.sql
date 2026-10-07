@@ -283,6 +283,7 @@ begin
      or not (
        p_token ~ '^[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*$'
        or p_token ~ '^[0-9]+[A-Za-z]?/[0-9]+$'
+       or p_token ~ '^[0-9]+(?:-[A-Za-z])?/[0-9]+(?:-[A-Za-z]+)?$'
      ) then
     raise exception 'Jurisdiction and section token are required' using errcode = '22023';
   end if;
@@ -315,7 +316,10 @@ begin
             and h->>'number' = p_token
         )
         or (
-          p_token ~ '^[0-9]+[A-Za-z]?/[0-9]+$'
+          (
+            p_token ~ '^[0-9]+[A-Za-z]?/[0-9]+$'
+            or p_token ~ '^[0-9]+(?:-[A-Za-z])?/[0-9]+(?:-[A-Za-z]+)?$'
+          )
           and split_part(p_token, '/', 1) = (
             select h->>'number'
             from jsonb_array_elements(

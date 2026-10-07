@@ -193,6 +193,44 @@ describe("exact statute citation paths", () => {
     expect(statuteNativeId("MA", "260:2A")).toBe("MA:260:2A");
   });
 
+  it("reads Maine title 14 section 752 without another title or a lettered neighbor", () => {
+    expect(exactCitationPaths("ME", "14 M.R.S. § 752")).toEqual(["14/752"]);
+    expect(exactCitationPaths("ME", "14 M.R.S. § 752")?.includes("752")).toBe(false);
+    expect(exactCitationPaths("ME", "14 M.R.S. § 752")?.includes("14/752-B")).toBe(false);
+    expect(exactCitationPaths("ME", "14 M.R.S. § 752-B")).toEqual(["14/752-B"]);
+    expect(exactCitationPaths("ME", "14 M.R.S. § 752-B")?.includes("14/752")).toBe(false);
+    expect(exactCitationPaths("ME", "14 M.R.S. § 752-B")?.includes("752-B")).toBe(false);
+    const sixYears = {
+      citationPath: "Title 14/Part 2/Chapter 205/§752",
+      sectionNumbers: ["752"],
+      titleNumbers: ["14"],
+    };
+    const ski = {
+      citationPath: "Title 14/Part 2/Chapter 205/§752-B",
+      sectionNumbers: ["752-B"],
+      titleNumbers: ["14"],
+    };
+    const otherTitle = {
+      citationPath: "Title 10/Chapter 1/§752",
+      sectionNumbers: ["752"],
+      titleNumbers: ["10"],
+    };
+    const otherLetter = {
+      citationPath: "Title 17-A/Chapter 1/§752-B",
+      sectionNumbers: ["752-B"],
+      titleNumbers: ["17-A"],
+    };
+    expect(onlyExactStoredSection("14/752", [sixYears, ski, otherTitle])?.citationPath).toBe(
+      sixYears.citationPath,
+    );
+    expect(onlyExactStoredSection("752", [sixYears, otherTitle])).toBeNull();
+    expect(onlyExactStoredSection("14/752-B", [ski, otherLetter, sixYears])?.citationPath).toBe(
+      ski.citationPath,
+    );
+    expect(onlyExactStoredSection("752-B", [ski, otherLetter])).toBeNull();
+    expect(statuteNativeId("ME", "14/752")).toBe("ME:14/752");
+  });
+
   it("reads Kentucky 413.140 and 413.120 as separate sections", () => {
     expect(exactCitationPaths("KY", "Ky. Rev. Stat. § 413.140(1)(a)")).toEqual(["413.140"]);
     expect(exactCitationPaths("KY", "Ky. Rev. Stat. § 413.140(1)(a)")?.includes("413.14")).toBe(

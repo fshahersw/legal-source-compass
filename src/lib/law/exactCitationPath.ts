@@ -20,6 +20,7 @@ export function exactCitationPaths(state: string, citation: string): string[] | 
         ...(vermontTitleSections(text) ?? []),
         ...(usps === "IL" ? (illinoisPaths(text) ?? []) : []),
         ...(usps === "MA" ? (massachusettsPaths(text) ?? []) : []),
+        ...(usps === "ME" ? (mainePaths(text) ?? []) : []),
         ...(DOTTED_PATH_STATES.has(usps) ? (dottedPaths(text) ?? []) : []),
       ]),
     ]),
@@ -85,6 +86,24 @@ function massachusettsPaths(citation: string): string[] | null {
     const section = match[2]?.toUpperCase();
     if (!chapter || !section) continue;
     const path = `${chapter}:${section}`;
+    if (!paths.includes(path)) paths.push(path);
+  }
+  return paths.length ? paths : null;
+}
+
+/**
+ * Maine paths such as `14 M.R.S. § 752` and `14 M.R.S. § 752-B`.
+ * The title and the section are one path. A parenthetical is not included.
+ * `§ 752` is not `§ 752-B`. The bare section number is not a second path.
+ */
+function mainePaths(citation: string): string[] | null {
+  const paths: string[] = [];
+  const re = /\b(\d+(?:-[A-Za-z])?)\s+M\.R\.S\.?\s*§§?\s*(\d+(?:-[A-Za-z]+)?)(?![A-Za-z0-9-])/gi;
+  for (const match of citation.matchAll(re)) {
+    const title = match[1]?.toUpperCase();
+    const section = match[2]?.toUpperCase();
+    if (!title || !section) continue;
+    const path = `${title}/${section}`;
     if (!paths.includes(path)) paths.push(path);
   }
   return paths.length ? paths : null;
@@ -240,7 +259,9 @@ export function tokenEqualsStoredSection(
   titleNumbers: readonly string[] = [],
 ): boolean {
   if (!token) return false;
-  const titled = /^(\d+[A-Za-z]?)\/(\d+)$/.exec(token);
+  const titled =
+    /^(\d+[A-Za-z]?)\/(\d+)$/.exec(token) ??
+    /^(\d+(?:-[A-Za-z])?)\/(\d+(?:-[A-Za-z]+)?)$/.exec(token);
   if (titled) return titleNumbers.includes(titled[1]!) && sectionNumbers.includes(titled[2]!);
   if (sectionTokenAfterSec(citationPath) === token) return true;
   if (lastHyphenSegment(citationPath) === token) return true;
