@@ -31,12 +31,17 @@ def main():
     ap.add_argument("--members", required=True, help="comma-separated publisher_member filenames, e.g. sd.9092.htm")
     ap.add_argument("--execute", action="store_true")
     ap.add_argument("--attempt", type=int, default=1)
+    ap.add_argument("--force", action="store_true", help="replace an existing parsed output directory")
     a = ap.parse_args()
     root = os.path.abspath(a.root)
     parsed_name = a.parsed
     target = os.path.join(root, parsed_name)
     if os.path.exists(target):
-        raise SystemExit(f"refusing to overwrite existing parsed dir: {target}")
+        if not a.force:
+            raise SystemExit(f"refusing to overwrite existing parsed dir: {target}")
+        import shutil
+
+        shutil.rmtree(target)
     os.makedirs(target)
     want = {m.strip() for m in a.members.split(",") if m.strip()}
     inventory = json.loads(open(os.path.join(root, "download-index.json"), encoding="utf-8").read())["StatuteCode"]

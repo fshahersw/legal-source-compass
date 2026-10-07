@@ -14,7 +14,7 @@ import zipfile
 from urllib.parse import urlsplit
 from lxml import html
 
-PARSER = 'texas-publisher-html/5'
+PARSER = 'texas-publisher-html/6'
 # Reviewed compound statutes only. A changed publisher file requires a fresh
 # review; centered ARTICLE text alone never proves section membership.
 REVIEWED_SUBDIVISIONS = json.loads(pathlib.Path(__file__).with_name('tx-reviewed-subdivisions.json').read_bytes())
