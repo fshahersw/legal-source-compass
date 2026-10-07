@@ -183,6 +183,7 @@ def squash(t):
     t = t.replace("\u2019", "'").replace("\u2018", "'").replace("\u201c", '"').replace("\u201d", '"')
     for dash in ("\u2010", "\u2011", "\u2012", "\u2013", "\u2014", "\u2212"):
         t = t.replace(dash, "-")
+    t = t.replace("\u00ad", "")  # soft hyphen (MO ballot blocks)
     return re.sub(r"\s+", "", t)
 
 
@@ -391,6 +392,7 @@ def section_region(lines, row, siblings, levels=None):
 
 
 LABEL_WORDS = re.compile(r"(?i)^(section|sec\.|art\.|article|chapter|title|part|rcw|nrs|rsa|ors|g\.s\.)")
+MA_API_LINE = re.compile(r"^https://malegislature\.gov/api/", re.I)
 
 
 def _strip_labels(piece, tokens):
@@ -451,6 +453,9 @@ def reverse_check(lines, row, siblings, chrome=frozenset(), levels=None):
         if PAGE_NUMBER.match(piece):
             continue
         if sq[i] in chrome:
+            excused += 1
+            continue
+        if MA_API_LINE.match(lines[i].strip()):
             excused += 1
             continue
         missing.append(lines[i][:240])
