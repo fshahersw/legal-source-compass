@@ -185,6 +185,16 @@ export const MATTERS = {
     pages: [{ id: 'mad-mdl-hub', role: 'mdl_page', family: 'mnd-mdl-page', url: 'https://www.mad.uscourts.gov/caseinfo/multi-district-litigation.htm' }],
     index_pages: [],
   },
+  // D. Md. MDL 2775 (only pending MDL; orders listed on /mdl_documents).
+  '2775': {
+    name: 'In re Smith & Nephew Birmingham Hip Resurfacing (BHR) Hip Implant Products Liability Litigation', court_id: 'mdd', host: 'www.mdd.uscourts.gov', tier: 2,
+    case_number: null, printed_mdl_literal: 'MDL 2775',
+    pages: [
+      { id: 'mdd-2775-landing', role: 'mdl_page', family: 'index-links', url: 'https://www.mdd.uscourts.gov/re-smith-nephew-birmingham-hip-resurfacing-bhr-hip-implant-products-liability-litigation-mdl-no2775' },
+      { id: 'mdd-2775-documents', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.mdd.uscourts.gov/mdl_documents' },
+    ],
+    index_pages: [],
+  },
 };
 
 // Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
