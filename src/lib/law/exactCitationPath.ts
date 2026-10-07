@@ -27,6 +27,7 @@ export function exactCitationPaths(state: string, citation: string): string[] | 
         ...(usps === "LA" ? (louisianaCivilCodePaths(text) ?? []) : []),
         ...(usps === "TX" ? (texasCodePaths(text) ?? []) : []),
         ...(usps === "WA" ? (washingtonPaths(text) ?? []) : []),
+        ...(usps === "PA" ? (pennsylvaniaPaths(text) ?? []) : []),
         ...(DOTTED_PATH_STATES.has(usps) ? (dottedPaths(text) ?? []) : []),
       ]),
     ]),
@@ -353,6 +354,25 @@ function westVirginiaPaths(citation: string): string[] | null {
   const paths = hyphenPaths(citation);
   if (!paths) return null;
   return paths.map((path) => path.toUpperCase());
+}
+
+/**
+ * Pennsylvania consolidated-statute paths such as `42 Pa.C.S. § 5524(2)` and `1 Pa.C.S. § 1908`.
+ * The title and the section are one path. A parenthetical is not included.
+ * `§ 5524` is not `§ 5524.1`. A later bare section sign does not inherit the title.
+ * `40 P.S.` is not a consolidated-statute title.
+ */
+function pennsylvaniaPaths(citation: string): string[] | null {
+  const paths: string[] = [];
+  const re = /\b(\d{1,3})\s+Pa\.C\.S\.\s*§§?\s*(\d+(?:\.\d+)?)(?!\d)/gi;
+  for (const match of citation.matchAll(re)) {
+    const title = match[1];
+    const section = match[2];
+    if (!title || !section) continue;
+    const path = `${title}:${section}`;
+    if (!paths.includes(path)) paths.push(path);
+  }
+  return paths.length ? paths : null;
 }
 
 function oklahomaPaths(citation: string): string[] | null {
