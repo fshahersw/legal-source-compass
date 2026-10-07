@@ -142,6 +142,13 @@ export const MATTERS = {
   '3110': { name: 'In re Granulated Sugar Antitrust Litigation', court_id: 'mnd', host: 'www.mnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 3110', pages: [{ id: 'mnd-3110-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.mnd.uscourts.gov/content/granulated-sugar-antitrust-litigation' }], index_pages: [] },
   '3155': { name: 'In re Air Crash at Toronto Pearson International Airport on January 5, 2025', court_id: 'mnd', host: 'www.mnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 3155', pages: [{ id: 'mnd-3155-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.mnd.uscourts.gov/content/air-crash-toronto-pearson-international-airport' }], index_pages: [] },
   '3128': { name: 'In re Dividend Solar Finance LLC and Fifth Third Bank Sales and Lending Practices Litigation', court_id: 'mnd', host: 'www.mnd.uscourts.gov', tier: 2, case_number: null, printed_mdl_literal: 'MDL 3128', pages: [{ id: 'mnd-3128-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.mnd.uscourts.gov/content/dividend-solar-finance-llc-and-fifth-third-bank-sales-and-lending-practices-litigation' }], index_pages: [] },
+  // D. Kan. MDL 2887 (Hill's pet food; Drupal content node with direct PDFs under /sites/ksd/files/).
+  '2887': {
+    name: "In re Hill's Pet Nutrition, Inc., Dog Food Products Liability Litigation", court_id: 'ksd', host: 'www.ksd.uscourts.gov', tier: 2,
+    case_number: null, printed_mdl_literal: 'MDL 2887',
+    pages: [{ id: 'ksd-2887-mdl', role: 'mdl_page', family: 'mnd-mdl-page', url: 'https://www.ksd.uscourts.gov/content/hills-pet-nutrition-inc-dog-food-products-liability-litigation-19-md-2887' }],
+    index_pages: [],
+  },
   // S.D. Ill. MDL 3004 (Paraquat; orders table with direct PDFs on litigation landing page).
   '3004': {
     name: 'In re Paraquat Products Liability Litigation', court_id: 'ilsd', host: 'www.ilsd.uscourts.gov', tier: 2,
