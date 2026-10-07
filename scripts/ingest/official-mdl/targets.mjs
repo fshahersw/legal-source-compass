@@ -149,6 +149,16 @@ export const MATTERS = {
     pages: [{ id: 'nysd-3043-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.nysd.uscourts.gov/MDL/22md3043' }],
     index_pages: [],
   },
+  // N.D. Ga. MDL 2782 (Ethicon Physiomesh; per-MDL listing pages with direct PDFs under /sites/gand/files/rws2782_*).
+  '2782': {
+    name: 'In re Ethicon Physiomesh Flexible Composite Hernia Mesh Products Liability Litigation', court_id: 'gand', host: 'www.gand.uscourts.gov', tier: 2,
+    case_number: { literal: '1:17-md-2782', page_id: 'gand-2782-ppo', note: 'printed in the practice-and-procedure orders page title' },
+    pages: [
+      { id: 'gand-2782-ppo', role: 'practice_procedure_orders', family: 'njd-body', url: 'https://www.gand.uscourts.gov/17md2782/practice-procedure-orders' },
+      { id: 'gand-2782-orders', role: 'orders_and_opinions', family: 'njd-body', url: 'https://www.gand.uscourts.gov/17md2782/orders-and-opinions' },
+    ],
+    index_pages: [],
+  },
 };
 
 // Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
