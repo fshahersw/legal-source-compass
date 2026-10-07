@@ -310,6 +310,40 @@ describe("exact statute citation paths", () => {
     expect(statuteNativeId("WV", "2-2-1")).toBe("WV:2-2-1");
   });
 
+  it("reads a Pennsylvania title and section as one path", () => {
+    expect(exactCitationPaths("PA", "42 Pa.C.S. § 5524(2)")).toEqual(["42:5524"]);
+    expect(exactCitationPaths("PA", "42 Pa.C.S. § 5524(2)")?.includes("5524")).toBe(false);
+    expect(exactCitationPaths("PA", "42 Pa.C.S. § 5524(2)")?.includes("42")).toBe(false);
+    expect(exactCitationPaths("PA", "42 Pa.C.S. § 5524(2)")?.includes("42:5524.1")).toBe(false);
+    expect(exactCitationPaths("PA", "42 Pa.C.S. § 5524(3), (4), (7)")).toEqual(["42:5524"]);
+    expect(exactCitationPaths("PA", "42 Pa.C.S. § 5524.1")).toEqual(["42:5524.1"]);
+    expect(exactCitationPaths("PA", "42 Pa.C.S. § 5524.1")?.includes("42:5524")).toBe(false);
+    expect(exactCitationPaths("PA", "42 Pa.C.S. § 5524.1; publisher note at § 5524")).toEqual([
+      "5524",
+      "42:5524.1",
+    ]);
+    expect(
+      exactCitationPaths("PA", "42 Pa.C.S. § 5524.1; publisher note at § 5524")?.includes(
+        "42:5524",
+      ),
+    ).toBe(false);
+    expect(exactCitationPaths("PA", "42 Pa.C.S. § 5533(b)(2)(i)")).toEqual(["42:5533"]);
+    expect(exactCitationPaths("PA", "42 Pa.C.S. § 5522(a)(1)")).toEqual(["42:5522"]);
+    expect(exactCitationPaths("PA", "42 Pa.C.S. § 5525(a)(8)")).toEqual(["42:5525"]);
+    expect(exactCitationPaths("PA", "42 Pa.C.S. § 5536(a)(2)")).toEqual(["42:5536"]);
+    expect(exactCitationPaths("PA", "1 Pa.C.S. § 1908")).toEqual(["1:1908"]);
+    expect(exactCitationPaths("PA", "40 P.S. § 1303.513(d) (MCARE Act § 513(d))")).toBeNull();
+    expect(
+      exactCitationPaths(
+        "PA",
+        "42 Pa.C.S. § 5524(2) (applied to medical professional liability claims; MCARE Act § 513, 40 P.S. § 1303.513)",
+      ),
+    ).toEqual(["513", "42:5524"]);
+    expect(statuteNativeId("PA", "42:5524")).toBe("PA:42:5524");
+    expect(statuteNativeId("PA", "42:5524.1")).toBe("PA:42:5524.1");
+    expect(statuteNativeId("PA", "1:1908")).toBe("PA:1:1908");
+  });
+
   it("reads Nevada 41A.097 with the chapter letter and without the parenthetical", () => {
     expect(exactCitationPaths("NV", "Nev. Rev. Stat. § 41A.097(3)")).toEqual(["41A.097"]);
     expect(exactCitationPaths("NV", "Nev. Rev. Stat. § 41A.097(2)")).toEqual(["41A.097"]);

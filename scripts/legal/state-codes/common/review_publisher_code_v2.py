@@ -13,6 +13,8 @@ batch can run it after landing. `--toc-ok` is the proof that parsed section coun
 (index/subchapter pages with zero sections are a red flag, not a pass); leave it empty and the state is held.
 A state is reviewed only when every one of the --n sampled sections matches. Proxied units hold the state unless
 --proxied-accepted quotes the owner decision accepting them; --live-proxy firecrawl re-fetches a challenged official page fresh.
+--blocks section-doc,history-doc additionally requires every live <p> paragraph and <td>/<th> table cell inside those containers
+to appear in the stored text or history.
 
 Two directions are checked per sampled section. Forward: the stored text appears in the live page. Reverse: every live line (paragraph,
 list item, table cell, bare text between paragraphs, PDF/RTF line) of the section's live region appears in the stored row. On HTML pages
@@ -151,6 +153,29 @@ def texas_zip_chapter_live(arc, code: str, publisher_member: str) -> str | None:
         return None
     with zipfile.ZipFile(io.BytesIO(arc.read(rec))) as zf:
         return zf.read(publisher_member).decode("utf-8-sig", "replace")
+
+
+def html_blocks(body, classes):
+    """Text of every <p> paragraph and <td>/<th> cell inside the page's <div class="..."> containers named in `classes`."""
+    s, _ = sc.decode_html(body)
+    out = []
+    tag = re.compile(r"<(/?)div\b[^>]*>", re.I)
+    for cls in classes:
+        for m in re.finditer(r'<div class="%s"[^>]*>' % re.escape(cls), s, re.I):
+            depth, pos = 1, m.end()
+            while depth:
+                t = tag.search(s, pos)
+                if not t:
+                    break
+                depth += -1 if t.group(1) else 1
+                pos = t.end()
+            inner = s[m.end():t.start() if t else len(s)]
+            for name in ("p", "td", "th"):
+                for blk in re.finditer(r"(?is)<%s\b[^>]*>(.*?)</%s\s*>" % (name, name), inner):
+                    text = sc.html_text(blk.group(1))
+                    if text.strip():
+                        out.append((name, text))
+    return out
 
 
 def squash(t):
@@ -475,7 +500,11 @@ def main():
                     help="when the direct live fetch is not HTTP 200, re-fetch the same official URL fresh through this proxy")
     ap.add_argument("--proxied-accepted", default="",
                     help="the owner decision accepting proxied copies (quoted in the report); without it proxied units hold the state")
+    ap.add_argument("--blocks", default="",
+                    help="comma-separated div classes of an HTML live page (e.g. section-doc,history-doc): every <p> paragraph and "
+                         "<td>/<th> cell inside them must appear in the stored text or history, or the section fails")
     a = ap.parse_args()
+    block_classes = [c.strip() for c in a.blocks.split(",") if c.strip()]
     land = a.landing
     units = {u["unit_key"]: u for u in map(json.loads, open(os.path.join(land, "units.jsonl"), encoding="utf-8"))}
     secs = [json.loads(x) for x in open(os.path.join(land, "sections.jsonl"), encoding="utf-8")]
@@ -503,8 +532,7 @@ def main():
         rec = arc.fetch(live_url, accept="*/*", min_bytes=0)
         row = {"citation_path": s["citation_path"], "citation": s["citation"], "url": live_url, "live_status": rec["http_status"],
                "route": rec["route"], "user_agent": rec.get("user_agent"), "ua_retry": rec.get("ua_retry", False)}
-        live_body = None
-        live_raw = None
+        live_body = live_raw = None
         if rec["state"] == "complete":
             live_raw = arc.read(rec)
             live_body = live_text(live_raw, live_url)
@@ -574,6 +602,14 @@ def main():
                     if heading and not row["heading_ok"]:
                         row["heading_ok"] = squash(re.sub(r"\[[^\]]+\]", "", heading)) in live_h
             row["ok"] = row["citation_ok"] and row["heading_ok"] and row["text_ok"]
+            if block_classes:
+                stored = squash(s["text"] + "\n" + (s.get("history") or ""))
+                pieces = html_blocks(live_raw, block_classes) if live_raw is not None else []
+                missing = [t for _, t in pieces if squash(t) not in stored]
+                row.update(blocks=len(pieces), blocks_missing=len(missing), blocks_missing_first=missing[0][:200] if missing else None,
+                           blocks_ok=bool(pieces) and not missing,
+                           paragraphs=sum(1 for n, _ in pieces if n == "p"), cells=sum(1 for n, _ in pieces if n != "p"))
+                row["ok"] = row["ok"] and row["blocks_ok"]
         results.append(row)
     chrome = site_chrome(live_docs)
     for s, row in zip(sample, results):
@@ -607,13 +643,19 @@ def main():
                 else "(any proxied content blocks automatic review)."),
              *([f"- Live fetch: direct first; on a non-200 answer the same official URL is re-fetched fresh through {a.live_proxy} "
                 "(maxAge 0, no cached copy)."] if a.live_proxy else []),
+             *([f"- Paragraphs and table cells: every <p>, <td> and <th> inside {', '.join(block_classes)} on the live page must appear "
+                f"in the stored text or history; {sum(r.get('paragraphs', 0) for r in results)} paragraphs and "
+                f"{sum(r.get('cells', 0) for r in results)} cells checked, {sum(r.get('blocks_missing', 0) for r in results)} missing."]
+               if block_classes else []),
              f"- Decision: **{decision}**", "",
-             "| citation_path | live | route/UA | citation | heading | text | reverse (lines checked / chrome excused) |",
-             "|---|---|---|---|---|---|---|"]
+             "| citation_path | live | route/UA | citation | heading | text | reverse (lines checked / chrome excused) |"
+             + (" paragraphs/cells found |" if block_classes else ""),
+             "|---|---|---|---|---|---|---|" + ("---|" if block_classes else "")]
     for r in results:
         lines.append(f"| {r['citation_path']} | {r['live_status']} | {r['route']}{'/browser-UA' if r.get('ua_retry') else ''} | "
                      f"{r.get('citation_ok')} | {r.get('heading_ok')} | {r.get('text_ok')} | "
-                     f"{r.get('reverse_ok')} ({r.get('reverse_lines', 0)}/{r.get('reverse_chrome', 0)}) |")
+                     f"{r.get('reverse_ok')} ({r.get('reverse_lines', 0)}/{r.get('reverse_chrome', 0)}) |"
+                     + (f" {r.get('blocks', 0) - r.get('blocks_missing', 0)}/{r.get('blocks', 0)} |" if block_classes else ""))
     misses = [(r["citation_path"], m) for r in results for m in r.get("reverse_missing") or []]
     if misses:
         lines += ["", "Live lines not found in the stored row (first three per section):", ""]
