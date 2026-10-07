@@ -115,13 +115,22 @@ if (args.wait) {
   report.steps.push("wait_complete");
 }
 
+const applyFiles = args.files
+  ? String(args.files)
+      .split(",")
+      .map((f) => f.trim())
+      .filter(Boolean)
+  : null;
 const shouldApply =
   args.apply === true || ((args.build || args.check || args.stage) && args["no-apply"] !== true);
 if (shouldApply) {
-  const out = run(
-    ["node", "scripts/limitations/backfill/apply-currency-findings.mjs", `--dir=${currencyDir}`],
-    { LIM_WORK: work },
-  );
+  const applyCmd = [
+    "node",
+    "scripts/limitations/backfill/apply-currency-findings.mjs",
+    `--dir=${currencyDir}`,
+  ];
+  for (const f of applyFiles ?? []) applyCmd.push(`--file=${f}`);
+  const out = run(applyCmd, { LIM_WORK: work });
   report.apply = JSON.parse(out);
   report.steps.push("apply");
 }
@@ -142,7 +151,7 @@ if (args.build || args.check || args.stage) {
 }
 
 if (args.check) {
-  run(["node", "--test", "src/lib/limitations/bundle-invariants.test.ts"], {
+  run(["bun", "test", "src/lib/limitations/bundle-invariants.test.ts"], {
     LIM_BUNDLE_DIR: bundleOut,
   });
   report.steps.push("bundle_invariants_ok");
