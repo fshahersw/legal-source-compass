@@ -44,6 +44,25 @@ export const MATTERS = {
     pages: [{ id: 'moed-3185-mdl', role: 'mdl_page', family: 'moed-mdl-page', url: 'https://www.moed.uscourts.gov/mdl/426-md-3185' }],
     index_pages: ['moed-mdl-index'],
   },
+  // E.D. Mo. court MDL index pages (moed-mdl-page on embedded node--mdl-orders; docket literals from page titles).
+  '424520': {
+    name: 'MOED multidistrict page 4:24-cv-00520', court_id: 'moed', host: 'www.moed.uscourts.gov', tier: 2,
+    case_number: { literal: '4:24-cv-00520', page_id: 'moed-424-mdl', note: 'page title h1' },
+    pages: [{ id: 'moed-424-mdl', role: 'mdl_page', family: 'moed-mdl-page', url: 'https://www.moed.uscourts.gov/mdl/424-cv-00520' }],
+    index_pages: [],
+  },
+  '4251580': {
+    name: 'MOED multidistrict page 4:25-cv-01580', court_id: 'moed', host: 'www.moed.uscourts.gov', tier: 2,
+    case_number: { literal: '4:25-cv-01580', page_id: 'moed-425-mdl', note: 'page title h1' },
+    pages: [{ id: 'moed-425-mdl', role: 'mdl_page', family: 'moed-mdl-page', url: 'https://www.moed.uscourts.gov/mdl/425-cv-01580' }],
+    index_pages: [],
+  },
+  '416180': {
+    name: 'MOED multidistrict page 4:16-cv-180-CDP', court_id: 'moed', host: 'www.moed.uscourts.gov', tier: 2,
+    case_number: { literal: '4:16-cv-180-CDP', page_id: 'moed-416-mdl', note: 'page title h1' },
+    pages: [{ id: 'moed-416-mdl', role: 'mdl_page', family: 'moed-mdl-page', url: 'https://www.moed.uscourts.gov/mdl/416-cv-180-cdp' }],
+    index_pages: [],
+  },
   '3180': {
     name: 'In re Dupixent (Dupilumab) Products Liability Litigation', court_id: 'njd', host: 'www.njd.uscourts.gov', tier: 1,
     case_number: null, pages: [], index_pages: ['njd-mdl-cases', 'jpml-panel-orders'],
