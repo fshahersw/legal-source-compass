@@ -43,7 +43,7 @@ H2_SUBTITLE = re.compile(r"^Subtitle\s+(\S+)\s*\.?\s*(.*)$", re.I)
 H2_PART = re.compile(r"^Part\s+(\S+)\s*\.?\s*(.*)$", re.I)
 H3_CHAPTER = re.compile(r"^Chapter\s+(\S+)\s*\.?\s*(.*)$", re.I)
 H3_ARTICLE = re.compile(r"^Article\s+(\S+)\s*\.?\s*(.*)$", re.I)
-CITATION_NUM = re.compile(r"^[0-9][0-9A-Za-z.]*-[0-9][0-9A-Za-z.]*$")
+CITATION_NUM = re.compile(r"^[0-9][0-9A-Za-z.:]*-[0-9][0-9A-Za-z.:]*$")
 
 
 def normalized(text: str) -> str:
@@ -180,11 +180,13 @@ def load_api_inventory(root: pathlib.Path) -> tuple[dict[str, list[str]], dict[s
     return ordered, meta
 
 
+# Section numbers may carry colon suffixes (46.2-341.9:01, 32.1-162.6:1); without ":" here such a header split into the
+# base number plus a heading starting "9:01." and its body was dropped as a repeat of the base section.
 HEADER_LABEL = re.compile(
     r"^(?:§§?\s*)?"
-    r"((?:[0-9][0-9A-Za-z.]*-[0-9][0-9A-Za-z.]*"
-    r"(?:\s*,\s*[0-9][0-9A-Za-z.]*-[0-9][0-9A-Za-z.]*)*)"
-    r"(?:\s+through\s+[0-9][0-9A-Za-z.]*-[0-9][0-9A-Za-z.]*)?)"
+    r"((?:[0-9][0-9A-Za-z.:]*-[0-9][0-9A-Za-z.:]*"
+    r"(?:\s*,\s*[0-9][0-9A-Za-z.:]*-[0-9][0-9A-Za-z.:]*)*)"
+    r"(?:\s+through\s+[0-9][0-9A-Za-z.:]*-[0-9][0-9A-Za-z.:]*)?)"
     r"\.\s*(.*)$",
     re.I,
 )
@@ -273,6 +275,9 @@ def split_history(paragraphs: list[str]) -> tuple[str, str | None]:
     history: list[str] = []
     body = list(paragraphs)
     while body and HISTORY_TAIL.match(body[-1]):
+        # A repealed section's only paragraph is often "Repealed by Acts …"; keep it in the body text.
+        if len(body) == 1 and re.match(r"^Repealed by Acts\b", body[-1], re.I):
+            break
         history.insert(0, body.pop())
     text = "\n".join(body).strip()
     hist = "\n".join(history).strip() or None
@@ -294,22 +299,31 @@ def count_section_markers(raw_html: str, ordered_api: list[str]) -> int:
 
 
 def count_section_versions(raw_html: str, ordered_api: list[str]) -> int:
-    """Printed section versions: every single-citation header is one version; a citation only named in comma/range headers is one."""
+    """Match parse_title: each single-citation <b> header is one version; grouped headers add one version per citation only if that citation has no version yet."""
     soup = BeautifulSoup(raw_html, "lxml")
     node = soup.find(id="va_code")
     if node is None:
         return 0
-    single: dict[str, int] = {}
-    grouped: set[str] = set()
+    per_citation: dict[str, int] = {}
+    total = 0
     for child in node.children:
         if not isinstance(child, Tag) or child.name != "b":
             continue
         pairs = parse_header_citations(child.get_text(" ", strip=True), ordered_api)
-        if len(pairs) == 1:
-            single[pairs[0][0]] = single.get(pairs[0][0], 0) + 1
-        else:
-            grouped.update(c for c, _ in pairs)
-    return sum(single.values()) + len(grouped - set(single))
+        if not pairs:
+            continue
+        citations = [c for c, _ in pairs]
+        if len(citations) == 1:
+            citation = citations[0]
+            per_citation[citation] = per_citation.get(citation, 0) + 1
+            total += 1
+            continue
+        for citation in citations:
+            if per_citation.get(citation, 0):
+                continue
+            per_citation[citation] = 1
+            total += 1
+    return total
 
 
 def parse_title(

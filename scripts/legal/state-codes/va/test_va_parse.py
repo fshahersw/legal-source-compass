@@ -13,8 +13,9 @@ PAGE = """<html><body><div id="va_code"><h2>Title 8.9A. Commercial Code</h2><h3>
 <b>\u00a7 8.9A-324. (Effective until July 1, 2027) Purchase-money.</b><p>(a) Old version.</p><p>2001, c. 5.</p>
 <b>\u00a7 8.9A-324. (Effective July 1, 2027) Purchase-money.</b><p>(a) New version.</p><p>2026, c. 7.</p>
 <b>\u00a7\u00a7 8.9A-325, 8.9A-326. Repealed.</b><p>Repealed by Acts 2001, c. 1.</p>
+<b>\u00a7 8.9A-326.1:01. Colon section.</b><p>Colon body text.</p>
 </div></body></html>"""
-ORDERED = ["8.9A-322", "8.9A-323", "8.9A-324", "8.9A-325", "8.9A-326"]
+ORDERED = ["8.9A-322", "8.9A-323", "8.9A-324", "8.9A-325", "8.9A-326", "8.9A-326.1:01"]
 RECEIPT = {"url": "https://law.lis.virginia.gov/vacodefull/title8.9A/", "sha256": "0" * 64}
 
 
@@ -43,11 +44,16 @@ class ParseTitle(unittest.TestCase):
         self.assertTrue(second["heading"].startswith("(Effective July 1, 2027)"))
         self.assertEqual(second["citation_path"][-1]["heading"], second["heading"])
 
+    def test_colon_numbered_section_is_its_own_section(self):
+        row = self.by_id["8.9A-326.1:01"]
+        self.assertEqual((row["heading"], row["text"]), ("Colon section.", "Colon body text."))
+        self.assertEqual(self.by_id["8.9A-326"]["text"], "Repealed by Acts 2001, c. 1.")
+
     def test_counts_and_spans(self):
-        self.assertEqual(self.report["html_sections"], 5)
-        self.assertEqual(self.report["html_versions"], 6)
-        self.assertEqual(count_section_markers(PAGE, ORDERED), 5)
-        self.assertEqual(count_section_versions(PAGE, ORDERED), 6)
+        self.assertEqual(self.report["html_sections"], 6)
+        self.assertEqual(self.report["html_versions"], 7)
+        self.assertEqual(count_section_markers(PAGE, ORDERED), 6)
+        self.assertEqual(count_section_versions(PAGE, ORDERED), 7)
         for r in self.rows:
             span = r["source"]["span"]
             if span:

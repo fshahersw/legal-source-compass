@@ -339,6 +339,10 @@ def level_pattern(levels):
     return re.compile(r"^(?:" + alts + r")\s+[0-9IVXLC][0-9A-Za-z.\-]*(?:\s*[.:\-\u2013\u2014]|\s*$|\s+[A-Z(])")
 
 
+def _base_citation(path):
+    return re.split(r":occurrence:", path or "", 1)[0]
+
+
 def section_region(lines, row, siblings, levels=None):
     """(first line, last line, start offset, end offset) of the row's live region, or None when the row cannot be located."""
     sq = [squash(x) for x in lines]
@@ -357,6 +361,26 @@ def section_region(lines, row, siblings, levels=None):
     end = total
     for sib in siblings:
         if sib.get("citation_path") == row.get("citation_path"):
+            continue
+        if (
+            _base_citation(sib.get("citation_path")) == _base_citation(row.get("citation_path"))
+            and sib.get("citation_path") != row.get("citation_path")
+        ):
+            heading = squash(sib.get("heading") or "")
+            spos = stream.find(heading, text_end) if len(heading) >= 8 else -1
+            if spos < 0:
+                for i, off in enumerate(offsets):
+                    if off < text_end:
+                        continue
+                    for tok in lines[i].split()[:2]:
+                        t = tok.lstrip("§(").rstrip(".:,;)")
+                        if t == own_number:
+                            spos = off
+                            break
+                    if spos >= 0:
+                        break
+            if spos >= 0:
+                end = min(end, max(text_end, _header_start(stream, sib, spos)))
             continue
         sib_text = squash(sib.get("text_head") or sib.get("text") or "")
         if not sib_text or sib_text == own or own.startswith(sib_text[:60]):
