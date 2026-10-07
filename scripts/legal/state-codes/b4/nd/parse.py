@@ -25,6 +25,7 @@ CHAPTER_HEAD = re.compile(r"<h1>\s*Chapter\s+(\d+-\d+)\s*</h1>", re.I)
 CHAPTER_H3 = re.compile(r"<h3>\s*(.*?)\s*</h3>", re.S | re.I)
 SECTION_HEAD = re.compile(r"^\s*(\d{1,2}-\d{2}-\d{2}(?:\.\d+)?)\.\s+(.+)$", re.M)
 REPEALED = re.compile(r"^\s*Repealed\b", re.I | re.M)
+CHAPTER_REPEALED = re.compile(r"\[Repealed\b", re.I)
 SL_HISTORY = re.compile(r"\bS\.L\.\s+\d{4}", re.I)
 
 OFFICIAL_STATEMENT = (
@@ -118,6 +119,31 @@ def chapter_id_from_slug(slug: str) -> str | None:
     return f"{int(m.group(1))}-{int(m.group(2)):02d}" if len(m.group(2)) <= 2 else f"{int(m.group(1))}-{int(m.group(2))}"
 
 
+def citation_chapter_id(citation: str) -> str | None:
+    parts = citation.strip().split("-")
+    if len(parts) < 3:
+        return None
+    return f"{int(parts[0])}-{int(parts[1]):02d}"
+
+
+def sections_for_chapter(parsed: list[dict], chapter_id: str | None) -> list[dict]:
+    if not chapter_id:
+        return parsed
+    return [s for s in parsed if citation_chapter_id(s["citation"]) == chapter_id]
+
+
+def repealed_chapter_notice(text: str, parsed_all: list[dict]) -> str | None:
+    """Chapter-level repealed stub PDF (no section headings). Not a section marked repealed inside a full chapter."""
+    if parsed_all:
+        return None
+    if not CHAPTER_REPEALED.search(text):
+        return None
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    if len(lines) > 8:
+        return None
+    return collapse(text)
+
+
 def run(work: str):
     arc = Archive(work)
     inv = json.load(open(os.path.join(work, "inventory.json")))
@@ -127,6 +153,8 @@ def run(work: str):
     toc_counts = {}
     pdf_counts = {}
     mismatches = []
+    empty_section_gaps = []
+    flag_classification = []
 
     for slug in inv["chapters"]:
         html_url = BASE + slug
@@ -139,8 +167,7 @@ def run(work: str):
             continue
         pdf_body = arc.read(prec)
         text = pdf_text(pdf_body)
-        parsed = split_pdf_sections(text)
-        pdf_counts[slug] = len(parsed)
+        parsed_all = split_pdf_sections(text)
         if html_only_toc:
             html, _ = decode_html(arc.read(hrec))
             chapter_id, chapter_heading, toc_rows = parse_toc(html)
@@ -148,16 +175,46 @@ def run(work: str):
             if slug not in pdf_only and not html_only_toc:
                 pdf_only.add(slug)
             chapter_id = chapter_id_from_slug(slug)
-            if parsed:
-                chapter_id = "-".join(parsed[0]["citation"].split("-")[:2])
+            if parsed_all:
+                chapter_id = citation_chapter_id(parsed_all[0]["citation"]) or chapter_id
             chapter_heading = None
-            toc_rows = [{"citation": s["citation"], "heading": s["heading"]} for s in parsed]
+            toc_rows = [{"citation": s["citation"], "heading": s["heading"]} for s in parsed_all]
+        if not chapter_id:
+            chapter_id = chapter_id_from_slug(slug)
+        parsed = sections_for_chapter(parsed_all, chapter_id)
+        pdf_counts[slug] = len(parsed)
         toc_counts[slug] = len(toc_rows)
         toc_cits = [r["citation"] for r in toc_rows]
         pdf_cits = [s["citation"] for s in parsed]
-        if not citations_equal_lists(toc_cits, pdf_cits):
+        chapter_status_note = None
+        repealed_notice = repealed_chapter_notice(text, parsed_all) if not parsed else None
+        if repealed_notice:
+            chapter_status_note = repealed_notice
             toc_canon = {canon_citation(c) for c in toc_cits}
-            pdf_canon = {canon_citation(c) for c in pdf_cits}
+            for row in toc_rows:
+                if canon_citation(row["citation"]) not in {canon_citation(s["citation"]) for s in parsed}:
+                    empty_section_gaps.append(
+                        {
+                            "chapter": slug,
+                            "citation": row["citation"],
+                            "heading": row.get("heading"),
+                            "reason": "chapter_repealed_pdf_has_no_section_text",
+                            "chapter_status_note": chapter_status_note,
+                        }
+                    )
+            flag_classification.append(
+                {
+                    "chapter": slug,
+                    "class": "repealed_chapter_notice_only",
+                    "toc_count": len(toc_rows),
+                    "pdf_section_count": 0,
+                }
+            )
+        toc_canon = {canon_citation(c) for c in toc_cits}
+        stray_pdf = [s["citation"] for s in parsed_all if canon_citation(s["citation"]) not in toc_canon]
+        cross_chapter_stray = [c for c in stray_pdf if citation_chapter_id(c) != chapter_id]
+        pdf_canon = {canon_citation(c) for c in pdf_cits}
+        if not repealed_notice and not citations_equal_lists(toc_cits, pdf_cits):
             mismatches.append(
                 {
                     "chapter": slug,
@@ -168,10 +225,41 @@ def run(work: str):
                     "pdf_count": len(pdf_cits),
                 }
             )
+            if len(toc_cits) > len(pdf_cits):
+                flag_classification.append({"chapter": slug, "class": "toc_extra_sections"})
+            elif len(pdf_cits) > len(toc_cits):
+                flag_classification.append({"chapter": slug, "class": "pdf_extra_in_chapter"})
+            else:
+                flag_classification.append({"chapter": slug, "class": "same_count_citation_drift"})
+        elif cross_chapter_stray:
+            flag_classification.append(
+                {
+                    "chapter": slug,
+                    "class": "pdf_cross_chapter_stray_reconciled",
+                    "stray_count": len(cross_chapter_stray),
+                    "stray_sample": cross_chapter_stray[:5],
+                }
+            )
         toc_by = {canon_citation(r["citation"]): r for r in toc_rows}
         seen = {}
         native = chapter_native_id(slug)
         ch_text = text
+        if repealed_notice and not parsed:
+            chapters_out.append(
+                {
+                    "native_id": native,
+                    "path": [
+                        {"type": "title", "number": chapter_id.split("-")[0] if chapter_id else None, "heading": None},
+                        {"type": "chapter", "number": chapter_id, "heading": chapter_heading},
+                    ],
+                    "heading": chapter_heading,
+                    "text": ch_text,
+                    "status_note": chapter_status_note,
+                    "raw_sha256s": [prec["sha256"]] + ([hrec["sha256"]] if html_only_toc else []),
+                    "source_urls": [pdf_url] + ([html_url] if html_only_toc else []),
+                }
+            )
+            continue
         for sec in parsed:
             cit = sec["citation"]
             seen[cit] = seen.get(cit, 0) + 1
@@ -209,19 +297,20 @@ def run(work: str):
                     "duplicate_occurrence": occ > 1,
                 }
             )
-        chapters_out.append(
-            {
-                "native_id": native,
-                "path": [
-                    {"type": "title", "number": chapter_id.split("-")[0] if chapter_id else None, "heading": None},
-                    {"type": "chapter", "number": chapter_id, "heading": chapter_heading},
-                ],
-                "heading": chapter_heading,
-                "text": ch_text,
-                "raw_sha256s": [prec["sha256"]] + ([hrec["sha256"]] if html_only_toc else []),
-                "source_urls": [pdf_url] + ([html_url] if html_only_toc else []),
-            }
-        )
+        ch_row = {
+            "native_id": native,
+            "path": [
+                {"type": "title", "number": chapter_id.split("-")[0] if chapter_id else None, "heading": None},
+                {"type": "chapter", "number": chapter_id, "heading": chapter_heading},
+            ],
+            "heading": chapter_heading,
+            "text": ch_text,
+            "raw_sha256s": [prec["sha256"]] + ([hrec["sha256"]] if html_only_toc else []),
+            "source_urls": [pdf_url] + ([html_url] if html_only_toc else []),
+        }
+        if chapter_status_note:
+            ch_row["status_note"] = chapter_status_note
+        chapters_out.append(ch_row)
 
     edition = {
         "official_statement": OFFICIAL_STATEMENT,
@@ -237,11 +326,13 @@ def run(work: str):
         sections=sections_out,
         extra={"currency_published_through": None},
     )
-    verify(work, arc, mismatches, toc_counts, pdf_counts, man)
+    json.dump(empty_section_gaps, open(os.path.join(work, "empty_section_gaps.json"), "w"), indent=2)
+    json.dump(flag_classification, open(os.path.join(work, "flag_classification.json"), "w"), indent=2)
+    verify(work, arc, mismatches, toc_counts, pdf_counts, man, empty_section_gaps, flag_classification)
     return man
 
 
-def verify(work, arc, mismatches, toc_counts, pdf_counts, man):
+def verify(work, arc, mismatches, toc_counts, pdf_counts, man, empty_section_gaps, flag_classification):
     packet = os.path.join(work, "packet")
     bad_hash = []
     for r in arc.index.values():
@@ -280,6 +371,8 @@ def verify(work, arc, mismatches, toc_counts, pdf_counts, man):
             ),
         },
         "mismatches": mismatches,
+        "empty_section_gaps": empty_section_gaps,
+        "flag_classification": flag_classification,
         "receipt_rehash_failures": bad_hash,
         "span_verify_failures": span_bad,
         "manifest": man,

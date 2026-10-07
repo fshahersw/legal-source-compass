@@ -2,7 +2,7 @@ import os
 import unittest
 
 from citation import canon_citation, citations_equal_lists
-from parse import OFFICIAL_STATEMENT, parse_toc, split_pdf_sections
+from parse import OFFICIAL_STATEMENT, parse_toc, sections_for_chapter, split_pdf_sections, citation_chapter_id
 
 FIX = os.path.join(os.path.dirname(__file__), "fixtures")
 
@@ -29,6 +29,15 @@ class TestNdParse(unittest.TestCase):
     def test_canon_citation_leading_zeros(self):
         self.assertEqual(canon_citation("1-03-19"), canon_citation("01-03-19"))
         self.assertTrue(citations_equal_lists(["5-02-10.1"], ["05-02-10.1"]))
+
+    def test_sections_for_chapter_filters_stray(self):
+        parsed = [
+            {"citation": "6-13-01", "heading": "a", "body": ""},
+            {"citation": "44-04-18", "heading": "b", "body": ""},
+        ]
+        kept = sections_for_chapter(parsed, "6-13")
+        self.assertEqual([s["citation"] for s in kept], ["6-13-01"])
+        self.assertEqual(citation_chapter_id("6-13-01"), "6-13")
 
 
 if __name__ == "__main__":
