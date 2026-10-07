@@ -224,30 +224,47 @@ def live_wv_section_row(body, url, section):
 
 def live_fetch(arc, url, state):
     """Live publisher fetch; WV ajax needs XHR (Firecrawl fallback when empty)."""
+    import ssl
+    import urllib.request
+
     extra = None
     min_bytes = 0
     if "admin-ajax.php" in url and "get_all_sections" in url:
         extra = {"X-Requested-With": "XMLHttpRequest"}
         min_bytes = 80
-    if extra:
-        status, body, meta = arc._http(url, accept="*/*", extra=extra)
-        retrieved = sc.utc_now()
-        rec = {"url": url, "http_status": status, "retrieved_at": retrieved, "bytes": len(body), "route": "direct",
-               "user_agent": arc.ua, **{k: v for k, v in meta.items() if v not in (None, [])}}
-        if status == 200 and len(body) >= min_bytes:
-            sha = sc.sha256_hex(body)
-            rel = f"{sha[:2]}/{sha}"
-            path = os.path.join(arc.raw, rel)
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            with open(path, "wb") as f:
-                f.write(body)
-            rec.update({"state": "complete", "sha256": sha, "file": os.path.join("raw", rel)})
-        else:
-            rec.update({"state": "failed"})
+    if extra and state == "WV":
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        req = urllib.request.Request(url, headers={**extra, "User-Agent": arc.ua}, method="GET")
+        try:
+            with urllib.request.urlopen(req, context=ctx, timeout=120) as resp:
+                status, body = resp.status, resp.read()
+            meta = {}
+        except Exception as exc:  # noqa: BLE001
+            status, body, meta = 0, b"", {"error": str(exc)[:200]}
+    elif extra:
+        try:
+            status, body, meta = arc._http(url, accept="*/*", extra=extra)
+        except Exception as exc:  # noqa: BLE001
+            status, body, meta = 0, b"", {"error": str(exc)[:200]}
     else:
-        rec = arc.fetch(url, accept="*/*", min_bytes=min_bytes)
+        return arc.fetch(url, accept="*/*", min_bytes=min_bytes)
+    retrieved = sc.utc_now()
+    rec = {"url": url, "http_status": status, "retrieved_at": retrieved, "bytes": len(body), "route": "direct",
+           "user_agent": arc.ua, **{k: v for k, v in meta.items() if v not in (None, [])}}
+    if status == 200 and len(body) >= min_bytes:
+        sha = sc.sha256_hex(body)
+        rel = f"{sha[:2]}/{sha}"
+        path = os.path.join(arc.raw, rel)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "wb") as f:
+            f.write(body)
+        rec.update({"state": "complete", "sha256": sha, "file": os.path.join("raw", rel)})
+    else:
+        rec.update({"state": "failed"})
     if state == "WV" and os.environ.get("FIRECRAWL_API_KEY"):
-        empty = rec.get("state") != "complete"
+        empty = rec.get("state") != "complete" or rec.get("http_status") != 200
         if not empty:
             try:
                 body = arc.read(rec)
