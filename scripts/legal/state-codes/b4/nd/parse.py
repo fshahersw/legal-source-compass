@@ -10,6 +10,8 @@ import tempfile
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from sc_common import Archive, collapse, decode_html, html_text, sha256_hex, write_packet  # noqa: E402
 
+from citation import canon_citation, citations_equal_lists  # noqa: E402
+
 STATE = "ND"
 BASE = "https://ndlegis.gov/cencode/"
 INFO = "https://ndlegis.gov/general-information/north-dakota-century-code/index.html"
@@ -153,18 +155,20 @@ def run(work: str):
         toc_counts[slug] = len(toc_rows)
         toc_cits = [r["citation"] for r in toc_rows]
         pdf_cits = [s["citation"] for s in parsed]
-        if toc_cits != pdf_cits:
+        if not citations_equal_lists(toc_cits, pdf_cits):
+            toc_canon = {canon_citation(c) for c in toc_cits}
+            pdf_canon = {canon_citation(c) for c in pdf_cits}
             mismatches.append(
                 {
                     "chapter": slug,
                     "reason": "toc_pdf_citation_mismatch",
-                    "toc_only": [c for c in toc_cits if c not in pdf_cits][:20],
-                    "pdf_only": [c for c in pdf_cits if c not in toc_cits][:20],
+                    "toc_only": [c for c in toc_cits if canon_citation(c) not in pdf_canon][:20],
+                    "pdf_only": [c for c in pdf_cits if canon_citation(c) not in toc_canon][:20],
                     "toc_count": len(toc_cits),
                     "pdf_count": len(pdf_cits),
                 }
             )
-        toc_by = {r["citation"]: r for r in toc_rows}
+        toc_by = {canon_citation(r["citation"]): r for r in toc_rows}
         seen = {}
         native = chapter_native_id(slug)
         ch_text = text
@@ -173,7 +177,7 @@ def run(work: str):
             seen[cit] = seen.get(cit, 0) + 1
             occ = seen[cit]
             citation_path = cit if occ == 1 else f"{cit}#{occ}"
-            toc_row = toc_by.get(cit, {})
+            toc_row = toc_by.get(canon_citation(cit), {})
             heading = toc_row.get("heading") or sec["heading"]
             body = sec["body"]
             start = ch_text.find(body)

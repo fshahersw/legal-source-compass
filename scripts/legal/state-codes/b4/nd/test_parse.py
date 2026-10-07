@@ -1,6 +1,7 @@
 import os
 import unittest
 
+from citation import canon_citation, citations_equal_lists
 from parse import OFFICIAL_STATEMENT, parse_toc, split_pdf_sections
 
 FIX = os.path.join(os.path.dirname(__file__), "fixtures")
@@ -24,6 +25,10 @@ class TestNdParse(unittest.TestCase):
 
     def test_official_statement_present(self):
         self.assertIn("official version", OFFICIAL_STATEMENT.lower())
+
+    def test_canon_citation_leading_zeros(self):
+        self.assertEqual(canon_citation("1-03-19"), canon_citation("01-03-19"))
+        self.assertTrue(citations_equal_lists(["5-02-10.1"], ["05-02-10.1"]))
 
 
 if __name__ == "__main__":
