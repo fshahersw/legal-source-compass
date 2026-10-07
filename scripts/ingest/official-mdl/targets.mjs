@@ -149,6 +149,14 @@ export const MATTERS = {
     pages: [{ id: 'nysd-3043-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.nysd.uscourts.gov/MDL/22md3043' }],
     index_pages: [],
   },
+  // D. Mass. MDL 3083 (shared court MDL hub; order PDFs scoped by path /caseinfo/pdf/mdl/3083/).
+  '3083': {
+    name: 'In re MOVEit Customer Data Security Breach Litigation', court_id: 'mad', host: 'www.mad.uscourts.gov', tier: 2,
+    case_number: { literal: '1:23-md-3083', page_id: 'mad-mdl-hub', note: 'printed as the lead case number in the MDL 3083 case-information tab on the court MDL hub' },
+    printed_mdl_literal: 'MDL 3083', listing_href_substring: 'pdf/mdl/3083',
+    pages: [{ id: 'mad-mdl-hub', role: 'mdl_page', family: 'mnd-mdl-page', url: 'https://www.mad.uscourts.gov/caseinfo/multi-district-litigation.htm' }],
+    index_pages: [],
+  },
 };
 
 // Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
