@@ -11,12 +11,14 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'common'))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from provenance_fetch import Fetcher  # noqa: E402
+from provenance_fetch import Fetcher, now_iso as az_parse_now  # noqa: E402
 import az_parse  # noqa: E402
+from az_deadline import HardDeadline, run_with_deadline  # noqa: E402
 
 ROOT = '/tmp/sc/AZ'
 F = Fetcher('AZ', ROOT, min_interval=float(os.environ.get('AZ_INTERVAL', '120')), timeout=120)
 STOP = ROOT + '/STOP'
+REQUEST_DEADLINE = float(os.environ.get('AZ_REQUEST_DEADLINE', '300'))  # hard wall-clock limit for one request; not the crawl delay
 
 
 def main():
@@ -41,13 +43,34 @@ def main():
         if raw != len(urls):
             raise SystemExit('title %s: %d docName links on the page but %d section links parsed; refusing to continue' % (t, raw, len(urls)))
         print('title', t, 'sections', len(urls), flush=True)
-        for u in urls:
-            if os.path.exists(STOP):
-                print('STOP file present', flush=True)
-                return
-            r = F.get(u, label='section:title%s' % t)
-            if not r.get('ok'):
-                print('FAIL', u, r.get('status'), r.get('error'), flush=True)
+        failed = []
+        for u in urls + [None]:
+            if u is None:
+                # one retry pass for requests that failed or hit the hard deadline; each retry is paced like any other request
+                urls_now, failed = failed, []
+                if not urls_now:
+                    break
+                print('title', t, 'retrying', len(urls_now), flush=True)
+            else:
+                urls_now = [u]
+            for uu in urls_now:
+                if os.path.exists(STOP):
+                    print('STOP file present', flush=True)
+                    return
+                try:
+                    r = run_with_deadline(REQUEST_DEADLINE, F.get, uu, label='section:title%s' % t)
+                except HardDeadline:
+                    F.session.close()
+                    F._append({'state': 'AZ', 'url': uu, 'label': 'section:title%s' % t, 'ok': False, 'status': None,
+                               'error': 'HardDeadline: no response within %ds' % REQUEST_DEADLINE, 'retrieval_method': 'direct',
+                               'retrieved_at': az_parse_now()})
+                    print('DEADLINE', uu, flush=True)
+                    failed.append(uu)
+                    continue
+                if not r.get('ok'):
+                    print('FAIL', uu, r.get('status'), r.get('error'), flush=True)
+                    if u is not None:
+                        failed.append(uu)
 
 
 if __name__ == '__main__':
