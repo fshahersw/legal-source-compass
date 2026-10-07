@@ -150,18 +150,24 @@ function delawarePaths(citation: string): string[] | null {
 }
 
 /**
- * Maryland Courts and Judicial Proceedings paths such as `Md. Code, Cts. & Jud. Proc. § 5-101`.
- * The article and the section are one path, `gcj 5-101`. A parenthetical is not included.
- * The bare number `5-101` is also published in other articles, so it is not a second path.
+ * Maryland article paths such as `Md. Code, Cts. & Jud. Proc. § 5-101`
+ * and `Md. Code, Gen. Provisions § 1-302(a)`.
+ * The article and the section are one path. A parenthetical is not included.
+ * The bare number is also published in other articles, so it is not a second path.
  */
 function marylandPaths(citation: string): string[] | null {
-  if (!/\bCts\.\s*&\s*Jud\.\s*Proc\./i.test(citation)) return null;
+  const article = /\bCts\.\s*&\s*Jud\.\s*Proc\./i.test(citation)
+    ? "gcj"
+    : /\bGen\.\s*Provisions\b/i.test(citation)
+      ? "ggp"
+      : null;
+  if (!article) return null;
   const paths: string[] = [];
   const re = /§§?\s*(\d+(?:\.\d+)?-\d+(?:\.\d+)?)(?![A-Za-z0-9.])/g;
   for (const match of citation.matchAll(re)) {
     const section = match[1];
     if (!section) continue;
-    const path = `gcj ${section}`;
+    const path = `${article} ${section}`;
     if (!paths.includes(path)) paths.push(path);
   }
   return paths.length ? paths : null;

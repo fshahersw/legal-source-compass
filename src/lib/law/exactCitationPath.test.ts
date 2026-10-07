@@ -367,6 +367,16 @@ describe("exact statute citation paths", () => {
       ]),
     ).toBeNull();
     expect(statuteNativeId("MD", "gcj 5-101")).toBe("MD:gcj 5-101");
+    expect(exactCitationPaths("MD", "Md. Code, Gen. Provisions § 1-302(a)-(b)")).toEqual([
+      "ggp 1-302",
+    ]);
+    expect(
+      exactCitationPaths("MD", "Md. Code, Gen. Provisions § 1-302(a)-(b)")?.includes("1-302"),
+    ).toBe(false);
+    expect(
+      exactCitationPaths("MD", "Md. Code, Gen. Provisions § 1-302(a)-(b)")?.includes("gcj 1-302"),
+    ).toBe(false);
+    expect(statuteNativeId("MD", "ggp 1-302")).toBe("MD:ggp 1-302");
   });
 
   it("reads Louisiana Revised Statutes 9:5628 without the decimal neighbor", () => {
