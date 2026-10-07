@@ -24,6 +24,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 import sys
 import time
 import uuid
@@ -36,6 +37,18 @@ MAX_BYTES = 6_000_000
 STANDARD_UPLOAD_LIMIT = 45 * 1024 * 1024
 TUS_CHUNK = 6 * 1024 * 1024
 NS = uuid.UUID("5b6f1c58-2a56-4e6a-9f7a-1c0de5a7c0de")
+TRANSIENT = (429, 502, 503, 504, 522, 524)
+LOCK = re.compile(r"lock ?timeout|could not obtain lock|55P03|statement timeout|timed out", re.I)
+ATTEMPTS = 6
+
+
+def transient(status, text):
+    """Gateway errors, rate limits, and a 5xx whose body reports a storage/database lock or statement timeout."""
+    return status in TRANSIENT or (status >= 500 and bool(LOCK.search(text or "")))
+
+
+def backoff(attempt):
+    time.sleep(min(64, 2 ** (attempt + 1)))
 
 
 def canon(value):
@@ -119,27 +132,26 @@ class Cloud:
         self.s = requests.Session()
 
     def rpc(self, name, args):
-        for attempt in range(4):
-            r = self.s.post(f"{self.url}/rest/v1/rpc/{name}", headers={**self.h, "Content-Type": "application/json"},
-                            data=json.dumps(args, ensure_ascii=False).encode("utf-8"), timeout=180)
-            if r.status_code in (502, 503, 504, 522, 524) and attempt < 3:
-                time.sleep(2 ** (attempt + 1))
-                continue
-            if r.status_code >= 400:
-                raise RuntimeError(f"{name} {r.status_code}: {r.text[:500]}")
-            return r.json()
+        body = json.dumps(args, ensure_ascii=False).encode("utf-8")
+        r = self._retry(lambda: self.s.post(f"{self.url}/rest/v1/rpc/{name}", data=body, timeout=180,
+                                            headers={**self.h, "Content-Type": "application/json"}))
+        if r.status_code >= 400:
+            raise RuntimeError(f"{name} {r.status_code}: {r.text[:500]}")
+        return r.json()
 
     def _retry(self, call):
-        for attempt in range(4):
+        """Every call here is idempotent (content-addressed objects, x-upsert false, replay-safe RPCs), so a transport
+        error (DNS, reset) or a transient answer is retried with exponential backoff."""
+        for attempt in range(ATTEMPTS):
             try:
                 r = call()
             except requests.RequestException:
-                if attempt == 3:
+                if attempt == ATTEMPTS - 1:
                     raise
-                time.sleep(2 ** (attempt + 1))
+                backoff(attempt)
                 continue
-            if r.status_code in (429, 502, 503, 504, 522, 524) and attempt < 3:
-                time.sleep(2 ** (attempt + 1))
+            if attempt < ATTEMPTS - 1 and transient(r.status_code, r.text if r.status_code >= 500 else ""):
+                backoff(attempt)
                 continue
             return r
 

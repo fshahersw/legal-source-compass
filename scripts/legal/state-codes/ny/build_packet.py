@@ -31,8 +31,8 @@ from parse import INDEX, LEAF_TYPES, parse_page, split_url  # noqa: E402
 SECTION_PATH = r"^[A-Z][A-Z0-9]{1,6}/[A-Z0-9][A-Za-z0-9.*-]*$"
 URL_PATTERNS = [r"^https://www\.nysenate\.gov/legislation/laws/CONSOLIDATED$",
                 r"^https://www\.nysenate\.gov/legislation/laws/[A-Z][A-Z0-9]{1,6}(/[A-Za-z0-9][A-Za-z0-9.*-]*)?$"]
-STATUS = re.compile(r"^(?:§+\s*[\w.*-]+\.?\s*)?(?:\[|\()?(?:Repealed|Renumbered|Transferred|Expired|Omitted|Reserved|"
-                    r"Deemed repealed|Unconstitutional|Blank|No section)\b", re.I)
+STATUS = re.compile(r"^(?:(?:§+|Section\.?)\s*[\w.*-]+\.?\s*)?[\[(]?(?:Repealed|Renumbered|Transferred|Expired|Omitted|Reserved|"
+                    r"Deemed repealed|Unconstitutional|Blank)(?=\s*(?:[\])\.,;:]|$)|\s+(?:by|and|eff|pursuant|as|to|L\.|ch\.)\b)", re.I)
 
 
 def level_name(word):

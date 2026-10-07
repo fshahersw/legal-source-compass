@@ -6,6 +6,8 @@ import tempfile
 import unittest
 import uuid
 
+import requests
+
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import land_publisher_code_v2 as L  # noqa: E402
 
@@ -162,6 +164,31 @@ class LanderTest(unittest.TestCase):
         self.assertEqual(L.Cloud().h, {"apikey": "sb_secret_test"})
         os.environ["EXTERNAL_SUPABASE_SERVICE_ROLE_KEY"] = "eyJ.jwt.key"
         self.assertIn("Authorization", L.Cloud().h)
+
+    def test_lock_timeout_and_dns_errors_are_retried(self):
+        class Resp:
+            def __init__(self, status, text=""):
+                self.status_code, self.text = status, text
+
+        answers = [requests.ConnectionError("Temporary failure in name resolution"),
+                   Resp(500, '{"statusCode":"500","code":"LockTimeout","message":"Lock timeout"}'), Resp(200, "ok")]
+
+        def call():
+            item = answers.pop(0)
+            if isinstance(item, Exception):
+                raise item
+            return item
+
+        cloud = L.Cloud.__new__(L.Cloud)
+        saved = L.backoff
+        L.backoff = lambda attempt: None
+        try:
+            self.assertEqual(cloud._retry(call).status_code, 200)
+            self.assertEqual(cloud._retry(lambda: Resp(500, "invalid input")).status_code, 500)
+        finally:
+            L.backoff = saved
+        self.assertTrue(L.transient(500, "canceling statement due to lock timeout"))
+        self.assertFalse(L.transient(400, "lock timeout"))
 
     def test_large_objects_use_resumable_path(self):
         calls = []
