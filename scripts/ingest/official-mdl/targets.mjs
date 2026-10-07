@@ -96,6 +96,19 @@ export const MATTERS = {
     pages: [{ id: 'flnd-2885-orders', role: 'orders_table', family: 'paed-orders-table', url: 'https://www.flnd.uscourts.gov/mdl2885-orders-by-date' }],
     index_pages: [],
   },
+  // E.D. La. MDL case-of-interest pages (mnd-mdl-page; direct PDFs under /sites/default/files/).
+  '2454': {
+    name: "In re Franck's Lab, Inc. Products Liability Litigation", court_id: 'laed', host: 'www.laed.uscourts.gov', tier: 2,
+    case_number: null, printed_mdl_literal: 'MDL 2454',
+    pages: [{ id: 'laed-2454-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.laed.uscourts.gov/case-information/mdl-mass-class-action/francks' }],
+    index_pages: [],
+  },
+  '3023': {
+    name: 'In re Taxotere (Docetaxel) Eye Injury Products Liability Litigation', court_id: 'laed', host: 'www.laed.uscourts.gov', tier: 2,
+    case_number: null, printed_mdl_literal: 'MDL 3023',
+    pages: [{ id: 'laed-3023-mdl', role: 'orders_table', family: 'mnd-mdl-page', url: 'https://www.laed.uscourts.gov/case-information/mdl-mass-class-action/taxotere-eye' }],
+    index_pages: [],
+  },
 };
 
 // Index pages prove which MDL pages a court currently lists (and therefore the ABSENCE of a page for a matter such as 3180).
