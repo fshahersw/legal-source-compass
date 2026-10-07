@@ -27,6 +27,9 @@ CONFIG = {
     'ccp': {'root': '/tmp/sc/LACP', 'folder': 68, 'prefix': 'CCP', 'banner': 'LOUISIANA CODE OF CIVIL PROCEDURE', 'toc_label': 'ccp-toc',
             'source_system': 'la-code-civil-procedure', 'parser': 'la-ccp-lawprint', 'title': 'Louisiana Code of Civil Procedure',
             'example': '1', 'cite': 'La. C.C.P. art. <path>', 'regex': r'^[0-9]+(\.[0-9]+)*(-[A-Z])?$'},
+    'ce': {'root': '/tmp/sc/LACE', 'folder': 70, 'prefix': 'CE', 'banner': None, 'toc_label': 'ce-toc',
+           'source_system': 'la-code-evidence', 'parser': 'la-ce-lawprint', 'title': 'Louisiana Code of Evidence',
+           'example': '101', 'cite': 'La. C.E. art. <path>', 'regex': r'^[0-9]+(\.[0-9]+)*(-[A-Z])?$'},
 }[CODE]
 ROOT = pathlib.Path(CONFIG['root'])
 OUT = ROOT / 'landing'
