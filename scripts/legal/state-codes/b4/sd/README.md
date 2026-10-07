@@ -25,6 +25,15 @@ python3 scripts/legal/state-codes/b4/sd/verify.py --work /tmp/sc4/sd
 python3 -m unittest scripts/legal/state-codes/b4/sd/test_parse.py
 ```
 
+## Section gaps (`not archived`)
+
+When chapter bundles are archived but a section fragment is missing, `parse.py` records `missing_body` with reason `not archived`. Fetch official per-section JSON (resumable):
+
+```bash
+python3 scripts/legal/state-codes/b4/sd/acquire_missing_sections.py --work /tmp/sc4/sd
+python3 scripts/legal/state-codes/b4/sd/parse.py --work /tmp/sc4/sd
+```
+
 ## Corpus reconciliation (read-only)
 
 ```bash
