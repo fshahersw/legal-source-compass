@@ -21,6 +21,7 @@ export function exactCitationPaths(state: string, citation: string): string[] | 
         ...(usps === "IL" ? (illinoisPaths(text) ?? []) : []),
         ...(usps === "MA" ? (massachusettsPaths(text) ?? []) : []),
         ...(usps === "ME" ? (mainePaths(text) ?? []) : []),
+        ...(usps === "DE" ? (delawarePaths(text) ?? []) : []),
         ...(DOTTED_PATH_STATES.has(usps) ? (dottedPaths(text) ?? []) : []),
       ]),
     ]),
@@ -105,6 +106,31 @@ function mainePaths(citation: string): string[] | null {
     if (!title || !section) continue;
     const path = `${title}/${section}`;
     if (!paths.includes(path)) paths.push(path);
+  }
+  return paths.length ? paths : null;
+}
+
+/**
+ * Delaware paths such as `10 Del. C. § 8119` and `10 Del. C. § 8131(a)`.
+ * The title and the section are one path. A parenthetical is not included.
+ * Title 10 section 8131 is not the section 8131 in another title.
+ */
+function delawarePaths(citation: string): string[] | null {
+  const paths: string[] = [];
+  const re = /\b(\d+[A-Za-z]?)\s+Del\.?\s+C\.?\s*§§?\s*([^.;]+)/gi;
+  for (const match of citation.matchAll(re)) {
+    const title = match[1]?.toUpperCase();
+    if (!title) continue;
+    for (const raw of (match[2] ?? "").split(",")) {
+      const section = raw
+        .trim()
+        .replace(/\s+/g, "")
+        .replace(/(?:\([^)]*\))+$/g, "")
+        .replace(/\.$/, "");
+      if (!/^\d{3,}$/.test(section)) continue;
+      const path = `${title}/${section}`;
+      if (!paths.includes(path)) paths.push(path);
+    }
   }
   return paths.length ? paths : null;
 }
