@@ -14,6 +14,7 @@ batch can run it after landing. `--toc-ok` is the proof that parsed section coun
 """
 import argparse
 import html as html_mod
+import io
 import json
 import os
 import random
@@ -21,6 +22,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "b4"))          # sc_common (archive/fetch helpers, browser-UA retry)
@@ -66,6 +68,16 @@ def live_text(body, url):
         except ValueError:
             pass
     return sc.html_text(s)
+
+
+def texas_zip_chapter_live(arc, code: str, publisher_member: str) -> str | None:
+    """Official HTML chapter member from the live publisher code ZIP (tcss.legis.texas.gov)."""
+    zip_url = f"https://tcss.legis.texas.gov/resources/Zips/{code}.htm.zip"
+    rec = arc.fetch(zip_url, accept="*/*", min_bytes=0)
+    if rec.get("state") != "complete":
+        return None
+    with zipfile.ZipFile(io.BytesIO(arc.read(rec))) as zf:
+        return zf.read(publisher_member).decode("utf-8-sig", "replace")
 
 
 def squash(t):
@@ -119,9 +131,25 @@ def main():
         if rec["state"] != "complete":
             row.update(ok=False, why="live fetch failed")
         else:
-            live = squash(live_text(arc.read(rec), live_url))
+            live_body = live_text(arc.read(rec), live_url)
+            live = squash(live_body)
+            if (
+                a.state == "TX"
+                and u.get("publisher_member")
+                and squash(s["text"]) not in live
+                and "statutes.capitol.texas.gov" in live_url
+            ):
+                code = s["citation_path"].split(":", 1)[0]
+                zip_html = texas_zip_chapter_live(arc, code, u["publisher_member"])
+                if zip_html:
+                    bulk_url = f"https://tcss.legis.texas.gov/resources/Zips/{code}.htm.zip"
+                    live = squash(live_text(zip_html.encode("utf-8"), bulk_url))
+                    row["live_route"] = "publisher_zip_member"
             number = s["hierarchy"][-1].get("number") or ""
             row["citation_ok"] = bool(number) and squash(number) in live
+            if a.state == "TX" and not row["citation_ok"]:
+                anchor = s["citation_path"].split("~", 1)[0].split(":", 1)[-1].strip()
+                row["citation_ok"] = bool(anchor) and squash(anchor) in live
             heading = s.get("heading") or ""
             row["heading_ok"] = (not heading) or squash(heading) in live
             if heading and not row["heading_ok"]:
