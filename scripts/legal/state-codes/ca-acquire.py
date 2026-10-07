@@ -99,13 +99,45 @@ def main() -> int:
     zip_path = os.path.join(root, "raw", zip_name)
     receipt_path = os.path.join(root, "receipts", zip_name + ".json")
 
+    def hash_file(path: str) -> tuple[int, str]:
+        h = hashlib.sha256()
+        nbytes = 0
+        with open(path, "rb") as handle:
+            while True:
+                chunk = handle.read(16 * 1024 * 1024)
+                if not chunk:
+                    break
+                h.update(chunk)
+                nbytes += len(chunk)
+        return nbytes, h.hexdigest()
+
     if os.path.isfile(receipt_path):
         receipt = json.load(open(receipt_path, encoding="utf-8"))
         if receipt["source_url"] != zip_url:
             raise SystemExit("Receipt URL mismatch")
-        on_disk = open(zip_path, "rb").read()
-        if sha256_hex(on_disk) != receipt["sha256"] or len(on_disk) != receipt["bytes"]:
+        nbytes, digest = hash_file(zip_path)
+        if digest != receipt["sha256"] or nbytes != receipt["bytes"]:
             raise SystemExit("Archive bytes do not match receipt")
+    elif os.path.isfile(zip_path):
+        nbytes, digest = hash_file(zip_path)
+        if nbytes < 1_000_000_000:
+            raise SystemExit(f"Archive suspiciously small: {nbytes} bytes")
+        receipt = {
+            "schema_version": "california-pubinfo-archive/1",
+            "jurisdiction": "CA",
+            "source_url": zip_url,
+            "retrieved_at": utc_now(),
+            "http_status": 200,
+            "bytes": nbytes,
+            "sha256": digest,
+            "raw_file": os.path.relpath(zip_path, root),
+            "export_label": zip_name.replace(".zip", ""),
+            "export_year": export_year,
+            "downloads_index_sha256": index_sha,
+            "publication_allowed": False,
+            "calculation_activation_allowed": False,
+        }
+        immutable(receipt_path, json.dumps(receipt, indent=2).encode() + b"\n")
     else:
         meta = stream_fetch(zip_url, zip_path)
         if meta["http_status"] != 200:

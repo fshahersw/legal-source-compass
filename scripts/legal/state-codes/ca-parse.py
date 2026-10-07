@@ -97,10 +97,12 @@ def hierarchy_row(level: str, number: str | None, heading: str | None) -> dict:
 def parse_archive(root: str, parsed_name: str) -> dict:
     root = os.path.abspath(root)
     receipts = os.path.join(root, "receipts")
-    archive_receipts = [f for f in os.listdir(receipts) if f.startswith("pubinfo_") and f.endswith(".zip.json")]
+    archive_receipts = sorted(
+        f for f in os.listdir(receipts) if re.fullmatch(r"pubinfo_\d{4}\.zip\.json", f)
+    )
     if not archive_receipts:
         raise SystemExit("No pubinfo archive receipt; run ca-acquire.py first")
-    archive_receipt = json.load(open(os.path.join(receipts, sorted(archive_receipts)[-1]), encoding="utf-8"))
+    archive_receipt = json.load(open(os.path.join(receipts, archive_receipts[-1]), encoding="utf-8"))
     zip_path = os.path.join(root, archive_receipt["raw_file"])
     if not os.path.isfile(zip_path):
         raise SystemExit("Archive file missing: " + zip_path)
