@@ -29,7 +29,7 @@ HOME = BASE + "index.html"
 PARSER = {"name": "mt-mca-section-html", "version": "2"}
 SOURCE_SYSTEM = "mt-mca"
 SECTION_URL_RE = re.compile(
-    r"^https://mca\.legmt\.gov/bills/mca/(title_\w+)/((?:chapter|article)_\w+)/(part_\w+)/(section_\w+)/([\w-]+)\.html$")
+    r"^https://mca\.legmt\.gov/bills/mca/(title_\w+)/((?:chapter|article)_\w+)/(part_\w+)/(section_\w+)/([\w-]+)(?:%20)?\.html$")
 HEAD_RE = {k: re.compile(r'<h\d class="section-%s-title">(.*?)</h\d>' % k, re.S | re.I)
            for k in ("title", "chapter", "part", "section")}
 CITATION_RE = re.compile(r'<span class="citation">(.*?)</span>', re.S | re.I)
@@ -37,14 +37,22 @@ CITATION_RE = re.compile(r'<span class="citation">(.*?)</span>', re.S | re.I)
 # word alone is not enough; the publisher's own marker (skip-running-header) is the primary signal.
 STATUS_HEADING_RE = re.compile(
     r"^(?:Repealed|Terminated|Superseded|Expired|Omitted|Void|Reserved|Unconstitutional|"
-    r"(?:Renumbered|Transferred|Recodified|Redesignated)\b.*)$", re.I)
+    r"(?:Renumbered|Transferred|Recodified|Redesignated)\b.*|\*+No Montana Rules? .*\*+)$", re.I)
 NUM_RE = {
     "title": re.compile(r"^TITLES?\s+([0-9A-Z]+)\b", re.I),
     "chapter": re.compile(r"^CHAPTERS?\s+([0-9A-Z]+)\b", re.I),
     "article": re.compile(r"^ARTICLE\s+([0-9A-Z]+)\b", re.I),
     "part": re.compile(r"^PARTS?\s+([0-9A-Z]+)\b", re.I),
 }
-SECTION_ID_REGEX = r"^([0-9]+[A-Z]?-[0-9]+[A-Z]?-[0-9]+[A-Z]?|const-[0-9A-Za-z]+-[0-9A-Za-z]+)(~[0-9]+)?$"
+STATUTE_RE = re.compile(r"^[0-9]+[A-Z]?-[0-9]+[A-Z]?-[0-9]+[A-Z]?(?:\.[0-9]+)?$")
+# Court rules and forms printed inside the code (titles 25 and 26) restart at "Rule 1" in each rule set, so their
+# path is scoped by the printed title and chapter: 25-20:Rule-4.1, 26-10:Rule-401, 25-21:Form-1A.
+SECTION_ID_REGEX = (r"^([0-9]+[A-Z]?-[0-9]+[A-Z]?-[0-9]+[A-Z]?(\.[0-9]+)?|[0-9]+[A-Z]?-[0-9]+[A-Z]?:[0-9A-Za-z][0-9A-Za-z.-]*"
+                    r"|const-[0-9A-Za-z]+-[0-9A-Za-z]+)(~[0-9]+)?$")
+
+
+def rule_slug(citation):
+    return re.sub(r"[^0-9A-Za-z.]+", "-", citation).strip("-.")
 
 
 def norm(s):
@@ -120,7 +128,7 @@ def toc_heading(label, citation):
     if citation and label.startswith(citation):
         rest = label[len(citation):].strip()
         # "1-1-210 through 1-1-213 reserved": the printed line is the heading, not its tail
-        return rest if rest[:1].isupper() or rest[:1].isdigit() else label
+        return rest if rest[:1].isupper() or rest[:1].isdigit() or rest == citation else label
     m = re.match(r"^([0-9]+[A-Za-z]?)\.\s*(.*)$", label)
     return (m.group(2).strip() or None) if m else label
 
@@ -187,12 +195,21 @@ def build(work, reviewer):
             path = f"const-{art}-{sec_num}"
             number = sec_num
         else:
-            citation = row["citation"]
-            if not citation or citation != s["citation_toc"]:
-                gaps.append({"url": s["url"], "citation_toc": s["citation_toc"], "citation_page": citation,
+            toc_cit = s["citation_toc"]
+            citation = row["citation"] or toc_cit
+            if not toc_cit or citation != toc_cit or squash(toc_cit) not in squash(row["text"]):
+                gaps.append({"url": s["url"], "citation_toc": toc_cit, "citation_page": row["citation"],
                              "reason": "page citation differs from the TOC citation"})
                 continue
-            path = citation
+            if STATUTE_RE.match(citation):
+                path = citation
+            else:
+                t_num, c_num = number_from("title", h["title"]), number_from(sub_level, h["chapter"])
+                if not t_num or not c_num:
+                    gaps.append({"url": s["url"], "citation_toc": toc_cit, "reason": "rule without printed title/chapter number"})
+                    continue
+                path = f"{t_num}-{c_num}:{rule_slug(citation)}"
+                notes["rule_or_form_path"] += 1
             number = citation
         heading = toc_heading(s["toc_label"], s["citation_toc"])
         if heading and squash(heading) in squash(sc.html_text(page_html)):
@@ -267,12 +284,13 @@ def build(work, reviewer):
         "publisher": "Montana Legislature, Legislative Services Division", "publisher_url": BASE,
         "source_system": SOURCE_SYSTEM, "code_title": "Montana Code Annotated", "parser": PARSER,
         "retrieval": {"methods": sorted({x["retrieval_method"] for o in objects.values() for x in o["sources"]}),
-                      "source_url_patterns": [r"^https://mca\.legmt\.gov/bills/mca/title_\w+/(?:chapter|article)_\w+/part_\w+/section_\w+/[\w-]+\.html$"],
+                      "source_url_patterns": [r"^https://mca\.legmt\.gov/bills/mca/title_\w+/(?:chapter|article)_\w+/part_\w+/section_\w+/[\w-]+(?:%20)?\.html$"],
                       "terms_gate": False, "official_source": True, "rate_limit_ms": 100},
         "structure": {"levels": ["title", "chapter", "article", "part", "section"],
                       "unit": "one official MCA section page (the retained HTML); title 0 is the Constitution as listed in the MCA table of contents"},
         "section_id": {"scheme": "official_citation_path", "regex": SECTION_ID_REGEX, "example": "27-2-204",
-                       "citation_format": "MCA <title>-<chapter>-<section>; the Constitution as const-<article>-<section> (~N marks a printed repeat)"},
+                       "citation_format": "MCA <title>-<chapter>-<section>; court rules and forms as <title>-<chapter>:<printed rule>; "
+                                          "the Constitution as const-<article>-<section> (~N marks a printed repeat)"},
         "currency": {"basis": "publisher_statement", "location": "mca.legmt.gov/bills/mca/index.html heading and the line beneath it"},
         "review": {"reviewed_by": reviewer, "reviewed_at": datetime.date.today().isoformat()},
     }
