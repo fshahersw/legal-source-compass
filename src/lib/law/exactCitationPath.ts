@@ -22,6 +22,7 @@ export function exactCitationPaths(state: string, citation: string): string[] | 
         ...(usps === "MA" ? (massachusettsPaths(text) ?? []) : []),
         ...(usps === "ME" ? (mainePaths(text) ?? []) : []),
         ...(usps === "DE" ? (delawarePaths(text) ?? []) : []),
+        ...(usps === "MD" ? (marylandPaths(text) ?? []) : []),
         ...(DOTTED_PATH_STATES.has(usps) ? (dottedPaths(text) ?? []) : []),
       ]),
     ]),
@@ -37,10 +38,13 @@ function citesSectionRange(text: string): boolean {
   return /(?:§§?\s*)?\d[\dA-Za-z.]*(?:\([^)]*\))*\s+(?:to|through)\s+(?:§§?\s*)?\d/i.test(text);
 }
 
-/** A bare section number that is already the section half of a title/section token is not a second section. */
+/** A bare section number that is already the section half of a title or article token is not a second section. */
 function omitSectionHalf(paths: string[]): string[] {
   return paths.filter(
-    (path) => !paths.some((other) => other !== path && other.endsWith(`/${path}`)),
+    (path) =>
+      !paths.some(
+        (other) => other !== path && (other.endsWith(`/${path}`) || other.endsWith(` ${path}`)),
+      ),
   );
 }
 
@@ -131,6 +135,24 @@ function delawarePaths(citation: string): string[] | null {
       const path = `${title}/${section}`;
       if (!paths.includes(path)) paths.push(path);
     }
+  }
+  return paths.length ? paths : null;
+}
+
+/**
+ * Maryland Courts and Judicial Proceedings paths such as `Md. Code, Cts. & Jud. Proc. § 5-101`.
+ * The article and the section are one path, `gcj 5-101`. A parenthetical is not included.
+ * The bare number `5-101` is also published in other articles, so it is not a second path.
+ */
+function marylandPaths(citation: string): string[] | null {
+  if (!/\bCts\.\s*&\s*Jud\.\s*Proc\./i.test(citation)) return null;
+  const paths: string[] = [];
+  const re = /§§?\s*(\d+(?:\.\d+)?-\d+(?:\.\d+)?)(?![A-Za-z0-9.])/g;
+  for (const match of citation.matchAll(re)) {
+    const section = match[1];
+    if (!section) continue;
+    const path = `gcj ${section}`;
+    if (!paths.includes(path)) paths.push(path);
   }
   return paths.length ? paths : null;
 }
