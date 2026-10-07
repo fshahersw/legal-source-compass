@@ -9,6 +9,8 @@ import {DB_ORIGIN, DocketBird} from './clients.mjs';
 import {dbDocumentRow} from './normalize.mjs';
 
 export const CSV_URL = `${DB_ORIGIN}/document-list.csv`;
+/** Case-page “Download CSV” export (same Bearer session as the REST API). */
+export const casePageCsvUrl = caseId => `${DB_ORIGIN}/cases/${encodeURIComponent(caseId)}/document-list.csv`;
 const COL = {
   id: ['document id', 'document_id', 'id', 'docketbird document id'],
   entry: ['entry number', 'entry_number', 'docket sheet number', 'docket_sheet_number', 'entry no', 'entry no.'],
@@ -84,18 +86,31 @@ export function csvToDocument(caseId, row, receipt, inventorySource) {
     inventory_source: inventorySource,
   };
   const base = dbDocumentRow(caseId, doc, receipt);
-  base.provenance = {...base.provenance, source_tool: inventorySource === 'document-list-csv' ? 'GET /document-list.csv' : 'GET /documents/search (inventory fallback)', inventory_csv_sha256: receipt.source_sha256};
+  const tool = inventorySource === 'case-page-document-list-csv' ? 'GET /cases/{id}/document-list.csv'
+    : inventorySource === 'document-list-csv' ? 'GET /document-list.csv'
+      : 'GET /documents/search (inventory fallback)';
+  base.provenance = {...base.provenance, source_tool: tool, inventory_csv_sha256: receipt.source_sha256};
   return base;
 }
 
-export async function fetchDocumentListCsv({caseId, cacheDir, key = process.env.DOCKETBIRD_API_KEY, fetchImpl = fetch}) {
-  const url = `${CSV_URL}?case_id=${encodeURIComponent(caseId)}`;
+async function fetchCsvUrl({url, cacheDir, key, fetchImpl, label}) {
   const res = await fetchImpl(url, {headers: {Authorization: `Bearer ${key}`, Accept: 'text/csv,*/*'}, redirect: 'error', signal: AbortSignal.timeout(120000)});
   const bytes = Buffer.from(await res.arrayBuffer());
-  const receipt = await archiveRaw(cacheDir, bytes, {source: 'docketbird', source_url: url, request_method: 'GET', http_status: res.status, retrieved_at: new Date().toISOString(), schema_version: 'docketbird-document-list-csv/1'});
+  const receipt = await archiveRaw(cacheDir, bytes, {source: 'docketbird', source_url: url, request_method: 'GET', http_status: res.status, retrieved_at: new Date().toISOString(), schema_version: 'docketbird-document-list-csv/1', export_route: label});
   const text = bytes.toString('utf8');
-  if (res.status === 200 && !text.trim().startsWith('{')) return {text, receipt, source: 'document-list-csv'};
-  return {text: null, receipt, source: null, http_status: res.status, preview: text.slice(0, 120)};
+  const ok = res.status === 200 && !text.trim().startsWith('{') && !/^\s*</.test(text);
+  return {ok, text: ok ? text : null, receipt, http_status: res.status, route: label, preview: ok ? null : text.slice(0, 120)};
+}
+
+/** Try case-page export, then the legacy query route; record every attempt. */
+export async function fetchDocumentListCsv({caseId, cacheDir, key = process.env.DOCKETBIRD_API_KEY, fetchImpl = fetch}) {
+  const attempts = [];
+  for (const [label, url] of [['case-page-document-list-csv', casePageCsvUrl(caseId)], ['document-list-csv', `${CSV_URL}?case_id=${encodeURIComponent(caseId)}`]]) {
+    const r = await fetchCsvUrl({url, cacheDir, key, fetchImpl, label});
+    attempts.push({route: label, http_status: r.http_status, ok: r.ok});
+    if (r.ok) return {text: r.text, receipt: r.receipt, source: label, attempts};
+  }
+  return {text: null, receipt: attempts.at(-1)?.receipt, source: null, attempts};
 }
 
 export async function buildInventoryCsvFromSearch({db, caseId, cacheDir}) {
@@ -128,13 +143,16 @@ export async function landCaseInventory({work, caseId, stageDir, runId, apply = 
 
   let text, receipt, source, meta = {};
   const primary = await fetchDocumentListCsv({caseId, cacheDir});
+  meta.csv_attempts = primary.attempts ?? [];
   if (primary.text && primary.source) {
     text = primary.text; receipt = primary.receipt; source = primary.source;
+    await fs.mkdir(path.join(work, 'document-list'), {recursive: true});
     await fs.writeFile(path.join(work, 'document-list', `${caseId.replace(/[^A-Za-z0-9]/g, '_')}.csv`), text);
   } else {
     const db = new DocketBird({cacheDir, maxRequests: 500000, minGapMs: 250});
     const fb = await buildInventoryCsvFromSearch({db, caseId, cacheDir});
-    text = fb.text; receipt = fb.receipt; source = fb.source; meta = {enumerated: fb.enumerated, csv_api_status: primary.http_status};
+    text = fb.text; receipt = fb.receipt; source = fb.source; meta = {...meta, enumerated: fb.enumerated, inventory_fallback: true};
+    await fs.mkdir(path.join(work, 'document-list'), {recursive: true});
     await fs.writeFile(path.join(work, 'document-list', `${caseId.replace(/[^A-Za-z0-9]/g, '_')}.csv`), text);
   }
   const parsed = parseDocumentListCsv(text);
@@ -144,6 +162,7 @@ export async function landCaseInventory({work, caseId, stageDir, runId, apply = 
     if (!row.document_id.startsWith(caseId + '-')) continue;
     const ingest = csvToDocument(caseId, row, receipt, source);
     ingest.data.inventory_record_sha256 = sha256(canonicalIntegerJson(ingest.data));
+    ingest.provenance.record_sha256 = sha256(canonicalIntegerJson(ingest.data));
     await appendJsonl(docFile, ingest);
     staged++;
   }
