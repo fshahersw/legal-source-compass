@@ -834,15 +834,12 @@ def main():
                         row["citation_ok"] = bool(number) and squash(number) in live
                 lh = parsed_row.get("heading") or ""
                 live_section_text = parsed_row.get("text") or ""
-                if parsed_row.get("history"):
-                    live_section_text = (live_section_text + "\n" + parsed_row["history"]).strip()
                 if not live_section_text.strip():
                     live_section_text = parsed_row.get("status_label") or lh
                 row["heading_ok"] = (not heading) or squash(heading) == squash(lh) or squash(heading) in squash(lh)
                 if heading and not row["heading_ok"]:
                     row["heading_ok"] = squash(re.sub(r"\[[^\]]+\]", "", heading)) in squash(lh)
-                stored_cmp = squash(s["text"] + "\n" + (s.get("history") or ""))
-                row["text_ok"] = squash(live_section_text) == stored_cmp if live_section_text.strip() else squash(s["text"]) in live
+                row["text_ok"] = squash(s["text"]) == squash(live_section_text) if live_section_text.strip() else squash(s["text"]) in live
             else:
                 pub_num = publisher_section_number(live_raw)
                 if pub_num:
