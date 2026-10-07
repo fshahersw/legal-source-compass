@@ -1,0 +1,54 @@
+{
+  "jurisdiction": "TX",
+  "publisher": "Texas Legislature (Texas Statutes)",
+  "publisher_url": "https://statutes.capitol.texas.gov/",
+  "source_system": "tx-texas-legislature-code",
+  "code_title": "Texas Statutes",
+  "parser": {
+    "name": "texas-publisher-html",
+    "version": "5"
+  },
+  "methods": [
+    "publisher_page",
+    "publisher_bulk_download"
+  ],
+  "source_url_patterns": [
+    "^https://statutes\\.capitol\\.texas\\.gov/Docs/[A-Z0-9]+/htm/[^/]+\\.htm$",
+    "^https://statutes\\.capitol\\.texas\\.gov/assets/StatuteCodeDownloads\\.json$",
+    "^https://tcss\\.legis\\.texas\\.gov/resources/Zips/[A-Z0-9]+\\.htm\\.zip$"
+  ],
+  "rate_limit_ms": 1000,
+  "structure": {
+    "levels": [
+      "title",
+      "subtitle",
+      "chapter",
+      "subchapter",
+      "article",
+      "section"
+    ],
+    "unit": "one official HTML chapter file from the publisher code ZIP (.htm member)"
+  },
+  "section_id": {
+    "scheme": "official_citation_path",
+    "regex": "^[A-Z0-9]{1,2}:[0-9A-Za-z._()+-]+(~[0-9]+)?$",
+    "example": "CP:16.003",
+    "citation_format": "<code>:<section-anchor> (~N marks a repeated publisher occurrence in the same chapter file)"
+  },
+  "currency": {
+    "basis": "publisher_statement",
+    "location": "Texas Statutes information page and captured publisher HTML archives"
+  },
+  "review": {
+    "reviewed_by": "state-codes batch 4 (pre-land dry run)",
+    "reviewed_at": "2026-10-07"
+  },
+  "unit_kind": "texas_statute_chapter_html",
+  "default_method": "publisher_page",
+  "currency_defaults": {
+    "basis": "publisher_statement",
+    "statement": "Publisher states statutes through 89th 2nd Called Session (2025); constitutional amendments through November 2025. Not independently certified current.",
+    "through_date": null,
+    "edition": null
+  }
+}
