@@ -136,8 +136,14 @@ def put_object(cloud, o):
         if hashlib.sha256(data).hexdigest() != o["sha256"] or len(data) != o["bytes"]:
             raise RuntimeError(f"local file does not match plan {o['sha256'][:12]}")
         ctype = "text/plain; charset=utf-8" if o["kind"] == "unit_text_derivative" else "application/octet-stream"
-        ust, msg = cloud.upload(key, data, ctype)
-        if ust not in (200, 201) and "already exists" not in msg and "Duplicate" not in msg:
+        ust, msg = None, ""
+        for attempt in range(8):
+            ust, msg = cloud.upload(key, data, ctype)
+            if ust in (200, 201) or "already exists" in msg or "Duplicate" in msg:
+                break
+            if ust in (502, 503, 504, 520, 522, 524) and attempt < 7:
+                time.sleep(min(60, 2 ** attempt))
+                continue
             raise RuntimeError(f"upload {ust} {msg}")
         for attempt in range(6):
             st, body = cloud.readback(key)
