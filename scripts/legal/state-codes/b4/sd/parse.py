@@ -49,7 +49,11 @@ def parse_section_html(html: str, citation: str, catchline: str | None):
         body_lines.append(line)
     body = "\n".join(body_lines).strip()
     status_label = None
-    combined = (catchline or "") + " " + (body or "") + " " + (history or "")
+    combined = " ".join(
+        x
+        for x in ((catchline or ""), (heading_line or ""), (body or ""), (history or ""))
+        if x
+    )
     if REPEALED_RE.search(combined):
         for word in ("Repealed", "Transferred", "Superseded", "Reserved", "Expired"):
             if word.lower() in combined.lower():

@@ -34,6 +34,13 @@ python3 scripts/legal/state-codes/b4/sd/acquire_missing_sections.py --work /tmp/
 python3 scripts/legal/state-codes/b4/sd/parse.py --work /tmp/sc4/sd
 ```
 
+## Empty body (chapter bundle truncates section HTML)
+
+```bash
+python3 scripts/legal/state-codes/b4/sd/acquire_empty_body_sections.py --work /tmp/sc4/sd
+python3 scripts/legal/state-codes/b4/sd/parse.py --work /tmp/sc4/sd
+```
+
 ## Corpus reconciliation (read-only)
 
 ```bash
