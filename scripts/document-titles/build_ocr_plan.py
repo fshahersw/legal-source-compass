@@ -15,6 +15,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--plan", required=True)
     ap.add_argument("--ocr", required=True)
+    ap.add_argument("--confirm", help="second-pass OCR JSONL (different dpi); a title is kept only when it derives identically from it")
     ap.add_argument("--out-dir", required=True)
     a = ap.parse_args()
     os.makedirs(a.out_dir, exist_ok=True)
@@ -27,6 +28,11 @@ def main():
     for l in open(a.ocr):
         d = json.loads(l)
         ocr[d["id"]] = d
+    confirm = {}
+    if a.confirm:
+        for l in open(a.confirm):
+            d = json.loads(l)
+            confirm[d["id"]] = d
     out, stats, samples = [], Counter(), defaultdict(list)
     for pid, p in sorted(v1.items()):
         d = ocr.get(pid)
@@ -39,6 +45,10 @@ def main():
         else:
             title, method, reason = D.title_from_ocr_first_page(d["lines"], d.get("page_h"))
             text_hash = hashlib.sha256("\n".join(l["t"] for l in d["lines"]).encode("utf-8")).hexdigest()
+            if title and a.confirm:
+                c = confirm.get(pid)
+                if not c or c["status"] != "ok" or not D.ocr_second_pass_agrees(title, c["lines"], c.get("page_h")):
+                    title, method, reason = None, None, "ocr_second_pass_disagreement"
         row = {"dataset": "court_documents", "id": pid, "old_title": p["new_title"], "source_id": p["source_id"], "file_name": p["file_name"]}
         if title:
             row.update(new_title=title, method=method, reason=None, source_text_sha256=text_hash)

@@ -20,8 +20,8 @@ efp = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(efp)
 
 DPI = 200
-TOP_FRACTION = 0.6
 SCALE = 72.0 / DPI
+TOP_FRACTION = 0.6
 ENGINE = "rapidocr-onnxruntime-1.4.4"
 _tls = {}
 
@@ -74,12 +74,15 @@ def process(art):
 
 
 def main():
+    global DPI, SCALE
     ap = argparse.ArgumentParser()
     ap.add_argument("--artifacts", required=True)
     ap.add_argument("--ids", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--workers", type=int, default=3)
+    ap.add_argument("--dpi", type=int, default=200)
     a = ap.parse_args()
+    DPI, SCALE = a.dpi, 72.0 / a.dpi
     arts = {x["route"].rsplit("/", 1)[-1]: x for x in json.load(open(a.artifacts))}
     ids = [l.strip() for l in open(a.ids) if l.strip()]
     done = set()

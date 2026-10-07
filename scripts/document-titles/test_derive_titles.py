@@ -120,6 +120,14 @@ class Ocr(unittest.TestCase):
     def test_no_text(self):
         self.assertEqual(D.title_from_ocr_first_page([], 792.0)[2], "ocr_no_text")
 
+    def test_second_pass_must_agree_exactly(self):
+        first = [OL("Standing Order Regarding", 24, 60), OL("Funding Arrangements", 24, 90)] + self.body
+        same = [dict(l, c=0.97) for l in first]
+        diff = [OL("Standing Order Regarding", 24, 60), OL("Funding Arrangernents", 24, 90)] + self.body
+        title = D.title_from_ocr_first_page(first, 792.0)[0]
+        self.assertTrue(D.ocr_second_pass_agrees(title, same, 792.0))
+        self.assertFalse(D.ocr_second_pass_agrees(title, diff, 792.0))
+
 
 if __name__ == "__main__":
     unittest.main()

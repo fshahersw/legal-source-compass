@@ -432,3 +432,9 @@ def title_from_ocr_first_page(lines, page_h):
     if why:
         return None, None, why
     return title, (METHOD_OCR_BLOCK if method == METHOD_BLOCK else METHOD_OCR_DOCTYPE), None
+
+
+def ocr_second_pass_agrees(title, lines_second, page_h):
+    """Precision gate: an independent OCR pass at a different resolution must derive exactly the same title."""
+    t2, _, _ = title_from_ocr_first_page(lines_second, page_h)
+    return t2 == title
