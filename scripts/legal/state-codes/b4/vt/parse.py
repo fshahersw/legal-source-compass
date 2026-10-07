@@ -223,6 +223,7 @@ def build_packet(work):
             currency_stmt = parsed[0]["currency"]["statement"]
         text_parts = []
         span_rows = []
+        chapter_text = ""
         for i, s in enumerate(parsed):
             key = toc_keys[i] if toc_keys and i < len(toc_keys) else s.get("inventory_key") or s["number"]
             citation_path = f"{s['title_num']}/{s['chapter_num']}/{key}"
@@ -231,11 +232,13 @@ def build_packet(work):
                 citation_path = f"{citation_path}#{seen_citation[citation_path]}"
             else:
                 seen_citation[citation_path] = 0
-            start = sum(len(p) + (2 if j else 0) for j, p in enumerate(text_parts))
+            if chapter_text:
+                chapter_text += "\n\n"
+            start = len(chapter_text)
+            chapter_text += s["text"]
+            end = len(chapter_text)
             text_parts.append(s["text"])
-            end = start + len(s["text"])
             span_rows.append((s, start, end, citation_path))
-        chapter_text = "\n\n".join(text_parts)
         chapters_out.append(
             {
                 "native_id": native_id,

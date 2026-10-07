@@ -3,7 +3,13 @@ import sys
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from review_publisher_code_v2 import live_lines, ordered_siblings, reverse_check, site_chrome  # noqa: E402
+from review_publisher_code_v2 import (  # noqa: E402
+    _stored_covers_live_line,
+    live_lines,
+    ordered_siblings,
+    reverse_check,
+    site_chrome,
+)
 
 PAGE = (b"<html><body><div id='nav'>Home | Search</div><div id='va_code'>"
         b"<b>\xc2\xa7 8.9A-322. Priorities.</b><p>(a) General rule. First text.</p><p>(c) Proceeds rule.</p>"
@@ -98,6 +104,16 @@ class ReverseCheck(unittest.TestCase):
         self.assertEqual([x["citation_path"] for x in ordered_siblings(rows[0], rows)], ["b", "c"])
         rows[2]["span"] = None
         self.assertEqual(len(ordered_siblings(rows[0], rows)), 2)
+
+    def test_body_and_history_on_one_live_line(self):
+        r = row(
+            "12-101",
+            "Heading.",
+            "The board shall implement a citywide reappraisal.",
+            history="(Added 2013, No. 26, § 1, eff. May 13, 2013.)",
+        )
+        live_line = "The board shall implement a citywide reappraisal. (Added 2013, No. 26, § 1, eff. May 13, 2013.)"
+        self.assertTrue(_stored_covers_live_line(live_line, r))
 
 
 if __name__ == "__main__":
