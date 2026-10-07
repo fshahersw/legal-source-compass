@@ -21,8 +21,10 @@ WS = re.compile(r'[ \t\r\n\f\v]+')
 HISTORY = re.compile(r'^(Acts\s+\d{4}|Amended by|Added by|Amended and reenacted|Enacted by|Redesignated|Repealed by Acts|Reenacted|'
                      r'Re-enacted|Source:|Formerly|Transferred by|Renumbered|Amended and renumbered|Acts\s)')
 HEADER = re.compile(r'^(PRELIMINARY TITLE|BOOK|SUBTITLE|TITLE|CHAPTER|SECTION|SUBSECTION|PART|SUBPART)\b'
-                    r'(?:\s+([IVXLCDM]+|[0-9]+(?:-[A-Z])?|[A-Z])(?![A-Za-z]))?\s*(?:\.|--|-|\u2013|\u2014)?\s*(.*)$')
-ARTICLE = re.compile(r'^(?:Art\.?|§)\s*([0-9]+(?:\.[0-9]+)?(?:-[A-Z])?)\s*\.?\s*(.*)$')
+                    r'(?:\s+([IVXLCDM]+|[0-9]+(?:-[A-Z])?|[A-Z])(?![A-Za-z]))?\s*(?:\.|--|-|\u2013|\u2014)?\s*(.*)$', re.I)
+SECTION_SIGN_HEADER = re.compile(r'^§\s*([0-9]+(?:-[A-Z])?)\s*(?:--|\u2013|\u2014|-|\.)\s*(.+)$')
+ARTICLE = re.compile(r'^Art\.?\s*([0-9]+(?:\.[0-9]+)?(?:-[A-Z])?)\s*\.?\s*(.*)$')
+SIGN_ARTICLE = re.compile(r'^§\s*([0-9]+(?:\.[0-9]+)?(?:-[A-Z])?)\.\s*(.*)$')
 LEVEL = {'BOOK': ('book', 0), 'PRELIMINARY TITLE': ('title', 1), 'TITLE': ('title', 1), 'SUBTITLE': ('subtitle', 2),
          'CHAPTER': ('chapter', 3), 'SECTION': ('section_group', 4), 'SUBSECTION': ('subsection_group', 5),
          'PART': ('part', 4), 'SUBPART': ('subpart', 5)}
@@ -53,7 +55,11 @@ def parse_page(html):
     m = LABEL.match(label)
     if not m:
         raise ValueError('unexpected label %r' % label)
+    article = ARTICLE
     idx = next((i for i, x in enumerate(lines) if ARTICLE.match(x)), None)
+    if idx is None:
+        article = SIGN_ARTICLE
+        idx = next((i for i, x in enumerate(lines) if SIGN_ARTICLE.match(x)), None)
     if idx is None:
         raise ValueError('no article line on %s' % label)
     headers, notes = [], []
@@ -61,9 +67,14 @@ def parse_page(html):
         if ln.startswith('NOTE:'):
             notes.append(ln)
             continue
+        ms = SECTION_SIGN_HEADER.match(ln)
+        if ms:
+            headers.append(['section_group', 4, ms.group(1), ms.group(2).strip()])
+            continue
         mh = HEADER.match(ln)
-        if mh and mh.group(1) in LEVEL and not (mh.group(1) not in ('PRELIMINARY TITLE',) and mh.group(2) is None):
-            kind = mh.group(1)
+        if mh:
+            kind = mh.group(1).upper()
+        if mh and kind in LEVEL and not (kind != 'PRELIMINARY TITLE' and mh.group(2) is None):
             level, rank = LEVEL[kind]
             number = 'Preliminary' if kind == 'PRELIMINARY TITLE' else mh.group(2)
             headers.append([level, rank, number, (mh.group(3) or '').strip()])
@@ -71,7 +82,7 @@ def parse_page(html):
             headers[-1][3] = (headers[-1][3] + ' ' + ln).strip()
         else:
             raise ValueError('unplaced line before article %s: %r' % (label, ln[:80]))
-    ma = ARTICLE.match(lines[idx])
+    ma = article.match(lines[idx])
     art_no, heading = ma.group(1), ma.group(2).strip()
     if art_no != m.group(1):
         raise ValueError('article number %s differs from label %s' % (art_no, label))

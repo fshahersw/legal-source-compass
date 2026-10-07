@@ -47,6 +47,23 @@ class CivilCodeParse(unittest.TestCase):
         pg = load('cc-195-subsection.html')
         self.assertIn('subsection_group', [h[0] for h in pg['headers']])
 
+    def test_a_section_sign_heading_is_a_heading_not_the_article_line(self):
+        pg = load('cc-3192-sign-heading.html')
+        self.assertEqual(pg['path'], '3192')
+        self.assertEqual(pg['art_no'], '3192')
+        self.assertEqual(pg['headers'], [['section_group', 4, '1', 'OF FUNERAL CHARGES']])
+        self.assertEqual(P.article_record(pg)['heading'], 'Funeral charges, definition.')
+
+    def test_a_section_sign_heading_ending_in_a_period_is_a_heading(self):
+        pg = load('cc-3218-sign-heading-period.html')
+        self.assertEqual(pg['path'], '3218')
+        self.assertEqual(pg['headers'], [['section_group', 4, '1', 'OF THE PRIVILEGE OF THE LESSOR']])
+
+    def test_a_mixed_case_subsection_heading_parses(self):
+        pg = load('cc-3020-mixed-case-subsection.html')
+        self.assertEqual([h[:3] for h in pg['headers']], [['subsection_group', 5, 'B']])
+        self.assertEqual(pg['headers'][0][3], 'Relations Between the Principal and Third Persons')
+
     def test_an_unplaced_line_raises(self):
         html = ('<span id="LabelName">CC 5</span><div id="LabelDocument"><p>stray words<br/>Art. 5. Ignorance of law</p>'
                 '<p>Body.</p></div>')
