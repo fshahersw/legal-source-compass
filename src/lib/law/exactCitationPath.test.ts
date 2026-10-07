@@ -344,6 +344,24 @@ describe("exact statute citation paths", () => {
     expect(statuteNativeId("PA", "1:1908")).toBe("PA:1:1908");
   });
 
+  it("reads a District of Columbia title and section, including a colon section", () => {
+    expect(exactCitationPaths("DC", "D.C. Code § 12-301(8)")).toEqual(["12-301"]);
+    expect(exactCitationPaths("DC", "D.C. Code § 12-301(8)")?.includes("301")).toBe(false);
+    expect(exactCitationPaths("DC", "D.C. Code § 12-301(8)")?.includes("8")).toBe(false);
+    expect(exactCitationPaths("DC", "D.C. Code § 16-2702")).toEqual(["16-2702"]);
+    expect(exactCitationPaths("DC", "D.C. Code § 12-301(11)-(12)")).toEqual(["12-301"]);
+    expect(exactCitationPaths("DC", "D.C. Code § 12-301(11)-(12)")?.includes("12-311")).toBe(false);
+    expect(exactCitationPaths("DC", "D.C. Code § 12-311(a)")).toEqual(["12-311"]);
+    expect(exactCitationPaths("DC", "D.C. Code § 28:2-725(1)")).toEqual(["28:2-725"]);
+    expect(exactCitationPaths("DC", "D.C. Code § 28:2-725(1)")?.includes("2-725")).toBe(false);
+    expect(exactCitationPaths("DC", "D.C. Code § 28:2-725(1)")?.includes("725")).toBe(false);
+    expect(exactCitationPaths("DC", "D.C. Code § 28:2-725(1)")?.includes("28")).toBe(false);
+    expect(statuteNativeId("DC", "12-301")).toBe("DC:12-301");
+    expect(statuteNativeId("DC", "16-2702")).toBe("DC:16-2702");
+    expect(statuteNativeId("DC", "12-311")).toBe("DC:12-311");
+    expect(statuteNativeId("DC", "28:2-725")).toBe("DC:28:2-725");
+  });
+
   it("reads Nevada 41A.097 with the chapter letter and without the parenthetical", () => {
     expect(exactCitationPaths("NV", "Nev. Rev. Stat. § 41A.097(3)")).toEqual(["41A.097"]);
     expect(exactCitationPaths("NV", "Nev. Rev. Stat. § 41A.097(2)")).toEqual(["41A.097"]);
