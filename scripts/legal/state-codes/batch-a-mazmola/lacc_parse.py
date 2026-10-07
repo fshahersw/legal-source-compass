@@ -32,7 +32,28 @@ LABEL = re.compile(r'^CC ([0-9]+(?:\.[0-9]+)*(?:-[A-Z])?)$')
 
 
 def label_pattern(prefix):
-    return re.compile(r'^%s ([0-9]+(?:\.[0-9]+)*(?:-[A-Z])?)$' % re.escape(prefix))
+    return re.compile(r'^%s ([0-9]+(?:\.[0-9]+)*(?:-[0-9A-Z]+)?)$' % re.escape(prefix))
+
+
+RANGE_NUMBER = re.compile(r'^[0-9]+-[0-9]+$')
+RANGE_ARTICLE = re.compile(r'^Arts?\.?\s*([0-9]+)\s*-\s*([0-9]+)\s*\.?\s*(.*)$')
+
+
+class _RangeMatch:
+    """Match adapter so a printed range line "Arts. 201 - 300. (Reserved)" reads as number 201-300."""
+
+    def __init__(self, m):
+        self._m = m
+
+    def group(self, i):
+        return '%s-%s' % (self._m.group(1), self._m.group(2)) if i == 1 else self._m.group(3)
+
+
+class _RangeArticle:
+    @staticmethod
+    def match(line):
+        m = RANGE_ARTICLE.match(line)
+        return _RangeMatch(m) if m else None
 
 
 class EmptyArticlePage(ValueError):
@@ -65,8 +86,8 @@ def parse_page(html, prefix='CC', banner=None):
     m = (LABEL if prefix == 'CC' else label_pattern(prefix)).match(label)
     if not m:
         raise ValueError('unexpected label %r' % label)
-    article = ARTICLE
-    idx = next((i for i, x in enumerate(lines) if ARTICLE.match(x)), None)
+    article = _RangeArticle if RANGE_NUMBER.match(m.group(1)) else ARTICLE
+    idx = next((i for i, x in enumerate(lines) if article.match(x)), None)
     if idx is None:
         article = SIGN_ARTICLE
         idx = next((i for i, x in enumerate(lines) if SIGN_ARTICLE.match(x)), None)
