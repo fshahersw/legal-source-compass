@@ -1,0 +1,50 @@
+{
+  "jurisdiction": "DC",
+  "publisher": "Council of the District of Columbia (D.C. Law Library)",
+  "publisher_url": "https://code.dccouncil.gov/us/dc/council/code",
+  "source_system": "dc-council-html",
+  "code_title": "Code of the District of Columbia",
+  "parser": {
+    "name": "dc-council-section-html",
+    "version": "1"
+  },
+  "methods": [
+    "publisher_page"
+  ],
+  "source_url_patterns": [
+    "^https://code\\.dccouncil\\.gov/us/dc/council/code/index\\.json$",
+    "^https://code\\.dccouncil\\.gov/us/dc/council/code/.+\\.json$",
+    "^https://code\\.dccouncil\\.gov/us/dc/council/code/sections/[^/]+$"
+  ],
+  "rate_limit_ms": 1000,
+  "structure": {
+    "levels": [
+      "title",
+      "chapter",
+      "section"
+    ],
+    "unit": "one code.dccouncil.gov section HTML page per official section node (et=section)"
+  },
+  "section_id": {
+    "scheme": "official_citation_path",
+    "regex": "^[\\[\\]0-9A-Za-z:._()~-]+$",
+    "example": "1-101",
+    "citation_format": "D.C. Code § <path> (colon in path marks division, e.g. 28:2-725)"
+  },
+  "currency": {
+    "basis": "publisher_statement",
+    "location": "code.dccouncil.gov section pages (no single edition date captured at acquisition)"
+  },
+  "review": {
+    "reviewed_by": "state-codes batch 4 (cursor agent)",
+    "reviewed_at": "2026-10-07"
+  },
+  "unit_kind": "dc_council_section_html",
+  "default_method": "publisher_page",
+  "currency_defaults": {
+    "basis": "none",
+    "statement": "",
+    "through_date": null,
+    "edition": null
+  }
+}

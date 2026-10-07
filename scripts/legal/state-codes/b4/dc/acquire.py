@@ -12,7 +12,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-from sc_common import Archive, decode_html  # noqa: E402
+from sc_common import Archive, decode_html, worker_slice  # noqa: E402
 
 from dc_lib import HOST, CODE_PREFIX, section_fetch_url  # noqa: E402
 
@@ -48,7 +48,7 @@ def walk_toc(arc: Archive, root: dict, toc_docs: dict, sections: list, outlines:
         child_parent = parent_outline
         if is_code and p and "#" not in p:
             outlines[p] = node.get("t") or ""
-            if "/sections/" in p:
+            if "/sections/" in p and node.get("et") != "container":
                 sections.append(
                     {
                         "native_id": p,
@@ -100,6 +100,18 @@ def sync_receipts(arc: Archive, inv: dict):
             sec["source_url"] = url
 
 
+def _fetch_one(arc: Archive, url: str, route: str = "direct"):
+    try:
+        rec = grab(arc, url, route=route)
+    except UnicodeEncodeError as exc:
+        return {"state": "failed", "error": str(exc), "url": url}
+    if rec.get("state") != "complete" and route == "direct" and os.environ.get("FIRECRAWL_API_KEY"):
+        rec2 = grab(arc, url, route="firecrawl")
+        if rec2.get("state") == "complete":
+            return rec2
+    return rec
+
+
 def fetch_sections(arc: Archive, inv: dict, inv_path: str, max_sections: int | None):
     n = 0
     for sec in inv["sections"]:
@@ -109,21 +121,37 @@ def fetch_sections(arc: Archive, inv: dict, inv_path: str, max_sections: int | N
             break
         url = sec.get("source_url") or section_fetch_url(sec["native_id"])
         sec["source_url"] = url
-        try:
-            rec = grab(arc, url)
-        except UnicodeEncodeError as exc:
-            sec["fetch_failed"] = True
-            sec["fetch_error"] = str(exc)
-            continue
-        n += 1
+        rec = _fetch_one(arc, url)
         if rec.get("state") != "complete":
             sec["fetch_failed"] = True
-            sec["fetch_receipt"] = {k: rec.get(k) for k in ("http_status", "state", "route")}
+            sec["fetch_receipt"] = {k: rec.get(k) for k in ("http_status", "state", "route", "error")}
+            if rec.get("error"):
+                sec["fetch_error"] = rec["error"]
             continue
+        sec.pop("fetch_failed", None)
+        sec.pop("fetch_error", None)
         sec["receipt_sha256"] = rec["sha256"]
+        n += 1
         if n % 500 == 0:
             print("sections", n, flush=True)
             json.dump(inv, open(inv_path, "w"), indent=1)
+
+
+def fetch_sections_parallel(arc: Archive, inv: dict, worker: int, workers: int):
+    sync_receipts(arc, inv)
+    pending = [sec for sec in inv["sections"] if not sec.get("receipt_sha256")]
+    chunk = worker_slice(pending, worker, workers)
+    print(f"dc worker {worker}/{workers} chunk {len(chunk)} of {len(pending)} pending", flush=True)
+    failed = 0
+    for i, sec in enumerate(chunk, 1):
+        url = sec.get("source_url") or section_fetch_url(sec["native_id"])
+        sec["source_url"] = url
+        rec = _fetch_one(arc, url)
+        if rec.get("state") != "complete":
+            failed += 1
+        if i % 200 == 0:
+            print(f"dc w{worker}", i, len(chunk), "failed", failed, flush=True)
+    print(f"dc w{worker} done chunk {len(chunk)} failed {failed}", flush=True)
 
 
 def main():
@@ -131,9 +159,16 @@ def main():
     ap.add_argument("--work", default="/tmp/sc4/dc")
     ap.add_argument("--max-sections", type=int, default=None)
     ap.add_argument("--inventory-only", action="store_true")
+    ap.add_argument("--fetch-parallel", action="store_true", help="fetch pending sections (--worker/--workers)")
+    ap.add_argument("--worker", type=int, default=0)
+    ap.add_argument("--workers", type=int, default=5)
+    ap.add_argument("--min-interval", type=float, default=None, help="per-process host spacing (default 1.0 serial, 0.2 parallel)")
     a = ap.parse_args()
     os.makedirs(a.work, exist_ok=True)
-    arc = Archive(a.work, min_interval=1.0)
+    interval = a.min_interval
+    if interval is None:
+        interval = 0.2 if a.fetch_parallel else 1.0
+    arc = Archive(a.work, min_interval=interval)
     inv_path = os.path.join(a.work, "inventory.json")
     if os.path.exists(inv_path):
         inv = json.load(open(inv_path, encoding="utf-8"))
@@ -142,6 +177,9 @@ def main():
         json.dump(inv, open(inv_path, "w"), indent=1)
         print("inventory sections", len(inv["sections"]), "toc_json_docs", inv["toc_json_documents"], flush=True)
     if a.inventory_only:
+        return
+    if a.fetch_parallel:
+        fetch_sections_parallel(arc, inv, a.worker, a.workers)
         return
     sync_receipts(arc, inv)
     fetch_sections(arc, inv, inv_path, a.max_sections)

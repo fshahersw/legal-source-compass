@@ -18,8 +18,13 @@ def run(work: str):
         "statement": "Code of the District of Columbia (D.C. Law Library)",
         "publisher_pages": inv.get("source_root"),
     }
-    by_chapter: dict[str, list] = {}
+    chapters_out = []
+    sections_out = []
+    seen_native: set[str] = set()
     for sec in inv["sections"]:
+        if sec["native_id"] in seen_native:
+            continue
+        seen_native.add(sec["native_id"])
         if not sec.get("receipt_sha256"):
             continue
         rec = next((r for r in arc.index.values() if r.get("sha256") == sec["receipt_sha256"]), None)
@@ -30,67 +35,50 @@ def run(work: str):
         parsed = parse_article(arc.read(rec))
         if parsed["native_id"] != sec["native_id"]:
             raise SystemExit(f"identity mismatch {sec['native_id']} vs {parsed['native_id']}")
+        cite_path = section_citation_path(parsed["native_id"])
         ck = chapter_key_from_parent(sec.get("parent_outline"))
-        by_chapter.setdefault(ck, []).append((sec, parsed, rec))
-    chapters_out = []
-    sections_out = []
-    sep = "\n\n"
-    for ck, rows in sorted(by_chapter.items()):
-        parts = []
-        ch_sections = []
-        raw_shas = []
-        src_urls = []
-        path_meta = []
-        parent = rows[0][0].get("parent_outline") if rows else None
-        for sec, parsed, rec in rows:
-            cite_path = section_citation_path(parsed["native_id"])
-            raw_shas.append(rec["sha256"])
-            src_urls.append(sec["source_url"])
-            if parts:
-                parts.append(sep)
-            start = len("".join(parts))
-            parts.append(parsed["text"])
-            end = len("".join(parts))
-            title_parts = (parsed.get("title") or "").split(".", 1)
-            heading = title_parts[1].strip() if len(title_parts) > 1 else parsed.get("title")
-            ch_sections.append(
-                {
-                    "chapter_native_id": ck,
-                    "state": "DC",
-                    "citation_path": cite_path,
-                    "citation": parsed.get("title") or f"§ {cite_path}",
-                    "number": cite_path,
-                    "heading": heading,
-                    "hierarchy": [
-                        {"level": "chapter", "number": ck, "heading": sec.get("toc_title")},
-                        {"level": "section", "number": cite_path, "heading": heading},
-                    ],
-                    "history": None,
-                    "status_label": None,
-                    "edition": edition["statement"],
-                    "currency": {"statement": None, "as_of": None},
-                    "effective": None,
-                    "start": start,
-                    "end": end,
-                    "source_url": sec["source_url"],
-                    "source_receipt_sha256": rec["sha256"],
-                }
-            )
-        if not parts:
-            continue
-        ch_text = "".join(parts)
+        title_parts = (parsed.get("title") or "").split(".", 1)
+        heading = title_parts[1].strip() if len(title_parts) > 1 else parsed.get("title")
+        body = parsed["text"]
+        unit_id = f"section-{cite_path}"
         chapters_out.append(
             {
-                "native_id": ck,
+                "native_id": unit_id,
                 "state": "DC",
-                "path": [{"level": "chapter", "number": ck, "heading": parent}],
-                "heading": parent,
-                "text": ch_text,
-                "raw_sha256s": list(dict.fromkeys(raw_shas)),
-                "source_urls": list(dict.fromkeys(src_urls)),
+                "path": [
+                    {"level": "chapter", "number": ck, "heading": sec.get("parent_outline")},
+                    {"level": "section", "number": cite_path, "heading": heading},
+                ],
+                "heading": parsed.get("title") or f"§ {cite_path}",
+                "text": body,
+                "raw_sha256s": [rec["sha256"]],
+                "source_urls": [sec["source_url"]],
+                "sections_expected": 1,
             }
         )
-        sections_out.extend(ch_sections)
+        sections_out.append(
+            {
+                "chapter_native_id": unit_id,
+                "state": "DC",
+                "citation_path": cite_path,
+                "citation": parsed.get("title") or f"§ {cite_path}",
+                "number": cite_path,
+                "heading": heading,
+                "hierarchy": [
+                    {"level": "chapter", "number": ck, "heading": sec.get("toc_title")},
+                    {"level": "section", "number": cite_path, "heading": heading},
+                ],
+                "history": None,
+                "status_label": None,
+                "edition": edition["statement"],
+                "currency": {"statement": None, "as_of": None},
+                "effective": None,
+                "start": 0,
+                "end": len(body),
+                "source_url": sec["source_url"],
+                "source_receipt_sha256": rec["sha256"],
+            }
+        )
     man = write_packet(
         work,
         "DC",

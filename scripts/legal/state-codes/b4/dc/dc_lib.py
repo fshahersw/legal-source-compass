@@ -33,7 +33,10 @@ def section_citation_path(native_id: str) -> str:
     m = re.fullmatch(r"/us/dc/council/code/sections/(.+)", native_id)
     if not m:
         raise ValueError(f"not a section native_id: {native_id}")
-    return m.group(1)
+    path = m.group(1)
+    for ch in ("\u2013", "\u2014", "\u2012", "\u2212"):
+        path = path.replace(ch, "-")
+    return path
 
 
 def chapter_key_from_parent(parent_id: str | None) -> str:
