@@ -196,6 +196,7 @@ function sectionSignPaths(citation: string): string[] | null {
         .trim()
         .replace(/\s+/g, "")
         .replace(/(?:\([^)]*\))+$/g, "")
+        .replace(/\)+$/, "")
         .replace(/\.$/, "");
       if (!token || paths.includes(token)) continue;
       if (

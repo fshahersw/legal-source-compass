@@ -132,6 +132,13 @@ describe("exact statute citation paths", () => {
     expect(exactCitationPaths("NH", "N.H. Rev. Stat. Ann. § 508:4-b, I")?.includes("508:4")).toBe(
       false,
     );
+    const wood =
+      "Anderson v. Estate of Wood, 171 N.H. 524 (2018), No. 2017-0559 (construing N.H. Rev. Stat. Ann. § 556:11)";
+    expect(exactCitationPaths("NH", wood)).toEqual(["556:11"]);
+    expect(exactCitationPaths("NH", wood)?.includes("171")).toBe(false);
+    expect(exactCitationPaths("NH", wood)?.includes("524")).toBe(false);
+    expect(exactCitationPaths("NH", wood)?.includes("2017-0559")).toBe(false);
+    expect(statuteNativeId("NH", "556:11")).toBe("NH:556:11");
     expect(statuteNativeId("NH", "508:4")).toBe("NH:508:4");
   });
 
