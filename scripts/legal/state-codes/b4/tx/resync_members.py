@@ -7,6 +7,7 @@ import json
 import os
 import subprocess
 import sys
+import uuid
 import zipfile
 
 import importlib.util
