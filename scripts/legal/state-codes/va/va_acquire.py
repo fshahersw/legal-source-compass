@@ -9,7 +9,13 @@ Phases (all direct, 1 s/host pacing, receipts via common/provenance_fetch.Fetche
   bodies    /vacodefull/title<N>/ whole-title HTML (the text bodies that get parsed)
   csv       official per-title CSV bulk files (stale 2025 baseline; audit cross-check only)
 Resumable: a URL with an existing ok receipt is never re-fetched.
+
+    va_acquire.py [phases...] [--root DIR] [--worker I --workers N]
+
+--worker/--workers split the titles round-robin so several processes can capture in parallel, each into its own root;
+merge_roots.py combines their receipts and content-addressed bodies into one root for parsing.
 """
+import argparse
 import json
 import pathlib
 import sys
@@ -34,9 +40,9 @@ def jget(f, url, label):
     return json.loads(f.read(r).decode('utf8')), r
 
 
-def main(phases):
-    f = Fetcher('VA', ROOT, min_interval=1.0)
-    if 'meta' in phases:
+def main(phases, root=ROOT, worker=0, workers=1):
+    f = Fetcher('VA', root, min_interval=1.0)
+    if 'meta' in phases and worker == 0:
         for path, label in (('/vacode/', 'portal-toc'), ('/vacodeupdates/', 'portal-2026-updates'),
                             ('/law-library/', 'portal-law-library'), ('/developers/', 'portal-developers'),
                             ('/jsonapi/', 'portal-jsonapi-help'), ('/vacodepopularnames', 'portal-popular-names')):
@@ -48,6 +54,7 @@ def main(phases):
         if t['TitleNumber'] not in nums:
             nums.append(t['TitleNumber'])
     log('titles: %d distinct numbers (%d rows)' % (len(nums), len(titles or [])))
+    nums = nums[worker::workers]
     if 'bodies' in phases:
         for n in nums:
             r = f.get('%s/vacodefull/title%s/' % (BASE, n), label='title-body:' + n)
@@ -62,7 +69,7 @@ def main(phases):
                     d, r = jget(f, '%s/api/CoVSectionsGetListOfJson/%s/%s/' % (BASE, n, c['ChapterNum']),
                                 'api-sections:%s:%s' % (n, c['ChapterNum']))
             log('chapters/sections title %s done' % n)
-    if 'csv' in phases:
+    if 'csv' in phases and worker == 0:
         lib = f.get(BASE + '/law-library/', label='portal-law-library')
         import re
         html = f.read(lib).decode('utf8')
@@ -73,4 +80,10 @@ def main(phases):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1:] or ['meta', 'bodies', 'chapters', 'sections', 'csv'])
+    ap = argparse.ArgumentParser()
+    ap.add_argument('phases', nargs='*', default=['meta', 'bodies', 'chapters', 'sections', 'csv'])
+    ap.add_argument('--root', type=pathlib.Path, default=ROOT)
+    ap.add_argument('--worker', type=int, default=0)
+    ap.add_argument('--workers', type=int, default=1)
+    a = ap.parse_args()
+    main(a.phases, a.root, a.worker, a.workers)

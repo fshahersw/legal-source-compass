@@ -9,14 +9,17 @@ import pathlib
 import re
 import sys
 
-from bs4 import BeautifulSoup, NavigableString, Tag
+from bs4 import BeautifulSoup, Comment, Declaration, Doctype, NavigableString, ProcessingInstruction, Tag
 
 BASE = "https://law.lis.virginia.gov"
 CODE_ID = "va-code"
 CODE_NAME = "Code of Virginia"
 EDITION = "Code of Virginia"
 PARSER_NAME = "va-vacodefull-title-html"
-PARSER_VERSION = "1"
+PARSER_VERSION = "3"
+# Text between block elements of #va_code (bare text, links, spans, non-header bold) belongs to the section as one paragraph.
+INLINE_TAGS = {"a", "span", "i", "em", "strong", "u", "sup", "sub", "font", "small", "abbr", "b"}
+SKIP_STRINGS = (Comment, Declaration, Doctype, ProcessingInstruction)
 SECTION_ID_REGEX = (
     r"^[0-9][0-9A-Za-z.]*(?:-[0-9][0-9A-Za-z.]*)+"
     r"(?:\:[0-9A-Za-z.]+)*"
@@ -253,6 +256,19 @@ def html_hierarchy_path(title_number: str, hierarchy: dict, citation: str, headi
     return path
 
 
+def table_text(table: Tag) -> str:
+    """A publisher table as text: one line per row, the row's cell texts separated by a tab (no characters added)."""
+    rows = []
+    for tr in table.find_all("tr"):
+        cells = [normalized(cell.get_text(" ", strip=False)) for cell in tr.find_all(["td", "th"])]
+        cells = [c for c in cells if c]
+        if cells:
+            rows.append("\t".join(cells))
+    if not rows:
+        return normalized(table.get_text(" ", strip=False))
+    return "\n".join(rows)
+
+
 def split_history(paragraphs: list[str]) -> tuple[str, str | None]:
     history: list[str] = []
     body = list(paragraphs)
@@ -275,6 +291,25 @@ def count_section_markers(raw_html: str, ordered_api: list[str]) -> int:
         for citation, _ in parse_header_citations(child.get_text(" ", strip=True), ordered_api):
             seen.add(citation)
     return len(seen)
+
+
+def count_section_versions(raw_html: str, ordered_api: list[str]) -> int:
+    """Printed section versions: every single-citation header is one version; a citation only named in comma/range headers is one."""
+    soup = BeautifulSoup(raw_html, "lxml")
+    node = soup.find(id="va_code")
+    if node is None:
+        return 0
+    single: dict[str, int] = {}
+    grouped: set[str] = set()
+    for child in node.children:
+        if not isinstance(child, Tag) or child.name != "b":
+            continue
+        pairs = parse_header_citations(child.get_text(" ", strip=True), ordered_api)
+        if len(pairs) == 1:
+            single[pairs[0][0]] = single.get(pairs[0][0], 0) + 1
+        else:
+            grouped.update(c for c, _ in pairs)
+    return sum(single.values()) + len(grouped - set(single))
 
 
 def parse_title(
@@ -300,12 +335,22 @@ def parse_title(
             "receipt_sha256": receipt["sha256"],
         }
     ]
-    bodies: dict[str, dict] = {}
+    # citation -> every printed version of that section, in page order (the first keeps the plain citation as its identity).
+    bodies: dict[str, list[dict]] = {}
     current: dict | None = None
     paragraphs: list[str] = []
+    inline: list[str] = []
+
+    def flush_inline() -> None:
+        if current is not None:
+            value = normalized("".join(inline))
+            if value:
+                paragraphs.append(value)
+        inline.clear()
 
     def flush_section() -> None:
         nonlocal current, paragraphs
+        flush_inline()
         if current is None:
             return
         text, history = split_history(paragraphs)
@@ -314,8 +359,6 @@ def parse_title(
         if STATUS_RE.search(heading) or STATUS_RE.search(text) or not text.strip():
             status_label = heading if STATUS_RE.search(heading) else (heading or "Repealed")
         for citation in current["citations"]:
-            if citation in bodies:
-                continue
             api = api_meta.get(citation)
             citation_path = (
                 api["citation_path"]
@@ -323,19 +366,30 @@ def parse_title(
                 else html_hierarchy_path(title_number, hierarchy, citation, heading)
             )
             hd = heading or (api["heading"] if api else "")
-            bodies[citation] = {
-                "citation": citation,
-                "heading": hd,
-                "text": text,
-                "history": history,
-                "status_label": status_label,
-                "citation_path": citation_path,
-            }
+            versions = bodies.setdefault(citation, [])
+            if len(current["citations"]) > 1 and versions:
+                continue
+            if len(versions) and citation_path and citation_path[-1].get("heading") != hd:
+                citation_path = citation_path[:-1] + [{**citation_path[-1], "heading": hd}]
+            versions.append(
+                {
+                    "citation": citation,
+                    "occurrence": len(versions) + 1,
+                    "heading": hd,
+                    "text": text,
+                    "history": history,
+                    "status_label": status_label,
+                    "citation_path": citation_path,
+                }
+            )
         current = None
         paragraphs = []
 
     for child in node.children:
+        if isinstance(child, SKIP_STRINGS):
+            continue
         if isinstance(child, NavigableString):
+            inline.append(str(child))
             continue
         if not isinstance(child, Tag):
             continue
@@ -344,18 +398,25 @@ def parse_title(
             apply_hierarchy_line(child.get_text(" ", strip=True), hierarchy)
             continue
         if child.name == "b":
-            flush_section()
             pairs = parse_header_citations(child.get_text(" ", strip=True), ordered_api)
-            if not pairs:
+            if pairs:
+                flush_section()
+                citations = [c for c, _ in pairs]
+                heading = pairs[0][1]
+                current = {"citations": citations, "heading": heading}
                 continue
-            citations = [c for c, _ in pairs]
-            heading = pairs[0][1]
-            current = {"citations": citations, "heading": heading}
+        if child.name in INLINE_TAGS:
+            inline.append(child.get_text())
             continue
-        if child.name == "p" and current is not None:
-            value = normalized(child.get_text("\n", strip=False))
-            if value:
-                paragraphs.append(value)
+        if child.name == "br":
+            flush_inline()
+            continue
+        flush_inline()
+        if current is None:
+            continue
+        value = table_text(child) if child.name == "table" else normalized(child.get_text("\n", strip=False))
+        if value:
+            paragraphs.append(value)
 
     flush_section()
 
@@ -367,8 +428,8 @@ def parse_title(
 
     draft: list[dict] = []
     for citation in emit_order:
-        if citation in bodies:
-            draft.append(bodies[citation])
+        if bodies.get(citation):
+            draft.extend(bodies[citation])
             continue
         if not ordered_api:
             continue
@@ -378,6 +439,7 @@ def parse_title(
         draft.append(
             {
                 "citation": citation,
+                "occurrence": 1,
                 "heading": heading,
                 "text": "",
                 "history": None,
@@ -385,12 +447,14 @@ def parse_title(
                 "citation_path": api["citation_path"],
             }
         )
+    for item in draft:
+        item["native_id"] = item["citation"] if item["occurrence"] == 1 else f"{item['citation']}:occurrence:{item['occurrence']}"
 
     for item in draft:
         inventory.append(
             {
                 "level": "section",
-                "native_id": item["citation"],
+                "native_id": item["native_id"],
                 "number": item["citation"],
                 "heading": item["heading"],
                 "title": title_number,
@@ -421,7 +485,7 @@ def parse_title(
                 "code_id": CODE_ID,
                 "code_name": CODE_NAME,
                 "edition": EDITION,
-                "native_id": item["citation"],
+                "native_id": item["native_id"],
                 "identity_kind": "official_citation",
                 "citation": item["citation"],
                 "citation_path": item["citation_path"],
@@ -431,7 +495,7 @@ def parse_title(
                 "status_label": item["status_label"],
                 "effective": None,
                 "currency": CURRENCY,
-                "occurrence": 1,
+                "occurrence": item["occurrence"],
                 "source": {
                     "url": receipt["url"],
                     "receipt_sha256": receipt["sha256"],
@@ -452,7 +516,8 @@ def parse_title(
         "title": title_number,
         "url": receipt["url"],
         "marker_count": marker_count,
-        "html_sections": len(bodies),
+        "html_sections": sum(1 for v in bodies.values() if v),
+        "html_versions": sum(len(v) for v in bodies.values()),
         "api_sections": len(ordered_api),
         "parsed_sections": len(rows),
         "api_minus_parsed": sorted(api_set - {r["citation"] for r in rows}, key=section_sort_key),

@@ -7,6 +7,7 @@ import pathlib
 
 from va_parse import (  # noqa: E402
     count_section_markers,
+    count_section_versions,
     load_api_inventory,
     load_receipts,
     title_body_receipts,
@@ -51,6 +52,8 @@ def main(argv: list[str] | None = None) -> int:
     bodies = title_body_receipts(receipts)
 
     raw_markers = 0
+    raw_versions = 0
+    version_mismatches = []
     title_mismatches = []
     api_mismatches = []
     for title, receipt in sorted(bodies.items()):
@@ -58,6 +61,8 @@ def main(argv: list[str] | None = None) -> int:
         api_list = ordered_api.get(title, [])
         markers = count_section_markers(raw_html, api_list)
         raw_markers += markers
+        versions = count_section_versions(raw_html, api_list)
+        raw_versions += versions
         rows = parsed_by_title.get(title, [])
         parsed = len(rows)
         title_report = next(
@@ -65,6 +70,8 @@ def main(argv: list[str] | None = None) -> int:
             None,
         )
         html_sections = title_report["html_sections"] if title_report else None
+        if title_report and versions != title_report.get("html_versions"):
+            version_mismatches.append({"title": title, "raw_versions": versions, "html_versions": title_report.get("html_versions")})
         if markers != html_sections:
             title_mismatches.append(
                 {
@@ -91,6 +98,7 @@ def main(argv: list[str] | None = None) -> int:
     parsed_rows = sum(len(rows) for rows in parsed_by_title.values())
     passed = (
         not title_mismatches
+        and not version_mismatches
         and not api_mismatches
         and span_errors == 0
         and parsed_rows == parse_report["counts"]["rows"]
@@ -105,6 +113,8 @@ def main(argv: list[str] | None = None) -> int:
             "official CoVSectionsGetListOfJson inventory per title"
         ),
         "raw_markers": raw_markers,
+        "raw_versions": raw_versions,
+        "version_mismatches": version_mismatches,
         "parsed_rows": parsed_rows,
         "span_errors": span_errors,
         "title_mismatches": title_mismatches,
