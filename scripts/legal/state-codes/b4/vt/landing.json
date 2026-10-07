@@ -6,7 +6,7 @@
   "code_title": "Vermont Statutes Annotated (online edition)",
   "parser": {
     "name": "vt-statutes-fullchapter",
-    "version": "3"
+    "version": "4"
   },
   "methods": [
     "publisher_page"
@@ -29,7 +29,7 @@
   },
   "section_id": {
     "scheme": "official_citation_path",
-    "regex": "^[^/]+/[0-9A-Za-z]+/[0-9A-Za-z.]+(#[0-9]+)?$",
+    "regex": "^[^/]+/[0-9A-Za-z]+/[0-9A-Za-z.]+([#~][0-9]+)?$",
     "example": "01/007/00371",
     "citation_format": "<title>/<chapter>/<section_key> from the publisher fullchapter page; #N marks repeated paths"
   },
