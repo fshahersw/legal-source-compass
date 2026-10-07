@@ -39,7 +39,7 @@ def main():
         raise SystemExit(f"refusing to overwrite existing parsed dir: {target}")
     os.makedirs(target)
     want = {m.strip() for m in a.members.split(",") if m.strip()}
-    inventory = json.loads(open(os.path.join(root, "download-index.json"), encoding="utf-8"))["StatuteCode"]
+    inventory = json.loads(open(os.path.join(root, "download-index.json"), encoding="utf-8").read())["StatuteCode"]
     chapters, sections = [], []
     for code in inventory:
         receipt = json.loads(open(os.path.join(root, "receipts", code["code"] + ".json"), encoding="utf-8").read())
@@ -78,7 +78,7 @@ def main():
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
     subprocess.run([sys.executable, TO_LANDING, "--root", root, "--parsed", parsed_name, "--config", LAND_CFG], check=True)
     subprocess.run([sys.executable, BUILD_TOC, "--root", root, "--parsed", parsed_name], check=True)
-    landing = os.path.join(root, parsed_name, "landing")
+    landing = os.path.join(root, "landing")
     cmd = [sys.executable, LAND_SCRIPT, landing]
     if a.execute:
         cmd += ["--execute", "--attempt", str(a.attempt)]
