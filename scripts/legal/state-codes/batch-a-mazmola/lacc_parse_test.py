@@ -64,6 +64,20 @@ class CivilCodeParse(unittest.TestCase):
         self.assertEqual([h[:3] for h in pg['headers']], [['subsection_group', 5, 'B']])
         self.assertEqual(pg['headers'][0][3], 'Relations Between the Principal and Third Persons')
 
+    def test_code_of_civil_procedure_banner_and_multi_dot_labels(self):
+        html = (FX / 'ccp-1-banner.html').read_text(encoding='utf8')
+        pg = P.parse_page(html, 'CCP', 'LOUISIANA CODE OF CIVIL PROCEDURE')
+        self.assertEqual(pg['path'], '1')
+        self.assertEqual(pg['headers'][0][0], 'book')
+        with self.assertRaises(ValueError):
+            P.parse_page(html, 'CCP')
+        two = P.parse_page((FX / 'ccp-74.3.1-two-dots.html').read_text(encoding='utf8'), 'CCP', 'LOUISIANA CODE OF CIVIL PROCEDURE')
+        self.assertEqual(two['path'], '74.3.1')
+
+    def test_a_page_with_no_printed_text_is_a_gap_not_a_failure(self):
+        with self.assertRaises(P.EmptyArticlePage):
+            P.parse_page((FX / 'ccp-1067-empty.html').read_text(encoding='utf8'), 'CCP', 'LOUISIANA CODE OF CIVIL PROCEDURE')
+
     def test_an_unplaced_line_raises(self):
         html = ('<span id="LabelName">CC 5</span><div id="LabelDocument"><p>stray words<br/>Art. 5. Ignorance of law</p>'
                 '<p>Body.</p></div>')
