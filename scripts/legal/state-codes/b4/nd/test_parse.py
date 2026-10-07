@@ -24,6 +24,13 @@ class TestNdParse(unittest.TestCase):
         self.assertEqual(secs[0]["citation"], "1-01-01")
         self.assertIn("Century Code", secs[0]["body"])
 
+    def test_pdf_section_after_bare_citation_line(self):
+        text = "1-02-23.\n\n   1-02-25. Continuations of existing statutes.\n   Body line one.\n"
+        secs = split_pdf_sections(text)
+        cits = [s["citation"] for s in secs]
+        self.assertIn("1-02-25", cits)
+        self.assertNotIn("1-02-23", cits)
+
     def test_official_statement_present(self):
         self.assertIn("official version", OFFICIAL_STATEMENT.lower())
 

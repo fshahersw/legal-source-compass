@@ -13,6 +13,7 @@ from sc_common import Archive, collapse, decode_html, html_text, sha256_hex, wri
 
 from citation import canon_citation, citations_equal_lists, citations_equal_multisets, filter_sections_to_official_toc  # noqa: E402
 from html_section_bodies import section_bodies_from_chapter_html  # noqa: E402
+from section_page import body_from_section_html_page, official_section_html_url  # noqa: E402
 
 STATE = "ND"
 BASE = "https://ndlegis.gov/cencode/"
@@ -25,7 +26,7 @@ TOC_ROW = re.compile(
 )
 CHAPTER_HEAD = re.compile(r"<h1>\s*Chapter\s+(\d+-\d+)\s*</h1>", re.I)
 CHAPTER_H3 = re.compile(r"<h3>\s*(.*?)\s*</h3>", re.S | re.I)
-SECTION_HEAD = re.compile(r"^\s*(\d{1,2}-\d{2}-\d{2}(?:\.\d+)?)\.\s+(.+)$", re.M)
+SECTION_HEAD = re.compile(r"^\s*(\d{1,2}-\d{2}-\d{2}(?:\.\d+)?)\.[ \t]+([^\n]+)$", re.M)
 REPEALED = re.compile(r"^\s*Repealed\b", re.I | re.M)
 CHAPTER_REPEALED = re.compile(r"\[Repealed\b", re.I)
 SL_HISTORY = re.compile(r"\bS\.L\.\s+\d{4}", re.I)
@@ -158,6 +159,7 @@ def run(work: str):
     empty_section_gaps = []
     flag_classification = []
     html_gap_from_html = 0
+    html_gap_from_section_page = 0
     html_gap_still_empty = 0
     chapter_html = None
 
@@ -350,6 +352,21 @@ def run(work: str):
                 body = html_bodies.get(key)
                 cit = row["citation"]
                 heading = row.get("heading") or cit
+                gap_text_source = "official_chapter_html" if body else None
+                gap_source_url = html_url
+                gap_receipt_sha = hrec["sha256"]
+                if not body:
+                    sec_url = official_section_html_url(slug, cit)
+                    srec = arc.index.get(sec_url)
+                    if not srec or srec.get("state") != "complete":
+                        srec = arc.fetch(sec_url, accept="text/html,*/*")
+                    if srec.get("state") == "complete":
+                        sec_html, _ = decode_html(arc.read(srec))
+                        body = body_from_section_html_page(sec_html, cit)
+                        if body:
+                            gap_text_source = "official_section_html_page"
+                            gap_source_url = sec_url
+                            gap_receipt_sha = srec["sha256"]
                 if body:
                     if ch_text and not ch_text.endswith("\n"):
                         ch_text += "\n\n"
@@ -377,13 +394,16 @@ def run(work: str):
                             "edition": None,
                             "currency": {"statement": OFFICIAL_STATEMENT + " " + UPDATE_STATEMENT, "as_of": None},
                             "effective": None,
-                            "source_url": html_url,
-                            "source_receipt_sha256": hrec["sha256"],
+                            "source_url": gap_source_url,
+                            "source_receipt_sha256": gap_receipt_sha,
                             "duplicate_occurrence": False,
-                            "text_source": "official_chapter_html",
+                            "text_source": gap_text_source,
                         }
                     )
-                    html_gap_from_html += 1
+                    if gap_text_source == "official_section_html_page":
+                        html_gap_from_section_page += 1
+                    else:
+                        html_gap_from_html += 1
                 else:
                     empty_section_gaps.append(
                         {
@@ -437,6 +457,7 @@ def run(work: str):
         empty_section_gaps,
         flag_classification,
         html_gap_from_html,
+        html_gap_from_section_page,
         html_gap_still_empty,
     )
     return man
@@ -452,6 +473,7 @@ def verify(
     empty_section_gaps,
     flag_classification,
     html_gap_from_html,
+    html_gap_from_section_page,
     html_gap_still_empty,
 ):
     packet = os.path.join(work, "packet")
@@ -494,7 +516,8 @@ def verify(
         "mismatches": mismatches,
         "empty_section_gaps": empty_section_gaps,
         "html_toc_pdf_gaps": {
-            "sections_with_official_html_body": html_gap_from_html,
+            "sections_with_official_chapter_html_body": html_gap_from_html,
+            "sections_with_official_section_page_body": html_gap_from_section_page,
             "sections_still_empty": html_gap_still_empty,
         },
         "flag_classification": flag_classification,
