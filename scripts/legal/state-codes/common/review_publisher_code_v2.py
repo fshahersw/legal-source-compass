@@ -11,8 +11,13 @@ All checks pass -> `corpus_publisher_code_review_v2(state, 'reviewed', true, not
 State-agnostic: reads the shared landing packet (manifest/units/sections.jsonl, see batch-c LANDING-PACKET.md) of any batch, so every
 batch can run it after landing. `--toc-ok` is the proof that parsed section counts equal the publisher's own section markers PER PAGE
 (index/subchapter pages with zero sections are a red flag, not a pass); leave it empty and the state is held.
+A state is reviewed only when every one of the --n sampled sections matches. Proxied units hold the state unless
+--proxied-accepted quotes the owner decision accepting them; --live-proxy firecrawl re-fetches a challenged official page fresh.
+--blocks section-doc,history-doc additionally requires every live <p> paragraph and <td>/<th> table cell inside those containers
+to appear in the stored text or history.
 """
 import argparse
+import hashlib
 import html as html_mod
 import io
 import json
@@ -99,6 +104,32 @@ def california_leginfo_live_html(url: str) -> tuple[str | None, str]:
     return open(out, encoding="utf-8", errors="replace").read(), "firecrawl_cli"
 
 
+def firecrawl_live(url: str) -> tuple[int, bytes, dict]:
+    """A fresh (maxAge 0, never a cached copy) Firecrawl rawHtml of the official page, for hosts that challenge direct requests."""
+    import urllib.request
+
+    key = os.environ.get("FIRECRAWL_API_KEY", "")
+    if not key:
+        raise SystemExit("FIRECRAWL_API_KEY not in environment")
+    body = json.dumps({"url": url, "formats": ["rawHtml"], "maxAge": 0}).encode()
+    for attempt in range(4):
+        req = urllib.request.Request("https://api.firecrawl.dev/v1/scrape", method="POST", data=body,
+                                     headers={"Authorization": "Bearer " + key, "Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(req, timeout=180) as r:
+                doc = json.loads(r.read())
+        except Exception as exc:  # noqa: BLE001 - recorded in the report row
+            err = str(exc)[:200]
+            continue
+        data = doc.get("data") or {}
+        meta = data.get("metadata") or {}
+        html = (data.get("rawHtml") or "").encode("utf-8")
+        if meta.get("statusCode") == 200 and html:
+            return 200, html, {"scrape_id": meta.get("scrapeId"), "cache_state": meta.get("cacheState")}
+        err = f"source status {meta.get('statusCode')}"
+    return 0, b"", {"error": err}
+
+
 def texas_zip_chapter_live(arc, code: str, publisher_member: str) -> str | None:
     """Official HTML chapter member from the live publisher code ZIP (tcss.legis.texas.gov)."""
     zip_url = f"https://tcss.legis.texas.gov/resources/Zips/{code}.htm.zip"
@@ -107,6 +138,29 @@ def texas_zip_chapter_live(arc, code: str, publisher_member: str) -> str | None:
         return None
     with zipfile.ZipFile(io.BytesIO(arc.read(rec))) as zf:
         return zf.read(publisher_member).decode("utf-8-sig", "replace")
+
+
+def html_blocks(body, classes):
+    """Text of every <p> paragraph and <td>/<th> cell inside the page's <div class="..."> containers named in `classes`."""
+    s, _ = sc.decode_html(body)
+    out = []
+    tag = re.compile(r"<(/?)div\b[^>]*>", re.I)
+    for cls in classes:
+        for m in re.finditer(r'<div class="%s"[^>]*>' % re.escape(cls), s, re.I):
+            depth, pos = 1, m.end()
+            while depth:
+                t = tag.search(s, pos)
+                if not t:
+                    break
+                depth += -1 if t.group(1) else 1
+                pos = t.end()
+            inner = s[m.end():t.start() if t else len(s)]
+            for name in ("p", "td", "th"):
+                for blk in re.finditer(r"(?is)<%s\b[^>]*>(.*?)</%s\s*>" % (name, name), inner):
+                    text = sc.html_text(blk.group(1))
+                    if text.strip():
+                        out.append((name, text))
+    return out
 
 
 def squash(t):
@@ -132,7 +186,15 @@ def main():
         default=[],
         help="citation_path or citation values always included in the live sample",
     )
+    ap.add_argument("--live-proxy", choices=["firecrawl"],
+                    help="when the direct live fetch is not HTTP 200, re-fetch the same official URL fresh through this proxy")
+    ap.add_argument("--proxied-accepted", default="",
+                    help="the owner decision accepting proxied copies (quoted in the report); without it proxied units hold the state")
+    ap.add_argument("--blocks", default="",
+                    help="comma-separated div classes of an HTML live page (e.g. section-doc,history-doc): every <p> paragraph and "
+                         "<td>/<th> cell inside them must appear in the stored text or history, or the section fails")
     a = ap.parse_args()
+    block_classes = [c.strip() for c in a.blocks.split(",") if c.strip()]
     land = a.landing
     units = {u["unit_key"]: u for u in map(json.loads, open(os.path.join(land, "units.jsonl"), encoding="utf-8"))}
     secs = [json.loads(x) for x in open(os.path.join(land, "sections.jsonl"), encoding="utf-8")]
@@ -157,9 +219,17 @@ def main():
         rec = arc.fetch(live_url, accept="*/*", min_bytes=0)
         row = {"citation_path": s["citation_path"], "citation": s["citation"], "url": live_url, "live_status": rec["http_status"],
                "route": rec["route"], "user_agent": rec.get("user_agent"), "ua_retry": rec.get("ua_retry", False)}
-        live_body = None
+        live_body = live_raw = None
         if rec["state"] == "complete":
-            live_body = live_text(arc.read(rec), live_url)
+            live_raw = arc.read(rec)
+            live_body = live_text(live_raw, live_url)
+        elif a.live_proxy == "firecrawl":
+            status, html, meta = firecrawl_live(live_url)
+            row.update(direct_status=rec["http_status"], live_status=status, route="firecrawl", ua_retry=False, **meta)
+            if html:
+                row["live_sha256"] = hashlib.sha256(html).hexdigest()
+                live_raw = html
+                live_body = live_text(html, live_url)
         elif a.state == "CA" and "leginfo.legislature.ca.gov" in live_url:
             html, route = california_leginfo_live_html(live_url)
             if html:
@@ -214,23 +284,43 @@ def main():
                     if heading and not row["heading_ok"]:
                         row["heading_ok"] = squash(re.sub(r"\[[^\]]+\]", "", heading)) in live_h
             row["ok"] = row["citation_ok"] and row["heading_ok"] and row["text_ok"]
+            if block_classes:
+                stored = squash(s["text"] + "\n" + (s.get("history") or ""))
+                pieces = html_blocks(live_raw, block_classes) if live_raw is not None else []
+                missing = [t for _, t in pieces if squash(t) not in stored]
+                row.update(blocks=len(pieces), blocks_missing=len(missing), blocks_missing_first=missing[0][:200] if missing else None,
+                           blocks_ok=bool(pieces) and not missing,
+                           paragraphs=sum(1 for n, _ in pieces if n == "p"), cells=sum(1 for n, _ in pieces if n != "p"))
+                row["ok"] = row["ok"] and row["blocks_ok"]
         results.append(row)
     cur = sorted({(x["currency"]["basis"], x["currency"]["statement"][:200], x["currency"]["through_date"], x["currency"]["edition"]) for x in secs})
     proxied = sum(1 for u in units.values() if u["retrieval_method"] == "proxied_fetch")
-    passed = all(r["ok"] for r in results)
+    passed = bool(results) and len(results) == sample_size and all(r["ok"] for r in results)
     toc_ok = bool(a.toc_ok.strip())
-    decision = "reviewed" if (passed and toc_ok and proxied == 0) else "held"
+    proxied_ok = proxied == 0 or bool(a.proxied_accepted.strip())
+    decision = "reviewed" if (passed and toc_ok and proxied_ok) else "held"
     lines = [f"## Review {a.state} ({manifest['parser']['name']}/{manifest['parser']['version']})", "",
              f"- Sections landed: {len(secs)}; units: {len(units)}; reviewed on {sc.utc_now()}.",
              f"- Section count vs publisher TOC: {'OK - ' + a.toc_ok if toc_ok else 'NOT ESTABLISHED'}.",
              f"- Live diff: {sum(1 for r in results if r['ok'])}/{len(results)} random sections match the live publisher page (seed {a.seed}); "
              "checks = section number present, heading present, full text present (whitespace-insensitive, quote-normalised).",
              f"- Currency as landed: {json.dumps(cur, ensure_ascii=False)}",
-             f"- Proxied-fetch units: {proxied} (any proxied content blocks automatic review).",
-             f"- Decision: **{decision}**", "", "| citation_path | live | route/UA | citation | heading | text |", "|---|---|---|---|---|---|"]
+             f"- Proxied-fetch units: {proxied} "
+             + (f"(accepted by owner decision: {a.proxied_accepted.strip()})." if proxied and a.proxied_accepted.strip()
+                else "(any proxied content blocks automatic review)."),
+             *([f"- Live fetch: direct first; on a non-200 answer the same official URL is re-fetched fresh through {a.live_proxy} "
+                "(maxAge 0, no cached copy)."] if a.live_proxy else []),
+             *([f"- Paragraphs and table cells: every <p>, <td> and <th> inside {', '.join(block_classes)} on the live page must appear "
+                f"in the stored text or history; {sum(r.get('paragraphs', 0) for r in results)} paragraphs and "
+                f"{sum(r.get('cells', 0) for r in results)} cells checked, {sum(r.get('blocks_missing', 0) for r in results)} missing."]
+               if block_classes else []),
+             f"- Decision: **{decision}**", "",
+             "| citation_path | live | route/UA | citation | heading | text |" + (" paragraphs/cells found |" if block_classes else ""),
+             "|---|---|---|---|---|---|" + ("---|" if block_classes else "")]
     for r in results:
         lines.append(f"| {r['citation_path']} | {r['live_status']} | {r['route']}{'/browser-UA' if r.get('ua_retry') else ''} | "
-                     f"{r.get('citation_ok')} | {r.get('heading_ok')} | {r.get('text_ok')} |")
+                     f"{r.get('citation_ok')} | {r.get('heading_ok')} | {r.get('text_ok')} |"
+                     + (f" {r.get('blocks', 0) - r.get('blocks_missing', 0)}/{r.get('blocks', 0)} |" if block_classes else ""))
     with open(a.report, "a", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n\n")
     note = f"batch-4 review {sc.utc_now()}: {sum(1 for r in results if r['ok'])}/{len(results)} live diffs, TOC {'ok' if toc_ok else 'not established'}; see {os.path.basename(a.report)}"

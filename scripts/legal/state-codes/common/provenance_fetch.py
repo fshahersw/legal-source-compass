@@ -142,20 +142,30 @@ class Fetcher:
     def read(self, receipt):
         return (self.root / receipt['stored_path']).read_bytes()
 
-    def proxied(self, url, service='firecrawl', label=None):
-        """Fallback for bot-blocked official hosts; recorded as a lower-grade derivative."""
+    def proxied(self, url, service='firecrawl', label=None, options=None):
+        """Fallback for bot-blocked official hosts; recorded as a lower-grade derivative.
+
+        options are extra Firecrawl scrape fields (e.g. {'maxAge': 0} to refuse a cached copy); they are kept on the receipt.
+        """
         started = now_iso()
         receipt = {'state': self.state, 'url': url, 'label': label, 'retrieved_at': started,
                    'retrieval_method': 'proxied:' + service, 'ok': False}
         try:
             if service == 'firecrawl':
+                request = {'url': url, 'formats': ['rawHtml'], **(options or {})}
+                if options:
+                    receipt['proxy_options'] = options
                 resp = requests.post('https://api.firecrawl.dev/v1/scrape', timeout=120,
                                      headers={'Authorization': 'Bearer ' + os.environ['FIRECRAWL_API_KEY']},
-                                     json={'url': url, 'formats': ['rawHtml']})
+                                     json=request)
+                receipt['status'] = resp.status_code
                 data = resp.json().get('data') or {}
                 body = (data.get('rawHtml') or '').encode('utf8')
-                receipt['status'] = resp.status_code
-                receipt['source_status'] = (data.get('metadata') or {}).get('statusCode')
+                meta = data.get('metadata') or {}
+                receipt['source_status'] = meta.get('statusCode')
+                kept = {k: meta[k] for k in ('scrapeId', 'cacheState', 'proxyUsed', 'creditsUsed', 'sourceURL') if meta.get(k) is not None}
+                if kept:
+                    receipt['proxy_metadata'] = kept
             else:
                 resp = requests.post('https://api.tavily.com/extract', timeout=120,
                                      headers={'Authorization': 'Bearer ' + os.environ['TAVILY_API_KEY']},

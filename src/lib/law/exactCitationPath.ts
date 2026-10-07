@@ -4,7 +4,7 @@
  * A range, a second title, or an unrecognized form returns null so nothing is linked.
  */
 /** Publishers whose citation_path is the dotted section number printed after the section sign. */
-const DOTTED_PATH_STATES = new Set(["FL", "KY", "MI", "MN", "MO", "NV", "OH", "OR", "WI"]);
+const DOTTED_PATH_STATES = new Set(["FL", "IA", "KY", "MI", "MN", "MO", "NV", "OH", "OR", "WI"]);
 
 export function exactCitationPaths(state: string, citation: string): string[] | null {
   const text = withoutSectionRanges(citation.trim());
@@ -14,7 +14,7 @@ export function exactCitationPaths(state: string, citation: string): string[] | 
   const paths = omitSectionHalf(
     omitDottedPrefix([
       ...new Set([
-        ...(hyphenPaths(text) ?? []),
+        ...(usps === "WV" ? (westVirginiaPaths(text) ?? []) : (hyphenPaths(text) ?? [])),
         ...(dottedHyphenPaths(text) ?? []),
         ...(sectionSignPaths(text) ?? []),
         ...(vermontTitleSections(text) ?? []),
@@ -342,6 +342,17 @@ function hyphenPaths(citation: string): string[] | null {
     paths.push(path);
   }
   return paths.length ? paths : null;
+}
+
+/**
+ * West Virginia paths such as `W. Va. Code § 55-2-12(b)` and `§ 55-2-6a`.
+ * The public citation_path uppercases a section letter, so `55-2-6a` is `55-2-6A`.
+ * `55-2-6` is not `55-2-6A`. A parenthetical is not part of the path.
+ */
+function westVirginiaPaths(citation: string): string[] | null {
+  const paths = hyphenPaths(citation);
+  if (!paths) return null;
+  return paths.map((path) => path.toUpperCase());
 }
 
 function oklahomaPaths(citation: string): string[] | null {

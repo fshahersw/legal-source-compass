@@ -251,6 +251,38 @@ describe("exact statute citation paths", () => {
     expect(statuteNativeId("OH", "2305.10")).toBe("OH:2305.10");
   });
 
+  it("reads Iowa dotted section numbers without a subsection or a session-law section", () => {
+    expect(exactCitationPaths("IA", "Iowa Code § 614.1(2)")).toEqual(["614.1"]);
+    expect(exactCitationPaths("IA", "Iowa Code § 614.1(2)")?.includes("614.10")).toBe(false);
+    expect(exactCitationPaths("IA", "Iowa Code § 614.1(2)")?.includes("614")).toBe(false);
+    expect(exactCitationPaths("IA", "Iowa Code § 614.1(2), (2A)(a), (b)")).toEqual(["614.1"]);
+    expect(exactCitationPaths("IA", "Iowa Code § 614.1(2), (2A)(a), (b)")?.includes("2A")).toBe(
+      false,
+    );
+    expect(exactCitationPaths("IA", "Iowa Code § 614.1(2); § 633.336; § 611.20")).toEqual([
+      "614.1",
+      "633.336",
+      "611.20",
+    ]);
+    expect(exactCitationPaths("IA", "Iowa Code § 614.1(4); § 614.4")).toEqual(["614.1", "614.4"]);
+    expect(exactCitationPaths("IA", "Iowa Code § 4.1(34)")).toEqual(["4.1"]);
+    expect(exactCitationPaths("IA", "Iowa Code § 4.1(34)")?.includes("34")).toBe(false);
+    expect(
+      exactCitationPaths(
+        "IA",
+        "Iowa Code § 614.1(2A)(a); enacted by 1997 Acts, ch 197, § 5",
+      )?.includes("5"),
+    ).toBe(false);
+    expect(
+      exactCitationPaths("IA", "Iowa Code § 614.1(2A)(a); enacted by 1997 Acts, ch 197, § 5"),
+    ).toEqual(["614.1"]);
+    expect(statuteNativeId("IA", "614.1")).toBe("IA:614.1");
+    expect(statuteNativeId("IA", "633.336")).toBe("IA:633.336");
+    expect(statuteNativeId("IA", "611.20")).toBe("IA:611.20");
+    expect(statuteNativeId("IA", "614.4")).toBe("IA:614.4");
+    expect(statuteNativeId("IA", "4.1")).toBe("IA:4.1");
+  });
+
   it("reads Washington RCW 4.16.080 as the whole section number", () => {
     expect(exactCitationPaths("WA", "RCW 4.16.080(2)")).toEqual(["4.16.080"]);
     expect(exactCitationPaths("WA", "RCW 4.16.080(2)")?.includes("4.16")).toBe(false);
@@ -258,6 +290,24 @@ describe("exact statute citation paths", () => {
     expect(exactCitationPaths("WA", "RCW 4.16.080(2)")?.includes("14.16.080")).toBe(false);
     expect(exactCitationPaths("WA", "RCW 14.16.080")).toEqual(["14.16.080"]);
     expect(statuteNativeId("WA", "4.16.080")).toBe("WA:4.16.080");
+  });
+
+  it("reads West Virginia section numbers, including the stored capital letter", () => {
+    expect(exactCitationPaths("WV", "W. Va. Code § 55-2-12(b)")).toEqual(["55-2-12"]);
+    expect(exactCitationPaths("WV", "W. Va. Code § 55-2-12(a)-(b)")).toEqual(["55-2-12"]);
+    expect(exactCitationPaths("WV", "W. Va. Code § 55-2-6")).toEqual(["55-2-6"]);
+    expect(exactCitationPaths("WV", "W. Va. Code § 55-2-6")?.includes("55-2-6A")).toBe(false);
+    expect(exactCitationPaths("WV", "W. Va. Code § 55-2-6a")).toEqual(["55-2-6A"]);
+    expect(exactCitationPaths("WV", "W. Va. Code § 55-2-6a")?.includes("55-2-6")).toBe(false);
+    expect(exactCitationPaths("WV", "W. Va. Code § 55-2-6a")?.includes("55-2-6a")).toBe(false);
+    expect(exactCitationPaths("WV", "W. Va. Code § 55-7B-4(a)")).toEqual(["55-7B-4"]);
+    expect(exactCitationPaths("WV", "W. Va. Code § 55-7-6(d)")).toEqual(["55-7-6"]);
+    expect(exactCitationPaths("WV", "W. Va. Code § 2-2-1(d)")).toEqual(["2-2-1"]);
+    expect(statuteNativeId("WV", "55-2-12")).toBe("WV:55-2-12");
+    expect(statuteNativeId("WV", "55-2-6A")).toBe("WV:55-2-6A");
+    expect(statuteNativeId("WV", "55-7B-4")).toBe("WV:55-7B-4");
+    expect(statuteNativeId("WV", "55-7-6")).toBe("WV:55-7-6");
+    expect(statuteNativeId("WV", "2-2-1")).toBe("WV:2-2-1");
   });
 
   it("reads Nevada 41A.097 with the chapter letter and without the parenthetical", () => {
