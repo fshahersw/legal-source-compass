@@ -7,8 +7,11 @@
  * Env: LIM_WORK (default /tmp/lim/backfill)
  */
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+
+const repo = new URL("../../..", import.meta.url).pathname.replace(/\/$/, "");
 
 const args = Object.fromEntries(
   process.argv.slice(2).map((a) => {
@@ -47,6 +50,107 @@ function captureExists(state, captureId) {
   return existsSync(join(capturesDir, state, `${captureId}.json`));
 }
 
+/** Match `normalizeText` / `containsLiteral` in src/lib/limitations/backfill/entries.ts */
+function normalizeText(value) {
+  return String(value)
+    .normalize("NFKC")
+    .replace(/[\u2018\u2019\u201B]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2010-\u2015\u2212]/g, "-")
+    .replace(/\u00A0/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function containsLiteral(haystack, needle) {
+  const n = normalizeText(needle);
+  return n.length >= 8 && normalizeText(haystack).includes(n);
+}
+
+const STATUTORY_PATCH_KEYS = new Set([
+  "citation",
+  "excerpt",
+  "periodEvidence",
+  "period",
+  "accrual",
+  "tolling",
+  "repose",
+  "effectiveDate",
+  "lastAmended",
+]);
+
+function needsSource(patch) {
+  if (!patch) return false;
+  return Object.keys(patch).some((k) => STATUTORY_PATCH_KEYS.has(k));
+}
+
+function captureIdFromUrl(state, url) {
+  const h = createHash("sha256").update(url).digest("hex").slice(0, 14);
+  return `currency-${state.toLowerCase()}-${h}`;
+}
+
+function fetchCapture(state, captureId, sourceUrl) {
+  const py = spawnSync(
+    "python3",
+    [join(repo, "scripts/limitations/backfill/capture.py"), state, captureId, sourceUrl],
+    { encoding: "utf8", env: { ...process.env, LIM_WORK: work } },
+  );
+  const line = (py.stdout || "").trim().split("\n").pop();
+  let parsed;
+  try {
+    parsed = JSON.parse(line ?? "{}");
+  } catch {
+    parsed = { ok: false };
+  }
+  if (!parsed.ok) {
+    throw new Error(
+      `CAPTURE_FAILED ${captureId} ${sourceUrl}: ${py.stderr?.trim() || line || py.status}`,
+    );
+  }
+  return parsed;
+}
+
+function resolveCapture(state, correction) {
+  const patch = correction.patch ?? {};
+  const sourceUrl = correction.sourceUrl ?? patch.sourceUrl;
+  const excerpt = correction.excerpt ?? patch.excerpt;
+  let captureId = correction.captureId ?? patch.captureId;
+
+  if (sourceUrl) {
+    if (!excerpt) throw new Error(`EXCERPT_REQUIRED_WITH_SOURCE_URL ${state}`);
+    captureId = captureId ?? captureIdFromUrl(state, sourceUrl);
+    const metaPath = join(capturesDir, state, `${captureId}.json`);
+    const hadMeta = existsSync(metaPath);
+    if (!hadMeta) {
+      if (dryRun) return { captureId, fetched: true, dryRun: true };
+      fetchCapture(state, captureId, sourceUrl);
+    } else {
+      const meta = JSON.parse(readFileSync(metaPath, "utf8"));
+      if (meta.url !== sourceUrl && meta.finalUrl !== sourceUrl)
+        throw new Error(`CAPTURE_ID_URL_MISMATCH ${captureId}`);
+    }
+    const text = readFileSync(join(capturesDir, state, `${captureId}.txt`), "utf8");
+    if (!containsLiteral(text, excerpt))
+      throw new Error(`EXCERPT_NOT_IN_CAPTURE ${state} ${captureId}`);
+    return { captureId, fetched: !hadMeta };
+  }
+
+  if (captureId) {
+    if (!captureExists(state, captureId))
+      throw new Error(`MISSING_CAPTURE ${state} ${captureId}`);
+    if (excerpt) {
+      const text = readFileSync(join(capturesDir, state, `${captureId}.txt`), "utf8");
+      if (!containsLiteral(text, excerpt))
+        throw new Error(`EXCERPT_NOT_IN_CAPTURE ${state} ${captureId}`);
+    }
+    return { captureId, fetched: false };
+  }
+
+  if (needsSource(patch))
+    throw new Error(`CAPTURE_OR_SOURCE_URL_REQUIRED ${state} ${correction.claimType}`);
+  return { captureId: null, fetched: false };
+}
+
 function applyPatch(state, entry, patch) {
   const allowed = new Set([
     "citation",
@@ -68,11 +172,9 @@ function applyPatch(state, entry, patch) {
     "crossChecks",
   ]);
   for (const key of Object.keys(patch)) {
-    if (key === "clearFlags" || key === "clearBlockers") continue;
+    if (key === "clearFlags" || key === "clearBlockers" || key === "sourceUrl") continue;
     if (!allowed.has(key)) throw new Error(`DISALLOWED_PATCH_FIELD ${key}`);
   }
-  if (patch.captureId && !captureExists(state, patch.captureId))
-    throw new Error(`MISSING_CAPTURE ${state} ${patch.captureId}`);
   for (const key of allowed) {
     if (patch[key] !== undefined) entry[key] = patch[key];
   }
@@ -120,12 +222,28 @@ function applyFile(fileName) {
     const entry = findEntry(doc, c.claimType, c.variant);
     const beforeFlags = (entry.flags ?? []).length;
     const patch = { ...(c.patch ?? {}) };
+    const source = resolveCapture(st, c);
+    if (source.captureId) patch.captureId = source.captureId;
+    if (c.retrievedAt && source.captureId && !dryRun) {
+      const metaPath = join(capturesDir, st, `${source.captureId}.json`);
+      if (existsSync(metaPath)) {
+        const meta = JSON.parse(readFileSync(metaPath, "utf8"));
+        meta.workerRetrievedAt = c.retrievedAt;
+        writeFileSync(metaPath, `${JSON.stringify(meta, null, 1)}\n`);
+      }
+    }
     applyPatch(st, entry, patch);
     const afterFlags = (entry.flags ?? []).length;
     flagsCleared += Math.max(0, beforeFlags - afterFlags);
     if (!dryRun) writeFileSync(entryPath, `${JSON.stringify(doc, null, 2)}\n`);
     applied++;
-    details.push({ state: st, claimType: c.claimType, variant: c.variant ?? "general" });
+    details.push({
+      state: st,
+      claimType: c.claimType,
+      variant: c.variant ?? "general",
+      captureId: source.captureId,
+      sourceUrl: c.sourceUrl ?? patch.sourceUrl ?? null,
+    });
   }
 
   if (!dryRun) {
