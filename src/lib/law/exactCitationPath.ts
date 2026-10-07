@@ -18,6 +18,7 @@ export function exactCitationPaths(state: string, citation: string): string[] | 
         ...(dottedHyphenPaths(text) ?? []),
         ...(sectionSignPaths(text) ?? []),
         ...(vermontTitleSections(text) ?? []),
+        ...(usps === "IL" ? (illinoisPaths(text) ?? []) : []),
         ...(DOTTED_PATH_STATES.has(usps) ? (dottedPaths(text) ?? []) : []),
       ]),
     ]),
@@ -50,6 +51,23 @@ function omitDottedPrefix(paths: string[]): string[] {
 
 export function statuteNativeId(state: string, citationPath: string): string {
   return `${state.toUpperCase()}:${citationPath}`;
+}
+
+/**
+ * Illinois compiled-statute paths such as `735 ILCS 5/13-202`.
+ * The chapter, act, and section are one path. A parenthetical is not included.
+ * `735 ILCS 5/13-202` is not `735 ILCS 5/13-202.1` or `220 ILCS 5/13-202`.
+ */
+function illinoisPaths(citation: string): string[] | null {
+  const paths: string[] = [];
+  const re =
+    /\b(\d{1,4} ILCS \d+[A-Za-z]?\/\d+[A-Za-z]*(?:-\d+[A-Za-z]*)*(?:\.\d+[A-Za-z]*)?)(?![A-Za-z0-9])/g;
+  for (const match of citation.matchAll(re)) {
+    const path = match[1];
+    if (!path || paths.includes(path)) continue;
+    paths.push(path);
+  }
+  return paths.length ? paths : null;
 }
 
 /** Dotted official paths such as Fla. Stat. § 95.11, KRS 413.140, MCL 600.5851b, NRS 11.190, NRS 41A.097, and ORS 12.110. The whole token, including one chapter letter and a trailing letter. A parenthetical is not included. */
