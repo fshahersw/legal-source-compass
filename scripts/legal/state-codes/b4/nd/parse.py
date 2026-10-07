@@ -10,7 +10,7 @@ import tempfile
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from sc_common import Archive, collapse, decode_html, html_text, sha256_hex, write_packet  # noqa: E402
 
-from citation import canon_citation, citations_equal_lists  # noqa: E402
+from citation import canon_citation, citations_equal_lists, filter_sections_to_official_toc  # noqa: E402
 
 STATE = "ND"
 BASE = "https://ndlegis.gov/cencode/"
@@ -182,6 +182,18 @@ def run(work: str):
         if not chapter_id:
             chapter_id = chapter_id_from_slug(slug)
         parsed = sections_for_chapter(parsed_all, chapter_id)
+        pdf_dropped_official: list[dict] = []
+        if html_only_toc and toc_rows:
+            parsed, pdf_dropped_official = filter_sections_to_official_toc(parsed, toc_rows)
+            if pdf_dropped_official:
+                flag_classification.append(
+                    {
+                        "chapter": slug,
+                        "class": "pdf_in_chapter_extra_reconciled",
+                        "dropped": pdf_dropped_official,
+                        "official_html": html_url,
+                    }
+                )
         pdf_counts[slug] = len(parsed)
         toc_counts[slug] = len(toc_rows)
         toc_cits = [r["citation"] for r in toc_rows]
