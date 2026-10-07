@@ -25,7 +25,7 @@ export function exactCitationPaths(state: string, citation: string): string[] | 
         ...(usps === "MD" ? (marylandPaths(text) ?? []) : []),
         ...(usps === "LA" ? (louisianaRevisedStatutePaths(text) ?? []) : []),
         ...(usps === "LA" ? (louisianaCivilCodePaths(text) ?? []) : []),
-        ...(usps === "TX" ? (texasCivilPracticePaths(text) ?? []) : []),
+        ...(usps === "TX" ? (texasCodePaths(text) ?? []) : []),
         ...(DOTTED_PATH_STATES.has(usps) ? (dottedPaths(text) ?? []) : []),
       ]),
     ]),
@@ -212,30 +212,35 @@ function louisianaCivilCodePaths(citation: string): string[] | null {
 }
 
 /**
- * Texas Civil Practice and Remedies Code paths such as `§ 16.003(a)`
- * and `§§ 16.003(a), 16.012(b)`.
- * The code and each section are one path. A parenthetical is not another section.
- * `§ 16.003` is not `§ 16.0031`. The same section number in another code is not a second path.
- * A section sign that belongs to a different code is not a Civil Practice section.
+ * Texas code paths such as `Tex. Civ. Prac. & Rem. Code § 16.003(a)`
+ * and `Tex. Bus. & Com. Code § 2.725(a)`.
+ * The named code and each section are one path. A parenthetical is not another section.
+ * `§ 2.725` is not `§ 2.7251`. A section of another code in the same sentence is not included.
  */
-function texasCivilPracticePaths(citation: string): string[] | null {
+function texasCodePaths(citation: string): string[] | null {
+  const codes: Array<[RegExp, string]> = [
+    [/\bCiv\.?\s*Prac\.?\s*&\s*Rem\.?\s*Code\b/i, "CP"],
+    [/\bBus\.?\s*&\s*Com\.?\s*Code\b/i, "BC"],
+  ];
   const paths: string[] = [];
-  const add = (section: string) => {
-    const path = `CP:${section}`;
+  const add = (prefix: string, section: string) => {
+    const path = `${prefix}:${section}`;
     if (!paths.includes(path)) paths.push(path);
   };
   for (const clause of citation.split(";")) {
-    if (!/\bCiv\.?\s*Prac\.?\s*&\s*Rem\.?\s*Code\b/i.test(clause)) continue;
+    const matched = codes.filter(([pattern]) => pattern.test(clause));
+    if (matched.length !== 1) continue;
+    const prefix = matched[0]![1];
     for (const match of clause.matchAll(/§§?\s*(\d+\.\d+)(?!\d)/g)) {
       const first = match[1];
       if (!first) continue;
-      add(first);
+      add(prefix, first);
       let rest = clause.slice((match.index ?? 0) + match[0].length);
       for (;;) {
         const next = /^\s*(?:\([^)]*\))*\s*,\s*(\d+\.\d+)(?!\d)/.exec(rest);
         const section = next?.[1];
         if (!next || !section) break;
-        add(section);
+        add(prefix, section);
         rest = rest.slice(next[0].length);
       }
     }
