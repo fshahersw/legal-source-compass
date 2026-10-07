@@ -2,6 +2,7 @@ import os
 import unittest
 
 from citation import canon_citation, citations_equal_lists, citations_equal_multisets, filter_sections_to_official_toc
+from html_section_bodies import section_bodies_from_chapter_html
 from parse import OFFICIAL_STATEMENT, parse_toc, sections_for_chapter, split_pdf_sections, citation_chapter_id
 
 FIX = os.path.join(os.path.dirname(__file__), "fixtures")
@@ -46,6 +47,13 @@ class TestNdParse(unittest.TestCase):
         self.assertEqual(len(kept), 1)
         self.assertEqual(len(dropped), 1)
         self.assertEqual(dropped[0]["canon"], "8-10-11")
+
+    def test_html_section_body_from_toc_cell(self):
+        html = open(os.path.join(FIX, "t01c99_toc_cell_body_snippet.html"), encoding="utf-8").read()
+        toc = [{"citation": "1-99-01", "heading": "Sample heading"}]
+        bodies = section_bodies_from_chapter_html(html, toc)
+        self.assertIn("1-99-01", bodies["1-99-01"])
+        self.assertIn("Additional official text", bodies["1-99-01"])
 
     def test_sections_for_chapter_filters_stray(self):
         parsed = [

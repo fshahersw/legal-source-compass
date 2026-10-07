@@ -6,11 +6,13 @@ import re
 import subprocess
 import sys
 import tempfile
+from collections import Counter
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from sc_common import Archive, collapse, decode_html, html_text, sha256_hex, write_packet  # noqa: E402
 
 from citation import canon_citation, citations_equal_lists, citations_equal_multisets, filter_sections_to_official_toc  # noqa: E402
+from html_section_bodies import section_bodies_from_chapter_html  # noqa: E402
 
 STATE = "ND"
 BASE = "https://ndlegis.gov/cencode/"
@@ -155,6 +157,9 @@ def run(work: str):
     mismatches = []
     empty_section_gaps = []
     flag_classification = []
+    html_gap_from_html = 0
+    html_gap_still_empty = 0
+    chapter_html = None
 
     for slug in inv["chapters"]:
         html_url = BASE + slug
@@ -168,9 +173,10 @@ def run(work: str):
         pdf_body = arc.read(prec)
         text = pdf_text(pdf_body)
         parsed_all = split_pdf_sections(text)
+        chapter_html = None
         if html_only_toc:
-            html, _ = decode_html(arc.read(hrec))
-            chapter_id, chapter_heading, toc_rows = parse_toc(html)
+            chapter_html, _ = decode_html(arc.read(hrec))
+            chapter_id, chapter_heading, toc_rows = parse_toc(chapter_html)
         else:
             if slug not in pdf_only and not html_only_toc:
                 pdf_only.add(slug)
@@ -228,17 +234,6 @@ def run(work: str):
         toc_only = [c for c in toc_cits if canon_citation(c) not in pdf_canon]
         pdf_only_cits = [c for c in pdf_cits if canon_citation(c) not in toc_canon]
         if html_only_toc and toc_only and not pdf_only_cits:
-            for row in toc_rows:
-                if canon_citation(row["citation"]) in {canon_citation(c) for c in toc_only}:
-                    empty_section_gaps.append(
-                        {
-                            "chapter": slug,
-                            "citation": row["citation"],
-                            "heading": row.get("heading"),
-                            "reason": "on_official_html_toc_pdf_has_no_section_text",
-                            "official_html": html_url,
-                        }
-                    )
             flag_classification.append(
                 {
                     "chapter": slug,
@@ -248,17 +243,6 @@ def run(work: str):
                 }
             )
         elif html_only_toc and toc_only and pdf_only_cits:
-            for row in toc_rows:
-                if canon_citation(row["citation"]) in {canon_citation(c) for c in toc_only}:
-                    empty_section_gaps.append(
-                        {
-                            "chapter": slug,
-                            "citation": row["citation"],
-                            "heading": row.get("heading"),
-                            "reason": "on_official_html_toc_pdf_has_no_section_text",
-                            "official_html": html_url,
-                        }
-                    )
             flag_classification.append(
                 {
                     "chapter": slug,
@@ -354,6 +338,64 @@ def run(work: str):
                     "duplicate_occurrence": occ > 1,
                 }
             )
+        if html_only_toc and chapter_html and not repealed_notice:
+            html_bodies = section_bodies_from_chapter_html(chapter_html, toc_rows)
+            toc_need = Counter(canon_citation(r["citation"]) for r in toc_rows)
+            pdf_have = Counter(canon_citation(s["citation"]) for s in parsed)
+            for row in toc_rows:
+                key = canon_citation(row["citation"])
+                if pdf_have[key] >= toc_need[key]:
+                    continue
+                pdf_have[key] += 1
+                body = html_bodies.get(key)
+                cit = row["citation"]
+                heading = row.get("heading") or cit
+                if body:
+                    if ch_text and not ch_text.endswith("\n"):
+                        ch_text += "\n\n"
+                    elif not ch_text:
+                        ch_text = ""
+                    start = len(ch_text)
+                    ch_text += body
+                    if not ch_text.endswith("\n"):
+                        ch_text += "\n"
+                    end = len(ch_text)
+                    status, history = status_and_history(body)
+                    sections_out.append(
+                        {
+                            "chapter_native_id": native,
+                            "citation": cit,
+                            "citation_path": cit,
+                            "number": cit,
+                            "heading": heading,
+                            "start": start,
+                            "end": end,
+                            "history": history,
+                            "status_label": status,
+                            "state": STATE,
+                            "hierarchy": hierarchy_for(chapter_id, chapter_heading, cit, heading),
+                            "edition": None,
+                            "currency": {"statement": OFFICIAL_STATEMENT + " " + UPDATE_STATEMENT, "as_of": None},
+                            "effective": None,
+                            "source_url": html_url,
+                            "source_receipt_sha256": hrec["sha256"],
+                            "duplicate_occurrence": False,
+                            "text_source": "official_chapter_html",
+                        }
+                    )
+                    html_gap_from_html += 1
+                else:
+                    empty_section_gaps.append(
+                        {
+                            "chapter": slug,
+                            "citation": cit,
+                            "heading": heading,
+                            "status_note": heading,
+                            "reason": "on_official_html_toc_pdf_has_no_section_text",
+                            "official_html": html_url,
+                        }
+                    )
+                    html_gap_still_empty += 1
         ch_row = {
             "native_id": native,
             "path": [
@@ -385,11 +427,33 @@ def run(work: str):
     )
     json.dump(empty_section_gaps, open(os.path.join(work, "empty_section_gaps.json"), "w"), indent=2)
     json.dump(flag_classification, open(os.path.join(work, "flag_classification.json"), "w"), indent=2)
-    verify(work, arc, mismatches, toc_counts, pdf_counts, man, empty_section_gaps, flag_classification)
+    verify(
+        work,
+        arc,
+        mismatches,
+        toc_counts,
+        pdf_counts,
+        man,
+        empty_section_gaps,
+        flag_classification,
+        html_gap_from_html,
+        html_gap_still_empty,
+    )
     return man
 
 
-def verify(work, arc, mismatches, toc_counts, pdf_counts, man, empty_section_gaps, flag_classification):
+def verify(
+    work,
+    arc,
+    mismatches,
+    toc_counts,
+    pdf_counts,
+    man,
+    empty_section_gaps,
+    flag_classification,
+    html_gap_from_html,
+    html_gap_still_empty,
+):
     packet = os.path.join(work, "packet")
     bad_hash = []
     for r in arc.index.values():
@@ -429,6 +493,10 @@ def verify(work, arc, mismatches, toc_counts, pdf_counts, man, empty_section_gap
         },
         "mismatches": mismatches,
         "empty_section_gaps": empty_section_gaps,
+        "html_toc_pdf_gaps": {
+            "sections_with_official_html_body": html_gap_from_html,
+            "sections_still_empty": html_gap_still_empty,
+        },
         "flag_classification": flag_classification,
         "receipt_rehash_failures": bad_hash,
         "span_verify_failures": span_bad,
