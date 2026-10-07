@@ -30,6 +30,7 @@ SECTION_HEAD = re.compile(r"^\s*(\d{1,2}-\d{2}-\d{1,4}(?:\.\d+)?)\.[ \t]+([^\n]+
 REPEALED = re.compile(r"^\s*Repealed\b", re.I | re.M)
 CHAPTER_REPEALED = re.compile(r"\[Repealed\b", re.I)
 SL_HISTORY = re.compile(r"\bS\.L\.\s+\d{4}", re.I)
+TOC_EFFECTIVE_SUNSET = re.compile(r"Effective through\s+July\s+31,\s*2019", re.I)
 
 OFFICIAL_STATEMENT = (
     "North Dakota Century Code published on this website is the official version of the "
@@ -298,7 +299,7 @@ def run(work: str):
                     "heading": chapter_heading,
                     "text": ch_text,
                     "status_note": chapter_status_note,
-                    "raw_sha256s": [prec["sha256"]] + ([hrec["sha256"]] if html_only_toc else []),
+                    "raw_sha256s": [prec["sha256"]],
                     "source_urls": [pdf_url] + ([html_url] if html_only_toc else []),
                 }
             )
@@ -404,6 +405,39 @@ def run(work: str):
                         html_gap_from_section_page += 1
                     else:
                         html_gap_from_html += 1
+                elif TOC_EFFECTIVE_SUNSET.search(heading):
+                    printed = heading
+                    if ch_text and not ch_text.endswith("\n"):
+                        ch_text += "\n\n"
+                    elif not ch_text:
+                        ch_text = ""
+                    start = len(ch_text)
+                    ch_text += printed
+                    if not ch_text.endswith("\n"):
+                        ch_text += "\n"
+                    end = len(ch_text)
+                    sections_out.append(
+                        {
+                            "chapter_native_id": native,
+                            "citation": cit,
+                            "citation_path": cit,
+                            "number": cit,
+                            "heading": heading,
+                            "start": start,
+                            "end": end,
+                            "history": None,
+                            "status_label": printed,
+                            "state": STATE,
+                            "hierarchy": hierarchy_for(chapter_id, chapter_heading, cit, heading),
+                            "edition": None,
+                            "currency": {"statement": OFFICIAL_STATEMENT + " " + UPDATE_STATEMENT, "as_of": None},
+                            "effective": None,
+                            "source_url": html_url,
+                            "source_receipt_sha256": hrec["sha256"],
+                            "duplicate_occurrence": False,
+                            "text_source": "official_toc_heading_only",
+                        }
+                    )
                 else:
                     empty_section_gaps.append(
                         {
@@ -424,7 +458,7 @@ def run(work: str):
             ],
             "heading": chapter_heading,
             "text": ch_text,
-            "raw_sha256s": [prec["sha256"]] + ([hrec["sha256"]] if html_only_toc else []),
+            "raw_sha256s": [prec["sha256"]],
             "source_urls": [pdf_url] + ([html_url] if html_only_toc else []),
         }
         if chapter_status_note:
