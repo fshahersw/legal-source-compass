@@ -47,7 +47,8 @@ def parse_title_chapter_heads(html):
 
 
 def section_header_parts(header_line):
-    m = re.match(r"§\s*(.+?)\.\s*(.*)", header_line.strip(), re.S)
+    # Section numbers may use an em dash (12—101), one decimal level (16.21), or a single token (8a).
+    m = re.match(r"§\s*([^\.]+(?:\.[^\.]+)?)\.\s+(.+)", header_line.strip(), re.S)
     if not m:
         return header_line.strip(), ""
     return collapse(m.group(1)), collapse(m.group(2))
@@ -150,6 +151,9 @@ def parse_fullchapter(html, *, title, chapter, source_url, receipt_sha, toc_keys
         sections = []
         for key in toc_keys:
             sections.append({**lone, "number": key.lstrip("0") or key, "inventory_key": key})
+    elif toc_keys and len(toc_keys) == len(sections):
+        for i, key in enumerate(toc_keys):
+            sections[i]["inventory_key"] = key
     return sections
 
 

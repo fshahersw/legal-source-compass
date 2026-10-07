@@ -33,6 +33,16 @@ class TestVTParse(unittest.TestCase):
     def test_citation_em_dash(self):
         self.assertEqual(citation_display("9A", "12—101"), "9A V.S.A. § 12-101")
 
+    def test_decimal_section_number(self):
+        from parse import section_header_parts  # noqa: WPS433
+
+        num, head = section_header_parts("§ 16.01. Corporate powers")
+        self.assertEqual(num, "16.01")
+        self.assertEqual(head, "Corporate powers")
+        num, head = section_header_parts("§ 16.21. Other reports to shareholders")
+        self.assertEqual(num, "16.21")
+        self.assertEqual(head, "Other reports to shareholders")
+
 
 if __name__ == "__main__":
     unittest.main()
