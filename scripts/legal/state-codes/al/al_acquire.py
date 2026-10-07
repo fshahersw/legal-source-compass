@@ -160,6 +160,7 @@ def run_capture(fetcher: Fetcher, root: pathlib.Path, max_pages: int) -> dict:
             print('capture', page, '/', last_page, summary['sections_with_content'], 'sections this page', flush=True)
     totals['last_page'] = last_page
     totals_path = root / 'extract' / 'capture-totals.json'
+    totals_path.parent.mkdir(parents=True, exist_ok=True)
     totals_path.write_text(json.dumps(totals, indent=2, sort_keys=True) + '\n')
     return totals
 
