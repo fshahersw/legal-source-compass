@@ -73,6 +73,94 @@ def publisher_section_number(body):
     return num.strip() if num else None
 
 
+def live_ia_section_row(body, url, section):
+    """Re-parse Iowa slim chapter XML and return the matching section row."""
+    if "_slim.xml" not in url:
+        return None
+    ia_dir = os.path.join(HERE, "..", "ia")
+    if ia_dir not in sys.path:
+        sys.path.insert(0, ia_dir)
+    from ia_parse import parse_chapter  # noqa: WPS433
+    hier = section.get("hierarchy") or []
+    title = next((x["number"] for x in hier if x.get("level") == "title"), "I")
+    chapter = next((x["number"] for x in hier if x.get("level") == "chapter"), None)
+    if not chapter:
+        cp = section.get("citation_path") or section.get("citation") or ""
+        chapter = cp.split(".", 1)[0] if cp else None
+    chapter_row = {"title": title, "title_heading": None, "chapter": chapter}
+    raw = body if isinstance(body, bytes) else body.encode("utf-8", "replace")
+    parsed = parse_chapter(raw, chapter_row)
+    target = section.get("citation_path") or section.get("citation")
+    for row in parsed["sections"]:
+        if row["number"] == target:
+            return row
+    return None
+
+
+def live_wv_section_row(body, url, section):
+    """Extract one section from get_all_sections JSON/HTML (West Virginia)."""
+    if "get_all_sections" not in url:
+        return None
+    wv_dir = os.path.join(HERE, "..", "wv")
+    if wv_dir not in sys.path:
+        sys.path.insert(0, wv_dir)
+    from wv_common import norm_slug, sections_from_article_html  # noqa: WPS433
+    raw = body.decode("utf-8", "replace") if isinstance(body, bytes) else body
+    try:
+        doc = json.loads(raw)
+        html = doc.get("html") or ""
+    except ValueError:
+        html = raw
+    token = norm_slug((section.get("citation_path") or section.get("citation") or "").replace("§", ""))
+    for item in sections_from_article_html(html):
+        if norm_slug(item["citation_token"]) == token:
+            return {
+                "citation_token": item["citation_token"],
+                "heading": item.get("catchline"),
+                "text": item.get("text") or "",
+                "status_label": item.get("catchline") if not (item.get("text") or "").strip() else None,
+            }
+    return None
+
+
+def live_fetch(arc, url, state):
+    """Live publisher fetch; WV ajax needs XHR (Firecrawl fallback when empty)."""
+    extra = None
+    min_bytes = 0
+    if "admin-ajax.php" in url and "get_all_sections" in url:
+        extra = {"X-Requested-With": "XMLHttpRequest"}
+        min_bytes = 80
+    if extra:
+        status, body, meta = arc._http(url, accept="*/*", extra=extra)
+        retrieved = sc.utc_now()
+        rec = {"url": url, "http_status": status, "retrieved_at": retrieved, "bytes": len(body), "route": "direct",
+               "user_agent": arc.ua, **{k: v for k, v in meta.items() if v not in (None, [])}}
+        if status == 200 and len(body) >= min_bytes:
+            sha = sc.sha256_hex(body)
+            rel = f"{sha[:2]}/{sha}"
+            path = os.path.join(arc.raw, rel)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "wb") as f:
+                f.write(body)
+            rec.update({"state": "complete", "sha256": sha, "file": os.path.join("raw", rel)})
+        else:
+            rec.update({"state": "failed"})
+    else:
+        rec = arc.fetch(url, accept="*/*", min_bytes=min_bytes)
+    if state == "WV" and os.environ.get("FIRECRAWL_API_KEY"):
+        empty = rec.get("state") != "complete"
+        if not empty:
+            try:
+                body = arc.read(rec)
+                doc = json.loads(body.decode("utf-8", "replace"))
+                empty = len((doc.get("html") or "").strip()) < 40
+            except (ValueError, KeyError, json.JSONDecodeError):
+                empty = len(body) < 40
+        if empty:
+            rec = arc.fetch(url, route="firecrawl", force=True, min_bytes=40)
+    return rec
+
+
 def live_ks_section_row(body, url, section):
     """Re-parse Kansas Revisor section HTML with the same parser as landing (TOC meta only)."""
     html = body.decode("utf-8", "replace") if isinstance(body, bytes) else body
@@ -146,7 +234,7 @@ def main():
     results = []
     for s in sample:
         u = units[s["unit_key"]]
-        rec = arc.fetch(u["source_url"], accept="*/*", min_bytes=0)
+        rec = live_fetch(arc, u["source_url"], a.state)
         row = {"citation_path": s["citation_path"], "citation": s["citation"], "url": u["source_url"], "live_status": rec["http_status"],
                "route": rec["route"], "user_agent": rec.get("user_agent"), "ua_retry": rec.get("ua_retry", False)}
         if rec["state"] != "complete":
@@ -163,8 +251,21 @@ def main():
             else:
                 row["citation_ok"] = bool(number) and squash(number) in live
             heading = s.get("heading") or ""
-            ks_row = live_ks_section_row(body, u["source_url"], s)
+            parsed_row = (
+                live_ks_section_row(body, u["source_url"], s)
+                or live_ia_section_row(body, u["source_url"], s)
+                or live_wv_section_row(body, u["source_url"], s)
+            )
+            ks_row = parsed_row
             if ks_row is not None:
+                if ks_row.get("citation_token"):
+                    wv_dir = os.path.join(HERE, "..", "wv")
+                    if wv_dir not in sys.path:
+                        sys.path.insert(0, wv_dir)
+                    from wv_common import norm_slug  # noqa: WPS433
+                    row["citation_ok"] = norm_slug(ks_row["citation_token"]) == norm_slug(
+                        (s.get("citation_path") or s.get("citation") or "").replace("§", "")
+                    )
                 lh = ks_row.get("heading") or ""
                 live_body = ks_row.get("text") or ""
                 if not live_body.strip():
