@@ -11,7 +11,7 @@ BASE = "https://ndlegis.gov/cencode/"
 
 SECTION_QUERY = re.compile(r"[?&]section=([^&#]+)", re.I)
 INLINE_SECTION = re.compile(
-    r"<(?:p|div)[^>]*>\s*(\d{1,2}-\d{2}-\d{2}(?:\.\d+)?)\.[ \t]+(.+?)\s*</(?:p|div)>",
+    r"<(?:p|div)[^>]*>\s*(\d{1,2}-\d{2}-\d{1,4}(?:\.\d+)?)\.[ \t]+(.+?)\s*</(?:p|div)>",
     re.S | re.I,
 )
 

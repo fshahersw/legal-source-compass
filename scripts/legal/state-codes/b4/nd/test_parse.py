@@ -31,6 +31,11 @@ class TestNdParse(unittest.TestCase):
         self.assertIn("1-02-25", cits)
         self.assertNotIn("1-02-23", cits)
 
+    def test_pdf_section_three_digit_section_number(self):
+        text = "    10-33-100. Procedure in dissolution.\n    1. When a notice.\n"
+        secs = split_pdf_sections(text)
+        self.assertEqual(secs[0]["citation"], "10-33-100")
+
     def test_official_statement_present(self):
         self.assertIn("official version", OFFICIAL_STATEMENT.lower())
 

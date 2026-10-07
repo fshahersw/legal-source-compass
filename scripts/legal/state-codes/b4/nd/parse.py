@@ -26,7 +26,7 @@ TOC_ROW = re.compile(
 )
 CHAPTER_HEAD = re.compile(r"<h1>\s*Chapter\s+(\d+-\d+)\s*</h1>", re.I)
 CHAPTER_H3 = re.compile(r"<h3>\s*(.*?)\s*</h3>", re.S | re.I)
-SECTION_HEAD = re.compile(r"^\s*(\d{1,2}-\d{2}-\d{2}(?:\.\d+)?)\.[ \t]+([^\n]+)$", re.M)
+SECTION_HEAD = re.compile(r"^\s*(\d{1,2}-\d{2}-\d{1,4}(?:\.\d+)?)\.[ \t]+([^\n]+)$", re.M)
 REPEALED = re.compile(r"^\s*Repealed\b", re.I | re.M)
 CHAPTER_REPEALED = re.compile(r"\[Repealed\b", re.I)
 SL_HISTORY = re.compile(r"\bS\.L\.\s+\d{4}", re.I)
