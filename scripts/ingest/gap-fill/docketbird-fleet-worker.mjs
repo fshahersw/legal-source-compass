@@ -4,7 +4,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {spawn} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
-import {appendJsonl, readJson, atomicWriteJson} from './lib.mjs';
+import {appendJsonl, readJson, sleep} from './lib.mjs';
+
+const isRateStop = text => /RATE_LIMIT/.test(String(text ?? ''));
 import {landCaseInventory} from './docketbird-document-list.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -38,6 +40,8 @@ export async function main(argv) {
   for (const caseId of cases) {
     const caseWork = path.join(work, 'cases', caseId.replace(/[^A-Za-z0-9]/g, '_'));
     await fs.mkdir(caseWork, {recursive: true});
+    const ckPre = await readJson(path.join(caseWork, 'checkpoint.json'), {cases: {}});
+    if (ckPre.cases[caseId]?.complete) continue;
     let probe = await fetch(`https://api.docketbird.com/cases/${encodeURIComponent(caseId)}`, {headers: {Authorization: `Bearer ${process.env.DOCKETBIRD_API_KEY}`}, signal: AbortSignal.timeout(60000)});
     if (probe.status === 429) { await new Promise(r => setTimeout(r, 60000)); probe = await fetch(`https://api.docketbird.com/cases/${encodeURIComponent(caseId)}`, {headers: {Authorization: `Bearer ${process.env.DOCKETBIRD_API_KEY}`}, signal: AbortSignal.timeout(60000)}); }
     if (probe.status !== 200) await waitFollow(fleet, caseId);
@@ -51,7 +55,12 @@ export async function main(argv) {
       if (code !== 0) {
         const stop = await readJson(path.join(caseWork, 'last-stop.json'), {});
         await appendJsonl(progress, {event: 'pull_stop', case_id: caseId, stop});
-        if (/NEW_CHARGE_AMOUNT|FOLLOW/.test(stop.stopped ?? '')) process.exitCode = 3;
+        if (/NEW_CHARGE_AMOUNT|FOLLOW/.test(stop.stopped ?? '')) { process.exitCode = 3; break; }
+        if (isRateStop(stop.stopped)) {
+          await appendJsonl(progress, {event: 'rate_limit_wait', case_id: caseId, at: new Date().toISOString(), seconds: 60});
+          await sleep(60000);
+          continue;
+        }
         break;
       }
       await exec(path.join(here, '../../admin/register-private-pdf-assets.mjs'), [`--transfers=${path.join(caseWork, 'transfer')}`, `--out=${path.join(caseWork, 'registration')}`]);
