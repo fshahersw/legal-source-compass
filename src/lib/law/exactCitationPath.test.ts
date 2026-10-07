@@ -495,6 +495,22 @@ describe("exact statute citation paths", () => {
       exactCitationPaths("TX", "Tex. Civ. Prac. & Rem. Code § 16.003(a)")?.includes("AG:16.003"),
     ).toBe(false);
     expect(statuteNativeId("TX", "CP:16.003")).toBe("TX:CP:16.003");
+    expect(
+      exactCitationPaths("TX", "Tex. Civ. Prac. & Rem. Code §§ 16.003(a), 16.012(b)"),
+    ).toEqual(["CP:16.003", "CP:16.012"]);
+    expect(
+      exactCitationPaths("TX", "Tex. Civ. Prac. & Rem. Code §§ 16.003(a), 16.012(b)")?.includes(
+        "16.012",
+      ),
+    ).toBe(false);
+    expect(
+      exactCitationPaths("TX", "Tex. Civ. Prac. & Rem. Code §§ 16.003(a), 16.012(b)")?.includes(
+        "FI:16.012",
+      ),
+    ).toBe(false);
+    expect(exactCitationPaths("TX", "Tex. Civ. Prac. & Rem. Code § 16.012(a)(2), (b)")).toEqual([
+      "CP:16.012",
+    ]);
   });
 
   it("links Connecticut personal injury only when one stored section has that exact number", () => {
