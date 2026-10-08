@@ -7,6 +7,7 @@ import type { ClaimType, LimitationRule, LimitationsSnapshot } from "@/lib/limit
 import {
   guidedDateFields,
   isAccrualReposeRule,
+  missingRequirements,
   reposeCapLabel,
   unconfirmedClaimInput,
 } from "./calculatorGuidance";
@@ -62,10 +63,11 @@ describe("guided limitations calculator", () => {
     expect(html).not.toContain('checked=""');
     expect(html).not.toContain("statutory anniversary");
   });
-  it("keeps prefilled choices on step one so a conditional fact pattern can be selected", () => {
+  it("shows dates on the same page for a prefilled claim without inferring confirmations", () => {
     const html = markup("IN", "personal_injury");
     expect(html).toContain("Choose the law and claim");
-    expect(html).not.toContain('type="date"');
+    expect(html).toContain('type="date"');
+    expect(html).toContain("Still needed before calculating");
     expect(html).not.toContain('checked=""');
     const ohio = markup("OH", "product_liability");
     expect(ohio).toContain("Fact pattern");
@@ -75,7 +77,7 @@ describe("guided limitations calculator", () => {
     const html = markup("HI", "product_liability");
     expect(html).toContain("No unique baseline is available");
     expect(html).not.toContain('type="date"');
-    expect(html).not.toContain("Review result");
+    expect(html).not.toContain(">Calculate<");
   });
   it("shows every required discovery and product-history date without replacing them with one date", () => {
     const rule = baselineRule(snapshot.rules, "OH", "product_liability", "latent_toxic");
@@ -129,6 +131,36 @@ describe("guided limitations calculator", () => {
     expect(result.date).toBeNull();
     expect(result.reasons.join(" ")).toContain("governing");
     expect(result.reasons.join(" ")).toContain("exceptions");
+  });
+});
+
+describe("missingRequirements", () => {
+  it("requires every guided date, the death date when deceased, and repose confirmation", () => {
+    const rule = reposeRule("NC", "last_act_or_omission");
+    const fields = guidedDateFields(rule, "NC");
+    const empty = unconfirmedClaimInput("NC", "personal_injury");
+    const missing = missingRequirements(empty, rule, fields);
+    expect(missing.map((m) => m.id)).toEqual([
+      ...fields.map((f) => "date-" + f.key),
+      "repose-applicability-confirmed",
+    ]);
+    const filled = Object.fromEntries(fields.map((f) => [f.key, "2020-01-01"]));
+    expect(
+      missingRequirements(
+        { ...empty, ...filled, reposeApplicabilityConfirmed: true },
+        rule,
+        fields,
+      ),
+    ).toEqual([]);
+    const plain = { ...rule, calculation: undefined } as unknown as LimitationRule;
+    expect(missingRequirements({ ...empty, ...filled }, plain, fields)).toEqual([]);
+    const death = { ...plain, calculation: { deathCapYears: 2 } } as unknown as LimitationRule;
+    expect(
+      missingRequirements({ ...empty, ...filled, vitalStatus: "deceased" }, death, fields).map(
+        (m) => m.id,
+      ),
+    ).toEqual(["date-deathDate"]);
+    expect(missingRequirements(empty, null, fields)).toEqual([]);
   });
 });
 
