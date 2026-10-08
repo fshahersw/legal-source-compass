@@ -508,7 +508,12 @@ export function LimitationsWorkbench({
                   )}
                   {reposeLabel && <p className="mt-1 text-sm font-medium">{reposeLabel}</p>}
                   <p className="mt-1 text-sm leading-relaxed">{rule.scope}</p>
-                  <Citations snapshot={snapshot} rule={rule} />
+                  <details className="mt-3">
+                    <summary className="min-h-10 cursor-pointer py-2 text-sm font-semibold text-primary">
+                      Show citation, statute text and evidence
+                    </summary>
+                    <Citations snapshot={snapshot} rule={rule} />
+                  </details>
                 </div>
               )}
               {state && claim && !rule && (
