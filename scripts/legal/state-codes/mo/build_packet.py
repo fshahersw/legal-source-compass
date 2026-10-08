@@ -19,7 +19,7 @@ REGISTERED_MANIFEST = {
     "publisher_url": "https://revisor.mo.gov/main/Home.aspx",
     "source_system": "mo-revised-statutes",
     "code_title": "Revised Statutes of Missouri",
-    "parser": {"name": "mo-revisor-html", "version": "2"},
+    "parser": {"name": "mo-revisor-html", "version": "4"},
     "retrieval": {
         "methods": ["publisher_page"],
         "source_url_patterns": [
