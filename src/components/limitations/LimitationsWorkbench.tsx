@@ -115,11 +115,18 @@ function Authority({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule: Li
         <dt className="font-medium">Fetch route</dt>
         <dd data-testid="fetch-route">
           {facts.sources.length
-            ? facts.sources.map((source) => (
-                <span key={source.id} className="block">
-                  {source.route}
-                </span>
-              ))
+            ? Object.entries(
+                facts.sources.reduce<Record<string, number>>((acc, source) => {
+                  acc[source.route] = (acc[source.route] ?? 0) + 1;
+                  return acc;
+                }, {}),
+              )
+                .map(([route, count]) =>
+                  facts.sources.length > 1
+                    ? `${count} ${count === 1 ? "source" : "sources"}: ${route.charAt(0).toLowerCase()}${route.slice(1)}`
+                    : route,
+                )
+                .join(" · ")
             : NOT_RECORDED}
         </dd>
         <dt className="font-medium">Effective date</dt>
