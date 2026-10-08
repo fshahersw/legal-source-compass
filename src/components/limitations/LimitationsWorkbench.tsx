@@ -551,17 +551,16 @@ export function LimitationsWorkbench({
                 </div>
               )}
             </section>
-          )}
+          }
 
           {state && claim && rule && (
             <section id="limitations-dates" className={box + " mt-5 scroll-mt-24"}>
               <h2 className="text-xl font-semibold">2. Dates and confirmations</h2>
-              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+              <p className="mt-1 mb-5 text-sm leading-relaxed text-muted-foreground">
                 Enter only the dates this rule needs. Leave unknown dates blank; none are inferred.
               </p>
-              {
+              {(
                 <>
-                  <div className="h-5" />
                   <div className="mb-5 rounded-lg border border-border p-4 text-sm">
                     <h3 className="font-semibold">Supported trigger dates</h3>
                     {rule.effectiveFrom && (
