@@ -15,6 +15,7 @@ import { StatuteCitation } from "./StatuteCitation";
 import {
   guidedDateFields,
   isAccrualReposeRule,
+  missingRequirements,
   reposeCapLabel,
   unconfirmedClaimInput,
 } from "./calculatorGuidance";
@@ -298,7 +299,6 @@ export function LimitationsWorkbench({
     queryFn: loadLimitations,
     staleTime: Infinity,
   });
-  const [step, setStep] = useState(1);
   const [input, setInput] = useState<BaselineInput>(() =>
     unconfirmedClaimInput(state, claim ?? ""),
   );
@@ -310,11 +310,11 @@ export function LimitationsWorkbench({
   );
   const resultRef = useRef<HTMLElement>(null);
   useEffect(() => {
-    if (step === 3 && resultRef.current) {
+    if (result && resultRef.current) {
       resultRef.current.focus({ preventScroll: true });
       resultRef.current.scrollIntoView({ block: "start", behavior: "instant" });
     }
-  }, [step, result]);
+  }, [result]);
   const visibleReasons = (result?.reasons ?? []).filter(
     (reason) =>
       !result?.date ||
@@ -384,22 +384,16 @@ export function LimitationsWorkbench({
   const reposeMode = isAccrualReposeRule(rule);
   const reposeLabel = reposeCapLabel(rule);
   const ruleSourceCutoff = rule ? sourceReviewDate(snapshot, rule) : null;
-  const requiredKeys = dates.map((item) => item.key);
-  if (rule?.calculation?.deathCapYears && input.vitalStatus === "deceased")
-    requiredKeys.push("deathDate");
-  const missingKeys = submitted ? requiredKeys.filter((key) => !input[key]) : [];
-  const missingReposeConfirmation =
-    submitted && reposeMode && input.reposeApplicabilityConfirmed !== true;
+  const missing = missingRequirements(input, rule, dates);
+  const missingKeys = submitted ? missing.map((item) => item.id.replace(/^date-/, "")) : [];
   const stateName = STATES.find((item) => item.usps === state)?.name ?? state;
   const calculate = () => {
     setSubmitted(true);
-    const missing = requiredKeys.find((key) => !input[key]);
-    if (missing) {
-      document.getElementById("date-" + missing)?.focus();
+    if (missing.length) {
+      document.getElementById(missing[0].id)?.focus();
       return;
     }
     setResult(calculateBaseline(snapshot, input));
-    setStep(3);
   };
   const nav = (
     <nav aria-label="Limitations research views" className="mb-5 flex flex-wrap gap-2">
@@ -426,30 +420,7 @@ export function LimitationsWorkbench({
       {view !== "calculator" && nav}
       {view === "calculator" && (
         <>
-          <nav aria-label="Calculator steps" className="mb-5 grid gap-2 sm:grid-cols-3">
-            {["Claim", "Dates and review", "Result"].map((label, index) => {
-              const number = index + 1;
-              return (
-                <button
-                  key={label}
-                  type="button"
-                  aria-current={step === number ? "step" : undefined}
-                  disabled={number > step}
-                  onClick={() => setStep(number)}
-                  className={
-                    "min-h-11 rounded-lg border px-4 py-2 text-left text-sm font-semibold " +
-                    (step === number
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border bg-background hover:bg-muted")
-                  }
-                >
-                  <span className="mr-2 opacity-75">{number}</span>
-                  {label}
-                </button>
-              );
-            })}
-          </nav>
-          {step === 1 && (
+          {
             <section className={box}>
               <h2 className="text-xl font-semibold">1. Choose the law and claim</h2>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -572,84 +543,25 @@ export function LimitationsWorkbench({
                   })()}
                 </div>
               )}
-              <div className="mt-6 flex justify-end">
-                <Button disabled={!state || !claim} onClick={() => setStep(2)}>
-                  {state && claim && !rule ? "View available research" : "Continue to dates"}
-                </Button>
-              </div>
+              {state && claim && !rule && (
+                <div className="mt-4">
+                  <Button variant="outline" onClick={() => navigate("sources")}>
+                    Review sources
+                  </Button>
+                </div>
+              )}
             </section>
           )}
 
-          {step === 2 && (
-            <section className={box}>
-              <h2 className="text-xl font-semibold">
-                {rule ? "2. Enter dates and review legal facts" : "2. Review available research"}
-              </h2>
-              {rule && (
-                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                  Enter only dates required by the cited rule. Leave unknown dates blank; none are
-                  inferred.
-                </p>
-              )}
-              <div className="my-5 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-muted/50 p-4">
-                <p className="text-sm font-semibold">
-                  {stateName} · {claim ? CLAIM_LABELS[claim] : "Claim not selected"}
-                </p>
-                <Button type="button" variant="outline" onClick={() => setStep(1)}>
-                  Change claim
-                </Button>
-              </div>
-              {!state || !claim ? (
-                <p className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
-                  Choose a state and claim first.
-                  <Button className="ml-3" variant="outline" onClick={() => setStep(1)}>
-                    Back to claim
-                  </Button>
-                </p>
-              ) : !rule ? (
-                <p className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
-                  No unique baseline rule is available for this selection. No date will be
-                  calculated.
-                  <Button className="ml-3" variant="outline" onClick={() => navigate("sources")}>
-                    Review sources
-                  </Button>
-                </p>
-              ) : (
+          {state && claim && rule && (
+            <section id="limitations-dates" className={box + " mt-5 scroll-mt-24"}>
+              <h2 className="text-xl font-semibold">2. Dates and confirmations</h2>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                Enter only the dates this rule needs. Leave unknown dates blank; none are inferred.
+              </p>
+              {
                 <>
-                  {subtypes.length > 1 && (
-                    <label className="mb-5 block text-sm font-semibold">
-                      Fact pattern
-                      <select
-                        className={control}
-                        value={input.subtype ?? "general"}
-                        onChange={(event) => {
-                          setInput(unconfirmedClaimInput(state, claim, event.target.value));
-                          setResult(null);
-                          setSubmitted(false);
-                          setExceptionAnswer("unreviewed");
-                        }}
-                      >
-                        {subtypes.map((item) => (
-                          <option key={item} value={item}>
-                            {patternLabel(item)}
-                            {baselineRule(snapshot.rules, state, claim, item)
-                              ? ""
-                              : " · legal review needed"}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
-                  <div className="mb-5 rounded-lg border border-border bg-muted/40 p-4">
-                    <p className="text-sm font-semibold">
-                      {rule.period
-                        ? `${periodLabel(rule.period)} · conditional baseline`
-                        : "Further legal review required"}
-                    </p>
-                    {reposeLabel && <p className="mt-1 text-sm font-medium">{reposeLabel}</p>}
-                    <p className="mt-1 text-sm leading-relaxed">{rule.scope}</p>
-                    <Citations snapshot={snapshot} rule={rule} />
-                  </div>
+                  <div className="h-5" />
                   <div className="mb-5 rounded-lg border border-border p-4 text-sm">
                     <h3 className="font-semibold">Supported trigger dates</h3>
                     {rule.effectiveFrom && (
@@ -752,39 +664,25 @@ export function LimitationsWorkbench({
                       </>
                     )}
                   </div>
-                  {reposeMode && (
-                    <label className="mt-5 flex min-h-11 items-start gap-3 text-sm leading-relaxed">
-                      <input
-                        id="repose-applicability-confirmed"
-                        type="checkbox"
-                        className="mt-1 h-4 w-4"
-                        checked={input.reposeApplicabilityConfirmed === true}
-                        aria-invalid={missingReposeConfirmation}
-                        aria-describedby={
-                          missingReposeConfirmation ? "repose-applicability-error" : undefined
-                        }
-                        onChange={(event) =>
-                          update({ reposeApplicabilityConfirmed: event.target.checked })
-                        }
-                      />
-                      <span>
-                        I confirmed this repose rule applies to this claim and defendant, and that
-                        the repose date above is legally relevant.
-                        {missingReposeConfirmation && (
-                          <span
-                            id="repose-applicability-error"
-                            className="mt-1 block font-medium text-destructive"
-                          >
-                            Confirm applicability and the act or omission date to continue.
-                          </span>
-                        )}
-                      </span>
-                    </label>
-                  )}
                   <fieldset className="mt-7 space-y-3">
-                    <legend className="mb-3 text-base font-semibold">
-                      Confirm the legal framework
-                    </legend>
+                    <legend className="mb-3 text-base font-semibold">Confirm</legend>
+                    {reposeMode && (
+                      <label className="flex min-h-11 items-start gap-3 text-sm leading-relaxed">
+                        <input
+                          id="repose-applicability-confirmed"
+                          type="checkbox"
+                          className="mt-1 h-4 w-4"
+                          checked={input.reposeApplicabilityConfirmed === true}
+                          onChange={(event) =>
+                            update({ reposeApplicabilityConfirmed: event.target.checked })
+                          }
+                        />
+                        <span>
+                          This repose rule applies to this claim and defendant, and the repose date
+                          above is legally relevant.
+                        </span>
+                      </label>
+                    )}
                     {(
                       [
                         [
@@ -844,48 +742,43 @@ export function LimitationsWorkbench({
                   </fieldset>
                   <fieldset className="mt-7">
                     <legend className="text-base font-semibold">
-                      Review exceptions and other issues
+                      Any tolling or exception facts?
                     </legend>
                     <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                      An unresolved issue prevents a date. Consider prior filings or orders,
-                      tolling, age or disability, repose, other-state law, and special claim
-                      requirements.
+                      For example prior filings or orders, tolling, age or disability, other-state
+                      law, or special claim requirements. Anything unresolved means no date.
                     </p>
-                    <label className="mt-4 block text-sm font-semibold">
-                      Review status
-                      <select
-                        className={control}
-                        value={exceptionAnswer}
-                        onChange={(event) => {
-                          const answer = event.target.value as typeof exceptionAnswer;
-                          setExceptionAnswer(answer);
-                          if (answer === "issue") setIssuesExpanded(true);
-                          update({
-                            exceptionReview:
-                              answer === "complete" && input.issues.length === 0
-                                ? "no_unresolved_issues"
-                                : "unresolved",
-                          });
-                        }}
-                      >
-                        <option value="unreviewed">Not reviewed / not sure</option>
-                        <option value="issue">An issue may apply · review needed</option>
-                        <option value="complete" disabled={input.issues.length > 0}>
-                          Reviewed · no unresolved issues
-                        </option>
-                      </select>
-                    </label>
-                    <button
-                      type="button"
-                      className="mt-4 min-h-11 text-left text-sm font-semibold text-primary underline"
-                      aria-expanded={issuesExpanded}
-                      onClick={() => setIssuesExpanded((open) => !open)}
-                    >
-                      {issuesExpanded
-                        ? "Hide possible issue checklist"
-                        : "Show possible issue checklist"}
-                      {input.issues.length ? " · " + input.issues.length + " selected" : ""}
-                    </button>
+                    <div className="mt-3 flex flex-wrap gap-2" role="radiogroup">
+                      {(
+                        [
+                          ["complete", "No"],
+                          ["issue", "Yes"],
+                          ["unreviewed", "Not sure"],
+                        ] as const
+                      ).map(([answer, label]) => (
+                        <Button
+                          key={answer}
+                          type="button"
+                          size="sm"
+                          role="radio"
+                          aria-checked={exceptionAnswer === answer}
+                          variant={exceptionAnswer === answer ? "default" : "outline"}
+                          disabled={answer === "complete" && input.issues.length > 0}
+                          onClick={() => {
+                            setExceptionAnswer(answer);
+                            setIssuesExpanded(answer === "issue");
+                            update({
+                              exceptionReview:
+                                answer === "complete" && input.issues.length === 0
+                                  ? "no_unresolved_issues"
+                                  : "unresolved",
+                            });
+                          }}
+                        >
+                          {label}
+                        </Button>
+                      ))}
+                    </div>
                     {issuesExpanded && (
                       <div className="mt-3 grid gap-3 rounded-lg border border-border p-4 md:grid-cols-2">
                         {SPECIAL_ISSUES.map((issue) => (
