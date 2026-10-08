@@ -24,7 +24,15 @@ const snapshot: LimitationsSnapshot = {
 const baseRule = snapshot.rules[0];
 if (!baseRule) throw new Error("Limitations snapshot has no rules for guidance tests.");
 vi.mock("@tanstack/react-query", () => ({
-  useQuery: () => ({ data: snapshot, isPending: false, error: null }),
+  // The workbench loads the snapshot; the citation component looks up public code sections (none here).
+  useQuery: (options: { queryKey: unknown[] }) =>
+    options.queryKey[0] === "public-statute-section"
+      ? { data: [], isPending: false, isSuccess: true, error: null }
+      : { data: snapshot, isPending: false, isSuccess: true, error: null },
+}));
+vi.mock(import("@tanstack/react-start"), async (importOriginal) => ({
+  ...(await importOriginal()),
+  useServerFn: (<T extends (...args: never[]) => unknown>(fn: T) => fn) as never,
 }));
 vi.mock("@tanstack/react-router", () => ({
   Link: (props: { to: string; children: ReactNode; className?: string }) =>
@@ -74,7 +82,12 @@ describe("guided limitations calculator", () => {
     expect(ohio).toContain("Latent substance / toxic injury");
   });
   it("unsupported claims offer source review without date inputs or a calculation action", () => {
-    const html = markup("HI", "product_liability");
+    // Pick a state whose general product claim has no unique baseline in the current release.
+    const unsupported = snapshot.coverage
+      .map((row) => row.state)
+      .find((state) => !baselineRule(snapshot.rules, state, "product_liability"));
+    expect(unsupported, "every state has a product baseline; pick another claim").toBeDefined();
+    const html = markup(unsupported!, "product_liability");
     expect(html).toContain("No unique baseline is available");
     expect(html).not.toContain('type="date"');
     expect(html).not.toContain(">Calculate<");

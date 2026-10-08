@@ -375,14 +375,14 @@ function westVirginiaPaths(citation: string): string[] | null {
 }
 
 /**
- * Pennsylvania consolidated-statute paths such as `42 Pa.C.S. § 5524(2)` and `1 Pa.C.S. § 1908`.
- * The title and the section are one path. A parenthetical is not included.
+ * Pennsylvania consolidated-statute paths such as `42 Pa.C.S. § 5524(2)`, `42 Pa. Cons. Stat. § 5524(1)`
+ * and `1 Pa.C.S. § 1908`. The title and the section are one path. A parenthetical is not included.
  * `§ 5524` is not `§ 5524.1`. A later bare section sign does not inherit the title.
  * `40 P.S.` is not a consolidated-statute title.
  */
 function pennsylvaniaPaths(citation: string): string[] | null {
   const paths: string[] = [];
-  const re = /\b(\d{1,3})\s+Pa\.C\.S\.\s*§§?\s*(\d+(?:\.\d+)?)(?!\d)/gi;
+  const re = /\b(\d{1,3})\s+Pa\.\s*(?:C\.S\.|Cons\.\s*Stat\.)\s*(?:Ann\.\s*)?§§?\s*(\d+(?:\.\d+)?)(?!\d)/gi;
   for (const match of citation.matchAll(re)) {
     const title = match[1];
     const section = match[2];
@@ -412,8 +412,8 @@ function districtOfColumbiaPaths(citation: string): string[] | null {
 }
 
 /**
- * New York consolidated-law paths such as `N.Y. C.P.L.R. § 214(5)` and
- * `N.Y. Est. Powers & Trusts Law § 5-4.1(1)`.
+ * New York consolidated-law paths such as `N.Y. C.P.L.R. § 214(5)`, the Bluebook form `N.Y. C.P.L.R. 214(6)`
+ * without a section sign, and `N.Y. Est. Powers & Trusts Law § 5-4.1(1)`.
  * The law and the section are one path. A parenthetical is not included.
  * A letter suffix is stored in capitals, so `214-c` is `CVP/214-C`.
  * `CVP/214` is not `CVP/214-C`. General Construction Law § 25-a is `GCN/25-A`.
@@ -425,7 +425,7 @@ function newYorkPaths(citation: string): string[] | null {
     if (!paths.includes(path)) paths.push(path);
   };
   for (const match of citation.matchAll(
-    /\b(?:C\.P\.L\.R\.|CPLR)\s*§§?\s*(\d+(?:-[A-Za-z]+)?)(?![A-Za-z0-9-])/gi,
+    /\b(?:C\.P\.L\.R\.|CPLR)\s*(?:§§?\s*)?(\d+(?:-[A-Za-z]+)?)(?![A-Za-z0-9-])/gi,
   )) {
     if (match[1]) add("CVP", match[1]);
   }

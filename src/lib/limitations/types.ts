@@ -7,7 +7,18 @@ export const CLAIM_TYPES = [
   "contract_oral",
   "fraud",
   "property_damage",
+  "defamation",
+  "intentional_tort",
+  "breach_of_warranty",
+  "legal_malpractice",
 ] as const;
+/** Claim types added in release 2026-10-08.1; their cells read "Not recorded" until an official-text entry exists. */
+export const CLAIM_TYPES_ADDED_2026_10_08: readonly ClaimType[] = [
+  "defamation",
+  "intentional_tort",
+  "breach_of_warranty",
+  "legal_malpractice",
+];
 export type ClaimType = (typeof CLAIM_TYPES)[number];
 export type AuthorityCapture = {
   sha256: string;
@@ -35,6 +46,78 @@ export const CLAIM_LABELS: Record<ClaimType, string> = {
   contract_oral: "Breach of oral contract",
   fraud: "Fraud / misrepresentation",
   property_damage: "Property damage",
+  defamation: "Defamation (libel / slander)",
+  intentional_tort: "Intentional tort (assault, battery, false imprisonment)",
+  breach_of_warranty: "Breach of warranty (sale of goods)",
+  legal_malpractice: "Legal malpractice",
+};
+
+/**
+ * Result of re-fetching an official source after its capture. "evidence" means the literal statutory
+ * passages the release relies on from that source (rule excerpt, period words, tolling and repose text).
+ */
+export const SOURCE_CURRENCY_STATUSES = [
+  "confirmed_unchanged",
+  "confirmed_evidence_intact",
+  "evidence_lost",
+  "not_rechecked",
+] as const;
+export type SourceCurrencyStatus = (typeof SOURCE_CURRENCY_STATUSES)[number];
+/**
+ * Provenance of a recheck made against the publisher's current section text as landed by the full-code
+ * intake (reviewed, projection on). Every value is copied from the intake's own coverage record.
+ */
+export type CodeCaptureProvenance = {
+  jurisdiction: string;
+  publisher: string;
+  /** Intake run that landed the text the passages were matched against. */
+  runId: string | null;
+  manifestSha256: string | null;
+  landedAt: string | null;
+  /** Native ids (`ST:<citation path>`) of the sections whose text was searched. */
+  sectionNativeIds: string[];
+  /** Official page URLs the intake recorded for those sections. */
+  sourceUrls: string[];
+};
+export type SourceCurrency = {
+  checkedAt: string;
+  status: SourceCurrencyStatus;
+  /**
+   * How the fresh copy was obtained: "direct" is a fresh fetch of the source URL; "official_code_capture" is
+   * the same publisher's current section text as landed by the full-code intake; "none" when neither
+   * route yielded a copy from the review environment.
+   */
+  route: "direct" | "official_code_capture" | "none";
+  detail: string;
+  httpStatus?: number;
+  rawSha256?: string;
+  textSha256?: string;
+  /** Private content-addressed copy of the fresh official response, when one was retrieved. */
+  rawStorageKey?: string;
+  /** Bundle text of the fresh copy when the page changed; the source's own textPath stays the verified capture. */
+  freshTextPath?: string;
+  /** Present only when route is "official_code_capture". */
+  codeCapture?: CodeCaptureProvenance;
+};
+
+export const RULE_CURRENCY_STATUSES = [
+  "confirmed",
+  "partially_confirmed",
+  "evidence_lost",
+  "not_rechecked",
+] as const;
+export type RuleCurrencyStatus = (typeof RULE_CURRENCY_STATUSES)[number];
+/** Roll-up of the currency checks of every source a rule's literal evidence is drawn from. */
+export type RuleCurrency = {
+  checkedAt: string;
+  status: RuleCurrencyStatus;
+  detail: string;
+  /** Sources whose fresh official copy still contains the rule's evidence. */
+  confirmedSourceIds: string[];
+  /** Sources that could not be re-read from the review environment. */
+  uncheckedSourceIds: string[];
+  /** Sources whose fresh official copy no longer contains the rule's evidence. */
+  lostSourceIds: string[];
 };
 
 export type PeriodUnit = "calendar_years" | "calendar_months" | "calendar_days";
@@ -115,14 +198,29 @@ export type ClaimCoverage = {
   variants?: ClaimVariantCoverage[];
 };
 
-/** One alternative period of a two-limb statute ("three years from injury or one year from discovery"). */
+/**
+ * One alternative period of a two-limb statute ("three years from injury or one year from discovery").
+ * `act_or_omission` runs from the incident / act complained of (the same date a repose clock of that kind uses).
+ */
 export type PeriodLimb = {
   amount: number;
   unit: PeriodUnit;
-  from: "accrual" | "discovery" | "injury_date" | "death";
+  from: "accrual" | "discovery" | "injury_date" | "death" | "act_or_omission";
 };
+export const PERIOD_LIMB_STARTS: readonly PeriodLimb["from"][] = [
+  "accrual",
+  "discovery",
+  "injury_date",
+  "death",
+  "act_or_omission",
+];
 
-/** An independent outer bar. Each clock needs its own start date and a printed effective date. */
+/**
+ * An independent outer bar. Each clock needs its own start date. `effectiveFrom` is the printed date the
+ * bar took effect; when the captured text does not print one, it is null and `startBasis` must say
+ * "not_recorded": the bar is then applied to every start date (it can only shorten the result) and the
+ * calculator states that the historical start of the bar is unverified.
+ */
 export type ReposeClock = {
   years: number;
   from:
@@ -131,8 +229,38 @@ export type ReposeClock = {
     | "injury_date"
     | "substantial_completion"
     | "first_delivery";
-  effectiveFrom: string;
+  effectiveFrom: string | null;
+  startBasis?: "printed_effective_date" | "not_recorded";
   effectiveThrough?: string;
+};
+
+/** Rule fields a ledgered correction may change. Identity, citation and provenance fields are never corrected in place. */
+export const RULE_CORRECTION_FIELDS = [
+  "effectiveFrom",
+  "effectiveThrough",
+  "calculation",
+  "computation",
+  "historicalApplicability",
+  "conditions",
+  "warnings",
+  "accrualBasis",
+] as const;
+export type RuleCorrectionField = (typeof RULE_CORRECTION_FIELDS)[number];
+
+/**
+ * A reviewed, ledgered change to one field of a previously released rule. The builder refuses a correction
+ * whose `from` value no longer matches the live rule or whose evidence quote is not in the cited source text.
+ */
+export type RuleCorrection = {
+  appliedInVersion: string;
+  field: RuleCorrectionField;
+  from: unknown;
+  to: unknown;
+  reason: string;
+  evidenceSourceId: string;
+  evidenceQuote: string;
+  /** A condition appended to the rule as part of this correction (e.g. a limb the calculator still cannot model). */
+  note?: string;
 };
 
 export type LimitationRule = {
@@ -155,6 +283,7 @@ export type LimitationRule = {
   period: { amount: number; unit: PeriodUnit } | null;
   provenance?: RuleProvenance;
   verification?: RuleVerification;
+  currency?: RuleCurrency;
   sourceIds: string[];
   pinpoint: string;
   scope: string;
@@ -168,6 +297,8 @@ export type LimitationRule = {
   summary: string;
   warnings: string[];
   caseReferenceIds?: string[];
+  /** Reviewed field changes applied to this rule after its first release, oldest first. */
+  corrections?: RuleCorrection[];
   subtype?: string;
   calculation?: {
     mode: "discovery_min" | "diagnosis" | "death_cause_min" | "accrual_repose_min" | "clocks_min";
@@ -175,6 +306,12 @@ export type LimitationRule = {
     limbs?: PeriodLimb[];
     combine?: "earlier" | "later";
     clocks?: ReposeClock[];
+    /**
+     * clocks_min: the limb start the rule's `effectiveFrom`/`effectiveThrough` window is tested against when
+     * the statute defines its own reach by one event (e.g. "injury occurring on or after ..."). Must be the
+     * `from` of a listed limb. Absent, every limb start must fall inside the window.
+     */
+    windowFrom?: PeriodLimb["from"];
     deathCapYears?: number;
     secondaryCapYears?: number;
     requiresExposureWithinDeliveryYears?: number;
@@ -205,6 +342,7 @@ export type LimitationSource = {
   historicalApplicability: string;
   rawCapture?: AuthorityCapture;
   fetchRoute?: FetchRoute;
+  currency?: SourceCurrency;
 };
 export type CoverageRow = {
   state: string;
@@ -321,4 +459,10 @@ export type BaselineResult = {
   rule: LimitationRule | null;
   reasons: string[];
   steps: { text: string; sourceIds: string[]; pinpoint: string }[];
+  /**
+   * Set only when the entered date falls outside this rule's statutory window and exactly one sibling
+   * baseline rule (same state, claim type, accrual basis and window event) has a window covering it.
+   * The caller may offer that fact pattern; the engine never switches rules by itself.
+   */
+  suggestedSubtype?: string | null;
 };

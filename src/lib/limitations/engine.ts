@@ -1,4 +1,5 @@
 import {
+  PERIOD_LIMB_STARTS,
   SPECIAL_ISSUES,
   type PeriodLimb,
   type ReposeClock,
@@ -117,16 +118,72 @@ export function sourceReviewDate(
   return [snapshot.snapshotDate, ...(dates as string[])].sort()[0]!;
 }
 
+/** True when two statutory windows share at least one date (open ends are unbounded). */
+function windowsOverlap(
+  a: Pick<LimitationRule, "effectiveFrom" | "effectiveThrough">,
+  b: Pick<LimitationRule, "effectiveFrom" | "effectiveThrough">,
+): boolean {
+  const start = [a.effectiveFrom, b.effectiveFrom].filter((d): d is string => !!d).sort().at(-1);
+  const end = [a.effectiveThrough, b.effectiveThrough].filter((d): d is string => !!d).sort()[0];
+  return !start || !end || start <= end;
+}
+
+/**
+ * The one sibling baseline rule (same state, claim type, accrual basis and window event) whose statutory
+ * window covers `date`, when `rule`'s own window does not. Only another *version* qualifies: its window
+ * must not overlap this rule's window, which excludes fact-pattern variants that run alongside the
+ * general rule. Null unless the match is unique, so a user is never steered to a guessed version.
+ */
+export function windowSibling(
+  snapshot: LimitationsSnapshot,
+  rule: LimitationRule,
+  date: string,
+): LimitationRule | null {
+  const windowEvent = rule.calculation?.windowFrom ?? "accrual";
+  const matches = snapshot.rules.filter(
+    (r) =>
+      r.id !== rule.id &&
+      r.jurisdiction === rule.jurisdiction &&
+      r.claimType === rule.claimType &&
+      r.computation === "baseline_only" &&
+      r.accrualBasis === rule.accrualBasis &&
+      (r.calculation?.windowFrom ?? "accrual") === windowEvent &&
+      (r.effectiveFrom !== null || r.effectiveThrough !== null) &&
+      !windowsOverlap(rule, r) &&
+      (r.effectiveFrom === null || r.effectiveFrom <= date) &&
+      (r.effectiveThrough === null || date <= r.effectiveThrough),
+  );
+  return matches.length === 1 ? matches[0]! : null;
+}
+
+/** Fact-pattern key the caller passes as `input.subtype` to select the sibling. */
+const siblingSubtype = (sibling: LimitationRule | null): string | null =>
+  sibling ? (sibling.subtype ?? "general") : null;
+
+function siblingReason(sibling: LimitationRule | null): string[] {
+  if (!sibling) return [];
+  const span =
+    sibling.effectiveFrom && sibling.effectiveThrough
+      ? `${sibling.effectiveFrom} through ${sibling.effectiveThrough}`
+      : sibling.effectiveThrough
+        ? `on or before ${sibling.effectiveThrough}`
+        : `on or after ${sibling.effectiveFrom}`;
+  return [
+    `A separately captured version of this rule covers dates ${span} (${sibling.pinpoint}). Select that fact pattern to calculate under it.`,
+  ];
+}
+
 export function calculateBaseline(
   snapshot: LimitationsSnapshot,
   input: BaselineInput,
 ): BaselineResult {
   const rule = baselineRule(snapshot.rules, input.jurisdiction, input.claimType, input.subtype);
+  let suggestedSubtype: string | null = null;
   const finish = (
     status: BaselineResult["status"],
     reasons: string[],
     date: string | null = null,
-  ): BaselineResult => ({ status, date, rule, reasons, steps: [] });
+  ): BaselineResult => ({ status, date, rule, reasons, steps: [], suggestedSubtype });
   if (!snapshot.coverage.some((c) => c.state === input.jurisdiction))
     return finish("invalid", ["Select one of the 50 states or DC."]);
   if (!rule)
@@ -276,14 +333,19 @@ export function calculateBaseline(
     reasons.push(
       "Post-death knowledge requires separate representative / accrual analysis; this branch does not resolve it.",
     );
-  if (rule.effectiveFrom && trigger < rule.effectiveFrom)
+  if (
+    (rule.effectiveFrom && trigger < rule.effectiveFrom) ||
+    (rule.effectiveThrough && trigger > rule.effectiveThrough)
+  ) {
     reasons.push(
-      `This calculator branch supports trigger dates on or after ${rule.effectiveFrom}. Earlier dates require the historical statute and transition analysis; the current period cannot be applied automatically.`,
+      rule.effectiveFrom && trigger < rule.effectiveFrom
+        ? `This calculator branch supports trigger dates on or after ${rule.effectiveFrom}. Earlier dates require the historical statute and transition analysis; the current period cannot be applied automatically.`
+        : `This calculator branch ends on ${rule.effectiveThrough}. Later dates require a supported statutory version.`,
     );
-  if (rule.effectiveThrough && trigger > rule.effectiveThrough)
-    reasons.push(
-      `This calculator branch ends on ${rule.effectiveThrough}. Later dates require a supported statutory version.`,
-    );
+    const sibling = windowSibling(snapshot, rule, trigger);
+    suggestedSubtype = siblingSubtype(sibling);
+    reasons.push(...siblingReason(sibling));
+  }
   if (rule.calculation?.requiresExposureWithinDeliveryYears) {
     const lastExposure = calendarAnniversary(
       input.firstProductDeliveryDate!,
@@ -408,6 +470,13 @@ const CLOCK_START_LABEL: Record<ReposeClock["from"], string> = {
   substantial_completion: "substantial completion of the improvement",
   first_delivery: "first delivery to a purchaser",
 };
+const LIMB_START_LABEL: Record<PeriodLimb["from"], string> = {
+  accrual: "accrual",
+  discovery: "discovery (earlier of actual and constructive)",
+  injury_date: "injury",
+  death: "death",
+  act_or_omission: "act or omission complained of",
+};
 
 /** Input date that starts a repose clock. */
 function clockStart(input: BaselineInput, from: ReposeClock["from"]): string | undefined {
@@ -421,6 +490,7 @@ function clockStart(input: BaselineInput, from: ReposeClock["from"]): string | u
 function limbStart(input: BaselineInput, from: PeriodLimb["from"]): string | undefined {
   if (from === "death") return input.deathDate;
   if (from === "injury_date") return input.injuryDate;
+  if (from === "act_or_omission") return input.reposeActDate;
   if (from === "discovery") {
     const dates = [input.actualDiscoveryDate, input.constructiveDiscoveryDate];
     return dates.every((d) => d && parseCivilDate(d)) ? (dates as string[]).sort()[0] : undefined;
@@ -438,11 +508,12 @@ function calculateClocks(
   input: BaselineInput,
   rule: LimitationRule,
 ): BaselineResult {
+  let suggestedSubtype: string | null = null;
   const finish = (
     status: BaselineResult["status"],
     reasons: string[],
     date: string | null = null,
-  ): BaselineResult => ({ status, date, rule, reasons, steps: [] });
+  ): BaselineResult => ({ status, date, rule, reasons, steps: [], suggestedSubtype });
   const calc = rule.calculation!;
   const limbs = calc.limbs ?? [];
   const clocks = calc.clocks ?? [];
@@ -455,7 +526,7 @@ function calculateClocks(
         !Number.isSafeInteger(l.amount) ||
         l.amount < 1 ||
         !["calendar_years", "calendar_months", "calendar_days"].includes(l.unit) ||
-        !["accrual", "discovery", "injury_date", "death"].includes(l.from),
+        !PERIOD_LIMB_STARTS.includes(l.from),
     ) ||
     clocks.some(
       (c) =>
@@ -463,10 +534,14 @@ function calculateClocks(
         c.years < 1 ||
         c.years > 100 ||
         !Object.hasOwn(CLOCK_START_LABEL, c.from) ||
-        !parseCivilDate(c.effectiveFrom) ||
+        (c.effectiveFrom === null
+          ? c.startBasis !== "not_recorded"
+          : !parseCivilDate(c.effectiveFrom)) ||
         (c.effectiveThrough !== undefined &&
-          (!parseCivilDate(c.effectiveThrough) || c.effectiveFrom > c.effectiveThrough)),
+          (!parseCivilDate(c.effectiveThrough) ||
+            (c.effectiveFrom !== null && c.effectiveFrom > c.effectiveThrough))),
     ) ||
+    (calc.windowFrom !== undefined && !limbs.some((l) => l.from === calc.windowFrom)) ||
     calc.deathCapYears !== undefined ||
     calc.secondaryCapYears !== undefined ||
     calc.requiresExposureWithinDeliveryYears !== undefined ||
@@ -531,7 +606,7 @@ function calculateClocks(
   const latestStart = [...(limbDates as string[])].sort().at(-1)!;
   clocks.forEach((c, i) => {
     const start = clockDates[i]!;
-    if (start < c.effectiveFrom)
+    if (c.effectiveFrom !== null && start < c.effectiveFrom)
       reasons.push(
         `The ${CLOCK_START_LABEL[c.from]} (${start}) predates ${c.effectiveFrom}, the supported historical start of this repose rule. Review the earlier statutory version and transition before calculating.`,
       );
@@ -544,14 +619,28 @@ function calculateClocks(
         `The ${CLOCK_START_LABEL[c.from]} follows the confirmed accrual or discovery date. Review the chronology; a later event does not restart repose.`,
       );
   });
-  if (rule.effectiveFrom && earliestStart < rule.effectiveFrom)
+  // The historical window is tested against the event the statute itself uses to define its reach when the
+  // rule names one (`windowFrom`); otherwise every limb start must fall inside it.
+  const windowIndex = calc.windowFrom ? limbs.findIndex((l) => l.from === calc.windowFrom) : -1;
+  const windowEarliest = windowIndex >= 0 ? limbDates[windowIndex]! : earliestStart;
+  const windowLatest = windowIndex >= 0 ? limbDates[windowIndex]! : latestStart;
+  const windowLabel = windowIndex >= 0 ? LIMB_START_LABEL[limbs[windowIndex]!.from] : "trigger";
+  const beforeWindow = Boolean(rule.effectiveFrom && windowEarliest < rule.effectiveFrom);
+  const afterWindow = Boolean(rule.effectiveThrough && windowLatest > rule.effectiveThrough);
+  if (beforeWindow)
     reasons.push(
-      `This calculator branch supports trigger dates on or after ${rule.effectiveFrom}. Earlier dates require the historical statute and transition analysis.`,
+      `This calculator branch supports ${windowLabel} dates on or after ${rule.effectiveFrom}. Earlier dates require the historical statute and transition analysis.`,
     );
-  if (rule.effectiveThrough && latestStart > rule.effectiveThrough)
+  if (afterWindow)
     reasons.push(
-      `This calculator branch ends on ${rule.effectiveThrough}. Later dates require a supported statutory version.`,
+      `This calculator branch ends on ${rule.effectiveThrough} (${windowLabel} date). Later dates require a supported statutory version.`,
     );
+  // Only a single out-of-window date can name a sibling version; a span straddling both ends cannot.
+  if (beforeWindow !== afterWindow) {
+    const sibling = windowSibling(snapshot, rule, beforeWindow ? windowEarliest : windowLatest);
+    suggestedSubtype = siblingSubtype(sibling);
+    reasons.push(...siblingReason(sibling));
+  }
   if (reasons.length) return finish("needs_review", reasons);
 
   const limbEnds = limbs.map((l, i) => addCivilPeriod(limbDates[i]!, l.amount, l.unit));
@@ -580,7 +669,7 @@ function calculateClocks(
   const limbText = limbs
     .map(
       (l, i) =>
-        `${periodLabel({ amount: l.amount, unit: l.unit })} from ${l.from.replaceAll("_", " ")} (${limbDates[i]}) = ${ends[i]}`,
+        `${periodLabel({ amount: l.amount, unit: l.unit })} from ${LIMB_START_LABEL[l.from]} (${limbDates[i]}) = ${ends[i]}`,
     )
     .join(calc.combine === "later" ? "; the later of: " : "; the earlier of: ");
   const sources = { sourceIds: rule.sourceIds, pinpoint: rule.pinpoint };
@@ -592,6 +681,7 @@ function calculateClocks(
     (weekday === 6 || weekday === 0)
       ? nextWeekday(date)
       : null;
+  const undatedClocks = clocks.filter((c) => c.effectiveFrom === null);
   return {
     status: "baseline",
     date,
@@ -599,7 +689,14 @@ function calculateClocks(
       ? { date: rolled, citation: timeRule!.citation, holidaysComputed: false }
       : null,
     rule,
-    reasons: [...rule.warnings],
+    reasons: [
+      ...rule.warnings,
+      ...(undatedClocks.length
+        ? [
+            `The captured text does not print the date the ${undatedClocks.length === 1 ? "outer limit" : "outer limits"} took effect; the current bar was applied to the entered dates. For conduct before the current statutory version, confirm the historical outer limit.`,
+          ]
+        : []),
+    ],
     steps: [
       {
         text:
@@ -609,7 +706,7 @@ function calculateClocks(
         ...sources,
       },
       ...clocks.map((c, i) => ({
-        text: `Repose: ${c.years} calendar years from the ${CLOCK_START_LABEL[c.from]} (${clockDates[i]}) is ${caps[i]}.`,
+        text: `Repose: ${c.years} calendar years from the ${CLOCK_START_LABEL[c.from]} (${clockDates[i]}) is ${caps[i]}${c.effectiveFrom === null ? " (start date of this bar not printed in the captured text; applied as current law)" : ""}.`,
         ...sources,
       })),
       {

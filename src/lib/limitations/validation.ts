@@ -1,11 +1,16 @@
 import {
   CLAIM_TYPES,
+  PERIOD_LIMB_STARTS,
+  RULE_CORRECTION_FIELDS,
+  RULE_CURRENCY_STATUSES,
+  SOURCE_CURRENCY_STATUSES,
   VERIFICATION_GRADES,
   type CoverageRow,
   type JudicialReference,
   type LimitationRule,
   type LimitationSource,
   type LimitationsSnapshot,
+  type RuleCorrectionField,
   LIMITATION_SOURCE_AUTHORITY_KINDS,
 } from "./types";
 
@@ -204,7 +209,10 @@ type KnownField =
   | "periodEvidence"
   | "accrualText"
   | "confidenceNote"
-  | "claimType";
+  | "claimType"
+  | "corrections"
+  | "startBasis"
+  | "windowFrom";
 type UnknownRecord = Record<string, unknown> & Partial<Record<KnownField, unknown>>;
 
 function record(value: unknown, label: string): UnknownRecord {
@@ -405,12 +413,46 @@ function validateRules(values: unknown): LimitationRule[] {
     )
       fail(`${label} has an inverted effective window`);
     if (r.caseReferenceIds !== undefined) strings(r.caseReferenceIds, `${label}.caseReferenceIds`);
+    if (r["corrections"] !== undefined) {
+      if (!Array.isArray(r["corrections"]) || !r["corrections"].length)
+        fail(`${label}.corrections must be a non-empty array when present`);
+      for (const [i, item] of (r["corrections"] as unknown[]).entries()) {
+        const c = record(item, `${label}.corrections[${i}]`);
+        string(c["appliedInVersion"], `${label}.corrections[${i}].appliedInVersion`);
+        if (!RULE_CORRECTION_FIELDS.includes(c["field"] as RuleCorrectionField))
+          fail(`${label}.corrections[${i}] changes an unsupported field`);
+        if (!("from" in c) || !("to" in c)) fail(`${label}.corrections[${i}] lacks from/to`);
+        string(c["reason"], `${label}.corrections[${i}].reason`);
+        string(c["evidenceSourceId"], `${label}.corrections[${i}].evidenceSourceId`);
+        string(c["evidenceQuote"], `${label}.corrections[${i}].evidenceQuote`);
+        if (c["note"] !== undefined) {
+          string(c["note"], `${label}.corrections[${i}].note`);
+          if (!(r.conditions as string[]).includes(c["note"] as string))
+            fail(`${label}.corrections[${i}] carries a note the rule's conditions no longer contain`);
+        }
+        if (!(r.sourceIds as string[]).includes(c["evidenceSourceId"] as string))
+          fail(`${label}.corrections[${i}] cites a source the rule does not link`);
+      }
+    }
     if (r.provenance !== undefined) validateProvenance(r.provenance, label);
     if (r["verification"] !== undefined) {
       const v = record(r["verification"], `${label}.verification`);
       if (!VERIFICATION_GRADES.includes(v["grade"] as (typeof VERIFICATION_GRADES)[number]))
         fail(`${label}.verification has an unsupported grade`);
       string(v["basis"], `${label}.verification.basis`);
+    }
+    if (r["currency"] !== undefined) {
+      const c = record(r["currency"], `${label}.currency`);
+      timestamp(c["checkedAt"], `${label}.currency.checkedAt`);
+      if (!RULE_CURRENCY_STATUSES.includes(c["status"] as (typeof RULE_CURRENCY_STATUSES)[number]))
+        fail(`${label}.currency has an unsupported status`);
+      string(c["detail"], `${label}.currency.detail`);
+      for (const field of ["confirmedSourceIds", "uncheckedSourceIds", "lostSourceIds"])
+        strings(c[field], `${label}.currency.${field}`);
+      if (c["status"] === "evidence_lost" && r.computation === "baseline_only")
+        fail(`${label} computes although its evidence was lost on recheck`);
+      if (c["status"] === "evidence_lost" && !(c["lostSourceIds"] as string[]).length)
+        fail(`${label}.currency reports lost evidence without naming a source`);
     }
     if (r.subtype !== undefined) string(r.subtype, `${label}.subtype`);
     if (r.calculation !== undefined) {
@@ -437,7 +479,7 @@ function validateRules(values: unknown): LimitationRule[] {
             !["calendar_years", "calendar_months", "calendar_days"].includes(limb["unit"] as string)
           )
             fail(`${label}.calculation.limbs[${i}] has an unsupported unit`);
-          if (!["accrual", "discovery", "injury_date", "death"].includes(limb["from"] as string))
+          if (!PERIOD_LIMB_STARTS.includes(limb["from"] as (typeof PERIOD_LIMB_STARTS)[number]))
             fail(`${label}.calculation.limbs[${i}] has an unsupported start`);
         }
         if (
@@ -445,6 +487,11 @@ function validateRules(values: unknown): LimitationRule[] {
           !["earlier", "later"].includes(calculation["combine"] as string)
         )
           fail(`${label} has two period limbs without an earlier/later rule`);
+        if (
+          calculation["windowFrom"] !== undefined &&
+          !(limbs as { from?: unknown }[]).some((l) => l.from === calculation["windowFrom"])
+        )
+          fail(`${label}.calculation.windowFrom is not the start of a listed limb`);
         for (const [i, item] of (clocks as unknown[]).entries()) {
           const clock = record(item, `${label}.calculation.clocks[${i}]`);
           positiveInteger(clock["years"], `${label}.calculation.clocks[${i}].years`, 100);
@@ -458,13 +505,29 @@ function validateRules(values: unknown): LimitationRule[] {
             ].includes(clock["from"] as string)
           )
             fail(`${label}.calculation.clocks[${i}] has an unsupported start`);
-          civilDate(clock["effectiveFrom"], `${label}.calculation.clocks[${i}].effectiveFrom`);
+          if (clock["effectiveFrom"] === null) {
+            // A bar without a printed start date must say so explicitly; it is never silently open-ended.
+            if (clock["startBasis"] !== "not_recorded")
+              fail(
+                `${label}.calculation.clocks[${i}] has no effectiveFrom and does not declare startBasis "not_recorded"`,
+              );
+          } else {
+            civilDate(clock["effectiveFrom"], `${label}.calculation.clocks[${i}].effectiveFrom`);
+            if (
+              clock["startBasis"] !== undefined &&
+              clock["startBasis"] !== "printed_effective_date"
+            )
+              fail(`${label}.calculation.clocks[${i}] has a dated start with a contradictory basis`);
+          }
           if (clock["effectiveThrough"] !== undefined) {
             civilDate(
               clock["effectiveThrough"],
               `${label}.calculation.clocks[${i}].effectiveThrough`,
             );
-            if ((clock["effectiveFrom"] as string) > (clock["effectiveThrough"] as string))
+            if (
+              clock["effectiveFrom"] !== null &&
+              (clock["effectiveFrom"] as string) > (clock["effectiveThrough"] as string)
+            )
               fail(`${label} has a reversed repose applicability window`);
           }
         }
@@ -577,6 +640,42 @@ function validateSources(values: unknown): LimitationSource[] {
         !["firecrawl", "tavily"].includes(route["proxy"] as string)
       )
         fail(`${label}.fetchRoute names an unsupported proxy`);
+    }
+    if (s["currency"] !== undefined) {
+      const c = record(s["currency"], `${label}.currency`);
+      timestamp(c["checkedAt"], `${label}.currency.checkedAt`);
+      if (
+        !SOURCE_CURRENCY_STATUSES.includes(
+          c["status"] as (typeof SOURCE_CURRENCY_STATUSES)[number],
+        )
+      )
+        fail(`${label}.currency has an unsupported status`);
+      if (!["direct", "official_code_capture", "none"].includes(c["route"] as string))
+        fail(`${label}.currency has an unsupported route`);
+      string(c["detail"], `${label}.currency.detail`);
+      if (c["route"] === "none" && c["status"] !== "not_rechecked")
+        fail(`${label}.currency claims a result without a fresh copy`);
+      if (c["rawSha256"] !== undefined) digest(c["rawSha256"], `${label}.currency.rawSha256`);
+      if (c["textSha256"] !== undefined) digest(c["textSha256"], `${label}.currency.textSha256`);
+      if (c["httpStatus"] !== undefined) positiveInteger(c["httpStatus"], `${label}.currency.httpStatus`, 599);
+      if (c["rawStorageKey"] !== undefined) string(c["rawStorageKey"], `${label}.currency.rawStorageKey`);
+      if (c["freshTextPath"] !== undefined) textPath(c["freshTextPath"], `${label}.currency.freshTextPath`);
+      if (c["route"] === "official_code_capture") {
+        if (c["status"] === "confirmed_unchanged")
+          fail(`${label}.currency: a code-capture recheck cannot claim a byte-identical page`);
+        const cc = record(c["codeCapture"], `${label}.currency.codeCapture`);
+        string(cc["jurisdiction"], `${label}.currency.codeCapture.jurisdiction`);
+        string(cc["publisher"], `${label}.currency.codeCapture.publisher`);
+        if (cc["runId"] !== null) string(cc["runId"], `${label}.currency.codeCapture.runId`);
+        if (cc["manifestSha256"] !== null)
+          digest(cc["manifestSha256"], `${label}.currency.codeCapture.manifestSha256`);
+        if (cc["landedAt"] !== null) timestamp(cc["landedAt"], `${label}.currency.codeCapture.landedAt`);
+        strings(cc["sectionNativeIds"], `${label}.currency.codeCapture.sectionNativeIds`);
+        if (!cc["sectionNativeIds"].length) fail(`${label}.currency.codeCapture names no section`);
+        strings(cc["sourceUrls"], `${label}.currency.codeCapture.sourceUrls`);
+      } else if (c["codeCapture"] !== undefined) {
+        fail(`${label}.currency carries code-capture provenance on a ${String(c["route"])} route`);
+      }
     }
     if (ids.has(s.id as string)) fail(`duplicate source ID ${String(s.id)}`);
     if (paths.has(s.textPath as string)) fail(`duplicate source text path ${String(s.textPath)}`);

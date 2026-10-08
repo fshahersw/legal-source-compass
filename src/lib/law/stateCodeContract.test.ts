@@ -6,6 +6,7 @@ import {
   parseFullCode,
   parseHierarchyPath,
   projectedCurrency,
+  publisherStatement,
   projectedEdition,
   publishedSectionBody,
   sectionFieldsFromRecord,
@@ -192,6 +193,34 @@ describe("full state code contract", () => {
     expect(fields.status).toBeNull();
   });
 
+  it("shows a stored HTML revised stamp as the publisher's own stamp, never as markup", () => {
+    const fields = sectionFieldsFromRecord({
+      title: "42 Pa.C.S. § 5524",
+      source_url: "https://www.palegis.us/statutes/consolidated/view-statute?50&ttl=42",
+      detail: {
+        citation: "42 Pa.C.S. § 5524",
+        heading: "Two year limitation.",
+        text: "§ 5524. Two year limitation.",
+        history: null,
+        status_note: null,
+        currency: {
+          basis: "publisher_metadata",
+          edition: null,
+          statement: '<meta name="revised" content="2026-09-16 10:42:58 AM">',
+          through_date: null,
+        },
+      },
+    });
+    expect(fields.currency).toBe("Publisher page revised stamp: 2026-09-16 10:42:58 AM");
+    expect(publisherStatement("Current through the 2025 Regular Session")).toBe(
+      "Current through the 2025 Regular Session",
+    );
+    expect(publisherStatement('<meta name="revised" content="">')).toBe(
+      '<meta name="revised" content="">',
+    );
+    expect(publisherStatement(null)).toBeNull();
+  });
+
   it("keeps a repealed publisher status line as the text", () => {
     const fields = sectionFieldsFromRecord({
       title: "§12-1704.01",
@@ -264,5 +293,25 @@ describe("full state code contract", () => {
     ).toBe(true);
     expect(matchesCitationOrHeading("z", "CP:140.001", "Definitions")).toBe(false);
     expect(matchesCitationOrHeading("nope", "CP:140.001", "Definitions")).toBe(false);
+  });
+});
+
+describe("sectionHierarchy", () => {
+  it("keeps the stored steps in order, drops the section row and stops at a malformed entry", async () => {
+    const { sectionHierarchy } = await import("./stateCodeContract");
+    expect(
+      sectionHierarchy([
+        { level: "title", number: "42", heading: "JUDICIARY AND JUDICIAL PROCEDURE" },
+        { level: "chapter", number: 55, heading: "" },
+        { level: "section", number: "5524", heading: "Two year limitation." },
+      ]),
+    ).toEqual([
+      { level: "title", number: "42", heading: "JUDICIARY AND JUDICIAL PROCEDURE" },
+      { level: "chapter", number: "55", heading: null },
+    ]);
+    expect(sectionHierarchy([{ level: "title", number: "1" }, "bad", { level: "part", number: "I" }])).toEqual([
+      { level: "title", number: "1", heading: null },
+    ]);
+    expect(sectionHierarchy(null)).toEqual([]);
   });
 });

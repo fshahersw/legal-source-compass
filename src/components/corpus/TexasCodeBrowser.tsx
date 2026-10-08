@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { SectionReadout } from "@/components/corpus/SectionReadout";
+import { SectionTools } from "@/components/corpus/SectionTools";
 import { searchStateCodes } from "@/lib/law/stateCode.functions";
 import { showRecorded, type SectionFields } from "@/lib/law/stateCodeContract";
 import {
@@ -488,10 +489,19 @@ export function TexasCodeBrowser({
                         {excerptError}
                       </p>
                     ) : excerpt ? (
-                      <SectionReadout
-                        fields={sectionFields(selectedSection, editionText, currency)}
-                        text={excerpt}
-                      />
+                      <div className="space-y-4">
+                        <SectionTools
+                          fields={{
+                            ...sectionFields(selectedSection, editionText, currency),
+                            text: excerpt,
+                          }}
+                          state={state}
+                        />
+                        <SectionReadout
+                          fields={sectionFields(selectedSection, editionText, currency)}
+                          text={excerpt}
+                        />
+                      </div>
                     ) : (
                       <p className="text-sm text-muted-foreground">
                         Verifying selected section text…
