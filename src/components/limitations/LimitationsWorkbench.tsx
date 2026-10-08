@@ -1052,9 +1052,9 @@ export function LimitationsWorkbench({
                           <p className="mt-1">
                             {stateName}&rsquo;s recorded counting rule,{" "}
                             <StatuteCitation state={state} citation={result.weekendNotice.citation} />,{" "}
-                            {result.weekendNotice.extendsWhenLastDayIsWeekend
+                            {result.weekendNotice.ruleStatus === "flagged"
                               ? "is on file but flagged, so it was not applied: "
-                              : "does not reach a last day on this weekday as captured: "}
+                              : "does not extend a last day that falls on a Saturday or Sunday: "}
                             {result.weekendNotice.note}
                           </p>
                           <p className="mt-1 text-muted-foreground">

@@ -361,6 +361,7 @@ describe("weekend extension from a recorded state counting rule", () => {
     expect(result.weekendNotice).toEqual({
       kind: "flagged_rule",
       weekday: "Saturday",
+      ruleStatus: "flagged",
       citation: "Test Code § 16.072",
       note: "test",
       extendsWhenLastDayIsWeekend: true,
@@ -374,6 +375,7 @@ describe("weekend extension from a recorded state counting rule", () => {
     expect(result.weekendNotice).toMatchObject({
       kind: "flagged_rule",
       weekday: "Saturday",
+      ruleStatus: "verified",
       extendsWhenLastDayIsWeekend: false,
     });
     expect(result.steps.at(-1)?.text).toContain("does not extend a last day that falls on a Saturday");

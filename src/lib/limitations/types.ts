@@ -553,6 +553,8 @@ export type WeekendNotice =
   | {
       kind: "flagged_rule";
       weekday: "Saturday" | "Sunday";
+      /** "flagged": on file but not applied; "verified": applied, but it does not extend weekends. */
+      ruleStatus: "verified" | "flagged";
       citation: string;
       note: string;
       extendsWhenLastDayIsWeekend: boolean;

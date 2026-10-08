@@ -133,6 +133,7 @@ export function weekendTreatment(
       {
         kind: "flagged_rule",
         weekday: weekdayName,
+        ruleStatus: timeRule.status,
         citation: timeRule.citation,
         note: timeRule.note,
         extendsWhenLastDayIsWeekend: timeRule.extendsWhenLastDayIsWeekend,
