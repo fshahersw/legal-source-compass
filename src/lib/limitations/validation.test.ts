@@ -55,6 +55,110 @@ describe("limitations snapshot validation", () => {
     );
   });
 
+  it("accepts a passage-level proxy comparison only beside a non-proxied verdict that names its retained bytes", () => {
+    const sha = "1cad99be369839b9cc1f4fcca7019f03c21025e37afc10ff1ffc788bc50dae36";
+    const passageRecheck = {
+      checkedAt: "2026-10-08T13:20:00.000Z",
+      route: "proxied",
+      proxy: "tavily",
+      rawSha256: sha,
+      rawStorageKey: `limitations-raw-captures/sha256/1c/${sha}.bin`,
+      passages: 22,
+      detail: "every passage present in the proxy's extracted text; response retained",
+    };
+    const ok = clone(fixture());
+    const sources = ok.sources["sources"] as TestRecord[];
+    const direct = sources.find((s) => (s["currency"] as TestRecord | undefined)?.["route"] === "direct")!;
+    (direct["currency"] as TestRecord)["passageRecheck"] = passageRecheck;
+    expect(() => validateLimitationsSnapshot(ok)).not.toThrow();
+
+    const wrongKey = clone(ok);
+    const wk = (wrongKey.sources["sources"] as TestRecord[]).find((s) => s["id"] === direct["id"])!;
+    ((wk["currency"] as TestRecord)["passageRecheck"] as TestRecord)["rawStorageKey"] =
+      "limitations-raw-captures/sha256/1c/other.bin";
+    expect(() => validateLimitationsSnapshot(wrongKey)).toThrow(/does not address its own rawSha256/);
+
+    const onProxied = clone(fixture());
+    const proxied = (onProxied.sources["sources"] as TestRecord[]).find(
+      (s) => (s["currency"] as TestRecord | undefined)?.["route"] === "proxied",
+    );
+    if (proxied) {
+      (proxied["currency"] as TestRecord)["passageRecheck"] = passageRecheck;
+      expect(() => validateLimitationsSnapshot(onProxied)).toThrow(/duplicates a proxied page-level verdict/);
+    }
+
+    const noPassages = clone(ok);
+    const np = (noPassages.sources["sources"] as TestRecord[]).find((s) => s["id"] === direct["id"])!;
+    ((np["currency"] as TestRecord)["passageRecheck"] as TestRecord)["passages"] = 0;
+    expect(() => validateLimitationsSnapshot(noPassages)).toThrow(/passages/);
+  });
+
+  it("accepts a composite verdict only as a direct evidence-intact verdict naming other existing sources", () => {
+    const ok = clone(fixture());
+    const sources = ok.sources["sources"] as TestRecord[];
+    const [a, b] = sources;
+    if (!a || !b) return;
+    a["currency"] = {
+      checkedAt: "2026-10-08T15:20:00.000Z",
+      status: "confirmed_evidence_intact",
+      route: "direct",
+      componentSourceIds: [b["id"]],
+      detail: "concatenation; verdict derived from the component page's text-identical re-read",
+    };
+    expect(() => validateLimitationsSnapshot(ok)).not.toThrow();
+
+    const self = clone(ok);
+    ((self.sources["sources"] as TestRecord[])[0]!["currency"] as TestRecord)["componentSourceIds"] = [a["id"]];
+    expect(() => validateLimitationsSnapshot(self)).toThrow(/names the composite itself/);
+
+    const missing = clone(ok);
+    ((missing.sources["sources"] as TestRecord[])[0]!["currency"] as TestRecord)["componentSourceIds"] = ["no-such-source"];
+    expect(() => validateLimitationsSnapshot(missing)).toThrow(/missing component source/);
+
+    const unchanged = clone(ok);
+    ((unchanged.sources["sources"] as TestRecord[])[0]!["currency"] as TestRecord)["status"] = "confirmed_unchanged";
+    expect(() => validateLimitationsSnapshot(unchanged)).toThrow(/composite verdict must be a direct-route evidence-intact verdict/);
+
+    const empty = clone(ok);
+    ((empty.sources["sources"] as TestRecord[])[0]!["currency"] as TestRecord)["componentSourceIds"] = [];
+    expect(() => validateLimitationsSnapshot(empty)).toThrow(/names no component/);
+  });
+
+  it("accepts a cross-reference link only for an existing note, in the rule's own state, with a term check that follows from its terms", () => {
+    const ok = clone(fixture());
+    const rules = ok.rules["rules"] as TestRecord[];
+    const rule = rules.find((r) => ((r["provenance"] as TestRecord | undefined)?.["tolling"] as unknown[] | undefined)?.length)!;
+    const note = ((rule["provenance"] as TestRecord)["tolling"] as TestRecord[])[0]!;
+    const link = {
+      kind: "tolling",
+      index: 0,
+      citation: note["citation"],
+      checkedAt: "2026-10-08T16:00:00.000Z",
+      sectionsNamed: 1,
+      sections: [{ nativeId: `${rule["jurisdiction"]}:1-1`, textSha256: "ab".repeat(32) }],
+      termCheck: "all_present",
+      terms: [{ term: "1 year", found: true }],
+      intakeRunId: null,
+    };
+    rule["crossReferenceLinks"] = [link];
+    expect(() => validateLimitationsSnapshot(ok)).not.toThrow();
+
+    const variant = (patch: (l: TestRecord) => void) => {
+      const copy = clone(ok);
+      const r = (copy.rules["rules"] as TestRecord[]).find((x) => x["id"] === rule["id"])!;
+      patch((r["crossReferenceLinks"] as TestRecord[])[0]!);
+      return copy;
+    };
+    expect(() => validateLimitationsSnapshot(variant((l) => (l["citation"] = "§ 0-0 (not the note's)")))).toThrow(/does not match the note/);
+    expect(() => validateLimitationsSnapshot(variant((l) => (l["index"] = 99)))).toThrow(/names no tolling note/);
+    expect(() => validateLimitationsSnapshot(variant((l) => (l["termCheck"] = "not_all_present")))).toThrow(/does not follow from its terms/);
+    expect(() => validateLimitationsSnapshot(variant((l) => ((l["sections"] as TestRecord[])[0]!["nativeId"] = "ZZ:1-1")))).toThrow(
+      /outside the rule's jurisdiction/,
+    );
+    expect(() => validateLimitationsSnapshot(variant((l) => (l["sections"] = [])))).toThrow(/names no section/);
+    expect(() => validateLimitationsSnapshot(variant((l) => (l["sectionsNamed"] = 0)))).toThrow(/sectionsNamed/);
+  });
+
   it("rejects unsafe URLs, malformed evidence hashes, and paths outside the snapshot namespace", () => {
     const unsafeUrl = clone(fixture());
     const sources = unsafeUrl.sources["sources"] as TestRecord[];

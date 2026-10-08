@@ -11,7 +11,7 @@ import {
   periodLabel,
   sourceReviewDate,
 } from "@/lib/limitations/engine";
-import { NOT_RECORDED, ruleAuthorityFacts, sourceCurrencyFacts } from "./ruleAuthority";
+import { NOT_RECORDED, ruleAuthorityFacts, sourceCurrencyFacts, type CrossReferenceFacts, sectionLabel } from "./ruleAuthority";
 import { StatuteCitation } from "./StatuteCitation";
 import { StateStatutePanel } from "./StateStatutePanel";
 import {
@@ -162,7 +162,7 @@ function Authority({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule: Li
         <dd>{facts.retrieved}</dd>
         {facts.entryStatus !== "legacy" && (
           <>
-            <dt className="font-medium">Accrual</dt>
+            <dt className="font-medium">{facts.accrualLabel}</dt>
             <dd>{facts.accrual}</dd>
             <dt className="font-medium">Verification</dt>
             <dd>
@@ -180,17 +180,27 @@ function Authority({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule: Li
         </blockquote>
       )}
       {facts.repose.length > 0 && (
-        <p className="mt-2">
-          <span className="font-medium">Statute of repose: </span>
-          {facts.repose.join("; ")}
-        </p>
+        <div className="mt-2">
+          <p className="font-medium">Statute of repose</p>
+          <ul className="list-disc pl-5">
+            {facts.repose.map((item, index) => (
+              <li key={item}>
+                {item}
+                <CrossReferenceNote link={facts.reposeLinks[index] ?? null} />
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
       {facts.tolling.length > 0 && (
         <div className="mt-2">
           <p className="font-medium">Statutory tolling (not applied by the calculator)</p>
           <ul className="list-disc pl-5">
-            {facts.tolling.map((item) => (
-              <li key={item}>{item}</li>
+            {facts.tolling.map((item, index) => (
+              <li key={item}>
+                {item}
+                <CrossReferenceNote link={facts.tollingLinks[index] ?? null} />
+              </li>
             ))}
           </ul>
         </div>
@@ -205,7 +215,50 @@ function Authority({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule: Li
           </ul>
         </div>
       )}
+      {facts.history.length > 0 && (
+        <div className="mt-2" data-testid="rule-history">
+          <p className="font-medium">Change history</p>
+          <ul className="list-disc pl-5">
+            {facts.history.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
+  );
+}
+
+/**
+ * Where a tolling / repose note's cited section is held in the corpus, and whether the note's periods are
+ * printed there. Rendered only when the release carries a link for the note; nothing is inferred otherwise.
+ */
+function CrossReferenceNote({ link }: { link: CrossReferenceFacts | null }) {
+  if (!link) return null;
+  const tone =
+    link.termCheck === "all_present"
+      ? "border-primary/40 text-primary"
+      : link.termCheck === "not_all_present"
+        ? "border-destructive/50 text-destructive"
+        : "border-border text-muted-foreground";
+  return (
+    <span className="ml-1 inline-flex flex-wrap items-center gap-1 align-baseline text-xs" data-testid="cross-reference">
+      <span className={`inline-block rounded border px-1.5 py-0.5 ${tone}`} title={link.detail}>
+        {link.label}
+      </span>
+      {link.sectionIds.map((nativeId) => (
+        <Link
+          key={nativeId}
+          to="/law/codes/$state"
+          params={{ state: link.state }}
+          search={{ section: nativeId }}
+          className="text-primary underline"
+          title={`Open ${nativeId.slice(nativeId.indexOf(":") + 1)} in the state code reader`}
+        >
+          {sectionLabel(nativeId)}
+        </Link>
+      ))}
+    </span>
   );
 }
 
@@ -986,6 +1039,46 @@ export function LimitationsWorkbench({
                             {formatCivilDate(result.adjustedDate.date)}
                           </time>
                           . Legal holidays are not computed.
+                        </div>
+                      )}
+                      {result.weekendNotice?.kind === "flagged_rule" && (
+                        <div
+                          className="rounded-md border border-warning/60 bg-warning/10 p-2"
+                          data-testid="weekend-notice-flagged"
+                        >
+                          <p className="font-medium">
+                            This date falls on a {result.weekendNotice.weekday}. It is shown unadjusted.
+                          </p>
+                          <p className="mt-1">
+                            {stateName}&rsquo;s recorded counting rule,{" "}
+                            <StatuteCitation state={state} citation={result.weekendNotice.citation} />,{" "}
+                            {result.weekendNotice.extendsWhenLastDayIsWeekend
+                              ? "is on file but flagged, so it was not applied: "
+                              : "does not reach a last day on this weekday as captured: "}
+                            {result.weekendNotice.note}
+                          </p>
+                          <p className="mt-1 text-muted-foreground">
+                            Confirm the rule&rsquo;s reach to limitation periods before relying on an
+                            extension; legal holidays are not computed.
+                          </p>
+                        </div>
+                      )}
+                      {result.weekendNotice?.kind === "no_rule" && (
+                        <div
+                          className="rounded-md border border-warning/60 bg-warning/10 p-2"
+                          data-testid="weekend-notice-none"
+                        >
+                          <p className="font-medium">
+                            This date falls on a {result.weekendNotice.weekday}. It is shown unadjusted.
+                          </p>
+                          <p className="mt-1">
+                            No last-day counting rule is recorded for {stateName}
+                            {result.weekendNotice.reason ? `: ${result.weekendNotice.reason}` : "."}
+                          </p>
+                          <p className="mt-1 text-muted-foreground">
+                            Check the state&rsquo;s own statute or court rule on last days that fall on a
+                            weekend or legal holiday before relying on any extension.
+                          </p>
                         </div>
                       )}
                     </div>

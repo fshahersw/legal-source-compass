@@ -354,6 +354,11 @@ export type TimeRuleInput = {
   excerpt: string;
   evidence: string;
   captureId: string;
+  /**
+   * Further official captures the rule's reading relies on (a holiday-definition section, a companion
+   * statute). Each quoted passage must be a literal substring of its capture; they become extra sources.
+   */
+  supporting?: { captureId: string; citation: string; excerpt: string }[];
   extendsWhenLastDayIsWeekend: boolean | null;
   extendsWhenLastDayIsHoliday: boolean | null;
   confidence: string;
@@ -372,7 +377,8 @@ export function checkTimeRule(
   const err = (message: string) => out.push({ level: "error", message });
   if (!(ENTRY_STATUSES as readonly string[]).includes(rule.status)) err("invalid status");
   if (rule.status === "not_recorded") {
-    if (!rule.notRecordedReason?.trim()) err("not_recorded needs notRecordedReason");
+    if (!rule.notRecordedReason?.trim() || rule.notRecordedReason.trim().length < 20)
+      err("not_recorded needs a notRecordedReason that says why no rule could be recorded");
     return out;
   }
   if (!rule.citation?.trim()) err("citation is required");
@@ -390,5 +396,18 @@ export function checkTimeRule(
     err("excerpt is not a literal substring of the capture text");
   if (!containsLiteral(rule.excerpt, rule.evidence))
     err("evidence is not a literal substring of the excerpt");
+  for (const s of rule.supporting ?? []) {
+    const cap = lookup(s.captureId);
+    if (!cap) {
+      err(`supporting capture ${s.captureId} not found`);
+      continue;
+    }
+    if (s.captureId === rule.captureId) err(`supporting capture ${s.captureId} repeats the main capture`);
+    if (cap.meta.state !== jurisdiction) err(`supporting capture ${s.captureId} belongs to another jurisdiction`);
+    if (cap.meta.hostClass === "blocked_secondary") err(`supporting capture ${s.captureId} is a secondary source`);
+    if (!s.citation?.trim()) err(`supporting capture ${s.captureId} needs a citation`);
+    if (!s.excerpt?.trim() || !containsLiteral(cap.text, s.excerpt))
+      err(`supporting excerpt for ${s.captureId} is not a literal substring of its capture text`);
+  }
   return out;
 }
