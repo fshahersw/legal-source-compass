@@ -329,6 +329,30 @@ def live_pa_section_row(body, url, section):
     return {"text": "\n".join(lines), "heading": section.get("heading")}
 
 
+def live_co_section_row(body, url, section, unit=None):
+    """Re-parse one Colorado CRS or constitution section from an olls.info title HTM file."""
+    if "olls.info/crs" not in (url or ""):
+        return None
+    raw = body if isinstance(body, bytes) else body.encode("utf-8", "replace")
+    co_dir = os.path.join(HERE, "..", "co")
+    if co_dir not in sys.path:
+        sys.path.insert(0, co_dir)
+    from review_region import section_row_from_title_html  # noqa: WPS433
+    return section_row_from_title_html(raw, url, section["citation_path"], section)
+
+
+def live_ri_section_row(body, url, section, unit=None):
+    """Re-parse one Rhode Island Gen. Laws section page."""
+    if "rilegislature.gov" not in (url or ""):
+        return None
+    raw = body if isinstance(body, bytes) else body.encode("utf-8", "replace")
+    ri_dir = os.path.join(HERE, "..", "b4", "ri")
+    if ri_dir not in sys.path:
+        sys.path.insert(0, ri_dir)
+    from review_region import section_row_from_html  # noqa: WPS433
+    return section_row_from_html(raw, url, section["citation_path"], section)
+
+
 def live_hi_section_row(body, url, section):
     """Re-parse Hawaii HRS section HTML with the same parser as landing."""
     html = body.decode("utf-8", "replace") if isinstance(body, bytes) else body
@@ -1097,6 +1121,8 @@ def main():
                 or live_in_section_row(live_raw, live_url, s, u)
                 or live_mi_section_row(live_raw, live_url, s, u)
                 or live_pa_section_row(live_raw, live_url, s)
+                or live_co_section_row(live_raw, live_url, s, u)
+                or live_ri_section_row(live_raw, live_url, s, u)
                 or live_vt_section_row(live_raw, live_url, s, u.get("source_url"))
                 or live_ut_section_row(live_raw, live_url, s)
                 or (
