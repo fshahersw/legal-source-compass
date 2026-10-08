@@ -230,7 +230,15 @@ export function StateStatutePanel({
           </label>
         </div>
         <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[760px] text-left text-sm" data-testid="claim-matrix">
+          <table className="w-full min-w-[760px] table-fixed text-left text-sm" data-testid="claim-matrix">
+            <colgroup>
+              <col className="w-[17%]" />
+              <col className="w-[24%]" />
+              <col className="w-[11%]" />
+              <col className="w-[14%]" />
+              <col className="w-[18%]" />
+              <col className="w-[16%]" />
+            </colgroup>
             <thead>
               <tr className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="py-2 pr-3 font-semibold">Claim type</th>
