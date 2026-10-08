@@ -861,6 +861,7 @@ def section_region(lines, row, siblings, levels=None):
 
 LABEL_WORDS = re.compile(r"(?i)^(section|sec\.|art\.|article|chapter|title|part|rcw|nrs|rsa|ors|g\.s\.)")
 MA_API_LINE = re.compile(r"^https://malegislature\.gov/api/", re.I)
+MO_DATE_STAMP = re.compile(r"^-{3,}\s*\d+\.\d+[A-Za-z]?\s+\d{1,2}/\d{1,2}/\d{4}\s*-{3,}\s*$")
 
 
 def _strip_labels(piece, tokens):
@@ -988,6 +989,15 @@ def reverse_check(lines, row, siblings, chrome=frozenset(), levels=None):
             continue
         if MA_API_LINE.match(lines[i].strip()):
             excused += 1
+            continue
+        hist = squash(row.get("history") or "")
+        if hist and (piece == hist or piece == f"({hist})" or hist in piece):
+            continue
+        if MO_DATE_STAMP.match(lines[i].strip()):
+            excused += 1
+            continue
+        numb = squash(own_number or "")
+        if numb and piece.startswith(numb) and piece[len(numb) :] in body:
             continue
         missing.append(lines[i][:240])
     return {"ok": not missing, "checked": checked, "excused_chrome": excused, "missing": missing}
