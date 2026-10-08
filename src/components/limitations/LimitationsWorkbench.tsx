@@ -1049,18 +1049,25 @@ export function LimitationsWorkbench({
                           <p className="font-medium">
                             This date falls on a {result.weekendNotice.weekday}. It is shown unadjusted.
                           </p>
-                          <div className="mt-1">
-                            {stateName}&rsquo;s recorded counting rule,{" "}
-                            <StatuteCitation state={state} citation={result.weekendNotice.citation} />,{" "}
+                          <p className="mt-1">
+                            {stateName}&rsquo;s recorded counting rule ({result.weekendNotice.citation}){" "}
                             {result.weekendNotice.ruleStatus === "flagged"
                               ? "is on file but flagged, so it was not applied: "
                               : "does not extend a last day that falls on a Saturday or Sunday: "}
                             {result.weekendNotice.note}
-                          </div>
+                          </p>
                           <p className="mt-1 text-muted-foreground">
                             Confirm the rule&rsquo;s reach to limitation periods before relying on an
                             extension; legal holidays are not computed.
                           </p>
+                          <details className="mt-1">
+                            <summary className="cursor-pointer text-muted-foreground">
+                              Rule text on file
+                            </summary>
+                            <div className="mt-1">
+                              <StatuteCitation state={state} citation={result.weekendNotice.citation} />
+                            </div>
+                          </details>
                         </div>
                       )}
                       {result.weekendNotice?.kind === "no_rule" && (
