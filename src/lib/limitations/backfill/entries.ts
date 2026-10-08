@@ -45,6 +45,13 @@ export type MatrixEntryInput = {
   claimType: string;
   variant?: string;
   status: string;
+  /**
+   * What the period rests on. "general_period" declares that no provision naming this claim exists in the
+   * reviewed official text and the state's general civil/tort statute is being applied to it: the period is
+   * quoted literally, but the mapping is the site's judgement, so the built rule says so in its summary,
+   * warnings and coverage cell. Omitted means "claim_specific".
+   */
+  basis?: "claim_specific" | "general_period";
   period: { amount: number; unit: string } | null;
   periodEvidence: string;
   citation: string;
@@ -188,6 +195,8 @@ export function checkEntry(
   if (!entry.confidenceNote?.trim()) err("confidenceNote is required");
   if (entry.variant !== undefined && !/^[a-z0-9_]{1,40}$/.test(entry.variant))
     err("variant must be a short snake_case slug");
+  if (entry.basis !== undefined && !["claim_specific", "general_period"].includes(entry.basis))
+    err(`invalid basis ${entry.basis}`);
   if (!Array.isArray(entry.flags)) err("flags must be an array");
   if (entry.status === "flagged" && !entry.flags?.length)
     err("flagged entries need at least one flag");

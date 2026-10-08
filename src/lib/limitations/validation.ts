@@ -1,6 +1,7 @@
 import {
   CLAIM_TYPES,
   PERIOD_LIMB_STARTS,
+  RULE_BASES,
   RULE_CORRECTION_FIELDS,
   RULE_CURRENCY_STATUSES,
   SOURCE_CURRENCY_STATUSES,
@@ -11,6 +12,7 @@ import {
   type LimitationSource,
   type LimitationsSnapshot,
   type RuleCorrectionField,
+  type RuleBasis,
   LIMITATION_SOURCE_AUTHORITY_KINDS,
 } from "./types";
 
@@ -455,6 +457,10 @@ function validateRules(values: unknown): LimitationRule[] {
         fail(`${label}.currency reports lost evidence without naming a source`);
     }
     if (r.subtype !== undefined) string(r.subtype, `${label}.subtype`);
+    if (r["basis"] !== undefined && !RULE_BASES.includes(r["basis"] as RuleBasis))
+      fail(`${label} has an unsupported basis`);
+    if (r["basis"] === "general_period" && !/general/i.test(r["summary"] as string))
+      fail(`${label} applies a general provision but its summary does not say so`);
     if (r.calculation !== undefined) {
       const calculation = record(r.calculation, `${label}.calculation`);
       if (!CALCULATION_MODES.has(calculation.mode as string))
@@ -793,6 +799,8 @@ function validateCoverage(values: unknown): CoverageRow[] {
           fail(`${label}.claimCoverage[${i}] has an unsupported status`);
         if (cc.status === "not_recorded") string(cc.reason, `${label}.claimCoverage[${i}].reason`);
         else string(cc.ruleId, `${label}.claimCoverage[${i}].ruleId`);
+        if (cc["basis"] !== undefined && !RULE_BASES.includes(cc["basis"] as RuleBasis))
+          fail(`${label}.claimCoverage[${i}] has an unsupported basis`);
         if (
           cc["grade"] !== undefined &&
           !VERIFICATION_GRADES.includes(cc["grade"] as (typeof VERIFICATION_GRADES)[number])

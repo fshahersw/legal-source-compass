@@ -4,8 +4,9 @@ import { calculateBaseline } from "./engine";
 import type { BaselineInput, LimitationsSnapshot } from "./types";
 import { validateLimitationsSnapshot } from "./validation";
 
+const bundleDir = process.env["LIM_BUNDLE_DIR"] ?? "private/data/limitations";
 const json = (name: string) =>
-  JSON.parse(readFileSync(`private/data/limitations/${name}.json`, "utf8"));
+  JSON.parse(readFileSync(`${bundleDir}/${name}.json`, "utf8"));
 const files = () => ({
   rules: json("rules"),
   sources: json("sources"),

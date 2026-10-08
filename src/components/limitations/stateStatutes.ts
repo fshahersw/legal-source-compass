@@ -7,6 +7,7 @@ import {
   type LimitationRule,
   type LimitationSource,
   type LimitationsSnapshot,
+  type RuleBasis,
 } from "@/lib/limitations/types";
 import { periodLabel } from "@/lib/limitations/engine";
 import {
@@ -22,6 +23,8 @@ export type ClaimMatrixRow = {
   claimType: ClaimType;
   label: string;
   status: ClaimCoverageStatus;
+  /** What the general rule rests on; null means the cited provision names the claim. */
+  basis: RuleBasis | null;
   statusLabel: string;
   /** The general rule's period, or "Not recorded". */
   period: string;
@@ -112,6 +115,7 @@ export function claimMatrix(
       claimType,
       label: CLAIM_LABELS[claimType],
       status,
+      basis: cell?.basis ?? rule?.basis ?? null,
       statusLabel: CLAIM_STATUS_LABELS[status],
       period: rule?.period ? periodLabel(rule.period) : NOT_RECORDED,
       citation: rule ? (rule.provenance?.citation ?? rule.pinpoint) : null,

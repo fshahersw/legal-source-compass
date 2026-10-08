@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { PrivateDataLink } from "@/components/atlas/PrivateDataLink";
 import { Button } from "@/components/ui/button";
+import { RULE_BASIS_LABELS } from "@/lib/limitations/types";
 import type {
   ClaimCoverageStatus,
   ClaimType,
@@ -24,6 +25,8 @@ const statusClass: Record<ClaimCoverageStatus, string> = {
   flagged: "border-warning/50 bg-warning/10 text-foreground",
   not_recorded: "border-dashed border-border bg-background text-muted-foreground",
 };
+/** A general period is a mapping the site makes, not a statement the statute makes: never styled like a claim-specific chip. */
+const basisClass = "border-dashed border-warning/50 bg-warning/5 text-muted-foreground";
 const kindLabel: Record<string, string> = {
   statute: "Statute",
   constitution: "Constitution",
@@ -205,6 +208,7 @@ export function StateStatutePanel({
   const [onlyRecorded, setOnlyRecorded] = useState(false);
   const visibleRows = onlyRecorded ? rows.filter((row) => row.status !== "not_recorded") : rows;
   const recorded = rows.filter((row) => row.status !== "not_recorded").length;
+  const general = rows.filter((row) => row.basis === "general_period").length;
 
   return (
     <div className="space-y-6">
@@ -218,6 +222,9 @@ export function StateStatutePanel({
               {recorded} of {rows.length} claim types have an entry read from official text in release{" "}
               {snapshot.ruleVersion}. A missing entry means nothing was recorded, not that no period
               exists.
+              {general
+                ? ` ${general} of those rest on a general provision, because no statute naming the claim was found in the reviewed text.`
+                : ""}
             </p>
           </div>
           <label className="flex items-center gap-2 text-sm">
@@ -270,6 +277,11 @@ export function StateStatutePanel({
                   </td>
                   <td className="py-2.5 pr-3">
                     <Chip className={statusClass[row.status]}>{row.statusLabel}</Chip>
+                    {row.basis === "general_period" ? (
+                      <p className="mt-1">
+                        <Chip className={basisClass}>{RULE_BASIS_LABELS.general_period}</Chip>
+                      </p>
+                    ) : null}
                     {row.flags.length ? (
                       <ul className="mt-1 list-disc pl-4 text-xs text-muted-foreground">
                         {row.flags.map((flag) => (

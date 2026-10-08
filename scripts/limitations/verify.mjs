@@ -30,11 +30,17 @@ for (const source of snapshot.sources) {
   if (ids.has(source.id)) throw new Error(`Duplicate source ${source.id}`);
   ids.add(source.id);
   verifyRawMetadata(source.rawCapture, source.id);
-  if (
-    !source.url.startsWith("https://") ||
-    (/\.pdf(?:$|\?)/i.test(source.url) && !isPdf(source.rawCapture))
-  )
-    throw new Error(`Unexpected source URL ${source.id}`);
+  if (!source.url.startsWith("https://")) throw new Error(`Unexpected source URL ${source.id}`);
+  // A link to a PDF whose stored bytes are not a PDF is honest only when the record says how the
+  // text actually arrived: an extraction intermediary returns JSON or plain text for a PDF page,
+  // and the raw capture is kept exactly as that intermediary produced it. A direct capture of a
+  // PDF still has to hold PDF bytes, and an intermediary claim still has to match the bytes.
+  if (/\.pdf(?:$|\?)/i.test(source.url) && !isPdf(source.rawCapture)) {
+    const declaredIntermediary = /extraction intermediary/i.test(source.method ?? "");
+    const wrappedType = source.rawCapture?.contentType?.split(";")[0].trim().toLowerCase();
+    if (!declaredIntermediary || !["application/json", "text/plain", "text/html"].includes(wrappedType))
+      throw new Error(`Unexpected source URL ${source.id}`);
+  }
   const bytes = await readFile(path.join(root, "text", `${source.id}.txt`));
   const hash = createHash("sha256").update(bytes).digest("hex");
   if (process.argv.includes("--update")) {

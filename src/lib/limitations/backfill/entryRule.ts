@@ -183,6 +183,7 @@ export function ruleFromEntry(input: {
     claimType: entry.claimType as ClaimType,
     ruleKind: "limitations",
     computation: baseline ? "baseline_only" : "research_only",
+    basis: entry.basis ?? "claim_specific",
     reviewStatus: "statutory_text_verified",
     period: { amount: entry.period.amount, unit },
     provenance,
@@ -206,10 +207,18 @@ export function ruleFromEntry(input: {
       provenance.lastAmended.text === "Not recorded"
         ? "Not recorded; historical amendments and transitional applicability must be confirmed"
         : `Official history note: ${provenance.lastAmended.text}`,
-    summary: `${periodLabel({ amount: entry.period.amount, unit })} statutory baseline (${entry.citation}), subject to the cited scope and exceptions.`,
+    summary:
+      entry.basis === "general_period"
+        ? `${periodLabel({ amount: entry.period.amount, unit })} general civil period (${entry.citation}), applied to this claim because no provision naming it was found in the reviewed official text; subject to the cited scope and exceptions.`
+        : `${periodLabel({ amount: entry.period.amount, unit })} statutory baseline (${entry.citation}), subject to the cited scope and exceptions.`,
     warnings: [
       "This is an unadjusted calendar anniversary, not a verified last day for filing.",
       "Court holidays, closure, commencement/service requirements and local filing cutoffs are not computed.",
+      ...(entry.basis === "general_period"
+        ? [
+            "No provision naming this claim was found in the reviewed official text: the cited general civil period is applied to it. Confirm that mapping before relying on the date.",
+          ]
+        : []),
     ],
     ...(variant === "general" ? {} : { subtype: variant }),
     ...(baseline && legacySingle
