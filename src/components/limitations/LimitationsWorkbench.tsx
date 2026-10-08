@@ -1,4 +1,5 @@
 import { PrivateDataLink } from "@/components/atlas/PrivateDataLink";
+import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -10,14 +11,17 @@ import {
   periodLabel,
   sourceReviewDate,
 } from "@/lib/limitations/engine";
-import { NOT_RECORDED, ruleAuthorityFacts } from "./ruleAuthority";
+import { NOT_RECORDED, ruleAuthorityFacts, sourceCurrencyFacts } from "./ruleAuthority";
 import { StatuteCitation } from "./StatuteCitation";
+import { StateStatutePanel } from "./StateStatutePanel";
 import {
   guidedDateFields,
   isAccrualReposeRule,
   missingRequirements,
   reposeCapLabel,
+  switchedVersionInput,
   unconfirmedClaimInput,
+  versionWindowLabel,
 } from "./calculatorGuidance";
 import {
   CLAIM_LABELS,
@@ -50,10 +54,32 @@ const subtypeLabels: Record<string, string> = {
   synthetic_estrogen: "DES / nonsteroidal synthetic estrogen exposure",
 };
 
-const patternLabel = (slug: string) =>
-  slug === "general"
-    ? "General rule for this claim type"
-    : `Variant, only if this fact pattern fits: ${subtypeLabels[slug] ?? humanize(slug)}`;
+/**
+ * Dropdown label for a fact pattern. Named variants keep their descriptive label; a subtype that only
+ * marks a statutory version (e.g. "pre_2024_07_01") is described by the dates its window covers.
+ */
+const patternLabel = (slug: string, rule: LimitationRule | null) => {
+  const window = rule ? versionWindowLabel(rule) : null;
+  if (slug === "general")
+    return `General rule for this claim type${window ? ` · ${window}` : ""}`;
+  if (subtypeLabels[slug])
+    return `Variant, only if this fact pattern fits: ${subtypeLabels[slug]}${window ? ` · ${window}` : ""}`;
+  return window
+    ? `Statutory version for ${window}`
+    : `Variant, only if this fact pattern fits: ${humanize(slug)}`;
+};
+const variantName = (rule: LimitationRule) =>
+  subtypeLabels[rule.subtype ?? "general"] ??
+  (versionWindowLabel(rule)
+    ? `the statutory version for ${versionWindowLabel(rule)}`
+    : humanize(rule.subtype ?? "general"));
+const toneClass: Record<"ok" | "partial" | "lost" | "unknown", string> = {
+  ok: "border-border bg-muted",
+  partial: "border-border bg-muted",
+  lost: "border-destructive/40 bg-destructive/10 text-destructive",
+  unknown: "border-dashed border-border bg-background text-muted-foreground",
+};
+
 function Authority({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule: LimitationRule }) {
   const facts = ruleAuthorityFacts(snapshot, rule);
   return (
@@ -74,18 +100,43 @@ function Authority({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule: Li
           </span>
           <span className="mt-1 block">{facts.gradeBasis}</span>
         </dd>
+        <dt className="font-medium">Last re-checked</dt>
+        <dd data-testid="rule-currency">
+          <span
+            className={`inline-block rounded border px-1.5 py-0.5 text-xs font-medium ${toneClass[facts.currency.tone]}`}
+          >
+            {facts.currency.label}
+          </span>
+          <details className="mt-1">
+            <summary className="cursor-pointer text-xs text-muted-foreground">What was checked</summary>
+            <p className="mt-1 leading-relaxed">{facts.currency.detail}</p>
+          </details>
+        </dd>
         <dt className="font-medium">Fetch route</dt>
         <dd data-testid="fetch-route">
           {facts.sources.length
-            ? facts.sources.map((source) => (
-                <span key={source.id} className="block">
-                  {source.route}
-                </span>
-              ))
+            ? Object.entries(
+                facts.sources.reduce<Record<string, number>>((acc, source) => {
+                  acc[source.route] = (acc[source.route] ?? 0) + 1;
+                  return acc;
+                }, {}),
+              )
+                .map(([route, count]) =>
+                  facts.sources.length > 1
+                    ? `${count} ${count === 1 ? "source" : "sources"}: ${route.charAt(0).toLowerCase()}${route.slice(1)}`
+                    : route,
+                )
+                .join(" · ")
             : NOT_RECORDED}
         </dd>
         <dt className="font-medium">Effective date</dt>
         <dd>{facts.effective}</dd>
+        {versionWindowLabel(rule) && (
+          <>
+            <dt className="font-medium">Calculator applies to</dt>
+            <dd>{versionWindowLabel(rule)}</dd>
+          </>
+        )}
         <dt className="font-medium">Last amended</dt>
         <dd>{facts.lastAmended}</dd>
         <dt className="font-medium">Source</dt>
@@ -169,18 +220,53 @@ function Citations({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule: Li
         <div className="mt-1 flex flex-col items-start gap-2">
           {rule.sourceIds.map((id) => {
             const source = snapshot.sources.find((item) => item.id === id);
-            return source ? (
-              <a
-                key={id}
-                href={source.url}
-                target="_blank"
-                rel="noreferrer"
-                className="font-medium text-primary underline"
-              >
-                {source.title}
-              </a>
-            ) : (
-              <span key={id}>Source not recorded</span>
+            if (!source) return <span key={id}>Source not recorded</span>;
+            const currency = sourceCurrencyFacts(source.currency);
+            return (
+              <div key={id} className="flex flex-col items-start gap-1" data-testid="cited-source">
+                <a
+                  href={source.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium text-primary underline"
+                >
+                  {source.title}
+                </a>
+                <span
+                  className={`inline-block rounded border px-1.5 py-0.5 text-xs ${toneClass[currency.tone]}`}
+                  title={currency.detail}
+                >
+                  {currency.label}
+                </span>
+                {currency.codeSections.length > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    Matched in{" "}
+                    {currency.codeSections.map((nativeId, index) => (
+                      <span key={nativeId}>
+                        {index > 0 ? ", " : ""}
+                        <Link
+                          to="/law/codes/$state"
+                          params={{ state: source.state }}
+                          search={{ section: nativeId }}
+                          className="text-primary underline"
+                        >
+                          {nativeId.slice(nativeId.indexOf(":") + 1)}
+                        </Link>
+                      </span>
+                    ))}
+                  </span>
+                )}
+                {currency.freshTextPath && (
+                  <PrivateDataLink
+                    className="text-xs text-primary underline"
+                    href={currency.freshTextPath}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Fresh official text ({currency.checked})
+                  </PrivateDataLink>
+                )}
+              </div>
             );
           })}
           {rule.caseReferenceIds?.map((id) => {
@@ -241,7 +327,15 @@ function RuleEvidence({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule:
     <article className="rounded-lg border border-border p-4">
       <h3 className="text-base font-semibold">
         {CLAIM_LABELS[rule.claimType]} · {rule.ruleKind.replaceAll("_", " ")}
-        {rule.subtype ? " · " + (subtypeLabels[rule.subtype] ?? humanize(rule.subtype)) : ""}
+        {rule.subtype
+          ? " · " +
+            (subtypeLabels[rule.subtype] ??
+              (versionWindowLabel(rule)
+                ? `version for ${versionWindowLabel(rule)}`
+                : humanize(rule.subtype)))
+          : versionWindowLabel(rule)
+            ? ` · ${versionWindowLabel(rule)}`
+            : ""}
       </h3>
       <p className="mt-2 text-sm leading-relaxed">{rule.summary}</p>
       {rule.conditions.length > 0 && (
@@ -409,7 +503,7 @@ export function LimitationsWorkbench({
             ? "Calculator"
             : item === "coverage"
               ? "State coverage"
-              : "Sources"}
+              : "Statutes & sources"}
         </Button>
       ))}
     </nav>
@@ -483,14 +577,15 @@ export function LimitationsWorkbench({
                       setExceptionAnswer("unreviewed");
                     }}
                   >
-                    {subtypes.map((item) => (
-                      <option key={item} value={item}>
-                        {patternLabel(item)}
-                        {baselineRule(snapshot.rules, state, claim, item)
-                          ? ""
-                          : " · legal review needed"}
-                      </option>
-                    ))}
+                    {subtypes.map((item) => {
+                      const candidate = baselineRule(snapshot.rules, state, claim, item);
+                      return (
+                        <option key={item} value={item}>
+                          {patternLabel(item, candidate)}
+                          {candidate ? "" : " · legal review needed"}
+                        </option>
+                      );
+                    })}
                   </select>
                 </label>
               )}
@@ -501,9 +596,14 @@ export function LimitationsWorkbench({
                   </p>
                   {rule.subtype && rule.subtype !== "general" && (
                     <p className="mt-1 text-sm font-medium">
-                      Variant rule: applies only to{" "}
-                      {subtypeLabels[rule.subtype] ?? humanize(rule.subtype)}, not to the claim type
-                      generally.
+                      {versionWindowLabel(rule) && !subtypeLabels[rule.subtype]
+                        ? `Statutory version: applies to ${versionWindowLabel(rule)}, not to later or earlier dates.`
+                        : `Variant rule: applies only to ${variantName(rule)}, not to the claim type generally.`}
+                    </p>
+                  )}
+                  {(!rule.subtype || rule.subtype === "general") && versionWindowLabel(rule) && (
+                    <p className="mt-1 text-sm font-medium">
+                      Current version: applies to {versionWindowLabel(rule)}.
                     </p>
                   )}
                   {reposeLabel && <p className="mt-1 text-sm font-medium">{reposeLabel}</p>}
@@ -929,6 +1029,41 @@ export function LimitationsWorkbench({
                   </ul>
                 </div>
               )}
+              {result.suggestedSubtype &&
+                claim &&
+                (() => {
+                  const sibling = baselineRule(snapshot.rules, state, claim, result.suggestedSubtype);
+                  return sibling ? (
+                    <div
+                      className="mt-5 rounded-lg border border-primary/40 bg-background p-4 text-sm"
+                      data-testid="version-suggestion"
+                    >
+                      <p className="font-semibold">
+                        Statutory version for {versionWindowLabel(sibling)} · {sibling.pinpoint}
+                        {sibling.period ? ` · ${periodLabel(sibling.period)}` : ""}
+                      </p>
+                      <p className="mt-1 leading-relaxed">
+                        Your dates carry over; the governing-law, start-date, applicability and
+                        exception confirmations reset because they were given for a different rule.
+                      </p>
+                      <Button
+                        type="button"
+                        className="mt-3"
+                        onClick={() => {
+                          setInput(switchedVersionInput(input, result.suggestedSubtype!));
+                          setResult(null);
+                          setSubmitted(false);
+                          setExceptionAnswer("unreviewed");
+                          document
+                            .getElementById("limitations-dates")
+                            ?.scrollIntoView({ block: "start", behavior: "instant" });
+                        }}
+                      >
+                        Use that version
+                      </Button>
+                    </div>
+                  ) : null;
+                })()}
               <details className="mt-5 rounded-lg border border-border bg-background p-4">
                 <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold">
                   Calculation steps and assumptions
@@ -1204,86 +1339,15 @@ export function LimitationsWorkbench({
       )}
 
       {view === "sources" && (
-        <section className={box}>
-          <h2 className="text-xl font-semibold">Sources · {stateName || "choose a state"}</h2>
-          <p className="mt-2 text-sm leading-relaxed">
-            Read the stored source text and review its capture details.
-          </p>
-          {stateCoverage && !stateSources.some((item) => item.state === state) && (
-            <div className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
-              <p>State-specific text capture is pending. Official publication sources:</p>
-              {stateCoverage.publisherLinks.map((item) => (
-                <a
-                  key={item.url}
-                  href={item.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-2 block text-primary underline"
-                >
-                  {item.title} · {item.status.replaceAll("_", " ")}
-                </a>
-              ))}
-              {stateCoverage.metadataOnlyReferences.map((item) => (
-                <p key={item.url} className="mt-2">
-                  <a
-                    href={item.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-primary underline"
-                  >
-                    {item.title}
-                  </a>{" "}
-                  · {item.note}
-                </p>
-              ))}
-            </div>
-          )}
-          <details className="mt-5">
-            <summary className="min-h-11 cursor-pointer py-2 text-base font-semibold">
-              Judicial references · {stateCases.length}
-            </summary>
-            <div className="mt-3 space-y-3">
-              {stateCases.map((item) => (
-                <JudicialEvidence key={item.id} reference={item} />
-              ))}
-            </div>
-          </details>
-          <div className="mt-5 space-y-4">
-            {stateSources.map((item) => (
-              <article key={item.id} className="rounded-lg border border-border p-4">
-                <a
-                  href={item.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-base font-semibold text-primary underline"
-                >
-                  {item.title}
-                </a>
-                <p className="mt-1 text-sm">
-                  {item.authorityKind.replaceAll("_", " ")} · {item.publisher} · captured{" "}
-                  {item.capturedAt.slice(0, 10)}
-                </p>
-                <PrivateDataLink
-                  href={item.textPath}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-2 inline-block text-sm text-primary underline"
-                >
-                  Inspect stored text
-                </PrivateDataLink>
-                <details className="mt-2 text-xs text-muted-foreground">
-                  <summary className="min-h-9 cursor-pointer py-2">Capture details</summary>
-                  <p>Retrieved {item.capturedAt}</p>
-                  <p>{item.method}</p>
-                  <p className="break-all">
-                    SHA-256 {item.sha256} · {item.byteLength.toLocaleString()} bytes · schema{" "}
-                    {item.schemaVersion}
-                  </p>
-                </details>
-              </article>
-            ))}
-          </div>
-        </section>
+        <StateStatutePanel
+          snapshot={snapshot}
+          state={state}
+          stateName={stateName || "choose a state"}
+          cases={stateCases}
+          variantName={variantName}
+          onOpenClaim={(nextClaim) => navigate("calculator", state, nextClaim)}
+          renderCase={(item) => <JudicialEvidence key={item.id} reference={item} />}
+        />
       )}
     </div>
   );

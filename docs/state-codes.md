@@ -1,12 +1,32 @@
 # Full state codes
 
+## Live status (read 2026-10-08, `corpus_publisher_code_coverage_v2`, no recount)
+
+43 jurisdictions are `reviewed` with `public_projection_allowed` on and show section text on the site: AK, AL, AZ, CO, CT, DC, DE, FL, IA, ID, IL, IN, KY, LA, MA, MD, ME, MI, MN, MO, MT, NC, ND, NE, NH, NM, NV, NY, OH, OK, OR, PA, RI, SC, SD, TX, UT, VA, VT, WA, WI, WV, WY. Four are `acquiring` with projection off (CA 0 sections, HI 0 sections / 1,500 units, KS 5,821 sections, NJ 0 sections; a second TX acquisition run also reports 32,007 sections landed beside the reviewed TX code). Four have no coverage row at all: AR, GA, MS, TN. The batch table and the "landed and private" lines further down are the October 6–7 history and are no longer the live state.
+
+Section counts per public state are the ones `corpus_publisher_code_projected_states_v2` prints (for example PA 14,741; NY 37,530; TX 121,902; IN 83,148; IL 72,813). Edition and currency come from each publisher's own statement; where a publisher prints none (AZ, DE, IL, LA, MA, MI, MO, NC, OH, OK, PA, TX, UT, VT, WV, WY and others) the site shows "Not recorded". Pennsylvania's only currency signal is each title document's `revised` meta stamp; the site now prints it as "Publisher page revised stamp: <value>" rather than the raw tag.
+
+## Outline defect and the projection/3 contract (2026-10-08)
+
+`corpus_publisher_code_projected_outline_v2` matches a recorded path against a section's `hierarchy` by array position and only groups on the next *declared* level. Publishers that declare optional levels land sections that skip them (PA declares title, part, subpart, article, subarticle, chapter, subchapter, division, subdivision, schedule, section; 42 Pa.C.S. § 5524 is recorded as title 42 › part VI › chapter 55 › subchapter B). Under v2 the outline at title 42 › part VI looks for a subpart in position 2, finds none, and lists nothing; a path that names the chapter directly is rejected ("does not follow this code's declared levels").
+
+Measured with v2 on the first click only (root group → its outline), reading every top-level group: Louisiana 48 of 54 titles dead-end (38,577 sections behind them); Pennsylvania 12 of 51 titles (2,058 sections); New York 7 of 94 laws (5,370 sections); Connecticut 2 of 110 titles (753 sections); Iowa, Kentucky, Nevada, Florida and Colorado 0. Deeper dead-ends (such as the Pennsylvania example) are not in those numbers.
+
+Fix: `database/contracts/corpus-publisher-code-projection-v3-outline.sql` adds `corpus_publisher_code_projected_outline_v3`. It keeps v2's anchored, positional path matcher (`publisher_code_path_matches_v2`), accepts any path whose steps are declared levels in strictly increasing declared order (so declared levels may be skipped), and groups on whatever entry each matched section records right after the path, so one outline level can list, say, chapters beside subparts; every group carries its own `level`. A path that is not anchored at the first recorded level (for example `part VI` alone) lists nothing rather than merging across titles. Same gate, same grants (service role only), nothing writes, v2 stays installed. The function was exercised on a local PostgreSQL 16.13 with a fixture (skipped levels, a null subpart, direct sections, a quarantined row, an unknown state, an unanchored path, and four invalid paths each isolated in its own savepoint) and returned the expected shapes; it has not been run against the live corpus. **Owner action:** apply the contract in the SQL editor of the corpus project, then run the readback queries in the file's trailer. The site already prefers v3 and falls back to v2 when v3 is absent; under v2 it now reports a path it cannot express as "The outline cannot open this position yet" instead of a 400 error.
+
+## Site behaviour (2026-10-08)
+
+- `/law/codes/$state` for a projected state shows a clickable outline (divisions with counts, breadcrumbs, filter, up-one-level), a section list with the open section highlighted and previous/next links, the section's recorded position in the code ("Show in outline" jumps the outline there), and a toolbar: Official source, Copy citation, Copy text, Copy link.
+- "Time limits citing this section" lists Time Limits rules whose pinpoint resolves exactly to the section's native id, or whose quoted passages a code-capture recheck found in that section; it links to the calculator for that state and claim. Nothing is matched by heading, chapter or neighbouring number (`src/lib/limitations/sectionRules.ts`).
+- Everything older below is history of the intake, kept for provenance.
+
 `publisher-code-intake/2` is applied. The public read `database/contracts/corpus-publisher-code-projection-v2.sql` is applied as well (migration `corpus_publisher_code_projection_v2`). The website shows section text only for a state whose review flag `public_projection_allowed` is on. States that have landed but are still private appear on Sources → Quality & coverage as landed-private, with no section text. Working rules: the project store `internal/state-codes/README.md`. Contract: `database/contracts/corpus-publisher-code-intake-v2.sql` (PR #45, merged).
 
 Isolated tests (`node --test scripts/legal/state-codes/publisher-code-intake-v2.test.mjs`, PGlite 0.5.8): 5/5 pass. They cover a manifest, one run, a unit and a section landing with exact readback, coverage counts, a terms gate, a bad section id, a foreign host, a section before its unit, projection before review, a second open run, anonymous denial, a reused payload hash, and the public projection staying empty until the review flag is allowed.
 
-Nothing below is a count of landed sections.
+Historical batch plan (October 6; superseded by the live status above). Nothing below is a count of landed sections.
 
-| Batch | States                                         | Status                                     |
+| Batch | States                                         | Status (as of October 6)                   |
 | ----- | ---------------------------------------------- | ------------------------------------------ |
 | A     | NY, PA, FL, IL, OH, MI, GA, NC, MA, AZ, MO, LA | MI, PA, NC, and MO are landed and still private. No batch A state has been reviewed. |
 | B     | MN, WI, IN, TN, CO, MD, VA, SC, AL, KY, OK, OR | staging against the mapping                |

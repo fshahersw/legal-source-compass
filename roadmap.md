@@ -23,3 +23,18 @@
 - [x] Email/password sign-up, sign-in, reset; sidebar AccountBox
 - [x] Collapsible sidebar (icon rail, persisted choice, header toggle)
 - [x] Court artwork on every court profile (verified exact-ID marks, honest court-type fallbacks, shared matter-page treatment)
+- [x] Time Limits calculator: single-page flow, grouped confirmations, live missing-requirements list
+
+## Time Limits accuracy program (started 2026-10-08)
+- [x] Currency recheck of every official limitations source: direct fetch where the host allows it, otherwise passage matching against the publisher's current code text in the corpus (route recorded on each source); 198 sources still unreachable by either route, 40 rules without literal evidence
+- [x] Recheck status shown in the app: "Last re-checked" on every rule, per-source status chips, matched code sections, fresh-text links
+- [x] Gap backfill round 1 (release 2026-10-08.1): 122 literal-evidence rules added across the four new claim types + 23 reviewed corrections (FL ch. 2023-15, LA Act 423, NV 41A.097, med-mal later-of/earlier-of structure, UT 78B-6-706); state × claim cells with no rule 213 → 95
+- [ ] Gap backfill round 2: remaining 95 cells (legal malpractice 35, breach of warranty 30, intentional tort 19, defamation 10, wrongful death 1) — only from official captures with literal evidence; AR/GA/MS/TN official-compilation blockers documented
+- [ ] Cross-references: tolling/repose/counting provisions and official-opinion precedents attached to rules; nothing from secondary reproductions
+- [x] State code reader: clickable outline with counts, breadcrumbs, filter, previous/next, section position + "Show in outline", toolbar (official source, copy citation/text/link), "Time limits citing this section"
+- [x] Time Limits → Statutes & sources: all-claim matrix with variants and recheck status, cited-source cards with excerpts, matched code sections, fresh copies, judicial references, JSON export
+- [x] Release 2026-10-08.1 staged (hash readback, 958/958 raw objects present) and activated in the manifest; audit report `docs/limitations-audit-2026-10-08.md`; publish to put it on the live site
+- [ ] Owner action: apply `database/contracts/corpus-publisher-code-projection-v3-outline.sql` (outline dead-ends on skipped optional levels: LA 48/54 titles, PA 12/51, NY 7/94, CT 2/110); site switches to v3 automatically
+- [ ] Full state code intake: CA/HI/KS/NJ acquiring; AR/GA/MS/TN absent (GA gated behind Lexis) — see docs/state-codes.md
+- [ ] Manual review of the 3 code-capture mismatches (NH opinion PDF, PA MCARE session law, SD duplicate rows)
+- [ ] Re-read the 198 not-rechecked sources once a route exists (session-law PDFs, blocked hosts, jurisdictions without a reviewed code in the corpus)

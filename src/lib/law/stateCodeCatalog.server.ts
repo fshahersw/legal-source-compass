@@ -17,6 +17,7 @@ import {
   projectedEdition,
   publishedSectionBody,
   sectionFieldsFromRecord,
+  sectionHierarchy,
   snapshotReleasePaths,
   summarizeBrowseRoot,
   type CodeIndexRow,
@@ -24,6 +25,7 @@ import {
   type HierarchyStep,
   type ProjectedOutline,
   type SectionFields,
+  type SectionHierarchyStep,
   type StateCodeHit,
   type StateCodeListing,
 } from "./stateCodeContract";
@@ -387,7 +389,10 @@ export async function stateCodeSectionList(
 export async function stateCodeSection(
   state: string,
   id: string,
-): Promise<(SectionFields & { id: string; datasetId: string | null }) | null> {
+): Promise<
+  | (SectionFields & { id: string; datasetId: string | null; hierarchy?: SectionHierarchyStep[] })
+  | null
+> {
   const listing = await listingFor(state);
   if (listing?.kind === "projection") {
     const section = await projectedSection(state, id);
@@ -555,7 +560,7 @@ function parseOutlineSections(value: unknown) {
   });
 }
 
-function parseOutline(value: unknown): ProjectedOutline {
+function parseOutline(value: unknown, read: "v2" | "v3"): ProjectedOutline {
   const row = value && typeof value === "object" ? (value as Record<string, unknown>) : null;
   if (!row || row["available"] !== true) return { available: false };
   if (row["kind"] === "sections" && Array.isArray(row["sections"])) {
@@ -563,6 +568,7 @@ function parseOutline(value: unknown): ProjectedOutline {
     return {
       available: true,
       kind: "sections",
+      read,
       level: "section",
       total: typeof row["total"] === "number" ? row["total"] : sections.length,
       truncated: row["truncated"] === true,
@@ -578,14 +584,17 @@ function parseOutline(value: unknown): ProjectedOutline {
     return {
       available: true,
       kind: "groups",
+      read,
       level: row["level"],
       total: typeof row["total"] === "number" ? row["total"] : row["groups"].length,
       truncated: row["truncated"] === true,
       groups: row["groups"].flatMap((item) => {
         const group = item && typeof item === "object" ? (item as Record<string, unknown>) : null;
         if (!group || typeof group["count"] !== "number") return [];
+        const level = asText(group["level"]);
         return [
           {
+            ...(level ? { level } : {}),
             number: asText(group["number"]),
             heading: asText(group["heading"]),
             count: group["count"],
@@ -601,21 +610,44 @@ function parseOutline(value: unknown): ProjectedOutline {
   return { available: false };
 }
 
+let outlineV3Missing = false;
+
+/**
+ * Outline under a recorded path. projection/3 matches path steps anywhere in a section's hierarchy
+ * (optional declared levels may be skipped); projection/2 matches by position only. v3 is preferred
+ * and v2 is the fallback until the v3 contract is applied. A path v2 cannot express (one that skips a
+ * declared level) is reported as `unsupported_path` instead of an error, so the reader can say so.
+ */
 export async function projectedOutline(
   state: string,
   path: HierarchyStep[],
 ): Promise<ProjectedOutline> {
-  const value = await rpcPostOptional<unknown>("corpus_publisher_code_projected_outline_v2", {
-    p_jurisdiction: state,
-    p_path: path.map((step) => ({ level: step.level, number: step.number })),
-  });
-  return parseOutline(value);
+  const p_path = path.map((step) => ({ level: step.level, number: step.number }));
+  if (!outlineV3Missing) {
+    const v3 = await rpcPostOptional<unknown>("corpus_publisher_code_projected_outline_v3", {
+      p_jurisdiction: state,
+      p_path,
+    });
+    if (v3 !== null) return parseOutline(v3, "v3");
+    outlineV3Missing = true;
+  }
+  try {
+    const value = await rpcPostOptional<unknown>("corpus_publisher_code_projected_outline_v2", {
+      p_jurisdiction: state,
+      p_path,
+    });
+    return parseOutline(value, "v2");
+  } catch (error) {
+    if (path.length && error instanceof Error && /\(400\)/.test(error.message))
+      return { available: true, kind: "unsupported_path" };
+    throw error;
+  }
 }
 
 export async function projectedSection(
   state: string,
   id: string,
-): Promise<(SectionFields & { id: string }) | null> {
+): Promise<(SectionFields & { id: string; hierarchy: SectionHierarchyStep[] }) | null> {
   const row = await rpcPostOptional<Record<string, unknown> | null>(
     "corpus_publisher_code_projected_section_v2",
     { p_jurisdiction: state, p_native_id: id },
@@ -633,7 +665,7 @@ export async function projectedSection(
       currency: row["currency"],
     },
   });
-  return { id: row["native_id"], ...fields };
+  return { id: row["native_id"], hierarchy: sectionHierarchy(row["hierarchy"]), ...fields };
 }
 
 export type PublicStatuteSection = {

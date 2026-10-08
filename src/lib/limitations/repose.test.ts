@@ -31,7 +31,8 @@ function candidate(jurisdiction: "NC" | "OR") {
     reposeEffectiveFrom: "2000-01-01",
   };
   const coverage = input.coverage.coverage.find((r: { state: string }) => r.state === jurisdiction);
-  coverage.baselineRuleIds = [rule.id];
+  // Keep every other recorded baseline link intact; only this rule's membership is adjusted.
+  coverage.baselineRuleIds = Array.from(new Set([...coverage.baselineRuleIds, rule.id]));
   coverage.researchRuleIds = coverage.researchRuleIds.filter((id: string) => id !== rule.id);
   coverage.coverage = "conditional_baselines";
   return input;

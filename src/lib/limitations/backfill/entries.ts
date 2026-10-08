@@ -58,6 +58,12 @@ export type MatrixEntryInput = {
     trigger: string;
     evidence: string;
     effectiveFrom: string | null;
+    /**
+     * "general": the bar reaches every claim this entry covers, so it is computed even when the captured
+     * text prints no effective date (applied as current law, disclosed in the result). Omitted or
+     * "narrow": the bar is recorded on the rule but not computed unless it also has a printed date.
+     */
+    applies?: "general" | "narrow";
   }[];
   lastAmended: { text: string; date: string | null; evidence: string };
   effectiveDate: string | null;
@@ -295,6 +301,8 @@ export function checkEntry(
       err(`repose[${i}].evidence does not state ${r.years} years`);
     if (r.effectiveFrom !== null && !isoDate(r.effectiveFrom))
       err(`repose[${i}].effectiveFrom invalid`);
+    if (r.applies !== undefined && r.applies !== "general" && r.applies !== "narrow")
+      err(`repose[${i}].applies must be "general" or "narrow"`);
   }
   if (entry.lastAmended?.evidence && !inEvidence(entry.lastAmended.evidence))
     err("lastAmended.evidence is not a literal substring of the primary or a cross-check capture");

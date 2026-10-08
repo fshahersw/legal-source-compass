@@ -400,7 +400,7 @@ export function sectionFieldsFromRecord(row: {
   const cells = row.item?.cells;
   const currency = detail ? asObject(detail["currency"]) : null;
   const through = currency ? asString(currency["through_date"]) : null;
-  const statement = currency ? asString(currency["statement"]) : null;
+  const statement = publisherStatement(currency ? asString(currency["statement"]) : null);
   const currencyText = [statement, through].filter((part): part is string => !!part).join(" · ");
   const status =
     factEquals(pairs, "Status as printed") ??
@@ -427,6 +427,21 @@ export function sectionFieldsFromRecord(row: {
       firstLink(detail),
     status,
   };
+}
+
+/**
+ * A publisher currency statement as recorded. When the intake stored a bare HTML meta tag
+ * (e.g. `<meta name="revised" content="2026-09-16 10:42:58 AM">`), the tag's own name and
+ * content are shown instead of the markup. Any other statement is returned unchanged.
+ */
+export function publisherStatement(statement: string | null): string | null {
+  if (!statement) return null;
+  const meta = /^<meta\s+name="([^"]+)"\s+content="([^"]*)"\s*\/?>$/i.exec(statement.trim());
+  if (!meta) return statement;
+  const name = meta[1]!.trim();
+  const content = meta[2]!.trim();
+  if (!content) return statement;
+  return `Publisher page ${name} stamp: ${content}`;
 }
 
 export function showRecorded(value: string | null | undefined): string {
@@ -509,6 +524,36 @@ export type StateCodeListing = {
 };
 
 export type HierarchyStep = { level: string; number: string | null };
+export type SectionHierarchyStep = HierarchyStep & { heading: string | null };
+
+/**
+ * The hierarchy recorded on one projected section, in stored order, without the section row itself.
+ * A malformed entry ends the list so no step is guessed; levels are the intake's own names.
+ */
+export function sectionHierarchy(value: unknown): SectionHierarchyStep[] {
+  if (!Array.isArray(value)) return [];
+  const steps: SectionHierarchyStep[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object") break;
+    const row = item as Record<string, unknown>;
+    const level = row["level"];
+    if (typeof level !== "string" || !/^[a-z][a-z_]{1,40}$/.test(level)) break;
+    if (level === "section") continue;
+    const number = row["number"];
+    const heading = row["heading"];
+    steps.push({
+      level,
+      number:
+        typeof number === "string" && number.trim()
+          ? number.trim()
+          : typeof number === "number" && Number.isFinite(number)
+            ? String(number)
+            : null,
+      heading: typeof heading === "string" && heading.trim() ? heading.trim() : null,
+    });
+  }
+  return steps;
+}
 
 /** Accept a JSON string or an already-parsed search param. A bad path is empty, not a guess. */
 export function parseHierarchyPath(value: unknown): HierarchyStep[] {
@@ -541,12 +586,20 @@ export type ProjectedOutline =
       available: false;
     }
   | {
+      /** The installed outline read cannot express this path (a declared level is skipped). */
+      available: true;
+      kind: "unsupported_path";
+    }
+  | {
       available: true;
       kind: "groups";
+      /** Which outline read answered: projection/3 follows skipped levels, projection/2 does not. */
+      read: "v2" | "v3";
       level: string;
       total: number;
       truncated: boolean;
-      groups: { number: string | null; heading: string | null; count: number }[];
+      /** `level` is present from projection/3, where one outline level can mix declared levels. */
+      groups: { level?: string; number: string | null; heading: string | null; count: number }[];
       /** Sections whose next hierarchy step is already a section, beside deeper groups. */
       directSections: {
         native_id: string;
@@ -560,6 +613,7 @@ export type ProjectedOutline =
   | {
       available: true;
       kind: "sections";
+      read: "v2" | "v3";
       level: "section";
       total: number;
       truncated: boolean;

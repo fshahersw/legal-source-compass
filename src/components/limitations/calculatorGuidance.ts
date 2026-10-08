@@ -21,6 +21,57 @@ export function unconfirmedClaimInput(
   };
 }
 
+const DATE_KEYS = [
+  "accrualDate",
+  "reposeActDate",
+  "actualDiscoveryDate",
+  "constructiveDiscoveryDate",
+  "diagnosisCommunicationDate",
+  "injuryDate",
+  "deathDate",
+  "causeDiscoveryDate",
+  "substantialCompletionDate",
+  "firstProductDeliveryDate",
+  "qualifyingExposureDate",
+] as const;
+
+/**
+ * Input for a different statutory version of the same claim: the entered dates carry over, every
+ * confirmation resets because they were given for a different rule.
+ */
+export function switchedVersionInput(previous: BaselineInput, subtype: string): BaselineInput {
+  const next = unconfirmedClaimInput(previous.jurisdiction, previous.claimType, subtype);
+  for (const key of DATE_KEYS) {
+    const value = previous[key];
+    if (typeof value === "string" && value) (next as Record<string, unknown>)[key] = value;
+  }
+  return next;
+}
+
+const WINDOW_EVENT_LABEL: Record<string, string> = {
+  accrual: "accrual",
+  discovery: "discovery",
+  injury_date: "injury",
+  death: "death",
+  act_or_omission: "act or omission",
+};
+
+/** The dates a rule's statutory window covers, e.g. "accrual dates on or before 2023-03-24", or null when unbounded. */
+export function versionWindowLabel(
+  rule: Pick<LimitationRule, "effectiveFrom" | "effectiveThrough" | "calculation" | "accrualBasis">,
+): string | null {
+  if (!rule.effectiveFrom && !rule.effectiveThrough) return null;
+  const event =
+    rule.calculation?.windowFrom ?? (rule.accrualBasis === "death" ? "death" : "accrual");
+  const span =
+    rule.effectiveFrom && rule.effectiveThrough
+      ? `${rule.effectiveFrom} through ${rule.effectiveThrough}`
+      : rule.effectiveThrough
+        ? `on or before ${rule.effectiveThrough}`
+        : `on or after ${rule.effectiveFrom}`;
+  return `${WINDOW_EVENT_LABEL[event] ?? event} dates ${span}`;
+}
+
 export type GuidedDateField = {
   key:
     | "accrualDate"
@@ -112,6 +163,12 @@ function clocksFields(rule: LimitationRule): GuidedDateField[] {
         key: "injuryDate",
         label: "Date of the injury",
         help: "The date the injury or incident occurred, as the cited rule measures it. This is not the discovery date.",
+      });
+    if (limb.from === "act_or_omission")
+      add({
+        key: "reposeActDate",
+        label: "Date of the act or omission complained of",
+        help: "The incident, treatment or omission the claim is based on, as the cited rule measures it. This is not the discovery date.",
       });
   }
   for (const clock of calc.clocks ?? []) {

@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { SectionReadout } from "@/components/corpus/SectionReadout";
+import { SectionTools } from "@/components/corpus/SectionTools";
 import {
   getStateCodeChapters,
   getStateCodeSection,
@@ -276,7 +277,12 @@ export function DatasetCodeBrowser({
             <p className="text-sm text-muted-foreground">Loading section…</p>
           ) : null}
           {detail.error ? <ExternalError error={detail.error} /> : null}
-          {detail.data ? <SectionReadout fields={detail.data} /> : null}
+          {detail.data ? (
+            <div className="space-y-4">
+              <SectionTools fields={detail.data} state={listing.state} />
+              <SectionReadout fields={detail.data} />
+            </div>
+          ) : null}
           {section && detail.data === null && !detail.isLoading && !detail.error ? (
             <p className="text-sm text-muted-foreground">No section is recorded for this link.</p>
           ) : null}

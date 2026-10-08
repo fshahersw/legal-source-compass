@@ -771,3 +771,17 @@ describe("exact statute citation paths", () => {
     ).toBeNull();
   });
 });
+
+describe("spelled-out publisher forms", () => {
+  it("reads Pa. Cons. Stat. as the consolidated statutes", () => {
+    expect(exactCitationPaths("PA", "42 Pa. Cons. Stat. § 5524(1)")).toEqual(["42:5524"]);
+    expect(exactCitationPaths("PA", "42 Pa. Cons. Stat. Ann. § 5524")).toEqual(["42:5524"]);
+    expect(exactCitationPaths("PA", "40 P.S. § 1303.513")).toBeNull();
+  });
+
+  it("reads CPLR with or without a section sign", () => {
+    expect(exactCitationPaths("NY", "CPLR 214")).toEqual(["CVP/214"]);
+    expect(exactCitationPaths("NY", "CPLR § 214-c(2)")).toEqual(["CVP/214-C"]);
+    expect(exactCitationPaths("NY", "CPLR 214 to 215")).toBeNull();
+  });
+});

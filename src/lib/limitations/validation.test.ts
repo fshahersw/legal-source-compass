@@ -89,6 +89,9 @@ describe("limitations snapshot validation", () => {
     const input = fixture();
     const cases = input.cases["cases"] as TestRecord[];
     const reference = cases[0]!;
+    // Start from a reference without any retained PDF so the claim stands alone.
+    delete reference["rawCapture"];
+    delete reference["officialPdfUrl"];
     reference["pdfDownloaded"] = true;
     expect(() => validateLimitationsSnapshot(input)).toThrow(/PDF download claim/);
     reference["officialPdfUrl"] = "https://www.govinfo.gov/example-test-opinion.pdf";

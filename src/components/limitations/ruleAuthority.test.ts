@@ -115,3 +115,59 @@ describe("rule authority facts", () => {
     expect(ruleAuthorityFacts(snapshot, rule).accrual).toBe(NOT_RECORDED);
   });
 });
+
+describe("currency facts", () => {
+  it("reads Not re-read when no recheck is recorded", async () => {
+    const { ruleCurrencyFacts, sourceCurrencyFacts } = await import("./ruleAuthority");
+    expect(sourceCurrencyFacts(undefined).label).toBe("Not re-read");
+    expect(sourceCurrencyFacts(undefined).tone).toBe("unknown");
+    expect(ruleCurrencyFacts(undefined).tone).toBe("unknown");
+    expect(ruleCurrencyFacts(undefined).checked).toBe(NOT_RECORDED);
+  });
+
+  it("names the full-code capture route and its sections without claiming the page was compared", async () => {
+    const { sourceCurrencyFacts } = await import("./ruleAuthority");
+    const facts = sourceCurrencyFacts({
+      checkedAt: "2026-10-08T04:49:12.001Z",
+      status: "confirmed_evidence_intact",
+      route: "official_code_capture",
+      detail: "matched against the publisher's current text",
+      codeCapture: {
+        jurisdiction: "NY",
+        publisher: "New York State Senate",
+        runId: "run-1",
+        manifestSha256: null,
+        landedAt: "2026-10-08T00:11:09.612Z",
+        sectionNativeIds: ["NY:CVP/214"],
+        sourceUrls: ["https://www.nysenate.gov/legislation/laws/CVP/214"],
+      },
+    });
+    expect(facts.label).toBe("Quoted passages found in current code text · 2026-10-08");
+    expect(facts.tone).toBe("ok");
+    expect(facts.codeSections).toEqual(["NY:CVP/214"]);
+    expect(facts.freshTextPath).toBeNull();
+  });
+
+  it("marks lost evidence and rolls a rule up to its own status", async () => {
+    const { ruleCurrencyFacts, sourceCurrencyFacts } = await import("./ruleAuthority");
+    expect(
+      sourceCurrencyFacts({
+        checkedAt: "2026-10-08T00:00:00.000Z",
+        status: "evidence_lost",
+        route: "direct",
+        detail: "gone",
+        freshTextPath: "/data/limitations/text/x.rechecked-2026-10-08.txt",
+      }),
+    ).toMatchObject({ tone: "lost", freshTextPath: "/data/limitations/text/x.rechecked-2026-10-08.txt" });
+    expect(
+      ruleCurrencyFacts({
+        checkedAt: "2026-10-08T00:00:00.000Z",
+        status: "partially_confirmed",
+        detail: "d",
+        confirmedSourceIds: ["a"],
+        uncheckedSourceIds: ["b"],
+        lostSourceIds: [],
+      }),
+    ).toMatchObject({ tone: "partial", label: "Quoted text confirmed in part; see detail · 2026-10-08" });
+  });
+});

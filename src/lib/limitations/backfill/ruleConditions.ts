@@ -13,11 +13,19 @@ export function buildEntryRuleConditions(
     entry.accrual.kind === "not_recorded"
       ? "The cited provision does not state when the claim accrues (Not recorded). The accrual date must be confirmed under controlling case law before relying on any date."
       : `Accrual under the cited rule: ${provenance.accrualText}`,
-    ...(repose.length && !baseline
+    ...(repose.length && (!baseline || reposeRecordedNotComputed)
       ? repose.map(
           (r) =>
-            `Statute of repose not computed here: ${r.years} years (${r.citation}); trigger: ${r.trigger}.`,
+            `Statute of repose not computed here: ${r.years} years (${r.citation}); trigger: ${r.trigger}.${baseline ? " Apply it separately before relying on the computed date." : ""}`,
         )
+      : []),
+    ...(repose.length && baseline && !reposeRecordedNotComputed
+      ? repose
+          .filter((r) => r.effectiveFrom === null)
+          .map(
+            (r) =>
+              `Outer limit computed as current law: ${r.years} years (${r.citation}); trigger: ${r.trigger}. The captured text prints no effective date for this bar; confirm the historical version for earlier conduct.`,
+          )
       : []),
     ...provenance.tolling.map(
       (t) => `Statutory tolling (not applied by the calculator): ${t.text} (${t.citation}).`,
