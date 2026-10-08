@@ -278,6 +278,42 @@ def live_fetch(arc, url, state):
     return rec
 
 
+def live_in_section_row(body, url, section, unit=None):
+    """Re-parse one Indiana Code title member inside the official HTML ZIP."""
+    if unit is None or not unit.get("publisher_member"):
+        return None
+    if "iga.in.gov" not in (url or "") and "Indiana-Code" not in unit.get("publisher_member", ""):
+        return None
+    raw = body if isinstance(body, bytes) else body.encode("utf-8", "replace")
+    if raw[:2] != b"PK":
+        return None
+    import io
+    import zipfile
+
+    in_dir = os.path.join(HERE, "..", "in")
+    if in_dir not in sys.path:
+        sys.path.insert(0, in_dir)
+    from review_region import section_row_from_member  # noqa: WPS433
+    try:
+        with zipfile.ZipFile(io.BytesIO(raw)) as zf:
+            member_bytes = zf.read(unit["publisher_member"])
+    except (KeyError, zipfile.BadZipFile):
+        return None
+    return section_row_from_member(member_bytes, unit["publisher_member"], section["citation_path"], section)
+
+
+def live_mi_section_row(body, url, section, unit=None):
+    """Re-parse one Michigan Compiled Laws chapter XML file for a single section."""
+    if "legislature.mi.gov" not in (url or "") or "Chapter" not in (url or ""):
+        return None
+    raw = body if isinstance(body, bytes) else body.encode("utf-8", "replace")
+    mi_dir = os.path.join(HERE, "..", "mi")
+    if mi_dir not in sys.path:
+        sys.path.insert(0, mi_dir)
+    from review_region import section_row_from_chapter  # noqa: WPS433
+    return section_row_from_chapter(raw, section["citation_path"])
+
+
 def live_pa_section_row(body, url, section):
     """Re-parse a palegis.us title page and return only the sampled section's body lines."""
     if "palegis.us" not in url:
@@ -841,6 +877,8 @@ def reverse_check_section_body(parsed_row, row, skip_line=None):
     live_body = (parsed_row.get("text") or "").strip()
     if not live_body:
         live_body = (parsed_row.get("status_label") or "").strip()
+    if not live_body and (parsed_row.get("heading") or "").strip():
+        live_body = (parsed_row.get("heading") or "").strip()
     if not live_body and not stored:
         return {"ok": True, "checked": 0, "excused_chrome": 0, "missing": []}
     if not live_body:
@@ -992,7 +1030,13 @@ def main():
     for s in sample:
         u = units[s["unit_key"]]
         live_url = s.get("source_url") or u["source_url"]
-        if a.state in ("IA", "WV", "KS"):
+        if a.state == "IN":
+            in_dir = os.path.join(HERE, "..", "in")
+            if in_dir not in sys.path:
+                sys.path.insert(0, in_dir)
+            from acquire import BROWSER_UA  # noqa: WPS433
+            rec = arc.fetch(live_url, accept="*/*", min_bytes=1_000_000, user_agent=BROWSER_UA)
+        elif a.state in ("IA", "WV", "KS"):
             rec = live_fetch(arc, live_url, a.state)
         else:
             rec = arc.fetch(live_url, accept="*/*", min_bytes=0)
@@ -1039,6 +1083,8 @@ def main():
                 or live_ia_section_row(live_raw, live_url, s)
                 or live_wv_section_row(live_raw, live_url, s)
                 or live_hi_section_row(live_raw, live_url, s)
+                or live_in_section_row(live_raw, live_url, s, u)
+                or live_mi_section_row(live_raw, live_url, s, u)
                 or live_pa_section_row(live_raw, live_url, s)
                 or live_vt_section_row(live_raw, live_url, s, u.get("source_url"))
                 or live_ut_section_row(live_raw, live_url, s)
@@ -1167,12 +1213,19 @@ def main():
             continue
         if parsed_row is not None:
             skip_line = None
-            if (manifest.get("parser") or {}).get("name") == "pa-palegis-title-html":
+            parser_name = (manifest.get("parser") or {}).get("name") or ""
+            if parser_name == "pa-palegis-title-html":
                 pa_dir = os.path.join(HERE, "..", "pa")
                 if pa_dir not in sys.path:
                     sys.path.insert(0, pa_dir)
                 from review_region import is_publisher_annotation_line  # noqa: WPS433
                 skip_line = is_publisher_annotation_line
+            elif parser_name == "indiana-official-html":
+                in_dir = os.path.join(HERE, "..", "in")
+                if in_dir not in sys.path:
+                    sys.path.insert(0, in_dir)
+                from review_region import is_publisher_annotation_line as in_skip  # noqa: WPS433
+                skip_line = in_skip
             rev = reverse_check_section_body(parsed_row, s, skip_line=skip_line)
         else:
             sibs = ordered_siblings(s, neighbors if neighbors is not None else secs)
