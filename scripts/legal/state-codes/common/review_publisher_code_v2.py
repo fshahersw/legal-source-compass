@@ -154,7 +154,15 @@ def texas_zip_chapter_live(arc, code: str, publisher_member: str) -> str | None:
     if rec.get("state") != "complete":
         return None
     with zipfile.ZipFile(io.BytesIO(arc.read(rec))) as zf:
-        return zf.read(publisher_member).decode("utf-8-sig", "replace")
+        try:
+            raw = zf.read(publisher_member)
+        except KeyError:
+            by_lower = {n.lower(): n for n in zf.namelist()}
+            alt = by_lower.get((publisher_member or "").lower())
+            if not alt:
+                return None
+            raw = zf.read(alt)
+        return raw.decode("utf-8-sig", "replace")
 
 
 def publisher_section_number(body):
