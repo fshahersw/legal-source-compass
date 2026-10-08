@@ -3,14 +3,15 @@ import { describe, expect, it } from "vitest";
 import { validateLimitationsSnapshot } from "./validation";
 
 type TestRecord = Record<string, unknown>;
+const bundleDir = process.env["LIM_BUNDLE_DIR"] ?? "private/data/limitations";
 const fixture = () => ({
-  rules: JSON.parse(readFileSync("private/data/limitations/rules.json", "utf8")) as TestRecord,
-  sources: JSON.parse(readFileSync("private/data/limitations/sources.json", "utf8")) as TestRecord,
+  rules: JSON.parse(readFileSync(`${bundleDir}/rules.json`, "utf8")) as TestRecord,
+  sources: JSON.parse(readFileSync(`${bundleDir}/sources.json`, "utf8")) as TestRecord,
   coverage: JSON.parse(
-    readFileSync("private/data/limitations/coverage.json", "utf8"),
+    readFileSync(`${bundleDir}/coverage.json`, "utf8"),
   ) as TestRecord,
   cases: JSON.parse(
-    readFileSync("private/data/limitations/case-references.json", "utf8"),
+    readFileSync(`${bundleDir}/case-references.json`, "utf8"),
   ) as TestRecord,
 });
 const clone = <T>(value: T): T => structuredClone(value);

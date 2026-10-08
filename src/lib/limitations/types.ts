@@ -181,6 +181,21 @@ export type RuleVerification = {
   verifiedOn?: string;
 };
 
+/**
+ * What a limitations rule's period actually rests on. "claim_specific" means the cited provision names this
+ * claim (or a category that plainly contains it) in the official text. "general_period" means the state's
+ * general civil or tort limitation statute is the closest provision found and no provision naming this claim
+ * exists in the reviewed official text: the period is quoted literally, but mapping it onto the claim is a
+ * judgement the site is making, not a statement the statute makes. Absent on rules released before the
+ * field existed — every one of those named the claim.
+ */
+export const RULE_BASES = ["claim_specific", "general_period"] as const;
+export type RuleBasis = (typeof RULE_BASES)[number];
+export const RULE_BASIS_LABELS: Record<RuleBasis, string> = {
+  claim_specific: "A statute names this claim",
+  general_period: "General period — no claim-specific statute found",
+};
+
 export type ClaimCoverageStatus = "baseline" | "research_only" | "flagged" | "not_recorded";
 export type ClaimVariantCoverage = {
   subtype: string;
@@ -192,6 +207,8 @@ export type ClaimVariantCoverage = {
 export type ClaimCoverage = {
   claimType: ClaimType;
   status: ClaimCoverageStatus;
+  /** Copied from the rule behind the cell: claim-specific or the general period standing in. */
+  basis?: RuleBasis;
   ruleId?: string;
   reason?: string;
   grade?: VerificationGrade;
@@ -279,6 +296,8 @@ export type LimitationRule = {
     | "counting"
     | "transition";
   computation: "baseline_only" | "research_only";
+  /** What the period rests on. Absent means claim_specific: every rule released before this field existed named the claim. */
+  basis?: RuleBasis;
   reviewStatus: "statutory_text_verified";
   period: { amount: number; unit: PeriodUnit } | null;
   provenance?: RuleProvenance;
