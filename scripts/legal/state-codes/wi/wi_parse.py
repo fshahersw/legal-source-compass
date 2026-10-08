@@ -23,13 +23,17 @@ BASE = "https://docs.legis.wisconsin.gov"
 CODE_ID = "wi-statutes"
 CODE_NAME = "Wisconsin Statutes"
 PARSER_NAME = "wi-official-toc-text"
-PARSER_VERSION = "2.0.0"
+PARSER_VERSION = "2.0.1"
 CHAPTER_RE = re.compile(r"^([0-9]+[A-Za-z]*)\.\s+(.+)$")
 TXT_SUBCHAPTER_RE = re.compile(r"^SUBCHAPTER\s+(.+)$", re.I)
 STATUS_RE = re.compile(r"^(?:Repealed|Reserved|Renumbered|Expired|Vacant)\.?$", re.I)
 EFFECTIVE_RE = re.compile(
     r"\b(effective|takes effect|expires?|expiration|applies? (?:first |only )?to)\b", re.I
 )
+# Wisconsin NOTE lines often use "amended eff. MM-DD-YY" without the word "effective".
+WI_FUTURE_NOTE_RE = re.compile(r"(?:\beff\.|\bamended\s+eff\.)", re.I)
+CROSS_REFERENCE_RE = re.compile(r"^Cross-reference:\s", re.I)
+PUBLISHER_EFFECTIVE_NOTE_RE = re.compile(r"^(?:NOTE:|Notes?:)", re.I)
 ANNOTATION_START_RE = re.compile(
     r"^(?:Cross-reference:|NOTE:|Notes?:|Judicial Council Note|Legislative Council Note|"
     r"Compiler(?:’s|'s) Note|Attorney General|See also |ANNOTATION:)",
@@ -68,6 +72,38 @@ def normalized(text: str) -> str:
 
 def heading_key(text: str) -> str:
     return normalized(text).replace("’", "'").rstrip(" .;:").casefold()
+
+
+def is_statute_text_boundary(stripped: str) -> tuple[bool, str | None]:
+    """Whether a plain-text line ends the statutory body (not cross-refs or future-effective NOTE blocks)."""
+    if stripped.startswith("History:"):
+        return True, "history"
+    if HIERARCHY_START_RE.match(stripped):
+        return True, "hierarchy_heading"
+    if CROSS_REFERENCE_RE.match(stripped):
+        return False, None
+    if PUBLISHER_EFFECTIVE_NOTE_RE.match(stripped) and (
+        EFFECTIVE_RE.search(stripped) or WI_FUTURE_NOTE_RE.search(stripped)
+    ):
+        return False, None
+    if ANNOTATION_START_RE.match(stripped):
+        return True, "labelled_annotation"
+    if (
+        UNLABELLED_ANNOTATION_RE.search(stripped)
+        and not re.match(r"^(?:\([^)]+\)|[0-9]+[A-Za-z]*\.)\s", stripped)
+    ):
+        return True, "unlabelled_annotation"
+    return False, None
+
+
+def effective_notes_from_text(text: str) -> str | None:
+    notes = [
+        line.strip()
+        for line in (text or "").splitlines()
+        if PUBLISHER_EFFECTIVE_NOTE_RE.match(line.strip())
+        and (EFFECTIVE_RE.search(line) or WI_FUTURE_NOTE_RE.search(line))
+    ]
+    return "\n".join(notes) or None
 
 
 def clean_tag(tag, remove_selectors=()) -> str:
@@ -337,12 +373,15 @@ def parse_chapter_html(
         text = "\n".join(lines)
         histories = [section_note_text(tag) for tag in history_elements[citation]]
         history = "\n".join(value for value in histories if value) or None
-        effective_notes = []
+        publisher_note_lines = []
         for tag in note_elements[citation]:
             value = section_note_text(tag)
-            if EFFECTIVE_RE.search(value):
-                effective_notes.append(value)
-        effective = "\n".join(effective_notes) or None
+            if value and (EFFECTIVE_RE.search(value) or WI_FUTURE_NOTE_RE.search(value)):
+                publisher_note_lines.append(value)
+        if publisher_note_lines:
+            lines.extend(publisher_note_lines)
+            text = "\n".join(lines)
+        effective = effective_notes_from_text(text)
         status_label = heading if heading and STATUS_RE.match(heading) else None
 
         toc_options = toc_by_citation.get(citation, [])
@@ -539,29 +578,17 @@ def parse_chapter_text(
 
         boundary_index = segment_end_index
         history = None
-        effective_notes = []
         boundary_kind = None
         for index in range(body_index + 1, segment_end_index):
             stripped = records[index]["text"].strip()
-            if stripped.startswith("History:"):
+            if not stripped:
+                continue
+            ends, kind = is_statute_text_boundary(stripped)
+            if ends:
                 boundary_index = index
-                history = stripped
-                boundary_kind = "history"
-                break
-            if HIERARCHY_START_RE.match(stripped):
-                boundary_index = index
-                boundary_kind = "hierarchy_heading"
-                break
-            if ANNOTATION_START_RE.match(stripped):
-                boundary_index = index
-                boundary_kind = "labelled_annotation"
-                break
-            if (
-                UNLABELLED_ANNOTATION_RE.search(stripped)
-                and not re.match(r"^(?:\([^)]+\)|[0-9]+[A-Za-z]*\.)\s", stripped)
-            ):
-                boundary_index = index
-                boundary_kind = "unlabelled_annotation"
+                boundary_kind = kind
+                if kind == "history":
+                    history = stripped
                 break
         # A no-history section can be followed by an all-caps subchapter/article
         # heading before the next section marker.  It is hierarchy, not section text.
@@ -585,6 +612,7 @@ def parse_chapter_text(
         while text_end > text_start and content[text_end - 1] in "\r\n":
             text_end -= 1
         text = content[text_start:text_end]
+        effective = effective_notes_from_text(text)
 
         if boundary_index < segment_end_index:
             for index in range(boundary_index, segment_end_index):
@@ -594,8 +622,11 @@ def parse_chapter_text(
                 if index == boundary_index and boundary_kind == "history":
                     annotation_counts["history"] += 1
                     continue
-                if EFFECTIVE_RE.search(value) and re.match(r"^(?:NOTE:|Notes?:)", value, re.I):
-                    effective_notes.append(value)
+                if PUBLISHER_EFFECTIVE_NOTE_RE.match(value) and (
+                    EFFECTIVE_RE.search(value) or WI_FUTURE_NOTE_RE.search(value)
+                ):
+                    annotation_counts["note"] += 1
+                    continue
                 if ANNOTATION_START_RE.match(value):
                     annotation_counts["labelled"] += 1
                 else:
@@ -635,7 +666,7 @@ def parse_chapter_text(
                 "text": text,
                 "history": history,
                 "status_label": status_label,
-                "effective": "\n".join(effective_notes) or None,
+                "effective": effective,
                 "currency": currency,
                 "source": {
                     "url": receipt["url"],

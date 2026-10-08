@@ -341,6 +341,18 @@ def live_co_section_row(body, url, section, unit=None):
     return section_row_from_title_html(raw, url, section["citation_path"], section)
 
 
+def live_wi_section_row(body, url, section, unit=None):
+    """Re-parse one Wisconsin section from an official chapter .txt file."""
+    if "docs.legis.wisconsin.gov" not in (url or "") or not (url or "").endswith(".txt"):
+        return None
+    raw = body if isinstance(body, bytes) else body.encode("utf-8", "replace")
+    wi_dir = os.path.join(HERE, "..", "wi")
+    if wi_dir not in sys.path:
+        sys.path.insert(0, wi_dir)
+    from review_region import section_row_from_chapter_text  # noqa: WPS433
+    return section_row_from_chapter_text(raw, url, section["citation_path"], section)
+
+
 def live_ri_section_row(body, url, section, unit=None):
     """Re-parse one Rhode Island Gen. Laws section page."""
     if "rilegislature.gov" not in (url or ""):
@@ -1123,6 +1135,7 @@ def main():
                 or live_pa_section_row(live_raw, live_url, s)
                 or live_co_section_row(live_raw, live_url, s, u)
                 or live_ri_section_row(live_raw, live_url, s, u)
+                or live_wi_section_row(live_raw, live_url, s, u)
                 or live_vt_section_row(live_raw, live_url, s, u.get("source_url"))
                 or live_ut_section_row(live_raw, live_url, s)
                 or (
