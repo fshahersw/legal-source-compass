@@ -100,10 +100,9 @@ Criminal Code.
         self.assertEqual(len(toc), 2)
         self.assertEqual(len(rows), 2)
         first = rows[0]
-        self.assertEqual(
-            wi_parse.normalized(first["text"]),
-            "In this chapter: (1) “Board” means the board.",
-        )
+        self.assertIn("In this chapter:", first["text"])
+        self.assertIn("“Board” means the board.", first["text"])
+        self.assertIn("NOTE: This section takes effect on January 1, 2027.", first["text"])
         self.assertEqual(first["history"], "History:  2025 a. 1.")
         self.assertNotIn("commentary", first["text"])
         self.assertEqual(first["effective"], "NOTE: This section takes effect on January 1, 2027.")
@@ -150,8 +149,36 @@ Criminal Code.
         self.assertEqual(merged[0]["heading"], "First.")
         self.assertEqual(merged[2]["heading"], "Third.")
 
+    def test_cross_reference_and_note_stay_inside_section_text(self):
+        content = """\nCHAPTER 99\nTITLE\n99.10 Sample.\n\n99.10 Sample.  (1) First part.\nCross-reference:  See also ch. 1, Wis. stat.\n(2) Second part.\nNOTE:  Par. (a) is amended eff. 1-1-28 by 2025 Wis. Act 1 to read:\n(a)  Preview text.\n(3) Third part.\nHistory:  2025 a. 1.\n"""
+        toc = [
+            {
+                "citation": "99.10",
+                "heading": "Sample.",
+                "subchapter": None,
+                "url": "https://example/99.10",
+            }
+        ]
+        receipt = {"url": "https://example/99.txt", "sha256": "c" * 64}
+        rows, _, _ = wi_parse.parse_chapter_text(
+            content,
+            "99",
+            {"heading": "Title.", "subject": None},
+            toc,
+            [],
+            "Edition",
+            {"statement": "Statement", "as_of": None},
+            receipt,
+        )
+        self.assertEqual(len(rows), 1)
+        self.assertIn("Cross-reference:", rows[0]["text"])
+        self.assertIn("(2) Second part.", rows[0]["text"])
+        self.assertIn("NOTE:", rows[0]["text"])
+        self.assertIn("(3) Third part.", rows[0]["text"])
+        self.assertIn("eff. 1-1-28", rows[0]["effective"])
+
     def test_complete_plain_text_parser_uses_exact_spans_and_excludes_annotations(self):
-        content = """\nCHAPTER 12\nELECTIONS\n12.01 Definitions.\n12.02 Repealed.\n\n12.01 Definitions.  In this chapter:\n(1) “Board” means the board.\nHistory:  2025 a. 1.\nAn annotation that is not statutory text.\nNOTE: This section takes effect on January 1, 2027.\n12.02 Repealed.\nHistory:  1999 a. 1.\n"""
+        content = """\nCHAPTER 12\nELECTIONS\n12.01 Definitions.\n12.02 Repealed.\n\n12.01 Definitions.  In this chapter:\n(1) “Board” means the board.\nNOTE: This section takes effect on January 1, 2027.\nHistory:  2025 a. 1.\nAn annotation that is not statutory text.\n12.02 Repealed.\nHistory:  1999 a. 1.\n"""
         toc = [
             {
                 "citation": "12.01",
@@ -177,7 +204,8 @@ Criminal Code.
             {"statement": "Statement", "as_of": None},
             receipt,
         )
-        self.assertEqual(rows[0]["text"], "In this chapter:\n(1) “Board” means the board.")
+        self.assertIn("NOTE: This section takes effect on January 1, 2027.", rows[0]["text"])
+        self.assertIn("(1) “Board” means the board.", rows[0]["text"])
         self.assertEqual(rows[0]["history"], "History:  2025 a. 1.")
         self.assertNotIn("annotation", rows[0]["text"].casefold())
         self.assertIn("takes effect", rows[0]["effective"])

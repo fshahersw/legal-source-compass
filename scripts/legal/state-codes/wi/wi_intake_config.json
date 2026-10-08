@@ -1,0 +1,21 @@
+{
+  "jurisdiction": "WI",
+  "publisher": "Wisconsin Legislature / Legislative Reference Bureau (docs.legis.wisconsin.gov)",
+  "publisher_url": "https://docs.legis.wisconsin.gov/statutes/statutes",
+  "source_system": "wi-statutes",
+  "code_title": "Wisconsin Statutes",
+  "parser_version": "3",
+  "source_url_patterns": ["^https://docs\\.legis\\.wisconsin\\.gov/.*$"],
+  "rate_limit_ms": 1000,
+  "unit": "chapter text file",
+  "section_id": {
+    "regex": "^[0-9]{1,3}[A-Za-z]?\\.[0-9]{1,4}[A-Za-z0-9]*(?::occurrence:[2-9][0-9]*)?$",
+    "scheme": "official_citation_path",
+    "example": "1.01",
+    "citation_format": "chapter.section as printed (Wis. Stat. § 1.01)"
+  },
+  "currency": {
+    "basis": "publisher_statement",
+    "location": "https://docs.legis.wisconsin.gov/statutes/statutes"
+  }
+}
