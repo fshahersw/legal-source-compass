@@ -1119,10 +1119,7 @@ export function LimitationsWorkbench({
                     <td className="p-3">
                       <button
                         className="min-h-10 text-primary underline"
-                        onClick={() => {
-                          navigate("calculator", item.state, claim);
-                          setStep(1);
-                        }}
+                        onClick={() => navigate("calculator", item.state, claim)}
                       >
                         {item.name}
                       </button>

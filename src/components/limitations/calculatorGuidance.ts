@@ -284,3 +284,22 @@ export function guidedDateFields(
     );
   return dates;
 }
+
+export type MissingRequirement = { id: string; label: string };
+
+/** Items that must be filled before the calculator may run (dates and repose confirmation). */
+export function missingRequirements(
+  input: BaselineInput,
+  rule: LimitationRule | null,
+  fields: GuidedDateField[],
+): MissingRequirement[] {
+  if (!rule) return [];
+  const out: MissingRequirement[] = fields
+    .filter((field) => !input[field.key])
+    .map((field) => ({ id: "date-" + field.key, label: field.label }));
+  if (rule.calculation?.deathCapYears && input.vitalStatus === "deceased" && !input.deathDate)
+    out.push({ id: "date-deathDate", label: "Date of death" });
+  if (isAccrualReposeRule(rule) && input.reposeApplicabilityConfirmed !== true)
+    out.push({ id: "repose-applicability-confirmed", label: "Confirm the repose rule applies" });
+  return out;
+}
