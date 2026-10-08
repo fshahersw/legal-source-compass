@@ -630,6 +630,36 @@ describe("versioned legal evidence integrity", () => {
     ).toBeNull();
   });
 
+  // Round-2 historical variants (release 2026-10-08.3+): former La. Civ. Code art. 3492's one-year
+  // period for defamation and intentional tort, bounded by Acts 2024, No. 423 §3 (prospective only).
+  const laHistoricalTorts = (["defamation", "intentional_tort"] as const).filter((claimType) =>
+    snapshot.rules.some((rule) => rule.id === `la-${claimType.replace("_", "-")}-pre-2024-07-01-bf20261008`),
+  );
+  it.skipIf(laHistoricalTorts.length === 0)(
+    "applies former art. 3492's one-year period only to Louisiana defamation and intentional-tort claims accrued on or before 2024-07-01",
+    () => {
+      for (const claimType of laHistoricalTorts) {
+        const current = calculateBaseline(snapshot, {
+          ...confirmed,
+          jurisdiction: "LA",
+          claimType,
+          accrualDate: "2023-06-01",
+        });
+        expect(current.date).toBeNull();
+        expect(current.suggestedSubtype).toBe("pre_2024_07_01");
+        const historical = { ...confirmed, jurisdiction: "LA", claimType, subtype: "pre_2024_07_01" };
+        expect(calculateBaseline(snapshot, { ...historical, accrualDate: "2023-06-01" }).date).toBe("2024-06-01");
+        expect(calculateBaseline(snapshot, { ...historical, accrualDate: "2024-07-01" }).date).toBe("2025-07-01");
+        // The repealed article never reaches claims arising after the Act's effective date.
+        expect(calculateBaseline(snapshot, { ...historical, accrualDate: "2024-07-02" }).date).toBeNull();
+        expect(
+          calculateBaseline(snapshot, { ...confirmed, jurisdiction: "LA", claimType, accrualDate: "2024-07-02" }).date,
+        ).toBe("2026-07-02");
+      }
+    },
+  );
+
+
   it("does not calculate through unresolved Wyoming representative tolling", () => {
     const rule = baselineRule(snapshot.rules, "WY", "wrongful_death")!;
     expect(rule.conditions.join(" ")).toContain("1-38-103(b)(ii)");

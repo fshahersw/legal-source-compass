@@ -89,7 +89,9 @@ export function sourceCurrencyFacts(currency: SourceCurrency | undefined): Sourc
   if (currency.status === "confirmed_evidence_intact")
     return currency.route === "official_code_capture"
       ? { ...base, label: `Quoted passages found in current code text · ${checked}`, tone: "ok" }
-      : { ...base, label: `Page changed; quoted passages intact · ${checked}`, tone: "ok" };
+      : currency.route === "proxied"
+        ? { ...base, label: `Quoted passages found; page read through a fetch proxy · ${checked}`, tone: "ok" }
+        : { ...base, label: `Page changed; quoted passages intact · ${checked}`, tone: "ok" };
   if (currency.status === "evidence_lost")
     return { ...base, label: `Quoted passage no longer on the official page · ${checked}`, tone: "lost" };
   return { ...base, label: `Not re-read · ${checked}`, tone: "unknown" };

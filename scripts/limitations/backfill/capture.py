@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Capture one official primary-source page for the limitations backfill.
 
-Usage: capture.py ST CAPTURE_ID URL [--render] [--via firecrawl|tavily] [--text-file PATH --method NAME]
+Usage: capture.py ST CAPTURE_ID URL [--render] [--via firecrawl|tavily [--wait MS]] [--text-file PATH --method NAME]
 
 --render loads the page in headless Chrome (no login, no clicks, no terms acceptance) and stores the rendered
 DOM, for official sites that only deliver text through JavaScript. The capture is marked rendered=true.
@@ -131,6 +131,26 @@ def pdf_to_text(raw: bytes) -> str:
     return "\n\n".join((page.extract_text() or "") for page in reader.pages).strip() + "\n"
 
 
+def markdown_to_text(md: str) -> str:
+    """Plain text from a proxy's markdown rendering of the official page.
+
+    The proxy returns the page as markdown: link syntax around section cross-references, `**` around
+    headings, and backslashes before `.`/`#`/`(`. None of those characters are the statute's words, so
+    the stored text (the string quotations are checked against) drops them. The raw proxy response is
+    kept unchanged next to it, so the transformation is always reviewable.
+    """
+    text = md.replace("\xa0", " ")
+    text = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", text)                       # images carry no statute text
+    text = re.sub(r"\[([^\]]*)\]\((?:[^()]|\([^()]*\))*\)", r"\1", text)      # [label](url) -> label, incl. javascript:(...) hrefs with spaces
+    text = re.sub(r"(\*\*|__)(?=\S)(.+?)(?<=\S)\1", r"\2", text, flags=re.S)  # **bold** -> bold
+    text = re.sub(r"(?<![\w*])\*(?=\S)([^*\n]+?)(?<=\S)\*(?![\w*])", r"\1", text)  # *italic* on one line -> plain (history notes)
+    text = re.sub(r"^\s{0,3}#{1,6}\s+", "", text, flags=re.M)               # heading markers
+    text = re.sub(r"\\([\\`*_{}\[\]()#+\-.!>|~])", r"\1", text)             # escaped punctuation
+    text = text.replace("&nbsp;", " ").replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
+    lines = [re.sub(r"[ \t\r\f\v]+", " ", l).strip() for l in text.split("\n")]
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip() + "\n"
+
+
 def main():
     args = sys.argv[1:]
     if len(args) < 3:
@@ -161,9 +181,24 @@ def main():
         key = os.environ.get("FIRECRAWL_API_KEY" if via == "firecrawl" else "TAVILY_API_KEY")
         if not key:
             sys.exit("API key not set in the environment")
+        wait_ms = int(args[args.index("--wait") + 1]) if "--wait" in args else 0
         if via == "firecrawl":
-            resp = requests.post("https://api.firecrawl.dev/v1/scrape", headers={"Authorization": f"Bearer {key}"},
-                                 json={"url": url, "formats": ["markdown"], "onlyMainContent": False}, timeout=120)
+            # --wait MS lets a script-rendered official page finish loading before its text is read; the
+            # proxy still fetches the same URL and the response is stored unchanged as the raw capture.
+            # A `lovc_` key is a Lovable connection key: the same provider API, reached through the
+            # connector gateway (which never sees the raw page text as anything but the proxy response).
+            if key.startswith("lovc_"):
+                gateway_key = os.environ.get("LOVABLE_API_KEY")
+                if not gateway_key:
+                    sys.exit("LOVABLE_API_KEY not set in the environment (needed for a gateway connection key)")
+                endpoint = "https://connector-gateway.lovable.dev/firecrawl/v2/scrape"
+                headers = {"Authorization": f"Bearer {gateway_key}", "X-Connection-Api-Key": key}
+            else:
+                endpoint = "https://api.firecrawl.dev/v1/scrape"
+                headers = {"Authorization": f"Bearer {key}"}
+            resp = requests.post(endpoint, headers=headers,
+                                 json={"url": url, "formats": ["markdown"], "onlyMainContent": False,
+                                       **({"waitFor": wait_ms} if wait_ms else {})}, timeout=150)
             body = resp.json() if resp.ok else {}
             text = ((body.get("data") or {}).get("markdown")) or ""
         else:
@@ -180,12 +215,15 @@ def main():
             print(json.dumps({"ok": False, "via": via, "reason": "page looks like a terms or bot gate; not stored"}))
             sys.exit(1)
         raw = resp.content
-        text = text.replace("\xa0", " ")
+        # Both proxies return markdown-flavoured text (headings, **bold**, [label](url)); store plain text so
+        # literal passage checks compare words, not markup. The proxy response itself is kept as the raw capture.
+        text = markdown_to_text(text)
         meta = {
             "id": cid, "state": st, "url": url, "finalUrl": url, "status": 200, "contentType": "application/json",
             "hostClass": cls, "finalHostClass": cls, "retrievedAt": retrieved, "intermediary": True,
             "extraction": f"proxied fetch via {via} of the official page",
             "route": {"kind": "proxied", "proxy": via},
+            "textNormalization": "markdown-to-plain",
             "rawSha256": hashlib.sha256(raw).hexdigest(), "rawBytes": len(raw),
             "textSha256": hashlib.sha256(text.encode("utf-8")).hexdigest(), "textBytes": len(text.encode("utf-8")),
         }
@@ -243,6 +281,15 @@ def main():
     }
     if r.status_code != 200 or final_cls == "blocked_secondary":
         print(json.dumps({"ok": False, "reason": "non-200 or redirected to a secondary host", **meta}))
+        sys.exit(1)
+    # A redirect that leaves the requested site is never the requested page, whatever the destination's host
+    # class is (code.wvlegislature.gov has answered this reviewer with a 302 to fbi.gov). Same-site hops
+    # (www., a bare domain, a publisher's own mirror subdomain) share the registrable domain and are kept.
+    def registrable(host: str) -> str:
+        parts = (host or "").lower().split(".")
+        return ".".join(parts[-3:]) if len(parts) >= 3 and parts[-2] in ("state", "co", "us") else ".".join(parts[-2:])
+    if registrable(final.hostname or "") != registrable(urlparse(url).hostname or "") and "--allow-offsite-redirect" not in args:
+        print(json.dumps({"ok": False, "reason": f"redirected off the requested site to {final.hostname}; not stored", **meta}))
         sys.exit(1)
     try:
         if "pdf" in ctype.lower() or raw[:5] == b"%PDF-":

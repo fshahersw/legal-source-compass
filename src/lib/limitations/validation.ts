@@ -656,8 +656,14 @@ function validateSources(values: unknown): LimitationSource[] {
         )
       )
         fail(`${label}.currency has an unsupported status`);
-      if (!["direct", "official_code_capture", "none"].includes(c["route"] as string))
+      if (!["direct", "official_code_capture", "proxied", "none"].includes(c["route"] as string))
         fail(`${label}.currency has an unsupported route`);
+      if (c["route"] === "proxied") {
+        if (c["status"] === "confirmed_unchanged")
+          fail(`${label}.currency: a proxied recheck cannot claim a byte-identical page`);
+        if (c["rawSha256"] === undefined || c["rawStorageKey"] === undefined)
+          fail(`${label}.currency: a proxied recheck must retain the proxy response`);
+      }
       string(c["detail"], `${label}.currency.detail`);
       if (c["route"] === "none" && c["status"] !== "not_rechecked")
         fail(`${label}.currency claims a result without a fresh copy`);
