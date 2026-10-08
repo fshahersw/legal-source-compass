@@ -1,4 +1,4 @@
-# Time Limits accuracy audit — release 2026-10-08.1 (live) and round 2 candidate 2026-10-08.3 (staged, inactive)
+# Time Limits accuracy audit — release 2026-10-08.1 (live); candidate 2026-10-08.4 (staged, inactive; supersedes staged .2 and .3)
 
 Scope asked for on 2026-10-08: check that the already backfilled state limitation rules still match the current official text, fix what is out of date, fill the remaining gaps from authoritative sources, and improve the state-code reader and the calculator's statute view. This note records what was actually done, with the numbers the release report prints. It does not claim legal completeness.
 
@@ -42,7 +42,7 @@ Verified 118, flagged 4 (shown with the flag), not recorded 104 cells left open 
 
 - 198 sources could not be re-read from the publisher and have no reviewed code capture to match against; they are listed per state under Statutes & sources with "Not re-read".
 - Three source matches need a human: the New Hampshire opinion PDF, the Pennsylvania MCARE session-law source, and two South Dakota sections that match the same passage.
-- North Dakota `nd-ch28-01` points at the publisher's whole-code JSON (63.7 MB). The fresh copy is retained as a raw object only; it is not bundled as text because no rule quotes it literally.
+- North Dakota `nd-ch28-01-3` and `nd-ch32-21` point at the publisher's whole-code JSON (about 64 MB). A fresh copy is retained as a raw object only (`freshTextOversizedKeptAsRawOnly` in the release report); it is not bundled as text because it exceeds the release text bound and no rule quotes it literally.
 - Full-code reader: Arkansas, Georgia, Mississippi and Tennessee have no landed code; California, Hawaii, Kansas and New Jersey are acquiring with projection off. Adding them is an intake job against the corpus, not something the site can do.
 - Outline reader: the v3 outline function (`database/contracts/corpus-publisher-code-projection-v3-outline.sql`) still has to be applied in the corpus project; until then the site uses v2 and says so wherever a publisher skips a declared level (Louisiana 48 of 54 titles, Pennsylvania 12 of 51, New York 7 of 94, Connecticut 2 of 110 on the first click).
 
@@ -56,7 +56,7 @@ Activated with `scripts/admin/activate-limitations-release.mjs --verify`: `src/l
 
 Browser check after activation: Florida personal injury accrued 2024-01-15 → 2026-01-15 (two years); Louisiana personal injury accrued 2025-01-10 → 2027-01-10; Louisiana accrued 2023-06-01 under the current article issues no date and offers the one-year art. 3492 version instead. No console errors.
 
-## Round 2 — release 2026-10-08.3 (staged 2026-10-08, NOT activated)
+## Round 2 — release 2026-10-08.3 (staged 2026-10-08, NOT activated; superseded by 2026-10-08.4 below)
 
 Owner decision: stage only; the owner activates. The staged-but-stale candidate 2026-10-08.2 (manifest `d7b321a4…`) predates the New Jersey and case-law corrections below and must not be activated either; it stays in storage as an inactive staged manifest.
 
@@ -82,8 +82,34 @@ Staged with `scripts/admin/stage-limitations-release.mjs --release=2026-10-08.3 
 
 To activate (owner): `node scripts/admin/activate-limitations-release.mjs --release=2026-10-08.3 --verify`, then publish. Reverting is the same one-file manifest change back to 2026-10-08.1; every 2026-10-08.1 object stays in storage.
 
-Still open after round 2:
-- 14 cells stay "Not recorded" on purpose: Arkansas (4), Georgia (3), Mississippi (4), Tennessee (3) — their official compilations sit behind gated publishers and no official capture exists; nothing is filled from secondary summaries.
-- 198 sources are still not re-read and 40 rules still rest on sources without a literal passage; round 2 added no new such rules but did not reduce the backlog.
-- Three source matches still need a human (New Hampshire opinion PDF, Pennsylvania MCARE session law, two South Dakota sections matching one passage).
+Still open after round 2 (see round 3 for what changed): 14 "Not recorded" cells (AR 4, GA 3, MS 4, TN 3 — gated compilations); 198 sources not re-read and 40 rules without a literal passage; three source matches for a human; historical versions only where an official act documents the boundary.
+
+## Round 3 — release 2026-10-08.4 (staged 2026-10-08, NOT activated)
+
+Owner decision unchanged: stage only; the owner activates. Candidate .4 contains everything in .3 (same 888 rules, same 107 additions, 3 supersessions and 2 corrections, same 14 open cells) plus a third currency route for the sources neither the direct fetch nor the code capture could reach.
+
+**Proxied re-read (`scripts/limitations/backfill/recheck-via-proxy.ts`).** Each of the 198 "not re-read" sources was requested again at the same official URL through a fetch proxy (Tavily; Firecrawl answered HTTP 402 "insufficient credits" after a handful of pages and was not retried). The tool refuses gated publishers and non-official hosts, keeps the proxy's exact response bytes as a content-addressed raw capture (`application/json`, `rawSha256`, `rawStorageKey`), converts the extracted markdown to plain text (`textNormalization: markdown-to-plain`, tested in `captureText.test.ts`), and compares every passage a rule quotes from that source. Matching is literal first; where the extractor renders a passage with different spacing around punctuation or a line-break hyphen, the same spacing normalisation is applied to both sides and the match is labelled `spacing_normalized`. The route is recorded on the source as `currency.route = "proxied"` and shown in the app as "page read through a fetch proxy"; it never produces `confirmed_unchanged` (an extracted copy cannot prove the page is unchanged) and never produces `evidence_lost` (a passage missing from an extraction is a read failure, not a law change).
+
+Outcome of the 198: 70 sources — every quoted passage present in the proxied text; 99 — page returned, no rule quotes the source literally, so no passage was compared (recorded as such); 3 — page returned but the extraction did not reproduce a quoted passage (Kansas combined statute `bf-ks-sol-combined`, 28 passages not reproduced in a truncated extraction; New Hampshire `bf-nh-op-anderson-wood`, the "we follow Cheever's three-year holding" sentence absent from the extracted PDF text; New Jersey `bf-nj-njsa-limitations`, the official download is a ZIP, not statute text) — these stay "Not re-read" with the proxied text retained for manual comparison; 26 — the proxy could not read the host either (California leginfo, Alaska appellate index, Georgia Court of Appeals opinions, Kentucky and Missouri opinion PDFs, Mississippi billstatus session acts, New York courts timetable and GOL 17-101, Tennessee Court of Appeals opinions, Oregon 1967 SB 134, North Carolina opinion, New Jersey Supreme Court opinion) — these stay "Not re-read" with the proxy failure noted. Round-2 entry captures that came through a proxy (34 sources) are recorded under the same route.
+
+| | 2026-10-08.1 (live) | 2026-10-08.3 (staged) | 2026-10-08.4 (staged) |
+| --- | --- | --- | --- |
+| Rules / sources / judicial references | 784 / 949 / 11 | 888 / 1,021 / 11 | 888 / 1,021 / 11 |
+| State × claim cells with no rule | 105 | 14 | 14 |
+| Sources: confirmed unchanged / evidence intact / not re-read / evidence lost | 394 / 357 / 198 / 0 | 466 / 357 / 198 / 0 | 431 / 561 / 29 / 0 |
+| Rules: confirmed / partially confirmed / not re-read | — | — | 652 / 177 / 19 |
+| Rules without a literal passage | 40 | 40 | 40 |
+| Currency routes: direct / official code capture / proxied / none | 491 / 260 / — / 198 | 528 / 260 / — / 198 | 528 / 260 / 204 / 29 |
+
+Pre-checks on the candidate: `verify.mjs` passes (1,021 sources, 51 state jurisdictions, 4 federal statutes, 11 judicial references, checksums); 866 Time Limits tests pass with `LIM_BUNDLE_DIR` on the candidate (the Louisiana art. 3492 test runs, not skipped); `tsgo` clean; browser calculations against the candidate served through `/api/bundles`: HI defamation 2025-03-01 → 2027-03-01, CA personal injury → 2027-03-01, ND personal injury → 2031-03-01, LA defamation pre-2024 variant 2023-06-01 → 2024-06-01, MS wrongful death → no date with the research-only notice (the period rests on opinions applying § 15-1-49, not codified text; the calculator says so and declines to compute). No console or page errors. The two North Dakota whole-code re-reads (61.2 MiB of text each) are kept as raw captures only; the builder now refuses to project a fresh text file larger than 15 MiB and says so on the source.
+
+Staged with `scripts/admin/stage-limitations-release.mjs --release=2026-10-08.4 --execute`: 298 raw capture objects (182,119,961 bytes; 172 uploaded, 126 already present), 1,306 release files in 1,245 objects (168 uploaded, 1,077 already present), every object read back and hash-compared, live manifest untouched. Staged manifest `atlas-private-data/staged-releases/limitations-2026-10-08.4/manifest.679c2912de603c591fec6ce8600e0478293201a77e8af5fbe576a990e0760996.json`, SHA-256 `679c2912de603c591fec6ce8600e0478293201a77e8af5fbe576a990e0760996`; capture index SHA-256 `8592e8126bf629f71e7e48c4e3607495903ae1c14d0988b2c723bfc9f6f33606`. Separate read-only HEAD passes: all 1,306 manifest entries and 298 staged capture objects present (1,543 checked, 0 missing); all 1,199 raw-capture objects the release's sources and judicial references point at present (0 missing).
+
+To activate (owner): `node scripts/admin/activate-limitations-release.mjs --release=2026-10-08.4 --verify`, then publish. Reverting is the same one-file manifest change back to 2026-10-08.1; every 2026-10-08.1 object stays in storage. Staged .2 and .3 remain inactive and must not be activated.
+
+Still open after round 3:
+- 14 cells stay "Not recorded" on purpose: Arkansas (4), Georgia (3), Mississippi (4), Tennessee (3) — their official compilations sit behind gated publishers (Lexis/Westlaw containers) and no official capture exists; nothing is filled from secondary summaries. Filling them needs a publisher arrangement or an owner decision on the gated sites.
+- 29 sources are still not re-read by any route (26 unreachable through the proxy too; 3 returned but not reproduced verbatim) and 19 rules rest only on them; 40 rules still carry no literal passage (unchanged — the proxy route compares passages, it does not create them).
+- Source matches for a human: New Hampshire `bf-nh-op-anderson-wood` (the quoted holding sentence is not in the extracted PDF text) and Kansas `bf-ks-sol-combined` (truncated extraction). The Pennsylvania MCARE source and the South Dakota pair were resolved by this round (MCARE § 513 passages found in the proxied page; South Dakota 22/22 passages matched).
 - Historical versions exist only where a boundary is documented from an official act (Louisiana 2024; Kentucky 2026 withholds earlier dates). Other states' earlier periods are not modeled, and the calculator says so when it withholds a date.
+- Tolling, repose and counting cross-references and official-opinion precedents are attached only where round 1–2 research recorded them; a systematic pass is still owed.
