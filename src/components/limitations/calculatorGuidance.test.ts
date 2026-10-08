@@ -152,7 +152,7 @@ describe("missingRequirements", () => {
         fields,
       ),
     ).toEqual([]);
-    const plain = { ...rule, calculation: undefined } as LimitationRule;
+    const plain = { ...rule, calculation: undefined } as unknown as LimitationRule;
     expect(missingRequirements({ ...empty, ...filled }, plain, fields)).toEqual([]);
     const death = { ...plain, calculation: { deathCapYears: 2 } } as unknown as LimitationRule;
     expect(

@@ -390,7 +390,7 @@ export function LimitationsWorkbench({
   const calculate = () => {
     setSubmitted(true);
     if (missing.length) {
-      document.getElementById(missing[0].id)?.focus();
+      document.getElementById(missing[0]!.id)?.focus();
       return;
     }
     setResult(calculateBaseline(snapshot, input));
