@@ -281,7 +281,7 @@ export function StateStatutePanel({
                       <p className="mt-1 text-xs text-muted-foreground">{row.reason}</p>
                     ) : null}
                   </td>
-                  <td className="whitespace-nowrap py-2.5 pr-3 tabular-nums">{row.period}</td>
+                  <td className="py-2.5 pr-3 tabular-nums">{row.period}</td>
                   <td className="py-2.5 pr-3">{row.citation ?? NOT_RECORDED}</td>
                   <td className="py-2.5 pr-3">
                     {row.variants.length ? (
