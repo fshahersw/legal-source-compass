@@ -173,6 +173,23 @@ describe("exact statute citation paths", () => {
     expect(tokenEqualsStoredSection("09.10.070", "09.10.070", ["09.10.070"])).toBe(true);
   });
 
+  it("reads the official short form AS 09.10.130 and a UCC-style RCW 62A.2-725 as whole tokens", () => {
+    expect(exactCitationPaths("AK", "AS 09.10.130")).toEqual(["09.10.130"]);
+    expect(exactCitationPaths("AK", "AS 09.10.140(a)")).toEqual(["09.10.140"]);
+    expect(exactCitationPaths("AK", "AS 45.02.725(c)-(d)")).toEqual(["45.02.725"]);
+    expect(exactCitationPaths("WA", "RCW 62A.2-725(3)-(4)")).toEqual(["62A.2-725"]);
+    expect(exactCitationPaths("WA", "RCW 62A.2-725")?.includes("2-725")).toBe(false);
+  });
+
+  it("does not cut a hyphen path at a dotted middle piece or a title letter", () => {
+    expect(exactCitationPaths("ND", "N.D. Cent. Code § 28-01.3-08(1)")).toEqual(["28-01.3-08"]);
+    expect(exactCitationPaths("ND", "N.D. Cent. Code § 28-01.3-08(1)")?.includes("01.3-08")).toBe(false);
+    expect(exactCitationPaths("WY", "W.S. 34.1-2-725(c)-(d)")).toEqual(["34.1-2-725"]);
+    expect(exactCitationPaths("WY", "W.S. 34.1-2-725")?.includes("34.1-2")).toBe(false);
+    expect(exactCitationPaths("CT", "C.G.S. § 42a-2-725(3)-(4)")).toEqual(["42a-2-725"]);
+    expect(exactCitationPaths("DE", "18 Del. C. § 6856(3)a.")).toEqual(["18/6856"]);
+  });
+
   it("reads New Hampshire 508:4 without the paragraph or the lettered neighbor", () => {
     expect(exactCitationPaths("NH", "N.H. Rev. Stat. Ann. § 508:4, I")).toEqual(["508:4"]);
     expect(exactCitationPaths("NH", "N.H. Rev. Stat. Ann. § 508:4, I")?.includes("508:4-b")).toBe(

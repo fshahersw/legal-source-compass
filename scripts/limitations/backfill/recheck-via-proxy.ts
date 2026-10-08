@@ -29,7 +29,8 @@
 import { spawn } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { containsLiteral, normalizeText } from "@/lib/limitations/backfill/entries";
+import { containsLiteral } from "@/lib/limitations/backfill/entries";
+import { matchPassage, type MatchMode } from "@/lib/limitations/backfill/passageMatch";
 import type { LimitationRule, LimitationSource } from "@/lib/limitations/types";
 
 const args = Object.fromEntries(
@@ -86,24 +87,8 @@ function needlesFor(source: LimitationSource): Needle[] {
   return out;
 }
 
-/**
- * Second, disclosed comparison for extracted copies: the same words in the same order, ignoring spaces that an
- * extractor puts before punctuation ("injury , not"), after an opening bracket, and line-break hyphenation
- * ("mali- cious" / "mali-cious"; every letter-hyphen-lowercase join is applied to both sides alike). Recorded as
- * matchMode "spacing_normalized".
- */
-function spacingNormalized(value: string): string {
-  return normalizeText(value)
-    .replace(/\s+([,.;:!?)\]])/g, "$1")
-    .replace(/([(\[])\s+/g, "$1")
-    .replace(/(\p{L})-\s?(\p{Ll})/gu, "$1$2");
-}
-type MatchMode = "literal" | "spacing_normalized";
-function matchPassage(haystack: string, needle: string): MatchMode | null {
-  if (containsLiteral(haystack, needle)) return "literal";
-  const n = spacingNormalized(needle);
-  return n.length >= 8 && spacingNormalized(haystack).includes(n) ? "spacing_normalized" : null;
-}
+// Second, disclosed comparison for extracted copies (spacing around punctuation, dashes and line-break
+// hyphenation): shared with the release builder in src/lib/limitations/backfill/passageMatch.ts.
 
 export type ProxyRecheckResult = {
   url: string;

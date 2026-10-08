@@ -73,7 +73,10 @@ function rule(
   };
 }
 
-function snapshotWith(rules: LimitationRule[]): LimitationsSnapshot {
+function snapshotWith(
+  rules: LimitationRule[],
+  patchCoverage: (row: Record<string, unknown>) => void = () => {},
+): LimitationsSnapshot {
   const sources = STATES.map(source);
   return validateLimitationsSnapshot({
     rules: {
@@ -89,26 +92,30 @@ function snapshotWith(rules: LimitationRule[]): LimitationsSnapshot {
     coverage: {
       schemaVersion: "1.0.0",
       snapshotDate: "2026-10-05",
-      coverage: STATES.map((state) => ({
-        state,
-        name: state,
-        sourceStatus: "primary_text_retrieved",
-        sourceIds: [`${state.toLowerCase()}-src`],
-        baselineRuleIds: rules
-          .filter((r) => r.jurisdiction === state && r.computation === "baseline_only")
-          .map((r) => r.id),
-        researchRuleIds: rules
-          .filter((r) => r.jurisdiction === state && r.computation === "research_only")
-          .map((r) => r.id),
-        coverage: rules.some((r) => r.jurisdiction === state && r.computation === "baseline_only")
-          ? "conditional_baselines"
-          : "research_only",
-        discoverySource: "https://legislature.example.gov/",
-        discoveryLinks: [],
-        gaps: ["test"],
-        publisherLinks: [],
-        metadataOnlyReferences: [],
-      })),
+      coverage: STATES.map((state) => {
+        const row: Record<string, unknown> = {
+          state,
+          name: state,
+          sourceStatus: "primary_text_retrieved",
+          sourceIds: [`${state.toLowerCase()}-src`],
+          baselineRuleIds: rules
+            .filter((r) => r.jurisdiction === state && r.computation === "baseline_only")
+            .map((r) => r.id),
+          researchRuleIds: rules
+            .filter((r) => r.jurisdiction === state && r.computation === "research_only")
+            .map((r) => r.id),
+          coverage: rules.some((r) => r.jurisdiction === state && r.computation === "baseline_only")
+            ? "conditional_baselines"
+            : "research_only",
+          discoverySource: "https://legislature.example.gov/",
+          discoveryLinks: [],
+          gaps: ["test"],
+          publisherLinks: [],
+          metadataOnlyReferences: [],
+        };
+        if (state === "TX") patchCoverage(row);
+        return row;
+      }),
     },
   });
 }
@@ -312,7 +319,7 @@ describe("weekend extension from a recorded state counting rule", () => {
   const withTimeRule = (extend: boolean) => {
     const data = snapshotWith([rule("fraud", 3, "calendar_years")]);
     const row = data.coverage.find((c) => c.state === "TX")!;
-    row.timeComputation = {
+    row["timeComputation"] = {
       status: "verified",
       extendsWhenLastDayIsWeekend: extend,
       extendsWhenLastDayIsHoliday: null,
@@ -351,17 +358,94 @@ describe("weekend extension from a recorded state counting rule", () => {
     const result = calculateBaseline(data, input("fraud", "2023-05-02"));
     expect(result.date).toBe("2026-05-02");
     expect(result.adjustedDate).toBeNull();
+    expect(result.weekendNotice).toEqual({
+      kind: "flagged_rule",
+      weekday: "Saturday",
+      ruleStatus: "flagged",
+      citation: "Test Code § 16.072",
+      note: "test",
+      extendsWhenLastDayIsWeekend: true,
+    });
+    expect(result.steps.at(-1)?.text).toContain("is flagged and was not applied: test.");
+  });
+
+  it("says so when a verified rule does not reach the weekday", () => {
+    const result = calculateBaseline(withTimeRule(false), input("fraud", "2023-05-02"));
+    expect(result.adjustedDate).toBeNull();
+    expect(result.weekendNotice).toMatchObject({
+      kind: "flagged_rule",
+      weekday: "Saturday",
+      ruleStatus: "verified",
+      extendsWhenLastDayIsWeekend: false,
+    });
+    expect(result.steps.at(-1)?.text).toContain("does not extend a last day that falls on a Saturday");
   });
 
   it("does not adjust weekday anniversaries or states without a recorded rule", () => {
-    expect(
-      calculateBaseline(withTimeRule(true), input("fraud", "2023-05-04")).adjustedDate,
-    ).toBeNull();
-    expect(
-      calculateBaseline(withTimeRule(false), input("fraud", "2023-05-02")).adjustedDate,
-    ).toBeNull();
+    const weekday = calculateBaseline(withTimeRule(true), input("fraud", "2023-05-04"));
+    expect(weekday.adjustedDate).toBeNull();
+    expect(weekday.weekendNotice).toBeNull();
     const none = snapshotWith([rule("fraud", 3, "calendar_years")]);
-    expect(calculateBaseline(none, input("fraud", "2023-05-02")).adjustedDate).toBeNull();
+    const result = calculateBaseline(none, input("fraud", "2023-05-02"));
+    expect(result.adjustedDate).toBeNull();
+    expect(result.weekendNotice).toEqual({ kind: "no_rule", weekday: "Saturday", reason: null });
+    expect(result.steps.at(-1)?.text).toContain("No last-day counting rule is recorded for TX");
+  });
+
+  it("carries the recorded reason when a state was reviewed and no rule could be recorded", () => {
+    const data = snapshotWith([rule("fraud", 3, "calendar_years")]);
+    data.coverage.find((c) => c.state === "TX")!.timeComputationNotRecorded = {
+      reason: "official code is published only through a gated publisher",
+      reviewedOn: "2026-10-08T00:00:00.000Z",
+    };
+    const result = calculateBaseline(data, input("fraud", "2023-05-03"));
+    expect(result.date).toBe("2026-05-03");
+    expect(result.adjustedDate).toBeNull();
+    expect(result.weekendNotice).toEqual({
+      kind: "no_rule",
+      weekday: "Sunday",
+      reason: "official code is published only through a gated publisher",
+    });
+    expect(result.steps.at(-1)?.text).toContain("gated publisher");
+  });
+
+  it("rejects a coverage row that records both a counting rule and a reason for having none", () => {
+    const timeComputation = {
+      status: "verified",
+      extendsWhenLastDayIsWeekend: true,
+      extendsWhenLastDayIsHoliday: null,
+      citation: "Test Code § 16.072",
+      excerpt: "next day that the county offices are open",
+      sourceId: "tx-src",
+      retrievedAt: "2026-10-05T00:00:00.000Z",
+      note: "test",
+    };
+    const timeComputationNotRecorded = {
+      reason: "official code is published only through a gated publisher",
+      reviewedOn: "2026-10-08T00:00:00.000Z",
+    };
+    expect(() =>
+      snapshotWith([rule("fraud", 3, "calendar_years")], (row) => {
+        row["timeComputation"] = timeComputation;
+        row["timeComputationNotRecorded"] = timeComputationNotRecorded;
+      }),
+    ).toThrow(/both a counting rule and a reason/);
+    expect(() =>
+      snapshotWith([rule("fraud", 3, "calendar_years")], (row) => {
+        row["timeComputationNotRecorded"] = { ...timeComputationNotRecorded, reason: "gated" };
+      }),
+    ).toThrow(/must say why no rule could be recorded/);
+    expect(() =>
+      snapshotWith([rule("fraud", 3, "calendar_years")], (row) => {
+        row["timeComputation"] = { ...timeComputation, supportingSourceIds: ["missing-src"] };
+      }),
+    ).toThrow(/missing supporting source/);
+    const ok = snapshotWith([rule("fraud", 3, "calendar_years")], (row) => {
+      row["timeComputationNotRecorded"] = timeComputationNotRecorded;
+    });
+    expect(ok.coverage.find((c) => c.state === "TX")!.timeComputationNotRecorded).toEqual(
+      timeComputationNotRecorded,
+    );
   });
 });
 

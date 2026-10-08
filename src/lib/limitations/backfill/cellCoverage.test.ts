@@ -63,6 +63,21 @@ describe("claimCoverageFor", () => {
     expect(cell.variants?.[0]?.status).toBe("baseline");
   });
 
+  it("appends the variants-only sentence once, even when a carried reason already has it", () => {
+    const sentence =
+      "Only narrow fact-pattern variants are recorded; none is treated as the claim type's rule.";
+    const carried = `Publisher gated. ${sentence} ${sentence}`;
+    const cell = claimCoverageFor(
+      [rule({ id: "v", subtype: "foreign_object", computation: "baseline_only" })],
+      "personal_injury",
+      carried,
+    );
+    expect(cell.reason).toBe(`Publisher gated. ${sentence}`);
+    expect(cell.reason!.split(sentence).length - 1).toBe(1);
+    const plain = claimCoverageFor([rule({ claimType: "fraud" })], "personal_injury", carried);
+    expect(plain.reason).toBe("Publisher gated.");
+  });
+
   it("ignores rules of other claim types and non-limitations rule kinds", () => {
     const cell = claimCoverageFor(
       [rule({ claimType: "fraud" }), rule({ ruleKind: "repose" })],

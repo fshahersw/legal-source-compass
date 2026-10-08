@@ -30,6 +30,9 @@ const recheckFile = process.env["LIM_RECHECK"] ?? "/tmp/lim/recheck/results.json
 const outFile = process.env["LIM_RECHECK_CODE"] ?? "/tmp/lim/recheck/results-code-capture.json";
 const reviewFile =
   process.env["LIM_RECHECK_CODE_REVIEW"] ?? "/tmp/lim/recheck/code-capture-review.json";
+/** `--only=id1,id2` restricts the pass to the named sources (e.g. those behind newly quoted rules). */
+const onlyArg = process.argv.find((a) => a.startsWith("--only="));
+const only = onlyArg ? new Set(onlyArg.slice("--only=".length).split(",").filter(Boolean)) : null;
 
 type DirectResult = {
   url: string;
@@ -84,9 +87,33 @@ const direct: DirectResult[] = existsSync(recheckFile)
   : [];
 const directBySource = new Map(direct.flatMap((r) => r.sourceIds.map((id) => [id, r] as const)));
 
+/**
+ * Character references left undecoded by an intake (`&#150;`, `&sect;`, `&nbsp;`) are rendering, not words;
+ * they are decoded before comparison. Numeric references 128-159 follow the HTML rule (Windows-1252 glyphs).
+ */
+const CP1252: Record<number, string> = {
+  130: "\u201a", 132: "\u201e", 133: "\u2026", 145: "\u2018", 146: "\u2019", 147: "\u201c", 148: "\u201d",
+  149: "\u2022", 150: "\u2013", 151: "\u2014", 153: "\u2122", 160: "\u00a0",
+};
+const NAMED: Record<string, string> = {
+  amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: "\u00a0", sect: "\u00a7", ndash: "\u2013",
+  mdash: "\u2014", lsquo: "\u2018", rsquo: "\u2019", ldquo: "\u201c", rdquo: "\u201d", para: "\u00b6", hellip: "\u2026",
+};
+function decodeEntities(text: string): string {
+  return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (whole, ref: string) => {
+    if (ref[0] === "#") {
+      const code = ref[1].toLowerCase() === "x" ? parseInt(ref.slice(2), 16) : parseInt(ref.slice(1), 10);
+      if (!Number.isFinite(code)) return whole;
+      if (CP1252[code]) return CP1252[code];
+      return code >= 32 ? String.fromCodePoint(code) : whole;
+    }
+    return NAMED[ref.toLowerCase()] ?? whole;
+  });
+}
+
 /** Same normalisation family as the direct recheck: whitespace, quotes, dashes, soft hyphens, case. */
 function norm(text: string): string {
-  return text
+  return decodeEntities(text)
     .normalize("NFKC")
     .replace(/[\u00ad\u200b\u200c\u200d\ufeff]/g, "")
     .replace(/[\u2018\u2019\u201a\u2032]/g, "'")
@@ -217,6 +244,7 @@ async function main() {
   const bump = (k: string) => (skipped[k] = (skipped[k] ?? 0) + 1);
 
   const candidates = sources.filter((s) => {
+    if (only && !only.has(s.id)) return false;
     const d = directBySource.get(s.id);
     if (d && USABLE_DIRECT.has(d.status)) return false;
     if (s.authorityKind !== "statute") {

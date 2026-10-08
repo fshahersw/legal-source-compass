@@ -27,6 +27,7 @@ export function exactCitationPaths(state: string, citation: string): string[] | 
         ...(usps === "LA" ? (louisianaCivilCodePaths(text) ?? []) : []),
         ...(usps === "TX" ? (texasCodePaths(text) ?? []) : []),
         ...(usps === "WA" ? (washingtonPaths(text) ?? []) : []),
+        ...(usps === "AK" ? (alaskaPaths(text) ?? []) : []),
         ...(usps === "PA" ? (pennsylvaniaPaths(text) ?? []) : []),
         ...(usps === "DC" ? (districtOfColumbiaPaths(text) ?? []) : []),
         ...(usps === "NY" ? (newYorkPaths(text) ?? []) : []),
@@ -160,8 +161,8 @@ function delawarePaths(citation: string): string[] | null {
       const section = raw
         .trim()
         .replace(/\s+/g, "")
-        .replace(/(?:\([^)]*\))+$/g, "")
-        .replace(/\.$/, "");
+        .replace(/\.$/, "")
+        .replace(/(?:\([^)]*\))+[a-z]?$/g, "");
       if (!/^\d{3,}$/.test(section)) continue;
       const path = `${title}/${section}`;
       if (!paths.includes(path)) paths.push(path);
@@ -275,7 +276,20 @@ function texasCodePaths(citation: string): string[] | null {
  */
 function washingtonPaths(citation: string): string[] | null {
   const paths: string[] = [];
-  const re = /\bRCW\s+(\d+\.\d+\.\d+)(?!\d)/gi;
+  // `RCW 62A.2-725` (Uniform Commercial Code title 62A) is the whole token too; `2-725` is not a WA section.
+  const re = /\bRCW\s+(\d+[A-Z]?\.\d+(?:\.\d+|-\d+))(?![\dA-Za-z])/gi;
+  for (const match of citation.matchAll(re)) {
+    const path = match[1];
+    if (!path || paths.includes(path)) continue;
+    paths.push(path);
+  }
+  return paths.length ? paths : null;
+}
+
+/** Alaska Statutes cited in the official short form `AS 09.10.130(a)`: the whole three-part number, no parenthetical. */
+function alaskaPaths(citation: string): string[] | null {
+  const paths: string[] = [];
+  const re = /\bAS\s+(\d{2}\.\d{2}\.\d{3})(?![\d.])/g;
   for (const match of citation.matchAll(re)) {
     const path = match[1];
     if (!path || paths.includes(path)) continue;
@@ -299,7 +313,8 @@ function dottedPaths(citation: string): string[] | null {
 /** Title-and-section numbers such as Va. Code § 8.01-243. A parenthetical or later subdivision is not included. */
 function dottedHyphenPaths(citation: string): string[] | null {
   const paths: string[] = [];
-  const re = /\b(\d{1,4}\.\d{1,4}-\d{1,4}(?:\.\d{1,4})?)(?![A-Za-z0-9.])/g;
+  // `01.3-08` inside `28-01.3-08` is not a section; `34.1-2` is not the whole of `34.1-2-725`.
+  const re = /(?<![\d.-])\b(\d{1,4}\.\d{1,4}(?:-\d{1,4}){1,3}(?:\.\d{1,4})?)(?![A-Za-z0-9.-])/g;
   for (const match of citation.matchAll(re)) {
     const path = match[1];
     if (!path || paths.includes(path)) continue;
@@ -354,7 +369,8 @@ function vermontTitleSections(citation: string): string[] | null {
 function hyphenPaths(citation: string): string[] | null {
   const paths: string[] = [];
   // A month-day tail of a date such as 2024-07-01 is not a section number.
-  const re = /(?<!\d\.)(?<!\d-)\b(\d{1,2}[A-Z]?(?:-\d{1,4}[A-Za-z]?){1,8}(?:\.\d{1,4})?)(?!\d)/g;
+  // `28-01.3-08` keeps its dotted middle piece; `42a-2-725` keeps its title letter; `2-725` after `62A.` is not a section.
+  const re = /(?<!\d\.)(?<!\d-)(?<![A-Za-z]\.)\b(\d{1,2}[A-Za-z]?(?:-\d{1,4}(?:\.\d{1,4})?[A-Za-z]?){1,8})(?![\d.-])/g;
   for (const match of citation.matchAll(re)) {
     const path = match[1];
     if (!path || paths.includes(path)) continue;

@@ -1,5 +1,9 @@
 import type { ClaimCoverage, ClaimCoverageStatus, ClaimType, LimitationRule } from "../types";
 
+const VARIANTS_ONLY_SENTENCE =
+  "Only narrow fact-pattern variants are recorded; none is treated as the claim type's rule.";
+
+
 const statusOf = (rule: LimitationRule): ClaimCoverageStatus =>
   rule.computation === "baseline_only"
     ? "baseline"
@@ -28,12 +32,12 @@ export function claimCoverageFor(
     .map((r) => ({ subtype: r.subtype!, ruleId: r.id, status: statusOf(r) }))
     .sort((a, b) => a.subtype.localeCompare(b.subtype));
   if (!chosen) {
+    // The reason may come from an earlier release that already carries this sentence; append it once.
+    const base = notRecordedReason.split(VARIANTS_ONLY_SENTENCE).join("").replace(/\s+$/, "").trim();
     return {
       claimType,
       status: "not_recorded",
-      reason: variants.length
-        ? `${notRecordedReason} Only narrow fact-pattern variants are recorded; none is treated as the claim type's rule.`
-        : notRecordedReason,
+      reason: variants.length ? `${base} ${VARIANTS_ONLY_SENTENCE}` : base,
       ...(variants.length ? { variants } : {}),
     };
   }

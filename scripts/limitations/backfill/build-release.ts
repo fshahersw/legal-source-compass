@@ -37,6 +37,7 @@ import {
   type MatrixEntryInput,
   type TimeRuleInput,
 } from "../../../src/lib/limitations/backfill/entries";
+import { matchPassage } from "../../../src/lib/limitations/backfill/passageMatch";
 import {
   isIntermediaryOnlyCapture,
   ruleFromEntry,
@@ -48,6 +49,10 @@ import {
   applyCorrections,
   type CorrectionInput,
 } from "../../../src/lib/limitations/backfill/corrections";
+import {
+  applyEvidenceAttachments,
+  type EvidenceAttachmentInput,
+} from "../../../src/lib/limitations/backfill/attachments";
 import {
   CLAIM_LABELS,
   CLAIM_TYPES,
@@ -110,9 +115,16 @@ type RecheckResult = {
   textBytes?: number;
   error?: string;
   probe?: string;
-  evidence?: { sourceId: string; ruleId: string; kind: string; found: boolean }[];
+  evidence?: { sourceId: string; ruleId: string; kind: string; found: boolean; matchMode?: string }[];
   sameRaw?: boolean;
   sameText?: boolean;
+  /** Disclosure appended to the verdict (browser engine used, automated check completed, plain-HTTP read…). */
+  note?: string;
+  /** Composite sources only (recheck-direct-browser.py --composite): the component source ids compared. */
+  components?: string[];
+  componentsNotIdentical?: string[];
+  /** Composite sources only: what the concatenation holds beyond the named components (never quoted by a rule). */
+  componentsNote?: string;
 };
 const recheck: RecheckResult[] = existsSync(recheckFile)
   ? JSON.parse(readFileSync(recheckFile, "utf8"))
@@ -138,6 +150,14 @@ function evidenceSources(rule: LimitationRule): Map<string, string[]> {
   }
   return found;
 }
+
+/**
+ * Whether a source's retained text came from a direct read of the page (as opposed to a proxy's or an
+ * extraction service's rendering). Only then does a differing fresh text say anything about the page itself;
+ * two renderings of one unchanged page routinely differ.
+ */
+const originalWasDirect = (s: LimitationSource): boolean =>
+  s.fetchRoute?.kind === "direct" || (!s.fetchRoute && !/extraction|intermediary|proxied|proxy/i.test(s.method));
 
 const describeUnavailable = (r: RecheckResult) => {
   if (r.status === "unreachable_from_workspace")
@@ -316,6 +336,14 @@ for (const s of sources) {
     continue;
   }
   if (!usable.includes(r.status)) {
+    if (r.status.startsWith("composite_")) {
+      // Settled in the composite pass below, once every component's own verdict for this build is known.
+      sourceCurrency.set(
+        s.id,
+        s.currency ?? { checkedAt, status: "not_rechecked", route: "none", detail: "Not included in the recheck pass; the retained capture stands." },
+      );
+      continue;
+    }
     const cc = codeRecheckBySource.get(s.id);
     const suffix =
       cc?.status === "code_capture_passage_missing"
@@ -323,12 +351,32 @@ for (const s of sources) {
         : cc?.status === "code_capture_no_section"
           ? " The publisher's current code text (full-code intake) was also consulted but names no exact section for this source."
           : "";
+    // A renewed attempt on a source already recorded as not re-read is appended to that record, so the
+    // earlier routes tried (and the proxy's outcome) stay visible; a passage the fresh copy did not
+    // reproduce is a review item, never a verdict.
+    const prior = s.currency?.status === "not_rechecked" ? s.currency.detail : undefined;
+    const day = (r.checkedAt ?? checkedAt).slice(0, 10);
+    const attempt =
+      r.status === "browser_passage_missing_review"
+        ? `A further direct read on ${day} returned the page, but its text did not reproduce ${(r.evidence ?? []).filter((e) => e.sourceId === s.id && !e.found).length} of ${(r.evidence ?? []).filter((e) => e.sourceId === s.id).length} quoted passage(s) verbatim, so no verdict is drawn from it; the fresh text is retained for manual comparison.`
+        : `A further direct read on ${day}: ${describeUnavailable(r).replace(/; the retained capture stands\.$/, "").replace(/^./, (c) => c.toLowerCase())}.`;
+    let freshTextPath: string | undefined;
+    if (r.status === "browser_passage_missing_review") {
+      const freshTxt = join(recheckCaptures, `${s.id}.txt`);
+      if (existsSync(freshTxt) && statSync(freshTxt).size <= FRESH_TEXT_MAX_BYTES) {
+        const id = `${s.id}.rechecked-${day}`;
+        newTexts.set(id, readFileSync(freshTxt, "utf8"));
+        freshTextPath = `/data/limitations/text/${id}.txt`;
+        freshTextFiles++;
+      }
+    }
     sourceCurrency.set(s.id, {
       checkedAt: r.checkedAt ?? checkedAt,
       status: "not_rechecked",
       route: "none",
-      detail: describeUnavailable(r) + suffix,
+      detail: prior ? `${prior} ${attempt}` : describeUnavailable(r) + suffix,
       ...(r.http ? { httpStatus: r.http } : {}),
+      ...(freshTextPath ? { freshTextPath } : {}),
     });
     continue;
   }
@@ -359,15 +407,23 @@ for (const s of sources) {
       detail: `Fresh official copy (${when.slice(0, 10)}) is byte- or text-identical to the retained capture.`,
     });
   } else {
+    const spaced = mine.filter((e) => e.matchMode === "spacing_normalized").length;
+    const direct = originalWasDirect(s);
+    const differs = direct
+      ? "differs from the retained capture"
+      : "differs from the retained text, which came through an extraction service rather than a direct read, so the difference does not by itself show that the page changed";
     sourceCurrency.set(s.id, {
       ...base,
       status: "confirmed_evidence_intact",
       detail:
         mine.length > 0
-          ? `Fresh official copy (${when.slice(0, 10)}) differs from the retained capture, but every quoted passage relied on from this source (${mine.length}) is still present. The page may have changed elsewhere; the fresh text is retained for comparison.`
-          : `Fresh official copy (${when.slice(0, 10)}) differs from the retained capture; no rule quotes this source literally, so the change is recorded without a rule effect.`,
+          ? `Fresh official copy (${when.slice(0, 10)}) ${differs}, but every quoted passage relied on from this source (${mine.length}) is still present${
+              spaced ? ` (${spaced} matched after normalising spaces around punctuation and line-break hyphens, which the two renderings place differently)` : ""
+            }. ${direct ? "The page may have changed elsewhere; the" : "The"} fresh text is retained for comparison.`
+          : `Fresh official copy (${when.slice(0, 10)}) ${differs}; no rule quotes this source literally, so ${direct ? "the change" : "the difference"} is recorded without a rule effect.`,
     });
   }
+  if (r.note) sourceCurrency.get(s.id)!.detail += ` ${r.note}`;
   // Keep the fresh text for changed pages so a reviewer can diff them in the app.
   const freshTxt = join(recheckCaptures, `${s.id}.txt`);
   if (!(r.sameRaw || r.sameText) && existsSync(freshTxt) && statSync(freshTxt).size <= FRESH_TEXT_MAX_BYTES) {
@@ -377,12 +433,118 @@ for (const s of sources) {
     freshTextFiles++;
   }
 }
+/**
+ * Composite sources: a builder-made verbatim concatenation of other sources' official pages is never fetched
+ * on its own. Its verdict is derived, in this build, from its components: when every component's own direct
+ * re-read is text-identical to its retained capture and every passage quoted from the concatenation is present
+ * in those components, the composite is confirmed on the direct route and names the components. Anything less
+ * leaves it not re-read. A composite verdict carried forward from an earlier release is re-derived the same way.
+ */
+const compositeDerived = new Set<string>();
+for (const s of sources) {
+  const r = recheckByUrl.get(s.id);
+  const prior = s.currency;
+  const components = r?.status.startsWith("composite_") ? (r.components ?? []) : (prior?.componentSourceIds ?? []);
+  if (!components.length) continue;
+  const when = r?.checkedAt ?? prior?.checkedAt ?? checkedAt;
+  const day = when.slice(0, 10);
+  const notIdentical = components.filter((c) => sourceCurrency.get(c)?.status !== "confirmed_unchanged");
+  const unknown = components.filter((c) => !sourceById.has(c));
+  const mine = (r?.evidence ?? []).filter((e) => e.sourceId === s.id);
+  const missing = mine.filter((e) => !e.found);
+  const labels = components.map((c) => sourceById.get(c)?.title?.replace(/\.$/, "") ?? c);
+  if (r && r.status === "composite_components_confirmed" && !notIdentical.length && !unknown.length && !missing.length) {
+    const componentDay = [...new Set(components.map((c) => sourceCurrency.get(c)!.checkedAt.slice(0, 10)))].sort().join(", ");
+    sourceCurrency.set(s.id, {
+      checkedAt: when,
+      status: "confirmed_evidence_intact",
+      route: "direct",
+      componentSourceIds: components,
+      detail: `This source is a builder-made verbatim concatenation of official pages that are also captured separately; it was not fetched again on its own. ${components.length} component page(s) (${labels.join("; ")}) were each re-read directly on ${componentDay} and found text-identical to their retained captures, and ${
+        mine.length ? `every one of the ${mine.length} passage(s) quoted from this concatenation is present verbatim in those components` : "no rule quotes this concatenation literally"
+      }.${r.componentsNote ? ` ${r.componentsNote}` : ""} Verdict derived on ${day}; it confirms the quoted passages, not the concatenation as a whole.`,
+    });
+    compositeDerived.add(s.id);
+    continue;
+  }
+  if (!r && prior?.componentSourceIds?.length) {
+    // Carried forward: keep it only while every component is still text-identical in this build.
+    if (!notIdentical.length) {
+      sourceCurrency.set(s.id, prior);
+      continue;
+    }
+    sourceCurrency.set(s.id, {
+      checkedAt,
+      status: "not_rechecked",
+      route: "none",
+      detail: `${prior.detail} In this release ${notIdentical.length} of those component page(s) (${notIdentical.join(", ")}) no longer carries a text-identical direct re-read, so the derived verdict is withdrawn and the retained capture stands.`,
+    });
+    continue;
+  }
+  if (r) {
+    const base = prior?.status === "not_rechecked" ? prior.detail : "Recheck did not yield a usable copy (composite); the retained capture stands.";
+    const why = unknown.length
+      ? `${unknown.length} named component source(s) do not exist in the release`
+      : notIdentical.length
+        ? `${notIdentical.length} of its ${components.length} component page(s) (${notIdentical.join(", ")}) did not have a text-identical direct re-read in this build`
+        : `${missing.length} of ${mine.length} quoted passage(s) were not found verbatim in the components' retained text`;
+    sourceCurrency.set(s.id, {
+      checkedAt: when,
+      status: "not_rechecked",
+      route: "none",
+      detail: `${base} A derivation from its component pages was attempted on ${day} but not recorded: ${why}.`,
+    });
+  }
+}
+/**
+ * Passage-level proxy comparison kept beside a page-level verdict that came another way. A rule whose quoted
+ * passages were confirmed through the proxy must be able to point at the retained proxy response, even when
+ * the source's own verdict is a direct re-read that compared no passage (or an older carried-forward one).
+ * Status and route are untouched; the proxy can only add a retained copy, never a page-level claim.
+ */
+const passageRechecked = new Set<string>();
+for (const s of sources) {
+  const c = sourceCurrency.get(s.id)!;
+  const pr = proxyRecheckBySource.get(s.id);
+  if (c.route === "proxied" || !pr || pr.status !== "proxied_evidence_intact" || !pr.rawSha256) continue;
+  const mine = pr.evidence.filter((e) => e.sourceId === s.id);
+  if (!mine.length || mine.some((e) => !e.found)) continue;
+  const day = pr.checkedAt.slice(0, 10);
+  const freshTxt = join(proxyRecheckCaptures, `${s.id}.txt`);
+  let freshTextPath: string | undefined;
+  let oversized = "";
+  if (existsSync(freshTxt) && statSync(freshTxt).size <= FRESH_TEXT_MAX_BYTES) {
+    const id = `${s.id}.proxied-${day}`;
+    newTexts.set(id, readFileSync(freshTxt, "utf8"));
+    freshTextPath = `/data/limitations/text/${id}.txt`;
+    freshTextFiles++;
+  } else if (existsSync(freshTxt)) {
+    oversizedFresh.add(s.id);
+    oversized = ` The proxied text (${(statSync(freshTxt).size / 1048576).toFixed(1)} MiB) exceeds the release text bound, so it is retained only as the raw capture named here, not as a release text file.`;
+  }
+  const spaced = mine.filter((e) => e.matchMode === "spacing_normalized").length;
+  c.passageRecheck = {
+    checkedAt: pr.checkedAt,
+    route: "proxied",
+    proxy: pr.proxy,
+    rawSha256: pr.rawSha256,
+    ...(pr.textSha256 ? { textSha256: pr.textSha256 } : {}),
+    rawStorageKey: `limitations-raw-captures/sha256/${pr.rawSha256.slice(0, 2)}/${pr.rawSha256}.bin`,
+    ...(freshTextPath ? { freshTextPath } : {}),
+    passages: mine.length,
+    detail: `On ${day} the same official URL was also read through a fetch proxy (${pr.proxy}) so that the ${mine.length} quoted passage(s) relied on from this source could be compared; every one is present in the proxy's extracted text${
+      spaced ? ` (${spaced} matched after normalising spaces around punctuation and line-break hyphens, which the extractor renders differently)` : ""
+    }. The proxy's response is retained byte-for-byte.${oversized} This confirms the passages in an extracted copy and does not change the page-level verdict recorded above.`,
+  };
+  passageRechecked.add(s.id);
+}
 for (const s of sources) {
   const c = sourceCurrency.get(s.id)!;
   s.currency = c;
   if (c.status === "confirmed_unchanged" || c.status === "confirmed_evidence_intact")
     s.verifiedAt = c.checkedAt;
 }
+
 
 
 // ---------------------------------------------------------------------------------------------------------
@@ -616,6 +778,37 @@ report["corrections"] = {
   rules: [...new Set(correctionOutcomes.filter((o) => o.status === "applied").map((o) => o.ruleId))],
 };
 
+// ---------------------------------------------------------------------------------------------------------
+// 2c. Evidence-attachment ledger: quoted official text for rules released before provenance was recorded.
+//     Only rules without provenance qualify; quotes must be literal passages of the cited stored text and the
+//     period words must state the rule's own period. Periods, dates and calculations are never touched.
+// ---------------------------------------------------------------------------------------------------------
+const attachmentsFile = join(work, "evidence-attachments.json");
+const attachmentOutcomes = existsSync(attachmentsFile)
+  ? applyEvidenceAttachments(
+      rules,
+      JSON.parse(readFileSync(attachmentsFile, "utf8")) as EvidenceAttachmentInput[],
+      {
+        ruleVersion,
+        hasSource: (id) => sourceById.has(id),
+        textOf: (id) =>
+          newTexts.has(id) || existsSync(join(bundle, "text", `${id}.txt`)) ? textOf(id) : "",
+        retrievedAtOf: (id) => {
+          const s = sourceById.get(id);
+          return s?.rawCapture?.retrievedAt ?? s?.capturedAt ?? null;
+        },
+      },
+    )
+  : [];
+for (const o of attachmentOutcomes)
+  if (o.status === "rejected")
+    rejected.push({ state: o.ruleId.slice(0, 2).toUpperCase(), claim: "evidence-attachment", reason: o.reason });
+report["evidenceAttachments"] = {
+  applied: attachmentOutcomes.filter((o) => o.status === "applied").length,
+  rejected: attachmentOutcomes.filter((o) => o.status === "rejected"),
+  rules: attachmentOutcomes.filter((o) => o.status === "applied").map((o) => o.ruleId),
+};
+
 // Rule currency roll-up (existing and new rules alike).
 const ruleCurrency = new Map<string, RuleCurrency>();
 let withheldForLostEvidence = 0;
@@ -639,6 +832,8 @@ for (const rule of rules) {
   const confirmed: string[] = [];
   const viaCode: string[] = [];
   const viaProxy: string[] = [];
+  const viaComposite: string[] = [];
+  const spacingOnly: string[] = [];
   const unchecked: string[] = [];
   const lost: string[] = [];
   let changedAround = false;
@@ -646,22 +841,41 @@ for (const rule of rules) {
     const c = sourceCurrency.get(sid)!;
     if (carriedForward.has(sid)) {
       // Carried-forward source: reuse this rule's own previous verdict for it when one exists; a rule new
-      // to this release is confirmed only where the retained copy settles it (page byte-identical, or the
-      // fresh text of a changed page literally holds this rule's passages).
+      // to this release (or newly carrying quoted text) is confirmed only where a retained or re-matched copy
+      // settles it: page byte-identical, the fresh text of a changed page literally holds this rule's
+      // passages, or this run's code-capture / proxied comparison matched every passage of this rule.
       const prev = rule.currency;
       if (prev?.lostSourceIds.includes(sid)) lost.push(sid);
       else if (prev?.confirmedSourceIds.includes(sid)) {
         confirmed.push(sid);
         if (c.route === "official_code_capture") viaCode.push(sid);
+        else if (c.route === "proxied") viaProxy.push(sid);
       } else if (prev) unchecked.push(sid);
       else if (c.status === "confirmed_unchanged") confirmed.push(sid);
-      else if (c.status === "confirmed_evidence_intact" && c.route === "direct") {
-        const fresh = freshTextFor(sid);
+      else if (c.status === "confirmed_evidence_intact") {
         const p = rule.provenance!;
         const needles = [p.excerpt, p.periodEvidence, ...p.tolling.map((t) => t.text)];
-        if (fresh && needles.every((n) => containsLiteral(fresh, n))) {
+        const fresh = c.route === "direct" ? freshTextFor(sid) : null;
+        const cc = codeRecheckBySource.get(sid);
+        const ccMine = (cc?.evidence ?? []).filter((e) => e.sourceId === sid && e.ruleId === rule.id);
+        const pr = proxyRecheckBySource.get(sid);
+        const prMine = (pr?.evidence ?? []).filter((e) => e.sourceId === sid && e.ruleId === rule.id);
+        // Fresh direct copy: literal first; a match that differs only in spacing around punctuation or a
+        // dash (two extractions of the same page) is accepted and disclosed, never a different word.
+        const freshModes = fresh ? needles.map((n) => matchPassage(fresh, n)) : [];
+        if (fresh && freshModes.every((m) => m !== null)) {
           confirmed.push(sid);
-          changedAround = true;
+          if (originalWasDirect(sourceById.get(sid)!)) changedAround = true;
+          if (freshModes.some((m) => m === "spacing_normalized")) spacingOnly.push(sid);
+        } else if (c.route === "official_code_capture" && ccMine.length && ccMine.every((e) => e.found)) {
+          confirmed.push(sid);
+          viaCode.push(sid);
+        } else if (prMine.length && prMine.every((e) => e.found) && pr?.rawSha256) {
+          // The same official URL as read through the proxy this release (retained byte-for-byte) holds every
+          // passage this rule quotes. Used where the direct copy could not be compared (not retained as text)
+          // or the source itself was already proxied.
+          confirmed.push(sid);
+          viaProxy.push(sid);
         } else unchecked.push(sid);
       } else unchecked.push(sid);
       continue;
@@ -695,9 +909,19 @@ for (const rule of rules) {
         confirmed.push(sid);
         viaProxy.push(sid);
       } else unchecked.push(sid);
+    } else if (c.status === "confirmed_evidence_intact" && c.componentSourceIds?.length) {
+      // A builder-made concatenation whose verdict is derived from its components' text-identical re-reads:
+      // the passages are present in unchanged component pages, so nothing "changed around" them.
+      const r = recheckByUrl.get(sid);
+      const mine = (r?.evidence ?? []).filter((e) => e.sourceId === sid && e.ruleId === rule.id);
+      if (mine.length && mine.every((e) => e.found)) {
+        confirmed.push(sid);
+        viaComposite.push(sid);
+      } else unchecked.push(sid);
     } else if (c.status === "confirmed_evidence_intact") {
       confirmed.push(sid);
-      changedAround = true;
+      // A fresh direct text that differs from a retained *extraction* says nothing about the page itself.
+      if (originalWasDirect(sourceById.get(sid)!)) changedAround = true;
     } else unchecked.push(sid);
   }
   let status: RuleCurrency["status"];
@@ -708,7 +932,13 @@ for (const rule of rules) {
       ? ` For ${viaCode.join(", ")} the match was made against the publisher's current code text as landed by the full-code intake, because the page itself did not answer the review environment.`
       : "") +
     (viaProxy.length
-      ? ` For ${viaProxy.join(", ")} the official page was read through a fetch proxy because the host did not answer the review environment directly; the passages were matched in the proxy's extracted text and the proxy's response is retained.`
+      ? ` For ${viaProxy.join(", ")} the same official URL was read through a fetch proxy because the page could not be compared directly from the review environment; the passages were matched in the proxy's extracted text and the proxy's response is retained.`
+      : "") +
+    (spacingOnly.length
+      ? ` For ${spacingOnly.join(", ")} the fresh copy prints the same words with different spacing around punctuation or a dash (the retained and fresh extractions differ only there); the match was made after normalising that spacing on both sides.`
+      : "") +
+    (viaComposite.length
+      ? ` ${viaComposite.join(", ")} is a concatenation of official pages captured separately; its passages were confirmed in those component pages, each re-read directly and found text-identical, rather than by fetching the concatenation again.`
       : "");
   if (lost.length) {
     status = "evidence_lost";
@@ -780,9 +1010,102 @@ report["currency"] = {
     official_code_capture: sources.filter((s) => s.currency?.route === "official_code_capture").length,
     proxied: sources.filter((s) => s.currency?.route === "proxied").length,
     proxiedReviewedStillUnchecked: proxyReviewed.size,
+    passageRecheckedViaProxy: passageRechecked.size,
+    compositeDerivedFromComponents: compositeDerived.size,
     carriedForward: carriedForward.size,
     none: sources.filter((s) => s.currency?.route === "none").length,
   },
+};
+
+// ---------------------------------------------------------------------------------------------------------
+// 2d. Cross-reference links: tolling / repose notes resolved to the publisher's current section text
+//     (link-cross-references.ts). A link never changes the note; it records where the cited section is held
+//     and whether the note's periods and ages are printed there. Rules the ledger covers are relinked from it;
+//     rules it does not mention keep the links they carried (their checkedAt says how old they are).
+// ---------------------------------------------------------------------------------------------------------
+const xrefFile = process.env["LIM_XREF_LINKS"] ?? join(work, "cross-reference-links.json");
+type XrefLedgerRow = {
+  ruleId: string;
+  kind: "tolling" | "repose";
+  index: number;
+  citation: string;
+  status:
+    | "linked"
+    | "no_exact_section"
+    | "state_not_projected"
+    | "no_statute_citation"
+    | "section_repealed_or_stub"
+    | "section_text_oversized";
+  checkedAt: string;
+  sectionsNamed: number;
+  sections: { nativeId: string; textSha256: string; sourceUrl: string | null }[];
+  stubsExcluded?: { nativeId: string; heading: string | null; text: string }[];
+  termCheck: "all_present" | "not_all_present" | "none_to_check" | null;
+  terms: { term: string; found: boolean; foundIn?: string }[];
+  intakeRunId: string | null;
+};
+const xrefRows: XrefLedgerRow[] = existsSync(xrefFile)
+  ? ((JSON.parse(readFileSync(xrefFile, "utf8")) as { links?: XrefLedgerRow[] }).links ?? [])
+  : [];
+const xrefByRule = new Map<string, XrefLedgerRow[]>();
+for (const row of xrefRows) xrefByRule.set(row.ruleId, [...(xrefByRule.get(row.ruleId) ?? []), row]);
+const xrefTally: Record<string, number> = {};
+const xrefByState: Record<string, Record<string, number>> = {};
+const xrefBump = (state: string, k: string) => {
+  xrefTally[k] = (xrefTally[k] ?? 0) + 1;
+  (xrefByState[state] ??= {})[k] = (xrefByState[state]![k] ?? 0) + 1;
+};
+const xrefReview: { ruleId: string; kind: string; citation: string; terms: { term: string; found: boolean }[] }[] = [];
+let xrefCarried = 0;
+let xrefRulesLinked = 0;
+for (const rule of rules) {
+  const rows = xrefByRule.get(rule.id);
+  if (!rows) {
+    if (rule.crossReferenceLinks?.length) xrefCarried += rule.crossReferenceLinks.length;
+    continue;
+  }
+  const p = rule.provenance;
+  const links: NonNullable<LimitationRule["crossReferenceLinks"]> = [];
+  for (const row of rows) {
+    const note = p?.[row.kind]?.[row.index];
+    // The ledger was built from this bundle's notes; a note that moved or changed since is not linked.
+    if (!note || note.citation !== row.citation) {
+      xrefBump(rule.jurisdiction, "note_changed_since_ledger");
+      continue;
+    }
+    if (row.status !== "linked" || !row.termCheck) {
+      xrefBump(rule.jurisdiction, row.status);
+      continue;
+    }
+    links.push({
+      kind: row.kind,
+      index: row.index,
+      citation: row.citation,
+      checkedAt: row.checkedAt,
+      sectionsNamed: Math.max(row.sectionsNamed, row.sections.length),
+      sections: row.sections.map((s) => ({ nativeId: s.nativeId, textSha256: s.textSha256 })),
+      termCheck: row.termCheck,
+      terms: row.terms.map((t) => (t.foundIn ? { term: t.term, found: t.found, foundIn: t.foundIn } : { term: t.term, found: t.found })),
+      intakeRunId: row.intakeRunId,
+    });
+    xrefBump(rule.jurisdiction, `linked:${row.termCheck}`);
+    if (row.termCheck === "not_all_present" || row.sections.length < row.sectionsNamed || row.stubsExcluded?.length)
+      xrefReview.push({ ruleId: rule.id, kind: row.kind, citation: row.citation, terms: row.terms });
+  }
+  links.sort((a, b) => (a.kind === b.kind ? a.index - b.index : a.kind < b.kind ? -1 : 1));
+  if (links.length) {
+    rule.crossReferenceLinks = links;
+    xrefRulesLinked++;
+  } else delete rule.crossReferenceLinks;
+}
+report["crossReferences"] = {
+  ledger: existsSync(xrefFile) ? xrefFile : null,
+  notesInLedger: xrefRows.length,
+  rulesLinked: xrefRulesLinked,
+  linksCarriedForward: xrefCarried,
+  tally: xrefTally,
+  byState: xrefByState,
+  review: xrefReview,
 };
 
 // ---------------------------------------------------------------------------------------------------------
@@ -820,7 +1143,7 @@ for (const rule of rules) {
   if (prev && prev !== fp && prevVerification?.grade === "independently_verified")
     rule.verification = {
       ...graded.verification,
-      basis: `${graded.verification.basis} Previously independently verified as rule version ${previousVersion}; the change in this release is ${rule.currency?.status === "evidence_lost" ? "withdrawal of computation after the recheck" : "recorded in the release notes"}.`,
+      basis: `${graded.verification.basis} Previously independently verified as rule version ${prevVerification.verifiedRuleVersion ?? previousVersion}${prevVerification.verifiedOn ? ` on ${prevVerification.verifiedOn}` : ""}; the change in this release is ${rule.currency?.status === "evidence_lost" ? "withdrawal of computation after the recheck" : rule.evidenceAttachment?.appliedInVersion === ruleVersion ? "the attachment of quoted official text (period, dates and calculation unchanged)" : "recorded in the release notes"}.`,
     };
   regraded++;
 }
@@ -830,6 +1153,7 @@ report["regraded"] = regraded;
 // 4. Time computation rules (weekend / holiday extension) from work/time.
 // ---------------------------------------------------------------------------------------------------------
 const timeRules = new Map<string, NonNullable<CoverageRow["timeComputation"]>>();
+const timeNotRecorded = new Map<string, NonNullable<CoverageRow["timeComputationNotRecorded"]>>();
 const timeDir = join(work, "time");
 for (const file of existsSync(timeDir)
   ? readdirSync(timeDir).filter((f) => f.endsWith(".json"))
@@ -843,12 +1167,23 @@ for (const file of existsSync(timeDir)
     rejected.push({ state, claim: "time_computation", reason: errs[0]!.message });
     continue;
   }
-  if (rule.status === "not_recorded" || typeof rule.extendsWhenLastDayIsWeekend !== "boolean")
+  if (rule.status === "not_recorded") {
+    // A reviewed state with no recordable rule keeps the reason, so a weekend last day is never silent.
+    timeNotRecorded.set(state, {
+      reason: rule.notRecordedReason!.trim(),
+      reviewedOn: new Date().toISOString(),
+    });
     continue;
+  }
+  if (typeof rule.extendsWhenLastDayIsWeekend !== "boolean") continue;
   const cap = capture(state, rule.captureId)!;
   const sourceId = ensureSource(state, rule.captureId, cap.meta, cap.text, "statute", [
     rule.citation,
   ]);
+  const supportingSourceIds = (rule.supporting ?? []).map((s) => {
+    const sc = capture(state, s.captureId)!;
+    return ensureSource(state, s.captureId, sc.meta, sc.text, "statute", [s.citation]);
+  });
   timeRules.set(state, {
     status: rule.status as "verified" | "flagged",
     extendsWhenLastDayIsWeekend: rule.extendsWhenLastDayIsWeekend,
@@ -856,6 +1191,7 @@ for (const file of existsSync(timeDir)
     citation: rule.citation,
     excerpt: rule.excerpt,
     sourceId,
+    ...(supportingSourceIds.length ? { supportingSourceIds } : {}),
     retrievedAt: cap.meta.retrievedAt,
     note: rule.flags?.length ? rule.flags.join("; ") : rule.confidenceNote,
   });
@@ -899,8 +1235,18 @@ const coverage: CoverageRow[] = (coverageDoc.coverage as CoverageRow[]).map((row
     ...lacking.map((c) => `${labelFor(c)}: no automatically computable reviewed baseline.`),
   ];
   const previousTime = row.timeComputation;
+  const { timeComputation: _t, timeComputationNotRecorded: previousNone, ...rest } = row;
+  const time = timeRules.has(row.state)
+    ? { timeComputation: timeRules.get(row.state)! }
+    : previousTime
+      ? { timeComputation: previousTime }
+      : timeNotRecorded.has(row.state)
+        ? { timeComputationNotRecorded: timeNotRecorded.get(row.state)! }
+        : previousNone
+          ? { timeComputationNotRecorded: previousNone }
+          : {};
   return {
-    ...row,
+    ...rest,
     sourceStatus: stateSources.length ? "primary_text_retrieved" : "primary_text_pending",
     sourceIds: stateSources,
     baselineRuleIds: baselineIds,
@@ -912,11 +1258,7 @@ const coverage: CoverageRow[] = (coverageDoc.coverage as CoverageRow[]).map((row
         : "pending",
     gaps,
     claimCoverage,
-    ...(timeRules.has(row.state)
-      ? { timeComputation: timeRules.get(row.state)! }
-      : previousTime
-        ? { timeComputation: previousTime }
-        : {}),
+    ...time,
   };
 });
 
@@ -954,6 +1296,20 @@ writeFileSync(join(out, "rules.json"), `${JSON.stringify(files4.rules, null, 2)}
 writeFileSync(join(out, "sources.json"), `${JSON.stringify(files4.sources, null, 2)}\n`);
 writeFileSync(join(out, "coverage.json"), `${JSON.stringify(files4.coverage, null, 2)}\n`);
 writeFileSync(join(out, "case-references.json"), `${JSON.stringify(files4.cases, null, 2)}\n`);
+// The evidence-attachment ledger ships with the release so every attached quote stays reviewable and reversible.
+if (existsSync(attachmentsFile))
+  writeFileSync(
+    join(out, "evidence-attachments-ledger.json"),
+    `${JSON.stringify(
+      {
+        ruleVersion,
+        ledger: JSON.parse(readFileSync(attachmentsFile, "utf8")),
+        outcomes: attachmentOutcomes,
+      },
+      null,
+      2,
+    )}\n`,
+  );
 // The correction ledger ships with the release so every in-place change stays reviewable and reversible.
 if (existsSync(correctionsFile))
   writeFileSync(
@@ -998,6 +1354,12 @@ report["totals"] = {
     ]),
   ),
   timeRules: coverage.filter((c) => c.timeComputation).length,
+  timeRulesByStatus: {
+    verified: coverage.filter((c) => c.timeComputation?.status === "verified").length,
+    flagged: coverage.filter((c) => c.timeComputation?.status === "flagged").length,
+    not_recorded: coverage.filter((c) => c.timeComputationNotRecorded).length,
+    unreviewed: coverage.filter((c) => !c.timeComputation && !c.timeComputationNotRecorded).length,
+  },
   newRuleIds: [...newRuleIds],
 };
 writeFileSync(join(out, "release-report.json"), `${JSON.stringify(report, null, 2)}\n`);

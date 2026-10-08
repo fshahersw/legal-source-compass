@@ -99,6 +99,31 @@ export type SourceCurrency = {
   freshTextPath?: string;
   /** Present only when route is "official_code_capture". */
   codeCapture?: CodeCaptureProvenance;
+  /**
+   * Present only on a direct-route verdict for a composite source (a builder-made concatenation of other
+   * sources' official pages): the component source ids whose own text-identical direct re-reads the verdict
+   * is derived from. The composite itself was not fetched again.
+   */
+  componentSourceIds?: string[];
+  /**
+   * A second, passage-level comparison made through the proxy route when the page-level verdict above came
+   * another way (or compared no passage): the same official URL as the proxy returned it, retained byte-for-byte,
+   * holding every quoted passage then relied on from this source. It never changes `status` or `route`.
+   */
+  passageRecheck?: PassageRecheck;
+};
+
+export type PassageRecheck = {
+  checkedAt: string;
+  route: "proxied";
+  proxy: string;
+  rawSha256: string;
+  textSha256?: string;
+  rawStorageKey: string;
+  freshTextPath?: string;
+  /** Number of quoted passages compared; every one was found (a missing passage records no passageRecheck). */
+  passages: number;
+  detail: string;
 };
 
 export const RULE_CURRENCY_STATUSES = [
@@ -158,6 +183,8 @@ export type TimeComputationRule = {
   citation: string;
   excerpt: string;
   sourceId: string;
+  /** Further official captures the note relies on (e.g. the holiday-definition section). */
+  supportingSourceIds?: string[];
   retrievedAt: string;
   note: string;
 };
@@ -281,6 +308,42 @@ export type RuleCorrection = {
   note?: string;
 };
 
+/**
+ * Quoted official text attached, by ledger, to a rule that was released before provenance was recorded.
+ * The builder refuses an attachment whose quotes are not literal passages of the cited stored text or whose
+ * period words do not state the rule's own period; it never replaces provenance a rule already carries.
+ */
+export type RuleEvidenceAttachment = {
+  appliedInVersion: string;
+  reason: string;
+  evidenceSourceId: string;
+};
+
+/**
+ * Where the section a tolling or repose note cites is held in the corpus (the publisher's current code text,
+ * full-code intake), and whether every period or age the note states is printed in that section's text.
+ * The note itself (`provenance.tolling[index]` / `provenance.repose[index]`) is never changed by a link;
+ * `termCheck` is a consistency check on the note's numbers, not a reading of the statute.
+ */
+export type CrossReferenceLink = {
+  kind: "tolling" | "repose";
+  /** Position in `provenance.tolling` / `provenance.repose`. */
+  index: number;
+  /** Copied from the note so a reordered note can never silently inherit another note's link. */
+  citation: string;
+  checkedAt: string;
+  /** How many sections the citation names; `sections` holds the ones that resolved to operative text. */
+  sectionsNamed: number;
+  sections: { nativeId: string; textSha256: string }[];
+  termCheck: "all_present" | "not_all_present" | "none_to_check";
+  /**
+   * Each period or age the note states. `foundIn` names another same-state section the note itself cites
+   * (e.g. "subject to the cap in 5-230") when the term is printed there rather than in the cited section.
+   */
+  terms: { term: string; found: boolean; foundIn?: string }[];
+  intakeRunId: string | null;
+};
+
 export type LimitationRule = {
   id: string;
   schemaVersion: string;
@@ -319,6 +382,10 @@ export type LimitationRule = {
   caseReferenceIds?: string[];
   /** Reviewed field changes applied to this rule after its first release, oldest first. */
   corrections?: RuleCorrection[];
+  /** Set when `provenance` was attached by ledger after the rule's first release rather than recorded with it. */
+  evidenceAttachment?: RuleEvidenceAttachment;
+  /** Tolling / repose notes resolved to the publisher's current section text held in the corpus. */
+  crossReferenceLinks?: CrossReferenceLink[];
   subtype?: string;
   calculation?: {
     mode: "discovery_min" | "diagnosis" | "death_cause_min" | "accrual_repose_min" | "clocks_min";
@@ -379,6 +446,12 @@ export type CoverageRow = {
   metadataOnlyReferences: { title: string; url: string; format: string; note: string }[];
   claimCoverage?: ClaimCoverage[];
   timeComputation?: TimeComputationRule;
+  /**
+   * Set when the state was reviewed for a last-day counting rule and none could be recorded from official
+   * text (gated publisher, rule that reaches only court-fixed periods, unreachable publisher). The reason is
+   * shown wherever a weekend last day would otherwise pass in silence. Mutually exclusive with timeComputation.
+   */
+  timeComputationNotRecorded?: { reason: string; reviewedOn: string };
 };
 export type JudicialReference = {
   id: string;
@@ -471,11 +544,29 @@ export type BaselineInput = {
   exceptionReview: "unresolved" | "no_unresolved_issues";
   issues: SpecialIssue[];
 };
+/**
+ * Why a Saturday/Sunday anniversary was left unadjusted: the state's recorded counting rule is flagged (its
+ * reach to limitation periods is not established, or it does not cover that weekday), or no rule is recorded.
+ * Never present when adjustedDate is set.
+ */
+export type WeekendNotice =
+  | {
+      kind: "flagged_rule";
+      weekday: "Saturday" | "Sunday";
+      /** "flagged": on file but not applied; "verified": applied, but it does not extend weekends. */
+      ruleStatus: "verified" | "flagged";
+      citation: string;
+      note: string;
+      extendsWhenLastDayIsWeekend: boolean;
+    }
+  | { kind: "no_rule"; weekday: "Saturday" | "Sunday"; reason: string | null };
 export type BaselineResult = {
   status: "baseline" | "needs_review" | "invalid";
   date: string | null;
   /** Next weekday when the anniversary is a Saturday or Sunday and the state's recorded rule extends it. */
   adjustedDate?: { date: string; citation: string; holidaysComputed: false } | null;
+  /** Set when the anniversary is a Saturday or Sunday and no verified rule moved it. */
+  weekendNotice?: WeekendNotice | null;
   rule: LimitationRule | null;
   reasons: string[];
   steps: { text: string; sourceIds: string[]; pinpoint: string }[];

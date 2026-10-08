@@ -7,6 +7,7 @@ import {
   type BaselineResult,
   type LimitationRule,
   type LimitationsSnapshot,
+  type WeekendNotice,
 } from "./types";
 
 /** Civil dates only: never parse a local midnight or add a fixed number of milliseconds. */
@@ -80,6 +81,73 @@ export function nextWeekday(value: string): string | null {
 export function periodLabel(period: { amount: number; unit: string }): string {
   const unit = period.unit.replace("calendar_", "").replace(/s$/, "");
   return `${period.amount} calendar ${unit}${period.amount === 1 ? "" : "s"}`;
+}
+
+/**
+ * How a Saturday/Sunday last day is treated for one jurisdiction. Only a *verified* recorded rule that
+ * extends weekends moves the date, and then only beside the unadjusted anniversary. A flagged rule or no
+ * rule yields a notice so the weekend never passes in silence; nothing is inferred from another state.
+ */
+export function weekendTreatment(
+  snapshot: LimitationsSnapshot,
+  jurisdiction: string,
+  date: string,
+): {
+  adjustedDate: NonNullable<BaselineResult["adjustedDate"]> | null;
+  weekendNotice: WeekendNotice | null;
+  /** Sentence(s) about the weekend, or null when the date is a weekday. Ends with a period. */
+  weekendText: string | null;
+  /** Full step sentence for a "calendar anniversary" step. */
+  stepText: string;
+} {
+  const row = snapshot.coverage.find((c) => c.state === jurisdiction);
+  const timeRule = row?.timeComputation;
+  const weekday = civilWeekday(date);
+  const weekdayName = weekday === 6 ? "Saturday" : weekday === 0 ? "Sunday" : null;
+  const uncomputed =
+    "Legal holidays, closures, commencement, service and filing-cutoff adjustments remain uncomputed.";
+  const finish = (
+    adjustedDate: NonNullable<BaselineResult["adjustedDate"]> | null,
+    weekendNotice: WeekendNotice | null,
+    weekendText: string | null,
+  ) => ({
+    adjustedDate,
+    weekendNotice,
+    weekendText,
+    stepText: weekendText
+      ? `The unadjusted calendar anniversary is ${date}, a ${weekdayName}. ${weekendText} ${uncomputed}`
+      : `The unadjusted calendar anniversary is ${date}. Holiday / closure, commencement, service and filing-cutoff adjustments remain uncomputed.`,
+  });
+  if (!weekdayName) return finish(null, null, null);
+  const rolled =
+    timeRule?.status === "verified" && timeRule.extendsWhenLastDayIsWeekend ? nextWeekday(date) : null;
+  if (rolled && timeRule)
+    return finish(
+      { date: rolled, citation: timeRule.citation, holidaysComputed: false },
+      null,
+      `The recorded state counting rule (${timeRule.citation}) extends a last day that falls on a weekend to the next weekday, ${rolled}.`,
+    );
+  if (timeRule)
+    return finish(
+      null,
+      {
+        kind: "flagged_rule",
+        weekday: weekdayName,
+        ruleStatus: timeRule.status,
+        citation: timeRule.citation,
+        note: timeRule.note,
+        extendsWhenLastDayIsWeekend: timeRule.extendsWhenLastDayIsWeekend,
+      },
+      timeRule.status === "verified"
+        ? `The recorded state counting rule (${timeRule.citation}) does not extend a last day that falls on a ${weekdayName}; the date is shown unadjusted.`
+        : `${jurisdiction}'s recorded counting rule (${timeRule.citation}) is flagged and was not applied: ${timeRule.note.replace(/\.$/, "")}. The date is shown unadjusted.`,
+    );
+  const reason = row?.timeComputationNotRecorded?.reason ?? null;
+  return finish(
+    null,
+    { kind: "no_rule", weekday: weekdayName, reason },
+    `No last-day counting rule is recorded for ${jurisdiction}${reason ? ` (${reason.replace(/\.$/, "")})` : ""}; the date is shown unadjusted.`,
+  );
 }
 
 export function baselineRule(
@@ -391,20 +459,12 @@ export function calculateBaseline(
     return finish("needs_review", [
       "This date has no exact calendar anniversary. A verified jurisdiction-specific leap-day / counting rule is required.",
     ]);
-  const timeRule = snapshot.coverage.find((c) => c.state === input.jurisdiction)?.timeComputation;
-  const weekday = civilWeekday(date);
-  const rolled =
-    timeRule?.status === "verified" &&
-    timeRule.extendsWhenLastDayIsWeekend &&
-    (weekday === 6 || weekday === 0)
-      ? nextWeekday(date)
-      : null;
+  const weekend = weekendTreatment(snapshot, input.jurisdiction, date);
   return {
     status: "baseline",
     date,
-    adjustedDate: rolled
-      ? { date: rolled, citation: timeRule!.citation, holidaysComputed: false }
-      : null,
+    adjustedDate: weekend.adjustedDate,
+    weekendNotice: weekend.weekendNotice,
     rule,
     reasons: [...rule.warnings],
     steps: [
@@ -453,9 +513,7 @@ export function calculateBaseline(
           ]
         : []),
       {
-        text: rolled
-          ? `The unadjusted calendar anniversary is ${date}, a ${weekday === 6 ? "Saturday" : "Sunday"}. The recorded state counting rule (${timeRule!.citation}) extends a last day that falls on a weekend to the next weekday, ${rolled}. Legal holidays, closures, commencement, service and filing-cutoff adjustments remain uncomputed.`
-          : `The unadjusted calendar anniversary is ${date}. Holiday / closure, commencement, service and filing-cutoff adjustments remain uncomputed.`,
+        text: weekend.stepText,
         sourceIds: rule.sourceIds,
         pinpoint: rule.pinpoint,
       },
@@ -673,21 +731,13 @@ function calculateClocks(
     )
     .join(calc.combine === "later" ? "; the later of: " : "; the earlier of: ");
   const sources = { sourceIds: rule.sourceIds, pinpoint: rule.pinpoint };
-  const timeRule = snapshot.coverage.find((c) => c.state === input.jurisdiction)?.timeComputation;
-  const weekday = civilWeekday(date);
-  const rolled =
-    timeRule?.status === "verified" &&
-    timeRule.extendsWhenLastDayIsWeekend &&
-    (weekday === 6 || weekday === 0)
-      ? nextWeekday(date)
-      : null;
+  const weekend = weekendTreatment(snapshot, input.jurisdiction, date);
   const undatedClocks = clocks.filter((c) => c.effectiveFrom === null);
   return {
     status: "baseline",
     date,
-    adjustedDate: rolled
-      ? { date: rolled, citation: timeRule!.citation, holidaysComputed: false }
-      : null,
+    adjustedDate: weekend.adjustedDate,
+    weekendNotice: weekend.weekendNotice,
     rule,
     reasons: [
       ...rule.warnings,
@@ -710,7 +760,9 @@ function calculateClocks(
         ...sources,
       })),
       {
-        text: `The earliest applicable date is ${date}. Holiday / closure, commencement, service and filing-cutoff adjustments remain uncomputed.`,
+        text: weekend.weekendText
+          ? `The earliest applicable date is ${date}, a ${weekend.weekendNotice?.weekday ?? (civilWeekday(date) === 6 ? "Saturday" : "Sunday")}. ${weekend.weekendText} Legal holidays, closures, commencement, service and filing-cutoff adjustments remain uncomputed.`
+          : `The earliest applicable date is ${date}. Holiday / closure, commencement, service and filing-cutoff adjustments remain uncomputed.`,
         ...sources,
       },
     ],
