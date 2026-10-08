@@ -407,12 +407,17 @@ def live_vt_section_row(body, url, section, unit_url=None):
 
 
 def html_blocks(body, classes):
-    """Text of every <p> paragraph and <td>/<th> cell inside the page's <div class="..."> containers named in `classes`."""
+    """Text of every <p> paragraph and <td>/<th> cell inside matching div containers; if a container has none
+    (e.g. NY OpenLegislation prints statute lines with <br> only), the container's visible text is one piece."""
     s, _ = sc.decode_html(body)
     out = []
     tag = re.compile(r"<(/?)div\b[^>]*>", re.I)
     for cls in classes:
-        for m in re.finditer(r'<div class="%s"[^>]*>' % re.escape(cls), s, re.I):
+        pat = re.compile(
+            r'<div\b[^>]*\bclass="[^"]*\b' + re.escape(cls) + r'\b[^"]*"[^>]*>',
+            re.I,
+        )
+        for m in pat.finditer(s):
             depth, pos = 1, m.end()
             while depth:
                 t = tag.search(s, pos)
@@ -421,11 +426,17 @@ def html_blocks(body, classes):
                 depth += -1 if t.group(1) else 1
                 pos = t.end()
             inner = s[m.end():t.start() if t else len(s)]
+            block = []
             for name in ("p", "td", "th"):
                 for blk in re.finditer(r"(?is)<%s\b[^>]*>(.*?)</%s\s*>" % (name, name), inner):
                     text = sc.html_text(blk.group(1))
                     if text.strip():
-                        out.append((name, text))
+                        block.append((name, text))
+            if not block:
+                text = sc.html_text(inner)
+                if text.strip():
+                    block.append(("div", text))
+            out.extend(block)
     return out
 
 
