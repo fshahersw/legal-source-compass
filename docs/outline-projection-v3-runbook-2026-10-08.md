@@ -30,7 +30,7 @@ The file is one transaction: it creates the function, restricts it to the servic
 
 ## 4. Verify — four checks
 
-Copied word for word from the contract file's own trailer (lines 169–179). Run each in the same SQL editor.
+Copied word for word from the contract file's own trailer, which heads them "Expected readback after apply (service role), compared with v2 on the same path:". Run each in the same SQL editor.
 
 ```sql
 -- 1. A skipped level now opens.
@@ -53,7 +53,7 @@ select public.corpus_publisher_code_projected_outline_v3('FL', '[]') = public.co
 
 Check 1 is the one that matters: today the same call against the old read returns `total 0, groups 0`.
 
-Optionally, `explain analyze` on the Pennsylvania empty path should use the same plan shape as the old read's empty path — one scan of that state's sections, no new index required.
+Optionally, the trailer's fifth note, verbatim: `explain analyze on PA '[]' should use the same plan shape as v2 '[]' (one scan of the state's sections)`. No new index is required.
 
 ## 5. Dead-ends that should disappear
 
