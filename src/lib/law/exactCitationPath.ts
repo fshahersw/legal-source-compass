@@ -29,6 +29,7 @@ export function exactCitationPaths(state: string, citation: string): string[] | 
         ...(usps === "WA" ? (washingtonPaths(text) ?? []) : []),
         ...(usps === "PA" ? (pennsylvaniaPaths(text) ?? []) : []),
         ...(usps === "DC" ? (districtOfColumbiaPaths(text) ?? []) : []),
+        ...(usps === "NY" ? (newYorkPaths(text) ?? []) : []),
         ...(DOTTED_PATH_STATES.has(usps) ? (dottedPaths(text) ?? []) : []),
       ]),
     ]),
@@ -406,6 +407,37 @@ function districtOfColumbiaPaths(citation: string): string[] | null {
     if (!title || !section) continue;
     const path = `${title}:${section}`;
     if (!paths.includes(path)) paths.push(path);
+  }
+  return paths.length ? paths : null;
+}
+
+/**
+ * New York consolidated-law paths such as `N.Y. C.P.L.R. § 214(5)` and
+ * `N.Y. Est. Powers & Trusts Law § 5-4.1(1)`.
+ * The law and the section are one path. A parenthetical is not included.
+ * A letter suffix is stored in capitals, so `214-c` is `CVP/214-C`.
+ * `CVP/214` is not `CVP/214-C`. General Construction Law § 25-a is `GCN/25-A`.
+ */
+function newYorkPaths(citation: string): string[] | null {
+  const paths: string[] = [];
+  const add = (law: string, section: string) => {
+    const path = `${law}/${section.replace(/[a-z]/g, (letter) => letter.toUpperCase())}`;
+    if (!paths.includes(path)) paths.push(path);
+  };
+  for (const match of citation.matchAll(
+    /\b(?:C\.P\.L\.R\.|CPLR)\s*§§?\s*(\d+(?:-[A-Za-z]+)?)(?![A-Za-z0-9-])/gi,
+  )) {
+    if (match[1]) add("CVP", match[1]);
+  }
+  for (const match of citation.matchAll(
+    /\b(?:Est\.\s+Powers\s+&\s+Trusts\s+Law|EPTL)\s*§§?\s*(\d+-\d+(?:\.\d+)?)(?![A-Za-z0-9.])/gi,
+  )) {
+    if (match[1]) add("EPT", match[1]);
+  }
+  for (const match of citation.matchAll(
+    /\bGen\.\s+Constr\.\s+Law\s*§§?\s*(\d+(?:-[A-Za-z]+)?)(?![A-Za-z0-9-])/gi,
+  )) {
+    if (match[1]) add("GCN", match[1]);
   }
   return paths.length ? paths : null;
 }

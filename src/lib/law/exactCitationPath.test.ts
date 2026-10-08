@@ -362,6 +362,38 @@ describe("exact statute citation paths", () => {
     expect(statuteNativeId("DC", "28:2-725")).toBe("DC:28:2-725");
   });
 
+  it("reads a New York law and section as one path", () => {
+    expect(exactCitationPaths("NY", "N.Y. C.P.L.R. § 214(5)")).toEqual(["CVP/214"]);
+    expect(exactCitationPaths("NY", "N.Y. C.P.L.R. § 214(5)")?.includes("214")).toBe(false);
+    expect(exactCitationPaths("NY", "N.Y. C.P.L.R. § 214(5)")?.includes("CVP/214-C")).toBe(false);
+    expect(exactCitationPaths("NY", "CPLR § 214-c(2), (4), (6)")).toEqual(["CVP/214-C"]);
+    expect(exactCitationPaths("NY", "CPLR § 214-c(2), (4), (6)")?.includes("CVP/214")).toBe(false);
+    expect(exactCitationPaths("NY", "CPLR § 214-c(2), (4), (6)")?.includes("4")).toBe(false);
+    expect(exactCitationPaths("NY", "CPLR § 214-c(2), (4)-(6)")).toEqual(["CVP/214-C"]);
+    expect(exactCitationPaths("NY", "N.Y. C.P.L.R. § 214-a(a)")).toEqual(["CVP/214-A"]);
+    expect(exactCitationPaths("NY", "N.Y. C.P.L.R. § 215(3)")).toEqual(["CVP/215"]);
+    expect(exactCitationPaths("NY", "N.Y. C.P.L.R. § 213(2)")).toEqual(["CVP/213"]);
+    expect(exactCitationPaths("NY", "N.Y. Est. Powers & Trusts Law § 5-4.1(1)")).toEqual([
+      "EPT/5-4.1",
+    ]);
+    expect(
+      exactCitationPaths("NY", "N.Y. Est. Powers & Trusts Law § 5-4.1(1)")?.includes("5-4.1"),
+    ).toBe(false);
+    expect(
+      exactCitationPaths("NY", "N.Y. Est. Powers & Trusts Law § 5-4.1(1)")?.includes("5-4"),
+    ).toBe(false);
+    expect(exactCitationPaths("NY", "N.Y. Gen. Constr. Law § 25-a(1)")).toEqual(["GCN/25-A"]);
+    expect(exactCitationPaths("NY", "N.Y. Gen. Constr. Law § 25-a(1)")?.includes("GCT/25-A")).toBe(
+      false,
+    );
+    expect(exactCitationPaths("NY", "N.Y. Gen. Constr. Law § 25-a(1)")?.includes("25-a")).toBe(
+      false,
+    );
+    expect(statuteNativeId("NY", "CVP/214")).toBe("NY:CVP/214");
+    expect(statuteNativeId("NY", "EPT/5-4.1")).toBe("NY:EPT/5-4.1");
+    expect(statuteNativeId("NY", "GCN/25-A")).toBe("NY:GCN/25-A");
+  });
+
   it("reads Nevada 41A.097 with the chapter letter and without the parenthetical", () => {
     expect(exactCitationPaths("NV", "Nev. Rev. Stat. § 41A.097(3)")).toEqual(["41A.097"]);
     expect(exactCitationPaths("NV", "Nev. Rev. Stat. § 41A.097(2)")).toEqual(["41A.097"]);
