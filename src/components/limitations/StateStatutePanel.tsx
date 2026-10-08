@@ -35,9 +35,9 @@ const kindLabel: Record<string, string> = {
 function Chip({ className, children }: { className: string; children: React.ReactNode }) {
   return (
     <span
-      className={`inline-flex max-w-full items-center rounded-md border px-2 py-0.5 text-xs font-medium ${className}`}
+      className={`inline-flex max-w-full items-start rounded-md border px-2 py-0.5 text-xs font-medium leading-snug ${className}`}
     >
-      <span className="truncate">{children}</span>
+      <span className="break-words [overflow-wrap:anywhere]">{children}</span>
     </span>
   );
 }
