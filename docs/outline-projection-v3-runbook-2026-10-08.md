@@ -53,7 +53,7 @@ select public.corpus_publisher_code_projected_outline_v3('FL', '[]') = public.co
 
 Check 1 is the one that matters: today the same call against the old read returns `total 0, groups 0`.
 
-Optionally, the trailer's fifth note, verbatim: `explain analyze on PA '[]' should use the same plan shape as v2 '[]' (one scan of the state's sections)`. No new index is required.
+Optionally, the trailer's fifth note, verbatim: `explain analyze on PA '[]' should use the same plan shape as v2 '[]' (one scan of the state's sections).` No new index is required.
 
 ## 5. Dead-ends that should disappear
 
