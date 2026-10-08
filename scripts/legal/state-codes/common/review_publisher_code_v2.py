@@ -147,6 +147,41 @@ def firecrawl_live(url: str) -> tuple[int, bytes, dict]:
     return 0, b"", {"error": err}
 
 
+def _texas_zip_member_name(zf: zipfile.ZipFile, publisher_member: str) -> str | None:
+    """Match a landed publisher_member to a ZIP entry (spaces vs underscores in Copy filenames)."""
+    if not publisher_member:
+        return None
+    names = zf.namelist()
+    if publisher_member in names:
+        return publisher_member
+    by_lower = {n.lower(): n for n in names}
+    hit = by_lower.get(publisher_member.lower())
+    if hit:
+        return hit
+    def variants(name: str) -> list[str]:
+        out = [name]
+        if "_" in name:
+            out.append(name.replace("_", " "))
+            out.append(name.replace("_-_", " - "))
+        if " - " in name:
+            out.append(name.replace(" - ", "_-_"))
+            out.append(name.replace(" ", "_"))
+        return out
+
+    for cand in variants(publisher_member):
+        if cand in names:
+            return cand
+        hit = by_lower.get(cand.lower())
+        if hit:
+            return hit
+    norm = lambda s: re.sub(r"[\s_]+", "", (s or "").lower())
+    want = norm(publisher_member)
+    for n in names:
+        if norm(n) == want:
+            return n
+    return None
+
+
 def texas_zip_chapter_live(arc, code: str, publisher_member: str) -> str | None:
     """Official HTML chapter member from the live publisher code ZIP (tcss.legis.texas.gov)."""
     zip_url = f"https://tcss.legis.texas.gov/resources/Zips/{code}.htm.zip"
@@ -154,14 +189,10 @@ def texas_zip_chapter_live(arc, code: str, publisher_member: str) -> str | None:
     if rec.get("state") != "complete":
         return None
     with zipfile.ZipFile(io.BytesIO(arc.read(rec))) as zf:
-        try:
-            raw = zf.read(publisher_member)
-        except KeyError:
-            by_lower = {n.lower(): n for n in zf.namelist()}
-            alt = by_lower.get((publisher_member or "").lower())
-            if not alt:
-                return None
-            raw = zf.read(alt)
+        member = _texas_zip_member_name(zf, publisher_member)
+        if not member:
+            return None
+        raw = zf.read(member)
         return raw.decode("utf-8-sig", "replace")
 
 
@@ -611,12 +642,23 @@ def _stored_covers_live_line(line, row):
     return bool(sb or sh)
 
 
+_TX_PUBLISHER_NOTE = re.compile(
+    r"^(Text of |For (?:another|text of)|This (?:section|article|chapter) (?:was|is)|The following)",
+    re.I,
+)
+
+
+def _excuse_tx_publisher_note(line):
+    """Texas <pre> publisher notices excluded from landed section text (see tx-parse publisher_note)."""
+    return bool(_TX_PUBLISHER_NOTE.match(squash(line)))
+
+
 def _excuse_tx_publisher_divider(line):
     """Centered all-caps bridge lines on Texas chapter <pre> pages, not section operative text."""
     sq = squash(line)
     if sq == squash("EMINENT DOMAIN PROCEEDINGS"):
         return True
-    return False
+    return _excuse_tx_publisher_note(line)
 
 
 def _excuse_repealer_crossref(piece, row):
