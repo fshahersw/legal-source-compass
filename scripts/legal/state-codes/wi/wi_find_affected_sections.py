@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""List Wisconsin sections whose parsed text grows under wi_parse 2.0.1 (live .txt vs corpus lengths)."""
+"""List Wisconsin sections whose parsed text grows under wi_parse v3 (live .txt vs corpus lengths)."""
 from __future__ import annotations
 
 import argparse
