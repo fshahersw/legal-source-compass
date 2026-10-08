@@ -34,7 +34,7 @@
 - [x] State code reader: clickable outline with counts, breadcrumbs, filter, previous/next, section position + "Show in outline", toolbar (official source, copy citation/text/link), "Time limits citing this section"
 - [x] Time Limits → Statutes & sources: all-claim matrix with variants and recheck status, cited-source cards with excerpts, matched code sections, fresh copies, judicial references, JSON export
 - [x] Release 2026-10-08.1 staged (hash readback, 958/958 raw objects present) and activated in the manifest; audit report `docs/limitations-audit-2026-10-08.md`; publish to put it on the live site
-- [ ] Owner action: apply `database/contracts/corpus-publisher-code-projection-v3-outline.sql` (outline dead-ends on skipped optional levels: LA 48/54 titles, PA 12/51, NY 7/94, CT 2/110); site switches to v3 automatically. Runbook: `docs/outline-projection-v3-runbook-2026-10-08.md`
+- [x] (Applied by owner 2026-10-08; readback checks and LA/PA browser checks pass) Owner action: apply `database/contracts/corpus-publisher-code-projection-v3-outline.sql` (outline dead-ends on skipped optional levels: LA 48/54 titles, PA 12/51, NY 7/94, CT 2/110); site switches to v3 automatically. Runbook: `docs/outline-projection-v3-runbook-2026-10-08.md`
 - [ ] Full state code intake: CA/HI/KS/NJ acquiring; AR/GA/MS/TN absent (GA gated behind Lexis) — see docs/state-codes.md
 - [ ] Manual review of the 3 code-capture mismatches (NH opinion PDF, PA MCARE session law, SD duplicate rows)
 - [ ] Re-read the 198 not-rechecked sources once a route exists (session-law PDFs, blocked hosts, jurisdictions without a reviewed code in the corpus)
