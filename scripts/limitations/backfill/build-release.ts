@@ -7,6 +7,9 @@
  * Env:  LIM_BUNDLE   live limitations dir (rules/sources/coverage/case-references + text/)
  *       LIM_RECHECK  recheck results JSON from the currency pass (optional)
  *       LIM_RECHECK_CAPTURES  dir with <sourceId>.{raw,txt,json} fresh copies (optional)
+ *       LIM_RECHECK_CODE   code-capture recheck results (recheck-via-code-capture.ts, optional)
+ *       LIM_RECHECK_PROXY  proxied recheck results (recheck-via-proxy.ts, optional)
+ *       LIM_RECHECK_PROXY_CAPTURES  dir with <sourceId>.{raw,txt,json} proxied fresh copies (optional)
  *       LIM_WORK     entries/<st>.json, captures/<ST>/<id>.{json,txt,raw}, time/<st>.json (optional)
  *       LIM_OUT      output dir
  *       LIM_SNAPSHOT_DATE, LIM_RULE_SEQ
@@ -24,6 +27,7 @@ import {
   readFileSync,
   rmSync,
   writeFileSync,
+  statSync,
 } from "node:fs";
 import { join } from "node:path";
 import {
@@ -169,8 +173,46 @@ const codeRecheckBySource = new Map(
 );
 const CODE_CAPTURE_USABLE = new Set(["changed_evidence_intact", "changed_no_evidence_tracked"]);
 
+// Third route: the same official URL fetched through a proxy (see recheck-via-proxy.ts).
+type ProxyRecheck = {
+  url: string;
+  sourceIds: string[];
+  checkedAt: string;
+  status: "proxied_evidence_intact" | "proxied_no_evidence_tracked" | "proxied_passage_missing" | "proxy_failed";
+  route: "proxied";
+  proxy: string;
+  rawSha256?: string;
+  textSha256?: string;
+  http?: number;
+  evidence: { sourceId: string; ruleId: string; kind: string; found: boolean; matchMode?: string }[];
+};
+const proxyRecheckFile = process.env["LIM_RECHECK_PROXY"] ?? "/tmp/lim/recheck/results-proxy.json";
+const proxyRecheckCaptures = process.env["LIM_RECHECK_PROXY_CAPTURES"] ?? "/tmp/lim/recheck/captures-proxy";
+const proxyRecheck: ProxyRecheck[] = existsSync(proxyRecheckFile)
+  ? JSON.parse(readFileSync(proxyRecheckFile, "utf8"))
+  : [];
+const proxyRecheckBySource = new Map(
+  proxyRecheck.flatMap((r) => r.sourceIds.map((id) => [id, r] as const)),
+);
+const PROXY_USABLE = new Set(["proxied_evidence_intact", "proxied_no_evidence_tracked"]);
+/**
+ * Release text files are bounded by the staging script (16 MiB per object). A fresh re-read larger than
+ * this (for example North Dakota's whole-code JSON) is kept only as its content-addressed raw capture; the
+ * source's currency detail says so instead of projecting an oversized text file.
+ */
+const FRESH_TEXT_MAX_BYTES = 15 * 1024 * 1024;
+const oversizedFresh = new Set<string>();
+
 const sourceCurrency = new Map<string, SourceCurrency>();
 const codeCaptureConfirmed = new Set<string>();
+const proxyConfirmed = new Set<string>();
+const proxyReviewed = new Set<string>();
+/**
+ * Sources not rechecked in this run keep the currency the previous release recorded for them (same
+ * checkedAt, status, route and detail). A build that adds entries without a new recheck pass must never
+ * downgrade last round's confirmed sources to "not_rechecked".
+ */
+const carriedForward = new Set<string>();
 let freshTextFiles = 0;
 for (const s of sources) {
   const r = recheckByUrl.get(s.id);
@@ -195,8 +237,76 @@ for (const s of sources) {
       codeCaptureConfirmed.add(s.id);
       continue;
     }
+    // Third route: the same official URL re-read through a fetch proxy (recheck-via-proxy.ts). Used only
+    // where neither the direct fetch nor the code capture produced a verdict, and never to issue evidence_lost.
+    const pr = proxyRecheckBySource.get(s.id);
+    const otherwiseUnchecked = !s.currency || s.currency.status === "not_rechecked";
+    if (pr && otherwiseUnchecked) {
+      const when = pr.checkedAt;
+      const day = when.slice(0, 10);
+      const mine = pr.evidence.filter((e) => e.sourceId === s.id);
+      const missing = mine.filter((e) => !e.found);
+      const freshTxt = join(proxyRecheckCaptures, `${s.id}.txt`);
+      const retainFresh = () => {
+        if (!existsSync(freshTxt)) return undefined;
+        if (statSync(freshTxt).size > FRESH_TEXT_MAX_BYTES) {
+          oversizedFresh.add(s.id);
+          return undefined;
+        }
+        const id = `${s.id}.rechecked-${day}`;
+        newTexts.set(id, readFileSync(freshTxt, "utf8"));
+        freshTextFiles++;
+        return `/data/limitations/text/${id}.txt`;
+      };
+      const oversizedNote = () =>
+        oversizedFresh.has(s.id)
+          ? ` The proxied text (${(statSync(freshTxt).size / 1048576).toFixed(1)} MiB) exceeds the release text bound, so it is retained only as the raw capture named here, not as a release text file.`
+          : "";
+      if (PROXY_USABLE.has(pr.status) && missing.length === 0 && pr.rawSha256) {
+        const freshTextPath = retainFresh();
+        sourceCurrency.set(s.id, {
+          checkedAt: when,
+          status: "confirmed_evidence_intact",
+          route: "proxied",
+          httpStatus: 200,
+          rawSha256: pr.rawSha256,
+          ...(pr.textSha256 ? { textSha256: pr.textSha256 } : {}),
+          rawStorageKey: `limitations-raw-captures/sha256/${pr.rawSha256.slice(0, 2)}/${pr.rawSha256}.bin`,
+          ...(freshTextPath ? { freshTextPath } : {}),
+          detail:
+            mine.length > 0
+              ? `The official host did not answer the review environment directly, so on ${day} the same official URL was re-read through a fetch proxy (${pr.proxy}); the proxy's response is retained byte-for-byte and its text was compared: every quoted passage relied on from this source (${mine.length}) is still present${
+                  mine.some((e) => e.matchMode === "spacing_normalized")
+                    ? ` (${mine.filter((e) => e.matchMode === "spacing_normalized").length} matched after normalising spaces around punctuation and line-break hyphens, which the extractor renders differently)`
+                    : ""
+                }. This confirms the passages in an extracted copy, not the publisher's own bytes.${oversizedNote()}`
+              : `The official host did not answer the review environment directly, so on ${day} the same official URL was re-read through a fetch proxy (${pr.proxy}); the response is retained. No rule quotes this source literally, so no passage was compared.${oversizedNote()}`,
+        });
+        proxyConfirmed.add(s.id);
+        continue;
+      }
+      const prior = s.currency?.detail ?? "Not included in the direct recheck pass; the retained capture stands.";
+      const freshTextPath = pr.status === "proxied_passage_missing" ? retainFresh() : undefined;
+      sourceCurrency.set(s.id, {
+        checkedAt: when,
+        status: "not_rechecked",
+        route: "none",
+        ...(freshTextPath ? { freshTextPath } : {}),
+        detail:
+          pr.status === "proxied_passage_missing"
+            ? `${prior} A proxied re-read on ${day} (${pr.proxy}) returned the page, but its extracted text did not reproduce ${missing.length} of ${mine.length} quoted passage(s) verbatim, so no verdict is drawn from it; the proxied text is retained for manual comparison.${oversizedNote()}`
+            : `${prior} A proxied re-read on ${day} (${pr.proxy}) also yielded no usable copy${pr.http && pr.http !== 200 ? ` (HTTP ${pr.http})` : ""}.`,
+      });
+      proxyReviewed.add(s.id);
+      continue;
+    }
   }
   if (!r) {
+    if (s.currency) {
+      sourceCurrency.set(s.id, s.currency);
+      carriedForward.add(s.id);
+      continue;
+    }
     sourceCurrency.set(s.id, {
       checkedAt,
       status: "not_rechecked",
@@ -260,7 +370,7 @@ for (const s of sources) {
   }
   // Keep the fresh text for changed pages so a reviewer can diff them in the app.
   const freshTxt = join(recheckCaptures, `${s.id}.txt`);
-  if (!(r.sameRaw || r.sameText) && existsSync(freshTxt)) {
+  if (!(r.sameRaw || r.sameText) && existsSync(freshTxt) && statSync(freshTxt).size <= FRESH_TEXT_MAX_BYTES) {
     const id = `${s.id}.rechecked-${when.slice(0, 10)}`;
     newTexts.set(id, readFileSync(freshTxt, "utf8"));
     sourceCurrency.get(s.id)!.freshTextPath = `/data/limitations/text/${id}.txt`;
@@ -340,9 +450,16 @@ function ensureSource(
     },
     currency: {
       checkedAt: meta.retrievedAt,
-      status: "confirmed_unchanged",
-      route: "direct",
-      detail: `Captured directly from the official host on ${meta.retrievedAt.slice(0, 10)} for this release.`,
+      status: meta.route?.kind === "proxied" ? "confirmed_evidence_intact" : "confirmed_unchanged",
+      route: meta.route?.kind === "proxied" ? "proxied" : "direct",
+      ...(meta.route?.kind === "proxied"
+        ? { rawStorageKey: `limitations-raw-captures/sha256/${meta.rawSha256.slice(0, 2)}/${meta.rawSha256}.bin` }
+        : {}),
+      detail: meta.route?.kind === "proxied"
+        ? `Official page fetched through the ${meta.route.proxy} fetch proxy on ${meta.retrievedAt.slice(0, 10)} for this release, because the host did not answer the review environment directly; the proxy's response is the retained raw capture.`
+        : meta.intermediary
+          ? `Official page text obtained through an extraction intermediary (${meta.extraction ?? "unspecified"}) on ${meta.retrievedAt.slice(0, 10)} for this release.`
+          : `Captured directly from the official host on ${meta.retrievedAt.slice(0, 10)} for this release.`,
       httpStatus: 200,
       rawSha256: meta.rawSha256,
       textSha256: meta.textSha256,
@@ -503,17 +620,52 @@ report["corrections"] = {
 const ruleCurrency = new Map<string, RuleCurrency>();
 let withheldForLostEvidence = 0;
 let pagesChangedAroundEvidence = 0;
+/** Fresh text retained by a previous recheck for a page that changed around the evidence, if any. */
+const freshTextFor = (sid: string): string | null => {
+  const path = sourceCurrency.get(sid)?.freshTextPath;
+  if (!path) return null;
+  const id = path.replace(/^\/data\/limitations\/text\//, "").replace(/\.txt$/, "");
+  return newTexts.has(id) || existsSync(join(bundle, "text", `${id}.txt`)) ? textOf(id) : null;
+};
 for (const rule of rules) {
   const ev = evidenceSources(rule);
   const ids = [...ev.keys()];
   if (!ids.length) continue;
+  // Every evidence source untouched this run and a roll-up already recorded: the previous verdict stands.
+  if (rule.currency && ids.every((sid) => carriedForward.has(sid))) {
+    ruleCurrency.set(rule.id, rule.currency);
+    continue;
+  }
   const confirmed: string[] = [];
   const viaCode: string[] = [];
+  const viaProxy: string[] = [];
   const unchecked: string[] = [];
   const lost: string[] = [];
   let changedAround = false;
   for (const sid of ids) {
     const c = sourceCurrency.get(sid)!;
+    if (carriedForward.has(sid)) {
+      // Carried-forward source: reuse this rule's own previous verdict for it when one exists; a rule new
+      // to this release is confirmed only where the retained copy settles it (page byte-identical, or the
+      // fresh text of a changed page literally holds this rule's passages).
+      const prev = rule.currency;
+      if (prev?.lostSourceIds.includes(sid)) lost.push(sid);
+      else if (prev?.confirmedSourceIds.includes(sid)) {
+        confirmed.push(sid);
+        if (c.route === "official_code_capture") viaCode.push(sid);
+      } else if (prev) unchecked.push(sid);
+      else if (c.status === "confirmed_unchanged") confirmed.push(sid);
+      else if (c.status === "confirmed_evidence_intact" && c.route === "direct") {
+        const fresh = freshTextFor(sid);
+        const p = rule.provenance!;
+        const needles = [p.excerpt, p.periodEvidence, ...p.tolling.map((t) => t.text)];
+        if (fresh && needles.every((n) => containsLiteral(fresh, n))) {
+          confirmed.push(sid);
+          changedAround = true;
+        } else unchecked.push(sid);
+      } else unchecked.push(sid);
+      continue;
+    }
     if (c.status === "evidence_lost") {
       const r = recheckByUrl.get(sid)!;
       const mine = (r.evidence ?? []).filter((e) => e.sourceId === sid && e.ruleId === rule.id);
@@ -528,6 +680,21 @@ for (const rule of rules) {
         confirmed.push(sid);
         viaCode.push(sid);
       } else unchecked.push(sid);
+    } else if (c.status === "confirmed_evidence_intact" && c.route === "proxied") {
+      // The passages were matched in a proxied extraction of the official page; whether the page changed
+      // elsewhere is not judged from an extracted copy.
+      const pr = proxyRecheckBySource.get(sid);
+      if (!pr) {
+        // Captured through the proxy for this release: the retained text is the current page as read.
+        confirmed.push(sid);
+        viaProxy.push(sid);
+        continue;
+      }
+      const mine = pr.evidence.filter((e) => e.sourceId === sid && e.ruleId === rule.id);
+      if (mine.length && mine.every((e) => e.found)) {
+        confirmed.push(sid);
+        viaProxy.push(sid);
+      } else unchecked.push(sid);
     } else if (c.status === "confirmed_evidence_intact") {
       confirmed.push(sid);
       changedAround = true;
@@ -536,9 +703,13 @@ for (const rule of rules) {
   let status: RuleCurrency["status"];
   let detail: string;
   const day = checkedAt.slice(0, 10);
-  const viaCodeNote = viaCode.length
-    ? ` For ${viaCode.join(", ")} the match was made against the publisher's current code text as landed by the full-code intake, because the page itself did not answer the review environment.`
-    : "";
+  const viaCodeNote =
+    (viaCode.length
+      ? ` For ${viaCode.join(", ")} the match was made against the publisher's current code text as landed by the full-code intake, because the page itself did not answer the review environment.`
+      : "") +
+    (viaProxy.length
+      ? ` For ${viaProxy.join(", ")} the official page was read through a fetch proxy because the host did not answer the review environment directly; the passages were matched in the proxy's extracted text and the proxy's response is retained.`
+      : "");
   if (lost.length) {
     status = "evidence_lost";
     detail = `On ${day} the official page for ${lost.join(", ")} no longer contained the passage this rule quotes. The rule no longer computes until it is re-verified against the current text.`;
@@ -603,9 +774,13 @@ report["currency"] = {
   withheldForLostEvidence,
   pagesChangedAroundEvidence,
   freshTextFiles,
+  freshTextOversizedKeptAsRawOnly: [...oversizedFresh].sort(),
   routes: {
     direct: sources.filter((s) => s.currency?.route === "direct").length,
-    official_code_capture: codeCaptureConfirmed.size,
+    official_code_capture: sources.filter((s) => s.currency?.route === "official_code_capture").length,
+    proxied: sources.filter((s) => s.currency?.route === "proxied").length,
+    proxiedReviewedStillUnchecked: proxyReviewed.size,
+    carriedForward: carriedForward.size,
     none: sources.filter((s) => s.currency?.route === "none").length,
   },
 };

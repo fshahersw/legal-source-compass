@@ -84,10 +84,11 @@ export type SourceCurrency = {
   status: SourceCurrencyStatus;
   /**
    * How the fresh copy was obtained: "direct" is a fresh fetch of the source URL; "official_code_capture" is
-   * the same publisher's current section text as landed by the full-code intake; "none" when neither
-   * route yielded a copy from the review environment.
+   * the same publisher's current section text as landed by the full-code intake; "proxied" is the same
+   * official URL re-read through a fetch proxy (extracted text, proxy response retained as the raw copy);
+   * "none" when no route yielded a copy from the review environment.
    */
-  route: "direct" | "official_code_capture" | "none";
+  route: "direct" | "official_code_capture" | "proxied" | "none";
   detail: string;
   httpStatus?: number;
   rawSha256?: string;
