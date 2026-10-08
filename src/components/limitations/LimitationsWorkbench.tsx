@@ -913,25 +913,33 @@ export function LimitationsWorkbench({
                       </div>
                     )}
                   </fieldset>
-                  <div className="mt-8 flex justify-between gap-3">
-                    <Button type="button" variant="outline" onClick={() => setStep(1)}>
-                      Back
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={() => {
-                        setSubmitted(true);
-                        const missing = requiredKeys.find((key) => !input[key]);
-                        if (missing) document.getElementById("date-" + missing)?.focus();
-                        else if (reposeMode && input.reposeApplicabilityConfirmed !== true)
-                          document.getElementById("repose-applicability-confirmed")?.focus();
-                        else {
-                          setResult(calculateBaseline(snapshot, input));
-                          setStep(3);
-                        }
-                      }}
-                    >
-                      Review result
+                  <div className="mt-8 flex flex-wrap items-start justify-between gap-3">
+                    <div className="text-sm">
+                      {missing.length > 0 ? (
+                        <>
+                          <p className="font-semibold">Still needed before calculating:</p>
+                          <ul className="mt-1 space-y-1">
+                            {missing.map((item) => (
+                              <li key={item.id}>
+                                <button
+                                  type="button"
+                                  className="text-left text-primary underline"
+                                  onClick={() => document.getElementById(item.id)?.focus()}
+                                >
+                                  {item.label}
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </>
+                      ) : (
+                        <p className="text-muted-foreground">
+                          Unchecked confirmations or unresolved exceptions produce no date.
+                        </p>
+                      )}
+                    </div>
+                    <Button type="button" disabled={missing.length > 0} onClick={calculate}>
+                      Calculate
                     </Button>
                   </div>
                 </>
@@ -939,7 +947,7 @@ export function LimitationsWorkbench({
             </section>
           )}
 
-          {step === 3 && result && (
+          {result && (
             <section
               ref={resultRef}
               tabIndex={-1}
@@ -986,7 +994,15 @@ export function LimitationsWorkbench({
                     </div>
                   )}
                 </div>
-                <Button type="button" variant="outline" onClick={() => setStep(2)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    document
+                      .getElementById("limitations-dates")
+                      ?.scrollIntoView({ block: "start", behavior: "instant" })
+                  }
+                >
                   Edit answers
                 </Button>
               </div>
