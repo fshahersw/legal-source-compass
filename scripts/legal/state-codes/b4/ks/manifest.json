@@ -1,0 +1,45 @@
+{
+ "code_title": "Kansas Statutes Annotated",
+ "currency": {
+  "basis": "publisher_statement",
+  "location": "https://www.ksrevisor.gov/ksa.html — \"These statutes include amendments and new laws enacted during the 2025 legislative session.\" 2026-session changes are listed separately at https://www.ksrevisor.gov/rpts/2026NewAmendsAndRepealsKSAOrder.pdf and are not in this text."
+ },
+ "jurisdiction": "KS",
+ "parser": {
+  "name": "ks-revisor-html",
+  "version": "6"
+ },
+ "publisher": "Kansas Office of Revisor of Statutes",
+ "publisher_url": "https://www.ksrevisor.gov/",
+ "retrieval": {
+  "methods": [
+   "publisher_page"
+  ],
+  "official_source": true,
+  "rate_limit_ms": 1000,
+  "source_url_patterns": [
+   "^https://www\\.ksrevisor\\.gov/statutes/"
+  ],
+  "terms_gate": false
+ },
+ "review": {
+  "reviewed_at": "2026-10-09",
+  "reviewed_by": "Lovable agent (Kansas recovery from retained evidence)"
+ },
+ "schema_version": "publisher-code-manifest/2",
+ "section_id": {
+  "citation_format": "K.S.A. chapter_article_section page key; a second printed version on the same page uses a :N suffix.",
+  "example": "073_002_0001:2",
+  "regex": "^[0-9]{3}[A-Za-z]?_[0-9]{3}[A-Za-z]?_[0-9A-Za-z]+(?:_[A-Za-z])?(?:#\\d+|:\\d+)?$",
+  "scheme": "official_citation_path"
+ },
+ "source_system": "ks-statutes",
+ "structure": {
+  "levels": [
+   "chapter",
+   "article",
+   "section"
+  ],
+  "unit": "One Revisor section page (chapters/chNN/CCC_AAA_SSSS.html); unit text is the printed statute text of that page, without editorial annotations."
+ }
+}
