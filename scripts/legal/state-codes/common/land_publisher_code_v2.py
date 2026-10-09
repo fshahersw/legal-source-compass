@@ -331,6 +331,8 @@ def main():
     ap.add_argument("--run-id")
     ap.add_argument("--attempt", type=int, default=1, help="a closed run cannot reopen; attempt N>1 derives a new deterministic run id")
     ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--checkpoint", help="persistent JSON checkpoint; verified batches are skipped on restart and an error "
+                                         "leaves the run open (resumable) instead of closing it as failed")
     ap.add_argument("--multicode", action="store_true",
                     help="register, open and finish through the v3 multi-code functions, so a second code can land under a jurisdiction "
                          "that already has one; intake, objects and verification are the v2 functions either way. Never reviews anything.")
@@ -372,16 +374,44 @@ def main():
         if chunk:
             cloud.rpc("corpus_publisher_code_register_objects_v2", {"p_run": run_id, "p_objects": chunk})
         landed = verified = 0
-        for rows in batches(unit_rows + section_rows):
-            cloud.rpc("corpus_publisher_code_intake_v2", {"p_run": run_id, "p_rows": rows})
+        ck = {"run_id": run_id, "done": {}}
+        if a.checkpoint and os.path.isfile(a.checkpoint):
+            ck = json.load(open(a.checkpoint))
+            assert ck["run_id"] == run_id, "checkpoint belongs to another run"
+        for i, rows in enumerate(batches(unit_rows + section_rows)):
+            bsha = sha(rows)
+            if ck["done"].get(str(i)) == bsha:
+                landed += len(rows)
+                verified += len(rows)
+                continue
+            try:
+                cloud.rpc("corpus_publisher_code_intake_v2", {"p_run": run_id, "p_rows": rows})
+            except RuntimeError as e:
+                # An exact batch that already landed (lost response / crash before checkpoint) is verified, not re-sent.
+                if "already observed in this run" not in str(e):
+                    raise
             v = cloud.rpc("corpus_publisher_code_verify_batch_v2", {"p_run": run_id, "p_rows": rows})
             if not v.get("verified"):
                 raise RuntimeError(f"batch not verified: {json.dumps(v)[:300]}")
             landed += len(rows)
             verified += v["matched"]
+            if a.checkpoint:
+                ck["done"][str(i)] = bsha
+                tmp = a.checkpoint + ".tmp"
+                json.dump(ck, open(tmp, "w"))
+                os.replace(tmp, a.checkpoint)
+                if i % 20 == 0:
+                    print(json.dumps({"batch": i, "landed": landed}), flush=True)
         counts.update(landed_rows=landed, verified_rows=verified)
         status = "completed" if landed == len(unit_rows) + len(section_rows) else "partial"
-    finally:
+    except BaseException:
+        if a.checkpoint:
+            print(json.dumps({"left_open": run_id, "checkpoint": a.checkpoint}), flush=True)
+            raise
+        fin = cloud.rpc("corpus_publisher_code_finish_run" + fn, {"p_run": run_id, "p_status": status, "p_counts": counts})
+        print(json.dumps({"finish": fin}))
+        raise
+    else:
         fin = cloud.rpc("corpus_publisher_code_finish_run" + fn, {"p_run": run_id, "p_status": status, "p_counts": counts})
         print(json.dumps({"finish": fin}))
     return 0 if status == "completed" else 1
