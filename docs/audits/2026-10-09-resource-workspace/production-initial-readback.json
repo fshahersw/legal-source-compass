@@ -1,0 +1,17 @@
+{
+  "checkedAt": "2026-10-09T10:38:38.233Z",
+  "origin": "https://firastest1.com",
+  "uiRelease": "resource-workspace-20261009",
+  "checks": [
+    "Live custom domain serves the new UI release and all 51 state/DC map targets",
+    "Live Nebraska page loads real research resources and court entries without fixture interception",
+    "Live state-filtered court directory loads from the configured production corpus",
+    "Live judicial directory returns production profiles inside the selected state",
+    "Live law workspace renders compact agency and state navigation without JSON download links",
+    "Live calculator loads the retained rule release with progressive inputs and no primary JSON exports"
+  ],
+  "errors": [],
+  "failedResponses": [],
+  "fixturesUsed": false,
+  "authenticatedDataBypass": false
+}

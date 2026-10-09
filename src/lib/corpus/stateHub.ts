@@ -1,4 +1,5 @@
 import { STATES, stateByFips, stateByUsps } from "./geo";
+import { isJudicialCourtRecord } from "./courtDirectoryKind";
 import type { CourtRow, JudgeRow } from "@/lib/external/directoryTree";
 const byName = new Map(STATES.map((s) => [s.name.toLowerCase(), s]));
 /** Identity only: no caption, substring, venue or fuzzy-name inference. */
@@ -43,6 +44,7 @@ export function filterStateCourts(
   const q = (filters.q ?? "").trim().toLocaleLowerCase();
   return rows.filter(
     (row) =>
+      isJudicialCourtRecord(row) &&
       canonicalState(row.state)?.usps === code &&
       (!filters.system || row.system === filters.system) &&
       (!q || `${row.title} ${row.type}`.toLocaleLowerCase().includes(q)),

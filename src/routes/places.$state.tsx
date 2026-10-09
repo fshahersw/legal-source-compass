@@ -21,6 +21,7 @@ import {
   type StateHubSearch,
   type StateHubTab,
 } from "@/lib/corpus/stateHub";
+import { isJudicialCourtRecord } from "@/lib/corpus/courtDirectoryKind";
 import { pageHead } from "@/lib/corpus/head";
 import { getStateCountyRecords } from "@/lib/external/corpus.functions";
 import { useStateCourtDirectory } from "@/lib/external/useStateDirectory";
@@ -111,6 +112,7 @@ function StatePage() {
   const courtPreview = useMemo(
     () =>
       (courts.data ?? [])
+        .filter(isJudicialCourtRecord)
         .slice()
         .sort((a, b) => a.title.localeCompare(b.title))
         .slice(0, 6),
@@ -204,7 +206,9 @@ function StatePage() {
                   Courts
                 </h2>
                 {courts.data ? (
-                  <span className="text-xs text-[var(--navy-muted)]">{courts.data.length}</span>
+                  <span className="text-xs text-[var(--navy-muted)]">
+                    {courts.data.filter(isJudicialCourtRecord).length}
+                  </span>
                 ) : null}
               </div>
               {courts.isPending ? (
