@@ -360,9 +360,23 @@ def main():
     try:
         from concurrent.futures import ThreadPoolExecutor
         receipts = {}
+        # Object readback receipts are checkpointed too: a restart re-verifies nothing already read back whole.
+        rpath = a.checkpoint + ".objects.jsonl" if a.checkpoint else None
+        if rpath and os.path.isfile(rpath):
+            for rec in jsonl(rpath):
+                receipts[rec["sha256"]] = rec["receipt"]
+        todo = [o for o in objects if o["sha256"] not in receipts]
+        rlog = open(rpath, "a", encoding="utf-8") if rpath else None
         with ThreadPoolExecutor(a.workers) as ex:
-            for o, rec in zip(objects, ex.map(lambda o: put_object(cloud, o), objects)):
+            for n, (o, rec) in enumerate(zip(todo, ex.map(lambda o: put_object(cloud, o), todo))):
                 receipts[o["sha256"]] = rec
+                if rlog:
+                    rlog.write(json.dumps({"sha256": o["sha256"], "receipt": rec}) + "\n")
+                    if n % 500 == 0:
+                        rlog.flush()
+                        print(json.dumps({"objects_verified": len(receipts), "of": len(objects)}), flush=True)
+        if rlog:
+            rlog.close()
         chunk, size = [], 0
         for o in objects:
             item = {"sha256": o["sha256"], "bytes": o["bytes"], "kind": o["kind"], "sources": [{**x, "http_status": 200} for x in o["sources"]], "readback": receipts[o["sha256"]]}
