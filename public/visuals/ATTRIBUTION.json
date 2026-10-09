@@ -1,0 +1,1742 @@
+{
+  "schemaVersion": 1,
+  "acquiredAt": "2026-10-09T07:08:28.424Z",
+  "states": {
+    "AL": {
+      "name": "Alabama",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/AL.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "677d6295dac1a66c7d558307ab3b33386f8fb53f63c8923f73074be728f19cf1",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "AK": {
+      "name": "Alaska",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/AK.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "a55e856f595c606bc80809749697a7d1fd4b3e7b733370ae9156b3f7447cc45c",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "AZ": {
+      "name": "Arizona",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/AZ.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "a6d07dcd9920081463d330c558dfc62958ba11f4e8c0db7f1bce03fdac255a27",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "AR": {
+      "name": "Arkansas",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/AR.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "5e88a7eb0d7e4ff1f3764e32122de8246c7560f1c561bbb728e1895096ca9d7f",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "CA": {
+      "name": "California",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/CA.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "f46c49af9fb7709213c2df644364f4df870bc2bfe09a4f5fc4e784040c92516a",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "CO": {
+      "name": "Colorado",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/CO.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "044aa77b64079099b0f70b44160717f7b94efc2ddd84e86a26f3c3ce90c7d205",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "CT": {
+      "name": "Connecticut",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/CT.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "f8fdcfddf5b874bc11feb0869fe059eeaea236dc75e18dfe6bb888b3788e748e",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "DE": {
+      "name": "Delaware",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/DE.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "d21f522a3b94bd4ca73ab6a4e24635277cc4d71cc60999f6e26a3eb09a940593",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "DC": {
+      "name": "District of Columbia",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/DC.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "2edb19ca6717d1583133720f950a5633e38bc06f84e569370500e4d61d72b390",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "FL": {
+      "name": "Florida",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/FL.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "20364a2be941afa091571e18831818c45e92eaad359e8ee5c4509a22c2a712b0",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "GA": {
+      "name": "Georgia",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/GA.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "540ef6d964d11a4f773f523ddf402e50088946e549c0c47375afe193e6456459",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "HI": {
+      "name": "Hawaii",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/HI.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "b911cce5aac721dc06742bbe0c055241537bed4502f7a6d660fa0ed165947f92",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "ID": {
+      "name": "Idaho",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/ID.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "67e15c0550316d9697212b48fcaffe75562a986aefc950479513f477d6c6685d",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "IL": {
+      "name": "Illinois",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/IL.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "7d84600bf1a60a7294690f4f861d0630b4d89aa8bf8a5f27be3339072d528024",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "IN": {
+      "name": "Indiana",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/IN.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "bb59fd40a9f31074b7d57d153523cea8b0e42c8d47636ef5013e084bae592ebb",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "IA": {
+      "name": "Iowa",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/IA.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "76ce246b8c2f55b6f57fff682cfd771ef0bfb2a3e0440b4cff61824e384fa25b",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "KS": {
+      "name": "Kansas",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/KS.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "7368f97737e38a5e06c841c40f0da6d2a7eed547ea7521b25dd388b4ff8899ba",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "KY": {
+      "name": "Kentucky",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/KY.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "cb93995af3fed81d69fd9e7a97525e69b16f29ca1f719a4e0840d22e182f0c69",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "LA": {
+      "name": "Louisiana",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/LA.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "ed68ee2cdbd56d415ae09a9b3f93da13b21a2d511eae06dd4b47a6c110b3f064",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "ME": {
+      "name": "Maine",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/ME.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "c98a09befcd791970d092fe634e5a6ef12c1fb993c8b9f376ddefd373b6b1ae2",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "MD": {
+      "name": "Maryland",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/MD.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "c756604e754b9f199c0f1953cf510abff5e0bee99e266b6fc2aef3ff9525a607",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "MA": {
+      "name": "Massachusetts",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/MA.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "2600a527fcae550714a3d33b3539411621b79f077f769e4ffaadc7a70f9c72a9",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "MI": {
+      "name": "Michigan",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/MI.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "5fa560b338551b42b335a81ae3dfdaff4f81db8a8dcf1e421f1776a4172b2073",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "MN": {
+      "name": "Minnesota",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/MN.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "85816aedc8eee163cc02e82713edb6382c15d343fd598e15182a7a66a33ce42d",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "MS": {
+      "name": "Mississippi",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/MS.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "b575eef49bd645dbedf5cc04f46a4fca8d0fd76c1e688483a86410264c6921b0",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "MO": {
+      "name": "Missouri",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/MO.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "60bdab3d13d64dfa5ec1ec20ce55556d41e6da0e7ffd7914ea86cc2b9fd7d8aa",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "MT": {
+      "name": "Montana",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/MT.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "6929f558b9813df2bbdd43ba4f228ce146b4377ba9ff8fc4ae2b3a93cef64321",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "NE": {
+      "name": "Nebraska",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/NE.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "2cf886ef420b74892537903d2c98772daa301e7c5d151069bc13bd2b60b41f5f",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "NV": {
+      "name": "Nevada",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/NV.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "09fe9bbf137f9388e2de32dd8f863906b5205779c008ddddd457d5878ccb924f",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "NH": {
+      "name": "New Hampshire",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/NH.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "59d4365902239e29e596944d01e5b5e681b87128dfadae5452d841a547d48a64",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "NJ": {
+      "name": "New Jersey",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/NJ.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "b065ac4e62b24bb2930ce402020b34739904c680433176133d78bd7fc31b9471",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "NM": {
+      "name": "New Mexico",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/NM.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "7931e6d6810228729f5de45154c33d3c1efd21e29b066327ed469090d978535e",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "NY": {
+      "name": "New York",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/NY.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "d867fae5c372d72b5cdb50ad771455ef171cbb41d0e2454d5da064235a1127bd",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "NC": {
+      "name": "North Carolina",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/NC.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "9f03805938d0f7a1f6767a30c53e42387cd1c2b95f1252e1fda12eb4fcd4dc01",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "ND": {
+      "name": "North Dakota",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/ND.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "ac413a0968f25bd7f5ea67aa397dd5bb6106b1cdbe967b573b32f2e9cc70e6e6",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "OH": {
+      "name": "Ohio",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/OH.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "2ad0b04bf61ca4a81c1e34420d8c0be3698c7c7d5efb601244423046c09bccaa",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "OK": {
+      "name": "Oklahoma",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/OK.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "902bff85c655a62bab043849f917baf5421167614e132ebb6a097ebda0b116cb",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "OR": {
+      "name": "Oregon",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/OR.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "0f9862c05f74f4c1c3d6b1e3c2d8a2761ec16dbd9757d9fd0d4ba2cfd7fbaa78",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "PA": {
+      "name": "Pennsylvania",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/PA.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "026dcb4240abcb7162d24543276c1512db8e84c7f67bb31fcc2d30a93675f08c",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "RI": {
+      "name": "Rhode Island",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/RI.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "88b07aa85f732e83e7254134f7d6ad7178f7980710da2ea74ac1f1fd54f791b5",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "SC": {
+      "name": "South Carolina",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/SC.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "5322b6a15aaaf26a61c5c03e355a3dce2eb0f47b603f1747f3571303d29f34f2",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "SD": {
+      "name": "South Dakota",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/SD.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "8895bb1b020485487f5f0a899810642086785baa7ae8f27d914bbdb2eeff2ebe",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "TN": {
+      "name": "Tennessee",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/TN.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "ac5d841b3a626a8af1c2c47d42c45219893067060aa35ddec26d314d5f8fa77b",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "TX": {
+      "name": "Texas",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/TX.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "635fe45d13bfced51397dab4e3baecdfb7b1b59ff620e8cb300a628052d8d998",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "UT": {
+      "name": "Utah",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/UT.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "b63dd9aaa1576c54b58d97a41b2c59ab8caee9c8e7a765e90f788cd42ce5e14d",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "VT": {
+      "name": "Vermont",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/VT.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "7f67bc9bf1e7e34e74a13eb86b10072b107302a2deef5384fc6c592b72513f4d",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "VA": {
+      "name": "Virginia",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/VA.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "a59f718176bea03f4b1580a5ba7e9785210f8417a0e0db4328a4405138f6609a",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "WA": {
+      "name": "Washington",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/WA.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "d5e6f9cb0ea1a10ec8119fd0cf17f63537054a48b2b30e7a36530fe33eabf686",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "WV": {
+      "name": "West Virginia",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/WV.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "bd047dda8d16d1a475a2e52310daa87683fc4714892ce3bda9784ac4aff1e615",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "WI": {
+      "name": "Wisconsin",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/WI.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "48c55bb48359b4f0a1bb9c2c730eb75a64043ed14d65452201c1a22d6f825961",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    },
+    "WY": {
+      "name": "Wyoming",
+      "kind": "geographic-outline",
+      "path": "/visuals/states/WY.svg",
+      "source": "https://cdn.jsdelivr.net/npm/us-atlas@3.0.1/states-albers-10m.json",
+      "sourceSha256": "6e7bb086a3c791490361968a3094f377f7726c5d0c4900fec03cc42db2305a3d",
+      "sha256": "c915a451fa77caa07539c29bb514a66e1a9907822d3cb89f76183b71eae2b1fb",
+      "license": "ISC; us-atlas geometry derived from U.S. Census geography",
+      "description": "Geographic outline; not an official state seal or flag"
+    }
+  },
+  "agencies": {
+    "agriculture department": {
+      "name": "Agriculture Department",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/usda.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/usda.png",
+      "sha256": "f18c15e5281665748719b2313b81a5fc78b594b1ab7d584a43d3def5de094c2b",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "commerce department": {
+      "name": "Commerce Department",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/commerce.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/commerce.png",
+      "sha256": "3b427c706a176d405d2530bab1a3e7c763687e1a060158778deeed8b7f6591dd",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "defense department": {
+      "name": "Defense Department",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/defense.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/defense.png",
+      "sha256": "354393fb909eadf8883254b9c3e083fbc784f1dca23208650cfd67e8875267d4",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "education department": {
+      "name": "Education Department",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/ed.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/ed.png",
+      "sha256": "7da387769cf4d34f84b8c88ae96bd422604bad3dc1737b126c806a30e834d0bb",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "energy department": {
+      "name": "Energy Department",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/energy.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/energy.png",
+      "sha256": "ae21a96045312ed474811b2f0c5192921b26a4fafe5ae40772d730c8d382b7dd",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "health and human services department": {
+      "name": "Health and Human Services Department",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/hhs.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/hhs.png",
+      "sha256": "e1537aaf13768de11d9553b56c7f54dc35482151ab82093e4eecdbc83d9c0468",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "homeland security department": {
+      "name": "Homeland Security Department",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/dhs.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/dhs.png",
+      "sha256": "f4687e5c7af2abceed4ae83a67be27dab6185b589b6439c41b3e585c92d17529",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "housing and urban development department": {
+      "name": "Housing and Urban Development Department",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/hud.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/hud.png",
+      "sha256": "3a953365a2c183c995cc7147de9b65f527f57785918d473bf85e032e7c53d8c2",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "interior department": {
+      "name": "Interior Department",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/doi.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/doi.png",
+      "sha256": "9de42349ad77c055745b453ba8c1dbb1439e9114cb193f969092c3aebda27a72",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "justice department": {
+      "name": "Justice Department",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/justice.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/justice.png",
+      "sha256": "d753e9f8f43cd89b8223403c10545883b1f397da5b901b37a2eb5429a12473ec",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "labor department": {
+      "name": "Labor Department",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/labor.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/labor.png",
+      "sha256": "ebef8fe59cfdc086479731c8631e30cc2d0eddc6aa904fec787c5383bd73139b",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "state department": {
+      "name": "State Department",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/state.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/state.png",
+      "sha256": "390e1bc177b01f1d267a576ad598da7f2430efe422f47908e316c08e2f5c7d17",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "transportation department": {
+      "name": "Transportation Department",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/dot.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/dot.png",
+      "sha256": "e3239a6119077f5b417d374792dd7a7cc65065d998c77545879a35e5786e7e07",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "treasury department": {
+      "name": "Treasury Department",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/treasury.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/treasury.png",
+      "sha256": "734d9229fa41f69df31710e39006aba74fb6de832a2053ab7e9371d34ca086f9",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "veterans affairs department": {
+      "name": "Veterans Affairs Department",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/va.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/va.png",
+      "sha256": "0051cb5c90c620bc9f041c98b1070f1a23c945e293f4189e8f9748272cbe9ec2",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "food and drug administration": {
+      "name": "Food and Drug Administration",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/fda.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/fda.png",
+      "sha256": "06a629aa5797b02f2950cbd235692e488ff8163796f33bde61c69a5b4bd284fe",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "environmental protection agency": {
+      "name": "Environmental Protection Agency",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/epa.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/epa.png",
+      "sha256": "9f1f3fed8d1bffd8f72c54f9c0144bb4be324890b50c1eecc4a5a18cc57a43ab",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "consumer product safety commission": {
+      "name": "Consumer Product Safety Commission",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/cpsc.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/cpsc.png",
+      "sha256": "fd2d48760eacd7a5e815a068b6c56b24676f43a5ca22d7fac474f562d1b6d0ea",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "federal trade commission": {
+      "name": "Federal Trade Commission",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/ftc.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/ftc.png",
+      "sha256": "7053122ee80114459dcce8fb41cfa31f490e5e8f76ed950dd980bf2bbdc07979",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "securities and exchange commission": {
+      "name": "Securities and Exchange Commission",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/sec.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/sec.png",
+      "sha256": "d4f1ab147baddd759447dbeab6e29656954da94d71cf17f839bf0474aab2999b",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "federal communications commission": {
+      "name": "Federal Communications Commission",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/fcc.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/fcc.png",
+      "sha256": "de5b75394519f094a2df2f3d8125dd1bba079a26c9e36c5c11497d1b26ba87e4",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "occupational safety and health administration": {
+      "name": "Occupational Safety and Health Administration",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/osha.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/osha.png",
+      "sha256": "cbbb775d37da8e860d0458f3a2f59f08bd220675824524c6cabd7bcbb3622dff",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "national highway traffic safety administration": {
+      "name": "National Highway Traffic Safety Administration",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/nhtsa.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/nhtsa.png",
+      "sha256": "311899cf4422281056ba985c2d0bf08c0c0cc1083964de2ae24aae12df42c578",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "federal aviation administration": {
+      "name": "Federal Aviation Administration",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/faa.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/faa.png",
+      "sha256": "119909a407cfc715536051d6af04c63f63367a6fbc0fc43a2eeb254cfe70718b",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "federal energy regulatory commission": {
+      "name": "Federal Energy Regulatory Commission",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/ferc.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/ferc.png",
+      "sha256": "f1db2685e7ed44b8c4f33453407df44356d59a584520fa7c640aca26f59c6975",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "nuclear regulatory commission": {
+      "name": "Nuclear Regulatory Commission",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/nrc.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/nrc.png",
+      "sha256": "a3c08caf3a3bde40dc61cb762d1a79ca3c789898c30597f8f4c269fc906468b1",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "internal revenue service": {
+      "name": "Internal Revenue Service",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/irs.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/irs.png",
+      "sha256": "c498fc9a1575b5c3bf8cb8a246a8e3a805a77554b7e028043c2795fc54a27320",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "federal emergency management agency": {
+      "name": "Federal Emergency Management Agency",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/fema.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/fema.png",
+      "sha256": "846f07654775adb17a149d010bd82253669ed50705bc9060c53517449fab013a",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "centers for disease control and prevention": {
+      "name": "Centers for Disease Control and Prevention",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/cdc.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/cdc.png",
+      "sha256": "3479b1b19053a2929e7cc74d7f97f58c6184bee85939703d6d726dcc8c841ddf",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "centers for medicare & medicaid services": {
+      "name": "Centers for Medicare & Medicaid Services",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/cms.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/cms.png",
+      "sha256": "506ca9f2936eceac4723763206b41200b3b1af28c60b5b680fe8678937a1862a",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "census bureau": {
+      "name": "Census Bureau",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/census.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/census.png",
+      "sha256": "5229be3ff6b4cecb5461a9d56d77cf477072348e3cfc0c5de4627cf535856e8e",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "national institutes of health": {
+      "name": "National Institutes of Health",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/nih.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/nih.png",
+      "sha256": "473a5c725f3e2e58bf9c3a08a9b20eeedcb8215637565c109a9fbe69522d927f",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "national aeronautics and space administration": {
+      "name": "National Aeronautics and Space Administration",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/nasa.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/nasa.png",
+      "sha256": "1077c01dd07085474d592ccbf6105b9f55bcad1d91818a6f4c88e98c712972a5",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "national oceanic and atmospheric administration": {
+      "name": "National Oceanic and Atmospheric Administration",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/noaa.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/noaa.png",
+      "sha256": "9e402502ca632cf5b74148a34549db25af804bca5b66d05df91ce52dd20573bd",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "small business administration": {
+      "name": "Small Business Administration",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/sba.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/sba.png",
+      "sha256": "3f74e99279cd6b87e374228ab94b74e77d7867384a25f8b3c010c127921df868",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "equal employment opportunity commission": {
+      "name": "Equal Employment Opportunity Commission",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/eeoc.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/eeoc.png",
+      "sha256": "352738528f61948d8da07ee9bd8207b36abde86dde543bba2d3f6e01a0048eb7",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "consumer financial protection bureau": {
+      "name": "Consumer Financial Protection Bureau",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/cfpb.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/cfpb.png",
+      "sha256": "515435f64d277e5977f89183c29886d612cef75d62bf7a148b2fe5febcfe44ff",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "national archives and records administration": {
+      "name": "National Archives and Records Administration",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/archives.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/archives.png",
+      "sha256": "fc8b563b12daf3ad2eb940bdfacab869004b4df9d8aa9ee4e4dd687a1b69e5ba",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "government publishing office": {
+      "name": "Government Publishing Office",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/gpo.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/gpo.png",
+      "sha256": "7f93f3473fba5b4edf81218573191927d7feaec1231a041bc9afcba224b33fea",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "general services administration": {
+      "name": "General Services Administration",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/gsa.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/gsa.png",
+      "sha256": "ab4f64c5518feac20f6508a30d4d39d0bf9113bf9bcc9bed694d1af0f9ec6185",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "national science foundation": {
+      "name": "National Science Foundation",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/nsf.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/nsf.png",
+      "sha256": "ed730188ea0fe2ba964731c94a2aa0bf96b095b81b365681f3106b21c3c836e2",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "federal deposit insurance corporation": {
+      "name": "Federal Deposit Insurance Corporation",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/fdic.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/fdic.png",
+      "sha256": "0f3e205ec1570a29fc9c162115f6851871c0711795ae91136c45247e69d73ebe",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "federal reserve system": {
+      "name": "Federal Reserve System",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/federalreserve.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/federalreserve.png",
+      "sha256": "7b276d53b73cadfd6418cdaa9140edb71117664fcc844204199466742cc95276",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "federal election commission": {
+      "name": "Federal Election Commission",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/fec.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/fec.png",
+      "sha256": "a809cca1be37707d2aa4ddc4542424e5ffc5ee632bd8a7eec8b32dbeb6fec2f1",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "federal bureau of investigation": {
+      "name": "Federal Bureau of Investigation",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/fbi.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/fbi.png",
+      "sha256": "c91d7cba6ba49c66672be4fb4a380531f42ca6370311babf25870bbdd7199ceb",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "national transportation safety board": {
+      "name": "National Transportation Safety Board",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/ntsb.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/ntsb.png",
+      "sha256": "a1786e33894df4a921901e1b6bd3f02dc3310ef0073c38b96884a377caa60171",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    },
+    "patent and trademark office": {
+      "name": "Patent and Trademark Office",
+      "kind": "agency-mark",
+      "path": "/visuals/agencies/uspto.png",
+      "source": "https://raw.githubusercontent.com/GSA/logo/ef81170993902f82f2dc8025e14ad8638d4167f6/uspto.png",
+      "sha256": "3982b5f1cc354e766b4033054c45888901c0666bf73ca3776f03fd3d1ef58174",
+      "license": "GSA/logo Unlicense; identification only, no endorsement",
+      "repositoryRevision": "ef81170993902f82f2dc8025e14ad8638d4167f6"
+    }
+  },
+  "courts": {
+    "acca": {
+      "name": "United States Army Court of Criminal Appeals",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/acca.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/acca.png",
+      "sha256": "73105919687d913e17d9a2eeb267aa5091ad0e97fc9d7bcb6fe32c0d7310014e",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "afcca": {
+      "name": "United States Air Force Court of Criminal Appeals",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/afcca.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/afcca.png",
+      "sha256": "dcd8123e5bd7a7103c6e3f3ebe29b053a63784f172c0ecf739c7ae2b20999dbd",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "akb": {
+      "name": "United States Bankruptcy Court, D. Alaska",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/akb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/akb.png",
+      "sha256": "78977edd9482e60e74b126a237a5344a09e6ce1b92a91f3e6941a85d99ed4f8b",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "almb": {
+      "name": "United States Bankruptcy Court, M.D. Alabama",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/almb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/almb.png",
+      "sha256": "9f762331d84e16a0392e2a2fca9577a4ec34eee9af28d54ddffac95b7f520f52",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "alnb": {
+      "name": "United States Bankruptcy Court, N.D. Alabama",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/alnb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/alnb.png",
+      "sha256": "fd06fa7e90b45b1ce489a158fcd2a1d211324d1156a019c45f3a70bba7594159",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "alsb": {
+      "name": "United States Bankruptcy Court, S.D. Alabama",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/alsb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/alsb.png",
+      "sha256": "c5d80f9deb021e49e9c8d5058ce40ad2c53abc426172adcda6cccd1b78c4951b",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "arb": {
+      "name": "United States Bankruptcy Court, D. Arizona",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/arb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/arb.png",
+      "sha256": "ddd85061901f799444e6736eb6826f6b162073c39985456e23ac72b4c1a0234f",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "bap8": {
+      "name": "United States Bankruptcy Appellate Panel for the Eighth Circuit",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/bap8.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/bap8.png",
+      "sha256": "8ef3d4b9c17ebf79736f203fa066aac7173536326572fdbe0bf5602e7826feb6",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "bap9": {
+      "name": "United States Bankruptcy Appellate Panel for the Ninth Circuit",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/bap9.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/bap9.png",
+      "sha256": "69715882b12c8ac2c0e4296e5c6ecd124cad3aa0be0f0cda5a3a9422cd9dd440",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "cacb": {
+      "name": "United States Bankruptcy Court, C.D. California",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/cacb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/cacb.png",
+      "sha256": "75c1390151191bf0e8b80a392e8b04b46607f1893179a860080b9431e5c7f773",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "canb": {
+      "name": "United States Bankruptcy Court, N.D. California",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/canb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/canb.png",
+      "sha256": "59808f03b3047dd4d633c3efd8d7fed38a15e28490150bf352b36e69946c11a8",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "cavc": {
+      "name": "United States Court of Appeals for Veterans Claims",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/cavc.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/cavc.png",
+      "sha256": "1dc56a0734f3e4bdac0a20f561a4d24361d049901c3b7be5a3a8218775f9806d",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "cit": {
+      "name": "United States Court of International Trade",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/cit.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/cit.png",
+      "sha256": "9203955055e0843892a8a4e800841acfdea9370b6bd8e2e2daf90b1db6296636",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "cob": {
+      "name": "United States Bankruptcy Court, D. Colorado",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/cob.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/cob.png",
+      "sha256": "fe165d658bfc2b9c25e02f772fd8e5853cfee7ad9d71e17f8a594e00d6222238",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "compliance": {
+      "name": "Office of Compliance, United States Congress",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/compliance.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/compliance.png",
+      "sha256": "bf78683d24bd3f5f97855ad3fa9def8f4f929a64c1ff440a0b41eeb60fc3054f",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ctb": {
+      "name": "United States Bankruptcy Court, D. Connecticut",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/ctb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ctb.png",
+      "sha256": "d17c542628e67a5aaf3f85d447032b3cddb65428867e83e99d68b8edb49df3c9",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "dcb": {
+      "name": "United States Bankruptcy Court, District of Columbia",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/dcb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/dcb.png",
+      "sha256": "b3aa465518087f8e482f062bb44d7a14ccad7ed1aa93ffd12a310eddf3725411",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "deb": {
+      "name": "United States Bankruptcy Court, D. Delaware",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/deb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/deb.png",
+      "sha256": "c566fc2e954996968207f5de580077bc7a29b87a5105ceb6c729db8881aac6be",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "flmb": {
+      "name": "United States Bankruptcy Court, M.D. Florida",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/flmb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/flmb.png",
+      "sha256": "97a735652bb7b533c50b1b37e8814bc15b56fe2af2e22a10100ac83b4da3a4ab",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "flnb": {
+      "name": "United States Bankruptcy Court, N.D. Florida",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/flnb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/flnb.png",
+      "sha256": "fed846440457e54d1b3f4650777449cafb25c34775822b6b6e87ba26c30c541e",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "flsb": {
+      "name": "United States Bankruptcy Court, S.D. Florida.",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/flsb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/flsb.png",
+      "sha256": "416e09f413227eca864b47aef346787472526f1f202b7d449cec4eb1786c5b6d",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "gamb": {
+      "name": "United States Bankruptcy Court, M.D. Georgia",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/gamb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/gamb.png",
+      "sha256": "ba8c1089dfc77a81ede12831a66fcbf76dcd5539cad00b7f0f230b74c04f6e83",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ganb": {
+      "name": "United States Bankruptcy Court, N.D. Georgia",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/ganb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ganb.png",
+      "sha256": "65bc8fb531f5191e27f65c9d59e7e45de35c91a7142868c030b034fd8e3456fc",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "gasb": {
+      "name": "United States Bankruptcy Court, S.D. Georgia",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/gasb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/gasb.png",
+      "sha256": "92efcb1212e67bf44378cf071e4d662a42268330183fca89c5676af5afe2f881",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "hib": {
+      "name": "United States Bankruptcy Court, D. Hawaii",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/hib.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/hib.png",
+      "sha256": "72c881380909313177454a02c0745869edf1aa9c17e4c9f7e647990e230f0794",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ianb": {
+      "name": "United States Bankruptcy Court, N.D. Iowa",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/ianb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ianb.png",
+      "sha256": "15684393fa5f2011477aab99624bff0321cef3453886dfb2ed398664b183b9c9",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "iasb": {
+      "name": "United States Bankruptcy Court, S.D. Iowa",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/iasb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/iasb.png",
+      "sha256": "9d877f7106d5cbb8b146465e875e64f6ddee1eb46d17df432827ed044843cfc9",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "idb": {
+      "name": "United States Bankruptcy Court, D. Idaho",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/idb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/idb.png",
+      "sha256": "f9cd81b46c92461ec933b0e58c1771dae4ad8cb8563fd3f5b2725744a64a4a9b",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ilcb": {
+      "name": "  United States Bankruptcy Court, C.D. Illinois",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/ilcb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ilcb.png",
+      "sha256": "1d6b9c5717595d1f33c1dc98ffdc5b8eacd7903adf6bdfab54cee9bbaec63b7f",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ilnb": {
+      "name": "  United States Bankruptcy Court, N.D. Illinois",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/ilnb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ilnb.png",
+      "sha256": "0c2d5766e91a1b79340575bdb0b9346577c19c237e405b9baded37047f91e80f",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ilsb": {
+      "name": "United States Bankruptcy Court, S.D. Illinois",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/ilsb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ilsb.png",
+      "sha256": "701ee84c1c29525920d946eed7dafb4c25633861ec607acf79cb5d31b54ac95d",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "innb": {
+      "name": "United States Bankruptcy Court, N.D. Indiana",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/innb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/innb.png",
+      "sha256": "4d02f5a3269d8c2522feb0d86ee9a9bfc27e5c1bec163a1c2eb6103cb7e8d615",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "insb": {
+      "name": "United States Bankruptcy Court, S.D. Indiana",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/insb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/insb.png",
+      "sha256": "71db4fa84a0805e63130de2c2fe60fd039802534aff9b2dc2f67d041e919c2fe",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "jpml": {
+      "name": "United States Judicial Panel on Multidistrict Litigation",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/jpml.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/jpml.png",
+      "sha256": "44b34e85e08759716bd85b7350dc2a0f621420b155d8252813d09ca4e48f929e",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ksb": {
+      "name": "United States Bankruptcy Court, D. Kansas",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/ksb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ksb.png",
+      "sha256": "983f80b2dc47b16fdbaa3b309640d9f059d8cb53e4eab7bd43f8afe85f992e0e",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "kyeb": {
+      "name": "United States Bankruptcy Court, E.D. Kentucky",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/kyeb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/kyeb.png",
+      "sha256": "12849f4e47983ff6ba190921252d689a3c4b36fcf127299fc7bd6be2c7b022e7",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "kywb": {
+      "name": "United States Bankruptcy Court, W.D. Kentucky",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/kywb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/kywb.png",
+      "sha256": "6edfa55119e42c712ef61f24fc32a8048aed13653643b88bc0bcdf8ef0fdacb3",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "laeb": {
+      "name": "United States Bankruptcy Court, E.D. Louisiana",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/laeb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/laeb.png",
+      "sha256": "27b87f3a875bc69aaf3e3244d8669b66cb0ee31243a00b479ca343c1d2506aa3",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "lamb": {
+      "name": "United States Bankruptcy Court, M.D. Louisiana",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/lamb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/lamb.png",
+      "sha256": "868d6f93eed38e0e659afe06adc2d755df71978aacc1aee2b9835e3f41707365",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "lawb": {
+      "name": "United States Bankruptcy Court, W.D. Louisiana",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/lawb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/lawb.png",
+      "sha256": "b0da984d6cceea1b733f1f133b3111758de36348f6bc868cbf4b79ca22eeaedb",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "mab": {
+      "name": "United States Bankruptcy Court, D. Massachusetts",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/mab.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/mab.png",
+      "sha256": "04c1441a87cbf121c6086a27ca0d6e22237aaf4c79d962e0083f63797c6c022b",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "mc": {
+      "name": "U.S. Court of Military Commission Review",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/mc.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/mc.png",
+      "sha256": "9edfaf7f6db34d9aa8bf98e97473740a522d8b944a06625f788a5979ac6473f8",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "meb": {
+      "name": "  United States Bankruptcy Court, D. Maine",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/meb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/meb.png",
+      "sha256": "7b7751631c8372d4af8f29e16b5ae93248aec31ec2d85c21601a9e25b5832571",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "mieb": {
+      "name": "United States Bankruptcy Court, E.D. Michigan",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/mieb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/mieb.png",
+      "sha256": "33a4de855dc54cea36acabc133455b189a6fa20916c3412d070f918588c4129a",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "mspb": {
+      "name": "United States Merit Systems Protection Board",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/mspb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/mspb.png",
+      "sha256": "042c3461922a3f17b14fbb4862942ebd703ac27397d1a03a430980c1fd9bf7d0",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "nceb": {
+      "name": "United States Bankruptcy Court, E.D. North Carolina",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/nceb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/nceb.png",
+      "sha256": "2898d76800aa441a2e0a462f86bab200e0ca2cb8c42abdaf090e66be1cd3eb34",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ncmb": {
+      "name": "United States Bankruptcy Court, M.D. North Carolina",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/ncmb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ncmb.png",
+      "sha256": "6e2fc7709648069c705e7fadcae90a505d0d447f862ff95d16392f0575b865fc",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ncwb": {
+      "name": "United States Bankruptcy Court, W.D. North Carolina",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/ncwb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ncwb.png",
+      "sha256": "2935e746ba2ea9be57ce90ea38b7c962e9d709cf92291bd94794a77e91b7becf",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ndb": {
+      "name": "  United States Bankruptcy Court, D. North Dakota",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/ndb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ndb.png",
+      "sha256": "3b032864bfbab3552811dc00e1e0ad99becdcc16e024976701c6a9587ae12c1b",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "nebraskab": {
+      "name": "United States Bankruptcy Court, D. Nebraska",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/nebraskab.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/nebraskab.png",
+      "sha256": "4c7ebfaa390458c5c158b1b3adedbe0d8fdc71655dbd2705842b30f2e1a193d7",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "nmcca": {
+      "name": "United States Navy-Marine Corps Court of Criminal Appeals",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/nmcca.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/nmcca.png",
+      "sha256": "eac394e6e4d923093d2071fcf29eb3672cc1ecc211f000f4df24513cc0e1f47e",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "nmib": {
+      "name": "United States Bankruptcy Court, Northern Mariana Islands",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/nmib.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/nmib.png",
+      "sha256": "c9f953237c5145273d8e3ba45b03988fb68d6432096a7a907aa6367fc6626105",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "nvb": {
+      "name": "United States Bankruptcy Court, D. Nevada",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/nvb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/nvb.png",
+      "sha256": "efa6d34eb036fc099e4d76fe277a695805288533cb5ba8e0184454a58cafdfee",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "nyeb": {
+      "name": "United States Bankruptcy Court, E.D. New York",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/nyeb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/nyeb.png",
+      "sha256": "7131fb9547f2565cb71c6d003c6e6499bce5632a6656b15492c5711c39c16858",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "nynb": {
+      "name": "United States Bankruptcy Court, N.D. New York",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/nynb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/nynb.png",
+      "sha256": "e16d99a9767c44dd1b2c760e454313141031dd8b3ee0cf25acdacbf8b3322be2",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "nysb": {
+      "name": "United States Bankruptcy Court, S.D. New York",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/nysb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/nysb.png",
+      "sha256": "c5c53aafcb99dde9ec59a3dd638d13b7c19f1a6899ed14e8859b670298f3dbf1",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "nywb": {
+      "name": "United States Bankruptcy Court, W.D. New York",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/nywb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/nywb.png",
+      "sha256": "ac530b3987d371ca04910cc175edae910c4b15a5dad5af9cc57d4de43ffd24cc",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ohnb": {
+      "name": "United States Bankruptcy Court, N.D. Ohio",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/ohnb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ohnb.png",
+      "sha256": "87b69298d4d284939d2d5ae1b35ce10ba11f3066cb1ceaca7684487e8e794fa0",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "okeb": {
+      "name": "United States Bankruptcy Court, E.D. Oklahoma",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/okeb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/okeb.png",
+      "sha256": "4c161a9ec46bfeae0698d66d5a7c4dfb1e3f9121d79dc23f337cec7324e921c2",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "oknb": {
+      "name": "United States Bankruptcy Court, N.D. Oklahoma",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/oknb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/oknb.png",
+      "sha256": "e3b530524ec0b1cd2f0e43bc979fe69ce1585c75625105cb492ed32d1a4f6103",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "okwb": {
+      "name": "United States Bankruptcy Court, W.D. Oklahoma",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/okwb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/okwb.png",
+      "sha256": "de3fbbd72fa447bd7b02f443dfc6791adbeace6d94cc2dee574fbad87ba00ad1",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "orb": {
+      "name": "United States Bankruptcy Court, D. Oregon",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/orb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/orb.png",
+      "sha256": "a0ff035e11e110eade2e441a532128115559eb7ecf19551dfed82ef3ef13d903",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "paeb": {
+      "name": "United States Bankruptcy Court, E.D. Pennsylvania",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/paeb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/paeb.png",
+      "sha256": "59a74d844c55f7f3c5d6683ed61f46e057cb1d6b2f5c351f3d82dd098ce278f3",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "pamb": {
+      "name": "United States Bankruptcy Court, M.D. Pennsylvania",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/pamb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/pamb.png",
+      "sha256": "cef2d42d40c768296274ef14ccda70c4fdf18ceb32f637aa3bff2debfd68166c",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "pawb": {
+      "name": "United States Bankruptcy Court, W.D. Pennsylvania",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/pawb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/pawb.png",
+      "sha256": "0e4707a914007ff7924d28ff4f4ef3a72596d99611a259b3479ec6df37dbd8f5",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "prb": {
+      "name": "United States Bankruptcy Court, D. Puerto Rico",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/prb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/prb.png",
+      "sha256": "c5ed7daa8b73a0e18e1b22b6c79925cbd8047bb4d6048d8e9940b55de175ecaf",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "rib": {
+      "name": "United States Bankruptcy Court, D. Rhode Island",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/rib.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/rib.png",
+      "sha256": "bdc85efdba70c167e64b1f530c58a337dab00b45fa56127b53aeb0169fe85f01",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "scb": {
+      "name": "United States Bankruptcy Court, District of South Carolina",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/scb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/scb.png",
+      "sha256": "ea212193ce1b00957f4a970282a129d9c3b1fd86f06509a01028a9de35caf0f2",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "scd": {
+      "name": "United States District Court, D. South Carolina",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/scd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/scd.png",
+      "sha256": "c4abea847747ad2b264d437786aa229faa06cbb870286930975f560d78ece30b",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "sdb": {
+      "name": "United States Bankruptcy Court, D. South Dakota",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/sdb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/sdb.png",
+      "sha256": "c5bfedf412f5391e30913e5a0f156feef86cdec3083ba5c1104b1bac0540cc17",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "tneb": {
+      "name": "United States Bankruptcy Court, E.D. Tennessee",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/tneb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/tneb.png",
+      "sha256": "26419ea37f5df82b4ac31849ad2c55d6da3157bdcfb2063d8a0fbb106bb2dda7",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "txeb": {
+      "name": "United States Bankruptcy Court, E.D. Texas",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/txeb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/txeb.png",
+      "sha256": "1286c5bdb49d0547766f4f875ab54b782850244d23d4fb3a2c34e76166c747a4",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "txnb": {
+      "name": "United States Bankruptcy Court, N.D. Texas",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/txnb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/txnb.png",
+      "sha256": "e548b342038b4259088f45cccd6facb396ea68313b2e4d79f17d6df6cbca654e",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "txsb": {
+      "name": "United States Bankruptcy Court, S.D. Texas",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/txsb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/txsb.png",
+      "sha256": "643c7c5d34a81d8681b70da6aeb259c693bff44409b1e34b9e387fd8d4066fca",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "txwb": {
+      "name": "United States District Court, W.D. Texas",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/txwb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/txwb.png",
+      "sha256": "54a9a3798b0e1153067ac40ad84ca25c43f84e61153a97dfd2fd4fb4b83a0552",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "utd": {
+      "name": "United States District Court, D. Utah",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/utd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/utd.png",
+      "sha256": "55e8a1bc87eb7ab3d686363103610356eb501162f184e2230a58aef5ab58e1cf",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "vaeb": {
+      "name": "United States Bankruptcy Court, E.D. Virginia",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/vaeb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/vaeb.png",
+      "sha256": "8a69d70843e0ba3dbc974b44c0e8b33875fbe74a8ae01ee3591e00f7fa796f28",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "vib": {
+      "name": "United States Bankruptcy Court, D. Virgin Islands",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/vib.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/vib.png",
+      "sha256": "c5ad4d36ea67e0b9f53ae8cccadde9d46170558202343b736b9d66b8d49c042a",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "waeb": {
+      "name": "United States Bankruptcy Court, E.D. Washington",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/waeb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/waeb.png",
+      "sha256": "80fe0637a3551e0e587922e6567c232424ec1565140ad02bed665f03a971cae0",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "wawb": {
+      "name": "United States Bankruptcy Court, W.D. Washington",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/wawb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/wawb.png",
+      "sha256": "e77b07f777361d8200b53243281b798c931d8a0a6d913f41eabee543cd14695d",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "wieb": {
+      "name": "United States Bankruptcy Court, E.D. Wisconsin",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/wieb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/wieb.png",
+      "sha256": "8bd0c33950520542d2e49c9ca2f15446d139fb94559d6b1981cc60075d1ce095",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "wiwb": {
+      "name": "United States Bankruptcy Court, W.D. Wisconsin",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/wiwb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/wiwb.png",
+      "sha256": "63927a348f21e9f132baf30c3113d94c75542e87e90ee38ed9338df48a555511",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "wvnb": {
+      "name": "United States District Court, N.D. West Virginia",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/wvnb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/wvnb.png",
+      "sha256": "6c1d563b02143696e6cfb10c5a8c56c2a710084bdef05671945f0f05ab045f78",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "wyb": {
+      "name": "United States Bankruptcy Court, D. Wyoming",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/wyb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/wyb.png",
+      "sha256": "ee40788d83efeeb09145162d85f5733047c416480a0ed4fadb0e998998849148",
+      "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    }
+  },
+  "sources": [
+    {
+      "repository": "https://github.com/topojson/us-atlas",
+      "version": "3.0.1",
+      "usage": "51 state and District of Columbia geographic outlines"
+    },
+    {
+      "repository": "https://github.com/GSA/logo",
+      "revision": "ef81170993902f82f2dc8025e14ad8638d4167f6",
+      "usage": "Exact-name agency marks; generic fallback for unmatched agencies"
+    },
+    {
+      "repository": "https://github.com/freelawproject/seal-rookery",
+      "revision": "784c3238bac3958395f83131b9acb206b67be5e8",
+      "usage": "Exact CourtListener IDs, federal-government images only; never a generic official seal"
+    },
+    {
+      "repository": "https://github.com/freelawproject/judge-pics",
+      "usage": "Existing corpus-linked portraits only; no guessing a person from a name or photograph"
+    },
+    {
+      "repository": "https://github.com/fonttools/region-flags",
+      "usage": "Reviewed but not shipped: sampled MN/UT files predate their replacement flags. Geographic outlines are used instead."
+    }
+  ],
+  "rejected": [
+    {
+      "id": "aoc",
+      "reason": "Error: Original hash differs from supplier metadata"
+    },
+    {
+      "id": "scotus",
+      "reason": "Error: Original hash differs from supplier metadata"
+    },
+    {
+      "id": "tax",
+      "reason": "Error: Original hash differs from supplier metadata"
+    },
+    {
+      "id": "uscfc",
+      "reason": "Error: Original hash differs from supplier metadata"
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/atlas/AppShell";
+import { LawLanding } from "@/components/corpus/LawLanding";
 import { SectionPage } from "@/components/corpus/SectionPage";
 import { FolderGrid, type FolderItem } from "@/components/corpus/FolderGrid";
 import { DatasetBrowser, useDatasets } from "@/components/corpus/DatasetBrowser";
@@ -109,52 +110,15 @@ function LawPage() {
   let body: React.ReactNode;
   const savedLawError = datasets.error;
   const err = s.scope === "states" ? stateSources.error : savedLawError;
-  if (err) body = <ExternalError error={err} />;
+  if (!s.scope && !s.ds && !s.view) body = <LawLanding />;
+  else if (err) body = <ExternalError error={err} />;
   else if (s.scope !== "states" && datasets.isLoading)
     body = <p className="text-[13px] text-muted-foreground">Loading law collections…</p>;
   else if (s.scope === "states" && stateSources.isLoading)
     body = <p className="text-[13px] text-muted-foreground">Loading state law sources…</p>;
   else if (s.ds) body = <DatasetBrowser key={s.ds} dataset={s.ds} />;
   else if (!s.scope) {
-    body = (
-      <div className="space-y-4">
-        <FolderGrid
-          title="Jurisdiction"
-          items={[
-            {
-              key: "federal",
-              label: "Federal",
-              note: "Browse available collections",
-              link: { to: "/law", search: { scope: "federal" } },
-            },
-            {
-              key: "states",
-              label: "States",
-              note: "Official state sources, by state",
-              link: { to: "/law", search: { scope: "states" } },
-            },
-            {
-              key: "reference",
-              label: "Reference tools",
-              note: "Limitations calculator and citations",
-              link: { to: "/law", search: { scope: "reference" } },
-            },
-            {
-              key: "codes",
-              label: "State codes",
-              note: "Full codes that have been captured",
-              link: { to: "/law/codes" },
-            },
-            {
-              key: "list",
-              label: "All law datasets (list)",
-              note: "Law record sets in one list",
-              link: { to: "/law", search: { view: "list" } },
-            },
-          ]}
-        />
-      </div>
-    );
+    body = <LawLanding />;
   } else if (s.scope === "federal" && s.group) {
     body = (
       <FolderGrid
@@ -214,7 +178,11 @@ function LawPage() {
             .map((state) => ({
               key: state.usps,
               label: state.name,
-              link: { to: "/law", search: { scope: "states", state: state.usps } },
+              link: {
+                to: "/places/$state",
+                params: { state: state.usps },
+                search: { tab: "sources" },
+              },
             }))}
         />
       </div>

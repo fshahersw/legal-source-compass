@@ -2,7 +2,7 @@ import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Map as MapIcon,
-  Landmark,
+  Clock3,
   Library,
   ShieldAlert,
   BookOpen,
@@ -22,76 +22,14 @@ import { reviewCounts } from "@/lib/atlas/review";
 import { getSidebarCollapsed, setSidebarCollapsed } from "@/lib/atlas/ui";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  PRIMARY_NAVIGATION,
+  contextualNavigation,
+  navigationSection,
+} from "@/lib/atlas/navigation";
 
-type NavItem = { to: string; label: string; icon: typeof Library; paths: string[] };
-const EXPLORE = ["/", "/places", "/search", "/overview"];
-const LITIGATION = [
-  "/courts",
-  "/judges",
-  "/matters",
-  "/people",
-  "/insights",
-  "/mdls",
-  "/records",
-  "/registry",
-];
-const LAW = ["/law", "/laws", "/limitations", "/safety", "/agencies"];
-const SOURCES = [
-  "/sources",
-  "/source-datasets",
-  "/data",
-  "/saved-sources",
-  "/data-exports",
-];
-const NAV: NavItem[] = [
-  { to: "/matters", label: "Matters", icon: Landmark, paths: LITIGATION },
-  { to: "/places", label: "Explore", icon: MapIcon, paths: EXPLORE },
-  { to: "/law", label: "Law & Safety", icon: BookOpen, paths: LAW },
-  { to: "/sources/library", label: "Sources", icon: Library, paths: SOURCES },
-];
-
-type ContextItem = { to: string; label: string; search?: { ds: string } };
-const CONTEXT_NAV: { paths: string[]; items: ContextItem[] }[] = [
-  {
-    paths: EXPLORE,
-    items: [
-      { to: "/", label: "Map" },
-      { to: "/search", label: "Search" },
-    ],
-  },
-  {
-    paths: LITIGATION,
-    items: [
-      { to: "/matters", label: "Matters & MDLs" },
-      { to: "/matters/cases", label: "Cases & dockets" },
-      { to: "/matters", label: "Expert rulings", search: { ds: "expert_rulings" } },
-      { to: "/courts", label: "Courts" },
-      { to: "/judges", label: "Judges" },
-      { to: "/people", label: "People" },
-    ],
-  },
-  {
-    paths: LAW,
-    items: [
-      { to: "/law", label: "Law & regulation" },
-      { to: "/law/codes", label: "State codes" },
-      { to: "/limitations", label: "Time limits" },
-      { to: "/safety", label: "Product safety" },
-      { to: "/agencies", label: "Agencies" },
-    ],
-  },
-  {
-    paths: SOURCES,
-    items: [
-      { to: "/sources/library", label: "Source library" },
-      { to: "/sources/catalog", label: "Source catalog" },
-      { to: "/sources/coverage", label: "Quality & coverage" },
-      { to: "/sources/analysis", label: "Docket timelines" },
-      { to: "/sources/docket-documents", label: "Docket documents" },
-      { to: "/saved-sources", label: "Saved" },
-    ],
-  },
-];
+const navIcons = { map: MapIcon, book: BookOpen, clock: Clock3, library: Library };
+const NAV = PRIMARY_NAVIGATION.map((item) => ({ ...item, icon: navIcons[item.icon] }));
 
 function AccountBox({ collapsed }: { collapsed: boolean }) {
   const { user, ready } = useSessionUser();
@@ -139,21 +77,19 @@ function AccountBox({ collapsed }: { collapsed: boolean }) {
   );
 }
 
-function pathMatches(pathname: string, path: string) {
-  return path === "/" ? pathname === "/" : pathname === path || pathname.startsWith(`${path}/`);
-}
-
 export function AppShell({
   breadcrumbs,
   title,
   description,
   actions,
+  emblem,
   children,
 }: {
   breadcrumbs: { label: string; to?: string; search?: Record<string, string> | undefined }[];
   title: string;
   description?: string;
   actions?: ReactNode;
+  emblem?: ReactNode;
   children: ReactNode;
 }) {
   const { overlays, bookmarks, localStateWarning, persistWarning } = useAtlas();
@@ -170,9 +106,7 @@ export function AppShell({
     setCollapsed(next);
     setSidebarCollapsed(next);
   };
-  const context = CONTEXT_NAV.find((group) =>
-    group.paths.some((path) => pathMatches(pathname, path)),
-  );
+  const context = contextualNavigation(pathname);
   const submitSearch = (event: FormEvent) => {
     event.preventDefault();
     const q = search.trim();
@@ -208,9 +142,9 @@ export function AppShell({
 
         <nav className="flex flex-col gap-0.5 overflow-y-auto">
           {NAV.map((item) => {
-            const active = item.paths.some((path) => pathMatches(pathname, path));
+            const active = navigationSection(pathname) === item.id;
             const badgeCount =
-              item.label === "Sources" ? counts.total + Object.keys(bookmarks).length : 0;
+              item.id === "sources" ? counts.total + Object.keys(bookmarks).length : 0;
             return (
               <Link
                 key={item.to}
@@ -251,89 +185,97 @@ export function AppShell({
       </aside>
 
       <div className="min-w-0 flex-1">
-        <header className="sticky top-0 z-20 border-b border-border bg-surface/90 px-5 py-4 backdrop-blur lg:px-8">
-          <div className="mb-1.5 flex items-center gap-2.5">
-            <button
-              type="button"
-              onClick={toggleSidebar}
-              aria-expanded={!collapsed}
-              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              className="hidden shrink-0 rounded-md border border-border bg-background p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:inline-flex"
+        <header className="border-b border-border bg-surface px-5 py-4 lg:px-8">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex min-w-0 items-center gap-3">
+              <button
+                type="button"
+                onClick={toggleSidebar}
+                aria-expanded={!collapsed}
+                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                className="hidden rounded-md border border-border p-1.5 text-muted-foreground hover:bg-muted lg:inline-flex"
+              >
+                {collapsed ? (
+                  <PanelLeftOpen className="size-4" />
+                ) : (
+                  <PanelLeftClose className="size-4" />
+                )}
+              </button>
+              <nav aria-label="Breadcrumb" className="min-w-0">
+                <ol className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                  {breadcrumbs.map((crumb, i) => (
+                    <li key={crumb.label + "-" + i} className="flex items-center gap-1.5">
+                      {i > 0 ? (
+                        <span aria-hidden className="opacity-40">
+                          /
+                        </span>
+                      ) : null}
+                      {crumb.to ? (
+                        <Link
+                          to={crumb.to}
+                          {...(crumb.search ? { search: crumb.search as never } : {})}
+                          className="hover:text-foreground"
+                        >
+                          {crumb.label}
+                        </Link>
+                      ) : (
+                        <span aria-current="page" className="font-medium text-foreground">
+                          {crumb.label}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              </nav>
+            </div>
+            <form
+              onSubmit={submitSearch}
+              className="hidden w-64 shrink-0 items-center gap-1 md:flex"
             >
-              {collapsed ? (
-                <PanelLeftOpen className="size-4" strokeWidth={1.75} />
-              ) : (
-                <PanelLeftClose className="size-4" strokeWidth={1.75} />
-              )}
-            </button>
-            <nav aria-label="Breadcrumb" className="min-w-0">
-              <ol className="flex flex-wrap items-center gap-1.5 text-[12px] text-muted-foreground">
-                {breadcrumbs.map((crumb, i) => (
-                  <li key={`${crumb.label}-${i}`} className="flex items-center gap-1.5">
-                    {i > 0 ? (
-                      <span aria-hidden className="opacity-50">
-                        /
-                      </span>
-                    ) : null}
-                    {crumb.to ? (
-                      <Link
-                        to={crumb.to}
-                        {...(crumb.search ? { search: crumb.search as never } : {})}
-                        className="hover:text-foreground hover:underline"
-                      >
-                        {crumb.label}
-                      </Link>
-                    ) : (
-                      <span className="font-medium text-foreground">{crumb.label}</span>
-                    )}
-                  </li>
-                ))}
-              </ol>
-            </nav>
+              <Input
+                aria-label="Search all corpus data"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search the atlas"
+                className="h-8 bg-background text-xs"
+              />
+              <Button
+                type="submit"
+                size="icon"
+                variant="ghost"
+                className="size-8 shrink-0"
+                aria-label="Search"
+              >
+                <Search className="size-4" />
+              </Button>
+            </form>
           </div>
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div className="min-w-0">
-              <h1 className="text-2xl leading-tight">{title}</h1>
-              {description ? (
-                <p className="mt-1 max-w-3xl text-[13px] leading-relaxed text-muted-foreground">
-                  {description}
-                </p>
-              ) : null}
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              {emblem ? <div className="shrink-0">{emblem}</div> : null}
+              <div className="min-w-0">
+                <h1 className="font-display text-2xl leading-tight">{title}</h1>
+                {description ? (
+                  <p className="mt-1 max-w-3xl text-[13px] leading-relaxed text-muted-foreground">
+                    {description}
+                  </p>
+                ) : null}
+              </div>
             </div>
             {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
           </div>
-          <form onSubmit={submitSearch} className="mt-3 flex max-w-xl items-center gap-1.5">
-            <Input
-              aria-label="Search all corpus data"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search matters, dockets, documents, courts, and law"
-              className="h-9 bg-background text-[13px]"
-            />
-            <Button
-              type="submit"
-              size="icon"
-              variant="outline"
-              className="size-9"
-              aria-label="Search"
-            >
-              <Search />
-            </Button>
-          </form>
         </header>
 
-        {context && pathname !== "/" ? (
+        {context.length > 0 ? (
           <nav
             aria-label="Section"
             className="flex gap-1 overflow-x-auto border-b border-border bg-surface px-5 py-2 lg:px-8"
           >
-            {context.items.map((item) => (
+            {context.map((item) => (
               <Link
-                key={`${item.to}${item.search?.ds ?? ""}`}
+                key={item.to}
                 to={item.to}
-                {...(item.search ? { search: item.search } : {})}
-                activeOptions={{ exact: item.to === "/", includeSearch: !!item.search }}
+                activeOptions={{ exact: true }}
                 className="rounded-md px-2 py-1 text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground"
                 activeProps={{ className: "bg-muted font-semibold text-foreground" }}
               >

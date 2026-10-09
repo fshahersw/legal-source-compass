@@ -1,74 +1,78 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { EntityError, EntityPage, entityQuery } from "@/components/corpus/EntityPage";
+import { JudgePortrait } from "@/components/corpus/EntityArtwork";
 import { pageHead } from "@/lib/corpus/head";
-import { useJudgeDirectory } from "@/lib/external/useDirectory";
-import { judgeStates, judgeSystems } from "@/lib/external/directoryTree";
+import { canonicalState } from "@/lib/corpus/stateHub";
+import { buildEntityView } from "@/lib/external/entityView";
 
 export const Route = createFileRoute("/judges/$id")({
   loader: ({ context, params }) =>
     context.queryClient.ensureQueryData(entityQuery("judges", params.id)),
   head: ({ loaderData }) => {
-    const raw = (loaderData as { raw?: unknown } | undefined)?.raw as
-      Record<string, unknown> | null | undefined;
+    const raw = (loaderData as { raw?: Record<string, unknown> | null } | undefined)?.raw;
     const name = String(raw?.["title"] ?? raw?.["name"] ?? "Judge profile");
     return pageHead(
       name,
-      `Judge profile for ${name}: linked records from the connected corpus on one page.`,
+      `Recorded judicial profile for ${name}: service, sources and state associations.`,
     );
   },
   component: Page,
   errorComponent: ({ error }) => (
     <EntityError error={error instanceof Error ? error : new Error(String(error))} />
   ),
-  notFoundComponent: () => <p className="p-6 text-[13px]">Judge not found.</p>,
+  notFoundComponent: () => <p className="p-6 text-sm">Judge not found.</p>,
 });
-
 function Page() {
   const { id } = Route.useParams();
-  const dir = useJudgeDirectory();
-  const j = dir.data?.find((r) => r.id === id);
-  const crumbs: { label: string; to?: string; search?: Record<string, string> }[] = [
-    { label: "Atlas", to: "/" },
-    { label: "Judges", to: "/judges" },
+  const { raw } = Route.useLoaderData();
+  const view = buildEntityView(raw ?? {});
+  const rawStates = Array.isArray(raw?.["states"])
+    ? (raw["states"] as unknown[])
+    : [
+        raw?.["state"],
+        ...view.facts.filter(([key]) => key.toLowerCase() === "state").map(([, value]) => value),
+      ];
+  const states = [
+    ...new Map(
+      rawStates
+        .map(canonicalState)
+        .filter((s): s is NonNullable<typeof s> => !!s)
+        .map((s) => [s.usps, s]),
+    ).values(),
   ];
-  if (j) {
-    const systems = judgeSystems(j);
-    const states = judgeStates(j);
-    const systemSearch = systems.length === 1 ? { system: systems[0]! } : {};
-    crumbs.push({ label: systems.join(" · "), to: "/judges", search: systemSearch });
+  const crumbs: { label: string; to?: string; search?: Record<string, string> }[] = [
+    { label: "State atlas", to: "/" },
+  ];
+  if (states.length === 1)
     crumbs.push({
-      label: states.join(" · "),
-      to: "/judges",
-      search: states.length === 1 ? { ...systemSearch, state: states[0]! } : systemSearch,
+      label: states[0]!.name,
+      to: "/places/" + states[0]!.usps,
+      search: { tab: "judges" },
     });
-    const court = j.courts[0];
-    if (court)
-      crumbs.push(
-        states.length === 1
-          ? { label: court, to: "/judges", search: { ...systemSearch, state: states[0]!, court } }
-          : { label: court },
-      );
-  }
+  else crumbs.push({ label: "Judicial profiles", to: "/judges" });
   return (
     <EntityPage
       dataset="judges"
       id={id}
       crumbs={crumbs}
-      extra={(raw) => (
-        <div className="mb-4 rounded-lg border border-primary/25 bg-primary/5 p-4 text-[13px]">
-          <Link
-            className="font-semibold text-primary underline"
-            to="/insights"
-            search={{ view: "judges", judge: j?.name ?? String(raw["title"] ?? raw["name"] ?? "") }}
-          >
-            Open judge analysis and service history
-          </Link>
-          <p className="mt-1 text-[12px] text-muted-foreground">
-            Inspect exact-name catalog cases, duration distributions and sourced federal
-            appointments.
-          </p>
-        </div>
-      )}
+      extra={() =>
+        states.length ? (
+          <div className="mb-5 flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-muted-foreground">Recorded state associations:</span>
+            {states.map((state) => (
+              <Link
+                key={state.usps}
+                to="/places/$state"
+                params={{ state: state.usps }}
+                search={{ tab: "judges" }}
+                className="rounded-lg border border-border bg-surface px-3 py-2 font-medium hover:bg-muted"
+              >
+                {state.name} →
+              </Link>
+            ))}
+          </div>
+        ) : null
+      }
     />
   );
 }

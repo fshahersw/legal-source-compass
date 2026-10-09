@@ -9,3 +9,9 @@ public/court-marks/* -text
 # Publisher capture formatting is evidence; retain whitespace with its checksum.
 public/data/limitations/text/** -whitespace
 public/data/limitations/opinion-text/** -whitespace
+
+# Original publisher regression captures retain their exact CRLF and whitespace.
+scripts/legal/state-codes/b4/ks/fixtures/empty_second_number.html -text -whitespace
+scripts/legal/state-codes/b4/ks/fixtures/repealed_stub.html -text -whitespace
+# These upstream license texts use seven '=' characters as an RST heading.
+public/visuals/licenses/*-LICENSE.txt -text conflict-marker-size=32

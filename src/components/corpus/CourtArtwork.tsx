@@ -20,6 +20,7 @@ import {
   type CourtTypeGroup,
 } from "@/lib/courts/artwork";
 import { cn } from "@/lib/utils";
+import { communityCourtArtwork } from "./EntityArtwork";
 
 const typeIcons = {
   "us-supreme": Landmark,
@@ -51,11 +52,19 @@ export function CourtArtwork({
   compact?: boolean;
 }) {
   const verified = artworkForCourtId(courtId);
-  const recorded = verified ? null : recordedCourtArtwork(recordedLinks);
+  const community = verified ? null : communityCourtArtwork(courtId, system);
+  const recorded = verified || community ? null : recordedCourtArtwork(recordedLinks);
   const [failed, setFailed] = useState(false);
-  const source = !failed ? verified?.assetPath ?? recorded?.url ?? null : null;
-  const imageSource = verified?.assetPath ?? (recorded ? fileUrl(recorded.url) : null);
-  const officialLabel = verified ? "Verified official court artwork" : recorded ? "Recorded court image" : null;
+  const source = !failed ? (verified?.assetPath ?? community?.path ?? recorded?.url ?? null) : null;
+  const imageSource =
+    verified?.assetPath ?? community?.path ?? (recorded ? fileUrl(recorded.url) : null);
+  const officialLabel = verified
+    ? "Verified official court artwork"
+    : community
+      ? "Court mark · Free Law Project"
+      : recorded
+        ? "Recorded court image"
+        : null;
   const group = classifyCourtType(system, type);
   const Icon = typeIcons[group];
 
@@ -83,7 +92,9 @@ export function CourtArtwork({
         >
           {image}
         </a>
-      ) : image;
+      ) : (
+        image
+      );
     }
     return (
       <span
@@ -114,8 +125,20 @@ export function CourtArtwork({
       <figcaption className="mt-1.5 text-[10px] leading-snug text-muted-foreground">
         {source ? officialLabel : "Court type"}
         <span className="block font-medium text-foreground">
-          {source ? (verified?.description ?? recorded?.label) : courtTypeLabels[group]}
+          {source
+            ? (verified?.description ?? community?.name ?? recorded?.label)
+            : courtTypeLabels[group]}
         </span>
+        {community && !verified ? (
+          <a
+            href={community.source}
+            target="_blank"
+            rel="noreferrer"
+            className="block underline decoration-dotted underline-offset-2"
+          >
+            Image provenance
+          </a>
+        ) : null}
         {verified ? (
           <a
             href={verified.sourcePage}

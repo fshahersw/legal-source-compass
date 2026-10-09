@@ -64,23 +64,134 @@ def parse_toc(page):
     return ch, entries
 
 
-def parse_page(page):
-    """-> list of dicts {citation, heading, lines, history}; one per printed stat_number."""
-    start = page.find('<div class="ksa"')
-    body = page[start:] if start >= 0 else page
-    stop = min([i for i in (body.find('class="ksa_8pt'), body.find('class="copyright-footer"')) if i >= 0] or [len(body)])
-    body = body[:stop]
-    marks = [m.start() for m in re.finditer(r'<p class="ksa_stat">\s*<span class="stat_number">', body)]
-    out = []
-    for i, s in enumerate(marks):
-        frag = body[s: marks[i + 1] if i + 1 < len(marks) else len(body)]
-        num = clean(re.search(r'(?s)<span class="stat_number">(.*?)</span>', frag).group(1))
-        cap = re.search(r'(?s)<span class="stat_caption">(.*?)</span>', frag)
-        ls = lines(frag)
-        hist = [l for l in ls if l.startswith("History:")]
-        out.append({"citation": num, "caption": clean(cap.group(1)) if cap else None, "lines": ls,
-                    "history": " ".join(hist) if hist else None})
+def _norm(s):
+    return re.sub(r"\s+", " ", s).strip()
+
+
+LEAVES = {"p", "li", "tr", "h1", "h2", "h3", "h4", "h5", "h6", "dt", "dd"}
+
+
+def _print_box(page):
+    from lxml import html as LH
+    if not page.strip():
+        return None
+    box = LH.fromstring(page).xpath('//div[@id="print"]')
+    return box[0] if box else None
+
+
+def _blocks(box):
+    """Outermost block leaves inside the print box, in document order (tables row by row; a div
+    holding only inline content, e.g. a printed formula line, is a leaf). Everything inside the
+    print box is statute text: the Revisor's editorial annotations sit after it."""
+    out, leafdivs = [], set()
+    for el in box.iter():
+        if not isinstance(el.tag, str):
+            continue
+        if el.tag == "div":
+            if el is box or any(isinstance(d.tag, str) and (d.tag in LEAVES or d.tag in ("div", "table")) for d in el.iterdescendants()):
+                continue
+        elif el.tag not in LEAVES:
+            continue
+        a, nested = el.getparent(), False
+        while a is not None and a is not box:
+            if a.tag in LEAVES or a.tag == "div" and a in leafdivs:
+                nested = True
+                break
+            a = a.getparent()
+        if not nested:
+            out.append(el)
+            if el.tag == "div":
+                leafdivs.add(el)
     return out
+
+
+def _text(el):
+    if el.tag == "tr":  # table cells keep their order, separated by a tab
+        return "\t".join(_norm(td.text_content()) for td in el if isinstance(td.tag, str))
+    return _norm(el.text_content())
+
+
+def parse_page_full(page):
+    """-> (lead_lines, sections). sections: [{citation, caption, lines, history}], one per printed
+    section. lead_lines: printed text before the first section number (an article subheading such
+    as "TECHNICAL COLLEGES"); it stays in the unit text, outside every section span.
+
+    Text is confined to the Revisor's <div id="print"> block, so navigation, comments and the
+    editorial annotations after it never enter stored text. A new section starts only at a block
+    whose stat_number span is non-empty: some pages carry an empty second span after the number,
+    which is markup, not a second version."""
+    box = _print_box(page)
+    if box is None:
+        return [], []
+    lead, out = [], []
+    for p in _blocks(box):
+        nums = [n for n in (_norm(s.text_content()) for s in p.xpath('.//span[@class="stat_number"]')) if n]
+        text = _text(p)
+        if nums:
+            cap = p.xpath('.//span[@class="stat_caption"]')
+            out.append({"citation": nums[0], "caption": (_norm(cap[0].text_content()) or None) if cap else None,
+                        "lines": [], "history": None})
+        if not text.strip():
+            continue
+        if not out:
+            lead.append(text)
+            continue
+        out[-1]["lines"].append(text)
+        if text.startswith("History:"):
+            out[-1]["history"] = text if out[-1]["history"] is None else out[-1]["history"] + " " + text
+    return lead, out
+
+
+def parse_page(page):
+    return parse_page_full(page)[1]
+
+
+def box_markers(page):
+    box = _print_box(page)
+    return 0 if box is None else sum(1 for sp in box.xpath('.//span[@class="stat_number"]') if _norm(sp.text_content()))
+
+
+def coverage_gap(page, lead, parsed):
+    """Non-whitespace character counts: whole print box, its block leaves, and the stored lines."""
+    box = _print_box(page)
+    if box is None:
+        return {"box": 0, "blocks": 0, "stored": 0}
+    nows = lambda t: len(re.sub(r"\s", "", t))
+    return {"box": nows(box.text_content()), "blocks": nows("".join(_text(b) for b in _blocks(box))),
+            "stored": nows("".join(lead) + "".join(l for p in parsed for l in p["lines"]))}
+
+
+ROW = re.compile(r"^\s*([0-9]{1,2}[a-z]?-[0-9][0-9a-z,]*)(?:\s+\(Supp\.\))?\s+(New|Am|Rep)\s+(\d+)\s+(\d+)\s+(\d+)\b(.*)$")
+# A row whose Type cell wraps onto the lines above and below it (e.g. "Rev" / "& Am": revived and amended).
+WRAPPED = re.compile(r"^\s*([0-9]{1,2}[a-z]?-[0-9][0-9a-z,]*)(?:\s+\(Supp\.\))?\s+(\d+)\s+(\d+)\s+(\d+)\b(.*)$")
+TYPE_PART = re.compile(r"^\s+((?:&\s*)?(?:Rev|New|Am|Rep)(?:\s*&\s*(?:Rev|New|Am|Rep))*)\s*$")
+
+
+def parse_change_text(txt):
+    """Rows of the Revisor's 2026 composite list (K.S.A. order): KSA, Type (New/Am/Rep, or a wrapped
+    combination such as "Rev & Am"), Bill, Sec, SL Ch, rest. Rows outside K.S.A. ("New Section 1.",
+    "Will not be included in K.S.A.") are not section rows."""
+    changes, table = {}, None
+    ls = txt.splitlines()
+    for i, line in enumerate(ls):
+        t = re.match(r"^\s*Table (One|Two|Three|Four)\s*$", line)
+        if t:
+            table = "Table " + t.group(1)
+            continue
+        m = ROW.match(line)
+        if m:
+            key, typ, bill, sec, slch = m.groups()[:5]
+        else:
+            m = WRAPPED.match(line)
+            before = TYPE_PART.match(ls[i - 1]) if i else None
+            after = TYPE_PART.match(ls[i + 1]) if i + 1 < len(ls) else None
+            if not (m and (before or after)):
+                continue
+            key, bill, sec, slch = m.groups()[:4]
+            typ = _norm(" ".join(x.group(1) for x in (before, after) if x))
+        changes.setdefault(key, []).append({"type": typ, "bill": bill, "sec": sec, "sl_ch": slch, "table": table,
+                                            "row": _norm(line)})
+    return changes
 
 
 def change_list(work, fetched):
@@ -88,13 +199,8 @@ def change_list(work, fetched):
     if not rec:
         return None, {}
     path = os.path.join(work, "toc", rec["sha256"])
-    txt = subprocess.run(["pdftotext", "-layout", path, "-"], capture_output=True, text=True).stdout
-    changes = {}
-    for line in txt.splitlines():
-        m = re.match(r"\s*([0-9]{1,2}[a-z]?-[0-9]+[a-z]?(?:[a-z])?)\s+(New|Amended|Repealed|Amend|Repeal)\b", line, re.I)
-        if m:
-            changes.setdefault(m.group(1), []).append(clean(line))
-    return rec, changes
+    txt = subprocess.run(["pdftotext", "-layout", path, "-"], capture_output=True, text=True, check=True).stdout
+    return rec, parse_change_text(txt)
 
 
 def build(work, out, cfg):
@@ -120,14 +226,20 @@ def build(work, out, cfg):
             chapters[u] = ch
     clist_rec, changes = change_list(work, fetched)
     objects, units, sections, pages, unfetched, superseded = {}, [], [], [], [], []
+    noted, subheads = [], []
     for url in sorted(toc):
         (chnum, chhead), (artnum, arthead, label, title) = toc[url]
         chosen, parsed = None, None
         for c in sorted(caps.get(url, []), key=lambda c: c["retrieved_at"], reverse=True):
             page = open(c["path"], encoding="utf-8", errors="replace").read()
-            p = parse_page(page)
+            lead_l, p = parse_page_full(page)
             if p and chosen is None:
-                chosen, parsed, markers = c, p, page.count('class="stat_number"')
+                chosen, parsed, lead = c, p, lead_l
+                markers = box_markers(page)
+                cov = coverage_gap(page, lead_l, p)
+                whole = sum(1 for m in re.finditer(r'(?s)<span class="stat_number">(.*?)</span>', page) if clean(m.group(1)))
+                if whole > markers:  # another version printed in the Revisor's note after the statute text
+                    noted.append({"url": url, "numbers_in_page": whole, "numbers_in_statute_text": markers})
             else:
                 superseded.append({"source_url": url, "sha256": c["sha256"], "retrieved_at": c["retrieved_at"],
                                    "markers": page.count('class="stat_number"'), "reason": "older or markerless capture of the same page"})
@@ -135,7 +247,9 @@ def build(work, out, cfg):
             unfetched.append(url)
             continue
         stem = url.rsplit("/", 1)[1][:-5]
-        blocks, spans, pos = [], [], 0
+        blocks, spans, pos = ([ "\n".join(lead) ], [], len("\n".join(lead)) + 2) if lead else ([], [], 0)
+        if lead:
+            subheads.append({"url": url, "lead": lead})
         for p in parsed:
             t = "\n".join(p["lines"])
             spans.append((pos, pos + len(t)))
@@ -146,7 +260,10 @@ def build(work, out, cfg):
         tpath = os.path.join(out, "text", tsha + ".txt")
         with open(tpath, "w", encoding="utf-8") as f:
             f.write(unit_text)
-        src = {"source_url": url, "retrieved_at": chosen["retrieved_at"], "retrieval_method": "publisher_page", "proxy": None}
+        if chosen.get("http_status") != 200 or chosen.get("proxy") is not None:
+            raise SystemExit(f"capture without a recorded direct HTTP 200: {url}")
+        src = {"source_url": url, "retrieved_at": chosen["retrieved_at"], "http_status": 200,
+               "retrieval_method": chosen.get("retrieval_method") or "publisher_page", "proxy": None}
         objects.setdefault(chosen["sha256"], {"sha256": chosen["sha256"], "bytes": os.path.getsize(chosen["path"]),
                                                "kind": "publisher_original", "path": chosen["path"], "sources": [src]})
         o = objects.setdefault(tsha, {"sha256": tsha, "bytes": len(unit_text.encode("utf-8")), "kind": "unit_text_derivative",
@@ -158,7 +275,7 @@ def build(work, out, cfg):
                       "publisher_member": None, "raw_member_sha256": None, "text_sha256": tsha, "text_code_points": len(unit_text),
                       "sections_expected": markers, "currency": cur, "source_url": url, "retrieved_at": chosen["retrieved_at"],
                       "retrieval_method": "publisher_page", "proxy": None})
-        pages.append({"url": url, "markers": markers, "sections": len(parsed)})
+        pages.append({"url": url, "markers": markers, "sections": len(parsed), "coverage": cov})
         for i, p in enumerate(parsed):
             path = stem if i == 0 else f"{stem}:{i + 1}"
             heading = p["caption"] or title or None
@@ -199,6 +316,11 @@ def build(work, out, cfg):
               "change_list": {"url": CHANGE_LIST, "sha256": clist_rec and clist_rec["sha256"], "ksa_entries": len(changes),
                               "matched_sections": sum(1 for s in sections if s["later_session"]),
                               "unmatched": sorted(set(changes) - {re.sub(r"\.$", "", s["citation"]).strip() for s in sections})},
+              "prior_version_in_revisor_note": noted,
+              "retained_section_pages_not_in_index": sorted(u for u in caps if "/statutes/chapters/" in u and u not in toc),
+              "printed_lead_text_outside_sections": subheads,
+              "coverage_mismatch": [p for p in pages if not (p["coverage"]["box"] == p["coverage"]["blocks"] == p["coverage"]["stored"])],
+              "marker_section_mismatch": [p["url"] for p in pages if p["markers"] != p["sections"]],
               "repealed_or_reserved": sum(1 for s in sections if s["status_note"])}
     json.dump(report, open(os.path.join(out, "report.json"), "w"), indent=1)
     print(json.dumps({k: v for k, v in report.items() if not isinstance(v, (list, dict))}))

@@ -1,0 +1,13 @@
+{
+  "checks": [
+    "ordinary CA calculation passed",
+    "complete assessment export passed",
+    "changed dates clear all confirmations and screening",
+    "bankruptcy positive withholds unsupported date",
+    "CA source-bound minority applied",
+    "IL source-bound minority applied",
+    "NY source-bound minority applied",
+    "390px mobile layout no horizontal overflow"
+  ],
+  "pageErrors": []
+}

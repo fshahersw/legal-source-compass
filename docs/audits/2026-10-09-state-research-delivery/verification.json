@@ -1,0 +1,37 @@
+{
+  "verifiedAt": "2026-10-09T08:05:51.374Z",
+  "testsPassed": 1149,
+  "testsFailed": 0,
+  "testFiles": 40,
+  "typecheck": "passed",
+  "build": "passed",
+  "lintErrors": 0,
+  "browserChecks": [
+    "Primary navigation has four research sections and no retired litigation entries",
+    "Nebraska geometry opens Nebraska; every displayed county belongs to FIPS 31",
+    "Court filters are URL-backed and switching state clears incompatible filters",
+    "Judicial directory is reachable inside the state hub",
+    "Unknown states are not relabelled as a real jurisdiction",
+    "Featured agency opens its filtered directory rather than an unrelated landing page",
+    "390px state page has no horizontal page overflow",
+    "State, agency and law navigation does not download the removed case catalog",
+    "Unresolved factor withholds date and survives bulk acknowledgement",
+    "Unresolved-only filtering and keyboard focus preserve the blocking factor; search cannot hide a requirement from calculation",
+    "Real California ordinary personal-injury baseline uses the loaded two-year rule",
+    "Reading source material and returning does not erase dates, review or results",
+    "Date change clears prior result and date-specific confirmations",
+    "Reviewed 31-day synthetic suspension retains the original baseline and labels the scenario conditional",
+    "JSON export contains immutable source fingerprints and never claims a verified final filing date",
+    "An expressly entered 10-day suspension maximum reduces the earlier 31-day scenario without changing the original baseline",
+    "390px mobile layout has no horizontal page overflow",
+    "An actual source-metadata change preserves entered dates but invalidates every legal confirmation, factor decision and result",
+    "A failed network refresh suppresses the cached date, disables calculation and exports an explicit failure rather than an obsolete result"
+  ],
+  "visuals": {
+    "states": 51,
+    "agencies": 47,
+    "courts": 84
+  },
+  "legalCoverage": "Not exhaustive; no corpus publication flags or legal release data modified by this UI delivery",
+  "directoryLiveReadback": "Pending deployment smoke check"
+}

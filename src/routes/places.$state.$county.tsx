@@ -7,44 +7,82 @@ import { useStateCounty } from "./places.$state";
 import { CountyProfile } from "@/components/corpus/LinkedPanels";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { externalHref } from "@/lib/external/href";
+import { countyInState } from "@/lib/corpus/stateHub";
 
 export const Route = createFileRoute("/places/$state/$county")({
-  head: ({ params }) => pageHead(`County ${params.county}`, `County detail within ${stateByUsps.get(params.state.toUpperCase())?.name ?? params.state}.`),
+  head: ({ params }) =>
+    pageHead(
+      `County ${params.county}`,
+      `County detail within ${stateByUsps.get(params.state.toUpperCase())?.name ?? params.state}.`,
+    ),
   component: CountyDetail,
 });
 
 function CountyDetail() {
   const { state, county } = Route.useParams();
   const { geo } = useCorpus();
-  const c = geo?.counties.find((x) => x.id === county);
+  const belongs = countyInState(county, state);
+  const c = belongs ? geo?.counties.find((x) => x.id === county) : undefined;
   const st = stateByUsps.get(state.toUpperCase());
-  const q = useStateCounty(st?.name);
-  const rows = useMemo(() => (q.data?.records ?? []).filter((r) => r.county_geoids.includes(county)), [q.data, county]);
+  const q = useStateCounty(belongs ? st?.name : undefined);
+  const rows = useMemo(
+    () => (q.data?.records ?? []).filter((r) => r.county_geoids.includes(county)),
+    [q.data, county],
+  );
   const byDataset = useMemo(() => {
     const m = new Map<string, number>();
     for (const r of rows) m.set(r.dataset, (m.get(r.dataset) ?? 0) + 1);
     return [...m.entries()].sort((a, b) => b[1] - a[1]);
   }, [rows]);
   return (
-    <div className="mt-3 rounded-md border border-border bg-muted/50 p-3 text-[13px]" data-testid="county-detail">
+    <div
+      className="mt-3 rounded-md border border-border bg-muted/50 p-3 text-[13px]"
+      data-testid="county-detail"
+    >
       <div className="eyebrow">County · FIPS {county}</div>
-      <div className="mt-0.5 font-display text-lg">{c ? `${c.name} County, ${st?.name ?? state}` : "Unknown county"}</div>
-      <CountyProfile fips={county} {...(c ? { county: `${c.name} County` } : {})} {...(st ? { state: st.name } : {})} />
+      <div className="mt-0.5 font-display text-lg">
+        {c ? `${c.name} County, ${st?.name ?? state}` : "Unknown county"}
+      </div>
+      <CountyProfile
+        fips={county}
+        {...(c ? { county: `${c.name} County` } : {})}
+        {...(st ? { state: st.name } : {})}
+      />
       {q.error ? <ExternalError error={q.error} /> : null}
-      {q.isLoading ? <p className="mt-1 text-muted-foreground">Loading county records…</p> : (
+      {q.isLoading ? (
+        <p className="mt-1 text-muted-foreground">Loading county records…</p>
+      ) : (
         <>
           <p className="mt-1 text-[12px] text-muted-foreground">
-            {rows.length.toLocaleString()} records in your corpus are tagged with this county code{byDataset.length ? `: ${byDataset.map(([d, n]) => `${d} ${n}`).join(", ")}` : ""}. County tags come from the corpus itself and are not re-verified here.
+            {rows.length.toLocaleString()} records in your corpus are tagged with this county code
+            {byDataset.length ? `: ${byDataset.map(([d, n]) => `${d} ${n}`).join(", ")}` : ""}.
+            County tags come from the corpus itself and are not re-verified here.
           </p>
           <ul className="mt-2 max-h-80 divide-y divide-border overflow-auto rounded border border-border bg-surface">
             {rows.map((r) => (
-              <li key={r.id} className="flex flex-col gap-0.5 px-2 py-1.5 sm:flex-row sm:items-baseline sm:gap-3">
-                <span className="truncate text-[11px] text-muted-foreground sm:w-32 sm:shrink-0">{r.category ?? r.dataset}</span>
+              <li
+                key={r.id}
+                className="flex flex-col gap-0.5 px-2 py-1.5 sm:flex-row sm:items-baseline sm:gap-3"
+              >
+                <span className="truncate text-[11px] text-muted-foreground sm:w-32 sm:shrink-0">
+                  {r.category ?? r.dataset}
+                </span>
                 <span className="min-w-0 break-words sm:flex-1 sm:truncate">{r.title || r.id}</span>
-                {r.source_url ? <a href={externalHref(r.source_url)} target="_blank" rel="noreferrer" className="min-w-0 max-w-full truncate font-mono text-[11px] underline sm:max-w-[40%]">{r.source_url}</a> : null}
+                {r.source_url ? (
+                  <a
+                    href={externalHref(r.source_url)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="min-w-0 max-w-full truncate font-mono text-[11px] underline sm:max-w-[40%]"
+                  >
+                    {r.source_url}
+                  </a>
+                ) : null}
               </li>
             ))}
-            {rows.length === 0 ? <li className="px-2 py-1.5 text-muted-foreground">No county-tagged records.</li> : null}
+            {rows.length === 0 ? (
+              <li className="px-2 py-1.5 text-muted-foreground">No county-tagged records.</li>
+            ) : null}
           </ul>
         </>
       )}

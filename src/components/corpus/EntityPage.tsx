@@ -26,13 +26,20 @@ export function EntityPage({
   docket,
   lead,
   extra,
+  linkFilter,
 }: {
   dataset: string;
   id: string;
   crumbs: { label: string; to?: string; search?: Record<string, string> | undefined }[];
   docket?: { kind: "mdl" | "court"; id: string } | undefined;
-  lead?: (raw: Record<string, unknown>, view: ReturnType<typeof buildEntityView>) => React.ReactNode;
+  lead?: (
+    raw: Record<string, unknown>,
+    view: ReturnType<typeof buildEntityView>,
+  ) => React.ReactNode;
   extra?: (raw: Record<string, unknown>) => React.ReactNode;
+  linkFilter?: (
+    links: ReturnType<typeof buildEntityView>["links"],
+  ) => ReturnType<typeof buildEntityView>["links"];
 }) {
   const { data } = useSuspenseQuery(entityQuery(dataset, id));
   const { aliases } = useDatasets();
@@ -43,6 +50,8 @@ export function EntityPage({
       </AppShell>
     );
   const v = buildEntityView(data.raw);
+  const visibleLinks = linkFilter ? linkFilter(v.links) : v.links;
+  const withheldLinks = v.links.length - visibleLinks.length;
   const key = v.facts.slice(0, 8);
   const rest = v.facts.slice(8);
   const nav = [
@@ -70,7 +79,9 @@ export function EntityPage({
         </section>
       ) : null}
       <div className="mb-5 flex flex-col gap-4 rounded-lg border border-border bg-surface p-4 shadow-card sm:flex-row">
-        {lead ? lead(data.raw, v) : v.photo ? (
+        {lead ? (
+          lead(data.raw, v)
+        ) : v.photo ? (
           <Img
             src={v.photo}
             className="h-36 w-28 shrink-0 rounded-md border border-border object-cover"
@@ -85,12 +96,18 @@ export function EntityPage({
           ))}
         </dl>
       </div>
-      {v.links.length ? (
+      {visibleLinks.length ? (
         <div className="mb-5 flex flex-wrap gap-x-4 gap-y-1">
-          {v.links.map((l) => (
+          {visibleLinks.map((l) => (
             <CorpusLink key={l.url} url={l.url} label={l.label} aliases={aliases} />
           ))}
         </div>
+      ) : null}
+      {withheldLinks > 0 ? (
+        <p className="mb-4 text-xs text-muted-foreground">
+          {withheldLinks} conflicting homepage link withheld; the recorded court system does not
+          match the destination. Original data is unchanged.
+        </p>
       ) : null}
       {extra ? extra(data.raw) : null}
       {nav.length > 1 ? (
@@ -219,7 +236,9 @@ function SectionView({ s, aliases }: { s: EntitySection; aliases: Record<string,
       <Section id={s.key} label={s.label}>
         <ul className="list-disc space-y-1 pl-5 text-[13px]">
           {s.items.map((t, i) => (
-            <li key={i} className="break-words">{t}</li>
+            <li key={i} className="break-words">
+              {t}
+            </li>
           ))}
         </ul>
       </Section>
@@ -319,7 +338,9 @@ function SectionView({ s, aliases }: { s: EntitySection; aliases: Record<string,
                 <span className="break-words font-medium">{it.title}</span>
               )}
               {it.subtitle ? (
-                <span className="ml-2 break-words text-[11px] text-muted-foreground">{it.subtitle}</span>
+                <span className="ml-2 break-words text-[11px] text-muted-foreground">
+                  {it.subtitle}
+                </span>
               ) : null}
             </li>
           ))}

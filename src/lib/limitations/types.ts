@@ -344,7 +344,25 @@ export type CrossReferenceLink = {
   intakeRunId: string | null;
 };
 
+/** A source-bound computational policy carried inside the versioned private rule bundle. */
+export type TollingPolicy = {
+  id: string;
+  schemaVersion: "1.0.0";
+  kind: "minority_at_accrual";
+  operation: "period_after_majority";
+  period: { amount: number; unit: "calendar_years" };
+  reviewedOn: string;
+  /** Conservative earliest supported accrual date, not a claim about all prior law. */
+  effectiveFrom: string;
+  scopeRuleId: string;
+  jurisdiction: string;
+  claimType: ClaimType;
+  subtype: string;
+  conditions: string[];
+  evidence: { sourceId: string; sha256: string; citation: string; quote: string }[];
+};
 export type LimitationRule = {
+  tollingPolicies?: TollingPolicy[];
   id: string;
   schemaVersion: string;
   ruleVersion: string;

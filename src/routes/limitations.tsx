@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
 import { LimitationsWorkbench } from "@/components/limitations/LimitationsWorkbench";
 import { pageHead } from "@/lib/corpus/head";
@@ -42,6 +42,15 @@ function Page() {
         { label: "Law & regulation", to: "/law" },
         { label: "Limitations research" },
       ]}
+      actions={
+        <Link
+          to="/limitations/statutory"
+          search={{ ...(state ? { state } : {}), ...(claim ? { claim } : {}) }}
+          className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-muted"
+        >
+          Source-backed policy review
+        </Link>
+      }
       title="Time limits"
       description="Source-linked calculations, explicit legal assumptions and a traceable review for each claim."
     >

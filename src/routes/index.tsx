@@ -3,6 +3,10 @@ import { PlacesMap } from "@/components/corpus/PlacesMap";
 import { pageHead } from "@/lib/corpus/head";
 
 export const Route = createFileRoute("/")({
-  head: () => pageHead("U.S. litigation map", "Map-first atlas of U.S. courts, judges, MDLs, law, agencies and litigation research sources."),
+  head: () =>
+    pageHead(
+      "State legal research atlas",
+      "Explore U.S. states, courts, judicial profiles, law and regulatory sources.",
+    ),
   component: () => <PlacesMap home />,
 });
