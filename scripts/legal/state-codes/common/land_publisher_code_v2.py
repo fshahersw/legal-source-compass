@@ -24,6 +24,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 import sys
 import time
 import uuid
@@ -88,6 +89,20 @@ def build_rows(packet, manifest_sha, manifest):
                 "text_code_points": len(text), "hierarchy": s["hierarchy"], "history": s["history"],
                 "status_note": s["status_note"], "unit_id": row_u["native_id"], "unit_text_sha256": u["text_sha256"],
                 "span": s["span"], "currency": s["currency"]}
+        locator = s.get("source_locator")
+        if locator is not None:
+            if (not isinstance(locator, dict)
+                or locator.get("archive_sha256") != u["original_sha256"]
+                or locator.get("citation_path") != s["citation_path"]
+                or not isinstance(locator.get("member"), str)
+                or not re.fullmatch(r"[A-Za-z0-9_.-]+", locator["member"])
+                or ".." in locator["member"]
+                or not re.fullmatch(r"[a-f0-9]{64}", str(locator.get("member_sha256", "")))
+                or locator.get("display_url_retrieved") is not False
+                or not all(isinstance(locator.get(k), str) and 0 < len(locator[k]) <= 2048
+                           for k in ("native_row_id", "section_version_id", "display_url"))):
+                raise ValueError("Source locator does not bind this section to its exact retained archive")
+            data["source_locator"] = dict(locator)
         prov = {**{k: row_u["provenance"][k] for k in ("source_url", "source_sha256", "retrieved_at", "retrieval_method", "proxy")},
                 "source_as_of": s["currency"]["through_date"], "record_hash_codec": "canonical-integer-jsonb/1",
                 "record_sha256": sha(data), "parser": parser, "manifest_sha256": manifest_sha}
@@ -107,6 +122,25 @@ def batches(rows):
         size += n
     if cur:
         yield cur
+
+
+class Digest:
+    """Running sha256, byte count and UTF-8 code-point count of a streamed body."""
+    def __init__(self):
+        self.h, self.n, self.cp, self.utf8_ok = hashlib.sha256(), 0, 0, True
+        self._dec = __import__("codecs").getincrementaldecoder("utf-8")()
+
+    def update(self, block):
+        self.h.update(block)
+        self.n += len(block)
+        if self.utf8_ok:
+            try:
+                self.cp += len(self._dec.decode(block))
+            except UnicodeDecodeError:
+                self.utf8_ok = False
+
+    def hexdigest(self):
+        return self.h.hexdigest()
 
 
 class Cloud:
@@ -144,9 +178,17 @@ class Cloud:
             return r
 
     def readback(self, key):
+        """Stream the whole object; returns (status, Digest) so a 1+ GB original never sits in memory."""
         r = self._retry(lambda: self.s.get(f"{self.url}/storage/v1/object/authenticated/{BUCKET}/{key}",
-                                           headers=self.h, timeout=600))
-        return r.status_code, r.content
+                                           headers=self.h, timeout=1800, stream=True))
+        if r.status_code != 200:
+            r.close()
+            return r.status_code, None
+        d = Digest()
+        for block in r.iter_content(1 << 20):
+            d.update(block)
+        return 200, d
+
 
     def upload(self, key, data, ctype):
         r = self._retry(lambda: self.s.post(f"{self.url}/storage/v1/object/{BUCKET}/{key}", data=data, timeout=1200,
@@ -212,13 +254,15 @@ def put_object(cloud, o):
         if ust not in (200, 201) and "already exists" not in msg and "Duplicate" not in msg and not (ust != 200 and "LockTimeout" in str(msg) and cloud.readback(key)[0] == 200):
             raise RuntimeError(f"upload {ust} {msg}")
         st, body = cloud.readback(key)
-    if st != 200 or hashlib.sha256(body).hexdigest() != o["sha256"] or len(body) != o["bytes"]:
+    if st != 200 or body.hexdigest() != o["sha256"] or body.n != o["bytes"]:
         raise RuntimeError(f"readback mismatch {o['sha256'][:12]} status={st}")
-    rec = {"bytes": o["bytes"], "bucket": BUCKET, "object_key": key, "readback_sha256": o["sha256"], "readback_bytes": len(body),
+    rec = {"bytes": o["bytes"], "bucket": BUCKET, "object_key": key, "readback_sha256": o["sha256"], "readback_bytes": body.n,
            "verification_method": "authenticated-whole-object-get-sha256", "http_status": 200,
            "verified_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
     if o["kind"] == "unit_text_derivative":
-        rec.update(readback_text_encoding="utf-8", readback_text_code_points=len(body.decode("utf-8")))
+        if not body.utf8_ok:
+            raise RuntimeError(f"text derivative is not UTF-8 {o['sha256'][:12]}")
+        rec.update(readback_text_encoding="utf-8", readback_text_code_points=body.cp)
     return rec
 
 
@@ -288,6 +332,8 @@ def main():
     ap.add_argument("--run-id")
     ap.add_argument("--attempt", type=int, default=1, help="a closed run cannot reopen; attempt N>1 derives a new deterministic run id")
     ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--checkpoint", help="persistent JSON checkpoint; verified batches are skipped on restart and an error "
+                                         "leaves the run open (resumable) instead of closing it as failed")
     ap.add_argument("--multicode", action="store_true",
                     help="register, open and finish through the v3 multi-code functions, so a second code can land under a jurisdiction "
                          "that already has one; intake, objects and verification are the v2 functions either way. Never reviews anything.")
@@ -329,16 +375,44 @@ def main():
         if chunk:
             cloud.rpc("corpus_publisher_code_register_objects_v2", {"p_run": run_id, "p_objects": chunk})
         landed = verified = 0
-        for rows in batches(unit_rows + section_rows):
-            cloud.rpc("corpus_publisher_code_intake_v2", {"p_run": run_id, "p_rows": rows})
+        ck = {"run_id": run_id, "done": {}}
+        if a.checkpoint and os.path.isfile(a.checkpoint):
+            ck = json.load(open(a.checkpoint))
+            assert ck["run_id"] == run_id, "checkpoint belongs to another run"
+        for i, rows in enumerate(batches(unit_rows + section_rows)):
+            bsha = sha(rows)
+            if ck["done"].get(str(i)) == bsha:
+                landed += len(rows)
+                verified += len(rows)
+                continue
+            try:
+                cloud.rpc("corpus_publisher_code_intake_v2", {"p_run": run_id, "p_rows": rows})
+            except RuntimeError as e:
+                # An exact batch that already landed (lost response / crash before checkpoint) is verified, not re-sent.
+                if "already observed in this run" not in str(e):
+                    raise
             v = cloud.rpc("corpus_publisher_code_verify_batch_v2", {"p_run": run_id, "p_rows": rows})
             if not v.get("verified"):
                 raise RuntimeError(f"batch not verified: {json.dumps(v)[:300]}")
             landed += len(rows)
             verified += v["matched"]
+            if a.checkpoint:
+                ck["done"][str(i)] = bsha
+                tmp = a.checkpoint + ".tmp"
+                json.dump(ck, open(tmp, "w"))
+                os.replace(tmp, a.checkpoint)
+                if i % 20 == 0:
+                    print(json.dumps({"batch": i, "landed": landed}), flush=True)
         counts.update(landed_rows=landed, verified_rows=verified)
         status = "completed" if landed == len(unit_rows) + len(section_rows) else "partial"
-    finally:
+    except BaseException:
+        if a.checkpoint:
+            print(json.dumps({"left_open": run_id, "checkpoint": a.checkpoint}), flush=True)
+            raise
+        fin = cloud.rpc("corpus_publisher_code_finish_run" + fn, {"p_run": run_id, "p_status": status, "p_counts": counts})
+        print(json.dumps({"finish": fin}))
+        raise
+    else:
         fin = cloud.rpc("corpus_publisher_code_finish_run" + fn, {"p_run": run_id, "p_status": status, "p_counts": counts})
         print(json.dumps({"finish": fin}))
     return 0 if status == "completed" else 1

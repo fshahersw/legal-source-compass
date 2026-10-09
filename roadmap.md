@@ -51,3 +51,6 @@
 - [ ] Re-read the 198 not-rechecked sources once a route exists (session-law PDFs, blocked hosts, jurisdictions without a reviewed code in the corpus)
 
 - [ ] Kansas recovery (scripts/legal/state-codes/b4/ks/): retained.py done (47,166 objects hash-verified); toc.py fetching 577 unretained pages + 2026 change list; then build_packet.py → close stale run 44a602cd (0 batches) → land ks-revisor-html/6 → readback, two-way publisher sample, review/project.
+- [x] California compact-v3 import: run 124b4562 completed, 162,526 sections, readback exact (docs/audits/2026-10-09-ca-import.md)
+- [ ] California publication: needs title/division/part/chapter/article headings from pubinfo TOC tables + a direct (non-proxied) official sample or an owner decision accepting proxied review
+- [ ] Kansas packet fixes before landing: 55 index-listed pages without a parsed section, second-version detection (expected 10 pages), 2026 change-list PDF parsing (0 entries matched)
