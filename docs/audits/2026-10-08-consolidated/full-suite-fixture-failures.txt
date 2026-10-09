@@ -1,0 +1,29 @@
+ FAIL  src/lib/atlas/caseAnalytics.test.ts [ src/lib/atlas/caseAnalytics.test.ts ]
+Error: ENOENT: no such file or directory, open 'private/data/catalog-matters.json'
+ FAIL  src/lib/atlas/catalog.test.ts [ src/lib/atlas/catalog.test.ts ]
+Error: ENOENT: no such file or directory, open 'private/data/catalog/index.json'
+ FAIL  src/lib/atlas/catalogMatters.test.ts [ src/lib/atlas/catalogMatters.test.ts ]
+Error: ENOENT: no such file or directory, open 'private/data/catalog-matters.json'
+ FAIL  src/lib/atlas/mdlDocuments.test.ts [ src/lib/atlas/mdlDocuments.test.ts ]
+Error: ENOENT: no such file or directory, scandir 'private/data/mdl-documents'
+ FAIL  src/lib/atlas/persistence.test.ts [ src/lib/atlas/persistence.test.ts ]
+Error: ENOENT: no such file or directory, open '/vercel/legal-source-compass/private/data/atlas-import-bundle.json'
+ FAIL  src/lib/atlas/registry.test.ts [ src/lib/atlas/registry.test.ts ]
+Error: ENOENT: no such file or directory, open 'private/data/registry_v06_1.jsonl'
+ FAIL  src/lib/atlas/stateSources.test.ts [ src/lib/atlas/stateSources.test.ts ]
+Error: ENOENT: no such file or directory, open 'private/data/atlas-import-bundle.json'
+ FAIL  src/lib/atlas/v22a.test.ts [ src/lib/atlas/v22a.test.ts ]
+ FAIL  src/lib/corpus/corpus.test.ts [ src/lib/corpus/corpus.test.ts ]
+Error: ENOENT: no such file or directory, open 'private/data/corpus/PROVENANCE.json'
+ FAIL  src/lib/corpus/quality.test.ts [ src/lib/corpus/quality.test.ts ]
+Error: ENOENT: no such file or directory, open 'private/data/atlas-import-bundle.json'
+ FAIL  src/lib/corpus/research.test.ts [ src/lib/corpus/research.test.ts ]
+Error: ENOENT: no such file or directory, open 'private/data/research/population.json'
+ FAIL  src/lib/corpus/taxonomy.test.ts [ src/lib/corpus/taxonomy.test.ts ]
+Error: ENOENT: no such file or directory, open 'private/data/quality/category-schema-followup-2026-10-02.json'
+ FAIL  src/lib/registry/registry.test.ts [ src/lib/registry/registry.test.ts ]
+Error: ENOENT: no such file or directory, open 'private/data/matter-registry/matters.jsonl'
+ FAIL  src/lib/corpus/courtLocations.test.ts > exact court-location tagging > maps all 518 actual njd rows without adding cases or inventing a talc association
+Error: ENOENT: no such file or directory, open 'private/data/corpus/insights.json'
+ Test Files  14 failed | 74 passed (88)
+      Tests  1 failed | 1486 passed (1487)

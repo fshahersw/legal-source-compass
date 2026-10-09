@@ -11,7 +11,7 @@ import sys
 import zipfile
 import xml.etree.ElementTree as ET
 
-PARSER = "california-pubinfo-xml/1"
+PARSER = "california-pubinfo-xml/2"
 SECTION_FIELDS = (
     "ID",
     "LAW_CODE",
@@ -65,17 +65,9 @@ def read_tab_rows(zf: zipfile.ZipFile, member: str) -> list[list[str]]:
     return list(csv.reader(io.StringIO(text), delimiter="\t", quotechar="`"))
 
 
-def xml_plain_text(xml_bytes: bytes) -> str:
-    root = ET.fromstring(xml_bytes)
-    parts = []
-    if root.text and root.text.strip():
-        parts.append(root.text.strip())
-    for elem in root.iter():
-        if elem is not root and elem.text and elem.text.strip():
-            parts.append(elem.text.strip())
-        if elem.tail and elem.tail.strip():
-            parts.append(elem.tail.strip())
-    return re.sub(r"\s+", " ", " ".join(parts)).strip()
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Shared renderer keeps inline tails in their original document order.
+from common.publisher_xml import xml_plain_text
 
 
 def citation_path(law_code: str, section_num: str, global_occurrence: int) -> str:
@@ -218,7 +210,7 @@ def parse_archive(root: str, parsed_name: str) -> dict:
     version_ids_toc = {t["LAW_SECTION_VERSION_ID"].strip() for t in toc_rows if t.get("LAW_SECTION_VERSION_ID")}
     summary = {
         "schema_version": "california-pubinfo-parse-summary/1",
-        "parser": {"name": PARSER, "version": "1"},
+        "parser": {"name": "california-pubinfo-xml", "version": "2"},
         "archive_sha256": archive_receipt["sha256"],
         "code_table_rows": len(codes),
         "law_section_tbl_rows": len(sections) + len(failures),

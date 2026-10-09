@@ -1,3 +1,4 @@
+import { assertBundleBindings } from "./bundleBindings";
 import {
   CLAIM_TYPES,
   PERIOD_LIMB_STARTS,
@@ -430,7 +431,9 @@ function validateRules(values: unknown): LimitationRule[] {
         if (c["note"] !== undefined) {
           string(c["note"], `${label}.corrections[${i}].note`);
           if (!(r.conditions as string[]).includes(c["note"] as string))
-            fail(`${label}.corrections[${i}] carries a note the rule's conditions no longer contain`);
+            fail(
+              `${label}.corrections[${i}] carries a note the rule's conditions no longer contain`,
+            );
         }
         if (!(r.sourceIds as string[]).includes(c["evidenceSourceId"] as string))
           fail(`${label}.corrections[${i}] cites a source the rule does not link`);
@@ -447,51 +450,78 @@ function validateRules(values: unknown): LimitationRule[] {
         fail(`${label}.evidenceAttachment is present but the rule carries no provenance`);
     }
     if (r["crossReferenceLinks"] !== undefined) {
-      if (!Array.isArray(r["crossReferenceLinks"])) fail(`${label}.crossReferenceLinks must be an array`);
-      if (r.provenance === undefined) fail(`${label}.crossReferenceLinks is present but the rule carries no provenance`);
+      if (!Array.isArray(r["crossReferenceLinks"]))
+        fail(`${label}.crossReferenceLinks must be an array`);
+      if (r.provenance === undefined)
+        fail(`${label}.crossReferenceLinks is present but the rule carries no provenance`);
       const p = record(r.provenance, `${label}.provenance`);
       const seen = new Set<string>();
       for (const [i, raw] of (r["crossReferenceLinks"] as unknown[]).entries()) {
         const l = record(raw, `${label}.crossReferenceLinks[${i}]`);
         const where = `${label}.crossReferenceLinks[${i}]`;
-        if (l["kind"] !== "tolling" && l["kind"] !== "repose") fail(`${where}.kind must be tolling or repose`);
+        if (l["kind"] !== "tolling" && l["kind"] !== "repose")
+          fail(`${where}.kind must be tolling or repose`);
         const notes = p[l["kind"] as "tolling" | "repose"];
-        if (!Number.isInteger(l["index"]) || (l["index"] as number) < 0 || !Array.isArray(notes) || (l["index"] as number) >= notes.length)
+        if (
+          !Number.isInteger(l["index"]) ||
+          (l["index"] as number) < 0 ||
+          !Array.isArray(notes) ||
+          (l["index"] as number) >= notes.length
+        )
           fail(`${where}.index names no ${l["kind"]} note on the rule`);
         const key = `${l["kind"]}:${l["index"]}`;
         if (seen.has(key)) fail(`${where} links the same note twice`);
         seen.add(key);
         string(l["citation"], `${where}.citation`);
-        const note = record(notes[l["index"] as number], `${label}.provenance.${l["kind"]}[${l["index"]}]`);
-        if (note["citation"] !== l["citation"]) fail(`${where}.citation does not match the note it links`);
+        const note = record(
+          notes[l["index"] as number],
+          `${label}.provenance.${l["kind"]}[${l["index"]}]`,
+        );
+        if (note["citation"] !== l["citation"])
+          fail(`${where}.citation does not match the note it links`);
         timestamp(l["checkedAt"], `${where}.checkedAt`);
-        if (!Array.isArray(l["sections"]) || !l["sections"].length) fail(`${where}.sections names no section`);
-        if (!Number.isInteger(l["sectionsNamed"]) || (l["sectionsNamed"] as number) < (l["sections"] as unknown[]).length)
-          fail(`${where}.sectionsNamed must be an integer no smaller than the sections that resolved`);
+        if (!Array.isArray(l["sections"]) || !l["sections"].length)
+          fail(`${where}.sections names no section`);
+        if (
+          !Number.isInteger(l["sectionsNamed"]) ||
+          (l["sectionsNamed"] as number) < (l["sections"] as unknown[]).length
+        )
+          fail(
+            `${where}.sectionsNamed must be an integer no smaller than the sections that resolved`,
+          );
         for (const [j, rawSection] of (l["sections"] as unknown[]).entries()) {
           const s = record(rawSection, `${where}.sections[${j}]`);
           string(s["nativeId"], `${where}.sections[${j}].nativeId`);
           if (!(s["nativeId"] as string).startsWith(`${r.jurisdiction as string}:`))
             fail(`${where}.sections[${j}] names a section outside the rule's jurisdiction`);
           string(s["textSha256"], `${where}.sections[${j}].textSha256`);
-          if (!/^[0-9a-f]{64}$/.test(s["textSha256"] as string)) fail(`${where}.sections[${j}].textSha256 must be a SHA-256 hex digest`);
+          if (!/^[0-9a-f]{64}$/.test(s["textSha256"] as string))
+            fail(`${where}.sections[${j}].textSha256 must be a SHA-256 hex digest`);
         }
         if (!Array.isArray(l["terms"])) fail(`${where}.terms must be an array`);
         const terms = (l["terms"] as unknown[]).map((t, k) => {
           const term = record(t, `${where}.terms[${k}]`);
           string(term["term"], `${where}.terms[${k}].term`);
-          if (typeof term["found"] !== "boolean") fail(`${where}.terms[${k}].found must be a boolean`);
+          if (typeof term["found"] !== "boolean")
+            fail(`${where}.terms[${k}].found must be a boolean`);
           if (term["foundIn"] !== undefined) {
             string(term["foundIn"], `${where}.terms[${k}].foundIn`);
-            if (term["found"] !== true) fail(`${where}.terms[${k}].foundIn is set on a term that was not found`);
+            if (term["found"] !== true)
+              fail(`${where}.terms[${k}].foundIn is set on a term that was not found`);
             if (!(term["foundIn"] as string).startsWith(`${r.jurisdiction as string}:`))
               fail(`${where}.terms[${k}].foundIn names a section outside the rule's jurisdiction`);
           }
           return term as { term: string; found: boolean };
         });
-        const expected = terms.length === 0 ? "none_to_check" : terms.every((t) => t.found) ? "all_present" : "not_all_present";
+        const expected =
+          terms.length === 0
+            ? "none_to_check"
+            : terms.every((t) => t.found)
+              ? "all_present"
+              : "not_all_present";
         if (l["termCheck"] !== expected) fail(`${where}.termCheck does not follow from its terms`);
-        if (l["intakeRunId"] !== null && typeof l["intakeRunId"] !== "string") fail(`${where}.intakeRunId must be a string or null`);
+        if (l["intakeRunId"] !== null && typeof l["intakeRunId"] !== "string")
+          fail(`${where}.intakeRunId must be a string or null`);
       }
     }
     if (r.provenance !== undefined) validateProvenance(r.provenance, label);
@@ -581,7 +611,9 @@ function validateRules(values: unknown): LimitationRule[] {
               clock["startBasis"] !== undefined &&
               clock["startBasis"] !== "printed_effective_date"
             )
-              fail(`${label}.calculation.clocks[${i}] has a dated start with a contradictory basis`);
+              fail(
+                `${label}.calculation.clocks[${i}] has a dated start with a contradictory basis`,
+              );
           }
           if (clock["effectiveThrough"] !== undefined) {
             civilDate(
@@ -709,9 +741,7 @@ function validateSources(values: unknown): LimitationSource[] {
       const c = record(s["currency"], `${label}.currency`);
       timestamp(c["checkedAt"], `${label}.currency.checkedAt`);
       if (
-        !SOURCE_CURRENCY_STATUSES.includes(
-          c["status"] as (typeof SOURCE_CURRENCY_STATUSES)[number],
-        )
+        !SOURCE_CURRENCY_STATUSES.includes(c["status"] as (typeof SOURCE_CURRENCY_STATUSES)[number])
       )
         fail(`${label}.currency has an unsupported status`);
       if (!["direct", "official_code_capture", "proxied", "none"].includes(c["route"] as string))
@@ -727,9 +757,12 @@ function validateSources(values: unknown): LimitationSource[] {
         fail(`${label}.currency claims a result without a fresh copy`);
       if (c["rawSha256"] !== undefined) digest(c["rawSha256"], `${label}.currency.rawSha256`);
       if (c["textSha256"] !== undefined) digest(c["textSha256"], `${label}.currency.textSha256`);
-      if (c["httpStatus"] !== undefined) positiveInteger(c["httpStatus"], `${label}.currency.httpStatus`, 599);
-      if (c["rawStorageKey"] !== undefined) string(c["rawStorageKey"], `${label}.currency.rawStorageKey`);
-      if (c["freshTextPath"] !== undefined) textPath(c["freshTextPath"], `${label}.currency.freshTextPath`);
+      if (c["httpStatus"] !== undefined)
+        positiveInteger(c["httpStatus"], `${label}.currency.httpStatus`, 599);
+      if (c["rawStorageKey"] !== undefined)
+        string(c["rawStorageKey"], `${label}.currency.rawStorageKey`);
+      if (c["freshTextPath"] !== undefined)
+        textPath(c["freshTextPath"], `${label}.currency.freshTextPath`);
       if (c["route"] === "official_code_capture") {
         if (c["status"] === "confirmed_unchanged")
           fail(`${label}.currency: a code-capture recheck cannot claim a byte-identical page`);
@@ -739,7 +772,8 @@ function validateSources(values: unknown): LimitationSource[] {
         if (cc["runId"] !== null) string(cc["runId"], `${label}.currency.codeCapture.runId`);
         if (cc["manifestSha256"] !== null)
           digest(cc["manifestSha256"], `${label}.currency.codeCapture.manifestSha256`);
-        if (cc["landedAt"] !== null) timestamp(cc["landedAt"], `${label}.currency.codeCapture.landedAt`);
+        if (cc["landedAt"] !== null)
+          timestamp(cc["landedAt"], `${label}.currency.codeCapture.landedAt`);
         strings(cc["sectionNativeIds"], `${label}.currency.codeCapture.sectionNativeIds`);
         if (!cc["sectionNativeIds"].length) fail(`${label}.currency.codeCapture names no section`);
         strings(cc["sourceUrls"], `${label}.currency.codeCapture.sourceUrls`);
@@ -748,9 +782,12 @@ function validateSources(values: unknown): LimitationSource[] {
       }
       if (c["componentSourceIds"] !== undefined) {
         strings(c["componentSourceIds"], `${label}.currency.componentSourceIds`);
-        if (!c["componentSourceIds"].length) fail(`${label}.currency.componentSourceIds names no component`);
+        if (!c["componentSourceIds"].length)
+          fail(`${label}.currency.componentSourceIds names no component`);
         if (c["route"] !== "direct" || c["status"] !== "confirmed_evidence_intact")
-          fail(`${label}.currency: a composite verdict must be a direct-route evidence-intact verdict`);
+          fail(
+            `${label}.currency: a composite verdict must be a direct-route evidence-intact verdict`,
+          );
         if (c["componentSourceIds"].includes(s.id as string))
           fail(`${label}.currency.componentSourceIds names the composite itself`);
       }
@@ -759,14 +796,20 @@ function validateSources(values: unknown): LimitationSource[] {
         if (c["route"] === "proxied")
           fail(`${label}.currency.passageRecheck duplicates a proxied page-level verdict`);
         timestamp(pr["checkedAt"], `${label}.currency.passageRecheck.checkedAt`);
-        if (pr["route"] !== "proxied") fail(`${label}.currency.passageRecheck route must be proxied`);
+        if (pr["route"] !== "proxied")
+          fail(`${label}.currency.passageRecheck route must be proxied`);
         string(pr["proxy"], `${label}.currency.passageRecheck.proxy`);
         digest(pr["rawSha256"], `${label}.currency.passageRecheck.rawSha256`);
-        if (pr["textSha256"] !== undefined) digest(pr["textSha256"], `${label}.currency.passageRecheck.textSha256`);
+        if (pr["textSha256"] !== undefined)
+          digest(pr["textSha256"], `${label}.currency.passageRecheck.textSha256`);
         string(pr["rawStorageKey"], `${label}.currency.passageRecheck.rawStorageKey`);
-        if (pr["rawStorageKey"] !== `limitations-raw-captures/sha256/${(pr["rawSha256"] as string).slice(0, 2)}/${String(pr["rawSha256"])}.bin`)
+        if (
+          pr["rawStorageKey"] !==
+          `limitations-raw-captures/sha256/${(pr["rawSha256"] as string).slice(0, 2)}/${String(pr["rawSha256"])}.bin`
+        )
           fail(`${label}.currency.passageRecheck.rawStorageKey does not address its own rawSha256`);
-        if (pr["freshTextPath"] !== undefined) textPath(pr["freshTextPath"], `${label}.currency.passageRecheck.freshTextPath`);
+        if (pr["freshTextPath"] !== undefined)
+          textPath(pr["freshTextPath"], `${label}.currency.passageRecheck.freshTextPath`);
         positiveInteger(pr["passages"], `${label}.currency.passageRecheck.passages`, 10_000);
         string(pr["detail"], `${label}.currency.passageRecheck.detail`);
       }
@@ -977,7 +1020,8 @@ export function validateLimitationsSnapshot(input: {
   const caseIds = new Set(cases.map((item) => item.id));
   for (const source of sources) {
     for (const id of source.currency?.componentSourceIds ?? [])
-      if (!sourceIds.has(id)) fail(`source ${source.id} derives its verdict from a missing component source ${id}`);
+      if (!sourceIds.has(id))
+        fail(`source ${source.id} derives its verdict from a missing component source ${id}`);
   }
   for (const rule of rules) {
     if (rule.sourceIds.some((id) => !sourceIds.has(id)))
@@ -1020,6 +1064,7 @@ export function validateLimitationsSnapshot(input: {
     if ((row.coverage === "conditional_baselines") !== expectedBaseline.length > 0)
       fail(`${row.state} coverage label conflicts with baseline inventory`);
   }
+  assertBundleBindings(rules, sources, coverage);
   return {
     schemaVersion: "1.0.0",
     ruleVersion: rulesFile.ruleVersion as string,

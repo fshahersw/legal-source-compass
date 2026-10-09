@@ -378,7 +378,9 @@ describe("weekend extension from a recorded state counting rule", () => {
       ruleStatus: "verified",
       extendsWhenLastDayIsWeekend: false,
     });
-    expect(result.steps.at(-1)?.text).toContain("does not extend a last day that falls on a Saturday");
+    expect(result.steps.at(-1)?.text).toContain(
+      "does not extend a last day that falls on a Saturday",
+    );
   });
 
   it("does not adjust weekday anniversaries or states without a recorded rule", () => {
@@ -644,7 +646,12 @@ describe("clocks_min: two-limb periods and several repose clocks", () => {
           ],
           clocks: [],
         },
-        { jurisdiction: "LA", accrualBasis: "death", id: "la-wrongful-death-clocks-min-test" },
+        {
+          jurisdiction: "LA",
+          sourceIds: ["la-src"],
+          accrualBasis: "death",
+          id: "la-wrongful-death-clocks-min-test",
+        },
       ),
     ]);
     const day = "2024-06-01";

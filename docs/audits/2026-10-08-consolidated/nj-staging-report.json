@@ -1,0 +1,17 @@
+{
+  "schema_version": "nj-publisher-staging/1",
+  "source_system": "nj-pub-statutes-bulk",
+  "archive_sha256": "70be4105e74c6bf53245f08693778fc41d39185c1010e4fb993387a55abd6c9a",
+  "source_sections": 56331,
+  "titles": 70,
+  "candidate_sections": 56329,
+  "quarantined_sections": 2,
+  "repeated_citation_groups": 20,
+  "publisher_headnote_anomalies": 5,
+  "unmapped_source_blocks": 2,
+  "statutes_version_marker": "NEW JERSEY GENERAL AND PERMANENT STATUTES\n(UPDATED THROUGH  P.L.2026, c.30, and J.R.1)",
+  "toc_version_marker": "Legislative Counsel's Table Of Contents UPDATED to P.L.2026, c.90 and JR 2.",
+  "publication_allowed": false,
+  "calculation_activation_allowed": false,
+  "completeness_preflight_expected": "blocked"
+}
