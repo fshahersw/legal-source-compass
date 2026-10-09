@@ -1,3 +1,4 @@
+import { validateTollingPolicies } from "./tollingPolicy";
 import { assertBundleBindings } from "./bundleBindings";
 import {
   CLAIM_TYPES,
@@ -1014,6 +1015,7 @@ export function validateLimitationsSnapshot(input: {
 
   const rules = validateRules(rulesFile.rules);
   const sources = validateSources(sourcesFile.sources);
+  validateTollingPolicies(rules, sources);
   const coverage = validateCoverage(coverageFile.coverage);
   const cases = validateCases(casesFile.cases);
   const sourceIds = new Set(sources.map((source) => source.id));
