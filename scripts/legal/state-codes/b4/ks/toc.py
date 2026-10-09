@@ -51,7 +51,19 @@ def main():
     chapters = list(dict.fromkeys(re.findall(r'href="(/statutes/ksa_ch[0-9a-z]+\.html)"', html)))
     for c in chapters:
         fetch(s, BASE + c, a.work)
-    print(json.dumps({"chapters": len(chapters)}))
+    # Section pages the index lists but no earlier run retained: fetch only those.
+    retained = {json.loads(l)["source_url"] for l in open(os.path.join(a.work, "sources.jsonl"))}
+    listed = []
+    for c in chapters:
+        rec = fetch(s, BASE + c, a.work)
+        page = open(os.path.join(a.work, "toc", rec["sha256"]), encoding="utf-8", errors="replace").read()
+        listed += [BASE + x for x in re.findall(r'href="(/statutes/chapters/[^"]+\.html)"', page)]
+    missing = [u for u in dict.fromkeys(listed) if u not in retained]
+    for u in missing:
+        fetch(s, u, a.work)
+    # The Revisor's list of sections changed by the 2026 session (not yet folded into the online text).
+    fetch(s, BASE + "/rpts/2026NewAmendsAndRepealsKSAOrder.pdf", a.work)
+    print(json.dumps({"chapters": len(chapters), "listed_pages": len(set(listed)), "newly_fetched_pages": len(missing)}))
 
 
 if __name__ == "__main__":
