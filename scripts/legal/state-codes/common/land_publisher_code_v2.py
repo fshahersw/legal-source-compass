@@ -24,6 +24,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 import sys
 import time
 import uuid
@@ -88,6 +89,20 @@ def build_rows(packet, manifest_sha, manifest):
                 "text_code_points": len(text), "hierarchy": s["hierarchy"], "history": s["history"],
                 "status_note": s["status_note"], "unit_id": row_u["native_id"], "unit_text_sha256": u["text_sha256"],
                 "span": s["span"], "currency": s["currency"]}
+        locator = s.get("source_locator")
+        if locator is not None:
+            if (not isinstance(locator, dict)
+                or locator.get("archive_sha256") != u["original_sha256"]
+                or locator.get("citation_path") != s["citation_path"]
+                or not isinstance(locator.get("member"), str)
+                or not re.fullmatch(r"[A-Za-z0-9_.-]+", locator["member"])
+                or ".." in locator["member"]
+                or not re.fullmatch(r"[a-f0-9]{64}", str(locator.get("member_sha256", "")))
+                or locator.get("display_url_retrieved") is not False
+                or not all(isinstance(locator.get(k), str) and 0 < len(locator[k]) <= 2048
+                           for k in ("native_row_id", "section_version_id", "display_url"))):
+                raise ValueError("Source locator does not bind this section to its exact retained archive")
+            data["source_locator"] = dict(locator)
         prov = {**{k: row_u["provenance"][k] for k in ("source_url", "source_sha256", "retrieved_at", "retrieval_method", "proxy")},
                 "source_as_of": s["currency"]["through_date"], "record_hash_codec": "canonical-integer-jsonb/1",
                 "record_sha256": sha(data), "parser": parser, "manifest_sha256": manifest_sha}
