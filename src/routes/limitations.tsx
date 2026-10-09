@@ -42,8 +42,8 @@ function Page() {
         { label: "Law & regulation", to: "/law" },
         { label: "Limitations research" },
       ]}
-      title="Statute of limitations calculator"
-      description="Choose a state and claim, enter the relevant dates, then review a cited conditional baseline."
+      title="Time limits"
+      description="Source-linked calculations, explicit legal assumptions and a traceable review for each claim."
     >
       <LimitationsWorkbench
         key={`${state}:${claim ?? ""}`}

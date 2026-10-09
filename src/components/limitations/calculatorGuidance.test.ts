@@ -14,8 +14,7 @@ import {
 import { LimitationsWorkbench } from "./LimitationsWorkbench";
 
 const bundleDir = process.env["LIM_BUNDLE_DIR"] ?? "private/data/limitations";
-const json = (name: string) =>
-  JSON.parse(readFileSync(`${bundleDir}/${name}.json`, "utf8"));
+const json = (name: string) => JSON.parse(readFileSync(`${bundleDir}/${name}.json`, "utf8"));
 const snapshot: LimitationsSnapshot = {
   ...json("rules"),
   sources: json("sources").sources,
@@ -66,17 +65,18 @@ const reposeRule = (
 describe("guided limitations calculator", () => {
   it("starts with state selection and no inferred claim, dates or legal confirmations", () => {
     const html = markup("");
-    expect(html).toContain("Choose the law and claim");
+    expect(html).toContain("Which claim are you assessing?");
     expect(html).toContain("Choose a state");
     expect(html).not.toContain('type="date"');
     expect(html).not.toContain('checked=""');
     expect(html).not.toContain("statutory anniversary");
   });
-  it("shows dates on the same page for a prefilled claim without inferring confirmations", () => {
+  it("keeps a prefilled claim unconfirmed and progressively reveals its timeline", () => {
     const html = markup("IN", "personal_injury");
-    expect(html).toContain("Choose the law and claim");
-    expect(html).toContain('type="date"');
-    expect(html).toContain("Still needed before calculating");
+    expect(html).toContain("Which claim are you assessing?");
+    expect(html).not.toContain('type="date"');
+    expect(html).toContain("Continue to timeline");
+    expect(html).toContain("Legal confirmations");
     expect(html).not.toContain('checked=""');
     const ohio = markup("OH", "product_liability");
     expect(ohio).toContain("Fact pattern");
@@ -89,7 +89,7 @@ describe("guided limitations calculator", () => {
       .find((state) => !baselineRule(snapshot.rules, state, "product_liability"));
     expect(unsupported, "every state has a product baseline; pick another claim").toBeDefined();
     const html = markup(unsupported!, "product_liability");
-    expect(html).toContain("No unique baseline is available");
+    expect(html).toContain("No supported calculation");
     expect(html).not.toContain('type="date"');
     expect(html).not.toContain(">Calculate<");
   });

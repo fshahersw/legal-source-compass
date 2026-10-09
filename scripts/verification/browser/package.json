@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "playwright": "^1.64.0"
+  },
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "guided": "node verify-guided.mjs",
+    "refresh": "node verify-source-refresh.mjs"
+  }
+}

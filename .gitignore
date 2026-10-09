@@ -37,3 +37,6 @@ __pycache__/
 
 # Corpus source snapshots are private cloud objects, never public repository assets.
 /private/
+
+# Local browser regression exports and screenshots (synthetic test data only).
+/.verification/
