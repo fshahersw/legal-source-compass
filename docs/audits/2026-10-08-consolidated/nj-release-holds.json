@@ -1,0 +1,31 @@
+{
+  "publication_allowed": false,
+  "calculation_activation_allowed": false,
+  "holds": [
+    {
+      "code": "operative_law_review_pending",
+      "detail": "Source capture is not legal-effect certification"
+    },
+    {
+      "code": "chapter_article_hierarchy_not_yet_reconciled",
+      "detail": "Only publisher title and section hierarchy is represented"
+    },
+    {
+      "code": "publisher_version_markers_differ",
+      "statutes": "NEW JERSEY GENERAL AND PERMANENT STATUTES\n(UPDATED THROUGH  P.L.2026, c.30, and J.R.1)",
+      "toc": "Legislative Counsel's Table Of Contents UPDATED to P.L.2026, c.90 and JR 2."
+    },
+    {
+      "code": "publisher_headnote_anomalies",
+      "count": 5
+    },
+    {
+      "code": "cross_title_sections_quarantined",
+      "count": 2
+    },
+    {
+      "code": "repeated_citation_versions_unresolved",
+      "count": 20
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "publication_allowed": false,
+  "calculation_activation_allowed": false,
+  "holds": [
+    {
+      "code": "operative_law_currency_pending"
+    },
+    {
+      "code": "independent_publisher_review_pending"
+    }
+  ]
+}

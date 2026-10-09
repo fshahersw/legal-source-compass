@@ -44,3 +44,11 @@ Section boundaries use the publisher PDF line layout:
 Sub-decimal enrolled-act blocks (e.g. Ski Safety Act inside `1-1-123`) remain inside the parent section text.
 
 TOC reconciliation: `toc_citation_paths()` and the parser share one detector; `parse.py` requires an **exact ordered match** per title.
+
+## Parser v4 safety correction — 2026-10-08
+
+The previous numeric-only article detector omitted lettered UCC sections (including `34.1-2.A-101` and `34.1-4A-101`) and appended their text to an earlier numeric section. Version 4 preserves the printed article token and represents the UCC hierarchy as title/article/part/section, without inventing a chapter. Article boundaries terminate the prior section. Embedded decimal act blocks retain the pre-existing policy.
+
+The new regression uses independently listed expected citations and tests that lease text is not merged into the sales limitation. A parser-derived ordered list matching that same parser is a consistency check, **not independent proof of statutory completeness**.
+
+This is a new parser version, not an approved replacement of the live data. The old manifest review does not apply; it has been removed from this v4 candidate. Rebuild into a new staging packet, compare retained originals and source boundaries, review the changed identities and pass the normal private intake/projection gates before publishing. Never relabel a v3 packet as v4.

@@ -11,7 +11,7 @@ from titles import CURRENCY_STATEMENT
 
 # Heading must begin on the same line as the citation (excludes bare `1-1-123.` page artifacts).
 SECTION_HEADER = re.compile(
-    r"^\s*(\d{1,2}(?:\.\d)?)-(\d+)-(\d+)\.(?!\d)(\s+)(.+)$"
+    r"^\s*(\d{1,2}(?:\.\d)?)-(\d+(?:\.?[A-Z])?)-(\d+)\.(?!\d)(\s+)(.+)$"
 )
 SECTION_CONST_HEADER = re.compile(
     r"^\s*Article\s+(\d+),\s*Section\s+(\d+)\s+(.+)$",
@@ -19,8 +19,8 @@ SECTION_CONST_HEADER = re.compile(
 )
 TITLE_HEAD = re.compile(r"^\s*TITLE\s+(\d+(?:\.\d)?)\s*-\s*(.+?)\s*$", re.IGNORECASE)
 CHAPTER_HEAD = re.compile(r"^\s*CHAPTER\s+(\d+)\s*-\s*(.+?)\s*$", re.IGNORECASE)
-REV_ART_HEAD = re.compile(r"^\s*REVISED\s+ARTICLE\s+(\d+)\s*-\s*(.+?)\s*$", re.IGNORECASE)
-ARTICLE_HEAD = re.compile(r"^\s*ARTICLE\s+(\d+)\s*-\s*(.+?)\s*$", re.IGNORECASE)
+REV_ART_HEAD = re.compile(r"^\s*REVISED\s+ARTICLE\s+(\d+(?:\.?[A-Z])?)\s*-\s*(.+?)\s*$", re.IGNORECASE)
+ARTICLE_HEAD = re.compile(r"^\s*ARTICLE\s+(\d+(?:\.?[A-Z])?)\s*-\s*(.+?)\s*$", re.IGNORECASE)
 PART_HEAD = re.compile(r"^\s*PART\s+(\d+)\.?\s*(.*)$", re.IGNORECASE)
 SUBSECTION_START = re.compile(r"^\s*\([a-zA-Z0-9]+\)")
 
@@ -156,11 +156,15 @@ def parse_title_text(text, *, title_key, title_label, source_url, receipt_sha):
         chapter_num = chapter_num or cnum
         chapter_heading = chapter_heading or f"Chapter {cnum}"
         cid = f"{tnum}-{cnum}"
-        hierarchy = [
-            {"level": "title", "number": tnum, "heading": title_heading},
-            {"level": "chapter", "number": cnum, "heading": chapter_heading or ""},
-        ]
-        if article_num:
+        hierarchy = [{"level": "title", "number": tnum, "heading": title_heading}]
+        if expected_title == "34.1":
+            # UCC citations use articles, not fabricated chapters. Preserve the
+            # publisher's punctuation (2.A and 4A are distinct printed tokens).
+            hierarchy.append({"level": "article", "number": cnum,
+                              "heading": chapter_heading if chapter_num == cnum else None})
+        else:
+            hierarchy.append({"level": "chapter", "number": cnum, "heading": chapter_heading or ""})
+        if article_num and expected_title != "34.1":
             hierarchy.append({"level": "article", "number": article_num, "heading": article_heading or ""})
         if part_num:
             hierarchy.append({"level": "part", "number": part_num, "heading": part_heading or ""})
@@ -194,6 +198,7 @@ def parse_title_text(text, *, title_key, title_label, source_url, receipt_sha):
             continue
         ra = REV_ART_HEAD.match(line)
         if ra:
+            flush_section()
             chapter_num = ra.group(1)
             chapter_heading = collapse_line(ra.group(2))
             article_num = None
@@ -202,6 +207,15 @@ def parse_title_text(text, *, title_key, title_label, source_url, receipt_sha):
             continue
         ar = ARTICLE_HEAD.match(line)
         if ar and not REV_ART_HEAD.match(line):
+            if expected_title == "34.1":
+                flush_section()
+                chapter_num = ar.group(1)
+                chapter_heading = collapse_line(ar.group(2))
+                article_num = None
+                article_heading = None
+                part_num = None
+                part_heading = None
+                continue
             article_num = ar.group(1)
             article_heading = collapse_line(ar.group(2))
             continue

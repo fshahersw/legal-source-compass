@@ -56,7 +56,7 @@ export function addCivilPeriod(
     const result = `${year}-${pad(month)}-${pad(date.day)}`;
     return parseCivilDate(result) ? result : null;
   }
-  if (amount > 36500) return null;
+  if (unit !== "calendar_days" || amount > 36500) return null;
   const moved = new Date(Date.UTC(date.year, date.month - 1, date.day + amount));
   const result = `${moved.getUTCFullYear()}-${pad(moved.getUTCMonth() + 1)}-${pad(moved.getUTCDate())}`;
   return parseCivilDate(result) ? result : null;
@@ -92,7 +92,10 @@ export function weekendTreatment(
   snapshot: LimitationsSnapshot,
   jurisdiction: string,
   date: string,
+  context: { governingDates?: string[]; outerLimits?: string[] } = {},
 ): {
+  /** Counting authorities belong on the step that discusses their application. */
+  sourceIds: string[];
   adjustedDate: NonNullable<BaselineResult["adjustedDate"]> | null;
   weekendNotice: WeekendNotice | null;
   /** Sentence(s) about the weekend, or null when the date is a weekday. Ends with a period. */
@@ -114,19 +117,65 @@ export function weekendTreatment(
     adjustedDate,
     weekendNotice,
     weekendText,
+    sourceIds: timeRule
+      ? [timeRule.sourceId, ...(timeRule.supportingSourceIds ?? [])].filter((id) =>
+          snapshot.sources.some((source) => source.id === id),
+        )
+      : [],
     stepText: weekendText
       ? `The unadjusted calendar anniversary is ${date}, a ${weekdayName}. ${weekendText} ${uncomputed}`
       : `The unadjusted calendar anniversary is ${date}. Holiday / closure, commencement, service and filing-cutoff adjustments remain uncomputed.`,
   });
   if (!weekdayName) return finish(null, null, null);
   const rolled =
-    timeRule?.status === "verified" && timeRule.extendsWhenLastDayIsWeekend ? nextWeekday(date) : null;
-  if (rolled && timeRule)
+    timeRule?.status === "verified" && timeRule.extendsWhenLastDayIsWeekend
+      ? nextWeekday(date)
+      : null;
+  if (rolled && timeRule) {
+    const ids = [timeRule.sourceId, ...(timeRule.supportingSourceIds ?? [])];
+    const authorities = ids.map((id) => {
+      const found = snapshot.sources.filter((source) => source.id === id);
+      return found.length === 1 ? found[0] : undefined;
+    });
+    const reviewDates = [
+      snapshot.snapshotDate,
+      timeRule.retrievedAt?.slice(0, 10),
+      ...authorities.map((source) => source?.verifiedAt?.slice(0, 10)),
+    ];
+    const validAuthorities =
+      authorities.every(
+        (source) =>
+          source && source.state === jurisdiction && source.currency?.status !== "evidence_lost",
+      ) && reviewDates.every((value) => value && parseCivilDate(value));
+    const reviewedThrough = validAuthorities ? (reviewDates as string[]).sort()[0]! : null;
+    if (
+      !reviewedThrough ||
+      context.governingDates?.some((value) => !parseCivilDate(value) || value > reviewedThrough)
+    ) {
+      const note = reviewedThrough
+        ? `The counting authority was reviewed only through ${reviewedThrough}, before a required event. Confirm the applicable version before extending the date.`
+        : "The counting authority or a required supporting source is missing, conflicting, from another jurisdiction, undated, or has lost its evidence. No extension was applied.";
+      return finish(
+        null,
+        { kind: "source_unverified", weekday: weekdayName, citation: timeRule.citation, note },
+        note,
+      );
+    }
+    const outer = context.outerLimits?.find((limit) => !parseCivilDate(limit) || rolled > limit);
+    if (outer) {
+      const note = `Moving the date to ${rolled} would pass the separately recorded outer limit (${outer}). The counting authority has not been established to extend that outer limit; no extension was applied. Review the repose or other cap separately.`;
+      return finish(
+        null,
+        { kind: "scope_unverified", weekday: weekdayName, citation: timeRule.citation, note },
+        note,
+      );
+    }
     return finish(
       { date: rolled, citation: timeRule.citation, holidaysComputed: false },
       null,
       `The recorded state counting rule (${timeRule.citation}) extends a last day that falls on a weekend to the next weekday, ${rolled}.`,
     );
+  }
   if (timeRule)
     return finish(
       null,
@@ -191,7 +240,10 @@ function windowsOverlap(
   a: Pick<LimitationRule, "effectiveFrom" | "effectiveThrough">,
   b: Pick<LimitationRule, "effectiveFrom" | "effectiveThrough">,
 ): boolean {
-  const start = [a.effectiveFrom, b.effectiveFrom].filter((d): d is string => !!d).sort().at(-1);
+  const start = [a.effectiveFrom, b.effectiveFrom]
+    .filter((d): d is string => !!d)
+    .sort()
+    .at(-1);
   const end = [a.effectiveThrough, b.effectiveThrough].filter((d): d is string => !!d).sort()[0];
   return !start || !end || start <= end;
 }
@@ -257,6 +309,17 @@ export function calculateBaseline(
   if (!rule)
     return finish("needs_review", [
       "This jurisdiction and claim have no uniquely supported baseline rule. Consult the source inventory and claim-specific research below.",
+    ]);
+  if (
+    rule.currency?.status === "evidence_lost" ||
+    rule.sourceIds.some((id) =>
+      snapshot.sources.some(
+        (source) => source.id === id && source.currency?.status === "evidence_lost",
+      ),
+    )
+  )
+    return finish("needs_review", [
+      "Required source evidence has been lost. Re-verify the authority before calculating.",
     ]);
   if (rule.calculation?.mode === "clocks_min") return calculateClocks(snapshot, input, rule);
   const hasRepose = rule.calculation?.mode === "accrual_repose_min";
@@ -459,7 +522,12 @@ export function calculateBaseline(
     return finish("needs_review", [
       "This date has no exact calendar anniversary. A verified jurisdiction-specific leap-day / counting rule is required.",
     ]);
-  const weekend = weekendTreatment(snapshot, input.jurisdiction, date);
+  const weekend = weekendTreatment(snapshot, input.jurisdiction, date, {
+    governingDates: requiredDates as string[],
+    outerLimits: [cap, reposeCap, rule.ruleKind === "repose" ? date : null].filter(
+      (value): value is string => value !== null,
+    ),
+  });
   return {
     status: "baseline",
     date,
@@ -514,7 +582,7 @@ export function calculateBaseline(
         : []),
       {
         text: weekend.stepText,
-        sourceIds: rule.sourceIds,
+        sourceIds: [...new Set([...rule.sourceIds, ...weekend.sourceIds])],
         pinpoint: rule.pinpoint,
       },
     ],
@@ -622,7 +690,11 @@ function calculateClocks(
 
   const limbDates = limbs.map((l) => limbStart(input, l.from));
   const clockDates = clocks.map((c) => clockStart(input, c.from));
-  const required = [...limbDates, ...clockDates];
+  // Taking the earlier discovery date must not hide an invalid or post-review second date.
+  const discoveryDates = limbs.some((limb) => limb.from === "discovery")
+    ? [input.actualDiscoveryDate, input.constructiveDiscoveryDate]
+    : [];
+  const required = [...limbDates, ...clockDates, ...discoveryDates];
   if (required.some((d) => !d || !parseCivilDate(d)))
     return finish("invalid", [
       "Supply each legally relevant real civil date in YYYY-MM-DD format (1900–2199).",
@@ -731,7 +803,10 @@ function calculateClocks(
     )
     .join(calc.combine === "later" ? "; the later of: " : "; the earlier of: ");
   const sources = { sourceIds: rule.sourceIds, pinpoint: rule.pinpoint };
-  const weekend = weekendTreatment(snapshot, input.jurisdiction, date);
+  const weekend = weekendTreatment(snapshot, input.jurisdiction, date, {
+    governingDates: required as string[],
+    outerLimits: [...(caps as string[]), ...(rule.ruleKind === "repose" ? [date] : [])],
+  });
   const undatedClocks = clocks.filter((c) => c.effectiveFrom === null);
   return {
     status: "baseline",
@@ -764,6 +839,7 @@ function calculateClocks(
           ? `The earliest applicable date is ${date}, a ${weekend.weekendNotice?.weekday ?? (civilWeekday(date) === 6 ? "Saturday" : "Sunday")}. ${weekend.weekendText} Legal holidays, closures, commencement, service and filing-cutoff adjustments remain uncomputed.`
           : `The earliest applicable date is ${date}. Holiday / closure, commencement, service and filing-cutoff adjustments remain uncomputed.`,
         ...sources,
+        sourceIds: [...new Set([...rule.sourceIds, ...weekend.sourceIds])],
       },
     ],
   };

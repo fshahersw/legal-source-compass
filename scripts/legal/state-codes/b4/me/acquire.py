@@ -17,7 +17,7 @@ BASE = "https://legislature.maine.gov/statutes/"
 HOME = BASE + "homepage.html"
 
 TITLE_RE = re.compile(r'href="(\d+(?:-[A-Z])?)/title[^"]+ch0sec0\.html"', re.I)
-CHAPTER_RE = re.compile(r'href="\./(title[^"]+ch[^"]+sec0\.html)"', re.I)
+CHAPTER_RE = re.compile(r'href="\./(title[^"]+ch[^"]+sec0(?:-[0-9]+)?\.html)"', re.I)
 SECTION_RE = re.compile(r'href="\./(title[^"]+sec(?!0)[^"]*\.html)"', re.I)
 CURRENCY_RE = re.compile(
     r'<div class="status">\s*<p>\s*(.*?)\s*</p>\s*</div>', re.S | re.I

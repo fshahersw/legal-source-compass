@@ -559,6 +559,13 @@ export type WeekendNotice =
       note: string;
       extendsWhenLastDayIsWeekend: boolean;
     }
+  | {
+      /** The recorded label does not establish the needed source currency or outer-limit scope. */
+      kind: "source_unverified" | "scope_unverified";
+      weekday: "Saturday" | "Sunday";
+      citation: string;
+      note: string;
+    }
   | { kind: "no_rule"; weekday: "Saturday" | "Sunday"; reason: string | null };
 export type BaselineResult = {
   status: "baseline" | "needs_review" | "invalid";

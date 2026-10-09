@@ -11,7 +11,13 @@ import {
   periodLabel,
   sourceReviewDate,
 } from "@/lib/limitations/engine";
-import { NOT_RECORDED, ruleAuthorityFacts, sourceCurrencyFacts, type CrossReferenceFacts, sectionLabel } from "./ruleAuthority";
+import {
+  NOT_RECORDED,
+  ruleAuthorityFacts,
+  sourceCurrencyFacts,
+  type CrossReferenceFacts,
+  sectionLabel,
+} from "./ruleAuthority";
 import { StatuteCitation } from "./StatuteCitation";
 import { StateStatutePanel } from "./StateStatutePanel";
 import {
@@ -60,8 +66,7 @@ const subtypeLabels: Record<string, string> = {
  */
 const patternLabel = (slug: string, rule: LimitationRule | null) => {
   const window = rule ? versionWindowLabel(rule) : null;
-  if (slug === "general")
-    return `General rule for this claim type${window ? ` · ${window}` : ""}`;
+  if (slug === "general") return `General rule for this claim type${window ? ` · ${window}` : ""}`;
   if (subtypeLabels[slug])
     return `Variant, only if this fact pattern fits: ${subtypeLabels[slug]}${window ? ` · ${window}` : ""}`;
   return window
@@ -108,7 +113,9 @@ function Authority({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule: Li
             {facts.currency.label}
           </span>
           <details className="mt-1">
-            <summary className="cursor-pointer text-xs text-muted-foreground">What was checked</summary>
+            <summary className="cursor-pointer text-xs text-muted-foreground">
+              What was checked
+            </summary>
             <p className="mt-1 leading-relaxed">{facts.currency.detail}</p>
           </details>
         </dd>
@@ -242,7 +249,10 @@ function CrossReferenceNote({ link }: { link: CrossReferenceFacts | null }) {
         ? "border-destructive/50 text-destructive"
         : "border-border text-muted-foreground";
   return (
-    <span className="ml-1 inline-flex flex-wrap items-center gap-1 align-baseline text-xs" data-testid="cross-reference">
+    <span
+      className="ml-1 inline-flex flex-wrap items-center gap-1 align-baseline text-xs"
+      data-testid="cross-reference"
+    >
       <span className={`inline-block rounded border px-1.5 py-0.5 ${tone}`} title={link.detail}>
         {link.label}
       </span>
@@ -717,7 +727,7 @@ export function LimitationsWorkbench({
               <p className="mt-1 mb-5 text-sm leading-relaxed text-muted-foreground">
                 Enter only the dates this rule needs. Leave unknown dates blank; none are inferred.
               </p>
-              {(
+              {
                 <>
                   <div className="mb-5 rounded-lg border border-border p-4 text-sm">
                     <h3 className="font-semibold">Supported trigger dates</h3>
@@ -993,7 +1003,7 @@ export function LimitationsWorkbench({
                     </Button>
                   </div>
                 </>
-              )}
+              }
             </section>
           )}
 
@@ -1047,27 +1057,51 @@ export function LimitationsWorkbench({
                           data-testid="weekend-notice-flagged"
                         >
                           <p className="font-medium">
-                            This date falls on a {result.weekendNotice.weekday}. It is shown unadjusted.
+                            This date falls on a {result.weekendNotice.weekday}. It is shown
+                            unadjusted.
                           </p>
                           <p className="mt-1">
-                            {stateName}&rsquo;s recorded counting rule ({result.weekendNotice.citation}){" "}
+                            {stateName}&rsquo;s recorded counting rule (
+                            {result.weekendNotice.citation}){" "}
                             {result.weekendNotice.ruleStatus === "flagged"
                               ? "is on file but flagged, so it was not applied: "
                               : "does not extend a last day that falls on a Saturday or Sunday: "}
                             {result.weekendNotice.note}
                           </p>
                           <p className="mt-1 text-muted-foreground">
-                            Confirm the rule&rsquo;s reach to limitation periods before relying on an
-                            extension; legal holidays are not computed.
+                            Confirm the rule&rsquo;s reach to limitation periods before relying on
+                            an extension; legal holidays are not computed.
                           </p>
                           <details className="mt-1">
                             <summary className="cursor-pointer text-muted-foreground">
                               Rule text on file
                             </summary>
                             <div className="mt-1">
-                              <StatuteCitation state={state} citation={result.weekendNotice.citation} />
+                              <StatuteCitation
+                                state={state}
+                                citation={result.weekendNotice.citation}
+                              />
                             </div>
                           </details>
+                        </div>
+                      )}
+                      {(result.weekendNotice?.kind === "source_unverified" ||
+                        result.weekendNotice?.kind === "scope_unverified") && (
+                        <div
+                          className="rounded-md border border-warning/60 bg-warning/10 p-2"
+                          data-testid={`weekend-notice-${result.weekendNotice.kind}`}
+                        >
+                          <p className="font-medium">
+                            This date falls on a {result.weekendNotice.weekday}. No extension is
+                            issued.
+                          </p>
+                          <p className="mt-1">{result.weekendNotice.note}</p>
+                          <div className="mt-1">
+                            <StatuteCitation
+                              state={state}
+                              citation={result.weekendNotice.citation}
+                            />
+                          </div>
                         </div>
                       )}
                       {result.weekendNotice?.kind === "no_rule" && (
@@ -1076,15 +1110,16 @@ export function LimitationsWorkbench({
                           data-testid="weekend-notice-none"
                         >
                           <p className="font-medium">
-                            This date falls on a {result.weekendNotice.weekday}. It is shown unadjusted.
+                            This date falls on a {result.weekendNotice.weekday}. It is shown
+                            unadjusted.
                           </p>
                           <p className="mt-1">
                             No last-day counting rule is recorded for {stateName}
                             {result.weekendNotice.reason ? `: ${result.weekendNotice.reason}` : "."}
                           </p>
                           <p className="mt-1 text-muted-foreground">
-                            Check the state&rsquo;s own statute or court rule on last days that fall on a
-                            weekend or legal holiday before relying on any extension.
+                            Check the state&rsquo;s own statute or court rule on last days that fall
+                            on a weekend or legal holiday before relying on any extension.
                           </p>
                         </div>
                       )}
@@ -1132,7 +1167,12 @@ export function LimitationsWorkbench({
               {result.suggestedSubtype &&
                 claim &&
                 (() => {
-                  const sibling = baselineRule(snapshot.rules, state, claim, result.suggestedSubtype);
+                  const sibling = baselineRule(
+                    snapshot.rules,
+                    state,
+                    claim,
+                    result.suggestedSubtype,
+                  );
                   return sibling ? (
                     <div
                       className="mt-5 rounded-lg border border-primary/40 bg-background p-4 text-sm"

@@ -107,5 +107,56 @@ All power is inherent in the people.
         self.assertEqual(secs[0]["citation"], "Article 1, Section 1")
 
 
+
+class LetteredUccArticleTest(unittest.TestCase):
+    """Synthetic bodies; citation/layout cases independently observed in official Title 34.1."""
+    def parse(self, text):
+        return parse_title_text(text, title_key="34.1", title_label="Uniform Commercial Code",
+                                source_url="https://wyoleg.gov/statutes/compress/title34.1.pdf",
+                                receipt_sha="synthetic-test-only")
+
+    def test_lettered_articles_are_sections_not_tail_of_sales_limitation(self):
+        text = """TITLE 34.1 - UNIFORM COMMERCIAL CODE
+ARTICLE 2 - SALES
+34.1-2-725. Statute of limitations in contracts for sale.
+
+(a) Synthetic sales limitations body.
+ARTICLE 2.A - LEASES
+PART 1. GENERAL PROVISIONS
+34.1-2.A-101. Short title.
+
+Synthetic lease section, not part of the sales limitation.
+34.1-2.A-102. Scope.
+
+Synthetic second lease section.
+REVISED ARTICLE 3 - NEGOTIABLE INSTRUMENTS
+34.1-3-101. Short title.
+
+Synthetic negotiable instruments body.
+ARTICLE 4A - FUNDS TRANSFERS
+34.1-4A-101. Short title.
+
+Synthetic transfer body.
+"""
+        expected = ["34.1-2-725", "34.1-2.A-101", "34.1-2.A-102", "34.1-3-101", "34.1-4A-101"]
+        chapters, sections, paths = self.parse(text)
+        self.assertEqual(paths, expected)
+        self.assertEqual(toc_citation_paths(text, "34.1"), expected)
+        first = sections[0]
+        unit = next(c for c in chapters if c["native_id"] == first["chapter_native_id"])
+        fragment = unit["text"][first["start"]:first["end"]]
+        self.assertNotIn("Synthetic lease", fragment)
+        self.assertNotIn("34.1-2.A-101", fragment)
+        article = next(h for h in sections[1]["hierarchy"] if h["level"] == "article")
+        self.assertEqual(article["number"], "2.A")
+        self.assertEqual(article["heading"], "LEASES")
+        self.assertFalse(any(h["level"] == "chapter" for h in sections[1]["hierarchy"]))
+        self.assertEqual(next(h for h in sections[3]["hierarchy"] if h["level"] == "article")["number"], "3")
+
+    def test_lettered_sections_do_not_change_embedded_decimal_act_policy(self):
+        text = "TITLE 1 - X\nCHAPTER 1 - Y\n" + SKI_BLOCK
+        self.assertEqual(toc_citation_paths(text, "01"), ["1-1-123", "1-1-124"])
+
+
 if __name__ == "__main__":
     unittest.main()

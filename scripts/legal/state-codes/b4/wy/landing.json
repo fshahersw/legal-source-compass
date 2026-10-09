@@ -6,7 +6,7 @@
  "code_title": "Wyoming Statutes",
  "parser": {
   "name": "wy-lso-pdf",
-  "version": "3"
+  "version": "4"
  },
  "methods": [
   "publisher_bulk_download"
@@ -35,10 +35,6 @@
  "currency": {
   "basis": "publisher_statement",
   "location": "wyoleg.gov State Statutes download page statement"
- },
- "review": {
-  "reviewed_by": "state-codes batch 4 lead (bc-747cabdb)",
-  "reviewed_at": "2026-10-06"
  },
  "unit_kind": "title_pdf_chapter",
  "currency_defaults": {

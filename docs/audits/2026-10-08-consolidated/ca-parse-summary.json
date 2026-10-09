@@ -1,0 +1,18 @@
+{
+  "schema_version": "california-pubinfo-parse-summary/1",
+  "parser": {
+    "name": "california-pubinfo-xml",
+    "version": "2"
+  },
+  "archive_sha256": "2b443092fc6ad7fbee78d694dd885ec9a44337ebc2b9557980c8846d27978f2c",
+  "code_table_rows": 30,
+  "law_section_tbl_rows": 162526,
+  "sections_parsed": 162526,
+  "parse_failures": 0,
+  "toc_section_rows": 162526,
+  "toc_version_ids": 162526,
+  "section_version_ids": 162526,
+  "toc_rows_missing_section_version_id": 0,
+  "sections_with_empty_text": 0,
+  "unique_citation_paths": 162526
+}
