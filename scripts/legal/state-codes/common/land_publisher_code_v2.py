@@ -159,9 +159,35 @@ class Cloud:
             return r
 
     def readback(self, key):
+        """Stream the whole object; returns (status, Digest) so a 1+ GB original never sits in memory."""
         r = self._retry(lambda: self.s.get(f"{self.url}/storage/v1/object/authenticated/{BUCKET}/{key}",
-                                           headers=self.h, timeout=600))
-        return r.status_code, r.content
+                                           headers=self.h, timeout=1800, stream=True))
+        if r.status_code != 200:
+            r.close()
+            return r.status_code, None
+        d = Digest()
+        for block in r.iter_content(1 << 20):
+            d.update(block)
+        return 200, d
+
+
+class Digest:
+    """Running sha256, byte count and UTF-8 code-point count of a streamed body."""
+    def __init__(self):
+        self.h, self.n, self.cp, self.utf8_ok = hashlib.sha256(), 0, 0, True
+        self._dec = __import__("codecs").getincrementaldecoder("utf-8")()
+
+    def update(self, block):
+        self.h.update(block)
+        self.n += len(block)
+        if self.utf8_ok:
+            try:
+                self.cp += len(self._dec.decode(block))
+            except UnicodeDecodeError:
+                self.utf8_ok = False
+
+    def hexdigest(self):
+        return self.h.hexdigest()
 
     def upload(self, key, data, ctype):
         r = self._retry(lambda: self.s.post(f"{self.url}/storage/v1/object/{BUCKET}/{key}", data=data, timeout=1200,
@@ -227,13 +253,15 @@ def put_object(cloud, o):
         if ust not in (200, 201) and "already exists" not in msg and "Duplicate" not in msg and not (ust != 200 and "LockTimeout" in str(msg) and cloud.readback(key)[0] == 200):
             raise RuntimeError(f"upload {ust} {msg}")
         st, body = cloud.readback(key)
-    if st != 200 or hashlib.sha256(body).hexdigest() != o["sha256"] or len(body) != o["bytes"]:
+    if st != 200 or body.hexdigest() != o["sha256"] or body.n != o["bytes"]:
         raise RuntimeError(f"readback mismatch {o['sha256'][:12]} status={st}")
-    rec = {"bytes": o["bytes"], "bucket": BUCKET, "object_key": key, "readback_sha256": o["sha256"], "readback_bytes": len(body),
+    rec = {"bytes": o["bytes"], "bucket": BUCKET, "object_key": key, "readback_sha256": o["sha256"], "readback_bytes": body.n,
            "verification_method": "authenticated-whole-object-get-sha256", "http_status": 200,
            "verified_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
     if o["kind"] == "unit_text_derivative":
-        rec.update(readback_text_encoding="utf-8", readback_text_code_points=len(body.decode("utf-8")))
+        if not body.utf8_ok:
+            raise RuntimeError(f"text derivative is not UTF-8 {o['sha256'][:12]}")
+        rec.update(readback_text_encoding="utf-8", readback_text_code_points=body.cp)
     return rec
 
 
