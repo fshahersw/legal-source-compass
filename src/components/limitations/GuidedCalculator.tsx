@@ -172,19 +172,14 @@ export function GuidedCalculator({
     setResult(next);
     go(2);
   }
-  function download() {
+  function printAssessment() {
     if (!result) return;
     try {
-      const data = assessmentExport(snapshot, input, review, result);
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `deadline-assessment-${state}-${claim ?? "claim"}.json`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      assessmentExport(snapshot, input, review, result); // Revalidate retained evidence before printing.
+      setResult(calculateGuided(snapshot, input, review));
+      requestAnimationFrame(() => window.print());
     } catch {
-      setUiError("Export failed. Your answers remain on screen; try again.");
+      setUiError("The assessment could not be printed. Recheck the sources and try again.");
     }
   }
   const evidence = (
@@ -874,7 +869,7 @@ export function GuidedCalculator({
                     </p>
                   </details>
                   <div className="flex flex-wrap gap-2">
-                    <Button onClick={download}>Export assessment</Button>
+                    <Button onClick={printAssessment}>Print assessment</Button>
                     <Button variant="outline" onClick={() => go(1)}>
                       Edit exceptions
                     </Button>

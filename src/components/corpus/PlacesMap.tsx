@@ -46,12 +46,12 @@ export function PlacesMap({ home }: { home?: boolean | undefined }) {
           ? [{ label: "State atlas" }]
           : [{ label: "Atlas", to: "/" }, { label: "States & courts" }]
       }
-      title="A clearer view of the law"
-      description="Start with a state. Explore its laws, courts, judicial profiles and research sources."
+      title="State research atlas"
+      description="Find statutes, courts, judges and practical research resources by jurisdiction."
     >
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div
-          className="flex flex-wrap items-center gap-1 rounded-xl border border-border bg-surface p-1"
+          className="flex flex-wrap items-center gap-1 rounded-lg border border-border bg-surface p-1"
           aria-label="Open selected state in"
         >
           {destinations.map(({ id, label, icon: Icon }) => (
@@ -71,7 +71,7 @@ export function PlacesMap({ home }: { home?: boolean | undefined }) {
           50 states <span className="px-1 text-border">/</span> District of Columbia
         </p>
       </div>
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_19rem]">
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_21rem]">
         <section aria-label="Explore jurisdictions on a map" className="min-w-0">
           {corpus.geo ? (
             <UsMap
@@ -109,7 +109,7 @@ export function PlacesMap({ home }: { home?: boolean | undefined }) {
               to="/law"
               className="group flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3.5 transition-colors hover:border-primary/25"
             >
-              <span className="rounded-lg bg-[#edf3ef] p-2.5 text-[#526e60]">
+              <span className="rounded-lg bg-[var(--blue-tint)] p-2 text-primary">
                 <BookOpen className="size-4" />
               </span>
               <span className="min-w-0 flex-1">
@@ -124,7 +124,7 @@ export function PlacesMap({ home }: { home?: boolean | undefined }) {
               to="/limitations"
               className="group flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3.5 transition-colors hover:border-primary/25"
             >
-              <span className="rounded-lg bg-[#fbf3e4] p-2.5 text-[#8c6b2e]">
+              <span className="rounded-lg bg-[var(--blue-tint)] p-2 text-primary">
                 <Clock3 className="size-4" />
               </span>
               <span className="min-w-0 flex-1">
@@ -136,25 +136,6 @@ export function PlacesMap({ home }: { home?: boolean | undefined }) {
               <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
             </Link>
           </div>
-          <details className="mt-4 text-[11px] text-muted-foreground">
-            <summary className="cursor-pointer">Map & source coverage</summary>
-            <p className="mt-2 max-w-3xl leading-relaxed">
-              Shading represents directory-source counts, not legal completeness, caseload or
-              population. State membership comes from recorded jurisdiction fields. Geographic
-              illustrations are not government seals.
-              {atlas.status === "ready" && report.sourcesWithoutState > 0
-                ? ` ${report.sourcesWithoutState.toLocaleString()} sources have no recorded state.`
-                : ""}
-            </p>
-            <a
-              href="/visuals/ATTRIBUTION.json"
-              className="mt-2 inline-block underline"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Visual sources & attribution
-            </a>
-          </details>
         </section>
         <aside className="overflow-hidden rounded-xl border border-border bg-surface">
           <div className="border-b border-border p-3.5">
@@ -173,7 +154,7 @@ export function PlacesMap({ home }: { home?: boolean | undefined }) {
               />
             </div>
           </div>
-          <ul className="max-h-[33rem] divide-y divide-border/60 overflow-y-auto">
+          <ul className="max-h-[29rem] divide-y divide-border/60 overflow-y-auto">
             {filtered.map((state) => (
               <li key={state.usps}>
                 <Link
@@ -184,7 +165,7 @@ export function PlacesMap({ home }: { home?: boolean | undefined }) {
                   onMouseLeave={() => setHover(null)}
                   className={`flex items-center gap-2.5 px-3 py-2 transition-colors ${hover === state.usps ? "bg-muted" : "hover:bg-muted/50"}`}
                 >
-                  <StateMark state={state.usps} className="size-8 rounded-lg p-1.5" />
+                  <StateMark state={state.usps} className="size-7 rounded-md p-1" />
                   <span className="min-w-0 flex-1 text-[13px] font-medium">{state.name}</span>
                   <span
                     className="text-[10px] tabular-nums text-muted-foreground"

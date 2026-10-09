@@ -1,0 +1,192 @@
+/* Shared resource workspace: navy contrast, compact rows and accessible motion. */
+.atlas-shell {
+  --background: #e9eff7;
+  --primary: #15385f;
+  --sidebar: #0a1c34;
+  --sidebar-primary: #b3d5ff;
+  --sidebar-accent: #1b395c;
+  --sidebar-ring: #a4caff;
+  --navy: #102d50;
+  --navy-deep: #0b213c;
+  --navy-muted: #d0ddef;
+  --blue-tint: #edf3fb;
+  --map-low: #d6e4f3;
+  --map-high: #527da8;
+  --map-active: #174a7e;
+  --map-focus: #7fb5ec;
+}
+.atlas-shell {
+  background: linear-gradient(140deg, #e5edf8 0%, #f0f4f9 58%, #e4edf7 100%);
+}
+.atlas-header {
+  border-top: 3px solid var(--navy);
+  box-shadow: 0 1px 5px #102d5008;
+}
+.atlas-main {
+  padding: 18px 20px 28px;
+}
+.research-band {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 14px;
+  color: #fff;
+  background: linear-gradient(115deg, var(--navy-deep), var(--navy));
+}
+.research-band h2 {
+  font-family: var(--font-sans);
+}
+.resource-panel {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  box-shadow: 0 2px 8px #102d5005;
+}
+.resource-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 8px 12px;
+  transition: background-color 140ms ease;
+}
+a.resource-row:hover {
+  background: var(--blue-tint);
+}
+a.resource-row:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -3px;
+}
+.resource-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: 1px solid #d4e0ed;
+  border-radius: 7px;
+  background: var(--blue-tint);
+  color: var(--primary);
+}
+.workspace-tabs {
+  display: flex;
+  gap: 3px;
+  overflow-x: auto;
+  padding: 5px;
+  margin-bottom: 14px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+}
+.workspace-tabs button {
+  flex-shrink: 0;
+  min-height: 35px;
+}
+.atlas-map {
+  background: linear-gradient(150deg, #f6f9fd, #e9f0f9);
+}
+.atlas-map svg {
+  display: block;
+  max-height: 460px;
+}
+.atlas-map[data-compact="true"] svg {
+  height: 170px;
+}
+.atlas-map[data-compact="true"] .map-footer {
+  display: none;
+}
+.dense-directory article,
+.dense-directory a[data-directory-row] {
+  min-height: 68px;
+}
+.dense-directory .directory-heading {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+}
+@media (min-width: 1024px) {
+  .atlas-main {
+    padding: 18px 24px 32px;
+  }
+}
+@media (max-width: 639px) {
+  .atlas-main {
+    padding: 12px;
+  }
+  .research-band {
+    padding: 10px 12px;
+  }
+  .resource-row {
+    min-height: 56px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .atlas-shell *,
+  .atlas-shell *::before,
+  .atlas-shell *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+@media print {
+  .atlas-shell {
+    display: block !important;
+    background: #fff !important;
+    color: #111 !important;
+  }
+  .atlas-shell > aside,
+  .atlas-shell > div > nav,
+  .atlas-header form,
+  .atlas-header button {
+    display: none !important;
+  }
+  .atlas-header {
+    border-top: 0;
+    padding: 0 0 12px;
+  }
+  .atlas-main {
+    padding: 0 !important;
+  }
+  [data-testid="guided-calculator"] > header,
+  [data-testid="guided-calculator"] > nav,
+  [data-testid="guided-calculator"] button {
+    display: none !important;
+  }
+  [data-testid="guided-calculator"] > .grid {
+    display: block !important;
+  }
+  [data-testid="guided-calculator"] > .grid > section {
+    display: none !important;
+  }
+  [aria-label="Assessment summary"] {
+    position: static !important;
+  }
+  [aria-label="Assessment summary"] > section:last-child {
+    display: none !important;
+  }
+  [data-testid="guided-result"] {
+    break-inside: avoid;
+    border: 1px solid #888;
+    margin-top: 12px;
+  }
+  [data-testid="statute-text"] {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  .atlas-shell a {
+    color: #111 !important;
+    text-decoration: none;
+  }
+}
+
+.atlas-shell .nav-link[data-status="active"],
+.atlas-shell .nav-link[aria-current="page"] {
+  background: var(--sidebar-accent);
+  box-shadow: inset 3px 0 0 var(--sidebar-primary);
+}

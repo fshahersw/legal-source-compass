@@ -351,17 +351,6 @@ function JudicialEvidence({ reference }: { reference: JudicialReference }) {
   );
 }
 
-function exportJson(value: unknown, name: string) {
-  const url = URL.createObjectURL(
-    new Blob([JSON.stringify(value, null, 2)], { type: "application/json" }),
-  );
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = name;
-  anchor.click();
-  URL.revokeObjectURL(url);
-}
-
 export function LimitationsWorkbench({
   state,
   claim,
@@ -452,13 +441,6 @@ export function LimitationsWorkbench({
         <section className={box}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-xl font-semibold">Coverage by state and DC</h2>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => exportJson(snapshot.coverage, "limitations-all-state-coverage.json")}
-            >
-              Export coverage
-            </Button>
           </div>
           <p className="mt-2 text-sm leading-relaxed">
             Source retrieval and computation are separate. Coverage does not represent a complete

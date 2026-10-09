@@ -34,6 +34,12 @@ function CountyDetail() {
     for (const r of rows) m.set(r.dataset, (m.get(r.dataset) ?? 0) + 1);
     return [...m.entries()].sort((a, b) => b[1] - a[1]);
   }, [rows]);
+  if (!belongs)
+    return (
+      <p role="alert" className="resource-panel p-4 text-sm">
+        This county does not belong to the selected state. Choose a county on the state map.
+      </p>
+    );
   return (
     <div
       className="mt-3 rounded-md border border-border bg-muted/50 p-3 text-[13px]"

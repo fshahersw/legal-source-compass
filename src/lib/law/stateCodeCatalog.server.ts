@@ -278,6 +278,14 @@ async function projectedListings(): Promise<StateCodeListing[]> {
   });
 }
 
+/** State-scoped entry avoids loading unrelated private code snapshots. */
+export async function stateCodeEntry(state: string): Promise<StateCodeListing[]> {
+  if (!stateByUsps.has(state)) throw new Error("Unknown state code.");
+  const projected = (await projectedListings()).filter((row) => row.state === state);
+  if (projected.length) return projected;
+  return (await publishedListings()).filter((row) => row.state === state);
+}
+
 export async function listFullStateCodes(): Promise<StateCodeListing[]> {
   const [published, projected] = await Promise.all([publishedListings(), projectedListings()]);
   return mergeListings([...published, ...projected]);

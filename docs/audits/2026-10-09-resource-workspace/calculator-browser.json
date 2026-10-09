@@ -1,0 +1,17 @@
+{
+  "checkedAt": "2026-10-09T10:10:41.437Z",
+  "checks": [
+    "Unresolved factor withholds date and survives bulk acknowledgement",
+    "Unresolved-only filtering and keyboard focus preserve the blocking factor; search cannot hide a requirement from calculation",
+    "Real California ordinary personal-injury baseline uses the loaded two-year rule",
+    "Reading source material and returning does not erase dates, review or results",
+    "Date change clears prior result and date-specific confirmations",
+    "Reviewed 31-day synthetic suspension retains the original baseline and labels the scenario conditional",
+    "Printing re-evaluates the current assessment and retains its dates, source version and legal qualifications without JSON download clutter",
+    "An expressly entered 10-day suspension maximum reduces the earlier 31-day scenario without changing the original baseline",
+    "390px mobile layout has no horizontal page overflow"
+  ],
+  "errors": [],
+  "accessibilityViolations": [],
+  "caseData": "Synthetic browser regression scenario; real hash-verified legal release .8"
+}

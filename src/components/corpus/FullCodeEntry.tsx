@@ -1,131 +1,134 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowUpRight, BookOpen, CircleAlert } from "lucide-react";
-import { getStateCodeCoverage, listStateCodes } from "@/lib/law/stateCode.functions";
-import { showRecorded } from "@/lib/law/stateCodeContract";
+import { ArrowUpRight, BookOpen } from "lucide-react";
+import { getStateCodeCoverage, getStateCodeEntry } from "@/lib/law/stateCode.functions";
+import { loadStateLawDirectory } from "@/lib/corpus/lawSources";
+import { safeResourceHref } from "@/lib/corpus/resourcePresentation";
 
-/** Shows the actual source-review state; an imported collection is not automatically published. */
+/** Compact reader entry. Importing data never implies publication or legal currency. */
 export function FullCodeEntry({ state }: { state: string }) {
-  const read = useServerFn(listStateCodes),
+  const usps = state.toUpperCase();
+  const read = useServerFn(getStateCodeEntry),
     readCoverage = useServerFn(getStateCodeCoverage);
   const query = useQuery({
-    queryKey: ["full-state-codes"],
-    queryFn: () => read(),
-    staleTime: 30_000,
+    queryKey: ["state-code-entry", usps],
+    queryFn: () => read({ data: { state: usps } }),
+    staleTime: 60_000,
   });
-  const rows = (query.data ?? []).filter((r) => r.state === state.toUpperCase());
+  const rows = query.data ?? [];
+  const needFallback = !query.isPending && !query.error && !rows.length;
   const coverage = useQuery({
     queryKey: ["state-code-coverage"],
     queryFn: () => readCoverage(),
-    staleTime: 30_000,
-    enabled: !query.isPending && !query.error && rows.length === 0,
+    enabled: needFallback,
+    staleTime: 60_000,
   });
-  const intake = coverage.data?.find((r) => r.state === state.toUpperCase());
+  const directory = useQuery({
+    queryKey: ["state-law-directory"],
+    queryFn: loadStateLawDirectory,
+    enabled: needFallback,
+    staleTime: 300_000,
+  });
+  const intake = coverage.data?.find((r) => r.state === usps);
+  const publisher = directory.data?.find((r) => r.code === usps)?.codeLink;
+  const publisherHref = safeResourceHref(publisher?.url);
   const error = query.error || coverage.error;
-  const loading = query.isPending || (!rows.length && coverage.isFetching);
   return (
-    <section className="rounded-xl border border-border bg-surface p-5" aria-label="Full code">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="flex items-center gap-2 text-sm font-semibold">
-          <BookOpen className="size-4 text-primary" />
+    <section className="resource-panel" aria-label="Full code">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-[var(--blue-tint)] px-3 py-2.5">
+        <h2 className="flex items-center gap-2 font-sans text-sm font-semibold text-primary">
+          <BookOpen className="size-4" aria-hidden />
           State statutes
         </h2>
-        <span
-          className={`rounded-full px-2.5 py-1 text-[10px] font-medium ${rows.length ? "bg-[#edf4ee] text-[#3e6851]" : "bg-muted text-muted-foreground"}`}
-        >
-          {loading
-            ? "Checking…"
+        <span className="text-[11px] font-medium text-muted-foreground">
+          {query.isPending
+            ? "Loading…"
             : error
               ? "Status unavailable"
               : rows.length
-                ? "Published source collection"
+                ? "Read in the workspace"
                 : intake?.status === "landed-private"
-                  ? "Import awaiting review"
-                  : "Not yet published"}
+                  ? "Local copy pending review"
+                  : "Publisher access"}
         </span>
       </div>
-      {loading ? (
-        <p role="status" className="mt-3 text-xs text-muted-foreground">
-          Loading this state’s statutory sources…
+      {query.isPending ? (
+        <p role="status" className="px-3 py-4 text-xs text-muted-foreground">
+          Loading statutes…
         </p>
       ) : null}
       {error ? (
-        <div role="alert" className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-          <CircleAlert className="size-4" />
-          <span>Source status could not be loaded.</span>
+        <div role="alert" className="flex items-center justify-between gap-3 p-3 text-xs">
+          <span>Statute availability could not be checked.</span>
           <button
             type="button"
-            className="underline"
+            className="font-medium underline"
             onClick={() => {
               void query.refetch();
-              void coverage.refetch();
+              if (needFallback) void coverage.refetch();
             }}
           >
             Retry
           </button>
         </div>
       ) : null}
-      {!loading && !error && !rows.length ? (
-        <div className="mt-3">
-          <p className="text-sm leading-relaxed text-muted-foreground">
+      {!query.isPending && !error && !rows.length ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-3">
+          <p className="text-xs text-muted-foreground">
             {intake?.status === "landed-private"
-              ? `${intake.sections == null ? "The captured statutes" : intake.sections.toLocaleString() + " imported sections"} remain private until source review is complete.`
-              : "A reviewed statute collection is not available here yet. The source directory still provides recorded research links."}
+              ? "The local copy is awaiting source review."
+              : "A reviewed local copy is not available yet."}
           </p>
-          {intake ? (
-            <details className="mt-3 text-xs text-muted-foreground">
-              <summary className="cursor-pointer">Capture & review details</summary>
-              <dl className="mt-2 grid gap-1.5">
-                <div>
-                  <dt className="inline font-medium">Publisher: </dt>
-                  <dd className="inline">{showRecorded(intake.publisher)}</dd>
-                </div>
-                <div>
-                  <dt className="inline font-medium">Edition: </dt>
-                  <dd className="inline">{showRecorded(intake.edition)}</dd>
-                </div>
-                <div>
-                  <dt className="inline font-medium">Currency: </dt>
-                  <dd className="inline">{showRecorded(intake.currency)}</dd>
-                </div>
-                <div>
-                  <dt className="inline font-medium">Review: </dt>
-                  <dd className="inline">{showRecorded(intake.reviewStatus)}</dd>
-                </div>
-              </dl>
-            </details>
+          {publisherHref ? (
+            <a
+              href={publisherHref}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-3 py-2 text-xs font-medium text-primary"
+            >
+              Open publisher
+              <ArrowUpRight className="size-3.5" />
+            </a>
+          ) : directory.isFetching ? (
+            <span role="status" className="text-xs text-muted-foreground">
+              Finding publisher…
+            </span>
           ) : null}
         </div>
       ) : null}
       {rows.map((row) => (
-        <div key={`${row.kind}-${row.datasetId ?? row.state}`} className="mt-4">
+        <div key={`${row.kind}-${row.datasetId ?? row.state}`}>
           <Link
             to="/law/codes/$state"
             params={{ state: row.state }}
             search={{ q: "" }}
-            className="group flex items-center justify-between gap-3 rounded-lg border border-border bg-background/60 px-3.5 py-3"
+            className="resource-row"
           >
-            <span>
-              <span className="block text-sm font-medium group-hover:text-primary">
-                {row.codeName}
-              </span>
-              <span className="mt-1 block text-xs text-muted-foreground">
+            <span className="resource-icon">
+              <BookOpen className="size-4" aria-hidden />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[13px] font-semibold">{row.codeName}</span>
+              <span className="mt-0.5 block text-[11px] text-muted-foreground">
                 {row.sectionCount == null
-                  ? "Section count not recorded"
-                  : `${row.sectionCount.toLocaleString()} captured sections`}
+                  ? "Browse titles and sections"
+                  : `${row.sectionCount.toLocaleString()} sections · browse or search`}
               </span>
             </span>
-            <ArrowUpRight className="size-4 shrink-0 text-muted-foreground" />
+            <ArrowUpRight className="size-4 text-primary" />
           </Link>
-          <details className="mt-3 text-xs text-muted-foreground">
-            <summary className="cursor-pointer">Edition & currency</summary>
-            <p className="mt-2 leading-relaxed">
-              Edition: {showRecorded(row.edition)}. Currency: {showRecorded(row.currency)}.
-              Publication of this source collection is not a certification of every legal issue or
-              deadline.
-            </p>
-          </details>
+          {row.edition || row.currency ? (
+            <details className="border-t border-border/60 px-3 py-2 text-[11px] text-muted-foreground">
+              <summary className="cursor-pointer">Source version</summary>
+              <p className="mt-1.5 leading-relaxed">
+                {row.edition ? `Edition: ${row.edition}. ` : ""}
+                {row.currency
+                  ? `Currency: ${row.currency}.`
+                  : "The compilation-through date is not established."}
+              </p>
+            </details>
+          ) : null}
         </div>
       ))}
     </section>

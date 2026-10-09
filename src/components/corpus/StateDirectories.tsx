@@ -95,10 +95,13 @@ export function StateCourtDirectory({ state, search, onSearch }: Props) {
     onSearch(value);
   };
   return (
-    <section aria-label={`${canonicalState(state)?.name} courts`} className="space-y-4">
+    <section
+      aria-label={`${canonicalState(state)?.name} courts`}
+      className="dense-directory resource-panel space-y-3 p-3.5"
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-display text-xl">Courts in {canonicalState(state)?.name}</h2>
+          <h2 className="directory-heading">Courts in {canonicalState(state)?.name}</h2>
           <p className="mt-1 text-xs text-muted-foreground">
             Court profiles with an explicitly recorded state location.
           </p>
@@ -146,11 +149,11 @@ export function StateCourtDirectory({ state, search, onSearch }: Props) {
         />
       ) : (
         <>
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid gap-2 md:grid-cols-2">
             {rows.slice(current * 24, (current + 1) * 24).map((court) => (
               <article
                 key={court.id}
-                className="group flex items-center gap-3 rounded-xl border border-border bg-surface p-4 transition-colors hover:border-primary/30 hover:bg-muted/20"
+                className="group flex items-center gap-3 rounded-lg border border-border bg-surface p-3 transition-colors hover:border-primary/30 hover:bg-muted/20"
               >
                 <CourtArtwork
                   courtId={court.id}
@@ -165,7 +168,7 @@ export function StateCourtDirectory({ state, search, onSearch }: Props) {
                   className="min-w-0 flex-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <span className="block text-sm font-semibold leading-snug">{court.title}</span>
-                  <span className="mt-1.5 block text-xs text-muted-foreground">
+                  <span className="mt-0.5 block text-xs text-muted-foreground">
                     {court.type} · {court.system}
                   </span>
                 </Link>
@@ -210,10 +213,13 @@ export function StateJudgeDirectory({ state, search, onSearch }: Props) {
     onSearch(value);
   };
   return (
-    <section aria-label={`${canonicalState(state)?.name} judges`} className="space-y-4">
+    <section
+      aria-label={`${canonicalState(state)?.name} judges`}
+      className="dense-directory resource-panel space-y-3 p-3.5"
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-display text-xl">
+          <h2 className="directory-heading">
             Judges associated with {canonicalState(state)?.name}
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -273,21 +279,21 @@ export function StateJudgeDirectory({ state, search, onSearch }: Props) {
         />
       ) : (
         <>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {rows.slice(current * 24, (current + 1) * 24).map((judge) => (
               <Link
                 key={judge.id}
                 to="/judges/$id"
                 params={{ id: judge.id }}
-                className="group flex gap-3 rounded-xl border border-border bg-surface p-4 transition-colors hover:border-primary/30 hover:bg-muted/20"
+                className="group flex gap-3 rounded-lg border border-border bg-surface p-3 transition-colors hover:border-primary/30 hover:bg-muted/20"
               >
                 <JudgePortrait name={judge.name} photo={judge.photo} />
                 <span className="min-w-0">
                   <span className="block text-sm font-semibold leading-snug">{judge.name}</span>
-                  <span className="mt-1.5 line-clamp-2 block text-xs leading-relaxed text-muted-foreground">
+                  <span className="mt-1 line-clamp-2 block text-xs leading-relaxed text-muted-foreground">
                     {judge.courts.join(" · ") || "Court not recorded"}
                   </span>
-                  <span className="mt-2 block text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <span className="mt-1 block text-[10px] text-muted-foreground">
                     {judge.systems.join(" / ") || "System not recorded"} · Profile
                   </span>
                 </span>

@@ -10,7 +10,7 @@ import { ProjectionCodeBrowser } from "@/components/corpus/ProjectionCodeBrowser
 import { TexasCodeBrowser } from "@/components/corpus/TexasCodeBrowser";
 import { pageHead } from "@/lib/corpus/head";
 import { stateByUsps } from "@/lib/corpus/geo";
-import { listStateCodes } from "@/lib/law/stateCode.functions";
+import { getStateCodeEntry } from "@/lib/law/stateCode.functions";
 import { parseHierarchyPath, type HierarchyStep } from "@/lib/law/stateCodeContract";
 
 type CodeSearch = {
@@ -58,11 +58,12 @@ function StateCodePage() {
   const navigate = useNavigate({ from: "/law/codes/$state" });
   const usps = state.toUpperCase();
   const place = stateByUsps.get(usps);
-  const listFn = useServerFn(listStateCodes);
+  const listFn = useServerFn(getStateCodeEntry);
   const codes = useQuery({
-    queryKey: ["full-state-codes"],
-    queryFn: () => listFn(),
-    staleTime: 0,
+    queryKey: ["state-code-entry", usps],
+    queryFn: () => listFn({ data: { state: usps } }),
+    staleTime: 60_000,
+    enabled: !!place,
   });
   const listing = codes.data?.find((row) => row.state === usps);
   const crumbs = [

@@ -99,6 +99,7 @@ export function CourtArtwork({
     return (
       <span
         className="grid size-9 shrink-0 place-items-center rounded-md border border-border bg-muted text-muted-foreground"
+        role="img"
         title={`Court type · ${courtTypeLabels[group]}`}
         aria-label={`Court type: ${courtTypeLabels[group]}`}
       >

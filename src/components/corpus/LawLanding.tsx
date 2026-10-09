@@ -1,133 +1,174 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, BookOpen, Building2, Clock3, LibraryBig, MapPin } from "lucide-react";
-import { AgencyMark } from "./EntityArtwork";
+import { ArrowRight, BookOpen, Building2, Clock3, FileText, LibraryBig, Scale } from "lucide-react";
+import { AgencyMark, StateMark } from "./EntityArtwork";
+import { STATES } from "@/lib/corpus/geo";
 
+const federal = [
+  {
+    group: "statutes",
+    title: "Federal statutes",
+    description: "United States Code and statutory materials",
+    icon: LibraryBig,
+  },
+  {
+    group: "regulations",
+    title: "Federal regulations",
+    description: "Codified agency rules and regulations",
+    icon: Scale,
+  },
+  {
+    group: "register",
+    title: "Federal Register",
+    description: "Published rules, notices and proposals",
+    icon: FileText,
+  },
+  {
+    group: "notices",
+    title: "Agency notices",
+    description: "Administrative notices and actions",
+    icon: Building2,
+  },
+];
+const agencies = [
+  { name: "Food and Drug Administration", short: "FDA", subject: "Food, drugs & devices" },
+  { name: "Environmental Protection Agency", short: "EPA", subject: "Environmental rules" },
+  { name: "Securities and Exchange Commission", short: "SEC", subject: "Securities & markets" },
+  { name: "Consumer Product Safety Commission", short: "CPSC", subject: "Consumer safety" },
+  { name: "Federal Trade Commission", short: "FTC", subject: "Consumer protection" },
+  { name: "Labor Department", short: "Labor", subject: "Workplace regulation" },
+  { name: "Justice Department", short: "Justice", subject: "Federal legal resources" },
+  { name: "Transportation Department", short: "Transport", subject: "Transportation rules" },
+];
 export function LawLanding() {
   return (
-    <div className="space-y-7">
-      <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr]">
-        <Link
-          to="/law"
-          search={{ scope: "federal" }}
-          className="group relative overflow-hidden rounded-2xl border border-border bg-[#f1f4f0] p-6 sm:p-7"
-        >
-          <span className="inline-flex rounded-xl border border-white/80 bg-white/75 p-3 text-[#51695c]">
-            <LibraryBig className="size-7" strokeWidth={1.5} />
-          </span>
-          <span className="mt-5 block text-[10px] font-semibold uppercase tracking-[0.17em] text-[#637769]">
-            National jurisdiction
-          </span>
-          <span className="mt-2 block font-display text-2xl text-foreground">
-            Federal law & regulation
-          </span>
-          <span className="mt-2 block max-w-md text-sm leading-relaxed text-muted-foreground">
-            Move from statutes to regulations, notices and the agencies behind them.
-          </span>
-          <span className="mt-6 inline-flex items-center gap-2 text-xs font-semibold">
-            Explore federal collections
-            <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
-          </span>
-        </Link>
-        <div className="grid gap-3">
+    <div className="space-y-4">
+      <section className="resource-panel" aria-label="Browse legal authorities">
+        <div className="research-band">
+          <h2 className="flex items-center gap-2 text-sm font-semibold">
+            <BookOpen className="size-4" />
+            Law & regulation
+          </h2>
           <Link
-            to="/"
-            className="group flex items-center gap-4 rounded-xl border border-border bg-surface p-5"
+            to="/law"
+            search={{ view: "list" }}
+            className="text-xs text-[var(--navy-muted)] hover:text-white hover:underline"
           >
-            <span className="rounded-xl bg-[#eef3ef] p-3 text-[#566e60]">
-              <MapPin className="size-6" strokeWidth={1.5} />
-            </span>
-            <span className="flex-1">
-              <span className="block font-display text-xl">State law, in context</span>
-              <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-                The source code, courts and judges for each state.
-              </span>
-            </span>
-            <ArrowRight className="size-4 text-muted-foreground" />
+            All collections →
           </Link>
+        </div>
+        <div className="grid gap-px bg-border md:grid-cols-2 xl:grid-cols-3">
+          {federal.map(({ group, title, description, icon: Icon }) => (
+            <Link
+              key={group}
+              to="/law"
+              search={{ scope: "federal", group }}
+              className="group flex min-h-24 items-center gap-3 bg-surface p-4 transition-colors hover:bg-[var(--blue-tint)]"
+            >
+              <span className="resource-icon !size-10">
+                <Icon className="size-5" strokeWidth={1.65} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold">{title}</span>
+                <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                  {description}
+                </span>
+              </span>
+              <ArrowRight className="size-3.5 text-muted-foreground" />
+            </Link>
+          ))}
           <Link
             to="/law/codes"
             search={{ q: "" }}
-            className="group flex items-center gap-4 rounded-xl border border-border bg-surface p-5"
+            className="flex min-h-24 items-center gap-3 bg-surface p-4 hover:bg-[var(--blue-tint)]"
           >
-            <span className="rounded-xl bg-[#f5f1e9] p-3 text-[#8c7043]">
-              <BookOpen className="size-6" strokeWidth={1.5} />
+            <span className="resource-icon !size-10">
+              <BookOpen className="size-5" />
             </span>
-            <span className="flex-1">
-              <span className="block font-display text-xl">Read state statutes</span>
-              <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-                Browse captured chapters, sections and source versions.
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold">State statutes</span>
+              <span className="mt-1 block text-xs text-muted-foreground">
+                Read titles, chapters and sections
               </span>
             </span>
-            <ArrowRight className="size-4 text-muted-foreground" />
+            <ArrowRight className="size-3.5 text-muted-foreground" />
           </Link>
           <Link
             to="/limitations"
-            className="group flex items-center gap-4 rounded-xl border border-border bg-surface p-5"
+            className="flex min-h-24 items-center gap-3 bg-surface p-4 hover:bg-[var(--blue-tint)]"
           >
-            <span className="rounded-xl bg-muted p-3 text-primary">
-              <Clock3 className="size-6" strokeWidth={1.5} />
+            <span className="resource-icon !size-10">
+              <Clock3 className="size-5" />
             </span>
-            <span className="flex-1">
-              <span className="block font-display text-xl">Assess time limits</span>
-              <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-                Guided facts, cited rules and case-specific review.
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold">Deadline assessment</span>
+              <span className="mt-1 block text-xs text-muted-foreground">
+                Cited rules and case-specific exceptions
               </span>
             </span>
-            <ArrowRight className="size-4 text-muted-foreground" />
+            <ArrowRight className="size-3.5 text-muted-foreground" />
           </Link>
         </div>
-      </div>
-      <section className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="flex items-center gap-2 font-display text-xl">
-              <Building2 className="size-5 text-muted-foreground" />
-              Regulatory agencies
-            </h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Explore the organizations behind the recorded rules and notices.
-            </p>
-          </div>
+      </section>
+      <section className="resource-panel" aria-label="Agency shortcuts">
+        <div className="research-band">
+          <h2 className="flex items-center gap-2 text-sm font-semibold">
+            <Building2 className="size-4" />
+            Regulatory agencies
+          </h2>
           <Link
             to="/agencies"
-            className="inline-flex items-center gap-2 text-xs font-semibold text-primary hover:underline"
+            className="text-xs text-[var(--navy-muted)] hover:text-white hover:underline"
           >
-            Agency directory
-            <ArrowRight className="size-4" />
+            All agencies →
           </Link>
         </div>
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {[
-            { name: "Food and Drug Administration", label: "Food & drugs" },
-            { name: "Environmental Protection Agency", label: "Environmental regulation" },
-            { name: "Securities and Exchange Commission", label: "Securities & markets" },
-            { name: "Consumer Product Safety Commission", label: "Consumer safety" },
-          ].map((a) => (
+        <div className="grid gap-px bg-border sm:grid-cols-2 xl:grid-cols-4">
+          {agencies.map((a) => (
             <Link
               key={a.name}
               to="/agencies"
               search={{ q: a.name }}
-              className="flex items-center gap-3 rounded-xl border border-border/70 bg-background/40 p-3 transition-colors hover:bg-muted/40"
+              className="flex items-center gap-3 bg-surface px-3 py-3 transition-colors hover:bg-[var(--blue-tint)]"
             >
-              <AgencyMark name={a.name} className="size-11" />
-              <span className="min-w-0">
-                <span className="block text-xs font-semibold">{a.name}</span>
-                <span className="mt-1 block text-[10px] text-muted-foreground">{a.label}</span>
+              <AgencyMark name={a.name} className="!size-10 !rounded-md !p-1.5" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-[13px] font-semibold">{a.short}</span>
+                <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                  {a.subject}
+                </span>
               </span>
+              <ArrowRight className="size-3 text-muted-foreground" />
             </Link>
           ))}
         </div>
       </section>
-      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-        <span>Collection availability and source currency are shown where you open a record.</span>
-        <Link
-          to="/law"
-          search={{ view: "list" }}
-          className="font-medium hover:text-foreground hover:underline"
-        >
-          Browse all law datasets →
-        </Link>
-      </div>
+      <section className="resource-panel" aria-label="State law shortcuts">
+        <div className="research-band">
+          <h2 className="text-sm font-semibold">State law & court rules</h2>
+          <Link
+            to="/"
+            className="text-xs text-[var(--navy-muted)] hover:text-white hover:underline"
+          >
+            Open map →
+          </Link>
+        </div>
+        <div className="grid gap-px bg-border/60 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+          {[...STATES]
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((state) => (
+              <Link
+                key={state.usps}
+                to="/places/$state"
+                params={{ state: state.usps }}
+                search={{ tab: "sources" }}
+                className="flex min-h-11 items-center gap-2 bg-surface px-2.5 py-1.5 text-[12px] font-medium hover:bg-[var(--blue-tint)]"
+              >
+                <StateMark state={state.usps} className="!size-7 !rounded-md !p-1" />
+                <span className="min-w-0 truncate">{state.name}</span>
+              </Link>
+            ))}
+        </div>
+      </section>
     </div>
   );
 }

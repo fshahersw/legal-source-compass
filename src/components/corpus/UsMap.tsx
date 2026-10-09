@@ -1,5 +1,5 @@
 import { useId, useMemo, useState } from "react";
-import { Layers3, RotateCcw } from "lucide-react";
+import { Layers3 } from "lucide-react";
 import { bboxOfPath, type GeoData } from "@/lib/corpus/geo";
 import { canonicalState, stateFromGeometry } from "@/lib/corpus/stateHub";
 
@@ -13,9 +13,9 @@ type Props = {
   selectedCounty?: string | undefined;
   selectedState?: string | undefined;
   onHoverState?: (usps: string | null) => void;
+  compact?: boolean;
 };
-
-/** Canonical FIPS identities; keyboard and pointer interactions share the same target. */
+/** Source geometry retains canonical FIPS identity. Display intensity never represents legal completeness. */
 export function UsMap({
   geo,
   values,
@@ -26,6 +26,7 @@ export function UsMap({
   selectedCounty,
   selectedState,
   onHoverState,
+  compact = false,
 }: Props) {
   const [hover, setHover] = useState<{
     id: string;
@@ -45,15 +46,15 @@ export function UsMap({
     if (!shape) return "0 0 975 610";
     const [x0, y0, x1, y1] = bboxOfPath(shape.d);
     if (![x0, y0, x1, y1].every(Number.isFinite) || x1 <= x0 || y1 <= y0) return "0 0 975 610";
-    const pad = Math.max(x1 - x0, y1 - y0) * 0.075;
+    const pad = Math.max(x1 - x0, y1 - y0) * 0.06;
     return `${x0 - pad} ${y0 - pad} ${x1 - x0 + 2 * pad} ${y1 - y0 + 2 * pad}`;
   }, [geo, state]);
-  const fill = (value: number | undefined, active: boolean) =>
+  const fill = (v: number | undefined, active: boolean) =>
     active
-      ? "var(--primary)"
-      : value == null
-        ? "#e9e9e5"
-        : `hsl(164 15% ${89 - 27 * Math.sqrt(Math.max(0, value) / max)}%)`;
+      ? "var(--map-active)"
+      : v == null || !Number.isFinite(v)
+        ? "var(--map-low)"
+        : `color-mix(in srgb,var(--map-high) ${Math.round(12 + 78 * Math.sqrt(Math.max(0, v) / max))}%,var(--map-low))`;
   function focus(id: string, name: string, value: number | undefined, usps?: string) {
     setHover({ id, name, value });
     if (usps) onHoverState?.(usps);
@@ -62,48 +63,39 @@ export function UsMap({
     setHover(null);
     onHoverState?.(null);
   }
-  const keyboard = (event: React.KeyboardEvent, activate: () => void) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
+  function keyboard(e: React.KeyboardEvent, activate: () => void) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
       activate();
     }
-  };
+  }
   return (
     <div
-      className="relative isolate overflow-hidden rounded-xl border border-border/60 bg-[#fafaf7]"
+      className="atlas-map relative isolate overflow-hidden rounded-lg border border-border"
       data-testid="geography-map"
+      data-compact={compact}
     >
-      <div
-        className="pointer-events-none absolute inset-0 -z-10 opacity-70"
-        style={{
-          backgroundImage: "radial-gradient(#d6dcd7 0.7px, transparent 0.7px)",
-          backgroundSize: "14px 14px",
-        }}
-      />
-      <div className="flex items-center justify-between gap-2 px-4 pt-3">
-        <span
-          id={headingId}
-          className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground"
-        >
-          {state ? state.name + " counties" : "United States · 50 states + D.C."}
+      <div className="research-band !py-2.5">
+        <span id={headingId} className="text-xs font-medium">
+          {state ? `${state.name} counties` : "Explore the United States"}
         </span>
         {!state ? (
           <button
             type="button"
             onClick={() => setBoundaries((v) => !v)}
             aria-pressed={boundaries}
-            className="flex items-center gap-1.5 rounded-md border border-border bg-surface/90 px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
+            className="flex items-center gap-1.5 rounded border border-white/30 px-2 py-1 text-[11px] text-white hover:bg-white/10"
           >
-            <Layers3 className="size-3.5" />
+            <Layers3 className="size-3.5" aria-hidden />
             County boundaries
           </button>
         ) : (
-          <span className="text-[11px] text-muted-foreground">{counties.length} mapped areas</span>
+          <span className="text-[11px] text-[var(--navy-muted)]">{counties.length} areas</span>
         )}
       </div>
       <svg
         viewBox={viewBox}
-        className={`w-full p-3 ${state ? "h-72 sm:h-80" : "h-auto min-h-56"}`}
+        className={`w-full p-3 ${state ? "h-72 sm:h-80" : "h-auto min-h-52"}`}
         role="group"
         aria-labelledby={headingId}
       >
@@ -119,13 +111,13 @@ export function UsMap({
                 role={onCounty ? "button" : undefined}
                 tabIndex={onCounty ? 0 : undefined}
                 aria-label={`${c.name}, ${state.name}${value == null ? "" : `, ${value.toLocaleString()} ${valueLabel}`}`}
-                aria-pressed={selectedCounty === c.id}
-                className="outline-none transition-[fill,stroke] duration-150 focus:stroke-amber-600"
+                aria-pressed={onCounty ? selectedCounty === c.id : undefined}
+                className="outline-none transition-[fill,stroke] duration-150"
                 vectorEffect="non-scaling-stroke"
                 style={{
                   fill: fill(value, active),
-                  stroke: active ? "#a07b32" : "#ffffff",
-                  strokeWidth: active ? 1.8 : 0.65,
+                  stroke: active ? "var(--map-focus)" : "#ffffff",
+                  strokeWidth: active ? 2 : 0.7,
                   cursor: onCounty ? "pointer" : "default",
                 }}
                 onMouseEnter={() => focus(c.id, c.name, value)}
@@ -155,13 +147,13 @@ export function UsMap({
                   role={onState ? "button" : undefined}
                   tabIndex={onState ? 0 : undefined}
                   aria-label={`Open ${identity.name}`}
-                  aria-pressed={selectedState === identity.usps}
-                  className="outline-none transition-[fill,stroke] duration-150 focus:stroke-amber-600"
+                  aria-pressed={onState ? selectedState === identity.usps : undefined}
+                  className="outline-none transition-[fill,stroke] duration-150"
                   vectorEffect="non-scaling-stroke"
                   style={{
                     fill: fill(value, active),
-                    stroke: active ? "#a07b32" : "#ffffff",
-                    strokeWidth: active ? 2 : 0.9,
+                    stroke: active ? "var(--map-focus)" : "#ffffff",
+                    strokeWidth: active ? 2.2 : 0.9,
                     cursor: onState ? "pointer" : "default",
                   }}
                   onMouseEnter={() => focus(identity.fips, identity.name, value, identity.usps)}
@@ -185,40 +177,35 @@ export function UsMap({
           </>
         )}
       </svg>
-      <div className="flex min-h-12 flex-wrap items-center justify-between gap-2 border-t border-border/50 bg-surface/80 px-4 py-2.5 text-xs">
+      <div className="map-footer flex min-h-10 flex-wrap items-center justify-between gap-2 border-t border-border bg-surface/80 px-3 py-2 text-[11px]">
         <div aria-live="polite" aria-atomic="true">
           {hover ? (
             <>
               <span className="font-semibold">{hover.name}</span>
-              <span className="ml-2 text-muted-foreground">
-                {hover.value == null
-                  ? "Count not recorded"
-                  : `${hover.value.toLocaleString()} ${valueLabel}`}
-              </span>
+              {hover.value != null ? (
+                <span className="ml-2 text-muted-foreground">
+                  {hover.value.toLocaleString()} {valueLabel}
+                </span>
+              ) : null}
             </>
           ) : (
             <span className="text-muted-foreground">
-              Choose a {state ? "county" : "state"} on the map or use the searchable list.
+              Select a {state ? "county" : "state"} to open its resources.
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+        {values.size > 0 ? (
           <span
-            className="h-2 w-14 rounded-full"
-            style={{ background: "linear-gradient(90deg,hsl(164 15% 89%),hsl(164 15% 62%))" }}
-          />
-          Directory records
-          {boundaries ? (
-            <button
-              type="button"
-              aria-label="Reset map layers"
-              onClick={() => setBoundaries(false)}
-              className="ml-1 rounded p-1 hover:bg-muted"
-            >
-              <RotateCcw className="size-3" />
-            </button>
-          ) : null}
-        </div>
+            className="flex items-center gap-2 text-muted-foreground"
+            title="Shading represents recorded resource counts, not completeness or caseload."
+          >
+            <span
+              className="h-1.5 w-14 rounded-full"
+              style={{ background: "linear-gradient(90deg,var(--map-low),var(--map-high))" }}
+            />
+            {valueLabel}
+          </span>
+        ) : null}
       </div>
     </div>
   );

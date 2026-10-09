@@ -29,7 +29,7 @@ export function StateMark({ state, className }: { state: string; className?: str
   return (
     <span
       className={cn(
-        "inline-flex size-11 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-[#f1f4ef] p-2",
+        "inline-flex size-11 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-[var(--blue-tint)] p-2",
         className,
       )}
       title={
@@ -57,7 +57,7 @@ export function AgencyMark({ name, className }: { name: string; className?: stri
   return (
     <span
       className={cn(
-        "inline-flex size-12 shrink-0 items-center justify-center rounded-xl border border-border bg-white p-2",
+        "inline-flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-white p-1.5",
         className,
       )}
       title={asset ? `${name} · GSA image repository; no endorsement implied` : name}
@@ -96,7 +96,7 @@ export function JudgePortrait({
   return (
     <span
       className={cn(
-        "inline-flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-muted",
+        "inline-flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-muted",
         className,
       )}
     >

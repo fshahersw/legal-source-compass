@@ -47,7 +47,7 @@ if (process.env.ATLAS_VERIFY_BUNDLE_ORIGIN) {
 }
 try {
   await page.goto(base + "/", { waitUntil: "domcontentloaded", timeout: 60000 });
-  await page.getByRole("heading", { name: "A clearer view of the law", exact: true }).waitFor();
+  await page.getByRole("heading", { name: "State research atlas", exact: true }).waitFor();
   const sidebar = page.locator("aside").first();
   for (const name of ["States & courts", "Law & regulation", "Time limits", "Sources"])
     assert(await sidebar.getByRole("link", { name, exact: true }).count());

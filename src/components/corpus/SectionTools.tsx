@@ -19,7 +19,10 @@ function useCopy(): [string | null, (key: string, value: string) => void] {
   return [
     copied,
     (key, value) => {
-      void navigator.clipboard.writeText(value).then(() => setCopied(key));
+      void navigator.clipboard
+        .writeText(value)
+        .then(() => setCopied(key))
+        .catch(() => setCopied("failed"));
     },
   ];
 }
@@ -42,7 +45,12 @@ export function SectionTools({
     setHref(window.location.href);
   }, [nativeId, fields.citation]);
   return (
-    <div className="space-y-3" data-testid="section-tools">
+    <div className="space-y-2" data-testid="section-tools">
+      {copied === "failed" ? (
+        <p role="alert" className="text-xs text-destructive">
+          Copy failed. Select the citation or text and copy it manually.
+        </p>
+      ) : null}
       <div className="flex flex-wrap items-center gap-2">
         {fields.sourceUrl ? (
           <Button asChild size="sm">
@@ -70,15 +78,6 @@ export function SectionTools({
             {copied === "link" ? "Copied" : "Copy link"}
           </Button>
         ) : null}
-        <span className="text-xs text-muted-foreground">
-          {fields.text && fields.sourceUrl
-            ? "Text as published · official page linked"
-            : fields.text
-              ? "Text as published · no source link recorded"
-              : fields.sourceUrl
-                ? "No stored text — open the official page"
-                : ""}
-        </span>
       </div>
       {nativeId ? <RelatedTimeLimits state={state} nativeId={nativeId} /> : null}
     </div>
@@ -111,12 +110,16 @@ function RelatedTimeLimits({ state, nativeId }: { state: string; nativeId: strin
         <Scale className="size-4" aria-hidden />
         Time limits citing this section
         <span className="font-normal text-muted-foreground">
-          · {rules.length} {rules.length === 1 ? "rule" : "rules"} · release {query.data?.ruleVersion}
+          · {rules.length} {rules.length === 1 ? "rule" : "rules"} · release{" "}
+          {query.data?.ruleVersion}
         </span>
       </h4>
       <ul className="mt-2 divide-y divide-border">
         {rules.map((rule) => (
-          <li key={rule.ruleId} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-1.5 text-sm">
+          <li
+            key={rule.ruleId}
+            className="flex flex-wrap items-baseline gap-x-3 gap-y-1 py-1.5 text-sm"
+          >
             <Link
               to="/limitations"
               search={{ state, claim: rule.claimType as ClaimType, view: "calculator" }}

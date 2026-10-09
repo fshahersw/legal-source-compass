@@ -24,18 +24,18 @@ export const Route = createFileRoute("/agencies/")({
 });
 function AgencyCards({ rows }: { rows: Agency[] }) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
       {rows.map((agency) => (
         <Link
           key={agency.id}
           to="/agencies/$id"
           params={{ id: agency.id }}
-          className="group flex items-start gap-3.5 rounded-xl border border-border bg-surface p-4 transition-colors hover:border-primary/30 hover:bg-muted/20"
+          className="group flex min-h-20 items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2.5 transition-colors hover:border-primary/30 hover:bg-muted/20"
         >
           <AgencyMark name={agency.name} />
           <span className="min-w-0 flex-1">
             <span className="block text-sm font-semibold leading-snug">{agency.name}</span>
-            <span className="mt-2 block text-[11px] text-muted-foreground">
+            <span className="mt-1 block text-[11px] text-muted-foreground">
               {agency.count == null
                 ? "Document count not recorded"
                 : `${agency.count.toLocaleString()} recorded documents`}
@@ -71,7 +71,7 @@ function AgenciesPage() {
       title="Federal agencies"
       description="Find a department, explore its rules, and follow the source documents."
     >
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div className="relative w-full max-w-lg">
           <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
           <Input
@@ -103,16 +103,20 @@ function AgenciesPage() {
           </Button>
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-4">
           {groups.departments.length ? (
             <section>
-              <h2 className="mb-3 font-display text-xl">Departments</h2>
+              <h2 className="research-band mb-2 rounded-lg !py-2 text-sm font-semibold">
+                Departments
+              </h2>
               <AgencyCards rows={groups.departments} />
             </section>
           ) : null}
           {groups.others.length ? (
             <section>
-              <h2 className="mb-3 font-display text-xl">Independent & component agencies</h2>
+              <h2 className="research-band mb-2 rounded-lg !py-2 text-sm font-semibold">
+                Independent & component agencies
+              </h2>
               <AgencyCards rows={groups.others.slice(0, limit)} />
               {groups.others.length > limit ? (
                 <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
@@ -133,23 +137,6 @@ function AgenciesPage() {
           ) : null}
         </div>
       )}
-      <details className="mt-6 text-[11px] text-muted-foreground">
-        <summary className="cursor-pointer">Names, document counts & artwork</summary>
-        <p className="mt-2 leading-relaxed">
-          Names and counts follow the recorded Federal Register directory. Artwork is an exact-name
-          match to the pinned GSA image collection where available, with a neutral fallback
-          elsewhere. Historical names and logos do not establish present organizational status or
-          government endorsement.
-        </p>
-        <a
-          className="mt-2 inline-block underline"
-          href="/visuals/ATTRIBUTION.json"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Visual attribution
-        </a>
-      </details>
     </AppShell>
   );
 }

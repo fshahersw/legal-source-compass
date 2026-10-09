@@ -11,6 +11,7 @@ import {
   stateCodeSection,
   stateCodeSectionList,
   stateCodeTitles,
+  stateCodeEntry,
 } from "./stateCodeCatalog.server";
 import type { HierarchyStep } from "./stateCodeContract";
 
@@ -22,6 +23,10 @@ const stateCode = z.string().regex(/^[A-Z]{2}$/);
 export const listStateCodes = createServerFn({ method: "GET" }).handler(async () =>
   listFullStateCodes(),
 );
+
+export const getStateCodeEntry = createServerFn({ method: "GET" })
+  .inputValidator((data: unknown) => z.object({ state: stateCode }).parse(data))
+  .handler(async ({ data }) => stateCodeEntry(data.state));
 
 export const getStateCodeTitles = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => z.object({ state: stateCode }).parse(data))

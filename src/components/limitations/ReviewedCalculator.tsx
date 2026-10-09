@@ -5,7 +5,7 @@ import {
   BookOpen,
   CalendarDays,
   Check,
-  Download,
+  Printer,
   FileCheck2,
   RotateCcw,
   RefreshCw,
@@ -29,11 +29,7 @@ import {
   type LimitationRule,
   type LimitationsSnapshot,
 } from "@/lib/limitations/types";
-import {
-  assessDeadline,
-  createAssessmentExport,
-  type DeadlineAssessment,
-} from "@/lib/limitations/deadlineAssessment";
+import { assessDeadline, type DeadlineAssessment } from "@/lib/limitations/deadlineAssessment";
 import {
   buildReviewInventory,
   reviewContextKey,
@@ -220,18 +216,10 @@ export function ReviewedCalculator({
       resultRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     });
   };
-  const exportReview = () => {
-    const data = createAssessmentExport(snapshot, input, currentReview, new Date().toISOString(), {
-      sourceRefreshFailed,
-    });
-    const url = URL.createObjectURL(
-      new Blob([JSON.stringify(data, null, 2) + "\n"], { type: "application/json" }),
-    );
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `limitations-${state || "unselected"}-${claim || "review"}.json`;
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  const printReview = () => {
+    const assessment = assessDeadline(snapshot, input, currentReview, { sourceRefreshFailed });
+    setResultRecord({ contextKey, decisionsKey: JSON.stringify(decisions), assessment });
+    requestAnimationFrame(() => window.print());
   };
   return (
     <div data-testid="guided-calculator" className="space-y-5">
@@ -240,8 +228,7 @@ export function ReviewedCalculator({
           <p className="font-semibold">Source refresh failed</p>
           <p className="mt-1">
             Your facts are preserved, but calculation is paused until the source release reloads
-            successfully. An exported review will record this failure and withhold the assessment
-            date.
+            successfully. No cached deadline is shown while the source is unavailable.
           </p>
         </div>
       )}
@@ -623,14 +610,6 @@ export function ReviewedCalculator({
                   Timeline
                 </Button>
                 <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-                  <Button
-                    variant="outline"
-                    onClick={exportReview}
-                    title="Export facts, unresolved issues and recorded instructions"
-                  >
-                    <Download className="mr-2 h-4 w-4" aria-hidden="true" />
-                    Export review
-                  </Button>
                   <Button onClick={calculate} disabled={sourceRefreshFailed}>
                     {instructions ? "Calculate reviewed scenario" : "Assess deadline"}
                     <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
@@ -669,7 +648,15 @@ export function ReviewedCalculator({
                   {rule.period ? periodLabel(rule.period) : "Review required"}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">{rule.pinpoint}</p>
-                <dl className="mt-4 space-y-2 text-sm">
+                <dl className="mt-3 space-y-2 text-xs">
+                  {dates
+                    .filter((d) => !!input[d.key])
+                    .map((d) => (
+                      <div key={d.key} className="flex justify-between gap-3">
+                        <dt className="text-muted-foreground">{d.label}</dt>
+                        <dd className="text-right font-medium">{displayDate(input[d.key]!)}</dd>
+                      </div>
+                    ))}
                   <div className="flex justify-between gap-3">
                     <dt className="text-muted-foreground">Required dates</dt>
                     <dd>
@@ -774,6 +761,7 @@ export function ReviewedCalculator({
                   Calculation and evidence trail
                 </summary>
                 <div className="mt-3 space-y-3 text-xs leading-relaxed">
+                  <p>Source version: {snapshot.ruleVersion}</p>
                   {result.baseline.steps.map((s, i) => (
                     <p key={`base-${i}`}>
                       {s.text}
@@ -788,18 +776,15 @@ export function ReviewedCalculator({
                   ))}
                 </div>
               </details>
-              <Button className="mt-4 w-full" variant="outline" size="sm" onClick={exportReview}>
-                <Download className="mr-2 h-4 w-4" aria-hidden="true" />
-                Export full assessment
+              <Button className="mt-4 w-full" variant="outline" size="sm" onClick={printReview}>
+                <Printer className="mr-2 h-4 w-4" aria-hidden="true" />
+                Print assessment
               </Button>
             </div>
           )}
           <section className="rounded-xl border border-border bg-muted/20 p-4 text-xs leading-relaxed text-muted-foreground">
-            <p className="font-medium text-foreground">Source-linked, not assumption-free</p>
-            <p className="mt-1">
-              Release {snapshot.ruleVersion}. Review data stays in this page unless you export it.
-              Nothing is automatically saved or sent to an AI service.
-            </p>
+            <p className="font-medium text-foreground">Sources & review</p>
+            <p className="mt-1">Case facts stay in this tab. Nothing is sent to an AI service.</p>
             {onRefreshSources && (
               <button
                 type="button"

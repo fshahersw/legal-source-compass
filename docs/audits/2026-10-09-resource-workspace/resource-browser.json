@@ -1,0 +1,16 @@
+{
+  "checkedAt": "2026-10-09T10:22:50.998Z",
+  "checks": [
+    "Compact navy map, 51 canonical state/DC targets, four primary sections and no technical download links",
+    "Nebraska overview shows actual resource destinations and scoped court entries, rather than metadata-only cards",
+    "Concise title-based resource groups and all-word search narrow the actual links; reset restores them",
+    "Scoped courts retain exact state identity; switching state clears incompatible system filters",
+    "A Nevada county cannot be displayed as a Nebraska county",
+    "Compact agency shortcuts open their exact filtered directory",
+    "390px resource workspace has no horizontal overflow and the primary resources remain readable",
+    "State research routes do not fetch retired litigation datasets"
+  ],
+  "errors": [],
+  "accessibilityViolations": [],
+  "data": "Synthetic bounded court/agency fixture API; actual protected research bundles and pinned artwork. No production database writes."
+}

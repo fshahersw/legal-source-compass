@@ -4,7 +4,6 @@ import {
   Map as MapIcon,
   Clock3,
   Library,
-  ShieldAlert,
   BookOpen,
   Search,
   LogIn,
@@ -13,7 +12,6 @@ import {
   PanelLeftOpen,
 } from "lucide-react";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-
 import { useCorpusAccessMode } from "@/components/auth/CorpusAccessGate";
 import { signOutEverywhere } from "@/lib/auth/session";
 import { useSessionUser } from "@/lib/auth/useSession";
@@ -46,20 +44,22 @@ function AccountBox({ collapsed }: { collapsed: boolean }) {
         title={collapsed ? "Sign in" : undefined}
         aria-label={collapsed ? "Sign in" : undefined}
       >
-        <LogIn className="size-4 opacity-70" strokeWidth={1.75} />
+        <LogIn className="size-4 opacity-70" />
         {!collapsed && <span>Sign in</span>}
       </Link>
     );
-  const signOut = async () => {
+  async function signOut() {
     await queryClient.cancelQueries();
     await signOutEverywhere();
-    // Sign-in is optional unless the server enforces accounts (CORPUS_REQUIRE_AUTH); then return to the sign-in page.
-    if (accessMode === "enforced") navigate({ to: "/auth", replace: true });
-  };
+    if (accessMode === "enforced") void navigate({ to: "/auth", replace: true });
+  }
   return (
     <div className={collapsed ? "flex justify-center" : "space-y-1"}>
       {!collapsed && (
-        <div className="truncate text-[11px] text-sidebar-foreground/75" title={user.email ?? ""}>
+        <div
+          className="truncate px-2 text-[11px] text-sidebar-foreground/75"
+          title={user.email ?? ""}
+        >
           {user.email}
         </div>
       )}
@@ -70,7 +70,7 @@ function AccountBox({ collapsed }: { collapsed: boolean }) {
         title={collapsed ? "Sign out" : undefined}
         aria-label={collapsed ? "Sign out" : undefined}
       >
-        <LogOut className="size-4 opacity-70" strokeWidth={1.75} />
+        <LogOut className="size-4 opacity-70" />
         {!collapsed && <span>Sign out</span>}
       </button>
     </div>
@@ -107,40 +107,45 @@ export function AppShell({
     setSidebarCollapsed(next);
   };
   const context = contextualNavigation(pathname);
-  const submitSearch = (event: FormEvent) => {
+  function submitSearch(event: FormEvent) {
     event.preventDefault();
     const q = search.trim();
-    if (q.length >= 2) navigate({ to: "/search", search: { q } });
-  };
-
+    if (q.length >= 2) void navigate({ to: "/search", search: { q } });
+  }
   return (
-    <div className="flex min-h-screen bg-background">
+    <div
+      data-ui-release="resource-workspace-20261009"
+      className="atlas-shell flex min-h-screen bg-background"
+    >
       <aside
-        className={`sticky top-0 hidden h-screen shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar px-3 py-5 transition-[width] duration-200 lg:flex ${
-          collapsed ? "w-14" : "w-60"
-        }`}
+        className={`sticky top-0 hidden h-screen shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar px-3 py-5 transition-[width] duration-150 lg:flex ${collapsed ? "w-14" : "w-52"}`}
       >
-        {collapsed ? (
-          <Link to="/" className="mb-4 flex justify-center" aria-label="Legal Source Atlas — home">
+        <Link
+          to="/"
+          className={collapsed ? "mb-6 flex justify-center" : "mb-6 block px-2"}
+          aria-label="Legal Source Atlas — home"
+        >
+          {collapsed ? (
             <span
               aria-hidden
-              className="flex size-8 items-center justify-center rounded-md bg-sidebar-accent font-display text-[13px] font-semibold text-sidebar-primary"
+              className="grid size-8 place-items-center rounded-md bg-sidebar-accent font-display text-sm font-semibold text-sidebar-primary"
             >
               LA
             </span>
-          </Link>
-        ) : (
-          <Link to="/" className="mb-4 block px-2">
-            <div className="eyebrow text-sidebar-foreground/75">Legal research</div>
-            <div className="mt-1 font-display text-lg leading-tight text-sidebar-primary">
-              Legal Source
-              <br />
-              Atlas
-            </div>
-          </Link>
-        )}
-
-        <nav className="flex flex-col gap-0.5 overflow-y-auto">
+          ) : (
+            <>
+              <span className="block text-[9px] font-semibold uppercase tracking-[0.2em] text-sidebar-foreground/70">
+                Research workspace
+              </span>
+              <span className="mt-1.5 block font-display text-xl leading-tight text-sidebar-primary">
+                Legal Source
+                <br />
+                Atlas
+              </span>
+            </>
+          )}
+        </Link>
+        <nav aria-label="Primary" className="flex flex-col gap-1">
           {NAV.map((item) => {
             const active = navigationSection(pathname) === item.id;
             const badgeCount =
@@ -150,44 +155,30 @@ export function AppShell({
                 key={item.to}
                 to={item.to}
                 activeOptions={{ exact: item.to === "/" }}
+                aria-current={active ? "page" : undefined}
                 title={collapsed ? item.label : undefined}
                 aria-label={collapsed ? item.label : undefined}
-                className={`nav-link relative ${active ? "active" : ""} ${collapsed ? "justify-center px-0" : ""}`}
+                className={`nav-link relative min-h-10 ${active ? "bg-sidebar-accent font-semibold" : ""} ${collapsed ? "justify-center px-0" : ""}`}
               >
-                <item.icon className="size-4 opacity-70" strokeWidth={1.75} />
+                <item.icon className="size-4 shrink-0 opacity-90" strokeWidth={1.7} />
                 {!collapsed && <span className="flex-1">{item.label}</span>}
-                {badgeCount > 0 ? (
-                  collapsed ? (
-                    <span
-                      aria-hidden
-                      className="absolute -right-0.5 top-1.5 size-1.5 rounded-full bg-secondary"
-                    />
-                  ) : (
-                    <span className="rounded-full bg-secondary px-1.5 text-[10px] font-semibold text-secondary-foreground">
-                      {badgeCount}
-                    </span>
-                  )
+                {badgeCount > 0 && !collapsed ? (
+                  <span className="rounded bg-sidebar/70 px-1.5 text-[10px] text-sidebar-foreground">
+                    {badgeCount}
+                  </span>
                 ) : null}
               </Link>
             );
           })}
         </nav>
-
-        <div className={`mt-auto space-y-3 pt-6 ${collapsed ? "px-0" : "px-2"}`}>
+        <div className="mt-auto border-t border-sidebar-border pt-3">
           <AccountBox collapsed={collapsed} />
-          {!collapsed && (
-            <p className="flex gap-1.5 text-[11px] leading-relaxed text-sidebar-foreground/75">
-              <ShieldAlert className="mt-px size-3.5 shrink-0" strokeWidth={1.75} />
-              <span>Saved items stay in this browser.</span>
-            </p>
-          )}
         </div>
       </aside>
-
       <div className="min-w-0 flex-1">
-        <header className="border-b border-border bg-surface px-5 py-4 lg:px-8">
+        <header className="atlas-header border-b border-border bg-surface px-4 py-3 lg:px-6">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 items-center gap-2.5">
               <button
                 type="button"
                 onClick={toggleSidebar}
@@ -202,11 +193,11 @@ export function AppShell({
                 )}
               </button>
               <nav aria-label="Breadcrumb" className="min-w-0">
-                <ol className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                <ol className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
                   {breadcrumbs.map((crumb, i) => (
-                    <li key={crumb.label + "-" + i} className="flex items-center gap-1.5">
+                    <li key={`${crumb.label}-${i}`} className="flex items-center gap-1.5">
                       {i > 0 ? (
-                        <span aria-hidden className="opacity-40">
+                        <span aria-hidden className="opacity-50">
                           /
                         </span>
                       ) : null}
@@ -214,14 +205,12 @@ export function AppShell({
                         <Link
                           to={crumb.to}
                           {...(crumb.search ? { search: crumb.search as never } : {})}
-                          className="hover:text-foreground"
+                          className="hover:text-foreground hover:underline"
                         >
                           {crumb.label}
                         </Link>
                       ) : (
-                        <span aria-current="page" className="font-medium text-foreground">
-                          {crumb.label}
-                        </span>
+                        <span aria-current="page">{crumb.label}</span>
                       )}
                     </li>
                   ))}
@@ -250,13 +239,13 @@ export function AppShell({
               </Button>
             </form>
           </div>
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-3">
+          <div className="mt-2.5 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2.5">
               {emblem ? <div className="shrink-0">{emblem}</div> : null}
               <div className="min-w-0">
-                <h1 className="font-display text-2xl leading-tight">{title}</h1>
+                <h1 className="font-display text-[23px] leading-tight">{title}</h1>
                 {description ? (
-                  <p className="mt-1 max-w-3xl text-[13px] leading-relaxed text-muted-foreground">
+                  <p className="mt-0.5 max-w-3xl text-xs leading-relaxed text-muted-foreground">
                     {description}
                   </p>
                 ) : null}
@@ -265,51 +254,48 @@ export function AppShell({
             {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
           </div>
         </header>
-
-        {context.length > 0 ? (
+        {context.length ? (
           <nav
             aria-label="Section"
-            className="flex gap-1 overflow-x-auto border-b border-border bg-surface px-5 py-2 lg:px-8"
+            className="flex gap-1 overflow-x-auto border-b border-border bg-surface px-4 py-1.5 lg:px-6"
           >
             {context.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
                 activeOptions={{ exact: true }}
-                className="rounded-md px-2 py-1 text-[12px] text-muted-foreground hover:bg-muted hover:text-foreground"
-                activeProps={{ className: "bg-muted font-semibold text-foreground" }}
+                className="shrink-0 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+                activeProps={{ className: "bg-muted font-semibold text-primary" }}
               >
                 {item.label}
               </Link>
             ))}
           </nav>
         ) : null}
-
         <nav
           aria-label="Sections"
-          className="flex items-center gap-1 overflow-x-auto border-b border-sidebar-border bg-sidebar px-3 py-2 text-sidebar-foreground lg:hidden"
+          className="flex items-center gap-0.5 overflow-x-auto border-b border-sidebar-border bg-sidebar px-2 py-1.5 text-sidebar-foreground lg:hidden"
         >
           {NAV.map((item) => (
             <Link
               key={item.to}
               to={item.to}
               activeOptions={{ exact: item.to === "/" }}
-              className="nav-link whitespace-nowrap"
+              className="nav-link whitespace-nowrap !px-2 !text-[11px]"
             >
               {item.label}
             </Link>
           ))}
-          <div className="ml-auto shrink-0 pl-1">
+          <div className="ml-auto shrink-0">
             <AccountBox collapsed />
           </div>
         </nav>
-
-        <main className="px-5 py-6 lg:px-8">
+        <main className="atlas-main">
           {localStateWarning ||
           (persistWarning && persistWarning !== "Saving to browser storage…") ? (
             <div
               role="alert"
-              className="mb-4 rounded-md border border-warning/40 bg-warning/10 p-2.5 text-[12px] leading-relaxed text-warning-foreground"
+              className="mb-3 rounded-md border border-warning/40 bg-warning/10 p-2.5 text-xs leading-relaxed text-warning-foreground"
             >
               {[localStateWarning, persistWarning].filter(Boolean).join(" ")}
             </div>

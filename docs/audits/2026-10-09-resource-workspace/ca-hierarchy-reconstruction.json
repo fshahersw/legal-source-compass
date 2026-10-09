@@ -1,0 +1,66 @@
+{
+  "schema_version": "california-publisher-hierarchy/1",
+  "source_archive_sha256": "2b443092fc6ad7fbee78d694dd885ec9a44337ebc2b9557980c8846d27978f2c",
+  "payload_sha256": "c000e9227ff75b1fb93b0ac27e093848d1e1919c1e8a82a7e9b84a50209b00cc",
+  "payload_bytes": 3371753,
+  "section_metadata_sha256": "a7bad11d7d30818eb70ff75e2acbcfe6dafcf7fea571635c5291815fb8a2792e",
+  "sections": 162526,
+  "publisher_toc_nodes": 24394,
+  "exact_scope_groups": 20363,
+  "ambiguous_scope_groups": 25,
+  "explicit_version_overrides": 413,
+  "codes": 30,
+  "spacing_only_identity_count": 1,
+  "spacing_only_identity_records": [
+    {
+      "native_id": "CA:WAT:31142.39.",
+      "version_id": "id_834aa2f7-f15e-11de-a33d-82cc13b244c3",
+      "section_row_id": "WAT31142.39.20095631",
+      "toc_row_id": "WAT 31142.39.20095631",
+      "section_number": "31142.39.",
+      "toc_section_number": " 31142.39.",
+      "comparison": "ASCII identifier spacing only; source strings retained"
+    }
+  ],
+  "ancestor_occurrences": {
+    "code": 162526,
+    "part": 107854,
+    "title": 48413,
+    "chapter": 154953,
+    "division": 150888,
+    "article": 106266,
+    "heading": 729
+  },
+  "maximum_depth": 7,
+  "missing_ancestor_headings": 0,
+  "source_members": [
+    {
+      "member": "CODES_TBL.dat",
+      "sha256": "138d6461e795fd2466e763e8146043db2cf78b1102a4232a983e8f3875134a30",
+      "bytes": 1015,
+      "zip_crc32": 1491469679
+    },
+    {
+      "member": "LAW_TOC_TBL.dat",
+      "sha256": "428b1eecfc90c3806febbc1b29548b65410afae8f59cd71f8c8f2d0a6057fc3a",
+      "bytes": 5329533,
+      "zip_crc32": 429970690
+    },
+    {
+      "member": "LAW_SECTION_TBL.dat",
+      "sha256": "dde1d3d09d161856d7e35906f6ba855724da6b878ea9b8a7454f75c9d8eac3bb",
+      "bytes": 43276148,
+      "zip_crc32": 2927169796
+    },
+    {
+      "member": "LAW_TOC_SECTIONS_TBL.dat",
+      "sha256": "448c37ed4d97fb26bc2ac9113af8717fca2b01a1b77ae1d339cb29469c4208a6",
+      "bytes": 31407073,
+      "zip_crc32": 2851453531
+    }
+  ],
+  "publication_allowed": false,
+  "calculation_activation_allowed": false,
+  "current_law_verified": false,
+  "law_cutoff": "Not inferred from the session filename, capture time or metadata update timestamps."
+}

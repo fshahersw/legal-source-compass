@@ -100,7 +100,10 @@ function StatuteCard({
       ) : null}
 
       {citedBy.length ? (
-        <ul className="mt-3 divide-y divide-border rounded-md border border-border" aria-label="Rules citing this source">
+        <ul
+          className="mt-3 divide-y divide-border rounded-md border border-border"
+          aria-label="Rules citing this source"
+        >
           {citedBy.map((entry) => (
             <li key={entry.ruleId} className="flex flex-wrap items-start justify-between gap-2 p-3">
               <div className="min-w-0 flex-1">
@@ -121,7 +124,9 @@ function StatuteCard({
                     {entry.excerpt}
                   </blockquote>
                 ) : (
-                  <p className="mt-1 text-xs text-muted-foreground">Quoted passage: {NOT_RECORDED}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Quoted passage: {NOT_RECORDED}
+                  </p>
                 )}
               </div>
               <span className="text-sm tabular-nums">{entry.period}</span>
@@ -172,7 +177,8 @@ function StatuteCard({
           <dd>{source.method}</dd>
           <dt>SHA-256</dt>
           <dd className="break-all">
-            {source.sha256} · {source.byteLength.toLocaleString()} bytes · schema {source.schemaVersion}
+            {source.sha256} · {source.byteLength.toLocaleString()} bytes · schema{" "}
+            {source.schemaVersion}
           </dd>
         </dl>
       ) : null}
@@ -212,16 +218,19 @@ export function StateStatutePanel({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-xl border border-border bg-surface p-5" aria-labelledby="claim-matrix-title">
+      <section
+        className="rounded-xl border border-border bg-surface p-5"
+        aria-labelledby="claim-matrix-title"
+      >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 id="claim-matrix-title" className="text-xl font-semibold">
               Claim types · {stateName}
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              {recorded} of {rows.length} claim types have an entry read from official text in release{" "}
-              {snapshot.ruleVersion}. A missing entry means nothing was recorded, not that no period
-              exists.
+              {recorded} of {rows.length} claim types have an entry read from official text in
+              release {snapshot.ruleVersion}. A missing entry means nothing was recorded, not that
+              no period exists.
               {general
                 ? ` ${general} of those rest on a general provision, because no statute naming the claim was found in the reviewed text.`
                 : ""}
@@ -237,7 +246,10 @@ export function StateStatutePanel({
           </label>
         </div>
         <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[760px] table-fixed text-left text-sm" data-testid="claim-matrix">
+          <table
+            className="w-full min-w-[760px] table-fixed text-left text-sm"
+            data-testid="claim-matrix"
+          >
             <colgroup>
               <col className="w-[17%]" />
               <col className="w-[24%]" />
@@ -303,7 +315,10 @@ export function StateStatutePanel({
                             {variant.name.charAt(0).toUpperCase() + variant.name.slice(1)}
                             <span className="text-muted-foreground">
                               {" "}
-                              · {variant.status === "baseline" ? "computable" : variant.status.replaceAll("_", " ")}
+                              ·{" "}
+                              {variant.status === "baseline"
+                                ? "computable"
+                                : variant.status.replaceAll("_", " ")}
                             </span>
                           </li>
                         ))}
@@ -314,9 +329,7 @@ export function StateStatutePanel({
                   </td>
                   <td className="py-2.5">
                     {row.currency ? (
-                      <Chip className={toneClass[row.currency.tone]} >
-                        {row.currency.label}
-                      </Chip>
+                      <Chip className={toneClass[row.currency.tone]}>{row.currency.label}</Chip>
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}
@@ -328,7 +341,10 @@ export function StateStatutePanel({
         </div>
       </section>
 
-      <section className="rounded-xl border border-border bg-surface p-5" aria-labelledby="cited-statutes-title">
+      <section
+        className="rounded-xl border border-border bg-surface p-5"
+        aria-labelledby="cited-statutes-title"
+      >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 id="cited-statutes-title" className="text-xl font-semibold">
@@ -340,24 +356,6 @@ export function StateStatutePanel({
               {summary.unchecked} not re-read since capture.
             </p>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              const blob = new Blob(
-                [JSON.stringify({ state, rules: rows, sources: statutes.map((s) => ({ ...s.source, currency: s.currency, citedBy: s.citedBy })) }, null, 2)],
-                { type: "application/json" },
-              );
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = `limitations-${state}-statutes.json`;
-              a.click();
-              URL.revokeObjectURL(url);
-            }}
-          >
-            Export this state
-          </Button>
         </div>
 
         {coverage && !statutes.some((s) => s.source.state === state) ? (

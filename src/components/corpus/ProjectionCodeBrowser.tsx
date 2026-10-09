@@ -80,9 +80,7 @@ export function ProjectionCodeBrowser({
   const mixedLevels = new Set(groups.map((g) => g.level ?? level)).size > 1;
   const needle = filter.trim().toLowerCase();
   const shownGroups = needle
-    ? groups.filter((g) =>
-        `${g.number ?? ""} ${g.heading ?? ""}`.toLowerCase().includes(needle),
-      )
+    ? groups.filter((g) => `${g.number ?? ""} ${g.heading ?? ""}`.toLowerCase().includes(needle))
     : groups;
   const shownSections = needle
     ? sections.filter((s) =>
@@ -96,7 +94,9 @@ export function ProjectionCodeBrowser({
   }, [detail.data, listing.levels]);
   const samePath =
     sectionSteps.length === path.length &&
-    sectionSteps.every((step, i) => path[i]?.level === step.level && path[i]?.number === step.number);
+    sectionSteps.every(
+      (step, i) => path[i]?.level === step.level && path[i]?.number === step.number,
+    );
   const index = section ? sections.findIndex((s) => s.native_id === section) : -1;
   const previous = index > 0 ? sections[index - 1] : null;
   const next = index >= 0 && index < sections.length - 1 ? sections[index + 1] : null;
@@ -142,15 +142,18 @@ export function ProjectionCodeBrowser({
       <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold">{listing.codeName}</h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {listing.sectionCount == null
-                ? "Section count: Not recorded"
-                : `${listing.sectionCount.toLocaleString()} sections`}
-              {" · "}Edition: {showRecorded(listing.edition)}
-              {" · "}Currency: {showRecorded(listing.currency)}
-              {listing.note ? ` · ${listing.note}` : ""}
-            </p>
+            <h2 className="font-sans text-sm font-semibold">Browse statutes</h2>
+            <details className="mt-1 text-xs text-muted-foreground">
+              <summary className="cursor-pointer">Source version</summary>
+              <p className="mt-2 leading-relaxed">
+                {listing.sectionCount == null
+                  ? "Section count: Not recorded"
+                  : `${listing.sectionCount.toLocaleString()} sections`}
+                {" · "}Edition: {showRecorded(listing.edition)}
+                {" · "}Currency: {showRecorded(listing.currency)}
+                {listing.note ? ` · ${listing.note}` : ""}
+              </p>
+            </details>
             {listing.sourceUrl ? (
               <a
                 href={listing.sourceUrl}
@@ -233,7 +236,9 @@ export function ProjectionCodeBrowser({
                     onClick={() => onNavigate({ path, section: hit.id })}
                   >
                     <span className="font-medium">{hit.citation ?? hit.heading}</span>
-                    <span className="mt-0.5 block text-xs text-muted-foreground">{hit.heading}</span>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">
+                      {hit.heading}
+                    </span>
                   </button>
                 </li>
               ))}
@@ -241,7 +246,7 @@ export function ProjectionCodeBrowser({
         ) : null}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(16rem,24rem)_minmax(0,1fr)]">
+      <div className="grid gap-4 lg:grid-cols-[minmax(15rem,20rem)_minmax(0,1fr)]">
         <div className="flex flex-col rounded-lg border border-border bg-surface shadow-card lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)]">
           <div className="space-y-2 border-b border-border p-3">
             {crumbs}
@@ -285,7 +290,10 @@ export function ProjectionCodeBrowser({
               </p>
             ) : null}
             {unsupported ? (
-              <div className="space-y-2 p-2 text-sm text-muted-foreground" data-testid="outline-unsupported">
+              <div
+                className="space-y-2 p-2 text-sm text-muted-foreground"
+                data-testid="outline-unsupported"
+              >
                 <p>
                   The outline cannot open this position yet: this section's recorded path skips one
                   of the publisher's declared levels, which the installed outline read only follows
@@ -397,12 +405,15 @@ export function ProjectionCodeBrowser({
             ) : null}
             {data && !groups.length && !sections.length ? (
               path.length && data.read === "v2" ? (
-                <div className="space-y-2 p-2 text-sm text-muted-foreground" data-testid="outline-empty">
+                <div
+                  className="space-y-2 p-2 text-sm text-muted-foreground"
+                  data-testid="outline-empty"
+                >
                   <p>The installed outline read lists nothing at this position.</p>
                   <p className="text-xs">
-                    Where the publisher skips one of its declared levels, the sections below here are
-                    still in the code: open them from search or from a section's "Show in outline"
-                    link. The corrected outline read lists them here once it is applied.
+                    Where the publisher skips one of its declared levels, the sections below here
+                    are still in the code: open them from search or from a section's "Show in
+                    outline" link. The corrected outline read lists them here once it is applied.
                   </p>
                 </div>
               ) : (
@@ -465,9 +476,15 @@ export function ProjectionCodeBrowser({
           {detail.data && section ? (
             <div className="space-y-4">
               {sectionSteps.length ? (
-                <p className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground" data-testid="section-position">
+                <p
+                  className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground"
+                  data-testid="section-position"
+                >
                   {sectionSteps.map((step, i) => (
-                    <span key={`${step.level}-${step.number ?? ""}-${i}`} className="flex items-center gap-1">
+                    <span
+                      key={`${step.level}-${step.number ?? ""}-${i}`}
+                      className="flex items-center gap-1"
+                    >
                       {i > 0 ? <ChevronRight className="size-3" aria-hidden /> : null}
                       <span className="capitalize">{stepLabel(step)}</span>
                       {step.heading ? <span className="normal-case">· {step.heading}</span> : null}
@@ -479,7 +496,10 @@ export function ProjectionCodeBrowser({
                       className="ml-1 text-primary underline-offset-4 hover:underline"
                       onClick={() =>
                         onNavigate({
-                          path: sectionSteps.map((step) => ({ level: step.level, number: step.number })),
+                          path: sectionSteps.map((step) => ({
+                            level: step.level,
+                            number: step.number,
+                          })),
                           section,
                         })
                       }

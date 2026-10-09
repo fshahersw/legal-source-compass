@@ -1,0 +1,9 @@
+{
+  "checkedAt": "2026-10-09T10:10:56.297Z",
+  "checks": [
+    "An actual source-metadata change preserves entered dates but invalidates every legal confirmation, factor decision and result",
+    "A failed network refresh suppresses the cached date and print action, and disables calculation without erasing case facts"
+  ],
+  "errors": [],
+  "caseData": "Synthetic browser failure and metadata update; immutable real legal rule contents are unchanged"
+}
