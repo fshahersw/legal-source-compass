@@ -49,3 +49,5 @@
 - [ ] Full state code intake: CA/HI/KS/NJ acquiring; AR/GA/MS/TN absent (GA gated behind Lexis) — see docs/state-codes.md
 - [ ] Manual review of the 3 code-capture mismatches (NH opinion PDF, PA MCARE session law, SD duplicate rows)
 - [ ] Re-read the 198 not-rechecked sources once a route exists (session-law PDFs, blocked hosts, jurisdictions without a reviewed code in the corpus)
+
+- [ ] Kansas recovery (scripts/legal/state-codes/b4/ks/): retained.py done (47,166 objects hash-verified); toc.py fetching 577 unretained pages + 2026 change list; then build_packet.py → close stale run 44a602cd (0 batches) → land ks-revisor-html/6 → readback, two-way publisher sample, review/project.
