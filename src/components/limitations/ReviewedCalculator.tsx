@@ -84,7 +84,7 @@ type Props = {
   renderAuthority: (rule: LimitationRule) => ReactNode;
 };
 
-export function GuidedCalculator({
+export function ReviewedCalculator({
   snapshot,
   state,
   claim,

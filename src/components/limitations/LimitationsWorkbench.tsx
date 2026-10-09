@@ -13,7 +13,7 @@ import {
 } from "./ruleAuthority";
 import { StatuteCitation } from "./StatuteCitation";
 import { StateStatutePanel } from "./StateStatutePanel";
-import { GuidedCalculator } from "./GuidedCalculator";
+import { ReviewedCalculator } from "./ReviewedCalculator";
 import { versionWindowLabel } from "./calculatorGuidance";
 import {
   CLAIM_LABELS,
@@ -417,7 +417,7 @@ export function LimitationsWorkbench({
         </div>
       )}
       <div hidden={view !== "calculator"}>
-        <GuidedCalculator
+        <ReviewedCalculator
           key={state + ":" + (claim ?? "")}
           snapshot={snapshot}
           sourceRefreshFailed={!!query.error}

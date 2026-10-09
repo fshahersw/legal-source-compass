@@ -1,7 +1,7 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { GuidedCalculator } from "./GuidedCalculator";
+import { ReviewedCalculator } from "./ReviewedCalculator";
 import { reviseCaseFacts } from "./caseFacts";
 import { unconfirmedClaimInput } from "./calculatorGuidance";
 import type { LimitationsSnapshot } from "@/lib/limitations/types";
@@ -17,7 +17,7 @@ const empty = {
 describe("guided calculator", () => {
   it("starts with a single compact step and no invented deadline", () => {
     const markup = renderToStaticMarkup(
-      createElement(GuidedCalculator, {
+      createElement(ReviewedCalculator, {
         snapshot: empty,
         state: "",
         claim: undefined,
@@ -33,7 +33,7 @@ describe("guided calculator", () => {
   });
   it("makes incomplete rule coverage explicit instead of selecting another claim", () => {
     const markup = renderToStaticMarkup(
-      createElement(GuidedCalculator, {
+      createElement(ReviewedCalculator, {
         snapshot: empty,
         state: "AR",
         claim: "defamation",
@@ -69,7 +69,7 @@ describe("guided calculator", () => {
 
 it("renders an explicit evidence-refresh failure without crashing or showing a date", () => {
   const markup = renderToStaticMarkup(
-    createElement(GuidedCalculator, {
+    createElement(ReviewedCalculator, {
       snapshot: empty,
       state: "CA",
       claim: "personal_injury",
