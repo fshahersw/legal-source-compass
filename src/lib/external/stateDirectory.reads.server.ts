@@ -1,7 +1,7 @@
 import { rpcPost } from "./rest.server";
 import { DIRECTORY_PAGE_SIZE } from "./directoryPaging";
 import { toCourtRow, toJudgeRow } from "./directoryTree";
-import { canonicalState, filterStateCourts, filterStateJudges } from "@/lib/corpus/stateHub";
+import { canonicalState, filterStateJudges } from "@/lib/corpus/stateHub";
 export async function readStateDirectoryPage(
   dataset: "court_spine" | "judges",
   state: string,
@@ -23,7 +23,7 @@ export async function readStateDirectoryPage(
   const rows = dataset === "court_spine" ? items.map(toCourtRow) : items.map(toJudgeRow);
   const matched =
     dataset === "court_spine"
-      ? filterStateCourts(items.map(toCourtRow), identity.usps)
+      ? items.map(toCourtRow).filter((row) => canonicalState(row.state)?.usps === identity.usps)
       : filterStateJudges(items.map(toJudgeRow), identity.usps);
   if (matched.length !== rows.length)
     throw new Error("Directory jurisdiction mismatch; results have been withheld.");

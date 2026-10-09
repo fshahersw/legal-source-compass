@@ -64,3 +64,48 @@ describe("bounded state-scoped directory reads", () => {
     await expect(readStateDirectoryPage("court_spine", "NE", 0)).rejects.toThrow(/oversized/);
   });
 });
+
+describe("jurisdiction validation is independent of court-display filtering", () => {
+  beforeEach(() => rpc.mockReset());
+  it("accepts a same-state reference collection without hiding the state's court records", async () => {
+    rpc.mockResolvedValue({
+      items: [
+        {
+          id: "neb",
+          title: "Nebraska Supreme Court",
+          cells: { state: "NE", system: "State" },
+          subtitle: "State supreme",
+        },
+        {
+          id: "neag",
+          title: "Attorney General Reports",
+          cells: { state: "NE", system: "State" },
+          subtitle: "State attorney general",
+        },
+      ],
+    });
+    const result = await readStateDirectoryPage("court_spine", "NE", 0);
+    expect(result.rows.map((row) => row.id)).toEqual(["neb", "neag"]);
+    expect(result.nextOffset).toBeNull();
+  });
+  it("still rejects foreign reference collections, not just foreign court rows", async () => {
+    rpc.mockResolvedValue({
+      items: [
+        { id: "nvag", cells: { state: "NV", system: "State" }, subtitle: "State attorney general" },
+      ],
+    });
+    await expect(readStateDirectoryPage("court_spine", "NE", 0)).rejects.toThrow(/jurisdiction/);
+  });
+  it("retains upstream page boundaries even when rows are filtered from court presentation", async () => {
+    rpc.mockResolvedValue({
+      items: Array.from({ length: 500 }, (_, i) => ({
+        id: String(i),
+        cells: { state: "NE", system: "State" },
+        subtitle: "State attorney general",
+      })),
+    });
+    const result = await readStateDirectoryPage("court_spine", "NE", 0);
+    expect(result.rows).toHaveLength(500);
+    expect(result.nextOffset).toBe(500);
+  });
+});

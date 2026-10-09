@@ -13,7 +13,7 @@ Owner-requested interface update: dense, aligned, useful research resources; nav
 
 ## Verification
 
-- 1,187 targeted tests passed with zero failures.
+- 1,190 targeted tests passed with zero failures.
 - TypeScript, changed-code lint and production build passed. Existing non-blocking fast-refresh warnings remain.
 - Eight resource-workspace browser checks, nine calculator checks and two refresh checks passed. Tested pages reported no uncaught errors and no accessibility violations.
 - Browser data is described in each report: synthetic bounded court/agency fixtures with actual protected research bundles and pinned image assets. These reports are not independent verification of every production record.
@@ -32,3 +32,5 @@ The first UI commit, 9072fd0, was published and observed on the real custom doma
 Live review also identified non-court reference collections in the court spine. The follow-up uses only the source's explicit attorney-general or umbrella-judiciary record type to keep those entries out of individual-court navigation. Original data and research-resource links are preserved. Three additional regression tests cover the filtering, misleading names and unknown types.
 
 The California hierarchy artifact was reconstructed and checked, but the attempted bulk transfer did not complete. No statutory corpus data or publication flag changed. Temporary empty staging database objects were removed and the unused upload endpoint was retired with JWT verification enabled; no ingestion job remains running.
+
+A production regression check also confirmed that source-page jurisdiction validation must be independent of presentation filtering. Same-state reference collections are retained in the bounded source response but omitted from court cards; foreign-state references still fail validation, and upstream page boundaries are preserved. Three regression tests cover these cases.
