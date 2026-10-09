@@ -54,3 +54,5 @@
 - [x] California compact-v3 import: run 124b4562 completed, 162,526 sections, readback exact (docs/audits/2026-10-09-ca-import.md)
 - [ ] California publication: needs title/division/part/chapter/article headings from pubinfo TOC tables + a direct (non-proxied) official sample or an owner decision accepting proxied review
 - [ ] Kansas packet fixes before landing: 55 index-listed pages without a parsed section, second-version detection (expected 10 pages), 2026 change-list PDF parsing (0 entries matched)
+- [ ] Apply guided-calculator patch + stage/activate limitations release 2026-10-09.1, publish (queued 2026-10-09)
+- [ ] Kansas parser-v6 land + readback; California hierarchy enrichment from retained LAW_TOC tables
