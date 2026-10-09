@@ -124,6 +124,25 @@ def batches(rows):
         yield cur
 
 
+class Digest:
+    """Running sha256, byte count and UTF-8 code-point count of a streamed body."""
+    def __init__(self):
+        self.h, self.n, self.cp, self.utf8_ok = hashlib.sha256(), 0, 0, True
+        self._dec = __import__("codecs").getincrementaldecoder("utf-8")()
+
+    def update(self, block):
+        self.h.update(block)
+        self.n += len(block)
+        if self.utf8_ok:
+            try:
+                self.cp += len(self._dec.decode(block))
+            except UnicodeDecodeError:
+                self.utf8_ok = False
+
+    def hexdigest(self):
+        return self.h.hexdigest()
+
+
 class Cloud:
     def __init__(self):
         self.url = os.environ["EXTERNAL_SUPABASE_URL"].rstrip("/")
@@ -170,24 +189,6 @@ class Cloud:
             d.update(block)
         return 200, d
 
-
-class Digest:
-    """Running sha256, byte count and UTF-8 code-point count of a streamed body."""
-    def __init__(self):
-        self.h, self.n, self.cp, self.utf8_ok = hashlib.sha256(), 0, 0, True
-        self._dec = __import__("codecs").getincrementaldecoder("utf-8")()
-
-    def update(self, block):
-        self.h.update(block)
-        self.n += len(block)
-        if self.utf8_ok:
-            try:
-                self.cp += len(self._dec.decode(block))
-            except UnicodeDecodeError:
-                self.utf8_ok = False
-
-    def hexdigest(self):
-        return self.h.hexdigest()
 
     def upload(self, key, data, ctype):
         r = self._retry(lambda: self.s.post(f"{self.url}/storage/v1/object/{BUCKET}/{key}", data=data, timeout=1200,
