@@ -83,7 +83,7 @@ function StatuteCard({
 
       {codeSections.length ? (
         <p className="mt-2 text-sm">
-          Current code text searched:{" "}
+          Captured code text searched:{" "}
           {codeSections.map((nativeId, index) => (
             <span key={nativeId}>
               {index ? ", " : ""}
@@ -213,7 +213,9 @@ export function StateStatutePanel({
   const summary = statuteSummary(statutes);
   const coverage = snapshot.coverage.find((row) => row.state === state);
   const [onlyRecorded, setOnlyRecorded] = useState(false);
-  const visibleRows = onlyRecorded ? rows.filter((row) => row.status !== "not_recorded") : rows;
+  const visibleRows = onlyRecorded
+    ? rows.filter((row) => row.status !== "not_recorded" || row.variants.length > 0)
+    : rows;
   const recorded = rows.filter((row) => row.status !== "not_recorded").length;
   const general = rows.filter((row) => row.basis === "general_period").length;
 
@@ -229,9 +231,9 @@ export function StateStatutePanel({
               Claim types · {stateName}
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              {recorded} of {rows.length} claim types have an entry read from official text in
-              release {snapshot.ruleVersion}. A missing entry means nothing was recorded, not that
-              no period exists.
+              {recorded} of {rows.length} claim types have a general entry in release{" "}
+              {snapshot.ruleVersion}. Some claims require a narrower variant, listed separately. An
+              unrecorded general period does not mean the claim has no time limit.
               {general
                 ? ` ${general} of those rest on a general provision, because no statute naming the claim was found in the reviewed text.`
                 : ""}
@@ -262,8 +264,8 @@ export function StateStatutePanel({
             <thead>
               <tr className="border-b border-border text-xs uppercase tracking-wide text-muted-foreground">
                 <th className="py-2 pr-3 font-semibold">Claim type</th>
-                <th className="py-2 pr-3 font-semibold">Status</th>
-                <th className="py-2 pr-3 font-semibold">Period</th>
+                <th className="py-2 pr-3 font-semibold">General entry</th>
+                <th className="py-2 pr-3 font-semibold">General period</th>
                 <th className="py-2 pr-3 font-semibold">Citation</th>
                 <th className="py-2 pr-3 font-semibold">Variants</th>
                 <th className="py-2 font-semibold">Last re-checked</th>
@@ -273,7 +275,7 @@ export function StateStatutePanel({
               {visibleRows.map((row) => (
                 <tr key={row.claimType} className="border-b border-border align-top">
                   <td className="py-2.5 pr-3">
-                    {row.status === "not_recorded" ? (
+                    {row.status === "not_recorded" && row.variants.length === 0 ? (
                       <span>{row.label}</span>
                     ) : (
                       <button

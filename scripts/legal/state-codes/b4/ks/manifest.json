@@ -7,7 +7,7 @@
  "jurisdiction": "KS",
  "parser": {
   "name": "ks-revisor-html",
-  "version": "6"
+  "version": "7"
  },
  "publisher": "Kansas Office of Revisor of Statutes",
  "publisher_url": "https://www.ksrevisor.gov/",
@@ -23,8 +23,8 @@
   "terms_gate": false
  },
  "review": {
-  "reviewed_at": "2026-10-09",
-  "reviewed_by": "Lovable agent (Kansas recovery from retained evidence)"
+  "reviewed_at": "2026-10-12",
+  "reviewed_by": "Codex source review (TOC markup correction; publication reviewed separately)"
  },
  "schema_version": "publisher-code-manifest/2",
  "section_id": {

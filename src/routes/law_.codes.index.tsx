@@ -18,7 +18,7 @@ export const Route = createFileRoute("/law_/codes/")({
           ? String(search["q"])
           : "",
   }),
-  head: () => pageHead("State codes", "Full state codes that have been captured."),
+  head: () => pageHead("State codes", "Captured state code editions and their source coverage."),
   component: StateCodesPage,
 });
 
@@ -38,6 +38,8 @@ function StateCodesPage() {
     queryFn: () => searchFn({ data: { q } }),
     enabled: q.trim().length >= 2,
   });
+  const jurisdictions = new Set((codes.data ?? []).map((row) => row.state));
+  const stateCount = [...jurisdictions].filter((state) => state !== "DC").length;
 
   return (
     <AppShell
@@ -47,7 +49,7 @@ function StateCodesPage() {
         { label: "State codes" },
       ]}
       title="State codes"
-      description="Full codes that have been captured. A state appears here when its code is ready, with no separate list to update."
+      description="Browse captured code editions. Check each source's edition, currency and known limits before relying on its text."
     >
       <form
         className="mb-4 flex flex-wrap gap-2"
@@ -79,9 +81,11 @@ function StateCodesPage() {
       ) : null}
       {codes.data ? (
         <FolderGrid
-          title="Captured full codes"
+          title="Captured code editions"
           hint={
-            codes.data.length ? `${codes.data.length.toLocaleString()} states` : "None captured yet"
+            jurisdictions.size
+              ? `${stateCount.toLocaleString()} states${jurisdictions.has("DC") ? " + DC" : ""}`
+              : "None captured yet"
           }
           items={codes.data.map((row) => ({
             key: `${row.state}-${row.datasetId ?? row.kind}`,

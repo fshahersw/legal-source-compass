@@ -2,7 +2,8 @@
 /**
  * Stage a limitations release in the private `corpus-originals` bucket without activating it.
  *
- *  1. Raw official captures -> limitations-raw-captures/sha256/<xx>/<sha256>.bin (exact response bytes).
+ *  1. Retained source captures -> limitations-raw-captures/sha256/<xx>/<sha256>.bin
+ *     (HTTP bytes or explicitly identified rendered DOM; capture method is preserved).
  *  2. Release files (rules/sources/coverage/cases JSON + text) -> atlas-private-data/sha256/<xx>/<sha256>.bin,
  *     the same content-addressed pattern as the live private snapshots.
  *  3. A staged manifest (calculation_activation_allowed:false) -> atlas-private-data/staged-releases/.
@@ -17,6 +18,7 @@
 import { createHash } from "node:crypto";
 import { readdir, readFile, writeFile, mkdir, stat } from "node:fs/promises";
 import { join, relative } from "node:path";
+import { readBytesWithRetry, requestWithRetry } from "./private-release-network.mjs";
 
 const PROJECT = "xosqzzsnhxcyehcnirpa";
 const BUCKET = "corpus-originals";
@@ -57,25 +59,17 @@ async function walk(dir) {
 }
 
 async function exists(storageKey) {
-  for (let attempt = 0; ; attempt++) {
-    try {
-      const r = await fetch(objectUrl(storageKey), {
-        headers: headers(),
-        signal: AbortSignal.timeout(120000),
-      });
-      if (r.status === 404 || r.status === 400) {
-        await r.body?.cancel();
-        return null;
-      }
-      if (r.ok) return new Uint8Array(await r.arrayBuffer());
-      await r.body?.cancel();
-      if (attempt >= 4 || ![408, 429, 500, 502, 503, 504].includes(r.status))
-        throw new Error(`READBACK_HTTP_${r.status}`);
-    } catch (error) {
-      if (attempt >= 4 || /^READBACK_HTTP_/.test(String(error?.message))) throw error;
-    }
-    await new Promise((res) => setTimeout(res, 2000 * 2 ** attempt));
+  const { response: r, bytes } = await readBytesWithRetry(() =>
+    fetch(objectUrl(storageKey), {
+      headers: headers(),
+      signal: AbortSignal.timeout(120000),
+    }),
+  );
+  if (r.status === 404 || r.status === 400) {
+    return null;
   }
+  if (r.ok) return bytes;
+  throw new Error(`READBACK_HTTP_${r.status}`);
 }
 
 async function putVerified(
@@ -87,19 +81,16 @@ async function putVerified(
   const existing = await exists(storageKey);
   let state = "already_present";
   if (!existing) {
-    for (let attempt = 0; ; attempt++) {
-      const r = await fetch(objectUrl(storageKey), {
+    const r = await requestWithRetry(() =>
+      fetch(objectUrl(storageKey), {
         method: "POST",
         headers: { ...headers(), "Content-Type": contentType, "x-upsert": "false" },
         body: bytes,
         signal: AbortSignal.timeout(300000),
-      });
-      await r.body?.cancel();
-      if (r.ok || r.status === 409) break;
-      if (attempt >= 3 || ![408, 429, 500, 502, 503, 504].includes(r.status))
-        throw new Error(`UPLOAD_HTTP_${r.status}`);
-      await new Promise((res) => setTimeout(res, 2000 * 2 ** attempt));
-    }
+      }),
+    );
+    await r.body?.cancel();
+    if (!r.ok && r.status !== 409) throw new Error(`UPLOAD_HTTP_${r.status}`);
     state = "uploaded";
   }
   const back = existing ?? (await exists(storageKey));
@@ -124,7 +115,7 @@ async function pool(items, worker, size = 4) {
 
 await mkdir(out, { recursive: true });
 
-// 1. raw captures (exact response bytes), de-duplicated by digest
+// 1. retained capture bytes, de-duplicated by digest; representation stays explicit.
 const rawFiles = (await walk(captures)).filter((f) => f.endsWith(".raw")).sort();
 const rawJobs = new Map();
 const captureIndex = [];
@@ -143,9 +134,17 @@ for (const file of rawFiles) {
     finalUrl: meta.finalUrl,
     retrievedAt: meta.retrievedAt,
     contentType: meta.contentType,
+    httpStatus: meta.status ?? null,
+    rendered: Boolean(meta.rendered),
+    representation: meta.representation ?? null,
+    extraction: meta.extraction ?? null,
+    ...(meta.browserReceipt
+      ? { browserReceipt: meta.browserReceipt, textProof: meta.textProof }
+      : {}),
     rawSha256: digest,
     rawBytes: bytes.length,
     textSha256: meta.textSha256,
+    textBytes: meta.textBytes ?? null,
     seeded: Boolean(meta.seeded),
     intermediary: Boolean(meta.intermediary),
     storageBucket: BUCKET,

@@ -20,6 +20,7 @@ Rules
 """
 import argparse, hashlib, html as H, json, os, re, subprocess, sys
 from collections import defaultdict
+from urllib.parse import urljoin, urlsplit
 
 BASE = "https://www.ksrevisor.gov"
 STATEMENT = "These statutes include amendments and new laws enacted during the 2025 legislative session."
@@ -48,19 +49,45 @@ def lines(fragment):
     return out
 
 
-def parse_toc(page):
+def parse_toc(page, duplicate_entries=None):
     """-> chapter (number, heading), {url: (article_number, article_heading, entry_label, title)}"""
-    m = re.search(r"(?s)<h2>\s*(Chapter\s+([0-9]+[a-z]?)\..*?)</h2>", page)
-    ch = (m.group(2), clean(m.group(1))) if m else (None, None)
+    from lxml import html as LH
+    document = LH.fromstring(page)
+    headings = [clean(h.text_content()) for h in document.xpath('//h2')]
+    heading = next((h for h in headings if re.match(r'Chapter\s+[0-9]+[a-z]?\.', h)), None)
+    m = re.match(r'Chapter\s+([0-9]+[a-z]?)\.', heading or '')
+    ch = (m.group(1), heading) if m else (None, None)
     art = (None, None)
     entries = {}
-    for t in re.finditer(r'(?s)<a class="collapsed"[^>]*>(.*?)</a>|<li>\s*([^<]*?)\s*<a href="(/statutes/chapters/[^"]+\.html)">(.*?)</a>', page):
-        if t.group(1) is not None:
-            head = clean(t.group(1))
+    for anchor in document.xpath('//a[@href] | //a[@class]'):
+        if 'collapsed' in (anchor.get('class') or '').split():
+            head = clean(anchor.text_content())
             n = re.match(r"Article\s+([0-9]+[a-z]?)\.", head)
-            art = (n.group(1) if n else None, head)
-        else:
-            entries[BASE + t.group(3)] = (art[0], art[1], clean(t.group(2)), clean(t.group(4)))
+            if n:
+                art = (n.group(1), head)
+            continue
+        url = urljoin(BASE, anchor.get('href') or '')
+        parts = urlsplit(url)
+        if not (parts.scheme == 'https' and parts.netloc == 'www.ksrevisor.gov'
+                and not parts.query and not parts.fragment
+                and re.fullmatch(r'/statutes/chapters/[A-Za-z0-9_/-]+\.html', parts.path)):
+            continue
+        li = anchor.getparent()
+        if li is None or li.tag != 'li':
+            raise ValueError('Section anchor is outside the reviewed publisher list structure')
+        # Native labels can contain inline markup, e.g. 32-104<i>l</i>, 32-104m.
+        # Preserve every character before this anchor; do not drop that whole page.
+        label = li.text or ''
+        for sibling in li:
+            if sibling is anchor:
+                break
+            label += sibling.text_content() + (sibling.tail or '')
+        entry = (art[0], art[1], clean(label), clean(anchor.text_content()))
+        if url in entries and entries[url] != entry and duplicate_entries is not None:
+            duplicate_entries.append({'url': url, 'earlier_label': entries[url], 'later_label': entry})
+        # Retain the existing last-printed-label behavior for repeated exact URLs;
+        # a duplicate is not a second section identity or a legal version choice.
+        entries[url] = entry
     return ch, entries
 
 
@@ -161,7 +188,7 @@ def coverage_gap(page, lead, parsed):
             "stored": nows("".join(lead) + "".join(l for p in parsed for l in p["lines"]))}
 
 
-ROW = re.compile(r"^\s*([0-9]{1,2}[a-z]?-[0-9][0-9a-z,]*)(?:\s+\(Supp\.\))?\s+(New|Am|Rep)\s+(\d+)\s+(\d+)\s+(\d+)\b(.*)$")
+ROW = re.compile(r"^\s*([0-9]{1,2}[a-z]?-[0-9][0-9a-z,]*)(?:\s+\(Supp\.\))?\s+((?:New|Am|Rep|Rev)(?:\s*&\s*(?:New|Am|Rep|Rev))*)\s+(\d+)\s+(\d+)\s+(\d+)\b(.*)$")
 # A row whose Type cell wraps onto the lines above and below it (e.g. "Rev" / "& Am": revived and amended).
 WRAPPED = re.compile(r"^\s*([0-9]{1,2}[a-z]?-[0-9][0-9a-z,]*)(?:\s+\(Supp\.\))?\s+(\d+)\s+(\d+)\s+(\d+)\b(.*)$")
 TYPE_PART = re.compile(r"^\s+((?:&\s*)?(?:Rev|New|Am|Rep)(?:\s*&\s*(?:Rev|New|Am|Rep))*)\s*$")
@@ -181,6 +208,9 @@ def parse_change_text(txt):
         m = ROW.match(line)
         if m:
             key, typ, bill, sec, slch = m.groups()[:5]
+            after = TYPE_PART.match(ls[i + 1]) if i + 1 < len(ls) else None
+            if after and after.group(1).lstrip().startswith('&'):
+                typ = _norm(typ + ' ' + after.group(1))
         else:
             m = WRAPPED.match(line)
             before = TYPE_PART.match(ls[i - 1]) if i else None
@@ -217,10 +247,11 @@ def build(work, out, cfg):
         if "/statutes/chapters/" in u:
             caps[u].append({**r, "path": os.path.join(work, "toc", r["sha256"])})
     toc = {}
+    toc_duplicate_labels = []
     chapters = {}
     for u, r in fetched.items():
         if re.search(r"/ksa_ch[0-9a-z]+\.html$", u):
-            ch, entries = parse_toc(open(os.path.join(work, "toc", r["sha256"]), encoding="utf-8", errors="replace").read())
+            ch, entries = parse_toc(open(os.path.join(work, "toc", r["sha256"]), encoding="utf-8", errors="replace").read(), toc_duplicate_labels)
             for e, v in entries.items():
                 toc[e] = (ch, v)
             chapters[u] = ch
@@ -310,6 +341,7 @@ def build(work, out, cfg):
                "pages": pages, "unfetched_child_pages": unfetched}, open(os.path.join(out, "toc-proof.json"), "w"), indent=0)
     out_of_scope = sorted({r["source_url"] for r in sources if "kslegislature.gov" in r["source_url"]})
     report = {"toc_chapters": len(chapters), "toc_pages": len(toc), "units": len(units), "sections": len(sections),
+              "toc_duplicate_labels": toc_duplicate_labels,
               "multi_version_pages": sum(1 for p in pages if p["sections"] > 1), "objects": len(objects),
               "superseded_captures": superseded, "unfetched_child_pages": unfetched,
               "out_of_scope_retained": {"reason": "Kansas Constitution pages (kslegislature.gov); not part of K.S.A.", "urls": out_of_scope},

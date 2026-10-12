@@ -56,7 +56,7 @@ export function SectionTools({
           <Button asChild size="sm">
             <a href={fields.sourceUrl} target="_blank" rel="noreferrer">
               <ExternalLink className="mr-1 size-3.5" />
-              Official source
+              Source page
             </a>
           </Button>
         ) : null}

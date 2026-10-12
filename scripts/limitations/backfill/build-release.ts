@@ -39,6 +39,7 @@ import {
 } from "../../../src/lib/limitations/backfill/entries";
 import { matchPassage } from "../../../src/lib/limitations/backfill/passageMatch";
 import { reuseSourceAuthority } from "../../../src/lib/limitations/backfill/sourceAuthority";
+import { captureReceiptDetails } from "../../../src/lib/limitations/backfill/captureProvenance";
 import {
   isIntermediaryOnlyCapture,
   ruleFromEntry,
@@ -572,18 +573,14 @@ function ensureSource(
   if (meta.seededFrom || sourceIds.has(id))
     return reuseSourceAuthority(sourceById.get(id), id, kind);
   const host = new URL(meta.url).hostname;
-  const how = meta.intermediary
-    ? `Text obtained through an extraction intermediary (${meta.extraction ?? "unspecified"}); not a direct HTTP response`
-    : meta.rendered
-      ? "Official page rendered in headless Chrome without login or terms acceptance; DOM text extracted"
-      : "Direct HTTPS GET of the official page; HTML block text extraction (scripts/styles/head omitted) or PDF text extraction; no OCR";
+  const receiptDetails = captureReceiptDetails(meta);
   const source: LimitationSource = {
     id,
     state,
     title: citations.length ? citations.slice(0, 3).join("; ") : `Official capture ${captureId}`,
     publisher: host,
     url: meta.url,
-    method: how,
+    method: receiptDetails.method,
     schemaVersion: "1.0.0",
     capturedAt: meta.retrievedAt,
     verifiedAt: meta.retrievedAt,
@@ -619,7 +616,7 @@ function ensureSource(
         : meta.intermediary
           ? `Official page text obtained through an extraction intermediary (${meta.extraction ?? "unspecified"}) on ${meta.retrievedAt.slice(0, 10)} for this release.`
           : `Captured directly from the official host on ${meta.retrievedAt.slice(0, 10)} for this release.`,
-      httpStatus: 200,
+      ...(receiptDetails.httpStatus === undefined ? {} : { httpStatus: receiptDetails.httpStatus }),
       rawSha256: meta.rawSha256,
       textSha256: meta.textSha256,
     },

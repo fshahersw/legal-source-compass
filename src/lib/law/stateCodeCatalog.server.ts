@@ -238,6 +238,7 @@ type ProjectedStateRow = {
   sections?: unknown;
   currency?: unknown;
   structure_levels?: unknown;
+  source_qualification?: unknown;
 };
 
 function asText(value: unknown): string | null {
@@ -267,7 +268,9 @@ async function projectedListings(): Promise<StateCodeListing[]> {
         edition: projectedEdition(row.currency),
         currency: projectedCurrency(row.currency),
         sourceUrl: asText(row.publisher_url),
-        note: asText(row.publisher),
+        note:
+          [asText(row.publisher), asText(row.source_qualification)].filter(Boolean).join(" · ") ||
+          null,
         datasetId: null,
         hasSnapshot: false,
         titleFilter: null,
@@ -568,7 +571,7 @@ function parseOutlineSections(value: unknown) {
   });
 }
 
-function parseOutline(value: unknown, read: "v2" | "v3"): ProjectedOutline {
+function parseOutline(value: unknown, read: "v2" | "v3" | "v4"): ProjectedOutline {
   const row = value && typeof value === "object" ? (value as Record<string, unknown>) : null;
   if (!row || row["available"] !== true) return { available: false };
   if (row["kind"] === "sections" && Array.isArray(row["sections"])) {
@@ -600,9 +603,11 @@ function parseOutline(value: unknown, read: "v2" | "v3"): ProjectedOutline {
         const group = item && typeof item === "object" ? (item as Record<string, unknown>) : null;
         if (!group || typeof group["count"] !== "number") return [];
         const level = asText(group["level"]);
+        const nodeId = asText(group["node_id"]);
         return [
           {
             ...(level ? { level } : {}),
+            ...(nodeId ? { node_id: nodeId } : {}),
             number: asText(group["number"]),
             heading: asText(group["heading"]),
             count: group["count"],
@@ -619,18 +624,31 @@ function parseOutline(value: unknown, read: "v2" | "v3"): ProjectedOutline {
 }
 
 let outlineV3Missing = false;
+let outlineV4Missing = false;
 
 /**
- * Outline under a recorded path. projection/3 matches path steps anywhere in a section's hierarchy
- * (optional declared levels may be skipped); projection/2 matches by position only. v3 is preferred
- * and v2 is the fallback until the v3 contract is applied. A path v2 cannot express (one that skips a
- * declared level) is reported as `unsupported_path` instead of an error, so the reader can say so.
+ * Exact source-prefix outline. v4 preserves native node IDs and publisher order;
+ * v3/v2 remain fallbacks for legacy paths that contain no native node IDs.
  */
 export async function projectedOutline(
   state: string,
   path: HierarchyStep[],
 ): Promise<ProjectedOutline> {
-  const p_path = path.map((step) => ({ level: step.level, number: step.number }));
+  const p_path = path.map((step) => ({
+    level: step.level,
+    number: step.number,
+    ...(step.node_id ? { node_id: step.node_id } : {}),
+  }));
+  if (!outlineV4Missing) {
+    const v4 = await rpcPostOptional<unknown>("corpus_publisher_code_projected_outline_v4", {
+      p_jurisdiction: state,
+      p_path,
+    });
+    if (v4 !== null) return parseOutline(v4, "v4");
+    outlineV4Missing = true;
+  }
+  // An older RPC would discard identity and merge distinct publisher nodes.
+  if (path.some((step) => step.node_id)) return { available: true, kind: "unsupported_path" };
   if (!outlineV3Missing) {
     const v3 = await rpcPostOptional<unknown>("corpus_publisher_code_projected_outline_v3", {
       p_jurisdiction: state,

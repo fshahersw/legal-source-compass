@@ -12,6 +12,8 @@ export default defineConfig({
   vite: {
     server: {
       fs: { deny: [".env", ".env.*", "*.{crt,pem}", "**/.git/**", "**/private/**"] },
+      // Acquisitions are read through server APIs; watching raw captures stalls local HMR.
+      watch: { ignored: ["**/private/**"] },
     },
     plugins: [{
       name: "atlas-private-data-boundary",

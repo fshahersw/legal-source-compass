@@ -1,2 +1,3 @@
 # capture.py is imported by the portable text-rendering regressions; no network calls occur in those tests.
 requests==2.32.5
+lxml==6.0.2

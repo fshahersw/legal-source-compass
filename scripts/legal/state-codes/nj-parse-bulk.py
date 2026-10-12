@@ -113,14 +113,17 @@ def bind_headings(text, rtf):
 def load_archive(base, name):
     receipt_path = base / f"{name}-TEXT.zip.receipt.json"
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
-    raw = (base / receipt["raw_file"]).read_bytes()
+    archive_path = (base / receipt["raw_file"]).resolve()
+    if not archive_path.is_relative_to(base.resolve()):
+        raise ValueError("Archive path escapes its capture root")
+    raw = archive_path.read_bytes()
     if receipt.get("http_status") != 200 or len(raw) != receipt["bytes"] or sha(raw) != receipt["sha256"]:
         raise ValueError(f"Archive receipt mismatch: {name}")
     inventory = json.loads((base / f"{name}-TEXT.zip.receipt.json.inventory.json").read_text())
     if inventory["archive_sha256"] != sha(raw):
         raise ValueError("Member inventory source mismatch")
     members = {}
-    with zipfile.ZipFile(base / receipt["raw_file"]) as archive:
+    with zipfile.ZipFile(archive_path) as archive:
         if set(archive.namelist()) != {f"{name}.TXT", f"{name}.RTF"}:
             raise ValueError("Unexpected or duplicate archive members")
         if len(archive.infolist()) != 2:

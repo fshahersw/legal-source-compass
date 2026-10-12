@@ -51,6 +51,38 @@ describe("claimCoverageFor", () => {
     expect(claimCoverageFor([flagged], "personal_injury", "none").status).toBe("flagged");
   });
 
+  it("does not label legacy baseline arithmetic as available when source review remains flagged", () => {
+    const flagged = rule({
+      id: "legacy-general",
+      computation: "baseline_only",
+      provenance: { entryStatus: "flagged" } as NonNullable<LimitationRule["provenance"]>,
+    });
+    const original = structuredClone(flagged);
+    const cell = claimCoverageFor([flagged], "personal_injury", "none");
+    expect(cell).toMatchObject({ ruleId: "legacy-general", status: "flagged" });
+    expect(flagged).toEqual(original);
+  });
+
+  it("keeps flagged variants distinct from a verified general baseline", () => {
+    const cell = claimCoverageFor(
+      [
+        rule({ id: "general", computation: "baseline_only" }),
+        rule({
+          id: "flagged-variant",
+          subtype: "special_claim",
+          computation: "baseline_only",
+          provenance: { entryStatus: "flagged" } as NonNullable<LimitationRule["provenance"]>,
+        }),
+      ],
+      "personal_injury",
+      "none",
+    );
+    expect(cell.status).toBe("baseline");
+    expect(cell.variants).toEqual([
+      { subtype: "special_claim", ruleId: "flagged-variant", status: "flagged" },
+    ]);
+  });
+
   it("is Not recorded when only variants exist, and says so", () => {
     const cell = claimCoverageFor(
       [rule({ id: "v", subtype: "foreign_object", computation: "baseline_only" })],

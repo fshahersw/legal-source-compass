@@ -280,6 +280,18 @@ describe("full state code contract", () => {
     expect(parseHierarchyPath("not-json")).toEqual([]);
   });
 
+  it("retains exact publisher node IDs for repeated unnumbered or same-numbered branches", async () => {
+    const { sectionHierarchy } = await import("./stateCodeContract");
+    const path = [{ level: "heading", number: null, node_id: "CA:PEN:2" }];
+    expect(parseHierarchyPath(JSON.stringify(path))).toEqual(path);
+    expect(parseHierarchyPath([{ ...path[0], node_id: 2 }])).toEqual([]);
+    expect(parseHierarchyPath([{ ...path[0], node_id: "" }])).toEqual([]);
+    expect(sectionHierarchy([{ ...path[0], heading: "PRELIMINARY" }])).toEqual([
+      { ...path[0], heading: "PRELIMINARY" },
+    ]);
+    expect(sectionHierarchy([{ ...path[0], node_id: "x".repeat(257) }])).toEqual([]);
+  });
+
   it("matches a citation or a heading and ignores a one-character query", () => {
     expect(matchesCitationOrHeading("140.001", "CP:140.001", "Sec. 140.001. DEFINITIONS.")).toBe(
       true,
@@ -309,9 +321,9 @@ describe("sectionHierarchy", () => {
       { level: "title", number: "42", heading: "JUDICIARY AND JUDICIAL PROCEDURE" },
       { level: "chapter", number: "55", heading: null },
     ]);
-    expect(sectionHierarchy([{ level: "title", number: "1" }, "bad", { level: "part", number: "I" }])).toEqual([
-      { level: "title", number: "1", heading: null },
-    ]);
+    expect(
+      sectionHierarchy([{ level: "title", number: "1" }, "bad", { level: "part", number: "I" }]),
+    ).toEqual([{ level: "title", number: "1", heading: null }]);
     expect(sectionHierarchy(null)).toEqual([]);
   });
 });

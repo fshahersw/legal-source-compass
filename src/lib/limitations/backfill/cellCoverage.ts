@@ -1,15 +1,8 @@
-import type { ClaimCoverage, ClaimCoverageStatus, ClaimType, LimitationRule } from "../types";
+import type { ClaimCoverage, ClaimType, LimitationRule } from "../types";
+import { ruleCoverageStatus } from "../coverageStatus";
 
 const VARIANTS_ONLY_SENTENCE =
   "Only narrow fact-pattern variants are recorded; none is treated as the claim type's rule.";
-
-
-const statusOf = (rule: LimitationRule): ClaimCoverageStatus =>
-  rule.computation === "baseline_only"
-    ? "baseline"
-    : rule.provenance?.entryStatus === "flagged"
-      ? "flagged"
-      : "research_only";
 
 /**
  * Coverage of one claim type in one jurisdiction. The cell reflects ONLY the claim type's general rule:
@@ -29,11 +22,15 @@ export function claimCoverageFor(
     general[0];
   const variants = mine
     .filter((r) => r.subtype && r.subtype !== "general" && r.period !== null)
-    .map((r) => ({ subtype: r.subtype!, ruleId: r.id, status: statusOf(r) }))
+    .map((r) => ({ subtype: r.subtype!, ruleId: r.id, status: ruleCoverageStatus(r) }))
     .sort((a, b) => a.subtype.localeCompare(b.subtype));
   if (!chosen) {
     // The reason may come from an earlier release that already carries this sentence; append it once.
-    const base = notRecordedReason.split(VARIANTS_ONLY_SENTENCE).join("").replace(/\s+$/, "").trim();
+    const base = notRecordedReason
+      .split(VARIANTS_ONLY_SENTENCE)
+      .join("")
+      .replace(/\s+$/, "")
+      .trim();
     return {
       claimType,
       status: "not_recorded",
@@ -43,7 +40,7 @@ export function claimCoverageFor(
   }
   return {
     claimType,
-    status: statusOf(chosen),
+    status: ruleCoverageStatus(chosen),
     ...(chosen.basis ? { basis: chosen.basis } : {}),
     ruleId: chosen.id,
     ...(chosen.verification ? { grade: chosen.verification.grade } : {}),

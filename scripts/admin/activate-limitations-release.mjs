@@ -12,6 +12,7 @@
  */
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
+import { readBytesWithRetry, requestWithRetry } from "./private-release-network.mjs";
 
 const args = Object.fromEntries(
   process.argv.slice(2).map((a) => {
@@ -26,11 +27,13 @@ if (args["from-storage"]) {
   const key = process.env.EXTERNAL_SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key || !args.release) throw new Error("CREDENTIALS_AND_RELEASE_REQUIRED");
   const objectKey = `atlas-private-data/staged-releases/${args.release}/manifest.${args.sha256}.json`;
-  const r = await fetch(`${url}/storage/v1/object/corpus-originals/${objectKey}`, {
-    headers: { apikey: key },
-  });
+  const { response: r, bytes } = await readBytesWithRetry(() =>
+    fetch(`${url}/storage/v1/object/corpus-originals/${objectKey}`, {
+      headers: { apikey: key },
+    }),
+  );
   if (!r.ok) throw new Error(`STAGED_MANIFEST_NOT_FOUND_${r.status}`);
-  stagedBytes = Buffer.from(await r.arrayBuffer());
+  stagedBytes = Buffer.from(bytes);
 } else {
   stagedBytes = await readFile(args.staged);
 }
@@ -61,12 +64,14 @@ if (args.verify) {
   const key = process.env.EXTERNAL_SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) throw new Error("CREDENTIALS_REQUIRED_IN_ENVIRONMENT");
   for (const [name, entry] of Object.entries(staged.files)) {
-    const r = await fetch(`${url}/storage/v1/object/info/${manifest.bucket}/${entry.storage_key}`, {
-      headers: {
-        apikey: key,
-        ...(key.startsWith("sb_") ? {} : { Authorization: `Bearer ${key}` }),
-      },
-    });
+    const r = await requestWithRetry(() =>
+      fetch(`${url}/storage/v1/object/info/${manifest.bucket}/${entry.storage_key}`, {
+        headers: {
+          apikey: key,
+          ...(key.startsWith("sb_") ? {} : { Authorization: `Bearer ${key}` }),
+        },
+      }),
+    );
     await r.body?.cancel();
     if (!r.ok) throw new Error(`MISSING_OBJECT ${name}`);
   }
