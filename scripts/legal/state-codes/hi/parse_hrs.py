@@ -17,6 +17,7 @@ BLOCKS={'p','li','tr','h1','h2','h3','h4','h5','h6','dt','dd'}
 HYPHEN=r'[-\u2010\u2011\u2012\u2013\u2014]'
 NUMBER=rf'[0-9]+[A-Za-z]*(?::[0-9A-Za-z]+)?{HYPHEN}[0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*'
 CITATION=re.compile(rf'^\s*\[?\s*§{{1,2}}\s*(?P<number>{NUMBER}(?:\s*(?:,|to|through|and)\s*(?:§{{1,2}}\s*)?{NUMBER})*)\]?')
+RULE=re.compile(r'^\s*\[?\s*(?P<citation>Rule\s+(?P<number>[0-9]+(?:\.[0-9]+)?))\]?(?=\s|$)')
 
 
 def normalize(text):
@@ -107,6 +108,19 @@ def parse_section_html(page, filename):
         match=CITATION.match(first[1]);citation=match.group('number')
         lead=bold_heading(first[0]);lead_match=CITATION.match(lead)
         if lead_match:heading=lead[lead_match.end():].lstrip(' ].').strip()or None
+    # Chapter 626's publisher pages print evidence-rule labels. Require a bold
+    # literal rule label matching that exact native filename; do not infer a
+    # statutory section number or treat a rule mention in prose as a heading.
+    rule_native=re.fullmatch(r'HRS_0626-0001-([0-9]+)(?:_([0-9]+))?\.htm',filename)
+    evidence_rule=False
+    if first is None and not index and rule_native:
+        native_number=str(int(rule_native.group(1)))+('.'+str(int(rule_native.group(2)))if rule_native.group(2)else'')
+        for element,value in blocks:
+            match=RULE.match(value);lead=bold_heading(element);lead_match=RULE.match(lead)
+            if match and lead_match and match.group('number')==lead_match.group('number')==native_number:
+                first=(element,value);citation=normalize(match.group('citation'))
+                heading=lead[lead_match.end():].lstrip(' ].').strip()or None
+                evidence_rule=True;break
     # A retained native page may be a reserved article marker, not a statute.
     # Require the exact source form and matching native article number; use the
     # literal article label instead of inventing a section citation from its URL.
@@ -118,6 +132,7 @@ def parse_section_html(page, filename):
     status=None
     if heading and re.match(r'^(REPEALED|RESERVED|TRANSFERRED|RENUMBERED)\b',heading,re.I):status=heading
     if reserved_article:status='Publisher reserved article page; no section citation is printed. The complete source-page marker is retained.'
+    if evidence_rule:status='Publisher evidence-rule page in HRS chapter 626; the literal printed Rule label is retained without inventing a statutory section citation.'
     if not index and first is None and not reserved_article:unclassified.append('No exact leading statutory citation found')
     if not coverage_ok:unclassified.append('Text outside recognized source block structure')
     first_position=next((i for i,(el,_)in enumerate(blocks)if first is not None and el is first[0]),0)
@@ -130,8 +145,9 @@ def parse_section_html(page, filename):
         annotations=annotations,attachments=images,unclassified=unclassified,source_style_exceptions=style_exceptions,
         source_character_sequence_preserved=coverage_ok,block_count=len(blocks),
         text_sha256=hashlib.sha256(text.encode('utf8')).hexdigest(),text_code_points=len(text),
-        printed_citation_markers=sum(bool(CITATION.match(t))for _,t in blocks),
+        printed_citation_markers=sum(bool(CITATION.match(t))for _,t in blocks)+(1 if evidence_rule else 0),
         reserved_article_page=reserved_article,
+        evidence_rule_page=evidence_rule,
         publication_allowed=False,current_law_verified=False,calculation_activation_allowed=False)
 
 
@@ -143,6 +159,17 @@ def parse_chapter_index(page,filename):
     blocks=[el for container in content_containers(document)for el in leaf_blocks(container)
             if block_text(el)and not is_annotation(el)]
     chapter=None;heading=None;headers=[]
+    # A reserved chapter range has one printed marker and no section text.
+    # Associate it only with the native index for the explicitly printed start.
+    reserved_range=(re.fullmatch(r'\[CHAPTERS ([0-9]+) to ([0-9]+) RESERVED\.\]',block_text(blocks[0]))
+                    if len(blocks)==1 else None)
+    if reserved_range:
+        native=re.fullmatch(r'HRS_0*([0-9]+)-\.htm',filename)
+        if native is None or native.group(1)!=reserved_range.group(1)or int(reserved_range.group(2))<int(reserved_range.group(1)):
+            raise ValueError('Printed reserved chapter range differs from exact publisher index filename')
+        return dict(chapter=reserved_range.group(1),heading=block_text(blocks[0]),text=parsed['text'],
+            annotations=parsed['annotations'],chapter_headers=[],reserved_chapter_range=True,
+            source_character_sequence_preserved=parsed['source_character_sequence_preserved'])
     chapter_label=re.compile(r'^\[?CHAPTER\s+([0-9]+[A-Za-z]*)\]?(?:\s+\[(?:OLD|NEW)\])?$',re.I)
     for i,element in enumerate(blocks):
         line=block_text(element);match=chapter_label.fullmatch(line)

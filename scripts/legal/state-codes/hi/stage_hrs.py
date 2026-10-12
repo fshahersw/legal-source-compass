@@ -126,6 +126,8 @@ def stage(directory,output,emit_packet=False,assets_directory=None):
         heading_not_recorded_pages=sum(p['heading']is None for _,_,p in section_rows),
         source_style_exception_pages=len(style_exceptions),
         reserved_article_pages=sum(p['reserved_article_page']for _,_,p in section_rows),
+        evidence_rule_pages=sum(p['evidence_rule_page']for _,_,p in section_rows),
+        reserved_chapter_ranges=sum(bool(p.get('reserved_chapter_range'))for p in indices.values()),
         maximum_section_utf8_bytes=max((len(p['text'].encode())for _,_,p in section_rows),default=0),
         full_directory_inventory_sha256=digest((directory/'directory-inventory.json').read_bytes()),
         source_text_scope='Published statute paragraphs; publisher editorial annotations retained separately',
@@ -140,7 +142,7 @@ def stage(directory,output,emit_packet=False,assets_directory=None):
     # Images are retained separately and disclosed; they never become invented text.
     manifest=dict(schema_version='publisher-code-manifest/2',jurisdiction='HI',publisher='Hawaii State Legislature',
         publisher_url='https://www.capitol.hawaii.gov/',source_system='hi-hrs',code_title='Hawaii Revised Statutes',
-        source_qualification='Publisher HRS source pages, including repealed and reserved markers and pages printing multiple versions. Editorial annotations and linked images remain in retained originals. Compilation-through date and current legal effect are not recorded.',
+        source_qualification='Publisher HRS source pages, including chapter 626 evidence rules, repealed and reserved markers, and pages printing multiple versions. Editorial annotations and linked images remain in retained originals. Compilation-through date and current legal effect are not recorded.',
         parser=dict(name='hi-hrs-html',version='3'),
         retrieval=dict(methods=['publisher_page'],official_source=True,terms_gate=False,
             rate_limit_ms=min(receipt.get('rate_limit_ms',250)for receipt,_ in captures.values()),
@@ -185,11 +187,12 @@ def stage(directory,output,emit_packet=False,assets_directory=None):
             history=parsed['history'],status_note=' '.join(notes)or None,span=parsed['span'],currency=currency))
         proof.append(dict(url=url,markers=1,sections=1,printed_citation_markers=parsed['printed_citation_markers'],
             reserved_article_page=parsed['reserved_article_page'],
+            evidence_rule_page=parsed['evidence_rule_page'],
             character_sequence_preserved=parsed['source_character_sequence_preserved']))
     for name,rows in [('objects',list(objects.values())),('units',units),('sections',sections)]:
         with (output/(name+'.jsonl')).open('x',encoding='utf8',newline='\n')as stream:
             for row in rows:stream.write(json.dumps(row,ensure_ascii=False,separators=(',',':'))+'\n')
-    json_file(output/'toc-proof.json',dict(marker='One exact directory-listed native source page with a printed statutory citation or an explicit reserved article marker; all printed versions are preserved',
+    json_file(output/'toc-proof.json',dict(marker='One exact directory-listed native source page with a printed statutory citation, chapter 626 Rule label, or explicit reserved article marker; all printed versions are preserved',
         pages=proof,unfetched_child_pages=[],chapter_index_pages=len(indices),directory_inventory_sha256=report['full_directory_inventory_sha256']))
     return report
 

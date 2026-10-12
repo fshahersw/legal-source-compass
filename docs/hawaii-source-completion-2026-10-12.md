@@ -3,9 +3,15 @@
 The source is the Hawaii Legislature's exact `data.capitol.hawaii.gov/hrscurrent/`
 directory. The retained directory traversal identifies 14 volumes, 1,108 chapter
 directories, and 24,081 HRS HTML pages, including 1,108 chapter indexes. The
-expected remaining 22,973 identities are section-page filenames, subject to the
-complete source audit. These counts describe source files, not present legal
+remaining 22,973 identities are native source-page filenames. These counts
+describe source files, not present legal
 force or distinct enacted provisions.
+
+Protected browsing was published on October 12, 2026 after complete private
+intake, whole-candidate database readback, and independent source review. It
+contains 22,973 captured source-page records across 815 nonempty chapters.
+Compilation currency and current legal effect remain unverified, and these
+records do not activate calculator rules.
 
 ## Source boundaries
 
@@ -50,12 +56,27 @@ is that literal article label, with an explicit reserved-page disclosure; no
 section citation or operative text is invented from the filename. Native page
 counts therefore include reserved and repealed source records.
 
+Chapter 626 contains 89 pages with printed evidence-rule labels, including
+`[Rule 409.5]`. Each rule label must be bold in the source and match the exact
+publisher filename's rule number. The literal `Rule` citation and a source-type
+disclosure are retained; no statutory section citation is invented. Three lone
+reserved chapter-range markers remain chapter indexes and create no section
+records. Their printed starting chapter must match the native index filename.
+The rejected first complete audit is preserved under `hi-packet-v3/`; it caught
+these 92 late-format holds before any packet could be released for intake.
+
 Exact publisher filenames form native IDs. Printed citations are separate
 fields, including the publisher's punctuation. Unknown text or an inconsistent
 chapter identity creates a review hold. The retrieval date and the directory
 name do not establish compilation currency: each record uses the contract's
 unknown-currency form, with no through date or invented publisher statement.
 Current-law and calculator flags remain false.
+
+Three index headings print lowercase chapter suffixes while their directory
+names use uppercase. The printed case is preserved, independently proved against
+the complete heading block, and compared case-insensitively with the exact
+native directory. Ten source pages have mixed or inherited heading styles; their
+complete text is retained while a separate heading value remains unparsed.
 
 Linked images are not converted into invented statute text. `capture_assets.py`
 first proves each reference against its retained source HTML, then captures only
@@ -132,7 +153,7 @@ or original-object registrations. The old units include administrative and
 constitutional pages and use a filename-plus-hash-suffix identity scheme. Keep
 their current and historical digests unchanged; they are not new HRS section
 candidates. Existing projected section readers select only `code-section`
-records. The eventual state unit count includes retained legacy units, while
+records. The final state unit count includes retained legacy units, while
 the published section count must reconcile exactly to the new HRS page inventory.
 No old source-unit content is approved by the new section review.
 
@@ -143,11 +164,107 @@ registered run activity. The closure receipt is
 units and 3,059 private objects were retained. Their original digests remain the
 post-intake preservation baseline.
 
-The current partial evidence is under
-`private/coverage-completion-2026-10-12/hi-audit-retained-images/`: 6,405 captured
-pages, 6,077 section pages, 328 chapter indexes, zero interpretation holds, and
-three retained image assets. Acquisition was still incomplete when this note was
-written; this note does not claim full intake, publication, or deployment.
-The separate fresh sample subsequently captured 20 section pages across all 14
+Acquisition completed at 2026-10-12 20:42:32 UTC with all 24,081 listed HRS HTML
+pages and zero fetch errors. The 1,123 root/volume/chapter directory responses
+are retained separately, giving 25,204 capture receipts. Three linked images
+totaling 32,403 bytes are also retained. The original directory inventory hash
+remains `d1d9fda07a6389a999939fabe5aa22a2556a4ec7c15ec94e8899abcebef3f5f8`.
+The complete `hi-packet-v4/` candidate passed independent source verification,
+the fresh-sample comparison, and the common lander's dry preflight. It contains
+22,973 native page records and source units, backed by 48,180 objects: 25,207
+originals and 22,973 UTF-8 derivatives, totaling 127,887,092 bytes. All source
+character sequences and Unicode spans matched; the verifier also checked 5,057
+section-page annotation sequences and all three linked images. All 815 nonempty
+chapter identities/headings passed their source checks. The complete parse has
+zero holds and zero missing pages. The manifest SHA-256 is
+`e804d2ef84ee6ad3e8c30bcb740312f5641bdb9ec5d89477cccbfd874615dee5`.
+Its deterministic initial intake run is `ef2a458a-1bdb-50d9-9f39-5c5320421dba`.
+The read-only post-intake SQL and expected full data/provenance digests are in
+`hi-review-v4/`; they require all 1,500 legacy units to remain unchanged and a
+state total of 24,473 source units. The completed readback meets those conditions.
+The separate fresh sample captured 20 section pages across all 14
 volumes and their 18 distinct chapter indexes, with zero parser holds. Its bytes
 and review are under `private/coverage-completion-2026-10-12/hi-source-sample-20261012/`.
+
+The raw-only storage preupload completed at 20:54:03 UTC with all 20,294 planned
+originals verified. After its completion marker, the offline bridge revalidated
+every receipt against both the original plan and final packet, retained all
+20,294, and excluded none. The source checkpoint was unchanged. The fresh bridge
+is `hi-final-receipt-bridge/objects.jsonl`, with SHA-256
+`313b5810456410366f1b117b411aa48a8325aed999aca231cbb8d0485b40e524`.
+Use it only as a new final-intake object's checkpoint; preserve the original
+preupload files. The final intake retained and verified the remaining 27,886
+final-packet objects.
+Neither the preupload nor receipt bridge changes database or publication gates.
+
+The post-intake readback and guarded publication SQL now join each section to
+its exact source unit once. This removes a repeated candidate scan while keeping
+the same source hash, text hash, Unicode span, and length checks. Missing or null
+evidence still fails; the source/type/native primary key prevents duplicate
+matches. An isolated SQL regression confirms identical prior and revised results
+for a valid Unicode span and 15 invalid evidence cases. The previous SQL and
+expected evidence remain retained byte-for-byte in `hi-review-v4/pre-unit-join-v1/`.
+
+Independent review confirmed that the manifest, all 1,630 data/provenance group
+hashes, seven error counters, and both complete object ledgers are unchanged.
+The regenerated publication guard again passed its isolated positive path,
+gate-only hold test, and all 14 rejection cases. Its SHA-256 is
+`f6361197ee0e7f299ca8d88722dfbd87042a629b6a50db34fd9e147372f5601c`;
+the read-only SQL SHA-256 is
+`3f127382e10d7981faf35fef84e2d6bb4b790b803e1fb9dfc8727d74daa0b7e7`.
+The offline fixtures were followed by the completed live intake and guarded
+publication described below.
+
+The private intake finished at 2026-10-12 21:20:58.715815 UTC with 92 verified
+batches and 45,946 new rows: 22,973 sections and 22,973 source units. Every one of
+the 48,180 unique objects has an authenticated whole-object SHA-256 readback
+receipt. Their total size is 127,887,092 bytes. An independent receipt review
+matched the complete final object plan, with no missing or duplicate receipt.
+The completion receipt is `hi-review-v4/intake-completion-receipt.json`.
+
+The database readback matched all 1,630 candidate data/provenance group digests,
+with zero errors across payload, scope, gates, versions, originals, units or
+derivatives, and native identities. There were no open Hawaii runs. The 1,500
+legacy units retained their exact current and historical digests, and the guarded
+publication also verified all 3,059 legacy private objects. The saved readback
+SHA-256 is
+`062e6e9a035b609ea0afcfe2ae552598dc275941f5c5f8993b59ab6cb248eca6`;
+`hi-review-v4/comparison.json` records the passing complete comparison.
+
+The separately reviewed publication transaction succeeded at
+2026-10-12 21:22:45.931755 UTC. Its receipt,
+`hi-review-v4/published-readback.json`, records `review_status=reviewed` and the
+state browse gate enabled for the exact reviewed manifest. The published count
+is 22,973 source-page records; all 1,500 legacy units remain, bringing total
+source units to 24,473. Current-law verification and calculator activation remain
+false. The review note explicitly describes unknown compilation currency,
+89 literal evidence-rule pages, reserved/repealed markers, 113 multiple-citation
+pages, and the three linked-image disclosures.
+
+The production HTTP check passed all 16 requests: 15 exact native source-page
+samples and the complete 815-chapter outline. Full text (trim only), citation,
+heading, source URL, history, status disclosure, currency, and hierarchy matched
+the final packet. Every chapter identity, heading, and record count matched; the
+chapter counts total 22,973. The samples cover evidence rules, reserved and OLD
+pages, mixed editorial styling, linked images, unparsed separate headings, and
+literal lowercase, percent-encoded, and `.docx` native filenames. All responses
+were HTTP 200 and contained no forbidden private fields. A separate offline
+replay rechecked their saved bytes and receipt hashes with zero network requests.
+Evidence is in `hi-review-v4/public-http-live/` and
+`hi-review-v4/public-http-independent-replay/`. The live report SHA-256 is
+`a3e8dfee27679561f8df98f4ebf4638f82705b8e984ee626e91c8323ba454e5e`.
+
+The separate protected projection readback passed all 15 exact source and
+public-field checks, with zero sample failures and zero browser-role execute
+grants on the publisher RPCs. Unknown section IDs and retained legacy unit IDs
+returned no projected section. The state and code listings returned the exact
+counts and unknown currency, and the root outline contained all 815 chapters.
+The receipt is `hi-review-v4/protected-projection-readback.json`, SHA-256
+`c9b0c71449bedd4c1ae8810b42b6c7f8f0f2ef7499474d991805442bb17704b4`.
+
+The final production listing check passed for exactly 50 states plus DC and
+Hawaii's direct entry; its two requests and scope limitations are recorded in
+`validation/all-jurisdiction-live-final/report.json`. This confirms browsing
+availability, not current legal force or an independent review of every existing
+state record. Production browser inspection also confirmed the page rendering
+for native chapter 626 and its literal `Rule 409.5` citation.

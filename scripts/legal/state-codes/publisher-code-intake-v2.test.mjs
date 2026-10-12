@@ -845,3 +845,85 @@ test("a later run cannot reuse a payload hash for different content", async () =
   );
   await database.close();
 });
+
+test("Hawaii readback joins units once without changing missing or malformed evidence results", async () => {
+  const generator = await fs.readFile("scripts/legal/state-codes/hi/review_export.py", "utf8");
+  const sql = generator.match(/SQL=r'''([\s\S]*?)'''/)[1];
+  const sectionCheck = sql.match(/else (coalesce\(u\.native_id[\s\S]*?)end unit_ok,/)[1];
+  const readUnitJoin = (source) => source.match(/left join candidate u[^\r\n]+/)[0].replace(/\),$/, "");
+  const unitJoin = readUnitJoin(sql);
+  assert.equal(readUnitJoin(sql.replace(/\r?\n/g, "\r\n")), readUnitJoin(sql.replace(/\r\n/g, "\n")));
+  const priorCheck = `exists(select 1 from candidate u
+    where u.entity_type='code-source-unit' and u.native_id=e.data->>'unit_id'
+    and u.data->>'text_sha256'=e.data->>'unit_text_sha256'
+    and u.provenance->>'source_sha256'=e.provenance->>'source_sha256'
+    and e.data->>'text_sha256'=encode(sha256(convert_to(e.data->>'text','UTF8')),'hex')
+    and (e.data->>'text_code_points')::bigint=length(e.data->>'text')
+    and e.data->'span'->>'unit'='unicode_code_points' and (e.data->'span'->>'start')::bigint>=0
+    and (e.data->'span'->>'end')::bigint<=(u.data->>'text_code_points')::bigint
+    and (e.data->'span'->>'end')::bigint-(e.data->'span'->>'start')::bigint=length(e.data->>'text'))`;
+  const text = "Fixture 😀";
+  const sourceSha = sha("synthetic publisher bytes");
+  const fixture = [
+    {
+      entity_type: "code-source-unit",
+      native_id: "HI:unit:fixture",
+      data: { text_sha256: sha(text), text_code_points: points(text) },
+      provenance: { source_sha256: sourceSha },
+    },
+    {
+      entity_type: "code-section",
+      native_id: "HI:fixture",
+      data: {
+        unit_id: "HI:unit:fixture",
+        unit_text_sha256: sha(text),
+        text,
+        text_sha256: sha(text),
+        text_code_points: points(text),
+        span: { unit: "unicode_code_points", start: 0, end: points(text) },
+      },
+      provenance: { source_sha256: sourceSha },
+    },
+  ];
+  const cases = [
+    ["valid Unicode span", () => {}, true],
+    ["missing unit", (rows) => rows.shift(), false],
+    ["wrong unit type", (rows) => (rows[0].entity_type = "other"), false],
+    ["wrong native identity", (rows) => (rows[0].native_id = "HI:unit:other"), false],
+    ["wrong unit text hash", (rows) => (rows[0].data.text_sha256 = "changed"), false],
+    ["wrong original hash", (rows) => (rows[0].provenance.source_sha256 = "changed"), false],
+    ["changed section text", (rows) => (rows[1].data.text = "changed"), false],
+    ["wrong text length", (rows) => (rows[1].data.text_code_points = 1), false],
+    ["wrong span units", (rows) => (rows[1].data.span.unit = "bytes"), false],
+    ["negative span", (rows) => (rows[1].data.span.start = -1), false],
+    ["span beyond unit", (rows) => (rows[0].data.text_code_points = 1), false],
+    ["wrong span length", (rows) => (rows[1].data.span.start = 1), false],
+    ["absent unit length", (rows) => delete rows[0].data.text_code_points, false],
+    ["absent section hash", (rows) => delete rows[1].data.text_sha256, false],
+    ["absent source hash", (rows) => delete rows[0].provenance.source_sha256, false],
+    ["absent unit reference", (rows) => delete rows[1].data.unit_id, false],
+  ];
+  const candidate = `with candidate as(select * from jsonb_to_recordset($1::jsonb)
+    as r(entity_type text,native_id text,data jsonb,provenance jsonb))`;
+  const database = new PGlite();
+  try {
+    for (const [label, mutate, valid] of cases) {
+      const rows = structuredClone(fixture);
+      mutate(rows);
+      const actual = await database.query(
+        `${candidate} select e.native_id,${sectionCheck} unit_ok from candidate e ${unitJoin}
+          where e.entity_type='code-section' order by e.native_id`,
+        [JSON.stringify(rows)],
+      );
+      const prior = await database.query(
+        `${candidate} select e.native_id,${priorCheck} unit_ok from candidate e
+          where e.entity_type='code-section' order by e.native_id`,
+        [JSON.stringify(rows)],
+      );
+      assert.deepEqual(actual.rows, prior.rows, label);
+      assert.deepEqual(actual.rows, [{ native_id: "HI:fixture", unit_ok: valid }], label);
+    }
+  } finally {
+    await database.close();
+  }
+});
