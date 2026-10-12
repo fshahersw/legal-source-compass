@@ -45,29 +45,29 @@ export function createReadAloudSession(
           if (!isCurrent()) return;
           active = null;
           utterance.onend = utterance.onerror = null;
-          onStatus({ speaking: false, message: "Question playback ended." });
+          onStatus({ speaking: false, message: "Response playback ended." });
         };
         utterance.onerror = () => {
           if (!isCurrent()) return;
           cancel();
           onStatus({
             speaking: false,
-            message: "Question playback is unavailable. The question is still shown above.",
+            message: "Response playback is unavailable. The response is still shown above.",
           });
         };
-        onStatus({ speaking: true, message: "Reading the current question…" });
+        onStatus({ speaking: true, message: "Reading the response…" });
         synthesis.speak(utterance);
       } catch {
         cancel();
         onStatus({
           speaking: false,
-          message: "Question playback is unavailable. The question is still shown above.",
+          message: "Response playback is unavailable. The response is still shown above.",
         });
       }
     },
     stop() {
       cancel();
-      onStatus({ speaking: false, message: "Question playback stopped." });
+      onStatus({ speaking: false, message: "Response playback stopped." });
     },
   };
 }

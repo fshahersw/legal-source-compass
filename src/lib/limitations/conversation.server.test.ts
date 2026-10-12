@@ -374,6 +374,109 @@ describe("stateless conversational extraction boundary", () => {
     ).toBe("no");
   });
 
+  it("withholds numeric age contradictions and adult-only negative minority screens", () => {
+    for (const quote of [
+      "I was 12 years old when the injury happened.",
+      "I was 20 when the injury happened.",
+      "I was an adult when the injury happened.",
+      "I was 12 at the injury and 35 years old when I filed.",
+    ]) {
+      const candidate = fact({
+        field: "screen:minority",
+        value: "no",
+        evidence: { messageId: "u1", quote },
+      });
+      expect(
+        validateConversationCandidates(output([candidate]), input(quote), []).candidates[0],
+      ).toMatchObject({ value: null, certainty: "uncertain" });
+    }
+    for (const [age, value] of [
+      [12, "yes"],
+      [20, "yes"],
+      [21, "no"],
+      [35, "no"],
+    ] as const) {
+      const quote = `I was ${age} years old when the injury happened.`;
+      const candidate = fact({
+        field: "screen:minority",
+        value,
+        evidence: { messageId: "u1", quote },
+      });
+      expect(
+        validateConversationCandidates(output([candidate]), input(quote), []).candidates[0]?.value,
+      ).toBe(value);
+    }
+  });
+
+  it("binds proposed state values to literal names or uppercase postal codes", () => {
+    for (const field of ["jurisdiction", "eventState", "forumState", "residenceState"] as const) {
+      const quote = "Use California law.";
+      expect(
+        validateConversationCandidates(
+          output([fact({ field, value: "TX", evidence: { messageId: "u1", quote } })]),
+          input(quote),
+          [],
+        ).candidates[0],
+      ).toMatchObject({ value: null, certainty: "uncertain" });
+      expect(
+        validateConversationCandidates(
+          output([fact({ field, value: "CA", evidence: { messageId: "u1", quote } })]),
+          input(quote),
+          [],
+        ).candidates[0]?.value,
+      ).toBe("CA");
+    }
+    for (const quote of ["Use the law there.", "Use this state's law.", "Use ca law."]) {
+      expect(
+        validateConversationCandidates(
+          output([
+            fact({ field: "jurisdiction", value: "CA", evidence: { messageId: "u1", quote } }),
+          ]),
+          input(quote),
+          [],
+        ).candidates[0]?.value,
+      ).toBeNull();
+    }
+    const quote = "Use CA law.";
+    expect(
+      validateConversationCandidates(
+        output([
+          fact({ field: "jurisdiction", value: "CA", evidence: { messageId: "u1", quote } }),
+        ]),
+        input(quote),
+        [],
+      ).candidates[0]?.value,
+    ).toBe("CA");
+  });
+
+  it("does not borrow an injury date for another event with an unknown date", () => {
+    for (const previous of [
+      "The injury happened January 5, 2024. I do not know the diagnosis date.",
+      "The injury happened January 5, 2024, but the diagnosis date is unknown.",
+      "The injury happened January 5, 2024 and the diagnosis date is unknown.",
+      "The diagnosis was not January 5, 2024.",
+    ]) {
+      const latest = "Use the same day as the diagnosis as the proposed starting date.";
+      const history: ConversationExtractionInput = {
+        messages: [
+          { id: "u1", role: "user", content: previous },
+          { id: "u2", role: "user", content: latest },
+        ],
+      };
+      const candidate = fact({
+        field: "accrualDate",
+        evidence: {
+          messageId: "u2",
+          quote: latest,
+          reference: { messageId: "u1", quote: previous },
+        },
+      });
+      expect(
+        validateConversationCandidates(output([candidate]), history, []).candidates[0],
+      ).toMatchObject({ value: null, certainty: "uncertain" });
+    }
+  });
+
   it("scopes recorded branches to the selected state and claim without inventing a general branch", async () => {
     const rules = [
       {
@@ -465,7 +568,7 @@ describe("stateless conversational extraction boundary", () => {
     };
     expect(
       validateConversationCandidates(output([dateOnlyReference]), history, []).candidates[0]?.value,
-    ).toBe("2024-01-05");
+    ).toBeNull();
     const otherEventHistory = {
       ...history,
       messages: [

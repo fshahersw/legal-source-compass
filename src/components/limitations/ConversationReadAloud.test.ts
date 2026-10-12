@@ -104,7 +104,7 @@ describe("optional spoken questions", () => {
     expect(() => session.speak("Question still visible?")).not.toThrow();
     expect(status.mock.lastCall?.[0]).toEqual({
       speaking: false,
-      message: expect.stringContaining("question is still shown"),
+      message: expect.stringContaining("response is still shown"),
     });
     expect(status.mock.lastCall?.[0].message).not.toContain("private service detail");
   });
@@ -154,7 +154,7 @@ describe("optional spoken questions", () => {
     const html = renderToStaticMarkup(
       createElement(ConversationReadAloud, { text: "A question?" }),
     );
-    expect(html).toContain("Read question aloud");
+    expect(html).toContain("Read response aloud");
     expect(html).toContain('disabled=""');
     expect(html).toContain("browser’s speech service");
   });

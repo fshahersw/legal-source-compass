@@ -176,10 +176,10 @@ Read earlier turns only for context and corrections. Capture new relevant facts 
 Only return facts actually supported by user words. Do not fill unmentioned screens with no. A yes/no answer to confirm_facts or scenario is not a new extracted fact or permission.
 jurisdiction means the user's selected state for analysis, never a determination of governing law. A place of injury is eventState; residence is residenceState; intended court state is forumState. Keep these separate.
 Use the provided state codes and claim labels. A claim classification is a proposal, not a legal conclusion. Do not select a subtype unless it is one of the provided recorded values and the user describes that distinction.
-For dates use YYYY-MM-DD only when the quote includes an exact year, named month and day or an ISO date. A narrow exception is an explicit "same day" or "same date" answer: evidence.reference may quote the exact complete date from an earlier USER turn, only when all explicit dates in user history agree and the new quote names the event or answers its factual date question. Never cite assistant text. Otherwise use null and uncertain. Never calculate relative dates, infer a missing year, resolve ambiguous slash dates, or treat incident/discovery as legal accrual.
+For dates use YYYY-MM-DD only when the quote includes an exact year, named month and day or an ISO date. A narrow exception is an explicit "same day" or "same date" answer: evidence.reference must quote the FULL earlier USER clause naming the event and its exact date together, not just the date. Use this only when all explicit dates in user history agree and the new quote names that event or answers its factual date question. An unknown or negated event date cannot support a reference. Never cite assistant text. Otherwise use null and uncertain. Never calculate relative dates, infer a missing year, resolve ambiguous slash dates, or treat incident/discovery as legal accrual.
 accrualDate requires the user expressly to describe a proposed accrual date. It never confirms legal accrual. A diagnosis date is diagnosisCommunicationDate only when the user says the diagnosis was communicated.
 Screens describe factual presence (yes/no/unsure), never whether a legal toll, exception or source applies. No facts about legal clearance may be inferred from a negative screen.
-Capture every newly stated relevant fact, even when it answers a later question. The minority screen asks the factual question whether the claimant was younger than 21 at relevant events; 21 is a broad screening threshold, not a legal conclusion. An explicit age tied to the event, such as "I was 35 when the injury happened", supports minority=no. "I was 35 years old" without a relevant-time link is insufficient unless answering the age-at-event question. Do not infer birthDate, calculate age from dates, or transfer a present age to an earlier event. If the timing is unclear use unsure or omit the screen.
+Capture every newly stated relevant fact, even when it answers a later question. The minority screen asks the factual question whether the claimant was younger than 21 at relevant events; 21 is a broad screening threshold, not a legal conclusion. An explicit age tied to the event, such as "I was 35 when the injury happened", supports minority=no. "Adult" alone does not rule out age 18-20. "I was 35 years old" without a relevant-time link is insufficient unless answering the age-at-event question. Do not infer birthDate, calculate age from dates, or transfer a present age to an earlier event. If the timing is unclear use unsure or omit the screen.
 Supplemental event dates (filing, service, agreements, bankruptcy, military service, capacity, concealment, treatment, representation, appointment, notice) only collect a timeline; they never calculate an extension or resolve a screen.
 Preserve multiple states, multiple claims and contradictory values as separate uncertain candidates. Do not silently pick one. Set replaces true only when the user explicitly corrects the earlier value; quote that correction clause.
 Set certainty stated for a clearly stated fact, uncertain for tentative, hypothetical, approximate or conflicting facts, unknown for an explicit unknown. Unknown values must be null. Never manufacture a quote.
@@ -222,6 +222,11 @@ export function quotedCalendarDates(quote: string): Set<string> {
   return dates;
 }
 
+const REFERENCE_EVENTS =
+  "injury|incident|accident|diagnosis|death|birth|filing|dismissal|service|agreement|bankruptcy|exposure|treatment|appointment|notice|delivery";
+const UNCERTAIN_REFERENCE =
+  /\b(?:not|no|unknown|unsure|uncertain|unclear|unrecorded|never|cannot|can't|don't|didn't|maybe|perhaps|approximately)\b/i;
+
 function referencedCalendarDate(
   candidate: ConversationCandidate,
   input: ConversationExtractionInput,
@@ -252,15 +257,31 @@ function referencedCalendarDate(
   )
     return null;
   const asEvent = quote.match(
-    /\bsame (?:day|date) as (?:the |my |his |her |their )?(injury|incident|accident|diagnosis|death|birth|filing|dismissal|service|agreement|bankruptcy|exposure|treatment|appointment|notice|delivery)\b/i,
+    new RegExp(
+      `\\bsame (?:day|date) as (?:the |my |his |her |their )?(${REFERENCE_EVENTS})\\b`,
+      "i",
+    ),
   );
+  // An event and its date must share the exact quoted clause; a different sentence's
+  // event name cannot borrow the only recorded date.
+  const datedClauses = reference.quote
+    .split(/[.;!?\n]|,\s*(?=[A-Za-z])|\b(?:and|but|whereas|although|while)\b/i)
+    .filter(
+      (clause) => quotedCalendarDates(clause).has(value) && !UNCERTAIN_REFERENCE.test(clause),
+    );
   if (asEvent) {
-    if (!new RegExp(`\\b${asEvent[1]}\\b`, "i").test(earlier.content)) return null;
+    if (!datedClauses.some((clause) => new RegExp(`\\b${asEvent[1]}\\b`, "i").test(clause)))
+      return null;
   } else {
     if (/\bsame (?:day|date) as\b/i.test(quote)) return null;
     if (
       !(input.latestQuestion?.kind === "fact" || input.latestQuestion?.kind === "clarify") ||
       input.latestQuestion.field !== candidate.field
+    )
+      return null;
+    if (
+      UNCERTAIN_REFERENCE.test(earlier.content) ||
+      !datedClauses.some((clause) => new RegExp(`\\b(?:${REFERENCE_EVENTS})\\b`, "i").test(clause))
     )
       return null;
   }
@@ -286,19 +307,32 @@ export function validateConversationCandidates(
     const referenceDate = referencedCalendarDate(fact, input);
     const factualQuestion =
       input.latestQuestion?.kind === "fact" || input.latestQuestion?.kind === "clarify";
-    if (
-      fact.field === "screen:minority" &&
-      /\b\d{1,3}\s+(?:years? old|years? of age)\b|\b(?:age|aged)\s+\d{1,3}\b/i.test(
-        fact.evidence.quote,
-      ) &&
-      !(factualQuestion && input.latestQuestion?.field === "screen:minority") &&
-      !/\b(?:when|at the time|at|during)\b[\s\S]{0,100}\b(?:injur\w*|event\w*|accident|incident|conduct|exposure|diagnosis|death|filing)\b/i.test(
-        fact.evidence.quote,
-      )
-    ) {
-      fact.value = null;
-      fact.certainty = "uncertain";
-      clarification.add("Please clarify the claimant's age when the relevant events happened.");
+    if (fact.field === "screen:minority" && ["yes", "no"].includes(fact.value ?? "")) {
+      const ages = [
+        ...fact.evidence.quote.matchAll(
+          /\b(\d{1,3})\s+(?:years? old|years? of age)\b|\b(?:was|am|age|aged|turned)\s+(\d{1,3})\b/gi,
+        ),
+      ].map((match) => Number(match[1] ?? match[2]));
+      const ageQuestion = factualQuestion && input.latestQuestion?.field === "screen:minority";
+      const eventBound =
+        ageQuestion ||
+        /\b(?:when|at the time|at|during)\b[\s\S]{0,100}\b(?:injur\w*|event\w*|accident|incident|conduct|exposure|diagnosis|death|filing)\b/i.test(
+          fact.evidence.quote,
+        );
+      const directNo = ageQuestion && /^(?:no|nope)\b/i.test(fact.evidence.quote.trim());
+      const contradicted =
+        ages.length > 0 &&
+        (fact.value === "no" ? ages.some((age) => age < 21) : ages.every((age) => age >= 21));
+      if (
+        (ages.length > 0 && (!eventBound || contradicted)) ||
+        (fact.value === "no" && ages.length === 0 && !directNo)
+      ) {
+        fact.value = null;
+        fact.certainty = "uncertain";
+        clarification.add(
+          "Please clarify whether the claimant was younger than 21 when any relevant events happened.",
+        );
+      }
     }
     if (
       fact.field === "jurisdiction" &&
@@ -347,6 +381,17 @@ export function validateConversationCandidates(
         fact.value = null;
         fact.certainty = "uncertain";
         clarification.add(`An exact calendar date is still needed for ${fact.field}.`);
+      }
+      if (["jurisdiction", "forumState", "eventState", "residenceState"].includes(fact.field)) {
+        const state = STATES.find((item) => item.usps === fact.value)!;
+        if (
+          !new RegExp(`\\b${state.name}\\b`, "i").test(fact.evidence.quote) &&
+          !new RegExp(`\\b${state.usps}\\b`).test(fact.evidence.quote)
+        ) {
+          fact.value = null;
+          fact.certainty = "uncertain";
+          clarification.add(`Please name the state explicitly for ${fact.field}.`);
+        }
       }
     }
     if (

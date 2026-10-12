@@ -2,6 +2,7 @@ import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ConversationCalculator } from "./ConversationCalculator";
+import { ConversationReadAloud } from "./ConversationReadAloud";
 import {
   calculateConversationScenario,
   planConversationAssessment,
@@ -413,6 +414,9 @@ describe("conversational calculator component", () => {
       expect(harness.states[4]).toBeNull();
       expect(harness.states[2]).toBe(false);
       expect(html).toContain("I will not request a calculation");
+      expect(
+        elements(render()).find((element) => element.type === ConversationReadAloud)?.props["text"],
+      ).toContain("I will not request a calculation");
       expect(html).not.toContain("2026-01-01");
       expect(html).not.toContain("Is this an accurate account of your facts?");
     },
@@ -482,6 +486,9 @@ describe("conversational calculator component", () => {
       });
       const html = renderToStaticMarkup(render());
       expect(html).toContain("No reliable date can be issued");
+      expect(
+        elements(render()).find((element) => element.type === ConversationReadAloud)?.props["text"],
+      ).toContain("I cannot give a reliable date");
       expect(html).not.toContain("2026-01-01");
       expect(html).toContain("California / Nevada");
     },
@@ -549,5 +556,16 @@ describe("conversational calculator component", () => {
       elements(tree).find((element) => element.props["aria-label"] === "Conversation assessment")
         ?.type,
     ).toBe("section");
+  });
+
+  it("reads the latest projected response after assessment and never a stale computed date", () => {
+    completedSession();
+    const response = elements(render()).find((element) => element.type === ConversationReadAloud);
+    expect(response?.props["text"]).toBe("Conditional illustration: 2026-01-01.");
+    const withdrawn = elements(render({ sourceRefreshFailed: true })).find(
+      (element) => element.type === ConversationReadAloud,
+    );
+    expect(withdrawn?.props["text"]).toContain("Earlier assessment withdrawn");
+    expect(withdrawn?.props["text"]).not.toContain("2026-01-01");
   });
 });

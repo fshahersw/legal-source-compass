@@ -41,10 +41,10 @@ export function ConversationReadAloud({
         aria-pressed={status.speaking}
         onClick={() => (status.speaking ? session.current?.stop() : session.current?.speak(text))}
       >
-        {status.speaking ? "Stop playback" : "Read question aloud"}
+        {status.speaking ? "Stop playback" : "Read response aloud"}
       </button>
       <p role="status" aria-live="polite" className="text-xs text-muted-foreground">
-        {supported === false ? "Browser question playback is unavailable." : status.message}
+        {supported === false ? "Browser response playback is unavailable." : status.message}
       </p>
       <p className="text-xs text-muted-foreground">
         Playback uses your browser’s speech service and starts only when you select the button.

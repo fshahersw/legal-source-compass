@@ -130,6 +130,10 @@ export function ConversationCalculator({
     binding,
     sourceRefreshFailed,
   );
+  const playbackText =
+    question?.text ??
+    visibleMessages.filter((message) => message.role === "assistant").at(-1)?.content ??
+    INTRO;
   const result =
     !sourceRefreshFailed && resultRecord?.binding === binding ? resultRecord.result : null;
   const scenario = result?.status === "assessed" ? result.scenario : null;
@@ -500,7 +504,7 @@ export function ConversationCalculator({
             <div className="mb-3">
               <ConversationReadAloud
                 key={dictationEpoch}
-                text={question?.text ?? INTRO}
+                text={playbackText}
                 disabled={busy || !active || sourceRefreshFailed}
               />
             </div>
