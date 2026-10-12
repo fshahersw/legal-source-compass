@@ -48,4 +48,10 @@ The Open Law ID tool was exercised against a captured official Montana section (
 
 The local application rendered the Northern District of California's exact official seal, reviewed rules/forms/filing links and capture provenance. The FDA profile showed its recorded ID, source collection coverage, distinct document counts and recent published documents. Search navigation followed the URL and browser history. A synthetic California intake with explicitly labelled dates required confirmation; mentioning bankruptcy seeded a legal-review blocker, and assessment presented no deadline. Calculator, court and agency layouts fit a 390-pixel mobile viewport without document-level horizontal overflow.
 
+## Release status
+
+The private court bundle and limitations `2026-10-12.1` release passed storage readback. Their entries are activated in the local manifest, with prior-manifest evidence retained for rollback. Production has not been deployed. GitHub rejected publication of the reviewed branch because the stored owner's OAuth credential lacks `workflow` scope; no remote branch or PR was created by that failed push.
+
+Validation passed 989 portable application tests, 821 candidate limitations integration tests, 228 Node contracts, 20 Python tests, 21 SQL contracts, five artwork hash checks, TypeScript and the production build. A subsequent narrow correction to the agency-notices shortcut added two regression tests; its nine-test focused suite, lint and TypeScript checks passed. The separate live legal-corpus deployment gate returned no result within its bounded process window, so it is **unconfirmed**, not passed.
+
 The code and tests improve production readiness. They do not certify all U.S. legal scenarios, make missing data complete, or turn staged changes into a deployed application without a release.

@@ -2,7 +2,7 @@
   "schema_version": "atlas-private-snapshots/1",
   "project_id": "xosqzzsnhxcyehcnirpa",
   "bucket": "corpus-originals",
-  "created_at": "2026-10-12T17:53:56.666Z",
+  "created_at": "2026-10-12T18:07:46.169Z",
   "files": {
     "atlas-import-bundle.json": {
       "sha256": "acb1355f66463d76e865e582a2a3cc3e62a235fe0ffa19eb69ea80fb3e7b7b3e",
@@ -310,14 +310,14 @@
       "storage_key": "atlas-private-data/sha256/a6/a674dfa31b625e92635f32684a61ae135b05a91507f17f2d5164833237fecf46.bin"
     },
     "limitations/case-references.json": {
-      "sha256": "d9afbc9e3434885aa708d728279b9c722f743d431f78f4d4ca9e47c3f55baecf",
+      "sha256": "9d75ebe1ed70815c026262580139018158a434bb7165609326e14cf069fd9fb9",
       "bytes": 23366,
-      "storage_key": "atlas-private-data/sha256/d9/d9afbc9e3434885aa708d728279b9c722f743d431f78f4d4ca9e47c3f55baecf.bin"
+      "storage_key": "atlas-private-data/sha256/9d/9d75ebe1ed70815c026262580139018158a434bb7165609326e14cf069fd9fb9.bin"
     },
     "limitations/coverage.json": {
-      "sha256": "77f52faa5a2cc6cd5034478997f4dd710515c69bba2eb165f09520e683e0c094",
-      "bytes": 417214,
-      "storage_key": "atlas-private-data/sha256/77/77f52faa5a2cc6cd5034478997f4dd710515c69bba2eb165f09520e683e0c094.bin"
+      "sha256": "fcd49c9c2af521243772f136c94e835a0b030bdb2820d2c7c05f043d4126c4dc",
+      "bytes": 418018,
+      "storage_key": "atlas-private-data/sha256/fc/fcd49c9c2af521243772f136c94e835a0b030bdb2820d2c7c05f043d4126c4dc.bin"
     },
     "limitations/opinion-text/il-best-1997.txt": {
       "sha256": "62117fe240d1b6cda98f79d43298eb586fc942261c7e9e89d2ba09f8873bfcb6",
@@ -375,14 +375,14 @@
       "storage_key": "atlas-private-data/sha256/ab/ab9a1d53a546941dbcf697490b6a332c0f34753566acbba44f1fb519a930e239.bin"
     },
     "limitations/rules.json": {
-      "sha256": "a5b3557dfc4da6fa79da83c917f7247a0ef9cfbb385e3a1573472b800a33b99f",
-      "bytes": 7390297,
-      "storage_key": "atlas-private-data/sha256/a5/a5b3557dfc4da6fa79da83c917f7247a0ef9cfbb385e3a1573472b800a33b99f.bin"
+      "sha256": "b38d7e9772a831ad1b86e0c86e53f4fd942ff19a2e313502ddf8e1a389c5e90d",
+      "bytes": 7396075,
+      "storage_key": "atlas-private-data/sha256/b3/b38d7e9772a831ad1b86e0c86e53f4fd942ff19a2e313502ddf8e1a389c5e90d.bin"
     },
     "limitations/sources.json": {
-      "sha256": "3a23514209aba557073ed83d03b6a6f9ebafa77b6d89c58cd77271aefb1ea6f1",
-      "bytes": 2417565,
-      "storage_key": "atlas-private-data/sha256/3a/3a23514209aba557073ed83d03b6a6f9ebafa77b6d89c58cd77271aefb1ea6f1.bin"
+      "sha256": "4dccd55ba877af4689a6f8eeccb68b6be10c9b5ded63826aa37f284d840c9df2",
+      "bytes": 2422374,
+      "storage_key": "atlas-private-data/sha256/4d/4dccd55ba877af4689a6f8eeccb68b6be10c9b5ded63826aa37f284d840c9df2.bin"
     },
     "limitations/text/ak-9-10-070.txt": {
       "sha256": "2be64c3240efeaa39cbc46f84ff6ce2f8376a3bcc627f992db51b999399a03b0",
@@ -31590,9 +31590,9 @@
       "storage_key": "atlas-private-data/sha256/e2/e25216f6e08673df733f3ccf49c09b25d630e28934406a529a0785cc83903d87.bin"
     },
     "limitations/release-report.json": {
-      "sha256": "a6be71fc7f038aae455071ff2522578211325493d633144ee1b2967c1285895f",
-      "bytes": 3466,
-      "storage_key": "atlas-private-data/sha256/a6/a6be71fc7f038aae455071ff2522578211325493d633144ee1b2967c1285895f.bin"
+      "sha256": "75ee77e2ad807dbd02f60d2861479e8416de35c62bba4f46ca80f5de59727057",
+      "bytes": 3512,
+      "storage_key": "atlas-private-data/sha256/75/75ee77e2ad807dbd02f60d2861479e8416de35c62bba4f46ca80f5de59727057.bin"
     },
     "limitations/text/ak-9-10-070.rechecked-2026-10-08.txt": {
       "sha256": "7d53794b8eb5af7a4bc8ae85728f1ce865683ecd0e9e2870caa5c6c9c876469c",
@@ -33363,6 +33363,16 @@
       "sha256": "166f2b694da120c4518036224f8107a640c3c10079984d9f9f7938e7280c4923",
       "bytes": 83375,
       "storage_key": "atlas-private-data/sha256/16/166f2b694da120c4518036224f8107a640c3c10079984d9f9f7938e7280c4923.bin"
+    },
+    "limitations/text/bf-ms-dollar-general-dobbs-2025-plain.txt": {
+      "sha256": "ef80cd062ec257b3182a082c28b32c464c4be37408c7129cb6b4b5ac15a58b12",
+      "bytes": 39537,
+      "storage_key": "atlas-private-data/sha256/ef/ef80cd062ec257b3182a082c28b32c464c4be37408c7129cb6b4b5ac15a58b12.bin"
+    },
+    "limitations/text/bf-nj-barron-2022-plain.txt": {
+      "sha256": "3628a7120916bb12ccfb59f308c4b81a1ae595d25afe46151cd9e90b73544954",
+      "bytes": 13151,
+      "storage_key": "atlas-private-data/sha256/36/3628a7120916bb12ccfb59f308c4b81a1ae595d25afe46151cd9e90b73544954.bin"
     }
   }
 }
