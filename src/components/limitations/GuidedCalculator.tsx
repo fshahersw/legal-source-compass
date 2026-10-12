@@ -14,6 +14,7 @@ import {
   assessmentExport,
   type GuidedReview,
 } from "@/lib/limitations/guidedAssessment";
+import { reviewContextKey as evidenceContextKey } from "@/lib/limitations/reviewInventory";
 import {
   eligibleMinorityPolicy,
   type MinorityFacts,
@@ -99,6 +100,41 @@ export function GuidedCalculator({
     () => (rule ? exceptionInventory(snapshot, rule) : []),
     [snapshot, rule],
   );
+  const sourceContextKey = useMemo(
+    () =>
+      rule
+        ? evidenceContextKey(
+            snapshot,
+            rule,
+            unconfirmedClaimInput(rule.jurisdiction, rule.claimType, rule.subtype ?? "general"),
+          )
+        : "",
+    [snapshot, rule],
+  );
+  const selectionKey = JSON.stringify([state, claim ?? "", input.subtype ?? "general"]);
+  const [boundEvidence, setBoundEvidence] = useState({ selectionKey, sourceKey: sourceContextKey });
+  const [sourceChanged, setSourceChanged] = useState(false);
+  // Bind approvals to the complete source evidence, including same-release source corrections.
+  // Reset during rendering so neither an old result nor re-stamped approvals reach the next frame.
+  if (boundEvidence.selectionKey !== selectionKey || boundEvidence.sourceKey !== sourceContextKey) {
+    setSourceChanged(boundEvidence.selectionKey === selectionKey);
+    setBoundEvidence({ selectionKey, sourceKey: sourceContextKey });
+    setInput((previous) => ({
+      ...previous,
+      governingLawConfirmed: false,
+      accrualConfirmed: false,
+      applicabilityConfirmed: false,
+      reposeApplicabilityConfirmed: false,
+      exceptionReview: "unresolved",
+    }));
+    setAnswers({});
+    setQualificationsReviewed(false);
+    setMinority(emptyMinority());
+    setResult(null);
+    setStep(0);
+    setGroupIndex(0);
+    setUiError("");
+  }
   const filteredNotes = inventory.filter(
     (n) =>
       !noteQuery || `${n.text} ${n.citation ?? ""}`.toLowerCase().includes(noteQuery.toLowerCase()),
@@ -218,6 +254,12 @@ export function GuidedCalculator({
   );
   return (
     <div data-testid="guided-calculator" className="space-y-5">
+      {sourceChanged && (
+        <p role="status" className="rounded-lg border border-border bg-muted p-3 text-sm">
+          The rule or source evidence changed. Your entered dates are preserved; review the legal
+          confirmations and exception screening again before calculating.
+        </p>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <nav className="flex items-center gap-2" aria-label="Calculator steps">
           {["Case facts", "Exceptions", "Assessment"].map((label, index) => (

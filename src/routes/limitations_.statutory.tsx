@@ -1,7 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { AppShell } from "@/components/atlas/AppShell";
 import { GuidedCalculator } from "@/components/limitations/GuidedCalculator";
+import { ConversationCalculator } from "@/components/limitations/ConversationCalculator";
 import { PrivateDataLink } from "@/components/atlas/PrivateDataLink";
 import { Button } from "@/components/ui/button";
 import { loadLimitations } from "@/lib/limitations/load";
@@ -23,6 +25,7 @@ export const Route = createFileRoute("/limitations_/statutory")({
   component: PolicyPage,
 });
 function PolicyPage() {
+  const [inputMethod, setInputMethod] = useState<"conversation" | "structured">("conversation");
   const search = Route.useSearch(),
     navigate = Route.useNavigate();
   const query = useQuery({
@@ -38,7 +41,7 @@ function PolicyPage() {
         { label: "Statutory policies" },
       ]}
       title="Statutory policy review"
-      description="Apply only the narrowly scoped policies carried in the current source release."
+      description="Talk through your facts, dates and circumstances, with the source record beside each assessment."
       actions={
         <Link
           to="/limitations"
@@ -64,29 +67,48 @@ function PolicyPage() {
         </div>
       ) : null}
       {query.data ? (
-        <div hidden={!!query.error}>
-          <GuidedCalculator
-            key={`${search.state ?? ""}:${search.claim ?? ""}`}
-            snapshot={query.data}
-            state={search.state ?? ""}
-            claim={search.claim}
-            onNavigate={(next) =>
-              void navigate({
-                search: {
-                  ...(next.state ? { state: next.state } : {}),
-                  ...(next.claim ? { claim: next.claim } : {}),
-                },
-              })
-            }
-            patternLabel={(subtype, rule) => rule?.summary ?? subtype.replaceAll("_", " ")}
-            renderEvidence={(rule) => (
-              <section className="space-y-3 text-xs" aria-label="Policy source evidence">
-                <p className="font-medium">{rule.pinpoint}</p>
-                <ul className="space-y-3">
+        <div>
+          <div
+            className="mb-5 flex flex-wrap gap-2"
+            role="group"
+            aria-label="Statutory calculator input method"
+          >
+            <Button
+              size="sm"
+              variant={inputMethod === "conversation" ? "default" : "outline"}
+              aria-pressed={inputMethod === "conversation"}
+              onClick={() => setInputMethod("conversation")}
+            >
+              Conversation
+            </Button>
+            <Button
+              size="sm"
+              variant={inputMethod === "structured" ? "default" : "outline"}
+              aria-pressed={inputMethod === "structured"}
+              onClick={() => setInputMethod("structured")}
+            >
+              Structured statutory review
+            </Button>
+          </div>
+          <div hidden={inputMethod !== "conversation"}>
+            <ConversationCalculator
+              key={`conversation:${search.state ?? ""}:${search.claim ?? ""}`}
+              snapshot={query.data}
+              state={search.state ?? ""}
+              claim={search.claim}
+              mode="statutory"
+              active={inputMethod === "conversation"}
+              sourceRefreshFailed={!!query.error}
+              onRefreshSources={() => void query.refetch()}
+              renderAuthority={(rule) => (
+                <section className="mt-3 space-y-3 text-xs" aria-label="Policy source evidence">
+                  <p className="font-medium">{rule.pinpoint}</p>
+                  <p>{rule.scope}</p>
+                  <p>{rule.currency?.detail ?? "Current-source comparison is not recorded."}</p>
                   {rule.sourceIds.map((id) => {
-                    const source = query.data!.sources.find((s) => s.id === id);
+                    const source = query.data!.sources.find((item) => item.id === id);
                     return source ? (
-                      <li key={id} className="rounded-lg border border-border p-3">
+                      <div key={id} className="rounded-lg border border-border p-3">
                         <a
                           href={source.url}
                           target="_blank"
@@ -95,26 +117,73 @@ function PolicyPage() {
                         >
                           {source.title}
                         </a>
-                        <PrivateDataLink
-                          href={source.textPath}
-                          className="ml-3 text-muted-foreground underline"
-                        >
-                          Retained text
+                        <p className="mt-1">
+                          Retrieved {source.capturedAt} · Verified {source.verifiedAt}
+                        </p>
+                        <PrivateDataLink href={source.textPath} className="mt-1 block underline">
+                          Retained source text
                         </PrivateDataLink>
-                      </li>
+                      </div>
                     ) : (
-                      <li key={id}>Required source not recorded: {id}</li>
+                      <p key={id}>Required source not recorded: {id}</p>
                     );
                   })}
-                </ul>
-                <p className="text-muted-foreground">
-                  Only source-bound policies contained in this release can execute. This is not an
-                  exhaustive determination of every applicable toll, exclusion, or court filing
-                  requirement.
-                </p>
-              </section>
-            )}
-          />
+                </section>
+              )}
+            />
+          </div>
+          <div hidden={inputMethod !== "structured" || !!query.error}>
+            <GuidedCalculator
+              key={`${search.state ?? ""}:${search.claim ?? ""}`}
+              snapshot={query.data}
+              state={search.state ?? ""}
+              claim={search.claim}
+              onNavigate={(next) =>
+                void navigate({
+                  search: {
+                    ...(next.state ? { state: next.state } : {}),
+                    ...(next.claim ? { claim: next.claim } : {}),
+                  },
+                })
+              }
+              patternLabel={(subtype, rule) => rule?.summary ?? subtype.replaceAll("_", " ")}
+              renderEvidence={(rule) => (
+                <section className="space-y-3 text-xs" aria-label="Policy source evidence">
+                  <p className="font-medium">{rule.pinpoint}</p>
+                  <ul className="space-y-3">
+                    {rule.sourceIds.map((id) => {
+                      const source = query.data!.sources.find((s) => s.id === id);
+                      return source ? (
+                        <li key={id} className="rounded-lg border border-border p-3">
+                          <a
+                            href={source.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-medium underline"
+                          >
+                            {source.title}
+                          </a>
+                          <PrivateDataLink
+                            href={source.textPath}
+                            className="ml-3 text-muted-foreground underline"
+                          >
+                            Retained text
+                          </PrivateDataLink>
+                        </li>
+                      ) : (
+                        <li key={id}>Required source not recorded: {id}</li>
+                      );
+                    })}
+                  </ul>
+                  <p className="text-muted-foreground">
+                    Only source-bound policies contained in this release can execute. This is not an
+                    exhaustive determination of every applicable toll, exclusion, or court filing
+                    requirement.
+                  </p>
+                </section>
+              )}
+            />
+          </div>
         </div>
       ) : null}
     </AppShell>
