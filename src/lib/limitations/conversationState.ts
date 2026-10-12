@@ -62,6 +62,7 @@ export const CONVERSATION_LABELS: Record<ConversationFactField, string> = {
   representativeAppointmentDate: "Representative appointed",
   noticeDate: "Notice or administrative presentation",
   ...Object.fromEntries(SCREENING_QUESTIONS.map((q) => [`screen:${q.id}`, q.label])),
+  "screen:minority": "Was the claimant younger than 21 at any relevant event?",
   "screen:calendar": "Known court closure, emergency, service or filing issue",
 } as Record<ConversationFactField, string>;
 
@@ -290,9 +291,20 @@ export function conversationScreens(facts: ConversationFacts): ConversationScree
 
 /** Confirmation is a narrow conversational act; "yes, but ..." always goes back through extraction. */
 export function isPlainConfirmation(text: string): boolean {
-  return /^(?:yes|yes[,.]? (?:that(?:'s| is) (?:right|correct)|correct|please)|correct|that(?:'s| is) (?:right|correct)|confirmed|looks (?:right|correct)|go ahead|please do)[.!\s]*$/i.test(
-    text.trim(),
-  );
+  const reply = text
+    .trim()
+    .replace(/\u2019/g, "'")
+    .replace(/\s+/g, " ")
+    .replace(/[.!]+$/, "")
+    .trim();
+  if (/^(?:yes|confirmed|go ahead|please do|yes[,.]? please)$/i.test(reply)) return true;
+  const statement = reply.replace(/^yes[,.]? /i, "");
+  // Match the whole acknowledgment: extra facts or qualifications must go through extraction.
+  return [
+    /^(?:correct|accurate|(?:that(?:'s| is)|it(?:'s| is)) (?:right|correct|accurate)|looks (?:right|correct|accurate))$/i,
+    /^(?:that(?:'s| is)|it(?:'s| is)) an accurate (?:account|summary) of (?:my|the) facts?$/i,
+    /^(?:(?:the|my|your) (?:summary|account)(?: of (?:my|the) facts?)? is|(?:my|the) fact is|(?:my|the) facts are) (?:right|correct|accurate)$/i,
+  ].some((pattern) => pattern.test(statement));
 }
 
 export function factsSummary(session: ConversationSession): string {
