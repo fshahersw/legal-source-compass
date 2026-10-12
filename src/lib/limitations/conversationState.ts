@@ -62,6 +62,7 @@ export const CONVERSATION_LABELS: Record<ConversationFactField, string> = {
   representativeAppointmentDate: "Representative appointed",
   noticeDate: "Notice or administrative presentation",
   ...Object.fromEntries(SCREENING_QUESTIONS.map((q) => [`screen:${q.id}`, q.label])),
+  "screen:minority": "Was the claimant younger than 21 at any relevant event?",
   "screen:calendar": "Known court closure, emergency, service or filing issue",
 } as Record<ConversationFactField, string>;
 
@@ -288,10 +289,35 @@ export function conversationScreens(facts: ConversationFacts): ConversationScree
   return answers;
 }
 
+function acknowledgementText(text: string): string {
+  return text
+    .trim()
+    .replace(/\u2019/g, "'")
+    .replace(/\s+/g, " ")
+    .replace(/[.!]+$/, "")
+    .trim();
+}
+
 /** Confirmation is a narrow conversational act; "yes, but ..." always goes back through extraction. */
 export function isPlainConfirmation(text: string): boolean {
-  return /^(?:yes|yes[,.]? (?:that(?:'s| is) (?:right|correct)|correct|please)|correct|that(?:'s| is) (?:right|correct)|confirmed|looks (?:right|correct)|go ahead|please do)[.!\s]*$/i.test(
-    text.trim(),
+  const reply = acknowledgementText(text);
+  if (/^(?:yes|confirmed|go ahead|please do|yes[,.]? please)$/i.test(reply)) return true;
+  const statement = reply.replace(/^yes[,.]? /i, "");
+  // Match the whole acknowledgment: extra facts or qualifications must go through extraction.
+  return [
+    /^(?:correct|accurate|(?:that(?:'s| is)|it(?:'s| is)) (?:right|correct|accurate)|looks (?:right|correct|accurate))$/i,
+    /^(?:that(?:'s| is)|it(?:'s| is)) an accurate (?:account|summary) of (?:my|the) facts?$/i,
+    /^(?:(?:the|my|your) (?:summary|account)(?: of (?:my|the) facts?)? is|(?:my|the) fact is|(?:my|the) facts are) (?:right|correct|accurate)$/i,
+  ].some((pattern) => pattern.test(statement));
+}
+
+/** Confirming the facts alone is not a request to calculate under legal assumptions. */
+export function isPlainScenarioRequest(text: string): boolean {
+  const reply = acknowledgementText(text);
+  if (/^(?:yes|yes[,.]? please|(?:yes[,.]? )?(?:go ahead|please do))$/i.test(reply)) return true;
+  const request = reply.replace(/^yes[,.]? /i, "");
+  return /^(?:please )?calculate(?: (?:a |the )?(?:conditional )?(?:calendar )?illustration)? under (?:those|the stated) assumptions$/i.test(
+    request,
   );
 }
 

@@ -363,6 +363,26 @@ describe("conversational calculator component", () => {
     expect(renderToStaticMarkup(render())).toContain("2026-01-01");
   });
 
+  it("re-asks for a calculation request when the user only reconfirms facts", () => {
+    const { session } = completedSession();
+    session.scenarioRevision = null;
+    harness.states[4] = {
+      id: "conditional-scenario",
+      kind: "scenario",
+      text: "Calculate under these assumptions?",
+      explanation: "Conditional illustration only.",
+    };
+    typeReply("The facts are accurate.");
+    submit();
+    expect(harness.assess).not.toHaveBeenCalled();
+    expect(harness.extract).not.toHaveBeenCalled();
+    expect(harness.states[0]).toMatchObject({ confirmedRevision: 1, scenarioRevision: null });
+    expect(harness.states[4]).toMatchObject({ kind: "scenario" });
+    const html = renderToStaticMarkup(render());
+    expect(html).toContain("Would you like me to calculate under those assumptions?");
+    expect(html).not.toContain("2026-01-01");
+  });
+
   it("discards an in-flight assessment after source refresh fails", async () => {
     const { result } = completedSession();
     harness.states[4] = {
