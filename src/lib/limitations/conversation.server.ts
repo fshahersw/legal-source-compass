@@ -11,6 +11,7 @@ import {
   type ConversationCapability,
   type ConversationExtractionInput,
   type ConversationExtractionResult,
+  type ConversationProviderDiagnostic,
 } from "./conversationExtraction";
 
 const MODEL = "gemini-3.1-flash-lite";
@@ -421,10 +422,49 @@ export function validateConversationCandidates(
   return { candidates, conflicts, clarifications: [...clarification] };
 }
 
+function jsonContentType(response: Response): boolean {
+  return /^application\/(?:json|[a-z0-9!#$&^_.+-]+\+json)(?:\s*;|\s*$)/i.test(
+    response.headers.get("content-type") ?? "",
+  );
+}
+
+function providerUnavailable(
+  stage: ConversationProviderDiagnostic["stage"],
+  status: number | undefined,
+  timedOut: boolean,
+): ConversationExtractionResult {
+  const httpStatus =
+    status !== undefined && Number.isInteger(status) && status >= 100 && status <= 599
+      ? status
+      : undefined;
+  const diagnostic: ConversationProviderDiagnostic = {
+    stage,
+    ...(httpStatus === undefined ? {} : { httpStatus }),
+    timedOut,
+  };
+  const code = timedOut
+    ? "provider_timeout"
+    : stage === "non2xx" && httpStatus !== undefined
+      ? `provider_http_${httpStatus}`
+      : `provider_${stage}_failure`;
+  // Derived allowlisted metadata only. Do not add provider errors, bodies, headers, or user text.
+  console.warn(`[limitations-extraction] ${code}`);
+  return {
+    status: "unavailable",
+    reason: "provider_error",
+    diagnostic,
+    message: `Natural-language extraction is temporarily unavailable (${code}). Your facts have not changed.`,
+  };
+}
+
 async function responseJson(response: Response): Promise<unknown> {
   if (!response.ok || !response.body) {
     await response.body?.cancel();
     throw new Error("Provider unavailable");
+  }
+  if (!jsonContentType(response)) {
+    await response.body.cancel();
+    throw new Error("Provider response is not JSON");
   }
   const declared = Number(response.headers.get("content-length"));
   if (declared > MAX_RESPONSE_BYTES) {
@@ -601,12 +641,15 @@ export async function extractConversation(
             },
           };
     let value: unknown;
+    let providerStage: ConversationProviderDiagnostic["stage"] = "fetch";
+    let providerStatus: number | undefined;
     try {
       const response = await withinDeadline(
         (dependencies.fetch ?? fetch)(config.kind === "gemini" ? GEMINI_URL : LOVABLE_URL, {
           method: "POST",
-          redirect: "error",
-          credentials: "omit",
+          // Workers supports manual/follow, not redirect:error. Manual responses are
+          // rejected by response.ok below; never follow a redirect with provider credentials.
+          redirect: "manual",
           cache: "no-store",
           signal: controller.signal,
           headers: {
@@ -619,14 +662,11 @@ export async function extractConversation(
         }),
         controller.signal,
       );
+      providerStatus = response.status;
+      providerStage = !response.ok ? "non2xx" : !jsonContentType(response) ? "contenttype" : "json";
       value = await withinDeadline(responseJson(response), controller.signal);
     } catch {
-      return {
-        status: "unavailable",
-        reason: "provider_error",
-        message:
-          "Natural-language extraction is temporarily unavailable. Your facts have not changed.",
-      };
+      return providerUnavailable(providerStage, providerStatus, controller.signal.aborted);
     }
     try {
       return {
@@ -647,12 +687,7 @@ export async function extractConversation(
       };
     }
   } catch {
-    return {
-      status: "unavailable",
-      reason: "provider_error",
-      message:
-        "Natural-language extraction is temporarily unavailable. Your facts have not changed.",
-    };
+    return providerUnavailable("fetch", undefined, controller.signal.aborted);
   } finally {
     clearTimeout(timer);
     release();

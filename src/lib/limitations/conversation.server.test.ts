@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   conversationCapability,
   extractConversation,
@@ -26,11 +26,9 @@ const fact = (changes: Partial<ConversationCandidate> = {}): ConversationCandida
 const env = { LIMITATIONS_AI_PROVIDER: "gemini", GEMINI_API_KEY: "fixture-private-key" };
 const output = (candidates: unknown[] = [fact()]) => ({ candidates });
 const gemini = (value: unknown = output(), finishReason = "STOP") =>
-  new Response(
-    JSON.stringify({
-      candidates: [{ finishReason, content: { parts: [{ text: JSON.stringify(value) }] } }],
-    }),
-  );
+  Response.json({
+    candidates: [{ finishReason, content: { parts: [{ text: JSON.stringify(value) }] } }],
+  });
 const dependencies = (fetcher = vi.fn(async () => gemini())) => ({
   env,
   fetch: fetcher as typeof fetch,
@@ -39,6 +37,12 @@ const dependencies = (fetcher = vi.fn(async () => gemini())) => ({
 });
 
 describe("stateless conversational extraction boundary", () => {
+  beforeEach(() => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
   it("requires explicit provider configuration and never uses an ambient key", async () => {
     const fetcher = vi.fn();
     expect(conversationCapability({ GEMINI_API_KEY: "present" })).toEqual({
@@ -73,10 +77,10 @@ describe("stateless conversational extraction boundary", () => {
     );
     expect(options).toMatchObject({
       method: "POST",
-      redirect: "error",
-      credentials: "omit",
+      redirect: "manual",
       cache: "no-store",
     });
+    expect(options).not.toHaveProperty("credentials");
     const body = JSON.parse(options.body as string);
     expect(body.generationConfig.responseFormat.text.mimeType).toBe("APPLICATION_JSON");
     expect(body.generationConfig.responseFormat.text.schema.additionalProperties).toBe(false);
@@ -93,13 +97,10 @@ describe("stateless conversational extraction boundary", () => {
   });
 
   it("uses only explicitly selected Lovable and does not fall back to a second provider", async () => {
-    const fetcher = vi.fn(
-      async () =>
-        new Response(
-          JSON.stringify({
-            choices: [{ finish_reason: "stop", message: { content: JSON.stringify(output()) } }],
-          }),
-        ),
+    const fetcher = vi.fn(async () =>
+      Response.json({
+        choices: [{ finish_reason: "stop", message: { content: JSON.stringify(output()) } }],
+      }),
     );
     const result = await extractConversation(input(), {
       ...dependencies(fetcher),
@@ -687,7 +688,14 @@ describe("stateless conversational extraction boundary", () => {
     const logs = vi.spyOn(console, "error").mockImplementation(() => {});
     const result = await extractConversation(
       input(),
-      dependencies(vi.fn(async () => new Response("secret transcript ".repeat(10_000)))),
+      dependencies(
+        vi.fn(
+          async () =>
+            new Response("secret transcript ".repeat(10_000), {
+              headers: { "Content-Type": "application/json" },
+            }),
+        ),
+      ),
     );
     expect(result).toMatchObject({ status: "unavailable", reason: "provider_error" });
     expect(JSON.stringify(result)).not.toContain("secret transcript");
@@ -707,6 +715,113 @@ describe("stateless conversational extraction boundary", () => {
     expect(release).toHaveBeenCalledOnce();
     const options = (fetcher.mock.calls[0] as unknown as [string, RequestInit])[1];
     expect(options.signal?.aborted).toBe(true);
+    expect(result).toMatchObject({
+      diagnostic: { stage: "fetch", timedOut: true },
+      message: expect.stringContaining("provider_timeout"),
+    });
+    expect(console.warn).toHaveBeenLastCalledWith("[limitations-extraction] provider_timeout");
+  });
+
+  it("rejects provider redirects without a second request or forwarding credentials", async () => {
+    for (const status of [302, 307, 308]) {
+      const fetcher = vi.fn(
+        async () =>
+          new Response(null, {
+            status,
+            headers: { Location: "https://untrusted.invalid/credential-capture" },
+          }),
+      );
+      const result = await extractConversation(input(), dependencies(fetcher));
+      expect(result).toMatchObject({
+        status: "unavailable",
+        reason: "provider_error",
+        diagnostic: { stage: "non2xx", httpStatus: status, timedOut: false },
+      });
+      expect(fetcher).toHaveBeenCalledOnce();
+      const [url, options] = fetcher.mock.calls[0]! as unknown as [string, RequestInit];
+      expect(url).toBe(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent",
+      );
+      expect(options.redirect).toBe("manual");
+      expect(options).not.toHaveProperty("credentials");
+      expect(JSON.stringify(result)).not.toContain("untrusted.invalid");
+    }
+  });
+
+  it("returns and logs only numeric HTTP status for rejected provider requests", async () => {
+    for (const status of [400, 401, 402, 403, 429, 500]) {
+      const response = new Response("sensitive narrative fixture-private-key", { status });
+      const readText = vi.spyOn(response, "text");
+      const result = await extractConversation(input(), dependencies(vi.fn(async () => response)));
+      expect(result).toEqual({
+        status: "unavailable",
+        reason: "provider_error",
+        diagnostic: { stage: "non2xx", httpStatus: status, timedOut: false },
+        message: `Natural-language extraction is temporarily unavailable (provider_http_${status}). Your facts have not changed.`,
+      });
+      expect(readText).not.toHaveBeenCalled();
+      expect(console.warn).toHaveBeenLastCalledWith(
+        `[limitations-extraction] provider_http_${status}`,
+      );
+    }
+    expect(JSON.stringify(vi.mocked(console.warn).mock.calls)).not.toMatch(
+      /sensitive|fixture-private-key/,
+    );
+  });
+
+  it("distinguishes transport failures without returning or logging thrown details", async () => {
+    const fetcher = vi.fn(async () => {
+      throw new Error("sensitive narrative fixture-private-key");
+    });
+    const result = await extractConversation(input(), dependencies(fetcher));
+    expect(result).toMatchObject({
+      diagnostic: { stage: "fetch", timedOut: false },
+      message: expect.stringContaining("provider_fetch_failure"),
+    });
+    expect(JSON.stringify(result)).not.toMatch(/sensitive|fixture-private-key|httpStatus/);
+    expect(console.warn).toHaveBeenCalledWith("[limitations-extraction] provider_fetch_failure");
+  });
+
+  it("distinguishes non-JSON responses without exposing media types or bodies", async () => {
+    const result = await extractConversation(
+      input(),
+      dependencies(
+        vi.fn(
+          async () =>
+            new Response("sensitive narrative", {
+              headers: { "Content-Type": "text/html;private=fixture-private-key" },
+            }),
+        ),
+      ),
+    );
+    expect(result).toMatchObject({
+      diagnostic: { stage: "contenttype", httpStatus: 200, timedOut: false },
+      message: expect.stringContaining("provider_contenttype_failure"),
+    });
+    expect(JSON.stringify(result)).not.toMatch(/sensitive|fixture-private-key|text\/html/);
+    expect(console.warn).toHaveBeenCalledWith(
+      "[limitations-extraction] provider_contenttype_failure",
+    );
+  });
+
+  it("distinguishes invalid JSON without exposing parse errors or response content", async () => {
+    const result = await extractConversation(
+      input(),
+      dependencies(
+        vi.fn(
+          async () =>
+            new Response("{sensitive narrative fixture-private-key", {
+              headers: { "Content-Type": "application/json" },
+            }),
+        ),
+      ),
+    );
+    expect(result).toMatchObject({
+      diagnostic: { stage: "json", httpStatus: 200, timedOut: false },
+      message: expect.stringContaining("provider_json_failure"),
+    });
+    expect(JSON.stringify(result)).not.toMatch(/sensitive|fixture-private-key/);
+    expect(console.warn).toHaveBeenCalledWith("[limitations-extraction] provider_json_failure");
   });
 
   it("bounds a stalled source-choice lookup and declines work when capacity is exhausted", async () => {
