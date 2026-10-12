@@ -15,6 +15,7 @@ import {
 import { StatuteCitation } from "./StatuteCitation";
 import { StateStatutePanel } from "./StateStatutePanel";
 import { ReviewedCalculator } from "./ReviewedCalculator";
+import { ConversationCalculator } from "./ConversationCalculator";
 import { researchNavigation } from "./researchNavigation";
 import { versionWindowLabel } from "./calculatorGuidance";
 import {
@@ -366,6 +367,9 @@ export function LimitationsWorkbench({
 }) {
   const [researchSession, setResearchSession] = useState<Navigation | null>(null);
   const [calculatorRevision, setCalculatorRevision] = useState(0);
+  const [calculatorMode, setCalculatorMode] = useState<"conversation" | "structured">(
+    "conversation",
+  );
   const state = researchSession?.state ?? routeState;
   const claim = researchSession ? researchSession.claim : routeClaim;
   const view = researchSession?.view ?? routeView;
@@ -419,17 +423,60 @@ export function LimitationsWorkbench({
         </div>
       )}
       <div hidden={view !== "calculator"}>
-        <ReviewedCalculator
-          key={routeState + ":" + (routeClaim ?? "") + ":" + calculatorRevision}
-          snapshot={snapshot}
-          sourceRefreshFailed={!!query.error}
-          sourceRefreshing={query.isFetching}
-          onRefreshSources={() => void query.refetch()}
-          state={routeState}
-          claim={routeClaim}
-          onNavigate={(next) => changeView(next, true)}
-          renderAuthority={(rule) => <Citations snapshot={snapshot} rule={rule} />}
-        />
+        <div
+          className="mb-5 flex flex-wrap gap-2"
+          role="group"
+          aria-label="Calculator input method"
+        >
+          <Button
+            size="sm"
+            variant={calculatorMode === "conversation" ? "default" : "outline"}
+            aria-pressed={calculatorMode === "conversation"}
+            onClick={() => setCalculatorMode("conversation")}
+          >
+            Conversation
+          </Button>
+          <Button
+            size="sm"
+            variant={calculatorMode === "structured" ? "default" : "outline"}
+            aria-pressed={calculatorMode === "structured"}
+            onClick={() => setCalculatorMode("structured")}
+          >
+            Structured review
+          </Button>
+        </div>
+        <div hidden={calculatorMode !== "conversation"}>
+          <ConversationCalculator
+            key={"conversation:" + routeState + ":" + (routeClaim ?? "") + ":" + calculatorRevision}
+            snapshot={snapshot}
+            state={routeState}
+            claim={routeClaim}
+            mode="reviewed"
+            active={view === "calculator" && calculatorMode === "conversation"}
+            sourceRefreshFailed={!!query.error}
+            onRefreshSources={() => void query.refetch()}
+            onOpenSources={(nextState, nextClaim) =>
+              changeView(
+                { state: nextState, ...(nextClaim ? { claim: nextClaim } : {}), view: "sources" },
+                true,
+              )
+            }
+            renderAuthority={(rule) => <Citations snapshot={snapshot} rule={rule} />}
+          />
+        </div>
+        <div hidden={calculatorMode !== "structured"}>
+          <ReviewedCalculator
+            key={routeState + ":" + (routeClaim ?? "") + ":" + calculatorRevision}
+            snapshot={snapshot}
+            sourceRefreshFailed={!!query.error}
+            sourceRefreshing={query.isFetching}
+            onRefreshSources={() => void query.refetch()}
+            state={routeState}
+            claim={routeClaim}
+            onNavigate={(next) => changeView(next, true)}
+            renderAuthority={(rule) => <Citations snapshot={snapshot} rule={rule} />}
+          />
+        </div>
       </div>
       {view !== "calculator" && (
         <nav aria-label="Limitations research views" className="mb-5 flex flex-wrap gap-2">

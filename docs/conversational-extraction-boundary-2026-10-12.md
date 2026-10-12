@@ -1,0 +1,42 @@
+# Conversational fact extraction boundary
+
+The conversational intake sends bounded user-supplied text to an explicitly configured model provider and returns proposed facts for review. It does not ask the model to supply law, limitation periods, deadlines, arithmetic, legal confirmation, source clearance, or exception decisions. The separate server assessment reloads the protected release and applies deterministic guards.
+
+## User workflow and result limits
+
+Conversation is the default on both `/limitations` and `/limitations/statutory`. The existing structured reviews remain available. Users describe events, answer follow-ups, correct facts, and confirm the account in text. Optional browser dictation inserts an editable draft; it never sends automatically. Question playback starts only on request. Voice controls stop when the conversation is reset, hidden or disabled.
+
+The planner asks for distinct event, residence and filing locations; source-backed claim branches; required clock dates; and all 18 factual screens. Supplemental dates retain earlier proceedings, agreements, stays, military service, capacity, concealment, treatment, representation, notices and representative appointments. These events do not automatically extend a period. Unknown facts are retained; conflicting facts are not collapsed. “Review unresolved facts” returns a withheld review without forcing an arbitrary choice between locations or events.
+
+Fact confirmation and a request for hypothetical arithmetic are separate conversational turns. A supported illustration is calculated on the server from the hash-verified release and is explicitly conditional on legal assumptions. All recorded conditions, exclusions and review limits remain visible. Unsupported legal effects, source gaps, uncertain dates, chronology conflicts, source review cutoffs or incomplete screening withhold the date. This feature does not certify choice of law, legal accrual, complete current law, holidays, service or filing cutoffs.
+
+Any new narrative withdraws an earlier result immediately, before extraction finishes. Changed source evidence also withdraws confirmations and results. Superseded assessment messages are replaced in the visible conversation, extraction history and JSON download. Late responses after reset or source failure cannot restore an old result. A downloaded review contains the reported facts, exact quote evidence, source references, release identity and current result status; it is a user-requested local export.
+
+## Configuration
+
+- `LIMITATIONS_AI_PROVIDER=gemini` uses the server-only `GEMINI_API_KEY` and fixed `gemini-3.1-flash-lite` model on `generativelanguage.googleapis.com`.
+- `LIMITATIONS_AI_PROVIDER=lovable` uses the server-only managed `LOVABLE_API_KEY` and fixed `google/gemini-3.1-flash-lite` model on `ai.gateway.lovable.dev`.
+- An absent or unsupported selector, or a missing matching key, disables extraction. An ambient key does not enable a provider and failure does not send the narrative to a fallback provider.
+- `getConversationCapability` reports configured provider availability, not a provider health check. After deployment, validate a synthetic POST through `extractConversationFacts` before claiming that the configured provider works.
+
+Never place these keys in a `VITE_` variable, client module, repository, browser request, log, or documentation. Both server functions retain the explicit corpus-access check, whose existing owner-controlled authentication switch is unchanged.
+
+## Validation and privacy
+
+The extraction endpoint uses POST and private/no-store responses. Requests are limited to 100 messages, 8,000 characters per message, and 40,000 conversation characters. Only the latest user message may introduce candidate facts. Prior user messages support interpretation; an exact earlier user quote may support a narrow same-day reference. Assistant statements cannot establish facts.
+
+The provider grammar restricts primary evidence to the newest user message ID. Local validation independently requires a verbatim quote, known field and enum values, and complete explicit dates. Slash dates, relative dates, missing years, guessed dates, unknown authority fields, model prose, and unsupported references cannot become accepted exact dates or legal authority. A reference requires one exact earlier date, no different explicit user date anywhere in the conversation, and an explicit same-day statement linked to the source event or current factual question. Earlier corrections or another event date make this shortcut unavailable.
+
+State-of-event text does not automatically select the state law to examine. An injury date does not establish legal accrual. An age without a link to the relevant event cannot establish a negative minority screen. Supplemental timeline dates cannot create an extension. Negative factual screening answers cannot create legal review decisions. Source-backed branch choices come from the server release, optionally filtered by validated user state/claim selections; the client cannot submit rules or periods. An accepted subtype selects the planner's same source-backed factual screening prompts, including its questions about additional events beyond an already modeled death, discovery, product, or repose branch.
+
+The adapter has a 25-second total deadline, a 96 KB response limit, a 6,144-token output cap, and worker-local limits of four concurrent requests and 40 requests per minute. Worker limits contain counters only and are not a distributed or per-user quota. It sends no model tools, follows no redirects, and returns fixed error text without provider error bodies or transcript logging. The application adapter does not persist transcripts. Provider retention is separate: [Lovable documents AI logging controls](https://docs.lovable.dev/features/ai), so the UI must disclose external processing and must not promise that the provider retains nothing.
+
+## Evidence on October 12, 2026
+
+The focused offline suite passed 37 tests for the extraction adapter and functions, including unauthorized fields, input/response bounds, timeouts, provider selection, quote provenance, source branch scoping, reference ambiguity, age timing, and explicit access checks. The full TypeScript check passed during integration.
+
+A private, explicitly enabled Gemini integration test used synthetic narratives only. Five actual requests returned HTTP 200 and passed assertions for ordinary narrative extraction, a correction plus military-service date, withholding an ambiguous slash date, a same-day discovery reference, and the recorded Indiana general-injury branch with a proposed starting date. The Indiana test hash-checks its local rule copy against the active manifest and refuses to treat an unbound age as a negative screen. Results are retained in `private/conversation-validation-2026-10-12/gemini-smoke.json` and `indiana-branch-smoke.json`; they are not normal CI tests or public artifacts. Earlier unsuccessful iterations were used to fix the wire schema and strengthen anti-replay instructions. A model can still produce an unverifiable answer; the adapter then leaves facts unchanged and asks the user to clarify.
+
+Gemini's current REST discovery defines `APPLICATION_JSON` for `responseFormat.text.mimeType`; the live test verifies that wire format. Provider array-cardinality hints caused a constrained-grammar rejection, so local Zod enforces the 64-candidate limit independently of the provider schema.
+
+The Lovable adapter has offline protocol tests. Its current [supported-model list](https://docs.lovable.dev/features/ai) includes Gemini 3.1 Flash Lite. A real Lovable gateway request still requires validation in the configured deployment; Gemini success is not evidence of Lovable gateway success.
