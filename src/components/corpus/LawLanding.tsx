@@ -2,12 +2,16 @@ import { Link } from "@tanstack/react-router";
 import { ArrowRight, BookOpen, Building2, Clock3, FileText, LibraryBig, Scale } from "lucide-react";
 import { AgencyMark, StateMark } from "./EntityArtwork";
 import { STATES } from "@/lib/corpus/geo";
+import type { DatasetInfo } from "@/lib/external/catalog.functions";
+import { parseAgencyOptions } from "@/lib/external/agencyTree";
+import { lawGroup } from "@/lib/external/lawTree";
+import { datasetDisplayName } from "@/lib/external/domainRegistry";
 
 const federal = [
   {
     group: "statutes",
     title: "Federal statutes",
-    description: "United States Code and statutory materials",
+    description: "Federal statutory materials",
     icon: LibraryBig,
   },
   {
@@ -39,9 +43,32 @@ const agencies = [
   { name: "Justice Department", short: "Justice", subject: "Federal legal resources" },
   { name: "Transportation Department", short: "Transport", subject: "Transportation rules" },
 ];
-export function LawLanding() {
+export function LawLanding({
+  datasets = [],
+  metadataState = "ready",
+  onRetry,
+}: {
+  datasets?: readonly DatasetInfo[];
+  metadataState?: "loading" | "error" | "ready";
+  onRetry?: () => void;
+}) {
+  const recordedAgencies = parseAgencyOptions(
+    datasets
+      .find((dataset) => dataset.id === "federal_register_history")
+      ?.filters.find((filter) => filter.name === "agency")?.options ?? [],
+  );
   return (
     <div className="space-y-4">
+      {metadataState === "loading" ? (
+        <p className="text-xs text-muted-foreground">Loading collection and agency shortcuts…</p>
+      ) : metadataState === "error" ? (
+        <p role="alert" className="text-xs text-muted-foreground">
+          Shortcut metadata could not be refreshed. Browse links remain available.{" "}
+          <button type="button" onClick={onRetry} className="text-primary underline">
+            Retry shortcut metadata
+          </button>
+        </p>
+      ) : null}
       <section className="resource-panel" aria-label="Browse legal authorities">
         <div className="research-band">
           <h2 className="flex items-center gap-2 text-sm font-semibold">
@@ -57,25 +84,50 @@ export function LawLanding() {
           </Link>
         </div>
         <div className="grid gap-px bg-border md:grid-cols-2 xl:grid-cols-3">
-          {federal.map(({ group, title, description, icon: Icon }) => (
-            <Link
-              key={group}
-              to="/law"
-              search={{ scope: "federal", group }}
-              className="group flex min-h-24 items-center gap-3 bg-surface p-4 transition-colors hover:bg-[var(--blue-tint)]"
-            >
-              <span className="resource-icon !size-10">
-                <Icon className="size-5" strokeWidth={1.65} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold">{title}</span>
-                <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-                  {description}
+          {federal.map(({ group, title, description, icon: Icon }) => {
+            const available = datasets.filter(
+              (dataset) => lawGroup(dataset.id) === group && dataset.ready === true,
+            );
+            const destination = available.length === 1 ? available[0] : undefined;
+            const browseAgencies = group === "notices" && available.length === 0;
+            return (
+              <Link
+                key={group}
+                {...(browseAgencies
+                  ? { to: "/agencies" as const, search: { q: "" } }
+                  : {
+                      to: "/law" as const,
+                      search: {
+                        scope: "federal",
+                        group,
+                        ...(destination ? { ds: destination.id } : {}),
+                      },
+                    })}
+                aria-label={browseAgencies ? "Browse agencies for published notices" : title}
+                className="group flex min-h-24 items-center gap-3 bg-surface p-4 transition-colors hover:bg-[var(--blue-tint)]"
+              >
+                <span className="resource-icon !size-10">
+                  <Icon className="size-5" strokeWidth={1.65} />
                 </span>
-              </span>
-              <ArrowRight className="size-3.5 text-muted-foreground" />
-            </Link>
-          ))}
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold">{title}</span>
+                  <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                    {destination
+                      ? datasetDisplayName(destination.id, destination.label)
+                      : description}
+                  </span>
+                  <span className="mt-1 block text-[11px] text-primary">
+                    {browseAgencies
+                      ? "Browse agencies"
+                      : destination
+                        ? "Open collection"
+                        : "Browse collections"}
+                  </span>
+                </span>
+                <ArrowRight className="size-3.5 text-muted-foreground" />
+              </Link>
+            );
+          })}
           <Link
             to="/law/codes"
             search={{ q: "" }}
@@ -123,23 +175,31 @@ export function LawLanding() {
           </Link>
         </div>
         <div className="grid gap-px bg-border sm:grid-cols-2 xl:grid-cols-4">
-          {agencies.map((a) => (
-            <Link
-              key={a.name}
-              to="/agencies"
-              search={{ q: a.name }}
-              className="flex items-center gap-3 bg-surface px-3 py-3 transition-colors hover:bg-[var(--blue-tint)]"
-            >
-              <AgencyMark name={a.name} className="!size-10 !rounded-md !p-1.5" />
-              <span className="min-w-0 flex-1">
-                <span className="block text-[13px] font-semibold">{a.short}</span>
-                <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
-                  {a.subject}
+          {agencies.map((a) => {
+            const matches = recordedAgencies.filter((agency) => agency.name === a.name);
+            const agency = matches.length === 1 ? matches[0] : undefined;
+            return (
+              <Link
+                key={a.name}
+                {...(agency
+                  ? { to: "/agencies/$id" as const, params: { id: agency.id } }
+                  : { to: "/agencies" as const, search: { q: a.name } })}
+                aria-label={
+                  agency ? `Open ${agency.name}` : `Browse agency directory for ${a.name}`
+                }
+                className="flex items-center gap-3 bg-surface px-3 py-3 transition-colors hover:bg-[var(--blue-tint)]"
+              >
+                <AgencyMark name={a.name} className="!size-10 !rounded-md !p-1.5" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[13px] font-semibold">{a.short}</span>
+                  <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                    {agency ? a.subject : "Browse agency directory"}
+                  </span>
                 </span>
-              </span>
-              <ArrowRight className="size-3 text-muted-foreground" />
-            </Link>
-          ))}
+                <ArrowRight className="size-3 text-muted-foreground" />
+              </Link>
+            );
+          })}
         </div>
       </section>
       <section className="resource-panel" aria-label="State law shortcuts">

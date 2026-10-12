@@ -91,8 +91,8 @@ async function countEntriesByMdl(mdl: string): Promise<ExactCount> {
 const summaryCache = new Map<string, { at: number; value: MatterDocketDocumentsSummary }>();
 
 /**
- * Live counts for one matter. Document rows are the cases that belong (MDL label or the MDL number in the exact case
- * id). Entries are those cases' docket keys, or the MDL cell on sw_docket_entries_v1 when the matter has no document
+ * Live counts for one matter. Document rows require a recorded MDL association on the case.
+ * Entries are those cases' docket keys, or the MDL cell on sw_docket_entries_v1 when the matter has no document
  * cases. A missing piece stays not-recorded or too large to count; nothing is summed from a partial result.
  */
 export async function loadMatterDocketDocumentsSummary(

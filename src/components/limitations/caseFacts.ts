@@ -1,4 +1,48 @@
-import type { BaselineInput } from "@/lib/limitations/types";
+import type { BaselineInput, ClaimType } from "@/lib/limitations/types";
+import type { ConfirmedIntake } from "@/lib/limitations/intake";
+import { switchedVersionInput, unconfirmedClaimInput } from "./calculatorGuidance";
+
+export type CaseEvidenceBinding = { selectionKey: string; sourceKey: string };
+
+/** A new case/version is a deliberate choice; only an existing selection can lose evidence. */
+export function isEvidenceRefresh(
+  previous: CaseEvidenceBinding,
+  next: CaseEvidenceBinding,
+): boolean {
+  return (
+    previous.selectionKey === next.selectionKey &&
+    previous.sourceKey !== "" &&
+    previous.sourceKey !== next.sourceKey
+  );
+}
+
+/** Accepted words are draft facts only; they can never carry previous legal confirmations. */
+export function intakeCaseFacts(
+  accepted: ConfirmedIntake,
+  state: string,
+  claim: ClaimType | undefined,
+): BaselineInput {
+  return {
+    ...unconfirmedClaimInput(
+      accepted.facts.jurisdiction ?? state,
+      accepted.facts.claimType ?? claim ?? "",
+    ),
+    ...accepted.facts,
+  };
+}
+
+/** Completing an incomplete intake preserves dated events but starts a fresh legal review. */
+export function chooseIntakeCase(
+  previous: BaselineInput,
+  state: string,
+  claim: ClaimType | undefined,
+): BaselineInput {
+  return {
+    ...switchedVersionInput(previous, "general"),
+    jurisdiction: state,
+    claimType: claim ?? "product_liability",
+  };
+}
 
 const datesKey = new Set([
   "accrualDate",

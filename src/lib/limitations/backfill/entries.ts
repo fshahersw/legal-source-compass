@@ -5,7 +5,11 @@
  * of a captured official response. Anything else must be `flagged` (reason required) or `not_recorded`
  * (no period, reason required). Nothing here guesses.
  */
-import { CLAIM_TYPES } from "../types";
+import {
+  CLAIM_TYPES,
+  LIMITATION_SOURCE_AUTHORITY_KINDS,
+  type LimitationSourceAuthorityKind,
+} from "../types";
 
 export const PERIOD_UNITS = ["years", "months", "days"] as const;
 export type PeriodUnit = (typeof PERIOD_UNITS)[number];
@@ -42,6 +46,8 @@ export type CaptureMeta = {
 };
 
 export type MatrixEntryInput = {
+  /** Declared source type; a court opinion quoting a statute remains a judicial opinion. */
+  authorityKind?: LimitationSourceAuthorityKind;
   claimType: string;
   variant?: string;
   status: string;
@@ -74,7 +80,7 @@ export type MatrixEntryInput = {
   }[];
   lastAmended: { text: string; date: string | null; evidence: string };
   effectiveDate: string | null;
-  crossChecks: { captureId: string; note: string }[];
+  crossChecks: { captureId: string; note: string; authorityKind?: LimitationSourceAuthorityKind }[];
   confidence: string;
   confidenceNote: string;
   flags: string[];
@@ -206,6 +212,11 @@ export function checkEntry(
     return out;
   }
   if (!entry.citation?.trim()) err("citation is required");
+  if (
+    entry.authorityKind !== undefined &&
+    !LIMITATION_SOURCE_AUTHORITY_KINDS.includes(entry.authorityKind)
+  )
+    err("invalid authorityKind");
   if (!entry.period) {
     err("period is required unless status is not_recorded");
   } else {
@@ -329,6 +340,11 @@ export function checkEntry(
     err("effectiveDate must be YYYY-MM-DD or null");
   if (!entry.lastAmended?.text?.trim()) warn("lastAmended not recorded");
   for (const [i, c] of (entry.crossChecks ?? []).entries()) {
+    if (
+      c.authorityKind !== undefined &&
+      !LIMITATION_SOURCE_AUTHORITY_KINDS.includes(c.authorityKind)
+    )
+      err(`crossChecks[${i}] invalid authorityKind`);
     const other = lookup(c.captureId);
     if (!other) err(`crossChecks[${i}] capture ${c.captureId} not found`);
     else if (other.meta.hostClass === "blocked_secondary")
@@ -349,6 +365,7 @@ export type MatrixEntry = MatrixEntryInput & {
 };
 
 export type TimeRuleInput = {
+  authorityKind?: LimitationSourceAuthorityKind;
   status: string;
   citation: string;
   excerpt: string;
@@ -358,7 +375,12 @@ export type TimeRuleInput = {
    * Further official captures the rule's reading relies on (a holiday-definition section, a companion
    * statute). Each quoted passage must be a literal substring of its capture; they become extra sources.
    */
-  supporting?: { captureId: string; citation: string; excerpt: string }[];
+  supporting?: {
+    captureId: string;
+    citation: string;
+    excerpt: string;
+    authorityKind?: LimitationSourceAuthorityKind;
+  }[];
   extendsWhenLastDayIsWeekend: boolean | null;
   extendsWhenLastDayIsHoliday: boolean | null;
   confidence: string;
@@ -383,6 +405,11 @@ export function checkTimeRule(
   }
   if (!rule.citation?.trim()) err("citation is required");
   if (
+    rule.authorityKind !== undefined &&
+    !LIMITATION_SOURCE_AUTHORITY_KINDS.includes(rule.authorityKind)
+  )
+    err("invalid authorityKind");
+  if (
     typeof rule.extendsWhenLastDayIsWeekend !== "boolean" &&
     !(rule.status === "flagged" && rule.extendsWhenLastDayIsWeekend === null)
   )
@@ -397,14 +424,22 @@ export function checkTimeRule(
   if (!containsLiteral(rule.excerpt, rule.evidence))
     err("evidence is not a literal substring of the excerpt");
   for (const s of rule.supporting ?? []) {
+    if (
+      s.authorityKind !== undefined &&
+      !LIMITATION_SOURCE_AUTHORITY_KINDS.includes(s.authorityKind)
+    )
+      err(`supporting capture ${s.captureId} invalid authorityKind`);
     const cap = lookup(s.captureId);
     if (!cap) {
       err(`supporting capture ${s.captureId} not found`);
       continue;
     }
-    if (s.captureId === rule.captureId) err(`supporting capture ${s.captureId} repeats the main capture`);
-    if (cap.meta.state !== jurisdiction) err(`supporting capture ${s.captureId} belongs to another jurisdiction`);
-    if (cap.meta.hostClass === "blocked_secondary") err(`supporting capture ${s.captureId} is a secondary source`);
+    if (s.captureId === rule.captureId)
+      err(`supporting capture ${s.captureId} repeats the main capture`);
+    if (cap.meta.state !== jurisdiction)
+      err(`supporting capture ${s.captureId} belongs to another jurisdiction`);
+    if (cap.meta.hostClass === "blocked_secondary")
+      err(`supporting capture ${s.captureId} is a secondary source`);
     if (!s.citation?.trim()) err(`supporting capture ${s.captureId} needs a citation`);
     if (!s.excerpt?.trim() || !containsLiteral(cap.text, s.excerpt))
       err(`supporting excerpt for ${s.captureId} is not a literal substring of its capture text`);

@@ -385,8 +385,10 @@ function validateRules(values: unknown): LimitationRule[] {
       fail(`${label} has an unsupported claim type`);
     if (!RULE_KINDS.has(r.ruleKind as string) || !COMPUTATIONS.has(r.computation as string))
       fail(`${label} has an unsupported rule kind or computation`);
-    if (r.reviewStatus !== "statutory_text_verified")
+    if (!["statutory_text_verified", "research_text_verified"].includes(r.reviewStatus as string))
       fail(`${label} has an unsupported review status`);
+    if (r.reviewStatus === "research_text_verified" && r.computation !== "research_only")
+      fail(`${label} research evidence cannot enable a baseline`);
     if (!ACCRUAL_BASES.has(r.accrualBasis as string))
       fail(`${label} has an unsupported accrual basis`);
     if (r.period !== null) {

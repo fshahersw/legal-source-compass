@@ -47,12 +47,26 @@ import {
   versionWindowLabel,
 } from "./calculatorGuidance";
 import { ReviewChecklist } from "./ReviewChecklist";
+import { ScenarioIntake } from "./ScenarioIntake";
+import { CalculatorCoverage } from "./CalculatorCoverage";
+import { ruleAuthorityFacts } from "./ruleAuthority";
+import {
+  intakeReviewDecisions,
+  type ConfirmedIntake,
+  type IntakeTopic,
+} from "@/lib/limitations/intake";
 
 const control =
   "mt-1 block min-h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm font-normal outline-none focus-visible:ring-2 focus-visible:ring-ring";
-const box = "min-w-0 rounded-xl border border-border bg-surface p-5 sm:p-6";
+const box = "min-w-0 rounded-xl border border-border bg-surface p-4 sm:p-5";
 const humanize = (text: string) => text.replaceAll("_", " ").replace(/^./, (c) => c.toUpperCase());
-import { reviseCaseFacts, CASE_VARIANT_LABELS } from "./caseFacts";
+import {
+  reviseCaseFacts,
+  intakeCaseFacts,
+  chooseIntakeCase,
+  isEvidenceRefresh,
+  CASE_VARIANT_LABELS,
+} from "./caseFacts";
 
 function displayDate(value: string | null): string {
   if (!value || !parseCivilDate(value)) return "Not established";
@@ -82,14 +96,23 @@ type Props = {
 
 export function ReviewedCalculator({
   snapshot,
-  state,
-  claim,
+  state: initialState,
+  claim: initialClaim,
   onNavigate,
   renderAuthority,
   sourceRefreshFailed = false,
   sourceRefreshing = false,
   onRefreshSources,
 }: Props) {
+  // Confirmed intake stays in memory: neither narrative nor dates belong in a shareable URL.
+  const [intakeSelection, setIntakeSelection] = useState<{
+    state: string;
+    claim: ClaimType | undefined;
+  } | null>(null);
+  const state = intakeSelection?.state ?? initialState;
+  const claim = intakeSelection ? intakeSelection.claim : initialClaim;
+  const [intakeTopics, setIntakeTopics] = useState<IntakeTopic[]>([]);
+  const [intakeApplied, setIntakeApplied] = useState(false);
   const [input, setInput] = useState<BaselineInput>(() =>
     unconfirmedClaimInput(state, claim ?? ""),
   );
@@ -123,13 +146,19 @@ export function ReviewedCalculator({
         : "",
     [snapshot, rule],
   );
-  const [boundEvidence, setBoundEvidence] = useState(sourceContextKey);
+  const selectionKey = JSON.stringify([state, claim ?? "", input.subtype ?? "general"]);
+  const [boundEvidence, setBoundEvidence] = useState({
+    selectionKey,
+    sourceKey: sourceContextKey,
+  });
   const [sourceChanged, setSourceChanged] = useState(false);
   // Reset only the legal decisions, not the entered facts, when evidence changes.
   // Conditional render-time state adjustment prevents a stale frame before an effect.
-  if (boundEvidence !== sourceContextKey) {
-    setBoundEvidence(sourceContextKey);
-    setSourceChanged(true);
+  if (boundEvidence.selectionKey !== selectionKey || boundEvidence.sourceKey !== sourceContextKey) {
+    const nextEvidence = { selectionKey, sourceKey: sourceContextKey };
+    const evidenceRefreshed = isEvidenceRefresh(boundEvidence, nextEvidence);
+    setBoundEvidence(nextEvidence);
+    setSourceChanged(evidenceRefreshed);
     setInput((previous) => ({
       ...previous,
       governingLawConfirmed: false,
@@ -141,9 +170,14 @@ export function ReviewedCalculator({
     setReview(null);
     setResultRecord(null);
     setSubmitted(false);
-    setStep(rule ? 1 : 0);
+    if (evidenceRefreshed) setStep(rule ? 1 : 0);
   }
-  const currentReview = review?.contextKey === contextKey ? review : null;
+  const currentReview =
+    review?.contextKey === contextKey
+      ? review
+      : rule && intakeTopics.length
+        ? { contextKey, decisions: intakeReviewDecisions(intakeTopics) }
+        : null;
   const decisions = currentReview?.decisions ?? {};
   const progress = reviewProgress(factors, decisions);
   const result =
@@ -182,6 +216,10 @@ export function ReviewedCalculator({
   const selectedFacts = rule ? calculateBaseline(snapshot, input) : null;
   const suggestedSubtype = selectedFacts?.suggestedSubtype;
   const sourceCutoff = rule ? sourceReviewDate(snapshot, rule) : null;
+  const authority = useMemo(
+    () => (rule ? ruleAuthorityFacts(snapshot, rule) : null),
+    [snapshot, rule],
+  );
   const instructions = Object.values(decisions).filter((d) => d.status === "instruction").length;
   const navigate = (view: Navigation["view"], nextState = state, nextClaim = claim) =>
     onNavigate({ state: nextState, view, ...(nextClaim ? { claim: nextClaim } : {}) });
@@ -191,11 +229,42 @@ export function ReviewedCalculator({
     setResultRecord(null);
     setSubmitted(false);
   };
+  const applyIntake = (accepted: ConfirmedIntake) => {
+    const nextState = accepted.facts.jurisdiction ?? state;
+    const nextClaim = accepted.facts.claimType ?? claim;
+    setIntakeSelection({ state: nextState, claim: nextClaim });
+    setInput(intakeCaseFacts(accepted, state, claim));
+    setIntakeTopics(accepted.reviewTopics);
+    setIntakeApplied(true);
+    setSourceChanged(false);
+    setReview(null);
+    setResultRecord(null);
+    setSubmitted(false);
+    setStep(0);
+  };
+  const chooseCase = (nextState: string, nextClaim: ClaimType | undefined) => {
+    setSourceChanged(false);
+    // Reset clears the description's facts, but the local state/claim selection still owns the UI.
+    if (!intakeSelection) {
+      onNavigate({
+        state: nextState,
+        view: "calculator",
+        ...(nextClaim ? { claim: nextClaim } : {}),
+      });
+      return;
+    }
+    setIntakeSelection({ state: nextState, claim: nextClaim });
+    setInput((previous) => chooseIntakeCase(previous, nextState, nextClaim));
+    setReview(null);
+    setResultRecord(null);
+    setSubmitted(false);
+  };
   const setDecisions = (next: ReviewDecisions) => {
     setReview({ contextKey, decisions: next });
     setResultRecord(null);
   };
   const chooseVersion = (subtype: string) => {
+    setSourceChanged(false);
     setInput((old) => switchedVersionInput(old, subtype));
     setReview(null);
     setResultRecord(null);
@@ -256,6 +325,7 @@ export function ReviewedCalculator({
           Statutes & sources
         </Button>
       </header>
+      <CalculatorCoverage snapshot={snapshot} onOpen={() => navigate("coverage")} />
       <nav
         aria-label="Calculation steps"
         className="grid grid-cols-3 gap-2 rounded-xl border border-border bg-muted/30 p-2"
@@ -286,10 +356,11 @@ export function ReviewedCalculator({
           );
         })}
       </nav>
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <section className={box} aria-label="Claim assessment form">
           {step === 0 && (
-            <section aria-label="Case and law" className="space-y-5">
+            <section aria-label="Case and law" className="space-y-4">
+              <ScenarioIntake onApply={applyIntake} />
               <div>
                 <h3 className="text-lg font-semibold">Which claim are you assessing?</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -303,7 +374,7 @@ export function ReviewedCalculator({
                     className={control}
                     aria-label="Choose governing state"
                     value={state}
-                    onChange={(e) => onNavigate({ state: e.target.value, view: "calculator" })}
+                    onChange={(e) => chooseCase(e.target.value, undefined)}
                   >
                     <option value="">Choose a state</option>
                     {[...STATES]
@@ -323,11 +394,7 @@ export function ReviewedCalculator({
                     value={claim ?? ""}
                     disabled={!state}
                     onChange={(e) =>
-                      onNavigate({
-                        state,
-                        view: "calculator",
-                        ...(e.target.value ? { claim: e.target.value as ClaimType } : {}),
-                      })
+                      chooseCase(state, e.target.value ? (e.target.value as ClaimType) : undefined)
                     }
                   >
                     <option value="">Choose a claim</option>
@@ -371,6 +438,12 @@ export function ReviewedCalculator({
                     {rule.period ? periodLabel(rule.period) : "Period not established"}
                   </p>
                   <p className="mt-1 text-sm font-medium text-primary">{rule.pinpoint}</p>
+                  {authority && (
+                    <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                      <span title={authority.gradeBasis}>{authority.grade}</span>
+                      <span title={authority.currency.detail}>{authority.currency.label}</span>
+                    </p>
+                  )}
                   <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{rule.scope}</p>
                   {versionWindowLabel(rule) && (
                     <p className="mt-2 text-xs text-muted-foreground">
@@ -391,6 +464,10 @@ export function ReviewedCalculator({
                   <p className="mt-2 text-sm leading-relaxed">
                     {cell?.reason ??
                       "No uniquely supported rule exists for this state, claim and fact pattern. A different claim's period will not be substituted."}
+                  </p>
+                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                    Check the claim and recorded historical versions, then inspect the cited
+                    material. A missing rule does not establish that the claim has no time limit.
                   </p>
                   <Button
                     className="mt-3"
@@ -633,6 +710,9 @@ export function ReviewedCalculator({
                   setResultRecord(null);
                   setStep(0);
                   setSubmitted(false);
+                  setIntakeTopics([]);
+                  setIntakeApplied(false);
+                  setSourceChanged(false);
                 }}
               >
                 <RotateCcw className="h-4 w-4" />
@@ -642,6 +722,28 @@ export function ReviewedCalculator({
             <p className="mt-1 text-sm text-muted-foreground">
               {claim ? CLAIM_LABELS[claim] : "Choose a claim to begin"}
             </p>
+            {intakeApplied && (
+              <p className="mt-3 rounded-md bg-primary/5 p-2 text-xs leading-relaxed" role="status">
+                Checked description facts applied. Review the governing law, required dates, legal
+                applicability and exception mentions before assessing a deadline.
+              </p>
+            )}
+            {intakeTopics.length > 0 && (
+              <details className="mt-3 rounded-md border border-warning/30 p-3 text-xs" open>
+                <summary className="cursor-pointer font-medium">
+                  From your description: review {intakeTopics.length} topic
+                  {intakeTopics.length === 1 ? "" : "s"}
+                </summary>
+                <ul className="mt-2 list-disc space-y-1 pl-4 text-muted-foreground">
+                  {intakeTopics.map((topic) => (
+                    <li key={topic.id}>{topic.label}</li>
+                  ))}
+                </ul>
+                <p className="mt-2">
+                  Each starts as “Needs review”. Address it explicitly in Review & result.
+                </p>
+              </details>
+            )}
             {rule && (
               <>
                 <p className="mt-3 border-t border-border pt-3 text-sm font-medium">
@@ -750,6 +852,28 @@ export function ReviewedCalculator({
                   <p key={index}>{reason}</p>
                 ))}
               </div>
+              {!result.date && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setStep(result.status === "needs_legal_review" ? 2 : 1)}
+                  >
+                    {result.status === "needs_legal_review"
+                      ? "Review unresolved factors"
+                      : "Check timeline facts"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowEvidence(true)}
+                  >
+                    Inspect rule evidence
+                  </Button>
+                </div>
+              )}
               {result.date && (
                 <p className="mt-4 border-t border-border pt-3 text-xs font-medium leading-relaxed">
                   Not a verified final filing deadline. Confirm complete operative law, the court

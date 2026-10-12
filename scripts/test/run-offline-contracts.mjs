@@ -1,0 +1,42 @@
+import { spawnSync } from "node:child_process";
+import { readdirSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+// Reviewed offline families: injected transports, temporary synthetic files, and pure parsers.
+// Exact legacy private-file audits and optional database-runtime tests have separate prerequisites.
+const directories = [
+  "scripts/verification",
+  "scripts/enrichment",
+  "scripts/ingest/gap-fill",
+  "scripts/ingest/courtlistener-bulk",
+  "scripts/ingest/federal-register",
+  "scripts/ingest/official-mdl",
+  "scripts/legal/state-codes",
+];
+const databaseTests = new Set([
+  "publisher-code-intake.test.mjs",
+  "publisher-code-intake-v2.test.mjs",
+  "publisher-code-multicode-v3.test.mjs",
+]);
+const files = directories.flatMap((directory) =>
+  readdirSync(resolve(root, directory))
+    .filter((name) => name.endsWith(".test.mjs") && !databaseTests.has(name))
+    .map((name) => `${directory}/${name}`),
+);
+files.push(
+  "scripts/legal/audit-private-archive-manifests.test.mjs",
+  "scripts/admin/remove-owner-collections-20261005.test.mjs",
+  "scripts/admin/remove-owner-storage-20261005.test.mjs",
+  "scripts/admin/remove-owner-context-keys-20261005.test.mjs",
+  "scripts/admin/remove-owner-artifact-metadata-20261005.test.mjs",
+  "scripts/admin/remove-openus-outline-20261005.test.mjs",
+  "scripts/admin/remove-openus-bulk-storage-20261006.test.mjs",
+);
+const result = spawnSync(process.execPath, ["--test", ...files.sort()], {
+  cwd: root,
+  stdio: "inherit",
+});
+if (result.error) throw result.error;
+process.exitCode = result.status ?? 1;

@@ -20,7 +20,7 @@ import {
   type CourtTypeGroup,
 } from "@/lib/courts/artwork";
 import { cn } from "@/lib/utils";
-import { communityCourtArtwork } from "./EntityArtwork";
+import { communityCourtArtwork } from "@/lib/visuals/registry";
 
 const typeIcons = {
   "us-supreme": Landmark,
@@ -51,11 +51,12 @@ export function CourtArtwork({
   recordedLinks?: readonly { url: string; label: string }[];
   compact?: boolean;
 }) {
-  const verified = artworkForCourtId(courtId);
+  const verified = artworkForCourtId(courtId, system);
   const community = verified ? null : communityCourtArtwork(courtId, system);
   const recorded = verified || community ? null : recordedCourtArtwork(recordedLinks);
-  const [failed, setFailed] = useState(false);
-  const source = !failed ? (verified?.assetPath ?? community?.path ?? recorded?.url ?? null) : null;
+  const [failed, setFailed] = useState<string | null>(null);
+  const candidate = verified?.assetPath ?? community?.path ?? recorded?.url ?? null;
+  const source = candidate !== failed ? candidate : null;
   const imageSource =
     verified?.assetPath ?? community?.path ?? (recorded ? fileUrl(recorded.url) : null);
   const officialLabel = verified
@@ -79,7 +80,7 @@ export function CourtArtwork({
             verified?.kind === "banner" ? "rounded-md object-left" : "rounded-full p-1",
           )}
           loading="lazy"
-          onError={() => setFailed(true)}
+          onError={() => setFailed(candidate)}
         />
       );
       return verified ? (
@@ -117,7 +118,7 @@ export function CourtArtwork({
             alt={`${title} ${verified?.kind === "banner" ? "official court mark" : "court artwork"}`}
             className="max-h-full max-w-full object-contain"
             loading="lazy"
-            onError={() => setFailed(true)}
+            onError={() => setFailed(candidate)}
           />
         ) : (
           <Icon aria-hidden="true" className="size-14 text-muted-foreground" strokeWidth={1.35} />
@@ -130,17 +131,17 @@ export function CourtArtwork({
             ? (verified?.description ?? community?.name ?? recorded?.label)
             : courtTypeLabels[group]}
         </span>
-        {community && !verified ? (
+        {source && community && !verified ? (
           <a
             href={community.source}
             target="_blank"
             rel="noreferrer"
             className="block underline decoration-dotted underline-offset-2"
           >
-            Image provenance
+            Image provenance · {community.license}
           </a>
         ) : null}
-        {verified ? (
+        {source && verified ? (
           <a
             href={verified.sourcePage}
             target="_blank"

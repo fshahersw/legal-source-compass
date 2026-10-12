@@ -1,31 +1,13 @@
 import { Building2, CircleUserRound, MapPin } from "lucide-react";
 import { useState } from "react";
-import rawRegistry from "@/lib/visuals/registry.json";
+import { agencyArtwork, stateArtwork } from "@/lib/visuals/registry";
 import { canonicalState } from "@/lib/corpus/stateHub";
 import { fileUrl } from "@/lib/external/groups";
 import { cn } from "@/lib/utils";
-export type VisualAsset = {
-  name: string;
-  path: string;
-  source: string;
-  sha256: string;
-  license: string;
-  kind: string;
-};
-const registry = rawRegistry as unknown as {
-  states: Record<string, VisualAsset>;
-  agencies: Record<string, VisualAsset>;
-  courts: Record<string, VisualAsset>;
-};
-export function agencyArtwork(name: string): VisualAsset | null {
-  return registry.agencies[name.trim().toLowerCase()] ?? null;
-}
-export function communityCourtArtwork(id: string, system?: string | null): VisualAsset | null {
-  return system?.trim().toLowerCase() === "federal" ? (registry.courts[id] ?? null) : null;
-}
 export function StateMark({ state, className }: { state: string; className?: string }) {
   const identity = canonicalState(state),
-    asset = identity ? registry.states[identity.usps] : null;
+    asset = stateArtwork(state);
+  const [failed, setFailed] = useState<string | null>(null);
   return (
     <span
       className={cn(
@@ -38,15 +20,19 @@ export function StateMark({ state, className }: { state: string; className?: str
           : "State not identified"
       }
     >
-      {asset ? (
+      {asset && failed !== asset.path ? (
         <img
           src={asset.path}
           alt={`${identity?.name} outline`}
           className="size-full object-contain"
           loading="lazy"
+          onError={() => setFailed(asset.path)}
         />
       ) : (
-        <MapPin aria-hidden className="size-5 text-muted-foreground" />
+        <MapPin
+          aria-label={identity ? `${identity.name} outline unavailable` : "State not identified"}
+          className="size-5 text-muted-foreground"
+        />
       )}
     </span>
   );
@@ -71,7 +57,10 @@ export function AgencyMark({ name, className }: { name: string; className?: stri
           onError={() => setFailed(asset.path)}
         />
       ) : (
-        <Building2 className="size-5 text-slate-500" aria-hidden />
+        <Building2
+          className="size-5 text-slate-500"
+          aria-label={`${name}: agency mark not available`}
+        />
       )}
     </span>
   );

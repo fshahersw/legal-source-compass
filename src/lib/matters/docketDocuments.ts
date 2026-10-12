@@ -119,14 +119,12 @@ export type DocketDocumentsOverview = {
   cases: DocketDocumentsCase[];
 };
 
-/** A case belongs to an MDL page by its own MDL label, or by the MDL number in its exact docket id. */
+/** Only the corpus's recorded MDL association establishes membership. A docket-number suffix is not evidence. */
 export function caseBelongsToMdl(
   c: Pick<DocketDocumentsCase, "caseId" | "mdl">,
   mdl: string,
 ): boolean {
-  if (c.mdl) return c.mdl === mdl;
-  const digits = mdl.replace(/^0+/, "");
-  return new RegExp(`-md-0*${digits}$`).test(c.caseId);
+  return !!c.mdl && c.mdl === mdl;
 }
 
 /**

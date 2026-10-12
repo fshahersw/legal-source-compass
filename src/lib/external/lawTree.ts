@@ -24,7 +24,8 @@ export function lawGroup(id: string): LawGroup {
   if (id === "public_laws") return "statutes";
   if (id.startsWith("federal_regulations_")) return "regulations";
   if (id === "federal_register_history") return "register";
-  if (id === "federal") return "notices";
+  // Recorded collection: "Federal court websites and legal reference resources".
+  if (id === "federal") return "reference";
   if (id === "ecfr_hierarchy" || id === "ecfr_authority_notes") return "reference";
   if (
     id === "citation_index" ||

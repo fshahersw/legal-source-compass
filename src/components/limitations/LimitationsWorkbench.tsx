@@ -1,4 +1,5 @@
 import { PrivateDataLink } from "@/components/atlas/PrivateDataLink";
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import {
 import { StatuteCitation } from "./StatuteCitation";
 import { StateStatutePanel } from "./StateStatutePanel";
 import { ReviewedCalculator } from "./ReviewedCalculator";
+import { researchNavigation } from "./researchNavigation";
 import { versionWindowLabel } from "./calculatorGuidance";
 import {
   CLAIM_LABELS,
@@ -352,9 +354,9 @@ function JudicialEvidence({ reference }: { reference: JudicialReference }) {
 }
 
 export function LimitationsWorkbench({
-  state,
-  claim,
-  view,
+  state: routeState,
+  claim: routeClaim,
+  view: routeView,
   onNavigate,
 }: {
   state: string;
@@ -362,16 +364,27 @@ export function LimitationsWorkbench({
   view: View;
   onNavigate: (next: Navigation) => void;
 }) {
+  const [researchSession, setResearchSession] = useState<Navigation | null>(null);
+  const [calculatorRevision, setCalculatorRevision] = useState(0);
+  const state = researchSession?.state ?? routeState;
+  const claim = researchSession ? researchSession.claim : routeClaim;
+  const view = researchSession?.view ?? routeView;
   const query = useQuery({
     queryKey: ["limitations-snapshot-1"],
     queryFn: loadLimitations,
     staleTime: 60_000,
   });
+  const changeView = (next: Navigation, fromCalculator = false) => {
+    const transition = researchNavigation(researchSession, next, fromCalculator);
+    setResearchSession(transition.session);
+    if (transition.resetCalculator) setCalculatorRevision((revision) => revision + 1);
+    if (transition.route) onNavigate(transition.route);
+  };
   const navigate = (
     nextView: View = "calculator",
     nextState = state,
     nextClaim: ClaimType | null | undefined = claim,
-  ) => onNavigate({ state: nextState, ...(nextClaim ? { claim: nextClaim } : {}), view: nextView });
+  ) => changeView({ state: nextState, ...(nextClaim ? { claim: nextClaim } : {}), view: nextView });
   if (query.isPending)
     return <p className="py-8 text-base text-muted-foreground">Loading cited state rules…</p>;
   if (!query.data)
@@ -407,14 +420,14 @@ export function LimitationsWorkbench({
       )}
       <div hidden={view !== "calculator"}>
         <ReviewedCalculator
-          key={state + ":" + (claim ?? "")}
+          key={routeState + ":" + (routeClaim ?? "") + ":" + calculatorRevision}
           snapshot={snapshot}
           sourceRefreshFailed={!!query.error}
           sourceRefreshing={query.isFetching}
           onRefreshSources={() => void query.refetch()}
-          state={state}
-          claim={claim}
-          onNavigate={onNavigate}
+          state={routeState}
+          claim={routeClaim}
+          onNavigate={(next) => changeView(next, true)}
           renderAuthority={(rule) => <Citations snapshot={snapshot} rule={rule} />}
         />
       </div>

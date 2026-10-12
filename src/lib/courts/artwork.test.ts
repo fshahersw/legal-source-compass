@@ -15,6 +15,8 @@ describe("court artwork", () => {
     expect(artworkForCourtId("cand")?.courtName).toContain("Northern District of California");
     expect(artworkForCourtId("CAND")).toBeNull();
     expect(artworkForCourtId("cand-copy")).toBeNull();
+    expect(artworkForCourtId("cand", "State")).toBeNull();
+    expect(artworkForCourtId("cand", "Federal")?.courtId).toBe("cand");
   });
 
   it("keeps every registered asset present and checksum-verified", () => {
@@ -22,7 +24,9 @@ describe("court artwork", () => {
       verifiedCourtArtwork.length,
     );
     for (const entry of verifiedCourtArtwork) {
-      const bytes = readFileSync(resolve(process.cwd(), "public", entry.assetPath.replace(/^\//, "")));
+      const bytes = readFileSync(
+        resolve(process.cwd(), "public", entry.assetPath.replace(/^\//, "")),
+      );
       expect(createHash("sha256").update(bytes).digest("hex"), entry.courtId).toBe(entry.sha256);
       expect(entry.sourcePage).toMatch(/^https:\/\//);
       expect(entry.sourceImage).toMatch(/^https:\/\//);
@@ -61,5 +65,11 @@ describe("court artwork", () => {
         { url: "/api/files/seal", label: "Official seal" },
       ]),
     ).toEqual({ url: "/api/files/seal", label: "Official seal" });
+    expect(
+      recordedCourtArtwork([{ url: "//third-party.test/seal.svg", label: "Court seal" }]),
+    ).toBeNull();
+    expect(
+      recordedCourtArtwork([{ url: "/\\third-party.test/seal.svg", label: "Court seal" }]),
+    ).toBeNull();
   });
 });

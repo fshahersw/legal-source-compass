@@ -1,0 +1,6 @@
+# Preserve the exact pinned source bytes on every checkout.
+impl/** -text
+registry/** -text
+conformance/** -text
+spec/** -text
+LICENSE -text

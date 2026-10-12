@@ -1,0 +1,187 @@
+{
+  "validatedAt": "2026-10-12",
+  "ruleVersion": "2026-10-08.8",
+  "snapshotDate": "2026-10-08",
+  "rules": 888,
+  "ruleJurisdictions": 51,
+  "sources": 1028,
+  "generalClaimCoverage": {
+    "baseline": 539,
+    "flagged": 58,
+    "not_recorded": 14,
+    "research_only": 1
+  },
+  "missingGeneralClaims": [
+    {
+      "state": "AR",
+      "claimType": "defamation",
+      "status": "not_recorded",
+      "reason": "Arkansas publishes its Code only through a gated publisher; the captured unenacted 2015 bill reprint of §§ 16-56-104 and 16-56-105 is not accepted as current law."
+    },
+    {
+      "state": "AR",
+      "claimType": "intentional_tort",
+      "status": "not_recorded",
+      "reason": "Arkansas publishes its Code only through a gated publisher; the captured 2015 HB1448 (never enacted) reprints § 16-56-104's one-year list (assault and battery, false imprisonment), but an unenacted bill is not accepted as current law."
+    },
+    {
+      "state": "AR",
+      "claimType": "breach_of_warranty",
+      "status": "not_recorded",
+      "reason": "The state's enactment of UCC § 2-725 (limitation in contracts for sale) has not been captured from the official code site; nothing is recorded until it is."
+    },
+    {
+      "state": "AR",
+      "claimType": "legal_malpractice",
+      "status": "not_recorded",
+      "reason": "The state's compiled code is published only through a gated publisher and no captured official provision names attorneys or professional services; the claim falls under general tort or contract periods, which this matrix does not infer."
+    },
+    {
+      "state": "GA",
+      "claimType": "intentional_tort",
+      "status": "not_recorded",
+      "reason": "The O.C.G.A. is published only through a gated publisher; no official text naming assault, battery or false imprisonment has been captured (the general § 9-3-33 two-year period is known only from the enacted 2015 Act and appellate opinions)."
+    },
+    {
+      "state": "GA",
+      "claimType": "breach_of_warranty",
+      "status": "not_recorded",
+      "reason": "The state's enactment of UCC § 2-725 (limitation in contracts for sale) has not been captured from the official code site; nothing is recorded until it is."
+    },
+    {
+      "state": "GA",
+      "claimType": "legal_malpractice",
+      "status": "not_recorded",
+      "reason": "The state's compiled code is published only through a gated publisher and no captured official provision names attorneys or professional services; the claim falls under general tort or contract periods, which this matrix does not infer."
+    },
+    {
+      "state": "MS",
+      "claimType": "defamation",
+      "status": "not_recorded",
+      "reason": "The Mississippi Code is published only through a gated publisher; the only capture is a 2020 introduced bill reprinting § 15-1-35 (one year for slanderous words and libels), which is not accepted as current law."
+    },
+    {
+      "state": "MS",
+      "claimType": "intentional_tort",
+      "status": "not_recorded",
+      "reason": "The Mississippi Code is published only through a gated publisher; the only capture is a 2020 introduced bill reprinting § 15-1-35 (one year for assault, battery, false imprisonment, malicious arrest), which is not accepted as current law."
+    },
+    {
+      "state": "MS",
+      "claimType": "breach_of_warranty",
+      "status": "not_recorded",
+      "reason": "The state's enactment of UCC § 2-725 (limitation in contracts for sale) has not been captured from the official code site; nothing is recorded until it is."
+    },
+    {
+      "state": "MS",
+      "claimType": "legal_malpractice",
+      "status": "not_recorded",
+      "reason": "The state's compiled code is published only through a gated publisher and no captured official provision names attorneys or professional services; the claim falls under general tort or contract periods, which this matrix does not infer."
+    },
+    {
+      "state": "TN",
+      "claimType": "defamation",
+      "status": "not_recorded",
+      "reason": "Only the archived 2016 code bill names libel (recorded as a flagged variant); the current compilation is publisher-gated and no current official text has been captured. Only narrow fact-pattern variants are recorded; none is treated as the claim type's rule.",
+      "variants": [
+        {
+          "subtype": "libel",
+          "ruleId": "tn-defamation-libel-bf20261008",
+          "status": "flagged"
+        }
+      ]
+    },
+    {
+      "state": "TN",
+      "claimType": "intentional_tort",
+      "status": "not_recorded",
+      "reason": "Tenn. Code § 28-3-104(a)(1)(A) names false imprisonment and malicious prosecution (recorded as a flagged variant from the archived 2016 code bill); assault and battery fall under 'injuries to the person' only by construction and the current compilation is publisher-gated. Only narrow fact-pattern variants are recorded; none is treated as the claim type's rule.",
+      "variants": [
+        {
+          "subtype": "false_imprisonment",
+          "ruleId": "tn-intentional-tort-false-imprisonment-bf20261008",
+          "status": "flagged"
+        }
+      ]
+    },
+    {
+      "state": "TN",
+      "claimType": "breach_of_warranty",
+      "status": "not_recorded",
+      "reason": "The state's enactment of UCC § 2-725 (limitation in contracts for sale) has not been captured from the official code site; nothing is recorded until it is."
+    }
+  ],
+  "ruleKinds": {
+    "limitations": 867,
+    "repose": 3,
+    "accrual": 8,
+    "validity": 4,
+    "transition": 1,
+    "counting": 1,
+    "tolling": 4
+  },
+  "ruleEvidenceGrades": {
+    "official_capture_verified": 792,
+    "lower_evidence_grade": 96
+  },
+  "ruleCurrency": {
+    "confirmed": 709,
+    "partially_confirmed": 175,
+    "not_rechecked": 4
+  },
+  "sourceCurrency": {
+    "confirmed_evidence_intact": 573,
+    "confirmed_unchanged": 442,
+    "not_rechecked": 13
+  },
+  "sourceCurrencyRoutes": {
+    "official_code_capture": 260,
+    "direct": 544,
+    "proxied": 211,
+    "none": 13
+  },
+  "missingCountingRules": [
+    {
+      "state": "GA",
+      "reason": {
+        "reason": "Georgia's computation-of-time statute, O.C.G.A. § 1-3-1(d)(3), is published only through a gated publisher; no official text could be captured, and no court-published counting rule for limitation periods was located",
+        "reviewedOn": "2026-10-08T16:46:14.074Z"
+      }
+    },
+    {
+      "state": "NJ",
+      "reason": {
+        "reason": "New Jersey's court rules publisher (njcourts.gov) served only a script-driven index with no retrievable text for R. 1:3-1, and no general statute on last days falling on a weekend was located in the official statutes",
+        "reviewedOn": "2026-10-08T16:46:14.074Z"
+      }
+    }
+  ],
+  "flaggedCountingRules": [
+    "AL",
+    "AZ",
+    "CT",
+    "DC",
+    "FL",
+    "ID",
+    "LA",
+    "MT",
+    "NH",
+    "NY",
+    "RI",
+    "SC",
+    "SD",
+    "TN",
+    "VT",
+    "WA",
+    "WI",
+    "WY"
+  ],
+  "validation": {
+    "privateTests": 821,
+    "privateFiles": 9,
+    "portableTests": 266,
+    "portableFiles": 28,
+    "sourceChecksums": "passed",
+    "rawCaptureMetadata": "validated; raw bytes require separate receipt verification"
+  }
+}

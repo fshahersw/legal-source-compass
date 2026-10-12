@@ -38,6 +38,7 @@ import {
   type TimeRuleInput,
 } from "../../../src/lib/limitations/backfill/entries";
 import { matchPassage } from "../../../src/lib/limitations/backfill/passageMatch";
+import { reuseSourceAuthority } from "../../../src/lib/limitations/backfill/sourceAuthority";
 import {
   isIntermediaryOnlyCapture,
   ruleFromEntry,
@@ -567,13 +568,9 @@ function ensureSource(
   kind: LimitationSource["authorityKind"],
   citations: string[],
 ): string {
-  if (meta.seededFrom) return meta.seededFrom;
-  const id = `bf-${captureId}`;
-  if (sourceIds.has(id)) {
-    const existing = sourceById.get(id)!;
-    if (kind === "statute") existing.authorityKind = "statute";
-    return id;
-  }
+  const id = meta.seededFrom ?? `bf-${captureId}`;
+  if (meta.seededFrom || sourceIds.has(id))
+    return reuseSourceAuthority(sourceById.get(id), id, kind);
   const host = new URL(meta.url).hostname;
   const how = meta.intermediary
     ? `Text obtained through an extraction intermediary (${meta.extraction ?? "unspecified"}); not a direct HTTP response`
@@ -667,7 +664,7 @@ for (const file of entryFiles) {
       continue;
     }
     const primary = capture(state, entry.captureId)!;
-    const primaryId = ensureSource(state, entry.captureId, primary.meta, primary.text, "statute", [
+    const primaryId = ensureSource(state, entry.captureId, primary.meta, primary.text, entry.authorityKind ?? "statute", [
       entry.citation,
     ]);
     const crossIds = (entry.crossChecks ?? []).map((c) => {
@@ -678,7 +675,7 @@ for (const file of entryFiles) {
         c.captureId,
         cc.meta,
         cc.text,
-        courtPage ? "publisher_guidance" : "statute",
+        c.authorityKind ?? (courtPage ? "publisher_guidance" : "statute"),
         [`Cross-check: ${c.note}`.slice(0, 160)],
       );
     });
@@ -1177,12 +1174,12 @@ for (const file of existsSync(timeDir)
   }
   if (typeof rule.extendsWhenLastDayIsWeekend !== "boolean") continue;
   const cap = capture(state, rule.captureId)!;
-  const sourceId = ensureSource(state, rule.captureId, cap.meta, cap.text, "statute", [
+  const sourceId = ensureSource(state, rule.captureId, cap.meta, cap.text, rule.authorityKind ?? "statute", [
     rule.citation,
   ]);
   const supportingSourceIds = (rule.supporting ?? []).map((s) => {
     const sc = capture(state, s.captureId)!;
-    return ensureSource(state, s.captureId, sc.meta, sc.text, "statute", [s.citation]);
+    return ensureSource(state, s.captureId, sc.meta, sc.text, s.authorityKind ?? "statute", [s.citation]);
   });
   timeRules.set(state, {
     status: rule.status as "verified" | "flagged",

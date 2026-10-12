@@ -31,6 +31,7 @@ export type AuthorityCapture = {
 };
 export const LIMITATION_SOURCE_AUTHORITY_KINDS = [
   "statute",
+  "judicial_opinion",
   "constitution",
   "legislative_history",
   "publisher_guidance",
@@ -380,7 +381,7 @@ export type LimitationRule = {
   computation: "baseline_only" | "research_only";
   /** What the period rests on. Absent means claim_specific: every rule released before this field existed named the claim. */
   basis?: RuleBasis;
-  reviewStatus: "statutory_text_verified";
+  reviewStatus: "statutory_text_verified" | "research_text_verified";
   period: { amount: number; unit: PeriodUnit } | null;
   provenance?: RuleProvenance;
   verification?: RuleVerification;

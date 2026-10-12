@@ -5,17 +5,19 @@ import { useState } from "react";
 import { AppShell } from "@/components/atlas/AppShell";
 import { AgencyMark } from "@/components/corpus/EntityArtwork";
 import { Stat } from "@/components/corpus/BarList";
-import { DatasetBrowser } from "@/components/corpus/DatasetBrowser";
+import { DatasetBrowser, useDatasets } from "@/components/corpus/DatasetBrowser";
 import {
   AGENCY_TYPES,
   getAgencyCounts,
   listAgencies,
   listAgencyDocs,
+  type AgencyCount,
 } from "@/lib/external/agency.functions";
 import { isDepartment, SAFETY_AGENCY } from "@/lib/external/agencyTree";
 import { pageHead } from "@/lib/corpus/head";
 
 export const Route = createFileRoute("/agencies/$id")({
+  remountDeps: ({ params }) => ({ id: params.id }),
   head: () =>
     pageHead(
       "Agency profile",
@@ -26,29 +28,96 @@ export const Route = createFileRoute("/agencies/$id")({
 
 const TABS = ["Overview", "Rules & notices", "All documents", "Safety & enforcement"] as const;
 
+function ReadFailure({ label, retry, busy }: { label: string; retry: () => void; busy: boolean }) {
+  return (
+    <div
+      role="alert"
+      className="my-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-[13px]"
+    >
+      <p>{label} could not be loaded. Try again to load the recorded values.</p>
+      <button
+        type="button"
+        className="mt-2 underline disabled:opacity-50"
+        onClick={retry}
+        disabled={busy}
+      >
+        {busy ? "Retrying…" : `Retry ${label.toLowerCase()}`}
+      </button>
+    </div>
+  );
+}
+
+function AgencyProvenance({ id }: { id: string }) {
+  const source = useDatasets();
+  const dataset = source.data?.find((row) => row.id === "federal_register_history");
+  return (
+    <section className="mt-4 rounded-lg border border-border bg-surface p-4">
+      <h2 className="text-sm font-semibold">Source and coverage</h2>
+      <dl className="mt-3 grid gap-3 text-[12px] sm:grid-cols-2">
+        <div>
+          <dt className="text-muted-foreground">Federal Register agency ID</dt>
+          <dd className="mt-1 font-mono">{id}</dd>
+        </div>
+        <div>
+          <dt className="text-muted-foreground">Source collection</dt>
+          <dd className="mt-1">
+            {source.error
+              ? "Unavailable"
+              : source.isPending
+                ? "Loading…"
+                : (dataset?.label ?? "Not recorded")}
+          </dd>
+        </div>
+      </dl>
+      {source.error ? (
+        <ReadFailure
+          label="Source metadata"
+          retry={() => void source.refetch()}
+          busy={source.isFetching}
+        />
+      ) : (
+        <p className="mt-3 text-[12px] leading-relaxed text-muted-foreground">
+          {dataset?.qualification ??
+            (source.isPending
+              ? "Loading source coverage…"
+              : "Source coverage qualification: Not recorded")}
+        </p>
+      )}
+    </section>
+  );
+}
+
 function AgencyPage() {
   const { id } = Route.useParams();
   const la = useServerFn(listAgencies),
     lc = useServerFn(getAgencyCounts),
     ld = useServerFn(listAgencyDocs);
-  const all = useQuery({ queryKey: ["agencies"], queryFn: () => la(), staleTime: Infinity });
+  const all = useQuery({ queryKey: ["agencies"], queryFn: () => la(), staleTime: 5 * 60_000 });
+  const a = all.data?.find((x) => x.id === id);
   const counts = useQuery({
     queryKey: ["agency-counts", id],
     queryFn: () => lc({ data: { id } }),
-    staleTime: Infinity,
+    staleTime: 5 * 60_000,
+    enabled: !!a,
   });
   const [type, setType] = useState("");
+  const [tab, setTab] = useState<(typeof TABS)[number]>("Overview");
   const docs = useQuery({
     queryKey: ["agency-docs", id, type],
     queryFn: () => ld({ data: { id, ...(type ? { type } : {}) } }),
     staleTime: 10 * 60_000,
+    enabled: !!a && tab === "Rules & notices",
   });
-  const [tab, setTab] = useState<(typeof TABS)[number]>("Overview");
-  const a = all.data?.find((x) => x.id === id);
   const name = a?.name ?? "Agency";
   const safety = a ? SAFETY_AGENCY[a.name] : undefined;
-  const num = (v: number | null | undefined) =>
-    counts.isLoading ? "…" : v == null ? "Too large to count" : v;
+  const num = (v: AgencyCount | undefined) =>
+    counts.error
+      ? "Unavailable"
+      : counts.isPending
+        ? "Loading…"
+        : v?.capped
+          ? "Too large to count"
+          : (v?.total ?? "Not recorded");
 
   return (
     <AppShell
@@ -66,14 +135,27 @@ function AgencyPage() {
           : "Federal Register documents that name this agency."
       }
     >
-      {all.data && !a ? (
+      {all.error ? (
+        <ReadFailure
+          label="Agency directory"
+          retry={() => void all.refetch()}
+          busy={all.isFetching}
+        />
+      ) : null}
+      {all.isPending ? (
+        <p role="status" className="text-[13px]">
+          Loading agency profile…
+        </p>
+      ) : null}
+      {!a && !all.isPending && !all.error ? (
         <p className="text-[13px]">This agency is not in the Federal Register agency list.</p>
-      ) : (
+      ) : null}
+      {a ? (
         <>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <Stat
               label="Federal Register documents"
-              value={a?.count ?? "…"}
+              value={a.count ?? "Not recorded"}
               note="In the Federal Register history"
             />
             <Stat
@@ -84,11 +166,19 @@ function AgencyPage() {
             <Stat label="Proposed rules" value={num(counts.data?.["Proposed Rule"])} />
             <Stat label="Notices" value={num(counts.data?.["Notice"])} />
           </div>
+          {counts.error ? (
+            <ReadFailure
+              label="Document counts"
+              retry={() => void counts.refetch()}
+              busy={counts.isFetching}
+            />
+          ) : null}
           <div className="mt-5 flex flex-wrap gap-1 border-b border-border text-[13px]">
             {TABS.filter((t) => t !== "Safety & enforcement" || safety).map((t) => (
               <button
                 key={t}
                 type="button"
+                aria-pressed={tab === t}
                 onClick={() => setTab(t)}
                 className={`-mb-px border-b-2 px-3 py-1.5 ${tab === t ? "border-primary font-medium" : "border-transparent text-muted-foreground"}`}
               >
@@ -119,6 +209,7 @@ function AgencyPage() {
                     No safety dataset for this agency in the corpus.
                   </p>
                 )}
+                <AgencyProvenance id={a.id} />
               </div>
             ) : null}
             {tab === "Rules & notices" ? (
@@ -141,6 +232,13 @@ function AgencyPage() {
                 <p className="text-[11px] text-muted-foreground">
                   The 12 most recent documents in the saved index.
                 </p>
+                {docs.error ? (
+                  <ReadFailure
+                    label="Agency documents"
+                    retry={() => void docs.refetch()}
+                    busy={docs.isFetching}
+                  />
+                ) : null}
                 <div className="overflow-x-auto rounded-lg border border-border">
                   <table className="w-full text-[12px]">
                     <thead className="bg-muted/50 text-left text-[11px] text-muted-foreground">
@@ -153,10 +251,22 @@ function AgencyPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {docs.isLoading ? (
+                      {docs.error ? (
+                        <tr>
+                          <td className="px-2 py-2 text-muted-foreground" colSpan={5}>
+                            Documents unavailable.
+                          </td>
+                        </tr>
+                      ) : docs.isPending ? (
                         <tr>
                           <td className="px-2 py-2 text-muted-foreground" colSpan={5}>
                             Loading…
+                          </td>
+                        </tr>
+                      ) : !docs.data?.length ? (
+                        <tr>
+                          <td className="px-2 py-2 text-muted-foreground" colSpan={5}>
+                            No matching documents in the saved index.
                           </td>
                         </tr>
                       ) : (
@@ -176,14 +286,16 @@ function AgencyPage() {
                                 d.title
                               )}
                             </td>
-                            <td className="px-2 py-1.5">{d.type || "—"}</td>
+                            <td className="px-2 py-1.5">{d.type || "Not recorded"}</td>
                             <td className="whitespace-nowrap px-2 py-1.5 font-mono">
-                              {d.published || "—"}
+                              {d.published || "Not recorded"}
                             </td>
                             <td className="whitespace-nowrap px-2 py-1.5 font-mono">
-                              {d.citation || "—"}
+                              {d.citation || "Not recorded"}
                             </td>
-                            <td className="px-2 py-1.5 font-mono text-[11px]">{d.cfr || "—"}</td>
+                            <td className="px-2 py-1.5 font-mono text-[11px]">
+                              {d.cfr || "Not recorded"}
+                            </td>
                           </tr>
                         ))
                       )}
@@ -208,7 +320,7 @@ function AgencyPage() {
             ) : null}
           </div>
         </>
-      )}
+      ) : null}
     </AppShell>
   );
 }
