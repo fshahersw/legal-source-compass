@@ -50,7 +50,7 @@ The local application rendered the Northern District of California's exact offic
 
 ## Release status
 
-The private court bundle and limitations `2026-10-12.1` release passed storage readback. Their entries are activated in the local manifest, with prior-manifest evidence retained for rollback. Production has not been deployed. GitHub rejected publication of the reviewed branch because the stored owner's OAuth credential lacks `workflow` scope; no remote branch or PR was created by that failed push.
+The private court bundle and limitations `2026-10-12.1` release passed storage readback. Their entries are activated in the branch manifest, with prior-manifest evidence retained for rollback. The reviewed branch is published in [PR #231](https://github.com/fshahersw/legal-source-compass/pull/231) after refreshing the repository owner's GitHub workflow access. Production has not been deployed; publication of the PR does not resolve the corpus deployment-baseline requirement below.
 
 Final application verification passed 991 portable application tests, 228 Node contracts, 20 Python tests, five artwork hash checks, TypeScript and the production build, including the last agency-navigation regressions. The candidate separately passed 821 limitations integration tests and 21 SQL contracts. An independent review found no additional Linux/Windows CI portability issues.
 
