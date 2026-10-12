@@ -269,7 +269,10 @@ describe("calculator across claim types and units", () => {
       }),
     );
     expect(result.date).toBeNull();
-    expect(result.reasons.join(" ")).toContain("precedes the confirmed accrual date");
+    expect(result.reasons).toEqual([
+      "The cited repose cutoff precedes the confirmed accrual date (2026-01-01). Review whether repose bars this claim before relying on an accrual-based period; no deadline is established.",
+    ]);
+    expect(JSON.stringify(result)).not.toContain("2024-01-01");
   });
 
   it("withholds dates later than the oldest authority review date", () => {
@@ -772,7 +775,10 @@ describe("clocks_min: two-limb periods and several repose clocks", () => {
     });
     const barred = calculateBaseline(data, base);
     expect(barred.date).toBeNull();
-    expect(barred.reasons.join(" ")).toContain("precedes the confirmed accrual or discovery date");
+    expect(barred.reasons).toEqual([
+      "The cited repose cutoff precedes the confirmed accrual or discovery date (2024-01-01). Review whether repose bars this claim before relying on an accrual-based period; no deadline is established.",
+    ]);
+    expect(JSON.stringify(barred)).not.toContain("2020-01-01");
     expect(
       calculateBaseline(data, { ...base, injuryDate: "2020-02-29", accrualDate: "2024-01-01" })
         .date,

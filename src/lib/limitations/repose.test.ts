@@ -107,7 +107,10 @@ describe("separate accrual and repose cutoffs", () => {
     });
     expect(expired.status).toBe("needs_review");
     expect(expired.date).toBeNull();
-    expect(expired.reasons.join(" ")).toContain("2020-05-01");
+    expect(expired.reasons).toEqual([
+      "The cited repose cutoff precedes the confirmed accrual date (2025-05-01). Review whether repose bars this claim before relying on an accrual-based period; no deadline is established.",
+    ]);
+    expect(JSON.stringify(expired)).not.toContain("2020-05-01");
   });
 
   it("fails closed for an unresolved leap-day cap, later-than-reviewed date, or special issue", () => {

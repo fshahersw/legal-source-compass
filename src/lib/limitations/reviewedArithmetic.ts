@@ -272,7 +272,7 @@ export function applyReviewedInstructions(input: ArithmeticInput): ReviewedArith
     if (interval.start > date)
       return stop(
         "needs_review",
-        `Suspension ${interval.ids.join(", ")} begins on ${interval.start}, after the then-running date ${date}. No revival was assumed.`,
+        `Suspension ${interval.ids.join(", ")} begins on ${interval.start}, after the reviewed clock would have expired. No revival was assumed; the deadline remains unestablished.`,
       );
     if (interval.end === "")
       return stop(
@@ -305,7 +305,7 @@ export function applyReviewedInstructions(input: ArithmeticInput): ReviewedArith
     if (instruction.protectedFromDate > date)
       return stop(
         "needs_review",
-        `Protection for ${instruction.id} attached after the then-running date ${date}. An expired claim was not revived.`,
+        `Protection for ${instruction.id} attached after the reviewed clock would have expired. An expired claim was not revived; the deadline remains unestablished.`,
       );
     const candidate = addCivilPeriod(instruction.eventDate, instruction.amount, instruction.unit);
     if (!candidate)

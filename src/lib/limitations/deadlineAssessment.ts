@@ -34,6 +34,39 @@ export function assessDeadline(
   review: ReviewState | null,
   runtime: AssessmentRuntime = {},
 ): DeadlineAssessment {
+  const assessment = evaluateDeadline(snapshot, input, review, runtime);
+  if (
+    assessment.date &&
+    (assessment.status === "baseline" || assessment.status === "reviewed_scenario")
+  )
+    return assessment;
+
+  // The UI and exports include nested evidence trails. A withheld headline date must not leave
+  // a computed baseline, weekend candidate or partial instruction result available underneath it.
+  // Keep the selected rule, source references and rejection reasons for legal review.
+  return {
+    ...assessment,
+    date: null,
+    baseline: {
+      ...assessment.baseline,
+      status:
+        assessment.baseline.status === "baseline" ? "needs_review" : assessment.baseline.status,
+      date: null,
+      adjustedDate: null,
+      weekendNotice: null,
+      steps: [],
+    },
+    scenario: assessment.scenario ? { ...assessment.scenario, date: null, steps: [] } : null,
+    calendar: null,
+  };
+}
+
+function evaluateDeadline(
+  snapshot: LimitationsSnapshot,
+  input: BaselineInput,
+  review: ReviewState | null,
+  runtime: AssessmentRuntime,
+): DeadlineAssessment {
   const rule = baselineRule(snapshot.rules, input.jurisdiction, input.claimType, input.subtype);
   const factors = rule ? buildReviewInventory(rule) : [];
   const current =

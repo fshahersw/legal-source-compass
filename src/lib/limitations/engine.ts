@@ -509,7 +509,7 @@ export function calculateBaseline(
     ]);
   if (reposeCap && reposeCap < trigger)
     return finish("needs_review", [
-      `The cited repose cutoff (${reposeCap}) precedes the confirmed accrual date (${trigger}). Review whether repose bars this claim before relying on an accrual-based period.`,
+      `The cited repose cutoff precedes the confirmed accrual date (${trigger}). Review whether repose bars this claim before relying on an accrual-based period; no deadline is established.`,
     ]);
   if (capYears && input.deathDate && !cap)
     return finish("needs_review", [
@@ -793,7 +793,7 @@ function calculateClocks(
   const barred = clocks.findIndex((_, i) => (caps[i] as string) < earliestStart);
   if (barred >= 0)
     return finish("needs_review", [
-      `The cited repose cutoff (${caps[barred]}) precedes the confirmed accrual or discovery date (${earliestStart}). Review whether repose bars this claim before relying on an accrual-based period.`,
+      `The cited repose cutoff precedes the confirmed accrual or discovery date (${earliestStart}). Review whether repose bars this claim before relying on an accrual-based period; no deadline is established.`,
     ]);
   const date = [combined, ...(caps as string[])].sort()[0]!;
   const limbText = limbs
