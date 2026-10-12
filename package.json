@@ -15,6 +15,13 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "vitest run",
+    "test:private": "vitest run --config vitest.private.config.ts",
+    "test:contracts": "node scripts/test/run-offline-contracts.mjs",
+    "test:python": "node scripts/test/run-python-contracts.mjs",
+    "test:assets": "node scripts/enrichment/verify_court_artwork.mjs",
+    "test:sql": "node --test scripts/legal/state-codes/publisher-code-intake.test.mjs scripts/legal/state-codes/publisher-code-intake-v2.test.mjs scripts/legal/state-codes/publisher-code-multicode-v3.test.mjs",
+    "typecheck": "tsc --noEmit",
+    "verify": "npm run typecheck && npm test && npm run test:contracts && npm run test:python && npm run test:assets && npm run build",
     "audit:corpus": "node scripts/audit-corpus.mjs",
     "audit:check": "node scripts/audit-corpus.mjs --check"
   },

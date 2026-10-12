@@ -93,17 +93,21 @@ describe("docket documents", () => {
     expect(parseDocketDocument({ cells: {} })).toBeNull();
     expect(parseDocketDocument(row({ sha256: "not-a-hash" }))!.pdfUrl).toBeNull();
   });
-  it("ties a case to an MDL by its own label or the MDL number in its exact id", () => {
+  it("requires an exact recorded MDL association even when the docket number resembles another MDL", () => {
     expect(caseBelongsToMdl({ caseId: "ilnd-1:2024-cv-06795", mdl: "3121" }, "3121")).toBe(true);
-    expect(caseBelongsToMdl({ caseId: "paed-2:2001-md-03094", mdl: null }, "3094")).toBe(true);
+    expect(caseBelongsToMdl({ caseId: "paed-2:2001-md-03094", mdl: "3113" }, "3094")).toBe(false);
+    expect(caseBelongsToMdl({ caseId: "paed-2:2001-md-03094", mdl: "3113" }, "3113")).toBe(true);
+    expect(caseBelongsToMdl({ caseId: "paed-2:2001-md-03094", mdl: "" }, "3094")).toBe(false);
     expect(caseBelongsToMdl({ caseId: "jpml-0:2024-md-03113", mdl: null }, "3094")).toBe(false);
     expect(caseBelongsToMdl({ caseId: "paed-2:2024-md-030941", mdl: null }, "3094")).toBe(false);
   });
-  it("ties the unlabeled streamlined and JPML dockets to their MDL by the number in the exact case id", () => {
+  it("leaves unlabeled streamlined and JPML dockets unassociated until evidence is recorded", () => {
     const streamlined = { caseId: "paed-2:2001-md-03094", mdl: null };
     const jpml = { caseId: "jpml-0:2024-md-03113", mdl: null };
-    expect(caseBelongsToMdl(streamlined, "3094")).toBe(true);
-    expect(caseBelongsToMdl(jpml, "3113")).toBe(true);
+    expect(caseBelongsToMdl(streamlined, "3094")).toBe(false);
+    expect(caseBelongsToMdl(jpml, "3113")).toBe(false);
+    expect(caseBelongsToMdl(jpml, "03113")).toBe(false);
+    expect(caseBelongsToMdl(streamlined, ".*")).toBe(false);
     expect(caseBelongsToMdl(jpml, "3094")).toBe(false);
   });
   it("reads the cases from the dataset's own metadata, with the case filter as a fallback", () => {

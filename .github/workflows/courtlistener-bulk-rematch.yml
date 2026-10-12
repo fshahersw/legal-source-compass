@@ -53,13 +53,22 @@ jobs:
       - name: Parallel bzip2 reader
         run: python -m pip install --target "$RUNNER_TEMP/pydeps" indexed_bzip2
       - name: Download, verify (size + S3 ETag), match, land, project
+        env:
+          INPUT_DATE: ${{ inputs.date }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
         # Fails the job on: no quarterly archive, size or ETag mismatch, a different sha256 for an already-opened snapshot,
         # matcher/archive hash disagreement, any intake rejection, or a re-send that is not byte-identical (readback).
         run: |
           set -euo pipefail
-          args=(--work "$CL_BULK_DIR" --python-deps "$RUNNER_TEMP/pydeps")
-          if [ -n "${{ inputs.date }}" ]; then args+=(--date "${{ inputs.date }}"); fi
-          if [ "${{ inputs.dry_run }}" = "true" ]; then args+=(--dry-run); fi
+          args=("--work=$CL_BULK_DIR" "--python-deps=$RUNNER_TEMP/pydeps")
+          if [ -n "$INPUT_DATE" ]; then
+            if [[ ! "$INPUT_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+              echo "::error::date must be YYYY-MM-DD (quarter-end)"
+              exit 1
+            fi
+            args+=("--date=$INPUT_DATE")
+          fi
+          if [ "$INPUT_DRY_RUN" = "true" ]; then args+=(--dry-run); fi
           node scripts/ingest/courtlistener-bulk/rematch.mjs "${args[@]}"
       - name: Upload checkpoint and ledgers (no credentials, no archive)
         if: always()

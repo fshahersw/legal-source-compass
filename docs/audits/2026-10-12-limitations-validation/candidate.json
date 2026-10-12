@@ -1,0 +1,177 @@
+{
+  "candidateVersion": "2026-10-12.1",
+  "snapshotDate": "2026-10-12",
+  "rules": 889,
+  "sources": 1030,
+  "baselineRules": 748,
+  "existingRecordsUnchanged": {
+    "rules": 888,
+    "sources": 1028
+  },
+  "cells": {
+    "baseline": 539,
+    "flagged": 59,
+    "not_recorded": 13,
+    "research_only": 1
+  },
+  "timeComputation": {
+    "flagged": 19,
+    "verified": 31,
+    "not_recorded": 1
+  },
+  "sourceCurrency": {
+    "confirmed_evidence_intact": 575,
+    "confirmed_unchanged": 442,
+    "not_rechecked": 13
+  },
+  "sourceCurrencyRoutes": {
+    "official_code_capture": 260,
+    "direct": 544,
+    "proxied": 213,
+    "none": 13
+  },
+  "missingCells": [
+    {
+      "state": "AR",
+      "claimType": "defamation",
+      "status": "not_recorded",
+      "reason": "Arkansas publishes its Code only through a gated publisher; the captured unenacted 2015 bill reprint of §§ 16-56-104 and 16-56-105 is not accepted as current law."
+    },
+    {
+      "state": "AR",
+      "claimType": "intentional_tort",
+      "status": "not_recorded",
+      "reason": "Arkansas publishes its Code only through a gated publisher; the captured 2015 HB1448 (never enacted) reprints § 16-56-104's one-year list (assault and battery, false imprisonment), but an unenacted bill is not accepted as current law."
+    },
+    {
+      "state": "AR",
+      "claimType": "breach_of_warranty",
+      "status": "not_recorded",
+      "reason": "The state's enactment of UCC § 2-725 (limitation in contracts for sale) has not been captured from the official code site; nothing is recorded until it is."
+    },
+    {
+      "state": "AR",
+      "claimType": "legal_malpractice",
+      "status": "not_recorded",
+      "reason": "The state's compiled code is published only through a gated publisher and no captured official provision names attorneys or professional services; the claim falls under general tort or contract periods, which this matrix does not infer."
+    },
+    {
+      "state": "GA",
+      "claimType": "intentional_tort",
+      "status": "not_recorded",
+      "reason": "The O.C.G.A. is published only through a gated publisher; no official text naming assault, battery or false imprisonment has been captured (the general § 9-3-33 two-year period is known only from the enacted 2015 Act and appellate opinions)."
+    },
+    {
+      "state": "GA",
+      "claimType": "breach_of_warranty",
+      "status": "not_recorded",
+      "reason": "The state's enactment of UCC § 2-725 (limitation in contracts for sale) has not been captured from the official code site; nothing is recorded until it is."
+    },
+    {
+      "state": "GA",
+      "claimType": "legal_malpractice",
+      "status": "not_recorded",
+      "reason": "The state's compiled code is published only through a gated publisher and no captured official provision names attorneys or professional services; the claim falls under general tort or contract periods, which this matrix does not infer."
+    },
+    {
+      "state": "MS",
+      "claimType": "intentional_tort",
+      "status": "not_recorded",
+      "reason": "The Mississippi Code is published only through a gated publisher; the only capture is a 2020 introduced bill reprinting § 15-1-35 (one year for assault, battery, false imprisonment, malicious arrest), which is not accepted as current law."
+    },
+    {
+      "state": "MS",
+      "claimType": "breach_of_warranty",
+      "status": "not_recorded",
+      "reason": "The state's enactment of UCC § 2-725 (limitation in contracts for sale) has not been captured from the official code site; nothing is recorded until it is."
+    },
+    {
+      "state": "MS",
+      "claimType": "legal_malpractice",
+      "status": "not_recorded",
+      "reason": "The state's compiled code is published only through a gated publisher and no captured official provision names attorneys or professional services; the claim falls under general tort or contract periods, which this matrix does not infer."
+    },
+    {
+      "state": "TN",
+      "claimType": "defamation",
+      "status": "not_recorded",
+      "reason": "Only the archived 2016 code bill names libel (recorded as a flagged variant); the current compilation is publisher-gated and no current official text has been captured. Only narrow fact-pattern variants are recorded; none is treated as the claim type's rule.",
+      "variants": [
+        {
+          "subtype": "libel",
+          "ruleId": "tn-defamation-libel-bf20261008",
+          "status": "flagged"
+        }
+      ]
+    },
+    {
+      "state": "TN",
+      "claimType": "intentional_tort",
+      "status": "not_recorded",
+      "reason": "Tenn. Code § 28-3-104(a)(1)(A) names false imprisonment and malicious prosecution (recorded as a flagged variant from the archived 2016 code bill); assault and battery fall under 'injuries to the person' only by construction and the current compilation is publisher-gated. Only narrow fact-pattern variants are recorded; none is treated as the claim type's rule.",
+      "variants": [
+        {
+          "subtype": "false_imprisonment",
+          "ruleId": "tn-intentional-tort-false-imprisonment-bf20261008",
+          "status": "flagged"
+        }
+      ]
+    },
+    {
+      "state": "TN",
+      "claimType": "breach_of_warranty",
+      "status": "not_recorded",
+      "reason": "The state's enactment of UCC § 2-725 (limitation in contracts for sale) has not been captured from the official code site; nothing is recorded until it is."
+    }
+  ],
+  "withheld": {
+    "msDefamation": {
+      "status": "needs_review",
+      "date": null
+    },
+    "njWeekend": {
+      "adjustedDate": null,
+      "weekendNotice": {
+        "kind": "flagged_rule",
+        "weekday": "Saturday",
+        "ruleStatus": "flagged",
+        "citation": "Barron v. Gersten, No. A-0912-20, pages 6–7 (N.J. App. Div. June 13, 2022), discussing Rule 1:3-1",
+        "note": "Research only: this is a 2022 appellate opinion discussing Rule 1:3-1 and COVID-era orders, not a capture of the current court rule. Automatic weekend extension remains disabled.; The court distinguishes a holiday on the last day from adding every intervening COVID holiday to a limitation period; no suspension or revival is inferred.; Direct retrieval returned HTTP403; retained raw bytes are the Firecrawl extraction response, not the official PDF. The current R1:3-1 link redirected to a rules index with no matching result.",
+        "extendsWhenLastDayIsWeekend": true
+      },
+      "weekendText": "NJ's recorded counting rule (Barron v. Gersten, No. A-0912-20, pages 6–7 (N.J. App. Div. June 13, 2022), discussing Rule 1:3-1) is flagged and was not applied: Research only: this is a 2022 appellate opinion discussing Rule 1:3-1 and COVID-era orders, not a capture of the current court rule. Automatic weekend extension remains disabled.; The court distinguishes a holiday on the last day from adding every intervening COVID holiday to a limitation period; no suspension or revival is inferred.; Direct retrieval returned HTTP403; retained raw bytes are the Firecrawl extraction response, not the official PDF. The current R1:3-1 link redirected to a rules index with no matching result. The date is shown unadjusted.",
+      "sourceIds": ["bf-nj-barron-2022-plain"],
+      "stepText": "The unadjusted calendar anniversary is 2026-10-10, a Saturday. NJ's recorded counting rule (Barron v. Gersten, No. A-0912-20, pages 6–7 (N.J. App. Div. June 13, 2022), discussing Rule 1:3-1) is flagged and was not applied: Research only: this is a 2022 appellate opinion discussing Rule 1:3-1 and COVID-era orders, not a capture of the current court rule. Automatic weekend extension remains disabled.; The court distinguishes a holiday on the last day from adding every intervening COVID holiday to a limitation period; no suspension or revival is inferred.; Direct retrieval returned HTTP403; retained raw bytes are the Firecrawl extraction response, not the official PDF. The current R1:3-1 link redirected to a rules index with no matching result. The date is shown unadjusted. Legal holidays, closures, commencement, service and filing-cutoff adjustments remain uncomputed."
+    }
+  },
+  "captures": [
+    {
+      "id": "bf-ms-dollar-general-dobbs-2025-plain",
+      "url": "https://courts.ms.gov/appellatecourts/Opinions/CO182835.pdf",
+      "rawSha256": "bc50867724f80b64072f89300a1b98b8b58334f09efc289dc6880ed4edc61b80",
+      "rawBytes": 42140,
+      "textSha256": "ef80cd062ec257b3182a082c28b32c464c4be37408c7129cb6b4b5ac15a58b12",
+      "textBytes": 39537,
+      "authorityKind": "judicial_opinion",
+      "fetchRoute": {
+        "kind": "proxied",
+        "proxy": "firecrawl"
+      },
+      "rawContentType": "application/json"
+    },
+    {
+      "id": "bf-nj-barron-2022-plain",
+      "url": "https://www.njcourts.gov/system/files/court-opinions/2022/a0912-20.pdf",
+      "rawSha256": "9e572d87f3f599c8e4a6981963815242595c1621e5553aa6e8c2b066bb124073",
+      "rawBytes": 14216,
+      "textSha256": "3628a7120916bb12ccfb59f308c4b81a1ae595d25afe46151cd9e90b73544954",
+      "textBytes": 13151,
+      "authorityKind": "judicial_opinion",
+      "fetchRoute": {
+        "kind": "proxied",
+        "proxy": "firecrawl"
+      },
+      "rawContentType": "application/json"
+    }
+  ]
+}

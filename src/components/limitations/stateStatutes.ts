@@ -162,6 +162,7 @@ export function citedStatutes(
   );
   const kindOrder: Record<string, number> = {
     statute: 0,
+    judicial_opinion: 1,
     constitution: 1,
     publisher_table: 2,
     publisher_guidance: 3,

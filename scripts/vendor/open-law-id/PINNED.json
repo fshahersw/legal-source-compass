@@ -1,0 +1,41 @@
+{
+  "repository": "https://github.com/Vaquill-AI/open-law-id",
+  "commit": "75f69acf4386fa7e198a33e3f93a58a0fe836774",
+  "files": [
+    {
+      "file": "impl/lawid/__init__.py",
+      "bytes": 10232,
+      "sha256": "acbe4a031ee799aee20fa44c65f2d48a5daf25be7a4d220f7d08a9e53c3352ba"
+    },
+    {
+      "file": "registry/corpora.json",
+      "bytes": 6319,
+      "sha256": "47d177b51480b29946fdcaa92b9ddf24091d12e9ef829eb2adaf13990821dccc"
+    },
+    {
+      "file": "registry/jurisdictions.json",
+      "bytes": 13996,
+      "sha256": "d819815c72570b7ed0de30eaa38f8481f34622e885df6f6be4fea28ea08a6a58"
+    },
+    {
+      "file": "registry/kinds.json",
+      "bytes": 6018,
+      "sha256": "0dbb26685d39e91ba718ba17c7e0033832f73081a8d2fe62549571c858807363"
+    },
+    {
+      "file": "conformance/conformance.json",
+      "bytes": 8005,
+      "sha256": "04319d86138d81f228627272da1c49f1c7bb8de930b9b47e9a2592d87ea6beee"
+    },
+    {
+      "file": "spec/SPEC-v0.1.md",
+      "bytes": 30650,
+      "sha256": "98dfa76d3314c539ece79136ecd1f4552a58dd6520e73d9c6cb435762846fdc1"
+    },
+    {
+      "file": "LICENSE",
+      "bytes": 2273,
+      "sha256": "fcd6294180d7d642c3a8828ff232eb7cffcef642863e4948c20d6ab393613661"
+    }
+  ]
+}

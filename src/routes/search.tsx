@@ -23,6 +23,9 @@ export const Route = createFileRoute("/search")({
           ? String(s["q"])
           : "",
   }),
+  // Header search and browser history can change q without unmounting this route.
+  // Query-owned draft and pagination must start fresh for each URL query.
+  remountDeps: ({ search }) => ({ q: search.q }),
   head: () =>
     pageHead(
       "Search",
@@ -101,6 +104,7 @@ function SearchPage() {
         ) : null}
       </form>
       {query.error ? <ExternalError error={query.error} /> : null}
+      {catalog.error ? <ExternalError error={catalog.error} /> : null}
       {d?.candidateCapped ? (
         <p role="status" className="mb-3 text-[12px] text-muted-foreground">
           Ranking covers a bounded set of up to {d.candidateLimit.toLocaleString()} candidate rows,
@@ -117,7 +121,7 @@ function SearchPage() {
       {q.trim().length < 2 ? (
         <p className="text-[13px] text-muted-foreground">Enter at least two characters.</p>
       ) : null}
-      {q.trim().length >= 2 && (codes.isFetching || snapshotHits.length > 0) ? (
+      {q.trim().length >= 2 && (codes.isFetching || codes.error || snapshotHits.length > 0) ? (
         <section className="mb-4">
           <h2 className="eyebrow">Full state codes</h2>
           {codes.isFetching ? (
@@ -232,7 +236,7 @@ function SearchPage() {
           <Button
             size="sm"
             variant="outline"
-            disabled={offset === 0}
+            disabled={offset === 0 || query.isFetching}
             onClick={() => setOffset(Math.max(0, offset - 50))}
           >
             Previous
@@ -240,7 +244,7 @@ function SearchPage() {
           <Button
             size="sm"
             variant="outline"
-            disabled={!d.hasMore}
+            disabled={!d.hasMore || query.isFetching}
             onClick={() => setOffset(offset + 50)}
           >
             Next

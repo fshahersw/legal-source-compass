@@ -182,6 +182,180 @@ describe("deadline assessment", () => {
 });
 
 describe("assessment boundary regressions", () => {
+  const withheldCases: {
+    name: string;
+    expectedReasons?: string[];
+    setup: (
+      f: ReturnType<typeof fixture>,
+    ) => { review?: ReviewState | null; sourceRefreshFailed?: boolean } | void;
+  }[] = [
+    { name: "failed source refresh", setup: () => ({ sourceRefreshFailed: true }) },
+    { name: "missing current review", setup: () => ({ review: null }) },
+    {
+      name: "stale review",
+      setup: (f) => {
+        f.review.contextKey = "earlier-evidence";
+      },
+    },
+    {
+      name: "unknown review factor",
+      setup: (f) => {
+        f.review.decisions["unknown"] = { status: "no_effect" };
+      },
+    },
+    {
+      name: "unanswered factor",
+      setup: (f) => {
+        delete f.review.decisions["screen:other"];
+      },
+    },
+    {
+      name: "unresolved factor",
+      setup: (f) => {
+        f.review.decisions["screen:other"] = { status: "needs_review" };
+      },
+    },
+    {
+      name: "missing rule",
+      setup: (f) => {
+        f.snapshot.rules = [];
+      },
+    },
+    {
+      name: "invalid timeline",
+      setup: (f) => {
+        f.input.accrualDate = "invalid";
+        f.review.contextKey = reviewContextKey(f.snapshot, f.rule, f.input);
+      },
+    },
+    {
+      name: "flagged source entry",
+      setup: (f) => {
+        f.rule.provenance!.entryStatus = "flagged";
+        f.review.contextKey = reviewContextKey(f.snapshot, f.rule, f.input);
+      },
+    },
+    {
+      name: "unsupported capped-clock instruction",
+      setup: (f) => {
+        f.rule.provenance!.repose = [
+          { years: 10, citation: "Fixture cap", trigger: "act", effectiveFrom: null },
+        ];
+        f.review.contextKey = reviewContextKey(f.snapshot, f.rule, f.input);
+        f.review.decisions["provenance.repose[0]"] = { status: "no_effect" };
+        f.review.decisions["provenance.tolling[0]"] = { status: "instruction", instruction };
+      },
+    },
+    {
+      name: "open-ended instruction",
+      setup: (f) => {
+        f.review.decisions["provenance.tolling[0]"] = {
+          status: "instruction",
+          instruction: { ...instruction, resumeDate: "" },
+        };
+      },
+    },
+    {
+      name: "conflicting instruction identities",
+      setup: (f) => {
+        f.review.decisions["provenance.tolling[0]"] = { status: "instruction", instruction };
+        f.review.decisions["screen:tolling"] = { status: "instruction", instruction };
+      },
+    },
+    {
+      name: "partial arithmetic followed by expiry rejection",
+      expectedReasons: [
+        "Suspension too-late-pause begins on 2025-03-01, after the reviewed clock would have expired. No revival was assumed; the deadline remains unestablished.",
+      ],
+      setup: (f) => {
+        f.review.decisions["provenance.tolling[0]"] = {
+          status: "instruction",
+          instruction: {
+            ...instruction,
+            kind: "defer_start",
+            resumeDate: "2024-02-01",
+            presentAtAccrualConfirmed: true,
+          },
+        };
+        f.review.decisions["screen:tolling"] = {
+          status: "instruction",
+          instruction: {
+            ...instruction,
+            id: "too-late-pause",
+            startDate: "2025-03-01",
+            resumeDate: "2025-04-01",
+          },
+        };
+      },
+    },
+    {
+      name: "partial arithmetic followed by late protection rejection",
+      expectedReasons: [
+        "Protection for too-late-floor attached after the reviewed clock would have expired. An expired claim was not revived; the deadline remains unestablished.",
+      ],
+      setup: (f) => {
+        f.review.decisions["provenance.tolling[0]"] = {
+          status: "instruction",
+          instruction,
+        };
+        f.review.decisions["screen:tolling"] = {
+          status: "instruction",
+          instruction: {
+            ...instruction,
+            id: "too-late-floor",
+            kind: "minimum_after_event",
+            protectedFromDate: "2025-03-01",
+            eventDate: "2025-04-01",
+            amount: 1,
+            unit: "calendar_years",
+          },
+        };
+      },
+    },
+  ];
+
+  it.each(withheldCases)(
+    "does not expose computed dates or steps for $name, including exports",
+    ({ setup, expectedReasons }) => {
+      const f = fixture();
+      // Even a legacy blanket confirmation must not leak arithmetic around the current review gates.
+      f.input.exceptionReview = "no_unresolved_issues";
+      f.review.contextKey = reviewContextKey(f.snapshot, f.rule, f.input);
+      const options = setup(f) ?? {};
+      const review = Object.hasOwn(options, "review") ? options.review! : f.review;
+      const runtime = { sourceRefreshFailed: options.sourceRefreshFailed ?? false };
+      const result = assessDeadline(f.snapshot, f.input, review, runtime);
+      const exported = createAssessmentExport(
+        f.snapshot,
+        f.input,
+        review,
+        "2026-10-12T00:00:00Z",
+        runtime,
+      );
+      for (const assessment of [result, exported.assessment]) {
+        expect(assessment.date).toBeNull();
+        expect(assessment.baseline.date).toBeNull();
+        expect(assessment.baseline.adjustedDate ?? null).toBeNull();
+        expect(assessment.baseline.weekendNotice ?? null).toBeNull();
+        expect(assessment.baseline.steps).toEqual([]);
+        expect(assessment.scenario?.date ?? null).toBeNull();
+        expect(assessment.scenario?.steps ?? []).toEqual([]);
+        expect(assessment.calendar).toBeNull();
+        expect(assessment.reasons.length).toBeGreaterThan(0);
+        if (expectedReasons) {
+          expect(assessment.reasons).toEqual(expectedReasons);
+          expect(assessment.scenario?.reasons).toEqual(expectedReasons);
+          expect(JSON.stringify(assessment)).not.toContain("2025-01-01");
+          expect(JSON.stringify(assessment)).not.toContain("2025-02-01");
+        }
+      }
+      if (f.snapshot.rules.length) {
+        expect(exported.rule?.id).toBe(f.rule.id);
+        expect(exported.sourceReferences[0]?.sha256).toBe(f.snapshot.sources[0]!.sha256);
+      }
+    },
+  );
+
   it("withholds a date when refreshing the governing evidence failed", () => {
     const f = fixture();
     const result = assessDeadline(f.snapshot, f.input, f.review, { sourceRefreshFailed: true });
@@ -189,6 +363,46 @@ describe("assessment boundary regressions", () => {
     expect(result.status).toBe("needs_legal_review");
     expect(result.reasons.join(" ")).toMatch(/refresh|evidence/i);
   });
+
+  it.each(["accrual_repose_min", "clocks_min"] as const)(
+    "keeps a computed expired repose cutoff out of assessment and export reasons for %s",
+    (mode) => {
+      const f = fixture();
+      f.rule.calculation =
+        mode === "accrual_repose_min"
+          ? {
+              mode,
+              reposeYears: 5,
+              reposeTrigger: "act_or_omission",
+              reposeEffectiveFrom: "1990-01-01",
+            }
+          : {
+              mode,
+              limbs: [{ amount: 1, unit: "calendar_years", from: "accrual" }],
+              clocks: [{ years: 5, from: "injury_date", effectiveFrom: "1990-01-01" }],
+            };
+      f.input.reposeActDate = "2016-01-01";
+      f.input.injuryDate = "2016-01-01";
+      f.input.reposeApplicabilityConfirmed = true;
+      f.review.contextKey = reviewContextKey(f.snapshot, f.rule, f.input);
+      const result = assessDeadline(f.snapshot, f.input, f.review);
+      const exported = createAssessmentExport(
+        f.snapshot,
+        f.input,
+        f.review,
+        "2026-10-12T00:00:00Z",
+      );
+      for (const assessment of [result, exported.assessment]) {
+        expect(assessment.status).toBe("needs_legal_review");
+        expect(assessment.date).toBeNull();
+        expect(assessment.reasons).toEqual([
+          `The cited repose cutoff precedes the confirmed accrual${mode === "clocks_min" ? " or discovery" : ""} date (2024-01-01). Review whether repose bars this claim before relying on an accrual-based period; no deadline is established.`,
+        ]);
+        expect(assessment.baseline.reasons).toEqual(assessment.reasons);
+        expect(JSON.stringify(assessment)).not.toContain("2021-01-01");
+      }
+    },
+  );
 
   it("exports a newly evaluated assessment instead of trusting an earlier result", () => {
     const f = fixture();

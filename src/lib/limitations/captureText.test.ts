@@ -6,11 +6,42 @@ import { describe, expect, it } from "vitest";
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const captureScript = join(repoRoot, "scripts", "limitations", "backfill", "capture.py");
 
+/** Honor an explicit interpreter, otherwise discover Python 3 on Windows/macOS/Linux. */
+function pythonCommand(): { command: string; args: string[] } {
+  const configured = process.env["PYTHON"];
+  const candidates = configured
+    ? [{ command: configured, args: [] }]
+    : [
+        { command: "python3", args: [] },
+        { command: "python", args: [] },
+        { command: "py", args: ["-3"] },
+      ];
+  for (const candidate of candidates) {
+    const result = spawnSync(
+      candidate.command,
+      [...candidate.args, "-c", "import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)"],
+      {
+        encoding: "utf8",
+        timeout: 10_000,
+      },
+    );
+    if (!result.error && result.status === 0) return candidate;
+  }
+  throw new Error(
+    "Python 3.10+ is required for capture text tests. Install Python or set PYTHON to its executable; install scripts/test/requirements.txt.",
+  );
+}
+const python = pythonCommand();
+
 /** Run capture.py's markdown_to_text on one string through the interpreter it ships for. */
 function plain(markdown: string): string {
   const result = spawnSync(
-    "python3",
+    python.command,
     [
+      ...python.args,
+      "-B",
+      "-X",
+      "utf8",
       "-c",
       [
         "import importlib.util, sys",
@@ -19,11 +50,12 @@ function plain(markdown: string): string {
         "sys.stdout.write(cap.markdown_to_text(sys.stdin.read()))",
       ].join("\n"),
     ],
-    { input: markdown, encoding: "utf8" },
+    { input: markdown, encoding: "utf8", timeout: 15_000 },
   );
+  expect(result.error).toBeUndefined();
   expect(result.stderr).toBe("");
   expect(result.status).toBe(0);
-  return result.stdout;
+  return result.stdout.replaceAll("\r\n", "\n");
 }
 
 // The stored capture text is what every quoted statute passage is checked against, so a proxy's markdown
@@ -33,7 +65,9 @@ describe("capture.py markdown_to_text", () => {
     const text = plain(
       "(B) Except as provided in section [2305.115](https://codes.ohio.gov/ohio-revised-code/section-2305.115) of the Revised Code, an action for assault or battery shall be brought within one year after the cause of the action accrues.",
     );
-    expect(text).toContain("Except as provided in section 2305.115 of the Revised Code, an action for assault");
+    expect(text).toContain(
+      "Except as provided in section 2305.115 of the Revised Code, an action for assault",
+    );
     expect(text).not.toContain("](");
     expect(text).not.toContain("https://");
   });
@@ -43,20 +77,25 @@ describe("capture.py markdown_to_text", () => {
     const text = plain(
       "[340.](javascript:submitCodesValues('340.','5.2.3','1872','','', 'id_8e983e95-291e-11d9-8231-adff999f5ee6'))\n\nWithin one year:\n\n(a) An action upon a statute for a penalty or forfeiture.",
     );
-    expect(text.replace(/\s+/g, " ")).toContain("340. Within one year: (a) An action upon a statute");
+    expect(text.replace(/\s+/g, " ")).toContain(
+      "340. Within one year: (a) An action upon a statute",
+    );
     expect(text).not.toContain("javascript:");
   });
 
   it("drops single-asterisk emphasis around a one-line history note but keeps asterisks inside words", () => {
-    const text = plain("*(Added by Stats. 2002, Ch. 448, Sec. 2. Effective January 1, 2003.)*\n\nSee 2*3 footnote.");
+    const text = plain(
+      "*(Added by Stats. 2002, Ch. 448, Sec. 2. Effective January 1, 2003.)*\n\nSee 2*3 footnote.",
+    );
     expect(text).toContain("(Added by Stats. 2002, Ch. 448, Sec. 2. Effective January 1, 2003.)");
     expect(text).not.toContain("*(");
     expect(text).toContain("2*3");
   });
 
-
   it("removes emphasis marks and escape backslashes without touching the words", () => {
-    const text = plain("**§ 5524\\.  Two year limitation.**\n\nThe following actions and proceedings must be commenced within two years:");
+    const text = plain(
+      "**§ 5524\\.  Two year limitation.**\n\nThe following actions and proceedings must be commenced within two years:",
+    );
     expect(text).toContain("§ 5524. Two year limitation.");
     expect(text).toContain("must be commenced within two years:");
     expect(text).not.toContain("**");
@@ -70,8 +109,27 @@ describe("capture.py markdown_to_text", () => {
   });
 
   it("strips heading markers and HTML entities and normalises runs of spaces", () => {
-    const text = plain("## Section 657-4\n\nAll actions for libel or slander &amp;  seduction  shall be commenced within two&nbsp;years");
+    const text = plain(
+      "## Section 657-4\n\nAll actions for libel or slander &amp;  seduction  shall be commenced within two&nbsp;years",
+    );
     expect(text.startsWith("Section 657-4")).toBe(true);
-    expect(text).toContain("All actions for libel or slander & seduction shall be commenced within two years");
+    expect(text).toContain(
+      "All actions for libel or slander & seduction shall be commenced within two years",
+    );
+  });
+
+  it("removes opinion formatting across PDF line breaks while preserving native underscores", () => {
+    const text = plain(
+      "_City of Meridian v.\nState,_ 231 So. 3d 972. A_B remains.\n* * *\n<u>Rule</u> 1:3-1 &quot;time&quot;<sup>2</sup>",
+    );
+    expect(text).toContain("City of Meridian v.\nState, 231 So. 3d 972. A_B remains.");
+    expect(text).toContain('Rule 1:3-1 "time"2');
+    expect(text).not.toMatch(/_City|State,_|\* \* \*|<\/?(?:u|sup)>/);
+  });
+
+  it("renders proxy metadata tables without markdown borders or separator rows", () => {
+    expect(plain("| DISPOSITION: | REVERSED - 03/13/2025 |\n| --- | --- |\n| DATE: | 2025 |")).toBe(
+      "DISPOSITION: REVERSED - 03/13/2025\n\nDATE: 2025\n",
+    );
   });
 });

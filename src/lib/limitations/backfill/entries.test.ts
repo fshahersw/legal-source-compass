@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
   checkEntry,
+  checkTimeRule,
   containsLiteral,
   normalizeText,
   parsePeriodQuantities,
   type CaptureMeta,
   type MatrixEntryInput,
+  type TimeRuleInput,
 } from "./entries";
+import { ruleFromEntry } from "./entryRule";
+import { baselineRule } from "../engine";
 
 const text = `Sec. 16.003. TWO-YEAR LIMITATIONS PERIOD. (a) a person must bring suit for personal injury not later than two (2) years after the day the cause of action accrues.\n\n(b) Within six months   of the death, an action\u2019s period is tolled.`;
 const meta: CaptureMeta = {
@@ -92,6 +96,79 @@ describe("literal evidence matching", () => {
 describe("entry verification", () => {
   it("accepts a fully evidenced entry", () => {
     expect(errors(entry())).toEqual([]);
+  });
+  it("preserves an explicit judicial source and keeps a flagged opinion entry out of calculation", () => {
+    const opinion = entry({
+      authorityKind: "judicial_opinion",
+      status: "flagged",
+      confidence: "medium",
+      flags: ["Current compilation unavailable; opinion retained for research."],
+    });
+    expect(errors(opinion)).toEqual([]);
+    const built = ruleFromEntry({
+      state: "TX",
+      entry: opinion,
+      primaryId: "tx-cap",
+      crossIds: [],
+      primaryRetrievedAt: meta.retrievedAt,
+      ruleVersion: "test-only",
+      idStamp: "20261012",
+    });
+    expect("rule" in built).toBe(true);
+    if ("rule" in built) {
+      expect(built.rule.computation).toBe("research_only");
+      expect(built.rule.reviewStatus).toBe("research_text_verified");
+      expect(built.rule.summary).toContain("no calculable baseline is established");
+      expect(baselineRule([built.rule], "TX", "personal_injury")).toBeNull();
+    }
+    expect(
+      errors(
+        entry({ authorityKind: "guessed" as NonNullable<MatrixEntryInput["authorityKind"]> }),
+      ).map((p) => p.message),
+    ).toContain("invalid authorityKind");
+  });
+  it("does not promote a verified non-statutory passage into a statutory baseline", () => {
+    const built = ruleFromEntry({
+      state: "TX",
+      entry: entry({ authorityKind: "judicial_opinion" }),
+      primaryId: "tx-cap",
+      crossIds: [],
+      primaryRetrievedAt: meta.retrievedAt,
+      ruleVersion: "test-only",
+      idStamp: "20261012",
+    });
+    expect("rule" in built).toBe(true);
+    if ("rule" in built) {
+      expect(built.baseline).toBe(false);
+      expect(built.rule.computation).toBe("research_only");
+      expect(built.rule.reviewStatus).toBe("research_text_verified");
+      expect(built.rule.validity).toContain("No date is issued");
+      expect(baselineRule([built.rule], "TX", "personal_injury")).toBeNull();
+    }
+  });
+  it("requires a supported source kind for a flagged judicial counting authority", () => {
+    const counting: TimeRuleInput = {
+      authorityKind: "judicial_opinion",
+      status: "flagged",
+      citation: "Synthetic opinion test only",
+      excerpt:
+        "a person must bring suit for personal injury not later than two (2) years after the day the cause of action accrues.",
+      evidence: "two (2) years",
+      captureId: "tx-cap",
+      extendsWhenLastDayIsWeekend: false,
+      extendsWhenLastDayIsHoliday: null,
+      confidence: "medium",
+      confidenceNote: "Test only",
+      flags: ["Current rule unavailable."],
+    };
+    expect(checkTimeRule("TX", counting, lookup)).toEqual([]);
+    expect(
+      checkTimeRule(
+        "TX",
+        { ...counting, authorityKind: "guessed" as NonNullable<TimeRuleInput["authorityKind"]> },
+        lookup,
+      ).map((p) => p.message),
+    ).toContain("invalid authorityKind");
   });
   it("rejects an excerpt that is not in the capture", () => {
     expect(

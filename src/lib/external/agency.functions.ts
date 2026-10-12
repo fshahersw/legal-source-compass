@@ -19,32 +19,35 @@ export const listAgencies = createServerFn({ method: "GET" }).handler(
   },
 );
 
-export type AgencyCounts = Record<string, number | null>;
+export type AgencyCount = { total: number | null; capped: boolean };
+export type AgencyCounts = Record<string, AgencyCount>;
 export const AGENCY_TYPES = ["Rule", "Proposed Rule", "Notice"] as const;
 
-/** Exact per-type counts via the corpus's bounded query; a timeout becomes null ("too large to count"). */
+/** Keep a bounded count distinct from missing totals. Request failures must reach the retry UI. */
 export const getAgencyCounts = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ id: z.string().regex(/^\d{1,6}$/) }).parse(d))
   .handler(async ({ data }): Promise<AgencyCounts> => {
     const out: AgencyCounts = {};
     await Promise.all(
       AGENCY_TYPES.map(async (t) => {
-        try {
-          const r = await rpcPost<{ total: number | null; total_capped: boolean }>(
-            "corpus_query_bounded",
-            {
-              p_q: null,
-              p_dataset: DS,
-              p_filters: { agency: data.id, type: t },
-              p_limit: 1,
-              p_offset: 0,
-              p_count_cap: 1_000_000,
-            },
-          );
-          out[t] = r.total_capped ? null : r.total;
-        } catch {
-          out[t] = null;
-        }
+        const r = await rpcPost<{ total: number | null; total_capped: boolean }>(
+          "corpus_query_bounded",
+          {
+            p_q: null,
+            p_dataset: DS,
+            p_filters: { agency: data.id, type: t },
+            p_limit: 1,
+            p_offset: 0,
+            p_count_cap: 1_000_000,
+          },
+        );
+        out[t] = {
+          total:
+            typeof r.total === "number" && Number.isSafeInteger(r.total) && r.total >= 0
+              ? r.total
+              : null,
+          capped: r.total_capped === true,
+        };
       }),
     );
     return out;

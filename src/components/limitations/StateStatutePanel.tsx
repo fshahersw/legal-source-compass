@@ -29,6 +29,7 @@ const statusClass: Record<ClaimCoverageStatus, string> = {
 const basisClass = "border-dashed border-warning/50 bg-warning/5 text-muted-foreground";
 const kindLabel: Record<string, string> = {
   statute: "Statute",
+  judicial_opinion: "Judicial opinion",
   constitution: "Constitution",
   legislative_history: "Legislative history",
   publisher_guidance: "Publisher guidance",

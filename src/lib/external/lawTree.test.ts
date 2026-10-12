@@ -29,6 +29,9 @@ const SAFETY = [
 ];
 
 describe("law & safety folders", () => {
+  it("keeps the recorded federal court website collection in reference tools", () => {
+    expect(lawGroup("federal")).toBe("reference");
+  });
   it("puts every law dataset in exactly one folder", () => {
     for (const id of LAW) {
       expect(sectionOf(id)).toBe("law");

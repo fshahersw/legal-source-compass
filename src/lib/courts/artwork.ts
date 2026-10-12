@@ -75,7 +75,12 @@ export const verifiedCourtArtwork: readonly VerifiedCourtArtwork[] = [
 
 const artworkByCourtId = new Map(verifiedCourtArtwork.map((entry) => [entry.courtId, entry]));
 
-export function artworkForCourtId(courtId: string): VerifiedCourtArtwork | null {
+export function artworkForCourtId(
+  courtId: string,
+  system?: string | null,
+): VerifiedCourtArtwork | null {
+  // These registrations are federal courts. A colliding state-court ID must keep its own artwork.
+  if (system?.trim().toLowerCase() === "state") return null;
   return artworkByCourtId.get(courtId) ?? null;
 }
 
@@ -107,12 +112,16 @@ export const courtTypeLabels: Record<CourtTypeGroup, string> = {
 };
 
 /** Uses recorded system/type labels only. The court title is deliberately not an input. */
-export function classifyCourtType(system: string | null | undefined, type: string | null | undefined): CourtTypeGroup {
+export function classifyCourtType(
+  system: string | null | undefined,
+  type: string | null | undefined,
+): CourtTypeGroup {
   const s = (system ?? "").trim().toLowerCase();
   const t = (type ?? "").trim().toLowerCase();
   if (!t || t === "not recorded") return "unclassified";
   if (/histor|former|territorial|defunct|abolish/.test(t)) return "historical";
-  if (/supreme court of the united states|u\.s\. supreme|federal supreme/.test(t)) return "us-supreme";
+  if (/supreme court of the united states|u\.s\. supreme|federal supreme/.test(t))
+    return "us-supreme";
   if (/bankrupt/.test(t)) return "federal-bankruptcy";
   if (/federal/.test(s) || /federal|u\.s\.|united states/.test(t)) {
     if (/appeal|appellate|circuit/.test(t)) return "federal-appellate";
@@ -129,19 +138,28 @@ export function classifyCourtType(system: string | null | undefined, type: strin
 }
 
 export function courtTypeCoverage(rows: readonly { system: string; type: string }[]) {
-  const bySourceType = new Map<string, { system: string; type: string; group: CourtTypeGroup; count: number }>();
+  const bySourceType = new Map<
+    string,
+    { system: string; type: string; group: CourtTypeGroup; count: number }
+  >();
   for (const row of rows) {
     const key = `${row.system}\u0000${row.type}`;
     const existing = bySourceType.get(key);
     if (existing) existing.count += 1;
-    else bySourceType.set(key, { ...row, group: classifyCourtType(row.system, row.type), count: 1 });
+    else
+      bySourceType.set(key, { ...row, group: classifyCourtType(row.system, row.type), count: 1 });
   }
-  return [...bySourceType.values()].sort((a, b) => b.count - a.count || a.type.localeCompare(b.type));
+  return [...bySourceType.values()].sort(
+    (a, b) => b.count - a.count || a.type.localeCompare(b.type),
+  );
 }
 
 export function recordedCourtArtwork(links: readonly { url: string; label: string }[]) {
   const candidates = links.filter(
-    (link) => link.url.startsWith("/") && /seal|image|logo|court mark/i.test(link.label),
+    (link) =>
+      /^\/(?!\/)/.test(link.url) &&
+      !link.url.includes("\\") &&
+      /seal|image|logo|court mark/i.test(link.label),
   );
   return candidates.find((link) => /seal/i.test(link.label)) ?? candidates[0] ?? null;
 }

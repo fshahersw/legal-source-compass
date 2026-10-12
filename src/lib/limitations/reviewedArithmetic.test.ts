@@ -67,6 +67,9 @@ describe("reviewed arithmetic is not inferred legal advice", () => {
     const r = run([pause("p", "2025-01-02", "2025-02-01")]);
     expect(r.date).toBeNull();
     expect(r.status).toBe("needs_review");
+    expect(r.reasons).toEqual([
+      "Suspension p begins on 2025-01-02, after the reviewed clock would have expired. No revival was assumed; the deadline remains unestablished.",
+    ]);
   });
   it("uses extensions already earned when checking a later interval", () => {
     const a = pause("a", "2024-03-01", "2024-04-01"),
@@ -191,6 +194,9 @@ describe("reviewed arithmetic is not inferred legal advice", () => {
       },
     ]);
     expect(r.date).toBeNull();
+    expect(r.reasons).toEqual([
+      "Protection for floor attached after the reviewed clock would have expired. An expired claim was not revived; the deadline remains unestablished.",
+    ]);
   });
   it("does not silently extend an independent outer cap", () => {
     const r = run([pause("p", "2024-03-01", "2024-04-01")], {

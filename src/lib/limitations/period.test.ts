@@ -137,6 +137,19 @@ const input = (
 });
 
 describe("civil period arithmetic", () => {
+  it("accepts research review metadata only when calculation is withheld", () => {
+    const research = rule("defamation", 1, "calendar_years", {
+      computation: "research_only",
+      reviewStatus: "research_text_verified",
+    });
+    expect(snapshotWith([research]).rules[0]?.reviewStatus).toBe("research_text_verified");
+    expect(() => snapshotWith([{ ...research, computation: "baseline_only" }])).toThrow(
+      /research evidence cannot enable a baseline/,
+    );
+    expect(
+      calculateBaseline(snapshotWith([research]), input("defamation", "2024-01-10")).date,
+    ).toBeNull();
+  });
   it("adds calendar years and refuses a missing leap-day anniversary", () => {
     expect(addCivilPeriod("2024-05-01", 2, "calendar_years")).toBe("2026-05-01");
     expect(addCivilPeriod("2024-02-29", 4, "calendar_years")).toBe("2028-02-29");
@@ -256,7 +269,10 @@ describe("calculator across claim types and units", () => {
       }),
     );
     expect(result.date).toBeNull();
-    expect(result.reasons.join(" ")).toContain("precedes the confirmed accrual date");
+    expect(result.reasons).toEqual([
+      "The cited repose cutoff precedes the confirmed accrual date (2026-01-01). Review whether repose bars this claim before relying on an accrual-based period; no deadline is established.",
+    ]);
+    expect(JSON.stringify(result)).not.toContain("2024-01-01");
   });
 
   it("withholds dates later than the oldest authority review date", () => {
@@ -759,7 +775,10 @@ describe("clocks_min: two-limb periods and several repose clocks", () => {
     });
     const barred = calculateBaseline(data, base);
     expect(barred.date).toBeNull();
-    expect(barred.reasons.join(" ")).toContain("precedes the confirmed accrual or discovery date");
+    expect(barred.reasons).toEqual([
+      "The cited repose cutoff precedes the confirmed accrual or discovery date (2024-01-01). Review whether repose bars this claim before relying on an accrual-based period; no deadline is established.",
+    ]);
+    expect(JSON.stringify(barred)).not.toContain("2020-01-01");
     expect(
       calculateBaseline(data, { ...base, injuryDate: "2020-02-29", accrualDate: "2024-01-01" })
         .date,

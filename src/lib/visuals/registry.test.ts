@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import registry from "./registry.json";
 import { STATES } from "@/lib/corpus/geo";
-import { agencyArtwork, communityCourtArtwork } from "@/components/corpus/EntityArtwork";
+import { agencyArtwork, communityCourtArtwork, stateArtwork } from "./registry";
 
 describe("source-bound local atlas artwork", () => {
   it("contains exactly the canonical 50 states and District of Columbia", () => {
@@ -35,6 +35,9 @@ describe("source-bound local atlas artwork", () => {
     }
   });
   it("never substitutes Nevada artwork for Nebraska", () => {
+    expect(stateArtwork("Nebraska")?.path).toBe(registry.states.NE.path);
+    expect(stateArtwork("Nevada")?.path).toBe(registry.states.NV.path);
+    expect(stateArtwork("unknown")).toBeNull();
     expect(registry.states.NE.sha256).not.toBe(registry.states.NV.sha256);
     expect(readFileSync(resolve("public", registry.states.NE.path.slice(1)), "utf8")).toContain(
       "Nebraska geographic outline",

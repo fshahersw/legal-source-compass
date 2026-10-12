@@ -110,7 +110,14 @@ function LawPage() {
   let body: React.ReactNode;
   const savedLawError = datasets.error;
   const err = s.scope === "states" ? stateSources.error : savedLawError;
-  if (!s.scope && !s.ds && !s.view) body = <LawLanding />;
+  const landing = (
+    <LawLanding
+      datasets={lawDs}
+      metadataState={datasets.error ? "error" : datasets.isLoading ? "loading" : "ready"}
+      onRetry={() => void datasets.refetch()}
+    />
+  );
+  if (!s.scope && !s.ds && !s.view) body = landing;
   else if (err) body = <ExternalError error={err} />;
   else if (s.scope !== "states" && datasets.isLoading)
     body = <p className="text-[13px] text-muted-foreground">Loading law collections…</p>;
@@ -118,7 +125,7 @@ function LawPage() {
     body = <p className="text-[13px] text-muted-foreground">Loading state law sources…</p>;
   else if (s.ds) body = <DatasetBrowser key={s.ds} dataset={s.ds} />;
   else if (!s.scope) {
-    body = <LawLanding />;
+    body = landing;
   } else if (s.scope === "federal" && s.group) {
     body = (
       <FolderGrid

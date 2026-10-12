@@ -33,6 +33,7 @@ import sys
 import time
 from datetime import datetime, timezone
 from html.parser import HTMLParser
+from html import unescape
 from urllib.parse import urlparse
 
 import requests
@@ -143,10 +144,15 @@ def markdown_to_text(md: str) -> str:
     text = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", text)                       # images carry no statute text
     text = re.sub(r"\[([^\]]*)\]\((?:[^()]|\([^()]*\))*\)", r"\1", text)      # [label](url) -> label, incl. javascript:(...) hrefs with spaces
     text = re.sub(r"(\*\*|__)(?=\S)(.+?)(?<=\S)\1", r"\2", text, flags=re.S)  # **bold** -> bold
-    text = re.sub(r"(?<![\w*])\*(?=\S)([^*\n]+?)(?<=\S)\*(?![\w*])", r"\1", text)  # *italic* on one line -> plain (history notes)
+    text = re.sub(r"^[ \t]*(?:\*[ \t]*){3,}$|^[ \t]*(?:-[ \t]*){3,}$|^[ \t]*(?:_[ \t]*){3,}$", "", text, flags=re.M)  # thematic separators
+    text = re.sub(r"(?<![\w*])\*(?=\S)([^*]+?)(?<=\S)\*(?![\w*])", r"\1", text)  # emphasis may span PDF line breaks
+    text = re.sub(r"(?<![\w_])_(?=\S)([^_]+?)(?<=\S)_(?![\w_])", r"\1", text)
+    text = re.sub(r"^[ \t]*\|(?:[ \t]*:?-+:?[ \t]*\|)+[ \t]*$", "", text, flags=re.M)  # table header separator
+    text = re.sub(r"^[ \t]*\|(.+)\|[ \t]*$", lambda m: "  ".join(cell.strip() for cell in m[1].split("|")), text, flags=re.M)
+    text = re.sub(r"</?(?:sup|sub|u|em|strong)(?:\s[^>]*)?>", "", text, flags=re.I)  # inline extraction formatting
     text = re.sub(r"^\s{0,3}#{1,6}\s+", "", text, flags=re.M)               # heading markers
     text = re.sub(r"\\([\\`*_{}\[\]()#+\-.!>|~])", r"\1", text)             # escaped punctuation
-    text = text.replace("&nbsp;", " ").replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
+    text = unescape(text).replace("\xa0", " ")
     lines = [re.sub(r"[ \t\r\f\v]+", " ", l).strip() for l in text.split("\n")]
     return re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip() + "\n"
 

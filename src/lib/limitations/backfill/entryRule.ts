@@ -96,9 +96,7 @@ export function isIntermediaryOnlyCapture(meta: EntryCaptureMeta): boolean {
   );
 }
 
-export type EntryRuleResult =
-  | { rule: LimitationRule; baseline: boolean }
-  | { rejected: string };
+export type EntryRuleResult = { rule: LimitationRule; baseline: boolean } | { rejected: string };
 
 /**
  * Build the `rules.json` record for one mechanically verified matrix entry. Mirrors the production builder:
@@ -164,7 +162,9 @@ export function ruleFromEntry(input: {
     "death",
     "not_recorded",
   ].includes(entry.accrual.kind);
+  const statutoryPrimary = (entry.authorityKind ?? "statute") === "statute";
   const baseline =
+    statutoryPrimary &&
     entry.status === "verified" &&
     accrualOk &&
     (repose.length === 0 || reposeModelled || reposeRecordedNotComputed);
@@ -184,7 +184,7 @@ export function ruleFromEntry(input: {
     ruleKind: "limitations",
     computation: baseline ? "baseline_only" : "research_only",
     basis: entry.basis ?? "claim_specific",
-    reviewStatus: "statutory_text_verified",
+    reviewStatus: statutoryPrimary ? "statutory_text_verified" : "research_text_verified",
     period: { amount: entry.period.amount, unit },
     provenance,
     sourceIds: [...new Set([primaryId, ...crossIds, ...(replaced?.sourceIds ?? [])])],
@@ -199,16 +199,18 @@ export function ruleFromEntry(input: {
     ],
     effectiveFrom: entry.effectiveDate ?? null,
     effectiveThrough: null,
-    validity:
-      entry.status === "verified"
+    validity: !statutoryPrimary
+      ? "Research passage verified against the retained source; current statutory text and operative-law review are not established. No date is issued."
+      : entry.status === "verified"
         ? "Statutory text verified against the official capture; no comprehensive operative-law or case-specific review completed"
         : "Recorded with open issues (see conditions); no date is issued from a flagged entry",
     historicalApplicability:
       provenance.lastAmended.text === "Not recorded"
         ? "Not recorded; historical amendments and transitional applicability must be confirmed"
         : `Official history note: ${provenance.lastAmended.text}`,
-    summary:
-      entry.basis === "general_period"
+    summary: !statutoryPrimary
+      ? `${periodLabel({ amount: entry.period.amount, unit })} described in the cited research authority (${entry.citation}); no calculable baseline is established.`
+      : entry.basis === "general_period"
         ? `${periodLabel({ amount: entry.period.amount, unit })} general civil period (${entry.citation}), applied to this claim because no provision naming it was found in the reviewed official text; subject to the cited scope and exceptions.`
         : `${periodLabel({ amount: entry.period.amount, unit })} statutory baseline (${entry.citation}), subject to the cited scope and exceptions.`,
     warnings: [
@@ -237,7 +239,11 @@ export function ruleFromEntry(input: {
             mode: "clocks_min" as const,
             ...(limbs.length
               ? {
-                  limbs: limbs.map((l) => ({ amount: l.amount, unit: UNIT[l.unit]!, from: l.from })),
+                  limbs: limbs.map((l) => ({
+                    amount: l.amount,
+                    unit: UNIT[l.unit]!,
+                    from: l.from,
+                  })),
                   combine: entry.periodCombine!,
                 }
               : {
@@ -245,7 +251,8 @@ export function ruleFromEntry(input: {
                     {
                       amount: entry.period.amount,
                       unit,
-                      from: entry.accrual.kind === "death" ? ("death" as const) : ("accrual" as const),
+                      from:
+                        entry.accrual.kind === "death" ? ("death" as const) : ("accrual" as const),
                     },
                   ],
                 }),

@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       from:
-        description: "Optional first publication day to (re)read, YYYY-MM-DD. Default: three days before the newest held date."
+        description: "Optional first publication day to (re)read, YYYY-MM-DD. Default: two days before the newest held date (three days inclusive)."
         required: false
         type: string
 
@@ -42,12 +42,20 @@ jobs:
       - name: Unit tests
         run: node --test scripts/ingest/federal-register/lib.test.mjs
       - name: Acquire, land, project and check the day counts
+        env:
+          INPUT_FROM: ${{ inputs.from }}
         # Fails the job if a day's API count, acquired pages and projected rows disagree, or if
         # any intake/projection readback verification fails.
         run: |
           set -euo pipefail
           args=()
-          if [ -n "${{ inputs.from }}" ]; then args+=(--from "${{ inputs.from }}"); fi
+          if [ -n "$INPUT_FROM" ]; then
+            if [[ ! "$INPUT_FROM" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+              echo "::error::from must be YYYY-MM-DD"
+              exit 1
+            fi
+            args+=(--from "$INPUT_FROM")
+          fi
           node scripts/ingest/federal-register/run.mjs daily "${args[@]}"
       - name: Upload checkpoint (no credentials, no document bodies)
         if: always()
