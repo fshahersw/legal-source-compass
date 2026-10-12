@@ -40,7 +40,7 @@ import {
 import type { ClaimType, LimitationRule, LimitationsSnapshot } from "@/lib/limitations/types";
 import { projectConversationTranscript } from "@/lib/limitations/conversationTranscript";
 
-const panel = "min-w-0 rounded-2xl border border-border bg-surface";
+const panel = "min-w-0 rounded-md border border-border bg-surface";
 const INTRO =
   "Tell me what happened, where it happened, and any dates you remember. I’ll ask for the other details that matter, check the recorded rules, and explain what can be calculated and what remains unresolved. You can correct me or say ‘I don’t know’ at any point. Please omit names and other identifying details.";
 
@@ -410,12 +410,12 @@ export function ConversationCalculator({
   const primaryFacts = factEntries.filter(([field]) => !field.startsWith("screen:"));
   const screeningFacts = factEntries.filter(([field]) => field.startsWith("screen:"));
   const renderFacts = (entries: typeof factEntries) => (
-    <dl className="mt-4 space-y-3">
+    <dl className="mt-3 space-y-2">
       {entries.map(([key, fact]) => {
         if (!fact) return null;
         const field = key as ConversationFactField;
         return (
-          <div key={key} className="border-b border-border pb-3 last:border-0 last:pb-0">
+          <div key={key} className="border-b border-border pb-2 last:border-0 last:pb-0">
             <dt className="text-xs text-muted-foreground">{CONVERSATION_LABELS[field]}</dt>
             <dd className="mt-1 break-words text-sm font-medium">
               {conversationFactLabel(field, fact.value)}
@@ -439,29 +439,34 @@ export function ConversationCalculator({
   );
 
   return (
-    <section aria-label="Conversational limitations calculator" className="space-y-5">
+    <section aria-label="Conversational limitations calculator" className="space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
             <MessageCircle size={15} /> Talk through your timeline
           </p>
-          <h2 className="text-2xl font-semibold tracking-tight">Start with what happened.</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+          <h2 className="font-sans text-lg font-semibold">Start with what happened.</h2>
+          <p className="mt-1 max-w-2xl text-sm leading-5 text-muted-foreground">
             Answer in your own words. I’ll keep the timeline, ask the follow-ups, and connect the
             analysis to the recorded sources.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" onClick={downloadReview}>
+          <Button
+            className="min-h-10 sm:min-h-8"
+            size="sm"
+            variant="outline"
+            onClick={downloadReview}
+          >
             <Download size={14} /> Download review
           </Button>
-          <Button size="sm" variant="ghost" onClick={reset}>
+          <Button className="min-h-10 sm:min-h-8" size="sm" variant="ghost" onClick={reset}>
             <RotateCcw size={14} /> Start over
           </Button>
         </div>
       </div>
       {sourceRefreshFailed && (
-        <div role="alert" className="rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm">
+        <div role="alert" className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm">
           The source release could not be refreshed. Your conversation is preserved; calculations
           and result exports are withheld.
           <Button variant="link" onClick={onRefreshSources}>
@@ -469,9 +474,9 @@ export function ConversationCalculator({
           </Button>
         </div>
       )}
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(18rem,1fr)]">
+      <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,1.7fr)_minmax(18rem,1fr)]">
         <div className={`${panel} overflow-hidden`}>
-          <div className="border-b border-border px-4 py-3 text-xs text-muted-foreground sm:px-5">
+          <div className="border-b border-border px-3 py-2 text-xs leading-5 text-muted-foreground">
             One claim at a time · Dates and answers remain editable · Source release{" "}
             {snapshot.ruleVersion}
           </div>
@@ -480,21 +485,21 @@ export function ConversationCalculator({
             aria-label="Limitations conversation"
             aria-live="polite"
             aria-relevant="additions text"
-            className="max-h-[38rem] min-h-64 space-y-5 overflow-y-auto px-4 py-5 sm:px-5"
+            className="max-h-[30rem] min-h-48 space-y-3 overflow-y-auto p-3"
           >
             {visibleMessages.map((message) => (
               <div
                 key={message.id}
                 className={
                   message.role === "user"
-                    ? "ml-6 rounded-xl bg-primary/10 p-4 sm:ml-14"
-                    : "mr-2 py-1"
+                    ? "ml-3 border-l-2 border-primary/30 bg-primary/5 px-3 py-2"
+                    : "py-1"
                 }
               >
-                <p className="mb-1.5 text-xs font-semibold text-muted-foreground">
+                <p className="mb-1 text-xs font-semibold text-muted-foreground">
                   {message.role === "user" ? "You" : "Time limits assistant"}
                 </p>
-                <p className="whitespace-pre-wrap break-words text-sm leading-7">
+                <p className="whitespace-pre-wrap break-words text-sm leading-[1.5]">
                   {message.content}
                 </p>
               </div>
@@ -511,18 +516,11 @@ export function ConversationCalculator({
               event.preventDefault();
               void send();
             }}
-            className="border-t border-border bg-background/60 p-4 sm:p-5"
+            className="border-t border-border bg-background/60 p-3"
           >
-            <div className="mb-3">
-              <ConversationReadAloud
-                key={dictationEpoch}
-                text={playbackText}
-                disabled={busy || !active || sourceRefreshFailed}
-              />
-            </div>
             <label
               htmlFor={`conversation-reply-${mode}`}
-              className="mb-2 block text-sm font-medium"
+              className="mb-1.5 block text-sm font-medium"
             >
               Your reply
             </label>
@@ -542,11 +540,11 @@ export function ConversationCalculator({
                   void send();
                 }
               }}
-              className="block w-full resize-y rounded-xl border border-input bg-background px-3 py-3 text-sm leading-6 outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+              className="block w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm leading-5 outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
             />
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="mt-2 grid items-start gap-3 sm:grid-cols-2">
               <ConversationDictation
-                key={dictationEpoch}
+                key={`dictation-${dictationEpoch}`}
                 disabled={busy || !active || sourceRefreshFailed}
                 onTranscript={(text) =>
                   setDraft((previous) => {
@@ -561,7 +559,22 @@ export function ConversationCalculator({
                   })
                 }
               />
+              <ConversationReadAloud
+                key={`playback-${dictationEpoch}`}
+                text={playbackText}
+                disabled={busy || !active || sourceRefreshFailed}
+              />
+            </div>
+            <div className="mt-3 flex flex-wrap items-start justify-between gap-3 border-t border-border pt-3">
+              <p className="min-w-0 flex-1 basis-64 text-xs leading-5 text-muted-foreground">
+                {capability.data?.configured
+                  ? `Your text conversation is sent to ${capability.data.providerName} to extract facts. This app keeps the draft in this tab’s memory; the provider’s processing and retention policies apply. Refreshing or leaving loses this draft unless you download it.`
+                  : capability.isPending
+                    ? "Checking conversation availability…"
+                    : "Natural-language interpretation is not configured or is unavailable. The structured calculator remains available below."}
+              </p>
               <Button
+                className="min-h-11 sm:min-h-9"
                 type="submit"
                 disabled={
                   busy ||
@@ -573,38 +586,31 @@ export function ConversationCalculator({
                 <ArrowUp size={16} /> Send reply
               </Button>
             </div>
-            <p className="mt-3 text-xs leading-5 text-muted-foreground">
-              {capability.data?.configured
-                ? `Your text conversation is sent to ${capability.data.providerName} to extract facts. This app keeps the draft in this tab’s memory; the provider’s processing and retention policies apply. Refreshing or leaving loses this draft unless you download it.`
-                : capability.isPending
-                  ? "Checking conversation availability…"
-                  : "Natural-language interpretation is not configured or is unavailable. The structured calculator remains available below."}
-            </p>
             {error && (
               <p
                 role="alert"
-                className="mt-3 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm"
+                className="mt-3 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm"
               >
                 {error}
               </p>
             )}
           </form>
         </div>
-        <aside className="min-w-0 space-y-4" aria-label="Facts and source review">
-          <section className={`${panel} p-4 sm:p-5`}>
-            <h3 className="font-semibold">What I understand</h3>
+        <aside className="min-w-0 space-y-3" aria-label="Facts and source review">
+          <section className={`${panel} p-3`}>
+            <h3 className="font-sans text-base font-semibold">What I understand</h3>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
               These are reported facts and proposed scenarios. Correct any item in the conversation.
             </p>
             {primaryFacts.length ? (
               renderFacts(primaryFacts)
             ) : (
-              <p className="mt-4 text-sm text-muted-foreground">
+              <p className="mt-3 text-sm text-muted-foreground">
                 State, claim and timeline facts will appear here as we talk.
               </p>
             )}
             {screeningFacts.length > 0 && (
-              <details className="mt-4 rounded-lg border border-border p-3">
+              <details className="mt-3 border-t border-border pt-3">
                 <summary className="cursor-pointer text-sm font-medium">
                   Screening answers ({screeningFacts.length})
                 </summary>
@@ -612,7 +618,7 @@ export function ConversationCalculator({
               </details>
             )}
             {Object.entries(session.conflicts).map(([key, values]) => (
-              <p key={key} className="mt-3 rounded-lg border border-warning/40 p-3 text-sm">
+              <p key={key} className="mt-3 rounded-md border border-warning/40 p-3 text-sm">
                 Conflicting {CONVERSATION_LABELS[key as ConversationFactField].toLowerCase()}:{" "}
                 {values!
                   .map((value) => conversationFactLabel(key as ConversationFactField, value.value))
@@ -621,11 +627,11 @@ export function ConversationCalculator({
               </p>
             ))}
           </section>
-          <section className={`${panel} p-4 sm:p-5`}>
-            <h3 className="flex items-center gap-2 font-semibold">
+          <section className={`${panel} p-3`}>
+            <h3 className="flex items-center gap-2 font-sans text-base font-semibold">
               <BookOpen size={16} /> Rules and evidence
             </h3>
-            <p className="mt-2 text-sm leading-6">
+            <p className="mt-2 text-sm leading-5">
               {plan.rule
                 ? plan.rule.summary
                 : "A unique supported claim branch has not yet been established."}
@@ -646,7 +652,7 @@ export function ConversationCalculator({
             )}
             {onOpenSources && (
               <Button
-                className="mt-3"
+                className="mt-3 min-h-10 sm:min-h-8"
                 variant="outline"
                 size="sm"
                 onClick={() => onOpenSources(input.jurisdiction, input.claimType || undefined)}
@@ -658,16 +664,16 @@ export function ConversationCalculator({
         </aside>
       </div>
       {scenario && (
-        <section aria-label="Conversation assessment" className={`${panel} p-5 sm:p-6`}>
+        <section aria-label="Conversation assessment" className={`${panel} p-3 sm:p-4`}>
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {scenario.status === "conditional_illustration"
               ? "Conditional calendar illustration"
               : "Further information or legal review required"}
           </p>
-          <h3 className="mt-2 text-2xl font-semibold">
+          <h3 className="mt-1 font-sans text-lg font-semibold">
             {scenario.date ?? "No reliable date can be issued"}
           </h3>
-          <p className="mt-2 text-sm leading-6">{scenario.reasons[0]}</p>
+          <p className="mt-2 text-sm leading-5">{scenario.reasons[0]}</p>
           {scenario.calendar?.adjustedDate && (
             <p className="mt-2 text-sm">
               Recorded weekend adjustment: {scenario.calendar.adjustedDate.date} (
@@ -681,7 +687,7 @@ export function ConversationCalculator({
             </p>
           )}
           {scenario.steps.length > 0 && (
-            <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm">
+            <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm">
               {scenario.steps.map((step, index) => (
                 <li key={index}>
                   {step.text} <span className="text-muted-foreground">{step.pinpoint}</span>
@@ -689,13 +695,13 @@ export function ConversationCalculator({
               ))}
             </ol>
           )}
-          <details className="mt-4" open={scenario.status === "withheld"}>
-            <summary className="cursor-pointer font-medium">
+          <details className="mt-3" open={scenario.status === "withheld"}>
+            <summary className="cursor-pointer text-sm font-medium">
               {scenario.status === "withheld"
                 ? "What prevents a date"
                 : "Assumptions behind this illustration"}
             </summary>
-            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-6">
+            <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-5">
               {(scenario.status === "withheld" ? scenario.reasons : scenario.assumptions).map(
                 (reason, index) => (
                   <li key={index}>{reason}</li>
@@ -703,14 +709,14 @@ export function ConversationCalculator({
               )}
             </ul>
           </details>
-          <details className="mt-4">
-            <summary className="cursor-pointer font-medium">
+          <details className="mt-3">
+            <summary className="cursor-pointer text-sm font-medium">
               All recorded conditions, exclusions and review limits (
               {scenario.qualifications.length})
             </summary>
-            <ul className="mt-3 space-y-3 text-sm leading-6">
+            <ul className="mt-2 divide-y divide-border text-sm leading-5">
               {scenario.qualifications.map((factor) => (
-                <li key={factor.id} className="rounded-lg border border-border p-3">
+                <li key={factor.id} className="py-2 first:pt-0 last:pb-0">
                   <strong>{factor.label}</strong>
                   <p>{factor.text}</p>
                   {factor.citation && <p className="text-muted-foreground">{factor.citation}</p>}

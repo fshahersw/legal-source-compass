@@ -18,6 +18,7 @@ import { CorpusAccessGate } from "@/components/auth/CorpusAccessGate";
 import { isPublicAuthPath } from "@/lib/auth/gateState";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { BRAND_ASSETS, PRODUCT_NAME } from "@/lib/branding";
 
 function NotFoundComponent() {
   return (
@@ -84,14 +85,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Legal Source Atlas" },
+      { title: PRODUCT_NAME },
       {
         name: "description",
         content:
-          "A compact searchable directory of U.S. litigation research sources imported from a export.",
+          "Research workspace for statutes, courts, matters and source-backed time-limit analysis.",
       },
+      { property: "og:site_name", content: PRODUCT_NAME },
+      { property: "og:title", content: PRODUCT_NAME },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex, nofollow" },
     ],
     links: [
@@ -105,7 +108,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap",
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: BRAND_ASSETS.icon32, type: "image/png", sizes: "32x32" },
+      { rel: "icon", href: BRAND_ASSETS.icon192, type: "image/png", sizes: "192x192" },
+      { rel: "apple-touch-icon", href: BRAND_ASSETS.appleTouchIcon, sizes: "180x180" },
     ],
   }),
   shellComponent: RootShell,
@@ -144,13 +149,13 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <CorpusAccessGate>
-      <AtlasProvider>
-        <CorpusProvider>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
-        <Toaster position="bottom-right" />
-        </CorpusProvider>
-      </AtlasProvider>
+        <AtlasProvider>
+          <CorpusProvider>
+            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+            <Outlet />
+            <Toaster position="bottom-right" />
+          </CorpusProvider>
+        </AtlasProvider>
       </CorpusAccessGate>
     </QueryClientProvider>
   );

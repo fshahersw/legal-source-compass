@@ -38,7 +38,7 @@ function PeoplePage() {
   const dups = possibleDuplicates(rows);
   return (
     <AppShell
-      breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Name index" }]}
+      breadcrumbs={[{ label: "Home", to: "/" }, { label: "Name index" }]}
       title="Name index"
       description="Names are listed exactly as recorded. Similar spellings are flagged as possible duplicates, never merged."
     >

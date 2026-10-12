@@ -57,8 +57,8 @@ import {
 } from "@/lib/limitations/intake";
 
 const control =
-  "mt-1 block min-h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm font-normal outline-none focus-visible:ring-2 focus-visible:ring-ring";
-const box = "min-w-0 rounded-xl border border-border bg-surface p-4 sm:p-5";
+  "mt-1 block min-h-11 w-full sm:min-h-9 rounded-md border border-input bg-background px-3 py-2 text-sm font-normal outline-none focus-visible:ring-2 focus-visible:ring-ring";
+const box = "min-w-0 rounded-md border border-border bg-surface p-3 sm:p-4";
 const humanize = (text: string) => text.replaceAll("_", " ").replace(/^./, (c) => c.toUpperCase());
 import {
   reviseCaseFacts,
@@ -291,9 +291,9 @@ export function ReviewedCalculator({
     requestAnimationFrame(() => window.print());
   };
   return (
-    <div data-testid="guided-calculator" className="space-y-5">
+    <div data-testid="guided-calculator" className="space-y-3">
       {sourceRefreshFailed && (
-        <div role="alert" className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
+        <div role="alert" className="rounded-md border border-warning/40 bg-warning/10 p-4 text-sm">
           <p className="font-semibold">Source refresh failed</p>
           <p className="mt-1">
             Your facts are preserved, but calculation is paused until the source release reloads
@@ -302,7 +302,7 @@ export function ReviewedCalculator({
         </div>
       )}
       {sourceChanged && (
-        <div role="status" className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm">
+        <div role="status" className="rounded-md border border-primary/20 bg-primary/5 p-4 text-sm">
           <p className="font-semibold">Rule or source evidence changed</p>
           <p className="mt-1">
             Your dates are preserved. Prior confirmations, factor decisions and results were cleared
@@ -315,7 +315,7 @@ export function ReviewedCalculator({
           <p className="text-xs font-semibold uppercase tracking-[.14em] text-muted-foreground">
             Time limits
           </p>
-          <h2 className="mt-1 text-2xl font-semibold tracking-tight">Deadline assessment</h2>
+          <h2 className="mt-1 font-sans text-lg font-semibold">Deadline assessment</h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
             Work through the cited rule, relevant dates and factors that may change the clock.
           </p>
@@ -328,7 +328,7 @@ export function ReviewedCalculator({
       <CalculatorCoverage snapshot={snapshot} onOpen={() => navigate("coverage")} />
       <nav
         aria-label="Calculation steps"
-        className="grid grid-cols-3 gap-2 rounded-xl border border-border bg-muted/30 p-2"
+        className="grid grid-cols-3 gap-1 rounded-md border border-border bg-muted/20 p-1"
       >
         {steps.map((item, index) => {
           const done = index === 0 ? !!rule : index === 1 ? timelineComplete : progress.complete;
@@ -340,7 +340,7 @@ export function ReviewedCalculator({
               disabled={index > 0 && !rule}
               aria-current={step === index ? "step" : undefined}
               onClick={() => setStep(index)}
-              className={`flex min-h-12 items-center justify-center gap-2 rounded-lg px-2 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${step === index ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-background hover:text-foreground"}`}
+              className={`flex min-h-11 items-center sm:min-h-10 justify-center gap-2 rounded-md px-2 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${step === index ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-background hover:text-foreground"}`}
             >
               <span className="hidden sm:block">
                 {done ? (
@@ -356,18 +356,20 @@ export function ReviewedCalculator({
           );
         })}
       </nav>
-      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,1fr)_20rem]">
         <section className={box} aria-label="Claim assessment form">
           {step === 0 && (
-            <section aria-label="Case and law" className="space-y-4">
+            <section aria-label="Case and law" className="space-y-3">
               <ScenarioIntake onApply={applyIntake} />
               <div>
-                <h3 className="text-lg font-semibold">Which claim are you assessing?</h3>
+                <h3 className="font-sans text-base font-semibold">
+                  Which claim are you assessing?
+                </h3>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Choose the governing law—not automatically the venue or the claimant's residence.
                 </p>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block text-sm font-medium">
                   Governing state
                   <select
@@ -433,8 +435,8 @@ export function ReviewedCalculator({
                 </label>
               )}
               {rule && (
-                <div className="rounded-lg border border-border bg-muted/30 p-4">
-                  <p className="text-lg font-semibold">
+                <div className="rounded-md border border-border bg-muted/30 p-4">
+                  <p className="text-base font-semibold">
                     {rule.period ? periodLabel(rule.period) : "Period not established"}
                   </p>
                   <p className="mt-1 text-sm font-medium text-primary">{rule.pinpoint}</p>
@@ -457,7 +459,7 @@ export function ReviewedCalculator({
               )}
               {state && claim && !rule && (
                 <div
-                  className="rounded-lg border border-warning/40 bg-warning/10 p-4"
+                  className="rounded-md border border-warning/40 bg-warning/10 p-4"
                   role="status"
                 >
                   <h4 className="font-semibold">No supported calculation</h4>
@@ -480,7 +482,7 @@ export function ReviewedCalculator({
                 </div>
               )}
               {!claim && (
-                <div className="rounded-lg border border-dashed border-border p-5 text-sm leading-relaxed text-muted-foreground">
+                <div className="rounded-md border border-dashed border-border p-3 text-sm leading-relaxed text-muted-foreground">
                   Start with one claim and one defendant. The next step asks only for dates required
                   by the selected rule; the review then exposes its recorded tolling notes,
                   conditions and exclusions.
@@ -495,15 +497,17 @@ export function ReviewedCalculator({
             </section>
           )}
           {step === 1 && rule && (
-            <section aria-label="Timeline" className="space-y-5">
+            <section aria-label="Timeline" className="space-y-3">
               <div>
-                <h3 className="text-lg font-semibold">Enter the legally relevant dates</h3>
+                <h3 className="font-sans text-base font-semibold">
+                  Enter the legally relevant dates
+                </h3>
                 <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                   Exposure, injury, diagnosis and discovery are not interchangeable. Changing a fact
                   resets its confirmations and the exception review.
                 </p>
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-3 md:grid-cols-2">
                 {dates.map((field) => (
                   <label key={field.key} className="block text-sm font-medium">
                     {field.label}
@@ -530,7 +534,7 @@ export function ReviewedCalculator({
                 ))}
               </div>
               {rule.calculation?.deathCapYears && (
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-3 sm:grid-cols-2">
                   <label className="text-sm font-medium">
                     Injured person's status
                     <select
@@ -564,7 +568,7 @@ export function ReviewedCalculator({
                 </div>
               )}
               {suggestedSubtype && (
-                <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm">
+                <div className="rounded-md border border-primary/20 bg-primary/5 p-4 text-sm">
                   <p>
                     A separately recorded statutory version may fit these dates. Your facts are
                     preserved, but the legal review must be repeated.
@@ -579,7 +583,7 @@ export function ReviewedCalculator({
                   </Button>
                 </div>
               )}
-              <fieldset className="rounded-lg border border-border p-4">
+              <fieldset className="rounded-md border border-border p-4">
                 <legend className="px-1 text-sm font-semibold">
                   Confirm the legal starting point
                 </legend>
@@ -625,7 +629,7 @@ export function ReviewedCalculator({
                 assume that later events are governed by unchanged law.
               </p>
               {submitted && !timelineComplete && (
-                <p className="rounded-lg bg-warning/10 p-3 text-sm" role="alert">
+                <p className="rounded-md bg-warning/10 p-3 text-sm" role="alert">
                   Complete the required dates, status and confirmations before calculating. Unknown
                   facts are not filled automatically.
                 </p>
@@ -652,9 +656,9 @@ export function ReviewedCalculator({
             </section>
           )}
           {step === 2 && rule && (
-            <section aria-label="Review and result" className="space-y-5">
+            <section aria-label="Review and result" className="space-y-3">
               {!timelineComplete && (
-                <div className="rounded-lg bg-warning/10 p-3 text-sm">
+                <div className="rounded-md bg-warning/10 p-3 text-sm">
                   Some timeline facts or confirmations are missing.{" "}
                   <button className="font-medium underline" onClick={() => setStep(1)}>
                     Return to the timeline.
@@ -696,10 +700,10 @@ export function ReviewedCalculator({
             </section>
           )}
         </section>
-        <aside className="space-y-4 xl:sticky xl:top-6" aria-label="Assessment summary">
+        <aside className="space-y-3 xl:sticky xl:top-6" aria-label="Assessment summary">
           <section className={box}>
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold">Your assessment</h3>
+              <h3 className="font-sans text-sm font-semibold">Your assessment</h3>
               <Button
                 size="icon"
                 variant="ghost"
@@ -791,7 +795,7 @@ export function ReviewedCalculator({
               </>
             )}
             {!result && (
-              <div className="mt-4 flex items-start gap-2 rounded-lg bg-muted/40 p-3 text-xs leading-relaxed text-muted-foreground">
+              <div className="mt-4 flex items-start gap-2 rounded-md bg-muted/40 p-3 text-xs leading-relaxed text-muted-foreground">
                 <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                 <span>
                   {progress.unresolved
@@ -820,12 +824,12 @@ export function ReviewedCalculator({
                     : "No deadline established"}
               </p>
               {result.date && (
-                <p className="mt-2 text-3xl font-semibold tracking-tight">
+                <p className="mt-2 font-sans text-lg font-semibold tracking-tight">
                   {displayDate(result.date)}
                 </p>
               )}
               {result.status === "reviewed_scenario" && (
-                <div className="mt-3 rounded-lg border border-border p-3 text-xs leading-relaxed">
+                <div className="mt-3 rounded-md border border-border p-3 text-xs leading-relaxed">
                   <p className="font-semibold">Conditional on your recorded legal instructions</p>
                   <p className="mt-1">
                     Original baseline: {displayDate(result.baseline.date)}. Excluded days counted
@@ -906,7 +910,7 @@ export function ReviewedCalculator({
               </Button>
             </div>
           )}
-          <section className="rounded-xl border border-border bg-muted/20 p-4 text-xs leading-relaxed text-muted-foreground">
+          <section className="rounded-md border border-border bg-muted/20 p-4 text-xs leading-relaxed text-muted-foreground">
             <p className="font-medium text-foreground">Sources & review</p>
             <p className="mt-1">Case facts stay in this tab. Nothing is sent to an AI service.</p>
             {onRefreshSources && (
@@ -945,7 +949,7 @@ export function ReviewedCalculator({
           aria-label="Selected rule evidence"
         >
           <div className="flex items-center justify-between gap-3">
-            <h3 className="font-semibold">The selected rule and its retained evidence</h3>
+            <h3 className="font-sans font-semibold">The selected rule and its retained evidence</h3>
             <Button size="sm" variant="ghost" onClick={() => setShowEvidence(false)}>
               Close
             </Button>

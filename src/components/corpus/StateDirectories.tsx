@@ -19,12 +19,12 @@ type Props = {
   onSearch: (change: Partial<StateHubSearch>) => void;
 };
 const field =
-  "h-9 min-w-0 rounded-lg border border-input bg-surface px-3 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring";
+  "h-9 min-w-0 rounded-md border border-input bg-surface px-3 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring";
 function DirectoryError({ retry, message }: { retry: () => void; message: string }) {
   return (
     <div
       role="alert"
-      className="rounded-xl border border-destructive/20 bg-destructive/5 p-5 text-sm"
+      className="rounded-md border border-destructive/20 bg-destructive/5 p-5 text-sm"
     >
       <p>{message}</p>
       <Button onClick={retry} variant="outline" size="sm" className="mt-3">
@@ -97,7 +97,7 @@ export function StateCourtDirectory({ state, search, onSearch }: Props) {
   return (
     <section
       aria-label={`${canonicalState(state)?.name} courts`}
-      className="dense-directory resource-panel space-y-3 p-3.5"
+      className="dense-directory resource-panel space-y-3 p-3"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -106,7 +106,7 @@ export function StateCourtDirectory({ state, search, onSearch }: Props) {
             Court profiles with an explicitly recorded state location.
           </p>
         </div>
-        <span className="rounded-full bg-muted px-3 py-1 text-xs tabular-nums">
+        <span className="rounded-md bg-muted px-3 py-1 text-xs tabular-nums">
           {query.data ? `${query.data.length.toLocaleString()} courts` : "Directory"}
         </span>
       </div>
@@ -138,7 +138,7 @@ export function StateCourtDirectory({ state, search, onSearch }: Props) {
       {query.isPending ? (
         <p
           role="status"
-          className="rounded-xl border border-border p-8 text-sm text-muted-foreground"
+          className="rounded-md border border-border p-8 text-sm text-muted-foreground"
         >
           Loading this state’s courts…
         </p>
@@ -153,7 +153,7 @@ export function StateCourtDirectory({ state, search, onSearch }: Props) {
             {rows.slice(current * 24, (current + 1) * 24).map((court) => (
               <article
                 key={court.id}
-                className="group flex items-center gap-3 rounded-lg border border-border bg-surface p-3 transition-colors hover:border-primary/30 hover:bg-muted/20"
+                className="group flex items-center gap-2.5 rounded-md border border-border bg-surface p-2.5 transition-colors hover:border-primary/30 hover:bg-muted/20"
               >
                 <CourtArtwork
                   courtId={court.id}
@@ -180,7 +180,7 @@ export function StateCourtDirectory({ state, search, onSearch }: Props) {
             ))}
           </div>
           {!rows.length ? (
-            <p className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
+            <p className="rounded-md border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
               No recorded courts match these filters.
             </p>
           ) : null}
@@ -215,7 +215,7 @@ export function StateJudgeDirectory({ state, search, onSearch }: Props) {
   return (
     <section
       aria-label={`${canonicalState(state)?.name} judges`}
-      className="dense-directory resource-panel space-y-3 p-3.5"
+      className="dense-directory resource-panel space-y-3 p-3"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
@@ -226,7 +226,7 @@ export function StateJudgeDirectory({ state, search, onSearch }: Props) {
             Recorded profile associations include historical service.
           </p>
         </div>
-        <span className="rounded-full bg-muted px-3 py-1 text-xs tabular-nums">
+        <span className="rounded-md bg-muted px-3 py-1 text-xs tabular-nums">
           {query.data ? `${all.length.toLocaleString()} profiles` : "Directory"}
         </span>
       </div>
@@ -268,7 +268,7 @@ export function StateJudgeDirectory({ state, search, onSearch }: Props) {
       {query.isPending ? (
         <p
           role="status"
-          className="rounded-xl border border-border p-8 text-sm text-muted-foreground"
+          className="rounded-md border border-border p-8 text-sm text-muted-foreground"
         >
           Loading this state’s judicial profiles…
         </p>
@@ -285,7 +285,7 @@ export function StateJudgeDirectory({ state, search, onSearch }: Props) {
                 key={judge.id}
                 to="/judges/$id"
                 params={{ id: judge.id }}
-                className="group flex gap-3 rounded-lg border border-border bg-surface p-3 transition-colors hover:border-primary/30 hover:bg-muted/20"
+                className="group flex gap-2.5 rounded-md border border-border bg-surface p-2.5 transition-colors hover:border-primary/30 hover:bg-muted/20"
               >
                 <JudgePortrait name={judge.name} photo={judge.photo} />
                 <span className="min-w-0">
@@ -301,7 +301,7 @@ export function StateJudgeDirectory({ state, search, onSearch }: Props) {
             ))}
           </div>
           {!rows.length ? (
-            <p className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
+            <p className="rounded-md border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
               No recorded profiles match these filters.
             </p>
           ) : null}

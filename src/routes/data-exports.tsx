@@ -26,16 +26,16 @@ import { checkMetaClaims } from "@/lib/atlas/v22a";
 export const Route = createFileRoute("/data-exports")({
   head: () => ({
     meta: [
-      { title: "Data & Exports — Legal Source Atlas" },
+      { title: "Data & Exports — Seeger Weiss Research" },
       {
         name: "description",
         content:
           "Provenance of the bundled litigation source directory, optional browser-local import, and CSV/JSON/raw exports.",
       },
-      { property: "og:title", content: "Data & Exports — Legal Source Atlas" },
+      { property: "og:title", content: "Data & Exports — Seeger Weiss Research" },
       {
         property: "og:description",
-        content: "Bundle provenance, browser-local import and CSV/JSON/raw export for the Legal Source Atlas.",
+        content: "Bundle provenance, browser-local import and CSV/JSON/raw export for Seeger Weiss Research.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -138,7 +138,7 @@ function DataExportsView() {
 
   return (
     <AppShell
-      breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Saved Work", to: "/saved-sources" }, { label: "Imports & Exports" }]}
+      breadcrumbs={[{ label: "Home", to: "/" }, { label: "Saved Work", to: "/saved-sources" }, { label: "Imports & Exports" }]}
       title="Imports & Exports"
       description="Where the directory data comes from, how to replace it with your own file in this browser, and exports of the directory and your browser-local review overlay."
     >

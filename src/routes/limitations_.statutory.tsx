@@ -36,7 +36,7 @@ function PolicyPage() {
   return (
     <AppShell
       breadcrumbs={[
-        { label: "Atlas", to: "/" },
+        { label: "Home", to: "/" },
         { label: "Time limits", to: "/limitations" },
         { label: "Statutory policies" },
       ]}

@@ -75,7 +75,7 @@ function LawPage() {
   });
 
   const crumbs: { label: string; to?: string; search?: Record<string, string> }[] = [
-    { label: "Atlas", to: "/" },
+    { label: "Home", to: "/" },
     { label: "Law & regulation", to: "/law" },
   ];
   const scopeLabel =

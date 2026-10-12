@@ -136,7 +136,7 @@ function StatePage() {
   if (!state)
     return (
       <AppShell
-        breadcrumbs={[{ label: "State atlas", to: "/" }, { label: rawState }]}
+        breadcrumbs={[{ label: "States & courts", to: "/" }, { label: rawState }]}
         title="State not found"
         description="This URL does not identify a U.S. state or the District of Columbia."
       >
@@ -147,7 +147,7 @@ function StatePage() {
     );
   return (
     <AppShell
-      breadcrumbs={[{ label: "State atlas", to: "/" }, { label: state.name }]}
+      breadcrumbs={[{ label: "States & courts", to: "/" }, { label: state.name }]}
       title={state.name}
       emblem={<StateMark state={usps} className="size-10" />}
       description="Statutes, court rules, judicial profiles and research resources."

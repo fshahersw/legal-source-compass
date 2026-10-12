@@ -59,7 +59,7 @@ function StatuteCard({
   const [open, setOpen] = useState(false);
   return (
     <article
-      className="rounded-lg border border-border bg-background p-4"
+      className="rounded-md border border-border bg-background p-3"
       aria-label={source.title}
       data-testid="cited-statute"
     >
@@ -220,14 +220,14 @@ export function StateStatutePanel({
   const general = rows.filter((row) => row.basis === "general_period").length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <section
-        className="rounded-xl border border-border bg-surface p-5"
+        className="rounded-md border border-border bg-surface p-3 sm:p-4"
         aria-labelledby="claim-matrix-title"
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 id="claim-matrix-title" className="text-xl font-semibold">
+            <h2 id="claim-matrix-title" className="font-sans text-lg font-semibold">
               Claim types · {stateName}
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -345,12 +345,12 @@ export function StateStatutePanel({
       </section>
 
       <section
-        className="rounded-xl border border-border bg-surface p-5"
+        className="rounded-md border border-border bg-surface p-3 sm:p-4"
         aria-labelledby="cited-statutes-title"
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 id="cited-statutes-title" className="text-xl font-semibold">
+            <h2 id="cited-statutes-title" className="font-sans text-lg font-semibold">
               Cited statutes and sources · {stateName}
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -362,7 +362,7 @@ export function StateStatutePanel({
         </div>
 
         {coverage && !statutes.some((s) => s.source.state === state) ? (
-          <div className="mt-4 rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm">
+          <div className="mt-4 rounded-md border border-warning/40 bg-warning/10 p-4 text-sm">
             <p>No state-specific text has been captured. Official publication sources:</p>
             {coverage.publisherLinks.map((item) => (
               <a

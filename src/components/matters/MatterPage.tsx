@@ -40,7 +40,7 @@ export function MatterPage({
   return (
     <AppShell
       breadcrumbs={[
-        { label: "Atlas", to: "/" },
+        { label: "Home", to: "/" },
         { label: "Matters", to: "/matters" },
         ...(payload.sw.tier ? [{ label: "Seeger Weiss hub", to: "/matters/seeger-weiss" }] : []),
         { label: `MDL ${o.mdl}` },

@@ -94,7 +94,7 @@ function InstructionEditor({
   const errors = validateInstruction(value);
   return (
     <div
-      className="mt-3 space-y-4 rounded-lg border border-primary/20 bg-primary/5 p-4"
+      className="mt-3 space-y-3 rounded-md border border-primary/20 bg-primary/5 p-4"
       data-testid="instruction-editor"
     >
       <div>
@@ -158,7 +158,7 @@ function InstructionEditor({
               <span>This authority limits the excluded interval</span>
             </label>
             {value.maximumExclusion && (
-              <div className="grid gap-3 rounded-lg border border-border bg-background p-3 sm:grid-cols-2">
+              <div className="grid gap-3 rounded-md border border-border bg-background p-3 sm:grid-cols-2">
                 <label className="text-sm font-medium">
                   Maximum period
                   <input
@@ -397,7 +397,7 @@ export function ReviewChecklist({
             been verified.
           </p>
         </div>
-        <span className="shrink-0 rounded-full bg-muted px-3 py-1 text-xs font-semibold tabular-nums">
+        <span className="shrink-0 rounded-md bg-muted px-3 py-1 text-xs font-semibold tabular-nums">
           {progress.resolved} / {progress.total}
         </span>
       </div>
@@ -414,7 +414,7 @@ export function ReviewChecklist({
           style={{ width: `${progress.total ? (100 * progress.resolved) / progress.total : 0}%` }}
         />
       </div>
-      <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/20 p-3">
+      <div className="flex flex-col gap-3 rounded-md border border-border bg-muted/20 p-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <label className="relative min-w-0 flex-1">
             <Search
@@ -475,7 +475,7 @@ export function ReviewChecklist({
         </div>
       </div>
       {visible.length === 0 && (
-        <p className="rounded-lg border border-dashed border-border p-5 text-sm text-muted-foreground">
+        <p className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
           No factors match this view. Filtering never removes a requirement from your assessment.{" "}
           <button
             type="button"
@@ -498,12 +498,12 @@ export function ReviewChecklist({
         return (
           <section
             key={group}
-            className="overflow-hidden rounded-lg border border-border"
+            className="overflow-hidden rounded-md border border-border"
             data-testid={`review-group-${group}`}
           >
             <button
               type="button"
-              className="flex min-h-12 w-full items-center justify-between gap-3 bg-muted/30 px-4 py-3 text-left"
+              className="flex min-h-11 w-full items-center justify-between gap-3 bg-muted/30 px-3 py-2 sm:min-h-10 text-left"
               aria-expanded={openGroup === group}
               aria-controls={`review-content-${group}`}
               onClick={() => setOpenGroup(openGroup === group ? null : group)}
@@ -528,7 +528,7 @@ export function ReviewChecklist({
             </button>
             {openGroup === group && (
               <div id={`review-content-${group}`}>
-                <div className="flex flex-wrap items-center justify-between gap-2 border-y border-border bg-background px-4 py-2">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-y border-border bg-background px-3 py-2">
                   <p className="text-xs text-muted-foreground">
                     Previously flagged items and instructions are never cleared by this action.
                   </p>
@@ -553,7 +553,7 @@ export function ReviewChecklist({
                       <div
                         key={factor.id}
                         id={`factor-${factor.id}`}
-                        className="p-4 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                        className="p-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                         tabIndex={-1}
                         data-testid="review-factor"
                         data-factor-kind={factor.kind}

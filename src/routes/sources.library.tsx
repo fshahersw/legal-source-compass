@@ -22,13 +22,13 @@ export const Route = createFileRoute("/sources/library")({
   validateSearch: (s: Record<string, unknown>): S => ({ view: s["view"] === "endpoints" ? "endpoints" : undefined }),
   head: () => ({
     meta: [
-      { title: "Source library — Legal Source Atlas" },
+      { title: "Source library — Seeger Weiss Research" },
       {
         name: "description",
         content:
           "Searchable directory of imported U.S. litigation research sources: exact URLs, jurisdictions, source families and heading categories.",
       },
-      { property: "og:title", content: "Source library — Legal Source Atlas" },
+      { property: "og:title", content: "Source library — Seeger Weiss Research" },
       {
         property: "og:description",
         content:
@@ -53,7 +53,7 @@ function LibraryView() {
 
   return (
     <AppShell
-      breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Sources", to: "/sources/library" }, { label: "Source library" }]}
+      breadcrumbs={[{ label: "Home", to: "/" }, { label: "Sources", to: "/sources/library" }, { label: "Source library" }]}
       title="Sources"
       description="Every distinct source URL in the bundle shipped with this build (or your own browser import). URLs are shown exactly as supplied, including query strings and hash routes."
     >

@@ -330,7 +330,7 @@ export function HubPage() {
   return (
     <AppShell
       breadcrumbs={[
-        { label: "Atlas", to: "/" },
+        { label: "Home", to: "/" },
         { label: "Matters", to: "/matters" },
         { label: "Seeger Weiss hub" },
       ]}

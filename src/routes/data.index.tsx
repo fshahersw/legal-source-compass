@@ -24,7 +24,7 @@ function Catalog() {
   return (
     <AppShell
       breadcrumbs={[
-        { label: "Atlas", to: "/" },
+        { label: "Home", to: "/" },
         { label: "Sources", to: "/sources/library" },
         { label: "Dataset inventory" },
       ]}

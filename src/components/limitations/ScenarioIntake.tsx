@@ -20,13 +20,13 @@ export function ScenarioIntake({ onApply }: { onApply: (intake: ConfirmedIntake)
   const [selected, setSelected] = useState<IntakeField[]>([]);
   const [confirmed, setConfirmed] = useState(false);
   return (
-    <details className="rounded-lg border border-primary/20 bg-primary/[.03]">
-      <summary className="flex min-h-12 cursor-pointer items-center gap-2 px-4 py-3 text-sm font-semibold text-primary">
+    <details className="rounded-md border border-primary/20 bg-primary/[.03]">
+      <summary className="flex min-h-11 cursor-pointer items-center gap-2 px-3 py-2 sm:min-h-10 text-sm font-semibold text-primary">
         <FileText className="size-4 shrink-0" aria-hidden="true" />
         Start with a description
         <span className="ml-auto text-xs font-normal text-muted-foreground">Optional</span>
       </summary>
-      <div className="space-y-3 border-t border-primary/10 p-4">
+      <div className="space-y-3 border-t border-primary/10 p-3">
         <p id={`${id}-help`} className="text-xs leading-relaxed text-muted-foreground">
           Extract explicitly named facts, then check them before applying. This local helper does
           not decide governing law, classify an accident, or calculate a deadline. Your text stays
@@ -91,7 +91,7 @@ export function ScenarioIntake({ onApply }: { onApply: (intake: ConfirmedIntake)
                 return (
                   <label
                     key={fact.field}
-                    className="flex min-h-12 cursor-pointer items-start gap-3 py-2 text-sm"
+                    className="flex min-h-11 cursor-pointer items-start gap-3 py-2 text-sm"
                   >
                     <input
                       type="checkbox"

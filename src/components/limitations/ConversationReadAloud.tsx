@@ -33,20 +33,20 @@ export function ConversationReadAloud({
   }, [text, disabled]);
 
   return (
-    <div className="space-y-1">
+    <div className="min-w-0 space-y-1">
       <button
         type="button"
-        className="min-h-11 rounded-lg border border-input px-3 py-2 text-sm disabled:opacity-50"
+        className="min-h-11 rounded-md border border-input bg-surface px-3 py-2 text-sm outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 sm:min-h-9 sm:py-1.5"
         disabled={disabled || supported !== true || !text.trim()}
         aria-pressed={status.speaking}
         onClick={() => (status.speaking ? session.current?.stop() : session.current?.speak(text))}
       >
         {status.speaking ? "Stop playback" : "Read response aloud"}
       </button>
-      <p role="status" aria-live="polite" className="text-xs text-muted-foreground">
+      <p role="status" aria-live="polite" className="text-xs leading-5 text-muted-foreground">
         {supported === false ? "Browser response playback is unavailable." : status.message}
       </p>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs leading-5 text-muted-foreground">
         Playback uses your browser’s speech service and starts only when you select the button.
       </p>
     </div>

@@ -5,7 +5,7 @@ import { pageHead } from "@/lib/corpus/head";
 export const Route = createFileRoute("/")({
   head: () =>
     pageHead(
-      "State legal research atlas",
+      "States & courts",
       "Explore U.S. states, courts, judicial profiles, law and regulatory sources.",
     ),
   component: () => <PlacesMap home />,

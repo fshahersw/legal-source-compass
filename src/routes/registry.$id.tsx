@@ -41,11 +41,11 @@ function MatterPage() {
   const reg = useQuery({ queryKey: ["matter-registry"], queryFn: loadRegistry, staleTime: Infinity });
   const docs = useQuery({ queryKey: ["matter-docs", id], queryFn: () => loadMatterDocs(id), staleTime: Infinity });
 
-  if (reg.error) return <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Case registry", to: "/registry" }, { label: "Matter" }]} title="Registry matter"><p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-[13px]">The case registry could not be loaded. {reg.error.message}</p></AppShell>;
-  if (!reg.data) return <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Case registry", to: "/registry" }, { label: "Matter" }]} title="Registry matter"><p className="text-[13px] text-muted-foreground">Loading…</p></AppShell>;
+  if (reg.error) return <AppShell breadcrumbs={[{ label: "Home", to: "/" }, { label: "Case registry", to: "/registry" }, { label: "Matter" }]} title="Registry matter"><p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-[13px]">The case registry could not be loaded. {reg.error.message}</p></AppShell>;
+  if (!reg.data) return <AppShell breadcrumbs={[{ label: "Home", to: "/" }, { label: "Case registry", to: "/registry" }, { label: "Matter" }]} title="Registry matter"><p className="text-[13px] text-muted-foreground">Loading…</p></AppShell>;
 
   const m = reg.data.matters.find((x) => x.matter_id === id);
-  if (!m) return <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Case registry", to: "/registry" }, { label: "Matter" }]} title="Registry matter"><p className="text-[13px]">Matter not found in the registry.</p></AppShell>;
+  if (!m) return <AppShell breadcrumbs={[{ label: "Home", to: "/" }, { label: "Case registry", to: "/registry" }, { label: "Matter" }]} title="Registry matter"><p className="text-[13px]">Matter not found in the registry.</p></AppShell>;
 
   const parties = reg.data.partiesByMatter.get(id) ?? [];
   const outcomes = reg.data.outcomesByMatter.get(id) ?? [];
@@ -59,7 +59,7 @@ function MatterPage() {
 
   return (
     <AppShell
-      breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Case registry", to: "/registry" }, { label: m.case_name }]}
+      breadcrumbs={[{ label: "Home", to: "/" }, { label: "Case registry", to: "/registry" }, { label: m.case_name }]}
       title={m.case_name}
       description={`Docket ${m.docket_number} · ${courtName}`}
     >

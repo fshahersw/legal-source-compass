@@ -38,7 +38,7 @@ function Page() {
   return (
     <AppShell
       breadcrumbs={[
-        { label: "Atlas", to: "/" },
+        { label: "Home", to: "/" },
         { label: "Law & regulation", to: "/law" },
         { label: "Limitations research" },
       ]}

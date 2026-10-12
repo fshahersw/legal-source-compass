@@ -18,7 +18,7 @@ function RegistryPage() {
 
   return (
     <AppShell
-      breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Case registry" }]}
+      breadcrumbs={[{ label: "Home", to: "/" }, { label: "Case registry" }]}
       title="Case registry"
       description="A verified matter registry: parties, attorneys, outcomes and docket documents for each case. Documents are listed with their details; the files themselves live in private storage and can't be opened from here."
     >
