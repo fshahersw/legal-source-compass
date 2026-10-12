@@ -43,7 +43,7 @@ function SafetyPage() {
   const agency = s.agency ?? (s.ds ? safetyAgency(s.ds) : undefined);
 
   const crumbs: { label: string; to?: string; search?: Record<string, string> }[] = [
-    { label: "Atlas", to: "/" },
+    { label: "Home", to: "/" },
     { label: "Product safety", to: "/safety" },
   ];
   if (agency) crumbs.push({ label: agency, to: "/safety", search: { agency } });

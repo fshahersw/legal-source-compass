@@ -38,7 +38,7 @@ function Page() {
     raw?.["type"] ?? cells["type"] ?? fact("type") ?? view.subtitle?.split(" · ")[0] ?? "Court",
   );
   const crumbs: { label: string; to?: string; search?: Record<string, string> }[] = [
-    { label: "State atlas", to: "/" },
+    { label: "States & courts", to: "/" },
   ];
   if (state)
     crumbs.push({ label: state.name, to: "/places/" + state.usps, search: { tab: "courts" } });

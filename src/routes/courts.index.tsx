@@ -32,7 +32,7 @@ function CourtsPage() {
   if (s.state) level = level.filter((r) => r.state === s.state);
   if (s.type) level = level.filter((r) => r.type === s.type);
 
-  const crumbs: { label: string; to?: string; search?: Record<string, string> }[] = [{ label: "Atlas", to: "/" }, { label: "Courts", to: "/courts" }];
+  const crumbs: { label: string; to?: string; search?: Record<string, string> }[] = [{ label: "Home", to: "/" }, { label: "Courts", to: "/courts" }];
   if (s.system) crumbs.push({ label: s.system, to: "/courts", search: { system: s.system } });
   if (s.state) crumbs.push({ label: stateLabel(s.state), to: "/courts", search: { system: s.system ?? "", state: s.state } });
   if (s.type) crumbs.push({ label: s.type });

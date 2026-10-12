@@ -41,7 +41,7 @@ function Page() {
     ).values(),
   ];
   const crumbs: { label: string; to?: string; search?: Record<string, string> }[] = [
-    { label: "State atlas", to: "/" },
+    { label: "States & courts", to: "/" },
   ];
   if (states.length === 1)
     crumbs.push({

@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PRODUCT_NAME } from "@/lib/branding";
+import { WorkspaceBrand } from "./WorkspaceBrand";
 
 type Mode = "signin" | "signup" | "forgot";
 
@@ -73,10 +75,10 @@ export function AuthCard({ notice }: { notice?: string | undefined }) {
 
   return (
     <div className="w-full max-w-sm rounded-lg border border-border bg-surface p-6">
-      <Link to="/" className="eyebrow">
-        Legal Source Atlas
+      <Link to="/" className="block" aria-label={`${PRODUCT_NAME} — home`}>
+        <WorkspaceBrand />
       </Link>
-      <h1 className="mt-1 font-display text-2xl text-foreground">{title}</h1>
+      <h1 className="mt-4 font-display text-2xl text-foreground">{title}</h1>
       {notice ? <p className="mt-2 text-[13px] text-muted-foreground">{notice}</p> : null}
       <form onSubmit={submit} className="mt-5 space-y-3">
         <Input

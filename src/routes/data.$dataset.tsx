@@ -45,7 +45,7 @@ function DatasetPage() {
   return (
     <AppShell
       breadcrumbs={[
-        { label: "Atlas", to: "/" },
+        { label: "Home", to: "/" },
         { label: "Data catalog", to: "/data" },
         { label: section.label },
         { label },

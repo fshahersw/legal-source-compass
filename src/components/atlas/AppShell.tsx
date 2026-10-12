@@ -20,6 +20,7 @@ import { reviewCounts } from "@/lib/atlas/review";
 import { getSidebarCollapsed, setSidebarCollapsed } from "@/lib/atlas/ui";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { BRAND_ASSETS, PRODUCT_NAME, WORKSPACE_DESCRIPTOR } from "@/lib/branding";
 import {
   PRIMARY_NAVIGATION,
   contextualNavigation,
@@ -114,38 +115,35 @@ export function AppShell({
   }
   return (
     <div
-      data-ui-release="resource-workspace-20261009"
+      data-ui-release="seeger-weiss-workspace-20261012"
       className="atlas-shell flex min-h-screen bg-background"
     >
       <aside
-        className={`sticky top-0 hidden h-screen shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar px-3 py-5 transition-[width] duration-150 lg:flex ${collapsed ? "w-14" : "w-52"}`}
+        className={`sticky top-0 hidden h-screen shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar px-2.5 py-4 transition-[width] duration-150 lg:flex ${collapsed ? "w-14" : "w-48"}`}
       >
         <Link
           to="/"
-          className={collapsed ? "mb-6 flex justify-center" : "mb-6 block px-2"}
-          aria-label="Legal Source Atlas — home"
+          className={collapsed ? "mb-4 flex justify-center" : "mb-4 block px-1.5 py-1"}
+          aria-label={`${PRODUCT_NAME} — home`}
         >
           {collapsed ? (
-            <span
-              aria-hidden
-              className="grid size-8 place-items-center rounded-md bg-sidebar-accent font-display text-sm font-semibold text-sidebar-primary"
-            >
-              LA
-            </span>
+            <img src={BRAND_ASSETS.icon32} alt="" className="size-7" />
           ) : (
             <>
-              <span className="block text-[9px] font-semibold uppercase tracking-[0.2em] text-sidebar-foreground/70">
-                Research workspace
-              </span>
-              <span className="mt-1.5 block font-display text-xl leading-tight text-sidebar-primary">
-                Legal Source
-                <br />
-                Atlas
+              <img
+                src={BRAND_ASSETS.wordmarkWhite}
+                alt="Seeger Weiss LLP"
+                width={241}
+                height={21}
+                className="h-auto w-full"
+              />
+              <span className="mt-2 block text-[10px] font-medium uppercase tracking-[0.12em] text-sidebar-foreground/75">
+                {WORKSPACE_DESCRIPTOR}
               </span>
             </>
           )}
         </Link>
-        <nav aria-label="Primary" className="flex flex-col gap-1">
+        <nav aria-label="Primary" className="flex flex-col gap-0.5">
           {NAV.map((item) => {
             const active = navigationSection(pathname) === item.id;
             const badgeCount =
@@ -158,7 +156,7 @@ export function AppShell({
                 aria-current={active ? "page" : undefined}
                 title={collapsed ? item.label : undefined}
                 aria-label={collapsed ? item.label : undefined}
-                className={`nav-link relative min-h-10 ${active ? "bg-sidebar-accent font-semibold" : ""} ${collapsed ? "justify-center px-0" : ""}`}
+                className={`nav-link relative min-h-9 ${active ? "bg-sidebar-accent font-semibold" : ""} ${collapsed ? "justify-center px-0" : ""}`}
               >
                 <item.icon className="size-4 shrink-0 opacity-90" strokeWidth={1.7} />
                 {!collapsed && <span className="flex-1">{item.label}</span>}
@@ -176,9 +174,12 @@ export function AppShell({
         </div>
       </aside>
       <div className="min-w-0 flex-1">
-        <header className="atlas-header border-b border-border bg-surface px-4 py-3 lg:px-6">
-          <div className="flex items-center justify-between gap-4">
+        <header className="atlas-header border-b border-border bg-surface py-2.5">
+          <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-2.5">
+              <Link to="/" aria-label={`${PRODUCT_NAME} — home`} className="shrink-0 lg:hidden">
+                <img src={BRAND_ASSETS.icon32} alt="" className="size-7" />
+              </Link>
               <button
                 type="button"
                 onClick={toggleSidebar}
@@ -225,7 +226,7 @@ export function AppShell({
                 aria-label="Search all corpus data"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search the atlas"
+                placeholder="Search research"
                 className="h-8 bg-background text-xs"
               />
               <Button
@@ -239,13 +240,13 @@ export function AppShell({
               </Button>
             </form>
           </div>
-          <div className="mt-2.5 flex flex-wrap items-center justify-between gap-3">
+          <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2.5">
               {emblem ? <div className="shrink-0">{emblem}</div> : null}
               <div className="min-w-0">
-                <h1 className="font-display text-[23px] leading-tight">{title}</h1>
+                <h1 className="font-display text-xl font-semibold leading-tight">{title}</h1>
                 {description ? (
-                  <p className="mt-0.5 max-w-3xl text-xs leading-relaxed text-muted-foreground">
+                  <p className="mt-0.5 max-w-3xl text-xs leading-5 text-muted-foreground">
                     {description}
                   </p>
                 ) : null}
@@ -257,14 +258,14 @@ export function AppShell({
         {context.length ? (
           <nav
             aria-label="Section"
-            className="flex gap-1 overflow-x-auto border-b border-border bg-surface px-4 py-1.5 lg:px-6"
+            className="atlas-section-nav flex gap-0.5 overflow-x-auto border-b border-border bg-surface py-1"
           >
             {context.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
                 activeOptions={{ exact: true }}
-                className="shrink-0 rounded-md px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+                className="inline-flex min-h-9 shrink-0 items-center rounded-sm px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground md:min-h-8"
                 activeProps={{ className: "bg-muted font-semibold text-primary" }}
               >
                 {item.label}
@@ -281,7 +282,7 @@ export function AppShell({
               key={item.to}
               to={item.to}
               activeOptions={{ exact: item.to === "/" }}
-              className="nav-link whitespace-nowrap !px-2 !text-[11px]"
+              className="nav-link min-h-10 whitespace-nowrap !px-2 !text-xs"
             >
               {item.label}
             </Link>

@@ -56,7 +56,7 @@ function JudgesPage() {
   const inventory = judgeProfileInventory(rows);
 
   const crumbs: { label: string; to?: string; search?: Record<string, string> }[] = [
-    { label: "Atlas", to: "/" },
+    { label: "Home", to: "/" },
     { label: "Judges", to: "/judges" },
   ];
   if (s.system) crumbs.push({ label: s.system, to: "/judges", search: { system: s.system } });

@@ -43,7 +43,7 @@ function Page() {
     return (
       <AppShell
         breadcrumbs={[
-          { label: "Atlas", to: "/" },
+          { label: "Home", to: "/" },
           { label: "Matters", to: "/matters" },
           { label: `MDL ${id}` },
         ]}

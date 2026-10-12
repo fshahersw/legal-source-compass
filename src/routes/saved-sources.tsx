@@ -10,13 +10,13 @@ import { useMergedSources } from "@/lib/atlas/useMergedSources";
 export const Route = createFileRoute("/saved-sources")({
   head: () => ({
     meta: [
-      { title: "Saved Sources — Legal Source Atlas" },
+      { title: "Saved Sources — Seeger Weiss Research" },
       {
         name: "description",
         content:
           "Sources bookmarked in this browser, exportable to CSV or JSON alongside their imported metadata.",
       },
-      { property: "og:title", content: "Saved Sources — Legal Source Atlas" },
+      { property: "og:title", content: "Saved Sources — Seeger Weiss Research" },
       {
         property: "og:description",
         content: "Your browser-local bookmarks of imported litigation sources.",
@@ -33,7 +33,7 @@ function SavedSourcesView() {
 
   return (
     <AppShell
-      breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Saved Work" }, { label: "Saved Sources" }]}
+      breadcrumbs={[{ label: "Home", to: "/" }, { label: "Saved Work" }, { label: "Saved Sources" }]}
       title="Saved Work"
       description="Bookmarks are stored in this browser only. Clearing site data removes them."
     >

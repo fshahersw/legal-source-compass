@@ -70,7 +70,7 @@ function SearchPage() {
   const d = query.data;
   return (
     <AppShell
-      breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Search" }]}
+      breadcrumbs={[{ label: "Home", to: "/" }, { label: "Search" }]}
       title="Search the corpus"
       description="Search published records. Names, headings and MDL matters that match appear first, and a search that starts with Judge or Hon. looks for the person; duplicate source cards keep their original record links."
     >

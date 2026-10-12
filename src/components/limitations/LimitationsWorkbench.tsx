@@ -29,7 +29,7 @@ import {
 
 type View = "calculator" | "coverage" | "sources";
 type Navigation = { state: string; claim?: ClaimType; view: View };
-const box = "rounded-xl border border-border bg-surface p-5";
+const box = "rounded-md border border-border bg-surface p-3 sm:p-4";
 const humanize = (slug: string) => slug.replaceAll("_", " ").replace(/^./, (c) => c.toUpperCase());
 const subtypeLabels: Record<string, string> = {
   general: "General claim",
@@ -57,7 +57,7 @@ const toneClass: Record<"ok" | "partial" | "lost" | "unknown", string> = {
 function Authority({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule: LimitationRule }) {
   const facts = ruleAuthorityFacts(snapshot, rule);
   return (
-    <div className="mt-3 rounded-lg border border-border p-3 text-sm" data-testid="rule-authority">
+    <div className="mt-3 rounded-md border border-border p-3 text-sm" data-testid="rule-authority">
       <dl className="grid gap-x-4 gap-y-1 sm:grid-cols-[10rem_1fr]">
         <dt className="font-medium">Citation</dt>
         <dd>
@@ -323,7 +323,7 @@ function Citations({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule: Li
 
 function JudicialEvidence({ reference }: { reference: JudicialReference }) {
   return (
-    <article className="rounded-lg border border-border p-4 text-sm">
+    <article className="rounded-md border border-border p-4 text-sm">
       <a
         href={reference.url}
         target="_blank"
@@ -413,7 +413,7 @@ export function LimitationsWorkbench({
       {query.error && view !== "calculator" && (
         <div
           role="alert"
-          className="mb-4 rounded-lg border border-warning/40 bg-warning/10 p-4 text-sm"
+          className="mb-4 rounded-md border border-warning/40 bg-warning/10 p-4 text-sm"
         >
           Source refresh failed. Your assessment is preserved, but calculation is paused until the
           source release can be checked.
@@ -424,11 +424,12 @@ export function LimitationsWorkbench({
       )}
       <div hidden={view !== "calculator"}>
         <div
-          className="mb-5 flex flex-wrap gap-2"
+          className="mb-3 flex flex-wrap gap-1.5"
           role="group"
           aria-label="Calculator input method"
         >
           <Button
+            className="min-h-10 sm:min-h-8"
             size="sm"
             variant={calculatorMode === "conversation" ? "default" : "outline"}
             aria-pressed={calculatorMode === "conversation"}
@@ -437,6 +438,7 @@ export function LimitationsWorkbench({
             Conversation
           </Button>
           <Button
+            className="min-h-10 sm:min-h-8"
             size="sm"
             variant={calculatorMode === "structured" ? "default" : "outline"}
             aria-pressed={calculatorMode === "structured"}
@@ -479,10 +481,11 @@ export function LimitationsWorkbench({
         </div>
       </div>
       {view !== "calculator" && (
-        <nav aria-label="Limitations research views" className="mb-5 flex flex-wrap gap-2">
+        <nav aria-label="Limitations research views" className="mb-3 flex flex-wrap gap-1.5">
           {(["calculator", "coverage", "sources"] as const).map((item) => (
             <Button
               key={item}
+              className="min-h-10 sm:min-h-8"
               size="sm"
               variant={view === item ? "default" : "outline"}
               aria-pressed={view === item}
@@ -500,13 +503,13 @@ export function LimitationsWorkbench({
       {view === "coverage" && (
         <section className={box}>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-xl font-semibold">Coverage by state and DC</h2>
+            <h2 className="font-sans text-lg font-semibold">Coverage by state and DC</h2>
           </div>
           <p className="mt-2 text-sm leading-relaxed">
             Source retrieval and computation are separate. Coverage does not represent a complete
             legal review.
           </p>
-          <div className="mt-5 overflow-x-auto">
+          <div className="mt-3 overflow-x-auto">
             <table className="w-full min-w-[700px] text-left text-sm">
               <thead>
                 <tr className="border-b border-border">

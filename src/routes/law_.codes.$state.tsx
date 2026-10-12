@@ -67,7 +67,7 @@ function StateCodePage() {
   });
   const listing = codes.data?.find((row) => row.state === usps);
   const crumbs = [
-    { label: "Atlas", to: "/" },
+    { label: "Home", to: "/" },
     { label: "Law & regulation", to: "/law" },
     { label: "State codes", to: "/law/codes" },
     { label: place?.name ?? usps },

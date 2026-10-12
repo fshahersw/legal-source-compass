@@ -53,7 +53,7 @@ export function SectionPage({
 
   return (
     <AppShell
-      breadcrumbs={[{ label: "Atlas", to: "/" }, { label: meta.label }]}
+      breadcrumbs={[{ label: "Home", to: "/" }, { label: meta.label }]}
       title={meta.label}
       description={
         section === "matters"

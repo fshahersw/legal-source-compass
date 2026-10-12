@@ -30,7 +30,7 @@ function CatalogPage() {
   const shown = filterCatalog(all, { q, category: category || undefined, access: access || undefined });
   const sel = "h-8 rounded-md border border-border bg-background px-2 text-[12px]";
   return (
-    <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Sources", to: "/sources/library" }, { label: "Source catalog" }]} title="Source catalog" description="Imported from your catalog file. Categories and verification labels are the file's own draft metadata, not checked by this app.">
+    <AppShell breadcrumbs={[{ label: "Home", to: "/" }, { label: "Sources", to: "/sources/library" }, { label: "Source catalog" }]} title="Source catalog" description="Imported from your catalog file. Categories and verification labels are the file's own draft metadata, not checked by this app.">
       <div className="mb-3 flex flex-wrap gap-2">
         <select aria-label="Jurisdiction" className={sel} value={j} onChange={(e) => navigate({ search: { j: e.target.value } })}>
           {(idx.data?.jurisdictions ?? []).map((x) => <option key={x.jurisdiction} value={x.jurisdiction}>{x.label} ({x.count.toLocaleString()})</option>)}

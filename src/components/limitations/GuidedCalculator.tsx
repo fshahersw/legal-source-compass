@@ -38,8 +38,8 @@ import {
 } from "./calculatorGuidance";
 
 const control =
-  "mt-1.5 min-h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-primary";
-const card = "rounded-xl border border-border bg-surface";
+  "mt-1.5 min-h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-primary sm:min-h-9";
+const card = "rounded-md border border-border bg-surface";
 const groups = [...new Set(SCREENING_QUESTIONS.map((q) => q.group))];
 const human = (s: string) => s.replaceAll("_", " ").replace(/^./, (c) => c.toUpperCase());
 const dateLabel = (s: string) =>
@@ -219,7 +219,7 @@ export function GuidedCalculator({
     }
   }
   const evidence = (
-    <details className={card + " mt-4 p-4"}>
+    <details className={card + " mt-3 p-3"}>
       <summary className="cursor-pointer text-sm font-semibold">
         Recorded qualifications and authority{" "}
         <span className="ml-2 text-muted-foreground font-normal">{inventory.length} items</span>
@@ -253,9 +253,9 @@ export function GuidedCalculator({
     </details>
   );
   return (
-    <div data-testid="guided-calculator" className="space-y-5">
+    <div data-testid="guided-calculator" className="space-y-3">
       {sourceChanged && (
-        <p role="status" className="rounded-lg border border-border bg-muted p-3 text-sm">
+        <p role="status" className="rounded-md border border-border bg-muted p-3 text-sm">
           The rule or source evidence changed. Your entered dates are preserved; review the legal
           confirmations and exception screening again before calculating.
         </p>
@@ -270,7 +270,7 @@ export function GuidedCalculator({
               onClick={() => go(index)}
               aria-current={step === index ? "step" : undefined}
               className={
-                "inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm transition-colors disabled:opacity-40 " +
+                "inline-flex min-h-10 items-center gap-2 rounded-md px-3 text-sm transition-colors disabled:opacity-40 " +
                 (step === index
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-muted")
@@ -290,17 +290,17 @@ export function GuidedCalculator({
         </nav>
         <span className="text-xs text-muted-foreground">Release {snapshot.ruleVersion}</span>
       </div>
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="grid items-start gap-3 xl:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0" role="region" aria-label="Guided assessment">
           <section className={card + " overflow-hidden"}>
-            <header className="border-b border-border px-5 py-4 sm:px-6">
+            <header className="border-b border-border px-3 py-3 sm:px-4">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Step {step + 1} of 3
               </p>
               <h2
                 ref={headingRef}
                 tabIndex={-1}
-                className="mt-1 text-xl font-semibold tracking-tight outline-none"
+                className="mt-1 font-sans text-lg font-semibold outline-none"
               >
                 {step === 0
                   ? "Case facts"
@@ -316,10 +316,10 @@ export function GuidedCalculator({
                     : "See the date, applied rules, and anything still requiring a decision."}
               </p>
             </header>
-            <div className="p-5 sm:p-6">
+            <div className="p-3 sm:p-4">
               {step === 0 && (
-                <div className="space-y-5">
-                  <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
                     <label className="text-sm font-medium">
                       Governing law
                       <select
@@ -387,7 +387,7 @@ export function GuidedCalculator({
                   {state && claim && !rule && (
                     <div
                       role="status"
-                      className="rounded-lg border border-warning/40 bg-warning/5 p-4 text-sm"
+                      className="rounded-md border border-warning/40 bg-warning/5 p-4 text-sm"
                     >
                       <p className="font-semibold">
                         This branch does not have a unique supported calculation.
@@ -415,7 +415,7 @@ export function GuidedCalculator({
                   )}
                   {rule && (
                     <>
-                      <div className="rounded-lg border border-border bg-muted/30 p-3">
+                      <div className="rounded-md border border-border bg-muted/30 p-3">
                         <div className="flex flex-wrap justify-between gap-2">
                           <p className="text-sm font-semibold">
                             {rule.period ? periodLabel(rule.period) : "Review required"}
@@ -429,7 +429,7 @@ export function GuidedCalculator({
                           </p>
                         )}
                       </div>
-                      <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="grid gap-3 sm:grid-cols-2">
                         {dates.map((f) => (
                           <label key={f.key} className="text-sm font-medium">
                             {f.label}
@@ -453,7 +453,7 @@ export function GuidedCalculator({
                         ))}
                       </div>
                       {rule.calculation?.deathCapYears && (
-                        <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="grid gap-3 sm:grid-cols-2">
                           <label className="text-sm">
                             Claimant status
                             <select
@@ -564,7 +564,7 @@ export function GuidedCalculator({
                         type="button"
                         onClick={() => setGroupIndex(i)}
                         className={
-                          "min-h-9 rounded-md px-2.5 text-xs font-medium " +
+                          "min-h-11 rounded-md sm:min-h-9 px-2.5 text-xs font-medium " +
                           (i === groupIndex
                             ? "bg-primary text-primary-foreground"
                             : "bg-muted text-muted-foreground")
@@ -580,7 +580,7 @@ export function GuidedCalculator({
                     ))}
                   </div>
                   <div className="mb-3 flex items-center justify-between gap-2">
-                    <h3 className="text-sm font-semibold">{groups[groupIndex]}</h3>
+                    <h3 className="font-sans text-sm font-semibold">{groups[groupIndex]}</h3>
                     <button
                       type="button"
                       className="text-xs text-primary underline underline-offset-4"
@@ -600,7 +600,7 @@ export function GuidedCalculator({
                     {currentQuestions.map((q) => {
                       const notes = inventory.filter((n) => n.categories.includes(q.id));
                       return (
-                        <div key={q.id} className="py-4 first:pt-1">
+                        <div key={q.id} className="py-3 first:pt-1">
                           <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
                             <div className="min-w-0">
                               <p id={"question-" + q.id} className="text-sm font-medium">
@@ -623,7 +623,7 @@ export function GuidedCalculator({
                                   aria-checked={answers[q.id] === a}
                                   onClick={() => answer(q.id, a)}
                                   className={
-                                    "min-h-9 rounded-md border px-3 text-xs font-medium " +
+                                    "min-h-11 rounded-md sm:min-h-9 border px-3 text-xs font-medium " +
                                     (answers[q.id] === a
                                       ? "border-primary bg-primary text-primary-foreground"
                                       : "border-border bg-background hover:bg-muted")
@@ -667,7 +667,7 @@ export function GuidedCalculator({
                             </div>
                           )}
                           {q.id === "minority" && answers.minority === "yes" && policy && (
-                            <div className="mt-3 space-y-3 rounded-lg border border-border p-4">
+                            <div className="mt-3 space-y-3 rounded-md border border-border p-4">
                               <label className="block text-sm font-medium">
                                 Legally established date majority was attained
                                 <input
@@ -776,7 +776,7 @@ export function GuidedCalculator({
                     )}
                   </div>
                   {groupIndex === groups.length - 1 && (
-                    <div className="mt-5 rounded-lg border border-border p-4">
+                    <div className="mt-5 rounded-md border border-border p-4">
                       <label
                         id="review-recorded-qualifications"
                         className="flex items-start gap-3 text-sm leading-relaxed"
@@ -807,10 +807,10 @@ export function GuidedCalculator({
                 </div>
               )}
               {step === 2 && result && (
-                <div className="space-y-5" data-testid="guided-result">
+                <div className="space-y-3" data-testid="guided-result">
                   <div
                     className={
-                      "rounded-xl border p-5 " +
+                      "rounded-md border p-3 sm:p-4 " +
                       (result.date
                         ? "border-primary/30 bg-primary/5"
                         : "border-warning/40 bg-warning/5")
@@ -823,7 +823,7 @@ export function GuidedCalculator({
                           : "Conditional statutory anniversary"
                         : "Date withheld"}
                     </p>
-                    <p className="mt-2 text-3xl font-semibold tracking-tight">
+                    <p className="mt-2 font-sans text-lg font-semibold tracking-tight">
                       {result.date ? (
                         <time dateTime={result.date}>{dateLabel(result.date)}</time>
                       ) : (
@@ -861,7 +861,7 @@ export function GuidedCalculator({
                   </div>
                   {result.reasons.length > 0 && (
                     <div>
-                      <h3 className="text-sm font-semibold">
+                      <h3 className="font-sans text-sm font-semibold">
                         {result.date ? "Scope and outstanding checks" : "What needs attention"}
                       </h3>
                       <div className="mt-2 space-y-2 text-sm">
@@ -888,7 +888,7 @@ export function GuidedCalculator({
                       Review the suggested historical version
                     </Button>
                   )}
-                  <details className="rounded-lg border border-border p-4">
+                  <details className="rounded-md border border-border p-4">
                     <summary className="cursor-pointer text-sm font-semibold">
                       Calculation trace and review record
                     </summary>
@@ -930,18 +930,20 @@ export function GuidedCalculator({
           </section>
           {rule && evidence}
         </div>
-        <aside className={card + " p-5 xl:sticky xl:top-5"} aria-label="Assessment summary">
+        <aside className={card + " p-3 sm:p-4 xl:sticky xl:top-4"} aria-label="Assessment summary">
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             At a glance
           </p>
-          <h3 className="mt-3 text-base font-semibold">{stateName || "Choose governing law"}</h3>
+          <h3 className="font-sans mt-3 text-base font-semibold">
+            {stateName || "Choose governing law"}
+          </h3>
           <p className="mt-1 text-sm text-muted-foreground">
             {claim ? CLAIM_LABELS[claim] : "Choose a claim to begin"}
           </p>
           {rule && (
             <>
               <div className="my-4 border-t border-border" />
-              <p className="text-2xl font-semibold">
+              <p className="font-sans text-base font-semibold">
                 {rule.period ? periodLabel(rule.period) : "Review needed"}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">{rule.pinpoint}</p>

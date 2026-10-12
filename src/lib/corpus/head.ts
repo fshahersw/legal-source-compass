@@ -1,5 +1,7 @@
+import { PRODUCT_NAME } from "@/lib/branding";
+
 export function pageHead(title: string, description: string) {
-  const t = `${title} — Legal Source Atlas`;
+  const t = `${title} — ${PRODUCT_NAME}`;
   return {
     meta: [
       { title: t },

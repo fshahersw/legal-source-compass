@@ -84,7 +84,7 @@ function DocketDocumentsPage() {
   return (
     <AppShell
       breadcrumbs={[
-        { label: "Atlas", to: "/" },
+        { label: "Home", to: "/" },
         { label: "Sources", to: "/sources/library" },
         { label: "Docket documents" },
       ]}

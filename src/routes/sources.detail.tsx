@@ -94,7 +94,7 @@ function SourcePage() {
   return (
     <AppShell
       breadcrumbs={[
-        { label: "Atlas", to: "/" },
+        { label: "Home", to: "/" },
         { label: "Sources", to: "/sources/library" },
         ...(st ? [{ label: st.name, to: `/places/${state}` }] : []),
         { label: "Source record" },

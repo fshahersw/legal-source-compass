@@ -98,7 +98,7 @@ function Page() {
   const error = research.error ?? catalog.error;
   return (
     <AppShell
-      breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Research workbench" }]}
+      breadcrumbs={[{ label: "Home", to: "/" }, { label: "Research workbench" }]}
       title="Research workbench"
       description="Compare jurisdictions, trace case relationships, inspect judge histories, and follow citations to source documents."
     >

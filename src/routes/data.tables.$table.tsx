@@ -30,9 +30,9 @@ function TablePage() {
   const rows = res.data ? (JSON.parse(res.data.json) as Record<string, unknown>[]) : [];
   const cols = rows.length ? Object.keys(rows[0]!).filter((k) => rows.some((r) => typeof r[k] !== "object" || r[k] == null)).slice(0, 7) : [];
   const [open, setOpen] = useState<number | null>(null);
-  if (!info) return <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Data catalog", to: "/data" }]} title="Table not found"><p className="text-[13px]">No such table.</p></AppShell>;
+  if (!info) return <AppShell breadcrumbs={[{ label: "Home", to: "/" }, { label: "Data catalog", to: "/data" }]} title="Table not found"><p className="text-[13px]">No such table.</p></AppShell>;
   return (
-    <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Data catalog", to: "/data" }, { label: "Supporting tables" }, { label: info.label }]} title={info.label} description={res.data?.total != null ? `${res.data.total.toLocaleString()} rows` : ""}>
+    <AppShell breadcrumbs={[{ label: "Home", to: "/" }, { label: "Data catalog", to: "/data" }, { label: "Supporting tables" }, { label: info.label }]} title={info.label} description={res.data?.total != null ? `${res.data.total.toLocaleString()} rows` : ""}>
       <div className="mb-3 flex flex-wrap items-center gap-3">
         <ExternalBadge />
         <form onSubmit={(e) => { e.preventDefault(); setOffset(0); setTerm(q); }} className="flex gap-2">

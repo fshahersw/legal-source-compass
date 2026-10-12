@@ -12,6 +12,8 @@ import {
 import { signOutEverywhere } from "@/lib/auth/session";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { Button } from "@/components/ui/button";
+import { PRODUCT_NAME } from "@/lib/branding";
+import { WorkspaceBrand } from "./WorkspaceBrand";
 
 /** "open": the server does not require an account (CORPUS_REQUIRE_AUTH unset). "enforced": it does. */
 export type CorpusAccessMode = "unknown" | "open" | "enforced";
@@ -126,10 +128,8 @@ export function CorpusAccessGate({ children }: { children: ReactNode }) {
       <main className="flex min-h-screen items-center justify-center bg-background px-6">
         <section className="w-full max-w-sm space-y-5 rounded-lg border border-border bg-surface p-7">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Private research workspace
-            </p>
-            <h1 className="mt-2 text-2xl font-semibold">Legal Source Atlas</h1>
+            <WorkspaceBrand />
+            <h1 className="sr-only">{PRODUCT_NAME}</h1>
           </div>
           {access.state === "checking" ? (
             <p role="status" className="text-sm text-muted-foreground">

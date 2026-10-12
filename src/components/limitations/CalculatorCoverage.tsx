@@ -14,7 +14,7 @@ export function CalculatorCoverage({
     (cell) => cell.status === "flagged" || cell.status === "research_only",
   ).length;
   return (
-    <details className="rounded-lg border border-border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+    <details className="rounded-md border border-border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
       <summary className="cursor-pointer leading-relaxed">
         {snapshot.rules.length.toLocaleString()} recorded rules · {jurisdictions.toLocaleString()}{" "}
         jurisdictions with rules · Coverage limits

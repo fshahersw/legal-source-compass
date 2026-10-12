@@ -33,11 +33,11 @@ function ProvisionPage() {
   const [copied, setCopied] = useState(false);
   const [copiedCite, setCopiedCite] = useState(false);
 
-  if (!p) return <AppShell breadcrumbs={[{ label: "Atlas", to: "/" }, { label: "Law & regulation", to: "/law" }, { label: "Not found" }]} title="Provision not found"><p className="text-[13px] text-muted-foreground">No unique provision is recorded for this link. Open the provision from its dataset to retain its collection identity.</p></AppShell>;
+  if (!p) return <AppShell breadcrumbs={[{ label: "Home", to: "/" }, { label: "Law & regulation", to: "/law" }, { label: "Not found" }]} title="Provision not found"><p className="text-[13px] text-muted-foreground">No unique provision is recorded for this link. Open the provision from its dataset to retain its collection identity.</p></AppShell>;
 
   const usps = p.state ? (stateByName.get(p.state) ?? stateByUsps.get(p.state))?.usps : undefined;
   const federal = p.state != null && ["US", "FEDERAL", "Federal"].includes(p.state);
-  const crumbs: { label: string; to?: string; search?: Record<string, string> }[] = [{ label: "Atlas", to: "/" }, { label: "Law & regulation", to: "/law" }];
+  const crumbs: { label: string; to?: string; search?: Record<string, string> }[] = [{ label: "Home", to: "/" }, { label: "Law & regulation", to: "/law" }];
   crumbs.push(federal ? { label: "Federal", to: "/law", search: { scope: "federal" } } : usps ? { label: p.state!, to: "/law", search: { scope: "states", state: usps } } : { label: p.state ?? "Jurisdiction not recorded" });
   if (p.kind) crumbs.push({ label: kindLabel(p.kind) });
   crumbs.push({ label: p.citation ?? "Provision" });

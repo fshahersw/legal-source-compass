@@ -12,12 +12,12 @@ export const Route = createFileRoute("/auth")({
   },
   head: () => ({
     meta: [
-      { title: "Sign in — Legal Source Atlas" },
-      { name: "description", content: "Sign in or create an account for Legal Source Atlas." },
-      { property: "og:title", content: "Sign in — Legal Source Atlas" },
+      { title: "Sign in — Seeger Weiss Research" },
+      { name: "description", content: "Sign in or create an account for Seeger Weiss Research." },
+      { property: "og:title", content: "Sign in — Seeger Weiss Research" },
       {
         property: "og:description",
-        content: "Sign in or create an account for Legal Source Atlas.",
+        content: "Sign in or create an account for Seeger Weiss Research.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
