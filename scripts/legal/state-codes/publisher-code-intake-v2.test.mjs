@@ -850,7 +850,9 @@ test("Hawaii readback joins units once without changing missing or malformed evi
   const generator = await fs.readFile("scripts/legal/state-codes/hi/review_export.py", "utf8");
   const sql = generator.match(/SQL=r'''([\s\S]*?)'''/)[1];
   const sectionCheck = sql.match(/else (coalesce\(u\.native_id[\s\S]*?)end unit_ok,/)[1];
-  const unitJoin = sql.match(/left join candidate u[^\n]+/)[0].replace(/\),$/, "");
+  const readUnitJoin = (source) => source.match(/left join candidate u[^\r\n]+/)[0].replace(/\),$/, "");
+  const unitJoin = readUnitJoin(sql);
+  assert.equal(readUnitJoin(sql.replace(/\r?\n/g, "\r\n")), readUnitJoin(sql.replace(/\r\n/g, "\n")));
   const priorCheck = `exists(select 1 from candidate u
     where u.entity_type='code-source-unit' and u.native_id=e.data->>'unit_id'
     and u.data->>'text_sha256'=e.data->>'unit_text_sha256'
