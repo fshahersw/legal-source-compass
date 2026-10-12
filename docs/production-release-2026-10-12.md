@@ -28,7 +28,13 @@ Before publication, production still serves limitations `2026-10-08.8`; its rule
 
 Final local verification passed 1,009 portable application tests across 107 files, 228 Node contracts, 20 Python tests, five artwork hashes, TypeScript and the production build. The private candidate passed 821 limitations tests. Independent review checked the withholding boundary, rejection messages and valid-result preservation.
 
-Publication is pending. Final commit, live bundle readback and browser evidence will be recorded here after deployment.
+Published successfully at **https://firastest1.com** on October 12, 2026. [PR #231](https://github.com/fshahersw/legal-source-compass/pull/231) merged as `46523a248bbbd907b1075246719e3278533f8576`, preserving history. [Final Windows and Linux CI](https://github.com/fshahersw/legal-source-compass/actions/runs/38295006438) passed for application candidate `008593a62ab451c41d6e9618868bf632a0c27024`. Lovable showed the synced merge and new intake in its connected preview, then confirmed “Your website was updated.”
+
+At `2026-10-12T19:05:32.769Z`, all eight changed snapshots passed live whole-body SHA-256, byte-length and per-page version/header checks over 46 API pages. The live rules hash is `b38d7e9772a831ad1b86e0c86e53f4fd942ff19a2e313502ddf8e1a389c5e90d`; the court-resource hash is `166f2b694da120c4518036224f8107a640c3c10079984d9f9f7938e7280c4923`. Home, limitations, court, agency and source-library routes returned HTTP 200 with no server-error page.
+
+Live browser verification covered explicit-fact intake and confirmation; a synthetic supported California baseline; removal of that date and its evidence-trail calculation when bankruptcy review was marked unresolved; preserved dates and review state after visiting sources; loaded exact court artwork and capture-backed rules/forms/filing links; and FDA counts, source coverage and document search. The FDA vaccine search returned 37 records, with a 390-pixel layout showing no document-level horizontal overflow. Application client assets contained no actual administrative or GitHub credentials; the independent scan found no credential/private-artifact exposure across 343 built files and 105 release-diff files.
+
+Private receipts include `merge-receipt.json`, `live-bundle-readback.json`, `live-route-checks.json`, `live-withheld-dom.txt`, `exact-secret-scan.json` and the publication/browser screenshots under `private/production-release-2026-10-12/`. The release record is a subsequent documentation-only commit; the deployed application commit is the merge above.
 
 ## Recovery
 

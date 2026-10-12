@@ -50,7 +50,7 @@ The local application rendered the Northern District of California's exact offic
 
 ## Release status
 
-The private court bundle and limitations `2026-10-12.1` release passed storage readback. Their entries are activated in the branch manifest, with prior-manifest evidence retained for rollback. The reviewed branch is published in [PR #231](https://github.com/fshahersw/legal-source-compass/pull/231) after refreshing the repository owner's GitHub workflow access. Production publication is tracked in [the production release record](production-release-2026-10-12.md). Neither this PR nor its application deployment approves the separate staged legal graph.
+The private court bundle and limitations `2026-10-12.1` release passed storage readback. Their entries are activated in the branch manifest, with prior-manifest evidence retained for rollback. The reviewed branch is published in [PR #231](https://github.com/fshahersw/legal-source-compass/pull/231) after refreshing the repository owner's GitHub workflow access. The PR merged and the application is live at [firastest1.com](https://firastest1.com), with publication and live readback documented in [the production release record](production-release-2026-10-12.md). Neither this PR nor its application deployment approves the separate staged legal graph.
 
 Final application verification passed 1,009 portable application tests, 228 Node contracts, 20 Python tests, five artwork hash checks, TypeScript and the production build, including the final withheld-result and agency-navigation regressions. The candidate separately passed 821 limitations integration tests and 21 SQL contracts. An independent review found no additional Linux/Windows CI portability issues.
 
