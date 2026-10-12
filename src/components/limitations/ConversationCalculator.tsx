@@ -21,6 +21,7 @@ import {
   conversationScreens,
   createConversationSession,
   isPlainConfirmation,
+  isPlainScenarioRequest,
   CONVERSATION_LABELS,
   type ConversationSession,
 } from "@/lib/limitations/conversationState";
@@ -265,7 +266,7 @@ export function ConversationCalculator({
         current = { ...current, confirmedRevision: current.revision, scenarioRevision: null };
       } else if (
         previousQuestion?.kind === "scenario" &&
-        isPlainConfirmation(text) &&
+        isPlainScenarioRequest(text) &&
         session.confirmedRevision === session.revision
       ) {
         current = {
@@ -276,6 +277,17 @@ export function ConversationCalculator({
         setSession(current);
         await assess(current, ticket);
         return;
+      } else if (
+        previousQuestion?.kind === "scenario" &&
+        isPlainConfirmation(text) &&
+        !isPlainScenarioRequest(text)
+      ) {
+        // The facts remain confirmed, but a factual acknowledgment does not request a date.
+        current = {
+          ...current,
+          confirmedRevision: session.confirmedRevision,
+          scenarioRevision: null,
+        };
       } else {
         // A new narrative always withdraws prior confirmation until it has been interpreted and reviewed.
         current = { ...current, confirmedRevision: null, scenarioRevision: null };

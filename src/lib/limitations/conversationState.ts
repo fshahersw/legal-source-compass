@@ -289,14 +289,18 @@ export function conversationScreens(facts: ConversationFacts): ConversationScree
   return answers;
 }
 
-/** Confirmation is a narrow conversational act; "yes, but ..." always goes back through extraction. */
-export function isPlainConfirmation(text: string): boolean {
-  const reply = text
+function acknowledgementText(text: string): string {
+  return text
     .trim()
     .replace(/\u2019/g, "'")
     .replace(/\s+/g, " ")
     .replace(/[.!]+$/, "")
     .trim();
+}
+
+/** Confirmation is a narrow conversational act; "yes, but ..." always goes back through extraction. */
+export function isPlainConfirmation(text: string): boolean {
+  const reply = acknowledgementText(text);
   if (/^(?:yes|confirmed|go ahead|please do|yes[,.]? please)$/i.test(reply)) return true;
   const statement = reply.replace(/^yes[,.]? /i, "");
   // Match the whole acknowledgment: extra facts or qualifications must go through extraction.
@@ -305,6 +309,16 @@ export function isPlainConfirmation(text: string): boolean {
     /^(?:that(?:'s| is)|it(?:'s| is)) an accurate (?:account|summary) of (?:my|the) facts?$/i,
     /^(?:(?:the|my|your) (?:summary|account)(?: of (?:my|the) facts?)? is|(?:my|the) fact is|(?:my|the) facts are) (?:right|correct|accurate)$/i,
   ].some((pattern) => pattern.test(statement));
+}
+
+/** Confirming the facts alone is not a request to calculate under legal assumptions. */
+export function isPlainScenarioRequest(text: string): boolean {
+  const reply = acknowledgementText(text);
+  if (/^(?:yes|yes[,.]? please|(?:yes[,.]? )?(?:go ahead|please do))$/i.test(reply)) return true;
+  const request = reply.replace(/^yes[,.]? /i, "");
+  return /^(?:please )?calculate(?: (?:a |the )?(?:conditional )?(?:calendar )?illustration)? under (?:those|the stated) assumptions$/i.test(
+    request,
+  );
 }
 
 export function factsSummary(session: ConversationSession): string {

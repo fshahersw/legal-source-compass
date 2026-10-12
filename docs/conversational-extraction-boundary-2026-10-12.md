@@ -33,6 +33,8 @@ The adapter has a 25-second total deadline, a 96 KB response limit, a 6,144-toke
 
 Provider transport failures return only an allowlisted stage (`fetch`, `non2xx`, `contenttype`, or `json`), a numeric HTTP status when available, and a timeout boolean. A fixed support code appears in the UI message and a server warning, for example `provider_http_400`, `provider_fetch_failure`, or `provider_timeout`. Provider error text, response bodies, headers, keys, and conversation content are never included in these diagnostics. A successful response must declare a JSON media type before its bounded body is parsed.
 
+Factual acknowledgements such as "that's accurate" confirm only the reported account. At the separate calculation-request step, a facts-only acknowledgement preserves that confirmation and re-asks the scenario question without a model request or assessment call. A complete, affirmative calculation request is required; corrections, conditions, and claims of legal certainty do not satisfy it.
+
 ## Evidence on October 12, 2026
 
 The focused offline suite passed 45 tests for the extraction adapter and functions, including unauthorized fields, input/response bounds, timeouts, provider selection, quote provenance, state-name binding, source branch scoping, same-clause reference ambiguity, numeric-age consistency/timing, explicit access checks, allowlisted diagnostics, and redirect rejection without credential forwarding. Scoped lint passed. The full TypeScript check passed during integration.

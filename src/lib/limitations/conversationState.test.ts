@@ -5,6 +5,7 @@ import {
   conversationScreens,
   createConversationSession,
   isPlainConfirmation,
+  isPlainScenarioRequest,
   conversationBinding,
   type ConversationSession,
 } from "./conversationState";
@@ -189,6 +190,36 @@ describe("conversation fact provenance and correction", () => {
     expect(changed.facts.subtype).toBeUndefined();
     expect(changed.conflicts.subtype).toBeUndefined();
   });
+  it.each([
+    "yes",
+    "Yes please",
+    "Go ahead.",
+    "Please do!",
+    "Yes, go ahead",
+    "Calculate under those assumptions",
+    "Please calculate under the stated assumptions.",
+    "Yes, please calculate a conditional calendar illustration under those assumptions.",
+  ])("recognizes an explicit scenario request %s", (reply) =>
+    expect(isPlainScenarioRequest(reply)).toBe(true),
+  );
+  it.each([
+    "That's accurate",
+    "The facts are accurate.",
+    "Yes, that's accurate",
+    "The summary is correct",
+    "The law applies",
+    "The deadline is correct",
+    "Yes, but the injury date was wrong",
+    "Calculate under those assumptions if California law applies",
+    "Yes, I was 12 years old",
+    "I think so",
+    "No",
+    "Yes?",
+    "Calculate a verified filing deadline under those assumptions",
+  ])(
+    "does not turn a factual acknowledgment or qualified reply into a scenario request: %s",
+    (reply) => expect(isPlainScenarioRequest(reply)).toBe(false),
+  );
   it.each([
     "yes",
     "That's correct.",
