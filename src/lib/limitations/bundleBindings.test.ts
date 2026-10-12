@@ -41,6 +41,32 @@ describe("rule, authority, and general-claim identity binding", () => {
     expect(() =>
       assertBundleBindings([rule({ computation: "research_only" })], [source()], coverage()),
     ).toThrow(/status/));
+  it("accepts a conservative flagged cell for a legacy baseline rule with flagged provenance", () => {
+    const flagged = rule({
+      provenance: { entryStatus: "flagged" } as NonNullable<LimitationRule["provenance"]>,
+    });
+    expect(() =>
+      assertBundleBindings([flagged], [source()], coverage(cell({ status: "flagged" }))),
+    ).not.toThrow();
+    // Previously published bundles retain their original label until replaced by a new release.
+    expect(() => assertBundleBindings([flagged], [source()], coverage())).not.toThrow();
+    expect(() =>
+      assertBundleBindings([rule()], [source()], coverage(cell({ status: "flagged" }))),
+    ).toThrow(/status/);
+  });
+  it("accepts conservative flagged variants without accepting a wrong research status", () => {
+    const flagged = rule({
+      id: "v",
+      subtype: "special",
+      provenance: { entryStatus: "flagged" } as NonNullable<LimitationRule["provenance"]>,
+    });
+    const rows = coverage(
+      cell({ variants: [{ subtype: "special", ruleId: "v", status: "flagged" }] }),
+    );
+    expect(() => assertBundleBindings([rule(), flagged], [source()], rows)).not.toThrow();
+    rows[0]!.claimCoverage![0]!.variants![0]!.status = "research_only";
+    expect(() => assertBundleBindings([rule(), flagged], [source()], rows)).toThrow(/status/);
+  });
   it("rejects missing rule IDs and not-recorded cells that still bind a rule", () => {
     expect(() => assertBundleBindings([], [], coverage())).toThrow(/missing/);
     expect(() =>

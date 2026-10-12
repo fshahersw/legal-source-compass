@@ -95,7 +95,10 @@ export function ProjectionCodeBrowser({
   const samePath =
     sectionSteps.length === path.length &&
     sectionSteps.every(
-      (step, i) => path[i]?.level === step.level && path[i]?.number === step.number,
+      (step, i) =>
+        path[i]?.level === step.level &&
+        path[i]?.number === step.number &&
+        path[i]?.node_id === step.node_id,
     );
   const index = section ? sections.findIndex((s) => s.native_id === section) : -1;
   const previous = index > 0 ? sections[index - 1] : null;
@@ -143,6 +146,15 @@ export function ProjectionCodeBrowser({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="font-sans text-sm font-semibold">Browse statutes</h2>
+            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+              Source version: {listing.currency || listing.edition || "Not recorded"}. This source
+              edition does not establish the law currently in force.
+            </p>
+            {listing.note ? (
+              <p className="mt-2 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+                {listing.note}
+              </p>
+            ) : null}
             <details className="mt-1 text-xs text-muted-foreground">
               <summary className="cursor-pointer">Source version</summary>
               <p className="mt-2 leading-relaxed">
@@ -151,7 +163,6 @@ export function ProjectionCodeBrowser({
                   : `${listing.sectionCount.toLocaleString()} sections`}
                 {" · "}Edition: {showRecorded(listing.edition)}
                 {" · "}Currency: {showRecorded(listing.currency)}
-                {listing.note ? ` · ${listing.note}` : ""}
               </p>
             </details>
             {listing.sourceUrl ? (
@@ -161,7 +172,7 @@ export function ProjectionCodeBrowser({
                 rel="noreferrer"
                 className="mt-1 inline-block text-xs text-primary underline underline-offset-4"
               >
-                Publisher site
+                Source site
               </a>
             ) : null}
           </div>
@@ -286,7 +297,7 @@ export function ProjectionCodeBrowser({
             ) : null}
             {outline.data && !outline.data.available ? (
               <p className="p-2 text-sm text-muted-foreground">
-                This state's code is not in the public projection.
+                This source edition is not available to browse.
               </p>
             ) : null}
             {unsupported ? (
@@ -295,12 +306,7 @@ export function ProjectionCodeBrowser({
                 data-testid="outline-unsupported"
               >
                 <p>
-                  The outline cannot open this position yet: this section's recorded path skips one
-                  of the publisher's declared levels, which the installed outline read only follows
-                  position by position.
-                </p>
-                <p className="text-xs">
-                  The section text, citation and official page are unaffected. Use search, the
+                  This outline position is unavailable. Open the section from search, use the
                   neighbouring-section links, or go up a level.
                 </p>
               </div>
@@ -323,7 +329,14 @@ export function ProjectionCodeBrowser({
                           const groupLevel = group.level ?? level;
                           if (!groupLevel) return;
                           onNavigate({
-                            path: [...path, { level: groupLevel, number: group.number }],
+                            path: [
+                              ...path,
+                              {
+                                level: groupLevel,
+                                number: group.number,
+                                ...(group.node_id ? { node_id: group.node_id } : {}),
+                              },
+                            ],
                             section: undefined,
                           });
                         }}
@@ -409,11 +422,9 @@ export function ProjectionCodeBrowser({
                   className="space-y-2 p-2 text-sm text-muted-foreground"
                   data-testid="outline-empty"
                 >
-                  <p>The installed outline read lists nothing at this position.</p>
+                  <p>No outline entries are available at this position.</p>
                   <p className="text-xs">
-                    Where the publisher skips one of its declared levels, the sections below here
-                    are still in the code: open them from search or from a section's "Show in
-                    outline" link. The corrected outline read lists them here once it is applied.
+                    Try searching a citation or heading, or use a section's "Show in outline" link.
                   </p>
                 </div>
               ) : (
@@ -433,8 +444,8 @@ export function ProjectionCodeBrowser({
             <div className="space-y-2 text-sm text-muted-foreground">
               <p>Choose a section from the outline, or search a citation or heading above.</p>
               <p className="text-xs">
-                Text is shown exactly as the publisher landed it; the official page is linked on
-                every section.
+                Text follows the recorded source edition. Check the linked source and its
+                qualifications before relying on it.
               </p>
             </div>
           ) : null}
@@ -499,6 +510,7 @@ export function ProjectionCodeBrowser({
                           path: sectionSteps.map((step) => ({
                             level: step.level,
                             number: step.number,
+                            ...(step.node_id ? { node_id: step.node_id } : {}),
                           })),
                           section,
                         })

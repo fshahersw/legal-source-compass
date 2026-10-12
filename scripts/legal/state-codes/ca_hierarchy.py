@@ -88,14 +88,16 @@ def build_payload(code_rows,toc_rows,section_rows,reference_rows):
     inventory='\n'.join(canonical(row) for _,row in sorted(signature,key=lambda pair:pair[0].encode('utf-8')))
     return {'schema_version':'california-publisher-hierarchy/1','codes':codes,'nodes':nodes,'scope_paths':scopes,'overrides':overrides,'section_count':len(records),'spacing_only_identity_count':len(spacing_differences),'spacing_only_identity_records':spacing_differences,'section_metadata_sha256':sha(inventory),'ambiguous_scope_count':sum(len(paths)>1 for paths in paths_by_scope.values()),'publication_allowed':False,'calculation_activation_allowed':False,'current_law_verified':False}
 
-def hierarchy_for(payload,native_id,row):
+def hierarchy_for(payload,native_id,row,*,include_node_ids=False):
     node_path=payload['overrides'].get(native_id) or payload['scope_paths'].get(canonical(scope(row)))
     if not node_path:raise ValueError('No exact version-backed ancestry for '+native_id)
     code=row[1]
-    result=[{'level':'code','number':code,'heading':payload['codes'][code]}]
+    result=[{'level':'code','number':code,'heading':payload['codes'][code],
+             **({'node_id':'CA:'+code} if include_node_ids else {})}]
     for parent in ancestors(node_path):
         level,number,heading=payload['nodes'][code+'|'+parent]
-        result.append({'level':level,'number':number,'heading':heading})
+        result.append({'level':level,'number':number,'heading':heading,
+                       **({'node_id':'CA:'+code+':'+parent} if include_node_ids else {})})
     result.append({'level':'section','number':native_id.removeprefix('CA:').split('~',1)[0],'heading':None})
     return result
 

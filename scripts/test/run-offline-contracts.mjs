@@ -14,11 +14,14 @@ const directories = [
   "scripts/ingest/federal-register",
   "scripts/ingest/official-mdl",
   "scripts/legal/state-codes",
+  "scripts/legal/state-codes/hi",
 ];
 const databaseTests = new Set([
   "publisher-code-intake.test.mjs",
   "publisher-code-intake-v2.test.mjs",
   "publisher-code-multicode-v3.test.mjs",
+  "publisher-code-outline-v4.test.mjs",
+  "ca-parser4-promotion.test.mjs",
 ]);
 const files = directories.flatMap((directory) =>
   readdirSync(resolve(root, directory))
@@ -26,6 +29,7 @@ const files = directories.flatMap((directory) =>
     .map((name) => `${directory}/${name}`),
 );
 files.push(
+  "scripts/admin/private-release-network.test.mjs",
   "scripts/legal/audit-private-archive-manifests.test.mjs",
   "scripts/admin/remove-owner-collections-20261005.test.mjs",
   "scripts/admin/remove-owner-storage-20261005.test.mjs",

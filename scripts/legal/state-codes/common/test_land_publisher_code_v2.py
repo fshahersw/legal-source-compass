@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 import uuid
+from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import land_publisher_code_v2 as L  # noqa: E402
@@ -31,6 +32,113 @@ def write_packet(root, parent_archive=None):
 
 
 class LanderTest(unittest.TestCase):
+    def test_third_party_empty_status_is_explicit_and_cannot_become_an_official_or_invented_body(self):
+        with tempfile.TemporaryDirectory() as root:
+            manifest = write_packet(root)
+            qualification = "Third-party historical edition; legal effect unverified."
+            manifest.update(provenance_class="third_party_edition_archive", archive={"edition": "2025", "qualification": qualification},
+                            section_id={"scheme": "third_party_source_occurrence"})
+            extra = dict(provenance_class=manifest["provenance_class"], archive_edition="2025",
+                         source_qualification=qualification, status_note=qualification)
+            unit_path = pathlib.Path(root) / "units.jsonl"
+            unit = json.loads(unit_path.read_text()); unit.update(extra)
+            unit_path.write_text(json.dumps(unit), encoding="utf-8")
+            path = pathlib.Path(root) / "sections.jsonl"
+            section = json.loads(path.read_text()); section.update(extra)
+            section.update(identity_kind="third_party_source_occurrence", text="", citation_path="src-" + "a" * 64 + "-record-1",
+                           span={"unit": "unicode_code_points", "start": 0, "end": 0})
+            section["source_occurrence"] = dict(kind="jsonl_record", release_sha256="a" * 64, record_ordinal=1,
+                record_sha256="d" * 64, unit_span=section["span"], text_field_empty=True, source_status="repealed")
+            section["source_pdf"] = dict(sha256="e" * 64, source_url="https://example.gov/book.pdf", page_start=1, page_end=2,
+                                         provenance_class="official_publisher")
+            path.write_text(json.dumps(section), encoding="utf-8")
+            _, rows = L.build_rows(root, "c" * 64, manifest)
+            self.assertEqual(rows[0]["data"]["text"], "")
+            self.assertEqual(rows[0]["data"]["text_code_points"], 0)
+            self.assertEqual(rows[0]["data"]["source_occurrence"]["source_status"], "repealed")
+            self.assertTrue(L.empty_source_status(section, "third_party_source_occurrence"))
+            self.assertFalse(L.empty_source_status(section, "official_citation_path"))
+            for key, value in (("text_field_empty", False), ("source_status", ""), ("record_ordinal", True)):
+                bad = json.loads(json.dumps(section)); bad["source_occurrence"][key] = value
+                path.write_text(json.dumps(bad), encoding="utf-8")
+                with self.assertRaises(ValueError): L.build_rows(root, "c" * 64, manifest)
+
+    def test_source_occurrence_binding_survives_landing_and_rejects_mislabeling(self):
+        with tempfile.TemporaryDirectory() as root:
+            manifest = write_packet(root, parent_archive="d" * 64)
+            manifest["section_id"] = {"scheme": "publisher_source_occurrence"}
+            unit_path = pathlib.Path(root) / "units.jsonl"
+            unit = json.loads(unit_path.read_text())
+            unit.update(publisher_member="STATUTES.TXT", raw_member_sha256="a" * 64)
+            unit_path.write_text(json.dumps(unit), encoding="utf-8")
+            path = pathlib.Path(root) / "sections.jsonl"
+            section = json.loads(path.read_text())
+            section.update(identity_kind="publisher_source_occurrence", status_note="Source only; unverified legal effect",
+                           citation_path="src-" + "a" * 64 + "-c1-0-6",
+                           span={"unit": "unicode_code_points", "start": 0, "end": 6})
+            section["source_occurrence"] = {"member": "STATUTES.TXT", "member_sha256": "a" * 64,
+                "archive_sha256": "d" * 64, "rtf_member_sha256": "e" * 64, "rtf_ordinal": 2,
+                "rtf_span": [10, 30], "kind": "section", "printed_heading": "Text é", "unit_span": section["span"]}
+            path.write_text(json.dumps(section), encoding="utf-8")
+            _, rows = L.build_rows(root, "c" * 64, manifest)
+            self.assertEqual(rows[0]["data"]["identity_kind"], "publisher_source_occurrence")
+            self.assertEqual(rows[0]["data"]["source_occurrence"], section["source_occurrence"])
+            self.assertFalse(rows[0]["data"]["current_law_verified"])
+            for key, value in (("member_sha256", "f" * 64), ("archive_sha256", "f" * 64),
+                               ("rtf_ordinal", True), ("printed_heading", "Invented")):
+                bad = json.loads(json.dumps(section)); bad["source_occurrence"][key] = value
+                path.write_text(json.dumps(bad), encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, "Source occurrence"):
+                    L.build_rows(root, "c" * 64, manifest)
+            path.write_text(json.dumps(section), encoding="utf-8")
+            manifest["section_id"]["scheme"] = "official_citation_path"
+            with self.assertRaisesRegex(ValueError, "identity"):
+                L.build_rows(root, "c" * 64, manifest)
+
+    def test_rpc_retries_connection_loss_with_identical_request(self):
+        cloud = L.Cloud.__new__(L.Cloud)
+        cloud.url, cloud.h, cloud.s = "https://example.test", {}, Mock()
+        response = Mock(status_code=200)
+        response.json.return_value = {"verified": True}
+        cloud.s.post.side_effect = [L.requests.ConnectionError("connection closed"), response]
+        with patch.object(L.time, "sleep") as sleep:
+            self.assertEqual(cloud.rpc("verify_batch", {"p_rows": ["é"]}), {"verified": True})
+        self.assertEqual(cloud.s.post.call_args_list[0], cloud.s.post.call_args_list[1])
+        sleep.assert_called_once_with(2)
+
+    def test_rpc_stops_after_four_transport_failures(self):
+        cloud = L.Cloud.__new__(L.Cloud)
+        cloud.url, cloud.h, cloud.s = "https://example.test", {}, Mock()
+        cloud.s.post.side_effect = L.requests.Timeout("temporary timeout")
+        with patch.object(L.time, "sleep"), self.assertRaises(L.requests.Timeout):
+            cloud.rpc("verify_batch", {"p_rows": []})
+        self.assertEqual(cloud.s.post.call_count, 4)
+
+    def test_rpc_does_not_retry_contract_rejection(self):
+        cloud = L.Cloud.__new__(L.Cloud)
+        cloud.url, cloud.h, cloud.s = "https://example.test", {}, Mock()
+        cloud.s.post.return_value = Mock(status_code=400, text="record mismatch")
+        with patch.object(L.time, "sleep") as sleep, self.assertRaisesRegex(RuntimeError, "record mismatch"):
+            cloud.rpc("verify_batch", {"p_rows": []})
+        cloud.s.post.assert_called_once()
+        sleep.assert_not_called()
+
+    def test_transient_gateway_retry_closes_body_and_honors_cooldown(self):
+        cloud = L.Cloud.__new__(L.Cloud)
+        transient = Mock(status_code=520, headers={"Retry-After": "9"})
+        success = Mock(status_code=200)
+        call = Mock(side_effect=[transient, success])
+        with patch.object(L.time, "sleep") as sleep:
+            self.assertIs(cloud._retry(call), success)
+        transient.close.assert_called_once()
+        sleep.assert_called_once_with(9)
+        cooldown = Mock(status_code=429, headers={"Retry-After": "120"})
+        call = Mock(return_value=cooldown)
+        with patch.object(L.time, "sleep") as sleep:
+            self.assertIs(cloud._retry(call), cooldown)
+        call.assert_called_once()
+        sleep.assert_not_called()
+
     def test_canonical_hash_is_sorted_and_compact(self):
         self.assertEqual(L.canon({"b": 1, "a": [None, True]}), '{"a":[null,true],"b":1}')
 
@@ -181,10 +289,10 @@ class LanderTest(unittest.TestCase):
 
         cloud = L.Cloud.__new__(L.Cloud)
         cloud.url, cloud.h, cloud.s = "https://x.supabase.co", {"apikey": "k"}, Session()
-        with tempfile.NamedTemporaryFile() as handle:
-            handle.write(b"x" * (L.TUS_CHUNK + 10))
-            handle.flush()
-            status, _ = L.tus_upload(cloud, "state-codes/sha256/aa/aa", handle.name, "application/pdf")
+        with tempfile.TemporaryDirectory() as root:
+            source = pathlib.Path(root) / "original.pdf"
+            source.write_bytes(b"x" * (L.TUS_CHUNK + 10))
+            status, _ = L.tus_upload(cloud, "state-codes/sha256/aa/aa", str(source), "application/pdf")
         self.assertEqual(status, 201)
         self.assertEqual([c[0] for c in calls], ["POST", "PATCH", "PATCH"])
         self.assertEqual(calls[2][2], str(L.TUS_CHUNK))

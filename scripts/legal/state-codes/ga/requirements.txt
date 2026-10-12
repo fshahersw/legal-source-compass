@@ -1,0 +1,2 @@
+# Acquisition/reconciliation only; not needed by the website or portable unit tests.
+pypdf==6.10.0

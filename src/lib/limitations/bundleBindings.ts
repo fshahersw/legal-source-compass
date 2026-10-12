@@ -1,4 +1,5 @@
 import type { ClaimCoverageStatus, CoverageRow, LimitationRule, LimitationSource } from "./types";
+import { ruleCoverageStatus } from "./coverageStatus";
 
 /** Cross-file identity checks only. These do not certify the underlying legal interpretation. */
 export function assertBundleBindings(
@@ -8,12 +9,12 @@ export function assertBundleBindings(
 ): void {
   const byRule = new Map(rules.map((rule) => [rule.id, rule]));
   const bySource = new Map(sources.map((source) => [source.id, source]));
-  const statusOf = (rule: LimitationRule): ClaimCoverageStatus =>
-    rule.computation === "baseline_only"
-      ? "baseline"
-      : rule.provenance?.entryStatus === "flagged"
-        ? "flagged"
-        : "research_only";
+  const statusMatches = (rule: LimitationRule, status: ClaimCoverageStatus): boolean =>
+    status === ruleCoverageStatus(rule) ||
+    // Read immutable older releases during rollout/rollback; the builder now emits "flagged".
+    (status === "baseline" &&
+      rule.computation === "baseline_only" &&
+      rule.provenance?.entryStatus === "flagged");
   function authority(state: string, id: string) {
     const source = bySource.get(id);
     if (!source) throw new Error("missing source: " + id);
@@ -44,7 +45,7 @@ export function assertBundleBindings(
         if (rule.claimType !== cell.claimType) throw new Error("General rule claim type mismatch");
         if (rule.ruleKind !== "limitations" || (rule.subtype && rule.subtype !== "general"))
           throw new Error("Narrow variant cannot stand in for general rule");
-        if (cell.status !== statusOf(rule))
+        if (!statusMatches(rule, cell.status))
           throw new Error("General claim status differs from rule computation");
         if (cell.basis !== undefined && cell.basis !== (rule.basis ?? "claim_specific"))
           throw new Error("Claim basis differs from bound rule");
@@ -67,7 +68,7 @@ export function assertBundleBindings(
           rule.period === null
         )
           throw new Error("Variant subtype or period mismatch");
-        if (variant.status !== statusOf(rule))
+        if (!statusMatches(rule, variant.status))
           throw new Error("Variant status differs from rule computation");
       }
     }

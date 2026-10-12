@@ -55,6 +55,7 @@ export const getStateCodeSection = createServerFn({ method: "GET" })
 const step = z.object({
   level: z.string().regex(/^[a-z][a-z_]{1,40}$/),
   number: z.string().max(300).nullable(),
+  node_id: z.string().min(1).max(256).optional(),
 });
 
 export const getProjectedOutline = createServerFn({ method: "GET" })

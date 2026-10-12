@@ -151,6 +151,8 @@ async function db() {
     "corpus-publisher-code-intake-v1.sql",
     "corpus-publisher-code-intake-v2.sql",
     "corpus-publisher-code-projection-v2.sql",
+    "corpus-publisher-code-source-occurrence-v1.sql",
+    "corpus-third-party-edition-v1.sql",
   ]) {
     await database.exec(await fs.readFile(`database/contracts/${file}`, "utf8"));
   }
@@ -158,7 +160,7 @@ async function db() {
 }
 const call = (database, name, args) =>
   database.query(`select public.${name}(${args.map((_, i) => `$${i + 1}`).join(",")}) as r`, args);
-async function ready(database) {
+async function ready(database, occurrences = false, archiveKind = null) {
   await database.exec("reset role");
   const objs = [
     { sha256: originalSha, bytes: original.length, kind: "publisher_original" },
@@ -169,6 +171,16 @@ async function ready(database) {
       codePoints: points(unitText),
     },
   ];
+  if (occurrences) {
+    for (const body of ["synthetic archive", "synthetic RTF"])
+      objs.push({ sha256: sha(body), bytes: Buffer.byteLength(body), kind: "publisher_original" });
+  }
+  if (archiveKind === "jsonl_record")
+    objs.push({
+      sha256: sha("synthetic PDF"),
+      bytes: Buffer.byteLength("synthetic PDF"),
+      kind: "publisher_original",
+    });
   for (const o of objs) {
     await database.query("insert into storage.objects values($1,$2,$3)", [
       "corpus-originals",
@@ -177,14 +189,116 @@ async function ready(database) {
     ]);
   }
   await database.exec("set role service_role");
+  const sourceManifest = manifest();
+  if (occurrences)
+    sourceManifest.section_id = {
+      scheme: "publisher_source_occurrence",
+      regex: "^src-[a-f0-9]{64}-t1-[0-9]+-[0-9]+$",
+      example: `src-${originalSha}-t1-0-10`,
+      citation_format: "Literal printed source occurrence, not an official citation identity",
+    };
+  const qualification =
+    "Third-party historical 2020 edition; current legal effect has not been verified.";
+  if (archiveKind) {
+    Object.assign(sourceManifest, {
+      provenance_class: "third_party_historical_archive",
+      current_law_verified: false,
+      calculation_activation_allowed: false,
+      archive: {
+        edition: "2020 edition",
+        edition_date: null,
+        qualification,
+        provider: "Fixture archive",
+        origin_url: "https://example.test/code/",
+      },
+      currency: { basis: "archive_date", location: "Retained edition metadata" },
+    });
+    sourceManifest.retrieval.official_source = false;
+    sourceManifest.section_id = {
+      scheme: "third_party_source_occurrence",
+      regex: "^src-[a-f0-9]{64}-(?:section|record)-[0-9]+$",
+      example: `src-${originalSha}-section-1`,
+      citation_format: "Literal third-party edition source occurrence",
+    };
+  }
   const registered = (
-    await call(database, "corpus_publisher_code_register_manifest_v2", [manifest()])
+    await call(database, "corpus_publisher_code_register_manifest_v2", [sourceManifest])
   ).rows[0].r;
   const opened = (
     await call(database, "corpus_publisher_code_open_run_v2", [run, registered.manifest_sha256])
   ).rows[0].r;
   const unit = unitRow();
   const section = sectionRow();
+  if (occurrences) {
+    Object.assign(unit.data, {
+      publisher_member: "STATUTES.TXT",
+      raw_member_sha256: originalSha,
+      parent_archive_sha256: sha("synthetic archive"),
+    });
+    Object.assign(section.data, {
+      identity_kind: "publisher_source_occurrence",
+      citation_path: `src-${originalSha}-t1-${section.data.span.start}-${section.data.span.end}`,
+      status_note: "Publisher source occurrence; current legal effect unverified.",
+      source_occurrence: {
+        member: "STATUTES.TXT",
+        member_sha256: originalSha,
+        archive_sha256: sha("synthetic archive"),
+        rtf_member_sha256: sha("synthetic RTF"),
+        rtf_ordinal: 2,
+        rtf_span: [10, 30],
+        kind: "section",
+        printed_heading: "FIXTURE TEXT.",
+        unit_span: structuredClone(section.data.span),
+      },
+    });
+    section.native_id = `ZZ:${section.data.citation_path}`;
+  }
+  if (archiveKind) {
+    for (const row of [unit, section])
+      Object.assign(row.data, {
+        provenance_class: sourceManifest.provenance_class,
+        archive_edition: sourceManifest.archive.edition,
+        source_qualification: qualification,
+        status_note: qualification,
+        currency: {
+          basis: "archive_date",
+          statement: "2020 edition",
+          edition: "2020 edition",
+          through_date: null,
+        },
+      });
+    for (const row of [unit, section]) row.provenance.source_as_of = null;
+    section.data.identity_kind = "third_party_source_occurrence";
+    section.data.citation_path = `src-${originalSha}-${archiveKind === "rtf_section" ? "section" : "record"}-1`;
+    section.native_id = `ZZ:${section.data.citation_path}`;
+    section.data.source_occurrence =
+      archiveKind === "rtf_section"
+        ? {
+            kind: archiveKind,
+            raw_sha256: originalSha,
+            ordinal: 1,
+            raw_span: [0, original.length],
+            printed_heading: "FIXTURE TEXT.",
+            unit_span: structuredClone(section.data.span),
+          }
+        : {
+            kind: archiveKind,
+            release_sha256: originalSha,
+            record_ordinal: 1,
+            record_sha256: sha("synthetic JSONL line"),
+            source_status: "active",
+            text_field_empty: false,
+            unit_span: structuredClone(section.data.span),
+          };
+    if (archiveKind === "jsonl_record")
+      section.data.source_pdf = {
+        sha256: sha("synthetic PDF"),
+        source_url: "https://example.test/code/t1",
+        page_start: 1,
+        page_end: 2,
+        provenance_class: "official_publisher",
+      };
+  }
   for (const row of [unit, section]) row.provenance.manifest_sha256 = registered.manifest_sha256;
   for (const row of [unit, section])
     row.provenance.record_sha256 = sha(canonicalIntegerJson(row.data));
@@ -216,8 +330,283 @@ async function ready(database) {
     },
   }));
   await call(database, "corpus_publisher_code_register_objects_v2", [run, payload]);
-  return { registered, opened, unit, section };
+  return { registered, opened, unit, section, sourceManifest };
 }
+
+test("third-party RTF editions retain literal occurrences and visibly qualified public metadata", async () => {
+  const database = await db();
+  const { unit, section } = await ready(database, false, "rtf_section");
+  await call(database, "corpus_publisher_code_intake_v2", [run, [unit, section]]);
+  await call(database, "corpus_publisher_code_finish_run_v2", [
+    run,
+    "completed",
+    { note: "fixture" },
+  ]);
+  await call(database, "corpus_publisher_code_review_v2", [
+    "ZZ",
+    "reviewed",
+    true,
+    "Explicit historical browse review",
+  ]);
+  const states = (await call(database, "corpus_publisher_code_projected_states_v2", [])).rows[0].r;
+  assert.equal(states[0].source_qualification, section.data.source_qualification);
+  assert.equal(JSON.stringify(states).includes("manifest_sha256"), false);
+  assert.equal(
+    (await call(database, "corpus_publisher_code_projected_section_for_token_v2", ["ZZ", "1.01"]))
+      .rows[0].r,
+    null,
+  );
+  const detail = (
+    await call(database, "corpus_publisher_code_projected_section_v2", ["ZZ", section.native_id])
+  ).rows[0].r;
+  assert.equal(detail.text, sectionText);
+  assert.equal(detail.currency.through_date, null);
+  assert.match(detail.status_note, /Third-party historical 2020 edition/);
+  await database.close();
+});
+
+test("third-party edition manifests and RTF payloads cannot lose qualifications or acquire current-law authority", async () => {
+  const database = await db();
+  const { unit, section, sourceManifest } = await ready(database, false, "rtf_section");
+  await database.exec("reset role");
+  for (const mutate of [
+    (m) => {
+      m.retrieval.official_source = true;
+    },
+    (m) => {
+      delete m.provenance_class;
+    },
+    (m) => {
+      delete m.archive.edition_date;
+    },
+    (m) => {
+      m.archive.qualification = "Unqualified source";
+    },
+    (m) => {
+      m.section_id.scheme = "official_citation_path";
+    },
+    (m) => {
+      m.current_law_verified = true;
+    },
+  ]) {
+    const bad = structuredClone(sourceManifest);
+    mutate(bad);
+    await assert.rejects(
+      database.query("select corpus_ingest.publisher_code_check_manifest_v2($1)", [bad]),
+    );
+  }
+  await database.exec("set role service_role");
+  for (const mutate of [
+    (d) => {
+      delete d.provenance_class;
+    },
+    (d) => {
+      d.archive_edition = "2026";
+    },
+    (d) => {
+      d.status_note = "No warning";
+    },
+    (d) => {
+      d.source_qualification = "Unqualified";
+    },
+    (d) => {
+      d.currency.through_date = "2026-10-12";
+    },
+    (d) => {
+      d.source_occurrence.raw_sha256 = "f".repeat(64);
+    },
+    (d) => {
+      d.source_occurrence.raw_span[1] = original.length + 1;
+    },
+    (d) => {
+      d.source_occurrence.ordinal = 2;
+    },
+    (d) => {
+      d.source_occurrence.printed_heading = "Invented";
+    },
+    (d) => {
+      d.source_occurrence.unit_span.end++;
+    },
+  ]) {
+    const bad = structuredClone(section);
+    mutate(bad.data);
+    bad.provenance.record_sha256 = sha(canonicalIntegerJson(bad.data));
+    await assert.rejects(call(database, "corpus_publisher_code_intake_v2", [run, [unit, bad]]));
+  }
+  await call(database, "corpus_publisher_code_intake_v2", [run, [unit, section]]);
+  await database.close();
+});
+
+test("third-party JSONL records require a retained original PDF and exact release and occurrence evidence", async () => {
+  const database = await db();
+  const { unit, section } = await ready(database, false, "jsonl_record");
+  for (const mutate of [
+    (d) => {
+      d.source_occurrence.release_sha256 = "f".repeat(64);
+    },
+    (d) => {
+      d.source_occurrence.record_ordinal++;
+    },
+    (d) => {
+      d.source_occurrence.record_sha256 = null;
+    },
+    (d) => {
+      d.source_occurrence.text_field_empty = true;
+    },
+    (d) => {
+      delete d.source_pdf;
+    },
+    (d) => {
+      d.source_pdf.sha256 = "f".repeat(64);
+    },
+    (d) => {
+      d.source_pdf.source_url += "other";
+    },
+    (d) => {
+      d.source_pdf.page_start = 3;
+    },
+    (d) => {
+      delete d.source_pdf.provenance_class;
+    },
+  ]) {
+    const bad = structuredClone(section);
+    mutate(bad.data);
+    bad.provenance.record_sha256 = sha(canonicalIntegerJson(bad.data));
+    await assert.rejects(call(database, "corpus_publisher_code_intake_v2", [run, [unit, bad]]));
+  }
+  await call(database, "corpus_publisher_code_intake_v2", [run, [unit, section]]);
+  await database.close();
+});
+
+test("an explicitly empty upstream status record remains empty without relaxing other section guards", async () => {
+  const database = await db();
+  const { unit, section } = await ready(database, false, "jsonl_record");
+  Object.assign(section.data, { text: "", text_sha256: sha(""), text_code_points: 0 });
+  section.data.span.end = section.data.span.start;
+  Object.assign(section.data.source_occurrence, {
+    text_field_empty: true,
+    source_status: "reserved",
+    unit_span: structuredClone(section.data.span),
+  });
+  for (const mutate of [
+    (d) => {
+      d.source_occurrence.text_field_empty = false;
+    },
+    (d) => {
+      d.source_occurrence.source_status = "";
+    },
+    (d) => {
+      d.source_occurrence.kind = "rtf_section";
+    },
+    (d) => {
+      d.span.end++;
+      d.source_occurrence.unit_span.end++;
+    },
+  ]) {
+    const bad = structuredClone(section);
+    mutate(bad.data);
+    bad.provenance.record_sha256 = sha(canonicalIntegerJson(bad.data));
+    await assert.rejects(call(database, "corpus_publisher_code_intake_v2", [run, [unit, bad]]));
+  }
+  section.provenance.record_sha256 = sha(canonicalIntegerJson(section.data));
+  await call(database, "corpus_publisher_code_intake_v2", [run, [unit, section]]);
+  assert.equal(
+    (await call(database, "corpus_publisher_code_verify_batch_v2", [run, [unit, section]])).rows[0]
+      .r.verified,
+    true,
+  );
+  await database.close();
+});
+
+test("source occurrences retain exact evidence, remain gated, and never resolve as canonical citation tokens", async () => {
+  const database = await db();
+  const { unit, section } = await ready(database, true);
+  await call(database, "corpus_publisher_code_intake_v2", [run, [unit, section]]);
+  assert.equal(
+    (await call(database, "corpus_publisher_code_projected_section_v2", ["ZZ", section.native_id]))
+      .rows[0].r,
+    null,
+  );
+  await call(database, "corpus_publisher_code_finish_run_v2", [
+    run,
+    "completed",
+    { note: "source fixture" },
+  ]);
+  await call(database, "corpus_publisher_code_review_v2", [
+    "ZZ",
+    "reviewed",
+    true,
+    "Explicit source-occurrence review; no legal-effect assertion",
+  ]);
+  const detail = (
+    await call(database, "corpus_publisher_code_projected_section_v2", ["ZZ", section.native_id])
+  ).rows[0].r;
+  assert.equal(detail.text, sectionText);
+  assert.match(detail.status_note, /unverified/);
+  assert.equal(
+    (await call(database, "corpus_publisher_code_projected_section_for_token_v2", ["ZZ", "1.01"]))
+      .rows[0].r,
+    null,
+  );
+  await database.exec("reset role");
+  const data = (
+    await database.query("select data from corpus_ingest.entities where native_id=$1", [
+      section.native_id,
+    ])
+  ).rows[0].data;
+  assert.equal(data.current_law_verified, false);
+  assert.equal(data.calculation_activation_allowed, false);
+  await database.close();
+});
+
+test("source occurrence identity cannot be forged, stripped of warnings, or mislabeled as an official citation", async () => {
+  const database = await db();
+  const { unit, section } = await ready(database, true);
+  const mutations = [
+    (d) => {
+      d.identity_kind = "official_citation_path";
+    },
+    (d) => {
+      delete d.source_occurrence;
+    },
+    (d) => {
+      d.source_occurrence.member_sha256 = "f".repeat(64);
+    },
+    (d) => {
+      d.source_occurrence.archive_sha256 = "f".repeat(64);
+    },
+    (d) => {
+      d.source_occurrence.rtf_member_sha256 = "f".repeat(64);
+    },
+    (d) => {
+      d.source_occurrence.rtf_ordinal = 0;
+    },
+    (d) => {
+      d.source_occurrence.unit_span.end++;
+    },
+    (d) => {
+      d.source_occurrence.printed_heading = "Invented heading";
+    },
+    (d) => {
+      d.status_note = null;
+    },
+    (d) => {
+      d.span = null;
+      d.source_occurrence.unit_span = null;
+    },
+    (d) => {
+      d.current_law_verified = true;
+    },
+  ];
+  for (const mutate of mutations) {
+    const bad = structuredClone(section);
+    mutate(bad.data);
+    bad.provenance.record_sha256 = sha(canonicalIntegerJson(bad.data));
+    await assert.rejects(call(database, "corpus_publisher_code_intake_v2", [run, [unit, bad]]));
+  }
+  await call(database, "corpus_publisher_code_intake_v2", [run, [unit, section]]);
+  await database.close();
+});
 
 test("a manifest, one run, a unit and a section land and verify, and coverage reports them", async () => {
   const database = await db();
@@ -393,6 +782,11 @@ test("a private state stays hidden until its review flag allows projection", asy
   assert.equal(published.currency.through_date, "2026-10-01");
   assert.equal(published.source_url, "https://example.test/code/t1");
   assert.equal(published.history, null);
+  assert.equal(
+    (await call(database, "corpus_publisher_code_projected_section_for_token_v2", ["ZZ", "1.01"]))
+      .rows[0].r.native_id,
+    "ZZ:1.01",
+  );
   const found = (
     await call(database, "corpus_publisher_code_projected_search_v2", ["FIXTURE", "ZZ", 30])
   ).rows[0].r;

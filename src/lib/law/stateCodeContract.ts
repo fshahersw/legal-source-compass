@@ -523,7 +523,7 @@ export type StateCodeListing = {
   levels: string[] | null;
 };
 
-export type HierarchyStep = { level: string; number: string | null };
+export type HierarchyStep = { level: string; number: string | null; node_id?: string };
 export type SectionHierarchyStep = HierarchyStep & { heading: string | null };
 
 /**
@@ -541,8 +541,16 @@ export function sectionHierarchy(value: unknown): SectionHierarchyStep[] {
     if (level === "section") continue;
     const number = row["number"];
     const heading = row["heading"];
+    const nodeId = row["node_id"];
+    if (
+      nodeId !== undefined &&
+      nodeId !== null &&
+      (typeof nodeId !== "string" || !nodeId.length || nodeId.length > 256)
+    )
+      break;
     steps.push({
       level,
+      ...(typeof nodeId === "string" ? { node_id: nodeId } : {}),
       number:
         typeof number === "string" && number.trim()
           ? number.trim()
@@ -572,10 +580,17 @@ export function parseHierarchyPath(value: unknown): HierarchyStep[] {
     if (!item || typeof item !== "object") return [];
     const level = (item as { level?: unknown }).level;
     const number = (item as { number?: unknown }).number;
+    const nodeId = (item as { node_id?: unknown }).node_id;
     if (typeof level !== "string" || !/^[a-z][a-z_]{1,40}$/.test(level)) return [];
-    if (number == null) steps.push({ level, number: null });
+    if (
+      nodeId !== undefined &&
+      (typeof nodeId !== "string" || !nodeId.length || nodeId.length > 256)
+    )
+      return [];
+    const identity = typeof nodeId === "string" ? { node_id: nodeId } : {};
+    if (number == null) steps.push({ level, number: null, ...identity });
     else if (typeof number === "string" || (typeof number === "number" && Number.isFinite(number)))
-      steps.push({ level, number: String(number) });
+      steps.push({ level, number: String(number), ...identity });
     else return [];
   }
   return steps;
@@ -594,12 +609,18 @@ export type ProjectedOutline =
       available: true;
       kind: "groups";
       /** Which outline read answered: projection/3 follows skipped levels, projection/2 does not. */
-      read: "v2" | "v3";
+      read: "v2" | "v3" | "v4";
       level: string;
       total: number;
       truncated: boolean;
       /** `level` is present from projection/3, where one outline level can mix declared levels. */
-      groups: { level?: string; number: string | null; heading: string | null; count: number }[];
+      groups: {
+        level?: string;
+        number: string | null;
+        heading: string | null;
+        node_id?: string;
+        count: number;
+      }[];
       /** Sections whose next hierarchy step is already a section, beside deeper groups. */
       directSections: {
         native_id: string;
@@ -613,7 +634,7 @@ export type ProjectedOutline =
   | {
       available: true;
       kind: "sections";
-      read: "v2" | "v3";
+      read: "v2" | "v3" | "v4";
       level: "section";
       total: number;
       truncated: boolean;

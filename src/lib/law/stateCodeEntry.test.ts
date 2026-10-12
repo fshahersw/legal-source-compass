@@ -42,6 +42,22 @@ describe("state landing code summary does not depend on unrelated private snapsh
     expect(rows.every((r) => r.state === "NV")).toBe(true);
     expect(rows).toEqual([]);
   });
+  it("keeps a source's historical qualification visible without administrative notes", async () => {
+    mocks.optional.mockResolvedValue([
+      {
+        jurisdiction: "AR",
+        publisher: "Public archive",
+        source_qualification: "2020 source edition; later amendments have not been incorporated.",
+        notes: "private audit path and administrative decision",
+        sections: 20,
+      },
+    ]);
+    const [row] = await stateCodeEntry("AR");
+    expect(row?.note).toBe(
+      "Public archive · 2020 source edition; later amendments have not been incorporated.",
+    );
+    expect(row?.note).not.toContain("administrative");
+  });
   it("rejects invalid state identity before querying", async () => {
     await expect(stateCodeEntry("ZZ")).rejects.toThrow(/state/i);
     expect(mocks.optional).not.toHaveBeenCalled();

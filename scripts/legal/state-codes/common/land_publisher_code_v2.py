@@ -11,7 +11,8 @@ Packet directory (all UTF-8 JSONL, produced by a state's staging script, no cred
   sections.jsonl  {citation_path, citation, heading, text, hierarchy, history, status_note,
                    unit_key, span, currency}
   toc-proof.json  {marker, pages: [{url, markers, sections}], unfetched_child_pages: []}
-Empty unit or section text is not a row: the packet author records it in gaps.json and leaves it out.
+Empty units are rejected. Empty section bodies are rejected except explicitly qualified
+third-party JSONL status occurrences bound to their exact source record and zero-length span.
 toc-proof.json compares the publisher's own section markers on every retained page with the parsed
 sections. unfetched_child_pages must be present and empty (Delaware chapter indexes linked 350
 subchapter pages that were never fetched). Dry-run and --execute both refuse a packet that fails this.
@@ -59,10 +60,34 @@ def gates(jur):
             "current_law_verified": False, "calculation_activation_allowed": False}
 
 
+def archive_metadata(manifest, row):
+    classification = manifest.get("provenance_class")
+    if classification not in ("third_party_edition_archive", "third_party_historical_archive"):
+        return {}
+    archive = manifest.get("archive") or {}
+    qualification = archive.get("qualification")
+    if (row.get("provenance_class") != classification or row.get("archive_edition") != archive.get("edition")
+        or not isinstance(qualification, str) or not qualification
+        or row.get("source_qualification") != qualification or qualification not in str(row.get("status_note") or "")):
+        raise ValueError("Archive row must preserve its exact classification, edition and visible qualification")
+    return {k: row[k] for k in ("provenance_class", "archive_edition", "source_qualification", "status_note")}
+
+
+def empty_source_status(section, scheme):
+    occurrence = section.get("source_occurrence") or {}
+    return (scheme == "third_party_source_occurrence" and section.get("identity_kind") == scheme
+            and occurrence.get("kind") == "jsonl_record" and occurrence.get("text_field_empty") is True
+            and isinstance(occurrence.get("source_status"), str) and 0 < len(occurrence["source_status"]) <= 200
+            and section.get("text") == "" and bool(section.get("status_note")))
+
+
 def build_rows(packet, manifest_sha, manifest):
     jur = manifest["jurisdiction"]
     system = manifest["source_system"]
     parser = f"{manifest['parser']['name']}/{manifest['parser']['version']}"
+    identity_kind = manifest.get("section_id", {}).get("scheme", "official_citation_path")
+    if identity_kind not in ("official_citation_path", "publisher_source_occurrence", "third_party_source_occurrence"):
+        raise ValueError("Unsupported section identity scheme")
     units = {}
     unit_rows = []
     for u in jsonl(os.path.join(packet, "units.jsonl")):
@@ -70,6 +95,7 @@ def build_rows(packet, manifest_sha, manifest):
                 "heading": u["heading"], "original_sha256": u["original_sha256"], "publisher_member": u["publisher_member"],
                 "raw_member_sha256": u["raw_member_sha256"], "text_sha256": u["text_sha256"],
                 "text_code_points": u["text_code_points"], "sections_expected": u["sections_expected"], "currency": u["currency"]}
+        data.update(archive_metadata(manifest, u))
         if u.get("parent_archive_sha256"):
             data["parent_archive_sha256"] = u["parent_archive_sha256"]
         prov = {"source_url": u["source_url"], "source_sha256": u["original_sha256"], "retrieved_at": u["retrieved_at"],
@@ -84,11 +110,79 @@ def build_rows(packet, manifest_sha, manifest):
     for s in jsonl(os.path.join(packet, "sections.jsonl")):
         row_u, u = units[s["unit_key"]]
         text = s["text"]
-        data = {**gates(jur), "identity_kind": "official_citation_path", "citation_path": s["citation_path"],
+        if s.get("identity_kind", identity_kind) != identity_kind:
+            raise ValueError("Section identity does not match its manifest")
+        data = {**gates(jur), "identity_kind": identity_kind, "citation_path": s["citation_path"],
                 "citation": s["citation"], "heading": s["heading"], "text": text, "text_sha256": sha(text.encode("utf-8")),
                 "text_code_points": len(text), "hierarchy": s["hierarchy"], "history": s["history"],
                 "status_note": s["status_note"], "unit_id": row_u["native_id"], "unit_text_sha256": u["text_sha256"],
                 "span": s["span"], "currency": s["currency"]}
+        data.update(archive_metadata(manifest, s))
+        occurrence = s.get("source_occurrence")
+        if identity_kind == "third_party_source_occurrence":
+            span = s.get("span") or {}
+            if (not isinstance(occurrence, dict)
+                or occurrence.get("kind") not in ("jsonl_record", "rtf_section")
+                or occurrence.get("unit_span") != span or span.get("unit") != "unicode_code_points"
+                or not all(type(span.get(k)) is int and 0 <= span[k] < 1_000_000_000 for k in ("start", "end"))
+                or span["end"] - span["start"] != len(text)
+                or (not text and not empty_source_status(s, identity_kind))):
+                raise ValueError("Third-party occurrence must bind the exact source record and unit span")
+            if occurrence["kind"] == "jsonl_record":
+                ordinal = occurrence.get("record_ordinal")
+                expected_path = f"src-{u['original_sha256']}-record-{ordinal}"
+                pdf = s.get("source_pdf") or {}
+                if (occurrence.get("release_sha256") != u["original_sha256"]
+                    or type(ordinal) is not int or not 1 <= ordinal < 1_000_000_000
+                    or not re.fullmatch(r"[a-f0-9]{64}", str(occurrence.get("record_sha256", "")))
+                    or occurrence.get("text_field_empty") is not (text == "")
+                    or not isinstance(occurrence.get("source_status"), str) or not occurrence["source_status"]
+                    or s["citation_path"] != expected_path
+                    or not re.fullmatch(r"[a-f0-9]{64}", str(pdf.get("sha256", "")))
+                    or not isinstance(pdf.get("source_url"), str) or not pdf["source_url"].startswith("https://")
+                    or not all(type(pdf.get(k)) is int and 1 <= pdf[k] <= 100000 for k in ("page_start", "page_end"))
+                    or pdf["page_start"] > pdf["page_end"]
+                    or pdf.get("provenance_class") not in ("official_publisher", "third_party_historical_archive")):
+                    raise ValueError("JSONL occurrence and retained source PDF binding invalid")
+                data["source_pdf"] = dict(pdf)
+            else:
+                ordinal = occurrence.get("ordinal")
+                raw_span = occurrence.get("raw_span")
+                if (occurrence.get("raw_sha256") != u["original_sha256"]
+                    or type(ordinal) is not int or not 1 <= ordinal < 1_000_000_000
+                    or s["citation_path"] != f"src-{u['original_sha256']}-section-{ordinal}"
+                    or not isinstance(raw_span, list) or len(raw_span) != 2
+                    or not all(type(n) is int and 0 <= n < 1_000_000_000 for n in raw_span)
+                    or raw_span[0] >= raw_span[1]
+                    or not isinstance(occurrence.get("printed_heading"), str)
+                    or not occurrence["printed_heading"] or not text.startswith(occurrence["printed_heading"])):
+                    raise ValueError("RTF occurrence must preserve its exact raw source and printed heading")
+            data["source_occurrence"] = dict(occurrence)
+        elif identity_kind == "publisher_source_occurrence":
+            span = s.get("span") or {}
+            expected_path = f"src-{u['original_sha256']}-{u['unit_key']}-{span.get('start')}-{span.get('end')}"
+            if (not isinstance(occurrence, dict)
+                or occurrence.get("member_sha256") != u["original_sha256"]
+                or occurrence.get("member_sha256") != u["raw_member_sha256"]
+                or occurrence.get("member") != u["publisher_member"]
+                or occurrence.get("archive_sha256") != u.get("parent_archive_sha256")
+                or not re.fullmatch(r"[a-f0-9]{64}", str(occurrence.get("archive_sha256", "")))
+                or not re.fullmatch(r"[a-f0-9]{64}", str(occurrence.get("rtf_member_sha256", "")))
+                or type(occurrence.get("rtf_ordinal")) is not int or occurrence["rtf_ordinal"] < 1
+                or not isinstance(occurrence.get("rtf_span"), list) or len(occurrence["rtf_span"]) != 2
+                or not all(type(n) is int and 0 <= n < 1_000_000_000 for n in occurrence["rtf_span"])
+                or occurrence["rtf_span"][0] >= occurrence["rtf_span"][1]
+                or occurrence.get("kind") not in ("section", "unmapped_headnote")
+                or not isinstance(occurrence.get("printed_heading"), str)
+                or not occurrence["printed_heading"] or occurrence["printed_heading"] not in text
+                or occurrence.get("unit_span") != span or span.get("unit") != "unicode_code_points"
+                or not all(type(span.get(k)) is int and 0 <= span[k] < 1_000_000_000 for k in ("start", "end"))
+                or span["end"] - span["start"] != len(text)
+                or s["citation_path"] != expected_path or not s.get("status_note")):
+                raise ValueError("Source occurrence must bind the exact member, parent archive, heading and unit span")
+            data["source_occurrence"] = dict(occurrence)
+        elif occurrence is not None:
+            raise ValueError("A source occurrence cannot be labeled an official citation path")
         locator = s.get("source_locator")
         if locator is not None:
             if (not isinstance(locator, dict)
@@ -153,15 +247,15 @@ class Cloud:
         self.s = requests.Session()
 
     def rpc(self, name, args):
-        for attempt in range(4):
-            r = self.s.post(f"{self.url}/rest/v1/rpc/{name}", headers={**self.h, "Content-Type": "application/json"},
-                            data=json.dumps(args, ensure_ascii=False).encode("utf-8"), timeout=180)
-            if r.status_code in (502, 503, 504, 522, 524) and attempt < 3:
-                time.sleep(2 ** (attempt + 1))
-                continue
-            if r.status_code >= 400:
-                raise RuntimeError(f"{name} {r.status_code}: {r.text[:500]}")
-            return r.json()
+        # These intake RPCs use deterministic run/record identities. Reuse the exact
+        # request after transport failure; the caller verifies already-observed batches.
+        body = json.dumps(args, ensure_ascii=False).encode("utf-8")
+        r = self._retry(lambda: self.s.post(
+            f"{self.url}/rest/v1/rpc/{name}",
+            headers={**self.h, "Content-Type": "application/json"}, data=body, timeout=180))
+        if r.status_code >= 400:
+            raise RuntimeError(f"{name} {r.status_code}: {r.text[:500]}")
+        return r.json()
 
     def _retry(self, call):
         for attempt in range(4):
@@ -172,8 +266,23 @@ class Cloud:
                     raise
                 time.sleep(2 ** (attempt + 1))
                 continue
-            if r.status_code in (429, 502, 503, 504, 522, 524) and attempt < 3:
-                time.sleep(2 ** (attempt + 1))
+            if r.status_code in (429, 502, 503, 504, 520, 521, 522, 524) and attempt < 3:
+                delay = 2 ** (attempt + 1)
+                retry_after = r.headers.get("Retry-After")
+                if retry_after:
+                    try:
+                        delay = max(delay, float(retry_after))
+                    except (TypeError, ValueError):
+                        from email.utils import parsedate_to_datetime
+                        try:
+                            delay = max(delay, parsedate_to_datetime(retry_after).timestamp() - time.time())
+                        except (TypeError, ValueError, OverflowError):
+                            pass
+                # Preserve long server cooldowns by stopping; a later resume is explicit.
+                if delay > 60:
+                    return r
+                r.close()
+                time.sleep(delay)
                 continue
             return r
 
@@ -269,11 +378,15 @@ def put_object(cloud, o):
 def preflight_packet(packet):
     """Refuse a packet before any run is opened.
 
-    Every source needs http_status 200. Empty unit or section text is a gap, not a row.
+    Every source needs http_status 200. Empty text is rejected except the explicit
+    third-party JSONL status-occurrence representation validated by empty_source_status.
     toc-proof.json must show the publisher's own section-marker count matching the parsed
     sections on every unit page, and must list no unfetched child pages.
     """
     objects = list(jsonl(os.path.join(packet, "objects.jsonl")))
+    with open(os.path.join(packet, "manifest.json"), encoding="utf-8") as handle:
+        manifest = json.load(handle)
+    identity_scheme = manifest.get("section_id", {}).get("scheme", "official_citation_path")
     units = list(jsonl(os.path.join(packet, "units.jsonl")))
     sections = list(jsonl(os.path.join(packet, "sections.jsonl")))
     if not objects or not units:
@@ -300,7 +413,7 @@ def preflight_packet(packet):
         if unit.get("text_sha256") not in derivatives:
             raise RuntimeError(f"unit {unit.get('unit_key')} has no text derivative")
     for section in sections:
-        if not str(section.get("text") or "").strip():
+        if not str(section.get("text") or "").strip() and not empty_source_status(section, identity_scheme):
             raise RuntimeError(f"empty section text {section.get('citation_path')}; record it as a gap")
     proof_path = os.path.join(packet, "toc-proof.json")
     if not os.path.isfile(proof_path):

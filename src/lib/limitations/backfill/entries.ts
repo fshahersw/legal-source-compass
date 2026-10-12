@@ -10,6 +10,7 @@ import {
   LIMITATION_SOURCE_AUTHORITY_KINDS,
   type LimitationSourceAuthorityKind,
 } from "../types";
+import { captureResponseAccepted } from "./captureProvenance";
 
 export const PERIOD_UNITS = ["years", "months", "days"] as const;
 export type PeriodUnit = (typeof PERIOD_UNITS)[number];
@@ -32,7 +33,10 @@ export type CaptureMeta = {
   state: string;
   url: string;
   finalUrl: string;
-  status: number;
+  /** HTTP status, or null only for an explicit rendered browser DOM observation. */
+  status: number | null;
+  rendered?: boolean;
+  representation?: "browser_dom";
   contentType: string;
   hostClass: "official" | "official_designated" | "blocked_secondary" | "unlisted";
   finalHostClass?: "official" | "official_designated" | "blocked_secondary" | "unlisted";
@@ -244,7 +248,8 @@ export function checkEntry(
     ].some((t) => containsLiteral(t, needle));
   if (meta.state !== jurisdiction)
     err(`capture ${meta.id} belongs to ${meta.state}, not ${jurisdiction}`);
-  if (meta.status !== 200) err("capture did not return HTTP 200");
+  if (!captureResponseAccepted(meta))
+    err("capture did not return HTTP 200 or record a rendered browser DOM observation");
   if (meta.hostClass === "blocked_secondary" || meta.finalHostClass === "blocked_secondary")
     err("capture host is a secondary publisher");
   if (meta.hostClass === "unlisted")

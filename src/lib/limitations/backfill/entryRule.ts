@@ -12,7 +12,6 @@ import { buildEntryRuleConditions } from "./ruleConditions";
 /** Capture metadata as written by scripts/limitations/backfill/capture.py (plus seed/render markers). */
 export type EntryCaptureMeta = CaptureMeta & {
   seededFrom?: string;
-  rendered?: boolean;
   route?: { kind: "proxied"; proxy: string };
   uaFallback?: boolean;
 };

@@ -97,6 +97,26 @@ describe("entry verification", () => {
   it("accepts a fully evidenced entry", () => {
     expect(errors(entry())).toEqual([]);
   });
+  it("accepts an explicitly recorded browser DOM capture without inventing HTTP status", () => {
+    const browser = {
+      ...meta,
+      status: null,
+      rendered: true,
+      representation: "browser_dom" as const,
+    };
+    expect(
+      checkEntry("TX", entry(), () => ({ meta: browser, text })).filter((p) => p.level === "error"),
+    ).toEqual([]);
+    for (const bad of [
+      { ...meta, status: null },
+      { ...browser, rendered: false },
+      { ...browser, status: 403 },
+    ]) {
+      expect(
+        checkEntry("TX", entry(), () => ({ meta: bad, text })).some((p) => p.level === "error"),
+      ).toBe(true);
+    }
+  });
   it("preserves an explicit judicial source and keeps a flagged opinion entry out of calculation", () => {
     const opinion = entry({
       authorityKind: "judicial_opinion",

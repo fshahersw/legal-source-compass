@@ -141,14 +141,17 @@ def markdown_to_text(md: str) -> str:
     kept unchanged next to it, so the transformation is always reviewable.
     """
     text = md.replace("\xa0", " ")
+    # Remove table borders before HTML breaks split a single cell over several lines.
+    text = re.sub(r"^[ \t]*\|(?:[ \t]*:?-+:?[ \t]*\|)+[ \t]*$", "", text, flags=re.M)
+    text = re.sub(r"^[ \t]*\|(.+)\|[ \t]*$", lambda m: "  ".join(cell.strip() for cell in m[1].split("|")), text, flags=re.M)
+    text = re.sub(r"<br\s*/?>", "\n", text, flags=re.I)                    # HTML line breaks in court-opinion extraction
+    text = re.sub(r"\\+\r?\n", "\n", text)                             # proxy-escaped hard breaks, including escaped HTML breaks
     text = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", text)                       # images carry no statute text
     text = re.sub(r"\[([^\]]*)\]\((?:[^()]|\([^()]*\))*\)", r"\1", text)      # [label](url) -> label, incl. javascript:(...) hrefs with spaces
     text = re.sub(r"(\*\*|__)(?=\S)(.+?)(?<=\S)\1", r"\2", text, flags=re.S)  # **bold** -> bold
     text = re.sub(r"^[ \t]*(?:\*[ \t]*){3,}$|^[ \t]*(?:-[ \t]*){3,}$|^[ \t]*(?:_[ \t]*){3,}$", "", text, flags=re.M)  # thematic separators
     text = re.sub(r"(?<![\w*])\*(?=\S)([^*]+?)(?<=\S)\*(?![\w*])", r"\1", text)  # emphasis may span PDF line breaks
     text = re.sub(r"(?<![\w_])_(?=\S)([^_]+?)(?<=\S)_(?![\w_])", r"\1", text)
-    text = re.sub(r"^[ \t]*\|(?:[ \t]*:?-+:?[ \t]*\|)+[ \t]*$", "", text, flags=re.M)  # table header separator
-    text = re.sub(r"^[ \t]*\|(.+)\|[ \t]*$", lambda m: "  ".join(cell.strip() for cell in m[1].split("|")), text, flags=re.M)
     text = re.sub(r"</?(?:sup|sub|u|em|strong)(?:\s[^>]*)?>", "", text, flags=re.I)  # inline extraction formatting
     text = re.sub(r"^\s{0,3}#{1,6}\s+", "", text, flags=re.M)               # heading markers
     text = re.sub(r"\\([\\`*_{}\[\]()#+\-.!>|~])", r"\1", text)             # escaped punctuation
@@ -239,7 +242,8 @@ def main():
         print(json.dumps({"ok": True, "id": cid, "via": via, "textBytes": meta["textBytes"], "retrievedAt": retrieved}))
         return
     if text_file:
-        raw = open(text_file, "rb").read()
+        with open(text_file, "rb") as f:
+            raw = f.read()
         text = raw.decode("utf-8", errors="replace").replace("\xa0", " ")
         if len(text) < 200:
             sys.exit("extraction text too short")
@@ -251,8 +255,8 @@ def main():
         }
         with open(os.path.join(out_dir, cid + ".raw"), "wb") as f:
             f.write(raw)
-        with open(os.path.join(out_dir, cid + ".txt"), "w", encoding="utf-8") as f:
-            f.write(text)
+        with open(os.path.join(out_dir, cid + ".txt"), "wb") as f:
+            f.write(text.encode("utf-8"))
         with open(os.path.join(out_dir, cid + ".json"), "w", encoding="utf-8") as f:
             json.dump(meta, f, indent=1)
         print(json.dumps({"ok": True, "id": cid, "intermediary": True, "textBytes": meta["textBytes"], "retrievedAt": retrieved}))
@@ -318,8 +322,8 @@ def main():
         meta["warning"] = "very short or possible terms/JavaScript gate; do NOT treat as statutory text unless the excerpt is present"
     with open(os.path.join(out_dir, cid + ".raw"), "wb") as f:
         f.write(raw)
-    with open(os.path.join(out_dir, cid + ".txt"), "w", encoding="utf-8") as f:
-        f.write(text)
+    with open(os.path.join(out_dir, cid + ".txt"), "wb") as f:
+        f.write(text.encode("utf-8"))
     with open(os.path.join(out_dir, cid + ".json"), "w", encoding="utf-8") as f:
         json.dump(meta, f, indent=1)
     print(json.dumps({"ok": True, **{k: meta[k] for k in ("id", "status", "hostClass", "textBytes", "retrievedAt")}, "warning": meta.get("warning")}))
