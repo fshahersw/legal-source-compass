@@ -145,6 +145,12 @@ export type ConversationCapability = {
   configured: boolean;
   providerName: "Google Gemini" | "Lovable AI" | null;
 };
+/** Operational metadata only; never includes provider text, headers, or conversation content. */
+export type ConversationProviderDiagnostic = {
+  stage: "fetch" | "non2xx" | "contenttype" | "json";
+  httpStatus?: number;
+  timedOut: boolean;
+};
 export type ConversationExtractionResult =
   | {
       status: "extracted";
@@ -159,5 +165,6 @@ export type ConversationExtractionResult =
       reason:
         "not_configured" | "provider_error" | "invalid_response" | "busy" | "source_unavailable";
       message: string;
+      diagnostic?: ConversationProviderDiagnostic;
     }
   | { status: "invalid_input"; message: string };
