@@ -190,3 +190,21 @@ is `hi-final-receipt-bridge/objects.jsonl`, with SHA-256
 Use it only as a new final-intake object's checkpoint; preserve the original
 preupload files. A further 27,886 final-packet objects require verified retention.
 Neither the preupload nor receipt bridge changes database or publication gates.
+
+The post-intake readback and guarded publication SQL now join each section to
+its exact source unit once. This removes a repeated candidate scan while keeping
+the same source hash, text hash, Unicode span, and length checks. Missing or null
+evidence still fails; the source/type/native primary key prevents duplicate
+matches. An isolated SQL regression confirms identical prior and revised results
+for a valid Unicode span and 15 invalid evidence cases. The previous SQL and
+expected evidence remain retained byte-for-byte in `hi-review-v4/pre-unit-join-v1/`.
+
+Independent review confirmed that the manifest, all 1,630 data/provenance group
+hashes, seven error counters, and both complete object ledgers are unchanged.
+The regenerated publication guard again passed its isolated positive path,
+gate-only hold test, and all 14 rejection cases. Its SHA-256 is
+`f6361197ee0e7f299ca8d88722dfbd87042a629b6a50db34fd9e147372f5601c`;
+the read-only SQL SHA-256 is
+`3f127382e10d7981faf35fef84e2d6bb4b790b803e1fb9dfc8727d74daa0b7e7`.
+These are offline verification results; final intake readback and publication
+remain pending.

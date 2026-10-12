@@ -103,17 +103,20 @@ checked as(select e.*,
   join storage.objects so on so.bucket_id=ob.bucket and so.name=ob.object_key join storage.buckets b on b.id=ob.bucket
   where ob.sha256=e.data->>'text_sha256' and ob.kind='unit_text_derivative' and ob.code_points=(e.data->>'text_code_points')::bigint
   and b.public is false and e.data->>'original_sha256'=e.provenance->>'source_sha256')
- else exists(select 1 from candidate u where u.entity_type='code-source-unit' and u.native_id=e.data->>'unit_id'
+ else coalesce(u.native_id is not null
   and u.data->>'text_sha256'=e.data->>'unit_text_sha256' and u.provenance->>'source_sha256'=e.provenance->>'source_sha256'
   and e.data->>'text_sha256'=encode(sha256(convert_to(e.data->>'text','UTF8')),'hex')
   and (e.data->>'text_code_points')::bigint=length(e.data->>'text')
   and e.data->'span'->>'unit'='unicode_code_points' and (e.data->'span'->>'start')::bigint>=0
   and (e.data->'span'->>'end')::bigint<=(u.data->>'text_code_points')::bigint
-  and (e.data->'span'->>'end')::bigint-(e.data->'span'->>'start')::bigint=length(e.data->>'text'))end unit_ok,
+  and (e.data->'span'->>'end')::bigint-(e.data->'span'->>'start')::bigint=length(e.data->>'text'),false)end unit_ok,
  (e.native_id=(case when e.entity_type='code-source-unit' then 'HI:unit:'else 'HI:'end)||
   regexp_replace(e.provenance->>'source_url','^.*/([^/]+)\.htm$','\1')
   and e.provenance->>'source_url' ~ '^https://data\.capitol\.hawaii\.gov/hrscurrent/Vol[0-9]+_[^/]+/HRS[0-9A-Z]+/HRS_[0-9A-Za-z_%\-]+(_\[OLD\])?(\.docx)?\.htm$') native_ok
- from candidate e,expected x),
+ -- The source/type/native primary key permits only one matching HI unit.
+ -- Join once: a correlated scan of this materialized CTE is quadratic in HRS pages.
+ from candidate e cross join expected x
+ left join candidate u on u.entity_type='code-source-unit' and u.native_id=e.data->>'unit_id'),
 groups as(select group_key,count(*) records,encode(sha256(convert_to(string_agg(
  length(native_id)::text||':'||native_id||'64:'||payload_sha256||'64:'||provenance_sha256,'' order by native_id collate "C"),'UTF8')),'hex') sha256
  from checked group by group_key),
