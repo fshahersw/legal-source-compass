@@ -9,7 +9,7 @@ from types import SimpleNamespace
 from parse_hrs import parse_section_html,parse_chapter_index
 from stage_hrs import ROOT,digest,exact_capture,discovery,stage
 from capture_assets import verified_references
-from verify_packet import verify
+from verify_packet import verify,chapter_identity_matches
 from source_review import selected_urls
 from review_export import expected_groups,check
 from source_boundaries import REVIEWED_LEADING_XNOTES
@@ -22,6 +22,39 @@ def source(body):
 
 
 class HawaiiSourceTests(unittest.TestCase):
+    def test_printed_lowercase_chapter_suffix_retains_exact_source_label(self):
+        body=source('<p>CHAPTER 327k</p><p>pROVIDER oRDERS</p><p>Section</p>').encode()
+        parsed=parse_chapter_index(body,'HRS_0327K-.htm')
+        self.assertEqual(parsed['chapter'],'327k');self.assertEqual(parsed['heading'],'pROVIDER oRDERS')
+        self.assertTrue(chapter_identity_matches(body,'327k','HRS0327K'))
+        self.assertFalse(chapter_identity_matches(body,'327K','HRS0327K'))
+        self.assertFalse(chapter_identity_matches(body,'327k','HRS0327L'))
+        self.assertFalse(chapter_identity_matches(source('<p>CHAPTER 327k is only a prose mention.</p>').encode(),'327k','HRS0327K'))
+
+    def test_evidence_rule_requires_literal_bold_label_and_matching_native_identity(self):
+        body=source('<p>ARTICLE IV.</p><p><b>[Rule 409.5] Admissibility.</b> Complete text.</p>'
+            '<p class="XNotes">Rule commentary.</p>')
+        parsed=parse_section_html(body,'HRS_0626-0001-0409_0005.htm')
+        self.assertEqual(parsed['citation'],'Rule 409.5');self.assertEqual(parsed['heading'],'Admissibility.')
+        self.assertEqual(parsed['text'],'[Rule 409.5] Admissibility. Complete text.')
+        self.assertEqual(parsed['leading_context'],'ARTICLE IV.');self.assertTrue(parsed['evidence_rule_page'])
+        self.assertFalse(parsed['unclassified']);self.assertEqual(parsed['printed_citation_markers'],1)
+        self.assertIn('literal printed Rule label',parsed['status_note'])
+        for name in ['HRS_0626-0001-0409_0006.htm','HRS_0625-0001-0409_0005.htm']:
+            self.assertTrue(parse_section_html(body,name)['unclassified'])
+        prose=parse_section_html(source('<p>Rule 100 is mentioned in prose.</p>'),'HRS_0626-0001-0100.htm')
+        self.assertTrue(prose['unclassified'])
+
+    def test_reserved_chapter_range_remains_an_index_without_fabricated_sections(self):
+        body=source('<p><b>[CHAPTERS 807 to 830 RESERVED.]</b></p><p> </p>')
+        parsed=parse_chapter_index(body,'HRS_0807-.htm')
+        self.assertEqual(parsed['chapter'],'807');self.assertEqual(parsed['heading'],'[CHAPTERS 807 to 830 RESERVED.]')
+        self.assertTrue(parsed['reserved_chapter_range']);self.assertFalse(parsed['chapter_headers'])
+        self.assertEqual(parse_section_html(body,'HRS_0807-.htm')['kind'],'chapter_index')
+        with self.assertRaisesRegex(ValueError,'range differs'):parse_chapter_index(body,'HRS_0808-.htm')
+        ambiguous=parse_chapter_index(source('<p>[CHAPTERS 807 to 830 RESERVED.]</p><p>Unknown text.</p>'),'HRS_0807-.htm')
+        self.assertIsNone(ambiguous['heading'])
+
     def test_literal_old_filename_and_reserved_article_are_preserved(self):
         old=parse_section_html(source('<p><b>§§431:9A-101 to 431:9A-108 REPEALED.</b> Source history.</p>'),
             'HRS_0431-0009A-0101_[OLD].htm')
@@ -255,6 +288,21 @@ class HawaiiCaptureTests(unittest.TestCase):
         out=self.base/'packet';report=stage(self.capture,out,True)
         self.assertEqual(report['source_style_exception_pages'],1)
         self.assertTrue(verify(self.capture,out)['passed'])
+
+    def test_independent_rule_proof_requires_literal_label_and_disclosure(self):
+        self.chapter=self.volumes[0]+'HRS0626/';self.index=self.chapter+'HRS_0626-.htm'
+        self.section=self.chapter+'HRS_0626-0001-0504_0001.htm'
+        self.keep(self.volumes[0],f'<a href="{self.chapter}">Chapter</a>')
+        receipt=self.keep(self.chapter,f'<a href="{self.index}">Index</a><a href="{self.section}">Rule</a>')
+        self.keep(self.index,source('<p>CHAPTER 626</p><p>HAWAII RULES OF EVIDENCE</p><p>Section</p>'))
+        self.keep(self.section,source('<p><b>Rule 504.1 Privilege.</b> Complete rule.</p><p class="XNotes">Commentary.</p>'))
+        self.inventory['chapters']=[dict(source_url=self.chapter,sha256=receipt['sha256'],pages=[self.index,self.section])]
+        self.inventory['pages']=[self.index,self.section];self.save_inventory()
+        out=self.base/'packet';report=stage(self.capture,out,True)
+        self.assertEqual(report['evidence_rule_pages'],1);self.assertTrue(verify(self.capture,out)['passed'])
+        path=out/'sections.jsonl';row=json.loads(path.read_text('utf8'));row['status_note']=None
+        path.write_text(json.dumps(row)+'\n',encoding='utf8')
+        with self.assertRaisesRegex(ValueError,'Evidence rule requires'):verify(self.capture,out)
 
 
 class StorageOnlyTransportTests(unittest.TestCase):

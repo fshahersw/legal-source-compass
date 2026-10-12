@@ -22,6 +22,22 @@ def sequence(value):return re.sub(r'\s','',value)
 def note(element):return any(c.casefold().startswith('xnotes')for c in (element.get('class')or'').split())
 
 
+def chapter_identity_matches(body,printed_number,native_directory):
+    # The publisher prints lowercase suffixes on some indexes (e.g. 327k)
+    # while its native directory uses uppercase. Keep the printed label exact,
+    # prove it exists in a complete chapter-heading block, then compare only
+    # its alphabetic case with the independently retained directory identity.
+    if not isinstance(printed_number,str):return False
+    native_number=re.sub(r'^HRS0*','',native_directory)
+    if printed_number.casefold()!=native_number.casefold():return False
+    document=html.fromstring(body.decode('utf-8-sig'))
+    for element in document.xpath('//p|//h1|//h2|//h3|//h4|//h5|//h6'):
+        match=re.fullmatch(r'\[?CHAPTER\s+([0-9]+[A-Za-z]*)\]?(?:\s+\[(?:OLD|NEW)\])?',
+            ' '.join(element.text_content().split()),re.I)
+        if match and match.group(1)==printed_number:return True
+    return False
+
+
 def source_sequences(body,filename):
     source_sha256=digest(body)
     document=html.fromstring(body.decode('utf-8-sig'))
@@ -74,7 +90,7 @@ def verify(capture,packet):
     if (len(proof_map)!=len(proof['pages'])or set(proof_map)!=set(urls)or proof['unfetched_child_pages']
             or proof['directory_inventory_sha256']!=digest((capture/'directory-inventory.json').read_bytes())):
         raise ValueError('Publisher coverage proof differs')
-    checked_notes=0;checked_images=0
+    checked_notes=0;checked_images=0;index_checks={}
     all_captures=dict(directory_captures)
     for url in inventory['pages']:
         captured=exact_capture(capture,url)
@@ -103,10 +119,14 @@ def verify(capture,packet):
                 or section['heading']!=unit['heading']):
             raise ValueError('Printed citation or heading differs from retained source text')
         hierarchy=section['hierarchy'];chapter=url.rsplit('/',2)[-2]
-        chapter_number=re.sub(r'^HRS0*','',chapter)
         index_url=url.rsplit('/',1)[0]+'/'+chapter.replace('HRS','HRS_',1)+'-.htm'
-        _,index_raw=all_captures[index_url];index_sequence=source_sequences(index_raw,index_url.rsplit('/',1)[-1])[0]
-        if (len(hierarchy)!=2 or hierarchy[0]['level']!='chapter'or hierarchy[0]['number']!=chapter_number
+        index_key=(index_url,hierarchy[0]['number'])
+        if index_key not in index_checks:
+            _,index_raw=all_captures[index_url]
+            index_checks[index_key]=(source_sequences(index_raw,index_url.rsplit('/',1)[-1])[0],
+                chapter_identity_matches(index_raw,hierarchy[0]['number'],chapter))
+        index_sequence,chapter_ok=index_checks[index_key]
+        if (len(hierarchy)!=2 or hierarchy[0]['level']!='chapter'or not chapter_ok
                 or not hierarchy[0]['heading']or any(sequence(line)not in index_sequence for line in hierarchy[0]['heading'].splitlines())
                 or hierarchy[1]!=dict(level='section',number=section['citation'],heading=section['heading'])):
             raise ValueError('Recorded hierarchy differs from native chapter or printed index')
@@ -115,6 +135,13 @@ def verify(capture,packet):
                     or 'no section citation is printed'not in(section['status_note']or'')
                     or proof_map[url].get('reserved_article_page')is not True):
                 raise ValueError('Reserved article marker requires literal source text and disclosure')
+        if section['citation'].startswith('Rule '):
+            native_rule=re.fullmatch(r'HRS_0626-0001-([0-9]+)(?:_([0-9]+))?',key)
+            expected_rule=('Rule '+str(int(native_rule.group(1)))+('.'+str(int(native_rule.group(2)))if native_rule.group(2)else''))if native_rule else None
+            if (section['citation']!=expected_rule or proof_map[url].get('evidence_rule_page')is not True
+                    or not re.match(r'^\[?'+re.escape(section['citation'])+r'\]?(?=\s|$)',section['text'])
+                    or 'literal printed Rule label'not in(section['status_note']or'')):
+                raise ValueError('Evidence rule requires exact native identity, literal label and disclosure')
         if section['currency']!={'basis':'none','edition':'Hawaii Revised Statutes, publisher hrscurrent HTML','through_date':None,'statement':''}:
             raise ValueError('Unestablished compilation currency was promoted')
         if section['currency']!=unit['currency']:raise ValueError('Source unit currency differs')
