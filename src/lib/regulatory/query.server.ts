@@ -5,6 +5,7 @@ import {
   interpretGuidedQuery,
   regulatoryQueryInputSchema,
   validateQueryModel,
+  type RegulatoryQueryInput,
   type RegulatoryQueryCapability,
   type RegulatoryQueryInterpretation,
 } from "./query";
@@ -186,6 +187,26 @@ function extractOutput(value: unknown, kind: "gemini" | "lovable"): unknown {
   return JSON.parse(text);
 }
 
+function guidedFallback(
+  input: RegulatoryQueryInput,
+  now: Date,
+  reason: "busy" | "unverified",
+): RegulatoryQueryInterpretation {
+  // Re-evaluate only the validated original request. Rejected model output and
+  // provider errors are never used as input, evidence, or user-visible prose.
+  const guided = interpretGuidedQuery(input, now);
+  return {
+    ...guided,
+    summary: `Guided interpretation: ${guided.summary}`,
+    limitations: [
+      reason === "busy"
+        ? "AI interpretation is busy. Guided interpretation used explicit words in your question; no AI output was applied. Review the proposed filters and answer any clarification before applying them."
+        : "AI interpretation could not be verified. Guided interpretation used explicit words in your question; no AI output was applied. Review the proposed filters and answer any clarification before applying them.",
+      ...guided.limitations,
+    ],
+  };
+}
+
 export async function interpretRegulatoryQueryServer(
   raw: unknown,
   dependencies: Dependencies = {},
@@ -201,12 +222,7 @@ export async function interpretRegulatoryQueryServer(
   const config = provider(dependencies.env ?? process.env);
   if (!config) return interpretGuidedQuery(parsed.data, now);
   const release = (dependencies.acquire ?? acquireCapacity)();
-  if (!release)
-    return {
-      status: "unavailable",
-      summary: "Question interpretation is busy. Your filters have not changed; try again shortly.",
-      limitations: [],
-    };
+  if (!release) return guidedFallback(parsed.data, now, "busy");
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), dependencies.timeoutMs ?? 25_000);
   try {
@@ -225,6 +241,7 @@ export async function interpretRegulatoryQueryServer(
             systemInstruction: { parts: [{ text: SYSTEM }] },
             contents: [{ role: "user", parts: [{ text: context }] }],
             generationConfig: {
+              // TextResponseFormat uses the REST enum, as in the limitations service.
               responseFormat: { text: { mimeType: "APPLICATION_JSON", schema: outputSchema } },
               maxOutputTokens: 2_500,
               temperature: 0,
@@ -266,12 +283,8 @@ export async function interpretRegulatoryQueryServer(
       now,
     );
   } catch {
-    return {
-      status: "unavailable",
-      summary:
-        "The interpretation could not be verified. Your filters have not changed. Clarify the source, exact phrase, and dates, or use the filters directly.",
-      limitations: [],
-    };
+    controller.abort();
+    return guidedFallback(parsed.data, now, "unverified");
   } finally {
     clearTimeout(timer);
     release();

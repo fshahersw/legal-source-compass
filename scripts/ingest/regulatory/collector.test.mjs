@@ -90,6 +90,29 @@ test('failed JSON parsing retains raw evidence but never becomes successful empt
   const output = await temporary(t); const packet = await captureSource('federal_register', { ...options, output, mode: 'initial' }, { fetchImpl: async () => new Response('{bad', { headers: { 'content-type': 'application/json' } }), sleep: async () => {} }); assert.equal(packet.status, 'failed'); assert.equal(packet.error_code, 'SOURCE_JSON_INVALID'); assert.equal(packet.expected_count, null); assert.equal(packet.captures.length, 1);
 });
 test('due schedule uses completed time, never a failed attempt as successful freshness', () => { const now = Date.parse('2026-10-12T12:00:00Z'); assert.equal(isDue('fda_warning_letters', { sources: [{ id: 'fda_warning_letters', latestCompletedAt: null, latestAttemptAt: new Date(now).toISOString() }] }, now), true); assert.equal(isDue('fda_warning_letters', { sources: [{ id: 'fda_warning_letters', latestCompletedAt: new Date(now - 3600000).toISOString() }] }, now), false); });
+test('six-hour source completed at 00:25 is due at the next 06:23 UTC cron slot', () => {
+  const overview = { sources: [{ id: 'fda_recall_notices', latestCompletedAt: '2026-10-12T00:25:00Z' }] };
+  assert.equal(isDue('fda_recall_notices', overview, Date.parse('2026-10-12T06:23:00Z')), true);
+  assert.equal(isDue('fda_recall_notices', overview, Date.parse('2026-10-12T06:00:00Z')), true);
+});
+test('daily source completed at 00:25 is due at next-day 00:23 UTC', () => {
+  const overview = { sources: [{ id: 'fda_warning_letters', latestCompletedAt: '2026-10-12T00:25:00Z' }] };
+  assert.equal(isDue('fda_warning_letters', overview, Date.parse('2026-10-13T00:23:00Z')), true);
+});
+test('completed sources remain not due inside the same UTC cadence bucket', () => {
+  for (const [source, now] of [['cpsc_recalls', '2026-10-12T05:59:59.999Z'], ['fda_warning_letters', '2026-10-12T23:59:59.999Z']]) {
+    // The explicit offset represents 00:25 UTC and must not shift cadence to local time.
+    const overview = { sources: [{ id: source, latestCompletedAt: '2026-10-11T19:25:00-05:00' }] };
+    assert.equal(isDue(source, overview, Date.parse(now)), false);
+  }
+});
+test('invalid completion freshness remains due instead of suppressing collection indefinitely', () => {
+  const now = Date.parse('2026-10-12T06:23:00Z');
+  for (const latestCompletedAt of ['not-a-timestamp', '', null]) {
+    assert.equal(isDue('cpsc_recalls', { sources: [{ id: 'cpsc_recalls', latestCompletedAt }] }, now), true);
+  }
+  assert.equal(isDue('cpsc_recalls', { sources: [] }, now), true);
+});
 test('cloud credentials restricted to service role on exact corpus host', () => { assert.throws(() => cloudClient({ EXTERNAL_SUPABASE_URL: 'https://evil.test', EXTERNAL_SUPABASE_SERVICE_ROLE_KEY: 'sb_secret_test' }), /CREDENTIALS/); assert.throws(() => cloudClient({ EXTERNAL_SUPABASE_URL: 'https://xosqzzsnhxcyehcnirpa.supabase.co', EXTERNAL_SUPABASE_SERVICE_ROLE_KEY: 'anon' }), /SERVICE_ROLE/); });
 test('storage creation is journaled before failed readback and never upserts', async (t) => {
   const directory = await temporary(t); const bytes = Buffer.from('synthetic source'); const hash = sha256(bytes); const c = { sha256: hash, byte_count: bytes.length, storage_key: `regulatory/${hash.slice(0, 2)}/${hash}.raw`, content_type: 'text/plain' }; const journal = path.join(directory, 'objects.jsonl'); let calls = 0;

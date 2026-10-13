@@ -24,6 +24,47 @@ const json = (value: unknown) =>
   new Response(JSON.stringify(value), { headers: { "content-type": "application/json" } });
 
 describe("regulatory natural-language query planning", () => {
+  it("does not repeat a source question after a unique explicit selection was validated", () => {
+    const result = validateQueryModel(
+      { candidates: [candidate("sourceFamily", "fda", "FDA")], question: "source" },
+      { ...input("FDA"), pendingQuestions: ["source"] },
+      now,
+    );
+    expect(result.status).toBe("ready");
+    expect(result.pendingQuestions).toEqual([]);
+    expect(result.query?.sourceFamily).toBe("fda");
+    const ambiguous = validateQueryModel(
+      { candidates: [candidate("sourceFamily", "fda", "FDA")], question: "source" },
+      input("FDA and NHTSA"),
+      now,
+    );
+    expect(ambiguous.status).toBe("clarification");
+    expect(ambiguous.pendingQuestions).toContain("source");
+  });
+  it("does not repeat an answered date-basis question or remove a genuinely ambiguous one", () => {
+    const current = { from: "2026-10-01", to: "2026-10-12" };
+    const result = validateQueryModel(
+      { candidates: [candidate("dateBasis", "published", "publication")], question: "date_basis" },
+      { ...input("publication date", current), pendingQuestions: ["date_basis"] },
+      now,
+    );
+    expect(result.status).toBe("ready");
+    expect(result.query?.dateBasis).toBe("published");
+    const ambiguous = validateQueryModel(
+      { candidates: [candidate("dateBasis", "published", "publication")], question: "date_basis" },
+      input("publication or detection date", current),
+      now,
+    );
+    expect(ambiguous.status).toBe("clarification");
+    expect(ambiguous.pendingQuestions).toContain("date_basis");
+    expect(
+      validateQueryModel(
+        { candidates: [candidate("sourceFamily", "fda", "FDA")], question: "unsupported_analysis" },
+        input("FDA causation"),
+        now,
+      ).pendingQuestions,
+    ).toContain("unsupported_analysis");
+  });
   it("retains changed source and text intent through an early date clarification", () => {
     const previous = {
       source: "fda_recall_notices" as const,
@@ -755,9 +796,22 @@ describe("regulatory language-service boundary", () => {
     });
     expect(result.query?.sourceFamily).toBe("fda");
     expect(requestBody?.["tools"]).toBeUndefined();
+    expect(requestBody?.["generationConfig"]).toMatchObject({
+      responseFormat: {
+        text: {
+          mimeType: "APPLICATION_JSON",
+          schema: {
+            additionalProperties: false,
+            properties: {
+              candidates: { items: { properties: { value: { type: ["string", "null"] } } } },
+            },
+          },
+        },
+      },
+    });
     expect(result.summary).not.toContain("synthetic-key");
   });
-  it("fails closed on provider errors, overlarge bodies, tool calls and unsupported output", async () => {
+  it("discards provider errors, overlarge bodies, tool calls and hostile output before guided fallback", async () => {
     const responses = [
       () => new Response("credential contents", { status: 401 }),
       () => new Response("x".repeat(48_001), { headers: { "content-type": "application/json" } }),
@@ -787,16 +841,95 @@ describe("regulatory language-service boundary", () => {
         env: { REGULATORY_AI_PROVIDER: "lovable", LOVABLE_API_KEY: "synthetic-key" },
         fetch: async () => make(),
       });
-      expect(result.status).toBe("unavailable");
-      expect(result.query).toBeUndefined();
+      expect(result.status).toBe("ready");
+      expect(result.query).toMatchObject({ sourceFamily: "fda" });
+      expect(result.query?.source).toBeUndefined();
+      expect(result.query?.q).toBeUndefined();
+      expect(result.summary).toMatch(/^Guided interpretation:/);
+      expect(result.limitations.join(" ")).toContain("no AI output was applied");
       expect(JSON.stringify(result)).not.toContain("credential contents");
+      expect(JSON.stringify(result)).not.toContain("synthetic-key");
     }
+  });
+  it("keeps date ambiguity and the original pending queue when transport fails", async () => {
+    const first = await interpretRegulatoryQueryServer(
+      input("FDA recall notices in the past 30 days"),
+      {
+        env: { REGULATORY_AI_PROVIDER: "lovable", LOVABLE_API_KEY: "synthetic-key" },
+        now: () => now,
+        fetch: async () => {
+          throw new Error("sensitive upstream detail synthetic-key");
+        },
+      },
+    );
+    expect(first.status).toBe("clarification");
+    expect(first.pendingQuestions).toEqual(["date_basis"]);
+    expect(first.query).toMatchObject({
+      source: "fda_recall_notices",
+      from: "2026-09-13",
+      to: "2026-10-12",
+    });
+    expect(first.query?.dateBasis).toBeUndefined();
+    expect(JSON.stringify(first)).not.toContain("sensitive upstream detail");
+    const unresolved = await interpretRegulatoryQueryServer(
+      {
+        ...input("publication date", first.query),
+        pendingQuestions: ["source", "date_basis"],
+      },
+      {
+        env: { REGULATORY_AI_PROVIDER: "gemini", GEMINI_API_KEY: "synthetic-key" },
+        now: () => now,
+        fetch: async () =>
+          json({
+            candidates: [
+              { finishReason: "STOP", content: { parts: [{ text: "not valid JSON" }] } },
+            ],
+          }),
+      },
+    );
+    expect(unresolved.status).toBe("clarification");
+    expect(unresolved.pendingQuestions).toEqual(["source"]);
+    expect(unresolved.query?.dateBasis).toBe("published");
+  });
+  it("never turns an unrecognized request into a ready answer after provider failure", async () => {
+    const result = await interpretRegulatoryQueryServer(
+      input("Assess scientific causation and liability"),
+      {
+        env: { REGULATORY_AI_PROVIDER: "lovable", LOVABLE_API_KEY: "synthetic-key" },
+        now: () => now,
+        fetch: async () =>
+          json({
+            choices: [
+              {
+                finish_reason: "stop",
+                message: {
+                  content: JSON.stringify({
+                    candidates: [],
+                    question: "none",
+                    conclusion: "Fabricated claim",
+                  }),
+                },
+              },
+            ],
+          }),
+      },
+    );
+    expect(result.status).toBe("clarification");
+    expect(result.pendingQuestions).toContain("unsupported_analysis");
+    expect(JSON.stringify(result)).not.toContain("Fabricated claim");
   });
   it("bounds capacity and validates input before provider calls", async () => {
     const env = { REGULATORY_AI_PROVIDER: "gemini", GEMINI_API_KEY: "synthetic-key" };
-    expect(
-      (await interpretRegulatoryQueryServer(input("FDA"), { env, acquire: () => null })).status,
-    ).toBe("unavailable");
+    const busy = await interpretRegulatoryQueryServer(input("FDA"), {
+      env,
+      acquire: () => null,
+      fetch: async () => {
+        throw new Error("must not call provider");
+      },
+    });
+    expect(busy.status).toBe("ready");
+    expect(busy.query?.sourceFamily).toBe("fda");
+    expect(busy.limitations.join(" ")).toContain("AI interpretation is busy");
     expect(
       (await interpretRegulatoryQueryServer({ turns: [], currentQuery: {} }, { env })).status,
     ).toBe("invalid_input");
@@ -811,7 +944,8 @@ describe("regulatory language-service boundary", () => {
         released = true;
       },
     });
-    expect(result.status).toBe("unavailable");
+    expect(result.status).toBe("ready");
+    expect(result.summary).toMatch(/^Guided interpretation:/);
     expect(released).toBe(true);
   });
 });

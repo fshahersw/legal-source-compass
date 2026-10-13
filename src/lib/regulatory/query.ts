@@ -595,8 +595,28 @@ export function validateQueryModel(
     !!(plan.from || plan.to);
   if (changedDates && !assigned.has("dateBasis")) delete plan.dateBasis;
   const validated = cleanQuery(regulatoryQueryPlanSchema.parse(plan));
+  let modelQuestion = model.question;
+  if (
+    modelQuestion === "source" &&
+    !ambiguousSource &&
+    requestedFamilies.length <= 1 &&
+    requestedFeeds.length <= 1 &&
+    (validated.source || validated.sourceFamily) &&
+    model.candidates.some(
+      (item) => (item.field === "source" || item.field === "sourceFamily") && item.value !== null,
+    )
+  )
+    modelQuestion = "none";
+  if (
+    modelQuestion === "date_basis" &&
+    validated.dateBasis &&
+    assigned.has("dateBasis") &&
+    (["detected", "published"] as const).filter((basis) => DATE_BASIS[basis].test(latestText))
+      .length === 1
+  )
+    modelQuestion = "none";
   const question =
-    (validated.from || validated.to) && !validated.dateBasis ? "date_basis" : model.question;
+    (validated.from || validated.to) && !validated.dateBasis ? "date_basis" : modelQuestion;
   return response(validated, question, [], [...pending]);
 }
 

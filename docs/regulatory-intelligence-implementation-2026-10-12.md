@@ -40,7 +40,11 @@ Focused parser/intake/query and local persistence tests; SQL contract execution;
 
 ## Delivery checkpoint
 
-This committed ledger records the pre-publication checkpoint. Repository administrative secrets exist, and the release is tracked in [PR #238](https://github.com/fshahersw/legal-source-compass/pull/238). Its final release notes and linked Actions runs record Linux/Windows CI, scheduled ingestion/recovery smoke and live deployment results. The production destination is [Regulatory Intelligence](https://firastest1.com/law/monitoring). The initial capture evidence above does not by itself establish scheduler activation or website publication.
+Initial release [PR #238](https://github.com/fshahersw/legal-source-compass/pull/238) was merged without rewriting history as fedd69a88ef5ae211919a83e5a6aaf3df7837b78. [Exact-head Linux and Windows verification](https://github.com/fshahersw/legal-source-compass/actions/runs/38328024718) passed. Lovable confirmed publication; the live [Regulatory Intelligence](https://firastest1.com/law/monitoring) page showed nine completed sources, 1,148 source-version events, no latest failed/incomplete attempts, and ungated browser-local investigations.
+
+The scheduled workflow is active on main. A [production collection](https://github.com/fshahersw/legal-source-compass/actions/runs/38328315840) completed CPSC run e41a8269-862a-4378-9b36-a85249141e9f with 20 selected records, one verified raw object and zero new duplicate events. A [fresh-runner recovery](https://github.com/fshahersw/legal-source-compass/actions/runs/38328390180) restored the exact retained packet and replayed the completed run without duplicates.
+
+Live acceptance identified two follow-up corrections: polling now uses UTC cadence buckets so run duration cannot skip the next six-hour/daily slot; failed AI interpretations now use an explicitly labeled guided interpretation of the original request while retaining clarification and explicit-apply requirements. Only redundant source/date-basis questions with uniquely validated explicit answers are removed. Focused validation passed 41 collector tests and 38 query tests, with scoped lint clean. The precise provider rejection cause for the original live 30-day query was not established; no API wire change or weakened output validation was made. Follow-up CI, publication and live checks are recorded in its release PR.
 
 ## Recovery and stop rules
 
