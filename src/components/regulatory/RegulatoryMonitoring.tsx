@@ -15,6 +15,7 @@ import {
   type RegulatorySourceId,
 } from "@/lib/regulatory/types";
 import { RegulatoryQueryComposer } from "./RegulatoryQueryComposer";
+import { FdaDashboard } from "@/components/fda-analytics/FdaDashboard";
 import { RegulatoryEvidenceDrawer } from "./RegulatoryEvidenceDrawer";
 import { RegulatoryCoverage } from "./RegulatoryCoverage";
 import { RegulatoryTrends } from "./RegulatoryTrends";
@@ -51,6 +52,7 @@ export function RegulatoryMonitoring({ search, onSearch }: Props) {
     queryKey: ["regulatory-overview"],
     queryFn: () => getRegulatoryOverview(),
     staleTime: 30000,
+    enabled: search.view !== "analytics",
   });
   const invalidWindow = !!search.from && !!search.to && search.from > search.to;
   const invalidEntity = !!search.entityNamespace !== !!search.entityId;
@@ -104,7 +106,7 @@ export function RegulatoryMonitoring({ search, onSearch }: Props) {
     <div className="space-y-2">
       <nav
         aria-label="Regulatory intelligence views"
-        className="flex flex-wrap gap-1 border-b border-border pb-2"
+        className="flex flex-wrap gap-1 border-b border-border pb-1"
       >
         {MONITORING_VIEWS.map((view) => (
           <button
@@ -125,61 +127,66 @@ export function RegulatoryMonitoring({ search, onSearch }: Props) {
                 eventId: undefined,
               })
             }
-            className={`${actionClass} ${search.view === view ? "!border-primary !bg-primary !text-primary-foreground hover:!bg-primary/90" : "border-transparent"}`}
+            className={`${actionClass} sm:!min-h-8 sm:!px-2.5 sm:!py-1 ${search.view === view ? "!border-primary !bg-primary !text-primary-foreground hover:!bg-primary/90" : "border-transparent"}`}
           >
-            {view[0]!.toUpperCase() + view.slice(1)}
+            {view === "analytics" ? "FDA analytics" : view[0]!.toUpperCase() + view.slice(1)}
           </button>
         ))}
       </nav>
-      {search.view !== "investigations" && search.view !== "coverage" && (
-        <>
-          <RegulatoryQueryComposer query={query} onApply={apply} />
-          <Filters key={binding} search={search} overview={overview.data} onSearch={onSearch} />
-        </>
-      )}
-      {overview.isError ? (
-        <LoadError retry={() => void overview.refetch()}>
-          Source health could not be refreshed. Public results may still load, but current
-          collection status is unavailable.
-        </LoadError>
-      ) : (
-        overview.data && (
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-y border-border py-2 text-xs text-muted-foreground">
-            <span>
-              <strong className="text-foreground">
-                {displayCount(overview.data.counts.completedSources)}
-              </strong>{" "}
-              sources with completed capture
-            </span>
-            <span>
-              <strong className="text-foreground">{problems.length}</strong> latest collection
-              attempts incomplete or failed
-            </span>
-            <button
-              type="button"
-              className="min-h-8 text-primary underline"
-              onClick={() => onSearch({ ...search, view: "coverage" })}
-            >
-              Inspect coverage
-            </button>
-            <button
-              type="button"
-              className="ml-auto flex min-h-8 items-center gap-1 text-primary underline"
-              disabled={overview.isFetching}
-              onClick={() => {
-                void overview.refetch();
-                if (search.view === "signals") void events.refetch();
-                if (search.view === "entities") void entities.refetch();
-              }}
-            >
-              <RefreshCw className="size-3" aria-hidden />
-              {overview.isFetching ? "Refreshing…" : "Refresh recorded data"}
-            </button>
-          </div>
-        )
-      )}
+      {search.view === "analytics" && <FdaDashboard search={search} onSearch={onSearch} />}
+      {search.view !== "analytics" &&
+        search.view !== "investigations" &&
+        search.view !== "coverage" && (
+          <>
+            <RegulatoryQueryComposer query={query} onApply={apply} />
+            <Filters key={binding} search={search} overview={overview.data} onSearch={onSearch} />
+          </>
+        )}
+      {search.view !== "analytics" &&
+        (overview.isError ? (
+          <LoadError retry={() => void overview.refetch()}>
+            Source health could not be refreshed. Public results may still load, but current
+            collection status is unavailable.
+          </LoadError>
+        ) : (
+          overview.data && (
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-y border-border py-2 text-xs text-muted-foreground">
+              <span>
+                <strong className="text-foreground">
+                  {displayCount(overview.data.counts.completedSources)}
+                </strong>{" "}
+                sources with completed capture
+              </span>
+              <span>
+                <strong className="text-foreground">{problems.length}</strong> latest collection
+                attempts incomplete or failed
+              </span>
+              <button
+                type="button"
+                className="min-h-8 text-primary underline"
+                onClick={() => onSearch({ ...search, view: "coverage" })}
+              >
+                Inspect coverage
+              </button>
+              <button
+                type="button"
+                className="ml-auto flex min-h-8 items-center gap-1 text-primary underline"
+                disabled={overview.isFetching}
+                onClick={() => {
+                  void overview.refetch();
+                  if (search.view === "signals") void events.refetch();
+                  if (search.view === "entities") void entities.refetch();
+                }}
+              >
+                <RefreshCw className="size-3" aria-hidden />
+                {overview.isFetching ? "Refreshing…" : "Refresh recorded data"}
+              </button>
+            </div>
+          )
+        ))}
       {(invalidWindow || invalidEntity) &&
         search.view !== "coverage" &&
+        search.view !== "analytics" &&
         search.view !== "investigations" && (
           <p role="alert" className="rounded-md border border-warning/40 p-3 text-sm">
             {invalidWindow
@@ -439,10 +446,12 @@ export function RegulatoryMonitoring({ search, onSearch }: Props) {
         ) : overview.data && !overview.isError ? (
           <RegulatoryCoverage overview={overview.data} />
         ) : null)}
-      <p className="text-xs leading-5 text-muted-foreground">
-        Recorded source evidence supports review. It does not establish complete monitoring, current
-        regulatory status, causation, liability, case value or a legal deadline.
-      </p>
+      {search.view !== "analytics" && (
+        <p className="text-xs leading-5 text-muted-foreground">
+          Recorded source evidence supports review. It does not establish complete monitoring,
+          current regulatory status, causation, liability, case value or a legal deadline.
+        </p>
+      )}
       {search.recordSource && search.recordId && (
         <RegulatoryEvidenceDrawer
           key={`${search.recordSource}:${search.recordId}:${search.eventId ?? "latest"}`}

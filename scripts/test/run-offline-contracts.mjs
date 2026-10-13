@@ -13,6 +13,7 @@ const directories = [
   "scripts/ingest/courtlistener-bulk",
   "scripts/ingest/federal-register",
   "scripts/ingest/regulatory",
+  "scripts/ingest/fda-analytics",
   "scripts/ingest/official-mdl",
   "scripts/legal/state-codes",
   "scripts/legal/state-codes/hi",

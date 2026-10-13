@@ -5,6 +5,7 @@ import {
 } from "@/lib/regulatory/types";
 
 export const MONITORING_VIEWS = [
+  "analytics",
   "signals",
   "trends",
   "entities",
@@ -35,6 +36,21 @@ export type MonitoringSearch = {
   recordSource?: string | undefined;
   recordId?: string | undefined;
   eventId?: string | undefined;
+  analyticsPeriod?: "30d" | "90d" | "1y" | "2y" | "custom" | undefined;
+  analyticsInterval?: "day" | "week" | "month" | undefined;
+  analyticsDomain?:
+    | "overview"
+    | "devices"
+    | "drugs"
+    | "food"
+    | "cosmetics"
+    | "veterinary"
+    | "tobacco"
+    | "transparency"
+    | "catalog"
+    | undefined;
+  analyticsFrom?: string | undefined;
+  analyticsTo?: string | undefined;
 };
 
 const bounded = (value: unknown, max: number) =>
@@ -55,7 +71,7 @@ export function normalizeMonitoringSearch(raw: Record<string, unknown>): Monitor
   return {
     view: MONITORING_VIEWS.includes(raw["view"] as MonitoringView)
       ? (raw["view"] as MonitoringView)
-      : "signals",
+      : "analytics",
     page: Number.isSafeInteger(page) && page >= 1 && page <= 401 ? page : 1,
     q: bounded(raw["q"], 300),
     source: REGULATORY_SOURCE_IDS.includes(raw["source"] as never)
@@ -82,6 +98,27 @@ export function normalizeMonitoringSearch(raw: Record<string, unknown>): Monitor
       typeof raw["eventId"] === "string" && /^[a-f0-9]{64}$/.test(raw["eventId"])
         ? raw["eventId"]
         : undefined,
+    analyticsPeriod: ["30d", "90d", "1y", "2y", "custom"].includes(raw["analyticsPeriod"] as string)
+      ? (raw["analyticsPeriod"] as MonitoringSearch["analyticsPeriod"])
+      : undefined,
+    analyticsInterval: ["day", "week", "month"].includes(raw["analyticsInterval"] as string)
+      ? (raw["analyticsInterval"] as MonitoringSearch["analyticsInterval"])
+      : undefined,
+    analyticsDomain: [
+      "overview",
+      "devices",
+      "drugs",
+      "food",
+      "cosmetics",
+      "veterinary",
+      "tobacco",
+      "transparency",
+      "catalog",
+    ].includes(raw["analyticsDomain"] as string)
+      ? (raw["analyticsDomain"] as MonitoringSearch["analyticsDomain"])
+      : undefined,
+    analyticsFrom: calendarDate(raw["analyticsFrom"]),
+    analyticsTo: calendarDate(raw["analyticsTo"]),
   };
 }
 

@@ -1,0 +1,59 @@
+name: FDA aggregate analytics
+
+on:
+  schedule:
+    - cron: '41 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fda-analytics-production
+  cancel-in-progress: false
+
+jobs:
+  analytics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Offline aggregate and private-intake contracts
+        run: node --test scripts/ingest/fda-analytics/*.test.mjs
+      - name: Require configured secrets without printing values
+        shell: bash
+        env:
+          OPENFDA_API_KEY: ${{ secrets.OPENFDA_API_KEY }}
+          EXTERNAL_SUPABASE_URL: ${{ secrets.EXTERNAL_SUPABASE_URL }}
+          EXTERNAL_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.EXTERNAL_SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          for name in OPENFDA_API_KEY EXTERNAL_SUPABASE_URL EXTERNAL_SUPABASE_SERVICE_ROLE_KEY; do
+            if [ -z "${!name}" ]; then echo "::error::Required repository secret $name is not configured"; exit 1; fi
+          done
+      - name: Capture bounded official API aggregates
+        env:
+          OPENFDA_API_KEY: ${{ secrets.OPENFDA_API_KEY }}
+        run: node scripts/ingest/fda-analytics/run.mjs capture "--output=$RUNNER_TEMP/private/fda-analytics"
+      - name: Re-derive metrics, retain private objects, publish atomically and verify exact readback
+        env:
+          EXTERNAL_SUPABASE_URL: ${{ secrets.EXTERNAL_SUPABASE_URL }}
+          EXTERNAL_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.EXTERNAL_SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/ingest/fda-analytics/run.mjs land --execute "--output=$RUNNER_TEMP/private/fda-analytics"
+      - name: Retain operational receipts only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fda-analytics-receipts-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/private/fda-analytics/manifest.json
+            ${{ runner.temp }}/private/fda-analytics/progress.json
+            ${{ runner.temp }}/private/fda-analytics/verification.json
+            ${{ runner.temp }}/private/fda-analytics/objects-journal.jsonl
+            ${{ runner.temp }}/private/fda-analytics/storage-checkpoint.json
+            ${{ runner.temp }}/private/fda-analytics/landing-receipt.json
+          if-no-files-found: ignore
+          retention-days: 30

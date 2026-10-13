@@ -70,7 +70,7 @@ export function LawLanding({
     <div className="space-y-4">
       <Link
         to="/law/monitoring"
-        search={{ view: "signals", page: 1, dateBasis: "detected" }}
+        search={{ view: "analytics", page: 1, dateBasis: "detected" }}
         className="flex items-center gap-3 rounded-md border border-border bg-surface p-3 transition-colors hover:bg-muted/30"
       >
         <Activity className="size-5 shrink-0 text-primary" aria-hidden />

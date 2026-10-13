@@ -9,7 +9,7 @@ export const Route = createFileRoute("/law_/monitoring")({
   head: () =>
     pageHead(
       "Regulatory intelligence",
-      "Review versioned regulatory source changes, retained evidence, coverage and browser-saved investigations.",
+      "FDA source analytics, versioned regulatory evidence and browser-saved investigations.",
     ),
   component: MonitoringPage,
 });
@@ -19,8 +19,10 @@ function MonitoringPage() {
   const navigate = Route.useNavigate();
   return (
     <AppShell
-      title="Regulatory intelligence"
-      description="Source changes, evidence and investigation review."
+      title={search.view === "analytics" ? "FDA analytics" : "Regulatory intelligence"}
+      description={
+        search.view === "analytics" ? "" : "Source changes, evidence and investigation review."
+      }
       breadcrumbs={[
         { label: "Home", to: "/" },
         { label: "Law & regulation", to: "/law" },
