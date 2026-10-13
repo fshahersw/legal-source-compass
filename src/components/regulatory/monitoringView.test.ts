@@ -63,7 +63,7 @@ describe("regulatory monitoring view boundaries", () => {
     });
     expect(
       normalizeMonitoringSearch({ view: "admin", page: -1, q: "x".repeat(301) }),
-    ).toMatchObject({ view: "signals", page: 1, q: undefined });
+    ).toMatchObject({ view: "analytics", page: 1, q: undefined });
   });
   it("resets pagination and selected evidence after the query changes", () => {
     const next = changeMonitoringFilters(
