@@ -24,6 +24,241 @@ const json = (value: unknown) =>
   new Response(JSON.stringify(value), { headers: { "content-type": "application/json" } });
 
 describe("regulatory natural-language query planning", () => {
+  it("keeps unsupported source alternatives pending without discarding independent facts", () => {
+    const previous = { sourceFamily: "cpsc" as const, dateBasis: "detected" as const };
+    for (const phrase of ["FDA or EPA", "FDA and EPA", "FDA or all sources"]) {
+      const request = input(`${phrase} containing "contamination" in the past 7 days`, previous);
+      const model = validateQueryModel(
+        {
+          candidates: [
+            candidate("sourceFamily", "fda", "FDA"),
+            candidate("q", "contamination", '"contamination"'),
+            candidate("from", "2026-10-06", "past 7 days"),
+            candidate("to", "2026-10-12", "past 7 days"),
+          ],
+          question: "source",
+        },
+        request,
+        now,
+      );
+      for (const result of [interpretGuidedQuery(request, now), model]) {
+        expect(result.status, phrase).toBe("clarification");
+        expect(result.pendingQuestions).toEqual(expect.arrayContaining(["source", "date_basis"]));
+        expect(result.query).toMatchObject({
+          sourceFamily: "cpsc",
+          q: "contamination",
+          from: "2026-10-06",
+          to: "2026-10-12",
+        });
+        const dated = interpretGuidedQuery(
+          {
+            ...input("publication date", result.query),
+            pendingQuestions: result.pendingQuestions,
+          },
+          now,
+        );
+        expect(dated.status).toBe("clarification");
+        expect(dated.pendingQuestions).toEqual(["source"]);
+      }
+    }
+    const clear = validateQueryModel(
+      { candidates: [candidate("sourceFamily", null, "all sources")], question: "none" },
+      input("FDA or all sources", previous),
+      now,
+    );
+    expect(clear.pendingQuestions).toContain("source");
+    expect(clear.query?.sourceFamily).toBe("cpsc");
+  });
+  it("does not choose publication when an unsupported date basis is also offered", () => {
+    const previous = { from: "2026-10-01", to: "2026-10-12", dateBasis: "detected" as const };
+    const request = input("publication date or incident date", previous);
+    for (const question of ["date_basis", "none"] as const) {
+      const model = validateQueryModel(
+        { candidates: [candidate("dateBasis", "published", "publication")], question },
+        request,
+        now,
+      );
+      for (const result of [interpretGuidedQuery(request, now), model]) {
+        expect(result.status).toBe("clarification");
+        expect(result.pendingQuestions).toContain("date_basis");
+        expect(result.query).toEqual({ ...previous, offset: 0 });
+      }
+    }
+  });
+  it("never interprets avoidance wording as an affirmative source or date selection", () => {
+    const previous = { sourceFamily: "cpsc" as const, dateBasis: "detected" as const };
+    for (const phrase of [
+      "Anything but FDA",
+      "avoid FDA",
+      "don’t use FDA",
+      "avoid publication dates",
+      "anything but publication dates",
+    ]) {
+      const source = phrase.includes("FDA");
+      const request = input(phrase, previous);
+      const guided = interpretGuidedQuery(request, now);
+      expect(guided.status, phrase).toBe("clarification");
+      expect(guided.query).toEqual({ ...previous, offset: 0 });
+      try {
+        const model = validateQueryModel(
+          {
+            candidates: [
+              candidate(
+                source ? "sourceFamily" : "dateBasis",
+                source ? "fda" : "published",
+                source ? "FDA" : "publication",
+              ),
+            ],
+            question: source ? "source" : "date_basis",
+          },
+          request,
+          now,
+        );
+        expect(model.status, phrase).toBe("clarification");
+        expect(model.query).toEqual({ ...previous, offset: 0 });
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toBe("Negated selection requires clarification");
+      }
+    }
+  });
+  it("keeps exact affirmative answers and literal quoted alternatives usable", () => {
+    expect(
+      validateQueryModel(
+        { candidates: [candidate("sourceFamily", "fda", "FDA")], question: "source" },
+        input("Please use FDA."),
+        now,
+      ).status,
+    ).toBe("ready");
+    const quoted = interpretGuidedQuery(input('containing "FDA or EPA"'), now);
+    expect(quoted.status).toBe("ready");
+    expect(quoted.query?.q).toBe("FDA or EPA");
+    expect(quoted.query?.source).toBeUndefined();
+    expect(quoted.query?.sourceFamily).toBeUndefined();
+    expect(
+      interpretGuidedQuery(input("FDA published between 2026-10-01 and 2026-10-12"), now).status,
+    ).toBe("ready");
+  });
+  it("treats quoted selector words as literal text while preserving every existing filter", () => {
+    const previous = {
+      source: "cpsc_recalls" as const,
+      eventType: "record_changed" as const,
+      from: "2026-10-01",
+      to: "2026-10-12",
+      dateBasis: "detected" as const,
+    };
+    for (const term of [
+      "FDA",
+      "FDA or EPA",
+      "publication",
+      "published",
+      "all sources",
+      "new records",
+      "all change types",
+      "remove dates",
+      "2026-02-30",
+      "past 30 days",
+      "avoid FDA",
+      "causation",
+    ]) {
+      for (const [open, close] of [
+        ['"', '"'],
+        ["“", "”"],
+        ["'", "'"],
+        ["‘", "’"],
+      ]) {
+        const quote = `${open}${term}${close}`;
+        const request = input(`records about ${quote}`, previous);
+        for (const result of [
+          interpretGuidedQuery(request, now),
+          validateQueryModel(
+            { candidates: [candidate("q", term, quote)], question: "none" },
+            request,
+            now,
+          ),
+        ]) {
+          expect(result.status, quote).toBe("ready");
+          expect(result.query, quote).toEqual({ ...previous, q: term, offset: 0 });
+        }
+      }
+    }
+  });
+  it("requires model selector and clearing evidence outside literal search phrases", () => {
+    for (const [field, value, phrase] of [
+      ["sourceFamily", "fda", "FDA"],
+      ["source", "fda_warning_letters", "FDA warning letters"],
+      ["dateBasis", "published", "published"],
+      ["eventType", "new_record", "new records"],
+      ["from", "2026-10-01", "2026-10-01"],
+      ["sourceFamily", null, "all sources"],
+      ["q", null, "all records"],
+      ["to", null, "remove dates"],
+    ] as const) {
+      expect(() =>
+        validateQueryModel(
+          {
+            candidates: [candidate(field, value, phrase)],
+            question: "none",
+          },
+          input(`containing "${phrase}"`, { sourceFamily: "cpsc" }),
+          now,
+        ),
+      ).toThrow("Query selector evidence is inside literal search text");
+    }
+    const result = validateQueryModel(
+      {
+        candidates: [
+          candidate("sourceFamily", "fda", "FDA"),
+          candidate("q", "FDA or EPA", '"FDA or EPA"'),
+        ],
+        question: "none",
+      },
+      input('FDA containing "FDA or EPA"'),
+      now,
+    );
+    expect(result.query).toMatchObject({ sourceFamily: "fda", q: "FDA or EPA" });
+  });
+  it("does not repeat a source question after a unique explicit selection was validated", () => {
+    const result = validateQueryModel(
+      { candidates: [candidate("sourceFamily", "fda", "FDA")], question: "source" },
+      { ...input("FDA"), pendingQuestions: ["source"] },
+      now,
+    );
+    expect(result.status).toBe("ready");
+    expect(result.pendingQuestions).toEqual([]);
+    expect(result.query?.sourceFamily).toBe("fda");
+    const ambiguous = validateQueryModel(
+      { candidates: [candidate("sourceFamily", "fda", "FDA")], question: "source" },
+      input("FDA and NHTSA"),
+      now,
+    );
+    expect(ambiguous.status).toBe("clarification");
+    expect(ambiguous.pendingQuestions).toContain("source");
+  });
+  it("does not repeat an answered date-basis question or remove a genuinely ambiguous one", () => {
+    const current = { from: "2026-10-01", to: "2026-10-12" };
+    const result = validateQueryModel(
+      { candidates: [candidate("dateBasis", "published", "publication")], question: "date_basis" },
+      { ...input("publication date", current), pendingQuestions: ["date_basis"] },
+      now,
+    );
+    expect(result.status).toBe("ready");
+    expect(result.query?.dateBasis).toBe("published");
+    const ambiguous = validateQueryModel(
+      { candidates: [candidate("dateBasis", "published", "publication")], question: "date_basis" },
+      input("publication or detection date", current),
+      now,
+    );
+    expect(ambiguous.status).toBe("clarification");
+    expect(ambiguous.pendingQuestions).toContain("date_basis");
+    expect(
+      validateQueryModel(
+        { candidates: [candidate("sourceFamily", "fda", "FDA")], question: "unsupported_analysis" },
+        input("FDA causation"),
+        now,
+      ).pendingQuestions,
+    ).toContain("unsupported_analysis");
+  });
   it("retains changed source and text intent through an early date clarification", () => {
     const previous = {
       source: "fda_recall_notices" as const,
@@ -755,9 +990,22 @@ describe("regulatory language-service boundary", () => {
     });
     expect(result.query?.sourceFamily).toBe("fda");
     expect(requestBody?.["tools"]).toBeUndefined();
+    expect(requestBody?.["generationConfig"]).toMatchObject({
+      responseFormat: {
+        text: {
+          mimeType: "APPLICATION_JSON",
+          schema: {
+            additionalProperties: false,
+            properties: {
+              candidates: { items: { properties: { value: { type: ["string", "null"] } } } },
+            },
+          },
+        },
+      },
+    });
     expect(result.summary).not.toContain("synthetic-key");
   });
-  it("fails closed on provider errors, overlarge bodies, tool calls and unsupported output", async () => {
+  it("discards provider errors, overlarge bodies, tool calls and hostile output before guided fallback", async () => {
     const responses = [
       () => new Response("credential contents", { status: 401 }),
       () => new Response("x".repeat(48_001), { headers: { "content-type": "application/json" } }),
@@ -787,16 +1035,177 @@ describe("regulatory language-service boundary", () => {
         env: { REGULATORY_AI_PROVIDER: "lovable", LOVABLE_API_KEY: "synthetic-key" },
         fetch: async () => make(),
       });
-      expect(result.status).toBe("unavailable");
-      expect(result.query).toBeUndefined();
+      expect(result.status).toBe("ready");
+      expect(result.query).toMatchObject({ sourceFamily: "fda" });
+      expect(result.query?.source).toBeUndefined();
+      expect(result.query?.q).toBeUndefined();
+      expect(result.summary).toMatch(/^Guided interpretation:/);
+      expect(result.limitations.join(" ")).toContain("no AI output was applied");
       expect(JSON.stringify(result)).not.toContain("credential contents");
+      expect(JSON.stringify(result)).not.toContain("synthetic-key");
     }
+  });
+  it("keeps date ambiguity and the original pending queue when transport fails", async () => {
+    const first = await interpretRegulatoryQueryServer(
+      input("FDA recall notices in the past 30 days"),
+      {
+        env: { REGULATORY_AI_PROVIDER: "lovable", LOVABLE_API_KEY: "synthetic-key" },
+        now: () => now,
+        fetch: async () => {
+          throw new Error("sensitive upstream detail synthetic-key");
+        },
+      },
+    );
+    expect(first.status).toBe("clarification");
+    expect(first.pendingQuestions).toEqual(["date_basis"]);
+    expect(first.query).toMatchObject({
+      source: "fda_recall_notices",
+      from: "2026-09-13",
+      to: "2026-10-12",
+    });
+    expect(first.query?.dateBasis).toBeUndefined();
+    expect(JSON.stringify(first)).not.toContain("sensitive upstream detail");
+    const unresolved = await interpretRegulatoryQueryServer(
+      {
+        ...input("publication date", first.query),
+        pendingQuestions: ["source", "date_basis"],
+      },
+      {
+        env: { REGULATORY_AI_PROVIDER: "gemini", GEMINI_API_KEY: "synthetic-key" },
+        now: () => now,
+        fetch: async () =>
+          json({
+            candidates: [
+              { finishReason: "STOP", content: { parts: [{ text: "not valid JSON" }] } },
+            ],
+          }),
+      },
+    );
+    expect(unresolved.status).toBe("clarification");
+    expect(unresolved.pendingQuestions).toEqual(["source"]);
+    expect(unresolved.query?.dateBasis).toBe("published");
+    const resolved = await interpretRegulatoryQueryServer(
+      { ...input("publication date", first.query), pendingQuestions: first.pendingQuestions },
+      {
+        env: { REGULATORY_AI_PROVIDER: "lovable", LOVABLE_API_KEY: "synthetic-key" },
+        now: () => now,
+        fetch: async () => {
+          throw new Error("provider failed");
+        },
+      },
+    );
+    expect(resolved.status).toBe("ready");
+    expect(resolved.query).toMatchObject({
+      source: "fda_recall_notices",
+      from: "2026-09-13",
+      to: "2026-10-12",
+      dateBasis: "published",
+    });
+  });
+  it("preserves unknown alternatives and exclusions during provider failure fallback", async () => {
+    const previous = {
+      sourceFamily: "cpsc" as const,
+      from: "2026-10-01",
+      to: "2026-10-12",
+      dateBasis: "detected" as const,
+    };
+    for (const phrase of [
+      "FDA or EPA",
+      "FDA or all sources",
+      "publication date or incident date",
+      "Anything but FDA",
+      "avoid FDA",
+      "don’t use FDA",
+      "avoid publication dates",
+      "anything but publication dates",
+    ]) {
+      const result = await interpretRegulatoryQueryServer(input(phrase, previous), {
+        env: { REGULATORY_AI_PROVIDER: "lovable", LOVABLE_API_KEY: "synthetic-key" },
+        now: () => now,
+        fetch: async () => {
+          throw new Error("private provider detail synthetic-key");
+        },
+      });
+      expect(result.status, phrase).toBe("clarification");
+      expect(result.query).toEqual({ ...previous, offset: 0 });
+      expect(result.pendingQuestions?.length).toBeGreaterThan(0);
+      expect(JSON.stringify(result)).not.toContain("private provider detail");
+      expect(JSON.stringify(result)).not.toContain("synthetic-key");
+    }
+  });
+  it("discards a model selector taken from quoted search text before safe fallback", async () => {
+    const previous = {
+      source: "cpsc_recalls" as const,
+      eventType: "record_changed" as const,
+      dateBasis: "detected" as const,
+    };
+    const result = await interpretRegulatoryQueryServer(
+      input('containing "FDA or EPA"', previous),
+      {
+        env: { REGULATORY_AI_PROVIDER: "lovable", LOVABLE_API_KEY: "synthetic-key" },
+        now: () => now,
+        fetch: async () =>
+          json({
+            choices: [
+              {
+                finish_reason: "stop",
+                message: {
+                  content: JSON.stringify({
+                    candidates: [
+                      candidate("q", "FDA or EPA", '"FDA or EPA"'),
+                      candidate("sourceFamily", "fda", "FDA"),
+                    ],
+                    question: "none",
+                  }),
+                },
+              },
+            ],
+          }),
+      },
+    );
+    expect(result.status).toBe("ready");
+    expect(result.summary).toMatch(/^Guided interpretation:/);
+    expect(result.query).toEqual({ ...previous, q: "FDA or EPA", offset: 0 });
+  });
+  it("never turns an unrecognized request into a ready answer after provider failure", async () => {
+    const result = await interpretRegulatoryQueryServer(
+      input("Assess scientific causation and liability"),
+      {
+        env: { REGULATORY_AI_PROVIDER: "lovable", LOVABLE_API_KEY: "synthetic-key" },
+        now: () => now,
+        fetch: async () =>
+          json({
+            choices: [
+              {
+                finish_reason: "stop",
+                message: {
+                  content: JSON.stringify({
+                    candidates: [],
+                    question: "none",
+                    conclusion: "Fabricated claim",
+                  }),
+                },
+              },
+            ],
+          }),
+      },
+    );
+    expect(result.status).toBe("clarification");
+    expect(result.pendingQuestions).toContain("unsupported_analysis");
+    expect(JSON.stringify(result)).not.toContain("Fabricated claim");
   });
   it("bounds capacity and validates input before provider calls", async () => {
     const env = { REGULATORY_AI_PROVIDER: "gemini", GEMINI_API_KEY: "synthetic-key" };
-    expect(
-      (await interpretRegulatoryQueryServer(input("FDA"), { env, acquire: () => null })).status,
-    ).toBe("unavailable");
+    const busy = await interpretRegulatoryQueryServer(input("FDA"), {
+      env,
+      acquire: () => null,
+      fetch: async () => {
+        throw new Error("must not call provider");
+      },
+    });
+    expect(busy.status).toBe("ready");
+    expect(busy.query?.sourceFamily).toBe("fda");
+    expect(busy.limitations.join(" ")).toContain("AI interpretation is busy");
     expect(
       (await interpretRegulatoryQueryServer({ turns: [], currentQuery: {} }, { env })).status,
     ).toBe("invalid_input");
@@ -811,7 +1220,8 @@ describe("regulatory language-service boundary", () => {
         released = true;
       },
     });
-    expect(result.status).toBe("unavailable");
+    expect(result.status).toBe("ready");
+    expect(result.summary).toMatch(/^Guided interpretation:/);
     expect(released).toBe(true);
   });
 });

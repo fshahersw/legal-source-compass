@@ -50,7 +50,16 @@ export async function captureSource(source, options, dependencies = {}) {
   await atomicJson(path.join(directory, 'checkpoint.json'), packetSummary(packet)); return packet;
 }
 export function packetSummary(packet) { return { run_id: packet.run_id, source_id: packet.source_id, status: packet.status, expected_count: packet.expected_count, record_count: packet.rows.length, capture_count: packet.captures.length, packet_sha256: payloadHash(packet), error_code: packet.error_code, window_from: packet.window_from, window_to: packet.window_to }; }
-export function isDue(source, overview, now = Date.now()) { const state = overview?.sources?.find((s) => s.id === source); if (!state?.latestCompletedAt) return true; return now - Date.parse(state.latestCompletedAt) >= SOURCES[source].hours * 3600000; }
+export function isDue(source, overview, now = Date.now()) {
+  const state = overview?.sources?.find((s) => s.id === source);
+  if (!state?.latestCompletedAt) return true;
+  const completed = Date.parse(state.latestCompletedAt);
+  // UTC-aligned slots prevent a run's duration from suppressing the next scheduled poll.
+  // Invalid freshness cannot establish that the current slot has already been covered.
+  if (!Number.isFinite(completed)) return true;
+  const bucketMs = SOURCES[source].hours * 3600000;
+  return Math.floor(now / bucketMs) > Math.floor(completed / bucketMs);
+}
 export async function closeInterruptedRun(cloud, packet, error) {
   // Read the actual server count after a failed step. Never guess a count or publish partial rows.
   try {
