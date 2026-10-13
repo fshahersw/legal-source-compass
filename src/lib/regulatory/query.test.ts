@@ -24,6 +24,313 @@ const json = (value: unknown) =>
   new Response(JSON.stringify(value), { headers: { "content-type": "application/json" } });
 
 describe("regulatory natural-language query planning", () => {
+  it("retains changed source and text intent through an early date clarification", () => {
+    const previous = {
+      source: "fda_recall_notices" as const,
+      q: "old term",
+      dateBasis: "published" as const,
+    };
+    const firstRequest = input('CPSC records containing "charger" during 2025', previous);
+    for (const first of [
+      interpretGuidedQuery(firstRequest, now),
+      validateQueryModel({ candidates: [], question: "none" }, firstRequest, now),
+    ]) {
+      expect(first.pendingQuestions).toEqual(["date_range", "source", "search_term"]);
+      const datedRequest = {
+        ...input("published from 2025-01-01 to 2025-12-31", first.query),
+        pendingQuestions: first.pendingQuestions,
+      };
+      const dated = interpretGuidedQuery(datedRequest, now);
+      const modelDated = validateQueryModel(
+        {
+          candidates: [
+            candidate("from", "2025-01-01", "2025-01-01"),
+            candidate("to", "2025-12-31", "2025-12-31"),
+            candidate("dateBasis", "published", "published"),
+          ],
+          question: "none",
+        },
+        datedRequest,
+        now,
+      );
+      for (const result of [dated, modelDated]) {
+        expect(result.status).toBe("clarification");
+        expect(result.pendingQuestions).toEqual(["source", "search_term"]);
+        const resolved = interpretGuidedQuery(
+          {
+            ...input('CPSC containing "charger"', result.query),
+            pendingQuestions: result.pendingQuestions,
+          },
+          now,
+        );
+        expect(resolved.status).toBe("ready");
+        expect(resolved.query).toMatchObject({
+          source: "cpsc_recalls",
+          q: "charger",
+          from: "2025-01-01",
+          to: "2025-12-31",
+        });
+      }
+    }
+    expect(
+      interpretGuidedQuery(input("Records from EPA during 2025", previous), now).pendingQuestions,
+    ).toContain("source");
+  });
+  it("holds out-of-range and malformed numeric day windows instead of ignoring them", () => {
+    for (const duration of ["0", "367", "1000", "0007", "-1", "1.5", "1,000"]) {
+      const request = input(`FDA published in the past ${duration} days`);
+      expect(interpretGuidedQuery(request, now).pendingQuestions, duration).toContain("date_range");
+      expect(
+        validateQueryModel({ candidates: [], question: "none" }, request, now).pendingQuestions,
+        duration,
+      ).toContain("date_range");
+    }
+    expect(interpretGuidedQuery(input("FDA published in the past 366 days"), now).status).toBe(
+      "ready",
+    );
+  });
+  it("clarifies exclusive wording instead of treating after or before as inclusive", () => {
+    const previous = { from: "2026-01-01", to: "2026-12-31", dateBasis: "published" as const };
+    for (const phrase of ["FDA published after 2026-03-01", "FDA published before March 1, 2026"]) {
+      for (const result of [
+        interpretGuidedQuery(input(phrase, previous), now),
+        validateQueryModel({ candidates: [], question: "none" }, input(phrase, previous), now),
+      ]) {
+        expect(result.status).toBe("clarification");
+        expect(result.pendingQuestions).toContain("date_range");
+        expect(result.question).toContain("Bounds include both dates");
+        expect(result.query).toEqual({ ...previous, offset: 0 });
+      }
+    }
+  });
+  it("rejects wrong-end, collapsed-range and incomplete single-day model bounds", () => {
+    const previous = { from: "2026-01-01", to: "2026-12-31", dateBasis: "published" as const };
+    const cases = [
+      {
+        phrase: "FDA published since 2026-03-01",
+        candidates: [candidate("to", "2026-03-01", "2026-03-01")],
+      },
+      {
+        phrase: "FDA published through 2026-03-01",
+        candidates: [candidate("from", "2026-03-01", "2026-03-01")],
+      },
+      {
+        phrase: "FDA published from 2026-03-01 to 2026-03-31",
+        candidates: [
+          candidate("from", "2026-03-01", "2026-03-01"),
+          candidate("to", "2026-03-01", "2026-03-01"),
+        ],
+      },
+      {
+        phrase: "FDA published on 2026-03-01",
+        candidates: [candidate("from", "2026-03-01", "2026-03-01")],
+      },
+      {
+        phrase: "FDA published since 2026-03-01",
+        candidates: [
+          candidate("from", "2026-03-01", "2026-03-01"),
+          candidate("to", "2026-03-01", "2026-03-01"),
+        ],
+      },
+    ];
+    for (const item of cases) {
+      const result = validateQueryModel(
+        { candidates: item.candidates, question: "none" },
+        input(item.phrase, previous),
+        now,
+      );
+      expect(result.status, item.phrase).toBe("clarification");
+      expect(result.pendingQuestions).toContain("date_range");
+      expect(result.query, item.phrase).toEqual({ ...previous, offset: 0 });
+    }
+  });
+  it("matches exact inclusive date intent in guided and model proposals", () => {
+    const previous = { from: "2026-01-01", to: "2026-12-31", dateBasis: "published" as const };
+    for (const prefix of ["since", "from", "starting on"]) {
+      const request = input(`FDA published ${prefix} 2026-03-01`, previous);
+      expect(interpretGuidedQuery(request, now).query).toMatchObject({
+        from: "2026-03-01",
+        to: previous.to,
+      });
+      expect(
+        validateQueryModel(
+          {
+            candidates: [
+              candidate("from", "2026-03-01", "2026-03-01"),
+              candidate("dateBasis", "published", "published"),
+            ],
+            question: "none",
+          },
+          request,
+          now,
+        ).status,
+      ).toBe("ready");
+    }
+    for (const prefix of ["until", "through", "ending on"]) {
+      const request = input(`FDA published ${prefix} 2026-03-01`, previous);
+      expect(interpretGuidedQuery(request, now).query).toMatchObject({
+        from: previous.from,
+        to: "2026-03-01",
+      });
+      expect(
+        validateQueryModel(
+          {
+            candidates: [
+              candidate("to", "2026-03-01", "2026-03-01"),
+              candidate("dateBasis", "published", "published"),
+            ],
+            question: "none",
+          },
+          request,
+          now,
+        ).status,
+      ).toBe("ready");
+    }
+    const request = input("Records from FDA published on 2026-03-01", previous);
+    expect(interpretGuidedQuery(request, now).query).toMatchObject({
+      from: "2026-03-01",
+      to: "2026-03-01",
+    });
+    expect(
+      validateQueryModel(
+        {
+          candidates: [
+            candidate("from", "2026-03-01", "2026-03-01"),
+            candidate("to", "2026-03-01", "2026-03-01"),
+            candidate("dateBasis", "published", "published"),
+          ],
+          question: "none",
+        },
+        request,
+        now,
+      ).status,
+    ).toBe("ready");
+  });
+  it("holds unsupported date clauses even when the model omits them or chooses one window", () => {
+    const previous = {
+      sourceFamily: "cpsc" as const,
+      from: "2026-09-01",
+      to: "2026-09-30",
+      dateBasis: "published" as const,
+    };
+    for (const phrase of [
+      "FDA records published on 2026-01-01, 2026-02-01 and 2026-03-01",
+      "FDA records published during 2025",
+      "FDA records published during 2025-2026",
+      'FDA records published during "2025"',
+      "FDA records published in the fiscal year 2025",
+      "FDA published from January 1, 2026 to January 31, 2026 or from March 1, 2026 to March 31, 2026",
+      "FDA published last month or today",
+      "FDA published in the past 7 days or on 2026-01-01",
+      "FDA published on 2026-01-01 or 2026-03-01",
+      "FDA published on January 1, 2026 and March 1, 2026",
+    ]) {
+      const request = input(phrase, previous);
+      for (const result of [
+        interpretGuidedQuery(request, now),
+        validateQueryModel({ candidates: [], question: "none" }, request, now),
+        validateQueryModel(
+          { candidates: [candidate("sourceFamily", "fda", "FDA")], question: "none" },
+          request,
+          now,
+        ),
+      ]) {
+        expect(result.status, phrase).toBe("clarification");
+        expect(result.pendingQuestions, phrase).toContain("date_range");
+        expect(result.query, phrase).toEqual({ ...previous, offset: 0 });
+      }
+    }
+  });
+  it("holds model proposals that omit an explicit requested date or part of a window", () => {
+    const previous = { from: "2026-09-01", to: "2026-09-30", dateBasis: "published" as const };
+    for (const phrase of [
+      "FDA published on 2026-01-01",
+      "FDA published from 2026-01-01 to 2026-01-31",
+      "FDA published in the past 7 days",
+    ]) {
+      const result = validateQueryModel(
+        { candidates: [candidate("sourceFamily", "fda", "FDA")], question: "none" },
+        input(phrase, previous),
+        now,
+      );
+      expect(result.status).toBe("clarification");
+      expect(result.pendingQuestions).toContain("date_range");
+    }
+    expect(
+      validateQueryModel(
+        { candidates: [candidate("from", "2026-01-01", "2026-01-01")], question: "none" },
+        input("FDA published from 2026-01-01 to 2026-01-31", previous),
+        now,
+      ).pendingQuestions,
+    ).toContain("date_range");
+  });
+  it("allows one contiguous explicit range and one complete relative window", () => {
+    for (const phrase of [
+      "FDA published between January 1, 2026 and January 31, 2026",
+      "FDA published from 2026-01-01 to 2026-01-31",
+    ])
+      expect(interpretGuidedQuery(input(phrase), now).status).toBe("ready");
+    const result = validateQueryModel(
+      {
+        candidates: [
+          candidate("from", "2026-10-06", "past 7 days"),
+          candidate("to", "2026-10-12", "past 7 days"),
+          candidate("dateBasis", "published", "published"),
+        ],
+        question: "none",
+      },
+      input("FDA published in the past 7 days"),
+      now,
+    );
+    expect(result.status).toBe("ready");
+    expect(result.query).toMatchObject({ from: "2026-10-06", to: "2026-10-12" });
+  });
+  it("keeps date clarification pending until an exact supported range is supplied", () => {
+    const first = interpretGuidedQuery(input("FDA published during 2025"), now);
+    const unrelated = {
+      ...input("FDA", first.query),
+      pendingQuestions: first.pendingQuestions,
+    };
+    expect(interpretGuidedQuery(unrelated, now).pendingQuestions).toContain("date_range");
+    expect(
+      validateQueryModel(
+        { candidates: [candidate("sourceFamily", "fda", "FDA")], question: "none" },
+        unrelated,
+        now,
+      ).pendingQuestions,
+    ).toContain("date_range");
+    const resolved = interpretGuidedQuery(
+      {
+        ...input("FDA published from 2025-01-01 through 2025-12-31", first.query),
+        pendingQuestions: first.pendingQuestions,
+      },
+      now,
+    );
+    expect(resolved.status).toBe("ready");
+    expect(resolved.query).toMatchObject({ from: "2025-01-01", to: "2025-12-31" });
+  });
+  it("retains quoted years as search text without treating them as date clauses", () => {
+    for (const [quote, term] of [
+      ['"2025"', "2025"],
+      ["“2025”", "2025"],
+      ['"during 2025"', "during 2025"],
+    ]) {
+      const request = input(`FDA records containing ${quote}`);
+      const guided = interpretGuidedQuery(request, now);
+      const model = validateQueryModel(
+        { candidates: [candidate("q", term!, quote!)], question: "none" },
+        request,
+        now,
+      );
+      for (const result of [guided, model]) {
+        expect(result.status).toBe("ready");
+        expect(result.query?.q).toBe(term);
+        expect(result.query?.from).toBeUndefined();
+        expect(result.query?.to).toBeUndefined();
+      }
+    }
+    expect(interpretGuidedQuery(input("FDA search for 2026-12345"), now).status).toBe("ready");
+  });
   it("does not silently omit a missing year or an unsupported calendar window", () => {
     for (const phrase of [
       "FDA published October 12",

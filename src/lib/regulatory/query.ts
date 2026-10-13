@@ -189,6 +189,7 @@ const months = [
   "november",
   "december",
 ];
+const FULL_QUERY_DATE = `(?:\\d{4}-\\d{2}-\\d{2}|(?:${months.join("|")})\\s+\\d{1,2}(?:st|nd|rd|th)?[,]?\\s+\\d{4})`;
 
 function explicitDatesInQuery(text: string): string[] {
   const values = [...text.matchAll(/\b\d{4}-\d{2}-\d{2}\b/g)].map((match) => ({
@@ -210,6 +211,62 @@ export function datesInQuery(text: string): string[] {
   return explicitDatesInQuery(text).filter(validQueryDate);
 }
 
+const YEAR_DATE_INTENT =
+  "(?:during|in|since|from|after|before|until|through|between|for|year|years|published|detected|dated)(?:\\s+(?:the|calendar|fiscal|year|years|in))*";
+function temporalQueryText(text: string): string {
+  const yearPrefix = new RegExp(`\\b${YEAR_DATE_INTENT}\\s*$`, "i");
+  // Quoted search phrases are literal text. A quoted year immediately after a date
+  // instruction (such as during "2025") still expresses an unsupported date clause.
+  return text.replace(
+    /["“][^"”\n]*["”]|(?<![\p{L}\p{N}])'[^'\n]*'(?![\p{L}\p{N}])|‘[^’\n]*’/gu,
+    (quote: string, index: number) =>
+      /^["“'‘]\d{4}["”'’]$/.test(quote) && yearPrefix.test(text.slice(0, index))
+        ? quote.slice(1, -1)
+        : " ".repeat(quote.length),
+  );
+}
+
+/** One query supports one contiguous window; unsupported clauses cannot be silently omitted. */
+function unsupportedDateClause(text: string): boolean {
+  const temporalText = temporalQueryText(text);
+  const explicit = explicitDatesInQuery(temporalText);
+  if (explicit.length > 2) return true;
+  if (
+    [...temporalText.matchAll(/\b(?:last|past)\s+([+-]?\d[\d,.]*)\s+days?\b/gi)].some(
+      (match) => !/^\d{1,3}$/.test(match[1]!) || Number(match[1]) < 1 || Number(match[1]) > 366,
+    )
+  )
+    return true;
+  if (new RegExp(`\\b(?:after|before)\\s+(?:on\\s+)?${FULL_QUERY_DATE}\\b`, "i").test(temporalText))
+    return true;
+  for (const pair of temporalText.matchAll(
+    new RegExp(`\\b${FULL_QUERY_DATE}([\\s\\S]*?)${FULL_QUERY_DATE}\\b`, "gi"),
+  )) {
+    const separator = pair[1]!;
+    if (/\bor\b/i.test(separator)) return true;
+    if (/\band\b/i.test(separator) && !/\bbetween\s*$/i.test(temporalText.slice(0, pair.index)))
+      return true;
+  }
+  const relative = [
+    ...temporalText.matchAll(
+      /\b(?:(?:last|past)\s+(?:\d{1,3}\s+days?|week)|last month|today|yesterday)\b/gi,
+    ),
+  ];
+  if (relative.length > 1 || (relative.length > 0 && explicit.length > 0)) return true;
+  // Strip fully specified dates before looking for year-only bounds. Numeric native
+  // identifiers such as 2026-12345 are not year windows.
+  const withoutFullDates = temporalText
+    .replace(/\b\d{4}-\d{1,2}-\d{1,2}\b/g, " ")
+    .replace(
+      new RegExp(`\\b(?:${months.join("|")})\\s+\\d{1,2}(?:st|nd|rd|th)?[,]?\\s+\\d{4}\\b`, "gi"),
+      " ",
+    );
+  return new RegExp(
+    `\\b${YEAR_DATE_INTENT}\\s+\\d{4}(?:\\s*[-–]\\s*\\d{4})?\\b(?![-/]\\d)`,
+    "i",
+  ).test(withoutFullDates);
+}
+
 function ambiguousOrInvalidDate(text: string): boolean {
   const named = [
     ...text.matchAll(
@@ -220,6 +277,7 @@ function ambiguousOrInvalidDate(text: string): boolean {
     ),
   ];
   return (
+    unsupportedDateClause(text) ||
     explicitDatesInQuery(text).some((value) => !validQueryDate(value)) ||
     named.some((match) => !match[3]) ||
     [...text.matchAll(/\b\d{4}-\d{1,2}-\d{1,2}\b/g)].some((match) => !validQueryDate(match[0])) ||
@@ -253,13 +311,28 @@ export function relativeQueryWindow(text: string, now: Date): { from: string; to
   return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) };
 }
 
+/** Deterministic inclusive bounds, independent of which date fields a model supplies. */
+function expectedDateBounds(text: string, now: Date): { from?: string; to?: string } | null {
+  const temporalText = temporalQueryText(text);
+  const relative = relativeQueryWindow(temporalText, now);
+  if (relative) return relative;
+  const dates = datesInQuery(temporalText);
+  if (dates.length === 2) return { from: dates[0]!, to: dates[1]! };
+  if (dates.length !== 1) return null;
+  const dateAt = new RegExp(`\\b${FULL_QUERY_DATE}\\b`, "i").exec(temporalText)?.index;
+  const prefix = temporalText.slice(0, dateAt);
+  if (/\b(?:since|from|starting)(?:\s+on)?\s*$/i.test(prefix)) return { from: dates[0]! };
+  if (/\b(?:until|through|ending)(?:\s+on)?\s*$/i.test(prefix)) return { to: dates[0]! };
+  return { from: dates[0]!, to: dates[0]! };
+}
+
 const QUESTIONS: Record<Exclude<QueryQuestion, "none">, string> = {
   source:
     "Which source family should I use: FDA, NHTSA, CPSC, or Federal Register? You can also name a particular feed or say all sources.",
   date_basis:
     "Should the dates refer to publication by the source or detection by this monitor? Incident dates are not a supported filter.",
   date_range:
-    "What exact date range should I use? Give ISO dates (YYYY-MM-DD), named dates with a year, or a window such as the past 30 days.",
+    "What exact date range should I use? Bounds include both dates. Give ISO dates (YYYY-MM-DD), named dates with a year, or a window such as the past 30 days.",
   search_term:
     "What exact product name, native identifier, or phrase should I look for? Put the phrase in quotation marks, or say all records.",
   unsupported_analysis:
@@ -357,6 +430,52 @@ function negatedQuote(content: string, quote: string): boolean {
   return NEGATIVE_SELECTION.test(quote) || NEGATIVE_SELECTION.test(prefix);
 }
 
+/** An early date hold must also remember selectors that have not yet been retained. */
+function clarifyUnparsedDates(input: RegulatoryQueryInput): RegulatoryQueryInterpretation {
+  const text = input.turns.at(-1)!.content;
+  const current = cleanQuery(input.currentQuery);
+  const pending = new Set<Exclude<QueryQuestion, "none">>([
+    ...(input.pendingQuestions ?? []),
+    "date_range",
+  ]);
+  const feeds = REGULATORY_SOURCE_IDS.filter(
+    (id) => SOURCE_PHRASES[id].test(text) || text.includes(id),
+  );
+  const families = QUERY_SOURCE_FAMILIES.filter((id) => familyPhrases[id].test(text));
+  if (CLEAR_FIELDS.source.test(text)) {
+    if (current.source || current.sourceFamily) pending.add("source");
+  } else if (feeds.length === 1 && families.length <= 1) {
+    if (current.source !== feeds[0]) pending.add("source");
+  } else if (feeds.length === 0 && families.length === 1) {
+    if (current.sourceFamily !== families[0] || current.source) pending.add("source");
+  } else if (
+    feeds.length > 1 ||
+    families.length > 1 ||
+    /\b(?:from|sources?(?: family)?(?: is| are)?)\s+[A-Z][A-Z.-]{1,20}\b/.test(text)
+  )
+    pending.add("source");
+  const quoted = [...text.matchAll(/["“]([^"”\n]{1,300})["”]/g)]
+    .map((match) => match[1]!.trim())
+    .filter(Boolean);
+  const term = text
+    .match(
+      /\b(?:about|containing|contains|involving|search for)\s+([\p{L}\p{N}][\p{L}\p{N}\s,'/-]{0,120}?)(?=\s+(?:from|since|between|during|in the|over the|for the|published|detected|last|past)\b|[.!?]|$)/iu,
+    )?.[1]
+    ?.trim();
+  const events = REGULATORY_EVENT_TYPES.filter((type) => eventPhrases[type].test(text));
+  if (
+    quoted.length > 1 ||
+    quoted.some((value) => value !== current.q) ||
+    (!quoted.length && term && term !== current.q) ||
+    (CLEAR_FIELDS.q.test(text) && current.q) ||
+    events.length > 1 ||
+    (events.length === 1 && events[0] !== current.eventType) ||
+    (CLEAR_FIELDS.eventType.test(text) && current.eventType)
+  )
+    pending.add("search_term");
+  return response(current, "date_range", [], [...pending]);
+}
+
 /** Model values must match an allowed operation and be supported by exact user words. */
 export function validateQueryModel(
   raw: unknown,
@@ -365,8 +484,7 @@ export function validateQueryModel(
 ): RegulatoryQueryInterpretation {
   const model = queryModelSchema.parse(raw);
   const latestText = input.turns.at(-1)!.content;
-  if (ambiguousOrInvalidDate(input.turns.at(-1)!.content))
-    return response(cleanQuery(input.currentQuery), "date_range", [], input.pendingQuestions);
+  if (ambiguousOrInvalidDate(input.turns.at(-1)!.content)) return clarifyUnparsedDates(input);
   const plan: RegulatoryQuery = cleanQuery(input.currentQuery);
   const pending = new Set(input.pendingQuestions ?? []);
   const requestedFamilies = QUERY_SOURCE_FAMILIES.filter((id) =>
@@ -448,6 +566,27 @@ export function validateQueryModel(
   }
   if (assigned.has("q") || assigned.has("eventType")) pending.delete("search_term");
   if (assigned.has("from") || assigned.has("to")) pending.delete("date_range");
+  const expectedBounds = expectedDateBounds(latestText, now);
+  const suppliedBounds = new Map(
+    model.candidates
+      .filter((item) => (item.field === "from" || item.field === "to") && item.value !== null)
+      .map((item) => [item.field, item.value]),
+  );
+  if (
+    (expectedBounds &&
+      (Object.entries(expectedBounds).some(
+        ([field, value]) => suppliedBounds.get(field as QueryField) !== value,
+      ) ||
+        [...suppliedBounds.keys()].some((field) => !Object.hasOwn(expectedBounds, field)))) ||
+    (!expectedBounds && suppliedBounds.size > 0)
+  ) {
+    pending.add("date_range");
+    // A later clarification must not inherit a wrong bound from this rejected proposal.
+    for (const field of ["from", "to"] as const) {
+      delete plan[field];
+      if (input.currentQuery[field] !== undefined) plan[field] = input.currentQuery[field];
+    }
+  }
   if (assigned.has("dateBasis")) pending.delete("date_basis");
   if (assigned.size && model.question !== "unsupported_analysis")
     pending.delete("unsupported_analysis");
@@ -482,8 +621,7 @@ export function interpretGuidedQuery(
       ["Exclusion and negated filters need clarification; no inclusion filter was inferred."],
       [...pending],
     );
-  if (ambiguousOrInvalidDate(text))
-    return response(cleanQuery(input.currentQuery), "date_range", [], [...pending]);
+  if (ambiguousOrInvalidDate(text)) return clarifyUnparsedDates(input);
   if (CLEAR_FIELDS.source.test(text)) {
     pending.delete("source");
     delete plan.source;
@@ -534,25 +672,10 @@ export function interpretGuidedQuery(
     if (CLEAR_FIELDS.to.test(text)) delete plan.to;
     recognized = true;
   } else {
-    const range = relativeQueryWindow(text, now);
-    const dates = datesInQuery(text);
-    if (range) {
+    const bounds = expectedDateBounds(text, now);
+    if (bounds) {
       pending.delete("date_range");
-      Object.assign(plan, range);
-      recognized = true;
-    } else if (dates.length === 2) {
-      pending.delete("date_range");
-      plan.from = dates[0]!;
-      plan.to = dates[1]!;
-      recognized = true;
-    } else if (dates.length === 1) {
-      pending.delete("date_range");
-      if (/\b(?:since|from|after|starting)\b/i.test(text)) plan.from = dates[0]!;
-      else if (/\b(?:until|through|before|ending)\b/i.test(text)) plan.to = dates[0]!;
-      else {
-        plan.from = dates[0]!;
-        plan.to = dates[0]!;
-      }
+      Object.assign(plan, bounds);
       recognized = true;
     } else if (
       /\b\d{1,2}[/]\d{1,2}(?:[/]\d{2,4})?\b|\b(?:recent|recently|last year|this year|this month)\b/i.test(
