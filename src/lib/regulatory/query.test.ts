@@ -133,9 +133,90 @@ describe("regulatory natural-language query planning", () => {
     const quoted = interpretGuidedQuery(input('containing "FDA or EPA"'), now);
     expect(quoted.status).toBe("ready");
     expect(quoted.query?.q).toBe("FDA or EPA");
+    expect(quoted.query?.source).toBeUndefined();
+    expect(quoted.query?.sourceFamily).toBeUndefined();
     expect(
       interpretGuidedQuery(input("FDA published between 2026-10-01 and 2026-10-12"), now).status,
     ).toBe("ready");
+  });
+  it("treats quoted selector words as literal text while preserving every existing filter", () => {
+    const previous = {
+      source: "cpsc_recalls" as const,
+      eventType: "record_changed" as const,
+      from: "2026-10-01",
+      to: "2026-10-12",
+      dateBasis: "detected" as const,
+    };
+    for (const term of [
+      "FDA",
+      "FDA or EPA",
+      "publication",
+      "published",
+      "all sources",
+      "new records",
+      "all change types",
+      "remove dates",
+      "2026-02-30",
+      "past 30 days",
+      "avoid FDA",
+      "causation",
+    ]) {
+      for (const [open, close] of [
+        ['"', '"'],
+        ["“", "”"],
+        ["'", "'"],
+        ["‘", "’"],
+      ]) {
+        const quote = `${open}${term}${close}`;
+        const request = input(`records about ${quote}`, previous);
+        for (const result of [
+          interpretGuidedQuery(request, now),
+          validateQueryModel(
+            { candidates: [candidate("q", term, quote)], question: "none" },
+            request,
+            now,
+          ),
+        ]) {
+          expect(result.status, quote).toBe("ready");
+          expect(result.query, quote).toEqual({ ...previous, q: term, offset: 0 });
+        }
+      }
+    }
+  });
+  it("requires model selector and clearing evidence outside literal search phrases", () => {
+    for (const [field, value, phrase] of [
+      ["sourceFamily", "fda", "FDA"],
+      ["source", "fda_warning_letters", "FDA warning letters"],
+      ["dateBasis", "published", "published"],
+      ["eventType", "new_record", "new records"],
+      ["from", "2026-10-01", "2026-10-01"],
+      ["sourceFamily", null, "all sources"],
+      ["q", null, "all records"],
+      ["to", null, "remove dates"],
+    ] as const) {
+      expect(() =>
+        validateQueryModel(
+          {
+            candidates: [candidate(field, value, phrase)],
+            question: "none",
+          },
+          input(`containing "${phrase}"`, { sourceFamily: "cpsc" }),
+          now,
+        ),
+      ).toThrow("Query selector evidence is inside literal search text");
+    }
+    const result = validateQueryModel(
+      {
+        candidates: [
+          candidate("sourceFamily", "fda", "FDA"),
+          candidate("q", "FDA or EPA", '"FDA or EPA"'),
+        ],
+        question: "none",
+      },
+      input('FDA containing "FDA or EPA"'),
+      now,
+    );
+    expect(result.query).toMatchObject({ sourceFamily: "fda", q: "FDA or EPA" });
   });
   it("does not repeat a source question after a unique explicit selection was validated", () => {
     const result = validateQueryModel(
@@ -1051,6 +1132,40 @@ describe("regulatory language-service boundary", () => {
       expect(JSON.stringify(result)).not.toContain("private provider detail");
       expect(JSON.stringify(result)).not.toContain("synthetic-key");
     }
+  });
+  it("discards a model selector taken from quoted search text before safe fallback", async () => {
+    const previous = {
+      source: "cpsc_recalls" as const,
+      eventType: "record_changed" as const,
+      dateBasis: "detected" as const,
+    };
+    const result = await interpretRegulatoryQueryServer(
+      input('containing "FDA or EPA"', previous),
+      {
+        env: { REGULATORY_AI_PROVIDER: "lovable", LOVABLE_API_KEY: "synthetic-key" },
+        now: () => now,
+        fetch: async () =>
+          json({
+            choices: [
+              {
+                finish_reason: "stop",
+                message: {
+                  content: JSON.stringify({
+                    candidates: [
+                      candidate("q", "FDA or EPA", '"FDA or EPA"'),
+                      candidate("sourceFamily", "fda", "FDA"),
+                    ],
+                    question: "none",
+                  }),
+                },
+              },
+            ],
+          }),
+      },
+    );
+    expect(result.status).toBe("ready");
+    expect(result.summary).toMatch(/^Guided interpretation:/);
+    expect(result.query).toEqual({ ...previous, q: "FDA or EPA", offset: 0 });
   });
   it("never turns an unrecognized request into a ready answer after provider failure", async () => {
     const result = await interpretRegulatoryQueryServer(
