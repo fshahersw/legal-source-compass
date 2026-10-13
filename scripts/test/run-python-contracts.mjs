@@ -24,6 +24,7 @@ if (!python)
 // Explicit reviewed offline suites: synthetic source bytes, temporary files and pinned conformance.
 // Do not discover acquisition scripts or run their CLI entry points.
 for (const suite of [
+  { directory: "scripts/ingest/regulatory", modules: ["test_nhtsa_bulk", "test_cpsc_rss"] },
   {
     directory: "scripts/enrichment",
     modules: ["test_court_resources", "test_court_resource_bundle", "test_law_id_crosswalk"],

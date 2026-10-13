@@ -43,6 +43,7 @@ export function contextualNavigation(path: string): ContextNavigationItem[] {
       return [
         { to: "/law", label: "Overview" },
         { to: "/law/codes", label: "State codes" },
+        { to: "/law/monitoring", label: "Regulatory intelligence" },
         { to: "/agencies", label: "Agencies" },
         { to: "/safety", label: "Product safety" },
       ];

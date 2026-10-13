@@ -29,4 +29,12 @@ describe("state-first navigation", () => {
   it("does not repeat global geographic tabs on an individual state page", () => {
     expect(contextualNavigation("/places/NE")).toEqual([]);
   });
+  it("keeps regulatory intelligence within the existing law section", () => {
+    expect(navigationSection("/law/monitoring")).toBe("law");
+    expect(contextualNavigation("/law/monitoring")).toContainEqual({
+      to: "/law/monitoring",
+      label: "Regulatory intelligence",
+    });
+    expect(PRIMARY_NAVIGATION).toHaveLength(4);
+  });
 });

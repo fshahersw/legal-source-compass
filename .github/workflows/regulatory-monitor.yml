@@ -1,0 +1,90 @@
+name: Regulatory source monitoring
+
+on:
+  schedule:
+    - cron: '23 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      from:
+        description: 'Optional inclusive publication-window start (YYYY-MM-DD, at most 90 days).'
+        required: false
+        type: string
+      sources:
+        description: 'Optional comma-separated approved source IDs. Empty runs all operational adapters.'
+        required: false
+        type: string
+      recover_run:
+        description: 'Optional exact interrupted run UUID. Recovers its immutable private packet; do not combine with from/sources.'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: regulatory-monitor-production
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      EXTERNAL_SUPABASE_URL: ${{ secrets.EXTERNAL_SUPABASE_URL }}
+      EXTERNAL_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.EXTERNAL_SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require administrative repository secrets without printing values
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in EXTERNAL_SUPABASE_URL EXTERNAL_SUPABASE_SERVICE_ROLE_KEY; do
+            if [ -z "${!name}" ]; then echo "::error::Required repository secret $name is not configured"; exit 1; fi
+          done
+      - name: Offline collector contracts
+        run: |
+          node --test scripts/ingest/regulatory/collector.test.mjs
+          python -B -m unittest discover -s scripts/ingest/regulatory -p 'test_*.py' -v
+      - name: Bounded official-source capture, verified private intake and count reconciliation
+        shell: bash
+        env:
+          INPUT_FROM: ${{ inputs.from }}
+          INPUT_SOURCES: ${{ inputs.sources }}
+          INPUT_RECOVER_RUN: ${{ inputs.recover_run }}
+        run: |
+          set -euo pipefail
+          if [ -n "$INPUT_RECOVER_RUN" ]; then
+            [[ "$INPUT_RECOVER_RUN" =~ ^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$ ]] || exit 1
+            [ -z "$INPUT_FROM" ] && [ -z "$INPUT_SOURCES" ] || exit 1
+            node scripts/ingest/regulatory/run.mjs recover --execute "--run-id=$INPUT_RECOVER_RUN" "--output=$RUNNER_TEMP/regulatory-monitor"
+            exit 0
+          fi
+          args=()
+          if [ -n "$INPUT_FROM" ]; then
+            [[ "$INPUT_FROM" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || exit 1
+            args+=("--from=$INPUT_FROM" "--force")
+          fi
+          if [ -n "$INPUT_SOURCES" ]; then
+            [[ "$INPUT_SOURCES" =~ ^[a-z_,]+$ ]] || exit 1
+            args+=("--sources=$INPUT_SOURCES")
+          fi
+          node scripts/ingest/regulatory/run.mjs daily --execute "--output=$RUNNER_TEMP/regulatory-monitor" "${args[@]}"
+      - name: Retain checkpoint only (no source bodies, private notes or credentials)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regulatory-monitor-checkpoint-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/regulatory-monitor/checkpoint.json
+            ${{ runner.temp }}/regulatory-monitor/*/objects-journal.jsonl
+            ${{ runner.temp }}/regulatory-monitor/*/landing-receipt.json
+            ${{ runner.temp }}/regulatory-monitor/*/intake-checkpoint.json
+            ${{ runner.temp }}/regulatory-monitor/*/recovery-receipt.json
+          if-no-files-found: ignore
+          retention-days: 30

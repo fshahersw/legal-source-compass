@@ -40,6 +40,7 @@ import { Route as DataDatasetRouteImport } from './routes/data.$dataset'
 import { Route as JudgesIndexRouteImport } from './routes/judges.index'
 import { Route as JudgesIdRouteImport } from './routes/judges.$id'
 import { Route as LawCodesRouteImport } from './routes/law_.codes'
+import { Route as LawMonitoringRouteImport } from './routes/law_.monitoring'
 import { Route as LimitationsStatutoryRouteImport } from './routes/limitations_.statutory'
 import { Route as MattersIndexRouteImport } from './routes/matters.index'
 import { Route as MattersIdRouteImport } from './routes/matters.$id'
@@ -221,6 +222,11 @@ const LawCodesRoute = LawCodesRouteImport.update({
   path: '/law/codes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LawMonitoringRoute = LawMonitoringRouteImport.update({
+  id: '/law_/monitoring',
+  path: '/law/monitoring',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LimitationsStatutoryRoute = LimitationsStatutoryRouteImport.update({
   id: '/limitations_/statutory',
   path: '/limitations/statutory',
@@ -375,6 +381,7 @@ export interface FileRoutesByFullPath {
   '/data/$dataset': typeof DataDatasetRoute
   '/judges/$id': typeof JudgesIdRoute
   '/law/codes': typeof LawCodesRouteWithChildren
+  '/law/monitoring': typeof LawMonitoringRoute
   '/limitations/statutory': typeof LimitationsStatutoryRoute
   '/matters/$id': typeof MattersIdRoute
   '/matters/cases': typeof MattersCasesRoute
@@ -432,6 +439,7 @@ export interface FileRoutesByTo {
   '/courts/$id': typeof CourtsIdRoute
   '/data/$dataset': typeof DataDatasetRoute
   '/judges/$id': typeof JudgesIdRoute
+  '/law/monitoring': typeof LawMonitoringRoute
   '/limitations/statutory': typeof LimitationsStatutoryRoute
   '/matters/$id': typeof MattersIdRoute
   '/matters/cases': typeof MattersCasesRoute
@@ -491,6 +499,7 @@ export interface FileRoutesById {
   '/data/$dataset': typeof DataDatasetRoute
   '/judges/$id': typeof JudgesIdRoute
   '/law_/codes': typeof LawCodesRouteWithChildren
+  '/law_/monitoring': typeof LawMonitoringRoute
   '/limitations_/statutory': typeof LimitationsStatutoryRoute
   '/matters/$id': typeof MattersIdRoute
   '/matters/cases': typeof MattersCasesRoute
@@ -551,6 +560,7 @@ export interface FileRouteTypes {
     | '/data/$dataset'
     | '/judges/$id'
     | '/law/codes'
+    | '/law/monitoring'
     | '/limitations/statutory'
     | '/matters/$id'
     | '/matters/cases'
@@ -608,6 +618,7 @@ export interface FileRouteTypes {
     | '/courts/$id'
     | '/data/$dataset'
     | '/judges/$id'
+    | '/law/monitoring'
     | '/limitations/statutory'
     | '/matters/$id'
     | '/matters/cases'
@@ -666,6 +677,7 @@ export interface FileRouteTypes {
     | '/data/$dataset'
     | '/judges/$id'
     | '/law_/codes'
+    | '/law_/monitoring'
     | '/limitations_/statutory'
     | '/matters/$id'
     | '/matters/cases'
@@ -725,6 +737,7 @@ export interface RootRouteChildren {
   DataDatasetRoute: typeof DataDatasetRoute
   JudgesIdRoute: typeof JudgesIdRoute
   LawCodesRoute: typeof LawCodesRouteWithChildren
+  LawMonitoringRoute: typeof LawMonitoringRoute
   LimitationsStatutoryRoute: typeof LimitationsStatutoryRoute
   MattersIdRoute: typeof MattersIdRoute
   MattersCasesRoute: typeof MattersCasesRoute
@@ -972,6 +985,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LawCodesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/law_/monitoring': {
+      id: '/law_/monitoring'
+      path: '/law/monitoring'
+      fullPath: '/law/monitoring'
+      preLoaderRoute: typeof LawMonitoringRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/limitations_/statutory': {
       id: '/limitations_/statutory'
       path: '/limitations/statutory'
@@ -1204,6 +1224,7 @@ const rootRouteChildren: RootRouteChildren = {
   DataDatasetRoute: DataDatasetRoute,
   JudgesIdRoute: JudgesIdRoute,
   LawCodesRoute: LawCodesRouteWithChildren,
+  LawMonitoringRoute: LawMonitoringRoute,
   LimitationsStatutoryRoute: LimitationsStatutoryRoute,
   MattersIdRoute: MattersIdRoute,
   MattersCasesRoute: MattersCasesRoute,

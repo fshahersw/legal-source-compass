@@ -1,5 +1,14 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, BookOpen, Building2, Clock3, FileText, LibraryBig, Scale } from "lucide-react";
+import {
+  ArrowRight,
+  BookOpen,
+  Building2,
+  Clock3,
+  FileText,
+  LibraryBig,
+  Scale,
+  Activity,
+} from "lucide-react";
 import { AgencyMark, StateMark } from "./EntityArtwork";
 import { STATES } from "@/lib/corpus/geo";
 import type { DatasetInfo } from "@/lib/external/catalog.functions";
@@ -59,6 +68,21 @@ export function LawLanding({
   );
   return (
     <div className="space-y-4">
+      <Link
+        to="/law/monitoring"
+        search={{ view: "signals", page: 1, dateBasis: "detected" }}
+        className="flex items-center gap-3 rounded-md border border-border bg-surface p-3 transition-colors hover:bg-muted/30"
+      >
+        <Activity className="size-5 shrink-0 text-primary" aria-hidden />
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold">Regulatory intelligence</span>
+          <span className="mt-1 block text-xs text-muted-foreground">
+            Review source changes, retained evidence, collection coverage and browser-saved
+            investigations.
+          </span>
+        </span>
+        <ArrowRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+      </Link>
       {metadataState === "loading" ? (
         <p className="text-xs text-muted-foreground">Loading collection and agency shortcuts…</p>
       ) : metadataState === "error" ? (
