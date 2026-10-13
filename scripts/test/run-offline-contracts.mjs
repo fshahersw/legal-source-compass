@@ -12,6 +12,7 @@ const directories = [
   "scripts/ingest/gap-fill",
   "scripts/ingest/courtlistener-bulk",
   "scripts/ingest/federal-register",
+  "scripts/ingest/regulatory",
   "scripts/ingest/official-mdl",
   "scripts/legal/state-codes",
   "scripts/legal/state-codes/hi",
