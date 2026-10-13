@@ -409,7 +409,84 @@ const DATE_BASIS = {
   published: /\b(?:publication|published|publisher|posted|posting)\b/i,
   detected: /\b(?:detection|detected|collected|capture|captured|monitor)\b/i,
 };
-const NEGATIVE_SELECTION = /\b(?:no|not|exclude|excluding|except|without|never|don't|do not)\b/i;
+const NEGATIVE_SELECTION =
+  /\b(?:no|not|exclude|excluding|except|without|never|don['’]t|do not|avoid|anything\s+but)\b/i;
+
+/** Unknown alternatives count too: the recognized choice is not permission to discard the other. */
+function selectionAlternatives(text: string): Exclude<QueryQuestion, "none">[] {
+  const choices = temporalQueryText(text)
+    .replace(
+      new RegExp(`\\bbetween\\s+${FULL_QUERY_DATE}\\s+and\\s+${FULL_QUERY_DATE}\\b`, "gi"),
+      " ",
+    )
+    .replace(/\bfood and drug administration\b/gi, "FDA");
+  if (!/\S\s+(?:or|and|versus|vs\.?)\s+\S/i.test(choices)) return [];
+  const questions: Exclude<QueryQuestion, "none">[] = [];
+  if (
+    QUERY_SOURCE_FAMILIES.some((id) => familyPhrases[id].test(choices)) ||
+    REGULATORY_SOURCE_IDS.some((id) => SOURCE_PHRASES[id].test(choices) || choices.includes(id)) ||
+    CLEAR_FIELDS.source.test(choices)
+  )
+    questions.push("source");
+  if (DATE_BASIS.published.test(choices) || DATE_BASIS.detected.test(choices))
+    questions.push("date_basis");
+  return questions;
+}
+
+function retainSelectionAlternatives(
+  plan: RegulatoryQuery,
+  current: RegulatoryQueryInput["currentQuery"],
+  pending: Set<Exclude<QueryQuestion, "none">>,
+  alternatives: Exclude<QueryQuestion, "none">[],
+): void {
+  for (const question of alternatives) {
+    pending.add(question);
+    const fields =
+      question === "source" ? (["source", "sourceFamily"] as const) : (["dateBasis"] as const);
+    for (const field of fields) {
+      delete plan[field];
+      if (current[field] !== undefined) Object.assign(plan, { [field]: current[field] });
+    }
+  }
+}
+
+function affirmativeAnswer(text: string): string {
+  return text
+    .trim()
+    .replace(/[.!]+$/, "")
+    .replace(/^(?:please\s+)?(?:use|choose|select)\s+/i, "")
+    .replace(/^the\s+/i, "")
+    .replace(/\s+please$/i, "")
+    .trim()
+    .toLowerCase();
+}
+
+function sourceAnswerMatches(text: string, query: RegulatoryQuery): boolean {
+  const answer = affirmativeAnswer(text);
+  const aliases: Record<(typeof QUERY_SOURCE_FAMILIES)[number], string[]> = {
+    fda: ["fda", "openfda", "food and drug administration", "fda source family"],
+    nhtsa: ["nhtsa", "national highway traffic safety administration", "nhtsa source family"],
+    cpsc: ["cpsc", "consumer product safety commission", "cpsc source family"],
+    federal_register: ["federal register", "federal_register"],
+  };
+  if (query.source)
+    return [
+      query.source,
+      sourceLabels[query.source].toLowerCase(),
+      ...(query.source === "fda_recall_notices" ? ["fda recall notices", "fda recalls"] : []),
+    ].includes(answer);
+  return !!query.sourceFamily && aliases[query.sourceFamily].includes(answer);
+}
+
+function dateBasisAnswerMatches(text: string, basis: RegulatoryQuery["dateBasis"]): boolean {
+  const answer = affirmativeAnswer(text);
+  return basis === "published"
+    ? /^(?:publication|published|publisher|posted|posting)(?: dates?)?$/.test(answer)
+    : basis === "detected" &&
+        /^(?:detection|detected|collected|capture|captured|monitor detection)(?: dates?)?$/.test(
+          answer,
+        );
+}
 
 // A supported clear is local to its field. Other exclusions in the same turn still need clarification.
 function hasUnsupportedNegation(text: string): boolean {
@@ -437,6 +514,7 @@ function clarifyUnparsedDates(input: RegulatoryQueryInput): RegulatoryQueryInter
   const pending = new Set<Exclude<QueryQuestion, "none">>([
     ...(input.pendingQuestions ?? []),
     "date_range",
+    ...selectionAlternatives(text),
   ]);
   const feeds = REGULATORY_SOURCE_IDS.filter(
     (id) => SOURCE_PHRASES[id].test(text) || text.includes(id),
@@ -485,6 +563,7 @@ export function validateQueryModel(
   const model = queryModelSchema.parse(raw);
   const latestText = input.turns.at(-1)!.content;
   if (ambiguousOrInvalidDate(input.turns.at(-1)!.content)) return clarifyUnparsedDates(input);
+  const alternatives = selectionAlternatives(latestText);
   const plan: RegulatoryQuery = cleanQuery(input.currentQuery);
   const pending = new Set(input.pendingQuestions ?? []);
   const requestedFamilies = QUERY_SOURCE_FAMILIES.filter((id) =>
@@ -590,6 +669,7 @@ export function validateQueryModel(
   if (assigned.has("dateBasis")) pending.delete("date_basis");
   if (assigned.size && model.question !== "unsupported_analysis")
     pending.delete("unsupported_analysis");
+  retainSelectionAlternatives(plan, input.currentQuery, pending, alternatives);
   const changedDates =
     (plan.from !== input.currentQuery.from || plan.to !== input.currentQuery.to) &&
     !!(plan.from || plan.to);
@@ -599,9 +679,7 @@ export function validateQueryModel(
   if (
     modelQuestion === "source" &&
     !ambiguousSource &&
-    requestedFamilies.length <= 1 &&
-    requestedFeeds.length <= 1 &&
-    (validated.source || validated.sourceFamily) &&
+    sourceAnswerMatches(latestText, validated) &&
     model.candidates.some(
       (item) => (item.field === "source" || item.field === "sourceFamily") && item.value !== null,
     )
@@ -609,10 +687,8 @@ export function validateQueryModel(
     modelQuestion = "none";
   if (
     modelQuestion === "date_basis" &&
-    validated.dateBasis &&
     assigned.has("dateBasis") &&
-    (["detected", "published"] as const).filter((basis) => DATE_BASIS[basis].test(latestText))
-      .length === 1
+    dateBasisAnswerMatches(latestText, validated.dateBasis)
   )
     modelQuestion = "none";
   const question =
@@ -642,6 +718,7 @@ export function interpretGuidedQuery(
       [...pending],
     );
   if (ambiguousOrInvalidDate(text)) return clarifyUnparsedDates(input);
+  const alternatives = selectionAlternatives(text);
   if (CLEAR_FIELDS.source.test(text)) {
     pending.delete("source");
     delete plan.source;
@@ -736,6 +813,7 @@ export function interpretGuidedQuery(
   )
     ask("unsupported_analysis");
   else if (recognized) pending.delete("unsupported_analysis");
+  retainSelectionAlternatives(plan, input.currentQuery, pending, alternatives);
   const parsed = regulatoryQueryPlanSchema.safeParse(plan);
   if (!parsed.success)
     return response(cleanQuery(input.currentQuery), "date_range", [], [...pending]);
