@@ -365,7 +365,7 @@ function DashboardCharts({
   return (
     <div className="space-y-2">
       <div
-        className={`grid gap-2 ${cards.length === 1 ? "grid-cols-1" : cards.length === 2 ? "grid-cols-1 sm:grid-cols-2" : cards.length === 3 ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-2 md:grid-cols-4 xl:grid-cols-8"}`}
+        className={`grid gap-2 ${cards.length === 1 ? "grid-cols-1" : cards.length === 2 ? "grid-cols-1 sm:grid-cols-2" : cards.length === 3 ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-2 md:grid-cols-4 xl:grid-cols-[repeat(auto-fit,minmax(110px,1fr))]"}`}
       >
         {cards.map(({ dataset, label }, index) => (
           <MetricCard
