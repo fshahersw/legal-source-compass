@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { LimitationRule, LimitationsSnapshot } from "@/lib/limitations/types";
+import {
+  CLAIM_TYPES,
+  type LimitationRule,
+  type LimitationsSnapshot,
+} from "@/lib/limitations/types";
 import { citedStatutes, claimMatrix, statuteSummary } from "./stateStatutes";
 
 const rule = (over: Record<string, unknown>): LimitationRule =>
@@ -53,7 +57,8 @@ const name = (r: LimitationRule) => `variant ${r.subtype}`;
 describe("claim matrix", () => {
   it("lists every claim type, reading the coverage record first and the rules otherwise", () => {
     const rows = claimMatrix(snapshot, "PA", name);
-    expect(rows).toHaveLength(12);
+    expect(rows).toHaveLength(CLAIM_TYPES.length);
+    expect(rows.find((r) => r.claimType === "consumer_protection")?.status).toBe("not_recorded");
     const pi = rows.find((r) => r.claimType === "personal_injury")!;
     expect(pi.status).toBe("baseline");
     expect(pi.statusLabel).toBe("Date computable");

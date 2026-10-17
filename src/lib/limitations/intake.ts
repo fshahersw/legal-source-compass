@@ -58,6 +58,10 @@ const claimTerms: [ClaimType, RegExp][] = [
   ["intentional_tort", /\bintentional tort\b/i],
   ["breach_of_warranty", /\bbreach of warranty\b/i],
   ["legal_malpractice", /\blegal malpractice\b/i],
+  [
+    "consumer_protection",
+    /\b(?:consumer protection|deceptive (?:trade|business) practices?|unfair (?:trade|business) practices?|UDAP)\b/i,
+  ],
 ];
 const topicTerms: [IntakeTopic["id"], string, RegExp][] = [
   [

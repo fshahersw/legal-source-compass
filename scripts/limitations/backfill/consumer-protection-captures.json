@@ -1,0 +1,32 @@
+{
+  "_note": "Official pages for state consumer-protection (UDAP) private-action limitations provisions, captured with capture.py.",
+  "captures": [
+    {"state": "AK", "id": "cp-ak-45-50-531", "url": "https://www.akleg.gov/basis/statutes.asp?media=print&secStart=45.50.531&secEnd=45.50.531"},
+    {"state": "CA", "id": "cp-ca-civ-1783", "url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CIV&sectionNum=1783."},
+    {"state": "CO", "id": "cp-co-6-1-115", "url": "https://olls.info/crs/crs2026-title-06.htm"},
+    {"state": "CT", "id": "cp-ct-42-110g", "url": "https://www.cga.ct.gov/2025/pub/chap_735a.htm"},
+    {"state": "HI", "id": "cp-hi-480-24", "url": "https://data.capitol.hawaii.gov/hrscurrent/Vol11_Ch0476-0490/HRS0480/HRS_0480-0024.htm"},
+    {"state": "ID", "id": "cp-id-48-619", "url": "https://legislature.idaho.gov/statutesrules/idstat/Title48/T48CH6/SECT48-619/"},
+    {"state": "IL", "id": "cp-il-815-505-10a", "url": "https://www.ilga.gov/legislation/ilcs/fulltext.asp?DocName=081505050K10a"},
+    {"state": "IN", "id": "cp-in-24-5-0-5-5", "url": "https://iga.in.gov/laws/2026/ic/titles/24#24-5-0.5-5"},
+    {"state": "MA", "id": "cp-ma-260-5a", "url": "https://malegislature.gov/Laws/GeneralLaws/PartIII/TitleV/Chapter260/Section5A"},
+    {"state": "MI", "id": "cp-mi-445-911", "url": "https://www.legislature.mi.gov/Laws/MCL?objectName=mcl-445-911"},
+    {"state": "NE", "id": "cp-ne-59-1612", "url": "https://nebraskalegislature.gov/laws/statutes.php?statute=59-1612"},
+    {"state": "NC", "id": "cp-nc-75-16-2", "url": "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_75/GS_75-16.2.html"},
+    {"state": "NH", "id": "cp-nh-358-a-3", "url": "https://gc.nh.gov/rsa/html/XXXI/358-A/358-A-3.htm"},
+    {"state": "OH", "id": "cp-oh-1345-10", "url": "https://codes.ohio.gov/ohio-revised-code/section-1345.10"},
+    {"state": "OR", "id": "cp-or-646-638", "url": "https://www.oregonlegislature.gov/bills_laws/ors/ors646.html"},
+    {"state": "SC", "id": "cp-sc-39-5-150", "url": "https://www.scstatehouse.gov/code/t39c005.php"},
+    {"state": "SD", "id": "cp-sd-37-24-33", "url": "https://sdlegislature.gov/api/Statutes/37-24-33.html?all=true"},
+    {"state": "TX", "id": "cp-tx-bc-17-565", "url": "https://tcss.legis.texas.gov/resources/BC/htm/BC.17.htm"},
+    {"state": "UT", "id": "cp-ut-13-11-19", "url": "https://le.utah.gov/xcode/Title13/Chapter11/13-11-S19.html"},
+    {"state": "VA", "id": "cp-va-59-1-204-1", "url": "https://law.lis.virginia.gov/vacode/59.1-204.1/"},
+    {"state": "WA", "id": "cp-wa-19-86-120", "url": "https://app.leg.wa.gov/RCW/default.aspx?cite=19.86.120"},
+    {"state": "WI", "id": "cp-wi-100-18", "url": "https://docs.legis.wisconsin.gov/document/statutes/100.18"},
+    {"state": "AL", "id": "cp-al-8-19-14", "url": "https://alison.legislature.state.al.us/code-of-alabama?section=8-19-14"},
+    {"state": "KY", "id": "cp-ky-367-220", "url": "https://apps.legislature.ky.gov/law/statutes/statute.aspx?id=29271"},
+    {"state": "LA", "id": "cp-la-51-1409", "url": "https://legis.la.gov/Legis/Law.aspx?d=87586"},
+    {"state": "WY", "id": "cp-wy-40-12-109", "url": "https://wyoleg.gov/statutes/compress/title40.pdf"},
+    {"state": "AR", "id": "cp-ar-4-88-115", "url": "https://www.arkleg.state.ar.us/Home/FTPDocument?path=%2FACTS%2F1999R%2FPublic%2F1014.pdf"}
+  ]
+}
