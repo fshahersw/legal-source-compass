@@ -45,3 +45,25 @@ Captured text corrected two figures that differ from commonly cited summaries: S
   same commit.
 - Local readback: `rules.json` served through `/api/bundles` matched the manifest hash and length; `ruleVersion`
   `2026-10-17.1`. Live publication and live readback are separate steps after merge.
+
+# Release 2026-10-17.2 — federal civil rights (42 U.S.C. § 1983)
+
+Adds a fourteenth claim type, `civil_rights_1983`. Section 1983 has no federal limitations period; federal courts borrow
+the forum state's general or residual personal-injury statute (Owens v. Okure, 488 U.S. 235 (1989); retained capture
+`US/cr-us-owens-okure-1989` from the Library of Congress U.S. Reports). Each entry quotes the state's statute literally
+from a fresh capture of the same official page the active personal-injury rule relies on (`pi-<st>`; ten via the
+reviewed code intake where the host could not be read directly) and is marked `general_period` because the mapping comes
+from federal case law. Accrual is a federal question (Wallace v. Kato, 549 U.S. 384 (2007)); state tolling applies.
+Every verified entry is medium confidence.
+
+| Status | Jurisdictions |
+| --- | --- |
+| Date computable (40) | AK, AL, AZ, CA, CO, DE, HI, IA, ID, IL, IN, KS, KY, MA, MD, ME, MI, MN, MO, MT, NC, ND, NE, NH, NJ, NM, NV, NY, OH, OK, PA, RI, SC, SD, TX, UT, VA, VT, WA, WV |
+| Flagged, no date (9) | CT and FL (courts borrow a different statute than the cited personal-injury rule), LA (2024 change from one to two years), TN (civil-rights-specific subsection), WI (post-2018 statute question), DC, GA, OR, WY (personal-injury rule already flagged) |
+| Not recorded (2) | AR, MS (no fresh capture of the personal-injury source from the review environment) |
+
+- `verify-entries.ts`: 51 files, 0 errors (19 warnings: accrual wording not recorded where the state text has none).
+- `build-release.ts` on top of `.1`: 984 rules (+49), 1,132 sources; 0 rejected, 0 discrepancies, 0 evidence lost.
+- `verify.mjs` checksums passed; protected limitations suites 897 passed; application suite 1,408 passed.
+- Staged manifest SHA-256 `d34744e17b72a007e076dec4a4c029a33f5d52da76c13138c93ec5ce0b290dc1` (1,421 release files,
+  1,326 objects, all hash-verified by readback); activated with `--verify`.

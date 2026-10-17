@@ -12,6 +12,7 @@ export const CLAIM_TYPES = [
   "breach_of_warranty",
   "legal_malpractice",
   "consumer_protection",
+  "civil_rights_1983",
 ] as const;
 /** Claim types added in release 2026-10-08.1; their cells read "Not recorded" until an official-text entry exists. */
 export const CLAIM_TYPES_ADDED_2026_10_08: readonly ClaimType[] = [
@@ -21,7 +22,10 @@ export const CLAIM_TYPES_ADDED_2026_10_08: readonly ClaimType[] = [
   "legal_malpractice",
 ];
 /** Claim types added in release 2026-10-17.1; cells without an official-text entry read "Not recorded". */
-export const CLAIM_TYPES_ADDED_2026_10_17: readonly ClaimType[] = ["consumer_protection"];
+export const CLAIM_TYPES_ADDED_2026_10_17: readonly ClaimType[] = [
+  "consumer_protection",
+  "civil_rights_1983",
+];
 export type ClaimType = (typeof CLAIM_TYPES)[number];
 export type AuthorityCapture = {
   sha256: string;
@@ -55,6 +59,7 @@ export const CLAIM_LABELS: Record<ClaimType, string> = {
   breach_of_warranty: "Breach of warranty (sale of goods)",
   legal_malpractice: "Legal malpractice",
   consumer_protection: "Consumer protection act (deceptive practices)",
+  civil_rights_1983: "Federal civil rights (42 U.S.C. § 1983)",
 };
 
 /**
