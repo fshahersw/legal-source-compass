@@ -16,6 +16,7 @@ import { StatuteCitation } from "./StatuteCitation";
 import { StateStatutePanel } from "./StateStatutePanel";
 import { ReviewedCalculator } from "./ReviewedCalculator";
 import { ConversationCalculator } from "./ConversationCalculator";
+import { QuickLookup } from "./QuickLookup";
 import { researchNavigation } from "./researchNavigation";
 import { versionWindowLabel } from "./calculatorGuidance";
 import {
@@ -367,8 +368,8 @@ export function LimitationsWorkbench({
 }) {
   const [researchSession, setResearchSession] = useState<Navigation | null>(null);
   const [calculatorRevision, setCalculatorRevision] = useState(0);
-  const [calculatorMode, setCalculatorMode] = useState<"conversation" | "structured">(
-    "conversation",
+  const [calculatorMode, setCalculatorMode] = useState<"quick" | "conversation" | "structured">(
+    "quick",
   );
   const state = researchSession?.state ?? routeState;
   const claim = researchSession ? researchSession.claim : routeClaim;
@@ -428,24 +429,37 @@ export function LimitationsWorkbench({
           role="group"
           aria-label="Calculator input method"
         >
-          <Button
-            className="min-h-10 sm:min-h-8"
-            size="sm"
-            variant={calculatorMode === "conversation" ? "default" : "outline"}
-            aria-pressed={calculatorMode === "conversation"}
-            onClick={() => setCalculatorMode("conversation")}
-          >
-            Conversation
-          </Button>
-          <Button
-            className="min-h-10 sm:min-h-8"
-            size="sm"
-            variant={calculatorMode === "structured" ? "default" : "outline"}
-            aria-pressed={calculatorMode === "structured"}
-            onClick={() => setCalculatorMode("structured")}
-          >
-            Structured review
-          </Button>
+          {(
+            [
+              ["quick", "Quick answer"],
+              ["structured", "Calculate a deadline"],
+              ["conversation", "Describe what happened"],
+            ] as const
+          ).map(([mode, label]) => (
+            <Button
+              key={mode}
+              className="min-h-10 sm:min-h-8"
+              size="sm"
+              variant={calculatorMode === mode ? "default" : "outline"}
+              aria-pressed={calculatorMode === mode}
+              onClick={() => setCalculatorMode(mode)}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+        <div hidden={calculatorMode !== "quick"}>
+          <QuickLookup
+            snapshot={snapshot}
+            state={routeState}
+            claim={routeClaim}
+            variantName={variantName}
+            onChange={(nextState, nextClaim) =>
+              navigate("calculator", nextState, nextClaim ?? null)
+            }
+            onCalculate={() => setCalculatorMode("structured")}
+            onOpenSources={() => navigate("sources", routeState, routeClaim)}
+          />
         </div>
         <div hidden={calculatorMode !== "conversation"}>
           <ConversationCalculator
