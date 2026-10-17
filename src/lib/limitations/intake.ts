@@ -62,7 +62,10 @@ const claimTerms: [ClaimType, RegExp][] = [
     "consumer_protection",
     /\b(?:consumer protection|deceptive (?:trade|business) practices?|unfair (?:trade|business) practices?|UDAP)\b/i,
   ],
-  ["civil_rights_1983", /\b(?:section 1983|§\s*1983|1983 claim|civil rights (?:claim|action|violation))\b/i],
+  [
+    "civil_rights_1983",
+    /\b(?:section 1983|§\s*1983|1983 claim|civil rights (?:claim|action|violation))\b/i,
+  ],
 ];
 const topicTerms: [IntakeTopic["id"], string, RegExp][] = [
   [

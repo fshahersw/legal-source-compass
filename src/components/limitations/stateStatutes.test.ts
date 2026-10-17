@@ -21,30 +21,117 @@ const rule = (over: Record<string, unknown>): LimitationRule =>
 
 const snapshot = {
   rules: [
-    rule({ id: "pa-pi", provenance: { citation: "42 Pa.C.S. § 5524(2)", excerpt: "within two years", flags: [], entryStatus: "verified" } }),
+    rule({
+      id: "pa-pi",
+      provenance: {
+        citation: "42 Pa.C.S. § 5524(2)",
+        excerpt: "within two years",
+        flags: [],
+        entryStatus: "verified",
+      },
+    }),
     rule({ id: "pa-pi-asb", subtype: "asbestos", computation: "research_only", period: null }),
     rule({
       id: "pa-wd",
       claimType: "wrongful_death",
-      provenance: { citation: "42 Pa.C.S. § 5524(2)", excerpt: "an action to recover damages for ... death", flags: ["survival limb unmodelled"], entryStatus: "flagged" },
-      currency: { checkedAt: "2026-10-08T01:00:00Z", status: "confirmed", detail: "ok", confirmedSourceIds: ["pa-5524"], uncheckedSourceIds: [], lostSourceIds: [] },
+      provenance: {
+        citation: "42 Pa.C.S. § 5524(2)",
+        excerpt: "an action to recover damages for ... death",
+        flags: ["survival limb unmodelled"],
+        entryStatus: "flagged",
+      },
+      currency: {
+        checkedAt: "2026-10-08T01:00:00Z",
+        status: "confirmed",
+        detail: "ok",
+        confirmedSourceIds: ["pa-5524"],
+        uncheckedSourceIds: [],
+        lostSourceIds: [],
+      },
     }),
-    rule({ id: "pa-mcare", claimType: "medical_malpractice", ruleKind: "repose", sourceIds: ["pa-mcare", "us-x"], pinpoint: "40 P.S. § 1303.513", period: { amount: 7, unit: "calendar_years" } }),
-    rule({ id: "tx-pi", jurisdiction: "TX", sourceIds: ["tx-16"], pinpoint: "Tex. Civ. Prac. & Rem. Code § 16.003" }),
+    rule({
+      id: "pa-mcare",
+      claimType: "medical_malpractice",
+      ruleKind: "repose",
+      sourceIds: ["pa-mcare", "us-x"],
+      pinpoint: "40 P.S. § 1303.513",
+      period: { amount: 7, unit: "calendar_years" },
+    }),
+    rule({
+      id: "tx-pi",
+      jurisdiction: "TX",
+      sourceIds: ["tx-16"],
+      pinpoint: "Tex. Civ. Prac. & Rem. Code § 16.003",
+    }),
   ],
   sources: [
-    { id: "pa-5524", state: "PA", title: "42 Pa.C.S. § 5524", url: "https://www.palegis.us/x", authorityKind: "statute", currency: { checkedAt: "2026-10-08T01:00:00Z", status: "confirmed_evidence_intact", route: "official_code_capture", detail: "found", codeCapture: { sectionNativeIds: ["PA:42:5524"] } } },
-    { id: "pa-mcare", state: "PA", title: "MCARE Act § 513", url: "https://www.palegis.us/y", authorityKind: "statute" },
-    { id: "pa-guide", state: "PA", title: "Publisher guidance", url: "https://www.palegis.us/z", authorityKind: "publisher_guidance", currency: { checkedAt: "2026-10-08T01:00:00Z", status: "evidence_lost", route: "direct", detail: "gone" } },
-    { id: "us-x", state: "US", title: "Federal reference", url: "https://www.govinfo.gov/x", authorityKind: "statute" },
-    { id: "us-unused", state: "US", title: "Unused federal", url: "https://www.govinfo.gov/y", authorityKind: "statute" },
-    { id: "tx-16", state: "TX", title: "Tex. CPRC § 16.003", url: "https://statutes.capitol.texas.gov/x", authorityKind: "statute" },
+    {
+      id: "pa-5524",
+      state: "PA",
+      title: "42 Pa.C.S. § 5524",
+      url: "https://www.palegis.us/x",
+      authorityKind: "statute",
+      currency: {
+        checkedAt: "2026-10-08T01:00:00Z",
+        status: "confirmed_evidence_intact",
+        route: "official_code_capture",
+        detail: "found",
+        codeCapture: { sectionNativeIds: ["PA:42:5524"] },
+      },
+    },
+    {
+      id: "pa-mcare",
+      state: "PA",
+      title: "MCARE Act § 513",
+      url: "https://www.palegis.us/y",
+      authorityKind: "statute",
+    },
+    {
+      id: "pa-guide",
+      state: "PA",
+      title: "Publisher guidance",
+      url: "https://www.palegis.us/z",
+      authorityKind: "publisher_guidance",
+      currency: {
+        checkedAt: "2026-10-08T01:00:00Z",
+        status: "evidence_lost",
+        route: "direct",
+        detail: "gone",
+      },
+    },
+    {
+      id: "us-x",
+      state: "US",
+      title: "Federal reference",
+      url: "https://www.govinfo.gov/x",
+      authorityKind: "statute",
+    },
+    {
+      id: "us-unused",
+      state: "US",
+      title: "Unused federal",
+      url: "https://www.govinfo.gov/y",
+      authorityKind: "statute",
+    },
+    {
+      id: "tx-16",
+      state: "TX",
+      title: "Tex. CPRC § 16.003",
+      url: "https://statutes.capitol.texas.gov/x",
+      authorityKind: "statute",
+    },
   ],
   coverage: [
     {
       state: "PA",
       claimCoverage: [
-        { claimType: "personal_injury", status: "baseline", ruleId: "pa-pi", grade: "official_capture_verified", variants: [{ subtype: "asbestos", ruleId: "pa-pi-asb", status: "research_only" }] },
+        {
+          claimType: "personal_injury",
+          status: "baseline",
+          ruleId: "pa-pi",
+          grade: "official_capture_verified",
+          variants: [{ subtype: "asbestos", ruleId: "pa-pi-asb", status: "research_only" }],
+        },
         { claimType: "fraud", status: "not_recorded", reason: "No official-text entry yet" },
       ],
     },
@@ -65,7 +152,9 @@ describe("claim matrix", () => {
     expect(pi.period).toBe("2 calendar years");
     expect(pi.citation).toBe("42 Pa.C.S. § 5524(2)");
     expect(pi.grade).toBe("Verified from official capture");
-    expect(pi.variants).toEqual([{ ruleId: "pa-pi-asb", name: "variant asbestos", status: "research_only" }]);
+    expect(pi.variants).toEqual([
+      { ruleId: "pa-pi-asb", name: "variant asbestos", status: "research_only" },
+    ]);
     const wd = rows.find((r) => r.claimType === "wrongful_death")!;
     expect(wd.status).toBe("flagged");
     expect(wd.flags).toEqual(["survival limb unmodelled"]);
