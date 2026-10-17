@@ -6,6 +6,11 @@ import { useDatasets } from "@/components/corpus/DatasetBrowser";
 import { DatasetBrowser } from "@/components/corpus/DatasetBrowser";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { pageHead } from "@/lib/corpus/head";
+import { AgencyMark } from "@/components/corpus/EntityArtwork";
+import {
+  SafetyIntelligence,
+  safetyIntelligenceQuery,
+} from "@/components/regulatory/SafetyIntelligence";
 import { sectionOf } from "@/lib/external/groups";
 import { safetyAgency, safetyKind } from "@/lib/external/lawTree";
 import { inventoryRecordTotal, datasetRecordGrain } from "@/lib/external/domainRegistry";
@@ -20,6 +25,7 @@ export const Route = createFileRoute("/safety")({
     view: str(s["view"]),
     agency: str(s["agency"]),
   }),
+  loader: ({ context }) => context.queryClient.prefetchQuery(safetyIntelligenceQuery),
   head: () =>
     pageHead(
       "Product safety",
@@ -29,18 +35,28 @@ export const Route = createFileRoute("/safety")({
 });
 
 const AGENCIES = [
-  { key: "FDA", note: "Recalls, enforcement, approvals, warning letters" },
-  { key: "CPSC", note: "Consumer product recalls" },
-  { key: "NHTSA", note: "Vehicle recalls, defect investigations, complaint trends" },
-  { key: "Other", note: "Agency science documents" },
+  {
+    key: "FDA",
+    name: "Food and Drug Administration",
+    note: "Recalls, enforcement, approvals, warning letters",
+  },
+  { key: "CPSC", name: "Consumer Product Safety Commission", note: "Consumer product recalls" },
+  {
+    key: "NHTSA",
+    name: "National Highway Traffic Safety Administration",
+    note: "Vehicle recalls, defect investigations, complaint trends",
+  },
+  { key: "Other", name: "", note: "Agency science documents" },
 ] as const;
+/** Derived intelligence is shown on the landing dashboard, not as an agency collection. */
+const DERIVED = new Set(["agency_safety_insights"]);
 
 function SafetyPage() {
   const s = Route.useSearch();
   const datasets = useDatasets();
   if (s.view === "list") return <SectionPage section="safety" path="/safety" ds={undefined} />;
   const allDatasets = datasets.data ?? [];
-  const list = allDatasets.filter((d) => sectionOf(d.id) === "safety");
+  const list = allDatasets.filter((d) => sectionOf(d.id) === "safety" && !DERIVED.has(d.id));
   const agency = s.agency ?? (s.ds ? safetyAgency(s.ds) : undefined);
 
   const crumbs: { label: string; to?: string; search?: Record<string, string> }[] = [
@@ -62,36 +78,40 @@ function SafetyPage() {
   else if (s.ds) body = <DatasetBrowser key={s.ds} dataset={s.ds} />;
   else if (!agency) {
     body = (
-      <FolderGrid
-        title="Agency"
-        items={[
-          ...AGENCIES.map((a) => {
-            const count = inventoryRecordTotal(list.filter((d) => safetyAgency(d.id) === a.key));
-            return {
-              key: a.key,
-              label: a.key,
-              note:
-                count == null
-                  ? `${a.note} · Count not recorded`
-                  : `${a.note} · Records may overlap`,
-              count: count ?? undefined,
-              link: { to: "/safety", search: { agency: a.key } },
-            };
-          }),
-          {
-            key: "signals",
-            label: "Mass-tort product signals",
-            note: "MDL litigation next to FDA adverse events, recalls and NHTSA complaints",
-            link: { to: "/safety/signals" },
-          },
-          {
-            key: "list",
-            label: "All safety collections",
-            note: "Browse recalls, notices, approvals and product classifications",
-            link: { to: "/safety", search: { view: "list" } },
-          },
-        ]}
-      />
+      <div className="space-y-6">
+        <SafetyIntelligence />
+        <FolderGrid
+          title="Browse by agency"
+          items={[
+            ...AGENCIES.map((a) => {
+              const count = inventoryRecordTotal(list.filter((d) => safetyAgency(d.id) === a.key));
+              return {
+                key: a.key,
+                label: a.key,
+                icon: a.name ? <AgencyMark name={a.name} className="size-9" /> : undefined,
+                note:
+                  count == null
+                    ? `${a.note} · Count not recorded`
+                    : `${a.note} · Records may overlap`,
+                count: count ?? undefined,
+                link: { to: "/safety", search: { agency: a.key } },
+              };
+            }),
+            {
+              key: "signals",
+              label: "Mass-tort product signals",
+              note: "MDL litigation next to FDA adverse events, recalls and NHTSA complaints",
+              link: { to: "/safety/signals" },
+            },
+            {
+              key: "list",
+              label: "All safety collections",
+              note: "Browse recalls, notices, approvals and product classifications",
+              link: { to: "/safety", search: { view: "list" } },
+            },
+          ]}
+        />
+      </div>
     );
   } else {
     body = (
@@ -118,8 +138,18 @@ function SafetyPage() {
   return (
     <AppShell
       breadcrumbs={crumbs}
-      title={s.ds ? safetyKind(s.ds) : agency ? `${agency} safety records` : "Product safety"}
-      description="Browse recalls, safety notices and product classifications by agency."
+      title={
+        s.ds
+          ? safetyKind(s.ds)
+          : agency
+            ? `${agency} safety records`
+            : "Product safety & regulatory watch"
+      }
+      description={
+        s.ds || agency
+          ? "Browse recalls, safety notices and product classifications by agency."
+          : "Automated trend and anomaly flags across agency safety records, then every collection by agency."
+      }
     >
       {body}
     </AppShell>

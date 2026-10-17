@@ -1,0 +1,39 @@
+name: Safety intelligence flags
+
+# Recomputes the automated regulatory-watch flags (agency_safety_insights) from the safety datasets
+# already published in the corpus. Detectors are deterministic; see scripts/enrichment/build_safety_insights.py.
+on:
+  schedule:
+    - cron: '17 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: safety-intelligence-production
+  cancel-in-progress: false
+
+jobs:
+  insights:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      EXTERNAL_SUPABASE_URL: ${{ secrets.EXTERNAL_SUPABASE_URL }}
+      EXTERNAL_SUPABASE_KEY: ${{ secrets.EXTERNAL_SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Require configured secrets without printing values
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in EXTERNAL_SUPABASE_URL EXTERNAL_SUPABASE_KEY; do
+            if [ -z "${!name}" ]; then echo "::error::Required repository secret for $name is not configured"; exit 1; fi
+          done
+      - name: Detector unit tests
+        run: python -B -m unittest discover -s scripts/enrichment -p 'test_*.py' -v
+      - name: Recompute and publish flags
+        run: python -B scripts/enrichment/build_safety_insights.py
