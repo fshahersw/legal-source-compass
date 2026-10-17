@@ -49,6 +49,7 @@ import { Route as MattersCasesRouteImport } from './routes/matters.cases'
 import { Route as MattersSeegerWeissRouteImport } from './routes/matters.seeger-weiss'
 import { Route as PlacesIndexRouteImport } from './routes/places.index'
 import { Route as PlacesStateRouteImport } from './routes/places.$state'
+import { Route as PrototypesIndexRouteImport } from './routes/prototypes.index'
 import { Route as RegistryIndexRouteImport } from './routes/registry.index'
 import { Route as RegistryIdRouteImport } from './routes/registry.$id'
 import { Route as SafetySignalsRouteImport } from './routes/safety_.signals'
@@ -67,6 +68,9 @@ import { Route as LawCodesIndexRouteImport } from './routes/law_.codes.index'
 import { Route as LawCodesStateRouteImport } from './routes/law_.codes.$state'
 import { Route as LawProvisionIdRouteImport } from './routes/law_.provision.$id'
 import { Route as PlacesStateCountyRouteImport } from './routes/places.$state.$county'
+import { Route as PrototypesCourtIdRouteImport } from './routes/prototypes.court.$id'
+import { Route as PrototypesJudgeIdRouteImport } from './routes/prototypes.judge.$id'
+import { Route as PrototypesMdlIdRouteImport } from './routes/prototypes.mdl.$id'
 import { Route as RecordsDatasetIdRouteImport } from './routes/records.$dataset.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -269,6 +273,11 @@ const PlacesStateRoute = PlacesStateRouteImport.update({
   path: '/places/$state',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrototypesIndexRoute = PrototypesIndexRouteImport.update({
+  id: '/prototypes/',
+  path: '/prototypes/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RegistryIndexRoute = RegistryIndexRouteImport.update({
   id: '/registry/',
   path: '/registry/',
@@ -359,6 +368,21 @@ const PlacesStateCountyRoute = PlacesStateCountyRouteImport.update({
   path: '/$county',
   getParentRoute: () => PlacesStateRoute,
 } as any)
+const PrototypesCourtIdRoute = PrototypesCourtIdRouteImport.update({
+  id: '/prototypes/court/$id',
+  path: '/prototypes/court/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrototypesJudgeIdRoute = PrototypesJudgeIdRouteImport.update({
+  id: '/prototypes/judge/$id',
+  path: '/prototypes/judge/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrototypesMdlIdRoute = PrototypesMdlIdRouteImport.update({
+  id: '/prototypes/mdl/$id',
+  path: '/prototypes/mdl/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RecordsDatasetIdRoute = RecordsDatasetIdRouteImport.update({
   id: '/records/$dataset/$id',
   path: '/records/$dataset/$id',
@@ -416,6 +440,7 @@ export interface FileRoutesByFullPath {
   '/judges/': typeof JudgesIndexRoute
   '/matters/': typeof MattersIndexRoute
   '/places/': typeof PlacesIndexRoute
+  '/prototypes/': typeof PrototypesIndexRoute
   '/registry/': typeof RegistryIndexRoute
   '/sources/': typeof SourcesIndexRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
@@ -423,6 +448,9 @@ export interface FileRoutesByFullPath {
   '/law/codes/$state': typeof LawCodesStateRoute
   '/law/provision/$id': typeof LawProvisionIdRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
+  '/prototypes/court/$id': typeof PrototypesCourtIdRoute
+  '/prototypes/judge/$id': typeof PrototypesJudgeIdRoute
+  '/prototypes/mdl/$id': typeof PrototypesMdlIdRoute
   '/records/$dataset/$id': typeof RecordsDatasetIdRoute
   '/law/codes/': typeof LawCodesIndexRoute
 }
@@ -476,6 +504,7 @@ export interface FileRoutesByTo {
   '/judges': typeof JudgesIndexRoute
   '/matters': typeof MattersIndexRoute
   '/places': typeof PlacesIndexRoute
+  '/prototypes': typeof PrototypesIndexRoute
   '/registry': typeof RegistryIndexRoute
   '/sources': typeof SourcesIndexRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
@@ -483,6 +512,9 @@ export interface FileRoutesByTo {
   '/law/codes/$state': typeof LawCodesStateRoute
   '/law/provision/$id': typeof LawProvisionIdRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
+  '/prototypes/court/$id': typeof PrototypesCourtIdRoute
+  '/prototypes/judge/$id': typeof PrototypesJudgeIdRoute
+  '/prototypes/mdl/$id': typeof PrototypesMdlIdRoute
   '/records/$dataset/$id': typeof RecordsDatasetIdRoute
   '/law/codes': typeof LawCodesIndexRoute
 }
@@ -538,6 +570,7 @@ export interface FileRoutesById {
   '/judges/': typeof JudgesIndexRoute
   '/matters/': typeof MattersIndexRoute
   '/places/': typeof PlacesIndexRoute
+  '/prototypes/': typeof PrototypesIndexRoute
   '/registry/': typeof RegistryIndexRoute
   '/sources/': typeof SourcesIndexRoute
   '/api/auth/logout': typeof ApiAuthLogoutRoute
@@ -545,6 +578,9 @@ export interface FileRoutesById {
   '/law_/codes/$state': typeof LawCodesStateRoute
   '/law_/provision/$id': typeof LawProvisionIdRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
+  '/prototypes/court/$id': typeof PrototypesCourtIdRoute
+  '/prototypes/judge/$id': typeof PrototypesJudgeIdRoute
+  '/prototypes/mdl/$id': typeof PrototypesMdlIdRoute
   '/records/$dataset/$id': typeof RecordsDatasetIdRoute
   '/law_/codes/': typeof LawCodesIndexRoute
 }
@@ -601,6 +637,7 @@ export interface FileRouteTypes {
     | '/judges/'
     | '/matters/'
     | '/places/'
+    | '/prototypes/'
     | '/registry/'
     | '/sources/'
     | '/api/auth/logout'
@@ -608,6 +645,9 @@ export interface FileRouteTypes {
     | '/law/codes/$state'
     | '/law/provision/$id'
     | '/places/$state/$county'
+    | '/prototypes/court/$id'
+    | '/prototypes/judge/$id'
+    | '/prototypes/mdl/$id'
     | '/records/$dataset/$id'
     | '/law/codes/'
   fileRoutesByTo: FileRoutesByTo
@@ -661,6 +701,7 @@ export interface FileRouteTypes {
     | '/judges'
     | '/matters'
     | '/places'
+    | '/prototypes'
     | '/registry'
     | '/sources'
     | '/api/auth/logout'
@@ -668,6 +709,9 @@ export interface FileRouteTypes {
     | '/law/codes/$state'
     | '/law/provision/$id'
     | '/places/$state/$county'
+    | '/prototypes/court/$id'
+    | '/prototypes/judge/$id'
+    | '/prototypes/mdl/$id'
     | '/records/$dataset/$id'
     | '/law/codes'
   id:
@@ -722,6 +766,7 @@ export interface FileRouteTypes {
     | '/judges/'
     | '/matters/'
     | '/places/'
+    | '/prototypes/'
     | '/registry/'
     | '/sources/'
     | '/api/auth/logout'
@@ -729,6 +774,9 @@ export interface FileRouteTypes {
     | '/law_/codes/$state'
     | '/law_/provision/$id'
     | '/places/$state/$county'
+    | '/prototypes/court/$id'
+    | '/prototypes/judge/$id'
+    | '/prototypes/mdl/$id'
     | '/records/$dataset/$id'
     | '/law_/codes/'
   fileRoutesById: FileRoutesById
@@ -784,11 +832,15 @@ export interface RootRouteChildren {
   JudgesIndexRoute: typeof JudgesIndexRoute
   MattersIndexRoute: typeof MattersIndexRoute
   PlacesIndexRoute: typeof PlacesIndexRoute
+  PrototypesIndexRoute: typeof PrototypesIndexRoute
   RegistryIndexRoute: typeof RegistryIndexRoute
   SourcesIndexRoute: typeof SourcesIndexRoute
   ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
   DataTablesTableRoute: typeof DataTablesTableRoute
   LawProvisionIdRoute: typeof LawProvisionIdRoute
+  PrototypesCourtIdRoute: typeof PrototypesCourtIdRoute
+  PrototypesJudgeIdRoute: typeof PrototypesJudgeIdRoute
+  PrototypesMdlIdRoute: typeof PrototypesMdlIdRoute
   RecordsDatasetIdRoute: typeof RecordsDatasetIdRoute
 }
 
@@ -1074,6 +1126,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlacesStateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/prototypes/': {
+      id: '/prototypes/'
+      path: '/prototypes'
+      fullPath: '/prototypes/'
+      preLoaderRoute: typeof PrototypesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/registry/': {
       id: '/registry/'
       path: '/registry'
@@ -1200,6 +1259,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlacesStateCountyRouteImport
       parentRoute: typeof PlacesStateRoute
     }
+    '/prototypes/court/$id': {
+      id: '/prototypes/court/$id'
+      path: '/prototypes/court/$id'
+      fullPath: '/prototypes/court/$id'
+      preLoaderRoute: typeof PrototypesCourtIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/prototypes/judge/$id': {
+      id: '/prototypes/judge/$id'
+      path: '/prototypes/judge/$id'
+      fullPath: '/prototypes/judge/$id'
+      preLoaderRoute: typeof PrototypesJudgeIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/prototypes/mdl/$id': {
+      id: '/prototypes/mdl/$id'
+      path: '/prototypes/mdl/$id'
+      fullPath: '/prototypes/mdl/$id'
+      preLoaderRoute: typeof PrototypesMdlIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/records/$dataset/$id': {
       id: '/records/$dataset/$id'
       path: '/records/$dataset/$id'
@@ -1287,11 +1367,15 @@ const rootRouteChildren: RootRouteChildren = {
   JudgesIndexRoute: JudgesIndexRoute,
   MattersIndexRoute: MattersIndexRoute,
   PlacesIndexRoute: PlacesIndexRoute,
+  PrototypesIndexRoute: PrototypesIndexRoute,
   RegistryIndexRoute: RegistryIndexRoute,
   SourcesIndexRoute: SourcesIndexRoute,
   ApiAuthLogoutRoute: ApiAuthLogoutRoute,
   DataTablesTableRoute: DataTablesTableRoute,
   LawProvisionIdRoute: LawProvisionIdRoute,
+  PrototypesCourtIdRoute: PrototypesCourtIdRoute,
+  PrototypesJudgeIdRoute: PrototypesJudgeIdRoute,
+  PrototypesMdlIdRoute: PrototypesMdlIdRoute,
   RecordsDatasetIdRoute: RecordsDatasetIdRoute,
 }
 export const routeTree = rootRouteImport
