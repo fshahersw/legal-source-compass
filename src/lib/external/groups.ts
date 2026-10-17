@@ -125,6 +125,7 @@ const EXPLICIT: Record<string, SectionId> = {
 export function sectionOf(datasetId: string): SectionId {
   if (EXPLICIT[datasetId]) return EXPLICIT[datasetId];
   if (datasetId.startsWith("agency_safety_")) return "safety";
+  if (datasetId.startsWith("regulatory_")) return "law";
   if (datasetId.startsWith("judge")) return "judges";
   if (datasetId.startsWith("mdl")) return "matters";
   if (datasetId.startsWith("court")) return "courts";
