@@ -100,6 +100,23 @@ def publish(dataset, label, rows, *, listing_block, summary, replace=True):
     return stored
 
 
+def fetch_all(dataset, select="id,title,state,item", page=1000):
+    """Read every record of a dataset (ordered by id) for joins in builders."""
+    rows, start = [], 0
+    while True:
+        base, key = _base()
+        request = urllib.request.Request(
+            base + f"corpus_records?select={select}&dataset=eq.{dataset}&order=id.asc",
+            headers={"apikey": key, "Authorization": f"Bearer {key}", "Range": f"{start}-{start + page - 1}"},
+        )
+        with urllib.request.urlopen(request, timeout=180) as response:
+            chunk = json.loads(response.read().decode())
+        rows.extend(chunk)
+        if len(chunk) < page:
+            return rows
+        start += page
+
+
 def _count(dataset):
     base, key = _base()
     request = urllib.request.Request(

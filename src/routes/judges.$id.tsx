@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { EntityError, EntityPage, entityQuery } from "@/components/corpus/EntityPage";
 import { JudgePortrait } from "@/components/corpus/EntityArtwork";
+import { JudgeFjcPanel } from "@/components/corpus/JudgeFjcPanel";
 import { pageHead } from "@/lib/corpus/head";
 import { canonicalState } from "@/lib/corpus/stateHub";
 import { buildEntityView } from "@/lib/external/entityView";
@@ -55,24 +56,27 @@ function Page() {
       dataset="judges"
       id={id}
       crumbs={crumbs}
-      extra={() =>
-        states.length ? (
-          <div className="mb-5 flex flex-wrap items-center gap-2 text-xs">
-            <span className="text-muted-foreground">Recorded state associations:</span>
-            {states.map((state) => (
-              <Link
-                key={state.usps}
-                to="/places/$state"
-                params={{ state: state.usps }}
-                search={{ tab: "judges" }}
-                className="rounded-lg border border-border bg-surface px-3 py-2 font-medium hover:bg-muted"
-              >
-                {state.name} →
-              </Link>
-            ))}
-          </div>
-        ) : null
-      }
+      extra={() => (
+        <>
+          <JudgeFjcPanel judgeId={id} />
+          {states.length ? (
+            <div className="mb-5 flex flex-wrap items-center gap-2 text-xs">
+              <span className="text-muted-foreground">Recorded state associations:</span>
+              {states.map((state) => (
+                <Link
+                  key={state.usps}
+                  to="/places/$state"
+                  params={{ state: state.usps }}
+                  search={{ tab: "judges" }}
+                  className="rounded-lg border border-border bg-surface px-3 py-2 font-medium hover:bg-muted"
+                >
+                  {state.name} →
+                </Link>
+              ))}
+            </div>
+          ) : null}
+        </>
+      )}
     />
   );
 }
