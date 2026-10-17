@@ -26,12 +26,20 @@ function MattersPage() {
               Cases, docket entries, available documents, and counsel.
             </span>
           </span>
-          <Link
-            to="/matters/seeger-weiss"
-            className="rounded-md border border-primary-foreground/40 px-3 py-2 text-[13px] font-semibold hover:bg-primary-foreground/10"
-          >
-            Browse priority matters
-          </Link>
+          <span className="flex flex-wrap gap-2">
+            <Link
+              to="/matters/analytics"
+              className="rounded-md border border-primary-foreground/40 px-3 py-2 text-[13px] font-semibold hover:bg-primary-foreground/10"
+            >
+              MDL analytics
+            </Link>
+            <Link
+              to="/matters/seeger-weiss"
+              className="rounded-md border border-primary-foreground/40 px-3 py-2 text-[13px] font-semibold hover:bg-primary-foreground/10"
+            >
+              Browse priority matters
+            </Link>
+          </span>
         </div>
       }
     />

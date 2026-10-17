@@ -44,6 +44,7 @@ import { Route as LawMonitoringRouteImport } from './routes/law_.monitoring'
 import { Route as LimitationsStatutoryRouteImport } from './routes/limitations_.statutory'
 import { Route as MattersIndexRouteImport } from './routes/matters.index'
 import { Route as MattersIdRouteImport } from './routes/matters.$id'
+import { Route as MattersAnalyticsRouteImport } from './routes/matters.analytics'
 import { Route as MattersCasesRouteImport } from './routes/matters.cases'
 import { Route as MattersSeegerWeissRouteImport } from './routes/matters.seeger-weiss'
 import { Route as PlacesIndexRouteImport } from './routes/places.index'
@@ -242,6 +243,11 @@ const MattersIdRoute = MattersIdRouteImport.update({
   path: '/matters/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MattersAnalyticsRoute = MattersAnalyticsRouteImport.update({
+  id: '/matters/analytics',
+  path: '/matters/analytics',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MattersCasesRoute = MattersCasesRouteImport.update({
   id: '/matters/cases',
   path: '/matters/cases',
@@ -384,6 +390,7 @@ export interface FileRoutesByFullPath {
   '/law/monitoring': typeof LawMonitoringRoute
   '/limitations/statutory': typeof LimitationsStatutoryRoute
   '/matters/$id': typeof MattersIdRoute
+  '/matters/analytics': typeof MattersAnalyticsRoute
   '/matters/cases': typeof MattersCasesRoute
   '/matters/seeger-weiss': typeof MattersSeegerWeissRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
@@ -442,6 +449,7 @@ export interface FileRoutesByTo {
   '/law/monitoring': typeof LawMonitoringRoute
   '/limitations/statutory': typeof LimitationsStatutoryRoute
   '/matters/$id': typeof MattersIdRoute
+  '/matters/analytics': typeof MattersAnalyticsRoute
   '/matters/cases': typeof MattersCasesRoute
   '/matters/seeger-weiss': typeof MattersSeegerWeissRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
@@ -502,6 +510,7 @@ export interface FileRoutesById {
   '/law_/monitoring': typeof LawMonitoringRoute
   '/limitations_/statutory': typeof LimitationsStatutoryRoute
   '/matters/$id': typeof MattersIdRoute
+  '/matters/analytics': typeof MattersAnalyticsRoute
   '/matters/cases': typeof MattersCasesRoute
   '/matters/seeger-weiss': typeof MattersSeegerWeissRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
@@ -563,6 +572,7 @@ export interface FileRouteTypes {
     | '/law/monitoring'
     | '/limitations/statutory'
     | '/matters/$id'
+    | '/matters/analytics'
     | '/matters/cases'
     | '/matters/seeger-weiss'
     | '/places/$state'
@@ -621,6 +631,7 @@ export interface FileRouteTypes {
     | '/law/monitoring'
     | '/limitations/statutory'
     | '/matters/$id'
+    | '/matters/analytics'
     | '/matters/cases'
     | '/matters/seeger-weiss'
     | '/places/$state'
@@ -680,6 +691,7 @@ export interface FileRouteTypes {
     | '/law_/monitoring'
     | '/limitations_/statutory'
     | '/matters/$id'
+    | '/matters/analytics'
     | '/matters/cases'
     | '/matters/seeger-weiss'
     | '/places/$state'
@@ -740,6 +752,7 @@ export interface RootRouteChildren {
   LawMonitoringRoute: typeof LawMonitoringRoute
   LimitationsStatutoryRoute: typeof LimitationsStatutoryRoute
   MattersIdRoute: typeof MattersIdRoute
+  MattersAnalyticsRoute: typeof MattersAnalyticsRoute
   MattersCasesRoute: typeof MattersCasesRoute
   MattersSeegerWeissRoute: typeof MattersSeegerWeissRoute
   PlacesStateRoute: typeof PlacesStateRouteWithChildren
@@ -1013,6 +1026,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MattersIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/matters/analytics': {
+      id: '/matters/analytics'
+      path: '/matters/analytics'
+      fullPath: '/matters/analytics'
+      preLoaderRoute: typeof MattersAnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/matters/cases': {
       id: '/matters/cases'
       path: '/matters/cases'
@@ -1227,6 +1247,7 @@ const rootRouteChildren: RootRouteChildren = {
   LawMonitoringRoute: LawMonitoringRoute,
   LimitationsStatutoryRoute: LimitationsStatutoryRoute,
   MattersIdRoute: MattersIdRoute,
+  MattersAnalyticsRoute: MattersAnalyticsRoute,
   MattersCasesRoute: MattersCasesRoute,
   MattersSeegerWeissRoute: MattersSeegerWeissRoute,
   PlacesStateRoute: PlacesStateRouteWithChildren,
