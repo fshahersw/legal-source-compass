@@ -69,9 +69,10 @@ const KIND_LABELS: Record<string, string> = {
 export const kindLabel = (k: string) =>
   KIND_LABELS[k] ?? k.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
 
-export type SafetyAgency = "FDA" | "CPSC" | "Other";
+export type SafetyAgency = "FDA" | "CPSC" | "NHTSA" | "Other";
 export function safetyAgency(id: string): SafetyAgency {
   if (id.includes("cpsc")) return "CPSC";
+  if (id.includes("nhtsa")) return "NHTSA";
   if (id.includes("fda")) return "FDA";
   return "Other";
 }
@@ -87,7 +88,8 @@ export function safetyKind(id: string): string {
   s = s
     .replace(/^openfda_/, "")
     .replace(/^fda_/, "")
-    .replace(/^cpsc_/, "");
+    .replace(/^cpsc_/, "")
+    .replace(/^nhtsa_/, "");
   const fix: Record<string, string> = {
     crl: "complete response letters",
     pma: "PMA approvals",

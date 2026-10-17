@@ -63,6 +63,7 @@ describe("law & safety folders", () => {
     for (const id of SAFETY) expect(sectionOf(id)).toBe("safety");
     expect(safetyAgency("agency_safety_cpsc_recalls_local")).toBe("CPSC");
     expect(safetyAgency("agency_safety_openfda_crl")).toBe("FDA");
+    expect(safetyAgency("agency_safety_nhtsa_recalls")).toBe("NHTSA");
     expect(safetyAgency("agency_science_documents")).toBe("Other");
     expect(safetyKind("agency_safety_openfda_drug_enforcement")).toBe("Drug enforcement (openFDA)");
     expect(safetyKind("agency_safety_cpsc_recalls_local")).toBe("Recalls");

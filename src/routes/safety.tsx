@@ -31,6 +31,7 @@ export const Route = createFileRoute("/safety")({
 const AGENCIES = [
   { key: "FDA", note: "Recalls, enforcement, approvals, warning letters" },
   { key: "CPSC", note: "Consumer product recalls" },
+  { key: "NHTSA", note: "Vehicle recalls, defect investigations, complaint trends" },
   { key: "Other", note: "Agency science documents" },
 ] as const;
 
@@ -77,6 +78,12 @@ function SafetyPage() {
               link: { to: "/safety", search: { agency: a.key } },
             };
           }),
+          {
+            key: "signals",
+            label: "Mass-tort product signals",
+            note: "MDL litigation next to FDA adverse events, recalls and NHTSA complaints",
+            link: { to: "/safety/signals" },
+          },
           {
             key: "list",
             label: "All safety collections",

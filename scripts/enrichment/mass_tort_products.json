@@ -1,0 +1,420 @@
+{
+ "_note": "Product queries for products-liability MDLs. 'faers'/'maude' are openFDA search expressions; 'recall' searches drug/device/food enforcement. Each query names the product as the MDL caption does; counts are reports mentioning the product, not causation.",
+ "mdls": [
+  {
+   "mdl": 1871,
+   "product": "Rosiglitazone (Avandia)",
+   "kind": "drug",
+   "faers": "patient.drug.medicinalproduct:(\"AVANDIA\"+\"ROSIGLITAZONE\")",
+   "recall": "product_description:\"rosiglitazone\""
+  },
+  {
+   "mdl": 2243,
+   "product": "Alendronate (Fosamax)",
+   "kind": "drug",
+   "faers": "patient.drug.openfda.generic_name:\"alendronate\"",
+   "recall": "openfda.generic_name:\"alendronate\""
+  },
+  {
+   "mdl": 2740,
+   "product": "Docetaxel (Taxotere)",
+   "kind": "drug",
+   "faers": "patient.drug.openfda.generic_name:\"docetaxel\"",
+   "recall": "openfda.generic_name:\"docetaxel\""
+  },
+  {
+   "mdl": 3023,
+   "product": "Docetaxel (Taxotere) — eye injury",
+   "kind": "drug",
+   "faers": "patient.drug.openfda.generic_name:\"docetaxel\"+AND+patient.reaction.reactionmeddrapt:\"lacrimation\"",
+   "recall": "openfda.generic_name:\"docetaxel\""
+  },
+  {
+   "mdl": 2789,
+   "product": "Proton-pump inhibitors",
+   "kind": "drug",
+   "faers": "patient.drug.openfda.generic_name:(\"omeprazole\"+\"esomeprazole\"+\"lansoprazole\"+\"pantoprazole\"+\"rabeprazole\"+\"dexlansoprazole\")",
+   "recall": "openfda.generic_name:(\"omeprazole\"+\"esomeprazole\"+\"lansoprazole\"+\"pantoprazole\"+\"rabeprazole\"+\"dexlansoprazole\")"
+  },
+  {
+   "mdl": 2848,
+   "product": "Zoster vaccine live (Zostavax)",
+   "kind": "drug",
+   "faers": "patient.drug.medicinalproduct:\"ZOSTAVAX\"",
+   "recall": null
+  },
+  {
+   "mdl": 2875,
+   "product": "Valsartan, losartan, irbesartan",
+   "kind": "drug",
+   "faers": "patient.drug.openfda.generic_name:(\"valsartan\"+\"losartan\"+\"irbesartan\")",
+   "recall": "openfda.generic_name:(\"valsartan\"+\"losartan\"+\"irbesartan\")"
+  },
+  {
+   "mdl": 2924,
+   "product": "Ranitidine (Zantac)",
+   "kind": "drug",
+   "faers": "patient.drug.openfda.generic_name:\"ranitidine\"",
+   "recall": "openfda.generic_name:\"ranitidine\""
+  },
+  {
+   "mdl": 2973,
+   "product": "Pentosan polysulfate (Elmiron)",
+   "kind": "drug",
+   "faers": "patient.drug.openfda.generic_name:\"pentosan\"",
+   "recall": "openfda.generic_name:\"pentosan\""
+  },
+  {
+   "mdl": 3006,
+   "product": "Nilotinib (Tasigna)",
+   "kind": "drug",
+   "faers": "patient.drug.openfda.generic_name:\"nilotinib\"",
+   "recall": "openfda.generic_name:\"nilotinib\""
+  },
+  {
+   "mdl": 3036,
+   "product": "HPV vaccine (Gardasil)",
+   "kind": "drug",
+   "faers": "patient.drug.medicinalproduct:\"GARDASIL\"",
+   "recall": null
+  },
+  {
+   "mdl": 3050,
+   "product": "Varenicline (Chantix)",
+   "kind": "drug",
+   "faers": "patient.drug.openfda.generic_name:\"varenicline\"",
+   "recall": "openfda.generic_name:\"varenicline\""
+  },
+  {
+   "mdl": 3079,
+   "product": "Teprotumumab (Tepezza)",
+   "kind": "drug",
+   "faers": "patient.drug.openfda.generic_name:\"teprotumumab\"",
+   "recall": null
+  },
+  {
+   "mdl": 3092,
+   "product": "Buprenorphine/naloxone film (Suboxone)",
+   "kind": "drug",
+   "faers": "patient.drug.openfda.brand_name:\"SUBOXONE\"",
+   "recall": "openfda.brand_name:\"SUBOXONE\""
+  },
+  {
+   "mdl": 3094,
+   "product": "GLP-1 receptor agonists",
+   "kind": "drug",
+   "faers": "patient.drug.openfda.generic_name:(\"semaglutide\"+\"liraglutide\"+\"dulaglutide\"+\"tirzepatide\"+\"exenatide\")",
+   "recall": "openfda.generic_name:(\"semaglutide\"+\"liraglutide\"+\"dulaglutide\"+\"tirzepatide\"+\"exenatide\")"
+  },
+  {
+   "mdl": 3163,
+   "product": "GLP-1 receptor agonists — NAION",
+   "kind": "drug",
+   "faers": "patient.drug.openfda.generic_name:(\"semaglutide\"+\"liraglutide\"+\"dulaglutide\"+\"tirzepatide\"+\"exenatide\")+AND+patient.reaction.reactionmeddrapt:\"optic\"",
+   "recall": null
+  },
+  {
+   "mdl": 3140,
+   "product": "Medroxyprogesterone acetate (Depo-Provera)",
+   "kind": "drug",
+   "faers": "patient.drug.openfda.generic_name:\"medroxyprogesterone\"",
+   "recall": "openfda.generic_name:\"medroxyprogesterone\""
+  },
+  {
+   "mdl": 3180,
+   "product": "Dupilumab (Dupixent)",
+   "kind": "drug",
+   "faers": "patient.drug.openfda.generic_name:\"dupilumab\"",
+   "recall": null
+  },
+  {
+   "mdl": 2197,
+   "product": "DePuy ASR hip implant",
+   "kind": "device",
+   "maude": "device.brand_name:\"ASR\"+AND+device.manufacturer_d_name:\"DEPUY\"",
+   "recall": "product_description:\"ASR\"+AND+recalling_firm:\"DePuy\""
+  },
+  {
+   "mdl": 2441,
+   "product": "Stryker Rejuvenate / ABG II stems",
+   "kind": "device",
+   "maude": "device.brand_name:(\"REJUVENATE\"+\"ABG II\")",
+   "recall": "product_description:(\"Rejuvenate\"+\"ABG II\")"
+  },
+  {
+   "mdl": 2570,
+   "product": "Cook IVC filters",
+   "kind": "device",
+   "maude": "device.brand_name:(celect+tulip)+AND+device.manufacturer_d_name:\"COOK\"",
+   "recall": "product_description:\"vena cava filter\"+AND+recalling_firm:\"Cook\""
+  },
+  {
+   "mdl": 2666,
+   "product": "Bair Hugger forced-air warming",
+   "kind": "device",
+   "maude": "device.brand_name:\"BAIR HUGGER\"",
+   "recall": "product_description:\"Bair Hugger\""
+  },
+  {
+   "mdl": 2753,
+   "product": "Atrium C-Qur mesh",
+   "kind": "device",
+   "maude": "device.brand_name:\"C-QUR\"",
+   "recall": "product_description:\"C-QUR\""
+  },
+  {
+   "mdl": 2768,
+   "product": "Stryker LFIT V40 femoral head",
+   "kind": "device",
+   "maude": "device.brand_name:\"V40\"",
+   "recall": "product_description:\"V40\""
+  },
+  {
+   "mdl": 2782,
+   "product": "Ethicon Physiomesh",
+   "kind": "device",
+   "maude": "device.brand_name:\"PHYSIOMESH\"",
+   "recall": "product_description:\"Physiomesh\""
+  },
+  {
+   "mdl": 2816,
+   "product": "Sorin/LivaNova 3T heater-cooler",
+   "kind": "device",
+   "maude": "device.brand_name:\"3T\"+AND+device.manufacturer_d_name:(\"SORIN\"+\"LIVANOVA\")",
+   "recall": "product_description:\"3T\"+AND+recalling_firm:(\"Sorin\"+\"LivaNova\")"
+  },
+  {
+   "mdl": 2846,
+   "product": "Bard/Davol polypropylene hernia mesh",
+   "kind": "device",
+   "maude": "device.generic_name:\"mesh\"+AND+device.manufacturer_d_name:\"DAVOL\"",
+   "recall": "product_description:\"mesh\"+AND+recalling_firm:\"Davol\""
+  },
+  {
+   "mdl": 2859,
+   "product": "Zimmer M/L Taper hip / Versys head",
+   "kind": "device",
+   "maude": "device.brand_name:(\"M/L TAPER\"+\"VERSYS\")",
+   "recall": "product_description:(\"M/L Taper\"+\"Versys\")"
+  },
+  {
+   "mdl": 2921,
+   "product": "Allergan Biocell textured breast implants",
+   "kind": "device",
+   "maude": "device.generic_name:\"breast\"+AND+device.manufacturer_d_name:\"ALLERGAN\"",
+   "recall": "product_description:\"breast implant\"+AND+recalling_firm:\"Allergan\""
+  },
+  {
+   "mdl": 2974,
+   "product": "Paragard copper IUD (regulated as a drug)",
+   "kind": "drug",
+   "recall": "openfda.brand_name:\"PARAGARD\"",
+   "faers": "patient.drug.medicinalproduct:\"PARAGARD\""
+  },
+  {
+   "mdl": 3014,
+   "product": "Philips CPAP / BiPAP / ventilators",
+   "kind": "device",
+   "maude": "device.brand_name:(\"DREAMSTATION\"+\"SYSTEMONE\"+\"TRILOGY\")",
+   "recall": "recalling_firm:\"Philips Respironics\""
+  },
+  {
+   "mdl": 3029,
+   "product": "Covidien hernia mesh",
+   "kind": "device",
+   "maude": "device.generic_name:\"mesh\"+AND+device.manufacturer_d_name:\"COVIDIEN\"",
+   "recall": "product_description:\"mesh\"+AND+recalling_firm:\"Covidien\""
+  },
+  {
+   "mdl": 3044,
+   "product": "Exactech polyethylene implants",
+   "kind": "device",
+   "maude": "device.manufacturer_d_name:\"EXACTECH\"",
+   "recall": "recalling_firm:\"Exactech\""
+  },
+  {
+   "mdl": 3081,
+   "product": "Bard implanted port catheters",
+   "kind": "device",
+   "maude": "device.generic_name:\"port\"+AND+device.manufacturer_d_name:\"BARD\"",
+   "recall": "product_description:\"port\"+AND+recalling_firm:\"Bard\""
+  },
+  {
+   "mdl": 3125,
+   "product": "AngioDynamics / Navilyst port catheters",
+   "kind": "device",
+   "maude": "device.generic_name:\"port\"+AND+device.manufacturer_d_name:(\"ANGIODYNAMICS\"+\"NAVILYST\")",
+   "recall": "product_description:\"port\"+AND+recalling_firm:(\"AngioDynamics\"+\"Navilyst\")"
+  },
+  {
+   "mdl": 3172,
+   "product": "Cartiva synthetic cartilage implant",
+   "kind": "device",
+   "maude": "device.brand_name:\"CARTIVA\"",
+   "recall": "product_description:\"Cartiva\""
+  },
+  {
+   "mdl": 3181,
+   "product": "Boston Scientific spinal cord stimulators",
+   "kind": "device",
+   "maude": "device.generic_name:\"stimulator\"+AND+device.manufacturer_d_name:\"BOSTON SCIENTIFIC\"",
+   "recall": "product_description:\"spinal cord stimulat\"+AND+recalling_firm:\"Boston Scientific\""
+  },
+  {
+   "mdl": 3026,
+   "product": "Preterm infant formula (cow's-milk based)",
+   "kind": "food",
+   "caers": "products.name_brand:(\"SIMILAC\"+\"ENFAMIL\")",
+   "recall": "product_description:(\"Similac\"+\"Enfamil\")"
+  },
+  {
+   "mdl": 3037,
+   "product": "Recalled Abbott infant formula",
+   "kind": "food",
+   "caers": "products.name_brand:(\"SIMILAC\"+\"ALIMENTUM\"+\"ELECARE\")",
+   "recall": "product_description:(\"Similac\"+\"Alimentum\"+\"EleCare\")+AND+recalling_firm:\"Abbott\""
+  },
+  {
+   "mdl": 3178,
+   "product": "ByHeart infant formula",
+   "kind": "food",
+   "caers": "products.name_brand:\"BYHEART\"",
+   "recall": "recalling_firm:\"ByHeart\""
+  },
+  {
+   "mdl": 3060,
+   "product": "Chemical hair straighteners / relaxers",
+   "kind": "cosmetic",
+   "caers": "products.name_brand:(\"RELAXER\"+\"RELAXERS\")",
+   "recall": null
+  },
+  {
+   "mdl": 3101,
+   "product": "Baby food (heavy metals)",
+   "kind": "food",
+   "caers": null,
+   "recall": "product_description:\"baby food\""
+  },
+  {
+   "mdl": 2151,
+   "product": "Toyota unintended acceleration",
+   "kind": "vehicle",
+   "nhtsa": {
+    "make": [
+     "TOYOTA",
+     "LEXUS"
+    ],
+    "component": [
+     "VEHICLE SPEED CONTROL",
+     "SPEED CONTROL"
+    ]
+   }
+  },
+  {
+   "mdl": 2599,
+   "product": "Takata airbag inflators",
+   "kind": "vehicle",
+   "nhtsa": {
+    "text": [
+     "TAKATA"
+    ],
+    "component": [
+     "AIR BAGS"
+    ]
+   }
+  },
+  {
+   "mdl": 2672,
+   "product": "Volkswagen 'clean diesel' emissions",
+   "kind": "vehicle",
+   "nhtsa": {
+    "make": [
+     "VOLKSWAGEN",
+     "AUDI",
+     "PORSCHE"
+    ],
+    "text": [
+     "DIESEL"
+    ]
+   }
+  },
+  {
+   "mdl": 2814,
+   "product": "Ford DPS6 PowerShift transmission",
+   "kind": "vehicle",
+   "nhtsa": {
+    "make": [
+     "FORD"
+    ],
+    "model": [
+     "FOCUS",
+     "FIESTA"
+    ],
+    "component": [
+     "POWER TRAIN"
+    ]
+   }
+  },
+  {
+   "mdl": 2905,
+   "product": "ZF-TRW airbag control units",
+   "kind": "vehicle",
+   "nhtsa": {
+    "text": [
+     "ZF-TRW",
+     "ZF TRW",
+     "ACU"
+    ],
+    "component": [
+     "AIR BAGS"
+    ]
+   }
+  },
+  {
+   "mdl": 3040,
+   "product": "Chrysler Pacifica plug-in hybrid fire",
+   "kind": "vehicle",
+   "nhtsa": {
+    "make": [
+     "CHRYSLER"
+    ],
+    "model": [
+     "PACIFICA"
+    ],
+    "component": [
+     "ELECTRICAL SYSTEM",
+     "HYBRID PROPULSION SYSTEM"
+    ]
+   }
+  },
+  {
+   "mdl": 3051,
+   "product": "ARC airbag inflators",
+   "kind": "vehicle",
+   "nhtsa": {
+    "text": [
+     "ARC AUTOMOTIVE",
+     "ARC INFLATOR"
+    ],
+    "component": [
+     "AIR BAGS"
+    ]
+   }
+  },
+  {
+   "mdl": 3052,
+   "product": "Kia/Hyundai vehicle theft",
+   "kind": "vehicle",
+   "nhtsa": {
+    "make": [
+     "KIA",
+     "HYUNDAI"
+    ],
+    "text": [
+     "THEFT",
+     "STOLEN"
+    ]
+   }
+  }
+ ]
+}

@@ -51,6 +51,7 @@ import { Route as PlacesIndexRouteImport } from './routes/places.index'
 import { Route as PlacesStateRouteImport } from './routes/places.$state'
 import { Route as RegistryIndexRouteImport } from './routes/registry.index'
 import { Route as RegistryIdRouteImport } from './routes/registry.$id'
+import { Route as SafetySignalsRouteImport } from './routes/safety_.signals'
 import { Route as SourcesIndexRouteImport } from './routes/sources.index'
 import { Route as SourcesAnalysisRouteImport } from './routes/sources.analysis'
 import { Route as SourcesCatalogRouteImport } from './routes/sources.catalog'
@@ -278,6 +279,11 @@ const RegistryIdRoute = RegistryIdRouteImport.update({
   path: '/registry/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SafetySignalsRoute = SafetySignalsRouteImport.update({
+  id: '/safety_/signals',
+  path: '/safety/signals',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SourcesIndexRoute = SourcesIndexRouteImport.update({
   id: '/sources/',
   path: '/sources/',
@@ -395,6 +401,7 @@ export interface FileRoutesByFullPath {
   '/matters/seeger-weiss': typeof MattersSeegerWeissRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/registry/$id': typeof RegistryIdRoute
+  '/safety/signals': typeof SafetySignalsRoute
   '/sources/analysis': typeof SourcesAnalysisRoute
   '/sources/catalog': typeof SourcesCatalogRoute
   '/sources/coverage': typeof SourcesCoverageRoute
@@ -454,6 +461,7 @@ export interface FileRoutesByTo {
   '/matters/seeger-weiss': typeof MattersSeegerWeissRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/registry/$id': typeof RegistryIdRoute
+  '/safety/signals': typeof SafetySignalsRoute
   '/sources/analysis': typeof SourcesAnalysisRoute
   '/sources/catalog': typeof SourcesCatalogRoute
   '/sources/coverage': typeof SourcesCoverageRoute
@@ -515,6 +523,7 @@ export interface FileRoutesById {
   '/matters/seeger-weiss': typeof MattersSeegerWeissRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/registry/$id': typeof RegistryIdRoute
+  '/safety_/signals': typeof SafetySignalsRoute
   '/sources/analysis': typeof SourcesAnalysisRoute
   '/sources/catalog': typeof SourcesCatalogRoute
   '/sources/coverage': typeof SourcesCoverageRoute
@@ -577,6 +586,7 @@ export interface FileRouteTypes {
     | '/matters/seeger-weiss'
     | '/places/$state'
     | '/registry/$id'
+    | '/safety/signals'
     | '/sources/analysis'
     | '/sources/catalog'
     | '/sources/coverage'
@@ -636,6 +646,7 @@ export interface FileRouteTypes {
     | '/matters/seeger-weiss'
     | '/places/$state'
     | '/registry/$id'
+    | '/safety/signals'
     | '/sources/analysis'
     | '/sources/catalog'
     | '/sources/coverage'
@@ -696,6 +707,7 @@ export interface FileRouteTypes {
     | '/matters/seeger-weiss'
     | '/places/$state'
     | '/registry/$id'
+    | '/safety_/signals'
     | '/sources/analysis'
     | '/sources/catalog'
     | '/sources/coverage'
@@ -757,6 +769,7 @@ export interface RootRouteChildren {
   MattersSeegerWeissRoute: typeof MattersSeegerWeissRoute
   PlacesStateRoute: typeof PlacesStateRouteWithChildren
   RegistryIdRoute: typeof RegistryIdRoute
+  SafetySignalsRoute: typeof SafetySignalsRoute
   SourcesAnalysisRoute: typeof SourcesAnalysisRoute
   SourcesCatalogRoute: typeof SourcesCatalogRoute
   SourcesCoverageRoute: typeof SourcesCoverageRoute
@@ -1075,6 +1088,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegistryIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/safety_/signals': {
+      id: '/safety_/signals'
+      path: '/safety/signals'
+      fullPath: '/safety/signals'
+      preLoaderRoute: typeof SafetySignalsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sources/': {
       id: '/sources/'
       path: '/sources'
@@ -1252,6 +1272,7 @@ const rootRouteChildren: RootRouteChildren = {
   MattersSeegerWeissRoute: MattersSeegerWeissRoute,
   PlacesStateRoute: PlacesStateRouteWithChildren,
   RegistryIdRoute: RegistryIdRoute,
+  SafetySignalsRoute: SafetySignalsRoute,
   SourcesAnalysisRoute: SourcesAnalysisRoute,
   SourcesCatalogRoute: SourcesCatalogRoute,
   SourcesCoverageRoute: SourcesCoverageRoute,
