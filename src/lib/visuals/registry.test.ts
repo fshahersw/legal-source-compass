@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import registry from "./registry.json";
 import { STATES } from "@/lib/corpus/geo";
-import { agencyArtwork, communityCourtArtwork, stateArtwork } from "./registry";
+import { agencyArtwork, communityCourtArtwork, stateArtwork, stateFlag } from "./registry";
 
 describe("source-bound local atlas artwork", () => {
   it("contains exactly the canonical 50 states and District of Columbia", () => {
@@ -22,8 +22,10 @@ describe("source-bound local atlas artwork", () => {
       ...Object.values(registry.states),
       ...Object.values(registry.agencies),
       ...Object.values(registry.courts),
+      ...Object.values(registry.stateCourts),
+      ...Object.values(registry.flags),
     ]) {
-      expect(asset.path).toMatch(/^\/visuals\/[a-z]+\/[A-Za-z0-9_-]+\.(svg|png)$/);
+      expect(asset.path).toMatch(/^\/visuals\/[a-z-]+\/[A-Za-z0-9_-]+\.(svg|png)$/);
       expect(asset.source).toMatch(/^https:\/\//);
       expect(asset.license.length).toBeGreaterThan(10);
       const body = readFileSync(resolve("public", asset.path.slice(1)));
@@ -50,5 +52,17 @@ describe("source-bound local atlas artwork", () => {
     expect(agencyArtwork("Food and Drug Administration Advisory Panel")).toBeNull();
     expect(communityCourtArtwork(Object.keys(registry.courts)[0]!, "State")).toBeNull();
     expect(communityCourtArtwork("unrecorded", "Federal")).toBeNull();
+    const stateCourt = Object.keys(registry.stateCourts)[0]!;
+    expect(communityCourtArtwork(stateCourt, "State")?.path).toBe(
+      (registry.stateCourts as Record<string, { path: string }>)[stateCourt]!.path,
+    );
+    expect(communityCourtArtwork(stateCourt, "Federal")).toBeNull();
+  });
+  it("has one flag per state and DC, keyed to that exact state", () => {
+    expect(Object.keys(registry.flags).sort()).toEqual(STATES.map((s) => s.usps).sort());
+    expect(stateFlag("Nebraska")?.name).toBe("Nebraska");
+    expect(stateFlag("Nevada")?.name).toBe("Nevada");
+    expect(stateFlag("Georgia")?.name).toBe("Georgia");
+    expect(stateFlag("unknown")).toBeNull();
   });
 });

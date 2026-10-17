@@ -1002,6 +1002,36 @@
       "license": "Federal government work per Free Law Project image license; identification only",
       "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
     },
+    "armfor": {
+      "name": "Court of Appeals for the Armed Forces",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/armfor.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/armfor.png",
+      "sourceSha256": "6185ab0c8aba74779640b69fc60237008988f106cf5c982c6d395b181d3cd040",
+      "sha256": "7de638c0c964b5ad572651048a8a9e8ec61d05f041aabaaf0a32699fe415a410",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "asbca": {
+      "name": "Armed Services Board of Contract Appeals",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/asbca.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/asbca.png",
+      "sourceSha256": "33685f635610ae9a37b27ac743586d45e994b99be02c8f4650bf46bc4d27bbe2",
+      "sha256": "04f9642ed3c273fc772d354717596ab24edc35a4caeccc5fcf632f61217068d2",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "bap1": {
+      "name": "Bankruptcy Appellate Panel of the First Circuit",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/bap1.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/bap1.png",
+      "sourceSha256": "bbd69a6723682cb95f2b577e2d358a1df53702dbf00675ced4b733766d3d2b5f",
+      "sha256": "20590c266de99da9e7cdc5b437d6e49ef348bc0906ec181ecb5368d4d1b52bf3",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
     "bap8": {
       "name": "United States Bankruptcy Appellate Panel for the Eighth Circuit",
       "kind": "community-court-mark",
@@ -1020,6 +1050,116 @@
       "license": "Federal government work per Free Law Project image license; identification only",
       "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
     },
+    "ca1": {
+      "name": "Court of Appeals for the First Circuit",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/ca1.svg",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ca1.svg",
+      "sourceSha256": "eff8053dd9d988ffad391f8f9d2f94e2c8b785ed0cad13247d7524731370a4ef",
+      "sha256": "eff8053dd9d988ffad391f8f9d2f94e2c8b785ed0cad13247d7524731370a4ef",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ca10": {
+      "name": "Court of Appeals for the Tenth Circuit",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/ca10.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ca10.png",
+      "sourceSha256": "7adebfccf499c8ba7fd57ee7251c865b65250e9dbd1415b24fa96dbb182c98ba",
+      "sha256": "1e87d120118a6d191ca5fad51373aa4d0c7da2784ad89cbc1ce490f9c6c75b66",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ca11": {
+      "name": "Court of Appeals for the Eleventh Circuit",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/ca11.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ca11.png",
+      "sourceSha256": "0d1ddeec88b15743b8e3b00a5cca0970512bfa78017c64baddab9d50a59d2c16",
+      "sha256": "3b00f6cb0ea8a634f48509b431b4cdb44c80f5fdd0f898aa81ae8d660a769409",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ca2": {
+      "name": "Court of Appeals for the Second Circuit",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/ca2.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ca2.png",
+      "sourceSha256": "64e731fea5f1481f88cdd7e83a9a76def0880c5d0c75c668758949a0bac5c334",
+      "sha256": "737247d349351bd8cafb87aaeb1a0a948f7d1972bfbafab6e8f8266ff6640d56",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ca3": {
+      "name": "Court of Appeals for the Third Circuit",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/ca3.svg",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ca3.svg",
+      "sourceSha256": "0661a0b1d8972aee5f400cc3a9486e2f58144c43cbba22f87d65e8f96aa688e7",
+      "sha256": "0661a0b1d8972aee5f400cc3a9486e2f58144c43cbba22f87d65e8f96aa688e7",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ca4": {
+      "name": "Court of Appeals for the Fourth Circuit",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/ca4.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ca4.png",
+      "sourceSha256": "53f6b9660c8853b84630759a87db041584da48014a3dd4f5a10c0cba3d49beb2",
+      "sha256": "e70db2b5517835fb26eec7f6319c3303a5b30b476f95f32cba847b6efc761292",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ca5": {
+      "name": "Court of Appeals for the Fifth Circuit",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/ca5.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ca5.png",
+      "sourceSha256": "1fbad592bf6068560dc3cc75b61387022457a8be1f56f163ee2168ce50532cb5",
+      "sha256": "b024b9e89f719c6a8d4bd4b89ae72b638640ddef4eca1f5e8dd9568ce5c0cbe6",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ca6": {
+      "name": "Court of Appeals for the Sixth Circuit",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/ca6.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ca6.png",
+      "sourceSha256": "a258f3f2d7138fbff32b15209f1f7015e31355a61d94bdd91adb822d519177bb",
+      "sha256": "7a6d3c1a9f6039d6fe9bbbe8d6e5e1f623ee44e0162efc99dec2861771bc803c",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ca7": {
+      "name": "Court of Appeals for the Seventh Circuit",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/ca7.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ca7.png",
+      "sourceSha256": "9729dc1e3eb703d4def802b598f800b381b74b7c3b2502a10b47a2547d4c3725",
+      "sha256": "f48e278781086c25eaee525a0fabf5783484906cd4112f7537a1614a44684135",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ca8": {
+      "name": "Court of Appeals for the Eighth Circuit",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/ca8.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ca8.png",
+      "sourceSha256": "8399f563c753bfb7de4dd4bc93d7c38ccb88a6736954980a8ea745bd50b0821c",
+      "sha256": "b4456e529b953bbff47bf8f482a8cf3b13e62473d6ad99a5e4657425f8287f96",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ca9": {
+      "name": "Court of Appeals for the Ninth Circuit",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/ca9.svg",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ca9.svg",
+      "sourceSha256": "3f6ab671d4ae034fe860efacac3336623235e5adaf77729df8b59f8af1e5744b",
+      "sha256": "3f6ab671d4ae034fe860efacac3336623235e5adaf77729df8b59f8af1e5744b",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
     "cacb": {
       "name": "United States Bankruptcy Court, C.D. California",
       "kind": "community-court-mark",
@@ -1027,6 +1167,26 @@
       "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/cacb.png",
       "sha256": "75c1390151191bf0e8b80a392e8b04b46607f1893179a860080b9431e5c7f773",
       "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "cadc": {
+      "name": "Court of Appeals for the D.C. Circuit",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/cadc.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/cadc.png",
+      "sourceSha256": "cecf421ef1a824e562689872a67eb15ed639b120e6943ba098cae6b700ac9761",
+      "sha256": "f92a1038cd5ff9ef40412db99f41b2bf78d14fbde9028e5ede6c811ea31ec95e",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "cafc": {
+      "name": "Court of Appeals for the Federal Circuit",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/cafc.svg",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/cafc.svg",
+      "sourceSha256": "15093375b071328be027dac456849275295cd4a9fc26243253024279ce6c41d2",
+      "sha256": "15093375b071328be027dac456849275295cd4a9fc26243253024279ce6c41d2",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
       "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
     },
     "canb": {
@@ -1047,6 +1207,16 @@
       "license": "Federal government work per Free Law Project image license; identification only",
       "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
     },
+    "cbca": {
+      "name": "Civilian Board of Contract Appeals",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/cbca.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/cbca.png",
+      "sourceSha256": "32a746fdbe83c1608da709f7f1286d78f23003ae26876639826adc505d2e00bf",
+      "sha256": "5ba8cca66d243fc907ea7256795cc5c7f32c2417ec6cad4813ce36e32dd37201",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
     "cit": {
       "name": "United States Court of International Trade",
       "kind": "community-court-mark",
@@ -1054,6 +1224,16 @@
       "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/cit.png",
       "sha256": "9203955055e0843892a8a4e800841acfdea9370b6bd8e2e2daf90b1db6296636",
       "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "cjdpa": {
+      "name": "Court of Judicial Discipline of Pennsylvania",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/cjdpa.svg",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/cjdpa.svg",
+      "sourceSha256": "8844d63bf4eb2335f4f20fc77bff45abd1a2323f8c2df83f91020e94cf7b0243",
+      "sha256": "8844d63bf4eb2335f4f20fc77bff45abd1a2323f8c2df83f91020e94cf7b0243",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
       "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
     },
     "cob": {
@@ -1099,6 +1279,16 @@
       "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/deb.png",
       "sha256": "c566fc2e954996968207f5de580077bc7a29b87a5105ceb6c729db8881aac6be",
       "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "fisc": {
+      "name": "Foreign Intelligence Surveillance Court",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/fisc.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/fisc.png",
+      "sourceSha256": "8e2c7481693b6297f51c30d29954d730def2810f418113e513cefde277820350",
+      "sha256": "78a32fc74659d3142ca62b4d759cd75ee75138965236d8c689e1be237be396fe",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
       "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
     },
     "flmb": {
@@ -1569,6 +1759,16 @@
       "license": "Federal government work per Free Law Project image license; identification only",
       "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
     },
+    "tax": {
+      "name": "United States Tax Court",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/tax.svg",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/tax.svg",
+      "sourceSha256": "e43241357078d0d2b3355f1476d80105d84dc548d23dd939373b9b294ea62246",
+      "sha256": "e43241357078d0d2b3355f1476d80105d84dc548d23dd939373b9b294ea62246",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
     "tneb": {
       "name": "United States Bankruptcy Court, E.D. Tennessee",
       "kind": "community-court-mark",
@@ -1612,6 +1812,16 @@
       "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/txwb.png",
       "sha256": "54a9a3798b0e1153067ac40ad84ca25c43f84e61153a97dfd2fd4fb4b83a0552",
       "license": "Federal government work per Free Law Project image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "uscfc": {
+      "name": "United States Court of Federal Claims",
+      "kind": "community-court-mark",
+      "path": "/visuals/courts/uscfc.svg",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/uscfc.svg",
+      "sourceSha256": "4ea3d3f54594a559fe6472352a6f1e6a94d5ce67609aa38fc3b155481862882b",
+      "sha256": "4ea3d3f54594a559fe6472352a6f1e6a94d5ce67609aa38fc3b155481862882b",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
       "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
     },
     "utd": {
@@ -1738,5 +1948,2000 @@
       "id": "uscfc",
       "reason": "Error: Original hash differs from supplier metadata"
     }
-  ]
+  ],
+  "stateCourts": {
+    "akd": {
+      "name": "District Court, D. Alaska",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/akd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/akd.png",
+      "sourceSha256": "94762917c952332656d56dab042868c9d8aaf3a01643413788967dff8c013bf4",
+      "sha256": "9a37d01fb3609af40a4d1d424df246d215092350045ad03a65deee5ec348c953",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ala": {
+      "name": "Supreme Court of Alabama",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/ala.svg",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ala.svg",
+      "sourceSha256": "4be1d5e999016946062ea3a94d8746e0331202fb165674732e8c6e8d16bbd0b1",
+      "sha256": "4be1d5e999016946062ea3a94d8746e0331202fb165674732e8c6e8d16bbd0b1",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "almd": {
+      "name": "District Court, M.D. Alabama",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/almd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/almd.png",
+      "sourceSha256": "d1f1b16f22334c61e7ff4adbde20deff4e84e961bf16dd6c734ae05def8b0c10",
+      "sha256": "e545bcf8ffbba2d0160771dedbb2fe7def1c70e6edcfb67bf5d017c1780ccbf4",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "alnd": {
+      "name": "District Court, N.D. Alabama",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/alnd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/alnd.png",
+      "sourceSha256": "62e2f548e510d066f705ce533338e5eac69e5cb3a3ddc0e8cf026c746d9a0177",
+      "sha256": "a3b660c4053b0828ffd55a570418f5a764671afd4552b9eb167e05b6d5fcb523",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "alsd": {
+      "name": "District Court, S.D. Alabama",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/alsd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/alsd.png",
+      "sourceSha256": "ac05c3b01d1f6e836a7d1f14b0927437ce31cfa9f10ff2e3e8ed70ef34e5f7a1",
+      "sha256": "74ae10c4c35ee936300a7cad07c3534224a22d6bac2183a466901dcfd2d51487",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ared": {
+      "name": "District Court, E.D. Arkansas",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/ared.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ared.png",
+      "sourceSha256": "97c7d1497fc2cdbee53d813998f7a75cda563cb3e44681a7e0adc7c78ad089cc",
+      "sha256": "b4a3be3898e47ee9b1b86f84b01d9a23735f6c398609b03798e38993fc5b7cb9",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ariz": {
+      "name": "Arizona Supreme Court",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/ariz.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ariz.png",
+      "sourceSha256": "2133cf3f9edc4a16c4616e439337c7346421bbf750110ed6537c8b7830915b99",
+      "sha256": "da90b4445faa1dc90c40435a59ba98276af993c87f35941b4343f79acfd504fb",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ark": {
+      "name": "Supreme Court of Arkansas",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/ark.svg",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ark.svg",
+      "sourceSha256": "4553467829b28b14673463394014f1926daa8da641b33cc2d3a8d641b5c3cef1",
+      "sha256": "4553467829b28b14673463394014f1926daa8da641b33cc2d3a8d641b5c3cef1",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "arwd": {
+      "name": "District Court, W.D. Arkansas",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/arwd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/arwd.png",
+      "sourceSha256": "83b006db945e4f25ca320415af35ce5197f1d2b350db5b29ecf6d90728a13d3d",
+      "sha256": "7defcda8b264cd3eedabb93af24cf78a21a2f84561b6b95b317211ea6e19b09e",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "azd": {
+      "name": "District Court, D. Arizona",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/azd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/azd.png",
+      "sourceSha256": "13117c59c5793ab6592534927d5469f3fc5c6864186a9f480816894f92f5e201",
+      "sha256": "5b5321a245d7cfae96913cfe047d51739308636a3727db408222c59293d7ce13",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "cacd": {
+      "name": "District Court, C.D. California",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/cacd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/cacd.png",
+      "sourceSha256": "acaa0e5c4c4c4b59057d931a3071dd0bfadc8d919543d4d69756f0999764c596",
+      "sha256": "c4e2efef27c0e2b314292828d511f51a1474032389fada1f66c34dd3c6aef971",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "caed": {
+      "name": "District Court, E.D. California",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/caed.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/caed.png",
+      "sourceSha256": "258533d683b7621e9831e55c3073ecf8ddaa028ea824b56b7d2d5da3ebc99f7e",
+      "sha256": "5a654da824e0f4180a306056f3814ff93834a6cd4d362ed550ad538a763f15c4",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "cal": {
+      "name": "California Supreme Court",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/cal.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/cal.png",
+      "sourceSha256": "8ab5b14ea5363d08d56de892fed6a054c8d329731a14f6903f2980c91e5d2633",
+      "sha256": "5d9bb8f1d19c90b5186fb605330a3ce566efaa05e78102a40fcd305f288d7c78",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "casd": {
+      "name": "District Court, S.D. California",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/casd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/casd.png",
+      "sourceSha256": "5a66979edbd57ad0a10299259291391111196dfd352897c29103b92b6589e980",
+      "sha256": "cb13c0b2fc2823adde4494b33e8a6ca70697048bc1142f8b2ffabef6e675b134",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "cod": {
+      "name": "District Court, D. Colorado",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/cod.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/cod.png",
+      "sourceSha256": "dd712448abdee9fe188de2c895d1f11d2a3048507809b222b3ae132ef0ae8993",
+      "sha256": "562399315b0a0cc4516c74e179c10e06277a4c13b2c76fff1db8a62f5c9c703c",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "conn": {
+      "name": "Supreme Court of Connecticut",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/conn.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/conn.png",
+      "sourceSha256": "b594fa7835f30f26e6cefb87064eb5aa31af53c9159ff898731e59759488e8b8",
+      "sha256": "f42805ff1deddb28db684cbcbe7b66e49d77bbe4cf7487ee5285bb131fbf675c",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ctd": {
+      "name": "District Court, D. Connecticut",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/ctd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ctd.png",
+      "sourceSha256": "228515c426ac7f7002b5a505efbb2ad27b2ea16cfe87d191ae37b7f97d23aa8b",
+      "sha256": "fb6ed9ce5267bd534288e75ed1f819a9f452bcd7d07ee1afcf7e08bba454a2ec",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "dc": {
+      "name": "District of Columbia Court of Appeals",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/dc.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/dc.png",
+      "sourceSha256": "e965cb89f8ffc381984a81f63577be17f8017a2ad9a1cd9632e4e48ef4f2bc16",
+      "sha256": "b09e819b1401856f0b447a8e163cd1bb68af58dae21f892a2e02f1c2315e5284",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "dcd": {
+      "name": "District Court, District of Columbia",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/dcd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/dcd.png",
+      "sourceSha256": "7e8705d9cfc180dd501b56cfc5f6b97c65f8fe1c1a60932f40d2ba09eaa85b5a",
+      "sha256": "f2f370dbc2e67e76f2f637b35e1cc62a23c65fb85cb79fcf08605269c5949912",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ded": {
+      "name": "District Court, D. Delaware",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/ded.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ded.png",
+      "sourceSha256": "f344d2dd0e498495f88422a58029ad81a3df7186e9d80eccdebbc111536583a0",
+      "sha256": "96a8ef37c969a25337fd40609ece08a30e64a4f36d0b1a2c2431a74c2a460d0d",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "del": {
+      "name": "Supreme Court of Delaware",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/del.svg",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/del.svg",
+      "sourceSha256": "1063c1946847ee9b933780004334f1eba711adea244402119b792b00f47e6cb6",
+      "sha256": "1063c1946847ee9b933780004334f1eba711adea244402119b792b00f47e6cb6",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "delch": {
+      "name": "Court of Chancery of Delaware",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/delch.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/delch.png",
+      "sourceSha256": "7651c75faeb416f6ea3b505acb95421c913639c2e339a769d1ccf2976e4ea633",
+      "sha256": "37fa22a57e0c7b45885af9cff23b01de221ab5838902fa286e93ce2438a362cd",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "delctcompl": {
+      "name": "Delaware Court of Common Pleas",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/delctcompl.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/delctcompl.png",
+      "sourceSha256": "9341ca5fae57aea3728b1f9b7062b5a6bfd74460fdef51aba4e03547f6b3ccda",
+      "sha256": "e91b28ab4b09b8b392f9bd77fcafe5802f98e90c77f0889536c6b0ec6561b22e",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "delfamct": {
+      "name": "Delaware Family Court",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/delfamct.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/delfamct.png",
+      "sourceSha256": "f1744a854de78cdc67d0c0bb5cfdfd27bd534dd2c8cc38e078a87cd85d72ca31",
+      "sha256": "9d3fbfa5eb26997b5bb255e76496d9320615c4fc3f6327f69eee5fd39114a2f8",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "fla": {
+      "name": "Supreme Court of Florida",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/fla.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/fla.png",
+      "sourceSha256": "acba4c577807d9838aed05906d198666258697a8d78f74c4a42da51db3b55045",
+      "sha256": "cb30553968bda8080b31a343fda6983be7b7948c3f7cceb18fc4a61e1c88789d",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "flmd": {
+      "name": "District Court, M.D. Florida",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/flmd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/flmd.png",
+      "sourceSha256": "19a692a2e03bdb22cc8728b026b0cb2acc732c4d48700ad3f628ffbfd692e099",
+      "sha256": "197a6bf5fe14519b4c0eeac9e3bf5e62b7324db4f96ac12e07cd8b378c3bebde",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "flnd": {
+      "name": "District Court, N.D. Florida",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/flnd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/flnd.png",
+      "sourceSha256": "9949e449087ad41ececa1ef2fc65f1606ec164fe3adec104d3e1a3191cfa6356",
+      "sha256": "5a08e8d28cc8d969193c7bdedbaf279456bbdcd76041b00eadc046c99e32c6eb",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "flsd": {
+      "name": "District Court, S.D. Florida",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/flsd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/flsd.png",
+      "sourceSha256": "d9d51f8fe3d77edb64d2eb559df67cb61cd8920efff19e17b351be7f1333351d",
+      "sha256": "f0982407d53185a377574452aae1c67e6c0db32a7204ec334760bb22ce952276",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ga": {
+      "name": "Supreme Court of Georgia",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/ga.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ga.png",
+      "sourceSha256": "ec386529f4f3fe0c4600d763cb1aa5d8876e2029d3802321a3d36383d89a8615",
+      "sha256": "92dc9bc9fc7f30f56b1e36b42fd159e47a9ada621f8969972bba5b85871bc6fb",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "gactapp": {
+      "name": "Court of Appeals of Georgia.",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/gactapp.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/gactapp.png",
+      "sourceSha256": "7624c3ad15993628f106afea18c9e4d725af8d1ed5016ec0fee462079041bf49",
+      "sha256": "b6f46399103001f89e5dfb587d5a57334508309773944ea23175452c8da3f6ea",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "gamd": {
+      "name": "District Court, M.D. Georgia",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/gamd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/gamd.png",
+      "sourceSha256": "176476cb6f3520c7d8d9ff43a085baaba573b7bfe0e60256ed0d7277a7fa6707",
+      "sha256": "05e9daa65b4c4dfef8c196efd24ccef7df2a7d88427693b449007e61118c92d4",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "gand": {
+      "name": "District Court, N.D. Georgia",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/gand.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/gand.png",
+      "sourceSha256": "bc4cdb654f38e72ca44b0c24761ec4146a637764d758534cf6074bdc53289b41",
+      "sha256": "9e3c87e97a1c770d5cf57a40db2e3be92203e355a382e606729c4b7d6379fbe3",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "gasd": {
+      "name": "District Court, S.D. Georgia",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/gasd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/gasd.png",
+      "sourceSha256": "d02528491f9e3f4e25243a1420da43a03aab811ba0685b7662c5c1ba74cbd538",
+      "sha256": "075e9813600a299ba023dc554ea69967021545c22a3982b553e24dbc01ccedb7",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "gud": {
+      "name": "District Court, D. Guam",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/gud.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/gud.png",
+      "sourceSha256": "5f9264a2dedc3300f6ecf730a6780bb2f341049ca4ec2e4cace77ae2ea11f536",
+      "sha256": "e06fc93ce83ebc03e1b71f4c9c31b530e3808a63dab329ca705ca61775c98f7c",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "haw": {
+      "name": "Hawaii Supreme Court",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/haw.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/haw.png",
+      "sourceSha256": "44e9366de7d6f8bba677235a5114ae3a003f7040bdcc52371bc1dc84c6b88d01",
+      "sha256": "bf9705b2a36a6bf62554876baec82538806d3c506c11c2c22944ccc2ee2210e5",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "hid": {
+      "name": "District Court, D. Hawaii",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/hid.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/hid.png",
+      "sourceSha256": "27042c860d03d9d36bea674c58b4342f074e4b8b91196ec9bddc6be30029b4f9",
+      "sha256": "c95ce8fa7e5e20d610616da46c6b3bc44b83df4e6133f0500ffa59215a8b276e",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "iand": {
+      "name": "District Court, N.D. Iowa",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/iand.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/iand.png",
+      "sourceSha256": "b4d65c148724da827b9e11119e4b34a2547d54fc1ee0468513d9266101fe410d",
+      "sha256": "232ac2e7b42c98bf02974d18a7679c0fecd8db9afb2178104aad36e8361f4528",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "iasd": {
+      "name": "District Court, S.D. Iowa",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/iasd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/iasd.png",
+      "sourceSha256": "210958e5bb3adc0dc32c65e63181d8094cfc7df0ea28840eef4a568bffcd3d99",
+      "sha256": "5add74339abd25a6fd351b3bfe40acc246f8ca0d21a54bddb497fc649bc86ffe",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "idd": {
+      "name": "District Court, D. Idaho",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/idd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/idd.png",
+      "sourceSha256": "04740dfe42b7acc9f81735d8dcee48a0670900db994ba68345dfc6820b99c4d1",
+      "sha256": "54f904b04c2b09e66e4691e85dbb825becab387e211a5409d916e91ae967dfe7",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ilcd": {
+      "name": "District Court, C.D. Illinois",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/ilcd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ilcd.png",
+      "sourceSha256": "29a183f4633b30fc5e227c53969e5efa44be08eee4bf5939a1ed1e7022f57ae3",
+      "sha256": "51cdfdd743713b6e15bee87297a384ba6bf18be3f9e2fc51b2d5ab1c16a757e1",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ill": {
+      "name": "Illinois Supreme Court",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/ill.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ill.png",
+      "sourceSha256": "98da64fb974e2993e5830cec7ea4dba064347b5a45919c8c4ec63a082427a5d6",
+      "sha256": "d707dbdc1ff13a1b1714fa4e7c9057f50268bf50c2856db193b9cc9c817b4c72",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ilnd": {
+      "name": "District Court, N.D. Illinois",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/ilnd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ilnd.png",
+      "sourceSha256": "1a5c00ac2c9573c7b66981504c747099f707bed2b151e0239508b53d020fa573",
+      "sha256": "b7852b1af383cc630fc19707bf0314ce0fbf3d7d9f8bd3ffba0ce876af646454",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ilsd": {
+      "name": "District Court, S.D. Illinois",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/ilsd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ilsd.png",
+      "sourceSha256": "f02a755270174f4c733bc58e95b78271a5c12eee44f5a0ba9ef2837d97b6e39f",
+      "sha256": "5f1302fa5bb3fc389550f1e1576377bac64377356835f7e86b4bf6c32df6476b",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ind": {
+      "name": "Indiana Supreme Court",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/ind.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ind.png",
+      "sourceSha256": "c73974c2d20b6f8ca08d387737ee85c23b9ad6b0360a83b834499c8f98a1780c",
+      "sha256": "a6ea9eb84a44b10d5457e7661460e39048716032995c0dd6e4c2df93021d145e",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "indctapp": {
+      "name": "Indiana Court of Appeals",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/indctapp.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/indctapp.png",
+      "sourceSha256": "1d478e180bd5e6a6d1d4d5f8e6044058b3e682842deeaa9a2da0cc42b9e4f622",
+      "sha256": "82072f056b68c9abf6eec06b9a593bc60f73c7058a5a30c25fd7a563b3e700a0",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "indtc": {
+      "name": "Indiana Tax Court",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/indtc.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/indtc.png",
+      "sourceSha256": "d32f1b029ec69bd14aa7447401a9368edaf02cbdc8ae297e1ecabb2e562be949",
+      "sha256": "e9d91fd5e851cc254d0bb15e2a5b312c4bea98101bc222bc30bde0142b13873a",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "innd": {
+      "name": "District Court, N.D. Indiana",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/innd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/innd.png",
+      "sourceSha256": "bd8dc56e33fb5a79419e55b6e8ad681a9049a5089176358be277a5705bd6cbd1",
+      "sha256": "c61e46078d9116c4883a1c0663107f402fc92eee03aa9b1bafd28d30a4afc0d3",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "insd": {
+      "name": "District Court, S.D. Indiana",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/insd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/insd.png",
+      "sourceSha256": "d1e0b35896dcca52a6d2e0e525bc9f3d01aea92860f17dc6ddd59796b9acecad",
+      "sha256": "5f1302fa5bb3fc389550f1e1576377bac64377356835f7e86b4bf6c32df6476b",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "kan": {
+      "name": "Supreme Court of Kansas",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/kan.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/kan.png",
+      "sourceSha256": "05b94c16f28f17227faebcb542de0efb70762dc2b4587163913064a8220e4eb4",
+      "sha256": "4c53ef07b0d0667787c10ca4d521e814e0224608f9d083089f9a7a445f18a45e",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ksd": {
+      "name": "District Court, D. Kansas",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/ksd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ksd.png",
+      "sourceSha256": "db370a84e0e0917b8da7a40c0467dc7d0a0569e95c79e43b32bf7cad6d2a944f",
+      "sha256": "297fc3c99e9ec09c58b0c805ca67792f6c556f6367807ba7da577c1a3d230bff",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "kyctapp": {
+      "name": "Court of Appeals of Kentucky",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/kyctapp.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/kyctapp.png",
+      "sourceSha256": "1b89524d67f39b8b5fca45aae5de3baeca74bc6aff3b29e06d5425a3020b67ea",
+      "sha256": "834a83e2e1cd229732723267cecf66ac722b83faba59b8a50c57e92d0dd08ca9",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "kyed": {
+      "name": "District Court, E.D. Kentucky",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/kyed.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/kyed.png",
+      "sourceSha256": "ef1199069ccbb93aedf8f5131d4ef64d582339f511bf8c50ed404a52a96df456",
+      "sha256": "c3d5d650d730cbd2615cfc49843c84f278f8e9bec4d53aeaa2ad145f91dd3bc9",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "kywd": {
+      "name": "District Court, W.D. Kentucky",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/kywd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/kywd.png",
+      "sourceSha256": "4bcb664458c98d6bdcc178ea85c66cdbbf3372cca2b18814f78403e83d0b0dd3",
+      "sha256": "19a7037b94624ec61829678410bff9d2eda9a7b6cbdcca216ed43b8555e23640",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "la": {
+      "name": "Supreme Court of Louisiana",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/la.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/la.png",
+      "sourceSha256": "b21e58f9b5eaadd9adef1356ebb3d82c1e8379ab75a0ff744dfefeef90a8ee42",
+      "sha256": "b90eb588b2803e7a3632b0c072f80ed15eb89a2683897925320937a2ec51a0d3",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "laed": {
+      "name": "District Court, E.D. Louisiana.",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/laed.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/laed.png",
+      "sourceSha256": "98c6959340bf066ba4ecd237a21196be5cc21a291efaee62244f34af2d578a63",
+      "sha256": "361240478151b6f766109e4c43571ec48dbbcfda59fb3b6228f4f753f5b69022",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "lamd": {
+      "name": "District Court, M.D. Louisiana",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/lamd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/lamd.png",
+      "sourceSha256": "2cde11d7eca8b971512c8a5f0c678fe23ca59a2231ebd61e01d9ae8c299ac5ae",
+      "sha256": "14137747c97f7c56d68f27ad7623dea77a243e1b9959025fb947291e44793b1d",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "lawd": {
+      "name": "District Court, W.D. Louisiana",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/lawd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/lawd.png",
+      "sourceSha256": "6c81d6beee8a318bb2a010f6bf4e41aa568659f93d5eebce30f93a981f34c394",
+      "sha256": "257fc76d7b65d03b9c78c0605b877b4580523d3e05943199243354441e623df9",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "mad": {
+      "name": "District Court, D. Massachusetts",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/mad.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/mad.png",
+      "sourceSha256": "9d921e2e4686f0c4c0a85c6287c4a1e526e257241e09a80519cf4b373f0ec7ca",
+      "sha256": "b5fdb5ac7383f6b88f6ab38be4efe15b7b3d56a52b286d92ff350b765e9bd654",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "mass": {
+      "name": "Massachusetts Supreme Judicial Court",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/mass.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/mass.png",
+      "sourceSha256": "8a6781b81dfb81228ac06c70834d11705dbfc851dfaf0bea02b8c0853573124d",
+      "sha256": "2e4e12ce6be0e6059d9f1ac4b44d864eda8eb6bca4ae4795158548b740f85bb0",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "md": {
+      "name": "Court of Appeals of Maryland",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/md.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/md.png",
+      "sourceSha256": "2393480e307846b98a4873c49277d35d2eae2a02f2ed75be2bc8f7101b0103d3",
+      "sha256": "89d63146512ce7da80ef31fb6ae01eca2389d3792836d124e8ca799f463f4e76",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "mdctspecapp": {
+      "name": "Court of Special Appeals of Maryland",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/mdctspecapp.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/mdctspecapp.png",
+      "sourceSha256": "36c4778a03a45ee8482e0a1860de0884c4fbd14bb2b2fc5fe21b91fb4788b742",
+      "sha256": "49ac0bed1d355b7fbde6e0df88e9c90130ecd2e0e59edfe7fd27ba7e1793a501",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "mdd": {
+      "name": "District Court, D. Maryland",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/mdd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/mdd.png",
+      "sourceSha256": "983a7a8954502aa05478fa378b9c75d93450929a562e17dd29a4e5fc43abbc59",
+      "sha256": "92dafe7e777490d5ff30f3f7b93ebc9ed075300f431ae78026b3fd42ec3ed358",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "me": {
+      "name": "Supreme Judicial Court of Maine",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/me.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/me.png",
+      "sourceSha256": "069e61af736bc3026aa38aaafd4c737ad85940a41fbfe320c8cd88a3cd1b0dc3",
+      "sha256": "bb7c20095b50fb287fa545ab4db25def7892cce8e89dbb4e4faa21ae321eacec",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "med": {
+      "name": "District Court, D. Maine",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/med.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/med.png",
+      "sourceSha256": "43df14caf300980ae4ea94f381af16b6d37f7813551da865bc98f647a2422cc8",
+      "sha256": "0a2f8fa6d32e036f904b7e974d5aacd48279fcc469e645870e8db3fe866942d7",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "mich": {
+      "name": "Michigan Supreme Court",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/mich.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/mich.png",
+      "sourceSha256": "3fcf235fe40a2e29b0a0bb03e23d61bfe3fd1822469691587ecc6db98f9b7f2b",
+      "sha256": "5df16efa4317f9f0ef9db0b41b4743cb50c33a64c772c668fb0250bd7fb4d7b7",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "michctapp": {
+      "name": "Michigan Court of Appeals",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/michctapp.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/michctapp.png",
+      "sourceSha256": "5179863623d4907a67982fa7d7672adf317d3734433084e2c02a6e8c64c8952d",
+      "sha256": "07b69a79fe81829b41a9d2b15ed178ad67c9881ac997e606aa0d2df72d1b501a",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "mied": {
+      "name": "District Court, E.D. Michigan",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/mied.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/mied.png",
+      "sourceSha256": "25bd79f7cdce460f5bcc32c516d972d5b656cbb7d9584e3e8583334e2535b85d",
+      "sha256": "2afea1381b9e2389c9d6f9575f414792d0fffa5e94cd99bf8cd0cbc263ac62b6",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "minn": {
+      "name": "Supreme Court of Minnesota",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/minn.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/minn.png",
+      "sourceSha256": "ac2674d4806f69e612bf20f602203d061e26630134410ab065a113707bb871c7",
+      "sha256": "895505ef1985672def4fcc5be87d60dd1a86fcaaef2933d97f9de18746792e78",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "miss": {
+      "name": "Mississippi Supreme Court",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/miss.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/miss.png",
+      "sourceSha256": "e4311ca01414d21f31e4a3f36f961f2367f917ad7e01b83fdbca740412389830",
+      "sha256": "5e58377b2f41275ab8a501acaa948782e91b1edf11517fd792ec6fb142bb083e",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "miwd": {
+      "name": "District Court, W.D. Michigan",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/miwd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/miwd.png",
+      "sourceSha256": "938c8ae901e8bd0957b08942b4affe3b9e9ede5908b982b632c6ca76071a78cf",
+      "sha256": "a45b67447bdc2b0b81caf9a8be920c645dd3f98fbea8a2b7cdd501c84533c087",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "mont": {
+      "name": "Montana Supreme Court",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/mont.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/mont.png",
+      "sourceSha256": "ded4f0165720b6017d747507e1511faaf86aee69c7b03beb37a38fb97e552649",
+      "sha256": "4fe63746d78261a7e7e254d8371e18e225a72ecd4ce8ac467808269d5516d0f8",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "mowd": {
+      "name": "District Court, W.D. Missouri",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/mowd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/mowd.png",
+      "sourceSha256": "3a1c0616ee9f91efea18da5c7a02a6d54e06d82c70ac4c1cbb6904921b8a6e3a",
+      "sha256": "aea4784a2cc09929f470d7a80022d527683e7452521f70fb84c14bc835b64115",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "msnd": {
+      "name": "District Court, N.D. Mississippi",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/msnd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/msnd.png",
+      "sourceSha256": "4626b22065fb9a38297c9b5578f50c9d29a13581544da2377994ccdb6ac78c2c",
+      "sha256": "eb40b2fddca0d4dae9024eb51ee6f1c047b2872274d5ea4e01ddb3d70d39de71",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "mssd": {
+      "name": "District Court, S.D. Mississippi",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/mssd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/mssd.png",
+      "sourceSha256": "ec4317e24bd249a311782cd038bca1dea5cb0498f08804a18e6b074a52b56b6b",
+      "sha256": "e5d4f49f8816333446d2448c45193e6db4fcd38e523ad2535d78385658295938",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "mtd": {
+      "name": "District Court, D. Montana",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/mtd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/mtd.png",
+      "sourceSha256": "77ee9f42b906a2be2f23457bf6bf46171ca86c4d44aa9bb17e51c3e960c89758",
+      "sha256": "773a2e83648d1a087ec76bc00c1fb92b818538599c68a5fd30ac83a23179b0d2",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "nc": {
+      "name": "Supreme Court of North Carolina",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/nc.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/nc.png",
+      "sourceSha256": "3337a3b3f58b76af9e90361bbc417ea3232dde335d37f6690512ba8c6d7607bd",
+      "sha256": "2b99b60572c0916d84e55be1d6e4272802993cf784761d13f36f10468a1bb375",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ncctapp": {
+      "name": "Court of Appeals of North Carolina",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/ncctapp.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ncctapp.png",
+      "sourceSha256": "e5ee8897645625311938b7cc0963069a27a356b2cc7f13dc471b03839cf78980",
+      "sha256": "879a2b1d31035a4e1eb56fd26cfc03ce105bd2f3959cb07801076ea18d57567d",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "nced": {
+      "name": "District Court, E.D. North Carolina",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/nced.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/nced.png",
+      "sourceSha256": "fa5b744877e4701f9be247df542e5c672efb13bb8579eeb915f621ea295d64fb",
+      "sha256": "d6f8d92f6475b6743fdce1c66cb605a5ed6fe4b59b3dd90d81efceba84e9d1a3",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ncmd": {
+      "name": "District Court, M.D. North Carolina",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/ncmd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ncmd.png",
+      "sourceSha256": "18899523139f2e4179ea89b75d0ad98b79752472b819c6331d06da748c96a5e3",
+      "sha256": "641ab4b015431b58857441d23e3d867ed36182dfca00ae0a97df170b1eeaf2cd",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ncwd": {
+      "name": "District Court, W.D. North Carolina",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/ncwd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ncwd.png",
+      "sourceSha256": "84d34289cb90c0fb36880a6e678c3c1d134ccfaee714d620279e510b263315e9",
+      "sha256": "8987030ff5045cbc2d9442a940b8bc1716ba8aa5920d2bd0b732825fac1d1add",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ndd": {
+      "name": "District Court, D. North Dakota",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/ndd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ndd.png",
+      "sourceSha256": "8776b754a2251454ac096478bac912b47b55c6079954a685b87703aa491c7d7f",
+      "sha256": "a1a20bc1abd6e7102a72e3cb4f89975dbb673db7dd59cde50a403e45c799d7d3",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "neb": {
+      "name": "Nebraska Supreme Court",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/neb.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/neb.png",
+      "sourceSha256": "120d0f5037e1bab11f317dd8226281217d3f47b7b50aeb2f2e2ba8a188b65b63",
+      "sha256": "36e732080e04e8cb3f12faa8760330ab140f86b3c6d8bbc17e776bb1223d2d22",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ned": {
+      "name": "District Court, D. Nebraska",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/ned.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ned.png",
+      "sourceSha256": "25623907c7a4576f99bcf36a2cabbfcff613e383ebb28d57e3cef858dcc0a0ba",
+      "sha256": "b9d8fa253f2e383e89e6da97199189e948875b4cb8ba64a0978b2fe68e568173",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "nev": {
+      "name": "Nevada Supreme Court",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/nev.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/nev.png",
+      "sourceSha256": "a91b272618c9825d5ef835f40404af7fe9960516349def13b80b3a077f1bbada",
+      "sha256": "b391b89d7d5fe5ce19739b16c08eee4c51822c2d7add7fddd45a4ea37f3348a9",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "nhd": {
+      "name": "District Court, D. New Hampshire",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/nhd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/nhd.png",
+      "sourceSha256": "760dcc44400ab3de9cd1d0b7fb1d5ae4cf519190534c6d45445af0fa2868ace0",
+      "sha256": "607afb9b49f6239342693410f0888f469c0d5afac178abbd32a18e1b4237c488",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "nj": {
+      "name": "Supreme Court of New Jersey",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/nj.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/nj.png",
+      "sourceSha256": "b804ce29b16f775ceede764a6d35d915a831f491d583c8b50763a4d7ea94752f",
+      "sha256": "83e322b7bba062d0befc6b59a1a229b82a5b238df54e50a2cd9c4babd7ee2e11",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "njd": {
+      "name": "District Court, D. New Jersey",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/njd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/njd.png",
+      "sourceSha256": "e84369f0e3ab4d806188f28232680b20d9fe2fc8d94b4a0aba891ca83cab9b5e",
+      "sha256": "ffd3f7cea9abb19ab487606ecb18eb8be3ba8957d31100be647b4de8c9ad3633",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "njsuperctappdiv": {
+      "name": "New Jersey Superior Court",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/njsuperctappdiv.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/njsuperctappdiv.png",
+      "sourceSha256": "70d8aba3e449ba32216b1930c510739ad18c9c85a0cde10587b674f141281e8d",
+      "sha256": "621e7d1c42e56577c4eb3b5c0af3871954517e0e7fe44be23ed46184a88fb131",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "njtaxct": {
+      "name": "New Jersey Tax Court",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/njtaxct.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/njtaxct.png",
+      "sourceSha256": "22ffd98d056f358b199c8e8a3a5023ba4558205ff3fa9667ec282e5a499e9566",
+      "sha256": "a76f986ac498fadae6c3e8bcfa01360a5416cf9a016d3e1e55678d362dd3a830",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "nm": {
+      "name": "New Mexico Supreme Court",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/nm.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/nm.png",
+      "sourceSha256": "b26a309ab99996a8061a939cce3d07aefddd5eaf88e54e513c43ca088cca69d4",
+      "sha256": "35161a38640e3defd9b2cd356aca5abd13a4d9fe09efabc7af6f9b8ef74c96b6",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "nmctapp": {
+      "name": "New Mexico Court of Appeals",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/nmctapp.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/nmctapp.png",
+      "sourceSha256": "ea918d0c8c6a012f63a42620ee92d41a9c36f573518408e88abe14926c854af0",
+      "sha256": "f4b4713d65508eb2a51291d774b738c83e899cb4ac95493efcc44b5836231d3a",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "nmid": {
+      "name": "District Court, Northern Mariana Islands",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/nmid.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/nmid.png",
+      "sourceSha256": "b05ac2d2d24c22759e97554b9d94a11222d64ea3ca91ab853d00b3ea2e31344c",
+      "sha256": "453b45c1be59fb39049cfccef05e7d5a6321773a115541f8e5d60ddd4cac5006",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "nvd": {
+      "name": "District Court, D. Nevada",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/nvd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/nvd.png",
+      "sourceSha256": "70532a33c789881738ae037d3a2587a993e33e9576784c9eb7983aa9b89f2dc8",
+      "sha256": "4b9456ba13d469667c252a9e624921772543f4cd30bd97a6cad7dd20c96f7e17",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ny": {
+      "name": "New York Court of Appeals",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/ny.svg",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ny.svg",
+      "sourceSha256": "7567703b9d61ca4d1b384a0d567385baf01208a4a3c4179fc8f90c999516c671",
+      "sha256": "7567703b9d61ca4d1b384a0d567385baf01208a4a3c4179fc8f90c999516c671",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "nyappdiv": {
+      "name": "Appellate Division of the Supreme Court of the State of New York",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/nyappdiv.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/nyappdiv.png",
+      "sourceSha256": "4b28f5e5831da69e051ee248f8913cb7777834f2c8aad0d9c2457f82f141621f",
+      "sha256": "e22c5eeeffda6b83f67fa7a5efb67aa01487e8ff4d91cd206fb07942c2bc401e",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "nyed": {
+      "name": "District Court, E.D. New York",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/nyed.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/nyed.png",
+      "sourceSha256": "a29652ee28c33ad36221e6133bfda62bd8c0727ba79c83f9a9b99c78c896a16a",
+      "sha256": "13e6cfcc5bd1c400c5e2cb60687e5a4d7e984c1ab0a8127e5b17aeb8e5b93677",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "nynd": {
+      "name": "District Court, N.D. New York",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/nynd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/nynd.png",
+      "sourceSha256": "370cae1061bc94c6dc70e06965df53525f2f157751285824b24d18a7cb3db430",
+      "sha256": "29d13fd65ce3acdff70af6d271d1f80344e2eb355b372d80ca7c6afbe980fcdb",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "nysd": {
+      "name": "District Court, S.D. New York",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/nysd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/nysd.png",
+      "sourceSha256": "602a72a3f157fd49517cd7a60cd8860833ae8923e515668e488df0248f16a91b",
+      "sha256": "c8946a0d9662d565bd95d21d763f4fec3a3ec04ed729db542e9d89e1dfac2967",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "nywd": {
+      "name": "District Court, W.D. New York",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/nywd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/nywd.png",
+      "sourceSha256": "773b2972e06cb4542e465ee74ed1c450f65ea9506ce5c7f81902972b686318e3",
+      "sha256": "ee95e0b27e249826320b36d61a50766d8c3d9c0661421000475f81c04de38c5b",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ohio": {
+      "name": "Ohio Supreme Court",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/ohio.svg",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ohio.svg",
+      "sourceSha256": "bffe7a99a9214c549a2e06759cf2b9f14b43865ff351f15ad8a6cdc005dca169",
+      "sha256": "bffe7a99a9214c549a2e06759cf2b9f14b43865ff351f15ad8a6cdc005dca169",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ohnd": {
+      "name": "District Court, N.D. Ohio",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/ohnd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ohnd.png",
+      "sourceSha256": "7443676ddd8cfe5162df06c300e65505f79a3d01e3ce0af1d548942fd239151c",
+      "sha256": "0355d8a5d4dfe99faf8ef8760d17d99d4009aaf3a25fb949350afa7d11575de8",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ohsd": {
+      "name": "District Court, S.D. Ohio",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/ohsd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ohsd.png",
+      "sourceSha256": "84b1a7491474bbdaafba0a0cffa7a21b5a0d9fd3ee2ace1fe33aa1176483977e",
+      "sha256": "ad226ddfc0e02db3f8064c45b3e4880e7141be92fc8db8f2405850b83c2b6f61",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "oknd": {
+      "name": "District Court, N.D. Oklahoma",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/oknd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/oknd.png",
+      "sourceSha256": "882003dd1b5a73c3fa5deee4a724c7b6413837ff88f6d277873d58fe38badd28",
+      "sha256": "8169ae4b9790fdac762a01ac0458b93783b51b3fcb5911b4260092b8b5cf1185",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "okwd": {
+      "name": "District Court, W.D. Oklahoma",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/okwd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/okwd.png",
+      "sourceSha256": "6455b5b9fc958ea3dfa1733d398a5ffe28fe453e1510af74f877e7219ad6faaf",
+      "sha256": "c9de60e9ed338d7e739f450b0da955b9fe5ba4395e6c82ace9287fe75f6a9255",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "or": {
+      "name": "Oregon Supreme Court",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/or.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/or.png",
+      "sourceSha256": "1b7a267ae1085f9a2fcbde050bba92d5d1b90db840add56b1935c259c57833eb",
+      "sha256": "b322025e8a21be3b3b548c2c9ae7b69ecd9037e6eae07d3a50e2478ac2d747a3",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "ord": {
+      "name": "District Court, D. Oregon",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/ord.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/ord.png",
+      "sourceSha256": "f4b69c43a908853ebbf393be9a7f566861cb2009c009fabd02c4fb8e6e044672",
+      "sha256": "e663f0bd2f65baa95cccf1bfac2b91a0f2efc89f11085b2fa905313fff235e41",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "pa": {
+      "name": "Supreme Court of Pennsylvania",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/pa.svg",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/pa.svg",
+      "sourceSha256": "f918e29ffb23ec8fda38d9912ef4f056f51cdc2e1bc714c5e529766f93cf89a4",
+      "sha256": "f918e29ffb23ec8fda38d9912ef4f056f51cdc2e1bc714c5e529766f93cf89a4",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "pacommwct": {
+      "name": "Commonwealth Court of Pennsylvania.",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/pacommwct.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/pacommwct.png",
+      "sourceSha256": "242b04e4756a7674382b134b25bbbff70dda2d7c0981d1c21ab1315e0ec683b6",
+      "sha256": "f77c310d5b0fc042567534fc8842522eb1c74ec2ca3a97ce286dd8bfd9cab025",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "paed": {
+      "name": "District Court, E.D. Pennsylvania",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/paed.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/paed.png",
+      "sourceSha256": "5c696d44d0c260cb4aed4cc965572fc476e744fd22c2a5e722254bb0e1d1a080",
+      "sha256": "5562c67ffa82cce835d5938a323ae2c7e056dfa34039ce1499324bc016e07f9a",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "pamd": {
+      "name": "District Court, M.D. Pennsylvania",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/pamd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/pamd.png",
+      "sourceSha256": "6629ca2d23d401315a178710e8bafdd28926cbd53a1b81735dd56c39cb15e07b",
+      "sha256": "02a4020a39c1712e1a30d5fd95723535e90a343ca71f230ecb6c303e47b3c318",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "pawd": {
+      "name": "District Court, W.D. Pennsylvania",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/pawd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/pawd.png",
+      "sourceSha256": "fa569813ce232315f9571b52817e9c5bb5304a2870b555b787622a9d09ca9f3b",
+      "sha256": "642cb21d519f2c4fec5af4a292144651ff28234f417b3fa6883153c95b3c80ef",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "prd": {
+      "name": "District Court, D. Puerto Rico",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/prd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/prd.png",
+      "sourceSha256": "eded80dd5ee976d7ec53e83240de3baaebdc44005879f03cab6d75fe724bdcd0",
+      "sha256": "fae5957e47aafcbf7c770254c818e672d887761ab8bf3fd6e590674c49b88b5d",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "rid": {
+      "name": "District Court, D. Rhode Island",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/rid.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/rid.png",
+      "sourceSha256": "beeaf2650820a8e70a82091cdb33c46900569910d11a28c4729bf7f83659faa4",
+      "sha256": "256530c35d0ceea891e897e7d208aad33b14ee0cc26620fdf56b906e3c81c3e4",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "sc": {
+      "name": "Supreme Court of South Carolina",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/sc.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/sc.png",
+      "sourceSha256": "f95aef668d039dc87383036faad720d35154514325d30141c84e552777439985",
+      "sha256": "1d59fd0a9c25a28ad61db649e0ad608cab15bf1b176e2bed7051e0a6d4eb2b0c",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "scctapp": {
+      "name": "Court of Appeals of South Carolina",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/scctapp.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/scctapp.png",
+      "sourceSha256": "8f60848865194e35c8584520e1feb6ca0d5992e8c2ee11051e4565c855e5866a",
+      "sha256": "9a0b4f13c9f59ba2ba101a05fe4125106eb9cd5c1cb012eb0c27fbe23b6c961c",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "sdd": {
+      "name": "District Court, D. South Dakota",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/sdd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/sdd.png",
+      "sourceSha256": "037e009ce25d7cb569ebd1d4e379c3aaf614174cd702b572cae38db48268f040",
+      "sha256": "3ebdb7fe2b1d7dcf58cc8f7d4177bc210d4b5c31d86009b529c282368c151614",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "tenn": {
+      "name": "Tennessee Supreme Court",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/tenn.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/tenn.png",
+      "sourceSha256": "48612a2a2d4d78f23fd5066e70ad1d09aa5533d77e86f3b588b8ab29eaeeb9bb",
+      "sha256": "9b5071e4ebc18b05d7229fa81503ca69f4c26aa2342e0106029ea46f314f8274",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "tennworkcompapp": {
+      "name": "Tennessee Workers' Compensation Appeals Board",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/tennworkcompapp.svg",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/tennworkcompapp.svg",
+      "sourceSha256": "bc35fb81ec84bc101d18762d46ce0ca74732f2a148ee6ccd31bdc2c21af7452e",
+      "sha256": "bc35fb81ec84bc101d18762d46ce0ca74732f2a148ee6ccd31bdc2c21af7452e",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "tennworkcompcl": {
+      "name": "Tennessee Court of Workers' Compensation Claims",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/tennworkcompcl.svg",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/tennworkcompcl.svg",
+      "sourceSha256": "bc35fb81ec84bc101d18762d46ce0ca74732f2a148ee6ccd31bdc2c21af7452e",
+      "sha256": "bc35fb81ec84bc101d18762d46ce0ca74732f2a148ee6ccd31bdc2c21af7452e",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "tex": {
+      "name": "Texas Supreme Court",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/tex.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/tex.png",
+      "sourceSha256": "97ce3afca8d132ce68087e3b58f064bfba42800d2062cfb6f87d2386bf543401",
+      "sha256": "326b99318d8208c3bd0d9a3e17051f101de54b5c5cf2c37f1c102e132ae6322d",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "texcrimapp": {
+      "name": "Court of Criminal Appeals of Texas",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/texcrimapp.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/texcrimapp.png",
+      "sourceSha256": "1449ba74aad1f40e46beb8b8001268328ba7722714e9534fc26ae4e1f2474dda",
+      "sha256": "f70077286ee6df86615920ca4c40500e32873c06172296bbc057024f93d49cf6",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "tned": {
+      "name": "District Court, E.D. Tennessee",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/tned.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/tned.png",
+      "sourceSha256": "3afd9c53a47028e91951647dd3276d57a05346134be765f1396fee28faaabd81",
+      "sha256": "a8bfa72c2d9c78816ebdcc5918e6da0683169b059b797e21f7e0eb975304169e",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "tnmd": {
+      "name": "District Court, M.D. Tennessee",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/tnmd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/tnmd.png",
+      "sourceSha256": "d26364db513b1bc4411ca6f96fa46e39e5630f359f6177386052c5c9f5c0d7e4",
+      "sha256": "ae434c5cb254154d1d515a3dc90d4dbf492901da9921082afdeba4fd19de8b03",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "tnwd": {
+      "name": "District Court, W.D. Tennessee",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/tnwd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/tnwd.png",
+      "sourceSha256": "e838c894f9ea2b8f7ab42045d936f3fd8f5dc3a498792b36521d355e3c13af69",
+      "sha256": "711ef789393de09fe9ab0e7290d5ec53ef5f5f292caff9886a8af6f9d64a78f4",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "txed": {
+      "name": "District Court, E.D. Texas",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/txed.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/txed.png",
+      "sourceSha256": "f82172fc7b102f42bb01984d5b605f860a2bd123ef341924a84a2c6b7d57d92f",
+      "sha256": "7672ebe8995d48687f4099a83f14f12b7637a3448ca2f0504b1ae4ffc4533443",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "txnd": {
+      "name": "District Court, N.D. Texas",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/txnd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/txnd.png",
+      "sourceSha256": "addb0c728b1ead345bab8949f3af4c8643bc30a263b0511b4c48df8beb00bbac",
+      "sha256": "31a276bf131c55ae72595e5b7741739e512d13f68f79594daf146bc149307bc4",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "txsd": {
+      "name": "District Court, S.D. Texas",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/txsd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/txsd.png",
+      "sourceSha256": "73839c28998f1f70e011b5875a75a82d0e8189028dff75565187956b16ce151d",
+      "sha256": "85826793a79106c073713889731c2a6654f2a3bd42a7414a89a55e0c2efbc171",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "txwd": {
+      "name": "District Court, W.D. Texas",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/txwd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/txwd.png",
+      "sourceSha256": "b2a74a1c7e7ca1cb58c81ebf9a8b2f0719487896a379d094df9000418c399b78",
+      "sha256": "fbdddc0a0c97c9e594f4eedd801bf0aa34000c9341b55c4dc8c3b4052ab2708d",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "va": {
+      "name": "Supreme Court of Virginia",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/va.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/va.png",
+      "sourceSha256": "bfe40c2d19a2b88b402ef41405357f70316c33910ba0b6d0da1a369c2058497d",
+      "sha256": "8456a18e78a7f5ab42b5abcf342a98b2bde73b3e00026b25e3aad8d7be23d6cc",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "vaed": {
+      "name": "District Court, E.D. Virginia",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/vaed.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/vaed.png",
+      "sourceSha256": "f512553045a6a0240bd99d9347b3c669fe4e7c9fe1c7b2c660055918a22ff190",
+      "sha256": "0a1fa21be3b8c61228899c7314e42d6102aff866b082f6ff9cf17313801745a3",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "vawd": {
+      "name": "District Court, W.D. Virginia",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/vawd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/vawd.png",
+      "sourceSha256": "dfead75c2a535504d550bccdf423d650d7f23badb33c155fc97e4572ca316e05",
+      "sha256": "72e0e835e7297cea9c10ffd9277d512bec0077aad5b6c8d1897b3ff2ea58d552",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "vid": {
+      "name": "District Court, Virgin Islands",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/vid.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/vid.png",
+      "sourceSha256": "112d55b93d9ef0b71c85bb6dac43041f4e56d0bd9f4503617da62e419ab667b2",
+      "sha256": "8a44b44ebfad079e0afd5ca7569a0524b17719e3449289c2859c5c300c6ac7e5",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "vt": {
+      "name": "Supreme Court of Vermont",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/vt.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/vt.png",
+      "sourceSha256": "cec7455cf85acc23215366fb6b04cd586bd93e18bb4f8fe686423f5a25b751ae",
+      "sha256": "0ae4583a327a75bfae4cbc9516375b36c9f36c6baeb563e559456244337a3ed7",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "vtd": {
+      "name": "District Court, D. Vermont",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/vtd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/vtd.png",
+      "sourceSha256": "e3084243fc241d3274126df420dfd5aa710735ee101bcbb0d045b003935b6c1b",
+      "sha256": "696cdd92c0afc3be743b337a498fee1a324bd4a833ecb2875a19ede8b043410c",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "waed": {
+      "name": "District Court, E.D. Washington",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/waed.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/waed.png",
+      "sourceSha256": "70060f29d654f901d72297108b8af8dd1ee675f9df15b806c56d4a27c6235bf4",
+      "sha256": "613b5519c381b5673a18a8f843d7591162d49e0a88c29e59eaa8d7b4acf76b04",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "wawd": {
+      "name": "District Court, W.D. Washington",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/wawd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/wawd.png",
+      "sourceSha256": "bf244c7d2b7e1cd6f0ff8b388796ab5a0aefdabf2d15708f549cef8766b3422c",
+      "sha256": "0e6cbcebebe1171eb28413bd3268f62c1c63fa6144da3ae3fcc0c174d74f5234",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "wied": {
+      "name": "District Court, E.D. Wisconsin",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/wied.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/wied.png",
+      "sourceSha256": "11079b69fa062bae6398547d9b63f8f77ad3d67b1d4542ed9452bc0e52896d73",
+      "sha256": "9d09344866ff108979fc3ca985c5738ffe7376c8b3313242aa24e7cd2eb501c4",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "wis": {
+      "name": "Wisconsin Supreme Court",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/wis.svg",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/wis.svg",
+      "sourceSha256": "de06860e0d6e2ef0ef84580ab4f38670e55fe73fad1e7929d0b3e7aff55c418a",
+      "sha256": "de06860e0d6e2ef0ef84580ab4f38670e55fe73fad1e7929d0b3e7aff55c418a",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "wisctapp": {
+      "name": "Court of Appeals of Wisconsin",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/wisctapp.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/wisctapp.png",
+      "sourceSha256": "7429e2c111f7e590c2e7036e32c5ffdfc239b86b80d95355295135111cedaa8b",
+      "sha256": "5f09d5531279ffada8e5664c03d620fdd54746c7c92197bdd458815cdfb2024f",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "wva": {
+      "name": "West Virginia Supreme Court",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/wva.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/wva.png",
+      "sourceSha256": "33c164a5c4ff9188320ea46e6e02fc1062c2df5b54daa241d0783e81504d4cc8",
+      "sha256": "883f768c7c3590a9d4963664de04e3956a38196ed28a97db11da0f782521a703",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "wvnd": {
+      "name": "District Court, N.D. West Virginia",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/wvnd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/wvnd.png",
+      "sourceSha256": "9f2d34e4479b5cb4e9f68f5c35eb5c64d77b75791f0a5b9a103dad2502c222fe",
+      "sha256": "8969ddc69db66600aa2782a59a9848cc3fa2e096179fe5d7335aff3d74c5af8c",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "wvsd": {
+      "name": "District Court, S.D. West Virginia.",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/wvsd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/wvsd.png",
+      "sourceSha256": "e492037cd418a0d8b93123f9151cae694cc4147483d7e4a52e7ba582794981de",
+      "sha256": "83739b034dd7a148cb85bc66b34379b6b32860df7cde0cb8b16531d27fb68e7b",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    },
+    "wyd": {
+      "name": "District Court, D. Wyoming",
+      "kind": "community-court-mark",
+      "path": "/visuals/state-courts/wyd.png",
+      "source": "https://raw.githubusercontent.com/freelawproject/seal-rookery/784c3238bac3958395f83131b9acb206b67be5e8/seal_rookery/seals/orig/wyd.png",
+      "sourceSha256": "765efeff413dd9b0f1a1ee11e40f301705bb157597a95f9abc8a2e424eb7f734",
+      "sha256": "dd563e54979831d3fef3b7002ede161b246d269b964e0679bf905a7b065c9184",
+      "license": "Government work per Free Law Project seal-rookery image license; identification only",
+      "repositoryRevision": "784c3238bac3958395f83131b9acb206b67be5e8"
+    }
+  },
+  "flags": {
+    "AK": {
+      "name": "Alaska",
+      "kind": "state-flag",
+      "path": "/visuals/flags/AK.svg",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/e/e6/Flag_of_Alaska.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Alaska.svg",
+      "sourceSha256": "6acace46543ad78958a2d35832d5a4d507b810e9e3cf4d906d21cdee966158ca",
+      "sha256": "6acace46543ad78958a2d35832d5a4d507b810e9e3cf4d906d21cdee966158ca",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "AL": {
+      "name": "Alabama",
+      "kind": "state-flag",
+      "path": "/visuals/flags/AL.svg",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/5/5c/Flag_of_Alabama.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Alabama.svg",
+      "sourceSha256": "55bd2b313407cf609ddb36c33d51c8f9b6f5f3978ecf2a42560e65ff7422cfe0",
+      "sha256": "55bd2b313407cf609ddb36c33d51c8f9b6f5f3978ecf2a42560e65ff7422cfe0",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "AR": {
+      "name": "Arkansas",
+      "kind": "state-flag",
+      "path": "/visuals/flags/AR.svg",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/9/9d/Flag_of_Arkansas.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Arkansas.svg",
+      "sourceSha256": "7f7cf94618d00670ec3739e9295123f518d0f8fa65b0b8c9629666a1c7c4b6c8",
+      "sha256": "7f7cf94618d00670ec3739e9295123f518d0f8fa65b0b8c9629666a1c7c4b6c8",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "AZ": {
+      "name": "Arizona",
+      "kind": "state-flag",
+      "path": "/visuals/flags/AZ.svg",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/9/9d/Flag_of_Arizona.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Arizona.svg",
+      "sourceSha256": "8c9e75cabd5bcc04557e60feee64f2b03e6e36658df2ae7258faeb2b6208ddf6",
+      "sha256": "8c9e75cabd5bcc04557e60feee64f2b03e6e36658df2ae7258faeb2b6208ddf6",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "CA": {
+      "name": "California",
+      "kind": "state-flag",
+      "path": "/visuals/flags/CA.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/01/Flag_of_California.svg/330px-Flag_of_California.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_California.svg",
+      "sourceSha256": "75ccdebef6bece5f96f1ab06f43f60a7a599e9d0ebf92f555cec0075d6580798",
+      "sha256": "3d58e62b364d200385e52feb65af7f13d04b40f6c318c73d35f22c059a95a68b",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "CO": {
+      "name": "Colorado",
+      "kind": "state-flag",
+      "path": "/visuals/flags/CO.svg",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/4/46/Flag_of_Colorado.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Colorado.svg",
+      "sourceSha256": "a9599630c49bac85d9a3df622d956e1f6f49683df35e6db218c4b22de82bc2ff",
+      "sha256": "a9599630c49bac85d9a3df622d956e1f6f49683df35e6db218c4b22de82bc2ff",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "CT": {
+      "name": "Connecticut",
+      "kind": "state-flag",
+      "path": "/visuals/flags/CT.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/96/Flag_of_Connecticut.svg/330px-Flag_of_Connecticut.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Connecticut.svg",
+      "sourceSha256": "97b03af79b9ba42c85d3adf8568b8cf62238e13f9561ded06ae10d0ce81ff9de",
+      "sha256": "6f3ecfe422ecc2b6b89f9bb125643dc51be90cd0ea219a924eda87c4a9159f11",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "DC": {
+      "name": "District of Columbia",
+      "kind": "state-flag",
+      "path": "/visuals/flags/DC.svg",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/0/03/Flag_of_Washington%2C_D.C.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Washington,_D.C.svg",
+      "sourceSha256": "76e1dc87facc58eefbff01f48d4f2fcc4936458030ccdacaeea9f084c0729832",
+      "sha256": "76e1dc87facc58eefbff01f48d4f2fcc4936458030ccdacaeea9f084c0729832",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "DE": {
+      "name": "Delaware",
+      "kind": "state-flag",
+      "path": "/visuals/flags/DE.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c6/Flag_of_Delaware.svg/330px-Flag_of_Delaware.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Delaware.svg",
+      "sourceSha256": "31b23f69e61c3994519c9ca2a3ef09ceab408a5cc24cd17e8e631275a41d367a",
+      "sha256": "a2edef91fe206bba3a39b26967178a4a1dc8209273cd30c4b6abadd7cbec8bcb",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "FL": {
+      "name": "Florida",
+      "kind": "state-flag",
+      "path": "/visuals/flags/FL.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f7/Flag_of_Florida.svg/330px-Flag_of_Florida.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Florida.svg",
+      "sourceSha256": "571d5d69103cb9d7bdb58c82aa3b0103e6bf3c7d476921b5f82bf29e8a61648f",
+      "sha256": "b601c85178894a081168f8bfa048bf898bd16121cb2b8469b26dad380fcfa899",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "GA": {
+      "name": "Georgia",
+      "kind": "state-flag",
+      "path": "/visuals/flags/GA.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/08/Flag_of_the_State_of_Georgia.svg/330px-Flag_of_the_State_of_Georgia.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_the_State_of_Georgia.svg",
+      "sourceSha256": "79d20cdc6c76b0832296941840caeb1f90a68dccd5707477f7e6e0b563b74b68",
+      "sha256": "f23dd183d34916e6d3bdaaf685016f6af3c653ae0b748aeb92eb3080f7e830ac",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "HI": {
+      "name": "Hawaii",
+      "kind": "state-flag",
+      "path": "/visuals/flags/HI.svg",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/e/ef/Flag_of_Hawaii.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Hawaii.svg",
+      "sourceSha256": "d13c98a92833e8b72d46d171b76c46a94844890daec822771c8177ad6424f31a",
+      "sha256": "d13c98a92833e8b72d46d171b76c46a94844890daec822771c8177ad6424f31a",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "IA": {
+      "name": "Iowa",
+      "kind": "state-flag",
+      "path": "/visuals/flags/IA.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/aa/Flag_of_Iowa.svg/330px-Flag_of_Iowa.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Iowa.svg",
+      "sourceSha256": "1052834e8fbf3feaaf0e009d40d8d2309fed43dabe011867994eded686b90359",
+      "sha256": "9ac8db9cd9bf7930e509f2551bb7b800d15f3cd227c2e4f8f690837167607480",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "ID": {
+      "name": "Idaho",
+      "kind": "state-flag",
+      "path": "/visuals/flags/ID.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a4/Flag_of_Idaho.svg/330px-Flag_of_Idaho.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Idaho.svg",
+      "sourceSha256": "744f4ec274ee522e35809660665648dfbd02bbeadb9fba2acf646e6ee48358f1",
+      "sha256": "bb8683f0b953e79f65ebcd8128bd7ec434a8e6b54fcbcc1cfed9a33b1ee7f17c",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "IL": {
+      "name": "Illinois",
+      "kind": "state-flag",
+      "path": "/visuals/flags/IL.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/01/Flag_of_Illinois.svg/330px-Flag_of_Illinois.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Illinois.svg",
+      "sourceSha256": "3e1b15f2cdd7c521964e745c08998748ee1cdfb9cf3a3749c4cc0a22110a92cb",
+      "sha256": "0454af21cf29a7173fd61654b9ea320c8e58e86d943702e8f26a0dc32f0a16d8",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "IN": {
+      "name": "Indiana",
+      "kind": "state-flag",
+      "path": "/visuals/flags/IN.svg",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/a/ac/Flag_of_Indiana.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Indiana.svg",
+      "sourceSha256": "c895f8aa2dd7191ab011ad5142507380f47b350fa7ccef24ac602af65aa827e5",
+      "sha256": "c895f8aa2dd7191ab011ad5142507380f47b350fa7ccef24ac602af65aa827e5",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "KS": {
+      "name": "Kansas",
+      "kind": "state-flag",
+      "path": "/visuals/flags/KS.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/da/Flag_of_Kansas.svg/330px-Flag_of_Kansas.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Kansas.svg",
+      "sourceSha256": "e1e48654cfdc025a14c8cf029ef47a644aab655ed29dcbeae26b2afa6a63bb0f",
+      "sha256": "d3befe6d87a015ceda56eac3949d036a02127bf5a5686e0612aa369d084a37ab",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "KY": {
+      "name": "Kentucky",
+      "kind": "state-flag",
+      "path": "/visuals/flags/KY.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8d/Flag_of_Kentucky.svg/330px-Flag_of_Kentucky.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Kentucky.svg",
+      "sourceSha256": "d42de97c8d15dd12149084073b37f76fea38c53bcdb04974fdecd6d54f8c2224",
+      "sha256": "5a2b76a666a86982a05ffafda2d7e44d3c34cae781b8566bcd2ef17e496f0b32",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "LA": {
+      "name": "Louisiana",
+      "kind": "state-flag",
+      "path": "/visuals/flags/LA.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e0/Flag_of_Louisiana.svg/330px-Flag_of_Louisiana.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Louisiana.svg",
+      "sourceSha256": "60e10cb0a0d6acf72ff0d478f1cff1a320c65274eeee4c0eaaafd2171a7e16ff",
+      "sha256": "8a3f0702b2bc5f6bc00357fb229f006ca4d0f773f4ae52e3ffc5181365dded1f",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "MA": {
+      "name": "Massachusetts",
+      "kind": "state-flag",
+      "path": "/visuals/flags/MA.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f2/Flag_of_Massachusetts.svg/330px-Flag_of_Massachusetts.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Massachusetts.svg",
+      "sourceSha256": "7c3e7875dc7ba21dd88f030e34351dc81b8a1c8f67b661b1b9ff68401ec8c229",
+      "sha256": "b08dec195c0205d87594f4b398d077fbb87a50f2627ae132dbdfd04864c1c499",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "MD": {
+      "name": "Maryland",
+      "kind": "state-flag",
+      "path": "/visuals/flags/MD.svg",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/a/a0/Flag_of_Maryland.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Maryland.svg",
+      "sourceSha256": "873396c04c1c42e4a438226fdb3974d4835aa411cc1b7685b6dc8052d8d25cae",
+      "sha256": "873396c04c1c42e4a438226fdb3974d4835aa411cc1b7685b6dc8052d8d25cae",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "ME": {
+      "name": "Maine",
+      "kind": "state-flag",
+      "path": "/visuals/flags/ME.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/35/Flag_of_Maine.svg/330px-Flag_of_Maine.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Maine.svg",
+      "sourceSha256": "7324a430f4fd5c81edf9dff705e4c31426cd09caa59dcee22763700adc5e98a0",
+      "sha256": "9010451db3aab472e0effcb8a3761ab0c050056aec5923083c8f3b1437d11ca0",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "MI": {
+      "name": "Michigan",
+      "kind": "state-flag",
+      "path": "/visuals/flags/MI.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b5/Flag_of_Michigan.svg/330px-Flag_of_Michigan.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Michigan.svg",
+      "sourceSha256": "d3b727658a142387d6c9445bc5e08cdb50ef2fe6683cfcb12674bd3c7a24221b",
+      "sha256": "c2471b83ee5a0ad79acaa964bd3588b935b582574995e86ff1a981f5a32c18bf",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "MN": {
+      "name": "Minnesota",
+      "kind": "state-flag",
+      "path": "/visuals/flags/MN.svg",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/b/b9/Flag_of_Minnesota.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Minnesota.svg",
+      "sourceSha256": "18456d126e2548d772039e4e5d8718ee68966ebe1d646e6b083ea301dd2d7f49",
+      "sha256": "18456d126e2548d772039e4e5d8718ee68966ebe1d646e6b083ea301dd2d7f49",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "MO": {
+      "name": "Missouri",
+      "kind": "state-flag",
+      "path": "/visuals/flags/MO.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5a/Flag_of_Missouri.svg/330px-Flag_of_Missouri.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Missouri.svg",
+      "sourceSha256": "27c311601606e2abb241352c675ebde36a71d9b51d4838484691e7e5427689b0",
+      "sha256": "ca1ab82e0f798f71b8e804ad377679618bd7378e209d00cf47828b3c83102906",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "MS": {
+      "name": "Mississippi",
+      "kind": "state-flag",
+      "path": "/visuals/flags/MS.svg",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/4/42/Flag_of_Mississippi.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Mississippi.svg",
+      "sourceSha256": "33335082191d551bd4bdddd965c7f060f602683d3278ef1425b1132d6e9d5fc1",
+      "sha256": "33335082191d551bd4bdddd965c7f060f602683d3278ef1425b1132d6e9d5fc1",
+      "license": "Copyrighted free use (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "MT": {
+      "name": "Montana",
+      "kind": "state-flag",
+      "path": "/visuals/flags/MT.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cb/Flag_of_Montana.svg/330px-Flag_of_Montana.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Montana.svg",
+      "sourceSha256": "f00232e52d9e3c1c5ba36ee1eee9270e6629e298e0fa8aba0710b510442b564c",
+      "sha256": "3ff85f11a9672b5dca93ea3da4d2e8f972d5c0715df2819109de9c3d62330d4b",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "NC": {
+      "name": "North Carolina",
+      "kind": "state-flag",
+      "path": "/visuals/flags/NC.svg",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/b/bb/Flag_of_North_Carolina.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_North_Carolina.svg",
+      "sourceSha256": "afd227bbc9e9151b4cd936c4cce95fc6107eaeb2d3fb8475ac9fcdb486c52d37",
+      "sha256": "afd227bbc9e9151b4cd936c4cce95fc6107eaeb2d3fb8475ac9fcdb486c52d37",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "ND": {
+      "name": "North Dakota",
+      "kind": "state-flag",
+      "path": "/visuals/flags/ND.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ee/Flag_of_North_Dakota.svg/330px-Flag_of_North_Dakota.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_North_Dakota.svg",
+      "sourceSha256": "90b3cae60c22cc7a8f1d0738145ce5be2622477dfea981830ce2c5832c36e979",
+      "sha256": "f9d01ba3fbbe181ddaa0a3b1ca0a9a240e7d9a47bdafbf5ab764ebe460527ed5",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "NE": {
+      "name": "Nebraska",
+      "kind": "state-flag",
+      "path": "/visuals/flags/NE.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4d/Flag_of_Nebraska.svg/330px-Flag_of_Nebraska.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Nebraska.svg",
+      "sourceSha256": "c9ea798c11fd29f6dd0e02264a819f7cf662fec13d6dc174543854039c9ee580",
+      "sha256": "a3833ddfd286f5a55a86124edeeb36a32e92afcce615b5cf9c1811bddcd79496",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "NH": {
+      "name": "New Hampshire",
+      "kind": "state-flag",
+      "path": "/visuals/flags/NH.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/28/Flag_of_New_Hampshire.svg/330px-Flag_of_New_Hampshire.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_New_Hampshire.svg",
+      "sourceSha256": "f15355b61104905ab57fa1cfc7b27ea8b08ff5a49c987a1f5b88be5cc71b4438",
+      "sha256": "30aaede01b28d0462eea832f8b236111b6c687decb222a6bfbc668efa7599ef2",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "NJ": {
+      "name": "New Jersey",
+      "kind": "state-flag",
+      "path": "/visuals/flags/NJ.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/Flag_of_New_Jersey.svg/330px-Flag_of_New_Jersey.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_New_Jersey.svg",
+      "sourceSha256": "21109b0084d5ccc9261e30285c7b11c6d1a2dca467253f23b9c4e3bf8480dd8f",
+      "sha256": "fcaff083bdb3326910de8a58eb328b09ba9c1c4d09a3712eb60d3d37d90b487d",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "NM": {
+      "name": "New Mexico",
+      "kind": "state-flag",
+      "path": "/visuals/flags/NM.svg",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/c/c3/Flag_of_New_Mexico.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_New_Mexico.svg",
+      "sourceSha256": "7ebc561ab772fcf092b86f412361af51a0f3ab5adfbea8cab1dba8d9fef922f4",
+      "sha256": "7ebc561ab772fcf092b86f412361af51a0f3ab5adfbea8cab1dba8d9fef922f4",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "NV": {
+      "name": "Nevada",
+      "kind": "state-flag",
+      "path": "/visuals/flags/NV.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f1/Flag_of_Nevada.svg/330px-Flag_of_Nevada.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Nevada.svg",
+      "sourceSha256": "bf237ff3d6b1c360c50c66d9af19a90fe39b8204576f6558856569afd9d37969",
+      "sha256": "c41c927c0c97db3d4f25c945bf29ab5a6c2cb847acdf9e56a851bb45ea7ece1e",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "NY": {
+      "name": "New York",
+      "kind": "state-flag",
+      "path": "/visuals/flags/NY.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1a/Flag_of_New_York.svg/330px-Flag_of_New_York.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_New_York.svg",
+      "sourceSha256": "9dcace785db78d6165fba2382717334448211850b62da3de502066eb6094f464",
+      "sha256": "8cbd9899d253388e9d45b5a6bc3bbdf69228cb3dd0e4ed2749519b49ac626f8b",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "OH": {
+      "name": "Ohio",
+      "kind": "state-flag",
+      "path": "/visuals/flags/OH.svg",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/4/4c/Flag_of_Ohio.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Ohio.svg",
+      "sourceSha256": "ce12c81c2bdfeb9896f8200cf662ce8d2605bf605a227efeb78aed1b8d8e8129",
+      "sha256": "ce12c81c2bdfeb9896f8200cf662ce8d2605bf605a227efeb78aed1b8d8e8129",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "OK": {
+      "name": "Oklahoma",
+      "kind": "state-flag",
+      "path": "/visuals/flags/OK.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6e/Flag_of_Oklahoma.svg/330px-Flag_of_Oklahoma.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Oklahoma.svg",
+      "sourceSha256": "140681d1eaadffcef9f19e19ae614cb860216e02d40333eacb7c6a8013167750",
+      "sha256": "58463a4fb96882927faf98e4e38f4da9aa08b6e98cc996a745e7fe3720af399b",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "OR": {
+      "name": "Oregon",
+      "kind": "state-flag",
+      "path": "/visuals/flags/OR.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b9/Flag_of_Oregon.svg/330px-Flag_of_Oregon.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Oregon.svg",
+      "sourceSha256": "fcefed60ee65ba4dad84fe24c35597e9b6b9ddfed6856757f36370953f847aa2",
+      "sha256": "2773ee9664c03310d0c7ffdde498d6d3716ea9759280a8f085d389b5fc2cc06b",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "PA": {
+      "name": "Pennsylvania",
+      "kind": "state-flag",
+      "path": "/visuals/flags/PA.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f7/Flag_of_Pennsylvania.svg/330px-Flag_of_Pennsylvania.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Pennsylvania.svg",
+      "sourceSha256": "f72d143b9baf7748824957924645c936648174f20ed4e239c5d42e9b9c3bf04d",
+      "sha256": "143be3b8016b08e38ee06a6909f1c10e949853b69ba7aa0e4384576bea2cb286",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "RI": {
+      "name": "Rhode Island",
+      "kind": "state-flag",
+      "path": "/visuals/flags/RI.svg",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/f/f3/Flag_of_Rhode_Island.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Rhode_Island.svg",
+      "sourceSha256": "0f5117e94e3d6c28ca592ac204cfe5dbe8522cf0e39ce95730ded231075598c4",
+      "sha256": "0f5117e94e3d6c28ca592ac204cfe5dbe8522cf0e39ce95730ded231075598c4",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "SC": {
+      "name": "South Carolina",
+      "kind": "state-flag",
+      "path": "/visuals/flags/SC.svg",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/6/69/Flag_of_South_Carolina.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_South_Carolina.svg",
+      "sourceSha256": "3ef68bc3b7065ac9fade67c51b40cf61555c484f3cc1ee67e162c6d317ca6825",
+      "sha256": "3ef68bc3b7065ac9fade67c51b40cf61555c484f3cc1ee67e162c6d317ca6825",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "SD": {
+      "name": "South Dakota",
+      "kind": "state-flag",
+      "path": "/visuals/flags/SD.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1a/Flag_of_South_Dakota.svg/330px-Flag_of_South_Dakota.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_South_Dakota.svg",
+      "sourceSha256": "27e78545ebe6edec5bf0dbfd18daa47fbdaabb33ac0044a9a4501f25cc33aa85",
+      "sha256": "7e1639a4436d1d1be0b28d89cfd13200895186a5ddf066b511eb8bbc4fe43c5e",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "TN": {
+      "name": "Tennessee",
+      "kind": "state-flag",
+      "path": "/visuals/flags/TN.svg",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/9/9e/Flag_of_Tennessee.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Tennessee.svg",
+      "sourceSha256": "104bc2bfe3575462b2902f88690055064dd829bfbfbe100c70bb729a1dc98c48",
+      "sha256": "104bc2bfe3575462b2902f88690055064dd829bfbfbe100c70bb729a1dc98c48",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "TX": {
+      "name": "Texas",
+      "kind": "state-flag",
+      "path": "/visuals/flags/TX.svg",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/f/f7/Flag_of_Texas.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Texas.svg",
+      "sourceSha256": "33b9a4dce7b11a8052e3d0dad2f046dbeacc8e4dff624efb2cd6ee9ec21003f1",
+      "sha256": "33b9a4dce7b11a8052e3d0dad2f046dbeacc8e4dff624efb2cd6ee9ec21003f1",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "UT": {
+      "name": "Utah",
+      "kind": "state-flag",
+      "path": "/visuals/flags/UT.svg",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/f/f6/Flag_of_Utah.svg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Utah.svg",
+      "sourceSha256": "686e53f4a0aa36cddc1eb127f1aa4f1757e973d583280b23987ab015a66d3814",
+      "sha256": "686e53f4a0aa36cddc1eb127f1aa4f1757e973d583280b23987ab015a66d3814",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "VA": {
+      "name": "Virginia",
+      "kind": "state-flag",
+      "path": "/visuals/flags/VA.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/47/Flag_of_Virginia.svg/330px-Flag_of_Virginia.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Virginia.svg",
+      "sourceSha256": "d153b89d82340e7fb8d3945feecbfb9eefda59e058945310eabe379a8041e695",
+      "sha256": "dca60990a0ece0d8b66c3353db2e6affec7c86efa1de77d028290d4859444738",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "VT": {
+      "name": "Vermont",
+      "kind": "state-flag",
+      "path": "/visuals/flags/VT.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/49/Flag_of_Vermont.svg/330px-Flag_of_Vermont.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Vermont.svg",
+      "sourceSha256": "a058d8c995750bf88a283b8b23396e54b4eb15db8b0e3abdb8ba7396a84c107a",
+      "sha256": "b81d83e5a72fce4ec3db04942480f88d5d12827c0c80b3c4c29febed8bcd2cb4",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "WA": {
+      "name": "Washington",
+      "kind": "state-flag",
+      "path": "/visuals/flags/WA.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/54/Flag_of_Washington.svg/330px-Flag_of_Washington.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Washington.svg",
+      "sourceSha256": "9f9ef17f07d3347762037c457cb744b8ef1c66c43f83031a9b0ee4b6d8a929f2",
+      "sha256": "b2cd2e6dabf5e1f4db0b8d27f30c735fb921b75cae13fdb46a3d5dd1009ec369",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "WI": {
+      "name": "Wisconsin",
+      "kind": "state-flag",
+      "path": "/visuals/flags/WI.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/22/Flag_of_Wisconsin.svg/330px-Flag_of_Wisconsin.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Wisconsin.svg",
+      "sourceSha256": "fb8be8131220a627043435bd8a3e33a9b54f41f90302ada93e9790153fd35c55",
+      "sha256": "ccef99b1c9061f805884ee06c39fcc673b81a5039c1601efc4fa3896198ccedb",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "WV": {
+      "name": "West Virginia",
+      "kind": "state-flag",
+      "path": "/visuals/flags/WV.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/22/Flag_of_West_Virginia.svg/330px-Flag_of_West_Virginia.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_West_Virginia.svg",
+      "sourceSha256": "607b5e62bb6b91f6bd5fa7bb29542737c98e6e22855e4e4c814debc08d662eb9",
+      "sha256": "cd4ba964c7b66fd7c06f147960b9bb1eeb60046009f9d0fb5dbebd231d25ddfe",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    },
+    "WY": {
+      "name": "Wyoming",
+      "kind": "state-flag",
+      "path": "/visuals/flags/WY.png",
+      "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bc/Flag_of_Wyoming.svg/330px-Flag_of_Wyoming.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "sourcePage": "https://commons.wikimedia.org/wiki/File:Flag_of_Wyoming.svg",
+      "sourceSha256": "10f8f95596ae5b39b86fa7b27b2da7244f53d812b0b66966d3921f0131abb40e",
+      "sha256": "8ddcd4109c356d3c123cb5f022d83fe45521e3d451c69facaa5ff9dd6a4cf818",
+      "license": "Public domain (Wikimedia Commons); state flag shown for identification only",
+      "description": "State flag; not an official seal and no endorsement implied"
+    }
+  }
 }

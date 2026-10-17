@@ -1,22 +1,31 @@
 import { Building2, CircleUserRound, MapPin } from "lucide-react";
 import { useState } from "react";
-import { agencyArtwork, stateArtwork } from "@/lib/visuals/registry";
+import { agencyArtwork, stateArtwork, stateFlag } from "@/lib/visuals/registry";
 import { canonicalState } from "@/lib/corpus/stateHub";
 import { fileUrl } from "@/lib/external/groups";
 import { cn } from "@/lib/utils";
-export function StateMark({ state, className }: { state: string; className?: string }) {
+export function StateMark({
+  state,
+  className,
+  flag = true,
+}: {
+  state: string;
+  className?: string;
+  flag?: boolean;
+}) {
   const identity = canonicalState(state),
-    asset = stateArtwork(state);
+    asset = stateArtwork(state),
+    flagAsset = flag ? stateFlag(state) : null;
   const [failed, setFailed] = useState<string | null>(null);
   return (
     <span
       className={cn(
-        "inline-flex size-11 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-[var(--blue-tint)] p-2",
+        "relative inline-flex size-11 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-[var(--blue-tint)] p-2",
         className,
       )}
       title={
         identity
-          ? `${identity.name} geographic outline — not a government seal`
+          ? `${identity.name} geographic outline${flagAsset ? " and state flag" : ""} — not a government seal`
           : "State not identified"
       }
     >
@@ -34,10 +43,38 @@ export function StateMark({ state, className }: { state: string; className?: str
           className="size-5 text-muted-foreground"
         />
       )}
+      {flagAsset && failed !== flagAsset.path ? (
+        <img
+          src={flagAsset.path}
+          alt={`Flag of ${identity?.name}`}
+          className="absolute -bottom-1 -right-1 h-[38%] w-auto max-w-[62%] rounded-[3px] border border-surface object-cover shadow-sm ring-1 ring-border/70"
+          loading="lazy"
+          onError={() => setFailed(flagAsset.path)}
+        />
+      ) : null}
     </span>
   );
 }
-export function AgencyMark({ name, className }: { name: string; className?: string }) {
+export function StateFlag({ state, className }: { state: string; className?: string }) {
+  const identity = canonicalState(state),
+    asset = stateFlag(state);
+  const [failed, setFailed] = useState(false);
+  if (!asset || failed) return null;
+  return (
+    <img
+      src={asset.path}
+      alt={`Flag of ${identity?.name}`}
+      title={`Flag of ${identity?.name} · ${asset.license}`}
+      className={cn(
+        "inline-block h-4 w-auto rounded-[2px] object-cover ring-1 ring-border/70",
+        className,
+      )}
+      loading="lazy"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+export function AgencyMark({ name, className }: { name: string; className?: string | undefined }) {
   const asset = agencyArtwork(name);
   const [failed, setFailed] = useState<string | null>(null);
   return (
