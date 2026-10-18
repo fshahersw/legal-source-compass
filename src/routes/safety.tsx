@@ -12,6 +12,10 @@ import {
   SafetyIntelligence,
   safetyIntelligenceQuery,
 } from "@/components/regulatory/SafetyIntelligence";
+import { NeissEstimates } from "@/components/safety/neiss/NeissEstimates";
+import { SaferProductsReports } from "@/components/safety/saferproducts/SaferProductsReports";
+import { SafetyTabPanel, SafetyTabs } from "@/components/safety/SafetyTabs";
+import { safetyViewOf, type SafetyView } from "@/components/safety/safetyView";
 import { sectionOf } from "@/lib/external/groups";
 import { safetyAgency, safetyKind } from "@/lib/external/lawTree";
 import { inventoryRecordTotal, datasetRecordGrain } from "@/lib/external/domainRegistry";
@@ -55,7 +59,37 @@ const DERIVED = new Set(["agency_safety_insights"]);
 function SafetyPage() {
   const s = Route.useSearch();
   const datasets = useDatasets();
+  const navigate = Route.useNavigate();
+  const selectView = (view: SafetyView) =>
+    void navigate({ search: view === "overview" ? {} : { view } });
   if (s.view === "list") return <SectionPage section="safety" path="/safety" ds={undefined} />;
+  if (s.view === "reports" || s.view === "neiss") {
+    const view = safetyViewOf(s.view);
+    const label =
+      view === "reports" ? "Consumer reports (SaferProducts.gov)" : "NEISS injury estimates";
+    return (
+      <AppShell
+        breadcrumbs={[
+          { label: "Home", to: "/" },
+          { label: "Product safety", to: "/safety" },
+          { label },
+        ]}
+        title={label}
+        description={
+          view === "reports"
+            ? "Unverified consumer-submitted reports published by CPSC. Counts are reports, not incidents."
+            : "Weighted national estimates, CPSC NEISS: emergency-department-treated consumer-product injuries."
+        }
+      >
+        <div className="space-y-3">
+          <SafetyTabs mode="landing" active={view} onSelect={selectView} />
+          <SafetyTabPanel mode="landing" active={view}>
+            {view === "reports" ? <SaferProductsReports /> : <NeissEstimates />}
+          </SafetyTabPanel>
+        </div>
+      </AppShell>
+    );
+  }
   const allDatasets = datasets.data ?? [];
   const list = allDatasets.filter((d) => sectionOf(d.id) === "safety" && !DERIVED.has(d.id));
   const agency = s.agency ?? (s.ds ? safetyAgency(s.ds) : undefined);
@@ -101,34 +135,37 @@ function SafetyPage() {
     // The caveat applies to every summed count, so it is stated once in full above the cards.
     const summed = agencyCards.some((c) => c.summed);
     body = (
-      <div className="space-y-6">
-        <DailyInsightCard section="safety" />
-        <SafetyIntelligence />
-        {/* Notes wrap (two lines, full text on hover) so a description is never cut mid-word at 1024–1280 px. */}
-        <FolderGrid
-          title="Browse by agency"
-          wrapNotes
-          hint={
-            summed
-              ? "Counts add up each agency's collections (rows across separate datasets and snapshots), so one recall or notice can be counted more than once."
-              : undefined
-          }
-          items={[
-            ...agencyCards,
-            {
-              key: "signals",
-              label: "Mass-tort product signals",
-              note: "MDL litigation next to FDA adverse events, recalls and NHTSA complaints",
-              link: { to: "/safety/signals" },
-            },
-            {
-              key: "list",
-              label: "All safety collections",
-              note: "Browse recalls, notices, approvals and product classifications",
-              link: { to: "/safety", search: { view: "list" } },
-            },
-          ]}
-        />
+      <div className="space-y-4">
+        <SafetyTabs mode="landing" active="overview" onSelect={selectView} />
+        <SafetyTabPanel mode="landing" active="overview" className="space-y-6">
+          <DailyInsightCard section="safety" />
+          <SafetyIntelligence />
+          {/* Notes wrap (two lines, full text on hover) so a description is never cut mid-word at 1024–1280 px. */}
+          <FolderGrid
+            title="Browse by agency"
+            wrapNotes
+            hint={
+              summed
+                ? "Counts add up each agency's collections (rows across separate datasets and snapshots), so one recall or notice can be counted more than once."
+                : undefined
+            }
+            items={[
+              ...agencyCards,
+              {
+                key: "signals",
+                label: "Mass-tort product signals",
+                note: "MDL litigation next to FDA adverse events, recalls and NHTSA complaints",
+                link: { to: "/safety/signals" },
+              },
+              {
+                key: "list",
+                label: "All safety collections",
+                note: "Browse recalls, notices, approvals and product classifications",
+                link: { to: "/safety", search: { view: "list" } },
+              },
+            ]}
+          />
+        </SafetyTabPanel>
       </div>
     );
   } else {
