@@ -19,8 +19,24 @@ function entityDecode(text) {
   });
 }
 
+// WHATWG windows-1252 mappings for bytes 0x80–0x9F. Some Node builds decode the "windows-1252" label as
+// ISO-8859-1 and return C1 control characters for these bytes, so they are mapped explicitly here.
+const WINDOWS_1252_C1 = {
+  0x80: '€', 0x82: '‚', 0x83: 'ƒ', 0x84: '„', 0x85: '…', 0x86: '†', 0x87: '‡',
+  0x88: 'ˆ', 0x89: '‰', 0x8a: 'Š', 0x8b: '‹', 0x8c: 'Œ', 0x8e: 'Ž',
+  0x91: '‘', 0x92: '’', 0x93: '“', 0x94: '”', 0x95: '•', 0x96: '–', 0x97: '—',
+  0x98: '˜', 0x99: '™', 0x9a: 'š', 0x9b: '›', 0x9c: 'œ', 0x9e: 'ž', 0x9f: 'Ÿ',
+};
+
+function decodeBytes(bytes, encoding) {
+  if (encoding !== 'windows-1252') return new TextDecoder(encoding).decode(bytes);
+  let out = '';
+  for (const byte of bytes) out += WINDOWS_1252_C1[byte] ?? String.fromCharCode(byte);
+  return out;
+}
+
 function htmlText(fragment, encoding) {
-  const decoded = new TextDecoder(encoding).decode(Buffer.from(fragment, 'latin1'));
+  const decoded = decodeBytes(Buffer.from(fragment, 'latin1'), encoding);
   return entityDecode(decoded
     .replace(/<\s*br\s*\/?>/gi, '\n')
     .replace(/<\/(?:p|div|li|tr|h[1-6])\s*>/gi, '\n')
