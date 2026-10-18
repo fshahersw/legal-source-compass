@@ -42,6 +42,8 @@ for (const suite of [
   { directory: "scripts/enrichment/cfpb", modules: ["test_cfpb"] },
   { directory: "scripts/enrichment/fda_adverse_events", modules: ["test_fda_adverse_events"] },
   { directory: "scripts/enrichment/epa_echo", modules: ["test_epa_echo"] },
+  { directory: "scripts/enrichment/npdb", modules: ["test_npdb"] },
+  { directory: "scripts/enrichment/osha", modules: ["test_osha"] },
   { directory: "scripts/enrichment/sec", modules: ["test_evidence", "test_financials"] },
   { directory: "scripts/enrichment/state_metrics", modules: ["test_parsers"] },
   {
