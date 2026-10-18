@@ -220,6 +220,63 @@ export type LensMdl = {
   series: { date: string; pending: number; total: number }[];
   badges: string[];
 };
+/** An openFDA adverse-event row (FAERS, MAUDE or CAERS) bound to this MDL number by its stored filters.mdl. */
+export type LensFdaReport = {
+  dataset: string;
+  recordId: string;
+  system: "FAERS" | "MAUDE" | "CAERS";
+  title: string;
+  /** Display strings as stored in the row's cells (already formatted, "Not recorded" when unknown). */
+  reports: string;
+  deaths: string | null;
+  /** The row's own note when its search is broader than its label; null when it states none. */
+  searchScope: string | null;
+  dataThrough: string | null;
+};
+
+const FDA_SYSTEMS: Record<string, LensFdaReport["system"]> = {
+  fda_faers_product_series: "FAERS",
+  fda_device_event_series: "MAUDE",
+  fda_caers_series: "CAERS",
+};
+
+/** A published FDA row, kept only when it records exactly this MDL number; anything else is dropped. */
+export function toFdaReport(
+  row: {
+    dataset?: unknown;
+    id?: unknown;
+    title?: unknown;
+    m?: unknown;
+    cells?: unknown;
+    facts?: unknown;
+  },
+  mdl: number,
+): LensFdaReport | null {
+  const dataset = str(row.dataset);
+  const id = str(row.id);
+  const system = dataset ? FDA_SYSTEMS[dataset] : undefined;
+  const cells = obj(row.cells);
+  const reports = str(cells?.["reports"]);
+  if (!dataset || !id || !system || row.m !== String(mdl) || !str(row.title) || !reports)
+    return null;
+  const fact = (label: string) => {
+    const hit = (Array.isArray(row.facts) ? row.facts : []).find(
+      (f) => Array.isArray(f) && f[0] === label && typeof f[1] === "string",
+    );
+    return hit ? (hit[1] as string) : null;
+  };
+  return {
+    dataset,
+    recordId: id,
+    system,
+    title: str(row.title)!,
+    reports,
+    deaths: str(cells?.["deaths"]),
+    searchScope: fact("Search scope"),
+    dataThrough: fact("Data through"),
+  };
+}
+
 export type MdlLens = {
   mdl: LensMdl | null;
   court: CourtAnalytics | null;
@@ -246,6 +303,8 @@ export type MdlLens = {
   panelOrdersInHearings: number;
   /** Terminated-litigation entries for this MDL number, one per transferee district. */
   terminated: LensTerminated[];
+  /** openFDA adverse-event report counts (FAERS, MAUDE, CAERS) whose stored MDL number is exactly this one. */
+  fdaReports: LensFdaReport[];
   series: LensSeries;
   /** Litigation title and the record it is taken from, when the MDL is outside the pending series. */
   recordedTitle: { title: string; source: string } | null;
@@ -403,6 +462,7 @@ export const getMdlLens = createServerFn({ method: "GET" })
       seriesRow,
       orderRows,
       sessionRange,
+      fdaRows,
     ] = await Promise.all([
       restGet<{ item: Record<string, unknown> }[]>(
         `corpus_records?select=item&dataset=eq.mdl_analytics&id=eq.${id}&limit=1`,
@@ -447,6 +507,19 @@ export const getMdlLens = createServerFn({ method: "GET" })
       restGet<{ first: unknown; last: unknown }[]>(
         "corpus_records?select=first:item->overview->session_rows->0->>date,last:item->overview->session_rows->-1->>date&dataset=eq.mdl_intel_hearing_orders&id=eq.summary:overview&limit=1",
       ),
+      // openFDA report counts (FAERS, MAUDE, CAERS) keyed by the MDL number the product list states explicitly.
+      restGet<
+        {
+          dataset: unknown;
+          id: unknown;
+          title: unknown;
+          m: unknown;
+          cells: unknown;
+          facts: unknown;
+        }[]
+      >(
+        `corpus_records?select=dataset,id,title,m:item->>mdl,cells:item->cells,facts:detail->facts&dataset=in.(fda_faers_product_series,fda_device_event_series,fda_caers_series)&filters->mdl=cs.${encodeURIComponent(JSON.stringify([String(data.mdl)]))}&limit=10`,
+      ),
     ]);
     const parsedLinks = links.rows.flatMap((row) => {
       const link = parseLink(row.link);
@@ -480,6 +553,9 @@ export const getMdlLens = createServerFn({ method: "GET" })
       .map((row) => toTerminated(row, data.mdl))
       .filter((t): t is LensTerminated => t !== null)
       .sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
+    const fdaReports = fdaRows.rows
+      .map((row) => toFdaReport(row, data.mdl))
+      .filter((r): r is LensFdaReport => r !== null);
     const allOrders = orderRows.rows
       .map((row) => toPanelOrder(row, data.mdl))
       .filter((o): o is LensPanelOrder => o !== null)
@@ -514,6 +590,7 @@ export const getMdlLens = createServerFn({ method: "GET" })
       panelOrders,
       panelOrdersInHearings: allOrders.length - panelOrders.length,
       terminated,
+      fdaReports,
       series: {
         first: str(s?.first),
         asOf: str(s?.as_of),

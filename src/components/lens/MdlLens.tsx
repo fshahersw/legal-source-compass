@@ -26,6 +26,7 @@ import { getCourtStatsDistrict } from "@/lib/external/courtStats.functions";
 import type {
   LensCompany,
   LensHearing,
+  LensFdaReport,
   LensPanelOrder,
   LensTerminated,
 } from "@/lib/external/mdlLens.functions";
@@ -1094,6 +1095,46 @@ function HearingsCard({
 }
 
 /** Entries of the JPML terminated-litigations report for this MDL number, one per transferee district. */
+function FdaReportsCard({
+  reports,
+  className,
+}: {
+  reports: LensFdaReport[];
+  className?: string | undefined;
+}) {
+  return (
+    <Card
+      title="FDA adverse-event reports"
+      subtitle="openFDA report counts for this MDL's product. Reports, not incidence: counts are affected by litigation-driven reporting."
+      className={className}
+    >
+      <ul className="space-y-2.5 text-[11px]">
+        {reports.map((r) => (
+          <li key={r.recordId}>
+            <p className="font-medium">
+              <Link
+                to="/records/$dataset/$id"
+                params={{ dataset: r.dataset, id: r.recordId }}
+                className="text-primary hover:underline"
+              >
+                {r.system}: {r.title}
+              </Link>
+            </p>
+            <p className="text-muted-foreground">
+              {r.reports} reports
+              {r.deaths ? ` · ${r.deaths} with a death outcome` : ""}
+              {r.dataThrough ? ` · data through ${r.dataThrough.split(" ")[0]}` : ""}
+            </p>
+            {r.searchScope ? (
+              <p className="mt-0.5 text-muted-foreground">Search scope: {r.searchScope}</p>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
 function TerminatedCard({
   rows,
   className,
@@ -1287,6 +1328,7 @@ function RecordedOnly({ mdl, lens }: { mdl: number; lens: Lens }) {
     ],
     ["SEC filings naming the MDL", lens.companies.length > 0],
     ["agency product signal", !!lens.signal],
+    ["openFDA adverse-event reports", lens.fdaReports.length > 0],
     ["automated flags", lens.insights.length > 0],
   ];
   const missing = recorded.filter(([, has]) => !has).map(([label]) => label);
@@ -1340,6 +1382,9 @@ function RecordedOnly({ mdl, lens }: { mdl: number; lens: Lens }) {
       ? (c) => <PanelOrdersCard orders={lens.panelOrders} className={c} />
       : null,
     lens.terminated.length ? (c) => <TerminatedCard rows={lens.terminated} className={c} /> : null,
+    lens.fdaReports.length
+      ? (c) => <FdaReportsCard reports={lens.fdaReports} className={c} />
+      : null,
     // A court page with fetched pages takes a full row of its own below.
     courtPage && !courtPageFull
       ? (c) => (
@@ -1602,6 +1647,9 @@ export function MdlLens({ mdl }: { mdl: number }) {
             : null,
           lens.terminated.length
             ? (c) => <TerminatedCard rows={lens.terminated} className={c} />
+            : null,
+          lens.fdaReports.length
+            ? (c) => <FdaReportsCard reports={lens.fdaReports} className={c} />
             : null,
         ]}
       />

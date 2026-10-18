@@ -18,6 +18,7 @@ import {
   evidenceQuote,
   getMdlLens,
   recordedTitle,
+  toFdaReport,
   toHearing,
   toPanelOrder,
   toTerminated,
@@ -539,5 +540,46 @@ describe("hearing evidence labels", () => {
       "Panel order (JPML)",
     );
     expect(evidenceLabel("govinfo", null)).toBeNull();
+  });
+});
+
+describe("toFdaReport", () => {
+  const row = {
+    dataset: "fda_device_event_series",
+    id: "3014",
+    title: "Philips CPAP — MAUDE reports (MDL 3014)",
+    m: "3014",
+    cells: { reports: "276,797", deaths: "412" },
+    facts: [
+      ["Search scope", "The brand token TRILOGY also matches other makers' devices."],
+      ["Data through", "2026-09-30 (openFDA last updated 2026-10-12)"],
+    ],
+  };
+
+  it("keeps a row bound to exactly this MDL number and reads its scope note", () => {
+    expect(toFdaReport(row, 3014)).toEqual({
+      dataset: "fda_device_event_series",
+      recordId: "3014",
+      system: "MAUDE",
+      title: "Philips CPAP — MAUDE reports (MDL 3014)",
+      reports: "276,797",
+      deaths: "412",
+      searchScope: "The brand token TRILOGY also matches other makers' devices.",
+      dataThrough: "2026-09-30 (openFDA last updated 2026-10-12)",
+    });
+  });
+
+  it("drops a row for another MDL number, an unknown dataset or a row without a count", () => {
+    expect(toFdaReport(row, 3015)).toBeNull();
+    expect(toFdaReport({ ...row, m: "30140" }, 3014)).toBeNull();
+    expect(toFdaReport({ ...row, dataset: "other_dataset" }, 3014)).toBeNull();
+    expect(toFdaReport({ ...row, cells: { deaths: "1" } }, 3014)).toBeNull();
+  });
+
+  it("leaves the scope and date notes null when the row states none", () => {
+    expect(toFdaReport({ ...row, facts: [] }, 3014)).toMatchObject({
+      searchScope: null,
+      dataThrough: null,
+    });
   });
 });

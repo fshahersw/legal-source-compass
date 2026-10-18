@@ -10,6 +10,7 @@ import { StateMark } from "@/components/corpus/EntityArtwork";
 import { CourtArtwork } from "@/components/corpus/CourtArtwork";
 import { StateCourtDirectory, StateJudgeDirectory } from "@/components/corpus/StateDirectories";
 import { StateSourcePanel } from "@/components/corpus/StateSourcePanel";
+import { StateFederalDataPanel } from "@/components/states/StateFederalDataPanel";
 import { StateMetricsPanel } from "@/components/states/StateMetricsPanel";
 import { Button } from "@/components/ui/button";
 import { useAtlas } from "@/lib/atlas/store";
@@ -294,6 +295,7 @@ function StatePage() {
               </Link>
             </section>
             <StateMetricsPanel key={usps} usps={usps} />
+            <StateFederalDataPanel key={`federal-${usps}`} usps={usps} />
             {corpus.geo ? (
               <UsMap
                 compact
