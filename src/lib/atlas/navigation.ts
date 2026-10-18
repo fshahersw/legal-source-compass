@@ -56,6 +56,7 @@ export function contextualNavigation(path: string): ContextNavigationItem[] {
         { to: "/places/analytics", label: "State analytics" },
         { to: "/courts", label: "All courts" },
         { to: "/courts/analytics", label: "Court analytics" },
+        { to: "/courts/caseload", label: "Caseload" },
         { to: "/judges", label: "All judges" },
         { to: "/judges/analytics", label: "Judge analytics" },
         { to: "/analytics", label: "Data visualizations" },
