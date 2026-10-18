@@ -15,3 +15,5 @@ scripts/legal/state-codes/b4/ks/fixtures/empty_second_number.html -text -whitesp
 scripts/legal/state-codes/b4/ks/fixtures/repealed_stub.html -text -whitespace
 # These upstream license texts use seven '=' characters as an RST heading.
 public/visuals/licenses/*-LICENSE.txt -text conflict-marker-size=32
+# Seals, flags, outlines and agency marks are hash-pinned in src/lib/visuals/registry.json.
+public/visuals/** -text
