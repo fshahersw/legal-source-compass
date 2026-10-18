@@ -42,15 +42,18 @@ def connect() -> duckdb.DuckDBPyConnection:
     con.execute(f"PRAGMA temp_directory='{TMP}'")
     for alias, f in (("dk", "docket"), ("cl", "cluster"), ("ci", "citation"), ("oa", "oral_argument"), ("cm", "cmap"), ("sm", "small"), ("ix", "idb")):
         con.execute(f"ATTACH '{DB}/{f}.duckdb' AS {alias} (READ_ONLY)")
+    con.execute("PRAGMA max_temp_directory_size='3GB'")
     if os.path.exists(os.path.join(DB, "opinion.done.json")):
         con.execute(f"ATTACH '{DB}/opinion.duckdb' AS op (READ_ONLY)")
+    if os.path.exists(os.path.join(DB, "parenthetical.done.json")):
+        con.execute(f"ATTACH '{DB}/parenthetical.duckdb' AS pr (READ_ONLY)")
     con.execute(
         f"""CREATE OR REPLACE TEMP VIEW d_base AS
             SELECT id, court_id, source, assigned_to_id, referred_to_id, appeal_from_id, idb_data_id, originating_court_information_id,
                    coalesce(nullif(regexp_extract(lower(docket_number), '[0-9]{{2}}-([a-z]{{2}})-[0-9]', 1), ''), federal_dn_case_type) AS case_type,
                    jurisdiction_type, jury_demand, nature_of_suit, cause, mdl_status, blocked,
                    {ok('date_filed')} AS filed, {ok('date_terminated')} AS term, date_filed AS raw_filed,
-                   TRY_CAST(regexp_extract(nature_of_suit, '^\\s*([0-9]{{3}})', 1) AS INTEGER) AS nos_code
+                   TRY_CAST(regexp_extract(nature_of_suit, '^\\s*([0-9]{{3}})(?:\\s|$)', 1) AS INTEGER) AS nos_code
             FROM dk.docket"""
     )
     con.execute("CREATE OR REPLACE TABLE nos_group (code INTEGER, grp VARCHAR)")
@@ -237,8 +240,42 @@ CREATE OR REPLACE TABLE w_cite_in AS
 SELECT b.court_id AS cited_court, year(b.filed) AS cited_yr, count(*) AS n
 FROM cm.cmap m JOIN w_op b ON b.oid = m.cited_opinion_id WHERE b.filed IS NOT NULL GROUP BY 1, 2"""
 
+STEPS["flows2"] = """
+CREATE OR REPLACE TABLE w_cite_lag AS
+SELECT a.court_id AS citing_court, count(*) AS n, quantile_cont(date_diff('day', b.filed, a.filed) / 365.25, 0.5) AS median_years,
+       quantile_cont(date_diff('day', b.filed, a.filed) / 365.25, 0.9) AS p90_years, avg(date_diff('day', b.filed, a.filed) / 365.25) AS mean_years
+FROM cm.cmap m JOIN w_op a ON a.oid = m.citing_opinion_id JOIN w_op b ON b.oid = m.cited_opinion_id
+WHERE a.filed IS NOT NULL AND b.filed IS NOT NULL AND a.filed >= b.filed GROUP BY 1;
+CREATE OR REPLACE TABLE w_cite_level_year AS
+SELECT year(a.filed) AS yr, a.court_id AS citing_court, count(*) AS n, count(*) FILTER (WHERE a.court_id = b.court_id) AS same_court
+FROM cm.cmap m JOIN w_op a ON a.oid = m.citing_opinion_id JOIN w_op b ON b.oid = m.cited_opinion_id
+WHERE a.filed IS NOT NULL GROUP BY 1, 2"""
+
+STEPS["authcites"] = """
+CREATE OR REPLACE TABLE w_author_cites AS
+SELECT o.author_id, count(DISTINCT o.cid) AS clusters, sum(j.cites) AS cites, quantile_cont(j.cites, 0.5) AS p50
+FROM (SELECT DISTINCT author_id, cid FROM w_op WHERE author_id IS NOT NULL AND type IN ('010combined', '015unamimous', '020lead', '025plurality', '080onthemerits')) o
+JOIN w_cj j ON j.cid = o.cid GROUP BY 1"""
+
+STEPS["topcited"] = """
+CREATE OR REPLACE TABLE w_top_citers AS
+SELECT b.cid AS cited_cid, a.court_id AS citing_court, year(a.filed) AS yr, count(*) AS n
+FROM cm.cmap m
+JOIN w_op b ON b.oid = m.cited_opinion_id AND b.cid IN (SELECT cid FROM w_cl_top_national)
+JOIN w_op a ON a.oid = m.citing_opinion_id
+GROUP BY 1, 2, 3;
+CREATE OR REPLACE TABLE w_top_reporters AS
+SELECT c.cluster_id AS cid, c.volume, c.reporter, c.page, c.type FROM ci.citation c WHERE c.cluster_id IN (SELECT cid FROM w_cl_top_national)"""
+
+STEPS["parens"] = """
+CREATE OR REPLACE TABLE w_paren AS
+SELECT b.cid, b.court_id, count(*) AS n, avg(p.score) AS avg_score, count(DISTINCT p.describing_opinion_id) AS describing
+FROM pr.parenthetical p JOIN w_op b ON b.oid = p.described_opinion_id GROUP BY 1, 2;
+CREATE OR REPLACE TABLE w_paren_court AS
+SELECT b.court_id, count(*) AS n, count(DISTINCT b.cid) AS clusters FROM pr.parenthetical p JOIN w_op b ON b.oid = p.described_opinion_id GROUP BY 1"""
+
 ORDER = ["court", "year", "source", "casetype", "nos", "cause", "jt", "dur", "fy", "judge", "appeal", "nosnat", "clusterjoin", "cluster", "reporters", "oral", "scotus"]
-LATER = ["opinion", "authors", "flows"]
+LATER = ["opinion", "authors", "flows", "flows2", "authcites", "topcited", "parens"]
 
 
 def main() -> int:

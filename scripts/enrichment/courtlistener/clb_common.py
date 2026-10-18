@@ -120,6 +120,32 @@ def share(part: int, whole: int, digits: int = 1) -> float | None:
     return None if not whole else round(100.0 * part / whole, digits)
 
 
+def shares(items, total: int, limit: int = 8, labels: dict | None = None, extra_label=None) -> list[dict]:
+    """[(value, count)] -> top rows with share of `total`; empty values and zero counts are dropped, ties break by value so output is stable."""
+    ordered = sorted(((v, n) for v, n in items if v not in (None, "") and n), key=lambda kv: (-kv[1], str(kv[0])))
+    out = []
+    for v, n in ordered[:limit]:
+        label = (labels or {}).get(v) or (extra_label(v) if extra_label else None) or str(v)
+        out.append({"value": v, "label": label, "count": int(n), "share_pct": share(int(n), total)})
+    return out
+
+
+def fisher_ci(rho: float, n: int):
+    """95% interval for a correlation from the Fisher z transform (standard error 1/sqrt(n-3)); None when n < 4 or |rho| >= 1."""
+    import math
+
+    if n < 4 or abs(rho) >= 1:
+        return None
+    z = math.atanh(rho)
+    se = 1.0 / math.sqrt(n - 3)
+    return math.tanh(z - 1.96 * se), math.tanh(z + 1.96 * se)
+
+
+def strength(rho: float) -> str:
+    a = abs(rho)
+    return "very weak or none" if a < 0.2 else "weak" if a < 0.4 else "moderate" if a < 0.6 else "strong" if a < 0.8 else "very strong"
+
+
 def top_counts(values, limit: int = 5, labels: dict | None = None) -> list[dict]:
     c = Counter(v for v in values if v not in (None, ""))
     total = sum(c.values())

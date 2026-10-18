@@ -108,6 +108,29 @@ class HelperTests(unittest.TestCase):
         self.assertEqual(cc.r1(2.25), 2.2)  # Python rounds half to even
         self.assertIsNone(cc.r1(None))
 
+    def test_shares_drops_empty_values_and_breaks_ties_stably(self):
+        out = cc.shares([("b", 5), ("a", 5), (None, 9), ("", 3), ("c", 0), ("d", 2)], total=20, limit=3, labels={"a": "Alpha"})
+        self.assertEqual([r["value"] for r in out], ["a", "b", "d"])  # tie between a and b resolved by value; None, empty and zero dropped
+        self.assertEqual(out[0], {"value": "a", "label": "Alpha", "count": 5, "share_pct": 25.0})
+        self.assertEqual(cc.shares([("x", 1)], total=0), [{"value": "x", "label": "x", "count": 1, "share_pct": None}])
+
+    def test_fisher_interval_and_strength_labels(self):
+        lo, hi = cc.fisher_ci(0.5, 94)
+        self.assertLess(lo, 0.5)
+        self.assertGreater(hi, 0.5)
+        # by hand: z = atanh(0.5) = 0.549306, se = 1/sqrt(91) = 0.104828, z -/+ 1.96 se = 0.343843 / 0.754769, tanh -> 0.3309 / 0.6380
+        self.assertAlmostEqual(lo, 0.3309, places=3)
+        self.assertAlmostEqual(hi, 0.6380, places=3)
+        self.assertIsNone(cc.fisher_ci(0.5, 3))
+        self.assertIsNone(cc.fisher_ci(1.0, 50))
+        self.assertEqual([cc.strength(x) for x in (0.0, 0.19, 0.2, 0.39, 0.4, 0.59, 0.6, 0.79, 0.8, -0.9)],
+                         ["very weak or none", "very weak or none", "weak", "weak", "moderate", "moderate", "strong", "strong", "very strong", "very strong"])
+
+    def test_jurisdiction_labels_cover_tribal_military_and_territorial_codes(self):
+        for code in ("TRA", "TRT", "TRS", "TRX", "MA", "TS", "TA", "TT"):
+            self.assertIn(code, cc.JURISDICTION_LABEL)
+        self.assertNotIn("St", cc.JURISDICTION_LABEL)  # an unexplained stored code stays unlabelled rather than guessed
+
     def test_spearman_handles_ties_missing_values_and_short_input(self):
         rho, n = cc.spearman([1, 2, 3, 4, 5], [10, 20, 30, 40, 50])
         self.assertAlmostEqual(rho, 1.0)
