@@ -1,8 +1,10 @@
 """Build clb_court_flows: court-to-court citation flows from the CourtListener citation map and appeal flows from docket.appeal_from_id.
 
-A citation edge is one row of CourtListener's citation map (a citing opinion cites a cited opinion), attributed to the court of each
-opinion's docket. The map is what CourtListener extracted from opinion text: it is not a complete census of citations and its coverage
-depends on the corpus (older and unpublished opinions cite less reliably). Appeal flows count dockets that carry an appeal_from court.
+A citation link is one row of CourtListener's citation map (a citing opinion cites a cited opinion; repeat citations of the same opinion
+inside the citing opinion count once), attributed to the court of each opinion's docket. Links between two opinions of the same decision
+(a dissent citing its lead opinion) are set aside and counted in the overview. The map is what CourtListener extracted from opinion text:
+it is not a complete census of citations and its coverage depends on the corpus (older and unpublished opinions cite less reliably).
+Appeal flows count dockets that carry an appeal_from court.
 """
 from __future__ import annotations
 
@@ -53,7 +55,10 @@ def build() -> dict[str, dict]:
     lag = bc.one(con, "SELECT * FROM w_cite_lag")
     lvl_year = bc.by(con, "SELECT * FROM w_cite_level_year", "yr")
     appeals = [(r[0], r[1], r[2]) for r in con.execute("SELECT court_id, from_court, n FROM w_appeal").fetchall()]
-    map_links, missing_opinion = con.execute("SELECT links, opinion_not_in_opinion_table FROM w_cmap_total").fetchone()
+    map_links, missing_opinion, same_decision = con.execute("SELECT links, opinion_not_in_opinion_table, same_decision_links FROM w_cmap_total").fetchone()
+    order = {(r[0], r[1]): r[2] for r in con.execute("SELECT order_class, same_decision, n FROM w_cite_order").fetchall()}
+    filed_before_cited = order.get(("citing_filed_before_cited", False), 0)
+    undated_links = order.get(("undated", False), 0)
     built_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     inputs = [{"url": u, "path": f"CourtListener bulk file {u.rsplit('/', 1)[1]} (slim tables in private/acq/courtlistener/db)", "sha256": None}
               for u in (cc.BULK_BASE + "citation-map-2026-09-30.csv.bz2", cc.BULK_BASE + "opinions-2026-09-30.csv.bz2", bc.DOCKETS_URL, bc.CLUSTERS_URL)]
@@ -68,18 +73,21 @@ def build() -> dict[str, dict]:
     total = sum(n for _, _, n in matched)
     same = sum(n for a, b, n in matched if a == b)
     # ---------------------------------------------------------------- cross-court citation edges
-    cross = sorted(((a, b, n) for a, b, n in matched if a != b and n >= MIN_EDGE), key=lambda t: (-t[2], t[0], t[1]))[:MAX_EDGES]
+    cross_all = sorted(((a, b, n) for a, b, n in matched if a != b and n >= MIN_EDGE), key=lambda t: (-t[2], t[0], t[1]))
+    cross = cross_all[:MAX_EDGES]
+    cross_omitted = cross_all[MAX_EDGES:]
+    cross_floor = cross[-1][2] if cross else None
     for a, b, n in cross:
         rows.append(writer.record(
-            DATASET, f"cite:{a}>{b}", f"{cname(a)} citing {cname(b)}: citation edges in CourtListener's citation map", source_url=cc.BULK_BASE + "citation-map-2026-09-30.csv.bz2",
-            subtitle=f"{n:,} citations · {cc.share(n, out_tot[a])}% of {cname(a)}'s citations that resolve to a court",
+            DATASET, f"cite:{a}>{b}", f"{cname(a)} citing {cname(b)}: citation links in CourtListener's citation map", source_url=cc.BULK_BASE + "citation-map-2026-09-30.csv.bz2",
+            subtitle=f"{n:,} citation links · {cc.share(n, out_tot[a])}% of {cname(a)}'s citation links that resolve to a court",
             cells={"kind": "citation", "from": cname(a), "to": cname(b), "count": n, "share_of_from_pct": cc.share(n, out_tot[a]), "share_of_to_pct": cc.share(n, in_tot[b]),
                    "from_level": cc.JURISDICTION_LABEL.get(courts.get(a, {}).get("jur"), "Not recorded"), "to_level": cc.JURISDICTION_LABEL.get(courts.get(b, {}).get("jur"), "Not recorded"), "median_lag_years": None},
             badges=["CourtListener bulk data", "Citation map is extracted from text"],
-            facts=bc.facts([("Citing court", cname(a)), ("Cited court", cname(b)), ("Citations (opinion-to-opinion links)", f"{n:,}"),
-                            ("Share of the citing court's citations with a resolved court", f"{cc.share(n, out_tot[a])}% of {out_tot[a]:,}"),
-                            ("Share of the cited court's incoming citations", f"{cc.share(n, in_tot[b])}% of {in_tot[b]:,}"),
-                            ("Counting", "One link per citing opinion and cited opinion pair in CourtListener's citation map, attributed to the court of each opinion's docket. Not a complete census of citations.")]),
+            facts=bc.facts([("Citing court", cname(a)), ("Cited court", cname(b)), ("Citation links (opinion-to-opinion)", f"{n:,}"),
+                            ("Share of the citing court's links with a resolved court", f"{cc.share(n, out_tot[a])}% of {out_tot[a]:,}"),
+                            ("Share of the cited court's incoming links", f"{cc.share(n, in_tot[b])}% of {in_tot[b]:,}"),
+                            ("Counting", "One link per citing opinion and cited opinion pair in CourtListener's citation map (repeat citations inside one opinion count once; links between opinions of the same decision are excluded), attributed to the court of each opinion's docket. Not a complete census of citations.")]),
             text=f"citations {cname(a)} {cname(b)} {a} {b}", filters={"kind": ["citation"]}, links=[x for x in ({"label": f"{cname(a)}", "url": link(a)} if link(a) else None, {"label": f"{cname(b)}", "url": link(b)} if link(b) else None) if x],
             extra={"profile": {"citing_court": a, "cited_court": b, "count": n, "share_of_citing_pct": cc.share(n, out_tot[a]), "share_of_cited_pct": cc.share(n, in_tot[b])}}))
     # ---------------------------------------------------------------- per-court citing behaviour
@@ -98,11 +106,11 @@ def build() -> dict[str, dict]:
         scotus = sum(n for b, n in lst if b == "scotus")
         rows.append(writer.record(
             DATASET, f"citing:{a}", f"{cname(a)}: whom it cites (CourtListener citation map)", source_url=cc.BULK_BASE + "citation-map-2026-09-30.csv.bz2",
-            subtitle=f"{out_tot[a]:,} citations made · {self_pct}% to its own opinions" + (f" · median age of cited opinion {lg['median_years']:.1f} years" if lg and lg["median_years"] is not None else ""),
-            cells={"kind": "citing court", "from": cname(a), "to": None, "count": out_tot[a], "share_of_from_pct": self_pct, "share_of_to_pct": cc.share(scotus, out_tot[a]),
+            subtitle=f"{out_tot[a]:,} citation links made · {self_pct}% to its own opinions" + (f" · median age of cited opinion {lg['median_years']:.1f} years" if lg and lg["median_years"] is not None else ""),
+            cells={"kind": "citing court", "from": cname(a), "to": None, "count": out_tot[a], "same_court_pct": self_pct, "scotus_pct": cc.share(scotus, out_tot[a]),
                    "from_level": cc.JURISDICTION_LABEL.get(courts.get(a, {}).get("jur"), "Not recorded"), "to_level": None, "median_lag_years": cc.r1(lg["median_years"]) if lg else None},
             badges=["CourtListener bulk data", "Citation map is extracted from text"],
-            facts=bc.facts([("Citing court", cname(a)), ("Citations made that resolve to a court", f"{out_tot[a]:,}"), ("To its own opinions", f"{self_pct}%"), ("To the U.S. Supreme Court", f"{cc.share(scotus, out_tot[a])}%"),
+            facts=bc.facts([("Citing court", cname(a)), ("Citation links made that resolve to a court", f"{out_tot[a]:,}"), ("To its own opinions", f"{self_pct}%"), ("To the U.S. Supreme Court", f"{cc.share(scotus, out_tot[a])}%"),
                             ("To federal / state / other courts", " / ".join(f"{cc.share(groups.get(g, 0), out_tot[a])}%" for g in ("Federal", "State", "Other"))),
                             ("Median years between the cited opinion and the citing opinion", f"{lg['median_years']:.1f} (n = {lg['n']:,}; 90th percentile {lg['p90_years']:.1f})" if lg else None),
                             ("Most-cited courts", "; ".join(f"{t['label']} {t['share_pct']}%" for t in top[:5]))]),
@@ -117,7 +125,7 @@ def build() -> dict[str, dict]:
     rows.append(writer.record(
         DATASET, "matrix:circuits", "Federal courts of appeals citing each other and the Supreme Court (CourtListener citation map)", source_url=cc.BULK_BASE + "citation-map-2026-09-30.csv.bz2",
         subtitle="13 courts of appeals × 13 courts of appeals + the U.S. Supreme Court", cells={"kind": "matrix", "from": "Courts of appeals", "to": "Courts of appeals and Supreme Court", "count": sum(sum(r.values()) for r in cmat.values()),
-                                                                                              "share_of_from_pct": None, "share_of_to_pct": None, "from_level": None, "to_level": None, "median_lag_years": None},
+                                                                                              "from_level": None, "to_level": None, "median_lag_years": None},
         badges=["CourtListener bulk data", "Citation map is extracted from text"],
         facts=bc.facts([("Rows", "citing court"), ("Columns", "cited court"), ("Cells", "citation links in CourtListener's citation map"),
                         ("Courts", ", ".join(CIRCUITS) + ", scotus"), ("Counting", "Links attributed to the court of each opinion's docket; self-citation is the diagonal.")]),
@@ -127,22 +135,30 @@ def build() -> dict[str, dict]:
     for a, b, n in matched:
         la, lb = courts.get(a, {}).get("jur"), courts.get(b, {}).get("jur")
         lm[cc.JURISDICTION_LABEL.get(la, f"Code {la}")][cc.JURISDICTION_LABEL.get(lb, f"Code {lb}")] += n
-    labels = [l for l, _ in Counter({k: sum(v.values()) for k, v in lm.items()}).most_common(10)]
+    level_totals = Counter({k: sum(v.values()) for k, v in lm.items()})
+    labels = [l for l, _ in level_totals.most_common(10)]
+    shown_links = sum(lm[a].get(b, 0) for a in labels for b in labels)
+    omitted_levels = [l for l in level_totals if l not in labels]
+    f_cited = sum(n for a, b, n in matched if courts.get(b, {}).get("jur") == "F")
+    f_cited_scotus = sum(n for a, b, n in matched if b == "scotus" and courts.get(b, {}).get("jur") == "F")
     rows.append(writer.record(
         DATASET, "matrix:levels", "Court levels citing each other (CourtListener citation map)", source_url=cc.BULK_BASE + "citation-map-2026-09-30.csv.bz2",
-        subtitle="Citing court level × cited court level", cells={"kind": "matrix", "from": "Court levels", "to": "Court levels", "count": total, "share_of_from_pct": cc.share(same, total), "share_of_to_pct": None,
+        subtitle="Citing court level × cited court level", cells={"kind": "matrix", "from": "Court levels", "to": "Court levels", "count": total, "same_court_pct": cc.share(same, total),
                                                               "from_level": None, "to_level": None, "median_lag_years": None},
         badges=["CourtListener bulk data", "Citation map is extracted from text"],
-        facts=bc.facts([("Citations that resolve to a court on both sides", f"{total:,}"), ("Within the same court", f"{cc.share(same, total)}%"), ("Levels shown", ", ".join(labels)),
+        facts=bc.facts([("Citation links that resolve to a court on both sides", f"{total:,}"), ("Within the same court", f"{cc.share(same, total)}%"), ("Levels shown (the ten with the most citing links)", ", ".join(labels)),
+                        ("Links in the table", f"{shown_links:,} of {total:,}; {total - shown_links:,} links involve {len(omitted_levels)} other levels ({', '.join(omitted_levels)}) and are not shown"),
+                        ("Federal appellate level", f"As coded by CourtListener this level includes the U.S. Supreme Court: {cc.share(f_cited_scotus, f_cited)}% of the links cited to it point to the Supreme Court (matrix:circuits separates the two)"),
                         ("Not resolved to a court", f"{unresolved:,} links where either opinion has no matching docket court")]),
         text="court level citation matrix", filters={"kind": ["matrix"]}, links=[],
-        extra={"profile": {"levels": labels, "cells": [[lm[a].get(b, 0) for b in labels] for a in labels]}}))
+        extra={"profile": {"levels": labels, "cells": [[lm[a].get(b, 0) for b in labels] for a in labels], "row_totals": [level_totals[a] for a in labels], "total_links": total, "shown_links": shown_links,
+                           "omitted_levels": omitted_levels, "federal_appellate_cited_scotus_pct": cc.share(f_cited_scotus, f_cited)}}))
     # ---------------------------------------------------------------- who cites SCOTUS
     sc_in = sorted(((a, n) for a, b, n in matched if b == "scotus"), key=lambda t: (-t[1], t[0]))
     sc_total = sum(n for _, n in sc_in)
     rows.append(writer.record(
         DATASET, "scotus:citers", "Courts citing the U.S. Supreme Court most (CourtListener citation map)", source_url=cc.BULK_BASE + "citation-map-2026-09-30.csv.bz2",
-        subtitle=f"{sc_total:,} citation links to Supreme Court opinions", cells={"kind": "scotus", "from": "All courts", "to": cname("scotus"), "count": sc_total, "share_of_from_pct": None, "share_of_to_pct": None,
+        subtitle=f"{sc_total:,} citation links to Supreme Court opinions", cells={"kind": "scotus", "from": "All courts", "to": cname("scotus"), "count": sc_total,
                                                                                 "from_level": None, "to_level": None, "median_lag_years": None},
         badges=["CourtListener bulk data", "Citation map is extracted from text"],
         facts=bc.facts([("Citation links to Supreme Court opinions", f"{sc_total:,}"), ("Largest citing courts", "; ".join(f"{cname(a)} {n:,}" for a, n in sc_in[:6]))]),
@@ -160,11 +176,12 @@ def build() -> dict[str, dict]:
         if n < 1000:
             continue
         rows.append(writer.record(
-            DATASET, f"year:{yr}", f"Citations made by opinions filed in {yr} (CourtListener citation map)", source_url=cc.BULK_BASE + "citation-map-2026-09-30.csv.bz2",
-            subtitle=f"{n:,} citation links · {cc.share(s, n)}% within the same court", cells={"kind": "year", "from": str(yr), "to": None, "count": n, "share_of_from_pct": cc.share(s, n), "share_of_to_pct": None,
+            DATASET, f"year:{yr}", f"Citation links made by opinions filed in {yr} (CourtListener citation map)", source_url=cc.BULK_BASE + "citation-map-2026-09-30.csv.bz2",
+            subtitle=f"{n:,} citation links · {cc.share(s, n)}% within the same court", cells={"kind": "year", "from": str(yr), "to": None, "count": n, "same_court_pct": cc.share(s, n),
                                                                                          "from_level": None, "to_level": None, "median_lag_years": None},
             badges=["CourtListener bulk data", "Citation map is extracted from text"],
             facts=bc.facts([("Year of the citing opinion", yr), ("Citation links made", f"{n:,}"), ("Within the same court", f"{cc.share(s, n)}%"),
+                            ("Years published", "years with at least 1,000 links (earlier and sparser years are not listed)"),
                             ("From federal / state / other courts", " / ".join(f"{g.get(k, 0):,}" for k in ("Federal", "State", "Other")))]),
             text=f"citations year {yr}", filters={"kind": ["year"]}, links=[], extra={"profile": {"year": yr, "citations": n, "same_court": s, "by_group": dict(g)}}))
     # ---------------------------------------------------------------- appeal flows
@@ -175,7 +192,7 @@ def build() -> dict[str, dict]:
         rows.append(writer.record(
             DATASET, f"appeal:{f}>{c}", f"Appeals to {cname(c)} from {cname(f) if f in courts else f}: dockets in CourtListener's collection", source_url=bc.DOCKETS_URL,
             subtitle=f"{n:,} dockets · {cc.share(n, ap_tot[c])}% of dockets with an appeal-from court at {cname(c)}",
-            cells={"kind": "appeal", "from": cname(f) if f in courts else f, "to": cname(c), "count": n, "share_of_from_pct": None, "share_of_to_pct": cc.share(n, ap_tot[c]),
+            cells={"kind": "appeal", "from": cname(f) if f in courts else f, "to": cname(c), "count": n, "appeal_share_pct": cc.share(n, ap_tot[c]),
                    "from_level": cc.JURISDICTION_LABEL.get(courts.get(f, {}).get("jur"), "Not recorded"), "to_level": cc.JURISDICTION_LABEL.get(courts.get(c, {}).get("jur"), "Not recorded"), "median_lag_years": None},
             badges=["CourtListener bulk data", "Collection, not complete court totals"],
             facts=bc.facts([("Appellate (receiving) court", cname(c)), ("Court appealed from (as recorded)", cname(f) if f in courts else f), ("Dockets", f"{n:,}"),
@@ -186,26 +203,35 @@ def build() -> dict[str, dict]:
     rows.append(writer.record(
         DATASET, "overview:all", "Court flows in CourtListener: overview", source_url=cc.BULK_BASE + "citation-map-2026-09-30.csv.bz2",
         subtitle=f"{total:,} citation links resolved to courts · {sum(ap_tot.values()):,} dockets with an appeal-from court",
-        cells={"kind": "overview", "from": "All courts", "to": "All courts", "count": total, "share_of_from_pct": cc.share(same, total), "share_of_to_pct": None, "from_level": None, "to_level": None, "median_lag_years": None},
+        cells={"kind": "overview", "from": "All courts", "to": "All courts", "count": total, "same_court_pct": cc.share(same, total), "from_level": None, "to_level": None, "median_lag_years": None},
         badges=["CourtListener bulk data"],
         facts=bc.facts([("Rows in the bulk citation map", f"{map_links:,}"), ("Links where an opinion is not in the opinion table", f"{missing_opinion:,}"),
+                        ("Links between two opinions of the same decision (set aside)", f"{same_decision:,}"),
                         ("Citation links with a court on both sides", f"{total:,}"), ("Within the same court", f"{cc.share(same, total)}%"),
                         ("Links where both opinions exist but a court could not be resolved", f"{unresolved:,}"),
-                        ("Dockets with an appeal-from court", f"{sum(ap_tot.values()):,}"), ("Edges published", f"cross-court citation edges with at least {MIN_EDGE:,} links (top {MAX_EDGES:,}); appeal edges with at least {MIN_APPEAL_EDGE}")]),
+                        ("Links where the citing opinion is dated before the cited opinion", f"{filed_before_cited:,} (kept in these counts; left out of the age statistics and of the top-cited decade series)"),
+                        ("Dockets with an appeal-from court", f"{sum(ap_tot.values()):,}"),
+                        ("Cross-court citation edges published", f"the {len(cross):,} largest of {len(cross_all):,} court pairs with at least {MIN_EDGE:,} links (ties broken by court id); the smallest published edge has {cross_floor:,} links; {len(cross_omitted):,} smaller pairs holding {sum(n for _, _, n in cross_omitted):,} links are not published"),
+                        ("Other records published", "citing-court profiles for courts with at least 5,000 links, years with at least 1,000 links, and appeal edges with at least 25 dockets")]),
         text="court flows overview citation appeal", filters={"kind": ["overview"]}, links=[],
-        extra={"profile": {"citations": total, "same_court": same, "unresolved": unresolved, "map_links": map_links, "opinion_not_in_opinion_table": missing_opinion, "appeal_dockets": sum(ap_tot.values())}}))
+        extra={"profile": {"citations": total, "same_court": same, "unresolved": unresolved, "map_links": map_links, "opinion_not_in_opinion_table": missing_opinion, "same_decision_links": same_decision,
+                           "citing_filed_before_cited": filed_before_cited, "undated_links": undated_links, "cross_pairs_at_least_100": len(cross_all), "cross_edges_published": len(cross), "cross_edge_floor": cross_floor,
+                           "cross_pairs_not_published": len(cross_omitted), "cross_links_not_published": sum(n for _, _, n in cross_omitted), "appeal_dockets": sum(ap_tot.values())}}))
     summary = {
         "source": "CourtListener bulk data: citation-map, opinions, dockets, opinion-clusters, courts (Free Law Project)", "snapshot": cc.SNAPSHOT,
         "terms": "CourtListener publishes these bulk files for download without an account; see https://www.courtlistener.com/terms/ and the bulk-data help page.",
-        "totals": {"citation_map_rows": map_links, "citation_links_resolved": total, "same_court": same, "unresolved": unresolved, "opinion_not_in_opinion_table": missing_opinion, "appeal_dockets": sum(ap_tot.values())},
-        "definitions": {"citation link": "one row of the citation map: a citing opinion and a cited opinion", "attribution": "each opinion is attributed to the court of its cluster's docket; links where either opinion has no matching docket court are counted as unresolved",
+        "totals": {"citation_map_rows": map_links, "citation_links_resolved": total, "same_court": same, "unresolved": unresolved, "opinion_not_in_opinion_table": missing_opinion, "same_decision_links_set_aside": same_decision,
+                   "citing_filed_before_cited": filed_before_cited, "appeal_dockets": sum(ap_tot.values()), "cross_pairs_at_least_100_links": len(cross_all), "cross_edges_published": len(cross), "cross_edge_floor": cross_floor},
+        "definitions": {"citation link": "one row of the citation map: a citing opinion and a cited opinion. Repeat citations of the same opinion inside the citing opinion are one link (the map's depth column is not used), and links between two opinions of the same decision (cluster) are set aside",
+                        "attribution": "each opinion is attributed to the court of its cluster's docket; links where either opinion has no matching docket court are counted as unresolved",
                         "median age": "median years between the cited opinion's cluster filing date and the citing opinion's, for links where both dates are plausible and the citing opinion is not older",
                         "appeal flow": "dockets whose appeal_from_id names a court, counted by the court that holds the docket"},
-        "caveats": ["The citation map is CourtListener's extraction from opinion text, not a complete census of citations.", "Coverage depends on the opinions in the collection; older and unpublished opinions are less complete.", "Appeal-from courts are recorded for a minority of appellate dockets."],
+        "caveats": ["The citation map is CourtListener's extraction from opinion text, not a complete census of citations.", "Coverage depends on the opinions in the collection; older and unpublished opinions are less complete.", "The share of appellate dockets that record an appeal-from court differs widely by court (it is high in some Texas courts and low in many others), so appeal edges describe only dockets that record one.", "Links where the citing opinion is dated before the cited opinion are kept in these counts (their number is in the overview) and left out of the age statistics.", "Edges, years and citing-court profiles below the stated floors are not published; the overview gives the size of the unpublished cross-court tail."],
         "grain": "cross-court citation edges, citing-court profiles, matrices, years, appeal edges and an overview"}
     return {DATASET: {
         "dataset": DATASET, "label": "Court-to-court citation and appeal flows (CourtListener citation map and dockets, Sept 30, 2026)",
-        "listing_block": writer.listing([("kind", "Type"), ("from", "From / citing"), ("to", "To / cited"), ("count", "Links or dockets"), ("share_of_from_pct", "% of citing court"), ("share_of_to_pct", "% of cited court"),
+        "listing_block": writer.listing([("kind", "Type"), ("from", "From / citing"), ("to", "To / cited"), ("count", "Links or dockets"), ("share_of_from_pct", "% of the citing court's links (edges)"), ("share_of_to_pct", "% of the cited court's incoming links (edges)"),
+                                         ("same_court_pct", "% within the same court"), ("scotus_pct", "% to the Supreme Court"), ("appeal_share_pct", "% of the receiving court's appeal-from dockets"),
                                          ("from_level", "Citing level"), ("to_level", "Cited level"), ("median_lag_years", "Median age of cited, years")],
                                         [("kind", "Type", {"citation": "Citation edge", "citing court": "Citing court profile", "matrix": "Matrix", "scotus": "Supreme Court citers", "year": "Year", "appeal": "Appeal edge", "overview": "Overview"})]),
         "summary": summary, "rows": rows, "built_at": built_at, "inputs": inputs}}

@@ -103,6 +103,7 @@ def build() -> dict[str, dict]:
     c_year = by(con, "SELECT * FROM w_cl_court_year ORDER BY court_id, yr")
     c_prec = by(con, "SELECT * FROM w_cl_court_prec")
     c_top = by(con, "SELECT * FROM w_cl_top ORDER BY court_id, rn")
+    c_blocked = one(con, "SELECT * FROM w_cl_blocked")
     c_rep = by(con, "SELECT * FROM w_cl_reporter")
     c_cov = one(con, "SELECT * FROM w_cl_cov")
     o_court = one(con, "SELECT * FROM w_oral_court")
@@ -144,6 +145,7 @@ def build() -> dict[str, dict]:
     ids = sorted(i for i in set(w_court) | set(c_court) | set(o_court) | set(benches) if i and i in courts)
     rows = []
     totals = {"dockets": sum(v["dockets"] for v in w_court.values()), "clusters": sum(v["clusters"] for k, v in c_court.items()), "oral": sum(v["n"] for v in o_court.values())}
+    oral_unattributed = (o_court.get(None) or {}).get("n", 0)  # recordings whose docket is not in the docket table
 
     for cid in ids:
         court = courts[cid]
@@ -193,7 +195,7 @@ def build() -> dict[str, dict]:
                 "with_fjc_record": wc["with_idb"], "with_fjc_record_pct": cc.share(wc["with_idb"], n),
                 "with_nature_of_suit": wc["with_nos"], "with_cause": wc["with_cause"], "mdl_flagged": wc["mdl_flagged"], "blocked": wc["blocked"],
                 "with_appeal_from": wc["with_appeal_from"], "with_origin_info": wc["with_origin_info"],
-                "by_year": years,
+                "by_year": years, "dated_outside_year_series": wc["dated"] - sum(y["dockets"] for y in years),
                 "sources": [{**s, "flags": cc.source_flags(s["value"] if isinstance(s["value"], int) else int(s["value"]))} for s in shares(src_items, n, 8)],
                 "case_types": shares(ctypes, n, 8), "case_type_not_recorded": n - sum(c for v, c in ctypes if v not in (None, "")),
                 "nos_groups": groups, "top_nos": top_nos, "nos_recorded": nos_total, "top_causes": causes,
@@ -216,6 +218,8 @@ def build() -> dict[str, dict]:
                 "with_reporter_cite_pct": cc.share((c_cov.get(cid) or {}).get("with_reporter_cite", 0), cn),
                 "with_syllabus_pct": cc.share(cc_["with_syllabus"], cn), "with_headnotes_pct": cc.share(cc_["with_headnotes"], cn), "with_summary_pct": cc.share(cc_["with_summary"], cn),
                 "with_scdb": cc_["with_scdb"],
+                "blocked_clusters": int((c_blocked.get(cid) or {}).get("blocked_clusters", 0)),
+                "dated_outside_year_series": cc_["dated"] - sum(r["clusters"] for r in c_year.get(cid, []) if r["yr"] and MIN_YEAR <= r["yr"] <= 2026),
             }
             if cid == "scotus":
                 clusters["scotus_by_year"] = scotus_year
@@ -292,11 +296,15 @@ def build() -> dict[str, dict]:
             links.append({"label": "Judicial positions on record", "url": f"/records/clb_court_benches/{cid}"})
         links.append({"label": "CourtListener court page", "url": f"https://www.courtlistener.com/court/{cid}/"})
         med_civil = (docket or {}).get("duration", {}).get("civil", {}).get("median_days") if docket else None
-        # Where a court's records come from opinion sources, CourtListener creates one docket row per opinion cluster: counts then match
-        # and the docket count says nothing about cases filed.
-        opinion_source = bool(docket and clusters and docket["recap"] == 0 and abs(d_total - c_total) <= 0.05 * max(d_total, c_total))
+        # Where a court's records come from opinion sources (no RECAP dockets and at least half of the dockets carry an opinion cluster),
+        # most docket rows were created from opinions and the docket count says little about cases filed.
+        dockets_with_cluster = int((c_blocked.get(cid) or {}).get("dockets_with_cluster", 0))
+        opinion_source = bool(docket and clusters and docket["recap"] == 0 and d_total and dockets_with_cluster >= 0.5 * d_total)
+        if docket:
+            docket["with_opinion_cluster"] = dockets_with_cluster
+            docket["with_opinion_cluster_pct"] = cc.share(dockets_with_cluster, d_total)
         latest_ratio = coverage["latest_ratio"] if coverage else None
-        span = f"{((docket or {}).get('first_filed') or '')[:4] or '?'}–{((docket or {}).get('last_filed') or '')[:4] or '?'}" if docket else None
+        span = (f"{docket['first_filed'][:4]}–{docket['last_filed'][:4]}" if docket and docket.get("first_filed") and docket.get("last_filed") else None)
         profile = {"court_id": cid, "name": name, "short_name": court["short_name"], "citation_string": court["citation_string"], "jurisdiction": jur, "level": level, "state": state,
                    "in_use": court["in_use"], "start_date": court["start_date"], "end_date": court["end_date"], "parent_court_id": court["parent_court_id"],
                    "pacer_court_id": court["pacer_court_id"], "fjc_court_id": court["fjc_court_id"],
@@ -312,18 +320,20 @@ def build() -> dict[str, dict]:
             badges=["CourtListener bulk data", level, "Collection, not complete court totals"] + (["Docket rows created from opinions"] if opinion_source else []),
             facts=facts([
                 ("Court", name), ("CourtListener court id", cid), ("Level (as coded)", level), ("Dockets in the collection", f"{d_total:,}" if docket else None),
-                ("Docket filing dates on record", f"{span} ({docket['dated']:,} dated; {docket['no_filed_date']:,} without a date; {docket['implausible_filed']:,} outside 1700–2026 excluded)" if docket else None),
+                ("Docket filing dates on record (unvalidated: the earliest and latest dates can come from typing errors or placeholder entries)",
+                 (f"{span} ({docket['dated']:,} dated; {docket['no_filed_date']:,} without a date; {docket['implausible_filed']:,} outside 1700–2026 excluded)" if span else f"none ({docket['no_filed_date']:,} dockets without a date; {docket['implausible_filed']:,} outside 1700–2026 excluded)") if docket else None),
                 ("Dockets from RECAP (PACER) sources", f"{docket['recap']:,} ({docket['recap_pct']}%)" if docket else None),
-                ("Dockets with a termination date", f"{docket['terminated']:,} ({docket['terminated_pct']}% of dated)" if docket else None),
+                ("Dockets with a termination date", (f"{docket['terminated']:,} ({docket['terminated_pct']}% of dated)" if docket["terminated_pct"] is not None else f"{docket['terminated']:,} (no dockets have a filing date, so no share is given)") if docket else None),
                 ("Median days filing to termination, civil dockets with both dates", f"{med_civil:,.0f} (n = {docket['duration']['civil']['n']:,})" if med_civil is not None else None),
                 ("Dockets with an assigned judge", f"{docket['with_assigned_judge']:,} ({docket['with_assigned_pct']}%)" if docket else None),
-                *([("Dockets CourtListener flags as blocked from search engines", f"{docket['blocked']:,} ({cc.share(docket['blocked'], d_total)}%); counted here like any other docket")] if docket and docket["blocked"] else []),
+                *([("Dockets CourtListener flags as blocked from search engines", f"{docket['blocked']:,} ({cc.share(docket['blocked'], d_total)}%); counted here, never named")] if docket and docket["blocked"] else []),
+                *([("Opinion clusters blocked from search engines (cluster or docket flag)", f"{clusters['blocked_clusters']:,}; counted here, never named in the most-cited list")] if clusters and clusters["blocked_clusters"] else []),
                 ("Opinion clusters", f"{c_total:,}" if clusters else None),
                 ("Clusters cited at least once by other opinions in the CourtListener citation network", f"{clusters['cited']:,} ({clusters['cited_pct']}%)" if clusters else None),
                 ("Oral argument recordings", f"{o_total:,}" if oral else None),
                 ("Civil dockets vs FJC civil filings, latest complete fiscal year", f"{latest_ratio:.2f}× (FY{coverage['latest_complete_fy']}; a coverage indicator, not a rate)" if latest_ratio is not None else None),
-                ("Judicial positions on record", f"{bench['positions']:,} ({bench['active']:,} with no recorded end date)" if bench else None),
-                *([("Docket rows", "CourtListener created one docket row for each opinion cluster here (no RECAP source, counts match), so the docket count is not a count of cases filed.")] if opinion_source else []),
+                ("Judicial positions on record", f"{bench['positions']:,} ({bench['active']:,} with a start date, no recorded end date and no recorded death date)" if bench else None),
+                *([("Docket rows", f"No RECAP dockets, and {dockets_with_cluster:,} of the {d_total:,} docket rows ({cc.share(dockets_with_cluster, d_total)}%) carry an opinion cluster: most docket rows here were created from opinions, so the docket count is not a count of cases filed.")] if opinion_source else []),
                 ("Coverage", "Counts are rows in CourtListener's collection (snapshot 2026-09-30), not complete court totals. RECAP dockets exist when someone fetched or shared them; coverage differs by court and year."),
             ]),
             text=f"{name} {cid} court dockets opinions clusters citations oral arguments {state or ''}", filters={"level": [jur or "unknown"], "state": [state or "unknown"]},
@@ -332,25 +342,30 @@ def build() -> dict[str, dict]:
     summary = {
         "source": "CourtListener bulk data: dockets, opinion-clusters, citations, oral-arguments, courts, people (Free Law Project)", "snapshot": cc.SNAPSHOT,
         "terms": "CourtListener publishes these bulk files for download without an account; see https://www.courtlistener.com/terms/ and the bulk-data help page.",
-        "totals": {"courts_in_schema": len(courts), "courts_with_records": len(rows), "dockets": totals["dockets"], "opinion_clusters": totals["clusters"], "oral_arguments": totals["oral"],
-                   "clusters_without_matching_docket": unmatched_clusters},
+        "totals": {"courts_in_schema": len(courts), "courts_with_records": len(rows), "dockets": totals["dockets"], "opinion_clusters": totals["clusters"], "oral_arguments": totals["oral"] - oral_unattributed,
+                   "oral_arguments_without_matching_docket": oral_unattributed, "clusters_without_matching_docket": unmatched_clusters},
         "definitions": {
             "docket": "one row of CourtListener's docket table (a case or appeal in one court), counted by court_id",
-            "filing date": "date_filed when it falls between 1700-01-01 and 2026-09-30; other values are counted as outside the plausible range and left out of year series",
+            "filing date": "date_filed when it falls between 1700-01-01 and 2026-09-30; other values are counted as outside the plausible range. Year series start at 1800 (earlier dates are counted in the span but not in the series; each record gives the number)",
+            "docket rows created from opinions": "no RECAP dockets and at least half of the court's docket rows carry an opinion cluster; CourtListener creates a docket row for an opinion, so the docket count then says little about cases filed",
+            "citation link": "one row of CourtListener's citation map: a citing opinion and a cited opinion, attributed to the court of each opinion's docket; only links with a court on both sides count, repeat citations inside one opinion count once, and links between two opinions of the same decision are set aside; 'cited by others' is every court's links to this court's opinions, including this court's own",
+            "named lists": "opinion clusters (and clusters on dockets) that CourtListener flags as blocked from search engines are counted but never named in the most-cited lists",
             "recap": "docket source field has the RECAP bit (value 1) set; the field is a bit mask (1 RECAP, 2 scraper, 4 Columbia, 8 FJC IDB, 16 Harvard)",
             "civil / criminal": "the two-letter case type inside a federal docket number (5:15-cv-02674 is cv, 1:15-cr-00123 is cr); CourtListener's own parsed case type fills in where the number does not match; dockets with neither are 'Not recorded'",
             "duration": "days from date_filed to date_terminated for dockets with both dates and termination on or after filing; shown only when n >= 30; RECAP dockets are a convenience sample",
             "times cited": "CourtListener's citation_count for an opinion cluster: how many opinions in its citation network cite it",
             "fjc coverage ratio": "CourtListener civil-numbered dockets (docket number contains -cv-) filed in a fiscal year divided by FJC Integrated Database civil filings for the same district and fiscal year; >1 or <1 does not measure error, only collection overlap",
             "fiscal year": "October 1 through September 30, labelled by the year it ends (the AO convention)"},
-        "caveats": ["The collection is not a census of court filings; RECAP dockets exist when someone fetched or shared them.", "State and appellate coverage varies by court.",
+        "caveats": ["The collection is not a census of court filings; RECAP dockets exist when someone fetched or shared them.",
+                    "The first and last filing dates are the earliest and latest recorded dates; some come from typing errors (a docket numbered in 2003 dated 1932) or placeholder entries, so they are not validated start dates of a court's records.",
+                    "Authorship counts credit an opinion to the person CourtListener recorded as its author; for older opinions that attribution is partly name-based, and opinions dated outside the person's recorded lifespan are left out of author lists.", "State and appellate coverage varies by court.",
                     "Durations and shares describe the dockets in the collection, not the court's whole caseload.", "Attorneys, parties and docket entries are not part of CourtListener's public bulk files, so no firm or attorney statistics are derived here."],
         "grain": "one record per court with dockets, opinion clusters, oral arguments or judicial positions on record",
     }
     return {DATASET: {
         "dataset": DATASET, "label": "Court-by-court dockets, opinions, citations and oral arguments in CourtListener's collection (Sept 30, 2026)",
         "listing_block": writer.listing([("court", "Court"), ("level", "Level"), ("state", "State"), ("dockets", "Dockets"), ("clusters", "Opinion clusters"), ("oral_arguments", "Oral arguments"),
-                                         ("first_year", "First docket year"), ("recap_pct", "RECAP %"), ("median_civil_days", "Median days, civil"), ("fjc_coverage_ratio", "vs FJC civil filings"), ("cited_pct", "Clusters cited %")],
+                                         ("first_year", "Earliest docket date on record, year (unvalidated)"), ("recap_pct", "RECAP %"), ("median_civil_days", "Median days, civil"), ("fjc_coverage_ratio", "vs FJC civil filings"), ("cited_pct", "Clusters cited %")],
                                         [("level", "Level", dict(cc.JURISDICTION_LABEL))]),
         "summary": summary, "rows": rows, "built_at": built_at, "inputs": inputs}}
 

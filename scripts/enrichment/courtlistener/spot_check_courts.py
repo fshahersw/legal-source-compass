@@ -90,9 +90,15 @@ def main() -> int:
             check("clusters cited at least once", w, cited, c["cited"])
             check("sum of times cited", w, int(csum or 0), c["cite_total"])
             check("max times cited", w, cmax, c["cite_max"])
-            top = con.execute(f"SELECT k.id, k.citation_count FROM cl.cluster k JOIN dk.docket x ON x.id = k.docket_id WHERE x.court_id = '{cid}' AND k.citation_count > 0 ORDER BY k.citation_count DESC, k.id LIMIT 1").fetchone()
+            top = con.execute(f"SELECT k.id, k.citation_count FROM cl.cluster k JOIN dk.docket x ON x.id = k.docket_id WHERE x.court_id = '{cid}' AND k.citation_count > 0 AND NOT coalesce(k.blocked, false) AND NOT coalesce(x.blocked, false) ORDER BY k.citation_count DESC, k.id LIMIT 1").fetchone()
             if top and c["top_cited"]:
-                check("most cited cluster (id, times cited)", w, [top[0], top[1]], [c["top_cited"][0]["cluster_id"], c["top_cited"][0]["times_cited"]])
+                check("most cited cluster not blocked from search engines (id, times cited)", w, [top[0], top[1]], [c["top_cited"][0]["cluster_id"], c["top_cited"][0]["times_cited"]])
+            blocked_n, with_cluster = con.execute(
+                f"SELECT count(*) FILTER (WHERE coalesce(k.blocked, false) OR coalesce(x.blocked, false)), count(DISTINCT k.docket_id) FROM cl.cluster k JOIN dk.docket x ON x.id = k.docket_id WHERE x.court_id = '{cid}'").fetchone()
+            check("clusters blocked from search engines (cluster or docket flag)", w, blocked_n, c["blocked_clusters"])
+            if p["dockets"]:
+                check("dockets carrying an opinion cluster", w, with_cluster, p["dockets"]["with_opinion_cluster"])
+                check("opinion-source flag follows the rule (no RECAP dockets, at least half carry a cluster)", w, bool(p["dockets"]["recap"] == 0 and with_cluster >= 0.5 * p["dockets"]["total"]), p["opinion_source_dockets"])
             wr = con.execute(f"SELECT count(DISTINCT t.cluster_id) FROM ci.citation t JOIN cl.cluster k ON k.id = t.cluster_id JOIN dk.docket x ON x.id = k.docket_id WHERE x.court_id = '{cid}'").fetchone()[0]
             check("clusters with a reporter citation", w, wr, c["with_reporter_cite"])
         o = p["oral_arguments"]

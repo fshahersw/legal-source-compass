@@ -239,7 +239,7 @@ export const CITATION_AGE_DEFINITION =
 
 /** What a citation link is and is not; shown in the Citations section wherever its figures appear. */
 export const CITATION_LINK_DEFINITION =
-  "A citation link is one row of CourtListener's citation map (a citing opinion cites a cited opinion), attributed to the court of each opinion's docket. Only links with a court on both sides are counted. It is an extraction from opinion text, not a census of citations.";
+  "A citation link is one row of CourtListener's citation map (a citing opinion cites a cited opinion), attributed to the court of each opinion's docket. Only links with a court on both sides are counted, and links between two opinions of the same decision (a separate opinion citing the lead opinion) are set aside. It is an extraction from opinion text, not a census of citations.";
 
 /** Link counts describe citation behaviour in the collection; they are not a quality or good-law signal. */
 export const CITATION_NOT_QUALITY =
