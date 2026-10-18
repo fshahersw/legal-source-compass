@@ -5,6 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 import common as c  # noqa: E402
+import disclosure_match as dm  # noqa: E402
 
 
 class CourtIds(unittest.TestCase):
@@ -90,7 +91,7 @@ class Terminated(unittest.TestCase):
     ])
 
     def test_headers_and_rows(self):
-        rows, headers, unparsed = c.parse_terminated_text(self.TEXT)
+        rows, headers, unparsed, _ = c.parse_terminated_text(self.TEXT)
         self.assertEqual([h["code"] for h in headers], ["53L", "647"])
         self.assertEqual(headers[0]["court_id"], "laed")
         self.assertEqual(headers[1]["printed"], 35)
@@ -101,6 +102,41 @@ class Terminated(unittest.TestCase):
         self.assertEqual(rows[2]["circuit"], "Sixth Circuit")
         self.assertEqual(rows[2]["transferee_judge"], "Gwin, James S.")
         self.assertEqual(unparsed, [])
+
+    def test_report_edge_rows(self):
+        text = "\n".join([
+            "                 CUMULATIVE TOTALS                                    (1,587 Litigations)       254,940",
+            "                                     SIXTH CIRCUIT",
+            "   643           KENTUCKY EASTERN                                               (6 Litigations)",
+            "             8A Cincinnati Airport - 11/8/65 AD                                Swinford, M.        6        2        8        0       1972",
+            "           2338 MF Global Holdings Ltd. Investment                     Marrero, V.                5             20           25        2,019",
+            "           2712 Air Crash Over the Southern Indian Ocean              Jackson, K.B.                39              3          42                    2018",
+            "           9999 Bad Arithmetic                                        Doe, J.                39              3          40                    2018",
+            "           2641 Bard IVC Filters Products Liability Litigation                                                         165           8,524        8,584        105       2024",
+            "           1173 American Airlines Flight 869 AD         Tjoflat, G.B. (11th Circuit)            10              4           12           2       2002",
+            "             10    Antibiotic Drug (Non-Settling Cases) AT                                           Lord, M.W. (MN)",
+        ])
+        rows, _, unparsed, total = c.parse_terminated_text(text)
+        self.assertEqual(total, 1587)
+        by = {r["mdl"]: r for r in rows}
+        self.assertEqual(by["8A"]["actions_closed"], 8)
+        self.assertEqual(by[2338]["termination_year"], 2019)
+        self.assertIsNone(by[2338]["actions_remanded"])
+        self.assertIsNone(by[2712]["actions_remanded"])
+        self.assertNotIn(9999, by)
+        self.assertFalse(by[2641]["judge_printed"])
+        self.assertEqual(by[2641]["transferee_judge"], "")
+        self.assertEqual(by[1173]["transferee_judge"], "Tjoflat, G.B. (11th Circuit)")
+        self.assertEqual(c.parse_jpml_judges(by[1173]["transferee_judge"])[0]["court"], "circuit")
+        self.assertEqual(len(unparsed), 2)
+
+    def test_pending_names(self):
+        parsed = c.parse_pending_judge("Edmund A. Sargus, Jr")
+        self.assertEqual(parsed, {"tokens": ["edmund", "a", "sargus"], "suffix": "jr"})
+        self.assertEqual(c.pending_name_split(parsed, ["sargus"]), ["edmund", "a"])
+        self.assertIsNone(c.pending_name_split(parsed, ["shipp"]))
+        yg = c.parse_pending_judge("Yvonne Gonzalez Rogers")
+        self.assertEqual(c.pending_name_split(yg, ["gonzalez", "rogers"]), ["yvonne"])
 
 
 class CompanyKey(unittest.TestCase):
@@ -131,6 +167,49 @@ class Stats(unittest.TestCase):
         self.assertEqual(c.hhi([50, 50]), 5000)
         self.assertEqual(c.hhi([100]), 10000)
         self.assertIsNone(c.hhi([0, 0]))
+
+
+class DisclosureTiers(unittest.TestCase):
+    BY_TICKER = {"JNJ": ("0000200406", "JOHNSON & JOHNSON"), "MMM": ("0000066740", "3M CO"), "ABT": ("0000001800", "ABBOTT LABORATORIES"),
+                 "GNRC": ("0001474735", "GENERAC HOLDINGS INC."), "PHG": ("0000313216", "KONINKLIJKE PHILIPS NV"),
+                 "ZBH": ("0001136869", "ZIMMER BIOMET HOLDINGS, INC."), "MDT": ("0001613103", "Medtronic plc"),
+                 "ABBV": ("0001551152", "AbbVie Inc."), "BDX": ("0000010795", "BECTON DICKINSON & CO"), "SYK": ("0000310764", "STRYKER CORP"),
+                 "BSX": ("0000885725", "BOSTON SCIENTIFIC CORP"), "TM": ("0001094517", "TOYOTA MOTOR CORP/"), "ANGO": ("0001275187", "ANGIODYNAMICS INC")}
+
+    def setUp(self):
+        self.aliases = dm.resolve_aliases(self.BY_TICKER)
+
+    def test_tiers(self):
+        k = c.company_key
+        self.assertEqual(dm.classify(k("Johnson & Johnson Com"), k("Johnson & Johnson"), 2019, self.aliases, set())[0], "match")
+        self.assertEqual(dm.classify(k("JNJ"), k("Johnson & Johnson"), 2019, self.aliases, set())[0], "near_match")
+        self.assertEqual(dm.classify(k("Johnson & Johnson"), k("Ethicon, Inc."), 2019, self.aliases, set())[0], "near_match")
+        self.assertEqual(dm.classify(k("Abbott Laboratories"), k("Abbott"), 2019, self.aliases, set())[0], "near_match")
+        self.assertEqual(dm.classify(k("Koninklijke Philips NV ADR"), k("Philips"), 2019, self.aliases, set())[0], "near_match")
+        self.assertEqual(dm.classify(k("Pfizer Inc Fund"), k("Pfizer Inc"), 2019, self.aliases, {"pfe"}), None)
+        self.assertEqual(dm.classify(k("PFE"), k("Pfizer Inc"), 2019, self.aliases, {"pfe"})[0], "near_match")
+        self.assertEqual(dm.classify(k("Boston Scientific Corp Bond 2025"), k("Boston Scientific Corporation"), 2019, self.aliases, set())[1],
+                         "investment name begins with the party name")
+        self.assertIsNone(dm.classify(k("Philips 66"), k("Philips"), 2019, self.aliases, set()))
+        self.assertIsNone(dm.classify(k("Vanguard 500 Index"), k("Johnson & Johnson"), 2019, self.aliases, set()))
+
+    def test_parent_dates(self):
+        k = c.company_key
+        self.assertIsNone(dm.classify(k("AbbVie Inc"), k("Allergan"), 2019, self.aliases, set()))
+        self.assertEqual(dm.classify(k("AbbVie Inc"), k("Allergan"), 2020, self.aliases, set())[0], "near_match")
+        self.assertIsNone(dm.classify(k("Becton Dickinson"), k("C.R. Bard, Inc."), 2017, self.aliases, set()))
+        self.assertEqual(dm.classify(k("Becton Dickinson & Co"), k("C.R. Bard, Inc."), 2018, self.aliases, set())[0], "near_match")
+
+    def test_bad_ticker_fails_loudly(self):
+        with self.assertRaises(SystemExit):
+            dm.resolve_aliases({**self.BY_TICKER, "JNJ": ("1", "SOMETHING ELSE")})
+
+    def test_non_company_parties(self):
+        for name in ["Defendants", "All Other Defendants", "United States of America", "State of New Jersey", "New Jersey",
+                     "County of Suffolk", "Does 1-100", "Travelers Casualty Insurance Company"]:
+            self.assertIsNotNone(dm.non_company_reason(name), name)
+        for name in ["3M Company", "Monsanto Company", "Mutual Pharmaceutical Company, Inc.", "E. I. du Pont de Nemours and Company"]:
+            self.assertIsNone(dm.non_company_reason(name), name)
 
 
 if __name__ == "__main__":

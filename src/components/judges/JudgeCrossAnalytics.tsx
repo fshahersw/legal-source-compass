@@ -11,6 +11,7 @@ import {
   ConcentrationCurve,
   DistrictDistribution,
   ExperienceScatter,
+  type DistributionMetric,
 } from "./JudgeCrossCharts";
 import { DisclosureReview } from "./DisclosureReview";
 import { JudgeRanking } from "./JudgeRanking";
@@ -107,6 +108,7 @@ export function JudgeCrossAnalytics() {
 function Dashboard({ data }: { data: Data }) {
   const { profiles: p, national: n, disclosures: d } = data;
   const [filter, setFilter] = useState<JudgeFilter>(EMPTY_FILTER);
+  const [metric, setMetric] = useState<DistributionMetric>("party");
   const set = (k: keyof JudgeFilter) => (v: string) => setFilter((f) => ({ ...f, [k]: v }));
   const judges = useMemo(() => filterJudges(p.points, filter), [p.points, filter]);
   const pendingJudges = judges.filter((j) => j.pendingMdls > 0);
@@ -129,7 +131,11 @@ function Dashboard({ data }: { data: Data }) {
     histMatched +
     (hist.status["no_candidate"] ?? 0) +
     (hist.status["ambiguous"] ?? 0) +
-    (hist.status["unparsed_name"] ?? 0);
+    (hist.status["unparsed_name"] ?? 0) +
+    (hist.status["judge_not_printed"] ?? 0) +
+    (hist.status["circuit_judge_by_designation"] ?? 0);
+  const exitsMatched =
+    (hist.status["exit_matched_strict"] ?? 0) + (hist.status["exit_matched_first_initial"] ?? 0);
   const demActive = n?.partyActive["Democratic"] ?? 0;
   const repActive = n?.partyActive["Republican"] ?? 0;
   const partial = !n || !d.summary;
@@ -283,10 +289,13 @@ function Dashboard({ data }: { data: Data }) {
         footnote={
           <>
             Actions handled = JPML total actions of current pending MDLs + actions transferred or
-            filed in terminated MDLs matched to the judge. Terminated MDLs matched for{" "}
-            {fmtInt(histMatched)} of {fmtInt(histTotal)} transferee-judge entries (court + surname +
-            initials, unique in FJC); {fmtInt(p.unassignedPending.length)} pending MDLs have no
-            matched judge profile.
+            filed in terminated MDLs matched to the judge. Terminated-report judge entries matched:{" "}
+            {fmtInt(histMatched)} of {fmtInt(histTotal)} (court + surname + initials, unique in
+            FJC); {fmtInt(hist.status["judge_not_printed"] ?? 0)} entries print no judge and{" "}
+            {fmtInt(hist.unparsedLines)} report lines could not be parsed. {fmtInt(exitsMatched)} of{" "}
+            {fmtInt(hist.exitsFy2026)} MDLs that left the pending report after 2025-09-30 (in
+            neither report) are attached from the monthly pending reports.{" "}
+            {fmtInt(p.unassignedPending.length)} pending MDLs have no matched judge profile.
           </>
         }
       >
@@ -298,16 +307,20 @@ function Dashboard({ data }: { data: Data }) {
           <ChartCard
             title="Bench composition by district"
             subtitle={`Active and senior district judges by appointing party, median years of active judges, pending MDL load${filter.circuit ? ` · ${circuitLabel(Number(filter.circuit))}` : ""}`}
-            footnote="Flag: MDL hub when the district holds ≥5% of all pending MDL actions. Largest = transferee judge with the most pending actions in the district (hover for HHI by judge). Source: FJC export (current service), JPML pending report."
+            footnote="Flag: MDL hub when the district holds ≥5% of all pending MDL actions. Largest = transferee judge with the most pending actions in the district (hover for HHI by judge). Judgeships are authorized seats from the US Courts table (June 2026; fractions are shared seats); FJC active counts are current, so the two use different as-of dates. Source: FJC export (current service), JPML pending report."
           >
             <BenchSmallMultiples rows={districts} />
           </ChartCard>
           <ChartCard
             title="Appointing party and tenure by district"
-            subtitle="Stacked counts of sitting judges per district, largest benches first"
+            subtitle={
+              metric === "party"
+                ? "Active judges (including chief) by appointing president's party, per district, largest benches first"
+                : "All sitting judges (active and senior) by years since first commission, per district, largest benches first"
+            }
             footnote={`National active bench: ${demActive} Democratic-appointed, ${repActive} Republican-appointed; median ${n.medianYearsActive?.toFixed(1) ?? "—"} years since first commission. Source: FJC export.`}
           >
-            <DistrictDistribution rows={districts} />
+            <DistrictDistribution rows={districts} metric={metric} setMetric={setMetric} />
           </ChartCard>
         </>
       ) : null}
@@ -334,10 +347,21 @@ function Dashboard({ data }: { data: Data }) {
             .
           </li>
           <li>
-            Terminated MDLs are parsed from the JPML report ({fmtInt(hist.rows)} rows across{" "}
-            {hist.districts.length} district headings; printed and parsed counts are compared per
-            district) and matched to an FJC judge only when exactly one judge of that court with
+            Terminated MDLs are parsed from the JPML report: {fmtInt(hist.rows)} report entries
+            across {hist.districts.length} district headings (the report’s own headline is{" "}
+            {fmtInt(hist.printedLitigations)} litigations; an MDL can be listed under more than one
+            district). Printed vs parsed entries per district:{" "}
+            {hist.districts
+              .filter((x) => x.printed !== x.parsed)
+              .map((x) => `${x.name} ${x.parsed}/${x.printed}`)
+              .join(", ") || "all equal"}
+            . An entry is matched to an FJC judge only when exactly one judge of that court with
             that surname has consistent initials and was commissioned by the termination year.
+            {hist.judgeNotPrinted.length
+              ? ` Entries with no printed judge are left unattached: ${hist.judgeNotPrinted
+                  .map((x) => `MDL ${x.mdl} (${x.district})`)
+                  .join(", ")}.`
+              : ""}
           </li>
           <li>
             Bench counts are not divided by authorized judgeships: the FJC export and the US Courts

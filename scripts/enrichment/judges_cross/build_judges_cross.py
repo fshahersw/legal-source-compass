@@ -25,6 +25,7 @@ sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE.parent))
 import common as c  # noqa: E402
 import corpus_writer as cw  # noqa: E402
+import disclosure_match as dm  # noqa: E402
 from build_judge_profiles import full_name, services  # noqa: E402
 
 ROOT = HERE.parents[2]
@@ -44,6 +45,7 @@ CL_FILES = {
     "investments": f"financial-disclosure-investments-{CL_DATE}.csv.bz2",
 }
 REVIEW_LABEL = "Requires review — disclosure name match, not a finding"
+NEAR_LABEL = "Near match — review: alias, parent, ticker or name prefix; not a finding"
 DISCLOSURE_YEARS = 3
 GROSS_VALUE = {
     "J": "$1–$15,000", "K": "$15,001–$50,000", "L": "$50,001–$100,000", "M": "$100,001–$250,000",
@@ -107,11 +109,11 @@ def load_fjc():
 
 def load_terminated():
     text = subprocess.run(["pdftotext", "-layout", str(TERMINATED_PDF), "-"], capture_output=True, text=True, check=True).stdout
-    rows, headers, unparsed = c.parse_terminated_text(text)
+    rows, headers, unparsed, printed_total = c.parse_terminated_text(text)
     per_header = Counter(r["district_code"] for r in rows)
-    coverage = [{"code": h["code"], "name": h["name"].title(), "court_id": h["court_id"], "printed": h["printed"],
+    coverage = [{"code": h["code"], "name": h["name"].title().replace(" Of ", " of "), "court_id": h["court_id"], "printed": h["printed"],
                  "parsed": per_header.get(h["code"], 0)} for h in headers]
-    return rows, coverage, unparsed
+    return rows, coverage, {"lines": unparsed, "printed_total": printed_total}
 
 
 def match_history(rows, people):
@@ -130,11 +132,18 @@ def match_history(rows, people):
                 by_court[cid].append((p, int(s["commission"][:4])))
     matched, status = defaultdict(list), Counter()
     for row in rows:
+        if not row.get("judge_printed", True):
+            # No judge printed (e.g. MDL 2641): nothing is attached without separate documented evidence.
+            status["judge_not_printed"] += 1
+            continue
         judges = c.parse_jpml_judges(row["transferee_judge"])
         if not judges:
             status["unparsed_name"] += 1
             continue
         for j in judges:
+            if j["court"] == "circuit":
+                status["circuit_judge_by_designation"] += 1
+                continue
             court = j["court"] or row["court_id"]
             pool = {p["nid"]: p for p, year in by_court.get(court, [])
                     if p["surname"] == j["surname"] and year <= row["termination_year"] and (not j["suffix"] or j["suffix"] == p["suffix"])}
@@ -150,6 +159,52 @@ def match_history(rows, people):
             matched[hit["nid"]].append({**row, "match_basis": basis, "judge_as_printed": row["transferee_judge"], "shared": len(judges) > 1})
             status[f"matched_{basis}"] += 1
     return matched, status
+
+
+def match_exits(mdls, terminated_numbers, people):
+    """MDLs that left the JPML pending report after the terminated report's cut-off (2025-09-30) appear in neither
+    report. Recover them from the monthly pending series (last listing, closing date from the JPML recently-
+    terminated list) and match the judge as printed there with the same court + surname + given-name rules."""
+    by_court = defaultdict(list)
+    for p in people:
+        for s in p["services"]:
+            cid = c.district_court_id(s["court"])
+            if cid and s["commission"]:
+                by_court[cid].append((p, int(s["commission"][:4])))
+    matched, status, rows = defaultdict(list), Counter(), []
+    for m in mdls.values():
+        if m.get("status") == "pending" or m["mdl"] in terminated_numbers:
+            continue
+        closed = m.get("date_closed")
+        if closed and closed <= "2025-09-30":
+            continue
+        court = c.pending_district_court_id(m.get("district"))
+        year = int((closed or m["as_of"])[:4])
+        row = {"mdl": m["mdl"], "caption": m["title"], "district_name": m.get("district") or "", "court_id": court,
+               "termination_year": year, "actions_total": m.get("total"), "date_closed": closed, "last_listed": m["as_of"],
+               "status": m.get("status"), "transferee_judge": m.get("judge") or "", "source": "jpml_pending_exit"}
+        rows.append(row)
+        parsed = c.parse_pending_judge(m.get("judge") or "")
+        if not parsed or not court:
+            status["exit_unparsed"] += 1
+            continue
+        pool = {}
+        for p, start in by_court.get(court, []):
+            given = c.pending_name_split(parsed, p["surname"])
+            if given is not None and start <= year and (not parsed["suffix"] or parsed["suffix"] == p["suffix"]):
+                pool[p["nid"]] = (p, given)
+        strict = [p for p, g in pool.values() if c.given_consistent(g, p["first"], p["middle"])]
+        loose = [p for p, g in pool.values() if c.first_initial_consistent(g, p["first"], p["middle"])]
+        if len(strict) == 1:
+            hit, basis = strict[0], "strict"
+        elif not strict and len(loose) == 1:
+            hit, basis = loose[0], "first_initial"
+        else:
+            status["exit_ambiguous" if (strict or loose) else "exit_no_candidate"] += 1
+            continue
+        matched[hit["nid"]].append({**row, "match_basis": basis, "judge_as_printed": row["transferee_judge"], "shared": False})
+        status[f"exit_matched_{basis}"] += 1
+    return matched, status, rows
 
 
 # --------------------------------------------------------------------------------------- CourtListener
@@ -261,7 +316,7 @@ def sec_evidence():
         latest = (link.get("verified") or [{}])[-1]
         out[mdl].append({"company": str(name), "kind": "sec_filing",
                          "label": f"Company's own SEC filing: {link.get('tier_label') or 'cites the MDL'}; excerpt describes claims against the company",
-                         "url": latest.get("url") or r.get("source_url") or "",
+                         "url": latest.get("url") or r.get("source_url") or "", "cik": str(link.get("cik") or "") or None,
                          "detail": f"{latest.get('form', '')} filed {latest.get('file_date', '')} · accession {latest.get('adsh', '')}".strip()})
     return out, bool(rows)
 
@@ -282,6 +337,10 @@ def build(dry=False):
     courts = {r["id"]: (r["item"] or {}).get("analytics", {}) for r in cw.fetch_all("court_analytics", "id,item")}
     terminated, coverage, unparsed = load_terminated()
     history, history_status = match_history(terminated, people)
+    exits, exit_status, exit_rows = match_exits(mdls, {r["mdl"] for r in terminated}, people)
+    for nid, items in exits.items():
+        history[nid].extend(items)
+    history_status.update(exit_status)
 
     # ---------------------------------------------------------------------------------- per-judge records
     judge_pending = {}
@@ -319,14 +378,23 @@ def build(dry=False):
         # report; it is counted once, as pending, so its actions are not added twice.
         pending_numbers = {m["mdl"] for m in pend}
         also_pending = sorted({h["mdl"] for h in history.get(nid, []) if h["mdl"] in pending_numbers})
-        hist = sorted((h for h in history.get(nid, []) if h["mdl"] not in pending_numbers), key=lambda h: (-h["termination_year"], h["mdl"]))
-        hist_out = [{"mdl": h["mdl"], "caption": h["caption"], "district": h["district_name"], "court_id": h["court_id"],
-                     "year": h["termination_year"], "transferred": h["actions_transferred"], "filed": h["actions_filed_in_transferee"],
-                     "closed": h["actions_closed"], "remanded": h["actions_remanded"], "judge_as_printed": h["judge_as_printed"], "shared": h["shared"], "basis": h["match_basis"]}
-                    for h in hist]
+        hist = sorted((h for h in history.get(nid, []) if h["mdl"] not in pending_numbers), key=lambda h: (-h["termination_year"], str(h["mdl"])))
+        hist_out = []
+        for h in hist:
+            exit_row = h.get("source") == "jpml_pending_exit"
+            hist_out.append({
+                "mdl": h["mdl"], "caption": h["caption"], "district": h["district_name"], "court_id": h["court_id"],
+                "year": h["termination_year"],
+                "transferred": None if exit_row else h["actions_transferred"], "filed": None if exit_row else h["actions_filed_in_transferee"],
+                "closed": None if exit_row else h["actions_closed"], "remanded": None if exit_row else h["actions_remanded"],
+                "actions": (h.get("actions_total") or 0) if exit_row else h["actions_transferred"] + h["actions_filed_in_transferee"],
+                "source": "jpml_pending_exit" if exit_row else "jpml_terminated_fy2025",
+                "date_closed": h.get("date_closed"), "last_listed": h.get("last_listed"),
+                "judge_as_printed": h["judge_as_printed"], "shared": h["shared"], "basis": h["match_basis"],
+            })
         pending_actions = sum(m["pending"] for m in pend)
         pending_total = sum(m["total"] for m in pend)
-        hist_actions = sum(h["transferred"] + h["filed"] for h in hist_out)
+        hist_actions = sum(h["actions"] for h in hist_out)
         cl_id, cl_basis = resolve_cl_person(p, pend, cl_by_fjc, cl_people, docket_people)
         court_id = c.district_court_id(cur["court"]) or prof.get("current_court_id")
         rec = {
@@ -363,12 +431,17 @@ def build(dry=False):
         "as_of": as_of, "records": records, "unassigned": unassigned, "history_status": history_status,
         "coverage": coverage, "unparsed": unparsed, "terminated_rows": len(terminated), "disclosure": disclosure,
         "districts": districts, "total_pending_actions": total_pending_actions, "pending_mdls": len(pending),
+        "terminated_judge_not_printed": [{"mdl": r["mdl"], "caption": r["caption"], "district": r["district_name"], "year": r["termination_year"]}
+                                         for r in terminated if not r.get("judge_printed", True)],
+        "exits": [{k: r[k] for k in ("mdl", "caption", "district_name", "date_closed", "last_listed", "transferee_judge", "actions_total")} for r in exit_rows],
     }
 
 
 def build_disclosures(records, pending, cl_people):
     sec, sec_present = sec_evidence()
     parties = party_evidence()
+    by_ticker, tickers_by_cik = dm.load_sec_tickers(ACQ / "sec_company_tickers.json")
+    aliases = dm.resolve_aliases(by_ticker)
     targets = [r for r in records if r["products_liability_mdls"]]
     person_ids = {r["cl_person_id"] for r in targets if r["cl_person_id"]}
     fds = load_disclosures(person_ids)
@@ -381,14 +454,19 @@ def build_disclosures(records, pending, cl_people):
     matches, coverage = [], []
     for r in targets:
         pl_mdls = [m for m in r["pending_mdls"] if m["type"] == "Products Liability"]
-        companies = []
+        companies, excluded = [], Counter()
         for m in pl_mdls:
             caption = pending[m["mdl"]]["title"]
             for name in CAPTION_COMPANIES.get(m["mdl"], []):
                 assert name in caption, (m["mdl"], name)
                 companies.append({"mdl": m["mdl"], "company": name, "kind": "caption", "label": "Named in the JPML MDL caption",
-                                  "url": JPML_PENDING_URL, "detail": caption})
-            companies += [{"mdl": m["mdl"], **e} for e in parties.get(m["mdl"], [])]
+                                  "url": JPML_PENDING_URL, "detail": caption, "cik": None})
+            for e in parties.get(m["mdl"], []):
+                reason = dm.non_company_reason(e["company"])
+                if reason:
+                    excluded[reason] += 1
+                else:
+                    companies.append({"mdl": m["mdl"], "cik": None, **e})
             companies += [{"mdl": m["mdl"], **e} for e in sec.get(m["mdl"], [])]
         keyed = defaultdict(list)
         for comp in companies:
@@ -406,21 +484,33 @@ def build_disclosures(records, pending, cl_people):
             pdf = ("https://storage.courtlistener.com/" + fd["filepath"]) if fd["filepath"] else fd["download_filepath"]
             for ordinal, inv in enumerate(rows, 1):
                 key = c.company_key(inv["description"])
-                for comp in keyed.get(key, []) if key else []:
-                    judge_matches.append({
-                        "nid": r["nid"], "judge": r["name"], "judge_profile_id": r["judge_profile_id"], "cl_person_id": pid,
-                        "mdl": comp["mdl"], "mdl_title": pending[comp["mdl"]]["title"], "company": comp["company"],
-                        "company_key": key, "evidence_kind": comp["kind"], "evidence_label": comp["label"],
-                        "evidence_url": comp["url"], "evidence_detail": comp["detail"],
-                        "investment": inv["description"], "investment_id": inv["id"], "line": ordinal,
-                        "lines_in_report": len(rows), "page": int(inv["page_number"]) if inv["page_number"].isdigit() else None,
-                        "year": int(fd["year"]), "disclosure_id": fd["id"], "report_type": REPORT_TYPE.get(fd["report_type"], "Not recorded"),
-                        "amended": fd["is_amended"] == "t", "disclosure_url": pdf,
-                        "gross_value_code": inv["gross_value_code"] or None, "gross_value": GROSS_VALUE.get(inv["gross_value_code"]),
-                        "income_type": inv["income_during_reporting_period_type"] or None,
-                        "transaction": inv["transaction_during_reporting_period"] or None,
-                        "redacted": inv["redacted"] == "t", "label": REVIEW_LABEL,
-                    })
+                if not key:
+                    continue
+                seen = set()
+                for party_key, comps in keyed.items():
+                    for comp in comps:
+                        sec_tickers = {t.lower() for t in tickers_by_cik.get(comp.get("cik") or "", []) if len(t) >= 2}
+                        hit = dm.classify(key, party_key, int(fd["year"]), aliases, sec_tickers)
+                        if not hit or (comp["mdl"], comp["company"]) in seen:
+                            continue
+                        seen.add((comp["mdl"], comp["company"]))
+                        tier, rule = hit
+                        judge_matches.append({
+                            "nid": r["nid"], "judge": r["name"], "judge_profile_id": r["judge_profile_id"], "cl_person_id": pid,
+                            "mdl": comp["mdl"], "mdl_title": pending[comp["mdl"]]["title"], "company": comp["company"],
+                            "company_key": party_key, "investment_key": key, "tier": tier, "rule": rule,
+                            "evidence_kind": comp["kind"], "evidence_label": comp["label"],
+                            "evidence_url": comp["url"], "evidence_detail": comp["detail"],
+                            "investment": inv["description"], "investment_id": inv["id"], "line": ordinal,
+                            "lines_in_report": len(rows), "page": int(inv["page_number"]) if inv["page_number"].isdigit() else None,
+                            "year": int(fd["year"]), "disclosure_id": fd["id"], "report_type": REPORT_TYPE.get(fd["report_type"], "Not recorded"),
+                            "amended": fd["is_amended"] == "t", "disclosure_url": pdf,
+                            "gross_value_code": inv["gross_value_code"] or None, "gross_value": GROSS_VALUE.get(inv["gross_value_code"]),
+                            "income_type": inv["income_during_reporting_period_type"] or None,
+                            "transaction": inv["transaction_during_reporting_period"] or None,
+                            "redacted": inv["redacted"] == "t",
+                            "label": REVIEW_LABEL if tier == "match" else NEAR_LABEL,
+                        })
         if not pid:
             status = "no_courtlistener_person"
         elif not all_years:
@@ -433,9 +523,17 @@ def build_disclosures(records, pending, cl_people):
             "nid": r["nid"], "judge": r["name"], "judge_profile_id": r["judge_profile_id"], "cl_person_id": pid,
             "cl_slug": r["cl_slug"], "cl_person_basis": r["cl_person_basis"], "status": status, "years_available": all_years,
             "years_checked": sorted({int(x["year"]) for x in sel}), "reports_checked": len(sel), "lines_checked": lines,
-            "mdls": [{"mdl": m["mdl"], "title": m["title"]} for m in pl_mdls],
+            "mdls": [{"mdl": m["mdl"], "title": m["title"], "transferred": m.get("date_transferred"),
+                      # The MDL was created after the judge's latest available report, so no report can show holdings
+                      # while the judge presided over it.
+                      "after_latest_report": (m.get("date_transferred") or "") > f"{all_years[-1]}-12-31" if all_years and m.get("date_transferred") else None}
+                     for m in pl_mdls],
             "companies_checked": sorted({comp["company"] for comp in companies}),
-            "companies_by_source": dict(Counter(comp["kind"] for comp in companies)), "matches": len(judge_matches),
+            "companies_by_source": dict(Counter(comp["kind"] for comp in companies)),
+            "parties_not_compared": dict(excluded),
+            "matches": sum(1 for x in judge_matches if x["tier"] == "match"),
+            "near_matches": sum(1 for x in judge_matches if x["tier"] == "near_match"),
+            "latest_report_year": all_years[-1] if all_years else None,
             "reports": [{"id": x["id"], "year": int(x["year"]), "url": ("https://storage.courtlistener.com/" + x["filepath"]) if x["filepath"] else x["download_filepath"],
                          "lines": len(investments.get(x["id"], [])), "amended": x["is_amended"] == "t"} for x in sorted(sel, key=lambda x: -int(x["year"]))],
         })
@@ -505,7 +603,7 @@ def build_districts(people, pending, terminated, courts, records, as_of):
             "top_judge_share_pct": round(100 * top_judge[1] / pending_actions, 1) if top_judge and pending_actions else None,
             "hhi_by_judge": c.hhi(list(by_judge.values())),
             "mdls": [{"mdl": a["mdl"], "title": a["title"], "judge": a.get("judge"), "type": a.get("type"), "pending": a["pending"]} for a in mdl_list],
-            "terminated_mdls": len(term), "terminated_actions": sum(t["actions_closed"] + t["actions_remanded"] for t in term),
+            "terminated_mdls": len(term), "terminated_actions": sum(t["actions_closed"] + (t["actions_remanded"] or 0) for t in term),
             "judges": sorted([
                 {"nid": p["nid"], "name": p["name"], "status": p["status"], "party": p["current"]["party"] or None,
                  "president": p["current"]["president"] or None, "years": c.years_between(p["first_commission"]),
@@ -554,8 +652,8 @@ def publish(result, dry=False):
             ["Pending MDLs (JPML, as of " + as_of + ")", str(r["pending_mdl_count"])],
             ["Actions pending in those MDLs", fmt(r["pending_actions"])],
             ["Share of all pending MDL actions", f"{r['pending_share_pct']}%" if r["pending_share_pct"] is not None else "Not applicable"],
-            ["Terminated MDLs matched (JPML, through FY2025)", str(r["historical_mdl_count"])],
-            ["Actions in terminated MDLs (transferred + filed)", fmt(r["historical_actions"])],
+            ["Terminated MDLs matched (JPML terminated report through FY2025, plus MDLs that left the pending report after 2025-09-30)", str(r["historical_mdl_count"])],
+            ["Actions in terminated MDLs (transferred + filed; last printed total for later closures)", fmt(r["historical_actions"])],
             ["Total actions handled", fmt(r["total_actions_handled"])],
             ["Method", "Pending MDLs from judge_profiles_fjc; terminated MDLs matched on court, surname and initials, unique in the FJC directory"],
         ]
@@ -592,7 +690,9 @@ def publish(result, dry=False):
         "median_years_pending_judges": c.median([r["years_since_commission"] for r in with_pending]),
         "unassigned_pending": result["unassigned"],
         "history": {"rows": result["terminated_rows"], "status": dict(result["history_status"]), "districts": result["coverage"],
-                    "unparsed_lines": len(result["unparsed"])},
+                    "unparsed_lines": len(result["unparsed"]["lines"]), "unparsed_examples": result["unparsed"]["lines"][:10],
+                    "printed_litigations": result["unparsed"]["printed_total"],
+                    "judge_not_printed": result["terminated_judge_not_printed"], "exits_fy2026": result["exits"]},
         "scatter": scatter,
     }
     rows.append(cw.record(
@@ -624,7 +724,8 @@ def publish(result, dry=False):
             facts=[["District", name], ["Sitting Article III judges (FJC)", str(d["sitting"])], ["Active (incl. chief)", str(d["active"])],
                    ["Senior", str(d["senior"])], ["Active judges by appointing party", ", ".join(f"{k}: {v}" for k, v in d["party_active"].items()) or "None"],
                    ["Median years since first commission (active)", fmt(d["median_years_active"])],
-                   ["Authorized judgeships (US Courts FCMS)", fmt(int(d["judgeships"])) if isinstance(d["judgeships"], (int, float)) else "Not recorded"],
+                   ["Authorized judgeships (US Courts FCMS, June 2026; FJC bench counts use a different as-of date)",
+                    f"{d['judgeships']:g}" if isinstance(d["judgeships"], (int, float)) else "Not recorded"],
                    ["Pending MDLs", str(d["pending_mdls"])], ["Pending MDL actions", fmt(d["pending_actions"])],
                    ["Top MDL judge share of district's pending actions", f"{d['top_judge_share_pct']}%" if d["top_judge_share_pct"] is not None else "Not applicable"],
                    ["Terminated MDLs through FY2025 (JPML)", str(d["terminated_mdls"])],
@@ -651,25 +752,27 @@ def publish(result, dry=False):
     disc = result["disclosure"]
     mrows = []
     for m in disc["matches"]:
-        rid = f"{m['nid']}:{m['mdl']}:{m['disclosure_id']}:{m['investment_id']}:{c.company_key(m['company']).replace(' ', '-')}"
+        rid = f"{m['tier']}:{m['nid']}:{m['mdl']}:{m['disclosure_id']}:{m['investment_id']}:{c.company_key(m['company']).replace(' ', '-')}"
         mrows.append(cw.record(
             "judge_cross_disclosure_matches", rid, f"{m['judge']} — {m['investment']}", source_url=m["disclosure_url"],
-            subtitle=f"{REVIEW_LABEL} · MDL {m['mdl']} · {m['year']} report, line {m['line']}",
+            subtitle=f"{m['label']} · MDL {m['mdl']} · {m['year']} report, line {m['line']}",
             cells={"judge": m["judge"], "mdl": str(m["mdl"]), "company": m["company"], "investment": m["investment"], "year": str(m["year"]),
-                   "line": str(m["line"]), "label": REVIEW_LABEL},
-            facts=[["Label", REVIEW_LABEL], ["Judge", m["judge"]], ["MDL", f"{m['mdl']} — {m['mdl_title']}"],
+                   "line": str(m["line"]), "label": m["label"]},
+            facts=[["Label", m["label"]], ["Tier", "Exact name match" if m["tier"] == "match" else "Near match"], ["Judge", m["judge"]],
+                   ["MDL", f"{m['mdl']} — {m['mdl_title']}"],
                    ["Company (party evidence)", f"{m['company']} — {m['evidence_label']}"],
                    ["Disclosed investment (as extracted)", m["investment"]], ["Report year", str(m["year"])],
                    ["Line / page", f"Line {m['line']} of {m['lines_in_report']} extracted investment rows, page {m['page'] or 'not recorded'}"],
                    ["Gross value code", f"{m['gross_value_code']} ({m['gross_value']})" if m["gross_value_code"] else "Not recorded"],
-                   ["Matching rule", "Exact equality of normalised names (case, punctuation, corporate suffixes and security words removed)"],
+                   ["Matching rule", m["rule"] + " (names compared after removing case, punctuation, corporate suffixes and security words)"],
                    ["Source", "CourtListener bulk financial-disclosure investments " + CL_DATE + "; disclosure PDF linked"]],
             links=[{"url": m["disclosure_url"], "label": f"Disclosure report {m['year']} (PDF)"},
                    {"url": m["evidence_url"], "label": m["evidence_label"]}] + ([{"url": f"/judges/{m['judge_profile_id']}", "label": "Judge profile"}] if m["judge_profile_id"] else []),
-            badges=["Requires review", f"MDL {m['mdl']}"], text=f"{m['company']} {m['investment']} {m['mdl_title']}",
-            filters={"kind": ["match"], "mdl": [str(m["mdl"])], "judge": [m["nid"]], "evidence": [m["evidence_kind"]],
+            badges=["Requires review" if m["tier"] == "match" else "Near match — review", f"MDL {m['mdl']}"],
+            text=f"{m['company']} {m['investment']} {m['mdl_title']}",
+            filters={"kind": [m["tier"]], "mdl": [str(m["mdl"])], "judge": [m["nid"]], "evidence": [m["evidence_kind"]],
                      "judge_profile": [m["judge_profile_id"]] if m["judge_profile_id"] else []},
-            extra={"kind": "match", "match": m},
+            extra={"kind": m["tier"], "match": m},
         ))
     for cov in disc["coverage"]:
         mrows.append(cw.record(
@@ -690,7 +793,12 @@ def publish(result, dry=False):
     status_counts = Counter(cov["status"] for cov in disc["coverage"])
     dsummary = {
         "as_of": as_of, "cl_bulk_date": CL_DATE, "judges_targeted": len(disc["coverage"]), "status": dict(status_counts),
-        "matches": len(disc["matches"]), "judges_with_matches": len({m["nid"] for m in disc["matches"]}),
+        "matches": sum(1 for m in disc["matches"] if m["tier"] == "match"),
+        "near_matches": sum(1 for m in disc["matches"] if m["tier"] == "near_match"),
+        "judges_with_matches": len({m["nid"] for m in disc["matches"] if m["tier"] == "match"}),
+        "judges_with_near_matches": len({m["nid"] for m in disc["matches"] if m["tier"] == "near_match"}),
+        "near_label": NEAR_LABEL, "alias_table": [{k: v for k, v in a.items() if k != "names"} | {"names": a["names"]} for a in dm.REVIEWED_ALIASES],
+        "parties_not_compared": dict(sum((Counter(cov["parties_not_compared"]) for cov in disc["coverage"]), Counter())),
         "sec_links_used": disc["sec_present"], "party_evidence_mdls": disc["party_mdls"], "sec_evidence_mdls": disc["sec_mdls"],
         "caption_companies": {str(k): v for k, v in CAPTION_COMPANIES.items()}, "years_per_judge": DISCLOSURE_YEARS,
         "label": REVIEW_LABEL,

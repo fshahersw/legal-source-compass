@@ -68,12 +68,27 @@ def main():
         checks.append(f"judge_cross_profiles/{nid} pending_mdls[{mdl}] pending,total: published={m['pending']},{m['total']} source={src} {PENDING_URL}")
 
     term_txt = subprocess.run(["pdftotext", "-layout", str(fetch(TERMINATED_URL, "terminated.pdf")), "-"], capture_output=True, text=True, check=True).stdout
-    rows, _, _ = c.parse_terminated_text(term_txt)
+    rows, _, _, _ = c.parse_terminated_text(term_txt)
     p = record("judge_cross_profiles", "1387376")["cross"]
     for h in p["historical_mdls"]:
         src = [r for r in rows if r["mdl"] == h["mdl"]]
         checks.append(f"judge_cross_profiles/1387376 historical[{h['mdl']}] judge,closed,year: published={h['judge_as_printed']},{h['closed']},{h['year']} "
                       f"source={[(r['transferee_judge'], r['actions_closed'], r['termination_year'], r['district_name']) for r in src]} {TERMINATED_URL}")
+
+    # FY2026 closures: in the 2025-10-01 pending report under the printed judge, absent from the 2026-10-01 report.
+    prior_txt = subprocess.run(["pdftotext", "-layout", str(fetch(PENDING_URL.replace("October-1-2026", "October-1-2025"), "pending_2025.pdf")), "-"],
+                               capture_output=True, text=True, check=True).stdout
+    fallon = next(r for r in cw.fetch_all("judge_cross_profiles", "id,item") if (r["item"] or {}).get("cross", {}).get("name", "").startswith("Eldon"))
+    for h in [h for h in fallon["item"]["cross"]["historical_mdls"] if h.get("source") == "jpml_pending_exit"]:
+        prior = next((ln.strip()[:90] for ln in prior_txt.splitlines() if re.search(rf"MDL\s*-\s*{h['mdl']}\b", ln)), None)
+        now = any(re.search(rf"MDL\s*-\s*{h['mdl']}\b", ln) for ln in pending_txt.splitlines())
+        checks.append(f"judge_cross_profiles/{fallon['id']} exit MDL {h['mdl']} (closed {h['date_closed']}): published judge={h['judge_as_printed']} "
+                      f"source 2025-10-01 line={prior!r}; listed 2026-10-01={now}")
+
+    p = record("judge_cross_profiles", "summary:overview")["summary"]["history"]
+    two_three = [r for r in rows if r["mdl"] in (2338, 2641)]
+    checks.append(f"terminated parse: printed_litigations published={p['printed_litigations']}; MDL 2338/2641 source rows="
+                  f"{[(r['mdl'], r['termination_year'], r['transferee_judge'] or 'NOT PRINTED') for r in two_three]}; judge_not_printed published={p['judge_not_printed']}")
 
     cov = record("judge_cross_disclosure_matches", "coverage:1394031")["coverage"]
     checks.append(f"judge_cross_disclosure_matches/coverage:1394031 reports(year:lines)={[(r['year'], r['lines']) for r in cov['reports']]} matches={cov['matches']} (compare: CourtListener API financial-disclosures?person=2955 and investments?financial_disclosure=<id>)")

@@ -132,6 +132,11 @@ def parse_jpml_judges(raw: str):
     if m:
         court = pending_district_court_id(m.group(1))
         raw = raw[: m.start()].strip()
+    m = re.search(r"\(\d{1,2}(?:st|nd|rd|th) Circuit\)\s*$", raw)
+    if m:
+        # A circuit judge sitting by designation: no district court to match against.
+        court = "circuit"
+        raw = raw[: m.start()].strip()
     pieces = [p.strip() for p in re.split(r"\s+&\s+", raw)]
     if len(pieces) == 1:
         m = re.fullmatch(r"([^,]+,(?:\s*(?:Jr|Sr|III|II|IV)\.?,)?\s*(?:[A-Z]\.){1,3}),\s*([^,]+,(?:\s*(?:Jr|Sr|III|II|IV)\.?,)?\s*(?:[A-Z]\.){1,3})", raw)
@@ -159,6 +164,21 @@ def parse_jpml_judges(raw: str):
             return []
         out.append({"surname": surname_tokens, "given": given_tokens, "court": court, "suffix": suffix_key(piece)})
     return out
+
+
+def parse_pending_judge(raw: str):
+    """Judge as printed in the JPML pending reports ("Edmund A. Sargus, Jr") -> {"tokens", "suffix"} or None."""
+    raw = (raw or "").strip()
+    tokens = name_tokens(raw)
+    return {"tokens": tokens, "suffix": suffix_key(raw)} if len(tokens) >= 2 else None
+
+
+def pending_name_split(parsed, surname_tokens):
+    """Given tokens left after removing an FJC surname from the end of a pending-report name, or None."""
+    k = len(surname_tokens)
+    if not k or k >= len(parsed["tokens"]) or parsed["tokens"][-k:] != surname_tokens:
+        return None
+    return parsed["tokens"][:-k]
 
 
 def given_consistent(given, first: str, middle: str) -> bool:
@@ -189,20 +209,42 @@ def first_initial_consistent(given, first: str, middle: str) -> bool:
 
 TERMINATED_HEADER = re.compile(r"^\s*(?P<code>[0-9][0-9A-Z]{2,3})\s+(?P<name>[A-Z][A-Z .,'()-]+?)\s+\(?(?P<count>\d+) Litigations?\)?\s*$")
 TERMINATED_CIRCUIT = re.compile(r"^\s+([A-Z ]+CIRCUIT)\s*$")
+_N = r"[\d,]+"
+_YEAR = r"(?P<year>\d,?\d{3})"
+_JUDGE = r"(?P<judge>[A-Z](?:[^\d]|\(\d{1,2}(?:st|nd|rd|th) Circuit\))*?)"
 TERMINATED_ROW = re.compile(
-    r"^\s*(?P<mdl>\d{1,5})\s+(?P<caption>.+?)\s{2,}(?P<judge>[A-Z][^\d]*?)\s+(?P<transferred>[\d,]+)\s+(?P<filed>[\d,]+)\s+(?P<closed>[\d,]+)\s+(?P<remanded>[\d,]+)\s+(?P<year>\d{4})\s*$"
+    rf"^\s*(?P<mdl>\d{{1,5}}[A-Z]?)\s+(?P<caption>.+?)\s{{2,}}{_JUDGE}\s+(?P<transferred>{_N})\s+(?P<filed>{_N})\s+(?P<closed>{_N})\s+(?:(?P<remanded>{_N})\s+)?{_YEAR}\s*$"
 )
+# Rows printed without a transferee judge (e.g. MDL 2641): caption followed directly by the counts.
+TERMINATED_ROW_NO_JUDGE = re.compile(
+    rf"^\s*(?P<mdl>\d{{1,5}}[A-Z]?)\s+(?P<caption>.*?[A-Za-z)].*?)\s{{20,}}(?P<transferred>{_N})\s+(?P<filed>{_N})\s+(?P<closed>{_N})\s+(?P<remanded>{_N})\s+{_YEAR}\s*$"
+)
+CUMULATIVE_TOTAL = re.compile(r"CUMULATIVE TOTALS\s+\(([\d,]+) Litigations\)")
+
+
+def _int(value):
+    return int(value.replace(",", ""))
 
 
 def parse_terminated_text(text: str):
     """Parse `pdftotext -layout` output of the JPML 'Multidistrict Litigations Terminated Through ...' report.
 
-    Returns (rows, headers, unparsed): rows carry the district heading they were printed under; headers carry the
-    printed litigation count per district so the caller can check every district parsed completely.
+    Returns (rows, headers, unparsed, printed_total): rows carry the district heading they were printed under;
+    headers carry the printed litigation count per district so the caller can check every district parsed
+    completely; printed_total is the report's own cumulative litigation count.
+
+    A row with an empty remanded column is accepted only when transferred + filed = closed (so the blank can only be
+    the remanded column); its remanded value stays None. A row without a printed judge gets judge "" and
+    judge_printed False. MDL numbers keep printed letter suffixes ("8A") as strings; plain numbers are ints.
     """
     rows, headers, unparsed = [], [], []
     circuit = district = None
+    printed_total = None
     for line in text.splitlines():
+        tm = CUMULATIVE_TOTAL.search(line)
+        if tm:
+            printed_total = _int(tm.group(1))
+            continue
         cm = TERMINATED_CIRCUIT.match(line)
         if cm:
             circuit = cm.group(1).strip().title()
@@ -214,22 +256,30 @@ def parse_terminated_text(text: str):
             headers.append(district)
             continue
         rm = TERMINATED_ROW.match(line)
+        judge_printed = True
+        if rm and rm.group("remanded") is None and _int(rm.group("transferred")) + _int(rm.group("filed")) != _int(rm.group("closed")):
+            rm = None
+        if not rm:
+            rm = TERMINATED_ROW_NO_JUDGE.match(line)
+            judge_printed = False
         if rm and district:
+            mdl = rm.group("mdl")
             rows.append({
-                "mdl": int(rm.group("mdl")),
+                "mdl": int(mdl) if mdl.isdigit() else mdl,
                 "caption": re.sub(r"\s+", " ", rm.group("caption")).strip(),
-                "transferee_judge": rm.group("judge").strip(),
-                "district_code": district["code"], "district_name": district["name"].title(), "court_id": district["court_id"],
+                "transferee_judge": rm.group("judge").strip() if judge_printed else "",
+                "judge_printed": judge_printed,
+                "district_code": district["code"], "district_name": district["name"].title().replace(" Of ", " of "), "court_id": district["court_id"],
                 "circuit": district["circuit"],
-                "actions_transferred": int(rm.group("transferred").replace(",", "")),
-                "actions_filed_in_transferee": int(rm.group("filed").replace(",", "")),
-                "actions_closed": int(rm.group("closed").replace(",", "")),
-                "actions_remanded": int(rm.group("remanded").replace(",", "")),
-                "termination_year": int(rm.group("year")),
+                "actions_transferred": _int(rm.group("transferred")),
+                "actions_filed_in_transferee": _int(rm.group("filed")),
+                "actions_closed": _int(rm.group("closed")),
+                "actions_remanded": _int(rm.group("remanded")) if rm.group("remanded") else None,
+                "termination_year": _int(rm.group("year")),
             })
-        elif district and re.match(r"^\s*\d{1,5}\s+\S", line):
+        elif district and re.match(r"^\s*\d{1,5}[A-Z]?\s+\S", line):
             unparsed.append(line.strip())
-    return rows, headers, unparsed
+    return rows, headers, unparsed, printed_total
 
 
 # ------------------------------------------------------------------------------------------ company names

@@ -17,7 +17,11 @@ const STATUS_STYLE: Record<string, string> = {
   no_extracted_investments: "border-warning/40 bg-warning/10 text-warning-foreground",
 };
 
-function MdlLinks({ mdls }: { mdls: { mdl: number; title: string }[] }) {
+function MdlLinks({
+  mdls,
+}: {
+  mdls: { mdl: number; title: string; afterLatestReport?: boolean | null }[];
+}) {
   return (
     <span className="flex flex-wrap gap-1">
       {mdls.map((m) => (
@@ -25,10 +29,18 @@ function MdlLinks({ mdls }: { mdls: { mdl: number; title: string }[] }) {
           key={m.mdl}
           to="/matters/lens/$mdl"
           params={{ mdl: String(m.mdl) }}
-          title={m.title}
-          className="rounded border border-border px-1 font-mono text-[11px] text-primary hover:bg-muted"
+          title={
+            m.afterLatestReport
+              ? `${m.title} — began after the judge's latest available disclosure report`
+              : m.title
+          }
+          className={cn(
+            "rounded border px-1 font-mono text-[11px] text-primary hover:bg-muted",
+            m.afterLatestReport ? "border-dashed border-warning/60" : "border-border",
+          )}
         >
           {m.mdl}
+          {m.afterLatestReport ? "†" : ""}
         </Link>
       ))}
     </span>
@@ -88,6 +100,9 @@ function MatchTable({ matches }: { matches: DisclosureMatch[] }) {
                 <div className="text-[11px] text-muted-foreground">
                   Gross value {m.grossValue ?? "not recorded"}
                 </div>
+                {m.tier === "near_match" ? (
+                  <div className="text-[11px] text-muted-foreground">Rule: {m.rule}</div>
+                ) : null}
               </td>
               <td className="px-2 py-1.5 whitespace-nowrap">
                 <a
@@ -137,7 +152,8 @@ function CoverageTable({ coverage }: { coverage: DisclosureCoverage[] }) {
               <th className="px-2 py-1.5 font-medium">Report years checked</th>
               <th className="px-2 py-1.5 text-right font-medium">Lines checked</th>
               <th className="px-2 py-1.5 text-right font-medium">Companies</th>
-              <th className="px-3 py-1.5 text-right font-medium">Name matches</th>
+              <th className="px-2 py-1.5 text-right font-medium">Exact</th>
+              <th className="px-3 py-1.5 text-right font-medium">Near</th>
             </tr>
           </thead>
           <tbody>
@@ -204,11 +220,21 @@ function CoverageTable({ coverage }: { coverage: DisclosureCoverage[] }) {
                 </td>
                 <td
                   className="px-2 py-1.5 text-right font-mono tabular-nums"
-                  title={c.companiesChecked.join("; ") || "No company with explicit party evidence"}
+                  title={[
+                    c.companiesChecked.join("; ") || "No company with explicit party evidence",
+                    Object.keys(c.partiesNotCompared).length
+                      ? `Not compared (not companies): ${Object.entries(c.partiesNotCompared)
+                          .map(([k, v]) => `${v} ${k}`)
+                          .join(", ")}`
+                      : "",
+                  ]
+                    .filter(Boolean)
+                    .join("\n")}
                 >
                   {c.companiesChecked.length}
                 </td>
-                <td className="px-3 py-1.5 text-right font-mono tabular-nums">{c.matches}</td>
+                <td className="px-2 py-1.5 text-right font-mono tabular-nums">{c.matches}</td>
+                <td className="px-3 py-1.5 text-right font-mono tabular-nums">{c.nearMatches}</td>
               </tr>
             ))}
           </tbody>
@@ -241,6 +267,10 @@ export function DisclosureReview({
   const years = [...new Set(checked.flatMap((c) => c.yearsChecked))].sort();
   const notChecked = coverage.length - checked.length;
   const noEvidence = checked.filter((c) => !c.companiesChecked.length).length;
+  const exact = matches.filter((m) => m.tier === "match");
+  const near = matches.filter((m) => m.tier === "near_match");
+  const later = coverage.reduce((s, c) => s + c.mdls.filter((m) => m.afterLatestReport).length, 0);
+  const excluded = Object.values(summary?.partiesNotCompared ?? {}).reduce((s, v) => s + v, 0);
   return (
     <section
       id="disclosures"
@@ -278,8 +308,8 @@ export function DisclosureReview({
             `${checked.length} judges with itemised reports`,
           ],
           [
-            "Exact name matches",
-            fmtInt(matches.length),
+            "Exact / near matches",
+            `${fmtInt(exact.length)} / ${fmtInt(near.length)}`,
             [
               notChecked ? `${notChecked} judges could not be checked` : null,
               noEvidence ? `${noEvidence} had no party evidence to compare` : null,
@@ -295,8 +325,11 @@ export function DisclosureReview({
           </div>
         ))}
       </dl>
-      {matches.length ? (
-        <MatchTable matches={matches} />
+      {exact.length ? (
+        <>
+          <h4 className="px-3 pt-2 text-xs font-semibold">Exact name matches</h4>
+          <MatchTable matches={exact} />
+        </>
       ) : (
         <p className="border-b border-border/70 px-3 py-3 text-xs">
           <span className="font-medium">No exact name matches.</span>{" "}
@@ -310,6 +343,23 @@ export function DisclosureReview({
           </span>
         </p>
       )}
+      {near.length ? (
+        <>
+          <h4 className="px-3 pt-2 text-xs font-semibold">Near matches — review</h4>
+          <MatchTable matches={near} />
+        </>
+      ) : (
+        <p className="border-b border-border/70 px-3 py-2 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">No near matches</span> (reviewed aliases and
+          parents, SEC tickers, or investment names beginning with a multi-word party name).
+        </p>
+      )}
+      {later ? (
+        <p className="border-b border-border/70 px-3 py-2 text-[11px] text-muted-foreground">
+          † {later} MDL{later === 1 ? "" : "s"} began after the judge’s latest available report, so
+          no checked report covers the period the judge presided over {later === 1 ? "it" : "them"}.
+        </p>
+      ) : null}
       <CoverageTable coverage={coverage} />
       <div className="space-y-1 border-t border-border/70 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
         <p>
@@ -330,6 +380,16 @@ export function DisclosureReview({
             : "(once published) linked by its own SEC filing citing the MDL"}
           . Normalisation: case, punctuation, parenthetical notes, “&”/“and”, corporate suffixes and
           security words are ignored; nothing else is.
+          {excluded
+            ? ` ${fmtInt(excluded)} docket party entries that are not companies (defendant placeholders, governments, insurers, unnamed parties) are not compared.`
+            : ""}
+        </p>
+        <p>
+          <span className="font-medium text-foreground">Tiers.</span> Exact match: normalised names
+          are equal. Near match — review: the investment equals a reviewed alias of the party (same
+          SEC registrant, or a reviewed parent such as Medtronic for Covidien from 2015), the SEC
+          ticker of the party’s registrant, or begins with a party name of two or more words.
+          Neither tier is a finding.
         </p>
       </div>
     </section>

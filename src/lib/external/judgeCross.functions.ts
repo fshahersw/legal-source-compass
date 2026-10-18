@@ -14,6 +14,13 @@ const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : n
 const int = (v: unknown) => num(v) ?? 0;
 const str = (v: unknown) => (typeof v === "string" && v.trim() ? v : null);
 const arr = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
+/** MDL numbers are integers except a few early dockets printed with a letter ("8A"). */
+const mdlLabel = (v: unknown) =>
+  typeof v === "number" && Number.isInteger(v)
+    ? String(v)
+    : typeof v === "string" && /^\d{1,5}[A-Z]?$/.test(v)
+      ? v
+      : null;
 const counts = (v: unknown): Record<string, number> => {
   const o = obj(v);
   if (!o) return {};
@@ -58,7 +65,15 @@ export type ProfilesSummary = {
   hhiByJudge: number | null;
   medianYearsPendingJudges: number | null;
   unassignedPending: { mdl: number; title: string; judge: string | null; pending: number }[];
-  history: { rows: number; status: Record<string, number>; districts: HistoryCoverage[] };
+  history: {
+    rows: number;
+    printedLitigations: number | null;
+    unparsedLines: number;
+    judgeNotPrinted: { mdl: string; caption: string; district: string; year: number | null }[];
+    exitsFy2026: number;
+    status: Record<string, number>;
+    districts: HistoryCoverage[];
+  };
   points: JudgePoint[];
 };
 export type DistrictRow = {
@@ -119,10 +134,18 @@ export type DisclosureCoverage = {
   yearsAvailable: number[];
   yearsChecked: number[];
   linesChecked: number;
-  mdls: { mdl: number; title: string }[];
+  latestReportYear: number | null;
+  mdls: {
+    mdl: number;
+    title: string;
+    transferred: string | null;
+    afterLatestReport: boolean | null;
+  }[];
   companiesChecked: string[];
   companiesBySource: Record<string, number>;
+  partiesNotCompared: Record<string, number>;
   matches: number;
+  nearMatches: number;
   reports: DisclosureReport[];
 };
 export type DisclosureMatch = {
@@ -144,13 +167,17 @@ export type DisclosureMatch = {
   disclosureUrl: string;
   grossValue: string | null;
   label: string;
+  tier: "match" | "near_match";
+  rule: string;
 };
 export type DisclosureSummary = {
   clBulkDate: string | null;
   judgesTargeted: number;
   status: Record<string, number>;
   matches: number;
+  nearMatches: number;
   judgesWithMatches: number;
+  partiesNotCompared: Record<string, number>;
   secLinksUsed: boolean;
   label: string;
   latestYears: Record<string, number>;
@@ -222,6 +249,18 @@ function toProfiles(v: unknown): ProfilesSummary | null {
       })),
     history: {
       rows: int(history["rows"]),
+      printedLitigations: num(history["printed_litigations"]),
+      unparsedLines: int(history["unparsed_lines"]),
+      judgeNotPrinted: arr(history["judge_not_printed"])
+        .map(obj)
+        .filter((x): x is Json => !!x && mdlLabel(x["mdl"]) !== null)
+        .map((x) => ({
+          mdl: mdlLabel(x["mdl"])!,
+          caption: str(x["caption"]) ?? "",
+          district: str(x["district"]) ?? "",
+          year: num(x["year"]),
+        })),
+      exitsFy2026: arr(history["exits_fy2026"]).length,
       status: counts(history["status"]),
       districts: arr(history["districts"])
         .map(obj)
@@ -328,13 +367,22 @@ function toCoverage(v: unknown): DisclosureCoverage | null {
     yearsAvailable: arr(o["years_available"]).filter((y): y is number => typeof y === "number"),
     yearsChecked: arr(o["years_checked"]).filter((y): y is number => typeof y === "number"),
     linesChecked: int(o["lines_checked"]),
+    latestReportYear: num(o["latest_report_year"]),
     mdls: arr(o["mdls"])
       .map(obj)
       .filter((x): x is Json => !!x && typeof x["mdl"] === "number")
-      .map((x) => ({ mdl: x["mdl"] as number, title: str(x["title"]) ?? "" })),
+      .map((x) => ({
+        mdl: x["mdl"] as number,
+        title: str(x["title"]) ?? "",
+        transferred: str(x["transferred"]),
+        afterLatestReport:
+          typeof x["after_latest_report"] === "boolean" ? x["after_latest_report"] : null,
+      })),
     companiesChecked: arr(o["companies_checked"]).filter((x): x is string => typeof x === "string"),
     companiesBySource: counts(o["companies_by_source"]),
+    partiesNotCompared: counts(o["parties_not_compared"]),
     matches: int(o["matches"]),
+    nearMatches: int(o["near_matches"]),
     reports: toReports(o["reports"]),
   };
 }
@@ -371,7 +419,13 @@ function toMatch(id: string, v: unknown): DisclosureMatch | null {
     page: num(o["page"]),
     disclosureUrl,
     grossValue: str(o["gross_value"]),
-    label: str(o["label"]) ?? "Requires review — disclosure name match, not a finding",
+    tier: o["tier"] === "near_match" ? "near_match" : "match",
+    rule: str(o["rule"]) ?? "Rule not recorded",
+    label:
+      str(o["label"]) ??
+      (o["tier"] === "near_match"
+        ? "Near match — review"
+        : "Requires review — disclosure name match, not a finding"),
   };
 }
 
@@ -383,7 +437,9 @@ function toDisclosureSummary(v: unknown): DisclosureSummary | null {
     judgesTargeted: int(o["judges_targeted"]),
     status: counts(o["status"]),
     matches: int(o["matches"]),
+    nearMatches: int(o["near_matches"]),
     judgesWithMatches: int(o["judges_with_matches"]),
+    partiesNotCompared: counts(o["parties_not_compared"]),
     secLinksUsed: o["sec_links_used"] === true,
     label: str(o["label"]) ?? "Requires review — disclosure name match, not a finding",
     latestYears: counts(o["latest_year_distribution"]),
@@ -419,7 +475,7 @@ export const getJudgeCrossAnalytics = createServerFn({ method: "GET" }).handler(
       if (item["kind"] === "coverage") {
         const c = toCoverage(item["coverage"]);
         if (c) coverage.push(c);
-      } else if (item["kind"] === "match") {
+      } else if (item["kind"] === "match" || item["kind"] === "near_match") {
         const m = toMatch(r.id, item["match"]);
         if (m) matches.push(m);
       } else if (item["kind"] === "summary") dsummary = toDisclosureSummary(item["summary"]);
@@ -444,14 +500,17 @@ export type JudgePendingMdl = {
   dateTransferred: string | null;
 };
 export type JudgeHistoricalMdl = {
-  mdl: number;
+  mdl: string;
   caption: string;
   district: string;
   year: number;
   actions: number;
-  remanded: number;
+  remanded: number | null;
   basis: string | null;
   shared: boolean;
+  /** jpml_terminated_fy2025, or jpml_pending_exit (left the pending report after 2025-09-30). */
+  source: string;
+  dateClosed: string | null;
 };
 export type JudgeCrossProfile = {
   nid: string;
@@ -498,18 +557,18 @@ function toCrossProfile(v: unknown): Omit<JudgeCrossProfile, "coverage" | "match
     rank: num(o["rank_pending_actions"]),
     historical: arr(o["historical_mdls"])
       .map(obj)
-      .filter(
-        (x): x is Json => !!x && typeof x["mdl"] === "number" && typeof x["year"] === "number",
-      )
+      .filter((x): x is Json => !!x && mdlLabel(x["mdl"]) !== null && typeof x["year"] === "number")
       .map((x) => ({
-        mdl: x["mdl"] as number,
+        mdl: mdlLabel(x["mdl"])!,
         caption: str(x["caption"]) ?? "",
         district: str(x["district"]) ?? "",
         year: x["year"] as number,
-        actions: int(x["transferred"]) + int(x["filed"]),
-        remanded: int(x["remanded"]),
+        actions: num(x["actions"]) ?? int(x["transferred"]) + int(x["filed"]),
+        remanded: num(x["remanded"]),
         basis: str(x["basis"]),
         shared: x["shared"] === true,
+        source: str(x["source"]) ?? "jpml_terminated_fy2025",
+        dateClosed: str(x["date_closed"]),
       })),
     historicalActions: int(o["historical_actions"]),
     totalActions: int(o["total_actions_handled"]),
@@ -537,7 +596,7 @@ export const getJudgeCrossProfile = createServerFn({ method: "GET" })
     for (const r of disclosures.rows) {
       const item = r.item ?? {};
       if (item["kind"] === "coverage") coverage = toCoverage(item["coverage"]);
-      else if (item["kind"] === "match") {
+      else if (item["kind"] === "match" || item["kind"] === "near_match") {
         const m = toMatch(r.id, item["match"]);
         if (m && m.nid === base.nid) matches.push(m);
       }

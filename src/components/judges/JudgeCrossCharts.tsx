@@ -68,22 +68,37 @@ function ScatterTip({
 
 /** Years since first commission (x) against actions now pending (y, log scale); size = MDLs handled. */
 export function ExperienceScatter({ points }: { points: JudgePoint[] }) {
+  const [colorBy, setColorBy] = useState<"none" | "party">("none");
   const pending = points.filter((p) => p.pendingMdls > 0);
   const plotted = pending.filter((p) => p.pendingActions > 0 && p.years !== null);
   const omitted = pending.length - plotted.length;
   if (!plotted.length)
     return <ChartUnavailable reason="No judge with pending MDL actions matches these filters." />;
-  const byParty = PARTIES.map((party) => ({
-    party,
-    data: plotted
-      .filter((p) => (party === "Other" ? !PARTY_COLOR[p.party ?? ""] : p.party === party))
-      .map((p) => ({
-        ...p,
-        x: p.years ?? 0,
-        y: p.pendingActions,
-        z: p.pendingMdls + p.historicalMdls,
-      })),
-  })).filter((s) => s.data.length);
+  const datum = (p: JudgePoint) => ({
+    ...p,
+    x: p.years ?? 0,
+    y: p.pendingActions,
+    z: p.pendingMdls + p.historicalMdls,
+  });
+  // Neutral by default; appointing party is an optional colour mode.
+  const series =
+    colorBy === "party"
+      ? PARTIES.map((party) => ({
+          key: party as string,
+          label: party === "Other" ? "Other / not recorded" : `${party} appointee`,
+          color: party === "Other" ? OTHER_PARTY_COLOR : PARTY_COLOR[party]!,
+          data: plotted
+            .filter((p) => (party === "Other" ? !PARTY_COLOR[p.party ?? ""] : p.party === party))
+            .map(datum),
+        })).filter((s) => s.data.length)
+      : [
+          {
+            key: "all",
+            label: "Transferee judge",
+            color: "var(--primary)",
+            data: plotted.map(datum),
+          },
+        ];
   const flagged = plotted.filter(judgeFlag);
   const maxYears = Math.max(5, ...plotted.map((p) => p.years ?? 0));
   const xMax = Math.ceil(maxYears / 5) * 5;
@@ -129,13 +144,13 @@ export function ExperienceScatter({ points }: { points: JudgePoint[] }) {
             />
             <ZAxis type="number" dataKey="z" range={[30, 260]} name="MDLs handled" />
             <Tooltip content={<ScatterTip />} cursor={{ strokeDasharray: "3 3" }} />
-            {byParty.map((s) => (
+            {series.map((s) => (
               <Scatter
-                key={s.party}
-                name={s.party}
+                key={s.key}
+                name={s.label}
                 data={s.data}
-                fill={s.party === "Other" ? OTHER_PARTY_COLOR : PARTY_COLOR[s.party]}
-                fillOpacity={0.7}
+                fill={s.color}
+                fillOpacity={0.6}
                 isAnimationActive={false}
               />
             ))}
@@ -143,15 +158,30 @@ export function ExperienceScatter({ points }: { points: JudgePoint[] }) {
         </ResponsiveContainer>
       </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1 text-[11px] text-muted-foreground">
-        {byParty.map((s) => (
-          <span key={s.party} className="inline-flex items-center gap-1">
-            <span
-              className="size-2 rounded-full"
-              style={{ background: s.party === "Other" ? OTHER_PARTY_COLOR : PARTY_COLOR[s.party] }}
-              aria-hidden
-            />
-            {s.party === "Other" ? "Other / not recorded" : `${s.party} appointee`} ({s.data.length}
-            )
+        <span
+          className="inline-flex rounded-md border border-border p-0.5"
+          role="group"
+          aria-label="Dot colour"
+        >
+          {(["none", "party"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              aria-pressed={colorBy === m}
+              onClick={() => setColorBy(m)}
+              className={cn(
+                "rounded px-1.5 py-px focus-visible:outline-2 focus-visible:outline-ring",
+                colorBy === m ? "bg-muted font-medium text-foreground" : "hover:bg-muted/50",
+              )}
+            >
+              {m === "none" ? "Single colour" : "Colour by appointing party"}
+            </button>
+          ))}
+        </span>
+        {series.map((s) => (
+          <span key={s.key} className="inline-flex items-center gap-1">
+            <span className="size-2 rounded-full" style={{ background: s.color }} aria-hidden />
+            {s.label} ({s.data.length})
           </span>
         ))}
         <span>Dot size = pending + terminated MDLs matched</span>
@@ -162,7 +192,7 @@ export function ExperienceScatter({ points }: { points: JudgePoint[] }) {
       {flagged.length ? (
         <p className="px-1 pt-1 text-[11px]">
           <span className="font-medium text-foreground">
-            Flagged (≥5% of all pending MDL actions):{" "}
+            Concentration ≥5% (judge holds at least 5% of all pending MDL actions):{" "}
           </span>
           <span className="text-muted-foreground">{flagged.map((p) => p.name).join("; ")}</span>
         </p>
@@ -220,11 +250,18 @@ export function ConcentrationCurve({ points }: { points: JudgePoint[] }) {
   );
 }
 
-type Metric = "party" | "tenure";
+export type DistributionMetric = "party" | "tenure";
 
 /** Appointing-party mix of active judges, or tenure mix of all sitting judges, by district. */
-export function DistrictDistribution({ rows }: { rows: DistrictRow[] }) {
-  const [metric, setMetric] = useState<Metric>("party");
+export function DistrictDistribution({
+  rows,
+  metric,
+  setMetric,
+}: {
+  rows: DistrictRow[];
+  metric: DistributionMetric;
+  setMetric: (m: DistributionMetric) => void;
+}) {
   const [all, setAll] = useState(false);
   const sorted = [...rows].sort((a, b) => b.sitting - a.sitting || a.name.localeCompare(b.name));
   const shown = all ? sorted : sorted.slice(0, 20);
@@ -435,11 +472,17 @@ export function BenchSmallMultiples({ rows }: { rows: DistrictRow[] }) {
                   <span className="tabular-nums text-foreground">{d.senior}</span>
                 </div>
               </div>
-              <dl className="mt-1.5 grid grid-cols-3 gap-1 text-[10.5px]">
+              <dl className="mt-1.5 grid grid-cols-4 gap-1 text-[10.5px]">
                 <div>
                   <dt className="text-muted-foreground">Median yrs</dt>
                   <dd className="font-mono tabular-nums">
                     {d.medianYearsActive?.toFixed(1) ?? "—"}
+                  </dd>
+                </div>
+                <div title="Authorized judgeships, US Courts FCMS (June 2026). Fractional values are shared judgeships. FJC active counts use a different as-of date.">
+                  <dt className="text-muted-foreground">Judgeships</dt>
+                  <dd className="font-mono tabular-nums">
+                    {d.judgeships !== null ? String(d.judgeships) : "—"}
                   </dd>
                 </div>
                 <div>

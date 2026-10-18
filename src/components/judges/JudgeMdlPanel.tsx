@@ -92,16 +92,23 @@ function Panel({ p }: { p: JudgeCrossProfile }) {
       {p.historical.length ? (
         <div className="border-t border-border/70 px-4 py-2 text-xs">
           <div className="mb-1 text-[11px] text-muted-foreground">
-            Terminated MDLs (JPML, through FY2025)
+            Terminated MDLs (JPML terminated report through FY2025; later closures from the pending
+            reports)
           </div>
           <ul className="space-y-0.5">
             {history.map((h) => (
-              <li key={`${h.mdl}:${h.year}`} className="flex items-baseline gap-2">
+              <li key={`${h.mdl}:${h.year}:${h.source}`} className="flex items-baseline gap-2">
                 <span className="w-10 shrink-0 font-mono text-[11px] text-muted-foreground">
                   {h.year}
                 </span>
                 <span className="min-w-0 flex-1 truncate" title={h.caption}>
                   MDL {h.mdl} · {h.caption}
+                  {h.source === "jpml_pending_exit" ? (
+                    <span className="text-muted-foreground">
+                      {" "}
+                      · closed {h.dateClosed ?? "after 2025-09-30"} (pending-report exit)
+                    </span>
+                  ) : null}
                 </span>
                 <span className="shrink-0 font-mono tabular-nums text-muted-foreground">
                   {fmtInt(h.actions)}
@@ -120,28 +127,57 @@ function Panel({ p }: { p: JudgeCrossProfile }) {
           ) : null}
         </div>
       ) : null}
-      {cov ? (
-        <p className="border-t border-border/70 px-4 py-2 text-[11px] text-muted-foreground">
-          <span className="font-medium text-foreground">Financial disclosures: </span>
-          {COVERAGE_LABEL[cov.status] ?? cov.status}
-          {cov.yearsChecked.length
-            ? ` · report years ${cov.yearsChecked.join(", ")} · ${fmtInt(cov.linesChecked)} investment lines`
-            : ""}{" "}
-          ·{" "}
-          {p.matches.length ? (
+      {cov ? <DisclosureLine p={p} /> : null}
+    </section>
+  );
+}
+
+/** One line summarising the disclosure check, worded by what was actually compared. */
+function DisclosureLine({ p }: { p: JudgeCrossProfile }) {
+  const cov = p.coverage!;
+  const exact = p.matches.filter((m) => m.tier === "match").length;
+  const near = p.matches.filter((m) => m.tier === "near_match").length;
+  const later = cov.mdls.filter((m) => m.afterLatestReport).map((m) => m.mdl);
+  let body: string;
+  if (cov.status !== "checked") body = COVERAGE_LABEL[cov.status] ?? cov.status.replace(/_/g, " ");
+  else if (!cov.companiesChecked.length)
+    body = "No company with explicit party evidence — nothing compared";
+  else
+    body = [
+      `${cov.companiesChecked.length} compan${cov.companiesChecked.length === 1 ? "y" : "ies"} compared`,
+      `${fmtInt(cov.linesChecked)} investment lines`,
+      `latest report year ${cov.latestReportYear ?? "not recorded"}`,
+      "current holdings not covered",
+    ].join(" · ");
+  return (
+    <p className="border-t border-border/70 px-4 py-2 text-[11px] text-muted-foreground">
+      <span className="font-medium text-foreground">Financial disclosures: </span>
+      {body}
+      {cov.status === "checked" && cov.companiesChecked.length ? (
+        <>
+          {" · "}
+          {exact || near ? (
             <Link
               to="/judges/analytics"
               hash="disclosures"
               className="text-warning-foreground underline underline-offset-2"
             >
-              {p.matches.length} name match{p.matches.length === 1 ? "" : "es"} — requires review,
-              not a finding
+              {exact ? `${exact} exact name match${exact === 1 ? "" : "es"}` : ""}
+              {exact && near ? ", " : ""}
+              {near ? `${near} near match${near === 1 ? "" : "es"}` : ""} — requires review, not a
+              finding
             </Link>
           ) : (
-            "no exact name match with a party in this judge’s products-liability MDLs"
+            "no exact or near name match · requires review"
           )}
-        </p>
+        </>
       ) : null}
-    </section>
+      {later.length ? (
+        <span className="block">
+          MDL {later.join(", ")} began after the latest available report, so no report covers the
+          period this judge presided over {later.length === 1 ? "it" : "them"}.
+        </span>
+      ) : null}
+    </p>
   );
 }
