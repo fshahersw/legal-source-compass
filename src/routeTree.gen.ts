@@ -51,6 +51,7 @@ import { Route as MattersIndexRouteImport } from './routes/matters.index'
 import { Route as MattersIdRouteImport } from './routes/matters.$id'
 import { Route as MattersAnalyticsRouteImport } from './routes/matters.analytics'
 import { Route as MattersCasesRouteImport } from './routes/matters.cases'
+import { Route as MattersIntelRouteImport } from './routes/matters.intel'
 import { Route as MattersSeegerWeissRouteImport } from './routes/matters.seeger-weiss'
 import { Route as PlacesIndexRouteImport } from './routes/places.index'
 import { Route as PlacesStateRouteImport } from './routes/places.$state'
@@ -290,6 +291,11 @@ const MattersCasesRoute = MattersCasesRouteImport.update({
   path: '/matters/cases',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MattersIntelRoute = MattersIntelRouteImport.update({
+  id: '/matters/intel',
+  path: '/matters/intel',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MattersSeegerWeissRoute = MattersSeegerWeissRouteImport.update({
   id: '/matters/seeger-weiss',
   path: '/matters/seeger-weiss',
@@ -468,6 +474,7 @@ export interface FileRoutesByFullPath {
   '/matters/$id': typeof MattersIdRoute
   '/matters/analytics': typeof MattersAnalyticsRoute
   '/matters/cases': typeof MattersCasesRoute
+  '/matters/intel': typeof MattersIntelRoute
   '/matters/seeger-weiss': typeof MattersSeegerWeissRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/places/analytics': typeof PlacesAnalyticsRoute
@@ -539,6 +546,7 @@ export interface FileRoutesByTo {
   '/matters/$id': typeof MattersIdRoute
   '/matters/analytics': typeof MattersAnalyticsRoute
   '/matters/cases': typeof MattersCasesRoute
+  '/matters/intel': typeof MattersIntelRoute
   '/matters/seeger-weiss': typeof MattersSeegerWeissRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/places/analytics': typeof PlacesAnalyticsRoute
@@ -612,6 +620,7 @@ export interface FileRoutesById {
   '/matters/$id': typeof MattersIdRoute
   '/matters/analytics': typeof MattersAnalyticsRoute
   '/matters/cases': typeof MattersCasesRoute
+  '/matters/intel': typeof MattersIntelRoute
   '/matters/seeger-weiss': typeof MattersSeegerWeissRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/places/analytics': typeof PlacesAnalyticsRoute
@@ -686,6 +695,7 @@ export interface FileRouteTypes {
     | '/matters/$id'
     | '/matters/analytics'
     | '/matters/cases'
+    | '/matters/intel'
     | '/matters/seeger-weiss'
     | '/places/$state'
     | '/places/analytics'
@@ -757,6 +767,7 @@ export interface FileRouteTypes {
     | '/matters/$id'
     | '/matters/analytics'
     | '/matters/cases'
+    | '/matters/intel'
     | '/matters/seeger-weiss'
     | '/places/$state'
     | '/places/analytics'
@@ -829,6 +840,7 @@ export interface FileRouteTypes {
     | '/matters/$id'
     | '/matters/analytics'
     | '/matters/cases'
+    | '/matters/intel'
     | '/matters/seeger-weiss'
     | '/places/$state'
     | '/places/analytics'
@@ -902,6 +914,7 @@ export interface RootRouteChildren {
   MattersIdRoute: typeof MattersIdRoute
   MattersAnalyticsRoute: typeof MattersAnalyticsRoute
   MattersCasesRoute: typeof MattersCasesRoute
+  MattersIntelRoute: typeof MattersIntelRoute
   MattersSeegerWeissRoute: typeof MattersSeegerWeissRoute
   PlacesStateRoute: typeof PlacesStateRouteWithChildren
   PlacesAnalyticsRoute: typeof PlacesAnalyticsRoute
@@ -1231,6 +1244,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MattersCasesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/matters/intel': {
+      id: '/matters/intel'
+      path: '/matters/intel'
+      fullPath: '/matters/intel'
+      preLoaderRoute: typeof MattersIntelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/matters/seeger-weiss': {
       id: '/matters/seeger-weiss'
       path: '/matters/seeger-weiss'
@@ -1493,6 +1513,7 @@ const rootRouteChildren: RootRouteChildren = {
   MattersIdRoute: MattersIdRoute,
   MattersAnalyticsRoute: MattersAnalyticsRoute,
   MattersCasesRoute: MattersCasesRoute,
+  MattersIntelRoute: MattersIntelRoute,
   MattersSeegerWeissRoute: MattersSeegerWeissRoute,
   PlacesStateRoute: PlacesStateRouteWithChildren,
   PlacesAnalyticsRoute: PlacesAnalyticsRoute,
