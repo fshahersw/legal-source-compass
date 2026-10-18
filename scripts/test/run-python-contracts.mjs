@@ -44,6 +44,7 @@ for (const suite of [
   { directory: "scripts/enrichment/epa_echo", modules: ["test_epa_echo"] },
   { directory: "scripts/enrichment/npdb", modules: ["test_npdb"] },
   { directory: "scripts/enrichment/osha", modules: ["test_osha"] },
+  { directory: "scripts/enrichment/third_party_data", modules: ["test_third_party_data"] },
   { directory: "scripts/enrichment/sec", modules: ["test_evidence", "test_financials"] },
   { directory: "scripts/enrichment/state_metrics", modules: ["test_parsers"] },
   {

@@ -1,11 +1,12 @@
-import { FileText, Landmark, MessageSquareWarning, ShieldAlert } from "lucide-react";
+import { FileText, HardHat, Landmark, MessageSquareWarning, ShieldAlert } from "lucide-react";
 import { RulemakingActivity } from "@/components/rulemaking/RulemakingActivity";
 import { cn } from "@/lib/utils";
 import { ConsumerComplaints } from "./ConsumerComplaints";
 import { CpscRecalls } from "./CpscRecalls";
 import { EpaEnforcement } from "./EpaEnforcement";
+import { OshaEnforcement } from "./OshaEnforcement";
 
-export type EnforcementTab = "epa" | "rulemaking" | "cpsc" | "cfpb";
+export type EnforcementTab = "epa" | "rulemaking" | "cpsc" | "cfpb" | "osha";
 export type EnforcementSearch = { tab?: EnforcementTab; state?: string };
 
 const TABS: { id: EnforcementTab; label: string; Icon: typeof Landmark }[] = [
@@ -13,12 +14,18 @@ const TABS: { id: EnforcementTab; label: string; Icon: typeof Landmark }[] = [
   { id: "rulemaking", label: "Federal rulemaking", Icon: FileText },
   { id: "cpsc", label: "CPSC recalls", Icon: ShieldAlert },
   { id: "cfpb", label: "Consumer complaints (CFPB)", Icon: MessageSquareWarning },
+  { id: "osha", label: "Workplace safety (OSHA)", Icon: HardHat },
 ];
 
 /** URL search for /law/enforcement; anything unrecognised is dropped rather than guessed. */
 export function normalizeEnforcementSearch(raw: Record<string, unknown>): EnforcementSearch {
   const out: EnforcementSearch = {};
-  if (raw["tab"] === "rulemaking" || raw["tab"] === "cpsc" || raw["tab"] === "cfpb")
+  if (
+    raw["tab"] === "rulemaking" ||
+    raw["tab"] === "cpsc" ||
+    raw["tab"] === "cfpb" ||
+    raw["tab"] === "osha"
+  )
     out.tab = raw["tab"];
   if (typeof raw["state"] === "string" && /^[A-Z]{2}$/.test(raw["state"])) out.state = raw["state"];
   return out;
@@ -77,6 +84,8 @@ export function EnforcementPage({
           <RulemakingActivity />
         ) : tab === "cfpb" ? (
           <ConsumerComplaints />
+        ) : tab === "osha" ? (
+          <OshaEnforcement />
         ) : (
           <CpscRecalls />
         )}
