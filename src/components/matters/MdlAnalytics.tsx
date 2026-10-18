@@ -324,9 +324,10 @@ function MdlTable({ rows, asOf }: { rows: MdlRow[]; asOf: string }) {
               <tr key={r.mdl} className="border-t border-border/60 hover:bg-muted/40">
                 <td className="px-2 py-1.5 tabular-nums">
                   <Link
-                    to="/records/$dataset/$id"
-                    params={{ dataset: "mdl_analytics", id: String(r.mdl) }}
+                    to="/matters/lens/$mdl"
+                    params={{ mdl: String(r.mdl) }}
                     className="font-medium text-primary hover:underline"
+                    title="Open the case lens: court, judge, regulator, flags and peers"
                   >
                     {r.mdl}
                   </Link>

@@ -37,3 +37,5 @@ jobs:
         run: python -B -m unittest discover -s scripts/enrichment -p 'test_*.py' -v
       - name: Recompute and publish flags
         run: python -B scripts/enrichment/build_safety_insights.py
+      - name: Refresh Federal Register rulemaking activity
+        run: python -B scripts/enrichment/rulemaking/build_rulemaking.py
