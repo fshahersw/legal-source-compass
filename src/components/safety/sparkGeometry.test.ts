@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sparkGeometry } from "./sparkline";
+import { sparkGeometry } from "./sparkGeometry";
 
 describe("sparkGeometry", () => {
   it("draws one solid segment through complete points from a zero baseline", () => {

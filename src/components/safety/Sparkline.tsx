@@ -1,4 +1,4 @@
-import { sparkGeometry, type SparkPoint } from "./sparkline";
+import { sparkGeometry, type SparkPoint } from "./sparkGeometry";
 
 /**
  * A table-row trend line drawn from a zero baseline. Solid where periods are complete, dashed into a partial period,
