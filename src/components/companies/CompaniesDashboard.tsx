@@ -33,6 +33,8 @@ import {
   pct,
   signedPct,
   sortCompanies,
+  strengthSplit,
+  mdlTitle,
   TIER_LABEL,
   type CompaniesData,
   type CompanyFilter,
@@ -94,13 +96,6 @@ function Dashboard({ data }: { data: CompaniesData }) {
     () => sortCompanies(filterCompanies(companies, filter), sort.key, sort.dir),
     [companies, filter, sort],
   );
-  const pendingCovered = o.coverage
-    .filter(
-      (c) =>
-        c.status === "pending" &&
-        c.companies.some((x) => x.role !== "not_named" && x.role !== "plaintiff"),
-    )
-    .reduce((s, c) => s + (c.pending ?? 0), 0);
   const ratios = companies.map((c) => c.accrualPctRevenue).filter((v): v is number => v !== null);
   const flagCounts = new Map<FlagKey, number>();
   for (const c of companies)
@@ -136,9 +131,11 @@ function Dashboard({ data }: { data: CompaniesData }) {
           note="pending mass-tort MDLs searched"
         />
         <Kpi
-          label="Pending actions linked"
-          value={count(pendingCovered)}
-          note="each MDL counted once; excludes not-named and claimant links"
+          label="Pending actions, defendants"
+          value={count(o.pendingActionsCounted)}
+          note={strengthSplit(o.pendingActionsCountedAB, o.pendingActionsCountedC) ?? undefined}
+          detail={`+${count(o.pendingActionsUnclearOnly)} where role not stated (not counted)`}
+          title="Each pending MDL counted once, when at least one linked company's own filing reads it as a defendant. A/B = MDL number or caption evidence; C = subject evidence (requires review)."
         />
         <Kpi
           label="Verified filings"
@@ -148,7 +145,8 @@ function Dashboard({ data }: { data: CompaniesData }) {
         <Kpi
           label="Median accrual / revenue"
           value={pct(median(ratios), 2)}
-          note={`${ratios.length} companies reporting both, same FY`}
+          note={`${ratios.length} companies, current FY only`}
+          title="Same-year litigation accrual / revenue, only for accruals from a company's latest or prior fiscal year while it still files XBRL."
         />
       </div>
 
@@ -215,7 +213,7 @@ function Dashboard({ data }: { data: CompaniesData }) {
         </div>
         {rows.length ? (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[920px] text-xs">
+            <table className="w-full min-w-[760px] text-xs">
               <thead className="text-left text-muted-foreground">
                 <tr className="border-b border-border/70">
                   <Th k="name" sort={sort} setSort={setSort}>
@@ -234,15 +232,14 @@ function Dashboard({ data }: { data: CompaniesData }) {
                     Net income
                   </Th>
                   <Th k="accrual" sort={sort} setSort={setSort} right>
-                    Litigation accrual
+                    Accrual
                   </Th>
                   <Th k="accrual_pct" sort={sort} setSort={setSort} right>
                     % rev.
                   </Th>
-                  <Th k="accrual_yoy" sort={sort} setSort={setSort} right>
+                  <Th k="accrual_yoy" sort={sort} setSort={setSort} right wide>
                     YoY
                   </Th>
-                  <th className="px-2 py-1.5 font-medium">Trend (rev · accrual)</th>
                 </tr>
               </thead>
               <tbody>
@@ -327,18 +324,25 @@ function Th({
   sort,
   setSort,
   right,
+  wide,
   children,
 }: {
   k: SortKey;
   sort: { key: SortKey; dir: "asc" | "desc" };
   setSort: (s: { key: SortKey; dir: "asc" | "desc" }) => void;
   right?: boolean;
+  /** Shown only on wide screens (its value moves into the previous cell below xl). */
+  wide?: boolean;
   children: React.ReactNode;
 }) {
   const active = sort.key === k;
   return (
     <th
-      className={cn("px-2 py-1.5 font-medium", right && "text-right")}
+      className={cn(
+        "px-2 py-1.5 font-medium",
+        right && "text-right",
+        wide && "hidden xl:table-cell",
+      )}
       aria-sort={active ? (sort.dir === "asc" ? "ascending" : "descending") : "none"}
     >
       <button
@@ -380,7 +384,7 @@ function CompanyRow({
   const acc = c.latest.litigation_accrual;
   return (
     <tr className="border-b border-border/50 align-top hover:bg-muted/30">
-      <td className="max-w-[260px] px-2 py-1.5">
+      <td className="max-w-[220px] px-2 py-1.5">
         <Link
           to="/companies/$cik"
           params={{ cik: p.cik }}
@@ -393,7 +397,16 @@ function CompanyRow({
             "Ticker and SIC not recorded"}
         </div>
         <div className="mt-0.5 flex flex-wrap gap-1">
-          {c.exposure.strongestTier ? <TierBadge tier={c.exposure.strongestTier} /> : null}
+          {c.exposure.strongestTier ? (
+            <TierBadge tier={c.exposure.strongestTier} />
+          ) : (
+            <span
+              className="text-[11px] text-muted-foreground"
+              title="No pending MDL where its filing reads it as a defendant"
+            >
+              No counted pending MDL
+            </span>
+          )}
           {c.flags.map((f) => (
             <FlagBadge key={f} flag={f} label={flagLabels[f] ?? f} rule={flagRules[f]} />
           ))}
@@ -401,10 +414,23 @@ function CompanyRow({
       </td>
       <td className="px-2 py-1.5 text-right tabular-nums">
         {c.exposure.linkedMdls}
-        <div className="text-[11px] text-muted-foreground">{c.exposure.pendingMdls} pending</div>
+        <div className="text-[11px] text-muted-foreground">{c.exposure.pendingMdls} counted</div>
       </td>
       <td className="px-2 py-1.5 text-right tabular-nums">
         {count(c.exposure.pendingActions)}
+        {strengthSplit(c.exposure.pendingActionsAB, c.exposure.pendingActionsC) ? (
+          <div className="whitespace-nowrap text-[11px] text-muted-foreground">
+            {strengthSplit(c.exposure.pendingActionsAB, c.exposure.pendingActionsC)}
+          </div>
+        ) : null}
+        {c.exposure.pendingActionsUnclear ? (
+          <div
+            className="whitespace-nowrap text-[11px] italic text-muted-foreground"
+            title="Role not stated in the evidence excerpt; not counted"
+          >
+            +{c.exposure.pendingActionsUnclear.toLocaleString("en-US")} role not stated
+          </div>
+        ) : null}
         {c.exposure.pendingChange12m !== null ? (
           <div
             className={cn(
@@ -422,6 +448,15 @@ function CompanyRow({
         {c.latest.revenue ? (
           <div className="text-[11px] text-muted-foreground">FY{c.latest.revenue.fy}</div>
         ) : null}
+        <div className="mt-0.5 flex justify-end">
+          <Spark
+            values={c.spark.revenue.map((x) => x.v)}
+            color={FDA_COLORS[0]}
+            width={56}
+            height={14}
+            label={`${p.name} revenue trend`}
+          />
+        </div>
       </td>
       <td
         className={cn(
@@ -431,32 +466,53 @@ function CompanyRow({
       >
         {money(c.latest.net_income?.value, c.latest.net_income?.unit)}
       </td>
-      <td className="px-2 py-1.5 text-right tabular-nums">
-        {money(acc?.value, acc?.unit)}
-        {acc ? <div className="text-[11px] text-muted-foreground">FY{acc.fy}</div> : null}
-      </td>
-      <td className="px-2 py-1.5 text-right tabular-nums">{pct(c.accrualPctRevenue, 2)}</td>
       <td
         className={cn(
           "px-2 py-1.5 text-right tabular-nums",
+          acc && !c.accrualCurrent && "text-muted-foreground",
+        )}
+      >
+        {money(acc?.value, acc?.unit)}
+        {acc ? (
+          <div className="whitespace-nowrap text-[11px] text-muted-foreground">
+            FY{acc.fy}
+            {c.accrualCurrent ? "" : ", not current"}
+          </div>
+        ) : null}
+        <div className="mt-0.5 flex justify-end">
+          <Spark
+            values={c.spark.litigation_accrual.map((x) => x.v)}
+            color={FDA_COLORS[2]}
+            width={56}
+            height={14}
+            label={`${p.name} accrual trend`}
+          />
+        </div>
+      </td>
+      <td className="px-2 py-1.5 text-right tabular-nums">
+        {acc && !c.accrualCurrent ? (
+          <span className="text-muted-foreground">Not current</span>
+        ) : (
+          pct(c.accrualPctRevenue, 2)
+        )}
+        {c.accrualYoyPct !== null ? (
+          <div
+            className={cn(
+              "whitespace-nowrap text-[11px] text-muted-foreground xl:hidden",
+              c.accrualYoyPct >= 50 && "font-semibold text-destructive",
+            )}
+          >
+            YoY {signedPct(c.accrualYoyPct)}
+          </div>
+        ) : null}
+      </td>
+      <td
+        className={cn(
+          "hidden px-2 py-1.5 text-right tabular-nums xl:table-cell",
           (c.accrualYoyPct ?? 0) >= 50 && "font-semibold text-destructive",
         )}
       >
         {signedPct(c.accrualYoyPct)}
-      </td>
-      <td className="px-2 py-1.5">
-        <div className="flex items-center gap-2">
-          <Spark
-            values={c.spark.revenue.map((x) => x.v)}
-            color={FDA_COLORS[0]}
-            label={`${p.name} revenue trend`}
-          />
-          <Spark
-            values={c.spark.litigation_accrual.map((x) => x.v)}
-            color={FDA_COLORS[2]}
-            label={`${p.name} accrual trend`}
-          />
-        </div>
       </td>
     </tr>
   );
@@ -468,7 +524,8 @@ function ExposureScatter({ companies }: { companies: CompanySummary[] }) {
       (c) =>
         (c.exposure.pendingActions ?? 0) > 0 &&
         (c.latest.litigation_accrual?.value ?? 0) > 0 &&
-        c.latest.litigation_accrual?.unit === "USD",
+        c.latest.litigation_accrual?.unit === "USD" &&
+        c.accrualCurrent,
     )
     .map((c) => ({
       name: c.profile.name,
@@ -482,8 +539,8 @@ function ExposureScatter({ companies }: { companies: CompanySummary[] }) {
   return (
     <ChartCard
       title="Pending MDL actions vs litigation accrual"
-      subtitle="Each dot is a company: JPML pending actions in its linked MDLs (x) against its latest XBRL accrual in USD (y), log scales"
-      footnote={`${points.length} companies report both. Red dots carry at least one flag. The accrual covers all of a company's loss contingencies, not only these MDLs.`}
+      subtitle="Each dot is a company: JPML pending actions in MDLs where its filings read it as a defendant (x) against its current XBRL accrual in USD (y), log scales"
+      footnote={`${points.length} companies with a current accrual (latest or prior fiscal year). Red dots carry at least one flag. The accrual is company-wide, covering all loss contingencies, not only these MDLs.`}
     >
       {points.length < 2 ? (
         <ChartUnavailable reason="Fewer than two companies report both a USD litigation accrual and pending actions in linked MDLs." />
@@ -741,8 +798,8 @@ function Coverage({ data }: { data: CompaniesData }) {
         </h3>
         <p className="text-xs text-muted-foreground">
           Ranked by JPML pending actions. {unlinked} of {pending.length} pending MDLs have no SEC
-          registrant whose filing meets the evidence rule (many defendants are private or foreign
-          non-filers).
+          registrant whose filing matched the rules (recall is incomplete; many defendants are
+          private or foreign non-filers).
         </p>
       </div>
       <div className="overflow-x-auto">
@@ -767,7 +824,9 @@ function Coverage({ data }: { data: CompaniesData }) {
                     {m.mdl}
                   </Link>
                 </td>
-                <td className="max-w-[320px] px-2 py-1.5">{m.title.replace(/^IN RE:?\s*/i, "")}</td>
+                <td className="max-w-[320px] px-2 py-1.5">
+                  {mdlTitle(m.title, m.titleTruncated, m.mdl)}
+                </td>
                 <td className="px-2 py-1.5 text-right tabular-nums">{count(m.pending)}</td>
                 <td className="px-2 py-1.5">
                   {m.companies.length ? (
@@ -781,6 +840,11 @@ function Coverage({ data }: { data: CompaniesData }) {
                           >
                             {c.name}
                           </Link>
+                          {!c.counted ? (
+                            <span className="text-[10px] text-muted-foreground">
+                              {c.dismissed ? "dismissed" : c.review ? "review" : "not counted"}
+                            </span>
+                          ) : null}
                           <span className="font-mono text-[10px] text-muted-foreground">
                             {c.tier}
                           </span>
@@ -793,7 +857,7 @@ function Coverage({ data }: { data: CompaniesData }) {
                     </ul>
                   ) : (
                     <span className="text-muted-foreground">
-                      No SEC filing meets the evidence rule
+                      No filing matched the rules (recall incomplete)
                     </span>
                   )}
                 </td>

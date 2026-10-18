@@ -440,7 +440,10 @@ const TIER_STYLE = {
 
 function CompaniesCard({ companies: all }: { companies: LensCompany[] }) {
   // Registrants read as claimants or as not named are listed apart from possible defendants.
-  const companies = all.filter((c) => c.link.role === "defendant" || c.link.role === "unclear");
+  // Counted defendants first; dismissed, review-flagged, claimant and role-not-stated links are listed apart.
+  const companies = all.filter(
+    (c) => c.link.countsTowardExposure && !c.link.dismissed && !c.link.review,
+  );
   const others = all.filter((c) => !companies.includes(c));
   return (
     <Card
@@ -552,7 +555,9 @@ function CompaniesCard({ companies: all }: { companies: LensCompany[] }) {
           </table>
           {others.length ? (
             <p className="mt-2 text-[11px]">
-              <span className="font-medium">Named in filings but not as a defendant: </span>
+              <span className="font-medium">
+                Also named in filings, not counted as a defendant here:{" "}
+              </span>
               {others.map((c, i) => (
                 <span key={c.cik}>
                   {i ? "; " : ""}
@@ -563,7 +568,15 @@ function CompaniesCard({ companies: all }: { companies: LensCompany[] }) {
                   >
                     {c.summary?.profile.name ?? c.name}
                   </Link>{" "}
-                  <span className="text-muted-foreground">({c.link.roleLabel.toLowerCase()})</span>
+                  <span className="text-muted-foreground">
+                    (
+                    {c.link.dismissed
+                      ? "filing reports a dismissal"
+                      : c.link.review
+                        ? (c.link.reviewNote ?? "requires review")
+                        : c.link.roleLabel.toLowerCase()}
+                    )
+                  </span>
                 </span>
               ))}
             </p>

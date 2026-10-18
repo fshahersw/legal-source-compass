@@ -86,3 +86,15 @@ class SeriesConceptChoice(unittest.TestCase):
         facts = {"ifrs-full": {"RevenueFromSaleOfGoods": {"units": {"EUR": [fact("2024-01-01", "2024-12-31", 40, form="20-F")]}}}}
         pts = fin.metric_series(facts, "revenue", "annual")
         self.assertEqual([(p["fy"], p["unit"], p["concept"]) for p in pts], [(2024, "EUR", "RevenueFromSaleOfGoods")])
+
+
+class NetIncomeFallback(unittest.TestCase):
+    def test_available_to_common_used_when_net_income_missing(self):
+        facts = {"us-gaap": {
+            "NetIncomeLoss": {"units": {"USD": [fact("2023-01-01", "2023-12-31", 1592)]}},
+            "NetIncomeLossAvailableToCommonStockholdersBasic": {"units": {"USD": [fact("2024-01-01", "2024-12-31", 1846, filed="2025-02-01")]}},
+            "ProfitLoss": {"units": {"USD": [fact("2024-01-01", "2024-12-31", 1853, filed="2025-02-01")]}},
+        }}
+        pts = fin.metric_series(facts, "net_income", "annual")
+        self.assertEqual([(p["fy"], p["value"], p["concept"]) for p in pts],
+                         [(2023, 1592, "NetIncomeLoss"), (2024, 1846, "NetIncomeLossAvailableToCommonStockholdersBasic")])

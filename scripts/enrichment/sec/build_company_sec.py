@@ -21,6 +21,7 @@ import corpus_writer as cw  # noqa: E402
 import fetch_xbrl as fx  # noqa: E402
 import financials as fin  # noqa: E402
 import sec_http as h  # noqa: E402
+import targets as tg  # noqa: E402
 
 ACQ = h.ACQ
 ROOT = HERE.parents[2]
@@ -38,7 +39,34 @@ ROLE_LABEL = {
     "plaintiff": "Excerpt describes the company as a claimant",
     "unclear": "Role not stated in excerpt",
 }
-EXPOSURE_ROLES = {"defendant", "unclear"}
+# Only links whose evidence excerpt reads the company as a defendant count toward exposure totals;
+# "unclear" links are shown and summed separately, never mixed in.
+EXPOSURE_ROLES = {"defendant"}
+
+# Decisions from the independent verification of the first publication (2026-10-18). Each one was made
+# by reading the evidence filing; the reason is published on the link. Rules are tried first; these
+# entries apply only where the deterministic rules cannot reach the reviewed reading.
+REVIEWED_DROP = {
+    ("0001121404", 2738): "Sanofi 20-F: the nearby 'MDL' is the Zantac MDL appeal; the filing never cites MDL 2738 or the talc caption.",
+    ("0000935703", 2924): "Dollar Tree 10-K: Zantac cases were in Pennsylvania state court and dismissed; the MDL sentence concerns acetaminophen.",
+    ("0000356130", 1358): "EMC Insurance 10-K: the company is an insurer defending policyholders' MTBE claims, not a party.",
+}
+REVIEWED_ROLE = {
+    ("0001410636", 1358): ("plaintiff", "American Water subsidiaries 'are each plaintiffs' in the MTBE lawsuits."),
+    ("0001410635", 1358): ("plaintiff", "American Water subsidiaries 'are each plaintiffs' in the MTBE lawsuits."),
+    ("0000745308", 2179): ("plaintiff", "St. Joe 'joined the MDL' and 'asserted claims' against BP and others."),
+    ("0001900304", 2789): ("defendant", "Haleon: 'The Group is a defendant in the ongoing PPI litigation'."),
+    ("0000872589", 3180): ("defendant", "Regeneron: product liability lawsuits 'against the Company' claiming Dupixent caused lymphoma."),
+    ("0001124139", 1507): ("defendant", "Schering AG: Berlex HRT lawsuits removed to MDL Docket No. 1507."),
+}
+REVIEW_NOTE = {
+    ("0000834071", 2151): "Toyota Motor Credit is a finance subsidiary; the filing may describe Toyota's litigation as an affiliate or indemnitee.",
+    ("0000818686", 2243): "Teva: confirm whether claims are against Teva or covered by an indemnity / dismissed.",
+    ("0001303523", 2913): "BAT: the filing describes a Reynolds / RJR Vapor action naming JUUL; confirm participation in the MDL.",
+    ("0001964738", 2666): "Solventum: Bair Hugger liabilities are allocated with 3M under the separation agreements (indemnity).",
+    ("0001821825", 2243): "Organon: Fosamax liabilities are allocated with Merck under the separation agreements (indemnity).",
+    ("0001666700", 2873): "DuPont de Nemours: the filing names EIDP and Chemours as AFFF defendants, not DuPont de Nemours, Inc.",
+}
 METRIC_LABEL = {
     "revenue": "Revenue", "net_income": "Net income", "assets": "Total assets", "cash": "Cash and equivalents",
     "rnd": "R&D expense", "litigation_accrual": "Litigation / loss-contingency accrual", "possible_loss": "Estimate of possible loss",
@@ -48,8 +76,8 @@ FLAG_RULES = {
     "accrual_surge": "Litigation accrual up 50% or more on the prior fiscal year while pending actions in the company's linked MDLs grew over the last 12 months (accrual from the latest or prior fiscal year of a company still filing XBRL)",
     "accrual_heavy": "Litigation accrual equal to 5% or more of same-year revenue (latest or prior fiscal year of a company still filing XBRL)",
     "expense_spike": "Litigation expense at least double the prior fiscal year (latest or prior fiscal year of a company still filing XBRL)",
-    "docket_growth": "Pending actions across linked MDLs up 25% or more in 12 months (at least 100 pending)",
-    "multi_mdl": "Named in three or more pending MDLs by its own filings",
+    "docket_growth": "Pending actions across MDLs where it is a defendant up 25% or more in 12 months (at least 100 pending)",
+    "multi_mdl": "Its own filings describe it as a defendant in three or more pending MDLs",
 }
 FLAG_LABEL = {
     "accrual_surge": "Accrual surge with growing docket", "accrual_heavy": "Accrual ≥ 5% of revenue",
@@ -100,7 +128,10 @@ def profile_from_submissions(cik, sub, fallback_name):
         "exchanges": [e for e in (sub.get("exchanges") or []) if e], "sic": sub.get("sic") or None,
         "sic_description": sub.get("sicDescription") or None,
         "state_of_incorporation": sub.get("stateOfIncorporation") or None,
+        # EDGAR's own descriptions of its state / country codes (for example 'I0' -> 'France').
+        "state_of_incorporation_name": sub.get("stateOfIncorporationDescription") or None,
         "business_state": biz.get("stateOrCountry") or None, "business_city": (biz.get("city") or "").title() or None,
+        "business_state_name": biz.get("stateOrCountryDescription") or None,
         "business_foreign": bool(biz.get("isForeignLocation")),
         "fiscal_year_end": sub.get("fiscalYearEnd") or None, "entity_type": sub.get("entityType") or None,
         "category": sub.get("category") or None,
@@ -149,7 +180,9 @@ def main(dry_run=False):
     queries_by_mdl = defaultdict(list)
     for q in hits["queries"]:
         queries_by_mdl[(q["mdl"], q["tier"])].append(q["search_url"])
-    pairs = [p for p in evidence["pairs"] if p["tier"]]
+    pairs = [p for p in evidence["pairs"] if p["tier"] and (p["cik"], p["mdl"]) not in REVIEWED_DROP]
+    dropped = [p for p in evidence["pairs"] if p["tier"] and (p["cik"], p["mdl"]) in REVIEWED_DROP]
+    print(len(dropped), "links dropped by review:", [(p["cik"], p["mdl"]) for p in dropped])
 
     # Registrant metadata and XBRL
     companies = {}
@@ -167,12 +200,21 @@ def main(dry_run=False):
         m = mdl_info.get(p["mdl"], {})
         roles = [v["role"] for v in reversed(p["verified"])]
         role = next((r for r in roles if r != "unclear"), "unclear")
+        role_source, role_note = "rule", None
+        if (p["cik"], p["mdl"]) in REVIEWED_ROLE:
+            reviewed, role_note = REVIEWED_ROLE[(p["cik"], p["mdl"])]
+            role_source = "rule" if reviewed == role else "review"
+            role = reviewed
+        dismissed = bool(p["verified"][-1].get("dismissed"))
+        review_note = REVIEW_NOTE.get((p["cik"], p["mdl"]))
+        title = t["title"]
+        truncated = len(tg.caption_core(title).split()) <= 3
         search = p["search_hits"].get(p["tier"], [])
         years = mention_years(p["verified"], search)
         status = m.get("status") or t["status"]
         link = {
             "cik": p["cik"], "company": companies[p["cik"]]["profile"]["name"], "mdl": p["mdl"],
-            "mdl_title": t["title"], "mdl_status": status, "mdl_type": m.get("type") or t.get("type"),
+            "mdl_title": title, "mdl_status": status, "title_truncated": truncated, "mdl_type": m.get("type") or t.get("type"),
             "pending": m.get("pending") if status == "pending" else None,
             "change_12m": m.get("change_12m") if status == "pending" else None,
             "district": m.get("district") or t.get("district"), "judge": m.get("judge") or t.get("judge"),
@@ -188,12 +230,15 @@ def main(dry_run=False):
             "verified": [
                 {"adsh": v["adsh"], "form": v["form"], "file_date": v["file_date"], "period_ending": v["period_ending"],
                  "url": v["url"], "index_url": filing_index_url(p["cik"], v["adsh"]), "matched": v["matched"],
-                 "role": v["role"], "co_registrants": [c.split("  (")[0] for c in v["co_registrants"]],
+                 "role": v["role"], "dismissed": bool(v.get("dismissed")),
+                 "co_registrants": [c.split("  (")[0] for c in v["co_registrants"]],
                  **({"excerpt": v["excerpt"]} if i >= len(p["verified"]) - 6 or i == 0 else {})}
                 for i, v in enumerate(p["verified"])
             ],
             "search_urls": queries_by_mdl[(p["mdl"], p["tier"])],
-            "counts_toward_exposure": role in EXPOSURE_ROLES,
+            "counts_toward_exposure": role in EXPOSURE_ROLES and not dismissed and not review_note,
+            "dismissed": dismissed, "review": bool(review_note), "review_note": review_note,
+            "role_source": role_source, "role_note": role_note,
             # Monthly JPML pending counts for this MDL as published in mdl_analytics (unchanged).
             "series": [{"date": x["date"], "pending": x["pending"]} for x in m.get("series") or []
                        if isinstance(x.get("pending"), int) and x.get("date")],
@@ -209,6 +254,12 @@ def main(dry_run=False):
         exposure_links = [l for l in links if l["counts_toward_exposure"]]
         pending_links = [l for l in exposure_links if l["mdl_status"] == "pending"]
         pending_actions = sum(l["pending"] or 0 for l in pending_links) if pending_links else None
+        # Split by evidence strength, and the "unclear role" links kept apart from the total.
+        pending_ab = sum(l["pending"] or 0 for l in pending_links if l["tier"] in ("A", "B")) if pending_links else None
+        pending_c = sum(l["pending"] or 0 for l in pending_links if l["tier"] == "C") if pending_links else None
+        unclear_links = [l for l in links if l["mdl_status"] == "pending" and l["role"] == "unclear"
+                         and not l["dismissed"] and not l["review"]]
+        pending_unclear = sum(l["pending"] or 0 for l in unclear_links) if unclear_links else None
         changes = [l["change_12m"] for l in pending_links if l["change_12m"] is not None]
         change_12m = sum(changes) if changes else None
         base = (pending_actions - change_12m) if pending_actions is not None and change_12m is not None else None
@@ -219,7 +270,7 @@ def main(dry_run=False):
         acc_yoy = (derived["yoy"].get("litigation_accrual") or [{}])[-1].get("change_pct") if annual["litigation_accrual"] else None
         exp_yoy = (derived["yoy"].get("litigation_expense") or [{}])[-1].get("change_pct") if annual["litigation_expense"] else None
         acc = latest["litigation_accrual"]
-        ratio = next((r["pct"] for r in derived["accrual_pct_revenue"] if acc and r["fy"] == acc["fy"]), None)
+        ratio_any = next((r["pct"] for r in derived["accrual_pct_revenue"] if acc and r["fy"] == acc["fy"]), None)
         # Financial flags use only current figures: the fiscal year must be the company's latest
         # reported fiscal year (any tracked metric) or the one before it.
         latest_fy = max((p["fy"] for m in fin.METRICS for p in annual[m][-1:]), default=None)
@@ -227,6 +278,10 @@ def main(dry_run=False):
 
         def current(point):
             return bool(point) and still_reporting and point["fy"] >= latest_fy - 1
+        # Recency rule for the headline accrual: only the latest or prior fiscal year of a company still
+        # filing XBRL is "current"; older accruals stay visible but are labelled and not ranked.
+        accrual_current = current(acc)
+        ratio = ratio_any if accrual_current else None
         exp = latest["litigation_expense"]
         flags = []
         if current(acc) and acc_yoy is not None and acc_yoy >= 50 and change_12m is not None and change_12m > 0:
@@ -247,7 +302,9 @@ def main(dry_run=False):
                 for v in l["verified"]:
                     for co in v["co_registrants"]:
                         co_parents.add(co)
-        tier_best = min(l["tier"] for l in links)
+        # Badge = strongest evidence among the links that contribute to the pending-actions total.
+        tier_best = min((l["tier"] for l in pending_links), default=None)
+        tier_any = min(l["tier"] for l in links)
         unit = (latest["revenue"] or latest["net_income"] or latest["assets"] or {}).get("unit")
         spark = {m: [{"fy": p["fy"], "v": p["value"]} for p in annual[m]] for m in ("revenue", "net_income", "litigation_accrual", "litigation_expense")}
         years = defaultdict(lambda: {"verified": set(), "search": set()})
@@ -272,15 +329,20 @@ def main(dry_run=False):
             "company": prof,
             "has_financials": has_fin, "co_registrant_of": sorted(co_parents)[:4] if co_parents else [],
             "currency": unit, "taxonomy": fdata["taxonomy"] if fdata else None,
-            "mdls": [{k: l[k] for k in ("mdl", "mdl_title", "mdl_status", "mdl_type", "pending", "change_12m", "tier", "role", "verified_count", "first_verified", "last_verified", "counts_toward_exposure", "district", "judge")} for l in links],
+            "mdls": [{k: l[k] for k in ("mdl", "mdl_title", "mdl_status", "mdl_type", "pending", "change_12m", "tier", "role", "verified_count", "first_verified", "last_verified", "counts_toward_exposure", "district", "judge", "dismissed", "review", "title_truncated")} for l in links],
             "exposure": {
                 "linked_mdls": len(links), "pending_mdls": len(pending_links), "pending_actions": pending_actions,
                 "pending_change_12m": change_12m, "pending_change_pct": change_pct,
                 "share_of_all_pending_pct": round(100 * pending_actions / pending_total_all, 2) if pending_actions and pending_total_all else None,
-                "strongest_tier": tier_best, "excluded_by_role": len(links) - len(exposure_links),
+                "strongest_tier": tier_best, "strongest_tier_any": tier_any,
+                "excluded_by_role": len(links) - len(exposure_links),
                 "roles": dict(Counter(l["role"] for l in links)),
+                "pending_actions_ab": pending_ab, "pending_actions_c": pending_c,
+                "pending_actions_unclear": pending_unclear, "pending_mdls_unclear": len(unclear_links),
+                "dismissed_links": sum(1 for l in links if l["dismissed"]), "review_links": sum(1 for l in links if l["review"]),
             },
             "latest": latest, "accrual_pct_revenue": ratio, "accrual_yoy_pct": acc_yoy, "expense_yoy_pct": exp_yoy,
+            "accrual_current": accrual_current, "accrual_pct_revenue_any": ratio_any, "latest_fy": latest_fy,
             "accrual_pct_series": derived["accrual_pct_revenue"],
             "spark": spark, "mentions_by_year": mentions, "pending_series": pending_series,
             "verified_filings": sum(l["verified_count"] for l in links),
@@ -290,12 +352,12 @@ def main(dry_run=False):
         tick = ", ".join(prof["tickers"]) if prof["tickers"] else ""
         facts_list = [
             ["CIK", cik], ["Tickers", tick or "Not recorded"], ["SIC", f"{prof['sic']} · {prof['sic_description']}" if prof["sic"] else "Not recorded"],
-            ["State of incorporation", prof["state_of_incorporation"] or "Not recorded"],
-            ["Business address", ", ".join(x for x in (prof["business_city"], prof["business_state"]) if x) or "Not recorded"],
+            ["State of incorporation", prof["state_of_incorporation_name"] or prof["state_of_incorporation"] or "Not recorded"],
+            ["Business address", ", ".join(x for x in (prof["business_city"], prof["business_state_name"] or prof["business_state"]) if x) or "Not recorded"],
             ["Linked MDLs (own filings)", str(len(links))],
-            ["Pending actions in linked MDLs", fmt(pending_actions)],
+            ["Pending actions, linked MDLs where the company is a defendant", f"{fmt(pending_actions)} (A/B {fmt(pending_ab)} · C {fmt(pending_c)})"],
             ["Revenue (latest FY)", money(latest["revenue"]["value"], latest["revenue"]["unit"]) + f" · FY{latest['revenue']['fy']}" if latest["revenue"] else "Not recorded"],
-            ["Litigation accrual (latest FY)", money(acc["value"], acc["unit"]) + f" · FY{acc['fy']} · {acc['concept']}" if acc else "Not recorded"],
+            ["Litigation accrual (latest FY, company-wide, not MDL-specific)", money(acc["value"], acc["unit"]) + f" · FY{acc['fy']}{'' if accrual_current else ' (not current)'} · {acc['concept']}" if acc else "Not recorded"],
             ["Accrual as % of revenue", pct(ratio)],
             ["Sources", "SEC EDGAR full-text search, filing documents, submissions and XBRL companyfacts; JPML pending MDL reports"],
         ]
@@ -311,7 +373,7 @@ def main(dry_run=False):
             links=[{"url": f"/companies/{cik}", "label": "Company intelligence"}, {"url": edgar_company_url(cik), "label": "EDGAR filings"},
                    {"url": fx.companyfacts_url(cik), "label": "XBRL companyfacts (SEC)"}],
             text=" ".join([name, tick, prof["sic_description"] or "", " ".join(prof["former_names"]), " ".join(str(l["mdl"]) + " " + l["mdl_title"] for l in links)]),
-            filters={"tier": [tier_best], "flag": flags or ["none"], "has_financials": ["yes" if has_fin else "no"], "sic": [prof["sic"] or ""]},
+            filters={"tier": [tier_best or "none"], "flag": flags or ["none"], "has_financials": ["yes" if has_fin else "no"], "sic": [prof["sic"] or ""]},
             state=prof["business_state"] if prof["business_state"] and len(prof["business_state"]) == 2 and not prof.get("business_foreign") else "",
             extra={"kind": "company", "summary": summary},
         ))
@@ -362,7 +424,7 @@ def main(dry_run=False):
     common = {"source": "SEC EDGAR (efts.sec.gov full-text search, www.sec.gov filing documents, data.sec.gov submissions and XBRL companyfacts) and JPML pending MDL reports", "retrieved": TODAY}
     cw.publish("company_sec_profiles", "SEC company intelligence for MDL defendants", profiles,
                listing_block=cw.listing([("company", "Company"), ("tickers", "Ticker"), ("sector", "Sector (SIC)"), ("mdls", "Linked MDLs"), ("pending", "Pending actions"), ("revenue", "Revenue"), ("accrual", "Litigation accrual"), ("accrual_pct", "Accrual % revenue")],
-                                        [("tier", "Strongest evidence", {k: v for k, v in TIER_LABEL.items()}), ("flag", "Flag", {**FLAG_LABEL, "none": "No flag"}), ("has_financials", "XBRL financials", {"yes": "Reported", "no": "Not reported"})]),
+                                        [("tier", "Strongest counted evidence", {**TIER_LABEL, "none": "No pending MDL read as defendant"}), ("flag", "Flag", {**FLAG_LABEL, "none": "No flag"}), ("has_financials", "XBRL financials", {"yes": "Reported", "no": "Not reported"})]),
                summary={**common, "companies": len(profiles) - 1})
     cw.publish("company_sec_mdl_links", "Company–MDL links from SEC filings", link_rows,
                listing_block=cw.listing([("company", "Company"), ("mdl", "MDL"), ("litigation", "Litigation"), ("tier", "Tier"), ("role", "Role (excerpt)"), ("verified", "Verified filings"), ("first", "First"), ("last", "Last")],
@@ -380,9 +442,23 @@ def overview_record(inputs, targets, pairs, by_company, companies, profiles):
         linked = [(cik, l) for cik, ls in by_company.items() for l in ls if l["mdl"] == t["mdl"]]
         coverage.append({
             "mdl": t["mdl"], "title": t["title"], "status": t["status"], "pending": t["pending"], "type": t.get("type"),
+            "title_truncated": len(tg.caption_core(t["title"]).split()) <= 3,
             "companies": [{"cik": cik, "name": companies[cik]["profile"]["name"], "tier": l["tier"], "role": l["role"],
-                           "has_financials": bool(companies[cik]["fin"])} for cik, l in sorted(linked, key=lambda x: x[1]["tier"])],
+                           "counted": l["counts_toward_exposure"], "dismissed": l["dismissed"], "review": l["review"],
+                           "has_financials": bool(companies[cik]["fin"])} for cik, l in sorted(linked, key=lambda x: (not x[1]["counts_toward_exposure"], x[1]["tier"]))],
         })
+    counted_ab = counted_c = unclear_only = 0
+    for row in coverage:
+        if row["status"] != "pending" or not row["pending"]:
+            continue
+        counted = [c for c in row["companies"] if c["counted"]]
+        if counted:
+            if any(c["tier"] in ("A", "B") for c in counted):
+                counted_ab += row["pending"]
+            else:
+                counted_c += row["pending"]
+        elif any(c["role"] == "unclear" and not c["dismissed"] and not c["review"] for c in row["companies"]):
+            unclear_only += row["pending"]
     years = defaultdict(lambda: {"A": set(), "B": set(), "C": set()})
     for p in pairs:
         for v in p["verified"]:
@@ -402,6 +478,9 @@ def overview_record(inputs, targets, pairs, by_company, companies, profiles):
         "as_of": TODAY, "jpml_as_of": max((m["as_of"] for m in inputs["mdls"] if m.get("as_of")), default=None),
         "target_mdls": len(targets), "pending_targets": len(pending_targets),
         "mdls_with_links": len({p["mdl"] for p in pairs}),
+        "pending_actions_counted": counted_ab + counted_c, "pending_actions_counted_ab": counted_ab,
+        "pending_actions_counted_c": counted_c, "pending_actions_unclear_only": unclear_only,
+        "dropped_by_review": len(REVIEWED_DROP), "role_reviews": len(REVIEWED_ROLE), "review_notes": len(REVIEW_NOTE),
         "pending_mdls_with_links": len({p["mdl"] for p in pairs if targets[p["mdl"]]["status"] == "pending"}),
         "companies": len(companies), "companies_with_financials": sum(1 for c in companies.values() if c["fin"]),
         "links": len(pairs), "tiers": dict(tiers), "roles": dict(roles),
@@ -414,10 +493,11 @@ def overview_record(inputs, targets, pairs, by_company, companies, profiles):
         "method": [
             "Targets: pending products-liability, common-disaster and air-disaster MDLs from JPML monthly reports, MDLs that left the pending report with a products-liability or personal-injury caption, and products-liability MDLs terminated since 2012 per the JPML terminated-litigations report (number search only).",
             "Candidates come from EDGAR full-text search (2001 onward). Every candidate filing is downloaded and the rule is re-checked against the document text; search hits alone never create a link.",
-            "Tier A: the filing contains 'MDL No. <n>', 'MDL <n>', 'MDL Docket No. <n>' or the federal master docket '<yy>-md-<n>'. Tier B: the filing contains every word of the official JPML caption in order. Tier C: 'MDL' or 'multidistrict' within 500 characters of a caption subject term, with a products-liability term in the same window, any required manufacturer term within 1,000 characters, and a filing date on or after the JPML docket date.",
-            "Only the registrant's own 10-K, 10-Q, 8-K, 20-F, 6-K, 40-F, registration statements and annual reports count; fund, ownership and asset-backed filers are excluded.",
-            "Role is a deterministic phrase reading of the evidence excerpt (for example 'has not been named as a defendant'). It always requires review. Links whose latest role reading is 'not named' or 'claimant' are excluded from exposure totals.",
-            "Financials are the registrant's own XBRL facts (standard us-gaap / ifrs-full concepts only; company-specific extension tags are not in the SEC companyfacts API). The litigation accrual is the company's total reported accrual for the concept named, not an MDL-specific reserve.",
+            "Tier A: the filing contains 'MDL No. <n>', 'MDL <n>', 'MDL Docket No. <n>' or the federal master docket '<yy>-md-<n>'. Tier B: the filing contains every word of the official JPML caption in order. Tier C (requires review): 'MDL' or 'multidistrict' in the same paragraph as a caption subject term and within 500 characters of it, with a products-liability term and every required manufacturer term in that paragraph, a filing date on or after the JPML docket date, and no other target MDL's subject in the MDL sentence or closer to the MDL mention.",
+            "Only the registrant's own 10-K, 10-Q, 8-K, 20-F, 6-K, 40-F, registration statements and annual reports count; fund, ownership and asset-backed filers are excluded, and a paragraph describing the registrant as an insurer defending policyholders' claims never counts.",
+            "Role is a deterministic phrase reading of the match's own paragraph and the next one (never an earlier paragraph). Only links read as 'defendant' count toward pending-action totals; 'role not stated' links are summed separately; 'not named', claimant, dismissal-language and review-flagged links are never counted. Totals are split by evidence strength (A/B vs C).",
+            "Reviewed decisions from an independent verification are published on the link (dropped links, role corrections, review notes).",
+            "Financials are the registrant's own XBRL facts (standard us-gaap / ifrs-full concepts only; company-specific extension tags are not in the SEC companyfacts API). The litigation accrual is the company's total reported accrual for the concept named, company-wide and not MDL-specific; it is 'current' only for the latest or prior fiscal year of a company still filing XBRL.",
         ],
     }
     return cw.record(

@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   filterCompanies,
   EMPTY_FILTER,
+  mdlTitle,
   median,
   money,
   parseCompanySummary,
   parseLink,
   sortCompanies,
+  strengthSplit,
 } from "./companyData";
 
 const summary = (cik: string, name: string, pending: number | null, accrual?: number) => ({
@@ -133,5 +135,33 @@ describe("formatting", () => {
     expect(median([])).toBeNull();
     expect(median([3, 1, 2])).toBe(2);
     expect(median([4, 1, 2, 3])).toBe(2.5);
+  });
+});
+
+describe("evidence strength and recency", () => {
+  it("splits counted totals by evidence strength", () => {
+    expect(strengthSplit(15266, 8424)).toBe("A/B 15,266 · C 8,424");
+    expect(strengthSplit(null, null)).toBeNull();
+  });
+  it("labels captions truncated in the JPML source instead of completing them", () => {
+    expect(mdlTitle("IN RE: Zantac Products Liability Litigation", false, 2924)).toBe(
+      "Zantac Products Liability Litigation",
+    );
+    expect(mdlTitle("Products Liability Litigation", true, 2627)).toMatch(/caption truncated/);
+  });
+  it("only reports accrual % of revenue for current accruals", () => {
+    const stale = parseCompanySummary({
+      ...summary("0000066740", "3M CO", 10, 3e8),
+      accrual_pct_revenue: 1.02,
+      accrual_current: false,
+    })!;
+    expect(stale.accrualPctRevenue).toBeNull();
+    expect(stale.accrualCurrent).toBe(false);
+    const fresh = parseCompanySummary({
+      ...summary("0001627223", "Chemours", 10, 4.84e8),
+      accrual_pct_revenue: 8.33,
+      accrual_current: true,
+    })!;
+    expect(fresh.accrualPctRevenue).toBe(8.33);
   });
 });

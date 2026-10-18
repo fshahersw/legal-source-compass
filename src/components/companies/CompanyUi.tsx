@@ -7,11 +7,13 @@ export function Kpi({
   label,
   value,
   note,
+  detail,
   title,
 }: {
   label: string;
   value: string;
   note?: string | undefined;
+  detail?: string | undefined;
   title?: string | undefined;
 }) {
   return (
@@ -19,6 +21,9 @@ export function Kpi({
       <div className="truncate text-xs text-muted-foreground">{label}</div>
       <div className="mt-0.5 truncate font-sans text-xl font-semibold tabular-nums">{value}</div>
       {note ? <div className="truncate text-xs text-muted-foreground">{note}</div> : null}
+      {detail ? (
+        <div className="truncate text-[11px] italic text-muted-foreground">{detail}</div>
+      ) : null}
     </div>
   );
 }

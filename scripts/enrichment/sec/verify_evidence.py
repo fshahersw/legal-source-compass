@@ -12,6 +12,7 @@ Rules (see targets.py for the tiers):
   * A pair is linked by the strongest tier with at least one verified filing.
 """
 import functools
+import gzip
 import json
 import sys
 from collections import defaultdict
@@ -44,12 +45,25 @@ def doc_url(hit) -> str:
     return f"https://www.sec.gov/Archives/edgar/data/{cik}/{hit['adsh'].replace('-', '')}/{hit['file']}"
 
 
+TEXT_VERSION = "p2"  # bump when evidence.filing_text changes
+
+
 @functools.lru_cache(maxsize=256)
 def doc_text(url: str) -> str | None:
+    """Visible text of a filing document. The parsed text is cached (derived data, gzip) next to the
+    unchanged raw download, keyed by URL and TEXT_VERSION."""
     if url.lower().endswith((".pdf", ".jpg", ".gif", ".png", ".xml")):
         return None
+    cached = h.cache_path(url + "#" + TEXT_VERSION, "text", ".txt.gz")
+    if cached.exists():
+        return gzip.decompress(cached.read_bytes()).decode()
     body = h.get(url, kind="docs", suffix=".htm", compress=True, timeout=180)
-    return None if body is None else ev.filing_text(body)
+    if body is None:
+        return None
+    text = ev.filing_text(body)
+    cached.parent.mkdir(parents=True, exist_ok=True)
+    cached.write_bytes(gzip.compress(text.encode(), 6))
+    return text
 
 
 def candidates(data):
@@ -119,15 +133,16 @@ def check(pair, target):
             main_doc = not (hit["file_type"] or "").upper().startswith("EX-")
             found = ev.verify(text, tier=tier, mdl=mdl, caption=target["caption"] if target["use_caption"] else None,
                               subjects=subjects, pl_terms=tg.PL_TERMS, mdl_terms=tg.MDL_TERMS,
-                              aliases=aliases, main_document=main_doc)
+                              aliases=aliases, main_document=main_doc, others=tg.other_terms(mdl))
             if not found:
                 continue
             start, end, matched = found
             role = ev.role_at(text, start, end, aliases)
+            dismissed = ev.dismissed_at(text, start, end, aliases)
             verified.append({
                 "adsh": hit["adsh"], "file": hit["file"], "form": hit["form"], "file_date": hit["file_date"],
-                "period_ending": hit["period_ending"], "url": url, "matched": matched[:160],
-                "excerpt": ev.excerpt(text, start, end), "role": role,
+                "period_ending": hit["period_ending"], "url": url, "matched": text[start:end][:160],
+                "excerpt": ev.excerpt(text, start, end), "role": role, "dismissed": dismissed,
                 "file_type": hit["file_type"],
                 "co_registrants": [n for c, n in zip(hit["ciks"], hit["names"]) if c != pair["cik"]][:6],
             })
@@ -151,9 +166,13 @@ def reread_roles():
                 continue
             found = ev.verify(text, tier=pair["tier"], mdl=pair["mdl"], caption=target["caption"] if target["use_caption"] else None,
                               subjects=tg.SUBJECTS.get(pair["mdl"]), pl_terms=tg.PL_TERMS, mdl_terms=tg.MDL_TERMS,
-                              aliases=pair["aliases"], main_document=not (v.get("file_type") or "").upper().startswith("EX-"))
+                              aliases=pair["aliases"], main_document=not (v.get("file_type") or "").upper().startswith("EX-"),
+                              others=tg.other_terms(pair["mdl"]))
             if found:
                 v["role"] = ev.role_at(text, found[0], found[1], pair["aliases"])
+                v["dismissed"] = ev.dismissed_at(text, found[0], found[1], pair["aliases"])
+                v["matched"] = text[found[0]:found[1]][:160]
+                v["excerpt"] = ev.excerpt(text, found[0], found[1])
         return pair
 
     linked = [p for p in data["pairs"] if p["tier"]]

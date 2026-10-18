@@ -43,7 +43,9 @@ export type CompanyProfile = {
   sic: string | null;
   sicDescription: string | null;
   stateOfIncorporation: string | null;
+  stateOfIncorporationName: string | null;
   businessState: string | null;
+  businessStateName: string | null;
   businessCity: string | null;
   fiscalYearEnd: string | null;
   formerNames: string[];
@@ -63,6 +65,9 @@ export type CompanyMdl = {
   countsTowardExposure: boolean;
   district: string | null;
   judge: string | null;
+  dismissed: boolean;
+  review: boolean;
+  titleTruncated: boolean;
 };
 export type Exposure = {
   linkedMdls: number;
@@ -71,8 +76,16 @@ export type Exposure = {
   pendingChange12m: number | null;
   pendingChangePct: number | null;
   sharePct: number | null;
+  /** Strongest tier among links that count toward the total (defendant readings only). */
   strongestTier: Tier | null;
+  strongestTierAny: Tier | null;
   excludedByRole: number;
+  pendingActionsAB: number | null;
+  pendingActionsC: number | null;
+  pendingActionsUnclear: number | null;
+  pendingMdlsUnclear: number;
+  dismissedLinks: number;
+  reviewLinks: number;
 };
 export type CompanySummary = {
   profile: CompanyProfile;
@@ -82,7 +95,11 @@ export type CompanySummary = {
   mdls: CompanyMdl[];
   exposure: Exposure;
   latest: Partial<Record<Metric, FinPoint>>;
+  /** Same-year accrual / revenue, only when the accrual is current (latest or prior FY of a filer). */
   accrualPctRevenue: number | null;
+  accrualCurrent: boolean;
+  accrualPctRevenueAny: number | null;
+  latestFy: number | null;
   accrualYoyPct: number | null;
   expenseYoyPct: number | null;
   accrualPctSeries: { fy: number; pct: number }[];
@@ -100,7 +117,16 @@ export type CoverageRow = {
   title: string;
   status: MdlStatus;
   pending: number | null;
-  companies: { cik: string; name: string; tier: Tier; role: Role }[];
+  titleTruncated: boolean;
+  companies: {
+    cik: string;
+    name: string;
+    tier: Tier;
+    role: Role;
+    counted: boolean;
+    dismissed: boolean;
+    review: boolean;
+  }[];
 };
 export type CompaniesOverview = {
   asOf: string;
@@ -117,6 +143,13 @@ export type CompaniesOverview = {
   filingsByYear: { year: number; A: number; B: number; C: number }[];
   coverage: CoverageRow[];
   medianAccrualPctRevenue: number | null;
+  pendingActionsCounted: number | null;
+  pendingActionsCountedAB: number | null;
+  pendingActionsCountedC: number | null;
+  pendingActionsUnclearOnly: number | null;
+  droppedByReview: number;
+  roleReviews: number;
+  reviewNotes: number;
   flagRules: Partial<Record<FlagKey, string>>;
   flagLabels: Partial<Record<FlagKey, string>>;
   tierLabels: Partial<Record<Tier, string>>;
@@ -134,6 +167,7 @@ export type EvidenceFiling = {
   indexUrl: string | null;
   matched: string;
   role: Role;
+  dismissed: boolean;
   coRegistrants: string[];
   excerpt: string | null;
 };
@@ -160,6 +194,12 @@ export type CompanyLink = {
   verified: EvidenceFiling[];
   searchUrls: string[];
   countsTowardExposure: boolean;
+  dismissed: boolean;
+  review: boolean;
+  reviewNote: string | null;
+  roleSource: "rule" | "review";
+  roleNote: string | null;
+  titleTruncated: boolean;
   series: SeriesPoint[];
 };
 export type Financials = {
@@ -288,7 +328,9 @@ function profile(v: unknown): CompanyProfile | null {
     sic: str(v["sic"]),
     sicDescription: str(v["sic_description"]),
     stateOfIncorporation: str(v["state_of_incorporation"]),
+    stateOfIncorporationName: str(v["state_of_incorporation_name"]),
     businessState: str(v["business_state"]),
+    businessStateName: str(v["business_state_name"]),
     businessCity: str(v["business_city"]),
     fiscalYearEnd: str(v["fiscal_year_end"]),
     formerNames: strs(v["former_names"]),
@@ -316,6 +358,9 @@ function companyMdl(v: unknown): CompanyMdl | null {
     countsTowardExposure: v["counts_toward_exposure"] === true,
     district: str(v["district"]),
     judge: str(v["judge"]),
+    dismissed: v["dismissed"] === true,
+    review: v["review"] === true,
+    titleTruncated: v["title_truncated"] === true,
   };
 }
 
@@ -349,10 +394,20 @@ export function parseCompanySummary(v: unknown): CompanySummary | null {
       pendingChangePct: num(e["pending_change_pct"]),
       sharePct: num(e["share_of_all_pending_pct"]),
       strongestTier: tier(e["strongest_tier"]),
+      strongestTierAny: tier(e["strongest_tier_any"]),
       excludedByRole: int(e["excluded_by_role"]) ?? 0,
+      pendingActionsAB: int(e["pending_actions_ab"]),
+      pendingActionsC: int(e["pending_actions_c"]),
+      pendingActionsUnclear: int(e["pending_actions_unclear"]),
+      pendingMdlsUnclear: int(e["pending_mdls_unclear"]) ?? 0,
+      dismissedLinks: int(e["dismissed_links"]) ?? 0,
+      reviewLinks: int(e["review_links"]) ?? 0,
     },
     latest,
-    accrualPctRevenue: num(v["accrual_pct_revenue"]),
+    accrualPctRevenue: v["accrual_current"] === true ? num(v["accrual_pct_revenue"]) : null,
+    accrualCurrent: v["accrual_current"] === true,
+    accrualPctRevenueAny: num(v["accrual_pct_revenue_any"]),
+    latestFy: int(v["latest_fy"]),
     accrualYoyPct: num(v["accrual_yoy_pct"]),
     expenseYoyPct: num(v["expense_yoy_pct"]),
     accrualPctSeries: pctSeries(v["accrual_pct_series"]),
@@ -417,19 +472,37 @@ export function parseOverview(v: unknown): CompaniesOverview | null {
           title: r["title"] as string,
           status: status(r["status"]),
           pending: int(r["pending"]),
+          titleTruncated: r["title_truncated"] === true,
           companies: arr(r["companies"])
             .map((c) => {
               if (!isObj(c)) return null;
               const cik = str(c["cik"]);
               const name = str(c["name"]);
               const t = tier(c["tier"]);
-              return cik && name && t ? { cik, name, tier: t, role: role(c["role"]) } : null;
+              return cik && name && t
+                ? {
+                    cik,
+                    name,
+                    tier: t,
+                    role: role(c["role"]),
+                    counted: c["counted"] === true,
+                    dismissed: c["dismissed"] === true,
+                    review: c["review"] === true,
+                  }
+                : null;
             })
             .filter((c): c is CoverageRow["companies"][number] => c !== null),
         };
       })
       .filter((r): r is CoverageRow => r !== null),
     medianAccrualPctRevenue: num(v["median_accrual_pct_revenue"]),
+    pendingActionsCounted: int(v["pending_actions_counted"]),
+    pendingActionsCountedAB: int(v["pending_actions_counted_ab"]),
+    pendingActionsCountedC: int(v["pending_actions_counted_c"]),
+    pendingActionsUnclearOnly: int(v["pending_actions_unclear_only"]),
+    droppedByReview: int(v["dropped_by_review"]) ?? 0,
+    roleReviews: int(v["role_reviews"]) ?? 0,
+    reviewNotes: int(v["review_notes"]) ?? 0,
     flagRules: record<FlagKey>(v["flag_rules"], FLAGS),
     flagLabels: record<FlagKey>(v["flag_labels"], FLAGS),
     tierLabels: record<Tier>(v["tier_labels"], TIERS),
@@ -453,6 +526,7 @@ function filing(v: unknown): EvidenceFiling | null {
     indexUrl: secUrl(v["index_url"]),
     matched: str(v["matched"]) ?? "",
     role: role(v["role"]),
+    dismissed: v["dismissed"] === true,
     coRegistrants: strs(v["co_registrants"]),
     excerpt: str(v["excerpt"]),
   };
@@ -490,6 +564,12 @@ export function parseLink(v: unknown): CompanyLink | null {
     verified,
     searchUrls: strs(v["search_urls"]).filter((u) => u.startsWith("https://efts.sec.gov/")),
     countsTowardExposure: v["counts_toward_exposure"] === true,
+    dismissed: v["dismissed"] === true,
+    review: v["review"] === true,
+    reviewNote: str(v["review_note"]),
+    roleSource: v["role_source"] === "review" ? "review" : "rule",
+    roleNote: str(v["role_note"]),
+    titleTruncated: v["title_truncated"] === true,
     series: seriesPoints(v["series"]),
   };
 }
@@ -666,12 +746,27 @@ export function median(values: number[]) {
  * ranked by latest accrual. */
 export function accrualMultiples(rows: CompanySummary[], limit = 12) {
   return rows
-    .filter((c) => c.spark.litigation_accrual.length >= 3 && c.latest.litigation_accrual)
+    .filter(
+      (c) =>
+        c.spark.litigation_accrual.length >= 3 && c.latest.litigation_accrual && c.accrualCurrent,
+    )
     .sort(
       (a, b) =>
         (b.latest.litigation_accrual?.value ?? 0) - (a.latest.litigation_accrual?.value ?? 0),
     )
     .slice(0, limit);
+}
+
+/** "23,690 (A/B 15,266 · C 8,424)" style split of a counted total by evidence strength. */
+export function strengthSplit(ab: number | null | undefined, c: number | null | undefined) {
+  if (typeof ab !== "number" && typeof c !== "number") return null;
+  return `A/B ${(ab ?? 0).toLocaleString("en-US")} · C ${(c ?? 0).toLocaleString("en-US")}`;
+}
+
+/** MDL title for display; a caption truncated in the JPML source is labelled, never completed by guess. */
+export function mdlTitle(title: string, truncated: boolean, mdl: number) {
+  const core = title.replace(/^IN RE:?\s*/i, "");
+  return truncated ? `MDL ${mdl} · caption truncated in JPML source ("${core}")` : core;
 }
 
 export function edgarCompanyUrl(cik: string) {

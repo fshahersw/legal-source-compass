@@ -29,6 +29,8 @@ import {
   pct,
   signedPct,
   TIER_LABEL,
+  mdlTitle,
+  strengthSplit,
   type CompanyDetail,
   type CompanyLink,
   type FinPoint,
@@ -102,7 +104,13 @@ function Profile({ d }: { d: CompanyDetail }) {
             ) : (
               <span className="text-[11px] text-muted-foreground">No ticker recorded</span>
             )}
-            {s.exposure.strongestTier ? <TierBadge tier={s.exposure.strongestTier} /> : null}
+            {s.exposure.strongestTier ? (
+              <TierBadge tier={s.exposure.strongestTier} />
+            ) : (
+              <span className="text-[11px] text-muted-foreground">
+                No pending MDL read as defendant
+              </span>
+            )}
             {s.flags.map((k) => (
               <FlagBadge key={k} flag={k} label={FLAG_TEXT[k]} />
             ))}
@@ -113,10 +121,17 @@ function Profile({ d }: { d: CompanyDetail }) {
               label="SIC"
               value={p.sic ? `${p.sic} · ${p.sicDescription ?? ""}` : NOT_RECORDED}
             />
-            <Fact label="State of incorporation" value={p.stateOfIncorporation ?? NOT_RECORDED} />
+            <Fact
+              label="State of incorporation"
+              value={p.stateOfIncorporationName ?? p.stateOfIncorporation ?? NOT_RECORDED}
+            />
             <Fact
               label="Business address"
-              value={[p.businessCity, p.businessState].filter(Boolean).join(", ") || NOT_RECORDED}
+              value={
+                [p.businessCity, p.businessStateName ?? p.businessState]
+                  .filter(Boolean)
+                  .join(", ") || NOT_RECORDED
+              }
             />
           </dl>
           {p.formerNames.length ? (
@@ -155,16 +170,20 @@ function Profile({ d }: { d: CompanyDetail }) {
         <Kpi
           label="Linked MDLs"
           value={String(s.exposure.linkedMdls)}
-          note={`${s.exposure.pendingMdls} pending`}
+          note={`${s.exposure.pendingMdls} pending, counted as defendant`}
         />
         <Kpi
-          label="Pending actions"
+          label="Pending actions (defendant)"
           value={count(s.exposure.pendingActions)}
-          note={
-            s.exposure.pendingChange12m !== null
-              ? `${s.exposure.pendingChange12m >= 0 ? "+" : ""}${s.exposure.pendingChange12m.toLocaleString("en-US")} in 12 months`
-              : undefined
+          note={strengthSplit(s.exposure.pendingActionsAB, s.exposure.pendingActionsC) ?? undefined}
+          detail={
+            s.exposure.pendingActionsUnclear
+              ? `+${s.exposure.pendingActionsUnclear.toLocaleString("en-US")} where role not stated`
+              : s.exposure.pendingChange12m !== null
+                ? `${s.exposure.pendingChange12m >= 0 ? "+" : ""}${s.exposure.pendingChange12m.toLocaleString("en-US")} in 12 months`
+                : undefined
           }
+          title="Sum of JPML pending actions in MDLs whose evidence excerpt reads the company as a defendant. A/B = MDL number or caption evidence; C = subject evidence (requires review)."
         />
         <Kpi
           label="Revenue"
@@ -177,15 +196,30 @@ function Profile({ d }: { d: CompanyDetail }) {
           note={s.latest.net_income ? `FY${s.latest.net_income.fy}` : undefined}
         />
         <Kpi
-          label="Litigation accrual"
+          label="Litigation accrual (company-wide)"
           value={money(acc?.value, acc?.unit)}
-          note={acc ? `FY${acc.fy} · YoY ${signedPct(s.accrualYoyPct)}` : undefined}
-          title={acc?.concept}
+          note={
+            acc
+              ? s.accrualCurrent
+                ? `FY${acc.fy} · YoY ${signedPct(s.accrualYoyPct)}`
+                : `FY${acc.fy}, not current`
+              : undefined
+          }
+          detail="not MDL-specific"
+          title={
+            acc
+              ? `${acc.concept}: the company's total loss-contingency accrual, not an MDL reserve`
+              : undefined
+          }
         />
         <Kpi
           label="Accrual % of revenue"
-          value={pct(s.accrualPctRevenue, 2)}
-          note="same fiscal year, same unit"
+          value={acc && !s.accrualCurrent ? "Not current" : pct(s.accrualPctRevenue, 2)}
+          note={
+            acc && !s.accrualCurrent && s.accrualPctRevenueAny !== null
+              ? `${s.accrualPctRevenueAny.toFixed(2)}% in FY${acc.fy}`
+              : "same fiscal year, same unit"
+          }
         />
       </div>
 
@@ -343,7 +377,7 @@ function Financials({ d }: { d: CompanyDetail }) {
       </ChartCard>
       <ChartCard
         title="Litigation accruals, expense and payments"
-        subtitle={`Loss-contingency XBRL facts, ${unit}; accrual and possible-loss are period-end balances`}
+        subtitle={`Company-wide loss-contingency XBRL facts, not MDL-specific, ${unit}; accrual and possible-loss are period-end balances`}
         footnote={conceptNote(pts, [
           "litigation_accrual",
           "litigation_expense",
@@ -415,8 +449,8 @@ function PendingTrend({ d }: { d: CompanyDetail }) {
   return (
     <ChartCard
       title="Pending actions across linked pending MDLs"
-      subtitle="Sum of JPML pending actions per monthly report for the MDLs this company's filings name"
-      footnote="Excludes links whose excerpt says the company is not named or is a claimant. An MDL created during the window counts from its first report."
+      subtitle="Sum of JPML pending actions per monthly report for the MDLs where this company's filings read it as a defendant"
+      footnote="Counts only MDLs whose evidence passage reads the company as a defendant (not dismissed, not flagged for review). An MDL created during the window counts from its first report."
     >
       {series.length > 1 ? (
         <div className="h-56 px-2 py-2">
@@ -545,7 +579,7 @@ function ExposureRow({ l }: { l: CompanyLink }) {
         </Link>
         <div className="min-w-0 md:order-none">
           <div className="text-xs font-medium leading-snug">
-            {l.title.replace(/^IN RE:?\s*/i, "")}
+            {mdlTitle(l.title, l.titleTruncated, l.mdl)}
           </div>
           <div className="text-[11px] text-muted-foreground">
             {[
@@ -572,8 +606,24 @@ function ExposureRow({ l }: { l: CompanyLink }) {
         <div className="flex flex-col items-start gap-0.5">
           <TierBadge tier={l.tier} />
           <RoleText role={l.role} />
+          {l.dismissed ? (
+            <span
+              className="rounded border border-border bg-muted px-1 text-[10px] font-medium"
+              title="The latest evidence passage reports a dismissal or that the company is not sued"
+            >
+              Dismissed (excerpt)
+            </span>
+          ) : null}
+          {l.review ? (
+            <span
+              className="rounded border border-warning/40 bg-warning/15 px-1 text-[10px] font-medium text-warning-foreground"
+              title={l.reviewNote ?? undefined}
+            >
+              Review
+            </span>
+          ) : null}
           {!l.countsTowardExposure ? (
-            <span className="text-[10px] text-muted-foreground">Excluded from exposure totals</span>
+            <span className="text-[10px] text-muted-foreground">Not counted in totals</span>
           ) : null}
         </div>
         <div className="text-[11px] text-muted-foreground">
@@ -599,6 +649,18 @@ function ExposureRow({ l }: { l: CompanyLink }) {
       </button>
       {open ? (
         <div id={id} className="space-y-2 bg-muted/20 px-3 py-2 text-xs">
+          {l.reviewNote ? (
+            <p className="rounded border border-warning/40 bg-warning/10 px-2 py-1 text-[11px]">
+              <span className="font-medium">Review: </span>
+              {l.reviewNote}
+            </p>
+          ) : null}
+          {l.roleSource === "review" && l.roleNote ? (
+            <p className="text-[11px] text-muted-foreground">
+              <span className="font-medium text-foreground">Role set by review: </span>
+              {l.roleNote}
+            </p>
+          ) : null}
           {l.verified
             .slice()
             .reverse()

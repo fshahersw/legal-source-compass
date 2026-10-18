@@ -159,3 +159,111 @@ class RoleWindows(unittest.TestCase):
         text = "Claims are coordinated in MDL No. 2873. " + "y " * 500 + "The Company is in the class of plaintiffs."
         start = text.index("MDL No. 2873")
         self.assertEqual(ev.role_at(text, start, start + 12), "plaintiff")
+
+
+class Review2(unittest.TestCase):
+    """Cases from the independent verification of the first publication."""
+
+    def test_mdl_sentence_about_another_target_is_not_evidence(self):
+        text = ("The Superior Court of Quebec has stayed the proposed Zantac class proceedings until the result of the "
+                "US Multi-District Litigation (MDL) appeal is announced.\nTalc Product Litigation in the US\n"
+                "Sanofi affiliates have been named in product liability actions regarding asbestos in talc products.")
+        self.assertIsNone(ev.verify(text, tier="C", mdl=2738, caption=None, subjects=tg.SUBJECTS[2738],
+                                    aliases=["Sanofi"], others=tg.other_terms(2738), **C))
+        same = ("Sanofi affiliates have been named in product liability actions alleging talc caused ovarian cancer, "
+                "and the federal cases were coordinated in an MDL in New Jersey.")
+        self.assertIsNotNone(ev.verify(same, tier="C", mdl=2738, caption=None, subjects=tg.SUBJECTS[2738],
+                                       aliases=["Sanofi"], others=tg.other_terms(2738), **C))
+
+    def test_other_subject_in_mdl_sentence(self):
+        text = ("Personal injury cases against the Company alleging that acetaminophen use caused ADHD have been "
+                "consolidated in multi-district court litigation in the Southern District of New York. Cases alleging "
+                "that Zantac sold by the Company caused cancer were dismissed in state court.")
+        self.assertIsNone(ev.verify(text, tier="C", mdl=2924, caption=None, subjects=tg.SUBJECTS[2924],
+                                    aliases=["Dollar"], others=tg.other_terms(2924), **C))
+
+    def test_shared_words_do_not_exclude(self):
+        self.assertNotIn("hernia mesh", tg.other_terms(2846))
+        self.assertNotIn("Taxotere", tg.other_terms(3023))
+        self.assertIn("Zantac", tg.other_terms(2738))
+
+    def test_insurer_defending_policyholders_is_not_a_party(self):
+        text = ("Lawsuits were consolidated under the caption In re: Methyl Tertiary Butyl Ether (MTBE) Products Liability "
+                "Litigation. The Company is defending these claims under commercial auto policies which afford coverage.")
+        self.assertIsNone(ev.verify(text, tier="B", mdl=1358, caption="Methyl Tertiary Butyl Ether (MTBE) Products Liability Litigation",
+                                    aliases=["EMC"]))
+
+    def test_claimant_sentences(self):
+        self.assertEqual(ev.role_hint("CAWC, NJAW and Long Island Water Corporation are each plaintiffs in lawsuits relating to MTBE; "
+                                      "the subsidiaries seek to recover cleanup costs.", ["Water"]), "plaintiff")
+        self.assertEqual(ev.role_hint("In addition, we joined the Multi-District Litigation (MDL) related to the oil spill. "
+                                      "We asserted claims for physical damage to property.", ["Joe"]), "plaintiff")
+        self.assertEqual(ev.role_hint("Plaintiffs who are plaintiffs in the MDL assert claims against the Company.", ["Acme"]), "defendant")
+
+    def test_role_does_not_read_the_previous_paragraph(self):
+        text = ("Regeneron filed a lawsuit against Sanofi under the Collaboration Agreement; the court denied the motion.\n"
+                "Dupixent Product Liability Litigation\n"
+                "Product liability lawsuits have been filed against the Company claiming that Dupixent caused lymphoma; "
+                "the federal cases were transferred to an MDL.")
+        start = text.index("Dupixent Product")
+        self.assertEqual(ev.role_at(text, start, start + 8, ["REGENERON"]), "defendant")
+
+    def test_dismissal(self):
+        text = "The MDL court granted the motion to dismiss; all claims against the Company were dismissed with prejudice."
+        start = text.index("MDL")
+        self.assertTrue(ev.dismissed_at(text, start, start + 3))
+        self.assertFalse(ev.dismissed_at("In the MDL, 40 plaintiffs' cases were dismissed with prejudice by the court.", 7, 10))
+        self.assertFalse(ev.dismissed_at("The Company is a defendant in the MDL.", 30, 33))
+
+    def test_paragraphs_from_html(self):
+        raw = b"<html><body><p>Zantac MDL appeal.</p><div>Talc litigation</div>line<br>wrap<br><br>next</body></html>"
+        self.assertEqual(ev.filing_text(raw), "Zantac MDL appeal.\nTalc litigation\nline wrap\nnext")
+
+
+class SectionRoles(unittest.TestCase):
+    def test_earlier_paragraph_of_same_section_counts(self):
+        text = ("Docetaxel\n• Personal Injury Actions\nA number of lawsuits have been filed against Hospira and Pfizer "
+                "alleging permanent hair loss.\nIn October 2016, the federal cases were transferred to MDL-2740 in Louisiana.")
+        start = text.index("MDL-2740")
+        self.assertEqual(ev.role_at(text, start, start + 8, ["PFIZER"]), "defendant")
+
+    def test_previous_section_does_not_bleed(self):
+        text = ("Regeneron filed a complaint against Sanofi; the court denied the motion to dismiss.\n"
+                "k. Dupixent Product Liability Litigation\n"
+                "Since 2025, product liability lawsuits have been filed in various U.S. district and state courts against the "
+                "Company claiming that Dupixent caused lymphoma; the JPML transferred them for pretrial proceedings.")
+        start = text.rindex("Dupixent")
+        self.assertEqual(ev.role_at(text, start, start + 8, ["REGENERON"]), "defendant")
+        self.assertFalse(ev.dismissed_at(text, start, start + 8))
+
+    def test_defendants_including(self):
+        self.assertEqual(ev.role_hint("Numerous defendants, including EID and Chemours, have been named in AFFF matters.", ["Chemours"]), "defendant")
+
+
+class SectionContext(unittest.TestCase):
+    def test_required_term_in_previous_section_does_not_count(self):
+        text = ("Pelvic mesh: the Company is in litigation with Bard over Bard's obligation to indemnify it.\n"
+                "Hernia Mesh Litigation\n"
+                "Plaintiffs filed lawsuits against subsidiaries of the Company alleging personal injury from hernia mesh "
+                "products; the JPML transferred the actions to a federal Multidistrict Litigation in Massachusetts.")
+        self.assertIsNone(ev.verify(text, tier="C", mdl=2846, caption=None, subjects=tg.SUBJECTS[2846],
+                                    aliases=["Medtronic"], others=tg.other_terms(2846), **C))
+
+    def test_defending_claims_is_a_defendant(self):
+        self.assertEqual(ev.role_hint("The Company was defending approximately 7,090 product liability claims involving "
+                                      "its line of hernia repair devices.", ["Becton"]), "defendant")
+
+
+class HeadingSubject(unittest.TestCase):
+    def test_heading_names_the_section_subject(self):
+        text = ("Chantix\nA number of lawsuits have been filed against Pfizer alleging economic loss and personal injury "
+                "from nitrosamine in Chantix; the federal cases were transferred to an MDL in New York.\nZantac\n"
+                "Other matters.")
+        self.assertIsNotNone(ev.verify(text, tier="C", mdl=3050, caption=None, subjects=tg.SUBJECTS[3050],
+                                       aliases=["PFIZER"], others=tg.other_terms(3050), **C))
+
+    def test_heading_does_not_reach_the_next_section(self):
+        text = ("Talc Product Litigation in the US\nSanofi affiliates have been named in product liability actions over "
+                "asbestos in talc products.\nZantac\nThe Zantac cases were coordinated in an MDL in Florida.")
+        self.assertIsNone(ev.verify(text, tier="C", mdl=2738, caption=None, subjects=tg.SUBJECTS[2738],
+                                    aliases=["Sanofi"], others=tg.other_terms(2738), **C))

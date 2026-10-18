@@ -14,10 +14,13 @@ import re
 
 NUMBER_TEMPLATES = ("MDL No. {n}", "MDL {n}", "MDL Docket No. {n}")
 
-# mdl -> (subject terms, required terms). Required terms must also appear within 1,000 characters.
+# mdl -> (subject terms, required terms). Required terms must also appear within 1,000 characters;
+# a required term written "A|B|C" is satisfied by any of its alternatives.
 SUBJECTS: dict[int, tuple[tuple[str, ...], tuple[str, ...]]] = {
     2738: (("talc", "talcum powder"), ()),
-    2846: (("hernia mesh",), ("Bard",)),
+    # Becton Dickinson (owner of Bard/Davol) calls them "hernia repair devices" / "Hernia Product Claims";
+    # the transferee court (S.D. Ohio, per JPML) is accepted as the disambiguator from MDL 3029.
+    2846: (("hernia mesh", "hernia repair", "hernia product"), ("Bard|Davol|Southern District of Ohio",)),
     2873: (("AFFF", "film-forming foam"), ()),
     3060: (("hair relaxer",), ()),
     2789: (("proton pump inhibitor", "proton-pump inhibitor"), ()),
@@ -26,13 +29,14 @@ SUBJECTS: dict[int, tuple[tuple[str, ...], tuple[str, ...]]] = {
     2570: (("IVC filter",), ("Cook",)),
     3140: (("Depo-Provera", "medroxyprogesterone"), ()),
     2974: (("Paragard",), ()),
-    3081: (("port catheter", "implanted port"), ("Bard",)),
+    3081: (("port catheter", "implanted port", "implantable port", "implantable ports"), ("Bard|Davol|District of Arizona",)),
     # "incretin" is the drug class of the captioned GLP-1 receptor agonists; filers such as Eli Lilly
     # describe the MDL as covering "incretin medicines". The date gate keeps the terminated 2013-2023
     # Incretin-Based Therapies MDL 2452 out.
     3094: (("GLP-1", "glucagon-like peptide", "incretin"), ()),
     3047: (("social media",), ("adolescent",)),
-    3029: (("hernia mesh",), ("Covidien",)),
+    # Medtronic describes Covidien as "certain subsidiaries"; the transferee court (D. Mass., per JPML) disambiguates.
+    3029: (("hernia mesh",), ("Covidien|District of Massachusetts",)),
     3092: (("Suboxone",), ("film",)),
     3044: (("Exactech",), ()),
     2875: (("valsartan", "losartan", "irbesartan"), ()),
@@ -101,7 +105,7 @@ SUBJECTS: dict[int, tuple[tuple[str, ...], tuple[str, ...]]] = {
 PL_TERMS = re.compile(
     r"product[s]?\s+liabilit|personal\s+injur|wrongful\s+death|bodily\s+injur|injur(?:y|ies|ed)|cancer|mesothelioma|lymphoma"
     r"|leukemia|death|disease|adverse (?:event|effect|reaction)|side effect|punitive|compensatory damages|meningioma|tumou?r"
-    r"|ovarian|asbestos",
+    r"|ovarian|asbestos|medical monitoring",
     re.I,
 )
 MDL_TERMS = re.compile(r"\bMDLs?\b|multi-?district", re.I)
@@ -147,3 +151,19 @@ def select_targets(inputs: dict) -> list[dict]:
             "source": "mdl_terminated_history", "use_caption": False,
         }
     return sorted(out.values(), key=lambda t: t["mdl"])
+
+
+def _words(term: str) -> set[str]:
+    return set(re.findall(r"[a-z0-9]+", term.lower()))
+
+
+def other_terms(mdl: int) -> list[str]:
+    """Subject terms of every other target MDL that share no word with this MDL's own terms (so 'hernia
+    mesh' for MDL 2846 and MDL 3029, or 'Taxotere' for 2740 and 3023, never exclude each other)."""
+    own = set().union(*(_words(t) for t in SUBJECTS[mdl][0])) if mdl in SUBJECTS else set()
+    out = []
+    for n, (terms, _) in SUBJECTS.items():
+        if n == mdl:
+            continue
+        out.extend(t for t in terms if not (_words(t) & own))
+    return sorted(set(out))

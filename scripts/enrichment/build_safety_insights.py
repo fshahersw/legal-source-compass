@@ -645,7 +645,13 @@ class Builder:
             parts = [self.COMPANY_FLAG[f] for f in flags]
             detail = []
             if pending:
-                detail.append(f"{pending:,} pending actions across {exposure.get('pending_mdls')} linked MDLs" + (f" ({change:+.0f}% in 12 months)" if change is not None else ""))
+                ab, c_only = exposure.get("pending_actions_ab"), exposure.get("pending_actions_c")
+                split = f"; evidence tier A/B {ab:,}, tier C {c_only:,}" if isinstance(ab, int) and isinstance(c_only, int) else ""
+                detail.append(
+                    f"{pending:,} pending actions in the {exposure.get('pending_mdls')} pending MDLs where its filings read it as a defendant "
+                    f"(full MDL counts, not the company's own share{split})"
+                    + (f", {change:+.0f}% in 12 months" if change is not None else "")
+                )
             if pct is not None:
                 detail.append(f"company-wide litigation accrual {pct:.1f}% of revenue")
             self.add(
