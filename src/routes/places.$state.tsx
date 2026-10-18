@@ -12,6 +12,8 @@ import { StateCourtDirectory, StateJudgeDirectory } from "@/components/corpus/St
 import { StateSourcePanel } from "@/components/corpus/StateSourcePanel";
 import { StateFederalDataPanel } from "@/components/states/StateFederalDataPanel";
 import { StateMetricsPanel } from "@/components/states/StateMetricsPanel";
+import { StateConsumerProtectionPanel } from "@/components/states/consumer/StateConsumerProtectionPanel";
+import { StateCourtDataPanel } from "@/components/states/courtdata/StateCourtDataPanel";
 import { Button } from "@/components/ui/button";
 import { useAtlas } from "@/lib/atlas/store";
 import { useCorpus } from "@/lib/corpus/store";
@@ -296,6 +298,8 @@ function StatePage() {
             </section>
             <StateMetricsPanel key={usps} usps={usps} />
             <StateFederalDataPanel key={`federal-${usps}`} usps={usps} />
+            <StateConsumerProtectionPanel key={`consumer-${usps}`} usps={usps} />
+            <StateCourtDataPanel key={`court-data-${usps}`} usps={usps} />
             {corpus.geo ? (
               <UsMap
                 compact
