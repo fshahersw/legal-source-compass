@@ -238,7 +238,10 @@ SELECT a.court_id AS citing_court, year(a.filed) AS yr, count(*) AS n
 FROM cm.cmap m JOIN w_op a ON a.oid = m.citing_opinion_id WHERE a.filed IS NOT NULL GROUP BY 1, 2;
 CREATE OR REPLACE TABLE w_cite_in AS
 SELECT b.court_id AS cited_court, year(b.filed) AS cited_yr, count(*) AS n
-FROM cm.cmap m JOIN w_op b ON b.oid = m.cited_opinion_id WHERE b.filed IS NOT NULL GROUP BY 1, 2"""
+FROM cm.cmap m JOIN w_op b ON b.oid = m.cited_opinion_id WHERE b.filed IS NOT NULL GROUP BY 1, 2;
+CREATE OR REPLACE TABLE w_cmap_total AS
+SELECT count(*) AS links, count(*) FILTER (WHERE a.oid IS NULL OR b.oid IS NULL) AS opinion_not_in_opinion_table
+FROM cm.cmap m LEFT JOIN w_op a ON a.oid = m.citing_opinion_id LEFT JOIN w_op b ON b.oid = m.cited_opinion_id"""
 
 STEPS["flows2"] = """
 CREATE OR REPLACE TABLE w_cite_lag AS
@@ -264,6 +267,9 @@ FROM cm.cmap m
 JOIN w_op b ON b.oid = m.cited_opinion_id AND b.cid IN (SELECT cid FROM w_cl_top_national)
 JOIN w_op a ON a.oid = m.citing_opinion_id
 GROUP BY 1, 2, 3;
+CREATE OR REPLACE TABLE w_top_links AS
+SELECT b.cid AS cited_cid, count(*) AS links
+FROM cm.cmap m JOIN w_op b ON b.oid = m.cited_opinion_id AND b.cid IN (SELECT cid FROM w_cl_top_national) GROUP BY 1;
 CREATE OR REPLACE TABLE w_top_reporters AS
 SELECT c.cluster_id AS cid, c.volume, c.reporter, c.page, c.type FROM ci.citation c WHERE c.cluster_id IN (SELECT cid FROM w_cl_top_national)"""
 

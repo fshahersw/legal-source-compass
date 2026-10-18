@@ -94,7 +94,7 @@ def main() -> int:
             n = con.execute("SELECT count(*) FROM dk.docket WHERE cause = ?", [row["cause"]]).fetchone()[0]
             check("dockets with this exact cause", f"cause:{rank}", n, row["dockets"])
     # judges
-    sample = sorted(judges, key=lambda k: -(judges[k]["dockets"] or {}).get("assigned", 0))
+    sample = sorted((k for k in judges if judges[k]["dockets"]), key=lambda k: -judges[k]["dockets"]["assigned"])  # judges with assigned dockets (others are authorship-only)
     pick = sample[:12] + sample[len(sample) // 2 - 6: len(sample) // 2 + 6] + sample[-12:]
     for jid in pick:
         p = judges[jid]

@@ -41,6 +41,7 @@ def build() -> dict[str, dict]:
     citers = defaultdict(list)
     for cid, court, yr, n in con.execute("SELECT cited_cid, citing_court, yr, n FROM w_top_citers").fetchall():
         citers[cid].append((court, yr, n))
+    all_links = {cid: n for cid, n in con.execute("SELECT cited_cid, links FROM w_top_links").fetchall()}
     reps = defaultdict(list)
     for cid, vol, rep, page, typ in con.execute("SELECT cid, volume, reporter, page, type FROM w_top_reporters").fetchall():
         reps[cid].append((typ, vol, rep, page))
@@ -51,7 +52,8 @@ def build() -> dict[str, dict]:
     rows = []
     for rank, (cid, court, docket_id, name, filed, cites) in enumerate(top, 1):
         lst = citers.get(cid, [])
-        total_map = sum(n for _, _, n in lst)
+        total_known = sum(n for _, _, n in lst)  # links whose citing opinion is in the opinion table (court and year can be read)
+        total_map = all_links.get(cid, 0)  # every row of the citation map that points at the cluster's opinions
         by_court = Counter()
         by_decade = Counter()
         by_group = Counter()
@@ -65,7 +67,7 @@ def build() -> dict[str, dict]:
         cite_strs = [f"{v} {r} {p}".strip() for _, v, r, p in citations]
         primary = cite_strs[0] if cite_strs else None
         courtname = courts.get(court, {}).get("name", court)
-        top_courts = [{"court_id": c, "name": courts.get(c, {}).get("name", c), "count": n, "share_pct": cc.share(n, total_map), "link": f"/courts/{c}" if c in spine_ids else None}
+        top_courts = [{"court_id": c, "name": courts.get(c, {}).get("name", c), "count": n, "share_pct": cc.share(n, total_known), "link": f"/courts/{c}" if c in spine_ids else None}
                       for c, n in by_court.most_common(8) if c]
         years = sorted(y for _, y, _ in lst if y)
         pr = paren.get(cid)
@@ -74,17 +76,18 @@ def build() -> dict[str, dict]:
             DATASET, f"cluster:{cid}", f"{name or 'Case name not recorded'}" + (f", {primary}" if primary else ""), source_url=bc.CLUSTERS_URL,
             subtitle=f"{courtname} · {filed.year if filed else 'date not recorded'} · cited {cites:,} times in CourtListener's network (rank {rank})",
             cells={"rank": rank, "case": name, "court": courtname, "year": filed.year if filed else None, "citation": primary, "times_cited": cites, "map_links": total_map or None,
-                   "federal_pct": cc.share(by_group.get("Federal", 0), total_map), "state_pct": cc.share(by_group.get("State", 0), total_map)},
+                   "federal_pct": cc.share(by_group.get("Federal", 0), total_known), "state_pct": cc.share(by_group.get("State", 0), total_known)},
             badges=["CourtListener bulk data", "Citation counts are extracted from text"],
             facts=bc.facts([("Case name (as recorded)", name), ("Court", courtname), ("Date filed", str(filed) if filed else None), ("Reporter citations", "; ".join(cite_strs[:6]) or None),
                             ("Times cited (CourtListener citation_count)", f"{cites:,}"), ("Links in the bulk citation map pointing at its opinions", f"{total_map:,}" if total_map else None),
                             ("Cited most by", "; ".join(f"{t['name']} {t['share_pct']}%" for t in top_courts[:4]) or None),
-                            ("Cited from federal / state / other courts", " / ".join(f"{cc.share(by_group.get(g, 0), total_map)}%" for g in ("Federal", "State", "Other")) if total_map else None),
+                            ("Cited from federal / state / other courts", " / ".join(f"{cc.share(by_group.get(g, 0), total_known)}%" for g in ("Federal", "State", "Other")) if total_known else None),
+                            ("Basis of those shares", f"{total_known:,} of the {total_map:,} map links, those whose citing opinion is in the opinion table" if total_map else None),
                             ("Parenthetical descriptions of its opinions", f"{pr['n']:,}" if pr else None),
                             ("Counting", "Two different measures: CourtListener's citation_count field and the number of links in the bulk citation map; they are not expected to match exactly.")]),
             text=f"most cited opinion {name} {primary or ''} {courtname}", filters={"court": [court or "unknown"]}, links=[{"label": "Opinion on CourtListener", "url": url}] + ([{"label": "Court profile", "url": f"/courts/{court}"}] if court in spine_ids else []),
             extra={"profile": {"rank": rank, "cluster_id": cid, "docket_id": docket_id, "case_name": name, "court_id": court, "court": courtname, "date_filed": str(filed) if filed else None,
-                               "citations": [{"volume": v, "reporter": r, "page": p, "type": t} for t, v, r, p in citations], "times_cited": cites, "map_links": total_map,
+                               "citations": [{"volume": v, "reporter": r, "page": p, "type": t} for t, v, r, p in citations], "times_cited": cites, "map_links": total_map, "links_with_known_citing_court": total_known,
                                "citing_courts": top_courts, "citing_groups": dict(by_group), "citing_by_decade": [{"decade": d, "n": n} for d, n in sorted(by_decade.items())],
                                "first_cited_year": years[0] if years else None, "last_cited_year": years[-1] if years else None,
                                "parentheticals": ({"n": pr["n"], "describing_opinions": pr["describing"], "avg_score": cc.r2(pr["avg_score"])} if pr else None), "url": url}}))

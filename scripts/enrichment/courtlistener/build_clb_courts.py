@@ -110,13 +110,24 @@ def build() -> dict[str, dict]:
     has_ops = bool(con.execute("SELECT count(*) FROM information_schema.tables WHERE table_name = 'w_court_op'").fetchone()[0])
     op_court = by(con, "SELECT * FROM w_court_op") if has_ops else {}
     cite_out = by(con, "SELECT citing_court AS court_id, cited_court, n FROM w_cite_flow") if has_ops and con.execute("SELECT count(*) FROM information_schema.tables WHERE table_name = 'w_cite_flow'").fetchone()[0] else {}
+    # Only links with a court on both sides are counted, as in clb_court_flows (links whose citing or cited opinion has no resolvable court are left out).
+    cite_out = {k: [r for r in v if r["cited_court"]] for k, v in cite_out.items() if k}
     cite_in = defaultdict(list)
     for citing, rows in cite_out.items():
         for r in rows:
             cite_in[r["cited_court"]].append({"citing_court": citing, "n": r["n"]})
+
+    def has_table(name: str) -> bool:
+        return bool(con.execute("SELECT count(*) FROM information_schema.tables WHERE table_name = ?", [name]).fetchone()[0])
+
+    cite_lag = one(con, "SELECT * FROM w_cite_lag") if has_table("w_cite_lag") else {}
+    paren_court = one(con, "SELECT * FROM w_paren_court") if has_table("w_paren_court") else {}
+    court_authors = by(con, "SELECT court_id, author_id, sum(n) AS n, sum(per_curiam) AS per_curiam FROM w_author GROUP BY 1, 2", "court_id") if has_table("w_author") else {}
     scotus_year = [dict(zip(("yr", "clusters", "scdb", "unanimous", "five_four", "with_votes", "dir_conservative", "dir_liberal", "dir_unspecifiable"), r))
                    for r in con.execute("SELECT yr, clusters, scdb, unanimous, five_four, with_votes, dir_conservative, dir_liberal, dir_unspecifiable FROM w_scotus_year ORDER BY yr").fetchall()]
 
+    judge_path = os.path.join(OUT, "clb_judge_dockets.json")
+    judge_ids = {int(r["id"]) for r in json.load(open(judge_path))["rows"]} if os.path.exists(judge_path) else set()
     fjc = {r["id"]: r["item"]["profile"] for r in json.load(open(os.path.join(ROOT, "private", "build", "fjc_idb", "fjc_civil_districts.json")))["rows"]}
     benches = {r["id"]: r["item"]["profile"] for r in json.load(open(os.path.join(OUT, "clb_court_benches.json")))["rows"]}
     built_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
@@ -219,9 +230,15 @@ def build() -> dict[str, dict]:
         if op_court.get(cid):
             ops = op_court[cid]
             tot = sum(r["n"] for r in ops)
-            opinions = {"total": tot, "types": shares([(r["type"], r["n"]) for r in ops], tot, 10),
+            authors = [r for r in court_authors.get(cid, []) if r["author_id"] is not None]
+            pc = paren_court.get(cid)
+            opinions = {"total": tot, "types": shares([(r["type"], r["n"]) for r in ops], tot, 10, cc.OPINION_TYPE_LABEL),
                         "with_author_pct": cc.share(sum(r["with_author"] for r in ops), tot), "per_curiam": sum(r["per_curiam"] for r in ops),
-                        "ocr_pct": cc.share(sum(r["ocr"] for r in ops), tot), "with_joined_by_pct": cc.share(sum(r["with_joined_by"] for r in ops), tot)}
+                        "ocr_pct": cc.share(sum(r["ocr"] for r in ops), tot), "with_joined_by_pct": cc.share(sum(r["with_joined_by"] for r in ops), tot),
+                        "top_authors": [{"person_id": int(r["author_id"]), "name": persons.get(int(r["author_id"]), "Name not recorded"), "opinions": int(r["n"]),
+                                         "record": f"/records/clb_judge_dockets/{int(r['author_id'])}" if int(r["author_id"]) in judge_ids else None}
+                                        for r in sorted(authors, key=lambda r: (-r["n"], r["author_id"]))[:TOP]],
+                        "parenthetical_descriptions": ({"n": int(pc["n"]), "clusters": int(pc["clusters"])} if pc else None)}
         citations = None
         if cid in cite_out or cid in cite_in:
             out_rows = cite_out.get(cid, [])
@@ -235,6 +252,9 @@ def build() -> dict[str, dict]:
                 "cited_by": [{"court_id": r["citing_court"], "name": cname(r["citing_court"]) if r["citing_court"] in courts else r["citing_court"], "n": r["n"], "share_pct": cc.share(r["n"], in_total),
                               "link": court_link(r["citing_court"]) if r["citing_court"] else None} for r in sorted(in_rows, key=lambda r: (-r["n"], str(r["citing_court"]))) if r["citing_court"]][:TOP],
                 "self_citation_pct": cc.share(sum(r["n"] for r in out_rows if r["cited_court"] == cid), out_total),
+                "median_age_of_cited_years": cc.r1(cite_lag[cid]["median_years"]) if cid in cite_lag else None,
+                "p90_age_of_cited_years": cc.r1(cite_lag[cid]["p90_years"]) if cid in cite_lag else None,
+                "age_basis_links": int(cite_lag[cid]["n"]) if cid in cite_lag else None,
             }
 
         coverage = None

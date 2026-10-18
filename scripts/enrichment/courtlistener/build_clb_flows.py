@@ -53,6 +53,7 @@ def build() -> dict[str, dict]:
     lag = bc.one(con, "SELECT * FROM w_cite_lag")
     lvl_year = bc.by(con, "SELECT * FROM w_cite_level_year", "yr")
     appeals = [(r[0], r[1], r[2]) for r in con.execute("SELECT court_id, from_court, n FROM w_appeal").fetchall()]
+    map_links, missing_opinion = con.execute("SELECT links, opinion_not_in_opinion_table FROM w_cmap_total").fetchone()
     built_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     inputs = [{"url": u, "path": f"CourtListener bulk file {u.rsplit('/', 1)[1]} (slim tables in private/acq/courtlistener/db)", "sha256": None}
               for u in (cc.BULK_BASE + "citation-map-2026-09-30.csv.bz2", cc.BULK_BASE + "opinions-2026-09-30.csv.bz2", bc.DOCKETS_URL, bc.CLUSTERS_URL)]
@@ -187,14 +188,16 @@ def build() -> dict[str, dict]:
         subtitle=f"{total:,} citation links resolved to courts · {sum(ap_tot.values()):,} dockets with an appeal-from court",
         cells={"kind": "overview", "from": "All courts", "to": "All courts", "count": total, "share_of_from_pct": cc.share(same, total), "share_of_to_pct": None, "from_level": None, "to_level": None, "median_lag_years": None},
         badges=["CourtListener bulk data"],
-        facts=bc.facts([("Citation links with a court on both sides", f"{total:,}"), ("Within the same court", f"{cc.share(same, total)}%"), ("Links where a court could not be resolved", f"{unresolved:,}"),
+        facts=bc.facts([("Rows in the bulk citation map", f"{map_links:,}"), ("Links where an opinion is not in the opinion table", f"{missing_opinion:,}"),
+                        ("Citation links with a court on both sides", f"{total:,}"), ("Within the same court", f"{cc.share(same, total)}%"),
+                        ("Links where both opinions exist but a court could not be resolved", f"{unresolved:,}"),
                         ("Dockets with an appeal-from court", f"{sum(ap_tot.values()):,}"), ("Edges published", f"cross-court citation edges with at least {MIN_EDGE:,} links (top {MAX_EDGES:,}); appeal edges with at least {MIN_APPEAL_EDGE}")]),
         text="court flows overview citation appeal", filters={"kind": ["overview"]}, links=[],
-        extra={"profile": {"citations": total, "same_court": same, "unresolved": unresolved, "appeal_dockets": sum(ap_tot.values())}}))
+        extra={"profile": {"citations": total, "same_court": same, "unresolved": unresolved, "map_links": map_links, "opinion_not_in_opinion_table": missing_opinion, "appeal_dockets": sum(ap_tot.values())}}))
     summary = {
         "source": "CourtListener bulk data: citation-map, opinions, dockets, opinion-clusters, courts (Free Law Project)", "snapshot": cc.SNAPSHOT,
         "terms": "CourtListener publishes these bulk files for download without an account; see https://www.courtlistener.com/terms/ and the bulk-data help page.",
-        "totals": {"citation_links_resolved": total, "same_court": same, "unresolved": unresolved, "appeal_dockets": sum(ap_tot.values())},
+        "totals": {"citation_map_rows": map_links, "citation_links_resolved": total, "same_court": same, "unresolved": unresolved, "opinion_not_in_opinion_table": missing_opinion, "appeal_dockets": sum(ap_tot.values())},
         "definitions": {"citation link": "one row of the citation map: a citing opinion and a cited opinion", "attribution": "each opinion is attributed to the court of its cluster's docket; links where either opinion has no matching docket court are counted as unresolved",
                         "median age": "median years between the cited opinion's cluster filing date and the citing opinion's, for links where both dates are plausible and the citing opinion is not older",
                         "appeal flow": "dockets whose appeal_from_id names a court, counted by the court that holds the docket"},

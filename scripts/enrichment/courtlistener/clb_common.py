@@ -79,6 +79,15 @@ POSITION_LABEL = {
 # Position types that are seats on a court (people-db position_type codes); others (clerk, commissioner, practice...) are excluded.
 JUDICIAL_POSITIONS = set(POSITION_LABEL) | {"asst-pres-jud", "sup-jud", "pres-jus", "ass-jud", "ad-law-jud", "spec-tr-jud", "jud-pt", "ad-pres-jus"}
 PARTY_LABEL = {"d": "Democratic", "r": "Republican"}  # other codes are shown as stored
+# Opinion type codes as stored in opinion.type (the numeric prefix orders them); labels written from the codes themselves.
+OPINION_TYPE_LABEL = {
+    "010combined": "Combined opinion", "015unamimous": "Unanimous opinion", "020lead": "Lead opinion", "025plurality": "Plurality opinion",
+    "030concurrence": "Concurrence", "035concurrenceinpart": "Concurrence in part", "040dissent": "Dissent", "050addendum": "Addendum",
+    "060remittitur": "Remittitur", "070rehearing": "Rehearing", "080onthemerits": "On the merits", "090onmotiontostrike": "On motion to strike",
+    "090onfurtherreconsideration": "On further reconsideration", "100trialcourt": "Trial court document",
+}
+# Types that carry a cluster's main holding: used to attribute a cluster's citations to its author.
+LEAD_OPINION_TYPES = {"010combined", "015unamimous", "020lead", "025plurality", "080onthemerits"}
 
 
 def source_flags(value: int | None) -> list[str]:

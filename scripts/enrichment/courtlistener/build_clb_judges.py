@@ -31,13 +31,8 @@ OUT = bc.OUT
 DATASET = "clb_judge_dockets"
 MIN_DOCKETS = 10
 MIN_OPINIONS = 10
-OPINION_TYPE_LABEL = {
-    "010combined": "Combined opinion", "015unamimous": "Unanimous opinion", "020lead": "Lead opinion", "025plurality": "Plurality opinion",
-    "030concurrence": "Concurrence", "035concurrenceinpart": "Concurrence in part", "040dissent": "Dissent", "050addendum": "Addendum",
-    "060remittitur": "Remittitur", "070rehearing": "Rehearing", "080onthemerits": "On the merits", "090onfurtherreconsideration": "On further reconsideration",
-    "100trialcourt": "Trial court document",
-}
-LEAD_TYPES = {"010combined", "015unamimous", "020lead", "025plurality", "080onthemerits"}
+OPINION_TYPE_LABEL = cc.OPINION_TYPE_LABEL
+LEAD_TYPES = cc.LEAD_OPINION_TYPES
 
 
 def has_table(con, name: str) -> bool:
