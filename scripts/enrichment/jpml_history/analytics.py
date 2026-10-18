@@ -107,7 +107,10 @@ def months_between_dates(a: str, b: str):
     return round((db - da).days / 30.4375, 1)
 
 
-def share_pct(part, whole, digits=2):
+PCT_STORE_DIGITS = 6  # stored percentages are effectively unrounded; pct() rounds them once for display
+
+
+def share_pct(part, whole, digits=PCT_STORE_DIGITS):
     if part is None or not whole:
         return None
     return round(100 * part / whole, digits)
@@ -143,7 +146,7 @@ def pct_change(points: dict, latest_month: str, k: int, field: str = "pending"):
     base = points[past][field]
     if not base:
         return None
-    return round(100 * (points[latest_month][field] - base) / base, 1)
+    return round(100 * (points[latest_month][field] - base) / base, PCT_STORE_DIGITS)
 
 
 def periods(series: list, key: str):
@@ -166,6 +169,11 @@ def peak(series: list, field: str = "pending"):
         if best is None or p[field] > best[field]:
             best = p
     return best
+
+
+def span(a, b, prefix=""):
+    """'FY2010' for a single period, 'FY2010–FY2012' for a range; months use no prefix ('2025-10', '2024-10–2026-10')."""
+    return f"{prefix}{a}" if a == b else f"{prefix}{a}–{prefix}{b}"
 
 
 def fmt(n):

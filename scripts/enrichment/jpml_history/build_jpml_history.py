@@ -42,6 +42,15 @@ TYPE_LABELS = {
     "terminated": "MDLs Terminated (recently terminated listing)",
 }
 PRODUCTS = "Products Liability"
+TERMS = (
+    "No terms of use or licence is published on the JPML pages these reports come from (pending-mdl-reports-archive, pending-mdls-0 and "
+    "statistics-info were read on 2026-10-18; the site footer carries navigation links only, and no privacy, copyright or terms page is linked). "
+    "robots.txt sets a 10-second crawl delay, which the acquisition honoured, and disallows only /includes/, /misc/, /modules/, /profiles/, /scripts/ "
+    "and /themes/ (none used). The reports are official publications of the Judicial "
+    "Panel on Multidistrict Litigation, a body of the U.S. federal judiciary; works prepared by federal employees in their official duties are not "
+    "subject to U.S. copyright (17 U.S.C. 105), which is our reading, not a statement on the source site. Every figure keeps its source report "
+    "URL; JPML does not endorse this compilation. No form, account or agreement was needed to download any file."
+)
 MASS_TORT_TYPES = {"Products Liability", "Common Disaster", "Air Disaster"}  # same definition as mdl_analytics
 GROWTH_LABELS = {
     "fast_growth": "Growing 25%+ in 12 months",
@@ -234,7 +243,7 @@ def build_mdl_history(months, spine, closings=None):
             "peak_pending": pk["pending"], "peak_month": pk["month"], "peak_report_date": pk["report_date"],
             "months_first_to_peak": an.month_diff(first_m, pk["month"]),
             "months_peak_to_last": an.month_diff(pk["month"], last_m),
-            "pending_vs_peak_pct": an.share_pct(last["pending"], pk["pending"], 1),
+            "pending_vs_peak_pct": an.share_pct(last["pending"], pk["pending"]),
             "age_months_at_last": an.months_between_dates(transferred, last["report_date"]),
             "age_months_at_peak": an.months_between_dates(transferred, pk["report_date"]),
             "change_1m": an.change(pts, last_m, 1), "change_3m": an.change(pts, last_m, 3), "change_6m": an.change(pts, last_m, 6), "change_12m": an.change(pts, last_m, 12),
@@ -362,14 +371,14 @@ def mdl_rows(hist, latest_month, months_order, fy=None):
             "listed_after_closing_date": f"In the latest report ({r['last_report']}) although a terminated listing prints closing date {r['date_closed']}",
             "closing_date_before_last_listing": f"Last listed {r['last_report']}; terminated listing prints closing date {r['date_closed']}, before that report",
         }[r["exit_status"]]
-        dist_hist = "; ".join(f"{d['value']} {d['from']}–{d['to']}" for d in r["districts"])
-        judge_hist = "; ".join(f"{d['value']} {d['from']}–{d['to']}" for d in r["judges"])
-        type_hist = "; ".join(f"{d['value'] or 'not listed'} {d['from']}–{d['to']}" for d in r["types"]) or "Not recorded"
+        dist_hist = "; ".join(f"{d['value']} {an.span(d['from'], d['to'])}" for d in r["districts"])
+        judge_hist = "; ".join(f"{d['value']} {an.span(d['from'], d['to'])}" for d in r["judges"])
+        type_hist = "; ".join(f"{d['value'] or 'not listed'} {an.span(d['from'], d['to'])}" for d in r["types"]) or "Not recorded"
         facts = [
             ["MDL number", str(r["mdl"])],
             ["Title as printed (latest report)", r["title"]],
             ["Status in the monthly reports", status],
-            ["Reports in series", f"{r['reports']} monthly reports, {r['first_report']} to {r['last_report']}"],
+            ["Reports in series", f"{r['reports']} monthly report{'s' if r['reports'] != 1 else ''}, {an.span(r['first_report'], r['last_report']).replace('–', ' to ')}"],
             ["Months absent between first and last appearance", ", ".join(r["absent_months"]) or "None"],
             ["Actions now pending (latest report)", an.fmt(r["pending"])],
             ["Total actions, historical (latest report)", an.fmt(r["total"])],
@@ -552,6 +561,8 @@ FORMULAS = {
     "months_first_to_peak": "calendar months from the first report listing the MDL to the first report holding its maximum pending count",
     "products_liability_share": "pending actions (or MDLs) typed 'Products Liability' in the same-date Docket Type Summary ÷ all pending; Not recorded unless every MDL in the pending report is typed",
     "age_months": "(report date − JPML 'Date Transferred') in days ÷ 30.4375",
+    "percentages": "stored as 100 × part ÷ whole to 6 decimals (effectively unrounded) and rounded once, to the digits shown, when displayed",
+    "growth": "same buckets as mdl_analytics on the unrounded 12-month change in pending: fast_growth >= 25%, growing >= 5%, stable above -5%, declining otherwise, insufficient_history when the month 12 earlier is not in the series",
     "district_carry": "a blank district cell repeats the row above (report suppresses repeated values); the District report of the same date is cross-checked",
 }
 
@@ -589,7 +600,7 @@ def write(res):
     inputs = [{"url": u, "path": f"private/acq/jpml_history/{res['manifest'][u]['path']}", "sha256": res["manifest"][u]["sha256"]} for u in used]
     order = sorted(res["months"])
     matched = sum(1 for c in res["courts"].values() if c.get("court_id"))
-    common = {"reports_used": len(order), "first_month": order[0], "latest_month": order[-1], "excluded_reports": len(res["excluded"]), "formulas": FORMULAS, "source": ARCHIVE, "current_page": CURRENT, "district_court_match": f"{matched}/{len(res['courts'])} JPML district codes matched exactly to court_spine"}
+    common = {"terms": TERMS, "reports_used": len(order), "first_month": order[0], "latest_month": order[-1], "excluded_reports": len(res["excluded"]), "formulas": FORMULAS, "source": ARCHIVE, "current_page": CURRENT, "district_court_match": f"{matched}/{len(res['courts'])} JPML district codes matched exactly to court_spine"}
     datasets = [
         (DS_MDLS, "JPML pending-MDL history by MDL (monthly reports)", res["mdl_rows"],
          cw.listing([("mdl", "MDL"), ("litigation", "Litigation"), ("type", "Type"), ("pending", "Pending"), ("peak", "Peak"), ("peak_month", "Peak month"), ("change_12m", "12-mo change"), ("first", "First report"), ("last", "Last report"), ("district", "District"), ("judge", "Judge")],

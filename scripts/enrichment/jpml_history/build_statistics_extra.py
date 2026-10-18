@@ -93,6 +93,41 @@ def district_pending(ed: dict) -> dict:
     return out
 
 
+COL_LABEL = {
+    "into_12m": "actions transferred in (Into Dist.) in the period", "out_12m": "actions transferred out in the period", "net_12m": "net change in the period",
+    "filed_12m": "actions filed in the transferee district in the period", "closed_12m": "actions closed or remanded in the period",
+    "into_cum": "cumulative actions transferred in", "out_cum": "cumulative actions transferred out", "net_cum": "cumulative net change",
+    "filed_cum": "cumulative actions filed in the transferee district", "closed_cum": "cumulative actions closed or remanded", "pending": "total pending in the transferee district",
+}
+
+
+def table_inconsistencies(ed: dict) -> list:
+    """Places where the report's own Circuit-and-District table disagrees with itself: a circuit row whose printed figure is not the
+    sum of the district rows under it. Both rows are kept as printed; the edition stays valid because its grand total adds up over circuits."""
+    out = []
+    for f in ed["district_check"].get("failed", []):
+        parts = f["check"].split(":")
+        if len(parts) != 3 or parts[0] != "districts_sum":
+            continue
+        circuit, col = parts[1], parts[2]
+        c = next((x for x in ed["district"]["circuits"] if x["label"] == circuit), None)
+        if c is None or col not in ps.COLS:
+            continue
+        j = ps.COLS.index(col)
+        rows = [{"label": d["label"], "printed": d["printed"][j]} for d in c["districts"]]
+        out.append({"fy": ed["link_year"], "circuit": circuit, "column": col, "column_label": COL_LABEL.get(col, col), "circuit_row_printed": c["printed"][j], "district_rows": rows,
+                    "district_rows_sum": f["parsed"], "single_district_key": ps.district_key(rows[0]["label"]) if len(rows) == 1 else None})
+    return out
+
+
+def inconsistency_text(i: dict) -> str:
+    one = len(i["district_rows"]) == 1
+    rows = ", ".join(f"{r['label']} '{r['printed']}'" for r in i["district_rows"][:4])
+    return (f"FY{i['fy']}, {i['column_label']}: the {i['circuit']} circuit row prints {i['circuit_row_printed']} while the district row{'' if one else 's'} under it "
+            f"print{'s' if one else ''} {rows} (district rows sum to {i['district_rows_sum']}). Each row is shown as printed in its own place (circuit lists use the circuit row, "
+            f"district series the district row); nothing is repaired.")
+
+
 def fy_stats(ed: dict, prev: dict | None) -> dict:
     g = ed["district"]["grand"]["values"]
     rec = {
@@ -110,7 +145,7 @@ def fy_stats(ed: dict, prev: dict | None) -> dict:
     # circuits
     circ = []
     for c in ed["district"]["circuits"]:
-        circ.append({"circuit": c["label"], "pending": c["values"][COL["pending"]], "transferred": c["values"][COL["into"]], "filed_in_transferee": c["values"][COL["filed"]], "closed": c["values"][COL["closed"]], "pending_share_pct": an.share_pct(c["values"][COL["pending"]], rec["pending"], 2)})
+        circ.append({"circuit": c["label"], "pending": c["values"][COL["pending"]], "transferred": c["values"][COL["into"]], "filed_in_transferee": c["values"][COL["filed"]], "closed": c["values"][COL["closed"]], "pending_share_pct": an.share_pct(c["values"][COL["pending"]], rec["pending"])})
     rec["circuits"] = circ
     dist = district_pending(ed)
     dvals = [v[2][COL["pending"]] for v in dist.values()]
@@ -139,6 +174,7 @@ def fy_stats(ed: dict, prev: dict | None) -> dict:
         if key in nar and nar[key]["value"] is not None:
             agree[key] = nar[key]["value"] == want
     rec["narrative_agrees_with_table"] = agree
+    rec["table_inconsistencies"] = table_inconsistencies(ed)
     return rec
 
 
@@ -180,14 +216,14 @@ def mdl_record_data(mdl: int, pts: list, editions: list, term_years: list) -> di
     for p in pts:
         prev = byfy.get(p["fy"] - 1)
         p["pending_change_vs_prev_fy"] = p["pending"] - prev["pending"] if prev else None
-        p["pending_pct_change_vs_prev_fy"] = an.share_pct(p["pending"] - prev["pending"], prev["pending"], 1) if prev and prev["pending"] else None
+        p["pending_pct_change_vs_prev_fy"] = an.share_pct(p["pending"] - prev["pending"], prev["pending"]) if prev and prev["pending"] else None
     in_last_edition = last["fy"] == okfys[-1]
     return {
         "mdl": mdl, "first_fy": first["fy"], "last_fy": last["fy"], "fiscal_years": len(pts), "in_latest_validated_edition": in_last_edition,
         "absent_validated_years": absent, "edition_excluded_years_inside_span": excluded_inside, "left_censored": first["fy"] == okfys[0],
         "pending": last["pending"], "transferred": last["transferred"], "filed_in_transferee": last["filed_in_transferee"], "closed": last["closed"], "remanded": last["remanded"],
         "peak_pending": pk["pending"], "peak_fy": pk["fy"], "fy_first_to_peak": pk["fy"] - first["fy"],
-        "pending_vs_peak_pct": an.share_pct(last["pending"], pk["pending"], 1),
+        "pending_vs_peak_pct": an.share_pct(last["pending"], pk["pending"]),
         "district": last["district"], "judge": last["judge"], "caption": last["caption"],
         "districts": _periods(pts, "district"),
         "judges": _periods(pts, "judge"),
@@ -274,6 +310,8 @@ def fy_rows(editions, stats_by_fy):
         for key, label in (("motions_filed_fy", "Motions to centralize filed in the fiscal year (as printed)"), ("motions_granted_fy", "Motions granted (as printed)"), ("motions_denied_fy", "Motions denied (as printed)"), ("pending_mdls_fy_end", "MDLs pending at Sept 30 (as printed)"), ("pending_transferee_districts_fy_end", "Transferee districts with pending MDLs (as printed)")):
             if key in s["narrative"] and s["narrative"][key]["value"] is not None:
                 facts.append([label, an.fmt(s["narrative"][key]["value"])])
+        for inc in s["table_inconsistencies"]:
+            facts.append(["Printed-table inconsistency (not repaired)", inconsistency_text(inc)])
         facts.append(["Source", f"JPML Statistical Analysis of Multidistrict Litigation, fiscal year {fy} (statistics-info, Fiscal Year): Cumulative Summary / Circuit-and-District table and Summary by Docket; retrieved {ed.get('retrieved_at', '2026-10-18')[:10]}"])
         cells = {
             "year": f"FY{fy}", "period": f"{s['period_months']} mo" if s["period_months"] else "—", "pending": an.fmt(s["pending"]),
@@ -283,6 +321,8 @@ def fy_rows(editions, stats_by_fy):
         badges = []
         if s["period_months"] and s["period_months"] != 12:
             badges.append(f"{s['period_months']}-month period")
+        if s["table_inconsistencies"]:
+            badges.append("Source table inconsistency")
         if not dk:
             badges.append("Docket table not validated")
         elif dk["attribution"] != "verified":
@@ -308,9 +348,13 @@ def district_rows(editions, stats_by_fy, spine):
     fy_url = {e["link_year"]: e["url"] for e in editions}
     series = defaultdict(dict)
     printed = defaultdict(set)
+    notes = defaultdict(list)  # district key -> source-table inconsistency sentences
     for ed in editions:
         if not ed["district_ok"]:
             continue
+        for inc in table_inconsistencies(ed):
+            if inc["single_district_key"]:
+                notes[inc["single_district_key"]].append(inconsistency_text(inc))
         total = ed["district"]["grand"]["values"][COL["pending"]]
         for key, (label, code, vals, circuit) in district_pending(ed).items():
             printed[key].add(label)
@@ -318,7 +362,7 @@ def district_rows(editions, stats_by_fy, spine):
                 "fy": ed["link_year"], "date": f"{ed['link_year']}-09-30", "label": label, "code": code, "circuit": circuit,
                 "pending": vals[COL["pending"]], "transferred": vals[COL["into"]], "transferred_out": vals[COL["out"]], "filed_in_transferee": vals[COL["filed"]], "closed": vals[COL["closed"]],
                 "cum_transferred": vals[COL["cum_into"]], "cum_filed_in_transferee": vals[COL["cum_filed"]], "cum_closed": vals[COL["cum_closed"]],
-                "pending_share_pct": an.share_pct(vals[COL["pending"]], total, 2), "source_edition_fy": ed["link_year"],
+                "pending_share_pct": an.share_pct(vals[COL["pending"]], total), "source_edition_fy": ed["link_year"],
             }
     latest_fy = max(stats_by_fy)
     rows, courts = [], {}
@@ -337,6 +381,10 @@ def district_rows(editions, stats_by_fy, spine):
         pk = an.peak(pts)
         label = an.court_label_from_key(key) or key
         links = ([{"url": f"/courts/{court['court_id']}", "label": f"{court['label']} (court page)"}] if court["court_id"] else []) + [{"url": fy_url[last["fy"]], "label": f"JPML Statistical Analysis FY{last['fy']} (PDF)"}, {"url": STAT_PAGE, "label": "JPML statistical information"}]
+        for p in pts:
+            hit = [t for t in notes.get(key, []) if t.startswith(f"FY{p['fy']},")]
+            if hit:
+                p["source_inconsistency"] = hit
         facts = [
             ["Transferee district (normalised from the printed name)", label],
             ["Printed in the reports as", "; ".join(sorted(printed[key]))],
@@ -346,6 +394,7 @@ def district_rows(editions, stats_by_fy, spine):
             ["Peak pending at a fiscal-year end", f"{an.fmt(pk['pending'])} (FY{pk['fy']})"],
             [f"Share of all pending MDL actions, FY{last['fy']} (computed)", an.pct(last["pending_share_pct"], 2)],
             [f"Cumulative since 1968, FY{last['fy']}: transferred in / filed in the district / closed", f"{an.fmt(last['cum_transferred'])} / {an.fmt(last['cum_filed_in_transferee'])} / {an.fmt(last['cum_closed'])}"],
+        ] + [["Printed-table inconsistency (not repaired)", t] for t in notes.get(key, [])] + [
             ["Source", "JPML Statistical Analysis of Multidistrict Litigation, Summary by Circuit and District (each fiscal-year edition)"],
         ]
         rows.append(cw.record(
@@ -375,14 +424,14 @@ def mdl_rows(editions, points, lookups, monthly, latest_ok_fy):
         links += [{"url": fy_url[last["fy"]], "label": f"JPML Statistical Analysis FY{last['fy']} (PDF)"}, {"url": STAT_PAGE, "label": "JPML statistical information"}]
         term = rec["termination_years_in_jpml_terminated_report"]
         status = "Listed in the latest validated edition" if rec["in_latest_validated_edition"] else f"Last listed in the FY{rec['last_fy']} edition"
-        dist_hist = "; ".join(f"{d['value']} FY{d['from']}–FY{d['to']}" for d in rec["districts"])
-        judge_hist = "; ".join(f"{d['value'] or 'Not printed'} FY{d['from']}–FY{d['to']}" for d in rec["judges"])
+        dist_hist = "; ".join(f"{d['value']} {an.span(d['from'], d['to'], 'FY')}" for d in rec["districts"])
+        judge_hist = "; ".join(f"{d['value'] or 'Not printed'} {an.span(d['from'], d['to'], 'FY')}" for d in rec["judges"])
         unverified = [p["fy"] for p in pts if p["attribution"] != "verified"]
         facts = [
             ["MDL number", str(mdl)],
             [f"Caption as printed (FY{rec['last_fy']}, abbreviated by the Panel)", rec["caption"]],
             ["Status in the fiscal-year tables", status],
-            ["Fiscal-year editions listing the MDL", f"{rec['fiscal_years']} (FY{rec['first_fy']} to FY{rec['last_fy']})" + (" — first edition validated is FY1992, earlier history not covered" if rec["left_censored"] else "")],
+            ["Fiscal-year editions listing the MDL", f"{rec['fiscal_years']} ({an.span(rec['first_fy'], rec['last_fy'], 'FY').replace('–', ' to ')})" + (" — first edition validated is FY1992, earlier history not covered" if rec["left_censored"] else "")],
             ["Editions inside that span excluded (failed printed-total checks) or not listing it", ", ".join(f"FY{y}" for y in sorted(set(rec["edition_excluded_years_inside_span"]) | set(rec["absent_validated_years"]))) or "None"],
             [f"Actions pending at Sept 30, FY{rec['last_fy']}", an.fmt(rec["pending"])],
             ["Total transferred / total filed in the transferee court / closed / remanded (cumulative, as printed)", f"{an.fmt(last['transferred'])} / {an.fmt(last['filed_in_transferee'])} / {an.fmt(last['closed'])} / {an.fmt(last['remanded'])}"],
@@ -404,10 +453,10 @@ def mdl_rows(editions, points, lookups, monthly, latest_ok_fy):
                     court_ids.append(c["court_id"])
                     links.insert(1, {"url": f"/courts/{c['court_id']}", "label": f"{c['label']} (transferee court)"})
         rec.pop("_courts", None)
-        cells = {"year": f"MDL {mdl}", "period": f"FY{rec['first_fy']}–FY{rec['last_fy']}", "pending": an.fmt(rec["pending"]), "mdls": "—", "transferred": an.fmt(last["transferred"]), "direct": an.fmt(last["filed_in_transferee"]), "closed": an.fmt(last["closed"]), "top10": "—", "hhi_district": "—"}
+        cells = {"year": f"MDL {mdl}", "period": an.span(rec["first_fy"], rec["last_fy"], "FY"), "pending": an.fmt(rec["pending"]), "mdls": "—", "transferred": an.fmt(last["transferred"]), "direct": an.fmt(last["filed_in_transferee"]), "closed": an.fmt(last["closed"]), "top10": "—", "hhi_district": "—"}
         rows.append(cw.record(
             DS, f"mdl:{mdl}", rec["caption"], source_url=fy_url[last["fy"]],
-            subtitle=f"MDL {mdl} · {rec['district']} · FY{rec['first_fy']}–FY{rec['last_fy']} · peak {an.fmt(rec['peak_pending'])} pending (FY{rec['peak_fy']})",
+            subtitle=f"MDL {mdl} · {rec['district']} · {an.span(rec['first_fy'], rec['last_fy'], 'FY')} · peak {an.fmt(rec['peak_pending'])} pending (FY{rec['peak_fy']})",
             cells=cells, facts=facts, links=links, text=f"MDL {mdl} {rec['caption']} {rec['judge'] or ''} {rec['district']}",
             filters={"_listing": ["no"], "kind": ["mdl"], "court": court_ids},
             extra={"kind": "mdl", "fy_history": {k: v for k, v in rec.items() if k != "series"} | {"series": pts}, "lens_content_known": known},
@@ -432,6 +481,7 @@ def overview_row(editions, stats_by_fy, recs, lookups, courts, monthly, excluded
         ["Fiscal-year editions read", f"{len(editions)} (FY{editions[0]['link_year']} to FY{editions[-1]['link_year']})"],
         ["Circuit-and-District tables validated", f"{sum(1 for e in editions if e['district_ok'])} of {len(editions)}"],
         ["Summary-by-Docket tables validated (numbers)", f"{sum(1 for e in editions if e['docket_ok'])} of {len(editions)}"],
+        ["Printed-table inconsistencies kept as printed", "; ".join(inconsistency_text(i) for s in stats_by_fy.values() for i in s["table_inconsistencies"]) or "None"],
         ["Editions excluded from the docket table", ", ".join(f"FY{x['fy']}" for x in excluded) or "None"],
         ["MDL numbers in the docket tables", an.fmt(len(recs))],
         ["Top 10 MDLs' share of pending actions, first → last validated docket edition", f"{an.pct(next(s['top10_share_pct'] for s in series if s['top10_share_pct'] is not None), 1)} → {an.pct(next(s['top10_share_pct'] for s in reversed(series) if s['top10_share_pct'] is not None), 1)}"],
@@ -533,6 +583,8 @@ FORMULAS = {
     "hhi": "sum over units of (100 × unit pending ÷ total pending)^2, 0–10,000 scale; units are transferee districts (hhi_district_pending) or docket entries (hhi_mdl_pending)",
     "top_n_share_pct": "100 × (sum of the n largest entry-level pending counts) ÷ (sum over all docket entries)",
     "docket_balance": "per entry: total transferred + total filed in the transferee court − closed − remanded = pending (labelled adjustment lines under an entry included); every entry of every validated edition satisfies it",
+    "rank_by_pending": "ordinal rank of a district among all districts of the same fiscal year by pending actions, descending; ties are broken by district id ascending (so ranks are 1..n without repeats); not set when pending is 0",
+    "percentages": "stored as 100 × part ÷ whole to 6 decimals (effectively unrounded) and rounded once, to the digits shown, when displayed",
     "pending_vs_peak_pct": "pending at the last edition listing the MDL ÷ maximum pending at any validated fiscal-year end × 100",
     "fy_first_to_peak": "fiscal years from the first validated edition listing the MDL to the first with its maximum pending count",
 }
@@ -572,7 +624,7 @@ def write(res):
     eds = res["editions"]
     inputs = [{"url": e["url"], "path": f"private/acq/jpml_history/{e['path']}", "sha256": e["sha256"]} for e in eds]
     summary = {
-        "editions": len(eds), "first_fy": eds[0]["link_year"], "last_fy": eds[-1]["link_year"], "mdl_numbers": len(res["recs"]),
+        "terms": bh.TERMS, "editions": len(eds), "first_fy": eds[0]["link_year"], "last_fy": eds[-1]["link_year"], "mdl_numbers": len(res["recs"]),
         "docket_editions_validated": sum(1 for e in eds if e["docket_ok"]), "district_editions_validated": sum(1 for e in eds if e["district_ok"]),
         "excluded": res["excluded"], "formulas": FORMULAS, "source": STAT_PAGE,
         "not_in": "mdl_intel_jpml_stats holds the calendar-year summary of Panel activity (motions, tag-alongs, remands, pending MDLs by type); this dataset holds the fiscal-year cumulative summary, the transferee-district table and the per-MDL Summary by Docket",

@@ -19,7 +19,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 ACQ = ROOT / "private" / "acq" / "uscourts_caseload"
 MANIFEST = ACQ / "_manifest.jsonl"
-UA = "legal-source-compass research (Seeger Weiss internal research)"
+UA = "legal-source-compass research (contact: notreelai@gmail.com)"  # the owner's approved contact (CONTRACT.md); fetches made before 2026-10-18 15:20 UTC used an earlier UA without a contact address
 MIN_INTERVAL = 0.6  # seconds between requests to one host (< 2 req/s)
 _lock = threading.Lock()
 _last = {}

@@ -7,7 +7,7 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 
-UA = "legal-source-compass research (Seeger Weiss internal research)"
+UA = "legal-source-compass research (contact: notreelai@gmail.com)"
 _lock = threading.Lock()
 _last = [0.0]
 MIN_INTERVAL = 1.0

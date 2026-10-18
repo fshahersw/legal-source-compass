@@ -29,7 +29,7 @@ ROOT = Path(__file__).resolve().parents[3]
 OUT = ROOT / "private" / "acq" / "uscourts_cjra"
 MANIFEST = OUT / "_manifest.jsonl"
 BASE = "https://www.uscourts.gov"
-UA = "legal-source-compass research (Seeger Weiss internal research)"
+UA = "legal-source-compass research (contact: notreelai@gmail.com)"  # the owner's approved contact (CONTRACT.md); fetches made before 2026-10-18 15:20 UTC used an earlier UA without a contact address
 LISTING = BASE + "/statistics-reports/caseload-statistics-data-tables?pn=530&page={page}"
 REPORT_INDEX = BASE + "/data-news/reports/statistical-reports/civil-justice-reform-act-report"
 MONTHS = {"march": "03-31", "september": "09-30"}

@@ -19,6 +19,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import courts  # noqa: E402
+import jsonio  # noqa: E402
 import layout  # noqa: E402
 import measures  # noqa: E402
 import profiles  # noqa: E402
@@ -40,10 +41,38 @@ def has_text(path):
     return len(re.sub(rb"\s+", b"", out)) > 200
 
 
+EXTRACTOR_VERSION = "2026-10-18.7"  # bump when layout/profiles/measures/extract change so that parsed files are rebuilt
+OCR_BEFORE = "2004-06-30"  # editions before this date are scans whose OCR text layer is unreliable (see ocr_assessment.py)
+
+
+def raw_row(row, years):
+    """The row exactly as read from the page: label, vertical position, printed tokens per period column, standing tokens."""
+    return {"label": row["label"], "y": row["y"], "tokens": {y: row["values"][y] for y in years if y in row["values"]},
+            "standing": dict(row.get("standing", {})), "stray": list(row.get("stray", [])), "stray_out": list(row.get("stray_out", []))}
+
+
+def ocr_period_keys(page, mmdd):
+    """Scanned editions print one period end for every column; keys become YYYY-<edition month-day> (documented fallback)."""
+    mapping = {}
+    for panel_keys in page["years"]:
+        for k in panel_keys:
+            mapping[k] = f"{k}-{mmdd}"
+    page["years"] = [[mapping[k] for k in ks] for ks in page["years"]]
+    for panel in page["panels"]:
+        for row in panel:
+            row["values"] = {mapping.get(k, k): v for k, v in row["values"].items()}
+    page["period_errors"] = []
+
+
 def values_of(row, years):
+    """Parsed numbers per period column. A row with extra tokens inside the period area that could not be placed one per
+    column is ambiguous (for example two overlapping figures printed in one cell): none of its values is used (flag 'ambiguous')."""
     out, flags = {}, {}
+    ambiguous = bool(row.get("stray"))
     for y in years:
         num, flag = measures.parse_value(row["values"].get(y))
+        if ambiguous and row["values"].get(y) is not None:
+            num, flag = None, "ambiguous"
         out[y] = num
         if flag and flag != "absent":
             flags[y] = flag
@@ -137,18 +166,23 @@ def merge_earlier_pct(entry):
         standing["pct_change_filings_earlier_years"] = standing.pop("pct_change_filings")  # 2011: line 2 = earlier years
 
 
-def parse_district(path, spine):
+def parse_district(path, spine, ocr_mmdd=None):
     result = {"pages": [], "excluded": []}
     for number, page, cls in read_pages(path, "district", _check_district):
         if page is None or not page.get("panels"):
             result["excluded"].append({"page": number, "reason": "no year header (not a profile page)"})
+            continue
+        if page.get("period_errors") and ocr_mmdd:
+            ocr_period_keys(page, ocr_mmdd)
+        if page.get("period_errors") or len(set(page["years"][0])) != len(page["years"][0]):
+            result["excluded"].append({"page": page["page"], "name": page["name"].strip(), "reason": "period ends of the columns could not be read: " + "; ".join(page.get("period_errors") or ["duplicate column keys"])})
             continue
         years = page["years"][0]
         rows = page["panels"][0]
         assigned, unmatched, missing = cls
         name = page["name"].strip()
         national = not name or name in ("ALL DISTRICT COURTS", "UNITED STATES", "NATIONAL TOTALS", "NATIONAL")
-        entry = {"page": page["page"], "name": name or "ALL DISTRICT COURTS", "years": years}
+        entry = {"page": page["page"], "name": name or "ALL DISTRICT COURTS", "years": years, "labels": page["labels"][0], "col_x": page["col_x"][0]}
         if national:
             entry["court_id"] = "national"
             entry["match"] = "national page"
@@ -159,8 +193,9 @@ def parse_district(path, spine):
             result["excluded"].append({"page": page["page"], "name": entry["name"], "reason": "rows did not match the expected order", "missing": missing,
                                        "labels": [r["label"] for r in rows]})
             continue
-        entry["values"], entry["flags"], entry["standing"], entry["stray"] = {}, {}, {}, {}
+        entry["values"], entry["flags"], entry["standing"], entry["stray"], entry["raw"] = {}, {}, {}, {}, {}
         for key, row in assigned.items():
+            entry["raw"][key] = raw_row(row, years)
             entry["values"][key], fl = values_of(row, years)
             if fl:
                 entry["flags"][key] = fl
@@ -176,13 +211,45 @@ def parse_district(path, spine):
     return result
 
 
-def parse_circuit(path, spine):
+def restack_judgeships(assigned, unmatched, years):
+    """March 2026 prints "Number of Judgeships/ Number of Panels" as a two-line cell ("11 /" above "3.7") for some courts: the
+    judgeships label line carries no values, the values of the first line fall on the panels label line and the second line
+    (the panels) has no label at all. The three lines are re-assigned (judgeships := the panels-labelled row, panels := the
+    unlabelled row under it) only when, in every printed period column, judgeships / 3 equals the panels value to 0.2;
+    otherwise nothing is changed. Returns True when the re-assignment was made."""
+    jr, pr = assigned.get("judgeships"), assigned.get("panels")
+    if not jr or jr["values"] or not pr or not pr["values"]:
+        return False
+    below = [r for r in unmatched if not r["label"].strip() and r["values"] and 0 < r["y"] - pr["y"] <= 12]
+    if len(below) != 1:
+        return False
+    nxt = below[0]
+    cols = [y for y in years if y in pr["values"] or y in nxt["values"]]
+    if not cols:
+        return False
+    for y in cols:
+        a, _ = measures.parse_value(pr["values"].get(y))
+        b, _ = measures.parse_value(nxt["values"].get(y))
+        if a is None or b is None or abs(a / 3 - b) > 0.2:
+            return False
+    assigned["judgeships"] = dict(pr, label=pr["label"] + " (judgeships, first line of a two-line cell)", restacked=True)
+    assigned["panels"] = dict(nxt, label="(panels, second line of the two-line judgeships/panels cell)", restacked=True)
+    unmatched.remove(nxt)
+    return True
+
+
+def parse_circuit(path, spine, ocr_mmdd=None):
     result = {"pages": [], "excluded": []}
     for number, page, cls in read_pages(path, "circuit", _check_circuit):
         if page is None or len(page.get("panels", [])) not in (1, 2) or cls is None:
             result["excluded"].append({"page": number, "reason": "no year header (not a profile page)"})
             continue
         mode, left_cls, right_cls = cls
+        if page.get("period_errors") and ocr_mmdd:
+            ocr_period_keys(page, ocr_mmdd)
+        if page.get("period_errors") or any(len(set(ks)) != len(ks) for ks in page["years"]):
+            result["excluded"].append({"page": page["page"], "name": page["name"].strip(), "reason": "period ends of the columns could not be read: " + "; ".join(page.get("period_errors") or ["duplicate column keys"])})
+            continue
         if mode == "both":
             ly, ry = page["years"]
             left, right = page["panels"]
@@ -202,7 +269,7 @@ def parse_circuit(path, spine):
                 a_left, u_left, m_left, a_right, u_right, m_right = {}, [], [], right_cls[0], right_cls[1], right_cls[2]
         name = page["name"].strip()
         national = not name or name in ("ALL CIRCUITS", "UNITED STATES", "NATIONAL", "NATIONAL TOTALS")
-        entry = {"page": page["page"], "name": name or "ALL CIRCUITS", "years": ly, "part": part}
+        entry = {"page": page["page"], "name": name or "ALL CIRCUITS", "years": ly, "part": part, "labels": page["labels"][0], "col_x": page["col_x"]}
         if ly != ry:
             result["excluded"].append({"page": page["page"], "name": entry["name"], "reason": "left and right panel years differ"})
             continue
@@ -215,8 +282,12 @@ def parse_circuit(path, spine):
             result["excluded"].append({"page": page["page"], "name": entry["name"], "reason": "rows did not match the expected order", "missing": m_left + m_right,
                                        "labels_left": [r["label"] for r in left], "labels_right": [r["label"] for r in right]})
             continue
-        entry["values"], entry["flags"], entry["standing"], entry["stray"] = {}, {}, {}, {}
+        entry["values"], entry["flags"], entry["standing"], entry["stray"], entry["raw"] = {}, {}, {}, {}, {}
+        restacked = restack_judgeships(a_right, u_right, ry)
         for key, row in list(a_left.items()) + list(a_right.items()):
+            entry["raw"][key] = raw_row(row, ly)
+            if row.get("restacked"):
+                entry["raw"][key]["restacked"] = True
             if key == "judgeships" and any("/" in tok for tok in row["values"].values()):
                 # 2004-2009 editions print "12/4.0" = judgeships/panels in one cell
                 judges, panels = {}, {}
@@ -244,8 +315,19 @@ def parse_circuit(path, spine):
         merge_earlier_pct(entry)
         entry["tol"] = page["tol"]
         entry["unmatched"] = [r["label"] for r in u_left + u_right]
+        if restacked:
+            entry["restacked_judgeships"] = True
         result["pages"].append(entry)
     return result
+
+
+NOTE_LINE = re.compile(r"^\s*(NOTE\b|[¹²³*])", re.I)
+
+
+def page1_notes(path):
+    """Footnote and NOTE lines printed on the first (national) page of the file, verbatim (whitespace collapsed)."""
+    out = subprocess.run(["pdftotext", "-layout", "-f", "1", "-l", "1", str(path), "-"], capture_output=True).stdout.decode("utf-8", "replace")
+    return [re.sub(r"\s+", " ", ln).strip() for ln in out.splitlines() if NOTE_LINE.match(ln) and len(ln.strip()) > 12]
 
 
 def main(selected):
@@ -253,7 +335,7 @@ def main(selected):
     spine = load_spine()
     OUT.mkdir(parents=True, exist_ok=True)
     index_path = OUT / "_index.json"
-    index = json.loads(index_path.read_text()) if index_path.exists() and selected else {}
+    index = json.loads(index_path.read_text()) if index_path.exists() else {}
     done = set()
     for ed in editions:
         if (selected and ed["edition"] not in selected) or ed["edition"] in done:
@@ -265,20 +347,29 @@ def main(selected):
             if not f:
                 index[key] = {"status": "no_file"}
                 continue
+            # resumable: a file already parsed from the same PDF (same sha256) is kept unless the edition was named
+            prior = index.get(key)
+            if not selected and prior and prior.get("status") in ("parsed", "image_only") and prior.get("sha256") == f["sha256"] \
+                    and prior.get("extractor") == EXTRACTOR_VERSION and (prior["status"] == "image_only" or (OUT / f"{key}.json.gz").exists()):
+                continue
             path = ROOT / f["path"]
             if not has_text(path):
-                index[key] = {"status": "image_only", "file": f["path"], "url": f["url"], "sha256": f["sha256"]}
+                index[key] = {"status": "image_only", "file": f["path"], "url": f["url"], "sha256": f["sha256"], "extractor": EXTRACTOR_VERSION}
+                jsonio.dump(index_path, index, indent=1)
                 continue
-            parsed = parse_district(path, spine) if kind == "district" else parse_circuit(path, spine)
+            ocr = ed["period_end"] < OCR_BEFORE
+            mmdd = ed["period_end"][5:] if ocr else None
+            parsed = parse_district(path, spine, mmdd) if kind == "district" else parse_circuit(path, spine, mmdd)
             parsed.update({"edition": ed["edition"], "period_end": ed["period_end"], "kind": kind, "file": f["path"], "url": f["url"],
-                           "sha256": f["sha256"], "page_url": ed["page_url"]})
-            (OUT / f"{key}.json").write_text(json.dumps(parsed, sort_keys=True))
+                           "sha256": f["sha256"], "page_url": ed["page_url"], "ocr_text_layer": ocr, "page1_notes": page1_notes(path)})
+            jsonio.dump(OUT / f"{key}.json.gz", parsed)
             years = sorted({y for p in parsed["pages"] for y in p["years"]})
             index[key] = {"status": "parsed", "pages": len(parsed["pages"]), "excluded": len(parsed["excluded"]), "years": years,
                           "file": f["path"], "url": f["url"], "sha256": f["sha256"],
-                          "unmapped": [p["name"] for p in parsed["pages"] if not p.get("court_id")]}
-            print(json.dumps({key: {k: v for k, v in index[key].items() if k in ("status", "pages", "excluded", "unmapped")}}))
-    index_path.write_text(json.dumps(index, indent=1, sort_keys=True))
+                          "unmapped": [p["name"] for p in parsed["pages"] if not p.get("court_id")], "extractor": EXTRACTOR_VERSION}
+            jsonio.dump(index_path, index, indent=1)
+            print(json.dumps({key: {k: v for k, v in index[key].items() if k in ("status", "pages", "excluded", "unmapped")}}), flush=True)
+    jsonio.dump(index_path, index, indent=1)
 
 
 def check_file(path, kind):

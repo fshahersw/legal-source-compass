@@ -392,7 +392,12 @@ def parse_docket_table(text: str) -> dict:
         n = RE_END5.search(rest)
         if n:
             vals = n.group(1).split()
-            if cur is not None and cur["values"] is None:
+            if cur is not None and cur["values"] is None and cur["line"] == i + 1 and all(cell(x) == 0 for x in vals) and rest[: n.start(1)].rstrip().endswith(";"):
+                # FY2006 (MDLs 1715, 1735, 1745): the first line of a wrapped entry prints "0 0 0 0 0" after a transferor list that
+                # continues (ends with ';'); the entry's real figures are on its last wrapped line. The placeholder zeros are
+                # recorded, not used; if no later line closes the entry it stays incomplete and the edition fails.
+                cur["placeholder_first_line"] = vals
+            elif cur is not None and cur["values"] is None:
                 cur["values"] = [cell(x) for x in vals]
                 cur["printed"] = vals
                 cur["end_line"] = i + 1

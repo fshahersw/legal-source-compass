@@ -313,15 +313,15 @@ def docket_text(printed_count=4, totals=(574, 4086, 4530, 0, 130), dc_count=2, w
     return "\n".join(lines) + "\n"
 
 
-def district_text(massachusetts_pending=16):
+def district_text(massachusetts_pending=16, dc_closed=(1, 1), grand_closed=6):
     row = lambda label, vals: f"{label:<34}" + "   ".join(f"{v:,}" if isinstance(v, int) and v >= 1000 else str(v) for v in vals)
     lines = [
         "   SUMMARY OF MULTIDISTRICT LITIGATION BY CIRCUIT AND DISTRICT UNDER 28 U.S.C. § 1407",
         "                       12 Months Ending September 30, 2010                       Cumulative 1968-2010",
         "   Circuit and District    Index   Into Dist.  Out of Dist.  Net Change  Filed  Terminated  Into Dist.  Out of Dist.  Net Change  Filed  Terminated  Pending", "",
-        row("  GRAND TOTALS", [10, 10, "-", 4, 6, 100, 100, "-", 40, 70, 30]), "",
-        row("DISTRICT OF COLUMBIA CIRCUIT", [2, 3, -1, 0, 1, 20, 5, 15, 1, 10, 4]),
-        row("District of Columbia    090", [2, 3, -1, 0, 1, 20, 5, 15, 1, 10, 4]), "",
+        row("  GRAND TOTALS", [10, 10, "-", 4, grand_closed, 100, 100, "-", 40, 70, 30]), "",
+        row("DISTRICT OF COLUMBIA CIRCUIT", [2, 3, -1, 0, dc_closed[0] or "-", 20, 5, 15, 1, 10, 4]),
+        row("District of Columbia    090", [2, 3, -1, 0, dc_closed[1] or "-", 20, 5, 15, 1, 10, 4]), "",
         row("FIRST CIRCUIT", [8, 7, 1, 4, 5, 80, 95, -15, 39, 60, 26]),
         row("Maine*   100", [3, 2, 1, 1, 2, 30, 35, -5, 9, 20, 10]),
         row("Massachusetts   101", [5, 5, 0, 3, 3, 50, 60, -10, 30, 40, massachusetts_pending]), "",
@@ -466,7 +466,8 @@ class FiscalYearBuilder(unittest.TestCase):
         self.assertIsNone(s["roll_forward_residual"])  # no previous edition
         d = s["docket"]
         self.assertEqual((d["entries"], d["mdls_with_pending_actions"], d["pending_total"]), (4, 3, 130))
-        self.assertEqual(d["top1_share_pct"], round(100 * 105 / 130, 2))
+        self.assertEqual(d["top1_share_pct"], round(100 * 105 / 130, 6))  # stored unrounded (6 decimals); displays round it once
+        self.assertEqual(an.pct(d["top1_share_pct"], 1), "80.8%")
         self.assertEqual(d["top10_share_pct"], 100.0)
         self.assertEqual(d["hhi_mdl_pending"], round(sum((100 * v / 130) ** 2 for v in (0, 105, 17, 8)), 1))
 
@@ -585,6 +586,92 @@ class MonthlyDatasetFields(unittest.TestCase):
         curve = bh.lifetime_curve(r, fy)
         self.assertEqual([(p["date"], p["source"]) for p in curve], [("2024-09-30", "fiscal_year_statistics"), ("2025-09-30", "fiscal_year_statistics"), ("2025-10-01", "monthly_report"), ("2025-11-03", "monthly_report")])
         self.assertEqual([p["source"] for p in bh.lifetime_curve(r, None)], ["monthly_report", "monthly_report"])  # MDL not in a validated edition: Not recorded, no invented history
+
+
+def placeholder_docket_text():
+    """FY2006 pattern: the first line of a wrapped entry prints '0 0 0 0 0' after a transferor list that continues (ends ';');
+    the real figures are on the last wrapped line."""
+    zeros = "            0             0            0         0           0"
+    lines = ["   SUMMARY BY DOCKET OF", "MULTIDISTRICT LITIGATION", *PAGE_HEADER, "",
+             "   TOTALS" + " " * 60 + _nums([89, 80, 3, 0, 166]), "",
+             "   101             MASSACHUSETTS                                          1 Litigation",
+             dline(1715, "Ameriquest Mortgage Co. Mortgage", "Aspen, M.E.", "5-CAC; 1-CAN; 17-CT; 4-FLM;") + zeros,
+             cont("Lending Practices", col=17), cont("1-FLS; 1-GAM; 2-GAN;"),
+             cont("15-RI; 1-TNE; 2-TNM; 2-WIE", nums=[89, 80, 3, 0, 166])]
+    lines += [""] * 4 + ["     BUT NOT TRANSFERRED", "Summary of Litigations Docketed but Not Transferred"]
+    return "\n".join(lines) + "\n"
+
+
+class PlaceholderZerosAndDisplays(unittest.TestCase):
+    def test_first_line_zero_placeholder_takes_the_real_figures_from_the_last_wrapped_line(self):
+        k = ps.parse_docket_table(placeholder_docket_text())
+        r = k["rows"][0]
+        self.assertEqual(r["values"], [89, 80, 3, 0, 166])
+        self.assertEqual(r["placeholder_first_line"], ["0", "0", "0", "0", "0"])
+        self.assertEqual(r["adjustments"], [])  # not a "Reassigned..." adjustment
+        self.assertEqual(r["caption"], "Ameriquest Mortgage Co. Mortgage Lending Practices")
+        v = ps.validate_docket_table(k)
+        self.assertTrue(v["valid"], v["failed"])
+
+    def test_zero_first_line_without_a_later_closing_line_stays_incomplete(self):
+        text = placeholder_docket_text().replace(cont("15-RI; 1-TNE; 2-TNM; 2-WIE", nums=[89, 80, 3, 0, 166]), cont("15-RI; 1-TNE; 2-TNM; 2-WIE"))
+        k = ps.parse_docket_table(text)
+        self.assertEqual(len(k["incomplete"]), 1)  # the zeros are never used as the entry's figures
+        self.assertFalse(ps.validate_docket_table(k)["valid"])
+
+    def test_a_genuine_single_line_all_zero_entry_is_kept(self):
+        text = docket_text().replace(dline(3078, "Generac Solar Power Systems", "", "1-CAE; 2-CAN; 1-FLM", [5, 4, 1, 0, 8]), dline(3078, "Generac Solar Power Systems", "", "1-CAE; 2-CAN; 1-FLM", [0, 0, 0, 0, 0]))
+        r = {x["mdl"]: x for x in ps.parse_docket_table(text)["rows"]}[3078]
+        self.assertEqual(r["values"], [0, 0, 0, 0, 0])  # ends with leader dots, not ';': no continuation expected
+        self.assertNotIn("placeholder_first_line", r)
+
+    def test_percentages_are_stored_unrounded_and_rounded_once_for_display(self):
+        self.assertEqual(an.share_pct(971465, 1000000), 97.1465)
+        self.assertEqual(an.pct(97.1465, 1), "97.1%")  # a 2-decimal store would have shown 97.2%
+        self.assertEqual(an.pct(79.3527, 1), "79.4%")
+        self.assertEqual(an.pct(77.9463, 1), "77.9%")
+        self.assertEqual(an.pct_change({"2025-01": {"pending": 100}, "2026-01": {"pending": 104.96}}, "2026-01", 12), 4.96)
+        self.assertEqual(bh.growth_bucket(an.pct_change({"2025-01": {"pending": 10000}, "2026-01": {"pending": 10496}}, "2026-01", 12)), "stable")  # 4.96% is not 5%
+
+    def test_spans_show_a_single_period_once(self):
+        self.assertEqual(an.span(2010, 2010, "FY"), "FY2010")
+        self.assertEqual(an.span(2010, 2012, "FY"), "FY2010–FY2012")
+        self.assertEqual(an.span("2026-10", "2026-10"), "2026-10")
+        self.assertEqual(an.span("2024-10", "2026-10"), "2024-10–2026-10")
+        ed = edition(2010, district_text() + docket_text())
+        pts = bse.mdl_points([ed])
+        recs = {1869: bse.mdl_record_data(1869, pts[1869], [ed], [])}
+        lookups = {"terminated": {}, "known": {1869}, "spine": SPINE}
+        rows, _ = bse.mdl_rows([ed], {1869: pts[1869]}, lookups, None, 2010)
+        self.assertEqual(rows[0]["item"]["cells"]["period"], "FY2010")
+        self.assertIn("· FY2010 ·", rows[0]["item"]["subtitle"])
+        facts = dict(map(tuple, rows[0]["detail"]["facts"]))
+        self.assertEqual(facts["Fiscal-year editions listing the MDL"].split(" (")[1][:6], "FY2010")
+        self.assertTrue(facts["Transferee district as printed, by period"].endswith("FY2010"))
+
+    def test_source_table_inconsistency_is_disclosed_in_page_text_and_each_row_stays_as_printed(self):
+        ed = edition(2023, district_text(dc_closed=(5, 0), grand_closed=10) + docket_text())
+        self.assertTrue(ed["district_ok"])  # the grand total still adds up over circuits
+        inc = bse.table_inconsistencies(ed)
+        self.assertEqual([(i["circuit"], i["column"], i["circuit_row_printed"], i["district_rows_sum"]) for i in inc], [("DISTRICT OF COLUMBIA CIRCUIT", "closed_12m", "5", 0)])
+        self.assertEqual(inc[0]["district_rows"], [{"label": "District of Columbia", "printed": "-"}])
+        self.assertIn("nothing is repaired", bse.inconsistency_text(inc[0]))
+        s23 = bse.fy_stats(ed, None)
+        self.assertEqual(next(c["closed"] for c in s23["circuits"] if c["circuit"].startswith("DISTRICT OF COLUMBIA")), 5)  # circuit list: the circuit row
+        facts = dict(map(tuple, bse.fy_rows([ed], {2023: s23})[0]["detail"]["facts"]))
+        self.assertIn("district rows sum to 0", facts["Printed-table inconsistency (not repaired)"])
+        rows, _ = bse.district_rows([ed], {2023: s23}, SPINE_FY)
+        dc = next(r for r in rows if r["id"] == "district:district-of-columbia")
+        self.assertEqual(dc["item"]["series"][0]["closed"], 0)  # district series: the district row ('-' = 0)
+        self.assertTrue(dc["item"]["series"][0]["source_inconsistency"])
+        self.assertIn("Printed-table inconsistency (not repaired)", [f[0] for f in dc["detail"]["facts"]])
+        other = next(r for r in rows if r["id"] == "district:maine")
+        self.assertNotIn("Printed-table inconsistency (not repaired)", [f[0] for f in other["detail"]["facts"]])
+
+    def test_terms_are_stated_on_the_dataset_summaries(self):
+        self.assertIn("No terms of use or licence is published", bh.TERMS)
+        self.assertIn("17 U.S.C. 105", bh.TERMS)
+        self.assertIn("No form, account or agreement", bh.TERMS)
 
 
 class MdlRowKeysAndLinks(unittest.TestCase):

@@ -130,14 +130,17 @@ def clean_label(words):
     return " ".join(toks)
 
 
-def read_panel(lines, start, years, x_left, x_right, standing_cols=(), right_limit=None):
+def read_panel(lines, start, years, x_left, x_right, standing_cols=(), right_limit=None, keys=None):
     """Rows of one table panel.
 
     years: year header words of this panel (left to right). Labels are words with x0 in [x_left, first column
     left edge - 4); values are value tokens between the first column and right_limit. standing_cols is a list of
-    (name, x_centre) for numeric standing columns right of the last period column.
+    (name, x_centre) for numeric standing columns right of the last period column. keys names each column (default:
+    the printed year); editions that print two columns with the same year (September 2010 and December 2010) pass
+    period-end dates so that no column is overwritten.
     """
-    centres = [((w[0] + w[2]) / 2, w[4]) for w in years]
+    keys = keys or [w[4] for w in years]
+    centres = [((w[0] + w[2]) / 2, k) for w, k in zip(years, keys)]
     spacing = (centres[-1][0] - centres[0][0]) / max(1, len(centres) - 1)
     first_left = min(w[0] for w in years) - 0.45 * spacing
     last_right = centres[-1][0] + 0.55 * spacing
@@ -155,7 +158,7 @@ def read_panel(lines, start, years, x_left, x_right, standing_cols=(), right_lim
         label.extend(label_words)
         if not value_words:
             continue
-        values, standing, stray = {}, {}, []
+        values, standing, stray, stray_out = {}, {}, [], []
         for w in value_words:
             cx = (w[0] + w[2]) / 2
             if cx <= last_right:
@@ -173,10 +176,18 @@ def read_panel(lines, start, years, x_left, x_right, standing_cols=(), right_lim
                 if abs(sx - cx) <= 30 and name not in standing:
                     standing[name] = w[4]
                 else:
-                    stray.append(w[4])
+                    stray_out.append(w[4])
             else:
-                stray.append(w[4])
-        rows.append({"label": clean_label(label), "values": values, "standing": standing, "stray": stray, "y": round(line["mid"], 1)})
+                stray_out.append(w[4])
+        if stray:
+            # Two tokens nearest the same column (adjacent narrow numbers): when the line carries exactly one token per
+            # period column in the period area, the tokens are assigned left to right. Otherwise the in-area stray
+            # tokens stay unassigned and the row is reported ambiguous (extract.py does not use its values).
+            in_area = sorted((w for w in value_words if (w[0] + w[2]) / 2 <= last_right), key=lambda w: w[0])
+            if len(in_area) == len(centres):
+                values = {c[1]: w[4] for c, w in zip(centres, in_area)}
+                stray = []
+        rows.append({"label": clean_label(label), "values": values, "standing": standing, "stray": stray, "stray_out": stray_out, "y": round(line["mid"], 1)})
         label = []
     return rows
 
@@ -199,3 +210,78 @@ def header_text(lines, upto, x_max):
                     and w[4] not in ("PERIOD", "ENDING", "SEPTEMBER", "JUNE", "MARCH", "DECEMBER"):
                 words.append(w[4])
     return " ".join(words)
+
+
+MONTH_END = {"mar": "03-31", "jun": "06-30", "sep": "09-30", "dec": "12-31"}
+ONE_WORD = re.compile(r"^(?:(30|31)[-/](mar|jun|sep|dec)[a-z]*|(mar|jun|sep|dec)[a-z]*[-/](30|31))$", re.I)
+MONTH_WORD = re.compile(r"^(mar(?:ch)?|jun(?:e)?|sep(?:t(?:ember)?)?|dec(?:ember)?)$", re.I)
+
+
+def month_markers(lines, upto, x_min=-1e9, x_max=1e9, depth=7):
+    """Period-end markers ("Sep 30", "SEPTEMBER 30", "December 31") printed above the year header.
+
+    Returns [(x_centre, "MM-DD")] left to right. A marker is a month word immediately followed by its day (30/31)
+    on the same line; month words that are not followed by the matching day are ignored.
+    """
+    out = []
+    for line in lines[max(0, upto - depth):upto]:
+        ws = line["words"]
+        for w in ws:  # one-word markers: "30-Sep" (September 2025 appeals file), "Sep-30"
+            m1 = ONE_WORD.match(w[4])
+            if m1:
+                day, mon = (m1.group(1), m1.group(2)) if m1.group(1) else (m1.group(4), m1.group(3))
+                end = MONTH_END[mon[:3].lower()]
+                cx = (w[0] + w[2]) / 2
+                if end[3:] == day and x_min <= cx <= x_max:
+                    out.append((cx, end))
+        for i, w in enumerate(ws[:-1]):
+            m = MONTH_WORD.match(w[4].strip(".,"))
+            nxt = ws[i + 1]
+            if not m or nxt[4] not in ("30", "31") or nxt[0] - w[2] > 12:
+                continue
+            end = MONTH_END[m.group(1)[:3].lower()]
+            if end[3:] != nxt[4]:
+                continue
+            cx = (w[0] + nxt[2]) / 2
+            if x_min <= cx <= x_max:
+                out.append((cx, end))
+    return sorted(out)
+
+
+def assign_months(markers, centres, spacing=None):
+    """Month-day for every period column from the markers printed above them.
+
+    One marker per column: left to right. One marker: all columns. Fewer markers than columns (the December 2011
+    edition prints "September 30" once over four columns and "December 31" once over two): the markers' centres
+    are matched to contiguous column groups, taking the split whose group centres lie closest to the marker centres.
+    Returns None when the markers cannot be assigned unambiguously.
+    """
+    n, k = len(centres), len(markers)
+    if k == 0:
+        return None
+    if k == 1:
+        return [markers[0][1]] * n
+    if k == n:
+        return [m[1] for m in markers]
+    if k > n:
+        return None
+    from itertools import combinations
+    best, best_cost, tie = None, None, False
+    for cuts in combinations(range(1, n), k - 1):
+        bounds = (0,) + cuts + (n,)
+        cost = 0.0
+        for g in range(k):
+            grp = centres[bounds[g]:bounds[g + 1]]
+            cost += abs(sum(grp) / len(grp) - markers[g][0])
+        if best_cost is None or cost < best_cost - 1e-6:
+            best, best_cost, tie = bounds, cost, False
+        elif abs(cost - best_cost) <= 1e-6:
+            tie = True
+    if tie or best is None:
+        return None
+    if spacing is not None and best_cost / k > 0.35 * spacing:
+        return None  # the markers are not centred over any contiguous group of columns
+    out = []
+    for g in range(k):
+        out += [markers[g][1]] * (best[g + 1] - best[g])
+    return out

@@ -8,7 +8,7 @@ links.json, unchanged, under private/acq/uscourts_fcms/files/<period>/.
 Every response is listed in private/acq/uscourts_fcms/_manifest.jsonl (url, path, sha256, bytes,
 retrieved_at UTC, http status, method). Rate limit: one request per second (fetchutil).
 
-Usage: python3 -I -B acquire.py pages | files [--only district,circuit]
+Usage: python3 -I -B acquire.py pages | probe | files [--only district,circuit] | excel | terms | one <file url> <period folder>
 """
 import json
 import re
@@ -194,6 +194,58 @@ def editions_from_links(links):
     return editions
 
 
+def step_excel():
+    """Download the Excel editions of the profiles (.xlsx/.xls) that editions.json lists, unchanged, beside the PDFs.
+
+    The Excel files are the publisher's own structured copy of the same tables; extract.py does not read them, the
+    independent check (verify_uscourts_fcms.py) compares the PDF extraction with the .xlsx ones.
+    """
+    editions = json.loads((ACQ / "editions.json").read_text())
+    ok = {e["url"]: e for e in fu.read_manifest(MANIFEST) if e.get("status") == 200 and e.get("path")}
+    seen, count, failed = set(), 0, []
+    for ed in editions:
+        for kind in ("district", "circuit"):
+            for url in ed.get(kind + "_excel_urls") or []:
+                if url in seen:
+                    continue
+                seen.add(url)
+                path = ACQ / "files" / ed["edition"] / url.rsplit("/", 1)[-1].split("?")[0]
+                if url in ok and path.exists():
+                    continue
+                status, data, _ = fu.get(url)
+                store(url, status, data, path)
+                count += 1
+                if status != 200:
+                    failed.append([url, status])
+    print(json.dumps({"excel_urls": len(seen), "downloaded": count, "failed": failed}))
+
+
+DEFINITION_FILES = [
+    "https://www.uscourts.gov/sites/default/files/document/explanation-of-selected-terms-2025.pdf",
+    "https://www.uscourts.gov/sites/default/files/2024-12/explanation_of_judicial_caseload_profiles_district.xlsx",
+    "https://www.uscourts.gov/sites/default/files/2024-12/explanation_of_judicial_caseload_profiles_appeals.xlsx",
+]
+
+
+def step_definitions():
+    """Download the publisher's explanation-of-terms files that the FCMS period pages link (unchanged)."""
+    for url in DEFINITION_FILES:
+        path = ACQ / "definitions" / url.rsplit("/", 1)[-1]
+        if path.exists():
+            continue
+        status, data, _ = fu.get(url)
+        store(url, status, data, path)
+        print(json.dumps({"url": url, "status": status, "bytes": len(data)}))
+
+
+def step_terms():
+    """Fetch robots.txt and the site's privacy/security policy page once (unchanged) so the terms read are on record."""
+    for url, name in ((BASE + "/robots.txt", "robots.txt"), (BASE + "/privacy-security-policy", "privacy-security-policy.html")):
+        status, data, _ = fu.get(url)
+        store(url, status, data, ACQ / "terms" / name)
+        print(json.dumps({"url": url, "status": status, "bytes": len(data)}))
+
+
 def step_files(only):
     links = json.loads((ACQ / "links.json").read_text())
     editions = editions_from_links(links)
@@ -235,6 +287,12 @@ if __name__ == "__main__":
         step_probe()
     elif step == "files":
         step_files(only)
+    elif step == "excel":
+        step_excel()
+    elif step == "terms":
+        step_terms()
+    elif step == "definitions":
+        step_definitions()
     elif step == "one":  # python3 acquire.py one <file url> <period folder>
         url, folder = sys.argv[2], sys.argv[3]
         status, data, _ = fu.get(url)

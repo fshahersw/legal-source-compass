@@ -6,6 +6,10 @@ months, bankruptcy appeals pending more than six months and Social Security appe
 Report layouts changed over time (2004-2009 lists magistrate judges first with SUBTOTAL rows; 2010-2018 and 2019-2026
 print district and judge-type totals above the names); the parser recognises each printed total row and checks that
 the listed rows add up to it. Nothing is imputed: a row is either read as printed or reported as unparsed.
+
+Headings and total labels are matched on their letters only (upper case, no spaces or punctuation), because the
+2014 report prints headings in a small-caps font that PDF text extraction returns as mixed case with stray spaces
+("PennSylVAniA MiDDle", "Di STriCT JuDgeS").
 """
 import re
 import unicodedata
@@ -45,40 +49,61 @@ CIRCUITS = {
 }
 CIRCUIT_OF = {d: c for c, ds in CIRCUITS.items() for d in ds}
 CIRCUIT_WORDS = {"FIRST": "1", "SECOND": "2", "THIRD": "3", "FOURTH": "4", "FIFTH": "5", "SIXTH": "6", "SEVENTH": "7", "EIGHTH": "8", "NINTH": "9", "TENTH": "10",
-                 "ELEVENTH": "11", "DISTRICT OF COLUMBIA": "dc", "D.C.": "dc", "DC": "dc"}
+                 "ELEVENTH": "11", "DISTRICTOFCOLUMBIA": "dc", "DC": "dc"}
 CIRCUIT_NAMES = {"dc": "D.C. Circuit", "1": "First Circuit", "2": "Second Circuit", "3": "Third Circuit", "4": "Fourth Circuit", "5": "Fifth Circuit", "6": "Sixth Circuit",
                  "7": "Seventh Circuit", "8": "Eighth Circuit", "9": "Ninth Circuit", "10": "Tenth Circuit", "11": "Eleventh Circuit"}
 # Printed district labels that are not "<STATE> <DIRECTION>" or "<STATE>".
-EXTRA_ALIASES = {"NORTHERN MARIANAS": "nmid", "NORTHERN MARIANA ISLANDS": "nmid", "NORTHERN MARIANA": "nmid", "N. MARIANA ISLANDS": "nmid", "DISTRICT OF COLUMBIA": "dcd"}
+EXTRA_ALIASES = {"NORTHERN MARIANAS": "nmid", "NORTHERN MARIANA ISLANDS": "nmid", "NORTHERN MARIANA": "nmid", "N. MARIANA ISLANDS": "nmid", "DISTRICT OF COLUMBIA": "dcd",
+                 "NORTHERN MARIANAS ISLAND": "nmid", "NORTHERN MARIANAS ISLANDS": "nmid"}
 # Assignment codes printed in the judge column that are not persons.
 PLACEHOLDER = re.compile(r"^(UNASSIGNED\b.*|.*\bAPPEALS?|CRIMINAL FUGITIVES?|LOCAL/STATE JUDGE|.*\bDOCKET\b.*|PRO SE.*|DRAW\b.*|MAGISTRATE\b.*POOL.*|.*\bPOOL)$", re.I)
 DESIGNATION = re.compile(r"\s*\((CJ|VJ|CIR|CIT|FCR|SJ|RJ|MJ|CJA|CHIEF)\)\s*", re.I)
 SUFFIXES = {"JR", "SR", "II", "III", "IV", "V"}
 
 
+def letters(label):
+    """Upper-case letters of a label only (no spaces, digits or punctuation)."""
+    s = unicodedata.normalize("NFKC", label or "")
+    return re.sub(r"[^A-Z]", "", s.upper())
+
+
 def district_aliases(courts):
-    """{printed label (upper case) -> court id} built from the court ids and the state table."""
-    aliases = dict(EXTRA_ALIASES)
-    per_state = {}
-    for cid in courts:
-        per_state.setdefault(cid[:2], []).append(cid)
+    """{letters-only printed label -> court id} built from the court ids and the state table."""
+    aliases = {letters(k): v for k, v in EXTRA_ALIASES.items()}
     for cid in courts:
         st = cid[:2].upper()
         name = STATES.get(st)
-        if cid == "nmid":
-            continue
-        if not name:
+        if cid == "nmid" or not name:
             continue
         rest = cid[2:-1]
         if rest and rest in DIRECTIONS:
             d = DIRECTIONS[rest]
-            aliases[f"{name} {d}"] = cid
-            aliases[f"{d} {name}"] = cid
-            aliases[f"{d} DISTRICT OF {name}"] = cid
+            for form in (f"{name} {d}", f"{d} {name}", f"{d} DISTRICT OF {name}"):
+                aliases[letters(form)] = cid
         else:
-            aliases[name] = cid
-            aliases[f"DISTRICT OF {name}"] = cid
+            aliases[letters(name)] = cid
+            aliases[letters(f"DISTRICT OF {name}")] = cid
+    collapsed = {}
+    for key, cid in list(aliases.items()):
+        collapsed.setdefault(collapse(key), set()).add(cid)
+    for key, ids in collapsed.items():
+        if len(ids) == 1:
+            aliases["~" + key] = next(iter(ids))
     return aliases
+
+
+def collapse(s):
+    """Letters-only label with every run of a repeated letter reduced to one ('LOUISIANAMIDLE' for 'LOUISIANAMIDDLE'): the 2015 report's
+    small-caps heading 'MiDDle' is extracted as 'MiDle'."""
+    return re.sub(r"(.)\1+", r"\1", s)
+
+
+def find_district(key, aliases):
+    """Court id of a letters-only district heading: exact alias first, then the repeated-letter-collapsed form ('~' + collapsed key in
+    the alias table). The collapsed entry exists only when every alias that collapses to the same string names the same court."""
+    if key in aliases:
+        return aliases[key]
+    return aliases.get("~" + collapse(key))
 
 
 def clean(label):
@@ -93,20 +118,23 @@ def norm_label(label):
 
 
 def district_key(label):
-    """Upper-case label with trailing TOTAL(S)/(CONTINUED)/asterisks/colon removed, for district matching."""
-    s = norm_label(label).upper().rstrip("*:").strip()
-    s = re.sub(r"\s*\(CONTINUED\)$", "", s)
-    s = re.sub(r"\s+TOTALS?$", "", s)
-    return s.strip()
+    """Letters-only label with a trailing CONTINUED / TOTAL(S) removed, for district matching."""
+    s = letters(label)
+    s = re.sub(r"CONTINUED$", "", s)
+    s = re.sub(r"TOTALS?$", "", s)
+    return s
 
 
 def circuit_key(label):
-    s = norm_label(label).upper().rstrip("*:").strip()
-    s = re.sub(r"\s*\(CONTINUED\)$", "", s)
-    m = re.match(r"^(.*?)\s*CIRCUIT(?:\s+TOTALS?)?$", s)
+    """Circuit id for a circuit heading or circuit-total label ('Third Circuit', 'FIRST CIRCUIT TOTALS'), '?' for a bare
+    'Circuit Totals', else None."""
+    s = letters(label)
+    s = re.sub(r"CONTINUED$", "", s)
+    s = re.sub(r"TOTALS?$", "", s)
+    m = re.match(r"^(.*?)CIRCUIT$", s)
     if not m:
         return None
-    word = m.group(1).strip()
+    word = m.group(1)
     return CIRCUIT_WORDS.get(word, "?" if word == "" else None)
 
 
@@ -131,6 +159,8 @@ def parse_name(printed):
     surname, rest = parts[0], [p for p in parts[1:] if p]
     if not surname or not rest:
         return out
+    if all(p.replace(".", "").upper() in SUFFIXES for p in rest):  # 'NUMBERS ROBERT T., II': the comma follows the given names, not the surname
+        return out
     suffix = None
     if len(rest) > 1 and rest[-1].replace(".", "").upper() in SUFFIXES:
         suffix = rest[-1].replace(".", "").upper()
@@ -150,42 +180,37 @@ def fold(s):
     """Case-fold, strip accents, treat hyphens/apostrophes/periods as removable punctuation, collapse spaces."""
     s = unicodedata.normalize("NFKD", s or "")
     s = "".join(ch for ch in s if not unicodedata.combining(ch))
-    s = s.upper().replace("’", "'")
-    s = re.sub(r"[.'`]", "", s)
+    s = s.upper()
+    s = re.sub(r"[.'`\"“”‘’’\[\]()*]", "", s)
     s = re.sub(r"[-,]", " ", s)
     return re.sub(r"\s+", " ", s).strip()
 
 
-def series_key(court_id, group, name):
-    """Stable key for one judge's listing in one district and judge-type group across periods."""
-    flags = sorted(f for f in name["designations"] if f != "CJ")
-    base = fold(name["printed"])
-    base = re.sub(r"\((\w+)\)", " ", base)
-    base = fold(DESIGNATION.sub(" ", name["printed"]).replace("*", " "))
-    return f"{court_id}|{group}|{base}|{'+'.join(flags)}"
-
-
-def classify(label, aliases):
+def classify(label, aliases, has_numbers=True):
+    """Kind of a printed row from its label alone: national | circuit_total | district_total | type_total | subtotal |
+    placeholder | person (and the key where there is one)."""
     s = norm_label(label)
-    up = s.upper().rstrip("*:").strip()
-    if re.fullmatch(r"NATIONAL TOTALS?|TOTAL,? ALL DISTRICTS|NATIONAL", up):
+    lt = letters(s)
+    if re.fullmatch(r"NATIONALTOTALS?|TOTALALLDISTRICTS|NATIONAL|TOTALS?|UNITEDSTATESTOTALS?|ALLCIRCUITS", lt):
         return ("national", None)
     ck = circuit_key(s)
     if ck:
         return ("circuit_total", ck)
-    if re.fullmatch(r"CIRCUIT TOTALS?(?:\s+[\d,]+)?", up):
+    if re.fullmatch(r"CIRCUITTOTALS?", lt):
         return ("circuit_total", "?")
-    if re.fullmatch(r"DISTRICT TOTALS?", up):
+    if re.fullmatch(r"DISTRICTTOTALS?", lt):
         return ("district_total", "?")
     dk = district_key(s)
-    if dk in aliases:
-        return ("district_total", aliases[dk])
-    if re.fullmatch(r"DISTRICT JUDGES?", up):
+    found = find_district(dk, aliases)
+    if found:
+        return ("district_total", found)
+    if re.fullmatch(r"DISTRICTJUDGES?(CONTINUED)?", lt):
         return ("type_total", "district")
-    if re.fullmatch(r"MAGISTRATE JUDGES?", up):
+    if re.fullmatch(r"MAGISTRATEJUDGES?(CONTINUED)?", lt):
         return ("type_total", "magistrate")
-    if re.fullmatch(r"SUB-?TOTALS?", up):
+    if re.fullmatch(r"SUBTOTALS?", lt):
         return ("subtotal", None)
+    up = s.upper().rstrip("*:").strip()
     if PLACEHOLDER.match(up) and "," not in up:
         return ("placeholder", None)
     return ("person", None)
@@ -202,6 +227,27 @@ def appendix_bounds(lines):
             end = i
             break
     return (start or 0), (end if end is not None else len(lines))
+
+
+def appendix_ranges(lines):
+    """Index ranges holding per-judge rows: Appendix A, plus any later appendix whose heading is followed by the same
+    'Report on Motions Pending ...' title (the 2006-03 report prints the Eastern District of Louisiana, which was granted relief
+    from the September 2005 report after Hurricane Katrina, in Appendix E)."""
+    lo, hi = appendix_bounds(lines)
+    ranges = [(lo, hi)]
+    heading = re.compile(r"(CJRA )?APPENDIX [B-F]\.?")
+    i = hi
+    while i < len(lines):
+        lab = norm_label(lines[i]["label"]).upper()
+        if heading.fullmatch(lab) and any(norm_label(lines[j]["label"]).upper().startswith("REPORT ON MOTIONS PENDING") for j in range(i + 1, min(i + 4, len(lines)))):
+            j = i + 1
+            while j < len(lines) and not heading.fullmatch(norm_label(lines[j]["label"]).upper()):
+                j += 1
+            ranges.append((i, j))
+            i = j
+        else:
+            i += 1
+    return ranges
 
 
 def endnotes(lines):
@@ -227,40 +273,131 @@ def endnotes(lines):
     return notes
 
 
+def endnotes_by_page(lines):
+    """Endnote texts of Appendix A as {page: {marker: text}}. An endnote is a label-only line that starts with its marker number and
+    continues on the following lines of the same page (continuation lines are the next label-only lines at line spacing); the marker
+    of a count is looked up on the page the count is printed on. If a page prints one marker twice, the first text is kept."""
+    out = {}
+    for i, l in enumerate(lines):
+        if l["nums"]:
+            continue
+        m = re.match(r"^(\d{1,2})\s+([A-Z][^\n]{15,})$", norm_label(l["label"]))
+        if not m or not re.search(r"(?i)case|caseload|multidistrict|litigation|pending|report|motion|judge", m.group(2)):
+            continue
+        text = m.group(2)
+        j = i + 1
+        while j < len(lines) and lines[j]["page"] == l["page"] and not lines[j]["nums"] and 0 < lines[j]["top"] - lines[j - 1]["top"] <= 13:
+            nxt = norm_label(lines[j]["label"])
+            if re.match(r"^(\d{1,2})\s+[A-Z]", nxt) or re.match(r"^\(\w+\) =", nxt) or re.match(r"(?i)^page \d", nxt) or nxt.startswith("*"):
+                break
+            text += " " + nxt
+            j += 1
+        out.setdefault(l["page"], {}).setdefault(int(m.group(1)), text)
+    return out
+
+
+def note_lookup(lines):
+    """Function (page, marker) -> endnote text or None: the endnote printed on the same page; else the list on a final 'Endnotes' page;
+    else the text of that marker when the whole report defines it with a single text (page-footnote reports that print every note on
+    the last page). A marker defined with different texts on different pages and not defined on the count's page stays unresolved."""
+    pages = endnotes_by_page(lines)
+    doc = endnotes_document(lines)
+    texts = {}
+    for page_notes in pages.values():
+        for marker, text in page_notes.items():
+            texts.setdefault(marker, set()).add(re.sub(r"\s+", "", text))
+    originals = {}
+    for page_notes in pages.values():
+        for marker, text in page_notes.items():
+            originals.setdefault((marker, re.sub(r"\s+", "", text)), text)
+
+    def lookup(page, marker):
+        if marker in pages.get(page, {}):
+            return pages[page][marker]
+        if marker in doc:
+            return doc[marker]
+        variants = texts.get(marker, set())
+        if len(variants) == 1:
+            return originals[(marker, next(iter(variants)))]
+        return None
+
+    return lookup
+
+
+def endnotes_document(lines):
+    """Endnotes printed in a list on a final 'Endnotes' page (2019 onward), {marker: text}: each note starts at an empty-label line
+    whose only token is its number and continues on the following text lines until the next number or the next appendix."""
+    out, current = {}, None
+    in_notes = False
+    for l in lines:
+        label = norm_label(l["label"])
+        if not in_notes:
+            in_notes = label.upper() == "ENDNOTES"
+            continue
+        if re.match(r"(?i)^(CJRA )?appendix [A-F]", label):
+            break
+        stray = l.get("stray") or []
+        if not label and len(stray) == 1 and re.fullmatch(r"\d{1,2}", stray[0]):
+            current = int(stray[0])
+            out.setdefault(current, "")
+        elif label and current is not None and not re.match(r"(?i)^page \d", label):
+            out[current] = (out[current] + " " + label).strip()
+    return {k: v for k, v in out.items() if v}
+
+
+FOOTER = re.compile(r"(?i)^(page \d|\(cj\)|\(vj\)|\(cir\)|\(cit\)|\(sj\)|\d+$)")
+
+
 def parse_period(lines, courts):
-    """Parse one report's printed rows. Returns dict(rows, totals, checks, warnings)."""
+    """Parse one report's printed rows. Returns dict(rows, totals, incomplete, warnings).
+
+    rows        one entry per judge (or placeholder assignment) with its five counts as printed
+    totals      every printed total row: national / circuit / district / type (district judges, magistrate judges)
+    incomplete  rows that carry some but not all five counts (never used as data)
+    """
     aliases = district_aliases(courts)
-    lo, hi = appendix_bounds(lines)
-    rows, totals, warnings = [], [], []
+    ranges = appendix_ranges(lines)
+    rows, totals, incomplete, warnings = [], [], [], []
     circuit = None
     district = None
     group = None
-    for idx in range(lo, hi):
+    starts = {lo for lo, _ in ranges}
+    indexes = [idx for lo, hi in ranges for idx in range(lo, hi)]
+    for idx in indexes:
+        if idx in starts:
+            circuit = district = group = None
         l = lines[idx]
         label = norm_label(l["label"])
-        if not label:
+        cols = l.get("cols") or ([None] * 5 if not l["nums"] else None)
+        if cols is None:  # legacy rows carrying only a number list
+            cols = l["nums"] if len(l["nums"]) == 5 else [None] * 5
+        filled = [c for c in cols if c is not None]
+        if not label and not filled:
             continue
-        if not l["nums"]:
+        if not filled:
             # heading lines
             ck = circuit_key(label)
             if ck and ck != "?":
                 circuit = ck
                 continue
             dk = district_key(label)
-            if dk in aliases:
-                if district != aliases[dk]:
-                    district, group = aliases[dk], None
+            found = find_district(dk, aliases)
+            if found:
+                if district != found:
+                    district, group = found, None
                 continue
-            up = label.upper()
-            if re.fullmatch(r"DISTRICT JUDGES?", up):
+            lt = letters(label)
+            if re.fullmatch(r"DISTRICTJUDGES?(CONTINUED)?", lt):
                 group = "district"
-            elif re.fullmatch(r"MAGISTRATE JUDGES?", up):
+            elif re.fullmatch(r"MAGISTRATEJUDGES?(CONTINUED)?", lt):
                 group = "magistrate"
             continue
-        if len(l["nums"]) != 5:
+        if len(filled) != 5:
+            if label and not FOOTER.match(label):
+                incomplete.append({"page": l["page"], "top": l["top"], "label": label, "cols": cols})
             continue
         kind, key = classify(label, aliases)
-        nums = dict(zip(MEASURES, l["nums"]))
+        nums = dict(zip(MEASURES, cols))
         ref = {"page": l["page"], "top": l["top"], "label": label}
         if kind == "national":
             totals.append({"level": "national", "key": "us", "values": nums, **ref})
@@ -293,11 +430,11 @@ def parse_period(lines, courts):
             name = parse_name(label) if kind == "person" else None
             rows.append({"court_id": district, "circuit": circuit, "group": group, "kind": kind, "printed": label, "name": name,
                          "values": nums, "markers": l.get("markers") or [], "page": l["page"], "top": l["top"]})
-    return {"rows": rows, "totals": totals, "warnings": warnings}
+    return {"rows": rows, "totals": totals, "incomplete": incomplete, "warnings": warnings}
 
 
 def validate(parsed):
-    """Arithmetic checks against every printed total. Returns list of {level, key, ok, printed, summed}."""
+    """Arithmetic checks against every printed total. Returns list of {level, key, ok, printed, summed, page}."""
     rows, totals = parsed["rows"], parsed["totals"]
     checks = []
 
