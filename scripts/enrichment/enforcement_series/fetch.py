@@ -22,7 +22,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 ACQ = os.path.join(ROOT, "private", "acq", "enforcement_series")
 MANIFEST = os.path.join(ACQ, "_manifest.jsonl")
-UA = "legal-source-compass research (Seeger Weiss internal research)"
+# Contact per private/scratch/enrich/CONTRACT.md: the owner-approved address, used only in this request header.
+# Manifest lines written before 2026-10-18 15:xx show the earlier User-Agent (no contact address) as recorded.
+UA = "legal-source-compass research (contact: notreelai@gmail.com)"
 MIN_INTERVAL = 1.0  # seconds between requests to the same host (<= 1 req/s)
 # robots.txt Crawl-delay values recorded on 2026-10-18: www.justice.gov asks for 10 seconds.
 HOST_INTERVAL = {"www.justice.gov": 10.0}
