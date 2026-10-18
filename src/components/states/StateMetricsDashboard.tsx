@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ExternalLink, Info, MapPinned, X } from "lucide-react";
 import { ChartCard } from "@/components/fda-analytics/FdaCharts";
 import { StateMark } from "@/components/corpus/EntityArtwork";
-import { UsMap } from "@/components/corpus/UsMap";
 import { useCorpus } from "@/lib/corpus/store";
 import {
   getStateMetrics,
@@ -14,8 +13,11 @@ import {
 } from "@/lib/external/stateMetrics.functions";
 import { cn } from "@/lib/utils";
 import { HistogramChart, SmallMultiples, StateScatter, TrendChart } from "./StateCharts";
+import { StateChoropleth } from "./StateChoropleth";
 import { StateRankingTable } from "./StateRankingTable";
 import {
+  bandYears,
+  changeUnitFor,
   commonYear,
   correlationLabel,
   coveredYears,
@@ -24,6 +26,7 @@ import {
   formatValue,
   median,
   metricGroups,
+  metricRelation,
   OUTLIER_Z,
   pearson,
   rankStates,
@@ -38,12 +41,14 @@ export const stateMetricsQuery = {
 };
 
 const DEFAULT_METRIC = "overdose_rate";
+// No preset pairs a metric with one of its own components (see metricRelation); the first is the default.
 const PRESETS: { label: string; x: string; y: string }[] = [
-  { label: "Overdose vs synthetic opioids", x: "synthetic_opioid_rate", y: "overdose_rate" },
   { label: "Traffic deaths vs vehicle complaints", x: "nhtsa_complaint_rate", y: "fars_rate" },
   { label: "Overdose vs unemployment", x: "unemployment_rate", y: "overdose_rate" },
   { label: "Overdose vs income", x: "per_capita_income", y: "overdose_rate" },
+  { label: "Traffic deaths vs income", x: "per_capita_income", y: "fars_rate" },
 ];
+const isVsrr = (m: MetricDef) => m.sources.some((s) => s.url.includes("xkb8-kh2a"));
 const isTotal = (m: MetricDef) => m.format === "int" || m.format === "money_m";
 const selectClass =
   "h-8 min-w-0 rounded-md border border-input bg-surface px-2 text-xs focus-visible:outline-2 focus-visible:outline-ring";
@@ -55,6 +60,7 @@ function MetricSelect({
   metrics,
   onChange,
   className,
+  short = false,
 }: {
   id: string;
   label: string;
@@ -62,6 +68,7 @@ function MetricSelect({
   metrics: MetricDef[];
   onChange: (key: string) => void;
   className?: string;
+  short?: boolean;
 }) {
   return (
     <label htmlFor={id} className={cn("flex min-w-0 flex-col gap-0.5 text-[11px]", className)}>
@@ -75,8 +82,8 @@ function MetricSelect({
         {metricGroups(metrics).map(({ group, items }) => (
           <optgroup key={group} label={group}>
             {items.map((m) => (
-              <option key={m.key} value={m.key}>
-                {m.label}
+              <option key={m.key} value={m.key} title={m.label}>
+                {short ? m.short : m.label}
               </option>
             ))}
           </optgroup>
@@ -216,10 +223,10 @@ function Dashboard({
       ? search.year
       : (defaultYear(def, data.states) ?? years.at(-1) ?? 0);
   const ranked = useMemo(() => {
-    const rows = rankStates(data.states, def.key, year);
+    const rows = rankStates(data.states, def.key, year, def.format);
     // A partial year against a full base year is not a like-for-like change: suppress it.
     return def.partialYears[String(year)] ? rows.map((r) => ({ ...r, change5: null })) : rows;
-  }, [data.states, def.key, def.partialYears, year]);
+  }, [data.states, def.key, def.format, def.partialYears, year]);
   const selectedProfile: StateProfile | null =
     data.states.find((s) => s.usps === search.state) ?? null;
   const selectedRank = ranked.find((r) => r.usps === selectedProfile?.usps) ?? null;
@@ -227,7 +234,10 @@ function Dashboard({
   const outliers = ranked.filter((r) => r.outlier);
   const partial = def.partialYears[String(year)];
   const nationalValue = def.national[String(year)];
-  const mapValues = useMemo(() => new Map(ranked.map((r) => [r.fips, r.value])), [ranked]);
+  const mapValues = useMemo(() => new Map(ranked.map((r) => [r.usps, r.value])), [ranked]);
+  const bands = bandYears(def);
+  // Years without a median band because fewer than 45 states report (partial years are explained separately).
+  const thinYears = years.filter((y) => !bands.has(String(y)) && !def.partialYears[String(y)]);
 
   const xDef = (search.x && byKey.get(search.x)) || byKey.get(PRESETS[0]!.x) || selectable[0]!;
   const yDef = (search.y && byKey.get(search.y)) || byKey.get(PRESETS[0]!.y) || selectable[1]!;
@@ -246,6 +256,7 @@ function Dashboard({
     [data.states, xDef.key, yDef.key, scatterYear],
   );
   const r = pearson(points.map((p) => [p.x, p.y]));
+  const relation = metricRelation(xDef, yDef);
   const crossOutliers = useMemo(() => {
     const rows: { usps: string; name: string; metric: MetricDef; z: number; year: number }[] = [];
     for (const s of data.states)
@@ -375,7 +386,7 @@ function Dashboard({
                 {formatValue(selectedRank?.value, def.format)}
               </span>
               {selectedRank
-                ? ` · rank ${selectedRank.rank} of ${ranked.length} · z ${selectedRank.z ?? "—"} · 5-yr ${formatChange(selectedRank.change5)}`
+                ? ` · rank ${selectedRank.rank} of ${ranked.length} · z ${selectedRank.z ?? "—"} · 5-yr ${formatChange(selectedRank.change5, changeUnitFor(def.format))}`
                 : ""}
             </div>
           </div>
@@ -402,15 +413,14 @@ function Dashboard({
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] xl:grid-cols-[minmax(0,1fr)_minmax(0,25rem)]">
         <section className="min-w-0 space-y-1" aria-label={`Map of ${def.short}`}>
           {corpus.geo ? (
-            <UsMap
+            <StateChoropleth
               geo={corpus.geo}
               values={mapValues}
-              valueLabel={def.unit}
-              selectedState={selectedProfile?.usps}
-              onState={(fips) => {
-                const s = data.states.find((x) => x.fips === fips);
-                if (s) select(s.usps);
-              }}
+              format={def.format}
+              unit={def.unit}
+              title={`${def.label}, ${year}`}
+              selected={selectedProfile?.usps ?? null}
+              onSelect={select}
             />
           ) : (
             <div className="flex h-64 items-center justify-center rounded-lg border border-border text-xs text-muted-foreground">
@@ -420,8 +430,8 @@ function Dashboard({
             </div>
           )}
           <p className="px-1 text-[11px] text-muted-foreground">
-            Shading: {def.label}, {year} (square-root scale; lightest = lowest or not recorded).{" "}
-            {comparison} <SourceLine def={def} />
+            Shading: {def.label}, {year}, on a linear scale from the lowest to the highest reported
+            value; hatched = not recorded. {comparison} <SourceLine def={def} />
           </p>
         </section>
         <ChartCard
@@ -429,8 +439,9 @@ function Dashboard({
           subtitle={`Rank 1 = highest. High / Low = outlier, |z| > ${OUTLIER_Z} (population SD across ${ranked.length} jurisdictions).`}
           footnote={
             <span>
-              5-yr Δ compares {year} with {year - 5}. * = CDC footnote (hover).{" "}
-              <SourceLine def={def} />
+              5-yr Δ compares {year} with {year - 5}
+              {def.format === "pct" ? " in percentage points" : " as a relative change"}.
+              {isVsrr(def) ? " * = CDC footnote (hover)." : ""} <SourceLine def={def} />
             </span>
           }
         >
@@ -456,11 +467,19 @@ function Dashboard({
                     .map(([y, note]) => `${y} (${note})`)
                     .join("; ")}. `
                 : ""}
+              {thinYears.length
+                ? `Median and percentile lines are drawn only for years with at least 45 of 51 jurisdictions reporting; omitted: ${thinYears
+                    .map((y) => {
+                      const n = def.distribution[String(y)]?.n;
+                      return n != null ? `${y} (n=${n})` : String(y);
+                    })
+                    .join(", ")}. `
+                : ""}
               <SourceLine def={def} />
             </span>
           }
         >
-          <TrendChart def={def} state={selectedProfile} years={years} />
+          <TrendChart def={def} state={selectedProfile} years={years} bandYears={bands} />
         </ChartCard>
         <ChartCard
           title={`Distribution · ${year}`}
@@ -482,6 +501,7 @@ function Dashboard({
         footnote={<SourceLine def={def} />}
       >
         <SmallMultiples
+          bandYears={bands}
           def={def}
           states={data.states}
           ranked={ranked}
@@ -506,7 +526,7 @@ function Dashboard({
             </span>
           }
         >
-          <div className="flex flex-wrap items-end gap-2 border-b border-border/60 px-3 py-2">
+          <div className="space-y-2 border-b border-border/60 px-3 py-2">
             <div className="flex flex-wrap gap-1" role="group" aria-label="Correlation presets">
               {PRESETS.filter((p) => byKey.has(p.x) && byKey.has(p.y)).map((p) => (
                 <button
@@ -525,22 +545,33 @@ function Dashboard({
                 </button>
               ))}
             </div>
-            <MetricSelect
-              id="scatter-x"
-              label="X axis"
-              value={xDef.key}
-              metrics={data.metrics}
-              onChange={(key) => onSearch({ x: key })}
-              className="w-full sm:w-56"
-            />
-            <MetricSelect
-              id="scatter-y"
-              label="Y axis"
-              value={yDef.key}
-              metrics={data.metrics}
-              onChange={(key) => onSearch({ y: key })}
-              className="w-full sm:w-56"
-            />
+            <div className="grid gap-2 sm:grid-cols-2">
+              <MetricSelect
+                id="scatter-x"
+                label="X axis"
+                value={xDef.key}
+                metrics={data.metrics}
+                onChange={(key) => onSearch({ x: key })}
+                short
+              />
+              <MetricSelect
+                id="scatter-y"
+                label="Y axis"
+                value={yDef.key}
+                metrics={data.metrics}
+                onChange={(key) => onSearch({ y: key })}
+                short
+              />
+            </div>
+            {relation ? (
+              <p
+                role="status"
+                className="flex items-start gap-1.5 rounded-md border border-warning/50 bg-warning/10 px-2 py-1 text-[11px]"
+              >
+                <AlertTriangle className="mt-px size-3.5 shrink-0 text-warning" aria-hidden />
+                {relation.message}
+              </p>
+            ) : null}
           </div>
           <StateScatter
             points={points}
@@ -601,6 +632,16 @@ function Dashboard({
           {def.label}
         </h3>
         <p className="mt-1 text-muted-foreground">{def.method}</p>
+        {def.provisional ? (
+          <p className="mt-1 text-muted-foreground">
+            <span className="font-medium text-foreground">Provisional: </span>
+            {typeof def.provisional === "string"
+              ? def.provisional
+              : Object.entries(def.provisional)
+                  .map(([y, note]) => `${y} — ${note}`)
+                  .join("; ")}
+          </p>
+        ) : null}
         {def.caveats.length ? (
           <ul className="mt-1 list-disc space-y-0.5 pl-4 text-muted-foreground">
             {def.caveats.map((c) => (

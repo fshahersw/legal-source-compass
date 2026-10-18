@@ -41,6 +41,8 @@ export type MetricDef = {
   distribution: Record<string, YearDistribution>;
   sources: MetricSource[];
   order: number;
+  /** Provisional flag for the whole series (string) or for specific years. */
+  provisional: string | Record<string, string> | null;
 };
 export type LatestStat = {
   year: number;
@@ -49,6 +51,8 @@ export type LatestStat = {
   of: number;
   z: number | null;
   change5: number | null;
+  /** "pts" = percentage-point change (percent metrics); "%" = relative change. */
+  change5Unit: "pts" | "%";
   outlier: "high" | "low" | null;
 };
 export type StateProfile = {
@@ -104,6 +108,12 @@ function parseSource(raw: unknown): MetricSource | null {
   };
 }
 
+function parseProvisional(raw: unknown): string | Record<string, string> | null {
+  if (typeof raw === "string") return raw || null;
+  const entries = Object.entries(obj(raw)).filter(([y, t]) => YEAR.test(y) && str(t));
+  return entries.length ? Object.fromEntries(entries.map(([y, t]) => [y, str(t)])) : null;
+}
+
 export function parseMetric(raw: unknown): MetricDef | null {
   const m = obj(raw);
   const key = str(m["key"]);
@@ -154,6 +164,7 @@ export function parseMetric(raw: unknown): MetricDef | null {
         })
       : [],
     order: num(m["order"]) ?? 999,
+    provisional: parseProvisional(m["provisional"]),
   };
 }
 
@@ -180,6 +191,7 @@ export function parseProfile(raw: unknown): StateProfile | null {
       of: num(o["of"]) ?? 0,
       z: num(o["z"]),
       change5: num(o["change5"]),
+      change5Unit: o["change5_unit"] === "pts" ? "pts" : "%",
       outlier,
     };
   }

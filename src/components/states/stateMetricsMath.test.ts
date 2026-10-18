@@ -2,13 +2,18 @@ import { describe, expect, it } from "vitest";
 import type { MetricDef, StateProfile } from "@/lib/external/stateMetrics.functions";
 import { parseMetric, parseProfile, parseSeries } from "@/lib/external/stateMetrics.functions";
 import {
+  bandYears,
+  changeFor,
   changePct,
+  changeUnitFor,
   commonYear,
   correlationLabel,
+  formatChange,
   formatValue,
   histogram,
   leastSquares,
   median,
+  metricRelation,
   pearson,
   rankStates,
   stdev,
@@ -156,5 +161,52 @@ describe("stored JSON validation", () => {
     });
     expect(Object.keys(p!.series)).toEqual(["population"]);
     expect(p!.latest["population"]!.outlier).toBe("high");
+  });
+});
+
+describe("verifier fixes", () => {
+  const m = (key: string, short = key) =>
+    ({ key, short, rankYears: [2019, 2020], partialYears: {} }) as unknown as MetricDef;
+
+  it("flags subset, derived and overlapping metric pairs and leaves independent pairs alone", () => {
+    expect(metricRelation(m("overdose_rate"), m("synthetic_opioid_rate"))?.kind).toBe("component");
+    expect(metricRelation(m("synthetic_opioid_deaths"), m("overdose_rate"))?.kind).toBe(
+      "component",
+    );
+    expect(metricRelation(m("opioid_rate"), m("synthetic_opioid_rate"))?.kind).toBe("component");
+    expect(metricRelation(m("fda_recalls"), m("fda_class1_recalls"))?.kind).toBe("component");
+    expect(metricRelation(m("cause_all_causes_rate"), m("cause_suicide_rate"))?.kind).toBe(
+      "component",
+    );
+    expect(metricRelation(m("overdose_rate"), m("overdose_deaths"))?.kind).toBe("derived");
+    expect(metricRelation(m("gdp"), m("gdp_per_capita"))?.kind).toBe("derived");
+    expect(metricRelation(m("synthetic_opioid_rate"), m("psychostimulant_rate"))?.kind).toBe(
+      "overlap",
+    );
+    expect(metricRelation(m("cause_unintentional_injuries_rate"), m("overdose_rate"))?.kind).toBe(
+      "overlap",
+    );
+    expect(metricRelation(m("fars_rate"), m("fars_rate"))?.kind).toBe("same");
+    expect(metricRelation(m("fars_rate"), m("nhtsa_complaint_rate"))).toBeNull();
+    expect(metricRelation(m("overdose_rate"), m("unemployment_rate"))).toBeNull();
+    expect(metricRelation(m("overdose_rate"), m("per_capita_income"))).toBeNull();
+  });
+
+  it("formats percentage-point change for percent metrics", () => {
+    expect(changeUnitFor("pct")).toBe("pts");
+    expect(changeUnitFor("rate")).toBe("%");
+    expect(formatChange(-3.6, "pts")).toBe("−3.6 pts");
+    expect(formatChange(4.25, "%")).toBe("+4.3%");
+    expect(changeFor({ "2020": 8.1, "2025": 4.5 }, 2025, "pct")).toBe(-3.6);
+    expect(changeFor({ "2020": 8, "2025": 4 }, 2025, "rate")).toBe(-50);
+    const states = [
+      profile("AA", "01", { u: { "2020": 8.1, "2025": 4.5 } }),
+      profile("BB", "02", { u: { "2020": 6, "2025": 5 } }),
+    ];
+    expect(rankStates(states, "u", 2025, "pct").find((r) => r.usps === "AA")?.change5).toBe(-3.6);
+  });
+
+  it("draws percentile bands only in years where enough states report", () => {
+    expect([...bandYears(m("x"))]).toEqual(["2019", "2020"]);
   });
 });

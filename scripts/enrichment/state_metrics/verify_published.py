@@ -72,6 +72,17 @@ nj_row = next(r for r in bea[1:] if len(r) > 8 and r[0].replace('"', "").strip()
 nj = published("NJ")
 check("state_metrics_profiles/NJ series.per_capita_income[2025]", nj["series"]["per_capita_income"]["2025"], int(nj_row[head.index("2025")]), url)
 
+# GDP per resident recomputed once from fresh BEA SAGDP1 line 3 and Census population
+url = "https://apps.bea.gov/regional/zip/SAGDP.zip"
+with zipfile.ZipFile(io.BytesIO(get(url).content)) as z:
+    gdp_rows = list(csv.reader(io.StringIO(z.read(next(n for n in z.namelist() if n.startswith("SAGDP1__ALL_AREAS"))).decode("latin-1"))))
+for usps, fips, name, year, pop_rows in [("NV", "32000", "Nevada", "2024", rows), ("NY", "36000", "New York", "2018", rows20)]:
+    line = next(r for r in gdp_rows[1:] if len(r) > 8 and r[0].replace('"', "").strip() == fips and r[4].strip() == "3")
+    gdp_m = float(line[gdp_rows[0].index(year)])
+    expected = round(gdp_m * 1_000_000 / int(pop_rows[name][f"POPESTIMATE{year}"]))
+    check(f"state_metrics_profiles/{usps} series.gdp_per_capita[{year}] (recomputed)", published(usps)["series"]["gdp_per_capita"][year], expected,
+          url + " ÷ Census")
+
 # BLS LAUS annual average (BLS public API v2, unregistered, annualaverage)
 nv = published("NV")
 api = "https://api.bls.gov/publicAPI/v2/timeseries/data/"
@@ -79,9 +90,19 @@ r = requests.post(api, json={"seriesid": ["LAUST320000000000003"], "startyear": 
                   headers=UA, timeout=120).json()
 series = (r.get("Results") or {}).get("series") or [{}]
 m13 = {d["year"]: float(d["value"]) for d in series[0].get("data", []) if d.get("period") == "M13"}
+bls_url = api + "LAUST320000000000003"
 if m13.get("2025") is None:
+    # The unregistered API has a small daily quota; fall back to a fresh download of the LAUS flat file.
     print("note: BLS API returned no M13 for 2025:", r.get("message"))
-check("state_metrics_profiles/NV series.unemployment_rate[2025]", nv["series"]["unemployment_rate"].get("2025"), m13.get("2025"), api + "LAUST320000000000003")
+    bls_url = "https://download.bls.gov/pub/time.series/la/la.data.2.AllStatesU"
+    for line in get(bls_url).text.splitlines():
+        parts = [x.strip() for x in line.split("\t")]
+        if len(parts) > 3 and parts[0] == "LAUST320000000000003" and parts[1] == "2025" and parts[2] == "M13":
+            m13["2025"] = float(parts[3])
+check("state_metrics_profiles/NV series.unemployment_rate[2025]", nv["series"]["unemployment_rate"].get("2025"), m13.get("2025"), bls_url)
+nv_change = nv["latest"]["unemployment_rate"]
+check("state_metrics_profiles/NV latest.unemployment_rate.change5 (pts)", nv_change["change5"],
+      round(nv["series"]["unemployment_rate"]["2025"] - nv["series"]["unemployment_rate"]["2020"], 1), "published series 2025 − 2020")
 
 # CDC VSRR overdose (Socrata API, a different access path than the CSV export)
 def vsrr(state, year, indicator):

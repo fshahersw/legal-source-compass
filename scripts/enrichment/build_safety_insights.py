@@ -43,6 +43,11 @@ SOURCES = {
     "agency_safety_nhtsa_investigations": "id,title,item",
     "agency_safety_nhtsa_complaint_trends": "id,title,item",
     "agency_safety_mass_tort_signals": "id,title,item",
+    # Cross-dataset sources (absent datasets are skipped).
+    "court_stats_national": "id,summary:item->summary",
+    "company_sec_profiles": "id,summary:item->summary",
+    "regulatory_epa_state_profiles": "id,profile:item->profile",
+    "regulatory_federal_register_activity": "id,activity:item->activity",
 }
 CENTER = {
     "agency_safety_openfda_drug_enforcement": "Drugs",
@@ -558,6 +563,191 @@ class Builder:
                 as_of=end, tags=["Mass tort", signal.get("product_kind", "").title()],
             )
 
+    # Cross-dataset detectors -------------------------------------------------------------------------------------
+    COURT_RULE = {
+        "pl_surge": "Product-liability surge",
+        "pl_concentration": "Product-liability concentration",
+        "pl_share_cluster": "Product-liability share cluster",
+        "aging_backlog": "Aging civil backlog",
+        "slow_disposition": "Slow civil disposition",
+        "pl_decline": "Product-liability decline",
+    }
+
+    def courts(self):
+        """District flags from U.S. Courts Judicial Business tables (court_stats_national), latest fiscal year only."""
+        rows = self.data.get("court_stats_national", [])
+        summary = next((r.get("summary") for r in rows if r.get("id") == "summary:national"), None)
+        if not summary:
+            return
+        latest = summary.get("latest")
+        rules = summary.get("rules") or {}
+        end = dt.date(int(latest), 9, 30) if isinstance(latest, int) else dt.date.today()
+        for flag in summary.get("flags") or []:
+            if flag.get("year") != latest or flag.get("rule") not in self.COURT_RULE:
+                continue
+            rule, name, court = flag["rule"], flag.get("name") or flag.get("court_id"), flag.get("court_id")
+            value, ratio, baseline = flag.get("value"), flag.get("ratio"), flag.get("baseline")
+            share = flag.get("sharePct", flag.get("share_pct"))
+            if rule == "pl_surge" and ratio:
+                headline = f"{name}: product-liability filings {ratio:.1f}× the five-year median (FY{latest})"
+                score = 40 + 12 * math.log2(max(ratio, 1)) + 4 * math.log10(max(value or 1, 1))
+            elif rule == "pl_concentration":
+                headline = f"{name} received {share:.1f}% of all federal product-liability filings (FY{latest})" if share is not None else f"{name}: product-liability concentration (FY{latest})"
+                score = 45 + (share or 0)
+            elif rule == "pl_share_cluster":
+                headline = f"{name}: product-liability share of civil filings {ratio:.1f}× the national share (FY{latest})" if ratio else f"{name}: product-liability share cluster (FY{latest})"
+                score = 35 + 6 * math.log2(max(ratio or 1, 1))
+            elif rule == "aging_backlog":
+                headline = f"{name}: civil cases pending 3+ years at {ratio:.1f}× the national share (FY{latest})" if ratio else f"{name}: aging civil backlog (FY{latest})"
+                score = 32 + 5 * math.log2(max(ratio or 1, 1))
+            elif rule == "slow_disposition":
+                headline = f"{name}: median civil disposition {value} months vs {flag.get('national')} nationally (FY{latest})"
+                score = 28
+            else:
+                headline = f"{name}: product-liability filings fell below half the five-year median (FY{latest})"
+                score = 22
+            self.add(
+                kind="court_signal", agency="COURTS", entity=f"{court} {rule}",
+                headline=headline,
+                summary=(rules.get(rule) or self.COURT_RULE[rule]) + " Large counts usually reflect MDL actions transferred to or filed in the court.",
+                score=score, serious=False,
+                metric={"recent": value, "baseline": baseline, "ratio": ratio, "window": f"FY{latest}", "unit": "filings" if rule.startswith("pl") else "measure"},
+                series=[], evidence_rows=[{"dataset": "court_stats_district_nos", "id": court, "title": f"{name} caseload statistics", "date": end.isoformat(), "note": self.COURT_RULE[rule]}],
+                method="Flag published with the U.S. Courts Judicial Business tables (C-3, C-5, C-6, C-11) for the latest fiscal year; see /courts/analytics.",
+                as_of=end, tags=["Courts", self.COURT_RULE[rule]],
+            )
+
+    COMPANY_FLAG = {
+        "accrual_surge": "Litigation accrual surge",
+        "accrual_heavy": "Accrual-heavy balance sheet",
+        "expense_spike": "Litigation expense spike",
+        "docket_growth": "Linked MDL docket growth",
+        "multi_mdl": "Named in 3+ pending MDLs",
+    }
+
+    def companies(self):
+        """SEC registrants whose own filings name MDLs, flagged by the company-intelligence rules."""
+        for row in self.data.get("company_sec_profiles", []):
+            summary = row.get("summary") or {}
+            flags = [f for f in summary.get("flags") or [] if f in self.COMPANY_FLAG]
+            if not flags or not str(row.get("id", "")).isdigit():
+                continue
+            company = summary.get("company") or {}
+            name = company.get("name") if isinstance(company, dict) else None
+            name = name or row["id"]
+            exposure = summary.get("exposure") or {}
+            pending = exposure.get("pending_actions")
+            pct = summary.get("accrual_pct_revenue")
+            change = exposure.get("pending_change_pct")
+            mdls = [m for m in summary.get("mdls") or [] if m.get("counts_toward_exposure") and m.get("mdl_status") == "pending"]
+            serious = "accrual_surge" in flags or "expense_spike" in flags or (pct or 0) >= 10
+            score = 30 + 8 * len(flags) + 6 * math.log10(max(pending or 1, 1)) + min(pct or 0, 30) + (min(change, 100) / 5 if change and change > 0 else 0)
+            parts = [self.COMPANY_FLAG[f] for f in flags]
+            detail = []
+            if pending:
+                detail.append(f"{pending:,} pending actions across {exposure.get('pending_mdls')} linked MDLs" + (f" ({change:+.0f}% in 12 months)" if change is not None else ""))
+            if pct is not None:
+                detail.append(f"company-wide litigation accrual {pct:.1f}% of revenue")
+            self.add(
+                kind="company_exposure", agency="SEC", entity=row["id"],
+                headline=f"{name}: {', '.join(parts).lower()}",
+                summary=("; ".join(detail) + ". " if detail else "") + f"Links rest on the company's own SEC filings (strongest evidence tier {exposure.get('strongest_tier') or 'not recorded'}); accruals are company-wide, not MDL-specific.",
+                score=score, serious=serious,
+                metric={"recent": pending, "baseline": None, "ratio": None, "window": "latest fiscal year / 12 months", "unit": "pending actions in linked MDLs"},
+                series=[{"period": p.get("date", "")[:7], "count": p.get("pending", 0)} for p in (summary.get("pending_series") or [])[-24:] if isinstance(p, dict)],
+                evidence_rows=[{"dataset": "company_sec_profiles", "id": row["id"], "title": f"{name} — SEC company profile", "date": None, "note": ", ".join(parts)}]
+                + [{"dataset": "mdl_analytics", "id": str(m["mdl"]), "title": m.get("mdl_title") or f"MDL {m['mdl']}", "date": None, "note": f"tier {m.get('tier')} · {m.get('pending', 0):,} pending"} for m in sorted(mdls, key=lambda m: -(m.get("pending") or 0))[:4]],
+                method="Company-intelligence flag rules on SEC XBRL financials and JPML counts for MDLs the company's own filings name; see /companies.",
+                as_of=dt.date.today(), tags=["Companies"] + parts,
+            )
+
+    def epa(self):
+        """EPA federal enforcement: a state's latest complete fiscal year against its own five prior years."""
+        all_rows = self.data.get("regulatory_epa_state_profiles", [])
+        rows = [r for r in all_rows if (r.get("profile") or {}).get("kind") == "state"]
+        national = next((r["profile"] for r in all_rows if (r.get("profile") or {}).get("code") == "US"), None)
+        if not rows:
+            return
+        latest_fy = max((y.get("fy") for r in rows for y in r["profile"].get("years") or [] if y.get("cases")), default=None)
+        if latest_fy is None:
+            return
+        # The current federal fiscal year is incomplete until September 30.
+        today = dt.date.today()
+        complete = today.year if today >= dt.date(today.year, 9, 30) else today.year - 1
+        fy = min(latest_fy, complete)
+
+        def ratio_of(profile):
+            years = {y.get("fy"): y for y in profile.get("years") or []}
+            latest = (years.get(fy) or {}).get("cases") or 0
+            base = sum((years.get(fy - k) or {}).get("cases") or 0 for k in range(1, 6)) / 5
+            return latest, base, (latest / base if base else None), years
+
+        # A nationwide rise lifts every state; a state is flagged only when it outpaces the national ratio.
+        national_ratio = 1.0
+        if national:
+            n_latest, n_base, n_ratio, n_years = ratio_of(national)
+            national_ratio = max(1.0, n_ratio or 1.0)
+            if n_ratio and n_ratio >= 1.25:
+                self.add(
+                    kind="enforcement_surge", agency="EPA", entity="US",
+                    headline=f"EPA federal enforcement cases nationwide: {n_latest:,} in FY{fy}, {n_ratio:.2f}× the five-year mean",
+                    summary=f"{n_latest:,} EPA-lead federal cases in FY{fy} against a mean of {n_base:,.0f} over FY{fy - 5}–FY{fy - 1}; the rise is almost entirely administrative cases ({(n_years.get(fy) or {}).get('administrative', 0):,}). State surges below are measured against this national ratio.",
+                    score=40 + 20 * (n_ratio - 1), serious=False,
+                    metric={"recent": n_latest, "baseline": round(n_base, 1), "ratio": round(n_ratio, 2), "window": f"FY{fy}", "unit": "EPA cases"},
+                    series=[{"period": str(y), "count": (n_years.get(y) or {}).get("cases") or 0} for y in range(fy - 11, fy + 1)],
+                    evidence_rows=[{"dataset": "regulatory_epa_state_profiles", "id": "epa-profile:US", "title": "United States — EPA enforcement profile", "date": None, "note": None}],
+                    method="EPA ECHO federal enforcement case counts by fiscal year, latest complete year against the prior five-year mean.",
+                    as_of=dt.date(fy, 9, 30), tags=["Enforcement", "EPA", "National"],
+                )
+        for row in rows:
+            p = row["profile"]
+            years = {y.get("fy"): y for y in p.get("years") or []}
+            latest = (years.get(fy) or {}).get("cases") or 0
+            prior = [(years.get(fy - k) or {}).get("cases") or 0 for k in range(1, 6)]
+            baseline = sum(prior) / 5
+            if latest < 10 or latest < 1.5 * national_ratio * baseline or latest - baseline < 10:
+                continue
+            penalty = (years.get(fy) or {}).get("fed_penalty") or 0
+            surprise = poisson_surprise(int(latest), baseline)
+            self.add(
+                kind="enforcement_surge", agency="EPA", entity=p.get("code") or row["id"],
+                headline=f"EPA enforcement in {p.get('name')}: {latest:,} cases in FY{fy}, {latest / baseline:.1f}× its five-year mean" if baseline else f"EPA enforcement in {p.get('name')}: {latest:,} cases in FY{fy}",
+                summary=f"{latest:,} federal enforcement cases with a facility in {p.get('name')} in FY{fy} (federal penalties ${penalty:,.0f}) against a mean of {baseline:.1f} over FY{fy - 5}–FY{fy - 1}, outpacing the national rise ({national_ratio:.2f}×). Cases are assigned to every state where a recorded facility sits.",
+                score=min(surprise, 30) * 2 + 20, serious=False,
+                metric={"recent": latest, "baseline": round(baseline, 1), "ratio": round(latest / baseline, 2) if baseline else None, "window": f"FY{fy}", "unit": "EPA cases"},
+                series=[{"period": str(y), "count": (years.get(y) or {}).get("cases") or 0} for y in range(fy - 11, fy + 1)],
+                evidence_rows=[{"dataset": "regulatory_epa_state_profiles", "id": row["id"], "title": f"{p.get('name')} — EPA enforcement profile", "date": None, "note": None}],
+                method="EPA ECHO federal enforcement cases by facility state and fiscal year; flag when the latest complete year is at least 1.5× the state's five-year mean times the national ratio, and at least 10 cases above the mean.",
+                as_of=dt.date(fy, 9, 30), tags=["Enforcement", "EPA"],
+            )
+
+    RULEMAKING_AGENCIES = {"FDA", "CPSC", "NHTSA", "EPA", "FTC", "OSHA", "CMS", "DEA", "FAA", "CFPB", "SEC", "PHMSA"}
+    DOC_LABEL = {"RULE": "final rules", "PRORULE": "proposed rules", "NOTICE": "notices"}
+
+    def rulemaking(self):
+        """Federal Register publication shifts per agency (regulatory_federal_register_activity)."""
+        for row in self.data.get("regulatory_federal_register_activity", []):
+            a = row.get("activity") or {}
+            short = a.get("short")
+            if short not in self.RULEMAKING_AGENCIES:
+                continue
+            for doc_type, f in (a.get("flags") or {}).items():
+                if not f or not f.get("flag") or doc_type not in self.DOC_LABEL:
+                    continue
+                surge = f["flag"] == "surge"
+                ratio = f.get("ratio")
+                self.add(
+                    kind="rulemaking_shift", agency=short, entity=f"{short} {doc_type}",
+                    headline=f"{short} {self.DOC_LABEL[doc_type]} {'up' if surge else 'down'}: {f.get('recent')} in 12 months vs {f.get('baselineAnnual')}/yr" + (f" ({ratio:.2f}×)" if ratio else ""),
+                    summary=f"{a.get('name')} published {f.get('recent')} {self.DOC_LABEL[doc_type]} in {f.get('window')} against {f.get('baselineAnnual')} a year in {f.get('baselineWindow')} (Federal Register).",
+                    score=(25 + min(f.get("surprise") or 0, 25) * 1.5) if surge else 24, serious=False,
+                    metric={"recent": f.get("recent"), "baseline": f.get("baselineAnnual"), "ratio": ratio, "window": "last 12 months", "unit": self.DOC_LABEL[doc_type]},
+                    series=[{"period": k, "count": v} for k, v in sorted((a.get("monthly") or {}).get(doc_type, {}).items())[-24:]],
+                    evidence_rows=[{"dataset": "regulatory_federal_register_activity", "id": row["id"], "title": f"{a.get('name')} — Federal Register activity", "date": None, "note": None}],
+                    method="Federal Register API monthly counts; last 12 complete months against the prior 36 months' rate (Poisson tail; surge ≥1.25×, slowdown ≤0.6×).",
+                    as_of=dt.date.today(), tags=["Rulemaking", short],
+                )
+
     def build(self):
         self.fda()
         self.cpsc()
@@ -566,6 +756,10 @@ class Builder:
         self.shortages()
         self.nhtsa()
         self.litigation()
+        self.courts()
+        self.companies()
+        self.epa()
+        self.rulemaking()
         seen, unique = set(), []
         for insight in sorted(self.insights, key=lambda x: -x["score"]):
             if insight["id"] in seen:
@@ -579,6 +773,8 @@ KIND_LABEL = {
     "firm_cluster": "Recall cluster", "hazard_surge": "Hazard surge", "class_i_spike": "Class I spike",
     "complaint_accel": "Complaint acceleration", "recall_surge": "Recall surge", "open_probe": "Open probe",
     "litigation": "Litigation momentum", "shortage_wave": "Shortage wave", "crl_cluster": "Approval setbacks",
+    "court_signal": "Court caseload signal", "company_exposure": "Company exposure",
+    "enforcement_surge": "Enforcement surge", "rulemaking_shift": "Rulemaking shift",
 }
 
 
@@ -628,7 +824,7 @@ def main(argv):
             [("rank", "Rank"), ("severity", "Severity"), ("kind", "Signal"), ("agency", "Agency"), ("score", "Score"), ("as_of", "As of")],
             [("severity", "Severity", {"high": "High", "elevated": "Elevated", "watch": "Watch"}),
              ("kind", "Signal", KIND_LABEL),
-             ("agency", "Agency", {"fda": "FDA", "cpsc": "CPSC", "nhtsa": "NHTSA", "jpml": "JPML"})],
+             ("agency", "Agency", {a.lower(): a for a in ["FDA", "CPSC", "NHTSA", "JPML", "COURTS", "SEC", "EPA", "FTC", "OSHA", "CMS", "DEA", "FAA", "CFPB", "PHMSA"]})],
         ),
         summary={"generated_at": generated, "insights": len(insights), "kinds": dict(counts), "severity": dict(severities),
                  "sources": sorted(data), "method": "Deterministic detectors over published safety datasets; see scripts/enrichment/build_safety_insights.py."},

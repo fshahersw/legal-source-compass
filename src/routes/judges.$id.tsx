@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { EntityError, EntityPage, entityQuery } from "@/components/corpus/EntityPage";
 import { JudgePortrait } from "@/components/corpus/EntityArtwork";
 import { JudgeFjcPanel } from "@/components/corpus/JudgeFjcPanel";
+import { JudgeMdlPanel } from "@/components/judges/JudgeMdlPanel";
 import { pageHead } from "@/lib/corpus/head";
 import { canonicalState } from "@/lib/corpus/stateHub";
 import { buildEntityView } from "@/lib/external/entityView";
@@ -59,6 +60,7 @@ function Page() {
       extra={() => (
         <>
           <JudgeFjcPanel judgeId={id} />
+          <JudgeMdlPanel judgeId={id} />
           {states.length ? (
             <div className="mb-5 flex flex-wrap items-center gap-2 text-xs">
               <span className="text-muted-foreground">Recorded state associations:</span>

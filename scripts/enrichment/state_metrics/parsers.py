@@ -232,13 +232,14 @@ def fda_enforcement(rows):
 
 
 # ---------------------------------------------------------------- derived statistics
-def per_capita(counts, population, per):
-    """counts / same-year population * per, rounded to 2 decimals; None when either side is missing."""
+def per_capita(counts, population, per, digits=2):
+    """counts / same-year population * per, rounded once to `digits`; years missing either side are omitted."""
     out = {}
     for year, value in counts.items():
         pop = population.get(year)
         if value is not None and pop:
-            out[year] = round(value / pop * per, 2)
+            rate = round(value / pop * per, digits)
+            out[year] = int(rate) if digits == 0 else rate
     return out
 
 
@@ -276,3 +277,11 @@ def change_pct(series, year, span=5):
     if a is None or b is None or a == 0:
         return None
     return round((b - a) / abs(a) * 100, 1)
+
+
+def change_points(series, year, span=5):
+    """Difference in percentage points, for metrics that are already percentages (e.g. unemployment rate)."""
+    a, b = series.get(year - span), series.get(year)
+    if a is None or b is None:
+        return None
+    return round(b - a, 1)

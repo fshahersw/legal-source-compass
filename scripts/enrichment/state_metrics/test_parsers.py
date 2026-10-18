@@ -128,6 +128,16 @@ class StatsTests(unittest.TestCase):
     def test_per_capita_requires_same_year_population(self):
         self.assertEqual(p.per_capita({2023: 50, 2024: 10}, {2023: 1_000_000}, 100_000), {2023: 5.0})
 
+    def test_per_capita_rounds_once(self):
+        # $1,000.499M / 10,000 people = $100,049.9 -> 100,050 (rounding to cents first would not change it here,
+        # but whole-dollar output must come from a single rounding of the exact quotient).
+        self.assertEqual(p.per_capita({2024: 1000.499}, {2024: 10000}, 1_000_000, digits=0), {2024: 100050})
+        self.assertIsInstance(p.per_capita({2024: 1000.0}, {2024: 3}, 1_000_000, digits=0)[2024], int)
+
+    def test_change_points(self):
+        self.assertEqual(p.change_points({2020: 8.1, 2025: 4.5}, 2025), -3.6)
+        self.assertIsNone(p.change_points({2025: 4.5}, 2025))
+
     def test_ranks_ties_and_z(self):
         ranks = p.ranks_and_z({"A": 10, "B": 10, "C": 4, "D": None})
         self.assertEqual(ranks["A"][0], 1)

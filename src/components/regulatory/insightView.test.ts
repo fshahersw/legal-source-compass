@@ -38,7 +38,7 @@ describe("safety insight parsing", () => {
   it("drops insights with unknown kinds, severities or agencies instead of guessing", () => {
     expect(parseInsight({ ...base, kind: "rumor" })).toBeNull();
     expect(parseInsight({ ...base, severity: "critical" })).toBeNull();
-    expect(parseInsight({ ...base, agency: "EPA" })).toBeNull();
+    expect(parseInsight({ ...base, agency: "NOT_AN_AGENCY" })).toBeNull();
     expect(parseInsight({ ...base, score: "high" })).toBeNull();
   });
   it("drops evidence without a dataset or id", () => {

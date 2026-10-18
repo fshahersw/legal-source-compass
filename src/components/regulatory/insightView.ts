@@ -15,6 +15,10 @@ export const KIND_LABEL: Record<InsightKind, string> = {
   litigation: "Litigation momentum",
   shortage_wave: "Shortage wave",
   crl_cluster: "Approval setbacks",
+  court_signal: "Court caseload signal",
+  company_exposure: "Company exposure",
+  enforcement_surge: "Enforcement surge",
+  rulemaking_shift: "Rulemaking shift",
 };
 
 export const SEVERITY_LABEL: Record<InsightSeverity, string> = {
@@ -29,6 +33,16 @@ export const AGENCY_NAME: Record<InsightAgency, string> = {
   CPSC: "Consumer Product Safety Commission",
   NHTSA: "National Highway Traffic Safety Administration",
   JPML: "Judicial Panel on Multidistrict Litigation",
+  COURTS: "U.S. Courts",
+  SEC: "Securities and Exchange Commission",
+  EPA: "Environmental Protection Agency",
+  FTC: "Federal Trade Commission",
+  OSHA: "Occupational Safety and Health Administration",
+  CMS: "Centers for Medicare & Medicaid Services",
+  DEA: "Drug Enforcement Administration",
+  FAA: "Federal Aviation Administration",
+  CFPB: "Consumer Financial Protection Bureau",
+  PHMSA: "Pipeline and Hazardous Materials Safety Administration",
 };
 
 export type InsightFilter = {

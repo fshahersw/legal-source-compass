@@ -296,9 +296,22 @@ def derive(data):
              ("psychostimulant_rate", "psychostimulant_deaths", 100_000), ("fars_rate", "fars_fatalities", 100_000),
              ("nhtsa_complaint_rate", "nhtsa_complaints", 100_000), ("fda_recall_rate", "fda_recalls", 1_000_000)]
     for target, source, per in pairs:
-        data[target] = {k: p.per_capita(data[source].get(k, {}), pop.get(k, {}), per) for k in keys}
-    # GDP is in millions of dollars: value*1e6/pop -> dollars per resident, rounded to whole dollars.
-    data["gdp_per_capita"] = {k: {y: round(v) for y, v in s.items()} for k, s in data["gdp_per_capita"].items()}
+        # GDP is in millions of dollars: value * 1e6 / pop = dollars per resident, rounded once to whole dollars.
+        digits = 0 if target == "gdp_per_capita" else 2
+        data[target] = {k: p.per_capita(data[source].get(k, {}), pop.get(k, {}), per, digits) for k in keys}
+
+
+# Derived rate -> the count it is computed from; the rate inherits the count's caveats, footnotes and flags.
+NUMERATOR = {"overdose_rate": "overdose_deaths", "opioid_rate": "opioid_deaths",
+             "synthetic_opioid_rate": "synthetic_opioid_deaths", "psychostimulant_rate": "psychostimulant_deaths",
+             "fars_rate": "fars_fatalities", "nhtsa_complaint_rate": "nhtsa_complaints", "fda_recall_rate": "fda_recalls",
+             "gdp_per_capita": "gdp"}
+VSRR_COUNTS = ("overdose_deaths", "opioid_deaths", "synthetic_opioid_deaths", "psychostimulant_deaths")
+RATE_CAVEATS = {
+    "vsrr": "Occurrence-based provisional death counts ÷ resident population: this differs from CDC's residence-based, "
+            "age-adjusted rates, most of all in the District of Columbia, where many deaths of non-residents occur.",
+    "fars_rate": "Fatalities are counted where the crash occurred (any residence) ÷ resident population.",
+}
 
 
 def add_causes(causes):
@@ -371,7 +384,31 @@ def main():
                "fda_recalls": {int(meta['fda']['max_report_date'][:4]): f"Reports through {meta['fda']['max_report_date']}"}}
     for key in ("fda_drug_recalls", "fda_device_recalls", "fda_food_recalls", "fda_class1_recalls"):
         partial[key] = partial["fda_recalls"]
-    provisional = {"overdose_deaths": "CDC provisional (VSRR)", "fars_fatalities": {2024: "FARS 2024 Annual Report File"}}
+    provisional = {key: "CDC provisional counts (VSRR)" for key in VSRR_COUNTS}
+    provisional["fars_fatalities"] = {2024: "FARS 2024 Annual Report File"}
+    for rate, count in NUMERATOR.items():
+        if count in provisional:
+            provisional[rate] = provisional[count]
+    vsrr_caveats = ["Provisional counts; CDC notes they may differ from final data.", "Reported (not predicted) values are used.",
+                    "Suppressed by CDC where the share of records with drugs specified is too low."]
+    for key in VSRR_COUNTS:
+        defs[key]["caveats"] = vsrr_caveats + [c for c in defs[key]["caveats"] if c not in vsrr_caveats]
+    if "overdose_deaths" in defs:  # the all-drug total is not subject to the drug-specified suppression
+        defs["overdose_deaths"]["caveats"] = [c for c in defs["overdose_deaths"]["caveats"] if not c.startswith("Suppressed")]
+    # Rates inherit their numerator's caveats (except partial-year notes: rates stop at the last population year).
+    for m in METRICS:
+        count = NUMERATOR.get(m["key"])
+        if count:
+            inherited = [c for c in defs[count]["caveats"] if "partial" not in c.lower() and c not in m["caveats"]]
+            m["caveats"] = inherited + m["caveats"]
+        if m["key"] in ("overdose_rate", "opioid_rate", "synthetic_opioid_rate", "psychostimulant_rate"):
+            m["caveats"].append(RATE_CAVEATS["vsrr"])
+        if m["key"] == "fars_rate":
+            m["caveats"].append(RATE_CAVEATS["fars_rate"])
+    # CDC cell footnotes on a count apply equally to the rate computed from it.
+    for rate, count in NUMERATOR.items():
+        if count in notes:
+            notes[rate] = notes[count]
 
     for m in METRICS:
         series = data[m["key"]]
@@ -408,7 +445,9 @@ def main():
             value = data[m["key"]].get(usps, {}).get(year)
             rank, z = ranks.get(usps, (None, None))
             latest[m["key"]] = {"year": year, "value": value, "rank": rank, "of": n, "z": z,
-                                "change5": p.change_pct(data[m["key"]].get(usps, {}), year),
+                                # Percent metrics change in percentage points; everything else in relative %.
+                                "change5": (p.change_points if m["format"] == "pct" else p.change_pct)(data[m["key"]].get(usps, {}), year),
+                                "change5_unit": "pts" if m["format"] == "pct" else "%",
                                 "outlier": None if z is None or abs(z) <= 2 else ("high" if z > 0 else "low")}
         state_notes = {k: {str(y): t for y, t in v.get(usps, {}).items()} for k, v in notes.items() if v.get(usps)}
         twelve = {k: v.get(usps) for k, v in latest12.items() if v.get(usps)}
@@ -431,7 +470,9 @@ def main():
                  "unemployment": fmt(L("unemployment_rate").get("value"), "pct"),
                  "overdose_rate": fmt(L("overdose_rate").get("value"), "rate"),
                  "fars_rate": fmt(L("fars_rate").get("value"), "rate")}
-        outliers = sorted(k for k, v in latest.items() if v.get("outlier") and defs[k]["selectable"])
+        # Raw totals (counts, dollar amounts) mostly track population size; only normalised metrics are flagged.
+        outliers = sorted(k for k, v in latest.items()
+                          if v.get("outlier") and defs[k]["selectable"] and defs[k]["format"] not in ("int", "money_m"))
         profile_rows.append(cw.record(
             PROFILES, usps, name, source_url=SRC["census2025"]["url"],
             subtitle=f"{len(series)} official series · population {cells['population']} ({L('population').get('year', '')})",

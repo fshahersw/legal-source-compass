@@ -11,6 +11,10 @@ import {
 import { cn } from "@/lib/utils";
 import { formatChange, formatValue } from "./stateMetricsMath";
 
+/** Short qualifiers shown beside a metric whose geography is not where people live. */
+const ROW_NOTE: Record<string, string> = {
+  fda_recalls: "by recalling-firm HQ state",
+};
 const PANEL_METRICS = [
   "population",
   "per_capita_income",
@@ -134,7 +138,12 @@ function MetricRow({
         title={`${def.label}. ${def.method}`}
       >
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[11.5px] text-muted-foreground">{def.short}</span>
+          <span className="block text-[11.5px] leading-tight text-muted-foreground">
+            {def.short}
+            {ROW_NOTE[def.key] ? (
+              <span className="text-[10.5px]"> · {ROW_NOTE[def.key]}</span>
+            ) : null}
+          </span>
           <span className="flex items-baseline gap-1.5">
             <span className="font-mono text-[13px] font-semibold">
               {formatValue(latest?.value, def.format)}
@@ -158,7 +167,9 @@ function MetricRow({
           </span>
           <span className="block text-[10.5px] text-muted-foreground">
             {latest?.rank ? `#${latest.rank} of ${latest.of}` : "Not ranked"}
-            {latest?.change5 != null ? ` · 5-yr ${formatChange(latest.change5)}` : ""}
+            {latest?.change5 != null
+              ? ` · 5-yr ${formatChange(latest.change5, latest.change5Unit)}`
+              : ""}
           </span>
         </span>
         <Spark series={series} years={years} />

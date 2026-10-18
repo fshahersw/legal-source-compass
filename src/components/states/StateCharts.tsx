@@ -36,15 +36,18 @@ export function TrendChart({
   def,
   state,
   years,
+  bandYears,
 }: {
   def: MetricDef;
   state: StateProfile | null;
   years: number[];
+  /** Years whose cross-state median / percentiles may be drawn (enough states report). */
+  bandYears: Set<string>;
 }) {
   const comparableNational = def.format !== "int" && def.format !== "money_m";
   const rows = years.map((year) => {
     const y = String(year);
-    const d = def.distribution[y];
+    const d = bandYears.has(y) ? def.distribution[y] : undefined;
     return {
       year: y,
       state: state?.series[def.key]?.[y] ?? null,
@@ -186,11 +189,13 @@ export function SmallMultiples({
   years,
   selected,
   onSelect,
+  bandYears,
 }: {
   def: MetricDef;
   states: StateProfile[];
   ranked: RankedValue[];
   years: number[];
+  bandYears: Set<string>;
   selected: string | null;
   onSelect: (usps: string) => void;
 }) {
@@ -213,7 +218,7 @@ export function SmallMultiples({
   const y = (v: number) => 30 - (Math.max(0, v) / max) * 27;
   const medianPath = years
     .map((yr, i) => {
-      const m = def.distribution[String(yr)]?.median;
+      const m = bandYears.has(String(yr)) ? def.distribution[String(yr)]?.median : undefined;
       return m == null ? null : `${x(i).toFixed(1)},${y(m).toFixed(1)}`;
     })
     .filter(Boolean)

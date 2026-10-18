@@ -153,9 +153,9 @@ function AgencyDetail({ agency }: { agency: AgencyActivity }) {
         </p>
         <div className="mt-2 h-56">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={yearly} margin={{ top: 4, right: 8, bottom: 0, left: -12 }}>
+            <LineChart data={yearly} margin={{ top: 4, right: 18, bottom: 0, left: -12 }}>
               <CartesianGrid stroke="var(--border)" vertical={false} />
-              <XAxis dataKey="year" tick={axis} interval={4} />
+              <XAxis dataKey="year" tick={axis} interval={4} padding={{ right: 6 }} />
               <YAxis tick={axis} />
               <Tooltip contentStyle={{ fontSize: 11 }} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
@@ -203,7 +203,7 @@ function AgencyDetail({ agency }: { agency: AgencyActivity }) {
         </p>
         <div className="mt-2 h-56">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={monthly} margin={{ top: 4, right: 8, bottom: 0, left: -12 }}>
+            <BarChart data={monthly} margin={{ top: 4, right: 18, bottom: 0, left: -12 }}>
               <CartesianGrid stroke="var(--border)" vertical={false} />
               <XAxis dataKey="month" tick={axis} interval={5} />
               <YAxis tick={axis} allowDecimals={false} />

@@ -7,6 +7,7 @@ import { AgencyMark } from "@/components/corpus/EntityArtwork";
 import { Input } from "@/components/ui/input";
 import {
   getSafetyIntelligence,
+  INSIGHT_AGENCIES,
   INSIGHT_KINDS,
   type InsightAgency,
   type InsightSeverity,
@@ -43,7 +44,7 @@ const SEVERITY_BAR: Record<InsightSeverity, string> = {
   elevated: "var(--warning)",
   watch: "var(--muted-foreground)",
 };
-const AGENCIES: InsightAgency[] = ["FDA", "CPSC", "NHTSA", "JPML"];
+const AGENCIES: readonly InsightAgency[] = INSIGHT_AGENCIES;
 const PAGE = 12;
 
 function Mark({ agency, className }: { agency: InsightAgency; className?: string | undefined }) {
@@ -365,8 +366,8 @@ export function SafetyIntelligence() {
             Regulatory watch · automated flags
           </h2>
           <p className="text-xs text-muted-foreground">
-            {all.length.toLocaleString("en-US")} trends and anomalies detected across FDA, CPSC,
-            NHTSA and JPML records
+            {all.length.toLocaleString("en-US")} trends and anomalies detected across agency safety,
+            enforcement, rulemaking, court, MDL and SEC records
             {generated
               ? ` · generated ${generated.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
               : ""}

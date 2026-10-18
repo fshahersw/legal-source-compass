@@ -3,7 +3,7 @@ import { ArrowDown, ArrowUp } from "lucide-react";
 import { StateMark } from "@/components/corpus/EntityArtwork";
 import type { MetricDef, StateProfile } from "@/lib/external/stateMetrics.functions";
 import { cn } from "@/lib/utils";
-import { formatChange, formatValue, type RankedValue } from "./stateMetricsMath";
+import { changeUnitFor, formatChange, formatValue, type RankedValue } from "./stateMetricsMath";
 
 type SortKey = "rank" | "name" | "z" | "change5";
 
@@ -72,7 +72,7 @@ export function StateRankingTable({
           <col />
           <col className="w-[4.5rem]" />
           <col className="w-11" />
-          <col className="w-16" />
+          <col className="w-[4.75rem]" />
         </colgroup>
         <thead className="sticky top-0 z-10 bg-surface text-left text-[11px] text-muted-foreground shadow-[0_1px_0_var(--border)]">
           <tr>
@@ -113,15 +113,18 @@ export function StateRankingTable({
                     className="flex min-w-0 max-w-full items-center gap-1.5 text-left font-medium hover:underline"
                   >
                     <StateMark state={r.usps} className="size-6 rounded-md p-0.5" />
-                    <span className="truncate">{r.name}</span>
-                    {r.outlier ? (
-                      <span
-                        className="shrink-0 rounded border border-warning/50 bg-warning/15 px-1 text-[10px] font-normal text-warning-foreground"
-                        title={`z = ${r.z}: more than 2 standard deviations ${r.outlier === "high" ? "above" : "below"} the state mean`}
-                      >
-                        {r.outlier === "high" ? "High" : "Low"}
-                      </span>
-                    ) : null}
+                    {/* Names wrap rather than truncate so every jurisdiction stays legible at narrow widths. */}
+                    <span className="min-w-0 leading-tight">
+                      {r.name}
+                      {r.outlier ? (
+                        <span
+                          className="ml-1 inline-block rounded border border-warning/50 bg-warning/15 px-1 align-[1px] text-[10px] font-normal leading-4 text-warning-foreground"
+                          title={`z = ${r.z}: more than 2 standard deviations ${r.outlier === "high" ? "above" : "below"} the state mean`}
+                        >
+                          {r.outlier === "high" ? "High" : "Low"}
+                        </span>
+                      ) : null}
+                    </span>
                   </button>
                 </td>
                 <td className="px-2 py-1 text-right font-mono">
@@ -135,8 +138,8 @@ export function StateRankingTable({
                 <td className="px-2 py-1 text-right font-mono text-muted-foreground">
                   {r.z == null ? "—" : r.z.toFixed(2)}
                 </td>
-                <td className="px-2 py-1 text-right font-mono text-muted-foreground">
-                  {r.change5 == null ? "—" : formatChange(r.change5)}
+                <td className="whitespace-nowrap px-1.5 py-1 text-right font-mono text-[11px] text-muted-foreground">
+                  {r.change5 == null ? "—" : formatChange(r.change5, changeUnitFor(def.format))}
                 </td>
               </tr>
             );

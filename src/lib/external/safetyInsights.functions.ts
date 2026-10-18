@@ -12,10 +12,30 @@ export const INSIGHT_KINDS = [
   "litigation",
   "shortage_wave",
   "crl_cluster",
+  "court_signal",
+  "company_exposure",
+  "enforcement_surge",
+  "rulemaking_shift",
 ] as const;
 export type InsightKind = (typeof INSIGHT_KINDS)[number];
 export type InsightSeverity = "high" | "elevated" | "watch";
-export type InsightAgency = "FDA" | "CPSC" | "NHTSA" | "JPML";
+export const INSIGHT_AGENCIES = [
+  "FDA",
+  "CPSC",
+  "NHTSA",
+  "JPML",
+  "COURTS",
+  "SEC",
+  "EPA",
+  "FTC",
+  "OSHA",
+  "CMS",
+  "DEA",
+  "FAA",
+  "CFPB",
+  "PHMSA",
+] as const;
+export type InsightAgency = (typeof INSIGHT_AGENCIES)[number];
 
 export type InsightEvidence = {
   dataset: string;
@@ -56,7 +76,7 @@ export type SafetyIntelligence = {
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
 const str = (v: unknown) => (typeof v === "string" ? v : "");
 const SEVERITIES: readonly InsightSeverity[] = ["high", "elevated", "watch"];
-const AGENCIES: readonly InsightAgency[] = ["FDA", "CPSC", "NHTSA", "JPML"];
+const AGENCIES: readonly InsightAgency[] = INSIGHT_AGENCIES;
 
 /** Validate one stored insight; anything malformed is dropped rather than shown with guessed fields. */
 export function parseInsight(raw: unknown): SafetyInsight | null {

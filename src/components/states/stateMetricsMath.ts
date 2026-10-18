@@ -40,10 +40,17 @@ export function formatValue(value: number | null | undefined, format: MetricForm
   }
 }
 
-export function formatChange(change: number | null | undefined): string {
+export type ChangeUnit = "pts" | "%";
+
+/** Signed change: "+4.2%" for relative change, "−3.6 pts" for percentage-point change. */
+export function formatChange(change: number | null | undefined, unit: ChangeUnit = "%"): string {
   if (!finite(change)) return NOT_RECORDED;
-  return `${change > 0 ? "+" : ""}${change.toFixed(1)}%`;
+  const sign = change > 0 ? "+" : change < 0 ? "−" : "";
+  return `${sign}${Math.abs(change).toFixed(1)}${unit === "pts" ? " pts" : "%"}`;
 }
+
+/** Percent-format metrics change in percentage points; all others in relative percent. */
+export const changeUnitFor = (format: MetricFormat): ChangeUnit => (format === "pct" ? "pts" : "%");
 
 export function median(values: number[]): number | null {
   const s = values.filter(finite).sort((a, b) => a - b);
@@ -116,6 +123,26 @@ export function changePct(series: YearSeries | undefined, year: number, span = 5
   return Math.round(((b - a) / Math.abs(a)) * 1000) / 10;
 }
 
+/** Difference in percentage points between `year` and `year - span`. */
+export function changePoints(
+  series: YearSeries | undefined,
+  year: number,
+  span = 5,
+): number | null {
+  const a = series?.[String(year - span)];
+  const b = series?.[String(year)];
+  if (!finite(a) || !finite(b)) return null;
+  return Math.round((b - a) * 10) / 10;
+}
+
+export function changeFor(
+  series: YearSeries | undefined,
+  year: number,
+  format: MetricFormat,
+): number | null {
+  return format === "pct" ? changePoints(series, year) : changePct(series, year);
+}
+
 /** Values of one metric in one year for every state that reports it. */
 export function valuesFor(states: StateProfile[], metric: string, year: number): StateValue[] {
   return states.flatMap((s) => {
@@ -125,7 +152,12 @@ export function valuesFor(states: StateProfile[], metric: string, year: number):
 }
 
 /** Rank 1 = highest value (ties share the best rank), z against the population SD, 5-year change. */
-export function rankStates(states: StateProfile[], metric: string, year: number): RankedValue[] {
+export function rankStates(
+  states: StateProfile[],
+  metric: string,
+  year: number,
+  format: MetricFormat = "int",
+): RankedValue[] {
   const values = valuesFor(states, metric, year);
   const nums = values.map((v) => v.value);
   const m = mean(nums);
@@ -139,7 +171,7 @@ export function rankStates(states: StateProfile[], metric: string, year: number)
         ...v,
         rank: sorted.indexOf(v.value) + 1,
         z,
-        change5: changePct(byUsps.get(v.usps)?.series[metric], year),
+        change5: changeFor(byUsps.get(v.usps)?.series[metric], year, format),
         outlier:
           z == null || Math.abs(z) <= OUTLIER_Z
             ? null
@@ -240,4 +272,114 @@ export function metricGroups(metrics: MetricDef[]) {
     groups.set(m.group, [...(groups.get(m.group) ?? []), m]);
   }
   return [...groups.entries()].map(([group, items]) => ({ group, items }));
+}
+
+/**
+ * Years whose cross-state median / percentiles are drawn: only years in which at least 45 of 51 jurisdictions
+ * report (the builder's rank_years), so the band never mixes different state sets.
+ */
+export function bandYears(def: MetricDef): Set<string> {
+  return new Set(def.rankYears.map(String));
+}
+
+/** Metric family: the count and the rate built from it belong to the same family. */
+const FAMILY: Record<string, string> = {
+  overdose_deaths: "overdose",
+  overdose_rate: "overdose",
+  opioid_deaths: "opioid",
+  opioid_rate: "opioid",
+  synthetic_opioid_deaths: "synthetic_opioid",
+  synthetic_opioid_rate: "synthetic_opioid",
+  psychostimulant_deaths: "psychostimulant",
+  psychostimulant_rate: "psychostimulant",
+  fars_fatalities: "fars",
+  fars_rate: "fars",
+  nhtsa_complaints: "nhtsa_complaints",
+  nhtsa_complaint_rate: "nhtsa_complaints",
+  nhtsa_crash_complaints: "nhtsa_crash",
+  fda_recalls: "fda_recalls",
+  fda_recall_rate: "fda_recalls",
+  fda_drug_recalls: "fda_drug",
+  fda_device_recalls: "fda_device",
+  fda_food_recalls: "fda_food",
+  fda_class1_recalls: "fda_class1",
+  gdp: "gdp",
+  real_gdp: "gdp",
+  gdp_per_capita: "gdp",
+  personal_income: "income",
+  per_capita_income: "income",
+  unemployment_rate: "labor",
+  labor_force: "labor",
+};
+const familyOf = (key: string) =>
+  FAMILY[key] ?? (key.startsWith("cause_") ? key.replace(/_(rate|deaths)$/, "") : key);
+
+/** [whole, part] families: the second is counted inside the first. */
+export const COMPONENT_PAIRS: readonly [string, string][] = [
+  ["overdose", "opioid"],
+  ["overdose", "synthetic_opioid"],
+  ["overdose", "psychostimulant"],
+  ["opioid", "synthetic_opioid"],
+  ["fda_recalls", "fda_drug"],
+  ["fda_recalls", "fda_device"],
+  ["fda_recalls", "fda_food"],
+  ["fda_recalls", "fda_class1"],
+  ["nhtsa_complaints", "nhtsa_crash"],
+  ["cause_unintentional_injuries", "fars"],
+  ...[
+    "heart_disease",
+    "cancer",
+    "unintentional_injuries",
+    "clrd",
+    "stroke",
+    "alzheimers_disease",
+    "diabetes",
+    "influenza_and_pneumonia",
+    "kidney_disease",
+    "suicide",
+  ].map((c): [string, string] => ["cause_all_causes", `cause_${c}`]),
+];
+/** Families that share some of the same deaths without either containing the other. */
+export const OVERLAP_PAIRS: readonly [string, string, string][] = [
+  ["synthetic_opioid", "psychostimulant", "a death involving both drug types is counted in both"],
+  ["opioid", "psychostimulant", "a death involving both drug types is counted in both"],
+  ...["overdose", "opioid", "synthetic_opioid", "psychostimulant"].flatMap(
+    (f): [string, string, string][] => [
+      ["cause_unintentional_injuries", f, "unintentional drug poisonings are counted in both"],
+      ["cause_suicide", f, "intentional drug poisonings are counted in both"],
+    ],
+  ),
+];
+
+export type MetricRelation = {
+  kind: "same" | "derived" | "component" | "overlap";
+  message: string;
+};
+
+/** Whether two metrics are related by construction, so their correlation says little about the world. */
+export function metricRelation(a: MetricDef, b: MetricDef): MetricRelation | null {
+  if (a.key === b.key)
+    return { kind: "same", message: "Both axes show the same metric; r = 1 by definition." };
+  const fa = familyOf(a.key),
+    fb = familyOf(b.key);
+  if (fa === fb)
+    return {
+      kind: "derived",
+      message: `${a.short} and ${b.short} are computed from the same underlying figure, so they correlate by construction.`,
+    };
+  for (const [whole, part] of COMPONENT_PAIRS) {
+    const [w, p] = fa === whole && fb === part ? [a, b] : fb === whole && fa === part ? [b, a] : [];
+    if (w && p)
+      return {
+        kind: "component",
+        message: `One metric is a component of the other: ${w.short} includes ${p.short}, so a positive correlation is expected by construction.`,
+      };
+  }
+  for (const [x, y, why] of OVERLAP_PAIRS)
+    if ((fa === x && fb === y) || (fa === y && fb === x))
+      return {
+        kind: "overlap",
+        message: `The metrics overlap: ${why}, so part of any correlation is built in.`,
+      };
+  return null;
 }
