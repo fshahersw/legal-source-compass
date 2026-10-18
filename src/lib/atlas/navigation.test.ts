@@ -69,6 +69,33 @@ describe("analytics destinations", () => {
     );
   });
 });
+describe("data visualizations hub", () => {
+  it("sits with States & courts as its last tab and lights only itself", () => {
+    expect(navigationSection("/analytics")).toBe("states");
+    expect(contextualNavigation("/analytics").at(-1)).toEqual({
+      to: "/analytics",
+      label: "Data visualizations",
+    });
+    expect(activeContextualPath("/analytics")).toBe("/analytics");
+    expect(activeContextualPath("/places/analytics")).toBe("/places/analytics");
+    expect(activeContextualPath("/courts/analytics")).toBe("/courts/analytics");
+  });
+  it("is offered on every States & courts page and adds no primary section", () => {
+    for (const path of ["/places", "/courts", "/courts/ned", "/judges", "/places/analytics"])
+      expect(contextualNavigation(path).map((x) => x.to)).toContain("/analytics");
+    expect(contextualNavigation("/analytics")).toEqual(contextualNavigation("/courts"));
+    expect(PRIMARY_NAVIGATION).toHaveLength(4);
+    expect(PRIMARY_NAVIGATION.map((x) => x.to)).not.toContain("/analytics");
+  });
+  it("does not capture look-alike paths", () => {
+    expect(navigationSection("/analytics-x")).toBeNull();
+    expect(navigationSection("/analyticsx/y")).toBeNull();
+    expect(activeContextualPath("/analytics/", contextualNavigation("/courts"))).toBe("/analytics");
+  });
+  it("is offered from the law section only through the States & courts tabs, not its own", () => {
+    expect(contextualNavigation("/law").map((x) => x.to)).not.toContain("/analytics");
+  });
+});
 describe("federal MDL views", () => {
   it("places MDL analytics, MDL intelligence and the case lens with States & courts", () => {
     for (const path of ["/matters/analytics", "/matters/intel", "/matters/lens/3026"]) {
@@ -105,6 +132,7 @@ describe("active section tab", () => {
     ["/law/provision/abc", "/law"],
     ["/law/enforcement", "/law/enforcement"],
     ["/places/analytics", "/places/analytics"],
+    ["/analytics", "/analytics"],
     ["/places", "/"],
     ["/places/", "/"],
     ["/companies", "/companies"],

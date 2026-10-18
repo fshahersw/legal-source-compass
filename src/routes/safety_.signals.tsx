@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
+import { DailyInsightCard } from "@/components/insights/DailyInsightCard";
 import { MassTortSignals, massTortSignalsQuery } from "@/components/regulatory/MassTortSignals";
 import { pageHead } from "@/lib/corpus/head";
 
@@ -24,6 +25,7 @@ function Page() {
         { label: "Mass-tort signals" },
       ]}
     >
+      <DailyInsightCard section="safety" className="mb-3" />
       <MassTortSignals />
     </AppShell>
   );

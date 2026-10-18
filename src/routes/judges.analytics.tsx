@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
+import { DailyInsightCard } from "@/components/insights/DailyInsightCard";
 import { JudgeCrossAnalytics } from "@/components/judges/JudgeCrossAnalytics";
 import { judgeCrossQuery } from "@/components/judges/judgeCrossQuery";
 import { pageHead } from "@/lib/corpus/head";
@@ -25,6 +26,7 @@ function Page() {
         { label: "MDL judge analytics" },
       ]}
     >
+      <DailyInsightCard section="judge" className="mb-3" />
       <JudgeCrossAnalytics />
     </AppShell>
   );

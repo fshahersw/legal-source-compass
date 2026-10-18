@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
+import { DailyInsightCard } from "@/components/insights/DailyInsightCard";
 import {
   StateMetricsDashboard,
   stateMetricsQuery,
@@ -35,6 +36,7 @@ function Page() {
         { label: "State analytics" },
       ]}
     >
+      <DailyInsightCard section="state" className="mb-3" />
       <StateMetricsDashboard
         search={search}
         onSearch={(patch) =>

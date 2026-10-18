@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
+import { DailyInsightCard } from "@/components/insights/DailyInsightCard";
 import {
   EnforcementPage,
   normalizeEnforcementSearch,
@@ -31,6 +32,7 @@ function Page() {
         { label: "Enforcement" },
       ]}
     >
+      <DailyInsightCard section="enforcement" className="mb-3" />
       <EnforcementPage
         search={search}
         onSearch={(next) => void navigate({ search: next, replace: true, resetScroll: false })}

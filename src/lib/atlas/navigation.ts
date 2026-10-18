@@ -27,7 +27,9 @@ export function navigationSection(path: string): NavigationSection | null {
     return "law";
   if (
     path === "/" ||
-    ["/places", "/courts", "/judges", "/search", "/overview"].some((x) => at(path, x)) ||
+    ["/places", "/courts", "/judges", "/search", "/overview", "/analytics"].some((x) =>
+      at(path, x),
+    ) ||
     isFederalMdlView(path)
   )
     return "states";
@@ -56,6 +58,7 @@ export function contextualNavigation(path: string): ContextNavigationItem[] {
         { to: "/courts/analytics", label: "Court analytics" },
         { to: "/judges", label: "All judges" },
         { to: "/judges/analytics", label: "Judge analytics" },
+        { to: "/analytics", label: "Data visualizations" },
       ];
     case "law":
       return [

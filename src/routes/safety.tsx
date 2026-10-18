@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
+import { DailyInsightCard } from "@/components/insights/DailyInsightCard";
 import { SectionPage } from "@/components/corpus/SectionPage";
 import { FolderGrid } from "@/components/corpus/FolderGrid";
 import { useDatasets } from "@/components/corpus/DatasetBrowser";
@@ -101,6 +102,7 @@ function SafetyPage() {
     const summed = agencyCards.some((c) => c.summed);
     body = (
       <div className="space-y-6">
+        <DailyInsightCard section="safety" />
         <SafetyIntelligence />
         {/* Notes wrap (two lines, full text on hover) so a description is never cut mid-word at 1024–1280 px. */}
         <FolderGrid

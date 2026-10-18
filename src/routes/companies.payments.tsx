@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
+import { DailyInsightCard } from "@/components/insights/DailyInsightCard";
 import {
   PaymentsDashboard,
   paymentsDashboardQuery,
@@ -52,6 +53,7 @@ function Page() {
         { label: "Industry payments" },
       ]}
     >
+      <DailyInsightCard section="payments" className="mb-3" />
       <PaymentsDashboard
         search={search}
         onSearch={(patch) =>

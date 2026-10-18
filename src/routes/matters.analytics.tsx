@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
+import { DailyInsightCard } from "@/components/insights/DailyInsightCard";
 import { MdlAnalytics, mdlAnalyticsQuery } from "@/components/matters/MdlAnalytics";
 import { pageHead } from "@/lib/corpus/head";
 
@@ -25,6 +26,7 @@ function Page() {
         { label: "MDL analytics" },
       ]}
     >
+      <DailyInsightCard section="mdl" className="mb-3" />
       <MdlAnalytics />
     </AppShell>
   );

@@ -87,6 +87,7 @@ describe("AppShell section tabs", () => {
     ["/law", "Overview", "page"],
     ["/places", "State map", "true"],
     ["/places/analytics", "State analytics", "page"],
+    ["/analytics", "Data visualizations", "page"],
   ])("%s lights only %s (aria-current=%s)", (path, label, current) => {
     const { tabs } = render(path);
     expect(tabs).not.toBeNull();
@@ -108,9 +109,18 @@ describe("AppShell section tabs", () => {
         "/courts/analytics",
         "/judges",
         "/judges/analytics",
+        "/analytics",
       ]);
       expect(lit(tabs!)).toEqual([["Court analytics", "true"]]);
       expect(lit(primary)).toEqual([["States & courts", "true"]]);
+    }
+  });
+
+  it("shows the Data visualizations hub under States & courts in the sidebar and the mobile bar", () => {
+    const { primary, mobile } = render("/analytics");
+    for (const links of [primary, mobile]) {
+      expect(links).toHaveLength(4);
+      expect(lit(links)).toEqual([["States & courts", "true"]]);
     }
   });
 

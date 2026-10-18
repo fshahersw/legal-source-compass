@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
+import { DailyInsightCard } from "@/components/insights/DailyInsightCard";
 import { CourtStatsDashboard, courtStatsQuery } from "@/components/courts/CourtStatsDashboard";
 import { pageHead } from "@/lib/corpus/head";
 
@@ -40,6 +41,7 @@ function Page() {
         </>
       }
     >
+      <DailyInsightCard section="court" className="mb-3" />
       <CourtStatsDashboard />
     </AppShell>
   );
