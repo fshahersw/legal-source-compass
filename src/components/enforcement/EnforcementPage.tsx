@@ -1,22 +1,25 @@
-import { FileText, Landmark, ShieldAlert } from "lucide-react";
+import { FileText, Landmark, MessageSquareWarning, ShieldAlert } from "lucide-react";
 import { RulemakingActivity } from "@/components/rulemaking/RulemakingActivity";
 import { cn } from "@/lib/utils";
+import { ConsumerComplaints } from "./ConsumerComplaints";
 import { CpscRecalls } from "./CpscRecalls";
 import { EpaEnforcement } from "./EpaEnforcement";
 
-export type EnforcementTab = "epa" | "rulemaking" | "cpsc";
+export type EnforcementTab = "epa" | "rulemaking" | "cpsc" | "cfpb";
 export type EnforcementSearch = { tab?: EnforcementTab; state?: string };
 
 const TABS: { id: EnforcementTab; label: string; Icon: typeof Landmark }[] = [
   { id: "epa", label: "EPA enforcement", Icon: Landmark },
   { id: "rulemaking", label: "Federal rulemaking", Icon: FileText },
   { id: "cpsc", label: "CPSC recalls", Icon: ShieldAlert },
+  { id: "cfpb", label: "Consumer complaints (CFPB)", Icon: MessageSquareWarning },
 ];
 
 /** URL search for /law/enforcement; anything unrecognised is dropped rather than guessed. */
 export function normalizeEnforcementSearch(raw: Record<string, unknown>): EnforcementSearch {
   const out: EnforcementSearch = {};
-  if (raw["tab"] === "rulemaking" || raw["tab"] === "cpsc") out.tab = raw["tab"];
+  if (raw["tab"] === "rulemaking" || raw["tab"] === "cpsc" || raw["tab"] === "cfpb")
+    out.tab = raw["tab"];
   if (typeof raw["state"] === "string" && /^[A-Z]{2}$/.test(raw["state"])) out.state = raw["state"];
   return out;
 }
@@ -72,6 +75,8 @@ export function EnforcementPage({
           />
         ) : tab === "rulemaking" ? (
           <RulemakingActivity />
+        ) : tab === "cfpb" ? (
+          <ConsumerComplaints />
         ) : (
           <CpscRecalls />
         )}
