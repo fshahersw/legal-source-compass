@@ -18,9 +18,10 @@ Usage: python3 -I -B scripts/enrichment/ftc_sentinel/build_ftc_sentinel.py
 import datetime as dt
 import json
 import os
+import re
 import sys
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE =os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.dirname(HERE))
 
@@ -28,6 +29,7 @@ import corpus_writer as writer  # noqa: E402
 import ftc_common as C  # noqa: E402
 import ftc_common as A  # noqa: E402  (analytics formulas live beside the display helpers)
 import ftc_dnc as D  # noqa: E402
+import ftc_dnc_pdf as F  # noqa: E402
 import ftc_national as N  # noqa: E402
 import ftc_parse as P  # noqa: E402
 import ftc_refunds as R  # noqa: E402
@@ -37,8 +39,9 @@ from ftc_common import NOT_RECORDED, fmt_int, fmt_pct, fmt_rank, fmt_signed_int,
 
 DATABOOK_YEARS = list(range(2017, 2025))
 DNC_YEARS = list(range(2021, 2026))
-# independent Tavily readings of Do Not Call ranking tables (private/acq/ftc_sentinel/verify/), used only when corroborated
-DNC_SUPPLEMENT_READS = {
+DNC_PDFS = {2021: "dnc_data_book_2021.pdf", 2022: "DNC-Data-Book-2022.pdf", 2023: "Do-Not-Call-Data-Book-2023.pdf", 2024: "DNC-Data-Book-2024.pdf", 2025: "DNC-Data-Book-2025.pdf"}
+# independent Tavily readings of Do Not Call ranking tables (private/acq/ftc_sentinel/verify/): cross-check only
+DNC_INDEPENDENT_READS = {
     2022: ["read06_tavily_dnc2022_complaints_registrations.txt"],
     2023: ["read08_tavily_dnc2023_complaints_ranking.txt"],
     2024: ["read09_tavily_dnc2024_registrations_ranking.txt", "read11_tavily_dnc2024_complaints_ranking.txt"],
@@ -47,6 +50,14 @@ DNC_SUPPLEMENT_READS = {
 REFUND_YEARS = [2022, 2023, 2024]
 FIRECRAWL_METHOD = "Firecrawl MCP firecrawl_scrape of the official ftc.gov PDF/page (ftc.gov answers this sandbox with an Akamai bot wall); tool-result JSON stored unchanged"
 GOV_TERMS = "Public domain: FTC Website Policy (https://www.ftc.gov/policy-notices/website-policy, Copyright Permission, last updated August 2023) says most material on the FTC website is a work of the United States Government in the public domain and not subject to copyright restrictions (17 U.S.C. 105); attribution requested where feasible (\"Source: United States Federal Trade Commission, www.ftc.gov\"); no FTC endorsement may be implied."
+
+
+_ROUTABLE = C.routable_places()
+
+
+def PLACES(usps, name):
+    """/places/<USPS> link only for jurisdictions the app resolves (src/lib/corpus/geo.ts: 50 states and DC); none for Puerto Rico."""
+    return C.places_links(usps, name, _ROUTABLE)
 
 
 def record(*args, facts, **kwargs):
@@ -76,8 +87,12 @@ def load_databooks(manifest, log):
         sums = book["state_sums"]
         if sums["total_loss_usd"] > summary["total_loss_usd"] or sums["fraud_reports"] > summary["fraud_reports"]:
             raise SystemExit(f"{year}: state sums exceed national totals")
+        pdf = C.official_pdf(manifest, entry)
+        # these percentages are printed as whole numbers; display with 0 decimals is then exact, never a second rounding
+        if not all(float(r["fraud"]["pct_reporting_loss"]).is_integer() for r in states.values() if r["fraud"]) or not float(summary["pct_reporting_loss"]).is_integer():
+            raise SystemExit(f"{year}: a printed percentage is not a whole number; display code assumes whole numbers")
         log["databooks"][str(year)] = {
-            "url": entry["url"], "sha256": entry["sha256"], "chunks": book["chunks"],
+            "url": entry["url"], "capture_sha256": entry["sha256"], "official_pdf_sha256": pdf["sha256"], "chunks": book["chunks"],
             "population_basis_year": book["population_basis_year"],
             "state_sums": sums,
             "national_total_loss_usd": summary["total_loss_usd"],
@@ -85,7 +100,7 @@ def load_databooks(manifest, log):
             "state_fraud_reports_share_of_national_pct": A.share_pct(sums["fraud_reports"], summary["fraud_reports"]),
             "state_pages_withheld": {u: r["withheld"] for u, r in states.items() if r["withheld"]},
         }
-        books[year] = {"entry": entry, "states": states, "book": book, "national": nat}
+        books[year] = {"entry": entry, "pdf": pdf, "states": states, "book": book, "national": nat}
     return books
 
 
@@ -178,15 +193,15 @@ def build_states(books, log):
                 subtitle=f"Consumer Sentinel Network Data Book {year} · {fmt_int(fo and fo['reports'])} fraud and other reports",
                 text=" ".join(["Consumer Sentinel FTC fraud identity theft reports consumer complaints", name, usps, str(year)] + [c["category"] for c in (cats or [])]),
                 filters={"year": [str(year)], "kind": [state_kind(usps)], "ranked": ["yes" if fo and fo["rank"] else "no"]},
-                links=[{"url": f"/places/{usps}", "label": f"{name} state page"}, {"url": url, "label": f"Consumer Sentinel Network Data Book {year} (FTC PDF)"}],
+                links=[*PLACES(usps, name), {"url": url, "label": f"Consumer Sentinel Network Data Book {year} (FTC PDF)"}],
                 extra={
                     "metrics": metrics, "analytics": an, "top_categories": cats, "identity_theft_types": thefts,
                     "population_basis_year": b["book"]["population_basis_year"], "caveats": caveats,
-                    "provenance": {"capture": b["entry"]["path"], "sha256": b["entry"]["sha256"], "chunks": {**b["book"]["chunks"], "state_page": s["page_chunk"]}, "state_page_identified_by": s["page_identified_by"], "checks": {**s["checks"], **ordinal_note}, "withheld": s["withheld"]},
+                    "provenance": C.provenance(b["entry"], b["pdf"], chunks={**b["book"]["chunks"], "state_page": s["page_chunk"]}, state_page_identified_by=s["page_identified_by"], checks={**s["checks"], **ordinal_note}, withheld=s["withheld"]),
                 },
             ))
     log["counts"]["ftc_sentinel_states"] = len(rows)
-    sources = {str(y): {"url": b["entry"]["url"], "file": os.path.basename(b["entry"]["path"]), "name": f"Consumer Sentinel Network Data Book {y}", "publisher": "Federal Trade Commission", "sha256": b["entry"]["sha256"], "retrieved": b["entry"]["retrieved_at"], "population_basis_year": b["book"]["population_basis_year"]} for y, b in books.items()}
+    sources = {str(y): C.source_record(b["entry"], b["pdf"], file=os.path.basename(b["entry"]["path"]), name=f"Consumer Sentinel Network Data Book {y}", publisher="Federal Trade Commission", population_basis_year=b["book"]["population_basis_year"]) for y, b in books.items()}
     summary = {
         "label": "FTC Consumer Sentinel reports by state and year",
         "rows": len(rows), "years": DATABOOK_YEARS, "jurisdictions": 52,
@@ -336,7 +351,7 @@ def build_national(books, log):
                 "contact_methods": n["contact_methods"], "contact_method_shares": n["contact_method_shares"], "age_groups": n["age_groups"],
                 "identity_theft_subtypes": n["identity_theft_subtypes"], "military": n["military"],
                 "analytics": an, "revision_vs_latest_edition": revision,
-                "provenance": {"capture": b["entry"]["path"], "sha256": b["entry"]["sha256"]},
+                "provenance": C.provenance(b["entry"], b["pdf"]),
             },
         ))
     # --- series row: 2001-latest counts by type (latest edition's revised history) and 2017-latest loss series
@@ -393,7 +408,7 @@ def build_national(books, log):
         later = {"total": series_total.get(year), **(series_type.get(year) or {})}
         revisions[str(year)] = {k: (own[k], later.get(k)) for k in own}
     log["national_revisions_as_printed_vs_latest_edition"] = revisions
-    sources = {str(y): {"url": b["entry"]["url"], "name": f"Consumer Sentinel Network Data Book {y}", "publisher": "Federal Trade Commission", "sha256": b["entry"]["sha256"], "retrieved": b["entry"]["retrieved_at"]} for y, b in books.items()}
+    sources = {str(y): C.source_record(b["entry"], b["pdf"], name=f"Consumer Sentinel Network Data Book {y}", publisher="Federal Trade Commission") for y, b in books.items()}
     summary = {
         "label": "FTC Consumer Sentinel national statistics by year",
         "rows": len(rows), "years": DATABOOK_YEARS, "method": FIRECRAWL_METHOD, "terms": GOV_TERMS, "sources": sources,
@@ -444,7 +459,7 @@ def refund_display(field, value):
     if field in MONEY_FIELDS:
         return fmt_usd(value)
     if field == "pct_cashed":
-        return fmt_pct(value, 1)
+        return C.fmt_pct_exact(value)
     return fmt_int(value)
 
 
@@ -473,7 +488,13 @@ def build_refunds(manifest, log):
         states, extras, stprobs = R.parse_state_mailed(md, year)
         if cprobs or sprobs:
             raise SystemExit(f"{year} refunds report failed: {cprobs + sprobs}")
-        reports[year] = {"entry": entry, "cases": cases, "snapshot": snap, "states": states, "extras": extras, "state_problems": stprobs}
+        corrections = R.apply_name_corrections(year, cases)
+        flat = R.official_pdf_flat_text(os.path.join(C.ROOT, C.official_pdf(manifest, entry)["path"]))
+        missing_names = R.names_missing_from_pdf(cases, flat)
+        if missing_names:
+            raise SystemExit(f"{year}: case names not found in the official PDF text: {missing_names}")
+        log.setdefault("refund_name_checks", {})[str(year)] = {"checked_against_official_pdf": flat is not None, "corrections": [list(c) for c in corrections]}
+        reports[year] = {"entry": entry, "pdf": C.official_pdf(manifest, entry), "cases": cases, "snapshot": snap, "states": states, "extras": extras, "state_problems": stprobs}
     data_entry, data_md = read_capture(manifest, "ftc_refunds_data_page.json")
     idx_entry, idx_md = read_capture(manifest, "ftc_refund_programs_index.json")
     data_snapshot = R.parse_data_page_snapshot(data_md)
@@ -490,7 +511,7 @@ def build_refunds(manifest, log):
         for kind, entry in rep["cases"].items():
             for c in entry["cases"]:
                 case_names[(year, kind, c["case"])] = c["case"]
-    unique_names = {n: n for n in {v for v in case_names.values()}}
+    unique_names = {n: n for n in sorted(set(case_names.values()))}  # sorted: the build log must not depend on set iteration order
     prog_targets = {sid: p["title"] for sid, p in program_ids.items()}
     # build target list by program key so the trailing word is dropped on the program side only
     key_targets = {sid: key for sid, key in program_keys.items()}
@@ -507,6 +528,15 @@ def build_refunds(manifest, log):
         else:
             program_unmatched.append(n)
     company_match, company_ambiguous, company_unmatched = C.unique_exact_matches(unique_names, companies)
+    # near misses: the case name equals a program key only after dropping a corporate-form word (LLC, Inc., Corp.). Not linked:
+    # the documented rule is exact equality of the normalised names, and a corporate-form word is part of the published name.
+    corp_word = re.compile(r"\b(llc|inc|incorporated|corp|corporation|co|company|ltd)\b\.?", re.I)
+    near_misses = []
+    for n in program_unmatched:
+        stripped = R.case_key(corp_word.sub(" ", n))
+        hits = by_key.get(stripped, [])
+        if stripped != R.case_key(n) and len(hits) == 1:
+            near_misses.append({"case_name": n, "program_title": program_ids[hits[0]]["title"], "program_url": program_ids[hits[0]]["url"], "differs_by": "corporate-form word only; left unlinked"})
 
     rows = []
     used = set()
@@ -536,23 +566,25 @@ def build_refunds(manifest, log):
                     links.insert(0, {"url": p["url"], "label": f"FTC refund program page: {p['title']}"})
                 if name in company_match:
                     links.insert(0, {"url": f"/companies/{company_match[name]}", "label": f"Company profile: {companies[company_match[name]]}"})
-                fields = [(f, v) for f, v in c.items() if f not in ("case", "notes", "chunk")]
+                fields = [(f, v) for f, v in c.items() if f not in ("case", "notes", "chunk", "name_corrected_from") and not f.endswith("_printed")]
                 facts = [("Case name (as published)", name), ("Report", f"{year} FTC Annual Report on Refunds to Consumers, 'Cases {'with First Distributions' if kind == 'first_distribution' else 'with Additional Distributions' if kind == 'additional_distribution' else 'Closed'} in {year}'"), ("Stage", stage_label[kind])]
-                facts += [(FIELD_LABELS[f], refund_display(f, v)) for f, v in fields]
+                facts += [(FIELD_LABELS[f], c.get(f + "_printed") if f + "_printed" in c else refund_display(f, v)) for f, v in fields]
                 if c["notes"]:
                     facts.append(("Note on the published cell", "; ".join(c["notes"]) + " in the report"))
+                if c.get("name_corrected_from"):
+                    facts.append(("Note on the case name", f"The official PDF prints '{name}'; the Firecrawl text extraction had read it as '{c['name_corrected_from']}'. Checked on the rendered PDF page."))
                 if entry["total_differences"]:
                     facts.append(("Note on the published table", "The report's printed Totals row differs from the sum of its case rows in: " + "; ".join(f"{d['column']} (rows {d['rows_sum']:,}, printed {d['printed_total']:,})" for d in entry["total_differences"] if d.get("column"))))
                 facts.append(("Linked FTC program page", program_ids[program_match[name]]["url"] if name in program_match else "None: no refund program page title equals this case name exactly"))
                 facts.append(("Linked company profile", companies[company_match[name]] if name in company_match else "None: no exact unique match to a company_sec_profiles title"))
-                cells = {"case": name, "report_year": str(year), "stage": stage_label[kind], "amount": fmt_usd(amount), "amount_label": amount_label, "consumers": fmt_int(consumers), "consumers_label": consumers_label, "pct_cashed": fmt_pct(c.get("pct_cashed"), 1) if c.get("pct_cashed") is not None else NOT_RECORDED}
+                cells = {"case": name, "report_year": str(year), "stage": stage_label[kind], "amount": fmt_usd(amount), "amount_label": amount_label, "consumers": fmt_int(consumers), "consumers_label": consumers_label, "pct_cashed": c.get("pct_cashed_printed") or C.fmt_pct_exact(c.get("pct_cashed"))}
                 date_field = next((f for f in ("date_sent", "date_recent", "date_closed") if f in c), None)
                 cells["date"] = c[date_field]["published"] if date_field else NOT_RECORDED
                 rows.append(record(
                     "ftc_refunds", record_id, name, source_url=rep["entry"]["url"], cells=cells, facts=facts, state="",
                     subtitle=f"{stage_label[kind]} · {year} report", text=" ".join(["FTC refunds consumers redress", name, stage_label[kind], str(year)]),
                     filters={"report_year": [str(year)], "kind": ["case"], "stage": [kind]}, links=links,
-                    extra={"values": {f: (v["iso"] if isinstance(v, dict) else v) for f, v in fields}, "published_dates": {f: v["published"] for f, v in fields if isinstance(v, dict)}, "case_key": R.case_key(name), "provenance": {"capture": rep["entry"]["path"], "sha256": rep["entry"]["sha256"], "chunk": c["chunk"], "table_total_differences": entry["total_differences"]}},
+                    extra={"values": {f: (v["iso"] if isinstance(v, dict) else v) for f, v in fields}, "published_dates": {f: v["published"] for f, v in fields if isinstance(v, dict)}, "case_key": R.case_key(name), "name_corrected_from": c.get("name_corrected_from"), "provenance": C.provenance(rep["entry"], rep["pdf"], chunk=c["chunk"], table_total_differences=entry["total_differences"])},
                 ))
     # state rows
     state_rows = 0
@@ -568,8 +600,8 @@ def build_refunds(manifest, log):
                 cells={"case": f"{name} (state total)", "report_year": str(year), "stage": "Mailed to state", "amount": fmt_usd(amount), "amount_label": f"$$ Mailed in {year}", "consumers": NOT_RECORDED, "consumers_label": "Not published by state", "pct_cashed": NOT_RECORDED, "date": f"Calendar year {year}"},
                 facts=facts, state=usps, subtitle=f"FTC refunds mailed to {name} in {year}", text=" ".join(["FTC refunds mailed state", name, usps, str(year)]),
                 filters={"report_year": [str(year)], "kind": ["state"], "stage": ["state_mailed"]},
-                links=[{"url": f"/places/{usps}", "label": f"{name} state page"}, {"url": rep["entry"]["url"], "label": f"{year} FTC Annual Report on Refunds to Consumers (PDF)"}],
-                extra={"values": {"mailed_usd": amount}, "analytics": {"share_of_listed_states_pct": A.share_pct(amount, total_states), "yoy_pct": A.yoy_pct(amount, reports.get(year - 1, {}).get("states", {}).get(usps))}, "provenance": {"capture": rep["entry"]["path"], "sha256": rep["entry"]["sha256"]}},
+                links=[*PLACES(usps, name), {"url": rep["entry"]["url"], "label": f"{year} FTC Annual Report on Refunds to Consumers (PDF)"}],
+                extra={"values": {"mailed_usd": amount}, "analytics": {"share_of_listed_states_pct": A.share_pct(amount, total_states), "yoy_pct": A.yoy_pct(amount, reports.get(year - 1, {}).get("states", {}).get(usps))}, "provenance": C.provenance(rep["entry"], rep["pdf"])},
             ))
             state_rows += 1
     # annual summary rows (share of funds 2018-2024 from the latest report showing the year)
@@ -582,19 +614,24 @@ def build_refunds(manifest, log):
         latest_report = max(snapshots[y])
         v = snapshots[y][latest_report]
         others = {str(r): snapshots[y][r] for r in snapshots[y] if r != latest_report}
-        differs = [r for r in snapshots[y] if r != latest_report and snapshots[y][r] != v]
+        nums = lambda d: (d["returned_pct"], d["treasury_pct"], d["admin_pct"])  # noqa: E731  (printed spelling may differ, e.g. 93 vs 93.0)
+        differs = [r for r in snapshots[y] if r != latest_report and nums(snapshots[y][r]) != nums(v)]
         rep = reports[latest_report]
-        facts = [("Period", f"Calendar year {y}"), ("Returned to consumers (share of funds)", fmt_pct(v["returned_pct"])), ("Sent to U.S. Treasury (share of funds)", fmt_pct(v["treasury_pct"])), ("Administrative costs (share of funds)", fmt_pct(v["admin_pct"])), ("Shown in report(s)", ", ".join(str(r) for r in sorted(snapshots[y]))), ("Reports that disagree on this year", ", ".join(str(r) for r in differs) if differs else "none")]
-        extras_ = {"values": {"returned_pct": v["returned_pct"], "treasury_pct": v["treasury_pct"], "admin_pct": v["admin_pct"]}, "also_shown_in": others, "provenance": {"capture": rep["entry"]["path"], "sha256": rep["entry"]["sha256"], "shown_in_report": latest_report}}
+        facts = [("Period", f"Calendar year {y}"), ("Returned to consumers (share of funds)", v["printed"][0] + "%"), ("Sent to U.S. Treasury (share of funds)", v["printed"][1] + "%"), ("Administrative costs (share of funds)", v["printed"][2] + "%"), ("Shown in report(s)", ", ".join(str(r) for r in sorted(snapshots[y]))), ("Reports that disagree on this year", ", ".join(str(r) for r in differs) if differs else "none")]
+        extras_ = {"values": {"returned_pct": v["returned_pct"], "treasury_pct": v["treasury_pct"], "admin_pct": v["admin_pct"]}, "also_shown_in": others, "provenance": C.provenance(rep["entry"], rep["pdf"], shown_in_report=latest_report)}
         source = rep["entry"]["url"]
         links = [{"url": rep["entry"]["url"], "label": f"{latest_report} FTC Annual Report on Refunds to Consumers (PDF)"}]
         if y in reports:
             ex = reports[y]["extras"]
             st_total = sum(reports[y]["states"].values())
             facts += [("Dollars mailed to the listed states and territories", fmt_usd(st_total) + " (derived: sum of the state table)")]
-            for key, label in (("military_bases_usd", "Mailed to military bases"), ("international_usd", "International payments"), ("electronic_no_geography_usd", "Electronic payments (no geographic data)"), ("electronic_and_international_usd", "Electronic and international payments"), ("total_sent_usd", "Total sent (as printed)")):
+            for key, label in (("military_bases_usd", "Mailed to military bases"), ("virgin_islands_usd", "Mailed to the U.S. Virgin Islands (a row in this year's table only)"), ("international_usd", "International payments"), ("electronic_no_geography_usd", "Electronic payments (no geographic data)"), ("electronic_and_international_usd", "Electronic and international payments"), ("total_sent_usd", "Total sent (as printed)")):
                 if key in ex:
                     facts.append((label, fmt_usd(ex[key])))
+            if "parts_sum_usd" in ex:
+                gap = ex["total_sent_usd"] - ex["parts_sum_usd"]
+                facts.append(("Sum of the listed parts (derived)", fmt_usd(ex["parts_sum_usd"]) + " (states + military bases + Virgin Islands where listed + electronic and international payments)"))
+                facts.append(("Printed total against the listed parts", "equal" if gap == 0 else f"the report's printed Total Sent differs from the sum of its listed parts by {fmt_usd(abs(gap))} ({'printed total higher' if gap > 0 else 'printed total lower'}); both are shown as printed"))
             extras_["values"].update({"states_sum_usd": st_total, **{k: ex[k] for k in ex}})
             counts = {k: len(reports[y]["cases"][k]["cases"]) for k in STAGE_ORDER}
             tot_text = {k: reports[y]["cases"][k]["totals_printed"] for k in STAGE_ORDER}
@@ -611,7 +648,7 @@ def build_refunds(manifest, log):
         rows.append(record(
             "ftc_refunds", f"{y}-summary", f"FTC refunds {y} summary", source_url=source,
             cells={"case": f"All FTC refund programs {y}", "report_year": str(y), "stage": "Annual summary", "amount": fmt_usd(extras_["values"].get("total_sent_usd")) if "total_sent_usd" in extras_["values"] else NOT_RECORDED, "amount_label": "Total sent (as printed)", "consumers": NOT_RECORDED, "consumers_label": "Not published", "pct_cashed": NOT_RECORDED, "date": f"Calendar year {y}"},
-            facts=facts, state="", subtitle=f"Returned {fmt_pct(v['returned_pct'])} · Treasury {fmt_pct(v['treasury_pct'])} · Admin {fmt_pct(v['admin_pct'])}",
+            facts=facts, state="", subtitle=f"Returned {v['printed'][0]}% · Treasury {v['printed'][1]}% · Admin {v['printed'][2]}%",
             text=f"FTC refunds to consumers annual summary {y} treasury administrative costs", filters={"report_year": [str(y)], "kind": ["summary"], "stage": ["annual_summary"]},
             links=links, extra=extras_,
         ))
@@ -635,7 +672,7 @@ def build_refunds(manifest, log):
     log["refund_state_checks"] = {str(y): {"states": len(reports[y]["states"]), "extras": reports[y]["extras"], "problems": reports[y]["state_problems"]} for y in reports}
     log["refund_cross_references"] = {
         "distinct_case_names": len(unique_names),
-        "refund_program_pages": {"matched": len(program_match), "ambiguous": len(program_ambiguous), "unmatched": len(program_unmatched), "matched_names": {n: program_ids[s]["url"] for n, s in sorted(program_match.items())}, "ambiguous_names": program_ambiguous},
+        "refund_program_pages": {"near_misses_not_linked": near_misses, "matched": len(program_match), "ambiguous": len(program_ambiguous), "unmatched": len(program_unmatched), "matched_names": {n: program_ids[s]["url"] for n, s in sorted(program_match.items())}, "ambiguous_names": program_ambiguous},
         "company_profiles": {"matched": len(company_match), "ambiguous": len(company_ambiguous), "unmatched": len(company_unmatched), "matched_names": {n: companies[c] for n, c in company_match.items()}, "company_titles_in_lookup": len(companies)},
         "rule": "case name and program title compared with lower-case letters and digits only; one trailing 'Refunds'/'Refund'/'Settlement' word removed from the program title only; link only when exactly one target matches",
     }
@@ -658,13 +695,13 @@ def build_refunds(manifest, log):
             facts=facts, state="", subtitle=f"{p['date']} · {p['administrator'] or 'administrator not listed'}",
             text=" ".join(["FTC active refund program claims", p["title"], p["administrator"] or "", p["products"] or ""]),
             filters={"date": [p["date"]], "administrator": [p["administrator"] or "Not recorded"]}, links=links,
-            extra={"program_url": p["url"], "case_names_matched_exactly": cases_for, "provenance": {"capture": idx_entry["path"], "sha256": idx_entry["sha256"]}},
+            extra={"program_url": p["url"], "case_names_matched_exactly": cases_for, "provenance": C.provenance(idx_entry)},
         ))
     log["counts"]["ftc_refund_programs"] = len(prog_rows)
     sources = {
-        **{f"report_{y}": {"url": r["entry"]["url"], "name": f"{y} FTC Annual Report on Refunds to Consumers", "publisher": "Federal Trade Commission, Bureau of Consumer Protection, Office of Claims and Refunds", "sha256": r["entry"]["sha256"], "retrieved": r["entry"]["retrieved_at"]} for y, r in reports.items()},
-        "data_page": {"url": data_entry["url"], "name": "Data on Refunds to Consumers", "sha256": data_entry["sha256"], "retrieved": data_entry["retrieved_at"]},
-        "programs_page": {"url": idx_entry["url"], "name": "FTC Refund Programs (active programs)", "sha256": idx_entry["sha256"], "retrieved": idx_entry["retrieved_at"]},
+        **{f"report_{y}": C.source_record(r["entry"], r["pdf"], name=f"{y} FTC Annual Report on Refunds to Consumers", publisher="Federal Trade Commission, Bureau of Consumer Protection, Office of Claims and Refunds") for y, r in reports.items()},
+        "data_page": C.source_record(data_entry, name="Data on Refunds to Consumers"),
+        "programs_page": C.source_record(idx_entry, name="FTC Refund Programs (active programs)"),
     }
     refunds_summary = {
         "label": "FTC refunds to consumers by case and year", "rows": len(rows), "case_rows": n_cases, "state_rows": state_rows, "summary_rows": len(summary_years),
@@ -674,7 +711,7 @@ def build_refunds(manifest, log):
         "validation": "Case cells are read by value type; closed-case rows must satisfy returned + admin + left over (+ education) = total fund (+-$2) and cashed <= base, first-distribution rows percent = cashed / eligible (+-1 point). The printed Totals row is compared with the column sums and any difference is shown beside the rows (it is a property of the printed report).",
         "formulas": {"share_of_listed_states_pct": "state dollars mailed / sum of the state table * 100", "yoy_pct": "(mailed in year t / mailed in year t-1 - 1) * 100"},
         "cross_references": log["refund_cross_references"],
-        "caveats": ["Case names are exactly as printed (HTML entities decoded); the same case can appear in several tables and years under slightly different names, and rows are linked only when the published name is identical.", "Amounts in the three tables mean different things (dollars sent in a distribution, dollars sent in the most recent distribution, dollars returned when closed) and are not additive."],
+        "caveats": ["Case names are exactly as printed (HTML entities decoded); the same case can appear in several tables and years under slightly different names, and rows are linked only when the published name is identical.", "Amounts in the three tables mean different things (dollars sent in a distribution, dollars sent in the most recent distribution, dollars returned when closed) and are not additive.", "State rows cover the 50 states, DC and Puerto Rico. The 2022 state table also lists the U.S. Virgin Islands ($1,833), and every year lists military bases, international and electronic payments; these stay on the year's summary row (values and facts) and are not state rows. A year's printed Total Sent can differ from the sum of its listed parts (2023 by $7, 2024 by $3); both are shown as printed."],
         "built_at": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
     programs_summary = {
@@ -683,7 +720,7 @@ def build_refunds(manifest, log):
         "caveats": ["A snapshot of the FTC list on the retrieval date; programs leave the list when they close.", "The 'Date' column is printed without a header definition and is shown exactly as published."],
         "built_at": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
-    inputs = [C.input_ref(reports[y]["entry"]) for y in reports] + [C.input_ref(data_entry), C.input_ref(idx_entry)]
+    inputs = [C.input_ref(reports[y]["entry"]) for y in reports] + [C.input_ref(reports[y]["pdf"]) for y in reports] + [C.input_ref(data_entry), C.input_ref(idx_entry)]
     return rows, refunds_summary, prog_rows, programs_summary, inputs, [C.input_ref(idx_entry)], company_src
 
 
@@ -707,29 +744,50 @@ def programs_listing():
 # Do Not Call
 
 def build_dnc(manifest, log):
-    books, entries = {}, {}
+    books, entries, pdf_entries = {}, {}, {}
     names = {2021: "dnc_databook_fy2021_pdf.json", 2022: "dnc_databook_fy2022_pdf.json", 2023: "dnc_databook_fy2023_pdf.json", 2024: "dnc_databook_fy2024_pdf.json", 2025: "dnc_databook_fy2025_pdf.json"}
     bases = {}
+    firecrawl_tables = {}
     for fy, name in names.items():
         entry, md = read_capture(manifest, name)
+        pdf_entry = manifest[DNC_PDFS[fy]]
         pages = P.split_pages(md)
-        rankings, rprobs = D.parse_dnc_rankings(pages)
+        # reading of record for the ranking tables: the official PDF's own word layer
+        pdf_tables, pdf_problems = F.read_book(os.path.join(C.ROOT, pdf_entry["path"]), f"FY{fy}")
+        rankings = {kind: {usps: {**row, "chunk": f"PDF page {F.REGISTRATIONS_PAGE if kind == 'registrations' else F.COMPLAINTS_PAGE}"} for usps, row in table.items()} for kind, table in pdf_tables.items()}
+        fc_rankings, fprobs = D.parse_dnc_rankings(pages)  # Firecrawl text of the same tables: cross-check only
         totals = D.parse_dnc_state_pages(pages)
         by_state, aprobs = D.assign_pages(totals, rankings, fy)
-        if rprobs or aprobs:
-            raise SystemExit(f"FY{fy} Do Not Call Data Book failed: {rprobs + aprobs}")
+        if pdf_problems or aprobs:
+            raise SystemExit(f"FY{fy} Do Not Call Data Book failed: {pdf_problems + aprobs}")
         books[fy] = {"rankings": rankings, "pages": by_state}
-        entries[fy] = entry
+        firecrawl_tables[fy] = fc_rankings
+        entries[fy], pdf_entries[fy] = entry, pdf_entry
         bases[fy] = D.dnc_population_basis(md)
-    supplement_entries = {}
-    supplements = {}
-    for fy, names_ in DNC_SUPPLEMENT_READS.items():
-        paths = []
-        for n in names_:
-            supplement_entries[n] = manifest[n]
-            paths.append(os.path.join(C.ROOT, manifest[n]["path"]))
-        supplements[fy] = X.load_supplements(paths)
-    recs = D.consolidate(books, supplements)
+    # cross-check the two machine readings (Firecrawl text, Tavily text) against the PDF word layer
+    independent = {}
+    for fy, names_ in DNC_INDEPENDENT_READS.items():
+        independent[fy] = X.load_supplements([os.path.join(C.ROOT, manifest[n]["path"]) for n in names_])
+    crosscheck = {"firecrawl_text_vs_pdf": {"agree": 0, "differ": [], "missing_in_firecrawl": 0}, "tavily_text_vs_pdf": {"agree": 0, "differ": []}}
+    for fy in books:
+        for kind in ("registrations", "complaints"):
+            for usps, prow in books[fy]["rankings"][kind].items():
+                frow = firecrawl_tables[fy][kind].get(usps)
+                if frow is None:
+                    crosscheck["firecrawl_text_vs_pdf"]["missing_in_firecrawl"] += 1
+                elif (frow["count"], frow["per100k"]) == (prow["count"], prow["per100k"]):
+                    crosscheck["firecrawl_text_vs_pdf"]["agree"] += 1
+                else:
+                    crosscheck["firecrawl_text_vs_pdf"]["differ"].append(f"{usps}-FY{fy} {kind}: Firecrawl {frow['count']}/{frow['per100k']} vs PDF {prow['count']}/{prow['per100k']}")
+                trow = independent.get(fy, {}).get(kind, {}).get(usps)
+                if trow:
+                    if (trow["count"], trow["per100k"]) == (prow["count"], prow["per100k"]):
+                        crosscheck["tavily_text_vs_pdf"]["agree"] += 1
+                    else:
+                        crosscheck["tavily_text_vs_pdf"]["differ"].append(f"{usps}-FY{fy} {kind}: Tavily {trow['count']}/{trow['per100k']} vs PDF {prow['count']}/{prow['per100k']}")
+    log["dnc_crosscheck_vs_pdf"] = crosscheck
+    recs = D.consolidate(books)
+    supplement_entries = {n: manifest[n] for names_ in DNC_INDEPENDENT_READS.values() for n in names_}
     rows = []
     withheld_log = {}
     for fy in sorted(books, reverse=True):
@@ -761,8 +819,8 @@ def build_dnc(manifest, log):
                 ("Active registrations per 100K population", fmt_int(reg and reg["per100k"]) if reg and reg["per100k"] is not None else NOT_RECORDED),
                 ("State rank, registrations per 100K", (fmt_rank(reg["rank"]) + " of 50 states") if reg and reg["rank"] else "Not recorded (unranked or not readable)"),
                 ("Complaints, change vs prior fiscal year", fmt_signed_pct(an["complaints_yoy_pct"]) + " (derived)"),
-                ("Source", f"National Do Not Call Registry Data Book FY {fy}: state ranking tables and state page (capture chunks: " + "; ".join(f"{k} table {v['table']}, state page {v['page']}" for k, v in r["chunks"].items()) + ")"),
-                ("Independent second reading", "; ".join(r["notes"]) if r["notes"] else "none used for this row"),
+                ("Source", f"National Do Not Call Registry Data Book FY {fy}: ranking tables read from the official PDF word layer (page {F.REGISTRATIONS_PAGE} registrations, page {F.COMPLAINTS_PAGE} complaints) and the {name} state page totals (Firecrawl capture chunk {(r['chunks'].get('complaints') or r['chunks'].get('registrations') or {}).get('page')})"),
+                ("Other readings that disagreed", "; ".join(r["notes"]) if r["notes"] else "none"),
                 ("Not recorded because", "; ".join(r["withheld"]) if r["withheld"] else "nothing withheld"),
             ]
             cells = {"state": name, "fiscal_year": f"FY{fy}", "complaints": fmt_int(cmp_ and cmp_["count"]), "complaints_per100k": fmt_int(cmp_ and cmp_["per100k"]), "complaints_rank": fmt_rank(cmp_ and cmp_["rank"]) if cmp_ and cmp_["rank"] else NOT_RECORDED, "registrations": fmt_int(reg and reg["count"]), "registrations_per100k": fmt_int(reg and reg["per100k"])}
@@ -770,22 +828,10 @@ def build_dnc(manifest, log):
                 "ftc_dnc_states", f"{usps}-FY{fy}", f"{name} FY{fy}", source_url=entries[fy]["url"], cells=cells, facts=facts, state=usps,
                 subtitle=f"National Do Not Call Registry Data Book FY {fy}", text=" ".join(["FTC National Do Not Call Registry complaints registrations telemarketing robocalls", name, usps, f"FY{fy}"]),
                 filters={"fiscal_year": [f"FY{fy}"], "kind": [state_kind(usps)]},
-                links=[{"url": f"/places/{usps}", "label": f"{name} state page"}, {"url": entries[fy]["url"], "label": f"National Do Not Call Registry Data Book FY {fy} (FTC PDF)"}],
-                extra={"metrics": {"complaints": cmp_ and cmp_["count"], "complaints_per100k": cmp_ and cmp_["per100k"], "complaints_rank": cmp_ and cmp_["rank"], "registrations": reg and reg["count"], "registrations_per100k": reg and reg["per100k"], "registrations_rank": reg and reg["rank"]}, "analytics": an, "population_basis_year": bases[fy], "provenance": {"capture": entries[fy]["path"], "sha256": entries[fy]["sha256"], "chunks": r["chunks"], "withheld": r["withheld"]}},
+                links=[*PLACES(usps, name), {"url": entries[fy]["url"], "label": f"National Do Not Call Registry Data Book FY {fy} (FTC PDF)"}],
+                extra={"metrics": {"complaints": cmp_ and cmp_["count"], "complaints_per100k": cmp_ and cmp_["per100k"], "complaints_rank": cmp_ and cmp_["rank"], "registrations": reg and reg["count"], "registrations_per100k": reg and reg["per100k"], "registrations_rank": reg and reg["rank"]}, "analytics": an, "population_basis_year": bases[fy], "provenance": C.provenance(entries[fy], pdf_entries[fy], ranking_tables_from="official PDF, pdfplumber words at y_tolerance 0.3, overlay header tokens dropped", chunks=r["chunks"], notes=r["notes"], withheld=r["withheld"])},
             ))
     log["counts"]["ftc_dnc_states"] = len(rows)
-    usage = {"agrees": 0, "filled_missing_row": 0, "replaced_damaged_cells": 0, "ignored_uncorroborated_difference": []}
-    for r in recs.values():
-        for note in r["notes"]:
-            usage["agrees" if "agrees" in note else "filled_missing_row" if "read only from" in note else "replaced_damaged_cells"] += 1
-    for fy, by_kind in supplements.items():
-        for kind, rows_ in by_kind.items():
-            for usps, srow in rows_.items():
-                base_row = books[fy]["rankings"][kind].get(usps)
-                applied = any(kind in n and srow["source"] in n and "agrees" not in n for n in recs[(usps, fy)]["notes"])
-                if base_row and (base_row["count"], base_row["per100k"]) != (srow["count"], srow["per100k"]) and not applied:
-                    usage["ignored_uncorroborated_difference"].append(f"{usps}-FY{fy} {kind}: Firecrawl {base_row['count']}/{base_row['per100k']} vs independent {srow['count']}/{srow['per100k']}")
-    log["dnc_supplement_usage"] = usage
     log["dnc_population_basis"] = bases
     log["dnc_withheld"] = withheld_log
     cov = {}
@@ -795,15 +841,16 @@ def build_dnc(manifest, log):
     log["dnc_coverage"] = cov
     summary = {
         "label": "FTC National Do Not Call Registry complaints and registrations by state", "rows": len(rows), "fiscal_years": [f"FY{y}" for y in DNC_YEARS], "method": FIRECRAWL_METHOD, "terms": GOV_TERMS,
-        "sources": {f"FY{fy}": {"url": entries[fy]["url"], "name": f"National Do Not Call Registry Data Book FY {fy}", "publisher": "Federal Trade Commission", "sha256": entries[fy]["sha256"], "retrieved": entries[fy]["retrieved_at"], "population_basis_year": bases[fy]} for fy in sorted(entries)},
+        "sources": {f"FY{fy}": C.source_record(entries[fy], pdf_entries[fy], name=f"National Do Not Call Registry Data Book FY {fy}", publisher="Federal Trade Commission", population_basis_year=bases[fy]) for fy in sorted(entries)},
         "coverage": cov,
+        "cross_checks": log["dnc_crosscheck_vs_pdf"],
         "independent_readings": {n: {"url": e["url"], "path": e["path"], "sha256": e["sha256"], "method": e["method"]} for n, e in sorted(supplement_entries.items())},
-        "validation": "The Firecrawl text extraction of these books drops digits and whole table rows; a second, independent extraction of the same PDFs (Tavily, see independent_readings) fills a damaged or missing table row only when its count equals the state page count and the count/per-100K pair passes the population check. The rule: The PDF text extraction of these books drops digits and whole table rows. A count is published when the ranking table and the state page agree (or only one is readable); a per-100K figure only when count / per-100K implies a population within 5% of that state's median implied population across all tables and books; a rank only when the table and page agree. Everything else is Not recorded and listed in build_log.json.",
+        "validation": "Ranking tables are read from the official PDF's word layer (pdfplumber, y_tolerance 0.3, hidden overlay header tokens dropped), which returns all 52 rows of both tables in every edition; each table must have ranks 1-50 contiguous, DC and PR unranked and per-100K non-increasing. A count is published when the PDF table and the Firecrawl state page agree, or when the per-100K figure and the implied population (count / per-100K) confirm the PDF count; a per-100K figure only when its implied population matches the state's registrations-table population to rounding (same edition) and the state's median over all editions within 20%. The Firecrawl text and the Tavily text of the same tables are cross-checks only (see cross_checks), never a source.",
         "formulas": {"complaints_yoy_pct": "(complaints in FY t / complaints in FY t-1 - 1) * 100, both readable", "rank_change": "rank in FY t-1 minus rank in FY t (positive = higher complaints per capita)", "implied_population": "count / per-100K * 100,000 (used only as a validity check)"},
         "caveats": ["Complaints are consumer reports to the FTC about calls allegedly violating the Do Not Call rules, not findings of violations.", "State comes from the state the consumer reported or else from the phone's area code (Data Book 'Inside the numbers').", "Per-100K figures use different Census vintages in different editions (see population_basis_year)."],
         "built_at": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
-    return rows, summary, [C.input_ref(entries[fy]) for fy in sorted(entries)] + [C.input_ref(supplement_entries[n]) for n in sorted(supplement_entries)]
+    return rows, summary, [C.input_ref(entries[fy]) for fy in sorted(entries)] + [C.input_ref(pdf_entries[fy]) for fy in sorted(pdf_entries)]
 
 
 DNC_COLUMNS = [("state", "State"), ("fiscal_year", "Fiscal year"), ("complaints", "Complaints"), ("complaints_per100k", "Per 100K"), ("complaints_rank", "Rank"), ("registrations", "Active registrations"), ("registrations_per100k", "Per 100K")]
@@ -833,7 +880,7 @@ def main():
     os.makedirs(C.BUILD, exist_ok=True)
     books = load_databooks(manifest, log)
     terms_ref = C.input_ref(manifest["ftc_website_policy_copyright_excerpt.txt"])  # terms of reuse, listed with every dataset's inputs
-    book_inputs = [C.input_ref(books[y]["entry"]) for y in sorted(books)] + [terms_ref]
+    book_inputs = [C.input_ref(books[y]["entry"]) for y in sorted(books)] + [C.input_ref(books[y]["pdf"]) for y in sorted(books)] + [terms_ref]
     rows, summary = build_states(books, log)
     write_build("ftc_sentinel_states", "FTC Consumer Sentinel reports by state and year", states_listing(), summary, rows, book_inputs)
     rows, summary = build_national(books, log)

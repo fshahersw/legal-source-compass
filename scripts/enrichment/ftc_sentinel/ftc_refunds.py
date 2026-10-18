@@ -6,6 +6,8 @@ table is rejected. A cell that cannot be read as the expected type rejects its r
 """
 import html
 import re
+import shutil
+import subprocess
 
 from ftc_parse import STATES, clean_cell, iter_tables, letters_key, split_pages, to_int
 
@@ -91,6 +93,8 @@ def parse_case_table(rows, spec):
                 ok = False
                 break
             rec[field] = value
+            if kind == "pct":
+                rec[field + "_printed"] = clean_cell(cell)  # shown verbatim ('93.0%', '66.55%'); the float is for arithmetic only
             if note:
                 notes.append(f"{field} {note}")
         if ok:
@@ -235,7 +239,7 @@ def parse_snapshot(markdown, year):
                         if abs(sum(vals) - 100) > 0.35:
                             problems.append(f"snapshot {c[0]} sums to {sum(vals):.1f}")
                             continue
-                        rows[int(c[0])] = {"returned_pct": vals[0], "treasury_pct": vals[1], "admin_pct": vals[2]}
+                        rows[int(c[0])] = {"returned_pct": vals[0], "treasury_pct": vals[1], "admin_pct": vals[2], "printed": c[1:]}
     if year not in rows:
         problems.append(f"{year} snapshot row missing")
     return rows, problems
@@ -258,28 +262,34 @@ def parse_state_mailed(markdown, year):
                     if label in rows:
                         problems.append(f"{label} twice")
                     rows[label] = int(m.group(1).replace(",", ""))
+                elif label == "VI" and m:
+                    extras["virgin_islands_usd"] = int(m.group(1).replace(",", ""))  # the U.S. Virgin Islands row exists in the 2022 table only
                 elif label == "Military Bases" and m:
                     extras["military_bases_usd"] = int(m.group(1).replace(",", ""))
                 elif label.startswith("Electronic") and "Total Sent" in label:
                     nums = [int(x.replace(",", "")) for x in re.findall(r"\$([\d,]+)", label)]
                     if len(nums) == 2:
                         extras["electronic_and_international_usd"], extras["total_sent_usd"] = nums
+                elif not val.strip() and re.fullmatch(r"\$([\d,]+) \$([\d,]+)", label):
+                    # 2022 layout: the labels 'Electronic & International Payments' and 'Total Sent' are one row and their two amounts
+                    # are printed in the next row, in the same order
+                    extras["electronic_and_international_usd"], extras["total_sent_usd"] = (int(x.replace(",", "")) for x in re.findall(r"[\d,]+", label))
     flat = re.sub(r"\s+", " ", " ".join(pages[2:3]))
-    m = re.search(r"International Payments \*\*Total Sent:\*\* \*\*\$([\d,]+)\*\* \*\*Electronic Payments \(no geographic data\) \$([\d,]+) \$([\d,]+)\*\*", flat)
+    m = re.search(r"International Payments(?:\*\*)? (?:\*\*)?Total Sent:(?:\*\*)? (?:\*\*)?\$([\d,]+)(?:\*\*)? (?:\*\*)?Electronic Payments \(no geographic data\) \$([\d,]+) \$([\d,]+)(?:\*\*)?", flat)
     if m:
         extras["international_usd"], extras["electronic_no_geography_usd"], extras["total_sent_usd"] = (int(x.replace(",", "")) for x in m.groups())
     missing = [u for u in STATES if u not in rows and u != "DC"]
     if missing:
         problems.append(f"{year}: states missing from the mailed table: {missing}")
     if "total_sent_usd" in extras:
-        parts = sum(rows.values()) + extras.get("military_bases_usd", 0)
+        parts = sum(rows.values()) + extras.get("military_bases_usd", 0) + extras.get("virgin_islands_usd", 0)
         if "electronic_and_international_usd" in extras:
             parts += extras["electronic_and_international_usd"]
         else:
             parts += extras.get("international_usd", 0) + extras.get("electronic_no_geography_usd", 0)
         extras["parts_sum_usd"] = parts
         if parts != extras["total_sent_usd"]:
-            problems.append(f"{year}: states + military + electronic/international = {parts}, printed total {extras['total_sent_usd']}")
+            problems.append(f"{year}: states + military + Virgin Islands + electronic/international = {parts}, printed total {extras['total_sent_usd']}")
     return rows, extras, problems
 
 
@@ -330,3 +340,37 @@ def program_match_key(title):
     """Program page title with one trailing 'Refunds'/'Settlement'/'Refund' word removed, then case_key()."""
     t = re.sub(r"\s+(Refunds?|Settlement)$", "", title.strip())
     return case_key(t)
+
+
+# Case names the Firecrawl text read differently from the official PDF. Each entry was checked on the rendered PDF page.
+NAME_CORRECTIONS = {
+    (2022, "closed", "Genius"): "Geniux",  # 2022 report, 'Cases Closed in 2022', PDF page 10 prints 'Geniux'
+}
+
+
+def apply_name_corrections(year, tables):
+    """Replace known misreadings in place; the original reading is kept in c['name_corrected_from']. Returns the corrections made."""
+    made = []
+    for kind, entry in tables.items():
+        for c in entry["cases"]:
+            fixed = NAME_CORRECTIONS.get((year, kind, c["case"]))
+            if fixed:
+                c["name_corrected_from"] = c["case"]
+                c["case"] = fixed
+                made.append((kind, c["name_corrected_from"], fixed))
+    return made
+
+
+def official_pdf_flat_text(pdf_path):
+    """Official PDF text (pdftotext) reduced to lower-case letters and digits; None when pdftotext is not installed."""
+    if not shutil.which("pdftotext"):
+        return None
+    out = subprocess.run(["pdftotext", pdf_path, "-"], capture_output=True, check=True).stdout.decode("utf-8", "replace")
+    return re.sub(r"[^a-z0-9]", "", out.lower())
+
+
+def names_missing_from_pdf(tables, flat):
+    """Case names whose letters-and-digits form does not occur in the official PDF text (empty list = all verified)."""
+    if flat is None:
+        return None
+    return sorted({c["case"] for entry in tables.values() for c in entry["cases"] if case_key(c["case"]) not in flat})

@@ -47,7 +47,8 @@ def connect() -> duckdb.DuckDBPyConnection:
     con.execute(
         f"""CREATE OR REPLACE TEMP VIEW d_base AS
             SELECT id, court_id, source, assigned_to_id, referred_to_id, appeal_from_id, idb_data_id, originating_court_information_id,
-                   federal_dn_case_type AS case_type, jurisdiction_type, jury_demand, nature_of_suit, cause, mdl_status, blocked,
+                   coalesce(nullif(regexp_extract(lower(docket_number), '[0-9]{{2}}-([a-z]{{2}})-[0-9]', 1), ''), federal_dn_case_type) AS case_type,
+                   jurisdiction_type, jury_demand, nature_of_suit, cause, mdl_status, blocked,
                    {ok('date_filed')} AS filed, {ok('date_terminated')} AS term, date_filed AS raw_filed,
                    TRY_CAST(regexp_extract(nature_of_suit, '^\\s*([0-9]{{3}})', 1) AS INTEGER) AS nos_code
             FROM dk.docket"""

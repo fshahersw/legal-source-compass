@@ -218,36 +218,13 @@ def adjudicate(check, table_count, page_count, per_table, kind):
     return count, per, how, reasons
 
 
-def _corroborated_row(base, supp, page_count, check):
-    """Choose the ranking-table reading to use. supp is the independent Tavily reading of the same table row.
+def consolidate(books):
+    """books: {fy: {'rankings': {kind: {usps: row}}, 'pages': {usps: entry}}}; rankings come from the official PDF's word layer.
 
-    The Firecrawl row stands unless it is missing or damaged. A supplement row replaces or fills it only when its count
-    equals the state page count (a third reading) and its count/per-100K pair passes the population check; with no
-    state page count it may fill a row that is missing altogether, but never overrides one.
-    Returns (row, note) where note says what the supplement did (None when it did nothing).
+    Returns {(usps, fy): record} holding only validated figures. The PDF table row is the reading of record; the Firecrawl
+    state page total is a second reading that must agree or be explained. Every withheld figure has a reason in
+    record['withheld']; record['notes'] lists readings that disagreed and why the table reading was kept.
     """
-    if not supp or supp.get("count") is None or supp.get("per100k") is None:
-        return base, None
-    pair_ok = check(supp["count"], supp["per100k"])
-    if base is None:
-        if pair_ok and (page_count is None or page_count == supp["count"]):
-            return {"rank": supp.get("rank"), "count": supp["count"], "per100k": supp["per100k"], "chunk": None, "raw": None}, f"row read only from {supp['source']} (independent extraction); Firecrawl table row missing"
-        return base, None
-    if (base["count"], base["per100k"]) == (supp["count"], supp["per100k"]):
-        return base, f"independent extraction {supp['source']} agrees"
-    if pair_ok and page_count is not None and page_count == supp["count"]:
-        return {**base, "count": supp["count"], "per100k": supp["per100k"], "rank": base["rank"] if base["rank"] is not None else supp.get("rank")}, (
-            f"count and per-100K taken from {supp['source']} (independent extraction), corroborated by the state page count; Firecrawl table cell read {base['count']} / {base['per100k']}")
-    return base, None
-
-
-def consolidate(books, supplements=None):
-    """books: {fy: {'rankings':..., 'pages': {usps: entry}}}; supplements: {fy: {kind: {usps: row}}} independent readings.
-
-    Returns {(usps, fy): record} holding only validated figures; every withheld figure has a reason in record['withheld']
-    and every use of an independent reading is listed in record['notes'].
-    """
-    supplements = supplements or {}
     medians = population_medians(books)
     out = {}
     for fy, book in sorted(books.items()):
@@ -256,7 +233,7 @@ def consolidate(books, supplements=None):
             page = book["pages"].get(usps)
             anchor = anchor_per = None
             for kind in ("registrations", "complaints"):
-                base = book["rankings"][kind].get(usps)
+                row = book["rankings"][kind].get(usps)
                 page_count = page[kind] if page else None
                 page_rank = page[f"{kind}_rank"] if page else None
                 if kind == "registrations" or anchor is None:
@@ -265,22 +242,20 @@ def consolidate(books, supplements=None):
                 else:
                     def check(count, per, anchor=anchor, anchor_per=anchor_per):
                         return _tight_ok(anchor, count, per, anchor_per)
-                row, note = _corroborated_row(base, supplements.get(fy, {}).get(kind, {}).get(usps), page_count, check)
-                if note:
-                    rec["notes"].append(f"{kind}: {note}")
                 count, per, how, reasons = adjudicate(check, row["count"] if row else None, page_count, row["per100k"] if row else None, kind)
                 if kind == "registrations" and count is not None and per is not None:
                     anchor, anchor_per = implied_population(count, per), per
                 rec["withheld"] += reasons
+                if row and page_count is not None and page_count != row["count"]:
+                    rec["notes"].append(f"{kind}: state page printed {page_count:,} (damaged in the text extraction of the page); the PDF table count {row['count']:,} is used")
                 rank = row["rank"] if row and row["rank"] is not None else None
                 if rank is not None and page_rank is not None and rank != page_rank:
-                    rec["withheld"].append(f"{kind}: table rank {rank} differs from state page rank {page_rank}")
-                    rank = None
+                    rec["notes"].append(f"{kind}: state page rank {page_rank} differs from the table rank {rank}; the table rank is used")
                 if rank is None and page_rank is not None and usps not in ("DC", "PR"):
                     rank = page_rank
                 if count is None and per is None and rank is None:
                     continue
                 rec[kind] = {"count": count, "per100k": per, "rank": rank, "count_check": how}
-                rec["chunks"][kind] = {"table": base["chunk"] if base else None, "page": page["chunk"] if page else None}
+                rec["chunks"][kind] = {"table": row["chunk"] if row else None, "page": page["chunk"] if page else None}
             out[(usps, fy)] = rec
     return out

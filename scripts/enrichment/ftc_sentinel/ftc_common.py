@@ -2,6 +2,7 @@
 import json
 import os
 import re
+from decimal import Decimal
 
 NOT_RECORDED = "Not recorded"
 
@@ -31,6 +32,14 @@ def fmt_pct(value, digits=1):
     return NOT_RECORDED if value is None else f"{value:.{digits}f}%"
 
 
+def fmt_pct_exact(value):
+    """A published percentage shown exactly as its value (66.55 -> '66.55%', 93.0 -> '93%'): no second rounding."""
+    if value is None:
+        return NOT_RECORDED
+    text = format(Decimal(repr(float(value))).normalize(), "f")
+    return text + "%"
+
+
 def fmt_signed_pct(value, digits=1):
     return NOT_RECORDED if value is None else f"{value:+.{digits}f}%"
 
@@ -41,6 +50,29 @@ def fmt_signed_int(value):
 
 def fmt_rank(value):
     return NOT_RECORDED if value is None else str(int(value))
+
+
+# --------------------------------------------------------------------------------------------------------------------
+# /places routes. The app resolves /places/<USPS> only for the jurisdictions in src/lib/corpus/geo.ts (50 states and DC).
+
+_GEO_DEFAULT = {"AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"}
+
+
+def routable_places(geo_path=None):
+    """USPS codes /places/<code> can resolve: read from src/lib/corpus/geo.ts when present, else the 50 states + DC."""
+    path = geo_path or os.path.join(ROOT, "src", "lib", "corpus", "geo.ts")
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            found = set(re.findall(r'\["\d{2}",\s*"([A-Z]{2})",\s*"[^"]+"\]', handle.read()))
+        return found or set(_GEO_DEFAULT)
+    except OSError:
+        return set(_GEO_DEFAULT)
+
+
+def places_links(usps, name, routable=None):
+    """The /places/<USPS> link for a jurisdiction the app can resolve; [] for Puerto Rico and anything else outside geo.ts."""
+    ok = routable if routable is not None else routable_places()
+    return [{"url": f"/places/{usps}", "label": f"{name} state page"}] if usps in ok else []
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -127,6 +159,68 @@ def load_manifest(path=MANIFEST):
 
 def input_ref(entry):
     return {"url": entry["url"], "path": entry["path"], "sha256": entry["sha256"]}
+
+
+# Firecrawl capture file -> official PDF file (both registered in the manifest under the same ftc.gov URL)
+CAPTURE_TO_PDF = {
+    "csn_databook_2017_pdf.json": "consumer_sentinel_data_book_2017.pdf",
+    "csn_databook_2018_pdf.json": "consumer_sentinel_network_data_book_2018_0.pdf",
+    "csn_databook_2019_pdf.json": "consumer_sentinel_network_data_book_2019.pdf",
+    "csn_databook_2020_pdf.json": "csn_annual_data_book_2020.pdf",
+    "csn_databook_2021_pdf.json": "CSN_Annual_Data_Book_2021_Final_PDF.pdf",
+    "csn_databook_2022_pdf.json": "CSN-Data-Book-2022.pdf",
+    "csn_databook_2023_pdf.json": "CSN-Annual-Data-Book-2023.pdf",
+    "csn_databook_2024_pdf.json": "csn-annual-data-book-2024.pdf",
+    "ftc_refunds_report_2022_pdf.json": "2022_FTC_REFUNDS_TO_CONSUMERS.pdf",
+    "ftc_refunds_report_2023_pdf.json": "ftc-refunds-to-consumers-2023.pdf",
+    "ftc_refunds_report_2024_pdf.json": "ftc-refunds-consumers-2024.pdf",
+    "dnc_databook_fy2021_pdf.json": "dnc_data_book_2021.pdf",
+    "dnc_databook_fy2022_pdf.json": "DNC-Data-Book-2022.pdf",
+    "dnc_databook_fy2023_pdf.json": "Do-Not-Call-Data-Book-2023.pdf",
+    "dnc_databook_fy2024_pdf.json": "DNC-Data-Book-2024.pdf",
+    "dnc_databook_fy2025_pdf.json": "DNC-Data-Book-2025.pdf",
+}
+
+
+def official_pdf(manifest, capture_entry):
+    """Manifest entry of the official PDF behind a Firecrawl capture (same ftc.gov URL), or None for HTML pages."""
+    name = CAPTURE_TO_PDF.get(os.path.basename(capture_entry["path"]))
+    if not name:
+        return None
+    pdf = manifest[name]
+    if pdf["url"] != capture_entry["url"]:
+        raise ValueError(f"{name}: URL differs from the capture's ({pdf['url']} vs {capture_entry['url']})")
+    return pdf
+
+
+def provenance(capture_entry, pdf_entry=None, **extra):
+    """Row provenance. capture_sha256 is the hash of the Firecrawl tool-result JSON (an extraction of the PDF);
+    official_pdf_sha256 is the hash of the PDF bytes as served by ftc.gov."""
+    out = {"capture": capture_entry["path"], "capture_sha256": capture_entry["sha256"]}
+    if pdf_entry:
+        out.update({"official_pdf": pdf_entry["path"], "official_pdf_sha256": pdf_entry["sha256"]})
+    out.update(extra)
+    return out
+
+
+def source_record(capture_entry, pdf_entry=None, **extra):
+    """Summary 'sources' entry that says which hash is which."""
+    out = {"url": capture_entry["url"], "capture_sha256": capture_entry["sha256"], "capture_retrieved": capture_entry["retrieved_at"],
+           "capture_note": "SHA-256 of the Firecrawl tool-result JSON kept in private/acq (a text extraction of the page/PDF), not of the PDF itself"}
+    if pdf_entry:
+        out.update({"official_pdf_sha256": pdf_entry["sha256"], "official_pdf_bytes": pdf_entry["bytes"], "official_pdf_retrieved": pdf_entry["retrieved_at"],
+                    "official_pdf_note": "SHA-256 of the official PDF bytes as served by ftc.gov (downloaded by the independent verifier, copied byte-identical)"})
+    out.update(extra)
+    return out
+
+
+def pdf_inputs(*captures_and_pdfs):
+    """input_ref list for captures and their official PDFs (entries may be None)."""
+    refs = []
+    for e in captures_and_pdfs:
+        if e:
+            refs.append(input_ref(e))
+    return refs
 
 
 def slug(text):

@@ -24,6 +24,16 @@ JURISDICTION_LABEL = {
     "C": "Committee",
     "I": "International",
     "T": "Testing",
+    # Codes below are not described in the published schema; the labels follow the names of the courts that carry each code
+    # (for example TRA: Grand Traverse Band Tribal Appellate Court, MA: Court of Appeals for the Armed Forces, TS: Supreme Court of Guam).
+    "MA": "Military appellate",
+    "TRS": "Tribal supreme",
+    "TRA": "Tribal appellate",
+    "TRT": "Tribal trial",
+    "TRX": "Tribal special",
+    "TS": "Territorial supreme",
+    "TA": "Territorial appellate",
+    "TT": "Territorial trial",
 }
 FEDERAL_JURISDICTIONS = {"F", "FD", "FB", "FBP", "FS"}
 STATE_JURISDICTIONS = {"S", "SA", "ST", "SS", "SAG"}

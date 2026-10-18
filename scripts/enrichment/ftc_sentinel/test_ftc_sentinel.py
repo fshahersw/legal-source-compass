@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.dirname(HERE))
 import build_ftc_sentinel as B  # noqa: E402
 import ftc_common as C  # noqa: E402
 import ftc_dnc as D  # noqa: E402
+import ftc_dnc_pdf as F  # noqa: E402
 import ftc_national as N  # noqa: E402
 import ftc_parse as P  # noqa: E402
 import ftc_refunds as R  # noqa: E402
@@ -337,27 +338,121 @@ class SupplementTests(unittest.TestCase):
     def test_a_short_or_broken_chain_is_not_a_table(self):
         self.assertEqual(X.parse_rank_blocks("1 Delaware 2 Ohio 4 Arizona 5 Maryland 1,000 5 2,000 6"), [])
 
-    def test_supplement_row_needs_corroboration_before_it_replaces_a_cell(self):
-        medians = {"DE": 967_683}
-        check = lambda c, p: D._loose_ok(medians, "DE", c, p)  # noqa: E731
-        supp = {"rank": 1, "count": 14875, "per100k": 1537, "source": "readX.txt"}
-        damaged = {"rank": 1, "count": 14875, "per100k": 537, "chunk": 8, "raw": []}
-        row, note = D._corroborated_row(damaged, supp, 14875, check)
-        self.assertEqual((row["count"], row["per100k"]), (14875, 1537))
-        self.assertIn("corroborated by the state page count", note)
-        row, note = D._corroborated_row(damaged, supp, 99999, check)  # state page disagrees: keep the original reading
-        self.assertEqual(row, damaged)
-        self.assertIsNone(note)
-        row, note = D._corroborated_row(damaged, {**supp, "per100k": 5000}, 14875, check)  # fails the population check
-        self.assertEqual(row, damaged)
-        row, note = D._corroborated_row(None, supp, None, check)  # missing row, no page: filled only if the pair is plausible
-        self.assertEqual(row["count"], 14875)
-        row, note = D._corroborated_row(None, {**supp, "per100k": 5000}, None, check)
-        self.assertIsNone(row)
-        same = {"rank": 1, "count": 14875, "per100k": 1537, "chunk": 8, "raw": []}
-        row, note = D._corroborated_row(same, supp, 14875, check)
-        self.assertEqual(row, same)
-        self.assertIn("agrees", note)
+class DncPdfTests(unittest.TestCase):
+    """Ranking tables read from the official PDF word layer, and consolidation around those rows."""
+
+    def test_two_table_columns_on_one_text_row_are_both_read(self):
+        rows = ["1 Arizona 74,752 1,028 27 West Virginia 13,021 730", "Puerto Rico 899 28", "District of Columbia 5,392 802", "Blank noise 12"]
+        table, problems = F.parse_ranking_rows(rows)
+        self.assertEqual(problems, [])
+        self.assertEqual(table["AZ"], {"rank": 1, "count": 74752, "per100k": 1028})
+        self.assertEqual(table["WV"], {"rank": 27, "count": 13021, "per100k": 730})
+        self.assertEqual(table["PR"], {"rank": None, "count": 899, "per100k": 28})  # count/per-100K recognised whichever prints first
+        self.assertEqual(table["DC"]["count"], 5392)
+        self.assertNotIn("Blank noise", table)
+
+    def test_per100k_first_column_order_is_handled(self):
+        table, _ = F.parse_ranking_rows(["3 Nevada 960 30,159"])
+        self.assertEqual(table["NV"], {"rank": 3, "count": 30159, "per100k": 960})
+
+    def test_a_table_must_have_all_rows_and_a_clean_rank_chain(self):
+        full = {u: {"rank": i + 1, "count": 100000 - i, "per100k": 5000 - i} for i, u in enumerate(P.RANKED_STATES)}
+        full["DC"] = {"rank": None, "count": 1, "per100k": 1}
+        full["PR"] = {"rank": None, "count": 1, "per100k": 1}
+        self.assertEqual(F.validate_pdf_table(full, "t"), [])
+        short = dict(full)
+        del short["TX"]
+        self.assertTrue(any("missing" in p for p in F.validate_pdf_table(short, "t")))
+        rising = {**full, "AL": {"rank": 1, "count": 5, "per100k": 99999}}
+        self.assertTrue(any("rises" in p for p in F.validate_pdf_table({**rising, "AK": {"rank": 2, "count": 5, "per100k": 99999 + 1}}, "t")))
+
+    def _books(self, page_complaints=15000, per_complaints=1500):
+        books = {}
+        for fy in (2021, 2022, 2023):
+            rankings = {"registrations": {"DE": {"rank": 19, "count": 800000, "per100k": 80000, "chunk": "PDF page 8"}},
+                        "complaints": {"DE": {"rank": 1, "count": 15000, "per100k": per_complaints, "chunk": "PDF page 9"}}}
+            pages = {"DE": {"chunk": 16, "complaints": page_complaints, "complaints_rank": 1, "registrations": 800000, "registrations_rank": 19, "heading_usps": None}}
+            books[fy] = {"rankings": rankings, "pages": pages}
+        return books
+
+    def test_pdf_row_is_used_and_a_damaged_state_page_total_is_noted(self):
+        recs = D.consolidate(self._books(page_complaints=5000))
+        r = recs[("DE", 2022)]
+        self.assertEqual((r["complaints"]["count"], r["complaints"]["per100k"], r["complaints"]["rank"]), (15000, 1500, 1))
+        self.assertTrue(any("state page printed 5,000" in n for n in r["notes"]))
+        self.assertEqual(r["withheld"], [])
+
+    def test_an_implausible_per100k_is_withheld_but_the_count_is_kept(self):
+        recs = D.consolidate(self._books(per_complaints=150))
+        r = recs[("DE", 2022)]
+        self.assertEqual((r["complaints"]["count"], r["complaints"]["per100k"]), (15000, None))
+        self.assertTrue(any("fails the implied-population check" in w for w in r["withheld"]))
+        self.assertIsNone(recs[("AL", 2022)]["complaints"])  # a jurisdiction with no row at all stays Not recorded
+
+    def test_the_independent_text_reading_is_only_a_cross_check(self):
+        # Tavily-style text parses to candidate rows, which build_dnc compares with the PDF rows and never publishes
+        blocks = X.parse_rank_blocks(SupplementTests.TEXT)
+        self.assertEqual(blocks[0]["rows"][0]["per100k"], 1537)
+
+
+# --------------------------------------------------------------------------------------------------------------------
+class DefectRegressionTests(unittest.TestCase):
+    """Verifier findings D2-D4 and the provenance request."""
+
+    def test_printed_percentages_are_shown_without_a_second_rounding(self):
+        self.assertEqual(C.fmt_pct_exact(66.55), "66.55%")  # D2: not 66.5% (binary rounding) and not 66.6%
+        self.assertEqual(C.fmt_pct_exact(93.0), "93%")
+        self.assertEqual(C.fmt_pct_exact(100.0), "100%")
+        self.assertEqual(C.fmt_pct_exact(91.4), "91.4%")
+        self.assertEqual(C.fmt_pct_exact(0.5), "0.5%")
+        self.assertEqual(C.fmt_pct_exact(None), "Not recorded")
+        self.assertEqual(B.refund_display("pct_cashed", 66.55), "66.55%")
+        self.assertEqual(R.convert("66.55%", "pct")[0], 66.55)
+        cases, _, _ = R.parse_case_table([["A", "10/10/2024", "$1.00", "10", "5", "93.0%", ""]], R.SPECS[("first_distribution", 2024)])
+        self.assertEqual(cases[0]["pct_cashed_printed"], "93.0%")  # shown verbatim, trailing zero included
+        self.assertEqual(cases[0]["pct_cashed"], 93.0)
+
+    def test_places_links_only_for_jurisdictions_the_app_resolves(self):
+        routable = C.routable_places()
+        self.assertEqual(len(routable), 51)  # D3: 50 states and DC in src/lib/corpus/geo.ts
+        self.assertNotIn("PR", routable)
+        self.assertEqual(C.places_links("PR", "Puerto Rico", routable), [])
+        self.assertEqual(C.places_links("DC", "District of Columbia", routable)[0]["url"], "/places/DC")
+        self.assertEqual(C.places_links("ZZ", "Nowhere", routable), [])
+        self.assertEqual(C.routable_places("/nonexistent/geo.ts"), C.routable_places("/nonexistent/other.ts"))  # falls back to the same 51
+
+    def test_known_misreading_is_corrected_and_original_kept(self):
+        tables = {"closed": {"cases": [{"case": "Genius"}, {"case": "Genuis Brands"}]}, "first_distribution": {"cases": [{"case": "Genius"}]}}
+        made = R.apply_name_corrections(2022, tables)
+        self.assertEqual(made, [("closed", "Genius", "Geniux")])  # D4: only the (2022, closed) row; same text elsewhere is untouched
+        self.assertEqual(tables["closed"]["cases"][0], {"case": "Geniux", "name_corrected_from": "Genius"})
+        self.assertEqual(tables["first_distribution"]["cases"][0], {"case": "Genius"})
+        self.assertEqual(R.apply_name_corrections(2023, {"closed": {"cases": [{"case": "Genius"}]}}), [])
+
+    def test_names_are_checked_against_the_official_pdf_text(self):
+        flat = "casesclosedin2022geniuxcommerceplanet"
+        tables = {"closed": {"cases": [{"case": "Geniux"}, {"case": "Commerce Planet"}, {"case": "Genius"}]}}
+        self.assertEqual(R.names_missing_from_pdf(tables, flat), ["Genius"])
+        self.assertIsNone(R.names_missing_from_pdf(tables, None))  # no pdftotext: reported as unchecked, never as passed
+
+    def test_provenance_says_which_hash_is_which(self):
+        capture = {"path": "private/acq/x/cap.json", "sha256": "a" * 64, "url": "https://www.ftc.gov/x.pdf", "retrieved_at": "2026-10-18T12:00:00Z"}
+        pdf = {"path": "private/acq/x/x.pdf", "sha256": "b" * 64, "url": "https://www.ftc.gov/x.pdf", "bytes": 10, "retrieved_at": "2026-10-18T16:00:00Z"}
+        prov = C.provenance(capture, pdf, chunk=3)
+        self.assertEqual((prov["capture_sha256"], prov["official_pdf_sha256"], prov["chunk"]), ("a" * 64, "b" * 64, 3))
+        self.assertNotIn("sha256", prov)
+        src = C.source_record(capture, pdf, name="n")
+        self.assertIn("not of the PDF", src["capture_note"])
+        self.assertIn("official PDF bytes", src["official_pdf_note"])
+        self.assertEqual(src["official_pdf_bytes"], 10)
+        self.assertNotIn("official_pdf_sha256", C.source_record(capture))  # HTML pages have no PDF
+
+    def test_capture_and_pdf_must_share_one_url(self):
+        manifest = {"csn-annual-data-book-2024.pdf": {"url": "https://www.ftc.gov/other.pdf", "path": "p", "sha256": "c" * 64}}
+        capture = {"path": "private/acq/ftc_sentinel/firecrawl/csn_databook_2024_pdf.json", "url": "https://www.ftc.gov/x.pdf"}
+        with self.assertRaises(ValueError):
+            C.official_pdf(manifest, capture)
+        self.assertIsNone(C.official_pdf(manifest, {"path": "private/acq/ftc_sentinel/firecrawl/ftc_refund_programs_index.json", "url": "u"}))
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -417,6 +512,32 @@ class RefundTests(unittest.TestCase):
         md2 = md + "\n| Electronic &amp; International Payments $5 Total Sent $9 | |"
         _, extras2, problems2 = R.parse_state_mailed("\n---\n".join(["", "", md2]), 2024)
         self.assertTrue(problems2)  # states + military + electronic != printed total
+
+    def test_state_mailed_2022_layout_has_virgin_islands_and_split_total_row(self):
+        base = [[u, "$1,000"] for u in P.STATES if u != "DC"]
+        # 2022: a VI row, 'Military Bases', then a label row without amounts and, last, one row carrying both amounts
+        rows = base + [["VI", "$10"], ["Military Bases", "$500"], ["Electronic &amp; International Payments Total Sent", ""], ["$20 $51,530", ""]]
+        md = "## Mailed\n" + table(["State", "$$ Mailed in 2022"], rows)
+        states, extras, problems = R.parse_state_mailed("\n---\n".join(["", "", md]), 2022)
+        self.assertEqual(len(states), 51)
+        self.assertNotIn("VI", states)  # a territory outside the 52 listed jurisdictions is kept as an extra, not a state row
+        self.assertEqual((extras["virgin_islands_usd"], extras["military_bases_usd"], extras["electronic_and_international_usd"], extras["total_sent_usd"]), (10, 500, 20, 51530))
+        self.assertEqual(extras["parts_sum_usd"], 51530)
+        self.assertEqual(problems, [])
+        wrong = md.replace("$20 $51,530", "$20 $51,531")
+        _, extras2, problems2 = R.parse_state_mailed("\n---\n".join(["", "", wrong]), 2022)
+        self.assertEqual(extras2["total_sent_usd"], 51531)
+        self.assertTrue(any("printed total 51531" in p for p in problems2))  # a printed total that disagrees with its parts is reported, never forced to agree
+
+    def test_state_mailed_2024_layout_international_electronic_and_total(self):
+        base = [[u, "$1,000"] for u in P.STATES if u != "DC"]
+        md = "## Mailed\n" + table(["State", "$$ Mailed in 2024"], base + [["Military Bases", "$500"]]) + "\n\n**International Payments**\n**Total Sent:**\n\n**$7**\n**Electronic Payments (no geographic data) $13\n$51,520**\n\n<sup>1</sup>note"
+        states, extras, problems = R.parse_state_mailed("\n---\n".join(["", "", md]), 2024)
+        self.assertEqual(len(states), 51)
+        self.assertEqual((extras["international_usd"], extras["electronic_no_geography_usd"], extras["total_sent_usd"], extras["parts_sum_usd"]), (7, 13, 51520, 51520))
+        self.assertEqual(problems, [])
+        _, _, problems2 = R.parse_state_mailed("\n---\n".join(["", "", md.replace("$51,520", "$51,519")]), 2024)
+        self.assertTrue(any("printed total 51519" in p for p in problems2))
 
     def test_snapshot_must_sum_to_100(self):
         md = table(["Category", "Returned to Consumers (%)", "Sent to U.S. Treasury (%)", "Administrative Costs (%)"], [["2024", "93", "3.8", "3.2"], ["2023", "88.1", "2.9", "9.1"], ["2022", "90", "2.6", "1.7"]])
@@ -500,7 +621,7 @@ class StateRecordTests(unittest.TestCase):
             rank = ranked.index(usps) + 1 if usps in ranked else None
             fraud = None if usps == drop_fraud_for else {"reports": 100 + i, "pct_reporting_loss": 40.0, "total_loss_usd": 1000 * (i + 1) * (1 + shift), "median_loss_usd": 400}
             states[usps] = {"usps": usps, "year": year, "fraud_other": {"rank": (rank + shift) if rank and rank + shift <= 50 else rank, "per100k": 2000 - i, "reports": 1000 + i}, "identity_theft": {"rank": rank, "per100k": 300 - i, "reports": 200 + i}, "fraud": fraud, "top_categories": None if usps == "AK" else [{"category": "Identity Theft", "share_pct": 20}], "id_theft_types": [], "page_chunk": 30, "page_identified_by": "footnote", "checks": {}, "withheld": ["no state page found"] if usps == "AK" else []}
-        return {"entry": {"url": f"https://example.test/{year}.pdf", "path": f"x/{year}.json", "sha256": "0" * 64, "retrieved_at": "2026-10-18T00:00:00Z"}, "states": states, "book": {"year": year, "chunks": {"fraud_other_ranking": 1, "identity_theft_ranking": 2, "appendix_c": 3}, "population_basis_year": str(year - 1), "state_sums": {"total_loss_usd": sum(s["fraud"]["total_loss_usd"] for s in states.values() if s["fraud"])}}}
+        return {"entry": {"url": f"https://example.test/{year}.pdf", "path": f"x/{year}.json", "sha256": "0" * 64, "retrieved_at": "2026-10-18T00:00:00Z"}, "pdf": {"path": f"x/{year}.pdf", "sha256": "1" * 64, "bytes": 1, "retrieved_at": "2026-10-18T00:00:00Z"}, "states": states, "book": {"year": year, "chunks": {"fraud_other_ranking": 1, "identity_theft_ranking": 2, "appendix_c": 3}, "population_basis_year": str(year - 1), "state_sums": {"total_loss_usd": sum(s["fraud"]["total_loss_usd"] for s in states.values() if s["fraud"])}}}
 
     def test_analytics_and_not_recorded_paths(self):
         books = {2023: self.edition(2023, shift=0), 2024: self.edition(2024, shift=1, drop_fraud_for="MT")}
@@ -564,6 +685,19 @@ class BuildFileTests(unittest.TestCase):
         self.assertEqual(len(self.builds["ftc_sentinel_national"]["rows"]), 9)
         self.assertEqual(len(self.builds["ftc_dnc_states"]["rows"]), 52 * 5)
 
+    def test_refund_state_table_totals_are_recorded_for_every_year_and_differences_are_shown(self):
+        rows = {r["id"]: r for r in self.builds["ftc_refunds"]["rows"]}
+        v22, v23, v24 = (rows[f"{y}-summary"]["item"]["values"] for y in (2022, 2023, 2024))
+        # 2022: a Virgin Islands row exists only in that year's table; with it the printed total equals its parts exactly
+        self.assertEqual((v22["virgin_islands_usd"], v22["total_sent_usd"], v22["parts_sum_usd"]), (1833, 439091946, 439091946))
+        self.assertEqual((v23["total_sent_usd"], v23["parts_sum_usd"]), (168380271, 168380264))
+        self.assertEqual((v24["total_sent_usd"], v24["parts_sum_usd"], v24["international_usd"], v24["electronic_no_geography_usd"]), (325179539, 325179542, 1967782, 48411598))
+        facts = {y: dict(rows[f"{y}-summary"]["detail"]["facts"]) for y in (2022, 2023, 2024)}
+        self.assertEqual(facts[2022]["Printed total against the listed parts"], "equal")
+        self.assertIn("printed total higher", facts[2023]["Printed total against the listed parts"])
+        self.assertIn("printed total lower", facts[2024]["Printed total against the listed parts"])
+        self.assertFalse(any(r["id"].endswith("-state-VI") for r in rows.values()))  # outside the 52 listed jurisdictions: an extra, not a state row
+
     def test_places_links_are_real_state_codes(self):
         for name, b in self.builds.items():
             for r in b["rows"]:
@@ -587,6 +721,70 @@ class BuildFileTests(unittest.TestCase):
         for year in range(2017, 2025):
             state_sum = sum(r["item"]["metrics"]["total_loss_usd"] or 0 for r in rows if r["id"].endswith(f"-{year}"))
             self.assertLess(state_sum, nat[f"US-{year}"]["item"]["fraud_summary"]["total_loss_usd"])
+
+    def test_puerto_rico_rows_exist_without_a_places_link(self):  # D3
+        for name, b in self.builds.items():
+            self.assertNotIn("/places/PR", json.dumps(b["rows"]), name)
+        states = {r["id"]: r for r in self.builds["ftc_sentinel_states"]["rows"]}
+        self.assertEqual(states["PR-2024"]["state"], "PR")
+        self.assertIsNotNone(states["PR-2024"]["item"]["metrics"]["fraud_other_reports"])
+        self.assertTrue(any(link["url"] == "/places/DC" for link in states["DC-2024"]["item"]["links"]))
+        refunds = {r["id"] for r in self.builds["ftc_refunds"]["rows"]}
+        self.assertTrue({"2022-state-PR", "2023-state-PR", "2024-state-PR"} <= refunds)
+
+    def test_dnc_tables_are_complete_apart_from_the_unranked_dc_and_pr(self):  # D5
+        for r in self.builds["ftc_dnc_states"]["rows"]:
+            m = r["item"]["metrics"]
+            unranked = r["state"] in ("DC", "PR")
+            for key in ("complaints", "complaints_per100k", "registrations", "registrations_per100k"):
+                self.assertIsNotNone(m[key], (r["id"], key))
+            for key in ("complaints_rank", "registrations_rank"):
+                self.assertEqual(m[key] is None, unranked, (r["id"], key))
+        by_id = {r["id"]: r["item"]["metrics"] for r in self.builds["ftc_dnc_states"]["rows"]}
+        self.assertEqual(by_id["DE-FY2022"]["complaints_per100k"], 1537)  # was damaged to 537 in the text extraction
+        self.assertEqual(by_id["TX-FY2023"]["registrations_rank"], 48)
+        cov = self.builds["ftc_dnc_states"]["summary"]["coverage"]
+        self.assertTrue(all(c["complaints_per100k"] == 52 and c["registrations_per100k"] == 52 for c in cov.values()))
+
+    def test_case_name_follows_the_official_pdf(self):  # D4
+        ids = {r["id"]: r for r in self.builds["ftc_refunds"]["rows"]}
+        self.assertIn("2022-closed-geniux", ids)
+        self.assertNotIn("2022-closed-genius", ids)
+        self.assertEqual(ids["2022-closed-geniux"]["title"], "Geniux")
+
+    def test_percentages_are_displayed_as_printed(self):  # D2
+        ids = {r["id"]: r for r in self.builds["ftc_refunds"]["rows"]}
+        self.assertEqual(ids["2023-first_distribution-arete-financial"]["item"]["cells"]["pct_cashed"], "66.55%")
+        self.assertEqual(ids["2024-first_distribution-lca-vision-lasikplus"]["item"]["cells"]["pct_cashed"], "93.0%")
+        self.assertEqual(ids["2022-closed-click-4-support"]["item"]["cells"]["pct_cashed"], "39%")
+        for r in ids.values():
+            cell = r["item"]["cells"].get("pct_cashed")
+            value = (r["item"].get("values") or {}).get("pct_cashed")
+            if cell not in (None, "Not recorded") and value is not None:
+                self.assertAlmostEqual(float(cell.rstrip("%")), value, places=6)
+
+    def test_every_hash_is_labelled_and_matches_its_file(self):
+        import hashlib
+        for name, b in self.builds.items():
+            for ref in b["inputs"]:
+                h = hashlib.sha256()
+                with open(os.path.join(C.ROOT, ref["path"]), "rb") as handle:
+                    for chunk in iter(lambda: handle.read(1 << 20), b""):
+                        h.update(chunk)
+                self.assertEqual(h.hexdigest(), ref["sha256"], (name, ref["path"]))
+            paths = {ref["path"]: ref["sha256"] for ref in b["inputs"]}
+            for r in b["rows"]:
+                prov = r["item"].get("provenance") or {}
+                self.assertNotIn("sha256", prov)
+                if prov.get("capture"):
+                    self.assertEqual(paths[prov["capture"]], prov["capture_sha256"])
+                if prov.get("official_pdf"):
+                    self.assertEqual(paths[prov["official_pdf"]], prov["official_pdf_sha256"])
+            for key, src in (b["summary"].get("sources") or {}).items():
+                self.assertIn("capture_sha256", src)
+                self.assertNotIn("sha256", src)
+        for r in self.builds["ftc_sentinel_states"]["rows"]:
+            self.assertIn("official_pdf_sha256", r["item"]["provenance"])
 
     def test_refund_rows_keep_published_names_and_link_only_exact_matches(self):
         rows = self.builds["ftc_refunds"]["rows"]
