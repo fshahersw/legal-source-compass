@@ -17,6 +17,8 @@ import {
   type CompanySummary,
 } from "@/components/companies/companyData";
 
+import { parseCourtPage, type CourtMdl } from "./mdlIntel.functions";
+
 export type LensCompany = {
   cik: string;
   name: string;
@@ -57,6 +59,8 @@ export type MdlLens = {
   insights: SafetyInsight[];
   /** Registrants whose own SEC filings name this MDL (company_sec_mdl_links); tier and role as recorded. */
   companies: LensCompany[];
+  /** Official transferee-court MDL page facts (mdl_intel_court_pages): verbatim quotes and listed orders. */
+  courtPage: CourtMdl | null;
 };
 
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
@@ -107,7 +111,7 @@ export const getMdlLens = createServerFn({ method: "GET" })
   .handler(async ({ data }): Promise<MdlLens> => {
     const id = String(data.mdl);
     const linkFilter = encodeURIComponent(JSON.stringify({ mdl: [id] }));
-    const [mdl, court, national, judges, signal, insights, links] = await Promise.all([
+    const [mdl, court, national, judges, signal, insights, links, page] = await Promise.all([
       restGet<{ item: Record<string, unknown> }[]>(
         `corpus_records?select=item&dataset=eq.mdl_analytics&id=eq.${id}&limit=1`,
       ),
@@ -128,6 +132,9 @@ export const getMdlLens = createServerFn({ method: "GET" })
       ),
       restGet<{ id: string; link: Record<string, unknown> | null }[]>(
         `corpus_records?select=id,link:item->link&dataset=eq.company_sec_mdl_links&filters=cs.${linkFilter}&limit=50`,
+      ),
+      restGet<{ court: unknown }[]>(
+        `corpus_records?select=court:item->court&dataset=eq.mdl_intel_court_pages&id=eq.${id}&limit=1`,
       ),
     ]);
     const parsedLinks = links.rows.flatMap((row) => {
@@ -161,6 +168,7 @@ export const getMdlLens = createServerFn({ method: "GET" })
       judgeAmbiguous: judges.rows.length > 1,
       signal: signal.rows[0] ? (toSignals(signal.rows[0].item)[0] ?? null) : null,
       companies,
+      courtPage: page.rows[0] ? parseCourtPage(page.rows[0].court) : null,
       insights: insights.rows.flatMap(({ item }) => {
         const parsed = parseInsight(item?.insight);
         return parsed ? [parsed] : [];

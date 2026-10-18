@@ -20,6 +20,7 @@ import { mdlAnalyticsQuery } from "@/components/matters/MdlAnalytics";
 import { getMdlLens, type MdlLens as Lens } from "@/lib/external/mdlLens.functions";
 import { getCourtStatsDistrict } from "@/lib/external/courtStats.functions";
 import type { LensCompany } from "@/lib/external/mdlLens.functions";
+import type { CourtMdl } from "@/lib/external/mdlIntel.functions";
 import { money } from "@/components/companies/companyData";
 import type { CourtAnalytics, NationalDistribution } from "@/lib/external/courtAnalytics.functions";
 import type { FjcProfile } from "@/lib/external/judgeProfiles.functions";
@@ -584,6 +585,142 @@ function CompaniesCard({ companies: all }: { companies: LensCompany[] }) {
   );
 }
 
+function CourtPageCard({ page }: { page: CourtMdl | null }) {
+  if (!page || !page.pages.length)
+    return (
+      <Card title="Transferee court MDL page" subtitle="Official court website">
+        <p className="text-[11px] text-muted-foreground">
+          No official MDL page for this docket was located on the transferee court's website.
+        </p>
+      </Card>
+    );
+  const orders = page.latestOrders.filter((o) => !o.vacated).slice(0, 6);
+  const bellwether = page.quotes.filter((q) => q.category === "bellwether").slice(0, 3);
+  const settlement = page.quotes.filter((q) => q.category === "settlement").slice(0, 2);
+  const leadership = page.leadership.slice(0, 2);
+  const retrieved = page.pages[0]?.retrieved;
+  return (
+    <Card
+      title="Transferee court MDL page"
+      subtitle={`Quoted verbatim from the court's own pages${retrieved ? `, retrieved ${retrieved}` : ""}; counsel contact details removed.`}
+      className="lg:col-span-2"
+    >
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="min-w-0 space-y-3">
+          <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px]">
+            {page.pages.slice(0, 3).map((pg) => (
+              <a
+                key={pg.url}
+                href={pg.url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-primary hover:underline"
+              >
+                {pg.title || "Court page"}
+                <ExternalLink className="size-3" aria-hidden="true" />
+              </a>
+            ))}
+          </div>
+          <div>
+            <p className="text-[11px] font-medium">
+              Latest orders listed{page.ordersTotal ? ` · ${n(page.ordersTotal)} on the page` : ""}
+            </p>
+            {orders.length ? (
+              <ul className="mt-1 space-y-1 text-[11px]">
+                {orders.map((o) => (
+                  <li key={o.url + o.title} className="flex gap-2">
+                    <span className="w-20 shrink-0 font-mono text-muted-foreground">
+                      {o.date ?? o.datePrinted ?? "—"}
+                    </span>
+                    <a
+                      href={o.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="min-w-0 truncate text-primary hover:underline"
+                      title={o.title}
+                    >
+                      {o.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                The page lists no dated orders that could be read.
+              </p>
+            )}
+          </div>
+          {leadership.length ? (
+            <div>
+              <p className="text-[11px] font-medium">Leadership as listed</p>
+              {leadership.map((block) => (
+                <div key={block.heading + block.url} className="mt-1 text-[11px]">
+                  <p className="font-medium text-muted-foreground">{block.heading}</p>
+                  <ul className="mt-0.5 space-y-0.5">
+                    {block.lines.slice(0, 6).map((line, i) => (
+                      <li key={i} className="truncate" title={line}>
+                        {line}
+                      </li>
+                    ))}
+                    {block.lines.length > 6 ? (
+                      <li className="text-muted-foreground">
+                        and {block.lines.length - 6} more lines
+                      </li>
+                    ) : null}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+        <div className="min-w-0 space-y-3">
+          <div>
+            <p className="text-[11px] font-medium">
+              Bellwether statements
+              {page.firstBellwetherDate ? (
+                <span className="font-normal text-muted-foreground">
+                  {" "}
+                  · first trial date quoted {page.firstBellwetherDate}
+                </span>
+              ) : null}
+            </p>
+            {bellwether.length ? (
+              <ul className="mt-1 space-y-1.5">
+                {bellwether.map((q, i) => (
+                  <li key={i} className="border-l-2 border-border pl-2 text-[11px] leading-snug">
+                    “{q.text}”
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                The court pages contain no bellwether statement.
+              </p>
+            )}
+            {page.bellwetherTimingNote ? (
+              <p className="mt-1 text-[10.5px] text-muted-foreground">
+                {page.bellwetherTimingNote}
+              </p>
+            ) : null}
+          </div>
+          {settlement.length ? (
+            <div>
+              <p className="text-[11px] font-medium">Settlement statements</p>
+              <ul className="mt-1 space-y-1.5">
+                {settlement.map((q, i) => (
+                  <li key={i} className="border-l-2 border-border pl-2 text-[11px] leading-snug">
+                    “{q.text}”
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 function FlagsCard({ insights }: { insights: SafetyInsight[] }) {
   return (
     <Card title="Automated flags" subtitle="From the regulatory-watch detectors on /safety">
@@ -843,6 +980,7 @@ export function MdlLens({ mdl }: { mdl: number }) {
 
       <div className="grid gap-3 lg:grid-cols-2">
         <CompaniesCard companies={lens.companies} />
+        <CourtPageCard page={lens.courtPage} />
       </div>
 
       {lens.signal ? (
