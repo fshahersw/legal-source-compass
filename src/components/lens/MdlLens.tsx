@@ -18,6 +18,7 @@ import { AgencyMark, JudgePortrait } from "@/components/corpus/EntityArtwork";
 import { FDA_COLORS } from "@/components/fda-analytics/chartView";
 import { mdlAnalyticsQuery } from "@/components/matters/MdlAnalytics";
 import { getMdlLens, type MdlLens as Lens } from "@/lib/external/mdlLens.functions";
+import { getCourtStatsDistrict } from "@/lib/external/courtStats.functions";
 import type { CourtAnalytics, NationalDistribution } from "@/lib/external/courtAnalytics.functions";
 import type { FjcProfile } from "@/lib/external/judgeProfiles.functions";
 import type { MassTortSignal } from "@/lib/external/massTortSignals.functions";
@@ -135,6 +136,58 @@ function Versus({
   );
 }
 
+/** Products-liability filings by fiscal year in the transferee district (Judicial Business C-11/C-3). */
+function CourtPlHistory({ courtId }: { courtId: string }) {
+  const q = useQuery({
+    queryKey: ["court-stats-district", courtId],
+    queryFn: () => getCourtStatsDistrict({ data: { id: courtId } }),
+    staleTime: 10 * 60 * 1000,
+  });
+  const panel = q.data;
+  if (q.isLoading)
+    return <div className="mt-3 h-24 animate-pulse rounded bg-muted/50" aria-busy="true" />;
+  if (!panel) return null;
+  const rows = panel.years.map((year, i) => ({
+    year: `FY${String(year).slice(2)}`,
+    pl: panel.pl[i] ?? null,
+    share: panel.share[i] ?? null,
+  }));
+  const latest = rows.at(-1);
+  return (
+    <div className="mt-3">
+      <p className="text-[11px] font-medium">
+        Products-liability filings, FY{panel.years[0]}–FY{panel.years.at(-1)}
+        {panel.ranks.pl && panel.ranks.of ? (
+          <span className="font-normal text-muted-foreground">
+            {" "}
+            · #{panel.ranks.pl} of {panel.ranks.of} districts in FY{panel.years.at(-1)}
+          </span>
+        ) : null}
+      </p>
+      <div className="h-24">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={rows} margin={{ top: 4, right: 0, bottom: 0, left: -18 }}>
+            <XAxis dataKey="year" tick={{ ...axis, fontSize: 9 }} interval={2} />
+            <YAxis tick={{ ...axis, fontSize: 9 }} />
+            <Tooltip
+              contentStyle={{ fontSize: 11 }}
+              formatter={(v) => [n(Number(v)), "PL filings"]}
+            />
+            <Bar dataKey="pl" fill={FDA_COLORS[3]} isAnimationActive={false} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <p className="text-[10px] text-muted-foreground">
+        {latest?.share != null
+          ? `${latest.share.toFixed(1)}% of the district's civil filings in ${latest.year}. `
+          : ""}
+        Counts include MDL actions transferred to the court. Source: U.S. Courts Judicial Business
+        tables C-3 and C-11.
+      </p>
+    </div>
+  );
+}
+
 function CourtCard({ court, dist }: { court: CourtAnalytics; dist: NationalDistribution | null }) {
   const m = court.metrics;
   const others = court.mdls.filter((x) => x.pending > 0).sort((a, b) => b.pending - a.pending);
@@ -185,6 +238,7 @@ function CourtCard({ court, dist }: { court: CourtAnalytics; dist: NationalDistr
           range={dist?.["per_judge_weighted_filings"]}
         />
       </div>
+      <CourtPlHistory courtId={court.court_id} />
       {others.length > 1 ? (
         <div className="mt-3">
           <p className="text-[11px] font-medium">Largest MDLs in this court</p>

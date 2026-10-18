@@ -7,6 +7,7 @@ import { buildEntityView } from "@/lib/external/entityView";
 import { CourtArtwork } from "@/components/corpus/CourtArtwork";
 import { CourtResources } from "@/components/corpus/CourtResources";
 import { CourtAnalyticsPanel } from "@/components/corpus/CourtAnalyticsPanel";
+import { CaseloadHistoryPanel } from "@/components/courts/CaseloadHistoryPanel";
 import { CourtJudgesPanel } from "@/components/corpus/JudgeFjcPanel";
 
 export const Route = createFileRoute("/courts/$id")({
@@ -64,6 +65,7 @@ function Page() {
       extra={(record) => (
         <>
           <CourtAnalyticsPanel courtId={id} />
+          <CaseloadHistoryPanel courtId={id} />
           <CourtJudgesPanel courtId={id} />
           <CourtResources raw={record} courtId={id} system={system} />
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
