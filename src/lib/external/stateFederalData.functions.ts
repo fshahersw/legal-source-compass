@@ -1,8 +1,10 @@
 /**
  * Headline figures from the published federal enrichment datasets for one state's page: CFPB consumer complaints
  * (cfpb_complaints_states), EPA ECHO enforcement cases (epa_echo_case_series) and ECHO-regulated facilities
- * (epa_echo_state_programs). Keys are exact (`cfpb-state:<USPS>`, `epa-echo-series:state:<USPS>:all`,
- * `epa-echo-programs:<USPS>`); a missing row stays missing, never filled from another state.
+ * (epa_echo_state_programs), OSHA inspections (osha_inspections_states) and NPDB malpractice payment reports
+ * (npdb_malpractice_states). Keys are exact (`cfpb-state:<USPS>`, `epa-echo-series:state:<USPS>:all`,
+ * `epa-echo-programs:<USPS>`, `osha-state:<USPS>`, `npdb-mmpr:<USPS>:all`); a missing row stays missing, never
+ * filled from another state.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
@@ -34,11 +36,35 @@ export type StateFederalData = {
     formal5y: number;
     sncNow: number;
   } | null;
+  /** OSHA inspections for the latest complete fiscal year (federal OSHA and State Plan offices combined). */
+  osha: {
+    recordId: string;
+    fy: number;
+    inspections: number;
+    /** Computed sum of recorded current penalties; null when the row does not state it. */
+    currentPenalty: number | null;
+    plan: string | null;
+  } | null;
+  /** NPDB medical malpractice payment reports, all years 1990 onward (aggregate only). */
+  npdb: {
+    recordId: string;
+    reports: number;
+    totalPaid: number | null;
+    medianPayment: number | null;
+    perMillion: number | null;
+  } | null;
 };
 
 export function parseStateFederalData(
   usps: string,
-  input: { cfpb: unknown; ranking: unknown; epa: unknown; programs: unknown },
+  input: {
+    cfpb: unknown;
+    ranking: unknown;
+    epa: unknown;
+    programs: unknown;
+    osha?: unknown;
+    npdb?: unknown;
+  },
 ): StateFederalData {
   const cfpb = obj(input.cfpb);
   const complaints = num(cfpb?.["complaints"]);
@@ -51,6 +77,11 @@ export function parseStateFederalData(
   const facilities = num(programs?.["facilities"]);
   const formal = num(programs?.["formal_5y"]);
   const snc = num(programs?.["snc_now"]);
+  const osha = obj(input.osha);
+  const oshaFy = num(osha?.["fy"]);
+  const oshaInspections = num(osha?.["inspections"]);
+  const npdb = obj(input.npdb);
+  const npdbReports = num(npdb?.["reports"]);
   return {
     cfpb:
       cfpb && complaints != null
@@ -70,6 +101,26 @@ export function parseStateFederalData(
       programs && facilities != null && formal != null && snc != null
         ? { recordId: `epa-echo-programs:${usps}`, facilities, formal5y: formal, sncNow: snc }
         : null,
+    osha:
+      osha && oshaFy != null && oshaInspections != null
+        ? {
+            recordId: `osha-state:${usps}`,
+            fy: oshaFy,
+            inspections: oshaInspections,
+            currentPenalty: num(osha["current_penalty"]),
+            plan: typeof osha["plan"] === "string" ? osha["plan"] : null,
+          }
+        : null,
+    npdb:
+      npdb && npdbReports != null
+        ? {
+            recordId: `npdb-mmpr:${usps}:all`,
+            reports: npdbReports,
+            totalPaid: num(npdb["total_paid"]),
+            medianPayment: num(npdb["median_payment"]),
+            perMillion: num(npdb["per_million"]),
+          }
+        : null,
   };
 }
 
@@ -81,18 +132,22 @@ export const getStateFederalData = createServerFn({ method: "GET" })
       restGet<{ c: unknown }[]>(
         `corpus_records?select=c:item->cells&dataset=eq.${dataset}&id=eq.${encodeURIComponent(id)}&limit=1`,
       );
-    const [cfpb, ranking, epa, programs] = await Promise.all([
+    const [cfpb, ranking, epa, programs, osha, npdb] = await Promise.all([
       read("cfpb_complaints_states", `cfpb-state:${u}`),
       restGet<{ r: unknown }[]>(
         "corpus_records?select=r:item->rankings&dataset=eq.cfpb_complaints_states&id=eq.cfpb-states:analytics&limit=1",
       ),
       read("epa_echo_case_series", `epa-echo-series:state:${u}:all`),
       read("epa_echo_state_programs", `epa-echo-programs:${u}`),
+      read("osha_inspections_states", `osha-state:${u}`),
+      read("npdb_malpractice_states", `npdb-mmpr:${u}:all`),
     ]);
     return parseStateFederalData(u, {
       cfpb: cfpb.rows[0]?.c,
       ranking: ranking.rows[0]?.r,
       epa: epa.rows[0]?.c,
       programs: programs.rows[0]?.c,
+      osha: osha.rows[0]?.c,
+      npdb: npdb.rows[0]?.c,
     });
   });

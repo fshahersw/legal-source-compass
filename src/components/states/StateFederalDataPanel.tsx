@@ -29,7 +29,7 @@ export function StateFederalDataPanel({ usps }: { usps: string }) {
           <Landmark className="size-4" aria-hidden />
           Federal enforcement and complaints
         </h2>
-        <span className="text-[11px] text-[var(--navy-muted)]">CFPB · EPA ECHO</span>
+        <span className="text-[11px] text-[var(--navy-muted)]">CFPB · EPA ECHO · OSHA · NPDB</span>
       </div>
       {q.isPending ? (
         <p role="status" className="px-3 py-6 text-xs text-muted-foreground">
@@ -81,7 +81,7 @@ function Row({
 }
 
 function Rows({ usps, data }: { usps: string; data: StateFederalData }) {
-  if (!data.cfpb && !data.epa && !data.facilities)
+  if (!data.cfpb && !data.epa && !data.facilities && !data.osha && !data.npdb)
     return (
       <p className="p-3 text-xs text-muted-foreground">
         No federal enforcement or complaint records are published for this state yet.
@@ -119,6 +119,32 @@ function Rows({ usps, data }: { usps: string; data: StateFederalData }) {
             title="Regulated facilities (ECHO)"
             value={fmt(data.facilities.facilities)}
             note={`${fmt(data.facilities.formal5y)} with a formal action in 5 years · ${fmt(data.facilities.sncNow)} significant violators now`}
+          />
+        ) : null}
+        {data.osha ? (
+          <Row
+            dataset="osha_inspections_states"
+            id={data.osha.recordId}
+            title={`Workplace safety inspections (OSHA), FY${data.osha.fy}`}
+            value={fmt(data.osha.inspections)}
+            note={`${data.osha.plan ?? `Plan status ${NOT_RECORDED}`}${
+              data.osha.currentPenalty != null
+                ? ` · ${usdMillions(data.osha.currentPenalty)} current penalties (computed from recorded amounts)`
+                : ""
+            }`}
+          />
+        ) : null}
+        {data.npdb ? (
+          <Row
+            dataset="npdb_malpractice_states"
+            id={data.npdb.recordId}
+            title="Medical malpractice payment reports (NPDB)"
+            value={fmt(data.npdb.reports)}
+            note={`${
+              data.npdb.perMillion != null
+                ? `${data.npdb.perMillion.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} per million residents a year, 2021–2025`
+                : `Per-capita ${NOT_RECORDED}`
+            }${data.npdb.medianPayment != null ? ` · median payment $${fmt(data.npdb.medianPayment)} (nominal)` : ""} · all years since 1990`}
           />
         ) : null}
       </ul>

@@ -58,7 +58,44 @@ describe("parseStateFederalData", () => {
       epa: { opened: 5, concluded: "n/a", fed_penalty: 1 },
       programs: undefined,
     });
-    expect(v).toEqual({ cfpb: null, epa: null, facilities: null });
+    expect(v).toEqual({ cfpb: null, epa: null, facilities: null, osha: null, npdb: null });
+  });
+
+  it("builds the OSHA and NPDB blocks from their published cells", () => {
+    const v = parseStateFederalData("TX", {
+      ...TX,
+      osha: {
+        fy: 2025,
+        inspections: 3894,
+        current_penalty: 24292457.31,
+        plan: "Federal OSHA (no State Plan)",
+      },
+      npdb: { reports: 31411, total_paid: 5654870400, median_payment: 97500, per_million: 18.542 },
+    });
+    expect(v.osha).toEqual({
+      recordId: "osha-state:TX",
+      fy: 2025,
+      inspections: 3894,
+      currentPenalty: 24292457.31,
+      plan: "Federal OSHA (no State Plan)",
+    });
+    expect(v.npdb).toEqual({
+      recordId: "npdb-mmpr:TX:all",
+      reports: 31411,
+      totalPaid: 5654870400,
+      medianPayment: 97500,
+      perMillion: 18.542,
+    });
+  });
+
+  it("keeps an unstated OSHA penalty or NPDB per-capita rate as null, and drops rows without their count", () => {
+    const v = parseStateFederalData("TX", {
+      ...TX,
+      osha: { fy: 2025, inspections: 10 },
+      npdb: { total_paid: 5 },
+    });
+    expect(v.osha).toMatchObject({ inspections: 10, currentPenalty: null, plan: null });
+    expect(v.npdb).toBeNull();
   });
 
   it("keeps per-capita Not recorded as null, never 0", () => {
