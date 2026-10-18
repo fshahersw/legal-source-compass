@@ -10,6 +10,7 @@ import { StateMark } from "@/components/corpus/EntityArtwork";
 import { CourtArtwork } from "@/components/corpus/CourtArtwork";
 import { StateCourtDirectory, StateJudgeDirectory } from "@/components/corpus/StateDirectories";
 import { StateSourcePanel } from "@/components/corpus/StateSourcePanel";
+import { StateMetricsPanel } from "@/components/states/StateMetricsPanel";
 import { Button } from "@/components/ui/button";
 import { useAtlas } from "@/lib/atlas/store";
 import { useCorpus } from "@/lib/corpus/store";
@@ -292,6 +293,7 @@ function StatePage() {
                 <ArrowRight className="size-3.5" />
               </Link>
             </section>
+            <StateMetricsPanel key={usps} usps={usps} />
             {corpus.geo ? (
               <UsMap
                 compact

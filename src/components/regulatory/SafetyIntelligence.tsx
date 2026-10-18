@@ -151,13 +151,23 @@ function InsightCard({ insight }: { insight: SafetyInsight }) {
                     {e.date ?? "—"}
                   </span>
                   <span className="min-w-0">
-                    <Link
-                      to="/records/$dataset/$id"
-                      params={evidenceParams(e)}
-                      className="font-medium text-primary hover:underline"
-                    >
-                      {e.title}
-                    </Link>
+                    {e.dataset === "mdl_analytics" && /^\d+$/.test(e.id) ? (
+                      <Link
+                        to="/matters/lens/$mdl"
+                        params={{ mdl: e.id }}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        {e.title} · case lens
+                      </Link>
+                    ) : (
+                      <Link
+                        to="/records/$dataset/$id"
+                        params={evidenceParams(e)}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        {e.title}
+                      </Link>
+                    )}
                     {e.note ? (
                       <span className="block truncate text-muted-foreground">{e.note}</span>
                     ) : null}

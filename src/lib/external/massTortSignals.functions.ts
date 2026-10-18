@@ -48,6 +48,42 @@ const str = (v: unknown) => (typeof v === "string" && v ? v : null);
 const record = (v: unknown) =>
   v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, number>) : {};
 
+/** Map one stored signal record to a MassTortSignal; incomplete records yield an empty list. */
+export function toSignals(item: Item): MassTortSignal[] {
+  const s = item.signal;
+  const l = item.litigation;
+  if (!s || !l || typeof l["mdl"] !== "number") return [];
+  const queries = (s["queries"] ?? {}) as Record<string, unknown>;
+  return [
+    {
+      mdl: l["mdl"],
+      title: str(l["title"]) ?? "",
+      product: str(s["product"]) ?? "",
+      kind: (str(s["product_kind"]) ?? "drug") as MassTortSignal["kind"],
+      source: str(s["source"]) ?? "",
+      sourceUrl: str(s["source_url"]) ?? "",
+      caveat: str(s["caveat"]) ?? "",
+      eventTotal: num(s["event_total"]),
+      eventsByYear: record(s["events_by_year"]),
+      breakdown: record(s["event_breakdown"]),
+      breakdownError: str(s["event_breakdown_error"]),
+      topTerms: Array.isArray(s["top_terms"]) ? (s["top_terms"] as MassTortSignal["topTerms"]) : [],
+      recallTotal: num(s["recall_total"]),
+      recallBreakdown: record(s["recall_breakdown"]),
+      recentRecalls: Array.isArray(s["recent_recalls"])
+        ? (s["recent_recalls"] as SignalRecall[])
+        : [],
+      eventsQuery: str(queries["events"]),
+      pending: num(l["pending"]) ?? 0,
+      total: num(l["total"]) ?? 0,
+      change12m: num(l["change_12m"]),
+      judge: str(l["judge"]),
+      district: str(l["district"]),
+      series: Array.isArray(l["series"]) ? (l["series"] as MassTortSignal["series"]) : [],
+    },
+  ];
+}
+
 let cache: { at: number; value: MassTortSignal[] } | null = null;
 
 export const getMassTortSignals = createServerFn({ method: "GET" }).handler(
@@ -56,42 +92,7 @@ export const getMassTortSignals = createServerFn({ method: "GET" }).handler(
     const r = await restGet<{ id: string; item: Item }[]>(
       "corpus_records?select=id,item&dataset=eq.agency_safety_mass_tort_signals&order=ordinal.asc&limit=500",
     );
-    const value = r.rows.flatMap(({ item }) => {
-      const s = item.signal;
-      const l = item.litigation;
-      if (!s || !l || typeof l["mdl"] !== "number") return [];
-      const queries = (s["queries"] ?? {}) as Record<string, unknown>;
-      return [
-        {
-          mdl: l["mdl"],
-          title: str(l["title"]) ?? "",
-          product: str(s["product"]) ?? "",
-          kind: (str(s["product_kind"]) ?? "drug") as MassTortSignal["kind"],
-          source: str(s["source"]) ?? "",
-          sourceUrl: str(s["source_url"]) ?? "",
-          caveat: str(s["caveat"]) ?? "",
-          eventTotal: num(s["event_total"]),
-          eventsByYear: record(s["events_by_year"]),
-          breakdown: record(s["event_breakdown"]),
-          breakdownError: str(s["event_breakdown_error"]),
-          topTerms: Array.isArray(s["top_terms"])
-            ? (s["top_terms"] as MassTortSignal["topTerms"])
-            : [],
-          recallTotal: num(s["recall_total"]),
-          recallBreakdown: record(s["recall_breakdown"]),
-          recentRecalls: Array.isArray(s["recent_recalls"])
-            ? (s["recent_recalls"] as SignalRecall[])
-            : [],
-          eventsQuery: str(queries["events"]),
-          pending: num(l["pending"]) ?? 0,
-          total: num(l["total"]) ?? 0,
-          change12m: num(l["change_12m"]),
-          judge: str(l["judge"]),
-          district: str(l["district"]),
-          series: Array.isArray(l["series"]) ? (l["series"] as MassTortSignal["series"]) : [],
-        },
-      ];
-    });
+    const value = r.rows.flatMap(({ item }) => toSignals(item));
     cache = { at: Date.now(), value };
     return value;
   },

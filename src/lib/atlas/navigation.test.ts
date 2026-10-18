@@ -38,3 +38,20 @@ describe("state-first navigation", () => {
     expect(PRIMARY_NAVIGATION).toHaveLength(4);
   });
 });
+describe("analytics destinations", () => {
+  it("offers state, court and judge analytics inside geographic navigation", () => {
+    const tabs = contextualNavigation("/courts").map((x) => x.to);
+    expect(tabs).toEqual(
+      expect.arrayContaining(["/places/analytics", "/courts/analytics", "/judges/analytics"]),
+    );
+    expect(navigationSection("/places/analytics")).toBe("states");
+    expect(contextualNavigation("/places/analytics").length).toBeGreaterThan(0);
+  });
+  it("keeps enforcement and company intelligence inside the law section", () => {
+    expect(navigationSection("/companies")).toBe("law");
+    expect(navigationSection("/companies/200406")).toBe("law");
+    expect(contextualNavigation("/law").map((x) => x.to)).toEqual(
+      expect.arrayContaining(["/law/enforcement", "/companies"]),
+    );
+  });
+});
