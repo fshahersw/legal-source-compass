@@ -108,9 +108,9 @@ class CompanyMatchTests(unittest.TestCase):
         self.assertEqual(P.match_company("SEC company intelligence overview", self.index), ("no_match", None))
 
 
-def violation_row(aid, viol_type, init, curr, delete=""):
+def violation_row(aid, viol_type, init, curr, delete="", citation=""):
     return {"ACTIVITY_NR": str(aid), "DELETE_FLAG": delete, "VIOL_TYPE": viol_type, "INITIAL_PENALTY": init, "CURRENT_PENALTY": curr,
-            "STANDARD": "19260501 B13"}
+            "STANDARD": "19260501 B13", "CITATION_ID": citation}
 
 
 def inspection_row(aid, state, opened, closed, itype, rid, naics, name="ACME ROOFING LLC"):
@@ -131,10 +131,30 @@ class AggregationTests(unittest.TestCase):
         self.assertEqual(one["violations"]["other"], 1)
         self.assertEqual(one["initial"], 6000.0)
         self.assertEqual(one["current"], 4600.0)
+        self.assertEqual(one["grouped_total"], 3)  # no CITATION_ID letters: every record is an item
         self.assertEqual(table.stats["deleted"], 1)
         self.assertEqual(table.stats["no_activity_nr"], 1)
         self.assertEqual(table.stats["initial_blank"], 1)
         self.assertIsNone(table.get(3))
+
+
+    def test_lettered_item_groups_count_once_as_items_but_every_row_is_a_record(self):
+        table = B.ViolationTable()
+        rows = [violation_row(5, "S", "400", "400", citation="01001A"), violation_row(5, "S", "0", "0", citation="01001B"),
+                violation_row(5, "S", "0", "0", citation="01001C"), violation_row(5, "R", "900", "900", citation="01002"),
+                violation_row(5, "S", "300", "300", citation="02001A"), violation_row(5, "S", "0", "0", citation="02001B", delete="X"),
+                violation_row(6, "S", "100", "100", citation="01001A")]   # another inspection with the same citation id
+        for row in rows:
+            table.add(row)
+        five = table.get(5)
+        self.assertEqual(five["items"], 5)                      # records: the deleted row is excluded
+        self.assertEqual(five["violations"]["serious"], 4)
+        self.assertEqual(five["grouped_total"], 3)               # items 01001, 01002, 02001
+        self.assertEqual(five["grouped"]["serious"], 2)
+        self.assertEqual(five["grouped"]["repeat"], 1)
+        self.assertEqual(table.get(6)["grouped_total"], 1)
+        self.assertEqual(table.stats["lettered_group_records_not_counted_as_items"], 2)
+        self.assertEqual(five["initial"], 1600.0)                # penalties are sums over records, unaffected by grouping
 
     def test_state_year_bucket_math(self):
         table = B.ViolationTable()
@@ -175,8 +195,9 @@ class AggregationTests(unittest.TestCase):
         for fy, n, pen in [(2015, 5, 10.0), (2016, 7, 20.0), (2025, 3, 30.0), (2026, 9, 40.0)]:
             e = {k: 0 for k in ("inspections", "programmed", "unprogrammed", "other_type", "fat_cat", "accident", "complaint", "referral",
                                 "follow_up", "federal", "state_plan", "jurisdiction_not_recorded", "with_violations", "violation_items",
-                                "open_cases")}
-            e.update({"fy": fy, "inspections": n, "initial_penalty": pen, "current_penalty": pen, "violations": P.blank_violations()})
+                                "open_cases", "violation_records")}
+            e.update({"fy": fy, "inspections": n, "initial_penalty": pen, "current_penalty": pen, "violations": P.blank_violations(),
+                      "items_by_type": P.blank_violations()})
             entries.append(e)
         total = B.sum_years(entries, 2016, 2025)
         self.assertEqual(total["inspections"], 10)

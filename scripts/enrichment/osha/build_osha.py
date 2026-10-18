@@ -207,11 +207,18 @@ def company_index():
 
 # ----------------------------------------------------------------------------------------------- violations
 class ViolationTable:
-    """Per-inspection violation aggregates in compact arrays (activity_nr -> slot)."""
+    """Per-inspection violation aggregates in compact arrays (activity_nr -> slot).
+
+    Two counts are kept. Records: every non-deleted row of the violation file (CITATION_ID such as 01001A and 01001B are two
+    records). Items: records with lettered item groups counted once per citation item (CITATION_ID[:5], the DOL field
+    description: 'citation number, item number and item group'); a lettered record whose item was already seen in the
+    inspection adds nothing, a record without a letter always counts. The item type is the type of the first record seen."""
 
     def __init__(self):
         self.slot = {}
         self.counts = {key: array.array("l") for key in P.VIOL_KEYS}
+        self.grouped = {key: array.array("l") for key in P.VIOL_KEYS}
+        self.group_seen = set()
         self.items = array.array("l")
         self.initial = array.array("d")
         self.current = array.array("d")
@@ -233,6 +240,7 @@ class ViolationTable:
             self.slot[aid] = index
             for key in P.VIOL_KEYS:
                 self.counts[key].append(0)
+                self.grouped[key].append(0)
             self.items.append(0)
             self.initial.append(0.0)
             self.current.append(0.0)
@@ -240,6 +248,17 @@ class ViolationTable:
         self.type_codes[code or "(blank)"] += 1
         self.counts[P.viol_key(code)][index] += 1
         self.items[index] += 1
+        citation = P.clean(row.get("CITATION_ID"))
+        new_item = True
+        if len(citation) > 5:
+            group_key = (aid, citation[:5])
+            if group_key in self.group_seen:
+                new_item = False
+                self.stats["lettered_group_records_not_counted_as_items"] += 1
+            else:
+                self.group_seen.add(group_key)
+        if new_item:
+            self.grouped[P.viol_key(code)][index] += 1
         init, curr = P.money(row.get("INITIAL_PENALTY")), P.money(row.get("CURRENT_PENALTY"))
         if init is None:
             self.stats["initial_blank"] += 1
@@ -254,7 +273,9 @@ class ViolationTable:
         index = self.slot.get(aid)
         if index is None:
             return None
+        grouped = {key: self.grouped[key][index] for key in P.VIOL_KEYS}
         return {"violations": {key: self.counts[key][index] for key in P.VIOL_KEYS}, "items": self.items[index],
+                "grouped": grouped, "grouped_total": sum(grouped.values()),
                 "initial": self.initial[index], "current": self.current[index]}
 
 
@@ -321,7 +342,7 @@ def blank_year():
         "by_type": collections.Counter(), "fat_cat": 0, "accident": 0, "complaint": 0, "referral": 0, "follow_up": 0,
         "federal": 0, "state_plan": 0, "jurisdiction_not_recorded": 0,
         "safety": 0, "health": 0, "no_inspection_scope": 0,
-        "with_violations": 0, "violation_items": 0, "violations": P.blank_violations(),
+        "with_violations": 0, "violation_records": 0, "violation_items": 0, "violations": P.blank_violations(), "items_by_type": P.blank_violations(),
         "initial_penalty": 0.0, "current_penalty": 0.0,
         "open_cases": 0, "naics": collections.Counter(), "naics_not_recorded": 0,
         "penalties": array.array("d"), "close_days": array.array("l"),
@@ -358,9 +379,12 @@ def add_inspection(bucket, row, cls, jur, sector, viol, days):
         bucket["close_days"].append(days)
     if viol:
         bucket["with_violations"] += 1
-        bucket["violation_items"] += viol["items"]
+        bucket["violation_records"] += viol["items"]
+        bucket["violation_items"] += viol["grouped_total"]
         for key, value in viol["violations"].items():
             bucket["violations"][key] += value
+        for key, value in viol["grouped"].items():
+            bucket["items_by_type"][key] += value
         bucket["initial_penalty"] += viol["initial"]
         bucket["current_penalty"] += viol["current"]
         if viol["current"] > 0:
@@ -376,8 +400,8 @@ def close_days(row):
 
 
 class EmployerAgg:
-    __slots__ = ("inspections", "penalized", "initial", "current", "violations", "items", "states", "sectors", "jur",
-                 "first", "last", "top", "fys")
+    __slots__ = ("inspections", "penalized", "initial", "current", "violations", "items", "grouped", "grouped_total", "states", "sectors",
+                 "jur", "first", "last", "top", "fys")
 
     def __init__(self):
         self.inspections = 0
@@ -386,6 +410,8 @@ class EmployerAgg:
         self.current = 0.0
         self.violations = P.blank_violations()
         self.items = 0
+        self.grouped = P.blank_violations()
+        self.grouped_total = 0
         self.states = collections.Counter()
         self.sectors = collections.Counter()
         self.jur = collections.Counter()
@@ -444,6 +470,9 @@ def scan_inspections(viol):
             agg.last = day if agg.last is None or day > agg.last else agg.last
             if v:
                 agg.items += v["items"]
+                agg.grouped_total += v["grouped_total"]
+                for key, value in v["grouped"].items():
+                    agg.grouped[key] += value
                 agg.initial += v["initial"]
                 agg.current += v["current"]
                 for key, value in v["violations"].items():
@@ -484,8 +513,10 @@ def finish_year(fy, bucket, titles, top_n=5):
         "health": bucket["health"],
         "no_inspection_scope": bucket["no_inspection_scope"],
         "with_violations": bucket["with_violations"],
-        "violation_items": bucket["violation_items"],
+        "violation_records": bucket["violation_records"],
         "violations": dict(bucket["violations"]),
+        "violation_items": bucket["violation_items"],
+        "items_by_type": dict(bucket["items_by_type"]),
         "initial_penalty": round(bucket["initial_penalty"], 2),
         "current_penalty": round(bucket["current_penalty"], 2),
         "current_to_initial_pct": round(bucket["current_penalty"] / bucket["initial_penalty"] * 100, 2) if bucket["initial_penalty"] > 0 else None,
@@ -520,10 +551,10 @@ def national_extras(entry, bucket):
 
 def sum_years(entries, first, last):
     keys = ("inspections", "programmed", "unprogrammed", "other_type", "fat_cat", "accident", "complaint", "referral",
-            "follow_up", "federal", "state_plan", "jurisdiction_not_recorded", "with_violations", "violation_items",
+            "follow_up", "federal", "state_plan", "jurisdiction_not_recorded", "with_violations", "violation_records", "violation_items",
             "open_cases")
     out = {key: 0 for key in keys}
-    out.update({"initial_penalty": 0.0, "current_penalty": 0.0, "violations": P.blank_violations()})
+    out.update({"initial_penalty": 0.0, "current_penalty": 0.0, "violations": P.blank_violations(), "items_by_type": P.blank_violations()})
     for e in entries:
         if first <= e["fy"] <= last:
             for key in keys:
@@ -532,6 +563,7 @@ def sum_years(entries, first, last):
             out["current_penalty"] += e["current_penalty"]
             for key in P.VIOL_KEYS:
                 out["violations"][key] += e["violations"][key]
+                out["items_by_type"][key] += e["items_by_type"][key]
     out["initial_penalty"] = round(out["initial_penalty"], 2)
     out["current_penalty"] = round(out["current_penalty"], 2)
     out["fy_range"] = [first, last]
@@ -547,7 +579,7 @@ def window_sectors(years_map, titles, first, last, n=8):
 
 
 def top_sections(counter, n=10):
-    return [{"section": s, "label": GENERAL_DUTY.get(s), "items": c} for s, c in sorted(counter.items(), key=lambda kv: (-kv[1], kv[0]))[:n]]
+    return [{"section": s, "label": GENERAL_DUTY.get(s), "records": c} for s, c in sorted(counter.items(), key=lambda kv: (-kv[1], kv[0]))[:n]]
 
 
 def coverage_note(code):
@@ -830,7 +862,7 @@ def main(argv=None):
                                "basis": FOM_URL},
         "fatality_catastrophe": "fat_cat counts insp_type M (Fat/Cat), a code first recorded in FY2011 (93 inspections; FY2010 and earlier show 0 because those investigations were coded A); accident counts insp_type A (Accident), the IMIS-era code for fatality/catastrophe investigations by federal offices and accident investigations by State Plans. Neither is a count of deaths.",
         "jurisdiction": "state_plan when REPORTING_ID's third digit is 5, else federal (derived rule; the file's STATE_FLAG column is blank in every row). Checked against current State Plan status on FY2025 inspections: 82-100% of inspections in the 21 full State Plan states and PR carry digit 5 (AK 82%, AZ 90%, every other plan 95% or more; the rest are federal agencies, maritime work and similar federal jurisdiction), and a handful in federal-jurisdiction states do too (FY2025: TX 5, GA 4, OH 1); those are counted as recorded, not reclassified. Public-sector-only plans (CT, IL, ME, MA, NJ, NY, VI) show a mix by design.",
-        "violations": "Non-deleted violation items (DELETE_FLAG not X) of each inspection, by VIOL_TYPE: S serious, W willful, R repeat, O other-than-serious, U unclassified; other codes kept as other_codes.",
+        "violations": "Two counts of the non-deleted violation rows (DELETE_FLAG not X) of each inspection, by VIOL_TYPE (S serious, W willful, R repeat, O other-than-serious, U unclassified; other codes kept as other_codes). violation_records / violations (by type) count every row of OSHA_violation.zip, so CITATION_ID 01001A and 01001B are two records. violation_items / items_by_type count a citation item once: DOL describes citation_id as the 'citation number, item number and item group', and a lettered record whose citation+item (CITATION_ID[:5]) already appeared in the inspection is not counted again (about 21% of records are lettered; counting items instead of records lowers the national total by about 12.7%, from 12,826,840 records to about 11.2 million items, and serious records by about 23%). The displayed cells and headline figures use records; osha.gov's inspection pages appear to count items (inspection 1868672.015 shows 3 violations, 2 serious and 1 repeat, where the file holds 4 records, 3 serious and 1 repeat). The item rule differs from full grouping by 379 of 12.8 million rows (a plain record repeating a lettered item).",
         "penalties": "initial_penalty and current_penalty are computed sums of the INITIAL_PENALTY and CURRENT_PENALTY amounts recorded on non-deleted violation items; blank amounts are not imputed and add nothing (items issued FY1991-2010: about 31% of serious and 79-87% of other-than-serious items have a blank current penalty; from FY2017 blanks are absent and zero amounts appear instead, so legacy blanks plausibly mean no penalty, but none is assumed); not official OSHA totals; failure-to-abate (FTA) amounts excluded.",
         "naics": "Two-digit NAICS sector of the inspection's NAICS_CODE (31-33, 44-45, 48-49 grouped) with Census NAICS 2022 titles; inspections with no NAICS (most before ~2002 carry only SIC) counted as naics_not_recorded.",
         "accident_files": "OSHA's accident investigation summary and injury files (OSHA_accident*.zip) were acquired and profiled but are not used: injury lines by event year are not stable enough to publish (degree-1 lines: ~1,900 in FY2019, 3,129 in FY2020, 661 in FY2025, 0 in FY2026) and are not a census of workplace deaths. Fatality/catastrophe activity is shown through inspection type M and A counts.",
@@ -883,24 +915,26 @@ def main(argv=None):
         state_rows.append(writer.record(
             "osha_inspections_states", f"osha-state:{code}", f"{name} — OSHA inspections and citations",
             source_url=INSPECTION_ZIP,
-            subtitle=(f"FY{LATEST_COMPLETE_FY}: {cur.get('inspections', 0):,} inspections · {sum(cur.get('violations', {}).values()):,} violations · "
+            subtitle=(f"FY{LATEST_COMPLETE_FY}: {cur.get('inspections', 0):,} inspections · {sum(cur.get('violations', {}).values()):,} violation records · "
                       f"current penalties {P.money_label(cur.get('current_penalty'))} (computed) · {plan_status(code)}"),
             state=code if kind in ("state", "territory") else "",
             cells={"state": name, "fy": LATEST_COMPLETE_FY, "inspections": cur.get("inspections", 0), "unprogrammed": cur.get("unprogrammed", 0),
-                   "fat_cat": cur.get("fat_cat", 0), "serious": cur.get("violations", {}).get("serious", 0),
+                   "fat_cat": cur.get("fat_cat", 0), "accident": cur.get("accident", 0), "serious": cur.get("violations", {}).get("serious", 0),
                    "willful_repeat": cur.get("violations", {}).get("willful", 0) + cur.get("violations", {}).get("repeat", 0),
                    "current_penalty": cur.get("current_penalty", 0.0), "ten_fy_inspections": t10["inspections"],
                    "state_plan_share": share_sp, "plan": plan_status(code)},
             facts=facts([
                 ("Source", "DOL Open Data Portal bulk files OSHA_inspection.zip and OSHA_violation.zip"),
                 ("Snapshot", f"{snap} (archive date), retrieved {retrieved}"),
-                ("Period", f"FY{profile['first_fy']}–FY{profile['last_fy']} by inspection open date; FY{CURRENT_FY} cases partly open, FY{CURRENT_FY + 1} partial"),
+                ("Period", f"FY{profile['first_fy']}–FY{profile['last_fy']} by inspection open date; FY{CURRENT_FY} runs to the {snap} snapshot and many of its cases are still open"),
                 ("Jurisdiction status", plan_status(code)),
                 (f"Inspections FY{LATEST_COMPLETE_FY}", f"{cur.get('inspections', 0):,}"),
                 (f"Programmed / unprogrammed FY{LATEST_COMPLETE_FY}", f"{cur.get('programmed', 0):,} / {cur.get('unprogrammed', 0):,}"),
-                (f"Fatality/catastrophe inspections FY{LATEST_COMPLETE_FY}", f"{cur.get('fat_cat', 0):,}"),
-                (f"Violations FY{LATEST_COMPLETE_FY} (serious / willful / repeat / other)",
+                (f"Fatality/catastrophe (type M) / accident (type A) inspections FY{LATEST_COMPLETE_FY}", f"{cur.get('fat_cat', 0):,} / {cur.get('accident', 0):,} (State Plans often code these investigations A)"),
+                (f"Violation records FY{LATEST_COMPLETE_FY} (serious / willful / repeat / other)",
                  "{:,} / {:,} / {:,} / {:,}".format(*(cur.get("violations", P.blank_violations())[k] for k in ("serious", "willful", "repeat", "other")))),
+                (f"Violation items FY{LATEST_COMPLETE_FY}, lettered groups counted once (serious / willful / repeat / other)",
+                 "{:,} / {:,} / {:,} / {:,}".format(*(cur.get("items_by_type", P.blank_violations())[k] for k in ("serious", "willful", "repeat", "other")))),
                 (f"Initial penalties FY{LATEST_COMPLETE_FY} (computed sum)", P.money_label(cur.get("initial_penalty"))),
                 (f"Current penalties FY{LATEST_COMPLETE_FY} (computed sum)", P.money_label(cur.get("current_penalty"))),
                 (f"Inspections FY{TEN_FY[0]}–FY{TEN_FY[1]}", f"{t10['inspections']:,}"),
@@ -936,9 +970,9 @@ def main(argv=None):
         nat_rows.append(writer.record(
             "osha_inspections_national", f"osha-national:FY{fy}", f"United States — OSHA inspections FY{fy}",
             source_url=INSPECTION_ZIP,
-            subtitle=f"{entry['inspections']:,} inspections · {entry['violation_items']:,} violations · current penalties {P.money_label(entry['current_penalty'])} (computed) · {status}",
+            subtitle=f"{entry['inspections']:,} inspections · {entry['violation_records']:,} violation records · current penalties {P.money_label(entry['current_penalty'])} (computed) · {status}",
             cells={"fy": fy, "inspections": entry["inspections"], "programmed": entry["programmed"], "unprogrammed": entry["unprogrammed"],
-                   "fat_cat": entry["fat_cat"], "state_plan": entry["state_plan"], "violations": entry["violation_items"],
+                   "fat_cat": entry["fat_cat"], "accident": entry["accident"], "state_plan": entry["state_plan"], "violations": entry["violation_records"],
                    "initial_penalty": entry["initial_penalty"], "current_penalty": entry["current_penalty"],
                    "median_current_penalty": entry["median_current_penalty"], "median_days_to_close": entry["median_days_to_close"]},
             facts=facts([
@@ -948,8 +982,10 @@ def main(argv=None):
                 ("Inspections (federal / State Plan)", f"{entry['inspections']:,} ({entry['federal']:,} / {entry['state_plan']:,})"),
                 ("Programmed / unprogrammed / other", f"{entry['programmed']:,} / {entry['unprogrammed']:,} / {entry['other_type']:,}"),
                 ("Fatality/catastrophe (M) / accident (A) inspections", f"{entry['fat_cat']:,} / {entry['accident']:,}"),
-                ("Violations serious / willful / repeat / other / unclassified",
+                ("Violation records serious / willful / repeat / other / unclassified",
                  "{:,} / {:,} / {:,} / {:,} / {:,}".format(*(entry["violations"][k] for k in ("serious", "willful", "repeat", "other", "unclassified")))),
+                ("Violation items, lettered groups counted once (serious / willful / repeat / other / unclassified)",
+                 "{:,} / {:,} / {:,} / {:,} / {:,}".format(*(entry["items_by_type"][k] for k in ("serious", "willful", "repeat", "other", "unclassified")))),
                 ("Initial penalties (computed sum)", P.money_label(entry["initial_penalty"])),
                 ("Current penalties (computed sum)", P.money_label(entry["current_penalty"])),
                 ("Current as % of initial", f"{entry['current_to_initial_pct']}%" if entry["current_to_initial_pct"] is not None else None),
@@ -967,7 +1003,7 @@ def main(argv=None):
     federal_10 = sum(e["federal"] for e in nat_entries if TEN_FY[0] <= e["fy"] <= TEN_FY[1])
     summary_profile = {
         "series": [{k: e[k] for k in ("fy", "inspections", "programmed", "unprogrammed", "fat_cat", "accident", "federal", "state_plan",
-                                       "violation_items", "initial_penalty", "current_penalty", "median_current_penalty",
+                                       "violation_records", "violation_items", "initial_penalty", "current_penalty", "median_current_penalty",
                                        "median_days_to_close", "open_cases", "yoy_inspections_pct", "yoy_current_penalty_pct")} for e in nat_entries],
         "ten_fy": ten_nat,
         "ten_fy_top_naics": window_sectors(national, titles, *TEN_FY),
@@ -982,7 +1018,7 @@ def main(argv=None):
         source_url=INSPECTION_ZIP,
         subtitle=f"FY{nat_entries[0]['fy']}–FY{nat_entries[-1]['fy']} · FY{TEN_FY[0]}–FY{TEN_FY[1]}: {ten_nat['inspections']:,} inspections, current penalties {P.money_label(ten_nat['current_penalty'])} (computed)",
         cells={"fy": f"FY{TEN_FY[0]}–FY{TEN_FY[1]}", "inspections": ten_nat["inspections"], "programmed": ten_nat["programmed"], "unprogrammed": ten_nat["unprogrammed"],
-               "fat_cat": ten_nat["fat_cat"], "state_plan": ten_nat["state_plan"], "violations": ten_nat["violation_items"],
+               "fat_cat": ten_nat["fat_cat"], "accident": ten_nat["accident"], "state_plan": ten_nat["state_plan"], "violations": ten_nat["violation_records"],
                "initial_penalty": ten_nat["initial_penalty"], "current_penalty": ten_nat["current_penalty"], "median_current_penalty": None, "median_days_to_close": None},
         facts=facts([
             ("Source", "DOL Open Data Portal bulk files OSHA_inspection.zip and OSHA_violation.zip"),
@@ -1021,7 +1057,7 @@ def main(argv=None):
             links.insert(0, {"label": "SEC company profile (exact name match)", "url": f"/companies/{cik}"})
         employer = {
             "name": name, "rank": rank, "fy_window": list(EMPLOYER_FY), "inspections": agg.inspections, "penalized_inspections": agg.penalized,
-            "violation_items": agg.items, "violations": dict(agg.violations), "initial_penalty": round(agg.initial, 2),
+            "violation_records": agg.items, "violations": dict(agg.violations), "violation_items": agg.grouped_total, "items_by_type": dict(agg.grouped), "initial_penalty": round(agg.initial, 2),
             "current_penalty": round(agg.current, 2), "share_of_window_current_penalty_pct": round(agg.current / window_total * 100, 4) if window_total else None,
             "states": states, "top_naics": sectors, "jurisdiction": dict(agg.jur), "first_opened": agg.first, "last_opened": agg.last,
             "by_fy": dict(sorted(agg.fys.items())), "top_inspections": top,
@@ -1039,10 +1075,11 @@ def main(argv=None):
                 ("Establishment name", f"{name} (exactly as recorded in ESTAB_NAME; variants are separate records)"),
                 ("Source", "DOL Open Data Portal bulk files OSHA_inspection.zip and OSHA_violation.zip"),
                 ("Snapshot", f"{snap} (archive date), retrieved {retrieved}"),
-                ("Window", f"Inspections opened FY{EMPLOYER_FY[0]}–FY{EMPLOYER_FY[1]} (1 Oct {EMPLOYER_FY[0] - 1} – 30 Sep {EMPLOYER_FY[1]})"),
+                ("Window", f"Inspections opened FY{EMPLOYER_FY[0]}–FY{EMPLOYER_FY[1]} (1 Oct {EMPLOYER_FY[0] - 1} – {snap} snapshot; FY{EMPLOYER_FY[1]} is not over and many of its cases are open)"),
                 ("Rank by current penalties", f"{rank} of {len(ranked):,} penalized names"),
                 ("Inspections (with a current penalty)", f"{agg.inspections:,} ({agg.penalized:,})"),
-                ("Violations serious / willful / repeat / other", "{:,} / {:,} / {:,} / {:,}".format(*(agg.violations[k] for k in ("serious", "willful", "repeat", "other")))),
+                ("Violation records serious / willful / repeat / other", "{:,} / {:,} / {:,} / {:,}".format(*(agg.violations[k] for k in ("serious", "willful", "repeat", "other")))),
+                ("Violation items, lettered groups counted once (serious / willful / repeat / other)", "{:,} / {:,} / {:,} / {:,}".format(*(agg.grouped[k] for k in ("serious", "willful", "repeat", "other")))),
                 ("Initial penalties (computed sum)", P.money_label(agg.initial)),
                 ("Current penalties (computed sum)", P.money_label(agg.current)),
                 ("States", ", ".join(f"{s['code']} ({s['inspections']})" for s in states[:10])),
@@ -1064,8 +1101,8 @@ def main(argv=None):
     plan_options = {"full": "State Plan (private + public)", "public": "State Plan (public only)", "federal": "Federal OSHA", "na": "Not applicable"}
     outputs = [
         ("osha_inspections_states", "OSHA inspections, violations and penalties by state and fiscal year", state_rows,
-         writer.listing([("state", "State"), ("fy", "FY"), ("inspections", "Inspections"), ("unprogrammed", "Unprogrammed"), ("fat_cat", "Fatality/catastrophe"),
-                         ("serious", "Serious violations"), ("willful_repeat", "Willful + repeat"), ("current_penalty", "Current penalties ($, computed)"),
+         writer.listing([("state", "State"), ("fy", "FY"), ("inspections", "Inspections"), ("unprogrammed", "Unprogrammed"), ("fat_cat", "Fat/cat (type M)"), ("accident", "Accident (type A)"),
+                         ("serious", "Serious (records)"), ("willful_repeat", "Willful + repeat (records)"), ("current_penalty", "Current penalties ($, computed)"),
                          ("ten_fy_inspections", f"Inspections FY{TEN_FY[0]}–{TEN_FY[1]}"), ("state_plan_share", "State Plan share (%)"), ("plan", "Jurisdiction")],
                         [("kind", "Kind", {"state": "State", "territory": "Territory", "other": "Other / unrecorded"}), ("plan", "Jurisdiction", plan_options)]),
          {**common, "grain": "one record per site state/territory code (50 states, DC, PR, VI, GU, AS, MP) plus one record for other or unrecorded site codes; item.profile.years holds the fiscal-year series",
@@ -1075,8 +1112,8 @@ def main(argv=None):
           "median_current_penalty": "median inspection-level current penalty (sum over its violation items) among inspections with a current penalty > 0",
           "top_sections": f"cited standards grouped to part.section (e.g. 19260501 B13 -> 1926.501) for inspections opened FY{EMPLOYER_FY[0]}–FY{EMPLOYER_FY[1]}"}),
         ("osha_inspections_national", "OSHA inspections, violations and penalties — national series", nat_rows,
-         writer.listing([("fy", "FY"), ("inspections", "Inspections"), ("programmed", "Programmed"), ("unprogrammed", "Unprogrammed"), ("fat_cat", "Fatality/catastrophe"),
-                         ("state_plan", "State Plan"), ("violations", "Violations"), ("initial_penalty", "Initial penalties ($, computed)"),
+         writer.listing([("fy", "FY"), ("inspections", "Inspections"), ("programmed", "Programmed"), ("unprogrammed", "Unprogrammed"), ("fat_cat", "Fat/cat (type M)"),
+                         ("accident", "Accident (type A)"), ("state_plan", "State Plan"), ("violations", "Violation records"), ("initial_penalty", "Initial penalties ($, computed)"),
                          ("current_penalty", "Current penalties ($, computed)"), ("median_current_penalty", "Median penalty ($)"), ("median_days_to_close", "Median days to close")],
                         [("kind", "Kind", {"year": "Fiscal year", "summary": "Summary"}), ("status", "Status", {"closed": "Closed year", "partial": "Partial / open cases"})]),
          {**common, "grain": "one record per fiscal year (item.year) plus a summary record (item.profile.series)",

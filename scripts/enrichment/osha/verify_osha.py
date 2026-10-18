@@ -112,16 +112,25 @@ def main(extra):
     for key, aids in aid_sets.items():
         for aid in aids:
             owner.setdefault(aid, []).append(key)
+    seen_groups = set()
     for fname, row in rows("violation"):
         aid = row["ACTIVITY_NR"].strip()
         if aid in raw_extra:
             raw_extra[aid]["violations"].append({"file": fname, **{k: row[k] for k in ("CITATION_ID", "DELETE_FLAG", "STANDARD", "VIOL_TYPE", "ISSUANCE_DATE", "INITIAL_PENALTY", "CURRENT_PENALTY")}})
         if row["DELETE_FLAG"].strip().upper() == "X" or aid not in owner:
             continue
+        cid = row["CITATION_ID"].strip()
+        new_item = True
+        if len(cid) > 5:   # lettered item group: count the citation item once per inspection
+            if (aid, cid[:5]) in seen_groups:
+                new_item = False
+            seen_groups.add((aid, cid[:5]))
         for key in owner[aid]:
             bump(key + ("current",), amount(row["CURRENT_PENALTY"]))
             bump(key + ("initial",), amount(row["INITIAL_PENALTY"]))
             bump(key + ("type", row["VIOL_TYPE"].strip().upper()))
+            if new_item:
+                bump(key + ("item", row["VIOL_TYPE"].strip().upper()))
     days.sort()
     n = len(days)
     median_days = (days[n // 2] if n % 2 else (days[n // 2 - 1] + days[n // 2]) / 2) if n else None
@@ -132,6 +141,9 @@ def main(extra):
         ("National FY2025 serious violations", national["FY2025"]["year"]["violations"]["serious"], count.get(("US", 2025, "type", "S"), 0)),
         ("National FY2025 current penalties ($)", national["FY2025"]["year"]["current_penalty"], round(count.get(("US", 2025, "current"), 0.0), 2)),
         ("National FY2024 initial penalties ($)", national["FY2024"]["year"]["initial_penalty"], round(count.get(("US", 2024, "initial"), 0.0), 2)),
+        ("National FY2025 serious violation items (lettered groups counted once)", national["FY2025"]["year"]["items_by_type"]["serious"], count.get(("US", 2025, "item", "S"), 0)),
+        ("National FY2025 total violation records", national["FY2025"]["year"]["violation_records"], sum(v for k, v in count.items() if k[:2] == ("US", 2025) and len(k) == 4 and k[2] == "type")),
+        ("CA FY2025 repeat violation items", year("CA", 2025)["items_by_type"]["repeat"], count.get(("CA", 2025, "item", "R"), 0)),
         ("National FY2024 willful violations", national["FY2024"]["year"]["violations"]["willful"], count.get(("US", 2024, "type", "W"), 0)),
         ("National FY2025 median days to close", national["FY2025"]["year"]["median_days_to_close"], median_days),
         ("National FY2010 inspections", national["FY2010"]["year"]["inspections"], count.get(("US", 2010, "inspections"))),
