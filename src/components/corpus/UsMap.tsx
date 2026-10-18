@@ -14,7 +14,18 @@ type Props = {
   selectedState?: string | undefined;
   onHoverState?: (usps: string | null) => void;
   compact?: boolean;
+  /** Band heading; defaults to "Explore the United States" or "<State> counties". */
+  heading?: string;
+  /** Footer prompt shown when nothing is hovered; defaults to the resource-navigation prompt. */
+  hint?: string;
+  /** Verb used in each state's accessible name, e.g. "Filter to"; defaults to "Open". */
+  stateAction?: string;
+  /** Formats values in the hover readout, accessible names and legend ends. */
+  formatValue?: (value: number) => string;
+  /** Tooltip on the legend explaining what shading means. */
+  legendNote?: string;
 };
+const plainNumber = (value: number) => value.toLocaleString();
 /** Source geometry retains canonical FIPS identity. Display intensity never represents legal completeness. */
 export function UsMap({
   geo,
@@ -27,6 +38,11 @@ export function UsMap({
   selectedState,
   onHoverState,
   compact = false,
+  heading,
+  hint,
+  stateAction = "Open",
+  formatValue = plainNumber,
+  legendNote = "Shading represents recorded resource counts, not completeness or caseload.",
 }: Props) {
   const [hover, setHover] = useState<{
     id: string;
@@ -40,7 +56,9 @@ export function UsMap({
     () => (state ? geo.counties.filter((c) => c.stateFips === state.fips) : geo.counties),
     [geo, state],
   );
-  const max = Math.max(1, ...[...values.values()].filter((v) => Number.isFinite(v) && v >= 0));
+  const finite = [...values.values()].filter((v) => Number.isFinite(v) && v >= 0);
+  const max = Math.max(1, ...finite);
+  const recordedMax = finite.length ? Math.max(...finite) : null;
   const viewBox = useMemo(() => {
     const shape = state ? geo.states.find((s) => stateFromGeometry(s)?.usps === state.usps) : null;
     if (!shape) return "0 0 975 610";
@@ -77,7 +95,7 @@ export function UsMap({
     >
       <div className="research-band !py-2.5">
         <span id={headingId} className="text-xs font-medium">
-          {state ? `${state.name} counties` : "Explore the United States"}
+          {heading ?? (state ? `${state.name} counties` : "Explore the United States")}
         </span>
         {!state ? (
           <button
@@ -110,7 +128,7 @@ export function UsMap({
                 data-county={c.id}
                 role={onCounty ? "button" : undefined}
                 tabIndex={onCounty ? 0 : undefined}
-                aria-label={`${c.name}, ${state.name}${value == null ? "" : `, ${value.toLocaleString()} ${valueLabel}`}`}
+                aria-label={`${c.name}, ${state.name}${value == null ? "" : `, ${formatValue(value)} ${valueLabel}`}`}
                 aria-pressed={onCounty ? selectedCounty === c.id : undefined}
                 className="outline-none transition-[fill,stroke] duration-150"
                 vectorEffect="non-scaling-stroke"
@@ -146,7 +164,7 @@ export function UsMap({
                   data-fips={identity.fips}
                   role={onState ? "button" : undefined}
                   tabIndex={onState ? 0 : undefined}
-                  aria-label={`Open ${identity.name}`}
+                  aria-label={`${stateAction} ${identity.name}${value == null || !Number.isFinite(value) ? "" : `, ${formatValue(value)} ${valueLabel}`}`}
                   aria-pressed={onState ? selectedState === identity.usps : undefined}
                   className="outline-none transition-[fill,stroke] duration-150"
                   vectorEffect="non-scaling-stroke"
@@ -182,28 +200,34 @@ export function UsMap({
           {hover ? (
             <>
               <span className="font-semibold">{hover.name}</span>
-              {hover.value != null ? (
+              {hover.value != null && Number.isFinite(hover.value) ? (
                 <span className="ml-2 text-muted-foreground">
-                  {hover.value.toLocaleString()} {valueLabel}
+                  {formatValue(hover.value)} {valueLabel}
                 </span>
+              ) : values.size > 0 ? (
+                <span className="ml-2 text-muted-foreground">Not recorded</span>
               ) : null}
             </>
           ) : (
             <span className="text-muted-foreground">
-              Select a {state ? "county" : "state"} to open its resources.
+              {hint ?? `Select a ${state ? "county" : "state"} to open its resources.`}
             </span>
           )}
         </div>
-        {values.size > 0 ? (
+        {recordedMax != null ? (
           <span
-            className="flex items-center gap-2 text-muted-foreground"
-            title="Shading represents recorded resource counts, not completeness or caseload."
+            className="flex items-center gap-1.5 text-muted-foreground"
+            title={legendNote}
+            data-testid="map-legend"
           >
+            <span className="font-mono tabular-nums">{formatValue(0)}</span>
             <span
+              aria-hidden
               className="h-1.5 w-14 rounded-full"
               style={{ background: "linear-gradient(90deg,var(--map-low),var(--map-high))" }}
             />
-            {valueLabel}
+            <span className="font-mono tabular-nums">{formatValue(recordedMax)}</span>
+            <span>{valueLabel}</span>
           </span>
         ) : null}
       </div>

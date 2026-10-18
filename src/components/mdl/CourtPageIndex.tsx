@@ -3,8 +3,11 @@ import { Link } from "@tanstack/react-router";
 import { ChevronDown, ExternalLink, Quote as QuoteIcon, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import type { CourtMdl } from "@/lib/external/mdlIntel.functions";
+import { courtPageStatus as pageStatus } from "@/lib/external/mdlIntelView";
 import { cn } from "@/lib/utils";
 import { FLAG_LABEL, n, signed, title } from "./intelFormat";
+import { LeadershipList } from "./LeadershipList";
+import { CourtOrderLink } from "./PacerLabel";
 
 type Filter = "all" | "page" | "bellwether" | "flagged" | "none" | "pending";
 type Sort = "pending" | "latest" | "mdl" | "orders";
@@ -23,6 +26,28 @@ const CATEGORY_LABEL: Record<string, string> = {
   settlement: "Settlement",
 };
 const bellwetherQuoted = (c: CourtMdl) => c.quoteCounts.bellwether > 0 || c.bellwetherOrders > 0;
+const plural = (count: number, word: string, many = `${word}s`) =>
+  `${n(count)} ${count === 1 ? word : many}`;
+/** Builder flags about court-page coverage (current and older names); their text is derived from the record. */
+const PAGE_FLAGS = new Set([
+  "page_unreadable",
+  "page_orders_not_extracted",
+  "page_lists_no_orders",
+  "page_fetch_failed",
+]);
+/** Flag text; the page-coverage flags say what extraction read from this record, never what the page contains. */
+const flagLabel = (f: string, c: CourtMdl) =>
+  PAGE_FLAGS.has(f) || (f === "no_court_page" && c.failedPages.length)
+    ? pageStatus(c)
+    : (FLAG_LABEL[f] ?? f);
+/** Shorten at a word boundary and mark it, so a quoted statement never ends mid-word. */
+const clipWords = (text: string, limit: number) => {
+  if (text.length <= limit) return text;
+  const space = text.lastIndexOf(" ", limit);
+  return `${(space > 0 ? text.slice(0, space) : text.slice(0, limit)).trimEnd()} …`;
+};
+const QUOTED_LEGEND =
+  "Statements quoted verbatim from the court page: L leadership, B bellwether or trial scheduling, S settlement";
 
 /** Index of official transferee-court MDL pages for every pending products-liability MDL, with quoted statements. */
 export function CourtPageIndex({ courts }: { courts: CourtMdl[] }) {
@@ -127,7 +152,7 @@ export function CourtPageIndex({ courts }: { courts: CourtMdl[] }) {
         </label>
       </div>
       <div className="overflow-hidden rounded-md border border-border bg-surface">
-        <div className="max-w-full overflow-x-auto">
+        <div className="relative max-w-full overflow-x-auto">
           <table className="w-full min-w-[860px] text-xs">
             <caption className="sr-only">Products-liability MDL court pages</caption>
             <thead className="bg-muted/50 text-left text-muted-foreground">
@@ -157,7 +182,12 @@ export function CourtPageIndex({ courts }: { courts: CourtMdl[] }) {
                   Latest order on page
                 </th>
                 <th scope="col" className="px-2 py-1.5 font-medium">
-                  Quoted
+                  <abbr title={QUOTED_LEGEND} className="no-underline">
+                    <span aria-hidden="true">L · B · S</span>
+                  </abbr>
+                  <span className="sr-only">
+                    Statements quoted: leadership, bellwether or trial, settlement
+                  </span>
                 </th>
               </tr>
             </thead>
@@ -180,6 +210,14 @@ export function CourtPageIndex({ courts }: { courts: CourtMdl[] }) {
             </tbody>
           </table>
         </div>
+        <p className="border-t border-border/60 px-3 py-1.5 text-[11px] text-muted-foreground">
+          <span className="font-medium text-foreground">L · B · S</span> = statements quoted
+          verbatim from the court page that name <span className="font-medium">L</span>eadership
+          (lead counsel, steering or executive committees, appointments),{" "}
+          <span className="font-medium">B</span>ellwether or trial scheduling, and{" "}
+          <span className="font-medium">S</span>ettlement; each is a sentence, list item or table
+          row. Orders are counted separately.
+        </p>
       </div>
     </section>
   );
@@ -216,7 +254,9 @@ function CourtRow({ c, open, onToggle }: { c: CourtMdl; open: boolean; onToggle:
           </Link>
         </td>
         <td className="max-w-[240px] px-2 py-1.5">
-          <div className="line-clamp-2 font-medium leading-snug">{title(c.title)}</div>
+          <div className="line-clamp-2 font-medium leading-snug" title={title(c.title)}>
+            {title(c.title)}
+          </div>
           {c.flags.length ? (
             <div className="mt-0.5 flex flex-wrap gap-1">
               {c.flags.map((f) => (
@@ -229,15 +269,19 @@ function CourtRow({ c, open, onToggle }: { c: CourtMdl; open: boolean; onToggle:
                       : "border-border text-muted-foreground",
                   )}
                 >
-                  {FLAG_LABEL[f] ?? f}
+                  {flagLabel(f, c)}
                 </span>
               ))}
             </div>
           ) : null}
         </td>
         <td className="max-w-[200px] px-2 py-1.5">
-          <div className="truncate">{c.districtLabel ?? "Not recorded"}</div>
-          <div className="truncate text-muted-foreground">{c.judge ?? "Judge not recorded"}</div>
+          <div className="truncate" title={c.districtLabel ?? undefined}>
+            {c.districtLabel ?? "Not recorded"}
+          </div>
+          <div className="truncate text-muted-foreground" title={c.judge ?? undefined}>
+            {c.judge ?? "Judge not recorded"}
+          </div>
         </td>
         <td className="px-2 py-1.5 text-right tabular-nums">{n(c.pending)}</td>
         <td className="px-2 py-1.5 text-right tabular-nums">{signed(c.change12m)}</td>
@@ -246,24 +290,24 @@ function CourtRow({ c, open, onToggle }: { c: CourtMdl; open: boolean; onToggle:
         </td>
         <td className="max-w-[220px] px-2 py-1.5">
           {latest ? (
-            <a href={latest.url} target="_blank" rel="noreferrer" className="group block">
+            <CourtOrderLink order={latest} className="group block" labelClassName="mt-0.5">
               <span className="tabular-nums text-muted-foreground">{latest.date}</span>{" "}
               <span className="line-clamp-1 text-primary group-hover:underline">
                 {latest.title}
               </span>
-            </a>
+            </CourtOrderLink>
           ) : (
-            <span className="text-muted-foreground">
-              {!c.pages.length
-                ? "No court page located"
-                : c.ordersTotal
-                  ? `${n(c.ordersTotal)} orders listed, none dated on the page`
-                  : "Court page unreadable (no orders extracted)"}
-            </span>
+            <span className="text-muted-foreground">{pageStatus(c)}</span>
           )}
         </td>
-        <td className="px-2 py-1.5 text-[11px] tabular-nums text-muted-foreground">
-          L {c.quoteCounts.leadership} · B {c.quoteCounts.bellwether} · S {c.quoteCounts.settlement}
+        <td className="whitespace-nowrap px-2 py-1.5 text-[11px] tabular-nums text-muted-foreground">
+          <span aria-hidden="true">
+            L {c.quoteCounts.leadership} · B {c.quoteCounts.bellwether} · S{" "}
+            {c.quoteCounts.settlement}
+          </span>
+          <span className="sr-only">
+            {`${plural(c.quoteCounts.leadership, "leadership statement")}, ${plural(c.quoteCounts.bellwether, "bellwether or trial statement")}, ${plural(c.quoteCounts.settlement, "settlement statement")} quoted`}
+          </span>
         </td>
       </tr>
       {open ? (
@@ -282,11 +326,46 @@ function CourtDetail({ c }: { c: CourtMdl }) {
   if (!c.pages.length)
     return (
       <p className="text-xs text-muted-foreground">
-        No official court MDL page was located with site-restricted searches of the transferee
-        court&rsquo;s uscourts.gov site.{" "}
+        {c.failedPages.length ? (
+          <>
+            The official court page was located but could not be fetched (
+            {c.failedPages.map((p, i) => (
+              <span key={p.url}>
+                {i ? ", " : ""}
+                <a
+                  href={p.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary underline-offset-2 hover:underline"
+                >
+                  {p.status ? `HTTP ${p.status}` : "no response"}
+                </a>
+              </span>
+            ))}
+            ).{" "}
+          </>
+        ) : (
+          <>
+            No official court MDL page was located with site-restricted searches of the transferee
+            court&rsquo;s uscourts.gov site.{" "}
+          </>
+        )}
         {c.status === "transferred"
           ? `JPML facts: transferred ${c.dateTransferred ?? "(date not recorded)"} to ${c.judge ?? "judge not recorded"}, ${c.districtLabel ?? "court not recorded"}.`
           : `Not transferred as of the JPML report of 10/1/2026${c.transferOrderFiled ? `; the Panel's transfer order was filed ${c.transferOrderFiled} (${c.judge ?? "judge not recorded"}, ${c.districtLabel ?? "court not recorded"})` : ""}.`}
+        {c.status !== "transferred" && c.transferOrderUrl ? (
+          <>
+            {" "}
+            <a
+              href={c.transferOrderUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-primary underline-offset-2 hover:underline"
+            >
+              Transfer order
+            </a>
+          </>
+        ) : null}
       </p>
     );
   const groups = ["leadership", "bellwether", "settlement"] as const;
@@ -307,7 +386,9 @@ function CourtDetail({ c }: { c: CourtMdl }) {
                   className="inline-flex items-start gap-1 text-primary underline-offset-2 hover:underline"
                 >
                   <ExternalLink className="mt-0.5 size-3 shrink-0" aria-hidden="true" />
-                  <span className="line-clamp-1">{p.title || p.url}</span>
+                  <span className="line-clamp-1" title={p.title || p.url}>
+                    {p.title || p.url}
+                  </span>
                 </a>
                 <span className="ml-4 text-[10.5px] text-muted-foreground">
                   retrieved {p.retrieved ?? "—"}
@@ -318,29 +399,26 @@ function CourtDetail({ c }: { c: CourtMdl }) {
         </div>
         <div>
           <h4 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Latest orders ({n(c.ordersTotal)} listed)
+            Latest orders ({n(c.ordersTotal)} extracted)
           </h4>
           {c.latestOrders.length ? (
             <ol className="mt-1 space-y-0.5 text-xs">
               {c.latestOrders.map((o) => (
-                <li key={o.url} className="flex gap-2">
+                <li key={o.url} className="flex items-start gap-2">
                   <span className="w-20 shrink-0 tabular-nums text-muted-foreground">
                     {o.date ?? o.datePrinted ?? "Undated"}
                   </span>
-                  <a
-                    href={o.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="line-clamp-1 text-primary underline-offset-2 hover:underline"
-                  >
-                    {o.title}
-                  </a>
+                  <CourtOrderLink
+                    order={o}
+                    className="line-clamp-1 min-w-0 text-primary underline-offset-2 hover:underline"
+                  />
                 </li>
               ))}
             </ol>
           ) : (
             <p className="mt-1 text-xs text-muted-foreground">
-              The court page lists no order links.
+              No order links were extracted from{" "}
+              {c.pages.length === 1 ? "the court page" : "the court pages"}; see the page itself.
             </p>
           )}
         </div>
@@ -352,25 +430,14 @@ function CourtDetail({ c }: { c: CourtMdl }) {
             <p className="text-[10.5px] text-muted-foreground" title={c.contactMethod ?? undefined}>
               Names, firms and roles as printed; counsel contact details are not shown.
             </p>
-            <dl className="mt-1 space-y-1 text-xs">
-              {c.leadership.map((b, i) => (
-                <div key={`${b.heading}-${i}`}>
-                  <dt className="font-medium">
-                    {b.heading}
-                    {b.contactLinesRemoved ? (
-                      <span className="ml-1.5 rounded border border-border px-1 py-px text-[10px] font-normal text-muted-foreground">
-                        contact lines removed
-                      </span>
-                    ) : null}
-                  </dt>
-                  {b.lines.map((l, j) => (
-                    <dd key={j} className="line-clamp-2 text-muted-foreground">
-                      {l}
-                    </dd>
-                  ))}
-                </div>
-              ))}
-            </dl>
+            <LeadershipList
+              sections={c.leadership}
+              initialSections={4}
+              initialLines={8}
+              moreRoles={c.leadershipMore}
+              moreUrl={c.leadershipMoreUrl}
+              className="mt-1 text-xs"
+            />
           </div>
         ) : null}
       </div>
@@ -401,8 +468,11 @@ function CourtDetail({ c }: { c: CourtMdl }) {
                         aria-hidden="true"
                       />
                       <span>
-                        <q className="leading-snug">
-                          {q.text.length > 320 ? `${q.text.slice(0, 320)}…` : q.text}
+                        <q
+                          className="leading-snug"
+                          title={q.text.length > 320 ? q.text : undefined}
+                        >
+                          {clipWords(q.text, 320)}
                         </q>{" "}
                         <a
                           href={q.url}

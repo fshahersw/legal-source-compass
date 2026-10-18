@@ -2,7 +2,9 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import type { FlagKey, Role, Tier } from "./companyData";
 import { ROLE_LABEL, ROLE_SHORT, TIER_LABEL, TIER_SHORT } from "./companyData";
+import { kpiTooltip } from "./companyViewNotes";
 
+/** KPI tile. Label, note and detail wrap to two lines; the tooltip carries every line in full. */
 export function Kpi({
   label,
   value,
@@ -17,14 +19,79 @@ export function Kpi({
   title?: string | undefined;
 }) {
   return (
-    <div className="min-w-0 rounded-md border border-border bg-surface px-3 py-2.5" title={title}>
-      <div className="truncate text-xs text-muted-foreground">{label}</div>
+    <div
+      className="min-w-0 rounded-md border border-border bg-surface px-3 py-2.5"
+      title={kpiTooltip({ label, value, note, detail, title })}
+    >
+      <div className="line-clamp-2 break-words text-xs leading-4 text-muted-foreground">
+        {label}
+      </div>
       <div className="mt-0.5 truncate font-sans text-xl font-semibold tabular-nums">{value}</div>
-      {note ? <div className="truncate text-xs text-muted-foreground">{note}</div> : null}
+      {note ? (
+        <div className="line-clamp-2 break-words text-xs leading-4 text-muted-foreground">
+          {note}
+        </div>
+      ) : null}
       {detail ? (
-        <div className="truncate text-[11px] italic text-muted-foreground">{detail}</div>
+        <div className="line-clamp-2 break-words text-[11px] italic leading-4 text-muted-foreground">
+          {detail}
+        </div>
       ) : null}
     </div>
+  );
+}
+
+export type LegendItem = {
+  label: string;
+  color: string;
+  shape?: "circle" | "square" | undefined;
+  /** Fill opacity of the marks this item labels (e.g. 0.35 for translucent reference marks). */
+  opacity?: number | undefined;
+  /** Optional explanation shown on hover. */
+  title?: string | undefined;
+};
+
+/**
+ * Chart legend drawn outside the chart so its text stays readable even when the marks are
+ * translucent (reference points, search-only bars). A translucent item's swatch uses the marks'
+ * own opacity inside a border outline, so it looks like the marks it labels and stays visible.
+ */
+export function SwatchLegend({
+  items,
+  className,
+}: {
+  items: LegendItem[];
+  className?: string | undefined;
+}) {
+  return (
+    <ul
+      className={cn(
+        "flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 px-2 text-[11px] text-muted-foreground",
+        className,
+      )}
+    >
+      {items.map((i) => {
+        const translucent = i.opacity != null && i.opacity < 1;
+        return (
+          <li key={i.label} className="inline-flex items-center gap-1.5" title={i.title}>
+            <span
+              aria-hidden
+              className={cn(
+                "relative size-2.5 shrink-0 overflow-hidden",
+                i.shape === "square" ? "rounded-sm" : "rounded-full",
+                translucent && "ring-1 ring-border",
+              )}
+            >
+              <span
+                className="absolute inset-0"
+                style={{ background: i.color, opacity: translucent ? i.opacity : undefined }}
+              />
+            </span>
+            <span className="text-foreground">{i.label}</span>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

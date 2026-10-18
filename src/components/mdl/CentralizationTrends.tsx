@@ -18,6 +18,8 @@ import type { MdlIntel } from "@/lib/external/mdlIntel.functions";
 import { cn } from "@/lib/utils";
 import { axis, compact, mean, n, pct } from "./intelFormat";
 
+const countTooltip = (v: number) => n(v);
+
 const RANGES = [
   { key: "all", label: "1973–2025", from: 1973 },
   { key: "20", label: "Since 2006", from: 2006 },
@@ -147,7 +149,7 @@ export function CentralizationTrends({ data }: { data: MdlIntel }) {
               <ComposedChart data={motions} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
                 <CartesianGrid stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="year" tick={axis} minTickGap={16} />
-                <YAxis yAxisId="c" tick={axis} width={36} />
+                <YAxis yAxisId="c" tick={axis} width={36} tickFormatter={compact} />
                 <YAxis
                   yAxisId="r"
                   orientation="right"
@@ -214,8 +216,8 @@ export function CentralizationTrends({ data }: { data: MdlIntel }) {
                 <BarChart data={categories} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
                   <CartesianGrid stroke="var(--border)" vertical={false} />
                   <XAxis dataKey="year" tick={axis} minTickGap={16} />
-                  <YAxis tick={axis} width={30} />
-                  <Tooltip />
+                  <YAxis tick={axis} width={30} tickFormatter={compact} />
+                  <Tooltip formatter={countTooltip} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                   <Bar
                     dataKey="Denied"
@@ -255,8 +257,8 @@ export function CentralizationTrends({ data }: { data: MdlIntel }) {
                 <BarChart data={hearings} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
                   <CartesianGrid stroke="var(--border)" vertical={false} />
                   <XAxis dataKey="year" tick={axis} minTickGap={12} />
-                  <YAxis tick={axis} width={32} />
-                  <Tooltip />
+                  <YAxis tick={axis} width={32} tickFormatter={compact} />
+                  <Tooltip formatter={countTooltip} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                   <Bar dataKey="Set" fill={FDA_COLORS[0]} isAnimationActive={false} />
                   <Bar dataKey="Decided" fill={FDA_COLORS[1]} isAnimationActive={false} />
@@ -303,8 +305,8 @@ export function CentralizationTrends({ data }: { data: MdlIntel }) {
                 <BarChart data={typeRows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
                   <CartesianGrid stroke="var(--border)" vertical={false} />
                   <XAxis dataKey="year" tick={axis} minTickGap={8} />
-                  <YAxis tick={axis} width={32} />
-                  <Tooltip />
+                  <YAxis tick={axis} width={32} tickFormatter={compact} />
+                  <Tooltip formatter={countTooltip} />
                   <Legend wrapperStyle={{ fontSize: 10 }} />
                   {[...top, "Other types"].map((k, i) => (
                     <Bar
@@ -341,7 +343,8 @@ function YearTable({
   const shown = open ? [...rows].reverse() : [...rows].reverse().slice(0, 8);
   return (
     <div className="overflow-hidden rounded-md border border-border bg-surface">
-      <div className="max-w-full overflow-x-auto">
+      {/* relative: the sr-only caption is absolutely positioned and must not escape the scroll box. */}
+      <div className="relative max-w-full overflow-x-auto">
         <table className="w-full min-w-[720px] text-xs">
           <caption className="sr-only">JPML calendar-year activity</caption>
           <thead className="bg-muted/50 text-left text-muted-foreground">

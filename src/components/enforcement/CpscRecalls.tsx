@@ -26,6 +26,7 @@ import {
   RISING_RULE,
   risingHazards,
 } from "./enforcementView";
+import { numTick } from "./listDisplay";
 import {
   axisTick,
   FlagChip,
@@ -86,7 +87,9 @@ function CpscBody({ data }: { data: CpscAnalytics }) {
   const injuries = years.reduce((a, y) => a + y.injuryMentions, 0);
   const standard = years.reduce((a, y) => a + y.standardViolation, 0);
   const rising = useMemo(() => risingHazards(data.hazards, latest), [data.hazards, latest]);
-  const countries = data.topCountries.slice(0, 5);
+  // The share chart draws the five most-listed countries; the hazard × country table lists every
+  // country the build ranked separately, so no ranked country silently drops out of "Other".
+  const countries = data.topCountries.slice(0, SHARE_COLORS.length);
 
   const hazardRows = data.hazards
     .map((h) => {
@@ -116,7 +119,7 @@ function CpscBody({ data }: { data: CpscAnalytics }) {
 
   const cubeFrom = latest - 4;
   const cube = hazardCube(data.years, cubeFrom, latest);
-  const cubeCols = [...countries, "Other countries", "Not recorded"];
+  const cubeCols = [...data.topCountries, "Other countries", "Not recorded"];
   const cubeMax = Math.max(1, ...[...cube.values()].flatMap((m) => [...m.values()]));
   const mentionRows = years.map((y) => ({
     year: String(y.year),
@@ -254,8 +257,12 @@ function CpscBody({ data }: { data: CpscAnalytics }) {
       <div className="grid gap-3 lg:grid-cols-2">
         <Panel
           title={`Manufacturer-country share${hazard ? ` · ${label(hazard)}` : ""}`}
-          subtitle={`% of ${hazard ? "the hazard's" : "all"} recalls per year that list each manufacturing country; dashed line = % of recalls with any country recorded`}
-          footnote="A recall can list several countries. Country qualifiers in parentheses are dropped; nothing else is normalised."
+          subtitle={`% of ${hazard ? "the hazard's" : "all"} recalls per year that list each of the ${countries.length} most-listed manufacturing countries (all years); dashed line = % of recalls with any country recorded`}
+          footnote={`A recall can list several countries. Country qualifiers in parentheses are dropped; nothing else is normalised.${
+            data.topCountries.length > countries.length
+              ? ` ${data.topCountries.slice(countries.length).join(", ")} appear in the hazard × country table below.`
+              : ""
+          }`}
         >
           <div className="h-64 px-1 pb-1 pt-2">
             <ResponsiveContainer width="100%" height="100%">
@@ -334,8 +341,12 @@ function CpscBody({ data }: { data: CpscAnalytics }) {
                   tickLine={false}
                   axisLine={false}
                   allowDecimals={false}
+                  tickFormatter={numTick}
                 />
-                <Tooltip contentStyle={tooltipStyle} />
+                <Tooltip
+                  contentStyle={tooltipStyle}
+                  formatter={(v, n) => [Number(v).toLocaleString("en-US"), n]}
+                />
                 <Legend wrapperStyle={{ fontSize: 11 }} iconSize={8} />
                 <Bar
                   dataKey="injury"
@@ -449,6 +460,11 @@ function CpscBody({ data }: { data: CpscAnalytics }) {
             <div>
               <p className="flex items-center gap-1 font-medium">
                 <Flag className="size-3.5 text-warning" aria-hidden /> Firm clusters
+                {data.firmClusters.length ? (
+                  <span className="font-normal text-muted-foreground">
+                    · {count(data.firmClusters.length)} listed, most recalls in 24 months first
+                  </span>
+                ) : null}
               </p>
               <p className="text-[11px] text-muted-foreground">
                 At least {data.firmMin} recalls dated after {data.firmWindowStart ?? "—"} (24 months
@@ -470,8 +486,12 @@ function CpscBody({ data }: { data: CpscAnalytics }) {
                         {f.recent24m} in 24 months · {f.recalls} total
                         {f.deathMentions
                           ? ` · ${f.deathMentions} product-related death mention${f.deathMentions === 1 ? "" : "s"}`
-                          : ""}{" "}
-                        · {f.topHazards.map(label).slice(0, 2).join(", ")}
+                          : ""}
+                        {/* The build stores at most three most-frequent hazards per firm, so the
+                            stored list is shown whole and labelled, with no implied total. */}
+                        {f.topHazards.length
+                          ? ` · top hazards: ${f.topHazards.map(label).join(", ")}`
+                          : ""}
                       </span>
                     </li>
                   ))}
@@ -550,7 +570,7 @@ function CpscBody({ data }: { data: CpscAnalytics }) {
 
       <Panel
         title="Most frequent recalling firms (all years)"
-        subtitle="Exact recorded manufacturer, importer or distributor names; spelling variants of the same company are listed separately; role counts can exceed recalls when a firm holds several roles in one recall"
+        subtitle={`${count(data.topFirms.length)} firms listed, most recalls first. Exact recorded manufacturer, importer or distributor names; spelling variants of the same company are listed separately; role counts can exceed recalls when a firm holds several roles in one recall`}
       >
         <div className="max-h-80 overflow-auto">
           <table className="w-full text-xs">

@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
@@ -12,6 +12,7 @@ import {
   duplicateLookingIds,
   fileUrl,
   normalizeItem,
+  pageRoutePatterns,
   recordDestination,
   resolveLink,
   shortRecordId,
@@ -41,6 +42,19 @@ export function useDatasets() {
   return { ...q, aliases };
 }
 
+const appRoutesCache = new WeakMap<object, readonly string[]>();
+
+/** The app's page routes, read from the live router's route tree (so stored in-app links never drift from it). */
+export function useAppRoutes(): readonly string[] {
+  const router = useRouter();
+  let routes = appRoutesCache.get(router);
+  if (!routes) {
+    routes = pageRoutePatterns(Object.values(router.routesById).map((r) => r.fullPath));
+    appRoutesCache.set(router, routes);
+  }
+  return routes;
+}
+
 function displayDatasetCellValue(
   value: string | undefined,
   key: string,
@@ -55,7 +69,11 @@ function displayDatasetCellValue(
   return displayValue(value);
 }
 
-/** Renders a corpus link as an in-app link, a file link or an external link. Unmapped links are labelled, not hidden. */
+/**
+ * Renders a corpus link as an in-app router link, a stored-file link or an external link. A stored "/..." path is
+ * an in-app page when it matches a route of the live route tree, otherwise a stored file. Unmapped links are
+ * labelled, not hidden.
+ */
 export function CorpusLink({
   url,
   label,
@@ -65,9 +83,22 @@ export function CorpusLink({
   label: string;
   aliases: Record<string, string>;
 }) {
-  const r = resolveLink(url, aliases);
+  const routes = useAppRoutes();
+  const r = resolveLink(url, aliases, routes);
   const cls =
     "inline-flex items-center gap-1 text-[12px] text-primary underline-offset-2 hover:underline";
+  if (r.kind === "app")
+    return (
+      <Link
+        className={cls}
+        to={r.to}
+        params={r.params}
+        {...(r.search ? { search: r.search } : {})}
+        {...(r.hash ? { hash: r.hash } : {})}
+      >
+        {label}
+      </Link>
+    );
   if (r.kind === "external")
     return (
       <a className={cls} href={r.href} target="_blank" rel="noreferrer">

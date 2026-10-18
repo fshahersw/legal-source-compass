@@ -5,10 +5,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+import build_courts_summary as bcs  # noqa: E402
 import contact_redaction as cr  # noqa: E402
 import extract_court_pages as ec  # noqa: E402
 import parse_govinfo as pg  # noqa: E402
 import parse_jpml as pj  # noqa: E402
+from bs4 import BeautifulSoup  # noqa: E402
 
 SUMMARY = """
 YEAR   HEARINGS    PANEL    MOTIONS FOR
@@ -72,6 +74,27 @@ class JpmlParsers(unittest.TestCase):
         self.assertEqual(rows[2]["judge"], "Andre Birotte, Jr")
         self.assertEqual(rows[2]["total"], 1313)
         self.assertEqual(pj.report_date(DISTRICT), "2026-10-01")
+
+    def test_hearing_location_lines_and_city(self):
+        text = (
+            "DATE OF HEARING SESSION:                   September 25, 2025\n\n"
+            "LOCATION OF HEARING SESSION:               Santiago E. Campus U.S. Courthouse\n"
+            "                                           Martha Vázquez Historical Courtroom, 2nd Floor\n"
+            "                                           106 South Federal Place\n"
+            "                                           Santa Fe, New Mexico 87501\n\n\n"
+            "TIME OF HEARING SESSION: In those matters designated for oral argument, counsel\n"
+        )
+        out = pj.parse_hearing_notice(text)
+        self.assertEqual(out["location"], "Santiago E. Campus U.S. Courthouse")
+        self.assertEqual(out["location_lines"][-1], "Santa Fe, New Mexico 87501")
+        self.assertEqual(len(out["location_lines"]), 4)
+        self.assertEqual((out["location_city"], out["location_state"]), ("Santa Fe", "New Mexico"))
+
+    def test_hearing_location_without_city_line_is_not_guessed(self):
+        out = pj.parse_hearing_notice(NOTICE)
+        self.assertEqual(out["location_lines"], ["Santiago E. Campus U.S. Courthouse"])  # "SECTION A" is not in the column
+        self.assertIsNone(out["location_city"])
+        self.assertIsNone(pj.parse_hearing_notice("no location here")["location_city"])
 
     def test_hearing_notice(self):
         out = pj.parse_hearing_notice(NOTICE)
@@ -143,6 +166,45 @@ class CourtPageExtractor(unittest.TestCase):
     def test_slug_rule(self):
         self.assertTrue(ec.shares_slug("https://www.njd.uscourts.gov/j-j-talcum-powder-orders", "https://www.njd.uscourts.gov/johnson-johnson-talcum-powder-litigation"))
         self.assertFalse(ec.shares_slug("https://www.njd.uscourts.gov/standing-orders", "https://www.njd.uscourts.gov/johnson-johnson-talcum-powder-litigation"))
+        # a judge's biography page shares only court-administration words with the court's duty-judge schedules
+        bio = "https://www.flsd.uscourts.gov/content/senior-judge-federico-Moreno"
+        self.assertFalse(ec.shares_slug("https://www.flsd.uscourts.gov/duty-judge-assignment-schedule-district-judges", bio))
+        self.assertFalse(ec.shares_slug("https://www.flsd.uscourts.gov/duty-judge-assignment-schedule-magistrate-judges", bio))
+
+
+class CourtPageList(unittest.TestCase):
+    def test_removed_entries_are_ledgered_and_not_fetched(self):
+        import json
+
+        pages = json.loads((Path(__file__).parent / "court_pages.json").read_text())
+        removed = pages["_removed"]
+        self.assertNotIn("2599", pages)  # not an MDL page (judge biography); see the ledger entry
+        for mdl, entry in removed.items():
+            if mdl.startswith("_"):
+                continue
+            self.assertNotIn(mdl, pages)
+            self.assertTrue(entry["urls"] and entry["reason"] and entry["removed"])
+        for key, urls in pages.items():
+            if not key.startswith("_"):
+                self.assertTrue(key.isdigit() and isinstance(urls, list) and all(u.startswith("https://") and ".uscourts.gov/" in u for u in urls), key)
+
+
+class CachedRetrievalDate(unittest.TestCase):
+    def test_cached_extraction_keeps_the_fetch_date(self):
+        import os
+        import tempfile
+        from datetime import datetime, timezone
+
+        import fetch_court_pages as fcp
+
+        with tempfile.TemporaryDirectory() as tmp:
+            raw = Path(tmp) / "page.html"
+            raw.write_bytes(b"<html></html>")
+            fetched = datetime(2026, 10, 18, 8, 39, tzinfo=timezone.utc).timestamp()
+            os.utime(raw, (fetched, fetched))
+            self.assertEqual(fcp.retrieved_on(raw, refresh=False, today="2026-11-02"), "2026-10-18")  # cached copy: its fetch date
+            self.assertEqual(fcp.retrieved_on(raw, refresh=True, today="2026-11-02"), "2026-11-02")  # live fetch: today
+            self.assertEqual(fcp.retrieved_on(Path(tmp) / "absent", refresh=False, today="2026-11-02"), "2026-11-02")
 
 
 class CourtTableRows(unittest.TestCase):
@@ -185,6 +247,245 @@ class CourtTableRows(unittest.TestCase):
         self.assertEqual([(o["date"], o["title"][:28]) for o in out["orders"]], [("2026-10-16", "CASE MANAGEMENT ORDER NO. 38")])
 
 
+class CourtLeadership(unittest.TestCase):
+    # Modeled on the N.D. Ill. MDL detail page structure (MDL 3026): role headings in <span><strong>, consecutive
+    # headings, counsel name and firm separated by <br> inside <td> cells. Names here are synthetic.
+    ILND = b"""<html><body><main><h1>In re: Example Formula Products Liability Litigation, MDL No. 9026</h1>
+    <div class='panel panel-default'><div class='panel-heading'><h4 class='panel-title'><a href='#c1'><i class='fa'></i>&nbsp;Lead Counsel List</a></h4></div>
+    <div id='c1' class='panel-collapse'><div class='panel-body'>
+    <span style="font-size: 14px;"><strong><span style="text-decoration: underline;"> PLAINTIFFS' COUNSEL </span></strong></span><br /><br />
+    <span style="font-size: 14px;"><strong> Plaintiffs' Co-Lead Counsel </strong></span><br />
+    <table class="table"><tr>
+      <td> Anna B. Carter<br /> Carter // Dunn, PLLC <br /><br /> Ben Ellis<br /> Ellis, Fox &amp; Gray, LLP </td>
+      <td> Cara Hale <br /> Hale Ives P.A. </td><td></td></tr></table>
+    <span style="font-size: 14px;"><strong> Plaintiffs' Executive Committee </strong><span style="white-space:pre;"> </span></span><br />
+    <table class="table"><tr><td> Dan Jones<br /> Jones &amp; Kay </td><td> Eve Lund<br /> Lund Mor </td></tr></table>
+    <span style="font-size: 14px;"><strong>Plaintiffs' Liaison Counsel</strong></span><br />
+    <table class="table"><tr><td> Anna B. Carter </td><td></td></tr></table>
+    <span style="font-size: 14px;"><strong><span style="text-decoration: underline;">DEFENDANT'S LEAD COUNSEL</span></strong></span><br />
+    <span style="font-size: 14px;"><br /></span>
+    <span style="font-size: 14px;"><strong> Acme's Lead Counsel </strong></span><br />
+    <table class="table"><tr><td> Fay Nash </td><td></td></tr></table>
+    <span style="font-size: 14px;"><strong>Acme's Co-Liaison Counsel</strong></span><br />
+    <table class="table"><tr><td> Gil Orr </td><td> Hal Poe </td></tr></table>
+    </div></div></div>
+    <div class='panel'><div class='panel-heading'><h4 class='panel-title'>Frequently Asked Questions</h4></div>
+    <div class='panel-body'><p>Multidistrict litigation is litigation pending in more than one federal district.</p></div></div>
+    </main></body></html>"""
+
+    def test_blocks_do_not_overlap_and_keep_element_boundaries(self):
+        out = ec.extract(self.ILND, "https://www.ilnd.uscourts.gov/mdl-details.aspx?x", "2026-10-18", 9026)
+        blocks = {b["heading"]: b for b in out["leadership_blocks"]}
+        self.assertEqual(list(blocks), ["Plaintiffs' Co-Lead Counsel", "Plaintiffs' Executive Committee", "Plaintiffs' Liaison Counsel", "Acme's Lead Counsel", "Acme's Co-Liaison Counsel"])
+        self.assertEqual(blocks["Plaintiffs' Co-Lead Counsel"]["lines"], ["Anna B. Carter", "Carter // Dunn, PLLC", "Ben Ellis", "Ellis, Fox & Gray, LLP", "Cara Hale", "Hale Ives P.A."])
+        self.assertEqual(blocks["Plaintiffs' Executive Committee"]["lines"], ["Dan Jones", "Jones & Kay", "Eve Lund", "Lund Mor"])  # printed text kept as is
+        self.assertEqual(blocks["Plaintiffs' Liaison Counsel"]["lines"], ["Anna B. Carter"])
+        self.assertEqual(blocks["Acme's Co-Liaison Counsel"]["lines"], ["Gil Orr", "Hal Poe"])
+        self.assertEqual(blocks["Plaintiffs' Co-Lead Counsel"]["group"], "PLAINTIFFS' COUNSEL")
+        self.assertEqual(blocks["Plaintiffs' Liaison Counsel"]["group"], "PLAINTIFFS' COUNSEL")
+        self.assertEqual(blocks["Acme's Lead Counsel"]["group"], "DEFENDANT'S LEAD COUNSEL")
+        every_line = [ln for b in out["leadership_blocks"] for ln in b["lines"]]
+        self.assertFalse(any(ln in blocks for ln in every_line))  # no heading repeated as another block's line
+        self.assertFalse(any("Multidistrict" in ln or ln.endswith("…") for ln in every_line))  # stops at the next h4; nothing cut
+        self.assertEqual(blocks["Plaintiffs' Co-Lead Counsel"]["lines_total"], 6)
+
+    def test_inline_label_nested_heading_and_line_cap(self):
+        html = b"""<main><p><strong>Lead Counsel:</strong> Jane Doe, Example LLP</p>
+        <h3><strong>Plaintiffs' Steering Committee</strong></h3><ul>""" + b"".join(b"<li>Member %d</li>" % i for i in range(ec.LEAD_LINES + 10)) + b"""</ul>
+        <h2>Orders</h2><p>Order No. 1</p></main>"""
+        blocks = ec.leadership_blocks(BeautifulSoup(html, "lxml").find("main"))
+        self.assertEqual([b["heading"] for b in blocks], ["Lead Counsel:", "Plaintiffs' Steering Committee"])  # h3 > strong is one heading
+        self.assertEqual(blocks[0]["lines"], ["Jane Doe, Example LLP"])
+        self.assertEqual(len(blocks[1]["lines"]), ec.LEAD_LINES)
+        self.assertEqual(blocks[1]["lines_total"], ec.LEAD_LINES + 10)
+        self.assertNotIn("Order No. 1", blocks[1]["lines"])
+
+    def test_column_tables_ecf_listings_order_titles_and_name_headings(self):
+        # N.D. Ga. style: role per column in <th>, names in the <td> below; M.D. Fla. style CM/ECF party listing;
+        # S.D.N.Y. style order links titled "Order: ... Leadership"; E.D. Ark. style "Name, role" in <strong>.
+        html = b"""<main><h2>Contact Information</h2>
+        <table><thead><tr><th><h4>Plaintiffs' Counsel</h4><p>Plaintiff Co-Lead Counsel</p></th><th><br/>Plaintiff Liaison Counsel</th></tr></thead>
+        <tbody><tr><td><strong>Erin Roe</strong><br/>ROE LAW LLP</td><td><strong>Carl Poe</strong><br/>POE LLC</td></tr>
+        <tr><td><strong>Ann Moe</strong><br/>MOE PC</td></tr></tbody></table>
+        <h3>Plaintiff's Counsel</h3><p>Plaintiff</p><p>Robert Doe</p><p>represented by</p><p>Jane Roe</p>
+        <h3>Orders</h3><p><strong>Order: Plaintiffs' Leadership</strong></p><p>December 2, 2022</p>
+        <h3>Plaintiffs' MDL Lead Counsel</h3><p><strong>Paul Q. Ames, MDL Liaison Counsel</strong><br/>Ames &amp; Bell, PLC</p>
+        <p></p><p><strong><u>Key Documents</u></strong></p><ul><li><a href="/files/MDL-Transfer-Order.pdf">JPML Transfer Order entered 02/05/2026.</a></li></ul>
+        </main>"""
+        blocks = ec.leadership_blocks(BeautifulSoup(html, "lxml").find("main"))
+        got = {b["heading"]: b for b in blocks}
+        self.assertEqual(list(got), ["Plaintiff Co-Lead Counsel", "Plaintiff Liaison Counsel", "Plaintiffs' MDL Lead Counsel"])
+        self.assertEqual(got["Plaintiff Co-Lead Counsel"]["lines"], ["Erin Roe", "ROE LAW LLP", "Ann Moe", "MOE PC"])
+        self.assertEqual(got["Plaintiff Co-Lead Counsel"]["group"], "Plaintiffs' Counsel")
+        self.assertEqual(got["Plaintiff Liaison Counsel"]["lines"], ["Carl Poe", "POE LLC"])
+        self.assertEqual(got["Plaintiffs' MDL Lead Counsel"]["lines"], ["Paul Q. Ames, MDL Liaison Counsel", "Ames & Bell, PLC"])
+
+    def test_last_updated_is_metadata_and_groups_end_at_the_next_heading_of_their_level(self):
+        # D. Minn. style (MDL 2441): h3 accordion headings, "Last Updated" first, sub-roles in <strong> inside <p>.
+        # Names here are synthetic.
+        html = b"""<main><h3>Plaintiffs' Lead Counsel</h3><div><p><em>Last Updated: July 20, 2015</em></p>
+        <p><em>Jane Doe, Chairperson</em><br/><strong>Doe &amp; Roe</strong><br/>225 W. Wacker Drive, Suite 1515</p></div>
+        <h3>Plaintiffs' Liaison Counsel</h3><div><p><em>Last Updated: January 17, 2014</em></p>
+        <p><span><strong>Liaison Counsel to the District of Minnesota</strong></span><br/><em>Al Nemo</em><br/><strong>Nemo Ltd.</strong></p>
+        <p><span><strong>Liaison Counsel to the State Courts</strong></span><br/><em>Bo Bern</em><br/><strong>Bern LLC</strong></p></div>
+        <h3>Defendants' Lead Counsel</h3><div><p><em>Last Updated: May 27, 2016</em></p><p><em>Kim Cat</em><br/><strong>Cat PC</strong></p></div>
+        <h3>Defendants' Liaison Counsel</h3><div><p><em>Kim Cat</em><br/><strong>Cat PC</strong></p></div></main>"""
+        blocks = ec.leadership_blocks(BeautifulSoup(html, "lxml").find("main"))
+        got = {b["heading"]: b for b in blocks}
+        self.assertEqual(list(got), ["Plaintiffs' Lead Counsel", "Liaison Counsel to the District of Minnesota", "Liaison Counsel to the State Courts",
+                                     "Defendants' Lead Counsel", "Defendants' Liaison Counsel"])
+        self.assertEqual(got["Plaintiffs' Lead Counsel"]["lines"][:2], ["Jane Doe, Chairperson", "Doe & Roe"])
+        self.assertEqual(got["Plaintiffs' Lead Counsel"]["updated"], "Last Updated: July 20, 2015")
+        self.assertFalse(any(ln.startswith("Last Updated") for b in blocks for ln in b["lines"]))
+        sub = got["Liaison Counsel to the District of Minnesota"]
+        self.assertEqual((sub["group"], sub["lines"], sub["updated"]), ("Plaintiffs' Liaison Counsel", ["Al Nemo", "Nemo Ltd."], "Last Updated: January 17, 2014"))
+        self.assertEqual(got["Liaison Counsel to the State Courts"]["group"], "Plaintiffs' Liaison Counsel")
+        # the plaintiffs' group ends at the next h3: the defense roles are not filed under it
+        self.assertIsNone(got["Defendants' Lead Counsel"]["group"])
+        self.assertIsNone(got["Defendants' Liaison Counsel"]["group"])
+        self.assertEqual(got["Defendants' Lead Counsel"]["updated"], "Last Updated: May 27, 2016")
+        self.assertIsNone(got["Defendants' Liaison Counsel"]["updated"])
+        self.assertIsNone(ec.updated_line("Last Updated: soon"))
+        self.assertIsNone(ec.updated_line("Jane Doe"))
+
+    def test_misspelled_and_co_counsel_role_headings(self):
+        # S.D. Ill. MDL 3004 prints "CO-LEAD PLANTIFF'S COUNSEL" (sic); N.D. Ohio MDL 2197 prints "Plaintiffs' Lead Co-Counsel".
+        self.assertTrue(ec.is_lead_heading_text("CO-LEAD PLANTIFF'S COUNSEL"))
+        self.assertTrue(ec.is_lead_heading_text("Plaintiffs' Lead Co-Counsel"))
+        self.assertFalse(ec.is_lead_heading_text("Claims Administrator:"))
+        html = b"""<main><h3>Lead Counsel and Plaintiffs' Executive Committee</h3><div>
+        <table><tr><td><span><u><strong>CO-LEAD PLANTIFF'S COUNSEL</strong></u></span></td></tr>
+        <tr><td><strong>Ann Doe</strong><br/>Doe LLP</td></tr></table>
+        <table><tr><td><span><u><strong>PLAINTIFFS' EXECUTIVE COMMITTEE</strong></u></span></td></tr>
+        <tr><td><strong>Bo Roe</strong><br/>Roe PC</td></tr></table></div></main>"""
+        blocks = ec.leadership_blocks(BeautifulSoup(html, "lxml").find("main"))
+        self.assertEqual([(b["group"], b["heading"], b["lines"]) for b in blocks], [
+            ("Lead Counsel and Plaintiffs' Executive Committee", "CO-LEAD PLANTIFF'S COUNSEL", ["Ann Doe", "Doe LLP"]),
+            ("Lead Counsel and Plaintiffs' Executive Committee", "PLAINTIFFS' EXECUTIVE COMMITTEE", ["Bo Roe", "Roe PC"]),
+        ])
+
+    def test_role_per_row_tables(self):
+        # N.D. Ohio style (MDL 2197 / 3092): one role per row, role in the first cell, names in the second (synthetic).
+        html = b"""<main><table><tbody>
+        <tr><td>Judge:</td><td>Hon. Example Judge</td></tr>
+        <tr><td><p>Plaintiffs' Co-Lead Counsel:</p></td><td><p>Ann Doe<br/>DOE LLP<br/>100 Main Street, Suite 2<br/>Cleveland, Ohio 44139<br/>(216) 555-0100<br/>ann@example.com</p>
+          <p>Bo Roe<br/>ROE PC<br/>12 Elm Road, #100<br/>Atlanta, Georgia 30319</p></td></tr>
+        <tr><td>Plaintiffs' Lead Co-Counsel</td><td>Cy Poe<br/>Poe &amp; Moe</td></tr>
+        <tr><td>Claims Administrator:</td><td>Hon. Dee Lee<br/>1 Center Plaza</td></tr>
+        <tr><td> </td><td> </td></tr>
+        </tbody></table>
+        <table><tr><td><a href="/files/cmo2.pdf">Doc #35</a></td><td>03/08/2024</td><td>Case Management Order No. 2 (Plaintiff's Leadership)</td></tr></table></main>"""
+        blocks = ec.leadership_blocks(BeautifulSoup(html, "lxml").find("main"))
+        self.assertEqual([b["heading"] for b in blocks], ["Plaintiffs' Co-Lead Counsel:", "Plaintiffs' Lead Co-Counsel"])
+        self.assertEqual(blocks[0]["lines"][:3], ["Ann Doe", "DOE LLP", "100 Main Street, Suite 2"])  # the builder removes the contacts
+        lead = bcs.leadership_from_pages([{"url": "https://x.uscourts.gov/mdl", "leadership_blocks": blocks}])
+        self.assertEqual(lead[0]["lines"], ["Ann Doe", "DOE LLP", "Bo Roe", "ROE PC"])
+        self.assertTrue(lead[0]["contact_lines_removed"])
+        self.assertEqual(lead[1]["lines"], ["Cy Poe", "Poe & Moe"])
+
+    def test_quicktabs_role_tabs(self):
+        # E.D. La. style (MDL 2740 contacts): role names are the tab links, names are in the matching tab page;
+        # a role label printed as a <p> inside a tab page starts a sub-list grouped under the tab (synthetic names).
+        html = """<main><div id="quicktabs-view__MDL__page_9" class="quicktabs-wrapper"><ul class="quicktabs-tabs">
+        <li><a href="?qt=0" id="quicktabs-tab-view__MDL__page_9-0" class="quicktabs-tab">Chambers</a></li>
+        <li><a href="?qt=1" id="quicktabs-tab-view__MDL__page_9-1" class="quicktabs-tab">Plaintiffs’ Liaison Counsel</a></li>
+        <li><a href="?qt=2" id="quicktabs-tab-view__MDL__page_9-2" class="quicktabs-tab">Defendants’ Co-Lead Counsel</a></li></ul>
+        <div class="quicktabs_main">
+        <div id="quicktabs-tabpage-view__MDL__page_9-0" class="quicktabs-tabpage"><p>Section H - Phone: (504) 555-0100</p></div>
+        <div id="quicktabs-tabpage-view__MDL__page_9-1" class="quicktabs-tabpage quicktabs-hide"><table><tbody><tr>
+          <td><ul><li><strong>Ann Doe </strong><br/>Doe, Roe &amp; Poe, LLP<br/>701 Main Street<br/>Suite 3650<br/>New Orleans, Louisiana 70139<br/>Phone: (504) 555-0101<br/>Facsimile: Not Available<br/>Email: <a href="mailto:ann@example.com">ann@example.com</a></li></ul></td>
+          <td><ul><li><strong>Bo Roe </strong>(Co-Lead Counsel)<br/>Roe Firm, PLC<br/>2800 Energy Centre<br/>1100 Main Street</li></ul></td></tr></tbody></table></div>
+        <div id="quicktabs-tabpage-view__MDL__page_9-2" class="quicktabs-tabpage quicktabs-hide"><p>ACME DEFENDANTS' LEAD COUNSEL</p>
+          <table><tr><td><p>Acme U.S. LLC</p></td><td><p>Cy Poe<br/>POE &amp; LEE<br/>2555 Grand Boulevard<br/>Telephone: (816) 555-0102<br/>Telefax; 816-555-0103</p></td></tr></table>
+          <p>OTHER DEFENDANTS LEAD COUNSEL</p>
+          <table><tr><td><p>Beta Inc.</p></td><td><p>Di Moe<br/>GREAT FIRM, LLP Terminus 200<br/>3333 Main Road NE, Suite 2500<br/>Telefax: 216-555-0104</p></td></tr></table></div>
+        </div></div></main>""".encode()
+        blocks = ec.leadership_blocks(BeautifulSoup(html, "lxml").find("main"))
+        self.assertEqual([(b["group"], b["heading"]) for b in blocks], [
+            (None, "Plaintiffs’ Liaison Counsel"),
+            ("Defendants’ Co-Lead Counsel", "ACME DEFENDANTS' LEAD COUNSEL"),
+            ("Defendants’ Co-Lead Counsel", "OTHER DEFENDANTS LEAD COUNSEL"),
+        ])  # the Chambers tab names no role; "Bo Roe (Co-Lead Counsel)" is a member line, not a sub-heading
+        self.assertEqual(blocks[0]["lines"][:2], ["Ann Doe", "Doe, Roe & Poe, LLP"])
+        self.assertIn("Bo Roe (Co-Lead Counsel)", blocks[0]["lines"])
+        lead = bcs.leadership_from_pages([{"url": "https://www.laed.uscourts.gov/x-contacts", "leadership_blocks": blocks}])
+        self.assertEqual([b["lines"] for b in lead], [
+            ["Ann Doe", "Doe, Roe & Poe, LLP", "Bo Roe (Co-Lead Counsel)", "Roe Firm, PLC"],
+            ["Acme U.S. LLC", "Cy Poe", "POE & LEE"],
+            ["Beta Inc.", "Di Moe", "GREAT FIRM, LLP"],
+        ])
+        self.assertTrue(all(b["contact_lines_removed"] for b in lead))
+
+    def test_clip_cuts_at_a_word_boundary_and_marks_it(self):
+        self.assertEqual(ec.clip("short", 10), "short")
+        self.assertEqual(ec.clip("Ellen A. Presby Ferrer Poirot", 14), "Ellen A. …")
+        self.assertEqual(ec.clip("Ellen A. Presby Ferrer", 15), "Ellen A. Presby …")
+        self.assertEqual(ec.clip("Supercalifragilistic word", 5), "Supercalifragilistic …")
+        self.assertEqual(ec.clip("Supercalifragilistic", 5), "Supercalifragilistic")
+
+
+class CourtSummaryBuilder(unittest.TestCase):
+    def test_leadership_redacts_contacts_dedupes_and_counts(self):
+        long_line = "Firm " + " ".join(f"Partner{i}" for i in range(80))
+        page = {"url": "https://x.uscourts.gov/a", "leadership_blocks": [
+            {"heading": "Plaintiffs' Lead Counsel", "group": "PLAINTIFFS' COUNSEL", "lines": ["Jane Doe", "Example LLP", "100 Main Street", "jdoe@example.com", long_line], "lines_total": 7},
+        ]}
+        again = {"url": "https://x.uscourts.gov/b", "leadership_blocks": page["leadership_blocks"]}
+        out = bcs.leadership_from_pages([page, again])
+        self.assertEqual(len(out), 1)  # the same block on a second page is kept once
+        b = out[0]
+        self.assertEqual(b["lines"][:2], ["Jane Doe", "Example LLP"])
+        self.assertTrue(b["contact_lines_removed"])
+        self.assertNotIn("100 Main Street", b["lines"])
+        self.assertTrue(b["lines"][2].endswith(" …") and len(b["lines"][2]) <= bcs.LEAD_LINE_CHARS + 2)
+        self.assertRegex(b["lines"][2], r"Partner\d+ …$")  # whole words only
+        self.assertEqual(b["lines_not_shown"], 2)  # beyond the extractor's cap
+        self.assertEqual(b["group"], "PLAINTIFFS' COUNSEL")
+
+    def test_page_flag_names_what_extraction_read(self):
+        self.assertEqual(bcs.page_flag([], [], [], []), "no_court_page")
+        self.assertEqual(bcs.page_flag([], [], [], [], [{"url": "f", "error": "fetch_failed"}]), "page_fetch_failed")
+        self.assertIsNone(bcs.page_flag([{}], [{"url": "o"}], [], []))
+        # no order extracted is not "the page lists no orders": the page may list orders the extractor did not read
+        self.assertEqual(bcs.page_flag([{}], [], [{"category": "bellwether"}], []), "page_orders_not_extracted")
+        self.assertEqual(bcs.page_flag([{}], [], [], [{"heading": "Lead Counsel"}]), "page_orders_not_extracted")
+        self.assertEqual(bcs.page_flag([{}], [], [], []), "page_unreadable")
+
+    def test_leadership_carries_updated_text(self):
+        page = {"url": "https://x.uscourts.gov/a", "leadership_blocks": [
+            {"heading": "Defendants' Lead Counsel", "group": None, "lines": ["Kim M. Catullo", "Gibbons PC"], "lines_total": 2, "updated": "Last Updated: May 27, 2016"},
+        ]}
+        self.assertEqual(bcs.leadership_from_pages([page])[0]["updated"], "Last Updated: May 27, 2016")
+
+
+class MassTortTermMerge(unittest.TestCase):
+    # build_mass_tort_signals.py lives one directory up; tested here so the CI Python contract suite covers it.
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, str(Path(__file__).parent.parent))
+        import build_mass_tort_signals as mts  # noqa: E402
+
+        cls.mts = mts
+
+    def test_case_variants_merge_like_the_app(self):
+        raw = [{"term": "Diarrhoea", "count": 292}, {"term": "Vomiting", "count": 270}, {"term": "DIARRHOEA", "count": 247},
+               {"term": "VOMITING", "count": 222}, {"term": "Pyrexia", "count": 187}, {"term": "", "count": 9}, {"term": "Rash", "count": True}]
+        out = self.mts.merge_case_variants(raw)
+        self.assertEqual(out[:3], [
+            {"term": "Diarrhoea", "count": 539, "variants": ["Diarrhoea", "DIARRHOEA"]},
+            {"term": "Vomiting", "count": 492, "variants": ["Vomiting", "VOMITING"]},
+            {"term": "Pyrexia", "count": 187, "variants": ["Pyrexia"]},
+        ])
+        self.assertEqual(len(out), 3)
+
+    def test_merge_is_idempotent_and_folds_with_lower(self):
+        once = self.mts.merge_case_variants([{"term": "Rash", "count": 5}, {"term": "RASH", "count": 5}, {"term": "Fatigue", "count": 10}])
+        self.assertEqual(self.mts.merge_case_variants(once), once)
+        self.assertEqual(once[0], {"term": "Rash", "count": 10, "variants": ["Rash", "RASH"]})
+        # str.lower (as String.toLowerCase in the app), not casefold: "ß" and "ss" stay distinct terms
+        self.assertEqual(len(self.mts.merge_case_variants([{"term": "Straße", "count": 1}, {"term": "STRASSE", "count": 1}])), 2)
+
+
 class ContactRedaction(unittest.TestCase):
     def test_counsel_line_keeps_name_and_firm(self):
         text = "Christopher A. Seeger Seeger Weiss LLP 55 Challenger Road, 6th Floor Ridgefield Park, NJ 07660 (212) 584-0700 cseeger@seegerweiss.com"
@@ -201,11 +502,67 @@ class ContactRedaction(unittest.TestCase):
         text = "Last Updated: May 27, 2016 Pretrial Order No. 18 appointing leadership in MDL No. 3140 on March 16, 2025."
         self.assertEqual(cr.redact(text), (text, False))
 
+    def test_document_numbers_are_not_suite_numbers(self):
+        # '#NN' on court pages is a document number; only a unit number right after a street word and a comma is address.
+        for text in ("Exhibit A to CMO #22", "Order (Related Doc # 671)", "Doc #35 | 03/08/2024 | Case Management Order No. 2", "Pretrial Order #4"):
+            self.assertEqual(cr.redact(text), (text, False))
+            self.assertEqual(cr.redact(text, marker="[contact removed]"), (text, False))
+        self.assertEqual(cr.redact_lines(["1932 North Druid Hills Road, #100"]), ([], True))
+        self.assertEqual(cr.redact("Childers LLC, 1932 North Druid Hills Road, #100 Atlanta, Georgia 30319", marker="[contact removed]")[0], "Childers LLC, [contact removed]")
+        self.assertEqual(cr.redact("Write to Doe LLC at Druid Hills Road, #100.", marker="[contact removed]"),
+                         ("Write to Doe LLC at Druid Hills Road, [contact removed].", True))
+        self.assertEqual(cr.redact("UB Greensfelder LLP #1400 Cincinnati, OH 45202"), ("UB Greensfelder LLP", True))
+
+    def test_unavailable_fields_telefax_and_firm_with_building(self):
+        lines = ["Ann Doe", "Facsimile: Not Available", "Fax: N/A", "Telefax: 216-555-0104", "Telefax; 678-555-0105", "Telefax",
+                 "GREAT FIRM, LLP Terminus 200", "3333 Main Road NE, Suite 2500", "Roe Partners 12", "100 Elm Street"]
+        kept, removed = cr.redact_lines(lines)
+        self.assertTrue(removed)
+        self.assertEqual(kept, ["Ann Doe", "GREAT FIRM, LLP"])  # a line without a firm suffix above a street line is a building
+        self.assertEqual(cr.redact("Contact Ann Doe (Facsimile: Not Available).", marker="[contact removed]")[0], "Contact Ann Doe [contact removed].")
+        self.assertEqual(cr.redact_lines(["Smith Jones LLP Plaza 7"]), (["Smith Jones LLP Plaza 7"], False))  # no street line below: kept
+
+    def test_per_element_counsel_lines_lose_every_contact_line(self):
+        # Counsel blocks are now one line per page element, so an address spans several lines.
+        lines = ["Timothy J. Becker", "JOHNSON // BECKER, PLLC", "444 Cedar Street, Suite 1800", "St. Paul, MN 55101", "Tel.:",
+                 "Trent B. Miracle", "SIMMONS HANLY CONROY", "One Court Street", "Alton, IL 62002", "Panagiotis V. Albanis",
+                 "MORGAN & MORGAN", "Naples, Florida", "Post Office Box 2208", "516/466-6500", "Name and Address", "Telephone", "Email",
+                 "Lori G. Cohen", "Greenberg Traurig, LLP", "Terminus 200", "3333 Piedmont Road NE, Suite 2500", "Wes Bowden",
+                 "Fears Law Firm", "310 4th Avenue South", "150 3 rd Avenue South", "(212) 555-0100 (fax)", "11th. Floor",
+                 "Third and Fourth Floor", "Plaza Seven Bldg.", "Irvine CA 92606", "Houston, TX 770606"]
+        kept, removed = cr.redact_lines(lines)
+        self.assertTrue(removed)
+        self.assertEqual(kept, ["Timothy J. Becker", "JOHNSON // BECKER, PLLC", "Trent B. Miracle", "SIMMONS HANLY CONROY", "Panagiotis V. Albanis",
+                                "MORGAN & MORGAN", "Lori G. Cohen", "Greenberg Traurig, LLP", "Wes Bowden", "Fears Law Firm"])
+
+    def test_firm_suffixes_and_people_survive_line_rules(self):
+        lines = ["Hale Ives, PA", "Douglas & London, P.C.", "One Legal Group", "Two members of the Court's leadership", "Stephanie E. Parker",
+                 "Stinson Leonard Street", "James R. Dugan, II"]
+        self.assertEqual(cr.redact_lines(lines), (lines, False))
+        self.assertEqual(cr.redact("Counsel: (516) 466-6500 and 516/466-6665")[0], "Counsel: and")
+        self.assertEqual(cr.redact("Order of 10/14/2026 at 9:30")[0], "Order of 10/14/2026 at 9:30")
+
     def test_marker_in_sentences_and_line_drops(self):
         clean, removed = cr.redact("Email Liaison Counsel (Donna Welch at donna.welch@kirkland.com).", marker="[contact removed]")
         self.assertEqual(clean, "Email Liaison Counsel (Donna Welch at [contact removed]).")
         lines, removed = cr.redact_lines(["Jane Doe, Example LLP", "100 Main Street", "Suite 400", "jdoe@example.com"])
         self.assertEqual((lines, removed), (["Jane Doe, Example LLP"], True))
+
+    def test_building_name_above_its_suite_line_is_address(self):
+        # S.D. Ohio MDL 2974 prints a building name, with a trailing comma, above the suite line (firm/person synthetic).
+        lines, removed = cr.redact_lines(["Chris Doe", "Example Snow LLP", "Renaissance at Colony Park,", "Suite 1400", "1020 Highland Colony Parkway",
+                                          "Ridgeland, MS 39158", "Pat Roe,", "Roe LLP"])
+        self.assertTrue(removed)
+        self.assertEqual(lines, ["Chris Doe", "Example Snow LLP", "Pat Roe", "Roe LLP"])  # a comma alone drops nothing (redact trims it)
+
+    def test_sentence_pointing_at_a_removed_contact_keeps_the_marker(self):
+        # N.D. Ill. MDL 3060 prints this sentence under Defendants' Liaison Counsel (address synthetic here).
+        lines, removed = cr.redact_lines(["Heidi Doe", "Example Austin LLP", "Any time-sensitive communications intended for the full defense group may be sent to MDL9999_DefenseLiaison@example.com.",
+                                          "Questions: (212) 555-0100", "Jane Roe Phone: (212) 555-0101", "Ph.: (212) 555-0102", "Ph,: 212-555-0103"])
+        self.assertTrue(removed)
+        self.assertEqual(lines, ["Heidi Doe", "Example Austin LLP",
+                                 "Any time-sensitive communications intended for the full defense group may be sent to [contact removed].",
+                                 "Questions: [contact removed]", "Jane Roe"])
 
 
 if __name__ == "__main__":

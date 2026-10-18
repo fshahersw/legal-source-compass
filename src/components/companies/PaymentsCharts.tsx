@@ -17,6 +17,8 @@ import {
 import { FDA_COLORS } from "@/components/fda-analytics/chartView";
 import { cn } from "@/lib/utils";
 import { median } from "@/lib/external/openPayments.functions";
+import { SwatchLegend } from "./CompanyUi";
+import { usdTick } from "./companyViewNotes";
 
 export const GENERAL_COLOR = FDA_COLORS[0];
 export const RESEARCH_COLOR = FDA_COLORS[1];
@@ -91,13 +93,7 @@ export function YearBars({
         <BarChart data={rows} margin={{ top: 6, right: 8, bottom: 0, left: 0 }}>
           <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
           <XAxis dataKey="year" tick={axis} tickLine={false} axisLine={false} />
-          <YAxis
-            width={52}
-            tick={axis}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={(v: number) => usd(v, 0)}
-          />
+          <YAxis width={52} tick={axis} tickLine={false} axisLine={false} tickFormatter={usdTick} />
           <Tooltip
             contentStyle={tooltipStyle}
             formatter={(value: number, name: string) => [fullUsd(value), name]}
@@ -265,110 +261,136 @@ function decades(values: number[]): { domain: [number, number]; ticks: number[] 
   return { domain: [10 ** (lo - 0.3), 10 ** (hi + 0.3)], ticks };
 }
 
+/** Opacity of the points excluded from r; the legend swatch uses the same value. */
+const EXCLUDED_OPACITY = 0.35;
+
 /** Log-log scatter of general payments against MAUDE reports. */
 export function PaymentsScatter({
   points,
   onPick,
+  minCoverage = 80,
+  minReports = 50,
 }: {
   points: ScatterPoint[];
   onPick?: (id: string) => void;
+  /** Eligibility test the points were marked with (percent coverage, report count), for the key. */
+  minCoverage?: number;
+  minReports?: number;
 }) {
   const plain = points.filter((p) => p.eligible && !p.flagged);
   const flagged = points.filter((p) => p.eligible && p.flagged);
   const excluded = points.filter((p) => !p.eligible);
   const xDomain = decades(points.map((p) => p.payments));
   const yDomain = decades(points.map((p) => p.reports));
+  // Legend is drawn outside the chart: recharts colours legend text by series and the reference
+  // series is translucent, so its key was hard to read. Text here is opaque; the excluded swatch
+  // keeps the marks' opacity inside an outline so it matches the dots it labels.
+  const legend = [
+    excluded.length
+      ? {
+          label: `Excluded from r: coverage under ${minCoverage}% or not recorded, or under ${minReports} reports (${excluded.length})`,
+          color: "var(--muted-foreground)",
+          opacity: EXCLUDED_OPACITY,
+        }
+      : null,
+    plain.length ? { label: `Used for r (${plain.length})`, color: GENERAL_COLOR! } : null,
+    flagged.length
+      ? { label: `Used for r · residual outlier (${flagged.length})`, color: "var(--destructive)" }
+      : null,
+  ].filter((i): i is NonNullable<typeof i> => i !== null);
   return (
-    <div className="h-80 px-2 py-2">
-      <ResponsiveContainer width="100%" height="100%">
-        <ScatterChart margin={{ top: 8, right: 16, bottom: 18, left: 14 }}>
-          <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
-          <XAxis
-            type="number"
-            dataKey="payments"
-            name="General payments"
-            scale="log"
-            domain={xDomain.domain}
-            ticks={xDomain.ticks}
-            allowDataOverflow
-            tick={axis}
-            tickFormatter={(v: number) => usd(v, 0)}
-            label={{
-              value: "General payments (log)",
-              position: "insideBottom",
-              offset: -10,
-              fontSize: 11,
-              fill: "var(--muted-foreground)",
-            }}
-          />
-          <YAxis
-            type="number"
-            dataKey="reports"
-            name="MAUDE reports"
-            scale="log"
-            domain={yDomain.domain}
-            ticks={yDomain.ticks}
-            allowDataOverflow
-            tick={axis}
-            width={56}
-            label={{
-              value: "MAUDE reports, lower bound (log)",
-              angle: -90,
-              position: "insideLeft",
-              offset: -6,
-              style: { textAnchor: "middle", fontSize: 11, fill: "var(--muted-foreground)" },
-            }}
-            tickFormatter={(v: number) =>
-              new Intl.NumberFormat("en-US", { notation: "compact" }).format(v)
-            }
-          />
-          <ZAxis range={[44, 44]} />
-          <Tooltip
-            cursor={{ strokeDasharray: "3 3" }}
-            content={({ payload }) => {
-              const d = payload?.[0]?.payload as ScatterPoint | undefined;
-              if (!d) return null;
-              return (
-                <div className="rounded border border-border bg-surface px-2 py-1 text-xs shadow-sm">
-                  <div className="font-medium">{d.name}</div>
-                  <div>General payments: {fullUsd(d.payments)}</div>
-                  <div>MAUDE reports: ≥{int(d.reports)}</div>
-                  <div>
-                    Name coverage: {pct(d.coverage, 1)}
-                    {d.eligible ? "" : " · not used for r"}
+    <div className="px-2 py-2">
+      <SwatchLegend items={legend} className="pb-1" />
+      <div className="h-[19rem]">
+        <ResponsiveContainer width="100%" height="100%">
+          <ScatterChart margin={{ top: 8, right: 16, bottom: 18, left: 14 }}>
+            <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
+            <XAxis
+              type="number"
+              dataKey="payments"
+              name="General payments"
+              scale="log"
+              domain={xDomain.domain}
+              ticks={xDomain.ticks}
+              allowDataOverflow
+              tick={axis}
+              tickFormatter={usdTick}
+              label={{
+                value: "General payments (log)",
+                position: "insideBottom",
+                offset: -10,
+                fontSize: 11,
+                fill: "var(--muted-foreground)",
+              }}
+            />
+            <YAxis
+              type="number"
+              dataKey="reports"
+              name="MAUDE reports"
+              scale="log"
+              domain={yDomain.domain}
+              ticks={yDomain.ticks}
+              allowDataOverflow
+              tick={axis}
+              width={56}
+              label={{
+                value: "MAUDE reports, lower bound (log)",
+                angle: -90,
+                position: "insideLeft",
+                offset: -6,
+                style: { textAnchor: "middle", fontSize: 11, fill: "var(--muted-foreground)" },
+              }}
+              tickFormatter={(v: number) =>
+                new Intl.NumberFormat("en-US", { notation: "compact" }).format(v)
+              }
+            />
+            <ZAxis range={[44, 44]} />
+            <Tooltip
+              cursor={{ strokeDasharray: "3 3" }}
+              content={({ payload }) => {
+                const d = payload?.[0]?.payload as ScatterPoint | undefined;
+                if (!d) return null;
+                return (
+                  <div className="rounded border border-border bg-surface px-2 py-1 text-xs shadow-sm">
+                    <div className="font-medium">{d.name}</div>
+                    <div>General payments: {fullUsd(d.payments)}</div>
+                    <div>MAUDE reports: ≥{int(d.reports)}</div>
+                    <div>
+                      Name coverage: {pct(d.coverage, 1)}
+                      {d.eligible ? "" : " · not used for r"}
+                    </div>
                   </div>
-                </div>
-              );
-            }}
-          />
-          <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} verticalAlign="top" />
-          <Scatter
-            name="Excluded from r: coverage < 80% or < 50 reports"
-            data={excluded}
-            fill="var(--muted-foreground)"
-            fillOpacity={0.35}
-            isAnimationActive={false}
-            onClick={(d: { id?: string }) => d?.id && onPick?.(d.id)}
-            cursor="pointer"
-          />
-          <Scatter
-            name="Used for r"
-            data={plain}
-            fill={GENERAL_COLOR}
-            isAnimationActive={false}
-            onClick={(d: { id?: string }) => d?.id && onPick?.(d.id)}
-            cursor="pointer"
-          />
-          <Scatter
-            name="Used for r · residual outlier"
-            data={flagged}
-            fill="var(--destructive)"
-            isAnimationActive={false}
-            onClick={(d: { id?: string }) => d?.id && onPick?.(d.id)}
-            cursor="pointer"
-          />
-        </ScatterChart>
-      </ResponsiveContainer>
+                );
+              }}
+            />
+            <Scatter
+              name="Excluded from r"
+              data={excluded}
+              fill="var(--muted-foreground)"
+              fillOpacity={EXCLUDED_OPACITY}
+              isAnimationActive={false}
+              onClick={(d: { id?: string }) => d?.id && onPick?.(d.id)}
+              cursor="pointer"
+            />
+            <Scatter
+              name="Used for r"
+              data={plain}
+              fill={GENERAL_COLOR}
+              isAnimationActive={false}
+              onClick={(d: { id?: string }) => d?.id && onPick?.(d.id)}
+              cursor="pointer"
+            />
+            <Scatter
+              name="Used for r · residual outlier"
+              data={flagged}
+              fill="var(--destructive)"
+              isAnimationActive={false}
+              onClick={(d: { id?: string }) => d?.id && onPick?.(d.id)}
+              cursor="pointer"
+            />
+          </ScatterChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }

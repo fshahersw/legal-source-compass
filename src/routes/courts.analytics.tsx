@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
 import { CourtStatsDashboard, courtStatsQuery } from "@/components/courts/CourtStatsDashboard";
 import { pageHead } from "@/lib/corpus/head";
@@ -23,6 +23,22 @@ function Page() {
         { label: "Courts", to: "/courts" },
         { label: "Federal court analytics" },
       ]}
+      actions={
+        <>
+          <Link
+            to="/matters/analytics"
+            className="rounded-lg border border-border px-3 py-2 text-xs font-medium hover:bg-muted"
+          >
+            Pending MDL analytics →
+          </Link>
+          <Link
+            to="/matters/intel"
+            className="rounded-lg border border-border px-3 py-2 text-xs font-medium hover:bg-muted"
+          >
+            MDL intelligence →
+          </Link>
+        </>
+      }
     >
       <CourtStatsDashboard />
     </AppShell>

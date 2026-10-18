@@ -29,6 +29,34 @@ def fmt(n):
     return "Not recorded" if n is None else f"{n:,}"
 
 
+def merge_case_variants(terms):
+    """openFDA counts spellings that differ only in letter case separately ("Diarrhoea" / "DIARRHOEA"): sum them per
+    lower-cased term, label with the most reported spelling (ties: first seen), keep every spelling in `variants`,
+    and re-sort by count (ties: first seen). Already-merged input keeps its stored `variants` without splitting the
+    count, so the merge is idempotent. Same rule and folding (str.lower / String.toLowerCase) as mergeTermCase in
+    src/lib/external/massTortSignals.functions.ts."""
+    groups = {}
+    for t in terms or []:
+        term = (t.get("term") or "").strip() if isinstance(t, dict) and isinstance(t.get("term"), str) else ""
+        count = t.get("count") if isinstance(t, dict) else None
+        if not term or not isinstance(count, (int, float)) or isinstance(count, bool) or count < 0:
+            continue
+        key = term.lower()
+        g = groups.setdefault(key, {"order": len(groups), "total": 0, "spellings": {}})
+        stored = t.get("variants") if isinstance(t.get("variants"), list) else []
+        for v in stored:
+            spelling = v.strip() if isinstance(v, str) else ""
+            if spelling and spelling.lower() == key:
+                g["spellings"].setdefault(spelling, 0)  # a stored variant's own count is already inside `count`
+        g["total"] += count
+        g["spellings"][term] = g["spellings"].get(term, 0) + count
+    out = []
+    for g in sorted(groups.values(), key=lambda g: (-g["total"], g["order"])):
+        best = max(g["spellings"].items(), key=lambda kv: kv[1])[0]  # max keeps the first of equal counts
+        out.append({"term": best, "count": g["total"], "variants": list(g["spellings"])})
+    return out
+
+
 def main():
     mapping = json.loads((Path(__file__).parent / "mass_tort_products.json").read_text())["mdls"]
     vehicles = json.loads(NHTSA.read_text()) if NHTSA.exists() else {}
@@ -54,6 +82,7 @@ def main():
                 missing.append(mdl)
                 continue
             signal = json.loads(path.read_text())
+            signal["top_terms"] = merge_case_variants(signal.get("top_terms"))
         years = signal.get("events_by_year") or {}
         recent = {y: n for y, n in years.items() if y >= "2015"}
         peak = max(recent.items(), key=lambda kv: kv[1]) if recent else (None, None)

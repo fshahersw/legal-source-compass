@@ -21,7 +21,6 @@ import { getCompanyDetail } from "@/lib/external/companies.functions";
 import { OpenPaymentsPanel } from "@/components/companies/OpenPaymentsPanel";
 import { cn } from "@/lib/utils";
 import {
-  companyfactsUrl,
   count,
   edgarCompanyUrl,
   METRIC_LABEL,
@@ -30,11 +29,14 @@ import {
   pct,
   signedPct,
   TIER_LABEL,
+  mdlRecordView,
   mdlTitle,
   strengthSplit,
+  xbrlSourceUrl,
   type CompanyDetail,
   type CompanyLink,
   type FinPoint,
+  type MdlRecordLookup,
   type Metric,
 } from "./companyData";
 import {
@@ -44,8 +46,17 @@ import {
   Notice,
   RoleText,
   SourceLine,
+  SwatchLegend,
   TierBadge,
 } from "./CompanyUi";
+import {
+  dateSpan,
+  linkedMdlNote,
+  pendingActionsValue,
+  pendingTrendFootnote,
+  pendingTrendMessage,
+  pendingTrendView,
+} from "./companyViewNotes";
 
 export const companyDetailQuery = (cik: string) => ({
   queryKey: ["company-sec-detail", cik],
@@ -85,7 +96,12 @@ export function companyTitle(d: CompanyDetail | null | undefined) {
 function reportsToCms(sic: string | null): boolean {
   const code = Number(sic);
   if (!sic || !Number.isInteger(code)) return false;
-  return (code >= 2830 && code <= 2836) || (code >= 3840 && code <= 3851) || code === 5047 || code === 5122;
+  return (
+    (code >= 2830 && code <= 2836) ||
+    (code >= 3840 && code <= 3851) ||
+    code === 5047 ||
+    code === 5122
+  );
 }
 
 function Profile({ d }: { d: CompanyDetail }) {
@@ -93,6 +109,7 @@ function Profile({ d }: { d: CompanyDetail }) {
   const p = s.profile;
   const acc = s.latest.litigation_accrual;
   const unit = s.currency;
+  const xbrl = xbrlSourceUrl(p.cik, f, d.financialsSourceUrl);
   return (
     <div className="space-y-4">
       <header className="flex flex-wrap items-start gap-3 rounded-md border border-border bg-surface p-3">
@@ -163,14 +180,18 @@ function Profile({ d }: { d: CompanyDetail }) {
           >
             EDGAR filings <ExternalLink className="size-3" aria-hidden />
           </a>
-          <a
-            href={companyfactsUrl(p.cik)}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1 text-primary hover:underline"
-          >
-            XBRL companyfacts <ExternalLink className="size-3" aria-hidden />
-          </a>
+          {xbrl ? (
+            <a
+              href={xbrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-primary hover:underline"
+            >
+              XBRL companyfacts <ExternalLink className="size-3" aria-hidden />
+            </a>
+          ) : (
+            <span className="text-muted-foreground">No XBRL financials on file</span>
+          )}
         </div>
       </header>
 
@@ -178,11 +199,11 @@ function Profile({ d }: { d: CompanyDetail }) {
         <Kpi
           label="Linked MDLs"
           value={String(s.exposure.linkedMdls)}
-          note={`${s.exposure.pendingMdls} pending, counted as defendant`}
+          note={linkedMdlNote(s.mdls, s.exposure.pendingMdls)}
         />
         <Kpi
           label="Pending actions (defendant)"
-          value={count(s.exposure.pendingActions)}
+          value={pendingActionsValue(s.exposure)}
           note={strengthSplit(s.exposure.pendingActionsAB, s.exposure.pendingActionsC) ?? undefined}
           detail={
             s.exposure.pendingActionsUnclear
@@ -245,7 +266,7 @@ function Profile({ d }: { d: CompanyDetail }) {
         <MentionTimeline d={d} />
       </div>
 
-      <Exposure links={d.links} />
+      <Exposure links={d.links} records={d.mdlRecords} />
       {reportsToCms(p.sic) ? (
         <section aria-label="Industry payments and device reports" className="space-y-2">
           <div>
@@ -466,13 +487,17 @@ function PendingTrend({ d }: { d: CompanyDetail }) {
     pending: p.pending,
     mdls: p.mdls ?? null,
   }));
+  // Chart only MDLs read as defendant (the same rule as the KPI totals); every other pending link
+  // is named with the reason it is left out, so an empty chart never reads as "nothing pending".
+  const view = pendingTrendView(d.summary.mdls, d.summary.pendingSeries);
+  const leftOut = pendingTrendFootnote(view);
   return (
     <ChartCard
       title="Pending actions across linked pending MDLs"
       subtitle="Sum of JPML pending actions per monthly report for the MDLs where this company's filings read it as a defendant"
-      footnote="Counts only MDLs whose evidence passage reads the company as a defendant (not dismissed, not flagged for review). An MDL created during the window counts from its first report."
+      footnote={`Counts only MDLs whose evidence passage reads the company as a defendant (not dismissed, not flagged for review). An MDL created during the window counts from its first report.${leftOut ? ` ${leftOut}` : ""}`}
     >
-      {series.length > 1 ? (
+      {view.kind === "chart" ? (
         <div className="h-56 px-2 py-2">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={series} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
@@ -504,11 +529,20 @@ function PendingTrend({ d }: { d: CompanyDetail }) {
           </ResponsiveContainer>
         </div>
       ) : (
-        <ChartUnavailable reason="None of this company's linked MDLs is pending in the JPML monthly reports." />
+        <ChartUnavailable
+          reason={`${pendingTrendMessage(view) ?? ""}${
+            view.kind === "none_counted"
+              ? " See “MDL exposure and evidence filings” below for each link's evidence."
+              : ""
+          }`}
+        />
       )}
     </ChartCard>
   );
 }
+
+/** Opacity of the search-only bars; the legend swatch uses the same value. */
+const SEARCH_ONLY_OPACITY = 0.35;
 
 function MentionTimeline({ d }: { d: CompanyDetail }) {
   const rows = d.summary.mentionsByYear.map((r) => ({
@@ -523,31 +557,50 @@ function MentionTimeline({ d }: { d: CompanyDetail }) {
       footnote="Only the registrant's own 10-K, 10-Q, 8-K, 20-F, 6-K, 40-F and registration statements count."
     >
       {rows.length ? (
-        <div className="h-56 px-2 py-2">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-              <CartesianGrid stroke="var(--border)" vertical={false} />
-              <XAxis dataKey="year" tick={axis} interval="preserveStartEnd" minTickGap={16} />
-              <YAxis tick={axis} width={32} allowDecimals={false} />
-              <Tooltip />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar
-                dataKey="verified"
-                name="Verified"
-                stackId="m"
-                fill={FDA_COLORS[0]}
-                isAnimationActive={false}
-              />
-              <Bar
-                dataKey="searchOnly"
-                name="Search match only"
-                stackId="m"
-                fill="var(--muted-foreground)"
-                fillOpacity={0.35}
-                isAnimationActive={false}
-              />
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="px-2 py-2">
+          <SwatchLegend
+            items={[
+              { label: "Verified", color: FDA_COLORS[0]!, shape: "square" },
+              {
+                label: "Search match only",
+                color: "var(--muted-foreground)",
+                shape: "square",
+                opacity: SEARCH_ONLY_OPACITY,
+              },
+            ]}
+          />
+          <div className="h-52">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+                <CartesianGrid stroke="var(--border)" vertical={false} />
+                <XAxis dataKey="year" tick={axis} interval="preserveStartEnd" minTickGap={16} />
+                <YAxis
+                  tick={axis}
+                  width={36}
+                  allowDecimals={false}
+                  tickFormatter={(v: number) => v.toLocaleString("en-US")}
+                />
+                <Tooltip
+                  formatter={(v: number, name) => [`${v.toLocaleString("en-US")} filings`, name]}
+                />
+                <Bar
+                  dataKey="verified"
+                  name="Verified"
+                  stackId="m"
+                  fill={FDA_COLORS[0]}
+                  isAnimationActive={false}
+                />
+                <Bar
+                  dataKey="searchOnly"
+                  name="Search match only"
+                  stackId="m"
+                  fill="var(--muted-foreground)"
+                  fillOpacity={SEARCH_ONLY_OPACITY}
+                  isAnimationActive={false}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       ) : (
         <ChartUnavailable reason="No dated filings were stored." />
@@ -556,7 +609,13 @@ function MentionTimeline({ d }: { d: CompanyDetail }) {
   );
 }
 
-function Exposure({ links }: { links: CompanyLink[] }) {
+function Exposure({
+  links,
+  records,
+}: {
+  links: CompanyLink[];
+  records: Record<string, MdlRecordLookup> | null;
+}) {
   const sorted = [...links].sort((a, b) => (b.pending ?? -1) - (a.pending ?? -1) || a.mdl - b.mdl);
   return (
     <section className="rounded-md border border-border bg-surface" aria-label="MDL exposure">
@@ -571,7 +630,7 @@ function Exposure({ links }: { links: CompanyLink[] }) {
       {sorted.length ? (
         <ul>
           {sorted.map((l) => (
-            <ExposureRow key={l.mdl} l={l} />
+            <ExposureRow key={l.mdl} l={l} record={mdlRecordView(records, l.mdl)} />
           ))}
         </ul>
       ) : (
@@ -583,20 +642,32 @@ function Exposure({ links }: { links: CompanyLink[] }) {
   );
 }
 
-function ExposureRow({ l }: { l: CompanyLink }) {
+function ExposureRow({ l, record }: { l: CompanyLink; record: ReturnType<typeof mdlRecordView> }) {
   const [open, setOpen] = useState(false);
   const id = `mdl-evidence-${l.mdl}`;
   const latest = l.verified.at(-1);
+  const ref = record.ref;
   return (
     <li className="border-b border-border/50 last:border-b-0">
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 px-3 py-2 md:grid-cols-[4rem_minmax(0,1fr)_7rem_9rem_8rem]">
-        <Link
-          to="/records/$dataset/$id"
-          params={{ dataset: "mdl_analytics", id: String(l.mdl) }}
-          className="font-mono text-xs text-primary hover:underline"
-        >
-          MDL {l.mdl}
-        </Link>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2 px-3 py-2 md:grid-cols-[4rem_minmax(0,1fr)_7rem_9rem_10.5rem]">
+        {ref ? (
+          <Link
+            to="/records/$dataset/$id"
+            params={{ dataset: ref.dataset, id: ref.id }}
+            className="font-mono text-xs text-primary hover:underline"
+            title={
+              ref.dataset === "mdl_terminated_history"
+                ? "JPML terminated-litigation report record"
+                : "JPML MDL report record"
+            }
+          >
+            MDL {l.mdl}
+          </Link>
+        ) : (
+          <span className="font-mono text-xs" title={record.note}>
+            MDL {l.mdl}
+          </span>
+        )}
         <div className="min-w-0 md:order-none">
           <div className="text-xs font-medium leading-snug">
             {mdlTitle(l.title, l.titleTruncated, l.mdl)}
@@ -648,8 +719,11 @@ function ExposureRow({ l }: { l: CompanyLink }) {
         </div>
         <div className="text-[11px] text-muted-foreground">
           {l.verifiedCount} verified filing{l.verifiedCount === 1 ? "" : "s"}
-          <div>
-            {l.firstVerified} → {l.lastVerified}
+          <div
+            className="whitespace-nowrap tabular-nums"
+            title="First and latest verified filing dates"
+          >
+            {dateSpan(l.firstVerified, l.lastVerified)}
           </div>
         </div>
       </div>

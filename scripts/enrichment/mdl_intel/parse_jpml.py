@@ -260,9 +260,46 @@ def us_long_date(s: str):
     return date(int(m.group(3)), MONTHS[m.group(1).lower()], int(m.group(2))).isoformat()
 
 
+RE_LOCATION_LABEL = re.compile(r"^(\s*LOCATION OF HEARING SESSION:\s+)(\S.*)$")
+US_STATES = (
+    "Alabama|Alaska|Arizona|Arkansas|California|Colorado|Connecticut|Delaware|District of Columbia|Florida|Georgia|Hawaii|Idaho|"
+    "Illinois|Indiana|Iowa|Kansas|Kentucky|Louisiana|Maine|Maryland|Massachusetts|Michigan|Minnesota|Mississippi|Missouri|"
+    "Montana|Nebraska|Nevada|New Hampshire|New Jersey|New Mexico|New York|North Carolina|North Dakota|Ohio|Oklahoma|Oregon|"
+    "Pennsylvania|Puerto Rico|Rhode Island|South Carolina|South Dakota|Tennessee|Texas|Utah|Vermont|Virginia|Washington|"
+    "West Virginia|Wisconsin|Wyoming|[A-Z]{2}"
+)
+RE_CITY_LINE = re.compile(rf"^(?P<city>[A-Z][A-Za-z.' -]{{1,40}}?),\s*(?P<state>{US_STATES})\.?(?:\s+\d{{5}}(?:-\d{{4}})?)?$")
+
+
+def hearing_location(text: str):
+    """The hearing location as printed on the notice: the line after 'LOCATION OF HEARING SESSION:' plus the lines
+    printed in the same column below it, up to the first blank line (pdftotext -layout). City and state are read only
+    from a printed 'City, State [ZIP]' line; otherwise they stay None (never guessed from the building name)."""
+    lines = text.splitlines()
+    for i, raw in enumerate(lines):
+        m = RE_LOCATION_LABEL.match(raw)
+        if not m:
+            continue
+        col = len(m.group(1))
+        printed = [" ".join(m.group(2).split())]
+        for nxt in lines[i + 1:i + 9]:
+            if not nxt.strip():
+                break
+            if abs((len(nxt) - len(nxt.lstrip())) - col) > 3:
+                break
+            printed.append(" ".join(nxt.split()))
+        city = state = None
+        for line in printed[1:]:
+            c = RE_CITY_LINE.match(line)
+            if c:
+                city, state = c.group("city").strip(), c.group("state")
+        return {"lines": printed, "city": city, "state": state}
+    return None
+
+
 def parse_hearing_notice(text: str) -> dict:
     session = us_long_date((RE_SESSION_DATE.search(text) or [None, None])[1] if RE_SESSION_DATE.search(text) else None)
-    loc = re.search(r"LOCATION OF HEARING SESSION:\s+(.+)", text)
+    loc = hearing_location(text)
     matters, section, current = [], None, None
     lines = text.splitlines()
     for i, raw in enumerate(lines):
@@ -297,7 +334,10 @@ def parse_hearing_notice(text: str) -> dict:
         to = re.search(r"to the United States District Court for the\s+(.+?)(?:\s+or,|\s+or\s+|:|;|$)", motion)
         mt["requested_district"] = " ".join(to.group(1).split()).rstrip(".,") if to and mt["section"] == "A" else None
         mt["motion"] = motion[:600]
-    return {"session_date": session, "location": " ".join(loc.group(1).split()) if loc else None, "matters": matters}
+    return {
+        "session_date": session, "location": loc["lines"][0] if loc else None, "location_lines": loc["lines"] if loc else [],
+        "location_city": loc["city"] if loc else None, "location_state": loc["state"] if loc else None, "matters": matters,
+    }
 
 
 # ---------------- JPML order PDFs (Panel Orders page / hearing-session archive) ----------------

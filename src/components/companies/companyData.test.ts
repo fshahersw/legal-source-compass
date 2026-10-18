@@ -2,13 +2,17 @@ import { describe, expect, it } from "vitest";
 import {
   filterCompanies,
   EMPTY_FILTER,
+  mdlRecordRefs,
+  mdlRecordView,
   mdlTitle,
   median,
   money,
   parseCompanySummary,
+  parseFinancials,
   parseLink,
   sortCompanies,
   strengthSplit,
+  xbrlSourceUrl,
 } from "./companyData";
 
 const summary = (cik: string, name: string, pending: number | null, accrual?: number) => ({
@@ -163,5 +167,98 @@ describe("evidence strength and recency", () => {
       accrual_current: true,
     })!;
     expect(fresh.accrualPctRevenue).toBe(8.33);
+  });
+});
+
+describe("links to sources that exist", () => {
+  it("offers the XBRL companyfacts link only when financials are on file for the CIK", () => {
+    const fin = parseFinancials({ annual: {} })!;
+    const stored = "https://data.sec.gov/api/xbrl/companyfacts/CIK0000001800.json";
+    expect(xbrlSourceUrl("0000001800", fin, stored)).toBe(stored);
+    expect(xbrlSourceUrl("0000001800", fin, null)).toBe(
+      "https://data.sec.gov/api/xbrl/companyfacts/CIK0000001800.json",
+    );
+    // No company_sec_financials row (e.g. CIK 0000929987 GUIDANT CORP): the SEC URL would be a 404.
+    expect(xbrlSourceUrl("0000929987", null, null)).toBeNull();
+    // A recorded source that is not a companyfacts file is not presented as one.
+    expect(xbrlSourceUrl("0000001800", null, "javascript:alert(1)")).toBeNull();
+  });
+
+  it("links an MDL number only to a record that exists, by exact number", () => {
+    const refs = mdlRecordRefs(
+      [2924, 875, 1203, 4242, 999, 875],
+      ["2924", "1871"],
+      [
+        { id: "875:313", mdl: 875 },
+        { id: "1203:313", mdl: 1203 },
+        // Two terminated rows for one number: ambiguous, so no link.
+        { id: "999:314", mdl: 999 },
+        { id: "999:315", mdl: 999 },
+        // Only the recorded numeric MDL number counts; the id prefix or a string value is not evidence.
+        { id: "4242:100", mdl: "4242" },
+        { id: "1203:999", mdl: 1230 },
+      ],
+    );
+    expect(refs).toEqual({
+      "2924": { kind: "record", ref: { dataset: "mdl_analytics", id: "2924" } },
+      "875": { kind: "record", ref: { dataset: "mdl_terminated_history", id: "875:313" } },
+      "1203": { kind: "record", ref: { dataset: "mdl_terminated_history", id: "1203:313" } },
+      "4242": { kind: "none" },
+      "999": { kind: "ambiguous", rows: 2 },
+    });
+    // The same row returned twice is still one row, not an ambiguity.
+    expect(
+      mdlRecordRefs(
+        [875],
+        [],
+        [
+          { id: "875:313", mdl: 875 },
+          { id: "875:313", mdl: 875 },
+        ],
+      ),
+    ).toEqual({
+      "875": { kind: "record", ref: { dataset: "mdl_terminated_history", id: "875:313" } },
+    });
+  });
+
+  it("resolves nothing from a terminated-history read that may be incomplete", () => {
+    const refs = mdlRecordRefs([2924, 875, 4242], ["2924"], [{ id: "875:313", mdl: 875 }], false);
+    expect(refs).toEqual({
+      // The analytics read is by id and complete, so it still resolves.
+      "2924": { kind: "record", ref: { dataset: "mdl_analytics", id: "2924" } },
+      // One row in a truncated response may hide a second; zero rows may hide one.
+      "875": { kind: "unknown" },
+      "4242": { kind: "unknown" },
+    });
+  });
+
+  it("words an unlinked MDL number by why it is not linked", () => {
+    const refs = mdlRecordRefs(
+      [2924, 999, 4242],
+      ["2924"],
+      [
+        { id: "999:314", mdl: 999 },
+        { id: "999:315", mdl: 999 },
+      ],
+    );
+    expect(mdlRecordView(refs, 2924)).toEqual({
+      ref: { dataset: "mdl_analytics", id: "2924" },
+      note: null,
+    });
+    expect(mdlRecordView(refs, 999)).toEqual({
+      ref: null,
+      note: "2 terminated-history records carry MDL 999; not linked",
+    });
+    expect(mdlRecordView(refs, 4242)).toEqual({
+      ref: null,
+      note: "No MDL record for this number in the corpus",
+    });
+    expect(mdlRecordView({ "875": { kind: "unknown" } }, 875)).toEqual({
+      ref: null,
+      note: "MDL record lookup incomplete; not linked",
+    });
+    // The lookup failed (null) or never covered the number: never reported as "no record".
+    expect(mdlRecordView(null, 2924)).toEqual({ ref: null, note: "MDL record lookup unavailable" });
+    expect(mdlRecordView(refs, 1)).toEqual({ ref: null, note: "MDL record lookup unavailable" });
   });
 });

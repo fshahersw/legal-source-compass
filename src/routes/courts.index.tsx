@@ -172,6 +172,13 @@ function CourtsPage() {
 
 function CourtList({ rows }: { rows: CourtRow[] }) {
   const [q, setQ] = useState("");
+  // Separate court records can carry the same printed name (e.g. two source ids for one court);
+  // they stay separate rows, and their links are told apart by the recorded court id.
+  const sharedTitles = useMemo(() => {
+    const seen = new Map<string, number>();
+    for (const r of rows) seen.set(r.title, (seen.get(r.title) ?? 0) + 1);
+    return new Set([...seen].filter(([, n]) => n > 1).map(([t]) => t));
+  }, [rows]);
   const shown = useMemo(() => {
     const t = q.trim().toLowerCase();
     return (t ? rows.filter((r) => r.title.toLowerCase().includes(t)) : rows)
@@ -216,9 +223,20 @@ function CourtList({ rows }: { rows: CourtRow[] }) {
                       to="/courts/$id"
                       params={{ id: r.id }}
                       className="min-w-0 font-medium hover:underline"
+                      aria-label={
+                        sharedTitles.has(r.title) ? `${r.title} (court ID ${r.id})` : undefined
+                      }
                     >
                       {r.title}
                     </Link>
+                    {sharedTitles.has(r.title) ? (
+                      <span
+                        className="shrink-0 font-mono text-[10.5px] text-muted-foreground"
+                        title="Another court record has the same name; the court ID tells them apart."
+                      >
+                        ID {r.id}
+                      </span>
+                    ) : null}
                   </span>
                 </td>
                 <td className="px-3 py-1.5 text-muted-foreground">{r.type}</td>

@@ -77,26 +77,42 @@ function SafetyPage() {
     body = <p className="text-[13px] text-muted-foreground">Loading safety records…</p>;
   else if (s.ds) body = <DatasetBrowser key={s.ds} dataset={s.ds} />;
   else if (!agency) {
+    const agencyCards = AGENCIES.map((a) => {
+      const sets = list.filter((d) => safetyAgency(d.id) === a.key);
+      const count = inventoryRecordTotal(sets);
+      return {
+        key: a.key,
+        label: a.key,
+        title: a.name || undefined,
+        icon: a.name ? <AgencyMark name={a.name} className="size-9" /> : undefined,
+        note: [
+          a.note,
+          count == null ? "Count not recorded" : null,
+          sets.length > 1 ? `${sets.length} collections` : null,
+        ]
+          .filter(Boolean)
+          .join(" · "),
+        count: count ?? undefined,
+        summed: count != null && sets.length > 1,
+        link: { to: "/safety", search: { agency: a.key } },
+      };
+    });
+    // The caveat applies to every summed count, so it is stated once in full above the cards.
+    const summed = agencyCards.some((c) => c.summed);
     body = (
       <div className="space-y-6">
         <SafetyIntelligence />
+        {/* Notes wrap (two lines, full text on hover) so a description is never cut mid-word at 1024–1280 px. */}
         <FolderGrid
           title="Browse by agency"
+          wrapNotes
+          hint={
+            summed
+              ? "Counts add up each agency's collections (rows across separate datasets and snapshots), so one recall or notice can be counted more than once."
+              : undefined
+          }
           items={[
-            ...AGENCIES.map((a) => {
-              const count = inventoryRecordTotal(list.filter((d) => safetyAgency(d.id) === a.key));
-              return {
-                key: a.key,
-                label: a.key,
-                icon: a.name ? <AgencyMark name={a.name} className="size-9" /> : undefined,
-                note:
-                  count == null
-                    ? `${a.note} · Count not recorded`
-                    : `${a.note} · Records may overlap`,
-                count: count ?? undefined,
-                link: { to: "/safety", search: { agency: a.key } },
-              };
-            }),
+            ...agencyCards,
             {
               key: "signals",
               label: "Mass-tort product signals",

@@ -13,6 +13,7 @@ import {
   type ManufacturerPayments,
 } from "@/lib/external/openPayments.functions";
 import { fullUsd, int, pct, ReportBars, ShareBars, usd, YearBars } from "./PaymentsCharts";
+import { kpiTooltip } from "./companyViewNotes";
 
 export function manufacturerPaymentsQuery(name: string, entityId?: string) {
   return {
@@ -24,10 +25,19 @@ export function manufacturerPaymentsQuery(name: string, entityId?: string) {
 
 function Kpi({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
-    <div className="min-w-0 rounded-md border border-border bg-surface px-3 py-2">
-      <p className="truncate text-[11px] text-muted-foreground">{label}</p>
+    <div
+      className="min-w-0 rounded-md border border-border bg-surface px-3 py-2"
+      title={kpiTooltip({ label, value, note })}
+    >
+      <p className="line-clamp-2 break-words text-[11px] leading-4 text-muted-foreground">
+        {label}
+      </p>
       <p className="font-mono text-base font-semibold leading-tight">{value}</p>
-      {note ? <p className="truncate text-[11px] text-muted-foreground">{note}</p> : null}
+      {note ? (
+        <p className="line-clamp-2 break-words text-[11px] leading-4 text-muted-foreground">
+          {note}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -46,7 +56,7 @@ function Unattributed({ adverse }: { adverse: AdverseManufacturer }) {
       <ul className="mt-1 grid gap-x-3 text-[11px] sm:grid-cols-2">
         {adverse.unattributed.slice(0, 6).map((u) => (
           <li key={u.name} className="flex justify-between gap-2">
-            <span className="truncate" title={u.name}>
+            <span className="line-clamp-2 min-w-0 break-words" title={u.name}>
               {u.name}
             </span>
             <span className="shrink-0 font-mono text-muted-foreground">
@@ -260,8 +270,8 @@ export function ManufacturerPaymentsView({
               <tbody className="divide-y divide-border/60">
                 {m.products.slice(0, 8).map((p) => (
                   <tr key={`${p.name}:${p.type}`}>
-                    <td className="truncate px-3 py-1.5" title={p.name}>
-                      {p.name}
+                    <td className="px-3 py-1.5" title={p.name}>
+                      <span className="line-clamp-2 break-words">{p.name}</span>
                     </td>
                     <td className="px-2 py-1.5 text-muted-foreground">{p.type}</td>
                     <td className="px-3 py-1.5 text-right font-mono" title={fullUsd(p.amount)}>

@@ -72,4 +72,24 @@ describe("court artwork", () => {
       recordedCourtArtwork([{ url: "/\\third-party.test/seal.svg", label: "Court seal" }]),
     ).toBeNull();
   });
+
+  it("never draws a stored image whose reuse permission is not established", () => {
+    expect(
+      recordedCourtArtwork([
+        {
+          url: "/supplement-files/court_spine/ilnd/logo.png",
+          label: "Identity mark image (reuse permission not established)",
+        },
+      ]),
+    ).toBeNull();
+    expect(
+      recordedCourtArtwork([
+        {
+          url: "/supplement-files/court_spine/x/logo.png",
+          label: "Identity mark image (reuse permission not established)",
+        },
+        { url: "/api/files/seal", label: "Official seal" },
+      ]),
+    ).toEqual({ url: "/api/files/seal", label: "Official seal" });
+  });
 });

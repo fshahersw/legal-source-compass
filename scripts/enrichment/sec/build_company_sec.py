@@ -84,6 +84,15 @@ FLAG_LABEL = {
     "expense_spike": "Litigation expense doubled", "docket_growth": "Linked docket growing 25%+",
     "multi_mdl": "3+ pending MDLs",
 }
+SUMMARY_SOURCE = "SEC EDGAR (efts.sec.gov full-text search, www.sec.gov filing documents, data.sec.gov submissions and XBRL companyfacts) and JPML pending MDL reports"
+PROFILES_DATASET = "company_sec_profiles"
+PROFILES_LABEL = "SEC company intelligence for MDL defendants"
+FINANCIALS_DATASET = "company_sec_financials"
+FINANCIALS_LABEL = "XBRL financial series for MDL-linked companies"
+# build_financials' taxonomy value as shown on the financials row; None = no us-gaap / ifrs-full facts at all.
+TAXONOMY_TEXT = {"us-gaap": "us-gaap", "ifrs-full": "ifrs-full", "mixed": "us-gaap and ifrs-full"}
+TAXONOMY_FILTER_LABEL = {"us-gaap": "US GAAP", "ifrs-full": "IFRS", "mixed": "Both US GAAP and IFRS"}
+CONCEPTS_FACT = "Tracked concepts in companyfacts (any period)"
 
 
 def load(name):
@@ -151,13 +160,17 @@ def build_financials(cik, facts):
     entity = facts.get("facts") or {}
     annual = {m: fin.metric_series(entity, m, "annual") for m in fin.METRICS}
     quarterly = {m: fin.metric_series(entity, m, "quarterly") for m in fin.METRICS}
-    raw = sorted({c for tax in ("us-gaap", "ifrs-full") for c in (entity.get(tax) or {}) if c in fin.RAW_CONCEPTS})
+    # RAW_CONCEPTS holds (taxonomy, concept) pairs; testing a bare concept name against it never matched,
+    # which published 0 tracked concepts for every company (fixed 2026-10-18).
+    raw = fin.concepts_present(entity)
     derived = {
         "accrual_pct_revenue": fin.ratio_same_year(annual["litigation_accrual"], annual["revenue"]),
         "expense_pct_revenue": fin.ratio_same_year(annual["litigation_expense"], annual["revenue"]),
         "yoy": {m: fin.yoy(annual[m]) for m in ("revenue", "net_income", "litigation_accrual", "litigation_expense")},
     }
-    taxonomy = "ifrs-full" if "ifrs-full" in entity and "us-gaap" not in entity else "us-gaap"
+    # From the taxonomies that supply the tracked concepts, not from whichever taxonomy key exists: one stray
+    # us-gaap fact once labelled an all-IFRS filer 'us-gaap' (fixed 2026-10-18).
+    taxonomy = fin.taxonomy_label(entity)
     return {"annual": annual, "quarterly": quarterly, "derived": derived, "concepts_present": raw, "taxonomy": taxonomy}
 
 
@@ -378,19 +391,7 @@ def main(dry_run=False):
             extra={"kind": "company", "summary": summary},
         ))
         if fdata:
-            fin_rows.append(cw.record(
-                "company_sec_financials", cik, f"{name} — XBRL financial series",
-                source_url=fx.companyfacts_url(cik),
-                subtitle=f"{fdata['taxonomy']} · {len(fdata['annual']['revenue'])} fiscal years of revenue · {len(fdata['concepts_present'])} tracked concepts reported",
-                cells={"company": name, "taxonomy": fdata["taxonomy"], "years": str(len(fdata["annual"]["revenue"])), "concepts": str(len(fdata["concepts_present"]))},
-                facts=[["CIK", cik], ["Taxonomy", fdata["taxonomy"]], ["Tracked concepts reported", ", ".join(fdata["concepts_present"]) or "None"],
-                       ["Rules", "Annual: 340-380 day periods from 10-K/20-F/40-F; quarterly: 80-100 day periods; one value per period, latest filed; balances only on the company's own period-end dates; no currency conversion"],
-                       ["Source", f"SEC XBRL companyfacts API, retrieved {TODAY}"]],
-                text=f"{name} xbrl financials",
-                filters={"taxonomy": [fdata["taxonomy"]]},
-                links=[{"url": fx.companyfacts_url(cik), "label": "XBRL companyfacts (SEC)"}, {"url": f"/companies/{cik}", "label": "Company intelligence"}],
-                extra={"kind": "financials", "cik": cik, "name": name, "retrieved": TODAY, **fdata, "labels": METRIC_LABEL},
-            ))
+            fin_rows.append(financials_record(cik, name, fdata, TODAY))
 
     for cik, links in by_company.items():
         name = companies[cik]["profile"]["name"]
@@ -421,18 +422,63 @@ def main(dry_run=False):
         out.write_text(json.dumps({"profiles": profiles, "links": link_rows[:50], "financials": fin_rows[:5]}, indent=1, default=str))
         print("preview", len(profiles), len(link_rows), len(fin_rows))
         return
-    common = {"source": "SEC EDGAR (efts.sec.gov full-text search, www.sec.gov filing documents, data.sec.gov submissions and XBRL companyfacts) and JPML pending MDL reports", "retrieved": TODAY}
-    cw.publish("company_sec_profiles", "SEC company intelligence for MDL defendants", profiles,
-               listing_block=cw.listing([("company", "Company"), ("tickers", "Ticker"), ("sector", "Sector (SIC)"), ("mdls", "Linked MDLs"), ("pending", "Pending actions"), ("revenue", "Revenue"), ("accrual", "Litigation accrual"), ("accrual_pct", "Accrual % revenue")],
-                                        [("tier", "Strongest counted evidence", {**TIER_LABEL, "none": "No pending MDL read as defendant"}), ("flag", "Flag", {**FLAG_LABEL, "none": "No flag"}), ("has_financials", "XBRL financials", {"yes": "Reported", "no": "Not reported"})]),
-               summary={**common, "companies": len(profiles) - 1})
+    common = {"source": SUMMARY_SOURCE, "retrieved": TODAY}
+    cw.publish(PROFILES_DATASET, PROFILES_LABEL, profiles, listing_block=profiles_listing(),
+               summary=profiles_summary(profiles, TODAY))
     cw.publish("company_sec_mdl_links", "Company–MDL links from SEC filings", link_rows,
                listing_block=cw.listing([("company", "Company"), ("mdl", "MDL"), ("litigation", "Litigation"), ("tier", "Tier"), ("role", "Role (excerpt)"), ("verified", "Verified filings"), ("first", "First"), ("last", "Last")],
                                         [("tier", "Evidence tier", TIER_LABEL), ("role", "Role in excerpt", ROLE_LABEL), ("status", "MDL status", {"pending": "Pending", "terminated": "Terminated", "no_longer_listed": "No longer listed"})]),
                summary={**common, "links": len(link_rows)})
-    cw.publish("company_sec_financials", "XBRL financial series for MDL-linked companies", fin_rows,
-               listing_block=cw.listing([("company", "Company"), ("taxonomy", "Taxonomy"), ("years", "Revenue years"), ("concepts", "Tracked concepts")], [("taxonomy", "Taxonomy", {"us-gaap": "US GAAP", "ifrs-full": "IFRS"})]),
-               summary={**common, "companies": len(fin_rows)})
+    cw.publish(FINANCIALS_DATASET, FINANCIALS_LABEL, fin_rows, listing_block=financials_listing(),
+               summary=financials_summary(fin_rows, TODAY))
+
+
+def taxonomy_text(taxonomy):
+    return TAXONOMY_TEXT.get(taxonomy, "Not recorded")
+
+
+def taxonomy_filter(taxonomy):
+    """filters.taxonomy values: a company reporting under both taxonomies is found by either filter and by 'mixed'."""
+    if taxonomy == "mixed":
+        return [*fin.STANDARD_TAXONOMIES, "mixed"]
+    return [taxonomy] if taxonomy else []
+
+
+def financials_record(cik, name, fdata, retrieved):
+    """The company_sec_financials row for one registrant (fdata from build_financials; retrieved = companyfacts date)."""
+    tax = taxonomy_text(fdata["taxonomy"])
+    return cw.record(
+        FINANCIALS_DATASET, cik, f"{name} — XBRL financial series",
+        source_url=fx.companyfacts_url(cik),
+        subtitle=f"{tax} · {len(fdata['annual']['revenue'])} fiscal years of revenue · {len(fdata['concepts_present'])} tracked concepts in companyfacts",
+        cells={"company": name, "taxonomy": tax, "years": str(len(fdata["annual"]["revenue"])), "concepts": str(len(fdata["concepts_present"]))},
+        facts=[["CIK", cik], ["Taxonomy", tax], [CONCEPTS_FACT, ", ".join(fdata["concepts_present"]) or "None"],
+               ["Rules", f"Annual: 340-380 day periods from 10-K/20-F/40-F; quarterly: 80-100 day periods; one value per period, latest filed; balances only on the company's own period-end dates; series keep fiscal years {fin.MIN_YEAR} onward, while tracked concepts are listed when companyfacts reports them for any period; no currency conversion"],
+               ["Source", f"SEC XBRL companyfacts API, retrieved {retrieved}"]],
+        text=f"{name} xbrl financials",
+        filters={"taxonomy": taxonomy_filter(fdata["taxonomy"])},
+        links=[{"url": fx.companyfacts_url(cik), "label": "XBRL companyfacts (SEC)"}, {"url": f"/companies/{cik}", "label": "Company intelligence"}],
+        extra={"kind": "financials", "cik": cik, "name": name, "retrieved": retrieved, **fdata, "labels": METRIC_LABEL},
+    )
+
+
+def financials_listing():
+    return cw.listing([("company", "Company"), ("taxonomy", "Taxonomy"), ("years", "Revenue years"), ("concepts", "Tracked concepts")],
+                      [("taxonomy", "Taxonomy", TAXONOMY_FILTER_LABEL)])
+
+
+def financials_summary(rows, retrieved):
+    return {"source": SUMMARY_SOURCE, "retrieved": retrieved, "companies": len(rows)}
+
+
+def profiles_listing():
+    return cw.listing([("company", "Company"), ("tickers", "Ticker"), ("sector", "Sector (SIC)"), ("mdls", "Linked MDLs"), ("pending", "Pending actions"), ("revenue", "Revenue"), ("accrual", "Litigation accrual"), ("accrual_pct", "Accrual % revenue")],
+                      [("tier", "Strongest counted evidence", {**TIER_LABEL, "none": "No pending MDL read as defendant"}), ("flag", "Flag", {**FLAG_LABEL, "none": "No flag"}), ("has_financials", "XBRL financials", {"yes": "Reported", "no": "Not reported"})])
+
+
+def profiles_summary(rows, retrieved):
+    """rows include the summary:overview record, which is not a company."""
+    return {"source": SUMMARY_SOURCE, "retrieved": retrieved, "companies": len(rows) - 1}
 
 
 def overview_record(inputs, targets, pairs, by_company, companies, profiles):

@@ -5,6 +5,8 @@ import type { ComponentProps, ReactNode } from "react";
 export type FolderItem = {
   key: string;
   label: string;
+  /** Full name shown on hover over a short label (e.g. an agency's name); defaults to the label. */
+  title?: string | undefined;
   count?: number | undefined;
   note?: string | undefined;
   /** Optional visual (seal, flag, mark) shown in place of the folder glyph. */
@@ -16,22 +18,30 @@ export type FolderItem = {
   };
 };
 
-/** Folder-style cards: click to open the next level. Empty folders are shown greyed out, not linked. */
+/**
+ * Folder-style cards: click to open the next level. Empty folders are shown greyed out, not linked.
+ * Labels and notes carry their full text on hover; `wrapNotes` lets notes run to two lines instead of one.
+ */
 export function FolderGrid({
   title,
   items,
   hint,
+  wrapNotes = false,
 }: {
   title?: string | undefined;
   items: FolderItem[];
   hint?: string | undefined;
+  /** Notes wrap to two lines (for descriptions and caveats that should not be cut mid-word at 1024–1280 px). */
+  wrapNotes?: boolean | undefined;
 }) {
   return (
     <section className="space-y-2">
       {title ? (
-        <div className="flex items-baseline gap-2">
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
           <h2 className="eyebrow">{title}</h2>
-          {hint ? <span className="text-[11px] text-muted-foreground">{hint}</span> : null}
+          {hint ? (
+            <span className="text-[11px] leading-4 text-muted-foreground">{hint}</span>
+          ) : null}
         </div>
       ) : null}
       <div className="grid grid-cols-[minmax(0,1fr)] gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -42,19 +52,31 @@ export function FolderGrid({
                 <Folder className="mt-0.5 size-4 shrink-0 opacity-60" strokeWidth={1.75} />
               )}
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13px] font-medium">{it.label}</span>
+                <span
+                  className="block truncate text-[13px] font-medium"
+                  title={it.title ?? it.label}
+                >
+                  {it.label}
+                </span>
                 {it.note ? (
-                  <span className="block truncate text-[11px] text-muted-foreground">
+                  <span
+                    className={
+                      wrapNotes
+                        ? "line-clamp-2 break-words text-[11px] leading-4 text-muted-foreground"
+                        : "block truncate text-[11px] text-muted-foreground"
+                    }
+                    title={it.note}
+                  >
                     {it.note}
                   </span>
                 ) : null}
               </span>
               {it.count != null ? (
-                <span className="font-mono text-[12px] text-muted-foreground">
-                  {it.count.toLocaleString()}
+                <span className="shrink-0 font-mono text-[12px] text-muted-foreground">
+                  {it.count.toLocaleString("en-US")}
                 </span>
               ) : null}
-              <ChevronRight className="mt-0.5 size-4 shrink-0 opacity-40" />
+              <ChevronRight className="mt-0.5 size-4 shrink-0 opacity-40" aria-hidden />
             </>
           );
           const cls = `flex ${it.icon ? "items-center gap-3" : "items-start gap-2"} rounded-lg border border-border bg-surface p-3 shadow-card`;

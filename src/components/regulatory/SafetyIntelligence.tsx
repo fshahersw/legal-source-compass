@@ -114,7 +114,14 @@ function InsightCard({ insight }: { insight: SafetyInsight }) {
             ) : null}
           </div>
           <h3 className="mt-1 text-[13.5px] font-semibold leading-snug">{insight.headline}</h3>
-          <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+          {/* Clamped while collapsed (full text on hover); the whole summary shows once opened. */}
+          <p
+            className={cn(
+              "mt-0.5 break-words text-xs leading-relaxed text-muted-foreground",
+              !open && "line-clamp-2",
+            )}
+            title={open ? undefined : insight.summary}
+          >
             {insight.summary}
           </p>
           <p className="mt-1 font-mono text-[11px] text-foreground/80">{metricLine(insight)}</p>
@@ -170,7 +177,7 @@ function InsightCard({ insight }: { insight: SafetyInsight }) {
                       </Link>
                     )}
                     {e.note ? (
-                      <span className="block truncate text-muted-foreground">{e.note}</span>
+                      <span className="block break-words text-muted-foreground">{e.note}</span>
                     ) : null}
                   </span>
                 </li>
@@ -296,7 +303,9 @@ function RisingThemes({ insights }: { insights: SafetyInsight[] }) {
         {themes.map((t) => (
           <li key={t.id} className="text-[11px]">
             <span className="flex justify-between gap-2">
-              <span className="truncate">{t.entity.split(" · ").pop()}</span>
+              <span className="truncate" title={t.entity}>
+                {t.entity.split(" · ").pop()}
+              </span>
               <span className="shrink-0 font-mono">{(t.metric.ratio ?? 0).toFixed(1)}×</span>
             </span>
             <span className="mt-0.5 block h-1.5 rounded-full bg-muted">

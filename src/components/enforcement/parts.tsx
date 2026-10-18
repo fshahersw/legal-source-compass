@@ -55,17 +55,57 @@ export function Kpi({
 }) {
   return (
     <div className="min-w-0 rounded-md border border-border bg-surface px-3 py-2">
-      <p className="truncate text-[11px] text-muted-foreground">{label}</p>
+      <p className="line-clamp-2 break-words text-[11px] text-muted-foreground" title={label}>
+        {label}
+      </p>
       <p
         className={cn(
-          "font-mono text-lg font-semibold leading-tight",
+          "break-words font-mono text-lg font-semibold leading-tight",
           tone === "destructive" && "text-destructive",
         )}
       >
         {value}
       </p>
-      {note ? <p className="text-[11px] leading-tight text-muted-foreground">{note}</p> : null}
+      {note ? (
+        <p
+          className="line-clamp-3 break-words text-[11px] leading-tight text-muted-foreground"
+          title={note}
+        >
+          {note}
+        </p>
+      ) : null}
     </div>
+  );
+}
+
+/** "+N more" / "Show fewer" for a capped list; keyboard-operable and tied to the list it expands. */
+export function MoreToggle({
+  total,
+  limit,
+  expanded,
+  onToggle,
+  controls,
+  noun,
+}: {
+  total: number;
+  limit: number;
+  expanded: boolean;
+  onToggle: () => void;
+  controls: string;
+  noun?: string | undefined;
+}) {
+  const hidden = total - limit;
+  if (hidden <= 0) return null;
+  return (
+    <button
+      type="button"
+      aria-expanded={expanded}
+      aria-controls={controls}
+      onClick={onToggle}
+      className="mt-1 rounded text-[11px] text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+    >
+      {expanded ? "Show fewer" : `+${hidden.toLocaleString("en-US")} more${noun ? ` ${noun}` : ""}`}
+    </button>
   );
 }
 

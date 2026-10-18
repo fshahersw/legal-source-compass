@@ -34,6 +34,7 @@ import {
   YearBars,
   type ScatterPoint,
 } from "./PaymentsCharts";
+import { kpiTooltip, paymentsNoMatchText } from "./companyViewNotes";
 
 export const paymentsDashboardQuery = {
   queryKey: ["open-payments-dashboard"],
@@ -99,11 +100,51 @@ function yoy(m: ManufacturerSummary) {
 
 function Kpi({ label, value, note }: { label: string; value: string; note?: string | undefined }) {
   return (
-    <div className="min-w-0 rounded-md border border-border bg-surface px-3 py-2">
-      <p className="truncate text-[11px] text-muted-foreground">{label}</p>
+    <div
+      className="min-w-0 rounded-md border border-border bg-surface px-3 py-2"
+      title={kpiTooltip({ label, value, note })}
+    >
+      <p className="line-clamp-2 break-words text-[11px] leading-4 text-muted-foreground">
+        {label}
+      </p>
       <p className="font-mono text-lg font-semibold leading-tight">{value}</p>
-      {note ? <p className="truncate text-[11px] text-muted-foreground">{note}</p> : null}
+      {note ? (
+        <p className="line-clamp-2 break-words text-[11px] leading-4 text-muted-foreground">
+          {note}
+        </p>
+      ) : null}
     </div>
+  );
+}
+
+/**
+ * Empty state shared by every view built from the filtered manufacturer ranking. Only the copy
+ * with `announce` is a live region, so screen readers hear the sentence once per change, not
+ * once per card.
+ */
+function NoMatch({
+  query,
+  deviceOnly,
+  onClear,
+  announce = false,
+  className,
+}: {
+  query: string;
+  deviceOnly: boolean;
+  onClear: () => void;
+  announce?: boolean;
+  className?: string | undefined;
+}) {
+  return (
+    <p
+      role={announce ? "status" : undefined}
+      className={cn("px-3 py-6 text-center text-sm text-muted-foreground", className)}
+    >
+      {paymentsNoMatchText(query, deviceOnly)}{" "}
+      <button type="button" className="text-primary underline" onClick={onClear}>
+        Clear filters
+      </button>
+    </p>
   );
 }
 
@@ -355,6 +396,20 @@ export function PaymentsDashboard({
   const archived = period === 2017 || period === 2018;
   const metricLabel = metric === "general" ? "General payments" : "Research payments";
   const multiples = ranked.length ? [...ranked].sort((a, b) => b.value - a.value).slice(0, 12) : [];
+  const filtered = !!query || deviceOnly;
+  const clearFilters = () => {
+    setDeviceOnly(false);
+    setShown(PAGE);
+    onSearch({ q: undefined });
+  };
+  const noMatch = (announce = false) => (
+    <NoMatch
+      query={search.q ?? ""}
+      deviceOnly={deviceOnly}
+      onClear={clearFilters}
+      announce={announce}
+    />
+  );
 
   return (
     <div className="space-y-4">
@@ -575,13 +630,18 @@ export function PaymentsDashboard({
                     <td className="max-w-0 px-2 py-1.5">
                       <button
                         type="button"
-                        className="block w-full truncate text-left font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+                        className="block w-full text-left font-medium leading-4 text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
                         aria-pressed={search.m === m.entityId}
                         title={m.name}
                       >
-                        {m.name}
+                        <span className="line-clamp-2 break-words">{m.name}</span>
                       </button>
-                      <span className="block truncate text-[11px] text-muted-foreground">
+                      <span
+                        className="block truncate text-[11px] text-muted-foreground"
+                        title={
+                          [m.hqState, m.country].filter(Boolean).join(", ") || "HQ not recorded"
+                        }
+                      >
                         {[m.hqState, m.country].filter(Boolean).join(", ") || "HQ not recorded"}
                         {flag ? (
                           <span
@@ -669,19 +729,7 @@ export function PaymentsDashboard({
             </div>
           </div>
         ) : (
-          <p className="px-3 py-6 text-center text-sm text-muted-foreground">
-            No reporting entity matches these filters.{" "}
-            <button
-              type="button"
-              className="text-primary underline"
-              onClick={() => {
-                setDeviceOnly(false);
-                onSearch({ q: undefined });
-              }}
-            >
-              Clear filters
-            </button>
-          </p>
+          noMatch(true)
         )}
       </section>
 
@@ -758,32 +806,45 @@ export function PaymentsDashboard({
       </section>
 
       <ChartCard
-        title={`Largest 12 · ${metricLabel.toLowerCase()} by year`}
+        title={`${
+          !filtered
+            ? `Largest ${multiples.length || 12}`
+            : multiples.length
+              ? `Largest ${multiples.length} matching the filters`
+              : "Largest matching entities"
+        } · ${metricLabel.toLowerCase()} by year`}
         subtitle="Small multiples, each on its own scale; lighter bars are archived years 2017–2018"
         footnote="Order follows the amount for the selected period and filters."
       >
-        <div className="grid grid-cols-2 gap-px bg-border/60 sm:grid-cols-3 xl:grid-cols-4">
-          {multiples.map(({ m, value }) => (
-            <button
-              key={m.entityId}
-              type="button"
-              onClick={() => onSearch({ m: m.entityId })}
-              className="min-w-0 bg-surface px-2 py-1.5 text-left hover:bg-muted/40"
-            >
-              <span className="block truncate text-[11px] font-medium" title={m.name}>
-                {m.name}
-              </span>
-              <span className="block font-mono text-[11px] text-muted-foreground">
-                {usd(value)} · {periodLabel}
-              </span>
-              <SparkBars
-                values={m.years.map((y) => y[metric])}
-                className="mt-0.5 h-7 w-full"
-                label={`${metricLabel} by year for ${m.name}`}
-              />
-            </button>
-          ))}
-        </div>
+        {multiples.length ? (
+          <div className="grid grid-cols-2 gap-px bg-border/60 sm:grid-cols-3 xl:grid-cols-4">
+            {multiples.map(({ m, value }) => (
+              <button
+                key={m.entityId}
+                type="button"
+                onClick={() => onSearch({ m: m.entityId })}
+                className="min-w-0 bg-surface px-2 py-1.5 text-left hover:bg-muted/40"
+              >
+                <span
+                  className="line-clamp-2 break-words text-[11px] font-medium leading-4"
+                  title={m.name}
+                >
+                  {m.name}
+                </span>
+                <span className="block font-mono text-[11px] text-muted-foreground">
+                  {usd(value)} · {periodLabel}
+                </span>
+                <SparkBars
+                  values={m.years.map((y) => y[metric])}
+                  className="mt-0.5 h-7 w-full"
+                  label={`${metricLabel} by year for ${m.name}`}
+                />
+              </button>
+            ))}
+          </div>
+        ) : (
+          noMatch()
+        )}
       </ChartCard>
 
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
@@ -801,7 +862,16 @@ export function PaymentsDashboard({
               <UsMap
                 geo={corpus.geo}
                 values={fipsValues}
-                valueLabel={perCapita ? "dollars per resident" : "dollars"}
+                valueLabel={perCapita ? "per resident" : "in payments"}
+                heading={`Payments to covered recipients by state, ${mapYear}`}
+                hint="Select a state to show its payments by year and nature of payment below the map; select it again to close."
+                stateAction="Show"
+                formatValue={perCapita ? (v) => `$${v.toFixed(2)}` : (v) => usd(v)}
+                legendNote={
+                  perCapita
+                    ? "Shading scales with CMS dollars per resident; it does not measure misconduct or influence."
+                    : "Shading scales with CMS reported dollars; it does not measure misconduct or influence."
+                }
                 selectedState={search.st}
                 onState={(f) => {
                   const s = [...stateByUsps.values()].find((x) => x.fips === f);
@@ -836,7 +906,9 @@ export function PaymentsDashboard({
                 >
                   <span className="w-5 font-mono text-muted-foreground">{i + 1}</span>
                   <StateFlag state={r.state.state} className="h-3" />
-                  <span className="min-w-0 flex-1 truncate">{r.state.name}</span>
+                  <span className="min-w-0 flex-1 truncate" title={r.state.name}>
+                    {r.state.name}
+                  </span>
                   {r.z != null && Math.abs(r.z) > 2 ? (
                     <span
                       className="rounded border border-warning/40 bg-warning/15 px-1 text-[10px] font-medium text-warning-foreground"
@@ -881,7 +953,12 @@ export function PaymentsDashboard({
         {scatter.points.length < 1 ? (
           <ChartUnavailable reason="No manufacturer has both payments and exact-name MAUDE matches for this period." />
         ) : (
-          <PaymentsScatter points={scatter.points} onPick={(id) => onSearch({ m: id })} />
+          <PaymentsScatter
+            points={scatter.points}
+            onPick={(id) => onSearch({ m: id })}
+            minCoverage={MIN_COVERAGE * 100}
+            minReports={MIN_REPORTS}
+          />
         )}
       </ChartCard>
 

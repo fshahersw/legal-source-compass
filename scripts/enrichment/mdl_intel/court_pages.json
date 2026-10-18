@@ -1,5 +1,14 @@
 {
   "_note": "Official court MDL pages found via mcp__Firecrawl__firecrawl_search (site:<court>.uscourts.gov queries), 2026-10-17/18. Each list: primary page first, then sub-pages (orders, contacts).",
+  "_removed": {
+    "_note": "Ledger of entries taken out of this list (reversible: restore the URL list under the MDL number). Keys starting with '_' are not fetched.",
+    "2599": {
+      "urls": ["https://www.flsd.uscourts.gov/content/senior-judge-federico-Moreno"],
+      "removed": "2026-10-18",
+      "reason": "Not an MDL page: a biography page of the transferee judge. Neither it nor the two pages crawled from it (S.D. Fla. duty-judge assignment schedules, reached through the shared slug word 'judge') names MDL 2599 or Takata; the 39 'orders' extracted were district Administrative Orders. MDL 2599 now reads as no court page located.",
+      "published_effect": "mdl_intel_court_pages 2599: court_page yes -> no, orders 39 -> 0; summary with_court_page 43 -> 42; overview kpis pl_with_court_page and pl_pages_read each -1"
+    }
+  },
   "3060": ["https://www.ilnd.uscourts.gov/mdl-details.aspx?91eSFtoI+ycFmA6482wQKA=="],
   "3026": ["https://www.ilnd.uscourts.gov/mdl-details.aspx?Lbz1nwUsE4JWF/IQJN6GpA=="],
   "3037": ["https://www.ilnd.uscourts.gov/mdl-details.aspx?Y/EMwl0+f9LcVNqgbUFRDw=="],
@@ -40,7 +49,6 @@
   "2973": ["https://www.njd.uscourts.gov/elmiron-pentosan-polysulfate-sodium-products-liability-litigation"],
   "3094": ["https://www.paed.uscourts.gov/mdl/mdl-3094-re-glucagon-peptide-1-receptor-agonists-glp-1-ras-products-liability-litigation-gi"],
   "3163": ["https://www.paed.uscourts.gov/mdl/mdl-3163-re-glucagon-peptide-1-receptor-agonists-glp-1-ras-non-arteritic-anterior-ischemic-optic"],
-  "2599": ["https://www.flsd.uscourts.gov/content/senior-judge-federico-Moreno"],
   "2924": ["https://www.flsd.uscourts.gov/zantac"],
   "3015": ["https://www.flsd.uscourts.gov/21-md-3015-singhal-%E2%80%93-re-johnson-johnson-aerosol-sunscreen-marketing-sales-practices-and-products"]
 }

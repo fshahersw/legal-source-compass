@@ -43,7 +43,9 @@ def load_notices(man):
             continue
         filed = re.search(r"Filed\s+(\d{2})/(\d{2})/(\d{2})", text)
         sessions[sid] = {
-            "date": sid, "location": parsed["location"], "notice_url": f["url"], "notice_sha256": f["sha256"],
+            "date": sid, "location": parsed["location"], "location_lines": parsed.get("location_lines") or [],
+            "location_city": parsed.get("location_city"), "location_state": parsed.get("location_state"),
+            "notice_url": f["url"], "notice_sha256": f["sha256"],
             "notice_filed": f"20{filed.group(3)}-{filed.group(1)}-{filed.group(2)}" if filed else None,
             "matters": parsed["matters"], "machine_readable": bool(parsed["matters"]),
         }
@@ -144,7 +146,8 @@ def build():
             DATASET, f"session:{sid}", f"JPML hearing session, {sid}", source_url=s["notice_url"],
             subtitle=f"{s['location'] or 'Location not recorded'} · {sess['section_a']} centralization motions · {sess['section_b']} other matters" if s["machine_readable"] else "Schedule not machine-readable (PDF font encoding) — see notice",
             cells={"session": sid, "mdl": "—", "litigation": "Hearing session", "section": "—", "outcome": f"{tallies.get('A:granted', 0)} granted / {tallies.get('A:denied', 0)} denied", "district": "—", "type": "—"},
-            facts=[["Session date", sid], ["Location", s["location"] or "Not recorded"], ["Notice filed", s["notice_filed"] or "Not recorded"], ["Matters on schedule", fmt(sess["matter_count"])], ["Section A outcomes", ", ".join(f"{k[2:]} {v}" for k, v in sorted(tallies.items()) if k.startswith("A:")) or "Not recorded"], ["Schedule machine-readable", "Yes" if s["machine_readable"] else "No (font encoding in the published PDF)"]],
+            facts=[["Session date", sid], ["Location", " · ".join(s.get("location_lines") or []) or s["location"] or "Not recorded"],
+                   ["City", ", ".join(x for x in (s.get("location_city"), s.get("location_state")) if x) or "Not recorded"], ["Notice filed", s["notice_filed"] or "Not recorded"], ["Matters on schedule", fmt(sess["matter_count"])], ["Section A outcomes", ", ".join(f"{k[2:]} {v}" for k, v in sorted(tallies.items()) if k.startswith("A:")) or "Not recorded"], ["Schedule machine-readable", "Yes" if s["machine_readable"] else "No (font encoding in the published PDF)"]],
             text=f"hearing session {sid} {s['location'] or ''}", filters={"kind": ["session"], "year": [sid[:4]], "date": sid},
             links=[{"url": s["notice_url"], "label": "Notice of hearing session (PDF)"}, {"url": ARCHIVE_PAGE, "label": "JPML hearing session archive"}],
             extra={"kind": "session", "session": sess},

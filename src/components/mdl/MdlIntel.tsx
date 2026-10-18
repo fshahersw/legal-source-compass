@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle } from "lucide-react";
 import { getMdlIntel, type MdlIntel as Data } from "@/lib/external/mdlIntel.functions";
+import { courtPageYield } from "@/lib/external/mdlIntelView";
 import { CentralizationTrends } from "./CentralizationTrends";
 import { Concentration } from "./Concentration";
 import { CourtPageIndex } from "./CourtPageIndex";
@@ -38,7 +39,16 @@ function Dashboard({ data }: { data: Data }) {
     .filter((c) => c.firstBellwetherDate)
     .sort((a, b) => (a.monthsToBellwether ?? 1e9) - (b.monthsToBellwether ?? 1e9));
   const timed = timing.filter((c) => c.monthsToBellwether !== null).length;
-  const partial = k.plMdls !== null && k.plWithCourtPage !== null && k.plWithCourtPage < k.plMdls;
+  // Counted from the court records themselves, so the notice says what each located page actually yielded.
+  const transferred = data.courts.filter((c) => c.status === "transferred");
+  const yields = transferred.map(courtPageYield);
+  const noPage = yields.filter((y) => y === "none" || y === "failed").length;
+  const withPage = transferred.filter((c) => c.pages.length).length;
+  const withOrders = yields.filter((y) => y === "orders").length;
+  const statementsOnly = yields.filter((y) => y === "statements").length;
+  const nothing = yields.filter((y) => y === "nothing").length;
+  const many = (count: number, one: string, more: string) =>
+    `${n(count)} ${count === 1 ? one : more}`;
   return (
     <div className="space-y-6">
       <p className="text-xs text-muted-foreground">
@@ -68,7 +78,7 @@ function Dashboard({ data }: { data: Data }) {
         <Kpi
           label="Products-liability MDLs"
           value={n(k.plMdls)}
-          note={`transferred · ${n(k.plWithCourtPage)} with court page, ${n(k.plPagesRead)} read`}
+          note={`transferred · ${n(withPage)} with court page · ${n(withOrders)} with orders extracted`}
         />
         <Kpi label="Bellwether quoted" value={n(k.plBellwetherQuoted)} note="on the court page" />
         <Kpi
@@ -78,14 +88,27 @@ function Dashboard({ data }: { data: Data }) {
           tone={k.flagged ? "warn" : undefined}
         />
       </div>
-      {partial ? (
+      {noPage || statementsOnly || nothing ? (
         <Notice>
-          Partial coverage: {n((k.plMdls ?? 0) - (k.plWithCourtPage ?? 0))} of {n(k.plMdls)}{" "}
-          transferred products-liability MDLs have no official court page located, and{" "}
-          {n((k.plWithCourtPage ?? 0) - (k.plPagesRead ?? 0))} located pages yielded no orders
-          (marked unreadable); those rows show JPML facts only. {n(k.plNotTransferred)} further
-          products-liability dockets on the 10/1/2026 report had not been transferred yet and are
-          listed separately.
+          Partial coverage:{" "}
+          {[
+            noPage
+              ? `${n(noPage)} of ${n(transferred.length)} transferred products-liability MDLs have no official court page ${yields.includes("failed") ? "located and fetched" : "located"}`
+              : null,
+            statementsOnly
+              ? `for ${many(statementsOnly, "MDL", "MDLs")} no order could be extracted from the court pages, but quoted statements or leadership were`
+              : null,
+            nothing
+              ? `for ${many(nothing, "MDL", "MDLs")} nothing could be extracted from the fetched court pages`
+              : null,
+          ]
+            .filter(Boolean)
+            .join("; ")}
+          . Rows without extracted orders show the JPML facts and any quoted statements; the linked
+          court page itself may list orders the extractor did not read.{" "}
+          {k.plNotTransferred
+            ? `${many(k.plNotTransferred, "further products-liability docket", "further products-liability dockets")} on the 10/1/2026 report had not been transferred yet and ${k.plNotTransferred === 1 ? "is" : "are"} listed separately.`
+            : null}
         </Notice>
       ) : null}
 
@@ -119,10 +142,14 @@ function Dashboard({ data }: { data: Data }) {
                     {c.mdl}
                   </Link>
                   <span className="min-w-0 flex-1">
-                    <span className="line-clamp-1 font-medium">{title(c.title)}</span>
+                    <span className="line-clamp-1 font-medium" title={title(c.title)}>
+                      {title(c.title)}
+                    </span>
                     <span className="text-muted-foreground">
                       {n(c.pending)} pending · {signed(c.change12m)} in 12 months ·{" "}
-                      {c.pages.length ? `${c.pages.length} court page(s)` : "no court page located"}
+                      {c.pages.length
+                        ? many(c.pages.length, "court page", "court pages")
+                        : "no court page located"}
                     </span>
                   </span>
                 </li>
@@ -158,14 +185,19 @@ function Dashboard({ data }: { data: Data }) {
                     >
                       MDL {c.mdl}
                     </Link>
-                    <span className="line-clamp-1 flex-1">{title(c.title)}</span>
+                    <span className="line-clamp-1 flex-1" title={title(c.title)}>
+                      {title(c.title)}
+                    </span>
                     <span className="shrink-0 font-semibold tabular-nums">
                       {c.monthsToBellwether !== null
                         ? `${c.monthsToBellwether} mo`
                         : `${c.firstBellwetherDate} · months not computed`}
                     </span>
                   </div>
-                  <q className="mt-0.5 line-clamp-2 text-muted-foreground">
+                  <q
+                    className="mt-0.5 line-clamp-2 text-muted-foreground"
+                    title={c.firstBellwetherQuote ?? undefined}
+                  >
                     {c.firstBellwetherQuote}
                   </q>
                   {c.bellwetherTimingNote ? (

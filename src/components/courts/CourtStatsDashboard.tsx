@@ -419,6 +419,7 @@ function SmallTrend({
               tickLine={false}
               axisLine={false}
               domain={["auto", "auto"]}
+              tickFormatter={compactNum}
             />
             <Tooltip
               contentStyle={tooltipStyle}
@@ -1288,6 +1289,7 @@ function SourcesPanel({ data, year }: { data: CourtStatsOverview; year: number }
                           target="_blank"
                           rel="noreferrer"
                           className="ml-1.5 text-muted-foreground hover:underline"
+                          aria-label={`Table ${t} ${fy(year)} data file (${(s.format ?? "file").toUpperCase()})`}
                         >
                           {(s.format ?? "file").toUpperCase()}
                         </a>
@@ -1314,6 +1316,7 @@ function SourcesPanel({ data, year }: { data: CourtStatsOverview; year: number }
                         target="_blank"
                         rel="noreferrer"
                         className="text-primary hover:underline"
+                        aria-label={`Table C-2A, ${fy(Number(y))} edition`}
                       >
                         {fy(Number(y))}
                       </a>

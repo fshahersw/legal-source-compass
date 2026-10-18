@@ -20,7 +20,8 @@ function Page() {
       description="Docket growth, concentration and outcomes from JPML statistics reports."
       breadcrumbs={[
         { label: "Home", to: "/" },
-        { label: "Matters", to: "/matters" },
+        { label: "Courts", to: "/courts" },
+        { label: "Federal court analytics", to: "/courts/analytics" },
         { label: "MDL analytics" },
       ]}
     >

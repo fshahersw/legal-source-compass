@@ -44,10 +44,19 @@ import {
   type SortKey,
 } from "./enforcementView";
 import {
+  bySurgeDesc,
+  capped,
+  joinCapped,
+  numTick,
+  surgeRatioLabel,
+  usdMillionsTick,
+} from "./listDisplay";
+import {
   axisTick,
   FlagChip,
   Kpi,
   LoadingBlock,
+  MoreToggle,
   Panel,
   Segmented,
   SortHeader,
@@ -55,6 +64,11 @@ import {
   StateNote,
   tooltipStyle,
 } from "./parts";
+
+const SURGE_LIMIT = 8;
+const STATUTE_LIMIT = 8;
+const CASE_NUMBER_LIMIT = 3;
+const CASE_DEFENDANT_LIMIT = 2;
 
 export const epaEnforcementQuery = {
   queryKey: ["epa-enforcement"],
@@ -111,15 +125,16 @@ function TrendChart({ profile, from, to }: { profile: EpaProfile; from: number; 
               tickLine={false}
               axisLine={false}
               allowDecimals={false}
+              tickFormatter={numTick}
             />
             <YAxis
               yAxisId="right"
               orientation="right"
-              width={48}
+              width={52}
               tick={axisTick}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(v: number) => `$${v}M`}
+              tickFormatter={usdMillionsTick}
             />
             <Tooltip
               contentStyle={tooltipStyle}
@@ -183,7 +198,8 @@ function StatuteMultiples({
   active: string;
   onPick: (code: string) => void;
 }) {
-  const rows = statutes
+  const [all, setAll] = useState(false);
+  const ranked = statutes
     .filter((s) => s.code)
     .map((s) => {
       const byFy = new Map(s.years.map((y) => [y.fy, y]));
@@ -203,52 +219,83 @@ function StatuteMultiples({
       };
     })
     .filter((s) => s.cases > 0 || s.penalty > 0)
-    .sort((a, b) => b.cases - a.cases)
-    .slice(0, 8);
+    .sort((a, b) => b.cases - a.cases);
+  // Keep the selected statute visible even when it ranks below the default cut.
+  const { shown } = capped(ranked, STATUTE_LIMIT, all);
+  const rows =
+    active && !shown.some((s) => s.code === active)
+      ? [...shown, ...ranked.filter((s) => s.code === active)]
+      : shown;
   if (!rows.length) return <StateNote>No statute series is recorded for this selection.</StateNote>;
   const max = Math.max(1, ...rows.flatMap((s) => s.years.map((y) => y.cases)));
+  // Counted against what is drawn, so an appended selected statute is not reported as hidden.
+  const hidden = ranked.length - rows.length;
   return (
-    <ul className="grid grid-cols-2 gap-px bg-border/60 sm:grid-cols-4">
-      {rows.map((s) => (
-        <li key={s.code} className="bg-surface">
-          <button
-            type="button"
-            aria-pressed={active === s.code}
-            onClick={() => onPick(active === s.code ? "" : s.code)}
-            title={s.name}
-            className={cn(
-              "w-full px-2.5 pb-1 pt-2 text-left hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring",
-              active === s.code && "bg-primary/5 ring-1 ring-inset ring-primary/40",
-            )}
-          >
-            <span className="flex items-baseline justify-between gap-1">
-              <span className="text-xs font-semibold">{s.code}</span>
-              <span className="font-mono text-[11px] text-muted-foreground">{count(s.cases)}</span>
-            </span>
-            <span className="block text-[10.5px] text-muted-foreground">
-              {usd(s.penalty)} settled
-            </span>
-            <span className="mt-1 block h-12" aria-hidden>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={s.years} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                  <YAxis hide domain={[0, max]} />
-                  <Tooltip
-                    contentStyle={tooltipStyle}
-                    labelFormatter={(_, p) => `FY${String(p?.[0]?.payload?.fy ?? "")}`}
-                    formatter={(v) => [Number(v).toLocaleString("en-US"), "cases opened"]}
-                  />
-                  <Bar
-                    dataKey="cases"
-                    fill={active === s.code ? FDA_COLORS[2] : FDA_COLORS[1]}
-                    isAnimationActive={false}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </span>
-          </button>
-        </li>
-      ))}
-    </ul>
+    <div>
+      <ul
+        id="epa-statute-multiples"
+        className="grid grid-cols-2 gap-px bg-border/60 sm:grid-cols-4"
+      >
+        {rows.map((s) => (
+          <li key={s.code} className="bg-surface">
+            <button
+              type="button"
+              aria-pressed={active === s.code}
+              onClick={() => onPick(active === s.code ? "" : s.code)}
+              title={s.name}
+              className={cn(
+                "w-full px-2.5 pb-1 pt-2 text-left hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-ring",
+                active === s.code && "bg-primary/5 ring-1 ring-inset ring-primary/40",
+              )}
+            >
+              <span className="flex items-baseline justify-between gap-1">
+                <span className="text-xs font-semibold">{s.code}</span>
+                <span className="font-mono text-[11px] text-muted-foreground">
+                  {count(s.cases)}
+                </span>
+              </span>
+              <span className="block text-[10.5px] text-muted-foreground">
+                {usd(s.penalty)} settled
+              </span>
+              <span className="mt-1 block h-12" aria-hidden>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={s.years} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+                    <YAxis hide domain={[0, max]} />
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      labelFormatter={(_, p) => `FY${String(p?.[0]?.payload?.fy ?? "")}`}
+                      formatter={(v) => [Number(v).toLocaleString("en-US"), "cases opened"]}
+                    />
+                    <Bar
+                      dataKey="cases"
+                      fill={active === s.code ? FDA_COLORS[2] : FDA_COLORS[1]}
+                      isAnimationActive={false}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {ranked.length > STATUTE_LIMIT ? (
+        <p className="flex flex-wrap items-center gap-2 px-3 py-1.5 text-[11px] text-muted-foreground">
+          {all
+            ? `All ${count(ranked.length)} statutes with cases or penalties in the window.`
+            : `Top ${STATUTE_LIMIT} of ${count(ranked.length)} statutes by cases opened${
+                rows.length > shown.length ? ", plus the selected statute" : ""
+              }.`}
+          <MoreToggle
+            total={ranked.length}
+            limit={all ? STATUTE_LIMIT : rows.length}
+            expanded={all}
+            onToggle={() => setAll((v) => !v)}
+            controls="epa-statute-multiples"
+            noun={hidden === 1 ? "statute" : "statutes"}
+          />
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -294,7 +341,12 @@ function DefendantTable({ rows, scope }: { rows: EpaDefendantGroup[]; scope: str
                   <span className="block text-[10.5px] text-muted-foreground">
                     {d.nationalCase
                       ? `National case recorded as several regional records (lead ${d.nationalCase}); shares summed`
-                      : d.caseNumbers.slice(0, 3).join(", ")}
+                      : joinCapped(
+                          d.caseNumbers,
+                          CASE_NUMBER_LIMIT,
+                          ", ",
+                          Math.max(d.cases, d.caseNumbers.length),
+                        )}
                   </span>
                 </td>
                 <td className="px-2 py-1.5 text-right font-mono">{count(d.cases)}</td>
@@ -415,7 +467,9 @@ function CasesTable({
                   <span className="block text-[10.5px] text-muted-foreground">
                     <SourceLink href={r.url}>{r.caseNumber}</SourceLink>
                     {r.dojDocket ? ` · DOJ ${r.dojDocket}` : ""}
-                    {r.defendants.length ? ` · ${r.defendants.slice(0, 2).join("; ")}` : ""}
+                    {r.defendants.length
+                      ? ` · ${joinCapped(r.defendants, CASE_DEFENDANT_LIMIT, "; ")}`
+                      : ""}
                   </span>
                   {r.nationalCase ? (
                     <span className="mt-0.5 block text-[10.5px] text-warning-foreground">
@@ -533,7 +587,7 @@ function StateTable({
               </td>
               <td className="space-x-1 px-2 py-1">
                 {r.surge ? (
-                  <FlagChip title={SURGE_RULE}>Surge {r.surge.ratio.toFixed(1)}×</FlagChip>
+                  <FlagChip title={SURGE_RULE}>Surge {surgeRatioLabel(r.surge.ratio)}</FlagChip>
                 ) : null}
                 {r.perCapitaOutlier ? (
                   <FlagChip title={PER_CAPITA_RULE}>Per-capita high</FlagChip>
@@ -626,7 +680,9 @@ function EpaBody({
       ? national.topDefendantGroupsRecent
       : national.topDefendantGroups;
   const statutes = selected ? (detail.data?.statutes ?? []) : national.statutes;
-  const surges = rows.filter((r) => r.surge).sort((a, b) => b.surge!.ratio - a.surge!.ratio);
+  const [allSurges, setAllSurges] = useState(false);
+  const surges = rows.filter((r) => r.surge).sort((a, b) => bySurgeDesc(a.surge!, b.surge!));
+  const surgeList = capped(surges, SURGE_LIMIT, allSurges);
   const outliers = rows
     .filter((r) => r.perCapitaOutlier)
     .sort((a, b) => b.perMillion! - a.perMillion!);
@@ -724,8 +780,7 @@ function EpaBody({
           }
           footnote={
             <>
-              Select a state to filter every panel. Source:{" "}
-              <SourceLink href={data.source}>ECHO case downloads</SourceLink>
+              Source: <SourceLink href={data.source}>ECHO case downloads</SourceLink>
               {data.populationSource ? (
                 <>
                   {" "}
@@ -741,6 +796,13 @@ function EpaBody({
                 geo={corpus.geo}
                 values={values}
                 valueLabel={METRIC_LABEL[metric]}
+                heading="EPA enforcement by state"
+                hint="Select a state to filter every panel; select it again to clear."
+                stateAction="Filter to"
+                formatValue={(v) =>
+                  v.toLocaleString("en-US", { maximumFractionDigits: metric === "cases" ? 0 : 1 })
+                }
+                legendNote="Shading scales with the selected ECHO metric for states; territories and unrecorded codes are listed in the table."
                 selectedState={state}
                 onState={(fips) => {
                   const hit = mapRows.find((r) => r.fips === fips);
@@ -769,22 +831,39 @@ function EpaBody({
               </p>
               <p className="text-[11px] text-muted-foreground">{SURGE_RULE}</p>
               {surges.length ? (
-                <ul className="mt-1 space-y-0.5">
-                  {surges.slice(0, 8).map((r) => (
-                    <li key={r.code} className="flex justify-between gap-2">
-                      <button
-                        type="button"
-                        className="text-primary hover:underline"
-                        onClick={() => onState(r.code)}
-                      >
-                        {r.name}
-                      </button>
-                      <span className="font-mono text-muted-foreground">
-                        {r.surge!.latest} vs {r.surge!.baseline.toFixed(1)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <ul
+                    id="epa-surge-states"
+                    className={cn("mt-1 space-y-0.5", allSurges && "max-h-64 overflow-auto pr-1")}
+                    aria-label={`${count(surges.length)} ${surges.length === 1 ? "state meets" : "states meet"} the surge rule`}
+                  >
+                    {surgeList.shown.map((r) => (
+                      <li key={r.code} className="flex justify-between gap-2">
+                        <button
+                          type="button"
+                          className="text-left text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+                          onClick={() => onState(r.code)}
+                        >
+                          {r.name}
+                        </button>
+                        <span
+                          className="shrink-0 font-mono text-muted-foreground"
+                          title={`FY${latest} cases opened vs mean of the five prior FYs`}
+                        >
+                          {count(r.surge!.latest)} vs {r.surge!.baseline.toFixed(1)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  <MoreToggle
+                    total={surges.length}
+                    limit={SURGE_LIMIT}
+                    expanded={allSurges}
+                    onToggle={() => setAllSurges((v) => !v)}
+                    controls="epa-surge-states"
+                    noun={surgeList.hidden === 1 ? "state" : "states"}
+                  />
+                </>
               ) : (
                 <p className="mt-1 text-muted-foreground">No state meets the rule.</p>
               )}

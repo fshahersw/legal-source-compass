@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   createMemoryHistory,
@@ -9,11 +11,26 @@ import {
   datasetLabel,
   duplicateLookingIds,
   normalizeItem,
+  pageRoutePatterns,
   recordDestination,
-  resolveLink,
+  resolveLink as resolveWithRoutes,
+  searchLinkOutcome,
   sectionOf,
   shortRecordId,
 } from "./groups";
+
+/** The app's real route tree: the generated `fullPaths` union, the same paths the live router exposes. */
+function generatedFullPaths(): string[] {
+  const source = readFileSync(
+    fileURLToPath(new URL("../../routeTree.gen.ts", import.meta.url)),
+    "utf8",
+  );
+  const block = /fullPaths:\s*((?:\|\s*'[^']*'\s*)+)/.exec(source)?.[1] ?? "";
+  return [...block.matchAll(/'([^']*)'/g)].map((m) => m[1]!);
+}
+const ROUTES = pageRoutePatterns(generatedFullPaths());
+const resolveLink = (url: string, aliases: Record<string, string>) =>
+  resolveWithRoutes(url, aliases, ROUTES);
 
 describe("permanent record destinations", () => {
   it("preserves exact collection identity and native IDs", () => {
@@ -234,6 +251,232 @@ describe("resolveLink", () => {
       href: "https://x.gov/a?b=1#c",
     });
     expect(resolveLink("#unknown", aliases)).toEqual({ kind: "unmapped", raw: "#unknown" });
+  });
+});
+
+describe("stored root-relative paths: in-app pages vs stored files", () => {
+  const app = (to: string, params: Record<string, string> = {}) => ({
+    kind: "app",
+    to,
+    params,
+    search: null,
+    hash: null,
+  });
+
+  it("reads page routes from the generated route tree, without the /api endpoints", () => {
+    expect(generatedFullPaths().length).toBeGreaterThan(50);
+    for (const r of [
+      "/companies/$cik",
+      "/courts/$id",
+      "/judges/$id",
+      "/matters/lens/$mdl",
+      "/places/$state",
+      "/records/$dataset/$id",
+      "/companies",
+      "/",
+    ])
+      expect(ROUTES).toContain(r);
+    expect(ROUTES.some((r) => r === "/api" || r.startsWith("/api/"))).toBe(false);
+    expect(ROUTES.some((r) => r.length > 1 && r.endsWith("/"))).toBe(false);
+  });
+
+  it("has only literal and named-param segments, the only kinds the stored-path matcher reads", () => {
+    // A splat ("/x/$"), optional ("{-$x}") or prefixed ("{$x}.json") segment would be matched as a literal and
+    // stored paths under it would silently read as unmapped: extend matchPageRoute before adding one.
+    const odd = ROUTES.flatMap((r) => r.split("/").slice(1)).filter(
+      (seg) => seg.includes("$") && !/^\$[A-Za-z_]\w*$/.test(seg),
+    );
+    expect(odd).toEqual([]);
+    expect(ROUTES.some((r) => /[{}]/.test(r))).toBe(false);
+  });
+
+  it("derives the same patterns from a live router's routesById", () => {
+    const root = createRootRoute();
+    const companies = createRoute({ getParentRoute: () => root, path: "/companies/" });
+    const company = createRoute({ getParentRoute: () => root, path: "/companies/$cik" });
+    const files = createRoute({ getParentRoute: () => root, path: "/api/files" });
+    const router = createRouter({
+      routeTree: root.addChildren([companies, company, files]),
+      history: createMemoryHistory({ initialEntries: ["/"] }),
+    });
+    const live = pageRoutePatterns(Object.values(router.routesById).map((r) => r.fullPath));
+    expect(live).toEqual(["/", "/companies", "/companies/$cik"]);
+    expect(resolveWithRoutes("/companies/0000001800", {}, live)).toEqual(
+      app("/companies/$cik", { cik: "0000001800" }),
+    );
+  });
+
+  it("opens stored in-app links (real examples from item/detail links) as router links", () => {
+    expect(resolveLink("/companies/0000001800", {})).toEqual(
+      app("/companies/$cik", { cik: "0000001800" }),
+    );
+    expect(resolveLink("/courts/akd", {})).toEqual(app("/courts/$id", { id: "akd" }));
+    expect(resolveLink("/judges/0026ac81ec4658f59f134da92fc995ac", {})).toEqual(
+      app("/judges/$id", { id: "0026ac81ec4658f59f134da92fc995ac" }),
+    );
+    expect(resolveLink("/matters/lens/1", {})).toEqual(app("/matters/lens/$mdl", { mdl: "1" }));
+    expect(resolveLink("/places/AK", {})).toEqual(app("/places/$state", { state: "AK" }));
+    // A static route wins over a parameter route, as in the router.
+    expect(resolveLink("/places/analytics", {})).toEqual(app("/places/analytics"));
+    expect(resolveLink("/companies/", {})).toEqual(app("/companies"));
+    expect(resolveLink("/records/agency_safety_cpsc_recalls_local/cpsc:rcl:26341", {})).toEqual({
+      kind: "record",
+      dataset: "agency_safety_cpsc_recalls_local",
+      id: "cpsc:rcl:26341",
+    });
+    expect(resolveLink("/records/mdls/1358", {})).toEqual({
+      kind: "record",
+      dataset: "mdls",
+      id: "1358",
+    });
+    expect(resolveLink("/matters/lens/1?tab=hearings#orders", {})).toEqual({
+      ...app("/matters/lens/$mdl", { mdl: "1" }),
+      search: { tab: "hearings" },
+      hash: "orders",
+    });
+  });
+
+  it("keeps everything after the dataset as the record id, so ids containing '/' open their record", () => {
+    for (const [stored, dataset, id] of [
+      [
+        "/records/agency_safety_openfda_device_enforcement/openfda:device/enforcement:Z-1770-2026",
+        "agency_safety_openfda_device_enforcement",
+        "openfda:device/enforcement:Z-1770-2026",
+      ],
+      [
+        "/records/agency_safety_openfda_food_enforcement/openfda:food/enforcement:N/A",
+        "agency_safety_openfda_food_enforcement",
+        "openfda:food/enforcement:N/A",
+      ],
+      [
+        "/records/agency_safety_openfda_crl/openfda:transparency/crl:CRL_BLA761308_20260709_Redacted.pdf",
+        "agency_safety_openfda_crl",
+        "openfda:transparency/crl:CRL_BLA761308_20260709_Redacted.pdf",
+      ],
+    ] as const) {
+      expect(resolveLink(stored, {})).toEqual({ kind: "record", dataset, id });
+      // The router encodes the id as one segment and reads it back intact.
+      const root = createRootRoute();
+      const record = createRoute({ getParentRoute: () => root, path: "/records/$dataset/$id" });
+      const router = createRouter({
+        routeTree: root.addChildren([record]),
+        history: createMemoryHistory({ initialEntries: ["/"] }),
+      });
+      const loc = router.buildLocation({ to: "/records/$dataset/$id", params: { dataset, id } });
+      expect(loc.pathname).toBe(`/records/${dataset}/${encodeURIComponent(id)}`);
+      expect(router.matchRoutes(loc.pathname).at(-1)?.params).toEqual({ dataset, id });
+    }
+    // An already-encoded id is decoded exactly once.
+    expect(
+      resolveLink("/records/agency_safety_openfda_crl/openfda%3Atransparency%2Fcrl%3Ax", {}),
+    ).toEqual({
+      kind: "record",
+      dataset: "agency_safety_openfda_crl",
+      id: "openfda:transparency/crl:x",
+    });
+  });
+
+  it("serves stored corpus files (every corpus_artifacts route root) through /api/files", () => {
+    for (const route of [
+      "/supplement-files/court_reference/ilcb",
+      "/supplement-files/agency_science_documents/10",
+      "/files/0002d027ebf80b17609ee88bcc6aa706",
+      "/judge-images/asset_0af91b0f65152938",
+      "/library-assets/court-image-21bef4871fc4b187c7834af0",
+      "/source-assets/archive:005945d89bdae8e70eeac16c770cda5e338bafcaa8efb15e6c331dfcb42d8c22/original",
+      "/agency-files/fda-press-recalls-xlsx",
+      "/mdl-files/jpmldoc-1113fa70c31288db",
+      "/api/trellis-coverage/receipt?id=tc-0002",
+      "/api/enrichment/file?id=addition%3A001cf2d2959d8a967edbf296&kind=original",
+      "/api/county-litigation-asset?id=county-litigation%3A0022f6784f77ad841a7295a8a4bc39ed&kind=original",
+    ])
+      expect(resolveLink(route, {})).toEqual({
+        kind: "file",
+        href: `/api/files?route=${encodeURIComponent(route)}`,
+      });
+  });
+
+  it("labels paths under a page route that match no route instead of sending them to the file proxy", () => {
+    for (const raw of [
+      "/courts/akd/extra",
+      "/records/agency_safety_insights",
+      "/records/Not-A-Dataset/x",
+      "/records/agency_safety_insights/a/../b",
+      "/courts//akd",
+      "/courts/%ZZ",
+      "/courts/a%2Fb",
+      "//evil.example/x",
+    ])
+      expect(resolveLink(raw, {})).toEqual({ kind: "unmapped", raw });
+  });
+
+  it("never opens a record path whose stored id may carry '?', '#' or a trailing '/' as a different record", () => {
+    // Record ids are stored raw: "abc?x" is not record "abc" with a query.
+    for (const raw of [
+      "/records/agency_safety_openfda_crl/abc?x",
+      "/records/agency_safety_openfda_crl/abc#x",
+      "/records/agency_safety_openfda_crl/abc/",
+      "/records/agency_safety_openfda_device_enforcement/openfda:device/enforcement:Z-1?x=1",
+      "/records/agency_safety_openfda_device_enforcement/openfda:device/enforcement:Z-1/",
+    ])
+      expect(resolveLink(raw, {})).toEqual({ kind: "unmapped", raw });
+    // Other page routes keep their query and hash.
+    expect(resolveLink("/courts/akd?tab=x", {})).toMatchObject({
+      kind: "app",
+      to: "/courts/$id",
+      search: { tab: "x" },
+    });
+  });
+});
+
+describe("openFDA searches recorded as finding nothing usable", () => {
+  const url =
+    'https://api.fda.gov/device/event.json?search=device.manufacturer_d_name:"BAUSCH%20AND%20LOMB%20AMERICAS"&count=device.manufacturer_d_name.exact&limit=100';
+  const query = { url, label: "openFDA query" };
+  const noMatch = {
+    id: "maude-100001116887",
+    facts: [
+      ["Matched MAUDE spellings", "None"],
+      ["Reports received 2017-2025 (lower bound)", "Not applicable"],
+    ],
+  };
+  const matched = {
+    id: "maude-100000010935",
+    facts: [["Matched MAUDE spellings", "VALEANT PHARMACEUTICALS NORTH AMERICA LLC"]],
+  };
+  const ds = "company_adverse_manufacturers";
+  it("flags the query links of no-match records only", () => {
+    expect(searchLinkOutcome(ds, noMatch, query)).toBe("no_exact_match");
+    expect(searchLinkOutcome(ds, matched, query)).toBeNull();
+    // The openFDA documentation page is a real source and stays a link.
+    expect(
+      searchLinkOutcome(ds, noMatch, {
+        url: "https://open.fda.gov/apis/device/event/",
+        label: "openFDA device adverse events",
+      }),
+    ).toBeNull();
+    expect(
+      searchLinkOutcome("agency_safety_openfda_device_enforcement", noMatch, query),
+    ).toBeNull();
+    expect(searchLinkOutcome(ds, {}, query)).toBeNull();
+  });
+  it("uses a per-query recorded result on matched records too, never the query text", () => {
+    // e.g. 'BAUSCH HEALTH US' on maude-100000010935 answers 404 "No matches found!"; once the builder records the
+    // per-query result in the label, that one query is listed as such while the record's other links stay links.
+    const empty = { url, label: "openFDA query (no matches)" };
+    expect(searchLinkOutcome(ds, matched, empty)).toBe("no_matches");
+    expect(searchLinkOutcome(ds, noMatch, empty)).toBe("no_matches");
+    expect(searchLinkOutcome(ds, matched, query)).toBeNull();
+    // The label marks only openFDA API queries of this dataset.
+    expect(
+      searchLinkOutcome(ds, matched, {
+        url: "https://open.fda.gov/apis/device/event/",
+        label: "openFDA query (no matches)",
+      }),
+    ).toBeNull();
+    expect(
+      searchLinkOutcome("agency_safety_openfda_device_enforcement", matched, empty),
+    ).toBeNull();
   });
 });
 

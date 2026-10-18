@@ -20,7 +20,7 @@ function Page() {
       description="MDL defendants linked by their own SEC filings, ranked by docket exposure and litigation accruals."
       breadcrumbs={[
         { label: "Home", to: "/" },
-        { label: "Matters", to: "/matters" },
+        { label: "Law & regulation", to: "/law" },
         { label: "Companies" },
       ]}
     >

@@ -393,7 +393,9 @@ export function parseCaseRow(raw: unknown): EpaCaseRow | null {
     states: strings(r["states"]),
     fedPenalty,
     sep: num(pen?.["sep"]),
-    defendants: strings(r["def"]).slice(0, 4),
+    // Every recorded defendant (at most a few dozen on a case): the table shows the first two and a
+    // "+N more" that must count the rest truthfully.
+    defendants: strings(r["def"]),
     dojDocket: strOrNull(r["doj"]),
     nationalCase:
       nc && str(nc["lead_case_number"]) && records.length > 1 && combined != null

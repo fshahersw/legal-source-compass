@@ -110,6 +110,7 @@ export function CourtResources({
                               target="_blank"
                               rel="noreferrer"
                               className="underline"
+                              aria-label={`the court’s source page where “${link.sourceLabel ?? link.label}” was observed`}
                             >
                               the court’s source page
                             </a>

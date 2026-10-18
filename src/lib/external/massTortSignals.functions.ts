@@ -25,7 +25,8 @@ export type MassTortSignal = {
   eventsByYear: Record<string, number>;
   breakdown: Record<string, number>;
   breakdownError: string | null;
-  topTerms: { term: string; count: number }[];
+  /** Most reported terms with spelling-case variants combined (see mergeTermCase). */
+  topTerms: TopTerm[];
   recallTotal: number | null;
   recallBreakdown: Record<string, number>;
   recentRecalls: SignalRecall[];
@@ -38,10 +39,59 @@ export type MassTortSignal = {
   series: { date: string; pending: number; total: number }[];
 };
 
+export type TopTerm = {
+  term: string;
+  count: number;
+  /** Every spelling recorded for this term, first seen first ("Diarrhoea", "DIARRHOEA"). */
+  variants: string[];
+};
+
 type Item = {
   signal?: Record<string, unknown>;
   litigation?: Record<string, unknown>;
 };
+
+/** Case folding shared with merge_case_variants in scripts/enrichment/build_mass_tort_signals.py (str.lower()). */
+const foldCase = (term: string) => term.toLowerCase();
+
+/**
+ * Combine report terms that differ only in letter case (openFDA counts "Diarrhoea" and "DIARRHOEA" separately): counts
+ * are summed per case-folded term, the label is the variant with the highest count (ties: first seen), and the list
+ * is re-sorted by count, descending (ties keep first-seen order). Malformed entries are dropped. The input is the
+ * stored top-N list, so a variant that fell outside it is not included in the sum. Already-merged input (the builder
+ * stores `variants` with each term) keeps its spellings: they are listed with the term and its count is not split.
+ */
+export function mergeTermCase(raw: unknown): TopTerm[] {
+  const groups = new Map<
+    string,
+    { order: number; total: number; spellings: Map<string, number> }
+  >();
+  for (const entry of Array.isArray(raw) ? raw : []) {
+    const e = entry && typeof entry === "object" ? (entry as Record<string, unknown>) : null;
+    const term = typeof e?.["term"] === "string" ? e["term"].trim() : "";
+    const count = e?.["count"];
+    if (!term || typeof count !== "number" || !Number.isFinite(count) || count < 0) continue;
+    const key = foldCase(term);
+    const g = groups.get(key) ?? { order: groups.size, total: 0, spellings: new Map() };
+    const stored = Array.isArray(e?.["variants"]) ? (e["variants"] as unknown[]) : [];
+    for (const v of stored) {
+      const spelling = typeof v === "string" ? v.trim() : "";
+      if (spelling && foldCase(spelling) === key && !g.spellings.has(spelling))
+        g.spellings.set(spelling, 0); // a stored variant's own count is already inside `count`
+    }
+    g.total += count;
+    g.spellings.set(term, (g.spellings.get(term) ?? 0) + count);
+    groups.set(key, g);
+  }
+  return [...groups.values()]
+    .sort((a, b) => b.total - a.total || a.order - b.order)
+    .map((g) => {
+      let label = "";
+      let best = -1;
+      for (const [spelling, n] of g.spellings) if (n > best) [label, best] = [spelling, n];
+      return { term: label, count: g.total, variants: [...g.spellings.keys()] };
+    });
+}
 
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
 const str = (v: unknown) => (typeof v === "string" && v ? v : null);
@@ -67,7 +117,7 @@ export function toSignals(item: Item): MassTortSignal[] {
       eventsByYear: record(s["events_by_year"]),
       breakdown: record(s["event_breakdown"]),
       breakdownError: str(s["event_breakdown_error"]),
-      topTerms: Array.isArray(s["top_terms"]) ? (s["top_terms"] as MassTortSignal["topTerms"]) : [],
+      topTerms: mergeTermCase(s["top_terms"]),
       recallTotal: num(s["recall_total"]),
       recallBreakdown: record(s["recall_breakdown"]),
       recentRecalls: Array.isArray(s["recent_recalls"])

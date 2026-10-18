@@ -38,8 +38,42 @@ METRICS = {
                                         ("us-gaap", "LossContingencyAccrualProvision"), ("us-gaap", "ProductLiabilityAccrualPeriodExpense")], "series"),
     "legal_payments": ("duration", [("us-gaap", "PaymentsForLegalSettlements"), ("us-gaap", "LossContingencyAccrualCarryingValuePayments")], "series"),
 }
-# Every concept named in the brief plus the litigation extensions above is also kept raw.
+# Every concept named in the brief plus the litigation extensions above is also kept raw, as
+# (taxonomy, concept) pairs: a concept is tracked only in the taxonomy it is listed under.
 RAW_CONCEPTS = sorted({c for _, cs, _ in METRICS.values() for c in cs})
+STANDARD_TAXONOMIES = ("us-gaap", "ifrs-full")
+MIN_YEAR = 2012  # series keep fiscal years from this one on
+
+
+def tracked_pairs(facts: dict) -> list[tuple[str, str]]:
+    """Tracked (taxonomy, concept) pairs the companyfacts file reports for any period, sorted. Company
+    extensions, dei/srt/ffd facts and a concept under a taxonomy it is not tracked in never count."""
+    tracked = set(RAW_CONCEPTS)
+    return sorted((taxonomy, concept) for taxonomy in STANDARD_TAXONOMIES for concept in (facts.get(taxonomy) or {})
+                  if (taxonomy, concept) in tracked)
+
+
+def taxonomy_label(facts: dict) -> str | None:
+    """The standard taxonomy the company's figures come from: 'us-gaap' or 'ifrs-full' when every tracked
+    concept is reported under that one, 'mixed' when tracked concepts come from both. Series points are
+    always drawn from tracked concepts, so they never add a taxonomy. Without any tracked concept, the
+    standard taxonomies the file holds at all decide; None when it holds neither (e.g. only filing-fee facts)."""
+    used = [t for t in STANDARD_TAXONOMIES if any(pt == t for pt, _ in tracked_pairs(facts))]
+    if not used:
+        used = [t for t in STANDARD_TAXONOMIES if facts.get(t)]
+    if len(used) > 1:
+        return "mixed"
+    return used[0] if used else None
+
+
+def concepts_present(facts: dict) -> list[str]:
+    """The tracked concepts the companyfacts file reports for any period (not only the periods the series
+    keep), sorted, one entry per (taxonomy, concept) pair. Names are bare when every pair comes from one
+    taxonomy; when both taxonomies supply tracked concepts each name carries its taxonomy ('ifrs-full:Assets')."""
+    pairs = tracked_pairs(facts)
+    if len({taxonomy for taxonomy, _ in pairs}) > 1:
+        return sorted(f"{taxonomy}:{concept}" for taxonomy, concept in pairs)
+    return sorted(concept for _, concept in pairs)
 
 
 def days(start: str, end: str) -> int:
@@ -146,7 +180,7 @@ def annual_by_year(points):
     return [out[y] for y in sorted(out)]
 
 
-def metric_series(facts: dict, metric: str, grain: str, min_year: int = 2012):
+def metric_series(facts: dict, metric: str, grain: str, min_year: int = MIN_YEAR):
     kind, concepts, mode = METRICS[metric]
     ends = period_ends(facts, grain) if kind == "instant" else None
     per_concept = {(t, c): series_for(facts, t, c, kind, grain, ends) for t, c in concepts}

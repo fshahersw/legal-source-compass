@@ -13,6 +13,9 @@ from pathlib import Path
 
 import requests
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from parsers import fars_national_csv_url  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[3]
 ACQ = ROOT / "private" / "acq" / "state-metrics"
 UA = {"User-Agent": "SeegerWeiss Research firasshaher99@gmail.com"}
@@ -33,7 +36,7 @@ SOURCES = {
     "nhtsa_CMPL.txt": "https://static.nhtsa.gov/odi/ffdd/cmpl/CMPL.txt",
 }
 for _year in FARS_YEARS:
-    SOURCES[f"fars_{_year}_national_csv.zip"] = f"https://static.nhtsa.gov/nhtsa/downloads/FARS/{_year}/National/FARS{_year}NationalCSV.zip"
+    SOURCES[f"fars_{_year}_national_csv.zip"] = fars_national_csv_url(_year)
 
 
 def download(name, url, refresh):

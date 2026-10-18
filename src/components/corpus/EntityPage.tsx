@@ -1,13 +1,39 @@
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { AppShell } from "@/components/atlas/AppShell";
-import { CorpusLink, DatasetBrowser, useDatasets } from "@/components/corpus/DatasetBrowser";
+import {
+  CorpusLink,
+  DatasetBrowser,
+  useAppRoutes,
+  useDatasets,
+} from "@/components/corpus/DatasetBrowser";
 import { getEntity } from "@/lib/external/entity.functions";
 import { buildEntityView, type EntitySection } from "@/lib/external/entityView";
 import { CaseCatalog } from "@/components/corpus/CaseCatalog";
 import { DocketDocuments } from "@/components/corpus/DocketDocuments";
-import { fileUrl, resolveLink } from "@/lib/external/groups";
+import { fileUrl, resolveLink, searchLinkOutcome } from "@/lib/external/groups";
 import { displayValue } from "@/lib/external/domainRegistry";
+import { isHeldMediaLabel, isStoredFilePath } from "@/lib/corpus/heldMedia";
+
+const HELD_NOTE = "held, not shown: reuse permission is not established";
+
+/** How recorded no-result openFDA name searches are listed (see searchLinkOutcome). */
+const SEARCH_OUTCOMES = [
+  {
+    outcome: "no_matches",
+    heading: "openFDA name search returned no matches",
+    suffix: "no matches",
+    title:
+      "The openFDA name searches that were run and recorded as returning no results (openFDA answers “No matches found!”). They are searches, not sources.",
+  },
+  {
+    outcome: "no_exact_match",
+    heading: "openFDA name search found no exact match",
+    suffix: "no exact match",
+    title:
+      "The openFDA name searches that were run. None found a manufacturer name matching this company exactly: a search finds either nothing (openFDA answers “No matches found!”) or only other spellings.",
+  },
+] as const;
 
 export const entityQuery = (dataset: string, id: string) =>
   queryOptions({
@@ -50,9 +76,26 @@ export function EntityPage({
       </AppShell>
     );
   const v = buildEntityView(data.raw);
-  const visibleLinks = linkFilter ? linkFilter(v.links) : v.links;
-  const withheldLinks = v.links.length - visibleLinks.length;
+  // Held media (reuse permission not established) is never linked; it is counted in a note instead.
+  const heldLinks = v.links.filter(
+    (l) => isHeldMediaLabel(l.label) && isStoredFilePath(l.url),
+  ).length;
+  const ownLinks = v.links.filter((l) => !(isHeldMediaLabel(l.label) && isStoredFilePath(l.url)));
+  const shownLinks = linkFilter ? linkFilter(ownLinks) : ownLinks;
+  const withheldLinks = ownLinks.length - shownLinks.length;
+  // Searches recorded as finding nothing usable are listed as such, not as source links.
+  const raw = data.raw;
+  const outcomes = shownLinks.map((l) => searchLinkOutcome(dataset, raw, l));
+  const visibleLinks = shownLinks.filter((_, i) => outcomes[i] === null);
+  const queryGroups = SEARCH_OUTCOMES.map((o) => ({
+    ...o,
+    links: shownLinks.filter((_, i) => outcomes[i] === o.outcome),
+  })).filter((g) => g.links.length);
   const key = v.facts.slice(0, 8);
+  // A caller's lead replaces the photo; the facts box is drawn only when it has something to hold.
+  const leadNode = lead ? lead(data.raw, v) : null;
+  const hasLead = leadNode !== null && leadNode !== undefined && leadNode !== false;
+  const photo = !lead && v.photo ? v.photo : null;
   const rest = v.facts.slice(8);
   const nav = [
     ...(docket
@@ -78,28 +121,50 @@ export function EntityPage({
           <p className="whitespace-pre-wrap">{v.qualification}</p>
         </section>
       ) : null}
-      <div className="mb-5 flex flex-col gap-4 rounded-lg border border-border bg-surface p-4 shadow-card sm:flex-row">
-        {lead ? (
-          lead(data.raw, v)
-        ) : v.photo ? (
-          <Img
-            src={v.photo}
-            className="h-36 w-28 shrink-0 rounded-md border border-border object-cover"
-          />
-        ) : null}
-        <dl className="grid flex-1 grid-cols-1 gap-x-6 gap-y-1.5 text-[13px] sm:grid-cols-2">
-          {key.map(([k, val], i) => (
-            <div key={i} className="min-w-0">
-              <dt className="text-[11px] text-muted-foreground">{k}</dt>
-              <dd className="break-words">{displayValue(val)}</dd>
-            </div>
-          ))}
-        </dl>
-      </div>
-      {visibleLinks.length ? (
+      {key.length || hasLead || photo ? (
+        <div className="mb-5 flex flex-col gap-4 rounded-lg border border-border bg-surface p-4 shadow-card sm:flex-row">
+          {hasLead ? leadNode : null}
+          {photo ? (
+            <Img
+              src={photo}
+              className="h-36 w-28 shrink-0 rounded-md border border-border object-cover"
+            />
+          ) : null}
+          {key.length ? (
+            <dl className="grid flex-1 grid-cols-1 gap-x-6 gap-y-1.5 text-[13px] sm:grid-cols-2">
+              {key.map(([k, val], i) => (
+                <div key={i} className="min-w-0">
+                  <dt className="text-[11px] text-muted-foreground">{k}</dt>
+                  <dd className="break-words">{displayValue(val)}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
+        </div>
+      ) : null}
+      {visibleLinks.length || queryGroups.length ? (
         <div className="mb-5 flex flex-wrap gap-x-4 gap-y-1">
           {visibleLinks.map((l) => (
             <CorpusLink key={l.url} url={l.url} label={l.label} aliases={aliases} />
+          ))}
+          {queryGroups.map((g) => (
+            <span key={g.outcome} className="text-[12px] text-muted-foreground" title={g.title}>
+              {g.heading}:{" "}
+              {g.links.map((l, i) => (
+                <Fragment key={l.url}>
+                  {i ? ", " : null}
+                  <a
+                    href={l.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    title={l.url}
+                    className="underline-offset-2 hover:underline"
+                  >
+                    {g.links.length > 1 ? `query ${i + 1} (${g.suffix})` : `query (${g.suffix})`}
+                  </a>
+                </Fragment>
+              ))}
+            </span>
           ))}
         </div>
       ) : null}
@@ -107,6 +172,11 @@ export function EntityPage({
         <p className="mb-4 text-xs text-muted-foreground">
           {withheldLinks} conflicting homepage link withheld; the recorded court system does not
           match the destination. Original data is unchanged.
+        </p>
+      ) : null}
+      {heldLinks > 0 ? (
+        <p className="mb-4 text-xs text-muted-foreground">
+          {heldLinks === 1 ? "1 stored image" : `${heldLinks} stored images`} {HELD_NOTE}.
         </p>
       ) : null}
       {extra ? extra(data.raw) : null}
@@ -218,6 +288,7 @@ function Section({
 
 function SectionView({ s, aliases }: { s: EntitySection; aliases: Record<string, string> }) {
   const [all, setAll] = useState(false);
+  const routes = useAppRoutes();
   if (s.kind === "facts")
     return (
       <Section id={s.key} label={s.label}>
@@ -255,9 +326,17 @@ function SectionView({ s, aliases }: { s: EntitySection; aliases: Record<string,
               ) : null}
               {it.links.length ? (
                 <div className="flex flex-wrap gap-x-3">
-                  {it.links.map((l) => (
-                    <CorpusLink key={l.url} url={l.url} label={l.label} aliases={aliases} />
-                  ))}
+                  {it.links.map((l) =>
+                    // A section of held media keeps its source-page links; the stored file itself is not linked.
+                    (isHeldMediaLabel(s.label) || isHeldMediaLabel(l.label)) &&
+                    isStoredFilePath(l.url) ? (
+                      <span key={l.url} className="text-[12px] text-muted-foreground">
+                        Image {HELD_NOTE}
+                      </span>
+                    ) : (
+                      <CorpusLink key={l.url} url={l.url} label={l.label} aliases={aliases} />
+                    ),
+                  )}
                 </div>
               ) : null}
             </li>
@@ -310,7 +389,7 @@ function SectionView({ s, aliases }: { s: EntitySection; aliases: Record<string,
         ) : null}
       </Section>
     );
-  const r = s.link ? resolveLink(s.link, aliases) : null;
+  const r = s.link ? resolveLink(s.link, aliases, routes) : null;
   const embed = r?.kind === "dataset" ? r : null;
   return (
     <Section

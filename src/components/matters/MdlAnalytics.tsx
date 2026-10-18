@@ -73,7 +73,12 @@ function Dashboard({ data }: { data: Data }) {
         Computed from {o.reports} JPML monthly reports ({o.first_report} to {o.as_of}): Distribution
         of Pending MDL Dockets by Actions Pending, docket type and terminated-litigation reports.
         Counts are as printed by the Panel. Mass tort means products liability, common disaster and
-        air disaster dockets.
+        air disaster dockets. Centralization grant rates, hearing outcomes and transferee-court MDL
+        pages are in{" "}
+        <Link to="/matters/intel" className="text-primary hover:underline">
+          MDL intelligence
+        </Link>
+        .
       </p>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <Kpi label="Pending MDLs" value={n(o.pending_mdls)} />
@@ -434,7 +439,9 @@ function Leaders({
         {groups.slice(0, 15).map((g) => (
           <li key={g.key} className="px-3 py-1.5">
             <div className="flex items-center gap-2">
-              <span className="min-w-0 flex-1 truncate font-medium">{g.key}</span>
+              <span className="min-w-0 flex-1 truncate font-medium" title={g.key}>
+                {g.key}
+              </span>
               <span className="text-muted-foreground">
                 {g.mdls} MDL{g.mdls === 1 ? "" : "s"}
               </span>
@@ -448,7 +455,7 @@ function Leaders({
             </div>
             <div
               className="mt-0.5 truncate text-muted-foreground"
-              title={g.top.map((t) => t.title).join("; ")}
+              title={`Largest: ${g.top.map((t) => t.title.replace(/^IN RE:\s*/i, "")).join("; ")}`}
             >
               Largest: {g.top[0]?.title.replace(/^IN RE:\s*/i, "") ?? "—"}
             </div>
@@ -531,7 +538,9 @@ function Terminated({ data }: { data: Data }) {
         <div className="grid gap-x-6 px-3 py-2 text-xs sm:grid-cols-2 lg:grid-cols-3">
           {t.byCircuit.map((c) => (
             <div key={c.circuit} className="flex items-center gap-2 py-1">
-              <span className="min-w-0 flex-1 truncate">{c.circuit}</span>
+              <span className="min-w-0 flex-1 truncate" title={c.circuit}>
+                {c.circuit}
+              </span>
               <span className="text-muted-foreground">{n(c.mdls)} MDLs</span>
               <span className="w-12 text-right tabular-nums">{c.remandPct ?? "—"}%</span>
             </div>

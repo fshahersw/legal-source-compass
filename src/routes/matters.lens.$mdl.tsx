@@ -16,7 +16,7 @@ export const Route = createFileRoute("/matters/lens/$mdl")({
   head: ({ params }) =>
     pageHead(
       `MDL ${params.mdl} case lens`,
-      "One MDL across JPML trajectory, transferee court, judge, regulator signal, flags and peers.",
+      "One MDL number across the JPML pending reports, hearing sessions, GovInfo Panel orders, terminated-litigation statistics, the transferee court page, linked companies, regulator signal, flags and peers.",
     ),
   component: Page,
 });
@@ -27,9 +27,11 @@ function Page() {
   return (
     <AppShell
       title={`MDL ${raw} case lens`}
-      description="Trajectory, court, judge, regulator, automated flags and peers for one MDL, joined by MDL number."
+      description="What the corpus records for one MDL number, joined by exact MDL number: report trajectory, court and judge, hearing sessions, Panel orders, terminated litigation, court page, companies, flags and peers."
       breadcrumbs={[
         { label: "Home", to: "/" },
+        { label: "Courts", to: "/courts" },
+        { label: "Federal court analytics", to: "/courts/analytics" },
         { label: "MDL analytics", to: "/matters/analytics" },
         { label: `MDL ${raw}` },
       ]}

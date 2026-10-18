@@ -2,6 +2,7 @@
 import io
 import sys
 import unittest
+import urllib.parse
 import zipfile
 from pathlib import Path
 
@@ -95,6 +96,26 @@ class FarsTests(unittest.TestCase):
         self.assertEqual(totals, {"AL": 3, "DC": 1})
         self.assertEqual(crashes["AL"], 2)
         self.assertTrue(name.endswith("ACCIDENT.csv"))
+
+
+class SourceUrlTests(unittest.TestCase):
+    def test_fars_archive_url_is_the_exact_yearly_file(self):
+        self.assertEqual(p.fars_national_csv_url(2024),
+                         "https://static.nhtsa.gov/nhtsa/downloads/FARS/2024/National/FARS2024NationalCSV.zip")
+        self.assertEqual(p.fars_national_csv_url("2014"),
+                         "https://static.nhtsa.gov/nhtsa/downloads/FARS/2014/National/FARS2014NationalCSV.zip")
+
+    def test_builder_links_no_unlistable_bucket_folder(self):
+        # static.nhtsa.gov is an S3 bucket: a folder URL there returns 404, so a source link must be a file or a page.
+        import build_state_metrics as b
+        self.assertEqual(b.SRC["fars"]["url"], p.FARS_LISTING)
+        self.assertEqual(b.SRC["fars"]["page"], "https://www.nhtsa.gov/research-data/fatality-analysis-reporting-system-fars")
+        for key, src in b.SRC.items():
+            for field in ("url", "page"):
+                parts = urllib.parse.urlsplit(src[field])
+                with self.subTest(source=key, field=field):
+                    self.assertEqual(parts.scheme, "https")
+                    self.assertFalse(parts.netloc.startswith("static.") and parts.path.endswith("/"), src[field])
 
 
 class ComplaintTests(unittest.TestCase):

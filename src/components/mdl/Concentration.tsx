@@ -84,7 +84,7 @@ export function Concentration({ data }: { data: MdlIntel }) {
                   <YAxis type="category" dataKey="name" tick={axis} width={128} interval={0} />
                   <Tooltip
                     formatter={(v: number, _k, p) => [
-                      `${n(v)} actions · ${p.payload.mdls} MDLs · ${pct(p.payload.sharePct)} of all`,
+                      `${n(v)} ${v === 1 ? "action" : "actions"} · ${n(p.payload.mdls)} ${p.payload.mdls === 1 ? "MDL" : "MDLs"} · ${pct(p.payload.sharePct)} of all`,
                       "Pending",
                     ]}
                   />
@@ -136,7 +136,7 @@ export function Concentration({ data }: { data: MdlIntel }) {
                       {j.judge}
                     </th>
                     <td className="px-2 py-1 text-muted-foreground">{j.districts.join(", ")}</td>
-                    <td className="px-2 py-1 text-right">{j.mdls}</td>
+                    <td className="px-2 py-1 text-right">{n(j.mdls)}</td>
                     <td className="px-2 py-1 text-right">{n(j.pending)}</td>
                     <td className="px-3 py-1">
                       <span className="flex items-center gap-1.5">
@@ -167,8 +167,13 @@ export function Concentration({ data }: { data: MdlIntel }) {
                 <BarChart data={data.ages} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
                   <CartesianGrid stroke="var(--border)" vertical={false} />
                   <XAxis dataKey="bucket" tick={axis} interval={0} />
-                  <YAxis tick={axis} width={28} allowDecimals={false} />
-                  <Tooltip />
+                  <YAxis
+                    tick={axis}
+                    width={28}
+                    allowDecimals={false}
+                    tickFormatter={(v: number) => n(v)}
+                  />
+                  <Tooltip formatter={(v: number) => `${n(v)} ${v === 1 ? "MDL" : "MDLs"}`} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
                   <Bar
                     dataKey="all"

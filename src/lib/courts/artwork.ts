@@ -1,3 +1,6 @@
+// Relative .ts import: scripts/enrichment/verify_court_artwork.mjs loads this module in plain Node.
+import { isHeldMediaLabel } from "../corpus/heldMedia.ts";
+
 export type CourtArtworkKind = "seal" | "banner" | "photo";
 
 export type VerifiedCourtArtwork = {
@@ -154,12 +157,14 @@ export function courtTypeCoverage(rows: readonly { system: string; type: string 
   );
 }
 
+/** A stored court image to show when no verified or community artwork exists; held images never qualify. */
 export function recordedCourtArtwork(links: readonly { url: string; label: string }[]) {
   const candidates = links.filter(
     (link) =>
       /^\/(?!\/)/.test(link.url) &&
       !link.url.includes("\\") &&
-      /seal|image|logo|court mark/i.test(link.label),
+      /seal|image|logo|court mark/i.test(link.label) &&
+      !isHeldMediaLabel(link.label),
   );
   return candidates.find((link) => /seal/i.test(link.label)) ?? candidates[0] ?? null;
 }

@@ -1,10 +1,11 @@
-import { useMemo } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
   Bar,
   BarChart,
   CartesianGrid,
+  Legend,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -17,9 +18,17 @@ import { CourtArtwork } from "@/components/corpus/CourtArtwork";
 import { AgencyMark, JudgePortrait } from "@/components/corpus/EntityArtwork";
 import { FDA_COLORS } from "@/components/fda-analytics/chartView";
 import { mdlAnalyticsQuery } from "@/components/matters/MdlAnalytics";
+import { compact, title as litigationTitle } from "@/components/mdl/intelFormat";
+import { LeadershipList } from "@/components/mdl/LeadershipList";
+import { CourtOrderLink } from "@/components/mdl/PacerLabel";
 import { getMdlLens, type MdlLens as Lens } from "@/lib/external/mdlLens.functions";
 import { getCourtStatsDistrict } from "@/lib/external/courtStats.functions";
-import type { LensCompany } from "@/lib/external/mdlLens.functions";
+import type {
+  LensCompany,
+  LensHearing,
+  LensPanelOrder,
+  LensTerminated,
+} from "@/lib/external/mdlLens.functions";
 import type { CourtMdl } from "@/lib/external/mdlIntel.functions";
 import { money } from "@/components/companies/companyData";
 import type { CourtAnalytics, NationalDistribution } from "@/lib/external/courtAnalytics.functions";
@@ -49,16 +58,34 @@ const monthYear = (v: string | null) =>
     : "Not recorded";
 const lastOf = (values: (number | null)[] | undefined) =>
   [...(values ?? [])].reverse().find((v): v is number => typeof v === "number") ?? null;
+/** "1 MDL", "3 MDLs". */
+const count = (v: number, word: string, many = `${word}s`) => `${n(v)} ${v === 1 ? word : many}`;
+const axisNumber = (v: number) => compact(v);
+const tooltipNumber = (v: unknown) => n(Number(v));
 
+/** Labels and notes wrap to two lines (full text on hover) so a narrow card never cuts them off. */
 function Kpi({ label, value, note }: { label: string; value: string; note?: string | undefined }) {
   return (
     <div className="min-w-0 bg-surface px-3 py-2">
-      <p className="truncate text-[11px] text-muted-foreground">{label}</p>
+      <p
+        className="line-clamp-2 break-words text-[11px] leading-4 text-muted-foreground"
+        title={label}
+      >
+        {label}
+      </p>
       <p className="font-mono text-lg font-semibold leading-tight">{value}</p>
-      {note ? <p className="truncate text-[10.5px] text-muted-foreground">{note}</p> : null}
+      {note ? (
+        <p className="line-clamp-2 break-words text-[10.5px] text-muted-foreground" title={note}>
+          {note}
+        </p>
+      ) : null}
     </div>
   );
 }
+
+/** "MDL 2875 · Valsartan, ..." for a linked MDL row, used as both the text and its hover title. */
+const mdlLabel = (mdl: number, title: string, prefix = "MDL ") =>
+  `${prefix}${mdl} · ${title.replace(/^IN RE:?\s*/i, "")}`;
 
 function Card({
   title,
@@ -171,10 +198,10 @@ function CourtPlHistory({ courtId }: { courtId: string }) {
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={rows} margin={{ top: 4, right: 0, bottom: 0, left: -18 }}>
             <XAxis dataKey="year" tick={{ ...axis, fontSize: 9 }} interval={2} />
-            <YAxis tick={{ ...axis, fontSize: 9 }} />
+            <YAxis tick={{ ...axis, fontSize: 9 }} tickFormatter={axisNumber} />
             <Tooltip
               contentStyle={{ fontSize: 11 }}
-              formatter={(v) => [n(Number(v)), "PL filings"]}
+              formatter={(v) => [n(Number(v)), "Products-liability filings"]}
             />
             <Bar dataKey="pl" fill={FDA_COLORS[3]} isAnimationActive={false} />
           </BarChart>
@@ -191,13 +218,22 @@ function CourtPlHistory({ courtId }: { courtId: string }) {
   );
 }
 
-function CourtCard({ court, dist }: { court: CourtAnalytics; dist: NationalDistribution | null }) {
+function CourtCard({
+  court,
+  dist,
+  className,
+}: {
+  court: CourtAnalytics;
+  dist: NationalDistribution | null;
+  className?: string | undefined;
+}) {
   const m = court.metrics;
   const others = court.mdls.filter((x) => x.pending > 0).sort((a, b) => b.pending - a.pending);
   return (
     <Card
       title="Transferee court"
       subtitle="US Courts Federal Court Management Statistics, 12 months to June 30, 2026"
+      className={className}
     >
       <div className="flex items-start gap-3">
         <CourtArtwork
@@ -216,7 +252,7 @@ function CourtCard({ court, dist }: { court: CourtAnalytics; dist: NationalDistr
             {court.name}
           </Link>
           <p className="text-[11px] text-muted-foreground">
-            {n(court.mdl_actions)} pending MDL actions across {others.length} MDLs
+            {count(court.mdl_actions, "pending MDL action")} across {count(others.length, "MDL")}
           </p>
         </div>
       </div>
@@ -252,8 +288,9 @@ function CourtCard({ court, dist }: { court: CourtAnalytics; dist: NationalDistr
                   to="/matters/lens/$mdl"
                   params={{ mdl: String(x.mdl) }}
                   className="truncate text-primary hover:underline"
+                  title={mdlLabel(x.mdl, x.title)}
                 >
-                  MDL {x.mdl} · {x.title.replace(/^IN RE:?\s*/i, "")}
+                  {mdlLabel(x.mdl, x.title)}
                 </Link>
                 <span className="shrink-0 font-mono text-muted-foreground">{n(x.pending)}</span>
               </li>
@@ -265,12 +302,24 @@ function CourtCard({ court, dist }: { court: CourtAnalytics; dist: NationalDistr
   );
 }
 
-function JudgeCard({ judge, mdl }: { judge: FjcProfile; mdl: number }) {
+function JudgeCard({
+  judge,
+  mdl,
+  className,
+}: {
+  judge: FjcProfile;
+  mdl: number;
+  className?: string | undefined;
+}) {
   const current = judge.services.filter((s) => !s.termination).at(-1) ?? judge.services.at(-1);
   const others = judge.mdls.filter((x) => x.mdl !== mdl).sort((a, b) => b.pending - a.pending);
   const load = judge.mdls.reduce((s, x) => s + x.pending, 0);
   return (
-    <Card title="Transferee judge" subtitle="Federal Judicial Center biographical directory">
+    <Card
+      title="Transferee judge"
+      subtitle="Federal Judicial Center biographical directory"
+      className={className}
+    >
       <div className="flex items-start gap-3">
         <JudgePortrait name={judge.name} photo={null} />
         <div className="min-w-0">
@@ -312,8 +361,9 @@ function JudgeCard({ judge, mdl }: { judge: FjcProfile; mdl: number }) {
                   to="/matters/lens/$mdl"
                   params={{ mdl: String(x.mdl) }}
                   className="truncate text-primary hover:underline"
+                  title={mdlLabel(x.mdl, x.title)}
                 >
-                  MDL {x.mdl} · {x.title.replace(/^IN RE:?\s*/i, "")}
+                  {mdlLabel(x.mdl, x.title)}
                 </Link>
                 <span className="shrink-0 font-mono text-muted-foreground">{n(x.pending)}</span>
               </li>
@@ -335,6 +385,9 @@ function SignalCard({ signal }: { signal: MassTortSignal }) {
   const rows = reportYears(signal, year);
   const terms = signal.topTerms.slice(0, 8);
   const maxTerm = Math.max(1, ...terms.map((t) => t.count));
+  // Terms are stored as the source's top list; spellings differing only in case are combined (mergeTermCase).
+  const recorded = signal.topTerms.reduce((s, t) => s + t.variants.length, 0);
+  const merged = signal.topTerms.find((t) => t.variants.length > 1);
   return (
     <Card
       title="Regulator and product signal"
@@ -350,7 +403,13 @@ function SignalCard({ signal }: { signal: MassTortSignal }) {
                 {regulator.short} · {regulator.name}
               </p>
               <p className="text-muted-foreground">
-                {n(signal.eventTotal)} reports on record · {n(signal.recallTotal)} recalls
+                {signal.eventTotal == null
+                  ? "Reports not recorded"
+                  : `${count(signal.eventTotal, "report")} on record`}{" "}
+                ·{" "}
+                {signal.recallTotal == null
+                  ? "recalls not recorded"
+                  : count(signal.recallTotal, "recall")}
               </p>
             </div>
           </div>
@@ -362,8 +421,8 @@ function SignalCard({ signal }: { signal: MassTortSignal }) {
               <BarChart data={rows} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
                 <CartesianGrid stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="year" tick={axis} interval={2} />
-                <YAxis tick={axis} />
-                <Tooltip contentStyle={{ fontSize: 11 }} />
+                <YAxis tick={axis} tickFormatter={axisNumber} />
+                <Tooltip contentStyle={{ fontSize: 11 }} formatter={tooltipNumber} />
                 <Bar
                   dataKey="reports"
                   name="Reports"
@@ -383,7 +442,14 @@ function SignalCard({ signal }: { signal: MassTortSignal }) {
                 {terms.map((t) => (
                   <li key={t.term} className="text-[11px]">
                     <span className="flex justify-between gap-2">
-                      <span className="truncate">{t.term}</span>
+                      <span
+                        className="truncate"
+                        title={
+                          t.variants.length > 1 ? `Combines ${t.variants.join(" + ")}` : t.term
+                        }
+                      >
+                        {t.term}
+                      </span>
                       <span className="font-mono text-muted-foreground">{n(t.count)}</span>
                     </span>
                     <span className="mt-0.5 block h-1 rounded-full bg-muted">
@@ -395,6 +461,13 @@ function SignalCard({ signal }: { signal: MassTortSignal }) {
                   </li>
                 ))}
               </ul>
+              {merged ? (
+                <p className="mt-1 text-[10.5px] leading-snug text-muted-foreground">
+                  Spellings that differ only in letter case are counted together (for example{" "}
+                  {merged.variants.map((v) => `“${v}”`).join(" and ")}), within the {recorded} most
+                  reported terms recorded from the source; a spelling outside those is not included.
+                </p>
+              ) : null}
             </div>
           ) : null}
           {signal.recentRecalls.length ? (
@@ -409,7 +482,10 @@ function SignalCard({ signal }: { signal: MassTortSignal }) {
                     <span className="font-medium">{r.classification ?? ""}</span>{" "}
                     {r.recalling_firm ?? ""}
                     {r.reason_for_recall ? (
-                      <span className="block truncate text-muted-foreground">
+                      <span
+                        className="block truncate text-muted-foreground"
+                        title={r.reason_for_recall}
+                      >
                         {r.reason_for_recall}
                       </span>
                     ) : null}
@@ -598,25 +674,110 @@ function CompaniesCard({ companies: all }: { companies: LensCompany[] }) {
   );
 }
 
-function CourtPageCard({ page }: { page: CourtMdl | null }) {
+/**
+ * The court-page index is built from this JPML report, a different publication from the monthly
+ * "Distribution of Pending MDL Dockets by Actions Pending" series behind the trajectory and peer ranking.
+ */
+const BY_TYPE_REPORT = "the JPML “Pending MDL Dockets by MDL Type” report of 10/1/2026";
+const ACTIONS_PENDING_SERIES =
+  "the JPML monthly “Distribution of Pending MDL Dockets by Actions Pending” reports";
+
+function CourtPageCard({
+  page,
+  sourceUrl,
+  sourceLabel,
+  className,
+}: {
+  page: CourtMdl | null;
+  /** The court-page record's own source (the court page, or the JPML report it was listed in). */
+  sourceUrl?: string | null | undefined;
+  /** The JPML report the source URL is, when it is the docket-type report (courtPageSourceLabel). */
+  sourceLabel?: string | null | undefined;
+  className?: string | undefined;
+}) {
   if (!page || !page.pages.length)
     return (
-      <Card title="Transferee court MDL page" subtitle="Official court website">
+      <Card
+        title="Transferee court MDL page"
+        subtitle="Official court website"
+        className={className}
+      >
         <p className="text-[11px] text-muted-foreground">
-          No official MDL page for this docket was located on the transferee court's website.
+          {!page ? (
+            `Transferee-court pages are indexed for the pending products-liability MDLs on ${BY_TYPE_REPORT}; this docket is not among them.`
+          ) : page.status !== "transferred" ? (
+            <>
+              Listed on {sourceLabel ?? BY_TYPE_REPORT} but not transferred as of that report
+              {page.transferOrderFiled ? (
+                <>
+                  ; the Panel&rsquo;s{" "}
+                  {page.transferOrderUrl ? (
+                    <a
+                      href={page.transferOrderUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      transfer order
+                    </a>
+                  ) : (
+                    "transfer order"
+                  )}{" "}
+                  was filed {page.transferOrderFiled}
+                  {page.judge || page.districtLabel
+                    ? ` (${[page.judge, page.districtLabel].filter(Boolean).join(", ")})`
+                    : ""}
+                </>
+              ) : (
+                "; no transfer order date is recorded"
+              )}
+              . No transferee-court MDL page is indexed for it.
+            </>
+          ) : page.failedPages.length ? (
+            <>
+              The official MDL page was located on the transferee court's website but could not be
+              fetched (
+              {page.failedPages.map((p, i) => (
+                <span key={p.url}>
+                  {i ? ", " : ""}
+                  <a
+                    href={p.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    {p.status ? `HTTP ${p.status}` : "no response"}
+                  </a>
+                </span>
+              ))}
+              ).
+            </>
+          ) : (
+            "No official MDL page for this docket was located on the transferee court's website."
+          )}
         </p>
+        {page && sourceUrl ? (
+          <a
+            href={sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-2 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+          >
+            {sourceLabel ? `Source: ${sourceLabel.replace(/^the /, "")}` : "Source of this record"}{" "}
+            <ExternalLink className="size-3" aria-hidden="true" />
+          </a>
+        ) : null}
       </Card>
     );
   const orders = page.latestOrders.filter((o) => !o.vacated).slice(0, 6);
   const bellwether = page.quotes.filter((q) => q.category === "bellwether").slice(0, 3);
   const settlement = page.quotes.filter((q) => q.category === "settlement").slice(0, 2);
-  const leadership = page.leadership.slice(0, 2);
   const retrieved = page.pages[0]?.retrieved;
   return (
     <Card
       title="Transferee court MDL page"
       subtitle={`Quoted verbatim from the court's own pages${retrieved ? `, retrieved ${retrieved}` : ""}; counsel contact details removed.`}
-      className="lg:col-span-2"
+      className={cn("lg:col-span-2", className)}
     >
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="min-w-0 space-y-3">
@@ -641,48 +802,39 @@ function CourtPageCard({ page }: { page: CourtMdl | null }) {
             {orders.length ? (
               <ul className="mt-1 space-y-1 text-[11px]">
                 {orders.map((o) => (
-                  <li key={o.url + o.title} className="flex gap-2">
+                  <li key={o.url + o.title} className="flex items-start gap-2">
                     <span className="w-20 shrink-0 font-mono text-muted-foreground">
                       {o.date ?? o.datePrinted ?? "—"}
                     </span>
-                    <a
-                      href={o.url}
-                      target="_blank"
-                      rel="noreferrer"
+                    <CourtOrderLink
+                      order={o}
                       className="min-w-0 truncate text-primary hover:underline"
-                      title={o.title}
-                    >
-                      {o.title}
-                    </a>
+                    />
                   </li>
                 ))}
               </ul>
             ) : (
               <p className="mt-1 text-[11px] text-muted-foreground">
-                The page lists no dated orders that could be read.
+                {page.ordersTotal
+                  ? `None of the ${count(page.ordersTotal, "order")} extracted from the court page has a date that could be read.`
+                  : "No orders were extracted from the court page; the page itself may list them."}
               </p>
             )}
           </div>
-          {leadership.length ? (
+          {page.leadership.length ? (
             <div>
               <p className="text-[11px] font-medium">Leadership as listed</p>
-              {leadership.map((block) => (
-                <div key={block.heading + block.url} className="mt-1 text-[11px]">
-                  <p className="font-medium text-muted-foreground">{block.heading}</p>
-                  <ul className="mt-0.5 space-y-0.5">
-                    {block.lines.slice(0, 6).map((line, i) => (
-                      <li key={i} className="truncate" title={line}>
-                        {line}
-                      </li>
-                    ))}
-                    {block.lines.length > 6 ? (
-                      <li className="text-muted-foreground">
-                        and {block.lines.length - 6} more lines
-                      </li>
-                    ) : null}
-                  </ul>
-                </div>
-              ))}
+              <p className="text-[10.5px] text-muted-foreground">
+                Names, firms and roles as printed on the court page; contact details are not shown.
+              </p>
+              <LeadershipList
+                sections={page.leadership}
+                initialSections={3}
+                initialLines={6}
+                moreRoles={page.leadershipMore}
+                moreUrl={page.leadershipMoreUrl}
+                className="mt-1.5"
+              />
             </div>
           ) : null}
         </div>
@@ -734,9 +886,19 @@ function CourtPageCard({ page }: { page: CourtMdl | null }) {
   );
 }
 
-function FlagsCard({ insights }: { insights: SafetyInsight[] }) {
+function FlagsCard({
+  insights,
+  className,
+}: {
+  insights: SafetyInsight[];
+  className?: string | undefined;
+}) {
   return (
-    <Card title="Automated flags" subtitle="From the regulatory-watch detectors on /safety">
+    <Card
+      title="Automated flags"
+      subtitle="From the regulatory-watch detectors on /safety"
+      className={className}
+    >
       {insights.length ? (
         <ul className="space-y-2">
           {insights.map((i) => (
@@ -805,8 +967,9 @@ function PeersCard({ mdl, type }: { mdl: number; type: string | null }) {
                         "truncate hover:underline",
                         self ? "font-semibold text-primary" : "text-foreground",
                       )}
+                      title={mdlLabel(p.mdl, p.title)}
                     >
-                      {p.mdl} · {p.title.replace(/^IN RE:?\s*/i, "")}
+                      {mdlLabel(p.mdl, p.title, "")}
                     </Link>
                     <span className="shrink-0 font-mono text-muted-foreground">{n(p.pending)}</span>
                   </span>
@@ -826,6 +989,427 @@ function PeersCard({ mdl, type }: { mdl: number; type: string | null }) {
         </>
       )}
     </Card>
+  );
+}
+
+const HEARINGS_SHOWN = 6;
+
+/** Dockets on the Panel's hearing-session Schedule of Matters for this MDL number, with the order or report found. */
+function HearingsCard({
+  hearings,
+  className,
+}: {
+  hearings: LensHearing[];
+  className?: string | undefined;
+}) {
+  const [all, setAll] = useState(false);
+  const shown = all ? hearings : hearings.slice(0, HEARINGS_SHOWN);
+  return (
+    <Card
+      title="JPML hearing sessions"
+      subtitle="Listed on the Panel's hearing-session Schedule of Matters; an outcome is shown only from a published order or JPML report"
+      className={className}
+    >
+      <ul className="space-y-2 text-[11px]">
+        {shown.map((h) => (
+          <li
+            key={`${h.session}:${h.section}`}
+            className="border-t border-border/60 pt-2 first:border-0 first:pt-0"
+          >
+            <p className="flex flex-wrap items-baseline gap-x-2">
+              <span className="font-mono text-muted-foreground">{h.session}</span>
+              <span className="text-muted-foreground">
+                Section {h.section} ·{" "}
+                {h.section === "A" ? "motion to centralize" : "CTO opposition or other matter"}
+              </span>
+            </p>
+            <p className="mt-0.5">
+              <span className="font-medium">{h.outcomeLabel}</span>
+              {h.district ? <span className="text-muted-foreground"> → {h.district}</span> : null}
+              {h.requestedDistrict ? (
+                <span className="text-muted-foreground">
+                  {" "}
+                  · motion asked for {h.requestedDistrict}
+                </span>
+              ) : null}
+              {h.actionsListed != null ? (
+                <span className="text-muted-foreground">
+                  {" "}
+                  · {count(h.actionsListed, "action")} listed
+                </span>
+              ) : null}
+            </p>
+            {h.evidenceQuote ? (
+              <p className="mt-1 border-l-2 border-border pl-2 leading-snug">
+                <span className="text-muted-foreground">{h.evidenceQuote.label}: </span>
+                <q>
+                  {h.evidenceQuote.text}
+                  {h.evidenceQuote.clipped ? " …" : ""}
+                </q>
+                {h.evidenceQuote.clipped ? (
+                  <span className="text-muted-foreground"> (stored text ends here)</span>
+                ) : null}
+              </p>
+            ) : null}
+            <p className="mt-0.5 flex flex-wrap gap-x-3">
+              {h.evidenceUrl ? (
+                <a
+                  href={h.evidenceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  {h.evidenceLabel ?? "Order"}
+                  {h.evidenceDate ? `, ${h.evidenceDate}` : ""}{" "}
+                  <ExternalLink className="inline size-3 align-[-2px]" aria-hidden="true" />
+                </a>
+              ) : null}
+              {h.noticeUrl ? (
+                <a
+                  href={h.noticeUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  Hearing-session notice{" "}
+                  <ExternalLink className="inline size-3 align-[-2px]" aria-hidden="true" />
+                </a>
+              ) : null}
+            </p>
+          </li>
+        ))}
+      </ul>
+      {hearings.length > HEARINGS_SHOWN ? (
+        <button
+          type="button"
+          onClick={() => setAll(!all)}
+          aria-expanded={all}
+          className="mt-2 rounded text-[11px] text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          {all ? "Show fewer" : `Show all ${n(hearings.length)} listings`}
+        </button>
+      ) : null}
+    </Card>
+  );
+}
+
+/** Entries of the JPML terminated-litigations report for this MDL number, one per transferee district. */
+function TerminatedCard({
+  rows,
+  className,
+}: {
+  rows: LensTerminated[];
+  className?: string | undefined;
+}) {
+  const sources = [...new Set(rows.map((r) => r.sourceUrl).filter((u): u is string => !!u))];
+  return (
+    <Card
+      title="Terminated litigation"
+      subtitle="As printed in the JPML terminated-litigations report, one entry per transferee district"
+      className={className}
+    >
+      <ul className="space-y-3 text-[11px]">
+        {rows.map((r) => (
+          <li key={`${r.districtCode ?? r.districtName}:${r.year}`}>
+            <p className="font-medium">
+              {r.districtName ?? "District not recorded"}
+              {r.circuit ? (
+                <span className="font-normal text-muted-foreground"> · {r.circuit}</span>
+              ) : null}
+            </p>
+            <p className="text-muted-foreground">
+              {r.judge ?? "Judge not recorded"} · terminated {r.year ?? "year not recorded"} ·
+              caption as printed: “{r.caption}”
+            </p>
+            <dl className="mt-1.5 grid grid-cols-2 gap-px overflow-hidden rounded-md border border-border bg-border/60 sm:grid-cols-4">
+              {(
+                [
+                  ["Transferred", r.transferred],
+                  ["Filed in transferee court", r.filedInTransferee],
+                  ["Closed", r.closed],
+                  ["Remanded", r.remanded],
+                ] as const
+              ).map(([label, value]) => (
+                <div key={label} className="min-w-0 bg-surface px-2 py-1.5">
+                  <dt
+                    className="line-clamp-2 break-words text-[10.5px] text-muted-foreground"
+                    title={label}
+                  >
+                    {label}
+                  </dt>
+                  <dd className="font-mono text-[13px] font-semibold">{n(value)}</dd>
+                </div>
+              ))}
+            </dl>
+          </li>
+        ))}
+      </ul>
+      {sources.map((url) => (
+        <a
+          key={url}
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-2 inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+        >
+          Source: JPML terminated-litigations report{" "}
+          <ExternalLink className="size-3" aria-hidden="true" />
+        </a>
+      ))}
+    </Card>
+  );
+}
+
+/** Panel orders published on GovInfo for this MDL number (mdl_intel_hearing_orders, ids order:<package>-<part>). */
+function PanelOrdersCard({
+  orders,
+  className,
+}: {
+  orders: LensPanelOrder[];
+  className?: string | undefined;
+}) {
+  return (
+    <Card
+      title="Panel orders on GovInfo"
+      subtitle="Order type as read from the start of GovInfo's docket text. Dated by signature when the text states one, otherwise by GovInfo's package date, which can be years after the order."
+      className={className}
+    >
+      <ul className="space-y-2 text-[11px]">
+        {orders.map((o) => {
+          const facts = [
+            o.natureOfSuit ? `GovInfo nature of suit: ${o.natureOfSuit}` : null,
+            o.transfereeCourt ? `transferee court ${o.transfereeCourt}` : null,
+            o.transfereeJudge ? `Judge ${o.transfereeJudge}` : null,
+            o.actionsTransferred != null
+              ? `${count(o.actionsTransferred, "action")} transferred`
+              : null,
+            o.initialMotion ? "rules on the initial motion" : null,
+          ].filter((f): f is string => !!f);
+          return (
+            <li key={o.id} className="border-t border-border/60 pt-2 first:border-0 first:pt-0">
+              <p className="flex flex-wrap items-baseline gap-x-2">
+                <span className="text-muted-foreground">
+                  {o.signedDate || o.issued ? (
+                    <>
+                      {o.signedDate ? "Signed" : "GovInfo date"}{" "}
+                      <span className="font-mono">{o.signedDate ?? o.issued}</span>
+                    </>
+                  ) : (
+                    "Date not recorded"
+                  )}
+                </span>
+                <span className="font-medium">{o.kindLabel}</span>
+              </p>
+              {o.title ? <p className="mt-0.5 break-words">{o.title}</p> : null}
+              {facts.length ? (
+                <p className="mt-0.5 break-words text-muted-foreground">{facts.join(" · ")}</p>
+              ) : null}
+              <p className="mt-0.5 flex flex-wrap gap-x-3">
+                {o.pdfUrl ? (
+                  <a
+                    href={o.pdfUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    Order PDF (GovInfo){" "}
+                    <ExternalLink className="inline size-3 align-[-2px]" aria-hidden="true" />
+                  </a>
+                ) : null}
+                {o.detailsUrl ? (
+                  <a
+                    href={o.detailsUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-primary hover:underline"
+                  >
+                    GovInfo details{" "}
+                    <ExternalLink className="inline size-3 align-[-2px]" aria-hidden="true" />
+                  </a>
+                ) : null}
+              </p>
+            </li>
+          );
+        })}
+      </ul>
+    </Card>
+  );
+}
+
+/** A card renderer given the grid class it should take; null when the card has nothing to show. */
+type CardSlot = ((className: string | undefined) => React.ReactNode) | null;
+
+/** Half-width cards in a two-column row; an odd last card spans the row instead of leaving half of it empty. */
+function PairedCards({ slots }: { slots: CardSlot[] }) {
+  const cards = slots.filter((s): s is NonNullable<CardSlot> => s !== null);
+  if (!cards.length) return null;
+  return (
+    <div className="grid gap-3 lg:grid-cols-2">
+      {cards.map((card, i) => (
+        <Fragment key={i}>
+          {card(i === cards.length - 1 && cards.length % 2 === 1 ? "lg:col-span-2" : undefined)}
+        </Fragment>
+      ))}
+    </div>
+  );
+}
+
+const reportMonth = (iso: string | null) =>
+  iso && /^\d{4}-\d{2}-\d{2}$/.test(iso)
+    ? new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+        timeZone: "UTC",
+      })
+    : null;
+
+/**
+ * An MDL number that is not in the JPML pending-report series: show every record kept for that exact number,
+ * each with its own source, and say plainly which series it is missing from.
+ */
+function RecordedOnly({ mdl, lens }: { mdl: number; lens: Lens }) {
+  const first = reportMonth(lens.series.first);
+  const asOf = reportMonth(lens.series.asOf);
+  const range = first && asOf ? `${first} to ${asOf}` : null;
+  const sessions =
+    lens.hearingCoverage.first && lens.hearingCoverage.last
+      ? ` (sessions ${lens.hearingCoverage.first} to ${lens.hearingCoverage.last})`
+      : "";
+  // Each label says what its source covers, so a gap in coverage does not read as a gap in the record.
+  const recorded: [string, boolean][] = [
+    [`JPML hearing-session schedules${sessions}`, lens.hearings.length > 0],
+    ["Panel orders on GovInfo", lens.panelOrders.length + lens.panelOrdersInHearings > 0],
+    ["terminated-litigations report", lens.terminated.length > 0],
+    [
+      `transferee-court page index (pending products-liability MDLs on ${BY_TYPE_REPORT})`,
+      !!lens.courtPage,
+    ],
+    ["SEC filings naming the MDL", lens.companies.length > 0],
+    ["agency product signal", !!lens.signal],
+    ["automated flags", lens.insights.length > 0],
+  ];
+  const missing = recorded.filter(([, has]) => !has).map(([label]) => label);
+  const anything =
+    recorded.some(([, has]) => has) || !!lens.court || !!lens.judge || lens.judgeAmbiguous;
+  const facts = [
+    lens.series.reports != null ? count(lens.series.reports, "report") : null,
+    range,
+  ].filter(Boolean);
+  const notTransferred = lens.courtPage?.status === "not_transferred_as_of_report";
+  const byType = lens.courtPageSourceLabel ?? BY_TYPE_REPORT;
+  const series = (
+    <>
+      {ACTIONS_PENDING_SERIES} recorded here
+      {facts.length || lens.series.sourceUrl ? (
+        <>
+          {" "}
+          ({facts.join(", ")}
+          {facts.length && lens.series.sourceUrl ? "; " : null}
+          {lens.series.sourceUrl ? (
+            <a
+              href={lens.series.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-primary hover:underline"
+            >
+              JPML report archive
+            </a>
+          ) : null}
+          )
+        </>
+      ) : null}
+    </>
+  );
+  if (!anything)
+    return (
+      <p className="rounded-lg border border-border px-4 py-4 text-sm text-muted-foreground">
+        No records for MDL {mdl}. It is not in {series}, and no hearing-session listing, GovInfo
+        Panel order, terminated-litigation entry, transferee-court page, SEC filing link or agency
+        signal is recorded for this MDL number.
+      </p>
+    );
+  const t = lens.recordedTitle;
+  // Hearing schedules print titles in capitals; the heading shows them in title case and says so.
+  const caseNormalized = !!t && !/[a-z]/.test(t.title.replace(/^IN RE:?\s*/i, ""));
+  const courtPageFull = !!lens.courtPage?.pages.length;
+  const { court, judge, courtPage } = lens;
+  const slots: CardSlot[] = [
+    lens.hearings.length ? (c) => <HearingsCard hearings={lens.hearings} className={c} /> : null,
+    lens.panelOrders.length
+      ? (c) => <PanelOrdersCard orders={lens.panelOrders} className={c} />
+      : null,
+    lens.terminated.length ? (c) => <TerminatedCard rows={lens.terminated} className={c} /> : null,
+    // A court page with fetched pages takes a full row of its own below.
+    courtPage && !courtPageFull
+      ? (c) => (
+          <CourtPageCard
+            page={courtPage}
+            sourceUrl={lens.courtPageSourceUrl}
+            sourceLabel={lens.courtPageSourceLabel}
+            className={c}
+          />
+        )
+      : null,
+    court ? (c) => <CourtCard court={court} dist={lens.courtDistributions} className={c} /> : null,
+    judge ? (c) => <JudgeCard judge={judge} mdl={mdl} className={c} /> : null,
+    lens.insights.length ? (c) => <FlagsCard insights={lens.insights} className={c} /> : null,
+  ];
+  return (
+    <div className="space-y-3">
+      <section className="rounded-lg border border-border bg-surface" aria-label="MDL summary">
+        <div className="px-4 py-3">
+          <p className="text-[11px] text-muted-foreground">
+            MDL {mdl} ·{" "}
+            {notTransferred
+              ? `listed on ${byType} but not transferred as of that report, so it has no actions-pending series`
+              : `not in ${ACTIONS_PENDING_SERIES}`}
+          </p>
+          <h2 className="mt-0.5 text-base font-semibold leading-snug">
+            {t ? litigationTitle(t.title) : `MDL ${mdl}`}
+          </h2>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            {t
+              ? `Title from ${t.source}${caseNormalized ? ", printed there in capitals" : ""}.`
+              : "No litigation title is recorded for this MDL number."}
+          </p>
+        </div>
+        <p
+          role="note"
+          className="border-t border-border bg-muted/40 px-4 py-2 text-[11.5px] leading-snug text-muted-foreground"
+        >
+          MDL {mdl} does not appear in {series}, so no pending-action trajectory, transferee-court
+          caseload or peer ranking is shown. Below is what other datasets record for this exact MDL
+          number, each with its source.
+        </p>
+      </section>
+
+      <PairedCards slots={slots} />
+      {courtPage && courtPageFull ? (
+        <div className="grid gap-3 lg:grid-cols-2">
+          <CourtPageCard
+            page={courtPage}
+            sourceUrl={lens.courtPageSourceUrl}
+            sourceLabel={lens.courtPageSourceLabel}
+          />
+        </div>
+      ) : null}
+      {lens.companies.length ? (
+        <div className="grid gap-3 lg:grid-cols-2">
+          <CompaniesCard companies={lens.companies} />
+        </div>
+      ) : null}
+      {lens.signal ? (
+        <div className="grid gap-3 lg:grid-cols-2">
+          <SignalCard signal={lens.signal} />
+        </div>
+      ) : null}
+      {missing.length ? (
+        <p className="rounded-lg border border-dashed border-border px-4 py-3 text-[11.5px] text-muted-foreground">
+          Not recorded for MDL {mdl}: {missing.join(", ")}.
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -849,12 +1433,7 @@ export function MdlLens({ mdl }: { mdl: number }) {
     );
   const lens: Lens = q.data;
   const m = lens.mdl;
-  if (!m)
-    return (
-      <p className="rounded-lg border border-border px-4 py-4 text-sm text-muted-foreground">
-        MDL {mdl} is not in the JPML monthly report series.
-      </p>
-    );
+  if (!m) return <RecordedOnly mdl={mdl} lens={lens} />;
   const growth = growthPct(m.pending, m.change12m);
   return (
     <div className="space-y-3">
@@ -865,7 +1444,7 @@ export function MdlLens({ mdl }: { mdl: number }) {
               MDL {m.mdl}
               {m.masterDocket ? ` · ${m.masterDocket}` : ""} · {m.type ?? "Type not recorded"} ·{" "}
               {m.status ?? "Status not recorded"}
-              {m.asOf ? ` · JPML report of ${m.asOf}` : ""}
+              {m.asOf ? ` · JPML actions-pending report of ${m.asOf}` : ""}
             </p>
             <h2 className="mt-0.5 text-base font-semibold leading-snug">{m.title}</h2>
             <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-muted-foreground">
@@ -923,11 +1502,11 @@ export function MdlLens({ mdl }: { mdl: number }) {
       <div className="grid gap-3 lg:grid-cols-3">
         <Card
           title="Trajectory"
-          subtitle="Pending and total actions, JPML monthly pending-MDL reports"
+          subtitle="Actions in each JPML monthly “Distribution of Pending MDL Dockets by Actions Pending” report"
           className="lg:col-span-2"
         >
           {m.series.length > 1 ? (
-            <div className="h-56">
+            <div className="h-60">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={m.series} margin={{ top: 4, right: 8, bottom: 0, left: -6 }}>
                   <CartesianGrid stroke="var(--border)" vertical={false} />
@@ -937,10 +1516,21 @@ export function MdlLens({ mdl }: { mdl: number }) {
                     tickFormatter={(d: string) => d.slice(0, 7)}
                     interval="preserveStartEnd"
                   />
-                  <YAxis tick={axis} />
-                  <Tooltip contentStyle={{ fontSize: 11 }} />
+                  <YAxis tick={axis} tickFormatter={axisNumber} width={44} />
+                  <Tooltip
+                    contentStyle={{ fontSize: 11 }}
+                    labelFormatter={(d) => `JPML report of ${String(d)}`}
+                    formatter={(v, name) => [count(Number(v), "action"), name]}
+                  />
+                  <Legend
+                    verticalAlign="top"
+                    align="right"
+                    height={22}
+                    iconType="plainline"
+                    wrapperStyle={{ fontSize: 11 }}
+                  />
                   <Line
-                    name="Pending"
+                    name="Pending actions"
                     dataKey="pending"
                     stroke={FDA_COLORS[0]}
                     dot={false}
@@ -948,7 +1538,7 @@ export function MdlLens({ mdl }: { mdl: number }) {
                     isAnimationActive={false}
                   />
                   <Line
-                    name="Total"
+                    name="Total historical actions (pending + closed)"
                     dataKey="total"
                     stroke={FDA_COLORS[2]}
                     dot={false}
@@ -993,8 +1583,28 @@ export function MdlLens({ mdl }: { mdl: number }) {
 
       <div className="grid gap-3 lg:grid-cols-2">
         <CompaniesCard companies={lens.companies} />
-        <CourtPageCard page={lens.courtPage} />
+        {/* The companies card spans the row, so the court-page card does too rather than leaving half empty. */}
+        <CourtPageCard
+          page={lens.courtPage}
+          sourceUrl={lens.courtPageSourceUrl}
+          sourceLabel={lens.courtPageSourceLabel}
+          className="lg:col-span-2"
+        />
       </div>
+
+      <PairedCards
+        slots={[
+          lens.hearings.length
+            ? (c) => <HearingsCard hearings={lens.hearings} className={c} />
+            : null,
+          lens.panelOrders.length
+            ? (c) => <PanelOrdersCard orders={lens.panelOrders} className={c} />
+            : null,
+          lens.terminated.length
+            ? (c) => <TerminatedCard rows={lens.terminated} className={c} />
+            : null,
+        ]}
+      />
 
       {lens.signal ? (
         <div className="grid gap-3 lg:grid-cols-2">

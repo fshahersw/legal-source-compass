@@ -23,12 +23,29 @@ import { Button } from "@/components/ui/button";
 import { BRAND_ASSETS, PRODUCT_NAME, WORKSPACE_DESCRIPTOR } from "@/lib/branding";
 import {
   PRIMARY_NAVIGATION,
+  activeContextualPath,
+  ariaCurrent,
   contextualNavigation,
   navigationSection,
 } from "@/lib/atlas/navigation";
 
 const navIcons = { map: MapIcon, book: BookOpen, clock: Clock3, library: Library };
 const NAV = PRIMARY_NAVIGATION.map((item) => ({ ...item, icon: navIcons[item.icon] }));
+
+/**
+ * Active state of a primary section link, decided by navigationSection() alone. The router only
+ * matches the exact path (always inside the same section), so it can never light another
+ * section; data-status drives the shared nav-link active style. aria-current is "page" only on
+ * the section's own page and "true" on its sub-pages.
+ */
+function primaryLinkState(pathname: string, to: string, active: boolean) {
+  return {
+    activeOptions: { exact: true, includeSearch: false },
+    activeProps: {},
+    "aria-current": ariaCurrent(pathname, to, active),
+    "data-status": active ? "active" : undefined,
+  };
+}
 
 function AccountBox({ collapsed }: { collapsed: boolean }) {
   const { user, ready } = useSessionUser();
@@ -107,7 +124,9 @@ export function AppShell({
     setCollapsed(next);
     setSidebarCollapsed(next);
   };
+  const section = navigationSection(pathname);
   const context = contextualNavigation(pathname);
+  const activeTab = activeContextualPath(pathname, context);
   function submitSearch(event: FormEvent) {
     event.preventDefault();
     const q = search.trim();
@@ -145,15 +164,14 @@ export function AppShell({
         </Link>
         <nav aria-label="Primary" className="flex flex-col gap-0.5">
           {NAV.map((item) => {
-            const active = navigationSection(pathname) === item.id;
+            const active = section === item.id;
             const badgeCount =
               item.id === "sources" ? counts.total + Object.keys(bookmarks).length : 0;
             return (
               <Link
                 key={item.to}
                 to={item.to}
-                activeOptions={{ exact: item.to === "/" }}
-                aria-current={active ? "page" : undefined}
+                {...primaryLinkState(pathname, item.to, active)}
                 title={collapsed ? item.label : undefined}
                 aria-label={collapsed ? item.label : undefined}
                 className={`nav-link relative min-h-9 ${active ? "bg-sidebar-accent font-semibold" : ""} ${collapsed ? "justify-center px-0" : ""}`}
@@ -260,17 +278,21 @@ export function AppShell({
             aria-label="Section"
             className="atlas-section-nav flex gap-0.5 overflow-x-auto border-b border-border bg-surface py-1"
           >
-            {context.map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                activeOptions={{ exact: true, includeSearch: false }}
-                className="inline-flex min-h-9 shrink-0 items-center rounded-sm px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground md:min-h-8"
-                activeProps={{ className: "bg-muted font-semibold text-primary" }}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {context.map((item) => {
+              const active = item.to === activeTab;
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  activeOptions={{ exact: true, includeSearch: false }}
+                  activeProps={{}}
+                  aria-current={ariaCurrent(pathname, item.to, active)}
+                  className={`inline-flex min-h-9 shrink-0 items-center rounded-sm px-2 py-1 text-xs md:min-h-8 ${active ? "bg-muted font-semibold text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </nav>
         ) : null}
         <nav
@@ -281,7 +303,7 @@ export function AppShell({
             <Link
               key={item.to}
               to={item.to}
-              activeOptions={{ exact: item.to === "/" }}
+              {...primaryLinkState(pathname, item.to, section === item.id)}
               className="nav-link min-h-10 whitespace-nowrap !px-2 !text-xs"
             >
               {item.label}

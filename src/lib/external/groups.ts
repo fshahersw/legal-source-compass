@@ -270,13 +270,155 @@ export type ResolvedLink =
   | { kind: "search"; q: string }
   | { kind: "entity"; type: "mdl" | "court" | "judge"; id: string }
   | { kind: "record"; dataset: string; id: string }
+  | {
+      kind: "app";
+      /** The matched route pattern from the route tree, e.g. "/companies/$cik". */
+      to: string;
+      params: Record<string, string>;
+      search: Record<string, string> | null;
+      hash: string | null;
+    }
   | { kind: "unmapped"; raw: string };
 
-/** Map a corpus link to where it lives in this app. `aliases` maps alias -> dataset id. */
-export function resolveLink(url: string, aliases: Record<string, string>): ResolvedLink {
+/**
+ * Page routes of this app, derived from the router's own route tree (`router.routesById[*].fullPath`, or the
+ * `fullPaths` of src/routeTree.gen.ts), never from a hand-kept list. Server endpoints under /api are dropped: they
+ * serve data, and stored corpus files also live under /api/... routes. Index routes ("/companies/") are normalised
+ * to their path ("/companies").
+ */
+export function pageRoutePatterns(fullPaths: Iterable<string>): string[] {
+  const out = new Set<string>();
+  for (const raw of fullPaths) {
+    if (typeof raw !== "string" || !raw.startsWith("/")) continue;
+    const path = raw === "/" ? raw : raw.replace(/\/+$/, "");
+    if (!path || path === "/api" || path.startsWith("/api/")) continue;
+    out.add(path);
+  }
+  return [...out].sort();
+}
+
+/**
+ * A named path param ("$cik"). Only named params are matched: the route tree has no splat ("$") or optional
+ * ("{-$x}") segments, and groups.test.ts fails if one is added, so the matcher is extended before stored paths
+ * under such a route could silently read as unmapped.
+ */
+const isParamPart = (part: string) => /^\$[A-Za-z_]\w*$/.test(part);
+
+const rootsCache = new WeakMap<readonly string[], Set<string>>();
+
+/** The first path segments that belong to app pages ("courts", "records", ...); a stored path there is never a file. */
+function pageRouteRoots(routes: readonly string[]): Set<string> {
+  const cached = rootsCache.get(routes);
+  if (cached) return cached;
+  const roots = new Set<string>();
+  for (const r of routes) {
+    const first = r.split("/")[1];
+    if (first && !isParamPart(first)) roots.add(first);
+  }
+  rootsCache.set(routes, roots);
+  return roots;
+}
+
+/** Exact match of decoded path segments against route patterns; static segments win over params, leftmost first. */
+function matchPageRoute(
+  segments: readonly string[],
+  routes: readonly string[],
+): { to: string; params: Record<string, string> } | null {
+  let best: { to: string; params: Record<string, string>; score: string } | null = null;
+  for (const pattern of routes) {
+    const parts = pattern === "/" ? [] : pattern.slice(1).split("/");
+    if (parts.length !== segments.length) continue;
+    const params: Record<string, string> = {};
+    let score = "";
+    let ok = true;
+    for (let i = 0; i < parts.length && ok; i++) {
+      const part = parts[i]!;
+      if (isParamPart(part)) {
+        params[part.slice(1)] = segments[i]!;
+        score += "0";
+      } else if (part === segments[i]) score += "1";
+      else ok = false;
+    }
+    if (ok && (!best || score > best.score)) best = { to: pattern, params, score };
+  }
+  return best ? { to: best.to, params: best.params } : null;
+}
+
+/**
+ * Classify a stored root-relative path ("/companies/0000001800", "/supplement-files/...") against the app's page
+ * routes. An exact route match is an in-app link; a path under a page-route root that matches no route is
+ * unmapped (it would not open anything); everything else is a stored file served by /api/files.
+ *
+ * Record paths are "/records/<dataset>/<native id>": everything after the dataset is the id, so a native id that
+ * contains "/" (for example "openfda:device/enforcement:Z-1770-2026") still opens its record.
+ */
+export function resolveRootPath(url: string, routes: readonly string[]): ResolvedLink {
+  const parts = /^([^?#]*)(\?[^#]*)?(#.*)?$/.exec(url);
+  const pathname = parts?.[1] ?? "";
+  if (!pathname.startsWith("/") || pathname.startsWith("//")) return { kind: "unmapped", raw: url };
+  const trimmed = pathname.length > 1 ? pathname.replace(/\/$/, "") : pathname;
+  let rawSegments = trimmed === "/" ? [] : trimmed.slice(1).split("/");
+  const roots = pageRouteRoots(routes);
+  if (!roots.has(rawSegments[0] ?? "")) {
+    if (rawSegments.length === 0 && routes.includes("/")) return appLink("/", {}, parts);
+    return { kind: "file", href: fileUrl(url) };
+  }
+  if (
+    rawSegments[0] === "records" &&
+    rawSegments.length > 3 &&
+    routes.includes("/records/$dataset/$id")
+  )
+    rawSegments = [rawSegments[0], rawSegments[1]!, rawSegments.slice(2).join("/")];
+  const segments: string[] = [];
+  for (const [i, seg] of rawSegments.entries()) {
+    // Only a record id may carry "/" (joined above); every segment is decoded exactly once.
+    const decoded = decodeNativeId(seg, RECORD_ID_MAX_LENGTH, RECORD_TOKEN_MAX_ENCODED_LENGTH);
+    if (decoded === null || (decoded.includes("/") && !(rawSegments[0] === "records" && i === 2)))
+      return { kind: "unmapped", raw: url };
+    segments.push(decoded);
+  }
+  const match = matchPageRoute(segments, routes);
+  if (!match) return { kind: "unmapped", raw: url };
+  if (match.to === "/records/$dataset/$id") {
+    const dataset = match.params["dataset"] ?? "";
+    if (!/^[a-z0-9_]{1,80}$/.test(dataset)) return { kind: "unmapped", raw: url };
+    // Stored record ids are raw, so a "?", "#" or trailing "/" may belong to the id itself. Opening the id without
+    // it would show a different record than the one stored, so such a path stays unmapped.
+    if (parts?.[2] || parts?.[3] || trimmed !== pathname) return { kind: "unmapped", raw: url };
+    return { kind: "record", dataset, id: match.params["id"] ?? "" };
+  }
+  return appLink(match.to, match.params, parts);
+}
+
+function appLink(
+  to: string,
+  params: Record<string, string>,
+  parts: RegExpExecArray | null,
+): ResolvedLink {
+  const query = parts?.[2] ? Object.fromEntries(new URLSearchParams(parts[2].slice(1))) : null;
+  const hash = parts?.[3] ? parts[3].slice(1) : null;
+  return {
+    kind: "app",
+    to,
+    params,
+    search: query && Object.keys(query).length ? query : null,
+    hash: hash || null,
+  };
+}
+
+/**
+ * Map a corpus link to where it lives in this app. `aliases` maps alias -> dataset id; `routes` are the app's page
+ * routes (`pageRoutePatterns` of the router's route tree), which decide whether a stored "/..." path is an in-app
+ * page or a stored file.
+ */
+export function resolveLink(
+  url: string,
+  aliases: Record<string, string>,
+  routes: readonly string[],
+): ResolvedLink {
   // The stored URL may contain raw spaces; only the href is encoded, the stored value stays as provenance.
   if (/^https?:\/\//i.test(url)) return { kind: "external", href: externalHref(url) };
-  if (url.startsWith("/")) return { kind: "file", href: fileUrl(url) };
+  if (url.startsWith("/")) return resolveRootPath(url, routes);
   if (url.startsWith("#")) {
     // Full native record identities: encodeURIComponent(id), decoded exactly once.
     // Slashes may be part of an encoded publisher path, never extra token segments.
@@ -307,6 +449,31 @@ export function resolveLink(url: string, aliases: Record<string, string>): Resol
     if (ds) return { kind: "dataset", dataset: ds, q, filters: params };
   }
   return { kind: "unmapped", raw: url };
+}
+
+/**
+ * What an openFDA MAUDE name query stored on a company_adverse_manufacturers record is known to have found, when
+ * that is recorded as nothing usable. Such a query is the search that was run, not a source:
+ * - "no_matches": the link's own label records that this query returned no results (openFDA answers it with 404
+ *   "No matches found!"), e.g. "openFDA query (no matches)". Per query, so it applies on matched records too.
+ * - "no_exact_match": the record's fact "Matched MAUDE spellings" = "None": no query found a manufacturer name
+ *   matching the company exactly (each found nothing or only other spellings; 43 of the 49 stored queries on
+ *   such records answered 404, checked 2026-10-18).
+ * null otherwise: the link stays an ordinary source link. Nothing is inferred from the query text.
+ */
+export function searchLinkOutcome(
+  dataset: string,
+  raw: Record<string, unknown>,
+  link: { url: string; label: string },
+): "no_matches" | "no_exact_match" | null {
+  if (dataset !== "company_adverse_manufacturers" || !/^https:\/\/api\.fda\.gov\//i.test(link.url))
+    return null;
+  if (/\(no matches\)\s*$/i.test(link.label)) return "no_matches";
+  const facts = raw["facts"];
+  return Array.isArray(facts) &&
+    facts.some((f) => Array.isArray(f) && f[0] === "Matched MAUDE spellings" && f[1] === "None")
+    ? "no_exact_match"
+    : null;
 }
 
 /** Invalid escapes and URL/traversal syntax remain inert; native punctuation is preserved. */

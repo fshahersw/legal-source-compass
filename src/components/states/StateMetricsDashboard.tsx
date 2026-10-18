@@ -106,22 +106,37 @@ function Kpi({
   tone?: "warning" | undefined;
   onClick?: (() => void) | undefined;
 }) {
+  // Every line is held to the card's width: labels and details wrap to two lines (full text on
+  // hover), values wrap rather than spill past the border at 1024–1280 px.
   const body = (
     <>
-      <span className="text-[11px] text-muted-foreground">{label}</span>
+      <span
+        className="line-clamp-2 w-full break-words text-[11px] text-muted-foreground"
+        title={label}
+      >
+        {label}
+      </span>
       <span
         className={cn(
-          "truncate font-mono text-lg font-semibold leading-tight",
+          "w-full break-words font-mono text-lg font-semibold leading-tight",
           tone === "warning" && "text-warning-foreground",
         )}
+        title={value}
       >
         {value}
       </span>
-      {detail ? <span className="truncate text-[11px] text-muted-foreground">{detail}</span> : null}
+      {detail ? (
+        <span
+          className="line-clamp-2 w-full break-words text-[11px] text-muted-foreground"
+          title={detail}
+        >
+          {detail}
+        </span>
+      ) : null}
     </>
   );
   const cls = cn(
-    "flex min-w-0 flex-col items-start rounded-lg border bg-surface px-3 py-2 text-left",
+    "flex min-w-0 flex-col items-start overflow-hidden rounded-lg border bg-surface px-3 py-2 text-left",
     tone === "warning" ? "border-warning/50" : "border-border",
   );
   return onClick ? (
@@ -598,7 +613,10 @@ function Dashboard({
                     <StateMark state={o.usps} className="size-6 rounded-md p-0.5" />
                     <span className="min-w-0 flex-1">
                       <span className="font-medium">{o.name}</span>
-                      <span className="block truncate text-muted-foreground">
+                      <span
+                        className="block truncate text-muted-foreground"
+                        title={`${o.metric.short} · ${o.year}${o.metric.label !== o.metric.short ? ` — ${o.metric.label}` : ""}`}
+                      >
                         {o.metric.short} · {o.year}
                       </span>
                     </span>

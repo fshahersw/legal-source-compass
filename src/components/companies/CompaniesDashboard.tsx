@@ -53,6 +53,7 @@ import {
   Spark,
   TierBadge,
 } from "./CompanyUi";
+import { pendingActionsValue } from "./companyViewNotes";
 
 export const companiesQuery = {
   queryKey: ["companies-sec-intelligence"],
@@ -195,8 +196,9 @@ function Dashboard({ data }: { data: CompaniesData }) {
           <Toggle
             on={filter.pendingOnly}
             onClick={() => setF({ pendingOnly: !filter.pendingOnly })}
+            title="Shows companies with at least one pending MDL counted as defendant exposure: the evidence excerpt reads the company as a defendant, no dismissal is reported and the link is not flagged for review. A pending MDL where the role is not stated is not counted."
           >
-            Pending MDLs only
+            Counted pending MDLs only
           </Toggle>
           <Toggle on={filter.financials} onClick={() => setF({ financials: !filter.financials })}>
             With financials
@@ -255,8 +257,21 @@ function Dashboard({ data }: { data: CompaniesData }) {
             </table>
           </div>
         ) : (
-          <p className="px-3 py-6 text-sm text-muted-foreground">
-            No companies match these filters.
+          <p role="status" className="px-3 py-6 text-sm text-muted-foreground">
+            {filter.q.trim()
+              ? `No linked company matches “${filter.q.trim()}”${
+                  filter.tier || filter.flag || filter.financials || filter.pendingOnly
+                    ? " with the selected filters"
+                    : ""
+                }.`
+              : "No linked company matches these filters."}{" "}
+            <button
+              type="button"
+              onClick={() => setF(EMPTY_FILTER)}
+              className="text-primary underline"
+            >
+              Reset filters
+            </button>
           </p>
         )}
         <div className="flex flex-wrap items-center gap-3 border-t border-border/60 px-3 py-1.5 text-xs text-muted-foreground">
@@ -296,10 +311,12 @@ function Dashboard({ data }: { data: CompaniesData }) {
 function Toggle({
   on,
   onClick,
+  title,
   children,
 }: {
   on: boolean;
   onClick: () => void;
+  title?: string | undefined;
   children: React.ReactNode;
 }) {
   return (
@@ -307,6 +324,7 @@ function Toggle({
       type="button"
       aria-pressed={on}
       onClick={onClick}
+      title={title}
       className={cn(
         "h-8 rounded-md border px-2 text-xs focus-visible:outline-2 focus-visible:outline-ring",
         on
@@ -382,6 +400,9 @@ function CompanyRow({
 }) {
   const p = c.profile;
   const acc = c.latest.litigation_accrual;
+  const tickerSic =
+    [p.tickers.slice(0, 2).join(", "), p.sicDescription].filter(Boolean).join(" · ") ||
+    "Ticker and SIC not recorded";
   return (
     <tr className="border-b border-border/50 align-top hover:bg-muted/30">
       <td className="max-w-[220px] px-2 py-1.5">
@@ -392,9 +413,8 @@ function CompanyRow({
         >
           {p.name}
         </Link>
-        <div className="truncate text-[11px] text-muted-foreground">
-          {[p.tickers.slice(0, 2).join(", "), p.sicDescription].filter(Boolean).join(" · ") ||
-            "Ticker and SIC not recorded"}
+        <div className="truncate text-[11px] text-muted-foreground" title={tickerSic}>
+          {tickerSic}
         </div>
         <div className="mt-0.5 flex flex-wrap gap-1">
           {c.exposure.strongestTier ? (
@@ -417,7 +437,11 @@ function CompanyRow({
         <div className="text-[11px] text-muted-foreground">{c.exposure.pendingMdls} counted</div>
       </td>
       <td className="px-2 py-1.5 text-right tabular-nums">
-        {count(c.exposure.pendingActions)}
+        {c.exposure.pendingMdls ? (
+          count(c.exposure.pendingActions)
+        ) : (
+          <span className="text-muted-foreground">{pendingActionsValue(c.exposure)}</span>
+        )}
         {strengthSplit(c.exposure.pendingActionsAB, c.exposure.pendingActionsC) ? (
           <div className="whitespace-nowrap text-[11px] text-muted-foreground">
             {strengthSplit(c.exposure.pendingActionsAB, c.exposure.pendingActionsC)}
@@ -621,8 +645,15 @@ function FilingsByYear({ data }: { data: CompaniesData["overview"]["filingsByYea
             <BarChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
               <CartesianGrid stroke="var(--border)" vertical={false} />
               <XAxis dataKey="year" tick={axis} interval="preserveStartEnd" minTickGap={16} />
-              <YAxis tick={axis} width={36} allowDecimals={false} />
-              <Tooltip />
+              <YAxis
+                tick={axis}
+                width={40}
+                allowDecimals={false}
+                tickFormatter={(v: number) => v.toLocaleString("en-US")}
+              />
+              <Tooltip
+                formatter={(v: number, name) => [`${v.toLocaleString("en-US")} filings`, name]}
+              />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar
                 dataKey="A"

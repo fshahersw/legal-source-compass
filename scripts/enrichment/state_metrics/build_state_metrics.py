@@ -59,7 +59,9 @@ SRC = {
              "url": "https://data.cdc.gov/api/views/xkb8-kh2a/rows.csv?accessType=DOWNLOAD",
              "page": "https://www.cdc.gov/nchs/nvss/vsrr/drug-overdose-data.htm", "file": "cdc_xkb8-kh2a_vsrr_overdose.csv"},
     "fars": {"publisher": "NHTSA National Center for Statistics and Analysis", "name": "Fatality Analysis Reporting System (FARS) national CSV files, accident.csv",
-             "url": "https://static.nhtsa.gov/nhtsa/downloads/FARS/", "page": "https://www.nhtsa.gov/research-data/fatality-analysis-reporting-system-fars",
+             # url: NHTSA's index of the FARS folder (the bucket folder itself is not listable); exact per-year
+             # archive URLs are stored in the metric's sources[0].files.
+             "url": p.FARS_LISTING, "page": "https://www.nhtsa.gov/research-data/fatality-analysis-reporting-system-fars",
              "file": "fars_<year>_national_csv.zip"},
     "nhtsa": {"publisher": "NHTSA Office of Defects Investigation", "name": "Vehicle safety complaints flat files (COMPLAINTS_RECEIVED_2020-2024, 2025-2026)",
               "url": "https://static.nhtsa.gov/odi/ffdd/cmpl/COMPLAINTS_RECEIVED_2025-2026.zip", "page": "https://www.nhtsa.gov/nhtsa-datasets-and-apis",
@@ -505,7 +507,7 @@ def main():
             sources[0] = {**sources[0], "retrieved": meta["fda"]["retrieved"], "corpus_counts": meta["fda"]["counts"],
                           "max_report_date": meta["fda"]["max_report_date"]}
         if m["key"] in ("fars_fatalities", "fars_rate"):
-            sources[0] = {**sources[0], "files": {str(y): {"url": f"https://static.nhtsa.gov/nhtsa/downloads/FARS/{y}/National/FARS{y}NationalCSV.zip",
+            sources[0] = {**sources[0], "files": {str(y): {"url": p.fars_national_csv_url(y),
                                                            "member": meta["fars_files"][y],
                                                            "sha256": files.get(f"fars_{y}_national_csv.zip", {}).get("sha256")}
                                                    for y in sorted(meta["fars_files"])}}

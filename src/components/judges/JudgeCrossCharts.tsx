@@ -181,9 +181,10 @@ export function ExperienceScatter({ points }: { points: JudgePoint[] }) {
         {series.map((s) => (
           <span key={s.key} className="inline-flex items-center gap-1">
             <span className="size-2 rounded-full" style={{ background: s.color }} aria-hidden />
-            {s.label} ({s.data.length})
+            {s.label} ({s.data.length.toLocaleString("en-US")})
           </span>
         ))}
+        <span>Vertical: actions now pending (log scale)</span>
         <span>Dot size = pending + terminated MDLs matched</span>
         {omitted ? (
           <span>{omitted} judges with 0 pending actions or no commission date not plotted</span>
@@ -242,15 +243,53 @@ export function ConcentrationCurve({ points }: { points: JudgePoint[] }) {
           </LineChart>
         </ResponsiveContainer>
       </div>
+      <div className="flex flex-wrap gap-x-3 gap-y-1 px-1 text-[11px] text-muted-foreground">
+        <span className="inline-flex items-center gap-1">
+          <span className="h-0.5 w-3 rounded-full bg-primary" aria-hidden />
+          Cumulative share of pending actions
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <span className="w-3 border-t border-dashed border-muted-foreground" aria-hidden />
+          50% of pending actions
+        </span>
+        <span>Horizontal: judges ranked by pending actions (1 = most)</span>
+      </div>
       <p className="px-1 text-[11px] text-muted-foreground">
         Top 1: {at(1)}% · top 5: {at(5)}% · top 10: {at(10)}% of pending actions across{" "}
-        {curve.length} judges. Dashed line = 50%.
+        {curve.length.toLocaleString("en-US")} judges.
       </p>
     </div>
   );
 }
 
 export type DistributionMetric = "party" | "tenure";
+
+/** Display name for a stacked series key; party keys name the appointees, tenure keys pass through. */
+const seriesLabel = (k: string) =>
+  k === "Other"
+    ? "Other / not recorded"
+    : k === "Democratic" || k === "Republican"
+      ? `${k} appointees`
+      : k;
+
+/** Colour key for the bench tiles, which draw party segments without axes. */
+function PartyKey() {
+  return (
+    <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+      {PARTIES.map((p) => (
+        <span key={p} className="inline-flex items-center gap-1">
+          <span
+            className="size-2 rounded-sm"
+            style={{ background: p === "Other" ? OTHER_PARTY_COLOR : PARTY_COLOR[p] }}
+            aria-hidden
+          />
+          {seriesLabel(p)}
+        </span>
+      ))}
+      <span>Bar length = judges, scaled to the largest bench shown; senior row drawn lighter</span>
+    </div>
+  );
+}
 
 /** Appointing-party mix of active judges, or tenure mix of all sitting judges, by district. */
 export function DistrictDistribution({
@@ -343,9 +382,23 @@ export function DistrictDistribution({
               width={150}
               interval={0}
             />
-            <Tooltip contentStyle={{ fontSize: 11 }} cursor={{ fill: "var(--muted)" }} />
+            <Tooltip
+              contentStyle={{ fontSize: 11 }}
+              cursor={{ fill: "var(--muted)" }}
+              formatter={(v, name) => [
+                `${Number(v).toLocaleString("en-US")} judge${Number(v) === 1 ? "" : "s"}`,
+                name,
+              ]}
+            />
             {keys.map((k, i) => (
-              <Bar key={k} dataKey={k} stackId="a" fill={colors[i]} isAnimationActive={false} />
+              <Bar
+                key={k}
+                dataKey={k}
+                name={seriesLabel(k)}
+                stackId="a"
+                fill={colors[i]}
+                isAnimationActive={false}
+              />
             ))}
           </BarChart>
         </ResponsiveContainer>
@@ -354,9 +407,12 @@ export function DistrictDistribution({
         {keys.map((k, i) => (
           <span key={k} className="inline-flex items-center gap-1">
             <span className="size-2 rounded-sm" style={{ background: colors[i] }} aria-hidden />
-            {k === "Other" ? "Other / not recorded" : k}
+            {seriesLabel(k)}
           </span>
         ))}
+        <span>
+          Bar length = number of {metric === "party" ? "active" : "sitting"} judges in the district
+        </span>
       </div>
     </div>
   );
@@ -388,6 +444,7 @@ export function BenchSmallMultiples({ rows }: { rows: DistrictRow[] }) {
   const maxBench = Math.max(1, ...shown.map((d) => d.sitting));
   return (
     <div className="p-3">
+      <PartyKey />
       <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {shown.map((d) => {
           const active = partySegments(d.partyActive);

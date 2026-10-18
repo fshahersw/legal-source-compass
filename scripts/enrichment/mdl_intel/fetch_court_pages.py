@@ -8,7 +8,7 @@ import concurrent.futures as cf
 import json
 import re
 import sys
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -18,7 +18,18 @@ from fetchutil import ACQ, fetch  # noqa: E402
 HERE = Path(__file__).parent
 
 
-def main(refresh=True):
+def retrieved_on(path, refresh, today):
+    """Retrieval date of the bytes being extracted. A live fetch (refresh) is today's. A cached copy (--cached) carries
+    the UTC date its file was written: fetchutil writes the cache file when the response arrives and never rewrites it
+    on a cached read, so re-extracting from the cache on a later day does not restamp an old fetch as new."""
+    if refresh or path is None or not Path(path).exists():
+        return today
+    return datetime.fromtimestamp(Path(path).stat().st_mtime, tz=timezone.utc).date().isoformat()
+
+
+def main(refresh=True, out_path=None, only=None):
+    """Fetch and extract every listed court page; write the extraction to out_path (default: the builder's input,
+    private/acq/mdl-intel/court_pages_extracted.json). `only` limits the run to those MDL numbers."""
     pages = json.loads((HERE / "court_pages.json").read_text())
     today = date.today().isoformat()
 
@@ -26,7 +37,7 @@ def main(refresh=True):
         body, path, status = fetch(url, "court_pages", refresh=refresh, timeout=45)
         if status != 200 or len(body) < 500:
             return {"url": url, "status": status, "retrieved": today, "error": "fetch_failed", "role": role}, body
-        data = extract(body, url, today, mdl)
+        data = extract(body, url, retrieved_on(path, refresh, today), mdl)
         data.update({"status": status, "raw_file": str(path.relative_to(ACQ)), "role": role})
         return data, body
 
@@ -54,15 +65,23 @@ def main(refresh=True):
         return mdl, items
 
     out = {}
-    jobs = [(int(k), urls) for k, urls in pages.items() if not k.startswith("_")]
+    jobs = [(int(k), urls) for k, urls in pages.items() if not k.startswith("_") and (not only or int(k) in only)]
     with cf.ThreadPoolExecutor(max_workers=6) as pool:
         for mdl, items in pool.map(lambda j: run(*j), jobs):
             out[str(mdl)] = items
-    (ACQ / "court_pages_extracted.json").write_text(json.dumps(out, indent=1))
+    target = Path(out_path) if out_path else ACQ / "court_pages_extracted.json"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(out, indent=1))
     for mdl, items in sorted(out.items(), key=lambda kv: int(kv[0])):
         for d in items:
             print(mdl, d.get("role"), d.get("status"), d.get("error", ""), len(d.get("orders", [])), "orders", len(d.get("quotes", [])), "quotes", d.get("text_chars"), d["url"][:95])
 
 
+def _arg(name):
+    return sys.argv[sys.argv.index(name) + 1] if name in sys.argv and sys.argv.index(name) + 1 < len(sys.argv) else None
+
+
 if __name__ == "__main__":
-    main(refresh="--cached" not in sys.argv)
+    # python3 fetch_court_pages.py [--cached] [--out private/build/mdl_intel/court_pages_extracted.json] [--only 3026,3140]
+    only = {int(x) for x in (_arg("--only") or "").split(",") if x.strip().isdigit()}
+    main(refresh="--cached" not in sys.argv, out_path=_arg("--out"), only=only or None)

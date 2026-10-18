@@ -14,8 +14,12 @@ import { ExternalLink } from "lucide-react";
 import { ChartCard, ChartUnavailable } from "@/components/fda-analytics/FdaCharts";
 import { FDA_COLORS } from "@/components/fda-analytics/chartView";
 import type { Matter, MdlIntel } from "@/lib/external/mdlIntel.functions";
+import { sessionPlace } from "@/lib/external/mdlIntelView";
 import { cn } from "@/lib/utils";
 import { axis, n, OUTCOME_COLOR, OUTCOME_LABEL, OUTCOME_ORDER, title } from "./intelFormat";
+
+const countTick = (v: number) => n(v);
+const countTooltip = (v: unknown) => n(Number(v));
 
 const SOURCE_LABEL: Record<string, string> = {
   govinfo: "GovInfo order",
@@ -135,17 +139,17 @@ export function HearingOutcomes({ data }: { data: MdlIntel }) {
                     textAnchor="end"
                     height={44}
                   />
-                  <YAxis tick={axis} width={28} allowDecimals={false} />
-                  <Tooltip labelFormatter={(_, p) => String(p?.[0]?.payload?.date ?? "")} />
-                  <Legend
-                    wrapperStyle={{ fontSize: 11 }}
-                    formatter={(v: string) => OUTCOME_LABEL[v] ?? v}
+                  <YAxis tick={axis} width={28} allowDecimals={false} tickFormatter={countTick} />
+                  <Tooltip
+                    labelFormatter={(_, p) => `Session of ${String(p?.[0]?.payload?.date ?? "")}`}
+                    formatter={countTooltip}
                   />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
                   {outcomes.map((o) => (
                     <Bar
                       key={o}
                       dataKey={o}
-                      name={o}
+                      name={OUTCOME_LABEL[o] ?? o}
                       stackId="o"
                       fill={OUTCOME_COLOR[o]}
                       isAnimationActive={false}
@@ -172,7 +176,12 @@ export function HearingOutcomes({ data }: { data: MdlIntel }) {
                     margin={{ top: 4, right: 16, bottom: 0, left: 4 }}
                   >
                     <CartesianGrid stroke="var(--border)" horizontal={false} />
-                    <XAxis type="number" tick={axis} allowDecimals={false} />
+                    <XAxis
+                      type="number"
+                      tick={axis}
+                      allowDecimals={false}
+                      tickFormatter={countTick}
+                    />
                     <YAxis
                       type="category"
                       dataKey="district"
@@ -180,7 +189,7 @@ export function HearingOutcomes({ data }: { data: MdlIntel }) {
                       width={150}
                       interval={0}
                     />
-                    <Tooltip />
+                    <Tooltip formatter={countTooltip} />
                     <Bar
                       dataKey="count"
                       name="Dockets"
@@ -206,8 +215,8 @@ export function HearingOutcomes({ data }: { data: MdlIntel }) {
                   <BarChart data={coverage} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
                     <CartesianGrid stroke="var(--border)" vertical={false} />
                     <XAxis dataKey="year" tick={axis} minTickGap={8} />
-                    <YAxis tick={axis} width={28} />
-                    <Tooltip />
+                    <YAxis tick={axis} width={28} allowDecimals={false} tickFormatter={countTick} />
+                    <Tooltip formatter={countTooltip} />
                     <Legend wrapperStyle={{ fontSize: 11 }} />
                     <Bar
                       dataKey="jpmlGranted"
@@ -231,7 +240,8 @@ export function HearingOutcomes({ data }: { data: MdlIntel }) {
         </div>
       </div>
       <div className="overflow-hidden rounded-md border border-border bg-surface">
-        <div className="max-w-full overflow-x-auto">
+        {/* relative: the sr-only caption is absolutely positioned and must not escape the scroll box. */}
+        <div className="relative max-w-full overflow-x-auto">
           <table className="w-full min-w-[680px] text-xs">
             <caption className="sr-only">Hearing sessions</caption>
             <thead className="bg-muted/50 text-left text-muted-foreground">
@@ -304,10 +314,12 @@ function SessionRows({
           </button>
         </th>
         <td
-          className="max-w-[260px] truncate px-2 py-1 text-muted-foreground"
-          title={session.location ?? undefined}
+          className="max-w-[300px] px-2 py-1 text-muted-foreground"
+          title={
+            session.locationLines.length ? session.locationLines.join(" · ") : sessionPlace(session)
+          }
         >
-          {session.location ?? "Not recorded"}
+          <span className="line-clamp-2">{sessionPlace(session)}</span>
         </td>
         <td className="px-2 py-1 tabular-nums">
           {session.machineReadable ? list.length : "Schedule not machine-readable"}

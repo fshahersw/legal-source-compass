@@ -3,7 +3,18 @@
  * mdl_intel_summary). Server-side reads only; stored JSON is validated defensively and malformed rows are dropped.
  */
 import { createServerFn } from "@tanstack/react-start";
+import { leadershipSections } from "./mdlIntelView";
 import { restGet } from "./rest.server";
+
+// Pure view helpers live in mdlIntelView.ts (client-safe); re-exported for existing callers.
+export {
+  courtPageStatus,
+  courtPageYield,
+  isRoleHeadingLine,
+  leadershipRuns,
+  leadershipSections,
+  sessionPlace,
+} from "./mdlIntelView";
 
 type Json = Record<string, unknown>;
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
@@ -43,7 +54,13 @@ export type TypeYear = { year: number; types: Record<string, number>; flag: stri
 export type Edition = { edition: number; url: string };
 export type SessionRow = {
   date: string;
+  /** First printed line of the notice's location (usually the building). */
   location: string | null;
+  /** Every printed location line, when the record carries them (building, room, street, city). */
+  locationLines: string[];
+  /** City and state only when the notice prints a "City, State ZIP" line; never inferred from the building name. */
+  city: string | null;
+  state: string | null;
   noticeUrl: string;
   machineReadable: boolean;
   tallies: Record<string, number>;
@@ -101,6 +118,8 @@ export type CourtOrder = {
   datePrinted: string | null;
   kind: string;
   vacated: boolean;
+  /** The link opens the court's CM/ECF system, which asks for a PACER login (requiresPacerLogin). */
+  pacer: boolean;
 };
 export type CourtMdl = {
   mdl: number;
@@ -117,9 +136,15 @@ export type CourtMdl = {
   pages: { url: string; title: string; retrieved: string | null }[];
   ordersTotal: number;
   latestOrders: CourtOrder[];
+  /** Court pages that were located but could not be fetched (recorded by the builder). */
+  failedPages: { url: string; status: number | null }[];
   quoteCounts: { leadership: number; bellwether: number; settlement: number };
   quotes: Quote[];
-  leadership: { heading: string; lines: string[]; url: string; contactLinesRemoved: boolean }[];
+  /** Ordered, non-overlapping leadership sections as listed on the court page (see leadershipSections). */
+  leadership: LeadershipSection[];
+  /** Leadership sections in the record beyond those included here, and the court page of the first of them. */
+  leadershipMore: number;
+  leadershipMoreUrl: string | null;
   bellwetherOrders: number;
   firstBellwetherDate: string | null;
   firstBellwetherQuote: string | null;
@@ -130,14 +155,35 @@ export type CourtMdl = {
   /** "transferred" or "not_transferred_as_of_report" (JPML pending report of 10/1/2026). */
   status: string;
   transferOrderFiled: string | null;
+  /** The Panel's transfer order for a docket not yet transferred as of the report (http(s) only). */
+  transferOrderUrl: string | null;
   bellwetherTimingNote: string | null;
 };
+
+/** One leadership role as listed on a court page: its heading, the heading it sits under, and its lines verbatim. */
+export type LeadershipSection = {
+  heading: string;
+  /** A heading printed directly above this one ("PLAINTIFFS' COUNSEL" above "Plaintiffs' Co-Lead Counsel"). */
+  group: string | null;
+  lines: string[];
+  /** Further lines on the court page that are not included in the record. */
+  moreLines: number;
+  url: string;
+  contactLinesRemoved: boolean;
+  /** The page's own "Last Updated: <date>" line printed for this role or the section above it, verbatim. */
+  updated: string | null;
+};
+/** A stored leadership block (mdl_intel_court_pages item.court.leadership_blocks), already validated. */
+export type LeadershipBlock = Omit<LeadershipSection, "moreLines"> & { linesNotShown: number };
 
 // Defence in depth: counsel are shown without contact fields even if an older record still carried them.
 const CONTACT = "[contact removed]";
 const EMAIL_RE = /[\w.+'-]+@[\w-]+(?:\.[\w-]+)+/g;
 const PHONE_RE = /(?<![\d-])(?:\+?1[\s.-]?)?(?:\(\d{3}\)\s?|\d{3}[\s.-])\d{3}[\s.-]\d{4}(?![\d-])/g;
 const scrub = (s: string) => s.replace(EMAIL_RE, CONTACT).replace(PHONE_RE, CONTACT);
+/** Payload bounds for the court-page index (every MDL in one response); the lens shows the same sections. */
+const LEADERSHIP_SECTIONS = 12;
+const LEADERSHIP_LINES = 40;
 export type MdlIntel = {
   asOf: string;
   retrieved: string | null;
@@ -256,6 +302,28 @@ function toStat(v: unknown): StatYear | null {
   };
 }
 
+/** One hearing-session row (mdl_intel_hearing_orders overview.session_rows); rows without a date or notice drop. */
+export function parseSession(v: unknown): SessionRow | null {
+  const x = obj(v);
+  const date = str(x?.["date"]);
+  const noticeUrl = str(x?.["notice_url"]);
+  if (!x || !date || !noticeUrl) return null;
+  return {
+    date,
+    location: str(x["location"]),
+    locationLines: arr(x["location_lines"]).filter(
+      (l): l is string => typeof l === "string" && !!l,
+    ),
+    city: str(x["location_city"]),
+    state: str(x["location_state"]),
+    noticeUrl,
+    machineReadable: x["machine_readable"] === true,
+    tallies: Object.fromEntries(
+      Object.entries(obj(x["tallies"]) ?? {}).filter(([, n]) => typeof n === "number"),
+    ) as Record<string, number>,
+  };
+}
+
 function toMatter(v: unknown): Matter | null {
   const m = obj(v);
   const mdl = num(m?.["mdl"]);
@@ -273,10 +341,31 @@ function toMatter(v: unknown): Matter | null {
     requestedDistrict: str(m["requested_district"]),
     actionsListed: num(m["actions_listed"]),
     evidenceSource: str(ev?.["source"]),
-    evidenceUrl: str(ev?.["url"]),
+    // Rendered as a link, so only http(s) is kept.
+    evidenceUrl: /^https?:\/\//.test(str(ev?.["url"]) ?? "") ? str(ev?.["url"]) : null,
     evidenceDate: str(ev?.["date"]),
     district: str(ev?.["district"]),
   };
+}
+
+/** One hearing-session matter (mdl_intel_hearing_orders item.matter); a row without MDL, session or section drops. */
+export function parseMatter(v: unknown): Matter | null {
+  return toMatter(v);
+}
+
+/**
+ * CM/ECF document hosts (ecf.<court>.uscourts.gov) and the PACER login and case-locator hosts. A court page
+ * that links an order there sends the reader to a PACER login, not to the document.
+ */
+const PACER_HOST =
+  /^(?:ecf\.[a-z0-9-]+\.uscourts\.gov|pacer\.login\.uscourts\.gov|pcl\.uscourts\.gov)$/i;
+export function requiresPacerLogin(url: string): boolean {
+  try {
+    const u = new URL(url);
+    return (u.protocol === "https:" || u.protocol === "http:") && PACER_HOST.test(u.hostname);
+  } catch {
+    return false;
+  }
 }
 
 function toOrder(v: unknown): CourtOrder | null {
@@ -291,6 +380,7 @@ function toOrder(v: unknown): CourtOrder | null {
     datePrinted: str(o["date_printed"]),
     kind: str(o["kind"]) ?? "other_order",
     vacated: o["vacated"] === true,
+    pacer: requiresPacerLogin(url),
   };
 }
 
@@ -306,6 +396,25 @@ function toCourt(v: unknown): CourtMdl | null {
   const c = obj(v);
   const mdl = num(c?.["mdl"]);
   if (!c || mdl === null) return null;
+  const leadership = leadershipSections(
+    arr(c["leadership_blocks"])
+      .map(obj)
+      .filter((b): b is Json => !!b && !!str(b["heading"]))
+      .map((b) => {
+        const raw = arr(b["lines"]).filter((l): l is string => typeof l === "string" && !!l);
+        const lines = raw.map(scrub);
+        return {
+          heading: str(b["heading"])!,
+          group: str(b["group"]),
+          lines,
+          linesNotShown: num(b["lines_not_shown"]) ?? 0,
+          url: str(b["url"]) ?? "",
+          contactLinesRemoved:
+            b["contact_lines_removed"] === true || lines.some((l, i) => l !== raw[i]),
+          updated: str(b["updated"]),
+        };
+      }),
+  );
   const qc = obj(c["quote_counts"]);
   const qs = obj(c["quotes"]);
   const quotes: Quote[] = [];
@@ -347,6 +456,10 @@ function toCourt(v: unknown): CourtMdl | null {
         retrieved: str(p["retrieved"]),
       })),
     ordersTotal: num(c["orders_total"]) ?? 0,
+    failedPages: arr(c["failed_pages"])
+      .map(obj)
+      .filter((p): p is Json => !!p && !!str(p["url"]))
+      .map((p) => ({ url: str(p["url"])!, status: num(p["status"]) })),
     latestOrders: arr(c["orders"])
       .map(toOrder)
       .filter((o): o is CourtOrder => o !== null)
@@ -357,29 +470,22 @@ function toCourt(v: unknown): CourtMdl | null {
       settlement: num(qc?.["settlement"]) ?? 0,
     },
     quotes,
-    leadership: arr(c["leadership_blocks"])
-      .map(obj)
-      .filter((b): b is Json => !!b && !!str(b["heading"]))
-      .slice(0, 4)
-      .map((b) => {
-        const raw = arr(b["lines"])
-          .filter((l): l is string => typeof l === "string")
-          .slice(0, 4);
-        const lines = raw.map(scrub);
-        return {
-          heading: str(b["heading"])!,
-          lines,
-          url: str(b["url"]) ?? "",
-          contactLinesRemoved:
-            b["contact_lines_removed"] === true || lines.some((l, i) => l !== raw[i]),
-        };
-      }),
+    leadership: leadership.slice(0, LEADERSHIP_SECTIONS).map((s) => ({
+      ...s,
+      lines: s.lines.slice(0, LEADERSHIP_LINES),
+      moreLines: s.moreLines + Math.max(0, s.lines.length - LEADERSHIP_LINES),
+    })),
+    leadershipMore: Math.max(0, leadership.length - LEADERSHIP_SECTIONS),
+    leadershipMoreUrl: leadership[LEADERSHIP_SECTIONS]?.url || null,
     bellwetherOrders: num(c["bellwether_orders"]) ?? 0,
     firstBellwetherDate: str(c["first_bellwether_date_quoted"]),
     firstBellwetherQuote: str(c["first_bellwether_quote"]),
     monthsToBellwether: num(c["months_transfer_to_quoted_bellwether"]),
     status: str(c["status"]) ?? "transferred",
     transferOrderFiled: str(c["transfer_order_filed"]),
+    transferOrderUrl: /^https?:\/\//.test(str(c["transfer_order_url"]) ?? "")
+      ? str(c["transfer_order_url"])
+      : null,
     bellwetherTimingNote: str(c["bellwether_timing_note"]),
     flags: arr(c["flags"]).filter((f): f is string => typeof f === "string"),
     contactMethod: str(c["contact_method"]),
@@ -463,17 +569,8 @@ export const getMdlIntel = createServerFn({ method: "GET" }).handler(
             `termination categories total ${num(x["categories_total"]) ?? "?"} vs summary table ${num(x["summary_total"]) ?? "?"}`,
         })),
       sessions: arr(h?.["session_rows"])
-        .map(obj)
-        .filter((x): x is Json => !!x && !!str(x["date"]) && !!str(x["notice_url"]))
-        .map((x) => ({
-          date: str(x["date"])!,
-          location: str(x["location"]),
-          noticeUrl: str(x["notice_url"])!,
-          machineReadable: x["machine_readable"] === true,
-          tallies: Object.fromEntries(
-            Object.entries(obj(x["tallies"]) ?? {}).filter(([, v]) => typeof v === "number"),
-          ) as Record<string, number>,
-        })),
+        .map(parseSession)
+        .filter((x): x is SessionRow => x !== null),
       matters: matters.map((r) => toMatter(r.item)).filter((m): m is Matter => m !== null),
       coverage: arr(s["govinfo_vs_jpml"])
         .map(obj)

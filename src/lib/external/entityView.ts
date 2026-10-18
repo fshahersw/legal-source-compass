@@ -76,15 +76,172 @@ function scalar(v: unknown): string | null {
 }
 const isObj = (v: unknown): v is Record<string, unknown> =>
   !!v && typeof v === "object" && !Array.isArray(v);
-function titleOf(o: Record<string, unknown>) {
+/**
+ * A nested item's own recorded name; when it has none, the label names what kind of record it is
+ * (from the collection it sits in) instead of a bare "Record".
+ */
+function titleOf(o: Record<string, unknown>, kind: string | null = null) {
   return (
     scalar(o["title"]) ??
     scalar(o["name"]) ??
     scalar(o["text"]) ??
     scalar(o["label"]) ??
+    scalar(o["description"]) ??
     scalar(o["id"]) ??
-    "Record"
+    `${kind ?? "Record"} — title not recorded`
   );
+}
+/** Singular names for items of known nested collections (sample key first, then parent key). */
+const ITEM_KIND: Record<string, string> = {
+  top_holdings_latest_year: "Reported holding",
+  mdls: "MDL appearance",
+  documents: "Document",
+  analyses: "Analysis",
+  sources: "Source",
+  courts: "Court",
+  judges: "Judge",
+  firms: "Firm",
+  judge_links: "Linked judge",
+  counsel_directory: "Counsel entry",
+  docket_activity: "Docket entry",
+};
+function itemKind(key: string, sampleKey?: string): string {
+  return (
+    (sampleKey ? ITEM_KIND[sampleKey] : undefined) ?? ITEM_KIND[key] ?? `${fieldLabel(key)} entry`
+  );
+}
+/** Years are labels, never thousands-separated quantities. */
+function yearText(v: unknown): string | null {
+  return typeof v === "number" && Number.isInteger(v)
+    ? String(v)
+    : typeof v === "string" && /^\d{4}$/.test(v.trim())
+      ? v.trim()
+      : null;
+}
+/** "2002–2008, 2010, 2012–2020": consecutive recorded years collapse to ranges; nothing is added. */
+export function yearRanges(years: readonly unknown[]): string {
+  const ys = [
+    ...new Set(
+      years
+        .map(yearText)
+        .filter((y): y is string => y != null)
+        .map(Number),
+    ),
+  ]
+    .filter(Number.isInteger)
+    .sort((a, b) => a - b);
+  const parts: string[] = [];
+  for (let i = 0; i < ys.length;) {
+    let j = i;
+    while (j + 1 < ys.length && ys[j + 1] === ys[j]! + 1) j += 1;
+    parts.push(i === j ? String(ys[i]) : `${ys[i]}–${ys[j]}`);
+    i = j + 1;
+  }
+  return parts.join(", ");
+}
+
+const DISCLOSURE_STATUS: Record<string, string> = {
+  filing_with_reportable_holdings: "Filed; reportable holdings listed",
+  filing_with_no_reportable_holdings: "Filed; no reportable holdings listed",
+  no_filing_in_snapshot: "No filing found in the disclosure snapshot",
+  not_bridged_to_courtlistener_person_id:
+    "Not linked to a CourtListener person record, so no filing could be looked up",
+};
+/** The judge profile's financial-disclosure summary (years filed, holdings per year, latest-year holdings). */
+function isDisclosureSummary(v: unknown): v is Record<string, unknown> {
+  return isObj(v) && Array.isArray(v["years_filed"]) && isObj(v["holdings_count_by_year"]);
+}
+/** True only when every item has a description and they run A–Z, ignoring case, as stored. */
+function inDescriptionOrder(items: readonly Record<string, unknown>[]): boolean {
+  const keys = items.map((h) =>
+    typeof h["description"] === "string" && h["description"].trim()
+      ? h["description"].toLowerCase()
+      : null,
+  );
+  return keys.every((k, i) => k != null && (i === 0 || keys[i - 1]! <= k));
+}
+/**
+ * Financial-disclosure summary → a facts block plus the latest year's listed holdings, each titled by
+ * its recorded description. Counts per year come from the summary itself; when the stored list is
+ * shorter than that year's count, the label states "N of M shown" (and "A–Z by description" only
+ * when the stored order really is A–Z) and carries no separate total, so no bare count can be read
+ * as the size of the list. The builder's scope note is shown as "Source scope" for filed and
+ * not-filed states; for a judge never linked to a CourtListener person it is internal bridge
+ * wording, already said plainly by "Filing status", so it moves to the technical details.
+ */
+function disclosureSections(
+  key: string,
+  d: Record<string, unknown>,
+): { sections: EntitySection[]; technical: [string, string][] } {
+  const state = scalar(d["state"]);
+  const years = (d["years_filed"] as unknown[]).map(yearText).filter((y): y is string => !!y);
+  const byYear = Object.entries(d["holdings_count_by_year"] as Record<string, unknown>)
+    .filter((e): e is [string, number] => yearText(e[0]) != null && typeof e[1] === "number")
+    .sort(([a], [b]) => Number(a) - Number(b));
+  const latest = yearText(d["latest_year"]);
+  const facts: [string, string][] = [
+    ["Filing status", (state && DISCLOSURE_STATUS[state]) ?? state ?? "Not recorded"],
+  ];
+  if (years.length) {
+    facts.push(["Years filed", yearRanges(years)]);
+    if (latest) facts.push(["Latest year filed", latest]);
+    if (typeof d["total_holdings"] === "number")
+      facts.push(["Holding entries, all filed years", scalar(d["total_holdings"])!]);
+    const withHoldings = byYear.filter(([, n]) => n > 0);
+    facts.push([
+      "Years with holdings listed",
+      withHoldings.length
+        ? withHoldings.map(([y, n]) => `${y} (${n.toLocaleString("en-US")})`).join(", ")
+        : "None",
+    ]);
+    if (typeof d["total_holdings_inferred"] === "number")
+      facts.push(["Entries with inferred values", scalar(d["total_holdings_inferred"])!]);
+  }
+  const technical: [string, string][] = [];
+  const scope =
+    typeof d["qualification"] === "string" && d["qualification"].trim()
+      ? decodeEntities(d["qualification"])
+      : null;
+  if (scope && state === "not_bridged_to_courtlistener_person_id")
+    technical.push(["Disclosure source scope", scope]);
+  else if (scope) facts.push(["Source scope", scope]);
+  const sections: EntitySection[] = [{ kind: "facts", key, label: "Financial disclosures", facts }];
+  const holdings = Array.isArray(d["top_holdings_latest_year"])
+    ? (d["top_holdings_latest_year"] as unknown[]).filter(isObj)
+    : [];
+  if (holdings.length) {
+    const latestCount = latest ? byYear.find(([y]) => y === latest)?.[1] : undefined;
+    const partial = latestCount != null && holdings.length < latestCount;
+    sections.push({
+      kind: "collection",
+      key: `${key}_latest_holdings`,
+      label: `Holdings listed in the ${latest ?? "latest"} disclosure${
+        partial
+          ? ` — ${holdings.length.toLocaleString("en-US")} of ${latestCount.toLocaleString(
+              "en-US",
+            )} shown${inDescriptionOrder(holdings) ? ", A–Z by description" : ""}`
+          : ""
+      }`,
+      link: null,
+      total: partial ? null : (latestCount ?? holdings.length),
+      sample: holdings.map((h) => {
+        const flags = [
+          h["redacted"] === true ? "Row contains redactions" : null,
+          h["inferred"] === true ? "Values inferred during CourtListener extraction" : null,
+        ].filter((f): f is string => !!f);
+        return {
+          title:
+            scalar(h["description"]) ??
+            (h["redacted"] === true
+              ? "Redacted holding — description not recorded"
+              : "Reported holding — description not recorded"),
+          subtitle: flags.length ? flags.join(" · ") : null,
+          link: null,
+        };
+      }),
+    });
+  }
+  return { sections, technical };
 }
 /** Links are encoded for the href only (raw spaces in stored URLs); in-app links such as "#mdl/3140" pass through. */
 function hrefOf(url: string): string {
@@ -235,7 +392,7 @@ export function buildEntityView(raw: Record<string, unknown>): EntityView {
           key: `s${i}`,
           label,
           items: (s["items"] as unknown[]).filter(isObj).map((o) => ({
-            title: titleOf(o),
+            title: titleOf(o, `${label} entry`),
             subtitle: scalar(o["subtitle"]),
             links: Array.isArray(o["links"])
               ? (o["links"] as unknown[])
@@ -284,6 +441,12 @@ export function buildEntityView(raw: Record<string, unknown>): EntityView {
       else if (objs.length) view.sections.push(tableFrom(k, objs));
       continue;
     }
+    if (isDisclosureSummary(v)) {
+      const disclosure = disclosureSections(k, v);
+      view.sections.push(...disclosure.sections);
+      view.technical.push(...disclosure.technical);
+      continue;
+    }
     if (isObj(v)) {
       const link = typeof v["link"] === "string" ? (v["link"] as string) : null;
       const sampleKey = [
@@ -301,11 +464,12 @@ export function buildEntityView(raw: Record<string, unknown>): EntityView {
             : typeof v["total_holdings"] === "number"
               ? (v["total_holdings"] as number)
               : null;
+        const kind = itemKind(k, sampleKey);
         const sample = sampleKey
           ? (v[sampleKey] as unknown[]).map((o) =>
               isObj(o)
                 ? {
-                    title: titleOf(o),
+                    title: titleOf(o, kind),
                     subtitle: scalar(o["subtitle"]) ?? scalar(o["date"]) ?? scalar(o["status"]),
                     link: linkOf(o),
                   }

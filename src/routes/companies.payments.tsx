@@ -47,6 +47,7 @@ function Page() {
       description="CMS Open Payments: what drug and device manufacturers paid physicians, practitioners and teaching hospitals, program years 2017–2025."
       breadcrumbs={[
         { label: "Home", to: "/" },
+        { label: "Law & regulation", to: "/law" },
         { label: "Companies", to: "/companies" },
         { label: "Industry payments" },
       ]}

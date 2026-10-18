@@ -10,17 +10,23 @@ import json
 import re
 import statistics
 from datetime import date
+from pathlib import Path
 
 import parse_jpml as pj
 from contact_redaction import redact, redact_lines
-from extract_court_pages import parse_date
+from extract_court_pages import clip, parse_date
 
 CONTACT_MARKER = "[contact removed]"
 CONTACT_METHOD = (
     "Counsel are shown without contact fields (owner decision 2026-10-03): e-mail addresses, NANP phone/fax numbers, "
-    "street addresses, Suite / P.O. Box / floor fragments and 'City, ST ZIP' are removed from court-page text by explicit "
-    "patterns; lines starting with a street number, Suite or P.O. Box are dropped. Counsel blocks that lost text are marked "
-    "'contact lines removed'; in quoted sentences each removal is shown as '[contact removed]'. Names, firms and roles are kept as printed."
+    "street addresses, Suite / P.O. Box / floor fragments, a unit number right after a street name ('Road, #100'), "
+    "'City, ST ZIP' and contact labels with no value ('Facsimile: Not Available') are removed from court-page text by explicit "
+    "patterns. In counsel lists, lines starting with a street number, Suite or P.O. Box are dropped, as are lines that are "
+    "only 'City, State' (state spelled out), only a contact-field label ('Telephone', 'Name and Address'), premises "
+    "('Third and Fourth Floor', 'Plaza Seven Bldg.') or a building name printed above its street line ('Terminus 200'; "
+    "a firm name on the same line is kept). Counsel blocks that lost text are marked 'contact lines removed'; in quoted "
+    "sentences, and in a counsel line whose sentence points at the removed contact ('may be sent to …'), each removal is "
+    "shown as '[contact removed]'. Names, firms and roles are kept as printed."
 )
 from common import ACQ, HERE, JPML, TODAY, cw, district_name, fmt, months_between, normalize_district, pct  # noqa: E402
 
@@ -31,6 +37,9 @@ BY_DISTRICT_URL = f"{JPML}/sites/jpml/files/Pending_MDL_Dockets_By_District-Octo
 ARCHIVE_URL = f"{JPML}/pending-mdl-reports-archive"
 QUOTE_CAP = 30
 ORDER_CAP = 80
+LEAD_BLOCK_CAP = 16  # leadership headings per MDL
+LEAD_LINE_CAP = 60  # lines shown per heading; the rest is counted in lines_not_shown
+LEAD_LINE_CHARS = 400  # longer lines are cut at a word boundary and end with " …"
 MIN_GROWTH = 100
 MIN_ORDERS = 10  # a page listing fewer orders (e.g. a recent-filings feed) cannot support a negative finding
 FAST_GROWTH_RULE = (
@@ -104,6 +113,44 @@ def earliest_bellwether_activity(quotes, orders, transferred):
     return min(dates) if dates else None
 
 
+def leadership_from_pages(items):
+    """Leadership blocks across an MDL's court pages: contact details removed (contact_redaction), lines longer than
+    LEAD_LINE_CHARS cut at a word boundary and marked, at most LEAD_LINE_CAP lines per heading with the remainder
+    counted, and a block repeated on another page (same heading, same lines) kept once."""
+    out, seen = [], set()
+    for p in items:
+        for b in p.get("leadership_blocks", []):
+            lines, removed = redact_lines(b["lines"])
+            heading, head_removed = redact(b["heading"])
+            if not lines or not heading:
+                continue
+            key = (" ".join(heading.lower().split()), tuple(lines))
+            if key in seen:
+                continue
+            seen.add(key)
+            shown = [clip(ln, LEAD_LINE_CHARS) for ln in lines[:LEAD_LINE_CAP]]
+            beyond_extract = max(0, (b.get("lines_total") or len(b["lines"])) - len(b["lines"]))
+            group = redact(b["group"])[0] if b.get("group") else None
+            out.append({
+                "heading": heading, "group": group or None, "lines": shown, "lines_not_shown": beyond_extract + len(lines) - len(shown),
+                "url": p["url"], "contact_lines_removed": removed or head_removed, "note": "contact lines removed" if removed or head_removed else None,
+                "updated": b.get("updated"),
+            })
+    return out[:LEAD_BLOCK_CAP]
+
+
+def page_flag(items, orders, quotes, lead_blocks, failed=()):
+    """Court-page coverage flag, naming what extraction read (never what the page itself contains): no page located
+    (no_court_page); located but no page could be fetched (page_fetch_failed); a fetched page from which nothing at
+    all was extracted (page_unreadable); or no order extracted, but quoted statements or leadership were
+    (page_orders_not_extracted: the page may still list orders the extractor did not read)."""
+    if not items:
+        return "page_fetch_failed" if failed else "no_court_page"
+    if orders:
+        return None
+    return "page_orders_not_extracted" if quotes or lead_blocks else "page_unreadable"
+
+
 def court_records(by_type, by_district, report_date, pages, searched, analytics, hearing_page_orders):
     dist = {r["mdl"]: r for r in by_district}
     pl = [r for r in by_type if r["type"] == "Products Liability"]
@@ -134,15 +181,7 @@ def court_records(by_type, by_district, report_date, pages, searched, analytics,
                 seen_o.add(o["url"])
                 orders.append(o | {"title": redact(o["title"])[0], "row_text": redact(o["row_text"], marker=CONTACT_MARKER)[0], "page": p["url"]})
         orders.sort(key=lambda o: (o["date"] or "", o["title"]), reverse=True)
-        lead_blocks = []
-        for p in items:
-            for b in p.get("leadership_blocks", []):
-                lines, removed = redact_lines(b["lines"])
-                lines = [ln if len(ln) <= 400 else ln[:400].rsplit(" ", 1)[0] + " …" for ln in lines]
-                heading, head_removed = redact(b["heading"])
-                if lines and heading:
-                    lead_blocks.append({"heading": heading, "lines": lines, "url": p["url"], "contact_lines_removed": removed or head_removed, "note": "contact lines removed" if removed or head_removed else None})
-        lead_blocks = lead_blocks[:8]
+        lead_blocks = leadership_from_pages(items)
         by_cat = collections.defaultdict(list)
         for q in quotes:
             longer = any(o is not q and o["category"] == q["category"] and o["url"] == q["url"] and len(o["text"]) > len(q["text"]) and q["text"] in o["text"] for o in quotes)
@@ -166,11 +205,7 @@ def court_records(by_type, by_district, report_date, pages, searched, analytics,
         page_read = bool(items) and bool(orders)
         earliest_bw = earliest_bellwether_activity(quotes, orders, transferred)
         bw_suppressed = bool(bw_date and earliest_bw and earliest_bw < bw_date)
-        flags = []
-        if not items:
-            flags.append("no_court_page")
-        elif not orders:
-            flags.append("page_unreadable")
+        flags = [f for f in [page_flag(items, orders, quotes, lead_blocks, failed)] if f]
         if status != "transferred":
             flags.append("not_transferred_as_of_report")
         if status == "transferred" and page_read and len(orders) >= MIN_ORDERS and growth == "fast_growth" and (change or 0) >= MIN_GROWTH and not has_bw:
@@ -202,8 +237,8 @@ def court_records(by_type, by_district, report_date, pages, searched, analytics,
         facts = [
             ["MDL number", str(mdl)], ["Transferee court (JPML)", district_label or "Not recorded"], ["Transferee judge (JPML)", judge or "Not recorded"],
             ["Date transferred (JPML)", transferred or "Not recorded"], ["Actions pending (JPML 10/1/2026)", fmt(d.get("pending"))], ["Total actions (historical)", fmt(d.get("total"))],
-            ["Change in pending, 12 months (JPML monthly reports)", fmt(a.get("change_12m"))], ["Official court pages", str(len(items)) if items else "None located"],
-            ["Orders listed on court pages", fmt(len(orders))], ["Latest dated order on court page", f"{latest['date']} — {latest['title']}" if latest else "Not recorded"],
+            ["Change in pending, 12 months (JPML monthly reports)", fmt(a.get("change_12m"))], ["Official court pages", str(len(items)) if items else ("Located, could not be fetched" if failed else "None located")],
+            ["Orders extracted from court pages", fmt(len(orders))], ["Latest dated order on court page", f"{latest['date']} — {latest['title']}" if latest else "Not recorded"],
             ["Leadership statements quoted", fmt(rec["quote_counts"]["leadership"])], ["Bellwether / trial statements quoted", fmt(rec["quote_counts"]["bellwether"])],
             ["Settlement statements quoted", fmt(rec["quote_counts"]["settlement"])], ["Earliest quoted bellwether-trial date", bw_date or "Not recorded"], ["Status (JPML report 10/1/2026)", "Transferred" if status == "transferred" else "Not transferred as of the report" + (f" (transfer order filed {pending_order.get('filed')})" if pending_order.get("filed") else "")],
             ["Flags", ", ".join(flags) or "None"], ["Retrieved", items[0]["retrieved"] if items else TODAY],
@@ -216,7 +251,7 @@ def court_records(by_type, by_district, report_date, pages, searched, analytics,
             subtitle=f"MDL {mdl} · {district_label or 'Transferee court not recorded'} · {judge or 'Judge not recorded'} · {fmt(d.get('pending'))} pending",
             cells={"mdl": str(mdl), "litigation": title[:120], "court": district_label or "—", "judge": judge or "—", "pending": fmt(d.get("pending")), "orders": fmt(len(orders)), "latest": (latest or {}).get("date") or "—", "bellwether": "Quoted" if has_bw else "Not quoted"},
             facts=facts, text=f"{r['title']} {judge} {district_label} " + " ".join(q["text"] for q in quotes[:40]),
-            badges=[b for b in ["Court page" if items else "No court page located", "Bellwether quoted" if has_bw else None, "Fast growth, no bellwether quote" if "fast_growth_no_bellwether_quote" in flags else None] if b],
+            badges=[b for b in ["Court page" if items else ("Court page not fetched" if failed else "No court page located"), "Bellwether quoted" if has_bw else None, "Fast growth, no bellwether quote" if "fast_growth_no_bellwether_quote" in flags else None] if b],
             filters={"kind": ["mdl"], "court_page": ["yes" if items else "no"], "bellwether": ["yes" if has_bw else "no"], "flag": flags or ["none"], "district": [district or ""], "date": (latest or {}).get("date") or ""},
             links=links, extra={"kind": "mdl", "court": rec},
         ))
@@ -296,6 +331,8 @@ def summary_records(by_type, by_district, report_date, analytics, courts, stats_
             "flag": FAST_GROWTH_RULE + " and no court-page sentence or order title mentions bellwether/trial/pilot",
             "contacts": CONTACT_METHOD,
             "quotes": "Statements are verbatim sentences, list items or table rows from the court page (each table row parsed on its own); a row's cells are joined with ' | '. Leadership statements must name a leadership role (lead counsel, co-lead, steering/executive committee) or an appointment of counsel, leadership or a committee.",
+            "leadership": "Leadership lists are the lines under each court-page heading that names a leadership role, up to the next such heading or any other section heading (or a list of documents); a heading printed directly above other role headings is kept as their group. Each line is one page element as printed (a name and a firm in separate elements stay separate lines); counsel contact details are removed; docket counsel-of-record listings ('represented by') are not leadership and are left out.",
+            "page_flags": "Flags describe what extraction read, not what the court page contains: no_court_page = no official court page located; page_fetch_failed = a court page was located but could not be fetched; page_unreadable = a fetched court page from which nothing was extracted (no orders, no quoted statements, no leadership); page_orders_not_extracted = no order could be extracted from the located page, but quoted statements or leadership were (the page may still list orders, e.g. as document links the extractor does not read).",
         },
     }
     rows = [cw.record(
@@ -334,3 +371,35 @@ def publish(stats_overview, hearings_overview, hearing_page_orders):
         summary={"records": len(srows), "as_of": report_date, "retrieved": TODAY},
     )
     return courts, overview
+
+
+def court_page_preview(extracted_path, out_path):
+    """Offline preview (no credentials, nothing published): the court-page fields this builder derives from an
+    extraction file (fetch_court_pages.py --out), per MDL — leadership blocks, coverage flag and counts."""
+    pages = json.loads(Path(extracted_path).read_text())
+    out = {}
+    for mdl, entries in sorted(pages.items(), key=lambda kv: int(kv[0]) if kv[0].isdigit() else 0):
+        if not mdl.isdigit():
+            continue
+        items = [p for p in entries if not p.get("error")]
+        orders = {o["url"] for p in items for o in p.get("orders", [])}
+        quotes = {(q["category"], q["text"]) for p in items for q in p.get("quotes", [])}
+        lead = leadership_from_pages(items)
+        failed = [p["url"] for p in entries if p.get("error")]
+        out[mdl] = {
+            "pages": [p["url"] for p in items], "failed_pages": failed,
+            "orders_total": len(orders), "quotes": len(quotes), "flag": page_flag(items, orders, quotes, lead, failed), "leadership_blocks": lead,
+        }
+    Path(out_path).parent.mkdir(parents=True, exist_ok=True)
+    Path(out_path).write_text(json.dumps(out, indent=1, ensure_ascii=False))
+    return out
+
+
+if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) == 4 and sys.argv[1] == "--preview":
+        preview = court_page_preview(sys.argv[2], sys.argv[3])
+        print(json.dumps({"mdls": len(preview), "with_leadership": sum(1 for v in preview.values() if v["leadership_blocks"]), "out": sys.argv[3]}))
+    else:
+        raise SystemExit("usage: build_courts_summary.py --preview <court_pages_extracted.json> <out.json>  (publishing runs through run_all.py)")

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -12,7 +12,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ExternalLink } from "lucide-react";
+import { ChevronDown, ExternalLink } from "lucide-react";
 import { ChartCard } from "@/components/fda-analytics/FdaCharts";
 import { FDA_COLORS } from "@/components/fda-analytics/chartView";
 import { getMassTortSignals, type MassTortSignal } from "@/lib/external/massTortSignals.functions";
@@ -46,6 +46,22 @@ function yearly(s: MassTortSignal) {
   return out;
 }
 
+/** Whether a scroll box holds rows below its visible area (re-measured on scroll, resize and data). */
+function useMoreBelow(deps: unknown) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [below, setBelow] = useState(false);
+  const measure = useCallback(() => {
+    const el = ref.current;
+    setBelow(!!el && el.scrollHeight - el.scrollTop - el.clientHeight > 4);
+  }, []);
+  useEffect(() => {
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [measure, deps]);
+  return { ref, below, measure };
+}
+
 export function MassTortSignals() {
   const q = useQuery(massTortSignalsQuery);
   const [kind, setKind] = useState<MassTortSignal["kind"] | "">("");
@@ -55,6 +71,7 @@ export function MassTortSignals() {
       (q.data ?? []).filter((s) => !kind || s.kind === kind).sort((a, b) => b.pending - a.pending),
     [q.data, kind],
   );
+  const scroll = useMoreBelow(rows);
   if (q.isLoading)
     return (
       <div className="space-y-3" aria-busy="true" aria-label="Loading product signals">
@@ -100,10 +117,29 @@ export function MassTortSignals() {
       </div>
       <div className="grid gap-3 xl:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
         <section
-          className="min-w-0 rounded-md border border-border bg-surface"
+          className="relative min-w-0 rounded-md border border-border bg-surface"
           aria-label="Products"
         >
-          <div className="max-h-[720px] overflow-auto">
+          <p className="flex items-center justify-between gap-2 border-b border-border/60 px-3 py-1.5 text-[11px] text-muted-foreground">
+            <span>
+              {rows.length.toLocaleString("en-US")} product{rows.length === 1 ? "" : "s"}
+              {kind ? ` · ${KIND_LABEL[kind]}` : ""} · most pending actions first
+            </span>
+            {scroll.below ? (
+              <span className="inline-flex shrink-0 items-center gap-0.5">
+                Scroll for more
+                <ChevronDown className="size-3" aria-hidden />
+              </span>
+            ) : null}
+          </p>
+          <div
+            ref={scroll.ref}
+            onScroll={scroll.measure}
+            className="max-h-[720px] overflow-auto focus-visible:outline-2 focus-visible:outline-ring"
+            role="region"
+            tabIndex={0}
+            aria-label={`Products, ${rows.length} rows; scrollable`}
+          >
             <table className="w-full text-xs">
               <thead className="sticky top-0 z-10 bg-surface text-muted-foreground shadow-[inset_0_-1px_0_var(--border)]">
                 <tr>
@@ -154,6 +190,12 @@ export function MassTortSignals() {
               </tbody>
             </table>
           </div>
+          {scroll.below ? (
+            <div
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-10 rounded-b-md bg-linear-to-t from-surface to-transparent"
+              aria-hidden
+            />
+          ) : null}
         </section>
         {active ? <Detail s={active} /> : null}
       </div>
@@ -316,7 +358,9 @@ function Detail({ s }: { s: MassTortSignal }) {
               .slice(0, 10)
               .map((t) => (
                 <li key={t.term} className="flex items-center gap-2 px-3 py-1.5">
-                  <span className="min-w-0 flex-1 truncate">{t.term || "Not stated"}</span>
+                  <span className="min-w-0 flex-1 truncate" title={t.term || "Not stated"}>
+                    {t.term || "Not stated"}
+                  </span>
                   <span className="tabular-nums">{n(t.count)}</span>
                 </li>
               ))}
@@ -361,8 +405,8 @@ function Detail({ s }: { s: MassTortSignal }) {
                     {fmtDate(r.report_date ?? r.event_date_initiated)}
                   </span>
                 </div>
-                <div className="truncate text-muted-foreground" title={r.reason_for_recall ?? ""}>
-                  {r.recalling_firm} · {r.reason_for_recall}
+                <div className="truncate text-muted-foreground" title={recallLine(r) || undefined}>
+                  {recallLine(r) || "Recalling firm and reason not recorded"}
                 </div>
               </li>
             ))}
@@ -380,6 +424,10 @@ function fmtDate(v: string | null | undefined) {
   if (!v) return "—";
   return /^\d{8}$/.test(v) ? `${v.slice(0, 4)}-${v.slice(4, 6)}-${v.slice(6, 8)}` : v.slice(0, 10);
 }
+
+/** "Firm · reason" with a missing part left out, never a dangling separator. */
+const recallLine = (r: MassTortSignal["recentRecalls"][number]) =>
+  [r.recalling_firm, r.reason_for_recall].filter(Boolean).join(" · ");
 
 function Fact({ label, value, note }: { label: string; value: string; note?: string | undefined }) {
   return (

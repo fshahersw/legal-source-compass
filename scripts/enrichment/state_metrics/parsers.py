@@ -32,6 +32,16 @@ US = "US"
 MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
           "November", "December"]
 
+# FARS is served from NHTSA's static.nhtsa.gov bucket, whose folders cannot be listed (a folder URL returns 404).
+# NHTSA's browsable index of that same folder is its file-downloads page; each year's archive has an exact URL.
+FARS_LISTING = "https://www.nhtsa.gov/file-downloads?p=nhtsa/downloads/FARS/"
+
+
+def fars_national_csv_url(year):
+    """Exact NHTSA URL of one year's FARS national CSV archive (the file fetch_sources.py downloads)."""
+    year = int(year)
+    return f"https://static.nhtsa.gov/nhtsa/downloads/FARS/{year}/National/FARS{year}NationalCSV.zip"
+
 
 def number(text):
     """Parse an official numeric cell; returns None for blanks, footnote codes like (D)/(NA), or junk."""

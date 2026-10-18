@@ -236,14 +236,16 @@ function Panel({
               </li>
             ))}
           </ul>
-          {court.mdls.length > 12 ? (
-            <Link
-              to="/matters/analytics"
-              className="mt-1 inline-block text-xs text-primary hover:underline"
-            >
-              All {court.mdls.length} MDLs in MDL analytics
+          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+            {court.mdls.length > 12 ? (
+              <Link to="/matters/analytics" className="text-primary hover:underline">
+                All {court.mdls.length} MDLs in MDL analytics
+              </Link>
+            ) : null}
+            <Link to="/matters/intel" className="text-primary hover:underline">
+              MDL intelligence: JPML outcomes and transferee-court pages
             </Link>
-          ) : null}
+          </div>
         </div>
       ) : null}
     </section>

@@ -212,10 +212,29 @@ export type Financials = {
   expensePctRevenue: { fy: number; pct: number }[];
   labels: Partial<Record<Metric, string>>;
 };
+/** An existing corpus record for an MDL number (exact number, never a guessed neighbour). */
+export type MdlRecordRef = { dataset: "mdl_analytics" | "mdl_terminated_history"; id: string };
+/**
+ * What the corpus holds for one linked MDL number: one record to open; several terminated-history rows carrying
+ * the number (ambiguous, so not linked); no record; or unknown (the lookup came back possibly incomplete, so
+ * nothing is resolved from it).
+ */
+export type MdlRecordLookup =
+  | { kind: "record"; ref: MdlRecordRef }
+  | { kind: "ambiguous"; rows: number }
+  | { kind: "none" }
+  | { kind: "unknown" };
 export type CompanyDetail = {
   summary: CompanySummary;
   sourceUrl: string | null;
   financials: Financials | null;
+  /** The company_sec_financials row's own source URL (the XBRL companyfacts file it was built from). */
+  financialsSourceUrl: string | null;
+  /**
+   * Lookup result for each linked MDL number (key = String(mdl)). null when the lookup itself failed: the
+   * numbers are then shown unlinked and labelled as such, and the rest of the profile still loads.
+   */
+  mdlRecords: Record<string, MdlRecordLookup> | null;
   links: CompanyLink[];
 };
 
@@ -774,4 +793,89 @@ export function edgarCompanyUrl(cik: string) {
 }
 export function companyfactsUrl(cik: string) {
   return `https://data.sec.gov/api/xbrl/companyfacts/CIK${cik}.json`;
+}
+
+/**
+ * The XBRL companyfacts link for a profile, only when an XBRL source exists for the CIK: the financials row's
+ * recorded source URL, else the companyfacts address when a financials row was parsed. A registrant without a
+ * company_sec_financials row has no companyfacts file at the SEC (the URL returns 404), so it gets no link.
+ */
+export function xbrlSourceUrl(
+  cik: string,
+  financials: Financials | null,
+  financialsSourceUrl: string | null,
+): string | null {
+  if (
+    financialsSourceUrl &&
+    /^https:\/\/data\.sec\.gov\/api\/xbrl\/companyfacts\//.test(financialsSourceUrl)
+  )
+    return financialsSourceUrl;
+  return financials ? companyfactsUrl(cik) : null;
+}
+
+/**
+ * Records to open for linked MDL numbers, by exact number: the JPML pending/analytics record (mdl_analytics id =
+ * the number) first, else the single terminated-litigation history row whose recorded MDL number equals it.
+ * Several history rows for a number are ambiguous and zero rows mean no record; either way the number is shown as
+ * plain text. When the terminated-history read may be incomplete (`terminatedComplete` false), a number without an
+ * analytics record is "unknown": a missing or single row in a truncated response proves nothing.
+ */
+export function mdlRecordRefs(
+  mdls: readonly number[],
+  analyticsIds: readonly string[],
+  terminatedRows: readonly { id: string; mdl: unknown }[],
+  terminatedComplete = true,
+): Record<string, MdlRecordLookup> {
+  const analytics = new Set(analyticsIds);
+  const out: Record<string, MdlRecordLookup> = {};
+  for (const mdl of new Set(mdls)) {
+    const key = String(mdl);
+    if (analytics.has(key)) {
+      out[key] = { kind: "record", ref: { dataset: "mdl_analytics", id: key } };
+      continue;
+    }
+    if (!terminatedComplete) {
+      out[key] = { kind: "unknown" };
+      continue;
+    }
+    const ids = [
+      ...new Set(
+        terminatedRows
+          .filter((r) => int(r.mdl) === mdl && typeof r.id === "string" && r.id)
+          .map((r) => r.id),
+      ),
+    ];
+    out[key] =
+      ids.length === 1
+        ? { kind: "record", ref: { dataset: "mdl_terminated_history", id: ids[0]! } }
+        : ids.length > 1
+          ? { kind: "ambiguous", rows: ids.length }
+          : { kind: "none" };
+  }
+  return out;
+}
+
+/**
+ * How to show one linked MDL number: the record to open, or why it is plain text. `records` null means the
+ * lookup failed; a number missing from the map was not looked up. Neither is reported as "no record".
+ */
+export function mdlRecordView(
+  records: Record<string, MdlRecordLookup> | null,
+  mdl: number,
+): { ref: MdlRecordRef; note: null } | { ref: null; note: string } {
+  const lookup = records?.[String(mdl)];
+  if (!lookup) return { ref: null, note: "MDL record lookup unavailable" };
+  switch (lookup.kind) {
+    case "record":
+      return { ref: lookup.ref, note: null };
+    case "ambiguous":
+      return {
+        ref: null,
+        note: `${lookup.rows} terminated-history records carry MDL ${mdl}; not linked`,
+      };
+    case "unknown":
+      return { ref: null, note: "MDL record lookup incomplete; not linked" };
+    case "none":
+      return { ref: null, note: "No MDL record for this number in the corpus" };
+  }
 }
