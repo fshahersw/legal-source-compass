@@ -35,6 +35,7 @@ import { Route as ApiFilesRouteImport } from './routes/api/files'
 import { Route as ApiMatterPdfRouteImport } from './routes/api/matter-pdf'
 import { Route as CompaniesIndexRouteImport } from './routes/companies.index'
 import { Route as CompaniesCikRouteImport } from './routes/companies.$cik'
+import { Route as CompaniesPaymentsRouteImport } from './routes/companies.payments'
 import { Route as CourtsIndexRouteImport } from './routes/courts.index'
 import { Route as CourtsIdRouteImport } from './routes/courts.$id'
 import { Route as CourtsAnalyticsRouteImport } from './routes/courts.analytics'
@@ -209,6 +210,11 @@ const CompaniesIndexRoute = CompaniesIndexRouteImport.update({
 const CompaniesCikRoute = CompaniesCikRouteImport.update({
   id: '/companies/$cik',
   path: '/companies/$cik',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompaniesPaymentsRoute = CompaniesPaymentsRouteImport.update({
+  id: '/companies/payments',
+  path: '/companies/payments',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CourtsIndexRoute = CourtsIndexRouteImport.update({
@@ -462,6 +468,7 @@ export interface FileRoutesByFullPath {
   '/api/files': typeof ApiFilesRoute
   '/api/matter-pdf': typeof ApiMatterPdfRoute
   '/companies/$cik': typeof CompaniesCikRoute
+  '/companies/payments': typeof CompaniesPaymentsRoute
   '/courts/$id': typeof CourtsIdRoute
   '/courts/analytics': typeof CourtsAnalyticsRoute
   '/data/$dataset': typeof DataDatasetRoute
@@ -535,6 +542,7 @@ export interface FileRoutesByTo {
   '/api/files': typeof ApiFilesRoute
   '/api/matter-pdf': typeof ApiMatterPdfRoute
   '/companies/$cik': typeof CompaniesCikRoute
+  '/companies/payments': typeof CompaniesPaymentsRoute
   '/courts/$id': typeof CourtsIdRoute
   '/courts/analytics': typeof CourtsAnalyticsRoute
   '/data/$dataset': typeof DataDatasetRoute
@@ -608,6 +616,7 @@ export interface FileRoutesById {
   '/api/files': typeof ApiFilesRoute
   '/api/matter-pdf': typeof ApiMatterPdfRoute
   '/companies/$cik': typeof CompaniesCikRoute
+  '/companies/payments': typeof CompaniesPaymentsRoute
   '/courts/$id': typeof CourtsIdRoute
   '/courts/analytics': typeof CourtsAnalyticsRoute
   '/data/$dataset': typeof DataDatasetRoute
@@ -683,6 +692,7 @@ export interface FileRouteTypes {
     | '/api/files'
     | '/api/matter-pdf'
     | '/companies/$cik'
+    | '/companies/payments'
     | '/courts/$id'
     | '/courts/analytics'
     | '/data/$dataset'
@@ -756,6 +766,7 @@ export interface FileRouteTypes {
     | '/api/files'
     | '/api/matter-pdf'
     | '/companies/$cik'
+    | '/companies/payments'
     | '/courts/$id'
     | '/courts/analytics'
     | '/data/$dataset'
@@ -828,6 +839,7 @@ export interface FileRouteTypes {
     | '/api/files'
     | '/api/matter-pdf'
     | '/companies/$cik'
+    | '/companies/payments'
     | '/courts/$id'
     | '/courts/analytics'
     | '/data/$dataset'
@@ -902,6 +914,7 @@ export interface RootRouteChildren {
   ApiFilesRoute: typeof ApiFilesRoute
   ApiMatterPdfRoute: typeof ApiMatterPdfRoute
   CompaniesCikRoute: typeof CompaniesCikRoute
+  CompaniesPaymentsRoute: typeof CompaniesPaymentsRoute
   CourtsIdRoute: typeof CourtsIdRoute
   CourtsAnalyticsRoute: typeof CourtsAnalyticsRoute
   DataDatasetRoute: typeof DataDatasetRoute
@@ -1130,6 +1143,13 @@ declare module '@tanstack/react-router' {
       path: '/companies/$cik'
       fullPath: '/companies/$cik'
       preLoaderRoute: typeof CompaniesCikRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/companies/payments': {
+      id: '/companies/payments'
+      path: '/companies/payments'
+      fullPath: '/companies/payments'
+      preLoaderRoute: typeof CompaniesPaymentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/courts/': {
@@ -1501,6 +1521,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiFilesRoute: ApiFilesRoute,
   ApiMatterPdfRoute: ApiMatterPdfRoute,
   CompaniesCikRoute: CompaniesCikRoute,
+  CompaniesPaymentsRoute: CompaniesPaymentsRoute,
   CourtsIdRoute: CourtsIdRoute,
   CourtsAnalyticsRoute: CourtsAnalyticsRoute,
   DataDatasetRoute: DataDatasetRoute,

@@ -56,6 +56,7 @@ export function contextualNavigation(path: string): ContextNavigationItem[] {
         { to: "/agencies", label: "Agencies" },
         { to: "/safety", label: "Product safety" },
         { to: "/companies", label: "Companies" },
+        { to: "/companies/payments", label: "Industry payments" },
       ];
     case "sources":
       return [

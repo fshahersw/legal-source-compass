@@ -18,6 +18,7 @@ import { Building2, ChevronDown, ExternalLink } from "lucide-react";
 import { ChartCard, ChartUnavailable } from "@/components/fda-analytics/FdaCharts";
 import { chartDateLabel, FDA_COLORS } from "@/components/fda-analytics/chartView";
 import { getCompanyDetail } from "@/lib/external/companies.functions";
+import { OpenPaymentsPanel } from "@/components/companies/OpenPaymentsPanel";
 import { cn } from "@/lib/utils";
 import {
   companyfactsUrl,
@@ -78,6 +79,13 @@ export function CompanyProfile({ cik }: { cik: string }) {
 
 export function companyTitle(d: CompanyDetail | null | undefined) {
   return d?.summary.profile.name ?? "Company";
+}
+
+/** SIC groups that report to CMS Open Payments or FDA MAUDE: drugs, biologics, devices, medical supply wholesale. */
+function reportsToCms(sic: string | null): boolean {
+  const code = Number(sic);
+  if (!sic || !Number.isInteger(code)) return false;
+  return (code >= 2830 && code <= 2836) || (code >= 3840 && code <= 3851) || code === 5047 || code === 5122;
 }
 
 function Profile({ d }: { d: CompanyDetail }) {
@@ -238,6 +246,18 @@ function Profile({ d }: { d: CompanyDetail }) {
       </div>
 
       <Exposure links={d.links} />
+      {reportsToCms(p.sic) ? (
+        <section aria-label="Industry payments and device reports" className="space-y-2">
+          <div>
+            <h3 className="text-sm font-semibold">Industry payments and device reports</h3>
+            <p className="text-xs text-muted-foreground">
+              CMS Open Payments and FDA MAUDE, matched on the exact registrant name. Subsidiaries
+              that report under their own names are not included.
+            </p>
+          </div>
+          <OpenPaymentsPanel name={p.name} />
+        </section>
+      ) : null}
       <SourceLine>
         Sources: SEC EDGAR filing documents (evidence excerpts), EDGAR full-text search,
         data.sec.gov submissions and XBRL companyfacts

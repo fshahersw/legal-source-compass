@@ -1,0 +1,287 @@
+{
+ "codes": {
+  "1": "Consulting Fee",
+  "2": "Compensation for services other than consulting, including serving as faculty or as a speaker at a venue other than a continuing education program",
+  "3": "Honoraria",
+  "4": "Gift",
+  "5": "Entertainment",
+  "6": "Food and Beverage",
+  "7": "Travel and Lodging",
+  "8": "Education",
+  "9": "Charitable Contribution",
+  "10": "Royalty or License",
+  "11": "Current or prospective ownership or investment interest",
+  "12": "Compensation for serving as faculty or as a speaker for a non-accredited and noncertified continuing education program",
+  "13": "Compensation for serving as faculty or as a speaker for an accredited or certified continuing education program",
+  "14": "Grant",
+  "15": "Space rental or facility fees (teaching hospital only)",
+  "16": "Compensation for serving as faculty or as a speaker for a medical education program",
+  "17": "Debt forgiveness",
+  "18": "Long term medical supply or device loan",
+  "19": "Acquisitions"
+ },
+ "method": "Derive the Open Payments summary nature-of-payment code -> label map from official data, with evidence.",
+ "evidence": {
+  "2020": {
+   "matched": {
+    "1": {
+     "label": "Consulting Fee",
+     "amount": 414897812.66,
+     "n": 141697
+    },
+    "2": {
+     "label": "Compensation for services other than consulting, including serving as faculty or as a speaker at a venue other than a continuing education program",
+     "amount": 333521253.2,
+     "n": 178836
+    },
+    "3": {
+     "label": "Honoraria",
+     "amount": 40327599.69,
+     "n": 18595
+    },
+    "4": {
+     "label": "Gift",
+     "amount": 28745023.66,
+     "n": 50875
+    },
+    "5": {
+     "label": "Entertainment",
+     "amount": 109743.94,
+     "n": 834
+    },
+    "6": {
+     "label": "Food and Beverage",
+     "amount": 116034758.42,
+     "n": 5123590
+    },
+    "7": {
+     "label": "Travel and Lodging",
+     "amount": 48416239.59,
+     "n": 166893
+    },
+    "8": {
+     "label": "Education",
+     "amount": 61930320.85,
+     "n": 121881
+    },
+    "9": {
+     "label": "Charitable Contribution",
+     "amount": 15238847.82,
+     "n": 14516
+    },
+    "10": {
+     "label": "Royalty or License",
+     "amount": 919213451.55,
+     "n": 14972
+    },
+    "11": {
+     "label": "Current or prospective ownership or investment interest",
+     "amount": 70124685.72,
+     "n": 927
+    },
+    "12": {
+     "label": "Compensation for serving as faculty or as a speaker for a non-accredited and noncertified continuing education program",
+     "amount": 10721604.69,
+     "n": 5774
+    },
+    "13": {
+     "label": "Compensation for serving as faculty or as a speaker for an accredited or certified continuing education program",
+     "amount": 4729430.29,
+     "n": 1855
+    },
+    "14": {
+     "label": "Grant",
+     "amount": 113705847.47,
+     "n": 5965
+    },
+    "15": {
+     "label": "Space rental or facility fees (teaching hospital only)",
+     "amount": 15692821.23,
+     "n": 4228
+    }
+   },
+   "unmatched": [],
+   "summary_dataset": "7dfe6254-2aee-454f-9ea5-df611a9a7b55",
+   "detail_dataset": "a08c4b30-5cf3-4948-ad40-36f404619019"
+  },
+  "2021": {
+   "matched": {
+    "1": {
+     "label": "Consulting Fee",
+     "amount": 471653407.93,
+     "n": 174301
+    },
+    "2": {
+     "label": "Compensation for services other than consulting, including serving as faculty or as a speaker at a venue other than a continuing education program",
+     "amount": 456117444.23,
+     "n": 235827
+    },
+    "3": {
+     "label": "Honoraria",
+     "amount": 46199966.11,
+     "n": 22045
+    },
+    "4": {
+     "label": "Gift",
+     "amount": 7972392.94,
+     "n": 44544
+    },
+    "5": {
+     "label": "Entertainment",
+     "amount": 290376.23,
+     "n": 3402
+    },
+    "6": {
+     "label": "Food and Beverage",
+     "amount": 250756851.99,
+     "n": 10591658
+    },
+    "7": {
+     "label": "Travel and Lodging",
+     "amount": 63093507.45,
+     "n": 247822
+    },
+    "8": {
+     "label": "Education",
+     "amount": 76806028.93,
+     "n": 179901
+    },
+    "9": {
+     "label": "Charitable Contribution",
+     "amount": 13855949.74,
+     "n": 811
+    },
+    "10": {
+     "label": "Royalty or License",
+     "amount": 1316696927.03,
+     "n": 15168
+    },
+    "11": {
+     "label": "Current or prospective ownership or investment interest",
+     "amount": 25020150.35,
+     "n": 875
+    },
+    "14": {
+     "label": "Grant",
+     "amount": 96285764.32,
+     "n": 6147
+    },
+    "15": {
+     "label": "Space rental or facility fees (teaching hospital only)",
+     "amount": 16980079.12,
+     "n": 7024
+    },
+    "16": {
+     "label": "Compensation for serving as faculty or as a speaker for a medical education program",
+     "amount": 15371650.2,
+     "n": 8047
+    },
+    "17": {
+     "label": "Debt forgiveness",
+     "amount": 20287625.4,
+     "n": 12115
+    },
+    "18": {
+     "label": "Long term medical supply or device loan",
+     "amount": 19859580.41,
+     "n": 8089
+    },
+    "19": {
+     "label": "Acquisitions",
+     "amount": 373463473.39,
+     "n": 693
+    }
+   },
+   "unmatched": [],
+   "summary_dataset": "a2714020-f599-52b0-b12b-8f5b510e547a",
+   "detail_dataset": "0380bbeb-aea1-58b6-b708-829f92a48202"
+  },
+  "2025": {
+   "matched": {
+    "1": {
+     "label": "Consulting Fee",
+     "amount": 648985307.63,
+     "n": 205079
+    },
+    "2": {
+     "label": "Compensation for services other than consulting, including serving as faculty or as a speaker at a venue other than a continuing education program",
+     "amount": 751881628.25,
+     "n": 249154
+    },
+    "3": {
+     "label": "Honoraria",
+     "amount": 80489846.65,
+     "n": 25134
+    },
+    "4": {
+     "label": "Gift",
+     "amount": 5764206.4,
+     "n": 26637
+    },
+    "5": {
+     "label": "Entertainment",
+     "amount": 506793.38,
+     "n": 5849
+    },
+    "6": {
+     "label": "Food and Beverage",
+     "amount": 443396829.52,
+     "n": 14764648
+    },
+    "7": {
+     "label": "Travel and Lodging",
+     "amount": 209661392.71,
+     "n": 623496
+    },
+    "8": {
+     "label": "Education",
+     "amount": 69937211.9,
+     "n": 161500
+    },
+    "9": {
+     "label": "Charitable Contribution",
+     "amount": 5282163.68,
+     "n": 680
+    },
+    "10": {
+     "label": "Royalty or License",
+     "amount": 1203443512.93,
+     "n": 15496
+    },
+    "14": {
+     "label": "Grant",
+     "amount": 121704360.82,
+     "n": 7352
+    },
+    "15": {
+     "label": "Space rental or facility fees (teaching hospital only)",
+     "amount": 37314257.73,
+     "n": 8371
+    },
+    "16": {
+     "label": "Compensation for serving as faculty or as a speaker for a medical education program",
+     "amount": 34131280.73,
+     "n": 15039
+    },
+    "17": {
+     "label": "Debt forgiveness",
+     "amount": 48590175.68,
+     "n": 6179
+    },
+    "18": {
+     "label": "Long term medical supply or device loan",
+     "amount": 38581138.32,
+     "n": 16837
+    },
+    "19": {
+     "label": "Acquisitions",
+     "amount": 223880856.47,
+     "n": 405
+    }
+   },
+   "unmatched": [],
+   "summary_dataset": "8798d245-2096-4fbf-b73e-78d689ed0c01",
+   "detail_dataset": "fb0b1734-1410-429d-92f6-3f4b35218e5e"
+  }
+ }
+}

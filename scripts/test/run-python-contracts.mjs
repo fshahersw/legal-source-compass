@@ -27,8 +27,20 @@ for (const suite of [
   { directory: "scripts/ingest/regulatory", modules: ["test_nhtsa_bulk", "test_cpsc_rss"] },
   {
     directory: "scripts/enrichment",
-    modules: ["test_court_resources", "test_court_resource_bundle", "test_law_id_crosswalk"],
+    modules: [
+      "test_court_resources",
+      "test_court_resource_bundle",
+      "test_law_id_crosswalk",
+      "test_safety_insights",
+    ],
   },
+  { directory: "scripts/enrichment/court_stats", modules: ["test_court_stats"] },
+  { directory: "scripts/enrichment/enforcement", modules: ["test_parsing"] },
+  { directory: "scripts/enrichment/judges_cross", modules: ["test_judges_cross"] },
+  { directory: "scripts/enrichment/mdl_intel", modules: ["test_parsers"] },
+  { directory: "scripts/enrichment/open_payments", modules: ["test_open_payments"] },
+  { directory: "scripts/enrichment/sec", modules: ["test_evidence", "test_financials"] },
+  { directory: "scripts/enrichment/state_metrics", modules: ["test_parsers"] },
   {
     directory: "scripts/limitations/backfill",
     modules: ["test_capture", "test_capture_browser_dom"],
