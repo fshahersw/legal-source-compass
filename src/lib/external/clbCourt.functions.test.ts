@@ -17,10 +17,15 @@ import {
   parseCoverage,
   parseDistrictGlance,
   parseDocketYears,
+  parseCitations,
+  parseCitedCourts,
   parseDuration,
   parseGlanceAgreement,
   parseGlanceMeasures,
   parseJudges,
+  parseOpinionAuthors,
+  parseOpinionTypes,
+  parseOpinions,
   parseOral,
   parseScotusYears,
   parseTopCited,
@@ -207,8 +212,100 @@ const CAND = {
   },
 };
 
+// Opinion and citation sections: values from the published ca9 record (shortened; shares are the stored ones).
+const OPINIONS = {
+  total: 230917,
+  types: [
+    { value: "010combined", label: "Combined opinion", count: 148214, share_pct: 64.2 },
+    { value: "020lead", label: "Lead opinion", count: 71033, share_pct: 30.8 },
+    { value: "040dissent", label: "Dissent", count: 6349, share_pct: 2.7 },
+  ],
+  with_author_pct: 0.3,
+  per_curiam: 7171,
+  ocr_pct: 29.6,
+  with_joined_by_pct: 0,
+  top_authors: [
+    {
+      name: "Alex Kozinski",
+      opinions: 103,
+      person_id: 1817,
+      record: "/records/clb_judge_dockets/1817",
+    },
+    // the stored record has no judge-statistics record: no internal link
+    { name: "Richard C. Tallman", opinions: 37, person_id: 3163, record: null },
+    {
+      name: "Stephen Roy Reinhardt",
+      opinions: 33,
+      person_id: 2694,
+      record: "/records/clb_judge_dockets/2694",
+    },
+  ],
+  parenthetical_descriptions: { clusters: 35877, n: 384060 },
+};
+
+const CITATIONS = {
+  cites_made: 1987369,
+  cited_by_others: 2916836,
+  cites_made_to: [
+    {
+      court_id: "ca9",
+      name: "Court of Appeals for the Ninth Circuit",
+      n: 990863,
+      share_pct: 49.9,
+      link: "/courts/ca9",
+    },
+    {
+      court_id: "scotus",
+      name: "Supreme Court of the United States",
+      n: 534711,
+      share_pct: 26.9,
+      link: "/courts/scotus",
+    },
+    {
+      court_id: "calctapp",
+      name: "California Court of Appeal",
+      n: 35368,
+      share_pct: 1.8,
+      link: "/courts/calctapp",
+    },
+  ],
+  cited_by: [
+    {
+      court_id: "ca9",
+      name: "Court of Appeals for the Ninth Circuit",
+      n: 990863,
+      share_pct: 34,
+      link: "/courts/ca9",
+    },
+    {
+      court_id: "caed",
+      name: "District Court, E.D. California",
+      n: 321834,
+      share_pct: 11,
+      link: "/courts/caed",
+    },
+  ],
+  self_citation_pct: 49.9,
+  median_age_of_cited_years: 8,
+  p90_age_of_cited_years: 31.3,
+  age_basis_links: 1983523,
+};
+
+const CA9 = {
+  court_id: "ca9",
+  name: "Court of Appeals for the Ninth Circuit",
+  level: "Federal appellate",
+  dockets: null,
+  clusters: null,
+  oral_arguments: null,
+  fjc_coverage: null,
+  bench: null,
+  opinions: OPINIONS,
+  citations: CITATIONS,
+};
+
 describe("parsers", () => {
-  it("parses a district profile and ignores the unfilled opinions and citations sections", () => {
+  it("parses a district profile; opinions and citations are null when the record carries none", () => {
     const p = parseClbCourtProfile(CAND)!;
     expect(p.courtId).toBe("cand");
     expect(p.opinionSourceDockets).toBe(false);
@@ -217,8 +314,278 @@ describe("parsers", () => {
     expect(p.clusters?.total).toBe(36171);
     expect(p.oral).toBeNull();
     expect(p.bench?.positions).toBe(89);
-    expect(p).not.toHaveProperty("opinions");
-    expect(p).not.toHaveProperty("citations");
+    expect(p.opinions).toBeNull();
+    expect(p.citations).toBeNull();
+  });
+
+  it("still parses an older record that has no opinions or citations keys at all", () => {
+    const { opinions: _o, citations: _c, ...old } = CAND;
+    const p = parseClbCourtProfile(old)!;
+    expect(p.dockets?.total).toBe(416771);
+    expect(p.opinions).toBeNull();
+    expect(p.citations).toBeNull();
+  });
+
+  it("reads the opinion section of a court", () => {
+    const o = parseClbCourtProfile(CA9)!.opinions!;
+    expect(o.total).toBe(230917);
+    expect(o.types.map((t) => t.label)).toEqual(["Combined opinion", "Lead opinion", "Dissent"]);
+    expect(o).toMatchObject({
+      withAuthorPct: 0.3,
+      perCuriam: 7171,
+      ocrPct: 29.6,
+      withJoinedByPct: 0,
+    });
+    expect(o.parentheticals).toEqual({ n: 384060, clusters: 35877 });
+    expect(o.topAuthors.map((a) => [a.personId, a.opinions, a.record])).toEqual([
+      [1817, 103, "/records/clb_judge_dockets/1817"],
+      [3163, 37, null],
+      [2694, 33, "/records/clb_judge_dockets/2694"],
+    ]);
+  });
+
+  it("reads an opinion section whose optional parts are absent", () => {
+    const o = parseOpinions({ total: 12 })!;
+    expect(o).toMatchObject({
+      total: 12,
+      types: [],
+      withAuthorPct: null,
+      perCuriam: null,
+      ocrPct: null,
+      withJoinedByPct: null,
+      topAuthors: [],
+      parentheticals: null,
+    });
+  });
+
+  it("returns no opinion section for a missing, empty or malformed block", () => {
+    expect(parseOpinions(null)).toBeNull();
+    expect(parseOpinions([])).toBeNull();
+    expect(parseOpinions({})).toBeNull();
+    expect(parseOpinions({ total: 0 })).toBeNull();
+    expect(parseOpinions({ total: -3 })).toBeNull();
+    expect(parseOpinions({ total: "12" })).toBeNull();
+  });
+
+  it("drops an impossible per curiam count and inconsistent parenthetical counts", () => {
+    expect(parseOpinions({ ...OPINIONS, per_curiam: OPINIONS.total + 1 })?.perCuriam).toBeNull();
+    expect(
+      parseOpinions({ ...OPINIONS, parenthetical_descriptions: { n: 5, clusters: 9 } })
+        ?.parentheticals,
+    ).toBeNull();
+    expect(
+      parseOpinions({ ...OPINIONS, parenthetical_descriptions: { n: 0, clusters: 0 } })
+        ?.parentheticals,
+    ).toBeNull();
+    expect(
+      parseOpinions({ ...OPINIONS, parenthetical_descriptions: null })?.parentheticals,
+    ).toBeNull();
+    expect(parseOpinions({ ...OPINIONS, ocr_pct: 120 })?.ocrPct).toBeNull();
+  });
+
+  it("keeps opinion types only where they fit the opinion total and their own shares", () => {
+    expect(parseOpinionTypes(OPINIONS.types, OPINIONS.total)).toHaveLength(3);
+    // a share that is not the count over the total
+    expect(
+      parseOpinionTypes(
+        [{ value: "a", label: "A", count: 100, share_pct: 50 }, ...OPINIONS.types],
+        OPINIONS.total,
+      ).map((t) => t.value),
+    ).toEqual(["010combined", "020lead", "040dissent"]);
+    // more opinions than the court has
+    expect(parseOpinionTypes([{ value: "a", label: "A", count: 11, share_pct: null }], 10)).toEqual(
+      [],
+    );
+    // types that together exceed the total are not a partition
+    expect(
+      parseOpinionTypes(
+        [
+          { value: "a", label: "A", count: 6, share_pct: 60 },
+          { value: "b", label: "B", count: 6, share_pct: 60 },
+        ],
+        10,
+      ),
+    ).toEqual([]);
+    expect(parseOpinionTypes(undefined, 10)).toEqual([]);
+  });
+
+  it("links an author to a judge record only when the stored path names exactly that person id", () => {
+    const authors = parseOpinionAuthors(
+      [
+        {
+          person_id: 1817,
+          name: "Alex Kozinski",
+          opinions: 103,
+          record: "/records/clb_judge_dockets/1817",
+        },
+        // the path names another person id
+        {
+          person_id: 3163,
+          name: "Richard C. Tallman",
+          opinions: 37,
+          record: "/records/clb_judge_dockets/9999",
+        },
+        // a different dataset's record is not a judge-statistics record
+        {
+          person_id: 2694,
+          name: "Stephen Roy Reinhardt",
+          opinions: 33,
+          record: "/records/cl_people/cl:people:2694",
+        },
+        // a path with a leading zero is not the exact path
+        {
+          person_id: 654,
+          name: "Richard R. Clifton",
+          opinions: 30,
+          record: "/records/clb_judge_dockets/0654",
+        },
+        { person_id: 2487, name: "Richard A. Paez", opinions: 27 },
+      ],
+      1000,
+    );
+    expect(authors.map((a) => [a.personId, a.record])).toEqual([
+      [1817, "/records/clb_judge_dockets/1817"],
+      [3163, null],
+      [2694, null],
+      [654, null],
+      [2487, null],
+    ]);
+  });
+
+  it("drops author rows that are malformed, repeated or impossible, and sorts by opinions", () => {
+    const rows = parseOpinionAuthors(
+      [
+        { person_id: 7, name: "Seven", opinions: 5 },
+        { person_id: 1, name: "One", opinions: 9 },
+        { person_id: 1, name: "One again", opinions: 3 },
+        { person_id: 0, name: "Zero", opinions: 2 },
+        { person_id: 8, name: "", opinions: 2 },
+        { person_id: 9, name: "Nine", opinions: -1 },
+        { person_id: 10, name: "Ten", opinions: 200 },
+        { person_id: 11, name: "Eleven" },
+        "x",
+      ],
+      100,
+    );
+    expect(rows.map((r) => [r.personId, r.opinions])).toEqual([
+      [1, 9],
+      [7, 5],
+    ]);
+    // listed authors cannot add up to more opinions than the court has
+    expect(
+      parseOpinionAuthors(
+        [
+          { person_id: 1, name: "A", opinions: 6 },
+          { person_id: 2, name: "B", opinions: 6 },
+        ],
+        10,
+      ),
+    ).toEqual([]);
+    expect(parseOpinionAuthors(null, 10)).toEqual([]);
+  });
+
+  it("reads the citation section of a court", () => {
+    const c = parseClbCourtProfile(CA9)!.citations!;
+    expect(c).toMatchObject({
+      made: 1987369,
+      received: 2916836,
+      selfCitationPct: 49.9,
+      medianAgeYears: 8,
+      p90AgeYears: 31.3,
+      ageBasisLinks: 1983523,
+    });
+    expect(c.madeTo.map((r) => r.courtId)).toEqual(["ca9", "scotus", "calctapp"]);
+    expect(c.madeTo[0]).toMatchObject({ isSelf: true, link: "/courts/ca9" });
+    expect(c.madeTo[1]).toMatchObject({ isSelf: false, link: "/courts/scotus" });
+    expect(c.citedBy.map((r) => r.courtId)).toEqual(["ca9", "caed"]);
+  });
+
+  it("returns no citation section when there are no citation links", () => {
+    expect(parseCitations(null, "ca9")).toBeNull();
+    expect(parseCitations({}, "ca9")).toBeNull();
+    expect(parseCitations({ cites_made: 0, cited_by_others: 0 }, "ca9")).toBeNull();
+    expect(parseCitations({ cites_made: "9", cited_by_others: -1 }, "ca9")).toBeNull();
+    expect(parseCitations({ cites_made: 0, cited_by_others: 40 }, "ca9")).toMatchObject({
+      made: 0,
+      received: 40,
+      selfCitationPct: null,
+    });
+  });
+
+  it("publishes citation ages only with their link count and as an ordered pair", () => {
+    const c = (over: Record<string, unknown>) => parseCitations({ ...CITATIONS, ...over }, "ca9")!;
+    expect(c({}).ageBasisLinks).toBe(1983523);
+    for (const bad of [
+      { age_basis_links: null },
+      { age_basis_links: 0 },
+      { median_age_of_cited_years: null },
+      { p90_age_of_cited_years: null },
+      { median_age_of_cited_years: -1 },
+      { median_age_of_cited_years: 40, p90_age_of_cited_years: 31.3 },
+      { p90_age_of_cited_years: 5000 },
+    ]) {
+      expect(c(bad)).toMatchObject({
+        medianAgeYears: null,
+        p90AgeYears: null,
+        ageBasisLinks: null,
+      });
+    }
+    // the counts and shares do not depend on the age
+    expect(c({ age_basis_links: null }).made).toBe(1987369);
+  });
+
+  it("keeps court rows only where they fit their whole, and links only exact court pages", () => {
+    const rows = parseCitedCourts(
+      [
+        {
+          court_id: "scotus",
+          name: "Supreme Court",
+          n: 534711,
+          share_pct: 26.9,
+          link: "/courts/scotus",
+        },
+        // the stored link names another court
+        { court_id: "ca2", name: "Second Circuit", n: 34166, share_pct: 1.7, link: "/courts/ca9" },
+        // no stored link
+        { court_id: "ca5", name: "Fifth Circuit", n: 33737, share_pct: 1.7, link: null },
+        // more links than the whole
+        { court_id: "ca8", name: "Eighth", n: 3000000, share_pct: 10 },
+        // the share is not the count over the whole
+        { court_id: "ca7", name: "Seventh", n: 27496, share_pct: 40 },
+        // a court listed twice
+        { court_id: "scotus", name: "Supreme Court again", n: 5, share_pct: 0 },
+        // a link that is not a court page
+        { court_id: "cal", n: 32899, share_pct: 1.7, link: "https://example.com/courts/cal" },
+        { court_id: "", name: "No id", n: 4 },
+        { court_id: "ca1", name: "First", n: 0, share_pct: 0 },
+      ],
+      1987369,
+      "ca9",
+    );
+    expect(rows.map((r) => [r.courtId, r.link])).toEqual([
+      ["scotus", "/courts/scotus"],
+      ["ca2", null],
+      ["ca5", null],
+      ["cal", null],
+    ]);
+    // a court without a stored name is shown by its id
+    expect(rows.find((r) => r.courtId === "cal")?.name).toBe("cal");
+  });
+
+  it("keeps no court rows without a whole to check them against or when they exceed it", () => {
+    const row = { court_id: "ca2", name: "Second Circuit", n: 60, share_pct: 60 };
+    expect(parseCitedCourts([row], null, "ca9")).toEqual([]);
+    expect(parseCitedCourts([row, { ...row, court_id: "ca5", name: "Fifth" }], 100, "ca9")).toEqual(
+      [],
+    );
+    expect(parseCitedCourts([row], 100, "ca9")).toHaveLength(1);
+    expect(parseCitedCourts("x", 100, "ca9")).toEqual([]);
+  });
+
+  it("marks the profiled court's own row", () => {
+    const c = parseCitations(CITATIONS, "scotus")!;
+    expect(c.madeTo.filter((r) => r.isSelf).map((r) => r.courtId)).toEqual(["scotus"]);
+    expect(c.citedBy.some((r) => r.isSelf)).toBe(false);
   });
 
   it("drops filing-year rows that are malformed or inconsistent and sorts the rest", () => {
@@ -620,6 +987,9 @@ describe("server reads", () => {
     );
     expect(out?.profile.dockets?.judgesAssigned[1]?.statsRecord).toBeNull();
     expect(get.mock.calls.some(([p]) => String(p).includes("id=in.(383,2474,10004)"))).toBe(true);
+    // a court without a citation section has nothing to link: its citing record is not looked up
+    expect(out?.citingRecord).toBeNull();
+    expect(get.mock.calls.some(([p]) => String(p).includes("clb_court_flows"))).toBe(false);
     const calls = get.mock.calls.length;
     await mod.getClbCourtCollection({ data: { id: "cand" } } as never);
     expect(get.mock.calls.length).toBe(calls);
@@ -647,6 +1017,39 @@ describe("server reads", () => {
     expect(out?.method).toBeNull();
     expect(out?.profile.dockets?.total).toBe(416771);
     expect(out?.profile.dockets?.judgesAssigned.every((j) => j.statsRecord === null)).toBe(true);
+  });
+
+  it("links a court's citing-behaviour record only after an exact id lookup finds it", async () => {
+    const { get, route, mod } = await load();
+    route({
+      "dataset=eq.clb_court_profiles&id=eq.ca9&": [{ p: CA9, l: [] }],
+      corpus_datasets: [{ s: { snapshot: "2026-09-30", caveats: [], definitions: {} } }],
+      "dataset=eq.clb_court_flows": [{ id: "citing:ca9" }],
+    });
+    const out = await mod.getClbCourtCollection({ data: { id: "ca9" } } as never);
+    expect(out?.citingRecord).toBe("/records/clb_court_flows/citing:ca9");
+    expect(out?.profile.opinions?.total).toBe(230917);
+    expect(out?.profile.citations?.made).toBe(1987369);
+    expect(
+      get.mock.calls.some(([p]) =>
+        String(p).includes("dataset=eq.clb_court_flows&id=eq.citing%3Aca9"),
+      ),
+    ).toBe(true);
+  });
+
+  it("does not link a citing record when the lookup finds none, finds another id, or fails", async () => {
+    for (const rows of [[], [{ id: "citing:cacd" }], new Error("down")]) {
+      const { route, mod } = await load();
+      route({
+        "dataset=eq.clb_court_profiles&id=eq.ca9&": [{ p: CA9, l: [] }],
+        corpus_datasets: [{ s: { snapshot: "2026-09-30", caveats: [], definitions: {} } }],
+        "dataset=eq.clb_court_flows": rows as never,
+      });
+      const out = await mod.getClbCourtCollection({ data: { id: "ca9" } } as never);
+      // the profile is still shown; only the link is withheld
+      expect(out?.profile.citations?.received).toBe(2916836);
+      expect(out?.citingRecord).toBeNull();
+    }
   });
 
   it("surfaces a failed profile read instead of caching it as empty", async () => {

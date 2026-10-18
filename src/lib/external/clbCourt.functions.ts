@@ -5,8 +5,12 @@
  *
  * The figures describe CourtListener's collection, not complete court totals. A docket row can be created
  * from an opinion (`opinionSourceDockets`), in which case the docket count is not a count of cases filed.
- * Stored JSON is validated here; malformed rows and links are dropped, never repaired. A section the
- * builder has not filled yet (`opinions`, `citations`) is not read at all.
+ * Stored JSON is validated here; malformed rows and links are dropped, never repaired. A section a record
+ * does not carry (`opinions`, `citations` are null for courts without opinion rows) stays null.
+ *
+ * Citation figures come from CourtListener's citation map: one row per citing opinion and cited opinion,
+ * attributed to the court of each opinion's docket, counted only where both opinions resolve to a court.
+ * They are an extraction from opinion text, not a census of citations.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
@@ -198,6 +202,72 @@ export type ClbBench = {
   medianTenureYearsEnded: number | null;
 };
 
+export type ClbOpinionAuthor = {
+  personId: number;
+  name: string;
+  /** Opinions in the collection whose recorded author is this person. */
+  opinions: number;
+  /** Root-relative clb_judge_dockets record, only when the stored path names exactly this person id. */
+  record: string | null;
+};
+
+export type ClbParentheticals = {
+  /** Parenthetical descriptions (extracted from opinion text) that describe an opinion of this court. */
+  n: number;
+  /** Opinion clusters of this court with at least one such description. */
+  clusters: number;
+};
+
+/** Opinion rows (one per majority, concurrence, dissent, ...) of a court; a decision can hold several. */
+export type ClbOpinions = {
+  total: number;
+  /** Mix of the labelled opinion types; shares are of all `total` opinions. */
+  types: ClbShare[];
+  /** Share of opinions with a recorded author (one decimal). */
+  withAuthorPct: number | null;
+  /** Opinions flagged per curiam. */
+  perCuriam: number | null;
+  /** Share of opinions whose text was extracted by OCR. */
+  ocrPct: number | null;
+  /** Share of opinions with a joined-by list recorded. */
+  withJoinedByPct: number | null;
+  /** Authors of the most opinions among opinions with a recorded author; may be empty. */
+  topAuthors: ClbOpinionAuthor[];
+  parentheticals: ClbParentheticals | null;
+};
+
+export type ClbCitedCourt = {
+  courtId: string;
+  name: string;
+  /** Citation links between this court and that one, in the stated direction. */
+  n: number;
+  /** Share of this court's links in that direction (made or received). */
+  sharePct: number | null;
+  /** true: this row is the profiled court itself. */
+  isSelf: boolean;
+  /** `/courts/<id>` only when the stored link names exactly this court id. */
+  link: string | null;
+};
+
+/**
+ * Citation links of one court. A link is one row of CourtListener's citation map; only links with a
+ * court on both sides are counted. `received` includes links from the court's own opinions.
+ */
+export type ClbCitations = {
+  made: number | null;
+  received: number | null;
+  /** Courts the opinions of this court cite, largest first; shares are of `made`. */
+  madeTo: ClbCitedCourt[];
+  /** Courts whose opinions cite this court, largest first; shares are of `received`. */
+  citedBy: ClbCitedCourt[];
+  /** Share of links made that go to opinions of this same court. */
+  selfCitationPct: number | null;
+  /** Years between the cited opinion's filing and the citing opinion's, over `ageBasisLinks` links made. */
+  medianAgeYears: number | null;
+  p90AgeYears: number | null;
+  ageBasisLinks: number | null;
+};
+
 export type ClbCourtProfile = {
   courtId: string;
   name: string;
@@ -211,6 +281,8 @@ export type ClbCourtProfile = {
   oral: ClbOral | null;
   coverage: ClbCoverage | null;
   bench: ClbBench | null;
+  opinions: ClbOpinions | null;
+  citations: ClbCitations | null;
 };
 
 export type ClbMethod = {
@@ -225,6 +297,8 @@ export type ClbCourtCollection = {
   /** CourtListener's own court page, from the record's stored links. */
   courtPageUrl: string | null;
   method: ClbMethod | null;
+  /** `/records/clb_court_flows/citing:<court id>`, only after an exact id lookup found that record. */
+  citingRecord: string | null;
 };
 
 // ---------------------------------------------------------------------------------------------------
@@ -515,6 +589,142 @@ export function parseBench(raw: unknown): ClbBench | null {
   };
 }
 
+/** A stored share must be the stored count over its whole (the builder rounds it to one decimal). */
+function shareMatches(n: number, whole: number, sharePct: number | null): boolean {
+  return sharePct == null || (whole > 0 && Math.abs((n / whole) * 100 - sharePct) <= 0.06);
+}
+
+/** Labelled opinion types; a row that exceeds, or disagrees with, the court's opinion total is dropped. */
+export function parseOpinionTypes(raw: unknown, total: number): ClbShare[] {
+  const rows = parseShares(raw).filter(
+    (t) => t.count <= total && shareMatches(t.count, total, t.sharePct),
+  );
+  // The types partition the opinions: their counts cannot add up to more than the total.
+  return rows.reduce((sum, t) => sum + t.count, 0) > total ? [] : rows;
+}
+
+/**
+ * Authors of the most opinions. `record` is kept only when it is exactly the clb_judge_dockets path of
+ * this person id; a name is never used to find a record.
+ */
+export function parseOpinionAuthors(raw: unknown, total: number): ClbOpinionAuthor[] {
+  const seen = new Set<number>();
+  const rows = arr(raw).flatMap((entry) => {
+    const r = obj(entry);
+    const personId = count(r?.["person_id"]);
+    const name = str(r?.["name"]);
+    const opinions = count(r?.["opinions"]);
+    if (!r || personId == null || personId <= 0 || !name || opinions == null) return [];
+    // An author cannot have written more opinions than the court has; the row is dropped, not clamped.
+    if (opinions > total || seen.has(personId)) return [];
+    seen.add(personId);
+    const record = str(r["record"]);
+    return [
+      {
+        personId,
+        name,
+        opinions,
+        record: record === `/records/clb_judge_dockets/${personId}` ? record : null,
+      },
+    ];
+  });
+  if (rows.reduce((sum, a) => sum + a.opinions, 0) > total) return [];
+  return rows.sort((a, b) => b.opinions - a.opinions || a.personId - b.personId);
+}
+
+/** The opinion-level section of a court record; null when the court has no opinion rows. */
+export function parseOpinions(raw: unknown): ClbOpinions | null {
+  const o = obj(raw);
+  const total = count(o?.["total"]);
+  if (!o || total == null || total === 0) return null;
+  const perCuriam = count(o["per_curiam"]);
+  const paren = obj(o["parenthetical_descriptions"]);
+  const parenN = count(paren?.["n"]);
+  const parenClusters = count(paren?.["clusters"]);
+  return {
+    total,
+    types: parseOpinionTypes(o["types"], total),
+    withAuthorPct: pct(o["with_author_pct"]),
+    perCuriam: perCuriam != null && perCuriam <= total ? perCuriam : null,
+    ocrPct: pct(o["ocr_pct"]),
+    withJoinedByPct: pct(o["with_joined_by_pct"]),
+    topAuthors: parseOpinionAuthors(o["top_authors"], total),
+    // A description names one cluster at least, so clusters cannot outnumber descriptions.
+    parentheticals:
+      parenN != null && parenClusters != null && parenN > 0 && parenClusters <= parenN
+        ? { n: parenN, clusters: parenClusters }
+        : null,
+  };
+}
+
+/**
+ * Courts on one side of a court's citation links. `whole` is the total those shares are of (links made
+ * or links received); without it no row can be checked and none is kept.
+ */
+export function parseCitedCourts(
+  raw: unknown,
+  whole: number | null,
+  selfId: string,
+): ClbCitedCourt[] {
+  if (whole == null) return [];
+  const seen = new Set<string>();
+  const rows = arr(raw).flatMap((entry) => {
+    const r = obj(entry);
+    const courtId = str(r?.["court_id"]);
+    const name = str(r?.["name"]) ?? courtId;
+    const n = count(r?.["n"]);
+    if (!r || !courtId || !name || n == null || n === 0 || n > whole || seen.has(courtId))
+      return [];
+    const sharePct = pct(r["share_pct"]);
+    if (!shareMatches(n, whole, sharePct)) return [];
+    seen.add(courtId);
+    const link = str(r["link"]);
+    return [
+      {
+        courtId,
+        name,
+        n,
+        sharePct,
+        isSelf: courtId === selfId,
+        // Only a stored link that names exactly this court id is a link; a name is never matched.
+        link: link && COURT_ID.test(courtId) && link === `/courts/${courtId}` ? link : null,
+      },
+    ];
+  });
+  if (rows.reduce((sum, c) => sum + c.n, 0) > whole) return [];
+  return rows.sort((a, b) => b.n - a.n || a.courtId.localeCompare(b.courtId));
+}
+
+/** The citation section of a court record; null when it holds no citation links. */
+export function parseCitations(raw: unknown, courtId: string): ClbCitations | null {
+  const c = obj(raw);
+  const made = count(c?.["cites_made"]);
+  const received = count(c?.["cited_by_others"]);
+  if (!c || ((made ?? 0) === 0 && (received ?? 0) === 0)) return null;
+  const median = num(c["median_age_of_cited_years"]);
+  const p90 = num(c["p90_age_of_cited_years"]);
+  const basis = count(c["age_basis_links"]);
+  // An age is published with the number of links it is computed over, and only as an ordered pair.
+  const ageOk =
+    basis != null &&
+    basis > 0 &&
+    median != null &&
+    p90 != null &&
+    median >= 0 &&
+    median <= p90 &&
+    p90 <= 1000;
+  return {
+    made,
+    received,
+    madeTo: parseCitedCourts(c["cites_made_to"], made, courtId),
+    citedBy: parseCitedCourts(c["cited_by"], received, courtId),
+    selfCitationPct: made != null && made > 0 ? pct(c["self_citation_pct"]) : null,
+    medianAgeYears: ageOk ? median : null,
+    p90AgeYears: ageOk ? p90 : null,
+    ageBasisLinks: ageOk ? basis : null,
+  };
+}
+
 /** The profile payload of one clb_court_profiles record; null when its identity is missing. */
 export function parseClbCourtProfile(raw: unknown): ClbCourtProfile | null {
   const p = obj(raw);
@@ -533,6 +743,8 @@ export function parseClbCourtProfile(raw: unknown): ClbCourtProfile | null {
     oral: parseOral(p["oral_arguments"]),
     coverage: parseCoverage(p["fjc_coverage"]),
     bench: parseBench(p["bench"]),
+    opinions: parseOpinions(p["opinions"]),
+    citations: parseCitations(p["citations"], courtId),
   };
 }
 
@@ -764,6 +976,22 @@ async function judgeStatsFound(ids: number[]): Promise<Set<number>> {
   }
 }
 
+/**
+ * The citing-behaviour record of a court (clb_court_flows `citing:<court id>`), only when an exact id
+ * lookup finds it; most courts have none, and a failed lookup means no link.
+ */
+async function citingFlowRecord(courtId: string): Promise<string | null> {
+  const id = `citing:${courtId}`;
+  try {
+    const r = await restGet<{ id: unknown }[]>(
+      `corpus_records?select=id&dataset=eq.clb_court_flows&id=eq.${encodeURIComponent(id)}&limit=1`,
+    );
+    return r.rows.some((row) => row.id === id) ? `/records/clb_court_flows/${id}` : null;
+  } catch {
+    return null;
+  }
+}
+
 export const getClbCourtCollection = createServerFn({ method: "GET" })
   .inputValidator((d) => z.object({ id: z.string().regex(COURT_ID) }).parse(d))
   .handler(async ({ data }): Promise<ClbCourtCollection | null> => {
@@ -782,11 +1010,15 @@ export const getClbCourtCollection = createServerFn({ method: "GET" })
         ...(parsed.dockets?.judgesAssigned ?? []),
         ...(parsed.dockets?.judgesReferred ?? []),
       ].map((j) => j.personId);
-      const found = await judgeStatsFound([...new Set(ids)]);
+      const [found, citingRecord] = await Promise.all([
+        judgeStatsFound([...new Set(ids)]),
+        parsed.citations ? citingFlowRecord(parsed.courtId) : Promise.resolve(null),
+      ]);
       return {
         profile: withJudgeStats(parsed, found),
         courtPageUrl: parseCourtPageUrl(row?.l, data.id),
         method,
+        citingRecord,
       };
     });
   });

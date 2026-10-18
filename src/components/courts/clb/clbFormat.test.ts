@@ -1,13 +1,25 @@
 import { describe, expect, it } from "vitest";
 import type {
   ClbBench,
+  ClbCitations,
+  ClbCitedCourt,
   ClbDocketYear,
   ClbDockets,
+  ClbOpinions,
   GlanceMeasure,
 } from "@/lib/external/clbCourt.functions";
 import {
+  CITATION_AGE_DEFINITION,
+  CITATION_LINK_DEFINITION,
+  CITATION_NOT_QUALITY,
   NOT_RECORDED,
+  ageBasisNote,
+  ageYearsText,
+  authorPctText,
+  authorshipNote,
   benchPhrases,
+  citationsSummary,
+  citedCourtRows,
   docketRange,
   docketYearRows,
   durationBar,
@@ -18,14 +30,18 @@ import {
   isPartialYear,
   lastVoteYear,
   measureValue,
+  noCourtsText,
   nosCoverage,
+  opinionsSummary,
   rankText,
   rhoText,
   shareOf,
   shareText,
+  shownCourtsNote,
   sourceMixLabel,
   tick,
   transcriptShare,
+  typeRows,
   voteDecades,
 } from "./clbFormat";
 
@@ -295,5 +311,160 @@ describe("district measures", () => {
     expect(rhoText(-0.056)).toBe("−0.06");
     expect(rhoText(-0.001)).toBe("0.00");
     expect(rhoText(1)).toBe("1.00");
+  });
+});
+
+describe("opinions on file and citations", () => {
+  const opinions = (over: Partial<ClbOpinions> = {}): ClbOpinions => ({
+    total: 230917,
+    types: [],
+    withAuthorPct: 0.3,
+    perCuriam: 7171,
+    ocrPct: 29.6,
+    withJoinedByPct: 0,
+    topAuthors: [{ personId: 1817, name: "Alex Kozinski", opinions: 103, record: null }],
+    parentheticals: null,
+    ...over,
+  });
+  const court = (over: Partial<ClbCitedCourt> = {}): ClbCitedCourt => ({
+    courtId: "scotus",
+    name: "Supreme Court of the United States",
+    n: 534711,
+    sharePct: 26.9,
+    isSelf: false,
+    link: "/courts/scotus",
+    ...over,
+  });
+
+  it("turns labelled opinion types into bar rows without changing the stored shares", () => {
+    const rows = typeRows([
+      { value: "010combined", label: "Combined opinion", count: 148214, sharePct: 64.2 },
+      { value: "070rehearing", label: "Rehearing", count: 184, sharePct: 0.1 },
+    ]);
+    expect(rows.map((r) => [r.key, r.label, r.count, r.sharePct, r.courtId])).toEqual([
+      ["010combined", "Combined opinion", 148214, 64.2, undefined],
+      ["070rehearing", "Rehearing", 184, 0.1, undefined],
+    ]);
+  });
+
+  it("links a cited court's label only for a verified link, and never the profiled court itself", () => {
+    const rows = citedCourtRows([
+      court(),
+      court({ courtId: "ca2", name: "Second Circuit", link: null }),
+      court({ courtId: "ca9", name: "Ninth Circuit", isSelf: true, link: "/courts/ca9" }),
+    ]);
+    expect(rows.map((r) => r.courtId)).toEqual(["scotus", undefined, undefined]);
+    expect(rows[2]?.label).toBe("Ninth Circuit (this court)");
+    expect(rows[1]?.label).toBe("Second Circuit");
+    expect(rows[0]).toMatchObject({ count: 534711, sharePct: 26.9, key: "scotus" });
+  });
+
+  it("writes a stored 0% author share beside listed authors as under 0.1%, never 0.0%", () => {
+    expect(authorPctText(opinions({ withAuthorPct: 0 }))).toBe("<0.1%");
+    expect(authorPctText(opinions({ withAuthorPct: 0, topAuthors: [] }))).toBe("0.0%");
+    expect(authorPctText(opinions({ withAuthorPct: 33.5 }))).toBe("33.5%");
+    expect(authorPctText(opinions({ withAuthorPct: null }))).toBe(NOT_RECORDED);
+  });
+
+  it("says what the author counts cover and calls them a floor when few opinions have an author", () => {
+    expect(authorshipNote(opinions())).toBe(
+      "Only 0.3% of the 230,917 opinions have a recorded author, so the author counts are a floor: they cover the opinions where CourtListener recorded an author and say nothing about who wrote the rest.",
+    );
+    expect(authorshipNote(opinions({ withAuthorPct: 93.1, total: 5000 }))).toBe(
+      "93.1% of the 5,000 opinions have a recorded author; author counts cover those opinions only.",
+    );
+    expect(authorshipNote(opinions({ withAuthorPct: null }))).toContain(NOT_RECORDED);
+    expect(authorshipNote(opinions({ withAuthorPct: 49.9 }))).toMatch(/^Only /);
+    expect(authorshipNote(opinions({ withAuthorPct: 50 }))).not.toMatch(/^Only /);
+  });
+
+  it("summarises the opinion and citation sections from stored figures only", () => {
+    expect(opinionsSummary(opinions())).toBe(
+      "230,917 opinions · 0.3% with a recorded author · 7,171 per curiam",
+    );
+    expect(opinionsSummary(opinions({ withAuthorPct: null, perCuriam: null }))).toBe(
+      "230,917 opinions",
+    );
+    const cit: ClbCitations = {
+      made: 1987369,
+      received: 2916836,
+      madeTo: [],
+      citedBy: [],
+      selfCitationPct: 49.9,
+      medianAgeYears: 8,
+      p90AgeYears: 31.3,
+      ageBasisLinks: 1983523,
+    };
+    expect(citationsSummary(cit)).toBe(
+      "1,987,369 links made · 2,916,836 received · 49.9% to its own opinions",
+    );
+    expect(citationsSummary({ ...cit, made: null, selfCitationPct: null })).toBe(
+      "2,916,836 received",
+    );
+  });
+
+  it("writes citation ages in years with one decimal, and Not recorded when unknown", () => {
+    expect(ageYearsText(8)).toBe("8.0 years");
+    expect(ageYearsText(31.3)).toBe("31.3 years");
+    expect(ageYearsText(null)).toBe(NOT_RECORDED);
+    expect(ageYearsText(undefined)).toBe(NOT_RECORDED);
+  });
+
+  it("states the age definition and its link basis, or that the age is not recorded", () => {
+    const note = ageBasisNote({ medianAgeYears: 8, ageBasisLinks: 1983523 });
+    expect(note).toContain(CITATION_AGE_DEFINITION);
+    expect(note).toContain("1,983,523 links");
+    expect(note).toContain("not whether what they cite is still good law");
+    expect(ageBasisNote({ medianAgeYears: null, ageBasisLinks: null })).toBe(
+      `The age of cited opinions is ${NOT_RECORDED} for this court.`,
+    );
+    expect(CITATION_AGE_DEFINITION).toBe(
+      "years between the cited opinion's filing and the citing opinion's",
+    );
+  });
+
+  it("keeps the citation caveats: an extraction with a court on both sides, not a census or a quality measure", () => {
+    expect(CITATION_LINK_DEFINITION).toContain("one row of CourtListener's citation map");
+    expect(CITATION_LINK_DEFINITION).toContain("a court on both sides");
+    expect(CITATION_LINK_DEFINITION).toContain("extraction from opinion text, not a census");
+    expect(CITATION_NOT_QUALITY).toContain(
+      "do not measure the quality, authority or current status",
+    );
+  });
+});
+
+describe("court lists and author coverage", () => {
+  it("describes how much of the whole a court list covers from the stored link counts", () => {
+    expect(shownCourtsNote([{ n: 600 }, { n: 300 }], 1000)).toBe(
+      "the 2 largest courts, together 90.0% of the links",
+    );
+    expect(shownCourtsNote([{ n: 600 }], 1000)).toBe(
+      "the largest court, together 60.0% of the links",
+    );
+    expect(shownCourtsNote([{ n: 2 }], 2)).toBe("the only court with links");
+    expect(shownCourtsNote([{ n: 5 }, { n: 5 }], 10)).toBe("all 2 courts with links");
+    expect(shownCourtsNote([], 10)).toBeUndefined();
+    expect(shownCourtsNote([{ n: 1 }], null)).toBeUndefined();
+    expect(shownCourtsNote([{ n: 1 }], 0)).toBeUndefined();
+  });
+
+  it("says what an empty court list means", () => {
+    expect(noCourtsText(0)).toBe("No links are recorded in this direction.");
+    expect(noCourtsText(null)).toBe(NOT_RECORDED);
+    expect(noCourtsText(12)).toBe(`The courts behind these 12 links are ${NOT_RECORDED}.`);
+  });
+
+  it("says no author is recorded when the share is zero and none is listed", () => {
+    const o = { total: 2367, withAuthorPct: 0, topAuthors: [] };
+    expect(authorshipNote(o)).toBe(
+      "None of the 2,367 opinions has a recorded author in the collection, so no author is listed.",
+    );
+    // a zero share beside listed authors is a rounded share, not "none"
+    expect(
+      authorshipNote({
+        ...o,
+        topAuthors: [{ personId: 1, name: "A", opinions: 3, record: null }],
+      }),
+    ).toMatch(/^Only <0\.1% of the 2,367 opinions have a recorded author/);
   });
 });

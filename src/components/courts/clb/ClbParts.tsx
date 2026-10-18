@@ -61,15 +61,21 @@ export type BarRow = {
   sharePct: number | null;
   /** Full text for the hover title (for example the source bit mask). */
   title?: string | undefined;
+  /** Court id whose page the label links to; the caller sets it only for a link verified as exact. */
+  courtId?: string | undefined;
 };
 
-/** Counts as bars scaled to the largest shown count, each with its stated share. */
+/**
+ * Counts as bars, each with its stated share. Bars are scaled to the largest shown count, or, when
+ * `whole` is given, to that whole (so a bar's length is the row's share of the stated denominator).
+ */
 export function ShareBars({
   heading,
   rows,
   note,
   limit = 8,
   noun,
+  whole,
 }: {
   heading: string;
   rows: readonly BarRow[];
@@ -77,12 +83,15 @@ export function ShareBars({
   note?: ReactNode;
   limit?: number;
   noun?: string;
+  /** The total the shares are of; bar lengths are then proportions of it. */
+  whole?: number | undefined;
 }) {
   const [expanded, setExpanded] = useState(false);
   const uid = useId();
   if (!rows.length) return null;
   const shown = expanded ? rows : rows.slice(0, limit);
   const max = Math.max(1, ...shown.map((r) => r.count));
+  const scale = whole != null && whole > 0 ? whole : max;
   return (
     <div className="min-w-0">
       <h4 className="text-xs font-medium">{heading}</h4>
@@ -92,7 +101,17 @@ export function ShareBars({
           <li key={r.key} className="min-w-0">
             <div className="flex items-baseline justify-between gap-2 text-xs">
               <span className="min-w-0 break-words leading-4" title={r.title ?? r.label}>
-                {r.label}
+                {r.courtId ? (
+                  <Link
+                    to="/courts/$id"
+                    params={{ id: r.courtId }}
+                    className="text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+                  >
+                    {r.label}
+                  </Link>
+                ) : (
+                  r.label
+                )}
               </span>
               <span className="shrink-0 font-mono tabular-nums text-muted-foreground">
                 {fmtInt(r.count)}
@@ -102,7 +121,10 @@ export function ShareBars({
             <div className="mt-0.5 h-1 rounded-sm bg-muted" aria-hidden>
               <div
                 className="h-1 rounded-sm bg-primary/80"
-                style={{ width: `${(r.count / max) * 100}%` }}
+                style={{
+                  width: `${Math.min(100, (r.count / scale) * 100)}%`,
+                  ...(whole != null && r.count > 0 ? { minWidth: "2px" } : {}),
+                }}
               />
             </div>
           </li>

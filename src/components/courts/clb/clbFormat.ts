@@ -5,12 +5,16 @@
  */
 import type {
   ClbBench,
+  ClbCitations,
+  ClbCitedCourt,
   ClbClusters,
   ClbDocketYear,
   ClbDockets,
   ClbDuration,
+  ClbOpinions,
   ClbOral,
   ClbScotusYear,
+  ClbShare,
   ClbSource,
   GlanceMeasure,
 } from "@/lib/external/clbCourt.functions";
@@ -223,6 +227,142 @@ export function benchPhrases(b: ClbBench): string[] {
       : "Median years served: Not recorded",
   ];
   return parts.flatMap((p) => (p ? [p] : []));
+}
+
+// ---------------------------------------------------------------------------------------------------
+// Opinions on file and citations
+// ---------------------------------------------------------------------------------------------------
+
+/** The citation-age measure as the dataset defines it (shown beside every age figure). */
+export const CITATION_AGE_DEFINITION =
+  "years between the cited opinion's filing and the citing opinion's";
+
+/** What a citation link is and is not; shown in the Citations section wherever its figures appear. */
+export const CITATION_LINK_DEFINITION =
+  "A citation link is one row of CourtListener's citation map (a citing opinion cites a cited opinion), attributed to the court of each opinion's docket. Only links with a court on both sides are counted. It is an extraction from opinion text, not a census of citations.";
+
+/** Link counts describe citation behaviour in the collection; they are not a quality or good-law signal. */
+export const CITATION_NOT_QUALITY =
+  "Link counts show where a court's citations go and come from in the collection; they do not measure the quality, authority or current status of a court or an opinion.";
+
+/** A row for the share bars (the same shape as the panel's BarRow). */
+export type ShareRow = {
+  key: string;
+  label: string;
+  count: number;
+  sharePct: number | null;
+  title: string;
+  /** Set only for a court row whose stored link named exactly that court (never the profiled court). */
+  courtId: string | undefined;
+};
+
+/** Labelled opinion types as bar rows; shares stay the stored shares of all opinions. */
+export function typeRows(types: readonly ClbShare[]): ShareRow[] {
+  return types.map((t) => ({
+    key: t.value,
+    label: t.label,
+    count: t.count,
+    sharePct: t.sharePct,
+    title: `${t.label} (${t.value})`,
+    courtId: undefined,
+  }));
+}
+
+/** Courts on one side of the citation links as bar rows; the profiled court itself is marked, not linked. */
+export function citedCourtRows(rows: readonly ClbCitedCourt[]): ShareRow[] {
+  return rows.map((r) => ({
+    key: r.courtId,
+    label: r.isSelf ? `${r.name} (this court)` : r.name,
+    count: r.n,
+    sharePct: r.sharePct,
+    title: `${r.name} (${r.courtId})`,
+    courtId: r.link && !r.isSelf ? r.courtId : undefined,
+  }));
+}
+
+/**
+ * The share of opinions with a recorded author. The stored share has one decimal, so a stored 0 beside
+ * listed authors is under 0.05%, never "0.0%".
+ */
+export function authorPctText(o: Pick<ClbOpinions, "withAuthorPct" | "topAuthors">): string {
+  if (o.withAuthorPct === 0 && o.topAuthors.length > 0) return "<0.1%";
+  return fmtPct(o.withAuthorPct);
+}
+
+/**
+ * What the author counts cover. Only an opinion with a recorded author is attributed to anyone, so a low
+ * share makes every author count a floor, not a ranking of who wrote the most.
+ */
+export function authorshipNote(
+  o: Pick<ClbOpinions, "total" | "withAuthorPct" | "topAuthors">,
+): string {
+  if (o.withAuthorPct == null)
+    return `The share of opinions with a recorded author is ${NOT_RECORDED} for this court.`;
+  // A stored 0 with no author listed: the collection records no author on any of these opinions.
+  if (o.withAuthorPct === 0 && o.topAuthors.length === 0)
+    return `None of the ${fmtInt(o.total)} opinions has a recorded author in the collection, so no author is listed.`;
+  const lead = `${authorPctText(o)} of the ${fmtInt(o.total)} opinions have a recorded author`;
+  return o.withAuthorPct < 50
+    ? `Only ${lead}, so the author counts are a floor: they cover the opinions where CourtListener recorded an author and say nothing about who wrote the rest.`
+    : `${lead}; author counts cover those opinions only.`;
+}
+
+export function opinionsSummary(o: ClbOpinions): string {
+  return [
+    `${fmtInt(o.total)} opinions`,
+    o.withAuthorPct != null ? `${authorPctText(o)} with a recorded author` : null,
+    o.perCuriam != null ? `${fmtInt(o.perCuriam)} per curiam` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+export function citationsSummary(c: ClbCitations): string {
+  return [
+    c.made != null ? `${fmtInt(c.made)} links made` : null,
+    c.received != null ? `${fmtInt(c.received)} received` : null,
+    c.selfCitationPct != null ? `${fmtPct(c.selfCitationPct)} to its own opinions` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+/**
+ * Which courts a list shows and how much of the whole they cover, from the stored link counts: the listed
+ * courts' links added up over the total they are shares of. Undefined when there is nothing to describe.
+ */
+export function shownCourtsNote(
+  rows: readonly Pick<ClbCitedCourt, "n">[],
+  whole: number | null,
+): string | undefined {
+  if (whole == null || whole <= 0 || !rows.length) return undefined;
+  const covered = rows.reduce((sum, r) => sum + r.n, 0);
+  if (covered >= whole)
+    return rows.length === 1 ? "the only court with links" : `all ${rows.length} courts with links`;
+  const lead = rows.length === 1 ? "the largest court" : `the ${rows.length} largest courts`;
+  return `${lead}, together ${fmtPct(shareOf(covered, whole))} of the links`;
+}
+
+/** What a court list says when it has no rows: no links in that direction, or courts that are not recorded. */
+export function noCourtsText(total: number | null): string {
+  if (total == null) return NOT_RECORDED;
+  return total === 0
+    ? "No links are recorded in this direction."
+    : `The courts behind these ${fmtInt(total)} links are ${NOT_RECORDED}.`;
+}
+
+/** Years with one decimal and the unit; Not recorded when the age is unknown. */
+export function ageYearsText(years: number | null | undefined): string {
+  return typeof years === "number" && Number.isFinite(years)
+    ? `${fmtDec(years, 1)} years`
+    : NOT_RECORDED;
+}
+
+/** The definition and basis of the age figures: what is measured, over how many links, and what it is not. */
+export function ageBasisNote(c: Pick<ClbCitations, "medianAgeYears" | "ageBasisLinks">): string {
+  if (c.medianAgeYears == null || c.ageBasisLinks == null)
+    return `The age of cited opinions is ${NOT_RECORDED} for this court.`;
+  return `Age is the ${CITATION_AGE_DEFINITION}, over the ${fmtInt(c.ageBasisLinks)} links made where both filing dates are on record and the citing opinion is not older. It shows how far back this court's opinions reach, not whether what they cite is still good law.`;
 }
 
 // ---------------------------------------------------------------------------------------------------

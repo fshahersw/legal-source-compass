@@ -24,6 +24,7 @@ import {
 } from "./ClbCharts";
 import {
   benchPhrases,
+  citationsSummary,
   clusterRange,
   docketRange,
   docketYearRows,
@@ -33,6 +34,7 @@ import {
   fmtPct,
   lastVoteYear,
   nosCoverage,
+  opinionsSummary,
   shareOf,
   sourceMixLabel,
   transcriptShare,
@@ -46,6 +48,7 @@ import {
   ShareBars,
   type BarRow,
 } from "./ClbParts";
+import { CitationsBody, OpinionsOnFileBody } from "./ClbOpinionSections";
 
 const STALE = 10 * 60 * 1000;
 const PERSON_ID = /^\/records\/cl_people\/(cl:people:\d+)$/;
@@ -59,7 +62,8 @@ const clbCollectionQuery = (courtId: string) => ({
 /**
  * CourtListener's collection statistics for one court (dataset clb_court_profiles). Counts describe
  * rows in CourtListener's collection, not complete court totals. Sections the record does not carry
- * are not rendered; a court with no dockets, opinion clusters or oral arguments shows nothing.
+ * are not rendered; a court with no dockets, opinion clusters, oral arguments, opinion rows or
+ * citation links shows nothing.
  */
 export function CourtCollectionPanel({ courtId }: { courtId: string }) {
   const enabled = COURT_ID.test(courtId);
@@ -101,9 +105,9 @@ function Body({ c }: { c: ClbCourtCollection }) {
   const d = p.dockets;
   const k = p.clusters;
   const o = p.oral;
-  if (!d && !k && !o) return null;
+  if (!d && !k && !o && !p.opinions && !p.citations) return null;
   const snapshot = c.method?.snapshot ?? null;
-  const sections = buildSections(p, snapshot);
+  const sections = buildSections(p, snapshot, c.citingRecord);
   return (
     <section
       className="mb-5 min-w-0 rounded-lg border border-border bg-surface"
@@ -208,7 +212,11 @@ function clusterNote(k: ClbClusters): string {
   return `${range ? `${range} · ` : ""}${fmtPct(k.citedPct)} cited at least once`;
 }
 
-function buildSections(p: ClbCourtProfile, snapshot: string | null): SectionSpec[] {
+function buildSections(
+  p: ClbCourtProfile,
+  snapshot: string | null,
+  citingRecord: string | null,
+): SectionSpec[] {
   const out: SectionSpec[] = [];
   const d = p.dockets;
   const k = p.clusters;
@@ -276,6 +284,20 @@ function buildSections(p: ClbCourtProfile, snapshot: string | null): SectionSpec
       title: "Opinions",
       summary: `${fmtInt(k.total)} clusters · ${clusterRange(k) ?? "no filing dates"} · ${fmtPct(k.citedPct)} cited at least once`,
       body: <OpinionsBody k={k} courtId={p.courtId} />,
+    });
+  if (p.opinions)
+    out.push({
+      key: "opinions-on-file",
+      title: "Opinions on file",
+      summary: opinionsSummary(p.opinions),
+      body: <OpinionsOnFileBody o={p.opinions} />,
+    });
+  if (p.citations)
+    out.push({
+      key: "citations",
+      title: "Citations",
+      summary: citationsSummary(p.citations),
+      body: <CitationsBody c={p.citations} courtId={p.courtId} citingRecord={citingRecord} />,
     });
   if (o)
     out.push({
