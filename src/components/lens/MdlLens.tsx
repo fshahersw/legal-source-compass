@@ -19,6 +19,8 @@ import { FDA_COLORS } from "@/components/fda-analytics/chartView";
 import { mdlAnalyticsQuery } from "@/components/matters/MdlAnalytics";
 import { getMdlLens, type MdlLens as Lens } from "@/lib/external/mdlLens.functions";
 import { getCourtStatsDistrict } from "@/lib/external/courtStats.functions";
+import type { LensCompany } from "@/lib/external/mdlLens.functions";
+import { money } from "@/components/companies/companyData";
 import type { CourtAnalytics, NationalDistribution } from "@/lib/external/courtAnalytics.functions";
 import type { FjcProfile } from "@/lib/external/judgeProfiles.functions";
 import type { MassTortSignal } from "@/lib/external/massTortSignals.functions";
@@ -429,6 +431,159 @@ function SignalCard({ signal }: { signal: MassTortSignal }) {
   );
 }
 
+const TIER_STYLE = {
+  A: "border-success/40 bg-success/10",
+  B: "border-border bg-muted",
+  C: "border-warning/40 bg-warning/15",
+} as const;
+
+function CompaniesCard({ companies: all }: { companies: LensCompany[] }) {
+  // Registrants read as claimants or as not named are listed apart from possible defendants.
+  const companies = all.filter((c) => c.link.role === "defendant" || c.link.role === "unclear");
+  const others = all.filter((c) => !companies.includes(c));
+  return (
+    <Card
+      title="Public companies naming this MDL in SEC filings"
+      subtitle="Linked only when the company's own 10-K, 10-Q, 20-F or 8-K names this MDL. Accruals are company-wide litigation figures, not MDL-specific."
+      className="lg:col-span-2"
+    >
+      {all.length ? (
+        <div className="overflow-x-auto">
+          <table hidden={!companies.length} className="w-full min-w-[640px] text-[11.5px]">
+            <thead className="text-left text-[10.5px] uppercase tracking-wide text-muted-foreground">
+              <tr>
+                <th className="py-1 pr-2 font-medium">Company</th>
+                <th className="py-1 pr-2 font-medium">Evidence</th>
+                <th className="py-1 pr-2 font-medium">Role read</th>
+                <th className="py-1 pr-2 text-right font-medium">Revenue</th>
+                <th className="py-1 pr-2 text-right font-medium">Litigation accrual</th>
+                <th className="py-1 text-right font-medium">Accrual % rev.</th>
+              </tr>
+            </thead>
+            <tbody>
+              {companies.map((c) => {
+                const rev = c.summary?.latest.revenue ?? null;
+                const acc = c.summary?.latest.litigation_accrual ?? null;
+                // An accrual more than a year older than the latest revenue is shown as stale, not current.
+                const stale = !!acc && !!rev && acc.fy < rev.fy - 1;
+                const filing = c.link.verified[0] ?? null;
+                return (
+                  <tr key={c.cik} className="border-t border-border/60 align-top">
+                    <td className="py-1.5 pr-2">
+                      <Link
+                        to="/companies/$cik"
+                        params={{ cik: c.cik }}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        {c.summary?.profile.name ?? c.name}
+                      </Link>
+                      {c.summary?.profile.tickers.length ? (
+                        <span className="ml-1 font-mono text-[10.5px] text-muted-foreground">
+                          {c.summary.profile.tickers.join(", ")}
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="py-1.5 pr-2">
+                      <span
+                        title={c.link.tierLabel}
+                        className={cn(
+                          "mr-1 rounded border px-1 py-px text-[10px] font-semibold",
+                          TIER_STYLE[c.link.tier],
+                        )}
+                      >
+                        Tier {c.link.tier}
+                        {c.link.tier === "C" ? " · review" : ""}
+                      </span>
+                      {c.link.verifiedCount} filing{c.link.verifiedCount === 1 ? "" : "s"}
+                      {filing ? (
+                        <a
+                          href={filing.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block text-[10.5px] text-primary hover:underline"
+                        >
+                          {filing.form} filed {filing.fileDate}
+                        </a>
+                      ) : null}
+                    </td>
+                    <td className="py-1.5 pr-2 text-muted-foreground">{c.link.roleLabel}</td>
+                    <td className="py-1.5 pr-2 text-right font-mono">
+                      {rev ? (
+                        <>
+                          {money(rev.value, rev.unit)}
+                          <span className="block text-[10px] text-muted-foreground">
+                            FY{rev.fy}
+                          </span>
+                        </>
+                      ) : (
+                        "Not recorded"
+                      )}
+                    </td>
+                    <td className="py-1.5 pr-2 text-right font-mono">
+                      {acc && !stale ? (
+                        <>
+                          {money(acc.value, acc.unit)}
+                          <span className="block text-[10px] text-muted-foreground">
+                            FY{acc.fy}
+                          </span>
+                        </>
+                      ) : acc ? (
+                        <span
+                          className="text-muted-foreground"
+                          title={`${money(acc.value, acc.unit)} in FY${acc.fy}`}
+                        >
+                          Not current
+                          <span className="block text-[10px]">last reported FY{acc.fy}</span>
+                        </span>
+                      ) : (
+                        "Not recorded"
+                      )}
+                    </td>
+                    <td className="py-1.5 text-right font-mono">
+                      {!stale && c.summary?.accrualPctRevenue != null
+                        ? `${c.summary.accrualPctRevenue.toFixed(1)}%`
+                        : "—"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {others.length ? (
+            <p className="mt-2 text-[11px]">
+              <span className="font-medium">Named in filings but not as a defendant: </span>
+              {others.map((c, i) => (
+                <span key={c.cik}>
+                  {i ? "; " : ""}
+                  <Link
+                    to="/companies/$cik"
+                    params={{ cik: c.cik }}
+                    className="text-primary hover:underline"
+                  >
+                    {c.summary?.profile.name ?? c.name}
+                  </Link>{" "}
+                  <span className="text-muted-foreground">({c.link.roleLabel.toLowerCase()})</span>
+                </span>
+              ))}
+            </p>
+          ) : null}
+          <p className="mt-2 text-[10.5px] text-muted-foreground">
+            Tier A: the filing cites the MDL number. Tier B: it cites the official caption. Tier C:
+            it describes the litigation by subject and needs review. Role is a deterministic reading
+            of the excerpt, also for review.
+          </p>
+        </div>
+      ) : (
+        <p className="text-[11px] text-muted-foreground">
+          No SEC registrant's filings were found naming this MDL. Defendants that do not file with
+          the SEC (for example foreign companies without US listings or private companies) cannot
+          appear here.
+        </p>
+      )}
+    </Card>
+  );
+}
+
 function FlagsCard({ insights }: { insights: SafetyInsight[] }) {
   return (
     <Card title="Automated flags" subtitle="From the regulatory-watch detectors on /safety">
@@ -684,6 +839,10 @@ export function MdlLens({ mdl }: { mdl: number }) {
           </Card>
         )}
         <FlagsCard insights={lens.insights} />
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-2">
+        <CompaniesCard companies={lens.companies} />
       </div>
 
       {lens.signal ? (
