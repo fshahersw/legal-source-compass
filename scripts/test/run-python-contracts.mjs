@@ -39,6 +39,9 @@ for (const suite of [
   { directory: "scripts/enrichment/judges_cross", modules: ["test_judges_cross"] },
   { directory: "scripts/enrichment/mdl_intel", modules: ["test_parsers"] },
   { directory: "scripts/enrichment/open_payments", modules: ["test_open_payments"] },
+  { directory: "scripts/enrichment/cfpb", modules: ["test_cfpb"] },
+  { directory: "scripts/enrichment/fda_adverse_events", modules: ["test_fda_adverse_events"] },
+  { directory: "scripts/enrichment/epa_echo", modules: ["test_epa_echo"] },
   { directory: "scripts/enrichment/sec", modules: ["test_evidence", "test_financials"] },
   { directory: "scripts/enrichment/state_metrics", modules: ["test_parsers"] },
   {
