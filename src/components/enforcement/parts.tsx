@@ -64,7 +64,7 @@ export function Kpi({
       >
         {value}
       </p>
-      {note ? <p className="truncate text-[11px] text-muted-foreground">{note}</p> : null}
+      {note ? <p className="text-[11px] leading-tight text-muted-foreground">{note}</p> : null}
     </div>
   );
 }

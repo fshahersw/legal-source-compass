@@ -24,9 +24,24 @@ export type StatFlag = {
   ratio: number | null;
   sharePct: number | null;
   nationalSharePct: number | null;
+  /** Pooled national value (Total row) for the time rules; reported, not used as the benchmark. */
   national: number | null;
+  /** Median of district values in the same year: the benchmark for the time rules. */
+  districtMedian: number | null;
   count: number | null;
 };
+
+/** Fiscal years in which a field was printed as a dash in the source (stored value is null). */
+export type DashMap = Record<string, number[]>;
+
+/** The district holding the largest share of a national count in one fiscal year. */
+export type TopShare = {
+  courtId: string;
+  name: string;
+  count: number;
+  total: number;
+  sharePct: number;
+} | null;
 
 export type MdlLink = {
   pendingDockets: number | null;
@@ -54,6 +69,7 @@ export type DistrictRow = {
   pl5: number | null;
   mdl: MdlLink | null;
   flags: StatFlag[];
+  dash: DashMap;
 };
 
 export type SourceRef = { page: string; url: string | null; format: string | null };
@@ -85,6 +101,7 @@ export type NationalSummary = {
   };
   notes: string[];
   retrievedAt: string | null;
+  concentration: { c5: TopShare[]; c6: TopShare[] };
 };
 
 export type CircuitStats = {
@@ -106,6 +123,7 @@ export type CircuitStats = {
   districtJudgeships: Series;
   districtMedian: Series;
   districtOver3: Series;
+  dash: DashMap;
 };
 
 export type DistrictTimes = {
@@ -117,6 +135,10 @@ export type DistrictTimes = {
   over3Pct: Series;
   nationalMedian: Series;
   nationalOver3Pct: Series;
+  districtMedian: Series;
+  districtMedianOver3Pct: Series;
+  concentration: { c5: TopShare[]; c6: TopShare[] };
+  dash: DashMap;
   flags: StatFlag[];
   fastestRank: number | null;
   rankOf: number | null;
@@ -138,6 +160,7 @@ export type DistrictPanel = {
   componentsWithheldYears: number[];
   pl5: number | null;
   flags: StatFlag[];
+  dash: DashMap;
   ranks: {
     pl: number | null;
     share: number | null;
@@ -211,8 +234,40 @@ export function parseFlag(v: unknown): StatFlag | null {
     sharePct: num(v["share_pct"]),
     nationalSharePct: num(v["national_share_pct"]),
     national: num(v["national"]),
+    districtMedian: num(v["district_median"]),
     count: num(v["count"]),
   };
+}
+
+/** {field: [fiscal years]} restricted to the loaded year axis. */
+export function parseDash(v: unknown, years: number[]): DashMap {
+  const out: DashMap = {};
+  if (!isObj(v)) return out;
+  for (const [key, list] of Object.entries(v)) {
+    if (!Array.isArray(list)) continue;
+    const ys = list.filter((y): y is number => typeof y === "number" && years.includes(y));
+    if (ys.length) out[key] = ys;
+  }
+  return out;
+}
+
+export function parseTopShares(v: unknown, length: number): TopShare[] {
+  const arr = Array.isArray(v) ? v : [];
+  return Array.from({ length }, (_, i) => {
+    const t = arr[i];
+    if (!isObj(t)) return null;
+    const courtId = str(t["court_id"]);
+    const count = num(t["count"]);
+    const total = num(t["total"]);
+    const sharePct = num(t["share_pct"]);
+    if (!courtId || count === null || total === null || sharePct === null) return null;
+    return { courtId, name: str(t["name"]) ?? courtId, count, total, sharePct };
+  });
+}
+
+function parseConcentration(v: unknown, length: number) {
+  const o = isObj(v) ? v : {};
+  return { c5: parseTopShares(o["c5"], length), c6: parseTopShares(o["c6"], length) };
 }
 
 const flags = (v: unknown) =>
@@ -231,7 +286,8 @@ function parseMdl(v: unknown): MdlLink | null {
 
 const COURT_ID = /^[a-z0-9]{2,12}$/;
 
-export function parseDistrictRow(v: unknown, length: number): DistrictRow | null {
+export function parseDistrictRow(v: unknown, years: number[]): DistrictRow | null {
+  const length = years.length;
   if (!isObj(v)) return null;
   const id = str(v["id"]);
   const name = str(v["name"]);
@@ -255,6 +311,7 @@ export function parseDistrictRow(v: unknown, length: number): DistrictRow | null
     pl5: num(v["pl5"]),
     mdl: parseMdl(v["mdl"]),
     flags: flags(v["flags"]),
+    dash: parseDash(v["dash"], years),
   };
 }
 
@@ -263,7 +320,7 @@ export function parseMatrix(v: unknown): { years: number[]; rows: DistrictRow[] 
   const years = parseYears(v["years"]);
   if (!years || !Array.isArray(v["rows"])) return null;
   const rows = v["rows"]
-    .map((row) => parseDistrictRow(row, years.length))
+    .map((row) => parseDistrictRow(row, years))
     .filter((r): r is DistrictRow => r !== null);
   return { years, rows };
 }
@@ -333,6 +390,7 @@ export function parseNational(v: unknown): NationalSummary | null {
       (x): x is string => typeof x === "string",
     ),
     retrievedAt: str(v["retrieved_at"]),
+    concentration: parseConcentration(v["benchmark_concentration"], n),
   };
 }
 
@@ -364,6 +422,7 @@ export function parseCircuit(v: unknown): CircuitStats | null {
     districtJudgeships: series(v["district_judgeships"], n),
     districtMedian: series(v["district_median_total"], n),
     districtOver3: series(v["district_over_3y_pct"], n),
+    dash: parseDash(v["dash"], years),
   };
 }
 
@@ -388,6 +447,10 @@ export function parseDistrictPanel(stats: unknown, times: unknown): DistrictPane
       over3Pct: series(times["pending_over_3y_pct"], n),
       nationalMedian: series(times["national_median_total"], n),
       nationalOver3Pct: series(times["national_over_3y_pct"], n),
+      districtMedian: series(times["district_median_total"], n),
+      districtMedianOver3Pct: series(times["district_median_over_3y_pct"], n),
+      concentration: parseConcentration(times["national_concentration"], n),
+      dash: parseDash(times["dash"], years),
       flags: flags(times["flags"]),
       fastestRank: num(tr["median_total_fastest"]),
       rankOf: num(tr["of"]),
@@ -412,6 +475,7 @@ export function parseDistrictPanel(stats: unknown, times: unknown): DistrictPane
     ).filter((y): y is number => typeof y === "number" && Number.isInteger(y)),
     pl5: num(stats["pl_5y_median"]),
     flags: flags(stats["flags"]),
+    dash: parseDash(stats["dash"], years),
     ranks: {
       pl: num(ranks["pl_total"]),
       share: num(ranks["pl_share_pct"]),
@@ -465,6 +529,36 @@ export function median(values: (number | null)[]): number | null {
   if (!v.length) return null;
   const mid = Math.floor(v.length / 2);
   return v.length % 2 ? v[mid]! : (v[mid - 1]! + v[mid]!) / 2;
+}
+
+/** True when the source printed this field as a dash in fiscal year `year`. */
+export function isDash(dash: DashMap | undefined, key: string, year: number): boolean {
+  return !!dash?.[key]?.includes(year);
+}
+
+export const DASH_TITLE =
+  "Printed as a dash in the source table (zero, not applicable or not computed)";
+
+/** Number as printed: a published dash shows as "–", other missing values as Not recorded. */
+export function fmtCell(v: number | null | undefined, dashed: boolean, digits = 0): string {
+  if ((v === null || v === undefined) && dashed) return "–";
+  return fmtNum(v, digits);
+}
+
+/** Ratio with three significant digits ("0.498x", "2.07x", "17.1x"). */
+export function fmtRatio(v: number | null | undefined): string {
+  return typeof v === "number" && Number.isFinite(v)
+    ? `${Number(v.toPrecision(3))}x`
+    : NOT_RECORDED;
+}
+
+/** Share at or above which one district is said to dominate a pooled national benchmark. */
+export const DOMINANCE_PCT = 25;
+
+/** Note naming the district that dominates a pooled national count, when it holds at least DOMINANCE_PCT. */
+export function dominanceNote(top: TopShare | undefined, what: string): string | null {
+  if (!top || top.sharePct < DOMINANCE_PCT) return null;
+  return `${top.name} accounts for ${fmtPct(top.sharePct)} of ${what} (${fmtNum(top.count)} of ${fmtNum(top.total)}), so the pooled national figure largely reflects that docket.`;
 }
 
 export function at(s: Series | undefined, i: number): number | null {
@@ -521,16 +615,20 @@ export function flagDetail(f: StatFlag): string {
     case "pl_surge":
     case "pl_decline":
       return `${fmtNum(f.value)} filings vs prior five-year median ${fmtNum(f.baseline)}${
-        f.ratio !== null ? ` (${fmtNum(f.ratio, f.rule === "pl_decline" ? 2 : 1)}x)` : ""
+        f.ratio !== null ? ` (${fmtRatio(f.ratio)})` : ""
       }`;
     case "pl_concentration":
       return `${fmtNum(f.value)} filings, ${fmtPct(f.sharePct)} of national product liability filings`;
     case "pl_share_cluster":
       return `${fmtPct(f.sharePct)} of civil filings vs ${fmtPct(f.nationalSharePct)} nationally`;
     case "slow_disposition":
-      return `${fmtNum(f.value, 1)} months vs national median ${fmtNum(f.national, 1)}`;
+      return `${fmtNum(f.value, 1)} months vs median district ${fmtNum(f.districtMedian, 1)}${
+        f.national !== null ? ` (pooled national ${fmtNum(f.national, 1)})` : ""
+      }`;
     case "aging_backlog":
-      return `${fmtPct(f.value)} pending 3+ years (${fmtNum(f.count)} cases) vs ${fmtPct(f.national)} nationally`;
+      return `${fmtPct(f.value)} pending 3+ years (${fmtNum(f.count)} cases) vs median district ${fmtPct(f.districtMedian)}${
+        f.national !== null ? ` (pooled national ${fmtPct(f.national)})` : ""
+      }`;
   }
 }
 
@@ -544,6 +642,7 @@ export type SortKey =
   | "median"
   | "over3"
   | "change"
+  | "mdl"
   | "flags";
 
 /** Value used to sort a district row for fiscal-year index i (fiscal year `year`); nulls sort last. */
@@ -572,6 +671,8 @@ export function sortValue(
       return at(row.over3, i);
     case "change":
       return i > 0 ? change(at(row.pl, i), at(row.pl, i - 1)) : null;
+    case "mdl":
+      return row.mdl?.plActions ?? null;
     case "flags":
       return row.flags.filter((f) => f.year === year).length;
   }

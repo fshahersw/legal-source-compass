@@ -22,9 +22,10 @@ import {
   getEpaCases,
   getEpaEnforcement,
   getEpaStateDetail,
-  type EpaDefendant,
+  type EpaDefendantGroup,
   type EpaEnforcement as EpaData,
   type EpaProfile,
+  type EpaStatute,
 } from "@/lib/external/enforcement.functions";
 import { cn } from "@/lib/utils";
 import {
@@ -68,12 +69,14 @@ const epaCasesQuery = {
 
 type Metric = "penalty" | "cases" | "perMillion";
 const METRIC_LABEL: Record<Metric, string> = {
-  penalty: "million USD federal penalties",
-  cases: "cases",
-  perMillion: "FY2025 cases per million residents",
+  penalty: "million USD federal penalties settled",
+  cases: "cases opened",
+  perMillion: "FY2025 cases opened per million residents",
 };
 const PAGE = 25;
 const CASE_DATASET = "regulatory_epa_cases";
+const BASIS =
+  "Counts use the fiscal year a case was opened; dollars use the fiscal year each settlement was entered.";
 
 function TrendChart({ profile, from, to }: { profile: EpaProfile; from: number; to: number }) {
   const rows = denseYears(profile.years, from, to).map((y) => ({
@@ -83,115 +86,114 @@ function TrendChart({ profile, from, to }: { profile: EpaProfile; from: number; 
     penalty: Math.round(y.fedPenalty / 1e5) / 10,
   }));
   const med = median(rows.map((r) => r.judicial + r.administrative));
-  if (!rows.some((r) => r.judicial + r.administrative > 0))
-    return <StateNote>No cases are recorded for this selection and window.</StateNote>;
+  if (!rows.some((r) => r.judicial + r.administrative > 0 || r.penalty > 0))
+    return (
+      <StateNote>No cases or settlements are recorded for this selection and window.</StateNote>
+    );
   return (
-    <div className="h-64 px-1 pb-1 pt-2">
-      <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={rows} margin={{ top: 6, right: 4, bottom: 0, left: 0 }}>
-          <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
-          <XAxis dataKey="fy" tick={axisTick} tickLine={false} axisLine={false} minTickGap={8} />
-          <YAxis
-            yAxisId="left"
-            width={40}
-            tick={axisTick}
-            tickLine={false}
-            axisLine={false}
-            allowDecimals={false}
-          />
-          <YAxis
-            yAxisId="right"
-            orientation="right"
-            width={44}
-            tick={axisTick}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={(v: number) => `$${v}M`}
-          />
-          <Tooltip
-            contentStyle={tooltipStyle}
-            formatter={(v, name) =>
-              name === "Federal penalties ($M)"
-                ? [`$${Number(v).toLocaleString("en-US")}M`, name]
-                : [Number(v).toLocaleString("en-US"), name]
-            }
-          />
-          <Legend wrapperStyle={{ fontSize: 11 }} iconSize={8} />
-          <Bar
-            yAxisId="left"
-            dataKey="administrative"
-            name="Administrative formal"
-            stackId="c"
-            fill={FDA_COLORS[5]}
-            isAnimationActive={false}
-          />
-          <Bar
-            yAxisId="left"
-            dataKey="judicial"
-            name="Civil judicial"
-            stackId="c"
-            fill={FDA_COLORS[0]}
-            isAnimationActive={false}
-          />
-          <Line
-            yAxisId="right"
-            dataKey="penalty"
-            name="Federal penalties ($M)"
-            stroke={FDA_COLORS[2]}
-            strokeWidth={2}
-            dot={false}
-            isAnimationActive={false}
-          />
-          {med != null ? (
-            <ReferenceLine
+    <div>
+      <p className="px-3 pt-2 text-[11px] text-muted-foreground">
+        Median cases opened per FY in the window:{" "}
+        <span className="font-mono text-foreground">
+          {med == null ? "—" : med.toLocaleString("en-US")}
+        </span>{" "}
+        (dashed line)
+      </p>
+      <div className="h-60 px-1 pb-1 pt-1">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={rows} margin={{ top: 6, right: 4, bottom: 0, left: 0 }}>
+            <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 3" />
+            <XAxis dataKey="fy" tick={axisTick} tickLine={false} axisLine={false} minTickGap={8} />
+            <YAxis
               yAxisId="left"
-              y={med}
-              stroke="var(--muted-foreground)"
-              strokeDasharray="4 3"
-              label={{
-                value: `median ${med}`,
-                fontSize: 10,
-                fill: "var(--muted-foreground)",
-                position: "insideTopLeft",
-              }}
+              width={40}
+              tick={axisTick}
+              tickLine={false}
+              axisLine={false}
+              allowDecimals={false}
             />
-          ) : null}
-        </ComposedChart>
-      </ResponsiveContainer>
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              width={48}
+              tick={axisTick}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(v: number) => `$${v}M`}
+            />
+            <Tooltip
+              contentStyle={tooltipStyle}
+              formatter={(v, name) =>
+                name === "Federal penalties settled ($M)"
+                  ? [`$${Number(v).toLocaleString("en-US")}M`, name]
+                  : [Number(v).toLocaleString("en-US"), name]
+              }
+            />
+            <Legend wrapperStyle={{ fontSize: 11 }} iconSize={8} />
+            <Bar
+              yAxisId="left"
+              dataKey="administrative"
+              name="Administrative opened"
+              stackId="c"
+              fill={FDA_COLORS[5]}
+              isAnimationActive={false}
+            />
+            <Bar
+              yAxisId="left"
+              dataKey="judicial"
+              name="Judicial opened"
+              stackId="c"
+              fill={FDA_COLORS[0]}
+              isAnimationActive={false}
+            />
+            <Line
+              yAxisId="right"
+              dataKey="penalty"
+              name="Federal penalties settled ($M)"
+              stroke={FDA_COLORS[2]}
+              strokeWidth={2}
+              dot={false}
+              isAnimationActive={false}
+            />
+            {med != null ? (
+              <ReferenceLine
+                yAxisId="left"
+                y={med}
+                stroke="var(--muted-foreground)"
+                strokeDasharray="4 3"
+              />
+            ) : null}
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }
 
 function StatuteMultiples({
-  national,
+  statutes,
   from,
   to,
   active,
   onPick,
 }: {
-  national: EpaProfile;
+  statutes: EpaStatute[];
   from: number;
   to: number;
   active: string;
   onPick: (code: string) => void;
 }) {
-  const statutes = national.statutes
+  const rows = statutes
     .filter((s) => s.code)
     .map((s) => {
-      const years = denseYears(
-        s.years.map((y) => ({
-          fy: y.fy,
-          cases: y.cases,
-          judicial: 0,
-          administrative: 0,
-          penaltyCases: 0,
-          fedPenalty: y.fedPenalty,
-          sep: 0,
-          costRecovery: 0,
-        })),
-        from,
-        to,
-      );
+      const byFy = new Map(s.years.map((y) => [y.fy, y]));
+      const years = [];
+      for (let fy = from; fy <= to; fy += 1)
+        years.push({
+          fy,
+          cases: byFy.get(fy)?.cases ?? 0,
+          fedPenalty: byFy.get(fy)?.fedPenalty ?? 0,
+        });
       return {
         code: s.code!,
         name: s.name,
@@ -200,13 +202,14 @@ function StatuteMultiples({
         penalty: years.reduce((a, y) => a + y.fedPenalty, 0),
       };
     })
-    .filter((s) => s.cases > 0)
+    .filter((s) => s.cases > 0 || s.penalty > 0)
     .sort((a, b) => b.cases - a.cases)
     .slice(0, 8);
-  const max = Math.max(1, ...statutes.flatMap((s) => s.years.map((y) => y.cases)));
+  if (!rows.length) return <StateNote>No statute series is recorded for this selection.</StateNote>;
+  const max = Math.max(1, ...rows.flatMap((s) => s.years.map((y) => y.cases)));
   return (
     <ul className="grid grid-cols-2 gap-px bg-border/60 sm:grid-cols-4">
-      {statutes.map((s) => (
+      {rows.map((s) => (
         <li key={s.code} className="bg-surface">
           <button
             type="button"
@@ -222,8 +225,8 @@ function StatuteMultiples({
               <span className="text-xs font-semibold">{s.code}</span>
               <span className="font-mono text-[11px] text-muted-foreground">{count(s.cases)}</span>
             </span>
-            <span className="block truncate text-[10.5px] text-muted-foreground">
-              {usd(s.penalty)}
+            <span className="block text-[10.5px] text-muted-foreground">
+              {usd(s.penalty)} settled
             </span>
             <span className="mt-1 block h-12" aria-hidden>
               <ResponsiveContainer width="100%" height="100%">
@@ -232,7 +235,7 @@ function StatuteMultiples({
                   <Tooltip
                     contentStyle={tooltipStyle}
                     labelFormatter={(_, p) => `FY${String(p?.[0]?.payload?.fy ?? "")}`}
-                    formatter={(v) => [Number(v).toLocaleString("en-US"), "cases"]}
+                    formatter={(v) => [Number(v).toLocaleString("en-US"), "cases opened"]}
                   />
                   <Bar
                     dataKey="cases"
@@ -249,10 +252,14 @@ function StatuteMultiples({
   );
 }
 
-function DefendantTable({ rows, scope }: { rows: EpaDefendant[]; scope: string }) {
+function DefendantTable({ rows, scope }: { rows: EpaDefendantGroup[]; scope: string }) {
   const [shown, setShown] = useState(15);
   if (!rows.length)
-    return <StateNote>No defendants with a recorded federal penalty in {scope}.</StateNote>;
+    return (
+      <StateNote>
+        No defendants with a settled federal penalty in {scope} for this window.
+      </StateNote>
+    );
   return (
     <div>
       <div className="max-h-[26rem] overflow-auto">
@@ -260,42 +267,43 @@ function DefendantTable({ rows, scope }: { rows: EpaDefendant[]; scope: string }
           <thead className="sticky top-0 bg-surface text-[11px] text-muted-foreground">
             <tr className="border-b border-border">
               <th scope="col" className="px-2 py-1.5 text-left font-medium">
-                Defendant (exact recorded name)
+                Defendants named together (exact recorded names)
               </th>
               <th scope="col" className="px-2 py-1.5 text-right font-medium">
                 Cases
               </th>
               <th scope="col" className="px-2 py-1.5 text-right font-medium">
-                Judicial
-              </th>
-              <th scope="col" className="px-2 py-1.5 text-right font-medium">
-                Federal penalties
+                Penalties settled
               </th>
               <th scope="col" className="hidden px-2 py-1.5 text-left font-medium md:table-cell">
-                FY span · statutes · states
+                Settled · statutes · states
               </th>
             </tr>
           </thead>
           <tbody>
             {rows.slice(0, shown).map((d) => (
-              <tr key={d.name} className="border-b border-border/50 align-top">
-                <td className="max-w-64 px-2 py-1.5">
-                  <span className="font-medium">{d.name}</span>
-                  {d.multiDefendantCases ? (
-                    <span className="block text-[10.5px] text-muted-foreground">
-                      {d.multiDefendantCases} multi-defendant case
-                      {d.multiDefendantCases === 1 ? "" : "s"} (full case penalty counted)
-                    </span>
+              <tr
+                key={d.nationalCase ?? d.defendants.join("|")}
+                className="border-b border-border/50 align-top"
+              >
+                <td className="max-w-72 px-2 py-1.5">
+                  <span className="font-medium">{d.defendants.slice(0, 4).join("; ")}</span>
+                  {d.defendants.length > 4 ? (
+                    <span className="text-muted-foreground"> +{d.defendants.length - 4} more</span>
                   ) : null}
+                  <span className="block text-[10.5px] text-muted-foreground">
+                    {d.nationalCase
+                      ? `National case recorded as several regional records (lead ${d.nationalCase}); shares summed`
+                      : d.caseNumbers.slice(0, 3).join(", ")}
+                  </span>
                 </td>
                 <td className="px-2 py-1.5 text-right font-mono">{count(d.cases)}</td>
-                <td className="px-2 py-1.5 text-right font-mono">{count(d.judicial)}</td>
                 <td className="px-2 py-1.5 text-right font-mono" title={usdFull(d.fedPenalty)}>
                   {usd(d.fedPenalty)}
                 </td>
                 <td className="hidden px-2 py-1.5 text-muted-foreground md:table-cell">
-                  {d.firstFy
-                    ? `FY${d.firstFy}${d.lastFy !== d.firstFy ? `–${d.lastFy}` : ""}`
+                  {d.firstSettlementFy
+                    ? `FY${d.firstSettlementFy}${d.lastSettlementFy !== d.firstSettlementFy ? `–${d.lastSettlementFy}` : ""}`
                     : "—"}
                   {" · "}
                   {d.statutes.join(", ") || "—"}
@@ -332,17 +340,19 @@ function CasesTable({
   clear: () => void;
 }) {
   const q = useQuery(epaCasesQuery);
-  const [sort, setSort] = useState<"fedPenalty" | "fy">("fedPenalty");
+  const [sort, setSort] = useState<"fedPenalty" | "settled">("fedPenalty");
   const [shown, setShown] = useState(PAGE);
   const rows = useMemo(() => {
     const filtered = (q.data ?? []).filter(
       (r) =>
-        r.fy >= minFy &&
+        (r.settlementFy ?? r.fy) >= minFy &&
         (!state || r.states.includes(state)) &&
         (!statute || r.statute === statute),
     );
     return filtered.sort((a, b) =>
-      sort === "fy" ? b.fy - a.fy || b.fedPenalty - a.fedPenalty : b.fedPenalty - a.fedPenalty,
+      sort === "settled"
+        ? (b.settled ?? "").localeCompare(a.settled ?? "") || b.fedPenalty - a.fedPenalty
+        : b.fedPenalty - a.fedPenalty,
     );
   }, [q.data, state, statute, sort, minFy]);
   if (q.isLoading)
@@ -371,12 +381,17 @@ function CasesTable({
               <th scope="col" className="px-2 py-1.5 text-left font-medium">
                 Case
               </th>
-              <SortHeader label="FY" active={sort === "fy"} desc onClick={() => setSort("fy")} />
-              <th scope="col" className="px-2 py-1.5 text-left font-medium">
-                Type · statute
+              <th scope="col" className="px-2 py-1.5 text-right font-medium">
+                Opened
               </th>
+              <SortHeader
+                label="Settled"
+                active={sort === "settled"}
+                desc
+                onClick={() => setSort("settled")}
+              />
               <th scope="col" className="hidden px-2 py-1.5 text-left font-medium sm:table-cell">
-                States
+                Type · statute · states
               </th>
               <SortHeader
                 label="Federal penalty"
@@ -384,9 +399,6 @@ function CasesTable({
                 desc
                 onClick={() => setSort("fedPenalty")}
               />
-              <th scope="col" className="hidden px-2 py-1.5 text-right font-medium md:table-cell">
-                SEP
-              </th>
             </tr>
           </thead>
           <tbody>
@@ -405,20 +417,23 @@ function CasesTable({
                     {r.dojDocket ? ` · DOJ ${r.dojDocket}` : ""}
                     {r.defendants.length ? ` · ${r.defendants.slice(0, 2).join("; ")}` : ""}
                   </span>
+                  {r.nationalCase ? (
+                    <span className="mt-0.5 block text-[10.5px] text-warning-foreground">
+                      One of {r.nationalCase.records.length} regional records of national case{" "}
+                      {r.nationalCase.lead}; combined {usd(r.nationalCase.combined, 2)}
+                    </span>
+                  ) : null}
                 </td>
-                <td className="px-2 py-1.5 text-right font-mono">{r.fy}</td>
-                <td className="px-2 py-1.5">
-                  {r.typeCode === "JDC" ? "Judicial" : r.typeCode === "AFR" ? "Admin." : "—"} ·{" "}
-                  {r.statute ?? "Not recorded"}
+                <td className="px-2 py-1.5 text-right font-mono">FY{r.fy}</td>
+                <td className="whitespace-nowrap px-2 py-1.5 text-right font-mono text-[11px]">
+                  {r.settled ?? "—"}
                 </td>
                 <td className="hidden px-2 py-1.5 sm:table-cell">
-                  {r.states.join(", ") || "Not recorded"}
+                  {r.typeCode === "JDC" ? "Judicial" : r.typeCode === "AFR" ? "Admin." : "—"} ·{" "}
+                  {r.statute ?? "Not recorded"} · {r.states.join(", ") || "Not recorded"}
                 </td>
                 <td className="px-2 py-1.5 text-right font-mono" title={usdFull(r.fedPenalty)}>
                   {usd(r.fedPenalty, 2)}
-                </td>
-                <td className="hidden px-2 py-1.5 text-right font-mono md:table-cell">
-                  {r.sep ? usd(r.sep) : "—"}
                 </td>
               </tr>
             ))}
@@ -474,13 +489,13 @@ function StateTable({
         <thead className="sticky top-0 z-10 bg-surface text-[11px] text-muted-foreground">
           <tr className="border-b border-border">
             {head("name", "State", "left")}
-            {head("cases", "Cases")}
+            {head("cases", "Opened")}
             {head("judicial", "Judicial")}
-            {head("fedPenalty", "Federal penalties")}
+            {head("fedPenalty", "Penalties settled")}
             <th scope="col" className="hidden px-2 py-1.5 text-right font-medium lg:table-cell">
-              <span title="Supplemental environmental projects">SEP</span>
+              <span title="Supplemental environmental projects, settled">SEP</span>
             </th>
-            {head("perMillion", "Cases / M (FY25)")}
+            {head("perMillion", "Opened / M (FY25)")}
             <th scope="col" className="px-2 py-1.5 text-left font-medium">
               Flags
             </th>
@@ -584,6 +599,8 @@ function EpaBody({
   const sums = sumYears(profile.years, win.from, win.to);
   const partial = profile.years.filter((y) => y.fy > latest);
   const rows = useMemo(() => stateRows(data.profiles, win, latest), [data.profiles, win, latest]);
+  const tableRows = rows.filter((r) => r.kind === "state" || r.kind === "territory");
+  const otherCodes = data.profiles.filter((p) => p.kind === "other" || p.kind === "unrecorded");
   const mapRows = rows.filter((r) => r.kind === "state" && r.fips);
   const values = new Map(
     mapRows.map((r) => [
@@ -601,13 +618,14 @@ function EpaBody({
     enabled: !!selected,
     staleTime: 10 * 60 * 1000,
   });
-  const defendants = selected
+  const groups = selected
     ? defWindow === "recent"
-      ? (detail.data?.topDefendantsRecent ?? [])
-      : (detail.data?.topDefendants ?? [])
+      ? (detail.data?.topDefendantGroupsRecent ?? [])
+      : (detail.data?.topDefendantGroups ?? [])
     : defWindow === "recent"
-      ? national.topDefendantsRecent
-      : national.topDefendants;
+      ? national.topDefendantGroupsRecent
+      : national.topDefendantGroups;
+  const statutes = selected ? (detail.data?.statutes ?? []) : national.statutes;
   const surges = rows.filter((r) => r.surge).sort((a, b) => b.surge!.ratio - a.surge!.ratio);
   const outliers = rows
     .filter((r) => r.perCapitaOutlier)
@@ -615,6 +633,7 @@ function EpaBody({
   const topCase = selected ? detail.data?.topCases[0] : national.topCases[0];
   const scopeName = selected ? selected.name : "all states";
   const minCaseFy = Math.max(win.from, 2017);
+  const detailPending = !!selected && detail.isLoading;
 
   return (
     <div className="space-y-3">
@@ -625,8 +644,8 @@ function EpaBody({
           </h2>
           <p className="text-xs text-muted-foreground">
             EPA-lead civil judicial and administrative formal cases from ICIS-FE&C (file dated{" "}
-            {data.fileDate ?? "not recorded"}, retrieved {data.retrieved ?? "not recorded"}). Counts
-            by case fiscal year; dollars are case totals across all settlements.
+            {data.fileDate ?? "not recorded"}, retrieved {data.retrieved ?? "not recorded"}).{" "}
+            {BASIS}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -650,40 +669,45 @@ function EpaBody({
       </div>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-        <Kpi label="Cases" value={count(sums.cases)} note={win.label} />
+        <Kpi label="Cases opened" value={count(sums.cases)} note={win.label} />
         <Kpi
-          label="Civil judicial"
+          label="Judicial opened"
           value={count(sums.judicial)}
           note={
-            sums.cases ? `${((sums.judicial / sums.cases) * 100).toFixed(1)}% of cases` : undefined
+            sums.cases ? `${((sums.judicial / sums.cases) * 100).toFixed(1)}% of opened` : undefined
           }
         />
-        <Kpi label="Admin. formal" value={count(sums.administrative)} />
         <Kpi
-          label="Federal penalties"
-          value={usd(sums.fedPenalty)}
-          note={`${count(sums.penaltyCases)} cases with a penalty`}
+          label="Admin. opened"
+          value={count(sums.administrative)}
+          note="Administrative formal"
         />
-        <Kpi label="SEP value" value={usd(sums.sep)} note="Supplemental env. projects" />
-        <Kpi label="Cost recovery" value={usd(sums.costRecovery)} note="Federal, mostly CERCLA" />
+        <Kpi
+          label="Penalties settled"
+          value={usd(sums.fedPenalty)}
+          note={`${count(sums.penaltySettlements)} settlements with a penalty`}
+        />
+        <Kpi label="SEP settled" value={usd(sums.sep)} note="Supplemental env. projects" />
+        <Kpi label="Cost recovery" value={usd(sums.costRecovery)} note="Settled, mostly CERCLA" />
       </div>
-      {partial.length ? (
-        <p className="text-[11px] text-muted-foreground">
-          FY{partial.map((p) => p.fy).join(", FY")} is in progress (
-          {count(partial.reduce((a, p) => a + p.cases, 0))} cases so far) and is excluded from
-          windows.
-          {selected && selected.totals.multistateCases
-            ? ` ${count(selected.totals.multistateCases)} of ${selected.name}'s cases also involve facilities in another state.`
-            : ""}
-        </p>
-      ) : null}
+      <p className="text-[11px] text-muted-foreground">
+        {partial.length
+          ? `FY${partial.map((p) => p.fy).join(", FY")} is in progress (${count(partial.reduce((a, p) => a + p.cases, 0))} cases opened so far) and is excluded from windows. `
+          : ""}
+        {selected && selected.totals.multistateCases
+          ? `${count(selected.totals.multistateCases)} of ${selected.name}'s cases also involve facilities in another state. `
+          : ""}
+        {national.totals.unattributedFedPenalty
+          ? `${usd(national.totals.unattributedFedPenalty)} of federal penalties sit in settlements without an entered date and appear only in all-years totals.`
+          : ""}
+      </p>
 
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <Panel
           title={`Map · ${METRIC_LABEL[metric]}`}
           subtitle={
             metric === "perMillion"
-              ? "FY2025 cases ÷ Census Vintage 2025 July 1, 2025 population × 1,000,000"
+              ? "Cases opened in FY2025 ÷ Census Vintage 2025 July 1, 2025 population × 1,000,000"
               : `${win.label}; a case counts in every state where one of its facilities is located`
           }
           actions={
@@ -794,13 +818,16 @@ function EpaBody({
             {topCase ? (
               <div>
                 <p className="font-medium">
-                  Largest single case · {selected ? selected.name : "all years"}
+                  Largest case · {selected ? selected.name : "United States"}, all years
                 </p>
                 <p className="text-[11px] text-muted-foreground">
-                  {topCase.name} ({topCase.caseNumber}, FY{topCase.fy ?? "—"}) —{" "}
+                  {topCase.name} ({topCase.records.join(" + ")}; settled {topCase.settled ?? "—"}) —{" "}
                   {usd(topCase.fedPenalty, 2)}
+                  {topCase.records.length > 1
+                    ? ` across ${topCase.records.length} regional records that split one national penalty`
+                    : ""}
                   {profile.totals.fedPenalty
-                    ? `, ${((topCase.fedPenalty / profile.totals.fedPenalty) * 100).toFixed(0)}% of all recorded federal penalties for ${selected ? selected.name : "the U.S."}.`
+                    ? `, ${((topCase.fedPenalty / profile.totals.fedPenalty) * 100).toFixed(0)}% of all settled federal penalties recorded for ${selected ? selected.name : "the U.S."}.`
                     : "."}
                 </p>
               </div>
@@ -811,103 +838,88 @@ function EpaBody({
 
       <div className="grid gap-3 lg:grid-cols-2">
         <Panel
-          title={`Cases and penalties by fiscal year · ${selected ? selected.name : "United States"}`}
-          subtitle={`${win.label}; dashed line is the median annual case count in the window`}
+          title={`Cases opened and penalties settled · ${selected ? selected.name : "United States"}`}
+          subtitle={`${win.label}. Bars: cases by FY opened. Line: federal penalties by settlement FY.`}
         >
           <TrendChart profile={profile} from={win.from} to={win.to} />
         </Panel>
         <Panel
-          title="Trend by primary statute · United States"
-          subtitle={`Cases per FY and federal penalties, ${win.label}; primary statute = law section ranked 1 on the case`}
+          title={`Trend by primary statute · ${selected ? selected.name : "United States"}`}
+          subtitle={`${win.label}. Bars: cases opened per FY; figure: federal penalties settled in the window. Primary statute = law section ranked 1.`}
           footnote="Select a statute to filter the case table."
         >
-          <StatuteMultiples
-            national={national}
-            from={win.from}
-            to={win.to}
-            active={statute}
-            onPick={setStatute}
-          />
+          {detailPending ? (
+            <div className="m-3 h-40 animate-pulse rounded bg-muted/50" aria-busy="true" />
+          ) : selected && detail.isError ? (
+            <StateNote tone="error">State statute series could not be loaded.</StateNote>
+          ) : (
+            <StatuteMultiples
+              statutes={statutes}
+              from={win.from}
+              to={win.to}
+              active={statute}
+              onPick={setStatute}
+            />
+          )}
         </Panel>
       </div>
 
-      {selected ? (
-        <Panel
-          title={`Statute mix · ${selected.name}`}
-          subtitle="All recorded fiscal years, by primary statute"
-        >
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead className="text-[11px] text-muted-foreground">
-                <tr className="border-b border-border">
-                  <th scope="col" className="px-2 py-1.5 text-left font-medium">
-                    Statute
-                  </th>
-                  <th scope="col" className="px-2 py-1.5 text-right font-medium">
-                    Cases
-                  </th>
-                  <th scope="col" className="px-2 py-1.5 text-right font-medium">
-                    Judicial
-                  </th>
-                  <th scope="col" className="px-2 py-1.5 text-right font-medium">
-                    Federal penalties
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {selected.statutes.map((s) => (
-                  <tr key={s.code ?? "none"} className="border-b border-border/50">
-                    <td className="px-2 py-1">
-                      <span className="font-medium">{s.code ?? "Not recorded"}</span>{" "}
-                      <span className="text-muted-foreground">{s.code ? s.name : ""}</span>
-                    </td>
-                    <td className="px-2 py-1 text-right font-mono">{count(s.cases)}</td>
-                    <td className="px-2 py-1 text-right font-mono">{count(s.judicial)}</td>
-                    <td className="px-2 py-1 text-right font-mono">{usd(s.fedPenalty)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Panel>
-      ) : null}
-
       <Panel
         title="States ranked"
-        subtitle={`${win.label}; select a row to filter. Flags use the rules stated in the Flags panel.`}
-        footnote={`State totals are not additive: ${count(national.totals.multistateCases)} cases involve facilities in more than one state. Territories and unrecognised facility state codes are listed as recorded.`}
+        subtitle={`${win.label}; select a row to filter. Opened = cases by FY opened; penalties = settled in the window.`}
+        footnote={
+          <>
+            State totals are not additive: {count(national.totals.multistateCases)} cases involve
+            facilities in more than one state.{" "}
+            {otherCodes.length
+              ? `Not listed: ${otherCodes
+                  .map(
+                    (p) =>
+                      `${p.kind === "unrecorded" ? "no facility state" : p.code} (${count(p.totals.cases)})`,
+                  )
+                  .join(
+                    ", ",
+                  )} — non-U.S. or unrecognised facility codes, kept as recorded in the dataset.`
+              : ""}
+          </>
+        }
       >
-        <StateTable rows={rows} selected={state} onState={onState} />
+        <StateTable rows={tableRows} selected={state} onState={onState} />
       </Panel>
 
       <div className="grid gap-3 xl:grid-cols-2">
         <Panel
-          title={`Top defendants by federal penalty · ${scopeName}`}
-          subtitle="Grouped by exact recorded defendant name (whitespace trimmed only); a multi-defendant case counts its full penalty for each named defendant"
+          title={`Top defendants by penalties settled · ${scopeName}`}
+          subtitle="One row per exact set of defendants named together on a case, so each case counts once and rows are additive. Spelling variants stay separate."
           actions={
             <Segmented
               label="Defendant window"
               value={defWindow}
               options={[
-                { id: "recent", label: "FY2017+" },
+                { id: "recent", label: "Settled FY2017+" },
                 { id: "all", label: "All years" },
               ]}
               onChange={setDefWindow}
             />
           }
+          footnote={
+            national.lookalikes
+              ? `${count(national.nationalGroups.length)} national cases recorded as several regional records sharing one penalty are shown as one row. ${count(national.lookalikes.groups)} other look-alike groups (same penalty, settlement dates and defendants, no lead marker) are kept as separate records.`
+              : undefined
+          }
         >
-          {selected && detail.isLoading ? (
+          {detailPending ? (
             <div className="m-3 h-40 animate-pulse rounded bg-muted/50" aria-busy="true" />
           ) : selected && detail.isError ? (
             <StateNote tone="error">State detail could not be loaded.</StateNote>
           ) : (
-            <DefendantTable rows={defendants} scope={scopeName} />
+            <DefendantTable rows={groups} scope={scopeName} />
           )}
         </Panel>
         <Panel
           title={`Largest cases · ${scopeName}${statute ? ` · ${statute}` : ""}`}
-          subtitle={`Published case records: case FY${minCaseFy}+ with a federal penalty of at least $100,000`}
-          footnote="Case names link to the stored record; case numbers open the EPA ECHO case report."
+          subtitle={`Published records: federal penalty ≥ $100,000, latest settlement in FY${minCaseFy} or later (opened FY if none)`}
+          footnote="Case names link to the stored record; case numbers open the EPA ECHO case report. Penalty = case total across settlements."
         >
           <CasesTable
             state={selected?.code}

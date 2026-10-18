@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { FDA_COLORS } from "@/components/fda-analytics/chartView";
 import { cn } from "@/lib/utils";
 import type { Series } from "./courtStatsData";
@@ -8,14 +8,19 @@ export function Kpi({
   value,
   note,
   tone,
+  detail,
+  title,
 }: {
   label: string;
   value: string;
   note?: string | undefined;
   tone?: "up" | "down" | undefined;
+  /** Second line shown in the warning tone (e.g. a benchmark caveat); `title` carries the full text. */
+  detail?: string | undefined;
+  title?: string | undefined;
 }) {
   return (
-    <div className="min-w-0 rounded-md border border-border bg-surface px-3 py-2">
+    <div className="min-w-0 rounded-md border border-border bg-surface px-3 py-2" title={title}>
       <div className="truncate text-[11px] text-muted-foreground" title={label}>
         {label}
       </div>
@@ -25,7 +30,7 @@ export function Kpi({
       {note ? (
         <div
           className={cn(
-            "truncate text-[11px]",
+            "text-[11px] leading-snug",
             tone === "up"
               ? "text-warning-foreground"
               : tone === "down"
@@ -36,6 +41,61 @@ export function Kpi({
         >
           {note}
         </div>
+      ) : null}
+      {detail ? (
+        <div className="text-[11px] leading-snug text-warning-foreground" title={title ?? detail}>
+          {detail}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Horizontal scroll region for wide tables: shows an edge shadow and a "more columns" cue while
+ * columns are hidden to the right, so a cut-off table is never mistaken for the whole table.
+ */
+export function ScrollX({ children, label }: { children: ReactNode; label: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [more, setMore] = useState(false);
+  const update = useCallback(() => {
+    const el = ref.current;
+    if (el) setMore(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
+  }, []);
+  useEffect(() => {
+    update();
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [update]);
+  return (
+    <div className="relative">
+      <div
+        ref={ref}
+        onScroll={update}
+        className="overflow-x-auto focus-visible:outline-2 focus-visible:outline-ring"
+        role="region"
+        aria-label={label}
+        tabIndex={0}
+      >
+        {children}
+      </div>
+      {more ? (
+        <>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 right-0 w-4"
+            style={{
+              boxShadow:
+                "inset -12px 0 10px -10px color-mix(in srgb, var(--foreground) 35%, transparent)",
+            }}
+          />
+          <span className="pointer-events-none absolute right-2 top-1 rounded border border-border bg-surface px-1 text-[10px] text-muted-foreground">
+            More columns →
+          </span>
+        </>
       ) : null}
     </div>
   );

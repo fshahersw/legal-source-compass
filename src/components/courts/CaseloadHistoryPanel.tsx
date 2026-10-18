@@ -18,8 +18,12 @@ import {
   at,
   change,
   compactNum,
+  DASH_TITLE,
+  dominanceNote,
   flagDetail,
+  fmtCell,
   fmtNum,
+  isDash,
   fmtPct,
   RULE_FALLBACK_SHORT,
   type DistrictPanel,
@@ -87,8 +91,18 @@ function Panel({ d }: { d: DistrictPanel }) {
     year: `'${String(y).slice(2)}`,
     full: fy(y),
     district: at(t?.median, k),
+    benchmark: at(t?.districtMedian, k),
     national: at(t?.nationalMedian, k),
   }));
+  const medianDash = isDash(t?.dash, "median_total", latest);
+  const c5Note = dominanceNote(
+    t?.concentration.c5[i] ?? null,
+    `${fy(latest)} civil terminations measured in Table C-5`,
+  );
+  const c6Note = dominanceNote(
+    t?.concentration.c6[i] ?? null,
+    `${fy(latest)} civil cases pending three years or more (Table C-6)`,
+  );
   const flags = [...d.flags, ...(t?.flags ?? [])].sort((a, b) => b.year - a.year);
   return (
     <section
@@ -129,13 +143,17 @@ function Panel({ d }: { d: DistrictPanel }) {
         />
         <Kpi
           label="Median months to disposition"
-          value={fmtNum(at(t?.median, i), 1)}
-          note={`National ${fmtNum(at(t?.nationalMedian, i), 1)} months`}
+          value={fmtCell(at(t?.median, i), medianDash, 1)}
+          note={`Median district ${fmtNum(at(t?.districtMedian, i), 1)} · national ${fmtNum(at(t?.nationalMedian, i), 1)}`}
+          detail={c5Note ? "National figure skewed by one MDL" : undefined}
+          title={c5Note ?? (medianDash ? DASH_TITLE : undefined)}
         />
         <Kpi
           label="Civil pending 3+ years"
           value={fmtPct(at(t?.over3Pct, i))}
-          note={`National ${fmtPct(at(t?.nationalOver3Pct, i))}`}
+          note={`Median district ${fmtPct(at(t?.districtMedianOver3Pct, i))} · national ${fmtPct(at(t?.nationalOver3Pct, i))}`}
+          detail={c6Note ? "National figure skewed by one MDL" : undefined}
+          title={c6Note ?? undefined}
         />
       </div>
       <div className="grid gap-3 px-3 py-3 lg:grid-cols-2">
@@ -207,9 +225,17 @@ function Panel({ d }: { d: DistrictPanel }) {
                   isAnimationActive={false}
                 />
                 <Line
-                  dataKey="national"
-                  name="All districts"
+                  dataKey="benchmark"
+                  name="Median district"
                   stroke={FDA_COLORS[1]}
+                  strokeWidth={1.5}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+                <Line
+                  dataKey="national"
+                  name="National (all terminations)"
+                  stroke={FDA_COLORS[3]}
                   strokeWidth={1.5}
                   strokeDasharray="5 3"
                   dot={false}
@@ -218,6 +244,12 @@ function Panel({ d }: { d: DistrictPanel }) {
               </LineChart>
             </ResponsiveContainer>
           </div>
+          {c5Note || c6Note ? (
+            <p className="mt-1 text-[11px] leading-snug text-warning-foreground">
+              {[c5Note, c6Note].filter(Boolean).join(" ")} Flags compare this district with the
+              median district instead.
+            </p>
+          ) : null}
         </figure>
       </div>
       <div className="border-t border-border/70 px-3 py-2 text-xs">

@@ -27,7 +27,8 @@ from parsing import (  # noqa: E402
     STANDARD_RULE,
     clean_text,
     hazard_categories,
-    mentions_death,
+    death_foreign_only,
+    death_mention_class,
     mentions_injury,
     mentions_standard_violation,
     normalize_country,
@@ -47,6 +48,11 @@ API_DOC = "https://www.cpsc.gov/Recalls/CPSC-Recalls-Application-Program-Interfa
 API_ONE = "https://www.saferproducts.gov/RestWebServices/Recall?format=json&RecallNumber={}"
 API_YEAR = "https://www.saferproducts.gov/RestWebServices/Recall?format=json&RecallDateStart={y}-01-01&RecallDateEnd={y}-12-31"
 TOP_COUNTRIES = 8
+DEATH_RULE = ("Injury statement mentions death/died/fatal/killed after removing negated phrases. Product-related unless every death "
+              "sentence carries a background marker (CPSC estimates, per year, since <year>, hazardous magnets, in the past, other or "
+              "another firm's product, other recalled, similar, possibility, potential, can/could cause, risk of, an animal) or the "
+              "statement opens with None reported / not aware of / has not received. Outside-U.S.-only when every product death "
+              "sentence names a foreign place and no U.S. place. A text mention, not a verified death count.")
 FIRM_MIN = 3
 
 
@@ -97,7 +103,10 @@ def shape(raw, standalone):
         "hazard_categories": hazard_categories(hazard_text),
         "standard_violation": mentions_standard_violation(hazard_text),
         "injuries": injuries[:1500] or None,
-        "mentions_death": mentions_death(injuries),
+        "death_class": death_mention_class(injuries),
+        "mentions_death": death_mention_class(injuries) == "product",
+        "death_background": death_mention_class(injuries) == "background",
+        "death_foreign_only": death_mention_class(injuries) == "product" and death_foreign_only(injuries),
         "mentions_injury": mentions_injury(injuries),
         "none_reported": reports_none(injuries),
         "remedies": [r[:800] for r in names(raw.get("Remedies"))][:4],
@@ -138,7 +147,7 @@ def main(dry):
             "agency_safety_cpsc_recalls_api", f"cpsc-api:{r['recall_number']}", r["title"] or f"CPSC recall {r['recall_number']}",
             source_url=page,
             subtitle=f"Recall {r['recall_number']} · {r['date'] or 'date not recorded'} · {', '.join(HAZARD_LABELS[k] for k in r['hazard_categories'][:2])}",
-            cells={"recall_number": r["recall_number"], "date": r["date"], "hazard": ", ".join(HAZARD_LABELS[k] for k in r["hazard_categories"]), "firm": "; ".join(firms[:2]) or None, "country": ", ".join(r["countries"]) or None, "units": r["units"], "death_mention": "Yes" if r["mentions_death"] else "No"},
+            cells={"recall_number": r["recall_number"], "date": r["date"], "hazard": ", ".join(HAZARD_LABELS[k] for k in r["hazard_categories"]), "firm": "; ".join(firms[:2]) or None, "country": ", ".join(r["countries"]) or None, "units": r["units"], "death_mention": "Product-related" + (" (outside U.S. only)" if r["death_foreign_only"] else "") if r["mentions_death"] else "Background / other product" if r["death_background"] else "No"},
             facts=[
                 {"label": "Recall number", "value": r["recall_number"]},
                 {"label": "Recall date", "value": r["date"] or "Not recorded"},
@@ -154,8 +163,8 @@ def main(dry):
                 {"label": "Source", "value": f"CPSC Recall REST API, retrieved {retrieved}"},
             ],
             text=" ".join([r["recall_number"], r["title"], r["description"] or "", " ".join(r["hazards"]), " ".join(r["manufacturers"] + r["importers"] + r["distributors"]), " ".join(p["name"] or "" for p in r["products"]), " ".join(r["countries"])]),
-            filters={"year": [str(r["year"]) if r["year"] else "none"], "hazard": r["hazard_categories"], "country": r["countries"] or ["none"], "death_mention": ["yes" if r["mentions_death"] else "no"]},
-            badges=[HAZARD_LABELS[k] for k in r["hazard_categories"][:3]] + (["Death mentioned"] if r["mentions_death"] else []),
+            filters={"year": [str(r["year"]) if r["year"] else "none"], "hazard": r["hazard_categories"], "country": r["countries"] or ["none"], "death_mention": ["product" if r["mentions_death"] else "background" if r["death_background"] else "no"]},
+            badges=[HAZARD_LABELS[k] for k in r["hazard_categories"][:3]] + (["Death mentioned" + (" (outside U.S.)" if r["death_foreign_only"] else "")] if r["mentions_death"] else ["Background death statistic"] if r["death_background"] else []),
             links=[{"label": "CPSC recall notice", "url": page}, {"label": "CPSC Recall API record", "url": api}],
             extra={"recall": r, "dates": {"date": r["date"]}},
         ))
@@ -190,6 +199,8 @@ def main(dry):
             "countries": counter_dict(countries),
             "hazard_country": {k: counter_dict(v) for k, v in cube.items()},
             "death_mentions": sum(r["mentions_death"] for r in items),
+            "death_background": sum(r["death_background"] for r in items),
+            "death_foreign_only": sum(r["death_foreign_only"] for r in items),
             "injury_mentions": sum(r["mentions_injury"] for r in items),
             "none_reported": sum(r["none_reported"] for r in items),
             "injury_text_missing": sum(1 for r in items if not r["injuries"]),
@@ -263,7 +274,7 @@ def main(dry):
         "years": [{"year": y["year"], "recalls": y["recalls"], "partial": y["partial"]} for y in year_items],
         "hazard_labels": HAZARD_LABELS, "hazard_rules": {k: p for k, _, p in HAZARD_RULES}, "standard_rule": STANDARD_RULE,
         "top_countries": top_countries, "firm_min": FIRM_MIN, "firm_window_start": cutoff,
-        "death_mentions": sum(r["mentions_death"] for r in recalls), "injury_mentions": sum(r["mentions_injury"] for r in recalls),
+        "death_mentions": sum(r["mentions_death"] for r in recalls), "death_background": sum(r["death_background"] for r in recalls), "death_foreign_only": sum(r["death_foreign_only"] for r in recalls), "death_rule": DEATH_RULE, "injury_mentions": sum(r["mentions_injury"] for r in recalls),
         "with_country": sum(1 for r in recalls if r["countries"]), "units_parsed_recalls": sum(1 for r in recalls if r["units"] is not None),
         "api_doc": API_DOC, "api_year_template": API_YEAR,
         "country_rule": "Parenthetical qualifiers dropped; multi-country strings split only when every part is a standalone recorded country",
@@ -291,8 +302,8 @@ def main(dry):
     hazard_opts = dict(HAZARD_LABELS)
     writer.publish(
         "agency_safety_cpsc_recalls_api", "CPSC recalls (official Recall API, full history)", rows,
-        listing_block=writer.listing([("recall_number", "Recall"), ("date", "Date"), ("hazard", "Hazard (keyword rule)"), ("firm", "Firm"), ("country", "Manufactured in"), ("units", "Units"), ("death_mention", "Death mentioned")], [("hazard", "Hazard", hazard_opts), ("death_mention", "Death mentioned", {"yes": "Yes", "no": "No"})]),
-        summary={**common, "grain": "one record per recall (RecallNumber)", "group": "cpsc", "windows": len(manifest["windows"]), "death_rule": "Injury statement mentions death/died/fatal/killed after removing explicitly negated phrases; a mention, not a verified count"},
+        listing_block=writer.listing([("recall_number", "Recall"), ("date", "Date"), ("hazard", "Hazard (keyword rule)"), ("firm", "Firm"), ("country", "Manufactured in"), ("units", "Units"), ("death_mention", "Death mentioned")], [("hazard", "Hazard", hazard_opts), ("death_mention", "Death mentioned", {"product": "Product-related", "background": "Background / other product", "no": "No"})]),
+        summary={**common, "grain": "one record per recall (RecallNumber)", "group": "cpsc", "windows": len(manifest["windows"]), "death_rule": DEATH_RULE},
     )
     writer.publish(
         "regulatory_cpsc_aggregates", "CPSC recall aggregates by year, hazard, manufacturer country and firm", built,

@@ -29,7 +29,8 @@ const y = (fy: number, cases: number, fedPenalty = 0): EpaYear => ({
   cases,
   judicial: 0,
   administrative: cases,
-  penaltyCases: 0,
+  settlements: 0,
+  penaltySettlements: 0,
   fedPenalty,
   sep: 0,
   costRecovery: 0,
@@ -46,17 +47,20 @@ function profile(code: string, years: EpaYear[], population: number | null = nul
       cases: 0,
       judicial: 0,
       administrative: 0,
-      penaltyCases: 0,
+      penaltySettlements: 0,
       fedPenalty: 0,
       sep: 0,
       costRecovery: 0,
       multistateCases: 0,
+      unattributedFedPenalty: 0,
     },
     years,
     statutes: [],
-    topDefendants: [],
-    topDefendantsRecent: [],
+    topDefendantGroups: [],
+    topDefendantGroupsRecent: [],
     topCases: [],
+    nationalGroups: [],
+    lookalikes: null,
     population,
     populationYear: population ? 2025 : null,
   };
@@ -134,6 +138,8 @@ describe("CPSC helpers", () => {
     countries: { China: 6 },
     hazardCountry: { fire_burn: { China: 3, "United States": 1 } },
     deathMentions: 0,
+    deathBackground: 0,
+    deathForeignOnly: 0,
     injuryMentions: 0,
     noneReported: 0,
     injuryTextMissing: 0,
@@ -181,6 +187,43 @@ describe("stored-row validation", () => {
         url: "https://echo.epa.gov/r",
       })?.fedPenalty,
     ).toBe(5);
+  });
+  it("parses defendant groups, settlement fields and multi-record national cases", () => {
+    const p = parseProfile("epa-profile:US", {
+      kind: "national",
+      code: "US",
+      totals: { cases: 3, fed_penalty: 10, unattributed: { fed_penalty: 2 } },
+      years: [
+        {
+          fy: 2016,
+          cases: 1,
+          settlements: 2,
+          penalty_settlements: 1,
+          fed_penalty: 5,
+          cost_recovery: 7,
+        },
+      ],
+      top_defendant_groups: [
+        { defendants: ["A Inc.", "B LLC"], cases: 1, fed_penalty: 5 },
+        { defendants: [] },
+      ],
+      top_cases: [
+        {
+          case_number: "06-2011-4881",
+          fed_penalty: 6.7,
+          records: ["06-2011-4881", "04-2010-9036"],
+          settled: "2016-04-04",
+        },
+      ],
+      national_case_groups: [
+        { lead_case_number: "06-2011-4881", records: ["06-2011-4881"], combined_fed_penalty: 1 },
+      ],
+    });
+    expect(p?.totals.unattributedFedPenalty).toBe(2);
+    expect(p?.years[0]).toMatchObject({ settlements: 2, penaltySettlements: 1, costRecovery: 7 });
+    expect(p?.topDefendantGroups).toHaveLength(1);
+    expect(p?.topCases[0]?.records).toHaveLength(2);
+    expect(p?.nationalGroups).toHaveLength(0);
   });
   it("requires a CPSC overview record and rejects foreign recall URLs", () => {
     expect(parseCpsc([{ kind: "year", year: 2020 }], [])).toBeNull();

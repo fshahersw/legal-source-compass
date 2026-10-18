@@ -98,6 +98,25 @@ class RuleTests(unittest.TestCase):
         self.assertEqual({f["rule"] for f in flags}, {"slow_disposition", "aging_backlog"})
         self.assertEqual(B.time_flags([2025], [30.0], [50], [10.0], [40.0], [100], [10.0]), [])
 
+    def test_time_flags_report_pooled_national_but_use_district_median(self):
+        flags = B.time_flags([2025], [12.0], [400], [7.9], [25.0], [900], [10.1], [15.6], [39.3])
+        slow = next(f for f in flags if f["rule"] == "slow_disposition")
+        self.assertEqual((slow["district_median"], slow["national"]), (7.9, 15.6))
+        self.assertEqual({f["rule"] for f in flags}, {"slow_disposition", "aging_backlog"})
+
+    def test_decline_ratio_keeps_precision(self):
+        pl = [2000, 2000, 2000, 2000, 2000, 995, 2000, 2000, 2000, 2000, 2000, 2000]
+        flags = B.pl_flags(self.YEARS, pl, [100_000] * 12, [50_000] * 12, [500_000] * 12)
+        decline = next(f for f in flags if f["rule"] == "pl_decline")
+        self.assertEqual(decline["ratio"], 0.4975)
+
+    def test_district_median_and_dash_years(self):
+        data = {"districts": {"a": {"2025": {"c5": {"median_total": 7.0}}}, "b": {"2025": {"c5": {"median_total": 9.0, "_dash": []}}},
+                              "c": {"2025": {"c5": {"median_total": None, "_dash": ["median_total"]}}}}}
+        self.assertEqual(B.district_median(data, [2025], "c5", "median_total"), [8.0])
+        self.assertEqual(B.dash_years(data["districts"]["c"], [2025], "c5", "median_total"), [2025])
+        self.assertEqual(B.dash_map(data["districts"]["a"], [2025], [("median_total", "c5", "median_total")]), {})
+
     def test_ranks_ties_and_nulls(self):
         self.assertEqual(B.ranks({"a": 5, "b": 9, "c": 5, "d": None}), {"b": 1, "a": 2, "c": 2})
         self.assertEqual(B.ranks({"a": 5, "b": 9}, higher_first=False), {"a": 1, "b": 2})

@@ -113,8 +113,9 @@ def find_cols(paths, patterns):
     return found
 
 
-def district_rows_from_xlsx(path, patterns, sheet_filter=None):
-    """{label: [values for each pattern]} using header-located columns; also returns resolved headers."""
+def district_rows_from_xlsx(path, patterns, sheet_filter=None, keep_dash=False):
+    """{label: [values for each pattern]} using header-located columns; also returns resolved headers.
+    With keep_dash, a cell printed as a dash comes back as T.DASH (callers pass the block through undash)."""
     result = {}
     headers = None
     for title, paths, rows in T.xlsx_sheets(path):
@@ -128,11 +129,12 @@ def district_rows_from_xlsx(path, patterns, sheet_filter=None):
         for label, values in rows:
             up = label.upper()
             if up == "TOTAL" or T.circuit_id(label) or T.district_id(label):
-                result[label] = [T.to_number(values[c - 1]) if c - 1 < len(values) else None for c in cols]
+                cells = [values[c - 1] if c - 1 < len(values) else None for c in cols]
+                result[label] = [T.DASH if keep_dash and T.is_dash(v) else T.to_number(v) for v in cells]
     return result, headers
 
 
-def district_rows_from_pdf(path, width, page_filter=None):
+def district_rows_from_pdf(path, width, page_filter=None, keep_dash=False):
     import pdfplumber
 
     result = {}
@@ -153,8 +155,18 @@ def district_rows_from_pdf(path, width, page_filter=None):
                 if len(tokens) != width:
                     bad.append(f"{label}:{len(tokens)}")
                     continue
-                result[label] = [None if t in ("-", "--") else T.to_number(t) for t in tokens]
+                result[label] = [(T.DASH if keep_dash else None) if T.is_dash(t) else T.to_number(t) for t in tokens]
     return result, bad
+
+
+def undash(block):
+    """Replace T.DASH markers with None and list the dashed keys in block['_dash'] (only when any)."""
+    dashed = [k for k, v in block.items() if v == T.DASH]
+    for k in dashed:
+        block[k] = None
+    if dashed:
+        block["_dash"] = dashed
+    return block
 
 
 def by_entity(rows_by_label):
@@ -205,16 +217,16 @@ C11_KEYS = ["prior_total", "total", "contract", "real_property", "property_damag
 def read_c11(year):
     fmt, path = edition(year, "c-11")
     if fmt == "xlsx":
-        rows, headers = district_rows_from_xlsx(path, C11_PATTERNS)
+        rows, headers = district_rows_from_xlsx(path, C11_PATTERNS, keep_dash=True)
     else:
         text = T.pdf_text(path)
         check(f"c-11 {year} pdf header", all(w in text for w in ("Contract", "Real Property", "Asbestos", "Other")), path.name)
-        rows, bad = district_rows_from_pdf(path, 10)
+        rows, bad = district_rows_from_pdf(path, 10, keep_dash=True)
         check(f"c-11 {year} pdf row widths", not bad, ",".join(bad))
     out = {}
     failures = []
     for label, vals in rows.items():
-        block = dict(zip(C11_KEYS, vals))
+        block = undash(dict(zip(C11_KEYS, vals)))
         parts = sum(nz(block[k]) for k in C11_KEYS[2:])
         if block["total"] is None or parts != block["total"]:
             # Components do not add up as printed (e.g. a truncated cell in the PDF): keep only the published
@@ -234,11 +246,11 @@ C_KEYS = ["filed_prior", "filed", "filed_pct", "terminated_prior", "terminated",
 def read_c(year, table="c"):
     fmt, path = edition(year, table)
     if fmt == "xlsx":
-        rows, headers = district_rows_from_xlsx(path, C_PATTERNS)
+        rows, headers = district_rows_from_xlsx(path, C_PATTERNS, keep_dash=True)
     else:
-        rows, bad = district_rows_from_pdf(path, 9)
+        rows, bad = district_rows_from_pdf(path, 9, keep_dash=True)
         check(f"{table} {year} pdf row widths", not bad, ",".join(bad))
-    return {label: dict(zip(C_KEYS, vals)) for label, vals in rows.items()}, fmt, path
+    return {label: undash(dict(zip(C_KEYS, vals))) for label, vals in rows.items()}, fmt, path
 
 
 C5_PATTERNS = [r"^Total Cases / Number", r"^Total Cases / Median", r"^No Court Action / Number", r"^No Court Action / Median", r"Before Pretrial / Number", r"Before Pretrial / Median", r"During or After Pretrial / Number", r"During or After Pretrial / Median", r"(During )?Trial / Number", r"(During )?Trial / Median"]
@@ -248,13 +260,13 @@ C5_KEYS = ["n_total", "median_total", "n_no_action", "median_no_action", "n_befo
 def read_c5(year):
     fmt, path = edition(year, "c-5")
     if fmt == "xlsx":
-        rows, headers = district_rows_from_xlsx(path, C5_PATTERNS)
+        rows, headers = district_rows_from_xlsx(path, C5_PATTERNS, keep_dash=True)
     else:
-        rows, bad = district_rows_from_pdf(path, 10)
+        rows, bad = district_rows_from_pdf(path, 10, keep_dash=True)
         check(f"c-5 {year} pdf row widths", not bad, ",".join(bad))
     out, failures = {}, []
     for label, vals in rows.items():
-        block = dict(zip(C5_KEYS, vals))
+        block = undash(dict(zip(C5_KEYS, vals)))
         for k in C5_KEYS:
             if k.startswith("median"):
                 block[k] = round1(block[k])
@@ -274,13 +286,13 @@ C6_KEYS = ["pending", "under_1y", "y1_2", "y2_3", "over_3y", "over_3y_pct"]
 def read_c6(year):
     fmt, path = edition(year, "c-6")
     if fmt == "xlsx":
-        rows, headers = district_rows_from_xlsx(path, C6_PATTERNS)
+        rows, headers = district_rows_from_xlsx(path, C6_PATTERNS, keep_dash=True)
     else:
-        rows, bad = district_rows_from_pdf(path, 6)
+        rows, bad = district_rows_from_pdf(path, 6, keep_dash=True)
         check(f"c-6 {year} pdf row widths", not bad, ",".join(bad))
     out, failures = {}, []
     for label, vals in rows.items():
-        block = dict(zip(C6_KEYS, vals))
+        block = undash(dict(zip(C6_KEYS, vals)))
         block["over_3y_pct"] = round1(block["over_3y_pct"])
         parts = sum(nz(block[k]) for k in ("under_1y", "y1_2", "y2_3", "over_3y"))
         if block["pending"] is None or parts != block["pending"]:
@@ -428,7 +440,7 @@ B4_KEYS = ["merits_terminations", "n_notice_to_final", "median_notice_to_final",
 def read_b4(year):
     fmt, path = edition(year, "b-4")
     if fmt == "xlsx":
-        rows, headers = district_rows_from_xlsx(path, B4_PATTERNS + [r"Oral Argument to Last Opinion.* / Cases$", r"Submission on Briefs to Last Opinion.* / Cases$"])
+        rows, headers = district_rows_from_xlsx(path, B4_PATTERNS + [r"Oral Argument to Last Opinion.* / Cases$", r"Submission on Briefs to Last Opinion.* / Cases$"], keep_dash=True)
     elif fmt == "pdf":
         # PDF editions print 14 numbers per circuit: total, by consolidation, then (cases, interval) for six intervals
         # in the order of the column headings checked here.
@@ -438,15 +450,15 @@ def read_b4(year):
         heading_ok = "Total Consolidation Cases Interval Cases Interval Cases Interval Cases Interval Cases Interval Cases Interval" in text
         if not check(f"b-4 {year} pdf column headings", heading_ok, path.name):
             return {}, None, path
-        raw, bad = district_rows_from_pdf(path, 14)
+        raw, bad = district_rows_from_pdf(path, 14, keep_dash=True)
         check(f"b-4 {year} pdf row widths", not bad, ",".join(bad))
         rows = {label: [v[0], v[10], v[11], v[12], v[13], v[6], v[8]] for label, v in raw.items()}
     else:
         return {}, None, path
     out, failures = {}, []
     for label, vals in rows.items():
-        block = dict(zip(B4_KEYS, vals[:5]))
-        n_oral, n_briefs = vals[5], vals[6]
+        block = undash(dict(zip(B4_KEYS, vals[:5])))
+        n_oral, n_briefs = (None if v == T.DASH else v for v in (vals[5], vals[6]))
         # Every merits termination is decided after oral argument or on the briefs: the notice-to-final case count
         # must equal the sum of those two interval counts.
         if block["n_notice_to_final"] is None or nz(n_oral) + nz(n_briefs) != block["n_notice_to_final"]:
@@ -472,6 +484,7 @@ def read_b7(year):
     for title, paths, rows in T.xlsx_sheets(path):
         pass
     wb_rows = []
+    dash = {}
     import openpyxl
 
     wb = openpyxl.load_workbook(path, data_only=True)
@@ -503,6 +516,9 @@ def read_b7(year):
             key = "diversity_pi_pl"
         if key and key not in out:
             out[key] = {"national": T.to_number(r[total_col]), **{cid: T.to_number(r[i]) for cid, i in cols.items()}}
+            dashed = [cid for cid, i in cols.items() if T.is_dash(r[i])]
+            if dashed:
+                dash[key] = dashed
         wb_rows.append(label)
     ok = all(k in out for k in ("total", "civil", "diversity_pi_pl")) and len(cols) == 12
     if ok:
@@ -512,6 +528,8 @@ def read_b7(year):
                 ok = False
                 check(f"b-7 {year} {k} circuit sum", False, f"{s} vs {v['national']}")
     check(f"b-7 {year} rows located", ok, ",".join(sorted(out)))
+    if ok and dash:
+        out["_dash"] = dash
     return (out if ok else {}), fmt, path
 
 
@@ -631,10 +649,14 @@ def main():
         rows, fmt, path = read_b7(year)
         if fmt:
             used.append(source_entry(sources, "b-7", year, fmt, path))
+        dash = rows.pop("_dash", {})
         for rowkey, values in rows.items():
             national.setdefault(str(year), {}).setdefault("b7", {})[rowkey] = values.get("national")
             for cid in CIRCUITS:
                 circuits.setdefault(cid, {}).setdefault(str(year), {}).setdefault("b7", {})[rowkey] = values.get(cid)
+        for rowkey, cids in dash.items():
+            for cid in cids:
+                circuits[cid][str(year)]["b7"].setdefault("_dash", []).append(rowkey)
     # appeals totals check
     for year in YEARS:
         b = national.get(str(year), {}).get("b")

@@ -712,7 +712,7 @@ class Builder:
             self.add(
                 kind="enforcement_surge", agency="EPA", entity=p.get("code") or row["id"],
                 headline=f"EPA enforcement in {p.get('name')}: {latest:,} cases in FY{fy}, {latest / baseline:.1f}× its five-year mean" if baseline else f"EPA enforcement in {p.get('name')}: {latest:,} cases in FY{fy}",
-                summary=f"{latest:,} federal enforcement cases with a facility in {p.get('name')} in FY{fy} (federal penalties ${penalty:,.0f}) against a mean of {baseline:.1f} over FY{fy - 5}–FY{fy - 1}, outpacing the national rise ({national_ratio:.2f}×). Cases are assigned to every state where a recorded facility sits.",
+                summary=f"{latest:,} federal enforcement cases opened with a facility in {p.get('name')} in FY{fy} (federal penalties entered in FY{fy}: ${penalty:,.0f}) against a mean of {baseline:.1f} over FY{fy - 5}–FY{fy - 1}, outpacing the national rise ({national_ratio:.2f}×). Cases are assigned to every state where a recorded facility sits.",
                 score=min(surprise, 30) * 2 + 20, serious=False,
                 metric={"recent": latest, "baseline": round(baseline, 1), "ratio": round(latest / baseline, 2) if baseline else None, "window": f"FY{fy}", "unit": "EPA cases"},
                 series=[{"period": str(y), "count": (years.get(y) or {}).get("cases") or 0} for y in range(fy - 11, fy + 1)],

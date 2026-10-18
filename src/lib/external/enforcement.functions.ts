@@ -26,12 +26,14 @@ const counts = (v: unknown) => {
 
 // ---------------------------------------------------------------- EPA
 
+/** Counts (cases, judicial, administrative) are by fiscal year opened; dollars are by settlement fiscal year. */
 export type EpaYear = {
   fy: number;
   cases: number;
   judicial: number;
   administrative: number;
-  penaltyCases: number;
+  settlements: number;
+  penaltySettlements: number;
   fedPenalty: number;
   sep: number;
   costRecovery: number;
@@ -44,27 +46,41 @@ export type EpaStatute = {
   fedPenalty: number;
   sep: number;
   citedCases: number | null;
+  /** cases = opened that FY; fedPenalty = settled that FY. */
   years: { fy: number; cases: number; fedPenalty: number }[];
 };
-export type EpaDefendant = {
-  name: string;
+export type EpaDefendantGroup = {
+  defendants: string[];
+  nationalCase: string | null;
   cases: number;
   judicial: number;
-  multiDefendantCases: number;
   fedPenalty: number;
-  firstFy: number | null;
-  lastFy: number | null;
+  firstSettlementFy: number | null;
+  lastSettlementFy: number | null;
   statutes: string[];
   states: string[];
+  caseNumbers: string[];
 };
 export type EpaTopCase = {
   caseNumber: string;
   name: string;
   fy: number | null;
+  settled: string | null;
+  settlementFy: number | null;
   type: string | null;
   statute: string | null;
   fedPenalty: number;
+  records: string[];
+  defendants: string[];
   inCasesDataset: boolean;
+};
+export type EpaNationalGroup = {
+  leadCaseNumber: string;
+  leadName: string;
+  records: string[];
+  perRecord: number;
+  combined: number;
+  states: string[];
 };
 export type EpaProfileKind = "national" | "state" | "territory" | "other" | "unrecorded";
 export type EpaProfile = {
@@ -77,17 +93,20 @@ export type EpaProfile = {
     cases: number;
     judicial: number;
     administrative: number;
-    penaltyCases: number;
+    penaltySettlements: number;
     fedPenalty: number;
     sep: number;
     costRecovery: number;
     multistateCases: number;
+    unattributedFedPenalty: number;
   };
   years: EpaYear[];
   statutes: EpaStatute[];
-  topDefendants: EpaDefendant[];
-  topDefendantsRecent: EpaDefendant[];
+  topDefendantGroups: EpaDefendantGroup[];
+  topDefendantGroupsRecent: EpaDefendantGroup[];
   topCases: EpaTopCase[];
+  nationalGroups: EpaNationalGroup[];
+  lookalikes: { groups: number; cases: number; extraFedPenalty: number } | null;
   population: number | null;
   populationYear: number | null;
 };
@@ -106,14 +125,16 @@ export type EpaCaseRow = {
   caseNumber: string;
   name: string;
   fy: number;
+  settled: string | null;
+  settlementFy: number | null;
   typeCode: string;
   statute: string | null;
   states: string[];
   fedPenalty: number;
   sep: number | null;
-  costRecovery: number | null;
   defendants: string[];
   dojDocket: string | null;
+  nationalCase: { lead: string; records: string[]; combined: number } | null;
   url: string;
 };
 
@@ -128,26 +149,70 @@ function parseYear(raw: unknown): EpaYear | null {
     cases: int(r["cases"]),
     judicial: int(r["judicial"]),
     administrative: int(r["administrative"]),
-    penaltyCases: int(r["penalty_cases"]),
+    settlements: int(r["settlements"]),
+    penaltySettlements: int(r["penalty_settlements"]),
     fedPenalty: int(r["fed_penalty"]),
     sep: int(r["sep"]),
-    costRecovery: int(r["fed_cost_recovery"]),
+    costRecovery: int(r["cost_recovery"]),
   };
 }
 
-function parseDefendant(raw: unknown): EpaDefendant | null {
+function parseGroup(raw: unknown): EpaDefendantGroup | null {
   const r = obj(raw);
-  if (!r || !str(r["name"])) return null;
+  const defendants = strings(r?.["defendants"]);
+  if (!r || !defendants.length) return null;
   return {
-    name: str(r["name"]),
+    defendants,
+    nationalCase: strOrNull(r["national_case"]),
     cases: int(r["cases"]),
     judicial: int(r["judicial"]),
-    multiDefendantCases: int(r["multi_defendant_cases"]),
     fedPenalty: int(r["fed_penalty"]),
-    firstFy: num(r["first_fy"]),
-    lastFy: num(r["last_fy"]),
+    firstSettlementFy: num(r["first_settlement_fy"]),
+    lastSettlementFy: num(r["last_settlement_fy"]),
     statutes: strings(r["statutes"]),
     states: strings(r["states"]),
+    caseNumbers: strings(r["case_numbers"]),
+  };
+}
+
+const list = <T>(v: unknown, parse: (x: unknown) => T | null) =>
+  arr(v).flatMap((x) => {
+    const p = parse(x);
+    return p ? [p] : [];
+  });
+
+function parseTopCase(raw: unknown): EpaTopCase | null {
+  const tc = obj(raw);
+  const penalty = num(tc?.["fed_penalty"]);
+  if (!tc || !str(tc["case_number"]) || penalty == null) return null;
+  const records = strings(tc["records"]);
+  return {
+    caseNumber: str(tc["case_number"]),
+    name: str(tc["name"]) || str(tc["case_number"]),
+    fy: num(tc["fy"]),
+    settled: strOrNull(tc["settled"]),
+    settlementFy: num(tc["settlement_fy"]),
+    type: strOrNull(tc["type"]),
+    statute: strOrNull(tc["statute"]),
+    fedPenalty: penalty,
+    records: records.length ? records : [str(tc["case_number"])],
+    defendants: strings(tc["defendants"]),
+    inCasesDataset: tc["in_cases_dataset"] === true,
+  };
+}
+
+function parseNationalGroup(raw: unknown): EpaNationalGroup | null {
+  const g = obj(raw);
+  const records = strings(g?.["records"]);
+  const combined = num(g?.["combined_fed_penalty"]);
+  if (!g || !str(g["lead_case_number"]) || records.length < 2 || combined == null) return null;
+  return {
+    leadCaseNumber: str(g["lead_case_number"]),
+    leadName: str(g["lead_name"]),
+    records,
+    perRecord: int(g["fed_penalty_per_record"]),
+    combined,
+    states: strings(g["states"]),
   };
 }
 
@@ -159,6 +224,7 @@ export function parseProfile(id: string, raw: unknown, minFy = 1990): EpaProfile
   const totals = obj(r["totals"]);
   if (!KINDS.includes(kind) || !str(r["code"]) || !totals) return null;
   const population = obj(r["population"]);
+  const look = obj(r["possible_duplicates"]);
   return {
     id,
     code: str(r["code"]),
@@ -169,16 +235,14 @@ export function parseProfile(id: string, raw: unknown, minFy = 1990): EpaProfile
       cases: int(totals["cases"]),
       judicial: int(totals["judicial"]),
       administrative: int(totals["administrative"]),
-      penaltyCases: int(totals["penalty_cases"]),
+      penaltySettlements: int(totals["penalty_settlements"]),
       fedPenalty: int(totals["fed_penalty"]),
       sep: int(totals["sep"]),
-      costRecovery: int(totals["fed_cost_recovery"]),
+      costRecovery: int(totals["cost_recovery"]),
       multistateCases: int(totals["multistate_cases"]),
+      unattributedFedPenalty: int(obj(totals["unattributed"])?.["fed_penalty"]),
     },
-    years: arr(r["years"]).flatMap((y) => {
-      const parsed = parseYear(y);
-      return parsed && parsed.fy >= minFy ? [parsed] : [];
-    }),
+    years: list(r["years"], parseYear).filter((y) => y.fy >= minFy),
     statutes: arr(r["statutes"]).flatMap((s) => {
       const st = obj(s);
       if (!st) return [];
@@ -201,30 +265,17 @@ export function parseProfile(id: string, raw: unknown, minFy = 1990): EpaProfile
         },
       ];
     }),
-    topDefendants: arr(r["top_defendants"]).flatMap((d) => {
-      const parsed = parseDefendant(d);
-      return parsed ? [parsed] : [];
-    }),
-    topDefendantsRecent: arr(r["top_defendants_recent"]).flatMap((d) => {
-      const parsed = parseDefendant(d);
-      return parsed ? [parsed] : [];
-    }),
-    topCases: arr(r["top_cases"]).flatMap((c) => {
-      const tc = obj(c);
-      const penalty = num(tc?.["fed_penalty"]);
-      if (!tc || !str(tc["case_number"]) || penalty == null) return [];
-      return [
-        {
-          caseNumber: str(tc["case_number"]),
-          name: str(tc["name"]) || str(tc["case_number"]),
-          fy: num(tc["fy"]),
-          type: strOrNull(tc["type"]),
-          statute: strOrNull(tc["statute"]),
-          fedPenalty: penalty,
-          inCasesDataset: tc["in_cases_dataset"] === true,
-        },
-      ];
-    }),
+    topDefendantGroups: list(r["top_defendant_groups"], parseGroup),
+    topDefendantGroupsRecent: list(r["top_defendant_groups_recent"], parseGroup),
+    topCases: list(r["top_cases"], parseTopCase),
+    nationalGroups: list(r["national_case_groups"], parseNationalGroup),
+    lookalikes: look
+      ? {
+          groups: int(look["groups"]),
+          cases: int(look["cases"]),
+          extraFedPenalty: int(look["extra_fed_penalty"]),
+        }
+      : null,
     population: num(population?.["value"]),
     populationYear: num(population?.["year"]),
   };
@@ -238,19 +289,20 @@ let cpscCache: { at: number; value: CpscAnalytics } | null = null;
 
 export type EpaStateDetail = {
   code: string;
-  topDefendants: EpaDefendant[];
-  topDefendantsRecent: EpaDefendant[];
+  statutes: EpaStatute[];
+  topDefendantGroups: EpaDefendantGroup[];
+  topDefendantGroupsRecent: EpaDefendantGroup[];
   topCases: EpaTopCase[];
 };
 
-/** Strip the per-state ranking lists from the overview payload (they load per state on demand). */
+/** Strip per-state series and ranking lists from the overview payload (they load per state on demand). */
 function compactProfile(p: EpaProfile): EpaProfile {
   return {
     ...p,
     years: p.years.filter((y) => y.fy >= 2000),
     statutes: p.statutes.map((s) => ({ ...s, years: [] })),
-    topDefendants: [],
-    topDefendantsRecent: [],
+    topDefendantGroups: [],
+    topDefendantGroupsRecent: [],
     topCases: [],
   };
 }
@@ -305,8 +357,9 @@ export const getEpaStateDetail = createServerFn({ method: "GET" })
     const value = parsed
       ? {
           code: parsed.code,
-          topDefendants: parsed.topDefendants,
-          topDefendantsRecent: parsed.topDefendantsRecent,
+          statutes: parsed.statutes,
+          topDefendantGroups: parsed.topDefendantGroups,
+          topDefendantGroupsRecent: parsed.topDefendantGroupsRecent,
           topCases: parsed.topCases,
         }
       : null;
@@ -325,19 +378,27 @@ export function parseCaseRow(raw: unknown): EpaCaseRow | null {
   const url = str(r["url"]);
   if (!caseNumber || fy == null || fedPenalty == null || !/^https:\/\/echo\.epa\.gov\//.test(url))
     return null;
+  const nc = obj(r["nc"]);
+  const records = strings(nc?.["records"]);
+  const combined = num(nc?.["combined_fed_penalty"]);
   return {
     id: str(r["id"]),
     caseNumber,
     name: str(r["name"]) || caseNumber,
     fy,
+    settled: strOrNull(r["settled"]),
+    settlementFy: num(r["sfy"]),
     typeCode: str(r["t"]),
     statute: strOrNull(r["st"]),
     states: strings(r["states"]),
     fedPenalty,
     sep: num(pen?.["sep"]),
-    costRecovery: num(pen?.["fed_cost_recovery"]),
     defendants: strings(r["def"]).slice(0, 4),
     dojDocket: strOrNull(r["doj"]),
+    nationalCase:
+      nc && str(nc["lead_case_number"]) && records.length > 1 && combined != null
+        ? { lead: str(nc["lead_case_number"]), records, combined }
+        : null,
     url,
   };
 }
@@ -351,12 +412,15 @@ export const getEpaCases = createServerFn({ method: "GET" }).handler(
       "n:item->case->>case_number",
       "name:item->case->>name",
       "fy:item->case->fy",
+      "settled:item->case->>settled",
+      "sfy:item->case->settlement_fy",
       "t:item->case->>type_code",
       "st:item->case->>primary_statute",
       "states:item->case->states",
       "pen:item->case->penalties",
       "def:item->case->defendants",
       "doj:item->case->>doj_docket",
+      "nc:item->case->national_case",
     ].join(",");
     const rows: unknown[] = [];
     for (let start = 0; start < 20000; start += 1000) {
@@ -386,7 +450,10 @@ export type CpscYear = {
   hazards: Record<string, number>;
   countries: Record<string, number>;
   hazardCountry: Record<string, Record<string, number>>;
+  /** Product-related death mentions (background/other-product/animal mentions excluded). */
   deathMentions: number;
+  deathBackground: number;
+  deathForeignOnly: number;
   injuryMentions: number;
   noneReported: number;
   injuryTextMissing: number;
@@ -423,6 +490,7 @@ export type CpscDeathRecall = {
   injuries: string;
   firms: string[];
   hazards: string[];
+  foreignOnly: boolean;
   url: string | null;
 };
 export type CpscAnalytics = {
@@ -438,6 +506,7 @@ export type CpscAnalytics = {
   firmWindowStart: string | null;
   withCountry: number;
   apiDoc: string;
+  deathRule: string;
   years: CpscYear[];
   hazards: CpscHazard[];
   countries: { country: string; recalls: number; years: { year: number; recalls: number }[] }[];
@@ -494,6 +563,8 @@ export function parseCpsc(aggs: unknown[], deaths: unknown[]): CpscAnalytics | n
         countries: counts(a["countries"]),
         hazardCountry: cube,
         deathMentions: int(a["death_mentions"]),
+        deathBackground: int(a["death_background"]),
+        deathForeignOnly: int(a["death_foreign_only"]),
         injuryMentions: int(a["injury_mentions"]),
         noneReported: int(a["none_reported"]),
         injuryTextMissing: int(a["injury_text_missing"]),
@@ -556,6 +627,7 @@ export function parseCpsc(aggs: unknown[], deaths: unknown[]): CpscAnalytics | n
     firmWindowStart: strOrNull(overview["firm_window_start"]),
     withCountry: int(overview["with_country"]),
     apiDoc: str(overview["api_doc"]),
+    deathRule: str(overview["death_rule"]),
     years: years.sort((a, b) => a.year - b.year),
     hazards,
     countries: countries.sort((a, b) => b.recalls - a.recalls),
@@ -580,6 +652,7 @@ export function parseCpsc(aggs: unknown[], deaths: unknown[]): CpscAnalytics | n
           injuries: str(r["i"]),
           firms: [...strings(r["m"]), ...strings(r["im"])].slice(0, 3),
           hazards: strings(r["h"]),
+          foreignOnly: r["f"] === true,
           url: /^https:\/\/(www\.)?cpsc\.gov\//.test(url) ? url : null,
         },
       ];
@@ -600,13 +673,14 @@ export const getCpscAnalytics = createServerFn({ method: "GET" }).handler(
       "m:item->recall->manufacturers",
       "im:item->recall->importers",
       "h:item->recall->hazard_categories",
+      "f:item->recall->death_foreign_only",
     ].join(",");
     const [aggs, deaths] = await Promise.all([
       restGet<{ a: unknown }[]>(
         "corpus_records?select=a:item->agg&dataset=eq.regulatory_cpsc_aggregates&id=not.like.cpsc-agg:firm:*&order=ordinal.asc&limit=1000",
       ),
       restGet<unknown[]>(
-        `corpus_records?select=${deathSelect}&dataset=eq.agency_safety_cpsc_recalls_api&filters->death_mention=cs.${encodeURIComponent('["yes"]')}&order=ordinal.desc&limit=30`,
+        `corpus_records?select=${deathSelect}&dataset=eq.agency_safety_cpsc_recalls_api&filters->death_mention=cs.${encodeURIComponent('["product"]')}&order=ordinal.desc&limit=30`,
       ),
     ]);
     const value = parseCpsc(

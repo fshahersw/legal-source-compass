@@ -7,11 +7,12 @@ import type {
 } from "@/lib/external/enforcement.functions";
 
 export type FyWindow = { id: string; label: string; from: number; to: number };
+/** cases/judicial/administrative: opened in the window; dollars and penaltySettlements: settled in the window. */
 export type EpaSums = {
   cases: number;
   judicial: number;
   administrative: number;
-  penaltyCases: number;
+  penaltySettlements: number;
   fedPenalty: number;
   sep: number;
   costRecovery: number;
@@ -39,7 +40,7 @@ export function sumYears(years: readonly EpaYear[], from: number, to: number): E
     cases: 0,
     judicial: 0,
     administrative: 0,
-    penaltyCases: 0,
+    penaltySettlements: 0,
     fedPenalty: 0,
     sep: 0,
     costRecovery: 0,
@@ -49,7 +50,7 @@ export function sumYears(years: readonly EpaYear[], from: number, to: number): E
     out.cases += y.cases;
     out.judicial += y.judicial;
     out.administrative += y.administrative;
-    out.penaltyCases += y.penaltyCases;
+    out.penaltySettlements += y.penaltySettlements;
     out.fedPenalty += y.fedPenalty;
     out.sep += y.sep;
     out.costRecovery += y.costRecovery;
@@ -68,7 +69,8 @@ export function denseYears(years: readonly EpaYear[], from: number, to: number):
         cases: 0,
         judicial: 0,
         administrative: 0,
-        penaltyCases: 0,
+        settlements: 0,
+        penaltySettlements: 0,
         fedPenalty: 0,
         sep: 0,
         costRecovery: 0,
@@ -102,9 +104,9 @@ export function tukeyUpper(values: readonly number[]): number | null {
 }
 
 export const SURGE_RULE =
-  "Cases in the latest complete FY are at least 1.5× the state's own mean for the five prior FYs and at least 10 cases above it.";
+  "Cases opened in the latest complete FY are at least 1.5× the state's own mean for the five prior FYs and at least 10 cases above it.";
 export const PER_CAPITA_RULE =
-  "FY2025 cases per million residents (Census Vintage 2025, July 1, 2025) above the Tukey fence Q3 + 1.5 × IQR across the 50 states and DC.";
+  "FY2025 cases opened per million residents (Census Vintage 2025, July 1, 2025) above the Tukey fence Q3 + 1.5 × IQR across the 50 states and DC.";
 
 export type SurgeFlag = { latest: number; baseline: number; ratio: number };
 

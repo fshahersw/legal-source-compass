@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   change,
+  dominanceNote,
+  fmtCell,
+  fmtRatio,
+  isDash,
+  parseDash,
   flagDetail,
   fmtNum,
   fmtPct,
@@ -153,5 +158,48 @@ describe("court stats view helpers", () => {
       national_share_pct: 15.1,
     })!;
     expect(flagDetail(s)).toBe("76.0% of civil filings vs 15.1% nationally");
+  });
+
+  it("benchmarks time flags against the median district and reports the pooled figure", () => {
+    const f = parseFlag({
+      year: 2025,
+      rule: "slow_disposition",
+      value: 13.6,
+      district_median: 7.9,
+      national: 15.6,
+      ratio: 1.7215,
+    })!;
+    expect(flagDetail(f)).toBe("13.6 months vs median district 7.9 (pooled national 15.6)");
+  });
+
+  it("prints ratios with three significant digits", () => {
+    expect(fmtRatio(0.4975)).toBe("0.497x");
+    expect(fmtRatio(17.1234)).toBe("17.1x");
+    expect(fmtRatio(2.0638)).toBe("2.06x");
+    expect(fmtRatio(null)).toBe("Not recorded");
+  });
+
+  it("renders published dashes as printed and keeps Not recorded for missing cells", () => {
+    const dash = parseDash({ median: [2024, 1999, "x"], pl: "bad" }, YEARS);
+    expect(dash).toEqual({ median: [2024] });
+    expect(isDash(dash, "median", 2024)).toBe(true);
+    expect(fmtCell(null, isDash(dash, "median", 2024), 1)).toBe("–");
+    expect(fmtCell(null, isDash(dash, "median", 2025), 1)).toBe("Not recorded");
+    expect(fmtCell(0, true)).toBe("0");
+  });
+
+  it("names a district that dominates a pooled benchmark only above the threshold", () => {
+    const top = {
+      courtId: "flnd",
+      name: "N.D. Florida",
+      count: 148428,
+      total: 355243,
+      sharePct: 41.8,
+    };
+    expect(dominanceNote(top, "FY2025 civil terminations")).toBe(
+      "N.D. Florida accounts for 41.8% of FY2025 civil terminations (148,428 of 355,243), so the pooled national figure largely reflects that docket.",
+    );
+    expect(dominanceNote({ ...top, sharePct: 12 }, "x")).toBeNull();
+    expect(dominanceNote(null, "x")).toBeNull();
   });
 });

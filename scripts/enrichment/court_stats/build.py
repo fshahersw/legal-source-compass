@@ -39,8 +39,8 @@ RULES = {
     "pl_decline": "Product liability filings in the fiscal year are below half the district's median of the previous five fiscal years, where that median is at least 250 (Table C-11).",
     "pl_concentration": "The district received at least 10% of all federal product liability filings in the fiscal year (Table C-11).",
     "pl_share_cluster": "Product liability filings are at least 3x the national product liability share of civil filings, with at least 100 filings (Tables C-11 and C).",
-    "slow_disposition": "Median months from filing to disposition is at least 1.5x the national median in the same fiscal year, with at least 100 civil terminations (Table C-5).",
-    "aging_backlog": "Share of pending civil cases three years or older is at least 2x the national share, with at least 500 such cases (Table C-6).",
+    "slow_disposition": "Median months from filing to disposition is at least 1.5x the median of all district medians in the same fiscal year, with at least 100 civil terminations measured (Table C-5). The pooled national median is shown alongside but not used, because a single MDL docket can dominate it.",
+    "aging_backlog": "Share of pending civil cases three years or older is at least 2x the median district share in the same fiscal year, with at least 500 such cases (Table C-6). The pooled national share is shown alongside but not used, because a single MDL docket can dominate it.",
 }
 TODAY = date.today().isoformat()
 
@@ -84,9 +84,9 @@ def pl_flags(years, pl, national_pl, civil, national_civil):
             continue
         base = baseline_median(pl, i)
         if base is not None and value >= 100 and value > 2 * base:
-            flags.append({"year": year, "rule": "pl_surge", "value": value, "baseline": base, "ratio": round(value / base, 1) if base else None})
+            flags.append({"year": year, "rule": "pl_surge", "value": value, "baseline": base, "ratio": round(value / base, 4) if base else None})
         if base is not None and base >= 250 and value < 0.5 * base:
-            flags.append({"year": year, "rule": "pl_decline", "value": value, "baseline": base, "ratio": round(value / base, 2)})
+            flags.append({"year": year, "rule": "pl_decline", "value": value, "baseline": base, "ratio": round(value / base, 4)})
         share = pct(value, national_pl[i])
         if share is not None and share >= 10:
             flags.append({"year": year, "rule": "pl_concentration", "value": value, "share_pct": share})
@@ -96,16 +96,57 @@ def pl_flags(years, pl, national_pl, civil, national_civil):
     return flags
 
 
-def time_flags(years, median_total, n_total, national_median, over3_pct, over3, national_over3_pct):
+def time_flags(years, median_total, n_total, district_median, over3_pct, over3, district_over3_pct, national_median=None, national_over3_pct=None):
+    """Benchmarks are the median of district values in the same year; pooled national values are reported, not used."""
+    national_median = national_median or [None] * len(years)
+    national_over3_pct = national_over3_pct or [None] * len(years)
     flags = []
     for i, year in enumerate(years):
-        m, n, nm = median_total[i], n_total[i], national_median[i]
-        if m is not None and nm and nz(n) >= 100 and m >= 1.5 * nm:
-            flags.append({"year": year, "rule": "slow_disposition", "value": m, "national": nm})
-        p, c, npct = over3_pct[i], over3[i], national_over3_pct[i]
-        if p is not None and npct and nz(c) >= 500 and p >= 2 * npct:
-            flags.append({"year": year, "rule": "aging_backlog", "value": p, "national": npct, "count": c})
+        m, n, dm = median_total[i], n_total[i], district_median[i]
+        if m is not None and dm and nz(n) >= 100 and m >= 1.5 * dm:
+            flags.append({"year": year, "rule": "slow_disposition", "value": m, "district_median": dm, "national": national_median[i], "ratio": round(m / dm, 4)})
+        p, c, dpct = over3_pct[i], over3[i], district_over3_pct[i]
+        if p is not None and dpct and nz(c) >= 500 and p >= 2 * dpct:
+            flags.append({"year": year, "rule": "aging_backlog", "value": p, "district_median": dpct, "national": national_over3_pct[i], "count": c, "ratio": round(p / dpct, 4)})
     return flags
+
+
+def district_median(data, years, block, key):
+    """Median across districts of a published per-district value, per fiscal year (None when no district has one)."""
+    out = []
+    for y in years:
+        values = [((ent.get(str(y)) or {}).get(block) or {}).get(key) for ent in data["districts"].values()]
+        values = [v for v in values if v is not None]
+        out.append(round(statistics.median(values), 1) if values else None)
+    return out
+
+
+def top_share(data, spine, years, block, key):
+    """Per fiscal year: the district holding the largest share of the national count in a table column."""
+    out = []
+    for y in years:
+        total = (((data["national"].get(str(y)) or {}).get(block)) or {}).get(key)
+        best = max(((did, ((ent.get(str(y)) or {}).get(block) or {}).get(key)) for did, ent in data["districts"].items()), key=lambda kv: kv[1] or -1)
+        if not total or best[1] is None:
+            out.append(None)
+            continue
+        out.append({"court_id": best[0], "name": short_name((spine.get(best[0]) or {}).get("title"), best[0]), "count": best[1], "total": total, "share_pct": pct(best[1], total)})
+    return out
+
+
+def dash_years(entity, years, block, key):
+    """Fiscal years in which the source printed this cell as a dash (stored value is null)."""
+    return [y for y in years if key in (((entity.get(str(y)) or {}).get(block) or {}).get("_dash") or [])]
+
+
+def dash_map(entity, years, spec):
+    """{output field: [years printed as a dash]} for (output field, block, source key) triples; empty lists dropped."""
+    out = {}
+    for field, block, key in spec:
+        ys = dash_years(entity, years, block, key)
+        if ys:
+            out[field] = ys
+    return out
 
 
 def ranks(values_by_id, higher_first=True):
@@ -186,6 +227,9 @@ def main(dry_run=False):
     national_civil = [((nat.get(str(y)) or {}).get("c") or {}).get("filed") for y in years]
     national_median = [((nat.get(str(y)) or {}).get("c5") or {}).get("median_total") for y in years]
     national_over3_pct = [((nat.get(str(y)) or {}).get("c6") or {}).get("over_3y_pct") for y in years]
+    district_median_total = district_median(data, years, "c5", "median_total")
+    district_median_over3_pct = district_median(data, years, "c6", "over_3y_pct")
+    concentration = {"c5": top_share(data, spine, years, "c5", "n_total"), "c6": top_share(data, spine, years, "c6", "over_3y")}
 
     district_ids = sorted(data["districts"])
     nos_rows, time_rows, matrix = [], [], []
@@ -221,6 +265,7 @@ def main(dry_run=False):
                     "as_of": a.get("mdl_as_of"), "source": "JPML pending MDL dockets report (dataset court_analytics)"} if a else None,
         }
         stats["flags"] = pl_flags(years, pl, national_pl, civil, national_civil)
+        stats["dash"] = dash_map(ent, years, [("pl_total", "c11", "total"), ("civil_filed", "c", "filed")] + [(out_key, "c11", key) for key, out_key, _ in PL_PARTS])
         stats_by_id[did] = stats
 
         median_total = series(ent, years, "c5", "median_total")
@@ -237,8 +282,13 @@ def main(dry_run=False):
             "pending": series(ent, years, "c6", "pending"), "pending_under_1y": series(ent, years, "c6", "under_1y"), "pending_1_2y": series(ent, years, "c6", "y1_2"),
             "pending_2_3y": series(ent, years, "c6", "y2_3"), "pending_over_3y": over3, "pending_over_3y_pct": over3_pct,
             "national_median_total": national_median, "national_over_3y_pct": national_over3_pct,
+            "district_median_total": district_median_total, "district_median_over_3y_pct": district_median_over3_pct,
+            "national_concentration": concentration,
+            "dash": dash_map(ent, years, [("median_total", "c5", "median_total"), ("median_trial", "c5", "median_trial"), ("median_no_action", "c5", "median_no_action"),
+                                          ("median_before_pretrial", "c5", "median_before_pretrial"), ("median_after_pretrial", "c5", "median_after_pretrial"),
+                                          ("pending_over_3y", "c6", "over_3y"), ("pending_over_3y_pct", "c6", "over_3y_pct")]),
         }
-        times["flags"] = time_flags(years, median_total, n_total, national_median, over3_pct, over3, national_over3_pct)
+        times["flags"] = time_flags(years, median_total, n_total, district_median_total, over3_pct, over3, district_median_over3_pct, national_median, national_over3_pct)
         stats["time_flags"] = times["flags"]
         time_rows.append(times)
 
@@ -303,7 +353,9 @@ def main(dry_run=False):
         matrix.append({"id": did, "name": s["name"], "circuit": s["circuit"], "pl": s["pl_total"], "civil": s["civil_filed"], "share": s["pl_share_pct"], "nat_share": s["pl_national_share_pct"],
                        "judgeships": s["judgeships"], "pl_per_j": s["pl_per_judgeship"], "civil_per_j": s["civil_per_judgeship_unweighted"], "median": t["median_total"], "trial": t["median_trial"],
                        "over3": t["pending_over_3y_pct"], "pending": t["pending"], "oth_pi": s["composition"]["other_pi"], "pl5": s["pl_5y_median"], "parts": {k: v[-1] for k, v in s["pl_parts"].items()},
-                       "mdl": s["mdl"], "flags": s["flags"] + s["time_flags"], "ranks": s["ranks"]})
+                       "mdl": s["mdl"], "flags": s["flags"] + s["time_flags"], "ranks": s["ranks"],
+                       "dash": {k: v for k, v in {"pl": s["dash"].get("pl_total"), "civil": s["dash"].get("civil_filed"), "median": t["dash"].get("median_total"),
+                                                  "trial": t["dash"].get("median_trial"), "over3": t["dash"].get("pending_over_3y_pct")}.items() if v}})
 
     # ---------------- circuits
     circuit_rows = []
@@ -328,6 +380,9 @@ def main(dry_run=False):
             "district_civil_filed": series(ent, years, "c", "filed"), "district_pl_total": series(ent, years, "c11", "total"),
             "district_median_total": series(ent, years, "c5", "median_total"), "district_over_3y_pct": series(ent, years, "c6", "over_3y_pct"),
             "district_composition": comp,
+            "dash": dash_map(ent, years, [("median_notice_to_final", "b4", "median_notice_to_final"), ("median_lower_court_to_final", "b4", "median_lower_court_to_final"),
+                                          ("diversity_pi_pl_appeals", "b7", "diversity_pi_pl"), ("civil_appeals", "b7", "civil"), ("private_civil_appeals", "b7", "private"),
+                                          ("diversity_appeals", "b7", "diversity")]),
         }
         # Table X-1A lists Article III districts only (not Guam, the Northern Mariana Islands or the Virgin Islands):
         # circuit judgeships and the per-judgeship rate use the same set of districts on both sides of the ratio.
@@ -361,7 +416,8 @@ def main(dry_run=False):
                   "pl_parts": {out_key: [((nat.get(str(y)) or {}).get("c11") or {}).get(key) for y in years] for key, out_key, _ in PL_PARTS},
                   "nos": {k: [((nat.get(str(y)) or {}).get("c2a") or {}).get(k) for y in years] for k in ["total", "tort_total", "pi_total", "pi_pl_total", "pl_airplane_315", "pl_marine_345", "pl_motor_vehicle_355", "pl_asbestos_368", "pl_health_care_pharma_367", "pl_other_365", "other_pi_total", "pi_medical_malpractice", "property_damage_total", "torts_to_land_240_245", "civil_rights_total", "prisoner_total", "contract_total", "insurance", "ip_total", "labor_total", "social_security_total", "securities_total", "antitrust", "consumer_credit", "rico", "environmental"]},
                   "nos_edition": [(nat.get(str(y)) or {}).get("c2a_edition") for y in years],
-                  "median_total": national_median, "median_trial": [((nat.get(str(y)) or {}).get("c5") or {}).get("median_trial") for y in years],
+                  "median_total": national_median, "district_median_total": district_median_total,
+                  "district_median_over_3y_pct": district_median_over3_pct, "median_trial": [((nat.get(str(y)) or {}).get("c5") or {}).get("median_trial") for y in years],
                   "median_after_pretrial": [((nat.get(str(y)) or {}).get("c5") or {}).get("median_after_pretrial") for y in years],
                   "pending_over_3y": [((nat.get(str(y)) or {}).get("c6") or {}).get("over_3y") for y in years], "pending_over_3y_pct": national_over3_pct,
                   "judgeships": [((nat.get(str(y)) or {}).get("x1a") or {}).get("judgeships") for y in years],
@@ -386,6 +442,7 @@ def main(dry_run=False):
     failed = [c for c in checks if not c["ok"]]
     flags_all = [{"court_id": d, "name": stats_by_id[d]["name"], **f} for d in district_ids for f in stats_by_id[d]["flags"] + stats_by_id[d]["time_flags"]]
     summary = {
+        "benchmark_concentration": concentration,
         "years": years, "latest": latest, "series": nat_series, "rules": RULES, "rules_short": RULES_SHORT, "flags": flags_all,
         "pl_parts_labels": {out_key: label for _, out_key, label in PL_PARTS}, "composition_labels": C3_LABELS,
         "mdl_correlation": {"spearman_rho": rho, "n": n_pairs, "x": f"District product liability filings, FY{latest} (Table C-11)",
@@ -399,6 +456,8 @@ def main(dry_run=False):
             "FY2014-FY2016 values are read from the published PDF editions; FY2017-FY2025 from the Excel editions. Rows whose printed arithmetic does not reconcile are withheld (Not recorded).",
             "Judgeships are authorized judgeships from Table X-1A (territorial courts are not included in that table).",
             "Two published cells do not reconcile and are withheld: FY2015 Table C-11 prints a truncated 'Other' cell for N.D. Illinois ('2,60'), so that row's product liability components are withheld while its total (2,690) is confirmed by the FY2016 edition's prior-year column; FY2017 Table C-3 leaves the Eighth Circuit private 'All Other' cell blank, so that circuit row is withheld and circuit composition is summed from its districts.",
+            "Time-to-disposition and pending-age benchmarks: the pooled national median (Table C-5 Total row) and pooled 3+ year share (Table C-6 Total row) are dominated in some years by a single MDL docket (see benchmark_concentration), so flags compare each district with the median of the district values for the same fiscal year; both figures are shown.",
+            "A cell printed as a dash in the source is stored as null and listed under 'dash' with its fiscal years; the page shows it as a dash, as printed.",
             "Courts of appeals: Table B-7 diversity personal injury/product liability appeals are read from the Excel editions (FY2017-FY2025); FY2014-FY2016 are Not recorded.",
         ],
         "retrieved_at": min((s.get("retrieved_at") or TODAY) for s in data["sources"])[:10],

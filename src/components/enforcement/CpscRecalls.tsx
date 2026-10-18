@@ -81,6 +81,8 @@ function CpscBody({ data }: { data: CpscAnalytics }) {
   const priorMean = prior.reduce((a, b) => a + b, 0) / 3;
   const total = years.reduce((a, y) => a + y.recalls, 0);
   const deaths = years.reduce((a, y) => a + y.deathMentions, 0);
+  const background = years.reduce((a, y) => a + y.deathBackground, 0);
+  const foreignOnly = years.reduce((a, y) => a + y.deathForeignOnly, 0);
   const injuries = years.reduce((a, y) => a + y.injuryMentions, 0);
   const standard = years.reduce((a, y) => a + y.standardViolation, 0);
   const rising = useMemo(() => risingHazards(data.hazards, latest), [data.hazards, latest]);
@@ -119,6 +121,7 @@ function CpscBody({ data }: { data: CpscAnalytics }) {
   const mentionRows = years.map((y) => ({
     year: String(y.year),
     death: y.deathMentions,
+    background: y.deathBackground,
     injury: y.injuryMentions,
   }));
   const chinaShare = latestYear ? countryShare(latestYear, "China") : null;
@@ -154,23 +157,22 @@ function CpscBody({ data }: { data: CpscAnalytics }) {
           note={`prior 3-year mean ${priorMean.toFixed(0)}`}
         />
         <Kpi
-          label={`Made in China · ${latest}`}
+          label={`China share · ${latest}`}
           value={pct(chinaShare)}
           note="of recalls with a recorded country"
         />
         <Kpi
-          label="Injury text mentions a death"
+          label="Death mentions"
           value={count(deaths)}
-          note={total ? `${pct(deaths / total, 1)} of recalls` : undefined}
-          tone="destructive"
+          note={`product-related; ${count(background)} background excluded; ${count(foreignOnly)} outside U.S. only`}
         />
         <Kpi
-          label="Injury text mentions injuries"
+          label="Injury mentions"
           value={count(injuries)}
           note={total ? `${pct(injuries / total, 0)} of recalls` : undefined}
         />
         <Kpi
-          label="Cites a standard violation"
+          label="Standard violations"
           value={count(standard)}
           note={total ? `${pct(standard / total, 0)} of recalls` : undefined}
         />
@@ -217,7 +219,8 @@ function CpscBody({ data }: { data: CpscAnalytics }) {
                   </span>
                 </span>
                 <span className="block text-[10.5px] text-muted-foreground">
-                  {count(h.windowDeaths)} with a death mention
+                  {count(h.windowDeaths)} product-related death mention
+                  {h.windowDeaths === 1 ? "" : "s"}
                   {rising.some((r) => r.key === h.key) ? (
                     <>
                       {" "}
@@ -304,8 +307,15 @@ function CpscBody({ data }: { data: CpscAnalytics }) {
         </Panel>
         <Panel
           title="Injury and death mentions"
-          subtitle={`Recalls per year whose injury statement mentions a death, or an injury, ${from}–${latest}`}
-          footnote="Text mentions after removing explicitly negated phrases (e.g. “no reports of injury or death”). Some statements cite background statistics; a mention is not a verified count of deaths caused by the product."
+          subtitle={`Recalls per year by what the injury statement mentions, ${from}–${latest}; categories overlap`}
+          footnote={
+            <span title={data.deathRule}>
+              Text mentions, not verified counts. “Background” = statements whose only death
+              references are category statistics, other firms’ products, hazard wording or animals
+              (e.g. “None reported. CPSC is aware of seven deaths involving hazardous magnets”);
+              hover for the full rule.
+            </span>
+          }
         >
           <div className="h-64 px-1 pb-1 pt-2">
             <ResponsiveContainer width="100%" height="100%">
@@ -335,8 +345,14 @@ function CpscBody({ data }: { data: CpscAnalytics }) {
                 />
                 <Bar
                   dataKey="death"
-                  name="Mentions a death"
-                  fill="var(--destructive)"
+                  name="Product-related death"
+                  fill={FDA_COLORS[2]}
+                  isAnimationActive={false}
+                />
+                <Bar
+                  dataKey="background"
+                  name="Background death mention"
+                  fill="var(--border)"
                   isAnimationActive={false}
                 />
               </BarChart>
@@ -453,7 +469,7 @@ function CpscBody({ data }: { data: CpscAnalytics }) {
                       <span className="block text-[10.5px] text-muted-foreground">
                         {f.recent24m} in 24 months · {f.recalls} total
                         {f.deathMentions
-                          ? ` · ${f.deathMentions} death mention${f.deathMentions === 1 ? "" : "s"}`
+                          ? ` · ${f.deathMentions} product-related death mention${f.deathMentions === 1 ? "" : "s"}`
                           : ""}{" "}
                         · {f.topHazards.map(label).slice(0, 2).join(", ")}
                       </span>
@@ -467,7 +483,7 @@ function CpscBody({ data }: { data: CpscAnalytics }) {
           </div>
         </Panel>
         <Panel
-          title="Latest recalls whose injury statement mentions a death"
+          title="Latest recalls with a product-related death mention"
           subtitle={`${count(data.deathRecalls.length)} most recent, newest first`}
           footnote="Titles open the stored record; recall numbers open the CPSC notice."
         >
@@ -512,6 +528,11 @@ function CpscBody({ data }: { data: CpscAnalytics }) {
                           )}
                           {r.firms.length ? ` · ${r.firms.join("; ")}` : ""}
                         </span>
+                        {r.foreignOnly ? (
+                          <span className="mt-0.5 inline-block rounded border border-border px-1 text-[10px] text-muted-foreground">
+                            Deaths reported outside the U.S. only
+                          </span>
+                        ) : null}
                       </td>
                       <td className="hidden max-w-96 px-2 py-1.5 text-muted-foreground md:table-cell">
                         <span className="line-clamp-3">{r.injuries || "Not recorded"}</span>
@@ -522,7 +543,7 @@ function CpscBody({ data }: { data: CpscAnalytics }) {
               </table>
             </div>
           ) : (
-            <StateNote>No recall has an injury statement mentioning a death.</StateNote>
+            <StateNote>No recall has a product-related death mention.</StateNote>
           )}
         </Panel>
       </div>

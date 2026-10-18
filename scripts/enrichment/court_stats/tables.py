@@ -55,6 +55,15 @@ def circuit_id(label):
     return None
 
 
+DASH = "-"
+DASHES = ("-", "--", "—", "–")
+
+
+def is_dash(value):
+    """True for a cell printed as a dash (the source's mark for zero, not applicable or not computed)."""
+    return isinstance(value, str) and value.strip() in DASHES
+
+
 def to_number(value):
     """Numbers stay numbers; published dashes, blanks and text become None."""
     if value is None:
