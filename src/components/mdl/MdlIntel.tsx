@@ -3,11 +3,48 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle } from "lucide-react";
 import { getMdlIntel, type MdlIntel as Data } from "@/lib/external/mdlIntel.functions";
 import { courtPageYield } from "@/lib/external/mdlIntelView";
+import { CoverageBar } from "@/components/analysis/CoverageBar";
+import { HowToRead, type Measure } from "@/components/analysis/HowToRead";
+import { KeyTakeaways } from "@/components/analysis/KeyTakeaways";
 import { CentralizationTrends } from "./CentralizationTrends";
 import { Concentration } from "./Concentration";
 import { CourtPageIndex } from "./CourtPageIndex";
 import { HearingOutcomes } from "./HearingOutcomes";
 import { n, pct, signed, title } from "./intelFormat";
+import { coverageSegments, intelTakeaways } from "./intelTakeaways";
+
+const INTEL_MEASURES: Measure[] = [
+  {
+    term: "Pending MDLs and actions",
+    means: "MDLs on the JPML pending report and the individual actions (cases) inside them.",
+    caveat: "Actions count docket volume, not the number of plaintiffs or the size of claims.",
+  },
+  {
+    term: "Grant share",
+    means:
+      "Granted ÷ (granted + denied, moot or withdrawn), by calendar year, as the Panel prints it.",
+    caveat:
+      "Merits grant share = granted ÷ (granted + denied). Small yearly counts move the share a lot.",
+  },
+  {
+    term: "HHI",
+    means:
+      "Sum of squared percentage shares, 0 to 10,000, across districts or judges, weighted by pending actions.",
+    caveat: "It summarises concentration only.",
+  },
+  {
+    term: "Orders extracted",
+    means: "The extractor read at least one order listed on an official court page for that MDL.",
+    caveat:
+      "A court page can list orders the extractor did not read; this counts what was read, not what exists.",
+  },
+  {
+    term: "Fast growth, no bellwether",
+    means:
+      "Pending actions up 25% or more in 12 months and no bellwether or trial statement on the court page.",
+    caveat: "A lead to review, not a finding.",
+  },
+];
 
 export const mdlIntelQuery = {
   queryKey: ["mdl-intel"],
@@ -49,6 +86,21 @@ function Dashboard({ data }: { data: Data }) {
   const nothing = yields.filter((y) => y === "nothing").length;
   const many = (count: number, one: string, more: string) =>
     `${n(count)} ${count === 1 ? one : more}`;
+  const takeaways = intelTakeaways({
+    lastYear: last?.year ?? null,
+    grantSharePct: last?.rateAll ?? null,
+    tenYearGrantMedianPct: k.tenYearGrantMedian,
+    motionsFiled: last?.motionsFiled ?? null,
+    motionsGranted: last?.motionsGranted ?? null,
+    top5DistrictSharePct: data.concentration.top5DistrictShare,
+    hhiDistrict: data.concentration.hhiDistrictPending,
+    transferred: transferred.length,
+    withOrders,
+    withPage,
+    flagged: k.flagged,
+    bellwetherQuoted: k.plBellwetherQuoted,
+    plMdls: k.plMdls,
+  });
   return (
     <div className="space-y-6">
       <p className="text-xs text-muted-foreground">
@@ -88,29 +140,27 @@ function Dashboard({ data }: { data: Data }) {
           tone={k.flagged ? "warn" : undefined}
         />
       </div>
+      <KeyTakeaways
+        items={takeaways}
+        scope={`JPML report ${data.asOf} · transferred products-liability MDLs where stated`}
+      />
       {noPage || statementsOnly || nothing ? (
-        <Notice>
-          Partial coverage:{" "}
-          {[
-            noPage
-              ? `${n(noPage)} of ${n(transferred.length)} transferred products-liability MDLs have no official court page ${yields.includes("failed") ? "located and fetched" : "located"}`
-              : null,
-            statementsOnly
-              ? `for ${many(statementsOnly, "MDL", "MDLs")} no order could be extracted from the court pages, but quoted statements or leadership were`
-              : null,
-            nothing
-              ? `for ${many(nothing, "MDL", "MDLs")} nothing could be extracted from the fetched court pages`
-              : null,
-          ]
-            .filter(Boolean)
-            .join("; ")}
-          . Rows without extracted orders show the JPML facts and any quoted statements; the linked
-          court page itself may list orders the extractor did not read.{" "}
-          {k.plNotTransferred
-            ? `${many(k.plNotTransferred, "further products-liability docket", "further products-liability dockets")} on the 10/1/2026 report had not been transferred yet and ${k.plNotTransferred === 1 ? "is" : "are"} listed separately.`
-            : null}
-        </Notice>
+        <CoverageBar
+          title="Court-page coverage, transferred products-liability MDLs"
+          total={transferred.length}
+          segments={coverageSegments(yields)}
+          caption={
+            <>
+              Rows without extracted orders show the JPML facts and any quoted statements; the
+              linked court page itself may list orders the extractor did not read.{" "}
+              {k.plNotTransferred
+                ? `${many(k.plNotTransferred, "further products-liability docket", "further products-liability dockets")} on the 10/1/2026 report had not been transferred yet and ${k.plNotTransferred === 1 ? "is" : "are"} listed separately.`
+                : null}
+            </>
+          }
+        />
       ) : null}
+      <HowToRead measures={INTEL_MEASURES} />
 
       <CentralizationTrends data={data} />
       <HearingOutcomes data={data} />

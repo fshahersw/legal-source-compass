@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ExternalLink, ShieldQuestion } from "lucide-react";
+import { HowToRead } from "@/components/analysis/HowToRead";
 import type {
   DisclosureCoverage,
   DisclosureMatch,
@@ -331,17 +332,22 @@ export function DisclosureReview({
           <MatchTable matches={exact} />
         </>
       ) : (
-        <p className="border-b border-border/70 px-3 py-3 text-xs">
-          <span className="font-medium">No exact name matches.</span>{" "}
-          <span className="text-muted-foreground">
-            None of the {fmtInt(lines)} extracted investment lines in the{" "}
-            {years.length ? `${years[0]}–${years.at(-1)}` : ""} reports equals, after normalisation,
-            a company with explicit party evidence in the same judge’s products-liability MDL. This
-            is a statement about the checked reports only: the CourtListener bulk files hold no
-            report later than {years.at(-1) ?? "the years shown"} for these judges, so current
-            holdings are not covered.
-          </span>
-        </p>
+        <div className="space-y-0.5 border-b border-border/70 px-3 py-2.5 text-xs">
+          <p>
+            <span className="font-medium">No exact name matches.</span>{" "}
+            <span className="text-muted-foreground">
+              None of the {fmtInt(lines)} extracted investment lines in the{" "}
+              {years.length ? `${years[0]}–${years.at(-1)}` : ""} reports equals, after
+              normalisation, a company with explicit party evidence in the same judge’s
+              products-liability MDL.
+            </span>
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            Scope: the checked reports only. The CourtListener bulk files hold no report later than{" "}
+            {years.at(-1) ?? "the years shown"} for these judges, so current holdings are not
+            covered.
+          </p>
+        </div>
       )}
       {near.length ? (
         <>
@@ -361,36 +367,40 @@ export function DisclosureReview({
         </p>
       ) : null}
       <CoverageTable coverage={coverage} />
-      <div className="space-y-1 border-t border-border/70 px-3 py-2 text-[11px] leading-relaxed text-muted-foreground">
-        <p>
-          <span className="font-medium text-foreground">Disclosures.</span> CourtListener bulk
-          financial-disclosure files
-          {summary?.clBulkDate ? ` (${summary.clBulkDate})` : ""}: the {summary?.yearsPerJudge ?? 3}{" "}
-          most recent report years per judge, every extracted Part VII investment row. Line =
-          position of the row among the report’s extracted rows; open the PDF to confirm. Judges are
-          linked to CourtListener by the FJC identifier, or by the MDL master docket’s assigned
-          judge when that is the only link and surnames agree.
-        </p>
-        <p>
-          <span className="font-medium text-foreground">Party evidence.</span> A company is compared
-          only when it is named in the JPML caption, listed as a defendant on the master docket’s
-          CourtListener party list, or{" "}
-          {summary?.secLinksUsed
-            ? "linked by its own SEC filing that cites the MDL number or caption and describes claims against it"
-            : "(once published) linked by its own SEC filing citing the MDL"}
-          . Normalisation: case, punctuation, parenthetical notes, “&”/“and”, corporate suffixes and
-          security words are ignored; nothing else is.
-          {excluded
-            ? ` ${fmtInt(excluded)} docket party entries that are not companies (defendant placeholders, governments, insurers, unnamed parties) are not compared.`
-            : ""}
-        </p>
-        <p>
-          <span className="font-medium text-foreground">Tiers.</span> Exact match: normalised names
-          are equal. Near match — review: the investment equals a reviewed alias of the party (same
-          SEC registrant, or a reviewed parent such as Medtronic for Covidien from 2015), the SEC
-          ticker of the party’s registrant, or begins with a party name of two or more words.
-          Neither tier is a finding.
-        </p>
+      <div className="border-t border-border/70 p-3">
+        <HowToRead
+          title="How the comparison works"
+          measures={[
+            {
+              term: "Disclosures",
+              means: `CourtListener bulk financial-disclosure files${summary?.clBulkDate ? ` (${summary.clBulkDate})` : ""}: the ${summary?.yearsPerJudge ?? 3} most recent report years per judge, every extracted Part VII investment row.`,
+              caveat:
+                "Line = position of the row among the report’s extracted rows; open the PDF to confirm. Judges are linked to CourtListener by the FJC identifier, or by the MDL master docket’s assigned judge when that is the only link and surnames agree.",
+            },
+            {
+              term: "Party evidence",
+              means: `A company is compared only when it is named in the JPML caption, listed as a defendant on the master docket’s CourtListener party list, or ${
+                summary?.secLinksUsed
+                  ? "linked by its own SEC filing that cites the MDL number or caption and describes claims against it"
+                  : "(once published) linked by its own SEC filing citing the MDL"
+              }. Normalisation ignores case, punctuation, parenthetical notes, “&”/“and”, corporate suffixes and security words; nothing else.`,
+              caveat: excluded
+                ? `${fmtInt(excluded)} docket party entries that are not companies (defendant placeholders, governments, insurers, unnamed parties) are not compared.`
+                : undefined,
+            },
+            {
+              term: "Exact match",
+              means: "The normalised investment name equals the normalised party name.",
+              caveat: "Not a finding.",
+            },
+            {
+              term: "Near match — review",
+              means:
+                "The investment equals a reviewed alias of the party (same SEC registrant, or a reviewed parent such as Medtronic for Covidien from 2015), the SEC ticker of the party’s registrant, or begins with a party name of two or more words.",
+              caveat: "Not a finding.",
+            },
+          ]}
+        />
       </div>
     </section>
   );

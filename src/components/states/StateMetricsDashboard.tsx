@@ -3,6 +3,8 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, ExternalLink, Info, MapPinned, X } from "lucide-react";
 import { ChartCard } from "@/components/fda-analytics/FdaCharts";
+import { HowToRead, type Measure } from "@/components/analysis/HowToRead";
+import { KeyTakeaways } from "@/components/analysis/KeyTakeaways";
 import { StateMark } from "@/components/corpus/EntityArtwork";
 import { useCorpus } from "@/lib/corpus/store";
 import {
@@ -15,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { HistogramChart, SmallMultiples, StateScatter, TrendChart } from "./StateCharts";
 import { StateChoropleth } from "./StateChoropleth";
 import { StateRankingTable } from "./StateRankingTable";
+import { stateMetricTakeaways } from "./stateMetricsTakeaways";
 import {
   bandYears,
   changeUnitFor,
@@ -50,6 +53,39 @@ const PRESETS: { label: string; x: string; y: string }[] = [
 ];
 const isVsrr = (m: MetricDef) => m.sources.some((s) => s.url.includes("xkb8-kh2a"));
 const isTotal = (m: MetricDef) => m.format === "int" || m.format === "money_m";
+const STATE_MEASURES: Measure[] = [
+  {
+    term: "Rank",
+    means:
+      "1 is the highest value among the jurisdictions that report the metric; ties share the best rank.",
+  },
+  {
+    term: "z and outliers",
+    means: `Distance from the mean of the reporting jurisdictions in population standard deviations; |z| > ${OUTLIER_Z} is marked High or Low.`,
+    caveat: "A flag says a value is unusual, not that it is wrong or why it is unusual.",
+  },
+  {
+    term: "5-yr change",
+    means:
+      "The latest year compared with five years earlier: relative change for most metrics, percentage points for percentage metrics.",
+    caveat: "Not shown for a partial year.",
+  },
+  {
+    term: "Totals versus rates",
+    means:
+      "Totals scale with population; per-capita and rate metrics are comparable across states of different size.",
+  },
+  {
+    term: "Not recorded",
+    means:
+      "A jurisdiction the source does not report for that year is hatched on the map and reads Not recorded, never a guessed value.",
+  },
+  {
+    term: "Correlation (r)",
+    means: "Pearson r over states reporting both metrics in the latest common full year.",
+    caveat: "Descriptive only; it does not show one metric causes the other.",
+  },
+];
 const selectClass =
   "h-8 min-w-0 rounded-md border border-input bg-surface px-2 text-xs focus-visible:outline-2 focus-visible:outline-ring";
 
@@ -284,6 +320,14 @@ function Dashboard({
     return rows.sort((a, b) => Math.abs(b.z) - Math.abs(a.z));
   }, [data.states, byKey]);
   const select = (usps: string) => onSearch({ state: search.state === usps ? undefined : usps });
+  const takeaways = stateMetricTakeaways({
+    short: def.short,
+    year,
+    format: def.format,
+    ranked,
+    jurisdictions: data.states.length,
+    partial: !!partial,
+  });
   const comparison =
     def.format === "int" || def.format === "money_m"
       ? "Totals scale with population; use a per-capita metric to compare states fairly."
@@ -390,6 +434,12 @@ function Dashboard({
         />
       </div>
 
+      <KeyTakeaways
+        items={takeaways}
+        scope={`${def.short}, ${year}${partial ? " (partial year)" : ""} · changes with the metric and year above`}
+      />
+      <HowToRead measures={STATE_MEASURES} />
+
       {selectedProfile ? (
         <div className="flex flex-wrap items-center gap-3 rounded-lg border border-primary/40 bg-primary/5 px-3 py-2 text-xs">
           <StateMark state={selectedProfile.usps} className="size-9" />
@@ -426,7 +476,11 @@ function Dashboard({
       ) : null}
 
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] xl:grid-cols-[minmax(0,1fr)_minmax(0,25rem)]">
-        <section className="min-w-0 space-y-1" aria-label={`Map of ${def.short}`}>
+        <section
+          id="state-map"
+          className="min-w-0 scroll-mt-4 space-y-1 focus:outline-none"
+          aria-label={`Map of ${def.short}`}
+        >
           {corpus.geo ? (
             <StateChoropleth
               geo={corpus.geo}
@@ -450,6 +504,7 @@ function Dashboard({
           </p>
         </section>
         <ChartCard
+          id="state-ranking"
           title={`Ranking · ${def.short}, ${year}`}
           subtitle={`Rank 1 = highest. High / Low = outlier, |z| > ${OUTLIER_Z} (population SD across ${ranked.length} jurisdictions).`}
           footnote={

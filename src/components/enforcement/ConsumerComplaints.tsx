@@ -21,6 +21,9 @@ import {
   getConsumerComplaints,
   type ConsumerComplaints as ConsumerData,
 } from "@/lib/external/consumerComplaints.functions";
+import { HowToRead, type Measure } from "@/components/analysis/HowToRead";
+import { KeyTakeaways } from "@/components/analysis/KeyTakeaways";
+import { consumerTakeaways } from "./enforcementTakeaways";
 import { numTick } from "./listDisplay";
 import {
   axisTick,
@@ -79,6 +82,46 @@ export function ConsumerComplaints() {
   return <Body data={q.data} />;
 }
 
+const CFPB_MEASURES: Measure[] = [
+  {
+    term: "Complaint",
+    means:
+      "A consumer submission to the CFPB Consumer Complaint Database, counted by the date the CFPB received it.",
+    caveat:
+      "Not a finding of wrongdoing. A complaint is published after the company responds or after 15 days.",
+  },
+  {
+    term: "Year in progress (*)",
+    means:
+      "The database starts 2011-12-01 and recent weeks are not yet published, so the current year is understated.",
+    caveat: "A year in progress is left out of year-over-year change.",
+  },
+  {
+    term: "Per 100,000 residents",
+    means:
+      "Complaints from the consumer's mailing-address state divided by the Census July 1 resident-population estimate, times 100,000.",
+    caveat:
+      "A rate compares states of different size; a count does not. Only the 50 states and DC are ranked.",
+  },
+  {
+    term: "Rise since 2022",
+    means: "The percent change in a state's per-capita rate from 2022 to 2025.",
+    caveat: "A small base can produce a large percentage.",
+  },
+  {
+    term: "Timely and relief rates",
+    means:
+      "Timely = Yes ÷ (Yes + No) company responses. Relief = complaints closed with monetary or non-monetary relief ÷ complaints with a company response.",
+    caveat:
+      "Both describe the company's recorded response, not whether the complaint was justified.",
+  },
+  {
+    term: "Company names",
+    means: "Exactly as recorded by the CFPB; spelling variants of one company are not merged.",
+    caveat: "Names are not matched to SEC company profiles in this view.",
+  },
+];
+
 type MapMetric = "per100k" | "rise";
 const METRIC_LABEL: Record<MapMetric, string> = {
   per100k: "complaints per 100,000 residents, 2025",
@@ -116,6 +159,36 @@ function Body({ data }: { data: ConsumerData }) {
     ? data.topCompanies
     : data.topCompanies.slice(0, companyLimit);
   const reportLimit = 8;
+  const takeaways = consumerTakeaways({
+    lastYear: lastComplete
+      ? {
+          year: lastComplete.year,
+          complaints: lastComplete.complaints,
+          creditReporting: lastComplete.creditReporting,
+        }
+      : null,
+    previous: previous
+      ? {
+          year: previous.year,
+          complaints: previous.complaints,
+          creditReporting: previous.creditReporting,
+        }
+      : null,
+    topState: data.perCapitaRanking[0]
+      ? { name: data.perCapitaRanking[0].name, value: data.perCapitaRanking[0].value }
+      : null,
+    perCapitaLabel: METRIC_LABEL.per100k,
+    riseState: data.riseRanking[0]
+      ? {
+          name: data.riseRanking[0].name,
+          value: data.riseRanking[0].value,
+          label: "rise in the per-capita complaint rate from 2022 to 2025",
+        }
+      : null,
+    topCompanies: data.topCompanies.map((c) => ({ company: c.company, complaints: c.complaints })),
+    totalComplaints: data.complaints,
+    since: data.from,
+  });
   const shownReports = allReports ? data.reports.slice(0, 30) : data.reports.slice(0, reportLimit);
 
   return (
@@ -163,7 +236,11 @@ function Body({ data }: { data: ConsumerData }) {
         />
       </div>
 
+      <KeyTakeaways items={takeaways} scope={`${data.from} to ${data.to} · all complaints`} />
+      <HowToRead measures={CFPB_MEASURES} />
+
       <Panel
+        id="cfpb-years"
         title="Complaints per year"
         subtitle="Credit reporting versus every other product"
         footnote={
@@ -324,6 +401,7 @@ function Body({ data }: { data: ConsumerData }) {
       </div>
 
       <Panel
+        id="cfpb-states"
         title="Consumer complaints by state"
         subtitle={`Shading and ranking: ${METRIC_LABEL[metric]}`}
         actions={
@@ -408,6 +486,7 @@ function Body({ data }: { data: ConsumerData }) {
       </Panel>
 
       <Panel
+        id="cfpb-companies-panel"
         title="Most-named companies"
         subtitle="By complaints received over all history; exact recorded company names"
         footnote={

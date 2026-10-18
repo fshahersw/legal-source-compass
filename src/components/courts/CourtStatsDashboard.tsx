@@ -17,6 +17,9 @@ import {
 import { ArrowDown, ArrowUp, Flag, Info, Search } from "lucide-react";
 import { ChartCard } from "@/components/fda-analytics/FdaCharts";
 import { FDA_COLORS } from "@/components/fda-analytics/chartView";
+import { HowToRead, type Measure } from "@/components/analysis/HowToRead";
+import { KeyTakeaways } from "@/components/analysis/KeyTakeaways";
+import { MoreToggle } from "@/components/enforcement/parts";
 import { Input } from "@/components/ui/input";
 import { getCourtStatsOverview } from "@/lib/external/courtStats.functions";
 import { cn } from "@/lib/utils";
@@ -47,6 +50,56 @@ import {
   tooltipStyle,
 } from "./courtStatsData";
 import { Kpi, Notice, ScrollX, SectionTitle, Spark } from "./CourtStatsParts";
+import { courtTakeaways } from "./courtTakeaways";
+
+const COURT_MEASURES: Measure[] = [
+  {
+    term: "Fiscal year (FY)",
+    means: "The 12-month period ending September 30, as the Judicial Business tables publish it.",
+  },
+  {
+    term: "Product liability filings",
+    means:
+      "Civil cases commenced with a product-liability nature of suit (Table C-11), counted where they are filed, including cases filed directly in or transferred to an MDL court.",
+    caveat:
+      "Large swings follow MDL dockets, so a district's count reflects where dockets are assigned, not local claim rates.",
+  },
+  {
+    term: "PL share of civil filings",
+    means:
+      "Product liability filings divided by all district civil filings in the same fiscal year (Tables C-11 and C).",
+  },
+  {
+    term: "Top-5 share and HHI",
+    means:
+      "Share of product liability filings in the five districts with the most; HHI is the sum of squared district shares, 0 to 10,000, so higher means filings sit in fewer districts.",
+  },
+  {
+    term: "Median months to disposition",
+    means:
+      "Table C-5. The pooled national figure is the median across all terminations; the median district is the middle of the 94 district medians.",
+    caveat:
+      "A single MDL docket can dominate the pooled figure in some years, so flags compare each district with the median of district values.",
+  },
+  {
+    term: "Pending 3+ years",
+    means:
+      "Table C-6: the share of pending civil cases that are three years old or more, pooled nationally and as the median district share.",
+    caveat: "Same pooled-versus-median-district caution as disposition time.",
+  },
+  {
+    term: "Outlier flags",
+    means:
+      "Deterministic rules applied to published values; the rules are stated in each flag card.",
+    caveat: "A flag is a lead to review, not a finding.",
+  },
+  {
+    term: "Dash or Not recorded",
+    means:
+      "A cell printed as a dash in the source is shown as a dash; a value the source does not publish reads Not recorded.",
+    caveat: "A dash can mean zero, not applicable or not computed; the page does not pick one.",
+  },
+];
 
 export const courtStatsQuery = {
   queryKey: ["court-stats-overview"],
@@ -100,14 +153,28 @@ function Dashboard({ data }: { data: CourtStatsOverview }) {
     nat.concentration.c6[yi] ?? null,
     `${fy(year)} civil cases pending three years or more (Table C-6)`,
   );
+  const takeaways = courtTakeaways({
+    yearLabel: fy(year),
+    priorLabel: yi > 0 ? fy(years[yi - 1]!) : null,
+    plFilings: pl,
+    plFilingsPrior: yi > 0 ? at(s["pl_total"], yi - 1) : null,
+    plSharePct: at(s["pl_share_pct"], yi),
+    plShareSeries: s["pl_share_pct"] ?? [],
+    top5SharePct: at(s["pl_top5_share_pct"], yi),
+    hhi: at(s["pl_hhi"], yi),
+    medianMonthsNational: at(s["median_total"], yi),
+    medianMonthsDistrict: at(s["district_median_total"], yi),
+    nationalSkewed: c5Note !== null,
+    flagCount: flagged.length,
+    flaggedDistricts: new Set(flagged.map((x) => x.d.id)).size,
+  });
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-3">
         <p className="mr-auto max-w-3xl text-xs leading-relaxed text-muted-foreground">
-          Read from the official Judicial Business data tables (12-month periods ending September
-          30): C-11 product liability by nature of suit, C and C-3 civil filings, C-5 median times,
-          C-6 pending age, X-1A judgeships, B, B-4 and B-7 courts of appeals. Every value is copied
-          as published; derived shares and rates use the same table year.{" "}
+          Official Judicial Business tables, 12-month periods ending September 30. Every value is
+          copied as published; derived shares and rates use the same table year. The tables used are
+          listed under Sources and method.{" "}
           {nat.checks.total !== null
             ? `${fmtNum(nat.checks.passed)} of ${fmtNum(nat.checks.total)} arithmetic checks passed${failed ? `; ${failed} published cells that do not reconcile are withheld` : ""}.`
             : null}
@@ -165,6 +232,12 @@ function Dashboard({ data }: { data: CourtStatsOverview }) {
         />
       </div>
 
+      <KeyTakeaways
+        items={takeaways}
+        scope={`${fy(year)} · national tables; the fiscal-year selector above changes these`}
+      />
+      <HowToRead measures={COURT_MEASURES} />
+
       <div className="grid gap-3 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <NosChart data={data} yi={yi} />
         <PharmaChart data={data} />
@@ -172,6 +245,7 @@ function Dashboard({ data }: { data: CourtStatsOverview }) {
 
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <SmallTrend
+          id="court-pl-share"
           title="Product liability share of civil filings"
           subtitle="Tables C-11 and C · line is the FY2014-FY2025 median"
           years={years}
@@ -180,6 +254,7 @@ function Dashboard({ data }: { data: CourtStatsOverview }) {
           yi={yi}
         />
         <SmallTrend
+          id="court-top5"
           title="Top 5 districts' share of PL filings"
           subtitle="Concentration across 94 districts · Table C-11"
           years={years}
@@ -188,6 +263,7 @@ function Dashboard({ data }: { data: CourtStatsOverview }) {
           yi={yi}
         />
         <SmallTrend
+          id="court-disposition"
           title="Median months, filing to disposition"
           subtitle="Table C-5 · pooled national vs median district"
           years={years}
@@ -251,6 +327,7 @@ function NosChart({ data, yi }: { data: CourtStatsOverview; yi: number }) {
   });
   return (
     <ChartCard
+      id="court-nos"
       title="National product liability filings by nature of suit"
       subtitle={`Table C-11, U.S. district courts, FY${data.years[0]}-FY${data.years.at(-1)} · selected ${fy(data.years[yi]!)}`}
       footnote="Large swings track MDL dockets: cases filed directly in, or transferred to, an MDL court count as filings there."
@@ -377,7 +454,9 @@ function SmallTrend({
   digits = 1,
   yi,
   footnote,
+  id,
 }: {
+  id?: string | undefined;
   title: string;
   subtitle: string;
   years: number[];
@@ -397,6 +476,7 @@ function SmallTrend({
   const mid = second ? null : median(values ?? []);
   return (
     <ChartCard
+      id={id}
       title={title}
       subtitle={subtitle}
       footnote={footnote ? <span className="text-warning-foreground">{footnote}</span> : undefined}
@@ -475,7 +555,11 @@ function FlagsPanel({
   const rules = data.national.rules;
   const short = (r: FlagRule) => data.national.rulesShort[r] ?? RULE_FALLBACK_SHORT[r];
   return (
-    <section className="rounded-md border border-border bg-surface" aria-label="Outlier flags">
+    <section
+      id="court-flags"
+      className="scroll-mt-4 rounded-md border border-border bg-surface focus:outline-none"
+      aria-label="Outlier flags"
+    >
       <SectionTitle
         title={`Outlier flags, ${fy(year)}`}
         subtitle={`${flagged.length} flags across ${new Set(flagged.map((x) => x.d.id)).size} districts. Each flag is a deterministic rule on published values, a lead to review rather than a finding.`}
@@ -1251,8 +1335,11 @@ const SOURCE_TABLES: [string, string][] = [
   ["B-7", "Courts of appeals: civil and criminal appeals commenced, by nature of proceeding"],
 ];
 
+const NOTE_LIMIT = 4;
+
 function SourcesPanel({ data, year }: { data: CourtStatsOverview; year: number }) {
   const n = data.national;
+  const [allNotes, setAllNotes] = useState(false);
   const src = (t: string) => n.sources[t]?.[String(year)];
   const c2a = Object.entries(n.sources["C-2A"] ?? {}).sort(([a], [b]) => a.localeCompare(b));
   const corr = n.mdlCorrelation;
@@ -1337,12 +1424,25 @@ function SourcesPanel({ data, year }: { data: CourtStatsOverview; year: number }
           ) : null}
         </div>
         <div>
-          <h4 className="mb-1 font-semibold">Notes</h4>
-          <ul className="list-disc space-y-1 pl-4 leading-relaxed text-muted-foreground">
-            {n.notes.map((note) => (
+          <h4 className="mb-1 font-semibold">
+            Notes <span className="font-normal text-muted-foreground">({n.notes.length})</span>
+          </h4>
+          <ul
+            id="court-notes"
+            className="list-disc space-y-1 pl-4 leading-relaxed text-muted-foreground"
+          >
+            {(allNotes ? n.notes : n.notes.slice(0, NOTE_LIMIT)).map((note) => (
               <li key={note}>{note}</li>
             ))}
           </ul>
+          <MoreToggle
+            total={n.notes.length}
+            limit={NOTE_LIMIT}
+            expanded={allNotes}
+            onToggle={() => setAllNotes((v) => !v)}
+            controls="court-notes"
+            noun="notes"
+          />
           {n.checks.failed.length ? (
             <details className="mt-2">
               <summary className="cursor-pointer text-muted-foreground">

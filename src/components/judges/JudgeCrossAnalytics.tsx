@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ChartCard } from "@/components/fda-analytics/FdaCharts";
+import { HowToRead, type Measure } from "@/components/analysis/HowToRead";
+import { KeyTakeaways } from "@/components/analysis/KeyTakeaways";
 import type { JudgeCrossAnalytics as Data } from "@/lib/external/judgeCross.functions";
 import { judgeCrossQuery } from "./judgeCrossQuery";
 import {
@@ -24,6 +26,7 @@ import {
   fmtPct,
   type JudgeFilter,
 } from "./judgeCrossView";
+import { judgeTakeaways } from "./judgeTakeaways";
 
 const FJC =
   "https://www.fjc.gov/history/judges/biographical-directory-article-iii-federal-judges-export";
@@ -69,6 +72,56 @@ function SelectFilter({
     </label>
   );
 }
+
+const JUDGE_MEASURES: Measure[] = [
+  {
+    term: "Pending MDLs and actions",
+    means:
+      "MDLs and the individual actions (cases) inside them, as printed in the JPML pending-MDL report.",
+    caveat: "Actions measure docket volume assigned to a judge, not the judge's whole caseload.",
+  },
+  {
+    term: "Top 10 judges' share",
+    means: "Share of all pending MDL actions held by the ten judges holding the most.",
+    caveat: "It describes how concentrated assignments are, not how the work is done.",
+  },
+  {
+    term: "HHI",
+    means:
+      "Sum of squared percentage shares, 0 to 10,000, across judges or across districts; higher means fewer holders carry more of the load.",
+    caveat: "It summarises concentration only.",
+  },
+  {
+    term: "Years of service",
+    means: "Years since the judge's first Article III commission, as recorded by the FJC.",
+    caveat:
+      "Appointing president and party are as the FJC records them for the judge's current court, not the judge's own affiliation.",
+  },
+  {
+    term: "Actions handled",
+    means:
+      "Actions in current pending MDLs plus actions transferred or filed in terminated MDLs matched to the judge.",
+    caveat:
+      "A terminated MDL is attached only when exactly one FJC judge of that court has that surname, consistent initials and was commissioned by the termination year.",
+  },
+  {
+    term: "Flag (5% or more)",
+    means:
+      "A judge or district is flagged when it holds at least 5% of all pending MDL actions. A district flagged this way is called an MDL hub.",
+  },
+  {
+    term: "Bench counts",
+    means: "Active and senior judges by district from the FJC export (current service).",
+    caveat:
+      "Not divided by authorized judgeships: the FJC export and the US Courts judgeship table (June 2026; fractions are shared seats) have different as-of dates, so a vacancy rate would mix periods.",
+  },
+  {
+    term: "Disclosure name match",
+    means:
+      "An extracted investment name equals a company with explicit party evidence in that judge's MDL.",
+    caveat: "It says nothing about recusal obligations, timing or ownership.",
+  },
+];
 
 export function JudgeCrossAnalytics() {
   const q = useQuery(judgeCrossQuery);
@@ -139,6 +192,21 @@ function Dashboard({ data }: { data: Data }) {
   const demActive = n?.partyActive["Democratic"] ?? 0;
   const repActive = n?.partyActive["Republican"] ?? 0;
   const partial = !n || !d.summary;
+  const checkedJudges = d.coverage.filter((c) => c.status === "checked");
+  const takeaways = judgeTakeaways({
+    profiles: p,
+    points: p.points,
+    national: n,
+    disclosure: d.summary
+      ? {
+          exact: d.matches.filter((m) => m.tier === "match").length,
+          near: d.matches.filter((m) => m.tier === "near_match").length,
+          lines: checkedJudges.reduce((s, c) => s + c.linesChecked, 0),
+          checked: checkedJudges.length,
+          targeted: d.coverage.length,
+        }
+      : null,
+  });
 
   return (
     <div className="space-y-4">
@@ -204,6 +272,22 @@ function Dashboard({ data }: { data: Data }) {
         />
       </div>
 
+      <KeyTakeaways
+        items={takeaways}
+        scope={`JPML report ${p.asOf} · all judges; the filters below do not change these`}
+      />
+      <HowToRead
+        measures={JUDGE_MEASURES}
+        notes={
+          <MethodNotes
+            data={data}
+            histMatched={histMatched}
+            histTotal={histTotal}
+            exitsMatched={exitsMatched}
+          />
+        }
+      />
+
       <div
         className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-surface px-3 py-2"
         role="search"
@@ -268,6 +352,7 @@ function Dashboard({ data }: { data: Data }) {
 
       <div className="grid gap-3 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <ChartCard
+          id="judge-experience"
           title="Experience vs current MDL load"
           subtitle="Each dot is a transferee judge with a pending MDL: years since first commission against actions now pending (log scale)"
           footnote={`Source: FJC export; JPML pending MDL report ${p.asOf}. Party = appointing president's party as recorded by FJC.`}
@@ -275,6 +360,7 @@ function Dashboard({ data }: { data: Data }) {
           <ExperienceScatter points={judges} />
         </ChartCard>
         <ChartCard
+          id="judge-concentration"
           title="MDL assignment concentration"
           subtitle="Cumulative share of all pending MDL actions held by the top-k transferee judges"
           footnote={`HHI across judges ${fmtInt(p.hhiByJudge)}; across districts ${fmtInt(n?.hhiByDistrict)} (0–10,000). Top 5 districts hold ${fmtPct(n?.top5DistrictSharePct)}.`}
@@ -284,18 +370,15 @@ function Dashboard({ data }: { data: Data }) {
       </div>
 
       <ChartCard
+        id="top-judges"
         title="Top MDL judges"
         subtitle="Sitting judges with pending or terminated MDLs; click a column to sort. Flag: holds ≥5% of all pending MDL actions."
         footnote={
           <>
-            Actions handled = JPML total actions of current pending MDLs + actions transferred or
-            filed in terminated MDLs matched to the judge. Terminated-report judge entries matched:{" "}
-            {fmtInt(histMatched)} of {fmtInt(histTotal)} (court + surname + initials, unique in
-            FJC); {fmtInt(hist.status["judge_not_printed"] ?? 0)} entries print no judge and{" "}
-            {fmtInt(hist.unparsedLines)} report lines could not be parsed. {fmtInt(exitsMatched)} of{" "}
-            {fmtInt(hist.exitsFy2026)} MDLs that left the pending report after 2025-09-30 (in
-            neither report) are attached from the monthly pending reports.{" "}
+            Actions handled = pending actions + actions in terminated MDLs matched to the judge.{" "}
+            {fmtInt(histMatched)} of {fmtInt(histTotal)} terminated-report entries matched a judge;{" "}
             {fmtInt(p.unassignedPending.length)} pending MDLs have no matched judge profile.
+            Matching rules are under “How to read this” above.
           </>
         }
       >
@@ -305,9 +388,10 @@ function Dashboard({ data }: { data: Data }) {
       {n ? (
         <>
           <ChartCard
+            id="district-benches"
             title="Bench composition by district"
             subtitle={`Active and senior district judges by appointing party, median years of active judges, pending MDL load${filter.circuit ? ` · ${circuitLabel(Number(filter.circuit))}` : ""}`}
-            footnote="Flag: MDL hub when the district holds ≥5% of all pending MDL actions. Largest = transferee judge with the most pending actions in the district (hover for HHI by judge). Judgeships are authorized seats from the US Courts table (June 2026; fractions are shared seats); FJC active counts are current, so the two use different as-of dates. Source: FJC export (current service), JPML pending report."
+            footnote="Flag: MDL hub when the district holds ≥5% of all pending MDL actions. Largest = transferee judge with the most pending actions in the district (hover for HHI by judge). Judgeship caveat: see “How to read this”. Source: FJC export (current service), JPML pending report."
           >
             <BenchSmallMultiples rows={districts} />
           </ChartCard>
@@ -327,55 +411,73 @@ function Dashboard({ data }: { data: Data }) {
 
       <DisclosureReview summary={d.summary} coverage={d.coverage} matches={d.matches} />
 
-      <section
-        className="rounded-md border border-border bg-surface px-3 py-2 text-[11px] leading-relaxed text-muted-foreground"
-        aria-label="Method and sources"
-      >
-        <h3 className="mb-1 font-sans text-xs font-semibold text-foreground">Method and sources</h3>
-        <ul className="list-disc space-y-0.5 pl-4">
-          <li>
-            Pending MDLs per judge come from the judge-profile join (JPML transferee judge as
-            printed, matched on court and name); MDL figures are as printed in the{" "}
-            <a
-              href={JPML}
-              target="_blank"
-              rel="noreferrer"
-              className="underline underline-offset-2"
-            >
-              JPML pending reports
-            </a>
-            .
-          </li>
-          <li>
-            Terminated MDLs are parsed from the JPML report: {fmtInt(hist.rows)} report entries
-            across {hist.districts.length} district headings (the report’s own headline is{" "}
-            {fmtInt(hist.printedLitigations)} litigations; an MDL can be listed under more than one
-            district). Printed vs parsed entries per district:{" "}
-            {hist.districts
-              .filter((x) => x.printed !== x.parsed)
-              .map((x) => `${x.name} ${x.parsed}/${x.printed}`)
-              .join(", ") || "all equal"}
-            . An entry is matched to an FJC judge only when exactly one judge of that court with
-            that surname has consistent initials and was commissioned by the termination year.
-            {hist.judgeNotPrinted.length
-              ? ` Entries with no printed judge are left unattached: ${hist.judgeNotPrinted
-                  .map((x) => `MDL ${x.mdl} (${x.district})`)
-                  .join(", ")}.`
-              : ""}
-          </li>
-          <li>
-            Bench counts are not divided by authorized judgeships: the FJC export and the US Courts
-            judgeship table have different as-of dates, so a vacancy rate would mix periods.
-          </li>
-          <li>
-            Each MDL number links to its{" "}
-            <Link to="/matters/analytics" className="underline underline-offset-2">
-              MDL analytics
-            </Link>{" "}
-            case lens.
-          </li>
-        </ul>
-      </section>
+      <p className="px-1 text-[11px] text-muted-foreground">
+        Method, matching rules and sources are under “How to read this” near the top of the page.
+      </p>
     </div>
+  );
+}
+
+/** The method and sources detail that used to sit in a bottom section, kept whole inside the disclosure. */
+function MethodNotes({
+  data,
+  histMatched,
+  histTotal,
+  exitsMatched,
+}: {
+  data: Data;
+  histMatched: number;
+  histTotal: number;
+  exitsMatched: number;
+}) {
+  const { profiles: p } = data;
+  const hist = p.history;
+  return (
+    <ul className="list-disc space-y-0.5 pl-4">
+      <li>
+        Pending MDLs per judge come from the judge-profile join (JPML transferee judge as printed,
+        matched on court and name); MDL figures are as printed in the{" "}
+        <a href={JPML} target="_blank" rel="noreferrer" className="underline underline-offset-2">
+          JPML pending reports
+        </a>
+        .
+      </li>
+      <li>
+        Terminated MDLs are parsed from the JPML report: {fmtInt(hist.rows)} report entries across{" "}
+        {hist.districts.length} district headings (the report’s own headline is{" "}
+        {fmtInt(hist.printedLitigations)} litigations; an MDL can be listed under more than one
+        district). Printed vs parsed entries per district:{" "}
+        {hist.districts
+          .filter((x) => x.printed !== x.parsed)
+          .map((x) => `${x.name} ${x.parsed}/${x.printed}`)
+          .join(", ") || "all equal"}
+        . An entry is matched to an FJC judge only when exactly one judge of that court with that
+        surname has consistent initials and was commissioned by the termination year.
+        {hist.judgeNotPrinted.length
+          ? ` Entries with no printed judge are left unattached: ${hist.judgeNotPrinted
+              .map((x) => `MDL ${x.mdl} (${x.district})`)
+              .join(", ")}.`
+          : ""}
+      </li>
+      <li>
+        Terminated-report judge entries matched: {fmtInt(histMatched)} of {fmtInt(histTotal)} (court
+        + surname + initials, unique in FJC); {fmtInt(hist.status["judge_not_printed"] ?? 0)}{" "}
+        entries print no judge and {fmtInt(hist.unparsedLines)} report lines could not be parsed.{" "}
+        {fmtInt(exitsMatched)} of {fmtInt(hist.exitsFy2026)} MDLs that left the pending report after
+        2025-09-30 (in neither report) are attached from the monthly pending reports.{" "}
+        {fmtInt(p.unassignedPending.length)} pending MDLs have no matched judge profile.
+      </li>
+      <li>
+        Bench counts are not divided by authorized judgeships: the FJC export and the US Courts
+        judgeship table have different as-of dates, so a vacancy rate would mix periods.
+      </li>
+      <li>
+        Each MDL number links to its{" "}
+        <Link to="/matters/analytics" className="underline underline-offset-2">
+          MDL analytics
+        </Link>{" "}
+        case lens.
+      </li>
+    </ul>
   );
 }

@@ -15,6 +15,8 @@ import {
   YAxis,
 } from "recharts";
 import { Flag, MapPin, X } from "lucide-react";
+import { HowToRead, type Measure } from "@/components/analysis/HowToRead";
+import { KeyTakeaways } from "@/components/analysis/KeyTakeaways";
 import { UsMap } from "@/components/corpus/UsMap";
 import { FDA_COLORS } from "@/components/fda-analytics/chartView";
 import { useCorpus } from "@/lib/corpus/store";
@@ -43,6 +45,7 @@ import {
   usdFull,
   type SortKey,
 } from "./enforcementView";
+import { epaTakeaways } from "./enforcementTakeaways";
 import {
   bySurgeDesc,
   capped,
@@ -91,6 +94,43 @@ const PAGE = 25;
 const CASE_DATASET = "regulatory_epa_cases";
 const BASIS =
   "Counts use the fiscal year a case was opened; dollars use the fiscal year each settlement was entered.";
+const EPA_MEASURES: Measure[] = [
+  {
+    term: "Cases opened",
+    means:
+      "EPA-lead civil judicial and administrative formal cases in ICIS-FE&C, counted in the fiscal year opened.",
+    caveat:
+      "A multi-state case counts in each state where one of its facilities is, so state totals are not additive.",
+  },
+  {
+    term: "Penalties settled",
+    means:
+      "Federal penalties on settlements, counted in the fiscal year each settlement was entered.",
+    caveat:
+      "Settlements without an entered date appear only in all-years totals, and a year in progress is excluded from windows.",
+  },
+  {
+    term: "SEP and cost recovery",
+    means:
+      "Supplemental environmental projects and recovered response costs (mostly CERCLA), settled in the window.",
+  },
+  {
+    term: "Case surge",
+    means: SURGE_RULE,
+    caveat: "A lead to review, not a finding.",
+  },
+  {
+    term: "Per-capita outlier",
+    means: PER_CAPITA_RULE,
+    caveat: "Small states can sit above the fence on few cases.",
+  },
+  {
+    term: "Defendant rows",
+    means:
+      "One row per exact set of defendants named together on a case, so each case counts once.",
+    caveat: "Spelling variants of one company stay separate.",
+  },
+];
 
 function TrendChart({ profile, from, to }: { profile: EpaProfile; from: number; to: number }) {
   const rows = denseYears(profile.years, from, to).map((y) => ({
@@ -690,6 +730,38 @@ function EpaBody({
   const scopeName = selected ? selected.name : "all states";
   const minCaseFy = Math.max(win.from, 2017);
   const detailPending = !!selected && detail.isLoading;
+  const topState = selected
+    ? null
+    : (rows
+        .filter((r) => r.kind === "state")
+        .sort((a, b) => b.sums.fedPenalty - a.sums.fedPenalty || a.name.localeCompare(b.name))
+        .map((r) => ({ name: r.name, fedPenalty: r.sums.fedPenalty }))[0] ?? null);
+  const takeaways = epaTakeaways({
+    windowLabel: win.label,
+    scopeName: selected ? selected.name : "the United States",
+    cases: sums.cases,
+    judicial: sums.judicial,
+    administrative: sums.administrative,
+    fedPenalty: sums.fedPenalty,
+    penaltySettlements: sums.penaltySettlements,
+    topState: topState && topState.fedPenalty > 0 ? topState : null,
+    latestFy: latest,
+    surges: surges.map((r) => ({
+      name: r.name,
+      latest: r.surge!.latest,
+      baseline: r.surge!.baseline,
+    })),
+    outliers: outliers.map((r) => ({ name: r.name, perMillion: r.perMillion! })),
+    topCase: topCase
+      ? {
+          name: topCase.name,
+          fedPenalty: topCase.fedPenalty,
+          sharePct: profile.totals.fedPenalty
+            ? (100 * topCase.fedPenalty) / profile.totals.fedPenalty
+            : null,
+        }
+      : null,
+  });
 
   return (
     <div className="space-y-3">
@@ -758,6 +830,12 @@ function EpaBody({
           : ""}
       </p>
 
+      <KeyTakeaways
+        items={takeaways}
+        scope={`${win.label} · ${selected ? selected.name : "United States"} · flag lines always compare all states`}
+      />
+      <HowToRead measures={EPA_MEASURES} />
+
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <Panel
           title={`Map · ${METRIC_LABEL[metric]}`}
@@ -820,6 +898,7 @@ function EpaBody({
           </div>
         </Panel>
         <Panel
+          id="epa-flags"
           title="Flags"
           subtitle="Deterministic rules over the published counts"
           footnote="A flag is a lead to review, not a finding."
@@ -917,6 +996,7 @@ function EpaBody({
 
       <div className="grid gap-3 lg:grid-cols-2">
         <Panel
+          id="epa-trend"
           title={`Cases opened and penalties settled · ${selected ? selected.name : "United States"}`}
           subtitle={`${win.label}. Bars: cases by FY opened. Line: federal penalties by settlement FY.`}
         >
@@ -944,6 +1024,7 @@ function EpaBody({
       </div>
 
       <Panel
+        id="epa-states"
         title="States ranked"
         subtitle={`${win.label}; select a row to filter. Opened = cases by FY opened; penalties = settled in the window.`}
         footnote={

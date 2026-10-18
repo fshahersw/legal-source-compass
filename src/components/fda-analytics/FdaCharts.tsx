@@ -33,6 +33,7 @@ export function ChartCard({
   onSource,
   className = "",
   footnote,
+  id,
 }: {
   title: string;
   subtitle: string;
@@ -40,10 +41,13 @@ export function ChartCard({
   onSource?: (() => void) | undefined;
   className?: string;
   footnote?: ReactNode;
+  /** Anchor target for in-page links such as "Key takeaways". */
+  id?: string | undefined;
 }) {
   return (
     <section
-      className={`min-w-0 overflow-hidden rounded-md border border-border bg-surface ${className}`}
+      id={id}
+      className={`min-w-0 overflow-hidden rounded-md border border-border bg-surface ${id ? "scroll-mt-4 focus:outline-none" : ""} ${className}`}
       aria-label={title}
     >
       <div className="flex min-h-14 items-start justify-between gap-2 border-b border-border/70 px-3 py-2">

@@ -14,6 +14,8 @@ import {
   YAxis,
 } from "recharts";
 import { Flag } from "lucide-react";
+import { HowToRead, type Measure } from "@/components/analysis/HowToRead";
+import { KeyTakeaways } from "@/components/analysis/KeyTakeaways";
 import { FDA_COLORS } from "@/components/fda-analytics/chartView";
 import { getCpscAnalytics, type CpscAnalytics } from "@/lib/external/enforcement.functions";
 import { cn } from "@/lib/utils";
@@ -26,6 +28,7 @@ import {
   RISING_RULE,
   risingHazards,
 } from "./enforcementView";
+import { cpscTakeaways } from "./enforcementTakeaways";
 import { numTick } from "./listDisplay";
 import {
   axisTick,
@@ -45,6 +48,44 @@ export const cpscAnalyticsQuery = {
   staleTime: 10 * 60 * 1000,
 };
 const RECALL_DATASET = "agency_safety_cpsc_recalls_api";
+const CPSC_MEASURES: Measure[] = [
+  {
+    term: "Recall",
+    means: "A recall notice in the official CPSC Recall API, counted by its recall date.",
+    caveat: "One notice can cover several products and firms.",
+  },
+  {
+    term: "Hazard category",
+    means: "Keyword rules over the hazard statement and title; hover a hazard panel for its rule.",
+    caveat:
+      "A recall can fall in several categories, so category counts add up to more than recalls.",
+  },
+  {
+    term: "Rising hazard",
+    means: RISING_RULE,
+    caveat: "A lead to review, not a finding. A partial year is excluded.",
+  },
+  {
+    term: "Death and injury mentions",
+    means: "Recalls whose injury statement mentions a product-related death or injuries.",
+    caveat:
+      "Text mentions, not verified counts. “Background” mentions (category statistics, other firms’ products, hazard wording, animals) are excluded, and deaths reported only outside the U.S. are labelled.",
+  },
+  {
+    term: "Manufacturer country",
+    means:
+      "Countries as recorded on the recall; qualifiers in parentheses are dropped and nothing else is normalised.",
+    caveat:
+      "A recall can list several countries, and the share is taken over recalls with a recorded country; the dashed line in the chart shows how many that is.",
+  },
+  {
+    term: "Firm clusters",
+    means:
+      "Several recalls in the last 24 months naming the same exact recorded manufacturer, importer or distributor.",
+    caveat:
+      "Spelling variants of one company are listed separately, so counts can understate a firm.",
+  },
+];
 const SHARE_COLORS = [FDA_COLORS[0], FDA_COLORS[2], FDA_COLORS[1], FDA_COLORS[3], FDA_COLORS[4]];
 
 export function CpscRecalls() {
@@ -128,6 +169,21 @@ function CpscBody({ data }: { data: CpscAnalytics }) {
     injury: y.injuryMentions,
   }));
   const chinaShare = latestYear ? countryShare(latestYear, "China") : null;
+  const takeaways = cpscTakeaways({
+    latest,
+    latestRecalls: latestYear ? latestYear.recalls : null,
+    priorMean,
+    rising,
+    windowLabel: `${from}–${latest}`,
+    deathMentions: deaths,
+    deathBackground: background,
+    chinaShare,
+    countryRecordedPct:
+      latestYear && latestYear.recalls ? (100 * latestYear.withCountry) / latestYear.recalls : null,
+    topHazard: hazardRows[0]
+      ? { label: hazardRows[0].label, total: hazardRows[0].windowTotal }
+      : null,
+  });
 
   return (
     <div className="space-y-3">
@@ -192,7 +248,14 @@ function CpscBody({ data }: { data: CpscAnalytics }) {
         </p>
       ) : null}
 
+      <KeyTakeaways
+        items={takeaways}
+        scope={`${latest} and ${from}–${latest} · changes with the year window above`}
+      />
+      <HowToRead measures={CPSC_MEASURES} />
+
       <Panel
+        id="cpsc-hazards"
         title="Recalls by hazard over time"
         subtitle={`Recalls per year, ${from}–${latest}; same y-scale across panels. Select a hazard to filter the country charts.`}
         footnote={
@@ -256,6 +319,7 @@ function CpscBody({ data }: { data: CpscAnalytics }) {
 
       <div className="grid gap-3 lg:grid-cols-2">
         <Panel
+          id="cpsc-country"
           title={`Manufacturer-country share${hazard ? ` · ${label(hazard)}` : ""}`}
           subtitle={`% of ${hazard ? "the hazard's" : "all"} recalls per year that list each of the ${countries.length} most-listed manufacturing countries (all years); dashed line = % of recalls with any country recorded`}
           footnote={`A recall can list several countries. Country qualifiers in parentheses are dropped; nothing else is normalised.${
@@ -313,6 +377,7 @@ function CpscBody({ data }: { data: CpscAnalytics }) {
           </div>
         </Panel>
         <Panel
+          id="cpsc-deaths"
           title="Injury and death mentions"
           subtitle={`Recalls per year by what the injury statement mentions, ${from}–${latest}; categories overlap`}
           footnote={
@@ -426,6 +491,7 @@ function CpscBody({ data }: { data: CpscAnalytics }) {
 
       <div className="grid gap-3 xl:grid-cols-[20rem_minmax(0,1fr)]">
         <Panel
+          id="cpsc-flags"
           title="Flags"
           subtitle="Deterministic rules"
           footnote="A flag is a lead to review, not a finding."

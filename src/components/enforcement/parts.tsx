@@ -9,6 +9,7 @@ export function Panel({
   footnote,
   children,
   className,
+  id,
 }: {
   title: string;
   subtitle?: ReactNode;
@@ -16,11 +17,15 @@ export function Panel({
   footnote?: ReactNode;
   children: ReactNode;
   className?: string;
+  /** Anchor target for in-page links such as "Key takeaways". */
+  id?: string | undefined;
 }) {
   return (
     <section
+      id={id}
       className={cn(
         "min-w-0 overflow-hidden rounded-md border border-border bg-surface",
+        id && "scroll-mt-4 focus:outline-none",
         className,
       )}
       aria-label={title}
