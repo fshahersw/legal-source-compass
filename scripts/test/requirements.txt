@@ -1,3 +1,11 @@
 # capture.py is imported by the portable text-rendering regressions; no network calls occur in those tests.
 requests==2.32.5
 lxml==6.0.2
+# court_stats tables.py reads the U.S. Courts XLSX tables; test_court_stats imports it.
+openpyxl==3.1.5
+# mdl_intel parsers read JPML and transferee-court HTML; test_parsers imports them.
+beautifulsoup4==4.15.0
+soupsieve==2.9.2
+# open_payments archive_aggregate.py aggregates the CMS archive files; test_open_payments imports it.
+pandas==3.0.5
+numpy==2.5.3
