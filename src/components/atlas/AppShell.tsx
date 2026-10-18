@@ -264,7 +264,7 @@ export function AppShell({
               <Link
                 key={item.to}
                 to={item.to}
-                activeOptions={{ exact: true }}
+                activeOptions={{ exact: true, includeSearch: false }}
                 className="inline-flex min-h-9 shrink-0 items-center rounded-sm px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground md:min-h-8"
                 activeProps={{ className: "bg-muted font-semibold text-primary" }}
               >
