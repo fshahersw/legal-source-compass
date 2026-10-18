@@ -1,12 +1,23 @@
-import { FileText, HardHat, Landmark, MessageSquareWarning, ShieldAlert } from "lucide-react";
+import {
+  FileText,
+  Handshake,
+  HardHat,
+  Landmark,
+  ListChecks,
+  MessageSquareWarning,
+  ShieldAlert,
+} from "lucide-react";
 import { RulemakingActivity } from "@/components/rulemaking/RulemakingActivity";
 import { cn } from "@/lib/utils";
 import { ConsumerComplaints } from "./ConsumerComplaints";
 import { CpscRecalls } from "./CpscRecalls";
+import { EnforcementSources } from "./EnforcementSources";
 import { EpaEnforcement } from "./EpaEnforcement";
 import { OshaEnforcement } from "./OshaEnforcement";
+import { SettlementNotices } from "./SettlementNotices";
 
-export type EnforcementTab = "epa" | "rulemaking" | "cpsc" | "cfpb" | "osha";
+export type EnforcementTab =
+  "epa" | "rulemaking" | "cpsc" | "cfpb" | "osha" | "settlements" | "sources";
 export type EnforcementSearch = { tab?: EnforcementTab; state?: string };
 
 const TABS: { id: EnforcementTab; label: string; Icon: typeof Landmark }[] = [
@@ -15,6 +26,8 @@ const TABS: { id: EnforcementTab; label: string; Icon: typeof Landmark }[] = [
   { id: "cpsc", label: "CPSC recalls", Icon: ShieldAlert },
   { id: "cfpb", label: "Consumer complaints (CFPB)", Icon: MessageSquareWarning },
   { id: "osha", label: "Workplace safety (OSHA)", Icon: HardHat },
+  { id: "settlements", label: "Settlement notices", Icon: Handshake },
+  { id: "sources", label: "Agency data sources", Icon: ListChecks },
 ];
 
 /** URL search for /law/enforcement; anything unrecognised is dropped rather than guessed. */
@@ -24,7 +37,9 @@ export function normalizeEnforcementSearch(raw: Record<string, unknown>): Enforc
     raw["tab"] === "rulemaking" ||
     raw["tab"] === "cpsc" ||
     raw["tab"] === "cfpb" ||
-    raw["tab"] === "osha"
+    raw["tab"] === "osha" ||
+    raw["tab"] === "settlements" ||
+    raw["tab"] === "sources"
   )
     out.tab = raw["tab"];
   if (typeof raw["state"] === "string" && /^[A-Z]{2}$/.test(raw["state"])) out.state = raw["state"];
@@ -86,6 +101,10 @@ export function EnforcementPage({
           <ConsumerComplaints />
         ) : tab === "osha" ? (
           <OshaEnforcement />
+        ) : tab === "settlements" ? (
+          <SettlementNotices />
+        ) : tab === "sources" ? (
+          <EnforcementSources />
         ) : (
           <CpscRecalls />
         )}
