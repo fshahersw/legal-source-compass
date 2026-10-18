@@ -12,7 +12,7 @@ import {
 } from "@/lib/limitations/types";
 import { cn } from "@/lib/utils";
 import { CLAIM_STATUS_LABELS, claimMatrix } from "./stateStatutes";
-import { nationalSpread } from "./quickLookup";
+import { nationalSpread } from "./quickLookupView";
 
 const select =
   "h-10 w-full rounded-md border border-input bg-surface px-3 text-sm focus-visible:outline-2 focus-visible:outline-ring";
