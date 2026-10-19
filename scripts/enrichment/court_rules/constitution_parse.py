@@ -13,7 +13,8 @@ import re
 ORDINALS = ("FIRST|SECOND|THIRD|FOURTH|FIFTH|SIXTH|SEVENTH|EIGHTH|NINTH|TENTH|ELEVENTH|TWELFTH|THIRTEENTH|FOURTEENTH|"
             "FIFTEENTH|SIXTEENTH|SEVENTEENTH|EIGHTEENTH|NINETEENTH|TWENTIETH|TWENTY-FIRST|TWENTY-SECOND|TWENTY-THIRD|"
             "TWENTY-FOURTH|TWENTY-FIFTH|TWENTY-SIXTH|TWENTY-SEVENTH|TWENTY-EIGHTH|TWENTY-NINTH|THIRTIETH")
-ARTICLE = re.compile(rf"^(?:ARTICLE|Article|ART\.|Art\.)\s+([IVXLC]+|\d+[A-Z]?|{ORDINALS}|{ORDINALS.title()})\b\.?\s*[-–—:.]?\s*(.*)$")
+# "ARTICLE.&#8194;1. - Declaration of Rights." (leg.state.nv.us) prints a point after the word
+ARTICLE = re.compile(rf"^(?:ARTICLE\.?|Article\.?|ART\.|Art\.)\s+([IVXLC]+|\d+[A-Z]?|{ORDINALS}|{ORDINALS.title()})\b\.?\s*[-–—:.]?\s*(.*)$")
 SECTION = re.compile(r"^(?:SECTION|Section|SEC\.|Sec\.|§+)\s*(\d+[A-Za-z]?(?:[.\-](?:\d+[A-Za-z]?|[A-Z]\b))*)\b\.?\s*[-–—:.]?\s*(.*)$")
 CATCHWORD = re.compile(r"^([A-Z][A-Za-z ,;'’()-]{1,80}\.)\s+(?:SECTION|Section|SEC\.|Sec\.)\s*(\d+[a-z]?)\.\s+(?=[A-Z(\[])(.*)$")
 # "Section 44. 1. Commission composition" (crs title 00): a decimal section number printed with a space after the point
@@ -188,8 +189,13 @@ def contents_like(u: dict) -> bool:
     lines = [ln.strip() for ln in u["text"].split("\n") if ln.strip()]
     if heading_only(u):
         return True
+    if PROVISION_VERB.search(u["text"][:300]):
+        return False  # a provision states its rule at once; a table of sections does not
     numbered = sum(1 for ln in lines if NUMBERED_LINE.match(ln))
-    return numbered >= 3 and numbered >= 0.5 * len(lines)
+    if numbered >= 3 and numbered >= 0.3 * len(lines):
+        return True
+    # a table of sections run together on lines: "... judges. 17. Town, village and city courts; jurisdiction. 18. Trial ..."
+    return len(re.findall(r"(?:^|[.;]\s)(?:§\s*)?\d{1,3}[a-z-]*\.\s+[A-Z]", u["text"], re.M)) >= 4
 
 
 def clean_units(units: list[dict]) -> tuple[list[dict], dict]:
@@ -230,7 +236,9 @@ def clean_units(units: list[dict]) -> tuple[list[dict], dict]:
         if not u.get("section") and heading_only(u) and len(u["text"]) < 300:
             if u.get("article") and u.get("article") in with_sections:
                 lines = [ln.strip() for ln in u["text"].split("\n") if ln.strip()]
-                title = u.get("article_title") or (lines[1].strip(" .") if len(lines) > 1 and not SECTION.match(lines[1]) else None)
+                second = lines[1].strip(" .") if len(lines) > 1 else ""
+                # the line under "ARTICLE VI" is its title unless it is a section heading or a page number
+                title = u.get("article_title") or (second if second and not SECTION.match(second) and re.search(r"[A-Za-z]{3}", second) else None)
                 titles.setdefault(u["article"], title)
                 bump("article_heading_kept_as_title")
                 continue
@@ -238,10 +246,33 @@ def clean_units(units: list[dict]) -> tuple[list[dict], dict]:
                 bump("title_or_running_header_dropped")
                 continue
         out.append(u)
+    # a table of contents printed before the text: units of later articles that come before the first article
+    # (e.g. II, VI, XIII ... before Article I) and whose article recurs in the text are contents, not provisions
+    nums = [article_number(u.get("article")) for u in out]
+    known = [n for n in nums if n is not None]
+    if known:
+        first = nums.index(min(known))
+        later = {u.get("article") for u in out[first:]}
+        kept = []
+        for i, u in enumerate(out):
+            if i < first and nums[i] is not None and nums[i] > min(known) and u.get("article") in later:
+                bump("leading_contents_entry_dropped")
+                continue
+            kept.append(u)
+        out = kept
     for u in out:
         if not u.get("article_title") and titles.get(u.get("article")):
             u["article_title"] = titles[u["article"]]
     return out, stats
+
+
+def article_number(label: str | None) -> int | None:
+    if not label:
+        return None
+    m = re.match(r"^(\d+)", label)
+    if m:
+        return int(m.group(1))
+    return roman_to_int(label) if re.fullmatch(r"[IVXLC]+", label) else None
 
 
 def repeated_share(units: list[dict]) -> float:

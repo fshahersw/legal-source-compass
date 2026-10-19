@@ -75,6 +75,17 @@ class SplitTests(unittest.TestCase):
         self.assertNotIn("Rule 81", [s.label for s in secs])
 
 
+class TitleTests(unittest.TestCase):
+    def test_hyphenated_heading_is_joined(self):
+        import build_court_rules as B
+
+        text = "Rule 12. Defenses and Objections: When and How Presented; Mo-\ntion for Judgment on the Pleadings\n(a) TIME TO SERVE."
+        self.assertEqual(B.full_title("Defenses and Objections: When and How Presented; Mo-", text),
+                         "Defenses and Objections: When and How Presented; Motion for Judgment on the Pleadings")
+        self.assertEqual(B.full_title("Scope", text), "Scope")
+        self.assertEqual(B.full_title("Self-", "Rule 9. Self-\n(a) The court"), "Self-")  # next line is not a continuation
+
+
 class QuoteTests(unittest.TestCase):
     TEXT = "The opposition must be filed and served not more\nthan 14 days after the motion was filed."
 

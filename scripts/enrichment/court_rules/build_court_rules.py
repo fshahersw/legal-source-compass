@@ -13,6 +13,7 @@ from __future__ import annotations
 import gzip
 import hashlib
 import json
+import re
 import os
 import sys
 from collections import Counter, defaultdict
@@ -46,6 +47,22 @@ def own_text(row: dict, text: str) -> dict:
     show it as published; the title is indexed for search separately."""
     row["text"] = text
     return row
+
+
+def full_title(title: str | None, text: str) -> str | None:
+    """A rule heading printed over two lines with a hyphenated break ("...; Mo-" / "tion for Judgment ...") is joined
+    with its continuation line from the section's own text."""
+    if not title or not re.search(r"[a-z]-$", title):
+        return title
+    tail = title.split()[-1]
+    lines = [ln.strip() for ln in text.split("\n")]
+    for i, ln in enumerate(lines):
+        if ln.endswith(tail):
+            nxt = next((x for x in lines[i + 1:] if x), "")
+            if nxt[:1].islower() and len(nxt) <= 160:
+                return title[:-1] + nxt
+            break
+    return title
 
 
 def load_jsonl(name):
@@ -92,6 +109,15 @@ def build_rules():
     kept_by_doc = {d["doc"]: d for d in ins["documents"]}
     doc_rows, sec_rows, ins_rows = [], [], []
     doc_index = {}
+    # courts whose website forbids automated access get a record saying so, so their page shows the gap
+    for cid, reason in sorted((docs.get("skipped_courts") or {}).items()):
+        host = re.search(r"\bat (www\.[a-z0-9.-]+\.gov)\b", reason)
+        if cid not in COURTS or any(d["courts"] == [cid] for d in docs["documents"]):
+            continue
+        docs["documents"].append({"id": f"{cid}-local", "scope": "federal_local", "courts": [cid], "state": "", "levels": [],
+                                  "part": "local", "title": "Local Rules", "status": "robots_disallowed", "url": None,
+                                  "found_on": f"https://{host.group(1)}/" if host else None, "format": "", "note": reason[:1].upper() + reason[1:],
+                                  "publisher": "The court's own website"})
     for d in docs["documents"]:
         doc_index[d["id"]] = d
         title = doc_display_title(d)
@@ -125,9 +151,14 @@ def build_rules():
                                cells={"document": title, "jurisdiction": jurisdiction, "status": STATUS_LABEL.get(status, status),
                                       "sections": by_doc_sections.get(d["id"], 0), "insights": len(insights)},
                                facts=facts, text=" ".join([title, jurisdiction, d.get("publisher") or ""]), filters=filters,
-                               subtitle=jurisdiction, badges=[d.get("format", "").upper() or "PDF"], links=links, state=d["state"] or "",
+                               subtitle=jurisdiction, badges=[d["format"].upper()] if d.get("format") else [], links=links, state=d["state"] or "",
                                extra={"rule_document": info}))
+    fixed_titles = {}
     for s in sections:
+        t = full_title(s["title"], s["text"])
+        if t != s["title"]:
+            fixed_titles[s["id"]] = t
+            s = {**s, "title": t}
         d = doc_index[s["doc"]]
         title = f"{s['label']}. {s['title']}" if s["title"] and s["title"] != s["label"] else s["label"]
         info = {k: s.get(k) for k in ("doc", "ordinal", "label", "number", "title", "page", "source_url", "group", "part", "parts", "occurrence",
@@ -146,9 +177,17 @@ def build_rules():
                                         links=[{"url": f"/records/court_rule_documents/{s['doc']}", "label": "Rule document"}],
                                         extra={"rule_section": info}), s["text"]))
     n_by_doc = defaultdict(int)
-    for docres in ins["documents"]:
+    # practice points in reading order for a court page: the court's own (or the state's) rules before the national
+    # rules, documents in their listed order, then deadlines, limits, formatting, filing, ... and rule order
+    doc_order = {d["id"]: (1 if d["scope"] == "federal_national" else 0, n) for n, d in enumerate(docs["documents"])}
+    cat_order = {c: n for n, c in enumerate(CATEGORY_LABEL)}
+    sec_order = {s["id"]: s.get("ordinal") or 0 for s in sections}
+    for docres in sorted(ins["documents"], key=lambda r: doc_order.get(r["doc"], (2, 0))):
         d = doc_index[docres["doc"]]
-        for i in docres["kept"]:
+        kept = sorted(docres["kept"], key=lambda i: (cat_order.get(i["category"], 99), sec_order.get(i["section_id"], 0)))
+        for i in kept:
+            if i["section_id"] in fixed_titles:
+                i = {**i, "section_title": fixed_titles[i["section_id"]]}
             n_by_doc[d["id"]] += 1
             iid = f"{d['id']}:i{n_by_doc[d['id']]:03d}"
             title = " ".join(f"{i['applies_to'] or CATEGORY_LABEL[i['category']]}: {i['value']}".split())  # display title on one line
