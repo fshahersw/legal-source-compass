@@ -22,7 +22,6 @@ sys.path.insert(0, HERE)
 import rest_common as rc  # noqa: E402
 import clb_common as cc  # noqa: E402
 import corpus_writer as writer  # noqa: E402
-import duckdb  # noqa: E402
 
 DATASET = "clb_unmatched_citations"
 MIN_REPORTER = 1000
@@ -60,6 +59,8 @@ def grouped(con, sql, key):
 
 
 def build() -> dict:
+    import duckdb  # only the build reads the bulk tables; the pure helpers above are tested without it
+
     con = duckdb.connect(os.path.join(rc.DB, "rest_work.duckdb"), read_only=True)
     sm = duckdb.connect(os.path.join(rc.DB, "small.duckdb"), read_only=True)
     ci = duckdb.connect(os.path.join(rc.DB, "citation.duckdb"), read_only=True)
