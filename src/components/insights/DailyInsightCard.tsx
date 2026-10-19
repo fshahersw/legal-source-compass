@@ -116,8 +116,8 @@ export function InsightPanel({
         </div>
         {data.headlines.length ? (
           <ul id={listId} hidden={!open} className="mt-1.5 list-disc space-y-0.5 pl-4">
-            {data.headlines.map((h) => (
-              <li key={h} className="text-foreground/80">
+            {data.headlines.map((h, i) => (
+              <li key={`${i}-${h}`} className="text-foreground/80">
                 {h}
               </li>
             ))}
@@ -250,27 +250,40 @@ function PointLabel({ point }: { point: InsightPoint }) {
   );
 }
 
+/** Drops exact repeats (same identity key), keeping the first occurrence and the original order. */
+function uniqueBy<T>(items: T[], key: (item: T) => string): T[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const k = key(item);
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
+
 function Points({ points }: { points: InsightPoint[] }) {
   return (
     <dl className="grid max-w-4xl grid-cols-1 gap-x-8 sm:grid-cols-2">
-      {points.map((p) => (
-        <div
-          key={`${p.label}-${p.value}`}
-          className="min-w-0 border-t border-border/60 py-1 first:border-t-0 sm:nth-[2]:border-t-0"
-        >
-          <dt className="break-words text-[11px] leading-4 text-muted-foreground">
-            <PointLabel point={p} />
-          </dt>
-          <dd className="break-words font-mono text-[13px] font-semibold leading-5">
-            {p.value}
-            {p.note ? (
-              <span className="ml-1.5 font-sans text-[11px] font-normal text-muted-foreground">
-                {p.note}
-              </span>
-            ) : null}
-          </dd>
-        </div>
-      ))}
+      {uniqueBy(points, (p) => `${p.label}|${p.value}|${p.note ?? ""}|${p.href ?? ""}`).map(
+        (p, i) => (
+          <div
+            key={`${i}-${p.label}`}
+            className="min-w-0 border-t border-border/60 py-1 first:border-t-0 sm:nth-[2]:border-t-0"
+          >
+            <dt className="break-words text-[11px] leading-4 text-muted-foreground">
+              <PointLabel point={p} />
+            </dt>
+            <dd className="break-words font-mono text-[13px] font-semibold leading-5">
+              {p.value}
+              {p.note ? (
+                <span className="ml-1.5 font-sans text-[11px] font-normal text-muted-foreground">
+                  {p.note}
+                </span>
+              ) : null}
+            </dd>
+          </div>
+        ),
+      )}
     </dl>
   );
 }
@@ -279,10 +292,10 @@ function Sources({ pick }: { pick: Insight }) {
   return (
     <p className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] leading-4 text-muted-foreground">
       <span>Sources:</span>
-      {pick.sources.map((s) =>
+      {uniqueBy(pick.sources, (s) => `${s.href}|${s.label}`).map((s, i) =>
         s.href.startsWith("/") ? (
           <Link
-            key={s.href}
+            key={`${i}-${s.href}`}
             to={s.href}
             className="rounded text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
           >
@@ -290,7 +303,7 @@ function Sources({ pick }: { pick: Insight }) {
           </Link>
         ) : (
           <a
-            key={s.href}
+            key={`${i}-${s.href}`}
             href={s.href}
             target="_blank"
             rel="noreferrer"
