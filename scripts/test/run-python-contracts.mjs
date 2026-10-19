@@ -42,6 +42,7 @@ for (const suite of [
   { directory: "scripts/enrichment/scac", modules: ["test_scac"] },
   { directory: "scripts/enrichment/court_locations", modules: ["test_court_locations"] },
   { directory: "scripts/enrichment/matter_xanalysis", modules: ["test_xstats"] },
+  { directory: "scripts/enrichment/courts_db", modules: ["test_courts_db"] },
   { directory: "scripts/enrichment/mdl_intel", modules: ["test_parsers"] },
   { directory: "scripts/enrichment/open_payments", modules: ["test_open_payments"] },
   { directory: "scripts/enrichment/cfpb", modules: ["test_cfpb"] },
