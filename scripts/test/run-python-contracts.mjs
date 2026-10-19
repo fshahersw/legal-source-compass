@@ -63,6 +63,7 @@ for (const suite of [
     ],
   },
   { directory: "scripts/enrichment/state_metrics", modules: ["test_parsers"] },
+  { directory: "scripts/enrichment/state_analysis", modules: ["test_state_analysis"] },
   {
     directory: "scripts/limitations/backfill",
     modules: ["test_capture", "test_capture_browser_dom"],
