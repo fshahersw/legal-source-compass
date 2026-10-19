@@ -24,7 +24,7 @@ if (output) {
 const hash = (body) => createHash("sha256").update(body).digest("hex");
 const results = [];
 for (const asset of verifiedCourtArtwork) {
-  if (!/^\/court-marks\/[a-z0-9-]+\.(svg|png|gif)$/.test(asset.assetPath))
+  if (!/^\/court-marks\/[a-z0-9-]+\.(svg|png|gif|jpg)$/.test(asset.assetPath))
     throw Error("Invalid local artwork path");
   const local = await readFile(path.join(root, "public", asset.assetPath.slice(1)));
   const localMatches = hash(local) === asset.sha256;

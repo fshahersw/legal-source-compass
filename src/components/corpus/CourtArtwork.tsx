@@ -60,7 +60,9 @@ export function CourtArtwork({
   const imageSource =
     verified?.assetPath ?? community?.path ?? (recorded ? fileUrl(recorded.url) : null);
   const officialLabel = verified
-    ? "Verified official court artwork"
+    ? verified.kind === "seal"
+      ? "Verified official court artwork"
+      : "Mark shown on the court homepage"
     : community
       ? "Court mark · Free Law Project"
       : recorded

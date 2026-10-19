@@ -1,5 +1,7 @@
 // Relative .ts import: scripts/enrichment/verify_court_artwork.mjs loads this module in plain Node.
 import { isHeldMediaLabel } from "../corpus/heldMedia.ts";
+// Written by scripts/visuals/acquire_official_marks.py from each court's own homepage; checked byte for byte like the entries below.
+import officialCourtMarks from "./officialCourtMarks.json" with { type: "json" };
 
 export type CourtArtworkKind = "seal" | "banner" | "photo";
 
@@ -15,8 +17,10 @@ export type VerifiedCourtArtwork = {
   description: string;
 };
 
-/** Exact-ID-only registry. Entries require official source provenance and a checked local asset. */
-export const verifiedCourtArtwork: readonly VerifiedCourtArtwork[] = [
+const KINDS: readonly CourtArtworkKind[] = ["seal", "banner", "photo"];
+
+/** Reviewed by hand. They take precedence over the acquired marks for the same court. */
+const reviewedCourtArtwork: readonly VerifiedCourtArtwork[] = [
   {
     courtId: "cand",
     courtName: "U.S. District Court for the Northern District of California",
@@ -75,6 +79,20 @@ export const verifiedCourtArtwork: readonly VerifiedCourtArtwork[] = [
     description: "Official homepage header containing the district seal and court name.",
   },
 ] as const;
+
+const reviewedIds = new Set(reviewedCourtArtwork.map((entry) => entry.courtId));
+
+/** Exact-ID-only registry. Entries require official source provenance and a checked local asset. */
+export const verifiedCourtArtwork: readonly VerifiedCourtArtwork[] = [
+  ...reviewedCourtArtwork,
+  ...(officialCourtMarks as readonly (Omit<VerifiedCourtArtwork, "kind"> & { kind: string })[])
+    .filter((entry) => !reviewedIds.has(entry.courtId))
+    .flatMap((entry) =>
+      KINDS.includes(entry.kind as CourtArtworkKind)
+        ? [{ ...entry, kind: entry.kind as CourtArtworkKind }]
+        : [],
+    ),
+];
 
 const artworkByCourtId = new Map(verifiedCourtArtwork.map((entry) => [entry.courtId, entry]));
 

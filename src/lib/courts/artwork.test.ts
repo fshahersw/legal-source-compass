@@ -34,6 +34,22 @@ describe("court artwork", () => {
     }
   });
 
+  it("includes marks acquired from each court's own homepage under that court's id only", () => {
+    const acquired = verifiedCourtArtwork.filter((entry) => entry.retrievedAt !== "2026-10-05");
+    expect(acquired.length).toBeGreaterThan(50);
+    for (const entry of acquired) {
+      expect(entry.assetPath.startsWith(`/court-marks/${entry.courtId}.`), entry.courtId).toBe(
+        true,
+      );
+      expect(new URL(entry.sourcePage).host).toBe(`www.${entry.courtId}.uscourts.gov`);
+      expect(new URL(entry.sourceImage).host).toBe(new URL(entry.sourcePage).host);
+    }
+    expect(artworkForCourtId("akd")?.kind).toBe("seal");
+    expect(artworkForCourtId("nmb")).toBeNull();
+    expect(artworkForCourtId("tnwb")).toBeNull();
+    expect(artworkForCourtId("cand")?.retrievedAt).toBe("2026-10-05");
+  });
+
   it.each([
     ["Federal", "U.S. Supreme Court", "us-supreme"],
     ["Federal", "Federal appellate", "federal-appellate"],
