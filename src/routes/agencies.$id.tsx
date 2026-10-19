@@ -6,6 +6,8 @@ import { AppShell } from "@/components/atlas/AppShell";
 import { AgencyMark } from "@/components/corpus/EntityArtwork";
 import { Stat } from "@/components/corpus/BarList";
 import { DatasetBrowser, useDatasets } from "@/components/corpus/DatasetBrowser";
+import { LoadingBlock } from "@/components/enforcement/parts";
+import { AgencyProfileView } from "@/components/agencies/AgencyProfileView";
 import {
   AGENCY_TYPES,
   getAgencyCounts,
@@ -13,6 +15,7 @@ import {
   listAgencyDocs,
   type AgencyCount,
 } from "@/lib/external/agency.functions";
+import { getAgencyProfile } from "@/lib/external/agencyProfile.functions";
 import { isDepartment, SAFETY_AGENCY } from "@/lib/external/agencyTree";
 import { pageHead } from "@/lib/corpus/head";
 
@@ -21,12 +24,45 @@ export const Route = createFileRoute("/agencies/$id")({
   head: () =>
     pageHead(
       "Agency profile",
-      "Federal Register documents, rules, proposed rules and notices filed by this agency, with safety records where the corpus has them.",
+      "Rulemaking by year and administration, significant rules, open comment periods, the Unified Agenda pipeline, budget and state spending, CFR footprint and structure for one federal agency.",
     ),
   component: AgencyPage,
 });
 
-const TABS = ["Overview", "Rules & notices", "All documents", "Safety & enforcement"] as const;
+const TABS = ["Overview", "Rules & notices", "Unified Agenda", "All documents"] as const;
+
+const SOURCES: { label: string; url: string; note: string }[] = [
+  {
+    label: "Federal Register API",
+    url: "https://www.federalregister.gov/developers/documentation/api/v1",
+    note: "Agency directory and structure, document counts, significant rules, comment periods",
+  },
+  {
+    label: "Unified Agenda (reginfo.gov)",
+    url: "https://www.reginfo.gov/public/do/eAgendaXmlReport",
+    note: "Regulatory pipeline by stage and priority",
+  },
+  {
+    label: "eCFR",
+    url: "https://www.ecfr.gov/api/admin/v1/agencies.json",
+    note: "CFR chapters assigned to each agency",
+  },
+  {
+    label: "USAspending API",
+    url: "https://api.usaspending.gov/docs/endpoints",
+    note: "Budgetary resources, obligations, outlays, state award obligations",
+  },
+  {
+    label: "Census Bureau population estimates (Vintage 2025)",
+    url: "https://www.census.gov/data/tables/time-series/demo/popest/2020s-state-total.html",
+    note: "Per-resident denominator",
+  },
+  {
+    label: "U.S. Government Manual, 2025 edition (GovInfo)",
+    url: "https://www.govinfo.gov/app/details/GOVMAN-2025-12-31",
+    note: "Mission and principal officials as printed",
+  },
+];
 
 function ReadFailure({ label, retry, busy }: { label: string; retry: () => void; busy: boolean }) {
   return (
@@ -47,13 +83,13 @@ function ReadFailure({ label, retry, busy }: { label: string; retry: () => void;
   );
 }
 
-function AgencyProvenance({ id }: { id: string }) {
+function AgencyProvenance({ id, asOf }: { id: string; asOf: string | null }) {
   const source = useDatasets();
   const dataset = source.data?.find((row) => row.id === "federal_register_history");
   return (
-    <section className="mt-4 rounded-lg border border-border bg-surface p-4">
+    <section className="mt-4 rounded-md border border-border bg-surface p-3">
       <h2 className="text-sm font-semibold">Source and coverage</h2>
-      <dl className="mt-3 grid gap-3 text-[12px] sm:grid-cols-2">
+      <dl className="mt-2 grid gap-3 text-[12px] sm:grid-cols-3">
         <div>
           <dt className="text-muted-foreground">Federal Register agency ID</dt>
           <dd className="mt-1 font-mono">{id}</dd>
@@ -68,6 +104,10 @@ function AgencyProvenance({ id }: { id: string }) {
                 : (dataset?.label ?? "Not recorded")}
           </dd>
         </div>
+        <div>
+          <dt className="text-muted-foreground">Agency analytics as of</dt>
+          <dd className="mt-1 font-mono">{asOf ?? "Not recorded"}</dd>
+        </div>
       </dl>
       {source.error ? (
         <ReadFailure
@@ -76,13 +116,28 @@ function AgencyProvenance({ id }: { id: string }) {
           busy={source.isFetching}
         />
       ) : (
-        <p className="mt-3 text-[12px] leading-relaxed text-muted-foreground">
+        <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground">
           {dataset?.qualification ??
             (source.isPending
               ? "Loading source coverage…"
               : "Source coverage qualification: Not recorded")}
         </p>
       )}
+      <ul className="mt-2 grid gap-x-4 gap-y-1 text-[11px] sm:grid-cols-2">
+        {SOURCES.map((s) => (
+          <li key={s.url}>
+            <a
+              href={s.url}
+              target="_blank"
+              rel="noreferrer"
+              className="text-primary hover:underline"
+            >
+              {s.label}
+            </a>
+            <span className="text-muted-foreground"> · {s.note}</span>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -91,25 +146,34 @@ function AgencyPage() {
   const { id } = Route.useParams();
   const la = useServerFn(listAgencies),
     lc = useServerFn(getAgencyCounts),
-    ld = useServerFn(listAgencyDocs);
+    ld = useServerFn(listAgencyDocs),
+    lp = useServerFn(getAgencyProfile);
   const all = useQuery({ queryKey: ["agencies"], queryFn: () => la(), staleTime: 5 * 60_000 });
-  const a = all.data?.find((x) => x.id === id);
+  const prof = useQuery({
+    queryKey: ["agency-profile", id],
+    queryFn: () => lp({ data: { id } }),
+    staleTime: 10 * 60_000,
+  });
+  const listed = all.data?.find((x) => x.id === id);
+  const profile = prof.data?.profile ?? null;
+  const known = !!listed || !!profile;
+  const [type, setType] = useState("");
+  const [tab, setTab] = useState<(typeof TABS)[number]>("Overview");
+  // Corpus index counts are the fallback when the agency profile dataset has no record for this agency.
   const counts = useQuery({
     queryKey: ["agency-counts", id],
     queryFn: () => lc({ data: { id } }),
     staleTime: 5 * 60_000,
-    enabled: !!a,
+    enabled: !!listed && !profile && !prof.isPending,
   });
-  const [type, setType] = useState("");
-  const [tab, setTab] = useState<(typeof TABS)[number]>("Overview");
   const docs = useQuery({
     queryKey: ["agency-docs", id, type],
     queryFn: () => ld({ data: { id, ...(type ? { type } : {}) } }),
     staleTime: 10 * 60_000,
-    enabled: !!a && tab === "Rules & notices",
+    enabled: known && tab === "Rules & notices",
   });
-  const name = a?.name ?? "Agency";
-  const safety = a ? SAFETY_AGENCY[a.name] : undefined;
+  const name = profile?.name ?? listed?.name ?? "Agency";
+  const safety = SAFETY_AGENCY[name];
   const num = (v: AgencyCount | undefined) =>
     counts.error
       ? "Unavailable"
@@ -118,6 +182,8 @@ function AgencyPage() {
         : v?.capped
           ? "Too large to count"
           : (v?.total ?? "Not recorded");
+  const loading = prof.isPending || (all.isPending && !profile);
+  const absent = !known && !loading && !all.error && !prof.error;
 
   return (
     <AppShell
@@ -130,51 +196,40 @@ function AgencyPage() {
       title={name}
       emblem={<AgencyMark name={name} />}
       description={
-        a && isDepartment(a.name)
+        known && isDepartment(name)
           ? "Department totals include documents its component agencies file: the publisher names the department and the component on the same document."
-          : "Federal Register documents that name this agency."
+          : "Federal Register documents, regulatory pipeline, spending and structure for this agency."
       }
     >
-      {all.error ? (
+      {all.error && !profile ? (
         <ReadFailure
           label="Agency directory"
           retry={() => void all.refetch()}
           busy={all.isFetching}
         />
       ) : null}
-      {all.isPending ? (
-        <p role="status" className="text-[13px]">
-          Loading agency profile…
-        </p>
+      {prof.error ? (
+        <ReadFailure
+          label="Agency analytics"
+          retry={() => void prof.refetch()}
+          busy={prof.isFetching}
+        />
       ) : null}
-      {!a && !all.isPending && !all.error ? (
+      {loading ? (
+        <>
+          <p role="status" className="mb-2 text-[13px]">
+            Loading agency profile…
+          </p>
+          <LoadingBlock label="Loading agency profile" />
+        </>
+      ) : null}
+      {absent ? (
         <p className="text-[13px]">This agency is not in the Federal Register agency list.</p>
       ) : null}
-      {a ? (
+      {known && !loading ? (
         <>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <Stat
-              label="Federal Register documents"
-              value={a.count ?? "Not recorded"}
-              note="In the Federal Register history"
-            />
-            <Stat
-              label="Rules"
-              value={num(counts.data?.["Rule"])}
-              note="Documents typed as a rule"
-            />
-            <Stat label="Proposed rules" value={num(counts.data?.["Proposed Rule"])} />
-            <Stat label="Notices" value={num(counts.data?.["Notice"])} />
-          </div>
-          {counts.error ? (
-            <ReadFailure
-              label="Document counts"
-              retry={() => void counts.refetch()}
-              busy={counts.isFetching}
-            />
-          ) : null}
-          <div className="mt-5 flex flex-wrap gap-1 border-b border-border text-[13px]">
-            {TABS.filter((t) => t !== "Safety & enforcement" || safety).map((t) => (
+          <div className="flex flex-wrap gap-1 border-b border-border text-[13px]">
+            {TABS.map((t) => (
               <button
                 key={t}
                 type="button"
@@ -186,30 +241,48 @@ function AgencyPage() {
               </button>
             ))}
           </div>
-          <div className="mt-4">
+          <div className="mt-3">
             {tab === "Overview" ? (
               <div className="space-y-2 text-[13px]">
-                <p>
-                  Document types for this agency, counted from the saved Federal Register index.
-                  Other types (corrections, presidential documents, uncategorized) make up the rest
-                  of the total.
-                </p>
-                <p className="text-[12px] text-muted-foreground">
-                  A per-year breakdown is not available: the index does not offer a year filter for
-                  agency counts.
-                </p>
-                {safety ? (
-                  <p>
-                    <Link to="/safety" search={{ agency: safety }} className="underline">
-                      Open {safety} safety records →
-                    </Link>
-                  </p>
+                {profile && prof.data ? (
+                  <AgencyProfileView data={prof.data} />
                 ) : (
-                  <p className="text-[12px] text-muted-foreground">
-                    No safety dataset for this agency in the corpus.
-                  </p>
+                  <>
+                    <p className="rounded-md border border-border bg-surface px-3 py-2 text-[12px] text-muted-foreground">
+                      Agency analytics are not recorded for this agency; counts below come from the
+                      saved Federal Register index.
+                    </p>
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                      <Stat
+                        label="Federal Register documents"
+                        value={listed?.count ?? "Not recorded"}
+                        note="In the Federal Register history"
+                      />
+                      <Stat
+                        label="Rules"
+                        value={num(counts.data?.["Rule"])}
+                        note="Documents typed as a rule"
+                      />
+                      <Stat label="Proposed rules" value={num(counts.data?.["Proposed Rule"])} />
+                      <Stat label="Notices" value={num(counts.data?.["Notice"])} />
+                    </div>
+                    {counts.error ? (
+                      <ReadFailure
+                        label="Document counts"
+                        retry={() => void counts.refetch()}
+                        busy={counts.isFetching}
+                      />
+                    ) : null}
+                    {safety ? (
+                      <p>
+                        <Link to="/safety" search={{ agency: safety }} className="underline">
+                          Open {safety} safety records →
+                        </Link>
+                      </p>
+                    ) : null}
+                  </>
                 )}
-                <AgencyProvenance id={a.id} />
+                <AgencyProvenance id={id} asOf={prof.data?.trends?.asOf ?? null} />
               </div>
             ) : null}
             {tab === "Rules & notices" ? (
@@ -304,19 +377,26 @@ function AgencyPage() {
                 </div>
               </div>
             ) : null}
+            {tab === "Unified Agenda" ? (
+              <div className="space-y-2">
+                <p className="text-[11px] text-muted-foreground">
+                  Every action this agency (or, for a department, its components) reported in the
+                  latest Unified Agenda. Filter by stage or priority; each row links to its
+                  reginfo.gov entry.
+                </p>
+                <DatasetBrowser
+                  dataset="unified_agenda_pipeline"
+                  initialFilters={{ agency: id }}
+                  compact
+                />
+              </div>
+            ) : null}
             {tab === "All documents" ? (
               <DatasetBrowser
                 dataset="federal_register_history"
                 initialFilters={{ agency: id }}
                 compact
               />
-            ) : null}
-            {tab === "Safety & enforcement" && safety ? (
-              <p className="text-[13px]">
-                <Link to="/safety" search={{ agency: safety }} className="underline">
-                  Open {safety} recalls, approvals and enforcement records →
-                </Link>
-              </p>
             ) : null}
           </div>
         </>

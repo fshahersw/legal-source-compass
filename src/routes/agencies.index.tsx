@@ -2,26 +2,32 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
-import { ArrowUpRight, Search } from "lucide-react";
+import { ArrowUpRight, Building2, FileText, Search } from "lucide-react";
 import { AppShell } from "@/components/atlas/AppShell";
 import { AgencyMark } from "@/components/corpus/EntityArtwork";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { LoadingBlock, StateNote } from "@/components/enforcement/parts";
+import { AgencyDirectory, type DirectoryState } from "@/components/agencies/AgencyDirectory";
+import { RegisterOverview } from "@/components/agencies/RegisterOverview";
+import { normalizeAgencySearch } from "@/components/agencies/agencyView";
 import { listAgencies, type Agency } from "@/lib/external/agency.functions";
+import { listAgencyDirectory } from "@/lib/external/agencyProfile.functions";
 import { splitAgencies } from "@/lib/external/agencyTree";
 import { pageHead } from "@/lib/corpus/head";
+import { cn } from "@/lib/utils";
+
+type View = "directory" | "register";
 export const Route = createFileRoute("/agencies/")({
-  validateSearch: (search: Record<string, unknown>): { q?: string } =>
-    typeof search["q"] === "string" && search["q"].trim()
-      ? { q: search["q"].trim().slice(0, 160) }
-      : {},
+  validateSearch: normalizeAgencySearch,
   head: () =>
     pageHead(
       "Federal agencies",
-      "Find federal departments and agencies, their rules and recorded regulatory documents.",
+      "Every Federal Register agency with rulemaking volume, significant rules, comment periods, Unified Agenda actions and spending, plus a Federal Register overview by administration.",
     ),
   component: AgenciesPage,
 });
+
 function AgencyCards({ rows }: { rows: Agency[] }) {
   return (
     <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -47,12 +53,11 @@ function AgencyCards({ rows }: { rows: Agency[] }) {
     </div>
   );
 }
-function AgenciesPage() {
+
+/** The corpus index listing, used while the agency profiles dataset is unavailable. */
+function LegacyDirectory({ term, setTerm }: { term: string; setTerm: (q: string) => void }) {
   const read = useServerFn(listAgencies);
   const query = useQuery({ queryKey: ["agencies"], queryFn: () => read(), staleTime: 5 * 60_000 });
-  const { q: term = "" } = Route.useSearch();
-  const navigate = Route.useNavigate();
-  const setTerm = (q: string) => void navigate({ search: q ? { q } : {}, replace: true });
   const [limit, setLimit] = useState(36);
   const groups = useMemo(
     () =>
@@ -62,34 +67,19 @@ function AgenciesPage() {
     [query.data, term],
   );
   return (
-    <AppShell
-      breadcrumbs={[
-        { label: "Home", to: "/" },
-        { label: "Law & regulation", to: "/law" },
-        { label: "Agencies" },
-      ]}
-      title="Federal agencies"
-      description="Find a department, explore its rules, and follow the source documents."
-    >
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <div className="relative w-full max-w-lg">
-          <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
-          <Input
-            aria-label="Find an agency"
-            value={term}
-            onChange={(e) => {
-              setTerm(e.target.value);
-              setLimit(36);
-            }}
-            placeholder="Search departments and agencies"
-            className="h-9 pl-9 text-sm"
-          />
-        </div>
-        {query.data ? (
-          <span className="text-xs text-muted-foreground">
-            {groups.departments.length + groups.others.length} listed organizations
-          </span>
-        ) : null}
+    <div className="space-y-3">
+      <div className="relative w-full max-w-lg">
+        <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
+        <Input
+          aria-label="Find an agency"
+          value={term}
+          onChange={(e) => {
+            setTerm(e.target.value);
+            setLimit(36);
+          }}
+          placeholder="Search departments and agencies"
+          className="h-9 pl-9 text-sm"
+        />
       </div>
       {query.isPending ? (
         <p role="status" className="py-10 text-sm text-muted-foreground">
@@ -135,6 +125,124 @@ function AgenciesPage() {
               No agency matches this search.
             </p>
           ) : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AgenciesPage() {
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const view: View = search.view === "register" ? "register" : "directory";
+  const readDirectory = useServerFn(listAgencyDirectory);
+  const directory = useQuery({
+    queryKey: ["agency-directory"],
+    queryFn: () => readDirectory(),
+    staleTime: 10 * 60_000,
+  });
+  const state: DirectoryState = {
+    q: search.q ?? "",
+    kind: search.kind ?? "all",
+    sort: search.sort ?? "rulesLastYear",
+    desc: search.dir ? search.dir === "desc" : (search.sort ?? "rulesLastYear") !== "name",
+    layout: search.layout ?? "table",
+    active: search.active ?? false,
+  };
+  const update = (next: Partial<DirectoryState>) => {
+    const merged = { ...state, ...next };
+    void navigate({
+      search: normalizeAgencySearch({
+        q: merged.q,
+        view: search.view,
+        kind: merged.kind === "all" ? undefined : merged.kind,
+        sort: merged.sort,
+        dir: merged.desc ? "desc" : "asc",
+        layout: merged.layout === "tree" ? "tree" : undefined,
+        active: merged.active || undefined,
+      }),
+      replace: true,
+    });
+  };
+  const setView = (v: View) =>
+    void navigate({
+      search: normalizeAgencySearch({ ...search, view: v === "register" ? "register" : undefined }),
+    });
+  const rows = directory.data?.rows ?? [];
+  return (
+    <AppShell
+      breadcrumbs={[
+        { label: "Home", to: "/" },
+        { label: "Law & regulation", to: "/law" },
+        { label: "Agencies" },
+      ]}
+      title="Federal agencies"
+      description="Every agency the Federal Register lists: rulemaking, regulatory pipeline, budget and spending, with the Federal Register as a whole."
+    >
+      <div
+        role="tablist"
+        aria-label="Agencies views"
+        className="mb-3 flex flex-wrap gap-1 border-b border-border text-[13px]"
+      >
+        {(
+          [
+            { id: "directory", label: "Directory", Icon: Building2 },
+            { id: "register", label: "Federal Register overview", Icon: FileText },
+          ] as const
+        ).map(({ id, label, Icon }) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={view === id}
+            onClick={() => setView(id)}
+            className={cn(
+              "-mb-px inline-flex items-center gap-1.5 border-b-2 px-3 py-1.5 focus-visible:outline-2 focus-visible:outline-ring",
+              view === id
+                ? "border-primary font-medium"
+                : "border-transparent text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <Icon className="size-3.5" aria-hidden />
+            {label}
+          </button>
+        ))}
+      </div>
+      {view === "register" ? (
+        <RegisterOverview />
+      ) : directory.isPending ? (
+        <LoadingBlock label="Loading the agency directory" />
+      ) : directory.isError ? (
+        <div className="space-y-3">
+          <StateNote
+            tone="error"
+            action={
+              <button
+                type="button"
+                className="text-primary underline"
+                onClick={() => void directory.refetch()}
+              >
+                Retry directory statistics
+              </button>
+            }
+          >
+            Agency statistics could not be loaded; the recorded index list is shown instead.
+          </StateNote>
+          <LegacyDirectory term={state.q} setTerm={(q) => update({ q })} />
+        </div>
+      ) : rows.length ? (
+        <AgencyDirectory
+          rows={rows}
+          asOf={directory.data?.asOf ?? null}
+          state={state}
+          onChange={update}
+        />
+      ) : (
+        <div className="space-y-3">
+          <StateNote>
+            Agency statistics have not been published yet; the recorded index list is shown instead.
+          </StateNote>
+          <LegacyDirectory term={state.q} setTerm={(q) => update({ q })} />
         </div>
       )}
     </AppShell>

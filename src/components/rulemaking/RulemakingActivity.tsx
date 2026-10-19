@@ -1,5 +1,7 @@
 import { useMemo, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { listAgencyDirectory } from "@/lib/external/agencyProfile.functions";
 import {
   Bar,
   BarChart,
@@ -32,6 +34,12 @@ import {
 export const rulemakingQuery = {
   queryKey: ["rulemaking-activity"],
   queryFn: () => getRulemakingActivity(),
+  staleTime: 10 * 60 * 1000,
+};
+
+const agencyDirectoryQuery = {
+  queryKey: ["agency-directory"],
+  queryFn: () => listAgencyDirectory(),
   staleTime: 10 * 60 * 1000,
 };
 
@@ -286,6 +294,13 @@ export function RulemakingActivity() {
   const agencies = useMemo(() => q.data?.agencies ?? [], [q.data]);
   const [picked, setPicked] = useState<string | null>(null);
   const active = agencies.find((a) => a.slug === picked) ?? agencies[0] ?? null;
+  // Profile links only on an exact, unique name match with the Federal Register agency directory.
+  const directory = useQuery(agencyDirectoryQuery);
+  const profileId = useMemo(() => {
+    if (!active) return null;
+    const hits = (directory.data?.rows ?? []).filter((r) => r.name === active.name);
+    return hits.length === 1 ? hits[0]!.id : null;
+  }, [active, directory.data]);
   const flagged = agencies.flatMap((a) =>
     DOC_TYPES.flatMap((t) => (a.flags[t]?.flag ? [{ a, t, f: a.flags[t]! }] : [])),
   );
@@ -355,6 +370,24 @@ export function RulemakingActivity() {
               />
             ))}
           </div>
+          <p className="flex flex-wrap gap-x-4 gap-y-1 text-[11.5px]">
+            {profileId != null ? (
+              <Link
+                to="/agencies/$id"
+                params={{ id: String(profileId) }}
+                className="text-primary hover:underline"
+              >
+                {active.short} profile: agenda, comment periods, spending, CFR →
+              </Link>
+            ) : null}
+            <Link
+              to="/agencies"
+              search={{ view: "register" }}
+              className="text-primary hover:underline"
+            >
+              Federal Register overview, every agency →
+            </Link>
+          </p>
           <AgencyDetail agency={active} />
         </>
       )}

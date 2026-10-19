@@ -41,12 +41,18 @@ vi.mock("@/lib/external/agency.functions", () => ({
   getAgencyCounts: vi.fn(),
   listAgencyDocs: vi.fn(),
 }));
+vi.mock("@/lib/external/agencyProfile.functions", () => ({ getAgencyProfile: vi.fn() }));
+vi.mock("@/components/agencies/AgencyProfileView", () => ({
+  AgencyProfileView: () => createElement("section", null, "Agency analytics view"),
+}));
+vi.mock("@/components/enforcement/parts", () => ({ LoadingBlock: () => null }));
 vi.mock("@/components/atlas/AppShell", () => ({
   AppShell: ({ children }: { children: ReactNode }) => createElement("main", null, children),
 }));
 vi.mock("@/components/corpus/EntityArtwork", () => ({ AgencyMark: () => null }));
 vi.mock("@/components/corpus/DatasetBrowser", () => ({
-  DatasetBrowser: () => null,
+  DatasetBrowser: ({ dataset }: { dataset: string }) =>
+    createElement("div", null, `browser:${dataset}`),
   useDatasets: () => ({
     isPending: false,
     isFetching: false,
@@ -63,6 +69,13 @@ const options = (
   }
 ).options;
 const render = () => renderToStaticMarkup(createElement(options.component));
+const noProfile = { profile: null, trends: null, budget: null, spending: null };
+const withProfile = {
+  profile: { id: 557, name: "ACTION", stats: {} },
+  trends: { asOf: "2026-10-19" },
+  budget: null,
+  spending: null,
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -70,6 +83,7 @@ beforeEach(() => {
   mocks.tab = "Overview";
   mocks.results = {
     agencies: { data: [{ id: "199", name: "Food and Drug Administration", count: null }] },
+    "agency-profile": { data: noProfile },
     "agency-counts": {
       data: {
         Rule: { total: 0, capped: false },
@@ -91,6 +105,19 @@ beforeEach(() => {
 });
 
 describe("agency profile data states", () => {
+  it("renders the analytics view when the profile dataset has the agency, without index counts", () => {
+    mocks.id = "557";
+    mocks.results["agencies"] = { data: [] };
+    mocks.results["agency-profile"] = { data: withProfile };
+    const html = render();
+    expect(html).toContain("Agency analytics view");
+    expect(html).not.toContain("not in the Federal Register agency list");
+    expect(html).toContain("2026-10-19");
+    expect(mocks.query).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: ["agency-counts", "557"], enabled: false }),
+    );
+  });
+
   it("surfaces directory failure with retry and does not claim the agency is absent", () => {
     mocks.results["agencies"] = { error: new Error("offline") };
     const html = render();
@@ -103,16 +130,25 @@ describe("agency profile data states", () => {
     );
   });
 
-  it("distinguishes an absent agency from a loading directory", () => {
-    mocks.results["agencies"] = { isPending: true };
+  it("surfaces an analytics read failure with retry and keeps the index counts", () => {
+    mocks.results["agency-profile"] = { error: new Error("read failed") };
+    const html = render();
+    expect(html).toContain("Retry agency analytics");
+    expect(html).toContain("Too large to count");
+  });
+
+  it("distinguishes an absent agency from a loading profile", () => {
+    mocks.results["agency-profile"] = { isPending: true };
     expect(render()).toContain("Loading agency profile");
     expect(render()).not.toContain("not in the Federal Register agency list");
+    mocks.results["agency-profile"] = { data: noProfile };
     mocks.results["agencies"] = { data: [] };
     expect(render()).toContain("not in the Federal Register agency list");
   });
 
-  it("renders recorded zero, missing totals and capped totals distinctly", () => {
+  it("renders recorded zero, missing totals and capped totals distinctly in the fallback", () => {
     const html = render();
+    expect(html).toContain("Agency analytics are not recorded for this agency");
     expect(html).toContain(">0</div>");
     expect(html).toContain("Not recorded");
     expect(html).toContain("Too large to count");
@@ -137,6 +173,11 @@ describe("agency profile data states", () => {
     expect(render()).not.toContain("No matching documents");
     mocks.results["agency-docs"] = { data: [] };
     expect(render()).toContain("No matching documents in the saved index");
+  });
+
+  it("filters the Unified Agenda browser to this agency", () => {
+    mocks.tab = "Unified Agenda";
+    expect(render()).toContain("browser:unified_agenda_pipeline");
   });
 
   it("reports source metadata failure instead of implying source coverage is absent", () => {
