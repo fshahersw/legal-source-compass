@@ -26,7 +26,7 @@ export const Route = createFileRoute("/courts/collection")({
   head: () =>
     pageHead(
       "CourtListener collection",
-      "Dockets, citation flows, most-cited opinions, financial-disclosure report counts and bulk-data coverage in CourtListener's collection, snapshot of its bulk files. Counts of rows in the collection, not complete court totals.",
+      "Dockets, citation flows, most-cited opinions and how later opinions describe them, citations CourtListener could not match, financial-disclosure report counts and bulk-data coverage in CourtListener's collection, snapshot of its bulk files. Counts of rows in the collection, not complete court totals.",
     ),
   component: Page,
 });
@@ -37,7 +37,7 @@ function Page() {
   return (
     <AppShell
       title="CourtListener collection"
-      description="What CourtListener's bulk files hold: dockets by year, court level, state and nature of suit; citation flows between courts; the most-cited opinions; financial-disclosure report counts; and which database tables have no public bulk file. Counts of rows in the collection, not complete court totals."
+      description="What CourtListener's bulk files hold: dockets by year, court level, state and nature of suit; citation flows between courts; the most-cited opinions and how later opinions describe them; citations CourtListener could not match to a case; financial-disclosure report counts; and which database tables have no public bulk file. Counts of rows in the collection, not complete court totals."
       breadcrumbs={[
         { label: "Home", to: "/" },
         { label: "Courts", to: "/courts" },

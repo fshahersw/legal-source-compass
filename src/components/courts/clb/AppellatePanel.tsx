@@ -54,11 +54,21 @@ export function AppellatePanel({ courtId }: { courtId: string }) {
   if (!t && !p) return null;
   return (
     <PanelShell
-      title="Appeals: timing, lower courts and panels"
+      title={
+        t && p
+          ? "Appeals: timing, lower courts and panels"
+          : t
+            ? "Appeals: timing and lower courts"
+            : "Recorded panels"
+      }
       subtitle={
         <>
-          CourtListener originating-court information and cluster panels · counts of the collection,
-          not complete caseloads
+          {t && p
+            ? "CourtListener originating-court information and cluster panels"
+            : t
+              ? "CourtListener originating-court information on appellate dockets"
+              : "Judges CourtListener lists on the court's opinion clusters"}{" "}
+          · counts of the collection, not complete caseloads
         </>
       }
       aside={
@@ -68,22 +78,14 @@ export function AppellatePanel({ courtId }: { courtId: string }) {
         </>
       }
     >
-      {t ? (
-        <Timing t={t} />
-      ) : (
-        <p className="px-3 pb-2 text-xs text-muted-foreground">
-          Appeal timing: {NOT_RECORDED} for this court (fewer than 100 appeals carry lower-court
-          information).
+      {t ? <Timing t={t} /> : null}
+      {p ? <Panels p={p} /> : null}
+      {t && !p ? (
+        <p className="border-t border-border/70 px-3 py-2 text-[11px] text-muted-foreground">
+          Recorded panels: {NOT_RECORDED} (fewer than 50 of this court&apos;s opinion clusters list
+          a panel).
         </p>
-      )}
-      {p ? (
-        <Panels p={p} />
-      ) : (
-        <p className="border-t border-border/70 px-3 py-2 text-xs text-muted-foreground">
-          Recorded panels: {NOT_RECORDED} for this court (fewer than 50 opinion clusters list a
-          panel).
-        </p>
-      )}
+      ) : null}
       <div className="px-3 pb-3">
         <HowToRead
           measures={[
