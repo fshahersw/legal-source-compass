@@ -325,7 +325,8 @@ def main(argv):
                     missing = True
                     continue
                 parts.append(source_text_words(p))
-            source_words[st] = None if missing and not parts else "".join(parts)
+            # a state whose files were partly pruned is not re-checked (a partial source would report false misses)
+            source_words[st] = None if missing else "".join(parts)
         src = source_words[st]
         if src is None:
             skipped["constitution_not_rechecked_source_file_missing"] += 1
@@ -359,7 +360,8 @@ def main(argv):
                           "constitution_90pct_windows_found": const_most},
               "failures": {k: v for k, v in failures.items()}, "failure_examples": {k: v[:15] for k, v in notes.items()},
               "not_rechecked": dict(skipped), "pdfs_pruned": len(pruned),
-              "raw_checks_of_pruned_pdfs": "verification_with_raw.json (run before the PDFs were deleted)" if pruned else None,
+              "raw_checks_of_pruned_pdfs": ("verification_with_raw.json (rule PDFs) and verification_constitutions_with_raw.json "
+                                            "(constitution PDFs): the runs made before each set of PDFs was deleted") if pruned else None,
               "spot_checks": spot, "verified_at": fetchlib.utc_now()}
     with open(os.path.join(BUILD, "verification.json"), "w", encoding="utf-8") as handle:
         json.dump(result, handle, indent=1, ensure_ascii=False)
