@@ -4,6 +4,7 @@ import { JudgeFjcPanel } from "@/components/corpus/JudgeFjcPanel";
 import { JudgeCourtListenerPanel } from "@/components/judges/JudgeCourtListenerPanel";
 import { JudgeHeadshot } from "@/components/judges/JudgeHeadshot";
 import { JudgeMdlPanel } from "@/components/judges/JudgeMdlPanel";
+import { JudgeMdlFlowsPanel } from "@/components/judges/JudgeMdlFlowsPanel";
 import { pageHead } from "@/lib/corpus/head";
 import { canonicalState } from "@/lib/corpus/stateHub";
 import { buildEntityView } from "@/lib/external/entityView";
@@ -64,6 +65,7 @@ function Page() {
           <JudgeFjcPanel judgeId={id} />
           <JudgeCourtListenerPanel judgeId={id} />
           <JudgeMdlPanel judgeId={id} />
+          <JudgeMdlFlowsPanel judgeId={id} />
           {states.length ? (
             <div className="mb-5 flex flex-wrap items-center gap-2 text-xs">
               <span className="text-muted-foreground">Recorded state associations:</span>

@@ -14,6 +14,7 @@ import { StateFederalDataPanel } from "@/components/states/StateFederalDataPanel
 import { StateMetricsPanel } from "@/components/states/StateMetricsPanel";
 import { StateConsumerProtectionPanel } from "@/components/states/consumer/StateConsumerProtectionPanel";
 import { StateCourtDataPanel } from "@/components/states/courtdata/StateCourtDataPanel";
+import { StateMdlScopePanel } from "@/components/states/StateMdlScopePanel";
 import { Button } from "@/components/ui/button";
 import { useAtlas } from "@/lib/atlas/store";
 import { useCorpus } from "@/lib/corpus/store";
@@ -300,6 +301,7 @@ function StatePage() {
             <StateFederalDataPanel key={`federal-${usps}`} usps={usps} />
             <StateConsumerProtectionPanel key={`consumer-${usps}`} usps={usps} />
             <StateCourtDataPanel key={`court-data-${usps}`} usps={usps} />
+            <StateMdlScopePanel key={`mdl-scope-${usps}`} usps={usps} />
             {corpus.geo ? (
               <UsMap
                 compact

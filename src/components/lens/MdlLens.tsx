@@ -37,6 +37,7 @@ import type { FjcProfile } from "@/lib/external/judgeProfiles.functions";
 import type { MassTortSignal } from "@/lib/external/massTortSignals.functions";
 import type { SafetyInsight } from "@/lib/external/safetyInsights.functions";
 import { cn } from "@/lib/utils";
+import { MdlOrigins } from "./MdlOrigins";
 import { growthPct, n, peerRanking, pct, REGULATOR, reportYears } from "./lensView";
 
 export const mdlLensQuery = (mdl: number) => ({
@@ -1625,6 +1626,8 @@ export function MdlLens({ mdl }: { mdl: number }) {
         )}
         <FlagsCard insights={lens.insights} />
       </div>
+
+      <MdlOrigins mdl={m.mdl} />
 
       <div className="grid gap-3 lg:grid-cols-2">
         <CompaniesCard companies={lens.companies} />
