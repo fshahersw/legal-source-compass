@@ -21,6 +21,7 @@ WS = re.compile(r"[ \t    ]+")
 FOOTER = re.compile(r"^Page No\. \d+$")
 STATUS = re.compile(r"^(Repealed|Expired|Superseded|Transferred|Reserved|Renumbered|Omitted)\b", re.I)
 TOKEN = re.compile(r"[0-9A-Za-z]+")
+ANY_NUMBER = re.compile(r"^(\d+(?:\.\d+)?-\d+(?:\.\d+)?-\d+(?:\.\d+)*)\.")
 
 
 def clean(text):
@@ -94,6 +95,7 @@ def split_sections(lines, expected):
     starts = []
     cursor = 0
     errors = []
+    listed = {number for number, _ in expected}
     for number, name in expected:
         # A heading line starts with the number and a period (the PDF sometimes prints a leading zero, e.g.
         # "01-03-19."); a body line that merely wraps a cross-reference to the number is skipped because its
@@ -111,6 +113,17 @@ def split_sections(lines, expected):
             if _heading_matches(head, m.group(1), want):
                 found = (i, j, head, m.group(1))
                 break
+        if found is None and first_candidate is None:
+            # A misprinted number (e.g. "50-11-02.4." for 50-11.1-02.4): accept only a heading whose printed number is
+            # not another contents entry and whose words are exactly the contents name; the printed form is kept.
+            for i in range(cursor, len(lines)):
+                m = ANY_NUMBER.match(lines[i])
+                if not m or m.group(1) in listed:
+                    continue
+                head, j = _heading(lines, i, len(want), m.group(1))
+                if _heading_matches(head, m.group(1), want):
+                    found = (i, j, head, m.group(1))
+                    break
         if found is None:
             if first_candidate is None:
                 errors.append({"number": number, "error": "heading not found in chapter PDF"})

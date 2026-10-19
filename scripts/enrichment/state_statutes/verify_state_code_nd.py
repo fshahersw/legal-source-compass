@@ -73,7 +73,8 @@ def main(acq_dir, build_path, report_path, sample=50, seed=20261019):
         row = by_id[rid]
         pdf_path, next_number = order[rid]
         status, body = fetchlib.get(SITE + pdf_path, interval=1.0)
-        live = live_words(body, rid, next_number) if status == 200 else None
+        printed = fact(row, "Number as printed in the chapter PDF") or rid
+        live = live_words(body, printed, next_number) if status == 200 else None
         if live is None:
             failures += 1
             results.append({"id": rid, "ok": False, "error": f"HTTP {status} or heading not found"})
@@ -81,7 +82,7 @@ def main(acq_dir, build_path, report_path, sample=50, seed=20261019):
         citation = fact(row, "Citation")
         heading = row["title"][len(citation):].strip()
         text = (row["detail"].get("sections") or [{}])[0].get("text", "")
-        expected = [rid + "."] + heading.split() + text.split()
+        expected = [printed + "."] + heading.split() + text.split()
         ok = live == expected
         failures += 0 if ok else 1
         item = {"id": rid, "ok": ok, "words": len(expected)}
