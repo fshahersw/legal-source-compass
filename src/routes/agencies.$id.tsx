@@ -189,7 +189,7 @@ function AgencyPage() {
     <AppShell
       breadcrumbs={[
         { label: "Home", to: "/" },
-        { label: "Law & Safety", to: "/law" },
+        { label: "Law & regulation", to: "/law" },
         { label: "Agencies", to: "/agencies" },
         { label: name },
       ]}
