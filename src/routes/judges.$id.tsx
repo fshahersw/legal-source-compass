@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { EntityError, EntityPage, entityQuery } from "@/components/corpus/EntityPage";
-import { JudgePortrait } from "@/components/corpus/EntityArtwork";
 import { JudgeFjcPanel } from "@/components/corpus/JudgeFjcPanel";
 import { JudgeCourtListenerPanel } from "@/components/judges/JudgeCourtListenerPanel";
+import { JudgeHeadshot } from "@/components/judges/JudgeHeadshot";
 import { JudgeMdlPanel } from "@/components/judges/JudgeMdlPanel";
 import { pageHead } from "@/lib/corpus/head";
 import { canonicalState } from "@/lib/corpus/stateHub";
@@ -58,6 +58,7 @@ function Page() {
       dataset="judges"
       id={id}
       crumbs={crumbs}
+      lead={(_, v) => <JudgeHeadshot judgeId={id} name={v.title} recorded={v.photo} />}
       extra={() => (
         <>
           <JudgeFjcPanel judgeId={id} />

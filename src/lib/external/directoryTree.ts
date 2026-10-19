@@ -15,6 +15,8 @@ export type JudgeRow = {
   courts: string[];
   profileLayer: string;
   photo: string | null;
+  /** Public-domain portrait of the linked CourtListener person (server-filled; absent when none). */
+  portrait?: string | null;
 };
 
 /** Court listing item → compact row. Court type is the first segment of the listing subtitle (e.g. "Federal district"). */

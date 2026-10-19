@@ -7,3 +7,4 @@ package-lock.json
 bun.lock
 routeTree.gen.ts
 scripts/vendor/open-law-id/
+src/lib/judges/portraits.server.json

@@ -207,12 +207,12 @@ function JudgeList({ rows }: { rows: JudgeRow[] }) {
             params={{ id: r.id }}
             className="flex items-center gap-2 rounded-lg border border-border bg-surface p-2 shadow-card hover:bg-muted"
           >
-            {r.photo ? (
+            {r.photo || r.portrait ? (
               <img
-                src={fileUrl(r.photo)}
+                src={r.photo ? fileUrl(r.photo) : (r.portrait ?? "")}
                 alt=""
                 loading="lazy"
-                className="size-9 shrink-0 rounded object-cover"
+                className="size-9 shrink-0 rounded object-cover object-top"
               />
             ) : (
               <span className="size-9 shrink-0 rounded bg-muted" />
