@@ -37,6 +37,7 @@ for (const suite of [
   { directory: "scripts/enrichment/court_stats", modules: ["test_court_stats"] },
   { directory: "scripts/enrichment/enforcement", modules: ["test_parsing"] },
   { directory: "scripts/enrichment/judges_cross", modules: ["test_judges_cross"] },
+  { directory: "scripts/enrichment/judge_xwalk", modules: ["test_judge_xwalk"] },
   { directory: "scripts/enrichment/mdl_intel", modules: ["test_parsers"] },
   { directory: "scripts/enrichment/open_payments", modules: ["test_open_payments"] },
   { directory: "scripts/enrichment/cfpb", modules: ["test_cfpb"] },
