@@ -31,6 +31,7 @@ import {
 } from "@/lib/assistant/protocol";
 import { cn } from "@/lib/utils";
 import { AssistantMarkdown } from "./AssistantMarkdown";
+import { ASK_EVENT, type AskDetail } from "./askAssistant";
 import { collectPageContext, suggestionsFor } from "./pageContext";
 import { useAssistantChat, type ChatMessage } from "./useAssistantChat";
 import { useDictation } from "./useDictation";
@@ -170,7 +171,7 @@ function Message({ m }: { m: ChatMessage }) {
     return (
       <div className="flex justify-end">
         <div className="max-w-[85%] rounded-lg bg-muted px-3 py-2 text-[13px] leading-relaxed">
-          <p className="m-0 whitespace-pre-wrap break-words">{m.content}</p>
+          <p className="m-0 whitespace-pre-wrap break-words">{m.display ?? m.content}</p>
           {m.attachments.length ? (
             <p className="m-0 mt-1 text-[11px] text-muted-foreground">
               {m.attachments.map((a) => a.name).join(", ")}
@@ -276,13 +277,25 @@ export function AssistantPanel() {
     window.addEventListener("pointerup", up);
   };
 
-  const submit = (text = draft) => {
+  const submit = (text = draft, label?: string) => {
     if (!text.trim() || busy) return;
     if (dictation.listening) dictation.stop();
-    void send(text, files, collectPageContext(root.current));
+    void send(text, files, collectPageContext(root.current), label);
     setDraft("");
     setFiles([]);
   };
+  const submitRef = useRef(submit);
+  submitRef.current = submit;
+  useEffect(() => {
+    const onAsk = (e: Event) => {
+      const detail = (e as CustomEvent<AskDetail>).detail;
+      if (!detail || typeof detail.question !== "string" || !detail.question.trim()) return;
+      setMode("open");
+      setTimeout(() => submitRef.current(detail.question, detail.label), 60);
+    };
+    window.addEventListener(ASK_EVENT, onAsk);
+    return () => window.removeEventListener(ASK_EVENT, onAsk);
+  }, []);
 
   const attach = async (picked: FileList | null) => {
     if (!picked) return;

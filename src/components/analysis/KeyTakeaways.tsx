@@ -1,5 +1,6 @@
 import type { MouseEvent, ReactNode } from "react";
-import { ArrowDown } from "lucide-react";
+import { ArrowDown, MessageCircle } from "lucide-react";
+import { askAssistant, interpretQuestion } from "@/components/assistant/askAssistant";
 import { cn } from "@/lib/utils";
 import type { Takeaway } from "./analysisFormat";
 import { jumpToSection } from "./jumpToSection";
@@ -33,7 +34,27 @@ export function KeyTakeaways({
     >
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 border-b border-border/70 px-3 py-1.5">
         <h3 className="text-sm font-semibold leading-5">{title}</h3>
-        {scope ? <span className="text-[11px] text-muted-foreground">{scope}</span> : null}
+        <span className="ml-auto flex items-baseline gap-3">
+          {scope ? <span className="text-[11px] text-muted-foreground">{scope}</span> : null}
+          <button
+            type="button"
+            onClick={() =>
+              askAssistant(
+                interpretQuestion(
+                  title,
+                  scope,
+                  items.map((i) => `${i.figure}: ${i.text}`),
+                ),
+                `Interpret: ${title}${scope ? ` (${scope})` : ""}`,
+              )
+            }
+            className="inline-flex items-center gap-1 self-center rounded text-[11px] text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+            title="Ask the research assistant to interpret these figures"
+          >
+            <MessageCircle className="size-3" aria-hidden />
+            Interpret
+          </button>
+        </span>
       </div>
       <ul className="divide-y divide-border/60">
         {items.map((t) => (

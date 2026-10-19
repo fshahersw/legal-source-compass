@@ -14,6 +14,8 @@ export type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  /** Shown instead of `content` for questions sent from page actions. */
+  display?: string | undefined;
   status: "streaming" | "done" | "error" | "stopped";
   steps: AssistantStep[];
   sources: AssistantSource[];
@@ -66,13 +68,19 @@ export function useAssistantChat() {
   }, []);
 
   const send = useCallback(
-    async (text: string, attachments: AssistantAttachment[], page: PageContext | null) => {
+    async (
+      text: string,
+      attachments: AssistantAttachment[],
+      page: PageContext | null,
+      display?: string,
+    ) => {
       const question = text.trim();
       if (!question || busy) return;
       const user: ChatMessage = {
         id: id(),
         role: "user",
         content: question,
+        display,
         status: "done",
         steps: [],
         sources: [],

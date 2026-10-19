@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { ArrowUpRight, ChevronRight } from "lucide-react";
+import { ArrowUpRight, ChevronRight, MessageCircle } from "lucide-react";
+import { askAssistant, interpretQuestion } from "@/components/assistant/askAssistant";
 import {
   Bar,
   CartesianGrid,
@@ -462,6 +463,26 @@ function DomainView({ data, onOpen }: { data: RecallDomainData; onOpen: (id: str
         <Panel
           title="What stands out"
           subtitle="Statements computed from the recall records; open one for the records behind it"
+          actions={
+            <button
+              type="button"
+              onClick={() =>
+                askAssistant(
+                  interpretQuestion(
+                    `${o.domainLabel}: what stands out`,
+                    o.first && o.last ? `${o.first.slice(0, 4)}–${o.last.slice(0, 4)}` : undefined,
+                    insights.map((i) => i.text),
+                  ),
+                  `Interpret: ${o.domainLabel}, what stands out`,
+                )
+              }
+              className="inline-flex items-center gap-1 rounded text-[11px] text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+              title="Ask the research assistant to interpret these findings"
+            >
+              <MessageCircle className="size-3" aria-hidden />
+              Interpret
+            </button>
+          }
         >
           <ul className="m-0 list-none space-y-1.5 px-3 py-2.5">
             {insights.map((i) => (
