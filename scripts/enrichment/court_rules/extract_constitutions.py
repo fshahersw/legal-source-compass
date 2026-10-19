@@ -113,14 +113,26 @@ def save_text(name: str, text: str) -> tuple[str, str]:
     return os.path.relpath(path, ROOT), hashlib.sha256(text.encode()).hexdigest()
 
 
-def units_from_text(text: str) -> tuple[list[dict], str]:
-    units = CP.split_constitution(text)
+REPEATED_LIMIT = 0.05  # above this share of unresolved contents entries (CP.repeated_share) sections are not trusted; articles are kept
+
+
+def finish_units(units: list[dict], whole: str | None, stats: dict) -> tuple[list[dict], str]:
     level = CP.structure_level(units)
+    if level == "section" and CP.repeated_share(units) > REPEATED_LIMIT:
+        stats["sections_not_trusted_repeated_share"] = round(CP.repeated_share(units), 3)
+        level = "article" if len({u.get("article") for u in units if u.get("article")}) >= 2 else "document"
     if level == "article":
         units = CP.merge_to_articles(units)
-    elif level == "document":
-        units = [{"article": None, "article_title": None, "section": None, "section_title": None, "start": 0, "text": text.strip()}]
+    elif level == "document" and whole is not None:
+        units = [{"article": None, "article_title": None, "section": None, "section_title": None, "start": 0, "text": whole.strip()}]
     return units, level
+
+
+def units_from_text(text: str, stats: dict) -> list[dict]:
+    units, cleaned = CP.clean_units(CP.split_constitution(text))
+    for k, v in cleaned.items():
+        stats[k] = stats.get(k, 0) + v
+    return units
 
 
 def al_units(files: list[tuple[str, dict]]) -> tuple[list[dict], str, list[dict]]:
@@ -176,6 +188,7 @@ def extract_state(st: str, src: dict, m: dict[str, dict]) -> tuple[dict, list[di
         info["status"] = "not_retrieved"
         return info, []
     units: list[dict] = []
+    cleanup: dict = {}
     level = "document"
     used: list[dict] = []
     if src["kind"] == "al_graphql":
@@ -225,19 +238,21 @@ def extract_state(st: str, src: dict, m: dict[str, dict]) -> tuple[dict, list[di
             return info, []
         if len(texts) == 1:
             text, r = texts[0]
-            units, level = units_from_text(text)
+            units = units_from_text(text, cleanup)
+            is_pdf = r["url"].lower().endswith(".pdf") or fetchlib.load_raw(r["path"])[:5] == b"%PDF-"
             for u in units:
-                u["url"] = r["url"] + (f"#page={textlib.page_of(text, u['start'])}" if r["url"].lower().endswith(".pdf") or fetchlib.load_raw(r["path"])[:5] == b"%PDF-" else "")
+                u["url"] = r["url"] + (f"#page={textlib.page_of(text, u['start'])}" if is_pdf else "")
+            units, level = finish_units(units, text, cleanup)
         else:
             for text, r in texts:
-                us, lv = units_from_text(text)
+                us = units_from_text(text, cleanup)
                 for u in us:
                     u["url"] = r["url"]
                 units += us
-            level = CP.structure_level(units)
+            units, level = finish_units(units, None, cleanup)
     full = "\n\f\n".join(u["text"] for u in units)
     info["text_path"], info["text_sha256"] = save_text(f"const-{st.lower()}", full)
-    info.update(status="text" if units else "no_text", structure=level, units=len(units),
+    info.update(status="text" if units else "no_text", structure=level, units=len(units), cleanup=cleanup or None,
                 articles=len({u.get("article") for u in units if u.get("article")}),
                 sections=sum(1 for u in units if u.get("section")), chars=len(full),
                 retrieved_at=max((r["retrieved_at"] for r in used), default=None),

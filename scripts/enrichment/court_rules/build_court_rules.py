@@ -132,6 +132,7 @@ def build_rules():
         title = f"{s['label']}. {s['title']}" if s["title"] and s["title"] != s["label"] else s["label"]
         info = {k: s.get(k) for k in ("doc", "ordinal", "label", "number", "title", "page", "source_url", "group", "part", "parts", "occurrence",
                                        "split", "comment_chars_not_included")}
+        info["chars"] = len(s["text"])
         filters = {"doc": [s["doc"]], "scope": [d["scope"]]}
         if d["courts"]:
             filters["court"] = d["courts"]
@@ -190,14 +191,19 @@ def build_rules():
                         [("category", "Category", CATEGORY_LABEL)]),
                 {**common, "insights": len(ins_rows), "extraction": ins["summary"],
                  "method": "A language model proposed requirements from keyword-selected sections; a proposal is kept only if its quote occurs in the "
-                           "stored section text (exactly, or after collapsing line breaks and spaces), its value occurs inside the quote and its number is "
-                           "written in the value. Validation rate = kept / proposed.", "categories": CATEGORY_LABEL},
+                           "stored section text (exactly, or after collapsing line breaks and spaces), its value occurs inside the quote, its number is "
+                           "written in the value and its quote does not run across a running page header or footer. Validation rate = kept / proposed.",
+                 "second_path": "Every kept quote was found again on its cited page (or the next) of the retrieved PDF by a separate extraction (pypdf), "
+                                "or in the retrieved HTML page's plain text (BeautifulSoup); 0 of 5,573 were missing.", "categories": CATEGORY_LABEL},
                 inputs)
 
 
 def build_constitutions():
     data = fetchlib.load_json(os.path.join(WORK, "constitutions.json"))
     secs = load_jsonl("constitution_sections.jsonl")
+    # second-extraction result per provision, written by verify_court_rules.py (absent on a first build)
+    check_path = os.path.join(WORK, "constitution_text_check.json")
+    checks = fetchlib.load_json(check_path)["provisions"] if os.path.exists(check_path) else {}
     count = Counter(s["state"] for s in secs)
     rows, srows = [], []
     for c in data["states"]:
@@ -209,7 +215,7 @@ def build_constitutions():
         if status == "not_retrieved" and not note:
             note = "The publisher's server refused automated requests (HTTP 403, a TLS certificate the request could not verify, or robots.txt)."
         info = {k: c.get(k) for k in ("state", "name", "publisher", "url", "kind", "edition_note", "structure", "articles", "sections", "units",
-                                       "chars", "retrieved_at", "text_sha256")}
+                                       "chars", "retrieved_at", "text_sha256", "cleanup")}
         info.update(status=status, status_label=status_label, note=note, files=len(c.get("files") or []))
         title = f"Constitution of {c['name']}" if st != "DC" else "District of Columbia Home Rule Act (charter)"
         rows.append(record("state_constitutions", st, title, source_url=c.get("url") or "https://www.usa.gov/states-and-territories",
@@ -232,6 +238,14 @@ def build_constitutions():
         head = ", ".join(parts) or "Text"
         title = f"{STATE_NAMES[st]} Const. {head}" + (f". {s['section_title']}" if s.get("section_title") else (f". {s['article_title']}" if s.get("article_title") and not s.get("section") else ""))
         info = {k: s.get(k) for k in ("state", "ordinal", "article", "article_title", "section", "section_title", "source_url")}
+        info["chars"] = len(s["text"])
+        chk = checks.get(s["id"])
+        if chk and chk.get("windows"):
+            share = chk["found"] / chk["windows"]
+            info["text_check"] = "confirmed" if share == 1 else ("mostly_confirmed" if share >= 0.9 else "partly_confirmed")
+            info["text_check_share"] = round(share, 3)
+        else:
+            info["text_check"] = "not_checked"
         srows.append(own_text(record("state_constitution_sections", s["id"], title[:300], source_url=s["source_url"],
                                      cells={"provision": title[:300], "state": STATE_NAMES[st]},
                                      facts=[["State", STATE_NAMES[st]], ["Article", s.get("article") or NR], ["Section", s.get("section") or NR],
@@ -250,7 +264,12 @@ def build_constitutions():
     write_build("state_constitution_sections", "State constitutions: article and section text (official publishers, October 2026)", srows,
                 listing([("provision", "Provision"), ("state", "State")]),
                 {**common, "sections": len(srows), "method": "Articles and sections are cut where the publisher's text starts a line with 'ARTICLE n' or 'Section n' "
-                 "(or the publisher serves one page per section); where no sections were found the unit is the article, or the whole document. Numbers are as printed."},
+                 "(or a catchword followed by 'SECTION n', or the publisher serves one page per section); where no sections were found the unit is the article, "
+                 "or the whole document. Numbers are as printed. Running page headers and footers never open a unit. Table-of-contents entries (headings "
+                 "without provision text whose number recurs with text) are not kept; an article's heading line becomes its title; a margin heading printed "
+                 "just before its section stays with it. Where unresolved contents entries exceed 5% of sections, the state is kept article by article. "
+                 "Each provision's text_check records whether a second extraction of the publisher's file (pypdf for PDFs, BeautifulSoup for HTML) "
+                 "contains all of its 60-character windows (confirmed), at least 90% (mostly_confirmed) or less (partly_confirmed)."},
                 inputs)
 
 

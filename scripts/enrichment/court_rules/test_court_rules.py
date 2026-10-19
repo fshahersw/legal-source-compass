@@ -165,6 +165,48 @@ class ConstitutionTests(unittest.TestCase):
         units = CP.split_constitution("Article I, Section 1 | Inalienable Rights\nAll men are free.")
         self.assertEqual((units[0]["article"], units[0]["section"], units[0]["section_title"]), ("I", "1", "Inalienable Rights"))
 
+    def test_contents_entries_margin_headings_and_titles(self):
+        text = "\n".join([
+            "ARTICLE I",
+            "DECLARATION OF RIGHTS",
+            "SECTION 1. Political power.",
+            "SECTION 2. Basic rights.",
+            "§3",
+            "Religious freedom.",
+            "SECTION 1. Political power.—All political power is inherent in the people.",
+            "SECTION 2. Basic rights.—All natural persons are equal before the law.",
+            "§3",
+            "Religious freedom.",
+            "Sec. 3. There shall be no law respecting the establishment of religion.",
+        ])
+        units, stats = CP.clean_units(CP.split_constitution(text))
+        self.assertEqual([(u["article"], u["section"]) for u in units], [("I", "1"), ("I", "2"), ("I", "3")])
+        self.assertTrue(units[0]["text"].startswith("SECTION 1. Political power.—All"))
+        self.assertTrue(units[2]["text"].startswith("§3\nReligious freedom.\nSec. 3."))  # margin heading kept with its section
+        self.assertEqual(units[0]["article_title"], "DECLARATION OF RIGHTS")
+        self.assertEqual(stats["article_heading_kept_as_title"], 1)
+        self.assertEqual(stats["margin_heading_kept_with_section"], 1)
+        self.assertGreaterEqual(stats["contents_entry_dropped"], 2)
+        self.assertEqual(CP.repeated_share(units), 0.0)
+
+    def test_running_headers_do_not_open_units(self):
+        pages = []
+        for n in range(1, 6):
+            pages.append("\n".join([f"Article IV Section {n}", f"Section {n}. Rule {n}. The legislature shall meet on day {n}",
+                                    "and shall adjourn when its business is done.", "CONSTITUTION OF THE STATE"]))
+        units = CP.split_constitution("ARTICLE IV\n" + "\n\f".join(pages))
+        self.assertEqual([u["section"] for u in units if u["section"]], ["1", "2", "3", "4", "5"])
+        self.assertTrue(all(u["article"] == "IV" for u in units))
+
+    def test_catchword_spaced_decimal_and_lettered_numbers(self):
+        units = CP.split_constitution("\n".join([
+            "ARTICLE V.", "Courts. SECTION 1. The judicial power shall be vested in a supreme court.",
+            "Section 44. 1. Commission composition and appointment. (1) The commission shall have twelve members.",
+            "Section 8-A. Rights of victims of crime. The victim shall be accorded fairness.",
+        ]))
+        self.assertEqual([(u["section"], u["section_title"]) for u in units if u["section"]],
+                         [("1", "Courts"), ("44.1", "Commission composition and appointment"), ("8-A", "Rights of victims of crime")])
+
     def test_roman(self):
         self.assertEqual(CP.roman_to_int("XIV"), 14)
         self.assertIsNone(CP.roman_to_int("ABC"))

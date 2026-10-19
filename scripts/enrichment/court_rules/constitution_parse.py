@@ -14,7 +14,10 @@ ORDINALS = ("FIRST|SECOND|THIRD|FOURTH|FIFTH|SIXTH|SEVENTH|EIGHTH|NINTH|TENTH|EL
             "FIFTEENTH|SIXTEENTH|SEVENTEENTH|EIGHTEENTH|NINETEENTH|TWENTIETH|TWENTY-FIRST|TWENTY-SECOND|TWENTY-THIRD|"
             "TWENTY-FOURTH|TWENTY-FIFTH|TWENTY-SIXTH|TWENTY-SEVENTH|TWENTY-EIGHTH|TWENTY-NINTH|THIRTIETH")
 ARTICLE = re.compile(rf"^(?:ARTICLE|Article|ART\.|Art\.)\s+([IVXLC]+|\d+[A-Z]?|{ORDINALS}|{ORDINALS.title()})\b\.?\s*[-–—:.]?\s*(.*)$")
-SECTION = re.compile(r"^(?:SECTION|Section|SEC\.|Sec\.|§+)\s*(\d+[A-Za-z]?(?:[.\-]\d+[A-Za-z]?)*)\b\.?\s*[-–—:.]?\s*(.*)$")
+SECTION = re.compile(r"^(?:SECTION|Section|SEC\.|Sec\.|§+)\s*(\d+[A-Za-z]?(?:[.\-](?:\d+[A-Za-z]?|[A-Z]\b))*)\b\.?\s*[-–—:.]?\s*(.*)$")
+CATCHWORD = re.compile(r"^([A-Z][A-Za-z ,;'’()-]{1,80}\.)\s+(?:SECTION|Section|SEC\.|Sec\.)\s*(\d+[a-z]?)\.\s+(?=[A-Z(\[])(.*)$")
+# "Section 44. 1. Commission composition" (crs title 00): a decimal section number printed with a space after the point
+SPACED_DECIMAL = re.compile(r"^(\d{1,2})\.\s+(?=[A-Z])")
 TOC = re.compile(r"(?:\.\s?){4,}\s*\d*\s*$|\s\.{2,}\s*\d+\s*$")
 # "Article I, Section 1 | Inalienable Rights" (codes.ohio.gov) names both levels on one line
 COMBINED = re.compile(r"^(?:Article|ARTICLE)\s+([IVXLC]+|\d+[A-Z]?),\s*(?:Section|SECTION)\s+(\d+[A-Za-z]?(?:[.\-]\d+[A-Za-z]?)*)\s*[|.:\-–—]?\s*(.*)$")
@@ -29,20 +32,82 @@ def _title(rest: str, max_len: int = 160) -> str:
     return head[:max_len].strip(" .")
 
 
+def _shape(line: str) -> str:
+    s = re.sub(r"\b[IVXLC]+\b", "R", line.strip())
+    s = re.sub(r"\d+", "#", s)
+    s = re.sub(r"\(([a-z])\)", "(x)", s)
+    return re.sub(r"\s+", " ", s).lower()
+
+
+def running_lines(lines: list[str]) -> set[int]:
+    """Indexes of running page headers and footers in a paged rendering (pages end with a form feed): lines among the
+    first or last three of a page whose exact text recurs at the edge of three or more pages ("Article IV – Legislative
+    Department"), or that name an article and a section and whose shape recurs at the edge of three or more pages
+    ("Article IV Section 8", "Art. III § 38(d)"). They stay in the text but never open an article or section."""
+    pages: list[list[int]] = [[]]
+    for i, line in enumerate(lines):
+        if "\f" in line:
+            pages.append([])
+        if line.strip(" \f"):
+            pages[-1].append(i)
+    if len(pages) < 4:
+        return set()
+    edge: list[int] = []
+    for page in pages:
+        edge.extend(page[:3] + page[-3:])
+    exact: dict[str, set] = {}
+    shape: dict[str, set] = {}
+    for n, page in enumerate(pages):
+        for i in set(page[:3] + page[-3:]):
+            exact.setdefault(lines[i].strip(" \f"), set()).add(n)
+            shape.setdefault(_shape(lines[i].strip(" \f")), set()).add(n)
+    both = re.compile(r"^(?:ARTICLE|Article|ART\.|Art\.)\s+\S+.*(?:SECTION|Section|SEC\.|Sec\.|§)\s*\d", re.I)
+    # how often each text / shape occurs anywhere: a running line sits at a page edge (almost) every time it is printed,
+    # while a real heading such as "Article 1, Section 1" (one per section) mostly falls inside pages
+    exact_all: dict[str, int] = {}
+    shape_all: dict[str, int] = {}
+    for line in lines:
+        s = line.strip(" \f")
+        if s:
+            exact_all[s] = exact_all.get(s, 0) + 1
+            shape_all[_shape(s)] = shape_all.get(_shape(s), 0) + 1
+    edge_set = set(edge)
+    exact_edge: dict[str, int] = {}
+    shape_edge: dict[str, int] = {}
+    for i in edge_set:
+        s = lines[i].strip(" \f")
+        exact_edge[s] = exact_edge.get(s, 0) + 1
+        shape_edge[_shape(s)] = shape_edge.get(_shape(s), 0) + 1
+    out = set()
+    for i in edge_set:
+        s = lines[i].strip(" \f")
+        sh = _shape(s)
+        # a bare repeated "Section 1." or "ARTICLE I" is a real heading that often starts a page, never furniture
+        repeated_text = (len(exact.get(s, ())) >= 3 and not SECTION.match(s) and len(s.split()) >= 3
+                         and exact_edge[s] >= 0.75 * exact_all[s])
+        repeated_shape = both.match(s) and len(shape.get(sh, ())) >= 3 and shape_edge[sh] >= 0.75 * shape_all[sh]
+        if repeated_text or repeated_shape:
+            out.add(i)
+    return out
+
+
 def split_constitution(text: str) -> list[dict]:
     lines = text.split("\n")
+    furniture = running_lines(lines)
     units: list[dict] = []
     article = None
     article_title = None
     current = None
     pos = 0
-    for line in lines:
+    for n_line, line in enumerate(lines):
         start = pos
         pos += len(line) + 1
         s = line.strip()
-        if not s or s == "\f":
+        if not s or s == "\f" or n_line in furniture:
             if current is not None:
                 current["lines"].append(line)
+            elif s:
+                current = {"article": None, "article_title": None, "section": None, "section_title": None, "start": start, "lines": [line]}
             continue
         cm = COMBINED.match(s)
         if cm and len(s) < 220 and not TOC.search(s):
@@ -63,14 +128,26 @@ def split_constitution(text: str) -> list[dict]:
         sm = SECTION.match(s)
         if sm and not TOC.search(s) and not re.match(r"^[,;)(]", sm.group(2) or ""):
             rest = sm.group(2)
+            number = sm.group(1)
+            spaced = SPACED_DECIMAL.match(rest or "") if re.fullmatch(r"\d+", number) and re.match(r"^\S+\s*\d+\.\s", s) else None
+            if spaced:
+                number, rest = f"{number}.{spaced.group(1)}", rest[spaced.end():]
             if rest and (rest[:1].islower() or rest[:1] in ",;)"):
                 pass  # "Section 4 of this article ..." wrapped inside a sentence: not a heading
             else:
                 if current is not None:
                     units.append(current)
-                current = {"article": article, "article_title": article_title, "section": sm.group(1), "section_title": _title(rest) or None,
+                current = {"article": article, "article_title": article_title, "section": number, "section_title": _title(rest) or None,
                            "start": start, "lines": [line]}
                 continue
+        cw = CATCHWORD.match(s)
+        if cw and not TOC.search(s):
+            # "Courts. SECTION 1. The Judicial power ..." (Iowa, Wisconsin): the catchword printed before the number
+            if current is not None:
+                units.append(current)
+            current = {"article": article, "article_title": article_title, "section": cw.group(2), "section_title": cw.group(1).strip(" ."),
+                       "start": start, "lines": [line]}
+            continue
         if current is None:
             current = {"article": None, "article_title": None, "section": None, "section_title": None, "start": start, "lines": []}
         current["lines"].append(line)
@@ -92,6 +169,93 @@ def split_constitution(text: str) -> list[dict]:
     if carry and out:
         out[-1]["text"] += "\n" + carry
     return out
+
+
+PROVISION_VERB = re.compile(r"\b(?:shall|may|must|is|are|be|been|was|were|has|have|will|hereby)\b", re.I)
+
+
+def heading_only(u: dict) -> bool:
+    """A unit holding headings and catchlines but no provision text: none of the verbs a provision states its rule with
+    (shall, may, must, is, are, be, ...). Line length is no guide: two-column publications print provisions in short lines."""
+    return bool(u["text"].strip()) and len(u["text"]) < 1500 and not PROVISION_VERB.search(u["text"])
+
+
+NUMBERED_LINE = re.compile(r"^(?:(?:SECTION|Section|SEC\.|Sec\.)\s*|§+\s*)?\d+[A-Za-z]?(?:[.\-][A-Za-z0-9]+)*\.?(?:\s|$)")
+
+
+def contents_like(u: dict) -> bool:
+    """Headings without provision text: heading-only, or a list of numbered lines such as an article's table of sections."""
+    lines = [ln.strip() for ln in u["text"].split("\n") if ln.strip()]
+    if heading_only(u):
+        return True
+    numbered = sum(1 for ln in lines if NUMBERED_LINE.match(ln))
+    return numbered >= 3 and numbered >= 0.5 * len(lines)
+
+
+def clean_units(units: list[dict]) -> tuple[list[dict], dict]:
+    """Remove units that are page furniture rather than provisions, without changing any provision's words:
+      * a contents-like section unit (contents_like) whose article and section number recur LATER in a unit with
+        provision text is a contents entry (dropped) or, when it comes right before that unit, a margin heading (its
+        words are kept at the start of the section);
+      * a heading-only article unit in an article that has sections is its heading (kept as the article title);
+      * a heading-only unit outside any article (a document title or running header) is dropped.
+    Returns the kept units and the counts of each change."""
+    stats: dict[str, int] = {}
+
+    def bump(k: str) -> None:
+        stats[k] = stats.get(k, 0) + 1
+
+    last_body: dict = {}
+    for i, u in enumerate(units):
+        if u.get("section") and not contents_like(u):
+            last_body[(u.get("article"), u.get("section"))] = i
+    has_body = set(last_body)
+    with_sections = {u.get("article") for u in units if u.get("section")}
+    titles: dict = {}
+    out: list[dict] = []
+    for i, u in enumerate(units):
+        key = (u.get("article"), u.get("section"))
+        nxt = units[i + 1] if i + 1 < len(units) else None
+        # contents-like units are dropped when the provision follows them (a table of contents precedes the text);
+        # strictly heading-only units also when it precedes them (an index printed after the text)
+        if u.get("section") and ((last_body.get(key, -1) > i and contents_like(u)) or (key in has_body and heading_only(u))):
+            if nxt is not None and (nxt.get("article"), nxt.get("section")) == key and not contents_like(nxt):
+                nxt["text"] = u["text"].rstrip() + "\n" + nxt["text"]
+                nxt["start"] = u.get("start", nxt.get("start"))
+                nxt["section_title"] = nxt.get("section_title") or u.get("section_title")
+                bump("margin_heading_kept_with_section")
+            else:
+                bump("contents_entry_dropped")
+            continue
+        if not u.get("section") and heading_only(u) and len(u["text"]) < 300:
+            if u.get("article") and u.get("article") in with_sections:
+                lines = [ln.strip() for ln in u["text"].split("\n") if ln.strip()]
+                title = u.get("article_title") or (lines[1].strip(" .") if len(lines) > 1 and not SECTION.match(lines[1]) else None)
+                titles.setdefault(u["article"], title)
+                bump("article_heading_kept_as_title")
+                continue
+            if not u.get("article") and len(u["text"]) < 200:
+                bump("title_or_running_header_dropped")
+                continue
+        out.append(u)
+    for u in out:
+        if not u.get("article_title") and titles.get(u.get("article")):
+            u["article_title"] = titles[u["article"]]
+    return out, stats
+
+
+def repeated_share(units: list[dict]) -> float:
+    """Share of section units that hold headings only (contents_like) and repeat another unit's article and section
+    number: contents entries that could not be told apart from the provision, i.e. a mis-read structure. (Two
+    provisions with text under one number, such as an original and an amended article, are the publisher's own.)"""
+    secs = [u for u in units if u.get("section")]
+    if not secs:
+        return 0.0
+    seen: dict = {}
+    for u in secs:
+        k = (u.get("article"), u.get("section"))
+        seen[k] = seen.get(k, 0) + 1
+    return sum(1 for u in secs if seen[(u.get("article"), u.get("section"))] > 1 and contents_like(u)) / len(secs)
 
 
 def structure_level(units: list[dict]) -> str:

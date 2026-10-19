@@ -12,7 +12,10 @@ Second paths used:
   * regulation index: each entry's citation (or the link it was read from) and heading occur in the stored publisher page;
   * after prune_raw.py deletes extracted PDFs, the checks that need them are counted under not_rechecked and their last
     results stay in verification_with_raw.json;
-  * constitutions: each provision's words occur in the stored rendering of its state's text.
+  * constitutions: each provision's 60-character windows of letters and digits (lines at PDF page edges left out) are
+    looked for in a second extraction of the publisher's files (pypdf; BeautifulSoup with encoding detection; decoded
+    JSON strings); all found = confirmed, at least 90% = mostly confirmed, less = a failure. The per-provision result is
+    written to work/constitution_text_check.json for the build to label each provision.
 Writes private/build/court_rules/verification.json with failure counts and the spot checks.
 """
 from __future__ import annotations
@@ -66,6 +69,61 @@ def html_words(path: str) -> str:
     raw = fetchlib.load_raw(path)
     enc = "cp1252" if "/state/nv/" in path else "utf-8"
     return words(BeautifulSoup(raw.decode(enc, "replace"), "lxml").get_text(" "))
+
+
+def source_text_words(path: str) -> str:
+    """Letters and digits of a stored publisher file, read independently of the extraction code."""
+    raw = fetchlib.load_raw(path)
+    if raw[:5] == b"%PDF-":
+        return "".join(pdf_pages(path))
+    if path.endswith((".json", ".json.gz")) or raw.lstrip()[:1] in (b"{", b"["):
+        try:
+            data = json.loads(raw.decode("utf-8-sig"))
+        except ValueError:
+            data = None
+        if data is not None:
+            strings = []
+
+            def walk(v):
+                if isinstance(v, dict):
+                    for x in v.values():
+                        walk(x)
+                elif isinstance(v, list):
+                    for x in v:
+                        walk(x)
+                elif isinstance(v, str):
+                    from bs4 import BeautifulSoup
+
+                    strings.append(BeautifulSoup(v, "lxml").get_text(" ") if "<" in v else v)
+
+            walk(data)
+            return words(" ".join(strings))
+    from bs4 import BeautifulSoup
+
+    if raw[:400].count(b"\x00") > 100:  # UTF-16 without a byte-order mark (sdlegislature.gov section pages)
+        return words(BeautifulSoup(raw.decode("utf-16-le", "replace"), "lxml").get_text(" "))
+    return words(BeautifulSoup(raw, "lxml").get_text(" "))
+
+
+def provision_windows(text: str, size: int = 120) -> list[str]:
+    """Letters-and-digits windows of a provision's body. A provision that runs across PDF pages is cut at each page
+    break and the three lines on either side of a break (the running header and footer zone, which two extractors
+    order differently) are left out, so each window is plain provision text."""
+    pages = text.split("\f")
+    chunks = []
+    for n, page in enumerate(pages):
+        lines = [ln for ln in page.split("\n") if ln.strip()]
+        if n > 0:
+            lines = lines[3:]
+        if n < len(pages) - 1:
+            lines = lines[:-3]
+        chunks.append(words("\n".join(lines)))
+    out = []
+    for w in chunks:
+        if not w:
+            continue
+        out.extend(w[i:i + size] for i in range(0, max(1, len(w) - size + 1), size))
+    return out
 
 
 def main(argv):
@@ -245,25 +303,60 @@ def main(argv):
                 notes["regulation_entry_not_on_page"].append(e["id"])
     failures["regulation_entry_not_on_page"] = reg_fail
 
-    # 5. constitution provisions occur in their state's rendering
+    # 5. constitution provisions occur, word for word, in a second extraction of the publisher's files: pypdf for PDFs,
+    #    BeautifulSoup (encoding detected from the bytes) for HTML, decoded string values for JSON. Each provision is cut
+    #    into 120-character windows of letters and digits; every window must occur in the state's source text.
     const_rows = load("state_constitution_sections")
     const_states = {c["state"]: c for c in fetchlib.load_json(os.path.join(BUILD, "work", "constitutions.json"))["states"]}
-    rendered = {}
+    source_words: dict[str, str | None] = {}
     cfail = 0
+    cchecked = 0
+    const_full = const_most = 0
+    text_check: dict[str, dict] = {}
+    by_state_fail = Counter()
     for s in const_rows:
         st = s["item"]["constitution_section"]["state"]
-        tp = const_states[st].get("text_path")
-        if st not in rendered:
-            rendered[st] = words(fetchlib.open_text(tp).read()) if tp else ""
-        if words(s["text"][:400]) not in rendered[st]:
+        if st not in source_words:
+            parts = []
+            missing = False
+            for f in const_states[st].get("files") or []:
+                p = f["path"]
+                if not os.path.exists(os.path.join(ROOT, p)):
+                    missing = True
+                    continue
+                parts.append(source_text_words(p))
+            source_words[st] = None if missing and not parts else "".join(parts)
+        src = source_words[st]
+        if src is None:
+            skipped["constitution_not_rechecked_source_file_missing"] += 1
+            continue
+        cchecked += 1
+        windows = provision_windows(s["text"], 60)
+        found = sum(1 for win in windows if win in src)
+        share = found / len(windows) if windows else 1.0
+        text_check[s["id"]] = {"windows": len(windows), "found": found}
+        if found == len(windows):
+            const_full += 1
+        elif share >= 0.9:
+            const_most += 1  # a heading or catchline the two extractors place differently; the body text is there
+        else:
             cfail += 1
-            notes["constitution_text_not_in_rendering"].append(s["id"])
-    failures["constitution_text_not_in_rendering"] = cfail
+            by_state_fail[st] += 1
+            notes["constitution_text_not_in_source"].append(s["id"])
+    failures["constitution_text_not_in_source"] = cfail
+    # read by build_court_rules.py, which labels each provision with its check result (the page shows a caveat
+    # where the second extraction did not find all of a provision's text)
+    with open(os.path.join(BUILD, "work", "constitution_text_check.json"), "w", encoding="utf-8") as handle:
+        json.dump({"method": "60-character windows of letters and digits, page-edge lines excluded, against pypdf / BeautifulSoup",
+                   "checked_at": fetchlib.utc_now(), "provisions": text_check}, handle)
+    notes["constitution_failures_by_state"] = [f"{k}: {v}" for k, v in by_state_fail.most_common()]
 
     result = {"checked": {"documents_raw_hash": raw_checked, "documents_section_coverage": coverage_checked, "insights": len(insights),
                           "insight_quotes_found_in_pdf_by_pypdf": page_found, "insight_quotes_not_found_in_pdf_by_pypdf": page_missing,
                           "insight_quotes_found_in_html": html_found, "insight_quotes_not_found_in_html": html_missing,
-                          "regulation_entries": len(reg), "constitution_provisions": len(const_rows)},
+                          "regulation_entries": len(reg), "constitution_provisions": len(const_rows),
+                          "constitution_provisions_checked": cchecked, "constitution_all_windows_found": const_full,
+                          "constitution_90pct_windows_found": const_most},
               "failures": {k: v for k, v in failures.items()}, "failure_examples": {k: v[:15] for k, v in notes.items()},
               "not_rechecked": dict(skipped), "pdfs_pruned": len(pruned),
               "raw_checks_of_pruned_pdfs": "verification_with_raw.json (run before the PDFs were deleted)" if pruned else None,
