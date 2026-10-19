@@ -49,20 +49,47 @@ def own_text(row: dict, text: str) -> dict:
     return row
 
 
+CAPS_CUT = re.compile(r"(\b(OF|AND|OR|THE|A|AN|TO|FOR|IN|ON|BY|FROM|WITH|UNDER|AGAINST|BEFORE|AS|AT|INTO|UPON)|[,;:—–-]|[’']S)$")
+CAPS_NOT_TITLE = re.compile(r"^(\(|\[|CIRCUIT ADVISORY|ADVISORY COMMITTEE|COMMITTEE NOTE|MODEL FORM|RESERVED\b|"
+                            r"(RULE|FRAP|LOCAL|CIRCUIT RULE|LR|L\.R\.)\s*\d)|\b(SHALL|MUST|MAY NOT)\b")
+CAPS_WIDE = 38  # a heading line this long has probably reached the printed line width and wrapped
+
+
+def _caps(s: str) -> bool:
+    return bool(re.search(r"[A-Z]", s)) and not re.search(r"[a-z]", s)
+
+
 def full_title(title: str | None, text: str) -> str | None:
-    """A rule heading printed over two lines with a hyphenated break ("...; Mo-" / "tion for Judgment ...") is joined
-    with its continuation line from the section's own text."""
-    if not title or not re.search(r"[a-z]-$", title):
+    """A rule heading printed over two lines is joined with its continuation from the section's own text: a hyphenated
+    break ("...; Mo-" / "tion for Judgment ...") or, for an all-capitals heading, up to two more all-capitals lines when
+    the heading line looks cut (it ends in a connecting word, punctuation or a possessive, or fills the printed line
+    width). A sentence, a committee note, a form title, "RESERVED" or another rule label is never joined."""
+    if not title:
         return title
-    tail = title.split()[-1]
     lines = [ln.strip() for ln in text.split("\n")]
-    for i, ln in enumerate(lines):
-        if ln.endswith(tail):
-            nxt = next((x for x in lines[i + 1:] if x), "")
-            if nxt[:1].islower() and len(nxt) <= 160:
-                return title[:-1] + nxt
+    if re.search(r"[a-z]-$", title):
+        tail = title.split()[-1]
+        for i, ln in enumerate(lines):
+            if ln.endswith(tail):
+                nxt = next((x for x in lines[i + 1:] if x), "")
+                if nxt[:1].islower() and len(nxt) <= 160:
+                    return title[:-1] + nxt
+                break
+        return title
+    if not _caps(title) or len(title.split()) < 2:
+        return title
+    i = next((n for n, ln in enumerate(lines[:4]) if ln.endswith(title)), None)
+    if i is None:
+        return title
+    joined, last = title, lines[i]
+    for nxt in [x for x in lines[i + 1:] if x and x != "\f"][:2]:
+        if not (_caps(nxt) and len(nxt) <= 80 and not CAPS_NOT_TITLE.search(nxt)):
             break
-    return title
+        if not (CAPS_CUT.search(last) or len(last) >= CAPS_WIDE):
+            break
+        joined = f"{joined[:-1]}{nxt}" if joined.endswith(("-", "—", "–")) else f"{joined} {nxt}"
+        last = nxt
+    return joined
 
 
 def load_jsonl(name):
@@ -87,6 +114,30 @@ def inputs_of(paths):
         body = fetchlib.load_raw(p if os.path.exists(p) else p + ".gz")  # sha256 of the uncompressed content either way
         out.append({"url": None, "path": os.path.relpath(p, ROOT), "sha256": hashlib.sha256(body).hexdigest()})
     return out
+
+
+# How practice points were proposed; the model itself is not named in published data.
+METHOD = "language model at build time; kept only when validated against a word-for-word quote of the rule"
+
+
+def second_path_note(kept: int) -> str:
+    """What verify_court_rules.py found for these insights, from its last run on a build with the same number of rows."""
+    path = os.path.join(BUILD, "verification.json")
+    v = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else {}
+    c = v.get("checked") or {}
+    if c.get("insights") != kept:
+        return "Not yet rechecked by a separate extraction for this build."
+    pdf, on_page, pdf_missing = (c.get("insight_quotes_found_in_pdf_by_pypdf", 0), c.get("insight_quotes_on_cited_page_by_pypdf", 0),
+                                 c.get("insight_quotes_not_found_in_pdf_by_pypdf", 0))
+    html, html_missing = c.get("insight_quotes_found_in_html", 0), c.get("insight_quotes_not_found_in_html", 0)
+    skipped = (v.get("not_rechecked") or {}).get("insight_second_path_not_rechecked_pdf_pruned", 0)
+    note = (f"Each kept quote was looked for again in the retrieved file by a separate extraction ({v.get('verified_at', 'date not recorded')}): "
+            f"{pdf:,} of {pdf + pdf_missing:,} PDF quotes found with pypdf, {on_page:,} of them on their cited page or the next; "
+            f"{html:,} of {html + html_missing:,} HTML quotes found in the page's plain text (BeautifulSoup).")
+    if skipped:
+        note += (f" {skipped:,} quotes were not rechecked: their PDFs were deleted after extraction and the publisher now serves "
+                 "different bytes, so the stored text is from the first retrieval.")
+    return note
 
 
 def write_build(dataset, label, rows, listing_block, summary, inputs):
@@ -193,7 +244,7 @@ def build_rules():
             iid = f"{d['id']}:i{n_by_doc[d['id']]:03d}"
             title = " ".join(f"{i['applies_to'] or CATEGORY_LABEL[i['category']]}: {i['value']}".split())  # display title on one line
             info = {**i, "doc": d["id"], "doc_title": doc_display_title(d), "doc_url": d.get("url"), "category_label": CATEGORY_LABEL[i["category"]],
-                    "model": docres.get("model"), "prompt_version": docres.get("prompt_version")}
+                    "extraction": METHOD, "prompt_version": docres.get("prompt_version")}
             filters = {"doc": [d["id"]], "category": [i["category"]], "scope": [d["scope"]]}
             if d["courts"]:
                 filters["court"] = d["courts"]
@@ -229,12 +280,13 @@ def build_rules():
     write_build("court_rule_insights", "Court rules: deadlines, length limits, formatting, filing, pro hac vice and ADR requirements, each with its quote", ins_rows,
                 listing([("requirement", "Requirement"), ("category", "Category"), ("rule", "Rule"), ("document", "Document")],
                         [("category", "Category", CATEGORY_LABEL)]),
-                {**common, "insights": len(ins_rows), "extraction": ins["summary"],
+                {**common, "insights": len(ins_rows), "extraction": {**{k: v for k, v in ins["summary"].items() if k != "model"}, "method": METHOD},
                  "method": "A language model proposed requirements from keyword-selected sections; a proposal is kept only if its quote occurs in the "
                            "stored section text (exactly, or after collapsing line breaks and spaces), its value occurs inside the quote, its number is "
-                           "written in the value and its quote does not run across a running page header or footer. Validation rate = kept / proposed.",
-                 "second_path": "Every kept quote was found again on its cited page (or the next) of the retrieved PDF by a separate extraction (pypdf), "
-                                "or in the retrieved HTML page's plain text (BeautifulSoup); 0 of 5,573 were missing.", "categories": CATEGORY_LABEL},
+                           "written in the value and its quote does not run across a running page header or footer. A value that stops mid-phrase is "
+                           "continued through its quote to the end of the clause, or dropped. Each practice point names the rule whose text holds its "
+                           "quote and the page the quote starts on. Validation rate = kept / proposed.",
+                 "second_path": second_path_note(len(ins_rows)), "categories": CATEGORY_LABEL},
                 inputs)
 
 

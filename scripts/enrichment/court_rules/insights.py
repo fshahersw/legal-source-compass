@@ -1,6 +1,6 @@
 """Extract practice insights from each rule document, keeping only values proven by a word-for-word quote.
 
-  python3 -I -B scripts/enrichment/court_rules/insights.py [--workers 6] [doc_id ...]
+  python3 -I -B scripts/enrichment/court_rules/insights.py [--workers 6] [--reattach] [doc_id ...]
 
 For each retrieved document the sections most likely to state deadlines, length limits, formatting, filing, conferral,
 pro hac vice and ADR requirements are chosen by keyword (deterministic), and a language model is asked to list such
@@ -9,9 +9,16 @@ requirements, each with the exact quote it rests on. A proposal is kept only whe
   2. its value occurs inside its quote (case- and spacing-insensitive),
   3. its number, when given, is written in its value (as digits or as a number word),
   4. its category is one of CATEGORIES and its section id is one that was shown,
-  5. its quote does not run across a running page header or footer (a line printed at the top or bottom of many pages).
-Everything else is dropped and counted by reason. Raw model responses are cached per document under
-private/build/court_rules/work/insights_cache/ so a rebuild is reproducible without new calls.
+  5. its quote does not run across a running page header or footer (a line printed at the top or bottom of many pages),
+  6. its value, when it stops mid-phrase ("within 14 days after the filing of"), can be continued through the quote to the
+     end of the clause (the stored value is then that continuation, flagged value_completed_from_quote).
+Everything else is dropped and counted by reason. Each kept item's page is the page its quote starts on. Raw model
+responses are cached per document under private/build/court_rules/work/insights_cache/ so a rebuild is reproducible
+without new calls. After a re-split (resplit_sections.py) changes a document's sections, --reattach re-validates its cached
+response against the new sections: each proposal goes to the one section whose text holds its quote, or, when the same
+words are printed in several rules, to the one overlapping the pages of the section the response cited (recorded in
+work/sections_replaced.jsonl); rules 1-3 and 5-6 still apply, a quote found nowhere or still ambiguous is dropped, and the
+document is marked attribution "quote_location".
 """
 from __future__ import annotations
 
@@ -194,13 +201,77 @@ def crosses_running_line(quote: str, running: set[str]) -> bool:
     return any(_norm_line(ln) in running for ln in quote.split("\n") if ln.strip())
 
 
-def validate(item: dict, sections: dict[str, dict], running: set[str] | None = None) -> tuple[dict | None, str]:
+# a value ending in one of these words stops mid-phrase ("within 14 days after the filing of")
+DANGLING = re.compile(r"\b(of|after|before|the|a|an|to|by|for|with|and|or|upon|following|within|than|on|at|is|are|be|must|"
+                      r"shall|may|not|that|which|who)\s*[:,]?$", re.I)
+
+
+def complete_value(value: str, quote: str) -> str | None:
+    """The value, or when it stops mid-phrase, the value continued through its quote to the end of the clause (the next
+    period or semicolon, or the quote's end). None when it cannot be completed within 200 characters."""
+    v = textlib.squash(value)
+    if not DANGLING.search(v):
+        return value.strip()
+    q = textlib.squash(quote)
+    at = q.lower().translate(textlib.QUOTE_FOLD).find(v.lower().translate(textlib.QUOTE_FOLD))
+    if at < 0:
+        return None
+    rest = q[at + len(v):]
+    end = re.search(r"[.;]", rest)
+    out = (q[at:at + len(v)] + (rest[: end.start()] if end else rest)).strip().rstrip(",:")
+    if DANGLING.search(out) or len(out) > 200:
+        return None
+    return out
+
+
+def quote_offset(quote: str, text: str) -> int | None:
+    """Character offset of the quote in text, allowing any run of whitespace (line or page breaks) between its words."""
+    words = quote.split()
+    if not words:
+        return None
+    m = re.search(r"\s+".join(re.escape(w) for w in words), text)
+    return m.start() if m else None
+
+
+def quote_location(quote: str, sec: dict) -> tuple[int | None, str]:
+    """The page the quote starts on (the section's first page plus the page breaks before the quote) and a source URL
+    pointing at that page when the section URL addresses pages ("#page=N")."""
+    url = sec.get("source_url") or ""
+    at = quote_offset(quote, sec["text"])
+    if sec.get("page") is None or at is None:
+        return sec.get("page"), url
+    page = sec["page"] + sec["text"].count(textlib.PAGE_BREAK, 0, at)
+    if "#page=" in url:
+        url = url.split("#page=")[0] + f"#page={page}"
+    return page, url
+
+
+def _span(sec: dict) -> tuple[int, int] | None:
+    return (sec["page"], sec["page"] + sec["text"].count(textlib.PAGE_BREAK)) if sec.get("page") is not None else None
+
+
+def replaced_spans(doc_id: str, answered_at: str | None) -> dict[str, tuple[int, int]]:
+    """Page spans of the sections a cached response was given: the first set replaced (resplit_sections.py) after the
+    response was made, by section id."""
+    path = os.path.join(WORK, "sections_replaced.jsonl")
+    if not os.path.exists(path):
+        return {}
+    rows = [r for r in map(json.loads, open(path, encoding="utf-8")) if r["doc"] == doc_id and r.get("page") is not None]
+    times = sorted({r["replaced_at"] for r in rows if not answered_at or r["replaced_at"] >= answered_at})
+    return {r["id"]: (r["page"], r["page_end"]) for r in rows if times and r["replaced_at"] == times[0]}
+
+
+def validate(item: dict, sections: dict[str, dict], running: set[str] | None = None,
+             located: list[dict] | None = None, cited_span: tuple[int, int] | None = None) -> tuple[dict | None, str]:
+    """located: when given, every section of the document; the item is attributed to the one section whose text holds
+    its quote. When several do (the same sentence printed in two rules), cited_span, the pages of the section the
+    response cited, picks the one overlapping it; otherwise the item is dropped."""
     cat = item.get("category")
     if cat not in CATEGORIES:
         return None, "unknown_category"
     sid = item.get("section_id")
-    sec = sections.get(sid)
-    if not sec:
+    sec = sections.get(sid) if located is None else None
+    if located is None and not sec:
         return None, "unknown_section"
     quote = str(item.get("quote") or "").strip()
     value = str(item.get("value") or "").strip()
@@ -208,25 +279,43 @@ def validate(item: dict, sections: dict[str, dict], running: set[str] | None = N
         return None, "missing_quote_or_value"
     if len(quote) > 600:
         return None, "quote_too_long"
-    match = textlib.find_quote(quote, sec["text"])
-    if not match:
-        return None, "quote_not_in_text"
+    if located is not None:
+        holders = [(s, m) for s in located for m in [textlib.find_quote(quote, s["text"])] if m]
+        if not holders:
+            return None, "quote_not_in_text"
+        if len(holders) > 1 and cited_span:
+            holders = [(s, m) for s, m in holders if _span(s) and _span(s)[0] <= cited_span[1] and cited_span[0] <= _span(s)[1]]
+        if len(holders) != 1:
+            return None, "quote_in_several_sections"
+        sec, match = holders[0]
+        sid = sec["id"]
+    else:
+        match = textlib.find_quote(quote, sec["text"])
+        if not match:
+            return None, "quote_not_in_text"
     if not textlib.value_in_quote(value, quote):
         return None, "value_not_in_quote"
     if running and crosses_running_line(quote, running):
         return None, "quote_crosses_page_header_or_footer"
     if not number_written(item.get("number"), value):
         return None, "number_not_in_value"
+    full = complete_value(value, quote)
+    if not full:
+        return None, "value_incomplete"
     unit = item.get("unit") if item.get("unit") in ("days", "pages", "words", "points", "lines", "inches", "dollars") else None
     number = int(item["number"]) if isinstance(item.get("number"), (int, float)) and number_written(item.get("number"), value) else None
+    page, url = quote_location(quote, sec)
     return {
-        "category": cat, "applies_to": str(item.get("applies_to") or "").strip()[:160] or None, "value": value[:200],
+        "category": cat, "applies_to": str(item.get("applies_to") or "").strip()[:160] or None, "value": full[:200],
+        **({"value_completed_from_quote": True} if full != value else {}),
         "number": number, "unit": unit, "quote": quote, "quote_match": match, "section_id": sid,
-        "section_label": sec["label"], "section_title": sec["title"], "page": sec.get("page"), "source_url": sec["source_url"],
+        "section_label": sec["label"], "section_title": sec["title"], "page": page, "source_url": url,
     }, "kept"
 
 
-def run_doc(doc: dict, secs: list[dict], refresh: bool = False) -> dict:
+def run_doc(doc: dict, secs: list[dict], refresh: bool = False, reattach: bool = False) -> dict:
+    """reattach: when the document's sections changed after its cached response (a re-split), re-validate that response
+    against the current sections instead of asking again; each proposal is attributed to the section holding its quote."""
     chosen = choose_sections(doc["id"], secs)
     if not chosen:
         return {"doc": doc["id"], "chosen": 0, "proposed": 0, "kept": [], "dropped": {}}
@@ -235,8 +324,13 @@ def run_doc(doc: dict, secs: list[dict], refresh: bool = False) -> dict:
     os.makedirs(CACHE, exist_ok=True)
     cache_path = os.path.join(CACHE, f"{doc['id']}.json")
     cached = json.load(open(cache_path)) if os.path.exists(cache_path) else None
+    reattached = False
     if cached and cached.get("prompt_sha256") == digest and not refresh:
         response = cached["response"]
+    elif cached and reattach and not refresh:
+        response = cached["response"]
+        digest = cached.get("prompt_sha256")  # the prompt the response answered
+        reattached = True
     else:
         response = call_model(prompt)
         with open(cache_path, "w", encoding="utf-8") as handle:
@@ -248,8 +342,10 @@ def run_doc(doc: dict, secs: list[dict], refresh: bool = False) -> dict:
     by_id = {s["id"]: s for s in secs if s["id"] in {c["id"] for c in chosen}}
     kept, dropped, seen = [], Counter(), set()
     running = running_lines(fetchlib.open_text(doc["text_path"]).read()) if doc.get("text_path") else set()
+    spans = replaced_spans(doc["id"], cached.get("at")) if reattached else {}
     for item in proposals:
-        rec, reason = validate(item, by_id, running)
+        rec, reason = validate(item, by_id, running, located=secs if reattached else None,
+                               cited_span=spans.get(item.get("section_id")))
         if not rec:
             dropped[reason] += 1
             continue
@@ -260,7 +356,8 @@ def run_doc(doc: dict, secs: list[dict], refresh: bool = False) -> dict:
         seen.add(key)
         kept.append(rec)
     return {"doc": doc["id"], "chosen": len(chosen), "proposed": len(proposals), "kept": kept, "dropped": dict(dropped),
-            "model": MODEL, "prompt_version": PROMPT_VERSION, "prompt_sha256": digest}
+            "model": MODEL, "prompt_version": PROMPT_VERSION, "prompt_sha256": digest,
+            **({"attribution": "quote_location"} if reattached else {})}
 
 
 def main(argv):
@@ -268,6 +365,7 @@ def main(argv):
     if "--workers" in argv:
         workers = int(argv[argv.index("--workers") + 1])
     refresh = "--refresh" in argv
+    reattach = "--reattach" in argv
     only = [a for a in argv if not a.startswith("--") and not a.isdigit()]
     docs = [d for d in fetchlib.load_json(os.path.join(WORK, "documents.json"))["documents"] if d.get("status") == "text"]
     if only:
@@ -283,7 +381,7 @@ def main(argv):
 
     def job(doc):
         try:
-            return run_doc(doc, secs_by_doc.get(doc["id"], []), refresh)
+            return run_doc(doc, secs_by_doc.get(doc["id"], []), refresh, reattach)
         except Exception as error:  # recorded per document; one failure does not stop the others
             return {"doc": doc["id"], "error": str(error)[:300], "kept": [], "dropped": {}, "proposed": 0, "chosen": 0}
 

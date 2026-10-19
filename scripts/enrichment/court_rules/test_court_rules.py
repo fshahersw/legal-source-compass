@@ -74,6 +74,53 @@ class SplitTests(unittest.TestCase):
         secs, _ = S.split_sections(text)
         self.assertNotIn("Rule 81", [s.label for s in secs])
 
+    APPELLATE = "\n".join([
+        "FRAP 11. FORWARDING THE RECORD", "(a) The appellant must help.",
+        "CIRCUIT RULE 11-6. PREPARATION OF THE CLERK’S RECORD", "11-6.1. Preparation of the Clerk’s Record for Transmittal",
+        "The clerk prepares the record.", "11-6.2. Number of Copies", "Five copies are required.",
+        "11-6.3. Transmittal", "The clerk transmits the record.",
+        "FRAP 12. DOCKETING THE APPEAL; FILING A REPRESENTATION STATEMENT",
+        "(b) Unless the court of appeals designates another time, the attorney who filed the notice of appeal must, within",
+        "\f", "FRAP 12", "(c) Further text.", "\f", "FRAP 12", "(d) More text.",
+        "14 days after filing the notice, file a statement with the circuit clerk.", "\f", "FRAP 12",
+        "CIRCUIT ADVISORY COMMITTEE NOTE TO RULE 12-1", "The note text shall apply Circuit",
+        "Rule 30-1. Each reference in Circuit Rule 30-1 to the district court and the district court clerk",
+        "CIRCUIT RULE 12-1. NOTICE OF EMERGENCY MOTIONS", "Counsel must notify the clerk.",
+        "CIRCUIT RULE 12-2. REPRESENTATION STATEMENT", "The statement shall be filed.",
+        "FRAP 13. APPEALS FROM THE TAX COURT", "(a) An appeal is commenced within 90 days.",
+    ])
+
+    def test_frap_and_circuit_rules_with_nested_sub_rules(self):
+        secs, method = S.split_sections(self.APPELLATE)
+        labels = [s.label for s in secs]
+        self.assertTrue(method.endswith("+nested"), method)
+        self.assertEqual(labels, ["FRAP 11", "CIRCUIT RULE 11-6", "CIRCUIT RULE 11-6.1", "CIRCUIT RULE 11-6.2",
+                                  "CIRCUIT RULE 11-6.3", "FRAP 12", "CIRCUIT RULE 12-1", "CIRCUIT RULE 12-2", "FRAP 13"])
+        frap12 = secs[labels.index("FRAP 12")]
+        self.assertIn("file a statement with the circuit clerk", frap12.text)
+        self.assertIn("CIRCUIT ADVISORY COMMITTEE NOTE", frap12.text)  # "FRAP 12" atop three pages is a running header
+        self.assertIn("Rule 30-1. Each reference", frap12.text)  # the previous line runs on into it: not a heading
+
+    def test_a_rule_opening_a_page_is_still_a_heading(self):
+        # civil and criminal rules in one file: the criminal "RULE 16" opens a page once, it is not a running header
+        body = "The rule text continues here with enough words to read as a full rule, as published by the court. " * 3
+        rules = ["RULE 1", "SCOPE", body, "\f", "RULE 16", "PRETRIAL CONFERENCES", body, "RULE 26", "DISCOVERY", body,
+                 "RULE 37", "SANCTIONS", body, "RULE 41", "DISMISSAL", body, "\f", "RULE 16", "DISCOVERY", body,
+                 "RULE 47", "MOTIONS", body]
+        secs, _ = S.split_sections("\n".join(rules))
+        self.assertEqual([s.label for s in secs].count("RULE 16"), 2)
+
+    def test_bare_numbers_that_are_not_sub_rules_stay_out(self):
+        text = "\n".join(["LR 1.1 SCOPE OF THE RULES", "These rules apply.", "LR 3.1 CIVIL COVER SHEET", "A sheet is filed.",
+                          "LR 7.1 MOTIONS", "Motions are filed.", "LR 16.1 CONFERENCES", "Parties confer.",
+                          "LR 83.13 SETTLEMENTS", "Notice of settlement is filed.",
+                          "1.1 ECF User Manual means the manual.", "1.2 Electronic Case Filing means the system.",
+                          "1.4 Local Rules means these rules.", "1.11 Traditional Filing means paper."])
+        secs, method = S.split_sections(text)
+        self.assertNotIn("nested", method)
+        self.assertFalse(any(S._nests("83.13", n) for n in ("1.1", "1.2", "1.4", "1.11")))
+        self.assertTrue(S._nests("11-6", "11-6.2") and S._nests("3", "3.1") and not S._nests("3", "31"))
+
 
 class TitleTests(unittest.TestCase):
     def test_hyphenated_heading_is_joined(self):
@@ -84,6 +131,25 @@ class TitleTests(unittest.TestCase):
                          "Defenses and Objections: When and How Presented; Motion for Judgment on the Pleadings")
         self.assertEqual(B.full_title("Scope", text), "Scope")
         self.assertEqual(B.full_title("Self-", "Rule 9. Self-\n(a) The court"), "Self-")  # next line is not a continuation
+
+    def test_wrapped_capitals_heading_is_joined(self):
+        import build_court_rules as B
+
+        text = "FRAP 12. DOCKETING THE APPEAL; FILING A\nREPRESENTATION STATEMENT; FILING THE RECORD\n(a) Docketing the Appeal."
+        self.assertEqual(B.full_title("DOCKETING THE APPEAL; FILING A", text),
+                         "DOCKETING THE APPEAL; FILING A REPRESENTATION STATEMENT; FILING THE RECORD")
+        wide = "FRAP 15. REVIEW OR ENFORCEMENT OF AN AGENCY\nORDER—HOW OBTAINED; INTERVENTION\n(a) Petition for Review."
+        self.assertEqual(B.full_title("REVIEW OR ENFORCEMENT OF AN AGENCY", wide),
+                         "REVIEW OR ENFORCEMENT OF AN AGENCY ORDER—HOW OBTAINED; INTERVENTION")
+        # a complete short heading, a canon's text, a reserved rule and a committee note are not continuations
+        self.assertEqual(B.full_title("MOTION FOR JAIL CREDIT", "RULE 3.801 MOTION FOR JAIL CREDIT\nMODEL FORM FOR USE IN MOTIONS FOR"),
+                         "MOTION FOR JAIL CREDIT")
+        self.assertEqual(B.full_title("CANON 2", "CANON 2\nA JUDGE SHALL PERFORM THE DUTIES OF JUDICIAL OFFICE"), "CANON 2")
+        self.assertEqual(B.full_title("INTERROGATORIES TO PARTIES", "LCR 33 INTERROGATORIES TO PARTIES\nRESERVED"),
+                         "INTERROGATORIES TO PARTIES")
+        self.assertEqual(B.full_title("REPRESENTATION STATEMENT AND OTHER",
+                                      "CIRCUIT RULE 3-2. REPRESENTATION STATEMENT AND OTHER\nCIRCUIT ADVISORY COMMITTEE NOTE TO RULE 3-2"),
+                         "REPRESENTATION STATEMENT AND OTHER")
 
 
 class QuoteTests(unittest.TestCase):
@@ -123,6 +189,43 @@ class InsightValidationTests(unittest.TestCase):
         self.assertEqual(INS.validate(self.item(number=21), self.SECTIONS)[1], "number_not_in_value")
         self.assertEqual(INS.validate(self.item(category="guess"), self.SECTIONS)[1], "unknown_category")
         self.assertEqual(INS.validate(self.item(section_id="d:9999"), self.SECTIONS)[1], "unknown_section")
+
+    def test_value_stopping_mid_phrase_is_completed_from_its_quote(self):
+        quote = "Unless otherwise directed by the Court, appellant may file a reply\nwithin 7 days of service of the response."
+        self.assertEqual(INS.complete_value("within 7 days of", quote), "within 7 days of service of the response")
+        self.assertEqual(INS.complete_value("within 30 days after entry of the judgment or order appealed from",
+                                            "must be filed within 30 days after entry of the judgment or order appealed from."),
+                         "within 30 days after entry of the judgment or order appealed from")
+        self.assertIsNone(INS.complete_value("shall be accompanied by a", "All motions shall be accompanied by a"))
+        sections = {"d:0001": {**self.SECTIONS["d:0001"], "text": quote}}
+        rec, reason = INS.validate(self.item(value="within 7 days of", number=7, quote=quote, category="reply_deadline"), sections)
+        self.assertEqual(reason, "kept")
+        self.assertEqual(rec["value"], "within 7 days of service of the response")
+        self.assertTrue(rec["value_completed_from_quote"])
+
+    def test_page_is_where_the_quote_starts(self):
+        text = "LR 7.1 Motions\nGeneral text.\f\nMore text.\f\nAny reply must be filed within 7 days after service of the opposition."
+        sections = {"d:0001": {**self.SECTIONS["d:0001"], "page": 44, "source_url": "https://x/doc.pdf#page=44", "text": text}}
+        rec, _ = INS.validate(self.item(value="within 7 days", number=7, category="reply_deadline",
+                                        quote="Any reply must be filed within 7 days after service of the opposition."), sections)
+        self.assertEqual(rec["page"], 46)
+        self.assertEqual(rec["source_url"], "https://x/doc.pdf#page=46")
+
+    def test_reattach_attributes_by_quote_location(self):
+        secs = [{"id": "d:0001", "label": "FRAP 12", "title": "Docketing", "page": 64, "source_url": "https://x/a.pdf#page=64",
+                 "text": "The attorney must, within 14 days after filing the notice, file a statement."},
+                {"id": "d:0002", "label": "CIRCUIT RULE 12-2", "title": "Representation", "page": 65, "source_url": "https://x/a.pdf#page=65",
+                 "text": "The statement shall be filed within 14 days after the docketing notice."}]
+        item = self.item(category="other_deadline", value="within 14 days", number=14, section_id="d:0099",
+                         quote="The statement shall be filed within 14 days after the docketing notice.")
+        rec, reason = INS.validate(item, {}, located=secs)
+        self.assertEqual(reason, "kept")
+        self.assertEqual((rec["section_id"], rec["section_label"], rec["page"]), ("d:0002", "CIRCUIT RULE 12-2", 65))
+        twice = secs + [{**secs[1], "id": "d:0003", "label": "LOCAL CRIMINAL RULE 47.2", "page": 90,
+                         "source_url": "https://x/a.pdf#page=90"}]
+        self.assertEqual(INS.validate(item, {}, located=twice)[1], "quote_in_several_sections")
+        rec, reason = INS.validate(item, {}, located=twice, cited_span=(89, 91))  # the response cited a section on pp. 89-91
+        self.assertEqual((reason, rec["section_id"], rec["page"]), ("kept", "d:0003", 90))
 
     def test_number_words(self):
         self.assertTrue(INS.number_written(14, "within fourteen days"))

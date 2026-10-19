@@ -4,9 +4,10 @@
 
 Second paths used:
   * raw files: every retrieved document's stored bytes hash to the SHA-256 in its record and in the manifest;
-  * PDFs: each insight's quote is looked for on its cited page (and the next page) in a separate extraction made with
-    pypdf (not poppler), comparing letters and digits only, so a match does not depend on the rendering the quote was
-    checked against at build time; HTML documents are checked against BeautifulSoup's plain get_text of the stored page;
+  * PDFs: each insight's quote is looked for in a separate extraction of the whole file made with pypdf (not poppler),
+    comparing letters and digits only, so a match does not depend on the rendering the quote was checked against at
+    build time; it is counted as on its cited page when it is on that page or the next (a quote may run over the page
+    break); HTML documents are checked against BeautifulSoup's plain get_text of the stored page;
   * sections: the sections of each document, joined, reproduce its stored text rendering word for word, except a title
     block of at most 400 characters before the first rule heading and, in page-by-page documents, pages under 40 characters;
   * regulation index: each entry's citation (or the link it was read from) and heading occur in the stored publisher page;
@@ -196,6 +197,7 @@ def main(argv):
     for doc_id, wd in work_docs.items():
         raw_path_of[doc_id] = wd.get("text_source_path") or wd.get("raw_path")
     page_found = page_missing = html_found = html_missing = 0
+    on_cited_page = 0  # of page_found: on the cited page or the next, not only elsewhere in the file
     spot = []
     rng = random.Random(20261019)
     sample_ids = set(i["id"] for i in rng.sample(insights, min(spot_n, len(insights))))
@@ -227,8 +229,13 @@ def main(argv):
         elif rp and os.path.exists(os.path.join(ROOT, rp)):
             pages = pdf_pages(rp)
             pg = (info.get("page") or 1) - 1
-            window = "".join(pages[max(0, pg - 1): pg + 2])
-            located = words(info["quote"]) in window or words(info["quote"]) in "".join(pages)
+            window = "".join(pages[pg: pg + 2])  # the cited page and the next (a quote may run over the page break)
+            on_page = words(info["quote"]) in window
+            located = on_page or words(info["quote"]) in "".join(pages)
+            if on_page:
+                on_cited_page += 1
+            elif located and len(notes["insight_quote_found_off_cited_page"]) < 20:
+                notes["insight_quote_found_off_cited_page"].append(i["id"])
         if located is True:
             if rp and rp.endswith(".pdf"):
                 page_found += 1
@@ -353,7 +360,7 @@ def main(argv):
     notes["constitution_failures_by_state"] = [f"{k}: {v}" for k, v in by_state_fail.most_common()]
 
     result = {"checked": {"documents_raw_hash": raw_checked, "documents_section_coverage": coverage_checked, "insights": len(insights),
-                          "insight_quotes_found_in_pdf_by_pypdf": page_found, "insight_quotes_not_found_in_pdf_by_pypdf": page_missing,
+                          "insight_quotes_found_in_pdf_by_pypdf": page_found, "insight_quotes_on_cited_page_by_pypdf": on_cited_page, "insight_quotes_not_found_in_pdf_by_pypdf": page_missing,
                           "insight_quotes_found_in_html": html_found, "insight_quotes_not_found_in_html": html_missing,
                           "regulation_entries": len(reg), "constitution_provisions": len(const_rows),
                           "constitution_provisions_checked": cchecked, "constitution_all_windows_found": const_full,

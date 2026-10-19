@@ -9,6 +9,7 @@ least MIN_SECTIONS sections, the document falls back to page-level sections ("Pa
 from __future__ import annotations
 
 import re
+from collections import Counter
 from dataclasses import dataclass, field
 
 from textlib import PAGE_BREAK, page_of
@@ -17,10 +18,10 @@ NUM = r"(\d{1,4}[A-Za-z]?(?:[.\-:]\d{1,4}[A-Za-z]?){0,3})"
 FAMILIES: dict[str, str] = {
     "local_rule": r"(?:LOCAL\s+(?:CIVIL\s+|CRIMINAL\s+|PATENT\s+|ADMIRALTY\s+|APPELLATE\s+|BANKRUPTCY\s+)?RULES?|"
                   r"Local\s+(?:Civil\s+|Criminal\s+|Patent\s+|Admiralty\s+|Appellate\s+)?Rules?)",
-    "rule": r"(?:RULE|Rule)",
+    "rule": r"(?:RULE|Rule|FRAP)",
     "abbrev": r"(?:LR|L\.\s?R\.|LCvR|LCrR|LCiv\.?\s?R\.?|LCrim\.?\s?R\.?|L\.\s?Civ\.\s?R\.|L\.\s?Cr\.\s?R\.|L\.\s?Cv\.\s?R\.|LCR|LRCiv|LRCrim|"
               r"LPR|L\.?\s?Pat\.?\s?R\.|P\.\s?R\.|Patent\s+L\.\s?R\.|ADR\s+L\.\s?R\.|NECivR|NECrimR|Civil\s+L\.\s?R\.|Crim\.\s+L\.\s?R\.|"
-              r"Civ\.\s?L\.\s?R\.|Cr\.\s?L\.\s?R\.|CvR|CrR|Cir(?:cuit)?\.?\s+R(?:ule)?\.?|LAR|L\.\s?A\.\s?R\.|Misc\.\s+LAR|"
+              r"Civ\.\s?L\.\s?R\.|Cr\.\s?L\.\s?R\.|CvR|CrR|Cir(?:cuit)?\.?\s+R(?:ule)?\.?|CIRCUIT\s+RULE|LAR|L\.\s?A\.\s?R\.|Misc\.\s+LAR|"
               r"Fed\.\s+Cir\.\s+R\.|I\.?O\.?P\.?|D\.C\.\s+Cir\.\s+R\.|L\.\s?Crim\.\s?R\.|LCrimR|LCivR|L\.\s?Civ\.\s?R|"
               r"Federal\s+Circuit\s+Rule|Civ\.\s+RULE|Crim\.\s+RULE|Cr\.\s+RULE|\d{1,2}(?:st|nd|rd|th)?\s+Cir\.\s+R\.)",
     "bare": r"",
@@ -74,9 +75,27 @@ def toc_pages(text: str) -> set[int]:
     return out
 
 
+RUNNING_HEADER_PAGES = 3  # a line opening this many pages is a running header (two real rules may each open a page)
+
+
+def _norm_top(line: str) -> str:
+    return re.sub(r"\s+", " ", line.replace(PAGE_BREAK, "")).strip()
+
+
+def page_tops(text: str) -> Counter:
+    """How many pages each line opens (first line with content on the page, whitespace collapsed)."""
+    tops: Counter = Counter()
+    for page in text.split(PAGE_BREAK):
+        first = next((ln for ln in page.split("\n") if ln.strip()), "")
+        if first:
+            tops[_norm_top(first)] += 1
+    return tops
+
+
 def _candidates(text: str, family: str) -> list[Section]:
     rx = _heading_regex(family)
     skip_pages = toc_pages(text)
+    tops = page_tops(text)
     lines = text.split("\n")
     out: list[Section] = []
     offset = 0
@@ -102,12 +121,17 @@ def _candidates(text: str, family: str) -> list[Section]:
             continue  # cross-reference such as "Rule 7.1, a party" or "Rule 56(a)"
         if title and _sentence(title) and re.search(r"\b(shall|must|may|should|will|is|are|be|has|have|was|were)\b", title):
             continue  # a wrapped sentence that happens to start with a rule citation ("Rule 81. They should be construed")
+        prev = lines[i - 1].rstrip() if i else ""
+        if family != "bare" and title and _sentence(title) and prev and prev != PAGE_BREAK and re.search(r"[A-Za-z,]$", prev):
+            continue  # the previous line runs on into this one ("... apply Circuit" / "Rule 30-1. Each reference in ...")
         no_title = False
+        title_from_next = False
         if not title:
             nxt = next((lines[j] for j in range(i + 1, min(i + 4, len(lines))) if lines[j] and lines[j] != PAGE_BREAK), "")
             if nxt and len(nxt) <= 110 and TITLE_OK.match(nxt) and not nxt.startswith("(") and not TOC_TAIL.search(nxt) \
                     and not nxt.rstrip().endswith((",", ";")) and not _heading_regex(family).match(nxt) and not _sentence(nxt):
                 title = nxt.strip()
+                title_from_next = True
             elif family in ("local_rule", "abbrev") and line.strip() == m.group(0).strip():
                 # a strong label alone on its line ("Federal Circuit Rule 28", "LR 7.1") is a heading even without a title
                 no_title = True
@@ -120,6 +144,12 @@ def _candidates(text: str, family: str) -> list[Section]:
                       end=0, page=page_of(text, offsets[i]), family=family)
         if no_title:
             sec.extra["no_title"] = True
+        if title_from_next:
+            sec.extra["title_from_next"] = True
+            # the nearest earlier line with content; a form feed counts ("\f".strip() is empty)
+            back = next((lines[j] for j in range(i - 1, -1, -1) if lines[j].strip() or PAGE_BREAK in lines[j]), PAGE_BREAK)
+            if (PAGE_BREAK in back or line.startswith(PAGE_BREAK)) and tops[_norm_top(line)] >= RUNNING_HEADER_PAGES:
+                sec.extra["running_header"] = True  # the same line opens several pages: a running header
         out.append(sec)
     return out
 
@@ -147,13 +177,15 @@ def _resolve(cands: list[Section], text_len: int) -> list[Section]:
         return n < 120 and best_len[_key(s)] > n
 
     kept = [s for s in cands if not tocish(s)]
-    # a title-less repeat of a label already seen (a running page header such as "LR 7.1") is not a new section
+    # a title-less repeat of a label already seen (a running page header such as "LR 7.1") is not a new section, nor is a
+    # repeat that is a running header, whatever line follows it ("FRAP 3" atop seven pages of FRAP 3)
     seen_keys: set[str] = set()
     deduped = []
     for s in sorted(kept, key=lambda s: s.start):
-        if s.extra.get("no_title") and _key(s) in seen_keys:
+        key = _key(s)
+        if key in seen_keys and (s.extra.get("no_title") or s.extra.get("running_header")):
             continue
-        seen_keys.add(_key(s))
+        seen_keys.add(key)
         deduped.append(s)
     kept = deduped
     kept = sorted(kept, key=lambda s: s.start)
@@ -162,12 +194,50 @@ def _resolve(cands: list[Section], text_len: int) -> list[Section]:
     return kept
 
 
+NEST_RATIO = 0.8  # share of bare headings inside named sections that must number as their sub-rules
+NEST_MIN = 3
+
+
+def _nests(parent: str, child: str) -> bool:
+    """child numbers a sub-rule of parent: "11-6.2" under "11-6", "3.1" under "3" (not "31" under "3")."""
+    p = parent.rstrip(".")
+    return bool(p) and child != p and child.startswith(p) and child[len(p):len(p) + 1] in ".-:("
+
+
+def _with_nested(named: list[Section], bare: list[Section], text_len: int) -> list[Section] | None:
+    """Named rule headings plus the bare-number headings that number their sub-rules, labelled with the parent's prefix
+    ("CIRCUIT RULE 11-6" > "CIRCUIT RULE 11-6.2"). None unless at least NEST_RATIO of the bare headings that fall inside
+    named sections (and at least NEST_MIN) are such sub-rules: then the two label sets describe one hierarchy rather than
+    two unrelated numberings (definitions, form paragraphs)."""
+    inside, children = 0, []
+    for b in bare:
+        parent = next((s for s in named if s.start <= b.start < s.end), None)
+        if parent is None or b.start == parent.start:
+            continue
+        inside += 1
+        if _nests(parent.number, b.number):
+            prefix = parent.label[: len(parent.label) - len(parent.number)].strip() if parent.label.endswith(parent.number) else ""
+            label = f"{prefix} {b.number}".strip()
+            children.append(Section(label=label, number=b.number, title=b.title, start=b.start, end=0, page=b.page,
+                                    family=f"{parent.family}+nested", extra=dict(b.extra)))
+    if inside < NEST_MIN or len(children) < NEST_RATIO * inside:
+        return None
+    named_starts = {s.start for s in named}
+    fresh = [Section(label=s.label, number=s.number, title=s.title, start=s.start, end=0, page=s.page, family=s.family,
+                     extra=dict(s.extra)) for s in named]
+    return _resolve(fresh + [c for c in children if c.start not in named_starts], text_len)
+
+
 def split_sections(text: str, families: tuple[str, ...] = ("local_rule", "rule", "abbrev", "bare")) -> tuple[list[Section], str]:
-    """Return (sections, method). method is the winning label family, or 'pages' for the page-level fallback."""
+    """Return (sections, method). method is the winning label family, or 'pages' for the page-level fallback.
+
+    When named headings and bare-number headings form one hierarchy (see _with_nested), both are kept and method ends in
+    "+nested"; otherwise the family yielding clearly more distinct rules wins."""
     best: list[Section] = []
     best_family = ""
     named = [f for f in families if f != "bare"]
     options: list[tuple[str, list[Section]]] = []
+    named_secs: list[Section] = []
     if named:
         merged: list[Section] = []
         seen_starts: set[int] = set()
@@ -176,9 +246,17 @@ def split_sections(text: str, families: tuple[str, ...] = ("local_rule", "rule",
                 if s.start not in seen_starts:
                     seen_starts.add(s.start)
                     merged.append(s)
-        options.append(("+".join(sorted({s.family for s in merged})) or "named", _resolve(merged, len(text))))
+        named_secs = _resolve(merged, len(text))
+        options.append(("+".join(sorted({s.family for s in merged})) or "named", named_secs))
     if "bare" in families:
-        options.append(("bare", _resolve(_candidates(text, "bare"), len(text))))
+        bare_secs = _resolve(_candidates(text, "bare"), len(text))
+        nested = None
+        if len({_key(s) for s in named_secs}) >= MIN_SECTIONS:
+            nested = _with_nested(named_secs, bare_secs, len(text))
+        if nested is not None:
+            options = [(options[0][0] + "+nested", nested)]
+        else:
+            options.append(("bare", bare_secs))
     for family, secs in options:
         distinct = len({_key(s) for s in secs})
         if distinct > len({_key(s) for s in best}) * 1.15 or (distinct and not best):
