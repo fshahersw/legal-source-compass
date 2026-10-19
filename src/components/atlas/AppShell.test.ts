@@ -109,6 +109,7 @@ describe("AppShell section tabs", () => {
         "/courts/analytics",
         "/courts/caseload",
         "/courts/collection",
+        "/courts/firms",
         "/judges",
         "/judges/analytics",
         "/analytics",

@@ -8,6 +8,7 @@ import { CourtArtwork } from "@/components/corpus/CourtArtwork";
 import { CourtResources } from "@/components/corpus/CourtResources";
 import { CourtAnalyticsPanel } from "@/components/corpus/CourtAnalyticsPanel";
 import { CaseloadHistoryPanel } from "@/components/courts/CaseloadHistoryPanel";
+import { CourtLocationsPanel } from "@/components/courts/CourtLocationsPanel";
 import { CourtJudgesPanel } from "@/components/corpus/JudgeFjcPanel";
 import { CourtCollectionPanel } from "@/components/courts/clb/CourtCollectionPanel";
 import { DistrictGlancePanel } from "@/components/courts/clb/DistrictGlancePanel";
@@ -66,6 +67,7 @@ function Page() {
       )}
       extra={(record) => (
         <>
+          <CourtLocationsPanel courtId={id} />
           <CourtAnalyticsPanel courtId={id} />
           <CaseloadHistoryPanel courtId={id} />
           <CourtJudgesPanel courtId={id} />
