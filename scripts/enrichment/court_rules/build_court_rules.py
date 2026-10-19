@@ -116,7 +116,8 @@ def build_rules():
             continue
         docs["documents"].append({"id": f"{cid}-local", "scope": "federal_local", "courts": [cid], "state": "", "levels": [],
                                   "part": "local", "title": "Local Rules", "status": "robots_disallowed", "url": None,
-                                  "found_on": f"https://{host.group(1)}/" if host else None, "format": "", "note": reason[:1].upper() + reason[1:],
+                                  "found_on": f"https://{host.group(1)}/" if host else None, "format": "",
+                                  "note": "Open the court's website to read its local rules", "retrieval_note": reason,
                                   "publisher": "The court's own website"})
     for d in docs["documents"]:
         doc_index[d["id"]] = d
