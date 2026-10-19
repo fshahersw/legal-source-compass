@@ -41,8 +41,9 @@ const dataset = (id: string, cutoff: string): FdaAnalyticsDataset => ({
 const available = { from: "2001-01-01", to: "2026-10-11" };
 
 describe("FDA dashboard view boundaries", () => {
-  it("opens analytics by default while preserving existing views and separate filter scopes", () => {
-    expect(normalizeMonitoringSearch({}).view).toBe("analytics");
+  it("opens recall patterns by default while preserving existing views and separate filter scopes", () => {
+    expect(normalizeMonitoringSearch({}).view).toBe("patterns");
+    expect(normalizeMonitoringSearch({ view: "analytics" }).view).toBe("analytics");
     expect(normalizeMonitoringSearch({ view: "signals" }).view).toBe("signals");
     const state = normalizeMonitoringSearch({
       view: "analytics",

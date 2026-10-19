@@ -30,11 +30,11 @@ describe("regulatory monitoring view boundaries", () => {
     });
     expect(
       changeMonitoringFilters(
-        normalizeMonitoringSearch({ view: "trends", dateBasis: "published" }),
+        normalizeMonitoringSearch({ view: "signals", dateBasis: "published" }),
         quickTrendWindow(90, new Date("2026-10-12T00:00:00Z")),
       ),
     ).toMatchObject({
-      view: "trends",
+      view: "signals",
       dateBasis: "published",
       from: "2026-07-15",
       to: "2026-10-12",
@@ -63,7 +63,11 @@ describe("regulatory monitoring view boundaries", () => {
     });
     expect(
       normalizeMonitoringSearch({ view: "admin", page: -1, q: "x".repeat(301) }),
-    ).toMatchObject({ view: "analytics", page: 1, q: undefined });
+    ).toMatchObject({ view: "patterns", page: 1, q: undefined });
+    expect(normalizeMonitoringSearch({ view: "trends" }).view).toBe("patterns");
+    expect(normalizeMonitoringSearch({ view: "investigations" }).view).toBe("patterns");
+    expect(normalizeMonitoringSearch({ recallDomain: "fda_food" }).recallDomain).toBe("fda_food");
+    expect(normalizeMonitoringSearch({ recallDomain: "other" }).recallDomain).toBeUndefined();
   });
   it("resets pagination and selected evidence after the query changes", () => {
     const next = changeMonitoringFilters(

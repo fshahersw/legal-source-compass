@@ -5,13 +5,20 @@ import {
 } from "@/lib/regulatory/types";
 
 export const MONITORING_VIEWS = [
+  "patterns",
   "analytics",
   "signals",
-  "trends",
   "entities",
-  "investigations",
   "coverage",
 ] as const;
+export const MONITORING_VIEW_LABELS: Record<(typeof MONITORING_VIEWS)[number], string> = {
+  patterns: "Recall patterns",
+  analytics: "FDA analytics",
+  signals: "Source changes",
+  entities: "Entities",
+  coverage: "Coverage",
+};
+export const RECALL_DOMAIN_IDS = ["fda_drug", "fda_device", "fda_food", "cpsc", "nhtsa"] as const;
 export type MonitoringView = (typeof MONITORING_VIEWS)[number];
 export const PAGE_SIZE = 25;
 export function quickTrendWindow(days: 7 | 30 | 90, now = new Date()) {
@@ -24,6 +31,7 @@ export function quickTrendWindow(days: 7 | 30 | 90, now = new Date()) {
 export type MonitoringSearch = {
   view: MonitoringView;
   page: number;
+  recallDomain?: (typeof RECALL_DOMAIN_IDS)[number] | undefined;
   q?: string | undefined;
   source?: string | undefined;
   sourceFamily?: "fda" | "nhtsa" | "cpsc" | "federal_register" | undefined;
@@ -71,7 +79,10 @@ export function normalizeMonitoringSearch(raw: Record<string, unknown>): Monitor
   return {
     view: MONITORING_VIEWS.includes(raw["view"] as MonitoringView)
       ? (raw["view"] as MonitoringView)
-      : "analytics",
+      : "patterns",
+    recallDomain: RECALL_DOMAIN_IDS.includes(raw["recallDomain"] as never)
+      ? (raw["recallDomain"] as MonitoringSearch["recallDomain"])
+      : undefined,
     page: Number.isSafeInteger(page) && page >= 1 && page <= 401 ? page : 1,
     q: bounded(raw["q"], 300),
     source: REGULATORY_SOURCE_IDS.includes(raw["source"] as never)

@@ -9,7 +9,7 @@ export const Route = createFileRoute("/law_/monitoring")({
   head: () =>
     pageHead(
       "Regulatory intelligence",
-      "FDA source analytics, versioned regulatory evidence and browser-saved investigations.",
+      "Recall patterns, complaint types, FDA source analytics and versioned regulatory evidence.",
     ),
   component: MonitoringPage,
 });
@@ -19,9 +19,19 @@ function MonitoringPage() {
   const navigate = Route.useNavigate();
   return (
     <AppShell
-      title={search.view === "analytics" ? "FDA analytics" : "Regulatory intelligence"}
+      title={
+        search.view === "analytics"
+          ? "FDA analytics"
+          : search.view === "patterns"
+            ? "Recall patterns"
+            : "Regulatory intelligence"
+      }
       description={
-        search.view === "analytics" ? "" : "Source changes, evidence and investigation review."
+        search.view === "patterns"
+          ? "Problem themes, repeat-recall firms, multi-firm clusters, named suppliers, unusual months and complaint types."
+          : search.view === "analytics"
+            ? ""
+            : "Source changes and retained evidence."
       }
       breadcrumbs={[
         { label: "Home", to: "/" },

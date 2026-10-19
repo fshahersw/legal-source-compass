@@ -20,6 +20,22 @@ export function corpusAuthRequired(
   return value === "1" || value === "true";
 }
 
+/** Name of the server-side list of administrator emails (comma or whitespace separated). Never exposed to the browser. */
+export const ADMIN_EMAILS_ENV = "ADMIN_EMAILS";
+
+/** True only for a verified account whose email is on the server's administrator list; an unset list has no administrators. */
+export function isAdminUser(
+  user: VerifiedCorpusUser | null,
+  env: Record<string, string | undefined> = process.env as Record<string, string | undefined>,
+): boolean {
+  if (!user || !isAllowedCorpusUser(user)) return false;
+  const admins = (env[ADMIN_EMAILS_ENV] ?? "")
+    .split(/[\s,]+/)
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  return admins.includes(user.email!.trim().toLowerCase());
+}
+
 /** The auth provider must verify this account; browser profile metadata cannot confirm its email. */
 export function isAllowedCorpusUser(user: VerifiedCorpusUser): boolean {
   return Boolean(

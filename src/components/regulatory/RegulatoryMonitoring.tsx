@@ -1,7 +1,8 @@
-import { useRegulatoryWorkspace } from "./useRegulatoryWorkspace";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ArrowRight, Search, RefreshCw } from "lucide-react";
+import { useViewerAccess } from "@/lib/auth/useViewerAccess";
+import { RecallPatterns } from "./RecallPatterns";
 import {
   getRegulatoryOverview,
   queryRegulatoryEvents,
@@ -18,8 +19,6 @@ import { RegulatoryQueryComposer } from "./RegulatoryQueryComposer";
 import { FdaDashboard } from "@/components/fda-analytics/FdaDashboard";
 import { RegulatoryEvidenceDrawer } from "./RegulatoryEvidenceDrawer";
 import { RegulatoryCoverage } from "./RegulatoryCoverage";
-import { RegulatoryTrends } from "./RegulatoryTrends";
-import { RegulatoryReviewEditor, RegulatoryWorkspacePanel } from "./RegulatoryWorkspace";
 import {
   actionClass,
   Empty,
@@ -33,6 +32,7 @@ import {
   displayCount,
   displayDate,
   EVENT_LABELS,
+  MONITORING_VIEW_LABELS,
   MONITORING_VIEWS,
   monitoringQuery,
   normalizeMonitoringSearch,
@@ -46,13 +46,12 @@ type Props = { search: MonitoringSearch; onSearch: (next: MonitoringSearch) => v
 export function RegulatoryMonitoring({ search, onSearch }: Props) {
   const query = monitoringQuery(search);
   const binding = JSON.stringify(query);
-  const [selected, setSelected] = useState<RegulatoryEvent[]>([]);
-  const workspace = useRegulatoryWorkspace();
+  const { admin } = useViewerAccess();
   const overview = useQuery({
     queryKey: ["regulatory-overview"],
     queryFn: () => getRegulatoryOverview(),
     staleTime: 30000,
-    enabled: search.view !== "analytics",
+    enabled: search.view !== "analytics" && search.view !== "patterns",
   });
   const invalidWindow = !!search.from && !!search.to && search.from > search.to;
   const invalidEntity = !!search.entityNamespace !== !!search.entityId;
@@ -75,9 +74,6 @@ export function RegulatoryMonitoring({ search, onSearch }: Props) {
     enabled: search.view === "entities",
     staleTime: 30000,
   });
-  useEffect(() => {
-    setSelected([]);
-  }, [binding]);
   function apply(next: RegulatoryQuery) {
     onSearch(
       normalizeMonitoringSearch({
@@ -108,7 +104,7 @@ export function RegulatoryMonitoring({ search, onSearch }: Props) {
         aria-label="Regulatory intelligence views"
         className="flex flex-wrap gap-1 border-b border-border pb-1"
       >
-        {MONITORING_VIEWS.map((view) => (
+        {MONITORING_VIEWS.filter((view) => view !== "coverage" || admin).map((view) => (
           <button
             key={view}
             type="button"
@@ -129,20 +125,25 @@ export function RegulatoryMonitoring({ search, onSearch }: Props) {
             }
             className={`${actionClass} sm:!min-h-8 sm:!px-2.5 sm:!py-1 ${search.view === view ? "!border-primary !bg-primary !text-primary-foreground hover:!bg-primary/90" : "border-transparent"}`}
           >
-            {view === "analytics" ? "FDA analytics" : view[0]!.toUpperCase() + view.slice(1)}
+            {MONITORING_VIEW_LABELS[view]}
           </button>
         ))}
       </nav>
+      {search.view === "patterns" && (
+        <RecallPatterns
+          domain={search.recallDomain ?? "fda_food"}
+          onDomain={(recallDomain) => onSearch({ ...search, recallDomain })}
+        />
+      )}
       {search.view === "analytics" && <FdaDashboard search={search} onSearch={onSearch} />}
-      {search.view !== "analytics" &&
-        search.view !== "investigations" &&
-        search.view !== "coverage" && (
-          <>
-            <RegulatoryQueryComposer query={query} onApply={apply} />
-            <Filters key={binding} search={search} overview={overview.data} onSearch={onSearch} />
-          </>
-        )}
-      {search.view !== "analytics" &&
+      {(search.view === "signals" || search.view === "entities") && (
+        <>
+          <RegulatoryQueryComposer query={query} onApply={apply} />
+          <Filters key={binding} search={search} overview={overview.data} onSearch={onSearch} />
+        </>
+      )}
+      {admin &&
+        (search.view === "signals" || search.view === "entities" || search.view === "coverage") &&
         (overview.isError ? (
           <LoadError retry={() => void overview.refetch()}>
             Source health could not be refreshed. Public results may still load, but current
@@ -185,9 +186,7 @@ export function RegulatoryMonitoring({ search, onSearch }: Props) {
           )
         ))}
       {(invalidWindow || invalidEntity) &&
-        search.view !== "coverage" &&
-        search.view !== "analytics" &&
-        search.view !== "investigations" && (
+        (search.view === "signals" || search.view === "entities") && (
           <p role="alert" className="rounded-md border border-warning/40 p-3 text-sm">
             {invalidWindow
               ? "The end date precedes the start date. Correct the date filters to load results."
@@ -204,16 +203,6 @@ export function RegulatoryMonitoring({ search, onSearch }: Props) {
                 Initial captures and backfills remain separately labeled.
               </p>
             </div>
-            {selected.length > 0 && (
-              <button
-                type="button"
-                className={actionClass}
-                onClick={() => onSearch({ ...search, view: "investigations" })}
-              >
-                Use {selected.length} selected in a brief
-                <ArrowRight className="size-3.5" aria-hidden />
-              </button>
-            )}
           </div>
           {events.isPending ? (
             <Pending />
@@ -232,7 +221,6 @@ export function RegulatoryMonitoring({ search, onSearch }: Props) {
                   {events.data.totalCapped ? " (capped)" : ""} {events.data.countUnit} ·{" "}
                   {events.data.dateBasis === "published" ? "publisher date" : "first detected date"}
                 </span>
-                <span>{selected.length} selected on this page</span>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[800px] text-left text-sm">
@@ -242,9 +230,6 @@ export function RegulatoryMonitoring({ search, onSearch }: Props) {
                   </caption>
                   <thead className="bg-muted/30 text-xs text-muted-foreground">
                     <tr>
-                      <th scope="col" className="w-10 px-3 py-2">
-                        <span className="sr-only">Select for brief</span>
-                      </th>
                       {["Record / subject", "Change and reason", "Source", "Dates", "Evidence"].map(
                         (label) => (
                           <th key={label} scope="col" className="px-3 py-2 font-medium">
@@ -260,23 +245,6 @@ export function RegulatoryMonitoring({ search, onSearch }: Props) {
                         key={event.id}
                         className="border-t border-border align-top hover:bg-muted/20"
                       >
-                        <td className="px-3 py-2">
-                          <label className="flex min-h-10 items-center">
-                            <input
-                              type="checkbox"
-                              className="size-4 accent-primary"
-                              checked={selected.some((item) => item.id === event.id)}
-                              onChange={(e) =>
-                                setSelected((previous) =>
-                                  e.target.checked
-                                    ? [...previous.filter((item) => item.id !== event.id), event]
-                                    : previous.filter((item) => item.id !== event.id),
-                                )
-                              }
-                            />
-                            <span className="sr-only">Select {event.record.title} for a brief</span>
-                          </label>
-                        </td>
                         <th scope="row" className="max-w-sm px-3 py-3 font-normal">
                           <button
                             type="button"
@@ -333,12 +301,6 @@ export function RegulatoryMonitoring({ search, onSearch }: Props) {
             </>
           )}
         </section>
-      )}
-      {search.view === "trends" && !invalidWindow && !invalidEntity && (
-        <RegulatoryTrends
-          query={query}
-          onRange={(range) => onSearch(changeMonitoringFilters(search, range))}
-        />
       )}
       {search.view === "entities" && (
         <section className={panelClass}>
@@ -431,22 +393,17 @@ export function RegulatoryMonitoring({ search, onSearch }: Props) {
           )}
         </section>
       )}
-      {search.view === "investigations" && (
-        <RegulatoryWorkspacePanel
-          workspace={workspace}
-          query={query}
-          selectedEvents={selected}
-          onApply={apply}
-          onOpen={open}
-        />
-      )}
       {search.view === "coverage" &&
-        (overview.isPending ? (
+        (!admin ? (
+          <Empty title="Coverage is available to administrators">
+            Source collection coverage is shown to signed-in administrator accounts only.
+          </Empty>
+        ) : overview.isPending ? (
           <Pending>Loading source coverage…</Pending>
         ) : overview.data && !overview.isError ? (
           <RegulatoryCoverage overview={overview.data} />
         ) : null)}
-      {search.view !== "analytics" && (
+      {(search.view === "signals" || search.view === "entities") && (
         <p className="text-xs leading-5 text-muted-foreground">
           Recorded source evidence supports review. It does not establish complete monitoring,
           current regulatory status, causation, liability, case value or a legal deadline.
@@ -466,7 +423,6 @@ export function RegulatoryMonitoring({ search, onSearch }: Props) {
               eventId: undefined,
             })
           }
-          review={(event) => <RegulatoryReviewEditor workspace={workspace} event={event} />}
         />
       )}
     </div>

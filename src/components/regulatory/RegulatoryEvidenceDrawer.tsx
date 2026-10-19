@@ -28,7 +28,7 @@ export function RegulatoryEvidenceDrawer({
   nativeId: string;
   eventId?: string | undefined;
   onClose: () => void;
-  review: (event: RegulatoryEvent) => ReactNode;
+  review?: ((event: RegulatoryEvent) => ReactNode) | undefined;
 }) {
   const [width, setWidth] = useState(48);
   const [chosenHash, setChosenHash] = useState<string | null>(null);
@@ -281,9 +281,9 @@ export function RegulatoryEvidenceDrawer({
                         {valueText(record.fields)}
                       </pre>
                     </details>
-                    {event && (
+                    {event && review ? (
                       <section className="border-t border-border pt-3">{review(event)}</section>
-                    )}
+                    ) : null}
                   </>
                 )}
               </>

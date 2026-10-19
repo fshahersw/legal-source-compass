@@ -1,5 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
-import { corpusAuthRequired, corpusRequestToken, isAllowedCorpusUser } from "./accessPolicy";
+import {
+  corpusAuthRequired,
+  corpusRequestToken,
+  isAllowedCorpusUser,
+  type VerifiedCorpusUser,
+} from "./accessPolicy";
 
 export type CorpusIdentity = { userId: string; email: string | null };
 
@@ -60,6 +65,25 @@ async function verifyAccess(request: Request): Promise<CorpusIdentity> {
   const user = result.data.user;
   if (!isAllowedCorpusUser(user)) throw new CorpusAccessError(403);
   return { userId: user.id, email: user.email ?? null };
+}
+
+/**
+ * The verified account behind a request, whether or not account enforcement is on; null when there is no valid session.
+ * The token is checked with the auth provider (never decoded and trusted).
+ */
+export async function verifiedRequestUser(request: Request): Promise<VerifiedCorpusUser | null> {
+  if (!corpusRequestToken(request)) return null;
+  try {
+    const identity = await verifyAccess(request);
+    return {
+      id: identity.userId,
+      email: identity.email,
+      email_confirmed_at: "verified",
+      is_anonymous: false,
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**
