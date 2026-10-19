@@ -86,7 +86,7 @@ def build(acq_dir, out_file):
                     DATASET, STATE, rid,
                     citation=f"RCW {s['number']}", heading=s["heading"], title_value=title, chapter_label=chapter_label,
                     body=body, source_url=f"{BASE}?cite={s['number']}", edition=edition, currency=currency,
-                    history=history, status=s["version_note"],
+                    history=history, status=s["version_note"], history_label="History",
                 ))
                 stats["rows"] += 1
                 stats["with_text"] += 1 if body else 0

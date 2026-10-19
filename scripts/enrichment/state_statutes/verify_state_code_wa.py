@@ -22,6 +22,7 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import codebuild  # noqa: E402
 import fetchlib  # noqa: E402
 
 BASE = "https://app.leg.wa.gov/RCW/default.aspx"
@@ -37,8 +38,16 @@ def fact(row, label):
 
 def toc_sections(raw_html):
     """Section numbers in the printed 'Sections' table: the in-page '#<number>' links before the section bodies."""
-    head = raw_html.split("ContentPlaceHolder1_dlSectionContent", 1)[0]
-    return list(dict.fromkeys(re.findall(r"href='#(\d+[A-Z]?\.\d+[A-Z]?\.\d+[0-9A-Za-z]*)'", head)))
+    # Only the printed "Sections" table: chapter notes before the bodies also link '#<number>' (e.g. "Prior law").
+    m = re.search(r">Sections</h3>(.*?)</table>", raw_html, re.S)
+    table = m.group(1) if m else ""
+    numbers = []
+    for row in re.findall(r"<tr>(.*?)</tr>", table, re.S):
+        # The row's first in-page link is its section; links inside the caption cell are cross-references.
+        first = re.search(r"href=['\"]#(\d+[A-Z]?\.\d+[A-Z]?[.-]\d+[0-9A-Za-z]*)['\"]", row)
+        if first:
+            numbers.append(first.group(1))
+    return list(dict.fromkeys(numbers))
 
 
 def live_section(number):
@@ -67,7 +76,7 @@ def live_section(number):
 def main(acq_dir, build_path, report_path, sample=50, seed=20261019):
     acq = Path(acq_dir)
     manifest = fetchlib.load_manifest(acq / "_manifest.jsonl")
-    build = json.loads(Path(build_path).read_text())
+    build = codebuild.read_build(build_path)
     rows = build["rows"]
     by_id = {r["id"]: r for r in rows}
     base_ids = collections.Counter(r["id"].split("@")[0] for r in rows)
@@ -116,7 +125,7 @@ def main(acq_dir, build_path, report_path, sample=50, seed=20261019):
             "cite": live["cite"] == citation,
             "heading": words(live["heading"]) == words(heading),
             "text": words(live["body"]) == words(body),
-            "history": words(re.sub(r"^\[\s*|\s*\]$", "", live["history"])) == words(fact(row, "History") or ""),
+            "history": words(re.sub(r"^\[\s*|\s*\]$", "", live["history"])) == words(fact(row, "History") or fact(row, "Source note") or ""),
         }
         ok = all(checks.values())
         failures += 0 if ok else 1

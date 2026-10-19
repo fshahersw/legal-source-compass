@@ -7,6 +7,7 @@ that starts with "Section text". Rows are built with corpus_writer.record() and 
 they stay lean: the body is stored once (detail.sections), `text` carries only id + title for search.
 """
 import datetime
+import gzip
 import hashlib
 import json
 import sys
@@ -31,15 +32,16 @@ def prune(value):
 
 
 def section_row(dataset, state, rid, *, citation, heading, title_value, chapter_label, body, source_url,
-                edition, currency, history=None, status=None, extra_facts=()):
-    """One section row. `body` is the printed text (paragraphs joined by newlines) or None for a status stub."""
+                edition, currency, history=None, status=None, extra_facts=(), history_label="Source note"):
+    """One section row. `body` is the printed text (paragraphs joined by newlines) or None for a status stub.
+    `history_label` must contain "history" or "source note" so the section page shows it as the history."""
     title = f"{citation} {heading}".strip() if heading else citation
     facts = [["Citation", citation]]
     if status:
         facts.append(["Status as printed", status])
     facts.extend([list(f) for f in extra_facts])
     if history:
-        facts.append(["Source note", history])
+        facts.append([history_label, history])
     facts.append(["Edition", edition])
     facts.append(["Currency", currency])
     cells = {"chapter": chapter_label}
@@ -87,8 +89,22 @@ def write_build(path, *, dataset, label, rows, listing, summary, inputs):
     if json.loads(json.dumps(build["rows"])) != build["rows"]:
         raise ValueError("rows not JSON round-trip stable")
     Path(path).parent.mkdir(parents=True, exist_ok=True)
-    Path(path).write_text(json.dumps(build, ensure_ascii=False, separators=(",", ":")))
+    data = json.dumps(build, ensure_ascii=False, separators=(",", ":")).encode()
+    if str(path).endswith(".gz"):
+        # Shared disk: build files are stored gzip-compressed; gunzip only the one about to be published.
+        with gzip.open(path, "wb", compresslevel=9) as handle:
+            handle.write(data)
+    else:
+        Path(path).write_bytes(data)
     return build
+
+
+def read_build(path):
+    """A build file, plain JSON or gzip-compressed (.gz)."""
+    if str(path).endswith(".gz"):
+        with gzip.open(path, "rb") as handle:
+            return json.loads(handle.read())
+    return json.loads(Path(path).read_text())
 
 
 def row_bytes(row):

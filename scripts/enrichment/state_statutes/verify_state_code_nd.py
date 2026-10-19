@@ -20,6 +20,7 @@ from pathlib import Path
 import pypdfium2 as pdfium
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import codebuild  # noqa: E402
 import fetchlib  # noqa: E402
 import parse_nd  # noqa: E402
 
@@ -47,7 +48,7 @@ def live_words(pdf_bytes, number, next_number):
 def main(acq_dir, build_path, report_path, sample=50, seed=20261019):
     acq = Path(acq_dir)
     manifest = fetchlib.load_manifest(acq / "_manifest.jsonl")
-    build = json.loads(Path(build_path).read_text())
+    build = codebuild.read_build(build_path)
     rows = build["rows"]
     by_id = {r["id"]: r for r in rows}
     index = parse_nd.parse_index(fetchlib.read_raw(manifest[INDEX]).decode("utf-8"))

@@ -21,6 +21,7 @@ from pathlib import Path
 from bs4 import BeautifulSoup
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import codebuild  # noqa: E402
 import fetchlib  # noqa: E402
 
 SITE = "https://sdlegislature.gov"
@@ -61,7 +62,7 @@ def live_section(number):
 def main(acq_dir, build_path, report_path, sample=50, seed=20261019):
     acq = Path(acq_dir)
     manifest = fetchlib.load_manifest(acq / "_manifest.jsonl")
-    build = json.loads(Path(build_path).read_text())
+    build = codebuild.read_build(build_path)
     rows = build["rows"]
     by_id = {r["id"]: r for r in rows}
     base_ids = {r["id"].split("@")[0] for r in rows}

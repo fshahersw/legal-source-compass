@@ -15,7 +15,8 @@ import re
 import lxml.html
 
 WS = re.compile(r"[ \t\r\n    ]+")
-NUMBER = re.compile(r"^\d+[A-Z]?\.\d+[A-Z]?\.\d+[0-9A-Za-z]*$")
+# 9A.32.030, 43.21C.010 and the Uniform Commercial Code's 62A.2-101, 62A.9A-102, 62A.5-1013.
+NUMBER = re.compile(r"^\d+[A-Z]?\.\d+[A-Z]?[.-]\d+[0-9A-Za-z]*$")
 EFFECTIVE = re.compile(r"\((Effective|Expires|Contingent)[^()]*\)\s*\.?$", re.I)
 
 
@@ -62,35 +63,64 @@ def table_rows(table):
 def parse_title_page(html):
     tree = _tree(html)
     h1, h2 = page_heading(tree)
-    return {"h1": h1, "caption": h2, "chapters": table_rows(_table_after(tree, "Chapters"))}
+    table = _table_after(tree, "Chapters")
+    if table is not None:
+        return {"h1": h1, "caption": h2, "chapters": table_rows(table)}
+    # Title 62A (Uniform Commercial Code) lists its articles in a table with no "Chapters" heading.
+    for candidate in tree.xpath("//div[@id='contentWrapper']//table"):
+        rows = table_rows(candidate)
+        if rows and all(re.match(r"^\d+[A-Z]?\.\d+[A-Z]?$", cite) for cite, _ in rows):
+            return {"h1": h1, "caption": h2, "chapters": rows}
+    return {"h1": h1, "caption": h2, "chapters": []}
 
 
-def _section(span):
+def _cite_text(div):
+    """The "RCW <number>" text of a cite heading, without the page's "PDF" button (an <a class="btn">)."""
+    h3 = div.find("h3")
+    if h3 is None:
+        return None
+    # A cite heading carries the page's PDF button; a catchline that merely starts with "RCW" does not.
+    buttons = h3.xpath(".//a[contains(@class,'btn')]")
+    if not buttons:
+        return None
+    text = clean(div.text_content())
+    label = "".join(clean(a.text_content()) for a in buttons)
+    text = clean(text[len(label):] if text.startswith(label) else text)
+    return text if text.startswith("RCW ") else None
+
+
+def _sections(span):
+    """Every version printed in one section span (a span can hold two versions, e.g. '(as amended by 1989 c 175)'
+    and '(as amended by 1989 c 372)', each with its own cite heading)."""
     anchor = span.xpath(".//a[@name]")
     number = anchor[0].get("name") if anchor else None
-    divs = [d for d in span if d.tag == "div"]
-    cite_line, heading, paragraphs, history = None, None, [], None
+    versions = []
+    cur = None
     stage = "cite"
-    for div in divs:
+    for div in (d for d in span if d.tag == "div"):
         text = clean(div.text_content())
         h3 = div.find("h3")
+        cite = _cite_text(div)
+        if cite is not None:
+            cur = {"number": number, "cite_line": cite, "heading": None, "paragraphs": [], "history": None}
+            versions.append(cur)
+            stage = "heading"
+            continue
+        if cur is None or stage == "notes":
+            continue
         if text.upper() == "NOTES:" or (h3 is not None and clean(h3.text_content()).upper() == "NOTES:"):
-            break
-        if stage == "cite" and h3 is not None:
-            # The cite heading starts with the page's "PDF" button (an <a class="btn">), which is not citation text.
-            buttons = "".join(clean(a.text_content()) for a in h3.xpath(".//a[contains(@class,'btn')]"))
-            cite_line, stage = clean(text[len(buttons):] if buttons and text.startswith(buttons) else text), "heading"
+            stage = "notes"  # Code Reviser notes run until the next version's cite heading
         elif stage == "heading" and h3 is not None:
-            heading, stage = text, "body"
+            cur["heading"], stage = text, "body"
         elif stage == "body" and "margin-top:15pt" in (div.get("style") or "").replace(" ", "") and text.startswith("["):
-            history, stage = text, "done"
+            cur["history"], stage = text, "done"
         elif stage == "body":
             children = [c for c in div if c.tag in ("div", "table", "p")]
             if children:
-                paragraphs.extend(t for t in (clean(c.text_content()) for c in children) if t)
+                cur["paragraphs"].extend(t for t in (clean(c.text_content()) for c in children) if t)
             elif text:
-                paragraphs.append(text)
-    return {"number": number, "cite_line": cite_line, "heading": heading, "paragraphs": paragraphs, "history": history}
+                cur["paragraphs"].append(text)
+    return versions or [{"number": number, "cite_line": None, "heading": None, "paragraphs": [], "history": None}]
 
 
 def parse_chapter_page(html):
@@ -103,14 +133,20 @@ def parse_chapter_page(html):
     for span in holder[0]:
         if span.tag != "span":
             continue
-        section = _section(span)
-        if not section["number"] or not NUMBER.match(section["number"]):
-            out["errors"].append({"error": "section without a valid anchor", "text": clean(span.text_content())[:120]})
-            continue
-        if section["cite_line"] != f"RCW {section['number']}" and not (section["cite_line"] or "").startswith(f"RCW {section['number']}"):
-            out["errors"].append({"number": section["number"], "error": f"cite line {section['cite_line']!r}"})
-            continue
-        effective = EFFECTIVE.search(section["heading"] or "")
-        section["version_note"] = effective.group(0).strip(" .") if effective else None
-        out["sections"].append(section)
+        for section in _sections(span):
+            if section["cite_line"] is None:
+                # Part/article headings inside a chapter carry an anchor (e.g. 11.130.000009) but no "RCW" cite line.
+                out.setdefault("part_headings", []).append({"anchor": section["number"], "text": clean(span.text_content())[:120]})
+                continue
+            if not section["number"] or not NUMBER.match(section["number"]):
+                out["errors"].append({"error": "section without a valid anchor", "text": clean(span.text_content())[:120]})
+                continue
+            if section["cite_line"] != f"RCW {section['number']}":
+                out["errors"].append({"number": section["number"], "error": f"cite line {section['cite_line']!r}"})
+                continue
+            effective = EFFECTIVE.search(section["heading"] or "")
+            amended = re.search(r"\(as amended by [^()]+\)", section["heading"] or "")
+            notes = [m.group(0).strip(" .") for m in (amended, effective) if m]
+            section["version_note"] = "; ".join(notes) or None
+            out["sections"].append(section)
     return out

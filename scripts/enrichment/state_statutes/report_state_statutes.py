@@ -13,6 +13,9 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import codebuild  # noqa: E402
+
 # jurisdiction -> (source_system, sections, publisher) from the read-only query named above.
 PROJECTION = {
     "AK": ("ak-basis-statutes", 20717, "Alaska State Legislature (BASIS Statutes)"),
@@ -85,7 +88,10 @@ PROJECTION_GAPS = {
 
 
 def load(path):
-    return json.loads(Path(path).read_text()) if Path(path).exists() else None
+    for candidate in (Path(path), Path(f"{path}.gz")):
+        if candidate.exists():
+            return codebuild.read_build(candidate)
+    return None
 
 
 def main(coverage_path, build_dir, measured):
