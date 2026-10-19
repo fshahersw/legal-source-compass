@@ -107,7 +107,9 @@ function SmallMultiple({
         <Mark agency={agency} className="size-7 rounded-md p-1" />
         <span className="min-w-0">
           <span className="block text-[12px] font-semibold">{agency.short}</span>
-          <span className="block truncate text-[10.5px] text-muted-foreground">{agency.name}</span>
+          <span className="block truncate text-[10.5px] text-muted-foreground" title={agency.name}>
+            {agency.name}
+          </span>
         </span>
       </span>
       <span className="mt-1.5 h-12 w-full" aria-hidden="true">

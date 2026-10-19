@@ -13,6 +13,7 @@ import {
   filterDirectory,
   lastYearVsAverage,
   perResidentByFips,
+  spendingConcentration,
   sortDirectory,
   yearRows,
   yearToDate,
@@ -224,6 +225,39 @@ describe("directory", () => {
     expect(hhs?.children.map((c) => c.row.id)).toEqual([2]);
     expect(tree.map((n) => n.row.id)).toContain(5);
     expect(tree.map((n) => n.row.id)).not.toContain(2);
+  });
+
+  it("measures concentration against the 50-state median, excluding DC", () => {
+    const state = (code: string, perResident: number | null) => ({
+      code,
+      name: code,
+      fy2025: 1,
+      fy2024: null,
+      changePct: null,
+      population2025: 1,
+      perResident,
+      perResidentRank: null,
+      sharePct: null,
+    });
+    const base = {
+      toptierCode: "075",
+      name: "HHS",
+      fiscalYear: 2025,
+      total: 1,
+      total2024: null,
+      statesWithSpending: 3,
+      denominator: null,
+    };
+    const c = spendingConcentration({
+      ...base,
+      medianPerResidentStates: 100,
+      states: [state("ND", 112000), state("DC", 999999), state("VA", 90)],
+    });
+    expect(c?.top.code).toBe("ND");
+    expect(c?.ratio).toBe(1120);
+    expect(
+      spendingConcentration({ ...base, medianPerResidentStates: null, states: [] }),
+    ).toBeNull();
   });
 
   it("maps per-resident amounts to FIPS and omits states without a population", () => {

@@ -196,6 +196,23 @@ export function perResidentByFips(sp: AgencySpending): Map<string, number> {
   return out;
 }
 
+/**
+ * Highest per-resident state (50 states) against the stored median. A large ratio means obligations sit where a
+ * contractor or processing site performs the work (e.g. benefit-claims contractors), not where residents benefit.
+ */
+export function spendingConcentration(sp: AgencySpending) {
+  const states = sp.states.filter(
+    (s) => s.perResident != null && s.code !== "DC" && s.code !== "PR",
+  );
+  const top = states.reduce<(typeof states)[number] | null>(
+    (best, s) => (best == null || s.perResident! > best.perResident! ? s : best),
+    null,
+  );
+  const median = sp.medianPerResidentStates;
+  if (!top || median == null || median <= 0) return null;
+  return { top, median, ratio: top.perResident! / median };
+}
+
 export type BudgetRow = {
   fy: string;
   resources: number | null;

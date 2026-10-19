@@ -39,6 +39,7 @@ import {
   monthName,
   nextActionLabel,
   perResidentByFips,
+  spendingConcentration,
   TYPE_LABEL,
   usd,
   USPS_BY_FIPS,
@@ -455,53 +456,55 @@ export function BudgetPanelBody({ budget }: { budget: AgencyBudget }) {
   const subs = expanded ? budget.subAgencies : budget.subAgencies.slice(0, 8);
   return (
     <div className="grid gap-3 p-2 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-      <div className="h-56 min-w-0">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={rows} margin={{ top: 6, right: 8, bottom: 0, left: 0 }}>
-            <CartesianGrid stroke="var(--border)" vertical={false} />
-            <XAxis dataKey="fy" tick={axisTick} />
-            <YAxis tick={axisTick} width={56} tickFormatter={(v: number) => usd(v * 1e6)} />
-            <Tooltip
-              contentStyle={tooltipStyle}
-              formatter={(v: number, name: string) => [usd(v * 1e6), name]}
-              labelFormatter={(fy: string) => {
-                const r = rows.find((x) => x.fy === fy);
-                return r?.partial ? `${fy} (through period ${r.period ?? "?"} of 12)` : fy;
-              }}
-            />
-            <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Bar
-              dataKey="resourcesM"
-              name="Budgetary resources"
-              fill={SERIES_COLORS.ALL}
-              isAnimationActive={false}
-            >
-              {rows.map((r) => (
-                <Cell key={r.fy} fillOpacity={r.partial ? 0.4 : 1} />
-              ))}
-            </Bar>
-            <Bar
-              dataKey="obligatedM"
-              name="Obligations"
-              fill={SERIES_COLORS.RULE}
-              isAnimationActive={false}
-            >
-              {rows.map((r) => (
-                <Cell key={r.fy} fillOpacity={r.partial ? 0.4 : 1} />
-              ))}
-            </Bar>
-            <Bar
-              dataKey="outlayedM"
-              name="Outlays"
-              fill={SERIES_COLORS.NOTICE}
-              isAnimationActive={false}
-            >
-              {rows.map((r) => (
-                <Cell key={r.fy} fillOpacity={r.partial ? 0.4 : 1} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+      <div className="min-w-0">
+        <div className="h-56">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={rows} margin={{ top: 6, right: 8, bottom: 0, left: 0 }}>
+              <CartesianGrid stroke="var(--border)" vertical={false} />
+              <XAxis dataKey="fy" tick={axisTick} />
+              <YAxis tick={axisTick} width={56} tickFormatter={(v: number) => usd(v * 1e6)} />
+              <Tooltip
+                contentStyle={tooltipStyle}
+                formatter={(v: number, name: string) => [usd(v * 1e6), name]}
+                labelFormatter={(fy: string) => {
+                  const r = rows.find((x) => x.fy === fy);
+                  return r?.partial ? `${fy} (through period ${r.period ?? "?"} of 12)` : fy;
+                }}
+              />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Bar
+                dataKey="resourcesM"
+                name="Budgetary resources"
+                fill={SERIES_COLORS.ALL}
+                isAnimationActive={false}
+              >
+                {rows.map((r) => (
+                  <Cell key={r.fy} fillOpacity={r.partial ? 0.4 : 1} />
+                ))}
+              </Bar>
+              <Bar
+                dataKey="obligatedM"
+                name="Obligations"
+                fill={SERIES_COLORS.RULE}
+                isAnimationActive={false}
+              >
+                {rows.map((r) => (
+                  <Cell key={r.fy} fillOpacity={r.partial ? 0.4 : 1} />
+                ))}
+              </Bar>
+              <Bar
+                dataKey="outlayedM"
+                name="Outlays"
+                fill={SERIES_COLORS.NOTICE}
+                isAnimationActive={false}
+              >
+                {rows.map((r) => (
+                  <Cell key={r.fy} fillOpacity={r.partial ? 0.4 : 1} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
         {partial.length ? (
           <p className="px-1 text-[11px] text-muted-foreground">
             {partial.map((r) => `${r.fy} through period ${r.period ?? "?"} of 12`).join("; ")}{" "}
@@ -566,8 +569,21 @@ export function SpendingPanelBody({ spending }: { spending: AgencySpending }) {
   const [expanded, setExpanded] = useState(false);
   const id = useId();
   const shown = expanded ? ranked : ranked.slice(0, 10);
+  const concentration = useMemo(() => spendingConcentration(spending), [spending]);
   return (
     <div className="grid gap-3 p-2 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      {concentration && concentration.ratio >= 5 ? (
+        <p
+          role="note"
+          className="rounded-md border border-warning/40 bg-warning/10 px-3 py-1.5 text-[11.5px] leading-4 lg:col-span-2"
+        >
+          Concentrated: {concentration.top.name} records {usd(concentration.top.perResident)} per
+          resident, {concentration.ratio.toLocaleString("en-US", { maximumFractionDigits: 0 })}× the
+          state median ({usd(concentration.median)}). Place of performance is where the awarded work
+          is done, which for claims-processing and similar contracts is the contractor's site, so
+          this ranking does not show where residents benefit.
+        </p>
+      ) : null}
       {corpus.geo ? (
         <UsMap
           geo={corpus.geo}
