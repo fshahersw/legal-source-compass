@@ -232,3 +232,27 @@ describe("federal civil caseload tab", () => {
     expect(PRIMARY_NAVIGATION.map((x) => x.to)).not.toContain("/courts/caseload");
   });
 });
+describe("CourtListener collection tab", () => {
+  it("sits with States & courts as its own tab right after Caseload", () => {
+    expect(navigationSection("/courts/collection")).toBe("states");
+    expect(contextualNavigation("/courts/collection")).toEqual(contextualNavigation("/courts"));
+    const tabs = contextualNavigation("/courts").map((x) => x.to);
+    expect(tabs.indexOf("/courts/collection")).toBe(tabs.indexOf("/courts/caseload") + 1);
+    expect(contextualNavigation("/courts")).toContainEqual({
+      to: "/courts/collection",
+      label: "Collection",
+    });
+  });
+  it("lights only itself, and leaves Caseload and the court pages alone", () => {
+    expect(activeContextualPath("/courts/collection")).toBe("/courts/collection");
+    expect(activeContextualPath("/courts/collection/")).toBe("/courts/collection");
+    expect(activeContextualPath("/courts/caseload")).toBe("/courts/caseload");
+    expect(activeContextualPath("/courts/ned")).toBe("/courts");
+    expect(ariaCurrent("/courts/collection", "/courts/collection", true)).toBe("page");
+    expect(ariaCurrent("/courts/caseload", "/courts/collection", false)).toBeUndefined();
+  });
+  it("adds no primary section", () => {
+    expect(PRIMARY_NAVIGATION).toHaveLength(4);
+    expect(PRIMARY_NAVIGATION.map((x) => x.to)).not.toContain("/courts/collection");
+  });
+});
