@@ -60,7 +60,12 @@ const options = (
         stringify: (params: { cik: string }) => { cik: string };
       };
       loader: (input: {
-        context: { queryClient: { ensureQueryData: () => Promise<unknown> } };
+        context: {
+          queryClient: {
+            ensureQueryData: () => Promise<unknown>;
+            prefetchQuery: (options: unknown) => Promise<unknown>;
+          };
+        };
         params: { cik: string };
       }) => Promise<{ found: boolean; name: string | null }>;
       head: (input: HeadInput) => Head;
@@ -93,12 +98,17 @@ describe("/companies/$cik address check", () => {
   });
 
   it("reports whether a record exists from the loader", async () => {
+    const prefetchQuery = vi.fn(async () => undefined);
     const run = (data: unknown) =>
       options.loader({
-        context: { queryClient: { ensureQueryData: async () => data } },
+        context: { queryClient: { ensureQueryData: async () => data, prefetchQuery } },
         params: { cik: "0001326801" },
       });
     await expect(run(null)).resolves.toEqual({ found: false, name: null });
+    // The statements read starts alongside the profile read, for the same company.
+    expect(prefetchQuery).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: expect.arrayContaining(["0001326801"]) }),
+    );
     await expect(run({ summary: { profile: { name: "Meta Platforms, Inc." } } })).resolves.toEqual({
       found: true,
       name: "Meta Platforms, Inc.",

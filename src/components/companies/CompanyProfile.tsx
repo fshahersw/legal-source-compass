@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState, type KeyboardEvent } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -8,13 +8,21 @@ import {
   Legend,
   Line,
   LineChart,
-  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
-import { Building2, ChevronDown, ExternalLink } from "lucide-react";
+import {
+  BarChart3,
+  ChevronDown,
+  ExternalLink,
+  FileStack,
+  FileText,
+  Gavel,
+  LayoutDashboard,
+  PieChart,
+} from "lucide-react";
 import { ChartCard, ChartUnavailable } from "@/components/fda-analytics/FdaCharts";
 import { chartDateLabel, FDA_COLORS } from "@/components/fda-analytics/chartView";
 import { getCompanyDetail } from "@/lib/external/companies.functions";
@@ -22,23 +30,28 @@ import { OpenPaymentsPanel } from "@/components/companies/OpenPaymentsPanel";
 import { cn } from "@/lib/utils";
 import {
   count,
-  edgarCompanyUrl,
   METRIC_LABEL,
   money,
-  NOT_RECORDED,
   pct,
   signedPct,
   TIER_LABEL,
   mdlRecordView,
   mdlTitle,
   strengthSplit,
-  xbrlSourceUrl,
   type CompanyDetail,
   type CompanyLink,
   type FinPoint,
   type MdlRecordLookup,
   type Metric,
 } from "./companyData";
+import { companyStatementsQuery } from "./companyQueries";
+import { COMPANY_TABS, tabOf, type CompanySearch, type CompanyTab } from "./companySearch";
+import type { Grain } from "./companyStatements";
+import { CompanyFacts } from "./CompanyHeader";
+import { GrainToggle, OverviewTab, StatementsTab } from "./CompanyFinancials";
+import { SegmentsTab } from "./CompanySegments";
+import { DocumentsTab } from "./CompanyDocuments";
+import { FilingsTab } from "./CompanyFilings";
 import {
   FlagBadge,
   Kpi,
@@ -66,26 +79,154 @@ export const companyDetailQuery = (cik: string) => ({
 
 const axis = { fontSize: 11, fill: "var(--muted-foreground)" };
 
-export function CompanyProfile({ cik }: { cik: string }) {
-  const q = useQuery(companyDetailQuery(cik));
-  if (q.isLoading) return <LoadingBlocks label="Loading company" />;
-  if (q.isError)
+const TABS: { id: CompanyTab; label: string; Icon: typeof LayoutDashboard }[] = [
+  { id: "overview", label: "Overview", Icon: LayoutDashboard },
+  { id: "statements", label: "Financial statements", Icon: BarChart3 },
+  { id: "segments", label: "Segments", Icon: PieChart },
+  { id: "documents", label: "Investor documents", Icon: FileText },
+  { id: "filings", label: "Filings", Icon: FileStack },
+  { id: "litigation", label: "Litigation", Icon: Gavel },
+];
+
+export type CompanyNavigate = (next: CompanySearch, opts?: { replace?: boolean }) => void;
+
+export function CompanyProfile({
+  cik,
+  search,
+  onNavigate,
+}: {
+  cik: string;
+  search: CompanySearch;
+  onNavigate: CompanyNavigate;
+}) {
+  const detail = useQuery(companyDetailQuery(cik));
+  const statements = useQuery(companyStatementsQuery(cik));
+  if (detail.isLoading || statements.isLoading) return <LoadingBlocks label="Loading company" />;
+  if (detail.isError && statements.isError)
     return (
       <Notice tone="error">
-        This company could not be loaded. {q.error instanceof Error ? q.error.message : ""}
+        This company could not be loaded.{" "}
+        {detail.error instanceof Error ? detail.error.message : ""}
       </Notice>
     );
-  if (!q.data)
+  const d = detail.data ?? null;
+  const p = statements.data ?? null;
+  if (!d && !p)
     return (
       <Notice>
-        No SEC company-intelligence record is published for CIK {cik}. Only registrants whose own
-        filings name an MDL are included.{" "}
+        No SEC company record is published for CIK {cik}. Only registrants whose own filings name an
+        MDL are included.{" "}
         <Link to="/companies" className="text-primary hover:underline">
           Back to all companies
         </Link>
       </Notice>
     );
-  return <Profile d={q.data} />;
+  const tab = tabOf(search);
+  const grain: Grain = search.grain ?? "annual";
+  const open = (id: CompanyTab) =>
+    onNavigate({ ...(id === "overview" ? {} : { tab: id }) }, { replace: false });
+  const setGrain = (g: Grain) =>
+    onNavigate(
+      { ...search, grain: g === "quarterly" ? "quarterly" : undefined },
+      { replace: true },
+    );
+  return (
+    <div className="space-y-3">
+      <CompanyFacts cik={cik} profile={p} summary={d?.summary ?? null} />
+      <TabBar tab={tab} onOpen={open} />
+      <div
+        role="tabpanel"
+        id={`company-panel-${tab}`}
+        aria-labelledby={`company-tab-${tab}`}
+        className="min-w-0"
+      >
+        {statements.isError && tab !== "litigation" ? (
+          <Notice tone="error">
+            Financial data could not be loaded.{" "}
+            {statements.error instanceof Error ? statements.error.message : ""}
+          </Notice>
+        ) : tab === "overview" ? (
+          <OverviewTab profile={p} summary={d?.summary ?? null} onOpen={open} />
+        ) : tab === "statements" ? (
+          <StatementsTab cik={cik} profile={p} grain={grain} onGrain={setGrain} />
+        ) : tab === "segments" ? (
+          <SegmentsTab cik={cik} grain={grain} onGrain={setGrain} currency={p?.currency ?? null} />
+        ) : tab === "documents" ? (
+          <DocumentsTab
+            cik={cik}
+            docId={search.doc}
+            onDoc={(id) => onNavigate({ tab: "documents", doc: id }, { replace: true })}
+            currency={p?.currency ?? null}
+          />
+        ) : tab === "filings" ? (
+          <FilingsTab cik={cik} profile={p} />
+        ) : d ? (
+          <Litigation d={d} />
+        ) : detail.isError ? (
+          <Notice tone="error">
+            Litigation exposure could not be loaded.{" "}
+            {detail.error instanceof Error ? detail.error.message : ""}
+          </Notice>
+        ) : (
+          <Notice>No MDL evidence record is published for this registrant.</Notice>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TabBar({ tab, onOpen }: { tab: CompanyTab; onOpen: (id: CompanyTab) => void }) {
+  const refs = useRef(new Map<CompanyTab, HTMLButtonElement>());
+  const onKey = (e: KeyboardEvent<HTMLButtonElement>) => {
+    const i = COMPANY_TABS.indexOf(tab);
+    const next =
+      e.key === "ArrowRight"
+        ? COMPANY_TABS[(i + 1) % COMPANY_TABS.length]
+        : e.key === "ArrowLeft"
+          ? COMPANY_TABS[(i - 1 + COMPANY_TABS.length) % COMPANY_TABS.length]
+          : e.key === "Home"
+            ? COMPANY_TABS[0]
+            : e.key === "End"
+              ? COMPANY_TABS[COMPANY_TABS.length - 1]
+              : undefined;
+    if (!next) return;
+    e.preventDefault();
+    onOpen(next);
+    refs.current.get(next)?.focus();
+  };
+  return (
+    <div
+      role="tablist"
+      aria-label="Company views"
+      className="flex gap-1 overflow-x-auto rounded-md border border-border bg-surface p-1"
+    >
+      {TABS.map(({ id, label, Icon }) => (
+        <button
+          key={id}
+          ref={(el) => {
+            if (el) refs.current.set(id, el);
+          }}
+          type="button"
+          role="tab"
+          id={`company-tab-${id}`}
+          aria-selected={tab === id}
+          aria-controls={`company-panel-${id}`}
+          tabIndex={tab === id ? 0 : -1}
+          onClick={() => onOpen(id)}
+          onKeyDown={onKey}
+          className={cn(
+            "flex shrink-0 items-center gap-1.5 rounded px-3 py-1.5 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-ring",
+            tab === id
+              ? "bg-primary font-semibold text-primary-foreground"
+              : "text-muted-foreground hover:bg-muted",
+          )}
+        >
+          <Icon className="size-3.5" aria-hidden />
+          {label}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 export function companyTitle(d: CompanyDetail | null | undefined) {
@@ -104,98 +245,26 @@ function reportsToCms(sic: string | null): boolean {
   );
 }
 
-function Profile({ d }: { d: CompanyDetail }) {
+function Litigation({ d }: { d: CompanyDetail }) {
   const { summary: s, financials: f } = d;
   const p = s.profile;
   const acc = s.latest.litigation_accrual;
   const unit = s.currency;
-  const xbrl = xbrlSourceUrl(p.cik, f, d.financialsSourceUrl);
   return (
-    <div className="space-y-4">
-      <header className="flex flex-wrap items-start gap-3 rounded-md border border-border bg-surface p-3">
-        <span
-          className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground"
-          aria-hidden
-        >
-          <Building2 className="size-5" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-1.5">
-            {p.tickers.length ? (
-              <span className="rounded border border-border bg-muted px-1.5 py-px font-mono text-[11px]">
-                {p.tickers.join(" · ")}
-                {p.exchanges.length ? ` · ${p.exchanges.join(", ")}` : ""}
-              </span>
-            ) : (
-              <span className="text-[11px] text-muted-foreground">No ticker recorded</span>
-            )}
-            {s.exposure.strongestTier ? (
-              <TierBadge tier={s.exposure.strongestTier} />
-            ) : (
-              <span className="text-[11px] text-muted-foreground">
-                No pending MDL read as defendant
-              </span>
-            )}
-            {s.flags.map((k) => (
-              <FlagBadge key={k} flag={k} label={FLAG_TEXT[k]} />
-            ))}
-          </div>
-          <dl className="mt-1.5 grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs sm:grid-cols-4">
-            <Fact label="CIK" value={p.cik} mono />
-            <Fact
-              label="SIC"
-              value={p.sic ? `${p.sic} · ${p.sicDescription ?? ""}` : NOT_RECORDED}
-            />
-            <Fact
-              label="State of incorporation"
-              value={p.stateOfIncorporationName ?? p.stateOfIncorporation ?? NOT_RECORDED}
-            />
-            <Fact
-              label="Business address"
-              value={
-                [p.businessCity, p.businessStateName ?? p.businessState]
-                  .filter(Boolean)
-                  .join(", ") || NOT_RECORDED
-              }
-            />
-          </dl>
-          {p.formerNames.length ? (
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Former names: {p.formerNames.join("; ")}
-            </p>
-          ) : null}
-          {s.coRegistrantOf.length ? (
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              No XBRL financials of its own; appears as a co-registrant with{" "}
-              {s.coRegistrantOf.join("; ")}.
-            </p>
-          ) : null}
-        </div>
-        <div className="flex flex-col gap-1 text-xs">
-          <a
-            href={edgarCompanyUrl(p.cik)}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1 text-primary hover:underline"
-          >
-            EDGAR filings <ExternalLink className="size-3" aria-hidden />
-          </a>
-          {xbrl ? (
-            <a
-              href={xbrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 text-primary hover:underline"
-            >
-              XBRL companyfacts <ExternalLink className="size-3" aria-hidden />
-            </a>
-          ) : (
-            <span className="text-muted-foreground">No XBRL financials on file</span>
-          )}
-        </div>
-      </header>
-
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-1.5">
+        {s.exposure.strongestTier ? (
+          <TierBadge tier={s.exposure.strongestTier} />
+        ) : (
+          <span className="text-[11px] text-muted-foreground">
+            No pending MDL read as defendant
+          </span>
+        )}
+        {s.flags.map((k) => (
+          <FlagBadge key={k} flag={k} label={FLAG_TEXT[k]} />
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Kpi
           label="Linked MDLs"
           value={String(s.exposure.linkedMdls)}
@@ -213,16 +282,6 @@ function Profile({ d }: { d: CompanyDetail }) {
                 : undefined
           }
           title="Sum of JPML pending actions in MDLs whose evidence excerpt reads the company as a defendant. A/B = MDL number or caption evidence; C = subject evidence (requires review)."
-        />
-        <Kpi
-          label="Revenue"
-          value={money(s.latest.revenue?.value, s.latest.revenue?.unit)}
-          note={s.latest.revenue ? `FY${s.latest.revenue.fy}` : undefined}
-        />
-        <Kpi
-          label="Net income"
-          value={money(s.latest.net_income?.value, s.latest.net_income?.unit)}
-          note={s.latest.net_income ? `FY${s.latest.net_income.fy}` : undefined}
         />
         <Kpi
           label="Litigation accrual (company-wide)"
@@ -253,10 +312,10 @@ function Profile({ d }: { d: CompanyDetail }) {
       </div>
 
       {f ? (
-        <Financials d={d} />
+        <LitigationFinancials d={d} />
       ) : (
         <Notice>
-          No XBRL financial facts are published for this registrant (it may file without XBRL or
+          No XBRL litigation facts are published for this registrant (it may file without XBRL or
           only as a co-registrant).
         </Notice>
       )}
@@ -298,17 +357,6 @@ const FLAG_TEXT = {
   multi_mdl: "3+ pending MDLs",
 } as const;
 
-function Fact({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
-  return (
-    <div className="min-w-0">
-      <dt className="text-[11px] text-muted-foreground">{label}</dt>
-      <dd className={cn("truncate", mono && "font-mono")} title={value}>
-        {value}
-      </dd>
-    </div>
-  );
-}
-
 function rowsFor(
   points: Partial<Record<Metric, FinPoint[]>>,
   metrics: Metric[],
@@ -339,13 +387,12 @@ function conceptNote(points: Partial<Record<Metric, FinPoint[]>>, metrics: Metri
     .join(" · ");
 }
 
-function Financials({ d }: { d: CompanyDetail }) {
+function LitigationFinancials({ d }: { d: CompanyDetail }) {
   const f = d.financials!;
-  const [grain, setGrain] = useState<"annual" | "quarterly">("annual");
+  const [grain, setGrain] = useState<Grain>("annual");
   const pts = grain === "annual" ? f.annual : f.quarterly;
   const unit =
     f.annual.revenue[0]?.unit ?? f.annual.net_income[0]?.unit ?? d.summary.currency ?? "USD";
-  const pl = rowsFor(pts, ["revenue", "net_income"], grain);
   const lit = rowsFor(
     pts,
     ["litigation_accrual", "litigation_expense", "legal_payments", "possible_loss"],
@@ -353,131 +400,84 @@ function Financials({ d }: { d: CompanyDetail }) {
   );
   const accPct = f.accrualPctRevenue.map((r) => ({ label: `FY${r.fy}`, pct: r.pct }));
   const fmt = (v: number) => money(v, unit);
-  const toggle = (
-    <div className="flex gap-1 px-3 pt-2" role="group" aria-label="Period grain">
-      {(["annual", "quarterly"] as const).map((g) => (
-        <button
-          key={g}
-          type="button"
-          aria-pressed={grain === g}
-          onClick={() => setGrain(g)}
-          className={cn(
-            "rounded border px-2 py-0.5 text-[11px]",
-            grain === g
-              ? "border-primary bg-primary/10 text-primary"
-              : "border-border text-muted-foreground hover:bg-muted",
-          )}
-        >
-          {g === "annual" ? "Fiscal years (10-K/20-F)" : "Quarters (10-Q)"}
-        </button>
-      ))}
-    </div>
-  );
+  const tracked = [
+    "litigation_accrual",
+    "litigation_expense",
+    "legal_payments",
+    "possible_loss",
+  ] as const;
+  // A registrant that tags none of the litigation concepts in either grain gets one line, not an empty chart.
+  if (!tracked.some((m) => f.annual[m].length || f.quarterly[m].length))
+    return (
+      <p className="rounded-md border border-border bg-surface px-3 py-2 text-xs text-muted-foreground">
+        Litigation accruals, expense, settlement payments and possible-loss estimates: none of these
+        concepts is tagged in this registrant&rsquo;s XBRL facts.
+      </p>
+    );
   return (
-    <div className="grid gap-3 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-      <ChartCard
-        title="Revenue and net income"
-        subtitle={`${grain === "annual" ? "Fiscal years" : "Quarterly (80–100 day) periods"}, ${unit}, latest filed value per period`}
-        footnote={conceptNote(pts, ["revenue", "net_income"])}
-      >
-        {toggle}
-        {pl.length ? (
-          <div className="h-64 px-2 py-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={pl} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
-                <CartesianGrid stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="label" tick={axis} interval="preserveStartEnd" minTickGap={20} />
-                <YAxis tick={axis} tickFormatter={fmt} width={60} />
-                <ReferenceLine y={0} stroke="var(--border)" />
-                <Tooltip formatter={(v: number) => fmt(v)} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line
-                  dataKey="revenue"
-                  name="Revenue"
-                  stroke={FDA_COLORS[0]}
-                  strokeWidth={2}
-                  dot={false}
-                  connectNulls={false}
-                  isAnimationActive={false}
-                />
-                <Line
-                  dataKey="net_income"
-                  name="Net income"
-                  stroke={FDA_COLORS[1]}
-                  strokeWidth={2}
-                  dot={false}
-                  connectNulls={false}
-                  isAnimationActive={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <ChartUnavailable reason="No revenue or net income facts for this grain." />
-        )}
-      </ChartCard>
-      <ChartCard
-        title="Litigation accruals, expense and payments"
-        subtitle={`Company-wide loss-contingency XBRL facts, not MDL-specific, ${unit}; accrual and possible-loss are period-end balances`}
-        footnote={conceptNote(pts, [
-          "litigation_accrual",
-          "litigation_expense",
-          "legal_payments",
-          "possible_loss",
-        ])}
-      >
-        {toggle}
-        {lit.length ? (
-          <div className="h-64 px-2 py-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={lit} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
-                <CartesianGrid stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="label" tick={axis} interval="preserveStartEnd" minTickGap={20} />
-                <YAxis tick={axis} tickFormatter={fmt} width={60} />
-                <Tooltip formatter={(v: number) => fmt(v)} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar
-                  dataKey="litigation_accrual"
-                  name="Accrual"
-                  fill={FDA_COLORS[2]}
-                  isAnimationActive={false}
-                />
-                <Bar
-                  dataKey="litigation_expense"
-                  name="Expense"
-                  fill={FDA_COLORS[3]}
-                  isAnimationActive={false}
-                />
-                <Bar
-                  dataKey="legal_payments"
-                  name="Payments"
-                  fill={FDA_COLORS[4]}
-                  isAnimationActive={false}
-                />
-                <Bar
-                  dataKey="possible_loss"
-                  name="Possible loss"
-                  fill={FDA_COLORS[5]}
-                  isAnimationActive={false}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <ChartUnavailable reason="This registrant reports none of the tracked litigation concepts in XBRL for this grain." />
-        )}
-        {grain === "annual" && accPct.length ? (
-          <div className="border-t border-border/60 px-3 py-1.5 text-[11px] text-muted-foreground">
-            Accrual as % of revenue:{" "}
-            {accPct.slice(-6).map((r) => (
-              <span key={r.label} className="mr-2 whitespace-nowrap font-mono text-foreground">
-                {r.label} {r.pct.toFixed(2)}%
-              </span>
-            ))}
-          </div>
-        ) : null}
-      </ChartCard>
-    </div>
+    <ChartCard
+      title="Litigation accruals, expense and payments"
+      subtitle={`Company-wide loss-contingency XBRL facts, not MDL-specific, ${unit}; accrual and possible-loss are period-end balances`}
+      footnote={conceptNote(pts, [
+        "litigation_accrual",
+        "litigation_expense",
+        "legal_payments",
+        "possible_loss",
+      ])}
+    >
+      <div className="px-3 pt-2">
+        <GrainToggle grain={grain} onGrain={setGrain} />
+      </div>
+      {lit.length ? (
+        <div className="h-64 px-2 py-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={lit} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
+              <CartesianGrid stroke="var(--border)" vertical={false} />
+              <XAxis dataKey="label" tick={axis} interval="preserveStartEnd" minTickGap={20} />
+              <YAxis tick={axis} tickFormatter={fmt} width={60} />
+              <Tooltip formatter={(v: number) => fmt(v)} />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Bar
+                dataKey="litigation_accrual"
+                name="Accrual"
+                fill={FDA_COLORS[2]}
+                isAnimationActive={false}
+              />
+              <Bar
+                dataKey="litigation_expense"
+                name="Expense"
+                fill={FDA_COLORS[3]}
+                isAnimationActive={false}
+              />
+              <Bar
+                dataKey="legal_payments"
+                name="Payments"
+                fill={FDA_COLORS[4]}
+                isAnimationActive={false}
+              />
+              <Bar
+                dataKey="possible_loss"
+                name="Possible loss"
+                fill={FDA_COLORS[5]}
+                isAnimationActive={false}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <ChartUnavailable reason="This registrant reports none of the tracked litigation concepts in XBRL for this grain." />
+      )}
+      {grain === "annual" && accPct.length ? (
+        <div className="border-t border-border/60 px-3 py-1.5 text-[11px] text-muted-foreground">
+          Accrual as % of revenue:{" "}
+          {accPct.slice(-6).map((r) => (
+            <span key={r.label} className="mr-2 whitespace-nowrap font-mono text-foreground">
+              {r.label} {r.pct.toFixed(2)}%
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </ChartCard>
   );
 }
 

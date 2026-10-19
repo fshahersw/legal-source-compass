@@ -6,6 +6,10 @@ import {
   companyDetailQuery,
   companyTitle,
 } from "@/components/companies/CompanyProfile";
+import { CompanyLogo } from "@/components/companies/CompanyHeader";
+import { tickerLine } from "@/components/companies/companyStatements";
+import { companyStatementsQuery } from "@/components/companies/companyQueries";
+import { normalizeCompanySearch } from "@/components/companies/companySearch";
 import { isCikAddress, paddedCik, requestedCik } from "@/components/companies/cik";
 import { pageHead } from "@/lib/corpus/head";
 
@@ -32,7 +36,10 @@ function parseCompanyParams(params: { cik: string }) {
 
 export const Route = createFileRoute("/companies/$cik")({
   params: { parse: parseCompanyParams, stringify: (params) => ({ cik: params.cik }) },
+  validateSearch: normalizeCompanySearch,
   loader: async ({ context, params }) => {
+    // The statements read overlaps the profile read; tabs other than litigation render from it.
+    void context.queryClient.prefetchQuery(companyStatementsQuery(params.cik));
     const data = await context.queryClient.ensureQueryData(companyDetailQuery(params.cik));
     return { found: data != null, name: data?.summary.profile.name ?? null };
   },
@@ -51,7 +58,7 @@ export const Route = createFileRoute("/companies/$cik")({
     const name = loaderData?.name ?? `CIK ${params.cik}`;
     return pageHead(
       name,
-      `${name}: MDLs named in its own SEC filings, evidence filings, and XBRL revenue, income and litigation accruals.`,
+      `${name}: financial statements, segments, earnings releases and filings from SEC EDGAR, with the MDLs named in its own filings.`,
     );
   },
   component: Page,
@@ -60,15 +67,30 @@ export const Route = createFileRoute("/companies/$cik")({
 
 function Page() {
   const { cik } = Route.useParams();
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
   const q = useQuery(companyDetailQuery(cik));
-  const name = companyTitle(q.data);
+  const st = useQuery(companyStatementsQuery(cik));
+  const name = q.data ? companyTitle(q.data) : (st.data?.name ?? `CIK ${cik}`);
+  const known = Boolean(q.data || st.data);
   return (
     <AppShell
-      title={q.data ? name : `CIK ${cik}`}
-      description="MDL exposure from the company's own SEC filings, with XBRL financial trends."
-      breadcrumbs={[...COMPANY_CRUMBS, { label: q.data ? name : `CIK ${cik}` }]}
+      title={name}
+      description={
+        known
+          ? `${tickerLine(st.data ?? null, q.data?.summary ?? null)} · ${st.data?.sicDescription ?? q.data?.summary.profile.sicDescription ?? "Industry not recorded"}`
+          : "Financial statements, segments, investor documents and filings from SEC EDGAR, with MDL exposure from the company's own filings."
+      }
+      emblem={known ? <CompanyLogo profile={st.data ?? null} /> : undefined}
+      breadcrumbs={[...COMPANY_CRUMBS, { label: name }]}
     >
-      <CompanyProfile cik={cik} />
+      <CompanyProfile
+        cik={cik}
+        search={search}
+        onNavigate={(next, opts) =>
+          void navigate({ search: next, replace: opts?.replace ?? true, resetScroll: false })
+        }
+      />
     </AppShell>
   );
 }
