@@ -27,9 +27,9 @@ def head(url):
 
 
 def main():
-    fd = json.load(open(os.path.join(rc.OUT, "clb_judge_disclosures.json")))["rows"]
+    fd = rc.read_build("clb_judge_disclosures")["rows"]
     pdfs = [x["pdf"] for r in fd[::400] for x in r["item"]["profile"]["report_list"][:1] if x["pdf"]][:8]
-    pr = json.load(open(os.path.join(rc.OUT, "clb_top_cited_parentheticals.json")))["rows"]
+    pr = rc.read_build("clb_top_cited_parentheticals")["rows"]
     ops = [e["describing_url"] for r in pr[::250] for e in r["item"]["profile"]["examples"][:1] if e["describing_url"]][:4]
     out = []
     for url in pdfs + ops:

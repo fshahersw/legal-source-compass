@@ -75,7 +75,7 @@ def bankruptcy() -> dict:
             judge[c] += 1
         if c in MEDIAN_COURTS and f and t and t >= f:
             durs[c].append((t - f).days)
-    spec = json.load(open(os.path.join(rc.OUT, "clb_bankruptcy_courts.json")))
+    spec = rc.read_build("clb_bankruptcy_courts")
     prof = {r["id"]: r["item"]["profile"] for r in spec["rows"]}
     checks = []
 
@@ -109,7 +109,7 @@ def unmatched() -> dict:
         st[int(row[ix["status"]])] += 1
         ty[int(row[ix["type"]])] += 1
         rep[row[ix["reporter"]][:60]] += 1
-    spec = json.load(open(os.path.join(rc.OUT, "clb_unmatched_citations.json")))
+    spec = rc.read_build("clb_unmatched_citations")
     prof = {r["id"]: r["item"]["profile"] for r in spec["rows"]}
     ov = prof["overview:all"]
     checks = []

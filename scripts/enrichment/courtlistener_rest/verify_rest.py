@@ -36,7 +36,7 @@ def check(ds, fig, where, mine, shown):
 
 
 def load(ds):
-    return {r["id"]: r for r in json.load(open(os.path.join(rc.OUT, ds + ".json")))["rows"]}
+    return {r["id"]: r for r in rc.read_build(ds)["rows"]}
 
 
 def ok_date(d):
@@ -183,6 +183,9 @@ def disclosures(db):
             viol += 1
         for x in p["report_list"]:
             if x["pdf"] and not x["pdf"].startswith(f"https://storage.courtlistener.com/us/federal/judicial/financial-disclosures/{rid}/"):
+                viol += 1
+            # a report-type tag from the file name (SR, SPE, SIA...) is never shown as part of the filer's court code
+            if x["filer_code"] and x["filer_code"].split()[-1] in {"SR", "SPE", "SIA", "RES", "RESP", "FIN"}:
                 viol += 1
     check("clb_judge_disclosures", "attribution-rule violations", "all rows", 0, viol)
     check("clb_judge_disclosures", "person 1780 marked as conflict (reports of two circuits)", "1780", "conflict", rows["1780"]["item"]["profile"]["attribution"]["status"])

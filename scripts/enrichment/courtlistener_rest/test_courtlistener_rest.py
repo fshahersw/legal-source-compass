@@ -27,6 +27,15 @@ class FilerFileTests(unittest.TestCase):
         self.assertEqual((p["words"], p["circuit"]), ("Tydingco-Gatewood", "09"))
         p = rc.parse_filer_file(AO + "King-Rob B J3. 04_R_15.tiff")
         self.assertEqual((p["words"], p["circuit"]), ("King", "04"))
+        p = rc.parse_filer_file(AO + "Wood-DP J3 07_SR_19.pdf")
+        self.assertEqual((p["circuit"], p["district"]), ("07", None))  # SR tags the report, not a district
+        p = rc.parse_filer_file(AO + "Batchelder-AM. J3. 06. SPE_R_12.tiff")
+        self.assertEqual((p["circuit"], p["district"]), ("06", None))
+        p = rc.parse_filer_file(AO + "Gordon-LM. J3. CIT SPE_resp2_R_12.tiff")
+        self.assertEqual((p["court_code"], p["district"]), ("CIT", None))
+        # malformed: a report tag where the court belongs -> no code fields, surname words kept
+        p = rc.parse_filer_file(AO + "Harvey-GM M. DC SPE_Ini_SIA_R_14.tiff")
+        self.assertEqual((p["words"], p["position"], p["court_code"], p["circuit"], p["district"]), ("Harvey", None, None, None, None))
 
     def test_national_court_codes_are_not_numbered_circuits(self):
         p = rc.parse_filer_file(AO + "Holmes-MV. J1. --. TAX_R_13.tiff")
@@ -129,6 +138,24 @@ class HelperTests(unittest.TestCase):
 
     def test_published_ids_digest(self):
         self.assertEqual(rc.ids_digest(["b", "a"]), rc.ids_digest(["a", "b"]))
+
+    def test_read_build_plain_or_gzipped(self):
+        import gzip
+        import json
+        import tempfile
+
+        saved = rc.OUT
+        with tempfile.TemporaryDirectory() as d:
+            rc.OUT = d
+            try:
+                with gzip.open(os.path.join(d, "clb_x.json.gz"), "wt") as h:
+                    json.dump({"rows": [{"id": "gz"}]}, h)
+                self.assertEqual(rc.read_build("clb_x")["rows"][0]["id"], "gz")
+                rc.write({"clb_x": {"rows": [{"id": "plain"}]}})  # a rebuild removes the stale gzipped copy
+                self.assertFalse(os.path.exists(os.path.join(d, "clb_x.json.gz")))
+                self.assertEqual(rc.read_build("clb_x")["rows"][0]["id"], "plain")
+            finally:
+                rc.OUT = saved
 
 
 if __name__ == "__main__":

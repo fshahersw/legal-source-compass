@@ -7,10 +7,10 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import rest_common as rc  # noqa: E402
 
-for name in sorted(os.listdir(rc.OUT)):
-    if not name.endswith(".json") or name.startswith("verify") or name.startswith("spot"):
+for name in sorted({n.removesuffix(".gz") for n in os.listdir(rc.OUT)}):
+    if not name.endswith(".json") or not name.startswith("clb_"):
         continue
-    spec = json.load(open(os.path.join(rc.OUT, name)))
+    spec = rc.read_build(name.removesuffix(".json"))
     if "rows" not in spec:
         continue
     rows = spec["rows"]

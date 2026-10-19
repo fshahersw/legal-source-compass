@@ -94,8 +94,12 @@ def ids_digest(ids) -> str:
 
 def published_ids(dataset: str) -> set[str]:
     """Record ids of a published clb_* dataset, read from its build file and accepted only when count and digest equal the live catalog's."""
+    import gzip
+
     path = os.path.join(CLB_BUILD, dataset + ".json")
-    ids = {r["id"] for r in json.load(open(path))["rows"]}
+    # published build files may be stored gzipped (<id>.json.gz) to save disk; the digest check below applies either way
+    with (open(path) if os.path.exists(path) else gzip.open(path + ".gz", "rt")) as h:
+        ids = {r["id"] for r in json.load(h)["rows"]}
     n, digest = PUBLISHED_IDS[dataset]
     if len(ids) != n or ids_digest(ids) != digest:
         raise SystemExit(f"{dataset}: build file ids differ from the published ids (count {len(ids)} vs {n}); refresh the lookup")
@@ -122,7 +126,18 @@ def write(spec_by_id: dict) -> None:
         with open(path + ".tmp", "w") as h:
             json.dump(spec, h, ensure_ascii=False, sort_keys=True, default=str)
         os.replace(path + ".tmp", path)
+        if os.path.exists(path + ".gz"):  # an older gzipped copy would be stale now
+            os.remove(path + ".gz")
         print(ds, len(spec["rows"]), "rows", os.path.getsize(path) // 1024, "KB")
+
+
+def read_build(ds: str) -> dict:
+    """A build file of this stream, plain (<id>.json) or gzipped (<id>.json.gz: finished builds are gzipped to save disk)."""
+    import gzip
+
+    path = os.path.join(OUT, ds + ".json")
+    with (open(path) if os.path.exists(path) else gzip.open(path + ".gz", "rt")) as h:
+        return json.load(h)
 
 
 def split_names(judges: str | None) -> list[str]:
@@ -146,6 +161,8 @@ AO_CODE = re.compile(
 JW_NAME = re.compile(r"^(?P<name>.+?) Financial Disclosure Report")
 NOMINATION_NAME = re.compile(r"^(?P<last>[^,]+),")
 SUFFIXES = {"jr", "sr", "ii", "iii", "iv"}
+# report-type tags written after the court in AO file names ("06. SPE_R_12", "10_SR_19", "08 SIA_Fin"), never district codes
+REPORT_SUFFIXES = {"SR", "SPE", "SIA", "RES", "RESP", "FIN"}
 NUMBERED_CIRCUITS = {f"{n:02d}" for n in range(1, 12)}  # the numbered regional circuits; other codes (DC, FC, SUP, TAX...) are not compared
 
 
@@ -191,8 +208,16 @@ def parse_filer_file(download_path: str | None) -> dict | None:
     if not m:
         return None
     cir = m.group("cir")
-    return {"kind": "ao", "words": m.group("last").strip(), "initials": (m.group("init") or "").strip() or None, "position": m.group("pos").upper(),
-            "circuit": cir if cir in NUMBERED_CIRCUITS else None, "court_code": cir if cir != "--" else None, "district": m.group("dist")}
+    dist = m.group("dist")
+    if dist in REPORT_SUFFIXES:  # "_SR_19" (and similar) mark the report, not a district
+        dist = None
+    pos = m.group("pos").upper()
+    if cir in REPORT_SUFFIXES:
+        # a malformed name ("Ozerden-HS. J3. 0. MSS SIA", "Harvey-GM M. DC SPE") put a report tag where the court belongs:
+        # the code fields cannot be read reliably, so none are kept (the surname check still uses the words)
+        pos = cir = dist = None
+    return {"kind": "ao", "words": m.group("last").strip(), "initials": (m.group("init") or "").strip() or None, "position": pos,
+            "circuit": cir if cir in NUMBERED_CIRCUITS else None, "court_code": cir if cir not in (None, "--") else None, "district": dist}
 
 
 def surname_matches(file_words: str | None, person_last: str | None) -> bool | None:

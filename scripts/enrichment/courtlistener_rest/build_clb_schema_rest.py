@@ -8,12 +8,17 @@ Runs ../courtlistener/build_clb_schema.build() unchanged except for three regist
   their load status.
 The file is written to private/build/courtlistener_rest/clb_bulk_schema.json for the lead to publish (this stream never publishes over
 an existing id).
+
+recap_fjcintegrateddatabase: the local copy of that table (idb.duckdb) was removed to save disk on 2026-10-19, so its profile cannot be
+recomputed. When the file is missing, the record published earlier (saved read-only by fetch_published_schema_row.py) is carried over
+unchanged except for one added fact saying so; the build stops if neither the table nor the saved record is present.
 """
 from __future__ import annotations
 
 import json
 import os
 import sys
+from collections import Counter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -44,7 +49,33 @@ def build() -> dict:
                         "rows": loaded["rows"] if loaded else None, "skipped_invalid_rows": loaded["skipped_invalid_rows"] if loaded else None,
                         "columns_kept": loaded["columns_selected"] if loaded else None, "used_by": "clb_bankruptcy_courts" if loaded else None})
     spec["summary"]["random_files"] = {"statement": "Files under bulk-data/randoms are one-off exports outside the database load script; they are listed here, not as schema tables.", "files": randoms}
+    carry_over_idb(spec)
     return out
+
+
+IDB_ID = "table:recap_fjcintegrateddatabase"
+IDB_SAVED = os.path.join(rc.LOOK, "clb_bulk_schema_published_idb.json")
+
+
+def carry_over_idb(spec: dict) -> None:
+    """Replace the recomputed recap_fjcintegrateddatabase row with the published one when the local table is gone."""
+    if os.path.exists(os.path.join(rc.DB, "idb.duckdb")):
+        return
+    if not os.path.exists(IDB_SAVED):
+        raise SystemExit("idb.duckdb is missing and the published record was not saved: run fetch_published_schema_row.py first")
+    saved = json.load(open(IDB_SAVED))
+    row = saved["row"]
+    if row["id"] != IDB_ID or row["dataset"] != "clb_bulk_schema":
+        raise SystemExit("saved record is not the clb_bulk_schema recap_fjcintegrateddatabase record")
+    note = (f"Carried over unchanged from the published clb_bulk_schema record (read {saved['fetched_at'][:10]}, catalog manifest "
+            f"{saved['manifest_sha256'][:16]}): this project's local copy of the table was removed to save disk, so the profile was not recomputed")
+    row["detail"]["facts"].append(["Profile source", note])
+    idx = [i for i, r in enumerate(spec["rows"]) if r["id"] == IDB_ID]
+    if len(idx) != 1:
+        raise SystemExit(f"{IDB_ID}: {len(idx)} rows in the rebuilt schema")
+    spec["rows"][idx[0]] = row
+    spec["summary"]["load_status"] = dict(Counter(r["item"]["cells"]["loaded"] for r in spec["rows"]))
+    spec["summary"]["carried_over"] = {"records": [IDB_ID], "statement": note, "manifest_sha256": saved["manifest_sha256"], "fetched_at": saved["fetched_at"]}
 
 
 if __name__ == "__main__":
