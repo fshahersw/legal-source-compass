@@ -60,7 +60,7 @@ const SOURCES: { label: string; url: string; note: string }[] = [
   {
     label: "U.S. Government Manual, 2025 edition (GovInfo)",
     url: "https://www.govinfo.gov/app/details/GOVMAN-2025-12-31",
-    note: "Mission and principal officials as printed",
+    note: "Mission, units and legal authority as printed",
   },
 ];
 
