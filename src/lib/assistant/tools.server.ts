@@ -7,6 +7,7 @@ import { restGet, rpcPost } from "@/lib/external/rest.server";
 import { queryPublishedDataset, searchPublishedCorpus } from "@/lib/external/catalog.reads.server";
 import { codeFile, searchCode } from "./codeIndex.server";
 import { publicUrl } from "@/lib/net/publicUrl";
+import { OFFICIAL_EXECUTORS, OFFICIAL_TOOL_DEFINITIONS } from "./officialTools.server";
 
 export { publicUrl };
 import type { AssistantSource } from "./protocol";
@@ -131,6 +132,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       required: ["query"],
     },
   },
+  ...OFFICIAL_TOOL_DEFINITIONS,
 ];
 
 function env(name: string): string | null {
@@ -435,6 +437,7 @@ const EXECUTORS: Record<
   web_search: webSearchTool,
   read_web_page: readWebPageTool,
   search_case_law: caseLawTool,
+  ...OFFICIAL_EXECUTORS,
 };
 
 /** Tools whose service keys are present; the model is only offered these. */
