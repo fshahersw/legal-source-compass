@@ -9,6 +9,7 @@ import {
   tokenEqualsStoredSection,
 } from "./exactCitationPath";
 import {
+  chooseStateListings,
   classifyDataset,
   coverageStatus,
   matchesCitationOrHeading,
@@ -134,11 +135,12 @@ async function datasetListings(index: CodeIndexRow[]): Promise<StateCodeListing[
       ready: boolean | null;
       imported_records: number | null;
       full_code: unknown;
+      summary_full_code: unknown;
       listing: unknown;
       qualification: unknown;
     }[]
   >(
-    "corpus_datasets?select=id,label,ready,imported_records,full_code:metadata->full_code,listing:metadata->listing,qualification:metadata->qualification&ready=eq.true&order=id.asc",
+    "corpus_datasets?select=id,label,ready,imported_records,full_code:metadata->full_code,summary_full_code:metadata->summary->full_code,listing:metadata->listing,qualification:metadata->qualification&ready=eq.true&order=id.asc",
   );
   return rows.rows.flatMap((row) => {
     const candidate: DatasetCandidate = {
@@ -147,6 +149,7 @@ async function datasetListings(index: CodeIndexRow[]): Promise<StateCodeListing[
       ready: row.ready ?? null,
       importedRecords: row.imported_records,
       fullCode: row.full_code,
+      summaryFullCode: row.summary_full_code,
       listing: row.listing,
       qualification: row.qualification,
     };
@@ -170,9 +173,20 @@ async function datasetListings(index: CodeIndexRow[]): Promise<StateCodeListing[
         titleFilter: classified.titleFilter,
         chapterField: classified.chapterField,
         levels: null,
+        ...(classified.replacesProjection ? { replacesProjection: true } : {}),
       },
     ];
   });
+}
+
+let replacingCache: { at: number; value: StateCodeListing[] } | null = null;
+
+/** Ready section datasets that declare `replaces_projection` (needs no snapshot or code-index read). */
+async function replacingDatasetListings(): Promise<StateCodeListing[]> {
+  if (replacingCache && Date.now() - replacingCache.at < CATALOG_TTL) return replacingCache.value;
+  const value = (await datasetListings([])).filter((row) => row.replacesProjection === true);
+  replacingCache = { at: Date.now(), value };
+  return value;
 }
 
 function mergeListings(rows: StateCodeListing[]): StateCodeListing[] {
@@ -193,7 +207,7 @@ function mergeListings(rows: StateCodeListing[]): StateCodeListing[] {
   for (const state of states) {
     const projection = projections.get(state);
     if (projection) {
-      merged.push(projection);
+      merged.push(...chooseStateListings([projection], datasets.get(state) ?? []));
       continue;
     }
     const snapshot = snapshots.get(state);
@@ -285,7 +299,11 @@ async function projectedListings(): Promise<StateCodeListing[]> {
 export async function stateCodeEntry(state: string): Promise<StateCodeListing[]> {
   if (!stateByUsps.has(state)) throw new Error("Unknown state code.");
   const projected = (await projectedListings()).filter((row) => row.state === state);
-  if (projected.length) return projected;
+  if (projected.length)
+    return chooseStateListings(
+      projected,
+      (await replacingDatasetListings()).filter((row) => row.state === state),
+    );
   return (await publishedListings()).filter((row) => row.state === state);
 }
 
@@ -945,9 +963,30 @@ export async function searchFullStateCodes(
       return { hits, total };
     }),
   );
-  const projected = await searchProjection(q, state);
+  const projected = await projectionHitsOutside(
+    q,
+    state,
+    new Set(listings.filter((row) => row.replacesProjection === true).map((row) => row.state)),
+  );
   return {
     hits: [...projected.hits, ...groups.flatMap((group) => group.hits)].slice(0, SEARCH_LIMIT),
     total: projected.total + groups.reduce((sum, group) => sum + group.total, 0),
   };
+}
+
+/**
+ * Projection search without the states whose projection a dataset replaces. Their hits are dropped
+ * and their exact totals (one state-scoped search each) are subtracted, so the count stays exact.
+ */
+async function projectionHitsOutside(
+  q: string,
+  state: string | undefined,
+  replaced: Set<string>,
+): Promise<{ hits: StateCodeHit[]; total: number }> {
+  if (state && replaced.has(state)) return { hits: [], total: 0 };
+  const all = await searchProjection(q, state);
+  if (state || !replaced.size) return all;
+  let total = all.total;
+  for (const usps of replaced) total -= (await searchProjection(q, usps)).total;
+  return { hits: all.hits.filter((hit) => !replaced.has(hit.state)), total: Math.max(total, 0) };
 }

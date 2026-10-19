@@ -35,7 +35,10 @@ describe("state landing code summary does not depend on unrelated private snapsh
     expect(rows).toHaveLength(1);
     expect(rows[0]?.state).toBe("NE");
     expect(mocks.snapshot).not.toHaveBeenCalled();
-    expect(mocks.rest).not.toHaveBeenCalled();
+    // Only the dataset catalog is read (a ready section dataset may declare it replaces the projection).
+    expect(mocks.rest.mock.calls.every(([p]) => String(p).startsWith("corpus_datasets?"))).toBe(
+      true,
+    );
   });
   it("cannot substitute a different state's published source", async () => {
     const rows = await stateCodeEntry("NV");

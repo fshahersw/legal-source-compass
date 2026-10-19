@@ -12,13 +12,17 @@ import { stateByUsps } from "@/lib/corpus/geo";
  *    Optional root fields: `edition`, `currency`, `text_root`.
  *    Optional section fields: `history`, `source_note`.
  *
- * 2. Published dataset. `corpus_datasets.ready = true` and `metadata.full_code`:
+ * 2. Published dataset. `corpus_datasets.ready = true` and `metadata.full_code`
+ *    (or `metadata.summary.full_code`, where the enrichment publisher stores it):
  *    `{ state, code_name?, edition?, currency?, source_url?, grain?: "section",
- *       title_filter?: "title", chapter_field?: "chapter" }`.
+ *       title_filter?: "title", chapter_field?: "chapter", replaces_projection?: true }`.
  *    Section rows put the official citation and heading in `title` (that is what
  *    search matches), the title-filter value on `filters`, the chapter label on
  *    `item.cells[chapter_field]`, citation / history / edition / currency in
  *    `detail.facts`, and the published body in `detail.sections[].text`.
+ *    A reviewed public projection wins for its state unless a ready section dataset
+ *    for that state declares `replaces_projection: true` (a complete official build
+ *    published to supersede an incomplete capture); removing the flag restores the projection.
  *
  * A ready dataset that already has a listing column `section`, is not described
  * as structure-only, and whose label exactly matches one `state_codes` title
@@ -68,6 +72,8 @@ export type FullCodeMeta = {
   grain: "section" | "structure" | null;
   titleFilter: string;
   chapterField: string;
+  /** Only an explicit `replaces_projection: true` on a section-grain block. */
+  replacesProjection: boolean;
 };
 
 export type CodeIndexRow = {
@@ -83,6 +89,8 @@ export type DatasetCandidate = {
   ready: boolean | null;
   importedRecords: number | null;
   fullCode: unknown;
+  /** `metadata.summary.full_code`, read only when `metadata.full_code` is absent or invalid. */
+  summaryFullCode?: unknown;
   listing: unknown;
   qualification: unknown;
 };
@@ -98,6 +106,7 @@ export type ClassifiedDataset = {
   datasetId: string;
   titleFilter: string;
   chapterField: string;
+  replacesProjection: boolean;
 };
 
 export type SectionFields = {
@@ -217,6 +226,7 @@ export function parseFullCode(value: unknown): FullCodeMeta | null {
     grain,
     titleFilter: titleFilter && FIELD.test(titleFilter) ? titleFilter : "title",
     chapterField: chapterField && FIELD.test(chapterField) ? chapterField : "chapter",
+    replacesProjection: grain === "section" && row["replaces_projection"] === true,
   };
 }
 
@@ -235,7 +245,7 @@ export function classifyDataset(
   fallbackState: Record<string, string> = {},
 ): ClassifiedDataset | null {
   if (row.ready !== true) return null;
-  const full = parseFullCode(row.fullCode);
+  const full = parseFullCode(row.fullCode) ?? parseFullCode(row.summaryFullCode ?? null);
   const listing = parseListing(row.listing);
   const qualification = listing.qualification ?? asString(row.qualification);
   if (full?.grain === "structure") return null;
@@ -259,6 +269,7 @@ export function classifyDataset(
     datasetId: row.id,
     titleFilter: full?.titleFilter ?? "title",
     chapterField: full?.chapterField ?? "chapter",
+    replacesProjection: full?.replacesProjection === true,
   };
 }
 
@@ -521,7 +532,24 @@ export type StateCodeListing = {
   chapterField: string | null;
   /** Declared hierarchy levels for a projected code, ending in "section". */
   levels: string[] | null;
+  /** A section dataset that supersedes the state's public projection (see the contract above). */
+  replacesProjection?: boolean;
 };
+
+/**
+ * Listings shown for one state, in order: a reviewed public projection wins over snapshots and
+ * datasets, except that ready section datasets declaring `replaces_projection` win over the projection.
+ */
+export function chooseStateListings(
+  projections: StateCodeListing[],
+  others: StateCodeListing[],
+): StateCodeListing[] {
+  const replacing = others.filter(
+    (row) => row.kind === "dataset" && row.replacesProjection === true,
+  );
+  if (projections.length && replacing.length) return replacing;
+  return projections.length ? projections : others;
+}
 
 export type HierarchyStep = { level: string; number: string | null; node_id?: string };
 export type SectionHierarchyStep = HierarchyStep & { heading: string | null };
