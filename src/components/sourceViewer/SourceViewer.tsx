@@ -7,6 +7,7 @@ import {
   FileText,
   Loader2,
   Maximize2,
+  MessageCircle,
   Minimize2,
   RotateCw,
   X,
@@ -18,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getCorpusSession } from "@/lib/auth/access.functions";
 import { cn } from "@/lib/utils";
 import { AssistantMarkdown } from "@/components/assistant/AssistantMarkdown";
+import { askAssistant } from "@/components/assistant/askAssistant";
 import {
   SOURCE_EVENT,
   VIEW_LABEL,
@@ -573,6 +575,25 @@ export function SourceViewer() {
           </p>
         </div>
         <div className="flex items-center gap-0.5">
+          <button
+            type="button"
+            className={cn(headerButton, "w-auto gap-1 px-1.5 text-[12px]")}
+            onClick={() =>
+              askAssistant(
+                [
+                  `Read this source and tell me what it says that matters for my research: ${target}`,
+                  `(${title}${data?.kind && data.kind !== "page" ? `, a ${data.kind}` : ""}).`,
+                  "Give its date and author or issuing body, the key points with pinpoint quotes, and how it relates to the page I was on. Cite what you use.",
+                ].join(" "),
+                `About this source: ${title}`.slice(0, 160),
+              )
+            }
+            aria-label="Ask the assistant about this source"
+            title="Ask the assistant about this source"
+          >
+            <MessageCircle className="size-3.5" aria-hidden />
+            Ask
+          </button>
           <button
             type="button"
             className={headerButton}

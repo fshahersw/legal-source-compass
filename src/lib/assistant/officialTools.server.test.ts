@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { OFFICIAL_EXECUTORS, OFFICIAL_TOOL_DEFINITIONS } from "./officialTools.server";
-import { TOOL_DEFINITIONS, availableTools } from "./tools.server";
+import { TOOL_DEFINITIONS, availableTools, pageWindow } from "./tools.server";
 
 type Call = { url: string; headers: Record<string, string> };
 
@@ -265,5 +265,34 @@ describe("court filings search", () => {
     expect(parsed.results.map((r) => r.filed)).toEqual(["2026-03-04", "2026-01-02"]);
     expect(parsed.results[0]!.snippets[0]).toBe("Hair relaxer & cancer");
     expect(out.label).toBe("Searched court filings");
+  });
+});
+
+describe("pageWindow", () => {
+  const text = `${"a".repeat(20000)}Chevron deference${"b".repeat(3000)}chevron again${"c".repeat(500)}CHEVRON third`;
+
+  it("returns windows with the next offset until the end", () => {
+    const first = pageWindow(text, 0, "");
+    expect(first).toMatchObject({
+      total_chars: text.length,
+      start: 0,
+      end: 14000,
+      next_start: 14000,
+    });
+    expect(first.text).toHaveLength(14000);
+    const last = pageWindow(text, 14000, "");
+    expect(last.end).toBe(text.length);
+    expect(last.next_start).toBeNull();
+    expect(pageWindow(text, 10_000_000, "").start).toBe(text.length - 1);
+  });
+
+  it("finds every mention and returns spaced passages with offsets", () => {
+    const phrase = pageWindow(text, 0, "  Chevron DEFERENCE ");
+    expect(phrase).toMatchObject({ find: "Chevron DEFERENCE", occurrences: 1 });
+    const hits = pageWindow(text, 0, "chevron");
+    expect(hits.occurrences).toBe(3);
+    // the second and third mentions are less than 1,200 characters apart, so they share one passage
+    expect(hits.matches?.map((m) => m.offset)).toEqual([20000, 20000 + 17 + 3000]);
+    expect(hits.matches?.[0]?.excerpt).toContain("Chevron deference");
   });
 });

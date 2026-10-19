@@ -115,8 +115,16 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: "read_web_page",
     description:
-      "Fetch and read one public web page or document (HTML, PDF and common office files are converted to text). Use to read a source found by web_search or linked from a record.",
-    input_schema: { type: "object", properties: { url: { type: "string" } }, required: ["url"] },
+      "Fetch and read one public web page or document (HTML, PDF and common office files are converted to text). Use to read a source found by web_search or linked from a record. Long documents come in windows of about 14,000 characters: the result gives total_chars and next_start; call again with start to continue, or with find to get the passages around every mention of a word or phrase (with their offsets) instead of reading from the top.",
+    input_schema: {
+      type: "object",
+      properties: {
+        url: { type: "string" },
+        start: { type: "integer", minimum: 0, description: "Character offset to read from." },
+        find: { type: "string", description: "Word or phrase to locate in the document." },
+      },
+      required: ["url"],
+    },
   },
   {
     name: "search_case_law",
@@ -330,6 +338,8 @@ async function readWebPageTool(input: Record<string, unknown>): Promise<ToolOutc
   if (!key) throw new Error("page reading is not configured");
   const url = publicUrl(str(input["url"], 2000));
   if (!url) throw new Error("only public http(s) URLs can be read");
+  const cached = cachedPage(url.toString());
+  if (cached) return pageOutcome(url, cached.title, cached.text, input);
   const res = await timed(45000, (signal) =>
     fetch("https://api.firecrawl.dev/v2/scrape", {
       method: "POST",
@@ -349,14 +359,78 @@ async function readWebPageTool(input: Record<string, unknown>): Promise<ToolOutc
     data?: { markdown?: string; metadata?: { title?: string; sourceURL?: string } };
   };
   const title = str(body.data?.metadata?.title, 200) || url.hostname;
+  const text = (body.data?.markdown ?? "").slice(0, PAGE_TEXT_MAX);
+  rememberPage(url.toString(), title, text);
+  return pageOutcome(url, title, text, input);
+}
+
+const PAGE_WINDOW = 14000;
+const PAGE_TEXT_MAX = 1_500_000;
+const PAGE_TTL = 10 * 60 * 1000;
+const pageCache = new Map<string, { at: number; title: string; text: string }>();
+
+/** Pages read in the last few minutes, so paging through a long document does not fetch it again. */
+function rememberPage(url: string, title: string, text: string) {
+  pageCache.delete(url);
+  pageCache.set(url, { at: Date.now(), title, text });
+  while (pageCache.size > 20) pageCache.delete(pageCache.keys().next().value!);
+}
+
+function cachedPage(url: string): { title: string; text: string } | null {
+  const hit = pageCache.get(url);
+  if (!hit || Date.now() - hit.at > PAGE_TTL) return null;
+  return hit;
+}
+
+/** One window of a long text, or the passages around each mention of `find` (at most eight, spaced apart). */
+export function pageWindow(text: string, start: number, find: string) {
+  const total = text.length;
+  const needle = find.trim().toLowerCase();
+  if (needle) {
+    const hay = text.toLowerCase();
+    const matches: { offset: number; excerpt: string }[] = [];
+    let occurrences = 0;
+    for (let at = hay.indexOf(needle); at >= 0; at = hay.indexOf(needle, at + needle.length)) {
+      occurrences += 1;
+      const last = matches[matches.length - 1];
+      if (matches.length < 8 && (!last || at - last.offset > 1200))
+        matches.push({
+          offset: at,
+          excerpt: text.slice(Math.max(0, at - 700), at + needle.length + 700),
+        });
+    }
+    return { total_chars: total, find: find.trim(), occurrences, matches };
+  }
+  const from = Math.min(Math.max(0, start), Math.max(0, total - 1));
+  const end = Math.min(total, from + PAGE_WINDOW);
   return {
-    content: clip(
-      JSON.stringify({ url: url.toString(), title, text: body.data?.markdown ?? "" }),
-      16000,
-    ),
+    total_chars: total,
+    start: from,
+    end,
+    next_start: end < total ? end : null,
+    text: text.slice(from, end),
+  };
+}
+
+function pageOutcome(
+  url: URL,
+  title: string,
+  text: string,
+  input: Record<string, unknown>,
+): ToolOutcome {
+  const start = int(input["start"], 0, PAGE_TEXT_MAX, 0);
+  const find = str(input["find"], 200);
+  const window = pageWindow(text, start, find);
+  const host = url.hostname.replace(/^www\./, "");
+  return {
+    content: clip(JSON.stringify({ url: url.toString(), title, ...window }), 16000),
     sources: [{ title, url: url.toString(), internal: false }],
-    label: "Read a page",
-    detail: url.hostname.replace(/^www\./, ""),
+    label: find.trim() ? "Searched within a page" : "Read a page",
+    detail: find.trim()
+      ? `${host} · “${find.trim()}”`
+      : start
+        ? `${host} · from character ${window.start?.toLocaleString("en-US")}`
+        : host,
   };
 }
 
