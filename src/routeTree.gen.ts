@@ -43,6 +43,7 @@ import { Route as CourtsAnalyticsRouteImport } from './routes/courts.analytics'
 import { Route as CourtsCaseloadRouteImport } from './routes/courts.caseload'
 import { Route as CourtsCollectionRouteImport } from './routes/courts.collection'
 import { Route as CourtsFirmsRouteImport } from './routes/courts.firms'
+import { Route as CourtsSecuritiesRouteImport } from './routes/courts.securities'
 import { Route as DataIndexRouteImport } from './routes/data.index'
 import { Route as DataDatasetRouteImport } from './routes/data.$dataset'
 import { Route as JudgesIndexRouteImport } from './routes/judges.index'
@@ -254,6 +255,11 @@ const CourtsCollectionRoute = CourtsCollectionRouteImport.update({
 const CourtsFirmsRoute = CourtsFirmsRouteImport.update({
   id: '/courts/firms',
   path: '/courts/firms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CourtsSecuritiesRoute = CourtsSecuritiesRouteImport.update({
+  id: '/courts/securities',
+  path: '/courts/securities',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DataIndexRoute = DataIndexRouteImport.update({
@@ -499,6 +505,7 @@ export interface FileRoutesByFullPath {
   '/courts/caseload': typeof CourtsCaseloadRoute
   '/courts/collection': typeof CourtsCollectionRoute
   '/courts/firms': typeof CourtsFirmsRoute
+  '/courts/securities': typeof CourtsSecuritiesRoute
   '/data/$dataset': typeof DataDatasetRoute
   '/judges/$id': typeof JudgesIdRoute
   '/judges/analytics': typeof JudgesAnalyticsRoute
@@ -577,6 +584,7 @@ export interface FileRoutesByTo {
   '/courts/caseload': typeof CourtsCaseloadRoute
   '/courts/collection': typeof CourtsCollectionRoute
   '/courts/firms': typeof CourtsFirmsRoute
+  '/courts/securities': typeof CourtsSecuritiesRoute
   '/data/$dataset': typeof DataDatasetRoute
   '/judges/$id': typeof JudgesIdRoute
   '/judges/analytics': typeof JudgesAnalyticsRoute
@@ -655,6 +663,7 @@ export interface FileRoutesById {
   '/courts/caseload': typeof CourtsCaseloadRoute
   '/courts/collection': typeof CourtsCollectionRoute
   '/courts/firms': typeof CourtsFirmsRoute
+  '/courts/securities': typeof CourtsSecuritiesRoute
   '/data/$dataset': typeof DataDatasetRoute
   '/judges/$id': typeof JudgesIdRoute
   '/judges/analytics': typeof JudgesAnalyticsRoute
@@ -735,6 +744,7 @@ export interface FileRouteTypes {
     | '/courts/caseload'
     | '/courts/collection'
     | '/courts/firms'
+    | '/courts/securities'
     | '/data/$dataset'
     | '/judges/$id'
     | '/judges/analytics'
@@ -813,6 +823,7 @@ export interface FileRouteTypes {
     | '/courts/caseload'
     | '/courts/collection'
     | '/courts/firms'
+    | '/courts/securities'
     | '/data/$dataset'
     | '/judges/$id'
     | '/judges/analytics'
@@ -890,6 +901,7 @@ export interface FileRouteTypes {
     | '/courts/caseload'
     | '/courts/collection'
     | '/courts/firms'
+    | '/courts/securities'
     | '/data/$dataset'
     | '/judges/$id'
     | '/judges/analytics'
@@ -969,6 +981,7 @@ export interface RootRouteChildren {
   CourtsCaseloadRoute: typeof CourtsCaseloadRoute
   CourtsCollectionRoute: typeof CourtsCollectionRoute
   CourtsFirmsRoute: typeof CourtsFirmsRoute
+  CourtsSecuritiesRoute: typeof CourtsSecuritiesRoute
   DataDatasetRoute: typeof DataDatasetRoute
   JudgesIdRoute: typeof JudgesIdRoute
   JudgesAnalyticsRoute: typeof JudgesAnalyticsRoute
@@ -1251,6 +1264,13 @@ declare module '@tanstack/react-router' {
       path: '/courts/firms'
       fullPath: '/courts/firms'
       preLoaderRoute: typeof CourtsFirmsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/courts/securities': {
+      id: '/courts/securities'
+      path: '/courts/securities'
+      fullPath: '/courts/securities'
+      preLoaderRoute: typeof CourtsSecuritiesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/data/': {
@@ -1608,6 +1628,7 @@ const rootRouteChildren: RootRouteChildren = {
   CourtsCaseloadRoute: CourtsCaseloadRoute,
   CourtsCollectionRoute: CourtsCollectionRoute,
   CourtsFirmsRoute: CourtsFirmsRoute,
+  CourtsSecuritiesRoute: CourtsSecuritiesRoute,
   DataDatasetRoute: DataDatasetRoute,
   JudgesIdRoute: JudgesIdRoute,
   JudgesAnalyticsRoute: JudgesAnalyticsRoute,

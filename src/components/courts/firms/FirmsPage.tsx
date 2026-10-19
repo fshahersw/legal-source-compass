@@ -569,17 +569,21 @@ function Associations() {
         isEmpty={(d) => !d.associations.length}
       >
         {(d) => (
-          <ul className="m-0 grid list-none gap-px bg-border/60 p-0 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="m-0 grid list-none gap-2 p-3 sm:grid-cols-2 xl:grid-cols-3">
             {d.associations.map((a) => {
               // The builder plots the first measure named on x and the second on y.
               const [xLabel, yLabel] = a.label.split(" vs ");
               return (
-                <li key={a.id} className="flex min-w-0 gap-3 bg-surface p-3">
+                <li
+                  key={a.id}
+                  className="flex min-w-0 gap-3 rounded-md border border-border/70 bg-surface p-3"
+                >
                   <RankScatter
-                    points={a.points}
-                    xLabel={xLabel ?? "second measure"}
-                    yLabel={yLabel ?? "first measure"}
+                    points={a.points.map((p) => ({ key: p.mdl, x: p.x, y: p.y }))}
+                    xLabel={xLabel ?? "first measure"}
+                    yLabel={yLabel ?? "second measure"}
                     label={`Scatter: ${a.label}`}
+                    pointName={(k) => `MDL ${k}`}
                   />
                   <div className="min-w-0 text-xs">
                     <p className="m-0 font-medium leading-snug">{a.label}</p>

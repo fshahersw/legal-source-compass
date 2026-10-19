@@ -117,17 +117,21 @@ export function ShareMeter({
   );
 }
 
-/** A small rank scatter (each point an MDL); axes are ranks so one large MDL does not flatten the rest. */
+/** A small rank scatter (each point an MDL, a year ...); axes are ranks so one large value does not flatten the rest. */
 export function RankScatter({
   points,
   xLabel,
   yLabel,
   label,
+  pointName,
+  format = int,
 }: {
-  points: readonly { mdl: number; x: number; y: number }[];
+  points: readonly { key: number; x: number; y: number }[];
   xLabel: string;
   yLabel: string;
   label: string;
+  pointName: (key: number) => string;
+  format?: (v: number) => string;
 }) {
   const rank = (vals: number[]) => {
     const sorted = [...vals].sort((a, b) => a - b);
@@ -155,14 +159,14 @@ export function RankScatter({
         <rect x="0.5" y="0.5" width={W - 1} height={H - 1} fill="none" stroke="var(--border)" />
         {points.map((p, i) => (
           <circle
-            key={p.mdl}
+            key={p.key}
             cx={6 + (rx[i]! / n) * (W - 12)}
             cy={H - 6 - (ry[i]! / n) * (H - 12)}
             r="2.4"
             fill={FDA_COLORS[0]}
             fillOpacity="0.75"
           >
-            <title>{`MDL ${p.mdl}: ${xLabel} ${int(p.x)}, ${yLabel} ${int(p.y)}`}</title>
+            <title>{`${pointName(p.key)}: ${xLabel} ${format(p.x)}, ${yLabel} ${format(p.y)}`}</title>
           </circle>
         ))}
       </svg>
