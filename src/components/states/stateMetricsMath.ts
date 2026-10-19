@@ -239,6 +239,10 @@ export type StateMetricsSearch = {
   state?: string;
   x?: string;
   y?: string;
+  /** "legal": the cross-state legal-activity view (state_cross_analysis); absent: the official metrics dashboard. */
+  view?: "legal";
+  /** Measure shown in the legal-activity view. */
+  measure?: string;
 };
 
 /** A change to the search params; an explicit undefined clears that param. */
@@ -261,6 +265,9 @@ export function parseStateMetricsSearch(search: Record<string, unknown>): StateM
   if (y) out.y = y;
   if (Number.isInteger(year) && year >= 1990 && year <= 2100) out.year = year;
   if (/^[A-Z]{2}$/.test(state)) out.state = state;
+  if (search["view"] === "legal") out.view = "legal";
+  const measure = key(search["measure"]);
+  if (measure && out.view === "legal") out.measure = measure;
   return out;
 }
 

@@ -2,7 +2,15 @@ import { createFileRoute, Link, Outlet, useMatch, useNavigate } from "@tanstack/
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowRight, BookOpen, Clock3, Landmark, MapPin, UsersRound } from "lucide-react";
+import {
+  ArrowRight,
+  BarChart3,
+  BookOpen,
+  Clock3,
+  Landmark,
+  MapPin,
+  UsersRound,
+} from "lucide-react";
 import { AppShell } from "@/components/atlas/AppShell";
 import { UsMap } from "@/components/corpus/UsMap";
 import { FullCodeEntry } from "@/components/corpus/FullCodeEntry";
@@ -15,17 +23,20 @@ import { StateMetricsPanel } from "@/components/states/StateMetricsPanel";
 import { StateConsumerProtectionPanel } from "@/components/states/consumer/StateConsumerProtectionPanel";
 import { StateCourtDataPanel } from "@/components/states/courtdata/StateCourtDataPanel";
 import { StateMdlScopePanel } from "@/components/states/StateMdlScopePanel";
+import { StateAnalysisView } from "@/components/places/StateAnalysisView";
+import { DEFAULT_METRIC } from "@/components/places/placeMetrics";
+import {
+  directorySearch,
+  parsePlaceHubSearch,
+  type PlaceHubSearch,
+  type PlaceHubTab,
+} from "@/components/places/placeSearch";
 import { Button } from "@/components/ui/button";
 import { useAtlas } from "@/lib/atlas/store";
 import { useCorpus } from "@/lib/corpus/store";
 import { sourcesForState } from "@/lib/corpus/join";
 import { STATES } from "@/lib/corpus/geo";
-import {
-  canonicalState,
-  parseStateHubSearch,
-  type StateHubSearch,
-  type StateHubTab,
-} from "@/lib/corpus/stateHub";
+import { canonicalState, type StateHubSearch } from "@/lib/corpus/stateHub";
 import { isJudicialCourtRecord } from "@/lib/corpus/courtDirectoryKind";
 import { pageHead } from "@/lib/corpus/head";
 import { getStateCountyRecords } from "@/lib/external/corpus.functions";
@@ -44,7 +55,7 @@ export function useStateCounty(stateName: string | undefined) {
   });
 }
 export const Route = createFileRoute("/places/$state")({
-  validateSearch: (search: Record<string, unknown>) => parseStateHubSearch(search),
+  validateSearch: (search: Record<string, unknown>): PlaceHubSearch => parsePlaceHubSearch(search),
   head: ({ params }) => {
     const state = canonicalState(params.state);
     return pageHead(
@@ -56,8 +67,9 @@ export const Route = createFileRoute("/places/$state")({
   },
   component: StatePage,
 });
-const tabs: { id: StateHubTab; label: string; icon: typeof Landmark }[] = [
+const tabs: { id: PlaceHubTab; label: string; icon: typeof Landmark }[] = [
   { id: "overview", label: "Overview", icon: MapPin },
+  { id: "analysis", label: "Analysis", icon: BarChart3 },
   { id: "courts", label: "Courts", icon: Landmark },
   { id: "judges", label: "Judges", icon: UsersRound },
   { id: "sources", label: "Laws & sources", icon: BookOpen },
@@ -69,7 +81,7 @@ function StatePage() {
   const state = canonicalState(rawState),
     usps = state?.usps ?? "";
   const countyMatch = useMatch({ from: "/places/$state/$county", shouldThrow: false });
-  const tab: StateHubTab = countyMatch ? "counties" : (search.tab ?? "overview");
+  const tab: PlaceHubTab = countyMatch ? "counties" : (search.tab ?? "overview");
   const atlas = useAtlas(),
     corpus = useCorpus(),
     navigate = useNavigate();
@@ -123,14 +135,22 @@ function StatePage() {
         .slice(0, 6),
     [courts.data],
   );
-  const openTab = (next: StateHubTab) =>
+  const openTab = (next: PlaceHubTab) =>
     navigate({ to: "/places/$state", params: { state: usps }, search: { tab: next } });
   const filter = (change: Partial<StateHubSearch>) =>
     navigate({
       to: "/places/$state",
       params: { state: usps },
-      search: parseStateHubSearch({ ...search, ...change }),
+      search: parsePlaceHubSearch({ ...search, ...change }),
       replace: true,
+    });
+  const analysisChange = (patch: Partial<PlaceHubSearch>) =>
+    navigate({
+      to: "/places/$state",
+      params: { state: usps },
+      search: parsePlaceHubSearch({ ...search, tab: "analysis", ...patch }),
+      replace: true,
+      resetScroll: false,
     });
   const retrySources = () => {
     atlas.retryLoad();
@@ -280,6 +300,24 @@ function StatePage() {
                 </span>
                 <ArrowRight className="size-3.5" />
               </button>
+              <button
+                type="button"
+                onClick={() => void openTab("analysis")}
+                className="resource-row w-full border-t border-border text-left"
+              >
+                <span className="resource-icon">
+                  <BarChart3 className="size-4" />
+                </span>
+                <span className="flex-1">
+                  <span className="block text-[13px] font-semibold">
+                    Compare counties and districts
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">
+                    Maps, rankings, cities and associations
+                  </span>
+                </span>
+                <ArrowRight className="size-3.5" />
+              </button>
               <Link
                 to="/limitations"
                 search={{ state: usps }}
@@ -325,11 +363,38 @@ function StatePage() {
           </aside>
         </div>
       ) : null}
+      {tab === "analysis" ? (
+        <StateAnalysisView
+          key={`analysis-${usps}`}
+          usps={usps}
+          stateName={state.name}
+          view={search.view ?? "map"}
+          metric={search.metric ?? DEFAULT_METRIC}
+          onChange={(patch) => void analysisChange(patch)}
+          onCounty={(c) =>
+            void navigate({
+              to: "/places/$state/$county",
+              params: { state: usps, county: c },
+              search: { tab: "counties" },
+            })
+          }
+        />
+      ) : null}
       {tab === "courts" ? (
-        <StateCourtDirectory key={usps} state={usps} search={search} onSearch={filter} />
+        <StateCourtDirectory
+          key={usps}
+          state={usps}
+          search={directorySearch(search)}
+          onSearch={filter}
+        />
       ) : null}
       {tab === "judges" ? (
-        <StateJudgeDirectory key={usps} state={usps} search={search} onSearch={filter} />
+        <StateJudgeDirectory
+          key={usps}
+          state={usps}
+          search={directorySearch(search)}
+          onSearch={filter}
+        />
       ) : null}
       {tab === "sources" ? (
         <div className="space-y-3">

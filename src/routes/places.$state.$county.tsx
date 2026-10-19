@@ -8,6 +8,7 @@ import { CountyProfile } from "@/components/corpus/LinkedPanels";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { externalHref } from "@/lib/external/href";
 import { countyInState } from "@/lib/corpus/stateHub";
+import { CountyAnalysisPanel } from "@/components/places/CountyAnalysisPanel";
 
 export const Route = createFileRoute("/places/$state/$county")({
   head: ({ params }) =>
@@ -49,6 +50,7 @@ function CountyDetail() {
       <div className="mt-0.5 font-display text-lg">
         {c ? `${c.name} County, ${st?.name ?? state}` : "Unknown county"}
       </div>
+      <CountyAnalysisPanel fips={county} />
       <CountyProfile
         fips={county}
         {...(c ? { county: `${c.name} County` } : {})}
