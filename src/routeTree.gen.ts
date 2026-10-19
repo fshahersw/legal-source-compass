@@ -31,6 +31,8 @@ import { Route as SourceDatasetsRouteImport } from './routes/source-datasets'
 import { Route as SourceFamiliesRouteImport } from './routes/source-families'
 import { Route as AgenciesIndexRouteImport } from './routes/agencies.index'
 import { Route as AgenciesIdRouteImport } from './routes/agencies.$id'
+import { Route as ApiAssistantRouteImport } from './routes/api/assistant'
+import { Route as ApiAssistantTranscribeRouteImport } from './routes/api/assistant-transcribe'
 import { Route as ApiBundlesRouteImport } from './routes/api/bundles'
 import { Route as ApiFilesRouteImport } from './routes/api/files'
 import { Route as ApiMatterPdfRouteImport } from './routes/api/matter-pdf'
@@ -195,6 +197,16 @@ const AgenciesIndexRoute = AgenciesIndexRouteImport.update({
 const AgenciesIdRoute = AgenciesIdRouteImport.update({
   id: '/agencies/$id',
   path: '/agencies/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAssistantRoute = ApiAssistantRouteImport.update({
+  id: '/api/assistant',
+  path: '/api/assistant',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAssistantTranscribeRoute = ApiAssistantTranscribeRouteImport.update({
+  id: '/api/assistant-transcribe',
+  path: '/api/assistant-transcribe',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiBundlesRoute = ApiBundlesRouteImport.update({
@@ -495,6 +507,8 @@ export interface FileRoutesByFullPath {
   '/source-datasets': typeof SourceDatasetsRoute
   '/source-families': typeof SourceFamiliesRoute
   '/agencies/$id': typeof AgenciesIdRoute
+  '/api/assistant': typeof ApiAssistantRoute
+  '/api/assistant-transcribe': typeof ApiAssistantTranscribeRoute
   '/api/bundles': typeof ApiBundlesRoute
   '/api/files': typeof ApiFilesRoute
   '/api/matter-pdf': typeof ApiMatterPdfRoute
@@ -574,6 +588,8 @@ export interface FileRoutesByTo {
   '/source-datasets': typeof SourceDatasetsRoute
   '/source-families': typeof SourceFamiliesRoute
   '/agencies/$id': typeof AgenciesIdRoute
+  '/api/assistant': typeof ApiAssistantRoute
+  '/api/assistant-transcribe': typeof ApiAssistantTranscribeRoute
   '/api/bundles': typeof ApiBundlesRoute
   '/api/files': typeof ApiFilesRoute
   '/api/matter-pdf': typeof ApiMatterPdfRoute
@@ -653,6 +669,8 @@ export interface FileRoutesById {
   '/source-datasets': typeof SourceDatasetsRoute
   '/source-families': typeof SourceFamiliesRoute
   '/agencies/$id': typeof AgenciesIdRoute
+  '/api/assistant': typeof ApiAssistantRoute
+  '/api/assistant-transcribe': typeof ApiAssistantTranscribeRoute
   '/api/bundles': typeof ApiBundlesRoute
   '/api/files': typeof ApiFilesRoute
   '/api/matter-pdf': typeof ApiMatterPdfRoute
@@ -734,6 +752,8 @@ export interface FileRouteTypes {
     | '/source-datasets'
     | '/source-families'
     | '/agencies/$id'
+    | '/api/assistant'
+    | '/api/assistant-transcribe'
     | '/api/bundles'
     | '/api/files'
     | '/api/matter-pdf'
@@ -813,6 +833,8 @@ export interface FileRouteTypes {
     | '/source-datasets'
     | '/source-families'
     | '/agencies/$id'
+    | '/api/assistant'
+    | '/api/assistant-transcribe'
     | '/api/bundles'
     | '/api/files'
     | '/api/matter-pdf'
@@ -891,6 +913,8 @@ export interface FileRouteTypes {
     | '/source-datasets'
     | '/source-families'
     | '/agencies/$id'
+    | '/api/assistant'
+    | '/api/assistant-transcribe'
     | '/api/bundles'
     | '/api/files'
     | '/api/matter-pdf'
@@ -971,6 +995,8 @@ export interface RootRouteChildren {
   SourceDatasetsRoute: typeof SourceDatasetsRoute
   SourceFamiliesRoute: typeof SourceFamiliesRoute
   AgenciesIdRoute: typeof AgenciesIdRoute
+  ApiAssistantRoute: typeof ApiAssistantRoute
+  ApiAssistantTranscribeRoute: typeof ApiAssistantTranscribeRoute
   ApiBundlesRoute: typeof ApiBundlesRoute
   ApiFilesRoute: typeof ApiFilesRoute
   ApiMatterPdfRoute: typeof ApiMatterPdfRoute
@@ -1180,6 +1206,20 @@ declare module '@tanstack/react-router' {
       path: '/agencies/$id'
       fullPath: '/agencies/$id'
       preLoaderRoute: typeof AgenciesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/assistant': {
+      id: '/api/assistant'
+      path: '/api/assistant'
+      fullPath: '/api/assistant'
+      preLoaderRoute: typeof ApiAssistantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/assistant-transcribe': {
+      id: '/api/assistant-transcribe'
+      path: '/api/assistant-transcribe'
+      fullPath: '/api/assistant-transcribe'
+      preLoaderRoute: typeof ApiAssistantTranscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/bundles': {
@@ -1618,6 +1658,8 @@ const rootRouteChildren: RootRouteChildren = {
   SourceDatasetsRoute: SourceDatasetsRoute,
   SourceFamiliesRoute: SourceFamiliesRoute,
   AgenciesIdRoute: AgenciesIdRoute,
+  ApiAssistantRoute: ApiAssistantRoute,
+  ApiAssistantTranscribeRoute: ApiAssistantTranscribeRoute,
   ApiBundlesRoute: ApiBundlesRoute,
   ApiFilesRoute: ApiFilesRoute,
   ApiMatterPdfRoute: ApiMatterPdfRoute,

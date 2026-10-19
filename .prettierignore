@@ -8,3 +8,4 @@ bun.lock
 routeTree.gen.ts
 scripts/vendor/open-law-id/
 src/lib/judges/portraits.server.json
+src/lib/assistant/codeIndex.server.json
