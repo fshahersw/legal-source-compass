@@ -12,6 +12,9 @@ import { CourtLocationsPanel } from "@/components/courts/CourtLocationsPanel";
 import { CourtStructurePanel } from "@/components/courts/CourtStructurePanel";
 import { CourtJudgesPanel } from "@/components/corpus/JudgeFjcPanel";
 import { CourtCollectionPanel } from "@/components/courts/clb/CourtCollectionPanel";
+import { AppellatePanel } from "@/components/courts/clb/AppellatePanel";
+import { BankruptcyActivityPanel } from "@/components/courts/clb/BankruptcyActivityPanel";
+import { OralArgumentsPanel } from "@/components/courts/clb/OralArgumentsPanel";
 import { DistrictGlancePanel } from "@/components/courts/clb/DistrictGlancePanel";
 
 export const Route = createFileRoute("/courts/$id")({
@@ -75,6 +78,9 @@ function Page() {
           <CourtJudgesPanel courtId={id} />
           <DistrictGlancePanel courtId={id} />
           <CourtCollectionPanel courtId={id} />
+          <BankruptcyActivityPanel courtId={id} />
+          <AppellatePanel courtId={id} />
+          <OralArgumentsPanel courtId={id} />
           <CourtResources raw={record} courtId={id} system={system} />
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             {state ? (

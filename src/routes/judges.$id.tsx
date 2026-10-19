@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { EntityError, EntityPage, entityQuery } from "@/components/corpus/EntityPage";
 import { JudgeFjcPanel } from "@/components/corpus/JudgeFjcPanel";
 import { JudgeCourtListenerPanel } from "@/components/judges/JudgeCourtListenerPanel";
+import { JudgeDisclosuresPanel } from "@/components/judges/clb/JudgeDisclosuresPanel";
+import { JudgePanelServicePanel } from "@/components/judges/clb/JudgePanelServicePanel";
 import { JudgeHeadshot } from "@/components/judges/JudgeHeadshot";
 import { JudgeMdlPanel } from "@/components/judges/JudgeMdlPanel";
 import { JudgeMdlFlowsPanel } from "@/components/judges/JudgeMdlFlowsPanel";
@@ -64,6 +66,8 @@ function Page() {
         <>
           <JudgeFjcPanel judgeId={id} />
           <JudgeCourtListenerPanel judgeId={id} />
+          <JudgePanelServicePanel judgeId={id} />
+          <JudgeDisclosuresPanel judgeId={id} />
           <JudgeMdlPanel judgeId={id} />
           <JudgeMdlFlowsPanel judgeId={id} />
           {states.length ? (
