@@ -137,7 +137,71 @@ def main(coverage_path, build_dir, measured):
         ver = e["verification"] if isinstance(e["verification"], str) else ", ".join(f"{k} {v}" for k, v in e["verification"].items())
         lines.append(f"| {e['state']} | {e.get('source_url', e['official_source'])} | {e['tier']} | {e['sections_built']} | {ver} | {e['bytes_per_row']} | {e['published']} | {e['reason']} |")
     (build_dir / "per_state_table.md").write_text("\n".join(lines) + "\n")
+    write_report(build_dir, rows, lines, measured)
     print("\n".join(lines[:3]), f"... {len(rows)} rows written")
+
+
+def write_report(build_dir, rows, table_lines, measured):
+    """REPORT.md: sources and terms, coverage, counts, spot checks, exclusions, storage projection, risks."""
+    out = ["# state_statutes stream report (2026-10-19)", ""]
+    out += ["## Finding that shaped the work", "",
+            "All 50 states and DC already have a reviewed, publicly projected full code in the app "
+            "(corpus_ingest publisher-code projections; `/law/codes/<state>` renders them and they win over datasets). "
+            "47 of them come from the same official publishers the open-us-law scrapers target, so building those again "
+            "would duplicate text already stored and stay invisible behind the projection; they are skipped. "
+            "Checking the projections against each publisher's own table of contents found three with large holes, "
+            "which this stream rebuilt completely from the official publisher:", ""]
+    for state in BUILT:
+        out.append(f"* {state}: {PROJECTION_GAPS[state]}.")
+    out += ["", "AR, GA, MS and TN publish their official code only through LexisNexis (commercial host, never fetched): skipped. "
+            "Puerto Rico is not in the app's state list.", ""]
+    out += ["## Per-state table", ""] + table_lines + [""]
+    out += ["## Datasets built", ""]
+    total_rows = 0
+    for state, (build_name, report_name) in BUILT.items():
+        build = load(build_dir / build_name)
+        report = load(build_dir / report_name)
+        if not build:
+            continue
+        total_rows += len(build["rows"])
+        s = build["summary"]
+        out += [f"### {build['dataset']} ({state})", "",
+                f"* Label: {build['label']}; rows {len(build['rows']):,}; titles {s.get('titles')}; retrieved {s.get('retrieved')}",
+                f"* Source: {s.get('source')}",
+                f"* Terms: {s.get('terms')}",
+                f"* Method: {s.get('method')}",
+                f"* Build stats: `{json.dumps(s.get('stats'))}`",
+                f"* full_code (stored in metadata.summary.full_code): `{json.dumps(s.get('full_code'))}`"]
+        excl = (s.get("excluded_appendices") or []) + (s.get("excluded_records") or [])
+        if excl:
+            out.append(f"* Excluded ({len(excl)}): " + "; ".join(f"{e.get('number') or e.get('title')}: {e.get('reason') or e.get('first')}" for e in excl[:20]))
+        if report:
+            out.append("* Verification: " + ", ".join(f"{k} failures {v['failures']}" for k, v in report["checks"].items()) + f"; total {report['total_failures']}")
+            live = report["checks"].get("live_sample", {})
+            out += ["", "Spot checks (live re-fetch, word for word; first 15 of the sample):", "",
+                    "| Row id | Words compared | Match |", "|---|---|---|"]
+            for r in live.get("results", [])[:15]:
+                out.append(f"| {r['id']} | {r.get('words', 'n/a')} | {'yes' if r.get('ok') else 'no'} |")
+        m = measured.get(state)
+        if m:
+            out.append(f"\n* Stored size (pg_column_size, read-only query after publish): {m.get('bytes_per_row')}")
+        out.append("")
+    avg = [v["avg_row_bytes"] for v in measured.values() if isinstance(v, dict) and v.get("avg_row_bytes")]
+    if avg:
+        mean = sum(avg) / len(avg)
+        others = sum(p[1] for st, p in PROJECTION.items() if st not in BUILT and st not in COMMERCIAL_ONLY)
+        all_rows = total_rows + others
+        out += ["## Storage projection", "",
+                f"Measured average stored row (heap incl. TOAST): {mean:,.0f} bytes (SD and WA). Index overhead is estimated at "
+                "about 600-900 bytes per row for these short-title rows (title btree, id/ordinal btrees, search_vector and "
+                "filters GIN). The Indiana dataset averages 8,074 bytes per row for comparison.",
+                f"* The three rebuilt states: {total_rows:,} rows, about {total_rows * mean / 1e6:,.0f} MB heap + "
+                f"{total_rows * 0.75e3 / 1e6:,.0f} MB indexes.",
+                f"* If every official state code were also stored this way ({all_rows:,} rows using the projection counts "
+                f"for the other {len(PROJECTION) - len(BUILT) - len(COMMERCIAL_ONLY)} jurisdictions): about "
+                f"{all_rows * mean / 1e9:,.1f} GB heap + {all_rows * 0.75e3 / 1e9:,.1f} GB indexes. Not recommended: those "
+                "codes are already served by reviewed projections.", ""]
+    (build_dir / "REPORT.md").write_text("\n".join(out) + "\n")
 
 
 if __name__ == "__main__":

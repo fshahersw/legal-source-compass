@@ -65,7 +65,7 @@ def build(acq_dir, out_file):
     retrieved = max(e["retrieved_at"] for e in manifest.values())[:10]
     edition = f"RCW online (Code Reviser; page states last update {last_update})" if last_update else "RCW online (Code Reviser)"
     currency = f"Retrieved {retrieved}"
-    rows, stats, title_labels = [], collections.Counter(), {}
+    rows, stats, title_labels, table_rows = [], collections.Counter(), {}, []
     for title in sorted(titles, key=title_order):
         tpage, chapters, _ = pages[title]
         title_labels[title] = f"{tpage['h1']}. {tpage['caption']}" if tpage["caption"] else tpage["h1"]
@@ -91,6 +91,8 @@ def build(acq_dir, out_file):
                 stats["rows"] += 1
                 stats["with_text"] += 1 if body else 0
                 stats["without_history"] += 0 if history else 1
+                if s.get("has_table"):
+                    table_rows.append(rid)  # printed tables: one line per row, cells separated by a space
             stats["chapters"] += 1
     ids = [r["id"] for r in rows]
     dup = [i for i, c in collections.Counter(ids).items() if c > 1]
@@ -100,8 +102,9 @@ def build(acq_dir, out_file):
         f"Revised Code of Washington as published online by the Washington State Legislature, Office of the Code Reviser "
         f"(app.leg.wa.gov/RCW; the RCW page states \"Last update: {last_update}\"; retrieved {retrieved}). The certified PDF "
         "documents in the Code Reviser's RCW Archive are the official publication. Section text, catchlines and session-law "
-        "history are as printed; the Code Reviser's notes are not included. A section printed in two versions with "
-        "effective-date notes appears twice. Not an official or certified copy."
+        "history are as printed (a printed table gives one line per row, its cells separated by spaces); the Code "
+        "Reviser's notes are not included. A section printed in two versions with effective-date or amendment notes "
+        "appears twice. Not an official or certified copy."
     )
     listing = codebuild.listing_block(rows, title_labels, qualification)
     inputs = [{"url": e["url"], "path": e["path"], "sha256": e["sha256"]} for _, e in sorted(manifest.items())]
@@ -112,6 +115,7 @@ def build(acq_dir, out_file):
         "retrieved": retrieved,
         "titles": len(title_labels),
         "stats": dict(stats),
+        "sections_with_tables": table_rows,
         "method": "open-us-law WA scraper surface (Apache-2.0, Vaquill AI), reimplemented over full chapter pages in scripts/enrichment/state_statutes/",
         "full_code": {
             "state": STATE,

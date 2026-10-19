@@ -109,6 +109,29 @@ class ParseWA(unittest.TestCase):
         self.assertEqual(second["version_note"], "(Effective until July 1, 2027.)".strip(" ."))
         self.assertEqual(page["errors"], [])
 
+    def test_table_cells_and_breaks_are_not_run_together(self):
+        import lxml.html
+        div = lxml.html.fromstring(
+            "<div><div>(i) Any of the following:</div><table><tr><td>AK-47 in all forms</td><td>AK-74 in all forms</td></tr>"
+            "<tr><td>Algimec AGM-1 type</td><td></td></tr></table><div>Line one<br>line <i>two</i>—end</div></div>"
+        )
+        self.assertEqual(parse_wa.block_lines(div), ["(i) Any of the following:", "AK-47 in all forms AK-74 in all forms",
+                                                     "Algimec AGM-1 type", "Line one", "line two—end"])
+
+    def test_two_versions_in_one_span_and_ucc_numbers(self):
+        html = WA_CHAPTER.replace(
+            "<div style=\"margin-top:15pt;\">[ 1975 1st ex.s. c 260 s 9A.32.020.]</div></span>",
+            "<div style=\"margin-top:15pt;\">[ 1975 1st ex.s. c 260 s 9A.32.020.]</div>"
+            "<div><h3><a class=\"btn\">PDF</a>RCW <a>9A.32.020</a></h3></div>"
+            "<div><h3>Premeditation—Limitations. (Effective July 1, 2027.)</h3></div><div><div>(1) Later.</div></div>"
+            "<div style=\"margin-top:15pt;\">[ 2026 c 1 s 1.]</div></span>")
+        page = parse_wa.parse_chapter_page(html)
+        versions = [s for s in page["sections"] if s["number"] == "9A.32.020"]
+        self.assertEqual([v["version_note"] for v in versions], ["(Effective until July 1, 2027.)", "(Effective July 1, 2027.)"])
+        self.assertEqual(versions[1]["paragraphs"], ["(1) Later."])
+        self.assertTrue(parse_wa.NUMBER.match("62A.2-101") and parse_wa.NUMBER.match("62A.9A-102"))
+        self.assertFalse(parse_wa.NUMBER.match("11.130.000009x-"))
+
     def test_section_without_anchor_is_an_error_not_a_guess(self):
         page = parse_wa.parse_chapter_page(WA_CHAPTER.replace("<a name='9A.32.020'></a>", ""))
         self.assertEqual(len(page["sections"]), 1)

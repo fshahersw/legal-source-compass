@@ -68,9 +68,31 @@ def live_section(number):
         if text.startswith("["):
             history = text
             break
-        inner = div.find_all(["div", "table", "p"], recursive=False)
-        paras.extend(" ".join(c.get_text().split()) for c in inner) if inner else paras.append(text)
+        paras.extend(soup_lines(div))
     return {"cite": " ".join(h1.get_text().split()), "heading": " ".join(h2.get_text().split()), "body": "\n".join(p for p in paras if p), "history": history}, None
+
+
+def soup_lines(tag):
+    """Independent (BeautifulSoup) reading of a block: table cells are separate words, nested blocks separate lines."""
+    if tag.name == "table":
+        return [" ".join(" ".join(td.get_text().split()) for td in tr.find_all(["td", "th"], recursive=False)).strip()
+                for tr in tag.find_all("tr")]
+    out, buf = [], []
+    for child in tag.children:
+        name = getattr(child, "name", None)
+        if name in ("div", "p", "table", "ul", "ol", "li", "tr", "blockquote") :
+            out.append("".join(buf))
+            buf = []
+            out.extend(soup_lines(child))
+        elif name == "br":
+            out.append("".join(buf))
+            buf = []
+        elif name is None:
+            buf.append(str(child) if not child.__class__.__name__ == "Comment" else "")
+        else:
+            buf.append(child.get_text())
+    out.append("".join(buf))
+    return [" ".join(line.split()) for line in out if line.split()]
 
 
 def main(acq_dir, build_path, report_path, sample=50, seed=20261019):
@@ -110,6 +132,9 @@ def main(acq_dir, build_path, report_path, sample=50, seed=20261019):
 
     rng = random.Random(seed)
     picks = rng.sample(sorted(i for i in by_id if "@" not in i and base_ids[i] == 1), sample)
+    # Plus up to 10 sections that print a table (cells must stay separate words).
+    tables = sorted(i for i in build["summary"].get("sections_with_tables", []) if "@" not in i and base_ids[i] == 1 and i not in picks)
+    picks += rng.sample(tables, min(10, len(tables)))
     results, failures = [], 0
     for rid in picks:
         row = by_id[rid]
@@ -134,7 +159,8 @@ def main(acq_dir, build_path, report_path, sample=50, seed=20261019):
             item["live"] = {k: v[:300] for k, v in live.items()}
             item["built"] = {"heading": heading[:300], "text": body[:300], "history": (fact(row, "History") or "")[:300]}
         results.append(item)
-    report["checks"]["live_sample"] = {"sample": sample, "seed": seed, "endpoint": f"{BASE}?cite={{number}}", "failures": failures, "results": results}
+    report["checks"]["live_sample"] = {"sample": len(picks), "random": sample, "table_sections": len(picks) - sample, "seed": seed,
+                                       "endpoint": f"{BASE}?cite={{number}}", "failures": failures, "results": results}
 
     title_values = {o["value"] for f in build["listing_block"]["filters"] if f["name"] == "title" for o in f.get("options", [])}
     shape = []

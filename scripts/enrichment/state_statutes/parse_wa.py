@@ -20,8 +20,46 @@ NUMBER = re.compile(r"^\d+[A-Z]?\.\d+[A-Z]?[.-]\d+[0-9A-Za-z]*$")
 EFFECTIVE = re.compile(r"\((Effective|Expires|Contingent)[^()]*\)\s*\.?$", re.I)
 
 
+BLOCK = {"div", "p", "ul", "ol", "li", "table", "tr", "blockquote", "h4", "h5", "h6"}
+
+
 def clean(text):
     return WS.sub(" ", text or "").strip()
+
+
+def block_lines(el):
+    """Printed lines of a block element: nested blocks and <br> start new lines, a table gives one line per row
+    with its cells separated by a space (cells are never run together), inline markup is joined as printed."""
+    if el.tag == "table":
+        rows = []
+        for tr in el.iter("tr"):
+            cells = [clean(td.text_content()) for td in tr if isinstance(td.tag, str) and td.tag in ("td", "th")]
+            line = " ".join(c for c in cells if c)
+            if line:
+                rows.append(line)
+        return rows
+    lines, buf = [], [el.text or ""]
+
+    def flush():
+        text = clean("".join(buf))
+        if text:
+            lines.append(text)
+        buf.clear()
+
+    for child in el:
+        if not isinstance(child.tag, str):  # comments
+            buf.append(child.tail or "")
+            continue
+        if child.tag in BLOCK:
+            flush()
+            lines.extend(block_lines(child))
+        elif child.tag == "br":
+            flush()
+        else:
+            buf.append(child.text_content())
+        buf.append(child.tail or "")
+    flush()
+    return lines
 
 
 def _tree(html):
@@ -115,11 +153,8 @@ def _sections(span):
         elif stage == "body" and "margin-top:15pt" in (div.get("style") or "").replace(" ", "") and text.startswith("["):
             cur["history"], stage = text, "done"
         elif stage == "body":
-            children = [c for c in div if c.tag in ("div", "table", "p")]
-            if children:
-                cur["paragraphs"].extend(t for t in (clean(c.text_content()) for c in children) if t)
-            elif text:
-                cur["paragraphs"].append(text)
+            cur["paragraphs"].extend(block_lines(div))
+            cur["has_table"] = cur.get("has_table", False) or bool(div.xpath(".//table"))
     return versions or [{"number": number, "cite_line": None, "heading": None, "paragraphs": [], "history": None}]
 
 

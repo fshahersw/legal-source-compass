@@ -25,7 +25,7 @@ def cites(html, pattern):
 
 
 def fetch(acq, manifest_path, done, url, name, interval):
-    if url in done and done[url]["status"] == 200:
+    if url in done and done[url]["status"] == 200 and Path(done[url]["path"]).exists():
         return fetchlib.read_raw(done[url]).decode("utf-8", "replace")
     status, body = fetchlib.get(url, interval=interval, timeout=180)
     entry = fetchlib.store(manifest_path, acq / name, url, status, body)
