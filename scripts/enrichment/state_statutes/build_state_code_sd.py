@@ -102,7 +102,8 @@ def collect(acq):
         m = re.search(r"/api/Statutes/([0-9]+[A-Z]?)\.html\?all=true$", url)
         if m and entry["status"] == 200:
             title_entries[m.group(1)] = entry
-    stats, appendices = collections.Counter(), []
+    stats, appendices, excluded_records = collections.Counter(), [], []
+    unbracketed = {re.sub(r"[()]", "", n): n for n in order if "(" in n}
     title_labels, chapter_labels, entries = {}, {}, []
     by_number = {}
     for label in sorted(title_entries, key=title_order):
@@ -129,25 +130,45 @@ def collect(acq):
             if rid in by_number or (s["number"] in by_number and not effective):
                 raise SystemExit(f"duplicate section {s['number']} without a distinguishing effective date")
             entry = {**s, "id": rid, "title_value": label, "key": key, "members": [], "origin": "title document"}
+            if s["number"] not in order:
+                # e.g. printed "57A-11-101A" whose publisher page is /Statutes/57A-11-101(A)
+                page = unbracketed.get(s["number"])
+                if page:
+                    entry["page_number"] = page
+                    entry["key"] = (order[page], 0)
+                    stats["printed_number_differs_from_page_address"] += 1
+                else:
+                    stats["documented_not_in_sitemap"] += 1
             by_number[rid] = entry
             entries.append(entry)
-            if s["number"] not in order:
-                stats["documented_not_in_sitemap"] += 1
+    documented_pages = {e.get("page_number", e["number"]) for e in entries}
     for number, data in records.items():
-        if data.get("Type") != "Section" or number in by_number:
+        if data.get("Type") != "Section" or number in by_number or number in documented_pages:
             continue
         html = data.get("Html") or ""
         parsed = parse_sd.parse_section(number, html) if parse_sd.clean(re.sub(r"<[^>]+>", " ", html)) else None
         if parsed is None or "error" in parsed:
             line = parse_sd.clean(data.get("CatchLine"))
-            if not line.startswith(number):
-                stats["record_catchline_unusable"] += 1
+            source_paras = [p for p in re.findall(r"<p[^>]*>(.*?)</p>", html, re.S)]
+            source = " ".join(t for t in (parse_sd.clean(re.sub(r"<[^>]+>", "", p)) for p in source_paras) if t.startswith("Source:"))
+            if line.upper().startswith("CHAPTER"):
+                stats["record_is_chapter_heading"] += 1
+                excluded_records.append({"number": number, "reason": f"the publisher's record is a chapter heading: {line[:80]}"})
                 continue
-            lab, heading = parse_sd.split_heading(number, line)
+            if line.startswith(number):
+                lab, heading = parse_sd.split_heading(number, line)
+                origin = "single-statute record (catchline only)"
+            elif line:
+                # The record carries the catchline without its number and prints no section text.
+                lab, heading = number, line
+                origin = "single-statute record (catchline and Source only; no section text printed)"
+            else:
+                stats["record_catchline_unusable"] += 1
+                excluded_records.append({"number": number, "reason": "the publisher's record has no catchline or text"})
+                continue
             status = parse_sd.STATUS.match(heading)
-            parsed = {"number": number, "label": lab, "heading": heading, "paragraphs": [], "source": "", "notes": [],
+            parsed = {"number": number, "label": lab, "heading": heading, "paragraphs": [], "source": source, "notes": [],
                       "status": status.group(1).capitalize() if status else None, "effective": None}
-            origin = "single-statute record (catchline only)"
         else:
             parsed["effective"] = None
             origin = "single-statute record"
@@ -181,7 +202,7 @@ def collect(acq):
         if entry["title_value"] not in title_labels:
             raise SystemExit(f"{entry['id']}: title {entry['title_value']} has no whole-title document")
     entries.sort(key=lambda e: e["key"])
-    return {"entries": entries, "stats": stats, "appendices": appendices, "title_labels": title_labels,
+    return {"entries": entries, "stats": stats, "appendices": appendices, "excluded_records": excluded_records, "title_labels": title_labels,
             "chapter_labels": chapter_labels, "manifest": manifest, "title_entries": title_entries, "order": order}
 
 
@@ -212,7 +233,7 @@ def build(acq_dir, out_file):
         rows.append(codebuild.section_row(
             DATASET, STATE, e["id"],
             citation=f"SDCL {e['label']}", heading=e["heading"], title_value=e["title_value"], chapter_label=chapter_label,
-            body=body, source_url=f"https://sdlegislature.gov/Statutes/{e['number']}", edition=edition,
+            body=body, source_url=f"https://sdlegislature.gov/Statutes/{e.get('page_number', e['number'])}", edition=edition,
             currency=currency, history=history, status=status, extra_facts=extra,
         ))
         stats["rows"] += 1
@@ -236,6 +257,7 @@ def build(acq_dir, out_file):
         "titles": len(got["title_labels"]),
         "stats": dict(stats),
         "excluded_appendices": got["appendices"],
+        "excluded_records": got["excluded_records"],
         "method": "open-us-law sd_bulk approach (Apache-2.0, Vaquill AI), reimplemented in scripts/enrichment/state_statutes/",
         "full_code": {
             "state": STATE,

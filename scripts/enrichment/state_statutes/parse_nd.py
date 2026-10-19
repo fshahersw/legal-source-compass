@@ -95,36 +95,55 @@ def split_sections(lines, expected):
     cursor = 0
     errors = []
     for number, name in expected:
+        # A heading line starts with the number and a period (the PDF sometimes prints a leading zero, e.g.
+        # "01-03-19."); a body line that merely wraps a cross-reference to the number is skipped because its
+        # following words are not the contents name.
+        start_re = re.compile(r"^(0*" + re.escape(number) + r")(\.|$)")
+        want = tokens(name)
         found = None
+        first_candidate = None
         for i in range(cursor, len(lines)):
-            if lines[i].startswith(f"{number}.") or lines[i] == number:
-                found = i
+            m = start_re.match(lines[i])
+            if not m:
+                continue
+            first_candidate = first_candidate if first_candidate is not None else i
+            head, j = _heading(lines, i, len(want), m.group(1))
+            if _heading_matches(head, m.group(1), want):
+                found = (i, j, head, m.group(1))
                 break
         if found is None:
-            errors.append({"number": number, "error": "heading not found in chapter PDF"})
+            if first_candidate is None:
+                errors.append({"number": number, "error": "heading not found in chapter PDF"})
+            else:
+                head, _ = _heading(lines, first_candidate, len(want), number)
+                errors.append({"number": number, "error": "heading words differ from contents name", "pdf": head[:160], "contents": name})
             continue
         starts.append((found, number, name))
-        cursor = found + 1
+        cursor = found[0] + 1
     out = {}
-    for k, (start, number, name) in enumerate(starts):
-        end = starts[k + 1][0] if k + 1 < len(starts) else len(lines)
-        block = lines[start:end]
-        want = tokens(name)
-        head = [block[0]]
-        j = 1
-        while len(tokens(" ".join(head))) - len(tokens(number)) < len(want) and j < len(block):
-            head.append(block[j])
-            j += 1
-        heading_line = " ".join(head)
-        while heading_line.startswith(f"{number}. {number}."):
-            heading_line = heading_line[len(number) + 2:]  # a number printed twice is one heading
-        got = tokens(heading_line)[len(tokens(number)):]
-        if got[: len(want)] != want:
-            errors.append({"number": number, "error": "heading words differ from contents name", "pdf": heading_line[:160], "contents": name})
-            continue
+    for k, ((start, body_start, heading_line, printed), number, name) in enumerate(starts):
+        end = starts[k + 1][0][0] if k + 1 < len(starts) else len(lines)
         key = number if number not in out else f"{number}@{sum(1 for x in out if x.split('@')[0] == number) + 1}"
-        heading = heading_line[len(number):].lstrip(". ").strip()
+        heading = heading_line[len(printed):].lstrip(". ").strip()
         status = STATUS.match(heading)
-        out[key] = {"number": number, "heading": heading, "lines": block[j:], "contents_name": name,
+        out[key] = {"number": number, "printed_number": printed if printed != number else None, "heading": heading,
+                    "lines": lines[body_start:end], "contents_name": name,
                     "status": status.group(1).capitalize() if status else None}
     return out, errors
+
+
+def _heading(lines, i, want_len, printed):
+    """The heading line plus continuation lines until it holds as many words as the contents name."""
+    head = [lines[i]]
+    j = i + 1
+    while len(tokens(" ".join(head))) - len(tokens(printed)) < want_len and j < len(lines):
+        head.append(lines[j])
+        j += 1
+    heading_line = " ".join(head)
+    while heading_line.startswith(f"{printed}. {printed}."):
+        heading_line = heading_line[len(printed) + 2:]  # a number printed twice is one heading
+    return heading_line, j
+
+
+def _heading_matches(heading_line, printed, want):
+    return tokens(heading_line)[len(tokens(printed)):][: len(want)] == want

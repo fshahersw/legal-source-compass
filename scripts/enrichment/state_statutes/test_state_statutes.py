@@ -7,6 +7,7 @@ import unittest
 
 import build_state_code_sd as bsd
 import codebuild
+import parse_nd
 import parse_sd
 import parse_wa
 
@@ -112,6 +113,50 @@ class ParseWA(unittest.TestCase):
         page = parse_wa.parse_chapter_page(WA_CHAPTER.replace("<a name='9A.32.020'></a>", ""))
         self.assertEqual(len(page["sections"]), 1)
         self.assertEqual(len(page["errors"]), 1)
+
+
+class ParseND(unittest.TestCase):
+    LINES = [
+        "CHAPTER 4.1-03",
+        "BEEF COMMISSION",
+        "4.1-03-12. Collection of assessment.",
+        "1. Forward the assessments in accordance with section",
+        "4.1-03-13.",
+        "2. a. If a person sells North Dakota cattle outside this state",
+        "4.1-03-13. Submission of assessments -",
+        "Penalty.",
+        "1. Any person required to forward assessments.",
+        "01-03-19. Right-To-Life Day.",
+        "To celebrate the right-to-life.",
+        "4.1-03-14. Repealed by S.L. 1999, ch. 51, § 2.",
+    ]
+
+    def test_cross_reference_line_is_not_a_heading_and_wrapped_heading_is_joined(self):
+        expected = [("4.1-03-12", "Collection of assessment"), ("4.1-03-13", "Submission of assessments ‑ Penalty"),
+                    ("1-03-19", "Right-To-Life Day"), ("4.1-03-14", "Repealed by S.L. 1999, ch. 51, § 2")]
+        out, errors = parse_nd.split_sections(self.LINES, expected)
+        self.assertEqual(errors, [])
+        self.assertEqual(out["4.1-03-12"]["lines"], self.LINES[3:6])
+        self.assertEqual(out["4.1-03-13"]["heading"], "Submission of assessments - Penalty.")
+        self.assertEqual(out["4.1-03-13"]["lines"], ["1. Any person required to forward assessments."])
+        self.assertEqual(out["1-03-19"]["printed_number"], "01-03-19")
+        self.assertEqual(out["1-03-19"]["heading"], "Right-To-Life Day.")
+        self.assertEqual(out["4.1-03-14"]["status"], "Repealed")
+
+    def test_missing_heading_is_reported_not_guessed(self):
+        out, errors = parse_nd.split_sections(self.LINES, [("4.1-03-99", "Nowhere")])
+        self.assertEqual(out, {})
+        self.assertEqual(errors[0]["error"], "heading not found in chapter PDF")
+
+    def test_index_parse(self):
+        html = ('<html><body><details><summary class="outer"><h2>Title 12.1 - Criminal Code</h2></summary>'
+                '<details><summary class="inner"><h3>Chapter 12.1-16 - Homicide</h3></summary><table><tr><th>Section</th></tr>'
+                '<tr><td><a href="/cencode/t12-1c16.pdf#nameddest=12p1-16-01">12.1-16-01</a></td><td>Murder</td></tr>'
+                '</table></details></details></body></html>')
+        titles = parse_nd.parse_index(html)
+        self.assertEqual(titles[0]["number"], "12.1")
+        self.assertEqual(titles[0]["chapters"][0]["pdf"], "/cencode/t12-1c16.pdf")
+        self.assertEqual(titles[0]["chapters"][0]["sections"], [("12.1-16-01", "Murder")])
 
 
 class CodeBuild(unittest.TestCase):

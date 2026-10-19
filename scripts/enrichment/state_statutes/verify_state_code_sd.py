@@ -69,6 +69,8 @@ def main(acq_dir, build_path, report_path, sample=50, seed=20261019):
         members = fact(r, "Numbers in this entry")
         if members:
             base_ids.update(m.strip() for m in members.split(","))
+    # The publisher page a row links to also counts (e.g. printed 57A-11-101A is page /Statutes/57A-11-101(A)).
+    pages = {r["source_url"].rsplit("/Statutes/", 1)[-1] for r in rows}
     report = {"dataset": build["dataset"], "rows": len(rows), "checks": {}}
 
     # 1. sitemap
@@ -80,8 +82,10 @@ def main(acq_dir, build_path, report_path, sample=50, seed=20261019):
                 if SECTION.match(number):
                     sitemap.add(number)
     excluded = {a.get("number") for a in build["summary"].get("excluded_appendices", []) if a.get("number")}
-    missing = sorted(sitemap - base_ids - excluded)
-    extra = sorted(base_ids - sitemap)
+    excluded |= {a["number"] for a in build["summary"].get("excluded_records", [])}
+    missing = sorted(sitemap - base_ids - pages - excluded)
+    extra = sorted({r["id"].split("@")[0] for r in rows
+                    if r["id"].split("@")[0] not in sitemap and r["source_url"].rsplit("/Statutes/", 1)[-1] not in sitemap})
     report["checks"]["toc_sitemap"] = {"sitemap_sections": len(sitemap), "row_numbers": len(base_ids),
                                        "excluded_appendices_in_sitemap": len(sitemap & excluded),
                                        "failures": len(missing) + len(extra), "missing": missing[:50], "not_in_sitemap": extra[:50]}

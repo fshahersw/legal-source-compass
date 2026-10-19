@@ -63,7 +63,9 @@ def build(acq_dir, out_file):
                     source_url=f"{SITE}{ch['pdf']}#nameddest={anchor(s['number'])}",
                     edition="North Dakota Century Code, chapter PDF" + (f" created {created}" if created else ""),
                     currency=f"Retrieved {retrieved}", status=s["status"],
+                    extra_facts=[["Number as printed in the chapter PDF", s["printed_number"]]] if s["printed_number"] else (),
                 ))
+                stats["printed_number_differs"] += 1 if s["printed_number"] else 0
                 stats["rows"] += 1
                 stats["with_text"] += 1 if body else 0
                 stats["status_stub"] += 1 if s["status"] else 0
