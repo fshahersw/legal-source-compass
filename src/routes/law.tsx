@@ -162,6 +162,18 @@ function LawPage() {
             note: "Calculator, cited rules and state coverage",
             link: { to: "/limitations" },
           },
+          {
+            key: "constitutions",
+            label: "State constitutions",
+            note: "41 states from official publishers, article by article",
+            link: { to: "/law/constitutions", search: { q: "" } },
+          },
+          {
+            key: "regulations",
+            label: "State administrative codes",
+            note: "Tables of contents, 12 states",
+            link: { to: "/law/regulations", search: { q: "" } },
+          },
           ...lawDs
             .filter(
               (d) =>

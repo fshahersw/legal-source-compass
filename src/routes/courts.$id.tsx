@@ -9,6 +9,7 @@ import { CourtResources } from "@/components/corpus/CourtResources";
 import { CourtAnalyticsPanel } from "@/components/corpus/CourtAnalyticsPanel";
 import { CaseloadHistoryPanel } from "@/components/courts/CaseloadHistoryPanel";
 import { CourtLocationsPanel } from "@/components/courts/CourtLocationsPanel";
+import { CourtRulesPanel } from "@/components/courts/rules/CourtRulesPanel";
 import { CourtStructurePanel } from "@/components/courts/CourtStructurePanel";
 import { CourtJudgesPanel } from "@/components/corpus/JudgeFjcPanel";
 import { CourtCollectionPanel } from "@/components/courts/clb/CourtCollectionPanel";
@@ -73,6 +74,7 @@ function Page() {
         <>
           <CourtStructurePanel courtId={id} />
           <CourtLocationsPanel courtId={id} />
+          <CourtRulesPanel courtId={id} />
           <CourtAnalyticsPanel courtId={id} />
           <CaseloadHistoryPanel courtId={id} />
           <CourtJudgesPanel courtId={id} />
