@@ -1,0 +1,1114 @@
+{
+ "_about": "Reviewed choice of each federal court's current local-rules documents, as linked from the court's own website (found_on). Built from local_rules_candidates.json (discover_local_rules.py) and manual review on 2026-10-19; parts: civil, criminal, combined (civil and criminal in one file), patent, adr, appellate (circuit rules, often printed with FRAP), iop. Format html = the rules are published as one HTML page; html_pages = an index page linking one HTML page per rule.",
+ "courts": {
+  "akd": [
+   {
+    "found_on": "https://www.akd.uscourts.gov/court-info/local-rules-and-orders/local-rules",
+    "part": "civil",
+    "title": "Local Civil Rules (effective October 15, 2025)",
+    "url": "https://www.akd.uscourts.gov/sites/akd/files/local_rules/Local_Civil_Rules_10-2025.pdf"
+   },
+   {
+    "found_on": "https://www.akd.uscourts.gov/court-info/local-rules-and-orders/local-rules",
+    "part": "criminal",
+    "title": "Local Criminal Rules (effective October 15, 2025)",
+    "url": "https://www.akd.uscourts.gov/sites/akd/files/local_rules/Local_Criminal_Rules_10-2025_0.pdf"
+   }
+  ],
+  "almd": [
+   {
+    "found_on": "https://www.almd.uscourts.gov/forms/local-rules",
+    "part": "combined",
+    "title": "Local Rules",
+    "url": "https://www.almd.uscourts.gov/sites/default/files/forms/ALMD%20Local%20Rules.pdf"
+   }
+  ],
+  "alnd": [
+   {
+    "found_on": "https://www.alnd.uscourts.gov/local-rules",
+    "part": "combined",
+    "title": "Local Rules as of December 4, 2019",
+    "url": "https://www.alnd.uscourts.gov/sites/alnd/files/ALND%20Local%20Rules%20Revised%2012-04-2019.pdf"
+   }
+  ],
+  "alsd": [
+   {
+    "found_on": "https://www.alsd.uscourts.gov/court-info/local-rules-and-orders",
+    "part": "combined",
+    "title": "Local Rules",
+    "url": "https://www.alsd.uscourts.gov/sites/alsd/files/local-rules.pdf"
+   }
+  ],
+  "ared": [
+   {
+    "found_on": "https://www.are.uscourts.gov/court-info/local-rules-and-orders/local-rules",
+    "part": "combined",
+    "title": "Local Rules (complete copy)",
+    "url": "https://www.are.uscourts.gov/sites/are/files/local_rules/All_LR.pdf"
+   }
+  ],
+  "arwd": [
+   {
+    "found_on": "https://www.arwd.uscourts.gov/court-info/local-rules-and-orders",
+    "part": "combined",
+    "title": "Local Rules",
+    "url": "https://www.arwd.uscourts.gov/sites/arwd/files/ARWD%20Local%20Rules.pdf"
+   }
+  ],
+  "azd": [
+   {
+    "found_on": "https://www.azd.uscourts.gov/local-rules",
+    "part": "civil",
+    "title": "Local Rules of Civil Procedure (2025-2026)",
+    "url": "https://www.azd.uscourts.gov/sites/azd/files/local-rules/LRCiv%202025.pdf"
+   },
+   {
+    "found_on": "https://www.azd.uscourts.gov/local-rules",
+    "part": "criminal",
+    "title": "Local Rules of Criminal Procedure (2025-2026)",
+    "url": "https://www.azd.uscourts.gov/sites/azd/files/local-rules/LRCRIM%202025.pdf"
+   }
+  ],
+  "ca1": [
+   {
+    "found_on": "https://www.ca1.uscourts.gov/rules-procedures",
+    "part": "appellate",
+    "title": "First Circuit Rulebook (Federal Rules of Appellate Procedure and Local Rules)",
+    "url": "https://www.ca1.uscourts.gov/sites/ca1/files/rulebook.pdf"
+   }
+  ],
+  "ca10": [
+   {
+    "found_on": "https://www.ca10.uscourts.gov/clerk/rules",
+    "part": "appellate",
+    "title": "2026 Federal Rules of Appellate Procedure and Tenth Circuit Rules",
+    "url": "https://www.ca10.uscourts.gov/sites/ca10/files/clerk/2026Rules.pdf"
+   }
+  ],
+  "ca11": [
+   {
+    "found_on": "https://www.ca11.uscourts.gov/rules-procedures",
+    "part": "appellate",
+    "title": "FRAP, Eleventh Circuit Rules and IOPs (effective August 1, 2026)",
+    "url": "https://www.ca11.uscourts.gov/sites/default/files/courtdocs/clk/Rules%20Bookmarked.AUG26.pdf"
+   }
+  ],
+  "ca2": [
+   {
+    "found_on": "https://www.ca2.uscourts.gov/clerk/case_filing/rules/rules_home.html",
+    "part": "appellate",
+    "title": "Local Rules, Internal Operating Procedures and Appendices",
+    "url": "https://www.ca2.uscourts.gov/clerk/case_filing/rules/pdf/LRs_IOCs_appendices_rev_2024.pdf"
+   }
+  ],
+  "ca3": [
+   {
+    "found_on": "https://www.ca3.uscourts.gov/",
+    "part": "appellate",
+    "title": "Local Appellate Rules (2011)",
+    "url": "https://www.ca3.uscourts.gov/sites/ca3/files/2011_LAR_Final.pdf"
+   },
+   {
+    "found_on": "https://www.ca3.uscourts.gov/",
+    "part": "iop",
+    "title": "Internal Operating Procedures",
+    "url": "https://www.ca3.uscourts.gov/sites/ca3/files/IOPs.pdf"
+   }
+  ],
+  "ca4": [
+   {
+    "found_on": "https://www.ca4.uscourts.gov/rules-and-procedures",
+    "part": "appellate",
+    "title": "Local Rules of the Fourth Circuit",
+    "url": "https://www.ca4.uscourts.gov/docs/rules/localrules.pdf?sfvrsn=6e5ab209_1"
+   }
+  ],
+  "ca5": [
+   {
+    "found_on": "https://www.ca5.uscourts.gov/rules-procedures",
+    "part": "appellate",
+    "title": "Federal Rules of Appellate Procedure, Fifth Circuit Rules and Internal Operating Procedures",
+    "url": "https://www.ca5.uscourts.gov/docs/C9B3642D-BBBF-4D20-859C-C5B0875D75E8/federalrulesofappellateprocedure"
+   }
+  ],
+  "ca6": [
+   {
+    "found_on": "https://www.ca6.uscourts.gov/rules-and-procedures/local-rules-frap-local-rules-iops",
+    "part": "appellate",
+    "title": "Sixth Circuit Rules with the Federal Rules of Appellate Procedure and IOPs",
+    "url": "https://www.ca6.uscourts.gov/sites/ca6/files/documents/rules_procedures/Full%20Rules%20w%20FRAP_0.pdf"
+   }
+  ],
+  "ca7": [
+   {
+    "found_on": "https://www.ca7.uscourts.gov/pages/LandingPage.php?page=rules-frap",
+    "part": "appellate",
+    "title": "Federal Rules of Appellate Procedure and Circuit Rules",
+    "url": "https://www.ca7.uscourts.gov/assets/pdf/rules.pdf"
+   }
+  ],
+  "ca8": [
+   {
+    "found_on": "https://www.ca8.uscourts.gov/rules-procedures",
+    "part": "appellate",
+    "title": "Local Rules of the Eighth Circuit (June 2024)",
+    "url": "https://www.ca8.uscourts.gov/sites/ca8/files/Eighth%20Circuit%20Local%20Rules%206.17.24.pdf"
+   },
+   {
+    "found_on": "https://www.ca8.uscourts.gov/rules-procedures",
+    "part": "iop",
+    "title": "Internal Operating Procedures",
+    "url": "https://ecf.ca8.uscourts.gov/newrules/coa/iops.pdf"
+   }
+  ],
+  "ca9": [
+   {
+    "found_on": "https://www.ca9.uscourts.gov/rules/",
+    "part": "appellate",
+    "retrieval_note": "rules page is rendered by script; its links were read with the Firecrawl scrape tool",
+    "title": "Federal Rules of Appellate Procedure with Ninth Circuit Rules and Advisory Committee Notes (June 1, 2026)",
+    "url": "https://cdn.ca9.uscourts.gov/datastore/uploads/frap-June%201%202026.pdf"
+   }
+  ],
+  "cacd": [
+   {
+    "found_on": "https://www.cacd.uscourts.gov/court-procedures/local-rules",
+    "part": "civil",
+    "title": "Chapter I: Local Civil Rules",
+    "url": "https://www.cacd.uscourts.gov/sites/default/files/documents/2026-June-LRs-Chap-1.pdf"
+   },
+   {
+    "found_on": "https://www.cacd.uscourts.gov/court-procedures/local-rules",
+    "part": "criminal",
+    "title": "Chapter III: Local Criminal Rules",
+    "url": "https://www.cacd.uscourts.gov/sites/default/files/documents/2025%20December%20LRs%20Chap%203.pdf"
+   }
+  ],
+  "cadc": [
+   {
+    "found_on": "https://www.cadc.uscourts.gov/circuit-rules-procedures",
+    "part": "appellate",
+    "title": "Federal Rules of Appellate Procedure and D.C. Circuit Rules",
+    "url": "https://www.cadc.uscourts.gov/sites/cadc/files/rules-RulesFRAP20251204.pdf"
+   },
+   {
+    "found_on": "https://www.cadc.uscourts.gov/circuit-rules-procedures",
+    "part": "iop",
+    "title": "Handbook of Practice and Internal Procedures",
+    "url": "https://www.cadc.uscourts.gov/sites/cadc/files/rules-Handbook20260917.pdf"
+   }
+  ],
+  "caed": [
+   {
+    "found_on": "https://www.caed.uscourts.gov/caednew/index.cfm/rules/local-rules/",
+    "part": "combined",
+    "title": "Local Rules (effective February 23, 2026)",
+    "url": "https://www.caed.uscourts.gov/caednew/assets/File/EDCA%20LOCAL%20RULES%20EFF_%2002-23-26.pdf"
+   }
+  ],
+  "cafc": [
+   {
+    "found_on": "https://www.cafc.uscourts.gov/home/rules-procedures-forms/federal-local-rules-of-appellate-procedure/",
+    "part": "appellate",
+    "title": "Federal Circuit Rules of Practice",
+    "url": "https://www.cafc.uscourts.gov/wp-content/uploads/RulesProceduresAndForms/FederalCircuitRules/FederalCircuitRulesofPractice.pdf"
+   }
+  ],
+  "cand": [
+   {
+    "found_on": "https://cand.uscourts.gov/rules-forms-fees/local-rules/civil-local-rules",
+    "part": "civil",
+    "title": "Civil Local Rules",
+    "url": "https://cand.uscourts.gov/sites/default/files/local-rules/CAND_Civil_Local_Rules_10_26.pdf"
+   },
+   {
+    "format": "html",
+    "found_on": "https://cand.uscourts.gov/rules-forms-fees/local-rules",
+    "part": "criminal",
+    "title": "Criminal Local Rules",
+    "url": "https://cand.uscourts.gov/rules-forms-fees/local-rules/criminal-local-rules"
+   },
+   {
+    "found_on": "https://cand.uscourts.gov/rules-forms-fees/local-rules/patent-local-rules",
+    "part": "patent",
+    "title": "Patent Local Rules",
+    "url": "https://cand.uscourts.gov/sites/default/files/local-rules/Patent_Local_Rules_08-11-2026.pdf"
+   },
+   {
+    "found_on": "https://cand.uscourts.gov/rules-forms-fees/local-rules/adr-local-rules",
+    "part": "adr",
+    "title": "ADR Local Rules",
+    "url": "https://cand.uscourts.gov/sites/default/files/local-rules/Local_Rules_ADR_Effective_May.1.2018.pdf"
+   }
+  ],
+  "casd": [
+   {
+    "found_on": "https://www.casd.uscourts.gov/rules/local-rules.aspx",
+    "part": "combined",
+    "title": "Local Rules (June 1, 2026)",
+    "url": "https://www.casd.uscourts.gov/_assets/pdf/rules/2026.06.01%20Local%20Rules.pdf"
+   },
+   {
+    "found_on": "https://www.casd.uscourts.gov/rules/local-rules.aspx",
+    "part": "patent",
+    "title": "Patent Local Rules",
+    "url": "https://www.casd.uscourts.gov/_assets/pdf/rules/Patent%20Local%20Rules.pdf"
+   }
+  ],
+  "cod": [
+   {
+    "found_on": "http://www.cod.uscourts.gov/CourtOperations/RulesProcedures/LocalRules.aspx",
+    "part": "combined",
+    "title": "Local Rules effective December 1, 2025",
+    "url": "http://www.cod.uscourts.gov/Portals/0/Documents/LocalRules/2025_Final_Local_Rules.pdf?ver=PJ10TWzrCi1cT_4mN_fh7g%3d%3d"
+   }
+  ],
+  "ctd": [
+   {
+    "found_on": "https://www.ctd.uscourts.gov/court-info/local-rules-and-orders",
+    "part": "combined",
+    "title": "Local Rules (revised October 13, 2026)",
+    "url": "https://www.ctd.uscourts.gov/sites/default/files/Current-Revised-Local-Rules-10.13.26.pdf"
+   }
+  ],
+  "dcd": [
+   {
+    "found_on": "https://www.dcd.uscourts.gov/court-info/local-rules-and-orders/local-rules",
+    "part": "combined",
+    "title": "Local Rules (September 2026)",
+    "url": "https://www.dcd.uscourts.gov/sites/dcd/files/local_rules/Local%20Rules%20SEP_2026.pdf"
+   }
+  ],
+  "ded": [
+   {
+    "found_on": "https://www.ded.uscourts.gov/local-rules",
+    "part": "combined",
+    "title": "2026 Revised Local Rules (effective September 1, 2026)",
+    "url": "https://www.ded.uscourts.gov/sites/ded/files/2026%20District%20of%20Delaware%20Revised%20Local%20Rules%20Effective%20September%201.pdf"
+   }
+  ],
+  "flmd": [
+   {
+    "found_on": "https://www.flmd.uscourts.gov/local-rules",
+    "part": "combined",
+    "title": "Local Rules (effective November 1, 2025)",
+    "url": "https://www.flmd.uscourts.gov/sites/flmd/files/flmd-amended-local-rules-effective-november-01-2025.pdf"
+   }
+  ],
+  "flnd": [
+   {
+    "found_on": "https://www.flnd.uscourts.gov/local-rules-0",
+    "part": "combined",
+    "title": "Local Rules",
+    "url": "https://www.flnd.uscourts.gov/sites/flnd/files/local_rules/local_rules_0.pdf"
+   }
+  ],
+  "flsd": [
+   {
+    "found_on": "https://www.flsd.uscourts.gov/local-rules-and-procedures",
+    "part": "combined",
+    "title": "Local Rules (effective December 1, 2025)",
+    "url": "https://www.flsd.uscourts.gov/sites/flsd/files/25-09-22%202025%20Local%20Rules%20effective%20120125%20-%20FINAL.pdf"
+   }
+  ],
+  "gamd": [
+   {
+    "found_on": "https://www.gamd.uscourts.gov/local-rules",
+    "part": "combined",
+    "title": "Local Rules",
+    "url": "https://www.gamd.uscourts.gov/sites/gamd/files/Local_Rules-12_1_2022.pdf"
+   }
+  ],
+  "gand": [
+   {
+    "found_on": "https://www.gand.uscourts.gov/court-info/local-rules-and-orders/local-rules",
+    "part": "civil",
+    "title": "Civil Rules",
+    "url": "https://www.gand.uscourts.gov/sites/gand/files/local_rules/NDGARulesCV_4_0_26.pdf"
+   },
+   {
+    "found_on": "https://www.gand.uscourts.gov/court-info/local-rules-and-orders/local-rules",
+    "part": "criminal",
+    "title": "Criminal Rules",
+    "url": "https://www.gand.uscourts.gov/sites/gand/files/local_rules/NDGARulesCR_3.pdf"
+   },
+   {
+    "found_on": "https://www.gand.uscourts.gov/court-info/local-rules-and-orders/local-rules",
+    "part": "patent",
+    "title": "Patent Rules",
+    "url": "https://www.gand.uscourts.gov/sites/gand/files/local_rules/NDGARulesPatent.pdf"
+   }
+  ],
+  "gasd": [
+   {
+    "found_on": "https://www.gasd.uscourts.gov/",
+    "part": "combined",
+    "title": "Local Rules (effective October 7, 2026)",
+    "url": "https://www.gasd.uscourts.gov/sites/gasd/files/local_rules/SDGA_Local_Rules_Effective_10-07-2026.pdf"
+   }
+  ],
+  "gud": [
+   {
+    "found_on": "https://www.gud.uscourts.gov/",
+    "part": "combined",
+    "title": "All Rules (effective April 15, 1997)",
+    "url": "https://www.gud.uscourts.gov/sites/gud/files/localrules_19970415.pdf"
+   }
+  ],
+  "hid": [
+   {
+    "found_on": "https://www.hid.uscourts.gov/rules/local-rules",
+    "part": "civil",
+    "title": "Civil Local Rules (as linked by the court: administrative order amending the Local Rules, effective September 1, 2019)",
+    "url": "https://www.hid.uscourts.gov/files/order532/2019_08_26_administrative_Order%20Amending%20the%20Local%20Rules%20eff%202019_09_01(1).pdf"
+   },
+   {
+    "found_on": "https://www.hid.uscourts.gov/rules/local-rules",
+    "part": "criminal",
+    "title": "Criminal Local Rules (effective January 1, 2023)",
+    "url": "https://www.hid.uscourts.gov/docs/localrules/USDC%20HID%20Criminal%20Local%20Rules%20Final%2012.16.2022.pdf"
+   }
+  ],
+  "iand": [
+   {
+    "found_on": "https://www.iand.uscourts.gov/",
+    "part": "combined",
+    "title": "Iowa Northern and Iowa Southern Districts' Joint Local Rules",
+    "url": "https://www.iand.uscourts.gov/sites/iand/files/Local%20Rules%20-%20Final%20Website%20Version.pdf"
+   }
+  ],
+  "iasd": [
+   {
+    "found_on": "https://www.iasd.uscourts.gov/",
+    "part": "combined",
+    "title": "Local Rules (Iowa Northern and Iowa Southern joint local rules)",
+    "url": "https://www.iasd.uscourts.gov/sites/iasd/files/Local%20Rules%20-%20Final%2012142020.pdf"
+   }
+  ],
+  "idd": [
+   {
+    "found_on": "https://www.id.uscourts.gov/clerks/rules_orders/Civil_Local_Rules.cfm?lni=317",
+    "part": "civil",
+    "title": "Civil Local Rules (complete rule packet)",
+    "url": "https://www.id.uscourts.gov/content_fetcher/print_pdf_packet.cfml?Court_Unit=District&Content_Type=Rule&Content_Sub_Type=Civil"
+   },
+   {
+    "found_on": "https://www.id.uscourts.gov/clerks/rules_orders/Criminal_Local_Rules.cfm?lni=318",
+    "part": "criminal",
+    "title": "Criminal Local Rules (complete rule packet)",
+    "url": "https://www.id.uscourts.gov/content_fetcher/print_pdf_packet.cfml?Court_Unit=District&Content_Type=Rule&Content_Sub_Type=Criminal"
+   },
+   {
+    "found_on": "https://www.id.uscourts.gov/clerks/rules_orders/Patent_Local_Rules.cfm?lni=319",
+    "part": "patent",
+    "title": "Patent Local Rules (complete rule packet)",
+    "url": "https://www.id.uscourts.gov/content_fetcher/print_pdf_packet.cfml?Court_Unit=District&Content_Type=Rule&Content_Sub_Type=Patent"
+   }
+  ],
+  "ilcd": [
+   {
+    "found_on": "https://www.ilcd.uscourts.gov/local-rules",
+    "part": "combined",
+    "title": "Local Rules (September 2026 version)",
+    "url": "https://www.ilcd.uscourts.gov/sites/ilcd/files/September%202026%20Version%20.pdf"
+   }
+  ],
+  "ilnd": [
+   {
+    "found_on": "https://www.ilnd.uscourts.gov/",
+    "part": "combined",
+    "title": "Local Rules (PDF version)",
+    "url": "https://www.ilnd.uscourts.gov/_assets/_documents/_rules/LRRULES.pdf"
+   }
+  ],
+  "ilsd": [
+   {
+    "found_on": "https://www.ilsd.uscourts.gov/",
+    "part": "combined",
+    "title": "Local Rules and Appendices",
+    "url": "https://www.ilsd.uscourts.gov/sites/ilsd/files/LocalRules.pdf"
+   }
+  ],
+  "innd": [
+   {
+    "found_on": "https://www.innd.uscourts.gov/",
+    "part": "combined",
+    "title": "Local Rules",
+    "url": "https://www.innd.uscourts.gov/sites/innd/files/CurrentLocalRules.pdf"
+   }
+  ],
+  "insd": [
+   {
+    "found_on": "https://www.insd.uscourts.gov/local-rules",
+    "part": "combined",
+    "title": "Local Rules (July 1, 2026)",
+    "url": "https://www.insd.uscourts.gov/sites/insd/files/Local%20Rules%207-1-26.pdf"
+   }
+  ],
+  "ksd": [
+   {
+    "found_on": "https://www.ksd.uscourts.gov/",
+    "part": "combined",
+    "title": "Local Rules (effective April 1, 2026)",
+    "url": "https://www.ksd.uscourts.gov/sites/ksd/files/MASTER%20COPY%20updated%204%2027%2026.pdf"
+   }
+  ],
+  "kyed": [
+   {
+    "found_on": "https://www.kyed.uscourts.gov/local-rules",
+    "part": "civil",
+    "title": "Joint Local Rules of Civil Practice (August 2026)",
+    "url": "https://www.kyed.uscourts.gov/sites/kyed/files/KY_Amended_Civil_Rules_August_2026.pdf"
+   },
+   {
+    "found_on": "https://www.kyed.uscourts.gov/local-rules",
+    "part": "criminal",
+    "title": "Joint Local Rules of Criminal Practice (August 2026)",
+    "url": "https://www.kyed.uscourts.gov/sites/kyed/files/KY_Amended_Criminal_Rules_August_2026.pdf"
+   }
+  ],
+  "kywd": [
+   {
+    "found_on": "https://www.kywd.uscourts.gov/court-info/local-rules-and-orders/local-rules",
+    "part": "civil",
+    "title": "Joint Local Rules of Civil Practice (August 2026)",
+    "url": "https://www.kywd.uscourts.gov/sites/kywd/files/local_rules/KY_Amended_Civil_Rules_August_2026-1.pdf"
+   },
+   {
+    "found_on": "https://www.kywd.uscourts.gov/court-info/local-rules-and-orders/local-rules",
+    "part": "criminal",
+    "title": "Joint Local Rules of Criminal Practice (August 2026)",
+    "url": "https://www.kywd.uscourts.gov/sites/kywd/files/local_rules/KY_Amended_Criminal_Rules_August_2026-1.pdf"
+   }
+  ],
+  "laed": [
+   {
+    "found_on": "https://www.laed.uscourts.gov/attorney-information/rules-and-orders/local-rules",
+    "part": "civil",
+    "title": "Local Civil Rules",
+    "url": "https://www.laed.uscourts.gov/sites/default/files/local_rules/2022%20CIVIL%20RULES%20LAED%20w%20Amendment%202%204%2025.pdf"
+   },
+   {
+    "found_on": "https://www.laed.uscourts.gov/attorney-information/rules-and-orders/local-rules",
+    "part": "criminal",
+    "title": "Local Criminal Rules",
+    "url": "https://www.laed.uscourts.gov/sites/default/files/local_rules/2022%20CRIMINAL%20RULES%20LAED%20w%20Amendments%203.1.22.pdf"
+   }
+  ],
+  "lamd": [
+   {
+    "found_on": "https://www.lamd.uscourts.gov/court-info/local-rules-and-orders",
+    "part": "combined",
+    "title": "Local Rules",
+    "url": "https://www.lamd.uscourts.gov/sites/default/files/pdf/2022%20Local%20Rules%20Revisions%208-18-2022.pdf"
+   }
+  ],
+  "lawd": [
+   {
+    "found_on": "https://www.lawd.uscourts.gov/local-rules",
+    "part": "combined",
+    "title": "Local Rules (current version)",
+    "url": "https://www.lawd.uscourts.gov/sites/lawd/files/UPLOADS/CivilCrimLRs.Barbara.updated.Ver3.030526.ppm.pdf"
+   }
+  ],
+  "mad": [
+   {
+    "found_on": "https://www.mad.uscourts.gov/",
+    "part": "combined",
+    "title": "Combined Local Rules",
+    "url": "https://www.mad.uscourts.gov/general/pdf/local-rules/Combined%20Local%20Rules.pdf"
+   }
+  ],
+  "mdd": [
+   {
+    "found_on": "https://www.mdd.uscourts.gov/",
+    "part": "combined",
+    "title": "Local Rules",
+    "url": "https://www.mdd.uscourts.gov/sites/mdd/files/LocalRules.pdf"
+   }
+  ],
+  "med": [
+   {
+    "found_on": "https://www.med.uscourts.gov/",
+    "part": "combined",
+    "title": "Local Rules (effective April 1, 2025)",
+    "url": "https://www.med.uscourts.gov/sites/med/files/LocalRules.pdf"
+   }
+  ],
+  "mied": [
+   {
+    "found_on": "https://www.mied.uscourts.gov/attorneys/localrules",
+    "part": "combined",
+    "title": "Local Rules (PDF version)",
+    "url": "https://www.mied.uscourts.gov/pdffiles/localRulesPackage.pdf"
+   }
+  ],
+  "miwd": [
+   {
+    "found_on": "https://www.miwd.uscourts.gov/",
+    "part": "combined",
+    "title": "Local Rules of Practice and Procedure",
+    "url": "https://www.miwd.uscourts.gov/sites/miwd/files/MIWD_Local_Rules.pdf"
+   }
+  ],
+  "mnd": [
+   {
+    "found_on": "https://www.mnd.uscourts.gov/",
+    "part": "combined",
+    "title": "Local Rules (complete)",
+    "url": "https://www.mnd.uscourts.gov/sites/mnd/files/Local-Rules-Master.pdf"
+   }
+  ],
+  "moed": [
+   {
+    "found_on": "https://www.moed.uscourts.gov/local-rules",
+    "part": "combined",
+    "title": "Local Rules",
+    "url": "https://www.moed.uscourts.gov/sites/moed/files/CMECF_localrule.pdf"
+   }
+  ],
+  "mowd": [
+   {
+    "found_on": "https://www.mow.uscourts.gov/",
+    "part": "combined",
+    "title": "Local Rules (complete copy)",
+    "url": "https://www.mow.uscourts.gov/sites/mow/files/DC-Local_Rules.pdf"
+   }
+  ],
+  "msnd": [
+   {
+    "found_on": "https://www.msnd.uscourts.gov/forms/uniform-local-civil-rules",
+    "part": "civil",
+    "title": "Local Uniform Civil Rules of the Northern and Southern Districts of Mississippi (2024)",
+    "url": "https://www.msnd.uscourts.gov/sites/msnd/files/forms/2024%20Local%20Civil%20Rules%20MSSD%20MSND_12.1.2024.pdf"
+   }
+  ],
+  "mssd": [
+   {
+    "found_on": "https://www.mssd.uscourts.gov/court-info/local-rules-and-orders/local-rules",
+    "part": "civil",
+    "title": "Local Uniform Civil Rules of the Northern and Southern Districts of Mississippi (2024)",
+    "url": "https://www.mssd.uscourts.gov/sites/mssd/files/2024%20Local%20Civil%20Rules%20MSSD%20MSND%20%28.pdf%29.pdf"
+   }
+  ],
+  "mtd": [
+   {
+    "found_on": "https://www.mtd.uscourts.gov/local-rules",
+    "part": "combined",
+    "title": "Local Rules (December 1, 2025)",
+    "url": "https://www.mtd.uscourts.gov/sites/mtd/files/LocalRules_12012025.pdf"
+   }
+  ],
+  "nced": [
+   {
+    "found_on": "https://www.nced.uscourts.gov/rules/default.aspx",
+    "part": "civil",
+    "title": "Local Civil Rules (2023)",
+    "url": "https://www.nced.uscourts.gov/pdfs/Local%20Civil%20Rules%202023.pdf"
+   },
+   {
+    "found_on": "https://www.nced.uscourts.gov/rules/default.aspx",
+    "part": "criminal",
+    "title": "Local Criminal Rules (2023)",
+    "url": "https://www.nced.uscourts.gov/pdfs/Local%20Criminal%20Rules%202023.pdf"
+   },
+   {
+    "found_on": "https://www.nced.uscourts.gov/rules/default.aspx",
+    "part": "patent",
+    "title": "Local Patent Rules (January 2019)",
+    "url": "https://www.nced.uscourts.gov/pdfs/Local%20Patent%20Rules%20January%202019.pdf"
+   }
+  ],
+  "ncmd": [
+   {
+    "found_on": "https://www.ncmd.uscourts.gov/",
+    "part": "civil",
+    "title": "Local Civil Rules (June 1, 2026)",
+    "url": "https://www.ncmd.uscourts.gov/sites/ncmd/files/mdnc%20local%20civil%20rules%2020260601.pdf"
+   },
+   {
+    "found_on": "https://www.ncmd.uscourts.gov/",
+    "part": "criminal",
+    "title": "Local Criminal Rules (June 1, 2026)",
+    "url": "https://www.ncmd.uscourts.gov/sites/ncmd/files/mdnc%20local%20criminal%20rules%2020260601.pdf"
+   }
+  ],
+  "ncwd": [
+   {
+    "found_on": "https://www.ncwd.uscourts.gov/",
+    "part": "combined",
+    "title": "Local Rules (effective December 1, 2022)",
+    "url": "https://www.ncwd.uscourts.gov/sites/default/files/local_rules/Revised%20Local%20Rules%20120122.pdf"
+   }
+  ],
+  "ndd": [
+   {
+    "found_on": "https://www.ndd.uscourts.gov/",
+    "part": "combined",
+    "title": "Local Rules",
+    "url": "https://www.ndd.uscourts.gov/lci/Local_Rules.pdf"
+   }
+  ],
+  "ned": [
+   {
+    "found_on": "https://www.ned.uscourts.gov/media/2065",
+    "part": "civil",
+    "title": "Nebraska Civil Rules (NECivR, 2025)",
+    "url": "https://www.ned.uscourts.gov/sites/default/files/documents/NECivR.2025.pdf"
+   },
+   {
+    "found_on": "https://www.ned.uscourts.gov/media/2798",
+    "part": "criminal",
+    "title": "Nebraska Criminal Rules (NECrimR, 2025)",
+    "url": "https://www.ned.uscourts.gov/sites/default/files/documents/NECrimR.2025.pdf"
+   }
+  ],
+  "nhd": [
+   {
+    "found_on": "https://www.nhd.uscourts.gov/",
+    "part": "combined",
+    "title": "Local Rules (2025)",
+    "url": "https://www.nhd.uscourts.gov/pdf/2025%20Local%20Rules%20-%20District%20of%20New%20Hampshire.pdf"
+   }
+  ],
+  "njd": [
+   {
+    "found_on": "https://www.njd.uscourts.gov/local-rules-and-appendices",
+    "part": "combined",
+    "title": "Local Rules",
+    "url": "https://www.njd.uscourts.gov/sites/njd/files/CompleteLocalRules.pdf"
+   },
+   {
+    "found_on": "https://www.njd.uscourts.gov/court-info/local-rules-and-orders",
+    "part": "patent",
+    "title": "Local Patent Rules",
+    "url": "https://www.njd.uscourts.gov/sites/njd/files/PatentRules.pdf"
+   }
+  ],
+  "nmd": [
+   {
+    "found_on": "https://www.nmd.uscourts.gov/court-info/local-rules-and-orders/local-rules",
+    "part": "civil",
+    "title": "Local Rules of Civil Procedure",
+    "url": "https://www.nmd.uscourts.gov/sites/nmd/files/local_rules/Local%20Rules%20of%20Civil%20Procedure%20Adopted%20October%201%2C%202020_0.pdf"
+   },
+   {
+    "found_on": "https://www.nmd.uscourts.gov/court-info/local-rules-and-orders/local-rules",
+    "part": "criminal",
+    "title": "Local Rules of Criminal Procedure (adopted November 14, 2025)",
+    "url": "https://www.nmd.uscourts.gov/sites/nmd/files/local_rules/Local%20Rules%20of%20Criminal%20Procedure%20Adopted%20November%2014%2C%202025.pdf"
+   }
+  ],
+  "nmid": [
+   {
+    "found_on": "https://www.nmid.uscourts.gov/local-and-federal-rules",
+    "part": "civil",
+    "title": "Local Rules",
+    "url": "https://www.nmid.uscourts.gov/sites/nmid/files/documents/localrules/LR20171101.pdf"
+   },
+   {
+    "found_on": "https://www.nmid.uscourts.gov/local-and-federal-rules",
+    "part": "criminal",
+    "title": "Criminal Local Rules",
+    "url": "https://www.nmid.uscourts.gov/sites/nmid/files/documents/localrules/LCRR20040101.pdf"
+   }
+  ],
+  "nyed": [
+   {
+    "found_on": "https://www.nysd.uscourts.gov/rules",
+    "note": "Joint rules published on the Southern District's website; the Eastern District's federal-court-rules page refers to the joint rules.",
+    "part": "combined",
+    "title": "Local Rules of the United States District Courts for the Southern and Eastern Districts of New York (joint local rules, as amended)",
+    "url": "https://www.nysd.uscourts.gov/sites/default/files/local_rules/2026-01-02%20-%20EDNY%20and%20SDNY%20Joint%20Local%20Rules%20As%20Amended.pdf"
+   }
+  ],
+  "nynd": [
+   {
+    "found_on": "https://www.nynd.uscourts.gov/local-rules",
+    "part": "combined",
+    "title": "Local Rules (2025)",
+    "url": "https://www.nynd.uscourts.gov/sites/nynd/files/local_rules/Local%20Rules%202025_Final_0.pdf"
+   }
+  ],
+  "nysd": [
+   {
+    "found_on": "https://www.nysd.uscourts.gov/rules",
+    "part": "combined",
+    "title": "Local Rules of the United States District Courts for the Southern and Eastern Districts of New York (joint local rules, as amended)",
+    "url": "https://www.nysd.uscourts.gov/sites/default/files/local_rules/2026-01-02%20-%20EDNY%20and%20SDNY%20Joint%20Local%20Rules%20As%20Amended.pdf"
+   }
+  ],
+  "nywd": [
+   {
+    "found_on": "https://www.nywd.uscourts.gov/rules-individual-local-federal",
+    "part": "civil",
+    "title": "Local Rules of Civil Procedure (effective January 15, 2026)",
+    "url": "https://www.nywd.uscourts.gov/sites/nywd/files/2025%20Local%20Rules%20of%20Civil%20Procedure%20FINAL%20-%20v3-1.pdf"
+   },
+   {
+    "found_on": "https://www.nywd.uscourts.gov/rules-individual-local-federal",
+    "part": "criminal",
+    "title": "Local Rules of Criminal Procedure",
+    "url": "https://www.nywd.uscourts.gov/sites/nywd/files/26-4-7%20CLERICAL%20CORRECTIONS%20TO%202024%20Local%20Rules%20of%20Criminal%20Procedure.docx%20-%20Signed.pdf"
+   },
+   {
+    "found_on": "https://www.nywd.uscourts.gov/rules-individual-local-federal",
+    "part": "patent",
+    "title": "Local Patent Rules (effective January 1, 2024)",
+    "url": "https://www.nywd.uscourts.gov/sites/nywd/files/2023%20Local%20Patent%20Rules%20-%20FINAL%20.pdf"
+   }
+  ],
+  "ohnd": [
+   {
+    "found_on": "https://www.ohnd.uscourts.gov/local-civil-rules",
+    "part": "civil",
+    "title": "Local Civil Rules (April 10, 2026)",
+    "url": "https://www.ohnd.uscourts.gov/sites/ohnd/files/Civil%20Rules%204-10-2026.pdf"
+   },
+   {
+    "found_on": "https://www.ohnd.uscourts.gov/local-criminal-rules",
+    "part": "criminal",
+    "title": "Local Criminal Rules (October 1, 2024)",
+    "url": "https://www.ohnd.uscourts.gov/sites/ohnd/files/Full_Criminal_Rules_10-1-2024.pdf"
+   }
+  ],
+  "ohsd": [
+   {
+    "found_on": "https://www.ohsd.uscourts.gov/local-rules",
+    "part": "combined",
+    "title": "Local Rules as amended October 21, 2024",
+    "url": "https://www.ohsd.uscourts.gov/sites/ohsd/files//2024-10-21%20Local%20Rules.pdf"
+   }
+  ],
+  "oked": [
+   {
+    "found_on": "https://www.oked.uscourts.gov/",
+    "part": "civil",
+    "title": "Local Civil Rules",
+    "url": "https://www.oked.uscourts.gov/sites/oked/files/Local_Civil_Rules.pdf"
+   },
+   {
+    "found_on": "https://www.oked.uscourts.gov/",
+    "part": "criminal",
+    "title": "Local Criminal Rules",
+    "url": "https://www.oked.uscourts.gov/sites/oked/files/Local_Criminal_Rules.pdf"
+   }
+  ],
+  "oknd": [
+   {
+    "found_on": "https://www.oknd.uscourts.gov/",
+    "part": "combined",
+    "title": "Local Rules (July 31, 2026)",
+    "url": "https://www.oknd.uscourts.gov/sites/default/files/2026-07-31%20Local%20Rules.pdf"
+   }
+  ],
+  "okwd": [
+   {
+    "found_on": "https://www.okwd.uscourts.gov/",
+    "part": "combined",
+    "title": "Local Rules (2026)",
+    "url": "https://www.okwd.uscourts.gov/sites/okwd/files/LocalRules2026.pdf"
+   }
+  ],
+  "ord": [
+   {
+    "format": "html_pages",
+    "found_on": "https://www.ord.uscourts.gov/index.php/rules-orders-and-notices/local-rules",
+    "part": "civil",
+    "title": "Local Rules of Civil Procedure",
+    "url": "https://www.ord.uscourts.gov/index.php/rules-orders-and-notices/local-rules/civil-procedure"
+   },
+   {
+    "format": "html_pages",
+    "found_on": "https://www.ord.uscourts.gov/index.php/rules-orders-and-notices/local-rules",
+    "part": "criminal",
+    "title": "Local Rules of Criminal Procedure",
+    "url": "https://www.ord.uscourts.gov/index.php/rules-orders-and-notices/local-rules/criminal-procedure"
+   }
+  ],
+  "paed": [
+   {
+    "found_on": "https://www.paed.uscourts.gov/",
+    "part": "civil",
+    "title": "Local Rules of Civil Procedure",
+    "url": "https://www.paed.uscourts.gov/sites/paed/files/documents/locrules/civil/cvrules.pdf"
+   },
+   {
+    "found_on": "https://www.paed.uscourts.gov/",
+    "part": "criminal",
+    "title": "Local Criminal Rules",
+    "url": "https://www.paed.uscourts.gov/sites/paed/files/documents/locrules/criminal/crrules.pdf"
+   }
+  ],
+  "pamd": [
+   {
+    "found_on": "https://www.pamd.uscourts.gov/",
+    "part": "combined",
+    "title": "Local Rules",
+    "url": "https://www.pamd.uscourts.gov/sites/pamd/files/LR120114.pdf"
+   }
+  ],
+  "pawd": [
+   {
+    "found_on": "https://www.pawd.uscourts.gov/",
+    "part": "combined",
+    "title": "Local Rules of Court",
+    "url": "https://www.pawd.uscourts.gov/sites/pawd/files/lrmanual20181101.pdf"
+   }
+  ],
+  "prd": [
+   {
+    "found_on": "https://www.prd.uscourts.gov/court-info/local-rules-and-orders",
+    "part": "combined",
+    "title": "Local Rules",
+    "url": "https://www.prd.uscourts.gov/sites/default/files/local_rules/Local%20Rules%2010-16-2024-amended-rule-83A.pdf"
+   }
+  ],
+  "rid": [
+   {
+    "found_on": "https://www.rid.uscourts.gov/",
+    "part": "combined",
+    "title": "Local Rules (approved December 2024)",
+    "url": "https://www.rid.uscourts.gov/sites/rid/files/documents/Approved%20Dec%202024%20Rules.pdf"
+   }
+  ],
+  "scd": [
+   {
+    "found_on": "https://www.scd.uscourts.gov/navtop/rules.asp",
+    "part": "civil",
+    "title": "Local Civil Rules",
+    "url": "https://www.scd.uscourts.gov/Rules/Civil%20Rules%20-%20Current.pdf"
+   },
+   {
+    "found_on": "https://www.scd.uscourts.gov/navtop/rules.asp",
+    "part": "criminal",
+    "title": "Local Criminal Rules",
+    "url": "https://www.scd.uscourts.gov/Rules/Criminal%20Rules%20-%20Current.pdf"
+   }
+  ],
+  "sdd": [
+   {
+    "found_on": "https://www.sdd.uscourts.gov/LocalRulesCivil",
+    "part": "civil",
+    "title": "Civil Local Rules (complete set)",
+    "url": "https://www.sdd.uscourts.gov/sites/sdd/files/Civil%20Local%20Rules%20-%20final%2C%20approved.pdf"
+   },
+   {
+    "found_on": "https://www.sdd.uscourts.gov/LocalRulesCriminal",
+    "part": "criminal",
+    "title": "Criminal Local Rules (complete set)",
+    "url": "https://www.sdd.uscourts.gov/sites/sdd/files/Criminal%20Local%20Rules%20-%20final%2C%20approved.pdf"
+   }
+  ],
+  "tned": [
+   {
+    "found_on": "https://www.tned.uscourts.gov/local-rules",
+    "part": "combined",
+    "title": "Local Rules (April 8, 2026 to present)",
+    "url": "https://www.tned.uscourts.gov/sites/tned/files/Local%20Rules_Active_2026.04.08%20to%20Present.pdf"
+   }
+  ],
+  "tnmd": [
+   {
+    "found_on": "https://www.tnmd.uscourts.gov/court-info/local-rules-and-orders/local-rules",
+    "part": "combined",
+    "title": "Local Rules of Court (2025 amendments)",
+    "url": "https://www.tnmd.uscourts.gov/sites/tnmd/files/2025.05.15%20TNMD%20Local%20Rules%20of%20Court%20-%202025%20amendments%20_0.pdf"
+   }
+  ],
+  "tnwd": [
+   {
+    "found_on": "https://www.tnwd.uscourts.gov/",
+    "part": "combined",
+    "title": "Local Rules (revised November 17, 2025)",
+    "url": "https://www.tnwd.uscourts.gov/sites/tnwd/files/Local%20Rules%20%E2%80%93%20Revised%2011.17.%202025%20%28Addition%20of%20LR%2043.1%28h%29%29.pdf"
+   }
+  ],
+  "txed": [
+   {
+    "found_on": "https://www.txed.uscourts.gov/?q=rules-and-orders",
+    "part": "combined",
+    "title": "Local Rules",
+    "url": "https://www.txed.uscourts.gov/?q=node/14056/attachment/newest"
+   }
+  ],
+  "txnd": [
+   {
+    "found_on": "https://www.txnd.uscourts.gov/rules-and-orders",
+    "part": "civil",
+    "title": "Local Civil Rules",
+    "url": "https://www.txnd.uscourts.gov/sites/default/files/documents/CIVRULES.pdf"
+   },
+   {
+    "found_on": "https://www.txnd.uscourts.gov/rules-and-orders",
+    "part": "criminal",
+    "title": "Local Criminal Rules",
+    "url": "https://www.txnd.uscourts.gov/sites/default/files/documents/CRIMRULES.pdf"
+   }
+  ],
+  "txsd": [
+   {
+    "found_on": "https://www.txs.uscourts.gov/page/local-federal-rules",
+    "part": "combined",
+    "title": "District Local Rules (March 2026)",
+    "url": "https://www.txs.uscourts.gov/sites/txs/files/LR_March_2026.pdf"
+   }
+  ],
+  "txwd": [
+   {
+    "found_on": "https://www.txwd.uscourts.gov/court-information/lcr-introduction/",
+    "note": "The court's page links the file name with spaces, which returns HTTP 404; the same upload is served under the hyphenated file name used here.",
+    "part": "combined",
+    "title": "Local Rules (complete copy)",
+    "url": "https://www.txwd.uscourts.gov/wp-content/uploads/2026/08/TXWD-Local-Rules-Full-Copy-081926.pdf"
+   }
+  ],
+  "utd": [
+   {
+    "found_on": "https://www.utd.uscourts.gov/rules-practice",
+    "part": "civil",
+    "title": "Local Civil Rules (2025)",
+    "url": "https://www.utd.uscourts.gov/sites/utd/files/Civil%20Rules%20Final%202025.pdf"
+   },
+   {
+    "found_on": "https://www.utd.uscourts.gov/rules-practice",
+    "part": "criminal",
+    "title": "Local Criminal Rules (2025)",
+    "url": "https://www.utd.uscourts.gov/sites/utd/files/Criminal%20Rules%20Final%202025.pdf"
+   },
+   {
+    "found_on": "https://www.utd.uscourts.gov/rules-practice",
+    "part": "patent",
+    "title": "Local Patent Rules (2024)",
+    "url": "https://www.utd.uscourts.gov/sites/utd/files/Patent%20Rules%20Final%202024.pdf"
+   }
+  ],
+  "vaed": [
+   {
+    "found_on": "https://www.vaed.uscourts.gov/",
+    "part": "combined",
+    "title": "Local Rules (December 1, 2024)",
+    "url": "https://www.vaed.uscourts.gov/sites/vaed/files/Local%20Rules%20EDVA%20December%201%202024.pdf"
+   }
+  ],
+  "vawd": [
+   {
+    "found_on": "https://www.vawd.uscourts.gov/",
+    "part": "combined",
+    "title": "Local Rules",
+    "url": "https://www.vawd.uscourts.gov/sites/Public/assets/File/court/local_rules.pdf"
+   }
+  ],
+  "vid": [
+   {
+    "found_on": "https://www.vid.uscourts.gov/court-info/local-rules-and-orders/local-rules",
+    "part": "civil",
+    "title": "Local Rules of Civil Procedure (effective February 1, 2026)",
+    "url": "https://www.vid.uscourts.gov/sites/vid/files/local_rules/260130_Local%20Rules%20Civil%20Procedure_effective%202.1.26%5BECF%2010-1%5D.pdf"
+   },
+   {
+    "found_on": "https://www.vid.uscourts.gov/court-info/local-rules-and-orders/local-rules",
+    "part": "criminal",
+    "title": "Local Rules of Criminal Procedure (effective February 1, 2026)",
+    "url": "https://www.vid.uscourts.gov/sites/vid/files/local_rules/260130_Local%20Rules%20Criminal%20Procedure_effective%202.1.26%5BECF%2010-2%5D.pdf"
+   }
+  ],
+  "vtd": [
+   {
+    "found_on": "https://www.vtd.uscourts.gov/",
+    "part": "combined",
+    "title": "Local Rules of Procedure (April 20, 2026)",
+    "url": "https://www.vtd.uscourts.gov/sites/vtd/files/LocalRules-20260420.pdf"
+   }
+  ],
+  "waed": [
+   {
+    "found_on": "https://www.waed.uscourts.gov/",
+    "part": "civil",
+    "title": "Local Civil Rules (November 2025)",
+    "url": "https://www.waed.uscourts.gov/sites/cst/waed/files/local-rules/LocalCivilRules---November-2025.pdf"
+   },
+   {
+    "found_on": "https://www.waed.uscourts.gov/",
+    "part": "criminal",
+    "title": "Local Criminal Rules",
+    "url": "https://www.waed.uscourts.gov/sites/cst/waed/files/local-rules/LocalCriminalRules.pdf"
+   },
+   {
+    "found_on": "https://www.waed.uscourts.gov/",
+    "part": "patent",
+    "title": "Local Patent Rules",
+    "url": "https://www.waed.uscourts.gov/sites/cst/waed/files/local-rules/waed_patent_rules.pdf"
+   }
+  ],
+  "wawd": [
+   {
+    "found_on": "https://www.wawd.uscourts.gov/local-rules-and-orders",
+    "part": "civil",
+    "title": "Local Civil Rules (2026)",
+    "url": "https://www.wawd.uscourts.gov/sites/wawd/files/WAWD%20Local%20Civil%20Rules%20%282026%29%20-%20Clean.pdf"
+   },
+   {
+    "found_on": "https://www.wawd.uscourts.gov/local-rules-and-orders",
+    "part": "criminal",
+    "title": "Local Criminal Rules (2026)",
+    "url": "https://www.wawd.uscourts.gov/sites/wawd/files/Local%20Criminal%20Rules%20%282026%29%20WAWD%20Clean.pdf"
+   },
+   {
+    "found_on": "https://www.wawd.uscourts.gov/local-rules-and-orders",
+    "part": "patent",
+    "title": "Local Supplemental Patent Rules",
+    "url": "https://www.wawd.uscourts.gov/sites/wawd/files/LRPatentRules-Final.pdf"
+   }
+  ],
+  "wied": [
+   {
+    "found_on": "https://www.wied.uscourts.gov/local-rules-and-guidance",
+    "part": "combined",
+    "title": "Local Rules (amended July 29, 2026)",
+    "url": "https://www.wied.uscourts.gov/sites/wied/files/documents/Local%20Rules%202010-0201-Amended%202026-0729.pdf"
+   }
+  ],
+  "wiwd": [
+   {
+    "found_on": "https://www.wiwd.uscourts.gov/",
+    "part": "combined",
+    "title": "Local Rules",
+    "url": "https://www.wiwd.uscourts.gov/sites/default/files/Local_Rules.pdf"
+   }
+  ],
+  "wvnd": [
+   {
+    "found_on": "https://www.wvnd.uscourts.gov/",
+    "part": "combined",
+    "title": "Local Rules",
+    "url": "http://www.wvnd.uscourts.gov/sites/wvnd/files/NDWV%20Local%20Rules%202018%20MASTER.pdf"
+   }
+  ],
+  "wvsd": [
+   {
+    "found_on": "https://www.wvsd.uscourts.gov/court-info/local-rules-and-orders/local-rules",
+    "part": "combined",
+    "title": "Local Rules of Procedure (June 2017)",
+    "url": "https://www.wvsd.uscourts.gov/sites/wvsd/files/LocalRulesofProcedure-June2017.pdf"
+   }
+  ],
+  "wyd": [
+   {
+    "found_on": "https://www.wyd.uscourts.gov/",
+    "part": "civil",
+    "title": "Civil Local Rules (2022)",
+    "url": "https://www.wyd.uscourts.gov/sites/wyd/files/local_rules/2022%20Civil%20Local%20Rules%20-%20FINAL.pdf"
+   },
+   {
+    "found_on": "https://www.wyd.uscourts.gov/",
+    "part": "criminal",
+    "title": "Criminal Local Rules",
+    "url": "https://www.wyd.uscourts.gov/sites/wyd/files/localrules-cr.pdf"
+   }
+  ]
+ },
+ "skipped": {
+  "nvd": "robots.txt at www.nvd.uscourts.gov disallows automated access for all user agents; not fetched"
+ }
+}
