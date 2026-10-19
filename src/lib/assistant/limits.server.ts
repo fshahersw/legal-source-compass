@@ -10,6 +10,12 @@ export function clientKey(request: Request): string {
   );
 }
 
+/** True for browser requests made by another site (embedding or hotlinking); direct visits and this site's own requests pass. */
+export function crossSiteRequest(request: Request): boolean {
+  const site = request.headers.get("sec-fetch-site");
+  return !!site && site !== "same-origin" && site !== "none";
+}
+
 /** True when the client is under `max` requests in the last `windowMs`; records the request when allowed. */
 export function allow(key: string, max: number, windowMs: number, now = Date.now()): boolean {
   const recent = (windows.get(key) ?? []).filter((t) => now - t < windowMs);

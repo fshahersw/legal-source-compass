@@ -6,6 +6,9 @@
 import { restGet, rpcPost } from "@/lib/external/rest.server";
 import { queryPublishedDataset, searchPublishedCorpus } from "@/lib/external/catalog.reads.server";
 import { codeFile, searchCode } from "./codeIndex.server";
+import { publicUrl } from "@/lib/net/publicUrl";
+
+export { publicUrl };
 import type { AssistantSource } from "./protocol";
 
 export type ToolDefinition = {
@@ -143,32 +146,6 @@ async function timed<T>(ms: number, run: (signal: AbortSignal) => Promise<T>): P
   } finally {
     clearTimeout(timer);
   }
-}
-
-/** Only public http(s) URLs; literal private, loopback and link-local hosts are refused. */
-export function publicUrl(raw: string): URL | null {
-  let u: URL;
-  try {
-    u = new URL(raw);
-  } catch {
-    return null;
-  }
-  if (u.protocol !== "https:" && u.protocol !== "http:") return null;
-  if (u.username || u.password) return null;
-  const h = u.hostname.toLowerCase().replace(/^\[|\]$/g, "");
-  if (
-    h === "localhost" ||
-    h.endsWith(".localhost") ||
-    h.endsWith(".internal") ||
-    h.endsWith(".local") ||
-    /^(127\.|10\.|0\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(h) ||
-    h === "::1" ||
-    /^f[cd][0-9a-f]{2}:/.test(h) ||
-    /^fe80:/.test(h) ||
-    h === "metadata.google.internal"
-  )
-    return null;
-  return u;
 }
 
 const recordLink = (dataset: string, id: string) =>

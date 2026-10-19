@@ -36,6 +36,10 @@ import { Route as ApiAssistantTranscribeRouteImport } from './routes/api/assista
 import { Route as ApiBundlesRouteImport } from './routes/api/bundles'
 import { Route as ApiFilesRouteImport } from './routes/api/files'
 import { Route as ApiMatterPdfRouteImport } from './routes/api/matter-pdf'
+import { Route as ApiSourceBrowserRouteImport } from './routes/api/source-browser'
+import { Route as ApiSourceCheckRouteImport } from './routes/api/source-check'
+import { Route as ApiSourceFileRouteImport } from './routes/api/source-file'
+import { Route as ApiSourceTextRouteImport } from './routes/api/source-text'
 import { Route as CompaniesIndexRouteImport } from './routes/companies.index'
 import { Route as CompaniesCikRouteImport } from './routes/companies.$cik'
 import { Route as CompaniesPaymentsRouteImport } from './routes/companies.payments'
@@ -222,6 +226,26 @@ const ApiFilesRoute = ApiFilesRouteImport.update({
 const ApiMatterPdfRoute = ApiMatterPdfRouteImport.update({
   id: '/api/matter-pdf',
   path: '/api/matter-pdf',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSourceBrowserRoute = ApiSourceBrowserRouteImport.update({
+  id: '/api/source-browser',
+  path: '/api/source-browser',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSourceCheckRoute = ApiSourceCheckRouteImport.update({
+  id: '/api/source-check',
+  path: '/api/source-check',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSourceFileRoute = ApiSourceFileRouteImport.update({
+  id: '/api/source-file',
+  path: '/api/source-file',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSourceTextRoute = ApiSourceTextRouteImport.update({
+  id: '/api/source-text',
+  path: '/api/source-text',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CompaniesIndexRoute = CompaniesIndexRouteImport.update({
@@ -512,6 +536,10 @@ export interface FileRoutesByFullPath {
   '/api/bundles': typeof ApiBundlesRoute
   '/api/files': typeof ApiFilesRoute
   '/api/matter-pdf': typeof ApiMatterPdfRoute
+  '/api/source-browser': typeof ApiSourceBrowserRoute
+  '/api/source-check': typeof ApiSourceCheckRoute
+  '/api/source-file': typeof ApiSourceFileRoute
+  '/api/source-text': typeof ApiSourceTextRoute
   '/companies/$cik': typeof CompaniesCikRoute
   '/companies/payments': typeof CompaniesPaymentsRoute
   '/courts/$id': typeof CourtsIdRoute
@@ -593,6 +621,10 @@ export interface FileRoutesByTo {
   '/api/bundles': typeof ApiBundlesRoute
   '/api/files': typeof ApiFilesRoute
   '/api/matter-pdf': typeof ApiMatterPdfRoute
+  '/api/source-browser': typeof ApiSourceBrowserRoute
+  '/api/source-check': typeof ApiSourceCheckRoute
+  '/api/source-file': typeof ApiSourceFileRoute
+  '/api/source-text': typeof ApiSourceTextRoute
   '/companies/$cik': typeof CompaniesCikRoute
   '/companies/payments': typeof CompaniesPaymentsRoute
   '/courts/$id': typeof CourtsIdRoute
@@ -674,6 +706,10 @@ export interface FileRoutesById {
   '/api/bundles': typeof ApiBundlesRoute
   '/api/files': typeof ApiFilesRoute
   '/api/matter-pdf': typeof ApiMatterPdfRoute
+  '/api/source-browser': typeof ApiSourceBrowserRoute
+  '/api/source-check': typeof ApiSourceCheckRoute
+  '/api/source-file': typeof ApiSourceFileRoute
+  '/api/source-text': typeof ApiSourceTextRoute
   '/companies/$cik': typeof CompaniesCikRoute
   '/companies/payments': typeof CompaniesPaymentsRoute
   '/courts/$id': typeof CourtsIdRoute
@@ -757,6 +793,10 @@ export interface FileRouteTypes {
     | '/api/bundles'
     | '/api/files'
     | '/api/matter-pdf'
+    | '/api/source-browser'
+    | '/api/source-check'
+    | '/api/source-file'
+    | '/api/source-text'
     | '/companies/$cik'
     | '/companies/payments'
     | '/courts/$id'
@@ -838,6 +878,10 @@ export interface FileRouteTypes {
     | '/api/bundles'
     | '/api/files'
     | '/api/matter-pdf'
+    | '/api/source-browser'
+    | '/api/source-check'
+    | '/api/source-file'
+    | '/api/source-text'
     | '/companies/$cik'
     | '/companies/payments'
     | '/courts/$id'
@@ -918,6 +962,10 @@ export interface FileRouteTypes {
     | '/api/bundles'
     | '/api/files'
     | '/api/matter-pdf'
+    | '/api/source-browser'
+    | '/api/source-check'
+    | '/api/source-file'
+    | '/api/source-text'
     | '/companies/$cik'
     | '/companies/payments'
     | '/courts/$id'
@@ -1000,6 +1048,10 @@ export interface RootRouteChildren {
   ApiBundlesRoute: typeof ApiBundlesRoute
   ApiFilesRoute: typeof ApiFilesRoute
   ApiMatterPdfRoute: typeof ApiMatterPdfRoute
+  ApiSourceBrowserRoute: typeof ApiSourceBrowserRoute
+  ApiSourceCheckRoute: typeof ApiSourceCheckRoute
+  ApiSourceFileRoute: typeof ApiSourceFileRoute
+  ApiSourceTextRoute: typeof ApiSourceTextRoute
   CompaniesCikRoute: typeof CompaniesCikRoute
   CompaniesPaymentsRoute: typeof CompaniesPaymentsRoute
   CourtsIdRoute: typeof CourtsIdRoute
@@ -1241,6 +1293,34 @@ declare module '@tanstack/react-router' {
       path: '/api/matter-pdf'
       fullPath: '/api/matter-pdf'
       preLoaderRoute: typeof ApiMatterPdfRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/source-browser': {
+      id: '/api/source-browser'
+      path: '/api/source-browser'
+      fullPath: '/api/source-browser'
+      preLoaderRoute: typeof ApiSourceBrowserRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/source-check': {
+      id: '/api/source-check'
+      path: '/api/source-check'
+      fullPath: '/api/source-check'
+      preLoaderRoute: typeof ApiSourceCheckRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/source-file': {
+      id: '/api/source-file'
+      path: '/api/source-file'
+      fullPath: '/api/source-file'
+      preLoaderRoute: typeof ApiSourceFileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/source-text': {
+      id: '/api/source-text'
+      path: '/api/source-text'
+      fullPath: '/api/source-text'
+      preLoaderRoute: typeof ApiSourceTextRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/companies/': {
@@ -1663,6 +1743,10 @@ const rootRouteChildren: RootRouteChildren = {
   ApiBundlesRoute: ApiBundlesRoute,
   ApiFilesRoute: ApiFilesRoute,
   ApiMatterPdfRoute: ApiMatterPdfRoute,
+  ApiSourceBrowserRoute: ApiSourceBrowserRoute,
+  ApiSourceCheckRoute: ApiSourceCheckRoute,
+  ApiSourceFileRoute: ApiSourceFileRoute,
+  ApiSourceTextRoute: ApiSourceTextRoute,
   CompaniesCikRoute: CompaniesCikRoute,
   CompaniesPaymentsRoute: CompaniesPaymentsRoute,
   CourtsIdRoute: CourtsIdRoute,

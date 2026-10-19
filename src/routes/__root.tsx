@@ -13,6 +13,7 @@ import { useEffect, type ReactNode } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
 import { AssistantPanel } from "@/components/assistant/AssistantPanel";
+import { SourceViewer } from "@/components/sourceViewer/SourceViewer";
 import { AtlasProvider } from "@/lib/atlas/store";
 import { CorpusProvider } from "@/lib/corpus/store";
 import { CorpusAccessGate } from "@/components/auth/CorpusAccessGate";
@@ -154,6 +155,7 @@ function RootComponent() {
           <CorpusProvider>
             {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
             <Outlet />
+            <SourceViewer />
             <AssistantPanel />
             <Toaster position="bottom-right" />
           </CorpusProvider>
