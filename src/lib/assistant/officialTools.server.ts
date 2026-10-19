@@ -1,6 +1,7 @@
 /**
- * Assistant tools over official public sources that need no key: the Federal Register, the eCFR, SEC EDGAR full-text search and
- * openFDA. Each returns bounded, structured results with the official URL to cite; nothing is cached or stored.
+ * Assistant tools over official public sources that need no key (the Federal Register, the eCFR, SEC EDGAR full-text search and
+ * openFDA) and a keyed full-text search of court filings. Each returns bounded, structured results with the URL to cite; nothing
+ * is cached or stored.
  */
 import type { ToolDefinition, ToolOutcome } from "./tools.server";
 
@@ -107,6 +108,22 @@ export const OFFICIAL_TOOL_DEFINITIONS: ToolDefinition[] = [
         limit: { type: "integer", minimum: 1, maximum: 10 },
       },
       required: ["endpoint"],
+    },
+  },
+  {
+    name: "search_court_filings",
+    description:
+      'Full-text search of the text of federal and state court filings (complaints, motions, orders, exhibits) across all courts. Syntax: words must all appear; "exact phrase"; or; -exclude; term* for word endings; /n, /s, /p for proximity. Optional court ids (comma-separated, e.g. ilnd,cand), filed date range and sort by recency. Returns document titles, case titles, courts, filing dates, matching snippets and the document page.',
+    input_schema: {
+      type: "object",
+      properties: {
+        query: { type: "string" },
+        courts: { type: "string" },
+        filed_after: { type: "string", description: "YYYY-MM-DD" },
+        filed_before: { type: "string", description: "YYYY-MM-DD" },
+        sort: { type: "string", enum: ["relevance", "recency"] },
+      },
+      required: ["query"],
     },
   },
 ];
@@ -368,6 +385,82 @@ async function fdaTool(input: Record<string, unknown>): Promise<ToolOutcome> {
   };
 }
 
+/** Full-text filing search; needs DOCKETBIRD_API_KEY. Several courts are searched one request each and merged. */
+async function courtFilingsTool(input: Record<string, unknown>): Promise<ToolOutcome> {
+  const key = process.env["DOCKETBIRD_API_KEY"]?.trim();
+  if (!key) throw new Error("court filing search is not configured");
+  const query = str(input["query"], 500).trim();
+  if (!query) throw new Error("query required");
+  const sort = input["sort"] === "recency" ? "recency" : "relevance";
+  const base = new URLSearchParams({ q: query, size: "15", sort });
+  const after = str(input["filed_after"], 10);
+  const before = str(input["filed_before"], 10);
+  if (DATE.test(after)) base.set("filed_after", after);
+  if (DATE.test(before)) base.set("filed_before", before);
+  const courts = str(input["courts"], 120)
+    .split(",")
+    .map((c) => c.trim().toLowerCase())
+    .filter((c) => /^[a-z0-9]{2,12}$/.test(c))
+    .slice(0, 4);
+  const requests = (courts.length ? courts : [""]).map(async (court) => {
+    const params = new URLSearchParams(base);
+    if (court) params.set("court_id", court);
+    const { status, body } = await getJson(
+      `https://api.docketbird.com/documents/search?${params}`,
+      {
+        authorization: `Bearer ${key}`,
+      },
+    );
+    if (status !== 200) throw new Error(`court filing search failed (${status})`);
+    return ((body as { data?: unknown })?.data ?? {}) as {
+      found?: number;
+      next_cursor?: string | null;
+      documents?: Record<string, unknown>[];
+    };
+  });
+  const pages = await Promise.all(requests);
+  let documents = pages.flatMap((page) => page.documents ?? []);
+  if (sort === "recency")
+    documents = documents.sort((a, b) =>
+      String(b["date_filed"] ?? "").localeCompare(String(a["date_filed"] ?? "")),
+    );
+  const found = pages.reduce((n, page) => n + (page.found ?? 0), 0);
+  const results = documents.slice(0, 15).map((d) => ({
+    document: str(d["document_title"], 300),
+    case: str(d["case_title"], 200),
+    case_id: str(d["case_id"], 80),
+    court: str(d["court_name"], 120) || str(d["court_id"], 20),
+    filed: str(d["date_filed"], 10) || null,
+    snippets: Array.isArray(d["snippets"])
+      ? (d["snippets"] as unknown[]).slice(0, 3).map((x) => plain(str(x, 600)))
+      : [],
+    url:
+      typeof d["canonical_url"] === "string" && /^https:\/\//.test(d["canonical_url"])
+        ? d["canonical_url"]
+        : null,
+  }));
+  return {
+    content: clip(
+      JSON.stringify({
+        found,
+        more: pages.some((page) => !!page.next_cursor),
+        note: "found can include restricted documents that are never returned",
+        results,
+      }),
+    ),
+    sources: results
+      .filter((r) => r.url)
+      .slice(0, 6)
+      .map((r) => ({
+        title: `${r.case}: ${r.document}`.slice(0, 200),
+        url: r.url!,
+        internal: false,
+      })),
+    label: "Searched court filings",
+    detail: `${query}${courts.length ? ` · ${courts.join(", ")}` : ""} · ${results.length} of ${found}`,
+  };
+}
+
 export const OFFICIAL_EXECUTORS: Record<
   string,
   (input: Record<string, unknown>) => Promise<ToolOutcome>
@@ -376,4 +469,5 @@ export const OFFICIAL_EXECUTORS: Record<
   search_ecfr: ecfrTool,
   search_sec_filings: secFilingsTool,
   search_fda: fdaTool,
+  search_court_filings: courtFilingsTool,
 };

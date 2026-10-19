@@ -20,11 +20,13 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe("official source tools", () => {
   it("are offered without keys and never name a model or tool vendor", () => {
-    const names = OFFICIAL_TOOL_DEFINITIONS.map((t) => t.name);
+    const names = OFFICIAL_TOOL_DEFINITIONS.map((t) => t.name).filter(
+      (n) => n !== "search_court_filings",
+    );
     expect(TOOL_DEFINITIONS.map((t) => t.name)).toEqual(expect.arrayContaining(names));
     expect(availableTools().map((t) => t.name)).toEqual(expect.arrayContaining(names));
     expect(JSON.stringify(OFFICIAL_TOOL_DEFINITIONS)).not.toMatch(
-      /anthropic|claude|openai|gpt|tavily|firecrawl|browser.?use/i,
+      /anthropic|claude|openai|gpt|tavily|firecrawl|browser.?use|docketbird/i,
     );
   });
 
@@ -198,5 +200,70 @@ describe("official source tools", () => {
     await expect(
       OFFICIAL_EXECUTORS["search_fda"]!({ endpoint: "drug/event", count: "a&limit=1000" }),
     ).rejects.toThrow(/count/);
+  });
+});
+
+describe("court filings search", () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("is offered only with its key", () => {
+    vi.stubEnv("DOCKETBIRD_API_KEY", "");
+    expect(availableTools().map((t) => t.name)).not.toContain("search_court_filings");
+    vi.stubEnv("DOCKETBIRD_API_KEY", "test-key");
+    expect(availableTools().map((t) => t.name)).toContain("search_court_filings");
+  });
+
+  it("searches each named court, merges by recency and strips snippet markup", async () => {
+    vi.stubEnv("DOCKETBIRD_API_KEY", "test-key");
+    const calls: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init?: RequestInit) => {
+        calls.push(String(url));
+        expect((init?.headers as Record<string, string>)["authorization"]).toBe("Bearer test-key");
+        const court = new URL(String(url)).searchParams.get("court_id");
+        const date = court === "ilnd" ? "2026-01-02" : "2026-03-04";
+        return new Response(
+          JSON.stringify({
+            status: "success",
+            data: {
+              found: 2,
+              next_cursor: null,
+              documents: [
+                {
+                  document_title: "Complaint",
+                  case_title: `Case in ${court}`,
+                  case_id: `${court}-1:2026-cv-1`,
+                  court_id: court,
+                  date_filed: date,
+                  snippets: ["<em>Hair</em> relaxer &amp; cancer"],
+                  canonical_url: `https://filings.example/${court}`,
+                },
+              ],
+            },
+          }),
+          { status: 200 },
+        );
+      }),
+    );
+    const out = await OFFICIAL_EXECUTORS["search_court_filings"]!({
+      query: '"hair relaxer"',
+      courts: "ilnd, cand, bad court!",
+      filed_after: "2026-01-01",
+      sort: "recency",
+    });
+    expect(calls).toHaveLength(2);
+    const first = new URL(calls[0]!);
+    expect(first.searchParams.get("q")).toBe('"hair relaxer"');
+    expect(first.searchParams.get("filed_after")).toBe("2026-01-01");
+    expect(first.searchParams.get("sort")).toBe("recency");
+    const parsed = JSON.parse(out.content) as {
+      found: number;
+      results: { court: string; filed: string; snippets: string[] }[];
+    };
+    expect(parsed.found).toBe(4);
+    expect(parsed.results.map((r) => r.filed)).toEqual(["2026-03-04", "2026-01-02"]);
+    expect(parsed.results[0]!.snippets[0]).toBe("Hair relaxer & cancer");
+    expect(out.label).toBe("Searched court filings");
   });
 });

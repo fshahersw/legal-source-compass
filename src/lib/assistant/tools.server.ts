@@ -446,6 +446,7 @@ export function availableTools(): ToolDefinition[] {
     if (t.name === "web_search") return !!env("TAVILY_API_KEY");
     if (t.name === "read_web_page") return !!env("FIRECRAWL_API_KEY");
     if (t.name === "search_case_law") return !!env("COURTLISTENER_API_KEY");
+    if (t.name === "search_court_filings") return !!env("DOCKETBIRD_API_KEY");
     return true;
   });
 }
