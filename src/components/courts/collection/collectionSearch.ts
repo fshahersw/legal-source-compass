@@ -4,7 +4,14 @@
  * leaves no parameter behind.
  */
 
-export const COLLECTION_TABS = ["dockets", "citations", "cited", "disclosures", "schema"] as const;
+export const COLLECTION_TABS = [
+  "dockets",
+  "citations",
+  "cited",
+  "unmatched",
+  "disclosures",
+  "schema",
+] as const;
 export type CollectionTab = (typeof COLLECTION_TABS)[number];
 
 export const DOCKET_VIEWS = ["states", "nos", "causes"] as const;
@@ -58,6 +65,7 @@ const VIEW_KEYS: Record<string, readonly Key[]> = {
   cited: ["q", "sort", "court", "decade", "sel"],
   disclosures: ["q", "sort", "level"],
   schema: ["q", "sort", "group", "bulk", "loaded", "sel"],
+  unmatched: ["q", "sort", "group", "sel"],
 };
 
 const text = (v: unknown, max = 80) => {
@@ -74,6 +82,8 @@ export const NOS_RECORD_ID = /^(nos:\d{3}|group:[a-z_]{2,40})$/;
 export const CAUSE_RECORD_ID = /^cause:\d{3}$/;
 export const COURT_ID = /^[A-Za-z0-9]{2,24}$/;
 export const TABLE_NAME = /^[a-z][a-z0-9_]{1,80}$/;
+/** A clb_unmatched_citations record id: a reporter slug or a citing court. */
+export const UNMATCHED_RECORD_ID = /^(reporter:[a-z0-9-]{1,50}|court:[A-Za-z0-9]{2,24})$/;
 
 /** The row id a view's `sel` may hold. */
 function selPattern(tab: CollectionTab, view: string | undefined): RegExp {
@@ -81,6 +91,7 @@ function selPattern(tab: CollectionTab, view: string | undefined): RegExp {
     return view === "nos" ? NOS_RECORD_ID : view === "causes" ? CAUSE_RECORD_ID : STATE_CODE;
   if (tab === "citations") return COURT_ID;
   if (tab === "cited") return /^\d{1,10}$/;
+  if (tab === "unmatched") return UNMATCHED_RECORD_ID;
   return TABLE_NAME;
 }
 

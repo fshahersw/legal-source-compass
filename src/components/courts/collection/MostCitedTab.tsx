@@ -43,6 +43,7 @@ import {
   type TabProps,
 } from "./CollectionParts";
 import { CourtShareList, YearBars } from "./CollectionVisuals";
+import { ParentheticalsBlock } from "./ParentheticalsBlock";
 
 export function MostCitedTab({ search, onSearch }: TabProps) {
   const query = useQuery(topCitedQuery);
@@ -353,6 +354,7 @@ function CitedDetail({
       >
         {(d) => <CitedDetailBody row={row} d={d} />}
       </QueryPanel>
+      <ParentheticalsBlock clusterId={row.clusterId} caseName={row.caseName} />
     </div>
   );
 }

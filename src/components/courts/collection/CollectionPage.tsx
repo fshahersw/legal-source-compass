@@ -1,11 +1,12 @@
 import { useRef, type KeyboardEvent } from "react";
-import { Database, FileText, Layers, Network, Scale } from "lucide-react";
+import { Database, FileText, Layers, Network, Scale, Unlink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CitationsTab } from "./CitationsTab";
 import { DisclosuresTab } from "./DisclosuresTab";
 import { DocketsTab } from "./DocketsTab";
 import { MostCitedTab } from "./MostCitedTab";
 import { SchemaTab } from "./SchemaTab";
+import { UnmatchedTab } from "./UnmatchedTab";
 import {
   COLLECTION_TABS,
   patchSearch,
@@ -19,6 +20,7 @@ const TABS: { id: CollectionTab; label: string; Icon: typeof Layers }[] = [
   { id: "dockets", label: "Docket collection", Icon: Layers },
   { id: "citations", label: "Citations", Icon: Network },
   { id: "cited", label: "Most cited", Icon: Scale },
+  { id: "unmatched", label: "Unresolved citations", Icon: Unlink },
   { id: "disclosures", label: "Disclosures", Icon: FileText },
   { id: "schema", label: "Data coverage", Icon: Database },
 ];
@@ -103,6 +105,8 @@ export function CollectionPage({
           <CitationsTab search={search} onSearch={onSearch} />
         ) : tab === "cited" ? (
           <MostCitedTab search={search} onSearch={onSearch} />
+        ) : tab === "unmatched" ? (
+          <UnmatchedTab search={search} onSearch={onSearch} />
         ) : tab === "disclosures" ? (
           <DisclosuresTab search={search} onSearch={onSearch} />
         ) : (
