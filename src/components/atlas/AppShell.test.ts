@@ -140,7 +140,8 @@ describe("AppShell primary sections", () => {
     ["/courts/ned", "States & courts", "true"],
     ["/law", "Law & regulation", "page"],
     ["/companies/payments", "Law & regulation", "true"],
-    ["/sources/library", "Sources", "page"],
+    ["/sources", "Sources", "page"],
+    ["/sources/library", "Sources", "true"],
     ["/sources/catalog", "Sources", "true"],
     ["/limitations", "Time limits", "page"],
   ])("%s lights %s (aria-current=%s) in the sidebar and the mobile bar", (path, label, current) => {

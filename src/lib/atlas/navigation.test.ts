@@ -9,12 +9,7 @@ import {
 } from "./navigation";
 describe("state-first navigation", () => {
   it("starts at the state map and has four clear primary destinations", () => {
-    expect(PRIMARY_NAVIGATION.map((x) => x.to)).toEqual([
-      "/",
-      "/law",
-      "/limitations",
-      "/sources/library",
-    ]);
+    expect(PRIMARY_NAVIGATION.map((x) => x.to)).toEqual(["/", "/law", "/limitations", "/sources"]);
   });
   it("keeps courts and judges within geographic navigation", () => {
     for (const path of ["/", "/places/NE", "/courts/ned", "/judges/123"])
@@ -139,6 +134,7 @@ describe("active section tab", () => {
     ["/companies/0001326801", "/companies"],
     ["/companies/payments", "/companies/payments"],
     ["/agencies/fda", "/agencies"],
+    ["/sources", "/sources"],
     ["/sources/library", "/sources/library"],
     ["/search", null],
     ["/laws", null],

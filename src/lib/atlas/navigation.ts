@@ -9,7 +9,7 @@ export const PRIMARY_NAVIGATION: readonly NavigationItem[] = [
   { id: "states", to: "/", label: "States & courts", icon: "map" },
   { id: "law", to: "/law", label: "Law & regulation", icon: "book" },
   { id: "time-limits", to: "/limitations", label: "Time limits", icon: "clock" },
-  { id: "sources", to: "/sources/library", label: "Sources", icon: "library" },
+  { id: "sources", to: "/sources", label: "Sources", icon: "library" },
 ];
 const at = (path: string, base: string) => path === base || path.startsWith(base + "/");
 /**
@@ -77,6 +77,7 @@ export function contextualNavigation(path: string): ContextNavigationItem[] {
       ];
     case "sources":
       return [
+        { to: "/sources", label: "Directory" },
         { to: "/sources/library", label: "Library" },
         { to: "/sources/catalog", label: "Catalog" },
         { to: "/sources/coverage", label: "Coverage" },
