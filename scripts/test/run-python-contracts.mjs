@@ -39,6 +39,7 @@ for (const suite of [
   { directory: "scripts/enrichment/judges_cross", modules: ["test_judges_cross"] },
   { directory: "scripts/enrichment/judge_xwalk", modules: ["test_judge_xwalk"] },
   { directory: "scripts/enrichment/firm_intel", modules: ["test_firm_intel"] },
+  { directory: "scripts/enrichment/scac", modules: ["test_scac"] },
   { directory: "scripts/enrichment/mdl_intel", modules: ["test_parsers"] },
   { directory: "scripts/enrichment/open_payments", modules: ["test_open_payments"] },
   { directory: "scripts/enrichment/cfpb", modules: ["test_cfpb"] },
