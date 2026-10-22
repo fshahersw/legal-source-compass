@@ -8,8 +8,14 @@ import { queryPublishedDataset, searchPublishedCorpus } from "@/lib/external/cat
 import { codeFile, searchCode } from "./codeIndex.server";
 import { publicUrl } from "@/lib/net/publicUrl";
 import { OFFICIAL_EXECUTORS, OFFICIAL_TOOL_DEFINITIONS } from "./officialTools.server";
+import {
+  CITATION_EXECUTORS,
+  CITATION_TOOL_DEFINITIONS,
+  caseLawConfigured,
+} from "./citationVerify.server";
+import { pageWindow } from "./textWindow";
 
-export { publicUrl };
+export { publicUrl, pageWindow };
 import type { AssistantSource } from "./protocol";
 
 export type ToolDefinition = {
@@ -141,6 +147,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     },
   },
   ...OFFICIAL_TOOL_DEFINITIONS,
+  ...CITATION_TOOL_DEFINITIONS,
 ];
 
 function env(name: string): string | null {
@@ -364,7 +371,6 @@ async function readWebPageTool(input: Record<string, unknown>): Promise<ToolOutc
   return pageOutcome(url, title, text, input);
 }
 
-const PAGE_WINDOW = 14000;
 const PAGE_TEXT_MAX = 1_500_000;
 const PAGE_TTL = 10 * 60 * 1000;
 const pageCache = new Map<string, { at: number; title: string; text: string }>();
@@ -380,36 +386,6 @@ function cachedPage(url: string): { title: string; text: string } | null {
   const hit = pageCache.get(url);
   if (!hit || Date.now() - hit.at > PAGE_TTL) return null;
   return hit;
-}
-
-/** One window of a long text, or the passages around each mention of `find` (at most eight, spaced apart). */
-export function pageWindow(text: string, start: number, find: string) {
-  const total = text.length;
-  const needle = find.trim().toLowerCase();
-  if (needle) {
-    const hay = text.toLowerCase();
-    const matches: { offset: number; excerpt: string }[] = [];
-    let occurrences = 0;
-    for (let at = hay.indexOf(needle); at >= 0; at = hay.indexOf(needle, at + needle.length)) {
-      occurrences += 1;
-      const last = matches[matches.length - 1];
-      if (matches.length < 8 && (!last || at - last.offset > 1200))
-        matches.push({
-          offset: at,
-          excerpt: text.slice(Math.max(0, at - 700), at + needle.length + 700),
-        });
-    }
-    return { total_chars: total, find: find.trim(), occurrences, matches };
-  }
-  const from = Math.min(Math.max(0, start), Math.max(0, total - 1));
-  const end = Math.min(total, from + PAGE_WINDOW);
-  return {
-    total_chars: total,
-    start: from,
-    end,
-    next_start: end < total ? end : null,
-    text: text.slice(from, end),
-  };
 }
 
 function pageOutcome(
@@ -512,6 +488,7 @@ const EXECUTORS: Record<
   read_web_page: readWebPageTool,
   search_case_law: caseLawTool,
   ...OFFICIAL_EXECUTORS,
+  ...CITATION_EXECUTORS,
 };
 
 /** Tools whose service keys are present; the model is only offered these. */
@@ -521,6 +498,9 @@ export function availableTools(): ToolDefinition[] {
     if (t.name === "read_web_page") return !!env("FIRECRAWL_API_KEY");
     if (t.name === "search_case_law") return !!env("COURTLISTENER_API_KEY");
     if (t.name === "search_court_filings") return !!env("DOCKETBIRD_API_KEY");
+    // verify_citations stays on without the key: statutes and regulations need none, and case citations then report
+    // that they could not be checked.
+    if (t.name === "get_opinion") return caseLawConfigured();
     return true;
   });
 }

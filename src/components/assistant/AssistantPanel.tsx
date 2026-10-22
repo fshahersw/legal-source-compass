@@ -32,6 +32,8 @@ import {
 import { cn } from "@/lib/utils";
 import { AssistantMarkdown } from "./AssistantMarkdown";
 import { ASK_EVENT, type AskDetail } from "./askAssistant";
+import { CitationCheckLine } from "./CitationCheck";
+import { citationMarks } from "./citationStatus";
 import { collectPageContext, suggestionsFor } from "./pageContext";
 import { useAssistantChat, type ChatMessage } from "./useAssistantChat";
 import { useDictation } from "./useDictation";
@@ -189,7 +191,7 @@ function Message({ m }: { m: ChatMessage }) {
           {m.content}
         </p>
       ) : m.content ? (
-        <AssistantMarkdown text={m.content} />
+        <AssistantMarkdown text={m.content} marks={citationMarks(m.citationCheck)} />
       ) : m.status === "streaming" && !m.steps.length ? (
         <p className="m-0 flex items-center gap-1.5 text-[12px] text-muted-foreground">
           <Loader2 className="size-3 animate-spin" aria-hidden /> Reading the page
@@ -197,6 +199,9 @@ function Message({ m }: { m: ChatMessage }) {
       ) : null}
       {m.status === "stopped" ? (
         <p className="m-0 mt-1 text-[11px] text-muted-foreground">Stopped.</p>
+      ) : null}
+      {m.status === "done" && m.citationCheck ? (
+        <CitationCheckLine check={m.citationCheck} />
       ) : null}
       <Sources m={m} />
     </div>

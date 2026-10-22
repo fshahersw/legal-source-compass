@@ -3,10 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   MEMORY_MESSAGES,
   rollingMemory,
+  sanitizeCitationCheck,
   type AssistantAttachment,
   type AssistantEvent,
   type AssistantSource,
   type AssistantStep,
+  type CitationCheck,
   type PageContext,
 } from "@/lib/assistant/protocol";
 
@@ -21,6 +23,8 @@ export type ChatMessage = {
   sources: AssistantSource[];
   notes: string[];
   attachments: { name: string; type: string }[];
+  /** Every citation found in the answer with its lookup status; absent when the answer cites none. */
+  citationCheck?: CitationCheck | null;
 };
 
 const STORE = "assistant:messages:v1";
@@ -36,7 +40,11 @@ function load(): ChatMessage[] {
             (m) =>
               m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string",
           )
-          .map((m) => ({ ...m, status: m.status === "streaming" ? "stopped" : m.status }))
+          .map((m) => ({
+            ...m,
+            status: m.status === "streaming" ? "stopped" : m.status,
+            citationCheck: sanitizeCitationCheck(m.citationCheck),
+          }))
           .slice(-MEMORY_MESSAGES)
       : [];
   } catch {
@@ -166,6 +174,7 @@ export function useAssistantChat() {
                 ...m,
                 content: event.text || m.content,
                 sources: event.sources,
+                citationCheck: sanitizeCitationCheck(event.citation_check),
                 status: "done",
               }));
             } else if (event.type === "error") {

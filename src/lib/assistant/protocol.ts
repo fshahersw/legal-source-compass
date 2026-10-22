@@ -79,12 +79,176 @@ export type AssistantStep = {
 };
 export type AssistantSource = { title: string; url: string; internal: boolean };
 
+/** What kind of legal citation was checked. */
+export type CitationKind = "case" | "usc" | "cfr" | "statute" | "public_law" | "federal_register";
+/**
+ * found: resolves to a real decision or provision (it does not show that the source supports the statement);
+ * ambiguous: matches more than one decision; not_found: no match at the source checked; unverified: could not be checked.
+ */
+export type CitationStatus = "found" | "ambiguous" | "not_found" | "unverified";
+export type CitationMatch = {
+  title: string | null;
+  court: string | null;
+  date: string | null;
+  clusterId: number | null;
+  url: string | null;
+};
+export type CheckedCitation = {
+  /** The citation as written in the checked text (whitespace collapsed). */
+  citation: string;
+  /** The form that was looked up, e.g. "576 U.S. 644" or "21 C.F.R. § 101.9". */
+  normalized: string;
+  kind: CitationKind;
+  status: CitationStatus;
+  /** Plain-language reason for the status, naming the source that was checked. */
+  reason: string;
+  /** Case name or the official heading, exactly as the source returned it. */
+  title: string | null;
+  court: string | null;
+  date: string | null;
+  clusterId: number | null;
+  /** The decision page or the official document the citation resolved to (or the lookup address when it did not). */
+  url: string | null;
+  /** Every link checked, labelled ("Decision", "eCFR (current)", "2025 annual edition", "Lookup"). */
+  links: { label: string; url: string }[];
+  /**
+   * Status the source returned for this citation: the case-law lookup's per-citation code (200 found, 300 several,
+   * 404 not found, 400 unknown reporter) or the official link service's HTTP status (302 resolved, 400 no match).
+   */
+  httpStatus: number | null;
+  /** Candidate decisions for an ambiguous case citation. */
+  matches: CitationMatch[];
+};
+/** The citation check attached to an answer: every citation found in the answer text, none dropped. */
+export type CitationCheck = {
+  total: number;
+  counts: Record<CitationStatus, number>;
+  items: CheckedCitation[];
+  /** Citations beyond the per-answer limit, counted but not listed or checked. */
+  more: number;
+  checkedAt: string;
+};
+
 export type AssistantEvent =
   | { type: "round"; round: number }
   | { type: "step"; step: AssistantStep }
   | { type: "delta"; round: number; text: string }
-  | { type: "done"; text: string; sources: AssistantSource[]; rounds: number }
+  | {
+      type: "done";
+      text: string;
+      sources: AssistantSource[];
+      rounds: number;
+      /** Present when the answer cites cases, statutes or regulations. */
+      citation_check?: CitationCheck | null;
+    }
   | { type: "error"; message: string };
+
+const CITATION_STATUSES: CitationStatus[] = ["found", "ambiguous", "not_found", "unverified"];
+const CITATION_KINDS: CitationKind[] = [
+  "case",
+  "usc",
+  "cfr",
+  "statute",
+  "public_law",
+  "federal_register",
+];
+const shortText = (v: unknown, n: number): string | null =>
+  typeof v === "string" && v.trim() ? v.slice(0, n) : null;
+const safeUrl = (v: unknown): string | null => {
+  if (typeof v !== "string") return null;
+  try {
+    const u = new URL(v);
+    return u.protocol === "https:" || u.protocol === "http:" ? u.toString() : null;
+  } catch {
+    return null;
+  }
+};
+const intOrNull = (v: unknown): number | null =>
+  typeof v === "number" && Number.isInteger(v) && v >= 0 ? v : null;
+
+function sanitizeMatch(raw: unknown): CitationMatch | null {
+  if (!raw || typeof raw !== "object") return null;
+  const m = raw as Record<string, unknown>;
+  return {
+    title: shortText(m["title"], 300),
+    court: shortText(m["court"], 200),
+    date: shortText(m["date"], 40),
+    clusterId: intOrNull(m["clusterId"]),
+    url: safeUrl(m["url"]),
+  };
+}
+
+/**
+ * A citation check read back from the stream or from browser storage: unknown shapes are dropped, text is bounded and only
+ * http(s) links survive. Counts are recomputed from the items so the summary always matches the list.
+ */
+export function sanitizeCitationCheck(raw: unknown): CitationCheck | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  if (!Array.isArray(r["items"])) return null;
+  const items: CheckedCitation[] = [];
+  for (const x of r["items"].slice(0, 120)) {
+    if (!x || typeof x !== "object") continue;
+    const c = x as Record<string, unknown>;
+    const citation = shortText(c["citation"], 400);
+    const status = CITATION_STATUSES.find((s) => s === c["status"]);
+    const kind = CITATION_KINDS.find((k) => k === c["kind"]);
+    if (!citation || !status || !kind) continue;
+    items.push({
+      citation,
+      normalized: shortText(c["normalized"], 400) ?? citation,
+      kind,
+      status,
+      reason: shortText(c["reason"], 400) ?? "",
+      title: shortText(c["title"], 300),
+      court: shortText(c["court"], 200),
+      date: shortText(c["date"], 40),
+      clusterId: intOrNull(c["clusterId"]),
+      url: safeUrl(c["url"]),
+      links: Array.isArray(c["links"])
+        ? c["links"]
+            .slice(0, 6)
+            .map((l) => {
+              const o = (l ?? {}) as Record<string, unknown>;
+              const url = safeUrl(o["url"]);
+              const label = shortText(o["label"], 60);
+              return url && label ? { label, url } : null;
+            })
+            .filter((l): l is { label: string; url: string } => !!l)
+        : [],
+      httpStatus: intOrNull(c["httpStatus"]),
+      matches: Array.isArray(c["matches"])
+        ? c["matches"]
+            .slice(0, 10)
+            .map(sanitizeMatch)
+            .filter((m): m is CitationMatch => !!m)
+        : [],
+    });
+  }
+  const counts = { found: 0, ambiguous: 0, not_found: 0, unverified: 0 };
+  for (const i of items) counts[i.status] += 1;
+  const more = intOrNull(r["more"]) ?? 0;
+  if (!items.length && !more) return null;
+  return {
+    total: items.length,
+    counts,
+    items,
+    more,
+    checkedAt: shortText(r["checkedAt"], 40) ?? "",
+  };
+}
+
+/** "4 citations checked · 1 not found" — the one-line summary shown under an answer and in the step list. */
+export function citationSummary(check: Pick<CitationCheck, "total" | "counts" | "more">): string {
+  const { total, counts, more } = check;
+  const parts = [`${total} citation${total === 1 ? "" : "s"} checked`];
+  if (counts.not_found) parts.push(`${counts.not_found} not found`);
+  if (counts.ambiguous) parts.push(`${counts.ambiguous} ambiguous`);
+  if (counts.unverified) parts.push(`${counts.unverified} could not be checked`);
+  if (parts.length === 1 && total) parts.push(total === 1 ? "found" : "all found");
+  if (more) parts.push(`${more} more not checked`);
+  return parts.join(" · ");
+}
 
 export function encodeEvent(event: AssistantEvent): string {
   return `data: ${JSON.stringify(event)}\n\n`;

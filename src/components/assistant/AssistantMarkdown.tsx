@@ -1,5 +1,7 @@
 import { useRouter } from "@tanstack/react-router";
 import { Fragment, type ReactNode } from "react";
+import { cn } from "@/lib/utils";
+import { CITATION_STATUS, type CitationMark } from "./citationStatus";
 import { safeHref } from "./markdownLinks";
 
 /** In-app link that navigates without a page load (modifier clicks open normally). */
@@ -20,16 +22,52 @@ function InternalLink({ href, children }: { href: string; children: ReactNode })
   );
 }
 
+/** Plain text with each unresolved citation wrapped in a visible mark that names its status; the text itself is unchanged. */
+function marked(text: string, marks: CitationMark[], key: string): ReactNode[] {
+  if (!marks.length || !text) return [text];
+  const out: ReactNode[] = [];
+  let rest = text;
+  let n = 0;
+  for (;;) {
+    let best: { at: number; mark: CitationMark } | null = null;
+    for (const mark of marks) {
+      const at = rest.indexOf(mark.text);
+      if (
+        at >= 0 &&
+        (!best || at < best.at || (at === best.at && mark.text.length > best.mark.text.length))
+      )
+        best = { at, mark };
+    }
+    if (!best) break;
+    if (best.at) out.push(rest.slice(0, best.at));
+    const status = CITATION_STATUS[best.mark.status];
+    out.push(
+      <span
+        key={`${key}-m${n++}`}
+        className={cn("underline decoration-wavy underline-offset-2", status.mark)}
+        title={`${status.label}: ${best.mark.reason}`}
+        data-citation-status={best.mark.status}
+      >
+        {best.mark.text}
+        <span className="sr-only"> (citation {status.label.toLowerCase()})</span>
+      </span>,
+    );
+    rest = rest.slice(best.at + best.mark.text.length);
+  }
+  if (rest) out.push(rest);
+  return out;
+}
+
 /** Inline markdown: `code`, **bold**, *italic*, [text](href). Everything else stays text; no HTML is interpreted. */
-function inline(text: string, key: string): ReactNode[] {
+function inline(text: string, key: string, marks: CitationMark[] = []): ReactNode[] {
   const out: ReactNode[] = [];
   const re = /(`[^`]+`)|(\*\*[^*]+\*\*)|(\*[^*\s][^*]*\*)|(\[([^\]]+)\]\(([^)\s]+)\))/g;
   let last = 0;
   let m: RegExpExecArray | null;
   let i = 0;
   while ((m = re.exec(text))) {
-    if (m.index > last) out.push(text.slice(last, m.index));
     const k = `${key}-${i++}`;
+    if (m.index > last) out.push(...marked(text.slice(last, m.index), marks, `${k}t`));
     if (m[1])
       out.push(
         <code key={k} className="rounded bg-muted px-1 py-px font-mono text-[0.85em]">
@@ -39,13 +77,13 @@ function inline(text: string, key: string): ReactNode[] {
     else if (m[2])
       out.push(
         <strong key={k} className="font-semibold">
-          {inline(m[2].slice(2, -2), k)}
+          {inline(m[2].slice(2, -2), k, marks)}
         </strong>,
       );
-    else if (m[3]) out.push(<em key={k}>{m[3].slice(1, -1)}</em>);
+    else if (m[3]) out.push(<em key={k}>{marked(m[3].slice(1, -1), marks, k)}</em>);
     else if (m[4]) {
       const href = safeHref(m[6]!);
-      const label = inline(m[5]!, k);
+      const label = inline(m[5]!, k, marks);
       if (!href) out.push(<Fragment key={k}>{label}</Fragment>);
       else if (href.internal)
         out.push(
@@ -68,7 +106,7 @@ function inline(text: string, key: string): ReactNode[] {
     }
     last = re.lastIndex;
   }
-  if (last < text.length) out.push(text.slice(last));
+  if (last < text.length) out.push(...marked(text.slice(last), marks, `${key}-end`));
   return out;
 }
 
@@ -79,8 +117,11 @@ const cells = (row: string) =>
     .split("|")
     .map((c) => c.trim());
 
-/** Block markdown: headings, lists, tables, code fences, quotes and paragraphs. */
-export function AssistantMarkdown({ text }: { text: string }) {
+/**
+ * Block markdown: headings, lists, tables, code fences, quotes and paragraphs. `marks` are citations the check could not
+ * resolve; they stay in the text and are marked where they appear.
+ */
+export function AssistantMarkdown({ text, marks = [] }: { text: string; marks?: CitationMark[] }) {
   const lines = text.replace(/\r/g, "").split("\n");
   const blocks: ReactNode[] = [];
   let i = 0;
@@ -107,7 +148,7 @@ export function AssistantMarkdown({ text }: { text: string }) {
     if (heading) {
       blocks.push(
         <p key={key} className="mt-1 font-semibold">
-          {inline(heading[2]!, key)}
+          {inline(heading[2]!, key, marks)}
         </p>,
       );
       i += 1;
@@ -129,7 +170,7 @@ export function AssistantMarkdown({ text }: { text: string }) {
               <tr className="border-b border-border">
                 {head.map((h, k) => (
                   <th key={k} className="px-1.5 py-1 font-semibold">
-                    {inline(h, `${key}h${k}`)}
+                    {inline(h, `${key}h${k}`, marks)}
                   </th>
                 ))}
               </tr>
@@ -139,7 +180,7 @@ export function AssistantMarkdown({ text }: { text: string }) {
                 <tr key={ri} className="border-b border-border/50 last:border-0">
                   {r.map((c, k) => (
                     <td key={k} className="px-1.5 py-1 align-top">
-                      {inline(c, `${key}r${ri}c${k}`)}
+                      {inline(c, `${key}r${ri}c${k}`, marks)}
                     </td>
                   ))}
                 </tr>
@@ -164,7 +205,7 @@ export function AssistantMarkdown({ text }: { text: string }) {
           className={`m-0 space-y-0.5 pl-4 ${ordered ? "list-decimal" : "list-disc"}`}
         >
           {items.map((it, k) => (
-            <li key={k}>{inline(it, `${key}-${k}`)}</li>
+            <li key={k}>{inline(it, `${key}-${k}`, marks)}</li>
           ))}
         </ListTag>,
       );
@@ -176,7 +217,7 @@ export function AssistantMarkdown({ text }: { text: string }) {
         quote.push(lines[i++]!.replace(/^>\s?/, ""));
       blocks.push(
         <blockquote key={key} className="border-l-2 border-border pl-2 text-muted-foreground">
-          {inline(quote.join(" "), key)}
+          {inline(quote.join(" "), key, marks)}
         </blockquote>,
       );
       continue;
@@ -198,7 +239,7 @@ export function AssistantMarkdown({ text }: { text: string }) {
     }
     blocks.push(
       <p key={key} className="m-0">
-        {inline(para.join(" "), key)}
+        {inline(para.join(" "), key, marks)}
       </p>,
     );
   }
