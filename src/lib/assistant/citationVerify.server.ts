@@ -79,8 +79,16 @@ const sleep = (ms: number, signal?: AbortSignal) =>
     );
   });
 
-const withTimeout = (signal: AbortSignal | undefined, ms: number) =>
-  signal ? AbortSignal.any([signal, AbortSignal.timeout(ms)]) : AbortSignal.timeout(ms);
+/** A signal that aborts with `signal` or after `ms`, without relying on AbortSignal.any (not in every edge runtime). */
+function withTimeout(signal: AbortSignal | undefined, ms: number): AbortSignal {
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  const timer = setTimeout(abort, ms);
+  controller.signal.addEventListener("abort", () => clearTimeout(timer), { once: true });
+  if (signal?.aborted) abort();
+  else signal?.addEventListener("abort", abort, { once: true });
+  return controller.signal;
+}
 
 /** Official hosts get at most two requests a second from this process. */
 async function politeFetch(url: string, init: RequestInit, signal?: AbortSignal) {
