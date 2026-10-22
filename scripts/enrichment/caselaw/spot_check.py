@@ -134,6 +134,7 @@ def main() -> int:
     record_fail_examples = []
     per_tier = collections.Counter()
     records_index = []  # (tier, shard path, line number)
+    notable = collections.defaultdict(list)  # opinion ids in rare categories, for review
     t0 = time.time()
     total_bytes = 0
     for e in shards:
@@ -167,6 +168,10 @@ def main() -> int:
                 record_fail_examples.append({"opinion_id": oid, "shard": e["path"], "errors": errs})
             per_tier[rec["tier"]] += 1
             records_index.append((rec["tier"], e["path"], i, oid))
+            for label, hit in (("pages_xml_harvard_text", rec["pages_source"] == "xml_harvard_text"), ("pages_aligned", rec["pages_source"] == "aligned"),
+                               ("no_text_field", rec["source_field"] is None), ("empty_rendering", rec["source_field"] is not None and not rec["text"])):
+                if hit and len(notable[label]) < 50:
+                    notable[label].append(oid)
         if n != e["opinions"]:
             shard_fail.append({"path": e["path"], "reason": f"{n} records, manifest says {e['opinions']}"})
     verify_s = time.time() - t0
@@ -234,7 +239,7 @@ def main() -> int:
     report = {
         "checked_at": et.now(), "extractor": et.VERSION, "shards": len(shards), "downloaded_bytes": total_bytes, "opinions": len(seen),
         "per_tier": dict(per_tier), "shard_failures": shard_fail, "record_failures": dict(record_fail), "record_failure_examples": record_fail_examples,
-        "duplicate_opinions": dup, "verify_seconds": round(verify_s, 1), "api": api,
+        "duplicate_opinions": dup, "verify_seconds": round(verify_s, 1), "notable_opinions": dict(notable), "api": api,
     }
     et.write_json(os.path.join(et.WORK, "verify_report.json"), report)
     fails = len(shard_fail) + sum(record_fail.values()) + dup + api["mismatch_unexplained"]

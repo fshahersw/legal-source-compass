@@ -527,7 +527,8 @@ class ResumeTests(unittest.TestCase):
 
     def setUp(self):
         self.saved = {k: getattr(et, k) for k in ("WORK", "SHARDS", "CHECKPOINT", "MANIFEST", "UNITS_DIR", "RUNS", "SEGMENT_MB", "INPUT_BYTES",
-                                                  "UNIT_SEGMENTS", "SHARD_MAX", "BATCH_BYTES", "MAX_PENDING", "segment_reader", "Selection")}
+                                                  "UNIT_SEGMENTS", "SHARD_MAX", "BATCH_BYTES", "MAX_PENDING", "segment_reader", "Selection",
+                                                  "verify_input")}
         self.saved_storage = store.Storage
         self.bucket = FakeBucket()
 
@@ -555,6 +556,7 @@ class ResumeTests(unittest.TestCase):
         et.Selection = lambda: FakeSelection(sel)
         bucket = self.bucket
         store.Storage = lambda: fake_storage(bucket)
+        et.verify_input = lambda: None  # offline: the synthetic stream stands in for the pinned bulk file
 
     def run_once(self, limit_mb=None):
         args = argparse.Namespace(limit_mb=limit_mb, procs=2, workers=1, upload_threads=2, min_free_gb=0.0, no_upload=False)

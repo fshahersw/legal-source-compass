@@ -53,8 +53,14 @@ them as one stream). Content is deterministic for a given input, selection and E
 thresholds that reset at every unit, gzip mtime 0), so a rerun of a unit reproduces byte-identical shards.
 
 Why units: the CSV interleaves all courts (each 1/64 of the file holds 70-150 of the selected courts), so a shard per
-court would have to stay open for the whole run (about 25 GB compressed) while the shared disk has a few GB to spare.
-Per-unit shards keep at most about two units of output on local disk.
+court would have to stay open for the whole run (about 28 GB compressed) while the shared disk has a few GB to spare.
+Per-unit shards keep at most about two units of output on local disk (trial: up to 1.7 GB). The price is many small
+objects: almost every group occurs in every unit (trial: 430 shards in unit 0, median 0.5 MB, largest 52 MB). A later
+compaction can concatenate a group's unit shards byte for byte (gzip members need no recompression) if larger objects
+are wanted.
+
+The input is pinned (INPUT_BYTES, INPUT_ETAG, checked with a HEAD request at the start of every run): unit starts and
+shard bytes are only reproducible for the same file.
 
 Storage and resume:
   * each closed shard is uploaded by a background thread (store.py: upload, whole-object readback, SHA-256 compare),
@@ -68,7 +74,10 @@ Storage and resume:
     partial unit, an older extractor version) are replaced, anything else is refused. No opinion is in two shards
     of the current version.
   * --limit-mb N reads only the first N MB of the compressed file (pbz2's limit); the unit cut by the limit is
-    recorded as "partial" and its shards as partial_unit=true, so the full run redoes that unit and replaces them.
+    recorded as "partial" and the last part of each of its groups as partial_unit=true (a part closed by size holds
+    the same records in every run), so the full run redoes that unit and replaces what changed.
+  * readback uses a unique query parameter: authenticated reads pass through a CDN cache that served an object's
+    previous bytes after an overwrite (observed 2026-10-22), which would otherwise hide or fake a mismatch.
 
 Commands for the full run (after review):
   cd scripts/enrichment/caselaw
@@ -500,6 +509,18 @@ def input_identity() -> dict:
             "units": -(-segments // UNIT_SEGMENTS)}
 
 
+def verify_input() -> None:
+    """Refuse to run when the bulk file's size or ETag differ from the pinned values: unit starts and shard bytes are
+    only reproducible for the exact same input."""
+    import requests
+
+    r = requests.head(URL, headers={"User-Agent": "legal-source-compass research (notreelai@gmail.com)"}, timeout=60, allow_redirects=True)
+    size = int(r.headers.get("Content-Length", "-1"))
+    etag = r.headers.get("ETag")
+    if r.status_code != 200 or size != INPUT_BYTES or etag != INPUT_ETAG:
+        raise PipelineError(f"{FILE} is not the pinned input (HTTP {r.status_code}, {size} bytes, ETag {etag})")
+
+
 def load_checkpoint(path: str | None = None, identity: dict | None = None) -> dict:
     path = path or CHECKPOINT
     identity = identity or input_identity()
@@ -705,6 +726,7 @@ class Run:
         summary = {"run_id": self.run_id, "started_at": now(), "limit_mb": args.limit_mb, "version": VERSION, "sessions": []}
         ok = False
         try:
+            verify_input()
             if not args.no_upload:
                 import store
 
