@@ -4,10 +4,17 @@ README
 ======
 Pipeline (no database tables, search, UI or publishing in this stage):
 
+    cd scripts/enrichment/caselaw
     python3 -I -B select_tiers.py                 # selection.parquet + selection_report.json (local DuckDB copies)
-    . private/scratch/env.sh && python3 -I -B extract_text.py run [--limit-mb N] [--procs 3] [--workers 4]
+    python3 -I -B extract_text.py run [--limit-mb N] [--procs 3] [--workers 4]
     python3 -I -B extract_text.py status          # checkpoint, units, manifest summary
-    . private/scratch/env.sh && python3 -I -B spot_check.py ...    # API comparison + shard verification
+    python3 -I -B extract_text.py report          # per-tier counts, sizes, gzip ratio, throughput -> work/extract_report.json
+    python3 -I -B spot_check.py [--sample 20]     # re-verify every stored shard + compare a sample with the API
+    python3 -B -m unittest -v test_caselaw        # offline tests
+
+Storage credentials (EXTERNAL_SUPABASE_URL / EXTERNAL_SUPABASE_KEY) are taken from the environment or, when unset, read
+from private/scratch/env.sh into the process by store.load_env_file(); the API key for spot_check.py comes from
+private/scratch/secrets.env (COURTLISTENER_API_KEY). Nothing secret is printed or written.
 
 Input: https://com-courtlistener-storage.s3-us-west-2.amazonaws.com/bulk-data/opinions-2026-09-30.csv.bz2
 (55,252,643,429 bytes, one bzip2 stream). It is never stored: HTTP ranges -> parallel bzip2 block decoding
@@ -65,8 +72,9 @@ Storage and resume:
 
 Commands for the full run (after review):
   cd scripts/enrichment/caselaw
-  . ../../../private/scratch/env.sh && nohup python3 -I -B extract_text.py run --procs 3 --workers 4 > ../../../private/build/caselaw/work/run.log 2>&1 &
-  (the same command resumes after any stop; `python3 -I -B extract_text.py status` shows where it is)
+  nohup python3 -I -B extract_text.py run --procs 3 --workers 4 >> ../../../private/build/caselaw/work/run.log 2>&1 &
+  (the same command resumes after any stop, starting at the first unit that is not complete; `extract_text.py status`
+  shows where it is; `report` and `spot_check.py` afterwards)
 """
 from __future__ import annotations
 
@@ -104,7 +112,7 @@ BATCH_BYTES = 8_000_000  # record bytes per worker task for one group
 MAX_PENDING = 384_000_000  # record bytes waiting in the main process across groups -> flush every group
 MAX_RECORD = 1_500_000_000
 GZIP_LEVEL = 6
-EXTRACTOR = "caselaw-extract/1"
+EXTRACTOR = "caselaw-extract/2"  # 2: star-pagination spans and page-label links count as xml_harvard page markers
 VERSION = EXTRACTOR + "+" + html_text.RENDERER
 KEY_PREFIX = f"caselaw/courtlistener/{SNAPSHOT}"
 API_URL = "https://www.courtlistener.com/api/rest/v4/opinions/{}/"
@@ -921,6 +929,8 @@ def status() -> int:
         "next_unit": first_open_unit(ck),
         "manifest_keys": len(latest),
         "manifest_states": dict(by_state),
+        # objects whose newest manifest line is from another extractor version (a later run replaces or supersedes them)
+        "keys_from_other_versions": sum(1 for e in latest.values() if e.get("extractor") != VERSION),
         "stored_bytes": sum(e["bytes"] for e in latest.values()),
         "stored_opinions": sum(e["opinions"] for e in latest.values()),
         "readback_failures": sum(1 for e in latest.values() if not e.get("readback_ok")),
@@ -928,6 +938,66 @@ def status() -> int:
         "free_gb": round(shutil.disk_usage(WORK).free / 1e9, 1),
     }
     print(json.dumps(out, indent=1))
+    return 0
+
+
+def report() -> int:
+    """Aggregate the unit statistics of the current extractor version, the run log and the manifest into
+    work/extract_report.json (counts per tier, raw vs text size, gzip ratio, throughput, upload speed, projections)."""
+    ck = load_checkpoint()
+    agg = new_stats()
+    units = []
+    for u, s in sorted(ck["units"].items(), key=lambda x: int(x[0])):
+        p = os.path.join(UNITS_DIR, f"u{int(u):04d}.json")
+        if s.get("extractor") != VERSION or not os.path.exists(p):
+            continue
+        with open(p) as h:
+            ur = json.load(h)
+        st = ur["stats"]
+        for k, v in st.items():
+            if isinstance(v, dict):
+                agg[k].update(v)
+            else:
+                agg[k] += v
+        units.append({"unit": int(u), "status": s["status"], "records": ur["records"], "selected": ur["selected"], "shards": ur["shards"],
+                      "gzip_bytes": st["gzip_bytes"], "seconds": ur["seconds"]})
+    runs = []
+    if os.path.exists(RUNS):
+        with open(RUNS) as h:
+            runs = [json.loads(line) for line in h if line.strip()]
+    sessions = [s for r in runs if r.get("version") == VERSION for s in r.get("sessions", [])]
+    comp = sum(s["compressed_bytes_read"] for s in sessions)
+    secs = sum(s["seconds"] for s in sessions)
+    covered_mb = 0.0
+    for s in sessions:
+        start_mb = s["start"]["segment"] * SEGMENT_MB
+        end_mb = (s.get("last_segment") or 0) * SEGMENT_MB + SEGMENT_MB
+        covered_mb += max(0, end_mb - start_mb)
+    up_b = sum(r.get("upload_bytes", 0) for r in runs if r.get("version") == VERSION)
+    up_s = sum(r.get("upload_seconds", 0) for r in runs if r.get("version") == VERSION)
+    rb_s = sum(r.get("readback_seconds", 0) for r in runs if r.get("version") == VERSION)
+    man = {k: v[-1] for k, v in manifest_keys().items()}
+    cur = [e for e in man.values() if e.get("extractor") == VERSION]
+    out = {
+        "extractor": VERSION, "units": units, "opinions": agg["opinions"], "by_tier": dict(agg["by_tier"]), "by_source_field": dict(agg["by_source_field"]),
+        "raw_bytes": agg["raw_bytes"], "text_chars": agg["text_chars"], "json_bytes": agg["json_bytes"], "gzip_bytes": agg["gzip_bytes"],
+        "raw_bytes_by_tier": dict(agg["raw_bytes_by_tier"]), "text_chars_by_tier": dict(agg["text_chars_by_tier"]),
+        "gzip_over_json": round(agg["gzip_bytes"] / agg["json_bytes"], 4) if agg["json_bytes"] else None,
+        "gzip_over_raw": round(agg["gzip_bytes"] / agg["raw_bytes"], 4) if agg["raw_bytes"] else None,
+        "text_chars_over_raw_bytes": round(agg["text_chars"] / agg["raw_bytes"], 4) if agg["raw_bytes"] else None,
+        "no_text": agg["no_text"], "empty_text": agg["empty_text"], "blocked": agg["blocked"], "pages_source": dict(agg["pages_source"]),
+        "citations": agg["citations"], "no_link_citations": agg["no_link_citations"], "cluster_mismatch": agg["cluster_mismatch"],
+        "unknown_tags": dict(agg["unknown_tags"]), "stray_lt": agg["stray_lt"], "skipped_script_style": agg["skipped_script_style"], "img": agg["img"],
+        "sessions": len(sessions), "compressed_bytes_downloaded": comp, "compressed_mb_covered": covered_mb, "session_seconds": round(secs, 1),
+        "download_mb_s": round(comp / secs / 1e6, 2) if secs else None, "input_mb_s": round(covered_mb / secs, 2) if secs else None,
+        "decompressed_bytes": sum(s["decompressed_bytes"] for s in sessions),
+        "upload_bytes": up_b, "upload_mb_s": round(up_b / up_s / 1e6, 2) if up_s else None, "readback_mb_s": round(up_b / rb_s / 1e6, 2) if rb_s else None,
+        "stored_shards": len(cur), "stored_bytes": sum(e["bytes"] for e in cur), "stored_opinions": sum(e["opinions"] for e in cur),
+        "manifest_states": dict(collections.Counter(e["state"] for e in cur)),
+        "readback_failures": sum(1 for e in cur if not e.get("readback_ok")),
+    }
+    write_json(os.path.join(WORK, "extract_report.json"), out)
+    print(json.dumps(out, indent=1, default=str))
     return 0
 
 
@@ -942,9 +1012,12 @@ def main() -> int:
     r.add_argument("--min-free-gb", type=float, default=3.5, help="pause (then stop) when free disk falls below this")
     r.add_argument("--no-upload", action="store_true", help="write local shards only (testing); units are not marked complete")
     sub.add_parser("status", help="checkpoint and manifest summary")
+    sub.add_parser("report", help="aggregate unit statistics, throughput and upload speed into work/extract_report.json")
     a = ap.parse_args()
     if a.cmd == "status":
         return status()
+    if a.cmd == "report":
+        return report()
     try:
         Run(a).run()
     except BaseException:  # noqa: BLE001 - daemon decoder threads can keep the interpreter alive after an error

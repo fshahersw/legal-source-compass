@@ -25,8 +25,9 @@ html_with_citations) the cited opinion id N, the cluster id taken from its ``<a 
 link when present, and the [start, end) code-point offsets of the anchor text in the rendered text.
 ``class="citation no-link"`` spans (citations CourtListener could not resolve) carry no id and are only counted.
 
-Page markers: Harvard ``<page-number citation-index="1" label="232">*232</page-number>`` and Columbia
-``<span class="star-pagination" citation-index="1" label="274">*274</span>`` are inline text and are also reported
+Page markers: Harvard ``<page-number citation-index="1" label="232">*232</page-number>``, Columbia
+``<span class="star-pagination" citation-index="1" label="274">*274</span>`` and Caselaw Access Project
+``<a class="page-label" data-citation-index="1" data-label="150">*150</a>`` are inline text and are also reported
 with the offset of their marker text. ``paginate()`` decides, per opinion, where the xml_harvard page breaks sit in
 the chosen text (see its docstring).
 """
@@ -202,8 +203,8 @@ class Rendered:
 
 def _page_attrs(attrs: str) -> tuple[str, int | None]:
     at = attrs_of(attrs)
-    idx = at.get("citation-index", "").strip()
-    return at.get("label", "").strip(), int(idx) if idx.isdigit() else None
+    idx = (at.get("citation-index") or at.get("data-citation-index") or "").strip()
+    return (at.get("label") or at.get("data-label") or "").strip(), int(idx) if idx.isdigit() else None
 
 
 def render(markup: str) -> Rendered:
@@ -217,6 +218,8 @@ def render(markup: str) -> Rendered:
     open_spans: list[dict] = []  # captures closed by a </span> at their recorded depth
     open_pagenum: list[dict] = []  # Harvard <page-number> captures
     span_depth = 0
+    open_links: list[dict] = []  # page-label <a> captures closed by an </a> at their recorded depth
+    a_depth = 0
     pre_stack: list[bool] = []  # one entry per open <pre>: True when class="inline"
     pre_depth = 0
     pos = 0
@@ -312,12 +315,24 @@ def render(markup: str) -> Rendered:
                 waiting.append(c)
             continue
         if tag == "a":
-            if not closing:
+            if closing:
+                if open_links and open_links[-1]["depth"] == a_depth:
+                    close_capture(open_links.pop())
+                a_depth = max(a_depth - 1, 0)
+            else:
+                a_depth += 1
+                a = m.group("attrs")
                 cite = next((c for c in reversed(open_spans) if c["kind"] == "cite"), None)
                 if cite is not None and cite["cluster_id"] is None:
-                    hm = OPINION_HREF.match(attrs_of(m.group("attrs")).get("href", ""))
+                    hm = OPINION_HREF.match(attrs_of(a).get("href", ""))
                     if hm:
                         cite["cluster_id"] = int(hm.group(1))
+                if "page-label" in a and "page-label" in attrs_of(a).get("class", "").split():
+                    # Caselaw Access Project page link: <a class="page-label" data-label="150" ...>*150</a>
+                    label, idx = _page_attrs(a)
+                    c = {"kind": "page", "label": label, "index": idx, "start": None, "depth": a_depth}
+                    open_links.append(c)
+                    waiting.append(c)
             continue
         if tag == "br":
             out.br()
@@ -357,6 +372,8 @@ def render(markup: str) -> Rendered:
         close_capture(open_spans.pop())
     while open_pagenum:
         close_capture(open_pagenum.pop())
+    while open_links:
+        close_capture(open_links.pop())
     cites.sort(key=lambda c: (c["start"], c["end"]))
     pages.sort(key=lambda p: p["offset"])
     return Rendered(out.value(), cites, pages, stats)
@@ -370,12 +387,26 @@ def render_field(field: str, value: str) -> Rendered:
 
 
 # ------------------------------------------------------------------------------------------------ star pagination
-HARVARD_PAGE = re.compile(r"<page-number\b([^>]*)>", re.I)
+HARVARD_PAGE = re.compile(r"<(page-number|span|a)\b([^>]*)>", re.I)
 
 
 def harvard_page_labels(xml: str) -> list[tuple[str, int | None]]:
-    """(label, citation-index) of every <page-number> marker in xml_harvard, in document order (cheap regex scan)."""
-    return [_page_attrs(m.group(1)) for m in HARVARD_PAGE.finditer(xml)]
+    """(label, citation-index) of every page marker in xml_harvard, in document order (cheap regex scan).
+
+    Three encodings occur in CourtListener's xml_harvard (survey of 9,271 documents at eight offsets of the 2026-09-30
+    file: 49% <page-number>, 23% <span class="star-pagination">, 1% only "*123" text, 27% none; plus
+    <a class="page-label" data-label=...> in Caselaw Access Project documents). Bare "*123" text is not treated as a
+    page break: it cannot be told apart from other asterisks.
+    """
+    out = []
+    for m in HARVARD_PAGE.finditer(xml):
+        kind, attrs = m.group(1).lower(), m.group(2)
+        if kind == "span" and not ("star-pagination" in attrs and "star-pagination" in attrs_of(attrs).get("class", "").split()):
+            continue
+        if kind == "a" and not ("page-label" in attrs and "page-label" in attrs_of(attrs).get("class", "").split()):
+            continue
+        out.append(_page_attrs(attrs))
+    return out
 
 
 def _content_index(text: str, markers: list[dict]) -> tuple[str, list[int]]:

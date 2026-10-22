@@ -105,6 +105,23 @@ class RenderTests(unittest.TestCase):
         s = "<div><p>" + "</p><p><em>".join(words) + "</em></p></div>"
         self.assertEqual(self.r(s).split(), words)
 
+    def test_page_label_link(self):
+        s = ('<p id="p-8"><a class="page-label" data-citation-index="1" data-label="150" href="#p150" id="p150">\n    *150\n   </a>'
+             '\n   On 7 January 2013, Marshall <a href="/x">left</a>.</p>')
+        out = ht.render(s)
+        self.assertEqual(out.text, "*150 On 7 January 2013, Marshall left.")
+        self.assertEqual([(p["page"], p["citation_index"], p["offset"]) for p in out.pages], [("150", 1, 0)])
+        self.assertEqual(ht.harvard_page_labels(s), [("150", 1)])
+
+    def test_harvard_page_labels_all_encodings_in_order(self):
+        x = ('<opinion><author><span citation-index="1" class="star-pagination" label="966"> *966 </span> FAHY, J.</author>'
+             '<p>a <page-number citation-index="2" label="12">*12</page-number> b <span class="citation" data-id="4">1 U.S. 1</span>'
+             ' <a class="page-label" data-label="967" data-citation-index="1" href="#p967">*967</a> c *968 d</p></opinion>')
+        self.assertEqual(ht.harvard_page_labels(x), [("966", 1), ("12", 2), ("967", 1)])
+        out = ht.render(x)
+        self.assertEqual([(p["page"], p["citation_index"]) for p in out.pages], [("966", 1), ("12", 2), ("967", 1)])
+        self.assertEqual(ht.paginate("html_with_citations", out, x)["pages_source"], "chosen_markup")
+
     def test_star_pagination_span(self):
         out = ht.render('<p>and <span citation-index="1" class="star-pagination" label="274"> *274 </span> for</p>')
         self.assertEqual(out.text, "and *274 for")
@@ -481,6 +498,7 @@ class FakeSelection:
         return self.rows[self.order[row]][:-1]
 
 
+@unittest.skipUnless("fork" in __import__("multiprocessing").get_all_start_methods(), "the extractor's worker pool uses fork")
 class ResumeTests(unittest.TestCase):
     """Run the real Run/session/upload code on a synthetic stream: trial with a limit, then the full run, then compare
     with a clean full run; and a run stopped by an upload failure, then resumed."""
