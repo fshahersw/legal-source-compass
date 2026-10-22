@@ -67,6 +67,7 @@ for (const suite of [
   { directory: "scripts/enrichment/agencies_fr", modules: ["test_agencies_fr"] },
   { directory: "scripts/enrichment/courtlistener_rest", modules: ["test_courtlistener_rest"] },
   { directory: "scripts/enrichment/court_rules", modules: ["test_court_rules"] },
+  { directory: "scripts/enrichment/caselaw", modules: ["test_caselaw"] },
   { directory: "scripts/enrichment/state_statutes", modules: ["test_state_statutes"] },
   {
     directory: "scripts/limitations/backfill",
