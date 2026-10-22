@@ -1,0 +1,455 @@
+import { Fragment, useEffect, useMemo, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { ChevronDown, ChevronRight } from "lucide-react";
+import {
+  AMOUNT_BUCKETS,
+  getDojLargest,
+  getDojReleaseDetail,
+  getDojReleases,
+  type AmountBucket,
+  type DojOverview,
+  type DojRelease,
+} from "@/lib/external/enforcementActions.functions";
+import { cn } from "@/lib/utils";
+import { Kpi, LoadingBlock, Panel, SourceLink, StateNote } from "../parts";
+import {
+  AmountList,
+  Chip,
+  CompanyList,
+  CourtList,
+  DetailRow,
+  FilterSelect,
+  Pager,
+  SearchBox,
+} from "./bits";
+import { dojOverviewQuery } from "./actionsView";
+import { fmtInt, fmtUsd } from "./format";
+
+export function DojReleases() {
+  const q = useQuery(dojOverviewQuery);
+  if (q.isLoading) return <LoadingBlock label="Loading DOJ press releases" />;
+  if (q.isError)
+    return (
+      <StateNote
+        tone="error"
+        action={
+          <button type="button" onClick={() => void q.refetch()} className="underline">
+            Retry
+          </button>
+        }
+      >
+        DOJ press releases could not be loaded.
+      </StateNote>
+    );
+  if (!q.data) return <StateNote>DOJ press releases have not been published yet.</StateNote>;
+  return <Body overview={q.data} />;
+}
+
+type Filters = {
+  year: string;
+  component?: string | undefined;
+  topic?: string | undefined;
+  amount?: AmountBucket | undefined;
+  q: string;
+  page: number;
+};
+
+function useDebounced<T>(value: T, ms: number): T {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setV(value), ms);
+    return () => clearTimeout(t);
+  }, [value, ms]);
+  return v;
+}
+
+function Body({ overview }: { overview: DojOverview }) {
+  const latest = overview.years[overview.years.length - 1]!;
+  const [f, setF] = useState<Filters>({ year: latest, q: "", page: 0 });
+  const set = (next: Partial<Filters>) => setF((cur) => ({ ...cur, page: 0, ...next }));
+  const q = useDebounced(f.q, 350);
+  const releases = useQuery({
+    queryKey: ["enforcement-actions", "doj", f.year, f.component, f.topic, f.amount, q, f.page],
+    queryFn: () =>
+      getDojReleases({
+        data: {
+          year: f.year,
+          component: f.component,
+          topic: f.topic,
+          amount: f.amount,
+          q: q || undefined,
+          page: f.page,
+        },
+      }),
+    placeholderData: keepPreviousData,
+    staleTime: 5 * 60 * 1000,
+  });
+  const yearRow = overview.byYear.find((y) => y.year === f.year);
+  const withFigure = overview.byYear.reduce(
+    (s, y) =>
+      s + Object.entries(y.amount).reduce((t, [k, n]) => t + (k === "none" ? 0 : (n ?? 0)), 0),
+    0,
+  );
+  const maxCount = Math.max(...overview.byYear.map((y) => y.count), 1);
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <Kpi
+          label="Press releases"
+          value={fmtInt(overview.total)}
+          note={`${overview.years[0]}–${latest}, all DOJ components`}
+        />
+        <Kpi
+          label="With a resolution figure stated"
+          value={fmtInt(withFigure)}
+          note="Settlement, penalty, restitution, forfeiture, disgorgement or judgment keyword in the figure's sentence"
+        />
+        <Kpi label={`Releases dated ${f.year}`} value={fmtInt(yearRow?.count ?? 0)} />
+        <Kpi
+          label="Extracted values re-checked"
+          value={
+            overview.checks.valuesChecked != null
+              ? fmtInt(overview.checks.valuesChecked)
+              : "Not recorded"
+          }
+          note={
+            overview.checks.spanFailures != null
+              ? `${fmtInt(overview.checks.spanFailures)} not found verbatim in the release text`
+              : undefined
+          }
+        />
+      </div>
+
+      <Panel
+        title="Releases by year"
+        subtitle="Release date year; select a year to list its releases"
+        footnote="Counts are releases in the DOJ News API on the harvest date. Releases before 2009 are in DOJ's static archive and are not included."
+      >
+        <div
+          className="flex h-24 items-end gap-0.5 overflow-x-auto px-3 py-2"
+          role="list"
+          aria-label="Releases by year"
+        >
+          {overview.byYear.map((y) => (
+            <button
+              key={y.year}
+              type="button"
+              role="listitem"
+              onClick={() => set({ year: y.year })}
+              aria-pressed={f.year === y.year}
+              title={`${y.year}: ${fmtInt(y.count)} releases`}
+              className="group flex h-full min-w-[1.6rem] flex-1 flex-col items-center justify-end gap-0.5 focus-visible:outline-2 focus-visible:outline-ring"
+            >
+              <span
+                className={cn(
+                  "w-full rounded-sm",
+                  f.year === y.year
+                    ? "bg-primary"
+                    : "bg-muted-foreground/30 group-hover:bg-muted-foreground/50",
+                )}
+                style={{ height: `${Math.max(4, (y.count / maxCount) * 100)}%` }}
+              />
+              <span className="text-[9px] tabular-nums text-muted-foreground">
+                {y.year.slice(2)}
+              </span>
+            </button>
+          ))}
+        </div>
+      </Panel>
+
+      <Panel
+        title={`DOJ press releases, ${f.year}`}
+        subtitle="Newest first. Figures are the dollar amounts the release states, labelled by the first keyword in their sentence; they are not verified payments."
+        footnote={
+          <>
+            Source: DOJ News API (justice.gov). Parties are named exactly as the title states them;
+            companies link to a company page only on an exact registrant-name match. Courts link
+            only when the release names a federal court that maps to exactly one court.
+          </>
+        }
+      >
+        <div className="grid grid-cols-1 gap-2 border-b border-border/60 px-3 py-2 sm:grid-cols-2 lg:grid-cols-5">
+          <FilterSelect
+            label="Year"
+            value={f.year}
+            allLabel={null}
+            onChange={(v) => set({ year: v ?? latest })}
+            options={[...overview.years].reverse().map((y) => ({ value: y, label: y }))}
+          />
+          <FilterSelect
+            label="Component"
+            value={f.component}
+            onChange={(v) => set({ component: v })}
+            options={overview.components
+              .slice(0, 200)
+              .map((c) => ({ value: c.name, label: `${c.name} (${fmtInt(c.count)})` }))}
+          />
+          <FilterSelect
+            label="Topic"
+            value={f.topic}
+            onChange={(v) => set({ topic: v })}
+            options={overview.topics
+              .slice(0, 200)
+              .map((t) => ({ value: t.name, label: `${t.name} (${fmtInt(t.count)})` }))}
+          />
+          <FilterSelect
+            label="Resolution figure"
+            value={f.amount}
+            onChange={(v) => set({ amount: v as AmountBucket | undefined })}
+            options={AMOUNT_BUCKETS.map((b) => ({ value: b.id, label: b.label }))}
+          />
+          <SearchBox
+            label="Search titles, parties, case numbers"
+            value={f.q}
+            onChange={(v) => set({ q: v })}
+            placeholder="e.g. False Claims Act"
+          />
+        </div>
+        {releases.isLoading ? (
+          <div className="p-3">
+            <LoadingBlock label="Loading releases" />
+          </div>
+        ) : releases.isError ? (
+          <div className="p-3">
+            <StateNote
+              tone="error"
+              action={
+                <button type="button" className="underline" onClick={() => void releases.refetch()}>
+                  Retry
+                </button>
+              }
+            >
+              Releases could not be loaded.
+            </StateNote>
+          </div>
+        ) : !releases.data?.rows.length ? (
+          <div className="p-3">
+            <StateNote>No release matches these filters in {f.year}.</StateNote>
+          </div>
+        ) : (
+          <>
+            <ReleaseTable rows={releases.data.rows} stale={releases.isPlaceholderData} />
+            <Pager
+              page={f.page}
+              pageSize={releases.data.pageSize}
+              total={releases.data.total}
+              shown={releases.data.rows.length}
+              onPage={(p) => setF((cur) => ({ ...cur, page: p }))}
+              noun="releases"
+            />
+          </>
+        )}
+      </Panel>
+
+      <Largest />
+    </div>
+  );
+}
+
+function ReleaseTable({ rows, stale }: { rows: DojRelease[]; stale: boolean }) {
+  const [open, setOpen] = useState<string | null>(null);
+  return (
+    <div className={cn("overflow-x-auto", stale && "opacity-60")}>
+      <table className="w-full text-xs">
+        <caption className="sr-only">DOJ press releases</caption>
+        <thead className="text-left text-[11px] text-muted-foreground">
+          <tr>
+            <th scope="col" className="w-6 px-2 py-1.5">
+              <span className="sr-only">Details</span>
+            </th>
+            <th scope="col" className="px-2 py-1.5 font-medium">
+              Date
+            </th>
+            <th scope="col" className="px-2 py-1.5 font-medium">
+              Title
+            </th>
+            <th scope="col" className="hidden px-2 py-1.5 font-medium md:table-cell">
+              Component
+            </th>
+            <th scope="col" className="px-2 py-1.5 text-right font-medium">
+              Resolution figure
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border/60">
+          {rows.map((r) => {
+            const expanded = open === r.id;
+            const lead = r.components.find((c) => c.startsWith("USAO")) ?? r.components[0];
+            return (
+              <Fragment key={r.id}>
+                <tr className="align-top">
+                  <td className="px-2 py-1">
+                    <button
+                      type="button"
+                      aria-expanded={expanded}
+                      aria-controls={`doj-${r.id}`}
+                      onClick={() => setOpen(expanded ? null : r.id)}
+                      className="rounded p-0.5 text-muted-foreground hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+                    >
+                      {expanded ? (
+                        <ChevronDown className="size-3.5" aria-hidden />
+                      ) : (
+                        <ChevronRight className="size-3.5" aria-hidden />
+                      )}
+                      <span className="sr-only">{expanded ? "Hide details" : "Show details"}</span>
+                    </button>
+                  </td>
+                  <td className="whitespace-nowrap px-2 py-1 font-mono">
+                    {r.date ?? "Not recorded"}
+                  </td>
+                  <td className="min-w-[14rem] px-2 py-1">
+                    {r.url ? <SourceLink href={r.url}>{r.title}</SourceLink> : r.title}
+                    <span className="mt-0.5 flex flex-wrap gap-1">
+                      {r.dockets.slice(0, 2).map((d) => (
+                        <Chip key={d} title="Case or docket number stated in the release">
+                          {d}
+                        </Chip>
+                      ))}
+                      {r.statutes.slice(0, 2).map((s) => (
+                        <Chip key={s} tone="muted" title="Statute cited in the release">
+                          {s}
+                        </Chip>
+                      ))}
+                      {r.companies.length ? (
+                        <Chip title="Exact match to an SEC registrant">Company page</Chip>
+                      ) : null}
+                    </span>
+                  </td>
+                  <td
+                    className="hidden max-w-56 truncate px-2 py-1 md:table-cell"
+                    title={r.components.join("; ")}
+                  >
+                    {lead ?? "Not recorded"}
+                  </td>
+                  <td className="whitespace-nowrap px-2 py-1 text-right font-mono">
+                    {r.maxResolutionUsd != null ? (
+                      fmtUsd(r.maxResolutionUsd)
+                    ) : (
+                      <span className="font-sans text-muted-foreground">None stated</span>
+                    )}
+                  </td>
+                </tr>
+                {expanded ? (
+                  <tr id={`doj-${r.id}`}>
+                    <td colSpan={5} className="bg-muted/30 px-3 py-2">
+                      <ReleaseDetail release={r} />
+                    </td>
+                  </tr>
+                ) : null}
+              </Fragment>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ReleaseDetail({ release: r }: { release: DojRelease }) {
+  const detail = useQuery({
+    queryKey: ["enforcement-actions", "doj-detail", r.dataset, r.id],
+    queryFn: () => getDojReleaseDetail({ data: { dataset: r.dataset, id: r.id } }),
+    staleTime: 30 * 60 * 1000,
+  });
+  return (
+    <dl className="space-y-1.5">
+      <DetailRow label="Components">{r.components.join("; ") || "Not recorded"}</DetailRow>
+      {r.topics.length ? <DetailRow label="Topics">{r.topics.join("; ")}</DetailRow> : null}
+      {r.parties.length ? (
+        <DetailRow label="Named in the title">
+          {r.parties.map((p) => p.asWritten).join("; ")}
+        </DetailRow>
+      ) : null}
+      {r.companies.length ? (
+        <DetailRow label="Company pages">
+          <CompanyList companies={r.companies} />
+        </DetailRow>
+      ) : null}
+      <DetailRow
+        label={`Dollar figures stated${r.amountsTotal > r.amounts.length ? ` (first ${r.amounts.length} of ${r.amountsTotal})` : ""}`}
+      >
+        <AmountList amounts={r.amounts} />
+      </DetailRow>
+      <DetailRow label="Statutes cited">{r.statutes.join("; ") || "None found"}</DetailRow>
+      <DetailRow label="Case or docket numbers">{r.dockets.join("; ") || "None stated"}</DetailRow>
+      <DetailRow label="Federal courts named">
+        <CourtList courts={r.courts} />
+      </DetailRow>
+      <DetailRow label="Excerpt">
+        {detail.isLoading ? (
+          <span className="text-muted-foreground">Loading excerpt…</span>
+        ) : detail.isError ? (
+          <span className="text-destructive">The excerpt could not be loaded.</span>
+        ) : detail.data?.excerpt ? (
+          <span className="block whitespace-pre-line text-[11px] leading-4">
+            {detail.data.excerpt}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">Not recorded</span>
+        )}
+      </DetailRow>
+    </dl>
+  );
+}
+
+function Largest() {
+  const q = useQuery({
+    queryKey: ["enforcement-actions", "doj-largest"],
+    queryFn: () => getDojLargest(),
+    staleTime: 10 * 60 * 1000,
+  });
+  const [expanded, setExpanded] = useState(false);
+  const rows = useMemo(() => q.data ?? [], [q.data]);
+  const shown = expanded ? rows.slice(0, 100) : rows.slice(0, 12);
+  return (
+    <Panel
+      title="Largest stated resolution figures, all years"
+      subtitle="Releases whose largest settlement, penalty, restitution, forfeiture, disgorgement or judgment figure is $1 billion or more"
+      footnote="A figure is what the release states in a sentence with one of those keywords; several releases can describe the same resolution, so figures are not summed."
+    >
+      {q.isLoading ? (
+        <div className="p-3">
+          <LoadingBlock label="Loading largest figures" />
+        </div>
+      ) : q.isError ? (
+        <div className="p-3">
+          <StateNote tone="error">The list could not be loaded.</StateNote>
+        </div>
+      ) : !rows.length ? (
+        <div className="p-3">
+          <StateNote>No release states a resolution figure of $1 billion or more.</StateNote>
+        </div>
+      ) : (
+        <div className="px-3 py-2">
+          <ol className="space-y-1 text-xs" id="doj-largest">
+            {shown.map((r) => (
+              <li key={r.id} className="flex min-w-0 items-baseline gap-2">
+                <span className="w-28 shrink-0 text-right font-mono">
+                  {fmtUsd(r.maxResolutionUsd)}
+                </span>
+                <span className="w-20 shrink-0 font-mono text-muted-foreground">
+                  {r.date ?? "—"}
+                </span>
+                <span className="min-w-0 truncate" title={r.title}>
+                  {r.url ? <SourceLink href={r.url}>{r.title}</SourceLink> : r.title}
+                </span>
+              </li>
+            ))}
+          </ol>
+          {rows.length > 12 ? (
+            <button
+              type="button"
+              aria-expanded={expanded}
+              aria-controls="doj-largest"
+              onClick={() => setExpanded((v) => !v)}
+              className="mt-1 rounded text-[11px] text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+            >
+              {expanded ? "Show fewer" : `Show ${fmtInt(Math.min(rows.length, 100) - 12)} more`}
+            </button>
+          ) : null}
+        </div>
+      )}
+    </Panel>
+  );
+}
