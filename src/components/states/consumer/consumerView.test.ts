@@ -10,6 +10,7 @@ import type {
 } from "@/lib/external/stateConsumer.functions";
 import { niceMax } from "./chartScale";
 import {
+  callsFirstDay,
   callsLatest,
   callsRows,
   callsSubjects,
@@ -348,6 +349,15 @@ describe("Do Not Call reports by month", () => {
     ]);
     expect(s!.catchAll).toBe("Other 50%, No Subject Provided 10%");
     expect(callsSubjects([month("2026-09")])).toBeNull();
+  });
+  it("names the first counted day, or null when no day is recorded", () => {
+    expect(
+      callsFirstDay([
+        month("2026-10", { firstDay: "2026-10-01" }),
+        month("2026-09", { firstDay: "2026-09-16" }),
+      ]),
+    ).toBe("September 16, 2026");
+    expect(callsFirstDay([month("2026-09")])).toBeNull();
   });
   it("finds the newest month", () => {
     expect(callsLatest([month("2026-08"), month("2026-10"), month("2026-09")])!.month).toBe(

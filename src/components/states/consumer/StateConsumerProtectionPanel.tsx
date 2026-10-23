@@ -25,6 +25,7 @@ import {
 import {
   FTC_CREDIT,
   NOT_RECORDED,
+  callsFirstDay,
   callsLatest,
   callsRows,
   callsSubjects,
@@ -514,6 +515,7 @@ function ReportedCalls({ data }: { data: StateConsumerData }) {
   const rows = callsRows(data.calls);
   const subjects = callsSubjects(data.calls);
   const window = callsWindow(data.calls);
+  const firstDay = callsFirstDay(data.calls);
   const newest = callsLatest(data.calls);
   const source = newest?.sourceUrl ?? null;
   return (
@@ -583,8 +585,11 @@ function ReportedCalls({ data }: { data: StateConsumerData }) {
         Census resident population of July 1, {newest?.populationYear ?? NOT_RECORDED} (Population
         Estimates, vintage {newest?.populationYear ?? NOT_RECORDED}); the rank is among the 50
         states, DC and Puerto Rico in the same month. Robocall share is reports answered as a
-        recorded message divided by reports answered either way. Months before the first day above
-        are not counted here; the fiscal-year table above is the FTC&apos;s Data Book.
+        recorded message divided by reports answered either way.{" "}
+        {firstDay
+          ? `Reports created before ${firstDay} are not counted here`
+          : "Earlier reports are not counted here"}
+        ; the fiscal-year table above is the FTC&apos;s Data Book.
         {source ? (
           <>
             {" "}

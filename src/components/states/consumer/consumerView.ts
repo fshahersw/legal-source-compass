@@ -9,7 +9,13 @@ import {
   usdCompact,
   type Takeaway,
 } from "@/components/analysis/analysisFormat";
-import { dayRange, monthName, subjectShares, type StateCallsMonth } from "@/lib/external/ftcData";
+import {
+  dayName,
+  dayRange,
+  monthName,
+  subjectShares,
+  type StateCallsMonth,
+} from "@/lib/external/ftcData";
 import type {
   ConsumerYear,
   DncYear,
@@ -282,6 +288,14 @@ export function callsWindow(calls: readonly StateCallsMonth[]): string | null {
     .sort((a, b) => b.month.localeCompare(a.month))
     .find((c) => c.lastDay)?.lastDay;
   return first && last ? `complaints created ${dayRange(first, last)}` : null;
+}
+
+/** First day with counted reports, "September 16, 2026", or null when no days are recorded. */
+export function callsFirstDay(calls: readonly StateCallsMonth[]): string | null {
+  const first = [...calls]
+    .sort((a, b) => a.month.localeCompare(b.month))
+    .find((c) => c.firstDay)?.firstDay;
+  return first ? dayName(first) : null;
 }
 
 /** The subjects consumers reported for the state over the counted months: named subjects ranked, catch-all buckets apart. */
