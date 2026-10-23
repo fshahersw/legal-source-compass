@@ -21,13 +21,21 @@ export const Route = createFileRoute("/api/source-text")({
             { error: "Too many requests. Wait a few minutes." },
             { status: 429 },
           );
-        const target = new URL(request.url).searchParams.get("url") ?? "";
+        const params = new URL(request.url).searchParams;
+        const target = params.get("url") ?? "";
         if (!target || target.length > 2000)
           return Response.json({ error: "Bad address." }, { status: 400 });
-        const { readSourceText } = await import("@/lib/sourceViewer/remote.server");
+        const { readSourceTextCached, serverTiming } =
+          await import("@/lib/sourceViewer/remote.server");
+        const started = Date.now();
         try {
-          return Response.json(await readSourceText(target), {
-            headers: { "cache-control": "private, max-age=600" },
+          // A page read a moment ago is served from memory (and a read already under way is shared); `fresh=1` reads again.
+          const text = await readSourceTextCached(target, { fresh: params.get("fresh") === "1" });
+          return Response.json(text, {
+            headers: {
+              "cache-control": "private, max-age=600",
+              "server-timing": serverTiming([{ name: "text", dur: Date.now() - started }]),
+            },
           });
         } catch (error) {
           return Response.json(

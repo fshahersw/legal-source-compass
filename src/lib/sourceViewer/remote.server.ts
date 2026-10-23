@@ -2,8 +2,12 @@
  * Server side of the in-page source viewer: an embeddability check, a guarded file relay and hosted interactive browser sessions.
  * Every outbound request goes only to a public http(s) address, re-checked at each redirect. The hosted browser's control endpoint
  * stays on the server; the panel only receives the session's live view address.
+ *
+ * Speed: checks and page texts are remembered briefly (public pages only, shared by everyone, concurrent asks share one request)
+ * and every outbound request has a time budget that covers its redirects. None of this widens what is fetched.
  */
 import { publicUrl } from "@/lib/net/publicUrl";
+import { TtlCache } from "./ttlCache";
 
 export type SourceCheck = {
   url: string;
@@ -19,8 +23,22 @@ export type SourceCheck = {
 
 const MAX_REDIRECTS = 5;
 const UA = "Mozilla/5.0 (compatible; research-workspace source viewer)";
+/** The embeddability check (HEAD, then a one-byte GET if the host refuses HEAD) must answer within this, redirects included. */
+const CHECK_BUDGET_MS = 9000;
 
-/** Follows redirects by hand so every hop is checked against the public-address rule. */
+/** A plain sentence for a failed outbound request (the raw messages name internals). */
+function friendlyFailure(error: unknown): Error {
+  if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError"))
+    return new Error("The site took too long to answer.");
+  if (error instanceof TypeError && /fetch failed/i.test(error.message))
+    return new Error("The site could not be reached.");
+  return error instanceof Error ? error : new Error("The address could not be checked.");
+}
+
+/**
+ * Follows redirects by hand so every hop is checked against the public-address rule. `timeoutMs` is one budget for the whole
+ * chain, so a long redirect chain cannot multiply the wait.
+ */
 export async function guardedFetch(
   raw: string,
   init: RequestInit = {},
@@ -28,12 +46,13 @@ export async function guardedFetch(
 ): Promise<{ res: Response; url: URL }> {
   let url = publicUrl(raw);
   if (!url) throw new Error("Only public web addresses can be opened.");
+  const signal = AbortSignal.timeout(timeoutMs);
   for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
     const res = await fetch(url, {
       ...init,
       redirect: "manual",
       headers: { "user-agent": UA, ...(init.headers ?? {}) },
-      signal: AbortSignal.timeout(timeoutMs),
+      signal,
     });
     if (res.status >= 300 && res.status < 400 && res.headers.get("location")) {
       const next = publicUrl(new URL(res.headers.get("location")!, url).toString());
@@ -101,10 +120,22 @@ function fileName(headers: Headers, url: URL): string | null {
 }
 
 export async function checkSource(raw: string, ownOrigin: string): Promise<SourceCheck> {
-  let { res, url } = await guardedFetch(raw, { method: "HEAD" });
-  if (res.status === 405 || res.status === 403 || res.status === 501) {
-    ({ res, url } = await guardedFetch(raw, { method: "GET", headers: { range: "bytes=0-0" } }));
-    await res.body?.cancel();
+  const deadline = Date.now() + CHECK_BUDGET_MS;
+  let res: Response;
+  let url: URL;
+  try {
+    ({ res, url } = await guardedFetch(raw, { method: "HEAD" }, CHECK_BUDGET_MS));
+    if (res.status === 405 || res.status === 403 || res.status === 501) {
+      // The host refuses HEAD: ask for one byte instead, within what is left of the same budget.
+      ({ res, url } = await guardedFetch(
+        raw,
+        { method: "GET", headers: { range: "bytes=0-0" } },
+        Math.max(1500, deadline - Date.now()),
+      ));
+      await res.body?.cancel();
+    }
+  } catch (error) {
+    throw friendlyFailure(error);
   }
   const contentType = res.headers.get("content-type");
   const kind = kindOf(contentType, url);
@@ -133,21 +164,76 @@ export async function checkSource(raw: string, ownOrigin: string): Promise<Sourc
   };
 }
 
+// Public pages only, whoever asks: nothing here depends on who the person is.
+const checkCache = new TtlCache<SourceCheck>({ max: 300, ttlMs: 5 * 60_000, errorTtlMs: 15_000 });
+const textCache = new TtlCache<SourceText>({ max: 24, ttlMs: 10 * 60_000, errorTtlMs: 10_000 });
+
+/** Forgets every remembered check and page text (tests, and a way to drop them if a deployment ever needs to). */
+export function clearSourceCaches(): void {
+  checkCache.clear();
+  textCache.clear();
+}
+
+/**
+ * The check for an address, from memory when it is fresh and shared with a request already under way. `cached` says whether
+ * the answer was already known; `fresh` asks again (the reload button).
+ */
+export async function checkSourceCached(
+  raw: string,
+  ownOrigin: string,
+  options: { fresh?: boolean } = {},
+): Promise<{ check: SourceCheck; cached: boolean; ms: number }> {
+  const key = `${ownOrigin}\n${raw}`;
+  if (options.fresh) checkCache.delete(key);
+  const started = Date.now();
+  const cached = !!checkCache.peek(key);
+  const check = await checkCache.load(key, () => checkSource(raw, ownOrigin));
+  return { check, cached, ms: Date.now() - started };
+}
+
+/** A Server-Timing header value, so the panel's waits can be read in the browser's network tools. */
+export function serverTiming(parts: { name: string; dur?: number; desc?: string }[]): string {
+  return parts
+    .map((p) =>
+      [
+        p.name,
+        p.dur !== undefined ? `dur=${Math.round(p.dur)}` : null,
+        p.desc ? `desc="${p.desc.replace(/["\\]/g, "")}"` : null,
+      ]
+        .filter(Boolean)
+        .join(";"),
+    )
+    .join(", ");
+}
+
 const RELAY_MAX = 60 * 1024 * 1024;
 // SVG is safe inline here: the relay's CSP sandbox gives it an opaque origin with scripts off.
 const INLINE = /^(application\/pdf|image\/(png|jpeg|gif|webp|svg\+xml)|text\/plain)/i;
+// Text-like documents (JSON, CSV, XML, source text) are shown inline as plain text, so they open in the panel instead of
+// downloading. HTML in any form never matches, and plain text cannot run anything.
+const TEXT_LIKE =
+  /^(?:text\/(?!x?html\b)[\w.+-]+|application\/(?!xhtml)(?:json|xml|[\w.+-]+\+(?:json|xml)))$/i;
 
-/** Streams a public file back. Inline only for PDFs, images and plain text; everything else (HTML included) is an attachment. */
+/** Streams a public file back. Inline only for PDFs, images and text; everything else (HTML included) is an attachment. */
 export async function relayFile(raw: string, inline: boolean): Promise<Response> {
   const { res, url } = await guardedFetch(raw, { method: "GET" }, 45000);
   if (!res.ok || !res.body) return new Response("The file could not be fetched.", { status: 502 });
   const length = Number(res.headers.get("content-length") ?? "0");
-  if (length > RELAY_MAX) return new Response("The file is too large to relay.", { status: 413 });
-  const type = (res.headers.get("content-type") ?? "application/octet-stream")
+  if (length > RELAY_MAX) {
+    await res.body.cancel();
+    return new Response("The file is too large to relay.", { status: 413 });
+  }
+  const encoding = (res.headers.get("content-encoding") ?? "").trim().toLowerCase();
+  // A body the fetch has already decompressed no longer matches the length the host stated for the compressed one.
+  const verbatim = !encoding || encoding === "identity";
+  const upstream = (res.headers.get("content-type") ?? "application/octet-stream")
     .split(";")[0]!
     .trim();
+  const asText = inline && TEXT_LIKE.test(upstream);
+  const showInline = inline && (INLINE.test(upstream) || asText);
+  const charset = /charset="?([\w-]{1,40})"?/i.exec(res.headers.get("content-type") ?? "")?.[1];
+  const type = asText ? `text/plain; charset=${charset ?? "utf-8"}` : upstream;
   const name = (fileName(res.headers, url) ?? url.hostname).replace(/[^\w.\- ]+/g, "_");
-  const showInline = inline && INLINE.test(type);
   let seen = 0;
   const limited = res.body.pipeThrough(
     new TransformStream<Uint8Array, Uint8Array>({
@@ -165,8 +251,10 @@ export async function relayFile(raw: string, inline: boolean): Promise<Response>
       "x-content-type-options": "nosniff",
       "content-security-policy":
         "sandbox; default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'",
-      "cache-control": "private, no-store",
-      ...(length ? { "content-length": String(length) } : {}),
+      // A public document may be kept for a few minutes by this person's browser, so reopening it is quicker (a 3.5 MB PDF
+      // reopened in about 0.7 s instead of 1.1 s); a download is not kept.
+      "cache-control": showInline ? "private, max-age=300" : "private, no-store",
+      ...(verbatim && length ? { "content-length": String(length) } : {}),
     },
   });
 }
@@ -195,10 +283,10 @@ export function readerConfigured(): boolean {
   return !!process.env["FIRECRAWL_API_KEY"]?.trim();
 }
 
+export type SourceText = { url: string; title: string; markdown: string; truncated: boolean };
+
 /** The main text of a public page or document as markdown, for the panel's text view. */
-export async function readSourceText(
-  raw: string,
-): Promise<{ url: string; title: string; markdown: string; truncated: boolean }> {
+export async function readSourceText(raw: string): Promise<SourceText> {
   const key = process.env["FIRECRAWL_API_KEY"]?.trim();
   if (!key) throw new Error("The text view is not configured on this server.");
   const url = publicUrl(raw);
@@ -228,6 +316,18 @@ export async function readSourceText(
     markdown: markdown.slice(0, READER_MAX),
     truncated: markdown.length > READER_MAX,
   };
+}
+
+/** The page text, from memory when fresh and shared with a read already under way (a page is read once, not once per ask). */
+export async function readSourceTextCached(
+  raw: string,
+  options: { fresh?: boolean } = {},
+): Promise<SourceText> {
+  const url = publicUrl(raw);
+  if (!url) throw new Error("Only public web addresses can be opened.");
+  const key = url.toString();
+  if (options.fresh) textCache.delete(key);
+  return textCache.load(key, () => readSourceText(raw));
 }
 
 const BROWSER_API = "https://api.browser-use.com/api/v3/browsers";

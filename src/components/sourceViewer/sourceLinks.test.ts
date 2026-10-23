@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
+  SLOW_WAIT_MS,
   availableViews,
+  failureViews,
   hostLabel,
-  initialView,
   interceptTarget,
+  looksLikeDocument,
   relayUrl,
   sizeLabel,
+  startViews,
 } from "./sourceLinks";
 
 const ORIGIN = "https://app.example.org";
@@ -66,19 +69,32 @@ describe("interceptTarget", () => {
 describe("views", () => {
   const base = { embeddable: false, remoteBrowser: true, reader: true };
   it("shows documents through the relay and framable pages directly", () => {
-    expect(initialView({ ...base, kind: "pdf" })).toBe("document");
-    expect(initialView({ ...base, kind: "image" })).toBe("document");
-    expect(initialView({ ...base, kind: "text" })).toBe("document");
-    expect(initialView({ ...base, kind: "file" })).toBe("file");
-    expect(initialView({ ...base, kind: "page", embeddable: true })).toBe("embed");
+    expect(startViews({ ...base, kind: "pdf" })).toEqual(["document"]);
+    expect(startViews({ ...base, kind: "image" })).toEqual(["document"]);
+    expect(startViews({ ...base, kind: "text" })).toEqual(["document"]);
+    expect(startViews({ ...base, kind: "file" })).toEqual(["file"]);
+    expect(startViews({ ...base, kind: "page", embeddable: true })).toEqual(["embed"]);
   });
 
-  it("falls back from a page that refuses framing to the live browser, then text, then nothing", () => {
-    expect(initialView({ ...base, kind: "page" })).toBe("browser");
-    expect(initialView({ ...base, kind: "page", remoteBrowser: false })).toBe("reader");
+  it("starts the text and the live browser together for a page that refuses framing, so the first ready is shown", () => {
+    expect(startViews({ ...base, kind: "page" })).toEqual(["reader", "browser"]);
+  });
+
+  it("starts only the quick view that is configured, and shows nothing when neither is", () => {
+    expect(startViews({ ...base, kind: "page", reader: false })).toEqual(["browser"]);
+    expect(startViews({ ...base, kind: "page", remoteBrowser: false })).toEqual(["reader"]);
     expect(
-      initialView({ kind: "page", embeddable: false, remoteBrowser: false, reader: false }),
-    ).toBe("blocked");
+      startViews({ kind: "page", embeddable: false, remoteBrowser: false, reader: false }),
+    ).toEqual(["blocked"]);
+  });
+
+  it("keeps a framable page and a document as they were whatever else is configured", () => {
+    expect(startViews({ ...base, kind: "page", embeddable: true, reader: false })).toEqual([
+      "embed",
+    ]);
+    expect(startViews({ ...base, kind: "pdf", reader: false, remoteBrowser: false })).toEqual([
+      "document",
+    ]);
   });
 
   it("lists only the views a source supports", () => {
@@ -96,6 +112,41 @@ describe("views", () => {
   });
 });
 
+describe("failureViews", () => {
+  const down = { code: "unreachable", remoteBrowser: true, reader: true };
+  it("starts the text service and the live browser for an address this server could not reach", () => {
+    expect(failureViews(down, false)).toEqual(["reader", "browser"]);
+    expect(failureViews({ ...down, reader: false }, false)).toEqual(["browser"]);
+    expect(failureViews({ ...down, reader: false, remoteBrowser: false }, false)).toEqual([
+      "blocked",
+    ]);
+  });
+
+  it("leaves a document that is already loading alone when only the check failed", () => {
+    expect(failureViews(down, true)).toEqual(["document"]);
+    expect(failureViews({ ...down, reader: false, remoteBrowser: false }, true)).toEqual([
+      "document",
+    ]);
+  });
+
+  it("shows nothing for an address that is not public or a sign-in problem, even with other views configured", () => {
+    expect(failureViews({ ...down, code: "not_public" }, false)).toEqual(["blocked"]);
+    expect(failureViews({ ...down, code: "not_public" }, true)).toEqual(["blocked"]);
+    expect(failureViews({ ...down, code: "access" }, false)).toEqual(["blocked"]);
+  });
+});
+
+describe("looksLikeDocument", () => {
+  it("recognises an address that is plainly a PDF by its path, ignoring query and case", () => {
+    expect(looksLikeDocument("https://a.gov/x/doc.pdf")).toBe(true);
+    expect(looksLikeDocument("https://a.gov/x/DOC.PDF?download=1#page=3")).toBe(true);
+    expect(looksLikeDocument("https://a.gov/x/doc.pdf.html")).toBe(false);
+    expect(looksLikeDocument("https://a.gov/pdf")).toBe(false);
+    expect(looksLikeDocument("https://a.gov/doc?file=x.pdf")).toBe(false);
+    expect(looksLikeDocument("not a url")).toBe(false);
+  });
+});
+
 describe("labels", () => {
   it("builds relay addresses and short labels", () => {
     expect(relayUrl("https://a.gov/x y.pdf?q=1&r=2", true)).toBe(
@@ -110,5 +161,10 @@ describe("labels", () => {
     expect(sizeLabel(512)).toBe("512 B");
     expect(sizeLabel(2048)).toBe("2 KB");
     expect(sizeLabel(5 * 1024 * 1024)).toBe("5.0 MB");
+  });
+
+  it("waits a few seconds before a loading state offers the way out", () => {
+    expect(SLOW_WAIT_MS).toBeGreaterThanOrEqual(2000);
+    expect(SLOW_WAIT_MS).toBeLessThanOrEqual(6000);
   });
 });

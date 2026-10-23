@@ -10,6 +10,7 @@ import { publicUrl } from "@/lib/net/publicUrl";
 import { OFFICIAL_EXECUTORS, OFFICIAL_TOOL_DEFINITIONS } from "./officialTools.server";
 import { REGULATION_EXECUTORS, REGULATION_TOOL_DEFINITIONS } from "./regulationTools.server";
 import { STATUTE_EXECUTORS, STATUTE_TOOL_DEFINITIONS } from "./statuteTools.server";
+import { LEGISLATION_EXECUTORS, LEGISLATION_TOOL_DEFINITIONS } from "./legislationTools.server";
 import {
   CITATION_EXECUTORS,
   CITATION_TOOL_DEFINITIONS,
@@ -150,6 +151,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   ...OFFICIAL_TOOL_DEFINITIONS,
   ...STATUTE_TOOL_DEFINITIONS,
+  ...LEGISLATION_TOOL_DEFINITIONS,
   ...REGULATION_TOOL_DEFINITIONS,
   ...CITATION_TOOL_DEFINITIONS,
 ];
@@ -493,6 +495,7 @@ const EXECUTORS: Record<
   search_case_law: caseLawTool,
   ...OFFICIAL_EXECUTORS,
   ...STATUTE_EXECUTORS,
+  ...LEGISLATION_EXECUTORS,
   ...REGULATION_EXECUTORS,
   ...CITATION_EXECUTORS,
 };

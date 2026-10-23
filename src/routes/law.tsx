@@ -175,6 +175,12 @@ function LawPage() {
             link: { to: "/law/uscode", search: { q: "" } },
           },
           {
+            key: "legislation",
+            label: "Legislation",
+            note: "Federal bills since 2003 and current state bills, with status, sponsors and official links",
+            link: { to: "/law/legislation" },
+          },
+          {
             key: "caselaw",
             label: "Case law",
             note: "Supreme Court, federal appeals and state high courts: opinions, citator, search",

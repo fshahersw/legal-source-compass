@@ -1,36 +1,49 @@
-export type NavigationSection = "states" | "law" | "time-limits" | "sources";
+export type NavigationSection = "states" | "law" | "analytics" | "sources";
 export type NavigationItem = {
   id: NavigationSection;
   to: string;
   label: string;
-  icon: "map" | "book" | "clock" | "library";
+  icon: "map" | "book" | "chart" | "library";
 };
+/** Exactly four sidebar sections (owner decision 2026-10-23); everything else is contextual sub-navigation. */
 export const PRIMARY_NAVIGATION: readonly NavigationItem[] = [
   { id: "states", to: "/", label: "States & courts", icon: "map" },
   { id: "law", to: "/law", label: "Law & regulation", icon: "book" },
-  { id: "time-limits", to: "/limitations", label: "Time limits", icon: "clock" },
+  { id: "analytics", to: "/analytics", label: "Analytics", icon: "chart" },
   { id: "sources", to: "/sources", label: "Sources", icon: "library" },
 ];
 const at = (path: string, base: string) => path === base || path.startsWith(base + "/");
 /**
- * Federal MDL views reached from court analytics: they sit with States & courts.
- * Only these families; /matters, /matters/<id>, /matters/cases etc. stay unsectioned
- * and no /matters link is ever advertised in navigation.
+ * Federal MDL views reached from court analytics: they sit with Analytics, under the Court
+ * analytics tab. Only these families; /matters, /matters/<id>, /matters/cases etc. stay
+ * unsectioned and no /matters link is ever advertised in navigation.
  */
 const isFederalMdlView = (path: string) =>
   at(path, "/matters/analytics") ||
   at(path, "/matters/intel") ||
   /^\/matters\/lens\/[^/]+/.test(path);
+/**
+ * The analytics pages of the geographic families keep their URLs (/places/analytics,
+ * /courts/analytics, /judges/analytics) but belong to Analytics, not States & courts.
+ */
+const isAnalyticsPage = (path: string) =>
+  at(path, "/analytics") ||
+  at(path, "/places/analytics") ||
+  at(path, "/courts/analytics") ||
+  at(path, "/judges/analytics") ||
+  isFederalMdlView(path);
 export function navigationSection(path: string): NavigationSection | null {
-  if (at(path, "/limitations")) return "time-limits";
-  if (["/law", "/laws", "/cases", "/safety", "/agencies", "/companies"].some((x) => at(path, x)))
+  if (isAnalyticsPage(path)) return "analytics";
+  // Time limits is a tab of Law & regulation; the calculator keeps its /limitations URLs.
+  if (
+    ["/law", "/laws", "/cases", "/limitations", "/safety", "/agencies", "/companies"].some((x) =>
+      at(path, x),
+    )
+  )
     return "law";
   if (
     path === "/" ||
-    ["/places", "/courts", "/judges", "/search", "/overview", "/analytics"].some((x) =>
-      at(path, x),
-    ) ||
-    isFederalMdlView(path)
+    ["/places", "/courts", "/judges", "/search", "/overview"].some((x) => at(path, x))
   )
     return "states";
   if (
@@ -43,33 +56,37 @@ export function navigationSection(path: string): NavigationSection | null {
 }
 export type ContextNavigationItem = { to: string; label: string };
 export function contextualNavigation(path: string): ContextNavigationItem[] {
-  if (
-    path === "/" ||
-    (/^\/places\/[^/]+/.test(path) && !at(path, "/places/analytics")) ||
-    navigationSection(path) === "time-limits"
-  )
-    return [];
+  // A state page (/places/<USPS>) carries no tab strip; only the map and its analytics do.
+  if (path === "/" || (/^\/places\/[^/]+/.test(path) && !at(path, "/places/analytics"))) return [];
   switch (navigationSection(path)) {
     case "states":
       return [
         { to: "/", label: "State map" },
-        { to: "/places/analytics", label: "State analytics" },
         { to: "/courts", label: "All courts" },
-        { to: "/courts/analytics", label: "Court analytics" },
         { to: "/courts/caseload", label: "Caseload" },
         { to: "/courts/collection", label: "Collection" },
         { to: "/courts/firms", label: "Law firms" },
         { to: "/courts/securities", label: "Securities suits" },
         { to: "/courts/vacancies", label: "Vacancies" },
         { to: "/judges", label: "All judges" },
+      ];
+    case "analytics":
+      return [
+        { to: "/analytics", label: "Overview" },
+        { to: "/analytics/enforcement", label: "Enforcement trends" },
+        { to: "/analytics/safety", label: "Safety trends" },
+        { to: "/places/analytics", label: "State analytics" },
+        { to: "/courts/analytics", label: "Court analytics" },
         { to: "/judges/analytics", label: "Judge analytics" },
-        { to: "/analytics", label: "Data visualizations" },
+        { to: "/analytics/insights", label: "Insights of the day" },
       ];
     case "law":
       return [
         { to: "/law", label: "Overview" },
         { to: "/law/codes", label: "State codes" },
         { to: "/cases", label: "Case law" },
+        { to: "/law/legislation", label: "Legislation" },
+        { to: "/limitations", label: "Time limits" },
         { to: "/law/monitoring", label: "Regulatory intelligence" },
         { to: "/law/enforcement", label: "Enforcement" },
         { to: "/agencies", label: "Agencies" },
@@ -83,7 +100,7 @@ export function contextualNavigation(path: string): ContextNavigationItem[] {
         { to: "/sources/library", label: "Library" },
         { to: "/sources/catalog", label: "Catalog" },
         { to: "/sources/coverage", label: "Coverage" },
-        { to: "/saved-sources", label: "Saved" },
+        { to: "/saved-sources", label: "Saved work" },
       ];
     default:
       return [];

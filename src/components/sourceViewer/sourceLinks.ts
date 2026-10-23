@@ -61,16 +61,52 @@ export type CheckResult = {
   reader: boolean;
 };
 
-/** The first view for a checked source: documents through our relay, framable pages directly, the rest interactively or as text. */
-export function initialView(
+/** How long a loading state runs before it says more and offers the way out. */
+export const SLOW_WAIT_MS = 3500;
+
+/** An address that is plainly a PDF by its path: the document view can start before the check has answered. */
+export function looksLikeDocument(url: string): boolean {
+  try {
+    return /\.pdf$/i.test(new URL(url).pathname);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The views to start for a checked source: documents through our relay, framable pages directly. A page that refuses framing
+ * has no single quickest view (its text answers in under a second on some sites and takes ten on others, a live browser in
+ * two to five), so both are started together and the first one ready is shown; the other is a click away, already loading.
+ * With only one of them available, that one. Two entries therefore mean a race.
+ */
+export function startViews(
   check: Pick<CheckResult, "kind" | "embeddable" | "remoteBrowser" | "reader">,
-): ViewMode {
-  if (check.kind === "pdf" || check.kind === "image" || check.kind === "text") return "document";
-  if (check.kind === "file") return "file";
-  if (check.embeddable) return "embed";
-  if (check.remoteBrowser) return "browser";
-  if (check.reader) return "reader";
-  return "blocked";
+): ViewMode[] {
+  if (check.kind === "pdf" || check.kind === "image" || check.kind === "text") return ["document"];
+  if (check.kind === "file") return ["file"];
+  if (check.embeddable) return ["embed"];
+  return quickViews(check);
+}
+
+function quickViews(check: Pick<CheckResult, "remoteBrowser" | "reader">): ViewMode[] {
+  const views: ViewMode[] = [];
+  if (check.reader) views.push("reader");
+  if (check.remoteBrowser) views.push("browser");
+  return views.length ? views : ["blocked"];
+}
+
+/**
+ * The views to start when the check itself failed. An address that could not be reached from here may still open from the
+ * text service or a live browser (they reach it from elsewhere); a document already loading from its address keeps going; an
+ * address that is not public, or a sign-in problem, shows nothing.
+ */
+export function failureViews(
+  failure: { code: string; remoteBrowser: boolean; reader: boolean },
+  documentStarted: boolean,
+): ViewMode[] {
+  if (failure.code !== "unreachable") return ["blocked"];
+  if (documentStarted) return ["document"];
+  return quickViews(failure);
 }
 
 /** The views a source can be switched between, in the order the switcher shows them. */

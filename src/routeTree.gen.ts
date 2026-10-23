@@ -31,6 +31,9 @@ import { Route as SourceDatasetsRouteImport } from './routes/source-datasets'
 import { Route as SourceFamiliesRouteImport } from './routes/source-families'
 import { Route as AgenciesIndexRouteImport } from './routes/agencies.index'
 import { Route as AgenciesIdRouteImport } from './routes/agencies.$id'
+import { Route as AnalyticsEnforcementRouteImport } from './routes/analytics_.enforcement'
+import { Route as AnalyticsInsightsRouteImport } from './routes/analytics_.insights'
+import { Route as AnalyticsSafetyRouteImport } from './routes/analytics_.safety'
 import { Route as ApiAssistantRouteImport } from './routes/api/assistant'
 import { Route as ApiAssistantTranscribeRouteImport } from './routes/api/assistant-transcribe'
 import { Route as ApiBundlesRouteImport } from './routes/api/bundles'
@@ -62,6 +65,7 @@ import { Route as LawCfrRouteImport } from './routes/law_.cfr'
 import { Route as LawCodesRouteImport } from './routes/law_.codes'
 import { Route as LawConstitutionsRouteImport } from './routes/law_.constitutions'
 import { Route as LawEnforcementRouteImport } from './routes/law_.enforcement'
+import { Route as LawLegislationRouteImport } from './routes/law_.legislation'
 import { Route as LawMonitoringRouteImport } from './routes/law_.monitoring'
 import { Route as LawRegulationsRouteImport } from './routes/law_.regulations'
 import { Route as LawUscodeRouteImport } from './routes/law_.uscode'
@@ -95,6 +99,7 @@ import { Route as LawCodesIndexRouteImport } from './routes/law_.codes.index'
 import { Route as LawCodesStateRouteImport } from './routes/law_.codes.$state'
 import { Route as LawConstitutionsIndexRouteImport } from './routes/law_.constitutions.index'
 import { Route as LawConstitutionsStateRouteImport } from './routes/law_.constitutions.$state'
+import { Route as LawLegislationIndexRouteImport } from './routes/law_.legislation.index'
 import { Route as LawProvisionIdRouteImport } from './routes/law_.provision.$id'
 import { Route as LawRegulationsIndexRouteImport } from './routes/law_.regulations.index'
 import { Route as LawRegulationsStateRouteImport } from './routes/law_.regulations.$state'
@@ -104,12 +109,15 @@ import { Route as MattersLensMdlRouteImport } from './routes/matters.lens.$mdl'
 import { Route as PlacesStateCountyRouteImport } from './routes/places.$state.$county'
 import { Route as PrototypesCourtIdRouteImport } from './routes/prototypes.court.$id'
 import { Route as PrototypesJudgeIdRouteImport } from './routes/prototypes.judge.$id'
+import { Route as PrototypesLegislationStateRouteImport } from './routes/prototypes.legislation.$state'
 import { Route as PrototypesMdlIdRouteImport } from './routes/prototypes.mdl.$id'
 import { Route as RecordsDatasetIdRouteImport } from './routes/records.$dataset.$id'
 import { Route as LawCfrTitleIndexRouteImport } from './routes/law_.cfr.$title.index'
 import { Route as LawCfrTitleSectionRouteImport } from './routes/law_.cfr.$title.$section'
+import { Route as LawLegislationStateIdRouteImport } from './routes/law_.legislation.state.$id'
 import { Route as LawUscodeTitleSectionRouteImport } from './routes/law_.uscode.$title.$section'
 import { Route as LawCfrTitlePartPartRouteImport } from './routes/law_.cfr.$title.part.$part'
+import { Route as LawLegislationFederalCongressTypeNumberRouteImport } from './routes/law_.legislation.federal.$congress.$type.$number'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -219,6 +227,21 @@ const AgenciesIndexRoute = AgenciesIndexRouteImport.update({
 const AgenciesIdRoute = AgenciesIdRouteImport.update({
   id: '/agencies/$id',
   path: '/agencies/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsEnforcementRoute = AnalyticsEnforcementRouteImport.update({
+  id: '/analytics_/enforcement',
+  path: '/analytics/enforcement',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsInsightsRoute = AnalyticsInsightsRouteImport.update({
+  id: '/analytics_/insights',
+  path: '/analytics/insights',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsSafetyRoute = AnalyticsSafetyRouteImport.update({
+  id: '/analytics_/safety',
+  path: '/analytics/safety',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAssistantRoute = ApiAssistantRouteImport.update({
@@ -374,6 +397,11 @@ const LawConstitutionsRoute = LawConstitutionsRouteImport.update({
 const LawEnforcementRoute = LawEnforcementRouteImport.update({
   id: '/law_/enforcement',
   path: '/law/enforcement',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LawLegislationRoute = LawLegislationRouteImport.update({
+  id: '/law_/legislation',
+  path: '/law/legislation',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LawMonitoringRoute = LawMonitoringRouteImport.update({
@@ -541,6 +569,11 @@ const LawConstitutionsStateRoute = LawConstitutionsStateRouteImport.update({
   path: '/$state',
   getParentRoute: () => LawConstitutionsRoute,
 } as any)
+const LawLegislationIndexRoute = LawLegislationIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LawLegislationRoute,
+} as any)
 const LawProvisionIdRoute = LawProvisionIdRouteImport.update({
   id: '/law_/provision/$id',
   path: '/law/provision/$id',
@@ -586,6 +619,12 @@ const PrototypesJudgeIdRoute = PrototypesJudgeIdRouteImport.update({
   path: '/prototypes/judge/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrototypesLegislationStateRoute =
+  PrototypesLegislationStateRouteImport.update({
+    id: '/prototypes/legislation/$state',
+    path: '/prototypes/legislation/$state',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const PrototypesMdlIdRoute = PrototypesMdlIdRouteImport.update({
   id: '/prototypes/mdl/$id',
   path: '/prototypes/mdl/$id',
@@ -606,6 +645,11 @@ const LawCfrTitleSectionRoute = LawCfrTitleSectionRouteImport.update({
   path: '/$title/$section',
   getParentRoute: () => LawCfrRoute,
 } as any)
+const LawLegislationStateIdRoute = LawLegislationStateIdRouteImport.update({
+  id: '/state/$id',
+  path: '/state/$id',
+  getParentRoute: () => LawLegislationRoute,
+} as any)
 const LawUscodeTitleSectionRoute = LawUscodeTitleSectionRouteImport.update({
   id: '/$section',
   path: '/$section',
@@ -616,6 +660,12 @@ const LawCfrTitlePartPartRoute = LawCfrTitlePartPartRouteImport.update({
   path: '/$title/part/$part',
   getParentRoute: () => LawCfrRoute,
 } as any)
+const LawLegislationFederalCongressTypeNumberRoute =
+  LawLegislationFederalCongressTypeNumberRouteImport.update({
+    id: '/federal/$congress/$type/$number',
+    path: '/federal/$congress/$type/$number',
+    getParentRoute: () => LawLegislationRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -639,6 +689,9 @@ export interface FileRoutesByFullPath {
   '/source-datasets': typeof SourceDatasetsRoute
   '/source-families': typeof SourceFamiliesRoute
   '/agencies/$id': typeof AgenciesIdRoute
+  '/analytics/enforcement': typeof AnalyticsEnforcementRoute
+  '/analytics/insights': typeof AnalyticsInsightsRoute
+  '/analytics/safety': typeof AnalyticsSafetyRoute
   '/api/assistant': typeof ApiAssistantRoute
   '/api/assistant-transcribe': typeof ApiAssistantTranscribeRoute
   '/api/bundles': typeof ApiBundlesRoute
@@ -665,6 +718,7 @@ export interface FileRoutesByFullPath {
   '/law/codes': typeof LawCodesRouteWithChildren
   '/law/constitutions': typeof LawConstitutionsRouteWithChildren
   '/law/enforcement': typeof LawEnforcementRoute
+  '/law/legislation': typeof LawLegislationRouteWithChildren
   '/law/monitoring': typeof LawMonitoringRoute
   '/law/regulations': typeof LawRegulationsRouteWithChildren
   '/law/uscode': typeof LawUscodeRouteWithChildren
@@ -708,17 +762,21 @@ export interface FileRoutesByFullPath {
   '/places/$state/$county': typeof PlacesStateCountyRoute
   '/prototypes/court/$id': typeof PrototypesCourtIdRoute
   '/prototypes/judge/$id': typeof PrototypesJudgeIdRoute
+  '/prototypes/legislation/$state': typeof PrototypesLegislationStateRoute
   '/prototypes/mdl/$id': typeof PrototypesMdlIdRoute
   '/records/$dataset/$id': typeof RecordsDatasetIdRoute
   '/law/cfr/': typeof LawCfrIndexRoute
   '/law/codes/': typeof LawCodesIndexRoute
   '/law/constitutions/': typeof LawConstitutionsIndexRoute
+  '/law/legislation/': typeof LawLegislationIndexRoute
   '/law/regulations/': typeof LawRegulationsIndexRoute
   '/law/uscode/': typeof LawUscodeIndexRoute
   '/law/cfr/$title/$section': typeof LawCfrTitleSectionRoute
+  '/law/legislation/state/$id': typeof LawLegislationStateIdRoute
   '/law/uscode/$title/$section': typeof LawUscodeTitleSectionRoute
   '/law/cfr/$title/': typeof LawCfrTitleIndexRoute
   '/law/cfr/$title/part/$part': typeof LawCfrTitlePartPartRoute
+  '/law/legislation/federal/$congress/$type/$number': typeof LawLegislationFederalCongressTypeNumberRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -742,6 +800,9 @@ export interface FileRoutesByTo {
   '/source-datasets': typeof SourceDatasetsRoute
   '/source-families': typeof SourceFamiliesRoute
   '/agencies/$id': typeof AgenciesIdRoute
+  '/analytics/enforcement': typeof AnalyticsEnforcementRoute
+  '/analytics/insights': typeof AnalyticsInsightsRoute
+  '/analytics/safety': typeof AnalyticsSafetyRoute
   '/api/assistant': typeof ApiAssistantRoute
   '/api/assistant-transcribe': typeof ApiAssistantTranscribeRoute
   '/api/bundles': typeof ApiBundlesRoute
@@ -806,17 +867,21 @@ export interface FileRoutesByTo {
   '/places/$state/$county': typeof PlacesStateCountyRoute
   '/prototypes/court/$id': typeof PrototypesCourtIdRoute
   '/prototypes/judge/$id': typeof PrototypesJudgeIdRoute
+  '/prototypes/legislation/$state': typeof PrototypesLegislationStateRoute
   '/prototypes/mdl/$id': typeof PrototypesMdlIdRoute
   '/records/$dataset/$id': typeof RecordsDatasetIdRoute
   '/law/cfr': typeof LawCfrIndexRoute
   '/law/codes': typeof LawCodesIndexRoute
   '/law/constitutions': typeof LawConstitutionsIndexRoute
+  '/law/legislation': typeof LawLegislationIndexRoute
   '/law/regulations': typeof LawRegulationsIndexRoute
   '/law/uscode': typeof LawUscodeIndexRoute
   '/law/cfr/$title/$section': typeof LawCfrTitleSectionRoute
+  '/law/legislation/state/$id': typeof LawLegislationStateIdRoute
   '/law/uscode/$title/$section': typeof LawUscodeTitleSectionRoute
   '/law/cfr/$title': typeof LawCfrTitleIndexRoute
   '/law/cfr/$title/part/$part': typeof LawCfrTitlePartPartRoute
+  '/law/legislation/federal/$congress/$type/$number': typeof LawLegislationFederalCongressTypeNumberRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -841,6 +906,9 @@ export interface FileRoutesById {
   '/source-datasets': typeof SourceDatasetsRoute
   '/source-families': typeof SourceFamiliesRoute
   '/agencies/$id': typeof AgenciesIdRoute
+  '/analytics_/enforcement': typeof AnalyticsEnforcementRoute
+  '/analytics_/insights': typeof AnalyticsInsightsRoute
+  '/analytics_/safety': typeof AnalyticsSafetyRoute
   '/api/assistant': typeof ApiAssistantRoute
   '/api/assistant-transcribe': typeof ApiAssistantTranscribeRoute
   '/api/bundles': typeof ApiBundlesRoute
@@ -867,6 +935,7 @@ export interface FileRoutesById {
   '/law_/codes': typeof LawCodesRouteWithChildren
   '/law_/constitutions': typeof LawConstitutionsRouteWithChildren
   '/law_/enforcement': typeof LawEnforcementRoute
+  '/law_/legislation': typeof LawLegislationRouteWithChildren
   '/law_/monitoring': typeof LawMonitoringRoute
   '/law_/regulations': typeof LawRegulationsRouteWithChildren
   '/law_/uscode': typeof LawUscodeRouteWithChildren
@@ -910,17 +979,21 @@ export interface FileRoutesById {
   '/places/$state/$county': typeof PlacesStateCountyRoute
   '/prototypes/court/$id': typeof PrototypesCourtIdRoute
   '/prototypes/judge/$id': typeof PrototypesJudgeIdRoute
+  '/prototypes/legislation/$state': typeof PrototypesLegislationStateRoute
   '/prototypes/mdl/$id': typeof PrototypesMdlIdRoute
   '/records/$dataset/$id': typeof RecordsDatasetIdRoute
   '/law_/cfr/': typeof LawCfrIndexRoute
   '/law_/codes/': typeof LawCodesIndexRoute
   '/law_/constitutions/': typeof LawConstitutionsIndexRoute
+  '/law_/legislation/': typeof LawLegislationIndexRoute
   '/law_/regulations/': typeof LawRegulationsIndexRoute
   '/law_/uscode/': typeof LawUscodeIndexRoute
   '/law_/cfr/$title/$section': typeof LawCfrTitleSectionRoute
+  '/law_/legislation/state/$id': typeof LawLegislationStateIdRoute
   '/law_/uscode/$title/$section': typeof LawUscodeTitleSectionRoute
   '/law_/cfr/$title/': typeof LawCfrTitleIndexRoute
   '/law_/cfr/$title/part/$part': typeof LawCfrTitlePartPartRoute
+  '/law_/legislation/federal/$congress/$type/$number': typeof LawLegislationFederalCongressTypeNumberRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -946,6 +1019,9 @@ export interface FileRouteTypes {
     | '/source-datasets'
     | '/source-families'
     | '/agencies/$id'
+    | '/analytics/enforcement'
+    | '/analytics/insights'
+    | '/analytics/safety'
     | '/api/assistant'
     | '/api/assistant-transcribe'
     | '/api/bundles'
@@ -972,6 +1048,7 @@ export interface FileRouteTypes {
     | '/law/codes'
     | '/law/constitutions'
     | '/law/enforcement'
+    | '/law/legislation'
     | '/law/monitoring'
     | '/law/regulations'
     | '/law/uscode'
@@ -1015,17 +1092,21 @@ export interface FileRouteTypes {
     | '/places/$state/$county'
     | '/prototypes/court/$id'
     | '/prototypes/judge/$id'
+    | '/prototypes/legislation/$state'
     | '/prototypes/mdl/$id'
     | '/records/$dataset/$id'
     | '/law/cfr/'
     | '/law/codes/'
     | '/law/constitutions/'
+    | '/law/legislation/'
     | '/law/regulations/'
     | '/law/uscode/'
     | '/law/cfr/$title/$section'
+    | '/law/legislation/state/$id'
     | '/law/uscode/$title/$section'
     | '/law/cfr/$title/'
     | '/law/cfr/$title/part/$part'
+    | '/law/legislation/federal/$congress/$type/$number'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -1049,6 +1130,9 @@ export interface FileRouteTypes {
     | '/source-datasets'
     | '/source-families'
     | '/agencies/$id'
+    | '/analytics/enforcement'
+    | '/analytics/insights'
+    | '/analytics/safety'
     | '/api/assistant'
     | '/api/assistant-transcribe'
     | '/api/bundles'
@@ -1113,17 +1197,21 @@ export interface FileRouteTypes {
     | '/places/$state/$county'
     | '/prototypes/court/$id'
     | '/prototypes/judge/$id'
+    | '/prototypes/legislation/$state'
     | '/prototypes/mdl/$id'
     | '/records/$dataset/$id'
     | '/law/cfr'
     | '/law/codes'
     | '/law/constitutions'
+    | '/law/legislation'
     | '/law/regulations'
     | '/law/uscode'
     | '/law/cfr/$title/$section'
+    | '/law/legislation/state/$id'
     | '/law/uscode/$title/$section'
     | '/law/cfr/$title'
     | '/law/cfr/$title/part/$part'
+    | '/law/legislation/federal/$congress/$type/$number'
   id:
     | '__root__'
     | '/'
@@ -1147,6 +1235,9 @@ export interface FileRouteTypes {
     | '/source-datasets'
     | '/source-families'
     | '/agencies/$id'
+    | '/analytics_/enforcement'
+    | '/analytics_/insights'
+    | '/analytics_/safety'
     | '/api/assistant'
     | '/api/assistant-transcribe'
     | '/api/bundles'
@@ -1173,6 +1264,7 @@ export interface FileRouteTypes {
     | '/law_/codes'
     | '/law_/constitutions'
     | '/law_/enforcement'
+    | '/law_/legislation'
     | '/law_/monitoring'
     | '/law_/regulations'
     | '/law_/uscode'
@@ -1216,17 +1308,21 @@ export interface FileRouteTypes {
     | '/places/$state/$county'
     | '/prototypes/court/$id'
     | '/prototypes/judge/$id'
+    | '/prototypes/legislation/$state'
     | '/prototypes/mdl/$id'
     | '/records/$dataset/$id'
     | '/law_/cfr/'
     | '/law_/codes/'
     | '/law_/constitutions/'
+    | '/law_/legislation/'
     | '/law_/regulations/'
     | '/law_/uscode/'
     | '/law_/cfr/$title/$section'
+    | '/law_/legislation/state/$id'
     | '/law_/uscode/$title/$section'
     | '/law_/cfr/$title/'
     | '/law_/cfr/$title/part/$part'
+    | '/law_/legislation/federal/$congress/$type/$number'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1251,6 +1347,9 @@ export interface RootRouteChildren {
   SourceDatasetsRoute: typeof SourceDatasetsRoute
   SourceFamiliesRoute: typeof SourceFamiliesRoute
   AgenciesIdRoute: typeof AgenciesIdRoute
+  AnalyticsEnforcementRoute: typeof AnalyticsEnforcementRoute
+  AnalyticsInsightsRoute: typeof AnalyticsInsightsRoute
+  AnalyticsSafetyRoute: typeof AnalyticsSafetyRoute
   ApiAssistantRoute: typeof ApiAssistantRoute
   ApiAssistantTranscribeRoute: typeof ApiAssistantTranscribeRoute
   ApiBundlesRoute: typeof ApiBundlesRoute
@@ -1277,6 +1376,7 @@ export interface RootRouteChildren {
   LawCodesRoute: typeof LawCodesRouteWithChildren
   LawConstitutionsRoute: typeof LawConstitutionsRouteWithChildren
   LawEnforcementRoute: typeof LawEnforcementRoute
+  LawLegislationRoute: typeof LawLegislationRouteWithChildren
   LawMonitoringRoute: typeof LawMonitoringRoute
   LawRegulationsRoute: typeof LawRegulationsRouteWithChildren
   LawUscodeRoute: typeof LawUscodeRouteWithChildren
@@ -1315,6 +1415,7 @@ export interface RootRouteChildren {
   MattersLensMdlRoute: typeof MattersLensMdlRoute
   PrototypesCourtIdRoute: typeof PrototypesCourtIdRoute
   PrototypesJudgeIdRoute: typeof PrototypesJudgeIdRoute
+  PrototypesLegislationStateRoute: typeof PrototypesLegislationStateRoute
   PrototypesMdlIdRoute: typeof PrototypesMdlIdRoute
   RecordsDatasetIdRoute: typeof RecordsDatasetIdRoute
 }
@@ -1473,6 +1574,27 @@ declare module '@tanstack/react-router' {
       path: '/agencies/$id'
       fullPath: '/agencies/$id'
       preLoaderRoute: typeof AgenciesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics_/enforcement': {
+      id: '/analytics_/enforcement'
+      path: '/analytics/enforcement'
+      fullPath: '/analytics/enforcement'
+      preLoaderRoute: typeof AnalyticsEnforcementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics_/insights': {
+      id: '/analytics_/insights'
+      path: '/analytics/insights'
+      fullPath: '/analytics/insights'
+      preLoaderRoute: typeof AnalyticsInsightsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics_/safety': {
+      id: '/analytics_/safety'
+      path: '/analytics/safety'
+      fullPath: '/analytics/safety'
+      preLoaderRoute: typeof AnalyticsSafetyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/assistant': {
@@ -1690,6 +1812,13 @@ declare module '@tanstack/react-router' {
       path: '/law/enforcement'
       fullPath: '/law/enforcement'
       preLoaderRoute: typeof LawEnforcementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/law_/legislation': {
+      id: '/law_/legislation'
+      path: '/law/legislation'
+      fullPath: '/law/legislation'
+      preLoaderRoute: typeof LawLegislationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/law_/monitoring': {
@@ -1923,6 +2052,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LawConstitutionsStateRouteImport
       parentRoute: typeof LawConstitutionsRoute
     }
+    '/law_/legislation/': {
+      id: '/law_/legislation/'
+      path: '/'
+      fullPath: '/law/legislation/'
+      preLoaderRoute: typeof LawLegislationIndexRouteImport
+      parentRoute: typeof LawLegislationRoute
+    }
     '/law_/provision/$id': {
       id: '/law_/provision/$id'
       path: '/law/provision/$id'
@@ -1986,6 +2122,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrototypesJudgeIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/prototypes/legislation/$state': {
+      id: '/prototypes/legislation/$state'
+      path: '/prototypes/legislation/$state'
+      fullPath: '/prototypes/legislation/$state'
+      preLoaderRoute: typeof PrototypesLegislationStateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/prototypes/mdl/$id': {
       id: '/prototypes/mdl/$id'
       path: '/prototypes/mdl/$id'
@@ -2014,6 +2157,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LawCfrTitleSectionRouteImport
       parentRoute: typeof LawCfrRoute
     }
+    '/law_/legislation/state/$id': {
+      id: '/law_/legislation/state/$id'
+      path: '/state/$id'
+      fullPath: '/law/legislation/state/$id'
+      preLoaderRoute: typeof LawLegislationStateIdRouteImport
+      parentRoute: typeof LawLegislationRoute
+    }
     '/law_/uscode/$title/$section': {
       id: '/law_/uscode/$title/$section'
       path: '/$section'
@@ -2027,6 +2177,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/law/cfr/$title/part/$part'
       preLoaderRoute: typeof LawCfrTitlePartPartRouteImport
       parentRoute: typeof LawCfrRoute
+    }
+    '/law_/legislation/federal/$congress/$type/$number': {
+      id: '/law_/legislation/federal/$congress/$type/$number'
+      path: '/federal/$congress/$type/$number'
+      fullPath: '/law/legislation/federal/$congress/$type/$number'
+      preLoaderRoute: typeof LawLegislationFederalCongressTypeNumberRouteImport
+      parentRoute: typeof LawLegislationRoute
     }
   }
 }
@@ -2074,6 +2231,23 @@ const LawConstitutionsRouteChildren: LawConstitutionsRouteChildren = {
 
 const LawConstitutionsRouteWithChildren =
   LawConstitutionsRoute._addFileChildren(LawConstitutionsRouteChildren)
+
+interface LawLegislationRouteChildren {
+  LawLegislationIndexRoute: typeof LawLegislationIndexRoute
+  LawLegislationStateIdRoute: typeof LawLegislationStateIdRoute
+  LawLegislationFederalCongressTypeNumberRoute: typeof LawLegislationFederalCongressTypeNumberRoute
+}
+
+const LawLegislationRouteChildren: LawLegislationRouteChildren = {
+  LawLegislationIndexRoute: LawLegislationIndexRoute,
+  LawLegislationStateIdRoute: LawLegislationStateIdRoute,
+  LawLegislationFederalCongressTypeNumberRoute:
+    LawLegislationFederalCongressTypeNumberRoute,
+}
+
+const LawLegislationRouteWithChildren = LawLegislationRoute._addFileChildren(
+  LawLegislationRouteChildren,
+)
 
 interface LawRegulationsRouteChildren {
   LawRegulationsStateRoute: typeof LawRegulationsStateRoute
@@ -2149,6 +2323,9 @@ const rootRouteChildren: RootRouteChildren = {
   SourceDatasetsRoute: SourceDatasetsRoute,
   SourceFamiliesRoute: SourceFamiliesRoute,
   AgenciesIdRoute: AgenciesIdRoute,
+  AnalyticsEnforcementRoute: AnalyticsEnforcementRoute,
+  AnalyticsInsightsRoute: AnalyticsInsightsRoute,
+  AnalyticsSafetyRoute: AnalyticsSafetyRoute,
   ApiAssistantRoute: ApiAssistantRoute,
   ApiAssistantTranscribeRoute: ApiAssistantTranscribeRoute,
   ApiBundlesRoute: ApiBundlesRoute,
@@ -2175,6 +2352,7 @@ const rootRouteChildren: RootRouteChildren = {
   LawCodesRoute: LawCodesRouteWithChildren,
   LawConstitutionsRoute: LawConstitutionsRouteWithChildren,
   LawEnforcementRoute: LawEnforcementRoute,
+  LawLegislationRoute: LawLegislationRouteWithChildren,
   LawMonitoringRoute: LawMonitoringRoute,
   LawRegulationsRoute: LawRegulationsRouteWithChildren,
   LawUscodeRoute: LawUscodeRouteWithChildren,
@@ -2213,6 +2391,7 @@ const rootRouteChildren: RootRouteChildren = {
   MattersLensMdlRoute: MattersLensMdlRoute,
   PrototypesCourtIdRoute: PrototypesCourtIdRoute,
   PrototypesJudgeIdRoute: PrototypesJudgeIdRoute,
+  PrototypesLegislationStateRoute: PrototypesLegislationStateRoute,
   PrototypesMdlIdRoute: PrototypesMdlIdRoute,
   RecordsDatasetIdRoute: RecordsDatasetIdRoute,
 }

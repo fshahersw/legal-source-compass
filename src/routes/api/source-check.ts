@@ -22,7 +22,7 @@ export const Route = createFileRoute("/api/source-check")({
         const target = requestUrl.searchParams.get("url") ?? "";
         if (target.length > 2000)
           return Response.json({ error: "Address too long." }, { status: 400 });
-        const { checkSource, readerConfigured, remoteBrowserConfigured } =
+        const { checkSourceCached, readerConfigured, remoteBrowserConfigured, serverTiming } =
           await import("@/lib/sourceViewer/remote.server");
         const options = { remoteBrowser: remoteBrowserConfigured(), reader: readerConfigured() };
         const { publicUrl } = await import("@/lib/net/publicUrl");
@@ -35,11 +35,22 @@ export const Route = createFileRoute("/api/source-check")({
             },
             { status: 400 },
           );
+        const started = Date.now();
         try {
-          const result = await checkSource(target, requestUrl.origin);
+          // Remembered for a few minutes and shared with a check already under way; `fresh=1` (reload) asks the site again.
+          const { check, cached, ms } = await checkSourceCached(target, requestUrl.origin, {
+            fresh: requestUrl.searchParams.get("fresh") === "1",
+          });
           return Response.json(
-            { ...result, ...options },
-            { headers: { "cache-control": "private, max-age=300" } },
+            { ...check, ...options },
+            {
+              headers: {
+                "cache-control": "private, max-age=300",
+                "server-timing": serverTiming([
+                  { name: "check", dur: ms, desc: cached ? "remembered" : "asked the site" },
+                ]),
+              },
+            },
           );
         } catch (error) {
           return Response.json(
@@ -48,7 +59,12 @@ export const Route = createFileRoute("/api/source-check")({
               code: "unreachable",
               ...options,
             },
-            { status: 422 },
+            {
+              status: 422,
+              headers: {
+                "server-timing": serverTiming([{ name: "check", dur: Date.now() - started }]),
+              },
+            },
           );
         }
       },

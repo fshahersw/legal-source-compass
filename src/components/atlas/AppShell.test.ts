@@ -87,7 +87,15 @@ describe("AppShell section tabs", () => {
     ["/law", "Overview", "page"],
     ["/places", "State map", "true"],
     ["/places/analytics", "State analytics", "page"],
-    ["/analytics", "Data visualizations", "page"],
+    ["/courts/analytics", "Court analytics", "page"],
+    ["/judges/analytics", "Judge analytics", "page"],
+    ["/analytics", "Overview", "page"],
+    ["/analytics/insights", "Insights of the day", "page"],
+    ["/analytics/enforcement", "Enforcement trends", "page"],
+    ["/analytics/safety", "Safety trends", "page"],
+    ["/limitations", "Time limits", "page"],
+    ["/limitations/statutory", "Time limits", "true"],
+    ["/saved-sources", "Saved work", "page"],
   ])("%s lights only %s (aria-current=%s)", (path, label, current) => {
     const { tabs } = render(path);
     expect(tabs).not.toBeNull();
@@ -99,33 +107,67 @@ describe("AppShell section tabs", () => {
     }
   });
 
-  it("shows the States & courts tabs with Court analytics lit as the parent of the MDL views", () => {
+  it("shows the Analytics tabs with Court analytics lit as the parent of the MDL views", () => {
     for (const path of ["/matters/analytics", "/matters/intel", "/matters/lens/3026"]) {
+      const { tabs, primary, mobile } = render(path);
+      expect(tabs?.map((t) => t.href)).toEqual([
+        "/analytics",
+        "/analytics/enforcement",
+        "/analytics/safety",
+        "/places/analytics",
+        "/courts/analytics",
+        "/judges/analytics",
+        "/analytics/insights",
+      ]);
+      expect(lit(tabs!)).toEqual([["Court analytics", "true"]]);
+      expect(lit(primary)).toEqual([["Analytics", "true"]]);
+      expect(lit(mobile)).toEqual([["Analytics", "true"]]);
+    }
+  });
+
+  it("shows the eight States & courts tabs, with no analytics entry", () => {
+    for (const path of ["/places", "/courts", "/courts/ned", "/judges", "/courts/vacancies"]) {
       const { tabs, primary } = render(path);
       expect(tabs?.map((t) => t.href)).toEqual([
         "/",
-        "/places/analytics",
         "/courts",
-        "/courts/analytics",
         "/courts/caseload",
         "/courts/collection",
         "/courts/firms",
         "/courts/securities",
         "/courts/vacancies",
         "/judges",
-        "/judges/analytics",
-        "/analytics",
       ]);
-      expect(lit(tabs!)).toEqual([["Court analytics", "true"]]);
       expect(lit(primary)).toEqual([["States & courts", "true"]]);
     }
   });
 
-  it("shows the Data visualizations hub under States & courts in the sidebar and the mobile bar", () => {
-    const { primary, mobile } = render("/analytics");
-    for (const links of [primary, mobile]) {
-      expect(links).toHaveLength(4);
-      expect(lit(links)).toEqual([["States & courts", "true"]]);
+  it("shows Time limits as a Law & regulation tab, after Case law and Legislation", () => {
+    const { tabs, primary, mobile } = render("/limitations");
+    const labels = tabs!.map((t) => t.label);
+    expect(labels.slice(labels.indexOf("Case law"), labels.indexOf("Case law") + 3)).toEqual([
+      "Case law",
+      "Legislation",
+      "Time limits",
+    ]);
+    expect(tabs!.find((t) => t.label === "Time limits")?.href).toBe("/limitations");
+    for (const links of [primary, mobile])
+      expect(lit(links)).toEqual([["Law & regulation", "true"]]);
+  });
+
+  it("opens the Analytics section from the sidebar and the mobile bar", () => {
+    for (const path of ["/analytics", "/places/analytics", "/judges/analytics"]) {
+      const { primary, mobile } = render(path);
+      for (const links of [primary, mobile]) {
+        expect(links.map((a) => a.label)).toEqual([
+          "States & courts",
+          "Law & regulation",
+          "Analytics",
+          "Sources",
+        ]);
+        expect(links.map((a) => a.href)).toEqual(["/", "/law", "/analytics", "/sources"]);
+        expect(lit(links)).toEqual([["Analytics", path === "/analytics" ? "page" : "true"]]);
+      }
     }
   });
 
@@ -144,7 +186,10 @@ describe("AppShell primary sections", () => {
     ["/sources", "Sources", "page"],
     ["/sources/library", "Sources", "true"],
     ["/sources/catalog", "Sources", "true"],
-    ["/limitations", "Time limits", "page"],
+    ["/limitations", "Law & regulation", "true"],
+    ["/limitations/statutory", "Law & regulation", "true"],
+    ["/analytics", "Analytics", "page"],
+    ["/courts/analytics", "Analytics", "true"],
   ])("%s lights %s (aria-current=%s) in the sidebar and the mobile bar", (path, label, current) => {
     const { primary, mobile } = render(path);
     for (const links of [primary, mobile]) {
