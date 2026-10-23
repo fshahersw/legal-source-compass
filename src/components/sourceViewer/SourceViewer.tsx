@@ -545,8 +545,13 @@ export function SourceViewer() {
       readerGen.current = generation.current;
       void loadReader(target, generation.current, true);
     } else {
-      setLoaded((l) => ({ ...l, [view]: false }));
-      setFrameKeys((k) => ({ ...k, [view]: (k[view] ?? 0) + 1 }));
+      const gen = generation.current;
+      // A reloaded document comes through the relay, whose session cookie may have lapsed while the panel stayed open.
+      void (view === "document" ? ensureSession() : Promise.resolve()).then(() => {
+        if (gen !== generation.current) return;
+        setLoaded((l) => ({ ...l, [view]: false }));
+        setFrameKeys((k) => ({ ...k, [view]: (k[view] ?? 0) + 1 }));
+      });
     }
   };
 
