@@ -49,7 +49,7 @@ export function StateLegislationPanel({ usps }: { usps: string }) {
           The state bill collection is not published yet.
         </p>
       ) : (
-        <div className="space-y-3 px-3 py-3 text-xs">
+        <div className="flex flex-col gap-3 px-3 py-3 text-xs">
           <p className="m-0 text-[11px] text-muted-foreground">
             {q.data.sessions.length
               ? q.data.sessions
@@ -108,14 +108,16 @@ function List({
         <ul className="m-0 list-none space-y-1 p-0">
           {rows.map((r) => (
             <li key={r.id} className="min-w-0">
-              <Link
-                to="/law/legislation/state/$id"
-                params={{ id: r.id }}
-                className="font-medium text-primary hover:underline"
-              >
-                {r.identifier}
-              </Link>{" "}
-              <span className="line-clamp-1 inline text-foreground">{r.title}</span>
+              <p className="m-0 line-clamp-2" title={r.title}>
+                <Link
+                  to="/law/legislation/state/$id"
+                  params={{ id: r.id }}
+                  className="font-medium text-primary hover:underline"
+                >
+                  {r.identifier}
+                </Link>{" "}
+                {r.title}
+              </p>
               <span className="block text-[10.5px] text-muted-foreground">
                 {r.statusLabel} · {fmtDay(r.latestActionDate)}
               </span>

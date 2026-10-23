@@ -11,6 +11,22 @@ import { Capped, MilestoneTrack, Section, StatusChip } from "./parts";
 const MILESTONE_RULE =
   "Derived only from published Congress.gov action codes (for example 8000 Passed/agreed to in House, 28000 Presented to President, 36000 Became Public Law); a stage without such an action is not recorded.";
 
+/** Stages that can apply to the measure type: simple resolutions stay in one chamber, concurrent resolutions never go to
+ * the President; bills and joint resolutions can reach every stage. A stage that happened is always shown. */
+function applicable(b: FederalBill) {
+  const own = b.type === "hres" ? "passed_house" : b.type === "sres" ? "passed_senate" : null;
+  const skip = new Set<string>(
+    own
+      ? ["passed_house", "passed_senate", "to_president", "vetoed", "became_law"].filter(
+          (k) => k !== own,
+        )
+      : b.type === "hconres" || b.type === "sconres"
+        ? ["to_president", "vetoed", "became_law"]
+        : [],
+  );
+  return b.milestones.filter((m) => m.date || !skip.has(m.key));
+}
+
 function copy(text: string, what: string) {
   void navigator.clipboard.writeText(text).then(
     () => toast.success(`${what} copied`),
@@ -55,7 +71,7 @@ export function FederalBillView({ bill: b, crs }: { bill: FederalBill; crs: CrsH
           {crs.length ? <Crs items={crs} /> : null}
         </div>
         <aside className="min-w-0 space-y-4">
-          <MilestoneTrack milestones={b.milestones} rule={MILESTONE_RULE} />
+          <MilestoneTrack milestones={applicable(b)} rule={MILESTONE_RULE} />
           <Sponsors bill={b} />
           {b.committees.length ? <Committees bill={b} /> : null}
           <Titles bill={b} />
@@ -114,7 +130,10 @@ function LatestAction({ bill: b }: { bill: FederalBill }) {
   );
 }
 
+const SUMMARY_PREVIEW = 8;
+
 function Summary({ bill: b }: { bill: FederalBill }) {
+  const [open, setOpen] = useState(false);
   if (!b.summary)
     return (
       <Section title="CRS summary">
@@ -123,13 +142,18 @@ function Summary({ bill: b }: { bill: FederalBill }) {
         </p>
       </Section>
     );
+  const blocks = b.summary.blocks;
+  const shown = open ? blocks : blocks.slice(0, SUMMARY_PREVIEW);
   return (
     <Section
       title="CRS summary"
       aside={`${b.summary.version ?? "Version not recorded"} · ${fmtDay(b.summary.date)}${b.summaryCount > 1 ? ` · latest of ${b.summaryCount}` : ""}`}
     >
-      <div className="max-w-[80ch] space-y-1.5 text-[13.5px] leading-relaxed">
-        {b.summary.blocks.map((blk, i) =>
+      <div
+        id="crs-summary"
+        className="flex max-w-[80ch] flex-col gap-1.5 text-[13.5px] leading-relaxed"
+      >
+        {shown.map((blk, i) =>
           blk.kind === "li" ? (
             <p key={i} className="m-0 pl-4 before:-ml-3 before:mr-1.5 before:content-['•']">
               {blk.text}
@@ -141,6 +165,17 @@ function Summary({ bill: b }: { bill: FederalBill }) {
           ),
         )}
       </div>
+      {blocks.length > SUMMARY_PREVIEW ? (
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls="crs-summary"
+          onClick={() => setOpen((v) => !v)}
+          className="mt-1.5 rounded text-[12px] text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          {open ? "Show less" : `Show the full summary (${fmtN(blocks.length)} paragraphs)`}
+        </button>
+      ) : null}
       <p className="m-0 mt-2 text-[10.5px] text-muted-foreground">
         Written by the Congressional Research Service for the version named above, as published in
         the Bill Status file.
@@ -403,31 +438,30 @@ function Sponsors({ bill: b }: { bill: FederalBill }) {
 }
 
 function Committees({ bill: b }: { bill: FederalBill }) {
+  const acts = (list: { name: string; date: string | null }[]) =>
+    list.map((a) => `${a.name}${a.date ? ` ${fmtDay(a.date)}` : ""}`).join(" · ") || NR;
   return (
-    <Section title="Committees">
-      <ul className="m-0 list-none space-y-2 p-0 text-[12.5px]">
-        {b.committees.map((c) => (
+    <Section title="Committees" aside={`${b.committees.length}`}>
+      <Capped
+        items={b.committees}
+        limit={6}
+        noun="committees"
+        className="space-y-2 text-[12.5px]"
+        render={(c) => (
           <li key={c.name}>
             <span className="font-medium">{c.name}</span>
             {c.chamber ? (
               <span className="ml-1 text-[11px] text-muted-foreground">{c.chamber}</span>
             ) : null}
-            <span className="block text-[11px] text-muted-foreground">
-              {c.activities
-                .map((a) => `${a.name}${a.date ? ` ${fmtDay(a.date)}` : ""}`)
-                .join(" · ") || NR}
-            </span>
-            {c.subcommittees.map((s) => (
-              <span key={s.name} className="block pl-3 text-[11px] text-muted-foreground">
-                {s.name}:{" "}
-                {s.activities
-                  .map((a) => `${a.name}${a.date ? ` ${fmtDay(a.date)}` : ""}`)
-                  .join(" · ") || NR}
+            <span className="block text-[11px] text-muted-foreground">{acts(c.activities)}</span>
+            {c.subcommittees.map((sc) => (
+              <span key={sc.name} className="block pl-3 text-[11px] text-muted-foreground">
+                {sc.name}: {acts(sc.activities)}
               </span>
             ))}
           </li>
-        ))}
-      </ul>
+        )}
+      />
     </Section>
   );
 }

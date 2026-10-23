@@ -368,7 +368,7 @@ function FederalRow({ h }: { h: FederalHit }) {
         {h.law ? <span className="text-[11px] text-muted-foreground">{h.law}</span> : null}
       </div>
       <p className="m-0 line-clamp-2 text-[13px]">{h.title}</p>
-      <p className="m-0 text-[11.5px] text-muted-foreground">
+      <p className="m-0 line-clamp-2 text-[11.5px] text-muted-foreground">
         {h.sponsor ?? "Sponsor not recorded"} · Latest action {fmtDay(h.latestActionDate)}
         {h.latestAction ? `: ${h.latestAction}` : ""}
       </p>
@@ -393,7 +393,7 @@ function StateRow({ h }: { h: StateHit }) {
         <StatusChip status={h.status} label={h.statusLabel} />
       </div>
       <p className="m-0 line-clamp-2 text-[13px]">{h.title}</p>
-      <p className="m-0 text-[11.5px] text-muted-foreground">
+      <p className="m-0 line-clamp-2 text-[11.5px] text-muted-foreground">
         {h.sponsor ?? "Sponsor not recorded"} · Latest action{" "}
         {h.latestActionDate ? fmtDay(h.latestActionDate) : NR}
         {h.latestAction ? `: ${h.latestAction}` : ""}
