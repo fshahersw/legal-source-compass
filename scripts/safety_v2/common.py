@@ -7,6 +7,7 @@ private/acq/w1025_safety/<stream>/. Every network response the builders keep is 
 """
 import gzip
 import hashlib
+import io
 import json
 import os
 import re
@@ -272,3 +273,68 @@ def iso(d):
         return date(int(d[:4]), int(d[4:6]), int(d[6:8])).isoformat()
     except ValueError:
         return None
+
+
+class RangeFile(io.RawIOBase):
+    """A seekable read-only view of a remote file through HTTP Range requests (for zipfile on large official archives,
+    so only the bytes read cross the network and nothing is stored). Refuses a server that ignores Range or an archive
+    replaced while it is read (If-Range on Last-Modified)."""
+
+    def __init__(self, url, block=8 << 20, min_interval=0.5):
+        self.url, self.pos, self.block, self.min_interval = url, 0, block, min_interval
+        self.cache_start, self.cache, self.requests = -1, b"", 0
+        req = urllib.request.Request(url, method="HEAD", headers={"User-Agent": UA})
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            self.size = int(resp.headers["Content-Length"])
+            self.last_modified = resp.headers.get("Last-Modified")
+            if (resp.headers.get("Accept-Ranges") or "").lower() != "bytes":
+                raise RuntimeError(f"{url} does not accept byte ranges")
+
+    def seekable(self):
+        return True
+
+    def readable(self):
+        return True
+
+    def tell(self):
+        return self.pos
+
+    def seek(self, offset, whence=0):
+        self.pos = offset if whence == 0 else self.pos + offset if whence == 1 else self.size + offset
+        return self.pos
+
+    def _fetch(self, start, end):
+        for attempt in range(8):
+            time.sleep(self.min_interval)
+            headers = {"User-Agent": UA, "Range": f"bytes={start}-{end}"}
+            if self.last_modified:
+                headers["If-Range"] = self.last_modified
+            try:
+                with urllib.request.urlopen(urllib.request.Request(self.url, headers=headers), timeout=300) as resp:
+                    self.requests += 1
+                    if resp.status != 206:
+                        raise RuntimeError(f"server answered {resp.status} to a Range request (archive replaced?)")
+                    return resp.read()
+            except Exception:  # noqa: BLE001 - network hiccups: retry with backoff, then raise
+                if attempt == 7:
+                    raise
+                time.sleep(min(60, 2 ** (attempt + 1)))
+
+    def read(self, n=-1):
+        if n is None or n < 0:
+            n = self.size - self.pos
+        n = min(n, self.size - self.pos)
+        if n <= 0:
+            return b""
+        if not (self.cache_start <= self.pos and self.pos + n <= self.cache_start + len(self.cache)):
+            end = min(self.size - 1, self.pos + max(n, self.block) - 1)
+            self.cache, self.cache_start = self._fetch(self.pos, end), self.pos
+        off = self.pos - self.cache_start
+        data = self.cache[off:off + n]
+        self.pos += len(data)
+        return data
+
+    def readinto(self, buffer):
+        data = self.read(len(buffer))
+        buffer[:len(data)] = data
+        return len(data)
