@@ -368,6 +368,13 @@ class ArizonaVersionTests(unittest.TestCase):
         bare = az.version_fields("9-1", "A. Text without a version line.", 2, {})
         self.assertIsNone(bare["version"])
 
+    def test_index_version_labels_cover_decimal_sections_too(self):
+        az = load("az")
+        self.assertTrue(az.printed_matches("3-3493", "3-3493; Version 2", "https://www.azleg.gov/ars/3/03493.01.htm"))
+        self.assertTrue(az.printed_matches("11-269.33", "11-269; Version 33", "https://www.azleg.gov/ars/11/00269.33.htm"))
+        self.assertTrue(az.printed_matches("12-542", "12-542", "https://www.azleg.gov/ars/12/00542.htm"))
+        self.assertFalse(az.printed_matches("11-270", "11-269; Version 33", "https://www.azleg.gov/ars/11/00269.33.htm"))
+
 
 class KansasTests(unittest.TestCase):
     def test_repealed_section_prints_its_number_in_the_history_paragraph(self):

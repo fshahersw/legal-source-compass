@@ -112,6 +112,15 @@ def base_number(label: str) -> str:
     return re.sub(r";\s*Version\s+\d+\s*$", "", label)
 
 
+def printed_matches(number: str, label: str, url: str) -> bool:
+    """The index labels a page with a ".NN" file suffix "<base>; Version NN" whether the page is a second version of
+    <base> (03493.01.htm prints "3-3493") or the decimal section <base>.NN (00269.33.htm prints "11-269.33"); either
+    printed number agrees with the index. Any other number does not."""
+    base = base_number(label)
+    suffix = re.search(r"/[0-9A-Za-z]+\.([0-9]+)\.htm$", url)
+    return number == base or (suffix is not None and number == f"{base}.{suffix.group(1)}")
+
+
 def version_fields(number: str, text: str, count: int, seen: dict[str, int]) -> dict:
     """A section the publisher prints in more than one version (03493.htm and 03493.01.htm): each version is kept
     with its own version line, "(L17, Ch. 295, sec. 2. Conditionally Eff.)", and none is called in force, since the
@@ -145,12 +154,11 @@ def acquire(ctx: lib.RunContext) -> None:
             break
         page = ctx.get(f"{BASE}/arsDetail/?title={title}")
         title_heading, rows = title_structure(page)
-        printed = {}
+        # pages are read first: whether two index rows are two versions of one section or two sections is decided by
+        # the numbers the pages print, not by the index labels (see printed_matches)
+        read = []
         for row in rows:
-            printed[base_number(row["number"])] = printed.get(base_number(row["number"]), 0) + 1
-        seen: dict[str, int] = {}
-        for row in rows:
-            if not ctx.want_more():
+            if not ctx.want_more() or (ctx.sample is not None and len(read) >= ctx.sample):
                 break
             if ctx.retained is not None and row["url"] not in ctx.retained.by_url:
                 if ctx.sample is not None:
@@ -158,8 +166,16 @@ def acquire(ctx: lib.RunContext) -> None:
                 raise RuntimeError(f"listed section has no retained original: {row['url']}")
             section_page = ctx.get(row["url"])
             number, heading, text = parse_section(section_page)
-            if number != base_number(row["number"]):
+            if not printed_matches(number, row["number"], row["url"]):
                 raise RuntimeError(f"{row['url']} prints {number}, index lists {row['number']}")
+            read.append((row, section_page, number, heading, text))
+        printed: dict[str, int] = {}
+        for _row, _page, number, _h, _t in read:
+            printed[number] = printed.get(number, 0) + 1
+        seen: dict[str, int] = {}
+        for row, section_page, number, heading, text in read:
+            if not ctx.want_more():
+                break
             versions = version_fields(number, text, printed[number], seen) if printed[number] > 1 else {}
             path = [{"level": "title", "label": "Title", "number": title, "heading": title_heading},
                     {"level": "chapter", "label": "Chapter", "number": row["chapter"], "heading": row["chapter_heading"]}]
