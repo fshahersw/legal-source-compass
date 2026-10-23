@@ -394,14 +394,18 @@ begin
     raise exception 'unresolved references: % sections without node, % nodes without parent, % duplicate ordinals',
       orphan_sections, orphan_nodes, dup_ord using errcode = '22023';
   end if;
+  -- one joined update (correlated lookups into the CTEs were quadratic in the node count)
   with direct as (
     select node_id, count(*) n from state_law.sections where state = ed.state and edition_id = p_edition_id group by node_id
   ), deep as (
     select a.anc, sum(d.n) n from direct d cross join lateral unnest(state_law.ancestor_ids_v1(d.node_id)) a(anc) group by a.anc
+  ), counts as (
+    select n.node_id, coalesce(d.n, 0) direct_n, coalesce(p.n, 0) deep_n
+    from state_law.nodes n left join direct d on d.node_id = n.node_id left join deep p on p.anc = n.node_id
+    where n.edition_id = p_edition_id
   )
-  update state_law.nodes x set direct_sections = coalesce((select d.n from direct d where d.node_id = x.node_id), 0),
-    descendant_sections = coalesce((select p.n from deep p where p.anc = x.node_id), 0)
-  where x.edition_id = p_edition_id;
+  update state_law.nodes x set direct_sections = c.direct_n, descendant_sections = c.deep_n
+  from counts c where x.edition_id = p_edition_id and x.node_id = c.node_id;
   select edition_id into prior from state_law.editions where state = ed.state and lifecycle = 'active';
   update state_law.editions set lifecycle = 'superseded', superseded_at = now() where edition_id = prior;
   update state_law.editions set lifecycle = 'active', activated_at = now(), note = coalesce(p_note, note)

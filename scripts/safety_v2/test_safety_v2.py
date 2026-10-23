@@ -152,6 +152,13 @@ class OpenfdaTests(unittest.TestCase):
         u = c.openfda_query("drug/event.json", search=ob.prefix_search(f, "A "), count=f, limit=1000)
         self.assertIn("generic_name.exact:A\\%20*&count=", u)
 
+    def test_named_product_link_tokens_are_words_of_the_title(self):
+        self.assertEqual(ob.title_tokens_for("Varenicline", "IN RE: Chantix (Varenicline) PL", ["Chantix", "Varenicline"]),
+                         ["Varenicline"])
+        self.assertEqual(ob.title_tokens_for("Heparin Sodium", "Heparin PL", ["Heparin"]), ["Heparin"])
+        self.assertEqual(ob.title_tokens_for("Heparinoid", "Heparin PL", ["Heparin"]), [])
+        self.assertEqual(ob.title_tokens_for("Aspirin", "Heparin PL", ["Heparin"]), [])
+
     def test_display_label_fits_the_subject_label_bound(self):
         self.assertEqual(ob.display_label("ASPIRIN"), "ASPIRIN")
         name = ", ".join(f"INGREDIENT NUMBER {i}" for i in range(40))

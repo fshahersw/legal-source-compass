@@ -99,10 +99,17 @@ def split_query(url):
 
 
 class Run:
-    def __init__(self, args, stream):
+    def __init__(self, args, stream, fresh=False):
         self.args = args
         self.out = Path(args.outdir) / stream
         self.out.mkdir(parents=True, exist_ok=True)
+        if fresh:
+            # a complete rebuild (not a resumable stream): chunks of an earlier build are superseded and must not stay
+            # listed in chunks/index.jsonl, which the loader reads
+            for p in (self.out / "chunks").glob("*"):
+                p.unlink()
+            for name in ("done.txt", "state.json"):
+                (self.out / name).unlink(missing_ok=True)
         self.http = c.Http(min_interval=args.interval, log_path=self.out / "requests.jsonl")
         self.key = c.openfda_key()
         if not self.key:
@@ -235,9 +242,20 @@ def mdl_groups(titles, only=None):
     return subjects, links
 
 
+def title_tokens_for(generic, title, tokens):
+    """The words of the official title that name this generic: the generic itself when the title prints it, else the
+    MDL's title tokens that the generic starts with as a whole word (the title's name followed by a salt or form word:
+    'Heparin' names HEPARIN SODIUM). Empty when the title names neither (no link)."""
+    low_title, g = title.lower(), generic.lower()
+    if g in low_title:
+        return [generic]
+    return [t for t in tokens if t.lower() in low_title and g.startswith(t.lower() + " ")]
+
+
 def named_product_links(products, titles, only=None):
     """Per-product FAERS pages linked to an MDL whose title prints the product's generic name (exact, case-insensitive,
-    or the title's name followed by a salt/form word: 'Alendronate Sodium' links ALENDRONATE SODIUM only)."""
+    or the title's name followed by a salt/form word: 'Alendronate Sodium' links ALENDRONATE SODIUM only). The recorded
+    title tokens are always words of the official title."""
     by_generic = {}
     for p in products:
         by_generic.setdefault(p["keys"]["generic_name"].lower(), []).append(p)
@@ -247,13 +265,16 @@ def named_product_links(products, titles, only=None):
             continue
         t = titles.get(str(e["mdl"]))
         for g in e.get("generics", []):
-            gl = g.lower()
-            hits = by_generic.get(gl, [])
-            for p in hits:
+            toks = title_tokens_for(g, t["title"], e["tokens"])
+            if not toks:
+                continue
+            note = (f"The JPML title names '{g}', the openFDA harmonised generic name of this product." if toks == [g] else
+                    f"The JPML title names '{toks[0]}'; '{g}', the openFDA harmonised generic name of this product, is that "
+                    f"name followed by a salt or form word.")
+            for p in by_generic.get(g.lower(), []):
                 links.append({"mdl": e["mdl"], "subject_id": p["id"], "relation": "named_product", "title": t["title"],
-                              "title_tokens": [g], "title_source_dataset": t["dataset"], "title_source_url": t["source_url"],
-                              "basis": "title_names_product",
-                              "basis_note": f"The JPML title names '{g}', the openFDA harmonised generic name of this product."})
+                              "title_tokens": toks, "title_source_dataset": t["dataset"], "title_source_url": t["source_url"],
+                              "basis": "title_names_product", "basis_note": note})
     return links
 
 
@@ -345,7 +366,7 @@ def maude_universe(run, n, minimum):
 
 
 def build_subjects(args):
-    run = Run(args, "subjects")
+    run = Run(args, "subjects", fresh=True)
     titles, titles_sha = load_titles(args.outdir)
     only = set(int(x) for x in args.mdls.split(",")) if args.mdls else None
     groups, links = mdl_groups(titles, only)
