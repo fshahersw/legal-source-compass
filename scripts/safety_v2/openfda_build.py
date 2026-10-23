@@ -257,6 +257,13 @@ def named_product_links(products, titles, only=None):
     return links
 
 
+def prefix_search(field, prefix):
+    """openFDA search for terms of `field` starting with `prefix`. openFDA has no '?' wildcard; a space in the prefix is
+    escaped instead ('A AND D' starts with 'A\\ '). A hyphen needs no escape."""
+    escaped = prefix.replace(" ", "\\ ")
+    return f"{field}:{escaped}*"
+
+
 def faers_universe(run, n, max_depth=3):
     """Top-n openFDA generic names by report count. One count request returns at most 1,000 terms, and a wildcard
     partition (names starting with a prefix) also counts the other drugs listed in the same reports, so a partition is
@@ -266,8 +273,7 @@ def faers_universe(run, n, max_depth=3):
     counts, part = {}, {}
 
     def fetch(prefix):
-        pattern = prefix.replace(" ", "?")
-        url = c.openfda_query("drug/event.json", search=f"patient.drug.openfda.generic_name.exact:{pattern}*",
+        url = c.openfda_query("drug/event.json", search=prefix_search("patient.drug.openfda.generic_name.exact", prefix),
                               count="patient.drug.openfda.generic_name.exact", limit=1000)
         data, _ = run.get(url)
         res = (data or {}).get("results", [])

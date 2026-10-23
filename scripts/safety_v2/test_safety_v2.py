@@ -143,6 +143,15 @@ class OpenfdaTests(unittest.TestCase):
         self.assertEqual(len([u for u in run.http.urls if "_exists_" in u]), len(probes))  # probes are cached
         self.assertTrue(all("api_key=K" in u for u in run.http.urls))
 
+    def test_prefix_search_escapes_spaces_not_hyphens(self):
+        f = "patient.drug.openfda.generic_name.exact"
+        self.assertEqual(ob.prefix_search(f, "A"), f + ":A*")
+        self.assertEqual(ob.prefix_search(f, "A "), f + ":A\\ *")
+        self.assertEqual(ob.prefix_search(f, "L-"), f + ":L-*")
+        self.assertNotIn("?", ob.prefix_search(f, "A B "))
+        u = c.openfda_query("drug/event.json", search=ob.prefix_search(f, "A "), count=f, limit=1000)
+        self.assertIn("generic_name.exact:A\\%20*&count=", u)
+
     def test_maude_record_keeps_published_text_and_drops_placeholders(self):
         r = {"report_number": "1234567-2020-00001", "mdr_report_key": "99", "date_received": "20200105", "event_type": "Injury",
              "device": [{"brand_name": "X", "manufacturer_d_name": "M", "device_report_product_code": "DQX", "model_number": "*"}],
