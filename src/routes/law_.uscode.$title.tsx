@@ -129,9 +129,7 @@ function TitleFacts({ t }: { t: UscTitleDetail }) {
       className="mb-4 rounded-lg border border-border bg-surface px-4 py-3"
     >
       <dl className="m-0 grid gap-x-6 gap-y-1.5 text-xs sm:grid-cols-2 xl:grid-cols-4">
-        <Fact label="Release point">
-          {t.release ? `${t.release} (current through Public Law ${t.release})` : "Not recorded"}
-        </Fact>
+        <Fact label="Release point">{t.release ?? "Not recorded"}</Fact>
         <Fact label="Units">{fmt(t.units)}</Fact>
         <Fact label="Repealed, omitted or moved">{fmt(gone)}</Fact>
         <Fact label="Positive law">{t.positiveLaw ? "Yes" : "No"}</Fact>

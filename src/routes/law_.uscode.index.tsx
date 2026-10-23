@@ -44,6 +44,7 @@ function titleNote(t: UscTitle): string {
   const gone = Object.entries(t.byStatus)
     .filter(([k]) => k !== "none")
     .reduce((a, [, n]) => a + n, 0);
+  if (t.units === 0) return "No sections in this release point";
   return [
     t.positiveLaw ? "Positive law" : "Not positive law",
     gone ? `${fmt(gone)} repealed, omitted or moved` : null,
@@ -165,7 +166,9 @@ function UsCodeIndex() {
             wrapNotes
             items={rows.map((t) => ({
               key: t.key,
-              label: `${t.appendix ? `${t.number} App.` : t.number}. ${smartTitle(t.name)}`,
+              label: t.appendix
+                ? `${t.number} App. ${smartTitle(t.name)}`
+                : `${t.number}. ${smartTitle(t.name)}`,
               title: `${t.label}. ${smartTitle(t.name)}`,
               count: t.units,
               note: titleNote(t),
@@ -240,7 +243,7 @@ function ReleasePoints() {
 function ReleaseRow({ p }: { p: ReleasePoint }) {
   return (
     <tr className="align-top">
-      <td className="px-3 py-1.5 font-mono">
+      <td className="whitespace-nowrap px-3 py-1.5 font-mono">
         {p.url ? (
           <a href={p.url} target="_blank" rel="noreferrer" className="text-primary hover:underline">
             {p.id}

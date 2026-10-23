@@ -50,7 +50,7 @@ def fetch_package(pkg, api_key, budget):
             return None, used
         url = f"{API}{pkg}/granules?offsetMark={urllib.parse.quote(mark)}&pageSize=1000"
         status, body, _, _ = fetchlib.request(url, headers={"X-Api-Key": api_key, "Accept": "application/json"},
-                                              interval=0.5)
+                                              interval=0.3)
         used += 1
         if status != 200:
             raise RuntimeError(f"{pkg}: HTTP {status}")
@@ -90,8 +90,10 @@ def main():
                 continue
             packages[pkg] = len(granules)
             for g in granules:
+                # "-app-" granules are the title's appendix (e.g. USCODE-2024-title18-app-classifie-sec1), not its
+                # sections; "-dup" granules repeat a heading
                 m = SEC.search(g)
-                if m:
+                if m and "-app-" not in g and "-dup" not in g:
                     sections.setdefault(title, {}).setdefault(m.group(1), []).append(year)
     for t in sections.values():
         for s in t:

@@ -114,12 +114,22 @@ def load_laws():
             continue
         key = (p["public_law"]["congress"], p["public_law"]["number"])
         same = [x for x in by_pl.get(key, []) if p["stat"] and x["stat"] == p["stat"]]
+        how = "public law number + Stat. page"
+        if not same:
+            # one of the two files lacks or misprints the page: same number and same enactment date, unique
+            same = [x for x in by_pl.get(key, []) if p["enacted"] and x.get("enacted") == p["enacted"]]
+            how = "public law number + enactment date"
         if len(same) == 1:
             x = same[0]
             x["sources"].append({"source": "plaw", "url": p["url"]})
-            x["plaw"] = {"title": p["title"], "enacted": p["enacted"], "stat": p["stat"], "bill": p["bill"]}
+            x["plaw"] = {"title": p["title"], "enacted": p["enacted"], "stat": p["stat"], "bill": p["bill"],
+                         "matched_by": how}
+            if not x.get("stat") and p["stat"]:
+                x["stat"] = p["stat"]
+                x["stat_from"] = "plaw"
             x["plaw_usc_refs"] = p["usc_refs"]
             plaw_stats["matched_statute"] += 1
+            plaw_stats["matched_by:" + how] += 1
             continue
         if by_pl.get(key):
             plaw_stats["pl_in_statute_other_page"] += 1
@@ -162,7 +172,11 @@ def law_row(law, linked_units):
     if law.get("chapter") is not None:
         facts.append(["Chapter", law.get("doc_number") or str(law["chapter"])])
     facts.append(["Enacted", long_date(law.get("enacted")) or "Not recorded"])
-    facts.append(["Statutes at Large", stat or "Not recorded"])
+    facts.append(["Statutes at Large", (stat or "Not recorded") + (" (from the slip law file)"
+                                                                    if law.get("stat_from") == "plaw" else "")])
+    pst = (law.get("plaw") or {}).get("stat")
+    if pst and law.get("stat") and pst != law["stat"]:
+        facts.append(["Slip law file cites", f"{pst['volume']} Stat. {pst['page']}"])
     facts.append(["Congress", str(law["congress"]) if law.get("congress") else "Not recorded"])
     if law.get("bill"):
         facts.append(["Bill", law["bill"]["printed"]])

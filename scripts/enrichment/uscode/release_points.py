@@ -1,6 +1,7 @@
 """Record every OLRC release point of the US Code and produce a per-section change list when a new one appears.
 
   python3 -I -B scripts/enrichment/uscode/release_points.py            record + baseline/update + build
+  python3 -I -B scripts/enrichment/uscode/release_points.py --rebuild  + rebuild and verify every dataset when new
   python3 -I -B scripts/enrichment/uscode/release_points.py --check    exit 3 when the live current release point is
                                                                         newer than the newest one held (no download)
 
@@ -158,12 +159,19 @@ def update(state, current):
         return None
     old, new = units_of(base), units_of(rp)
     changes = compare(old, new)
-    touched = {uid.split(":", 1)[0] for k in changes for uid, *_ in changes[k]}
-    for z in sorted((fetchlib.ACQ / rp).glob("xml_usc*@*.zip")):
+    prune(base, {uid.split(":", 1)[0] for k in changes for uid, *_ in changes[k]})
+    return finish(state, base, rp, changes, "all", "all titles")
+
+
+def prune(old_rp, touched):
+    """Disk: the superseded release point keeps only the zips of titles the new one changed (the others are
+    byte-for-byte re-fetchable from the URL and sha256 in the manifest) and drops its parsed files."""
+    for z in sorted((fetchlib.ACQ / old_rp).glob("xml_usc*@*.zip")):
         key = z.name[len("xml_usc"):].split("@")[0].lower().lstrip("0")
         if key not in touched:
-            z.unlink()   # unchanged title: the manifest line (URL, sha256) is kept for re-fetching
-    return finish(state, base, rp, changes, "all", "all titles")
+            z.unlink()
+    for f in parse_release.parsed_dir(old_rp).glob("t*.jsonl.gz"):
+        f.unlink()
 
 
 def record_rows(state, current, prior):
@@ -225,6 +233,7 @@ def record_rows(state, current, prior):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true")
+    ap.add_argument("--rebuild", action="store_true", help="after a new release point, rebuild and verify all datasets")
     args = ap.parse_args()
     state = load_state()
     current, prior, cur_entry, prior_entry = read_pages()
@@ -258,6 +267,25 @@ def main():
          {"url": prior_entry["url"], "path": prior_entry["path"], "sha256": prior_entry["sha256"]}])
     print(json.dumps({"current": current["id"], "prior": len(prior), "records": len(rows), "new": is_new,
                       "change_summary": summary, "requests": fetchlib.COUNTS}))
+    if is_new and args.rebuild:
+        rebuild(current["id"])
+
+
+def rebuild(release):
+    """After a new release point: resolve its non-plain official URLs, rebuild every dataset and verify the build
+    files. Publishing stays a separate, explicit step (publish_build.py)."""
+    import subprocess
+    here = Path(__file__).resolve().parent
+    steps = [["check_official_urls.py", release, "--sample", "50"], ["build_uscode.py", release],
+             ["build_laws.py", release], ["verify_uscode.py", release, "--sample", "500"]]
+    for script, *rest in steps:
+        result = subprocess.run([sys.executable, "-I", "-B", str(here / script), *rest])
+        if result.returncode:
+            raise SystemExit(f"{script} failed ({result.returncode})")
+    report = json.loads((fetchlib.BUILD / "verify_report.json").read_text())
+    print(json.dumps({"rebuilt": release, "verify_failures": report["total_failures"]}))
+    if report["total_failures"]:
+        raise SystemExit(4)
 
 
 if __name__ == "__main__":

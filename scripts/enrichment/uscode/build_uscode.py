@@ -167,7 +167,8 @@ def section_rows(release, rel, tkey, head, containers, units, urls, years, granu
     return rows
 
 
-def title_row(release, rel, rel_title, tkey, head, containers, units, years):
+def title_row(release, rel, rel_title, tkey, head, containers, units, years, rel_titles_all=None):
+    rel_titles_all = rel_titles_all or {}
     total = {c["index"]: 0 for c in containers}
     direct = {c["index"]: 0 for c in containers}
     by_status, by_kind = {}, {}
@@ -182,9 +183,13 @@ def title_row(release, rel, rel_title, tkey, head, containers, units, years):
                 total[c["index"]], direct[c["index"]]] for c in containers]
     positive_meta = head["meta"].get("is-positive-law") == "yes"
     name = rel_title["label"].split(" - ", 1)[1] if " - " in rel_title["label"] else rel_title["label"]
+    root = next((c for c in containers if c["depth"] == 0), None)
+    heading_printed = root["heading"] if root else None
     if tkey.endswith("a"):
-        root = next((c for c in containers if c["depth"] == 0), None)
-        name = (root and root["heading"]) or name
+        # The download page labels an appendix only "Appendix" and its XML heading names its first act (5a) or
+        # carries a currency note (50a): name it after its title, as the download page groups it.
+        main = rel_titles_all.get(tkey[:-1])
+        name = (main["label"].split(" - ", 1)[1] if main and " - " in main["label"] else f"Title {tkey[:-1]}")
     label = cite.title_label(tkey)
     official = cite.title_page(release, tkey)
     usc_title = {
@@ -207,6 +212,7 @@ def title_row(release, rel, rel_title, tkey, head, containers, units, years):
                 "last_modified": rel_title["last_modified"]},
         "xml_file": head["file"],
         "official_url": official,
+        "heading_printed": heading_printed,
     }
     facts = [["Title", label], ["Name", name], ["Positive law", "Yes" if positive_meta else "No"],
              ["Units", len(units)], ["Release point", release], ["Current through", f"Public Law {release}, {rel['law_date_text']}"],
@@ -278,7 +284,7 @@ def main():
         if rt["sha256"] != head["zip_sha256"]:
             raise SystemExit(f"title {tkey}: parsed file does not match the acquired zip")
         years = editions["years"].get(tkey, [])
-        title_rows.append(title_row(release, rel, rt, tkey, head, containers, units, years))
+        title_rows.append(title_row(release, rel, rt, tkey, head, containers, units, years, rel_titles))
         section_rows_all.extend(section_rows(release, rel, tkey, head, containers, units, urls, years,
                                             title_granules(tkey, years)))
         inputs.append({"url": rt["xml_url"], "path": rt["path"], "sha256": rt["sha256"]})
