@@ -196,7 +196,11 @@ function Actions({ bill: b }: { bill: FederalBill }) {
   return (
     <Section
       title="Actions"
-      aside={`${fmtN(b.actions.length)} actions${b.actionsDroppedIdentical ? ` · ${fmtN(b.actionsDroppedIdentical)} identical copies from another source system not repeated` : ""}`}
+      aside={`${fmtN(b.actions.length)} action${b.actions.length === 1 ? "" : "s"}${
+        b.actionsDroppedIdentical
+          ? ` · ${fmtN(b.actionsDroppedIdentical)} identical ${b.actionsDroppedIdentical === 1 ? "copy" : "copies"} from another source system not repeated`
+          : ""
+      }`}
     >
       {key.length && key.length < b.actions.length ? (
         <div className="mb-2">

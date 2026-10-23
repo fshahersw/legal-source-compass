@@ -63,7 +63,7 @@ export function StateLegislationPanel({ usps }: { usps: string }) {
               : ""}
           </p>
           <List
-            title="Recently signed or became law"
+            title="Signed or became law, both sessions (latest first)"
             rows={q.data.enacted}
             total={q.data.enactedTotal}
             empty="Open States records no signed or enacted bill for these sessions."
