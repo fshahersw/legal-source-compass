@@ -2,9 +2,15 @@ import { Copy, ExternalLink } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SCDB_DIRECTION, type CaseRecord } from "@/lib/external/caselaw";
+import {
+  COURT_LEVEL_LABEL,
+  SCDB_DIRECTION,
+  TIER_LABEL,
+  type CaseRecord,
+  type OpinionText,
+} from "@/lib/external/caselaw";
 import type { CasePage, OpinionLoad } from "@/lib/external/caselaw.functions";
-import { citeLine, fmtDay, fmtInt, NOT_RECORDED } from "./caseFormat";
+import { citeLine, fmtDay, fmtInt, NOT_RECORDED, stateLabel } from "./caseFormat";
 import { AuthoritiesPanel, CitatorPanel } from "./CitatorPanel";
 import { OpinionBody } from "./OpinionBody";
 import { RelatedPanel } from "@/components/semantic/RelatedPanel";
@@ -25,6 +31,16 @@ export function CaseFacts({ r }: { r: CaseRecord }) {
       <dl className="grid grid-cols-[9rem_1fr] gap-x-3 gap-y-1 text-[12px] md:grid-cols-[9rem_1fr_9rem_1fr]">
         <Fact label="Citations">{r.citations.length ? r.citations.join(" · ") : NOT_RECORDED}</Fact>
         <Fact label="Court">{r.court}</Fact>
+        <Fact label="Court level">
+          {TIER_LABEL[r.tier]}
+          {r.courtLevel && COURT_LEVEL_LABEL[r.courtLevel] ? (
+            <span className="text-muted-foreground">
+              {" "}
+              · CourtListener: {COURT_LEVEL_LABEL[r.courtLevel]}
+            </span>
+          ) : null}
+        </Fact>
+        {r.jurisdiction ? <Fact label="State">{stateLabel(r.jurisdiction)}</Fact> : null}
         <Fact label="Date filed">
           {fmtDay(r.dateFiled)}
           {r.dateApprox ? <span className="text-muted-foreground"> (approximate)</span> : null}
@@ -44,6 +60,16 @@ export function CaseFacts({ r }: { r: CaseRecord }) {
             · CourtListener count {fmtInt(r.citationCount)}
           </span>
         </Fact>
+        {r.capFile ? (
+          <Fact label="Caselaw Access Project">
+            Case {r.capFile.capId} · reporter {r.capFile.reporter}, volume {r.capFile.volume}, page{" "}
+            {r.capFile.page}
+            <span className="text-muted-foreground">
+              {" "}
+              (the Harvard file CourtListener merged into this case)
+            </span>
+          </Fact>
+        ) : null}
         {scdb ? (
           <Fact label="SCDB">
             {scdb.id}
@@ -125,6 +151,49 @@ function OpinionTab({
       </p>
       <OpinionBody opinion={o} />
     </article>
+  );
+}
+
+/** Exact source bytes of one stored opinion (records written by the v2 builder carry them). */
+function OpinionSource({ o }: { o: OpinionText }) {
+  const p = o.provenance!;
+  const file = p.file.split("/").pop();
+  return (
+    <>
+      <dt>Opinion {o.opinionId}</dt>
+      <dd className="min-w-0 break-words">
+        {file}
+        {p.segment != null && p.offset != null
+          ? `, 48 MB segment ${p.segment}, record at byte ${fmtInt(p.offset)} of its decompressed output`
+          : ""}
+        {p.recordSha256 ? (
+          <>
+            {" "}
+            · record sha256 <span className="font-mono">{p.recordSha256.slice(0, 16)}…</span>
+          </>
+        ) : null}
+        {p.field ? ` · text from ${p.field}` : ""}
+        {p.rawSha256 ? (
+          <>
+            {" "}
+            (sha256 <span className="font-mono">{p.rawSha256.slice(0, 16)}…</span>
+            {p.rawBytes != null ? `, ${fmtInt(p.rawBytes)} bytes` : ""})
+          </>
+        ) : null}
+        {p.sha1 ? (
+          <>
+            {" "}
+            · court file sha1 <span className="font-mono">{p.sha1.slice(0, 12)}…</span>
+          </>
+        ) : null}
+        {o.textSha256 ? (
+          <>
+            {" "}
+            · stored text sha256 <span className="font-mono">{o.textSha256.slice(0, 16)}…</span>
+          </>
+        ) : null}
+      </dd>
+    </>
   );
 }
 
@@ -216,7 +285,13 @@ export function CaseView({
         ))}
         <TabsContent value="citator">
           {tab === "citator" ? (
-            <CitatorPanel id={r.clusterId} caseName={r.caseName} clCount={r.citationCount} />
+            <CitatorPanel
+              id={r.clusterId}
+              caseName={r.caseName}
+              clCount={r.citationCount}
+              citedBy={r.citedBy}
+              citedByCases={r.citedByCases}
+            />
           ) : null}
         </TabsContent>
         <TabsContent value="authorities">
@@ -238,7 +313,13 @@ export function CaseView({
           <dd>
             CourtListener bulk data (opinions, clusters, citations, citation map, parentheticals),
             snapshot 2026-09-30
+            {r.sourceCode ? ` · CourtListener cluster source code ${r.sourceCode}` : ""}
           </dd>
+          {page.opinions.map((o) =>
+            o.status === "ok" && o.opinion.provenance ? (
+              <OpinionSource key={o.opinionId} o={o.opinion} />
+            ) : null,
+          )}
         </dl>
       </details>
     </div>

@@ -3,7 +3,10 @@ import {
   getCaselawAuthorities,
   getCaselawCase,
   getCaselawCitator,
+  getCaselawCourt,
   getCaselawCourts,
+  getCaselawTextCoverage,
+  listCourtCases,
   searchCaselaw,
   searchCaselawFulltext,
   searchCaselawLive,
@@ -46,6 +49,7 @@ export const casesSearchQuery = (s: CaseSearchState) =>
       "search",
       s.q ?? "",
       s.tier ?? null,
+      s.jur ?? null,
       s.court ?? null,
       s.from ?? null,
       s.to ?? null,
@@ -58,6 +62,7 @@ export const casesSearchQuery = (s: CaseSearchState) =>
         data: {
           q: s.q ?? "",
           tier: s.tier ?? null,
+          jurisdiction: s.jur ?? null,
           court: s.court ?? null,
           from: s.from ?? null,
           to: s.to ?? null,
@@ -75,6 +80,9 @@ export const fulltextQuery = (s: CaseSearchState) =>
       "caselaw",
       "fulltext",
       s.q ?? "",
+      s.tier ?? null,
+      s.jur ?? null,
+      s.court ?? null,
       s.from ?? null,
       s.to ?? null,
       s.sort ?? "relevance",
@@ -84,6 +92,9 @@ export const fulltextQuery = (s: CaseSearchState) =>
       searchCaselawFulltext({
         data: {
           q: s.q ?? "",
+          tier: s.tier ?? null,
+          jurisdiction: s.jur ?? null,
+          court: s.court ?? null,
           from: s.from ?? null,
           to: s.to ?? null,
           type: null,
@@ -102,6 +113,7 @@ export const liveQuery = (s: CaseSearchState) =>
       "live",
       s.q ?? "",
       liveTier(s.tier),
+      s.jur ?? null,
       s.court ?? null,
       s.from ?? null,
       s.to ?? null,
@@ -115,6 +127,7 @@ export const liveQuery = (s: CaseSearchState) =>
         data: {
           q: s.q ?? "",
           tier: liveTier(s.tier),
+          jurisdiction: s.jur ?? null,
           court: s.court ?? null,
           from: s.from ?? null,
           to: s.to ?? null,
@@ -127,4 +140,29 @@ export const liveQuery = (s: CaseSearchState) =>
     staleTime: 30 * 60 * 1000,
     enabled: !!s.q,
     retry: false,
+  });
+
+export const coverageQuery = queryOptions({
+  queryKey: ["caselaw", "coverage"],
+  queryFn: () => getCaselawTextCoverage(),
+  staleTime: 60 * 60 * 1000,
+});
+
+export const courtYearsQuery = (court: string) =>
+  queryOptions({
+    queryKey: ["caselaw", "court", court],
+    queryFn: () => getCaselawCourt({ data: { court } }),
+    staleTime,
+  });
+
+export const courtCasesQuery = (
+  court: string,
+  year: number | null,
+  sort: "newest" | "oldest" | "cited",
+  page: number,
+) =>
+  queryOptions({
+    queryKey: ["caselaw", "court-cases", court, year, sort, page],
+    queryFn: () => listCourtCases({ data: { court, year, sort, page } }),
+    staleTime,
   });

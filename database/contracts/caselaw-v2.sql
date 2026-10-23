@@ -89,6 +89,7 @@ create table if not exists caselaw.text_v2 (
   type text,
   scope text not null check (scope in ('full', 'prefix')),
   words integer not null check (words >= 0),      -- words of the whole opinion text
+  prefix_words integer,                            -- scope prefix: how many leading words were indexed
   tsv tsvector not null,
   tsv_mode smallint not null default 0 check (tsv_mode in (0, 1, 2)),  -- 0 full, 1 positions stripped, 2 truncated
   text_sha256 text not null check (text_sha256 ~ '^[a-f0-9]{64}$'),
@@ -441,6 +442,15 @@ begin
   return (select jsonb_agg(public.caselaw_resolve_v2(x) order by i) from unnest(p_citations) with ordinality u(x, i));
 end $$;
 
+-- which tiers' opinion text is searchable, and how: [{tier, scope, opinions, prefix_words}] (tier 1 from opinion_fts)
+create or replace function public.caselaw_text_coverage_v2() returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select coalesce(jsonb_agg(jsonb_build_object('tier', tier, 'scope', scope, 'opinions', n, 'prefix_words', pw) order by tier, scope), '[]'::jsonb)
+  from (select 1 as tier, 'full'::text as scope, count(*) as n, null::integer as pw from caselaw.opinion_fts having count(*) > 0
+        union all
+        select f.tier, f.scope, count(*), max(f.prefix_words) from caselaw.text_v2 f where f.part = 0 group by f.tier, f.scope) s
+$$;
+
 create or replace function public.caselaw_status_v2() returns jsonb
 language sql stable security definer set search_path = '' as $$
   select jsonb_build_object(
@@ -589,7 +599,8 @@ begin
     where x.cluster_id = (r ->> 'cluster_id')::bigint and (e ->> 'id')::bigint = v_id and e ? 'o';
     if not found or c.tier not between 2 and 7 then missing := missing + 1; continue; end if;
     if exists (select 1 from caselaw.text_v2 f where f.tier = c.tier and f.opinion_id = v_id and f.part = 0 and f.text_sha256 = v_sha
-               and f.scope = p_scope and f.cluster_id = c.cluster_id and f.court_id = c.court_id
+               and f.scope = p_scope and f.prefix_words is not distinct from case when p_scope = 'prefix' then p_prefix_words end
+               and f.cluster_id = c.cluster_id and f.court_id = c.court_id
                and f.date_filed is not distinct from c.date_filed and f.type is not distinct from c.type) then
       unchanged := unchanged + 1; continue;
     end if;
@@ -622,8 +633,10 @@ begin
           v := strip(to_tsvector('english', left(chunk, 400000))); mode := 2;
         end;
       end;
-      insert into caselaw.text_v2(tier, opinion_id, part, cluster_id, court_id, date_filed, type, scope, words, tsv, tsv_mode, text_sha256, build)
-      values (c.tier, v_id, k, c.cluster_id, c.court_id, c.date_filed, c.type, p_scope, nw, v, mode, v_sha, p_build);
+      insert into caselaw.text_v2(tier, opinion_id, part, cluster_id, court_id, date_filed, type, scope, words, prefix_words, tsv,
+        tsv_mode, text_sha256, build)
+      values (c.tier, v_id, k, c.cluster_id, c.court_id, c.date_filed, c.type, p_scope, nw,
+        case when p_scope = 'prefix' then p_prefix_words end, v, mode, v_sha, p_build);
     end loop;
     n := n + 1; parts_total := parts_total + np;
   end loop;
@@ -651,6 +664,7 @@ begin
     'public.caselaw_court_years_v2(text)', 'public.caselaw_court_cases_v2(text,integer,text,integer,integer)',
     'public.caselaw_fulltext_v2(text,integer[],text,text,date,date,text,text,integer,integer)',
     'public.caselaw_resolve_v2(text,integer,text)', 'public.caselaw_resolve_many_v2(text[])', 'public.caselaw_status_v2()',
+    'public.caselaw_text_coverage_v2()',
     'public.caselaw_load_courts_v2(jsonb)', 'public.caselaw_load_cases_v2(text,jsonb)', 'public.caselaw_attach_opinions_v2(text,jsonb)',
     'public.caselaw_load_text_v2(text,text,jsonb,integer)', 'public.caselaw_refresh_court_counts_v2()',
     'caselaw.type_rank(text)', 'caselaw.reporter_key(text)', 'caselaw.parse_citation(text)', 'caselaw.candidate(caselaw.cases)',

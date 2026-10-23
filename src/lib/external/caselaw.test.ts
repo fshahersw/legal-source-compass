@@ -299,7 +299,10 @@ describe("search rows", () => {
     })!;
     expect(h.dateFiled).toBeNull();
     expect(h.matched).toEqual([{ opinionId: 5, type: "040dissent", label: "Dissent" }]);
-    expect(parseCaseHit({ cluster_id: 1, tier: 4, court_id: "ca9", case_name: "x" })).toBeNull();
+    expect(parseCaseHit({ cluster_id: 1, tier: 8, court_id: "ca9", case_name: "x" })).toBeNull();
+    const v2 = parseCaseHit({ cluster_id: 7, tier: 5, court_id: "nysd", case_name: "x", jurisdiction: "NY" });
+    expect([v2?.tier, v2?.jurisdiction]).toEqual([5, "NY"]);
+    expect(parseCaseHit({ cluster_id: 7, tier: 5, court_id: "nysd", case_name: "x", jurisdiction: "New York" })?.jurisdiction).toBeNull();
   });
   it("parses CourtListener live hits and their snippets", () => {
     const h = parseLiveHit({

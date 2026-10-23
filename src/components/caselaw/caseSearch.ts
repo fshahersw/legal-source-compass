@@ -1,10 +1,14 @@
+import type { Tier } from "@/lib/external/caselaw";
+
 /** URL state of /cases (pure; validated, unknown values dropped). */
 export type CaseMode = "cases" | "fulltext" | "live";
 export type CaseSort = "relevance" | "cited" | "newest" | "oldest";
 export type CaseSearchState = {
   mode?: CaseMode | undefined;
   q?: string | undefined;
-  tier?: 1 | 2 | 3 | undefined;
+  tier?: Tier | undefined;
+  /** Two-letter state of the court (court registry), e.g. TX. */
+  jur?: string | undefined;
   court?: string | undefined;
   from?: string | undefined;
   to?: string | undefined;
@@ -45,7 +49,8 @@ export function normalizeCaseSearch(s: Record<string, unknown>): CaseSearchState
       : typeof s["tier"] === "string"
         ? Number(s["tier"])
         : NaN;
-  if (tier === 1 || tier === 2 || tier === 3) out.tier = tier;
+  if (Number.isInteger(tier) && tier >= 1 && tier <= 7) out.tier = tier as Tier;
+  if (typeof s["jur"] === "string" && /^[A-Z]{2}$/.test(s["jur"])) out.jur = s["jur"];
   if (typeof s["court"] === "string" && /^[a-z0-9_-]{1,40}$/.test(s["court"]))
     out.court = s["court"];
   out.from = validDay(s["from"]);
@@ -69,9 +74,9 @@ export function normalizeCaseSearch(s: Record<string, unknown>): CaseSearchState
   return out;
 }
 
-/** The live service covers the federal appellate and state tiers only; the Supreme Court is searched here. */
-export function liveTier(tier: number | undefined): 2 | 3 | null {
-  return tier === 2 || tier === 3 ? tier : null;
+/** The live service is used for tiers 2-7; the Supreme Court is searched here. */
+export function liveTier(tier: number | undefined): Tier | null {
+  return tier && Number.isInteger(tier) && tier >= 2 && tier <= 7 ? (tier as Tier) : null;
 }
 
 export const SORT_LABEL: Record<CaseSort, string> = {
@@ -82,6 +87,6 @@ export const SORT_LABEL: Record<CaseSort, string> = {
 };
 export const MODE_LABEL: Record<CaseMode, string> = {
   cases: "Names & citations",
-  fulltext: "Supreme Court full text",
-  live: "Appellate & state full text",
+  fulltext: "Full text",
+  live: "CourtListener full text",
 };

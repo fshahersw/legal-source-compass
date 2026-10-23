@@ -227,6 +227,8 @@ test("text index by tier: prefix and full scopes, full-text search across tiers"
     { opinion_id: 3001, cluster_id: 103, text: long, text_sha256: sha("other") }]) }), /does not match/);
   const parts = await db.query("select count(*)::int n from caselaw.text_v2 where opinion_id = 3001");
   assert.equal(parts.rows[0].n, 1); // 3,000 words: one 8,000-word part
+  const cov = await rpc(db, "caselaw_text_coverage_v2");
+  assert.deepEqual(cov, [{ tier: 4, scope: "prefix", opinions: 1, prefix_words: 1000 }, { tier: 5, scope: "full", opinions: 1, prefix_words: null }]);
 });
 
 test("court pages and grants", async () => {
@@ -241,7 +243,7 @@ test("court pages and grants", async () => {
       has_function_privilege('authenticated', p.oid, 'execute') auth, has_function_privilege('service_role', p.oid, 'execute') svc,
       p.prosecdef, p.proconfig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
       where n.nspname = 'public' and p.proname like 'caselaw\\_%\\_v2'`);
-  assert.ok(g.rows.length >= 14);
+  assert.ok(g.rows.length >= 15);
   for (const r of g.rows) {
     assert.equal(r.anon, false, r.proname);
     assert.equal(r.auth, false, r.proname);
