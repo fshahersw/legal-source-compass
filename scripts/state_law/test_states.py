@@ -262,7 +262,7 @@ class HawaiiAndIdahoTests(unittest.TestCase):
 
 class BlockedStates(unittest.TestCase):
     def test_blocked_modules_never_fetch(self):
-        for code in ("ga", "ar"):
+        for code in ("ga", "ar", "co"):
             module = load(code)
             self.assertTrue(module.META.blocked)
             self.assertEqual(module.META.hosts, ())

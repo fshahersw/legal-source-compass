@@ -1148,9 +1148,9 @@ class RunContext:
         return self.sample is None or self.section_count < self.sample
 
     # sources ----------------------------------------------------------------------------------------------
-    def _record_source(self, fetched: Fetched) -> None:
+    def _record_source(self, fetched: Fetched, keep_raw: bool = True) -> None:
         raw_path = None
-        if self.keep_raw and self.raw_root is not None:
+        if keep_raw and self.keep_raw and self.raw_root is not None:
             raw_dir = self.raw_root / self.state.lower() / fetched.sha256[:2]
             raw_dir.mkdir(parents=True, exist_ok=True)
             raw_file = raw_dir / f"{fetched.sha256}.raw"
@@ -1172,27 +1172,29 @@ class RunContext:
             self._first_retrieved = fetched.retrieved_at
 
     def fetch(self, url: str, *, method: str = "publisher_page", data: bytes | None = None, headers: dict | None = None,
-              accept_status: Iterable[int] = (200,)) -> Fetched:
+              accept_status: Iterable[int] = (200,), keep_raw: bool = True) -> Fetched:
         if method not in METHODS:
             raise ModelError(f"bad method {method!r}")
         host = urllib.parse.urlsplit(url).netloc.lower()
         if self.meta.hosts and host not in self.meta.hosts:
             raise ModelError(f"{url} is not on a declared publisher host {self.meta.hosts}")
         fetched = self.fetcher.get(url, data=data, headers=headers, method=method, accept_status=accept_status)
-        self._record_source(fetched)
+        self._record_source(fetched, keep_raw=keep_raw)
         return fetched
 
-    def get(self, url: str, fallback_fresh: bool = False, **kwargs: Any) -> Fetched:
+    def get(self, url: str, fallback_fresh: bool = False, keep_raw: bool = True, **kwargs: Any) -> Fetched:
         """fetch() from the publisher, or the retained original of the same URL when the run uses a RetainedStore
         (run.py --retained-index FILE or --option source=retained). fallback_fresh fetches from the publisher when
-        no retained copy of that URL exists (for pages the earlier capture did not keep)."""
+        no retained copy of that URL exists (for pages the earlier capture did not keep). keep_raw=False records a
+        bulk archive without keeping its bytes (its members are kept through member())."""
         if self.retained is None or (fallback_fresh and url not in self.retained.by_url):
-            return self.fetch(url, **kwargs)
+            fetched = self.fetch(url, keep_raw=keep_raw, **kwargs)
+            return fetched
         host = urllib.parse.urlsplit(url).netloc.lower()
         if self.meta.hosts and host not in self.meta.hosts:
             raise ModelError(f"{url} is not on a declared publisher host {self.meta.hosts}")
         fetched = self.retained.get(url)
-        self._record_source(fetched)
+        self._record_source(fetched, keep_raw=keep_raw)
         return fetched
 
     def member(self, archive: Fetched | dict, name: str, body: bytes) -> Fetched:
