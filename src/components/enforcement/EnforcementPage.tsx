@@ -6,18 +6,20 @@ import {
   ListChecks,
   MessageSquareWarning,
   ShieldAlert,
+  UserX,
 } from "lucide-react";
 import { RulemakingActivity } from "@/components/rulemaking/RulemakingActivity";
 import { cn } from "@/lib/utils";
 import { ConsumerComplaints } from "./ConsumerComplaints";
 import { CpscRecalls } from "./CpscRecalls";
 import { EnforcementSources } from "./EnforcementSources";
+import { ExclusionsSearch } from "./extra/ExclusionsSearch";
 import { EpaEnforcement } from "./EpaEnforcement";
 import { OshaEnforcement } from "./OshaEnforcement";
 import { SettlementNotices } from "./SettlementNotices";
 
 export type EnforcementTab =
-  "epa" | "rulemaking" | "cpsc" | "cfpb" | "osha" | "settlements" | "sources";
+  "epa" | "rulemaking" | "cpsc" | "cfpb" | "osha" | "settlements" | "exclusions" | "sources";
 export type EnforcementSearch = { tab?: EnforcementTab; state?: string };
 
 const TABS: { id: EnforcementTab; label: string; Icon: typeof Landmark }[] = [
@@ -27,6 +29,7 @@ const TABS: { id: EnforcementTab; label: string; Icon: typeof Landmark }[] = [
   { id: "cfpb", label: "Consumer complaints (CFPB)", Icon: MessageSquareWarning },
   { id: "osha", label: "Workplace safety (OSHA)", Icon: HardHat },
   { id: "settlements", label: "Settlement notices", Icon: Handshake },
+  { id: "exclusions", label: "Exclusions", Icon: UserX },
   { id: "sources", label: "Agency data sources", Icon: ListChecks },
 ];
 
@@ -39,6 +42,7 @@ export function normalizeEnforcementSearch(raw: Record<string, unknown>): Enforc
     raw["tab"] === "cfpb" ||
     raw["tab"] === "osha" ||
     raw["tab"] === "settlements" ||
+    raw["tab"] === "exclusions" ||
     raw["tab"] === "sources"
   )
     out.tab = raw["tab"];
@@ -103,6 +107,8 @@ export function EnforcementPage({
           <OshaEnforcement />
         ) : tab === "settlements" ? (
           <SettlementNotices />
+        ) : tab === "exclusions" ? (
+          <ExclusionsSearch />
         ) : tab === "sources" ? (
           <EnforcementSources />
         ) : (

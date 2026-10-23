@@ -143,7 +143,7 @@ def build() -> str:
     rows = [with_source(r) for r in rows]
     summary = {
         "source": {"publisher": "USDA Food Safety and Inspection Service", "index": INDEX_URL,
-                   "retrieval": "PDFs read through the Firecrawl scrape service's PDF text rendering (FSIS answers this environment with an Akamai 403; not bypassed).",
+                   "retrieval": "FSIS refused direct requests from the collection server with HTTP 403; the PDFs were read as text through an external page-fetching service and that text is stored unchanged.",
                    "terms": "U.S. government work."},
         "records": len(rows), "per_report": report,
         "notes": ["Each record holds every table of the fiscal year's fourth-quarter report (FY2026: the newest, third-quarter report).",

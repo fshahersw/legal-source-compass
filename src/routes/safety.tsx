@@ -13,6 +13,7 @@ import {
   safetyIntelligenceQuery,
 } from "@/components/regulatory/SafetyIntelligence";
 import { NeissEstimates } from "@/components/safety/neiss/NeissEstimates";
+import { FsisRecallsTable } from "@/components/enforcement/extra/FsisRecallsTable";
 import { SaferProductsReports } from "@/components/safety/saferproducts/SaferProductsReports";
 import { SafetyTabPanel, SafetyTabs } from "@/components/safety/SafetyTabs";
 import { safetyViewOf, type SafetyView } from "@/components/safety/safetyView";
@@ -140,6 +141,7 @@ function SafetyPage() {
         <SafetyTabPanel mode="landing" active="overview" className="space-y-6">
           <DailyInsightCard section="safety" />
           <SafetyIntelligence />
+          <FsisRecallsTable />
           {/* Notes wrap (two lines, full text on hover) so a description is never cut mid-word at 1024–1280 px. */}
           <FolderGrid
             title="Browse by agency"

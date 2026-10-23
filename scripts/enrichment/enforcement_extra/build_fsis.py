@@ -159,9 +159,9 @@ def build() -> str:
             "publisher": "U.S. Department of Agriculture, Food Safety and Inspection Service",
             "listing": LISTING_URL,
             "annual_summaries": "https://www.fsis.usda.gov/food-safety/recalls-public-health-alerts/annual-recall-summaries",
-            "retrieval": "FSIS's recall API (https://www.fsis.usda.gov/fsis/api/recall/v/1) and its file downloads answer this "
-                         "environment with an Akamai 403 (Access Denied), which was not bypassed. The public listing pages were read "
-                         "through the Firecrawl scrape service at no more than one request per second; unfiltered pages 0-65 cover "
+            "retrieval": "FSIS's recall API (https://www.fsis.usda.gov/fsis/api/recall/v/1) and its file downloads refused "
+                         "direct requests from the collection server with HTTP 403 (Access Denied). The public listing pages were "
+                         "read through an external page-fetching service at no more than one request per second; unfiltered pages 0-65 cover "
                          "2018-2026, and pages beyond 65 returned FSIS's 'Site Maintenance' page (HTTP 503), so 2014-2018 were read "
                          "through the listing's own year facet.",
             "pages": info["pages"],

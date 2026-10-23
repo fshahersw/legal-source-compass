@@ -95,6 +95,16 @@ const EXPLICIT: Record<string, SectionId> = {
   mdl_docket_documents: "matters",
   mdl_docket_activity: "matters",
   settlements: "matters",
+  settlement_claims_official: "matters",
+  ftc_enforcement_actions: "law",
+  ftc_cases: "law",
+  sec_enforcement_actions: "law",
+  sam_exclusions: "law",
+  oig_leie_exclusions: "law",
+  fsis_recalls: "safety",
+  fsis_enforcement_quarterly: "safety",
+  ussc_sentencing_districts: "courts",
+  eousa_caseload_annual: "courts",
   verdict_reports: "matters",
   expert_rulings: "matters",
   state_proceedings: "matters",
@@ -138,6 +148,7 @@ export function sectionOf(datasetId: string): SectionId {
   if (EXPLICIT[datasetId]) return EXPLICIT[datasetId];
   if (datasetId.startsWith("agency_safety_")) return "safety";
   if (datasetId.startsWith("regulatory_")) return "law";
+  if (datasetId.startsWith("doj_press_releases")) return "law";
   if (datasetId.startsWith("judge")) return "judges";
   if (datasetId.startsWith("mdl")) return "matters";
   if (datasetId.startsWith("court")) return "courts";
