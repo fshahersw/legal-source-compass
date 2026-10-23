@@ -329,7 +329,7 @@ class DncBuildTests(unittest.TestCase):
         self.assertEqual(s["subjects"]["Charities"], 10)
 
     def test_rows_flag_a_partial_month_and_compute_rank_per_100k_and_share(self):
-        rows, meta, overlap, per_file, official, pop_doc = BD.build(days=self.days, overlap=[], per_file=[], month_counts={}, official=[], population=POP, entries={})
+        rows, meta, overlap, per_file, official, pop_doc = BD.build(days=self.days, overlap=[], per_file=[], month_counts={}, official=[], population=POP, entries={}, crosscheck={})
         ids = [r["id"] for r in rows]
         self.assertEqual(ids, ["US-2026-02", "OH-2026-02", "TX-2026-02"])
         us = rows[0]["item"]
@@ -345,12 +345,12 @@ class DncBuildTests(unittest.TestCase):
 
     def test_a_month_with_every_day_is_complete(self):
         days = {f"2026-02-{d:02d}": day(day_agg(**{"Texas|Other|Y": 1})) for d in range(1, 29)}
-        rows, meta, *_ = BD.build(days=days, overlap=[], per_file=[], month_counts={}, official=[], population=POP, entries={})
+        rows, meta, *_ = BD.build(days=days, overlap=[], per_file=[], month_counts={}, official=[], population=POP, entries={}, crosscheck={})
         self.assertTrue(meta["2026-02"]["complete"])
         self.assertEqual(rows[0]["item"]["days_covered"], 28)
 
     def test_count_only_month_has_no_subjects_or_state_rows(self):
-        rows, meta, *_ = BD.build(days={}, overlap=[], per_file=[], month_counts={"2024-04": {"total": 1000, "robo_y": 600, "robo_n": 300}}, official=[], population=POP, entries={})
+        rows, meta, *_ = BD.build(days={}, overlap=[], per_file=[], month_counts={"2024-04": {"total": 1000, "robo_y": 600, "robo_n": 300}}, official=[], population=POP, entries={}, crosscheck={})
         self.assertEqual([r["id"] for r in rows], ["US-2024-04"])
         item = rows[0]["item"]
         self.assertEqual((item["method"], item["complete"], item["subjects"], item["metrics"]["no_flag"]), ("count", True, {}, None))
@@ -358,11 +358,29 @@ class DncBuildTests(unittest.TestCase):
 
     def test_official_months_become_rows_and_crosscheck_compares_totals(self):
         official = [{"month": "2026-02", "live": 4, "robocall": 14, "total": 18, "parts_sum_equals_total": True}, {"month": "2026-03", "live": 1, "robocall": 1, "total": 2, "parts_sum_equals_total": True}]
-        rows, meta, overlap, per_file, off, pop_doc = BD.build(days=self.days, overlap=[], per_file=[], month_counts={}, official=official, population=POP, entries={})
+        rows, meta, overlap, per_file, off, pop_doc = BD.build(days=self.days, overlap=[], per_file=[], month_counts={}, official=official, population=POP, entries={}, crosscheck={})
         self.assertIn("official-2026-03", [r["id"] for r in rows])
         check = BD.crosscheck_official(meta, official)
         self.assertEqual(check[0]["status"], "equal")
         self.assertEqual(check[1]["status"], "no matching month in this build")
+
+    def test_an_api_count_that_differs_from_the_dashboard_is_evidence_on_the_dashboard_row_and_never_a_month(self):
+        official = [{"month": "2026-04", "live": 62553, "robocall": 170295, "total": 232848, "parts_sum_equals_total": True}]
+        cross = {"2026-04": {"total": 255760, "robo_y": 182267, "robo_n": 68220, "counted_at": "2026-10-23T10:17:46Z", "method": "m"}}
+        rows, meta, overlap, per_file, off, pop_doc = BD.build(days=self.days, overlap=[], per_file=[], month_counts={}, official=official, population=POP, entries={}, crosscheck=cross)
+        ids = [r["id"] for r in rows]
+        self.assertNotIn("US-2026-04", ids)  # the API count is not published as a month
+        row = rows[ids.index("official-2026-04")]
+        self.assertEqual(row["item"]["api_count"]["total"], 255760)
+        facts = dict(row["detail"]["facts"])
+        self.assertIn("22,912 more than the dashboard shows", facts["Checked against the FTC API"])
+        summary = BD.build_summary(rows, meta, overlap, per_file, off, pop_doc, crosscheck=cross)
+        self.assertEqual(summary["validation"]["api_vs_dashboard"][0]["difference"], 22912)
+        self.assertEqual(summary["validation"]["api_vs_dashboard"][0]["difference_pct_of_dashboard"], 9.8)
+        self.assertFalse(summary["validation"]["api_vs_dashboard"][0]["equal"])
+
+    def test_an_equal_api_count_is_reported_as_equal(self):
+        self.assertIn("same 100 records", BD.api_note({"total": 100, "robo_y": 60, "robo_n": 40, "counted_at": "2026-10-23T00:00:00Z"}, 100))
 
     def test_named_subjects_leave_out_the_catch_all_buckets(self):
         self.assertEqual(BD.named_subjects({"Other": 9, "No Subject Provided": 8, "Charities": 1, "Medical & prescriptions": 5}), [("Medical & prescriptions", 5), ("Charities", 1)])

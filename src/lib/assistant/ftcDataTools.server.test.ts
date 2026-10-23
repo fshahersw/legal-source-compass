@@ -127,6 +127,37 @@ describe("ftc_dnc_trends", () => {
     expect(JSON.stringify(body)).not.toMatch(/anthropic|claude|openai|gpt|tavily|firecrawl/i);
   });
 
+  it("gives the API's record count beside a dashboard month when the build took one, and says the two are different counts", async () => {
+    rules.push(["%22national%22", { rows: [nationalRow("2026-09")] }]);
+    rules.push([
+      "%22official%22",
+      {
+        rows: [
+          {
+            id: "official-2026-04",
+            month: "2026-04",
+            m: { calls: 232848, robocalls: 170295, live_callers: 62553 },
+            api: { total: 255760 },
+            source_url: "https://public.tableau.com/x",
+          },
+        ],
+      },
+    ]);
+    const body = JSON.parse((await dnc({})).content);
+    expect(body.ftc_dashboard_months).toEqual([
+      {
+        month: "2026-04",
+        complaints: 232848,
+        robocall: 170295,
+        live_caller: 62553,
+        ftc_api_records_for_same_month: 255760,
+      },
+    ]);
+    expect(body.how_to_read.join(" ")).toMatch(
+      /different counts; do not compare a dashboard month/,
+    );
+  });
+
   it("filters by month range and says nothing was counted instead of returning zero", async () => {
     rules.push(["%22national%22", { rows: [nationalRow("2026-09")] }]);
     const body = JSON.parse((await dnc({ from: "2026-11", to: "2026-12" })).content);

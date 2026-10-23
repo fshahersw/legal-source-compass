@@ -26,11 +26,17 @@ const month = (key: string, over: Partial<DncMonth> = {}): DncMonth => ({
   sourceUrl: null,
   ...over,
 });
-const official = (key: string, robocall: number, live: number): OfficialMonth => ({
+const official = (
+  key: string,
+  robocall: number,
+  live: number,
+  apiTotal: number | null = null,
+): OfficialMonth => ({
   month: key,
   total: robocall + live,
   robocall,
   live,
+  apiTotal,
   sourceUrl: null,
 });
 
@@ -101,6 +107,40 @@ describe("buildDncMonthly", () => {
     expect(block.notes.join(" ")).toMatch(
       /April 2026, May 2026\) are the figures on the FTC's Do Not Call Complaints dashboard/,
     );
+  });
+});
+
+describe("dashboard and counted months", () => {
+  it("warns that the two are different counts and gives the API cross-check when the build has one", () => {
+    const block = buildDncMonthly({
+      months: [
+        month("2026-09", { method: "records", firstDay: "2026-09-01", lastDay: "2026-09-30" }),
+      ],
+      official: [official("2026-04", 170295, 62553, 255760)],
+      asOf: null,
+    })!;
+    const notes = block.notes.join(" ");
+    expect(notes).toMatch(
+      /different counts, so compare months within one source, not across the two/,
+    );
+    expect(notes).toMatch(
+      /For April 2026 the FTC API lists 255,760 records while the dashboard shows 232,848/,
+    );
+  });
+  it("warns without a number when no cross-check was taken, and stays silent when only one source is shown", () => {
+    const mixed = buildDncMonthly({
+      months: [month("2026-09", { method: "records" })],
+      official: [official("2026-04", 170295, 62553)],
+      asOf: null,
+    })!;
+    expect(mixed.notes.join(" ")).toMatch(/different counts/);
+    expect(mixed.notes.join(" ")).not.toMatch(/FTC API lists/);
+    const only = buildDncMonthly({
+      months: [],
+      official: [official("2026-04", 170295, 62553, 255760)],
+      asOf: null,
+    })!;
+    expect(only.notes.join(" ")).not.toMatch(/different counts/);
   });
 });
 

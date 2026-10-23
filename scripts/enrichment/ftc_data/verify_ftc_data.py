@@ -238,12 +238,20 @@ def dashboard_months():
 
 def verify_counts():
     """Months counted through the API: built rows against the stored counts file; the API counts against the dashboard where both exist."""
-    path = os.path.join(ACQ, "dnc", "month_counts.json")
+    path = os.path.join(ACQ, "dnc", "crosscheck_counts.json")
+    rows = {r["id"]: r for r in load("ftc_dnc_reported_calls")["rows"]}
+    dash = dashboard_months()
+    for month, d in sorted(dash.items()):
+        off = rows.get(f"official-{month}")
+        check("dnc_dashboard", f"official-{month} exists", off is not None, True)
+        if off is not None:
+            check("dnc_dashboard", f"official-{month} total", off["item"]["metrics"]["calls"], d["total"])
+            check("dnc_dashboard", f"official-{month} robocall", off["item"]["metrics"]["robocalls"], d["robocall"])
+            check("dnc_dashboard", f"official-{month} live caller", off["item"]["metrics"]["live_callers"], d["live"])
+            check("dnc_dashboard", f"official-{month} parts add up", d["robocall"] + d["live"], d["total"])
     if not os.path.exists(path):
         return
     raw = json.load(open(path, encoding="utf-8"))["months"]
-    rows = {r["id"]: r for r in load("ftc_dnc_reported_calls")["rows"]}
-    dash = dashboard_months()
     for month, c in sorted(raw.items()):
         row = rows.get(f"US-{month}")
         if row is not None and row["item"]["method"] == "count":
@@ -254,6 +262,15 @@ def verify_counts():
             check("dnc_counts", f"US-{month} no flag", m["no_flag"], c["total"] - c["robo_y"] - c["robo_n"])
         d = dash.get(month)
         if d:
+            off = rows.get(f"official-{month}")
+            check("dnc_counts", f"official-{month} exists", off is not None, True)
+            if off is not None:
+                check("dnc_counts", f"official-{month} dashboard total", off["item"]["metrics"]["calls"], d["total"])
+                check("dnc_counts", f"official-{month} robocall", off["item"]["metrics"]["robocalls"], d["robocall"])
+                check("dnc_counts", f"official-{month} live caller", off["item"]["metrics"]["live_callers"], d["live"])
+                check("dnc_counts", f"official-{month} API total kept on the row", off["item"]["api_count"]["total"], c["total"])
+                check("dnc_counts", f"official-{month} API robocalls kept on the row", off["item"]["api_count"]["robocalls"], c["robo_y"])
+                check("dnc_counts", f"official-{month} API not robocalls kept on the row", off["item"]["api_count"]["not_robocalls"], c["robo_n"])
             VALIDATION.append({"month": month, "api_total": c["total"], "dashboard_total": d["total"], "api_robocall": c["robo_y"], "dashboard_robocall": d["robocall"], "api_not": c["robo_n"], "dashboard_live": d["live"]})
             COMPARED["api_vs_dashboard"] = COMPARED.get("api_vs_dashboard", 0) + 3
 

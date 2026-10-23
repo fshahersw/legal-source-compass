@@ -66,7 +66,11 @@ function monthRange(values: Map<string, MonthValue>): { first: string; last: str
   return keys.length ? { first: keys[0]!, last: keys[keys.length - 1]! } : null;
 }
 
-function originNotes(months: readonly DncMonth[], values: Map<string, MonthValue>): string[] {
+function originNotes(
+  months: readonly DncMonth[],
+  values: Map<string, MonthValue>,
+  official: readonly OfficialMonth[],
+): string[] {
   const notes: string[] = [];
   const keysOf = (origin: MonthValue["origin"]) =>
     [...values.entries()]
@@ -92,6 +96,16 @@ function originNotes(months: readonly DncMonth[], values: Map<string, MonthValue
     notes.push(
       `${dashboard.length} month${dashboard.length === 1 ? "" : "s"} (${dashboard.map(monthName).join(", ")}) are the figures on the FTC's Do Not Call Complaints dashboard (April to June comparison), which the build did not count itself.`,
     );
+  if (dashboard.length && (recordsKeys.length || counted.length)) {
+    const checked = official.find((o) => dashboard.includes(o.month) && o.apiTotal !== null);
+    notes.push(
+      `Dashboard months and months counted from the daily files are different counts, so compare months within one source, not across the two.${
+        checked
+          ? ` For ${monthName(checked.month)} the FTC API lists ${formatCount(checked.apiTotal!)} records while the dashboard shows ${formatCount(checked.total)}; no reason is given in the FTC material read for this build.`
+          : ""
+      }`,
+    );
+  }
   return notes;
 }
 
@@ -135,7 +149,7 @@ export function buildDncMonthly(input: {
     asOf: input.asOf,
     notes: [
       ...SHARED_NOTES,
-      ...originNotes(input.months, values),
+      ...originNotes(input.months, values, input.official),
       ...(partial.length
         ? [
             `${partial.map((k) => `${monthName(k)}*`).join(" and ")} cover${partial.length === 1 ? "s" : ""} only the days stated above, drawn dashed, and ${partial.length === 1 ? "is" : "are"} never the latest value.`,
@@ -176,7 +190,7 @@ export function buildDncRobocallShare(input: {
     notes: [
       "Share = calls reported as a recorded message or robocall / calls reported as either a recording or not × 100. Calls with no answer are in neither count.",
       "A share is a rate of reports, not of calls made: it says nothing about how many robocalls were placed.",
-      ...originNotes(input.months, values),
+      ...originNotes(input.months, values, input.official),
       "Months with no point were not counted; they are gaps, not zero.",
     ],
   });

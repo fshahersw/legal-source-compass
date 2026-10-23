@@ -52,7 +52,7 @@ const cs = (filters: Record<string, string[]>) =>
   `filters=cs.${encodeURIComponent(JSON.stringify(filters))}`;
 
 const DNC_SELECT =
-  "id,month:item->>month,complete:item->complete,method:item->>method,first:item->>first_day,last:item->>last_day,days:item->days_covered,dim:item->days_in_month,m:item->metrics,a:item->analytics,subj:item->subjects,source_url";
+  "id,month:item->>month,complete:item->complete,method:item->>method,first:item->>first_day,last:item->>last_day,days:item->days_covered,dim:item->days_in_month,m:item->metrics,a:item->analytics,subj:item->subjects,api:item->api_count,source_url";
 
 async function readDnc(): Promise<
   Pick<FtcConsumerOverview, "monthly" | "share" | "subjects"> & { terms: string | null }

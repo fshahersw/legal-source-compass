@@ -2,7 +2,7 @@
 
 Inputs (private/acq/ftc_data/): the FTC's daily CSV files (files/DNC_Complaint_Numbers_*.csv, stored unchanged), the daily
 aggregates read from api.ftc.gov (dnc/days/*.json, written by fetch_dnc.py), optional API record counts per month
-(dnc/month_counts.json), and the FTC dashboard's own monthly comparison (tableau/DoNotCallComplaints__MonthlyComparison.csv).
+(dnc/month_counts.json: none now; the API counts in dnc/crosscheck_counts.json are evidence only), and the FTC dashboard's own monthly comparison (tableau/DoNotCallComplaints__MonthlyComparison.csv).
 Every count is made from the records themselves by dnc_agg; nothing is estimated. A day that has no source is a gap.
 Per-100,000 figures divide a month's count by the Census resident population of July 1, 2025 (Population Estimates, vintage 2025).
 """
@@ -164,7 +164,29 @@ def official_monthly(entries=None):
     return out
 
 
-def build(days=None, overlap=None, per_file=None, month_counts=None, official=None, population=None, entries=None):
+def load_crosscheck(path=None):
+    """API record counts for months the FTC dashboard also shows (private/acq/ftc_data/dnc/crosscheck_counts.json); {} when none were taken.
+
+    They are evidence about how the two sources compare, not months of this dataset."""
+    path = path or os.path.join(B.ACQ, "dnc", "crosscheck_counts.json")
+    if not os.path.exists(path):
+        return {}
+    with open(path, encoding="utf-8") as handle:
+        return json.load(handle).get("months", {})
+
+
+def api_note(x, dashboard_total):
+    diff = x["total"] - dashboard_total
+    if diff == 0:
+        return f"The FTC API lists the same {B.fmt_int(x['total'])} records created in this month (counted on {x['counted_at'][:10]})."
+    more = "more" if diff > 0 else "fewer"
+    return (
+        f"The FTC API lists {B.fmt_int(x['total'])} records created in this month ({B.fmt_int(x['robo_y'])} reported as a recording or robocall, {B.fmt_int(x['robo_n'])} as not), counted on {x['counted_at'][:10]}: "
+        f"{B.fmt_int(abs(diff))} {more} than the dashboard shows. No reason is given in the FTC material read for this build, so dashboard months and months counted from the daily files are treated as different counts and are not compared with each other."
+    )
+
+
+def build(days=None, overlap=None, per_file=None, month_counts=None, official=None, population=None, entries=None, crosscheck=None):
     entries = entries if entries is not None else B.current_entries()
     if days is None:
         csv_days, per_file = load_csv_days()
@@ -174,6 +196,7 @@ def build(days=None, overlap=None, per_file=None, month_counts=None, official=No
     per_file = per_file or []
     month_counts = month_counts if month_counts is not None else {}
     official = official if official is not None else official_monthly()
+    crosscheck = crosscheck if crosscheck is not None else load_crosscheck()
     if population is None:
         with open(os.path.join(B.LOOKUPS, "census_pop_state.json"), encoding="utf-8") as handle:
             pop_doc = json.load(handle)
@@ -266,6 +289,7 @@ def build(days=None, overlap=None, per_file=None, month_counts=None, official=No
             )
     for o in official:
         key = o["month"]
+        x = crosscheck.get(key)
         rows.append(
             B.record(
                 "ftc_dnc_reported_calls", f"official-{key}", f"Do Not Call complaints, {month_label(key)} (FTC dashboard)",
@@ -273,11 +297,13 @@ def build(days=None, overlap=None, per_file=None, month_counts=None, official=No
                 cells={"month": month_label(key), "scope": "United States (FTC dashboard)", "calls": B.fmt_int(o["total"]), "robocalls": B.fmt_int(o["robocall"]), "robocall_share": B.fmt_pct(robocall_share(o["robocall"], o["live"]), 1), "top_subject": B.NOT_RECORDED},
                 facts=[("Month", month_label(key)), ("Complaints", B.fmt_int(o["total"])), ("Robocall", B.fmt_int(o["robocall"])), ("Live caller", B.fmt_int(o["live"])),
                        ("Source", f"Data download of the 'Monthly Comparison' view of the FTC's Do Not Call Complaints dashboard on Tableau Public ({TABLEAU_VIEW}); the view shows only April to June of each year"),
-                       ("Robocall share of the two call types (derived)", B.fmt_pct(robocall_share(o["robocall"], o["live"]), 1))],
+                       ("Robocall share of the two call types (derived)", B.fmt_pct(robocall_share(o["robocall"], o["live"]), 1))]
+                      + ([("Checked against the FTC API", api_note(x, o["total"]))] if x else []),
                 links=[{"url": TABLEAU_VIEW, "label": "FTC Do Not Call Complaints dashboard"}],
                 text="Do Not Call complaints FTC dashboard monthly comparison robocall live caller",
                 filters={"kind": ["official"], "month": [key], "year": [key[:4]], "complete": ["yes"]},
-                extra={"kind": "official", "month": key, "complete": True, "metrics": {"calls": o["total"], "robocalls": o["robocall"], "live_callers": o["live"]}, "analytics": {"robocall_share_pct": robocall_share(o["robocall"], o["live"])}, "parts_sum_equals_total": o["parts_sum_equals_total"]},
+                extra={"kind": "official", "month": key, "complete": True, "metrics": {"calls": o["total"], "robocalls": o["robocall"], "live_callers": o["live"]}, "analytics": {"robocall_share_pct": robocall_share(o["robocall"], o["live"])}, "parts_sum_equals_total": o["parts_sum_equals_total"],
+                       **({"api_count": {"total": x["total"], "robocalls": x["robo_y"], "not_robocalls": x["robo_n"], "counted_at": x["counted_at"], "method": x["method"]}} if x else {})},
             )
         )
     return rows, months_meta, overlap, per_file, official, pop_doc
@@ -301,7 +327,20 @@ def crosscheck_official(months_meta, official):
     return out
 
 
-def build_summary(rows, months_meta, overlap, per_file, official, pop_doc):
+def api_vs_dashboard(official, crosscheck):
+    """For each dashboard month the API was also counted for: both totals, the difference and its share of the dashboard figure."""
+    out = []
+    for o in official:
+        x = crosscheck.get(o["month"])
+        if not x:
+            continue
+        diff = x["total"] - o["total"]
+        out.append({"month": o["month"], "dashboard_total": o["total"], "api_total": x["total"], "difference": diff, "difference_pct_of_dashboard": round(diff / o["total"] * 100, 1),
+                    "dashboard_robocall": o["robocall"], "api_robocall": x["robo_y"], "dashboard_live_caller": o["live"], "api_not_robocall": x["robo_n"], "counted_at": x["counted_at"], "equal": diff == 0})
+    return out
+
+
+def build_summary(rows, months_meta, overlap, per_file, official, pop_doc, crosscheck=None):
     complete = [k for k, m in months_meta.items() if m["complete"]]
     partial = [k for k, m in months_meta.items() if not m["complete"]]
     nat = [r for r in rows if r["item"].get("kind") == "national"]
@@ -325,7 +364,7 @@ def build_summary(rows, months_meta, overlap, per_file, official, pop_doc):
             "months_by_method": {k: m["method"] for k, m in months_meta.items()},
         },
         "sources": {"daily_csv_files": [{"name": f["name"], "url": CSV_URL.format(name=f["name"]), "rows": f["rows"], "sha256": f["sha256"], "created_days": f["created_days"]} for f in per_file], "api_documentation": API_DOCS, "data_page": DATA_PAGE, "dashboard_view": TABLEAU_VIEW},
-        "validation": {"csv_vs_api_days": overlap, "official_dashboard_months": crosscheck_official(months_meta, official), "csv_malformed_rows": sum(f["malformed_rows"] for f in per_file)},
+        "validation": {"csv_vs_api_days": overlap, "official_dashboard_months": crosscheck_official(months_meta, official), "api_vs_dashboard": api_vs_dashboard(official, crosscheck if crosscheck is not None else load_crosscheck()), "csv_malformed_rows": sum(f["malformed_rows"] for f in per_file)},
         "quality_of_published_records": totals, "subjects_in_records_months": dict(sorted(subjects.items(), key=lambda kv: (-kv[1], kv[0]))),
         "population_denominator": {"source": pop_doc["source"], "url": pop_doc["source_url"], "year": pop_doc["year"]},
         "formulas": FORMULAS,

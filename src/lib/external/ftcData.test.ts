@@ -142,7 +142,17 @@ describe("parseOfficialMonths", () => {
       row("2026-04", 232848, 170295, 62552),
     ]);
     expect(out.map((o) => o.month)).toEqual(["2026-05", "2026-06"]);
-    expect(out[0]).toMatchObject({ total: 233346, robocall: 176472, live: 56874 });
+    expect(out[0]).toMatchObject({ total: 233346, robocall: 176472, live: 56874, apiTotal: null });
+  });
+  it("carries the API cross-check count of a month when the build took one, and nothing else from it", () => {
+    const [m] = parseOfficialMonths([
+      { ...row("2026-04", 232848, 170295, 62553), api: { total: 255760, robocalls: 182267 } },
+    ]);
+    expect(m!.apiTotal).toBe(255760);
+    const [bad] = parseOfficialMonths([
+      { ...row("2026-04", 232848, 170295, 62553), api: { total: "255,760" } },
+    ]);
+    expect(bad!.apiTotal).toBeNull();
   });
 });
 

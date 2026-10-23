@@ -96,7 +96,7 @@ export function safeTerm(input: unknown, min = 2): string | null {
 }
 
 const SELECT_MONTH =
-  "id,month:item->>month,complete:item->complete,method:item->>method,first:item->>first_day,last:item->>last_day,days:item->days_covered,dim:item->days_in_month,m:item->metrics,a:item->analytics,subj:item->subjects,source_url";
+  "id,month:item->>month,complete:item->complete,method:item->>method,first:item->>first_day,last:item->>last_day,days:item->days_covered,dim:item->days_in_month,m:item->metrics,a:item->analytics,subj:item->subjects,api:item->api_count,source_url";
 
 function inRange(month: string, from: string | null, to: string | null) {
   return (!from || month >= from) && (!to || month <= to);
@@ -225,6 +225,7 @@ async function dncTrendsTool(input: Record<string, unknown>): Promise<ToolOutcom
             complaints: d.total,
             robocall: d.robocall,
             live_caller: d.live,
+            ...(d.apiTotal !== null ? { ftc_api_records_for_same_month: d.apiTotal } : {}),
           })),
         }),
     how_to_read: [
@@ -234,6 +235,7 @@ async function dncTrendsTool(input: Record<string, unknown>): Promise<ToolOutcom
         ? "The state is the one the consumer reported; reports with no state are in the national counts only. Per-100,000 uses the Census denominator named on each month."
         : "Months not listed were not counted; they are not zero.",
       "Robocall share = reported as a recorded message / reported as either a recording or not; reports with no answer are left out.",
+      "Dashboard months and months counted from the daily files are different counts; do not compare a dashboard month with a counted month. Where ftc_api_records_for_same_month is given, the FTC API lists that many records for the month, which differs from the dashboard figure.",
     ],
     ...(months.length
       ? {}

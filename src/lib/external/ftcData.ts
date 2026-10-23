@@ -103,6 +103,8 @@ export type OfficialMonth = {
   total: number;
   robocall: number;
   live: number;
+  /** Records the FTC API lists for the same month, when the build counted them (a cross-check, not a month of the dataset). */
+  apiTotal: number | null;
   sourceUrl: string | null;
 };
 
@@ -128,7 +130,14 @@ export function parseOfficialMonths(rows: unknown[]): OfficialMonth[] {
     const robocall = int(m["robocalls"]);
     const live = int(m["live_callers"]);
     if (total === null || robocall === null || live === null || robocall + live !== total) continue;
-    out.set(month, { month, total, robocall, live, sourceUrl: str(r["source_url"]) });
+    out.set(month, {
+      month,
+      total,
+      robocall,
+      live,
+      apiTotal: int(obj(r["api"])?.["total"]),
+      sourceUrl: str(r["source_url"]),
+    });
   }
   return [...out.values()].sort((a, b) => a.month.localeCompare(b.month));
 }

@@ -1,13 +1,16 @@
 """Count the Do Not Call records the API lists for a window, by paging with one record per page (no record is read).
 
   python3 -I -B count_api.py --day 2026-09-16
-  python3 -I -B count_api.py --months 2024-01 2024-02 ...  [--out private/acq/ftc_data/dnc/month_counts.json]
+  python3 -I -B count_api.py --months 2024-01 2024-02 ...  [--out private/acq/ftc_data/dnc/crosscheck_counts.json]
 
 The endpoint reports no usable total (its `record-total` member is not a number), so the count is found by binary search on
 `offset` with items_per_page=1: the number of records is the first offset that returns an empty page. Each month is counted
 for all records, for is_robocall=true and for is_robocall=false; records with no robocall answer are the difference.
-A day count can be compared with the FTC's daily file for that day (validation); month counts are published only after
-that comparison agrees for the days where both exist.
+A month count is compared with the FTC dashboard's figure for the same month where the dashboard shows one. Measured on
+2026-10-23 for April 2026 the API listed 255,760 records against the dashboard's 232,848 (9.8 percent more, with the robocall
+and live caller parts higher by 7.0 and 9.1 percent), so counts made this way are kept only as cross-check evidence
+(crosscheck_counts.json) and no month of the published dataset comes from them. Cost: a deep offset takes 5 to 13 seconds, about
+55 requests and ten minutes a month, with the probes kept in dnc/probes.jsonl so a stopped run resumes.
 """
 import argparse
 import calendar
@@ -21,7 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ftc_http as fh  # noqa: E402
 
 BASE = "https://api.ftc.gov/v0/dnc-complaints"
-OUT = os.path.join(fh.ACQ, "dnc", "month_counts.json")
+OUT = os.path.join(fh.ACQ, "dnc", "crosscheck_counts.json")
 METHOD = "api.ftc.gov /v0/dnc-complaints counted by binary search on offset (items_per_page=1)"
 
 
