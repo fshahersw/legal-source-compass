@@ -21,7 +21,7 @@ rule_set, strip_sign; [ ... ] is kept only when every group inside it is non-emp
 
 from __future__ import annotations
 
-VERSION = "citations-v2/2026-10-25.3"
+VERSION = "citations-v2/2026-10-25.4"
 
 # ------------------------------------------------------------------------------------------------ fragments
 FRAGMENTS: dict[str, str] = {
@@ -56,8 +56,9 @@ FRAGMENTS: dict[str, str] = {
     # state code sections: "13-202", "2A:58C-2", "95.11(3)", "17200", "5/13-202"
     # a hyphen at a line break continues the section ("24-5-0.5-\n2(a)(8)", "24-5-0.5- 2(a)(8)"); the key drops the break
     "STATE_SEC": r"[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \t]{0,2}\n?[ \t]{0,2})?)[0-9A-Za-z]+)*(?:\([0-9A-Za-z]{1,5}\))*",
-    # states whose section is chapter.section with exactly one dot (a second ".4" is a footnote glued to the citation)
-    "STATE_SEC_DOTTED": r"[0-9]{1,4}[A-Z]?\.[0-9]{1,5}[A-Za-z]?(?:\([0-9A-Za-z]{1,5}\))*(?!\.?[0-9])",
+    # states whose section is chapter.section with exactly one dot (a second ".4" is a footnote glued to the citation);
+    # the UCC chapters add an article-section part: Mo. "400.2-313", Minn. "336.2-313", "400.4A-101"
+    "STATE_SEC_DOTTED": r"[0-9]{1,4}[A-Z]?\.[0-9]{1,5}[A-Za-z]?(?:-[0-9]{1,4}[A-Za-z]?)?(?:\([0-9A-Za-z]{1,5}\))*(?!\.?[0-9])",
     # administrative-code sections: "335-3-1-.02", "R18-2-101", "7:26-1.4", "26.11.01.01", "Env-A 101.01"
     "REG_SEC": r"(?:R\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\-–]|-\.)[0-9A-Za-z]+)*(?:\([0-9A-Za-z]{1,5}\))*",
     "STATE_TAIL": r"(?![A-Za-z0-9_])(?!\s+Supp\.)(?![-–]\s)(?![¬­])",

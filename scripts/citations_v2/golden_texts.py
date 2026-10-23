@@ -69,6 +69,8 @@ TEXTS: list[tuple[str, str]] = [
     ("nbsp", "Mass. Gen. Laws ch. 93A, § 2 and 42 U.S.C. § 1983 with no-break spaces."),
     ("astral", "\U0001F4C4 Exhibit: see 42 U.S.C. § 1983 and Doe v. Roe, 1 F.4th 2 (1st Cir. 2021) \U0001F4C4 then 21 CFR 11."),
     ("not-cases", "On 5 May 2020 the 3 Defendants paid 12 dollars; 100 NE 2nd Ave; 25 Black 3 sold; page 4 Exhibit 5."),
+    ("ucc-dotted", "Express warranty: Mo. Rev. Stat. § 400.2-313 and Minn. Stat. § 336.2-314(2)(c); Mo. Rev. Stat. § "
+                   "400.4A-101; damages under Mo. Rev. Stat. § 537.090-537.100 and Fla. Stat. § 95.11(3)."),
 ]
 
 # A document given page by page (short forms resolve across pages).
