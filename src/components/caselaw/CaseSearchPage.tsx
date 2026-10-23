@@ -4,10 +4,16 @@ import { ExternalLink, FileText, Search } from "lucide-react";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { TIER_LABEL, type CaseHit, type LiveHit } from "@/lib/external/caselaw";
+import { TIER_PLURAL, TIERS, type CaseHit, type LiveHit, type Tier } from "@/lib/external/caselaw";
 import { cn } from "@/lib/utils";
-import { casesSearchQuery, courtsQuery, fulltextQuery, liveQuery } from "./caseQueries";
-import { fmtDay, fmtInt, NOT_RECORDED, yearOf } from "./caseFormat";
+import {
+  casesSearchQuery,
+  courtsQuery,
+  coverageQuery,
+  fulltextQuery,
+  liveQuery,
+} from "./caseQueries";
+import { fmtDay, fmtInt, NOT_RECORDED, stateLabel, yearOf } from "./caseFormat";
 import {
   MODE_LABEL,
   SORT_LABEL,
@@ -30,7 +36,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function Skeleton() {
+export function Skeleton() {
   return (
     <div className="space-y-1" aria-busy="true" aria-label="Loading results">
       {Array.from({ length: 8 }, (_, i) => (
@@ -40,7 +46,7 @@ function Skeleton() {
   );
 }
 
-function Problem({
+export function Problem({
   children,
   onRetry,
 }: {
@@ -66,7 +72,15 @@ function Problem({
   );
 }
 
-function Pager({ page, hasMore, go }: { page: number; hasMore: boolean; go: (p: number) => void }) {
+export function Pager({
+  page,
+  hasMore,
+  go,
+}: {
+  page: number;
+  hasMore: boolean;
+  go: (p: number) => void;
+}) {
   if (page <= 1 && !hasMore) return null;
   return (
     <div className="flex items-center gap-2 pt-2 text-[12px]">
@@ -81,7 +95,16 @@ function Pager({ page, hasMore, go }: { page: number; hasMore: boolean; go: (p: 
   );
 }
 
-function HitTable({ rows, showMatched }: { rows: CaseHit[]; showMatched?: boolean }) {
+export function HitTable({
+  rows,
+  showMatched,
+  hideCourt,
+}: {
+  rows: CaseHit[];
+  showMatched?: boolean;
+  /** One court's own list: the court column would repeat its name on every row. */
+  hideCourt?: boolean;
+}) {
   return (
     <div className="overflow-x-auto rounded-md border border-border">
       <table className="w-full min-w-[44rem] text-xs">
@@ -89,7 +112,7 @@ function HitTable({ rows, showMatched }: { rows: CaseHit[]; showMatched?: boolea
         <thead className="bg-muted/40 text-left text-[11px] text-muted-foreground">
           <tr>
             <th className="px-3 py-1.5 font-medium">Case</th>
-            <th className="px-2 py-1.5 font-medium">Court</th>
+            {hideCourt ? null : <th className="px-2 py-1.5 font-medium">Court</th>}
             <th className="px-2 py-1.5 font-medium">Filed</th>
             <th className="px-2 py-1.5 font-medium">Status</th>
             <th
@@ -128,7 +151,16 @@ function HitTable({ rows, showMatched }: { rows: CaseHit[]; showMatched?: boolea
                     : ""}
                 </div>
               </td>
-              <td className="px-2 py-1.5 text-muted-foreground">{r.court ?? r.courtId}</td>
+              {hideCourt ? null : (
+                <td className="px-2 py-1.5 text-muted-foreground">
+                  {r.court ?? r.courtId}
+                  {r.jurisdiction ? (
+                    <span className="ml-1 text-[11px]" title={stateLabel(r.jurisdiction)}>
+                      · {r.jurisdiction}
+                    </span>
+                  ) : null}
+                </td>
+              )}
               <td className="whitespace-nowrap px-2 py-1.5 tabular-nums">{fmtDay(r.dateFiled)}</td>
               <td className="px-2 py-1.5 text-muted-foreground">
                 {r.precedentialStatus ?? NOT_RECORDED}
@@ -180,12 +212,38 @@ function CasesResults({ s, nav }: { s: CaseSearchState; nav: Nav }) {
   );
 }
 
+/** "Supreme Court (every word); Federal district courts (first 1,000 words of each opinion)" */
+function coverageText(tiers: { tier: Tier; scope: string; prefixWords: number | null }[]): string {
+  if (!tiers.length) return "the Supreme Court";
+  return tiers
+    .map(
+      (t) =>
+        `${TIER_PLURAL[t.tier]} (${t.scope === "full" ? "every word" : `first ${fmtInt(t.prefixWords)} words of each opinion`})`,
+    )
+    .join("; ");
+}
+
 function FulltextResults({ s, nav }: { s: CaseSearchState; nav: Nav }) {
   const q = useQuery(fulltextQuery(s));
+  const cov = useQuery(coverageQuery);
+  const indexed = (cov.data?.tiers ?? []).filter((t) => t.opinions > 0 || t.tier === 1);
+  const scope = coverageText(indexed);
+  const tierIndexed = !s.tier || indexed.some((t) => t.tier === s.tier);
   if (!s.q)
+    return <Problem>Type words or a phrase in quotes to search opinion text of {scope}.</Problem>;
+  if (cov.isSuccess && !tierIndexed)
     return (
       <Problem>
-        Type words or a phrase in quotes to search the text of every Supreme Court opinion.
+        The opinion text of {TIER_PLURAL[s.tier!]?.toLowerCase()} is not indexed here yet (indexed:{" "}
+        {scope}). Their opinions can be read on each case page; search their text with CourtListener
+        full text.
+        <button
+          type="button"
+          onClick={() => nav({ ...s, mode: "live", page: undefined, cursor: undefined })}
+          className="rounded text-primary underline focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          Search on CourtListener
+        </button>
       </Problem>
     );
   if (q.isLoading) return <Skeleton />;
@@ -197,13 +255,13 @@ function FulltextResults({ s, nav }: { s: CaseSearchState; nav: Nav }) {
   return (
     <div className="space-y-2">
       <p className="text-[12px] text-muted-foreground">
-        Supreme Court opinions whose text matches (English stemming; "quoted phrases", OR and -word
-        work). Cases are ranked by how densely the words occur, then by citations.
+        Opinions whose indexed text matches (English stemming; "quoted phrases", OR and -word work).
+        Indexed here: {scope}. Cases are ranked by how densely the words occur, then by citations.
       </p>
       {d.rows.length ? (
         <HitTable rows={d.rows} showMatched />
       ) : (
-        <Problem>No Supreme Court opinion text matches “{s.q}”.</Problem>
+        <Problem>No indexed opinion text matches “{s.q}”.</Problem>
       )}
       <Pager
         page={d.page}
@@ -262,7 +320,9 @@ function LiveResults({ s, nav }: { s: CaseSearchState; nav: Nav }) {
             ? "The live CourtListener search is not configured on this server."
             : d.reason === "no_courts"
               ? "No court matches these filters."
-              : "CourtListener's live search did not answer. Try again shortly."}
+              : d.reason === "too_many_courts"
+                ? "This court level has too many courts for one search: choose a state or a court."
+                : "CourtListener's live search did not answer. Try again shortly."}
       </Problem>
     );
   const rows: LiveHit[] = d.rows;
@@ -346,11 +406,14 @@ export function CaseSearchPage({ s, nav }: { s: CaseSearchState; nav: Nav }) {
   const [text, setText] = useState(s.q ?? "");
   useEffect(() => setText(s.q ?? ""), [s.q]);
   const courts = useQuery(courtsQuery);
-  const courtOptions = (courts.data ?? [])
-    .filter((c) =>
-      mode === "fulltext" ? c.tier === 1 : mode === "live" ? c.tier === 2 || c.tier === 3 : true,
-    )
-    .filter((c) => !s.tier || c.tier === s.tier);
+  const levels: Tier[] = mode === "live" ? TIERS.filter((t) => t >= 2) : [...TIERS];
+  const inMode = (courts.data ?? []).filter(
+    (c) => (mode === "live" ? c.tier >= 2 : true) && (!s.tier || c.tier === s.tier),
+  );
+  const states = [
+    ...new Set(inMode.map((c) => c.jurisdiction).filter((j): j is string => !!j)),
+  ].sort((a, b) => stateLabel(a).localeCompare(stateLabel(b)));
+  const courtOptions = inMode.filter((c) => !s.jur || c.jurisdiction === s.jur);
   const submit = (e: FormEvent) => {
     e.preventDefault();
     nav({ ...s, q: text.trim() || undefined, page: undefined, cursor: undefined });
@@ -369,8 +432,7 @@ export function CaseSearchPage({ s, nav }: { s: CaseSearchState; nav: Nav }) {
             onClick={() =>
               set({
                 mode: m === "cases" ? undefined : m,
-                tier:
-                  m === "fulltext" ? undefined : m === "live" && s.tier === 1 ? undefined : s.tier,
+                tier: m === "live" && s.tier === 1 ? undefined : s.tier,
                 court: undefined,
                 semantic: undefined,
               })
@@ -399,8 +461,8 @@ export function CaseSearchPage({ s, nav }: { s: CaseSearchState; nav: Nav }) {
               mode === "cases"
                 ? "Case name or citation, e.g. Miranda v. Arizona or 384 U.S. 436"
                 : mode === "fulltext"
-                  ? 'Words or "a phrase" in Supreme Court opinions'
-                  : "Words in federal appellate and state supreme court opinions"
+                  ? 'Words or "a phrase" in opinion text'
+                  : "Words in opinions, searched on CourtListener"
             }
             aria-label="Search cases"
             className="h-8 pl-8 text-[13px]"
@@ -412,51 +474,62 @@ export function CaseSearchPage({ s, nav }: { s: CaseSearchState; nav: Nav }) {
         </Button>
       </form>
       <div className="flex flex-wrap items-end gap-2">
-        {mode !== "fulltext" ? (
-          <Field label="Courts">
-            <select
-              value={s.tier ?? ""}
-              onChange={(e) =>
-                set({
-                  tier: e.target.value ? (Number(e.target.value) as 1 | 2 | 3) : undefined,
-                  court: undefined,
-                })
-              }
-              className={selectClass}
-            >
-              <option value="">
-                {mode === "live" ? "Federal appellate and state" : "All three tiers"}
+        <Field label="Court level">
+          <select
+            value={s.tier ?? ""}
+            onChange={(e) =>
+              set({
+                tier: e.target.value ? (Number(e.target.value) as Tier) : undefined,
+                court: undefined,
+              })
+            }
+            className={cn(selectClass, "max-w-[15rem]")}
+          >
+            <option value="">
+              {mode === "live" ? "Federal appellate and state highest" : "Every level"}
+            </option>
+            {levels.map((t) => (
+              <option key={t} value={t}>
+                {TIER_PLURAL[t]}
               </option>
-              {(mode === "live" ? [2, 3] : [1, 2, 3]).map((t) => (
-                <option key={t} value={t}>
-                  {TIER_LABEL[t]}
-                </option>
-              ))}
-            </select>
-          </Field>
-        ) : null}
-        {mode !== "fulltext" ? (
-          <Field label="Court">
-            <select
-              value={s.court ?? ""}
-              onChange={(e) => set({ court: e.target.value || undefined })}
-              className={cn(selectClass, "max-w-[16rem]")}
-            >
-              <option value="">
-                {courts.isLoading
-                  ? "Loading courts…"
-                  : courts.isError
-                    ? "Courts unavailable"
-                    : "Any court"}
+            ))}
+          </select>
+        </Field>
+        <Field label="State">
+          <select
+            value={s.jur ?? ""}
+            onChange={(e) => set({ jur: e.target.value || undefined, court: undefined })}
+            className={cn(selectClass, "max-w-[11rem]")}
+            disabled={!states.length && !s.jur}
+          >
+            <option value="">{courts.isLoading ? "Loading…" : "Any state"}</option>
+            {states.map((j) => (
+              <option key={j} value={j}>
+                {stateLabel(j)}
               </option>
-              {courtOptions.map((c) => (
-                <option key={c.courtId} value={c.courtId}>
-                  {c.name} ({fmtInt(c.cases)})
-                </option>
-              ))}
-            </select>
-          </Field>
-        ) : null}
+            ))}
+          </select>
+        </Field>
+        <Field label="Court">
+          <select
+            value={s.court ?? ""}
+            onChange={(e) => set({ court: e.target.value || undefined })}
+            className={cn(selectClass, "max-w-[16rem]")}
+          >
+            <option value="">
+              {courts.isLoading
+                ? "Loading courts…"
+                : courts.isError
+                  ? "Courts unavailable"
+                  : "Any court"}
+            </option>
+            {courtOptions.map((c) => (
+              <option key={c.courtId} value={c.courtId}>
+                {c.name} ({fmtInt(c.cases)})
+              </option>
+            ))}
+          </select>
+        </Field>
         <Field label="Filed from">
           <input
             type="date"
@@ -532,9 +605,17 @@ export function CaseSearchPage({ s, nav }: { s: CaseSearchState; nav: Nav }) {
       )}
       <p className="flex items-start gap-1 text-[11px] text-muted-foreground">
         <FileText className="mt-0.5 size-3 shrink-0" aria-hidden />
-        Supreme Court, federal courts of appeals and state highest courts from CourtListener's bulk
-        data (snapshot 2026-09-30). Names, citations and Supreme Court text are searched here;
-        appellate and state text is searched through CourtListener's live service.
+        <span>
+          Every court level from CourtListener's bulk data (snapshot 2026-09-30): the Supreme Court,
+          federal courts of appeals, state highest and intermediate appellate courts, federal
+          district courts and other courts. Names and citations are searched here, opinion text
+          where it is indexed; any court's text can also be searched through CourtListener's live
+          service.{" "}
+          <Link to="/cases/courts" className="text-primary hover:underline">
+            Browse by court
+          </Link>
+          .
+        </span>
       </p>
     </div>
   );

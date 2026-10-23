@@ -57,8 +57,8 @@ function NotFound() {
       title="Case not found"
     >
       <p className="text-[13px] text-muted-foreground">
-        No Supreme Court, federal appellate or state highest-court case with this id is held here
-        (blocked cases are never shown).{" "}
+        No case with this id is held here (cases of every court level are held when CourtListener
+        has an opinion for them; cases it blocks from search engines are never shown).{" "}
         <Link to="/cases" className="text-primary hover:underline">
           Search case law
         </Link>

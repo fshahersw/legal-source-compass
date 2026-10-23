@@ -17,7 +17,7 @@ export const Route = createFileRoute("/cases/")({
   head: () =>
     pageHead(
       "Case law",
-      "Read and search Supreme Court, federal courts of appeals and state highest-court opinions from CourtListener's bulk data, with a citator for every case.",
+      "Read and search opinions of every court level from CourtListener's bulk data: the Supreme Court, federal courts of appeals and district courts, state highest and intermediate appellate courts, and other courts.",
     ),
   component: Page,
 });
@@ -28,7 +28,7 @@ function Page() {
   return (
     <AppShell
       title="Case law"
-      description="Supreme Court, federal courts of appeals and state highest courts: find a case by name or citation, search Supreme Court opinion text, and search appellate and state opinion text through CourtListener's live service."
+      description="Every court level, from the Supreme Court to federal district and state appellate courts: find a case by name or citation, filter by court level, state and court, and search opinion text."
       breadcrumbs={[
         { label: "Home", to: "/" },
         { label: "Law & regulation", to: "/law" },

@@ -113,15 +113,28 @@ export function CitatorPanel({
   id,
   caseName,
   clCount,
+  citedBy = 0,
+  citedByCases = 0,
 }: {
   id: number;
   caseName: string;
   clCount: number | null;
+  /** The case row's counts from the citation map (always computed, also where no citator record is built yet). */
+  citedBy?: number;
+  citedByCases?: number;
 }) {
   const q = useCitator(id);
   if (q.isLoading) return <Loading label="Loading the citator" />;
   if (q.isError) return <Failed onRetry={() => void q.refetch()} what="citator" />;
   const c = q.data?.citator ?? null;
+  if (!c && citedBy > 0)
+    return (
+      <p className="rounded-md border border-border px-3 py-2 text-[13px] text-muted-foreground">
+        {fmtInt(citedBy)} later opinions in {fmtInt(citedByCases)} cases cite {caseName} in
+        CourtListener's citation map. The list of citing cases and parentheticals is not built for
+        this court level yet.
+      </p>
+    );
   if (!c || (c.citedByOpinions === 0 && c.parentheticals.length === 0))
     return (
       <p className="rounded-md border border-border px-3 py-2 text-[13px] text-muted-foreground">

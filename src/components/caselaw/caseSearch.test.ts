@@ -35,7 +35,8 @@ describe("normalizeCaseSearch", () => {
     expect(
       normalizeCaseSearch({
         mode: "x",
-        tier: 4,
+        tier: 8,
+        jur: "Texas",
         court: "CA 9",
         page: 1,
         sort: "best",
@@ -45,9 +46,15 @@ describe("normalizeCaseSearch", () => {
     ).toEqual({});
     expect(normalizeCaseSearch({ q: "   " })).toEqual({});
   });
-  it("live search covers only the appellate and state tiers", () => {
+  it("keeps tiers 4-7 and a two-letter state", () => {
+    expect(normalizeCaseSearch({ tier: "5", jur: "NY" })).toEqual({ tier: 5, jur: "NY" });
+    expect(normalizeCaseSearch({ tier: 7 })).toEqual({ tier: 7 });
+  });
+  it("live search covers tiers 2-7, never the Supreme Court", () => {
     expect(liveTier(1)).toBeNull();
     expect(liveTier(2)).toBe(2);
+    expect(liveTier(5)).toBe(5);
+    expect(liveTier(8)).toBeNull();
     expect(liveTier(undefined)).toBeNull();
   });
 });

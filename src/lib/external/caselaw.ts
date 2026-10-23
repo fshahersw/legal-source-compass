@@ -2,6 +2,10 @@
  * Case law (CourtListener bulk data, snapshot 2026-09-30): pure parsing and text layout shared by the server functions
  * (caselaw.functions.ts) and the /cases pages. Nothing here touches the network.
  *
+ * Tiers 1-3 (Supreme Court, federal appellate, state highest courts) come from stage 2; tiers 4-7 (state intermediate
+ * appellate, federal district, other federal courts and tribunals, other state/territorial/tribal courts) from
+ * scripts/caselaw_v2 (database/contracts/caselaw-v2.sql). Their reading records add exact source provenance.
+ *
  * Data contract (scripts/enrichment/caselaw, database/contracts/caselaw-read-v1.sql):
  *  - caselaw_case_v1 returns one case row with its opinions' byte pointers into the private reading store;
  *  - each opinion is one gzip member holding a "caselaw-read/1" record: text, star pages
@@ -42,10 +46,49 @@ const courtId = (v: unknown) => {
 const clusterId = (v: unknown) => int(v, 1, 2_000_000_000);
 
 // ---------------------------------------------------------------------------------------------- labels
+export type Tier = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+export const TIERS: readonly Tier[] = [1, 2, 3, 4, 5, 6, 7];
 export const TIER_LABEL: Record<number, string> = {
   1: "Supreme Court",
   2: "Federal appellate",
   3: "State highest court",
+  4: "State intermediate appellate",
+  5: "Federal district",
+  6: "Other federal courts and tribunals",
+  7: "Other state, territorial and tribal courts",
+};
+/** Short plural names for filters and headings. */
+export const TIER_PLURAL: Record<number, string> = {
+  1: "Supreme Court",
+  2: "Federal courts of appeals",
+  3: "State highest courts",
+  4: "State intermediate appellate courts",
+  5: "Federal district courts",
+  6: "Other federal courts and tribunals",
+  7: "Other state, territorial and tribal courts",
+};
+export const isTier = (v: unknown): v is Tier =>
+  typeof v === "number" && Number.isInteger(v) && v >= 1 && v <= 7;
+/** CourtListener's court jurisdiction codes (courts table), as the court registry records them. */
+export const COURT_LEVEL_LABEL: Record<string, string> = {
+  F: "Federal appellate",
+  FD: "Federal district",
+  FB: "Federal bankruptcy",
+  FBP: "Federal bankruptcy appellate panel",
+  FS: "Federal special court or tribunal",
+  MA: "Military appellate",
+  S: "State supreme court",
+  SA: "State appellate",
+  ST: "State trial",
+  SS: "State special court",
+  TS: "Territorial supreme court",
+  TA: "Territorial appellate",
+  TT: "Territorial trial",
+  TSP: "Territorial special court",
+  TRS: "Tribal supreme court",
+  TRA: "Tribal appellate",
+  TRT: "Tribal trial",
+  TRX: "Tribal special court",
 };
 const TYPE_LABEL: Record<string, string> = {
   "010combined": "Combined opinion",
@@ -93,9 +136,23 @@ export type OpinionRef = {
   perCuriam: boolean | null;
   pointer: { key: string; offset: number; length: number } | null;
 };
+/** The Caselaw Access Project file CourtListener merged into a case (an exact crosswalk, not a link we guess). */
+export type CapFile = { reporter: string; volume: string; page: string; capId: string };
+
+/** "law.free.cap.sw2d.507/801.10143776.json" -> reporter slug, volume, first page, CAP case id; anything else null. */
+export function parseCapFile(v: unknown): CapFile | null {
+  const s = str(v, 300);
+  const m = s
+    ? /^law\.free\.cap\.([a-z0-9-]{1,40})\.([0-9a-z-]{1,12})\/([0-9a-z-]{1,12})\.([0-9]{1,12})\.json$/.exec(
+        s,
+      )
+    : null;
+  return m ? { reporter: m[1]!, volume: m[2]!, page: m[3]!, capId: m[4]! } : null;
+}
+
 export type CaseRecord = {
   clusterId: number;
-  tier: 1 | 2 | 3;
+  tier: Tier;
   tierLabel: string;
   courtId: string;
   court: string;
@@ -125,6 +182,13 @@ export type CaseRecord = {
   citator: { key: string; offset: number; length: number } | null;
   authoritiesRef: { key: string; offset: number; length: number } | null;
   courtListenerUrl: string;
+  /** Court registry facts (caselaw_case_v2; null when the v2 contract is not installed or the value is not recorded). */
+  jurisdiction: string | null;
+  courtLevel: string | null;
+  courtSystem: string | null;
+  capFile: CapFile | null;
+  /** CourtListener's cluster source code (e.g. "LU"), as published. */
+  sourceCode: string | null;
 };
 
 function pointer(
@@ -147,7 +211,7 @@ export function parseCaseRow(raw: unknown, expectedId: number): CaseRecord | nul
   const r = obj(raw);
   if (!r) return null;
   const id = clusterId(r["cluster_id"]);
-  const tier = int(r["tier"], 1, 3) as 1 | 2 | 3 | null;
+  const tier = int(r["tier"], 1, 7) as Tier | null;
   const cid = courtId(r["court_id"]);
   const name = str(r["case_name"], 5000);
   if (id !== expectedId || !tier || !cid || !name) return null;
@@ -210,6 +274,14 @@ export function parseCaseRow(raw: unknown, expectedId: number): CaseRecord | nul
     citator: pointer(obj(r["citator"]), CITATOR_KEY),
     authoritiesRef: pointer(obj(r["authorities_ref"]), CITATOR_KEY),
     courtListenerUrl: courtListenerCaseUrl(id, name),
+    jurisdiction: (() => {
+      const j = str(r["jurisdiction"], 2);
+      return j && /^[A-Z]{2}$/.test(j) ? j : null;
+    })(),
+    courtLevel: str(r["court_level"], 8),
+    courtSystem: str(r["court_system"], 20),
+    capFile: parseCapFile(r["cap_file"]),
+    sourceCode: str(r["source"], 20),
   };
 }
 
@@ -218,6 +290,33 @@ export function orderOpinions(ops: OpinionRef[]): OpinionRef[] {
   const split = ops.some((o) => o.type !== "010combined");
   const rank = (o: OpinionRef) => (o.type === "010combined" && split ? 1 : 0);
   return [...ops].sort((a, b) => rank(a) - rank(b));
+}
+
+/**
+ * Byte ranges to read for a case: one per storage object (a case's opinions usually sit next to each other in one
+ * object; opinions the bulk file holds far apart can sit in another object). A range wider than MAX_RANGE_BYTES is
+ * split into one range per opinion. Each range lists the pointers it covers.
+ */
+export function readRanges(
+  ptrs: { key: string; offset: number; length: number }[],
+): { key: string; start: number; end: number; members: number[] }[] {
+  const byKey = new Map<string, number[]>();
+  ptrs.forEach((p, i) => byKey.set(p.key, [...(byKey.get(p.key) ?? []), i]));
+  const out: { key: string; start: number; end: number; members: number[] }[] = [];
+  for (const [key, idx] of byKey) {
+    const start = Math.min(...idx.map((i) => ptrs[i]!.offset));
+    const end = Math.max(...idx.map((i) => ptrs[i]!.offset + ptrs[i]!.length));
+    if (end - start <= MAX_RANGE_BYTES) out.push({ key, start, end, members: idx });
+    else
+      for (const i of idx)
+        out.push({
+          key,
+          start: ptrs[i]!.offset,
+          end: ptrs[i]!.offset + ptrs[i]!.length,
+          members: [i],
+        });
+  }
+  return out;
 }
 
 /** One byte range covering every pointer (all of a case's opinions sit next to each other in one object). */
@@ -241,6 +340,19 @@ export type CiteAnchor = {
   opinionId: number | null;
   held: boolean;
 };
+/** Exact source of a v2 reading record: the bulk file, where its CSV record starts, and the hashes of its bytes. */
+export type OpinionProvenance = {
+  file: string;
+  segment: number | null;
+  offset: number | null;
+  recordSha256: string | null;
+  field: string | null;
+  rawSha256: string | null;
+  rawBytes: number | null;
+  sha1: string | null;
+  dateModified: string | null;
+};
+
 export type OpinionText = {
   opinionId: number;
   clusterId: number;
@@ -256,7 +368,31 @@ export type OpinionText = {
   sourceUrl: string | null;
   downloadUrl: string | null;
   textSha256: string | null;
+  provenance: OpinionProvenance | null;
 };
+
+const SHA256 = /^[a-f0-9]{64}$/;
+function parseProvenance(v: unknown): OpinionProvenance | null {
+  const o = obj(v);
+  const file = str(o?.["file"], 500);
+  if (!o || !file || !/^https:\/\//.test(file)) return null;
+  const hex = (x: unknown) => {
+    const s = str(x, 64);
+    return s && SHA256.test(s) ? s : null;
+  };
+  const sha1 = str(o["sha1"], 40);
+  return {
+    file,
+    segment: int(o["segment"], 0),
+    offset: int(o["offset"], 0),
+    recordSha256: hex(o["record_sha256"]),
+    field: str(o["field"], 40),
+    rawSha256: hex(o["raw_sha256"]),
+    rawBytes: int(o["raw_bytes"], 0),
+    sha1: sha1 && /^[a-f0-9]{40}$/.test(sha1) ? sha1 : null,
+    dateModified: str(o["date_modified"], 40),
+  };
+}
 
 /** UTF-16 index for each code-point offset of `text` (identity when the text has no astral characters). */
 export function codePointMapper(text: string): (cp: number) => number {
@@ -325,7 +461,28 @@ export function parseReadingRecord(raw: unknown, expectedOpinionId: number): Opi
     sourceUrl: url(r["source_url"]),
     downloadUrl: url(r["download_url"]),
     textSha256: str(r["text_sha256"], 64),
+    provenance: parseProvenance(r["source"]),
   };
+}
+
+/** Cited cases the stored record did not mark as held (the record predates their load): ids to re-check live. */
+export function unheldCitedClusters(ops: OpinionText[], limit = 200): number[] {
+  const ids = new Set<number>();
+  for (const o of ops)
+    for (const c of o.citations)
+      if (c.clusterId != null && !c.held && ids.size < limit) ids.add(c.clusterId);
+  return [...ids];
+}
+
+/** Mark anchors whose cited case is held now (live check) so they link to the case page. */
+export function markHeld(ops: OpinionText[], held: Set<number>): OpinionText[] {
+  if (!held.size) return ops;
+  return ops.map((o) => ({
+    ...o,
+    citations: o.citations.map((c) =>
+      !c.held && c.clusterId != null && held.has(c.clusterId) ? { ...c, held: true } : c,
+    ),
+  }));
 }
 
 // ---------------------------------------------------------------------------------------------- text layout
@@ -547,7 +704,7 @@ export function parseCitator(raw: unknown, expectedId: number): Citator | null {
 // ---------------------------------------------------------------------------------------------- search rows
 export type CaseHit = {
   clusterId: number;
-  tier: 1 | 2 | 3;
+  tier: Tier;
   courtId: string;
   court: string | null;
   dateFiled: string | null;
@@ -560,15 +717,17 @@ export type CaseHit = {
   hasText: boolean;
   rank: number | null;
   matched: { opinionId: number; type: string | null; label: string }[];
+  jurisdiction: string | null;
 };
 
 export function parseCaseHit(raw: unknown): CaseHit | null {
   const r = obj(raw);
   const id = clusterId(r?.["cluster_id"]);
-  const tier = int(r?.["tier"], 1, 3) as 1 | 2 | 3 | null;
+  const tier = int(r?.["tier"], 1, 7) as Tier | null;
   const cid = courtId(r?.["court_id"]);
   const name = str(r?.["case_name"], 5000);
   if (!r || id == null || !tier || !cid || !name) return null;
+  const jur = str(r["jurisdiction"], 2);
   return {
     clusterId: id,
     tier,
@@ -593,6 +752,7 @@ export function parseCaseHit(raw: unknown): CaseHit | null {
         return oid == null ? null : { opinionId: oid, type, label: opinionTypeLabel(type) };
       })
       .filter((m): m is { opinionId: number; type: string | null; label: string } => !!m),
+    jurisdiction: jur && /^[A-Z]{2}$/.test(jur) ? jur : null,
   };
 }
 
