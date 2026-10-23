@@ -71,6 +71,10 @@ afterEach(() => rpc.mockReset());
 describe("graph helpers", () => {
   it("link a resolved record to its page on the site", () => {
     expect(targetHref("us_code_sections", "42:1983")).toBe("/law/uscode/42/1983");
+    expect(targetHref("state_law", "VA:VAC:8.01-243")).toBe(
+      "/law/codes/VA?view=inforce&sec=VA%3AVAC%3A8.01-243",
+    );
+    expect(targetHref("state_law", "not a section id")).toBeNull();
     expect(targetHref("ecfr_sections_full", "cfr:21:314.50")).toBe("/law/cfr/21/314.50");
     expect(targetHref("ecfr_sections_full", "cfr:21:part-11")).toBe("/law/cfr/21/part/11");
     expect(targetHref("federal_regulations_parts", "cfr:21:314")).toBe("/law/cfr/21/part/314");

@@ -188,6 +188,10 @@ export function targetHref(dataset: string, id: string): string | null {
       return null;
     case "caselaw":
       return /^[1-9]\d{0,11}$/.test(id) ? `/cases/${id}` : null;
+    case "state_law":
+      // in-force section of a state's active edition (state_law.sections.section_id, e.g. VA:VAC:8.01-243)
+      m = id.match(/^([A-Z]{2}):[A-Z0-9]{1,12}:\S{1,140}$/);
+      return m ? `/law/codes/${m[1]}?view=inforce&sec=${enc(id)}` : null;
     default:
       return /^[a-z0-9_]{1,80}$/.test(dataset) && id.length <= 160
         ? `/records/${dataset}/${enc(id)}`

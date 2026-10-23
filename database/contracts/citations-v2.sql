@@ -282,6 +282,25 @@ begin
   if n = 0 then
     return jsonb_build_object('resolution', 'not_in_corpus', 'reason', 'resolver_no_match', 'resolver', p_fn);
   end if;
+  -- the in-force state-law resolver (state-law-inforce-v1.sql) answers one object with a 'result'
+  if p_fn = 'state_law_resolve_v1' and n = 1 and (v_rows -> 0) ? 'result' then
+    r := v_rows -> 0;
+    if r ->> 'result' = 'resolved' and coalesce(r ->> 'section_id', '') <> '' then
+      return jsonb_build_object('resolution', 'resolved', 'reason', 'resolver', 'resolver', p_fn, 'dataset', 'state_law',
+                                'id', r ->> 'section_id', 'title', concat_ws(' ', r ->> 'citation', r ->> 'heading'));
+    elsif r ->> 'result' = 'ambiguous' then
+      return jsonb_build_object('resolution', 'ambiguous', 'reason', 'resolver_ambiguous', 'resolver', p_fn,
+        'candidates', coalesce((select jsonb_agg(c ->> 'section_id') from jsonb_array_elements(r -> 'candidates') c
+                                 where c ->> 'section_id' is not null), '[]'::jsonb));
+    elsif r ->> 'result' = 'unresolved' and jsonb_array_length(coalesce(r -> 'parsed', '[]'::jsonb)) > 0 then
+      -- read as a section number of the state's code, and no section of the active edition has it
+      return jsonb_build_object('resolution', 'not_in_corpus', 'reason', 'no_section_in_active_edition', 'resolver', p_fn);
+    elsif r ->> 'result' = 'unresolved' then
+      return jsonb_build_object('resolution', 'unresolved', 'reason', 'citation_form_not_recognized', 'resolver', p_fn);
+    end if;
+    -- no_edition / unknown_state: the state's in-force code is not loaded yet (requeued when it is)
+    return jsonb_build_object('resolution', 'unresolved', 'reason', 'state_code_not_loaded', 'resolver', p_fn);
+  end if;
   if n = 1 then
     r := v_rows -> 0;
     st := lower(coalesce(r ->> 'status', r ->> 'resolution', r ->> 'state', ''));

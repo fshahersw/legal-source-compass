@@ -496,6 +496,33 @@ test("resolvers owned by other contracts are used once installed, and their answ
   });
   assert.equal((await a("state-stat:NJ:stat:2A:58C-2")).resolution, "ambiguous");
   assert.equal((await a("state-stat:FL:stat:95.11")).reason, "resolver_no_match");
+  // the in-force resolver's own answer shape (state-law-inforce-v1.sql)
+  await db.exec(`create or replace function public.state_law_resolve_v1(p_state text, p_citation text) returns jsonb language sql as $$
+    select case when p_citation like '%17200%' then jsonb_build_object('state', 'CA', 'result', 'resolved',
+                  'section_id', 'CA:BPC:17200', 'citation', 'Cal. Bus. & Prof. Code § 17200', 'heading', 'Unfair competition.',
+                  'status', 'in_force', 'candidates', '[]'::jsonb)
+                when p_citation like '%340.8%' then jsonb_build_object('state', 'CA', 'result', 'unresolved',
+                  'parsed', jsonb_build_array(jsonb_build_object('code', 'CCP', 'number_norm', '340.8')), 'candidates', '[]'::jsonb)
+                when p_citation like '%2A:58C%' then jsonb_build_object('state', 'NJ', 'result', 'ambiguous',
+                  'candidates', jsonb_build_array(jsonb_build_object('section_id', 'NJ:NJSA:2A:58C-2'),
+                                                  jsonb_build_object('section_id', 'NJ:NJSA:2A:58C-2@2')))
+                else jsonb_build_object('state', p_state, 'result', 'no_edition', 'candidates', '[]'::jsonb) end $$`);
+  await rpc(db, "citations_requeue_v2", "state_statute", null);
+  await rpc(db, "citations_resolve_v2", 5000, null);
+  assert.deepEqual(await a("state-stat:CA:busprof:17200"), {
+    resolution: "resolved",
+    reason: "resolver",
+    target_dataset: "state_law",
+    target_id: "CA:BPC:17200",
+  });
+  assert.deepEqual(await a("state-stat:CA:civproc:340.8"), {
+    resolution: "not_in_corpus",
+    reason: "no_section_in_active_edition",
+    target_dataset: null,
+    target_id: null,
+  });
+  assert.equal((await a("state-stat:NJ:stat:2A:58C-2")).resolution, "ambiguous");
+  assert.equal((await a("state-stat:FL:stat:95.11")).reason, "state_code_not_loaded");
   // a case-law resolver answering a set of rows naming two clusters
   await db.exec(`create function public.caselaw_resolve_v2(p_citation text) returns table(cluster_id bigint, status text) language sql as $$
     select x, 'resolved' from unnest(case when p_citation = '556 U.S. 662' then array[2::bigint] else array[3::bigint, 4::bigint] end) x $$`);
