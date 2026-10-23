@@ -774,14 +774,18 @@ export const regulationsGovDocuments: SourceAdapter = {
         });
         if (!p.hasNextPage) break;
       }
-      cursor.count_offset = Number.isInteger(cursor.count_offset) ? cursor.count_offset : 0;
+      const countOffset =
+        typeof cursor.count_offset === "number" && Number.isInteger(cursor.count_offset)
+          ? cursor.count_offset
+          : 0;
+      cursor.count_offset = countOffset;
       // counts: changed/new documents first (in modification order), then the comment-window documents in rotation
       const stored = await storedComments(ctx, DOCS_DATASET, [...docs.keys()]);
       const counts = new Map<string, CommentCount | null>(stored);
       const first = [...docs.values()].filter(
         ({ doc }) => wantsDocumentCount(doc) && !stored.get(doc.id),
       );
-      const rot = windowIds.length ? cursor.count_offset % windowIds.length : 0;
+      const rot = windowIds.length ? countOffset % windowIds.length : 0;
       const rotation = [...windowIds.slice(rot), ...windowIds.slice(0, rot)];
       const order = [...first.map((x) => x.doc.id), ...rotation].filter(
         (id, i, a) => a.indexOf(id) === i,

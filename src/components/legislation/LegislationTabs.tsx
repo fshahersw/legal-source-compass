@@ -7,14 +7,29 @@ export type LegislationSection =
 const tab =
   "-mb-px inline-flex items-center whitespace-nowrap border-b-2 px-3 py-1.5 text-[13px] font-medium focus-visible:outline-2 focus-visible:outline-ring";
 
-const TABS: { id: LegislationSection; to: string; label: string }[] = [
+const TABS: { id: LegislationSection; to: string; label: string; title?: string }[] = [
   { id: "bills", to: "/law/legislation", label: "Bills" },
   { id: "members", to: "/law/legislation/members", label: "Members of Congress" },
   { id: "committees", to: "/law/legislation/committees", label: "Committees" },
   { id: "amendments", to: "/law/legislation/amendments", label: "Amendments" },
-  { id: "reports", to: "/law/legislation/reports", label: "Reports & hearings" },
-  { id: "nominations", to: "/law/legislation/nominations", label: "Nominations & treaties" },
-  { id: "gao", to: "/law/legislation/gao", label: "GAO decisions" },
+  {
+    id: "reports",
+    to: "/law/legislation/reports",
+    label: "Reports",
+    title: "Committee reports, hearings and prints",
+  },
+  {
+    id: "nominations",
+    to: "/law/legislation/nominations",
+    label: "Nominations",
+    title: "Nominations and treaty documents",
+  },
+  {
+    id: "gao",
+    to: "/law/legislation/gao",
+    label: "GAO",
+    title: "GAO bid protest and appropriations-law decisions",
+  },
 ];
 
 /**
@@ -40,6 +55,7 @@ export function LegislationTabs({ active }: { active: LegislationSection }) {
           key={t.id}
           to={t.to as never}
           className={cls(active === t.id)}
+          {...(t.title ? { title: t.title } : {})}
           {...(active === t.id ? { "aria-current": "page" as const } : {})}
         >
           {t.label}

@@ -99,6 +99,27 @@ export type Summary = {
   documentNumber: string | null;
   suDocClassNumber: string | null;
 };
+/** A summary kept from a stored row, re-checked field by field (a malformed stored value becomes empty, not a crash). */
+export function storedSummary(v: unknown): Summary | null {
+  const o = obj(v);
+  if (!o) return null;
+  return {
+    title: str(o["title"]),
+    session: str(o["session"]),
+    chamber: str(o["chamber"]),
+    pages: str(o["pages"]),
+    heldDates: Array.isArray(o["heldDates"])
+      ? (o["heldDates"] as unknown[]).filter((d): d is string => typeof d === "string")
+      : [],
+    committees: arr(o["committees"]).map((c) => ({
+      name: str(c["name"]),
+      authorityId: str(c["authorityId"]),
+    })),
+    author: str(o["author"]),
+    documentNumber: str(o["documentNumber"]),
+    suDocClassNumber: str(o["suDocClassNumber"]),
+  };
+}
 export function normalizeSummary(s: JsonObject | null): Summary | null {
   if (!s || !str(s["packageId"])) return null;
   return {
@@ -172,7 +193,7 @@ export function packageRow(
         label: `Committee: ${cm.name ?? cm.authorityId}`,
       });
   const jacket = c === "CHRG" ? hearingJacket(p.packageId) : null;
-  const year = (s?.heldDates[0] ?? p.dateIssued ?? "").slice(0, 4);
+  const year = ((s?.heldDates ?? [])[0] ?? p.dateIssued ?? "").slice(0, 4);
   const facts: [string, string][] = [
     ["GovInfo package", p.packageId],
     ["Collection", label.name],
@@ -459,29 +480,71 @@ async function gi(
   };
 }
 
-type GiCursor = { since?: string };
+type GiCursor = { since?: string; exact?: boolean };
 const isoBack = (iso: string, ms: number) =>
   new Date(Date.parse(iso) - ms).toISOString().replace(/\.\d{3}Z$/, "Z");
 
-async function readListing(ctx: CollectContext, c: Collection, since: string, pages: number) {
+const num = (v: unknown): number | null =>
+  typeof v === "number" && Number.isFinite(v)
+    ? v
+    : typeof v === "string" && /^\d+$/.test(v)
+      ? Number(v)
+      : null;
+const isoNoMs = (ms: number) => new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z");
+
+/**
+ * Packages of a collection modified in [since, until]. `until` is now unless GovInfo counts more packages than `pages`
+ * pages hold: the window's end is then halved (one small count probe each, at most six) until it fits, so a burst of
+ * modifications is read in consecutive windows instead of re-reading the same first pages.
+ */
+async function readListing(
+  ctx: CollectContext,
+  c: Collection,
+  since: string,
+  pages: number,
+): Promise<{
+  out: { p: Listed; url: string; at: string }[];
+  complete: boolean;
+  until: string;
+  bisected: boolean;
+}> {
   const out: { p: Listed; url: string; at: string }[] = [];
+  let until = isoNoMs(ctx.now.getTime());
+  let bisected = false;
+  let first = await gi(ctx, collectionUrl(c, since, "*", 1000, until));
+  let count = num(first.body["count"]);
+  for (let k = 0; k < 6 && count !== null && count > pages * 1000; k++) {
+    const mid = Date.parse(since) + Math.floor((Date.parse(until) - Date.parse(since)) / 2);
+    if (mid <= Date.parse(since) + 1000) break;
+    until = isoNoMs(mid);
+    bisected = true;
+    count = num((await gi(ctx, collectionUrl(c, since, "*", 10, until))).body["count"]);
+    if (count !== null && count <= pages * 1000)
+      first = await gi(ctx, collectionUrl(c, since, "*", 1000, until));
+  }
   let mark = "*";
   let complete = true;
   for (let i = 0; i < pages; i++) {
-    const r = await gi(ctx, collectionUrl(c, since, mark));
+    const r = i === 0 ? first : await gi(ctx, collectionUrl(c, since, mark, 1000, until));
     for (const raw of arr(r.body["packages"])) {
       const p = normalizeListed(raw);
       if (p) out.push({ p, url: r.url, at: r.at });
     }
     const next = str(r.body["nextPage"]);
-    if (!next) return { out, complete };
+    if (!next) return { out, complete, until, bisected };
     const m = /offsetMark=([^&]+)/.exec(next);
     mark = m ? decodeURIComponent(m[1]!) : "";
-    if (!mark) return { out, complete };
+    if (!mark) return { out, complete, until, bisected };
     if (i === pages - 1) complete = false;
   }
-  return { out, complete };
+  return { out, complete, until, bisected };
 }
+
+/** Where a run starts: exactly at a bisected window's end, else two hours before the last run's newest change. */
+const sinceOf = (cur: GiCursor, now: Date) =>
+  cur.exact && cur.since
+    ? cur.since
+    : isoBack(cur.since ?? isoBack(now.toISOString(), 3 * 86400_000), 2 * 3600_000);
 
 /** Hearings, committee prints, GAO reports: packages modified since the cursor (a day of overlap); summaries for them. */
 function packageAdapter(
@@ -496,14 +559,20 @@ function packageAdapter(
     mode: "upsert",
     ordinalPolicy: "prepend",
     functionName: "ingest-govinfo",
-    limits: { maxRequests: schedulePages + summaries, minIntervalMs: 500 },
+    // list pages + up to 7 window probes + summaries
+    limits: { maxRequests: schedulePages + 7 + summaries, minIntervalMs: 500 },
     secrets: ["DATA_GOV_API_KEY"],
     async collect(ctx: CollectContext): Promise<Collected> {
       const cur = (ctx.cursor ?? {}) as GiCursor;
-      const since = isoBack(cur.since ?? isoBack(ctx.now.toISOString(), 3 * 86400_000), 86400_000);
+      const since = sinceOf(cur, ctx.now);
       const held: HeldRecord[] = [];
       try {
-        const { out, complete: listed } = await readListing(ctx, c, since, schedulePages);
+        const {
+          out,
+          complete: listed,
+          until,
+          bisected,
+        } = await readListing(ctx, c, since, schedulePages);
         let complete = listed;
         const stored = new Map<string, StoredRow>();
         for (const r of await ctx.corpus.rowsBy(
@@ -517,7 +586,15 @@ function packageAdapter(
         const committees = new Set<string>();
         const sums = new Map<string, { s: Summary | null; url: string; at: string }>();
         let n = 0;
+        let current = 0;
         for (const x of out) {
+          // a stored summary read after the package's last modification is current: not read again
+          const st = stored.get(x.p.packageId)?.item;
+          const readAt = str(((st?.["provenance"] ?? {}) as JsonObject)["summary_retrieved_at"]);
+          if (st?.["summary"] && readAt && x.p.lastModified && readAt >= x.p.lastModified) {
+            current++;
+            continue;
+          }
           if (n >= summaries || ctx.http.remaining < 1) {
             complete = false;
             break;
@@ -537,10 +614,7 @@ function packageAdapter(
         for (const x of out) {
           const sm = sums.get(x.p.packageId);
           // a package whose summary was not read this run keeps the summary its stored row has
-          const keep = !sm
-            ? ((stored.get(x.p.packageId)?.item["summary"] as unknown as
-                Summary | null | undefined) ?? null)
-            : sm.s;
+          const keep = !sm ? storedSummary(stored.get(x.p.packageId)?.item["summary"]) : sm.s;
           const keepProv = stored.get(x.p.packageId)?.item["provenance"] as JsonObject | undefined;
           rows.push(
             packageRow(c, x.p, keep, committees, {
@@ -566,9 +640,13 @@ function packageAdapter(
           rows,
           fetched: out.length,
           held,
-          cursorAfter: complete ? { since: newest } : ctx.cursor,
+          cursorAfter: complete
+            ? bisected
+              ? { since: until, exact: true }
+              : { since: newest }
+            : ctx.cursor,
           complete,
-          notes: { since, listed: out.length, summaries: n },
+          notes: { since, until, listed: out.length, summaries: n, already_current: current },
         };
       } catch (error) {
         if (error instanceof BudgetExhausted || error instanceof RateLimited)
@@ -614,14 +692,14 @@ export const govinfoBillVersions: SourceAdapter = {
   mode: "upsert",
   ordinalPolicy: "prepend",
   functionName: "ingest-govinfo",
-  limits: { maxRequests: 6, minIntervalMs: 500 },
+  limits: { maxRequests: 13, minIntervalMs: 500 },
   secrets: ["DATA_GOV_API_KEY"],
   async collect(ctx: CollectContext): Promise<Collected> {
     const cur = (ctx.cursor ?? {}) as GiCursor;
-    const since = isoBack(cur.since ?? isoBack(ctx.now.toISOString(), 3 * 86400_000), 86400_000);
+    const since = sinceOf(cur, ctx.now);
     const held: HeldRecord[] = [];
     try {
-      const { out, complete } = await readListing(ctx, "BILLS", since, 6);
+      const { out, complete, until, bisected } = await readListing(ctx, "BILLS", since, 6);
       const byBill = new Map<string, { b: ParsedBill; vs: BillVersion[] }>();
       for (const x of out) {
         const b = parseBillPackage(x.p.packageId);
@@ -678,7 +756,11 @@ export const govinfoBillVersions: SourceAdapter = {
         rows,
         fetched: out.length,
         held,
-        cursorAfter: complete ? { since: newest } : ctx.cursor,
+        cursorAfter: complete
+          ? bisected
+            ? { since: until, exact: true }
+            : { since: newest }
+          : ctx.cursor,
         complete,
         notes: { since, packages: out.length, bills: rows.length },
       };

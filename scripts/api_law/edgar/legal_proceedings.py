@@ -283,7 +283,11 @@ def build(args):
                      "notes": ["yes" if r["notes"] else "no"], "mdl": sorted(held, key=int), "has_mdl_mention": ["yes" if held else "no"]},
             links=links,
             extra={"filing": {k: r[k] for k in ("cik", "company", "tickers", "form", "filed", "period", "accession", "document", "document_url", "index_url", "raw_sha256", "raw_bytes", "text_sha256", "text_chars", "rendering", "retrieved_at")},
-                   "item3": r["item3"], "notes": r["notes"], "note_rule": r["note_rule"], "mentions": mention_rows},
+                   "item3": r["item3"], "notes": r["notes"], "note_rule": r["note_rule"], "mentions": mention_rows,
+                   # the section list without texts, so a page can list a filing's sections without reading them
+                   "sections": [{"label": "Item 3" if s is r["item3"] else f"Note {s['number']}",
+                                 **{k: s[k] for k in ("heading", "start", "end", "chars", "truncated", "sha256")}}
+                                for s in ([r["item3"]] if r["item3"] else []) + r["notes"]]},
         ))
     rows.sort(key=lambda x: (x["item"]["filing"]["filed"], x["id"]), reverse=True)
     counts = {}

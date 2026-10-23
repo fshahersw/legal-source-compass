@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import type { CollectContext, CorpusReader, JsonObject, SourceHttp, StoredRow } from "../types.ts";
 import {
   amendmentRow,
+  congressAmendments,
   emptyKnown,
   nominationRow,
   nominationStatus,
@@ -9,7 +11,7 @@ import {
   reportKeyOfPackage,
 } from "./congressGov";
 import { gaoRow, parseFeed, unescapeTwice } from "./gaoLegal";
-import { billVersionsRow, hearingJacket, parseBillPackage } from "./govinfo";
+import { billVersionsRow, govinfoHearings, hearingJacket, parseBillPackage } from "./govinfo";
 
 const FEED = `<?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0"><channel><title>GAO Legal Products</title>
@@ -239,6 +241,212 @@ describe("record pages of the api-law datasets sit in the Law section", () => {
       "gao_legal_decisions",
     ])
       expect(recordPlacement(d)).toEqual({ section: "law", tab: "legislation" });
-    expect(recordPlacement("company_sec_legal_proceedings")).toEqual({ section: "companies", tab: "directory" });
+    expect(recordPlacement("company_sec_legal_proceedings")).toEqual({
+      section: "companies",
+      tab: "directory",
+    });
+  });
+});
+
+/* --------------------------------------------------------------------- scheduled runs against fakes */
+
+function fakeHttp(route: (url: string) => unknown, budget = 100) {
+  const urls: string[] = [];
+  let used = 0;
+  const http: SourceHttp & { urls: string[] } = {
+    urls,
+    requests: [],
+    get remaining() {
+      return budget - used;
+    },
+    async getText(url) {
+      used++;
+      urls.push(url);
+      const body = JSON.stringify(route(url));
+      return {
+        status: 200,
+        text: body,
+        record: {
+          url,
+          status: 200,
+          bytes: body.length,
+          sha256: "x",
+          retrieved_at: "2026-10-24T09:00:00Z",
+        },
+      };
+    },
+  };
+  return http;
+}
+const corpusOf = (stored: StoredRow[]): CorpusReader => ({
+  async rowsBy(dataset, column, values) {
+    return stored.filter(
+      (r) =>
+        r.dataset === dataset && values.includes(column === "id" ? r.id : (r.source_url ?? "")),
+    );
+  },
+  async edge() {
+    return [];
+  },
+  async query() {
+    return [];
+  },
+  async rpc() {
+    return null as never;
+  },
+});
+const ctxOf = (
+  http: SourceHttp,
+  stored: StoredRow[],
+  cursor: JsonObject | null,
+): CollectContext => ({
+  http,
+  corpus: corpusOf(stored),
+  cursor,
+  now: new Date("2026-10-24T09:00:00Z"),
+  env: (n) => (n === "DATA_GOV_API_KEY" ? "test-key-not-real" : undefined),
+});
+
+const amdtList = (n: number, update: string) => ({
+  congress: 119,
+  type: "SAMDT",
+  number: String(n),
+  updateDate: update,
+  url: `https://api.congress.gov/v3/amendment/119/samdt/${n}?format=json`,
+  latestAction: { actionDate: "2026-10-20", text: "Submitted in the Senate." },
+});
+const amdtDetail = (n: number, update: string) => ({
+  amendment: {
+    congress: 119,
+    type: "SAMDT",
+    number: String(n),
+    updateDate: update,
+    chamber: "Senate",
+    submittedDate: "2026-10-20T04:00:00Z",
+  },
+});
+
+describe("Congress.gov scheduled runs", () => {
+  it("halves a window Congress.gov counts as too large, and resumes at its end", async () => {
+    const http = fakeHttp((url) => {
+      if (url.includes("/samdt/")) {
+        const n = Number(/samdt\/(\d+)/.exec(url)![1]);
+        return amdtDetail(n, `2026-10-21T0${n}:00:00Z`);
+      }
+      const to = /toDateTime=([^&]+)/.exec(url)![1]!;
+      // 5,000 updates in the whole window, 3 before 2026-10-22: it must shrink below 1,000 (4 pages of 250)
+      const count = to > "2026-10-22T00:00:00Z" ? 5000 : 3;
+      if (/limit=1&/.test(url)) return { pagination: { count }, amendments: [] };
+      return {
+        pagination: { count },
+        amendments: count === 3 ? [3, 1, 2].map((n) => amdtList(n, `2026-10-21T0${n}:00:00Z`)) : [],
+      };
+    });
+    const out = await congressAmendments.collect(ctxOf(http, [], { from: "2026-10-20T00:00:00Z" }));
+    const to = (out.notes as JsonObject)["to"] as string;
+    expect(to <= "2026-10-22T00:00:00Z").toBe(true);
+    expect(out.complete).toBe(true);
+    expect(out.cursorAfter).toEqual({ from: to });
+    expect(out.rows.map((r) => r.id).sort()).toEqual([
+      "amdt:119-samdt-1",
+      "amdt:119-samdt-2",
+      "amdt:119-samdt-3",
+    ]);
+    expect(http.urls.every((u) => !/key=/i.test(u))).toBe(true);
+  });
+
+  it("skips current details, stops at the budget and never replaces a detailed row with a list-only one", async () => {
+    const updates = [
+      "2026-10-21T01:00:00Z",
+      "2026-10-21T02:00:00Z",
+      "2026-10-21T03:00:00Z",
+      "2026-10-21T04:00:00Z",
+    ];
+    const stored = (n: number, update: string): StoredRow =>
+      ({
+        dataset: "congress_amendments",
+        id: `amdt:119-samdt-${n}`,
+        ordinal: 0,
+        item: { id: `amdt:119-samdt-${n}`, amendment: { detail: true, updateDate: update } },
+      }) as unknown as StoredRow;
+    const http = fakeHttp((url) => {
+      if (url.includes("/samdt/")) {
+        const n = Number(/samdt\/(\d+)/.exec(url)![1]);
+        return amdtDetail(n, updates[n - 1]!);
+      }
+      return {
+        pagination: { count: 4 },
+        amendments: [4, 3, 2, 1].map((n) => amdtList(n, updates[n - 1]!)),
+      };
+    }, 3); // the list page + 2 details
+    // #1 is current; #4 is stored with an older detail and must not be overwritten by a list-only row
+    const out = await congressAmendments.collect(
+      ctxOf(http, [stored(1, updates[0]!), stored(4, "2026-10-01T00:00:00Z")], {
+        from: "2026-10-21T00:00:00Z",
+      }),
+    );
+    expect(
+      http.urls.filter((u) => u.includes("/samdt/")).map((u) => /samdt\/(\d+)/.exec(u)![1]),
+    ).toEqual(["2", "3"]);
+    expect(out.rows.map((r) => r.id).sort()).toEqual(["amdt:119-samdt-2", "amdt:119-samdt-3"]);
+    expect(out.complete).toBe(false);
+    expect(out.cursorAfter).toEqual({ from: updates[2] });
+    expect((out.notes as JsonObject)["already_current"]).toBe(1);
+  });
+});
+
+describe("GovInfo scheduled runs", () => {
+  const listed = (id: string, modified: string) => ({
+    packageId: id,
+    title: `Hearing ${id}`,
+    dateIssued: "2026-06-10",
+    congress: "119",
+    docClass: "HHRG",
+    lastModified: modified,
+    packageLink: `https://api.govinfo.gov/packages/${id}/summary`,
+  });
+  it("reads only the summaries that are not current, and resumes the window exactly after halving it", async () => {
+    const http = fakeHttp((url) => {
+      if (url.includes("/summary"))
+        return {
+          title: "HEARING",
+          dateIssued: "2026-06-10",
+          heldDates: ["2026-06-10"],
+          committees: [],
+        };
+      const until = /CHRG\/[^/]+\/([^?]+)\?/.exec(url)?.[1] ?? "";
+      const dense = decodeURIComponent(until) > "2026-10-23T00:00:00Z";
+      if (/pageSize=10&/.test(url)) return { count: dense ? 9000 : 2, packages: [] };
+      return {
+        count: dense ? 9000 : 2,
+        packages: dense
+          ? []
+          : [
+              listed("CHRG-119hhrg1", "2026-10-22T10:00:00Z"),
+              listed("CHRG-119hhrg2", "2026-10-22T11:00:00Z"),
+            ],
+      };
+    });
+    const current = {
+      dataset: "govinfo_hearings",
+      id: "CHRG-119hhrg1",
+      ordinal: 0,
+      item: {
+        id: "CHRG-119hhrg1",
+        summary: { title: "HEARING" },
+        provenance: { summary_retrieved_at: "2026-10-23T00:00:00Z" },
+      },
+    } as unknown as StoredRow;
+    const out = await govinfoHearings.collect(
+      ctxOf(http, [current], { since: "2026-10-22T00:00:00Z", exact: true }),
+    );
+    expect(http.urls.filter((u) => u.includes("/summary"))).toEqual([
+      "https://api.govinfo.gov/packages/CHRG-119hhrg2/summary",
+    ]);
+    expect(out.complete).toBe(true);
+    const until = (out.notes as JsonObject)["until"] as string;
+    expect(until <= "2026-10-23T00:00:00Z").toBe(true);
+    expect(out.cursorAfter).toEqual({ since: until, exact: true });
+    expect(http.urls[0]).toContain("/collections/CHRG/2026-10-22T00:00:00Z/");
   });
 });

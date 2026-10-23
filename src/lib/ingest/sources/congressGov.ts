@@ -838,12 +838,15 @@ async function knownFor(
 }
 
 type Cursor = { from?: string };
-const isoFloor = (iso: string, ms: number) =>
-  new Date(Date.parse(iso) - ms).toISOString().replace(/\.\d{3}Z$/, "Z");
+const isoNoMs = (ms: number) => new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z");
 
 /**
- * A Congress.gov collection read by update date: everything updated since the cursor (a day of overlap), newest first,
- * 250 a page, at most `pages`; details for the items that need them within the request budget.
+ * A Congress.gov collection read by update date, oldest update first, so a run that stops early resumes where it
+ * stopped. The window runs from the cursor to now; when Congress.gov counts more updates in it than `pages` list pages
+ * hold, the window's end is halved (one count probe each) until it fits, and the next run starts at that end. Items are
+ * ordered by update time in code (some list endpoints ignore the sort parameter). An item whose stored row already has
+ * its detail for the same update time is skipped; an item whose detail does not fit in the request budget ends the run
+ * there (a stored detailed row is never replaced by a list-only one), and the cursor moves to the last item done.
  */
 function cgAdapter<T>(o: {
   source: string;
@@ -854,6 +857,9 @@ function cgAdapter<T>(o: {
   details: number;
   normalize: (list: JsonObject, detail: JsonObject | null) => T | null;
   detailUrl: ((list: JsonObject) => string | null) | null;
+  /** record id of an item, and the item's key in a stored row (item.<key>.updateDate / .detail) */
+  idOf: (item: T) => string;
+  storedKey: string;
   want: (items: T[]) => {
     bills?: string[];
     members?: string[];
@@ -864,68 +870,122 @@ function cgAdapter<T>(o: {
   order: (a: CorpusRow, b: CorpusRow) => number;
   firstFrom: string;
 }): SourceAdapter {
+  const listUrl = (from: string, to: string, limit: number, offset: number) =>
+    `${CG_API}/${o.path}?fromDateTime=${from}&toDateTime=${to}&sort=updateDate+asc&limit=${limit}&offset=${offset}`;
+  const capacity = o.pages * 250;
   return {
     source: o.source,
     dataset: o.dataset,
     mode: "upsert",
     ordinalPolicy: "prepend",
     functionName: "ingest-congress-gov",
-    limits: { maxRequests: o.pages + o.details, minIntervalMs: 800 },
+    // pages + up to 6 count probes + details
+    limits: { maxRequests: o.pages + 6 + o.details, minIntervalMs: 800 },
     secrets: ["DATA_GOV_API_KEY"],
     async collect(ctx: CollectContext): Promise<Collected> {
       const cursor = (ctx.cursor ?? {}) as Cursor;
-      const from = isoFloor(cursor.from ?? o.firstFrom, 86400_000);
-      const to = ctx.now.toISOString().replace(/\.\d{3}Z$/, "Z");
+      const from = cursor.from ?? o.firstFrom;
+      let to = isoNoMs(ctx.now.getTime());
       const items: { list: JsonObject; url: string; at: string }[] = [];
       const held: HeldRecord[] = [];
-      const notes: JsonObject = { from, to };
-      let complete = true;
+      const notes: JsonObject = { from };
+      let listed = true;
       try {
+        // the window: halve its end while Congress.gov counts more updates than the list pages hold
+        let first = await cg(ctx, listUrl(from, to, 250, 0));
+        let count = num(obj(first.body["pagination"])?.["count"]);
+        for (let k = 0; k < 6 && count !== null && count > capacity; k++) {
+          const mid = Date.parse(from) + Math.floor((Date.parse(to) - Date.parse(from)) / 2);
+          if (mid <= Date.parse(from) + 1000) break;
+          to = isoNoMs(mid);
+          count = num(obj((await cg(ctx, listUrl(from, to, 1, 0))).body["pagination"])?.["count"]);
+          if (count !== null && count <= capacity) first = await cg(ctx, listUrl(from, to, 250, 0));
+        }
+        notes["to"] = to;
+        notes["count"] = count;
         for (let page = 0; page < o.pages; page++) {
-          const r = await cg(
-            ctx,
-            `${CG_API}/${o.path}?fromDateTime=${from}&toDateTime=${to}&sort=updateDate+desc&limit=250&offset=${page * 250}`,
-          );
+          const r = page === 0 ? first : await cg(ctx, listUrl(from, to, 250, page * 250));
           const list = arr(r.body[o.listKey]);
           for (const l of list) items.push({ list: l, url: r.url, at: r.at });
           if (list.length < 250) break;
-          if (page === o.pages - 1) complete = false;
+          if (page === o.pages - 1) listed = false;
         }
+        const upd = (l: JsonObject) => str(l["updateDate"]) ?? "";
+        items.sort((a, b) => (upd(a.list) < upd(b.list) ? -1 : upd(a.list) > upd(b.list) ? 1 : 0));
+
+        const base = items.map((it) => o.normalize(it.list, null));
+        const ids = base.filter((b): b is NonNullable<typeof b> => b !== null).map(o.idOf);
+        const stored = new Map<string, JsonObject>();
+        for (const r of await ctx.corpus.rowsBy(o.dataset, "id", [...new Set(ids)], "id,item"))
+          stored.set(r.id, (r.item[o.storedKey] ?? {}) as JsonObject);
+
         const built: { item: T; prov: Prov }[] = [];
         let details = 0;
-        for (const it of items) {
-          let detail: JsonObject | null = null;
-          let prov: Prov = { api_url: it.url, retrieved_at: it.at };
-          const du = o.detailUrl ? o.detailUrl(it.list) : null;
-          if (du && details < o.details && ctx.http.remaining > 0) {
-            const d = await cg(ctx, du);
-            details++;
-            detail = d.body;
-            prov = { ...prov, detail_url: d.url, detail_retrieved_at: d.at };
-          } else if (du) complete = false;
-          const n = o.normalize(it.list, detail);
-          if (!n) {
+        let current = 0;
+        let lastDone: string | null = null;
+        let stopped = false;
+        for (let i = 0; i < items.length; i++) {
+          const it = items[i]!;
+          const b = base[i];
+          if (!b) {
             held.push({
               key: String(it.list["url"] ?? "?"),
               reason: "record without the identifiers the dataset needs",
             });
+            lastDone = upd(it.list) || lastDone;
             continue;
           }
-          built.push({ item: n, prov });
+          const du = o.detailUrl ? o.detailUrl(it.list) : null;
+          let prov: Prov = { api_url: it.url, retrieved_at: it.at };
+          if (!du) {
+            built.push({ item: b, prov });
+            lastDone = upd(it.list) || lastDone;
+            continue;
+          }
+          const st = stored.get(o.idOf(b));
+          if (
+            st &&
+            st["detail"] === true &&
+            str(st["updateDate"]) === (str(it.list["updateDate"]) ?? null)
+          ) {
+            current++;
+            lastDone = upd(it.list) || lastDone;
+            continue;
+          }
+          if (details >= o.details || ctx.http.remaining < 1) {
+            stopped = true;
+            break;
+          }
+          const d = await cg(ctx, du);
+          details++;
+          prov = { ...prov, detail_url: d.url, detail_retrieved_at: d.at };
+          const n = o.normalize(it.list, d.body);
+          if (n) built.push({ item: n, prov });
+          lastDone = upd(it.list) || lastDone;
         }
         notes["read"] = items.length;
         notes["details"] = details;
+        notes["already_current"] = current;
         const known = await knownFor(ctx, o.want(built.map((b) => b.item)));
         const rows = new Map<string, CorpusRow>();
         for (const b of built) {
           const row = o.row(b.item, known, b.prov);
           rows.set(row.id, row);
         }
+        const complete = listed && !stopped;
+        // a finished window moves the cursor to its end; an unfinished one to the last update handled. A window still
+        // too dense to list whole (rare: six halvings) keeps the cursor, since an unlisted earlier update may remain.
+        if (!listed) notes["window_too_dense"] = true;
+        const cursorAfter: Json = complete
+          ? { from: to }
+          : listed && lastDone
+            ? { from: lastDone }
+            : (ctx.cursor as Json);
         return {
           rows: [...rows.values()].sort(o.order),
           fetched: items.length,
           held,
-          cursorAfter: complete ? { from: to } : ctx.cursor,
+          cursorAfter,
           complete,
           notes,
         };
@@ -977,6 +1037,8 @@ export const congressAmendments = cgAdapter<Amendment>({
   pages: 4,
   details: 60,
   normalize: normalizeAmendment,
+  idOf: amendmentId,
+  storedKey: "amendment",
   detailUrl: (l) =>
     typeof l["url"] === "string" ? String(l["url"]).replace(/\?format=json$/, "") : null,
   want: (xs) => ({
@@ -1000,6 +1062,8 @@ export const congressNominations = cgAdapter<Nomination>({
   pages: 4,
   details: 0,
   normalize: (l) => normalizeNomination(l),
+  idOf: nominationId,
+  storedKey: "nomination",
   detailUrl: null,
   want: (xs) => ({ judicial: xs.map(nominationId) }),
   row: (n, k, p) => nominationRow(n, k, p),
@@ -1015,6 +1079,8 @@ export const congressTreaties = cgAdapter<Treaty>({
   pages: 1,
   details: 20,
   normalize: normalizeTreaty,
+  idOf: treatyId,
+  storedKey: "treaty",
   detailUrl: (l) =>
     typeof l["url"] === "string" ? String(l["url"]).replace(/\?format=json$/, "") : null,
   want: () => ({}),
@@ -1031,6 +1097,8 @@ export const congressCommitteeReports = cgAdapter<CommitteeReport>({
   pages: 2,
   details: 60,
   normalize: normalizeReport,
+  idOf: reportId,
+  storedKey: "report",
   detailUrl: (l) =>
     typeof l["url"] === "string" ? String(l["url"]).replace(/\?format=json$/, "") : null,
   want: (xs) => ({

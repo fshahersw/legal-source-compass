@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo } from "react";
-import { BarTrend, ChartFrame, metricFormatter } from "@/components/charts";
+import { BarTrend, ChartFrame, ChartLegend, metricFormatter, seriesVar } from "@/components/charts";
 import type { PeriodAxis, TrendSeriesInput } from "@/components/charts/series";
 import { Panel, StateNote } from "@/components/enforcement/parts";
 import { getRegsOverview, type RegsOverview as Overview } from "@/lib/external/apiLaw.functions";
@@ -79,7 +79,8 @@ function OverviewBody({ o }: { o: NonNullable<Overview> }) {
   const axis: PeriodAxis = {
     keys: years,
     label: (y) => y,
-    tick: (y) => (y.endsWith("0") || y.endsWith("5") ? y : ""),
+    // every year while they fit; past a dozen years, every fifth
+    tick: (y) => (years.length <= 12 || y.endsWith("0") || y.endsWith("5") ? y : ""),
   };
   const totals = o.agencies.reduce(
     (a, r) => ({
@@ -94,7 +95,7 @@ function OverviewBody({ o }: { o: NonNullable<Overview> }) {
         title="Documents posted on Regulations.gov, by year and type (twelve agencies)"
         unit="documents"
         period={years.length ? `${years[0]}–${years[years.length - 1]}` : undefined}
-        asOf={`Read ${o.as_of}`}
+        asOf={o.as_of}
         sources={SOURCES}
         status={
           years.length
@@ -125,6 +126,10 @@ function OverviewBody({ o }: { o: NonNullable<Overview> }) {
           })),
         }}
       >
+        <ChartLegend
+          mark="swatch"
+          items={TYPES.map(([type, label], i) => ({ id: type, label, color: seriesVar(i) }))}
+        />
         <BarTrend
           series={series}
           axis={axis}
@@ -157,7 +162,7 @@ function OverviewBody({ o }: { o: NonNullable<Overview> }) {
                       labelOf(d.type),
                       `ends ${d.comment_end}`,
                       d.posted != null
-                        ? `${fmtN(d.posted)} comments posted`
+                        ? `${fmtN(d.posted)} ${d.posted === 1 ? "comment" : "comments"} posted`
                         : "comments not recorded",
                     ].join(" · ")}
                   </p>

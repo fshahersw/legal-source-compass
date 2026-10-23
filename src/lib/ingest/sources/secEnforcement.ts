@@ -110,7 +110,7 @@ export function parseListing(text: string): ListingItem[] {
     const links = resp
       ? [...resp[1]!.matchAll(rx("<a href='([^']+)'>(.*?)</a>", "gs"))].map((m) => [m[1]!, m[2]!])
       : [];
-    let url = links.length ? links[0]![0] : null;
+    let url = links.length ? (links[0]![0] ?? null) : null;
     if (url && url.startsWith("/")) url = BASE + url;
     const seeAlso: ListingItem["see_also"] = [];
     const sa = subfield(row, "see_also");
