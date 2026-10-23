@@ -133,9 +133,12 @@ export function SlopeChart({
       orientation="vertical"
     >
       {(w) => {
-        const xs = pointPositions(periods.length, [labelW, w - labelW]).map((x, i, arr) =>
-          arr.length === 2 ? (i === 0 ? labelW + 20 : w - labelW - 20) : x,
+        // labels may take at most about a quarter of the width on each side
+        const lw = Math.min(labelW, Math.max(64, w * 0.26));
+        const xs = pointPositions(periods.length, [lw, w - lw]).map((x, i, arr) =>
+          arr.length === 2 ? (i === 0 ? lw + 12 : w - lw - 12) : x,
         );
+        const maxChars = Math.max(6, Math.floor((lw - 30) / 5.8));
         const y =
           mode === "bump"
             ? linearScale([1, maxRank], [26, height - 10])
@@ -243,12 +246,12 @@ export function SlopeChart({
                 <g key={`lab-${it.id}`} fontSize={10.5} fill="var(--chart-ink)">
                   {a !== null ? (
                     <text x={xs[0]! - 8} y={leftY[k]} dy="0.32em" textAnchor="end">
-                      {`${truncate(it.label, 14)} ${mode === "bump" ? `#${a}` : formatter.tick(a)}`}
+                      {`${truncate(it.label, maxChars)} ${mode === "bump" ? `#${a}` : formatter.tick(a)}`}
                     </text>
                   ) : null}
                   {b !== null ? (
                     <text x={xs[periods.length - 1]! + 8} y={rightY[k]} dy="0.32em">
-                      {`${mode === "bump" ? `#${b}` : formatter.tick(b)} ${truncate(it.label, 14)}`}
+                      {`${mode === "bump" ? `#${b}` : formatter.tick(b)} ${truncate(it.label, maxChars)}`}
                     </text>
                   ) : null}
                 </g>

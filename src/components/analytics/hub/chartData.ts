@@ -12,15 +12,21 @@ import {
   type TrendPoint,
 } from "@/lib/analytics/trend";
 
-/** Series colours: design tokens only. The fourth is for the rare four-part stack. */
+/**
+ * Series colours: the shared chart palette (src/components/charts/palette.ts), assigned in fixed order and never
+ * cycled; a block never has more series than the palette has slots. The variables are set by the card frame.
+ */
 export const SERIES_COLORS = [
-  "var(--primary)",
-  "var(--warning)",
-  "var(--success)",
-  "var(--muted-foreground)",
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+  "var(--chart-6)",
 ] as const;
 
-export const seriesColor = (index: number): string => SERIES_COLORS[index % SERIES_COLORS.length]!;
+export const seriesColor = (index: number): string =>
+  SERIES_COLORS[index] ?? "var(--chart-muted-mark)";
 
 export type ChartRow = {
   x: string;

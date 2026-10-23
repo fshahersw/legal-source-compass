@@ -1,25 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { AppShell } from "@/components/atlas/AppShell";
-import { AnalyticsOverview } from "@/components/analytics/hub/AnalyticsOverview";
-import { pageHead } from "@/lib/corpus/head";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
+/**
+ * The Analytics overview became the Insights overview (owner decision 2026-10-23, evening). Its trend blocks are tiles
+ * on /insights and full charts in Insights › Trends › National series.
+ */
 export const Route = createFileRoute("/analytics")({
-  head: () =>
-    pageHead(
-      "Analytics overview",
-      "Trends across the platform's published data: federal civil and criminal filings, MDL actions pending, enforcement activity, recalls and adverse events, consumer complaints, rulemaking, legislation and judicial vacancies, each with its source and period.",
-    ),
-  component: Page,
+  beforeLoad: () => {
+    throw redirect({ to: "/insights", replace: true });
+  },
 });
-
-function Page() {
-  return (
-    <AppShell
-      title="Analytics"
-      description="Trends over time across the platform's data, each with its unit, period and source."
-      breadcrumbs={[{ label: "Home", to: "/" }, { label: "Analytics" }]}
-    >
-      <AnalyticsOverview />
-    </AppShell>
-  );
-}

@@ -222,7 +222,11 @@ export function Heatmap({
                 })}
               </g>
             ))}
-            <g transform={`translate(${labelW},${legendY})`} fontSize={10} fill="var(--chart-axis)">
+            <g
+              transform={`translate(${Math.max(4, Math.min(labelW, w - 290))},${legendY})`}
+              fontSize={10}
+              fill="var(--chart-axis)"
+            >
               <text x={0} y={4} dy="0.32em">
                 {formatter.tick(scale === "diverging" ? -maxAbs : lo)}
               </text>

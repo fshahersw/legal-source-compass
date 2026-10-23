@@ -87,7 +87,8 @@ export function RankedBars({
           ]
         : ranked.slice(0, limit);
   const values = [...shown.map((r) => r.value), ...references.map((r) => r.value)];
-  const { domain, ticks } = niceDomain(values, { zero: true, count: 4 });
+  const domainFor = (plot: number) =>
+    niceDomain(values, { zero: true, count: Math.max(2, Math.min(5, Math.floor(plot / 70))) });
   const labelW = Math.min(170, Math.max(60, ...shown.map((r) => textWidth(r.label, 11) + 26)));
   const valueW = Math.max(40, ...shown.map((r) => textWidth(formatter.full(r.value), 10.5) + 8));
   const top = references.length ? 26 : 8;
@@ -109,6 +110,7 @@ export function RankedBars({
         orientation="vertical"
       >
         {(w) => {
+          const { domain, ticks } = domainFor(w - labelW - valueW);
           const x = linearScale(domain, [labelW, Math.max(labelW + 40, w - valueW)]);
           const zeroX = x(0);
           const marks = (

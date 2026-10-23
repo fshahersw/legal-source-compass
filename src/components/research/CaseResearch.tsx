@@ -397,7 +397,7 @@ export function CaseResearch({ data, cases, masters, state, search, update }: Wo
               )}
               <Link
                 className="text-primary underline"
-                to="/insights"
+                to="/insights/research"
                 search={{ view: "cases", docket: chosen.docket_id, state: "ALL" }}
               >
                 Permanent case analysis link

@@ -34,7 +34,7 @@ function retrievedLabel(sources: { fetchedAt: string }[]): string {
     : `sources retrieved ${days[0]} to ${days[days.length - 1]}`;
 }
 
-export const Route = createFileRoute("/insights")({
+export const Route = createFileRoute("/insights/research")({
   validateSearch: (input: Record<string, unknown>): ResearchSearch => ({
     view: views.some((v) => v.id === input["view"]) ? (input["view"] as ResearchView) : undefined,
     state:
@@ -62,7 +62,7 @@ export const Route = createFileRoute("/insights")({
 });
 function Page() {
   const search = Route.useSearch(),
-    navigate = useNavigate({ from: "/insights" });
+    navigate = useNavigate({ from: "/insights/research" });
   const research = useQuery({
     queryKey: ["research-snapshot"],
     queryFn: loadResearch,
@@ -98,7 +98,11 @@ function Page() {
   const error = research.error ?? catalog.error;
   return (
     <AppShell
-      breadcrumbs={[{ label: "Home", to: "/" }, { label: "Research workbench" }]}
+      breadcrumbs={[
+        { label: "Home", to: "/" },
+        { label: "Insights", to: "/insights" },
+        { label: "Research workbench" },
+      ]}
       title="Research workbench"
       description="Compare jurisdictions, trace case relationships, inspect judge histories, and follow citations to source documents."
     >

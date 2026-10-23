@@ -259,7 +259,7 @@ export function JudgeResearch({ data, cases, state, search, update }: WorkbenchP
                     <li key={c.docket_id}>
                       <Link
                         className="text-primary underline"
-                        to="/insights"
+                        to="/insights/research"
                         search={{ view: "cases", state, docket: c.docket_id, judge: selectedName }}
                       >
                         {c.case_name ?? c.docket_number ?? c.docket_id}

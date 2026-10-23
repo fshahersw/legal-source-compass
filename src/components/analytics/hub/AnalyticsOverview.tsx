@@ -6,7 +6,7 @@ import { SecRegistrationTrends } from "@/components/enforcement/regulatory/SecRe
 import { TrendCard } from "./TrendCard";
 
 const READING_NOTE =
-  "Each block counts one thing, states its unit, period and source, and links to the page with the detail. A period still in progress is marked * and drawn dashed or faded and is never the latest value. A period a source does not record is left as a gap, never shown as zero. Nothing is estimated or projected.";
+  "Each block counts one thing, states its unit, period and source, and links to the page with the detail. A period still in progress is marked * and drawn dashed or hatched and is never the latest value. A period a source does not record is left as a gap, never shown as zero. Nothing is estimated or projected.";
 
 /**
  * Body of /analytics and of its depth pages: trend blocks in groups. Every block loads and fails on its own; the

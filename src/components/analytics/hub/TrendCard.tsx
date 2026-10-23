@@ -22,6 +22,7 @@ import {
   longDate,
   type TrendBlockData,
 } from "@/lib/analytics/trend";
+import { chartTokens } from "@/components/charts/palette";
 import { seriesColor, tableRows } from "./chartData";
 import { analyticsBlockQuery } from "./blockQuery";
 
@@ -80,6 +81,7 @@ function Frame({
       aria-labelledby={`block-${def.id}-title`}
       {...(busy ? { "aria-busy": true } : {})}
       className="flex min-w-0 scroll-mt-4 flex-col rounded-md border border-border bg-surface"
+      style={chartTokens}
     >
       <header className="border-b border-border/70 px-3 py-2">
         <h3 id={`block-${def.id}-title`} className="text-sm font-semibold leading-5">
@@ -136,7 +138,11 @@ function Legend({ block }: { block: TrendBlockData }) {
         <li key={s.id} className="flex items-center gap-1.5">
           <span
             aria-hidden
-            className="inline-block size-2 rounded-[2px]"
+            className={
+              block.chart === "line"
+                ? "inline-block h-0.5 w-3 rounded-full"
+                : "inline-block size-2 rounded-[2px]"
+            }
             style={{ background: seriesColor(i) }}
           />
           {s.label}
@@ -212,7 +218,7 @@ function Loaded({ def, block }: { def: BlockDef; block: TrendBlockData }) {
       </div>
       {partial || block.gaps > 0 ? (
         <p className="px-3 pb-1 text-[11px] leading-4 text-muted-foreground">
-          {partial ? "* Partial period: drawn dashed or faded." : null}
+          {partial ? "* Partial period: drawn dashed or hatched." : null}
           {partial && block.gaps > 0 ? " " : null}
           {block.gaps > 0
             ? `${formatCount(block.gaps)} period${block.gaps === 1 ? "" : "s"} not recorded, left as gaps (not zero).`

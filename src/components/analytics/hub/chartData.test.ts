@@ -176,9 +176,9 @@ describe("text alternatives", () => {
 });
 
 describe("series colours", () => {
-  it("are design tokens only and cycle after the last", () => {
-    for (const c of SERIES_COLORS) expect(c).toMatch(/^var\(--[a-z-]+\)$/);
-    expect(seriesColor(0)).toBe("var(--primary)");
-    expect(seriesColor(SERIES_COLORS.length)).toBe(seriesColor(0));
+  it("are the shared chart tokens, in fixed order, never cycled", () => {
+    for (const c of SERIES_COLORS) expect(c).toMatch(/^var\(--chart-[0-9]\)$/);
+    expect(seriesColor(0)).toBe("var(--chart-1)");
+    expect(seriesColor(SERIES_COLORS.length)).toBe("var(--chart-muted-mark)");
   });
 });
