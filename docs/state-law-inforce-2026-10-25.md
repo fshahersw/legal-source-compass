@@ -22,7 +22,7 @@ sections), every stored line of text, heading, history and status marker found v
 | AK | Legislative Affairs Agency, BASIS | per-chapter print ranges `statutes.asp?media=print&secStart=…&secEnd=…` | label "Alaska Statutes 2025" | 20,717 | allowed; 1 req/s | fresh (~1,900 req, ~35 min) or retained | 29 (ch. 09.10) ✓ |
 | AR | — | **BLOCKED** — arkleg.state.ar.us links the code only to advance.lexis.com | — | — | commercial host never fetched | owner decision | — |
 | AZ | Legislative Council (azleg.gov) | one page per section | "The Arizona Revised Statutes have been updated to include the revised sections from the 57th Legislature, 2nd Regular Session. Please note that the next update of this compilation will not take place until after the conclusion of the 58th Legislature, 1st Regular Session, which convenes in January 2027." | 25,157 | **Crawl-delay 120 s** (25k pages = ~35 days) | **retained** (captures of 2026-10-07; landing page and § 12-542 re-read fresh 2026-10-23 byte-identical) | 40 ✓ |
-| CA | Office of Legislative Counsel | bulk `pubinfo_2025.zip` (1.29 GB) streamed; sample by HTTP range | none printed; Last-Modified Mon, 19 Oct 2026 | 162,526 | allowed; one stream | fresh (stream, no disk) | 40 ✓ (2 future-effective, 1 expired) |
+| CA | Office of Legislative Counsel | bulk `pubinfo_2025.zip` (1.29 GB) streamed; sample by HTTP range | none printed; `pubinfo_2025.zip` Last-Modified Mon, 19 Oct 2026 04:26:10 GMT | 162,526 | allowed; one stream | fresh (stream, no disk) | 40 ✓ (2 future-effective, 1 expired) |
 | CO | — | **BLOCKED (owner decision)** — leg.colorado.gov: "Click here to access the Colorado Revised Statutes hosted by LexisNexis."; the government host serves C.R.S. **2024** title PDFs only (2025/2026 paths 404); olls.info (crs2026 HTML, captured) is not linked from any government page found | — | (35,791 in capture) | — | confirm olls.info is OLLS-operated → parser over the retained crs2026 files | — |
 | CT | Legislative Commissioners' Office | revision `/current/pub/` + `/2026/sup/` supplement (supplement sections replace the revision's) | "GENERAL STATUTES OF CONNECTICUT Revised to January 1, 2025 / 2026 SUPPLEMENT … Revised to January 1, 2026 / Note: This 2026 Supplement is intended to be used in conjunction with the General Statutes of Connecticut, revised to January 1, 2025" | 32,519 | allowed; 1 req/s (intermediate cert supplied from `certs/`) | fresh (~1.7k req, ~30 min) | 37 ✓ |
 | DE | Code Revisors / Division of Legislative Services | title → chapter (→ subchapter) pages | "This version includes all acts enacted as of October 01, 2026, up to and including 85 Del. Laws, c. 550." | 23,444 | no robots (404); 1 req/s | fresh (~1.5k req, ~25 min) | 40 ✓ (4 repealed) |
@@ -33,7 +33,7 @@ sections), every stored line of text, heading, history and status marker found v
 | ID | Legislative Services Office | title → chapter → section pages | "Idaho Statutes are updated to the website July 1 following the legislative session." / "Idaho Statutes and Constitutions are current through the 2026 Legislative Session." | 22,538 | allowed; 1 req/s | fresh (~24k req, ~7 h) or retained (27,994) | 40 ✓ |
 | IL | Legislative Reference Bureau (ILCS database) | chapters → acts → article/full-text pages | "Updating the database of the Illinois Compiled Statutes (ILCS) is an ongoing process. Recent laws may not yet be included in the ILCS database, …" | 72,813 | **Crawl-delay 10 s** | fresh (~2.9k req, ~8 h) | 40 ✓ |
 | IN | Office of Code Revision (iga.in.gov) | bulk `2026-Indiana-Code-html.zip`; the URL serves an app shell to this project's honest client | label "2026 Indiana Code"; title files dated 2026-06-23 | 83,135 † | fresh fetch refused (no bypass) | **retained** archive (captured 2026-10-06, sha256-checked); full dry run 83,135 sections, 13 superseded versions ledgered | 37 ✓ |
-| IA | Legislative Services Agency | per-chapter "slim" XML (listed under "Unofficial Version"; official = authenticated volume PDFs) | "Year: 2026 (1/1/2026 - 12/31/2026)", label "Iowa Code - 2026"; newest file Last-Modified 10 Jul 2026 | 47,239 | allowed (except /chambers/); 1 req/s | fresh (~1.3k req, ~25 min) | 40 ✓ |
+| IA | Legislative Services Agency | per-chapter "slim" XML (listed under "Unofficial Version"; official = authenticated volume PDFs) | "Year: 2026 (1/1/2026 - 12/31/2026)", label "Iowa Code - 2026"; newest file Last-Modified 10 Jul 2026 | 27,319 † | allowed (except /chambers/); 1 req/s | fresh (~1.9k req, ~25 min; full dry run 0 rejects; the earlier capture's 47,239 also counted cross-reference range spans tagged as sections) | 40 ✓ |
 | KS | Office of Revisor of Statutes | chapter → section pages | "These statutes include amendments and new laws enacted during the 2025 legislative session." (authenticated text = printed K.S.A.) | 47,489 | allowed; 1 req/s | fresh (~48k req, ~13 h) or retained (47,490) | 28 (art. 60-5) ✓ |
 | KY | Legislative Research Commission | chapter pages → one PDF per section (layout text) | "Includes enactments through the 2026 Regular Session" / "The KRS database was last updated on 10/23/2026" | 40,462 | no robots (404); 1 req/s | fresh (~41k req, ~11.5 h) or retained (40,470) | 40 ✓ |
 | LA | Louisiana State Legislature | TOC postbacks → `LawPrint.aspx?d=` per section | "Laws have been updated through the 2025 First Extraordinary Session." / "For a list of laws updated through the 2026 Regular Legislative Session, click here." | 46,365 | no robots (404); 1 req/s | fresh (~52k req, ~14.5 h) or retained (52,320) | 40 ✓ |
@@ -41,7 +41,7 @@ sections), every stored line of text, heading, history and status marker found v
 | MD | Department of Legislative Services | GetSections API + StatuteText pages (enactments in effect) | "Show statutes in effect as of October 1st of this year" | 40,347 | allowed; 1 req/s | fresh (~40k req, ~11 h) | 21 ✓ |
 | MA | General Court (malegislature.gov) | JSON API (Parts/Chapters/Sections) | "This site includes all amendments to the General Laws passed before May 31, 2026, for laws enacted since that time, see the 2026 Session Laws." + its NOTICE that the site is not the official version | 26,812 | allowed; 1 req/s | fresh (~28k req, ~8 h) or retained | 40 ✓ |
 
-Totals for the 19 acquirable jurisdictions: ≈ 858,000 sections, ≈ 1.19 GB of statute text (capture-based).
+Totals for the 19 acquirable jurisdictions: ≈ 838,000 sections, ≈ 1.19 GB of statute text (capture-based).
 
 Currency gaps the publishers themselves state (shown verbatim beside every section, never hidden): KS (2025 session
 only), LA (through the 2025 First Extraordinary Session), AZ (through the 57th Legislature, 2nd Regular Session),
@@ -82,7 +82,7 @@ Row/byte estimates (AL–MA, 19 jurisdictions):
 
 | item | estimate |
 |---|---|
-| sections rows | ≈ 0.86 M (CA 163k, IN 83k, IL 73k largest) |
+| sections rows | ≈ 0.84 M (CA 163k, IN 83k, IL 73k largest) |
 | section text | ≈ 1.19 GB raw; TOAST-compressed ≈ 0.5–0.6 GB |
 | tsvector (generated, A = number + heading, B = `left(text, 250000)`, `english`) | ≈ 0.45–0.6 GB |
 | GIN per partition | ≈ 0.35–0.5 GB |
@@ -90,7 +90,7 @@ Row/byte estimates (AL–MA, 19 jurisdictions):
 | btree indexes (edition/code/number_norm, node, ordinal) | ≈ 120 MB |
 | **total** | **≈ 2.0–2.5 GB** (national with STAT-B ≈ 4.5–5 GB; production DB is 119 GB) |
 
-Measured: DC full dry run 24,221 sections → `sections.jsonl.gz` 12.4 MB; IN 83,135 → 23.9 MB.
+Measured: DC full dry run 24,221 sections → `sections.jsonl.gz` 12.4 MB; IN 83,135 → 23.9 MB; IA 27,319 → 13.3 MB.
 
 Full-text search plan: `websearch_to_tsquery('english', q)` over the per-state partition (the RPC always filters by
 state, so one partition's GIN is used), ranked by `ts_rank_cd` with number/heading weight A, snippets by
@@ -166,7 +166,7 @@ python3 scripts/state_law/verify.py $B/<xx>/<edition_id> --no-require-raw       
 | ID | retained optional | ~24,000 | 7 h | |
 | IL | — | ~2,900 | 8 h | Crawl-delay 10 honoured |
 | IN | `--option source=retained` | 1 archive | 1 min | fresh is refused by the publisher (exit 3) |
-| IA | — | ~1,300 | 25 min | |
+| IA | — | ~1,900 | 25–40 min | full dry run: 27,319 sections, 0 rejects |
 | KS | retained optional | ~48,000 | 13 h | |
 | KY | retained optional | ~41,000 | 11.5 h | needs pdftotext |
 | LA | retained optional | ~52,000 | 14.5 h | |

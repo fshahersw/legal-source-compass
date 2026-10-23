@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import collections
 import datetime as dt
-import json
 import pathlib
 import re
 import struct
@@ -315,8 +314,8 @@ def acquire_sample(ctx: lib.RunContext) -> None:
     bodies = {name: _range_member(ctx, name, entries[name], keep_source=False) for name in sorted(KEEP)}
     tables = Tables(bodies["CODES_TBL.dat"].body, bodies["LAW_TOC_TBL.dat"].body,
                     bodies["LAW_TOC_SECTIONS_TBL.dat"].body, bodies["LAW_SECTION_TBL.dat"].body)
-    ctx.edition(edition_label=ARCHIVE, currency_statement=None, currency_source_url=URL,
-                source_last_modified=ctx.last_modified)
+    ctx.edition(edition_label=None, currency_statement=None, currency_source_url=URL,
+                source_last_modified=f"{ARCHIVE} Last-Modified {ctx.last_modified}" if ctx.last_modified else None)
     picks = [key for key in SAMPLE_PICKS if key in tables.groups]
     extra = sorted(k for k in tables.groups if k[0] == "CCP" and k not in picks)[: max(0, (ctx.sample or 0) - len(picks))]
     sec_member = bodies["LAW_SECTION_TBL.dat"]
@@ -340,7 +339,9 @@ def acquire_full(ctx: lib.RunContext) -> None:
     pending_lobs: dict[str, bytes] = {}
     done = 0
     with ctx.stream(URL) as stream:
-        ctx.edition(edition_label=ARCHIVE, currency_statement=None, currency_source_url=URL)
+        modified = ctx._stream_meta.get("last_modified")
+        ctx.edition(edition_label=None, currency_statement=None, currency_source_url=URL,
+                    source_last_modified=f"{ARCHIVE} Last-Modified {modified}" if modified else None)
         archive = {"url": URL, "retrieved_at": ctx._stream_meta["retrieved_at"], "sha256": "0" * 64, "bytes": 0}
         for name, body in lib.iter_zip_members(stream, want=lambda n: n in KEEP or bool(LOB_RE.match(n))):
             if name in KEEP:

@@ -1216,7 +1216,7 @@ class RunContext:
             reader = HashingReader(response)
             buffered = io.BufferedReader(reader, buffer_size=1 << 20)
             self._stream_meta = {"url": url, "final_url": response.geturl(), "retrieved_at": retrieved_at,
-                                 "content_type": hdrs.get("content-type", "")}
+                                 "content_type": hdrs.get("content-type", ""), "last_modified": hdrs.get("last-modified")}
             yield buffered  # type: ignore[misc]
             reader.drain()
         self._sources.write({
