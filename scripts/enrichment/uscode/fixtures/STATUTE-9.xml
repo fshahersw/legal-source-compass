@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><statutesAtLarge xmlns="http://schemas.gpo.gov/xml/uslm" xmlns:dc="http://purl.org/dc/elements/1.1/">
+<meta><volume>9</volume></meta>
+<main><collection role="statutesParts">
+<component>
+<pLaw>
+<meta><dc:title>Public Law 108–204: To make technical corrections.</dc:title>
+<dc:type>Public Law</dc:type><docNumber>204</docNumber>
+<citableAs>Public Law 108–204</citableAs><citableAs>118 Stat. 542</citableAs>
+<approvedDate>2004-03-02</approvedDate>
+<congress>108</congress><publicPrivate>public</publicPrivate>
+</meta>
+<preface><page identifier="/us/stat/118/542">118 STAT. 542</page></preface>
+<main>
+<longTitle><docTitle>An Act</docTitle><officialTitle>To make technical corrections.<sidenote><p><approvedDate date="2004-03-02">Mar. 2, 2004</approvedDate></p><p>[<ref href="/us/bill/108/s/523">S. 523</ref>]</p></sidenote></officialTitle></longTitle>
+<section><num value="1">SECTION 1.</num><content>This <sidenote><p><ref href="/us/usc/t25/s461">25 USC 461 note</ref>.</p></sidenote>Act may be cited as the Sample Act. Section 5 of the Sample Act (<ref href="/us/usc/t42/s1983">42 U.S.C. 1983</ref>) is amended by inserting “<quotedText>as defined in <ref href="/us/usc/t11/s101">section 101 of title 11</ref></quotedText>”.<page identifier="/us/stat/118/543">118 STAT. 543</page></content></section>
+</main>
+</pLaw>
+</component>
+<component>
+<pLaw>
+<meta><dc:title>Public Law 248: To amend certain titles of the United States Code.</dc:title>
+<dc:type>Public Law</dc:type><docNumber>248</docNumber>
+<citableAs>Public Law 248</citableAs><citableAs>65 Stat. 710</citableAs>
+<approvedDate>1951-10-31</approvedDate>
+<congress>82</congress><session>1</session><publicPrivate>public</publicPrivate>
+</meta>
+<preface><page identifier="/us/stat/65/710">65 Stat. 710</page><dc:type>Public Law</dc:type> <docNumber>248</docNumber><p class="rightAlign smallCaps">chapter 655</p></preface>
+<main><longTitle><officialTitle>To amend certain titles.</officialTitle></longTitle></main>
+</pLaw>
+</component>
+<component>
+<pLaw>
+<meta><dc:title>Chapter XVI: to extend the jurisdiction of the District Court.</dc:title>
+<citableAs>5 Stat. 147</citableAs><dc:date>1837-03-01</dc:date><dc:type>Chapter</dc:type><docNumber>XVI</docNumber>
+<congress>24</congress><session>1</session><publicPrivate>public</publicPrivate>
+</meta>
+<main><longTitle><officialTitle>to extend the jurisdiction.<sidenote><p>[<ref href="/us/pl/24/16">Public, No. 16</ref>]</p></sidenote></officialTitle></longTitle></main>
+</pLaw>
+<pLaw>
+<meta><dc:title>Private Law 408: For the relief of a person.</dc:title><dc:type>Private Law</dc:type><docNumber>408</docNumber>
+<approvedDate>1951-10-31</approvedDate><congress>82</congress><publicPrivate>private</publicPrivate></meta>
+</pLaw>
+<resolution>
+<meta><dc:title>I: for the admission of a State.</dc:title><dc:type>Public Resolution</dc:type><docNumber>I</docNumber>
+<citableAs>3 Stat. 472</citableAs><dc:date>1817-12-10</dc:date><publicPrivate>public</publicPrivate></meta>
+</resolution>
+</component>
+</collection></main>
+</statutesAtLarge>

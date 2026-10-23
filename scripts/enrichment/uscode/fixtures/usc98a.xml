@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<uscDoc xmlns="http://xml.house.gov/schemas/uslm/1.0" xmlns:dc="http://purl.org/dc/elements/1.1/" identifier="/us/usc/t98a">
+<meta>
+  <dc:title>Title 98 Appendix</dc:title>
+  <docNumber>98a</docNumber>
+  <property role="is-positive-law">no</property>
+</meta>
+<main>
+<appendix identifier="/us/usc/t98a"><num value="98a">Title 98—Appendix</num><heading>SAMPLE APPENDIX</heading>
+<courtRules identifier="/us/usc/t98a/courtRules/Civil"><heading>FEDERAL RULES OF CIVIL PROCEDURE</heading>
+<title identifier="/us/usc/t98a/courtRules/Civil/tI"><num value="I">TITLE I.</num><heading> SCOPE OF RULES</heading>
+<courtRule identifier="/us/usc/t98a/courtRules/Civil/rule4"><num value="4">Rule 4.</num><heading> Summons</heading><subsection class="indent0" identifier="/us/usc/t98a/courtRules/Civil/rule4/a"><num value="a">(a)</num><heading> Contents.</heading><content> A summons must name the court.</content></subsection>
+</courtRule>
+</title>
+</courtRules>
+<reorganizationPlans identifier="/us/usc/t98a/reorgPlans"><heading>REORGANIZATION PLANS</heading>
+<reorganizationPlan identifier="/us/usc/t98a/reorgPlan/1939/I"><heading>REORGANIZATION PLAN NO. I OF 1939</heading>
+<content><p class="centered">Eff. July 1, 1939.</p><p class="indent0">Section 1. Transfers.</p></content>
+</reorganizationPlan>
+</reorganizationPlans>
+<compiledAct><heading>SAMPLE ACT</heading>
+<section status="transferred"><num value="1">[§ 1.</num><heading> Transferred]</heading></section>
+</compiledAct>
+</appendix>
+</main>
+</uscDoc>
