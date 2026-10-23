@@ -107,6 +107,25 @@ def parse_section(page: lib.Fetched) -> tuple[str, str | None, str]:
     return number, heading, text
 
 
+def base_number(label: str) -> str:
+    """The index labels the second printed version of a section "3-3493; Version 2"; the page prints "3-3493"."""
+    return re.sub(r";\s*Version\s+\d+\s*$", "", label)
+
+
+def version_fields(number: str, text: str, count: int, seen: dict[str, int]) -> dict:
+    """A section the publisher prints in more than one version (03493.htm and 03493.01.htm): each version is kept
+    with its own version line, "(L17, Ch. 295, sec. 2. Conditionally Eff.)", and none is called in force, since the
+    pages do not say which condition has occurred."""
+    seen[number] = seen.get(number, 0) + 1
+    first = text.split("\n", 1)[0].strip()
+    match = re.fullmatch(r"\(([^()]+)\)", first)
+    line = lib.norm_ws(match.group(1)) if match else None
+    note = (f"The publisher prints {count} versions of this section; this version is marked ({line})." if line else
+            f"The publisher prints {count} versions of this section; this version carries no version line.")
+    return {"version": line, "version_index": seen[number], "status": "not_recorded", "status_basis": "not_recorded",
+            "effective": {"note": note}}
+
+
 def acquire(ctx: lib.RunContext) -> None:
     landing = ctx.get(LANDING)
     statement = STATEMENT_RE.search(lib.html_text(landing.body))
@@ -126,6 +145,10 @@ def acquire(ctx: lib.RunContext) -> None:
             break
         page = ctx.get(f"{BASE}/arsDetail/?title={title}")
         title_heading, rows = title_structure(page)
+        printed = {}
+        for row in rows:
+            printed[base_number(row["number"])] = printed.get(base_number(row["number"]), 0) + 1
+        seen: dict[str, int] = {}
         for row in rows:
             if not ctx.want_more():
                 break
@@ -135,10 +158,11 @@ def acquire(ctx: lib.RunContext) -> None:
                 raise RuntimeError(f"listed section has no retained original: {row['url']}")
             section_page = ctx.get(row["url"])
             number, heading, text = parse_section(section_page)
-            if number != row["number"]:
+            if number != base_number(row["number"]):
                 raise RuntimeError(f"{row['url']} prints {number}, index lists {row['number']}")
+            versions = version_fields(number, text, printed[number], seen) if printed[number] > 1 else {}
             path = [{"level": "title", "label": "Title", "number": title, "heading": title_heading},
                     {"level": "chapter", "label": "Chapter", "number": row["chapter"], "heading": row["chapter_heading"]}]
             if row["article"]:
                 path.append({"level": "article", "label": "Article", "number": row["article"], "heading": row["article_heading"]})
-            ctx.section(code="ARS", number=number, heading=heading, text=text, source=section_page, path=path)
+            ctx.section(code="ARS", number=number, heading=heading, text=text, source=section_page, path=path, **versions)

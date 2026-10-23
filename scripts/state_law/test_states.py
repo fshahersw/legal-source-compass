@@ -353,6 +353,22 @@ class LoaderRejectBoundTests(unittest.TestCase):
             self.assertEqual(loader.main([str(gap), "--dry-run", "--accept-rejects", "Title 22 returned HTTP 404"]), 0)
 
 
+class ArizonaVersionTests(unittest.TestCase):
+    def test_two_printed_versions_are_kept_and_neither_is_called_in_force(self):
+        az = load("az")
+        self.assertEqual(az.base_number("3-3493; Version 2"), "3-3493")
+        self.assertEqual(az.base_number("12-542"), "12-542")
+        seen: dict[str, int] = {}
+        first = az.version_fields("3-3493", "(L16, Ch. 232, sec. 27)\nA. All gasoline ...", 2, seen)
+        second = az.version_fields("3-3493", "(L17, Ch. 295, sec. 2. Conditionally Eff.)\nA. All gasoline ...", 2, seen)
+        self.assertEqual((first["version_index"], second["version_index"]), (1, 2))
+        self.assertEqual(second["version"], "L17, Ch. 295, sec. 2. Conditionally Eff.")
+        self.assertEqual({first["status"], second["status"]}, {"not_recorded"})
+        self.assertIn("prints 2 versions", second["effective"]["note"])
+        bare = az.version_fields("9-1", "A. Text without a version line.", 2, {})
+        self.assertIsNone(bare["version"])
+
+
 class BlockedStates(unittest.TestCase):
     def test_blocked_modules_never_fetch(self):
         for code in ("ga", "ar", "co"):
