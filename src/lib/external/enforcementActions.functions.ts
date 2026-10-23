@@ -117,9 +117,24 @@ export type HeadlineFigure = {
   source: "title" | "first resolution sentence";
   sentence: string | null;
   keyword: string | null;
+  /** "nearly", "more than"…: the approximation written right before the figure, so it is not shown as exact. */
+  qualifier: string | null;
   differsFromLargest: boolean;
 };
-export function parseHeadline(v: unknown): HeadlineFigure | null {
+
+const QUALIFIER =
+  /\b(nearly|almost|more than|over|approximately|about|roughly|at least|up to|in excess of|close to|just over|just under|upwards of)\s+$/i;
+
+/** The approximation word(s) written directly before the figure in its title or sentence, lower-cased. */
+export function qualifierBefore(text: string, asWritten: string): string | null {
+  const i = text.indexOf(asWritten);
+  if (i < 0) return null;
+  const m = QUALIFIER.exec(text.slice(Math.max(0, i - 30), i));
+  return m ? m[1]!.toLowerCase().replace(/\s+/g, " ") : null;
+}
+
+/** `title` is the title shown with the release: a figure read from the title must be in it. */
+export function parseHeadline(v: unknown, title: string): HeadlineFigure | null {
   const o = obj(v);
   const asWritten = str(o?.["as_written"], 60);
   const valueUsd = num(o?.["value_usd"]);
@@ -127,15 +142,16 @@ export function parseHeadline(v: unknown): HeadlineFigure | null {
   if (!asWritten || !/\d/.test(asWritten) || valueUsd == null || valueUsd < 0) return null;
   if (source !== "title" && source !== "first resolution sentence") return null;
   const sentence = source === "first resolution sentence" ? str(o?.["sentence"], 400) : null;
-  // a figure from the text is shown only with the sentence it was read from
-  if (source === "first resolution sentence" && (!sentence || !sentence.includes(asWritten)))
-    return null;
+  // a figure is shown only with the title or sentence it was read from
+  const from = source === "title" ? title : sentence;
+  if (!from || !from.includes(asWritten)) return null;
   return {
     asWritten,
     valueUsd,
     source,
     sentence,
     keyword: str(o?.["keyword"], 60),
+    qualifier: qualifierBefore(from, asWritten),
     differsFromLargest: o?.["differs_from_largest"] === true,
   };
 }
@@ -243,6 +259,8 @@ export type DojRelease = {
   /** Largest stated resolution figure: sorting and the amount filter only. */
   maxResolutionUsd: number | null;
   headline: HeadlineFigure | null;
+  /** Why there is no headline figure although a largest figure exists (every figure is about another matter). */
+  headlineNoneReason: string | null;
   statutes: string[];
   dockets: string[];
   courts: CourtRef[];
@@ -272,11 +290,8 @@ export function parseDojRelease(
     amounts: parseAmounts(r["amounts"]),
     amountsTotal: int(r["amounts_total"]) ?? 0,
     maxResolutionUsd: num(r["max_resolution_amount_usd"]),
-    headline: (() => {
-      const h = parseHeadline(r["headline_figure"]);
-      // a title figure must be in the title shown
-      return h && (h.source !== "title" || title.includes(h.asWritten)) ? h : null;
-    })(),
+    headline: parseHeadline(r["headline_figure"], title),
+    headlineNoneReason: str(r["headline_none_reason"], 200),
     statutes: arr(r["statutes"]).flatMap((s) => {
       const c = str(obj(s)?.["cite"], 200);
       return c ? [c] : [];
@@ -609,6 +624,8 @@ export type SecAction = {
   /** Largest stated resolution figure: sorting and the amount filter only. */
   maxResolutionUsd: number | null;
   headline: HeadlineFigure | null;
+  /** Why there is no headline figure although a largest figure exists (every figure is about another matter). */
+  headlineNoneReason: string | null;
   statutes: string[];
   seeAlso: { label: string; url: string }[];
   companies: CompanyLink[];
@@ -641,11 +658,8 @@ export function parseSecAction(row: { id?: unknown; s?: unknown }): SecAction | 
     courts: parseCourts(s["courts"]),
     amounts: parseAmounts(s["amounts"]),
     maxResolutionUsd: num(s["max_resolution_amount_usd"]),
-    headline: (() => {
-      const h = parseHeadline(s["headline_figure"]);
-      const pageTitle = str(s["title"], 600) ?? "";
-      return h && (h.source !== "title" || pageTitle.includes(h.asWritten)) ? h : null;
-    })(),
+    headline: parseHeadline(s["headline_figure"], str(s["title"], 600) ?? ""),
+    headlineNoneReason: str(s["headline_none_reason"], 200),
     statutes: strings(s["statutes"], 200),
     seeAlso: arr(s["see_also"]).flatMap((x) => {
       const o = obj(x);

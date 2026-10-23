@@ -24,10 +24,20 @@ export type FigureView = {
   note: string | null;
 };
 
-export function figureView(headline: HeadlineFigure | null, largest: number | null): FigureView {
+/** "nearly $60 million": the value with the approximation written before it, so it never reads as exact. */
+export function headlineText(headline: HeadlineFigure): string {
+  const value = fmtUsd(headline.valueUsd);
+  return headline.qualifier ? `${headline.qualifier} ${value}` : value;
+}
+
+export function figureView(
+  headline: HeadlineFigure | null,
+  largest: number | null,
+  noneReason: string | null = null,
+): FigureView {
   if (headline) {
     return {
-      primary: fmtUsd(headline.valueUsd),
+      primary: headlineText(headline),
       secondary:
         headline.differsFromLargest && largest != null ? `also states ${fmtUsd(largest)}` : null,
       note:
@@ -36,6 +46,9 @@ export function figureView(headline: HeadlineFigure | null, largest: number | nu
           : `As written in the first resolution sentence: “${headline.sentence ?? headline.asWritten}”`,
     };
   }
+  // every figure the release states is about an earlier or separate matter: none is shown as its own
+  if (largest != null && noneReason)
+    return { primary: null, secondary: `states ${fmtUsd(largest)}`, note: noneReason };
   if (largest != null)
     return { primary: fmtUsd(largest), secondary: null, note: "Largest resolution figure stated" };
   return { primary: null, secondary: null, note: null };

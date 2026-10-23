@@ -88,13 +88,20 @@ def amount_sentence_keys(r):
     return {sentence_key(a.get("sentence")) for a in ex.extract_amounts(text) if a.get("sentence")}
 
 
-def headline_for(title, text, amounts, max_res, checks):
+def headline_for(title, text, amounts, max_res, date, checks):
     """extract.headline_figure, re-checked (the figure is a verbatim span of the title, or of its sentence and the
-    sentence of the body) and counted; `differs_from_largest` when the largest resolution figure is another value."""
-    headline = ex.headline_figure(title, amounts)
+    sentence of the body) and counted; `differs_from_largest` when the largest resolution figure is another value.
+    Returns (headline or None, reason when there is no headline although a largest figure exists)."""
+    headline = ex.headline_figure(title, amounts, date)
     if headline is None:
         checks["headline_none"] += 1
-        return None
+        if max_res is not None:
+            # every resolution figure is in a sentence about an earlier or separate matter
+            checks["headline_none_only_earlier_matter_figures"] += 1
+            return None, "only figures about an earlier or separate matter"
+        return None, None
+    if headline.get("earlier_matter_figures_skipped"):
+        checks["headline_skipped_earlier_matter_figures"] += 1
     checks["values_checked"] += 1
     if headline["source"] == "title":
         checks["headline_from_title"] += 1
@@ -106,7 +113,7 @@ def headline_for(title, text, amounts, max_res, checks):
         checks["headline_title_figure_not_used"] += 1
     differs = max_res is not None and abs(headline["value_usd"] - max_res) > 0.005
     checks["headline_differs_from_largest"] += differs
-    return {**headline, "differs_from_largest": differs}
+    return {**headline, "differs_from_largest": differs}, None
 
 
 def headline_label(headline):
@@ -152,7 +159,7 @@ def build_release(r, companies, courts, checks, boilerplate=frozenset()):
                   and a["value_usd"] < ex.RESOLUTION_CAP_USD]
     max_res = max(resolution) if resolution else None
     max_any = max((a["value_usd"] for a in valued), default=None)
-    headline = headline_for(title, text, amounts, max_res, checks)
+    headline, headline_none_reason = headline_for(title, text, amounts, max_res, date, checks)
     # the excerpt is a contiguous span of the body text; leading press-contact lines (CONTACT/PHONE/FAX...) are skipped
     start = 0
     for line in text.split("\n")[:8]:
@@ -173,6 +180,7 @@ def build_release(r, companies, courts, checks, boilerplate=frozenset()):
                     | {"sentence": bc.clip(a.get("sentence"), 220)[0]} for a in amounts[:5]],
         "amounts_total": len(amounts), "max_amount_usd": max_any, "max_resolution_amount_usd": max_res,
         "headline_figure": headline,
+        **({"headline_none_reason": headline_none_reason} if headline_none_reason else {}),
         "statutes": [{"cite": s["cite"], "as_written": s["as_written"]} for s in statutes[:12]], "statutes_total": len(statutes),
         "dockets": [{"as_written": d["as_written"], "form": d["form"], **({"mdl": d["mdl"]} if "mdl" in d else {})} for d in dockets[:10]],
         "courts": [{"as_written": c["as_written"], **({"court_id": c["court_id"]} if c.get("court_id") else {})} for c in court_list[:6]],
@@ -204,7 +212,7 @@ def build_release(r, companies, courts, checks, boilerplate=frozenset()):
     lead_component = next((c for c in components if c.startswith("USAO")), components[0] if components else None)
     facts = [
         ("Date", date), ("Components", components), ("Topics", topics), ("Release number", release["number"]),
-        ("Headline figure", headline_label(headline)),
+        ("Headline figure", headline_label(headline) or (f"None of its own: {headline_none_reason}" if headline_none_reason else None)),
         ("Largest resolution figure stated", bc.money_label(max_res) if max_res is not None else None),
         ("Dollar figures stated (as written; first keyword in the sentence)",
          [f"{a['as_written']} ({a.get('keyword') or 'no keyword'})" for a in amounts[:5]]),
@@ -219,7 +227,7 @@ def build_release(r, companies, courts, checks, boilerplate=frozenset()):
         subtitle=" · ".join(x for x in [date, lead_component, headline["as_written"] if headline else None] if x),
         state=state or "",
         cells={"date": date or bc.NOT_RECORDED, "title": title, "component": lead_component or bc.NOT_RECORDED,
-               "amount": headline["as_written"] if headline else "No resolution figure stated",
+               "amount": headline["as_written"] if headline else ("None of its own" if headline_none_reason else "No resolution figure stated"),
                "largest": bc.money_label(max_res) if max_res else "No resolution figure stated"},
         facts=facts,
         text=" ".join(filter(None, [title, release["teaser"], " ".join(p["as_written"] for p in parties), " ".join(d["as_written"] for d in dockets[:10])])),

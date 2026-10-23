@@ -118,7 +118,13 @@ def main():
                       and a["value_usd"] < ex.RESOLUTION_CAP_USD]
         max_res = max(resolution) if resolution else None
         # the release's own figure: the page title's resolution figure, else the first resolution sentence
-        headline = ex.headline_figure(title, amounts) if text else None
+        headline = ex.headline_figure(title, amounts, item["date"], earlier_months=6) if text else None
+        headline_none_reason = None
+        if headline is None and max_res is not None:
+            headline_none_reason = "only figures about an earlier or separate matter"
+            stats["lr_headline_none_only_earlier_matter_figures"] += 1
+        if headline and headline.get("earlier_matter_figures_skipped"):
+            stats["lr_headline_skipped_earlier_matter_figures"] += 1
         if headline:
             stats["lr_headline_from_" + ("title" if headline["source"] == "title" else "first_resolution_sentence")] += 1
             in_source = headline["as_written"] in (title or "") if headline["source"] == "title" else (
@@ -140,7 +146,9 @@ def main():
             "url": item["url"], "title": title, "civil_actions": [{"as_written": d["as_written"]} for d in civil],
             "courts": [{"as_written": c["as_written"], "court_id": c.get("court_id")} for c in court_list],
             "amounts": [{k: a[k] for k in ("as_written", "value_usd", "keyword", "sentence") if k in a} for a in amounts[:6]],
-            "max_resolution_amount_usd": max_res, "headline_figure": headline, "statutes": [s["cite"] for s in statutes],
+            "max_resolution_amount_usd": max_res, "headline_figure": headline,
+            **({"headline_none_reason": headline_none_reason} if headline_none_reason else {}),
+            "statutes": [s["cite"] for s in statutes],
             "see_also": item["see_also"][:6], "companies": company_links, "text_read": bool(text), "excerpt": excerpt,
         }
         rows.append(bc.record(
@@ -153,7 +161,7 @@ def main():
                    ("Type", "Litigation release"), ("Civil action number (as stated)", [d["as_written"] for d in civil]),
                    ("Court (as stated)", [c["as_written"] for c in court_list]),
                    ("Headline figure", (f"{headline['as_written']} (stated in the title)" if headline["source"] == "title"
-                                        else f"{headline['as_written']} (first resolution sentence: “{headline.get('sentence')}”)") if headline else None),
+                                        else f"{headline['as_written']} (first resolution sentence: “{headline.get('sentence')}”)") if headline else (f"None of its own: {headline_none_reason}" if headline_none_reason else None)),
                    ("Largest resolution figure stated", bc.money_label(max_res) if max_res is not None else None),
                    ("Dollar figures stated", [f"{a['as_written']} ({a.get('keyword') or 'no keyword in sentence'})" for a in amounts[:6]]),
                    ("Statutes cited", [s["cite"] for s in statutes]),

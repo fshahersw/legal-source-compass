@@ -238,13 +238,51 @@ def title_figures(title):
     return [{k: v for k, v in f.items() if v is not None} for f in out]
 
 
-def headline_figure(title, amounts):
+_MONTHS = {m: i for i, m in enumerate(["january", "february", "march", "april", "may", "june", "july", "august",
+                                          "september", "october", "november", "december"], 1)}
+_MONTH_RE = r"(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan\.|Feb\.|Mar\.|Apr\.|Aug\.|Sept?\.|Oct\.|Nov\.|Dec\.)"
+# "In November 2009, ..." / "On December 3, 2012, ..." / "In 2009, ..." at the start of the sentence
+_EARLIER_START = re.compile(r"^(?:In|On|Back in|During)\s+(?:(?:early|late|mid-?)\s*)?(?:(?P<month>" + _MONTH_RE + r")\s+)?"
+                            r"(?:\d{1,2},?\s+)?(?:of\s+)?(?P<year>(?:19|20)\d{2})\b")
+# "were settled or dismissed in 2009", "paid in March 2014"
+_EARLIER_EVENT = re.compile(r"\b(?:settled|resolved|dismissed|paid)\b"
+                            r"(?:\s+\w+){0,3}?\s+in\s+(?:(?P<month>" + _MONTH_RE + r")\s+)?(?:of\s+)?(?P<year>(?:19|20)\d{2})\b")
+_EARLIER_WORDS = re.compile(r"^previously,"
+                            r"|\bin (?:a|an) (?:separate|earlier|prior) (?:settlement|case|matter|action|resolution|agreement)\b", re.I)
+
+
+def _month_index(match):
+    month = (match.group("month") or "").lower().rstrip(".")
+    number = next((n for name, n in _MONTHS.items() if month and name.startswith(month[:3])), 12)
+    return int(match.group("year")) * 12 + number
+
+
+def about_earlier_matter(sentence, release_date, min_months=2):
+    """True when a figure's sentence reports an event dated `min_months` calendar months or more before the release (2 for
+    DOJ press releases, which announce the day's events; SEC litigation releases often report a judgment entered weeks
+    or months earlier, so their builder passes 6) ("In November
+    2009, the United States ... entered into a $98 million settlement" in a 2010 release; "The other nine suits were
+    settled or dismissed in 2009") or says it is a separate/previous resolution. Undated sentences are not earlier."""
+    if not sentence:
+        return False
+    if _EARLIER_WORDS.search(sentence):
+        return True
+    m = re.match(r"^((?:19|20)\d{2})-(\d{2})", release_date or "")
+    if not m:
+        return False
+    released = int(m.group(1)) * 12 + int(m.group(2))
+    events = [_EARLIER_START.match(sentence)] + list(_EARLIER_EVENT.finditer(sentence))
+    return any(e and _month_index(e) <= released - min_months for e in events)
+
+
+def headline_figure(title, amounts, release_date=None, earlier_months=2):
     """The figure a reader takes as the release's own resolution figure, verbatim:
     - source "title": the title's first figure stated as a resolution (title_figures), when it can be read exactly
       (not a range start, not ambiguous as written, under RESOLUTION_CAP_USD);
     - otherwise source "first resolution sentence": the first body figure in reading order whose sentence has a
-      settlement/penalty/restitution/forfeiture/disgorgement/judgment keyword (statutory maximums and alleged losses
-      are never resolution figures), not a stock paragraph (`boilerplate`), readable and under the cap.
+      settlement/penalty/restitution/forfeiture/disgorgement/judgment keyword (statutory maximums, alleged losses and
+      special assessments are never resolution figures), not a stock paragraph (`boilerplate`), readable, under the
+      cap, and not in a sentence about an earlier or separate matter (about_earlier_matter, given the release date).
     `amounts` are extract_amounts() results in reading order. Returns None when neither exists."""
     stated = [f for f in title_figures(title) if f["resolution"]]
     rejected = None
@@ -256,13 +294,19 @@ def headline_figure(title, amounts):
                 out["title_figures"] = len(stated)
             return out
         rejected = "range" if first.get("range_start") else "ambiguous as written" if first.get("ambiguous_as_written") else "over cap"
+    skipped = 0
     for a in amounts:
         if (a.get("keyword") in RESOLUTION_KINDS and not a.get("boilerplate") and a.get("value_usd") is not None
                 and a["value_usd"] < RESOLUTION_CAP_USD):
+            if about_earlier_matter(a.get("sentence"), release_date, earlier_months):
+                skipped += 1
+                continue
             out = {"as_written": a["as_written"], "value_usd": a["value_usd"], "source": "first resolution sentence",
                    "keyword": a["keyword"], "sentence": a.get("sentence")}
             if rejected:
                 out["title_figure_not_used"] = rejected
+            if skipped:
+                out["earlier_matter_figures_skipped"] = skipped
             return out
     return None
 

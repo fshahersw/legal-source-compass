@@ -127,6 +127,24 @@ class HeadlineTests(unittest.TestCase):
         self.assertEqual(head["keyword"], "restitution")
         self.assertEqual(head["sentence"], "She was ordered to pay $1.2 million in restitution.")
 
+    def test_figures_about_an_earlier_matter_are_skipped(self):
+        body = ("In November 2009, the United States, numerous states, and Omnicare entered into a $98 million settlement "
+                "agreement that resolved Omnicare's civil liability. The complaint seeks treble damages.")
+        amounts = ex.extract_amounts(body)
+        self.assertIsNone(ex.headline_figure("U.S. Files Suit Against Johnson & Johnson", amounts, "2010-01-15"))
+        # undated, or dated less than two months before the release: kept
+        self.assertEqual(ex.headline_figure("X", amounts, "2009-12-20")["as_written"], "$98 million")
+        detrol = ex.extract_amounts(HeadlineTests.DETROL_BODY)
+        head = ex.headline_figure("Pfizer Settles Detrol Claims", detrol, "2011-10-21")
+        self.assertEqual((head["as_written"], head["earlier_matter_figures_skipped"]), ("$14.5 million", 1))
+        self.assertFalse(ex.about_earlier_matter("Smith, who pleaded guilty in March 2014, was ordered to pay $5 million.", "2014-09-01"))
+        self.assertTrue(ex.about_earlier_matter("In a separate settlement, the company paid $2 million.", "2014-09-01"))
+        self.assertTrue(ex.about_earlier_matter("Previously, on March 30, 2002, two relatives settled for $4.7 million.", "2002-07-15"))
+        # SEC releases report judgments entered weeks or months earlier: a six-month threshold keeps those
+        judgment = "On November 8, 2021, a federal court entered a final judgment ordering Craig to pay $1.3 million."
+        self.assertTrue(ex.about_earlier_matter(judgment, "2022-01-06"))
+        self.assertFalse(ex.about_earlier_matter(judgment, "2022-01-06", min_months=6))
+
     def test_stock_paragraph_is_skipped(self):
         amounts = ex.extract_amounts("The task force has recovered $9 billion in settlements. Acme agreed to pay $2 million to settle.")
         amounts[0]["boilerplate"] = True

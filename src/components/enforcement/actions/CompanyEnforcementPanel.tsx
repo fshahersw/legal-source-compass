@@ -52,6 +52,7 @@ export function CompanyEnforcementPanel({ cik, className }: { cik: string; class
       /** DOJ/SEC: the headline figure, with the largest stated figure below it when it differs. */
       headline: HeadlineFigure | null;
       largest: number | null;
+      noneReason: string | null;
       /** FTC: the ordered amount as listed. */
       ordered: number | null;
       note: string | null;
@@ -65,6 +66,7 @@ export function CompanyEnforcementPanel({ cik, className }: { cik: string; class
         url: r.url,
         headline: r.headline,
         largest: r.maxResolutionUsd,
+        noneReason: r.headlineNoneReason,
         ordered: null,
         note: r.components[0] ?? null,
       })),
@@ -76,6 +78,7 @@ export function CompanyEnforcementPanel({ cik, className }: { cik: string; class
         url: s.url,
         headline: s.headline,
         largest: s.maxResolutionUsd,
+        noneReason: s.headlineNoneReason,
         ordered: null,
         note: s.type,
       })),
@@ -87,6 +90,7 @@ export function CompanyEnforcementPanel({ cik, className }: { cik: string; class
         url: a.page ?? a.sourceUrl,
         headline: null,
         largest: null,
+        noneReason: null,
         ordered: a.orderedAmount,
         note: a.actionType,
       })),
@@ -98,6 +102,7 @@ export function CompanyEnforcementPanel({ cik, className }: { cik: string; class
         url: c.url,
         headline: null,
         largest: null,
+        noneReason: null,
         ordered: null,
         note: [c.actionType, c.status].filter(Boolean).join(" · ") || null,
       })),
@@ -141,7 +146,12 @@ export function CompanyEnforcementPanel({ cik, className }: { cik: string; class
                   {i.ordered != null ? (
                     <span title="Ordered amount, as the FTC lists it">{fmtUsd(i.ordered)}</span>
                   ) : (
-                    <FigureCell headline={i.headline} largest={i.largest} none="—" />
+                    <FigureCell
+                      headline={i.headline}
+                      largest={i.largest}
+                      noneReason={i.noneReason}
+                      none="—"
+                    />
                   )}
                 </td>
               </tr>

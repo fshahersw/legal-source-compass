@@ -208,13 +208,22 @@ export function FigureCell({
   headline,
   largest,
   none,
+  noneReason = null,
 }: {
   headline: HeadlineFigure | null;
   largest: number | null;
   none: string;
+  /** Set when every figure the release states is about an earlier or separate matter. */
+  noneReason?: string | null;
 }) {
-  const v = figureView(headline, largest);
-  if (!v.primary) return <span className="font-sans text-muted-foreground">{none}</span>;
+  const v = figureView(headline, largest, noneReason);
+  if (!v.primary)
+    return (
+      <span className="font-sans text-muted-foreground" title={v.note ?? undefined}>
+        {v.secondary ? "Earlier figures only" : none}
+        {v.secondary ? <span className="block text-[11px]">{v.secondary}</span> : null}
+      </span>
+    );
   return (
     <span title={v.note ?? undefined}>
       {v.primary}
@@ -231,11 +240,20 @@ export function FigureCell({
 export function HeadlineDetail({
   headline,
   largest,
+  noneReason = null,
 }: {
   headline: HeadlineFigure | null;
   largest: number | null;
+  noneReason?: string | null;
 }) {
-  if (!headline) return <span className="text-muted-foreground">None stated</span>;
+  if (!headline)
+    return (
+      <span className="text-muted-foreground">
+        {noneReason && largest != null
+          ? `Earlier figures only: the release states ${fmtUsd(largest)}, but every resolution figure is in a sentence about an event two or more months earlier (six for SEC releases) or a separate matter, so none is shown as this release’s own.`
+          : "None stated"}
+      </span>
+    );
   return (
     <span className="block">
       <span className="font-mono font-medium">{headline.asWritten}</span>{" "}

@@ -21,6 +21,7 @@ import {
   parseFtcCase,
   parseHeadline,
   parseOfficialSettlement,
+  qualifierBefore,
   parseSecAction,
   readAll,
   secActionsPath,
@@ -173,6 +174,7 @@ describe("headline figure", () => {
       source: "title",
       sentence: null,
       keyword: null,
+      qualifier: null,
       differsFromLargest: true,
     });
     expect(r.maxResolutionUsd).toBe(2.3e9);
@@ -183,23 +185,45 @@ describe("headline figure", () => {
   it("needs the sentence for a figure read from the text", () => {
     const sentence = "Pfizer Inc. has agreed to pay $14.5 million to resolve allegations.";
     expect(
-      parseHeadline({
-        as_written: "$14.5 million",
-        value_usd: 14.5e6,
-        source: "first resolution sentence",
-        sentence,
-        keyword: "settlement",
-      }),
+      parseHeadline(
+        {
+          as_written: "$14.5 million",
+          value_usd: 14.5e6,
+          source: "first resolution sentence",
+          sentence,
+          keyword: "settlement",
+        },
+        "",
+      ),
     ).toMatchObject({ source: "first resolution sentence", sentence, differsFromLargest: false });
     expect(
-      parseHeadline({
-        as_written: "$14.5 million",
-        value_usd: 14.5e6,
-        source: "first resolution sentence",
-      }),
+      parseHeadline(
+        {
+          as_written: "$14.5 million",
+          value_usd: 14.5e6,
+          source: "first resolution sentence",
+        },
+        "",
+      ),
     ).toBeNull();
-    expect(parseHeadline({ as_written: "$1", value_usd: 1, source: "largest" })).toBeNull();
-    expect(parseHeadline({ as_written: "n/a", value_usd: 1, source: "title" })).toBeNull();
+    expect(parseHeadline({ as_written: "$1", value_usd: 1, source: "largest" }, "$1")).toBeNull();
+    expect(parseHeadline({ as_written: "n/a", value_usd: 1, source: "title" }, "n/a")).toBeNull();
+  });
+  it("keeps the approximation written before the figure", () => {
+    const title = "Pfizer Agrees to Pay Nearly 60M to Resolve False Claims Allegations";
+    const head = parseHeadline(
+      { as_written: "60M", value_usd: 6e7, source: "title", differs_from_largest: true },
+      title,
+    )!;
+    expect(head.qualifier).toBe("nearly");
+    expect(figureView(head, 59.75e6)).toMatchObject({
+      primary: "nearly $60 million",
+      secondary: "also states $59.75 million",
+    });
+    expect(qualifierBefore("ordered to pay more than $910,000 as restitution", "$910,000")).toBe(
+      "more than",
+    );
+    expect(qualifierBefore("ordered to pay $910,000", "$910,000")).toBeNull();
   });
   it("shows the largest figure as a second line only when it differs", () => {
     const head = parseDojRelease(DETROL, "d")!.headline;
@@ -211,6 +235,23 @@ describe("headline figure", () => {
     expect(figureView({ ...head!, differsFromLargest: false }, 14.5e6).secondary).toBeNull();
     expect(figureView(null, 5e6)).toMatchObject({ primary: "$5 million", secondary: null });
     expect(figureView(null, null).primary).toBeNull();
+  });
+  it("shows no figure of its own when every figure is about another matter", () => {
+    const reason = "only figures about an earlier or separate matter";
+    const r = parseDojRelease(
+      {
+        id: "doj-pr:643fb749-6cd5-47d5-888a-63ba227b88c2",
+        title: "U.S. Files Suit Against Johnson & Johnson for Paying Kickbacks",
+        r: { max_resolution_amount_usd: 98e6, headline_figure: null, headline_none_reason: reason },
+      },
+      "doj_press_releases_2010",
+    )!;
+    expect(r.headline).toBeNull();
+    expect(figureView(r.headline, r.maxResolutionUsd, r.headlineNoneReason)).toEqual({
+      primary: null,
+      secondary: "states $98 million",
+      note: reason,
+    });
   });
   it("SEC litigation releases carry the headline figure too", () => {
     const s = parseSecAction({

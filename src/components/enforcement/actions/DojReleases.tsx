@@ -25,7 +25,7 @@ import {
   SearchBox,
 } from "./bits";
 import { dojOverviewQuery } from "./actionsView";
-import { figureView, fmtInt, fmtUsd } from "./format";
+import { figureView, fmtInt, fmtUsd, headlineText } from "./format";
 
 export function DojReleases() {
   const q = useQuery(dojOverviewQuery);
@@ -333,6 +333,7 @@ function ReleaseTable({ rows, stale }: { rows: DojRelease[]; stale: boolean }) {
                       headline={r.headline}
                       largest={r.maxResolutionUsd}
                       none="None stated"
+                      noneReason={r.headlineNoneReason}
                     />
                   </td>
                 </tr>
@@ -373,7 +374,11 @@ function ReleaseDetail({ release: r }: { release: DojRelease }) {
         </DetailRow>
       ) : null}
       <DetailRow label="Headline figure">
-        <HeadlineDetail headline={r.headline} largest={r.maxResolutionUsd} />
+        <HeadlineDetail
+          headline={r.headline}
+          largest={r.maxResolutionUsd}
+          noneReason={r.headlineNoneReason}
+        />
       </DetailRow>
       <DetailRow
         label={`Dollar figures stated${r.amountsTotal > r.amounts.length ? ` (first ${r.amounts.length} of ${r.amountsTotal})` : ""}`}
@@ -463,7 +468,7 @@ function Largest() {
                     className="shrink-0 text-[11px] text-muted-foreground"
                     title={figureView(r.headline, r.maxResolutionUsd).note ?? undefined}
                   >
-                    headline figure {fmtUsd(r.headline.valueUsd)}
+                    headline figure {headlineText(r.headline)}
                   </span>
                 ) : null}
                 {count > 1 ? (

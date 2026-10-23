@@ -116,20 +116,34 @@ def check_headline(head, title, body_text, fails, checked, max_res):
 RESOLUTION = {"settlement", "penalty or fine", "restitution", "forfeiture", "disgorgement", "judgment"}
 
 
-def check_headline_order(head, amounts, fails, checked):
+EARLIER_MARK = re.compile(r"(?:19|20)\d{2}|previously|separate|earlier|prior", re.I)
+
+
+def check_headline_order(head, amounts, fails, checked, none_reason=None):
     """From the stored figures (reading order): without a title figure, the headline is the first stored figure whose
-    sentence has a resolution keyword (not a stock paragraph, readable, under $1 trillion); a release with such a
-    figure always has a headline."""
-    first = next((a for a in amounts if a.get("keyword") in RESOLUTION and not a.get("boilerplate")
-                  and a.get("value_usd") is not None and a["value_usd"] < 1e12), None)
-    if first is None:
+    sentence has a resolution keyword (not a stock paragraph, readable, under $1 trillion), after the k figures the
+    builder skipped as being about an earlier or separate matter (each skipped sentence must name a year or say
+    previously/separate/earlier/prior); a release with such a figure has a headline unless it says why not."""
+    quals = [a for a in amounts if a.get("keyword") in RESOLUTION and not a.get("boilerplate")
+             and a.get("value_usd") is not None and a["value_usd"] < 1e12]
+    if not quals:
         return
     checked["headline_order_checks"] += 1
     if not head:
-        fails["headline_missing"] += 1
-    elif head["source"] == "first resolution sentence" and (
-            head["as_written"] != first["as_written"] or not squash(head.get("sentence")).startswith(squash(first.get("sentence"))[:150])):
-        fails["headline_not_first_resolution_figure"] += 1
+        if not none_reason:
+            fails["headline_missing"] += 1
+        elif not all(EARLIER_MARK.search(a.get("sentence") or "") for a in quals):
+            fails["headline_none_but_undated_resolution_sentence"] += 1
+        return
+    if head["source"] != "first resolution sentence":
+        return
+    k = head.get("earlier_matter_figures_skipped", 0)
+    if not all(EARLIER_MARK.search(a.get("sentence") or "") for a in quals[:k]):
+        fails["headline_skipped_an_undated_sentence"] += 1
+    if len(quals) > k:
+        target = quals[k]
+        if head["as_written"] != target["as_written"] or not squash(head.get("sentence")).startswith(squash(target.get("sentence"))[:150]):
+            fails["headline_not_first_resolution_figure"] += 1
 
 
 # ---------------------------------------------------------------- DOJ
@@ -206,7 +220,7 @@ def verify_doj(n, headline_only=False):
             if a.get("sentence") and squash(a["sentence"]) not in body_text:
                 fails["amount_sentence_not_in_body"] += 1
         check_headline(rel.get("headline_figure"), title, body_text, fails, checked, rel["max_resolution_amount_usd"])
-        check_headline_order(rel.get("headline_figure"), rel["amounts"], fails, checked)
+        check_headline_order(rel.get("headline_figure"), rel["amounts"], fails, checked, rel.get("headline_none_reason"))
         for s in rel["statutes"]:
             checked["statutes"] += 1
             if squash(s["as_written"]) not in body_text:
@@ -383,7 +397,7 @@ def verify_sec(n):
         check_headline(s.get("headline_figure"), s.get("title") or "", page, fails, checked, s["max_resolution_amount_usd"])
         if s.get("headline_figure") and s["headline_figure"]["source"] == "title" and squash(s["headline_figure"]["as_written"]) not in page:
             fails["headline_title_not_in_page"] += 1
-        check_headline_order(s.get("headline_figure"), s["amounts"], fails, checked)
+        check_headline_order(s.get("headline_figure"), s["amounts"], fails, checked, s.get("headline_none_reason"))
     fails = Counter({k: v for k, v in fails.items() if v})
     result = {"dataset": "sec_enforcement_actions", "lr_listed": len(lr_numbers), "ap_listed": len(ap_numbers),
               "lr_built": len(built_lr), "ap_built": len(built_ap), "lr_text_read": len(with_text), "checked": dict(checked),

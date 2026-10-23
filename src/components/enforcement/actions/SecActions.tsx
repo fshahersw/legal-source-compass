@@ -221,6 +221,7 @@ function SecTable({ rows, stale }: { rows: SecAction[]; stale: boolean }) {
                       headline={r.headline}
                       largest={r.maxResolutionUsd}
                       none={r.type === "Litigation release" ? "None stated" : "Not in the list"}
+                      noneReason={r.headlineNoneReason}
                     />
                   </td>
                 </tr>
@@ -239,7 +240,11 @@ function SecTable({ rows, stale }: { rows: SecAction[]; stale: boolean }) {
                               <CourtList courts={r.courts} />
                             </DetailRow>
                             <DetailRow label="Headline figure">
-                              <HeadlineDetail headline={r.headline} largest={r.maxResolutionUsd} />
+                              <HeadlineDetail
+                                headline={r.headline}
+                                largest={r.maxResolutionUsd}
+                                noneReason={r.headlineNoneReason}
+                              />
                             </DetailRow>
                             <DetailRow label="Dollar figures stated">
                               <AmountList amounts={r.amounts} />
