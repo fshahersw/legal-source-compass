@@ -8,12 +8,14 @@ import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { BodyLines, Fact, Footnotes, StatusBadge } from "@/components/uscode/UsCodeText";
 import { RegulationsUnderSectionPanel } from "@/components/authorities/RegulationsUnderSectionPanel";
 import { pageHead } from "@/lib/corpus/head";
+import { cn } from "@/lib/utils";
 import {
   getUsCodeSection,
   getUsCodeSectionLaws,
   govinfoEditionUrl,
   LINK_KIND_LABELS,
   containerLabel,
+  containerSmallCaps,
   smartTitle,
   STATUS_LABELS,
   TITLE_KEY,
@@ -136,7 +138,10 @@ function SectionBody({ s }: { s: UscSection }) {
                   to="/law/uscode/$title"
                   params={{ title: s.title }}
                   search={{ q: undefined, c: p.index }}
-                  className="hover:text-foreground hover:underline"
+                  className={cn(
+                    "hover:text-foreground hover:underline",
+                    containerSmallCaps(p.num) && "[font-variant:small-caps]",
+                  )}
                 >
                   {containerLabel(p.num, p.heading)}
                 </Link>

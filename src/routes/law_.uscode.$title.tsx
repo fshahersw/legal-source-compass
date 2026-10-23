@@ -13,6 +13,7 @@ import {
   getUsCodeTitle,
   searchUsCodeTitle,
   containerLabel,
+  containerSmallCaps,
   smartTitle,
   TITLE_KEY,
   type OutlineNode,
@@ -353,7 +354,14 @@ function Outline({
                     : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                 )}
               >
-                <span className="min-w-0 flex-1">{containerLabel(n.num, n.heading)}</span>
+                <span
+                  className={cn(
+                    "min-w-0 flex-1",
+                    containerSmallCaps(n.num) && "[font-variant:small-caps]",
+                  )}
+                >
+                  {containerLabel(n.num, n.heading)}
+                </span>
                 <span className="shrink-0 font-mono text-[11px]">{fmt(n.total)}</span>
               </button>
             </div>
@@ -423,7 +431,12 @@ function ContainerPanel({
   return (
     <section aria-label="Contents" className="min-w-0 rounded-lg border border-border bg-surface">
       <header className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-border/70 px-4 py-2.5">
-        <h2 className="m-0 text-sm font-semibold">
+        <h2
+          className={cn(
+            "m-0 text-sm font-semibold",
+            node.depth !== 0 && containerSmallCaps(node.num) && "[font-variant:small-caps]",
+          )}
+        >
           {node.depth === 0 ? `Title ${title}` : containerLabel(node.num, node.heading)}
         </h2>
         <span className="text-[11px] text-muted-foreground">{fmt(node.total)} units</span>
@@ -438,7 +451,14 @@ function ContainerPanel({
                 onClick={() => onSelect(k.index)}
                 className="flex w-full items-baseline gap-3 px-4 py-1.5 text-left text-[13px] hover:bg-muted/50"
               >
-                <span className="min-w-0 flex-1">{containerLabel(k.num, k.heading)}</span>
+                <span
+                  className={cn(
+                    "min-w-0 flex-1",
+                    containerSmallCaps(k.num) && "[font-variant:small-caps]",
+                  )}
+                >
+                  {containerLabel(k.num, k.heading)}
+                </span>
                 <span className="font-mono text-[11px] text-muted-foreground">{fmt(k.total)}</span>
               </button>
             </li>

@@ -186,12 +186,24 @@ export function smartTitle(text: string): string {
   });
 }
 
-/** "CHAPTER 21—" + "CIVIL RIGHTS" -> "Chapter 21—Civil Rights" (OLRC prints these in capitals). */
+/**
+ * OLRC marks some levels (most subparts) `class="small-caps"` and stores their text in lower case ("subpart i—" /
+ * "general"); its own pages print them in small capitals. Those are the only levels whose printed number starts with a
+ * lower-case letter, so that is the test.
+ */
+export function containerSmallCaps(num: string | null): boolean {
+  return /^\[?[a-z]/.test((num ?? "").trim());
+}
+
+/**
+ * "CHAPTER 21—" + "CIVIL RIGHTS" -> "CHAPTER 21—CIVIL RIGHTS": the designation and heading exactly as OLRC prints
+ * them (capitals stay capitals; nothing is re-cased). A level with neither is "Not recorded".
+ */
 export function containerLabel(num: string | null, heading: string | null): string {
   const n = (num ?? "").trim();
-  const h = smartTitle((heading ?? "").trim());
-  if (!n) return h || "Untitled";
-  return /[—–-]$/.test(n) ? `${smartTitle(n)}${h}` : `${smartTitle(n)} ${h}`.trim();
+  const h = (heading ?? "").trim();
+  if (!n) return h || "Not recorded";
+  return /[—–-]$/.test(n) ? `${n}${h}` : `${n} ${h}`.trim();
 }
 
 /** Decode a section's stored lines (see scripts/enrichment/uscode/bodytext.py). */

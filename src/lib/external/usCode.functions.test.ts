@@ -17,6 +17,8 @@ import {
   parseCitationQuery,
   parseLaw,
   parseLines,
+  containerLabel,
+  containerSmallCaps,
   parseLink,
   parseOutline,
   parseReleasePoint,
@@ -325,5 +327,20 @@ describe("queries and links", () => {
     expect(smartTitle("CIVIL RIGHTS")).toBe("Civil Rights");
     expect(smartTitle("TITLE II—CHILDREN'S PROGRAMS")).toBe("Title II—Children's Programs");
     expect(smartTitle("Already mixed")).toBe("Already mixed");
+  });
+
+  it("labels outline levels as OLRC prints them, without re-casing", () => {
+    expect(containerLabel("CHAPTER 21—", "CIVIL RIGHTS")).toBe("CHAPTER 21—CIVIL RIGHTS");
+    expect(containerLabel("[CHAPTER 3—", "REPEALED]")).toBe("[CHAPTER 3—REPEALED]");
+    expect(containerLabel("Article 1", "General Provisions")).toBe("Article 1 General Provisions");
+    expect(containerLabel(null, "Organization of Federal Land Banks")).toBe(
+      "Organization of Federal Land Banks",
+    );
+    expect(containerLabel(null, null)).toBe("Not recorded");
+    // OLRC's small-caps levels are stored in lower case and printed in small capitals.
+    expect(containerLabel("subpart i—", "general")).toBe("subpart i—general");
+    expect(containerSmallCaps("subpart i—")).toBe(true);
+    expect(containerSmallCaps("CHAPTER 401—")).toBe(false);
+    expect(containerSmallCaps(null)).toBe(false);
   });
 });
