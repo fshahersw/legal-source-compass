@@ -26,7 +26,8 @@ import {
 export const EMBEDDING_MODEL = "voyage-law-2";
 const DEFAULT_EMBEDDING_URL = "https://api.voyageai.com/v1/embeddings";
 const EMBED_TIMEOUT_MS = 10_000;
-const RECORD_ID = /^[A-Za-z0-9:._@/-]{1,200}$/;
+/** Record ids as the index stores them; CFR appendix and supplement ids carry spaces, commas, brackets and "§". */
+const RECORD_ID = /^[A-Za-z0-9:._@/~ ,()[\]§-]{1,200}$/;
 
 export type Deps = {
   fetch: typeof fetch;

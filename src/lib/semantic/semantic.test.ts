@@ -420,10 +420,27 @@ describe("relatedSemantic", () => {
     });
   });
 
+  it("accepts the record ids the index stores, appendix and supplement ids included", async () => {
+    const { d, rpcCalls } = deps();
+    for (const id of [
+      "cfr:12:Supplement I to Part 1002",
+      "cfr:40:Appendix A-7 to Part 60",
+      "cfr:21:Pt. 101, App. B",
+      "cfr:26:1.401(a)(4)-1",
+      "cfr:7:[Reserved] § 1.1",
+      "28:2071~",
+    ])
+      expect((await relatedSemantic("ecfr_sections_full", id, 8, null, d)).status).not.toBe(
+        "invalid",
+      );
+    expect(rpcCalls).toHaveLength(6);
+  });
+
   it("validates the dataset and the record id", async () => {
     const { d, rpcCalls } = deps();
     expect((await relatedSemantic("open_us_law", "1", 8, null, d)).status).toBe("invalid");
-    expect((await relatedSemantic("us_code_sections", "a b", 8, null, d)).status).toBe("invalid");
+    for (const bad of ["a\nb", 'x"y', "<b>", " ".repeat(201)])
+      expect((await relatedSemantic("us_code_sections", bad, 8, null, d)).status).toBe("invalid");
     expect((await relatedSemantic("us_code_sections", "1:1", 8, ["nope"], d)).status).toBe(
       "invalid",
     );
