@@ -122,8 +122,9 @@ def _is_class(el: Any, name: str) -> bool:
 
 
 def html_text(fragment: str | bytes | None, *, encoding: str | None = None, drop_tags: Iterable[str] = ()) -> str:
-    """Render an HTML fragment/document to plain text: block elements become line breaks, inline text joins,
-    entities are decoded, markup never survives. Returns norm_lines() output."""
+    """Render an HTML fragment/document to plain text: block elements (and <br>) become line breaks, raw newlines
+    inside text are ordinary whitespace (except inside <pre>), entities are decoded, markup never survives.
+    Returns norm_lines() output."""
     if fragment is None:
         return ""
     if isinstance(fragment, bytes):
@@ -131,47 +132,45 @@ def html_text(fragment: str | bytes | None, *, encoding: str | None = None, drop
     if not fragment.strip():
         return ""
     drop = set(_DROP_TAGS) | {t.lower() for t in drop_tags}
-    try:
-        from lxml import html as lxml_html  # type: ignore
+    from lxml import html as lxml_html  # type: ignore
 
-        root = lxml_html.fragment_fromstring(fragment, create_parent="div") if "<html" not in fragment[:2000].lower() else lxml_html.document_fromstring(fragment)
-        out: list[str] = []
+    head = fragment[:3000].lower()
+    root = lxml_html.document_fromstring(fragment) if ("<html" in head or "<body" in head) else lxml_html.fragment_fromstring(fragment, create_parent="div")
+    out: list[str] = []
+    BR = "\x1e"
 
-        def walk(el: Any) -> None:
-            tag = el.tag.lower() if isinstance(el.tag, str) else ""
-            if not isinstance(el.tag, str):  # comments / processing instructions
-                if el.tail:
-                    out.append(el.tail)
-                return
-            if tag in drop:
-                if el.tail:
-                    out.append(el.tail)
-                return
-            block = tag in _BLOCK_TAGS
-            if block:
-                out.append("\n")
-            if tag in ("td", "th"):
-                out.append(" ")
-            if el.text:
-                out.append(el.text)
-            previous = None
-            for child in el:
-                if previous is not None and _is_class(child, "denominator") and _is_class(previous, "numerator"):
-                    out.append("/")
-                walk(child)
-                previous = child
-            if block:
-                out.append("\n")
-            if el.tail:
-                out.append(el.tail)
+    def flat(text: str | None, pre: bool) -> str:
+        if not text:
+            return ""
+        return text.replace("\r", "").replace("\n", BR) if pre else text.replace("\r", " ").replace("\n", " ")
 
-        walk(root)
-        return norm_lines("".join(out))
-    except ImportError:  # pragma: no cover - lxml is present on this machine
-        text = re.sub(r"(?is)<(script|style|noscript|head)[^>]*>.*?</\1>", " ", fragment)
-        text = re.sub(r"(?i)<br\s*/?>|</?(?:p|div|li|tr|h[1-6]|table|blockquote|pre|center|dd|dt)\b[^>]*>", "\n", text)
-        text = re.sub(r"<[^>]+>", "", text)
-        return norm_lines(_html.unescape(text))
+    def walk(el: Any, pre: bool) -> None:
+        if not isinstance(el.tag, str):  # comments / processing instructions
+            out.append(flat(el.tail, pre))
+            return
+        tag = el.tag.lower()
+        if tag in drop:
+            out.append(flat(el.tail, pre))
+            return
+        inner_pre = pre or tag == "pre"
+        block = tag in _BLOCK_TAGS
+        if block:
+            out.append(BR)
+        if tag in ("td", "th"):
+            out.append(" ")
+        out.append(flat(el.text, inner_pre))
+        previous = None
+        for child in el:
+            if previous is not None and _is_class(child, "denominator") and _is_class(previous, "numerator"):
+                out.append("/")
+            walk(child, inner_pre)
+            previous = child
+        if block:
+            out.append(BR)
+        out.append(flat(el.tail, pre))
+
+    walk(root, False)
+    return norm_lines("".join(out).replace(BR, "\n"))
 
 
 def decode_bytes(body: bytes, encoding: str | None = None) -> str:
@@ -197,26 +196,28 @@ def decode_bytes(body: bytes, encoding: str | None = None) -> str:
 
 
 def xml_text(body: bytes | str) -> str:
-    """Plain-text rendering of an XML document (all text nodes, element boundaries as line breaks)."""
+    """Plain-text rendering of an XML document: element boundaries are line breaks, raw newlines inside text are
+    ordinary whitespace."""
     from xml.etree import ElementTree as ET
 
     if isinstance(body, str):
         body = body.encode("utf-8")
     root = ET.fromstring(body)
     out: list[str] = []
+    BR = "\x1e"
 
     def walk(el: ET.Element) -> None:
-        out.append("\n")
+        out.append(BR)
         if el.text:
-            out.append(el.text)
+            out.append(el.text.replace("\n", " "))
         for child in el:
             walk(child)
-        out.append("\n")
+        out.append(BR)
         if el.tail:
-            out.append(el.tail)
+            out.append(el.tail.replace("\n", " "))
 
     walk(root)
-    return norm_lines(_html.unescape("".join(out)))
+    return norm_lines(_html.unescape("".join(out)).replace(BR, "\n"))
 
 
 def pdf_text(body: bytes) -> str:
@@ -268,10 +269,10 @@ def caml_text(body: bytes | str) -> str:
         if name == "span" and el.get("class") in _CAML_SPACES and not len(el) and not (el.text or ""):
             out.append(_CAML_SPACES[el.get("class")])
         elif name == "br":
-            out.append("\n")
+            out.append("\x1e")
         else:
             if el.text:
-                out.append(el.text)
+                out.append(el.text.replace("\n", " "))
             children = list(el)
             for index, child in enumerate(children):
                 if name == "Fraction" and local(child) == "Denominator" and index > 0:
@@ -280,12 +281,12 @@ def caml_text(body: bytes | str) -> str:
                     out.append(" ")
                 walk(child)
                 if child.tail:
-                    out.append(child.tail)
+                    out.append(child.tail.replace("\n", " "))
             if name in ("p", "h1", "h2", "h3", "tr", "table", "li", "div"):
-                out.append("\n")
+                out.append("\x1e")
 
     walk(root)
-    return norm_lines("".join(out))
+    return norm_lines("".join(out).replace("\x1e", "\n"))
 
 
 def render_text(body: bytes, content_type: str | None = None, url: str | None = None) -> str:
@@ -532,6 +533,11 @@ class Fetched:
         }
 
 
+def safe_url(url: str) -> str:
+    """Percent-encode characters a publisher leaves raw in its links (spaces, non-ASCII); idempotent."""
+    return urllib.parse.quote(url, safe=":/?&=%#+,;@!$'()*~[]")
+
+
 def utcnow() -> str:
     return _dt.datetime.now(_dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
@@ -617,7 +623,7 @@ class Fetcher:
 
     # transport --------------------------------------------------------------------------------------------
     def _raw_get(self, url: str, headers: dict, data: bytes | None) -> tuple[int, dict, bytes, str]:
-        request = urllib.request.Request(url, data=data, headers={"User-Agent": self.user_agent, "Accept-Encoding": "gzip", **headers})
+        request = urllib.request.Request(safe_url(url), data=data, headers={"User-Agent": self.user_agent, "Accept-Encoding": "gzip", **headers})
         try:
             with self._opener.open(request, timeout=self.timeout) as response:
                 body = response.read(self.max_bytes + 1)
@@ -687,7 +693,7 @@ class Fetcher:
         if not self.allowed(url):
             raise Blocked(f"robots.txt disallows {url}")
         self._wait(url)
-        request = urllib.request.Request(url, headers={"User-Agent": self.user_agent, **(headers or {})})
+        request = urllib.request.Request(safe_url(url), headers={"User-Agent": self.user_agent, **(headers or {})})
         try:
             response = self._opener.open(request, timeout=self.timeout)
         except urllib.error.HTTPError as error:
