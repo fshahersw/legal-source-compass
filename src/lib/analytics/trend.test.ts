@@ -12,8 +12,10 @@ import {
   describePeriod,
   formatChange,
   formatCount,
+  formatPct,
   formatTick,
   formatUsd,
+  formatValue,
   longDate,
   markedPeriod,
   periodLabel,
@@ -61,6 +63,15 @@ describe("formatting", () => {
     expect(formatTick(1_200_000)).toBe("1.2M");
     expect(formatTick(2_000_000)).toBe("2M");
     expect(formatTick(1500, "usd")).toBe("$1.5k");
+  });
+  it("writes percentages with one decimal and ticks as whole percents", () => {
+    expect(formatPct(74.53)).toBe("74.5%");
+    expect(formatPct(100)).toBe("100.0%");
+    expect(formatPct(0)).toBe("0.0%");
+    expect(formatPct(null)).toBe("Not recorded");
+    expect(formatValue(74.53, "pct")).toBe("74.5%");
+    expect(formatValue(12, "count")).toBe("12");
+    expect(formatTick(74.53, "pct")).toBe("75%");
   });
 });
 
@@ -221,6 +232,17 @@ describe("change text", () => {
     expect(formatChange({ comparedWith: "2024", previousValue: 5, absolute: 0, percent: 0 })).toBe(
       "0 (0.0%) vs 2024",
     );
+  });
+  it("writes a change in a percentage series in percentage points, never as a percent of a percent", () => {
+    expect(
+      formatChange(
+        { comparedWith: "August 2026", previousValue: 71.2, absolute: 3.3, percent: 4.6 },
+        "pct",
+      ),
+    ).toBe("+3.3 percentage points vs August 2026");
+    expect(
+      formatChange({ comparedWith: "2025", previousValue: 80, absolute: -1.25, percent: -1.6 }, "pct"),
+    ).toBe("−1.3 percentage points vs 2025");
   });
   it("reads the direction", () => {
     expect(changeDirection({ comparedWith: "x", previousValue: 1, absolute: 2, percent: 1 })).toBe(

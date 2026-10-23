@@ -25,7 +25,8 @@ export type TrendSeries = {
   points: TrendPoint[];
 };
 
-export type ValueFormat = "count" | "usd";
+/** `pct` values are percentages (0-100) the block states a base for; a change in a `pct` series is in percentage points. */
+export type ValueFormat = "count" | "usd" | "pct";
 
 export type LatestSummary = {
   /** Period the latest value belongs to, as shown ("FY2025", "October 2026", "118th Congress"). */
@@ -99,12 +100,18 @@ export function formatUsd(v: number | null | undefined): string {
   return `$${v.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
 }
 
-export function formatValue(v: number | null | undefined, format: ValueFormat): string {
-  return format === "usd" ? formatUsd(v) : formatCount(v);
+/** "74.5%" with one decimal; a missing value is Not recorded. */
+export function formatPct(v: number | null | undefined): string {
+  return finite(v) ? `${v.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%` : NOT_RECORDED;
 }
 
-/** Compact axis tick ("12k", "1.4M"); counts only. */
+export function formatValue(v: number | null | undefined, format: ValueFormat): string {
+  return format === "usd" ? formatUsd(v) : format === "pct" ? formatPct(v) : formatCount(v);
+}
+
+/** Compact axis tick ("12k", "1.4M", "70%"). */
 export function formatTick(v: number, format: ValueFormat = "count"): string {
+  if (format === "pct") return `${Math.round(v)}%`;
   const abs = Math.abs(v);
   const prefix = format === "usd" ? "$" : "";
   const pick = (n: number, unit: string) => {
@@ -232,6 +239,8 @@ export function formatChange(
   format: ValueFormat = "count",
 ): string {
   const sign = change.absolute > 0 ? "+" : change.absolute < 0 ? "−" : "";
+  if (format === "pct")
+    return `${sign}${Math.abs(change.absolute).toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} percentage points vs ${change.comparedWith}`;
   const abs = formatValue(Math.abs(change.absolute), format);
   const pct =
     change.percent === null
