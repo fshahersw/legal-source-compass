@@ -69,7 +69,7 @@ def load_row(m: dict, vec: np.ndarray) -> dict:
         "char_end": m["char_end"],
         "text_sha256": m["text_sha256"],
         "title": m["title"],
-        "href": m["href"],
+        "href": src.encode_href(m["href"]),
         "source_url": m["source_url"] or "",
         "snippet": m["snippet"],
         "embedding": vector_text(vec),
@@ -83,7 +83,10 @@ def copy_escape(value: object) -> str:
 
 
 def copy_line(m: dict, vec: np.ndarray) -> str:
-    values = [m[c] if c != "source_url" else (m["source_url"] or None) for c in COPY_COLUMNS]
+    values = [
+        src.encode_href(m["href"]) if c == "href" else (m[c] if c != "source_url" else (m["source_url"] or None))
+        for c in COPY_COLUMNS
+    ]
     return "\t".join([*map(copy_escape, values), vector_text(vec)]) + "\n"
 
 

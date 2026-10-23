@@ -233,7 +233,7 @@ class SourceTests(unittest.TestCase):
                                "item": {"oversight": {"oig": "Smithsonian Institution OIG", "agency_reviewed": "Smithsonian Institution", "type": "Inspection / Evaluation",
                                                       "description": "This evaluation determined the extent."}}})
         self.assertIn("Description: This evaluation determined the extent.", o.text)
-        self.assertEqual(o.href, "/records/oversight_reports/ovr:1")
+        self.assertEqual(o.href, "/records/oversight_reports/ovr%3A1")
         d = src.doj_oig_doc({"id": "dojoig:a", "title": "Semiannual Report", "source_url": "https://oig.justice.gov/a",
                              "item": {"dojoig": {"type": "Semiannual Report", "components": [], "description": None, "entity": None, "location": None}}})
         self.assertEqual(d.text, "Report type: Semiannual Report")
@@ -244,6 +244,20 @@ class SourceTests(unittest.TestCase):
                          "detail": {"crs": {"title": "ESSA", "topics": ["Education"], "contentType": "Resources"}}})
         self.assertEqual(c.text, "Topics: Education\nType: Resources")
         self.assertIsNone(src.crs_doc({"id": "x", "detail": {"crs": {}}}))
+
+    def test_in_app_paths_are_encoded_like_the_apps_own_links_and_idempotently(self):
+        self.assertEqual(src.encode_href("/law/cfr/2/Appendix A to Part 25"), "/law/cfr/2/Appendix%20A%20to%20Part%2025")
+        self.assertEqual(src.encode_href("/law/uscode/41/41+42"), "/law/uscode/41/41%2B42")
+        self.assertEqual(src.encode_href("/records/oversight_reports/ovr:0267ee"), "/records/oversight_reports/ovr%3A0267ee")
+        once = src.encode_href("/law/cfr/2/Appendix A to Part 25")
+        self.assertEqual(src.encode_href(once), once)
+        self.assertEqual(src.encode_href("/law/cfr/17/240.10b-5"), "/law/cfr/17/240.10b-5")
+        for bad in ("law/x", "/x?y=1", "/x#z"):
+            with self.assertRaises(ValueError):
+                src.encode_href(bad)
+        row = {"id": "cfr:2:Appendix A to Part 25", "title": "2 CFR Appendix A to Part 25", "text": "Text of the appendix.",
+               "detail": {"title_number": "2", "identifier": "Appendix A to Part 25"}}
+        self.assertEqual(src.cfr_doc(row).href, "/law/cfr/2/Appendix%20A%20to%20Part%2025")
 
     def test_every_dataset_has_a_label_and_a_composition_flag(self):
         for ds in list(src.ITERATORS) + ["caselaw_scotus"]:

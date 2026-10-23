@@ -71,6 +71,16 @@ LABELS = {
 _WS = re.compile(r"\s+")
 
 
+def encode_href(path: str) -> str:
+    """In-app path with every segment percent-encoded the way the app's own links are (encodeURIComponent: spaces, '+', ':' and
+    '/' inside a segment are escaped). Idempotent: an already encoded segment is decoded first, so it is never encoded twice."""
+    from urllib.parse import quote, unquote
+
+    if not path.startswith("/") or "?" in path or "#" in path:
+        raise ValueError(f"not an in-app path: {path!r}")
+    return "/" + "/".join(quote(unquote(seg), safe="!~*'()") for seg in path[1:].split("/"))
+
+
 def _one_line(value: Any) -> str:
     return _WS.sub(" ", value).strip() if isinstance(value, str) else ""
 
@@ -139,7 +149,7 @@ def usc_doc(row: dict, titles: dict[str, str]) -> Doc | None:
         title=_one_line(row.get("title")) or citation,
         heading=" > ".join(trail),
         text=text,
-        href=f"/law/uscode/{title}/{key}",
+        href=encode_href(f"/law/uscode/{title}/{key}"),
         source_url=row.get("source_url") or None,
         max_chunks=60,
     )
@@ -176,7 +186,7 @@ def cfr_doc(row: dict) -> Doc | None:
         title=title,
         heading=f"Code of Federal Regulations > {where} > {title}" if where else f"Code of Federal Regulations > {title}",
         text=text,
-        href=f"/law/cfr/{title_no}/{ident}",
+        href=encode_href(f"/law/cfr/{title_no}/{ident}"),
         source_url=d.get("ecfr_url") or row.get("source_url") or None,
         max_chunks=60,
     )
@@ -209,7 +219,7 @@ def crs_doc(row: dict) -> Doc | None:
         title=_one_line(row.get("title")) or title,
         heading=f"Congressional Research Service > {title}",
         text=body or title,
-        href=f"/records/crs_reports/{rid}",
+        href=encode_href(f"/records/crs_reports/{rid}"),
         source_url=row.get("source_url") or None,
         max_chunks=2,
     )
@@ -256,7 +266,7 @@ def bill_doc(row: dict) -> Doc | None:
         parts.append("Summary:\n" + "\n".join(summary))
     rid = str(row["id"])
     typ, number, congress = str(b.get("type") or ""), str(b.get("number") or ""), b.get("congress")
-    href = (
+    href = encode_href(
         f"/law/legislation/federal/{congress}/{typ}/{number}"
         if congress and typ and number
         else f"/records/congress_bills/{rid}"
@@ -308,7 +318,7 @@ def oversight_doc(row: dict) -> Doc | None:
         title=title,
         heading=f"Inspector General report > {title}",
         text=body or title,
-        href=f"/records/oversight_reports/{rid}",
+        href=encode_href(f"/records/oversight_reports/{rid}"),
         source_url=row.get("source_url") or None,
         max_chunks=3,
     )
@@ -336,7 +346,7 @@ def doj_oig_doc(row: dict) -> Doc | None:
         title=title,
         heading=f"Department of Justice Inspector General report > {title}",
         text=body or title,
-        href=f"/records/doj_oig_reports/{rid}",
+        href=encode_href(f"/records/doj_oig_reports/{rid}"),
         source_url=row.get("source_url") or None,
         max_chunks=3,
     )
@@ -357,7 +367,7 @@ def ftc_publication_doc(row: dict) -> Doc | None:
         title=title,
         heading=f"Federal Trade Commission > {title}",
         text=body or title,
-        href=f"/records/ftc_publications_index/{rid}",
+        href=encode_href(f"/records/ftc_publications_index/{rid}"),
         source_url=item.get("page_url") or row.get("source_url") or None,
         max_chunks=3,
     )
