@@ -41,7 +41,9 @@ describe("bounded published search ranking", () => {
       if (path.startsWith("corpus_records?select=id,state&dataset=eq.court_spine")) return { rows: courts, total: courts.length };
       const encoded = path.split("&id=in.")[1]!.split("&dataset=")[0]!;
       const ids = JSON.parse(`[${decodeURIComponent(encoded).slice(1, -1)}]`) as string[];
-      return { rows: records.filter((record) => ids.includes(record.id)), total: null };
+      const scope = path.split("&dataset=in.")[1]?.split("&")[0];
+      const allowed = scope ? (JSON.parse(`[${decodeURIComponent(scope).slice(1, -1)}]`) as string[]) : null;
+      return { rows: records.filter((record) => ids.includes(record.id) && (!allowed || allowed.includes(record.dataset))), total: null };
     });
   }
   it("finds a real MDL beyond the ordinal candidate page without querying unpublished datasets", async () => {
@@ -92,5 +94,77 @@ describe("bounded published search ranking", () => {
     const held = await searchPublishedCorpus("talc", 0, 50);
     expect(held.matches[0]).toMatchObject({ state: null, stateBasis: null });
     expect(vi.mocked(restGet).mock.calls.some(([path]) => path.includes("dataset=eq.court_spine"))).toBe(false);
+  });
+});
+
+describe("identity lookups at the size of the published catalog", () => {
+  beforeEach(() => vi.resetAllMocks());
+  it("splits the dataset filter so every lookup path stays bounded and each record is read once", async () => {
+    // 287 ready datasets encode to more than the whole path budget; the search used to throw before any lookup
+    const datasets = Array.from(
+      { length: 287 },
+      (_, i) => `published_dataset_${String(i).padStart(3, "0")}`,
+    ).concat("mdls");
+    const mdlItem = {
+      id: "mdl:2738",
+      mdl_number: 2738,
+      title: "IN RE: Johnson & Johnson Talcum Powder Products Liability Litigation",
+    };
+    const reportItem = { id: "R12345", title: "Talc and asbestos: a report" };
+    const records: SearchRecord[] = [
+      {
+        id: "2738",
+        dataset: "mdls",
+        title: mdlItem.title,
+        state: null,
+        category: null,
+        source_url: null,
+        item: mdlItem,
+      },
+      {
+        id: "R12345",
+        dataset: "published_dataset_200",
+        title: reportItem.title,
+        state: null,
+        category: null,
+        source_url: null,
+        item: reportItem,
+      },
+    ];
+    const paths: string[] = [];
+    vi.mocked(restGet).mockImplementation(async (path) => {
+      if (path.startsWith("corpus_datasets?"))
+        return { rows: datasets.map((id) => ({ id })), total: datasets.length };
+      paths.push(path);
+      const ids = JSON.parse(
+        `[${decodeURIComponent(path.split("&id=in.")[1]!.split("&dataset=")[0]!).slice(1, -1)}]`,
+      ) as string[];
+      const scope = JSON.parse(
+        `[${decodeURIComponent(path.split("&dataset=in.")[1]!.split("&")[0]!).slice(1, -1)}]`,
+      ) as string[];
+      return {
+        rows: records.filter((r) => ids.includes(r.id) && scope.includes(r.dataset)),
+        total: null,
+      };
+    });
+    vi.mocked(rpcPost).mockImplementation(async (_fn, body) =>
+      body["p_datasets"] instanceof Array && body["p_datasets"].length === 1
+        ? { items: [mdlItem], total: 1 }
+        : { items: [reportItem, mdlItem], total: 2 },
+    );
+    const result = await searchPublishedCorpus("talc", 0, 50);
+    expect(result.matches.map((m) => `${m.record.dataset}/${m.record.id}`).sort()).toEqual([
+      "mdls/2738",
+      "published_dataset_200/R12345",
+    ]);
+    const lookups = paths.filter((p) => p.startsWith("corpus_records?select=id,dataset"));
+    expect(lookups.length).toBeGreaterThan(1);
+    for (const p of lookups) expect(p.length).toBeLessThanOrEqual(7000);
+    // every published dataset is in exactly one dataset filter
+    const scopes = new Set(lookups.map((p) => p.split("&dataset=in.")[1]!.split("&")[0]!));
+    const covered = [...scopes].flatMap(
+      (s) => JSON.parse(`[${decodeURIComponent(s).slice(1, -1)}]`) as string[],
+    );
+    expect(covered.sort()).toEqual([...datasets].sort());
   });
 });

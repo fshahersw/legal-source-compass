@@ -15,8 +15,13 @@ import {
   searchState,
 } from "./searchQuality";
 import { exactCourtLocations } from "@/lib/corpus/courtLocations";
+import { mapLimit } from "@/lib/analytics/tally.server";
 
 const SEARCH_CANDIDATES = 500;
+/** Longest PostgREST lookup path the search sends, and the share of it a dataset filter may take. */
+const LOOKUP_PATH_BUDGET = 7000;
+const DATASET_FILTER_BUDGET = 3000;
+const LOOKUP_CONCURRENCY = 6;
 const PRIORITY_CANDIDATES = 250;
 /**
  * Entity datasets that get their own bounded pass, so a matter, judge, court or registry hit never depends on its
@@ -132,19 +137,34 @@ export async function searchPublishedCorpus(q: string, offset: number, pageSize:
   ]);
   const items = passes.flatMap((pass) => pass.items);
   const ids = candidateRecordIds(items);
-  const records: SearchRecord[] = [];
-  // Bound URL size as well as row count; reused IDs may occur in multiple published datasets.
+  // Bound URL size as well as row count; reused IDs may occur in multiple published datasets. The published catalog's
+  // dataset ids no longer fit in one lookup path beside the record ids (287 datasets encode to about 8,400 characters),
+  // so both lists are split and every pair is read: exact ids and exact datasets, as before, in more requests that run
+  // with bounded concurrency. Results keep the order of one unsplit lookup (record-id chunk, then dataset, then id).
   const lookupPrefix =
     "corpus_records?select=id,dataset,title,state,source_url,category,item&id=in.";
-  const lookupSuffix = `&dataset=in.${inFilter(datasets)}&order=dataset.asc,id.asc`;
-  for (const chunk of candidateIdChunks(ids, 7000 - lookupPrefix.length - lookupSuffix.length)) {
-    const path = `${lookupPrefix}${inFilter(chunk)}${lookupSuffix}`;
-    for (let start = 0; start < chunk.length * datasets.length; start += 500) {
+  const lookupOrder = "&order=dataset.asc,id.asc";
+  const datasetChunks = candidateIdChunks(
+    datasets,
+    DATASET_FILTER_BUDGET,
+    Number.POSITIVE_INFINITY,
+  );
+  const longestScope = Math.max(...datasetChunks.map((c) => `&dataset=in.${inFilter(c)}`.length));
+  const lookups = candidateIdChunks(
+    ids,
+    LOOKUP_PATH_BUDGET - lookupPrefix.length - longestScope - lookupOrder.length,
+  ).flatMap((chunk) => datasetChunks.map((scope) => ({ chunk, scope })));
+  const pages = await mapLimit(lookups, LOOKUP_CONCURRENCY, async ({ chunk, scope }) => {
+    const path = `${lookupPrefix}${inFilter(chunk)}&dataset=in.${inFilter(scope)}${lookupOrder}`;
+    const rows: SearchRecord[] = [];
+    for (let start = 0; start < chunk.length * scope.length; start += 500) {
       const page = await restGet<SearchRecord[]>(path, { range: [start, start + 499] });
-      records.push(...page.rows);
+      rows.push(...page.rows);
       if (page.rows.length < 500) break;
     }
-  }
+    return rows;
+  });
+  const records = pages.flat();
   const resolved = passes.map((pass) =>
     resolveSearchIdentities(
       pass.items,

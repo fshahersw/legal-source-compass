@@ -62,12 +62,20 @@ export function inFilter(values: readonly string[]): string {
 }
 
 /** Preserve exact IDs while bounding encoded lookup paths, including long source-qualified identities. */
-export function candidateIdChunks(ids: readonly string[], encodedBudget: number): string[][] {
+export function candidateIdChunks(
+  ids: readonly string[],
+  encodedBudget: number,
+  maxItems = 40,
+): string[][] {
   const chunks: string[][] = [];
   let chunk: string[] = [];
   for (const id of ids) {
-    if (inFilter([id]).length > encodedBudget) throw new Error("A search identity exceeds the bounded lookup path.");
-    if (chunk.length && (chunk.length >= 40 || inFilter([...chunk, id]).length > encodedBudget)) {
+    if (inFilter([id]).length > encodedBudget)
+      throw new Error("A search identity exceeds the bounded lookup path.");
+    if (
+      chunk.length &&
+      (chunk.length >= maxItems || inFilter([...chunk, id]).length > encodedBudget)
+    ) {
       chunks.push(chunk);
       chunk = [];
     }
