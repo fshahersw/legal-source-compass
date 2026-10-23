@@ -92,7 +92,7 @@ export function CourtDirectory({
                   <td className="px-2 py-1.5 text-right font-mono tabular-nums">
                     {fmtInt(t.cases)}
                   </td>
-                  <td className="px-2 py-1.5 text-right font-mono tabular-nums">
+                  <td className="whitespace-nowrap px-2 py-1.5 text-right font-mono tabular-nums">
                     {fmtInt(t.withText)}
                   </td>
                   <td className="px-3 py-1.5 text-muted-foreground">
@@ -171,13 +171,13 @@ export function CourtDirectory({
                     </Link>
                   </td>
                   <td className="px-2 py-1.5 text-muted-foreground">{TIER_PLURAL[c.tier]}</td>
-                  <td className="px-2 py-1.5 text-muted-foreground">
+                  <td className="whitespace-nowrap px-2 py-1.5 text-muted-foreground">
                     {c.jurisdiction ? stateLabel(c.jurisdiction) : NOT_RECORDED}
                   </td>
                   <td className="px-2 py-1.5 text-right font-mono tabular-nums">
                     {fmtInt(c.cases)}
                   </td>
-                  <td className="px-3 py-1.5 text-right font-mono tabular-nums">
+                  <td className="whitespace-nowrap px-3 py-1.5 text-right font-mono tabular-nums">
                     {fmtInt(c.casesWithText)}
                   </td>
                 </tr>

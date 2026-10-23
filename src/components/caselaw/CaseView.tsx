@@ -33,7 +33,9 @@ export function CaseFacts({ r }: { r: CaseRecord }) {
         <Fact label="Court">{r.court}</Fact>
         <Fact label="Court level">
           {TIER_LABEL[r.tier]}
-          {r.courtLevel && COURT_LEVEL_LABEL[r.courtLevel] ? (
+          {r.courtLevel &&
+          COURT_LEVEL_LABEL[r.courtLevel] &&
+          COURT_LEVEL_LABEL[r.courtLevel] !== TIER_LABEL[r.tier] ? (
             <span className="text-muted-foreground">
               {" "}
               · CourtListener: {COURT_LEVEL_LABEL[r.courtLevel]}

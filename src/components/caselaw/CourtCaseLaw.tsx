@@ -45,7 +45,9 @@ export function CourtCaseLaw({
           <dt className="text-muted-foreground">Court level</dt>
           <dd>
             {TIER_PLURAL[c.tier]}
-            {c.level && COURT_LEVEL_LABEL[c.level] ? (
+            {c.level &&
+            COURT_LEVEL_LABEL[c.level] &&
+            !TIER_PLURAL[c.tier]?.startsWith(COURT_LEVEL_LABEL[c.level]!) ? (
               <span className="text-muted-foreground">
                 {" "}
                 · CourtListener: {COURT_LEVEL_LABEL[c.level]}
