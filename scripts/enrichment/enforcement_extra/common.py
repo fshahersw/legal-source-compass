@@ -270,6 +270,13 @@ def facts_pairs(facts: list[tuple[str, object]], optional: list[tuple[str, objec
     return out
 
 
+def with_source(row: dict) -> dict:
+    """Copy the row's source_url into its detail so the record page shows it as the 'Original source' link
+    (the corpus detail function returns detail fields, not the row's source_url column)."""
+    row["detail"]["source_url"] = row["source_url"]
+    return row
+
+
 def compact(d: dict) -> dict:
     """Drop None and empty-string values (readers treat a missing key as 'Not recorded')."""
     return {k: v for k, v in d.items() if v is not None and v != ""}

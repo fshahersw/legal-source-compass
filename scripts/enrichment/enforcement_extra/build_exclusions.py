@@ -22,7 +22,7 @@ import os
 import sys
 import zipfile
 
-from common import ACQ, LOOKUPS, NOT_RECORDED, compact, latest_manifest, write_build
+from common import ACQ, LOOKUPS, NOT_RECORDED, compact, latest_manifest, with_source, write_build
 from exclusions import (
     LEIE_AUTHORITIES,
     LEIE_AUTHORITIES_URL,
@@ -193,10 +193,10 @@ def build_sam() -> dict:
         filters = {k: v for k, v in filters.items() if v}
         subtitle = " · ".join(p for p in (f["classification"], f["agency"] or "Agency not recorded") if p)
         text = " ".join(p for p in (f["xref"], f["city"], state_text, f["uei"], f["cage"], f["npi"]) if p)
-        rows.append(lean_record(
+        rows.append(with_source(lean_record(
             "sam_exclusions", f"sam:{f['sam_number']}", f["name"], SAM_RECORD_URL.format(f["sam_number"]),
             cells, detail, text, filters, subtitle, links, f["usps"],
-        ))
+        )))
     rows.sort(key=lambda r: (r["title"].lower(), r["id"]))
     top = lambda c, n=60: [{"value": k, "records": v} for k, v in c.most_common(n)]  # noqa: E731
     summary = {
@@ -316,9 +316,9 @@ def build_leie() -> dict:
                 filters["company"] = [cik]
             subtitle = " · ".join(p for p in (f["general"], f"§{f['ssa_section']}" if f["ssa_section"] else f["code"]) if p)
             text = " ".join(p for p in (f["business"], f["specialty"], f["city"], f["state"], f["npi"]) if p)
-            rows.append(lean_record(
+            rows.append(with_source(lean_record(
                 "oig_leie_exclusions", rid, f["name"], LEIE_URL, cells, detail, text, filters, subtitle, links, f["usps"],
-            ))
+            )))
     rows.sort(key=lambda r: (r["title"].lower(), r["id"]))
     top = lambda c, n=60: [{"value": k, "records": v} for k, v in c.most_common(n)]  # noqa: E731
     summary = {

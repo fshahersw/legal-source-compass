@@ -21,7 +21,7 @@ import os
 import sys
 import zipfile
 
-from common import ACQ, LOOKUPS, compact, latest_manifest, write_build
+from common import ACQ, LOOKUPS, compact, latest_manifest, with_source, write_build
 from eousa import charge_title, code_tables, count, court_id_for, open_text, read_rows
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
@@ -193,6 +193,7 @@ def build() -> str:
                               cells={"district": "All districts", "criminal_records": d7_total, "gov_defendant_cases": national["government_defendant_cases"]},
                               facts=facts, text="U.S. Attorneys national caseload release counts", filters={"scope": ["national"]},
                               subtitle=f"{d7_total:,} criminal lead-charge records", links=[], extra={"profile": national}))
+    rows = [with_source(r) for r in rows]
     rows.sort(key=lambda r: r["id"])
     summary = {
         "source": {"publisher": "U.S. Department of Justice, Executive Office for United States Attorneys", "page": PAGE,

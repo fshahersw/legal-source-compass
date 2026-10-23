@@ -15,7 +15,7 @@ import re
 import os
 import sys
 
-from common import ACQ, BUILD, compact, manifest_entries, write_build
+from common import ACQ, BUILD, compact, manifest_entries, with_source, write_build
 from fsis import parse_listing, usps_codes
 from fsis_summaries import parsed as official_totals
 
@@ -136,7 +136,7 @@ def build() -> str:
             state=codes[0] if len(codes) == 1 else "",
         )
         row["detail"] = {"id": row["id"], "title": row["title"], "subtitle": row["item"]["subtitle"], **detail, "links": links}
-        rows.append(row)
+        rows.append(with_source(row))
     rows.sort(key=lambda r: (r["item"]["cells"].get("date") or "", r["id"]), reverse=True)
     comparison = []
     for y in sorted(official):

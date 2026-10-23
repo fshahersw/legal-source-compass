@@ -18,7 +18,7 @@ import os
 import re
 import sys
 
-from common import ACQ, compact, latest_manifest, write_build
+from common import ACQ, compact, latest_manifest, with_source, write_build
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import corpus_writer as writer  # noqa: E402
@@ -140,6 +140,7 @@ def build() -> str:
             subtitle=f"{len(tables)} tables · {period.group(1).strip() if period else ''}", links=[],
             extra={"tables": tables},
         ))
+    rows = [with_source(r) for r in rows]
     summary = {
         "source": {"publisher": "USDA Food Safety and Inspection Service", "index": INDEX_URL,
                    "retrieval": "PDFs read through the Firecrawl scrape service's PDF text rendering (FSIS answers this environment with an Akamai 403; not bypassed).",

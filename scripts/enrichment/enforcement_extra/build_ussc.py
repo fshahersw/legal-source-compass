@@ -15,7 +15,7 @@ import json
 import os
 import sys
 
-from common import ACQ, BUILD, MANIFEST, PRIVATE, download, latest_manifest, manifest_append, require_space, utc_now, write_build
+from common import ACQ, BUILD, PRIVATE, download, latest_manifest, manifest_append, require_space, utc_now, with_source, write_build
 from ussc import aggregate, available_variables, iter_csv, iter_fixed, summarize_unit
 from ussc_codes import CODEBOOK_URL, DATAFILES_PAGE, DISTRICTS, OFFENSE_TABLES, RANGE_SCHEMES, SENTIMP, datafile_url, range_candidates, year_spec
 
@@ -170,6 +170,7 @@ def assemble() -> str:
                 text=f"{name} federal sentencing FY{fy} {' '.join(o['label'] for o in top)}", filters=filters,
                 subtitle=subtitle, links=links, state=state, extra={"profile": profile},
             ))
+    rows = [with_source(r) for r in rows]
     rows.sort(key=lambda r: (r["item"]["profile"]["fy"], r["id"]))
     summary = {
         "source": {
