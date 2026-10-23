@@ -166,6 +166,9 @@ def listing_entries(body: bytes, base: str, hosts: set[str], ov: dict, audit: li
         if why:
             audit.append({"url": e.url, "name": e.name_text, "reason": f"not a sitting judge: {why}"})
             continue
+        if re.search(r"[-/_]opinions?(?:[-/_.]|$)", urllib.parse.urlparse(e.url).path, re.I):  # "Judge Glenn Opinions": a list of decisions, not the judge's page
+            audit.append({"url": e.url, "name": e.name_text, "reason": "an opinions index, not the judge's own page"})
+            continue
         if ov.get("exclude_href_regex") and re.search(ov["exclude_href_regex"], e.url):
             continue
         if e.url not in out or (e.name_text and not out[e.url].name_text):

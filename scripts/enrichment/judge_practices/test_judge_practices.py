@@ -413,7 +413,7 @@ class AppAdapters(unittest.TestCase):
             out = ac.crawl({"level": "district"}, {}, False, False, result)
         by = {j["name"]: j for j in out["judges"]}
         self.assertEqual(set(by), {"Dolly M. Gee", "Percy Anderson", "Alka Sagar"})  # the "Visiting" placeholder is not a person
-        self.assertTrue(any("placeholder 'Visiting'" in p for p in out["problems"]))
+        self.assertTrue(any("placeholder 'Visiting District Judge'" in p for p in out["problems"]))
         gee = by["Dolly M. Gee"]
         self.assertEqual((gee["title_as_published"], gee["title_class"]), ("Chief Judge", "chief_district_judge"))
         self.assertEqual(gee["page_url"], "https://apps.cacd.uscourts.gov/Jps/honorable-dolly-m-gee")

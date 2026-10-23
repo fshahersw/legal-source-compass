@@ -5,6 +5,6 @@
   "urlAlias": "honorable-percy-anderson", "documents": [], "webPage": null},
  {"id": "11111111-2222-3333-4444-555555555555", "initials": "MJ1", "title": "Magistrate Judge", "name": "Alka Sagar", "titleType": "MJ",
   "urlAlias": "honorable-alka-sagar", "documents": [], "webPage": null},
- {"id": "66666666-7777-8888-9999-000000000000", "initials": "VIS", "title": "Visiting District Judge", "name": "Visiting", "titleType": "DJV",
+ {"id": "66666666-7777-8888-9999-000000000000", "initials": "VIS", "title": "Visiting District Judge", "name": "Visiting District Judge", "titleType": "DJV",
   "urlAlias": "honorable-visiting-district-judge", "documents": [], "webPage": null}
 ]
