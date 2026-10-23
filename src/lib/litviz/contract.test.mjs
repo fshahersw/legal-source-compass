@@ -677,3 +677,73 @@ test("the contract is idempotent: applying it twice and refreshing again keeps t
   assert.equal(after.series_rows, before.series_rows);
   assert.deepEqual(after.by_series, before.by_series);
 });
+
+test("with the citation index v2 installed, citations come from its resolved edges (mentions counted once)", async () => {
+  const v2 = await setup();
+  await v2.exec(`
+    create schema citations;
+    create table citations.authorities (key text primary key, kind text, resolution text, link_type text, link_id text);
+    create table citations.edges (citing_type text, citing_id text, key text, kind text, relation text, mentions integer,
+      first_page integer, pages integer[]);
+    create table citations.occurrences (src text, src_id text, page integer, seq integer, kind text, key text);
+    -- the view as published by citations-v2.sql (it sums mentions after unnesting pages)
+    create view citations.document_links as
+      select e.citing_id as document_id, a.link_type as to_type, a.link_id as to_id, e.relation, 'exact_id'::text as evidence,
+             sum(e.mentions)::integer as mentions, min(e.first_page) as first_page
+        from citations.edges e
+        join citations.authorities a on a.key = e.key and a.resolution = 'resolved' and a.link_type is not null
+        cross join lateral unnest(e.pages) p
+       where e.citing_type = 'document'
+       group by e.citing_id, a.link_type, a.link_id, e.relation;
+    insert into citations.authorities values
+      ('509 U.S. 579', 'case', 'resolved', 'record', 'caselaw/111'),
+      ('113 S. Ct. 2786', 'case', 'resolved', 'record', 'caselaw/111'),
+      ('28 U.S.C. § 1332', 'usc', 'resolved', 'law_unit', 'usc:28:1332'),
+      ('999 F.4th 1', 'case', 'not_in_corpus', null, null),
+      ('1 F.3d 1', 'case', 'unresolved', null, null),
+      ('2 F.3d 2', 'case', 'ambiguous', null, null),
+      ('933 F.3d 591', 'case', 'resolved', 'record', 'caselaw/222');
+    insert into citations.edges values
+      ('document', 'd_000000000000000000000001', '509 U.S. 579', 'case', 'cites', 2, 3, '{3,4}'),
+      ('document', 'd_000000000000000000000001', '113 S. Ct. 2786', 'case', 'cites', 1, 5, '{5}'),
+      ('document', 'd_000000000000000000000001', '999 F.4th 1', 'case', 'cites', 1, 6, '{6}'),
+      ('document', 'd_000000000000000000000002', '28 U.S.C. § 1332', 'usc', 'cites', 1, 2, '{2}'),
+      ('document', 'd_000000000000000000000004', '933 F.3d 591', 'case', 'cites', 5, 1, '{1}');
+    insert into citations.occurrences values
+      ('pdf', 'sha-d_000000000000000000000001', 6, 0, 'case', '999 F.4th 1'),
+      ('pdf', 'sha-d_000000000000000000000001', 7, 0, 'case', '1 F.3d 1'),
+      ('pdf', 'sha-d_000000000000000000000001', 7, 1, 'case', '2 F.3d 2'),
+      ('pdf', 'sha-d_000000000000000000000001', 8, 0, 'case', '509 U.S. 579');
+  `);
+  const q = async (s, p = []) => (await v2.query(s, p)).rows[0]?.v ?? null;
+  const counts = await q("select public.litviz_refresh_v1($1::date) as v", [TODAY]);
+  assert.equal(counts.citation_source, "citations_v2");
+  assert.equal((await q("select public.litviz_status_v1() as v")).citation_source, "citations_v2");
+
+  const cit = await q("select public.litviz_citations_v1('2001', 30) as v");
+  assert.deepEqual(
+    cit.authorities.map((a) => [a.key, a.filings, a.mentions]),
+    [
+      ["record|caselaw/111", 1, 3],
+      ["law_unit|usc:28:1332", 1, 1],
+    ],
+    "parallel citations of one decision are one authority; the documents layer's own links are not read",
+  );
+  assert.equal(cit.meta.citing, 2);
+  assert.equal(cit.meta.cites_unresolved, 2, "unresolved and not in the corpus");
+  assert.equal(cit.meta.cites_ambiguous, 1);
+  assert.ok(!JSON.stringify(cit).includes("caselaw/222"), "the closed document stays out");
+
+  const filing = await q("select public.litviz_filing_citations_v1('d_000000000000000000000001') as v");
+  assert.deepEqual(
+    filing.authorities.map((a) => [a.key, a.mentions, a.first_page]),
+    [["record|caselaw/111", 3, 3]],
+    "mentions are not multiplied by the pages they appear on",
+  );
+  const viaView = (
+    await v2.query(
+      "select mentions from citations.document_links where document_id = 'd_000000000000000000000001' and to_id = 'caselaw/111'",
+    )
+  ).rows[0].mentions;
+  assert.equal(viaView, 5, "the published view would have counted 5 (2 mentions on two pages, plus 1)");
+});

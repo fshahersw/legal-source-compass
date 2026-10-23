@@ -16,8 +16,9 @@
 --     by name, caption, firm or search term (AGENTS.md: explicit evidence only). Recalls and enforcement reports have
 --     no such link in the corpus, so none are attributed here; public.product_signals_v1 (worker SAFETY) supplies them
 --     when it maps them.
---   * Citations are documents.links (relation 'cites', evidence exact_id) of documents whose text the layer serves and
---     that are open under documents.is_open(); a citation is a mention, never MDL membership.
+--   * Citations are exact citations of documents whose text the layer serves and that are open under documents.is_open():
+--     the citation index v2 (citations.document_links, worker CITE) when it is installed, else documents.links (relation
+--     'cites', evidence exact_id). Both use documents/1 link ids. A citation is a mention, never MDL membership.
 --   * Court metrics are the latest complete insights facts; a judge's MDLs are those whose `mdls` record names the judge's
 --     profile with judge_match_kind = 'exact'.
 -- The series and label derivations have a TypeScript twin (src/lib/litviz/derive.ts) used while these functions are
@@ -347,6 +348,66 @@ language sql stable set search_path = '' as $$
     left join x on x.mdl = i.mdl left join t on t.mdl = i.mdl left join p on p.mdl = i.mdl
 $$;
 
+-- ------------------------------------------------------------------------------------------------ citation source
+-- Exact citations of filings, one row per (filing, authority): the citation index v2 (citations.document_links, worker
+-- CITE) when it is installed, else the documents layer's own links. Both carry documents/1 link ids (record
+-- caselaw/<cluster>, law_unit usc:<title>:<section> or cfr:<title>:<part>). p_document narrows to one filing.
+create or replace function litviz.citation_source() returns text
+language sql stable set search_path = '' as $$
+  select case when to_regclass('citations.document_links') is not null then 'citations_v2' else 'documents_links' end
+$$;
+
+create or replace function litviz.citing_links(p_document text default null)
+returns table (document_id text, to_type text, to_id text, mentions integer, first_page integer)
+language plpgsql stable set search_path = '' as $$
+begin
+  -- v2 is read from its edges, not from the citations.document_links view: the view sums mentions after unnesting
+  -- pages, which counts an edge's mentions once per page it appears on.
+  if litviz.citation_source() = 'citations_v2' then
+    return query execute
+      'select e.citing_id, a.link_type, a.link_id, sum(e.mentions)::integer, min(e.first_page)::integer
+         from citations.edges e
+         join citations.authorities a on a.key = e.key and a.resolution = ''resolved'' and a.link_type in (''record'', ''law_unit'')
+        where e.citing_type = ''document'' and e.relation = ''cites'' and ($1::text is null or e.citing_id = $1)
+        group by 1, 2, 3'
+      using p_document;
+  else
+    return query
+      select l.document_id, l.to_type, l.to_id, l.mentions::integer, l.first_page::integer from documents.links l
+       where (p_document is null or l.document_id = p_document)
+         and l.relation = 'cites' and l.evidence = 'exact_id' and l.to_type in ('record', 'law_unit');
+  end if;
+end $$;
+
+-- Case citations per MDL that resolved to no decision held (unresolved) or to more than one (ambiguous), counted per
+-- occurrence in the text, from the same source as litviz.citing_links().
+create or replace function litviz.unresolved_by_mdl()
+returns table (mdl text, unresolved integer, ambiguous integer)
+language plpgsql stable set search_path = '' as $$
+begin
+  if litviz.citation_source() = 'citations_v2' then
+    return query execute
+      'select x.mdl, (count(*) filter (where x.resolution in (''unresolved'', ''not_in_corpus'')))::integer,
+              (count(*) filter (where x.resolution = ''ambiguous''))::integer
+         from (select distinct d.mdl, o.src_id, o.page, o.seq, a.resolution
+                 from citations.occurrences o
+                 join citations.authorities a on a.key = o.key
+                 join documents.documents d on d.sha256 = o.src_id
+                where o.src = ''pdf'' and o.kind = ''case'' and a.resolution in (''unresolved'', ''not_in_corpus'', ''ambiguous'')
+                  and d.mdl ~ ''^[1-9][0-9]{0,5}$'' and d.text_status in (''text_layer'', ''partial_text'')) x
+        group by x.mdl';
+  else
+    return query
+      select x.mdl, (count(*) filter (where x.resolution = 'unresolved'))::integer,
+             (count(*) filter (where x.resolution = 'ambiguous'))::integer
+        from (select distinct d.mdl, e.sha256, e.page, e.start_offset, e.resolution
+                from documents.extractions e join documents.documents d on d.sha256 = e.sha256
+               where e.kind = 'case_citation' and e.resolution in ('unresolved', 'ambiguous')
+                 and d.mdl ~ '^[1-9][0-9]{0,5}$' and d.text_status in ('text_layer', 'partial_text')) x
+       group by x.mdl;
+  end if;
+end $$;
+
 -- ------------------------------------------------------------------------------------------------ refresh
 -- Rebuilds every litviz table from the sources (one transaction; readers see the old rows until it commits).
 create or replace function public.litviz_refresh_v1(p_today date default null) returns jsonb
@@ -366,14 +427,13 @@ begin
   insert into litviz.mdl_sources (mdl, scope, src) select r.mdl, r.scope, r.src from litviz.source_rows() r;
   get diagnostics n_sources = row_count;
 
-  -- citations of open, text-serving filings (documents.links relation 'cites', exact ids only)
+  -- citations of open, text-serving filings (exact ids only; litviz.citing_links says from which source)
   with d as (delete from litviz.citations c where c.mdl is not null returning 1) select count(*) into n from d;
   insert into litviz.citations (mdl, to_type, to_id, filings, mentions)
   select d.mdl, l.to_type, l.to_id, count(distinct d.id), sum(l.mentions)
-    from documents.links l
+    from litviz.citing_links() l
     join documents.documents d on d.id = l.document_id
-   where l.relation = 'cites' and l.evidence = 'exact_id' and l.to_type in ('record', 'law_unit')
-     and d.text_status in ('text_layer', 'partial_text') and documents.is_open(d.source_system, d.native_document_id)
+   where d.text_status in ('text_layer', 'partial_text') and documents.is_open(d.source_system, d.native_document_id)
    group by 1, 2, 3;
   get diagnostics n_cit = row_count;
 
@@ -388,11 +448,10 @@ begin
      where c.rn <= 40),
   dl as (
     select distinct d.mdl, d.id, l.to_type, l.to_id
-      from documents.links l
+      from litviz.citing_links() l
       join documents.documents d on d.id = l.document_id
       join top t on t.mdl = d.mdl and t.to_type = l.to_type and t.to_id = l.to_id
-     where l.relation = 'cites' and l.evidence = 'exact_id'
-       and d.text_status in ('text_layer', 'partial_text') and documents.is_open(d.source_system, d.native_document_id))
+     where d.text_status in ('text_layer', 'partial_text') and documents.is_open(d.source_system, d.native_document_id))
   select a.mdl, a.to_type, a.to_id, b.to_type, b.to_id, count(*)
     from dl a join dl b on b.mdl = a.mdl and b.id = a.id
      and (a.to_type || '|' || a.to_id) collate "C" < (b.to_type || '|' || b.to_id) collate "C"
@@ -460,18 +519,10 @@ begin
       from documents.documents d where d.mdl ~ '^[1-9][0-9]{0,5}$' group by d.mdl),
   cm as (
     select d.mdl, count(distinct d.id)::integer as citing
-      from documents.links l join documents.documents d on d.id = l.document_id
-     where l.relation = 'cites' and l.evidence = 'exact_id' and l.to_type in ('record', 'law_unit')
-       and d.text_status in ('text_layer', 'partial_text') and documents.is_open(d.source_system, d.native_document_id)
+      from litviz.citing_links() l join documents.documents d on d.id = l.document_id
+     where d.text_status in ('text_layer', 'partial_text') and documents.is_open(d.source_system, d.native_document_id)
      group by d.mdl),
-  um as (
-    select x.mdl, count(*) filter (where x.resolution = 'unresolved')::integer as unresolved,
-           count(*) filter (where x.resolution = 'ambiguous')::integer as ambiguous
-      from (select distinct d.mdl, e.sha256, e.page, e.start_offset, e.resolution
-              from documents.extractions e join documents.documents d on d.sha256 = e.sha256
-             where e.kind = 'case_citation' and e.resolution in ('unresolved', 'ambiguous')
-               and d.text_status in ('text_layer', 'partial_text')) x
-     group by x.mdl),
+  um as (select u.mdl, u.unresolved, u.ambiguous from litviz.unresolved_by_mdl() u),
   ids as (select dkm.mdl from dkm union select dm.mdl from dm)
   select i.mdl, dkm.ds, coalesce(dkm.total, 0), coalesce(dkm.undated, 0), coalesce(dm.filings, 0), coalesce(dm.undated, 0),
          coalesce(dm.with_text, 0), coalesce(cm.citing, 0), coalesce(um.unresolved, 0), coalesce(um.ambiguous, 0)
@@ -481,7 +532,7 @@ begin
 
   update litviz.refreshes set finished_at = now(),
     counts = jsonb_build_object('series_rows', n_series, 'mdls', n_sources, 'meta', n_meta, 'citations', n_cit,
-                                'cocitations', n_co, 'authorities', n_auth)
+                                'cocitations', n_co, 'authorities', n_auth, 'citation_source', litviz.citation_source())
    where id = v_id;
   return (select r.counts || jsonb_build_object('today', r.today, 'finished_at', r.finished_at)
             from litviz.refreshes r where r.id = v_id);
@@ -578,12 +629,29 @@ begin
                         || jsonb_build_object('filings', t.filings, 'mentions', t.mentions)
                         order by t.filings desc, t.mentions desc, t.to_type collate "C", t.to_id collate "C"), '[]'::jsonb)
                         from top t left join litviz.authorities a on a.to_type = t.to_type and a.to_id = t.to_id),
-      'edges', (select coalesce(jsonb_agg(jsonb_build_array(x.a_type || '|' || x.a_id, x.b_type || '|' || x.b_id, x.filings)
-                  order by x.filings desc, x.a_type collate "C", x.a_id collate "C", x.b_type collate "C", x.b_id collate "C"), '[]'::jsonb)
-                  from litviz.cocitations x
-                 where x.mdl = p_mdl
-                   and (x.a_type, x.a_id) in (select t.to_type, t.to_id from top t)
-                   and (x.b_type, x.b_id) in (select t.to_type, t.to_id from top t)))
+      -- a readable network: each shown authority keeps its three strongest co-citations, plus the 60 strongest overall
+      'edges', (with ex as (
+                  select x.* from litviz.cocitations x
+                   where x.mdl = p_mdl
+                     and (x.a_type, x.a_id) in (select t.to_type, t.to_id from top t)
+                     and (x.b_type, x.b_id) in (select t.to_type, t.to_id from top t)),
+                inc as (
+                  select ex.a_type, ex.a_id, ex.b_type, ex.b_id, ex.filings,
+                         row_number() over (partition by v.n_type, v.n_id
+                                            order by ex.filings desc, ex.a_type collate "C", ex.a_id collate "C",
+                                                     ex.b_type collate "C", ex.b_id collate "C") as r
+                    from ex cross join lateral (values (ex.a_type, ex.a_id), (ex.b_type, ex.b_id)) v(n_type, n_id)),
+                best as (
+                  select inc.a_type, inc.a_id, inc.b_type, inc.b_id, min(inc.filings) as filings, min(inc.r) as r
+                    from inc group by 1, 2, 3, 4),
+                ranked as (
+                  select best.*, row_number() over (order by best.filings desc, best.a_type collate "C", best.a_id collate "C",
+                                                            best.b_type collate "C", best.b_id collate "C") as g
+                    from best)
+                select coalesce(jsonb_agg(jsonb_build_array(k.a_type || '|' || k.a_id, k.b_type || '|' || k.b_id, k.filings)
+                         order by k.filings desc, k.a_type collate "C", k.a_id collate "C", k.b_type collate "C", k.b_id collate "C"),
+                         '[]'::jsonb)
+                  from ranked k where k.r <= 3 or k.g <= 60))
   );
 end $$;
 
@@ -648,8 +716,7 @@ begin
               'mdl_filings', (select c.filings from litviz.citations c where c.mdl = d.mdl and c.to_type = l.to_type and c.to_id = l.to_id),
               'all_filings', (select sum(c.filings) from litviz.citations c where c.to_type = l.to_type and c.to_id = l.to_id))
          order by l.mentions desc, l.to_type collate "C", l.to_id collate "C"), '[]'::jsonb)
-         from (select * from documents.links l0 where l0.document_id = d.id and l0.relation = 'cites'
-                  and l0.evidence = 'exact_id' and l0.to_type in ('record', 'law_unit')
+         from (select * from litviz.citing_links(d.id) l0
                 order by l0.mentions desc, l0.to_type collate "C", l0.to_id collate "C" limit 60) l
          left join litviz.authorities a on a.to_type = l.to_type and a.to_id = l.to_id) end);
 end $$;
@@ -712,7 +779,9 @@ begin
        where p_type = 'state' and e.entity_type = 'court' and e.parent_type = 'state' and e.parent_id = p_id
          and e.keys ->> 'court_type' = any (v_appellate)
       union all
-      select 'other_courts', p_id, 'Trial and other courts', '/courts?system=State&state=' || p_id, null, 600, array[]::text[]
+      select 'other_courts', p_id, 'Trial and other courts',
+             '/courts?system=' || case when p_id in ('AS', 'GU', 'MP', 'PR', 'VI') then 'Territory' else 'State' end || '&state=' || p_id,
+             null, 600, array[]::text[]
        where p_type = 'state'),
     counted as (
       select n.*,
@@ -772,6 +841,7 @@ language sql stable security definer set search_path = '' as $$
     'by_series', (select coalesce(jsonb_object_agg(series, n), '{}'::jsonb) from (select series, count(*) n from litviz.mdl_series group by 1) s),
     'mdls', (select coalesce(jsonb_object_agg(scope, n), '{}'::jsonb) from (select scope, count(*) n from litviz.mdl_sources group by 1) s),
     'citations', (select count(*) from litviz.citations),
+    'citation_source', litviz.citation_source(),
     'authorities', (select count(*) from litviz.authorities),
     'bytes', (select pg_total_relation_size('litviz.mdl_series') + pg_total_relation_size('litviz.citations')
                    + pg_total_relation_size('litviz.cocitations') + pg_total_relation_size('litviz.mdl_sources')))
@@ -782,6 +852,7 @@ declare f text;
 begin
   foreach f in array array[
     'litviz.series_rows(date)', 'litviz.source_rows()', 'litviz.last_refresh()',
+    'litviz.citation_source()', 'litviz.citing_links(text)', 'litviz.unresolved_by_mdl()',
     'litviz.authority_json(litviz.authorities,text,text)',
     'public.litviz_refresh_v1(date)', 'public.litviz_mdl_lanes_v1(text)', 'public.litviz_mdl_series_v1(text)',
     'public.litviz_citations_v1(text,integer)', 'public.litviz_citation_grid_v1(text[],integer)',

@@ -338,5 +338,10 @@ export const LITVIZ_CITATIONS: CitationAdapter = {
   },
 };
 
-/** Tried in order. Worker CITE's citations v2 adapter goes first once its RPCs are applied (see the handoff). */
+/**
+ * Tried in order. Worker CITE's citation index v2 needs no adapter of its own: once citations-v2.sql is applied,
+ * litviz-v1.sql reads its resolved edges (litviz.citing_links) at the next refresh, so these RPCs keep their shape and
+ * gain its coverage. Its own read RPCs (citations_map_v2 is a filing × authority graph, without the court, year and
+ * class labels the grid clusters by) would need an adapter here; none is needed for the views as built.
+ */
 export const CITATION_ADAPTERS: CitationAdapter[] = [LITVIZ_CITATIONS];

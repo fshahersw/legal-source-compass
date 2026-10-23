@@ -33,7 +33,7 @@ import {
 } from "./canvas";
 import type { ValueFormatter } from "./format";
 import { chartTokens, sequentialFill, seriesVar } from "./palette";
-import { linearScale, niceDomain } from "./scale";
+import { linearScale, niceDomain, type Linear } from "./scale";
 
 // ------------------------------------------------------------------------------------------------ types
 
@@ -63,6 +63,8 @@ export type LaneTrack =
       kind: "line";
       id: string;
       label: string;
+      /** Tooltip label ("Pending"); the full label otherwise. */
+      short?: string | undefined;
       unit: string;
       formatter: ValueFormatter;
       points: readonly LanePoint[];
@@ -75,6 +77,7 @@ export type LaneTrack =
       kind: "bins";
       id: string;
       label: string;
+      short?: string | undefined;
       unit: string;
       formatter: ValueFormatter;
       bins: readonly LaneBin[];
@@ -142,7 +145,8 @@ export function laneDomain(
   }
   if (until !== undefined && Number.isFinite(lo)) hi = Math.max(hi, until);
   if (!Number.isFinite(lo) || !Number.isFinite(hi)) return null;
-  return [Math.floor(lo / 12) * 12, Math.ceil((hi + 0.001) / 12) * 12];
+  const a = Math.floor(lo / 12) * 12;
+  return [a, Math.max(a + 12, Math.ceil(hi / 12) * 12)];
 }
 
 const AXIS_FONT = 10;
@@ -152,25 +156,32 @@ export function LaneAxis({
   width,
   left,
   right,
+  leftLabel,
+  rightLabel,
   className,
 }: {
   domain: readonly [number, number];
   /** Width of the plot area in px. */
   width: number;
-  /** Offset of the plot area from the left of the row. */
+  /** Offset of the plot area from the left of the row, and the width of the column right of it. */
   left: number;
   right: number;
+  /** Column headings over the label column and the right-hand column. */
+  leftLabel?: string | undefined;
+  rightLabel?: string | undefined;
   className?: string | undefined;
 }) {
   const x = linearScale([domain[0], domain[1]], [0, width]);
   const ticks = laneTicks(domain, width);
   return (
-    <div
-      aria-hidden
-      className={cn("relative h-5", className)}
-      style={{ paddingLeft: left, paddingRight: right }}
-    >
-      <svg width={width} height={20} className="block overflow-visible">
+    <div aria-hidden className={cn("relative flex h-5 items-end", className)}>
+      <span
+        className="shrink-0 truncate pl-1 text-[11px] font-medium text-muted-foreground"
+        style={{ width: left }}
+      >
+        {leftLabel}
+      </span>
+      <svg width={width} height={20} className="block shrink-0 overflow-visible">
         {ticks.map((tk) => (
           <g key={tk.t} transform={`translate(${x(tk.t)},0)`}>
             <line y1={14} y2={20} stroke="var(--chart-grid)" />
@@ -180,6 +191,12 @@ export function LaneAxis({
           </g>
         ))}
       </svg>
+      <span
+        className="shrink-0 truncate pr-1 text-right text-[11px] font-medium text-muted-foreground"
+        style={{ width: right }}
+      >
+        {rightLabel}
+      </span>
     </div>
   );
 }
@@ -219,6 +236,9 @@ export type LaneRowsProps = {
   labelWidth?: number | undefined;
   /** Fixed width (tests); measured from the container when omitted. */
   width?: number | undefined;
+  /** Headings over the label column and the right-hand value column. */
+  nameLabel?: string | undefined;
+  asideLabel?: string | undefined;
   className?: string | undefined;
 };
 
@@ -260,6 +280,8 @@ export function LaneRows({
   renderExpanded,
   labelWidth = 260,
   width: fixedWidth,
+  nameLabel,
+  asideLabel,
   className,
 }: LaneRowsProps) {
   const [ref, measured] = useMeasuredWidth<HTMLDivElement>();
@@ -335,7 +357,9 @@ export function LaneRows({
             width={plotW}
             left={lw + 8}
             right={aw + 8}
-            className="sticky top-0 z-10 bg-surface"
+            leftLabel={nameLabel}
+            rightLabel={asideLabel}
+            className="sticky top-0 z-10 border-b border-border/70 bg-surface pb-0.5"
           />
           <ul
             role="list"
@@ -361,7 +385,10 @@ export function LaneRows({
                     aria-expanded={open}
                     aria-controls={open ? panelId : undefined}
                     onFocus={() => setFocus(i)}
-                    onClick={() => onToggle(r.id)}
+                    onClick={() => {
+                      setCursor(null);
+                      onToggle(r.id);
+                    }}
                     onBlur={() => setCursor((c) => (c?.row === r.id ? null : c))}
                     className={cn(
                       "flex w-full items-center gap-2 px-0 py-0.5 text-left outline-none transition-colors hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
@@ -383,7 +410,7 @@ export function LaneRows({
                       width={plotW}
                       height={ROW_SVG_H}
                       aria-hidden
-                      className="block shrink-0 overflow-visible"
+                      className="block shrink-0 overflow-hidden"
                       onPointerMove={(e) => {
                         const p = localPoint(e);
                         setCursor({ row: r.id, t: x.invert(p.x), x: lw + 8 + p.x, y: 0 });
@@ -613,12 +640,11 @@ export function LaneTracks({
         .filter((tr) => tr.kind !== "note")
         .map((tr) => {
           const r = readTrack(tr, at);
+          // values lead; the short label and the period follow (the band label names the unit)
           return {
             key: tr.id,
-            label: `${tr.label}${r ? ` (${r.label}${r.partial ? ", partial" : ""})` : ""}`,
-            value: r
-              ? `${tr.formatter.full(r.value)}${tr.unit && !/[%$]/.test(tr.formatter.full(r.value)) ? ` ${tr.unit}` : ""}`
-              : "Not recorded",
+            label: `${tr.short ?? tr.label}${r ? ` · ${r.label}${r.partial ? ", partial" : ""}` : ""}`,
+            value: r ? tr.formatter.full(r.value) : "Not recorded",
             color: seriesVar(tr.slot ?? 0),
           };
         }),
@@ -664,7 +690,8 @@ export function LaneTracks({
     y0 += bandOf(tr) + GAP;
     return { tr, top, h: bandOf(tr) };
   });
-  const placed = width ? placeMarkerLabels(markers, x, plotL + plotW) : [];
+  const visible = markers.filter((m) => m.t >= domain[0] && m.t <= domain[1]);
+  const placed = width ? placeMarkerLabels(visible, x, plotL + plotW) : [];
   const ticks = width ? laneTicks(domain, plotW) : [];
 
   return (
@@ -696,6 +723,9 @@ export function LaneTracks({
               >
                 <line x1="0" y1="0" x2="0" y2="4" stroke="var(--chart-surface)" strokeWidth="1.5" />
               </pattern>
+              <clipPath id={`${hatch}-clip`}>
+                <rect x={plotL} y={0} width={plotW} height={height} />
+              </clipPath>
             </defs>
             {ticks.map((tk) => (
               <g key={tk.t}>
@@ -810,11 +840,13 @@ function Band({
   tr: LaneTrack;
   top: number;
   h: number;
-  x: (t: number) => number;
+  x: Linear;
   plotL: number;
   plotW: number;
   hatch: string;
 }) {
+  const clip = `url(#${hatch}-clip)`;
+  const [d0, d1] = x.domain;
   if (tr.kind === "note")
     return (
       <text x={plotL + 2} y={top + h / 2} dy="0.32em" fontSize={11} fill="var(--chart-axis)">
@@ -822,7 +854,11 @@ function Band({
       </text>
     );
   const color = seriesVar(tr.slot ?? 0);
-  const values = tr.kind === "line" ? tr.points.map((p) => p.v) : tr.bins.map((b) => b.v);
+  // the band's scale covers the values inside the visible span only
+  const values =
+    tr.kind === "line"
+      ? tr.points.filter((p) => p.t >= d0 && p.t <= d1).map((p) => p.v)
+      : tr.bins.filter((b) => b.t1 > d0 && b.t0 < d1).map((b) => b.v);
   const { domain: yd, ticks } = niceDomain(values, { zero: true, count: 2 });
   const y = linearScale(yd, [top + h, top + 2]);
   const maxTick = ticks[ticks.length - 1]!;
@@ -846,7 +882,10 @@ function Band({
       />
       <text
         x={plotL + plotW}
-        y={y(maxTick) - 3}
+        y={y(maxTick) + 10}
+        stroke="var(--chart-surface)"
+        strokeWidth={3}
+        paintOrder="stroke"
         textAnchor="end"
         fontSize={AXIS_FONT}
         fill="var(--chart-axis)"
@@ -864,70 +903,71 @@ function Band({
     return (
       <g>
         {base}
-        {segs.map((s) =>
-          s.length === 1 ? (
-            <circle
-              key={`d${s[0]!.t}`}
-              cx={x(s[0]!.t)}
-              cy={y(s[0]!.v)}
-              r={4}
-              fill={color}
-              stroke="var(--chart-surface)"
-              strokeWidth={2}
-            />
-          ) : (
-            <g key={`s${s[0]!.t}`}>
-              <path
-                d={`${s.map((p, i) => `${i ? "L" : "M"}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join("")}L${x(s[s.length - 1]!.t).toFixed(1)},${top + h}L${x(s[0]!.t).toFixed(1)},${top + h}Z`}
+        <g clipPath={clip}>
+          {segs.map((s) =>
+            s.length === 1 ? (
+              <circle
+                key={`d${s[0]!.t}`}
+                cx={x(s[0]!.t)}
+                cy={y(s[0]!.v)}
+                r={4}
                 fill={color}
-                fillOpacity={0.1}
-              />
-              <path
-                d={s
-                  .map((p, i) => `${i ? "L" : "M"}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`)
-                  .join("")}
-                fill="none"
-                stroke={color}
+                stroke="var(--chart-surface)"
                 strokeWidth={2}
-                strokeLinejoin="round"
-                strokeLinecap="round"
               />
-            </g>
-          ),
-        )}
+            ) : (
+              <g key={`s${s[0]!.t}`}>
+                <path
+                  d={`${s.map((p, i) => `${i ? "L" : "M"}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join("")}L${x(s[s.length - 1]!.t).toFixed(1)},${top + h}L${x(s[0]!.t).toFixed(1)},${top + h}Z`}
+                  fill={color}
+                  fillOpacity={0.1}
+                />
+                <path
+                  d={s
+                    .map((p, i) => `${i ? "L" : "M"}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`)
+                    .join("")}
+                  fill="none"
+                  stroke={color}
+                  strokeWidth={2}
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                />
+              </g>
+            ),
+          )}
+        </g>
       </g>
     );
   }
-  // bins: a hairline under the span the source covers; a column per recorded period
-  const lo = Math.min(...tr.bins.map((b) => b.t0));
-  const hi = Math.max(...tr.bins.map((b) => b.t1));
+  // bins: a column per recorded period over a hairline in the series colour, so a recorded zero shows as the
+  // hairline alone and a period the source does not record shows nothing at all
   return (
     <g>
       {base}
-      {tr.bins.length ? (
-        <line
-          x1={x(lo)}
-          x2={x(hi)}
-          y1={top + h}
-          y2={top + h}
-          stroke={color}
-          strokeOpacity={0.5}
-          strokeWidth={2}
-        />
-      ) : null}
-      {tr.bins.map((b) => {
-        const x0 = x(b.t0);
-        const full = x(b.t1) - x0;
-        const gap = full >= 5 ? 1 : 0;
-        const w = Math.max(0.75, full - gap);
-        const d = columnPath(x0 + gap / 2, w, y(0), y(b.v), Math.min(4, w / 2));
-        return d ? (
-          <g key={`${b.t0}`}>
-            <path d={d} fill={color} />
-            {b.partial ? <path d={d} fill={`url(#${hatch})`} /> : null}
-          </g>
-        ) : null;
-      })}
+      <g clipPath={clip}>
+        {tr.bins.map((b) => {
+          const x0 = x(b.t0);
+          const full = x(b.t1) - x0;
+          const gap = full >= 5 ? 1 : 0;
+          const w = Math.max(0.75, full - gap);
+          const d = columnPath(x0 + gap / 2, w, y(0), y(b.v), Math.min(4, w / 2));
+          return (
+            <g key={`${b.t0}`}>
+              <line
+                x1={x0 + gap / 2}
+                x2={x0 + gap / 2 + w}
+                y1={top + h - 1}
+                y2={top + h - 1}
+                stroke={color}
+                strokeOpacity={0.45}
+                strokeWidth={2}
+              />
+              {d ? <path d={d} fill={color} /> : null}
+              {d && b.partial ? <path d={d} fill={`url(#${hatch})`} /> : null}
+            </g>
+          );
+        })}
+      </g>
     </g>
   );
 }

@@ -45,8 +45,22 @@ const bins: LaneTrack = {
 describe("lane time axis", () => {
   it("steps years to fit the width and uses months for short spans", () => {
     const long = laneTicks([Y(1990), Y(2027)], 600);
-    expect(long.map((t) => t.label)).toEqual(["1990", "1995", "2000", "2005", "2010", "2015", "2020", "2025"]);
-    expect(laneTicks([Y(1990), Y(2027)], 300).map((t) => t.label)).toEqual(["1990", "2000", "2010", "2020"]);
+    expect(long.map((t) => t.label)).toEqual([
+      "1990",
+      "1995",
+      "2000",
+      "2005",
+      "2010",
+      "2015",
+      "2020",
+      "2025",
+    ]);
+    expect(laneTicks([Y(1990), Y(2027)], 300).map((t) => t.label)).toEqual([
+      "1990",
+      "2000",
+      "2010",
+      "2020",
+    ]);
     const short = laneTicks([Y(2024, 10), Y(2025, 10)], 600);
     expect(short[0]!.label).toBe("Oct 2024");
     expect(laneTicks([Y(2000), Y(2027)], 1400).length).toBeGreaterThan(5);

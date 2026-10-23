@@ -84,15 +84,20 @@ export function Network({
         // Labels: the heaviest nodes first, each kept only where it does not overlap one already placed.
         const boxes: [number, number, number, number][] = [];
         const labelled = new Set<string>();
+        // A label is centred on its node but kept inside the plot, so a node near the edge is never cut off.
+        const labelText = (l: string) => (l.length > 28 ? `${l.slice(0, 27)}…` : l);
+        const labelX = (n: { x: number; label: string }) => {
+          const half = (labelText(n.label).length * 5.6) / 2;
+          return Math.min(Math.max(n.x, half + 2), w - half - 2);
+        };
         for (const n of [...laid.nodes].sort(
           (a, b) => b.weight - a.weight || a.label.localeCompare(b.label),
         )) {
-          const text = n.label.length > 28 ? `${n.label.slice(0, 27)}…` : n.label;
-          const wdt = text.length * 5.6;
+          const wdt = labelText(n.label).length * 5.6;
           const box: [number, number, number, number] = [
-            n.x - wdt / 2,
+            labelX(n) - wdt / 2,
             n.y - r(n.weight) - 15,
-            n.x + wdt / 2,
+            labelX(n) + wdt / 2,
             n.y - r(n.weight) - 3,
           ];
           if (boxes.some((b) => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1]))
@@ -135,7 +140,7 @@ export function Network({
                   />
                   {labelled.has(n.id) || n.id === focus ? (
                     <text
-                      x={n.x}
+                      x={labelX(n)}
                       y={n.y - r(n.weight) - 4}
                       textAnchor="middle"
                       fontSize={10}
@@ -144,7 +149,7 @@ export function Network({
                       strokeWidth={3}
                       paintOrder="stroke"
                     >
-                      {n.label.length > 28 ? `${n.label.slice(0, 27)}…` : n.label}
+                      {labelText(n.label)}
                     </text>
                   ) : null}
                 </g>

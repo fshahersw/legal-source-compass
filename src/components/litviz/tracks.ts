@@ -93,11 +93,38 @@ export function seriesBins(rows: readonly SeriesRow[]): LaneBin[] {
   });
 }
 
+/** Tooltip labels of the known series. */
+export const SHORT_LABEL: Record<string, string> = {
+  jpml_pending: "Pending",
+  jpml_fy_pending: "Pending",
+  jpml_fy_closed: "Closed",
+  jpml_fy_remanded: "Remanded",
+  fjc_idb_cases: "FJC civil cases",
+  docket_entries: "Docket entries",
+  filings: "Filings",
+  filings_year: "Filings",
+  faers_reports: "FAERS reports",
+  maude_reports: "MAUDE reports",
+  adverse_events: "Adverse-event reports",
+  adverse_events_serious: "Serious reports",
+  adverse_events_death: "Reports with a death",
+  device_reports: "Device reports",
+  device_reports_death: "Death reports",
+  device_reports_injury: "Injury reports",
+  device_reports_malfunction: "Malfunction reports",
+  enforcement_reports: "Enforcement reports",
+  recalls: "Recalls",
+  complaints: "Complaints",
+  jpml_actions_added: "Change in actions",
+  jpml_motions_granted: "Motions granted",
+};
+
 const trackOf = (id: string, rows: readonly SeriesRow[], slot = 0): LaneTrack => {
   const meta = seriesMeta(id, rows[0]);
   return {
     kind: "bins",
     id,
+    short: SHORT_LABEL[id] ?? meta.label,
     label: `${meta.label} (${meta.source})`,
     unit: meta.unit,
     formatter: count,
@@ -132,6 +159,13 @@ export const DATASET_NAMES: Record<string, string> = {
   fda_faers_product_series: "FDA FAERS via openFDA",
   fda_device_event_series: "FDA MAUDE via openFDA",
   mdl_intel_jpml_stats: "JPML calendar-year statistics",
+  openfda_faers: "FDA FAERS via openFDA",
+  openfda_caers: "FDA CAERS via openFDA",
+  openfda_maude: "FDA MAUDE via openFDA",
+  openfda_enforcement: "FDA enforcement reports via openFDA",
+  openfda_device_recall: "FDA device recalls via openFDA",
+  nhtsa_recalls: "NHTSA recalls",
+  nhtsa_complaints: "NHTSA complaints",
 };
 
 /** The detailed lifecycle lane of one MDL. */
@@ -145,6 +179,7 @@ export function lifecycleTracks(rows: readonly SeriesRow[]): LaneTrack[] {
           kind: "line",
           id: "pending",
           label: "Actions pending (JPML reports)",
+          short: "Pending",
           unit: "actions",
           formatter: count,
           points: line,

@@ -43,17 +43,31 @@ const COURT_TYPE: Record<string, string> = {
   TA: "intermediate appellate (territory)",
 };
 
+const plural = (n: number, one: string, many: string) =>
+  `${n.toLocaleString("en-US")} ${n === 1 ? one : many}`;
+
+/** Router props for an in-app href that may carry a query ("/courts?system=State&state=AK"). */
+export function hrefProps(href: string): { to: string; search?: Record<string, string> } {
+  const [path, query] = href.split("?") as [string, string | undefined];
+  if (!query) return { to: path };
+  return { to: path, search: Object.fromEntries(new URLSearchParams(query)) };
+}
+
 const sublabel = (n: CourtNode): string | null => {
-  if (
-    n.type === "judges" ||
-    n.type === "states" ||
-    n.type === "other_courts" ||
-    n.type === "state" ||
-    n.type === "circuit"
-  )
-    return n.children
-      ? `${n.children.toLocaleString("en-US")} ${n.type === "judges" ? (n.id === "scotus" ? "justices" : "judges") : n.type === "states" ? "systems" : n.type === "circuit" ? "below" : "courts"}`
+  const c = n.children;
+  if (n.type === "judges")
+    return c
+      ? plural(
+          c,
+          n.id === "scotus" ? "justice" : "judge",
+          n.id === "scotus" ? "justices" : "judges",
+        )
       : null;
+  if (n.type === "states") return c ? plural(c, "system", "systems") : null;
+  if (n.type === "state" || n.type === "other_courts")
+    return c ? plural(c, "court", "courts") : null;
+  if (n.type === "circuit") return null;
+  if (n.type === "court" && n.id === "scotus") return "highest federal court";
   if (n.type === "court" && n.courtType) return COURT_TYPE[n.courtType] ?? null;
   return null;
 };
@@ -257,7 +271,7 @@ export function CourtHierarchy() {
             const n = lookup.get(item.id);
             return n?.href ? (
               <Link
-                to={n.href as never}
+                {...(hrefProps(n.href) as { to: never })}
                 tabIndex={-1}
                 className="text-foreground underline-offset-2 hover:text-primary hover:underline"
               >
@@ -269,7 +283,7 @@ export function CourtHierarchy() {
           }}
           onActivate={(item) => {
             const n = lookup.get(item.id);
-            if (n?.href) void navigate({ to: n.href as never });
+            if (n?.href) void navigate(hrefProps(n.href) as never);
           }}
         />
       ) : null}

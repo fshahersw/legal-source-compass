@@ -554,6 +554,8 @@ const judgeMdlsMemo = memo(LIVE_TTL, async () => {
 });
 
 const APPELLATE = new Set(["S", "TS", "SA", "TA"]);
+/** Territories the court directory files under its "Territory" system. */
+const TERRITORIES = new Set(["AS", "GU", "MP", "PR", "VI"]);
 const courtType = (e: EntityJson) =>
   typeof e.keys?.["court_type"] === "string" ? (e.keys["court_type"] as string) : null;
 const node = (
@@ -701,7 +703,11 @@ async function liveCourtLevel(type: CourtLevelType, id: string | null): Promise<
     nodes.push(
       node(
         "other_courts",
-        { id, label: "Trial and other courts", href: `/courts?system=State&state=${id}` },
+        {
+          id,
+          label: "Trial and other courts",
+          href: `/courts?system=${TERRITORIES.has(id) ? "Territory" : "State"}&state=${id}`,
+        },
         { children: others },
       ),
     );

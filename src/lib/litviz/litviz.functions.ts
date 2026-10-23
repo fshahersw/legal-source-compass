@@ -24,7 +24,7 @@ import {
   readProductSignals,
   type Available,
 } from "./litviz.server";
-import type { MdlDetail, ProductSignals } from "./signals";
+import { toSignalWire, type MdlDetail, type ProductSignalsWire } from "./signals";
 
 const mdlId = z.string().regex(/^[1-9][0-9]{0,5}$/);
 
@@ -63,8 +63,10 @@ export const getMdlLane = createServerFn({ method: "GET" })
 
 export const getProductSignals = createServerFn({ method: "GET" })
   .inputValidator((d: { mdl: string }) => z.object({ mdl: mdlId }).parse(d))
-  .handler(({ data }): Promise<ProductSignals | null> =>
-    readProductSignals(data.mdl).catch(fail("product signal timeline")),
+  .handler(({ data }): Promise<ProductSignalsWire | null> =>
+    readProductSignals(data.mdl)
+      .then((p) => (p ? toSignalWire(p) : null))
+      .catch(fail("product signal timeline")),
   );
 
 export const getCitationMap = createServerFn({ method: "GET" })

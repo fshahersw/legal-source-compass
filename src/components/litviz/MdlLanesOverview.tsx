@@ -39,6 +39,8 @@ const SORTS: { value: LaneSort; label: string }[] = [
   { value: "number", label: "MDL number" },
 ];
 const FROM = [1990, 2000, 2010, 2020] as const;
+/** Lanes listed at first; the reader shows more on request (the page scrolls, never a box inside it). */
+const PAGE = 30;
 
 const shortTitle = (t: string) => t.replace(/^IN RE:?\s*/i, "").replace(/^In re\s+/, "");
 
@@ -58,10 +60,11 @@ function rowSpec(l: LaneSummary, strip: "docket" | "filings"): LaneRowSpec {
     title: shortTitle(l.title),
     sublabel: sub,
     aside: latestText,
-    asideNote: when ? `pending, ${when}` : STATUS_LABEL[l.status],
+    asideNote: when ?? STATUS_LABEL[l.status],
     line: lanePoints(l),
     strip: yearBins(strip === "docket" ? l.docket : l.filings),
-    markers: mdlMarkers(l),
+    // compact lanes mark centralization and closing; the motion date is in the detail
+    markers: mdlMarkers(l).filter((m) => m.kind !== "mark"),
     summary: `MDL ${l.mdl}, ${l.title}. ${STATUS_LABEL[l.status]}. ${
       l.dates.centralized ? `Centralized ${dayLabel(l.dates.centralized)}. ` : ""
     }${latestText ? `${latestText} actions pending (${when}). ` : "Pending actions not recorded. "}${
@@ -122,6 +125,7 @@ export function MdlLanesOverview() {
   const [strip, setStrip] = useState<"docket" | "filings">("docket");
   const [from, setFrom] = useState<number>(2000);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [limit, setLimit] = useState(PAGE);
   const q = useQuery(lanesQuery(scope, decade));
   const data = q.data;
 
@@ -142,7 +146,10 @@ export function MdlLanesOverview() {
     return m;
   }, [shown, strip]);
   const stripScale = (v: number) => (stripMax > 0 ? Math.log1p(v) / Math.log1p(stripMax) : 0);
-  const rows = useMemo(() => shown.map((l) => rowSpec(l, strip)), [shown, strip]);
+  const rows = useMemo(
+    () => shown.slice(0, limit).map((l) => rowSpec(l, strip)),
+    [shown, strip, limit],
+  );
   const byId = useMemo(() => new Map(shown.map((l) => [l.mdl, l] as const)), [shown]);
 
   const readout = (id: string, t: number) => {
@@ -183,7 +190,10 @@ export function MdlLanesOverview() {
     };
   };
 
-  const set = (k: keyof LaneFilter, v: string) => setFilter((f) => ({ ...f, [k]: v || undefined }));
+  const set = (k: keyof LaneFilter, v: string) => {
+    setLimit(PAGE);
+    setFilter((f) => ({ ...f, [k]: v || undefined }));
+  };
   const filtered = Object.values(filter).some(Boolean);
   const status =
     q.isPending && !data
@@ -222,6 +232,7 @@ export function MdlLanesOverview() {
           ]}
           onChange={(v) => {
             setScope(v);
+            setLimit(PAGE);
             setExpanded(null);
             setFilter({});
             setFrom(v === "historical" ? 1990 : 2000);
@@ -396,10 +407,15 @@ export function MdlLanesOverview() {
         }
         table={data ? lanesTable(shown) : undefined}
       >
-        <div className={q.isFetching && data ? "opacity-60 transition-opacity" : undefined}>
+        <div
+          className={q.isFetching && data ? "opacity-60 transition-opacity" : undefined}
+          aria-busy={q.isFetching && data ? true : undefined}
+        >
           {rows.length ? (
-            <div className="max-h-[640px] overflow-y-auto overflow-x-hidden pr-1" tabIndex={-1}>
+            <div>
               <LaneRows
+                nameLabel="MDL"
+                asideLabel="Pending"
                 rows={rows}
                 domain={domain}
                 ariaLabel={`MDL lanes, ${rows.length} MDLs, sorted by ${SORTS.find((s) => s.value === sort)?.label.toLowerCase()}. Use the up and down arrow keys to move between MDLs and Enter to open one.`}
@@ -409,6 +425,27 @@ export function MdlLanesOverview() {
                 onToggle={(id) => setExpanded((cur) => (cur === id ? null : id))}
                 renderExpanded={(id) => <MdlLaneDetail mdl={id} showPageLink />}
               />
+              {shown.length > rows.length ? (
+                <div className="flex flex-wrap items-center gap-3 border-t border-border/60 px-1 py-2 text-[12px]">
+                  <span className="text-muted-foreground">
+                    {count.full(rows.length)} of {count.full(shown.length)} lanes listed
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setLimit((n) => n + PAGE)}
+                    className="rounded text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+                  >
+                    Show {Math.min(PAGE, shown.length - rows.length)} more
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLimit(shown.length)}
+                    className="rounded text-primary hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+                  >
+                    Show all
+                  </button>
+                </div>
+              ) : null}
             </div>
           ) : (
             <p role="status" className="py-6 text-center text-[12px] text-muted-foreground">

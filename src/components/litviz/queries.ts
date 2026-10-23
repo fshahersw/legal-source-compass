@@ -3,6 +3,7 @@
 import { keepPreviousData, queryOptions } from "@tanstack/react-query";
 import type { CourtLevelType } from "@/lib/litviz/courtTree";
 import { fromWire } from "@/lib/litviz/lanes";
+import { fromSignalWire } from "@/lib/litviz/signals";
 import {
   getCitationGrid,
   getCitationMap,
@@ -38,7 +39,10 @@ export const mdlLaneQuery = (mdl: string) =>
 export const productSignalsQuery = (mdl: string) =>
   queryOptions({
     queryKey: ["litviz", "signals", mdl],
-    queryFn: () => getProductSignals({ data: { mdl } }),
+    queryFn: async () => {
+      const w = await getProductSignals({ data: { mdl } });
+      return w ? fromSignalWire(w) : null;
+    },
     staleTime,
   });
 

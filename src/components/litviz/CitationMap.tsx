@@ -40,17 +40,42 @@ const SHORT_CLASS: Record<string, string> = {
   cfr: "C.F.R.",
 };
 
-/** Short node label: the case name (trimmed) or the provision. */
+const SUFFIX =
+  /^(inc|co|corp|corporation|company|ltd|llc|l\.l\.c|lp|plc|n\.a|fsb|jr|sr|ii|iii|et|al)\.?,?$/i;
+const ORG =
+  /&|\b(bank|company|services|pipeline|tire|manufacturing|pharmaceuticals?|electric|trucks?|transp\.?|labs?|laboratories|holdings|group|motors?|products|airlines?|technologies|systems)\b/i;
+
+/** One party of a case name, shortened: "U.S.", a city's name, an organisation's first word, a person's surname. */
+function partyShort(p: string): string | null {
+  const head = p.split(",")[0]!.trim();
+  if (/^(the )?united states( of america)?$/i.test(head)) return "U.S.";
+  const city = /^(city|county|state|town|village) of (.+)$/i.exec(head);
+  if (city) return city[2]!.split(/\s+/)[0]!;
+  const words = head.split(/\s+/).filter((w) => w && !SUFFIX.test(w));
+  if (!words.length) return null;
+  return ORG.test(head) ? words[0]! : words[words.length - 1]!;
+}
+
+/** Short node label: the provision, a short case name as is, else "<party> v. <party>" ("Sperberg v. Goodyear"). */
 export function shortAuthority(a: Pick<Authority, "kind" | "label">): string {
   if (a.kind !== "case") return a.label;
-  const t = a.label.replace(/,? (Inc|Corp|Co|Ltd|L\.L\.C|LLC)\.?(?=\b|$)/g, "");
-  return t.length > 34 ? `${t.slice(0, 33)}…` : t;
+  const name = a.label.trim();
+  if (name.length <= 24) return name;
+  const inRe = /^in re:?\s+(.+)$/i.exec(name);
+  if (inRe) return `In re ${inRe[1]!.length > 16 ? `${inRe[1]!.slice(0, 15)}…` : inRe[1]}`;
+  const parts = name.split(/\s+v\.?\s+/i);
+  if (parts.length >= 2) {
+    const a1 = partyShort(parts[0]!);
+    const a2 = partyShort(parts[1]!);
+    if (a1 && a2) return `${a1} v. ${a2}`;
+  }
+  return `${name.slice(0, 23)}…`;
 }
 
 export function authorityLine(a: Authority): string {
-  return [a.cite, a.courtLabel, a.year ? String(a.year) : null, a.heading]
-    .filter(Boolean)
-    .join(" · ");
+  // The class label already names the Supreme Court; the court is repeated only when it says more.
+  const court = a.courtLabel && a.courtLabel !== CLASS_LABEL[a.class] ? a.courtLabel : null;
+  return [a.cite, court, a.year ? String(a.year) : null, a.heading].filter(Boolean).join(" · ");
 }
 
 function AuthorityLink({ a, short = false }: { a: Authority; short?: boolean }) {
@@ -107,6 +132,12 @@ function authorityTable(
 }
 
 type View = "network" | "grid" | "compare";
+
+/** The authorities the network draws: those co-cited with another shown authority by two or more filings. */
+function linked(m: Map_) {
+  const keys = new Set(m.edges.flatMap(([a, b]) => [a, b]));
+  return m.authorities.filter((a) => keys.has(a.key));
+}
 
 export function CitationMap({ mdl }: { mdl: string }) {
   const [view, setView] = useState<View>("network");
@@ -188,15 +219,33 @@ export function CitationMap({ mdl }: { mdl: string }) {
         "Grid: rows are authorities grouped by kind (Supreme Court, courts of appeals, state high courts, U.S. Code, C.F.R.); each cell is the share of an MDL's citing filings that cite the authority.",
         "Compare: the authorities either MDL cites, shared ones first, as a share of each MDL's citing filings.",
       ]}
-      footnotes={m ? coverageNote(m.meta, m.distinct, m.authorities.length) : undefined}
+      footnotes={
+        m
+          ? [
+              ...coverageNote(m.meta, m.distinct, m.authorities.length),
+              ...(view === "network" && linked(m).length < m.authorities.length
+                ? [
+                    m.authorities.length - linked(m).length === 1
+                      ? `1 of the ${m.authorities.length} authorities is not cited together with another of them by two or more filings; it is left out of the network and listed in the table.`
+                      : `${m.authorities.length - linked(m).length} of the ${m.authorities.length} authorities are not cited together with another of them by two or more filings; they are left out of the network and listed in the table.`,
+                  ]
+                : []),
+            ]
+          : undefined
+      }
       table={
         m ? authorityTable(m.authorities, `Authorities cited in MDL No. ${mdl} filings`) : undefined
       }
     >
       {m ? (
-        view === "network" ? (
+        view === "network" && !linked(m).length ? (
+          <p role="status" className="py-6 text-[12px] text-muted-foreground">
+            No two of these authorities are cited together by two or more filings, so there is no
+            network to draw; the grid and the table list them.
+          </p>
+        ) : view === "network" ? (
           <Network
-            nodes={m.authorities.map((a) => ({
+            nodes={linked(m).map((a) => ({
               id: a.key,
               label: shortAuthority(a),
               weight: a.filings,
@@ -492,7 +541,7 @@ export function FilingCitationContext({ document }: { document: string }) {
               </svg>
               <span className="tabular-nums">
                 {a.mdlFilings !== null && total
-                  ? `${count.full(a.mdlFilings)} of ${count.full(total)} MDL filings`
+                  ? `${count.full(a.mdlFilings)} of the MDL's ${count.full(total)} citing filings`
                   : "Not recorded"}
               </span>
             </span>

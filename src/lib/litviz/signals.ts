@@ -6,7 +6,10 @@
  */
 import {
   bySeries,
+  isPartialBasis,
   mdlAttributes,
+  monthIndex,
+  monthKey,
   parseSeriesRows,
   seriesMeta,
   type MdlAttributes,
@@ -101,28 +104,52 @@ const isAgency = (r: SeriesRow) => AGENCY_GROUPS.has(seriesMeta(r.series, r).gro
 const isActivity = (r: SeriesRow) => seriesMeta(r.series, r).group === "activity";
 
 /**
- * The timeline rows: SAFETY's rows when its RPC returned any (they replace the FDA product series of the same MDL and
- * any litigation series they also carry), plus the litviz litigation rows.
+ * SAFETY's litigation series under this file's ids. Its `filings` is the change in JPML total actions between two
+ * consecutive monthly reports (negative after a correction), not court filings: it becomes `jpml_actions_added`.
+ * Its `documents_filed` and `docket_entries` duplicate litviz's own `filings` and `docket_entries`, which are kept
+ * instead (they count only filings open under documents.is_open() and prefer the fuller docket source).
+ */
+const SAFETY_IDS: Record<string, string | null> = {
+  filings: "jpml_actions_added",
+  documents_filed: null,
+  docket_entries: null,
+};
+
+/**
+ * The timeline rows. Agency series: SAFETY's when its RPC returned any, else the FDA product series records that name
+ * the MDL. Litigation series: litviz's own. The month in progress is marked partial.
  */
 export function mergeSignalRows(
   own: readonly SeriesRow[],
   safety: readonly SeriesRow[] | null,
+  today: string | null = null,
 ): {
   rows: SeriesRow[];
   agencySource: ProductSignals["agencySource"];
 } {
   const activity = own.filter(isActivity);
-  if (safety && safety.length) {
-    const theirs = new Set(safety.map((r) => r.series));
+  const theirs = (safety ?? []).flatMap((r) => {
+    const id = r.series in SAFETY_IDS ? SAFETY_IDS[r.series] : r.series;
+    return id ? [{ ...r, series: id }] : [];
+  });
+  const theirAgency = theirs.filter(isAgency);
+  const ownAgency = own.filter(isAgency);
+  const current = today && /^\d{4}-\d{2}/.test(today) ? today.slice(0, 7) : null;
+  const mark = (r: SeriesRow): SeriesRow =>
+    current &&
+    r.month === current &&
+    seriesMeta(r.series, r).grain === "month" &&
+    !isPartialBasis(r.basis)
+      ? { ...r, basis: `${r.basis}:partial_month` }
+      : r;
+  if (theirAgency.length)
     return {
-      rows: [...safety, ...activity.filter((r) => !theirs.has(r.series))],
+      rows: [...theirs.map(mark), ...activity],
       agencySource: "product_signals_v1",
     };
-  }
-  const agency = own.filter(isAgency);
   return {
-    rows: [...agency, ...activity],
-    agencySource: agency.length ? "fda_product_series" : null,
+    rows: [...ownAgency, ...theirs.filter((r) => !isAgency(r)).map(mark), ...activity],
+    agencySource: ownAgency.length ? "fda_product_series" : null,
   };
 }
 
@@ -130,7 +157,7 @@ export function productSignals(
   detail: MdlDetail,
   safety: readonly SeriesRow[] | null,
 ): ProductSignals {
-  const { rows, agencySource } = mergeSignalRows(detail.rows, safety);
+  const { rows, agencySource } = mergeSignalRows(detail.rows, safety, detail.today);
   return {
     mdl: detail.mdl,
     title: detail.attributes.title,
@@ -153,5 +180,60 @@ export function signalGroups(rows: readonly SeriesRow[]): { agency: string[]; ac
         !["activity", "lifecycle", "national"].includes(seriesMeta(id).group),
     ),
     activity: ids.filter((id) => seriesMeta(id).group === "activity"),
+  };
+}
+
+/**
+ * Transport form of the product signals: SAFETY's monthly series run to thousands of rows that repeat their unit,
+ * source, query URL and link statement, so every string goes once into a dictionary and each row is
+ * [series, monthIndex, value, unit, dataset, url (-1 = none), basis]. Lossless; expanded in the browser.
+ */
+export type SignalRowWire = [number, number, number | null, number, number, number, number];
+export type ProductSignalsWire = Omit<ProductSignals, "rows"> & {
+  strings: string[];
+  rows: SignalRowWire[];
+};
+
+export function toSignalWire(p: ProductSignals): ProductSignalsWire {
+  const strings: string[] = [];
+  const at = new Map<string, number>();
+  const ix = (v: string) => {
+    let i = at.get(v);
+    if (i === undefined) {
+      i = strings.push(v) - 1;
+      at.set(v, i);
+    }
+    return i;
+  };
+  const { rows, ...rest } = p;
+  return {
+    ...rest,
+    strings,
+    rows: rows.map((r) => [
+      ix(r.series),
+      monthIndex(r.month) ?? 0,
+      r.value,
+      ix(r.unit),
+      ix(r.source_dataset),
+      r.source_url === null ? -1 : ix(r.source_url),
+      ix(r.basis),
+    ]),
+  };
+}
+
+export function fromSignalWire(w: ProductSignalsWire): ProductSignals {
+  const { strings, rows, ...rest } = w;
+  const s = (i: number) => strings[i] ?? "";
+  return {
+    ...rest,
+    rows: rows.map(([series, m, value, unit, ds, url, basis]) => ({
+      series: s(series),
+      month: monthKey(m),
+      value,
+      unit: s(unit),
+      source_dataset: s(ds),
+      source_url: url < 0 ? null : s(url),
+      basis: s(basis),
+    })),
   };
 }

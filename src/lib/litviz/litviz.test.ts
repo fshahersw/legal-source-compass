@@ -551,4 +551,64 @@ describe("product signals", () => {
     expect(m.rows.map((r) => r.series)).toEqual(["fda_enforcement_reports", "docket_entries"]);
     expect(mergeSignalRows([row("docket_entries", "2024-02", 3)], []).agencySource).toBeNull();
   });
+
+  it("maps SAFETY's litigation series: its filings are JPML action changes, its docket and filing counts yield to ours", () => {
+    const own = [row("docket_entries", "2024-02", 3), row("filings", "2024-02", 5)];
+    const safety = [
+      row("device_reports", "2026-10", 7),
+      row("device_reports", "2026-09", 9),
+      row("filings", "2024-02", -4),
+      row("documents_filed", "2024-02", 6),
+      row("docket_entries", "2024-02", 2),
+    ];
+    const m = mergeSignalRows(own, safety, "2026-10-23");
+    expect(m.agencySource).toBe("product_signals_v1");
+    expect(m.rows.map((r) => [r.series, r.value, r.basis])).toEqual([
+      ["device_reports", 7, ":partial_month"],
+      ["device_reports", 9, ""],
+      ["jpml_actions_added", -4, ""],
+      ["docket_entries", 3, ""],
+      ["filings", 5, ""],
+    ]);
+    expect(seriesMeta("jpml_actions_added").group).toBe("lifecycle");
+    // SAFETY holds no product link for this MDL: the FDA series that name it are kept
+    const fda = {
+      ...row("maude_reports", "2024-01", 4, "calendar_year"),
+      source_dataset: "fda_device_event_series",
+    };
+    const n = mergeSignalRows([fda], [row("filings", "2024-02", 1)], "2026-10-23");
+    expect(n.agencySource).toBe("fda_product_series");
+    expect(n.rows.map((r) => r.series)).toEqual(["maude_reports", "jpml_actions_added"]);
+  });
+});
+
+describe("product signal transport", () => {
+  it("round-trips the rows losslessly and stores each repeated string once", async () => {
+    const { toSignalWire, fromSignalWire } = await import("./signals");
+    const url =
+      "https://api.fda.gov/device/event.json?search=device.generic_name:%22hernia+mesh%22&count=date_received";
+    const rows = Array.from({ length: 240 }, (_, i) => ({
+      series: i % 2 ? "device_reports" : "device_reports_death",
+      month: `${2006 + Math.floor(i / 24)}-${String((Math.floor(i / 2) % 12) + 1).padStart(2, "0")}`,
+      value: i % 7 ? i : null,
+      unit: "reports",
+      source_dataset: "openfda_maude",
+      source_url: i === 3 ? null : url,
+      basis: "title_names_product — JPML title names hernia mesh",
+    }));
+    const p = {
+      mdl: "2846",
+      title: "t",
+      centralized: null,
+      today: "2026-10-23",
+      agencySource: "product_signals_v1" as const,
+      products: [],
+      rows,
+      notices: [],
+    };
+    const w = toSignalWire(p);
+    expect(fromSignalWire(JSON.parse(JSON.stringify(w)))).toEqual(p);
+    expect(w.strings.filter((s) => s === url)).toHaveLength(1);
+    expect(JSON.stringify(w).length).toBeLessThan(JSON.stringify(p).length / 4);
+  });
 });

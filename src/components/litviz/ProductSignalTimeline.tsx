@@ -5,6 +5,7 @@
  *
  * A product series is shown only when its record names this MDL itself; nothing is matched to the MDL by name.
  */
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChartFrame, type ChartSource } from "@/components/charts/ChartFrame";
 import { LaneTracks, laneDomain, type LaneTrack } from "@/components/charts/Lanes";
@@ -13,12 +14,14 @@ import { bySeries, dateIndex, seriesMeta } from "@/lib/litviz/model";
 import type { ProductSignals } from "@/lib/litviz/signals";
 import { todayIndex } from "./MdlLaneDetail";
 import { productSignalsQuery } from "./queries";
-import { DATASET_NAMES, rowSources, seriesBins, seriesTable } from "./tracks";
+import { DATASET_NAMES, rowSources, SHORT_LABEL, seriesBins, seriesTable } from "./tracks";
 
 const count = metricFormatter("count");
 
 const RECALL = /recall/;
 const ENFORCEMENT = /enforcement/;
+/** Breakdowns of a report series (serious, death, injury, malfunction) are listed in the table, not drawn. */
+const BREAKDOWN = /_(serious|death|injury|malfunction)$/;
 
 /** Tracks: agency series first (product slot), then litigation activity; a "Not recorded" band for enforcement
  * reports and recalls whenever no such series is held for the MDL. */
@@ -26,7 +29,9 @@ export function signalTracks(p: ProductSignals): LaneTrack[] {
   const s = bySeries(p.rows);
   const tracks: LaneTrack[] = [];
   const ids = [...s.keys()];
-  const agency = ids.filter((id) => seriesMeta(id, s.get(id)![0]).group === "product");
+  const agency = ids.filter(
+    (id) => seriesMeta(id, s.get(id)![0]).group === "product" && !BREAKDOWN.test(id),
+  );
   const activity = ids.filter((id) => seriesMeta(id).group === "activity");
   for (const id of agency) {
     const rows = s.get(id)!;
@@ -35,7 +40,8 @@ export function signalTracks(p: ProductSignals): LaneTrack[] {
     tracks.push({
       kind: "bins",
       id,
-      label: `${meta.label}${product ? `: ${product}` : ""} (${meta.source}${meta.grain === "calendar_year" ? ", per year" : ""})`,
+      short: SHORT_LABEL[id] ?? meta.label,
+      label: `${meta.label}${product ? `: ${product}` : ""} (${meta.source}${meta.grain === "calendar_year" ? ", per year" : ", per month"})`,
       unit: meta.unit,
       formatter: count,
       bins: seriesBins(rows),
@@ -69,6 +75,7 @@ export function signalTracks(p: ProductSignals): LaneTrack[] {
     tracks.push({
       kind: "bins",
       id,
+      short: SHORT_LABEL[id] ?? meta.label,
       label: `${meta.label}${meta.grain === "calendar_year" ? ", per year" : ", per month"}`,
       unit: meta.unit,
       formatter: count,
@@ -79,14 +86,57 @@ export function signalTracks(p: ProductSignals): LaneTrack[] {
   return tracks;
 }
 
+/** What the table holds beyond the bands, and why each agency series belongs to this MDL. */
+export function signalFootnotes(p: ProductSignals): string[] {
+  const out: string[] = [];
+  const ids = [...bySeries(p.rows).keys()];
+  if (p.agencySource === "product_signals_v1") {
+    const why = [
+      ...new Set(
+        p.rows
+          .filter((r) => seriesMeta(r.series, r).group === "product" && r.basis)
+          .map((r) =>
+            r.basis
+              .replace(/:partial(_month)?$/, "")
+              .replace(/_/g, " ")
+              .trim(),
+          )
+          .filter(Boolean),
+      ),
+    ];
+    out.push(
+      why.length
+        ? `Agency series linked to this MDL by the product safety signals layer: ${why.slice(0, 2).join("; ")}${why.length > 2 ? `; and ${why.length - 2} more` : ""}.`
+        : "Agency series: product safety signals layer.",
+    );
+  } else if (p.agencySource === "fda_product_series")
+    out.push(
+      `Agency series: FDA product series for ${p.products.map((x) => x.product).join(", ")}${p.products[0]?.dataThrough ? `, data through ${p.products[0].dataThrough}` : ""}; the series record names this MDL.`,
+    );
+  else out.push("No agency series is held for this MDL.");
+  const listed = ids
+    .filter((id) => BREAKDOWN.test(id))
+    .map((id) => seriesMeta(id).label.toLowerCase());
+  if (listed.length) out.push(`Listed in the table, not drawn: ${listed.join(", ")}.`);
+  if (ids.includes("jpml_actions_added"))
+    out.push(
+      "The change in actions between consecutive JPML monthly reports is listed in the table, not drawn: it counts actions added less actions closed or corrected, so it can be negative.",
+    );
+  return out;
+}
+
+/** Lead-up shown by default: this many years before centralization (all years remain one choice away). */
+const LEAD_YEARS = 10;
+
 export function ProductSignalTimeline({ mdl }: { mdl: string }) {
+  const [all, setAll] = useState(false);
   const q = useQuery(productSignalsQuery(mdl));
   const p = q.data ?? null;
   const tracks = p ? signalTracks(p) : [];
   const central = p ? dateIndex(p.centralized) : null;
   const markers =
     central !== null ? [{ t: central, label: "Centralized", kind: "start" as const }] : [];
-  const domain = p
+  const full = p
     ? laneDomain(
         tracks.map((t) =>
           t.kind === "bins" ? { bins: t.bins } : t.kind === "line" ? { points: t.points } : {},
@@ -95,12 +145,16 @@ export function ProductSignalTimeline({ mdl }: { mdl: string }) {
         todayIndex(p.today),
       )
     : null;
+  const leadStart = central !== null ? (Math.floor(central / 12) - LEAD_YEARS) * 12 : null;
+  const windowed = full !== null && leadStart !== null && full[0] < leadStart;
+  const domain: [number, number] | null =
+    full && windowed && !all && leadStart !== null ? [leadStart, full[1]] : full;
   const sources: ChartSource[] = p ? rowSources(p.rows, DATASET_NAMES) : [];
   const hasData = tracks.some((t) => t.kind !== "note");
   return (
     <ChartFrame
       title="Product signals and litigation activity"
-      unit="reports per year; docket entries and filings per month"
+      unit={`reports per ${tracks.some((t) => t.kind === "bins" && t.slot === 2 && seriesMeta(t.id).grain === "month") ? "month" : "year"}; docket entries and filings per month`}
       period={
         domain ? `${Math.floor(domain[0] / 12)}–${Math.floor(domain[1] / 12) - 1}` : undefined
       }
@@ -123,22 +177,27 @@ export function ProductSignalTimeline({ mdl }: { mdl: string }) {
               : { kind: "ready" }
       }
       partialNotice={p?.notices.length ? p.notices.join(" ") : undefined}
+      actions={
+        windowed && full ? (
+          <label className="flex items-center gap-1 text-[11.5px] text-muted-foreground">
+            From
+            <select
+              value={all ? "all" : "lead"}
+              onChange={(e) => setAll(e.target.value === "all")}
+              className="h-8 rounded-md border border-input bg-background px-2 text-[12px] text-foreground"
+            >
+              <option value="lead">{LEAD_YEARS} years before centralization</option>
+              <option value="all">All years held (from {Math.floor(full[0] / 12)})</option>
+            </select>
+          </label>
+        ) : null
+      }
       notes={[
         "Each band has its own scale. Report counts are reports that mention the product, not incidence: reporting rises with publicity and litigation.",
-        "A product series appears only when its own record names this MDL; recalls and enforcement reports are shown once a record links them to the MDL explicitly.",
+        "A product series appears only when it is linked to this MDL explicitly: its own record names the MDL, or the product safety signals layer links it because the MDL's JPML title names the product (the link is stated below the chart). Nothing is matched by a search term.",
         "The vertical rule marks the JPML transfer order (centralization). Hatched bars are periods still in progress.",
       ]}
-      footnotes={
-        p
-          ? [
-              p.agencySource === "product_signals_v1"
-                ? "Agency series: product safety signals layer."
-                : p.agencySource === "fda_product_series"
-                  ? `Agency series: FDA product series for ${p.products.map((x) => x.product).join(", ")}${p.products[0]?.dataThrough ? `, data through ${p.products[0].dataThrough}` : ""}.`
-                  : "No agency series is held for this MDL.",
-            ]
-          : undefined
-      }
+      footnotes={p ? signalFootnotes(p) : undefined}
       table={
         p
           ? seriesTable(p.rows, `MDL No. ${mdl}: product signals and litigation activity`)
