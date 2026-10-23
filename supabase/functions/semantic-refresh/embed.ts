@@ -75,6 +75,19 @@ export function formatG5(h: number): string {
   return (neg ? "-" : "") + body;
 }
 
+/** formatG5 of each float16 value seen so far (at most 63,488 finite values exist, so the cache stays small). */
+const G5_CACHE = new Map<number, string>();
+
+function formatHalfCached(h: number): string {
+  if (h === 0) return Object.is(h, -0) ? "-0" : "0";
+  let out = G5_CACHE.get(h);
+  if (out === undefined) {
+    out = formatG5(h);
+    G5_CACHE.set(h, out);
+  }
+  return out;
+}
+
 /** pgvector text of one float32 embedding, rounded to float16 exactly as the batch build stored it. */
 export function halfvecLiteral(values: ArrayLike<number>): string {
   if (values.length !== EMBEDDING_DIMENSIONS) throw new Error("wrong embedding length");
@@ -84,7 +97,7 @@ export function halfvecLiteral(values: ArrayLike<number>): string {
     if (!Number.isFinite(v)) throw new Error("embedding has a non-finite value");
     const h = toHalf(v);
     if (!Number.isFinite(h)) throw new Error("embedding value outside the float16 range");
-    out[i] = formatG5(h);
+    out[i] = formatHalfCached(h);
   }
   return `[${out.join(",")}]`;
 }

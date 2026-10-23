@@ -39,6 +39,7 @@ import {
   EMBEDDING_INPUT_TYPE,
   EMBEDDING_MODEL,
   formatG5,
+  halfvecLiteral,
   toHalf,
 } from "../../../supabase/functions/semantic-refresh/embed";
 
@@ -207,5 +208,10 @@ describe("float16 vector text", () => {
     for (let i = 0; i < bytes.length / 4; i++)
       got.push(formatG5(toHalf(view.getFloat32(i * 4, true))));
     expect(got).toEqual(G.vectors.f16_text);
+    // the literal the refresh sends (cached formatting) is load.py's vector_text of the same values
+    const first = new Float32Array(1024);
+    for (let i = 0; i < 1024; i++) first[i] = view.getFloat32(i * 4, true);
+    expect(halfvecLiteral(first)).toBe(`[${G.vectors.f16_text.slice(0, 1024).join(",")}]`);
+    expect(halfvecLiteral(first)).toBe(`[${G.vectors.f16_text.slice(0, 1024).join(",")}]`);
   });
 });
