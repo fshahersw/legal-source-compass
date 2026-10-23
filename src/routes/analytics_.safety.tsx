@@ -7,7 +7,7 @@ export const Route = createFileRoute("/analytics_/safety")({
   head: () =>
     pageHead(
       "Safety trends",
-      "FAERS reports by outcome and reporter, SaferProducts.gov reports, CPSC recalls by hazard and by death mention, and FDA Class I recall entries, by year.",
+      "FAERS reports by outcome and reporter, SaferProducts.gov reports, CPSC recalls by hazard and by death mention in the injury statement, and FDA Class I recall entries, by year.",
     ),
   component: Page,
 });

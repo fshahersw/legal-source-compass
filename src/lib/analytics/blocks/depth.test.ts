@@ -132,7 +132,8 @@ describe("EPA and OSHA penalties", () => {
     expect(b.latest?.period).toBe("FY2016");
     expect(b.latest?.value).toBe(5_000_000);
     expect(noteWith(b, "FY2015")).toBe(true);
-    expect(noteWith(b, "latest years read low")).toBe(true);
+    expect(noteWith(b, "settlements entered in that federal fiscal year")).toBe(true);
+    expect(noteWith(b, "not when the case opened")).toBe(true);
     expect(b.asOf).toBe("2026-10-17");
   });
   it("falls back to the highest year in the file when no complete year is stated", () => {
@@ -171,6 +172,8 @@ describe("EPA and OSHA penalties", () => {
     expect(b.latest?.value).toBe(330_800_000);
     expect(noteWith(b, "FY2026*")).toBe(true);
     expect(noteWith(b, "not OSHA's official totals")).toBe(true);
+    expect(noteWith(b, "blank amount adds nothing")).toBe(true);
+    expect(noteWith(b, "failure-to-abate")).toBe(true);
   });
   it("leaves out OSHA with no recorded penalty", () => {
     expect(buildOshaPenalties({ years: [], snapshot: null })).toBeNull();

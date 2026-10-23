@@ -192,7 +192,7 @@ const peakNote = (years: readonly PenaltyYear[]): string[] => {
   ];
 };
 
-/** EPA ECHO: federal penalties on cases opened in each fiscal year, summed from the settlements recorded so far. */
+/** EPA ECHO: federal penalties on settlements entered in each federal fiscal year, summed from the amounts recorded. */
 export function buildEpaPenalties(input: {
   years: readonly { fy: number; penalty: number | null }[];
   latestCompleteFy: number | null;
@@ -221,7 +221,7 @@ export function buildEpaPenalties(input: {
     },
     asOf: input.fileDate,
     notes: [
-      "Each bar is the computed sum of the federal penalty amounts recorded on the settlements of cases opened in that fiscal year (ECHO's FED_PENALTY_ASSESSED_AMT), in dollars as recorded and not adjusted for inflation. A case opened recently that has not settled carries no penalty yet, so the latest years read low.",
+      "Each bar is the computed sum of the federal penalty amounts (ECHO's FED_PENALTY_ASSESSED_AMT) recorded on the settlements entered in that federal fiscal year, in dollars as recorded and not adjusted for inflation. It counts when a settlement was entered, not when the case opened, so it does not follow the case counts of the overview. A settlement the file does not date to a fiscal year is in no bar, and one entered after the file date is not counted yet.",
       ...peakNote(shown),
     ],
   });
@@ -255,7 +255,8 @@ export function buildOshaPenalties(input: {
     },
     asOf: input.snapshot,
     notes: [
-      "Each bar is the computed sum of the current-penalty amounts recorded for the citations of inspections opened in that fiscal year. These are sums of recorded amounts, not OSHA's official totals, and are not adjusted for inflation.",
+      "Each bar is the computed sum of the current-penalty amounts recorded on the citation items of inspections opened in that federal fiscal year, excluding failure-to-abate amounts. These are sums of recorded amounts, not OSHA's official totals, and are not adjusted for inflation.",
+      "A blank amount adds nothing and is never filled in. Many items issued in FY1991 to FY2010 have a blank current penalty (the dataset counts about 31% of serious and 79% to 87% of other-than-serious items), and from FY2017 blanks are absent and zero amounts appear instead, so the earlier bars read lower than the later ones for that reason as well as any change in penalties.",
       ...peakNote(input.years),
       ...(partials.length
         ? [
@@ -366,7 +367,7 @@ export type CpscHazardYear = {
   deathMentions: number;
 };
 
-/** CPSC recalls by the hazard tags of the announcement: the four most common hazards, one line each. */
+/** CPSC recalls by the hazard named in the title or hazard statement: the four most common hazards, one line each. */
 export function buildCpscHazards(input: {
   years: readonly CpscHazardYear[];
   labels: Readonly<Record<string, string>>;
@@ -402,7 +403,7 @@ export function buildCpscHazards(input: {
     },
     asOf: input.asOf,
     notes: [
-      "Counts recalls by the year of the recall date whose announcement text matches the hazard's documented patterns. A recall can match several hazards, so the lines overlap and must not be added. Recalls matching none are in the dataset's other or unclassified group, which is not drawn.",
+      "Counts recalls by the year of the recall date whose title or hazard statement matches the hazard's documented patterns. A recall can match several hazards, so the lines overlap and must not be added. Recalls matching none are in the dataset's other or unclassified group, which is not drawn.",
       `The four hazards with the most recalls over the whole series are drawn, most common first; the latest value shown is for the first.`,
       ...partialNote(partials, input.asOf),
     ],

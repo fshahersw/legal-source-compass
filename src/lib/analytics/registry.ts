@@ -106,7 +106,7 @@ export const BLOCK_GROUPS: readonly BlockGroup[] = [
     id: "recalls",
     page: "safety",
     title: "Recalls by kind",
-    lede: "CPSC recalls by hazard in the announcement and by whether the injury statement mentions a death, and the most serious FDA recall class.",
+    lede: "CPSC recalls by hazard named in the recall's title or hazard statement and by whether its injury statement mentions a death, and the most serious FDA recall class.",
   },
 ];
 
@@ -282,8 +282,8 @@ export const BLOCKS: readonly BlockDef[] = [
   {
     id: "epa-penalties",
     group: "penalties",
-    title: "Federal penalties recorded on EPA cases, by the fiscal year the case opened",
-    measure: "EPA federal penalties",
+    title: "Federal penalties on EPA settlements, by the fiscal year the settlement was entered",
+    measure: "EPA settlement penalties",
     detail: { to: "/law/enforcement", label: "EPA enforcement" },
   },
   {
@@ -310,7 +310,7 @@ export const BLOCKS: readonly BlockDef[] = [
   {
     id: "cpsc-hazards",
     group: "recalls",
-    title: "CPSC recalls by hazard in the announcement",
+    title: "CPSC recalls by hazard named in the title or hazard statement",
     measure: "CPSC recalls by hazard",
     detail: { to: "/law/enforcement", search: { tab: "cpsc" }, label: "CPSC recalls" },
   },
