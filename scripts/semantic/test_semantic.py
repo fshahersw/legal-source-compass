@@ -805,5 +805,9 @@ class EvalTests(unittest.TestCase):
         self.assertEqual(ev.top_records(sims, records, 3), ["r2", "r1", "r3"])
 
 
+# The TypeScript port's golden-fixture parity checks run with this suite (scripts/test/run-python-contracts.mjs lists it).
+from test_chunk_parity import ChunkParityTest  # noqa: E402,F401
+
+
 if __name__ == "__main__":
     unittest.main()
