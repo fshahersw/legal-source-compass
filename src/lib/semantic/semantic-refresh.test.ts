@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import golden from "./fixtures/chunk-golden.json";
 import sampleRows from "./fixtures/semantic-rows.json";
 import {
+  holdSeconds,
   planRecord,
   reserveFor,
   runRefresh,
@@ -379,6 +380,22 @@ describe("runRefresh: budget guard and failures", () => {
     });
     expect(db.applied.find((a) => a.action === "unchanged")).toBeDefined();
     expect(db.usage().today).toBe(0);
+    // not read again before the next UTC day
+    const held = db.applied.find((a) => a.action === "hold") as unknown as {
+      not_before_seconds: number;
+    };
+    expect(held.not_before_seconds).toBeGreaterThan(0);
+    expect(held.not_before_seconds).toBeLessThanOrEqual(86_400);
+  });
+
+  it("holds wait until the next UTC day for the budget, a day for settings, an hour for a missing key", () => {
+    const at = Date.parse("2026-10-25T06:40:00Z");
+    expect(holdSeconds("daily_cap", at)).toBe(17 * 3600 + 20 * 60);
+    expect(holdSeconds("total_cap", at)).toBe(86_400);
+    expect(holdSeconds("keys_not_seeded", at)).toBe(86_400);
+    expect(holdSeconds("embedding_key_missing", at)).toBe(3_600);
+    expect(holdSeconds("time_budget", at)).toBe(0);
+    expect(holdSeconds("vectors_pending", at)).toBe(0);
   });
 
   it("stops at the global cap and before the usage ledger is seeded", async () => {

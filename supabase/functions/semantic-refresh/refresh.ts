@@ -308,13 +308,49 @@ function mergeCounts(into: Counts, from: Counts | undefined) {
 
 type ApplyRecord = Record<string, unknown>;
 
+/**
+ * How long a record held for this reason is not read again: until the next UTC day for the daily budget and per-run
+ * guards, a day for the global cap and settings, an hour while the key or the service is missing; 0 = next run.
+ */
+export function holdSeconds(reason: string, nowMs: number): number {
+  const untilMidnight = Math.max(
+    60,
+    Math.ceil((Math.floor(nowMs / 86_400_000 + 1) * 86_400_000 - nowMs) / 1000),
+  );
+  switch (reason) {
+    case "daily_cap":
+    case "heading_drift_guard":
+      return untilMidnight;
+    case "total_cap":
+    case "keys_not_seeded":
+    case "input_too_large":
+    case "usage_not_seeded":
+      return 86_400;
+    case "embedding_key_missing":
+    case "embedding_failed":
+    case "reservation_overrun":
+    case "source_collection_not_ready":
+    case "dataset_not_rebuildable":
+      return 3_600;
+    default:
+      return 0; // time_budget, vectors_pending, dry_run: the next run continues
+  }
+}
+
 function decision(
   p: Plan,
   known: Set<string>,
   holdReason: string | null,
   tooLarge: Set<string> = new Set(),
+  nowMs: number = Date.now(),
 ): ApplyRecord | null {
   const base = { dataset: p.item.dataset, record_id: p.item.record_id, seq: p.item.seq };
+  const hold = (reason: string) => ({
+    ...base,
+    action: "hold",
+    reason,
+    not_before_seconds: holdSeconds(reason, nowMs),
+  });
   switch (p.kind) {
     case "unchanged":
       return {
@@ -327,8 +363,8 @@ function decision(
     case "index": {
       const missing = p.rows.some((r) => !known.has(r.embed_sha256));
       if (missing && p.rows.some((r) => tooLarge.has(r.embed_sha256)))
-        return { ...base, action: "hold", reason: "input_too_large" };
-      if (missing) return { ...base, action: "hold", reason: holdReason ?? "vectors_pending" };
+        return hold("input_too_large");
+      if (missing) return hold(holdReason ?? "vectors_pending");
       return {
         ...base,
         action: "index",
@@ -344,7 +380,7 @@ function decision(
     case "defer":
       return { ...base, action: "defer" };
     case "hold":
-      return { ...base, action: "hold", reason: p.reason };
+      return hold(p.reason);
     case "error":
       return { ...base, action: "error", reason: p.reason };
   }
@@ -671,7 +707,13 @@ export async function runRefresh(deps: RunDeps): Promise<RunSummary> {
             record_id: p.item.record_id,
             reason: p.reason,
           });
-        const d = decision(p, known, summary.embeddingStop ?? (dry ? "dry_run" : null), tooLarge);
+        const d = decision(
+          p,
+          known,
+          summary.embeddingStop ?? (dry ? "dry_run" : null),
+          tooLarge,
+          now(),
+        );
         if (d) records.push(d);
       }
       if (!dry) {

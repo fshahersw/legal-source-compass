@@ -81,8 +81,10 @@ create table if not exists semantic.refresh_queue (
   attempts integer not null default 0 check (attempts >= 0),
   last_attempt_at timestamptz,
   last_error text,
+  not_before timestamptz,                                        -- held for the budget or a setting: not read before this
   primary key (dataset, record_id)
 );
+alter table semantic.refresh_queue add column if not exists not_before timestamptz;
 create index if not exists refresh_queue_order on semantic.refresh_queue (((attempts >= 3)), first_seen_at, dataset, record_id);
 
 create table if not exists semantic.refresh_records (
@@ -386,7 +388,7 @@ begin
     reason = excluded.reason,
     seq = nextval('semantic.refresh_queue_seq'),
     missing_since = case when excluded.reason = 'removed' then coalesce(q.missing_since, now()) end,
-    attempts = 0, last_error = null;
+    attempts = 0, last_error = null, not_before = null;
 end $$;
 
 create or replace function semantic.enqueue_corpus_change() returns trigger
@@ -613,6 +615,7 @@ begin
   for q in
     select * from semantic.refresh_queue x
     where x.dataset = any (v_datasets)
+      and (x.not_before is null or x.not_before <= now())
       and (p_after is null or ((x.attempts >= 3), x.first_seen_at, x.dataset, x.record_id) > (v_late, v_first, v_ds, v_id))
     order by (x.attempts >= 3), x.first_seen_at, x.dataset, x.record_id
     limit v_limit + 1
@@ -785,7 +788,11 @@ begin
       v_counts := semantic.bump(v_counts, v_ds, 'deferred', 1);
       continue;
     elsif v_action = 'hold' then
-      update semantic.refresh_queue set last_error = semantic.clean_error(coalesce(e ->> 'reason', 'held')), last_attempt_at = now()
+      -- a hold for the budget or a setting may set a time before which the record is not read again (zero-token work
+      -- queued behind it goes on; the record keeps its place for the next day)
+      update semantic.refresh_queue set last_error = semantic.clean_error(coalesce(e ->> 'reason', 'held')), last_attempt_at = now(),
+        not_before = case when coalesce((e ->> 'not_before_seconds')::integer, 0) > 0
+                          then now() + make_interval(secs => least((e ->> 'not_before_seconds')::integer, 172800)) end
         where dataset = v_ds and record_id = v_id;
       v_counts := semantic.bump(v_counts, v_ds, 'held', 1);
       continue;
@@ -1050,8 +1057,9 @@ language sql stable security definer set search_path = '' as $$
     'settings', (select to_jsonb(s) - 'sweep_cursor' from semantic.refresh_settings s where s.id = 1),
     'usage', semantic.usage_state(),
     'queue', coalesce((select jsonb_agg(jsonb_build_object('dataset', t.dataset, 'reason', t.reason, 'records', t.n, 'oldest', t.oldest,
-                 'failing', t.failing) order by t.dataset, t.reason)
-               from (select q.dataset, q.reason, count(*) as n, min(q.first_seen_at) as oldest, count(*) filter (where q.attempts >= 3) as failing
+                 'failing', t.failing, 'deferred', t.deferred) order by t.dataset, t.reason)
+               from (select q.dataset, q.reason, count(*) as n, min(q.first_seen_at) as oldest, count(*) filter (where q.attempts >= 3) as failing,
+                            count(*) filter (where q.not_before > now()) as deferred
                      from semantic.refresh_queue q group by 1, 2) t), '[]'::jsonb),
     'ledger', coalesce((select jsonb_agg(jsonb_build_object('dataset', t.dataset, 'state', t.state, 'records', t.n) order by t.dataset, t.state)
                from (select l.dataset, l.state, count(*) as n from semantic.refresh_records l group by 1, 2) t), '[]'::jsonb),

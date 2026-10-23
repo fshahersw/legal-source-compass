@@ -36,7 +36,9 @@ removed source records reach the index every night, within a hard token budget.
    everything until the ledger has its seed row. After the request the reservation settles to the billed tokens. A record is
    applied only when all of its passages have vectors; vectors embedded before a stop are cached
    (`semantic.vector_cache`), so the next night spends only what is missing. Zero-token work (unchanged records,
-   metadata-only changes, removals) continues after a budget stop.
+   metadata-only changes, removals) continues after a budget stop: a record held for the budget is not read again before
+   the next UTC day (a day for the global cap and for settings such as unseeded keys, an hour while the key or the
+   service is missing), and keeps its place at the head of the queue.
 5. **Apply.** One transaction per batch: passages upserted (identical rows untouched, the same guard as `semantic_load_v1`),
    extra passages deleted, `semantic.corpora` records/chunks/capped recounted for every collection the call changed (keeps
    `semantic_status_v1` and the exact small-set path of `semantic.nearest_v1` right; HNSW is maintained by Postgres).

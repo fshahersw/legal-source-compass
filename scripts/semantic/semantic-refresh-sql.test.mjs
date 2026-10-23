@@ -222,6 +222,11 @@ async function consistent(t) {
 
 const run = (t, emb, extra = {}) =>
   runRefresh({ rpc: t.rpc, embedder: emb, trigger: "manual", ...extra });
+/** The next day: records held for the budget or a setting are read again (their not_before has passed). */
+const runNextDay = async (t, emb, extra = {}) => {
+  await t.db.exec("update semantic.refresh_queue set not_before = null");
+  return run(t, emb, extra);
+};
 
 test("contract text: security definer, empty search_path, grants, idempotent DDL, no bare drops", async () => {
   const sql = await fs.readFile("database/contracts/semantic-refresh-v1.sql", "utf8");
@@ -538,6 +543,12 @@ test("budget: nothing is embedded before the usage seed; the daily and global ca
   let s = await run(t, emb);
   assert.equal(s.embeddingStop, "usage_not_seeded");
   assert.equal(emb.calls.length, 0);
+  // held for the setting: not read again by the next run of the night (zero-token work behind it goes on)
+  const held = await t.one(
+    "select not_before > now() + interval '23 hours' as later, last_error from semantic.refresh_queue where record_id = 'r1'",
+  );
+  assert.deepEqual(held, { later: true, last_error: "usage_not_seeded" });
+  assert.equal((await run(t, emb)).records, 0);
   assert.equal(
     (await t.one("select count(*)::int n from semantic.refresh_queue where record_id = 'r1'")).n,
     1,
@@ -617,7 +628,7 @@ test("budget: nothing is embedded before the usage seed; the daily and global ca
     await t.db.exec("delete from semantic.embedding_usage where kind = 'reservation'");
   }
   await t.db.exec("update semantic.refresh_settings set daily_token_cap = 100");
-  s = await run(t, emb);
+  s = await runNextDay(t, emb);
   assert.equal(s.embeddingStop, "daily_cap");
   assert.equal(s.status, "partial");
   assert.equal(emb.calls.length, 0);
@@ -625,11 +636,11 @@ test("budget: nothing is embedded before the usage seed; the daily and global ca
   await t.db.exec(
     "update semantic.refresh_settings set daily_token_cap = 250000, total_token_cap = 392653000",
   );
-  s = await run(t, emb);
+  s = await runNextDay(t, emb);
   assert.equal(s.embeddingStop, "total_cap");
   assert.equal(emb.calls.length, 0);
   await t.db.exec("update semantic.refresh_settings set total_token_cap = 400000000");
-  s = await run(t, emb);
+  s = await runNextDay(t, emb);
   assert.equal(s.status, "ok");
   assert.equal(emb.calls.length, 1);
   const st = await t.rpc("semantic_refresh_status_v1");
@@ -673,7 +684,7 @@ test("budget: nothing is embedded before the usage seed; the daily and global ca
   await t.db.query("update semantic.refresh_settings set daily_token_cap = $1", [
     today + new TextEncoder().encode(first).length + 8,
   ]);
-  s = await run(t, emb);
+  s = await runNextDay(t, emb);
   assert.equal(s.embeddingStop, "daily_cap");
   assert.equal(s.embeddedInputs, 1);
   assert.equal(
@@ -686,7 +697,7 @@ test("budget: nothing is embedded before the usage seed; the daily and global ca
     2,
   );
   await t.db.exec("update semantic.refresh_settings set daily_token_cap = 250000");
-  s = await run(t, emb);
+  s = await runNextDay(t, emb);
   assert.equal(s.status, "ok");
   assert.equal(s.embeddedInputs, plan.rows.length - 1, "the cached passage is not embedded again");
   assert.equal(
@@ -716,7 +727,7 @@ test("U.S. Code title rename queues the title's sections; the drift guard caps h
   assert.equal(emb.calls.length, 0);
   assert.equal(s.holds[0].reason, "heading_drift_guard");
   await t.db.exec("update semantic.refresh_settings set drift_guard = 200");
-  s = await run(t, emb);
+  s = await runNextDay(t, emb);
   assert.equal(s.status, "ok");
   const n = golden.rows.find((g) => g.id === "15:78u-6").chunks.length;
   assert.equal(s.embeddedInputs, n);
@@ -740,7 +751,7 @@ test("unseeded passages are held instead of re-embedded; the sweep finds writes 
   // a write with the trigger disabled is found by the sweep
   for (const d of DATASETS) await t.rpc("semantic_refresh_enqueue_v1", { p_dataset: d });
   await t.db.exec("update semantic.refresh_settings set reembed_unseeded = true");
-  await run(t, emb);
+  await runNextDay(t, emb);
   await t.db.exec(
     "alter table public.corpus_records disable trigger semantic_refresh_enqueue_update",
   );
@@ -754,7 +765,7 @@ test("unseeded passages are held instead of re-embedded; the sweep finds writes 
   );
   assert.equal((await t.one("select count(*)::int n from semantic.refresh_queue")).n, 0);
   await t.db.exec("update semantic.refresh_settings set sweep_rows_per_run = 1000");
-  s = await run(t, emb);
+  s = await runNextDay(t, emb);
   assert.ok(s.detect.sweep_queued >= 1);
   assert.equal(
     (
