@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
 import { RegulatoryMonitoring } from "@/components/regulatory/RegulatoryMonitoring";
-import { normalizeMonitoringSearch } from "@/components/regulatory/monitoringView";
+import {
+  MONITORING_VIEW_LABELS,
+  normalizeMonitoringSearch,
+} from "@/components/regulatory/monitoringView";
 import { pageHead } from "@/lib/corpus/head";
 
 export const Route = createFileRoute("/law_/monitoring")({
@@ -33,11 +36,8 @@ function MonitoringPage() {
             ? ""
             : "Source changes and retained evidence."
       }
-      breadcrumbs={[
-        { label: "Home", to: "/" },
-        { label: "Law & regulation", to: "/law" },
-        { label: "Monitoring" },
-      ]}
+      // Products & safety › Regulatory intelligence › <view> (the shell adds the section and tab).
+      breadcrumbs={[{ label: MONITORING_VIEW_LABELS[search.view] }]}
     >
       <RegulatoryMonitoring search={search} onSearch={(next) => void navigate({ search: next })} />
     </AppShell>

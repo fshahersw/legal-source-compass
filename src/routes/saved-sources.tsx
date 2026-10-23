@@ -33,7 +33,7 @@ function SavedSourcesView() {
 
   return (
     <AppShell
-      breadcrumbs={[{ label: "Home", to: "/" }, { label: "Saved Work" }, { label: "Saved Sources" }]}
+      breadcrumbs={[]}
       title="Saved Work"
       description="Bookmarks are stored in this browser only. Clearing site data removes them."
     >

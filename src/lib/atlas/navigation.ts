@@ -767,7 +767,11 @@ function crumbTarget(crumb: Crumb): { to: string; search: Record<string, string>
   return { to: normalizePath(path), search };
 }
 
-const SECTION_ROOTS = new Set(ALL_SECTIONS.map((s) => s.to));
+/** Section landings, plus the former Analytics landing, which pages still name as their parent. */
+const SECTION_ROOTS = new Set([...ALL_SECTIONS.map((s) => s.to), "/analytics"]);
+/** Labels name the same place regardless of case ("Saved Work" and "Saved work"). */
+const same = (a: string | undefined, b: string | undefined) =>
+  a !== undefined && b !== undefined && a.toLowerCase() === b.toLowerCase();
 
 /**
  * The breadcrumb trail of a page: Section › sub-area (the lit tab) › the page's own crumbs. A page's crumbs that
@@ -801,7 +805,7 @@ export function composeBreadcrumbs(
       for (const [i, c] of crumbs.entries()) {
         const target = crumbTarget(c);
         // A link named like the section or the lit tab repeats the trail (e.g. a former "Sources" crumb to the library).
-        if (i < crumbs.length - 1 && (c.label === section.label || c.label === tab?.label))
+        if (i < crumbs.length - 1 && (same(c.label, section.label) || same(c.label, tab?.label)))
           continue;
         if (target) {
           if (target.to === "/") continue;
@@ -817,7 +821,7 @@ export function composeBreadcrumbs(
       }
   }
   // Adjacent crumbs with the same label name one place: keep the later (more specific or current) one.
-  const deduped = out.filter((c, i) => out[i + 1]?.label !== c.label);
+  const deduped = out.filter((c, i) => !same(out[i + 1]?.label, c.label));
   const last = deduped[deduped.length - 1];
   if (last) deduped[deduped.length - 1] = { label: last.label };
   return deduped;

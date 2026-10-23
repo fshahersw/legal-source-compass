@@ -7,7 +7,6 @@ import { SECTION_ICONS } from "@/components/atlas/sectionIcons";
 import { listDatasets, type DatasetInfo } from "@/lib/external/catalog.functions";
 import { datasetDisplayName } from "@/lib/external/domainRegistry";
 import { sectionItem } from "@/lib/atlas/navigation";
-import { cn } from "@/lib/utils";
 import { HUBS, type HubCount, type HubLink } from "./hubs";
 
 const fmt = (n: number) => n.toLocaleString("en-US");
@@ -85,18 +84,17 @@ export function HubKpis({
   if (!tiles.length) return null;
   return (
     <section aria-label={label}>
-      <ul
-        className={cn(
-          "m-0 grid list-none grid-cols-2 gap-px overflow-hidden rounded-md border border-border bg-border p-0 sm:grid-cols-3",
-          tiles.length >= 5 ? "xl:grid-cols-6" : tiles.length === 4 ? "lg:grid-cols-4" : "",
-        )}
-      >
+      {/* Tiles grow to fill their row, so an uneven count never leaves an empty cell. */}
+      <ul className="m-0 flex list-none flex-wrap gap-px overflow-hidden rounded-md border border-border bg-border p-0">
         {tiles.map((k) => {
           const d = catalog.byId.get(k.dataset);
           const n = recordCount(d);
-          const source = d ? datasetDisplayName(d.id, d.label) : k.dataset;
+          const source = d ? datasetDisplayName(d.id, d.label) : null;
           return (
-            <li key={k.dataset} className="flex min-w-0 flex-col gap-0.5 bg-surface px-3 py-2.5">
+            <li
+              key={k.dataset}
+              className="flex min-w-0 grow basis-[calc(50%-1px)] flex-col gap-0.5 bg-surface px-3 py-2.5 sm:basis-[calc(33.333%-1px)] xl:basis-[calc(16.666%-1px)]"
+            >
               <span
                 className="font-display text-lg font-semibold tabular-nums leading-tight"
                 aria-busy={catalog.loading || undefined}
@@ -110,14 +108,21 @@ export function HubKpis({
                 )}
               </span>
               <span className="text-[11.5px] leading-4 text-foreground/85">{k.label}</span>
-              <Link
-                to="/data/$dataset"
-                params={{ dataset: k.dataset }}
-                title={`Source: ${source}`}
-                className="line-clamp-2 text-[10.5px] leading-4 text-muted-foreground hover:text-primary hover:underline"
-              >
-                {source}
-              </Link>
+              {source ? (
+                <Link
+                  to="/data/$dataset"
+                  params={{ dataset: k.dataset }}
+                  title={`Source: ${source}`}
+                  className="line-clamp-2 text-[10.5px] leading-4 text-muted-foreground hover:text-primary hover:underline"
+                >
+                  {source}
+                </Link>
+              ) : (
+                <span
+                  className="mt-0.5 block h-3 w-24 animate-pulse rounded-sm bg-muted"
+                  aria-hidden
+                />
+              )}
             </li>
           );
         })}

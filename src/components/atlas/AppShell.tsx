@@ -403,7 +403,7 @@ export function AppShell({
         <SheetContent
           id="atlas-drawer"
           side="left"
-          className="atlas-shell flex w-72 max-w-[85vw] flex-col gap-0 overflow-y-auto border-sidebar-border bg-sidebar p-3 text-sidebar-foreground"
+          className="atlas-shell flex w-72 max-w-[85vw] flex-col gap-0 overflow-y-auto border-sidebar-border !bg-sidebar p-3 text-sidebar-foreground"
         >
           <SheetTitle className="sr-only">Navigation</SheetTitle>
           <SheetDescription className="sr-only">

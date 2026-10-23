@@ -507,6 +507,35 @@ describe("breadcrumbs: Section › sub-area › entity", () => {
       { label: "Dockets" },
     ]);
   });
+  it("drops the former Analytics landing from Insights trails", () => {
+    expect(
+      trail("/analytics/insights", undefined, [
+        HOME,
+        { label: "Analytics", to: "/analytics" },
+        { label: "Insights of the day" },
+      ]),
+    ).toEqual([{ label: "Insights", to: "/insights" }, { label: "Insights of the day" }]);
+    expect(
+      trail("/analytics/enforcement", undefined, [
+        HOME,
+        { label: "Analytics", to: "/analytics" },
+        { label: "Enforcement trends" },
+      ]),
+    ).toEqual([
+      { label: "Insights", to: "/insights" },
+      { label: "Trends", to: "/insights/trends" },
+      { label: "Enforcement trends" },
+    ]);
+  });
+  it("names a page by its own crumb when it differs from the tab only in case", () => {
+    expect(
+      trail("/saved-sources", undefined, [
+        HOME,
+        { label: "Saved Work" },
+        { label: "Saved Sources" },
+      ]),
+    ).toEqual([{ label: "Saved work", to: "/saved-sources" }, { label: "Saved Sources" }]);
+  });
   it("keeps an unsectioned page's own crumbs, with Home named Overview", () => {
     expect(trail("/search", { q: "x" }, [HOME, { label: "Search" }])).toEqual([
       { label: "Overview", to: "/" },
