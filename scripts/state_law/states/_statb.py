@@ -406,7 +406,7 @@ def replay_cli(argv=None):
     args = parser.parse_args(argv)
     captures = {}
     for item in args.capture:
-        url, rest = item.split("=", 1)
+        url, rest = item.rsplit("=", 1)   # URLs may carry "=" in their query; paths do not
         path, at = rest.rsplit("@", 1)
         captures[url] = (path, at)
     here = pathlib.Path(__file__).resolve().parent
