@@ -193,6 +193,11 @@ load and delete shard by shard (`--delete-after-load`) to stay inside the disk b
 All commands from the repository root. Python needs only the standard library plus lxml (present); Florida's checks use
 LibreOffice (`soffice`, present). Credentials are sourced only inside the commands that load.
 
+0. **TLS**: www.ilga.gov and www.registerofohio.state.oh.us do not send their intermediate certificate. `lib.py` loads
+   `private/acq/w1025_regs/tls/extra_intermediates.pem` (Sectigo Public Server Authentication CA OV R40 and R36, each
+   downloaded from the URL in the server certificate's Authority Information Access field) in addition to the system
+   bundle; verification stays on. On another machine, fetch them the same way
+   (`openssl s_client ... | openssl x509 -noout -ext authorityInfoAccess`).
 1. **Apply the contract** (after `database/contracts/ingest-v1.sql`, which it extends):
    `database/contracts/state-regs-v1.sql` (idempotent; safe to re-apply). Check: `select public.state_reg_status_v1();`
 2. **Coverage rows** (51): `python3 -I -B scripts/state_regs/coverage.py` then
