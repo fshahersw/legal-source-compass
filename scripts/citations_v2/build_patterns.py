@@ -189,7 +189,7 @@ def state_rules(frags: dict[str, str]) -> list[dict]:
         anchors = literal_anchors(form)
         rules.append({
             "id": f"state_statute_{usps.lower()}_{i}", "kind": "state_statute", "builder": "state_statute", "priority": 35,
-            "state": usps, "code": code_id,
+            "state": usps, "code": code_id, "flags": "i",
             "pattern": r"(?<![A-Za-z0-9_.])(?<code_text>" + form + r")(?<sec>{{" + sec + "}})" + tail,
             "atomic": {"sec": "{{" + sec + "}}"},
             "anchors": anchors,
@@ -198,7 +198,7 @@ def state_rules(frags: dict[str, str]) -> list[dict]:
         anchors = literal_anchors(form)
         rules.append({
             "id": f"state_regulation_{usps.lower()}_{i}", "kind": "state_regulation", "builder": "state_regulation",
-            "priority": 36, "state": usps, "code": code_id,
+            "priority": 36, "state": usps, "code": code_id, "flags": "i",
             "pattern": r"(?<![A-Za-z0-9_.])(?:" + form + r")(?![A-Za-z0-9_])(?![-–]\d)",
             "anchors": anchors,
         })

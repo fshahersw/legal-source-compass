@@ -281,6 +281,15 @@ def build_case_short(c: Compiled, rule: dict, m: re.Match, mid: int) -> list[dic
                   fields, pin=pin, form="short", short="at")]
 
 
+def build_at_short(c: Compiled, rule: dict, m: re.Match, mid: int) -> list[dict]:
+    """ "76 FR at 48213", "124 Stat. at 242": linked later to the page of that volume cited before."""
+    g = groupdict(m)
+    fields = {k: render(c, t, g) for k, t in rule.get("fields", {}).items()}
+    pin = g["pin"].replace(",", "")
+    return [_cite(rule, rule["kind"], m.start(), m.end(), (m.start(), m.end()), mid, None, render(c, rule["normalized"], g),
+                  fields, pin=pin, form="short", short="at")]
+
+
 def build_statute_list(c: Compiled, rule: dict, m: re.Match, mid: int) -> list[dict]:
     g = groupdict(m)
     family = rule["family"]
@@ -289,9 +298,18 @@ def build_statute_list(c: Compiled, rule: dict, m: re.Match, mid: int) -> list[d
     label = (g.get("label") or "").strip()
     plural = bool(re.fullmatch(r"(§§|secs\.|sections|parts|pts\.)", label, re.I))
     body_start = m.start("items")
-    items = list(rule["item_rx"].finditer(m.group("items")))[: 20 if plural else 1]
+    found = list(rule["item_rx"].finditer(m.group("items")))
+    items = found[: 20 if plural else 1]
     if not items:
         return []
+    if not plural and family == "cfr" and items[0].group("section"):
+        # "40 CFR 52.38 and 52.39", "40 CFR 52.38(a)(2), (b)(2); 52.39(c)": without "§§" a further item is read only when it is
+        # a section of the same part
+        first_part = int(items[0].group("part"))
+        for it in found[1:20]:
+            if not it.group("section") or it.group("part_end") or int(it.group("part")) != first_part:
+                break
+            items.append(it)
     span_end = body_start + items[-1].end()
     out = []
     appendix = bool(g.get("app"))
@@ -390,7 +408,11 @@ def build_state_statute(c: Compiled, rule: dict, m: re.Match, mid: int) -> list[
         if not a or a.end() != m.end(grp):
             return []
     raw_code = g["code_text"]
-    sec = dash(g["sec"])
+    sec = nospace(dash(g["sec"]))
+    sub = re.search(r"(?:\([0-9A-Za-z]{1,5}\))+$", sec)
+    pin = sub.group(0) if sub and sub.start() > 0 else None
+    if pin:
+        sec = sec[: sub.start()]
     code = squash(_SIGN_TAIL.sub("", raw_code)).rstrip(",")
     st = rule["state"]
     title = g.get("title") or g.get("title2")
@@ -422,7 +444,7 @@ def build_state_statute(c: Compiled, rule: dict, m: re.Match, mid: int) -> list[
     if g.get("title2"):
         fields["title"] = g["title2"]
     key = f"state-stat:{st}:{code_id}:{path}"[:200]
-    return [_cite(rule, "state_statute", m.start(), m.end(), (m.start(), m.end()), mid, key, normalized, fields)]
+    return [_cite(rule, "state_statute", m.start(), m.end(), (m.start(), m.end()), mid, key, normalized, fields, pin=pin)]
 
 
 def build_state_regulation(c: Compiled, rule: dict, m: re.Match, mid: int) -> list[dict]:
@@ -464,14 +486,34 @@ def build_id(c: Compiled, rule: dict, m: re.Match, mid: int) -> list[dict]:
 def build_supra(c: Compiled, rule: dict, m: re.Match, mid: int) -> list[dict]:
     g = groupdict(m)
     name = g["name"]
-    sig = c.signals.match(name)
-    name_start = m.start("name") + (sig.end() if sig else 0)
-    name = name[sig.end():] if sig else name
+    sig = c.signals.match(name + " ")
+    cut = min(sig.end(), len(name)) if sig else 0
+    name_start = m.start("name") + cut
+    name = name[cut:]
     if not name:
         return []
     fields = {"name": squash(name)}
     return [_cite(rule, "short", name_start, m.end(), (name_start, m.end()), mid, None, squash(m.group(0)[name_start - m.start():]),
                   fields, pin=squash(g["pin"]) if g.get("pin") else None, form="short", short="supra")]
+
+
+def build_rule_list(c: Compiled, rule: dict, m: re.Match, mid: int) -> list[dict]:
+    """"Rules 16, 26(b), 34, and 45 of the Federal Rules of Civil Procedure": one citation per rule."""
+    g = groupdict(m)
+    rule_set = apply_filter(c, "rule_set", g["set"])
+    if not rule_set:
+        return []
+    name = c.rule_set_names.get(rule_set, "")
+    body_start = m.start("items")
+    out = []
+    items = list(rule["item_rx"].finditer(m.group("items")))
+    for i, it in enumerate(items):
+        s = m.start() if i == 0 else body_start + it.start()
+        e = m.end() if i == len(items) - 1 else body_start + it.end()
+        r = it.group("rule")
+        out.append(_cite(rule, "federal_rule", s, e, (m.start(), m.end()), mid, f"rule:{rule_set}:{r}", f"{name} {r}",
+                         {"set": rule_set, "rule": r}, pin=nospace(it.group("subs") or "") or None))
+    return out
 
 
 def build_section_short(c: Compiled, rule: dict, m: re.Match, mid: int) -> list[dict]:
@@ -487,9 +529,10 @@ def build_rule_short(c: Compiled, rule: dict, m: re.Match, mid: int) -> list[dic
 
 
 BUILDERS = {
-    "case": build_case, "case_short": build_case_short, "statute_list": build_statute_list, "single": build_single,
+    "case": build_case, "case_short": build_case_short, "at_short": build_at_short, "statute_list": build_statute_list,
+    "single": build_single,
     "state_statute": build_state_statute, "state_regulation": build_state_regulation, "id": build_id,
-    "supra": build_supra, "section_short": build_section_short, "rule_short": build_rule_short,
+    "supra": build_supra, "section_short": build_section_short, "rule_short": build_rule_short, "rule_list": build_rule_list,
 }
 
 
@@ -607,6 +650,35 @@ def case_name(c: Compiled, text: str, start: int, floor: int) -> dict | None:
     return {"text": squash(name), "start": base + s, "end": base + e}
 
 
+_CITING_PAREN = re.compile(r"^\((?:citing|quoting|cited\s+in|cited\s+with\s+approval\s+in|cleaned\s+up|alteration|internal|"
+                           r"emphasis|footnote|brackets|omissions)", re.I)
+
+
+def _inside_quote(text: str, start: int) -> bool:
+    """The citation is part of quoted text (an opening curly quote before it with no closing one in between)."""
+    lo = max(0, start - 800)
+    seg = text[lo:start]
+    o = seg.rfind("“")
+    return o >= 0 and seg.find("”", o) < 0
+
+
+def _inside_citing_paren(text: str, start: int) -> bool:
+    """The citation sits inside an explanatory parenthetical that cites it ("(citing Shamrock Oil, 313 U.S. 100)")."""
+    depth = 0
+    i = start - 1
+    lo = max(0, start - 300)
+    while i >= lo:
+        ch = text[i]
+        if ch == ")":
+            depth += 1
+        elif ch == "(":
+            if depth == 0:
+                return bool(_CITING_PAREN.match(text[i : i + 40]))
+            depth -= 1
+        i -= 1
+    return False
+
+
 def _postprocess(c: Compiled, text: str, kept: list[dict]) -> list[dict]:
     """Pins (cases, Federal Register, Statutes at Large, public laws), parallel groups, parentheticals and case names.
     A pin never runs into the next full citation; a short form read inside a pin ("Pub. L. No. 111-148, § 1501") is part
@@ -656,6 +728,8 @@ def _postprocess(c: Compiled, text: str, kept: list[dict]) -> list[dict]:
             kept[i]["paren"] = paren
             kept[i]["name"] = name
 
+    for x in kept:
+        x["_in_paren"] = x["form"] == "full" and (_inside_citing_paren(text, x["start"]) or _inside_quote(text, x["start"]))
     for idx, x in enumerate(kept):
         if x["kind"] != "case" or x["form"] != "full":
             close(members)
@@ -680,7 +754,7 @@ def extract(text: str, compiled: Compiled | None = None, max_chars: int = MAX_CH
     source = text[:max_chars]
     cands, furniture = _candidates(c, source)
     if furniture:
-        cands = [x for x in cands if x["kind"] != "docket" or all(x["end"] <= a or x["start"] >= b for a, b in furniture)]
+        cands = [x for x in cands if x["kind"] not in ("docket", "mdl") or all(x["end"] <= a or x["start"] >= b for a, b in furniture)]
     kept = _postprocess(c, source, _resolve_overlaps(cands))
     for x in kept:
         x["matched"] = source[x["start"] : x["end"]]
@@ -697,7 +771,7 @@ def extract_pages(pages: list[str], compiled: Compiled | None = None) -> list[li
         source = text[:MAX_CHARS]
         cands, furniture = _candidates(c, source)
         if furniture:
-            cands = [x for x in cands if x["kind"] != "docket" or all(x["end"] <= a or x["start"] >= b for a, b in furniture)]
+            cands = [x for x in cands if x["kind"] not in ("docket", "mdl") or all(x["end"] <= a or x["start"] >= b for a, b in furniture)]
         kept = _postprocess(c, source, _resolve_overlaps(cands))
         for x in kept:
             x["matched"] = source[x["start"] : x["end"]]
@@ -722,6 +796,39 @@ NOT_ANTECEDENT = ("mdl", "docket", "short")
 PAGED_KINDS = ("case", "federal_register", "statutes_at_large")
 
 
+_LIST_GAP = re.compile(js_to_py(r"^\s*(?:,|;|,?\s*(?:and|or))\s*$"))
+_RECORD_REF = re.compile(js_to_py(
+    r"(?<![A-Za-z])(?:Opp(?:osition)?|Mot(?:ion)?|Br(?:ief)?|Compl(?:aint)?|Decl(?:aration)?|Dep|Tr|Ex(?:hibit)?|Dkt|ECF|Doc|"
+    r"Reply|Resp(?:onse)?|Mem(?:orandum)?|Answer)\.?(?:\s+No\.)?\s*(?:at\s+)?[0-9]"))
+
+
+def _list_continuation(text: str, prev: dict | None, x: dict) -> tuple[str, str] | None:
+    """Key and display form of a "§ N" that continues a statutory list ("§ 4-88-104, § 4-88-105"), else None."""
+    if prev is None or prev["kind"] not in ("usc", "state_statute") or prev["form"] != "full":
+        return None
+    if not _LIST_GAP.match(text[prev["end"] : x["start"]]) and not _LIST_GAP.match(text[prev["span"][1] : x["start"]]):
+        return None
+    sec = x["fields"]["section"]
+    f = prev["fields"]
+    if prev["kind"] == "usc":
+        return f"usc:{f['title']}:{sec}", f"{f['title']} U.S.C. § {sec}"
+    if f.get("code_id") == "ilcs":
+        return None
+    path = f"{f['title']}:{sec}" if f.get("title") else f"{f['chapter']}:{sec}" if f.get("chapter") else sec
+    return f"state-stat:{f['state']}:{f['code_id']}:{path}", f"{f['code']} § {sec}"
+
+
+def _named_since(text: str, px: dict, until: int) -> bool:
+    """The text between a case citation and a later Id. names that case again ("... in Cepiel, the court ... Id.")."""
+    if px["kind"] != "case" or not px.get("name"):
+        return False
+    words = [w for w in re.findall(r"[A-Za-z][A-Za-z'’]+", px["name"]["text"]) if len(w) >= 4 and w[0].isupper()]
+    if not words:
+        return False
+    gap = text[px["end"] : until]
+    return re.search(r"(?<![A-Za-z])" + re.escape(words[0]) + r"(?![A-Za-z])", gap) is not None
+
+
 def _between_is_string_cite(c: Compiled, text: str, a_end: int, b_start: int) -> bool:
     """The two citations sit in one citation sentence joined by a semicolon (a string cite)."""
     gap = text[a_end:b_start]
@@ -743,15 +850,19 @@ def link_short_forms(c: Compiled, pages: list[tuple[int, str, list[dict]]]) -> N
             target = None
             status = "none"
             if x["short"] == "id":
-                prev = history[-1] if history else None
+                eligible = [h for h in history if not h[2].get("_in_paren")]
+                prev = eligible[-1] if eligible else None
                 if prev:
                     pp, pi, px = prev
                     status = "resolved"
-                    if len(history) > 1 and pp == p:
-                        qp, qi, qx = history[-2]
+                    if len(eligible) > 1 and pp == p:
+                        qp, qi, qx = eligible[-2]
                         if qp == p and qx["key"] != px["key"] and (qx["group"] is None or qx["group"] != px["group"]) \
-                                and _between_is_string_cite(c, text, qx["end"], px["start"]):
+                                and _between_is_string_cite(c, text, qx["end"], px["start"]) \
+                                and not _named_since(text, px, x["start"]):
                             status = "ambiguous"
+                    if status == "resolved" and pp == p and _RECORD_REF.search(text[px["end"] : x["start"]]):
+                        status = "ambiguous"  # a record document ("Opposition at 52", "Ex. 13") sits between them
                     if x["fields"].get("pin_kind") == "page" and px["kind"] not in PAGED_KINDS:
                         status = "ambiguous"  # "Id. at 570" names a page; the preceding authority has none
                     sec = x["fields"].get("section")
@@ -776,11 +887,17 @@ def link_short_forms(c: Compiled, pages: list[tuple[int, str, list[dict]]]) -> N
                         x["kind"] = px["kind"]
                         target = prev
             elif x["short"] == "at":
-                vol, rep = x["fields"]["volume"], x["fields"]["reporter"]
+                base = x["kind"]  # case, federal_register or statutes_at_large
+                vol, rep = x["fields"]["volume"], x["fields"].get("reporter")
                 pin_page = lead_number(x["pin"].lstrip("*")) if x["pin"] else -1
-                cands = [h for h in history if h[2]["kind"] == "case" and h[2]["form"] == "full"
-                         and h[2]["fields"].get("volume") == vol and h[2]["fields"].get("reporter") == rep
+                cands = [h for h in history if h[2]["kind"] == base and h[2]["form"] == "full"
+                         and h[2]["fields"].get("volume") == vol and (base != "case" or h[2]["fields"].get("reporter") == rep)
                          and h[2]["fields"].get("page", "").isdigit() and int(h[2]["fields"]["page"]) <= pin_page]
+                if base != "case" and cands:
+                    # the pages of a Federal Register or Statutes at Large volume are consecutive: the pin lies in the
+                    # cited document that starts last at or before it
+                    top = max(int(h[2]["fields"]["page"]) for h in cands)
+                    cands = [h for h in cands if int(h[2]["fields"]["page"]) == top]
                 keys = {h[2]["key"] for h in cands}
                 if len(keys) > 1:
                     nm = re.search(js_to_py(r"([A-Z][A-Za-z'’.&-]+)(?:\s+[A-Z][A-Za-z'’.&-]+)*,\s*$"), text[max(0, x["start"] - 80) : x["start"]])
@@ -793,7 +910,7 @@ def link_short_forms(c: Compiled, pages: list[tuple[int, str, list[dict]]]) -> N
                     target = cands[-1]
                     status = "resolved"
                     x["key"] = target[2]["key"]
-                    x["kind"] = "case"
+                    x["kind"] = base
                 elif keys:
                     status = "ambiguous"
             elif x["short"] == "supra":
@@ -816,10 +933,20 @@ def link_short_forms(c: Compiled, pages: list[tuple[int, str, list[dict]]]) -> N
                     status = "ambiguous"
             elif x["short"] == "section":
                 sec = x["fields"]["section"]
+                prev_cite = kept[i - 1] if i > 0 else None
+                listed = _list_continuation(text, prev_cite, x)
                 cands = [h for h in history if h[2]["kind"] in ("usc", "state_statute") and h[2]["form"] == "full"
                          and h[2]["fields"].get("section") == sec]
                 keys = {h[2]["key"] for h in cands}
-                if len(keys) == 1:
+                if listed is not None:
+                    # "Ark. Code Ann. § 4-88-104, § 4-88-105": a further item of the list just cited (same code)
+                    x["key"], x["normalized"] = listed
+                    x["kind"] = prev_cite["kind"]
+                    x["form"] = "full"
+                    x["short"] = None
+                    status = "resolved"
+                    target = (p, i - 1, prev_cite)
+                elif len(keys) == 1:
                     target = cands[-1]
                     status = "resolved"
                     x["key"] = target[2]["key"]
@@ -832,7 +959,7 @@ def link_short_forms(c: Compiled, pages: list[tuple[int, str, list[dict]]]) -> N
                     x["key"] = f"rule:{last_rule_set}:{x['fields']['rule']}"
                     x["kind"] = "federal_rule"
                     x["fields"]["set"] = last_rule_set
-            x["short_status"] = status
+            x["short_status"] = status if x["form"] == "short" else None
             if target is not None:
                 tp, ti, tx = target
                 own = x["fields"]

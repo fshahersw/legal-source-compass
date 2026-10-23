@@ -1,9 +1,9 @@
 {
- "version": "citations-v2/2026-10-25.1",
+ "version": "citations-v2/2026-10-25.2",
  "source": {
   "reporters_db": "3.2.67",
   "reporters_json_sha256": "d1dee4057eaf051b3737c720fd0c58cd436f74b69286f521c3601d6aa4d332f1",
-  "pattern_source_sha256": "175ffdc7abc3f75a0ce7dfad0c250839939890d7dfaaf6c66c100f14280f5f8b"
+  "pattern_source_sha256": "92942520c0ff6c454453f0cee55b60644c32b00f757642c5223ae3e66a566a05"
  },
  "rules": [
   {
@@ -11,7 +11,7 @@
    "kind": "case",
    "builder": "case",
    "priority": 40,
-   "pattern": "(?<![\\w.§-])(?<volume>\\d{1,4})\\s+(?<reporter>(?:A(?:,2d|2d|D(?:2d|3d|\\s?(?:2d|3d))|LR\\s?(?:2d|3d|4th|5th|6th)|RK\\.|\\.(?:\\s?(?:2d(?:\\.)?|3d(?:\\.)?|D\\.(?:\\s?(?:2d|3d|Cases))?|E\\.\\s?C\\.|F\\.\\s?(?:Rep\\.|T\\.\\s?R\\.(?:\\s?(?:2d(?:\\s?\\(RIA\\))?|\\((?:P\\-H\\)|RIA\\))))?)|K\\.\\s?Marsh\\.|L\\.\\s?(?:R\\.(?:\\s?(?:2d|3d|4th|5th|6th|Fed\\.(?:\\s?2d)?))?|T\\.\\s?Bankr\\.)|M\\.\\s?C\\.|N\\.(?:\\s?C\\.)?|R(?:\\.|ep\\.)))?|b(?:b(?:\\.(?:\\s?(?:Adm\\.|Ct\\.\\s?App\\.(?:\\s?Dec\\.)?|N\\.\\s?C(?:\\.|as\\.)|P(?:\\.\\s?R\\.|r(?:\\.(?:\\s?(?:Rep\\.|\\(n\\.\\s?s\\.\\s?\\)))?|ac\\.))|Rep\\.|U\\.\\s?S\\.|\\(U\\.\\s?S\\.\\s?\\)))?|ott(?:['’]s\\s?Pr(?:\\.\\s?Rep\\.|ac\\.\\s?Rep\\.)|\\s?P(?:\\.\\s?R\\.|r(?:\\.\\s?Rep\\.|act\\.\\s?Cas\\.))))|s\\.)|ccom\\.\\s?Disabilities\\s?Dec\\.\\s?\\(CCH\\)|d(?:d\\.|m\\.\\s?Rec\\.|v\\.\\s?S\\.)|gric\\.\\s?Dec(?:\\.)?|ik\\.(?:\\s?Rep\\.)?|k\\.(?:\\s?App\\.)?|l(?:a(?:\\.(?:\\s?(?:2d|App\\.(?:\\s?LEXIS)?|C(?:iv\\.\\s?App\\.\\s?LEXIS|rim\\.\\s?App\\.\\s?LEXIS)|LEXIS|Rep\\.|\\(N\\.\\s?S\\.\\s?\\)))?|s(?:\\.\\s?(?:App\\.\\s?LEXIS|LEXIS)|ka\\s?Fed\\.(?:\\s?R(?:\\.|ep\\.))?))|b\\.\\s?Law\\s?J\\.|k\\.|l\\.(?:\\s?Rep\\.)?)|m(?:\\.\\s?(?:&\\s?Eng\\.\\s?R\\.\\s?Cas\\.|Ann\\.\\s?Cas\\.|B\\.\\s?R\\.(?:\\s?\\((?:N\\.\\s?S\\.\\s?\\)|n\\.\\s?s\\.\\s?\\)))?|D(?:\\.|ec(?:['’]s\\.|\\.)|isabilities\\s?(?:Cas\\.\\s?\\(BNA\\)|Dec\\.))|Jur\\.|L(?:\\.\\s?(?:C(?:\\.|as)|Reg\\.\\s?,\\s?n\\.\\s?s\\.)|aw(?:\\.\\s?Rec\\.|\\s?(?:J\\.(?:\\s?\\((?:N\\.\\s?S\\.\\s?\\)|U\\.\\s?S\\.\\s?\\)))?|Re(?:c\\.|g\\.(?:\\s?\\(N\\.\\s?S\\.\\s?\\))?|v\\.)|T\\.(?:\\s?(?:Rep\\.(?:\\s?(?:Bankr\\.|U\\.\\s?S\\.\\s?Cts\\.|\\((?:N\\.\\s?S\\.\\s?\\)|U\\.\\s?S\\.\\s?Cts\\.\\s?\\))))?|\\(N\\.\\s?S\\.\\s?\\)))?))|ead(?:\\.\\s?Cas\\.|ing\\s?Cas))|Neg(?:\\.\\s?Ca(?:\\.|s(?:\\.|es))|l\\.\\s?Cas\\.)|R(?:ep(?:\\.|orts)|y\\.\\s?Rep\\.)|S(?:\\.\\s?R\\.|amoa(?:\\s?(?:2d|3d))?|t\\.\\s?R(?:\\.|ep\\.))|Tribal\\s?Law)|er(?:\\.\\s?(?:Jur\\.|L(?:\\.\\s?Rev\\.|aw\\s?(?:J\\.(?:\\s?\\(N\\.\\s?S\\.\\s?\\))?|Re(?:g\\.(?:\\s?\\(N\\.\\s?S\\.\\s?\\))?|v\\.)|T\\.\\s?Rep\\.)))|ican\\s?Leading\\s?Cases(?:\\s?\\(U\\.\\s?S\\.\\s?\\))?)|\\s?(?:Dec\\.|Law\\s?Rev\\.))|n(?:derson['’]s\\s?Ohio\\s?App\\.\\s?Cas\\.|t(?:\\.\\s?N\\.\\s?P\\.\\s?Cas\\.|h(?:\\.|on\\s?N\\.\\s?P\\.\\s?\\(N\\.\\s?Y\\.\\s?\\))))|p(?:\\.(?:\\s?2d\\.)?|p(?:\\.(?:\\s?(?:Com(?:['’]r(?:\\.\\s?Pat\\.|s\\s?Pat\\.|\\s?(?:Pat\\.|of\\s?Pat\\.))|\\.\\s?Pat\\.|m\\.\\s?Pat\\.|r\\.\\s?Pat\\.)|D(?:\\.\\s?C\\.|iv(?:\\.(?:\\s?(?:2d(?:\\.)?|3d(?:\\.)?|Rep\\.|\\(N\\.\\s?Y\\.\\s?\\)))?)?)))?|\\s?Div(?:\\.)?))|r(?:iz(?:\\.(?:\\s?(?:A(?:dv\\.\\s?Rep\\.|pp\\.(?:\\s?(?:LEXIS|Unpub\\.\\s?LEXIS))?)|LEXIS|Tax\\s?LEXIS|Unpub\\.\\s?LEXIS))?|ona\\s?Cases\\s?Digest)|k(?:\\.(?:\\s?(?:A(?:dv\\.\\s?Op\\.|pp(?:['’]x|\\.(?:\\s?LEXIS)?|x\\.))|LEXIS|Rep\\.|Terr\\.\\s?Rep\\.))?|\\s?App)|mstrong\\.\\s?Election\\s?Cases)|t(?:\\.(?:\\s?Rep\\.)?|l\\.(?:\\s?(?:2d|R(?:\\.|ep\\.)))?)|uto\\.\\s?Cas\\.(?:\\s?(?:2d(?:\\s?\\(CCH\\))?|\\(CCH\\)))?|v\\.\\s?Cas\\.(?:\\s?\\(CCH\\))?|\\s?2d)|B(?:LUE\\s?SKY\\s?L\\.\\s?REP\\.\\s?\\(CCH\\)|NA\\s?(?:IER\\s?CAS|OSHC)|TA\\s?LEXIS|\\.(?:\\s?(?:C\\.\\s?(?:A\\.\\s?\\(CCH\\)|D\\.)|Mon(?:\\.(?:\\s?Rep\\.)?)?|R\\.|Stockton|T\\.\\s?A\\.(?:\\s?M\\.\\s?\\(P\\-H\\))?))?|a(?:i(?:\\.(?:\\s?Eq\\.)?|l(?:\\.(?:\\s?(?:Eq\\.(?:\\s?\\(S\\.\\s?C\\.\\s?\\))?|L\\.(?:\\s?\\(S\\.\\s?C\\.\\s?\\))?|Rep\\.))?|ey\\s?(?:Ch\\.|Eq\\.|Rep\\.)))|l(?:d(?:\\.\\s?C\\.\\s?C\\.|w(?:\\.|in['’]s\\s?(?:C\\.\\s?C\\.\\s?U\\.\\s?S\\.\\s?Rep|Rep\\.)))|t\\.\\s?(?:C\\.\\s?Rep\\.|Law\\s?Trans\\.))|n(?:\\.\\s?&\\s?A\\.|k(?:ing\\s?Rep\\.\\s?\\(BNA\\)|r\\.\\s?(?:Ct\\.\\s?(?:Dec\\.(?:\\s?\\((?:CRR\\)|LRP\\)))?|Rep\\.)|L(?:EXIS|\\.\\s?Rep\\.(?:\\s?\\(C(?:CH\\)|\\.\\s?C\\.\\s?H\\.\\s?\\)))?)|Re(?:g\\.\\s?Supp\\.|p\\s?\\(St\\.\\s?Louis\\s?B\\.\\s?A\\.\\s?\\)))))|rb\\.(?:\\s?(?:Ch\\.(?:\\s?(?:Rep\\.|\\(N\\.\\s?Y\\.\\s?\\)))?|Rep\\.|S\\.\\s?C\\.))?|x(?:\\.|t\\.(?:\\s?\\(Tenn\\.\\s?\\))?)|yard['’]s\\s?Notebook)|e(?:e\\.|n\\.(?:\\s?Rev\\.\\s?Bd\\.\\s?Serv\\.\\s?\\(MB\\))?|tt(?:['’]s\\s?D\\.\\s?C\\.\\s?MS\\.|s(?:,\\s?(?:C\\.\\s?C\\.\\s?MS\\.|D(?:\\.\\s?C\\.(?:\\s?M(?:S(?:S\\.|\\.)|s\\.))?|\\s?C\\.\\s?MS\\.)|Scr\\.\\s?Bk\\.)|['’]\\s?(?:C\\.\\s?C\\.\\s?MS\\.|D(?:\\.\\s?C\\.\\s?MS(?:S\\.|\\.)|ec\\.)|Scr\\.\\s?Bk\\.)|\\.\\s?(?:C\\.\\s?C\\.\\s?MS\\.|D(?:\\.\\s?C\\.\\s?MS(?:S\\.|\\.)|\\s?C\\.\\s?MS\\.))|\\s?D\\.\\s?C\\.\\s?MS\\.)))|i(?:bb(?:\\(Ky\\.\\s?\\)|\\s?Rep\\.)|gelow(?:['’]s\\s?Insurance\\s?Reports|\\.\\s?Ins\\.\\s?Rep\\.)|n(?:\\.(?:\\s?Rep\\.)?|n(?:\\.(?:\\s?(?:Rep\\.|\\(Pa\\.\\s?\\)))?|\\s?\\[Pa\\]))|ss\\.(?:\\s?\\(U\\.\\s?S\\.\\s?\\)\\s?Bissell['’]s)?)|k\\.\\s?Reg\\.|l(?:\\.(?:\\s?C\\.\\s?C\\.(?:\\s?R\\.)?)?|a(?:ck(?:\\.(?:\\s?Rep\\.)?|f\\.(?:\\s?(?:Rep\\.|\\(Ind\\.\\s?\\)))?|\\s?R(?:\\.|ep\\.))|t(?:\\.\\s?C\\.\\s?C\\.\\s?R\\.|ch(?:\\.\\s?\\(U\\.\\s?S\\.\\s?Cir\\.\\s?Ct\\.\\s?\\)|f\\.(?:\\s?(?:&\\s?H\\.|C\\.\\s?C\\.(?:\\s?Rep\\.)?|Pr(?:\\.\\s?Cas\\.|ize\\s?Cas\\.)|\\(U\\.\\s?S\\.\\s?Circ\\.\\s?Ct\\.\\s?\\)))?)))|m\\.\\s?Neg\\.|oom\\.\\s?Man\\.(?:\\s?Neg\\.\\s?Cas\\.)?|u(?:e\\s?Sky\\s?L\\.\\s?Rep\\.(?:\\s?\\(CCH\\))?|me\\s?(?:Op\\.|Sup\\.\\s?Ct\\.\\s?Trans\\.|Unrep\\.\\s?Op\\.)))|o(?:nd\\.|sw(?:\\.|orth\\s?Super\\.\\s?Ct\\.\\s?Rep\\.))|r(?:a(?:d(?:\\.|f\\.)|yt(?:\\.|on\\s?\\(Vt\\.\\s?\\)))|ev\\.(?:\\s?Rep\\.)?|ief\\s?Times\\s?Rptr\\.|o(?:ck(?:,|\\.(?:\\s?Rep\\.)?)|wn(?:,\\s?Adm\\.|['’]s\\s?Adm(?:\\.)?|\\.\\s?Adm\\.|e(?:,\\s?\\(Pa\\.\\s?\\)|\\s?\\(Pa\\.\\s?\\))|\\s?Adm(?:\\.)?))|un(?:\\.\\s?Col\\.\\s?Cas\\.|n(?:\\.\\s?Coll\\.\\s?Cas\\.|er(?:,\\s?Col\\.\\s?Cas\\.|\\.\\s?Col\\.\\s?Cas\\.))))|u(?:ch(?:\\.|an(?:\\.|an\\.))|r(?:\\.(?:\\s?Rep\\.)?|nett\\s?\\(Wis\\.\\s?\\)|r['’]s\\s?Trial)|s(?:\\.\\s?Franchise\\s?Guide\\s?\\(CCH\\)|b(?:\\.(?:\\s?(?:Eq\\.|L\\.))?|ee\\s?Eq\\.\\s?\\(N\\.\\s?C\\.\\s?\\))|h\\s?\\(Ky\\.\\s?\\)))|\\s?Stockton)|C(?:AAF\\s?LEXIS|C(?:A\\s?LEXIS|H(?:,\\s?Unemployment\\s?Ins\\.\\s?Rep\\.|\\s?(?:OSHD|Tax\\s?Ct\\.\\s?Mem\\.|Unemployment\\s?Ins\\.\\s?Rep\\.))|PA\\s?LEXIS)|J\\s?C\\.\\s?A\\.\\s?R\\.|M(?:A\\s?LEXIS|R\\s?LEXIS)|\\.(?:\\s?(?:&\\s?C\\.|B\\.(?:\\s?C\\.)?|C(?:\\.(?:\\s?(?:A\\.(?:\\s?Rep\\.)?|L\\.\\s?J\\.|P\\.\\s?A\\.))?|ls\\.(?:\\s?R\\.)?)|I\\.\\s?T\\.|M\\.\\s?(?:A\\.|R\\.)))?|a(?:i(?:\\.(?:\\s?(?:Cas\\.(?:\\s?Err\\.)?|R\\.))?|n(?:\\.(?:\\s?Rep\\.)?|es\\s?(?:Cas\\.|Rep\\.|\\(N\\.\\s?Y\\.\\s?\\))))|l(?:\\.(?:\\s?(?:2(?:d|nd)|3(?:d(?:\\s?Spec\\.\\s?Trib\\s?Supp\\.)?|rd)|4th(?:\\s?CJP\\s?Supp\\.)?|5th(?:\\s?CJP\\s?Supp\\.)?|App\\.(?:\\s?(?:2d(?:\\s?Supp(?:\\.)?)?|3d(?:\\s?Supp\\.)?|4th(?:\\s?Supp\\.)?|5th(?:\\s?Supp\\.)?|LEXIS|Rep\\.|Supp(?:\\.(?:\\s?(?:2d|3d|4th|5th))?)?|Unpub\\.\\s?LEXIS))?|Bankr\\.\\s?Ct\\.\\s?Rep\\.|Com(?:m\\.\\s?Jud\\.\\s?Perform\\.\\s?LEXIS|p\\.\\s?Cas(?:es)?)|D(?:aily\\s?Op\\.\\s?Serv(?:\\.|ice)|ist\\.\\s?Ct\\.)|I\\.\\s?A\\.\\s?C\\.|Jud\\.\\s?Ethics\\s?Op\\.\\s?LEXIS|L(?:EXIS|aw\\s?J\\.(?:\\s?&\\s?Lit\\.\\s?Rev\\.)?)|R(?:ep\\.|ptr\\.(?:\\s?(?:2d|3d))?)|Sup(?:\\.(?:\\s?\\(Cal\\.\\s?\\))?|er\\.\\s?(?:Ct\\.|LEXIS)|p\\.)|Unrep\\.(?:\\s?Cas\\.)?|WCC))?|l\\s?(?:Rep\\.|\\(Va\\.\\s?\\)))|m\\.\\s?&\\s?N(?:\\.|or\\.)|n\\.\\s?(?:Com\\.\\s?L\\.\\s?Guide\\s?\\(CCH\\)|Tax\\s?Rep\\.\\s?\\(CCH\\))|r(?:\\.\\s?L(?:\\.\\s?Rep\\.|aw(?:\\.\\s?Repos\\.|\\s?Repos\\.))|penter['’]s\\s?Report\\s?of\\s?Burr['’]s\\s?Trial)|tes\\.)|ent(?:\\.\\s?Law(?:\\.\\s?J\\.|\\s?J\\.)|re\\s?Co\\.\\s?L\\.\\s?J\\.)|h(?:\\.\\s?Sent\\.(?:\\s?\\(N\\.\\s?Y\\.\\s?\\))?|a(?:nd(?:\\.(?:\\s?\\(Wis\\.\\s?\\))?|l\\.)|rl(?:\\.\\s?R\\.|et\\.\\s?\\(Ga\\.\\s?\\)|t(?:\\.(?:\\s?R\\.\\s?M\\.)?|on(?:['’]s(?:\\s?\\(Rob['’]t\\.\\s?M\\.\\s?\\)\\s?Rep\\.)?|\\s?Rep\\.)))|se(?:,|['’]s\\s?Trial\\.\\s?Append\\.|\\.))|e(?:m\\.\\s?Reg\\.\\s?Rep\\.\\s?\\(BNA\\)|st(?:\\.|er\\s?Co\\.\\s?Rep\\.)|v(?:\\.(?:\\s?(?:Ch\\.|Eq\\.))?|es\\s?(?:Eq\\.\\s?\\(S\\.\\s?C\\.\\s?\\)|L\\.\\s?\\(S\\.\\s?C\\.\\s?\\))))|i(?:\\.\\s?L(?:aw\\s?J\\.|eg\\.\\s?N(?:\\.|ews(?:\\.)?))|cago\\s?Bd\\.\\s?Options\\s?Ex\\.\\s?\\(CCH\\)|p\\.(?:\\s?(?:D\\.|N\\.|Rep\\.|\\(Vt\\.\\s?\\)))?|t\\.\\s?Cr(?:\\.\\s?L(?:\\.|aw)|im\\.\\s?Law)|\\s?Leg\\.\\s?News))|i(?:n(?:\\.\\s?(?:L(?:\\.\\s?Bull\\.|aw(?:\\.\\s?Bul\\.|\\s?Bul(?:\\.|l\\.)))|R(?:\\.|ep\\.)|S(?:\\.\\s?C\\.\\s?R(?:\\.|ep\\.)|up(?:\\.\\s?Ct\\.\\s?Rep\\.|er\\.\\s?\\(Ohio\\))))|c\\.\\s?L\\.\\s?Bul\\.)|ty\\s?H(?:\\.\\s?Rec\\.|all\\s?Rec\\.\\s?\\(NY\\))|v(?:\\.\\s?Proc\\.\\s?(?:N\\.\\s?S\\.|R\\.)|il\\s?Proc\\.\\s?R\\.))|l(?:\\.\\s?(?:C(?:h\\.|t\\.)|R\\.)|a(?:rke\\s?Ch\\.(?:\\s?\\(N\\.\\s?Y\\.\\s?\\))?|yton['’]s\\s?Notebook)|iff\\.)|o(?:d(?:d(?:\\.\\s?Dig\\.|ington['’]s\\s?Digest)|e\\s?Rep\\.)|l(?:\\.(?:\\s?(?:&\\s?C(?:\\.\\s?Cas\\.|ai(?:\\.|nes\\s?Cas\\.\\s?\\(N\\.\\s?Y\\.\\s?\\)))|Cas\\.(?:\\s?\\(N\\.\\s?Y\\.\\s?\\))?|L(?:\\.\\s?Rep\\.|aw\\s?Rep\\.)))?|d(?:\\.|w\\.)|e(?:\\.\\s?(?:&\\s?C(?:\\.\\s?Cas\\.|ai\\.(?:\\s?Cas\\.)?)|Cas\\.(?:\\s?Pr\\.)?)|m\\.\\s?(?:&\\s?C\\.\\s?Cas\\.|Cas\\.))|l(?:ective\\s?Bargaining\\s?Negot\\.\\s?&\\s?Cont\\.\\s?\\(BNA\\)|ier\\s?Bankr\\.\\s?Cas\\.(?:\\s?(?:2d(?:\\s?\\(MB\\))?|\\(MB\\)))?)|o(?:\\.(?:\\s?(?:App\\.(?:\\s?LEXIS)?|Bankr\\.\\s?Ct\\.\\s?Rep\\.|Discipl\\.\\s?LEXIS|J\\.(?:\\s?C\\.\\s?A\\.\\s?R\\.)?|L(?:EXIS|\\.\\s?Rep\\.|aw\\s?Rep\\.)|N\\.\\s?P\\.|R\\.))?|rado\\s?Journal|\\s?Bankr\\s?Ct\\s?Rep))|m(?:m(?:\\.\\s?(?:Fut\\.\\s?L\\.\\s?Rep\\.(?:\\s?\\(CCH\\))?|Reg\\.\\s?(?:2d\\s?\\(P\\s?&\\s?F\\)|\\(P\\s?&\\s?F\\)))|c['’]ns\\s?Reg\\.\\s?\\(P\\s?&\\s?F\\)|unications\\s?Reg\\.\\s?(?:2d\\s?\\(P&F\\)|\\(P&F\\)))|p\\.\\s?Gen\\.)|n(?:g\\.\\s?Index\\(CCH\\)|n(?:\\.(?:\\s?(?:App\\.(?:\\s?LEXIS)?|Cir\\.\\s?(?:Ct(?:\\.)?|LEXIS)|L(?:EXIS|\\.\\s?Rptr\\.)|Rep\\.|Su(?:p(?:\\.|er\\.\\s?(?:Ct\\.|LEXIS)|p\\.)|rr\\.)))?|oly\\s?Sur(?:\\.\\s?Rep\\.|r\\.\\s?Rep\\.))|s(?:t\\.(?:\\s?(?:Rep\\.|S\\.\\s?C\\.))?|umer\\s?(?:Cred\\.\\s?Guide\\s?\\(CCH\\)|Prod\\.\\s?Safety\\s?Guide\\s?\\(CCH\\)))|t\\.\\s?(?:App\\.\\s?Dec\\.\\s?\\(CCH\\)|Cas\\.\\s?Fed\\.(?:\\s?\\(CCH\\))?))|o(?:ke\\s?\\(Tenn\\.\\s?\\)|mbs['’]\\s?Trial\\s?of\\s?Aaron\\s?Burr(?:\\.)?|p\\.\\s?Chy\\.)|p(?:r\\.\\s?L\\.\\s?Dec\\.|y(?:\\.\\s?L\\.\\s?Rep\\.\\s?\\(CCH\\)|right\\s?L\\.\\s?(?:Dec\\.\\s?\\(CCH\\)|Rep\\.\\s?\\(CCH\\))))|st\\s?Accounting\\s?Stand\\.\\s?Guide\\s?\\(CCH\\)|urt\\s?Cl\\.|w\\.(?:\\s?(?:N\\.\\s?Y\\.|Rep\\.))?|x\\.\\s?Manual\\s?Trade\\-Mark\\s?Cas\\.)|r(?:a(?:\\.|bbe\\.|nch(?:,\\s?(?:C\\.\\s?C\\.|Pat\\.\\s?Dec\\.)|\\.\\s?C\\.\\s?C\\.|\\s?(?:C\\.\\s?C\\.|D\\.\\s?C\\.|Rep\\.|\\(US\\)))?)|im\\.\\s?L\\.\\s?Rep\\.\\s?\\(BNA\\))|t\\.\\s?(?:C(?:l(?:\\.(?:\\s?R(?:\\.|ep\\.))?|s\\.\\s?R\\.)|ust\\.(?:\\s?(?:Appls\\.|LEXIS))?)|Int(?:['’]l\\s?Trade|l\\.\\s?Trade\\s?LEXIS)|Sup\\.)|u(?:rt\\.|s(?:h\\.(?:\\s?(?:Rep\\.|\\(Mass\\.\\s?\\)))?|t\\.\\s?(?:B\\.\\s?&\\s?Dec\\.|Ct\\.(?:\\s?LEXIS)?))))|D(?:\\.(?:\\s?(?:&\\s?B\\.|A\\.\\s?R\\.|C(?:\\.(?:\\s?(?:App\\.(?:\\s?LEXIS)?|Super\\.\\s?LEXIS|\\((?:Cranch\\)|Mac(?:Arth\\.\\s?(?:&\\s?M\\.\\s?\\)|\\))|key\\))|Tuck\\.\\s?&\\s?Cl\\.\\s?\\)|patent\\))))?|hip(?:\\.(?:\\s?(?:Rep\\.|\\(Vt\\.\\s?\\)))?|m\\.))|Haw\\.|L\\.\\s?N\\.(?:\\s?,)?|N\\.\\s?H\\.|P\\.\\s?R\\.|S\\.\\s?D\\.))?|a(?:ily\\s?(?:Journal\\s?D(?:AR|\\.\\s?A\\.\\s?R\\.)|L(?:\\.\\s?(?:N\\.|R\\.)|ab\\.\\s?Rep\\.\\s?\\(BNA\\)|eg\\.\\s?(?:News\\s?\\(Pa\\.\\s?\\)|\\(Pa\\.\\s?\\)))|Wash\\.\\s?L\\.\\s?Rptr\\.)|k(?:\\.|ota\\s?LEXIS)|l(?:\\.(?:\\s?Rep\\.)?|l(?:\\.(?:\\s?(?:Dig\\.|Rep\\.|S\\.\\s?C\\.|\\(Tex\\.\\s?\\)))?|a(?:m\\s?Dig\\.\\s?\\(Tex\\.\\s?\\)|s\\s?Rep\\.))|y(?:['’]s\\s?R\\.|\\s?\\(N(?:Y\\)|\\.\\s?Y\\.\\s?\\))))|n(?:\\.|a\\s?Rep\\.|e,\\s?Abr\\.)|vis\\.\\s?L\\.\\s?Ct\\.\\s?Cas\\.|y(?:\\.|\\s?\\(Conn\\)))|e(?:ady(?:,|\\.)|c\\.\\s?Com(?:\\.\\s?Pat\\.|m(?:['’]r\\s?Pat\\.|r\\.\\s?Pat\\.))|l(?:\\.(?:\\s?(?:C(?:\\.\\s?P\\.\\s?LEXIS|as\\.|h\\.(?:\\s?(?:LEXIS|Rep\\.))?|o\\.(?:\\s?Rep\\.)?)|Fam\\.\\s?Ct\\.\\s?LEXIS|LEXIS|Rep\\.|Super\\.\\s?LEXIS|\\(Boyce\\)))?|aware\\s?Co\\.\\s?Reports)|m\\.(?:\\s?Sur(?:\\.|r\\.))?|n(?:\\.|io\\s?Rep\\.)|s(?:\\.(?:\\s?(?:Eq\\.|Rep\\.))?|aus\\.(?:\\s?(?:Eq\\.|Rep\\.))?)|v\\.(?:\\s?(?:&\\s?B(?:\\.(?:\\s?(?:Eq\\.|L\\.))?|at\\.(?:\\s?(?:Eq\\.|Law))?)|Eq\\.(?:\\s?Rep\\.)?|L\\.|Rep\\.|\\(N\\.\\s?C\\.\\s?\\)))?)|i(?:ck\\.\\s?\\(NJ\\)|ll\\.|s(?:\\.\\s?R\\.|ney\\s?\\(Ohio\\)|t\\.\\s?Rep\\.)|v\\.)|o(?:minion\\s?Tax\\s?Cas\\.\\s?\\(CCH\\)|ug(?:\\.(?:\\s?(?:Rep\\.|\\(Mich\\.\\s?\\)))?|l\\.\\s?\\(Mich\\.\\s?\\)))|u(?:d(?:\\.(?:\\s?(?:Ch\\.|Eq\\.(?:\\s?\\(S\\.\\s?C\\.\\s?\\))?|L\\.(?:\\s?\\(S\\.\\s?C\\.\\s?\\))?|\\(S\\.\\s?C\\.\\s?\\)))?|l(?:\\.|ey\\s?(?:Rep\\.|\\(Ga\\.\\s?\\))))|er\\s?Super\\.\\s?Ct\\.\\s?Rep\\.|v\\.))|E(?:EOC\\s?Compl\\.\\s?Man\\.\\s?\\(CCH\\)|RC\\s?\\(BNA\\)|\\.\\s?(?:A\\.\\s?D\\.|D\\.\\s?(?:Pa\\.|Smith)|H\\.\\s?Smith(?:['’]s)?)|d(?:\\.\\s?(?:C(?:\\.\\s?R\\.|h\\.)|Law\\s?Rep\\.)|m\\.\\s?Sel\\.\\s?Ca(?:\\.|s\\.(?:\\s?\\(N\\.\\s?Y\\.\\s?\\))?)|uc(?:\\.\\s?L\\.\\s?Rep\\.|\\s?L\\s?Rep)|w\\.(?:\\s?(?:Ch\\.(?:\\s?(?:Rep\\.|\\(N\\.\\s?Y\\.\\s?\\)))?|Rep\\.))?)|mpl(?:\\.\\s?(?:Benefits\\s?Cas\\.\\s?\\(BNA\\)|Coordinator\\s?\\(RIA\\)|Prac\\.\\s?(?:Dec\\.(?:\\s?\\(CCH\\))?|Guide\\s?\\(CCH\\))|Safety\\s?&\\s?Health\\s?Guide\\s?\\(CCH\\))|oyee\\s?Benefits\\s?Cas\\.(?:\\s?\\(BNA\\))?|\\s?Prac\\s?Dec\\s?\\[CCH\\])|n(?:ergy\\s?Mg(?:mt\\.\\s?\\(CCH\\)|t\\.)|v(?:['’]t\\s?Rep\\.\\s?(?:Cas\\.\\s?\\(BNA\\)|\\(BNA\\))|tl\\.\\s?L\\.\\s?Rep\\.(?:\\s?\\(Envtl\\.\\s?Law\\s?Inst\\.\\s?\\))?))|xempt\\s?Org\\.\\s?Rep\\.\\s?\\(CCH\\))|F(?:3d(?:\\.)?|4th|CC\\s?(?:2d|Rcd)|ED\\s?App\\.|LW\\s?Fed|S(?:3d|upp3d)|\\.(?:\\s?(?:2d(?:\\.)?|3d(?:\\.)?|4(?:th(?:\\.)?|\\s?th)|App(?:['’]x(?:\\.)?|x\\.)|C(?:\\.(?:\\s?C\\.(?:\\s?2d)?)?|as\\.)|L\\.\\s?R\\.\\s?A\\.|R\\.\\s?D\\.|Supp(?:\\.(?:\\s?(?:2d|3(?:D|d(?:\\.)?)))?)?|T\\.\\s?C\\.|\\(2d\\)))?|a(?:ir\\s?Empl\\.\\s?Prac\\.\\s?(?:Cas\\.(?:\\s?\\(BNA\\))?|Newsl\\.\\s?\\(BNA\\))|m\\.\\s?L\\.\\s?(?:Rep\\.\\s?\\(BNA\\)|Tax\\s?Guide\\s?\\(CCH\\)))|ed(?:\\.(?:\\s?(?:A(?:pp(?:['’]x|\\.|x(?:\\.)?)|udit\\s?Guide\\s?\\(CCH\\))|Banking\\s?L\\.\\s?Rep\\.(?:\\s?\\(CCH\\))?|C(?:a(?:\\.|rr\\.\\s?(?:Cas\\.(?:\\s?\\(CCH\\))?|Rep\\.\\s?\\(CCH\\))|s\\.)|l\\.|ont\\.\\s?Rep\\.\\s?\\(BNA\\))|E(?:lection\\s?Camp\\.\\s?Fin\\.\\s?Guide\\s?\\(CCH\\)|nergy\\s?Reg\\.\\s?Comm['’]n\\s?Rep\\.\\s?\\(CCH\\)|st\\.\\s?&\\s?Gift\\s?Tax\\s?Rep\\.\\s?\\(CCH\\)|x\\.\\s?Tax\\s?Rep\\.\\s?\\(CCH\\))|Inc\\.\\s?Gift\\s?&\\s?Est\\.\\s?Tax['’]n\\s?\\(MB\\)|R(?:\\.(?:\\s?(?:2d|3d|4th|Evid\\.\\s?Serv\\.(?:\\s?(?:2d|3d|\\(Callaghan\\)))?|Serv\\.(?:\\s?(?:2d(?:\\s?\\((?:Callaghan\\)|West\\)))?|3d(?:\\s?\\((?:Callaghan\\)|West\\)))?|\\(Callaghan\\)))?))?|ep\\.(?:\\s?(?:2d|3d|4th))?)|Se(?:c\\.\\s?L\\.\\s?Rep\\.(?:\\s?\\(CCH\\))?|nt(?:['’]g\\s?Rep|\\.\\s?R\\.))|Tax\\s?(?:Coordinator\\s?Second\\s?Series\\s?\\(RIA\\)|Guide\\s?Rep\\.\\s?\\(CCH\\))))?|\\s?(?:Appx|Sec\\s?L\\s?Rep\\s?\\(CCH\\)))|i(?:re\\s?&\\s?Casualty\\s?Cas\\.(?:\\s?\\(CCH\\))?|sh\\.\\s?P(?:at\\.\\s?(?:Cas\\.|Rep\\.)|r(?:\\.\\s?Cas\\.|ize(?:\\s?Cas\\.)?)))|l(?:\\.\\s?S\\.|a\\.(?:\\s?(?:App\\.\\s?LEXIS|L(?:EXIS|\\.\\s?Weekly(?:\\s?(?:Fed\\.(?:\\s?(?:B|C|D|S))?|S(?:upp\\.)?))?)|Rep\\.|Supp\\.(?:\\s?2d)?))?|ip(?:\\.|p\\.\\s?\\(F\\.\\s?\\))|or(?:\\.|ida\\s?Rep\\.))|ood\\s?Drug\\s?Cosm\\.\\s?L\\.\\s?Rep\\.\\s?\\(CCH\\)|r(?:\\.\\s?Ch(?:\\.|y\\.)|ee(?:\\.\\s?Ch\\.|m\\.(?:\\s?(?:Ch\\.(?:\\s?\\(Miss\\.\\s?\\))?|\\(Miss\\.\\s?\\)))?))|ulton\\s?County\\s?D\\.\\s?Rep\\.|\\s?(?:2d|Supp(?:\\.|\\s?2d)?))|G(?:\\.\\s?(?:&\\s?J\\.|D\\.\\s?R\\.)|a(?:\\.(?:\\s?(?:App\\.(?:\\s?LEXIS)?|L(?:EXIS|\\.\\s?Rep\\.|aw\\s?Reporter)|Rep\\.|\\(Kelly\\)))?|ll(?:\\.(?:\\s?(?:C\\.\\s?C\\.\\s?R\\.|Rep\\.))?|ison['’]s\\s?Rep\\.))|eorgia\\s?Decisions|i(?:bb(?:\\.\\s?Surr\\.|ons\\s?\\(N\\.\\s?Y\\.\\s?\\))|l(?:\\.|d(?:\\.|ersleeve\\s?\\(N\\.\\s?Mex\\.\\s?\\)|r\\.)|m(?:\\.(?:\\s?\\(Ill\\.\\s?\\))?|er\\s?\\(Va\\.\\s?\\))|p\\.))|o(?:ebel['’]s\\s?Rep\\.|v['’]t\\s?(?:Cont\\.\\s?Rep\\.\\s?\\(CCH\\)|Empl\\.\\s?Rel\\.\\s?Rep\\.\\s?\\(BNA\\)))|r(?:\\.|a(?:nt\\s?(?:Cas\\.(?:\\s?\\(Pa\\.\\s?\\))?|Pa\\.|\\(Pa\\.\\s?\\))|tt\\.(?:\\s?\\(Va\\.\\s?\\))?|y\\s?\\(Mass\\.\\s?\\))|eene\\s?G\\.\\s?\\(Iowa\\))|u(?:am\\s?LEXIS|nby\\s?\\(La\\.\\s?\\)))|H(?:\\.(?:\\s?(?:&\\s?(?:G\\.|J\\.|M(?:\\.(?:\\s?\\(Va\\.\\s?\\))?|cH\\.))|Rep\\.))?|a(?:ll(?:,\\s?Law\\s?J\\.|['’]s\\s?(?:R\\.|Sup\\.\\s?C(?:ourt\\s?Rep\\.|t\\.\\s?R\\.))|\\.(?:\\s?Law\\s?J\\.)?|\\s?(?:R(?:\\.|ep\\.)|Super\\.\\s?Ct\\.\\s?Rep\\.))|nd(?:\\.|y\\s?(?:R\\.|\\(Ohio\\)))|r(?:\\.(?:\\s?(?:&\\s?J\\.|Ch(?:\\.|y\\.)))?|d(?:\\.|es\\.|in\\(Ky\\.\\s?\\))|p\\.(?:\\s?(?:Eq\\.(?:\\s?\\(S\\.\\s?C\\.\\s?\\))?|L\\.(?:\\s?\\(S\\.\\s?C\\.\\s?\\))?))?|r(?:\\.(?:\\s?(?:Ch\\.(?:\\s?(?:R\\.|\\(Mich\\.\\s?\\)))?|Rep\\.|\\(Mich\\.\\s?\\)))?|ing\\.(?:\\s?Ch\\.\\s?\\(Mich\\.\\s?\\))?))|s(?:b\\.|k(?:\\.|ell\\s?C\\.\\s?C\\.))|vw\\.\\s?&\\s?H\\.|w(?:\\.(?:\\s?(?:App\\.(?:\\s?LEXIS)?|LEXIS|Rep\\.))?|ai(?:['’]i|i\\s?(?:App\\.|Rep\\.))|ks(?:\\(N\\.\\s?C\\.\\s?\\)|\\s?Rep\\.))|y(?:\\.(?:\\s?(?:&\\s?H(?:\\.|az\\.)|Rep\\.))?|w\\.(?:\\s?(?:&\\s?H(?:\\.(?:\\s?D\\.\\s?C\\.)?|az\\.)|N\\.\\s?C\\.|Rep\\.|Tenn\\.|\\((?:N\\.\\s?C\\.\\s?\\)|Tenn\\.\\s?\\))))?)|z\\.\\s?(?:Reg\\.\\s?(?:Pa\\.|U\\.\\s?S\\.)|U\\.\\s?S\\.\\s?Reg\\.))|e(?:ad\\(Tenn\\.\\s?\\)|isk\\.(?:\\s?\\(Tenn\\.\\s?\\))?|mp(?:\\.|st\\.)|n\\.(?:\\s?&\\s?M(?:\\.|un\\.))?)|il(?:l(?:\\.\\s?N\\.\\s?Y\\.|es['’]\\s?Notebook|\\s?(?:&\\s?D(?:\\.\\s?Supp\\.|en\\.(?:\\s?Supp\\.)?)|Ch\\.(?:\\s?Rep\\.)?|Eq\\.(?:\\s?\\(S\\.\\s?C\\.\\s?\\))?|Law|Rep\\.|S\\.\\s?C\\.))|t\\.)|o(?:ff(?:\\.(?:\\s?(?:Ch(?:\\.(?:\\s?Rep\\.)?|a\\.)|Dec\\.|Land(?:\\.\\s?Cas\\.|\\s?Cas\\.)|N\\.\\s?Y\\.|Op\\.))?|m\\.(?:\\s?Ch\\.\\s?\\(N\\.\\s?Y\\.\\s?\\))?|\\s?Land\\s?Cas\\.)|pk\\.\\s?(?:Ch\\.(?:\\s?Rep\\.)?|Works(?:\\.)?)|sea['’]s\\s?Rep\\.|us(?:\\.\\s?&\\s?Dev\\.\\s?Rep\\.\\s?\\(RIA\\)|t(?:\\.|on\\s?Criminal))|w(?:\\.(?:\\s?(?:App\\.\\s?Cas\\.|N\\.\\s?P\\.(?:\\s?\\(Mich\\.\\s?\\))?|P(?:\\.\\s?R\\.|r(?:\\.(?:\\s?(?:Rep\\.|\\(n\\.\\s?s\\.\\s?\\)))?|ac\\.(?:\\s?\\(N\\.\\s?Y\\.\\s?\\))?))|Rep\\.))?|ard\\s?Rep\\.|ell\\s?N\\.\\s?P\\.))|u(?:gh(?:\\.|es(?:\\.|\\s?\\(1877\\)))|m(?:\\.(?:\\s?Rep\\.)?|ph\\.(?:\\s?Rep\\.)?)|n(?:\\.|t(?:,\\s?Mer\\.\\s?Mag\\.|\\.\\s?Mer\\.\\s?Mag\\.|\\s?Mer\\.\\s?Mag\\.))))|I(?:&N(?:Dec\\.|\\s?Dec(?:\\.)?)?|ER\\s?Cases|L\\s?App(?:\\.\\s?\\((?:1st\\)|2d\\)|3d\\)|4th\\)|5th\\))|\\s?\\((?:1st\\)|2(?:d\\)|nd\\))|3(?:d\\)|rd\\))|4th\\)|5(?:th\\)|\\s?th\\))))|N\\s?Dec\\.|RS\\s?Pos\\.\\s?\\(CCH\\)|\\.\\s?(?:&\\s?N\\.\\s?Dec\\.|C\\.\\s?C\\.(?:\\s?2d)?|E\\.\\s?R\\.(?:\\s?Cas\\.(?:\\s?\\(BNA\\))?)?|R\\.\\s?B\\.|T\\.\\s?R\\.\\s?D\\.(?:\\s?\\(BNA\\))?)|a\\.|da\\.(?:\\s?(?:App\\.\\s?(?:LEXIS|Unpub\\.\\s?LEXIS)|LEXIS))?|l(?:l\\.(?:\\s?(?:2d|A(?:\\.(?:\\s?(?:2d|3d))?|pp\\.(?:\\s?(?:2d|3d|LEXIS|Rep\\.|Unpub\\.\\s?LEXIS))?)|C(?:\\.\\s?C\\.|ir\\.\\s?Ct\\.(?:\\s?Rep\\.)?|t\\.\\s?Cl\\.(?:\\s?LEXIS)?)|Dec(?:\\.|s\\.)|LEXIS|Rep\\.|\\((?:Breese\\)|Gilm\\.\\s?\\)|Scam(?:\\)|\\.\\s?\\)))))?|\\s?App(?:\\.\\s?\\((?:1st\\)|2d\\)|3d\\)|4th\\)|5th\\))|\\s?\\((?:1st\\)|2d\\)|3d\\)|4th\\)|5th\\))))|mmigr\\.\\s?L\\.\\s?Serv\\.\\s?\\(West\\)|n(?:d(?:\\.(?:\\s?(?:App\\.(?:\\s?(?:LEXIS|Unpub\\.\\s?LEXIS))?|Cl\\.\\s?Com(?:\\.|m\\.)|Dec\\.|L(?:EXIS|\\.\\s?Rep\\.)|Rep\\.|T(?:\\.|ax\\s?LEXIS)))?|ian\\s?Terr\\.(?:\\s?LEXIS)?)|her\\.\\s?Est\\.\\s?&\\s?Gift\\s?Tax\\s?Rep\\.\\s?\\(CCH\\)|s(?:\\.\\s?L(?:\\.\\s?(?:J\\.|Rep\\.\\s?\\(CCH\\))|aw(?:\\.\\s?J\\.|\\s?J\\.))|\\s?Law\\s?J\\.)|t(?:['’]l\\s?(?:Env['’]t\\s?Rep\\.\\s?\\(BNA\\)|Trade\\s?Rep\\.\\s?\\(BNA\\))|\\.\\s?Rev\\.\\s?Rec(?:,|\\.)|erior\\s?Dec\\.|\\s?Rev\\.\\s?Rec\\.))|owa\\s?(?:App\\.\\s?LEXIS|Rep\\.|Sup\\.\\s?LEXIS)|red\\.(?:\\s?(?:Eq\\.(?:\\s?(?:Rep\\.|\\(N\\.\\s?C\\.\\s?\\)))?|L(?:\\.(?:\\s?\\(N\\.\\s?C\\.\\s?\\))?|aw(?:\\s?Rep\\.)?)|Rep\\.))?|\\s?&\\s?N\\s?Dec\\.)|J(?:\\.(?:\\s?(?:Ch\\.|J\\.\\s?Mar(?:\\.|sh\\.(?:\\s?\\(Ky\\.\\s?\\))?)|Rep\\.))?|eff\\.(?:\\s?\\(Va\\.\\s?\\))?|o(?:hn(?:\\.(?:\\s?Rep\\.)?|s(?:\\.(?:\\s?(?:C(?:as\\.(?:\\s?\\(N\\.\\s?Y\\.\\s?\\))?|h\\.(?:\\s?(?:Cas\\.|Rep\\.|\\(N\\.\\s?Y\\.\\s?\\)))?|t\\.\\s?Err\\.)|N\\.\\s?Y\\.|Rep\\.|\\(N\\.\\s?Y\\.\\s?\\)))?|on\\s?Rep\\.))|nes\\s?(?:&\\s?S(?:\\.|pencer)|Eq\\.|L(?:\\.|aw(?:\\.)?)|N\\.\\s?C\\.|and\\s?Spencer['’]s\\s?Super\\.\\s?Ct\\.\\s?Rep\\.)|ur\\.\\s?(?:Fr\\.\\s?Inst\\.|Jur\\.))|u(?:ris\\s?P\\.\\s?R\\.|st\\.))|K(?:a(?:n(?:\\.(?:\\s?(?:App\\.(?:\\s?(?:2d|LEXIS|Unpub\\.\\s?LEXIS))?|LEXIS|Rep\\.|Unpub\\.\\s?LEXIS))?|s\\.(?:\\s?App\\.)?)|s\\.)|en\\.\\s?(?:Dec\\.|L\\.\\s?Re\\.|Opin\\.)|ir(?:\\.|b\\.)|y\\.(?:\\s?(?:App\\.(?:\\s?(?:LEXIS|Unpub\\.\\s?LEXIS))?|L(?:EXIS|\\.\\s?(?:R(?:\\.|ptr\\.)|Summ\\.)|aw(?:\\.\\s?Rep\\.|\\s?Rep\\.))|Op\\.|Rep\\.|Unpub\\.\\s?LEXIS|\\((?:A\\.\\s?K\\.\\s?Marsh\\.\\s?\\)|B(?:\\.\\s?Mon\\.\\s?\\)|ibb\\)|ush\\))|D(?:ana\\)|uv\\.\\s?\\))|H(?:ard\\.\\s?\\)|ughes\\))|J\\.\\s?J\\.\\s?Marsh\\.\\s?\\)|Lit(?:\\.\\s?Sel\\.\\s?Cas\\.\\s?\\)|t\\.\\s?\\))|Met\\.\\s?\\)|Sneed\\)|T\\.\\s?B\\.\\s?Monroe\\))))?)|L(?:AW\\s?ED|Ed2d|\\.(?:\\s?(?:E(?:\\.(?:\\s?2d)?|d\\.(?:\\s?(?:2d|\\(U\\.\\s?S\\.\\s?\\)))?)|J\\.\\s?Q\\.\\s?B\\.|R(?:\\.\\s?(?:A(?:\\.(?:\\s?N\\.\\s?S\\.)?|\\s?\\(N\\.\\s?S\\.\\s?\\))|R\\.\\s?M\\.(?:\\s?\\(BNA\\))?)|ep\\.)))?|a(?:\\.(?:\\s?(?:A(?:\\.|nn\\.(?:\\s?Rep\\.)?|pp\\.(?:\\s?(?:1\\s?Cir\\.|2\\s?Cir\\.|3\\s?Cir\\.|4\\s?Cir\\.|5\\s?Cir\\.|6\\s?Cir\\.|LEXIS|Unpub\\.\\s?LEXIS|\\(Orleans\\)))?)|L(?:EXIS|aw\\s?J\\.)|Rep\\.))?|b\\.\\s?(?:Arb\\.\\s?(?:Awards\\s?\\(CCH\\)|Rep\\.\\s?\\(BNA\\))|Cas\\.(?:\\s?\\(CCH\\))?|L\\.\\s?Rep\\.\\s?\\(CCH\\)|Rel\\.\\s?Rep\\.\\s?\\(BNA\\))|c(?:\\.\\s?Jur\\.|k(?:\\.\\s?(?:Jur(?:\\.|ist)|L(?:\\.\\s?N\\.|eg\\.(?:\\s?News\\s?\\(P\\.\\s?A\\.\\s?\\))?))|a\\.\\s?Leg\\.\\s?News))|lor\\s?Supp\\.|n(?:c\\.\\s?L\\.\\s?Rev\\.|s\\.(?:\\s?Ch\\.)?)|w(?:,\\s?Rep\\.|\\.\\s?(?:Ed\\.|Rep\\.)|\\s?(?:&\\s?Eq\\.\\s?Rep\\.|J\\.\\s?Q\\.\\s?B\\.|Rep(?:\\.|orter)|Times\\s?\\(N\\.\\s?S\\.\\s?\\))))|e(?:a\\.|g(?:\\.\\s?(?:Gaz\\.(?:\\s?Rep\\.)?|Int(?:\\.|el\\.\\s?or\\s?Intell\\.)|Op(?:\\.|s\\.\\s?\\(Pa\\.\\s?\\))|Re(?:c\\.(?:\\s?Rep\\.)?|p\\.))|al\\s?(?:Gaz\\.|Int(?:\\.|el(?:\\.|l(?:\\.|igencer)))))|h(?:\\.\\s?V\\.\\s?L\\.\\s?R\\.\\s?\\(Pa\\.\\s?\\)|igh\\s?V(?:\\.\\s?L\\.\\s?R\\.|al\\.\\s?L(?:\\.\\s?R(?:\\.|ep\\.)|aw\\s?Rep)))|igh\\s?(?:Rep\\.|\\(Va\\.\\s?\\)))|i(?:fe\\.\\s?Cas\\.\\s?(?:2d(?:\\(CCH\\)|\\s?\\(CCH\\))|\\(CCH\\))|quor\\s?(?:Cont\\.\\s?L\\.\\s?Rep\\.\\s?\\(CCH\\)|Tax\\s?Rep\\.)|t(?:\\.(?:\\s?(?:Rep\\.|Sel\\.\\s?Ca\\.))?|t(?:\\.(?:\\s?(?:Rep\\.|Sel\\.\\s?Cas\\.(?:\\s?\\(Ky\\.\\s?\\))?|\\(Ky\\.\\s?\\)))?|ell\\s?Rep\\.))|v\\.\\s?Law\\s?Mag\\.)|o(?:ck\\.\\s?Rev\\.\\s?Cas\\.|w(?:\\.(?:\\s?D(?:ec\\.|is\\.))?|ell\\.))|uz\\.\\s?L(?:\\.\\s?R\\.|eg\\.\\s?Reg\\.(?:\\s?Rep\\.)?)|\\s?Ed(?:\\s?2d)?)|M(?:\\.(?:\\s?(?:&\\s?Y\\.(?:\\s?R\\.)?|D\\.\\s?L\\.\\s?R\\.|J\\.|S\\.\\s?P\\.\\s?(?:B\\.|R\\.)|T\\.\\s?C\\.\\s?(?:A\\.|R\\.)))?|a(?:\\.(?:\\s?A\\.)?|c(?:A(?:\\.\\s?Pat(?:\\.\\s?Cas\\.|\\s?Cas\\.)|r(?:\\.(?:\\s?&\\s?M(?:\\.|ackey))?|th(?:\\.(?:\\s?&\\s?M\\.(?:\\s?\\(Dist\\.\\s?Col\\.\\s?\\))?)?|ur\\s?&\\s?M\\.)))|\\.\\s?A\\.\\s?Pat\\.\\s?Cas\\.)|i(?:\\.|ne\\s?Rep\\.)|n(?:\\.\\s?Unrep\\.\\s?Cas\\.|n(?:\\.\\s?Unrep\\.\\s?Cas\\.|ing(?:['’]s\\s?U(?:\\.\\s?C\\.|nrep\\.\\s?Cases)|\\s?La\\.))|um\\.(?:\\s?Cas\\.)?)|r(?:\\.(?:\\s?Rep\\.)?|sh\\.(?:\\s?(?:A\\.\\s?K\\.|J\\.\\s?J\\.|Rep\\.|\\(Ky\\.\\s?\\)))?|t(?:\\.(?:\\s?(?:&\\s?Y(?:\\.(?:\\s?\\(Tenn\\.\\s?\\))?|er(?:\\.|g\\.))|Dec\\.|N\\.\\s?C\\.|O\\.\\s?S\\.\\s?\\(La\\.\\s?\\)|Rep\\.|\\((?:N\\.\\s?(?:C\\.\\s?\\)|S\\.\\s?\\))|O\\.\\s?S\\.\\s?\\)|n\\.\\s?s\\.\\s?\\)|o\\.\\s?s\\.\\s?\\))))?|in\\s?Rep\\.)|v\\.(?:\\s?\\(Del\\.\\s?\\))?|yland\\s?Rep\\.)|s(?:\\.(?:\\s?Rep\\.)?|on(?:\\.|\\s?(?:C(?:\\.\\s?C\\.(?:\\s?R\\.)?|irct\\.\\s?Ct\\.\\s?R\\.)|R\\.|U\\.\\s?S\\.))|s\\.(?:\\s?(?:App\\.(?:\\s?(?:Ct\\.|D(?:ec\\.|iv\\.(?:\\s?(?:Adv\\.\\s?Sh\\.|LEXIS))?)|LEXIS|Unpub\\.\\s?LEXIS))?|L(?:CR\\s?LEXIS|EXIS|\\.\\s?Rptr\\.|aw\\s?Rep(?:\\.)?)|R(?:\\.|ep\\.)|Sup(?:er\\.\\s?LEXIS|p\\.)|\\((?:Allen\\)|Cush(?:\\)|\\.\\s?\\))|Gray\\)|Met\\.\\s?\\)|Pick\\.\\s?\\)|Tyng\\)|Will\\.\\s?\\))))?))|c(?:A(?:\\.\\s?Pat\\.\\s?Cas\\.|l(?:\\.|l(?:\\.(?:\\s?\\(Cal\\.\\s?\\))?|ister\\s?U\\.\\s?S\\.\\s?Circ\\.\\s?Court\\s?R\\.)))|C(?:ah\\.|ord\\s?(?:Ch\\.(?:\\s?Rep\\.)?|Eq\\.|Rep\\.)|rary['’]s\\s?Cir\\.\\s?Ct\\.\\s?Rpts)|Gl\\.|Lean\\.|Mul\\.(?:\\s?(?:Eq\\.(?:\\s?\\(S\\.\\s?C\\.\\s?\\))?|L\\.\\s?\\(S\\.\\s?C\\.\\s?\\)))?|\\.\\s?A\\.\\s?Pat\\.\\s?Cas\\.|\\s?Lean)|d\\.(?:\\s?(?:App\\.(?:\\s?LEXIS)?|C(?:h\\.|ir\\.\\s?Ct\\.\\s?LEXIS)|L(?:EXIS|aw\\s?Rec\\.)|Rep\\.|Tax\\s?LEXIS))?|e(?:\\.(?:\\s?(?:LEXIS|Super\\.\\s?LEXIS|Unpub\\.\\s?LEXIS))?|d(?:\\.\\s?Devices\\s?Rep\\.\\s?\\(CCH\\)|i(?:a\\s?L\\.\\s?Rep\\.(?:\\s?\\(BNA\\))?|care\\s?&\\s?Medicaid\\s?Guide\\s?\\(CCH\\))|\\s?&\\s?Med\\s?GD\\s?\\(CCH\\))|t(?:\\.(?:\\s?Rep\\.)?|c\\.(?:\\s?(?:Ky\\.|Mass\\.|Rep\\.))?))|i(?:ch(?:\\.(?:\\s?(?:App\\.(?:\\s?LEXIS)?|Ct\\.\\s?(?:App\\.|Cl\\.)|L(?:EXIS|awy\\.)|N\\.\\s?P\\.(?:\\s?R\\.)?|Pr\\.|Rep\\.))?|\\s?App)|ll(?:er['’]s\\s?Notebook|s(?:\\.|\\s?Surr\\.)|\\s?Const\\.(?:\\s?\\(S\\.\\s?C\\.\\s?\\))?)|n(?:\\.(?:\\s?Rep\\.)?|n\\.(?:\\s?(?:App\\.\\s?(?:LEXIS|Unpub\\.\\s?LEXIS)|Dist\\.\\s?LEXIS|LEXIS|Rep\\.|Tax\\s?LEXIS))?|or\\s?\\(Ala\\.\\s?\\))|s(?:\\.(?:\\s?Rep\\.)?|c(?:\\.(?:\\s?(?:2d|3d|Rep(?:\\.)?))?|\\s?(?:2d|3d|Rep(?:\\.)?))|s\\.(?:\\s?(?:App\\.\\s?LEXIS|Dec\\.|LEXIS|R(?:\\.|ep\\.)|\\((?:Howard\\)|S\\.\\s?&\\s?M\\.\\s?(?:Ch\\.\\s?\\)|\\))|Walker\\))))?))|o(?:\\.(?:\\s?(?:App\\.(?:\\s?(?:LEXIS|Rep\\.))?|LEXIS|Rep\\.))?|n(?:\\.(?:\\s?(?:B\\.|Rep\\.|T\\.\\s?B\\.))?|a(?:\\.|g(?:\\.|han\\(Pa\\.\\s?\\)))|roe,\\s?B\\.|t(?:['’]g\\.\\s?(?:Co\\.\\s?L\\.\\s?Rep\\.|L\\.\\s?Rep\\.)|\\.(?:\\s?(?:Dist\\.\\s?LEXIS|LEXIS|St\\.\\s?Rep\\.|Water\\s?LEXIS))?|g\\.(?:\\s?(?:C(?:LR(?:\\.)?|o\\.(?:\\s?L(?:\\.\\s?R(?:\\.(?:\\s?\\(Pa\\.\\s?\\))?|ep['’]r)|aw\\s?Rep['’]r\\.))?)|\\(Pa\\.\\s?\\)))?|h\\.\\s?(?:Jur\\.|West\\.\\s?Jur\\.)))|r(?:\\.\\s?(?:Ia\\.|Min\\.\\s?Rep\\.|St\\.\\s?Ca(?:\\.|s\\.))|r(?:\\.(?:\\s?(?:M(?:\\.\\s?R\\.|in\\.\\s?R(?:\\.|ep\\.))|St\\.\\s?Cas\\.))?|is\\s?St\\.\\s?Cas\\.)))|t\\.|u(?:nf\\.(?:\\s?Rep\\.)?|r(?:\\.(?:\\s?Rep\\.)?|ph\\.(?:\\s?(?:Rep\\.|\\(N\\.\\s?C\\.\\s?\\)))?)|t\\.\\s?Funds\\s?Guide\\s?\\(CCH\\)))|N(?:CBC\\s?LEXIS|D(?:LR\\s?\\(LRP\\)(?:\\s?LEXIS)?|\\s?A(?:PP|pp))|E(?:2d|3d|\\s?(?:2d|3d))|LRB\\s?(?:Dec\\.\\s?\\(CCH\\)|No\\.)|W(?:2(?:D|d)|3d|\\.\\s?2d|\\s?2d)|Y(?:2d|3d|S(?:2d|3d|\\s?(?:2d|3d))|\\s?(?:2d|3d|App\\s?Div\\s?LEXIS|Misc\\s?LEXIS|Slip\\s?Op(?:\\.)?))|\\.\\s?(?:&\\s?Mc\\.|B(?:\\.\\s?R\\.(?:\\s?\\(Supp\\.\\s?\\))?|k(?:\\.\\s?R\\.|pt\\.\\s?R(?:\\.|eg\\.)))|C(?:\\.(?:\\s?(?:App\\.(?:\\s?LEXIS)?|Conf\\.(?:\\s?Rep\\.)?|LEXIS|Rep\\.|T(?:\\.\\s?Rep\\.|erm\\.\\s?R(?:\\.|ep\\.))|\\((?:Busb\\.\\s?(?:Eq\\.\\s?\\)|\\))|Ca(?:m\\.\\s?&\\s?Nor\\.\\s?\\)|r\\.\\s?L\\.\\s?Rep\\.\\s?\\))|Dev\\.\\s?(?:&\\s?Bat\\.\\s?(?:Eq\\.\\s?\\)|\\))|Eq\\.\\s?\\)|\\))|Ha(?:wks\\)|yw\\.\\s?\\))|Ired\\.\\s?(?:Eq\\.\\s?\\)|\\))|Jones(?:\\)|\\s?Eq\\.\\s?\\))|M(?:art\\.\\s?\\)|ur\\.\\s?\\))|Phil\\.\\s?(?:Eq\\.\\s?\\)|Law\\))|Tay(?:\\.\\s?\\)|lor\\)))))?|hip(?:\\.(?:\\s?\\(Vt\\.\\s?\\))?|m\\.))|D\\.(?:\\s?(?:App\\.(?:\\s?LEXIS)?|LEXIS))?|E\\.(?:\\s?(?:2d|3d|Rep\\.))?|H(?:\\.(?:\\s?(?:LEXIS|R(?:\\.|ep\\.)|Super\\.\\s?LEXIS))?)?|J\\.(?:\\s?(?:Admin\\.(?:\\s?2d)?|Ch\\.\\s?LEXIS|Eq\\.|L(?:EXIS|\\.(?:\\s?J\\.)?|aw(?:\\s?J\\.)?)|M(?:\\.|isc\\.(?:\\s?LEXIS)?)|Prerog\\.\\s?Ct\\.\\s?LEXIS|S(?:\\.|up(?:\\.\\s?Ct\\.\\s?LEXIS|er\\.(?:\\s?(?:LEXIS|Unpub\\.\\s?LEXIS))?))|Tax(?:\\.|\\s?Ct\\.)?|\\(Manumission\\)))?|L\\.\\s?R\\.\\s?B\\.|M(?:\\.(?:\\s?(?:App\\.\\s?(?:LEXIS|Unpub\\.\\s?LEXIS)|B\\.|Ct\\.\\s?App\\.|I\\.|LEXIS|St\\.\\s?B\\.\\s?Bull\\.|Unpub\\.\\s?LEXIS|\\((?:Ct\\.\\s?App\\.\\s?\\)|G(?:\\.\\s?\\)|ild\\.\\s?\\))|J(?:\\.\\s?\\)|ohn\\.\\s?\\)))))?|ar\\.\\s?I\\.(?:\\s?(?:Commw\\.(?:\\s?Rptr\\.)?|LEXIS))?)|R\\.\\s?C\\.|T\\.\\s?S\\.\\s?B\\.|W\\.(?:\\s?(?:2(?:\\.\\s?d|d(?:\\.)?|nd)|3d|Rep\\.|\\(2d\\)))?|Y(?:\\.(?:\\s?(?:2d|3d|A(?:nn(?:\\.\\s?Ca(?:\\.|s\\.)|o\\.\\s?Cas\\.)|pp\\.\\s?D(?:ec\\.|iv\\.(?:\\s?LEXIS)?))|C(?:as\\.\\s?Err\\.|h\\.\\s?(?:Ann\\.|R\\.\\s?Ann\\.|Sent\\.)|i(?:ty\\s?(?:Ct\\.\\s?Rep\\.|H\\.\\s?Rec\\.)|v\\.\\s?Proc\\.\\s?R(?:\\.(?:\\s?,\\s?\\(N\\.\\s?S\\.\\s?\\))?|ep\\.(?:\\s?\\(n\\.\\s?s\\.\\s?\\))?))|r(?:\\.\\s?R(?:\\.|ep\\.)|im\\.(?:\\s?R(?:\\.|ep\\.))?))|L(?:EXIS|\\.\\s?J\\.|aw\\s?J\\.|eg(?:\\.\\s?Ob(?:\\.|s\\.)|al\\s?Observer))|Misc\\.\\s?LEXIS|Proc\\.\\s?Ct\\.\\s?Ass\\.|Rep\\.|S(?:\\.(?:\\s?(?:2d|3d|E\\.\\s?Guide\\s?\\(CCH\\)))?|lip\\s?Op(?:\\.)?|pec\\.\\s?Term\\s?R(?:\\.|ep\\.)|t\\.\\s?R(?:\\.|ep(?:['’]r|\\.|r\\.)|ptr\\.)|up(?:\\.\\s?Ct\\.|er\\.\\s?Ct\\.|p(?:\\.|lement)|r(?:\\.\\s?Ct\\.|m\\.\\s?Ct\\.)))|Wkly\\.\\s?Dig\\.|\\(N\\.\\s?Y\\.\\s?S\\.\\s?\\)))?)?)|a(?:t\\.\\s?Bank(?:\\.\\s?Reg\\.|r\\.\\s?Reg\\.)|vajo\\s?Rptr\\.)|e(?:b(?:\\.(?:\\s?(?:App\\.(?:\\s?(?:LEXIS|R\\.))?|C(?:\\.\\s?A\\.|t\\.\\s?App\\.)|LEXIS|Unoff|\\(Unof\\.\\s?\\)))?|\\s?App(?:\\.)?)|g\\.\\s?Cas\\.\\s?(?:2d\\s?\\(CCH\\)|\\(CCH\\))|v\\.(?:\\s?(?:,\\s?Adv(?:\\.\\s?Op\\.|ance\\s?Opinion)|Ad(?:\\.\\s?Op\\.|v(?:\\.\\s?(?:Op\\.(?:\\s?No\\.)?|Rep\\.)|ance\\s?Rep\\.))|LEXIS|Unpub\\.\\s?LEXIS))?|w(?:b\\.(?:\\s?Adm\\.)?|\\s?York\\s?Supp(?:\\.|lement)))|ile(?:,\\s?Reg\\.|s(?:,\\s?Reg\\.|['’]\\s?Reg\\.|\\s?Reg\\.))|o(?:\\.\\s?(?:East\\s?Rep\\.|West\\s?Rep\\.)|rth(?:umb(?:\\.\\s?L(?:\\.\\s?J(?:\\.)?|egal\\.\\s?J\\.)|erland\\s?(?:Co\\.\\s?Leg\\.\\s?Jour|L\\.\\s?J\\.))|w\\.\\s?Rep\\.)|tt\\s?&\\s?M(?:['’]C\\.\\s?\\(S\\.\\s?C\\.\\s?\\)|cC\\.))|uclear\\s?Reg\\.\\s?Rep\\.(?:\\s?\\(CCH\\))?|\\s?W\\.\\s?Rep\\.)|O(?:FCCP\\s?Fed\\.\\s?Cont\\.\\s?Compl\\.\\s?Man\\.\\s?\\(CCH\\)|K(?:la\\.|\\s?(?:AG|C(?:IV\\s?APP|R)|JUD(?:\\s?ETH)?))|S(?:H(?:A\\s?Comp\\.\\s?Guide\\s?\\(CCH\\)|C\\s?\\(BNA\\)|D\\s?\\(CCH\\))|\\.)|TR\\-MD|\\.(?:\\s?(?:A(?:\\.\\s?R\\.(?:\\s?(?:2d|3d))?|pp\\.(?:\\s?(?:2d|3d))?)|B\\.\\s?(?:A\\.\\s?J\\.|R\\.)|C(?:\\.\\s?(?:A\\.|C\\.(?:\\s?N\\.\\s?S\\.)?|D\\.)|r\\.)|D(?:\\.|ec\\.\\s?Rep\\.)|G\\.(?:\\s?Pat\\.\\s?Off\\.)?|L\\.\\s?A(?:\\.|bs\\.)|Misc\\.(?:\\s?2d)?|N\\.\\s?P\\.(?:\\s?N\\.\\s?S\\.)?|O\\.(?:\\s?(?:2d|3d))?|R\\.\\s?W\\.|S(?:\\.(?:\\s?(?:2d|3d|C\\.\\s?D\\.|H\\.\\s?(?:Cas(?:\\.(?:\\s?\\(BNA\\))?|es(?:\\s?\\(BNA\\))?)|D(?:\\.(?:\\s?\\(CCH\\))?|ec\\.\\s?\\(CCH\\))|Rep\\.\\s?\\(BNA\\))|U\\.))?|upp(?:\\.)?)))?|ff\\.\\s?Gaz\\.(?:\\s?Pat\\.(?:\\s?Off\\.)?)?|h(?:\\.\\s?(?:A(?:\\.(?:\\s?(?:2d|3d))?|pp\\.(?:\\s?(?:2d|3d))?)|Cir\\.\\s?(?:Ct\\.(?:\\s?N\\.\\s?S\\.)?|Dec\\.)|Dec\\.(?:\\s?\\(Reprint\\))?|N\\.\\s?P\\.(?:\\s?\\(N\\.\\s?S\\)\\.)?|S(?:\\.\\s?C\\.\\s?D\\.|t\\.))|io(?:\\.\\s?Unrept\\.\\s?Cas\\.|\\s?(?:A(?:bs\\.|pp\\.(?:\\s?(?:2d|3d|LEXIS|Rep\\.|Unrep\\.))?)|B\\.(?:\\s?Rep\\.)?|C(?:\\.\\s?(?:A\\.|C\\.(?:\\s?(?:Dec\\.|N\\.\\s?S\\.|R\\.(?:\\s?N\\.\\s?S\\.)?|\\((?:N\\.\\s?S\\.\\s?\\)|n\\.\\s?s\\.\\s?\\))))?|D(?:\\.|ec\\.))|h\\.|ir\\.\\s?(?:Ct\\.(?:\\s?(?:R\\.\\s?N\\.\\s?S\\.|\\(N\\.\\s?S\\.\\s?\\)))?|Dec\\.)|r\\.\\s?Ct\\.\\s?R\\.|t\\.\\s?App\\.)|Dec\\.(?:\\s?Rep(?:\\.|rint))?|F(?:\\.\\s?D(?:\\.|ec(?:\\.)?)|ed\\.\\s?Dec\\.)|L(?:EXIS|\\.\\s?(?:Abs\\.|R\\.)|aw(?:\\.\\s?Abs\\.|s\\s?Abs\\.|\\s?(?:Abs(?:\\.|t\\.)?|R(?:ep\\.)?)))|Misc\\.(?:\\s?(?:2d|Dec\\.|LEXIS))?|N(?:\\.\\s?P\\.(?:\\s?(?:N\\.\\s?S\\.|\\(n\\.\\s?s\\.\\s?\\)))?|isi\\s?Prius(?:\\s?(?:Decisions|Reports\\s?\\(N\\.\\s?S\\.\\s?\\)|\\((?:N(?:S\\)|\\.\\s?S\\.\\s?\\))|n\\.\\s?s\\.\\s?\\))|\\[N\\.\\s?S\\.\\s?\\]))?)|Op(?:\\.(?:\\s?(?:2d|3d))?|s\\.)|Prob\\.(?:\\s?Ct\\.)?|Rep\\.|S(?:\\.\\s?U\\.|t(?:\\.(?:\\s?(?:2d|3d(?:\\.)?|Rep\\.|\\((?:N\\.\\s?S\\.\\s?\\)|n\\.\\s?s\\.\\s?\\))))?|ate)|upp\\.)|W\\.\\s?L\\.\\s?Bull\\.)))|il\\s?&\\s?Gas(?:\\s?R(?:ep(?:\\.|tr\\.)|ptr\\.))?|kl(?:\\.(?:\\s?Cr\\.)?|a\\.(?:\\s?(?:C(?:iv\\.\\s?App\\.\\s?LEXIS|r(?:\\.(?:\\s?Rep\\.)?|im\\.(?:\\s?(?:App\\.\\s?LEXIS|Rep\\.))?))|JUD\\s?LEXIS|LEXIS|Rep\\.|Trib\\.))?|\\s?Jud\\.)|l(?:c(?:\\.|ott,)|iver['’]s\\s?Forms)|p(?:\\.\\s?(?:Att['’]y\\s?Gen\\.|O(?:LC\\.|\\.\\s?L\\.\\s?C\\.))|s\\.\\s?Cal\\.\\s?Atty\\.\\s?Gen\\.)|r(?:\\.(?:\\s?(?:A(?:\\.|pp\\.)|Tax))?|e(?:\\.(?:\\s?(?:App\\.(?:\\s?LEXIS)?|LEXIS|Tax\\s?LEXIS))?|g\\.)|\\s?App(?:\\.)?)|vert\\.)|P(?:2(?:\\.\\s?d|d)|3(?:\\.\\s?d|d)|A\\s?Super|R\\s?(?:App\\.\\s?LEXIS|Sup\\.\\s?LEXIS)|\\-H\\s?T\\.\\s?C\\.\\s?Memo\\.|\\.(?:\\s?(?:&\\s?(?:H\\.|W\\.)|2(?:d(?:\\.)?|\\s?d)?|3(?:d(?:\\.)?)?|C\\.\\s?(?:L\\.\\s?J\\.|R\\.)|H\\.|Jr\\.\\s?&\\s?H\\.|L\\.\\s?(?:M\\.|R(?:\\.|ep\\.))|O\\.\\s?R\\.|R(?:\\.(?:\\s?(?:Dec\\.|Fed\\.(?:\\s?Rep\\.)?|Offic\\.\\s?Trans\\.|R\\.|Sent\\.))?|ep\\.)|S\\.\\s?R\\.|U\\.\\s?R\\.(?:\\s?(?:3d|4th|\\((?:N(?:S\\)|\\.\\s?S\\.\\s?\\))|n\\.\\s?s\\.\\s?\\))))?|\\(2d\\)|\\[2(?:d(?:\\.\\s?\\]|\\])|nd\\])))?|a(?:C\\.|\\.(?:\\s?(?:C(?:\\.(?:\\s?C\\.)?|as\\.|mwlth(?:\\.)?|o(?:\\.\\s?Ct\\.(?:\\s?R(?:\\.|ep\\.))?|mm(?:onwealth\\s?Ct\\.|w\\.(?:\\s?(?:Ct\\.|LEXIS|Unpub\\.\\s?LEXIS))?)|rp(?:\\.(?:\\s?R(?:\\.|ep\\.))?)?|unty\\s?Ct\\.))|D(?:\\.(?:\\s?&\\s?C\\.(?:\\s?(?:2d|3d|4th|5th))?)?|ist\\.(?:\\s?(?:&\\s?C(?:\\.\\s?Rep\\.|nty\\.\\s?Dec\\.\\s?LEXIS|o\\.)|R\\.))?)|Fid\\.|Ju(?:d\\.\\s?Disc\\.\\s?LEXIS|st\\.\\s?L\\.\\s?Rep\\.)|L(?:EXIS|aw\\s?J\\.(?:\\s?Rep\\.)?)|R(?:awle|ep\\.)|S(?:\\.|t(?:\\.|ate)|uper(?:\\.(?:\\s?(?:Ct\\.|LEXIS|Unpub\\.\\s?LEXIS))?|ior\\s?Ct\\.)?)|\\(Admiralty\\)))?|c(?:\\.(?:\\s?(?:2d|Law(?:\\.\\s?Rep\\.|\\s?(?:Mag\\.|Rep(?:\\.|tr\\.)))|R(?:\\.|ep\\.)|\\(2(?:\\)|d\\)(?:\\.)?)))?|ific\\s?(?:Law\\s?Mag\\.|Rep\\.)|\\s?\\(2d\\))|i(?:\\.(?:\\s?Ch\\.)?|ge\\s?(?:Ch\\.(?:\\s?Rep\\.)?|Rep\\.)|ne\\.)|rk(?:\\.\\s?C(?:\\.\\s?R\\.|r(?:\\.(?:\\s?Rep\\.)?|im\\.\\s?R(?:\\.|ep\\.)))|er(?:,\\s?Cr\\.\\s?(?:Cas\\.|R\\.)|['’]s\\s?Cr(?:\\.\\s?R\\.|im\\.\\s?R(?:\\.|ep\\.))|\\s?Cr\\.(?:\\s?Rep\\.)?))|t(?:\\.\\s?(?:&\\s?H\\.|Trademark\\s?&\\s?Copyright\\s?J\\.\\s?\\(BNA\\))|t(?:\\.\\s?&\\s?H(?:\\.(?:\\s?\\(Va\\.\\s?\\))?|eath\\s?R\\.)|on\\s?&\\s?H(?:\\.(?:\\s?\\(Va\\.\\s?\\))?|eath))))|e(?:ars\\.|ck\\s?\\(Tenn\\.\\s?\\)|lt\\.|n(?:\\.\\s?&\\s?W\\.|n(?:\\.(?:\\s?(?:Co\\.\\s?Ct\\.\\s?Rep\\.|D(?:el\\.|ist\\.\\s?Rep\\.)|L(?:\\.\\s?J\\.|aw\\s?J(?:\\.|our\\.))|Rep\\.|St\\.(?:\\s?R\\.)?))?|e(?:\\.|w(?:\\.|ill\\.))|y(?:\\.|p\\.(?:\\s?\\(Pa\\.\\s?\\))?))|r\\.\\s?&\\s?W\\.|s\\.\\s?(?:&\\s?(?:Ben(?:\\.\\s?Rep\\.\\s?\\(BNA\\)|efits\\s?Rep\\.\\s?\\(BNA\\))|Profit\\s?Sharing\\s?2d\\s?\\(RIA\\))|Plan\\s?Guide\\s?\\(CCH\\)))|rson(?:al\\s?and\\s?Comm\\.\\s?Liab\\.\\s?Life\\s?Health\\s?&\\s?Accid\\.\\s?Ins\\.\\s?Cas\\.\\s?2d\\s?\\(CCH\\)|nel\\s?Mgmt\\.\\s?\\(BNA\\))|t(?:\\.(?:\\s?(?:Adm\\.|C(?:\\.\\s?C\\.|ir\\.\\s?C\\.\\s?R\\.)|Rep\\.|S\\.\\s?C\\.))?|ers\\s?(?:C\\.\\s?C\\.|Rep\\.)|\\s?C\\.\\s?C\\.))|hil(?:\\.(?:\\s?(?:Eq\\.(?:\\s?\\(N\\.\\s?C\\.\\s?\\))?|Law|N\\.\\s?C\\.|Rep\\.))?|a(?:\\.(?:\\s?(?:Ct(?:\\.\\s?Com\\.\\s?Pl\\.\\s?LEXIS|y\\.\\s?Rptr\\.\\s?LEXIS)|Leg\\.\\s?Int\\.|Rep\\.))?|delphia\\s?Leg\\.\\s?Int\\.)|l\\.(?:\\s?(?:L\\.\\s?\\(N\\.\\s?C\\.\\s?\\)|Rep\\.))?)|i(?:ck\\.(?:\\s?(?:Rep\\.|\\(Mass\\.\\s?\\)))?|n(?:\\.|n\\.)|tt(?:\\.\\s?L\\.\\s?J\\.|s(?:\\.\\s?(?:L(?:\\.\\s?J\\.|eg\\.\\s?J(?:\\.|oor\\.))|R(?:\\.|ep\\.(?:\\s?\\(Pa\\.\\s?\\))?|pts\\.))|b(?:\\.\\s?(?:L(?:\\.\\s?(?:J\\.|Rev\\.)|eg\\.\\s?J\\.(?:\\s?\\((?:O\\.\\s?S\\.\\s?\\)|Pa\\.\\s?\\)))?)|R\\.\\s?\\(Pa\\.\\s?\\))|urgh\\s?Leg(?:\\.\\s?J(?:\\.|ournal)|al\\s?Journal))|\\s?L\\.\\s?J\\.)))|o(?:rt(?:\\.(?:\\s?(?:Rep\\.|\\(Ala\\.\\s?\\)))?|er\\s?Rep\\.)|sey(?:,\\s?Unrep\\.\\s?Cas\\.|['’]s\\s?U\\.\\s?C\\.|\\s?U\\.\\s?C\\.)|w\\.\\s?Surr\\.)|rod\\.\\s?(?:Liab\\.\\s?Rep\\.\\s?\\(CCH\\)|Safety\\s?&\\s?Liab\\.\\s?Rep\\.\\s?\\(BNA\\))|u(?:b\\.\\s?(?:Lands\\s?Dec\\.|Util\\.\\s?Rep\\.\\s?4th)|erto\\s?Rico)|\\s?(?:2d|3d|\\[2d\\]))|Quart\\.\\s?Law\\s?J\\.|R(?:I(?:A\\s?TM|CO\\s?Bus\\.\\s?Disp\\.\\s?Guide(?:\\s?\\(CCH\\))?)|\\.(?:\\s?I\\.(?:\\s?(?:C\\.\\s?O\\.\\s?Bus\\.\\s?Disp\\.\\s?Guide\\s?\\(CCH\\)|Dec\\.|LEXIS|Super\\.\\s?LEXIS))?)?|a(?:d\\.\\s?Reg\\.(?:\\s?(?:2d\\s?\\(P\\s?&\\s?F\\)|\\(P\\s?&\\s?F\\)))?|nd\\.(?:\\s?Rep\\.)?|w(?:\\.|le\\s?Rep\\.))|e(?:ad['’]s\\s?Notebook|c\\.\\s?(?:Co\\.\\s?C(?:h\\.\\s?\\(S\\.\\s?C\\.\\s?\\)|t\\.)|V\\.\\s?A\\.\\s?Ct\\.\\s?\\(R\\.\\s?I\\.\\s?\\))|df\\.|p(?:\\.\\s?Cont\\.\\s?El(?:\\.|ect\\.\\s?Cas(?:\\.|e\\.))|orter(?:,|\\.)))|i(?:c(?:e\\s?(?:Ch\\.|Eq\\.|L\\.\\s?\\(S\\.\\s?C\\.\\s?\\))|h\\.(?:\\s?(?:Cas\\.(?:\\s?\\(S\\.\\s?C\\.\\s?\\))?|Eq\\.(?:\\s?(?:Ch\\.|Rep\\.))?|L(?:\\.\\s?\\(S\\.\\s?C\\.\\s?\\)|aw\\(S\\.\\s?C\\.\\s?\\))|Rep\\.))?)|dgely['’]s\\s?Notebook(?:\\s?(?:I(?:I(?:I)?|V)?|V))?|l(?:\\.(?:\\s?Eq\\.)?|ey\\s?(?:Ch\\.|Eq\\.(?:\\s?\\(S\\.\\s?C\\.\\s?\\))?|L\\.\\s?\\(S\\.\\s?C\\.\\s?\\))))|o(?:b(?:\\.(?:\\s?(?:Cons(?:\\.\\s?Cas\\.\\s?\\(Tex\\.\\s?\\)|c\\.\\s?Cas\\.)|La\\.|Rep\\.|Va\\.|\\(VA\\)))?|b(?:,\\s?Pat\\.\\s?Cas\\.|\\.(?:\\s?\\(N\\.\\s?J\\.\\s?\\))?|ins\\.)|ertson['’]s\\s?(?:Report\\s?of\\s?the\\s?Trial\\s?of\\s?Aaron\\s?Burr\\.|Super\\.\\s?Ct\\.\\s?Rep\\.))|dney['’]s\\s?Notes))|S(?:Ct|E(?:2d|C\\s?(?:Accounting\\s?R\\.\\s?\\(CCH\\)|Docket|Jud\\.\\s?Dec\\.)|\\s?2d)|O\\.|W(?:2(?:D|d)|3(?:D|d)|\\.\\s?3d|\\s?(?:2d|3d))|\\.\\s?(?:&\\s?M(?:\\.|ar\\.)|C(?:\\.(?:\\s?(?:App\\.\\s?(?:LEXIS|Unpub\\.\\s?LEXIS)|D\\.\\s?C\\.\\s?\\(N\\.\\s?S\\.\\s?\\)|Eq\\.(?:\\s?\\((?:Bail\\.\\s?Eq\\.\\s?\\)|Chev\\.\\s?Eq\\.\\s?\\)|D(?:es\\.\\s?\\)|ud\\.\\s?Eq\\.\\s?\\))|H(?:arp\\.\\s?Eq\\.\\s?\\)|ill\\s?Eq\\.\\s?\\))|Ri(?:c(?:e\\.\\s?Eq\\.\\s?\\)|h\\.\\s?Eq\\.\\s?\\))|l\\.\\s?\\))|S(?:peers\\s?Eq\\.\\s?\\)|trob\\.\\s?Eq\\.\\s?\\))))?|L(?:EXIS|\\.(?:\\s?\\((?:B(?:a(?:il\\.\\s?\\)|y\\))|rev\\))|Chev\\.\\s?\\)|Dud\\.\\s?\\)|H(?:arp\\.\\s?\\)|ill\\))|M(?:c(?:Cord(?:\\)|\\s?Eq\\.\\s?\\))|Mul(?:\\.\\s?\\)|lan\\s?Eq\\.\\s?\\)))|ill(?:\\)|\\s?Const\\.\\s?\\)))|Nott\\s?&\\s?McC\\.\\s?\\)|Ri(?:c(?:e\\)|h\\.\\s?\\))|ley\\))|S(?:peers\\)|trob\\.\\s?\\))|Tread\\.\\s?\\)))?)|R\\.|Unpub\\.\\s?LEXIS))?|ar\\.|t(?:\\.(?:\\s?Rep\\.)?)?)|D(?:\\.(?:\\s?LEXIS)?|ak\\.)|E(?:2\\.\\s?d|\\.(?:\\s?(?:2d(?:\\.)?|C\\.\\s?Docket|Rep\\.|\\(2d\\)))?)|R\\.|T\\.\\s?B\\.|W\\.(?:\\s?(?:,\\s?(?:2d\\s?Series(?:,|\\.)|Second\\s?Series,)|2d(?:\\s?Series\\.)?|3d(?:\\.)?|Rep\\.|Series|\\(2d\\)))?|\\(2nd\\))|a(?:d(?:\\.\\s?Pa\\.\\s?C(?:as\\.|s\\.)|l(?:\\.|er\\(Pa\\.\\s?\\)))|n(?:d(?:\\.\\s?Ch(?:\\.(?:\\s?Rep\\.)?|y\\.)|f(?:\\.(?:\\s?(?:Ch(?:\\.(?:\\s?\\(N\\.\\s?Y\\.\\s?\\))?|y\\.)|Rep\\.))?|ord\\s?Super\\.\\s?Ct\\.\\s?Rep\\.))|\\s?Fran\\.\\s?Law(?:\\.\\s?J\\.|\\s?J\\.))|r(?:\\.\\s?Ch\\.\\s?Sen\\.|at\\.\\s?Ch\\.\\s?Sent\\.)|w(?:\\.|y(?:\\.|er\\s?(?:Circt\\.|U\\.\\s?S\\.\\s?Ct\\.\\s?Rep\\.))))|c(?:\\.|am\\.(?:\\s?Rep\\.)?|h(?:\\.\\s?Reg\\.|uy\\.\\s?Reg\\.))|e(?:c(?:\\.\\s?(?:&\\s?Fed\\.\\s?Corp\\.\\s?L\\.\\s?Rep\\.\\s?\\(West\\)|Reg\\.\\s?&\\s?L\\.\\s?Rep\\.\\s?\\(BNA\\))|ured\\s?Transactions\\s?Guide\\s?\\(CCH\\))|ld\\.\\s?Notes|rg\\.\\s?&\\s?R(?:\\.|aw(?:\\.|l(?:\\.|e))))|h(?:an\\.(?:\\s?Cas\\.)?|ipping\\s?Reg\\.\\s?\\(P\\s?&\\s?F\\))|i(?:ck\\.|l(?:\\.\\s?\\(Sup\\.\\s?Ct\\.\\s?\\)|v\\.\\s?(?:Ct\\.\\s?App\\.|Sup\\.)))|m(?:\\.\\s?&\\s?M\\.|ed(?:\\.\\s?&\\s?M\\.|es\\s?&\\s?M\\.(?:\\s?\\(Miss\\.\\s?\\))?)|ith(?:['’]s\\s?(?:N\\.\\s?H\\.\\s?Reports|\\(E\\.\\s?H\\.\\s?\\)\\s?Reports)|s\\s?E\\.\\s?H\\.|\\s?(?:&\\s?H\\.|\\((?:N\\.\\s?H\\.\\s?\\)|T(?:N\\)|enn\\.\\s?\\))))))|need\\s?(?:Dec\\.|\\(Ky\\))|o(?:,(?:\\s?\\(2nd\\))?|\\.(?:\\s?(?:2(?:d(?:\\.)?|nd)|3d|C(?:\\.|ar\\.)|Rep(?:\\.(?:\\s?(?:2d|3d))?|orter(?:,)?)|\\(2(?:d(?:\\)|\\s?Series\\))|nd(?:\\)|\\s?Series\\)))))?|c\\.\\s?Sec\\.\\s?Rep\\.\\s?\\(CCH\\)|m(?:\\.(?:\\s?L(?:\\.\\s?J\\.|eg\\.\\s?J\\.\\s?\\(Pa\\.\\s?\\)))?|erset(?:L\\.\\s?J\\.|\\s?L\\.\\s?J\\.))|u(?:\\.(?:\\s?(?:Rep\\.|\\(2nd\\)))?|th(?:\\.(?:\\s?(?:2d|3d|Rep\\.))?|\\s?Car\\.))|\\s?\\(2nd\\))|p(?:\\.(?:\\s?Ch\\.)?|e(?:ar(?:s\\s?Eq\\.|\\s?(?:Ch\\.|Eq\\.))|ers\\s?(?:Eq\\.(?:\\s?\\(S\\.\\s?C\\.\\s?\\))?|L\\.\\s?\\(S\\.\\s?C\\.\\s?\\)))|r(?:\\.|ague\\.))|t(?:\\.\\s?(?:&\\s?Loc\\.\\s?Tax\\s?Serv\\.\\s?\\(RIA\\)|Rep\\.|Tax\\s?(?:Guide\\s?\\(CCH\\)|Rep\\.\\s?\\(CCH\\)))|a(?:nd\\.\\s?Fed\\.\\s?Tax\\s?Rep\\.\\s?\\(CCH\\)|te\\s?R(?:eptr\\.|ptr\\.))|ew\\.(?:\\s?(?:&\\s?P\\.|Rep\\.))?|o(?:\\.(?:\\s?Rep\\.)?|ck\\.|ry(?:\\.|\\s?Rep\\.))|rob(?:\\.(?:\\s?Eq\\.(?:\\s?\\(S\\.\\s?C\\.\\s?\\))?)?|h\\.\\s?L\\.\\s?\\(S\\.\\s?C\\.\\s?\\)))|u(?:m(?:\\.|n\\.(?:\\s?Rep\\.)?)|p(?:\\.\\s?Ct\\.(?:\\s?Rep\\.)?|er\\.\\s?Ct\\.\\s?(?:Jud\\.|\\(R\\.\\s?I\\.\\s?\\))|p(?:\\.\\s?Tex\\.|l\\.\\s?Ga\\.)|r\\.\\s?Ct\\.\\s?Rep\\.))|weeney\\s?Super\\.\\s?Ct\\.\\s?Rep\\.|\\s?Ct)|T(?:N\\s?WC(?:\\s?App\\.)?|\\.\\s?(?:B\\.\\s?Mon\\.(?:\\s?\\(Ky\\.\\s?\\))?|C(?:\\.(?:\\s?(?:A\\.|M(?:\\.(?:\\s?\\((?:CCH\\)|P\\-H\\)|RIA\\)))?|emo(?:\\.)?)|No\\.|Summary\\s?Opinion|at))?|t(?:\\.)?))|a(?:ney\\.|pp\\.\\s?Rep\\.|x\\s?(?:Ct\\.\\s?(?:Mem(?:\\.\\s?Dec\\.\\s?\\(CCH\\)|o\\s?LEXIS)|Rep\\.\\s?(?:Dec\\.\\s?\\(RIA\\)|\\(CCH\\))|Summary\\s?LEXIS)|Treaties\\s?\\(CCH\\))|y(?:\\.(?:\\s?(?:J\\.\\s?L\\.|N\\.\\s?C\\.))?|l\\.\\s?N\\.\\s?C\\.))|e(?:iss\\.|n(?:\\.(?:\\s?Rep\\.)?|n\\.(?:\\s?(?:App\\.(?:\\s?LEXIS)?|C(?:as\\.|h(?:\\.\\s?(?:App\\.(?:\\s?LEXIS)?|R\\.)|ancery(?:\\s?App\\.)?)|rim\\.\\s?App\\.(?:\\s?LEXIS)?)|L(?:EXIS|eg\\.\\s?Rep\\.)|Rep\\.|\\((?:Co(?:ld\\.\\s?\\)|oke\\))|H(?:ayw\\.\\s?\\)|e(?:ad\\)|isk\\.\\s?\\))|um\\.\\s?\\))|Meigs\\)|Overt\\.\\s?\\)|Peck\\)|S(?:need\\)|wan\\))|Yer\\.\\s?\\))))?)|r\\.(?:\\s?Rep\\.)?|x(?:\\.(?:\\s?(?:A(?:\\.\\s?Civ\\.(?:\\s?Cas\\.)?|pp\\.(?:\\s?LEXIS)?)|B(?:ankr\\.\\s?Ct\\.\\s?Rep\\.|us\\.(?:\\s?Ct\\.)?)|C(?:\\.\\s?C\\.|iv\\.\\s?(?:App\\.|Cas\\.)|r(?:\\.(?:\\s?(?:App\\.|R\\.))?|im\\.(?:\\s?(?:App\\.\\s?(?:LEXIS|Unpub\\.\\s?LEXIS)|Rep\\.))?)|t\\.\\s?App\\.(?:\\s?(?:Dec\\.\\s?Civ\\.|R\\.))?)|L(?:EXIS|\\.\\s?R\\.|aw\\s?J\\.)|Rep\\.|S(?:\\.\\s?Ct\\.|up\\.\\s?(?:Ct\\.\\s?J\\.|J\\.))|Unrep\\.\\s?Cas\\.))?|as\\s?(?:Cr(?:\\.\\s?Rep\\.|im\\.\\s?Rep\\.)|Rep\\.)))|homp\\.\\s?(?:&\\s?Cook|Cas\\.)|i(?:ess\\.|ff\\.)|r(?:a(?:de\\s?(?:Cas(?:\\.(?:\\s?\\(CCH\\))?|es)|Reg\\.\\s?Rep\\.\\s?\\(CCH\\))|ns\\.\\s?App\\.)|ea(?:d(?:\\.(?:\\s?Const\\.)?|way\\s?Const\\.\\s?\\(S\\.\\s?C\\.\\s?\\))|s\\.\\s?Dec\\.(?:\\s?Int\\.\\s?Rev\\.)?))|uck\\.(?:\\s?(?:&\\s?C(?:\\.|l\\.)|Surr\\.))?|yl\\.)|U(?:CC\\s?Rep\\.\\s?Serv\\.(?:\\s?(?:2d(?:\\s?\\((?:Callaghan\\)|West\\)))?|\\((?:Callaghan\\)|West\\))))?|NITED\\s?STATES\\s?TAX\\s?COURT\\s?REPORT(?:S)?|S(?:PQ(?:2d(?:\\s?(?:\\(BNA\\)|\\[BNA\\]))?|\\s?(?:2d(?:\\s?(?:\\(BNA\\)|\\[BNA\\]))?|\\(BNA\\)|\\[BNA\\]))|\\s?Dist\\s?LEXIS)?|T\\s?(?:App(?:\\.)?|Ct\\.\\s?App\\.)|\\.\\s?(?:C\\.\\s?C\\.\\s?Rep\\.\\s?Serv\\.(?:\\s?(?:2d(?:\\s?\\((?:Callaghan\\)|West\\)))?|\\((?:Callaghan\\)|West\\))))?|S\\.(?:\\s?(?:App(?:\\.\\s?(?:D\\.\\s?C\\.|LEXIS|Vet\\.\\s?Claims\\s?LEXIS)|x\\.)|C(?:MCR\\s?LEXIS|\\.\\s?M\\.\\s?A\\.|l(?:\\.\\s?Ct\\.\\s?LEXIS|aims\\s?LEXIS)|ommerce\\s?Ct\\.\\s?LEXIS|t\\.\\s?Cl\\.\\s?LEXIS)|Dist\\.\\s?LEXIS|L(?:EXIS|\\.\\s?(?:Ed\\.(?:\\s?2d)?|W\\.(?:\\s?\\(BNA\\))?)|aw(?:\\.\\s?Ed\\.|\\s?(?:Int\\.|J\\.)))|P\\.\\s?Q\\.(?:\\s?(?:2(?:D\\s?(?:\\(BNA\\)|\\[BNA\\])|d(?:\\s?(?:\\(BNA\\)|\\[BNA\\]))?)|\\(BNA\\)|\\[BNA\\]))?|R(?:\\.|ep\\.)|S\\.\\s?C\\.\\s?Rep\\.|Tax\\s?(?:C(?:as\\.\\s?\\(CCH\\)|t\\.\\s?LEXIS)|Rep\\.\\s?\\(RIA\\))|Vet\\.\\s?App\\.\\s?LEXIS|\\(Apx\\.\\s?\\)))?)|n(?:empl(?:\\.\\s?Ins\\.\\s?Rep\\.\\s?\\(CCH\\)|oyment\\s?Ins\\.\\s?Rep\\.(?:\\s?\\(CCH\\))?)|ion\\s?Lab\\.\\s?Rep\\.\\s?\\(BNA\\)|rep\\.\\s?Tenn\\.\\s?Cas\\.)|t(?:ah\\s?(?:2d|A(?:dv\\.\\s?Rep\\.|pp(?:\\.(?:\\s?LEXIS)?)?)|Ct\\.\\s?App\\.|LEXIS)|il\\.\\s?L\\.\\s?Rep\\.(?:\\s?\\(CCH\\))?))|V(?:I\\s?Super(?:\\.)?|\\.(?:\\s?(?:I\\.(?:\\s?(?:LEXIS|Sup(?:er(?:\\.)?|reme\\s?LEXIS)))?|R\\.))?|a(?:\\.(?:\\s?(?:App\\.(?:\\s?LEXIS)?|C(?:as\\.|h\\.\\s?Dec\\.|ir\\.(?:\\s?LEXIS)?|ol\\.\\s?Dec\\.)|Dec\\.|L(?:EXIS|aw\\s?(?:J\\.|Rep\\.)|eigh)|Rep\\.|Unpub\\.\\s?LEXIS|\\((?:Call\\)|G(?:ilmer\\)|ratt\\.\\s?\\))|Hen\\.\\s?&\\s?M\\.\\s?\\)|Leigh\\)|Patt\\.\\s?&\\s?Heath\\)|R(?:and\\.\\s?\\)|ob\\.\\s?\\))|Wash\\.\\s?\\))))?|n\\s?Ness)|e(?:rm\\.(?:\\s?Rep\\.)?|t\\.\\s?App\\.)|ir(?:\\.\\s?L\\.\\s?J\\.|g\\.)|r(?:\\.|oom(?:\\.|\\s?\\((?:G\\.\\s?D\\.\\s?W\\)|N\\.\\s?J\\.\\s?\\)|P\\.\\s?D\\.\\s?\\))))|t(?:\\.(?:\\s?(?:LEXIS|Rep\\.|Super\\.(?:\\s?LEXIS)?|Unpub\\.\\s?LEXIS))?|\\s?Super))|W(?:I(?:\\.\\s?App\\.|\\s?App)|L|\\.(?:\\s?(?:&\\s?(?:S\\.|W\\.)|2d|App\\.|L\\.\\s?(?:B(?:\\.|ull\\.)|J\\.|M(?:\\.|onthly))|N\\.\\s?C\\.(?:\\s?\\(Pa\\.\\s?\\))?|R\\.|St\\.|T(?:\\.|y\\.\\s?R\\.)|V(?:\\.|a\\.(?:\\s?LEXIS)?)|W\\.\\s?H(?:arr\\.(?:\\s?Del)?)?))?|a(?:\\.(?:\\s?(?:2d|3d|A\\.))?|ge\\s?(?:&\\s?Hour\\s?Cas\\.(?:\\s?(?:2d(?:\\s?\\(BNA\\))?|\\(BNA\\)))?|Hour\\s?&\\s?Leave\\s?Rep\\.\\s?\\(BNA\\))|l(?:k\\.(?:\\s?(?:Ch\\.|Miss\\.|Pa\\.))?|l(?:\\.(?:\\s?(?:,\\s?Jr\\.|C(?:\\.\\s?C|ir\\.\\s?Ct\\.)|Jr\\.(?:\\s?(?:Append\\.|C\\.\\s?C\\.))?|Rep\\.|S\\.\\s?C\\.))?|ace(?:,\\s?Jr\\.\\s?,\\s?Rept\\.|\\s?R\\.)))|re\\.|sh\\.(?:\\s?(?:2d|3d|App\\.(?:\\s?(?:2d|LEXIS))?|C(?:\\.\\s?C\\.(?:\\s?Rep\\.)?|o(?:\\.(?:\\s?R(?:\\.|ep(?:\\.|r\\.)))?|\\s?\\(Pa\\.\\s?\\)))|LEXIS|Rep\\.|St\\.|T(?:\\.|er(?:\\.(?:\\s?N\\.\\s?S\\.)?|r\\.(?:\\s?LEXIS)?)|y\\.)|Va\\.|\\(VA\\)))?|tts(?:\\(Pa\\.\\s?\\)|\\s?(?:&\\s?S(?:\\.|erg\\.)|Rep\\.)))|e(?:ek(?:\\.\\s?(?:Law\\s?Gaz\\.|No(?:\\.|tes\\s?Cas\\.))|ly\\s?L(?:\\.\\s?Bull\\.|aw(?:Bulletin|\\s?Bulletin(?:\\s?\\(Ohio\\))?)))|lls['’]\\s?Notebook|nd(?:\\.(?:\\s?(?:Rep\\.|\\(N\\.\\s?Y\\.\\s?\\)))?|ell\\s?Rep\\.)|st(?:\\.\\s?(?:Jur\\.|Law(?:\\.\\s?J\\.|\\s?(?:J\\.|Month\\.)))|\\s?(?:Co(?:\\.\\s?Rep\\.|ast\\s?Rep\\.)|Law\\s?Month\\.|Va\\.)))|h(?:\\.(?:\\s?Rep\\.)?|ar(?:\\.(?:\\s?Rep\\.)?|t\\.(?:\\s?(?:Hom\\.|Pa\\.|Rep\\.|St\\.\\s?Tr\\.))?)|e(?:at(?:\\.(?:\\s?Rep\\.)?|on\\s?Rep\\.)|el(?:\\.\\s?Cr\\.\\s?Cas\\.|er(?:,\\s?Cr(?:\\.\\s?Cas\\.|im\\.\\s?Cas\\.)|\\.\\s?Cr\\.\\s?Cas\\.)))|ite\\s?&\\s?W\\.(?:\\s?(?:Civ\\.\\s?Cas\\.\\s?Ct\\.\\s?App\\.|\\(Tex\\.\\s?\\)))?)|i(?:\\.\\s?&\\s?Will\\.|l(?:l(?:\\.(?:\\s?Mass\\.)?|son\\s?Rep\\.)|s(?:\\.\\s?(?:Ind\\.|Minn\\.|Oreg\\.|Super\\.\\s?\\(Ind\\.\\s?\\))|on['’]s\\s?Red\\s?Book))|n\\.|s(?:\\.(?:\\s?(?:2d|Rep\\.))?|c\\.\\s?(?:App\\.\\s?LEXIS|Cir\\.\\s?LEXIS|LEXIS)|\\s?2d))|kly\\.\\s?(?:Dig\\.|Law\\s?Gaz\\.(?:\\s?No\\.)?|N(?:\\.\\s?C|otes(?:\\.\\s?Cas\\.|\\s?Cas\\.(?:\\s?\\(Pa\\.\\s?\\))?)))|n\\.(?:\\s?(?:2d|3d|App\\.(?:\\s?2d)?|Terr\\.))?|oo(?:d(?:\\.\\s?&\\s?Minot|b\\.\\s?&\\s?M\\.|s(?:\\.|\\s?C\\.\\s?C\\.))|l(?:\\.|w(?:\\.(?:\\s?Rep\\.)?|orth['’]s\\s?Cir\\.\\s?Ct\\.\\s?R\\.)))|y(?:\\.|o\\.(?:\\s?LEXIS)?|the(?:['’]s\\s?R(?:\\.|ep\\.)|\\s?(?:Ch\\.\\s?\\(Va\\.\\s?\\)|\\(Va\\.\\s?\\)))))|Y(?:\\.|ates\\s?Sel\\.\\s?Cas\\.(?:\\s?\\(N\\.\\s?Y\\.\\s?\\))?|e(?:a(?:\\.|tes\\s?Rep\\.)|r(?:\\.(?:\\s?Rep\\.)?|g\\.(?:\\s?(?:Rep\\.|\\(Tenn\\.\\s?\\)))?))|ork\\s?Leg(?:\\.\\s?Rec(?:\\.(?:\\s?\\(Pa\\.\\s?\\))?|ord)|al\\s?Record))|\\(So\\.\\s?2nd\\)|cal\\.\\s?4th|p\\.\\s?2(?:d|\\s?d)))\\s+(?<page>\\d{1,7})(?![\\w])(?!\\s*[:/-]\\s*\\d)",
+   "pattern": "(?<![\\w.§-])(?<volume>\\d{1,4})\\s+(?<reporter>(?:A(?:,2d|2d|D(?:2d|3d|\\s?(?:2d|3d))|LR\\s?(?:2d|3d|4th|5th|6th)|RK\\.|\\.(?:\\s?(?:2d(?:\\.)?|3d(?:\\.)?|D\\.(?:\\s?(?:2d|3d|Cases))?|E\\.\\s?C\\.|F\\.\\s?(?:Rep\\.|T\\.\\s?R\\.(?:\\s?(?:2d(?:\\s?\\(RIA\\))?|\\((?:P\\-H\\)|RIA\\))))?)|K\\.\\s?Marsh\\.|L\\.\\s?(?:R\\.(?:\\s?(?:2d|3d|4th|5th|6th|Fed\\.(?:\\s?2d)?))?|T\\.\\s?Bankr\\.)|M\\.\\s?C\\.|N\\.(?:\\s?C\\.)?|R(?:\\.|ep\\.)))?|b(?:b(?:\\.(?:\\s?(?:Adm\\.|Ct\\.\\s?App\\.(?:\\s?Dec\\.)?|N\\.\\s?C(?:\\.|as\\.)|P(?:\\.\\s?R\\.|r(?:\\.(?:\\s?(?:Rep\\.|\\(n\\.\\s?s\\.\\s?\\)))?|ac\\.))|Rep\\.|U\\.\\s?S\\.|\\(U\\.\\s?S\\.\\s?\\)))?|ott(?:['’]s\\s?Pr(?:\\.\\s?Rep\\.|ac\\.\\s?Rep\\.)|\\s?P(?:\\.\\s?R\\.|r(?:\\.\\s?Rep\\.|act\\.\\s?Cas\\.))))|s\\.)|ccom\\.\\s?Disabilities\\s?Dec\\.\\s?\\(CCH\\)|d(?:d\\.|m\\.\\s?Rec\\.|v\\.\\s?S\\.)|gric\\.\\s?Dec(?:\\.)?|ik\\.(?:\\s?Rep\\.)?|k\\.(?:\\s?App\\.)?|l(?:a(?:\\.(?:\\s?(?:2d|App\\.(?:\\s?LEXIS)?|C(?:iv\\.\\s?App\\.\\s?LEXIS|rim\\.\\s?App\\.\\s?LEXIS)|LEXIS|Rep\\.|\\(N\\.\\s?S\\.\\s?\\)))?|s(?:\\.\\s?(?:App\\.\\s?LEXIS|LEXIS)|ka\\s?Fed\\.(?:\\s?R(?:\\.|ep\\.))?))|b\\.\\s?Law\\s?J\\.|k\\.|l\\.(?:\\s?Rep\\.)?)|m(?:\\.\\s?(?:&\\s?Eng\\.\\s?R\\.\\s?Cas\\.|Ann\\.\\s?Cas\\.|B\\.\\s?R\\.(?:\\s?\\((?:N\\.\\s?S\\.\\s?\\)|n\\.\\s?s\\.\\s?\\)))?|D(?:\\.|ec(?:['’]s\\.|\\.)|isabilities\\s?(?:Cas\\.\\s?\\(BNA\\)|Dec\\.))|Jur\\.|L(?:\\.\\s?(?:C(?:\\.|as)|Reg\\.\\s?,\\s?n\\.\\s?s\\.)|aw(?:\\.\\s?Rec\\.|\\s?(?:J\\.(?:\\s?\\((?:N\\.\\s?S\\.\\s?\\)|U\\.\\s?S\\.\\s?\\)))?|Re(?:c\\.|g\\.(?:\\s?\\(N\\.\\s?S\\.\\s?\\))?|v\\.)|T\\.(?:\\s?(?:Rep\\.(?:\\s?(?:Bankr\\.|U\\.\\s?S\\.\\s?Cts\\.|\\((?:N\\.\\s?S\\.\\s?\\)|U\\.\\s?S\\.\\s?Cts\\.\\s?\\))))?|\\(N\\.\\s?S\\.\\s?\\)))?))|ead(?:\\.\\s?Cas\\.|ing\\s?Cas))|Neg(?:\\.\\s?Ca(?:\\.|s(?:\\.|es))|l\\.\\s?Cas\\.)|R(?:ep(?:\\.|orts)|y\\.\\s?Rep\\.)|S(?:\\.\\s?R\\.|amoa(?:\\s?(?:2d|3d))?|t\\.\\s?R(?:\\.|ep\\.))|Tribal\\s?Law)|er(?:\\.\\s?(?:Jur\\.|L(?:\\.\\s?Rev\\.|aw\\s?(?:J\\.(?:\\s?\\(N\\.\\s?S\\.\\s?\\))?|Re(?:g\\.(?:\\s?\\(N\\.\\s?S\\.\\s?\\))?|v\\.)|T\\.\\s?Rep\\.)))|ican\\s?Leading\\s?Cases(?:\\s?\\(U\\.\\s?S\\.\\s?\\))?)|\\s?(?:Dec\\.|Law\\s?Rev\\.))|n(?:derson['’]s\\s?Ohio\\s?App\\.\\s?Cas\\.|t(?:\\.\\s?N\\.\\s?P\\.\\s?Cas\\.|h(?:\\.|on\\s?N\\.\\s?P\\.\\s?\\(N\\.\\s?Y\\.\\s?\\))))|p(?:\\.(?:\\s?2d\\.)?|p(?:\\.(?:\\s?(?:Com(?:['’]r(?:\\.\\s?Pat\\.|s\\s?Pat\\.|\\s?(?:Pat\\.|of\\s?Pat\\.))|\\.\\s?Pat\\.|m\\.\\s?Pat\\.|r\\.\\s?Pat\\.)|D(?:\\.\\s?C\\.|iv(?:\\.(?:\\s?(?:2d(?:\\.)?|3d(?:\\.)?|Rep\\.|\\(N\\.\\s?Y\\.\\s?\\)))?)?)))?|\\s?Div(?:\\.)?))|r(?:iz(?:\\.(?:\\s?(?:A(?:dv\\.\\s?Rep\\.|pp\\.(?:\\s?(?:LEXIS|Unpub\\.\\s?LEXIS))?)|LEXIS|Tax\\s?LEXIS|Unpub\\.\\s?LEXIS))?|ona\\s?Cases\\s?Digest)|k(?:\\.(?:\\s?(?:A(?:dv\\.\\s?Op\\.|pp(?:['’]x|\\.(?:\\s?LEXIS)?|x\\.))|LEXIS|Rep\\.|Terr\\.\\s?Rep\\.))?|\\s?App)|mstrong\\.\\s?Election\\s?Cases)|t(?:\\.(?:\\s?Rep\\.)?|l\\.(?:\\s?(?:2d|R(?:\\.|ep\\.)))?)|uto\\.\\s?Cas\\.(?:\\s?(?:2d(?:\\s?\\(CCH\\))?|\\(CCH\\)))?|v\\.\\s?Cas\\.(?:\\s?\\(CCH\\))?|\\s?2d)|B(?:LUE\\s?SKY\\s?L\\.\\s?REP\\.\\s?\\(CCH\\)|NA\\s?(?:IER\\s?CAS|OSHC)|TA\\s?LEXIS|\\.(?:\\s?(?:C\\.\\s?(?:A\\.\\s?\\(CCH\\)|D\\.)|Mon(?:\\.(?:\\s?Rep\\.)?)?|R\\.|Stockton|T\\.\\s?A\\.(?:\\s?M\\.\\s?\\(P\\-H\\))?))?|a(?:i(?:\\.(?:\\s?Eq\\.)?|l(?:\\.(?:\\s?(?:Eq\\.(?:\\s?\\(S\\.\\s?C\\.\\s?\\))?|L\\.(?:\\s?\\(S\\.\\s?C\\.\\s?\\))?|Rep\\.))?|ey\\s?(?:Ch\\.|Eq\\.|Rep\\.)))|l(?:d(?:\\.\\s?C\\.\\s?C\\.|w(?:\\.|in['’]s\\s?(?:C\\.\\s?C\\.\\s?U\\.\\s?S\\.\\s?Rep|Rep\\.)))|t\\.\\s?(?:C\\.\\s?Rep\\.|Law\\s?Trans\\.))|n(?:\\.\\s?&\\s?A\\.|k(?:ing\\s?Rep\\.\\s?\\(BNA\\)|r\\.\\s?(?:Ct\\.\\s?(?:Dec\\.(?:\\s?\\((?:CRR\\)|LRP\\)))?|Rep\\.)|L(?:EXIS|\\.\\s?Rep\\.(?:\\s?\\(C(?:CH\\)|\\.\\s?C\\.\\s?H\\.\\s?\\)))?)|Re(?:g\\.\\s?Supp\\.|p\\s?\\(St\\.\\s?Louis\\s?B\\.\\s?A\\.\\s?\\)))))|rb\\.(?:\\s?(?:Ch\\.(?:\\s?(?:Rep\\.|\\(N\\.\\s?Y\\.\\s?\\)))?|Rep\\.|S\\.\\s?C\\.))?|x(?:\\.|t\\.(?:\\s?\\(Tenn\\.\\s?\\))?)|yard['’]s\\s?Notebook)|e(?:e\\.|n\\.(?:\\s?Rev\\.\\s?Bd\\.\\s?Serv\\.\\s?\\(MB\\))?|tt(?:['’]s\\s?D\\.\\s?C\\.\\s?MS\\.|s(?:,\\s?(?:C\\.\\s?C\\.\\s?MS\\.|D(?:\\.\\s?C\\.(?:\\s?M(?:S(?:S\\.|\\.)|s\\.))?|\\s?C\\.\\s?MS\\.)|Scr\\.\\s?Bk\\.)|['’]\\s?(?:C\\.\\s?C\\.\\s?MS\\.|D(?:\\.\\s?C\\.\\s?MS(?:S\\.|\\.)|ec\\.)|Scr\\.\\s?Bk\\.)|\\.\\s?(?:C\\.\\s?C\\.\\s?MS\\.|D(?:\\.\\s?C\\.\\s?MS(?:S\\.|\\.)|\\s?C\\.\\s?MS\\.))|\\s?D\\.\\s?C\\.\\s?MS\\.)))|i(?:bb(?:\\(Ky\\.\\s?\\)|\\s?Rep\\.)|gelow(?:['’]s\\s?Insurance\\s?Reports|\\.\\s?Ins\\.\\s?Rep\\.)|n(?:\\.(?:\\s?Rep\\.)?|n(?:\\.(?:\\s?(?:Rep\\.|\\(Pa\\.\\s?\\)))?|\\s?\\[Pa\\]))|ss\\.(?:\\s?\\(U\\.\\s?S\\.\\s?\\)\\s?Bissell['’]s)?)|k\\.\\s?Reg\\.|l(?:\\.(?:\\s?C\\.\\s?C\\.(?:\\s?R\\.)?)?|a(?:ck(?:\\.(?:\\s?Rep\\.)?|f\\.(?:\\s?(?:Rep\\.|\\(Ind\\.\\s?\\)))?|\\s?R(?:\\.|ep\\.))|t(?:\\.\\s?C\\.\\s?C\\.\\s?R\\.|ch(?:\\.\\s?\\(U\\.\\s?S\\.\\s?Cir\\.\\s?Ct\\.\\s?\\)|f\\.(?:\\s?(?:&\\s?H\\.|C\\.\\s?C\\.(?:\\s?Rep\\.)?|Pr(?:\\.\\s?Cas\\.|ize\\s?Cas\\.)|\\(U\\.\\s?S\\.\\s?Circ\\.\\s?Ct\\.\\s?\\)))?)))|m\\.\\s?Neg\\.|oom\\.\\s?Man\\.(?:\\s?Neg\\.\\s?Cas\\.)?|u(?:e\\s?Sky\\s?L\\.\\s?Rep\\.(?:\\s?\\(CCH\\))?|me\\s?(?:Op\\.|Sup\\.\\s?Ct\\.\\s?Trans\\.|Unrep\\.\\s?Op\\.)))|o(?:nd\\.|sw(?:\\.|orth\\s?Super\\.\\s?Ct\\.\\s?Rep\\.))|r(?:a(?:d(?:\\.|f\\.)|yt(?:\\.|on\\s?\\(Vt\\.\\s?\\)))|ev\\.(?:\\s?Rep\\.)?|ief\\s?Times\\s?Rptr\\.|o(?:ck(?:,|\\.(?:\\s?Rep\\.)?)|wn(?:,\\s?Adm\\.|['’]s\\s?Adm(?:\\.)?|\\.\\s?Adm\\.|e(?:,\\s?\\(Pa\\.\\s?\\)|\\s?\\(Pa\\.\\s?\\))|\\s?Adm(?:\\.)?))|un(?:\\.\\s?Col\\.\\s?Cas\\.|n(?:\\.\\s?Coll\\.\\s?Cas\\.|er(?:,\\s?Col\\.\\s?Cas\\.|\\.\\s?Col\\.\\s?Cas\\.))))|u(?:ch(?:\\.|an(?:\\.|an\\.))|r(?:\\.(?:\\s?Rep\\.)?|nett\\s?\\(Wis\\.\\s?\\)|r['’]s\\s?Trial)|s(?:\\.\\s?Franchise\\s?Guide\\s?\\(CCH\\)|b(?:\\.(?:\\s?(?:Eq\\.|L\\.))?|ee\\s?Eq\\.\\s?\\(N\\.\\s?C\\.\\s?\\))|h\\s?\\(Ky\\.\\s?\\)))|\\s?Stockton)|C(?:AAF\\s?LEXIS|C(?:A\\s?LEXIS|H(?:,\\s?Unemployment\\s?Ins\\.\\s?Rep\\.|\\s?(?:OSHD|Tax\\s?Ct\\.\\s?Mem\\.|Unemployment\\s?Ins\\.\\s?Rep\\.))|PA\\s?LEXIS)|J\\s?C\\.\\s?A\\.\\s?R\\.|M(?:A\\s?LEXIS|R\\s?LEXIS)|\\.(?:\\s?(?:&\\s?C\\.|B\\.(?:\\s?C\\.)?|C(?:\\.(?:\\s?(?:A\\.(?:\\s?Rep\\.)?|L\\.\\s?J\\.|P\\.\\s?A\\.))?|ls\\.(?:\\s?R\\.)?)|I\\.\\s?T\\.|M\\.\\s?(?:A\\.|R\\.)))?|a(?:i(?:\\.(?:\\s?(?:Cas\\.(?:\\s?Err\\.)?|R\\.))?|n(?:\\.(?:\\s?Rep\\.)?|es\\s?(?:Cas\\.|Rep\\.|\\(N\\.\\s?Y\\.\\s?\\))))|l(?:\\.(?:\\s?(?:2(?:d|nd)|3(?:d(?:\\s?Spec\\.\\s?Trib\\s?Supp\\.)?|rd)|4th(?:\\s?CJP\\s?Supp\\.)?|5th(?:\\s?CJP\\s?Supp\\.)?|App\\.(?:\\s?(?:2d(?:\\s?Supp(?:\\.)?)?|3d(?:\\s?Supp\\.)?|4th(?:\\s?Supp\\.)?|5th(?:\\s?Supp\\.)?|LEXIS|Rep\\.|Supp(?:\\.(?:\\s?(?:2d|3d|4th|5th))?)?|Unpub\\.\\s?LEXIS))?|Bankr\\.\\s?Ct\\.\\s?Rep\\.|Com(?:m\\.\\s?Jud\\.\\s?Perform\\.\\s?LEXIS|p\\.\\s?Cas(?:es)?)|D(?:aily\\s?Op\\.\\s?Serv(?:\\.|ice)|ist\\.\\s?Ct\\.)|I\\.\\s?A\\.\\s?C\\.|Jud\\.\\s?Ethics\\s?Op\\.\\s?LEXIS|L(?:EXIS|aw\\s?J\\.(?:\\s?&\\s?Lit\\.\\s?Rev\\.)?)|R(?:ep\\.|ptr\\.(?:\\s?(?:2d|3d))?)|Sup(?:\\.(?:\\s?\\(Cal\\.\\s?\\))?|er\\.\\s?(?:Ct\\.|LEXIS)|p\\.)|Unrep\\.(?:\\s?Cas\\.)?|WCC))?|l\\s?(?:Rep\\.|\\(Va\\.\\s?\\)))|m\\.\\s?&\\s?N(?:\\.|or\\.)|n\\.\\s?(?:Com\\.\\s?L\\.\\s?Guide\\s?\\(CCH\\)|Tax\\s?Rep\\.\\s?\\(CCH\\))|r(?:\\.\\s?L(?:\\.\\s?Rep\\.|aw(?:\\.\\s?Repos\\.|\\s?Repos\\.))|penter['’]s\\s?Report\\s?of\\s?Burr['’]s\\s?Trial)|tes\\.)|ent(?:\\.\\s?Law(?:\\.\\s?J\\.|\\s?J\\.)|re\\s?Co\\.\\s?L\\.\\s?J\\.)|h(?:\\.\\s?Sent\\.(?:\\s?\\(N\\.\\s?Y\\.\\s?\\))?|a(?:nd(?:\\.(?:\\s?\\(Wis\\.\\s?\\))?|l\\.)|rl(?:\\.\\s?R\\.|et\\.\\s?\\(Ga\\.\\s?\\)|t(?:\\.(?:\\s?R\\.\\s?M\\.)?|on(?:['’]s(?:\\s?\\(Rob['’]t\\.\\s?M\\.\\s?\\)\\s?Rep\\.)?|\\s?Rep\\.)))|se(?:,|['’]s\\s?Trial\\.\\s?Append\\.|\\.))|e(?:m\\.\\s?Reg\\.\\s?Rep\\.\\s?\\(BNA\\)|st(?:\\.|er\\s?Co\\.\\s?Rep\\.)|v(?:\\.(?:\\s?(?:Ch\\.|Eq\\.))?|es\\s?(?:Eq\\.\\s?\\(S\\.\\s?C\\.\\s?\\)|L\\.\\s?\\(S\\.\\s?C\\.\\s?\\))))|i(?:\\.\\s?L(?:aw\\s?J\\.|eg\\.\\s?N(?:\\.|ews(?:\\.)?))|cago\\s?Bd\\.\\s?Options\\s?Ex\\.\\s?\\(CCH\\)|p\\.(?:\\s?(?:D\\.|N\\.|Rep\\.|\\(Vt\\.\\s?\\)))?|t\\.\\s?Cr(?:\\.\\s?L(?:\\.|aw)|im\\.\\s?Law)|\\s?Leg\\.\\s?News))|i(?:n(?:\\.\\s?(?:L(?:\\.\\s?Bull\\.|aw(?:\\.\\s?Bul\\.|\\s?Bul(?:\\.|l\\.)))|R(?:\\.|ep\\.)|S(?:\\.\\s?C\\.\\s?R(?:\\.|ep\\.)|up(?:\\.\\s?Ct\\.\\s?Rep\\.|er\\.\\s?\\(Ohio\\))))|c\\.\\s?L\\.\\s?Bul\\.)|ty\\s?H(?:\\.\\s?Rec\\.|all\\s?Rec\\.\\s?\\(NY\\))|v(?:\\.\\s?Proc\\.\\s?(?:N\\.\\s?S\\.|R\\.)|il\\s?Proc\\.\\s?R\\.))|l(?:\\.\\s?(?:C(?:h\\.|t\\.)|R\\.)|a(?:rke\\s?Ch\\.(?:\\s?\\(N\\.\\s?Y\\.\\s?\\))?|yton['’]s\\s?Notebook)|iff\\.)|o(?:d(?:d(?:\\.\\s?Dig\\.|ington['’]s\\s?Digest)|e\\s?Rep\\.)|l(?:\\.(?:\\s?(?:&\\s?C(?:\\.\\s?Cas\\.|ai(?:\\.|nes\\s?Cas\\.\\s?\\(N\\.\\s?Y\\.\\s?\\)))|Cas\\.(?:\\s?\\(N\\.\\s?Y\\.\\s?\\))?|L(?:\\.\\s?Rep\\.|aw\\s?Rep\\.)))?|d(?:\\.|w\\.)|e(?:\\.\\s?(?:&\\s?C(?:\\.\\s?Cas\\.|ai\\.(?:\\s?Cas\\.)?)|Cas\\.(?:\\s?Pr\\.)?)|m\\.\\s?(?:&\\s?C\\.\\s?Cas\\.|Cas\\.))|l(?:ective\\s?Bargaining\\s?Negot\\.\\s?&\\s?Cont\\.\\s?\\(BNA\\)|ier\\s?Bankr\\.\\s?Cas\\.(?:\\s?(?:2d(?:\\s?\\(MB\\))?|\\(MB\\)))?)|o(?:\\.(?:\\s?(?:App\\.(?:\\s?LEXIS)?|Bankr\\.\\s?Ct\\.\\s?Rep\\.|Discipl\\.\\s?LEXIS|J\\.(?:\\s?C\\.\\s?A\\.\\s?R\\.)?|L(?:EXIS|\\.\\s?Rep\\.|aw\\s?Rep\\.)|N\\.\\s?P\\.|R\\.))?|rado\\s?Journal|\\s?Bankr\\s?Ct\\s?Rep))|m(?:m(?:\\.\\s?(?:Fut\\.\\s?L\\.\\s?Rep\\.(?:\\s?\\(CCH\\))?|Reg\\.\\s?(?:2d\\s?\\(P\\s?&\\s?F\\)|\\(P\\s?&\\s?F\\)))|c['’]ns\\s?Reg\\.\\s?\\(P\\s?&\\s?F\\)|unications\\s?Reg\\.\\s?(?:2d\\s?\\(P&F\\)|\\(P&F\\)))|p\\.\\s?Gen\\.)|n(?:g\\.\\s?Index\\(CCH\\)|n(?:\\.(?:\\s?(?:App\\.(?:\\s?LEXIS)?|Cir\\.\\s?(?:Ct(?:\\.)?|LEXIS)|L(?:EXIS|\\.\\s?Rptr\\.)|Rep\\.|Su(?:p(?:\\.|er\\.\\s?(?:Ct\\.|LEXIS)|p\\.)|rr\\.)))?|oly\\s?Sur(?:\\.\\s?Rep\\.|r\\.\\s?Rep\\.))|s(?:t\\.(?:\\s?(?:Rep\\.|S\\.\\s?C\\.))?|umer\\s?(?:Cred\\.\\s?Guide\\s?\\(CCH\\)|Prod\\.\\s?Safety\\s?Guide\\s?\\(CCH\\)))|t\\.\\s?(?:App\\.\\s?Dec\\.\\s?\\(CCH\\)|Cas\\.\\s?Fed\\.(?:\\s?\\(CCH\\))?))|o(?:ke\\s?\\(Tenn\\.\\s?\\)|mbs['’]\\s?Trial\\s?of\\s?Aaron\\s?Burr(?:\\.)?|p\\.\\s?Chy\\.)|p(?:r\\.\\s?L\\.\\s?Dec\\.|y(?:\\.\\s?L\\.\\s?Rep\\.\\s?\\(CCH\\)|right\\s?L\\.\\s?(?:Dec\\.\\s?\\(CCH\\)|Rep\\.\\s?\\(CCH\\))))|st\\s?Accounting\\s?Stand\\.\\s?Guide\\s?\\(CCH\\)|urt\\s?Cl\\.|w\\.(?:\\s?(?:N\\.\\s?Y\\.|Rep\\.))?|x\\.\\s?Manual\\s?Trade\\-Mark\\s?Cas\\.)|r(?:a(?:\\.|bbe\\.|nch(?:,\\s?(?:C\\.\\s?C\\.|Pat\\.\\s?Dec\\.)|\\.\\s?C\\.\\s?C\\.|\\s?(?:C\\.\\s?C\\.|D\\.\\s?C\\.|Rep\\.|\\(US\\)))?)|im\\.\\s?L\\.\\s?Rep\\.\\s?\\(BNA\\))|t\\.\\s?(?:C(?:l(?:\\.(?:\\s?R(?:\\.|ep\\.))?|s\\.\\s?R\\.)|ust\\.(?:\\s?(?:Appls\\.|LEXIS))?)|Int(?:['’]l\\s?Trade|l\\.\\s?Trade\\s?LEXIS)|Sup\\.)|u(?:rt\\.|s(?:h\\.(?:\\s?(?:Rep\\.|\\(Mass\\.\\s?\\)))?|t\\.\\s?(?:B\\.\\s?&\\s?Dec\\.|Ct\\.(?:\\s?LEXIS)?))))|D(?:\\.(?:\\s?(?:&\\s?B\\.|A\\.\\s?R\\.|C(?:\\.(?:\\s?(?:App\\.(?:\\s?LEXIS)?|Super\\.\\s?LEXIS|\\((?:Cranch\\)|Mac(?:Arth\\.\\s?(?:&\\s?M\\.\\s?\\)|\\))|key\\))|Tuck\\.\\s?&\\s?Cl\\.\\s?\\)|patent\\))))?|hip(?:\\.(?:\\s?(?:Rep\\.|\\(Vt\\.\\s?\\)))?|m\\.))|Haw\\.|L\\.\\s?N\\.(?:\\s?,)?|N\\.\\s?H\\.|P\\.\\s?R\\.|S\\.\\s?D\\.))?|a(?:ily\\s?(?:Journal\\s?D(?:AR|\\.\\s?A\\.\\s?R\\.)|L(?:\\.\\s?(?:N\\.|R\\.)|ab\\.\\s?Rep\\.\\s?\\(BNA\\)|eg\\.\\s?(?:News\\s?\\(Pa\\.\\s?\\)|\\(Pa\\.\\s?\\)))|Wash\\.\\s?L\\.\\s?Rptr\\.)|k(?:\\.|ota\\s?LEXIS)|l(?:\\.(?:\\s?Rep\\.)?|l(?:\\.(?:\\s?(?:Dig\\.|Rep\\.|S\\.\\s?C\\.|\\(Tex\\.\\s?\\)))?|a(?:m\\s?Dig\\.\\s?\\(Tex\\.\\s?\\)|s\\s?Rep\\.))|y(?:['’]s\\s?R\\.|\\s?\\(N(?:Y\\)|\\.\\s?Y\\.\\s?\\))))|n(?:\\.|a\\s?Rep\\.|e,\\s?Abr\\.)|vis\\.\\s?L\\.\\s?Ct\\.\\s?Cas\\.|y(?:\\.|\\s?\\(Conn\\)))|e(?:ady(?:,|\\.)|c\\.\\s?Com(?:\\.\\s?Pat\\.|m(?:['’]r\\s?Pat\\.|r\\.\\s?Pat\\.))|l(?:\\.(?:\\s?(?:C(?:\\.\\s?P\\.\\s?LEXIS|as\\.|h\\.(?:\\s?(?:LEXIS|Rep\\.))?|o\\.(?:\\s?Rep\\.)?)|Fam\\.\\s?Ct\\.\\s?LEXIS|LEXIS|Rep\\.|Super\\.\\s?LEXIS|\\(Boyce\\)))?|aware\\s?Co\\.\\s?Reports)|m\\.(?:\\s?Sur(?:\\.|r\\.))?|n(?:\\.|io\\s?Rep\\.)|s(?:\\.(?:\\s?(?:Eq\\.|Rep\\.))?|aus\\.(?:\\s?(?:Eq\\.|Rep\\.))?)|v\\.(?:\\s?(?:&\\s?B(?:\\.(?:\\s?(?:Eq\\.|L\\.))?|at\\.(?:\\s?(?:Eq\\.|Law))?)|Eq\\.(?:\\s?Rep\\.)?|L\\.|Rep\\.|\\(N\\.\\s?C\\.\\s?\\)))?)|i(?:ck\\.\\s?\\(NJ\\)|ll\\.|s(?:\\.\\s?R\\.|ney\\s?\\(Ohio\\)|t\\.\\s?Rep\\.)|v\\.)|o(?:minion\\s?Tax\\s?Cas\\.\\s?\\(CCH\\)|ug(?:\\.(?:\\s?(?:Rep\\.|\\(Mich\\.\\s?\\)))?|l\\.\\s?\\(Mich\\.\\s?\\)))|u(?:d(?:\\.(?:\\s?(?:Ch\\.|Eq\\.(?:\\s?\\(S\\.\\s?C\\.\\s?\\))?|L\\.(?:\\s?\\(S\\.\\s?C\\.\\s?\\))?|\\(S\\.\\s?C\\.\\s?\\)))?|l(?:\\.|ey\\s?(?:Rep\\.|\\(Ga\\.\\s?\\))))|er\\s?Super\\.\\s?Ct\\.\\s?Rep\\.|v\\.))|E(?:EOC\\s?Compl\\.\\s?Man\\.\\s?\\(CCH\\)|RC\\s?\\(BNA\\)|\\.\\s?(?:A\\.\\s?D\\.|D\\.\\s?(?:Pa\\.|Smith)|H\\.\\s?Smith(?:['’]s)?)|d(?:\\.\\s?(?:C(?:\\.\\s?R\\.|h\\.)|Law\\s?Rep\\.)|m\\.\\s?Sel\\.\\s?Ca(?:\\.|s\\.(?:\\s?\\(N\\.\\s?Y\\.\\s?\\))?)|uc(?:\\.\\s?L\\.\\s?Rep\\.|\\s?L\\s?Rep)|w\\.(?:\\s?(?:Ch\\.(?:\\s?(?:Rep\\.|\\(N\\.\\s?Y\\.\\s?\\)))?|Rep\\.))?)|mpl(?:\\.\\s?(?:Benefits\\s?Cas\\.\\s?\\(BNA\\)|Coordinator\\s?\\(RIA\\)|Prac\\.\\s?(?:Dec\\.(?:\\s?\\(CCH\\))?|Guide\\s?\\(CCH\\))|Safety\\s?&\\s?Health\\s?Guide\\s?\\(CCH\\))|oyee\\s?Benefits\\s?Cas\\.(?:\\s?\\(BNA\\))?|\\s?Prac\\s?Dec\\s?\\[CCH\\])|n(?:ergy\\s?Mg(?:mt\\.\\s?\\(CCH\\)|t\\.)|v(?:['’]t\\s?Rep\\.\\s?(?:Cas\\.\\s?\\(BNA\\)|\\(BNA\\))|tl\\.\\s?L\\.\\s?Rep\\.(?:\\s?\\(Envtl\\.\\s?Law\\s?Inst\\.\\s?\\))?))|xempt\\s?Org\\.\\s?Rep\\.\\s?\\(CCH\\))|F(?:3d(?:\\.)?|4th|CC\\s?(?:2d|Rcd)|ED\\s?App\\.|LW\\s?Fed|S(?:3d|upp3d)|\\.(?:\\s?(?:2d(?:\\.)?|3d(?:\\.)?|4(?:th(?:\\.)?|\\s?th)|App(?:['’]x(?:\\.)?|x\\.)|C(?:\\.(?:\\s?C\\.(?:\\s?2d)?)?|as\\.)|L\\.\\s?R\\.\\s?A\\.|R\\.\\s?D\\.|Supp(?:\\.(?:\\s?(?:2d|3(?:D|d(?:\\.)?)))?)?|T\\.\\s?C\\.|\\(2d\\)))?|a(?:ir\\s?Empl\\.\\s?Prac\\.\\s?(?:Cas\\.(?:\\s?\\(BNA\\))?|Newsl\\.\\s?\\(BNA\\))|m\\.\\s?L\\.\\s?(?:Rep\\.\\s?\\(BNA\\)|Tax\\s?Guide\\s?\\(CCH\\)))|ed(?:\\.(?:\\s?(?:A(?:pp(?:['’]x|\\.|x(?:\\.)?)|udit\\s?Guide\\s?\\(CCH\\))|Banking\\s?L\\.\\s?Rep\\.(?:\\s?\\(CCH\\))?|C(?:a(?:\\.|rr\\.\\s?(?:Cas\\.(?:\\s?\\(CCH\\))?|Rep\\.\\s?\\(CCH\\))|s\\.)|l\\.|ont\\.\\s?Rep\\.\\s?\\(BNA\\))|E(?:lection\\s?Camp\\.\\s?Fin\\.\\s?Guide\\s?\\(CCH\\)|nergy\\s?Reg\\.\\s?Comm['’]n\\s?Rep\\.\\s?\\(CCH\\)|st\\.\\s?&\\s?Gift\\s?Tax\\s?Rep\\.\\s?\\(CCH\\)|x\\.\\s?Tax\\s?Rep\\.\\s?\\(CCH\\))|Inc\\.\\s?Gift\\s?&\\s?Est\\.\\s?Tax['’]n\\s?\\(MB\\)|R(?:\\.(?:\\s?(?:2d|3d|4th|Evid\\.\\s?Serv\\.(?:\\s?(?:2d|3d|\\(Callaghan\\)))?|Serv\\.(?:\\s?(?:2d(?:\\s?\\((?:Callaghan\\)|West\\)))?|3d(?:\\s?\\((?:Callaghan\\)|West\\)))?|\\(Callaghan\\)))?))?|ep\\.(?:\\s?(?:2d|3d|4th))?)|Se(?:c\\.\\s?L\\.\\s?Rep\\.(?:\\s?\\(CCH\\))?|nt(?:['’]g\\s?Rep|\\.\\s?R\\.))|Tax\\s?(?:Coordinator\\s?Second\\s?Series\\s?\\(RIA\\)|Guide\\s?Rep\\.\\s?\\(CCH\\))))?|\\s?(?:Appx|Sec\\s?L\\s?Rep\\s?\\(CCH\\)))|i(?:re\\s?&\\s?Casualty\\s?Cas\\.(?:\\s?\\(CCH\\))?|sh\\.\\s?P(?:at\\.\\s?(?:Cas\\.|Rep\\.)|r(?:\\.\\s?Cas\\.|ize(?:\\s?Cas\\.)?)))|l(?:\\.\\s?S\\.|a\\.(?:\\s?(?:App\\.\\s?LEXIS|L(?:EXIS|\\.\\s?Weekly(?:\\s?(?:Fed\\.(?:\\s?(?:B|C|D|S))?|S(?:upp\\.)?))?)|Rep\\.|Supp\\.(?:\\s?2d)?))?|ip(?:\\.|p\\.\\s?\\(F\\.\\s?\\))|or(?:\\.|ida\\s?Rep\\.))|ood\\s?Drug\\s?Cosm\\.\\s?L\\.\\s?Rep\\.\\s?\\(CCH\\)|r(?:\\.\\s?Ch(?:\\.|y\\.)|ee(?:\\.\\s?Ch\\.|m\\.(?:\\s?(?:Ch\\.(?:\\s?\\(Miss\\.\\s?\\))?|\\(Miss\\.\\s?\\)))?))|ulton\\s?County\\s?D\\.\\s?Rep\\.|\\s?(?:2d|Supp(?:\\.|\\s?2d)?))|G(?:\\.\\s?(?:&\\s?J\\.|D\\.\\s?R\\.)|a(?:\\.(?:\\s?(?:App\\.(?:\\s?LEXIS)?|L(?:EXIS|\\.\\s?Rep\\.|aw\\s?Reporter)|Rep\\.|\\(Kelly\\)))?|ll(?:\\.(?:\\s?(?:C\\.\\s?C\\.\\s?R\\.|Rep\\.))?|ison['’]s\\s?Rep\\.))|eorgia\\s?Decisions|i(?:bb(?:\\.\\s?Surr\\.|ons\\s?\\(N\\.\\s?Y\\.\\s?\\))|l(?:\\.|d(?:\\.|ersleeve\\s?\\(N\\.\\s?Mex\\.\\s?\\)|r\\.)|m(?:\\.(?:\\s?\\(Ill\\.\\s?\\))?|er\\s?\\(Va\\.\\s?\\))|p\\.))|o(?:ebel['’]s\\s?Rep\\.|v['’]t\\s?(?:Cont\\.\\s?Rep\\.\\s?\\(CCH\\)|Empl\\.\\s?Rel\\.\\s?Rep\\.\\s?\\(BNA\\)))|r(?:\\.|a(?:nt\\s?(?:Cas\\.(?:\\s?\\(Pa\\.\\s?\\))?|Pa\\.|\\(Pa\\.\\s?\\))|tt\\.(?:\\s?\\(Va\\.\\s?\\))?|y\\s?\\(Mass\\.\\s?\\))|eene\\s?G\\.\\s?\\(Iowa\\))|u(?:am\\s?LEXIS|nby\\s?\\(La\\.\\s?\\)))|H(?:\\.(?:\\s?(?:&\\s?(?:G\\.|J\\.|M(?:\\.(?:\\s?\\(Va\\.\\s?\\))?|cH\\.))|Rep\\.))?|a(?:ll(?:,\\s?Law\\s?J\\.|['’]s\\s?(?:R\\.|Sup\\.\\s?C(?:ourt\\s?Rep\\.|t\\.\\s?R\\.))|\\.(?:\\s?Law\\s?J\\.)?|\\s?(?:R(?:\\.|ep\\.)|Super\\.\\s?Ct\\.\\s?Rep\\.))|nd(?:\\.|y\\s?(?:R\\.|\\(Ohio\\)))|r(?:\\.(?:\\s?(?:&\\s?J\\.|Ch(?:\\.|y\\.)))?|d(?:\\.|es\\.|in\\(Ky\\.\\s?\\))|p\\.(?:\\s?(?:Eq\\.(?:\\s?\\(S\\.\\s?C\\.\\s?\\))?|L\\.(?:\\s?\\(S\\.\\s?C\\.\\s?\\))?))?|r(?:\\.(?:\\s?(?:Ch\\.(?:\\s?(?:R\\.|\\(Mich\\.\\s?\\)))?|Rep\\.|\\(Mich\\.\\s?\\)))?|ing\\.(?:\\s?Ch\\.\\s?\\(Mich\\.\\s?\\))?))|s(?:b\\.|k(?:\\.|ell\\s?C\\.\\s?C\\.))|vw\\.\\s?&\\s?H\\.|w(?:\\.(?:\\s?(?:App\\.(?:\\s?LEXIS)?|LEXIS|Rep\\.))?|ai(?:['’]i|i\\s?(?:App\\.|Rep\\.))|ks(?:\\(N\\.\\s?C\\.\\s?\\)|\\s?Rep\\.))|y(?:\\.(?:\\s?(?:&\\s?H(?:\\.|az\\.)|Rep\\.))?|w\\.(?:\\s?(?:&\\s?H(?:\\.(?:\\s?D\\.\\s?C\\.)?|az\\.)|N\\.\\s?C\\.|Rep\\.|Tenn\\.|\\((?:N\\.\\s?C\\.\\s?\\)|Tenn\\.\\s?\\))))?)|z\\.\\s?(?:Reg\\.\\s?(?:Pa\\.|U\\.\\s?S\\.)|U\\.\\s?S\\.\\s?Reg\\.))|e(?:ad\\(Tenn\\.\\s?\\)|isk\\.(?:\\s?\\(Tenn\\.\\s?\\))?|mp(?:\\.|st\\.)|n\\.(?:\\s?&\\s?M(?:\\.|un\\.))?)|il(?:l(?:\\.\\s?N\\.\\s?Y\\.|es['’]\\s?Notebook|\\s?(?:&\\s?D(?:\\.\\s?Supp\\.|en\\.(?:\\s?Supp\\.)?)|Ch\\.(?:\\s?Rep\\.)?|Eq\\.(?:\\s?\\(S\\.\\s?C\\.\\s?\\))?|Law|Rep\\.|S\\.\\s?C\\.))|t\\.)|o(?:ff(?:\\.(?:\\s?(?:Ch(?:\\.(?:\\s?Rep\\.)?|a\\.)|Dec\\.|Land(?:\\.\\s?Cas\\.|\\s?Cas\\.)|N\\.\\s?Y\\.|Op\\.))?|m\\.(?:\\s?Ch\\.\\s?\\(N\\.\\s?Y\\.\\s?\\))?|\\s?Land\\s?Cas\\.)|pk\\.\\s?(?:Ch\\.(?:\\s?Rep\\.)?|Works(?:\\.)?)|sea['’]s\\s?Rep\\.|us(?:\\.\\s?&\\s?Dev\\.\\s?Rep\\.\\s?\\(RIA\\)|t(?:\\.|on\\s?Criminal))|w(?:\\.(?:\\s?(?:App\\.\\s?Cas\\.|N\\.\\s?P\\.(?:\\s?\\(Mich\\.\\s?\\))?|P(?:\\.\\s?R\\.|r(?:\\.(?:\\s?(?:Rep\\.|\\(n\\.\\s?s\\.\\s?\\)))?|ac\\.(?:\\s?\\(N\\.\\s?Y\\.\\s?\\))?))|Rep\\.))?|ard\\s?Rep\\.|ell\\s?N\\.\\s?P\\.))|u(?:gh(?:\\.|es(?:\\.|\\s?\\(1877\\)))|m(?:\\.(?:\\s?Rep\\.)?|ph\\.(?:\\s?Rep\\.)?)|n(?:\\.|t(?:,\\s?Mer\\.\\s?Mag\\.|\\.\\s?Mer\\.\\s?Mag\\.|\\s?Mer\\.\\s?Mag\\.))))|I(?:&N(?:Dec\\.|\\s?Dec(?:\\.)?)?|ER\\s?Cases|L\\s?App(?:\\.\\s?\\((?:1st\\)|2d\\)|3d\\)|4th\\)|5th\\))|\\s?\\((?:1st\\)|2(?:d\\)|nd\\))|3(?:d\\)|rd\\))|4th\\)|5(?:th\\)|\\s?th\\))))|N\\s?Dec\\.|RS\\s?Pos\\.\\s?\\(CCH\\)|\\.\\s?(?:&\\s?N\\.\\s?Dec\\.|C\\.\\s?C\\.(?:\\s?2d)?|E\\.\\s?R\\.(?:\\s?Cas\\.(?:\\s?\\(BNA\\))?)?|R\\.\\s?B\\.|T\\.\\s?R\\.\\s?D\\.(?:\\s?\\(BNA\\))?)|a\\.|da\\.(?:\\s?(?:App\\.\\s?(?:LEXIS|Unpub\\.\\s?LEXIS)|LEXIS))?|l(?:l\\.(?:\\s?(?:2d|A(?:\\.(?:\\s?(?:2d|3d))?|pp\\.(?:\\s?(?:2d|3d|LEXIS|Rep\\.|Unpub\\.\\s?LEXIS))?)|C(?:\\.\\s?C\\.|ir\\.\\s?Ct\\.(?:\\s?Rep\\.)?|t\\.\\s?Cl\\.(?:\\s?LEXIS)?)|Dec(?:\\.|s\\.)|LEXIS|Rep\\.|\\((?:Breese\\)|Gilm\\.\\s?\\)|Scam(?:\\)|\\.\\s?\\)))))?|\\s?App(?:\\.\\s?\\((?:1st\\)|2d\\)|3d\\)|4th\\)|5th\\))|\\s?\\((?:1st\\)|2d\\)|3d\\)|4th\\)|5th\\))))|mmigr\\.\\s?L\\.\\s?Serv\\.\\s?\\(West\\)|n(?:d(?:\\.(?:\\s?(?:App\\.(?:\\s?(?:LEXIS|Unpub\\.\\s?LEXIS))?|Cl\\.\\s?Com(?:\\.|m\\.)|Dec\\.|L(?:EXIS|\\.\\s?Rep\\.)|Rep\\.|T(?:\\.|ax\\s?LEXIS)))?|ian\\s?Terr\\.(?:\\s?LEXIS)?)|her\\.\\s?Est\\.\\s?&\\s?Gift\\s?Tax\\s?Rep\\.\\s?\\(CCH\\)|s(?:\\.\\s?L(?:\\.\\s?(?:J\\.|Rep\\.\\s?\\(CCH\\))|aw(?:\\.\\s?J\\.|\\s?J\\.))|\\s?Law\\s?J\\.)|t(?:['’]l\\s?(?:Env['’]t\\s?Rep\\.\\s?\\(BNA\\)|Trade\\s?Rep\\.\\s?\\(BNA\\))|\\.\\s?Rev\\.\\s?Rec(?:,|\\.)|erior\\s?Dec\\.|\\s?Rev\\.\\s?Rec\\.))|owa\\s?(?:App\\.\\s?LEXIS|Rep\\.|Sup\\.\\s?LEXIS)|red\\.(?:\\s?(?:Eq\\.(?:\\s?(?:Rep\\.|\\(N\\.\\s?C\\.\\s?\\)))?|L(?:\\.(?:\\s?\\(N\\.\\s?C\\.\\s?\\))?|aw(?:\\s?Rep\\.)?)|Rep\\.))?|\\s?&\\s?N\\s?Dec\\.)|J(?:\\.(?:\\s?(?:Ch\\.|J\\.\\s?Mar(?:\\.|sh\\.(?:\\s?\\(Ky\\.\\s?\\))?)|Rep\\.))?|eff\\.(?:\\s?\\(Va\\.\\s?\\))?|o(?:hn(?:\\.(?:\\s?Rep\\.)?|s(?:\\.(?:\\s?(?:C(?:as\\.(?:\\s?\\(N\\.\\s?Y\\.\\s?\\))?|h\\.(?:\\s?(?:Cas\\.|Rep\\.|\\(N\\.\\s?Y\\.\\s?\\)))?|t\\.\\s?Err\\.)|N\\.\\s?Y\\.|Rep\\.|\\(N\\.\\s?Y\\.\\s?\\)))?|on\\s?Rep\\.))|nes\\s?(?:&\\s?S(?:\\.|pencer)|Eq\\.|L(?:\\.|aw(?:\\.)?)|N\\.\\s?C\\.|and\\s?Spencer['’]s\\s?Super\\.\\s?Ct\\.\\s?Rep\\.)|ur\\.\\s?(?:Fr\\.\\s?Inst\\.|Jur\\.))|u(?:ris\\s?P\\.\\s?R\\.|st\\.))|K(?:a(?:n(?:\\.(?:\\s?(?:App\\.(?:\\s?(?:2d|LEXIS|Unpub\\.\\s?LEXIS))?|LEXIS|Rep\\.|Unpub\\.\\s?LEXIS))?|s\\.(?:\\s?App\\.)?)|s\\.)|en\\.\\s?(?:Dec\\.|L\\.\\s?Re\\.|Opin\\.)|ir(?:\\.|b\\.)|y\\.(?:\\s?(?:App\\.(?:\\s?(?:LEXIS|Unpub\\.\\s?LEXIS))?|L(?:EXIS|\\.\\s?(?:R(?:\\.|ptr\\.)|Summ\\.)|aw(?:\\.\\s?Rep\\.|\\s?Rep\\.))|Op\\.|Rep\\.|Unpub\\.\\s?LEXIS|\\((?:A\\.\\s?K\\.\\s?Marsh\\.\\s?\\)|B(?:\\.\\s?Mon\\.\\s?\\)|ibb\\)|ush\\))|D(?:ana\\)|uv\\.\\s?\\))|H(?:ard\\.\\s?\\)|ughes\\))|J\\.\\s?J\\.\\s?Marsh\\.\\s?\\)|Lit(?:\\.\\s?Sel\\.\\s?Cas\\.\\s?\\)|t\\.\\s?\\))|Met\\.\\s?\\)|Sneed\\)|T\\.\\s?B\\.\\s?Monroe\\))))?)|L(?:AW\\s?ED|Ed2d|\\.(?:\\s?(?:E(?:\\.(?:\\s?2d)?|d\\.(?:\\s?(?:2d|\\(U\\.\\s?S\\.\\s?\\)))?)|J\\.\\s?Q\\.\\s?B\\.|R(?:\\.\\s?(?:A(?:\\.(?:\\s?N\\.\\s?S\\.)?|\\s?\\(N\\.\\s?S\\.\\s?\\))|R\\.\\s?M\\.(?:\\s?\\(BNA\\))?)|ep\\.)))?|a(?:\\.(?:\\s?(?:A(?:\\.|nn\\.(?:\\s?Rep\\.)?|pp\\.(?:\\s?(?:1\\s?Cir\\.|2\\s?Cir\\.|3\\s?Cir\\.|4\\s?Cir\\.|5\\s?Cir\\.|6\\s?Cir\\.|LEXIS|Unpub\\.\\s?LEXIS|\\(Orleans\\)))?)|L(?:EXIS|aw\\s?J\\.)|Rep\\.))?|b\\.\\s?(?:Arb\\.\\s?(?:Awards\\s?\\(CCH\\)|Rep\\.\\s?\\(BNA\\))|Cas\\.(?:\\s?\\(CCH\\))?|L\\.\\s?Rep\\.\\s?\\(CCH\\)|Rel\\.\\s?Rep\\.\\s?\\(BNA\\))|c(?:\\.\\s?Jur\\.|k(?:\\.\\s?(?:Jur(?:\\.|ist)|L(?:\\.\\s?N\\.|eg\\.(?:\\s?News\\s?\\(P\\.\\s?A\\.\\s?\\))?))|a\\.\\s?Leg\\.\\s?News))|lor\\s?Supp\\.|n(?:c\\.\\s?L\\.\\s?Rev\\.|s\\.(?:\\s?Ch\\.)?)|w(?:,\\s?Rep\\.|\\.\\s?(?:Ed\\.|Rep\\.)|\\s?(?:&\\s?Eq\\.\\s?Rep\\.|J\\.\\s?Q\\.\\s?B\\.|Rep(?:\\.|orter)|Times\\s?\\(N\\.\\s?S\\.\\s?\\))))|e(?:a\\.|g(?:\\.\\s?(?:Gaz\\.(?:\\s?Rep\\.)?|Int(?:\\.|el\\.\\s?or\\s?Intell\\.)|Op(?:\\.|s\\.\\s?\\(Pa\\.\\s?\\))|Re(?:c\\.(?:\\s?Rep\\.)?|p\\.))|al\\s?(?:Gaz\\.|Int(?:\\.|el(?:\\.|l(?:\\.|igencer)))))|h(?:\\.\\s?V\\.\\s?L\\.\\s?R\\.\\s?\\(Pa\\.\\s?\\)|igh\\s?V(?:\\.\\s?L\\.\\s?R\\.|al\\.\\s?L(?:\\.\\s?R(?:\\.|ep\\.)|aw\\s?Rep)))|igh\\s?(?:Rep\\.|\\(Va\\.\\s?\\)))|i(?:fe\\.\\s?Cas\\.\\s?(?:2d(?:\\(CCH\\)|\\s?\\(CCH\\))|\\(CCH\\))|quor\\s?(?:Cont\\.\\s?L\\.\\s?Rep\\.\\s?\\(CCH\\)|Tax\\s?Rep\\.)|t(?:\\.(?:\\s?(?:Rep\\.|Sel\\.\\s?Ca\\.))?|t(?:\\.(?:\\s?(?:Rep\\.|Sel\\.\\s?Cas\\.(?:\\s?\\(Ky\\.\\s?\\))?|\\(Ky\\.\\s?\\)))?|ell\\s?Rep\\.))|v\\.\\s?Law\\s?Mag\\.)|o(?:ck\\.\\s?Rev\\.\\s?Cas\\.|w(?:\\.(?:\\s?D(?:ec\\.|is\\.))?|ell\\.))|uz\\.\\s?L(?:\\.\\s?R\\.|eg\\.\\s?Reg\\.(?:\\s?Rep\\.)?)|\\s?Ed(?:\\s?2d)?)|M(?:\\.(?:\\s?(?:&\\s?Y\\.(?:\\s?R\\.)?|D\\.\\s?L\\.\\s?R\\.|J\\.|S\\.\\s?P\\.\\s?(?:B\\.|R\\.)|T\\.\\s?C\\.\\s?(?:A\\.|R\\.)))?|a(?:\\.(?:\\s?A\\.)?|c(?:A(?:\\.\\s?Pat(?:\\.\\s?Cas\\.|\\s?Cas\\.)|r(?:\\.(?:\\s?&\\s?M(?:\\.|ackey))?|th(?:\\.(?:\\s?&\\s?M\\.(?:\\s?\\(Dist\\.\\s?Col\\.\\s?\\))?)?|ur\\s?&\\s?M\\.)))|\\.\\s?A\\.\\s?Pat\\.\\s?Cas\\.)|i(?:\\.|ne\\s?Rep\\.)|n(?:\\.\\s?Unrep\\.\\s?Cas\\.|n(?:\\.\\s?Unrep\\.\\s?Cas\\.|ing(?:['’]s\\s?U(?:\\.\\s?C\\.|nrep\\.\\s?Cases)|\\s?La\\.))|um\\.(?:\\s?Cas\\.)?)|r(?:\\.(?:\\s?Rep\\.)?|sh\\.(?:\\s?(?:A\\.\\s?K\\.|J\\.\\s?J\\.|Rep\\.|\\(Ky\\.\\s?\\)))?|t(?:\\.(?:\\s?(?:&\\s?Y(?:\\.(?:\\s?\\(Tenn\\.\\s?\\))?|er(?:\\.|g\\.))|Dec\\.|N\\.\\s?C\\.|O\\.\\s?S\\.\\s?\\(La\\.\\s?\\)|Rep\\.|\\((?:N\\.\\s?(?:C\\.\\s?\\)|S\\.\\s?\\))|O\\.\\s?S\\.\\s?\\)|n\\.\\s?s\\.\\s?\\)|o\\.\\s?s\\.\\s?\\))))?|in\\s?Rep\\.)|v\\.(?:\\s?\\(Del\\.\\s?\\))?|yland\\s?Rep\\.)|s(?:\\.(?:\\s?Rep\\.)?|on(?:\\.|\\s?(?:C(?:\\.\\s?C\\.(?:\\s?R\\.)?|irct\\.\\s?Ct\\.\\s?R\\.)|R\\.|U\\.\\s?S\\.))|s\\.(?:\\s?(?:App\\.(?:\\s?(?:Ct\\.|D(?:ec\\.|iv\\.(?:\\s?(?:Adv\\.\\s?Sh\\.|LEXIS))?)|LEXIS|Unpub\\.\\s?LEXIS))?|L(?:CR\\s?LEXIS|EXIS|\\.\\s?Rptr\\.|aw\\s?Rep(?:\\.)?)|R(?:\\.|ep\\.)|Sup(?:er\\.\\s?LEXIS|p\\.)|\\((?:Allen\\)|Cush(?:\\)|\\.\\s?\\))|Gray\\)|Met\\.\\s?\\)|Pick\\.\\s?\\)|Tyng\\)|Will\\.\\s?\\))))?))|c(?:A(?:\\.\\s?Pat\\.\\s?Cas\\.|l(?:\\.|l(?:\\.(?:\\s?\\(Cal\\.\\s?\\))?|ister\\s?U\\.\\s?S\\.\\s?Circ\\.\\s?Court\\s?R\\.)))|C(?:ah\\.|ord\\s?(?:Ch\\.(?:\\s?Rep\\.)?|Eq\\.|Rep\\.)|rary['’]s\\s?Cir\\.\\s?Ct\\.\\s?Rpts)|Gl\\.|Lean\\.|Mul\\.(?:\\s?(?:Eq\\.(?:\\s?\\(S\\.\\s?C\\.\\s?\\))?|L\\.\\s?\\(S\\.\\s?C\\.\\s?\\)))?|\\.\\s?A\\.\\s?Pat\\.\\s?Cas\\.|\\s?Lean)|d\\.(?:\\s?(?:App\\.(?:\\s?LEXIS)?|C(?:h\\.|ir\\.\\s?Ct\\.\\s?LEXIS)|L(?:EXIS|aw\\s?Rec\\.)|Rep\\.|Tax\\s?LEXIS))?|e(?:\\.(?:\\s?(?:LEXIS|Super\\.\\s?LEXIS|Unpub\\.\\s?LEXIS))?|d(?:\\.\\s?Devices\\s?Rep\\.\\s?\\(CCH\\)|i(?:a\\s?L\\.\\s?Rep\\.(?:\\s?\\(BNA\\))?|care\\s?&\\s?Medicaid\\s?Guide\\s?\\(CCH\\))|\\s?&\\s?Med\\s?GD\\s?\\(CCH\\))|t(?:\\.(?:\\s?Rep\\.)?|c\\.(?:\\s?(?:Ky\\.|Mass\\.|Rep\\.))?))|i(?:ch(?:\\.(?:\\s?(?:App\\.(?:\\s?LEXIS)?|Ct\\.\\s?(?:App\\.|Cl\\.)|L(?:EXIS|awy\\.)|N\\.\\s?P\\.(?:\\s?R\\.)?|Pr\\.|Rep\\.))?|\\s?App)|ll(?:er['’]s\\s?Notebook|s(?:\\.|\\s?Surr\\.)|\\s?Const\\.(?:\\s?\\(S\\.\\s?C\\.\\s?\\))?)|n(?:\\.(?:\\s?Rep\\.)?|n\\.(?:\\s?(?:App\\.\\s?(?:LEXIS|Unpub\\.\\s?LEXIS)|Dist\\.\\s?LEXIS|LEXIS|Rep\\.|Tax\\s?LEXIS))?|or\\s?\\(Ala\\.\\s?\\))|s(?:\\.(?:\\s?Rep\\.)?|c(?:\\.(?:\\s?(?:2d|3d|Rep(?:\\.)?))?|\\s?(?:2d|3d|Rep(?:\\.)?))|s\\.(?:\\s?(?:App\\.\\s?LEXIS|Dec\\.|LEXIS|R(?:\\.|ep\\.)|\\((?:Howard\\)|S\\.\\s?&\\s?M\\.\\s?(?:Ch\\.\\s?\\)|\\))|Walker\\))))?))|o(?:\\.(?:\\s?(?:App\\.(?:\\s?(?:LEXIS|Rep\\.))?|LEXIS|Rep\\.))?|n(?:\\.(?:\\s?(?:B\\.|Rep\\.|T\\.\\s?B\\.))?|a(?:\\.|g(?:\\.|han\\(Pa\\.\\s?\\)))|roe,\\s?B\\.|t(?:['’]g\\.\\s?(?:Co\\.\\s?L\\.\\s?Rep\\.|L\\.\\s?Rep\\.)|\\.(?:\\s?(?:Dist\\.\\s?LEXIS|LEXIS|St\\.\\s?Rep\\.|Water\\s?LEXIS))?|g\\.(?:\\s?(?:C(?:LR(?:\\.)?|o\\.(?:\\s?L(?:\\.\\s?R(?:\\.(?:\\s?\\(Pa\\.\\s?\\))?|ep['’]r)|aw\\s?Rep['’]r\\.))?)|\\(Pa\\.\\s?\\)))?|h\\.\\s?(?:Jur\\.|West\\.\\s?Jur\\.)))|r(?:\\.\\s?(?:Ia\\.|Min\\.\\s?Rep\\.|St\\.\\s?Ca(?:\\.|s\\.))|r(?:\\.(?:\\s?(?:M(?:\\.\\s?R\\.|in\\.\\s?R(?:\\.|ep\\.))|St\\.\\s?Cas\\.))?|is\\s?St\\.\\s?Cas\\.)))|t\\.|u(?:nf\\.(?:\\s?Rep\\.)?|r(?:\\.(?:\\s?Rep\\.)?|ph\\.(?:\\s?(?:Rep\\.|\\(N\\.\\s?C\\.\\s?\\)))?)|t\\.\\s?Funds\\s?Guide\\s?\\(CCH\\)))|N(?:CBC\\s?LEXIS|D(?:LR\\s?\\(LRP\\)(?:\\s?LEXIS)?|\\s?A(?:PP|pp))|E(?:2d|3d|\\s?(?:2d|3d))|LRB\\s?(?:Dec\\.\\s?\\(CCH\\)|No\\.)|W(?:2(?:D|d)|3d|\\.\\s?2d|\\s?2d)|Y(?:2d|3d|S(?:2d|3d|\\s?(?:2d|3d))|\\s?(?:2d|3d|App\\s?Div\\s?LEXIS|Misc\\s?LEXIS|Slip\\s?Op(?:\\.)?))|\\.\\s?(?:&\\s?Mc\\.|B(?:\\.\\s?R\\.(?:\\s?\\(Supp\\.\\s?\\))?|k(?:\\.\\s?R\\.|pt\\.\\s?R(?:\\.|eg\\.)))|C(?:\\.(?:\\s?(?:App\\.(?:\\s?LEXIS)?|Conf\\.(?:\\s?Rep\\.)?|LEXIS|Rep\\.|T(?:\\.\\s?Rep\\.|erm\\.\\s?R(?:\\.|ep\\.))|\\((?:Busb\\.\\s?(?:Eq\\.\\s?\\)|\\))|Ca(?:m\\.\\s?&\\s?Nor\\.\\s?\\)|r\\.\\s?L\\.\\s?Rep\\.\\s?\\))|Dev\\.\\s?(?:&\\s?Bat\\.\\s?(?:Eq\\.\\s?\\)|\\))|Eq\\.\\s?\\)|\\))|Ha(?:wks\\)|yw\\.\\s?\\))|Ired\\.\\s?(?:Eq\\.\\s?\\)|\\))|Jones(?:\\)|\\s?Eq\\.\\s?\\))|M(?:art\\.\\s?\\)|ur\\.\\s?\\))|Phil\\.\\s?(?:Eq\\.\\s?\\)|Law\\))|Tay(?:\\.\\s?\\)|lor\\)))))?|hip(?:\\.(?:\\s?\\(Vt\\.\\s?\\))?|m\\.))|D\\.(?:\\s?(?:App\\.(?:\\s?LEXIS)?|LEXIS))?|E\\.(?:\\s?(?:2d|3d|Rep\\.))?|H(?:\\.(?:\\s?(?:LEXIS|R(?:\\.|ep\\.)|Super\\.\\s?LEXIS))?)?|J\\.(?:\\s?(?:Admin\\.(?:\\s?2d)?|Ch\\.\\s?LEXIS|Eq\\.|L(?:EXIS|\\.(?:\\s?J\\.)?|aw(?:\\s?J\\.)?)|M(?:\\.|isc\\.(?:\\s?LEXIS)?)|Prerog\\.\\s?Ct\\.\\s?LEXIS|S(?:\\.|up(?:\\.\\s?Ct\\.\\s?LEXIS|er\\.(?:\\s?(?:LEXIS|Unpub\\.\\s?LEXIS))?))|Tax(?:\\.|\\s?Ct\\.)?|\\(Manumission\\)))?|L\\.\\s?R\\.\\s?B\\.|M(?:\\.(?:\\s?(?:App\\.\\s?(?:LEXIS|Unpub\\.\\s?LEXIS)|B\\.|Ct\\.\\s?App\\.|I\\.|LEXIS|St\\.\\s?B\\.\\s?Bull\\.|Unpub\\.\\s?LEXIS|\\((?:Ct\\.\\s?App\\.\\s?\\)|G(?:\\.\\s?\\)|ild\\.\\s?\\))|J(?:\\.\\s?\\)|ohn\\.\\s?\\)))))?|ar\\.\\s?I\\.(?:\\s?(?:Commw\\.(?:\\s?Rptr\\.)?|LEXIS))?)|R\\.\\s?C\\.|T\\.\\s?S\\.\\s?B\\.|W\\.(?:\\s?(?:2(?:\\.\\s?d|d(?:\\.)?|nd)|3d|Rep\\.|\\(2d\\)))?|Y(?:\\.(?:\\s?(?:2d|3d|A(?:nn(?:\\.\\s?Ca(?:\\.|s\\.)|o\\.\\s?Cas\\.)|pp\\.\\s?D(?:ec\\.|iv\\.(?:\\s?LEXIS)?))|C(?:as\\.\\s?Err\\.|h\\.\\s?(?:Ann\\.|R\\.\\s?Ann\\.|Sent\\.)|i(?:ty\\s?(?:Ct\\.\\s?Rep\\.|H\\.\\s?Rec\\.)|v\\.\\s?Proc\\.\\s?R(?:\\.(?:\\s?,\\s?\\(N\\.\\s?S\\.\\s?\\))?|ep\\.(?:\\s?\\(n\\.\\s?s\\.\\s?\\))?))|r(?:\\.\\s?R(?:\\.|ep\\.)|im\\.(?:\\s?R(?:\\.|ep\\.))?))|L(?:EXIS|\\.\\s?J\\.|aw\\s?J\\.|eg(?:\\.\\s?Ob(?:\\.|s\\.)|al\\s?Observer))|Misc\\.\\s?LEXIS|Proc\\.\\s?Ct\\.\\s?Ass\\.|Rep\\.|S(?:\\.(?:\\s?(?:2d|3d|E\\.\\s?Guide\\s?\\(CCH\\)))?|lip\\s?Op(?:\\.)?|pec\\.\\s?Term\\s?R(?:\\.|ep\\.)|t\\.\\s?R(?:\\.|ep(?:['’]r|\\.|r\\.)|ptr\\.)|up(?:\\.\\s?Ct\\.|er\\.\\s?Ct\\.|p(?:\\.|lement)|r(?:\\.\\s?Ct\\.|m\\.\\s?Ct\\.)))|Wkly\\.\\s?Dig\\.|\\(N\\.\\s?Y\\.\\s?S\\.\\s?\\)))?)?)|a(?:t\\.\\s?Bank(?:\\.\\s?Reg\\.|r\\.\\s?Reg\\.)|vajo\\s?Rptr\\.)|e(?:b(?:\\.(?:\\s?(?:App\\.(?:\\s?(?:LEXIS|R\\.))?|C(?:\\.\\s?A\\.|t\\.\\s?App\\.)|LEXIS|Unoff|\\(Unof\\.\\s?\\)))?|\\s?App(?:\\.)?)|g\\.\\s?Cas\\.\\s?(?:2d\\s?\\(CCH\\)|\\(CCH\\))|v\\.(?:\\s?(?:,\\s?Adv(?:\\.\\s?Op\\.|ance\\s?Opinion)|Ad(?:\\.\\s?Op\\.|v(?:\\.\\s?(?:Op\\.(?:\\s?No\\.)?|Rep\\.)|ance\\s?Rep\\.))|LEXIS|Unpub\\.\\s?LEXIS))?|w(?:b\\.(?:\\s?Adm\\.)?|\\s?York\\s?Supp(?:\\.|lement)))|ile(?:,\\s?Reg\\.|s(?:,\\s?Reg\\.|['’]\\s?Reg\\.|\\s?Reg\\.))|o(?:\\.\\s?(?:East\\s?Rep\\.|West\\s?Rep\\.)|rth(?:umb(?:\\.\\s?L(?:\\.\\s?J(?:\\.)?|egal\\.\\s?J\\.)|erland\\s?(?:Co\\.\\s?Leg\\.\\s?Jour|L\\.\\s?J\\.))|w\\.\\s?Rep\\.)|tt\\s?&\\s?M(?:['’]C\\.\\s?\\(S\\.\\s?C\\.\\s?\\)|cC\\.))|uclear\\s?Reg\\.\\s?Rep\\.(?:\\s?\\(CCH\\))?|\\s?W\\.\\s?Rep\\.)|O(?:FCCP\\s?Fed\\.\\s?Cont\\.\\s?Compl\\.\\s?Man\\.\\s?\\(CCH\\)|K(?:la\\.|\\s?(?:AG|C(?:IV\\s?APP|R)|JUD(?:\\s?ETH)?))|S(?:H(?:A\\s?Comp\\.\\s?Guide\\s?\\(CCH\\)|C\\s?\\(BNA\\)|D\\s?\\(CCH\\))|\\.)|TR\\-MD|\\.(?:\\s?(?:A(?:\\.\\s?R\\.(?:\\s?(?:2d|3d))?|pp\\.(?:\\s?(?:2d|3d))?)|B\\.\\s?(?:A\\.\\s?J\\.|R\\.)|C(?:\\.\\s?(?:A\\.|C\\.(?:\\s?N\\.\\s?S\\.)?|D\\.)|r\\.)|D(?:\\.|ec\\.\\s?Rep\\.)|G\\.(?:\\s?Pat\\.\\s?Off\\.)?|L\\.\\s?A(?:\\.|bs\\.)|Misc\\.(?:\\s?2d)?|N\\.\\s?P\\.(?:\\s?N\\.\\s?S\\.)?|O\\.(?:\\s?(?:2d|3d))?|R\\.\\s?W\\.|S(?:\\.(?:\\s?(?:2d|3d|C\\.\\s?D\\.|H\\.\\s?(?:Cas(?:\\.(?:\\s?\\(BNA\\))?|es(?:\\s?\\(BNA\\))?)|D(?:\\.(?:\\s?\\(CCH\\))?|ec\\.\\s?\\(CCH\\))|Rep\\.\\s?\\(BNA\\))|U\\.))?|upp(?:\\.)?)))?|ff\\.\\s?Gaz\\.(?:\\s?Pat\\.(?:\\s?Off\\.)?)?|h(?:\\.\\s?(?:A(?:\\.(?:\\s?(?:2d|3d))?|pp\\.(?:\\s?(?:2d|3d))?)|Cir\\.\\s?(?:Ct\\.(?:\\s?N\\.\\s?S\\.)?|Dec\\.)|Dec\\.(?:\\s?\\(Reprint\\))?|N\\.\\s?P\\.(?:\\s?\\(N\\.\\s?S\\)\\.)?|S(?:\\.\\s?C\\.\\s?D\\.|t\\.))|io(?:\\.\\s?Unrept\\.\\s?Cas\\.|\\s?(?:A(?:bs\\.|pp\\.(?:\\s?(?:2d|3d|LEXIS|Rep\\.|Unrep\\.))?)|B\\.(?:\\s?Rep\\.)?|C(?:\\.\\s?(?:A\\.|C\\.(?:\\s?(?:Dec\\.|N\\.\\s?S\\.|R\\.(?:\\s?N\\.\\s?S\\.)?|\\((?:N\\.\\s?S\\.\\s?\\)|n\\.\\s?s\\.\\s?\\))))?|D(?:\\.|ec\\.))|h\\.|ir\\.\\s?(?:Ct\\.(?:\\s?(?:R\\.\\s?N\\.\\s?S\\.|\\(N\\.\\s?S\\.\\s?\\)))?|Dec\\.)|r\\.\\s?Ct\\.\\s?R\\.|t\\.\\s?App\\.)|Dec\\.(?:\\s?Rep(?:\\.|rint))?|F(?:\\.\\s?D(?:\\.|ec(?:\\.)?)|ed\\.\\s?Dec\\.)|L(?:EXIS|\\.\\s?(?:Abs\\.|R\\.)|aw(?:\\.\\s?Abs\\.|s\\s?Abs\\.|\\s?(?:Abs(?:\\.|t\\.)?|R(?:ep\\.)?)))|Misc\\.(?:\\s?(?:2d|Dec\\.|LEXIS))?|N(?:\\.\\s?P\\.(?:\\s?(?:N\\.\\s?S\\.|\\(n\\.\\s?s\\.\\s?\\)))?|isi\\s?Prius(?:\\s?(?:Decisions|Reports\\s?\\(N\\.\\s?S\\.\\s?\\)|\\((?:N(?:S\\)|\\.\\s?S\\.\\s?\\))|n\\.\\s?s\\.\\s?\\))|\\[N\\.\\s?S\\.\\s?\\]))?)|Op(?:\\.(?:\\s?(?:2d|3d))?|s\\.)|Prob\\.(?:\\s?Ct\\.)?|Rep\\.|S(?:\\.\\s?U\\.|t(?:\\.(?:\\s?(?:2d|3d(?:\\.)?|Rep\\.|\\((?:N\\.\\s?S\\.\\s?\\)|n\\.\\s?s\\.\\s?\\))))?|ate)|upp\\.)|W\\.\\s?L\\.\\s?Bull\\.)))|il\\s?&\\s?Gas(?:\\s?R(?:ep(?:\\.|tr\\.)|ptr\\.))?|kl(?:\\.(?:\\s?Cr\\.)?|a\\.(?:\\s?(?:C(?:iv\\.\\s?App\\.\\s?LEXIS|r(?:\\.(?:\\s?Rep\\.)?|im\\.(?:\\s?(?:App\\.\\s?LEXIS|Rep\\.))?))|JUD\\s?LEXIS|LEXIS|Rep\\.|Trib\\.))?|\\s?Jud\\.)|l(?:c(?:\\.|ott,)|iver['’]s\\s?Forms)|p(?:\\.\\s?(?:Att['’]y\\s?Gen\\.|O(?:LC\\.|\\.\\s?L\\.\\s?C\\.))|s\\.\\s?Cal\\.\\s?Atty\\.\\s?Gen\\.)|r(?:\\.(?:\\s?(?:A(?:\\.|pp\\.)|Tax))?|e(?:\\.(?:\\s?(?:App\\.(?:\\s?LEXIS)?|LEXIS|Tax\\s?LEXIS))?|g\\.)|\\s?App(?:\\.)?)|vert\\.)|P(?:2(?:\\.\\s?d|d)|3(?:\\.\\s?d|d)|A\\s?Super|R\\s?(?:App\\.\\s?LEXIS|Sup\\.\\s?LEXIS)|\\-H\\s?T\\.\\s?C\\.\\s?Memo\\.|\\.(?:\\s?(?:&\\s?(?:H\\.|W\\.)|2(?:d(?:\\.)?|\\s?d)?|3(?:d(?:\\.)?)?|C\\.\\s?(?:L\\.\\s?J\\.|R\\.)|H\\.|Jr\\.\\s?&\\s?H\\.|L\\.\\s?(?:M\\.|R(?:\\.|ep\\.))|O\\.\\s?R\\.|R(?:\\.(?:\\s?(?:Dec\\.|Fed\\.(?:\\s?Rep\\.)?|Offic\\.\\s?Trans\\.|R\\.|Sent\\.))?|ep\\.)|S\\.\\s?R\\.|U\\.\\s?R\\.(?:\\s?(?:3d|4th|\\((?:N(?:S\\)|\\.\\s?S\\.\\s?\\))|n\\.\\s?s\\.\\s?\\))))?|\\(2d\\)|\\[2(?:d(?:\\.\\s?\\]|\\])|nd\\])))?|a(?:C\\.|\\.(?:\\s?(?:C(?:\\.(?:\\s?C\\.)?|as\\.|mwlth(?:\\.)?|o(?:\\.\\s?Ct\\.(?:\\s?R(?:\\.|ep\\.))?|mm(?:onwealth\\s?Ct\\.|w\\.(?:\\s?(?:Ct\\.|LEXIS|Unpub\\.\\s?LEXIS))?)|rp(?:\\.(?:\\s?R(?:\\.|ep\\.))?)?|unty\\s?Ct\\.))|D(?:\\.(?:\\s?&\\s?C\\.(?:\\s?(?:2d|3d|4th|5th))?)?|ist\\.(?:\\s?(?:&\\s?C(?:\\.\\s?Rep\\.|nty\\.\\s?Dec\\.\\s?LEXIS|o\\.)|R\\.))?)|Fid\\.|Ju(?:d\\.\\s?Disc\\.\\s?LEXIS|st\\.\\s?L\\.\\s?Rep\\.)|L(?:EXIS|aw\\s?J\\.(?:\\s?Rep\\.)?)|R(?:awle|ep\\.)|S(?:\\.|t(?:\\.|ate)|uper(?:\\.(?:\\s?(?:Ct\\.|LEXIS|Unpub\\.\\s?LEXIS))?|ior\\s?Ct\\.)?)|\\(Admiralty\\)))?|c(?:\\.(?:\\s?(?:2d|Law(?:\\.\\s?Rep\\.|\\s?(?:Mag\\.|Rep(?:\\.|tr\\.)))|R(?:\\.|ep\\.)|\\(2(?:\\)|d\\)(?:\\.)?)))?|ific\\s?(?:Law\\s?Mag\\.|Rep\\.)|\\s?\\(2d\\))|i(?:\\.(?:\\s?Ch\\.)?|ge\\s?(?:Ch\\.(?:\\s?Rep\\.)?|Rep\\.)|ne\\.)|rk(?:\\.\\s?C(?:\\.\\s?R\\.|r(?:\\.(?:\\s?Rep\\.)?|im\\.\\s?R(?:\\.|ep\\.)))|er(?:,\\s?Cr\\.\\s?(?:Cas\\.|R\\.)|['’]s\\s?Cr(?:\\.\\s?R\\.|im\\.\\s?R(?:\\.|ep\\.))|\\s?Cr\\.(?:\\s?Rep\\.)?))|t(?:\\.\\s?(?:&\\s?H\\.|Trademark\\s?&\\s?Copyright\\s?J\\.\\s?\\(BNA\\))|t(?:\\.\\s?&\\s?H(?:\\.(?:\\s?\\(Va\\.\\s?\\))?|eath\\s?R\\.)|on\\s?&\\s?H(?:\\.(?:\\s?\\(Va\\.\\s?\\))?|eath))))|e(?:ars\\.|ck\\s?\\(Tenn\\.\\s?\\)|lt\\.|n(?:\\.\\s?&\\s?W\\.|n(?:\\.(?:\\s?(?:Co\\.\\s?Ct\\.\\s?Rep\\.|D(?:el\\.|ist\\.\\s?Rep\\.)|L(?:\\.\\s?J\\.|aw\\s?J(?:\\.|our\\.))|Rep\\.|St\\.(?:\\s?R\\.)?))?|e(?:\\.|w(?:\\.|ill\\.))|y(?:\\.|p\\.(?:\\s?\\(Pa\\.\\s?\\))?))|r\\.\\s?&\\s?W\\.|s\\.\\s?(?:&\\s?(?:Ben(?:\\.\\s?Rep\\.\\s?\\(BNA\\)|efits\\s?Rep\\.\\s?\\(BNA\\))|Profit\\s?Sharing\\s?2d\\s?\\(RIA\\))|Plan\\s?Guide\\s?\\(CCH\\)))|rson(?:al\\s?and\\s?Comm\\.\\s?Liab\\.\\s?Life\\s?Health\\s?&\\s?Accid\\.\\s?Ins\\.\\s?Cas\\.\\s?2d\\s?\\(CCH\\)|nel\\s?Mgmt\\.\\s?\\(BNA\\))|t(?:\\.(?:\\s?(?:Adm\\.|C(?:\\.\\s?C\\.|ir\\.\\s?C\\.\\s?R\\.)|Rep\\.|S\\.\\s?C\\.))?|ers\\s?(?:C\\.\\s?C\\.|Rep\\.)|\\s?C\\.\\s?C\\.))|hil(?:\\.(?:\\s?(?:Eq\\.(?:\\s?\\(N\\.\\s?C\\.\\s?\\))?|Law|N\\.\\s?C\\.|Rep\\.))?|a(?:\\.(?:\\s?(?:Ct(?:\\.\\s?Com\\.\\s?Pl\\.\\s?LEXIS|y\\.\\s?Rptr\\.\\s?LEXIS)|Leg\\.\\s?Int\\.|Rep\\.))?|delphia\\s?Leg\\.\\s?Int\\.)|l\\.(?:\\s?(?:L\\.\\s?\\(N\\.\\s?C\\.\\s?\\)|Rep\\.))?)|i(?:ck\\.(?:\\s?(?:Rep\\.|\\(Mass\\.\\s?\\)))?|n(?:\\.|n\\.)|tt(?:\\.\\s?L\\.\\s?J\\.|s(?:\\.\\s?(?:L(?:\\.\\s?J\\.|eg\\.\\s?J(?:\\.|oor\\.))|R(?:\\.|ep\\.(?:\\s?\\(Pa\\.\\s?\\))?|pts\\.))|b(?:\\.\\s?(?:L(?:\\.\\s?(?:J\\.|Rev\\.)|eg\\.\\s?J\\.(?:\\s?\\((?:O\\.\\s?S\\.\\s?\\)|Pa\\.\\s?\\)))?)|R\\.\\s?\\(Pa\\.\\s?\\))|urgh\\s?Leg(?:\\.\\s?J(?:\\.|ournal)|al\\s?Journal))|\\s?L\\.\\s?J\\.)))|o(?:rt(?:\\.(?:\\s?(?:Rep\\.|\\(Ala\\.\\s?\\)))?|er\\s?Rep\\.)|sey(?:,\\s?Unrep\\.\\s?Cas\\.|['’]s\\s?U\\.\\s?C\\.|\\s?U\\.\\s?C\\.)|w\\.\\s?Surr\\.)|rod\\.\\s?(?:Liab\\.\\s?Rep\\.\\s?\\(CCH\\)|Safety\\s?&\\s?Liab\\.\\s?Rep\\.\\s?\\(BNA\\))|u(?:b\\.\\s?(?:Lands\\s?Dec\\.|Util\\.\\s?Rep\\.\\s?4th)|erto\\s?Rico)|\\s?(?:2d|3d|\\[2d\\]))|Quart\\.\\s?Law\\s?J\\.|R(?:I(?:A\\s?TM|CO\\s?Bus\\.\\s?Disp\\.\\s?Guide(?:\\s?\\(CCH\\))?)|\\.(?:\\s?I\\.(?:\\s?(?:C\\.\\s?O\\.\\s?Bus\\.\\s?Disp\\.\\s?Guide\\s?\\(CCH\\)|Dec\\.|LEXIS|Super\\.\\s?LEXIS))?)?|a(?:d\\.\\s?Reg\\.(?:\\s?(?:2d\\s?\\(P\\s?&\\s?F\\)|\\(P\\s?&\\s?F\\)))?|nd\\.(?:\\s?Rep\\.)?|w(?:\\.|le\\s?Rep\\.))|e(?:ad['’]s\\s?Notebook|c\\.\\s?(?:Co\\.\\s?C(?:h\\.\\s?\\(S\\.\\s?C\\.\\s?\\)|t\\.)|V\\.\\s?A\\.\\s?Ct\\.\\s?\\(R\\.\\s?I\\.\\s?\\))|df\\.|p(?:\\.\\s?Cont\\.\\s?El(?:\\.|ect\\.\\s?Cas(?:\\.|e\\.))|orter(?:,|\\.)))|i(?:c(?:e\\s?(?:Ch\\.|Eq\\.|L\\.\\s?\\(S\\.\\s?C\\.\\s?\\))|h\\.(?:\\s?(?:Cas\\.(?:\\s?\\(S\\.\\s?C\\.\\s?\\))?|Eq\\.(?:\\s?(?:Ch\\.|Rep\\.))?|L(?:\\.\\s?\\(S\\.\\s?C\\.\\s?\\)|aw\\(S\\.\\s?C\\.\\s?\\))|Rep\\.))?)|dgely['’]s\\s?Notebook(?:\\s?(?:I(?:I(?:I)?|V)?|V))?|l(?:\\.(?:\\s?Eq\\.)?|ey\\s?(?:Ch\\.|Eq\\.(?:\\s?\\(S\\.\\s?C\\.\\s?\\))?|L\\.\\s?\\(S\\.\\s?C\\.\\s?\\))))|o(?:b(?:\\.(?:\\s?(?:Cons(?:\\.\\s?Cas\\.\\s?\\(Tex\\.\\s?\\)|c\\.\\s?Cas\\.)|La\\.|Rep\\.|Va\\.|\\(VA\\)))?|b(?:,\\s?Pat\\.\\s?Cas\\.|\\.(?:\\s?\\(N\\.\\s?J\\.\\s?\\))?|ins\\.)|ertson['’]s\\s?(?:Report\\s?of\\s?the\\s?Trial\\s?of\\s?Aaron\\s?Burr\\.|Super\\.\\s?Ct\\.\\s?Rep\\.))|dney['’]s\\s?Notes))|S(?:Ct|E(?:2d|C\\s?(?:Accounting\\s?R\\.\\s?\\(CCH\\)|Docket|Jud\\.\\s?Dec\\.)|\\s?2d)|O\\.|W(?:2(?:D|d)|3(?:D|d)|\\.\\s?3d|\\s?(?:2d|3d))|\\.\\s?(?:&\\s?M(?:\\.|ar\\.)|C(?:\\.(?:\\s?(?:App\\.\\s?(?:LEXIS|Unpub\\.\\s?LEXIS)|D\\.\\s?C\\.\\s?\\(N\\.\\s?S\\.\\s?\\)|Eq\\.(?:\\s?\\((?:Bail\\.\\s?Eq\\.\\s?\\)|Chev\\.\\s?Eq\\.\\s?\\)|D(?:es\\.\\s?\\)|ud\\.\\s?Eq\\.\\s?\\))|H(?:arp\\.\\s?Eq\\.\\s?\\)|ill\\s?Eq\\.\\s?\\))|Ri(?:c(?:e\\.\\s?Eq\\.\\s?\\)|h\\.\\s?Eq\\.\\s?\\))|l\\.\\s?\\))|S(?:peers\\s?Eq\\.\\s?\\)|trob\\.\\s?Eq\\.\\s?\\))))?|L(?:EXIS|\\.(?:\\s?\\((?:B(?:a(?:il\\.\\s?\\)|y\\))|rev\\))|Chev\\.\\s?\\)|Dud\\.\\s?\\)|H(?:arp\\.\\s?\\)|ill\\))|M(?:c(?:Cord(?:\\)|\\s?Eq\\.\\s?\\))|Mul(?:\\.\\s?\\)|lan\\s?Eq\\.\\s?\\)))|ill(?:\\)|\\s?Const\\.\\s?\\)))|Nott\\s?&\\s?McC\\.\\s?\\)|Ri(?:c(?:e\\)|h\\.\\s?\\))|ley\\))|S(?:peers\\)|trob\\.\\s?\\))|Tread\\.\\s?\\)))?)|R\\.|Unpub\\.\\s?LEXIS))?|ar\\.|t(?:\\.(?:\\s?Rep\\.)?)?)|D(?:\\.(?:\\s?LEXIS)?|ak\\.)|E(?:2\\.\\s?d|\\.(?:\\s?(?:2d(?:\\.)?|C\\.\\s?Docket|Rep\\.|\\(2d\\)))?)|R\\.|T\\.\\s?B\\.|W\\.(?:\\s?(?:,\\s?(?:2d\\s?Series(?:,|\\.)|Second\\s?Series,)|2d(?:\\s?Series\\.)?|3d(?:\\.)?|Rep\\.|Series|\\(2d\\)))?|\\(2nd\\))|a(?:d(?:\\.\\s?Pa\\.\\s?C(?:as\\.|s\\.)|l(?:\\.|er\\(Pa\\.\\s?\\)))|n(?:d(?:\\.\\s?Ch(?:\\.(?:\\s?Rep\\.)?|y\\.)|f(?:\\.(?:\\s?(?:Ch(?:\\.(?:\\s?\\(N\\.\\s?Y\\.\\s?\\))?|y\\.)|Rep\\.))?|ord\\s?Super\\.\\s?Ct\\.\\s?Rep\\.))|\\s?Fran\\.\\s?Law(?:\\.\\s?J\\.|\\s?J\\.))|r(?:\\.\\s?Ch\\.\\s?Sen\\.|at\\.\\s?Ch\\.\\s?Sent\\.)|w(?:\\.|y(?:\\.|er\\s?(?:Circt\\.|U\\.\\s?S\\.\\s?Ct\\.\\s?Rep\\.))))|c(?:\\.|am\\.(?:\\s?Rep\\.)?|h(?:\\.\\s?Reg\\.|uy\\.\\s?Reg\\.))|e(?:c(?:\\.\\s?(?:&\\s?Fed\\.\\s?Corp\\.\\s?L\\.\\s?Rep\\.\\s?\\(West\\)|Reg\\.\\s?&\\s?L\\.\\s?Rep\\.\\s?\\(BNA\\))|ured\\s?Transactions\\s?Guide\\s?\\(CCH\\))|ld\\.\\s?Notes|rg\\.\\s?&\\s?R(?:\\.|aw(?:\\.|l(?:\\.|e))))|h(?:an\\.(?:\\s?Cas\\.)?|ipping\\s?Reg\\.\\s?\\(P\\s?&\\s?F\\))|i(?:ck\\.|l(?:\\.\\s?\\(Sup\\.\\s?Ct\\.\\s?\\)|v\\.\\s?(?:Ct\\.\\s?App\\.|Sup\\.)))|m(?:\\.\\s?&\\s?M\\.|ed(?:\\.\\s?&\\s?M\\.|es\\s?&\\s?M\\.(?:\\s?\\(Miss\\.\\s?\\))?)|ith(?:['’]s\\s?(?:N\\.\\s?H\\.\\s?Reports|\\(E\\.\\s?H\\.\\s?\\)\\s?Reports)|s\\s?E\\.\\s?H\\.|\\s?(?:&\\s?H\\.|\\((?:N\\.\\s?H\\.\\s?\\)|T(?:N\\)|enn\\.\\s?\\))))))|need\\s?(?:Dec\\.|\\(Ky\\))|o(?:,(?:\\s?\\(2nd\\))?|\\.(?:\\s?(?:2(?:d(?:\\.)?|nd)|3d|C(?:\\.|ar\\.)|Rep(?:\\.(?:\\s?(?:2d|3d))?|orter(?:,)?)|\\(2(?:d(?:\\)|\\s?Series\\))|nd(?:\\)|\\s?Series\\)))))?|c\\.\\s?Sec\\.\\s?Rep\\.\\s?\\(CCH\\)|m(?:\\.(?:\\s?L(?:\\.\\s?J\\.|eg\\.\\s?J\\.\\s?\\(Pa\\.\\s?\\)))?|erset(?:L\\.\\s?J\\.|\\s?L\\.\\s?J\\.))|u(?:\\.(?:\\s?(?:Rep\\.|\\(2nd\\)))?|th(?:\\.(?:\\s?(?:2d|3d|Rep\\.))?|\\s?Car\\.))|\\s?\\(2nd\\))|p(?:\\.(?:\\s?Ch\\.)?|e(?:ar(?:s\\s?Eq\\.|\\s?(?:Ch\\.|Eq\\.))|ers\\s?(?:Eq\\.(?:\\s?\\(S\\.\\s?C\\.\\s?\\))?|L\\.\\s?\\(S\\.\\s?C\\.\\s?\\)))|r(?:\\.|ague\\.))|t(?:\\.\\s?(?:&\\s?Loc\\.\\s?Tax\\s?Serv\\.\\s?\\(RIA\\)|Rep\\.|Tax\\s?(?:Guide\\s?\\(CCH\\)|Rep\\.\\s?\\(CCH\\)))|a(?:nd\\.\\s?Fed\\.\\s?Tax\\s?Rep\\.\\s?\\(CCH\\)|te\\s?R(?:eptr\\.|ptr\\.))|ew\\.(?:\\s?(?:&\\s?P\\.|Rep\\.))?|o(?:\\.(?:\\s?Rep\\.)?|ck\\.|ry(?:\\.|\\s?Rep\\.))|rob(?:\\.(?:\\s?Eq\\.(?:\\s?\\(S\\.\\s?C\\.\\s?\\))?)?|h\\.\\s?L\\.\\s?\\(S\\.\\s?C\\.\\s?\\)))|u(?:m(?:\\.|n\\.(?:\\s?Rep\\.)?)|p(?:\\.\\s?Ct\\.(?:\\s?Rep\\.)?|er\\.\\s?Ct\\.\\s?(?:Jud\\.|\\(R\\.\\s?I\\.\\s?\\))|p(?:\\.\\s?Tex\\.|l\\.\\s?Ga\\.)|r\\.\\s?Ct\\.\\s?Rep\\.))|weeney\\s?Super\\.\\s?Ct\\.\\s?Rep\\.|\\s?Ct)|T(?:N\\s?WC(?:\\s?App\\.)?|\\.\\s?(?:B\\.\\s?Mon\\.(?:\\s?\\(Ky\\.\\s?\\))?|C(?:\\.(?:\\s?(?:A\\.|M(?:\\.(?:\\s?\\((?:CCH\\)|P\\-H\\)|RIA\\)))?|emo(?:\\.)?)|No\\.|Summary\\s?Opinion|at))?|t(?:\\.)?))|a(?:ney\\.|pp\\.\\s?Rep\\.|x\\s?(?:Ct\\.\\s?(?:Mem(?:\\.\\s?Dec\\.\\s?\\(CCH\\)|o\\s?LEXIS)|Rep\\.\\s?(?:Dec\\.\\s?\\(RIA\\)|\\(CCH\\))|Summary\\s?LEXIS)|Treaties\\s?\\(CCH\\))|y(?:\\.(?:\\s?(?:J\\.\\s?L\\.|N\\.\\s?C\\.))?|l\\.\\s?N\\.\\s?C\\.))|e(?:iss\\.|n(?:\\.(?:\\s?Rep\\.)?|n\\.(?:\\s?(?:App\\.(?:\\s?LEXIS)?|C(?:as\\.|h(?:\\.\\s?(?:App\\.(?:\\s?LEXIS)?|R\\.)|ancery(?:\\s?App\\.)?)|rim\\.\\s?App\\.(?:\\s?LEXIS)?)|L(?:EXIS|eg\\.\\s?Rep\\.)|Rep\\.|\\((?:Co(?:ld\\.\\s?\\)|oke\\))|H(?:ayw\\.\\s?\\)|e(?:ad\\)|isk\\.\\s?\\))|um\\.\\s?\\))|Meigs\\)|Overt\\.\\s?\\)|Peck\\)|S(?:need\\)|wan\\))|Yer\\.\\s?\\))))?)|r\\.(?:\\s?Rep\\.)?|x(?:\\.(?:\\s?(?:A(?:\\.\\s?Civ\\.(?:\\s?Cas\\.)?|pp\\.(?:\\s?LEXIS)?)|B(?:ankr\\.\\s?Ct\\.\\s?Rep\\.|us\\.(?:\\s?Ct\\.)?)|C(?:\\.\\s?C\\.|iv\\.\\s?(?:App\\.|Cas\\.)|r(?:\\.(?:\\s?(?:App\\.|R\\.))?|im\\.(?:\\s?(?:App\\.\\s?(?:LEXIS|Unpub\\.\\s?LEXIS)|Rep\\.))?)|t\\.\\s?App\\.(?:\\s?(?:Dec\\.\\s?Civ\\.|R\\.))?)|L(?:EXIS|\\.\\s?R\\.|aw\\s?J\\.)|Rep\\.|S(?:\\.\\s?Ct\\.|up\\.\\s?(?:Ct\\.\\s?J\\.|J\\.))|Unrep\\.\\s?Cas\\.))?|as\\s?(?:Cr(?:\\.\\s?Rep\\.|im\\.\\s?Rep\\.)|Rep\\.)))|homp\\.\\s?(?:&\\s?Cook|Cas\\.)|i(?:ess\\.|ff\\.)|r(?:a(?:de\\s?(?:Cas(?:\\.(?:\\s?\\(CCH\\))?|es)|Reg\\.\\s?Rep\\.\\s?\\(CCH\\))|ns\\.\\s?App\\.)|ea(?:d(?:\\.(?:\\s?Const\\.)?|way\\s?Const\\.\\s?\\(S\\.\\s?C\\.\\s?\\))|s\\.\\s?Dec\\.(?:\\s?Int\\.\\s?Rev\\.)?))|uck\\.(?:\\s?(?:&\\s?C(?:\\.|l\\.)|Surr\\.))?|yl\\.)|U(?:CC\\s?Rep\\.\\s?Serv\\.(?:\\s?(?:2d(?:\\s?\\((?:Callaghan\\)|West\\)))?|\\((?:Callaghan\\)|West\\))))?|NITED\\s?STATES\\s?TAX\\s?COURT\\s?REPORT(?:S)?|S(?:PQ(?:2d(?:\\s?(?:\\(BNA\\)|\\[BNA\\]))?|\\s?(?:2d(?:\\s?(?:\\(BNA\\)|\\[BNA\\]))?|\\(BNA\\)|\\[BNA\\]))|\\s?Dist\\s?LEXIS)?|T\\s?(?:App(?:\\.)?|Ct\\.\\s?App\\.)|\\.\\s?(?:C\\.\\s?C\\.\\s?Rep\\.\\s?Serv\\.(?:\\s?(?:2d(?:\\s?\\((?:Callaghan\\)|West\\)))?|\\((?:Callaghan\\)|West\\))))?|S\\.(?:\\s?(?:App(?:\\.\\s?(?:D\\.\\s?C\\.|LEXIS|Vet\\.\\s?Claims\\s?LEXIS)|x\\.)|C(?:MCR\\s?LEXIS|\\.\\s?M\\.\\s?A\\.|l(?:\\.\\s?Ct\\.\\s?LEXIS|aims\\s?LEXIS)|ommerce\\s?Ct\\.\\s?LEXIS|t\\.\\s?Cl\\.\\s?LEXIS)|Dist\\.\\s?LEXIS|L(?:EXIS|\\.\\s?(?:Ed\\.(?:\\s?2d)?|W\\.(?:\\s?\\(BNA\\))?)|aw(?:\\.\\s?Ed\\.|\\s?(?:Int\\.|J\\.)))|P\\.\\s?Q\\.(?:\\s?(?:2(?:D\\s?(?:\\(BNA\\)|\\[BNA\\])|d(?:\\s?(?:\\(BNA\\)|\\[BNA\\]))?)|\\(BNA\\)|\\[BNA\\]))?|R(?:\\.|ep\\.)|S\\.\\s?C\\.\\s?Rep\\.|Tax\\s?(?:C(?:as\\.\\s?\\(CCH\\)|t\\.\\s?LEXIS)|Rep\\.\\s?\\(RIA\\))|Vet\\.\\s?App\\.\\s?LEXIS|\\(Apx\\.\\s?\\)))?)|n(?:empl(?:\\.\\s?Ins\\.\\s?Rep\\.\\s?\\(CCH\\)|oyment\\s?Ins\\.\\s?Rep\\.(?:\\s?\\(CCH\\))?)|ion\\s?Lab\\.\\s?Rep\\.\\s?\\(BNA\\)|rep\\.\\s?Tenn\\.\\s?Cas\\.)|t(?:ah\\s?(?:2d|A(?:dv\\.\\s?Rep\\.|pp(?:\\.(?:\\s?LEXIS)?)?)|Ct\\.\\s?App\\.|LEXIS)|il\\.\\s?L\\.\\s?Rep\\.(?:\\s?\\(CCH\\))?))|V(?:I\\s?Super(?:\\.)?|\\.(?:\\s?(?:I\\.(?:\\s?(?:LEXIS|Sup(?:er(?:\\.)?|reme\\s?LEXIS)))?|R\\.))?|a(?:\\.(?:\\s?(?:App\\.(?:\\s?LEXIS)?|C(?:as\\.|h\\.\\s?Dec\\.|ir\\.(?:\\s?LEXIS)?|ol\\.\\s?Dec\\.)|Dec\\.|L(?:EXIS|aw\\s?(?:J\\.|Rep\\.)|eigh)|Rep\\.|Unpub\\.\\s?LEXIS|\\((?:Call\\)|G(?:ilmer\\)|ratt\\.\\s?\\))|Hen\\.\\s?&\\s?M\\.\\s?\\)|Leigh\\)|Patt\\.\\s?&\\s?Heath\\)|R(?:and\\.\\s?\\)|ob\\.\\s?\\))|Wash\\.\\s?\\))))?|n\\s?Ness)|e(?:rm\\.(?:\\s?Rep\\.)?|t\\.\\s?App\\.)|ir(?:\\.\\s?L\\.\\s?J\\.|g\\.)|r(?:\\.|oom(?:\\.|\\s?\\((?:G\\.\\s?D\\.\\s?W\\)|N\\.\\s?J\\.\\s?\\)|P\\.\\s?D\\.\\s?\\))))|t(?:\\.(?:\\s?(?:LEXIS|Rep\\.|Super\\.(?:\\s?LEXIS)?|Unpub\\.\\s?LEXIS))?|\\s?Super))|W(?:I(?:\\.\\s?App\\.|\\s?App)|L|\\.(?:\\s?(?:&\\s?(?:S\\.|W\\.)|2d|App\\.|L\\.\\s?(?:B(?:\\.|ull\\.)|J\\.|M(?:\\.|onthly))|N\\.\\s?C\\.(?:\\s?\\(Pa\\.\\s?\\))?|R\\.|St\\.|T(?:\\.|y\\.\\s?R\\.)|V(?:\\.|a\\.(?:\\s?LEXIS)?)|W\\.\\s?H(?:arr\\.(?:\\s?Del)?)?))?|a(?:\\.(?:\\s?(?:2d|3d|A\\.))?|ge\\s?(?:&\\s?Hour\\s?Cas\\.(?:\\s?(?:2d(?:\\s?\\(BNA\\))?|\\(BNA\\)))?|Hour\\s?&\\s?Leave\\s?Rep\\.\\s?\\(BNA\\))|l(?:k\\.(?:\\s?(?:Ch\\.|Miss\\.|Pa\\.))?|l(?:\\.(?:\\s?(?:,\\s?Jr\\.|C(?:\\.\\s?C|ir\\.\\s?Ct\\.)|Jr\\.(?:\\s?(?:Append\\.|C\\.\\s?C\\.))?|Rep\\.|S\\.\\s?C\\.))?|ace(?:,\\s?Jr\\.\\s?,\\s?Rept\\.|\\s?R\\.)))|re\\.|sh\\.(?:\\s?(?:2d|3d|App\\.(?:\\s?(?:2d|LEXIS))?|C(?:\\.\\s?C\\.(?:\\s?Rep\\.)?|o(?:\\.(?:\\s?R(?:\\.|ep(?:\\.|r\\.)))?|\\s?\\(Pa\\.\\s?\\)))|LEXIS|Rep\\.|St\\.|T(?:\\.|er(?:\\.(?:\\s?N\\.\\s?S\\.)?|r\\.(?:\\s?LEXIS)?)|y\\.)|Va\\.|\\(VA\\)))?|tts(?:\\(Pa\\.\\s?\\)|\\s?(?:&\\s?S(?:\\.|erg\\.)|Rep\\.)))|e(?:ek(?:\\.\\s?(?:Law\\s?Gaz\\.|No(?:\\.|tes\\s?Cas\\.))|ly\\s?L(?:\\.\\s?Bull\\.|aw(?:Bulletin|\\s?Bulletin(?:\\s?\\(Ohio\\))?)))|lls['’]\\s?Notebook|nd(?:\\.(?:\\s?(?:Rep\\.|\\(N\\.\\s?Y\\.\\s?\\)))?|ell\\s?Rep\\.)|st(?:\\.\\s?(?:Jur\\.|Law(?:\\.\\s?J\\.|\\s?(?:J\\.|Month\\.)))|\\s?(?:Co(?:\\.\\s?Rep\\.|ast\\s?Rep\\.)|Law\\s?Month\\.|Va\\.)))|h(?:\\.(?:\\s?Rep\\.)?|ar(?:\\.(?:\\s?Rep\\.)?|t\\.(?:\\s?(?:Hom\\.|Pa\\.|Rep\\.|St\\.\\s?Tr\\.))?)|e(?:at(?:\\.(?:\\s?Rep\\.)?|on\\s?Rep\\.)|el(?:\\.\\s?Cr\\.\\s?Cas\\.|er(?:,\\s?Cr(?:\\.\\s?Cas\\.|im\\.\\s?Cas\\.)|\\.\\s?Cr\\.\\s?Cas\\.)))|ite\\s?&\\s?W\\.(?:\\s?(?:Civ\\.\\s?Cas\\.\\s?Ct\\.\\s?App\\.|\\(Tex\\.\\s?\\)))?)|i(?:\\.\\s?&\\s?Will\\.|l(?:l(?:\\.(?:\\s?Mass\\.)?|son\\s?Rep\\.)|s(?:\\.\\s?(?:Ind\\.|Minn\\.|Oreg\\.|Super\\.\\s?\\(Ind\\.\\s?\\))|on['’]s\\s?Red\\s?Book))|n\\.|s(?:\\.(?:\\s?(?:2d|Rep\\.))?|c\\.\\s?(?:App\\.\\s?LEXIS|Cir\\.\\s?LEXIS|LEXIS)|\\s?2d))|kly\\.\\s?(?:Dig\\.|Law\\s?Gaz\\.(?:\\s?No\\.)?|N(?:\\.\\s?C|otes(?:\\.\\s?Cas\\.|\\s?Cas\\.(?:\\s?\\(Pa\\.\\s?\\))?)))|n\\.(?:\\s?(?:2d|3d|App\\.(?:\\s?2d)?|Terr\\.))?|oo(?:d(?:\\.\\s?&\\s?Minot|b\\.\\s?&\\s?M\\.|s(?:\\.|\\s?C\\.\\s?C\\.))|l(?:\\.|w(?:\\.(?:\\s?Rep\\.)?|orth['’]s\\s?Cir\\.\\s?Ct\\.\\s?R\\.)))|y(?:\\.|o\\.(?:\\s?LEXIS)?|the(?:['’]s\\s?R(?:\\.|ep\\.)|\\s?(?:Ch\\.\\s?\\(Va\\.\\s?\\)|\\(Va\\.\\s?\\)))))|Y(?:\\.|ates\\s?Sel\\.\\s?Cas\\.(?:\\s?\\(N\\.\\s?Y\\.\\s?\\))?|e(?:a(?:\\.|tes\\s?Rep\\.)|r(?:\\.(?:\\s?Rep\\.)?|g\\.(?:\\s?(?:Rep\\.|\\(Tenn\\.\\s?\\)))?))|ork\\s?Leg(?:\\.\\s?Rec(?:\\.(?:\\s?\\(Pa\\.\\s?\\))?|ord)|al\\s?Record))|\\(So\\.\\s?2nd\\)|cal\\.\\s?4th|p\\.\\s?2(?:d|\\s?d))),?\\s+(?<page>\\d{1,7})(?![\\w])(?!\\s*[:/]\\s*\\d)",
    "flags": "",
    "anchors": []
   },
@@ -57,13 +57,28 @@
    "anchors": []
   },
   {
+   "id": "usc_chapter",
+   "kind": "usc",
+   "builder": "single",
+   "priority": 49,
+   "pattern": "(?<![\\w.])(?<title>\\d{1,2})\\s*U\\.?\\s?S\\.?\\s?C\\.?(?:\\s?A\\.?)?(?![A-Za-z])\\s*,?\\s*(?:[Cc]hapters?|[Cc]hs?\\.|CHAPTER)\\s*(?<chapter>\\d{1,4}[A-Z]?)(?![\\w])",
+   "key": "usc-ch:{title|int}:{chapter|upper}",
+   "normalized": "{title|int} U.S.C. ch. {chapter|upper}",
+   "fields": {
+    "title": "{title|int}",
+    "chapter": "{chapter|upper}"
+   },
+   "flags": "",
+   "anchors": []
+  },
+  {
    "id": "cfr",
    "kind": "cfr",
    "builder": "statute_list",
    "family": "cfr",
    "priority": 50,
-   "pattern": "(?<![\\w.])(?<title>\\d{1,2})\\s*C\\.?\\s?F\\.?\\s?R\\.?(?![A-Za-z])\\s*(?<label>§§|§|[Ss]ecs?\\.|[Ss]ections?|[Pp]arts?|[Pp]ts?\\.|PARTS?|PTS?\\.)?\\s*(?<items>\\d{1,5}(?:\\.\\d{1,6}[a-zA-Z]{0,4}(?:(?:\\([a-z0-9]{1,4}\\)){0,3}-\\d{1,4}[a-zA-Z]{0,4}(?!\\.\\d))*)?(?:\\([a-zA-Z0-9]{1,5}\\))*(?:\\s*(?:[-–—]|\\s(?:to|through)\\s)\\s*\\d{1,5}(?:\\.\\d{1,6}[a-zA-Z]{0,4}(?:(?:\\([a-z0-9]{1,4}\\)){0,3}-\\d{1,4}[a-zA-Z]{0,4}(?!\\.\\d))*)?(?:\\([a-zA-Z0-9]{1,5}\\))*)?(?![.\\d]*[ ][A-Za-z0-9]\\()(?:\\s*(?:,\\s*(?:and\\s+|or\\s+|&\\s*)?|(?:and|or|&)\\s+)(?![\\d\\s]*(?:U\\.?\\s?S|C\\.?\\s?F\\.?\\s?R|Stat\\.|Fed\\.\\s?Reg|F\\.\\s?R\\.|FR(?![A-Za-z0-9_])|Pub\\.|P\\.\\s?L\\.|[A-Z][A-Za-z]{0,12}\\.(?:\\s?[A-Z0-9][A-Za-z0-9'’]{0,12}\\.?){0,4}\\s+\\d))\\d{1,5}(?:\\.\\d{1,6}[a-zA-Z]{0,4}(?:(?:\\([a-z0-9]{1,4}\\)){0,3}-\\d{1,4}[a-zA-Z]{0,4}(?!\\.\\d))*)?(?:\\([a-zA-Z0-9]{1,5}\\))*(?:\\s*(?:[-–—]|\\s(?:to|through)\\s)\\s*\\d{1,5}(?:\\.\\d{1,6}[a-zA-Z]{0,4}(?:(?:\\([a-z0-9]{1,4}\\)){0,3}-\\d{1,4}[a-zA-Z]{0,4}(?!\\.\\d))*)?(?:\\([a-zA-Z0-9]{1,5}\\))*)?(?![.\\d]*[ ][A-Za-z0-9]\\())*)",
-   "item": "(?<part>\\d{1,5})(?:\\.(?<section>\\d{1,6}[a-zA-Z]{0,4}(?:(?:\\([a-z0-9]{1,4}\\)){0,3}-\\d{1,4}[a-zA-Z]{0,4}(?!\\.\\d))*))?(?<subs>(?:\\([a-zA-Z0-9]{1,5}\\))*)(?:\\s*(?:[-–—]|\\s(?:to|through)\\s)\\s*(?<part_end>\\d{1,5})(?:\\.(?<section_end>\\d{1,6}[a-zA-Z]{0,4}(?:(?:\\([a-z0-9]{1,4}\\)){0,3}-\\d{1,4}[a-zA-Z]{0,4}(?!\\.\\d))*))?(?<subs_end>(?:\\([a-zA-Z0-9]{1,5}\\))*))?",
+   "pattern": "(?<![\\w.])(?<title>\\d{1,2})\\s*C\\.?\\s?F\\.?\\s?R\\.?(?![A-Za-z])\\s*(?<label>§§|§|[Ss]ecs?\\.|[Ss]ections?|[Pp]arts?|[Pp]ts?\\.|PARTS?|PTS?\\.)?\\s*(?<items>\\d{1,5}(?:\\.\\d{1,6}[a-zA-Z]{0,4}(?:(?:\\([a-z0-9]{1,4}\\)){0,3}-\\d{1,4}[a-zA-Z]{0,4}(?!\\.\\d))*)?(?:\\([a-zA-Z0-9]{1,5}\\))*(?:\\s*(?:[-–—]|\\s(?:to|through)\\s)\\s*\\d{1,5}(?:\\.\\d{1,6}[a-zA-Z]{0,4}(?:(?:\\([a-z0-9]{1,4}\\)){0,3}-\\d{1,4}[a-zA-Z]{0,4}(?!\\.\\d))*)?(?:\\([a-zA-Z0-9]{1,5}\\))*)?(?![.\\d]*[ ][A-Za-z0-9]\\()(?:\\s*[-–]\\s*(?:\\([a-zA-Z0-9]{1,5}\\))+)?(?:\\s*,\\s*(?:\\([a-zA-Z0-9]{1,5}\\))+(?:\\s*[-–]\\s*(?:\\([a-zA-Z0-9]{1,5}\\))+)?)*(?:\\s*(?:[,;]\\s*(?:and\\s+|or\\s+|&\\s*)?|(?:and|or|&)\\s+)(?![\\d\\s]*(?:U\\.?\\s?S|C\\.?\\s?F\\.?\\s?R|Stat\\.|Fed\\.\\s?Reg|F\\.\\s?R\\.|FR(?![A-Za-z0-9_])|Pub\\.|P\\.\\s?L\\.|[A-Z][A-Za-z]{0,12}\\.(?:\\s?[A-Z0-9][A-Za-z0-9'’]{0,12}\\.?){0,4}\\s+\\d))\\d{1,5}(?:\\.\\d{1,6}[a-zA-Z]{0,4}(?:(?:\\([a-z0-9]{1,4}\\)){0,3}-\\d{1,4}[a-zA-Z]{0,4}(?!\\.\\d))*)?(?:\\([a-zA-Z0-9]{1,5}\\))*(?:\\s*(?:[-–—]|\\s(?:to|through)\\s)\\s*\\d{1,5}(?:\\.\\d{1,6}[a-zA-Z]{0,4}(?:(?:\\([a-z0-9]{1,4}\\)){0,3}-\\d{1,4}[a-zA-Z]{0,4}(?!\\.\\d))*)?(?:\\([a-zA-Z0-9]{1,5}\\))*)?(?![.\\d]*[ ][A-Za-z0-9]\\()(?:\\s*[-–]\\s*(?:\\([a-zA-Z0-9]{1,5}\\))+)?(?:\\s*,\\s*(?:\\([a-zA-Z0-9]{1,5}\\))+(?:\\s*[-–]\\s*(?:\\([a-zA-Z0-9]{1,5}\\))+)?)*)*)",
+   "item": "(?<![\\w.(])(?<part>\\d{1,5})(?:\\.(?<section>\\d{1,6}[a-zA-Z]{0,4}(?:(?:\\([a-z0-9]{1,4}\\)){0,3}-\\d{1,4}[a-zA-Z]{0,4}(?!\\.\\d))*))?(?<subs>(?:\\([a-zA-Z0-9]{1,5}\\))*)(?:\\s*(?:[-–—]|\\s(?:to|through)\\s)\\s*(?<part_end>\\d{1,5})(?:\\.(?<section_end>\\d{1,6}[a-zA-Z]{0,4}(?:(?:\\([a-z0-9]{1,4}\\)){0,3}-\\d{1,4}[a-zA-Z]{0,4}(?!\\.\\d))*))?(?<subs_end>(?:\\([a-zA-Z0-9]{1,5}\\))*))?",
    "flags": "",
    "anchors": []
   },
@@ -109,12 +124,40 @@
    "anchors": [
     "Stat."
    ],
-   "pattern": "(?<![\\w.])(?<volume>\\d{1,3})\\s+Stat\\.\\s+(?<page>\\d{1,5})(?![\\w])",
+   "pattern": "(?<![\\w.])(?<volume>\\d{1,3}A?)\\s+Stat\\.\\s+(?<page>\\d{1,5})(?![\\w])",
    "key": "stat:{volume|int}:{page|int}",
    "normalized": "{volume|int} Stat. {page|int}",
    "fields": {
     "volume": "{volume|int}",
     "page": "{page|int}"
+   },
+   "flags": ""
+  },
+  {
+   "id": "federal_register_short",
+   "kind": "federal_register",
+   "builder": "at_short",
+   "priority": 44,
+   "pattern": "(?<![\\w.])(?<volume>\\d{1,3})\\s+(?:Fed\\.\\s?Reg\\.|FED\\.\\s?REG\\.|F\\.\\s?R\\.|FR)(?![A-Za-z.])\\s*,?\\s+at\\s+(?<pin>\\d{1,3}(?:,\\d{3})+|\\d{1,6})(?:\\s*[-–]\\s*\\d{1,6})?(?![\\w])",
+   "normalized": "{volume|int} Fed. Reg. at {pin|nocomma|int}",
+   "fields": {
+    "volume": "{volume|int}"
+   },
+   "flags": "",
+   "anchors": []
+  },
+  {
+   "id": "statutes_at_large_short",
+   "kind": "statutes_at_large",
+   "builder": "at_short",
+   "priority": 44,
+   "anchors": [
+    "Stat."
+   ],
+   "pattern": "(?<![\\w.])(?<volume>\\d{1,3}A?)\\s+Stat\\.\\s*,?\\s+at\\s+(?<pin>\\d{1,5})(?:\\s*[-–]\\s*\\d{1,5})?(?![\\w])",
+   "normalized": "{volume|int} Stat. at {pin|int}",
+   "fields": {
+    "volume": "{volume|int}"
    },
    "flags": ""
   },
@@ -164,7 +207,7 @@
     "Const",
     "CONST"
    ],
-   "pattern": "(?<![\\w.])(?<state>(?:District\\s?of\\s?Columbia|North\\s?Carolina|South\\s?Carolina|New\\s?Hampshire|West\\s?Virginia|North\\s?Dakota|Rhode\\s?Island|South\\s?Dakota|Massachusetts|New\\s?Jersey|New\\s?Mexico|Pennsylvania|Connecticut|Mississippi|California|New\\s?York|W\\.\\s?Va\\.|Washington|D\\.\\s?C\\.|Louisiana|Minnesota|N\\.\\s?C\\.|N\\.\\s?D\\.|N\\.\\s?H\\.|N\\.\\s?J\\.|N\\.\\s?M\\.|N\\.\\s?Y\\.|R\\.\\s?I\\.|S\\.\\s?C\\.|S\\.\\s?D\\.|Tennessee|Wisconsin|Arkansas|Colorado|Delaware|Illinois|Kentucky|Maryland|Michigan|Missouri|Nebraska|Oklahoma|Virginia|Alabama|Arizona|Calif\\.|Florida|Georgia|Indiana|Montana|Vermont|Wyoming|Alaska|Ariz\\.|Colo\\.|Conn\\.|Hawaii|Kans\\.|Kansas|Mass\\.|Mich\\.|Minn\\.|Miss\\.|Mont\\.|Nevada|Okla\\.|Oregon|Penn\\.|Tenn\\.|Wash\\.|Wisc\\.|Ala\\.|Ark\\.|Cal\\.|Del\\.|Fla\\.|Haw\\.|Idaho|Ill\\.|Ind\\.|Kan\\.|Maine|Neb\\.|Nev\\.|Ore\\.|Tex\\.|Texas|Wis\\.|Wyo\\.|Ga\\.|Iowa|Ky\\.|La\\.|Md\\.|Me\\.|Mo\\.|Ohio|Or\\.|Pa\\.|Utah|Va\\.|Vt\\.))\\s+Const(?:itution|\\.)?(?:\\s+(?:of\\s+)?\\d{4})?\\s*,?\\s*(?:art(?:icle)?\\.?\\s*(?<article>(?:[IVXLC]{1,7}|\\d{1,3}[A-Za-z]?))(?![A-Za-z0-9])(?:\\s*,\\s*(?:§§?|sec(?:tion)?\\.?|¶|para\\.)\\s*(?<section>\\d{1,3}[a-zA-Z]?(?:\\.\\d{1,2})?)(?![\\d]))?|pt\\.\\s*(?<part>[IV]{1,3}|\\d)\\s*,\\s*art\\.\\s*(?<part_article>(?:[IVXLC]{1,7}|\\d{1,3}[A-Za-z]?))(?![A-Za-z0-9]))",
+   "pattern": "(?<![\\w.])(?<state>(?:District\\s?of\\s?Columbia|North\\s?Carolina|South\\s?Carolina|New\\s?Hampshire|West\\s?Virginia|North\\s?Dakota|Rhode\\s?Island|South\\s?Dakota|Massachusetts|New\\s?Jersey|New\\s?Mexico|Pennsylvania|Connecticut|Mississippi|California|New\\s?York|W\\.\\s?Va\\.|Washington|D\\.\\s?C\\.|Louisiana|Minnesota|N\\.\\s?C\\.|N\\.\\s?D\\.|N\\.\\s?H\\.|N\\.\\s?J\\.|N\\.\\s?M\\.|N\\.\\s?Y\\.|R\\.\\s?I\\.|S\\.\\s?C\\.|S\\.\\s?D\\.|Tennessee|Wisconsin|Arkansas|Colorado|Delaware|Illinois|Kentucky|Maryland|Michigan|Missouri|Nebraska|Oklahoma|Virginia|Alabama|Arizona|Calif\\.|Florida|Georgia|Indiana|Montana|Vermont|Wyoming|Alaska|Ariz\\.|Colo\\.|Conn\\.|Hawaii|Kans\\.|Kansas|Mass\\.|Mich\\.|Minn\\.|Miss\\.|Mont\\.|Nevada|Okla\\.|Oregon|Penn\\.|Tenn\\.|Wash\\.|Wisc\\.|Ala\\.|Ark\\.|Cal\\.|Del\\.|Fla\\.|Haw\\.|Idaho|Ill\\.|Ind\\.|Kan\\.|Maine|Neb\\.|Nev\\.|Ore\\.|Tex\\.|Texas|Wis\\.|Wyo\\.|Ga\\.|Iowa|Ky\\.|La\\.|Md\\.|Me\\.|Mo\\.|Ohio|Or\\.|Pa\\.|Utah|Va\\.|Vt\\.))\\s*Const(?:itution|\\.)?(?:\\s+(?:of\\s+)?\\d{4})?\\s*,?\\s*(?:art(?:icle)?\\.?\\s*(?<article>(?:[IVXLC]{1,7}|\\d{1,3}[A-Za-z]?))(?![A-Za-z0-9])(?:\\s*,\\s*(?:§§?|sec(?:tion)?s?\\.?|¶¶?|para\\.)\\s*(?<section>\\d{1,3}[a-zA-Z]?(?:\\.\\d{1,2})?)(?![\\d]))?|pt\\.\\s*(?<part>[IV]{1,3}|\\d)\\s*,\\s*art\\.\\s*(?<part_article>(?:[IVXLC]{1,7}|\\d{1,3}[A-Za-z]?))(?![A-Za-z0-9]))",
    "key": "const:{state|state}:[pt-{part|roman}:][art-{article|roman}][art-{part_article|roman}][:sec-{section|lower}]",
    "normalized": "{state|state_abbr} Const.[ pt. {part|roman}][ art. {article|roman|upper_roman}][, art. {part_article|roman}][, § {section}]",
    "fields": {
@@ -218,6 +261,18 @@
    "flags": ""
   },
   {
+   "id": "federal_rule_list",
+   "kind": "federal_rule",
+   "builder": "rule_list",
+   "priority": 45,
+   "anchors": [
+    "Federal Rules"
+   ],
+   "pattern": "(?<![\\w.])Rules\\s+(?<items>\\d{1,4}(?:\\.\\d{1,2})?[a-z]?(?:\\([a-zA-Z0-9]{1,5}\\))*(?:\\s*(?:,\\s*(?:and\\s+|or\\s+|&\\s*)?|(?:and|or|&)\\s+)\\d{1,4}(?:\\.\\d{1,2})?[a-z]?(?:\\([a-zA-Z0-9]{1,5}\\))*){1,12})\\s+of\\s+the\\s+Federal\\s+Rules\\s+of\\s+(?<set>Civil\\s+Procedure|Criminal\\s+Procedure|Evidence|Appellate\\s+Procedure|Bankruptcy\\s+Procedure)",
+   "item": "(?<rule>\\d{1,4}(?:\\.\\d{1,2})?[a-z]?)(?<subs>(?:\\([a-zA-Z0-9]{1,5}\\))*)",
+   "flags": ""
+  },
+  {
    "id": "bankruptcy_rule",
    "kind": "federal_rule",
    "builder": "single",
@@ -240,7 +295,7 @@
    "kind": "local_rule",
    "builder": "single",
    "priority": 43,
-   "pattern": "(?<![\\w.])(?:(?<court>(?:[NSEWMC]\\.\\s?)?D\\.\\s?(?:[A-Z][a-z]{0,6}\\.\\s?){1,3})\\s*)?(?<label>L\\.\\s?(?:Civ\\.\\s?|Cr(?:im)?\\.\\s?|Pat\\.\\s?|B\\.\\s?|Bankr\\.\\s?)?R\\.(?:\\s?Civ\\.\\s?P\\.)?|Local\\s+(?:Civil\\s+|Criminal\\s+|Patent\\s+|Bankruptcy\\s+|Admiralty\\s+)?Rules?|Civ\\.\\s?L\\.\\s?R\\.|Crim\\.\\s?L\\.\\s?R\\.|L\\.\\s?R\\.|LR|LCvR|LCrR|LCR|LBR|Local\\s+R\\.)\\s*(?<rule>\\d{1,3}(?:[.\\-]\\d{1,3}){0,3}[A-Za-z]?)(?![\\d])(?<subs>(?:\\([a-zA-Z0-9]{1,5}\\))*)",
+   "pattern": "(?<![\\w.])(?:(?<court>(?:[NSEWMC]\\.\\s?)?D\\.\\s?(?:[A-Z][a-z]{0,6}\\.\\s?){1,3})\\s*)?(?<label>L\\.\\s?(?:Civ\\.\\s?|Cr(?:im)?\\.\\s?|Pat\\.\\s?|B\\.\\s?|Bankr\\.\\s?)?R\\.(?:\\s?Civ\\.\\s?P\\.)?|Local\\s+(?:Civil\\s+|Criminal\\s+|Patent\\s+|Bankruptcy\\s+|Admiralty\\s+)?Rules?|Civ(?:il)?\\.?\\s?L\\.\\s?R\\.|Crim(?:inal)?\\.?\\s?L\\.\\s?R\\.|L\\.\\s?R\\.|LR|LCvR|LCrR|LCR|LBR|Local\\s+R\\.)\\s*(?<rule>\\d{1,3}(?:[.\\-]\\d{1,3}){0,3}[A-Za-z]?)(?![\\d])(?<subs>(?:\\([a-zA-Z0-9]{1,5}\\))*)",
    "key": "local-rule:{court|slug}:{rule}",
    "normalized": "[{court|squash} ]L.R. {rule}",
    "fields": {
@@ -256,7 +311,7 @@
    "kind": "mdl",
    "builder": "single",
    "priority": 30,
-   "pattern": "(?<![A-Za-z0-9_])(?:MDL|M\\.D\\.L\\.|Multi-?\\s?[Dd]istrict\\s+Litigation)(?:\\s*[-–]\\s*|\\s+)(?:(?:Docket\\s+)?No\\.?\\s*:?\\s*|Number\\s+)?(?<n>\\d{1,5})(?![0-9A-Za-z_:/])(?!\\s*[-–]\\s*[0-9A-Za-z])(?![.,]\\d)",
+   "pattern": "(?<![A-Za-z0-9_])(?:MDL|M\\.D\\.L\\.|Multi-?\\s?[Dd]istrict\\s+Litigation)(?:\\s*[-–]\\s*|\\s+)(?:(?:Docket\\s+|DOCKET\\s+)?(?:No|NO)\\.?\\s*:?\\s*|Number\\s+)?(?<n>\\d{1,5})(?![0-9A-Za-z_:/])(?!\\s*[-–]\\s*(?:[0-9a-z]|M[DLdl](?![A-Za-z])|[A-Z][a-z]))(?![.,]\\d)",
    "key": "mdl:{n|int}",
    "normalized": "MDL No. {n|int}",
    "fields": {
@@ -267,16 +322,48 @@
    "anchors": []
   },
   {
+   "id": "mdl_year_number",
+   "kind": "mdl",
+   "builder": "single",
+   "priority": 31,
+   "anchors": [
+    "MDL"
+   ],
+   "pattern": "(?<![A-Za-z0-9_])MDL\\s+(?:No\\.?|NO\\.?)\\s*(?<yy>\\d{2})-(?<n>\\d{4})(?![0-9A-Za-z_:/-])",
+   "key": "mdl:{n|int}",
+   "normalized": "MDL No. {n|int}",
+   "fields": {
+    "number": "{n|int}"
+   },
+   "nonzero": "n",
+   "flags": ""
+  },
+  {
    "id": "docket",
    "kind": "docket",
    "builder": "single",
    "priority": 30,
    "flags": "i",
-   "pattern": "(?<![A-Za-z0-9_:/.-])(?<office>\\d{1,2}):(?<yy>\\d{2}|\\d{4})-(?<type>cv|cr|md|mc|ml|bk|ap|mj|po|sw|gj|dp|ms|cb|ad)-(?<num>\\d{1,6})(?:-(?<judge>[A-Z]{1,5}(?:-[A-Z]{1,5}){0,3}))?(?![A-Za-z0-9_])",
+   "pattern": "(?<![A-Za-z0-9_/.-])(?<![0-9]:)(?:(?<office>\\d{1,2}):)?(?<yy>\\d{2}|\\d{4})-(?<type>cv|cr|md|mc|ml|bk|ap|mj|po|sw|gj|dp|ms|cb|ad)-(?<num>\\d{1,6})(?:-(?<judge>[A-Z]{1,5}(?:-[A-Z]{1,5}){0,3}))?(?![A-Za-z0-9_])",
+   "key": "docket:[{office|int}:]{yy|last2}-{type|lower}-{num|docketnum}",
+   "normalized": "[{office|int}:]{yy|last2}-{type|lower}-{num|docketnum}",
+   "fields": {
+    "office": "{office|int}",
+    "judge_suffix": "{judge}"
+   },
+   "anchors": []
+  },
+  {
+   "id": "docket_compact",
+   "kind": "docket",
+   "builder": "single",
+   "priority": 29,
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_/.-])(?<![0-9]:)(?<office>\\d{1,2}):(?<yy>\\d{2})(?<type>cv|cr|md|mc|ml)(?<num>\\d{1,6})(?![A-Za-z0-9_])",
    "key": "docket:{office|int}:{yy|last2}-{type|lower}-{num|docketnum}",
    "normalized": "{office|int}:{yy|last2}-{type|lower}-{num|docketnum}",
    "fields": {
-    "judge_suffix": "{judge}"
+    "office": "{office|int}"
    },
    "anchors": []
   },
@@ -297,7 +384,7 @@
    "kind": "short",
    "builder": "id",
    "priority": 20,
-   "pattern": "(?<![\\w.])(?:[Ii]d\\.|ID\\.|[Ii]bid\\.?|IBID\\.?)(?![\\w])(?:(?:\\s*,)?\\s+at\\s+(?<pin>\\*{0,2}\\d{1,7}(?:\\s*[-–—]\\s*\\*{0,2}\\d{1,7})?(?:\\s*nn?\\.\\s*\\d{1,3}(?:\\s*[-–&]\\s*\\d{1,3})?)?)(?![\\w])|\\s*(?<sec>§§?\\s*\\d[0-9A-Za-z]*(?:[.\\-–:][0-9A-Za-z]+)*(?:\\([a-zA-Z0-9]{1,5}\\))*)|\\s*,?\\s*(?<para>¶¶?\\s*\\d{1,4}))?",
+   "pattern": "(?<![\\w.])(?<!\\d\\s)(?:[Ii]d\\.|ID\\.|[Ii]bid\\.?|IBID\\.?)(?![\\w])(?:(?:\\s*,)?\\s+at\\s+(?<pin>\\*{0,2}\\d{1,7}(?:\\s*[-–—]\\s*\\*{0,2}\\d{1,7})?(?:\\s*nn?\\.\\s*\\d{1,3}(?:\\s*[-–&]\\s*\\d{1,3})?)?)(?![\\w])|\\s*(?<sec>§§?\\s*\\d[0-9A-Za-z]*(?:[.\\-–:][0-9A-Za-z]+)*(?:\\([a-zA-Z0-9]{1,5}\\))*)|\\s*,?\\s*(?<para>¶¶?\\s*\\d{1,4}))?",
    "flags": "",
    "anchors": []
   },
@@ -311,7 +398,7 @@
     "Supra",
     "SUPRA"
    ],
-   "pattern": "(?<![\\w'’&.\\-])(?<name>[A-Z][\\w'’&.\\-]*(?:\\s+(?:[A-Z][\\w'’&.\\-]*|of|the|&|and)){0,4}),\\s+supra(?![\\w])(?:\\s*,?\\s*at\\s+(?<pin>\\*{0,2}\\d{1,7}(?:\\s*[-–—]\\s*\\*{0,2}\\d{1,7})?(?:\\s*nn?\\.\\s*\\d{1,3}(?:\\s*[-–&]\\s*\\d{1,3})?)?)(?![\\w]))?",
+   "pattern": "(?<![\\w'’&.\\-])(?<name>[A-Z][\\w'’&.\\-]*(?:\\s+(?:[A-Z][\\w'’&.\\-]*|\\d{1,5}|of|the|&|and)){0,4}),\\s+supra(?![\\w])(?:\\s*,?\\s*at\\s+(?<pin>\\*{0,2}\\d{1,7}(?:\\s*[-–—]\\s*\\*{0,2}\\d{1,7})?(?:\\s*nn?\\.\\s*\\d{1,3}(?:\\s*[-–&]\\s*\\d{1,3})?)?)(?![\\w]))?",
    "flags": ""
   },
   {
@@ -323,6 +410,17 @@
     "§"
    ],
    "pattern": "(?<![\\w.§])(?<label>§§?)\\s*(?<section>\\d{1,6}[A-Za-z]{0,4}(?:[.:\\-–]\\d{1,6}[A-Za-z]{0,4})*)(?<subs>(?:\\([a-zA-Z0-9]{1,5}\\))*)(?![\\w])(?!\\.\\d)",
+   "flags": ""
+  },
+  {
+   "id": "section_short_gpo",
+   "kind": "short",
+   "builder": "section_short",
+   "priority": 10,
+   "anchors": [
+    "Sec."
+   ],
+   "pattern": "(?<![\\w.§])(?<label>Sec\\.)[ ]{1,3}(?<section>\\d{1,6}\\.\\d{1,6}[A-Za-z]{0,4}(?:-\\d{1,4}[A-Za-z]{0,2})?)(?<subs>(?:\\([a-zA-Z0-9]{1,5}\\))*)(?![\\w])(?!\\.\\d)",
    "flags": ""
   },
   {
@@ -343,17 +441,17 @@
    "priority": 35,
    "state": "AL",
    "code": "code",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Ala\\.\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Ala\\.\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
     "Ala.",
     "Code",
     "SIGN"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_statute_ak_1",
@@ -362,17 +460,17 @@
    "priority": 35,
    "state": "AK",
    "code": "stat",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Alaska\\s+Stat\\.(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Alaska\\s+Stat\\.(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
     "Alaska",
     "SIGN",
     "Stat."
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_statute_az_2",
@@ -381,9 +479,10 @@
    "priority": 35,
    "state": "AZ",
    "code": "rev-stat",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:Ariz\\.\\s+Rev\\.\\s+Stat\\.(?:\\s+Ann\\.)?|A\\.R\\.S\\.)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:Ariz\\.\\s+Rev\\.\\s+Stat\\.(?:\\s+Ann\\.)?|A\\.R\\.S\\.)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "A.",
@@ -394,8 +493,7 @@
     "S.",
     "SIGN",
     "Stat."
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_statute_ar_3",
@@ -404,17 +502,17 @@
    "priority": 35,
    "state": "AR",
    "code": "code",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Ark\\.\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Ark\\.\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
     "Ark.",
     "Code",
     "SIGN"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_statute_ca_4",
@@ -423,9 +521,10 @@
    "priority": 35,
    "state": "CA",
    "code": "*",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Cal\\.\\s+(?:(?:[A-Z][A-Za-z'’]*\\.?|&)\\s+){1,5}Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Cal\\.\\s+(?:(?:[A-Z][A-Za-z'’]*\\.?|&)\\s+){1,5}Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
@@ -433,8 +532,7 @@
     "Code",
     "SIGN",
     "WORD"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_statute_ca_5",
@@ -443,9 +541,10 @@
    "priority": 35,
    "state": "CA",
    "code": "civ-proc",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Cal\\.\\s+Code\\s+Civ\\.\\s+Proc\\.\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Cal\\.\\s+Code\\s+Civ\\.\\s+Proc\\.\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "Cal.",
@@ -453,8 +552,7 @@
     "Code",
     "Proc.",
     "SIGN"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_statute_co_6",
@@ -463,9 +561,10 @@
    "priority": 35,
    "state": "CO",
    "code": "rev-stat",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:Colo\\.\\s+Rev\\.\\s+Stat\\.(?:\\s+Ann\\.)?|C\\.R\\.S\\.)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:Colo\\.\\s+Rev\\.\\s+Stat\\.(?:\\s+Ann\\.)?|C\\.R\\.S\\.)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
@@ -476,8 +575,7 @@
     "S.",
     "SIGN",
     "Stat."
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_statute_ct_7",
@@ -486,9 +584,10 @@
    "priority": 35,
    "state": "CT",
    "code": "gen-stat",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Conn\\.\\s+Gen\\.\\s+Stat\\.(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Conn\\.\\s+Gen\\.\\s+Stat\\.(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
@@ -496,8 +595,7 @@
     "Gen.",
     "SIGN",
     "Stat."
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_statute_de_8",
@@ -506,17 +604,17 @@
    "priority": 35,
    "state": "DE",
    "code": "code",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Del\\.\\s+Code(?:\\s+Ann\\.)?\\s+tit\\.\\s*(?<title>\\d{1,2}),?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Del\\.\\s+Code(?:\\s+Ann\\.)?\\s+tit\\.\\s*(?<title>\\d{1,2}),?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
     "Code",
     "Del.",
     "SIGN"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_statute_de_9",
@@ -525,9 +623,10 @@
    "priority": 35,
    "state": "DE",
    "code": "code",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?<title>\\d{1,2})\\s+Del\\.\\s+(?:C\\.|Code(?:\\s+Ann\\.)?)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?<title>\\d{1,2})\\s+Del\\.\\s+(?:C\\.|Code(?:\\s+Ann\\.)?)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
@@ -535,8 +634,7 @@
     "Code",
     "Del.",
     "SIGN"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_statute_dc_10",
@@ -545,9 +643,10 @@
    "priority": 35,
    "state": "DC",
    "code": "code",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>D\\.C\\.\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>D\\.C\\.\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
@@ -555,8 +654,7 @@
     "Code",
     "D.",
     "SIGN"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_statute_fl_11",
@@ -565,6 +663,7 @@
    "priority": 35,
    "state": "FL",
    "code": "stat",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Fla\\.\\s+Stat\\.(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9]{1,4}[A-Z]?\\.[0-9]{1,5}[A-Za-z]?(?:\\([0-9A-Za-z]{1,5}\\))*(?!\\.?[0-9]))(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
     "sec": "[0-9]{1,4}[A-Z]?\\.[0-9]{1,5}[A-Za-z]?(?:\\([0-9A-Za-z]{1,5}\\))*(?!\\.?[0-9])"
@@ -574,8 +673,7 @@
     "Fla.",
     "SIGN",
     "Stat."
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_statute_ga_12",
@@ -584,9 +682,10 @@
    "priority": 35,
    "state": "GA",
    "code": "code",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:O\\.C\\.G\\.A\\.|Ga\\.\\s+Code(?:\\s+Ann\\.)?)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:O\\.C\\.G\\.A\\.|Ga\\.\\s+Code(?:\\s+Ann\\.)?)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "A.",
@@ -597,8 +696,7 @@
     "Ga.",
     "O.",
     "SIGN"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_statute_hi_13",
@@ -607,9 +705,10 @@
    "priority": 35,
    "state": "HI",
    "code": "rev-stat",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:Haw\\.\\s+Rev\\.\\s+Stat\\.(?:\\s+Ann\\.)?|HRS)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:Haw\\.\\s+Rev\\.\\s+Stat\\.(?:\\s+Ann\\.)?|HRS)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
@@ -618,8 +717,7 @@
     "Rev.",
     "SIGN",
     "Stat."
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_statute_id_14",
@@ -628,17 +726,17 @@
    "priority": 35,
    "state": "ID",
    "code": "code",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Idaho\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Idaho\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
     "Code",
     "Idaho",
     "SIGN"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_statute_il_15",
@@ -647,9 +745,10 @@
    "priority": 35,
    "state": "IL",
    "code": "ilcs",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?<title>\\d{1,4})\\s+(?:ILCS|Ill\\.\\s+Comp\\.\\s+Stat\\.(?:\\s+Ann\\.)?)\\s+(?<act>\\d{1,4}[A-Za-z]?)/)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?<title>\\d{1,4})\\s+(?:ILCS|Ill\\.\\s+Comp\\.\\s+Stat\\.(?:\\s+Ann\\.)?)\\s+(?<act>\\d{1,4}[A-Za-z]?)/)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
@@ -658,35 +757,49 @@
     "Ill.",
     "Stat.",
     "Za"
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_in_16",
+   "id": "state_statute_il_16",
+   "kind": "state_statute",
+   "builder": "state_statute",
+   "priority": 35,
+   "state": "IL",
+   "code": "rev-stat",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Ill\\.\\s+Rev\\.\\s+Stat\\.(?:\\s+\\d{4})?,?\\s+ch\\.\\s*(?<chapter>\\d{1,3}(?:\\s?1/2)?),?\\s+(?:par\\.|¶|pars\\.|¶¶)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "atomic": {
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+   },
+   "anchors": []
+  },
+  {
+   "id": "state_statute_in_17",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "IN",
    "code": "code",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Ind\\.\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Ind\\.\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
     "Code",
     "Ind.",
     "SIGN"
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_ia_17",
+   "id": "state_statute_ia_18",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "IA",
    "code": "code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Iowa\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9]{1,4}[A-Z]?\\.[0-9]{1,5}[A-Za-z]?(?:\\([0-9A-Za-z]{1,5}\\))*(?!\\.?[0-9]))(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
     "sec": "[0-9]{1,4}[A-Z]?\\.[0-9]{1,5}[A-Za-z]?(?:\\([0-9A-Za-z]{1,5}\\))*(?!\\.?[0-9])"
@@ -696,19 +809,19 @@
     "Code",
     "Iowa",
     "SIGN"
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_ks_18",
+   "id": "state_statute_ks_19",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "KS",
    "code": "stat",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:Kan\\.\\s+Stat\\.(?:\\s+Ann\\.)?|K\\.S\\.A\\.)(?:\\s+\\d{4}\\s+Supp\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)?\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:Kan\\.\\s+Stat\\.(?:\\s+Ann\\.)?|K\\.S\\.A\\.)(?:\\s+\\d{4}\\s+Supp\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)?\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "A.",
@@ -720,16 +833,16 @@
     "SIGN",
     "Stat.",
     "Supp."
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_ky_19",
+   "id": "state_statute_ky_20",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "KY",
    "code": "rev-stat",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:Ky\\.\\s+Rev\\.\\s+Stat\\.(?:\\s+Ann\\.)?|KRS)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)?\\s*)(?<sec>[0-9]{1,4}[A-Z]?\\.[0-9]{1,5}[A-Za-z]?(?:\\([0-9A-Za-z]{1,5}\\))*(?!\\.?[0-9]))(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
     "sec": "[0-9]{1,4}[A-Z]?\\.[0-9]{1,5}[A-Za-z]?(?:\\([0-9A-Za-z]{1,5}\\))*(?!\\.?[0-9])"
@@ -742,22 +855,7 @@
     "Rev.",
     "SIGN",
     "Stat."
-   ],
-   "flags": ""
-  },
-  {
-   "id": "state_statute_la_20",
-   "kind": "state_statute",
-   "builder": "state_statute",
-   "priority": 35,
-   "state": "LA",
-   "code": "rev-stat",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:La\\.\\s+R\\.\\s?S\\.|La\\.\\s+Rev\\.\\s+Stat\\.(?:\\s+Ann\\.)?|La\\.\\s+Stat\\.(?:\\s+Ann\\.)?)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)?\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
-   "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
-   },
-   "anchors": [],
-   "flags": ""
+   ]
   },
   {
    "id": "state_statute_la_21",
@@ -765,10 +863,25 @@
    "builder": "state_statute",
    "priority": 35,
    "state": "LA",
-   "code": "civ-code",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>La\\.\\s+Civ\\.\\s+Code(?:\\s+Ann\\.)?\\s+(?:art\\.|arts\\.|Art\\.)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "code": "rev-stat",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:La\\.\\s+R\\.\\s?S\\.|La\\.\\s+Rev\\.\\s+Stat\\.(?:\\s+Ann\\.)?|La\\.\\s+Stat\\.(?:\\s+Ann\\.)?)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)?\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+   },
+   "anchors": []
+  },
+  {
+   "id": "state_statute_la_22",
+   "kind": "state_statute",
+   "builder": "state_statute",
+   "priority": 35,
+   "state": "LA",
+   "code": "civ-code",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>La\\.\\s+Civ\\.\\s+Code(?:\\s+Ann\\.)?\\s+(?:art\\.|arts\\.|Art\\.)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "atomic": {
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
@@ -776,19 +889,19 @@
     "Civ.",
     "Code",
     "La."
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_me_22",
+   "id": "state_statute_me_23",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "ME",
    "code": "rev-stat",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:Me\\.\\s+(?:Rev\\.\\s+)?Stat\\.(?:\\s+Ann\\.)?\\s+tit\\.\\s*(?<title>\\d{1,2}(?:-[A-Z])?),?|(?<title2>\\d{1,2}(?:-[A-Z])?)\\s+M\\.R\\.S\\.(?:A\\.)?)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:Me\\.\\s+(?:Rev\\.\\s+)?Stat\\.(?:\\s+Ann\\.)?\\s+tit\\.\\s*(?<title>\\d{1,2}(?:-[A-Z])?),?|(?<title2>\\d{1,2}(?:-[A-Z])?)\\s+M\\.R\\.S\\.(?:A\\.)?)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "A.",
@@ -800,19 +913,19 @@
     "S.",
     "SIGN",
     "Stat."
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_md_23",
+   "id": "state_statute_md_24",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "MD",
    "code": "*",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Md\\.\\s+Code(?:\\s+Ann\\.)?,\\s*(?:(?:[A-Z][A-Za-z'’]*\\.?|&)\\s+){1,6}(?=§)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Md\\.\\s+Code(?:\\s+Ann\\.)?,\\s*(?:(?:[A-Z][A-Za-z'’]*\\.?|&)\\s+){1,6}(?=§)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
@@ -820,30 +933,30 @@
     "Md.",
     "SIGN",
     "WORD"
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_ma_24",
+   "id": "state_statute_ma_25",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "MA",
    "code": "gen-laws",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:Mass\\.\\s+Gen\\.\\s+Laws(?:\\s+Ann\\.)?|Mass\\.\\s+Ann\\.\\s+Laws|M\\.G\\.L\\.(?:A\\.)?|G\\.\\s?L\\.)\\s+(?:[Cc]h\\.\\s*|c\\.\\s*)?(?<chapter>\\d{1,3}[A-Z]{0,2}),?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:Mass\\.\\s+Gen\\.\\s+Laws(?:\\s+Ann\\.)?|Mass\\.\\s+Ann\\.\\s+Laws|M\\.G\\.L\\.(?:A\\.)?|G\\.\\s?L\\.)\\s+(?:[Cc]h\\.\\s*|c\\.\\s*)?(?<chapter>\\d{1,3}[A-Z]{0,2}),?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
-   "anchors": [],
-   "flags": ""
+   "anchors": []
   },
   {
-   "id": "state_statute_mi_25",
+   "id": "state_statute_mi_26",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "MI",
    "code": "comp-laws",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:Mich\\.\\s+Comp\\.\\s+Laws(?:\\s+Ann\\.|\\s+Serv\\.)?|MCL)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9]{1,4}[A-Z]?\\.[0-9]{1,5}[A-Za-z]?(?:\\([0-9A-Za-z]{1,5}\\))*(?!\\.?[0-9]))(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
     "sec": "[0-9]{1,4}[A-Z]?\\.[0-9]{1,5}[A-Za-z]?(?:\\([0-9A-Za-z]{1,5}\\))*(?!\\.?[0-9])"
@@ -856,16 +969,16 @@
     "Mich.",
     "SIGN",
     "Serv."
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_mn_26",
+   "id": "state_statute_mn_27",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "MN",
    "code": "stat",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Minn\\.\\s+Stat\\.(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9]{1,4}[A-Z]?\\.[0-9]{1,5}[A-Za-z]?(?:\\([0-9A-Za-z]{1,5}\\))*(?!\\.?[0-9]))(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
     "sec": "[0-9]{1,4}[A-Z]?\\.[0-9]{1,5}[A-Za-z]?(?:\\([0-9A-Za-z]{1,5}\\))*(?!\\.?[0-9])"
@@ -875,35 +988,35 @@
     "Minn.",
     "SIGN",
     "Stat."
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_ms_27",
+   "id": "state_statute_ms_28",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "MS",
    "code": "code",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Miss\\.\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Miss\\.\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
     "Code",
     "Miss.",
     "SIGN"
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_mo_28",
+   "id": "state_statute_mo_29",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "MO",
    "code": "rev-stat",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:Mo\\.\\s+(?:Rev\\.\\s+)?Stat\\.(?:\\s+Ann\\.)?|Mo\\.\\s+Ann\\.\\s+Stat\\.|RSMo)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9]{1,4}[A-Z]?\\.[0-9]{1,5}[A-Za-z]?(?:\\([0-9A-Za-z]{1,5}\\))*(?!\\.?[0-9]))(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
     "sec": "[0-9]{1,4}[A-Z]?\\.[0-9]{1,5}[A-Za-z]?(?:\\([0-9A-Za-z]{1,5}\\))*(?!\\.?[0-9])"
@@ -916,38 +1029,38 @@
     "Rev.",
     "SIGN",
     "Stat."
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_mt_29",
+   "id": "state_statute_mt_30",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "MT",
    "code": "code",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Mont\\.\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Mont\\.\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
     "Code",
     "Mont.",
     "SIGN"
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_ne_30",
+   "id": "state_statute_ne_31",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "NE",
    "code": "rev-stat",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Neb\\.\\s+Rev\\.\\s+Stat\\.(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])(?!,\\s?[0-9])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Neb\\.\\s+Rev\\.\\s+Stat\\.(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])(?!,\\s?[0-9])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
@@ -955,16 +1068,16 @@
     "Rev.",
     "SIGN",
     "Stat."
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_nv_31",
+   "id": "state_statute_nv_32",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "NV",
    "code": "rev-stat",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:Nev\\.\\s+Rev\\.\\s+Stat\\.(?:\\s+Ann\\.)?|NRS)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)?\\s*)(?<sec>[0-9]{1,4}[A-Z]?\\.[0-9]{1,5}[A-Za-z]?(?:\\([0-9A-Za-z]{1,5}\\))*(?!\\.?[0-9]))(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
     "sec": "[0-9]{1,4}[A-Z]?\\.[0-9]{1,5}[A-Za-z]?(?:\\([0-9A-Za-z]{1,5}\\))*(?!\\.?[0-9])"
@@ -977,19 +1090,19 @@
     "Rev.",
     "SIGN",
     "Stat."
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_nh_32",
+   "id": "state_statute_nh_33",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "NH",
    "code": "rev-stat",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:N\\.H\\.\\s+Rev\\.\\s+Stat\\.(?:\\s+Ann\\.)?|RSA)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:N\\.H\\.\\s+Rev\\.\\s+Stat\\.(?:\\s+Ann\\.)?|RSA)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
@@ -999,19 +1112,19 @@
     "Rev.",
     "SIGN",
     "Stat."
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_nj_33",
+   "id": "state_statute_nj_34",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "NJ",
    "code": "stat",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:N\\.J\\.S\\.A\\.|N\\.J\\.\\s+(?:Rev\\.\\s+)?Stat\\.(?:\\s+Ann\\.)?)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)?\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:N\\.J\\.S\\.A\\.|N\\.J\\.\\s+(?:Rev\\.\\s+)?Stat\\.(?:\\s+Ann\\.)?)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)?\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "A.",
@@ -1023,19 +1136,19 @@
     "S.",
     "SIGN",
     "Stat."
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_nm_34",
+   "id": "state_statute_nm_35",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "NM",
    "code": "stat",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:N\\.M\\.\\s+Stat\\.(?:\\s+Ann\\.)?|NMSA\\s+1978,?)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)?\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:N\\.M\\.\\s+Stat\\.(?:\\s+Ann\\.)?|NMSA\\s+1978,?)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)?\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
@@ -1045,19 +1158,19 @@
     "OPT",
     "SIGN",
     "Stat."
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_ny_35",
+   "id": "state_statute_ny_36",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "NY",
    "code": "*",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>N\\.Y\\.\\s+(?:(?:[A-Z][A-Za-z'’]*\\.?|&)\\s+){0,4}(?:Law|L\\.)(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>N\\.Y\\.\\s+(?:(?:[A-Z][A-Za-z'’]*\\.?|&)\\s+){0,4}(?:Law|L\\.)(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "Ann.",
@@ -1067,19 +1180,19 @@
     "SIGN",
     "WORD",
     "Y."
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_ny_36",
+   "id": "state_statute_ny_37",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "NY",
    "code": "cplr",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:N\\.Y\\.\\s*)?C\\.P\\.L\\.R\\.\\s*(?:§§?\\s*|[Rr]ule\\s+)?)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:N\\.Y\\.\\s*)?C\\.P\\.L\\.R\\.\\s*(?:§§?\\s*|[Rr]ule\\s+)?)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "C.",
@@ -1088,19 +1201,19 @@
     "P.",
     "R.",
     "Y."
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_nc_37",
+   "id": "state_statute_nc_38",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "NC",
    "code": "gen-stat",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>N\\.C\\.\\s+Gen\\.\\s+Stat\\.(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>N\\.C\\.\\s+Gen\\.\\s+Stat\\.(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
@@ -1109,19 +1222,19 @@
     "N.",
     "SIGN",
     "Stat."
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_nd_38",
+   "id": "state_statute_nd_39",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "ND",
    "code": "cent-code",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>N\\.D\\.\\s+Cent\\.\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>N\\.D\\.\\s+Cent\\.\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
@@ -1130,16 +1243,16 @@
     "D.",
     "N.",
     "SIGN"
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_oh_39",
+   "id": "state_statute_oh_40",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "OH",
    "code": "rev-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:Ohio\\s+Rev\\.\\s+Code(?:\\s+Ann\\.)?|R\\.C\\.)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9]{1,4}[A-Z]?\\.[0-9]{1,5}[A-Za-z]?(?:\\([0-9A-Za-z]{1,5}\\))*(?!\\.?[0-9]))(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
     "sec": "[0-9]{1,4}[A-Z]?\\.[0-9]{1,5}[A-Za-z]?(?:\\([0-9A-Za-z]{1,5}\\))*(?!\\.?[0-9])"
@@ -1152,35 +1265,54 @@
     "R.",
     "Rev.",
     "SIGN"
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_ok_40",
+   "id": "state_statute_ok_41",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "OK",
    "code": "stat",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Okla\\.\\s+Stat\\.(?:\\s+Ann\\.)?\\s+tit\\.\\s*(?<title>\\d{1,2}),?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Okla\\.\\s+Stat\\.(?:\\s+Ann\\.)?\\s+tit\\.\\s*(?<title>\\d{1,2}),?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
     "Okla.",
     "SIGN",
     "Stat."
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_or_41",
+   "id": "state_statute_ok_42",
+   "kind": "state_statute",
+   "builder": "state_statute",
+   "priority": 35,
+   "state": "OK",
+   "code": "stat",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?<title>\\d{1,2})\\s+Okla\\.\\s+Stat\\.(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "atomic": {
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+   },
+   "anchors": [
+    "ANN",
+    "Okla.",
+    "SIGN",
+    "Stat."
+   ]
+  },
+  {
+   "id": "state_statute_or_43",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "OR",
    "code": "rev-stat",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:Or\\.\\s+Rev\\.\\s+Stat\\.(?:\\s+Ann\\.)?|ORS)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)?\\s*)(?<sec>[0-9]{1,4}[A-Z]?\\.[0-9]{1,5}[A-Za-z]?(?:\\([0-9A-Za-z]{1,5}\\))*(?!\\.?[0-9]))(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
     "sec": "[0-9]{1,4}[A-Z]?\\.[0-9]{1,5}[A-Za-z]?(?:\\([0-9A-Za-z]{1,5}\\))*(?!\\.?[0-9])"
@@ -1193,19 +1325,19 @@
     "Rev.",
     "SIGN",
     "Stat."
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_pa_42",
+   "id": "state_statute_pa_44",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "PA",
    "code": "cons-stat",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?<title>\\d{1,3})\\s+(?:Pa\\.\\s*C\\.\\s*S\\.(?:\\s*A\\.)?|Pa\\.\\s+Cons\\.\\s+Stat\\.(?:\\s+Ann\\.)?|Pa\\.\\s+Stat\\.\\s+and\\s+Cons\\.\\s+Stat\\.(?:\\s+Ann\\.)?)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?<title>\\d{1,3})\\s+(?:Pa\\.\\s*C\\.\\s*S\\.(?:\\s*A\\.)?|Pa\\.\\s+Cons\\.\\s+Stat\\.(?:\\s+Ann\\.)?|Pa\\.\\s+Stat\\.\\s+and\\s+Cons\\.\\s+Stat\\.(?:\\s+Ann\\.)?)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "A.",
@@ -1216,19 +1348,19 @@
     "S.",
     "SIGN",
     "Stat."
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_pa_43",
+   "id": "state_statute_pa_45",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "PA",
    "code": "stat",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?<title>\\d{1,3})\\s+(?:Pa\\.\\s+Stat\\.(?:\\s+Ann\\.)?|P\\.S\\.)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?<title>\\d{1,3})\\s+(?:Pa\\.\\s+Stat\\.(?:\\s+Ann\\.)?|P\\.S\\.)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
@@ -1237,19 +1369,19 @@
     "S.",
     "SIGN",
     "Stat."
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_ri_44",
+   "id": "state_statute_ri_46",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "RI",
    "code": "gen-laws",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>R\\.I\\.\\s+Gen\\.\\s+Laws(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>R\\.I\\.\\s+Gen\\.\\s+Laws(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
@@ -1258,19 +1390,19 @@
     "Laws",
     "R.",
     "SIGN"
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_sc_45",
+   "id": "state_statute_sc_47",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "SC",
    "code": "code",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>S\\.C\\.\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>S\\.C\\.\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
@@ -1278,19 +1410,19 @@
     "Code",
     "S.",
     "SIGN"
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_sd_46",
+   "id": "state_statute_sd_48",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "SD",
    "code": "cod-laws",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:S\\.D\\.\\s+Codified\\s+Laws|SDCL)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:S\\.D\\.\\s+Codified\\s+Laws|SDCL)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "Codified",
@@ -1299,38 +1431,38 @@
     "S.",
     "SDCL",
     "SIGN"
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_tn_47",
+   "id": "state_statute_tn_49",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "TN",
    "code": "code",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Tenn\\.\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Tenn\\.\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
     "Code",
     "SIGN",
     "Tenn."
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_tx_48",
+   "id": "state_statute_tx_50",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "TX",
    "code": "*",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Tex\\.\\s+(?:(?:[A-Z][A-Za-z'’]*\\.?|&)\\s+){1,6}Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Tex\\.\\s+(?:(?:[A-Z][A-Za-z'’]*\\.?|&)\\s+){1,6}Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
@@ -1338,76 +1470,76 @@
     "SIGN",
     "Tex.",
     "WORD"
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_ut_49",
+   "id": "state_statute_ut_51",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "UT",
    "code": "code",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Utah\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Utah\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
     "Code",
     "SIGN",
     "Utah"
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_vt_50",
+   "id": "state_statute_vt_52",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "VT",
    "code": "stat",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Vt\\.\\s+Stat\\.(?:\\s+Ann\\.)?\\s+tit\\.\\s*(?<title>\\d{1,2}),?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Vt\\.\\s+Stat\\.(?:\\s+Ann\\.)?\\s+tit\\.\\s*(?<title>\\d{1,2}),?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
     "SIGN",
     "Stat.",
     "Vt."
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_va_51",
+   "id": "state_statute_va_53",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "VA",
    "code": "code",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Va\\.\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Va\\.\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
     "Code",
     "SIGN",
     "Va."
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_wa_52",
+   "id": "state_statute_wa_54",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "WA",
    "code": "rev-code",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:Wash\\.\\s+Rev\\.\\s+Code(?:\\s+Ann\\.)?|RCW)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)?\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>(?:Wash\\.\\s+Rev\\.\\s+Code(?:\\s+Ann\\.)?|RCW)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)?\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
@@ -1417,30 +1549,30 @@
     "Rev.",
     "SIGN",
     "Wash."
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_wv_53",
+   "id": "state_statute_wv_55",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "WV",
    "code": "code",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>W\\.\\s?Va\\.\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>W\\.\\s?Va\\.\\s+Code(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
-   "anchors": [],
-   "flags": ""
+   "anchors": []
   },
   {
-   "id": "state_statute_wi_54",
+   "id": "state_statute_wi_56",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "WI",
    "code": "stat",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Wis\\.\\s+Stat\\.(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)?\\s*)(?<sec>[0-9]{1,4}[A-Z]?\\.[0-9]{1,5}[A-Za-z]?(?:\\([0-9A-Za-z]{1,5}\\))*(?!\\.?[0-9]))(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
     "sec": "[0-9]{1,4}[A-Z]?\\.[0-9]{1,5}[A-Za-z]?(?:\\([0-9A-Za-z]{1,5}\\))*(?!\\.?[0-9])"
@@ -1451,27 +1583,26 @@
     "SIGN",
     "Stat.",
     "Wis."
-   ],
-   "flags": ""
+   ]
   },
   {
-   "id": "state_statute_wy_55",
+   "id": "state_statute_wy_57",
    "kind": "state_statute",
    "builder": "state_statute",
    "priority": 35,
    "state": "WY",
    "code": "stat",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Wyo\\.\\s+Stat\\.(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Wyo\\.\\s+Stat\\.(?:\\s+Ann\\.)?\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
-    "sec": "[0-9][0-9A-Za-z]*(?:[.:/\\-–][0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
+    "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
    "anchors": [
     "ANN",
     "SIGN",
     "Stat.",
     "Wyo."
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_al_0",
@@ -1480,6 +1611,7 @@
    "priority": 36,
    "state": "AL",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:Ala\\.\\s+Admin\\.\\s+Code\\s+(?:r\\.\\s*)?(?<sec>(?:R\\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\\-–]|-\\.)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Admin.",
@@ -1487,8 +1619,7 @@
     "Code",
     "REG",
     "SEC"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_ak_1",
@@ -1497,6 +1628,7 @@
    "priority": 36,
    "state": "AK",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:Alaska\\s+Admin\\.\\s+Code\\s+tit\\.\\s*(?<title>\\d{1,2}),?\\s*§§?\\s*(?<sec>(?:R\\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\\-–]|-\\.)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Admin.",
@@ -1504,8 +1636,7 @@
     "Code",
     "REG",
     "SEC"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_ak_2",
@@ -1514,12 +1645,12 @@
    "priority": 36,
    "state": "AK",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?<title>\\d{1,2})\\s+AAC\\s+(?<sec>\\d{1,3}\\.\\d{3}(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "AAC",
     "SUBS"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_az_3",
@@ -1528,6 +1659,7 @@
    "priority": 36,
    "state": "AZ",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?:Ariz\\.\\s+Admin\\.\\s+Code|A\\.A\\.C\\.)\\s*(?:§§?\\s*)?(?<sec>R\\d{1,2}-\\d{1,2}-\\d{1,4}[A-Z]?(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "A.",
@@ -1536,8 +1668,7 @@
     "C.",
     "Code",
     "SUBS"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_ar_4",
@@ -1546,6 +1677,7 @@
    "priority": 36,
    "state": "AR",
    "code": "code-r",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?:(?<title>\\d{3}\\.\\d{2}\\.\\d{1,3})\\s+)?Ark\\.\\s+Code\\s+R\\.\\s*(?:§§?\\s*)?(?<sec>(?:R\\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\\-–]|-\\.)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Ark.",
@@ -1553,8 +1685,7 @@
     "R.",
     "REG",
     "SEC"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_ca_5",
@@ -1563,6 +1694,7 @@
    "priority": 36,
    "state": "CA",
    "code": "code-regs",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:Cal\\.\\s+Code\\s+(?:of\\s+)?Regs\\.,?\\s+tit\\.\\s*(?<title>\\d{1,2}),?\\s*§§?\\s*(?<sec>(?:R\\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\\-–]|-\\.)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Cal.",
@@ -1570,8 +1702,7 @@
     "REG",
     "Regs.",
     "SEC"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_ca_6",
@@ -1580,6 +1711,7 @@
    "priority": 36,
    "state": "CA",
    "code": "code-regs",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?<title>\\d{1,2})\\s+(?:C\\.C\\.R\\.|CCR|Cal\\.\\s+Code\\s+Regs\\.)\\s*§§?\\s*(?<sec>(?:R\\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\\-–]|-\\.)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "C.",
@@ -1590,8 +1722,7 @@
     "REG",
     "Regs.",
     "SEC"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_co_7",
@@ -1600,6 +1731,7 @@
    "priority": 36,
    "state": "CO",
    "code": "code-regs",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?<title>\\d{1,2})\\s+(?:Colo\\.\\s+Code\\s+Regs\\.|CCR)\\s+(?:§§?\\s*)?(?<sec>\\d{3,4}-\\d{1,3}(?::[0-9.]+)?(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "CCR",
@@ -1607,8 +1739,7 @@
     "Colo.",
     "Regs.",
     "SUBS"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_ct_8",
@@ -1617,6 +1748,7 @@
    "priority": 36,
    "state": "CT",
    "code": "agencies-regs",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?:Conn\\.\\s+Agencies\\s+Regs\\.|R\\.C\\.S\\.A\\.)\\s*§§?\\s*(?<sec>(?:R\\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\\-–]|-\\.)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "A.",
@@ -1628,8 +1760,7 @@
     "Regs.",
     "S.",
     "SEC"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_de_9",
@@ -1638,6 +1769,7 @@
    "priority": 36,
    "state": "DE",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?<title>\\d{1,2})\\s+(?:Del\\.|DE)\\s+Admin\\.\\s+Code\\s*(?:§§?\\s*)?(?<sec>(?:R\\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\\-–]|-\\.)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Admin.",
@@ -1646,8 +1778,7 @@
     "Del.",
     "REG",
     "SEC"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_dc_10",
@@ -1656,6 +1787,7 @@
    "priority": 36,
    "state": "DC",
    "code": "mun-regs",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:D\\.C\\.\\s+(?:Code\\s+)?Mun\\.\\s+Regs\\.,?\\s+tit\\.\\s*(?<title>\\d{1,2}[A-Z]?),?\\s*§§?\\s*(?<sec>(?:R\\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\\-–]|-\\.)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "C.",
@@ -1665,8 +1797,7 @@
     "REG",
     "Regs.",
     "SEC"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_dc_11",
@@ -1675,13 +1806,13 @@
    "priority": 36,
    "state": "DC",
    "code": "mun-regs",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?<title>\\d{1,2}[A-Z]?)\\s+DCMR\\s*(?:§§?\\s*)?(?<sec>(?:R\\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\\-–]|-\\.)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "DCMR",
     "REG",
     "SEC"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_fl_12",
@@ -1690,6 +1821,7 @@
    "priority": 36,
    "state": "FL",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:Fla\\.\\s+Admin\\.\\s+Code(?:\\s+Ann\\.)?\\s+(?:[Rr]\\.|[Rr]ule)\\s*(?<sec>\\d{1,3}[A-Z]{0,2}-\\d{1,3}\\.\\d{1,4}(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Admin.",
@@ -1697,8 +1829,7 @@
     "Code",
     "Fla.",
     "SUBS"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_fl_13",
@@ -1707,6 +1838,7 @@
    "priority": 36,
    "state": "FL",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?:[Rr]ule\\s+)(?<sec>\\d{1,3}[A-Z]{0,2}-\\d{1,3}\\.\\d{1,4}(?:\\([a-zA-Z0-9]{1,5}\\))*),?\\s+(?:F\\.A\\.C\\.|Fla\\.\\s+Admin\\.\\s+Code))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "A.",
@@ -1716,8 +1848,7 @@
     "F.",
     "Fla.",
     "SUBS"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_ga_14",
@@ -1726,6 +1857,7 @@
    "priority": 36,
    "state": "GA",
    "code": "comp-r-regs",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:Ga\\.\\s+Comp\\.\\s+R\\.\\s+&\\s+Regs\\.\\s*(?:r\\.\\s*)?(?<sec>(?:R\\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\\-–]|-\\.)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Comp.",
@@ -1734,8 +1866,7 @@
     "REG",
     "Regs.",
     "SEC"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_hi_15",
@@ -1744,6 +1875,7 @@
    "priority": 36,
    "state": "HI",
    "code": "code-r",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?:Haw\\.\\s+Code\\s+R\\.|Haw\\.\\s+Admin\\.\\s+R\\.|HAR)\\s*§§?\\s*(?<sec>(?:R\\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\\-–]|-\\.)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Admin.",
@@ -1753,8 +1885,7 @@
     "R.",
     "REG",
     "SEC"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_id_16",
@@ -1763,6 +1894,7 @@
    "priority": 36,
    "state": "ID",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?:Idaho\\s+Admin\\.\\s+Code\\s+r\\.|IDAPA)\\s*(?<sec>\\d{2}\\.\\d{2}\\.\\d{2}(?:\\.\\d{3})?(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Admin.",
@@ -1770,8 +1902,7 @@
     "IDAPA",
     "Idaho",
     "SUBS"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_il_17",
@@ -1780,6 +1911,7 @@
    "priority": 36,
    "state": "IL",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:Ill\\.\\s+Admin\\.\\s+Code\\s+tit\\.\\s*(?<title>\\d{1,2}),?\\s*§§?\\s*(?<sec>(?:R\\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\\-–]|-\\.)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Admin.",
@@ -1787,8 +1919,7 @@
     "Ill.",
     "REG",
     "SEC"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_il_18",
@@ -1797,14 +1928,14 @@
    "priority": 36,
    "state": "IL",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?<title>\\d{1,2})\\s+Ill\\.\\s+Adm(?:in)?\\.\\s+Code\\s+(?:§§?\\s*)?(?<sec>\\d{1,4}\\.\\d{1,5}(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Adm",
     "Code",
     "Ill.",
     "SUBS"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_in_19",
@@ -1813,6 +1944,7 @@
    "priority": 36,
    "state": "IN",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?<title>\\d{1,3})\\s+Ind\\.\\s+Admin\\.\\s+Code\\s+(?<sec>(?:R\\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\\-–]|-\\.)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Admin.",
@@ -1820,8 +1952,7 @@
     "Ind.",
     "REG",
     "SEC"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_ia_20",
@@ -1830,6 +1961,7 @@
    "priority": 36,
    "state": "IA",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:Iowa\\s+Admin\\.\\s+Code\\s+r\\.\\s*(?<sec>(?:R\\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\\-–]|-\\.)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Admin.",
@@ -1837,8 +1969,7 @@
     "Iowa",
     "REG",
     "SEC"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_ks_21",
@@ -1847,6 +1978,7 @@
    "priority": 36,
    "state": "KS",
    "code": "admin-regs",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?:Kan\\.\\s+Admin\\.\\s+Regs\\.|K\\.A\\.R\\.)\\s*(?:§§?\\s*)?(?<sec>\\d{1,3}-\\d{1,3}-\\d{1,4}[a-z]?(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "A.",
@@ -1856,8 +1988,7 @@
     "R.",
     "Regs.",
     "SUBS"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_ky_22",
@@ -1866,6 +1997,7 @@
    "priority": 36,
    "state": "KY",
    "code": "admin-regs",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?<title>\\d{1,3})\\s+(?:Ky\\.\\s+Admin\\.\\s+Regs\\.|KAR)\\s+(?<sec>\\d{1,3}:\\d{2,3}(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Admin.",
@@ -1873,8 +2005,7 @@
     "Ky.",
     "Regs.",
     "SUBS"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_la_23",
@@ -1883,6 +2014,7 @@
    "priority": 36,
    "state": "LA",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:La\\.\\s+Admin\\.\\s+Code\\s+tit\\.\\s*(?<title>\\d{1,2}),?\\s*(?:pt\\.\\s*(?<part>[IVXL]{1,6}),?\\s*)?§§?\\s*(?<sec>(?:R\\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\\-–]|-\\.)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Admin.",
@@ -1891,8 +2023,7 @@
     "REG",
     "SEC",
     "VXL"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_la_24",
@@ -1901,9 +2032,9 @@
    "priority": 36,
    "state": "LA",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:L\\.?A\\.?C\\.?\\s+(?<title>\\d{1,2}):(?<part>[IVXL]{1,6})\\.(?<sec>\\d{1,4}(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
-   "anchors": [],
-   "flags": ""
+   "anchors": []
   },
   {
    "id": "state_regulation_me_25",
@@ -1912,6 +2043,7 @@
    "priority": 36,
    "state": "ME",
    "code": "code-r",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?<title>\\d{2}-\\d{3})\\s+(?:Me\\.\\s+Code\\s+R\\.|C\\.M\\.R\\.|CMR)\\s*(?:ch\\.|§§?)?\\s*(?<sec>\\d{1,4}(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "C.",
@@ -1921,8 +2053,7 @@
     "Me.",
     "R.",
     "SUBS"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_md_26",
@@ -1931,6 +2062,7 @@
    "priority": 36,
    "state": "MD",
    "code": "code-regs",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?:Md\\.\\s+Code\\s+Regs\\.|COMAR)\\s*(?<sec>\\d{2}\\.\\d{2}\\.\\d{2}(?:\\.\\d{2,3})?(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "COMAR",
@@ -1938,8 +2070,7 @@
     "Md.",
     "Regs.",
     "SUBS"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_ma_27",
@@ -1948,6 +2079,7 @@
    "priority": 36,
    "state": "MA",
    "code": "code-regs",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?<title>\\d{3})\\s+(?:Mass\\.\\s+Code\\s+Regs\\.|C\\.M\\.R\\.|CMR)\\s*(?:§§?\\s*)?(?<sec>\\d{1,3}\\.\\d{2,3}(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "C.",
@@ -1958,8 +2090,7 @@
     "R.",
     "Regs.",
     "SUBS"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_mi_28",
@@ -1968,14 +2099,14 @@
    "priority": 36,
    "state": "MI",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:Mich\\.\\s+Admin\\.\\s+Code\\s+(?:r\\.|R)\\s*(?<sec>\\d{1,3}\\.\\d{1,5}[a-z]?(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Admin.",
     "Code",
     "Mich.",
     "SUBS"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_mn_29",
@@ -1984,13 +2115,13 @@
    "priority": 36,
    "state": "MN",
    "code": "rules",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:Minn\\.\\s+R\\.\\s*(?:pt\\.\\s*)?(?<sec>\\d{4}\\.\\d{4}(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Minn.",
     "R.",
     "SUBS"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_ms_30",
@@ -1999,6 +2130,7 @@
    "priority": 36,
    "state": "MS",
    "code": "code-r",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?<title>\\d{1,2}-\\d{1,3})\\s+Miss\\.\\s+Code\\s+R\\.\\s*(?:§§?\\s*)?(?<sec>(?:R\\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\\-–]|-\\.)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Code",
@@ -2006,8 +2138,7 @@
     "R.",
     "REG",
     "SEC"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_mo_31",
@@ -2016,6 +2147,7 @@
    "priority": 36,
    "state": "MO",
    "code": "code-regs",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:Mo\\.\\s+Code\\s+(?:of\\s+State\\s+)?Regs\\.(?:\\s+Ann\\.)?\\s+tit\\.\\s*(?<title>\\d{1,2}),?\\s*§§?\\s*(?<sec>(?:R\\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\\-–]|-\\.)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Ann.",
@@ -2025,8 +2157,7 @@
     "Regs.",
     "SEC",
     "State"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_mo_32",
@@ -2035,12 +2166,12 @@
    "priority": 36,
    "state": "MO",
    "code": "code-regs",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?<title>\\d{1,2})\\s+CSR\\s+(?<sec>\\d{1,3}-\\d{1,3}\\.\\d{2,4}(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "CSR",
     "SUBS"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_mt_33",
@@ -2049,6 +2180,7 @@
    "priority": 36,
    "state": "MT",
    "code": "admin-r",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?:Mont\\.\\s+Admin\\.\\s+R\\.|ARM)\\s+(?<sec>\\d{1,2}\\.\\d{1,3}\\.\\d{3,4}(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "ARM",
@@ -2056,8 +2188,7 @@
     "Mont.",
     "R.",
     "SUBS"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_ne_34",
@@ -2066,6 +2197,7 @@
    "priority": 36,
    "state": "NE",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?<title>\\d{1,3})\\s+Neb\\.\\s+Admin\\.\\s+Code\\s*(?:ch\\.\\s*|§§?\\s*)?(?<sec>(?:R\\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\\-–]|-\\.)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Admin.",
@@ -2073,8 +2205,7 @@
     "Neb.",
     "REG",
     "SEC"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_nv_35",
@@ -2083,6 +2214,7 @@
    "priority": 36,
    "state": "NV",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?:Nev\\.\\s+Admin\\.\\s+Code|NAC)\\s*(?:ch\\.\\s*|§§?\\s*)?(?<sec>\\d{1,3}[A-Z]?\\.\\d{1,4}(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Admin.",
@@ -2090,8 +2222,7 @@
     "NAC",
     "Nev.",
     "SUBS"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_nh_36",
@@ -2100,6 +2231,7 @@
    "priority": 36,
    "state": "NH",
    "code": "code-admin-r",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:N\\.H\\.\\s+Code\\s+Admin\\.\\s+R\\.(?:\\s+Ann\\.)?\\s*(?<agency>[A-Z][A-Za-z]{1,8}(?:-[A-Z][a-z]{0,3})?)\\s*(?<sec>\\d{1,4}\\.\\d{1,3}(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Admin.",
@@ -2110,8 +2242,7 @@
     "R.",
     "SUBS",
     "Za"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_nj_37",
@@ -2120,6 +2251,7 @@
    "priority": 36,
    "state": "NJ",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?:N\\.J\\.\\s+Admin\\.\\s+Code|N\\.J\\.A\\.C\\.)\\s*(?:§§?\\s*)?(?<sec>\\d{1,2}[A-Z]?:\\d{1,3}[A-Z]?-\\d{1,3}(?:\\.\\d{1,3})?(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "A.",
@@ -2129,8 +2261,7 @@
     "J.",
     "N.",
     "SUBS"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_nm_38",
@@ -2139,6 +2270,7 @@
    "priority": 36,
    "state": "NM",
    "code": "code-r",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:N\\.M\\.\\s+Code\\s+R\\.\\s*(?:§§?\\s*)?(?<sec>\\d{1,2}\\.\\d{1,3}\\.\\d{1,3}(?:\\.\\d{1,4})?(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Code",
@@ -2146,8 +2278,7 @@
     "N.",
     "R.",
     "SUBS"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_nm_39",
@@ -2156,12 +2287,12 @@
    "priority": 36,
    "state": "NM",
    "code": "code-r",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?<sec>\\d{1,2}\\.\\d{1,3}\\.\\d{1,3}(?:\\.\\d{1,4})?(?:\\([a-zA-Z0-9]{1,5}\\))*)\\s+NMAC)(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "NMAC",
     "SUBS"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_ny_40",
@@ -2170,6 +2301,7 @@
    "priority": 36,
    "state": "NY",
    "code": "comp-codes",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:N\\.Y\\.\\s+Comp\\.\\s+Codes\\s+R\\.\\s+&\\s+Regs\\.,?\\s+tit\\.\\s*(?<title>\\d{1,2}[A-Z]?),?\\s*§§?\\s*(?<sec>(?:R\\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\\-–]|-\\.)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Codes",
@@ -2180,8 +2312,7 @@
     "Regs.",
     "SEC",
     "Y."
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_ny_41",
@@ -2190,9 +2321,9 @@
    "priority": 36,
    "state": "NY",
    "code": "comp-codes",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?<title>\\d{1,2}[A-Z]?)\\s+N\\.?Y\\.?C\\.?R\\.?R\\.?\\s*(?:§§?\\s*)?(?<sec>(?:R\\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\\-–]|-\\.)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
-   "anchors": [],
-   "flags": ""
+   "anchors": []
   },
   {
    "id": "state_regulation_nc_42",
@@ -2201,9 +2332,9 @@
    "priority": 36,
    "state": "NC",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?<title>\\d{1,2}[A-Z]?)\\s+(?:N\\.C\\.\\s+Admin\\.\\s+Code|NCAC)\\s+(?<sec>\\d{1,2}[A-Z]{1,2}\\s?\\.\\d{4}(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
-   "anchors": [],
-   "flags": ""
+   "anchors": []
   },
   {
    "id": "state_regulation_nd_43",
@@ -2212,6 +2343,7 @@
    "priority": 36,
    "state": "ND",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?:N\\.D\\.\\s+Admin\\.\\s+Code|N\\.D\\.A\\.C\\.)\\s*(?:§§?\\s*)?(?<sec>\\d{2,3}-\\d{2}-\\d{2}(?:-\\d{2}(?:\\.\\d)?)?(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "A.",
@@ -2221,8 +2353,7 @@
     "D.",
     "N.",
     "SUBS"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_oh_44",
@@ -2231,9 +2362,9 @@
    "priority": 36,
    "state": "OH",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?:Ohio\\s+Admin\\.\\s+Code|Ohio\\s+Adm\\.\\s?Code|O\\.A\\.C\\.)\\s*(?:§§?\\s*)?(?<sec>\\d{3,4}(?::\\d{1,2})?-\\d{1,3}-\\d{2}(?:\\.\\d{1,3})?(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
-   "anchors": [],
-   "flags": ""
+   "anchors": []
   },
   {
    "id": "state_regulation_ok_45",
@@ -2242,6 +2373,7 @@
    "priority": 36,
    "state": "OK",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?:Okla\\.\\s+Admin\\.\\s+Code|OAC)\\s*(?:§§?\\s*)?(?<sec>\\d{2,3}:\\d{1,3}-\\d{1,3}-\\d{1,3}(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Admin.",
@@ -2249,8 +2381,7 @@
     "OAC",
     "Okla.",
     "SUBS"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_or_46",
@@ -2259,6 +2390,7 @@
    "priority": 36,
    "state": "OR",
    "code": "admin-r",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?:Or\\.\\s+Admin\\.\\s+R\\.|OAR)\\s*(?<sec>\\d{3}-\\d{3}-\\d{4}(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Admin.",
@@ -2266,8 +2398,7 @@
     "Or.",
     "R.",
     "SUBS"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_pa_47",
@@ -2276,14 +2407,14 @@
    "priority": 36,
    "state": "PA",
    "code": "code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?<title>\\d{1,3})\\s+Pa\\.\\s+Code\\s*§§?\\s*(?<sec>(?:R\\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\\-–]|-\\.)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Code",
     "Pa.",
     "REG",
     "SEC"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_ri_48",
@@ -2292,6 +2423,7 @@
    "priority": 36,
    "state": "RI",
    "code": "code-r",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?:(?<title>\\d{1,3}-\\d{1,3})\\s+R\\.I\\.\\s+Code\\s+R\\.\\s*(?:§§?\\s*)?(?<sec>(?:R\\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\\-–]|-\\.)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)|(?<sec2>\\d{3}-RICR-\\d{2,3}-\\d{2}-\\d{1,2}(?:\\.\\d{1,2})?)))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Code",
@@ -2300,8 +2432,7 @@
     "REG",
     "RICR",
     "SEC"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_sc_49",
@@ -2310,6 +2441,7 @@
    "priority": 36,
    "state": "SC",
    "code": "code-regs",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:S\\.C\\.\\s+Code(?:\\s+Ann\\.)?\\s+Regs\\.\\s*(?<sec>\\d{1,3}-\\d{1,4}(?:\\.\\d{1,3})?(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Ann.",
@@ -2318,8 +2450,7 @@
     "Regs.",
     "S.",
     "SUBS"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_sd_50",
@@ -2328,6 +2459,7 @@
    "priority": 36,
    "state": "SD",
    "code": "admin-r",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?:S\\.D\\.\\s+Admin\\.\\s+R\\.|ARSD)\\s*(?<sec>\\d{1,2}:\\d{2}(?::\\d{2}){1,2}(?:\\.\\d{1,2})?(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "ARSD",
@@ -2336,8 +2468,7 @@
     "R.",
     "S.",
     "SUBS"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_tn_51",
@@ -2346,6 +2477,7 @@
    "priority": 36,
    "state": "TN",
    "code": "comp-r-regs",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:Tenn\\.\\s+Comp\\.\\s+R\\.\\s+&\\s+Regs\\.\\s*(?:r\\.\\s*)?(?<sec>(?:R\\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\\-–]|-\\.)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Comp.",
@@ -2354,8 +2486,7 @@
     "Regs.",
     "SEC",
     "Tenn."
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_tx_52",
@@ -2364,6 +2495,7 @@
    "priority": 36,
    "state": "TX",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?<title>\\d{1,2})\\s+(?:Tex\\.\\s+Admin\\.\\s+Code|TAC|T\\.A\\.C\\.)\\s*(?:§§?\\s*)?(?<sec>\\d{1,4}\\.\\d{1,4}(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "A.",
@@ -2374,8 +2506,7 @@
     "T.",
     "TAC",
     "Tex."
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_ut_53",
@@ -2384,14 +2515,14 @@
    "priority": 36,
    "state": "UT",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:Utah\\s+Admin\\.\\s+Code\\s+(?:r\\.\\s*)?(?<sec>R\\d{1,3}-\\d{1,4}(?:-\\d{1,4}[a-z]?)?(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Admin.",
     "Code",
     "SUBS",
     "Utah"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_vt_54",
@@ -2400,6 +2531,7 @@
    "priority": 36,
    "state": "VT",
    "code": "code-r",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?<title>\\d{1,2}-\\d{3})\\s+Vt\\.\\s+Code\\s+R\\.\\s*(?:§§?\\s*)?(?<sec>(?:R\\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\\-–]|-\\.)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Code",
@@ -2407,8 +2539,7 @@
     "REG",
     "SEC",
     "Vt."
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_va_55",
@@ -2417,9 +2548,9 @@
    "priority": 36,
    "state": "VA",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?<title>\\d{1,2})\\s?(?:Va\\.\\s+Admin\\.\\s+Code|VAC)\\s?(?:§§?\\s*)?(?<sec>\\d{1,3}-\\d{1,3}-\\d{1,4}(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
-   "anchors": [],
-   "flags": ""
+   "anchors": []
   },
   {
    "id": "state_regulation_wa_56",
@@ -2428,6 +2559,7 @@
    "priority": 36,
    "state": "WA",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?:Wash\\.\\s+Admin\\.\\s+Code|WAC)\\s*(?:§§?\\s*)?(?<sec>\\d{1,3}[A-Z]?-\\d{1,3}[A-Z]?-\\d{1,4}[A-Z]?(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Admin.",
@@ -2435,8 +2567,7 @@
     "SUBS",
     "WAC",
     "Wash."
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_wv_57",
@@ -2445,9 +2576,9 @@
    "priority": 36,
    "state": "WV",
    "code": "code-r",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?:W\\.\\s?Va\\.\\s+Code\\s+(?:R\\.|St\\.\\s+R\\.)|W\\.\\s?Va\\.\\s+C\\.S\\.R\\.)\\s*(?:§§?\\s*)?(?<sec>\\d{1,3}-\\d{1,3}-\\d{1,3}(?:\\.\\d{1,3})?(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
-   "anchors": [],
-   "flags": ""
+   "anchors": []
   },
   {
    "id": "state_regulation_wi_58",
@@ -2456,6 +2587,7 @@
    "priority": 36,
    "state": "WI",
    "code": "admin-code",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:Wis\\.\\s+Admin\\.\\s+Code\\s+(?<agency>[A-Z][A-Za-z&]{1,8})\\s*§§?\\s*(?<sec>\\d{1,4}\\.\\d{1,4}(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Admin.",
@@ -2463,8 +2595,7 @@
     "SUBS",
     "Wis.",
     "Za"
-   ],
-   "flags": ""
+   ]
   },
   {
    "id": "state_regulation_wy_59",
@@ -2473,6 +2604,7 @@
    "priority": 36,
    "state": "WY",
    "code": "code-r",
+   "flags": "i",
    "pattern": "(?<![A-Za-z0-9_.])(?:(?:(?<title>\\d{3}\\.\\d{4})\\s+)?Wyo\\.\\s+Code\\s+R\\.\\s*(?:§§?\\s*)?(?<sec>(?:R\\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\\-–]|-\\.)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Code",
@@ -2480,8 +2612,7 @@
     "REG",
     "SEC",
     "Wyo."
-   ],
-   "flags": ""
+   ]
   }
  ],
  "case": {

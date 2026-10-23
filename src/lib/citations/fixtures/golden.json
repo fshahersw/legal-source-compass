@@ -1,5 +1,5 @@
 {
- "pattern_version": "citations-v2/2026-10-25.1",
+ "pattern_version": "citations-v2/2026-10-25.2",
  "texts": [
   {
    "id": "cases-parallel",
@@ -2088,6 +2088,525 @@
    ]
   },
   {
+   "id": "cfr-lists",
+   "text": "\\14\\ 40 CFR 52.38(a)(2), (b)(2); 52.39(c); 52.2140; 52.2141. Codified at 40 CFR 52.38 and 52.39 and subparts of 40 CFR part 97; 21 CFR 11, 12; 40 CFR 52.38, 2.5 percent; 40 CFR 52.38(a)(5)(iv)-(v), (a)(6); 52.39(j).",
+   "expected": [
+    {
+     "kind": "cfr",
+     "form": "full",
+     "short": null,
+     "rule": "cfr",
+     "start": 5,
+     "end": 23,
+     "matched": "40 CFR 52.38(a)(2)",
+     "span": [
+      5,
+      59
+     ],
+     "key": "cfr:40:52.38",
+     "normalized": "40 C.F.R. § 52.38",
+     "pin": "(a)(2)",
+     "fields": {
+      "title": "40",
+      "part": "52",
+      "section": "38"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "cfr",
+     "form": "full",
+     "short": null,
+     "rule": "cfr",
+     "start": 33,
+     "end": 41,
+     "matched": "52.39(c)",
+     "span": [
+      5,
+      59
+     ],
+     "key": "cfr:40:52.39",
+     "normalized": "40 C.F.R. § 52.39",
+     "pin": "(c)",
+     "fields": {
+      "title": "40",
+      "part": "52",
+      "section": "39"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "cfr",
+     "form": "full",
+     "short": null,
+     "rule": "cfr",
+     "start": 43,
+     "end": 50,
+     "matched": "52.2140",
+     "span": [
+      5,
+      59
+     ],
+     "key": "cfr:40:52.2140",
+     "normalized": "40 C.F.R. § 52.2140",
+     "pin": null,
+     "fields": {
+      "title": "40",
+      "part": "52",
+      "section": "2140"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "cfr",
+     "form": "full",
+     "short": null,
+     "rule": "cfr",
+     "start": 52,
+     "end": 59,
+     "matched": "52.2141",
+     "span": [
+      5,
+      59
+     ],
+     "key": "cfr:40:52.2141",
+     "normalized": "40 C.F.R. § 52.2141",
+     "pin": null,
+     "fields": {
+      "title": "40",
+      "part": "52",
+      "section": "2141"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "cfr",
+     "form": "full",
+     "short": null,
+     "rule": "cfr",
+     "start": 73,
+     "end": 85,
+     "matched": "40 CFR 52.38",
+     "span": [
+      73,
+      95
+     ],
+     "key": "cfr:40:52.38",
+     "normalized": "40 C.F.R. § 52.38",
+     "pin": null,
+     "fields": {
+      "title": "40",
+      "part": "52",
+      "section": "38"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "cfr",
+     "form": "full",
+     "short": null,
+     "rule": "cfr",
+     "start": 90,
+     "end": 95,
+     "matched": "52.39",
+     "span": [
+      73,
+      95
+     ],
+     "key": "cfr:40:52.39",
+     "normalized": "40 C.F.R. § 52.39",
+     "pin": null,
+     "fields": {
+      "title": "40",
+      "part": "52",
+      "section": "39"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "cfr_part",
+     "form": "full",
+     "short": null,
+     "rule": "cfr",
+     "start": 112,
+     "end": 126,
+     "matched": "40 CFR part 97",
+     "span": [
+      112,
+      126
+     ],
+     "key": "cfr-part:40:97",
+     "normalized": "40 C.F.R. part 97",
+     "pin": null,
+     "fields": {
+      "title": "40",
+      "part": "97"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "cfr_part",
+     "form": "full",
+     "short": null,
+     "rule": "cfr",
+     "start": 128,
+     "end": 137,
+     "matched": "21 CFR 11",
+     "span": [
+      128,
+      137
+     ],
+     "key": "cfr-part:21:11",
+     "normalized": "21 C.F.R. part 11",
+     "pin": null,
+     "fields": {
+      "title": "21",
+      "part": "11"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "cfr",
+     "form": "full",
+     "short": null,
+     "rule": "cfr",
+     "start": 143,
+     "end": 155,
+     "matched": "40 CFR 52.38",
+     "span": [
+      143,
+      155
+     ],
+     "key": "cfr:40:52.38",
+     "normalized": "40 C.F.R. § 52.38",
+     "pin": null,
+     "fields": {
+      "title": "40",
+      "part": "52",
+      "section": "38"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "cfr",
+     "form": "full",
+     "short": null,
+     "rule": "cfr",
+     "start": 170,
+     "end": 192,
+     "matched": "40 CFR 52.38(a)(5)(iv)",
+     "span": [
+      170,
+      214
+     ],
+     "key": "cfr:40:52.38",
+     "normalized": "40 C.F.R. § 52.38",
+     "pin": "(a)(5)(iv)",
+     "fields": {
+      "title": "40",
+      "part": "52",
+      "section": "38"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "cfr",
+     "form": "full",
+     "short": null,
+     "rule": "cfr",
+     "start": 206,
+     "end": 214,
+     "matched": "52.39(j)",
+     "span": [
+      170,
+      214
+     ],
+     "key": "cfr:40:52.39",
+     "normalized": "40 C.F.R. § 52.39",
+     "pin": "(j)",
+     "fields": {
+      "title": "40",
+      "part": "52",
+      "section": "39"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    }
+   ]
+  },
+  {
+   "id": "register-short",
+   "text": "Federal Plans, 76 FR 48208 (Aug. 8, 2011); see 76 FR at 48213 and 76 FR 40000; 76 FR at 40002. Pub. L. No. 111-148, 124 Stat. 119 (2010); 124 Stat. at 242. 80 FR at 100 has no antecedent. The rule requires at Sec.  210.30(e)(2) an assessment. Sec. 2. Definitions.",
+   "expected": [
+    {
+     "kind": "federal_register",
+     "form": "full",
+     "short": null,
+     "rule": "federal_register",
+     "start": 15,
+     "end": 26,
+     "matched": "76 FR 48208",
+     "span": [
+      15,
+      26
+     ],
+     "key": "fr:76:48208",
+     "normalized": "76 Fed. Reg. 48208",
+     "pin": null,
+     "fields": {
+      "volume": "76",
+      "page": "48208"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "federal_register",
+     "form": "short",
+     "short": "at",
+     "rule": "federal_register_short",
+     "start": 47,
+     "end": 61,
+     "matched": "76 FR at 48213",
+     "span": [
+      47,
+      61
+     ],
+     "key": "fr:76:48208",
+     "normalized": "76 Fed. Reg. at 48213",
+     "pin": "48213",
+     "fields": {
+      "volume": "76",
+      "page": "48208"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": 0,
+     "short_status": "resolved"
+    },
+    {
+     "kind": "federal_register",
+     "form": "full",
+     "short": null,
+     "rule": "federal_register",
+     "start": 66,
+     "end": 77,
+     "matched": "76 FR 40000",
+     "span": [
+      66,
+      77
+     ],
+     "key": "fr:76:40000",
+     "normalized": "76 Fed. Reg. 40000",
+     "pin": null,
+     "fields": {
+      "volume": "76",
+      "page": "40000"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "federal_register",
+     "form": "short",
+     "short": "at",
+     "rule": "federal_register_short",
+     "start": 79,
+     "end": 93,
+     "matched": "76 FR at 40002",
+     "span": [
+      79,
+      93
+     ],
+     "key": "fr:76:40000",
+     "normalized": "76 Fed. Reg. at 40002",
+     "pin": "40002",
+     "fields": {
+      "volume": "76",
+      "page": "40000"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": 2,
+     "short_status": "resolved"
+    },
+    {
+     "kind": "public_law",
+     "form": "full",
+     "short": null,
+     "rule": "public_law",
+     "start": 95,
+     "end": 114,
+     "matched": "Pub. L. No. 111-148",
+     "span": [
+      95,
+      114
+     ],
+     "key": "pl:111:148",
+     "normalized": "Pub. L. No. 111-148",
+     "pin": null,
+     "fields": {
+      "congress": "111",
+      "law": "148"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "statutes_at_large",
+     "form": "full",
+     "short": null,
+     "rule": "statutes_at_large",
+     "start": 116,
+     "end": 129,
+     "matched": "124 Stat. 119",
+     "span": [
+      116,
+      129
+     ],
+     "key": "stat:124:119",
+     "normalized": "124 Stat. 119",
+     "pin": null,
+     "fields": {
+      "volume": "124",
+      "page": "119"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "statutes_at_large",
+     "form": "short",
+     "short": "at",
+     "rule": "statutes_at_large_short",
+     "start": 138,
+     "end": 154,
+     "matched": "124 Stat. at 242",
+     "span": [
+      138,
+      154
+     ],
+     "key": "stat:124:119",
+     "normalized": "124 Stat. at 242",
+     "pin": "242",
+     "fields": {
+      "volume": "124",
+      "page": "119"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": 5,
+     "short_status": "resolved"
+    },
+    {
+     "kind": "federal_register",
+     "form": "short",
+     "short": "at",
+     "rule": "federal_register_short",
+     "start": 156,
+     "end": 168,
+     "matched": "80 FR at 100",
+     "span": [
+      156,
+      168
+     ],
+     "key": null,
+     "normalized": "80 Fed. Reg. at 100",
+     "pin": "100",
+     "fields": {
+      "volume": "80"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": "none"
+    },
+    {
+     "kind": "short",
+     "form": "short",
+     "short": "section",
+     "rule": "section_short_gpo",
+     "start": 209,
+     "end": 227,
+     "matched": "Sec.  210.30(e)(2)",
+     "span": [
+      209,
+      227
+     ],
+     "key": null,
+     "normalized": "§ 210.30",
+     "pin": "(e)(2)",
+     "fields": {
+      "section": "210.30"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": "none"
+    }
+   ]
+  },
+  {
    "id": "constitutions",
    "text": "U.S. Const. art. I, § 8, cl. 3; U.S. CONST. amend. XIV, § 1; United States Constitution, Article III; Cal. Const. art. I, § 7; Mass. Const. pt. 1, art. 12; N.J. Const. art. I, ¶ 1; Tex. Const. art. 1, § 13.",
    "expected": [
@@ -2776,7 +3295,7 @@
      "kind": "state_statute",
      "form": "full",
      "short": null,
-     "rule": "state_statute_nj_33",
+     "rule": "state_statute_nj_34",
      "start": 81,
      "end": 98,
      "matched": "N.J.S.A. 2A:58C-2",
@@ -2803,7 +3322,7 @@
      "kind": "state_statute",
      "form": "full",
      "short": null,
-     "rule": "state_statute_nj_33",
+     "rule": "state_statute_nj_34",
      "start": 100,
      "end": 127,
      "matched": "N.J. Stat. Ann. § 2A:58C–5c",
@@ -2830,7 +3349,7 @@
      "kind": "state_statute",
      "form": "full",
      "short": null,
-     "rule": "state_statute_pa_42",
+     "rule": "state_statute_pa_44",
      "start": 129,
      "end": 154,
      "matched": "42 Pa. Cons. Stat. § 5524",
@@ -2858,7 +3377,7 @@
      "kind": "state_statute",
      "form": "full",
      "short": null,
-     "rule": "state_statute_pa_42",
+     "rule": "state_statute_pa_44",
      "start": 156,
      "end": 174,
      "matched": "42 Pa. C.S. § 5524",
@@ -2886,7 +3405,7 @@
      "kind": "state_statute",
      "form": "full",
      "short": null,
-     "rule": "state_statute_tx_48",
+     "rule": "state_statute_tx_50",
      "start": 176,
      "end": 217,
      "matched": "Tex. Civ. Prac. & Rem. Code Ann. § 16.003",
@@ -2921,14 +3440,14 @@
       219,
       240
      ],
-     "key": "state-stat:FL:stat:95.11(3)",
-     "normalized": "Fla. Stat. § 95.11(3)",
-     "pin": null,
+     "key": "state-stat:FL:stat:95.11",
+     "normalized": "Fla. Stat. § 95.11",
+     "pin": "(3)",
      "fields": {
       "state": "FL",
       "code": "Fla. Stat.",
       "code_id": "stat",
-      "section": "95.11(3)"
+      "section": "95.11"
      },
      "group": null,
      "name": null,
@@ -2940,7 +3459,7 @@
      "kind": "state_statute",
      "form": "full",
      "short": null,
-     "rule": "state_statute_ma_24",
+     "rule": "state_statute_ma_25",
      "start": 242,
      "end": 270,
      "matched": "Mass. Gen. Laws ch. 93A, § 9",
@@ -2968,7 +3487,7 @@
      "kind": "state_statute",
      "form": "full",
      "short": null,
-     "rule": "state_statute_wa_52",
+     "rule": "state_statute_wa_54",
      "start": 272,
      "end": 284,
      "matched": "RCW 4.16.080",
@@ -3028,7 +3547,7 @@
      "kind": "state_statute",
      "form": "full",
      "short": null,
-     "rule": "state_statute_ny_35",
+     "rule": "state_statute_ny_36",
      "start": 0,
      "end": 24,
      "matched": "N.Y. Gen. Bus. Law § 349",
@@ -3055,7 +3574,7 @@
      "kind": "state_statute",
      "form": "full",
      "short": null,
-     "rule": "state_statute_ny_36",
+     "rule": "state_statute_ny_37",
      "start": 26,
      "end": 45,
      "matched": "N.Y. C.P.L.R. 214-c",
@@ -3082,7 +3601,7 @@
      "kind": "state_statute",
      "form": "full",
      "short": null,
-     "rule": "state_statute_md_23",
+     "rule": "state_statute_md_24",
      "start": 47,
      "end": 87,
      "matched": "Md. Code Ann., Cts. & Jud. Proc. § 5-101",
@@ -3109,7 +3628,7 @@
      "kind": "state_statute",
      "form": "full",
      "short": null,
-     "rule": "state_statute_la_21",
+     "rule": "state_statute_la_22",
      "start": 89,
      "end": 117,
      "matched": "La. Civ. Code Ann. art. 3492",
@@ -3136,7 +3655,7 @@
      "kind": "state_statute",
      "form": "full",
      "short": null,
-     "rule": "state_statute_la_20",
+     "rule": "state_statute_la_21",
      "start": 119,
      "end": 134,
      "matched": "La. R.S. 9:5628",
@@ -3219,7 +3738,7 @@
      "kind": "state_statute",
      "form": "full",
      "short": null,
-     "rule": "state_statute_ok_40",
+     "rule": "state_statute_ok_41",
      "start": 187,
      "end": 212,
      "matched": "Okla. Stat. tit. 12, § 95",
@@ -3247,7 +3766,7 @@
      "kind": "state_statute",
      "form": "full",
      "short": null,
-     "rule": "state_statute_vt_50",
+     "rule": "state_statute_vt_52",
      "start": 214,
      "end": 243,
      "matched": "Vt. Stat. Ann. tit. 12, § 512",
@@ -3275,7 +3794,7 @@
      "kind": "state_statute",
      "form": "full",
      "short": null,
-     "rule": "state_statute_me_22",
+     "rule": "state_statute_me_23",
      "start": 245,
      "end": 260,
      "matched": "14 M.R.S. § 752",
@@ -3303,7 +3822,7 @@
      "kind": "state_statute",
      "form": "full",
      "short": null,
-     "rule": "state_statute_ks_18",
+     "rule": "state_statute_ks_19",
      "start": 262,
      "end": 286,
      "matched": "K.S.A. 2019 Supp. 60-513",
@@ -3330,7 +3849,7 @@
      "kind": "state_statute",
      "form": "full",
      "short": null,
-     "rule": "state_statute_oh_39",
+     "rule": "state_statute_oh_40",
      "start": 288,
      "end": 317,
      "matched": "Ohio Rev. Code Ann. § 2305.10",
@@ -3897,7 +4416,9 @@
      "key": "docket:3:17-md-02804",
      "normalized": "3:17-md-02804",
      "pin": null,
-     "fields": {},
+     "fields": {
+      "office": "3"
+     },
      "group": null,
      "name": null,
      "paren": null,
@@ -3919,7 +4440,9 @@
      "key": "docket:3:16-md-02738",
      "normalized": "3:16-md-02738",
      "pin": null,
-     "fields": {},
+     "fields": {
+      "office": "3"
+     },
      "group": null,
      "name": null,
      "paren": null,
@@ -3942,6 +4465,7 @@
      "normalized": "1:23-cv-00818",
      "pin": null,
      "fields": {
+      "office": "1",
       "judge_suffix": "ABC"
      },
      "group": null,
@@ -3971,7 +4495,9 @@
      "key": "docket:3:16-md-02738",
      "normalized": "3:16-md-02738",
      "pin": null,
-     "fields": {},
+     "fields": {
+      "office": "3"
+     },
      "group": null,
      "name": null,
      "paren": null,
@@ -4208,7 +4734,7 @@
      "kind": "state_statute",
      "form": "full",
      "short": null,
-     "rule": "state_statute_ma_24",
+     "rule": "state_statute_ma_25",
      "start": 0,
      "end": 28,
      "matched": "Mass. Gen. Laws ch. 93A, § 2",

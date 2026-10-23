@@ -21,7 +21,7 @@ rule_set, strip_sign; [ ... ] is kept only when every group inside it is non-emp
 
 from __future__ import annotations
 
-VERSION = "citations-v2/2026-10-25.1"
+VERSION = "citations-v2/2026-10-25.2"
 
 # ------------------------------------------------------------------------------------------------ fragments
 FRAGMENTS: dict[str, str] = {
@@ -45,11 +45,17 @@ FRAGMENTS: dict[str, str] = {
     "USC_ITEM": r"{{USC_SEC}}{{SUBS}}(?:{{RANGE}}{{USC_SEC}}{{SUBS}})?{{NO_SPLIT}}",
     "CFR_NUM": r"\d{1,5}(?:\.{{CFR_SEC}})?",
     "CFR_ITEM": r"{{CFR_NUM}}{{SUBS}}(?:{{RANGE}}{{CFR_NUM}}{{SUBS}})?{{NO_SPLIT}}",
+    # further paragraphs of the same C.F.R. section: "52.38(a)(5)(iv)-(v), (a)(6), (b)(10)(i)" (pins of that one section)
+    "CFR_SUBS_TAIL": (r"(?:\s*[-–]\s*(?:\([a-zA-Z0-9]{1,5}\))+)?"
+                      r"(?:\s*,\s*(?:\([a-zA-Z0-9]{1,5}\))+(?:\s*[-–]\s*(?:\([a-zA-Z0-9]{1,5}\))+)?)*"),
+    # C.F.R. lists also run on semicolons ("40 CFR 52.38(a)(2), (b)(2); 52.39(c); 52.2140")
+    "CFR_LIST_SEP": r"\s*(?:[,;]\s*(?:and\s+|or\s+|&\s*)?|(?:and|or|&)\s+)",
     "SEC_LABEL": r"(?:§§|§|[Ss]ecs?\.|[Ss]ections?|SECS?\.|SECTIONS?)",
     # pin cites
     "PIN_PAGE": r"\*{0,2}\d{1,7}(?:\s*[-–—]\s*\*{0,2}\d{1,7})?(?:\s*nn?\.\s*\d{1,3}(?:\s*[-–&]\s*\d{1,3})?)?",
     # state code sections: "13-202", "2A:58C-2", "95.11(3)", "17200", "5/13-202"
-    "STATE_SEC": r"[0-9][0-9A-Za-z]*(?:[.:/\-–][0-9A-Za-z]+)*(?:\([0-9A-Za-z]{1,5}\))*",
+    # a hyphen at a line break continues the section ("24-5-0.5-\n2(a)(8)", "24-5-0.5- 2(a)(8)"); the key drops the break
+    "STATE_SEC": r"[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \t]{0,2}\n?[ \t]{0,2})?)[0-9A-Za-z]+)*(?:\([0-9A-Za-z]{1,5}\))*",
     # states whose section is chapter.section with exactly one dot (a second ".4" is a footnote glued to the citation)
     "STATE_SEC_DOTTED": r"[0-9]{1,4}[A-Z]?\.[0-9]{1,5}[A-Za-z]?(?:\([0-9A-Za-z]{1,5}\))*(?!\.?[0-9])",
     # administrative-code sections: "335-3-1-.02", "R18-2-101", "7:26-1.4", "26.11.01.01", "Env-A 101.01"
@@ -150,6 +156,7 @@ STATE_STATUTES: list[tuple[str, str, str]] = [
     ("HI", "rev-stat", r"(?:Haw\.\s+Rev\.\s+Stat\.{{ANN}}|HRS){{SIGN}}"),
     ("ID", "code", r"Idaho\s+Code{{ANN}}{{SIGN}}"),
     ("IL", "ilcs", r"(?<title>\d{1,4})\s+(?:ILCS|Ill\.\s+Comp\.\s+Stat\.{{ANN}})\s+(?<act>\d{1,4}[A-Za-z]?)/"),
+    ("IL", "rev-stat", r"Ill\.\s+Rev\.\s+Stat\.(?:\s+\d{4})?,?\s+ch\.\s*(?<chapter>\d{1,3}(?:\s?1/2)?),?\s+(?:par\.|¶|pars\.|¶¶)\s*"),
     ("IN", "code", r"Ind\.\s+Code{{ANN}}{{SIGN}}"),
     ("IA", "code", r"Iowa\s+Code{{ANN}}{{SIGN}}"),
     ("KS", "stat", r"(?:Kan\.\s+Stat\.{{ANN}}|K\.S\.A\.)(?:\s+\d{4}\s+Supp\.)?{{OPT_SIGN}}"),
@@ -175,6 +182,7 @@ STATE_STATUTES: list[tuple[str, str, str]] = [
     ("ND", "cent-code", r"N\.D\.\s+Cent\.\s+Code{{ANN}}{{SIGN}}"),
     ("OH", "rev-code", r"(?:Ohio\s+Rev\.\s+Code{{ANN}}|R\.C\.){{SIGN}}"),
     ("OK", "stat", r"Okla\.\s+Stat\.{{ANN}}\s+tit\.\s*(?<title>\d{1,2}),?{{SIGN}}"),
+    ("OK", "stat", r"(?<title>\d{1,2})\s+Okla\.\s+Stat\.{{ANN}}{{SIGN}}"),
     ("OR", "rev-stat", r"(?:Or\.\s+Rev\.\s+Stat\.{{ANN}}|ORS){{OPT_SIGN}}"),
     ("PA", "cons-stat", r"(?<title>\d{1,3})\s+(?:Pa\.\s*C\.\s*S\.(?:\s*A\.)?|Pa\.\s+Cons\.\s+Stat\.{{ANN}}|Pa\.\s+Stat\.\s+and\s+Cons\.\s+Stat\.{{ANN}}){{SIGN}}"),
     ("PA", "stat", r"(?<title>\d{1,3})\s+(?:Pa\.\s+Stat\.{{ANN}}|P\.S\.){{SIGN}}"),
@@ -282,7 +290,7 @@ RULE_SET_NAMES = {
 RULES: list[dict] = [
     # ---------------------------------------------------------------- cases
     {"id": "case", "kind": "case", "builder": "case", "priority": 40,
-     "pattern": r"(?<![\w.§-])(?<volume>\d{1,4})\s+(?<reporter>{{REPORTER}})\s+(?<page>\d{1,7})(?![\w])(?!\s*[:/-]\s*\d)"},
+     "pattern": r"(?<![\w.§-])(?<volume>\d{1,4})\s+(?<reporter>{{REPORTER}}),?\s+(?<page>\d{1,7})(?![\w])(?!\s*[:/]\s*\d)"},
     {"id": "case_neutral", "kind": "case", "builder": "case", "priority": 41,
      "pattern": r"(?<![\w.§-])(?<volume>(?:19|20)\d\d)(?:\s+|\s?-\s?)(?<reporter>{{NEUTRAL}})(?:\s+|\s?-\s?)(?<page>\d{1,7}(?:-[A-Z]|[A-Z])?)(?![\w])"},
     {"id": "case_tc_memo", "kind": "case", "builder": "case", "priority": 41, "anchors": ["T.C.", "T. C."],
@@ -295,10 +303,15 @@ RULES: list[dict] = [
                  r"(?![A-Za-z])(?:\s*(?<app>app\.|App\.|Appendix))?\s*(?<label>{{SEC_LABEL}})?\s*"
                  r"(?<items>{{USC_ITEM}}(?:{{LIST_SEP}}{{NOT_NEXT}}{{USC_ITEM}})*)(?<etseq>\s*,?\s*et\s+seq\.?)?"),
      "item": r"(?<section>{{USC_SEC}})(?<subs>{{SUBS}})(?:{{RANGE}}(?<section_end>{{USC_SEC}})(?<subs_end>{{SUBS}}))?"},
+    {"id": "usc_chapter", "kind": "usc", "builder": "single", "priority": 49,
+     "pattern": (r"{{NB}}(?<title>\d{1,2})\s*U\.?\s?S\.?\s?C\.?(?:\s?A\.?)?(?![A-Za-z])\s*,?\s*(?:[Cc]hapters?|[Cc]hs?\.|CHAPTER)\s*(?<chapter>\d{1,4}[A-Z]?)(?![\w])"),
+     "key": "usc-ch:{title|int}:{chapter|upper}", "normalized": "{title|int} U.S.C. ch. {chapter|upper}",
+     "fields": {"title": "{title|int}", "chapter": "{chapter|upper}"}},
     {"id": "cfr", "kind": "cfr", "builder": "statute_list", "family": "cfr", "priority": 50,
      "pattern": (r"{{NB}}(?<title>\d{1,2})\s*C\.?\s?F\.?\s?R\.?(?![A-Za-z])\s*(?<label>§§|§|[Ss]ecs?\.|[Ss]ections?|[Pp]arts?|[Pp]ts?\.|PARTS?|PTS?\.)?\s*"
-                 r"(?<items>{{CFR_ITEM}}(?:{{LIST_SEP}}{{NOT_NEXT}}{{CFR_ITEM}})*)"),
-     "item": r"(?<part>\d{1,5})(?:\.(?<section>{{CFR_SEC}}))?(?<subs>{{SUBS}})(?:{{RANGE}}(?<part_end>\d{1,5})(?:\.(?<section_end>{{CFR_SEC}}))?(?<subs_end>{{SUBS}}))?"},
+                 r"(?<items>{{CFR_ITEM}}{{CFR_SUBS_TAIL}}(?:{{CFR_LIST_SEP}}{{NOT_NEXT}}{{CFR_ITEM}}{{CFR_SUBS_TAIL}})*)"),
+     # an item never starts inside a paragraph designation ("(b)(10)") or a number
+     "item": r"(?<![\w.(])(?<part>\d{1,5})(?:\.(?<section>{{CFR_SEC}}))?(?<subs>{{SUBS}})(?:{{RANGE}}(?<part_end>\d{1,5})(?:\.(?<section_end>{{CFR_SEC}}))?(?<subs_end>{{SUBS}}))?"},
     {"id": "treas_reg", "kind": "cfr", "builder": "statute_list", "family": "cfr", "priority": 50, "const": {"title": "26"},
      "anchors": ["Treas", "TREAS"],
      "pattern": (r"{{NB}}(?:Treas\.\s?Reg\.|TREAS\.\s?REG\.|Treasury\s+Regulations?)\s*(?<label>§§|§)?\s*"
@@ -310,9 +323,17 @@ RULES: list[dict] = [
      "fields": {"volume": "{volume|int}", "page": "{page|nocomma|int}"}},
     {"id": "statutes_at_large", "kind": "statutes_at_large", "builder": "single", "priority": 45, "pin": "statutes_at_large",
      "anchors": ["Stat."],
-     "pattern": r"{{NB}}(?<volume>\d{1,3})\s+Stat\.\s+(?<page>\d{1,5})(?![\w])",
+     "pattern": r"{{NB}}(?<volume>\d{1,3}A?)\s+Stat\.\s+(?<page>\d{1,5})(?![\w])",
      "key": "stat:{volume|int}:{page|int}", "normalized": "{volume|int} Stat. {page|int}",
      "fields": {"volume": "{volume|int}", "page": "{page|int}"}},
+    # "76 FR at 48213", "124 Stat. at 242": short forms of a Federal Register or Statutes at Large page cited before
+    {"id": "federal_register_short", "kind": "federal_register", "builder": "at_short", "priority": 44,
+     "pattern": (r"{{NB}}(?<volume>\d{1,3})\s+(?:Fed\.\s?Reg\.|FED\.\s?REG\.|F\.\s?R\.|FR)(?![A-Za-z.])\s*,?\s+at\s+"
+                 r"(?<pin>\d{1,3}(?:,\d{3})+|\d{1,6})(?:\s*[-–]\s*\d{1,6})?(?![\w])"),
+     "normalized": "{volume|int} Fed. Reg. at {pin|nocomma|int}", "fields": {"volume": "{volume|int}"}},
+    {"id": "statutes_at_large_short", "kind": "statutes_at_large", "builder": "at_short", "priority": 44, "anchors": ["Stat."],
+     "pattern": r"{{NB}}(?<volume>\d{1,3}A?)\s+Stat\.\s*,?\s+at\s+(?<pin>\d{1,5})(?:\s*[-–]\s*\d{1,5})?(?![\w])",
+     "normalized": "{volume|int} Stat. at {pin|int}", "fields": {"volume": "{volume|int}"}},
     {"id": "public_law", "kind": "public_law", "builder": "single", "priority": 45, "pin": "public_law",
      "pattern": r"{{NB}}(?:Pub(?:lic)?\.?\s*L(?:aw)?\.?|P\.\s?L\.|PUB\.\s*L\.|PUBLIC\s+LAW)\s*(?:No\.?\s*|NO\.\s*|Number\s+)?(?<congress>\d{1,3})\s*[-–‑—]\s*(?<law>\d{1,4})(?![\w])",
      "key": "pl:{congress|int}:{law|int}", "normalized": "Pub. L. No. {congress|int}-{law|int}",
@@ -328,8 +349,8 @@ RULES: list[dict] = [
      "fields": {"amendment": "{amend|roman}", "article": "{article|roman}", "section": "{section|int}", "clause": "{clause|int}"}},
     {"id": "constitution_state", "kind": "constitution_state", "builder": "single", "priority": 46, "flags": "i",
      "anchors": ["Const", "CONST"],
-     "pattern": (r"{{NB}}(?<state>{{STATE_NAME}})\s+Const(?:itution|\.)?(?:\s+(?:of\s+)?\d{4})?\s*,?\s*"
-                 r"(?:art(?:icle)?\.?\s*(?<article>{{ROMAN_OR_NUM}})(?![A-Za-z0-9])(?:\s*,\s*(?:§§?|sec(?:tion)?\.?|¶|para\.)\s*(?<section>\d{1,3}[a-zA-Z]?(?:\.\d{1,2})?)(?![\d]))?"
+     "pattern": (r"{{NB}}(?<state>{{STATE_NAME}})\s*Const(?:itution|\.)?(?:\s+(?:of\s+)?\d{4})?\s*,?\s*"
+                 r"(?:art(?:icle)?\.?\s*(?<article>{{ROMAN_OR_NUM}})(?![A-Za-z0-9])(?:\s*,\s*(?:§§?|sec(?:tion)?s?\.?|¶¶?|para\.)\s*(?<section>\d{1,3}[a-zA-Z]?(?:\.\d{1,2})?)(?![\d]))?"
                  r"|pt\.\s*(?<part>[IV]{1,3}|\d)\s*,\s*art\.\s*(?<part_article>{{ROMAN_OR_NUM}})(?![A-Za-z0-9]))"),
      "key": "const:{state|state}:[pt-{part|roman}:][art-{article|roman}][art-{part_article|roman}][:sec-{section|lower}]",
      "normalized": "{state|state_abbr} Const.[ pt. {part|roman}][ art. {article|roman|upper_roman}][, art. {part_article|roman}][, § {section}]",
@@ -348,6 +369,10 @@ RULES: list[dict] = [
                  r"(?<set>Civil\s+Procedure|Criminal\s+Procedure|Evidence|Appellate\s+Procedure|Bankruptcy\s+Procedure)"),
      "key": "rule:{set|rule_set}:{rule}", "normalized": "{set|rule_set_name} {rule}",
      "fields": {"set": "{set|rule_set}", "rule": "{rule}"}, "pin_group": "subs", "required": ["set"]},
+    {"id": "federal_rule_list", "kind": "federal_rule", "builder": "rule_list", "priority": 45, "anchors": ["Federal Rules"],
+     "pattern": (r"{{NB}}Rules\s+(?<items>\d{1,4}(?:\.\d{1,2})?[a-z]?{{SUBS}}(?:{{LIST_SEP}}\d{1,4}(?:\.\d{1,2})?[a-z]?{{SUBS}}){1,12})\s+of\s+the\s+Federal\s+Rules\s+of\s+"
+                 r"(?<set>Civil\s+Procedure|Criminal\s+Procedure|Evidence|Appellate\s+Procedure|Bankruptcy\s+Procedure)"),
+     "item": r"(?<rule>\d{1,4}(?:\.\d{1,2})?[a-z]?)(?<subs>{{SUBS}})"},
     {"id": "bankruptcy_rule", "kind": "federal_rule", "builder": "single", "priority": 44, "anchors": ["Bankr"],
      "pattern": r"{{NB}}(?<set>Bankruptcy|Bankr\.)\s+Rule\s+(?<rule>\d{4}(?:\.\d)?)(?![\d])(?<subs>{{SUBS}})",
      "key": "rule:frbp:{rule}", "normalized": "Fed. R. Bankr. P. {rule}",
@@ -355,33 +380,44 @@ RULES: list[dict] = [
     {"id": "local_rule", "kind": "local_rule", "builder": "single", "priority": 43,
      "pattern": (r"{{NB}}(?:(?<court>(?:[NSEWMC]\.\s?)?D\.\s?(?:[A-Z][a-z]{0,6}\.\s?){1,3})\s*)?"
                  r"(?<label>L\.\s?(?:Civ\.\s?|Cr(?:im)?\.\s?|Pat\.\s?|B\.\s?|Bankr\.\s?)?R\.(?:\s?Civ\.\s?P\.)?|Local\s+(?:Civil\s+|Criminal\s+|Patent\s+|Bankruptcy\s+|Admiralty\s+)?Rules?|"
-                 r"Civ\.\s?L\.\s?R\.|Crim\.\s?L\.\s?R\.|L\.\s?R\.|LR|LCvR|LCrR|LCR|LBR|Local\s+R\.)"
+                 r"Civ(?:il)?\.?\s?L\.\s?R\.|Crim(?:inal)?\.?\s?L\.\s?R\.|L\.\s?R\.|LR|LCvR|LCrR|LCR|LBR|Local\s+R\.)"
                  r"\s*(?<rule>\d{1,3}(?:[.\-]\d{1,3}){0,3}[A-Za-z]?)(?![\d])(?<subs>{{SUBS}})"),
      "key": "local-rule:{court|slug}:{rule}", "normalized": "[{court|squash} ]L.R. {rule}",
      "fields": {"court": "{court|squash}", "rule": "{rule}"}, "pin_group": "subs"},
     # ---------------------------------------------------------------- mentions (never membership)
     {"id": "mdl", "kind": "mdl", "builder": "single", "priority": 30,
-     "pattern": (r"(?<![A-Za-z0-9_])(?:MDL|M\.D\.L\.|Multi-?\s?[Dd]istrict\s+Litigation)(?:\s*[-–]\s*|\s+)(?:(?:Docket\s+)?No\.?\s*:?\s*|Number\s+)?"
-                 r"(?<n>\d{1,5})(?![0-9A-Za-z_:/])(?!\s*[-–]\s*[0-9A-Za-z])(?![.,]\d)"),
+     "pattern": (r"(?<![A-Za-z0-9_])(?:MDL|M\.D\.L\.|Multi-?\s?[Dd]istrict\s+Litigation)(?:\s*[-–]\s*|\s+)(?:(?:Docket\s+|DOCKET\s+)?(?:No|NO)\.?\s*:?\s*|Number\s+)?"
+                 r"(?<n>\d{1,5})(?![0-9A-Za-z_:/])(?!\s*[-–]\s*(?:[0-9a-z]|M[DLdl](?![A-Za-z])|[A-Z][a-z]))(?![.,]\d)"),
+     "key": "mdl:{n|int}", "normalized": "MDL No. {n|int}", "fields": {"number": "{n|int}"}, "nonzero": "n"},
+    # District of Minnesota style: "MDL No. 24-3108 (DWF/DJF)" is MDL 3108 filed in 2024
+    {"id": "mdl_year_number", "kind": "mdl", "builder": "single", "priority": 31, "anchors": ["MDL"],
+     "pattern": r"(?<![A-Za-z0-9_])MDL\s+(?:No\.?|NO\.?)\s*(?<yy>\d{2})-(?<n>\d{4})(?![0-9A-Za-z_:/-])",
      "key": "mdl:{n|int}", "normalized": "MDL No. {n|int}", "fields": {"number": "{n|int}"}, "nonzero": "n"},
     {"id": "docket", "kind": "docket", "builder": "single", "priority": 30, "flags": "i",
-     "pattern": (r"(?<![A-Za-z0-9_:/.-])(?<office>\d{1,2}):(?<yy>\d{2}|\d{4})-(?<type>cv|cr|md|mc|ml|bk|ap|mj|po|sw|gj|dp|ms|cb|ad)-(?<num>\d{1,6})"
+     "pattern": (r"(?<![A-Za-z0-9_/.-])(?<![0-9]:)(?:(?<office>\d{1,2}):)?(?<yy>\d{2}|\d{4})-(?<type>cv|cr|md|mc|ml|bk|ap|mj|po|sw|gj|dp|ms|cb|ad)-(?<num>\d{1,6})"
                  r"(?:-(?<judge>[A-Z]{1,5}(?:-[A-Z]{1,5}){0,3}))?(?![A-Za-z0-9_])"),
+     "key": "docket:[{office|int}:]{yy|last2}-{type|lower}-{num|docketnum}", "normalized": "[{office|int}:]{yy|last2}-{type|lower}-{num|docketnum}",
+     "fields": {"office": "{office|int}", "judge_suffix": "{judge}"}},
+    {"id": "docket_compact", "kind": "docket", "builder": "single", "priority": 29, "flags": "i",
+     "pattern": r"(?<![A-Za-z0-9_/.-])(?<![0-9]:)(?<office>\d{1,2}):(?<yy>\d{2})(?<type>cv|cr|md|mc|ml)(?<num>\d{1,6})(?![A-Za-z0-9_])",
      "key": "docket:{office|int}:{yy|last2}-{type|lower}-{num|docketnum}", "normalized": "{office|int}:{yy|last2}-{type|lower}-{num|docketnum}",
-     "fields": {"judge_suffix": "{judge}"}},
+     "fields": {"office": "{office|int}"}},
     {"id": "ecf_header", "kind": "ecf_header", "builder": "furniture", "priority": 99, "flags": "i", "anchors": ["Case", "CASE"],
      "pattern": (r"Case:?\s*(?:MDL\s+No\.\s*\d{1,5}|\d{1,2}:\d{2}-[A-Za-z]{2,4}-\d{1,6}(?:-[A-Za-z0-9]{1,6}){0,4})\s+(?:Document|Doc\.?)\s*#?:?\s*"
                  r"\d{1,6}(?:-\d{1,3})?\s+(?:Filed:?|Entered\s+on\s+[A-Za-z]{2,6}\s+Docket:?)\s*\d{1,2}/\d{1,2}/(?:\d{4}|\d{2})\s+Page:?\s*"
                  r"\d{1,5}\s+of\s+\d{1,5}(?:\s+Page\s?ID\s*#?:?\s*\d{1,9})?")},
     # ---------------------------------------------------------------- short forms
     {"id": "id", "kind": "short", "builder": "id", "priority": 20,
-     "pattern": (r"(?<![\w.])(?:[Ii]d\.|ID\.|[Ii]bid\.?|IBID\.?)(?![\w])(?:(?:\s*,)?\s+at\s+(?<pin>{{PIN_PAGE}})(?![\w])|"
+     "pattern": (r"(?<![\w.])(?<!\d\s)(?:[Ii]d\.|ID\.|[Ii]bid\.?|IBID\.?)(?![\w])(?:(?:\s*,)?\s+at\s+(?<pin>{{PIN_PAGE}})(?![\w])|"
                  r"\s*(?<sec>§§?\s*\d[0-9A-Za-z]*(?:[.\-–:][0-9A-Za-z]+)*{{SUBS}})|\s*,?\s*(?<para>¶¶?\s*\d{1,4}))?")},
     {"id": "supra", "kind": "short", "builder": "supra", "priority": 20, "anchors": ["supra", "Supra", "SUPRA"],
-     "pattern": (r"(?<![\w'’&.\-])(?<name>[A-Z][\w'’&.\-]*(?:\s+(?:[A-Z][\w'’&.\-]*|of|the|&|and)){0,4}),\s+supra(?![\w])"
+     "pattern": (r"(?<![\w'’&.\-])(?<name>[A-Z][\w'’&.\-]*(?:\s+(?:[A-Z][\w'’&.\-]*|\d{1,5}|of|the|&|and)){0,4}),\s+supra(?![\w])"
                  r"(?:\s*,?\s*at\s+(?<pin>{{PIN_PAGE}})(?![\w]))?")},
     {"id": "section_short", "kind": "short", "builder": "section_short", "priority": 10, "anchors": ["§"],
      "pattern": r"(?<![\w.§])(?<label>§§?)\s*(?<section>\d{1,6}[A-Za-z]{0,4}(?:[.:\-–]\d{1,6}[A-Za-z]{0,4})*)(?<subs>{{SUBS}})(?![\w])(?!\.\d)"},
+    # the Government Publishing Office text of the Federal Register and the C.F.R. writes "§" as "Sec." ("Sec.  210.30(e)")
+    {"id": "section_short_gpo", "kind": "short", "builder": "section_short", "priority": 10, "anchors": ["Sec."],
+     "pattern": r"(?<![\w.§])(?<label>Sec\.)[ ]{1,3}(?<section>\d{1,6}\.\d{1,6}[A-Za-z]{0,4}(?:-\d{1,4}[A-Za-z]{0,2})?)(?<subs>{{SUBS}})(?![\w])(?!\.\d)"},
     {"id": "rule_short", "kind": "short", "builder": "rule_short", "priority": 10, "anchors": ["Rule"],
      "pattern": r"(?<![\w.])Rules?\s+(?<rule>\d{1,4}(?:\.\d{1,2})?(?:[a-z](?![a-z]))?)(?![\d])(?![:\-–.]\d)(?<subs>{{SUBS}})"},
 ]

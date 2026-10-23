@@ -32,6 +32,11 @@ TEXTS: list[tuple[str, str]] = [
     ("treasury", "Treas. Reg. § 1.501(c)(3)-1(d) and 26 C.F.R. § 1.1313(c)-1 govern."),
     ("register-statutes", "The rule was published at 85 Fed. Reg. 12,345, 12,350 (Mar. 2, 2020) and 91 FR 67000 under Pub. L. "
                           "No. 111-148, § 1501, 124 Stat. 119, 242 (2010); see also Public Law 119–99 and P.L. 94-142."),
+    ("cfr-lists", "\\14\\ 40 CFR 52.38(a)(2), (b)(2); 52.39(c); 52.2140; 52.2141. Codified at 40 CFR 52.38 and 52.39 and "
+                  "subparts of 40 CFR part 97; 21 CFR 11, 12; 40 CFR 52.38, 2.5 percent; 40 CFR 52.38(a)(5)(iv)-(v), (a)(6); 52.39(j)."),
+    ("register-short", "Federal Plans, 76 FR 48208 (Aug. 8, 2011); see 76 FR at 48213 and 76 FR 40000; 76 FR at 40002. Pub. L. "
+                       "No. 111-148, 124 Stat. 119 (2010); 124 Stat. at 242. 80 FR at 100 has no antecedent. The rule requires "
+                       "at Sec.  210.30(e)(2) an assessment. Sec. 2. Definitions."),
     ("constitutions", "U.S. Const. art. I, § 8, cl. 3; U.S. CONST. amend. XIV, § 1; United States Constitution, Article III; "
                       "Cal. Const. art. I, § 7; Mass. Const. pt. 1, art. 12; N.J. Const. art. I, ¶ 1; Tex. Const. art. 1, § 13."),
     ("federal-rules", "Under Fed. R. Civ. P. 12(b)(6) and Rule 9(b), see also Fed. R. Evid. 702, FRCP 23(b)(3), Fed.R.App.P. "
