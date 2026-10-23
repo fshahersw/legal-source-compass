@@ -9,7 +9,9 @@ import { pathToFileURL } from "node:url";
 
 const runtime =
   process.env.PUBLISHER_CODE_PGLITE ??
-  path.resolve("private/tools/publisher-code-contract-tests/node_modules/@electric-sql/pglite/dist/index.js");
+  path.resolve(
+    "private/tools/publisher-code-contract-tests/node_modules/@electric-sql/pglite/dist/index.js",
+  );
 const { PGlite } = await import(pathToFileURL(runtime).href);
 const SQL = await fs.readFile("database/contracts/safety-signals-v1.sql", "utf8");
 
@@ -101,7 +103,10 @@ test("MDL links need every title token inside the stored official title", async 
   };
   const r = await load(db, "mdl_subjects", [link]);
   assert.equal(r.inserted, 1);
-  await assert.rejects(load(db, "mdl_subjects", [{ ...link, title_tokens: ["Taxotere", "Paclitaxel"] }]), /title token/);
+  await assert.rejects(
+    load(db, "mdl_subjects", [{ ...link, title_tokens: ["Taxotere", "Paclitaxel"] }]),
+    /title token/,
+  );
   const again = await load(db, "mdl_subjects", [link]);
   assert.equal(again.unchanged, 1);
 });
@@ -123,15 +128,32 @@ const seriesRow = (subject, series, from, to, vals, extra = {}) => ({
 test("series load: one array row per series, exact window length, patches move the window", async () => {
   const db = await fresh();
   await load(db, "subjects", [subject("mdl:2740")]);
-  let r = await load(db, "series", [seriesRow("mdl:2740", "faers_reports", "2024-01", "2024-03", [5, 0, 2])]);
+  let r = await load(db, "series", [
+    seriesRow("mdl:2740", "faers_reports", "2024-01", "2024-03", [5, 0, 2]),
+  ]);
   assert.deepEqual([r.inserted, r.updated, r.unchanged], [1, 0, 0]);
-  r = await load(db, "series", [seriesRow("mdl:2740", "faers_reports", "2024-01", "2024-03", [5, 0, 2])]);
+  r = await load(db, "series", [
+    seriesRow("mdl:2740", "faers_reports", "2024-01", "2024-03", [5, 0, 2]),
+  ]);
   assert.equal(r.unchanged, 1, "identical row left alone");
-  await assert.rejects(load(db, "series", [seriesRow("mdl:2740", "faers_death", "2024-01", "2024-03", [1, 2])]), /one non-negative integer per month/);
-  await assert.rejects(load(db, "series", [seriesRow("mdl:2740", "faers_death", "2024-01", "2024-02", [1, -2])]), /invalid series/);
-  await assert.rejects(load(db, "series", [seriesRow("mdl:2740", "faers_death", "2024-01", "2024-02", [1, 1.5])]), /invalid series/);
   await assert.rejects(
-    load(db, "series", [seriesRow("mdl:2740", "faers_death", "2024-01", "2024-01", [1], { query_url: "https://api.fda.gov/x?api_key=K" })]),
+    load(db, "series", [seriesRow("mdl:2740", "faers_death", "2024-01", "2024-03", [1, 2])]),
+    /one non-negative integer per month/,
+  );
+  await assert.rejects(
+    load(db, "series", [seriesRow("mdl:2740", "faers_death", "2024-01", "2024-02", [1, -2])]),
+    /invalid series/,
+  );
+  await assert.rejects(
+    load(db, "series", [seriesRow("mdl:2740", "faers_death", "2024-01", "2024-02", [1, 1.5])]),
+    /invalid series/,
+  );
+  await assert.rejects(
+    load(db, "series", [
+      seriesRow("mdl:2740", "faers_death", "2024-01", "2024-01", [1], {
+        query_url: "https://api.fda.gov/x?api_key=K",
+      }),
+    ]),
     /credentials|invalid/,
   );
   // a scheduled refresh of the last two months moves the window end and zero-fills omitted months
@@ -147,11 +169,23 @@ test("series load: one array row per series, exact window length, patches move t
     },
   ]);
   assert.equal(r.updated, 1);
-  const row = await one(db, "select vals, total, to_char(coverage_to, 'YYYY-MM') t from safety.series where subject_id = 'mdl:2740'");
+  const row = await one(
+    db,
+    "select vals, total, to_char(coverage_to, 'YYYY-MM') t from safety.series where subject_id = 'mdl:2740'",
+  );
   assert.deepEqual(row, { vals: [5, 0, 3, 0, 1], total: 9, t: "2024-05" });
   await assert.rejects(
-    load(db, "series_patch", [{ subject_id: "mdl:2740", series: "faers_reports", window_from: "2023-12", window_to: "2024-01",
-      months: {}, query_url: "https://api.fda.gov/q", retrieved_at: "2026-10-30T00:00:00Z" }]),
+    load(db, "series_patch", [
+      {
+        subject_id: "mdl:2740",
+        series: "faers_reports",
+        window_from: "2023-12",
+        window_to: "2024-01",
+        months: {},
+        query_url: "https://api.fda.gov/q",
+        retrieved_at: "2026-10-30T00:00:00Z",
+      },
+    ]),
     /invalid patch/,
   );
   const ledger = await one(db, "select count(*)::int n from safety.loads");
@@ -197,13 +231,18 @@ test("product_signals_v1: zero-filled coverage window, JPML filings difference a
     ('mdl_docket_activity', 'e2', 'https://www.courtlistener.com/docket/1/', '{"cells":{"published_at":"2024-02-20"}}', '{"mdl":["2740"]}'),
     ('mdl_docket_activity', 'e3', 'https://www.courtlistener.com/docket/2/', '{"cells":{"published_at":"2024-02-20"}}', '{"mdl":["9999"]}')`);
   const rows = (await db.query("select * from public.product_signals_v1('2740')")).rows;
-  const ae = rows.filter((r) => r.series === "adverse_events").map((r) => [r.month, Number(r.value)]);
+  const ae = rows
+    .filter((r) => r.series === "adverse_events")
+    .map((r) => [r.month, Number(r.value)]);
   assert.deepEqual(ae, [
     ["2024-01", 5],
     ["2024-02", 0],
     ["2024-03", 2],
   ]);
-  assert.ok(!rows.some((r) => r.series === null), "series outside the timeline set are not returned");
+  assert.ok(
+    !rows.some((r) => r.series === null),
+    "series outside the timeline set are not returned",
+  );
   const filings = rows.filter((r) => r.series === "filings");
   assert.deepEqual(
     filings.map((r) => [r.month, Number(r.value), r.source_url]),
@@ -211,7 +250,10 @@ test("product_signals_v1: zero-filled coverage window, JPML filings difference a
     "only consecutive monthly reports give a difference",
   );
   const docket = rows.filter((r) => r.series === "docket_entries");
-  assert.deepEqual(docket.map((r) => [r.month, Number(r.value)]), [["2024-02", 2]]);
+  assert.deepEqual(
+    docket.map((r) => [r.month, Number(r.value)]),
+    [["2024-02", 2]],
+  );
   for (const r of rows) {
     assert.ok(r.unit && r.source_dataset && r.basis, JSON.stringify(r));
     assert.match(r.source_url, /^https:\/\//);
@@ -230,35 +272,69 @@ test("breakdowns: one row per (subject, dim, period), terms by label, serious ne
     period,
     limit_n: 25,
     returned: terms.length,
-    query_url: "https://api.fda.gov/drug/event.json?search=y&count=patient.reaction.reactionmeddrapt.exact",
+    query_url:
+      "https://api.fda.gov/drug/event.json?search=y&count=patient.reaction.reactionmeddrapt.exact",
     retrieved_at: "2026-10-23T00:00:00Z",
     terms,
     vals,
     serious,
     ...extra,
   });
-  let r = await load(db, "breakdowns", [b("2024-Q1", ["Alopecia", "Neutropenia"], [10, 6], [4, null]), b("all", ["Alopecia"], [90], [30])]);
+  let r = await load(db, "breakdowns", [
+    b("2024-Q1", ["Alopecia", "Neutropenia"], [10, 6], [4, null]),
+    b("all", ["Alopecia"], [90], [30]),
+  ]);
   assert.equal(r.inserted, 2);
   r = await load(db, "breakdowns", [b("2024-Q1", ["Alopecia"], [11], [4])]);
   assert.deepEqual([r.inserted, r.updated], [0, 1]);
-  await assert.rejects(load(db, "breakdowns", [b("2024-Q2", ["Alopecia"], [2], [3])]), /invalid breakdown/);
-  await assert.rejects(load(db, "breakdowns", [b("2024-Q2", ["Alopecia", "Alopecia"], [2, 1], null)]), /invalid breakdown/);
-  await assert.rejects(load(db, "breakdowns", [b("2024-Q2", ["Alopecia"], [2, 1], null)]), /invalid breakdown/);
-  const q = await one(db, "select public.safety_term_quarters_v1('faers:docetaxel', 'meddra_pt', array['Alopecia']) r");
+  await assert.rejects(
+    load(db, "breakdowns", [b("2024-Q2", ["Alopecia"], [2], [3])]),
+    /invalid breakdown/,
+  );
+  await assert.rejects(
+    load(db, "breakdowns", [b("2024-Q2", ["Alopecia", "Alopecia"], [2, 1], null)]),
+    /invalid breakdown/,
+  );
+  await assert.rejects(
+    load(db, "breakdowns", [b("2024-Q2", ["Alopecia"], [2, 1], null)]),
+    /invalid breakdown/,
+  );
+  const q = await one(
+    db,
+    "select public.safety_term_quarters_v1('faers:docetaxel', 'meddra_pt', array['Alopecia']) r",
+  );
   assert.deepEqual(q.r.cells, [["2024-Q1", "Alopecia", 11, 4]]);
   assert.equal(q.r.periods[0].truncated, false);
   // default rows: the terms most reported inside the requested periods, not the all-time leaders
-  await load(db, "breakdowns", [b("2025-Q1", ["Neutropenia", "Alopecia"], [9, 1], null), b("2025-Q2", ["Fatigue", "Neutropenia"], [8, 7], null)]);
-  const win = await one(db, "select public.safety_term_quarters_v1('faers:docetaxel', 'meddra_pt', null, '2025-Q1', '2025-Q2', 2) r");
+  await load(db, "breakdowns", [
+    b("2025-Q1", ["Neutropenia", "Alopecia"], [9, 1], null),
+    b("2025-Q2", ["Fatigue", "Neutropenia"], [8, 7], null),
+  ]);
+  const win = await one(
+    db,
+    "select public.safety_term_quarters_v1('faers:docetaxel', 'meddra_pt', null, '2025-Q1', '2025-Q2', 2) r",
+  );
   assert.deepEqual(win.r.terms, ["Neutropenia", "Fatigue"]);
-  assert.deepEqual(win.r.periods.map((x) => x.period), ["2025-Q1", "2025-Q2"]);
-  const none = await one(db, "select public.safety_term_quarters_v1('faers:docetaxel', 'meddra_pt', null, '2030', null, 3) r");
+  assert.deepEqual(
+    win.r.periods.map((x) => x.period),
+    ["2025-Q1", "2025-Q2"],
+  );
+  const none = await one(
+    db,
+    "select public.safety_term_quarters_v1('faers:docetaxel', 'meddra_pt', null, '2030', null, 3) r",
+  );
   assert.deepEqual([none.r.terms, none.r.periods, none.r.cells], [["Alopecia"], [], []]);
-  const top = await one(db, "select public.safety_breakdown_v1('faers:docetaxel', 'meddra_pt', 'all', 10) r");
+  const top = await one(
+    db,
+    "select public.safety_breakdown_v1('faers:docetaxel', 'meddra_pt', 'all', 10) r",
+  );
   assert.deepEqual(top.r.rows, [{ term: "Alopecia", value: 90, serious: 30 }]);
   const prof = await one(db, "select public.safety_subject_v1('faers:docetaxel') r");
   assert.equal(prof.r.breakdowns.meddra_pt.rows[0].term, "Alopecia");
-  assert.deepEqual(prof.r.periods, ["2024-Q1", "2025-Q1", "2025-Q2"].map((period) => ({ dim: "meddra_pt", period })));
+  assert.deepEqual(
+    prof.r.periods,
+    ["2024-Q1", "2025-Q1", "2025-Q2"].map((period) => ({ dim: "meddra_pt", period })),
+  );
 });
 
 test("record tables: withheld fields are refused, NEISS stays held without the lead's confirmation", async () => {
@@ -275,10 +351,16 @@ test("record tables: withheld fields are refused, NEISS stays held without the l
     description: "THE AIR BAG DID NOT DEPLOY.",
   };
   await assert.rejects(load(db, "nhtsa_complaints", [{ ...complaint, vin: "1ABC" }]), /withheld/);
-  await assert.rejects(load(db, "nhtsa_complaints", [{ ...complaint, vehicle_operator: "Name" }]), /withheld/);
+  await assert.rejects(
+    load(db, "nhtsa_complaints", [{ ...complaint, vehicle_operator: "Name" }]),
+    /withheld/,
+  );
   const r = await load(db, "nhtsa_complaints", [complaint]);
   assert.equal(r.inserted, 1);
-  const row = await one(db, "select makes, model_years, components from safety.nhtsa_complaints where odino = 11500001");
+  const row = await one(
+    db,
+    "select makes, model_years, components from safety.nhtsa_complaints where odino = 11500001",
+  );
   assert.deepEqual(row, { makes: ["EXAMPLE"], model_years: [2021], components: ["AIR BAGS"] });
   const neiss = {
     case_number: 250102066,
@@ -293,9 +375,14 @@ test("record tables: withheld fields are refused, NEISS stays held without the l
     file_year: 2025,
   };
   await assert.rejects(load(db, "neiss_cases", [neiss]), /held/);
-  const ok = await load(db, "neiss_cases", [neiss], { confirmed_by_lead: "2026-10-25 lead confirmed" });
+  const ok = await load(db, "neiss_cases", [neiss], {
+    confirmed_by_lead: "2026-10-25 lead confirmed",
+  });
   assert.equal(ok.inserted, 1);
-  await assert.rejects(load(db, "cfpb_complaints", [{ complaint_id: 1, date_received: "2025-01-01", narrative: "x" }]), /invalid/);
+  await assert.rejects(
+    load(db, "cfpb_complaints", [{ complaint_id: 1, date_received: "2025-01-01", narrative: "x" }]),
+    /invalid/,
+  );
   await assert.rejects(
     load(db, "osha_inspections", [{ activity_nr: 1, site_address: "1 Main St" }]),
     /withheld/,
@@ -312,7 +399,11 @@ test("CFPB aggregates and complaints share term ids; records RPC filters by the 
     month,
     complaints: n,
   });
-  let r = await load(db, "cfpb_monthly", [agg("ACME LLC", 3), agg("ACME LLC", 2, "2025-02"), agg("Other Co", 1)]);
+  let r = await load(db, "cfpb_monthly", [
+    agg("ACME LLC", 3),
+    agg("ACME LLC", 2, "2025-02"),
+    agg("Other Co", 1),
+  ]);
   assert.equal(r.inserted, 3);
   r = await load(db, "cfpb_complaints", [
     {
@@ -328,9 +419,15 @@ test("CFPB aggregates and complaints share term ids; records RPC filters by the 
     },
   ]);
   assert.equal(r.inserted, 1);
-  const terms = await one(db, "select count(*)::int n from safety.terms where kind = 'cfpb_company'");
+  const terms = await one(
+    db,
+    "select count(*)::int n from safety.terms where kind = 'cfpb_company'",
+  );
   assert.equal(terms.n, 2);
-  const rec = await one(db, `select public.safety_records_v1('cfpb', null, null, null, null, '{"company":"ACME LLC"}', 10, 0) r`);
+  const rec = await one(
+    db,
+    `select public.safety_records_v1('cfpb', null, null, null, null, '{"company":"ACME LLC"}', 10, 0) r`,
+  );
   assert.equal(rec.r.total, 1);
   assert.equal(rec.r.rows[0].company, "ACME LLC");
   assert.equal(rec.r.rows[0].sub_product, "");
@@ -350,39 +447,62 @@ test("ingest bridge counts writes into the open run and refuses other targets", 
     ('00000000-0000-4000-8000-000000000001', 'safety_faers_series', 'running'),
     ('00000000-0000-4000-8000-000000000002', 'safety_faers_series', 'ok')`);
   await load(db, "series", [seriesRow("mdl:2740", "faers_reports", "2025-11", "2025-12", [2, 3])]);
-  const rows = [{ subject_id: "mdl:2740", series: "faers_reports", window_from: "2025-12", window_to: "2026-01",
-    months: { "2026-01": 4 }, query_url: "https://api.fda.gov/drug/event.json?search=x&count=receivedate", retrieved_at: "2026-02-03T00:00:00Z" }];
-  const r = await one(db, "select public.safety_ingest_apply_v1($1::uuid, 'series_patch', $2::jsonb, '{}'::jsonb) r", [
-    "00000000-0000-4000-8000-000000000001",
-    JSON.stringify(rows),
-  ]);
+  const rows = [
+    {
+      subject_id: "mdl:2740",
+      series: "faers_reports",
+      window_from: "2025-12",
+      window_to: "2026-01",
+      months: { "2026-01": 4 },
+      query_url: "https://api.fda.gov/drug/event.json?search=x&count=receivedate",
+      retrieved_at: "2026-02-03T00:00:00Z",
+    },
+  ];
+  const r = await one(
+    db,
+    "select public.safety_ingest_apply_v1($1::uuid, 'series_patch', $2::jsonb, '{}'::jsonb) r",
+    ["00000000-0000-4000-8000-000000000001", JSON.stringify(rows)],
+  );
   assert.equal(r.r.updated, 1);
-  const run = await one(db, "select updated from ingest.runs where id = '00000000-0000-4000-8000-000000000001'");
+  const run = await one(
+    db,
+    "select updated from ingest.runs where id = '00000000-0000-4000-8000-000000000001'",
+  );
   assert.equal(run.updated, 1);
   const vals = await one(db, "select vals from safety.series where subject_id = 'mdl:2740'");
   assert.deepEqual(vals.vals, [2, 0, 4], "December dropped to 0 inside the refreshed window");
   await assert.rejects(
-    db.query("select public.safety_ingest_apply_v1($1::uuid, 'cfpb_complaints', '[{}]'::jsonb, '{}'::jsonb)", [
-      "00000000-0000-4000-8000-000000000001",
-    ]),
+    db.query(
+      "select public.safety_ingest_apply_v1($1::uuid, 'cfpb_complaints', '[{}]'::jsonb, '{}'::jsonb)",
+      ["00000000-0000-4000-8000-000000000001"],
+    ),
     /not written by source/,
   );
   await assert.rejects(
-    db.query("select public.safety_ingest_apply_v1($1::uuid, 'series_patch', $2::jsonb, '{}'::jsonb)", [
-      "00000000-0000-4000-8000-000000000002",
-      JSON.stringify(rows),
-    ]),
+    db.query(
+      "select public.safety_ingest_apply_v1($1::uuid, 'series_patch', $2::jsonb, '{}'::jsonb)",
+      ["00000000-0000-4000-8000-000000000002", JSON.stringify(rows)],
+    ),
     /not open/,
   );
   const plan = await one(db, "select public.safety_ingest_plan_v1('safety_faers_series') p");
-  assert.deepEqual(plan.p.subjects.map((x) => x.id), ["mdl:2740"], "subjects with stored FAERS series are planned");
+  assert.deepEqual(
+    plan.p.subjects.map((x) => x.id),
+    ["mdl:2740"],
+    "subjects with stored FAERS series are planned",
+  );
 });
 
 test("subject profile and listing", async () => {
   const db = await fresh();
   await load(db, "subjects", [
     subject("mdl:2740"),
-    subject("faers:docetaxel", { subject_type: "product", label: "DOCETAXEL", rank: 120, reports_total: 30000 }),
+    subject("faers:docetaxel", {
+      subject_type: "product",
+      label: "DOCETAXEL",
+      rank: 120,
+      reports_total: 30000,
+    }),
   ]);
   const list = await one(db, "select public.safety_subjects_v1('product', null, 'doce', 10, 0) r");
   assert.equal(list.r.total, 1);
@@ -390,7 +510,9 @@ test("subject profile and listing", async () => {
   // an MDL group has no ranked count: its listing total is its main stored series total, else null (never invented)
   let groups = await one(db, "select public.safety_subjects_v1('mdl_group', null, null, 10, 0) r");
   assert.equal(groups.r.rows[0].reports_total, null);
-  await load(db, "series", [seriesRow("mdl:2740", "faers_reports", "2024-01", "2024-03", [5, 0, 2])]);
+  await load(db, "series", [
+    seriesRow("mdl:2740", "faers_reports", "2024-01", "2024-03", [5, 0, 2]),
+  ]);
   groups = await one(db, "select public.safety_subjects_v1('mdl_group', null, null, 10, 0) r");
   assert.equal(Number(groups.r.rows[0].reports_total), 7);
   const prof = await one(db, "select public.safety_subject_v1('faers:docetaxel') r");

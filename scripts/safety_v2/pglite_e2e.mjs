@@ -10,11 +10,27 @@ import { pathToFileURL } from "node:url";
 
 const runtime =
   process.env.PUBLISHER_CODE_PGLITE ??
-  path.resolve("private/tools/publisher-code-contract-tests/node_modules/@electric-sql/pglite/dist/index.js");
+  path.resolve(
+    "private/tools/publisher-code-contract-tests/node_modules/@electric-sql/pglite/dist/index.js",
+  );
 const { PGlite } = await import(pathToFileURL(runtime).href);
-const ORDER = ["subjects", "mdl_subjects", "series", "series_patch", "breakdowns", "maude_reports",
-  "nhtsa_complaints", "record_subjects", "neiss_cases", "cfpb_monthly", "cfpb_complaints", "osha_inspections",
-  "osha_violations", "osha_accidents", "open_payments"];
+const ORDER = [
+  "subjects",
+  "mdl_subjects",
+  "series",
+  "series_patch",
+  "breakdowns",
+  "maude_reports",
+  "nhtsa_complaints",
+  "record_subjects",
+  "neiss_cases",
+  "cfpb_monthly",
+  "cfpb_complaints",
+  "osha_inspections",
+  "osha_violations",
+  "osha_accidents",
+  "open_payments",
+];
 
 const argv = process.argv.slice(2);
 const flag = (name) => {
@@ -26,7 +42,9 @@ const subjects = [];
 let m;
 while ((m = flag("--mdl"))) mdls.push(m);
 while ((m = flag("--subject"))) subjects.push(m);
-const confirmNeiss = argv.includes("--confirm-neiss") ? (argv.splice(argv.indexOf("--confirm-neiss"), 1), true) : false;
+const confirmNeiss = argv.includes("--confirm-neiss")
+  ? (argv.splice(argv.indexOf("--confirm-neiss"), 1), true)
+  : false;
 const dirs = argv;
 
 async function* walk(dir) {
@@ -52,13 +70,20 @@ for (const d of dirs) {
     }
   }
 }
-list.sort((a, b) => ORDER.indexOf(a.target) - ORDER.indexOf(b.target) || a.path.localeCompare(b.path));
+list.sort(
+  (a, b) => ORDER.indexOf(a.target) - ORDER.indexOf(b.target) || a.path.localeCompare(b.path),
+);
 const totals = {};
 const started = Date.now();
 for (const ch of list) {
   let rows;
   try {
-    rows = zlib.gunzipSync(await fs.readFile(ch.path)).toString("utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l));
+    rows = zlib
+      .gunzipSync(await fs.readFile(ch.path))
+      .toString("utf8")
+      .split("\n")
+      .filter(Boolean)
+      .map((l) => JSON.parse(l));
   } catch {
     continue; // a chunk already deleted after a load
   }
@@ -75,7 +100,14 @@ for (const ch of list) {
       JSON.stringify({ source: ch.source ?? "", part: ch.file, sha256: ch.sha256 }),
     ])
   ).rows[0].r;
-  const t = (totals[ch.target] ??= { chunks: 0, rows: 0, inserted: 0, updated: 0, unchanged: 0, deleted: 0 });
+  const t = (totals[ch.target] ??= {
+    chunks: 0,
+    rows: 0,
+    inserted: 0,
+    updated: 0,
+    unchanged: 0,
+    deleted: 0,
+  });
   t.chunks += 1;
   t.rows += rows.length;
   for (const k of ["inserted", "updated", "unchanged", "deleted"]) t[k] += r[k];
@@ -90,7 +122,12 @@ const sizes = (
 const counts = {};
 for (const s of sizes) {
   const n = (await db.query(`select count(*)::int n from safety.${s.t}`)).rows[0].n;
-  if (n) counts[s.t] = { rows: n, bytes: Number(s.bytes), bytes_per_row: Math.round(Number(s.bytes) / n) };
+  if (n)
+    counts[s.t] = {
+      rows: n,
+      bytes: Number(s.bytes),
+      bytes_per_row: Math.round(Number(s.bytes) / n),
+    };
 }
 console.log(JSON.stringify({ tables: counts }));
 
@@ -98,7 +135,13 @@ for (const mdl of mdls) {
   const rows = (await db.query("select * from public.product_signals_v1($1)", [mdl])).rows;
   const by = {};
   for (const r of rows) {
-    const b = (by[r.series] ??= { months: 0, total: 0, first: r.month, last: r.month, source_dataset: r.source_dataset });
+    const b = (by[r.series] ??= {
+      months: 0,
+      total: 0,
+      first: r.month,
+      last: r.month,
+      source_dataset: r.source_dataset,
+    });
     b.months += 1;
     b.total += Number(r.value);
     b.last = r.month;
@@ -107,13 +150,17 @@ for (const mdl of mdls) {
 }
 for (const id of subjects) {
   const p = (await db.query("select public.safety_subject_v1($1) p", [id])).rows[0].p;
-  console.log(JSON.stringify({
-    subject: id,
-    label: p?.subject?.label,
-    mdls: p?.mdls?.map((x) => [x.mdl, x.basis]),
-    series: p?.series?.map((s) => [s.series, s.coverage_from, s.coverage_to, s.total]),
-    breakdowns: Object.fromEntries(Object.entries(p?.breakdowns ?? {}).map(([k, v]) => [k, v.rows.slice(0, 3)])),
-    quarters: p?.quarters?.length,
-    records: p?.records,
-  }));
+  console.log(
+    JSON.stringify({
+      subject: id,
+      label: p?.subject?.label,
+      mdls: p?.mdls?.map((x) => [x.mdl, x.basis]),
+      series: p?.series?.map((s) => [s.series, s.coverage_from, s.coverage_to, s.total]),
+      breakdowns: Object.fromEntries(
+        Object.entries(p?.breakdowns ?? {}).map(([k, v]) => [k, v.rows.slice(0, 3)]),
+      ),
+      quarters: p?.quarters?.length,
+      records: p?.records,
+    }),
+  );
 }

@@ -25,7 +25,8 @@ export function bundle(out) {
     const queue = [];
     const index = fs.readFileSync(entry, "utf8").replace(IMPORT, (m, pre, spec) => {
       const abs = path.resolve(path.dirname(entry), spec);
-      if (!abs.startsWith(LIB + path.sep)) throw new Error(`${fn}: import outside src/lib: ${spec}`);
+      if (!abs.startsWith(LIB + path.sep))
+        throw new Error(`${fn}: import outside src/lib: ${spec}`);
       queue.push(abs);
       return `${pre}"./_lib/${path.relative(LIB, abs).split(path.sep).join("/")}"`;
     });
@@ -40,9 +41,11 @@ export function bundle(out) {
       const text = fs.readFileSync(file, "utf8");
       for (const m of text.matchAll(IMPORT)) {
         const spec = m[2];
-        if (!spec.startsWith(".")) throw new Error(`${file}: non-relative import ${spec} cannot run in the edge runtime`);
+        if (!spec.startsWith("."))
+          throw new Error(`${file}: non-relative import ${spec} cannot run in the edge runtime`);
         const abs = path.resolve(path.dirname(file), spec);
-        if (!abs.startsWith(LIB + path.sep)) throw new Error(`${file}: import outside src/lib: ${spec}`);
+        if (!abs.startsWith(LIB + path.sep))
+          throw new Error(`${file}: import outside src/lib: ${spec}`);
         queue.push(abs);
       }
       const rel = path.relative(LIB, file);
