@@ -1,0 +1,421 @@
+{
+ "note": "Regulations.gov API v4 records exactly as returned on 2026-10-23 (subset of the wave-1025 validation sample), with the comment counts and Federal Register links read for them.",
+ "documents": {
+  "data": [
+   {
+    "type": "documents",
+    "id": "CPSC-2009-0064-0024",
+    "attributes": {
+     "agencyId": "CPSC",
+     "objectId": "09000064865f82d6",
+     "frDocNum": "2024-15843",
+     "documentType": "Proposed Rule",
+     "withdrawn": false,
+     "highlightedContent": "",
+     "commentEndDate": "2024-08-02T03:59:59Z",
+     "commentStartDate": "2024-07-18T04:00:00Z",
+     "lastModifiedDate": "2024-07-18T18:17:06Z",
+     "openForComment": false,
+     "withinCommentPeriod": false,
+     "postedDate": "2024-07-18T04:00:00Z",
+     "title": "Voluntary Standard for Infant Bath Seats; Revision",
+     "docketId": "CPSC-2009-0064",
+     "subtype": null,
+     "allowLateComments": false
+    }
+   },
+   {
+    "type": "documents",
+    "id": "CPSC-2010-0028-0076",
+    "attributes": {
+     "agencyId": "CPSC",
+     "objectId": "09000064864da7b9",
+     "frDocNum": "2024-07706",
+     "documentType": "Proposed Rule",
+     "withdrawn": false,
+     "highlightedContent": "",
+     "commentEndDate": "2024-06-18T03:59:59Z",
+     "commentStartDate": "2024-04-16T04:00:00Z",
+     "lastModifiedDate": "2024-06-18T01:00:57Z",
+     "openForComment": false,
+     "withinCommentPeriod": false,
+     "postedDate": "2024-04-16T04:00:00Z",
+     "title": "Safety Standard for Bassinets and Cradles",
+     "docketId": "CPSC-2010-0028",
+     "subtype": null,
+     "allowLateComments": false
+    }
+   },
+   {
+    "type": "documents",
+    "id": "CPSC-2009-0064-0025",
+    "attributes": {
+     "agencyId": "CPSC",
+     "objectId": "09000064867bc54d",
+     "frDocNum": "2024-23211",
+     "documentType": "Rule",
+     "withdrawn": false,
+     "highlightedContent": "",
+     "commentEndDate": "2024-11-09T04:59:59Z",
+     "commentStartDate": "2024-10-09T04:00:00Z",
+     "lastModifiedDate": "2024-11-05T02:01:03Z",
+     "openForComment": false,
+     "withinCommentPeriod": false,
+     "postedDate": "2024-10-09T04:00:00Z",
+     "title": "Safety Standard: Infant Bath Seats",
+     "docketId": "CPSC-2009-0064",
+     "subtype": null,
+     "allowLateComments": false
+    }
+   },
+   {
+    "type": "documents",
+    "id": "CPSC-2010-0028-0109",
+    "attributes": {
+     "agencyId": "CPSC",
+     "objectId": "09000064b90c86da",
+     "frDocNum": "2025-22697",
+     "documentType": "Rule",
+     "withdrawn": false,
+     "highlightedContent": "",
+     "commentEndDate": "2026-01-13T04:59:59Z",
+     "commentStartDate": "2025-12-12T05:00:00Z",
+     "lastModifiedDate": "2025-12-12T21:15:13Z",
+     "openForComment": false,
+     "withinCommentPeriod": false,
+     "postedDate": "2025-12-12T05:00:00Z",
+     "title": "Safety Standard: Bassinets and Cradles",
+     "docketId": "CPSC-2010-0028",
+     "subtype": null,
+     "allowLateComments": false
+    }
+   },
+   {
+    "type": "documents",
+    "id": "FTC-2021-0075-0002",
+    "attributes": {
+     "agencyId": "FTC",
+     "objectId": "09000064b8ed383f",
+     "frDocNum": null,
+     "documentType": "Notice",
+     "withdrawn": true,
+     "highlightedContent": "",
+     "commentEndDate": null,
+     "commentStartDate": null,
+     "lastModifiedDate": "2025-08-04T17:16:14Z",
+     "openForComment": false,
+     "withinCommentPeriod": false,
+     "postedDate": "2025-08-04T04:00:00Z",
+     "title": "Granting of Requests for Early Termination of the Waiting Period Under the Premerger Notification Rules",
+     "docketId": "FTC-2021-0075",
+     "subtype": null,
+     "allowLateComments": false
+    }
+   },
+   {
+    "type": "documents",
+    "id": "FTC-2025-0007-0001",
+    "attributes": {
+     "agencyId": "FTC",
+     "objectId": "09000064868cd755",
+     "frDocNum": null,
+     "documentType": "Notice",
+     "withdrawn": true,
+     "highlightedContent": "",
+     "commentEndDate": null,
+     "commentStartDate": null,
+     "lastModifiedDate": "2025-01-23T02:00:51Z",
+     "openForComment": false,
+     "withinCommentPeriod": false,
+     "postedDate": "2025-01-21T00:00:00Z",
+     "title": "Request for Public Comments Regarding Surveillance Pricing Practices",
+     "docketId": "FTC-2025-0007",
+     "subtype": null,
+     "allowLateComments": false
+    }
+   },
+   {
+    "type": "documents",
+    "id": "CPSC-2009-0044-0013",
+    "attributes": {
+     "agencyId": "CPSC",
+     "objectId": "09000064b8fd15f5",
+     "frDocNum": "2025-18302",
+     "documentType": "Notice",
+     "withdrawn": false,
+     "highlightedContent": "",
+     "commentEndDate": "2025-11-22T04:59:59Z",
+     "commentStartDate": "2025-09-22T04:00:00Z",
+     "lastModifiedDate": "2025-11-22T10:00:15Z",
+     "openForComment": false,
+     "withinCommentPeriod": false,
+     "postedDate": "2025-09-22T04:00:00Z",
+     "title": "Agency Information Collection Activities; Proposals, Submissions, and Approvals: Safety Standard for Cigarette Lighters",
+     "docketId": "CPSC-2009-0044",
+     "subtype": null,
+     "allowLateComments": false
+    }
+   },
+   {
+    "type": "documents",
+    "id": "CPSC-2009-0044-0016",
+    "attributes": {
+     "agencyId": "CPSC",
+     "objectId": "09000064b90a5a7e",
+     "frDocNum": "2025-21588",
+     "documentType": "Notice",
+     "withdrawn": false,
+     "highlightedContent": "",
+     "commentEndDate": "2025-12-30T04:59:59Z",
+     "commentStartDate": "2025-12-01T05:00:00Z",
+     "lastModifiedDate": "2025-12-02T18:46:33Z",
+     "openForComment": false,
+     "withinCommentPeriod": false,
+     "postedDate": "2025-12-01T05:00:00Z",
+     "title": "Agency Information Collection Activities; Proposals, Submissions, and Approvals: Safety Standard for Cigarette Lighters",
+     "docketId": "CPSC-2009-0044",
+     "subtype": null,
+     "allowLateComments": false
+    }
+   },
+   {
+    "type": "documents",
+    "id": "CPSC-2009-0087-0736",
+    "attributes": {
+     "agencyId": "CPSC",
+     "objectId": "09000064b8fe424a",
+     "frDocNum": "2025-18810",
+     "documentType": "Proposed Rule",
+     "withdrawn": false,
+     "highlightedContent": "",
+     "commentEndDate": null,
+     "commentStartDate": "2025-09-29T04:00:00Z",
+     "lastModifiedDate": "2025-09-30T00:00:26Z",
+     "openForComment": false,
+     "withinCommentPeriod": false,
+     "postedDate": "2025-09-29T04:00:00Z",
+     "title": "Withdrawal of Proposed Regulatory Actions",
+     "docketId": "CPSC-2009-0087",
+     "subtype": null,
+     "allowLateComments": false
+    }
+   },
+   {
+    "type": "documents",
+    "id": "CPSC-2009-0092-0013",
+    "attributes": {
+     "agencyId": "CPSC",
+     "objectId": "09000064b934e204",
+     "frDocNum": "2026-12770",
+     "documentType": "Notice",
+     "withdrawn": false,
+     "highlightedContent": "",
+     "commentEndDate": "2026-08-25T03:59:59Z",
+     "commentStartDate": "2026-06-25T04:00:00Z",
+     "lastModifiedDate": "2026-06-25T18:34:46Z",
+     "openForComment": false,
+     "withinCommentPeriod": false,
+     "postedDate": "2026-06-25T04:00:00Z",
+     "title": "Agency Information Collection Activities; Proposals, Submissions, and Approvals: Standard for the Flammability of Clothing Textiles; Standard for the Flammability of Vinyl Plastic Film",
+     "docketId": "CPSC-2009-0092",
+     "subtype": null,
+     "allowLateComments": false
+    }
+   },
+   {
+    "type": "documents",
+    "id": "CPSC-2009-0092-0014",
+    "attributes": {
+     "agencyId": "CPSC",
+     "objectId": "09000064b95d2f90",
+     "frDocNum": "2026-19748",
+     "documentType": "Notice",
+     "withdrawn": false,
+     "highlightedContent": "",
+     "commentEndDate": "2026-10-29T03:59:59Z",
+     "commentStartDate": "2026-09-28T04:00:00Z",
+     "lastModifiedDate": "2026-09-29T18:51:31Z",
+     "openForComment": true,
+     "withinCommentPeriod": true,
+     "postedDate": "2026-09-28T04:00:00Z",
+     "title": "Agency Information Collection Activities; Proposals, Submissions, and Approvals: Standard for the Flammability of Clothing Textiles, Standard for the Flammability of Vinyl Plastic Film",
+     "docketId": "CPSC-2009-0092",
+     "subtype": null,
+     "allowLateComments": false
+    }
+   }
+  ],
+  "meta": {
+   "totalElements": 11,
+   "hasNextPage": false
+  }
+ },
+ "dockets": {
+  "data": [
+   {
+    "id": "CPSC-2009-0044",
+    "type": "dockets",
+    "attributes": {
+     "agencyId": "CPSC",
+     "objectId": "0b000064809ee506",
+     "docketId": "CPSC-2009-0044",
+     "docketType": "Nonrulemaking",
+     "highlightedContent": null,
+     "title": "Proposed Extension of Approval of Information Collection; Comment Request-Safety Standard for Cigarette Lighters",
+     "lastModifiedDate": "2025-12-02T13:46:28Z"
+    }
+   },
+   {
+    "id": "CPSC-2009-0064",
+    "type": "dockets",
+    "attributes": {
+     "agencyId": "CPSC",
+     "objectId": "0b00006480a1ec22",
+     "docketId": "CPSC-2009-0064",
+     "docketType": "Rulemaking",
+     "highlightedContent": null,
+     "title": "Safety Standard for Infant Bath Seats",
+     "lastModifiedDate": "2024-11-12T10:16:59Z"
+    }
+   },
+   {
+    "id": "CPSC-2010-0028",
+    "type": "dockets",
+    "attributes": {
+     "agencyId": "CPSC",
+     "objectId": "0b00006480adc95b",
+     "docketId": "CPSC-2010-0028",
+     "docketType": "Rulemaking",
+     "highlightedContent": null,
+     "title": "Safety Standard for Bassinets and\r\nCradles: Notice of Proposed\r\nRulemaking",
+     "lastModifiedDate": "2025-12-12T16:15:09Z"
+    }
+   },
+   {
+    "id": "FTC-2021-0075",
+    "type": "dockets",
+    "attributes": {
+     "agencyId": "FTC",
+     "objectId": "0b00006484ecff5f",
+     "docketId": "FTC-2021-0075",
+     "docketType": "Nonrulemaking",
+     "highlightedContent": null,
+     "title": "Granting of Requests for Early Termination of the Waiting Period Under the Premerger Notification",
+     "lastModifiedDate": "2025-08-04T12:46:12Z"
+    }
+   },
+   {
+    "id": "FTC-2025-0007",
+    "type": "dockets",
+    "attributes": {
+     "agencyId": "FTC",
+     "objectId": "0b000064868cd08c",
+     "docketId": "FTC-2025-0007",
+     "docketType": "Nonrulemaking",
+     "highlightedContent": null,
+     "title": "Request for Public Comments Regarding Surveillance Pricing Practices",
+     "lastModifiedDate": "2025-01-21T13:04:14Z"
+    }
+   },
+   {
+    "id": "CPSC-2005-0001",
+    "type": "dockets",
+    "attributes": {
+     "agencyId": "CPSC",
+     "objectId": "0b0000648008eeb7",
+     "docketId": "CPSC-2005-0001",
+     "docketType": "Nonrulemaking",
+     "highlightedContent": null,
+     "title": "Notification of Request for Extension of Approval of Information Collection Activity; Notification Requirements for Coal and Wood Burning Appliances",
+     "lastModifiedDate": "2017-04-11T12:52:21Z"
+    }
+   },
+   {
+    "id": "CPSC-2005-0002",
+    "type": "dockets",
+    "attributes": {
+     "agencyId": "CPSC",
+     "objectId": "0b0000648008efbf",
+     "docketId": "CPSC-2005-0002",
+     "docketType": "Nonrulemaking",
+     "highlightedContent": null,
+     "title": "Notification of Request for Extension of Approval of Information Collection Activity--Notification Requirements for Sound Levels of Toy Caps",
+     "lastModifiedDate": "2017-04-11T12:53:04Z"
+    }
+   }
+  ],
+  "meta": {
+   "totalElements": 7,
+   "hasNextPage": false
+  }
+ },
+ "counts": {
+  "CPSC-2009-0087-0736": 0,
+  "CPSC-2009-0092-0013": 0,
+  "CPSC-2009-0092-0014": 0
+ },
+ "docket_counts": {
+  "CPSC-2010-0028": 80
+ },
+ "fr_links": [
+  {
+   "doc_num": "2024-15843",
+   "record_id": "951154",
+   "cfr_pairs": [
+    "16:1215"
+   ]
+  },
+  {
+   "doc_num": "2024-07706",
+   "record_id": "943650",
+   "cfr_pairs": [
+    "16:1112",
+    "16:1218"
+   ]
+  },
+  {
+   "doc_num": "2024-23211",
+   "record_id": "958486",
+   "cfr_pairs": [
+    "16:1215"
+   ]
+  },
+  {
+   "doc_num": "2025-22697",
+   "record_id": "988579",
+   "cfr_pairs": [
+    "16:1218"
+   ]
+  },
+  {
+   "doc_num": "2025-18302",
+   "record_id": "984449",
+   "cfr_pairs": []
+  },
+  {
+   "doc_num": "2025-21588",
+   "record_id": "987614",
+   "cfr_pairs": []
+  },
+  {
+   "doc_num": "2025-18810",
+   "record_id": "984958",
+   "cfr_pairs": [
+    "16:1245",
+    "16:1421",
+    "16:1422",
+    "16:1500"
+   ]
+  },
+  {
+   "doc_num": "2026-12770",
+   "record_id": "1002621",
+   "cfr_pairs": []
+  },
+  {
+   "doc_num": "2026-19748",
+   "record_id": "1009345",
+   "cfr_pairs": []
+  }
+ ]
+}
