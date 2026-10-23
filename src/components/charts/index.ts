@@ -27,3 +27,7 @@ export type { SurvivalGroup } from "./SurvivalCurve";
 export { DistributionStrip } from "./DistributionStrip";
 export * from "./format";
 export * from "./series";
+export { Icicle, icicleLayout, fitLabel } from "./Icicle";
+export type { IcicleDatum, IcicleProps } from "./Icicle";
+export { Swimlanes, laneMarks } from "./Swimlanes";
+export type { SwimEvent, SwimLane, SwimGroup, SwimBar, SwimlanesProps } from "./Swimlanes";
