@@ -275,13 +275,30 @@ def verify_cli(argv=None):
     from state_law import verify as shared_verify  # type: ignore
 
     lib.xml_text = _xml_text_rendering_markup
+    shared_render = lib.render_text
+
+    def render_text(body, content_type=None, url=None):
+        # CSV downloads (Virginia Law Library): undo the CSV quoting layer, then render each field (HTML or text)
+        if url and url.lower().split("?", 1)[0].endswith(".csv"):
+            import csv as _csv
+            import io as _io
+
+            out = []
+            for row in _csv.reader(_io.StringIO(lib.decode_bytes(body, "utf-8").lstrip("\ufeff"))):
+                for field in row:
+                    out.append(lib.html_text(field) if "<" in field else lib.norm_lines(_html.unescape(field)))
+            return "\n".join(x for x in out if x)
+        return shared_render(body, content_type, url)
+
+    lib.render_text = render_text
     parser = argparse.ArgumentParser()
     parser.add_argument("cmd", choices=["verify"])
     parser.add_argument("edition_dir", type=pathlib.Path)
     parser.add_argument("--raw", type=pathlib.Path, default=None)
     args = parser.parse_args(argv)
     result = shared_verify.verify(args.edition_dir, args.raw)
-    result["adapter"] = "statb: xml_text renders escaped publisher markup via html_text"
+    result["adapter"] = ("statb: xml_text renders escaped publisher markup via html_text; .csv sources are rendered "
+                         "field by field after CSV unquoting")
     (args.edition_dir / "verify.json").write_text(json.dumps(result, indent=2, ensure_ascii=False))
     print(json.dumps({k: result[k] for k in ("edition_id", "ok", "counts", "adapter")}, ensure_ascii=False))
     for item in result["failures"][:20]:
