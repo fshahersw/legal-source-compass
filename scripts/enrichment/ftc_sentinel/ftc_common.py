@@ -206,7 +206,7 @@ def provenance(capture_entry, pdf_entry=None, **extra):
 def source_record(capture_entry, pdf_entry=None, **extra):
     """Summary 'sources' entry that says which hash is which."""
     out = {"url": capture_entry["url"], "capture_sha256": capture_entry["sha256"], "capture_retrieved": capture_entry["retrieved_at"],
-           "capture_note": "SHA-256 of the Firecrawl tool-result JSON kept in private/acq (a text extraction of the page/PDF), not of the PDF itself"}
+           "capture_note": "SHA-256 of the page-fetching service's JSON response kept in private/acq (a text extraction of the page/PDF), not of the PDF itself"}
     if pdf_entry:
         out.update({"official_pdf_sha256": pdf_entry["sha256"], "official_pdf_bytes": pdf_entry["bytes"], "official_pdf_retrieved": pdf_entry["retrieved_at"],
                     "official_pdf_note": "SHA-256 of the official PDF bytes as served by ftc.gov (downloaded by the independent verifier, copied byte-identical)"})

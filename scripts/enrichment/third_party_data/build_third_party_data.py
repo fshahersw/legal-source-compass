@@ -73,7 +73,8 @@ FIGURES_FROM = {
     "not_verified": "Compiled record (not checked against the official page)",
 }
 RETRIEVAL_LABELS = {"direct": "Direct fetch from the research environment (bytes saved unchanged)",
-                    "firecrawl": "Firecrawl MCP page read (the environment is blocked or bot-walled by the host)",
+                    # published value "page_service" (was "firecrawl" before 2026-10-23: published data names no third-party service)
+                    "page_service": "Read through an external page-fetching service (the environment is blocked or bot-walled by the host)",
                     "none": "Not loaded (host blocks automated access, or robots.txt disallows it)"}
 SOURCE_TYPE_LABELS = {"press_releases": "Press releases / announcements", "orders_and_actions": "Orders, actions, penalties, settlements",
                       "dataset_download": "Dataset download", "open_records_request": "Open-records (FOIA) request mentioned",
@@ -228,44 +229,48 @@ def load_firecrawl():
     return out
 
 
+PAGE_SERVICE = "an external page-fetching service"  # the Firecrawl reads; published wording describes, never names, the service
+
+
 def retrieval_state(check, firecrawl=None):
-    """(state, note, method). state: retrieved | access_restricted | not_retrieved; method: direct | firecrawl | none.
-    A Firecrawl read can only upgrade a sandbox failure when the page it read is the cited page (usable); it is never used where
-    robots.txt disallows automated retrieval."""
+    """(state, note, method). state: retrieved | access_restricted | not_retrieved; method: direct | page_service | none.
+    A page-service (Firecrawl) read can only upgrade a sandbox failure when the page it read is the cited page (usable); it is never
+    used where robots.txt disallows automated retrieval. The returned note is published, so it names no third-party service."""
     if not check:
         return "not_retrieved", "Not checked", "none"
     status, outcome = check.get("status"), check.get("outcome")
     fc = (firecrawl or {}).get(check.get("url"))
     fc_ok = bool(fc and fc["usable"])
-    fc_note = f"; independent read through Firecrawl: HTTP {fc['status']} ({fc['note']})" if fc and fc["status"] else (f"; independent read through Firecrawl: {fc['note']}" if fc else "")
+    fc_text = tp.public_wording(fc["note"]) if fc else None
+    fc_note = f"; independent read through {PAGE_SERVICE}: HTTP {fc['status']} ({fc_text})" if fc and fc["status"] else (f"; independent read through {PAGE_SERVICE}: {fc_text}" if fc else "")
     if outcome == "no_url":
         return "not_retrieved", "No URL", "none"
     if check.get("sha256") == SANDBOX_BLOCK_SHA:
         if fc is None:
             return "access_restricted", "ftc.gov returns the same generic 'Page Not Found' page to this environment for every path (including / and /robots.txt); the cited page was not loaded here", "none"
         if fc_ok:
-            return "retrieved", f"HTTP 200 through Firecrawl on the check date ({fc['note']}); the research sandbox is blocked by ftc.gov", "firecrawl"
-        return "not_retrieved", f"HTTP {fc['status']} on the cited page, read through Firecrawl on the check date ({fc['note']})", "firecrawl"
+            return "retrieved", f"HTTP 200 through {PAGE_SERVICE} on the check date ({fc_text}); the research sandbox is blocked by ftc.gov", "page_service"
+        return "not_retrieved", f"HTTP {fc['status']} on the cited page, read through {PAGE_SERVICE} on the check date ({fc_text})", "page_service"
     if outcome == "robots_disallowed":
         return "access_restricted", "robots.txt disallows automated retrieval (host up; page not fetched)", "none"
     if outcome == "robots_unreachable":
         if fc_ok:
             return "retrieved", (f"robots.txt could not be read from the sandbox ({(check.get('error') or 'robots.txt 5xx')[:90]}); "
-                                 f"the page was read once through Firecrawl ({fc['note']})"), "firecrawl"
+                                 f"the page was read once through {PAGE_SERVICE} ({fc_text})"), "page_service"
         return "not_retrieved", f"Host unreachable ({check.get('error') or 'robots.txt 5xx'})" + fc_note, "none"
     if status and 200 <= status < 300:
         if page_relevant(check):
             return "retrieved", f"HTTP {status}", "direct"
         if fc_ok:
-            return "retrieved", f"HTTP {status} to the sandbox without settlement wording in the static HTML; the page was read through Firecrawl ({fc['note']})", "firecrawl"
+            return "retrieved", f"HTTP {status} to the sandbox without settlement wording in the static HTML; the page was read through {PAGE_SERVICE} ({fc_text})", "page_service"
         return "not_retrieved", (f"HTTP {status} but the page left the cited site or carries no settlement/claim/case wording (possible parked or repurposed domain; "
                                  f"final URL {check.get('final_url')})" + fc_note), "direct"
     if status in (401, 403, 429):
         if fc_ok:
-            return "retrieved", f"HTTP {status} to the sandbox (bot wall); HTTP 200 through Firecrawl on the check date", "firecrawl"
+            return "retrieved", f"HTTP {status} to the sandbox (bot wall); HTTP 200 through {PAGE_SERVICE} on the check date", "page_service"
         return "access_restricted", f"HTTP {status} (host restricts automated access; page exists for browsers)", "none"
     if fc_ok:
-        return "retrieved", f"{'HTTP ' + str(status) if status else (check.get('error') or 'network error')} to the sandbox; HTTP 200 through Firecrawl on the check date ({fc['note']})", "firecrawl"
+        return "retrieved", f"{'HTTP ' + str(status) if status else (check.get('error') or 'network error')} to the sandbox; HTTP 200 through {PAGE_SERVICE} on the check date ({fc_text})", "page_service"
     if status:
         return "not_retrieved", f"HTTP {status}" + fc_note, "none"
     return "not_retrieved", (check.get("error") or "Network error") + fc_note, "none"
@@ -736,7 +741,12 @@ def main():
     data, ss_rows, excluded, ov, near, dropped, ss_stats, ss_path, notice_prov = build_settlesignal(stamp)
     verdicts = load_verdicts()
     ver_summary = {k: verdicts[k] for k in ("seed", "population", "sampled", "in_published_set", "not_in_published_set", "verdict_counts", "strict_rate",
-                                           "at_least_partly_rate", "contradicted_rate", "field_results", "rules", "firecrawl_method") if k in verdicts}
+                                           "at_least_partly_rate", "contradicted_rate", "field_results") if k in verdicts}
+    # reviewer wording from the private verdicts file is published only through public_wording (no compilation or service names)
+    if "rules" in verdicts:
+        ver_summary["rules"] = {k: tp.public_wording(v) if isinstance(v, str) else v for k, v in verdicts["rules"].items()}
+    if "firecrawl_method" in verdicts:
+        ver_summary["page_service_method"] = tp.public_wording(verdicts["firecrawl_method"])
     ss_stats["verification_sample"] = ver_summary
     ss_inputs = [raw_input_entry("compiled record file (public settlement notices; private acquisition, see the acquisition manifest)", ss_path),
                  {"url": "official source checks (one GET per cited URL, robots.txt respected)", "path": "private/acq/third_party_data/official_pages/_checks.jsonl",
@@ -750,19 +760,19 @@ def main():
         ss_inputs.append({"url": "verification verdicts (sample checked against cited official pages)", "path": os.path.relpath(vpath, ROOT), "sha256": sha256_file(vpath)})
     fpath = os.path.join(ACQ, "verification", "firecrawl_checks.json")
     if os.path.exists(fpath):
-        ss_inputs.append({"url": "Firecrawl MCP page reads of cited pages the sandbox could not load (ftc.gov and other blocked hosts)", "path": os.path.relpath(fpath, ROOT), "sha256": sha256_file(fpath)})
+        ss_inputs.append({"url": "external page-fetching service reads of cited pages the sandbox could not load (ftc.gov and other blocked hosts)", "path": os.path.relpath(fpath, ROOT), "sha256": sha256_file(fpath)})
     ss_summary = {
         "compiled": True,
         "method": NOTICE_METHOD,
         "last_checked": stamp["check_date"],
         "records_considered": ss_stats["feed_records"],
         "inclusion": ("Record cites an official source (government, court, settlement/administrator website, wire press release, class-counsel/organisation or company page; not an aggregator; compiled tier not 'third_party_only') "
-                      "AND the cited URL was retrieved on the check date (HTTP 2xx with settlement/claim/case wording), or the host bot-walls the research environment (401/403/429) or robots.txt disallows automated retrieval (page not loaded; labelled), or a Firecrawl read confirmed the page. "
-                      "robots.txt was honoured (RFC 9309). ftc.gov returns one identical generic 404 page to the research environment for every path (including / and /robots.txt), so its cited pages were read through the Firecrawl MCP instead of being excluded as 404s. "
-                      f"Pages included on a Firecrawl read: {ss_stats['retrieval_method_included'].get('firecrawl', 0)}; included without the page being loaded (bot wall / robots): {ss_stats['retrieval_method_included'].get('none', 0)}."),
+                      "AND the cited URL was retrieved on the check date (HTTP 2xx with settlement/claim/case wording), or the host bot-walls the research environment (401/403/429) or robots.txt disallows automated retrieval (page not loaded; labelled), or a read through an external page-fetching service confirmed the page. "
+                      "robots.txt was honoured (RFC 9309). ftc.gov returns one identical generic 404 page to the research environment for every path (including / and /robots.txt), so its cited pages were read through an external page-fetching service instead of being excluded as 404s. "
+                      f"Pages included on a page-fetching service read: {ss_stats['retrieval_method_included'].get('page_service', 0)}; included without the page being loaded (bot wall / robots): {ss_stats['retrieval_method_included'].get('none', 0)}."),
         "source_url_rule": "every row's source_url is its cited official page (the page the verification read, where one exists on the same official site)",
         "check_date": stamp["check_date"],
-        "verification": {"method": "fixed-seed random sample of all records considered (seed 20261018, 36 records) checked field by field (claim deadline, dollar figures, matter named) against the official page each record cites; deterministic matching on the saved bytes, then a person read every row's evidence; pages the sandbox could not load or render were read through the Firecrawl MCP. 33 of the 36 sampled records are in the published set (3 are excluded: aggregator source, dead site, unresolvable domain); rates are over those 33. Rows outside the sample are Not verified.",
+        "verification": {"method": "fixed-seed random sample of all records considered (seed 20261018, 36 records) checked field by field (claim deadline, dollar figures, matter named) against the official page each record cites; deterministic matching on the saved bytes, then a person read every row's evidence; pages the sandbox could not load or render were read through an external page-fetching service. 33 of the 36 sampled records are in the published set (3 are excluded: aggregator source, dead site, unresolvable domain); rates are over those 33. Rows outside the sample are Not verified.",
                          **ver_summary},
         "counts": public_notice_counts(ss_stats),
         "links": {"places": "applicable_states USPS codes -> /places/<USPS>", "courts": "none: no court field in the compiled records",

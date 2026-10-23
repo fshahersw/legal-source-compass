@@ -74,15 +74,48 @@ def find_forbidden(obj, path="$"):
             yield path, "value", hit
 
 
+# Published wording names no third-party tool or service either (owner rule 2026-10-23): the reads made through the page
+# service (Firecrawl) and the second extraction service (Tavily) are described, not named. Ordered: specific phrases first.
+SERVICE_WORDING = (
+    (r"\bFirecrawl MCP firecrawl_scrape\b", "external page-fetching service"),
+    (r"\bthe Firecrawl MCP\b", "an external page-fetching service"),
+    (r"\bFirecrawl MCP\b", "external page-fetching service"),
+    (r"\ba Firecrawl read\b", "a read through an external page-fetching service"),
+    (r"\bthe Firecrawl reads\b", "the page-fetching service reads"),
+    (r"\bFirecrawl (read|could)\b", r"the page-fetching service \1"),
+    (r"\bthrough Firecrawl\b", "through an external page-fetching service"),
+    (r"\bFirecrawl\b", "the page-fetching service"),
+    (r"\bTavily tavily_extract\b", "a second external extraction service"),
+    (r"\bTavily\b", "a second external extraction service"),
+    (r"\s*\b(?:firecrawl_scrape|tavily_extract)\b", ""),
+)
+
+
+def service_wording(text):
+    """Describe the page-fetching and extraction services instead of naming them. A replacement that starts a sentence (start of
+    the text, or after '. ', '; ', '! ', '? ') begins with a capital; nothing else in the text changes."""
+    if text is None:
+        return None
+    out = text
+    for pattern, repl in SERVICE_WORDING:
+        def sub(m, repl=repl):
+            new = m.expand(repl)
+            start = m.start()
+            at_sentence_start = start == 0 or re.search(r"[.;!?]\s+$", m.string[:start]) is not None
+            return new[:1].upper() + new[1:] if at_sentence_start and new else new
+        out = re.sub(pattern, sub, out, flags=re.I)
+    return out
+
+
 def public_wording(text):
-    """Reword a private reviewer note so it no longer names the compilation (the evidence itself is untouched)."""
+    """Reword a private reviewer note so it no longer names the compilation or a third-party service (the evidence itself is untouched)."""
     if text is None:
         return None
     out = re.sub(r"\bthe SettleSignal title\b", "the compiled title", text, flags=re.I)
     out = re.sub(r"\bSettleSignal['’]s\b", "the compilation's", out, flags=re.I)
     out = re.sub(r"\bSettleSignal\b", "the compilation", out, flags=re.I)
     out = out.replace(" (the first build mis-levelled it as state; vt_parse.level_of now returns local)", "")
-    return out.replace(" under private/acq", "")
+    return service_wording(out.replace(" under private/acq", ""))
 
 MONEY = re.compile(r"\$\s?(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,2}))?(?:\s*(million|billion|M|B)\b)?", re.I)
 CAPTION = re.compile(r"^(?P<p>[^()]+?)\s+v(?:s)?\.?\s+(?P<d>[^()]+?)$", re.I)

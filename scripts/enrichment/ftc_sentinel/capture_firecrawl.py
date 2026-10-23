@@ -1,4 +1,7 @@
-"""Store a Firecrawl MCP scrape result (the tool-result JSON file, bytes unchanged) under private/acq/ftc_sentinel/firecrawl/.
+"""Store a Firecrawl MCP scrape result (the tool-result JSON file, bytes unchanged) under private/acq/ftc_sentinel/pages/.
+
+(The folder was renamed from firecrawl/ on 2026-10-23: capture paths are published in row provenance, and published
+data names no third-party service. Bytes and hashes are unchanged; see the manifest.)
 
 ftc.gov answers this sandbox with an Akamai bot wall (HTTP 403 for curl, 404 for our User-Agent on every path,
 including the home page), so FTC pages and PDFs are read through the Firecrawl MCP scrape tool. The tool-result
@@ -21,7 +24,7 @@ MANIFEST = os.path.join(ACQ, "_manifest.jsonl")
 
 
 def main(src, name, url):
-    dst = os.path.join(ACQ, "firecrawl", name)
+    dst = os.path.join(ACQ, "pages", name)
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     shutil.copyfile(src, dst)
     raw = open(dst, "rb").read()

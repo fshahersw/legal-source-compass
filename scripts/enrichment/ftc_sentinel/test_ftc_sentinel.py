@@ -23,6 +23,10 @@ import ftc_states as S  # noqa: E402
 import ftc_supplement as X  # noqa: E402
 
 
+# Published strings (row provenance, facts, dataset summaries) name no third-party tool, crawler, search or AI vendor.
+VENDOR_NAMES = r"(?i)firecrawl|tavily|browser[ _-]?use|apify|\bexa\b|anthropic|claude|openai|\bgpt|\bmcp\b"
+
+
 def table(header, rows):
     out = ["| " + " | ".join(header) + " |", "| " + " | ".join(["---"] * len(header)) + " |"]
     out += ["| " + " | ".join(str(c) for c in r) + " |" for r in rows]
@@ -449,10 +453,19 @@ class DefectRegressionTests(unittest.TestCase):
 
     def test_capture_and_pdf_must_share_one_url(self):
         manifest = {"csn-annual-data-book-2024.pdf": {"url": "https://www.ftc.gov/other.pdf", "path": "p", "sha256": "c" * 64}}
-        capture = {"path": "private/acq/ftc_sentinel/firecrawl/csn_databook_2024_pdf.json", "url": "https://www.ftc.gov/x.pdf"}
+        capture = {"path": "private/acq/ftc_sentinel/pages/csn_databook_2024_pdf.json", "url": "https://www.ftc.gov/x.pdf"}
         with self.assertRaises(ValueError):
             C.official_pdf(manifest, capture)
-        self.assertIsNone(C.official_pdf(manifest, {"path": "private/acq/ftc_sentinel/firecrawl/ftc_refund_programs_index.json", "url": "u"}))
+        self.assertIsNone(C.official_pdf(manifest, {"path": "private/acq/ftc_sentinel/pages/ftc_refund_programs_index.json", "url": "u"}))
+
+    def test_published_method_wording_names_no_third_party_service(self):
+        capture = {"path": "private/acq/x/cap.json", "sha256": "a" * 64, "url": "https://www.ftc.gov/x.pdf", "retrieved_at": "2026-10-18T12:00:00Z"}
+        published = [B.PAGE_SERVICE_METHOD, B.INDEPENDENT_READ_METHOD, C.source_record(capture)["capture_note"]]
+        for text in published:
+            self.assertNotRegex(text, VENDOR_NAMES)
+        self.assertIn("external page-fetching service", B.PAGE_SERVICE_METHOD)
+        self.assertIn("Akamai bot wall", B.PAGE_SERVICE_METHOD)  # the reason the service was used stays stated
+        self.assertTrue(all("_tavily_" not in n for names in B.DNC_INDEPENDENT_READS.values() for n in names))
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -796,6 +809,13 @@ class BuildFileTests(unittest.TestCase):
                 prog = linked[0].rsplit("/", 1)[-1]
                 self.assertTrue(any(R.program_match_key(p["title"]) == R.case_key(r["title"]) for p in self.builds["ftc_refund_programs"]["rows"] if p["id"] == prog))
         self.assertFalse([r for r in rows if "&amp;" in r["title"]])
+
+    def test_published_rows_and_summaries_name_no_third_party_service(self):
+        import re
+        for name, b in self.builds.items():
+            self.assertNotRegex(json.dumps({"summary": b["summary"], "listing": b["listing_block"], "label": b["label"]}), VENDOR_NAMES, name)
+            hits = [r["id"] for r in b["rows"] if re.search(VENDOR_NAMES, json.dumps(r))]
+            self.assertEqual(hits, [], name)
 
 
 if __name__ == "__main__":

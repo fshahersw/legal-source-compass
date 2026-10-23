@@ -165,7 +165,7 @@
    {
     "found_on": "https://www.ca9.uscourts.gov/rules/",
     "part": "appellate",
-    "retrieval_note": "rules page is rendered by script; its links were read with the Firecrawl scrape tool",
+    "retrieval_note": "rules page is rendered by script; its links were read through an external page-fetching service",
     "title": "Federal Rules of Appellate Procedure with Ninth Circuit Rules and Advisory Committee Notes (June 1, 2026)",
     "url": "https://cdn.ca9.uscourts.gov/datastore/uploads/frap-June%201%202026.pdf"
    }

@@ -227,10 +227,11 @@ class TestRetrievalAndInclusion(unittest.TestCase):
         self.assertEqual((state, method), ("access_restricted", "none"))
         live = {url: {"status": 200, "note": "Rando Refunds", "usable": True}}
         state, note, method = bt.retrieval_state(blocked, live)
-        self.assertEqual((state, method), ("retrieved", "firecrawl"))
+        self.assertEqual((state, method), ("retrieved", "page_service"))
+        self.assertIn("through an external page-fetching service", note)
         dead = {url: {"status": 404, "note": "Page not found", "usable": False}}
         state, note, method = bt.retrieval_state(blocked, dead)
-        self.assertEqual((state, method), ("not_retrieved", "firecrawl"))
+        self.assertEqual((state, method), ("not_retrieved", "page_service"))
         # a 404 from a different host with the same body hash is still only a sandbox block for ftc.gov; hosts are looked up by URL
         self.assertEqual(bt.retrieval_state(self.check(status=404))[0], "not_retrieved")
 
@@ -238,7 +239,19 @@ class TestRetrievalAndInclusion(unittest.TestCase):
         c = self.check(url="https://gone.example/", status=404)
         state, note, _ = bt.retrieval_state(c, {"https://gone.example/": {"status": 404, "note": "Not Found", "usable": False}})
         self.assertEqual(state, "not_retrieved")
-        self.assertIn("independent read through Firecrawl", note)
+        self.assertIn("independent read through an external page-fetching service", note)
+
+    def test_published_retrieval_wording_names_no_service(self):
+        vendor = r"(?i)firecrawl|tavily|\bmcp\b|browser[ _-]?use|apify"
+        url = "https://www.example-settlement.com/"
+        page_read = {url: {"status": None, "note": "Firecrawl read timed out after 60 s; inconclusive", "usable": False}}
+        for check in (self.check(url=url, status=403), self.check(url=url, status=None, error="URLError: tls"), self.check(url=url, status=404)):
+            for reads in (None, page_read, {url: {"status": 200, "note": "official site", "usable": True}}):
+                state, note, method = bt.retrieval_state(check, reads)
+                self.assertNotRegex(note, vendor)
+                self.assertIn(method, bt.RETRIEVAL_LABELS)
+                self.assertNotRegex(bt.RETRIEVAL_LABELS[method], vendor)
+        self.assertEqual(set(bt.RETRIEVAL_LABELS), {"direct", "page_service", "none"})
 
     def test_firecrawl_read_upgrades_only_when_it_is_the_cited_page(self):
         url = "https://www.example-settlement.com/"
@@ -246,16 +259,16 @@ class TestRetrievalAndInclusion(unittest.TestCase):
         hijacked = {url: {"status": 200, "note": "now a gambling site", "usable": False}}
         empty_shell = self.check(url=url, status=200, path=self.page("<html>JavaScript app shell</html>"))  # no settlement wording in the static HTML
         self.assertEqual(bt.retrieval_state(empty_shell)[0], "not_retrieved")
-        self.assertEqual(bt.retrieval_state(empty_shell, usable)[0::2], ("retrieved", "firecrawl"))
+        self.assertEqual(bt.retrieval_state(empty_shell, usable)[0::2], ("retrieved", "page_service"))
         state, note, _ = bt.retrieval_state(empty_shell, hijacked)
         self.assertEqual(state, "not_retrieved")  # a 200 that is not the cited page never upgrades
         self.assertIn("now a gambling site", note)
         tls = self.check(url=url, status=None, error="URLError: certificate verify failed")
-        self.assertEqual(bt.retrieval_state(tls, usable)[0::2], ("retrieved", "firecrawl"))
+        self.assertEqual(bt.retrieval_state(tls, usable)[0::2], ("retrieved", "page_service"))
         redirect = self.check(url=url, status=302)
         self.assertEqual(bt.retrieval_state(redirect, usable)[0], "retrieved")
         bot_wall = self.check(url=url, status=403)
-        self.assertEqual(bt.retrieval_state(bot_wall, usable)[0::2], ("retrieved", "firecrawl"))
+        self.assertEqual(bt.retrieval_state(bot_wall, usable)[0::2], ("retrieved", "page_service"))
         self.assertEqual(bt.retrieval_state(bot_wall, hijacked)[0], "access_restricted")
         unreachable_robots = self.check(url=url, status=None, outcome="robots_unreachable", error="URLError: tls")
         self.assertEqual(bt.retrieval_state(unreachable_robots, usable)[0], "retrieved")
@@ -589,6 +602,25 @@ class TestNoSourceNames(unittest.TestCase):
         self.assertEqual(tp.public_wording("read directly (bytes unchanged under private/acq)"), "read directly (bytes unchanged)")
         self.assertIsNone(tp.public_wording(None))
         self.assertIsNone(tp.forbidden_in_text(tp.public_wording("Deadline matches; the SettleSignal title and the SettleSignal payout text are not on the page")))
+
+    def test_public_wording_describes_the_page_services_without_naming_them(self):
+        cases = {
+            "Firecrawl MCP firecrawl_scrape (public page read on 2026-10-18; sandbox fetch blocked or empty)":
+                "External page-fetching service (public page read on 2026-10-18; sandbox fetch blocked or empty)",
+            "The sandbox gets HTTP 403. A Firecrawl read redirected the listed path to /x, titled 'X | NHTSA'.":
+                "The sandbox gets HTTP 403. A read through an external page-fetching service redirected the listed path to /x, titled 'X | NHTSA'.",
+            "unreadable sources would count as not verified (none were unreadable after the Firecrawl reads)":
+                "unreadable sources would count as not verified (none were unreadable after the page-fetching service reads)",
+            "Firecrawl could not load the page (ERR_TUNNEL_CONNECTION_FAILED); inconclusive":
+                "The page-fetching service could not load the page (ERR_TUNNEL_CONNECTION_FAILED); inconclusive",
+            "Firecrawl read timed out after 60 s; inconclusive": "The page-fetching service read timed out after 60 s; inconclusive",
+            "independent text extraction by Tavily tavily_extract": "independent text extraction by a second external extraction service",
+        }
+        for before, after in cases.items():
+            self.assertEqual(tp.public_wording(before), after)
+        # text that names no service is returned unchanged, sentence capitals included
+        plain = "HTTP 200 on the check date (U.S. district court page); e.g. the claim form. see the notice"
+        self.assertEqual(tp.public_wording(plain), plain)
 
     def test_citable_rejects_a_record_whose_only_url_is_on_a_forbidden_host(self):
         retrieved = {"url": "https://settlesignal.com/x", "final_url": "https://settlesignal.com/x", "status": 403, "checked_at": "2026-10-18T00:00:00Z"}

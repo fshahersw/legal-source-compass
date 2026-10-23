@@ -40,15 +40,18 @@ from ftc_common import NOT_RECORDED, fmt_int, fmt_pct, fmt_rank, fmt_signed_int,
 DATABOOK_YEARS = list(range(2017, 2025))
 DNC_YEARS = list(range(2021, 2026))
 DNC_PDFS = {2021: "dnc_data_book_2021.pdf", 2022: "DNC-Data-Book-2022.pdf", 2023: "Do-Not-Call-Data-Book-2023.pdf", 2024: "DNC-Data-Book-2024.pdf", 2025: "DNC-Data-Book-2025.pdf"}
-# independent Tavily readings of Do Not Call ranking tables (private/acq/ftc_sentinel/verify/): cross-check only
+# independent second-extraction readings (Tavily) of Do Not Call ranking tables (private/acq/ftc_sentinel/verify/):
+# cross-check only. Files renamed 2026-10-23 without the vendor token (bytes and hashes unchanged).
 DNC_INDEPENDENT_READS = {
-    2022: ["read06_tavily_dnc2022_complaints_registrations.txt"],
-    2023: ["read08_tavily_dnc2023_complaints_ranking.txt"],
-    2024: ["read09_tavily_dnc2024_registrations_ranking.txt", "read11_tavily_dnc2024_complaints_ranking.txt"],
-    2025: ["read05_tavily_dnc2025_complaints_ranking.txt", "read10_tavily_dnc2025_registrations_ranking.txt"],
+    2022: ["read06_dnc2022_complaints_registrations.txt"],
+    2023: ["read08_dnc2023_complaints_ranking.txt"],
+    2024: ["read09_dnc2024_registrations_ranking.txt", "read11_dnc2024_complaints_ranking.txt"],
+    2025: ["read05_dnc2025_complaints_ranking.txt", "read10_dnc2025_registrations_ranking.txt"],
 }
 REFUND_YEARS = [2022, 2023, 2024]
-FIRECRAWL_METHOD = "Firecrawl MCP firecrawl_scrape of the official ftc.gov PDF/page (ftc.gov answers this sandbox with an Akamai bot wall); tool-result JSON stored unchanged"
+# Published provenance names no third-party service (owner rule): the captures are page-service (Firecrawl) reads.
+PAGE_SERVICE_METHOD = "Official ftc.gov PDF/page read through an external page-fetching service (ftc.gov answers requests from the collection server with an Akamai bot wall); the service's JSON response is stored unchanged"
+INDEPENDENT_READ_METHOD = "Independent text extraction of the official PDF by a second external extraction service (advanced extraction depth); result transcribed verbatim into this file, not a byte-identical capture"
 GOV_TERMS = "Public domain: FTC Website Policy (https://www.ftc.gov/policy-notices/website-policy, Copyright Permission, last updated August 2023) says most material on the FTC website is a work of the United States Government in the public domain and not subject to copyright restrictions (17 U.S.C. 105); attribution requested where feasible (\"Source: United States Federal Trade Commission, www.ftc.gov\"); no FTC endorsement may be implied."
 
 
@@ -205,7 +208,7 @@ def build_states(books, log):
     summary = {
         "label": "FTC Consumer Sentinel reports by state and year",
         "rows": len(rows), "years": DATABOOK_YEARS, "jurisdictions": 52,
-        "method": FIRECRAWL_METHOD, "terms": GOV_TERMS,
+        "method": PAGE_SERVICE_METHOD, "terms": GOV_TERMS,
         "sources": sources,
         "definitions": {
             "fraud_other_reports": "Number of Fraud and Other reports (identity theft excluded) the FTC attributes to the state's consumers in the calendar year, as printed in 'State Rankings: Fraud and Other Reports'.",
@@ -411,7 +414,7 @@ def build_national(books, log):
     sources = {str(y): C.source_record(b["entry"], b["pdf"], name=f"Consumer Sentinel Network Data Book {y}", publisher="Federal Trade Commission") for y, b in books.items()}
     summary = {
         "label": "FTC Consumer Sentinel national statistics by year",
-        "rows": len(rows), "years": DATABOOK_YEARS, "method": FIRECRAWL_METHOD, "terms": GOV_TERMS, "sources": sources,
+        "rows": len(rows), "years": DATABOOK_YEARS, "method": PAGE_SERVICE_METHOD, "terms": GOV_TERMS, "sources": sources,
         "formulas": {
             "yoy_pct": "(value in year t / value in year t-1 - 1) * 100",
             "cagr_pct": "((last / first) ** (1 / years) - 1) * 100",
@@ -572,7 +575,7 @@ def build_refunds(manifest, log):
                 if c["notes"]:
                     facts.append(("Note on the published cell", "; ".join(c["notes"]) + " in the report"))
                 if c.get("name_corrected_from"):
-                    facts.append(("Note on the case name", f"The official PDF prints '{name}'; the Firecrawl text extraction had read it as '{c['name_corrected_from']}'. Checked on the rendered PDF page."))
+                    facts.append(("Note on the case name", f"The official PDF prints '{name}'; the page-fetching service's text extraction had read it as '{c['name_corrected_from']}'. Checked on the rendered PDF page."))
                 if entry["total_differences"]:
                     facts.append(("Note on the published table", "The report's printed Totals row differs from the sum of its case rows in: " + "; ".join(f"{d['column']} (rows {d['rows_sum']:,}, printed {d['printed_total']:,})" for d in entry["total_differences"] if d.get("column"))))
                 facts.append(("Linked FTC program page", program_ids[program_match[name]]["url"] if name in program_match else "None: no refund program page title equals this case name exactly"))
@@ -706,7 +709,7 @@ def build_refunds(manifest, log):
     refunds_summary = {
         "label": "FTC refunds to consumers by case and year", "rows": len(rows), "case_rows": n_cases, "state_rows": state_rows, "summary_rows": len(summary_years),
         "years": {"case_and_state_tables": REFUND_YEARS, "share_of_funds_summaries": summary_years},
-        "method": FIRECRAWL_METHOD, "terms": GOV_TERMS, "sources": sources,
+        "method": PAGE_SERVICE_METHOD, "terms": GOV_TERMS, "sources": sources,
         "coverage_statement": "Per-case tables (first distributions, additional distributions, closed cases) and per-state mailed dollars exist only in the 2022, 2023 and 2024 report PDFs; the 2020 and 2021 reports and earlier carry summaries only and were not loaded. Share-of-funds summaries cover 2018-2024 from the snapshot tables of the 2022-2024 reports.",
         "validation": "Case cells are read by value type; closed-case rows must satisfy returned + admin + left over (+ education) = total fund (+-$2) and cashed <= base, first-distribution rows percent = cashed / eligible (+-1 point). The printed Totals row is compared with the column sums and any difference is shown beside the rows (it is a property of the printed report).",
         "formulas": {"share_of_listed_states_pct": "state dollars mailed / sum of the state table * 100", "yoy_pct": "(mailed in year t / mailed in year t-1 - 1) * 100"},
@@ -715,7 +718,7 @@ def build_refunds(manifest, log):
         "built_at": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
     programs_summary = {
-        "label": "FTC active refund programs", "rows": len(prog_rows), "method": FIRECRAWL_METHOD, "terms": GOV_TERMS,
+        "label": "FTC active refund programs", "rows": len(prog_rows), "method": PAGE_SERVICE_METHOD, "terms": GOV_TERMS,
         "sources": {"programs_page": sources["programs_page"]},
         "caveats": ["A snapshot of the FTC list on the retrieval date; programs leave the list when they close.", "The 'Date' column is printed without a header definition and is shown exactly as published."],
         "built_at": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -764,27 +767,28 @@ def build_dnc(manifest, log):
         firecrawl_tables[fy] = fc_rankings
         entries[fy], pdf_entries[fy] = entry, pdf_entry
         bases[fy] = D.dnc_population_basis(md)
-    # cross-check the two machine readings (Firecrawl text, Tavily text) against the PDF word layer
+    # cross-check the two machine readings (the page-service capture text, the independent second extraction) against
+    # the PDF word layer; published key names and messages name no third-party service
     independent = {}
     for fy, names_ in DNC_INDEPENDENT_READS.items():
         independent[fy] = X.load_supplements([os.path.join(C.ROOT, manifest[n]["path"]) for n in names_])
-    crosscheck = {"firecrawl_text_vs_pdf": {"agree": 0, "differ": [], "missing_in_firecrawl": 0}, "tavily_text_vs_pdf": {"agree": 0, "differ": []}}
+    crosscheck = {"capture_text_vs_pdf": {"agree": 0, "differ": [], "missing_in_capture_text": 0}, "independent_reading_vs_pdf": {"agree": 0, "differ": []}}
     for fy in books:
         for kind in ("registrations", "complaints"):
             for usps, prow in books[fy]["rankings"][kind].items():
                 frow = firecrawl_tables[fy][kind].get(usps)
                 if frow is None:
-                    crosscheck["firecrawl_text_vs_pdf"]["missing_in_firecrawl"] += 1
+                    crosscheck["capture_text_vs_pdf"]["missing_in_capture_text"] += 1
                 elif (frow["count"], frow["per100k"]) == (prow["count"], prow["per100k"]):
-                    crosscheck["firecrawl_text_vs_pdf"]["agree"] += 1
+                    crosscheck["capture_text_vs_pdf"]["agree"] += 1
                 else:
-                    crosscheck["firecrawl_text_vs_pdf"]["differ"].append(f"{usps}-FY{fy} {kind}: Firecrawl {frow['count']}/{frow['per100k']} vs PDF {prow['count']}/{prow['per100k']}")
+                    crosscheck["capture_text_vs_pdf"]["differ"].append(f"{usps}-FY{fy} {kind}: capture text {frow['count']}/{frow['per100k']} vs PDF {prow['count']}/{prow['per100k']}")
                 trow = independent.get(fy, {}).get(kind, {}).get(usps)
                 if trow:
                     if (trow["count"], trow["per100k"]) == (prow["count"], prow["per100k"]):
-                        crosscheck["tavily_text_vs_pdf"]["agree"] += 1
+                        crosscheck["independent_reading_vs_pdf"]["agree"] += 1
                     else:
-                        crosscheck["tavily_text_vs_pdf"]["differ"].append(f"{usps}-FY{fy} {kind}: Tavily {trow['count']}/{trow['per100k']} vs PDF {prow['count']}/{prow['per100k']}")
+                        crosscheck["independent_reading_vs_pdf"]["differ"].append(f"{usps}-FY{fy} {kind}: independent reading {trow['count']}/{trow['per100k']} vs PDF {prow['count']}/{prow['per100k']}")
     log["dnc_crosscheck_vs_pdf"] = crosscheck
     recs = D.consolidate(books)
     supplement_entries = {n: manifest[n] for names_ in DNC_INDEPENDENT_READS.values() for n in names_}
@@ -819,7 +823,7 @@ def build_dnc(manifest, log):
                 ("Active registrations per 100K population", fmt_int(reg and reg["per100k"]) if reg and reg["per100k"] is not None else NOT_RECORDED),
                 ("State rank, registrations per 100K", (fmt_rank(reg["rank"]) + " of 50 states") if reg and reg["rank"] else "Not recorded (unranked or not readable)"),
                 ("Complaints, change vs prior fiscal year", fmt_signed_pct(an["complaints_yoy_pct"]) + " (derived)"),
-                ("Source", f"National Do Not Call Registry Data Book FY {fy}: ranking tables read from the official PDF word layer (page {F.REGISTRATIONS_PAGE} registrations, page {F.COMPLAINTS_PAGE} complaints) and the {name} state page totals (Firecrawl capture chunk {(r['chunks'].get('complaints') or r['chunks'].get('registrations') or {}).get('page')})"),
+                ("Source", f"National Do Not Call Registry Data Book FY {fy}: ranking tables read from the official PDF word layer (page {F.REGISTRATIONS_PAGE} registrations, page {F.COMPLAINTS_PAGE} complaints) and the {name} state page totals (page-service capture chunk {(r['chunks'].get('complaints') or r['chunks'].get('registrations') or {}).get('page')})"),
                 ("Other readings that disagreed", "; ".join(r["notes"]) if r["notes"] else "none"),
                 ("Not recorded because", "; ".join(r["withheld"]) if r["withheld"] else "nothing withheld"),
             ]
@@ -840,12 +844,13 @@ def build_dnc(manifest, log):
         cov[f"FY{fy}"] = {"complaints_count": sum(1 for r in sub if r["complaints"] and r["complaints"]["count"] is not None), "complaints_per100k": sum(1 for r in sub if r["complaints"] and r["complaints"]["per100k"] is not None), "complaints_rank": sum(1 for r in sub if r["complaints"] and r["complaints"]["rank"] is not None), "registrations_count": sum(1 for r in sub if r["registrations"] and r["registrations"]["count"] is not None), "registrations_per100k": sum(1 for r in sub if r["registrations"] and r["registrations"]["per100k"] is not None), "registrations_rank": sum(1 for r in sub if r["registrations"] and r["registrations"]["rank"] is not None), "of_jurisdictions": 52}
     log["dnc_coverage"] = cov
     summary = {
-        "label": "FTC National Do Not Call Registry complaints and registrations by state", "rows": len(rows), "fiscal_years": [f"FY{y}" for y in DNC_YEARS], "method": FIRECRAWL_METHOD, "terms": GOV_TERMS,
+        "label": "FTC National Do Not Call Registry complaints and registrations by state", "rows": len(rows), "fiscal_years": [f"FY{y}" for y in DNC_YEARS], "method": PAGE_SERVICE_METHOD, "terms": GOV_TERMS,
         "sources": {f"FY{fy}": C.source_record(entries[fy], pdf_entries[fy], name=f"National Do Not Call Registry Data Book FY {fy}", publisher="Federal Trade Commission", population_basis_year=bases[fy]) for fy in sorted(entries)},
         "coverage": cov,
         "cross_checks": log["dnc_crosscheck_vs_pdf"],
-        "independent_readings": {n: {"url": e["url"], "path": e["path"], "sha256": e["sha256"], "method": e["method"]} for n, e in sorted(supplement_entries.items())},
-        "validation": "Ranking tables are read from the official PDF's word layer (pdfplumber, y_tolerance 0.3, hidden overlay header tokens dropped), which returns all 52 rows of both tables in every edition; each table must have ranks 1-50 contiguous, DC and PR unranked and per-100K non-increasing. A count is published when the PDF table and the Firecrawl state page agree, or when the per-100K figure and the implied population (count / per-100K) confirm the PDF count; a per-100K figure only when its implied population matches the state's registrations-table population to rounding (same edition) and the state's median over all editions within 20%. The Firecrawl text and the Tavily text of the same tables are cross-checks only (see cross_checks), never a source.",
+        # the manifest keeps the acquisition method verbatim (private); the published method is the neutral description
+        "independent_readings": {n: {"url": e["url"], "path": e["path"], "sha256": e["sha256"], "method": INDEPENDENT_READ_METHOD} for n, e in sorted(supplement_entries.items())},
+        "validation": "Ranking tables are read from the official PDF's word layer (pdfplumber, y_tolerance 0.3, hidden overlay header tokens dropped), which returns all 52 rows of both tables in every edition; each table must have ranks 1-50 contiguous, DC and PR unranked and per-100K non-increasing. A count is published when the PDF table and the captured state page agree, or when the per-100K figure and the implied population (count / per-100K) confirm the PDF count; a per-100K figure only when its implied population matches the state's registrations-table population to rounding (same edition) and the state's median over all editions within 20%. The page-fetching service's text and the independent second extraction of the same tables are cross-checks only (see cross_checks), never a source.",
         "formulas": {"complaints_yoy_pct": "(complaints in FY t / complaints in FY t-1 - 1) * 100, both readable", "rank_change": "rank in FY t-1 minus rank in FY t (positive = higher complaints per capita)", "implied_population": "count / per-100K * 100,000 (used only as a validity check)"},
         "caveats": ["Complaints are consumer reports to the FTC about calls allegedly violating the Do Not Call rules, not findings of violations.", "State comes from the state the consumer reported or else from the phone's area code (Data Book 'Inside the numbers').", "Per-100K figures use different Census vintages in different editions (see population_basis_year)."],
         "built_at": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),

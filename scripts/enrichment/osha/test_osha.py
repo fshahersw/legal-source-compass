@@ -432,6 +432,17 @@ class SirBuildTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.build(sir_fixture(al_total=1))
 
+    def test_published_provenance_names_no_third_party_service(self):
+        import json
+        import re
+        dataset, label, rows, listing, summary = self.build(sir_fixture())
+        vendor = r"(?i)firecrawl|tavily|browser[ _-]?use|apify|\bexa\b|anthropic|claude|openai|\bgpt|\bmcp\b"
+        self.assertNotRegex(json.dumps([label, listing, summary]), vendor)
+        self.assertEqual([r["id"] for r in rows if re.search(vendor, json.dumps(r))], [])
+        retrieval = dict(rows[0]["detail"]["facts"])["Retrieval"]
+        self.assertIn("external page-fetching service", retrieval)
+        self.assertIn("HTTP 403", retrieval)  # the blocked record-level file stays stated
+
 
 if __name__ == "__main__":
     unittest.main()

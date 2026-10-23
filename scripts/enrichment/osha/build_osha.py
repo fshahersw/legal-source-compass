@@ -639,7 +639,8 @@ def sir_common_facts(period, origin_label, origin_url):
         ("Source", f"OSHA Severe Injury Reports: {origin_label}"),
         ("Source page", origin_url),
         ("Period", period),
-        ("Retrieval", "Read 2026-10-18 through the Firecrawl MCP from the public osha.gov document and copied into private/acq/osha/_pages/sir_published_tables_2026-10-18.md; "
+        # published wording names no third-party service (owner rule); the reads were made through Firecrawl
+        ("Retrieval", "Read 2026-10-18 through an external page-fetching service (osha.gov blocks direct requests from the collection server) from the public osha.gov document and copied into private/acq/osha/_pages/sir_published_tables_2026-10-18.md; "
                       "the record-level SIR file (osha.gov/sites/default/files/January2015toNovember2025.zip) answers HTTP 403 to this environment and was not acquired"),
         ("Coverage", sir_coverage()),
     ]
@@ -797,14 +798,14 @@ def build_sir():
         "sources": [SIR_DASHBOARD, SIR_2024, SIR_LOOKBACK, SIR_PAGE],
         "blocked": {"file": SIR_ZIP, "label": "Download the full SIR data set (Data from 1/1/2015 through 11/30/2025)", "result": "HTTP 403 (osha.gov bot wall) from this environment on 2026-10-18; Internet Archive unreachable through the egress proxy; not in the DOL data portal catalog (45 datasets checked)"},
         "retrieved": "2026-10-18",
-        "method": "Public osha.gov documents read through the Firecrawl MCP (no login, no access control bypassed) and the tables copied by hand into private/acq/osha/_pages/sir_published_tables_2026-10-18.md; every transcribed table is cross-checked against its own printed totals by the builder (state years sum to the printed total; sector columns add to the printed totals; body-part rows add to their totals and the grand total 70,206 equals 56,696 + 18,559 - 5,049; the 2024 dashboard figures equal the 2024 annual report text).",
-        "year_series": "Dashboard chart text for 2015-2025 as returned by the Firecrawl search index of osha.gov/severe-injury-reports (the live page renders its charts with script and shows no numbers to a page read); 2024 agrees with the 2024 annual report.",
+        "method": "Public osha.gov documents read through an external page-fetching service (no login, no access control bypassed) and the tables copied by hand into private/acq/osha/_pages/sir_published_tables_2026-10-18.md; every transcribed table is cross-checked against its own printed totals by the builder (state years sum to the printed total; sector columns add to the printed totals; body-part rows add to their totals and the grand total 70,206 equals 56,696 + 18,559 - 5,049; the 2024 dashboard figures equal the 2024 annual report text).",
+        "year_series": "Dashboard chart text for 2015-2025 as returned by an external web search service's index of osha.gov/severe-injury-reports (the live page renders its charts with script and shows no numbers to a page read); 2024 agrees with the 2024 annual report.",
         "workers_vs_reports": "Hospitalized / amputations / loss of an eye are worker counts (dashboard headings 'Total Workers ...'); reports is the number of SIRs. One report can involve several workers and types.",
         "rates": "Published by OSHA and not recomputed: state rates = average annual SIRs per 100,000 FTE workers 2015-2021 using American Community Survey PUMS 2015-2019 denominators (Seven-Year Lookback, Table 2); sector rates per 100,000 FTE workers using BEA full-time-equivalent employees by industry (2024 Annual Report p. 4, accessed Nov 17 2025). The denominator values themselves are not published in the reports.",
         "computed": "yoy_reports_pct = (reports - previous year's reports) / previous year's reports x 100 (not computed for partial 2025); rate_change_pct = (2024 rate - 2015-2023 average rate) / 2015-2023 average rate x 100; body_part_share_pct_computed = body-part count / sector (or all-sector) reports x 100; change_2021_vs_2015_pct likewise.",
         "coverage": sir_coverage(),
         "not_recorded": list(SIR_NOT_RECORDED),
-        "terms": "U.S. Department of Labor public information (osha.gov); read through the Firecrawl MCP because osha.gov blocks direct requests from this environment.",
+        "terms": "U.S. Department of Labor public information (osha.gov); read through an external page-fetching service because osha.gov blocks direct requests from the collection server.",
         "state_plan_note": "State Plan states do not appear in the public SIR dataset except for employers federal OSHA covers; absence of a state record here means 'not recorded', not zero.",
     }
     return ("osha_severe_injuries", "OSHA severe injury reports: published aggregates (national, state 2015–2021, sector)", rows, listing_block, summary)

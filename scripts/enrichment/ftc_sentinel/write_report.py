@@ -1,7 +1,7 @@
 """Compose private/build/ftc_sentinel/REPORT.md from the build files, build_log.json, spot_checks.json and the manifest.
 
 Every figure in the report is read from those files. The only typed-in text is (a) prose, (b) quotations from the captured
-FTC press releases (private/acq/ftc_sentinel/firecrawl/press_*_databook.json) used for the cross-check table, and (c) the console
+FTC press releases (private/acq/ftc_sentinel/pages/press_*_databook.json) used for the cross-check table, and (c) the console
 results of the independent verifier's scripts in VERIFIER_RUNS, which were copied by hand from the runs made after the final rebuild.
 
 Usage: python3 -I -B scripts/enrichment/ftc_sentinel/write_report.py
@@ -130,10 +130,10 @@ def main():
     w("Byte provenance, in order of authority:")
     w("")
     w("1. **Official PDFs** (`private/acq/ftc_sentinel/pdf/`): 8 Consumer Sentinel Data Books (2017-2024), 5 Do Not Call Data Books (FY2021-FY2025), 3 refund reports (2022-2024). ftc.gov answers this sandbox with an Akamai bot wall, so these are the independent verifier's downloads of 2026-10-18, copied byte-identical; `import_official_pdfs.py` refuses a copy whose SHA-256 differs from the verifier's `_download_log.json`. The Do Not Call ranking tables are read from these PDFs' word layer; all other datasets are spot-checked and cross-checked against them (sections 6 and 7).")
-    w("2. **Firecrawl captures** (`private/acq/ftc_sentinel/firecrawl/`): the Firecrawl MCP `firecrawl_scrape` tool-result JSON of the same PDFs and of the HTML pages (refunds data page, refund programs list, three Data Book press releases), stored unchanged. This is a text extraction (letters spaced apart, digits lost in some cells, rows dropped), so every figure passes the validation rules in section 4. The contract names HTML pages for the Firecrawl route; the PDFs were also read through it because the sandbox cannot fetch ftc.gov directly (a deviation, flagged here). No login, CAPTCHA or paywall was involved.")
+    w("2. **Firecrawl captures** (`private/acq/ftc_sentinel/pages/`, renamed from `firecrawl/` on 2026-10-23 so published capture paths name no service; bytes unchanged): the Firecrawl MCP `firecrawl_scrape` tool-result JSON of the same PDFs and of the HTML pages (refunds data page, refund programs list, three Data Book press releases), stored unchanged. This is a text extraction (letters spaced apart, digits lost in some cells, rows dropped), so every figure passes the validation rules in section 4. The contract names HTML pages for the Firecrawl route; the PDFs were also read through it because the sandbox cannot fetch ftc.gov directly (a deviation, flagged here). No login, CAPTCHA or paywall was involved.")
     w("3. **Independent text readings** (`private/acq/ftc_sentinel/verify/read01-read11`): Tavily `tavily_extract` readings of the same official PDFs, transcribed by the agent. Used only as cross-checks, never as the source of a published figure.")
     w("")
-    w("Terms: " + builds["ftc_sentinel_states"]["summary"]["terms"] + " The excerpt is stored as `private/acq/ftc_sentinel/firecrawl/ftc_website_policy_copyright_excerpt.txt`. ftc.gov's robots.txt could not be read from this sandbox (the bot wall returns an error page); the Tableau Public robots.txt was fetched (`_probe/tableau_robots.txt`).")
+    w("Terms: " + builds["ftc_sentinel_states"]["summary"]["terms"] + " The excerpt is stored as `private/acq/ftc_sentinel/pages/ftc_website_policy_copyright_excerpt.txt`. ftc.gov's robots.txt could not be read from this sandbox (the bot wall returns an error page); the Tableau Public robots.txt was fetched (`_probe/tableau_robots.txt`).")
     w("")
     w("Hash labels (the first build mixed them): in every `summary.sources[*]` and `item.provenance`, **`capture_sha256` is the hash of the Firecrawl tool-result JSON (a text extraction)** and **`official_pdf_sha256` is the hash of the official PDF bytes as served by ftc.gov**. Each record carries a note saying which is which, and `inputs` lists both files.")
     w("")
@@ -225,7 +225,7 @@ def main():
     w("")
     w("### Cross-check of headline figures against the FTC press releases")
     w("")
-    w("The three press releases captured with the Data Books (`firecrawl/press_2022_databook.json`, `press_2023_databook.json`, `press_2024_databook.json`) state headline figures. Compared with the build:")
+    w("The three press releases captured with the Data Books (`pages/press_2022_databook.json`, `press_2023_databook.json`, `press_2024_databook.json`) state headline figures. Compared with the build:")
     w("")
     inv = {}
     imp = {}
@@ -274,7 +274,7 @@ def main():
         picked.append([c["dataset"], c["id"], c["field"], c["displayed"], c["pdf_page"], c["level"], (c["where"] or "")[:96], "yes" if c["match"] else "NO"])
     w(table(["Dataset", "Record", "Field", "Displayed", "PDF page", "Level", "Where on the PDF page (row text)", "Match"], picked))
     w("")
-    w(f"Further independent checks of the Do Not Call tables: Tavily's separate extraction agrees with the PDF-derived values on {xc['tavily_text_vs_pdf']['agree']} cells and differs on {len(xc['tavily_text_vs_pdf']['differ'])}; the Firecrawl text agrees on {xc['firecrawl_text_vs_pdf']['agree']} cells, is missing {xc['firecrawl_text_vs_pdf']['missing_in_firecrawl']} and differs on {len(xc['firecrawl_text_vs_pdf']['differ'])}, all in FY2022 where the extraction dropped a leading digit (for example Delaware complaints per 100K: Firecrawl 537, PDF 1,537). The PDF values are published.")
+    w(f"Further independent checks of the Do Not Call tables: Tavily's separate extraction agrees with the PDF-derived values on {xc['independent_reading_vs_pdf']['agree']} cells and differs on {len(xc['independent_reading_vs_pdf']['differ'])}; the Firecrawl text agrees on {xc['capture_text_vs_pdf']['agree']} cells, is missing {xc['capture_text_vs_pdf']['missing_in_capture_text']} and differs on {len(xc['capture_text_vs_pdf']['differ'])}, all in FY2022 where the extraction dropped a leading digit (for example Delaware complaints per 100K: Firecrawl 537, PDF 1,537). The PDF values are published.")
     w("")
     w("## 7. Independent verifier scripts, re-run after the final rebuild")
     w("")
