@@ -37,7 +37,8 @@ export type Deps = {
 
 const realDeps: Deps = {
   fetch: (...a) => fetch(...a),
-  rpc: rpcPostOptional,
+  // resolved at call time, so a module that only imports this file (the assistant's tool registry) never touches the REST client
+  rpc: (...a) => rpcPostOptional(...a),
   now: () => Date.now(),
   env: (name) => {
     const v = process.env[name];
