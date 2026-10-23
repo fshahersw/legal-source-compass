@@ -628,6 +628,52 @@ class ExportStdoutTests(unittest.TestCase):
             self.assertEqual(n, len(buf.getvalue().splitlines()))
 
 
+class VerifyShardsTests(unittest.TestCase):
+    def build(self, tmp, doc_list):
+        import verify_shards  # noqa: F401  (imported here so the module is exercised)
+
+        directory = os.path.join(tmp, "us_code_sections")
+        store = em.Store(directory, "us_code_sections", em.chunk_params("us_code_sections"), shard_rows=10)
+        usage = em.Usage(os.path.join(tmp, "usage.json"), 10**9)
+        em.Runner("us_code_sections", doc_list, FakeClient(), store, usage, free_bytes=lambda: 10**12, log=lambda m: None, window_chunks=4).run()
+        return directory
+
+    def test_a_clean_build_passes_and_aligned_vectors_match_fresh_embeddings(self):
+        import verify_shards as vs
+
+        with tempfile.TemporaryDirectory() as tmp:
+            d = docs(12, lambda i: statute(3, 140))
+            directory = self.build(tmp, d)
+            res = vs.verify_dataset("us_code_sections", d, directory, sample=8, client=FakeClient())
+            self.assertEqual(res["failures"], [])
+            self.assertGreaterEqual(res["sampled"], 6)
+            self.assertGreater(res["min_cosine"], 0.99)
+
+    def test_changed_source_text_vector_misalignment_and_file_damage_are_reported(self):
+        import verify_shards as vs
+
+        with tempfile.TemporaryDirectory() as tmp:
+            d = docs(12, lambda i: statute(3, 140))
+            directory = self.build(tmp, d)
+            changed = [ck.Doc(x.dataset, x.record_id, x.title, x.heading, x.text.replace("shall comply", "may comply"), x.href, x.source_url) for x in d]
+            res = vs.verify_dataset("us_code_sections", changed, directory, sample=8)
+            self.assertTrue(any("text hash differs" in f or "embed key differs" in f for f in res["failures"]))
+            # swap two vector rows of a shard (and fix the manifest hash): the metadata no longer matches the vectors
+            manifest = jload(os.path.join(directory, "manifest.json"))
+            vec_path = em.shard_paths(directory, 0)[0]
+            mat = np.fromfile(vec_path, dtype="<f2").reshape(-1, vg.DIMENSIONS).copy()
+            mat[[0, 1]] = mat[[1, 0]]
+            mat.tofile(vec_path)
+            manifest["shards"][0]["vec_sha256"] = em.file_sha256(vec_path)
+            em.atomic_write(os.path.join(directory, "manifest.json"), json.dumps(manifest).encode())
+            res = vs.verify_dataset("us_code_sections", d, directory, sample=40, client=FakeClient())
+            self.assertTrue(any("does not match a fresh embedding" in f for f in res["failures"]), res["failures"][:3])
+            with open(vec_path, "r+b") as fh:
+                fh.write(b"\x07")
+            res = vs.verify_dataset("us_code_sections", d, directory, sample=4)
+            self.assertTrue(any("file hash differs" in f for f in res["failures"]))
+
+
 class OpinionTests(unittest.TestCase):
     def member(self, text, sha=None):
         rec = {"opinion_id": 1, "text": text, "text_sha256": sha or hashlib.sha256(text.encode()).hexdigest()}
