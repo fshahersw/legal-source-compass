@@ -1,0 +1,4523 @@
+{
+ "pattern_version": "citations-v2/2026-10-25.1",
+ "texts": [
+  {
+   "id": "cases-parallel",
+   "text": "See Obergefell v. Hodges, 576 U.S. 644, 651-52, 135 S. Ct. 2584 (2015); Ashcroft v. Iqbal, 556 U.S. 662 (2009).",
+   "expected": [
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case",
+     "start": 26,
+     "end": 38,
+     "matched": "576 U.S. 644",
+     "span": [
+      26,
+      38
+     ],
+     "key": "case:576:U.S.:644",
+     "normalized": "576 U.S. 644",
+     "pin": "651-52",
+     "fields": {
+      "volume": "576",
+      "reporter": "U.S.",
+      "reporter_as_written": "U.S.",
+      "page": "644",
+      "cite": "576 U.S. 644"
+     },
+     "group": 1,
+     "name": {
+      "text": "Obergefell v. Hodges",
+      "start": 4,
+      "end": 24
+     },
+     "paren": {
+      "court": "",
+      "year": "2015",
+      "date": "2015",
+      "start": 63,
+      "end": 70
+     },
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case",
+     "start": 48,
+     "end": 63,
+     "matched": "135 S. Ct. 2584",
+     "span": [
+      48,
+      63
+     ],
+     "key": "case:135:S. Ct.:2584",
+     "normalized": "135 S. Ct. 2584",
+     "pin": null,
+     "fields": {
+      "volume": "135",
+      "reporter": "S. Ct.",
+      "reporter_as_written": "S. Ct.",
+      "page": "2584",
+      "cite": "135 S. Ct. 2584"
+     },
+     "group": 1,
+     "name": {
+      "text": "Obergefell v. Hodges",
+      "start": 4,
+      "end": 24
+     },
+     "paren": {
+      "court": "",
+      "year": "2015",
+      "date": "2015",
+      "start": 63,
+      "end": 70
+     },
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case",
+     "start": 91,
+     "end": 103,
+     "matched": "556 U.S. 662",
+     "span": [
+      91,
+      103
+     ],
+     "key": "case:556:U.S.:662",
+     "normalized": "556 U.S. 662",
+     "pin": null,
+     "fields": {
+      "volume": "556",
+      "reporter": "U.S.",
+      "reporter_as_written": "U.S.",
+      "page": "662",
+      "cite": "556 U.S. 662"
+     },
+     "group": 2,
+     "name": {
+      "text": "Ashcroft v. Iqbal",
+      "start": 72,
+      "end": 89
+     },
+     "paren": {
+      "court": "",
+      "year": "2009",
+      "date": "2009",
+      "start": 103,
+      "end": 110
+     },
+     "antecedent": null,
+     "short_status": null
+    }
+   ]
+  },
+  {
+   "id": "cases-reporters",
+   "text": "Smith v. Jones, 123 F.3d 456, 460 (9th Cir. 1997); Doe v. Roe, 45 F. Supp. 3d 789 (S.D.N.Y. 2014); Kim v. Lee, 12 F.Supp.2d 34 (D. Mass. 1998); Ruiz v. City, 598 F. App’x 123 (5th Cir. 2015); People v. X, 51 Cal. 4th 1 (2010); Hansen v. Y, 210 A.3d 55 (Pa. 2019); In re Q, 145 S.Ct. 1 (2024).",
+   "expected": [
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case",
+     "start": 16,
+     "end": 28,
+     "matched": "123 F.3d 456",
+     "span": [
+      16,
+      28
+     ],
+     "key": "case:123:F.3d:456",
+     "normalized": "123 F.3d 456",
+     "pin": "460",
+     "fields": {
+      "volume": "123",
+      "reporter": "F.3d",
+      "reporter_as_written": "F.3d",
+      "page": "456",
+      "cite": "123 F.3d 456"
+     },
+     "group": 1,
+     "name": {
+      "text": "Smith v. Jones",
+      "start": 0,
+      "end": 14
+     },
+     "paren": {
+      "court": "9th Cir.",
+      "year": "1997",
+      "date": "1997",
+      "start": 33,
+      "end": 49
+     },
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case",
+     "start": 63,
+     "end": 81,
+     "matched": "45 F. Supp. 3d 789",
+     "span": [
+      63,
+      81
+     ],
+     "key": "case:45:F. Supp. 3d:789",
+     "normalized": "45 F. Supp. 3d 789",
+     "pin": null,
+     "fields": {
+      "volume": "45",
+      "reporter": "F. Supp. 3d",
+      "reporter_as_written": "F. Supp. 3d",
+      "page": "789",
+      "cite": "45 F. Supp. 3d 789"
+     },
+     "group": 2,
+     "name": {
+      "text": "Doe v. Roe",
+      "start": 51,
+      "end": 61
+     },
+     "paren": {
+      "court": "S.D.N.Y.",
+      "year": "2014",
+      "date": "2014",
+      "start": 81,
+      "end": 97
+     },
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case",
+     "start": 111,
+     "end": 126,
+     "matched": "12 F.Supp.2d 34",
+     "span": [
+      111,
+      126
+     ],
+     "key": "case:12:F. Supp. 2d:34",
+     "normalized": "12 F. Supp. 2d 34",
+     "pin": null,
+     "fields": {
+      "volume": "12",
+      "reporter": "F. Supp. 2d",
+      "reporter_as_written": "F.Supp.2d",
+      "page": "34",
+      "cite": "12 F. Supp. 2d 34"
+     },
+     "group": 3,
+     "name": {
+      "text": "Kim v. Lee",
+      "start": 99,
+      "end": 109
+     },
+     "paren": {
+      "court": "D. Mass.",
+      "year": "1998",
+      "date": "1998",
+      "start": 126,
+      "end": 142
+     },
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case",
+     "start": 158,
+     "end": 174,
+     "matched": "598 F. App’x 123",
+     "span": [
+      158,
+      174
+     ],
+     "key": "case:598:F. App'x:123",
+     "normalized": "598 F. App'x 123",
+     "pin": null,
+     "fields": {
+      "volume": "598",
+      "reporter": "F. App'x",
+      "reporter_as_written": "F. App'x",
+      "page": "123",
+      "cite": "598 F. App'x 123"
+     },
+     "group": 4,
+     "name": {
+      "text": "Ruiz v. City",
+      "start": 144,
+      "end": 156
+     },
+     "paren": {
+      "court": "5th Cir.",
+      "year": "2015",
+      "date": "2015",
+      "start": 174,
+      "end": 190
+     },
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case",
+     "start": 205,
+     "end": 218,
+     "matched": "51 Cal. 4th 1",
+     "span": [
+      205,
+      218
+     ],
+     "key": "case:51:Cal. 4th:1",
+     "normalized": "51 Cal. 4th 1",
+     "pin": null,
+     "fields": {
+      "volume": "51",
+      "reporter": "Cal. 4th",
+      "reporter_as_written": "Cal. 4th",
+      "page": "1",
+      "cite": "51 Cal. 4th 1"
+     },
+     "group": 5,
+     "name": {
+      "text": "People v. X",
+      "start": 192,
+      "end": 203
+     },
+     "paren": {
+      "court": "",
+      "year": "2010",
+      "date": "2010",
+      "start": 218,
+      "end": 225
+     },
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case",
+     "start": 240,
+     "end": 251,
+     "matched": "210 A.3d 55",
+     "span": [
+      240,
+      251
+     ],
+     "key": "case:210:A.3d:55",
+     "normalized": "210 A.3d 55",
+     "pin": null,
+     "fields": {
+      "volume": "210",
+      "reporter": "A.3d",
+      "reporter_as_written": "A.3d",
+      "page": "55",
+      "cite": "210 A.3d 55"
+     },
+     "group": 6,
+     "name": {
+      "text": "Hansen v. Y",
+      "start": 227,
+      "end": 238
+     },
+     "paren": {
+      "court": "Pa.",
+      "year": "2019",
+      "date": "2019",
+      "start": 251,
+      "end": 262
+     },
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case",
+     "start": 273,
+     "end": 284,
+     "matched": "145 S.Ct. 1",
+     "span": [
+      273,
+      284
+     ],
+     "key": "case:145:S. Ct.:1",
+     "normalized": "145 S. Ct. 1",
+     "pin": null,
+     "fields": {
+      "volume": "145",
+      "reporter": "S. Ct.",
+      "reporter_as_written": "S.Ct.",
+      "page": "1",
+      "cite": "145 S. Ct. 1"
+     },
+     "group": 7,
+     "name": {
+      "text": "In re Q",
+      "start": 264,
+      "end": 271
+     },
+     "paren": {
+      "court": "",
+      "year": "2024",
+      "date": "2024",
+      "start": 284,
+      "end": 291
+     },
+     "antecedent": null,
+     "short_status": null
+    }
+   ]
+  },
+  {
+   "id": "cases-wl-lexis",
+   "text": "Compare In re Zantac, 2021 WL 1234567, at *3 (S.D. Fla. Mar. 3, 2021), with Doe v. Roe, 2019 U.S. Dist. LEXIS 12345, at *4-5 (D.N.J. 2019), and Kumho Tire Co. v. Carmichael, 526 U.S. 137, 119 S. Ct. 1167, 143 L. Ed. 2d 238 (1999).",
+   "expected": [
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case",
+     "start": 22,
+     "end": 37,
+     "matched": "2021 WL 1234567",
+     "span": [
+      22,
+      37
+     ],
+     "key": "case:2021:WL:1234567",
+     "normalized": "2021 WL 1234567",
+     "pin": "*3",
+     "fields": {
+      "volume": "2021",
+      "reporter": "WL",
+      "reporter_as_written": "WL",
+      "page": "1234567",
+      "cite": "2021 WL 1234567"
+     },
+     "group": 1,
+     "name": {
+      "text": "In re Zantac",
+      "start": 8,
+      "end": 20
+     },
+     "paren": {
+      "court": "S.D. Fla.",
+      "year": "2021",
+      "date": "Mar. 3, 2021",
+      "start": 44,
+      "end": 69
+     },
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case",
+     "start": 88,
+     "end": 115,
+     "matched": "2019 U.S. Dist. LEXIS 12345",
+     "span": [
+      88,
+      115
+     ],
+     "key": "case:2019:U.S. Dist. LEXIS:12345",
+     "normalized": "2019 U.S. Dist. LEXIS 12345",
+     "pin": "*4-5",
+     "fields": {
+      "volume": "2019",
+      "reporter": "U.S. Dist. LEXIS",
+      "reporter_as_written": "U.S. Dist. LEXIS",
+      "page": "12345",
+      "cite": "2019 U.S. Dist. LEXIS 12345"
+     },
+     "group": 2,
+     "name": {
+      "text": "Doe v. Roe",
+      "start": 76,
+      "end": 86
+     },
+     "paren": {
+      "court": "D.N.J.",
+      "year": "2019",
+      "date": "2019",
+      "start": 124,
+      "end": 138
+     },
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case",
+     "start": 174,
+     "end": 186,
+     "matched": "526 U.S. 137",
+     "span": [
+      174,
+      186
+     ],
+     "key": "case:526:U.S.:137",
+     "normalized": "526 U.S. 137",
+     "pin": null,
+     "fields": {
+      "volume": "526",
+      "reporter": "U.S.",
+      "reporter_as_written": "U.S.",
+      "page": "137",
+      "cite": "526 U.S. 137"
+     },
+     "group": 3,
+     "name": {
+      "text": "Kumho Tire Co. v. Carmichael",
+      "start": 144,
+      "end": 172
+     },
+     "paren": {
+      "court": "",
+      "year": "1999",
+      "date": "1999",
+      "start": 222,
+      "end": 229
+     },
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case",
+     "start": 188,
+     "end": 203,
+     "matched": "119 S. Ct. 1167",
+     "span": [
+      188,
+      203
+     ],
+     "key": "case:119:S. Ct.:1167",
+     "normalized": "119 S. Ct. 1167",
+     "pin": null,
+     "fields": {
+      "volume": "119",
+      "reporter": "S. Ct.",
+      "reporter_as_written": "S. Ct.",
+      "page": "1167",
+      "cite": "119 S. Ct. 1167"
+     },
+     "group": 3,
+     "name": {
+      "text": "Kumho Tire Co. v. Carmichael",
+      "start": 144,
+      "end": 172
+     },
+     "paren": {
+      "court": "",
+      "year": "1999",
+      "date": "1999",
+      "start": 222,
+      "end": 229
+     },
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case",
+     "start": 205,
+     "end": 222,
+     "matched": "143 L. Ed. 2d 238",
+     "span": [
+      205,
+      222
+     ],
+     "key": "case:143:L. Ed. 2d:238",
+     "normalized": "143 L. Ed. 2d 238",
+     "pin": null,
+     "fields": {
+      "volume": "143",
+      "reporter": "L. Ed. 2d",
+      "reporter_as_written": "L. Ed. 2d",
+      "page": "238",
+      "cite": "143 L. Ed. 2d 238"
+     },
+     "group": 3,
+     "name": {
+      "text": "Kumho Tire Co. v. Carmichael",
+      "start": 144,
+      "end": 172
+     },
+     "paren": {
+      "court": "",
+      "year": "1999",
+      "date": "1999",
+      "start": 222,
+      "end": 229
+     },
+     "antecedent": null,
+     "short_status": null
+    }
+   ]
+  },
+  {
+   "id": "cases-neutral",
+   "text": "See State v. Doe, 2017-Ohio-5699, ¶ 12; Smith v. Roe, 2019 ND 12; People v. Q, 2014 IL App (1st) 120583; and Estate of R, T.C. Memo. 2019-12.",
+   "expected": [
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case_neutral",
+     "start": 18,
+     "end": 32,
+     "matched": "2017-Ohio-5699",
+     "span": [
+      18,
+      32
+     ],
+     "key": "case:2017:Ohio:5699",
+     "normalized": "2017-Ohio-5699",
+     "pin": null,
+     "fields": {
+      "volume": "2017",
+      "reporter": "Ohio",
+      "reporter_as_written": "Ohio",
+      "page": "5699",
+      "cite": "2017-Ohio-5699"
+     },
+     "group": 1,
+     "name": {
+      "text": "State v. Doe",
+      "start": 4,
+      "end": 16
+     },
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case_neutral",
+     "start": 54,
+     "end": 64,
+     "matched": "2019 ND 12",
+     "span": [
+      54,
+      64
+     ],
+     "key": "case:2019:ND:12",
+     "normalized": "2019 ND 12",
+     "pin": null,
+     "fields": {
+      "volume": "2019",
+      "reporter": "ND",
+      "reporter_as_written": "ND",
+      "page": "12",
+      "cite": "2019 ND 12"
+     },
+     "group": 2,
+     "name": {
+      "text": "Smith v. Roe",
+      "start": 40,
+      "end": 52
+     },
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case_neutral",
+     "start": 79,
+     "end": 103,
+     "matched": "2014 IL App (1st) 120583",
+     "span": [
+      79,
+      103
+     ],
+     "key": "case:2014:IL App (1st):120583",
+     "normalized": "2014 IL App (1st) 120583",
+     "pin": null,
+     "fields": {
+      "volume": "2014",
+      "reporter": "IL App (1st)",
+      "reporter_as_written": "IL App (1st)",
+      "page": "120583",
+      "cite": "2014 IL App (1st) 120583"
+     },
+     "group": 3,
+     "name": {
+      "text": "People v. Q",
+      "start": 66,
+      "end": 77
+     },
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case_tc_memo",
+     "start": 122,
+     "end": 140,
+     "matched": "T.C. Memo. 2019-12",
+     "span": [
+      122,
+      140
+     ],
+     "key": "case:2019:T.C. Memo.:12",
+     "normalized": "T.C. Memo. 2019-12",
+     "pin": null,
+     "fields": {
+      "volume": "2019",
+      "reporter": "T.C. Memo.",
+      "reporter_as_written": "T.C. Memo.",
+      "page": "12",
+      "cite": "T.C. Memo. 2019-12"
+     },
+     "group": 4,
+     "name": {
+      "text": "Estate of R",
+      "start": 109,
+      "end": 120
+     },
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    }
+   ]
+  },
+  {
+   "id": "cases-names",
+   "text": "The Court in Bell Atl. Corp. v. Twombly, 550 U.S. 544, 555 (2007), set the standard. Plaintiffs rely on Erie R.R. Co. v. Tompkins, 304 U.S. 64 (1938). Accord United States ex rel. Polansky v. Exec. Health Res., Inc., 599 U.S. 419 (2023); Ex parte Young, 209 U.S. 123 (1908).",
+   "expected": [
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case",
+     "start": 41,
+     "end": 53,
+     "matched": "550 U.S. 544",
+     "span": [
+      41,
+      53
+     ],
+     "key": "case:550:U.S.:544",
+     "normalized": "550 U.S. 544",
+     "pin": "555",
+     "fields": {
+      "volume": "550",
+      "reporter": "U.S.",
+      "reporter_as_written": "U.S.",
+      "page": "544",
+      "cite": "550 U.S. 544"
+     },
+     "group": 1,
+     "name": {
+      "text": "Bell Atl. Corp. v. Twombly",
+      "start": 13,
+      "end": 39
+     },
+     "paren": {
+      "court": "",
+      "year": "2007",
+      "date": "2007",
+      "start": 58,
+      "end": 65
+     },
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case",
+     "start": 131,
+     "end": 142,
+     "matched": "304 U.S. 64",
+     "span": [
+      131,
+      142
+     ],
+     "key": "case:304:U.S.:64",
+     "normalized": "304 U.S. 64",
+     "pin": null,
+     "fields": {
+      "volume": "304",
+      "reporter": "U.S.",
+      "reporter_as_written": "U.S.",
+      "page": "64",
+      "cite": "304 U.S. 64"
+     },
+     "group": 2,
+     "name": {
+      "text": "Erie R.R. Co. v. Tompkins",
+      "start": 104,
+      "end": 129
+     },
+     "paren": {
+      "court": "",
+      "year": "1938",
+      "date": "1938",
+      "start": 142,
+      "end": 149
+     },
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case",
+     "start": 217,
+     "end": 229,
+     "matched": "599 U.S. 419",
+     "span": [
+      217,
+      229
+     ],
+     "key": "case:599:U.S.:419",
+     "normalized": "599 U.S. 419",
+     "pin": null,
+     "fields": {
+      "volume": "599",
+      "reporter": "U.S.",
+      "reporter_as_written": "U.S.",
+      "page": "419",
+      "cite": "599 U.S. 419"
+     },
+     "group": 3,
+     "name": {
+      "text": "United States ex rel. Polansky v. Exec. Health Res., Inc.",
+      "start": 158,
+      "end": 215
+     },
+     "paren": {
+      "court": "",
+      "year": "2023",
+      "date": "2023",
+      "start": 229,
+      "end": 236
+     },
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case",
+     "start": 254,
+     "end": 266,
+     "matched": "209 U.S. 123",
+     "span": [
+      254,
+      266
+     ],
+     "key": "case:209:U.S.:123",
+     "normalized": "209 U.S. 123",
+     "pin": null,
+     "fields": {
+      "volume": "209",
+      "reporter": "U.S.",
+      "reporter_as_written": "U.S.",
+      "page": "123",
+      "cite": "209 U.S. 123"
+     },
+     "group": 4,
+     "name": {
+      "text": "Ex parte Young",
+      "start": 238,
+      "end": 252
+     },
+     "paren": {
+      "court": "",
+      "year": "1908",
+      "date": "1908",
+      "start": 266,
+      "end": 273
+     },
+     "antecedent": null,
+     "short_status": null
+    }
+   ]
+  },
+  {
+   "id": "short-forms",
+   "text": "Bell Atl. Corp. v. Twombly, 550 U.S. 544, 555 (2007). Id. at 556. The Court later said so. Twombly, 550 U.S. at 570. Iqbal followed. Ashcroft v. Iqbal, 556 U.S. 662 (2009). Twombly, supra, at 558. See id. at 678.",
+   "expected": [
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case",
+     "start": 28,
+     "end": 40,
+     "matched": "550 U.S. 544",
+     "span": [
+      28,
+      40
+     ],
+     "key": "case:550:U.S.:544",
+     "normalized": "550 U.S. 544",
+     "pin": "555",
+     "fields": {
+      "volume": "550",
+      "reporter": "U.S.",
+      "reporter_as_written": "U.S.",
+      "page": "544",
+      "cite": "550 U.S. 544"
+     },
+     "group": 1,
+     "name": {
+      "text": "Bell Atl. Corp. v. Twombly",
+      "start": 0,
+      "end": 26
+     },
+     "paren": {
+      "court": "",
+      "year": "2007",
+      "date": "2007",
+      "start": 45,
+      "end": 52
+     },
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "case",
+     "form": "short",
+     "short": "id",
+     "rule": "id",
+     "start": 54,
+     "end": 64,
+     "matched": "Id. at 556",
+     "span": [
+      54,
+      64
+     ],
+     "key": "case:550:U.S.:544",
+     "normalized": "Id. at 556",
+     "pin": "556",
+     "fields": {
+      "volume": "550",
+      "reporter": "U.S.",
+      "reporter_as_written": "U.S.",
+      "page": "544",
+      "cite": "550 U.S. 544",
+      "pin_kind": "page"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": 0,
+     "short_status": "resolved"
+    },
+    {
+     "kind": "case",
+     "form": "short",
+     "short": "at",
+     "rule": "case_short",
+     "start": 100,
+     "end": 115,
+     "matched": "550 U.S. at 570",
+     "span": [
+      100,
+      115
+     ],
+     "key": "case:550:U.S.:544",
+     "normalized": "550 U.S. at 570",
+     "pin": "570",
+     "fields": {
+      "volume": "550",
+      "reporter": "U.S.",
+      "reporter_as_written": "U.S.",
+      "page": "544",
+      "cite": "550 U.S. 544"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": 0,
+     "short_status": "resolved"
+    },
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case",
+     "start": 152,
+     "end": 164,
+     "matched": "556 U.S. 662",
+     "span": [
+      152,
+      164
+     ],
+     "key": "case:556:U.S.:662",
+     "normalized": "556 U.S. 662",
+     "pin": null,
+     "fields": {
+      "volume": "556",
+      "reporter": "U.S.",
+      "reporter_as_written": "U.S.",
+      "page": "662",
+      "cite": "556 U.S. 662"
+     },
+     "group": 2,
+     "name": {
+      "text": "Ashcroft v. Iqbal",
+      "start": 133,
+      "end": 150
+     },
+     "paren": {
+      "court": "",
+      "year": "2009",
+      "date": "2009",
+      "start": 164,
+      "end": 171
+     },
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "case",
+     "form": "short",
+     "short": "supra",
+     "rule": "supra",
+     "start": 173,
+     "end": 195,
+     "matched": "Twombly, supra, at 558",
+     "span": [
+      173,
+      195
+     ],
+     "key": "case:550:U.S.:544",
+     "normalized": "Twombly, supra, at 558",
+     "pin": "558",
+     "fields": {
+      "volume": "550",
+      "reporter": "U.S.",
+      "reporter_as_written": "U.S.",
+      "page": "544",
+      "cite": "550 U.S. 544",
+      "name": "Twombly"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": 0,
+     "short_status": "resolved"
+    },
+    {
+     "kind": "case",
+     "form": "short",
+     "short": "id",
+     "rule": "id",
+     "start": 201,
+     "end": 211,
+     "matched": "id. at 678",
+     "span": [
+      201,
+      211
+     ],
+     "key": "case:550:U.S.:544",
+     "normalized": "id. at 678",
+     "pin": "678",
+     "fields": {
+      "volume": "550",
+      "reporter": "U.S.",
+      "reporter_as_written": "U.S.",
+      "page": "544",
+      "cite": "550 U.S. 544",
+      "name": "Twombly",
+      "pin_kind": "page"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": 4,
+     "short_status": "resolved"
+    }
+   ]
+  },
+  {
+   "id": "short-ambiguous",
+   "text": "See Smith v. Jones, 1 F.3d 2 (1st Cir. 1993); Doe v. Roe, 3 F.3d 4 (2d Cir. 1993). Id. at 5. Brown, 9 F.3d at 12.",
+   "expected": [
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case",
+     "start": 20,
+     "end": 28,
+     "matched": "1 F.3d 2",
+     "span": [
+      20,
+      28
+     ],
+     "key": "case:1:F.3d:2",
+     "normalized": "1 F.3d 2",
+     "pin": null,
+     "fields": {
+      "volume": "1",
+      "reporter": "F.3d",
+      "reporter_as_written": "F.3d",
+      "page": "2",
+      "cite": "1 F.3d 2"
+     },
+     "group": 1,
+     "name": {
+      "text": "Smith v. Jones",
+      "start": 4,
+      "end": 18
+     },
+     "paren": {
+      "court": "1st Cir.",
+      "year": "1993",
+      "date": "1993",
+      "start": 28,
+      "end": 44
+     },
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case",
+     "start": 58,
+     "end": 66,
+     "matched": "3 F.3d 4",
+     "span": [
+      58,
+      66
+     ],
+     "key": "case:3:F.3d:4",
+     "normalized": "3 F.3d 4",
+     "pin": null,
+     "fields": {
+      "volume": "3",
+      "reporter": "F.3d",
+      "reporter_as_written": "F.3d",
+      "page": "4",
+      "cite": "3 F.3d 4"
+     },
+     "group": 2,
+     "name": {
+      "text": "Doe v. Roe",
+      "start": 46,
+      "end": 56
+     },
+     "paren": {
+      "court": "2d Cir.",
+      "year": "1993",
+      "date": "1993",
+      "start": 66,
+      "end": 81
+     },
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "short",
+     "form": "short",
+     "short": "id",
+     "rule": "id",
+     "start": 83,
+     "end": 91,
+     "matched": "Id. at 5",
+     "span": [
+      83,
+      91
+     ],
+     "key": null,
+     "normalized": "Id. at 5",
+     "pin": "5",
+     "fields": {
+      "pin_kind": "page"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": "ambiguous"
+    },
+    {
+     "kind": "case",
+     "form": "short",
+     "short": "at",
+     "rule": "case_short",
+     "start": 100,
+     "end": 112,
+     "matched": "9 F.3d at 12",
+     "span": [
+      100,
+      112
+     ],
+     "key": null,
+     "normalized": "9 F.3d at 12",
+     "pin": "12",
+     "fields": {
+      "volume": "9",
+      "reporter": "F.3d",
+      "reporter_as_written": "F.3d"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": "none"
+    }
+   ]
+  },
+  {
+   "id": "usc-lists",
+   "text": "Plaintiffs sue under 42 U.S.C. §§ 1981, 1983 and 1985(3), and under 28 U.S.C. § 1332(d)(2); see 15 U.S.C. § 78u-4 et seq. and 50 U.S.C. app. § 4305.",
+   "expected": [
+    {
+     "kind": "usc",
+     "form": "full",
+     "short": null,
+     "rule": "usc",
+     "start": 21,
+     "end": 38,
+     "matched": "42 U.S.C. §§ 1981",
+     "span": [
+      21,
+      56
+     ],
+     "key": "usc:42:1981",
+     "normalized": "42 U.S.C. § 1981",
+     "pin": null,
+     "fields": {
+      "title": "42",
+      "section": "1981"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "usc",
+     "form": "full",
+     "short": null,
+     "rule": "usc",
+     "start": 40,
+     "end": 44,
+     "matched": "1983",
+     "span": [
+      21,
+      56
+     ],
+     "key": "usc:42:1983",
+     "normalized": "42 U.S.C. § 1983",
+     "pin": null,
+     "fields": {
+      "title": "42",
+      "section": "1983"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "usc",
+     "form": "full",
+     "short": null,
+     "rule": "usc",
+     "start": 49,
+     "end": 56,
+     "matched": "1985(3)",
+     "span": [
+      21,
+      56
+     ],
+     "key": "usc:42:1985",
+     "normalized": "42 U.S.C. § 1985",
+     "pin": "(3)",
+     "fields": {
+      "title": "42",
+      "section": "1985"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "usc",
+     "form": "full",
+     "short": null,
+     "rule": "usc",
+     "start": 68,
+     "end": 90,
+     "matched": "28 U.S.C. § 1332(d)(2)",
+     "span": [
+      68,
+      90
+     ],
+     "key": "usc:28:1332",
+     "normalized": "28 U.S.C. § 1332",
+     "pin": "(d)(2)",
+     "fields": {
+      "title": "28",
+      "section": "1332"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "usc",
+     "form": "full",
+     "short": null,
+     "rule": "usc",
+     "start": 96,
+     "end": 113,
+     "matched": "15 U.S.C. § 78u-4",
+     "span": [
+      96,
+      113
+     ],
+     "key": "usc:15:78u-4",
+     "normalized": "15 U.S.C. § 78u-4",
+     "pin": null,
+     "fields": {
+      "title": "15",
+      "section": "78u-4",
+      "et_seq": "true"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "usc",
+     "form": "full",
+     "short": null,
+     "rule": "usc",
+     "start": 126,
+     "end": 147,
+     "matched": "50 U.S.C. app. § 4305",
+     "span": [
+      126,
+      147
+     ],
+     "key": "usc:50a:4305",
+     "normalized": "50 U.S.C. app. § 4305",
+     "pin": null,
+     "fields": {
+      "title": "50",
+      "section": "4305",
+      "appendix": "true"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    }
+   ]
+  },
+  {
+   "id": "usc-forms",
+   "text": "Jurisdiction lies under 28 U.S.C. §§ 1331–1332 and 15 USC 78j(b); see also 42 U.S.C.A. § 2000e-2(a)(1), 26 U.S.C. sec. 501(c)(3), 29 U.S.C. section 1132(a)(1)(B) and 42 U.S.C. § 1395w–26(b)(3).",
+   "expected": [
+    {
+     "kind": "usc",
+     "form": "full",
+     "short": null,
+     "rule": "usc",
+     "start": 24,
+     "end": 46,
+     "matched": "28 U.S.C. §§ 1331–1332",
+     "span": [
+      24,
+      46
+     ],
+     "key": "usc:28:1331:1332",
+     "normalized": "28 U.S.C. §§ 1331–1332",
+     "pin": null,
+     "fields": {
+      "title": "28",
+      "section": "1331",
+      "section_end": "1332"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "usc",
+     "form": "full",
+     "short": null,
+     "rule": "usc",
+     "start": 51,
+     "end": 64,
+     "matched": "15 USC 78j(b)",
+     "span": [
+      51,
+      64
+     ],
+     "key": "usc:15:78j",
+     "normalized": "15 U.S.C. § 78j",
+     "pin": "(b)",
+     "fields": {
+      "title": "15",
+      "section": "78j"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "usc",
+     "form": "full",
+     "short": null,
+     "rule": "usc",
+     "start": 75,
+     "end": 102,
+     "matched": "42 U.S.C.A. § 2000e-2(a)(1)",
+     "span": [
+      75,
+      102
+     ],
+     "key": "usc:42:2000e-2",
+     "normalized": "42 U.S.C. § 2000e-2",
+     "pin": "(a)(1)",
+     "fields": {
+      "title": "42",
+      "section": "2000e-2"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "usc",
+     "form": "full",
+     "short": null,
+     "rule": "usc",
+     "start": 104,
+     "end": 128,
+     "matched": "26 U.S.C. sec. 501(c)(3)",
+     "span": [
+      104,
+      128
+     ],
+     "key": "usc:26:501",
+     "normalized": "26 U.S.C. § 501",
+     "pin": "(c)(3)",
+     "fields": {
+      "title": "26",
+      "section": "501"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "usc",
+     "form": "full",
+     "short": null,
+     "rule": "usc",
+     "start": 130,
+     "end": 161,
+     "matched": "29 U.S.C. section 1132(a)(1)(B)",
+     "span": [
+      130,
+      161
+     ],
+     "key": "usc:29:1132",
+     "normalized": "29 U.S.C. § 1132",
+     "pin": "(a)(1)(B)",
+     "fields": {
+      "title": "29",
+      "section": "1132"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "usc",
+     "form": "full",
+     "short": null,
+     "rule": "usc",
+     "start": 166,
+     "end": 192,
+     "matched": "42 U.S.C. § 1395w–26(b)(3)",
+     "span": [
+      166,
+      192
+     ],
+     "key": "usc:42:1395w-26",
+     "normalized": "42 U.S.C. § 1395w-26",
+     "pin": "(b)(3)",
+     "fields": {
+      "title": "42",
+      "section": "1395w-26",
+      "dash_joined": "true"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    }
+   ]
+  },
+  {
+   "id": "usc-split",
+   "text": "(citing 21 C.F.R. 1301.7 l(a)); 15 U.S.C. § 1681 e(a); 28 U.S.C. § 1332 (a); 21 C.F.R. § 1301.74(b).",
+   "expected": [
+    {
+     "kind": "short",
+     "form": "short",
+     "short": "section",
+     "rule": "section_short",
+     "start": 42,
+     "end": 48,
+     "matched": "§ 1681",
+     "span": [
+      42,
+      48
+     ],
+     "key": null,
+     "normalized": "§ 1681",
+     "pin": null,
+     "fields": {
+      "section": "1681"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": "none"
+    },
+    {
+     "kind": "usc",
+     "form": "full",
+     "short": null,
+     "rule": "usc",
+     "start": 55,
+     "end": 71,
+     "matched": "28 U.S.C. § 1332",
+     "span": [
+      55,
+      71
+     ],
+     "key": "usc:28:1332",
+     "normalized": "28 U.S.C. § 1332",
+     "pin": null,
+     "fields": {
+      "title": "28",
+      "section": "1332"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "cfr",
+     "form": "full",
+     "short": null,
+     "rule": "cfr",
+     "start": 77,
+     "end": 99,
+     "matched": "21 C.F.R. § 1301.74(b)",
+     "span": [
+      77,
+      99
+     ],
+     "key": "cfr:21:1301.74",
+     "normalized": "21 C.F.R. § 1301.74",
+     "pin": "(b)",
+     "fields": {
+      "title": "21",
+      "part": "1301",
+      "section": "74"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    }
+   ]
+  },
+  {
+   "id": "cfr",
+   "text": "FDA regulations at 21 C.F.R. § 314.50(d)(5) and 21 CFR Part 11, as well as 21 C.F.R. parts 210-211, 40 C.F.R. §§ 63.10–63.15, 12 C.F.R. 1026.18, 16 CFR §§ 433.1, 433.2 and 433.3, and 40 C.F.R. § 86.1845–04.",
+   "expected": [
+    {
+     "kind": "cfr",
+     "form": "full",
+     "short": null,
+     "rule": "cfr",
+     "start": 19,
+     "end": 43,
+     "matched": "21 C.F.R. § 314.50(d)(5)",
+     "span": [
+      19,
+      43
+     ],
+     "key": "cfr:21:314.50",
+     "normalized": "21 C.F.R. § 314.50",
+     "pin": "(d)(5)",
+     "fields": {
+      "title": "21",
+      "part": "314",
+      "section": "50"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "cfr_part",
+     "form": "full",
+     "short": null,
+     "rule": "cfr",
+     "start": 48,
+     "end": 62,
+     "matched": "21 CFR Part 11",
+     "span": [
+      48,
+      62
+     ],
+     "key": "cfr-part:21:11",
+     "normalized": "21 C.F.R. part 11",
+     "pin": null,
+     "fields": {
+      "title": "21",
+      "part": "11"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "cfr_part",
+     "form": "full",
+     "short": null,
+     "rule": "cfr",
+     "start": 75,
+     "end": 94,
+     "matched": "21 C.F.R. parts 210",
+     "span": [
+      75,
+      98
+     ],
+     "key": "cfr-part:21:210",
+     "normalized": "21 C.F.R. part 210",
+     "pin": null,
+     "fields": {
+      "title": "21",
+      "part": "210"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "cfr_part",
+     "form": "full",
+     "short": null,
+     "rule": "cfr",
+     "start": 95,
+     "end": 98,
+     "matched": "211",
+     "span": [
+      75,
+      98
+     ],
+     "key": "cfr-part:21:211",
+     "normalized": "21 C.F.R. part 211",
+     "pin": null,
+     "fields": {
+      "title": "21",
+      "part": "211"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "cfr",
+     "form": "full",
+     "short": null,
+     "rule": "cfr",
+     "start": 100,
+     "end": 124,
+     "matched": "40 C.F.R. §§ 63.10–63.15",
+     "span": [
+      100,
+      124
+     ],
+     "key": "cfr:40:63.10:63.15",
+     "normalized": "40 C.F.R. §§ 63.10–63.15",
+     "pin": null,
+     "fields": {
+      "title": "40",
+      "part": "63",
+      "section": "10",
+      "section_end": "63.15"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "cfr",
+     "form": "full",
+     "short": null,
+     "rule": "cfr",
+     "start": 126,
+     "end": 143,
+     "matched": "12 C.F.R. 1026.18",
+     "span": [
+      126,
+      143
+     ],
+     "key": "cfr:12:1026.18",
+     "normalized": "12 C.F.R. § 1026.18",
+     "pin": null,
+     "fields": {
+      "title": "12",
+      "part": "1026",
+      "section": "18"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "cfr",
+     "form": "full",
+     "short": null,
+     "rule": "cfr",
+     "start": 145,
+     "end": 160,
+     "matched": "16 CFR §§ 433.1",
+     "span": [
+      145,
+      177
+     ],
+     "key": "cfr:16:433.1",
+     "normalized": "16 C.F.R. § 433.1",
+     "pin": null,
+     "fields": {
+      "title": "16",
+      "part": "433",
+      "section": "1"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "cfr",
+     "form": "full",
+     "short": null,
+     "rule": "cfr",
+     "start": 162,
+     "end": 167,
+     "matched": "433.2",
+     "span": [
+      145,
+      177
+     ],
+     "key": "cfr:16:433.2",
+     "normalized": "16 C.F.R. § 433.2",
+     "pin": null,
+     "fields": {
+      "title": "16",
+      "part": "433",
+      "section": "2"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "cfr",
+     "form": "full",
+     "short": null,
+     "rule": "cfr",
+     "start": 172,
+     "end": 177,
+     "matched": "433.3",
+     "span": [
+      145,
+      177
+     ],
+     "key": "cfr:16:433.3",
+     "normalized": "16 C.F.R. § 433.3",
+     "pin": null,
+     "fields": {
+      "title": "16",
+      "part": "433",
+      "section": "3"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "cfr",
+     "form": "full",
+     "short": null,
+     "rule": "cfr",
+     "start": 183,
+     "end": 205,
+     "matched": "40 C.F.R. § 86.1845–04",
+     "span": [
+      183,
+      205
+     ],
+     "key": "cfr:40:86.1845-04",
+     "normalized": "40 C.F.R. § 86.1845-04",
+     "pin": null,
+     "fields": {
+      "title": "40",
+      "part": "86",
+      "section": "1845-04",
+      "dash_joined": "true"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    }
+   ]
+  },
+  {
+   "id": "treasury",
+   "text": "Treas. Reg. § 1.501(c)(3)-1(d) and 26 C.F.R. § 1.1313(c)-1 govern.",
+   "expected": [
+    {
+     "kind": "cfr",
+     "form": "full",
+     "short": null,
+     "rule": "treas_reg",
+     "start": 0,
+     "end": 30,
+     "matched": "Treas. Reg. § 1.501(c)(3)-1(d)",
+     "span": [
+      0,
+      30
+     ],
+     "key": "cfr:26:1.501(c)(3)-1",
+     "normalized": "26 C.F.R. § 1.501(c)(3)-1",
+     "pin": "(d)",
+     "fields": {
+      "title": "26",
+      "part": "1",
+      "section": "501(c)(3)-1"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "cfr",
+     "form": "full",
+     "short": null,
+     "rule": "cfr",
+     "start": 35,
+     "end": 58,
+     "matched": "26 C.F.R. § 1.1313(c)-1",
+     "span": [
+      35,
+      58
+     ],
+     "key": "cfr:26:1.1313(c)-1",
+     "normalized": "26 C.F.R. § 1.1313(c)-1",
+     "pin": null,
+     "fields": {
+      "title": "26",
+      "part": "1",
+      "section": "1313(c)-1"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    }
+   ]
+  },
+  {
+   "id": "register-statutes",
+   "text": "The rule was published at 85 Fed. Reg. 12,345, 12,350 (Mar. 2, 2020) and 91 FR 67000 under Pub. L. No. 111-148, § 1501, 124 Stat. 119, 242 (2010); see also Public Law 119–99 and P.L. 94-142.",
+   "expected": [
+    {
+     "kind": "federal_register",
+     "form": "full",
+     "short": null,
+     "rule": "federal_register",
+     "start": 26,
+     "end": 45,
+     "matched": "85 Fed. Reg. 12,345",
+     "span": [
+      26,
+      45
+     ],
+     "key": "fr:85:12345",
+     "normalized": "85 Fed. Reg. 12345",
+     "pin": "12,350",
+     "fields": {
+      "volume": "85",
+      "page": "12345"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "federal_register",
+     "form": "full",
+     "short": null,
+     "rule": "federal_register",
+     "start": 73,
+     "end": 84,
+     "matched": "91 FR 67000",
+     "span": [
+      73,
+      84
+     ],
+     "key": "fr:91:67000",
+     "normalized": "91 Fed. Reg. 67000",
+     "pin": null,
+     "fields": {
+      "volume": "91",
+      "page": "67000"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "public_law",
+     "form": "full",
+     "short": null,
+     "rule": "public_law",
+     "start": 91,
+     "end": 110,
+     "matched": "Pub. L. No. 111-148",
+     "span": [
+      91,
+      110
+     ],
+     "key": "pl:111:148",
+     "normalized": "Pub. L. No. 111-148",
+     "pin": "§ 1501",
+     "fields": {
+      "congress": "111",
+      "law": "148"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "statutes_at_large",
+     "form": "full",
+     "short": null,
+     "rule": "statutes_at_large",
+     "start": 120,
+     "end": 133,
+     "matched": "124 Stat. 119",
+     "span": [
+      120,
+      133
+     ],
+     "key": "stat:124:119",
+     "normalized": "124 Stat. 119",
+     "pin": "242",
+     "fields": {
+      "volume": "124",
+      "page": "119"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "public_law",
+     "form": "full",
+     "short": null,
+     "rule": "public_law",
+     "start": 156,
+     "end": 173,
+     "matched": "Public Law 119–99",
+     "span": [
+      156,
+      173
+     ],
+     "key": "pl:119:99",
+     "normalized": "Pub. L. No. 119-99",
+     "pin": null,
+     "fields": {
+      "congress": "119",
+      "law": "99"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "public_law",
+     "form": "full",
+     "short": null,
+     "rule": "public_law",
+     "start": 178,
+     "end": 189,
+     "matched": "P.L. 94-142",
+     "span": [
+      178,
+      189
+     ],
+     "key": "pl:94:142",
+     "normalized": "Pub. L. No. 94-142",
+     "pin": null,
+     "fields": {
+      "congress": "94",
+      "law": "142"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    }
+   ]
+  },
+  {
+   "id": "constitutions",
+   "text": "U.S. Const. art. I, § 8, cl. 3; U.S. CONST. amend. XIV, § 1; United States Constitution, Article III; Cal. Const. art. I, § 7; Mass. Const. pt. 1, art. 12; N.J. Const. art. I, ¶ 1; Tex. Const. art. 1, § 13.",
+   "expected": [
+    {
+     "kind": "constitution_us",
+     "form": "full",
+     "short": null,
+     "rule": "constitution_us",
+     "start": 0,
+     "end": 30,
+     "matched": "U.S. Const. art. I, § 8, cl. 3",
+     "span": [
+      0,
+      30
+     ],
+     "key": "const-us:art-1:sec-8:cl-3",
+     "normalized": "U.S. Const. art. I, § 8, cl. 3",
+     "pin": null,
+     "fields": {
+      "article": "1",
+      "section": "8",
+      "clause": "3"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "constitution_us",
+     "form": "full",
+     "short": null,
+     "rule": "constitution_us",
+     "start": 32,
+     "end": 59,
+     "matched": "U.S. CONST. amend. XIV, § 1",
+     "span": [
+      32,
+      59
+     ],
+     "key": "const-us:amend-14:sec-1",
+     "normalized": "U.S. Const. amend. XIV, § 1",
+     "pin": null,
+     "fields": {
+      "amendment": "14",
+      "section": "1"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "constitution_us",
+     "form": "full",
+     "short": null,
+     "rule": "constitution_us",
+     "start": 61,
+     "end": 100,
+     "matched": "United States Constitution, Article III",
+     "span": [
+      61,
+      100
+     ],
+     "key": "const-us:art-3",
+     "normalized": "U.S. Const. art. III",
+     "pin": null,
+     "fields": {
+      "article": "3"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "constitution_state",
+     "form": "full",
+     "short": null,
+     "rule": "constitution_state",
+     "start": 102,
+     "end": 125,
+     "matched": "Cal. Const. art. I, § 7",
+     "span": [
+      102,
+      125
+     ],
+     "key": "const:CA:art-1:sec-7",
+     "normalized": "Cal. Const. art. I, § 7",
+     "pin": null,
+     "fields": {
+      "state": "CA",
+      "article": "1",
+      "section": "7"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "constitution_state",
+     "form": "full",
+     "short": null,
+     "rule": "constitution_state",
+     "start": 127,
+     "end": 154,
+     "matched": "Mass. Const. pt. 1, art. 12",
+     "span": [
+      127,
+      154
+     ],
+     "key": "const:MA:pt-1:art-12",
+     "normalized": "Mass. Const. pt. 1, art. 12",
+     "pin": null,
+     "fields": {
+      "state": "MA",
+      "part": "1",
+      "article": "12"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "constitution_state",
+     "form": "full",
+     "short": null,
+     "rule": "constitution_state",
+     "start": 156,
+     "end": 179,
+     "matched": "N.J. Const. art. I, ¶ 1",
+     "span": [
+      156,
+      179
+     ],
+     "key": "const:NJ:art-1:sec-1",
+     "normalized": "N.J. Const. art. I, § 1",
+     "pin": null,
+     "fields": {
+      "state": "NJ",
+      "article": "1",
+      "section": "1"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "constitution_state",
+     "form": "full",
+     "short": null,
+     "rule": "constitution_state",
+     "start": 181,
+     "end": 205,
+     "matched": "Tex. Const. art. 1, § 13",
+     "span": [
+      181,
+      205
+     ],
+     "key": "const:TX:art-1:sec-13",
+     "normalized": "Tex. Const. art. I, § 13",
+     "pin": null,
+     "fields": {
+      "state": "TX",
+      "article": "1",
+      "section": "13"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    }
+   ]
+  },
+  {
+   "id": "federal-rules",
+   "text": "Under Fed. R. Civ. P. 12(b)(6) and Rule 9(b), see also Fed. R. Evid. 702, FRCP 23(b)(3), Fed.R.App.P. 4(a)(1), Fed. R. Crim. P. 11, Bankruptcy Rule 9019 and Rule 26(b)(1) of the Federal Rules of Civil Procedure. Rule 56 applies.",
+   "expected": [
+    {
+     "kind": "federal_rule",
+     "form": "full",
+     "short": null,
+     "rule": "federal_rule",
+     "start": 6,
+     "end": 30,
+     "matched": "Fed. R. Civ. P. 12(b)(6)",
+     "span": [
+      6,
+      30
+     ],
+     "key": "rule:frcp:12",
+     "normalized": "Fed. R. Civ. P. 12",
+     "pin": "(b)(6)",
+     "fields": {
+      "set": "frcp",
+      "rule": "12"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "federal_rule",
+     "form": "short",
+     "short": "rule",
+     "rule": "rule_short",
+     "start": 35,
+     "end": 44,
+     "matched": "Rule 9(b)",
+     "span": [
+      35,
+      44
+     ],
+     "key": "rule:frcp:9",
+     "normalized": "Rule 9",
+     "pin": "(b)",
+     "fields": {
+      "rule": "9",
+      "set": "frcp"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": "resolved"
+    },
+    {
+     "kind": "federal_rule",
+     "form": "full",
+     "short": null,
+     "rule": "federal_rule",
+     "start": 55,
+     "end": 72,
+     "matched": "Fed. R. Evid. 702",
+     "span": [
+      55,
+      72
+     ],
+     "key": "rule:fre:702",
+     "normalized": "Fed. R. Evid. 702",
+     "pin": null,
+     "fields": {
+      "set": "fre",
+      "rule": "702"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "federal_rule",
+     "form": "full",
+     "short": null,
+     "rule": "federal_rule",
+     "start": 74,
+     "end": 87,
+     "matched": "FRCP 23(b)(3)",
+     "span": [
+      74,
+      87
+     ],
+     "key": "rule:frcp:23",
+     "normalized": "Fed. R. Civ. P. 23",
+     "pin": "(b)(3)",
+     "fields": {
+      "set": "frcp",
+      "rule": "23"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "federal_rule",
+     "form": "full",
+     "short": null,
+     "rule": "federal_rule",
+     "start": 89,
+     "end": 109,
+     "matched": "Fed.R.App.P. 4(a)(1)",
+     "span": [
+      89,
+      109
+     ],
+     "key": "rule:frap:4",
+     "normalized": "Fed. R. App. P. 4",
+     "pin": "(a)(1)",
+     "fields": {
+      "set": "frap",
+      "rule": "4"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "federal_rule",
+     "form": "full",
+     "short": null,
+     "rule": "federal_rule",
+     "start": 111,
+     "end": 130,
+     "matched": "Fed. R. Crim. P. 11",
+     "span": [
+      111,
+      130
+     ],
+     "key": "rule:frcrp:11",
+     "normalized": "Fed. R. Crim. P. 11",
+     "pin": null,
+     "fields": {
+      "set": "frcrp",
+      "rule": "11"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "federal_rule",
+     "form": "full",
+     "short": null,
+     "rule": "bankruptcy_rule",
+     "start": 132,
+     "end": 152,
+     "matched": "Bankruptcy Rule 9019",
+     "span": [
+      132,
+      152
+     ],
+     "key": "rule:frbp:9019",
+     "normalized": "Fed. R. Bankr. P. 9019",
+     "pin": null,
+     "fields": {
+      "set": "frbp",
+      "rule": "9019"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "federal_rule",
+     "form": "full",
+     "short": null,
+     "rule": "federal_rule_named",
+     "start": 157,
+     "end": 210,
+     "matched": "Rule 26(b)(1) of the Federal Rules of Civil Procedure",
+     "span": [
+      157,
+      210
+     ],
+     "key": "rule:frcp:26",
+     "normalized": "Fed. R. Civ. P. 26",
+     "pin": "(b)(1)",
+     "fields": {
+      "set": "frcp",
+      "rule": "26"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "federal_rule",
+     "form": "short",
+     "short": "rule",
+     "rule": "rule_short",
+     "start": 212,
+     "end": 219,
+     "matched": "Rule 56",
+     "span": [
+      212,
+      219
+     ],
+     "key": "rule:frcp:56",
+     "normalized": "Rule 56",
+     "pin": null,
+     "fields": {
+      "rule": "56",
+      "set": "frcp"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": "resolved"
+    }
+   ]
+  },
+  {
+   "id": "local-rules",
+   "text": "Local Rule 7.1; L.R. 56.1(a); N.D. Cal. Civ. L.R. 7-3; D.N.J. L. Civ. R. 7.1(d); LCvR 7(m); Local Civil Rule 6.3.",
+   "expected": [
+    {
+     "kind": "local_rule",
+     "form": "full",
+     "short": null,
+     "rule": "local_rule",
+     "start": 0,
+     "end": 14,
+     "matched": "Local Rule 7.1",
+     "span": [
+      0,
+      14
+     ],
+     "key": "local-rule::7.1",
+     "normalized": "L.R. 7.1",
+     "pin": null,
+     "fields": {
+      "rule": "7.1"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "local_rule",
+     "form": "full",
+     "short": null,
+     "rule": "local_rule",
+     "start": 16,
+     "end": 28,
+     "matched": "L.R. 56.1(a)",
+     "span": [
+      16,
+      28
+     ],
+     "key": "local-rule::56.1",
+     "normalized": "L.R. 56.1",
+     "pin": "(a)",
+     "fields": {
+      "rule": "56.1"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "local_rule",
+     "form": "full",
+     "short": null,
+     "rule": "local_rule",
+     "start": 30,
+     "end": 53,
+     "matched": "N.D. Cal. Civ. L.R. 7-3",
+     "span": [
+      30,
+      53
+     ],
+     "key": "local-rule:ndcalciv:7-3",
+     "normalized": "N.D. Cal. Civ. L.R. 7-3",
+     "pin": null,
+     "fields": {
+      "court": "N.D. Cal. Civ.",
+      "rule": "7-3"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "local_rule",
+     "form": "full",
+     "short": null,
+     "rule": "local_rule",
+     "start": 55,
+     "end": 79,
+     "matched": "D.N.J. L. Civ. R. 7.1(d)",
+     "span": [
+      55,
+      79
+     ],
+     "key": "local-rule:dnj:7.1",
+     "normalized": "D.N.J. L.R. 7.1",
+     "pin": "(d)",
+     "fields": {
+      "court": "D.N.J.",
+      "rule": "7.1"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "local_rule",
+     "form": "full",
+     "short": null,
+     "rule": "local_rule",
+     "start": 81,
+     "end": 90,
+     "matched": "LCvR 7(m)",
+     "span": [
+      81,
+      90
+     ],
+     "key": "local-rule::7",
+     "normalized": "L.R. 7",
+     "pin": "(m)",
+     "fields": {
+      "rule": "7"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "local_rule",
+     "form": "full",
+     "short": null,
+     "rule": "local_rule",
+     "start": 92,
+     "end": 112,
+     "matched": "Local Civil Rule 6.3",
+     "span": [
+      92,
+      112
+     ],
+     "key": "local-rule::6.3",
+     "normalized": "L.R. 6.3",
+     "pin": null,
+     "fields": {
+      "rule": "6.3"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    }
+   ]
+  },
+  {
+   "id": "rule-short-none",
+   "text": "Rule 12(b)(6) is cited without a federal-rule citation before it; Rule 4:6-2 is a state rule.",
+   "expected": [
+    {
+     "kind": "short",
+     "form": "short",
+     "short": "rule",
+     "rule": "rule_short",
+     "start": 0,
+     "end": 13,
+     "matched": "Rule 12(b)(6)",
+     "span": [
+      0,
+      13
+     ],
+     "key": null,
+     "normalized": "Rule 12",
+     "pin": "(b)(6)",
+     "fields": {
+      "rule": "12"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": "none"
+    }
+   ]
+  },
+  {
+   "id": "state-statutes",
+   "text": "Cal. Bus. & Prof. Code § 17200; Cal. Civ. Proc. Code § 340.8; 735 ILCS 5/13-202; N.J.S.A. 2A:58C-2; N.J. Stat. Ann. § 2A:58C–5c; 42 Pa. Cons. Stat. § 5524; 42 Pa. C.S. § 5524; Tex. Civ. Prac. & Rem. Code Ann. § 16.003; Fla. Stat. § 95.11(3); Mass. Gen. Laws ch. 93A, § 9; RCW 4.16.080; O.C.G.A. § 9-3-33.",
+   "expected": [
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_ca_4",
+     "start": 0,
+     "end": 30,
+     "matched": "Cal. Bus. & Prof. Code § 17200",
+     "span": [
+      0,
+      30
+     ],
+     "key": "state-stat:CA:busprof:17200",
+     "normalized": "Cal. Bus. & Prof. Code § 17200",
+     "pin": null,
+     "fields": {
+      "state": "CA",
+      "code": "Cal. Bus. & Prof. Code",
+      "code_id": "busprof",
+      "section": "17200"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_ca_4",
+     "start": 32,
+     "end": 60,
+     "matched": "Cal. Civ. Proc. Code § 340.8",
+     "span": [
+      32,
+      60
+     ],
+     "key": "state-stat:CA:civproc:340.8",
+     "normalized": "Cal. Civ. Proc. Code § 340.8",
+     "pin": null,
+     "fields": {
+      "state": "CA",
+      "code": "Cal. Civ. Proc. Code",
+      "code_id": "civproc",
+      "section": "340.8"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_il_15",
+     "start": 62,
+     "end": 79,
+     "matched": "735 ILCS 5/13-202",
+     "span": [
+      62,
+      79
+     ],
+     "key": "state-stat:IL:ilcs:735/5/13-202",
+     "normalized": "735 ILCS 5/13-202",
+     "pin": null,
+     "fields": {
+      "state": "IL",
+      "code": "735 ILCS 5",
+      "code_id": "ilcs",
+      "section": "13-202",
+      "title": "735",
+      "act": "5"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_nj_33",
+     "start": 81,
+     "end": 98,
+     "matched": "N.J.S.A. 2A:58C-2",
+     "span": [
+      81,
+      98
+     ],
+     "key": "state-stat:NJ:stat:2A:58C-2",
+     "normalized": "N.J.S.A. 2A:58C-2",
+     "pin": null,
+     "fields": {
+      "state": "NJ",
+      "code": "N.J.S.A.",
+      "code_id": "stat",
+      "section": "2A:58C-2"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_nj_33",
+     "start": 100,
+     "end": 127,
+     "matched": "N.J. Stat. Ann. § 2A:58C–5c",
+     "span": [
+      100,
+      127
+     ],
+     "key": "state-stat:NJ:stat:2A:58C-5c",
+     "normalized": "N.J. Stat. Ann. § 2A:58C-5c",
+     "pin": null,
+     "fields": {
+      "state": "NJ",
+      "code": "N.J. Stat. Ann.",
+      "code_id": "stat",
+      "section": "2A:58C-5c"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_pa_42",
+     "start": 129,
+     "end": 154,
+     "matched": "42 Pa. Cons. Stat. § 5524",
+     "span": [
+      129,
+      154
+     ],
+     "key": "state-stat:PA:cons-stat:42:5524",
+     "normalized": "42 Pa. Cons. Stat. § 5524",
+     "pin": null,
+     "fields": {
+      "state": "PA",
+      "code": "42 Pa. Cons. Stat.",
+      "code_id": "cons-stat",
+      "section": "5524",
+      "title": "42"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_pa_42",
+     "start": 156,
+     "end": 174,
+     "matched": "42 Pa. C.S. § 5524",
+     "span": [
+      156,
+      174
+     ],
+     "key": "state-stat:PA:cons-stat:42:5524",
+     "normalized": "42 Pa. C.S. § 5524",
+     "pin": null,
+     "fields": {
+      "state": "PA",
+      "code": "42 Pa. C.S.",
+      "code_id": "cons-stat",
+      "section": "5524",
+      "title": "42"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_tx_48",
+     "start": 176,
+     "end": 217,
+     "matched": "Tex. Civ. Prac. & Rem. Code Ann. § 16.003",
+     "span": [
+      176,
+      217
+     ],
+     "key": "state-stat:TX:civpracrem:16.003",
+     "normalized": "Tex. Civ. Prac. & Rem. Code Ann. § 16.003",
+     "pin": null,
+     "fields": {
+      "state": "TX",
+      "code": "Tex. Civ. Prac. & Rem. Code Ann.",
+      "code_id": "civpracrem",
+      "section": "16.003"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_fl_11",
+     "start": 219,
+     "end": 240,
+     "matched": "Fla. Stat. § 95.11(3)",
+     "span": [
+      219,
+      240
+     ],
+     "key": "state-stat:FL:stat:95.11(3)",
+     "normalized": "Fla. Stat. § 95.11(3)",
+     "pin": null,
+     "fields": {
+      "state": "FL",
+      "code": "Fla. Stat.",
+      "code_id": "stat",
+      "section": "95.11(3)"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_ma_24",
+     "start": 242,
+     "end": 270,
+     "matched": "Mass. Gen. Laws ch. 93A, § 9",
+     "span": [
+      242,
+      270
+     ],
+     "key": "state-stat:MA:gen-laws:93A:9",
+     "normalized": "Mass. Gen. Laws ch. 93A § 9",
+     "pin": null,
+     "fields": {
+      "state": "MA",
+      "code": "Mass. Gen. Laws ch. 93A",
+      "code_id": "gen-laws",
+      "section": "9",
+      "chapter": "93A"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_wa_52",
+     "start": 272,
+     "end": 284,
+     "matched": "RCW 4.16.080",
+     "span": [
+      272,
+      284
+     ],
+     "key": "state-stat:WA:rev-code:4.16.080",
+     "normalized": "RCW 4.16.080",
+     "pin": null,
+     "fields": {
+      "state": "WA",
+      "code": "RCW",
+      "code_id": "rev-code",
+      "section": "4.16.080"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_ga_12",
+     "start": 286,
+     "end": 303,
+     "matched": "O.C.G.A. § 9-3-33",
+     "span": [
+      286,
+      303
+     ],
+     "key": "state-stat:GA:code:9-3-33",
+     "normalized": "O.C.G.A. § 9-3-33",
+     "pin": null,
+     "fields": {
+      "state": "GA",
+      "code": "O.C.G.A.",
+      "code_id": "code",
+      "section": "9-3-33"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    }
+   ]
+  },
+  {
+   "id": "state-statutes-2",
+   "text": "N.Y. Gen. Bus. Law § 349; N.Y. C.P.L.R. 214-c; Md. Code Ann., Cts. & Jud. Proc. § 5-101; La. Civ. Code Ann. art. 3492; La. R.S. 9:5628; Del. Code Ann. tit. 10, § 8119; 10 Del. C. § 8106; Okla. Stat. tit. 12, § 95; Vt. Stat. Ann. tit. 12, § 512; 14 M.R.S. § 752; K.S.A. 2019 Supp. 60-513; Ohio Rev. Code Ann. § 2305.10; Minn. Stat. § 604.01.4; Neb. Rev. Stat. § 25-21, 187.12.",
+   "expected": [
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_ny_35",
+     "start": 0,
+     "end": 24,
+     "matched": "N.Y. Gen. Bus. Law § 349",
+     "span": [
+      0,
+      24
+     ],
+     "key": "state-stat:NY:genbus:349",
+     "normalized": "N.Y. Gen. Bus. Law § 349",
+     "pin": null,
+     "fields": {
+      "state": "NY",
+      "code": "N.Y. Gen. Bus. Law",
+      "code_id": "genbus",
+      "section": "349"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_ny_36",
+     "start": 26,
+     "end": 45,
+     "matched": "N.Y. C.P.L.R. 214-c",
+     "span": [
+      26,
+      45
+     ],
+     "key": "state-stat:NY:cplr:214-c",
+     "normalized": "N.Y. C.P.L.R. 214-c",
+     "pin": null,
+     "fields": {
+      "state": "NY",
+      "code": "N.Y. C.P.L.R.",
+      "code_id": "cplr",
+      "section": "214-c"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_md_23",
+     "start": 47,
+     "end": 87,
+     "matched": "Md. Code Ann., Cts. & Jud. Proc. § 5-101",
+     "span": [
+      47,
+      87
+     ],
+     "key": "state-stat:MD:ctsjudproc:5-101",
+     "normalized": "Md. Code Ann., Cts. & Jud. Proc. § 5-101",
+     "pin": null,
+     "fields": {
+      "state": "MD",
+      "code": "Md. Code Ann., Cts. & Jud. Proc.",
+      "code_id": "ctsjudproc",
+      "section": "5-101"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_la_21",
+     "start": 89,
+     "end": 117,
+     "matched": "La. Civ. Code Ann. art. 3492",
+     "span": [
+      89,
+      117
+     ],
+     "key": "state-stat:LA:civ-code:3492",
+     "normalized": "La. Civ. Code Ann. art. 3492",
+     "pin": null,
+     "fields": {
+      "state": "LA",
+      "code": "La. Civ. Code Ann.",
+      "code_id": "civ-code",
+      "section": "3492"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_la_20",
+     "start": 119,
+     "end": 134,
+     "matched": "La. R.S. 9:5628",
+     "span": [
+      119,
+      134
+     ],
+     "key": "state-stat:LA:rev-stat:9:5628",
+     "normalized": "La. R.S. 9:5628",
+     "pin": null,
+     "fields": {
+      "state": "LA",
+      "code": "La. R.S.",
+      "code_id": "rev-stat",
+      "section": "9:5628"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_de_8",
+     "start": 136,
+     "end": 166,
+     "matched": "Del. Code Ann. tit. 10, § 8119",
+     "span": [
+      136,
+      166
+     ],
+     "key": "state-stat:DE:code:10:8119",
+     "normalized": "Del. Code Ann. tit. 10 § 8119",
+     "pin": null,
+     "fields": {
+      "state": "DE",
+      "code": "Del. Code Ann. tit. 10",
+      "code_id": "code",
+      "section": "8119",
+      "title": "10"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_de_9",
+     "start": 168,
+     "end": 185,
+     "matched": "10 Del. C. § 8106",
+     "span": [
+      168,
+      185
+     ],
+     "key": "state-stat:DE:code:10:8106",
+     "normalized": "10 Del. C. § 8106",
+     "pin": null,
+     "fields": {
+      "state": "DE",
+      "code": "10 Del. C.",
+      "code_id": "code",
+      "section": "8106",
+      "title": "10"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_ok_40",
+     "start": 187,
+     "end": 212,
+     "matched": "Okla. Stat. tit. 12, § 95",
+     "span": [
+      187,
+      212
+     ],
+     "key": "state-stat:OK:stat:12:95",
+     "normalized": "Okla. Stat. tit. 12 § 95",
+     "pin": null,
+     "fields": {
+      "state": "OK",
+      "code": "Okla. Stat. tit. 12",
+      "code_id": "stat",
+      "section": "95",
+      "title": "12"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_vt_50",
+     "start": 214,
+     "end": 243,
+     "matched": "Vt. Stat. Ann. tit. 12, § 512",
+     "span": [
+      214,
+      243
+     ],
+     "key": "state-stat:VT:stat:12:512",
+     "normalized": "Vt. Stat. Ann. tit. 12 § 512",
+     "pin": null,
+     "fields": {
+      "state": "VT",
+      "code": "Vt. Stat. Ann. tit. 12",
+      "code_id": "stat",
+      "section": "512",
+      "title": "12"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_me_22",
+     "start": 245,
+     "end": 260,
+     "matched": "14 M.R.S. § 752",
+     "span": [
+      245,
+      260
+     ],
+     "key": "state-stat:ME:rev-stat:14:752",
+     "normalized": "14 M.R.S. § 752",
+     "pin": null,
+     "fields": {
+      "state": "ME",
+      "code": "14 M.R.S.",
+      "code_id": "rev-stat",
+      "section": "752",
+      "title": "14"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_ks_18",
+     "start": 262,
+     "end": 286,
+     "matched": "K.S.A. 2019 Supp. 60-513",
+     "span": [
+      262,
+      286
+     ],
+     "key": "state-stat:KS:stat:60-513",
+     "normalized": "K.S.A. 2019 Supp. 60-513",
+     "pin": null,
+     "fields": {
+      "state": "KS",
+      "code": "K.S.A. 2019 Supp.",
+      "code_id": "stat",
+      "section": "60-513"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_oh_39",
+     "start": 288,
+     "end": 317,
+     "matched": "Ohio Rev. Code Ann. § 2305.10",
+     "span": [
+      288,
+      317
+     ],
+     "key": "state-stat:OH:rev-code:2305.10",
+     "normalized": "Ohio Rev. Code Ann. § 2305.10",
+     "pin": null,
+     "fields": {
+      "state": "OH",
+      "code": "Ohio Rev. Code Ann.",
+      "code_id": "rev-code",
+      "section": "2305.10"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "short",
+     "form": "short",
+     "short": "section",
+     "rule": "section_short",
+     "start": 331,
+     "end": 341,
+     "matched": "§ 604.01.4",
+     "span": [
+      331,
+      341
+     ],
+     "key": null,
+     "normalized": "§ 604.01.4",
+     "pin": null,
+     "fields": {
+      "section": "604.01.4"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": "none"
+    },
+    {
+     "kind": "short",
+     "form": "short",
+     "short": "section",
+     "rule": "section_short",
+     "start": 359,
+     "end": 366,
+     "matched": "§ 25-21",
+     "span": [
+      359,
+      366
+     ],
+     "key": null,
+     "normalized": "§ 25-21",
+     "pin": null,
+     "fields": {
+      "section": "25-21"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": "none"
+    }
+   ]
+  },
+  {
+   "id": "state-regs",
+   "text": "Cal. Code Regs. tit. 22, § 66262.11; 10 NYCRR 405.1; 310 CMR 7.00; COMAR 26.11.01.01; WAC 173-303-040; 30 Tex. Admin. Code § 335.1; 25 Pa. Code § 109.1; N.J.A.C. 7:26-1.4; 401 KAR 51:010; OAR 340-012-0140; Fla. Admin. Code Ann. r. 62-296.320; 15A NCAC 2D .0101; 35 Ill. Adm. Code 721.103; 9VAC5-20-10.",
+   "expected": [
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "short": null,
+     "rule": "state_regulation_ca_5",
+     "start": 0,
+     "end": 35,
+     "matched": "Cal. Code Regs. tit. 22, § 66262.11",
+     "span": [
+      0,
+      35
+     ],
+     "key": "state-reg:CA:code-regs:22:66262.11",
+     "normalized": "Cal. Code Regs. tit. 22, § 66262.11",
+     "pin": null,
+     "fields": {
+      "state": "CA",
+      "code_id": "code-regs",
+      "section": "66262.11",
+      "title": "22"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "short": null,
+     "rule": "state_regulation_ny_41",
+     "start": 37,
+     "end": 51,
+     "matched": "10 NYCRR 405.1",
+     "span": [
+      37,
+      51
+     ],
+     "key": "state-reg:NY:comp-codes:10:405.1",
+     "normalized": "10 NYCRR 405.1",
+     "pin": null,
+     "fields": {
+      "state": "NY",
+      "code_id": "comp-codes",
+      "section": "405.1",
+      "title": "10"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "short": null,
+     "rule": "state_regulation_ma_27",
+     "start": 53,
+     "end": 65,
+     "matched": "310 CMR 7.00",
+     "span": [
+      53,
+      65
+     ],
+     "key": "state-reg:MA:code-regs:310:7.00",
+     "normalized": "310 CMR 7.00",
+     "pin": null,
+     "fields": {
+      "state": "MA",
+      "code_id": "code-regs",
+      "section": "7.00",
+      "title": "310"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "short": null,
+     "rule": "state_regulation_md_26",
+     "start": 67,
+     "end": 84,
+     "matched": "COMAR 26.11.01.01",
+     "span": [
+      67,
+      84
+     ],
+     "key": "state-reg:MD:code-regs:26.11.01.01",
+     "normalized": "COMAR 26.11.01.01",
+     "pin": null,
+     "fields": {
+      "state": "MD",
+      "code_id": "code-regs",
+      "section": "26.11.01.01"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "short": null,
+     "rule": "state_regulation_wa_56",
+     "start": 86,
+     "end": 101,
+     "matched": "WAC 173-303-040",
+     "span": [
+      86,
+      101
+     ],
+     "key": "state-reg:WA:admin-code:173-303-040",
+     "normalized": "WAC 173-303-040",
+     "pin": null,
+     "fields": {
+      "state": "WA",
+      "code_id": "admin-code",
+      "section": "173-303-040"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "short": null,
+     "rule": "state_regulation_tx_52",
+     "start": 103,
+     "end": 130,
+     "matched": "30 Tex. Admin. Code § 335.1",
+     "span": [
+      103,
+      130
+     ],
+     "key": "state-reg:TX:admin-code:30:335.1",
+     "normalized": "30 Tex. Admin. Code § 335.1",
+     "pin": null,
+     "fields": {
+      "state": "TX",
+      "code_id": "admin-code",
+      "section": "335.1",
+      "title": "30"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "short": null,
+     "rule": "state_regulation_pa_47",
+     "start": 132,
+     "end": 151,
+     "matched": "25 Pa. Code § 109.1",
+     "span": [
+      132,
+      151
+     ],
+     "key": "state-reg:PA:code:25:109.1",
+     "normalized": "25 Pa. Code § 109.1",
+     "pin": null,
+     "fields": {
+      "state": "PA",
+      "code_id": "code",
+      "section": "109.1",
+      "title": "25"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "short": null,
+     "rule": "state_regulation_nj_37",
+     "start": 153,
+     "end": 170,
+     "matched": "N.J.A.C. 7:26-1.4",
+     "span": [
+      153,
+      170
+     ],
+     "key": "state-reg:NJ:admin-code:7:26-1.4",
+     "normalized": "N.J.A.C. 7:26-1.4",
+     "pin": null,
+     "fields": {
+      "state": "NJ",
+      "code_id": "admin-code",
+      "section": "7:26-1.4"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "short": null,
+     "rule": "state_regulation_ky_22",
+     "start": 172,
+     "end": 186,
+     "matched": "401 KAR 51:010",
+     "span": [
+      172,
+      186
+     ],
+     "key": "state-reg:KY:admin-regs:401:51:010",
+     "normalized": "401 KAR 51:010",
+     "pin": null,
+     "fields": {
+      "state": "KY",
+      "code_id": "admin-regs",
+      "section": "51:010",
+      "title": "401"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "short": null,
+     "rule": "state_regulation_or_46",
+     "start": 188,
+     "end": 204,
+     "matched": "OAR 340-012-0140",
+     "span": [
+      188,
+      204
+     ],
+     "key": "state-reg:OR:admin-r:340-012-0140",
+     "normalized": "OAR 340-012-0140",
+     "pin": null,
+     "fields": {
+      "state": "OR",
+      "code_id": "admin-r",
+      "section": "340-012-0140"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "short": null,
+     "rule": "state_regulation_fl_12",
+     "start": 206,
+     "end": 241,
+     "matched": "Fla. Admin. Code Ann. r. 62-296.320",
+     "span": [
+      206,
+      241
+     ],
+     "key": "state-reg:FL:admin-code:62-296.320",
+     "normalized": "Fla. Admin. Code Ann. r. 62-296.320",
+     "pin": null,
+     "fields": {
+      "state": "FL",
+      "code_id": "admin-code",
+      "section": "62-296.320"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "short": null,
+     "rule": "state_regulation_nc_42",
+     "start": 243,
+     "end": 260,
+     "matched": "15A NCAC 2D .0101",
+     "span": [
+      243,
+      260
+     ],
+     "key": "state-reg:NC:admin-code:15A:2D.0101",
+     "normalized": "15A NCAC 2D .0101",
+     "pin": null,
+     "fields": {
+      "state": "NC",
+      "code_id": "admin-code",
+      "section": "2D.0101",
+      "title": "15A"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "short": null,
+     "rule": "state_regulation_il_18",
+     "start": 262,
+     "end": 287,
+     "matched": "35 Ill. Adm. Code 721.103",
+     "span": [
+      262,
+      287
+     ],
+     "key": "state-reg:IL:admin-code:35:721.103",
+     "normalized": "35 Ill. Adm. Code 721.103",
+     "pin": null,
+     "fields": {
+      "state": "IL",
+      "code_id": "admin-code",
+      "section": "721.103",
+      "title": "35"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "short": null,
+     "rule": "state_regulation_va_55",
+     "start": 289,
+     "end": 300,
+     "matched": "9VAC5-20-10",
+     "span": [
+      289,
+      300
+     ],
+     "key": "state-reg:VA:admin-code:9:5-20-10",
+     "normalized": "9VAC5-20-10",
+     "pin": null,
+     "fields": {
+      "state": "VA",
+      "code_id": "admin-code",
+      "section": "5-20-10",
+      "title": "9"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    }
+   ]
+  },
+  {
+   "id": "mdl-docket",
+   "text": "IN RE: TALC PRODUCTS LIABILITY LITIGATION, MDL No. 2738; MDL 2804; MDL-3092; Multidistrict Litigation No. 2846; the MDL Court; MDL 3:17-md-2804; No. 3:16-md-2738 and 1:23-cv-818-ABC.",
+   "expected": [
+    {
+     "kind": "mdl",
+     "form": "full",
+     "short": null,
+     "rule": "mdl",
+     "start": 43,
+     "end": 55,
+     "matched": "MDL No. 2738",
+     "span": [
+      43,
+      55
+     ],
+     "key": "mdl:2738",
+     "normalized": "MDL No. 2738",
+     "pin": null,
+     "fields": {
+      "number": "2738"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "mdl",
+     "form": "full",
+     "short": null,
+     "rule": "mdl",
+     "start": 57,
+     "end": 65,
+     "matched": "MDL 2804",
+     "span": [
+      57,
+      65
+     ],
+     "key": "mdl:2804",
+     "normalized": "MDL No. 2804",
+     "pin": null,
+     "fields": {
+      "number": "2804"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "mdl",
+     "form": "full",
+     "short": null,
+     "rule": "mdl",
+     "start": 67,
+     "end": 75,
+     "matched": "MDL-3092",
+     "span": [
+      67,
+      75
+     ],
+     "key": "mdl:3092",
+     "normalized": "MDL No. 3092",
+     "pin": null,
+     "fields": {
+      "number": "3092"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "mdl",
+     "form": "full",
+     "short": null,
+     "rule": "mdl",
+     "start": 77,
+     "end": 110,
+     "matched": "Multidistrict Litigation No. 2846",
+     "span": [
+      77,
+      110
+     ],
+     "key": "mdl:2846",
+     "normalized": "MDL No. 2846",
+     "pin": null,
+     "fields": {
+      "number": "2846"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "docket",
+     "form": "full",
+     "short": null,
+     "rule": "docket",
+     "start": 131,
+     "end": 143,
+     "matched": "3:17-md-2804",
+     "span": [
+      131,
+      143
+     ],
+     "key": "docket:3:17-md-02804",
+     "normalized": "3:17-md-02804",
+     "pin": null,
+     "fields": {},
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "docket",
+     "form": "full",
+     "short": null,
+     "rule": "docket",
+     "start": 149,
+     "end": 161,
+     "matched": "3:16-md-2738",
+     "span": [
+      149,
+      161
+     ],
+     "key": "docket:3:16-md-02738",
+     "normalized": "3:16-md-02738",
+     "pin": null,
+     "fields": {},
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "docket",
+     "form": "full",
+     "short": null,
+     "rule": "docket",
+     "start": 166,
+     "end": 181,
+     "matched": "1:23-cv-818-ABC",
+     "span": [
+      166,
+      181
+     ],
+     "key": "docket:1:23-cv-00818",
+     "normalized": "1:23-cv-00818",
+     "pin": null,
+     "fields": {
+      "judge_suffix": "ABC"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    }
+   ]
+  },
+  {
+   "id": "ecf-header",
+   "text": "Case 3:16-md-02738-MAS-RLS Document 33091 Filed 06/26/24 Page 1 of 3 PageID: 12345\nThe docket 3:16-md-02738 is cited in the text.",
+   "expected": [
+    {
+     "kind": "docket",
+     "form": "full",
+     "short": null,
+     "rule": "docket",
+     "start": 94,
+     "end": 107,
+     "matched": "3:16-md-02738",
+     "span": [
+      94,
+      107
+     ],
+     "key": "docket:3:16-md-02738",
+     "normalized": "3:16-md-02738",
+     "pin": null,
+     "fields": {},
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    }
+   ]
+  },
+  {
+   "id": "section-short",
+   "text": "42 U.S.C. § 1983 claims fail. Plaintiff's § 1983 claim, and § 1985 too. Cal. Civ. Code § 1714 governs; under § 1714(a) the duty is general.",
+   "expected": [
+    {
+     "kind": "usc",
+     "form": "full",
+     "short": null,
+     "rule": "usc",
+     "start": 0,
+     "end": 16,
+     "matched": "42 U.S.C. § 1983",
+     "span": [
+      0,
+      16
+     ],
+     "key": "usc:42:1983",
+     "normalized": "42 U.S.C. § 1983",
+     "pin": null,
+     "fields": {
+      "title": "42",
+      "section": "1983"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "usc",
+     "form": "short",
+     "short": "section",
+     "rule": "section_short",
+     "start": 42,
+     "end": 48,
+     "matched": "§ 1983",
+     "span": [
+      42,
+      48
+     ],
+     "key": "usc:42:1983",
+     "normalized": "§ 1983",
+     "pin": null,
+     "fields": {
+      "title": "42",
+      "section": "1983"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": 0,
+     "short_status": "resolved"
+    },
+    {
+     "kind": "short",
+     "form": "short",
+     "short": "section",
+     "rule": "section_short",
+     "start": 60,
+     "end": 66,
+     "matched": "§ 1985",
+     "span": [
+      60,
+      66
+     ],
+     "key": null,
+     "normalized": "§ 1985",
+     "pin": null,
+     "fields": {
+      "section": "1985"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": "none"
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_ca_4",
+     "start": 72,
+     "end": 93,
+     "matched": "Cal. Civ. Code § 1714",
+     "span": [
+      72,
+      93
+     ],
+     "key": "state-stat:CA:civ:1714",
+     "normalized": "Cal. Civ. Code § 1714",
+     "pin": null,
+     "fields": {
+      "state": "CA",
+      "code": "Cal. Civ. Code",
+      "code_id": "civ",
+      "section": "1714"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_statute",
+     "form": "short",
+     "short": "section",
+     "rule": "section_short",
+     "start": 109,
+     "end": 118,
+     "matched": "§ 1714(a)",
+     "span": [
+      109,
+      118
+     ],
+     "key": "state-stat:CA:civ:1714",
+     "normalized": "§ 1714",
+     "pin": "(a)",
+     "fields": {
+      "state": "CA",
+      "code": "Cal. Civ. Code",
+      "code_id": "civ",
+      "section": "1714"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": 3,
+     "short_status": "resolved"
+    }
+   ]
+  },
+  {
+   "id": "id-statute",
+   "text": "See 42 U.S.C. § 2000e-2(a). Id. § 2000e-3(a). Id. § 2000e-5.",
+   "expected": [
+    {
+     "kind": "usc",
+     "form": "full",
+     "short": null,
+     "rule": "usc",
+     "start": 4,
+     "end": 26,
+     "matched": "42 U.S.C. § 2000e-2(a)",
+     "span": [
+      4,
+      26
+     ],
+     "key": "usc:42:2000e-2",
+     "normalized": "42 U.S.C. § 2000e-2",
+     "pin": "(a)",
+     "fields": {
+      "title": "42",
+      "section": "2000e-2"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "usc",
+     "form": "short",
+     "short": "id",
+     "rule": "id",
+     "start": 28,
+     "end": 44,
+     "matched": "Id. § 2000e-3(a)",
+     "span": [
+      28,
+      44
+     ],
+     "key": "usc:42:2000e-3",
+     "normalized": "42 U.S.C. § 2000e-3",
+     "pin": "(a)",
+     "fields": {
+      "title": "42",
+      "section": "2000e-3"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": 0,
+     "short_status": "resolved"
+    },
+    {
+     "kind": "usc",
+     "form": "short",
+     "short": "id",
+     "rule": "id",
+     "start": 46,
+     "end": 59,
+     "matched": "Id. § 2000e-5",
+     "span": [
+      46,
+      59
+     ],
+     "key": "usc:42:2000e-5",
+     "normalized": "42 U.S.C. § 2000e-5",
+     "pin": null,
+     "fields": {
+      "title": "42",
+      "section": "2000e-5"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": 1,
+     "short_status": "resolved"
+    }
+   ]
+  },
+  {
+   "id": "no-citations",
+   "text": "No citation here: the court set the trial for June 5, 2024 and awarded $1,250,000.00 in damages under section 5 of the contract. Mass. Gen. Laws were cited without a chapter.",
+   "expected": []
+  },
+  {
+   "id": "nbsp",
+   "text": "Mass. Gen. Laws ch. 93A, § 2 and 42 U.S.C. § 1983 with no-break spaces.",
+   "expected": [
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_ma_24",
+     "start": 0,
+     "end": 28,
+     "matched": "Mass. Gen. Laws ch. 93A, § 2",
+     "span": [
+      0,
+      28
+     ],
+     "key": "state-stat:MA:gen-laws:93A:2",
+     "normalized": "Mass. Gen. Laws ch. 93A § 2",
+     "pin": null,
+     "fields": {
+      "state": "MA",
+      "code": "Mass. Gen. Laws ch. 93A",
+      "code_id": "gen-laws",
+      "section": "2",
+      "chapter": "93A"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "usc",
+     "form": "full",
+     "short": null,
+     "rule": "usc",
+     "start": 33,
+     "end": 49,
+     "matched": "42 U.S.C. § 1983",
+     "span": [
+      33,
+      49
+     ],
+     "key": "usc:42:1983",
+     "normalized": "42 U.S.C. § 1983",
+     "pin": null,
+     "fields": {
+      "title": "42",
+      "section": "1983"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    }
+   ]
+  },
+  {
+   "id": "astral",
+   "text": "📄 Exhibit: see 42 U.S.C. § 1983 and Doe v. Roe, 1 F.4th 2 (1st Cir. 2021) 📄 then 21 CFR 11.",
+   "expected": [
+    {
+     "kind": "usc",
+     "form": "full",
+     "short": null,
+     "rule": "usc",
+     "start": 15,
+     "end": 31,
+     "matched": "42 U.S.C. § 1983",
+     "span": [
+      15,
+      31
+     ],
+     "key": "usc:42:1983",
+     "normalized": "42 U.S.C. § 1983",
+     "pin": null,
+     "fields": {
+      "title": "42",
+      "section": "1983"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "case",
+     "form": "full",
+     "short": null,
+     "rule": "case",
+     "start": 48,
+     "end": 57,
+     "matched": "1 F.4th 2",
+     "span": [
+      48,
+      57
+     ],
+     "key": "case:1:F.4th:2",
+     "normalized": "1 F.4th 2",
+     "pin": null,
+     "fields": {
+      "volume": "1",
+      "reporter": "F.4th",
+      "reporter_as_written": "F.4th",
+      "page": "2",
+      "cite": "1 F.4th 2"
+     },
+     "group": 1,
+     "name": {
+      "text": "Doe v. Roe",
+      "start": 36,
+      "end": 46
+     },
+     "paren": {
+      "court": "1st Cir.",
+      "year": "2021",
+      "date": "2021",
+      "start": 57,
+      "end": 73
+     },
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "cfr_part",
+     "form": "full",
+     "short": null,
+     "rule": "cfr",
+     "start": 81,
+     "end": 90,
+     "matched": "21 CFR 11",
+     "span": [
+      81,
+      90
+     ],
+     "key": "cfr-part:21:11",
+     "normalized": "21 C.F.R. part 11",
+     "pin": null,
+     "fields": {
+      "title": "21",
+      "part": "11"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    }
+   ]
+  },
+  {
+   "id": "not-cases",
+   "text": "On 5 May 2020 the 3 Defendants paid 12 dollars; 100 NE 2nd Ave; 25 Black 3 sold; page 4 Exhibit 5.",
+   "expected": []
+  }
+ ],
+ "documents": [
+  {
+   "id": "pages",
+   "pages": [
+    "Bell Atl. Corp. v. Twombly, 550 U.S. 544 (2007), and 42 U.S.C. § 1983.",
+    "Id. at 570. Twombly, 550 U.S. at 556. Section 1983 is cited as § 1983."
+   ],
+   "expected": [
+    [
+     {
+      "kind": "case",
+      "form": "full",
+      "short": null,
+      "rule": "case",
+      "start": 28,
+      "end": 40,
+      "matched": "550 U.S. 544",
+      "span": [
+       28,
+       40
+      ],
+      "key": "case:550:U.S.:544",
+      "normalized": "550 U.S. 544",
+      "pin": null,
+      "fields": {
+       "volume": "550",
+       "reporter": "U.S.",
+       "reporter_as_written": "U.S.",
+       "page": "544",
+       "cite": "550 U.S. 544"
+      },
+      "group": 1,
+      "name": {
+       "text": "Bell Atl. Corp. v. Twombly",
+       "start": 0,
+       "end": 26
+      },
+      "paren": {
+       "court": "",
+       "year": "2007",
+       "date": "2007",
+       "start": 40,
+       "end": 47
+      },
+      "antecedent": null,
+      "short_status": null
+     },
+     {
+      "kind": "usc",
+      "form": "full",
+      "short": null,
+      "rule": "usc",
+      "start": 53,
+      "end": 69,
+      "matched": "42 U.S.C. § 1983",
+      "span": [
+       53,
+       69
+      ],
+      "key": "usc:42:1983",
+      "normalized": "42 U.S.C. § 1983",
+      "pin": null,
+      "fields": {
+       "title": "42",
+       "section": "1983"
+      },
+      "group": null,
+      "name": null,
+      "paren": null,
+      "antecedent": null,
+      "short_status": null
+     }
+    ],
+    [
+     {
+      "kind": "short",
+      "form": "short",
+      "short": "id",
+      "rule": "id",
+      "start": 0,
+      "end": 10,
+      "matched": "Id. at 570",
+      "span": [
+       0,
+       10
+      ],
+      "key": null,
+      "normalized": "Id. at 570",
+      "pin": "570",
+      "fields": {
+       "pin_kind": "page"
+      },
+      "group": null,
+      "name": null,
+      "paren": null,
+      "antecedent": null,
+      "short_status": "ambiguous"
+     },
+     {
+      "kind": "case",
+      "form": "short",
+      "short": "at",
+      "rule": "case_short",
+      "start": 21,
+      "end": 36,
+      "matched": "550 U.S. at 556",
+      "span": [
+       21,
+       36
+      ],
+      "key": "case:550:U.S.:544",
+      "normalized": "550 U.S. at 556",
+      "pin": "556",
+      "fields": {
+       "volume": "550",
+       "reporter": "U.S.",
+       "reporter_as_written": "U.S.",
+       "page": "544",
+       "cite": "550 U.S. 544"
+      },
+      "group": null,
+      "name": null,
+      "paren": null,
+      "antecedent": {
+       "page": 0,
+       "index": 0
+      },
+      "short_status": "resolved"
+     },
+     {
+      "kind": "usc",
+      "form": "short",
+      "short": "section",
+      "rule": "section_short",
+      "start": 63,
+      "end": 69,
+      "matched": "§ 1983",
+      "span": [
+       63,
+       69
+      ],
+      "key": "usc:42:1983",
+      "normalized": "§ 1983",
+      "pin": null,
+      "fields": {
+       "title": "42",
+       "section": "1983"
+      },
+      "group": null,
+      "name": null,
+      "paren": null,
+      "antecedent": {
+       "page": 0,
+       "index": 1
+      },
+      "short_status": "resolved"
+     }
+    ]
+   ]
+  }
+ ]
+}
