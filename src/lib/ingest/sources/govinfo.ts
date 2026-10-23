@@ -161,10 +161,10 @@ export function packageRow(
       s ? (s.committees.length ? s.committees.map((x) => `${x.name ?? ""}${x.authorityId ? ` (${x.authorityId})` : ""}`).join("; ") : "Not listed in the summary") : NOT_RECORDED,
     ]);
   } else {
-    facts.push(["Issuing unit", s?.author ?? NOT_RECORDED]);
-    facts.push(["SuDoc class", s?.suDocClassNumber ?? NOT_RECORDED]);
+    facts.push(["Issuing unit", s ? (s.author ?? "Not stated in the summary") : NOT_RECORDED]);
+    facts.push(["SuDoc class", s ? (s.suDocClassNumber ?? "Not stated in the summary") : NOT_RECORDED]);
   }
-  facts.push(["Pages", s?.pages ?? NOT_RECORDED]);
+  facts.push(["Pages", s ? (s.pages ?? "Not stated in the summary") : NOT_RECORDED]);
   facts.push(["Summary read", s ? "yes" : "no (listing entry only)"]);
   facts.push(["Last modified on GovInfo", p.lastModified ?? NOT_RECORDED]);
   facts.push(["Source", `GovInfo API, collection ${c} (${GI_DOCS})`]);
