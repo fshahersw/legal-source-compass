@@ -12,6 +12,7 @@ Register agency records is exact on a documented key (match.py) and only when on
 import glob
 import json
 import os
+import re
 import sys
 from collections import Counter, defaultdict
 
@@ -60,11 +61,26 @@ def collect(scope="federal"):
     return out, {"pages": len(pages), "rows_seen": sum(len(p[1]) for p in pages), "unique": len(out), "duplicates": dup}
 
 
+def load_details():
+    """{report path: parsed report page} for every Oversight.gov report page read by fetch_oversight_details.py."""
+    folder = os.path.join(cm.ACQ, "oversight_gov", "details")
+    out = {}
+    for f in sorted(glob.glob(os.path.join(folder, "*.html.gz"))):
+        page = cm.read_gz(f).decode("utf-8")
+        base = os.path.basename(f)[: -len(".html.gz")]
+        out[base] = po.parse_report_page(page)
+    return out
+
+
+def detail_key(path):
+    return re.sub(r"[^A-Za-z0-9._-]", "_", path.strip("/"))
+
+
 def year_of(date):
     return int(date[:4]) if date else None
 
 
-def build_record(r, agencies, doj_link=None):
+def build_record(r, agencies, doj_link=None, detail=None):
     rid = rw.stable_id("ovr", r["path"])
     url = po.BASE + r["path"]
     year = year_of(r["date"])
@@ -80,7 +96,16 @@ def build_record(r, agencies, doj_link=None):
         "recommendations": r["recommendations"], "description": desc, "description_clipped": clipped,
         "url": url, "doj_oig_id": doj_link,
     }
+    if detail:
+        body["questioned_costs"] = detail["questioned_costs"]
+        body["funds_better_use"] = detail["funds_better_use"]
+        body["file_url"] = detail["file_url"]
+        body["external_url"] = detail["external_url"]
     links = [{"url": url, "label": "Oversight.gov report page"}]
+    if detail and detail["file_url"]:
+        links.append({"url": detail["file_url"], "label": "Report file (hosted on Oversight.gov)"})
+    if detail and detail["external_url"] and detail["external_url"].startswith("https://"):
+        links.append({"url": detail["external_url"], "label": "On the OIG's own site"})
     if oig_match:
         links.append({"url": f"/agencies/{oig_match['id']}", "label": f"Agency: {oig_match['title']}"})
     if doj_link:
@@ -95,6 +120,9 @@ def build_record(r, agencies, doj_link=None):
     ]
     if oig_match:
         facts.append(("Agency record (exact name match)", oig_match["title"]))
+    if detail:
+        facts += [("Questioned costs (as the report page prints them)", (detail["questioned_costs"] or {}).get("text")),
+                  ("Funds for better use (as the report page prints them)", (detail["funds_better_use"] or {}).get("text"))]
     filters = {
         "oig": [r["oig"]] if r["oig"] else [], "agency": [r["agency_reviewed"]] if r["agency_reviewed"] else [],
         "type": [r["type"]] if r["type"] else [], "year": [str(year)] if year else [],
@@ -169,7 +197,7 @@ def doj_money(doj_rows):
                            "better_use": (r["funds_better_use"] or {}).get("value")} for r in doj_rows])
 
 
-def build_trends(items, agencies, as_of, doj_rows=None):
+def build_trends(items, agencies, as_of, doj_rows=None, details=None):
     out = []
     national = {"scope": "national", "name": "All Offices of Inspector General on Oversight.gov", "as_of": as_of,
                 "totals": totals(items), "years": series(items)}
@@ -197,6 +225,14 @@ def build_trends(items, agencies, as_of, doj_rows=None):
                              "source_url": "https://oig.justice.gov/reports", "years": doj_money(doj_rows),
                              "excludes": sorted(dj.AGGREGATE_TYPES),
                              "note": "Amounts are as the Office of the Inspector General states them on each report page; they are not audited or recomputed here."}
+        elif details and group and all(detail_key(r["path"]) in details for r in group):
+            # every report of this OIG was read: its dollar fields can be totalled without leaving a hidden gap
+            read = [{"date": r["date"], "type": r["type"],
+                     "questioned": ((details[detail_key(r["path"])]["questioned_costs"]) or {}).get("value"),
+                     "better_use": ((details[detail_key(r["path"])]["funds_better_use"]) or {}).get("value")} for r in group]
+            body["money"] = {"source": "Oversight.gov report pages, every report of this OIG read", "source_url": SOURCE_PAGE,
+                             "years": money_by_year(read), "excludes": sorted(dj.AGGREGATE_TYPES),
+                             "note": "Amounts are as each report page prints them; they are not audited or recomputed here."}
         filters = {"scope": ["oig"], "oig": [name]}
         if m:
             filters["agency_id"] = [m["id"]]
@@ -228,14 +264,18 @@ def main():
     links = dj.crosslink(doj_rows, items) if doj_rows else {}
     reverse = {v: k for k, v in links.items()}
     doj_ids = {r["path"]: "dojoig:" + dj.slug_of(r["path"]) for r in doj_rows}
-    records = [build_record(r, agencies, doj_ids.get(reverse.get(r["path"]))) for r in items]
+    details = load_details()
+    records = [build_record(r, agencies, doj_ids.get(reverse.get(r["path"])), details.get(detail_key(r["path"]))) for r in items]
+    detail_mismatch = sum(1 for r in items if detail_key(r["path"]) in details
+                          and (details[detail_key(r["path"])]["date"], details[detail_key(r["path"])]["recommendations"])
+                          != (r["date"], r["recommendations"]))
     records.sort(key=lambda row: (row["item"]["oversight"]["date"] or "", row["id"]), reverse=True)
     as_of = max((r["date"] for r in items if r["date"]), default=None)
     retrieved = sorted(r["retrieved_at"] for r in items if r["retrieved_at"])
     oig_names = sorted({r["oig"] for r in items if r["oig"]})
     types = sorted({r["type"] for r in items if r["type"]})
     years = sorted({str(year_of(r["date"])) for r in items if r["date"]}, reverse=True)
-    inputs = rw.manifest_inputs([cm.rel(os.path.join(cm.ACQ, "oversight_gov", "federal"))])
+    inputs = rw.manifest_inputs([cm.rel(os.path.join(cm.ACQ, "oversight_gov", "federal")), cm.rel(os.path.join(cm.ACQ, "oversight_gov", "details"))])
     summary = {
         "source": "Oversight.gov, the Council of the Inspectors General on Integrity and Efficiency (CIGIE) site of public reports from federal Offices of Inspector General",
         "source_page": SOURCE_PAGE,
@@ -243,8 +283,9 @@ def main():
         "coverage": f"{len(records):,} reports; report dates {min((r['date'] for r in items if r['date']), default='Not recorded')} to {as_of}; listing read {retrieved[0][:10] if retrieved else 'Not recorded'} to {retrieved[-1][:10] if retrieved else 'Not recorded'}",
         "fields": "Report date, submitting OIG, agency reviewed or investigated, report type, location, report number, number of recommendations and report description are exactly as the listing shows them; an empty field is Not recorded. Descriptions longer than 1,200 characters are cut at a word boundary and marked.",
         "matching": "A report links to a Federal Register agency record only when the submitting OIG's name and the agency's name give the same key (match.agency_key) and one agency holds it; to a DOJ OIG report record only when report number and date are equal and unique on both sides.",
-        "monetary_impact": "Not part of the listing. Dollar figures stated on report pages are in doj_oig_reports (every DOJ OIG report page read).",
-        "stats": {**stats, "agency_match": agencies.stats, "doj_oig": doj_stats, "doj_crosslinks": len(links)},
+        "monetary_impact": "Not part of the listing. Dollar figures stated on report pages are in doj_oig_reports (every DOJ OIG report page read) and, for the OIGs whose every report page was read, on the Oversight.gov record (report_pages_read in stats counts them).",
+        "stats": {**stats, "agency_match": agencies.stats, "doj_oig": doj_stats, "doj_crosslinks": len(links),
+                  "report_pages_read": len(details), "report_page_vs_listing_mismatches": detail_mismatch},
         "as_of": as_of, "dated_reports": sum(1 for r in items if r["date"]), "undated_reports": sum(1 for r in items if not r["date"]),
     }
     lb = rw.listing(
@@ -252,7 +293,7 @@ def main():
         [("oig", "Submitting OIG", {n: n for n in oig_names}), ("type", "Report type", {t: t for t in types}), ("year", "Report year", {y: y for y in years}),
          ("has_recommendations", "Recommendations", {"yes": "One or more", "no": "Zero stated", "not_recorded": "Not recorded"})])
     rw.write_build(REPORTS, "Inspector General reports (Oversight.gov, CIGIE)", records, lb, summary, inputs)
-    trend_rows = build_trends(items, agencies, as_of, doj_rows or None)
+    trend_rows = build_trends(items, agencies, as_of, doj_rows or None, details)
     tsummary = {
         "source": "Counted from oversight_reports (Oversight.gov report listing)", "source_page": SOURCE_PAGE,
         "formula": "reports = number of listed reports with that report date's calendar year; recs = sum of the 'Number of recommendations' stated by the OIG, over only the reports that state one (recs_reports says how many); reports without a date are counted in totals only. DOJ OIG money = sum of the amounts the OIG states on each report page, excluding semiannual reports (they total other reports).",

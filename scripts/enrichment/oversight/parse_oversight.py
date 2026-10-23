@@ -82,31 +82,50 @@ def parse_money(text):
     return float(m.group(1).replace(",", "")) if m else None
 
 
+def _field(page_html, name):
+    """(inner html, machine value) of the first `field--name-<name>` item on a report page, or (None, None)."""
+    start = page_html.find("field--name-" + name + " ")
+    if start < 0:
+        return None, None
+    nxt = page_html.find('<div class="field field--name-', start + 20)
+    block = page_html[start: nxt if nxt > 0 else start + 3000]
+    m = re.search(r'<div([^>]*)class="[^"]*field__item[^"]*"([^>]*)>(.*?)</div>', block, re.S)
+    if not m:
+        return None, None
+    content = re.search(r'content="([^"]*)"', m.group(1) + m.group(2))
+    return m.group(3), content.group(1) if content else None
+
+
+def _issued(text):
+    for fmt in ("%A, %B %d, %Y", "%B %d, %Y"):
+        try:
+            return datetime.strptime(text, fmt).strftime("%Y-%m-%d")
+        except ValueError:
+            continue
+    return None
+
+
 def parse_report_page(page_html):
-    """Detail fields of one Oversight.gov report page: dates, numbers, money as stated, file and external links."""
-    labels = {}
-    for title, rest in re.findall(r'<div class="title[^"]*">([^<]+)</div>\s*(.*?)(?=<div class="field field--name|</article>|\Z)', page_html, re.S):
-        item = re.search(r'<div class="field__item[^"]*">(.*?)</div>', rest, re.S)
-        labels[clean(title)] = item.group(1) if item else None
-    ext = re.search(r'field--name-field-report-link.*?<a href="([^"]+)"', page_html, re.S)
-    pdf = re.search(r'field--name-field-report-file.*?<a href="([^"]+)"', page_html, re.S)
-    issued = labels.get("Date Issued")
-    when = None
-    if issued:
-        for fmt in ("%A, %B %d, %Y", "%B %d, %Y"):
-            try:
-                when = datetime.strptime(clean(issued), fmt).strftime("%Y-%m-%d")
-                break
-            except ValueError:
-                continue
-    return {
-        "date": when,
-        "report_number": clean(labels.get("Report Number")) or None,
-        "recommendations": int(clean(labels["Number of Recommendations"])) if clean(labels.get("Number of Recommendations")).isdigit() else None,
-        "questioned_costs_text": clean(labels.get("Questioned Costs")) or None,
-        "questioned_costs": parse_money(clean(labels.get("Questioned Costs"))),
-        "funds_better_use_text": clean(labels.get("Funds for Better Use")) or None,
-        "funds_better_use": parse_money(clean(labels.get("Funds for Better Use"))),
-        "external_url": html.unescape(ext.group(1)) if ext else None,
-        "file_url": (BASE + pdf.group(1) if pdf and pdf.group(1).startswith("/") else (pdf.group(1) if pdf else None)),
-    }
+    """Detail fields of one Oversight.gov report page, as printed: date, number, recommendations, the money fields
+    (printed text and the machine value the page carries), the OIG's external link and the hosted report file."""
+    out = {}
+    issued, _ = _field(page_html, "field-report-date-issued")
+    stamp = re.search(r'<time datetime="(\d{4}-\d{2}-\d{2})', issued or "")
+    out["date"] = stamp.group(1) if stamp else _issued(clean(issued)) if issued else None
+    number, _ = _field(page_html, "field-report-number")
+    out["report_number"] = clean(number) or None if number else None
+    recs, _ = _field(page_html, "field-report-number-of-recs")
+    out["recommendations"] = int(clean(recs)) if recs and clean(recs).isdigit() else None
+    for key, name in (("questioned_costs", "field-net-questioned-costs"), ("funds_better_use", "field-net-funds-for-better-use")):
+        item, content = _field(page_html, name)
+        text = clean(item) if item else ""
+        value = float(content) if content is not None and re.fullmatch(r"\d+(?:\.\d+)?", content) else parse_money(text)
+        out[key] = {"text": text, "value": value} if text else None
+    link, _ = _field(page_html, "field-report-link")
+    href = re.search(r'href="([^"]+)"', link or "")
+    out["external_url"] = html.unescape(href.group(1)) if href else None
+    start = page_html.find("field--name-field-report-file ")
+    m = re.search(r'report-download-button[^>]*href="([^"]+)"|href="([^"]+)"[^>]*report-download-button', page_html[start: start + 2500]) if start >= 0 else None
+    href = (m.group(1) or m.group(2)) if m else None
+    out["file_url"] = (BASE + href if href.startswith("/") else href) if href else None
+    return out
