@@ -194,7 +194,13 @@ export function InForceCodeBrowser({
 
   const t = tree.data?.available ? tree.data : null;
   const edition = t?.edition ?? openSection?.edition ?? null;
-  const crumbs: StateLawNode[] = t ? [...t.breadcrumb, ...(t.node ? [t.node] : [])] : [];
+  const singleCode = (edition?.codes.length ?? 0) === 1;
+  // The root button already names a single-code state's code, so its code node is not repeated.
+  const crumbs: StateLawNode[] = t
+    ? [...t.breadcrumb, ...(t.node ? [t.node] : [])].filter(
+        (c) => !(singleCode && c.level === "code"),
+      )
+    : [];
   const go = (next: InForceNav) => onNavigate({ lq: nav.lq, ...next });
   const searchData = found.data?.available ? found.data : null;
   const exactId = searchData?.exact?.sectionId ?? null;

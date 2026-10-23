@@ -45,7 +45,17 @@ export async function stateLawTree(
     p_limit: limit,
     p_offset: offset,
   });
-  return raw === null ? { available: false, reason: "not_installed" } : parseTree(raw);
+  if (raw === null) return { available: false, reason: "not_installed" };
+  const tree = parseTree(raw);
+  // A single-code state opens on its code: the outline starts at the code's own divisions.
+  if (
+    nodeId === null &&
+    tree.available &&
+    tree.children.length === 1 &&
+    tree.children[0]?.level === "code"
+  )
+    return stateLawTree(state, tree.children[0].nodeId, offset, limit);
+  return tree;
 }
 
 export async function stateLawSection(state: string, sectionId: string): Promise<StateLawSection> {
