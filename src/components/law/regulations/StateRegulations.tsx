@@ -365,10 +365,12 @@ export function SearchPanel({
   onSearch: (q: string) => void;
 }) {
   const [draft, setDraft] = useState(q);
+  const [page, setPage] = useState({ q, offset: 0 });
+  const offset = page.q === q ? page.offset : 0;
   const searchFn = useServerFn(searchStateRegs);
   const res = useQuery({
-    queryKey: ["state-reg-search", state, q],
-    queryFn: () => searchFn({ data: { state, q, offset: 0 } }),
+    queryKey: ["state-reg-search", state, q, offset],
+    queryFn: () => searchFn({ data: { state, q, offset } }),
     enabled: q.trim().length >= 2,
     staleTime: 5 * 60 * 1000,
   });
@@ -421,11 +423,31 @@ export function SearchPanel({
           ) : null}
           <p className="mb-1 text-xs text-muted-foreground">
             {res.data.total.toLocaleString("en-US")} rules contain “{q}”
-            {res.data.hits.length < res.data.total
-              ? `; showing the first ${res.data.hits.length}`
+            {res.data.total > res.data.hits.length
+              ? `; showing ${(offset + 1).toLocaleString("en-US")}–${(offset + res.data.hits.length).toLocaleString("en-US")}`
               : ""}
             .
           </p>
+          {res.data.total > 25 ? (
+            <div className="mb-2 flex gap-2 text-xs">
+              <button
+                type="button"
+                disabled={offset === 0}
+                onClick={() => setPage({ q, offset: Math.max(0, offset - 25) })}
+                className="rounded-md border border-border px-2.5 py-1 hover:bg-muted disabled:opacity-50"
+              >
+                Previous 25
+              </button>
+              <button
+                type="button"
+                disabled={offset + 25 >= res.data.total || offset + 25 > 5000}
+                onClick={() => setPage({ q, offset: offset + 25 })}
+                className="rounded-md border border-border px-2.5 py-1 hover:bg-muted disabled:opacity-50"
+              >
+                Next 25
+              </button>
+            </div>
+          ) : null}
           {res.data.hits.length ? (
             <ul className="divide-y divide-border rounded-lg border border-border bg-surface">
               {res.data.hits.map((h) => (

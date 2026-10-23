@@ -16,7 +16,7 @@ export function CoverageTable({ codes }: { codes: RegCode[] }) {
   );
   return (
     <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-      <table className="w-full min-w-[56rem] border-collapse text-left text-[13px]">
+      <table className="w-full min-w-[44rem] border-collapse text-left text-[13px]">
         <caption className="sr-only">
           State administrative codes: publisher, access and coverage
         </caption>
@@ -34,7 +34,7 @@ export function CoverageTable({ codes }: { codes: RegCode[] }) {
             <th scope="col" className="px-3 py-2 font-medium">
               Contents
             </th>
-            <th scope="col" className="px-3 py-2 font-medium">
+            <th scope="col" className="hidden px-3 py-2 font-medium xl:table-cell">
               robots.txt
             </th>
             <th scope="col" className="px-3 py-2 font-medium">
@@ -80,7 +80,7 @@ export function CoverageTable({ codes }: { codes: RegCode[] }) {
               <td className="whitespace-nowrap px-3 py-1.5 text-muted-foreground">
                 {c.indexNodes ? `${c.indexNodes.toLocaleString("en-US")} headings` : "Not loaded"}
               </td>
-              <td className="whitespace-nowrap px-3 py-1.5 text-muted-foreground">
+              <td className="hidden whitespace-nowrap px-3 py-1.5 text-muted-foreground xl:table-cell">
                 {robotsLine(c)}
               </td>
               <td className="px-3 py-1.5 text-muted-foreground">
