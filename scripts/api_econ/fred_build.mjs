@@ -165,7 +165,7 @@ const files = [
         ["seasonal_adjustment", "Seasonal adjustment", { SA: "Seasonally adjusted", NSA: "Not seasonally adjusted" }],
       ],
     ),
-    { ...common, rows: seriesRows.length, series: perSeries.length, observation_dataset: fred.OBS_DATASET },
+    { ...common, rows: seriesRows.length, series: seriesRows.length, observation_dataset: fred.OBS_DATASET },
     seriesRows,
   ),
   write(
@@ -186,8 +186,9 @@ const files = [
     {
       ...common,
       rows: obsRows.length,
-      observations: perSeries.reduce((a, s) => a + s.dates, 0),
-      per_series: perSeries,
+      // counts at the full build; the scheduled refresh restates `rows` only (ingest catalog_metadata)
+      observations_at_build: perSeries.reduce((a, s) => a + s.dates, 0),
+      per_series_at_build: perSeries,
       series_dataset: fred.SERIES_DATASET,
     },
     obsRows,
