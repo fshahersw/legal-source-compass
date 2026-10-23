@@ -420,8 +420,8 @@ begin
   return v is not null and sha256(convert_to(v, 'UTF8')) = sha256(convert_to(p_token, 'UTF8'));
 end $$;
 
--- Open a run. A scheduled run needs the refresh enabled; manual and local runs do not. A run open for more than 30 minutes
--- is closed as failed first; one open run at a time.
+-- Open a run. A scheduled run needs the refresh enabled; manual and local runs do not. A run left open (10 minutes for an
+-- edge run, 40 for a local one) is closed as failed first; one open run at a time.
 create or replace function public.semantic_refresh_open_run_v1(p_trigger text default 'schedule') returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare s semantic.refresh_settings; v_run uuid; v_limits jsonb;
@@ -429,8 +429,11 @@ begin
   if p_trigger not in ('schedule', 'manual', 'local') then raise exception 'trigger must be schedule, manual or local' using errcode = '22023'; end if;
   select * into s from semantic.refresh_settings where id = 1;
   if p_trigger = 'schedule' and not s.enabled then return jsonb_build_object('skipped', 'disabled'); end if;
-  update semantic.refresh_runs set status = 'failed', finished_at = now(), error = 'abandoned: the run did not finish within 30 minutes'
-    where status = 'running' and started_at < now() - interval '30 minutes';
+  -- an edge run is bounded to a few minutes (and is stopped by the platform at its CPU or wall-clock limit); a local run
+  -- to 25 minutes by default: a run left open past that is closed as failed (its open reservations stay counted in full)
+  update semantic.refresh_runs set status = 'failed', finished_at = now(),
+    error = 'abandoned: the run did not finish within ' || case when trigger = 'local' then '40' else '10' end || ' minutes'
+    where status = 'running' and started_at < now() - case when trigger = 'local' then interval '40 minutes' else interval '10 minutes' end;
   if exists (select 1 from semantic.refresh_runs where status = 'running') then return jsonb_build_object('skipped', 'busy'); end if;
   insert into semantic.refresh_runs (trigger) values (p_trigger) returning id into v_run;
   select coalesce(jsonb_object_agg(d, semantic.removal_limit(d)), '{}') into v_limits from unnest(s.datasets) d;

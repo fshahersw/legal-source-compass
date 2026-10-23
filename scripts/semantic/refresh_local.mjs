@@ -98,7 +98,7 @@ if (cmd === "status") {
 } else if (cmd === "dry-run" || cmd === "run") {
   const limits = {};
   if (arg("--max-records")) limits.max_records_per_run = Number(arg("--max-records"));
-  limits.max_seconds_per_run = Number(arg("--max-seconds", cmd === "run" ? "1500" : "36000")); // a run open for 30 minutes is closed as abandoned
+  limits.max_seconds_per_run = Number(arg("--max-seconds", cmd === "run" ? "1500" : "36000")); // a local run open for 40 minutes is closed as abandoned
   limits.max_cpu_ms_per_run = 86_400_000;
   limits.page_records = Number(arg("--page", "500"));
   if (!limits.max_records_per_run) limits.max_records_per_run = 1_000_000;

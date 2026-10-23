@@ -790,13 +790,23 @@ test("dry run reads only; a run is single and abandoned runs are closed", async 
   assert.deepEqual(await t.rpc("semantic_refresh_open_run_v1", { p_trigger: "schedule" }), {
     skipped: "disabled",
   });
-  await t.db.exec("update semantic.refresh_runs set started_at = now() - interval '31 minutes'");
-  const b = await t.rpc("semantic_refresh_open_run_v1", { p_trigger: "manual" });
-  assert.ok(b.run_id);
+  await t.db.exec("update semantic.refresh_runs set started_at = now() - interval '11 minutes'");
+  const b = await t.rpc("semantic_refresh_open_run_v1", { p_trigger: "local" });
+  assert.ok(b.run_id, "an edge run open for 10 minutes is abandoned");
   assert.equal(
     (await t.one("select status from semantic.refresh_runs where id = $1", [a.run_id])).status,
     "failed",
   );
+  await t.db.exec(
+    `update semantic.refresh_runs set started_at = now() - interval '31 minutes' where id = '${b.run_id}'`,
+  );
+  assert.deepEqual(await t.rpc("semantic_refresh_open_run_v1", { p_trigger: "manual" }), {
+    skipped: "busy",
+  });
+  await t.db.exec(
+    `update semantic.refresh_runs set started_at = now() - interval '41 minutes' where id = '${b.run_id}'`,
+  );
+  assert.ok((await t.rpc("semantic_refresh_open_run_v1", { p_trigger: "manual" })).run_id);
   assert.equal(
     await t.rpc("semantic_refresh_check_trigger_v1", { p_token: "x".repeat(64) }),
     false,
