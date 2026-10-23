@@ -130,19 +130,28 @@ class Storage:
         while after it is overwritten (observed 2026-10-22: a plain GET returned the old version after an upsert and
         after a delete). Every readback therefore carries a unique query parameter, which makes the cache miss.
         """
-        params = {"readback": uuid.uuid4().hex}
-        r = self._retry(lambda: self.s.get(self._object_url(key, True), headers=self.h, params=params, timeout=self.timeout, stream=True))
-        try:
-            if r.status_code != 200:
-                return (404 if _is_not_found(r) else r.status_code), None, 0
-            h = hashlib.sha256()
-            n = 0
-            for block in r.iter_content(1 << 20):
-                h.update(block)
-                n += len(block)
-            return 200, h.hexdigest(), n
-        finally:
-            r.close()
+        # a connection broken while the body streams (after _retry has returned) is read again from the start
+        delay = 2.0
+        for attempt in range(self.retries + 1):
+            params = {"readback": uuid.uuid4().hex}
+            r = self._retry(lambda: self.s.get(self._object_url(key, True), headers=self.h, params=params, timeout=self.timeout, stream=True))
+            try:
+                if r.status_code != 200:
+                    return (404 if _is_not_found(r) else r.status_code), None, 0
+                h = hashlib.sha256()
+                n = 0
+                for block in r.iter_content(1 << 20):
+                    h.update(block)
+                    n += len(block)
+                return 200, h.hexdigest(), n
+            except (requests.ConnectionError, requests.Timeout, requests.exceptions.ChunkedEncodingError) as exc:
+                if attempt >= self.retries:
+                    raise StoreError(f"network error while reading back: {type(exc).__name__}") from exc
+            finally:
+                r.close()
+            time.sleep(delay)
+            delay = min(delay * 2, 60)
+        raise StoreError("unreachable")
 
     # ------------------------------------------------------------------------------------------------ writes
     def _standard_upload(self, key: str, path: str, upsert: bool) -> tuple[int, str]:

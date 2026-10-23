@@ -15,6 +15,7 @@ import re
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
@@ -371,7 +372,18 @@ class FakeBucket:
         if self.flaky_reads.get(key):
             self.flaky_reads[key] -= 1
             body = b"not yet"
+        if self.broken_streams.get(key):
+            self.broken_streams[key] -= 1
+            return BrokenStreamResponse(200, body)
         return FakeResponse(200, body)
+
+
+class BrokenStreamResponse(FakeResponse):
+    """Headers arrive, then the connection is reset while the body streams (seen 2026-10-23 on a 30 MB readback)."""
+
+    def iter_content(self, n):
+        yield self.content[:1]
+        raise store.requests.exceptions.ChunkedEncodingError("Connection broken: ConnectionResetError(104)")
 
 
 FakeBucket.cache = None  # set per instance below
@@ -382,6 +394,7 @@ def _init_with_cache(self):
     _fake_init(self)
     self.cache = {}
     self.flaky_reads = {}
+    self.broken_streams = {}
 
 
 FakeBucket.__init__ = _init_with_cache
@@ -447,6 +460,20 @@ class StoreTests(unittest.TestCase):
         r = self.s.put_verified("k/a.gz", self.path, self.sha, self.n)
         self.assertTrue(r["readback_ok"])
         self.assertEqual(self.b.posts["k/a.gz"], 1)
+
+    def test_stream_broken_during_readback_is_read_again(self):
+        self.b.broken_streams["k/a.gz"] = 1
+        s = fake_storage(self.b, retries=2)
+        with mock.patch.object(store.time, "sleep"):
+            r = s.put_verified("k/a.gz", self.path, self.sha, self.n)
+        self.assertEqual((r["state"], r["readback_ok"], r["readback_sha256"]), ("uploaded", True, self.sha))
+        self.assertEqual(self.b.posts["k/a.gz"], 1)
+
+    def test_stream_broken_on_every_readback_is_an_error(self):
+        self.b.broken_streams["k/a.gz"] = 99
+        s = fake_storage(self.b, retries=1)
+        with mock.patch.object(store.time, "sleep"), self.assertRaises(store.StoreError):
+            s.put_verified("k/a.gz", self.path, self.sha, self.n)
 
     def test_local_file_changed_is_refused(self):
         with self.assertRaises(store.StoreError):
