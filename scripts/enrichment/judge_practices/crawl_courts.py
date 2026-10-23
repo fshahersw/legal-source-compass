@@ -151,7 +151,7 @@ def listing_entries(body: bytes, base: str, hosts: set[str], ov: dict, audit: li
         found += pl.judge_entries(soup, base, audit=audit)
     if ov.get("entry_href_regex"):
         rx_found = pl.regex_entries(pl.extract_links(soup, base), ov["entry_href_regex"], ov.get("exclude_href_regex"),
-                                    main_only=bool(ov.get("entry_main_only")))
+                                    main_only=bool(ov.get("entry_main_only")), heading=ov.get("entry_heading_regex"))
         if ov.get("row_docs"):
             for e in rx_found:
                 e.docs = pl.row_docs(soup, base, e.url, e.name_text or None)

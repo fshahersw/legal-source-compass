@@ -88,7 +88,7 @@ class ProfileIndex:
                     "basis": "unique exact normalised name (middle names reduced to initials) at the same court"}
         if not ids:
             return {"status": "unmatched", "reason": "no profile with this name at this court", "candidates": 0}
-        return {"status": "ambiguous", "reason": "more than one profile has this name at this court", "candidates": len(ids)}
+        return {"status": "ambiguous", "reason": "more than one profile has this name at this court", "candidates": len(ids), "candidate_ids": sorted(ids)[:6]}
 
 
 def LOCATIONS_DIR() -> str:

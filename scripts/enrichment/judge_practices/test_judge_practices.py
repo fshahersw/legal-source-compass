@@ -169,6 +169,8 @@ class Titles(unittest.TestCase):
         self.assertEqual(pl.role_phrase("Senior Judge"), "Senior Judge")
         self.assertEqual(pl.role_phrase("U.S. Magistrate Judge Cassady on Recall"), "U.S. Magistrate Judge on Recall")
         self.assertIsNone(pl.role_phrase("Courtroom 15C"))
+        self.assertEqual(pl.role_phrase("James B. Clark, III United States Magistrate Judge"), "United States Magistrate Judge")  # III is the name's
+        self.assertEqual(pl.role_phrase("Article III Judge"), "Article III Judge")
 
     def test_classify_title(self):
         c = pl.classify_title
@@ -266,6 +268,37 @@ class Fetching(unittest.TestCase):
         a = fl.page_path("https://www.nysd.uscourts.gov/judges")
         self.assertEqual(a, fl.page_path("https://www.nysd.uscourts.gov/judges"))
         self.assertNotEqual(a, fl.page_path("https://www.nysd.uscourts.gov/judges?x=1"))
+
+
+class JudgePageText(unittest.TestCase):
+    """A judge's own page that carries the judge's practices in its text: when it counts, and what is left out of the stored text."""
+
+    PRACTICES = ("Page limits: opening and opposition briefs may not exceed twenty-five pages and replies may not exceed ten pages. "
+                 "Courtesy copies: send one courtesy copy of every motion over fifty pages to chambers. Proposed orders must be submitted with every motion. "
+                 "Discovery disputes: do not file a motion; call chambers to arrange a conference. A continuance is granted only for good cause. "
+                 "Pretrial conference: counsel must file a joint pretrial statement. Summary judgment motions require a pre-motion letter. ") * 3
+    PAGE = ("<html><body><main><h1>District Judge Jane Roe</h1><p>Courtroom Deputy:</p><p>Mary Smith, Phone: (555) 123-4567, Email: mary_smith@example.gov</p>"
+            "<p>Judicial Assistant:</p><p>John Doe (555) 765-4321</p><h2>Practices</h2><p>" + PRACTICES + "</p></main></body></html>").encode()
+    BIO = ("<html><body><main><h1>District Judge Jane Roe</h1><p>" + "Judge Roe was born in Ohio, graduated from State University and practiced law. " * 40
+           + "</p></main></body></html>").encode()
+
+    def test_only_a_page_that_states_practices_counts(self):
+        self.assertIsNotNone(xt.inline_practices(self.PAGE))
+        self.assertIsNone(xt.inline_practices(self.BIO))
+        self.assertIsNone(xt.inline_practices(b"<html><body><main><h1>Judge Roe</h1><p>Page limits and proposed orders.</p></main></body></html>"))
+
+    def test_staff_blocks_in_the_header_are_left_out_of_the_text(self):
+        ex = xt.inline_practices(self.PAGE)
+        text, counts = xt.redact_page(ex.text)
+        for leaked in ("Mary Smith", "John Doe", "mary_smith", "555", "@"):
+            self.assertNotIn(leaked, text)
+        self.assertIn("[staff contact block omitted]", text)
+        self.assertIn("Page limits: opening and opposition briefs", text)  # prose is never dropped
+        self.assertGreaterEqual(counts["staff_blocks"], 1)  # chained labels are one block
+
+    def test_prose_that_mentions_a_courtroom_deputy_is_kept_unless_it_names_one(self):
+        keep, _ = xt.drop_staff_blocks("Intro\nCourtroom deputies schedule hearings through the calendar clerk and they answer questions about filing by phone.\nEnd")
+        self.assertIn("answer questions about filing", keep)
 
 
 class CourtAbbreviationsAndPageTitles(unittest.TestCase):

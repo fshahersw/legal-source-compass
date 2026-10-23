@@ -186,6 +186,59 @@ STAFF_WORDS = {"Courtroom", "Deputy", "Clerk", "Calendar", "Case", "Manager", "J
                "Avenue", "Building", "Courthouse", "Honorable", "Hon", "Mr", "Ms", "Mrs", "Dr"}
 
 
+STAFF_LABEL = re.compile(r"^(?:staff information|courtroom deputy|courtroom clerk|deputy clerk|judicial assistant|court reporter|law clerks?|case manager|"
+                         r"calendar clerk|secretary|chambers staff|courtroom technology)\b|^chambers:\s*$", re.I)
+
+
+def drop_staff_blocks(text: str, header_lines: int = 90) -> tuple[str, int]:
+    """Judge pages print their staff as a label on one line and the person's name, telephone number and e-mail on the lines after it
+    ("Courtroom Deputy:" / "Jane Roe, Phone: ..."). In the header of the page a label line and the short lines that follow it (at most four,
+    chained when another label follows) are replaced by one marker; prose lines are never dropped."""
+    lines = text.split("\n")
+    out: list[str] = []
+    blocks = 0
+    i = 0
+    while i < len(lines):
+        ln = lines[i]
+        if i < header_lines and STAFF_LABEL.match(ln) and len(ln) <= 70:
+            j, budget, steps = i + 1, 4, 0
+            while j < len(lines) and budget > 0 and steps < 24 and 0 < len(lines[j]) <= 80 and not lines[j].endswith((".", "?", "!")):
+                budget = 4 if STAFF_LABEL.match(lines[j]) else budget - 1
+                j += 1
+                steps += 1
+            out.append("[staff contact block omitted]")
+            blocks += 1
+            i = j
+            continue
+        out.append(ln)
+        i += 1
+    return "\n".join(out), blocks
+
+
+PRACTICE_PHRASES = [r"page limit", r"courtesy cop", r"chambers cop", r"proposed order", r"discovery dispute", r"motion practice", r"continuance",
+                    r"pre-?trial", r"scheduling order", r"standing order", r"oral argument", r"in limine", r"jury instruction", r"settlement conference",
+                    r"pre-?motion", r"meet and confer", r"status report", r"sealed? (?:filings?|documents?)", r"summary judgment",
+                    r"(?:judge|chambers|courtroom|trial)[’']?s? (?:procedures|practices|rules|requirements|preferences)"]
+
+
+def inline_practices(body: bytes) -> Extracted | None:
+    """The text of a judge's page when the page itself carries the judge's practices (not only a biography or a list of links): at least 1,200
+    characters of main content and at least four different practice phrases (page limits, courtesy copies, proposed orders, discovery
+    disputes, ...). None otherwise."""
+    ex = html_text(body)
+    if len(ex.text) < 1200 or sum(1 for p in PRACTICE_PHRASES if re.search(p, ex.text, re.I)) < 4:
+        return None
+    return ex
+
+
+def redact_page(text: str) -> tuple[str, dict]:
+    """redact() for the text of a web page: staff blocks of the header first, then the line rules."""
+    text, blocks = drop_staff_blocks(text)
+    out, counts = redact(text)
+    counts["staff_blocks"] = blocks
+    return out, counts
+
+
 def redact(text: str) -> tuple[str, dict]:
     counts = {"emails": 0, "phones": 0, "staff_lines": 0}
     out: list[str] = []

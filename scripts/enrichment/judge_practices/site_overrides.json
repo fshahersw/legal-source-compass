@@ -369,5 +369,47 @@
   "hid": {
     "note": "The court's website is a single-page app that reads judges and their requirement files from the court's own content service (/cms); that service is read with the same pacing and robots.txt rules.",
     "adapter": "hid_cms"
+  },
+  "njd": {
+    "note": "The site's menu lists every judge under 'Our Judges' (grouped by vicinage); each entry is a judge page. A second page lists judges of other courts sitting by designation.",
+    "listing_urls": [
+      "https://www.njd.uscourts.gov/our-judges",
+      "https://www.njd.uscourts.gov/judges-sitting-designation"
+    ],
+    "skip_link_entries": true,
+    "entry_href_regex": "/content/[^/]+$",
+    "exclude_href_regex": "/content/(attorneys|ads-webform)$",
+    "entry_heading_regex": "^Our Judges$",
+    "text_roster": true,
+    "no_sublistings": true
+  },
+  "wvnd": {
+    "note": "The site has no judges list; its Judges' Info page names the chief judge in the header and prints the district judges' names in the titles of their seminar disclosures.",
+    "listing_urls": [
+      "https://www.wvnd.uscourts.gov/judges-info"
+    ],
+    "manual_roster": [
+      {
+        "source_url": "https://www.wvnd.uscourts.gov/judges-info",
+        "name": "Thomas S. Kleeh",
+        "title": "Chief Judge",
+        "evidence": "Thomas S\\. Kleeh, Chief Judge"
+      },
+      {
+        "source_url": "https://www.wvnd.uscourts.gov/judges-info",
+        "name": "Gina M. Groh",
+        "title": "District Judge",
+        "evidence": "District Judge Gina M\\. Groh"
+      },
+      {
+        "source_url": "https://www.wvnd.uscourts.gov/judges-info",
+        "name": "John Preston Bailey",
+        "title": "District Judge",
+        "evidence": "District Judge John Preston Bailey"
+      }
+    ],
+    "skip_link_entries": true,
+    "no_text_fallback": true,
+    "no_sublistings": true
   }
 }

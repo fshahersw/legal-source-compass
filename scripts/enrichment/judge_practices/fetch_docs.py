@@ -192,6 +192,95 @@ def run_site(site: str, jobs: list[dict], store, upload: bool, stop_at: int, for
     return site, done, failed, None
 
 
+PAGE_TEXT_TITLE = "Text on the judge's page"
+
+
+def collect_pagetext_jobs(only: set[str]) -> list[dict]:
+    """Judge pages that carry the judge's practices in their own text (extract_text.inline_practices). The page bytes are the stored copy of the
+    crawl (no new request); the page is the document, the judge it belongs to is the owner."""
+    seen: dict[str, dict] = {}
+    for name in sorted(os.listdir(COURTS)):
+        if not name.endswith(".json"):
+            continue
+        cid = name[:-5]
+        if only and cid not in only:
+            continue
+        court = json.load(open(os.path.join(COURTS, name), encoding="utf-8"))
+        for j in court.get("judges", []):
+            url = j["page_url"]
+            if j.get("status") != 200 or j.get("listing_only") or j.get("data_url") or j.get("former") or not j.get("name") or "#" in url:
+                continue
+            e = seen.get(url)
+            if e is None:
+                body = fl.cached_page(url)
+                if body is None or xt.inline_practices(body) is None:
+                    continue
+                e = seen[url] = {"url": url, "kind": "pagetext", "file_type": "html", "titles": [PAGE_TEXT_TITLE], "courts": set(),
+                                 "host": urllib.parse.urlparse(url).netloc.lower()}
+            e["courts"].add(cid)
+    return list(seen.values())
+
+
+def process_pagetext(job: dict, store, upload: bool, manifest: dict[str, dict]) -> dict:
+    url = job["url"]
+    body = fl.cached_page(url)
+    m = manifest.get(url) or {}
+    rec: dict = {"url": url, "titles": job["titles"], "courts": sorted(job["courts"]), "kind": "pagetext", "file_type_from_url": "html", "status": 200,
+                 "error": None, "blocked": None, "final_url": m.get("final_url") or url, "retrieved_at": m.get("retrieved_at"),
+                 "content_type_header": m.get("content_type") or "text/html"}
+    sha = hashlib.sha256(body).hexdigest()
+    rec.update(sha256=sha, bytes=len(body), detected_type="html", file_type="html", manifest_sha256_matches=(m.get("sha256") == sha))
+    os.makedirs(TMP, exist_ok=True)
+    path = os.path.join(TMP, f"{doc_key(url)}.html")
+    try:
+        with open(path, "wb") as h:
+            h.write(body)
+        if upload:
+            date = (rec["retrieved_at"] or fl.utc_now())[:10]
+            try:
+                receipt = store.put(path, date, sha, len(body), "html")
+                rec["storage"] = {k: receipt[k] for k in ("bucket", "key", "state", "sha256", "bytes", "readback_sha256", "readback_bytes",
+                                                          "readback_ok", "verified_at", "content_type")}
+            except Exception as e:  # noqa: BLE001
+                rec["storage_error"] = f"{type(e).__name__}: {str(e)[:200]}"
+        ex = xt.html_text(body)
+        text, counts = xt.redact_page(ex.text)
+        capped, truncated, total = xt.cap(text)
+        rec.update(text=capped, text_chars=len(capped), text_chars_total=total, text_truncated=truncated,
+                   text_method=ex.method + "; staff contact blocks in the page header omitted", pages=None, text_error=None, redactions=counts,
+                   text_sha256=hashlib.sha256(capped.encode()).hexdigest() if capped else None)
+    finally:
+        if os.path.exists(path):
+            os.remove(path)
+    return rec
+
+
+def run_pagetext(jobs: list[dict], store, upload: bool, force: bool, workers: int = 8) -> tuple[int, int]:
+    manifest = fl.load_manifest_index()
+    done = failed = 0
+    os.makedirs(DOCS, exist_ok=True)
+
+    def one(job: dict) -> bool:
+        out = record_path(job["url"])
+        if os.path.exists(out) and not force:
+            prev = json.load(open(out, encoding="utf-8"))
+            if prev.get("status") == 200 and (prev.get("storage", {}).get("readback_ok") or not upload):
+                return True
+        try:
+            rec = process_pagetext(job, store, upload, manifest)
+        except Exception as e:  # noqa: BLE001
+            rec = {"url": job["url"], "titles": job["titles"], "courts": sorted(job["courts"]), "kind": "pagetext", "error": f"{type(e).__name__}: {str(e)[:200]}"}
+        with open(out, "w", encoding="utf-8") as h:
+            json.dump(rec, h, sort_keys=True)
+        return rec.get("status") == 200 and not rec.get("error") and (bool(rec.get("storage", {}).get("readback_ok")) or not upload)
+
+    with ThreadPoolExecutor(workers) as pool:
+        for ok in pool.map(one, jobs):
+            done += ok
+            failed += not ok
+    return done, failed
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--courts", default="")
@@ -200,7 +289,19 @@ def main() -> None:
     ap.add_argument("--no-upload", action="store_true")
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--limit", type=int, default=0, help="at most this many documents per site (testing)")
+    ap.add_argument("--page-text-only", action="store_true", help="only the judge pages that carry practices in their own text (no requests)")
     args = ap.parse_args()
+    if args.page_text_only:
+        jobs = collect_pagetext_jobs(set(filter(None, args.courts.split(","))))
+        say(f"{len(jobs)} judge pages carry practices in their own text")
+        store = None
+        if not args.no_upload:
+            import docstore
+
+            store = docstore.DocStore()
+        ok, bad = run_pagetext(jobs, store, not args.no_upload, args.force)
+        say(f"page texts: ok={ok} failed={bad}")
+        return
     by_site = collect_jobs(set(filter(None, args.courts.split(","))))
     if args.limit:
         by_site = {k: v[: args.limit] for k, v in by_site.items()}

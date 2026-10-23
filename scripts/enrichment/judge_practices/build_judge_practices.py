@@ -60,7 +60,8 @@ DOC_KINDS = [
                                        r"standard order|order re", re.I)),
     ("form", re.compile(r"\bforms?\b|consent|checklist|template|sample|cover sheet|exhibit|witness|voir dire|questionnaire|stipulat", re.I)),
 ]
-KIND_LABEL = {"standing_order": "Standing order", "individual_practices": "Individual rules / practices", "procedures": "Procedures and guidelines",
+PAGE_TEXT_TITLE = "Text on the judge's page"
+KIND_LABEL = {"page_text": "Text on the judge's page", "standing_order": "Standing order", "individual_practices": "Individual rules / practices", "procedures": "Procedures and guidelines",
               "order_or_scheduling": "Order or scheduling form", "form": "Form or template", "other": "Other document"}
 
 
@@ -108,6 +109,7 @@ def main() -> None:
     cover_rows = []
     totals = Counter()
     link_basis = Counter()
+    matrix = Counter()  # title class x profile status
     for cid in sorted(roster):
         c = roster[cid]
         cr = crawl.get(cid)
@@ -127,6 +129,11 @@ def main() -> None:
             page_url = j["page_url"]
             fragment = "#" in page_url
             base_url = page_url.split("#")[0]
+            for it in items:  # the judge's own page carries the judge's practices in its text: that text is a document of the judge
+                pt = docs.get(it["page_url"]) if "#" not in it["page_url"] else None
+                if pt and pt.get("kind") == "pagetext" and pt.get("status") == 200:
+                    seen_docs.setdefault(it["page_url"], {"url": it["page_url"], "title": PAGE_TEXT_TITLE, "date_text": None, "date": None, "kind": "page",
+                                                          "file_type": "html", "note": "the judge's own page; its main text carries the judge's practices"})
             tm = times.get(base_url) or times.get(j.get("final_url", "")) or times.get(j.get("data_url") or "") or {}
             # a page that is an app shell: what was read is the court's own JSON service response (hash of that response)
             tclass = j.get("title_class") or "unclassified"
@@ -198,7 +205,7 @@ def main() -> None:
                  "links": [{"url": d["url"], "label": "Open on the court's website"}, {"url": f"/records/{DOCS_ID}/{d['id']}", "label": "Extracted text and file record"}]}
                 for d in docs_list]})
         text = " ".join([name_pub, j["name"], title_pub or "", c["name"]] + [d["title"] for d in docs_list])
-        profile = {"status": m["status"], "judge_id": m.get("judge_id"), "basis": m.get("basis"), "reason": m.get("reason"), "candidates": m["candidates"]}
+        profile = {"status": m["status"], "judge_id": m.get("judge_id"), "basis": m.get("basis"), "reason": m.get("reason"), "candidates": m["candidates"], "candidate_ids": m.get("candidate_ids")}
         judge_page = {
             "id": r["rid"], "court_id": c["court_id"], "court": c["name"], "level": c["level"], "state": c["state"], "name": j["name"],
             "name_as_published": name_pub, "title_as_published": title_pub, "title_class": r["tclass"], "title_label": TITLE_LABEL.get(r["tclass"], r["tclass"]),
@@ -229,6 +236,7 @@ def main() -> None:
                                                     "printed words, not a statement by the court. Dates are those printed beside the link; none is inferred.")
         totals[f"title_{r['tclass']}"] += 1
         totals[f"profile_{m['status']}"] += 1
+        matrix[f"{r['tclass']}|{m['status']}"] += 1
 
     # ---- judge_practice_documents rows
     docs_out = []
@@ -245,7 +253,7 @@ def main() -> None:
         got = d.get("status") == 200 and (d.get("storage") or {}).get("readback_ok")
         st = d.get("storage") or {}
         text = (d.get("text") or "").replace("﻿", "")
-        kind = doc_kind(title)
+        kind = "page_text" if d.get("kind") == "pagetext" else doc_kind(title)
         doc = {
             "id": did, "title": title, "titles": titles, "url": url, "final_url": d.get("final_url") or url, "file_type": d.get("file_type") or d.get("file_type_from_url"),
             "detected_type": d.get("detected_type"), "http_status": d.get("status"), "retrieved_at": d.get("retrieved_at"), "bytes": d.get("bytes"),
@@ -260,7 +268,7 @@ def main() -> None:
         }
         dates = sorted({o["date"] for o in owners if o["date"]})
         facts = [
-            ["Title as published", "; ".join(titles)], ["Judge(s)", "; ".join(f"{o['name']} ({o['court_id']})" for o in owners)],
+            ["Title as published" if kind != "page_text" else "Title (assigned: the judge's page itself, not a separate file)", "; ".join(titles)], ["Judge(s)", "; ".join(f"{o['name']} ({o['court_id']})" for o in owners)],
             ["Official address", url], ["Retrieved", d.get("retrieved_at") or "Not retrieved"],
             ["HTTP status", d.get("status") if d.get("status") is not None else (d.get("error") or "Not retrieved")],
             ["File type", (doc["file_type"] or "Not recorded")], ["Size (bytes)", d.get("bytes") if d.get("bytes") is not None else "Not recorded"],
@@ -390,7 +398,7 @@ def main() -> None:
         os.replace(path + ".tmp", path)
         print(spec["dataset"], len(spec["rows"]), "rows", os.path.getsize(path) // 1024, "KB")
     stats = {"courts": len(roster), "coverage_status": dict(status_count), "judges": len(pages_out), "documents": len(docs_out), "doc_stats": dict(doc_stats),
-             "title_classes": {k[6:]: v for k, v in totals.items() if k.startswith("title_")}, "profile": {k[8:]: v for k, v in totals.items() if k.startswith("profile_")}}
+             "title_classes": {k[6:]: v for k, v in totals.items() if k.startswith("title_")}, "profile": {k[8:]: v for k, v in totals.items() if k.startswith("profile_")}, "title_class_x_profile": dict(matrix)}
     with open(os.path.join(OUT, "build_stats.json"), "w", encoding="utf-8") as h:
         json.dump(stats, h, indent=1, sort_keys=True, default=str)
     print(json.dumps(stats, default=str)[:3000])
