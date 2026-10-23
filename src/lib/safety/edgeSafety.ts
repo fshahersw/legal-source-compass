@@ -8,7 +8,12 @@
  */
 import { corpusClient } from "../ingest/corpus.ts";
 import type { JsonObject } from "../ingest/types.ts";
-import { runCfpbComplaints, runOpenfdaEvents, type RunSummary, type SafetySource } from "./ingestSafety.ts";
+import {
+  runCfpbComplaints,
+  runOpenfdaEvents,
+  type RunSummary,
+  type SafetySource,
+} from "./ingestSafety.ts";
 
 export type SafetyServeOptions = {
   sources: SafetySource[];
@@ -20,7 +25,10 @@ export type SafetyServeOptions = {
 };
 
 const json = (status: number, body: unknown) =>
-  new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+  });
 
 /** Secrets each source needs before it can run (names only; values stay in the function settings). */
 export const REQUIRED_SECRETS: Record<SafetySource, string[]> = {
@@ -34,7 +42,8 @@ export function serveSafety(opts: SafetyServeOptions): (req: Request) => Promise
     if (req.method !== "POST") return json(405, { error: "POST only" });
     const url = opts.env("SUPABASE_URL");
     const key = opts.env("SUPABASE_SERVICE_ROLE_KEY");
-    if (!url || !key) return json(503, { error: "SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not available" });
+    if (!url || !key)
+      return json(503, { error: "SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not available" });
     const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
     if (token.length < 32) return json(401, { error: "unauthorized" });
     const corpus = corpusClient({ url, key, ...(opts.fetch ? { fetch: opts.fetch } : {}) });
@@ -52,7 +61,12 @@ export function serveSafety(opts: SafetyServeOptions): (req: Request) => Promise
     } catch {
       return json(400, { error: "body must be JSON" });
     }
-    const name = typeof body["source"] === "string" ? body["source"] : opts.sources.length === 1 ? opts.sources[0]! : "";
+    const name =
+      typeof body["source"] === "string"
+        ? body["source"]
+        : opts.sources.length === 1
+          ? opts.sources[0]!
+          : "";
     const source = opts.sources.find((s) => s === name);
     if (!source) return json(400, { error: "unknown source", sources: opts.sources });
     const missing = REQUIRED_SECRETS[source].filter((s) => !opts.env(s));
@@ -68,7 +82,9 @@ export function serveSafety(opts: SafetyServeOptions): (req: Request) => Promise
       log: (line: JsonObject) => console.log(JSON.stringify(line)),
     } as const;
     const run: Promise<RunSummary> = (
-      source === "safety_cfpb_complaints" ? runCfpbComplaints(runOpts) : runOpenfdaEvents(source, runOpts)
+      source === "safety_cfpb_complaints"
+        ? runCfpbComplaints(runOpts)
+        : runOpenfdaEvents(source, runOpts)
     ).catch((error: unknown) => {
       const message = error instanceof Error ? `${error.name}: ${error.message}` : "unknown error";
       console.error(JSON.stringify({ step: "run-error", source, error: message.slice(0, 500) }));

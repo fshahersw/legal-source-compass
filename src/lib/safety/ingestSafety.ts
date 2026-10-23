@@ -19,7 +19,8 @@ import type { CorpusClient } from "../ingest/corpus.ts";
 import type { JsonObject, RequestRecord } from "../ingest/types.ts";
 
 export const OPENFDA = "https://api.fda.gov/";
-export const CFPB_API = "https://www.consumerfinance.gov/data-research/consumer-complaints/search/api/v1/";
+export const CFPB_API =
+  "https://www.consumerfinance.gov/data-research/consumer-complaints/search/api/v1/";
 
 export type SafetySource = "safety_faers_series" | "safety_maude_series" | "safety_cfpb_complaints";
 
@@ -61,7 +62,9 @@ export function monthAdd(m: string, k: number): string {
 
 export function monthEnd(m: string): string {
   const next = monthAdd(m, 1);
-  const d = new Date(Date.UTC(Number(next.slice(0, 4)), Number(next.slice(5, 7)) - 1, 1) - 86_400_000);
+  const d = new Date(
+    Date.UTC(Number(next.slice(0, 4)), Number(next.slice(5, 7)) - 1, 1) - 86_400_000,
+  );
   return d.toISOString().slice(0, 10);
 }
 
@@ -71,7 +74,8 @@ export function dayCountsToMonths(results: unknown): Record<string, number> {
   for (const r of Array.isArray(results) ? results : []) {
     const t = String((r as { time?: unknown }).time ?? "");
     const n = (r as { count?: unknown }).count;
-    if (!/^(19|20)\d{6}$/.test(t) || typeof n !== "number" || !Number.isInteger(n) || n < 0) continue;
+    if (!/^(19|20)\d{6}$/.test(t) || typeof n !== "number" || !Number.isInteger(n) || n < 0)
+      continue;
     const m = `${t.slice(0, 4)}-${t.slice(4, 6)}`;
     out[m] = (out[m] ?? 0) + n;
   }
@@ -92,7 +96,11 @@ export function lastCompleteMonth(results: unknown): string | null {
 
 /** openFDA query string: '+' separates clauses and stays literal; spaces, '&' and '#' are encoded. */
 export function openfdaUrl(endpoint: string, search: string, count: string): string {
-  const s = search.replace(/%/g, "%25").replace(/ /g, "%20").replace(/&/g, "%26").replace(/#/g, "%23");
+  const s = search
+    .replace(/%/g, "%25")
+    .replace(/ /g, "%20")
+    .replace(/&/g, "%26")
+    .replace(/#/g, "%23");
   return `${OPENFDA}${endpoint}?search=${s}&count=${count}`;
 }
 
@@ -135,7 +143,8 @@ export function cfpbRow(hit: unknown): JsonObject | null {
   const id = String(src["complaint_id"] ?? "");
   const date = String(src["date_received"] ?? "").slice(0, 10);
   if (!/^[1-9]\d{0,14}$/.test(id) || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
-  const s = (k: string) => (typeof src[k] === "string" && src[k] !== "" ? (src[k] as string) : null);
+  const s = (k: string) =>
+    typeof src[k] === "string" && src[k] !== "" ? (src[k] as string) : null;
   const timely = s("timely");
   return {
     complaint_id: Number(id),
@@ -211,8 +220,12 @@ export async function runOpenfdaEvents(
   opts: RunOptions,
 ): Promise<RunSummary> {
   const spec = STREAMS[source];
-  const open = await opts.corpus.call<OpenRun>("ingest_open_run_v1", { p_source: source, p_trigger: opts.trigger });
-  if (!open.run_id) return { source, status: "skipped", notes: { reason: open.skipped ?? "not opened" } };
+  const open = await opts.corpus.call<OpenRun>("ingest_open_run_v1", {
+    p_source: source,
+    p_trigger: opts.trigger,
+  });
+  if (!open.run_id)
+    return { source, status: "skipped", notes: { reason: open.skipped ?? "not opened" } };
   const run = open.run_id;
   const key = opts.env("DATA_GOV_API_KEY");
   const http = politeHttp({
@@ -232,17 +245,22 @@ export async function runOpenfdaEvents(
   const flush = async () => {
     while (pending.length) {
       const batch = pending.splice(0, 200);
-      const res = await opts.corpus.call<{ updated?: number; unchanged?: number }>("safety_ingest_apply_v1", {
-        p_run: run,
-        p_target: "series_patch",
-        p_rows: batch,
-        p_opts: {},
-      });
+      const res = await opts.corpus.call<{ updated?: number; unchanged?: number }>(
+        "safety_ingest_apply_v1",
+        {
+          p_run: run,
+          p_target: "series_patch",
+          p_rows: batch,
+          p_opts: {},
+        },
+      );
       written += (res?.updated ?? 0) + (res?.unchanged ?? 0);
     }
   };
   try {
-    const plan = await opts.corpus.call<{ subjects: PlanSubject[] }>("safety_ingest_plan_v1", { p_source: source });
+    const plan = await opts.corpus.call<{ subjects: PlanSubject[] }>("safety_ingest_plan_v1", {
+      p_source: source,
+    });
     const subjects = (plan.subjects ?? []).filter((s) => typeof s.search === "string" && s.search);
     if (index >= subjects.length) index = 0;
     // the newest complete month of the whole endpoint (one request): the refreshed window ends there
@@ -258,11 +276,18 @@ export async function runOpenfdaEvents(
       const subj = subjects[index]!;
       for (const s of subj.series) {
         if (!(s.series in spec.clauses)) continue;
-        const search = andClause(andClause(subj.search!, spec.clauses[s.series] ?? null), `${spec.dateField}:[${a}+TO+${b}]`);
+        const search = andClause(
+          andClause(subj.search!, spec.clauses[s.series] ?? null),
+          `${spec.dateField}:[${a}+TO+${b}]`,
+        );
         const url = openfdaUrl(spec.endpoint, search, spec.dateField);
         const res = await http.getText(keyed(url), { recordUrl: url });
-        if (res.status !== 200 && res.status !== 404) throw new SourceError(`openFDA answered ${res.status}`, res.status);
-        const months = res.status === 404 ? {} : dayCountsToMonths((JSON.parse(res.text) as { results?: unknown }).results);
+        if (res.status !== 200 && res.status !== 404)
+          throw new SourceError(`openFDA answered ${res.status}`, res.status);
+        const months =
+          res.status === 404
+            ? {}
+            : dayCountsToMonths((JSON.parse(res.text) as { results?: unknown }).results);
         const row = patchRow(subj.id, s, months, windowFrom, through, url, res.record.retrieved_at);
         if (row) pending.push(row);
       }
@@ -276,51 +301,86 @@ export async function runOpenfdaEvents(
       error = e instanceof RateLimited ? e.message : null;
     } else {
       const message = e instanceof Error ? `${e.name}: ${e.message}` : "unknown error";
-      await finish(opts, run, "failed", http.requests.length, null, message, http.requests, { index });
+      await finish(opts, run, "failed", http.requests.length, null, message, http.requests, {
+        index,
+      });
       return { source, status: "failed", run, error: message };
     }
   }
   const done = status === "ok";
   const cursorAfter = done ? { index: 0, cycle: cycle + 1 } : { index, cycle };
-  const notes = { subjects_index: index, cycle, windowMonths: opts.windowMonths ?? 3, series_written: written };
+  const notes = {
+    subjects_index: index,
+    cycle,
+    windowMonths: opts.windowMonths ?? 3,
+    series_written: written,
+  };
   await finish(opts, run, status, http.requests.length, cursorAfter, error, http.requests, notes);
   return { source, status, run, fetched: http.requests.length, written, notes };
 }
 
 export async function runCfpbComplaints(opts: RunOptions): Promise<RunSummary> {
   const source = "safety_cfpb_complaints" as const;
-  const open = await opts.corpus.call<OpenRun>("ingest_open_run_v1", { p_source: source, p_trigger: opts.trigger });
-  if (!open.run_id) return { source, status: "skipped", notes: { reason: open.skipped ?? "not opened" } };
+  const open = await opts.corpus.call<OpenRun>("ingest_open_run_v1", {
+    p_source: source,
+    p_trigger: opts.trigger,
+  });
+  if (!open.run_id)
+    return { source, status: "skipped", notes: { reason: open.skipped ?? "not opened" } };
   const run = open.run_id;
-  const http = politeHttp({ maxRequests: opts.maxRequests ?? 20, minIntervalMs: opts.minIntervalMs ?? 1000, fetch: opts.fetch, sleep: opts.sleep });
+  const http = politeHttp({
+    maxRequests: opts.maxRequests ?? 20,
+    minIntervalMs: opts.minIntervalMs ?? 1000,
+    fetch: opts.fetch,
+    sleep: opts.sleep,
+  });
   let written = 0;
   let fetched = 0;
   let status: "ok" | "partial" = "ok";
   let error: string | null = null;
-  const plan = await opts.corpus.call<{ latest_received: string | null; products: string[] }>("safety_ingest_plan_v1", { p_source: source });
+  const plan = await opts.corpus.call<{ latest_received: string | null; products: string[] }>(
+    "safety_ingest_plan_v1",
+    { p_source: source },
+  );
   const products = (plan.products ?? []).filter((p) => typeof p === "string" && p);
   const today = opts.now.toISOString().slice(0, 10);
   const since = new Date(opts.now.getTime() - 7 * 86_400_000).toISOString().slice(0, 10);
   if (!products.length) {
-    await finish(opts, run, "ok", 0, { since }, null, [], { reason: "no products in the record table yet" });
+    await finish(opts, run, "ok", 0, { since }, null, [], {
+      reason: "no products in the record table yet",
+    });
     return { source, status: "ok", run, fetched: 0, written: 0 };
   }
   try {
     for (let frm = 0; ; frm += 1000) {
-      const q = new URLSearchParams({ date_received_min: since, date_received_max: today, size: "1000", frm: String(frm),
-        sort: "created_date_desc", no_aggs: "true" });
+      const q = new URLSearchParams({
+        date_received_min: since,
+        date_received_max: today,
+        size: "1000",
+        frm: String(frm),
+        sort: "created_date_desc",
+        no_aggs: "true",
+      });
       for (const p of products) q.append("product", p);
       const url = `${CFPB_API}?${q.toString()}`;
       const res = await http.getText(url);
       if (res.status !== 200) throw new SourceError(`CFPB answered ${res.status}`, res.status);
-      const body = JSON.parse(res.text) as { hits?: { hits?: unknown[]; total?: { value?: number } } };
+      const body = JSON.parse(res.text) as {
+        hits?: { hits?: unknown[]; total?: { value?: number } };
+      };
       const hits = body.hits?.hits ?? [];
       fetched += hits.length;
       const rows = hits.map(cfpbRow).filter((r): r is JsonObject => r !== null);
       for (let i = 0; i < rows.length; i += 1000) {
-        const r = await opts.corpus.call<{ inserted?: number; updated?: number }>("safety_ingest_apply_v1", {
-          p_run: run, p_target: "cfpb_complaints", p_rows: rows.slice(i, i + 1000), p_opts: {},
-        });
+        const r = await opts.corpus.call<{ inserted?: number; updated?: number }>(
+          "safety_ingest_apply_v1",
+          {
+            p_run: run,
+            p_target: "cfpb_complaints",
+            p_rows: rows.slice(i, i + 1000),
+            p_opts: {},
+          },
+        );
         written += (r?.inserted ?? 0) + (r?.updated ?? 0);
       }
       if (hits.length < 1000 || frm + 1000 >= (body.hits?.total?.value ?? 0)) break;
@@ -335,6 +395,10 @@ export async function runCfpbComplaints(opts: RunOptions): Promise<RunSummary> {
       return { source, status: "failed", run, error: message };
     }
   }
-  await finish(opts, run, status, fetched, { since, through: today }, error, http.requests, { since, products: products.length, written });
+  await finish(opts, run, status, fetched, { since, through: today }, error, http.requests, {
+    since,
+    products: products.length,
+    written,
+  });
   return { source, status, run, fetched, written };
 }
