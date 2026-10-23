@@ -11,15 +11,12 @@ from datetime import datetime
 
 BASE = "https://www.oversight.gov"
 _WS = re.compile(r"\s+")
-_ROW = re.compile(r'<tr class="listing-table__row table-row">(.*?)</tr>(.*?)(?=<tr class="listing-table__row table-row">|</tbody>|\Z)', re.S)
+# A row ends where the next one starts. (A description can contain its own <table>, so </tbody> is not a boundary.)
+_ROW = re.compile(r'<tr class="listing-table__row table-row">(.*?)</tr>(.*?)(?=<tr class="listing-table__row table-row">|\Z)', re.S)
 _CELL = re.compile(r'<td[^>]*?data-label="([^"]+)"[^>]*>(.*?)</td>', re.S)
 
 
-def clean(fragment):
-    if fragment is None:
-        return ""
-    text = re.sub(r"<[^>]+>", " ", fragment)
-    return _WS.sub(" ", html.unescape(text)).strip()
+from textclean import clean  # noqa: E402,F401  (shared visible-text rule)
 
 
 def field(block, name):
@@ -32,6 +29,9 @@ def field(block, name):
 
 
 def parse_row(cells_html, rest_html):
+    # The highlights are one <article>; for the last row of a page this also stops the scan before the pager and footer.
+    end = rest_html.find("</article>")
+    rest_html = rest_html[: end + len("</article>")] if end >= 0 else rest_html
     cells = {label: inner for label, inner in _CELL.findall(cells_html)}
     date = re.search(r'<time datetime="(\d{4}-\d{2}-\d{2})', cells.get("Report Date", ""))
     link = re.search(r'<a href="(/(?:reports|node)/[^"]+)"', cells.get("action-cell-report-link", ""))

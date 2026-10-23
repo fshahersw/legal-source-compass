@@ -116,9 +116,7 @@ export function DojView({ onOpenOig }: { onOpenOig: (oig: string) => void }) {
                           Open company profile
                         </Link>
                       ) : (
-                        <span className="text-muted-foreground">
-                          Not linked (no exact name match)
-                        </span>
+                        <span className="text-muted-foreground">Not linked</span>
                       )}
                     </td>
                   </tr>

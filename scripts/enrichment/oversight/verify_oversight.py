@@ -10,6 +10,7 @@ is 0. --write saves the result to private/build/oversight/verify_report.json.
 import glob
 import json
 import os
+import re
 import sys
 from collections import Counter, defaultdict
 from html.parser import HTMLParser
@@ -22,6 +23,15 @@ import parse_doj_oig as pj  # noqa: E402
 import rows as rw  # noqa: E402
 
 BUILD = cm.BUILD
+EXAMPLES = defaultdict(list)
+VENDOR = re.compile(r"\b(firecrawl|tavily|claude|anthropic|openai|gpt-?\d)\b", re.I)
+
+
+def bad(fails, kind, info=None):
+    """Count a failure and keep up to three examples of it."""
+    fails[kind] += 1
+    if info is not None and len(EXAMPLES[kind]) < 3:
+        EXAMPLES[kind].append(info)
 
 
 def load(dataset):
@@ -122,13 +132,16 @@ def check_oversight():
             got = {"date": b["date"], "agency_reviewed": b["agency_reviewed"], "title": row["title"], "type": b["type"], "location": b["location"],
                    "oig": b["oig"], "report_number": b["report_number"], "recommendations": b["recommendations"]}
             for k in expect:
-                if expect[k] != got[k]:
-                    fails[f"field_{k}"] += 1
+                # this reader joins adjacent text without separators, so place and text compare without whitespace
+                same = (re.sub(r"\s+", "", expect[k] or "") == re.sub(r"\s+", "", got[k] or "")) if k in ("location",) else expect[k] == got[k]
+                if not same:
+                    bad(fails, f"field_{k}", [url, expect[k], got[k]])
             desc = fl.get("Report Description")
-            if desc and b["description"] and not desc.startswith(b["description"].rstrip("…").rstrip()):
-                fails["field_description"] += 1
+            squash = lambda x: re.sub(r"\s+", "", x or "")  # noqa: E731
+            if desc and b["description"] and not squash(desc).startswith(squash(b["description"].rstrip("…"))):
+                bad(fails, "field_description", [url, desc[:120], b["description"][:120]])
             if bool(desc) != bool(b["description"]):
-                fails["description_presence"] += 1
+                bad(fails, "description_presence", [url, (desc or "")[:80], (b["description"] or "")[:80]])
     stored_not_raw = len(set(by_url) - seen)
     if stored_not_raw:
         fails["build_report_not_in_raw"] += stored_not_raw
@@ -224,18 +237,18 @@ def check_doj_oig():
             pos = k
         number = (labels.get("Report Number") or labels.get("Número de informe") or [None])[0]
         if number != b["number"]:
-            fails["number"] += 1
+            bad(fails, "number", [rid, number, b["number"]])
         qc = (labels.get("Questioned Costs") or labels.get("Costos cuestionados") or [None])[0]
         got_qc = b["questioned_costs"]["text"] if b["questioned_costs"] else None
         if qc != got_qc:
-            fails["questioned_costs"] += 1
+            bad(fails, "questioned_costs", [rid, qc, got_qc])
         fb = (labels.get("Funds for Better Use") or [None])[0]
         got_fb = b["funds_better_use"]["text"] if b["funds_better_use"] else None
         if fb != got_fb:
-            fails["funds_better_use"] += 1
+            bad(fails, "funds_better_use", [rid, fb, got_fb])
         recs = (labels.get("Number of Recommendations") or labels.get("Número de recomendaciones") or [None])[0]
         if (int(recs) if recs and recs.isdigit() else None) != b["recommendations"]:
-            fails["recommendations"] += 1
+            bad(fails, "recommendations", [rid, recs, b["recommendations"]])
         for key, value in (("questioned_costs", b["questioned_costs"]), ("funds_better_use", b["funds_better_use"])):
             if value and value["value"] is not None:
                 printed = int(round(value["value"]))
@@ -295,7 +308,9 @@ def check_doj_site():
     idx = load("doj_document_index")["rows"]
     fails = Counter()
     page = cm.read_gz(os.path.join(cm.ACQ, "justice_gov", "vsd_resolutions_part_1.html.gz")).decode("utf-8")
-    anchors = page.count("<li><a href=")
+    start = page.find("<ol reversed")
+    ol = page[start: page.find("</ol>", start)]
+    anchors = ol.count("<li><a href=")
     if anchors != len(cep):
         fails["cep_count_vs_list_items"] += 1
     for r in cep:
@@ -310,6 +325,37 @@ def check_doj_site():
         if not any(url.replace("https://www.justice.gov", "") in p or url in p for p in pages):
             fails["index_link_not_on_any_page"] += 1
     return {"cep_rows": len(cep), "index_rows": len(idx), "failures": dict(fails), "total_failures": sum(fails.values())}
+
+
+def check_report_pages():
+    """Oversight.gov report pages read for money: the stored text of each money field against a plain scan of the page."""
+    build = load("oversight_reports")
+    by_key = {re.sub(r"[^A-Za-z0-9._-]", "_", r["source_url"].replace("https://www.oversight.gov", "").strip("/")): r for r in build["rows"]}
+    fails = Counter()
+    n = 0
+    for f in sorted(glob.glob(os.path.join(cm.ACQ, "oversight_gov", "details", "*.html.gz"))):
+        page = cm.read_gz(f).decode("utf-8")
+        key = os.path.basename(f)[: -len(".html.gz")]
+        row = by_key.get(key)
+        if row is None:
+            bad(fails, "page_without_record", [key])
+            continue
+        n += 1
+        b = row["item"]["oversight"]
+        for label, field in (("Questioned Costs", "questioned_costs"), ("Funds for Better Use", "funds_better_use")):
+            i = page.find(f'<div class="title">{label}</div>')
+            printed = None
+            if i >= 0:
+                j = page.find("field__item", i)
+                printed = " ".join(pj.clean(page[page.find(">", j) + 1: page.find("</div>", j)]).split()) or None
+            stored = (b.get(field) or {}).get("text")
+            if printed != stored:
+                bad(fails, field, [key, printed, stored])
+        shown = " ".join(pj.clean(page).split())
+        if b["report_number"] and b["report_number"] not in shown:
+            bad(fails, "report_number_not_on_page", [key, b["report_number"]])
+    covered = Counter(r["item"]["oversight"]["oig"] for r in build["rows"] if "questioned_costs" in r["item"]["oversight"])
+    return {"report_pages_checked": n, "records_with_money_fields": sum(covered.values()), "oigs": dict(covered), "failures": dict(fails), "total_failures": sum(fails.values())}
 
 
 def check_shapes():
@@ -327,21 +373,24 @@ def check_shapes():
             if not r["title"].strip():
                 fails[f"{ds}: empty title"] += 1
             for label, value in r["detail"]["facts"]:
-                if value in ("", "None", "null"):
+                if value in ("", "null", "undefined", "nan"):
                     fails[f"{ds}: blank fact"] += 1
-            for banned in ("firecrawl", "tavily", "claude", "anthropic", "openai"):
-                if banned in json.dumps(r).lower():
-                    fails[f"{ds}: vendor/model name '{banned}'"] += 1
+            hit = VENDOR.search(json.dumps(r))
+            if hit:
+                bad(fails, f"{ds}: vendor/model name '{hit.group(1).lower()}'", [r["id"], json.dumps(r)[max(0, hit.start() - 60): hit.end() + 60]])
     return {"failures": dict(fails), "total_failures": sum(fails.values())}
 
 
 def main():
     report = {"verified_at": rw.built_at()}
     for name, fn in (("oversight_reports", check_oversight), ("oversight_trends", check_trends), ("doj_oig_reports", check_doj_oig),
-                     ("osc", check_osc), ("doj_site", check_doj_site), ("shapes", check_shapes)):
+                     ("osc", check_osc), ("doj_site", check_doj_site), ("oversight_report_pages", check_report_pages), ("shapes", check_shapes)):
         report[name] = fn()
         print(name, json.dumps(report[name]))
     report["total_failures"] = sum(v["total_failures"] for k, v in report.items() if isinstance(v, dict))
+    report["examples"] = dict(EXAMPLES)
+    for kind, ex in EXAMPLES.items():
+        print("  e.g.", kind, json.dumps(ex)[:700])
     print("TOTAL FAILURES", report["total_failures"])
     if "--write" in sys.argv:
         with open(os.path.join(BUILD, "verify_report.json"), "w", encoding="utf-8") as handle:

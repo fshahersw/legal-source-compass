@@ -89,6 +89,18 @@ DOJ_OLD = (
     '</article>'
 )
 
+REPORT_PAGE = (
+    '<div class="field field--name-field-report-file field--type-entity-reference field--label-visually_hidden"><div class="title usa-sr-only">Report File</div>'
+    '<div class="field__item"><div><div class="field field--name-field-media-document field__item"><a class="pdf-icon report-download-button usa-button" href="/sites/default/files/documents/reports/2026-10/IG-27-001.pdf" target="_blank">View Report</a></div></div></div></div>'
+    '<div class="field field--name-field-report-date-issued field--type-datetime field--label-above"><div class="title">Date Issued</div><div class="field__item"><time datetime="2026-10-19T12:00:00Z">Monday, October 19, 2026</time></div></div>'
+    '<div class="field field--name-field-report-number field--type-string field--label-above"><div class="title">Report Number</div><div class="field__item">IG-27-001</div></div>'
+    '<div class="field field--name-field-report-number-of-recs field--type-integer field--label-above"><div class="title">Number of Recommendations</div><div class="field__item">8</div></div>'
+    '<div class="field field--name-field-net-questioned-costs field--type-bigint field--label-above"><div class="title">Questioned Costs</div><div content="1250000" class="field__item">$1,250,000</div></div>'
+    '<div class="field field--name-field-net-funds-for-better-use field--type-bigint field--label-above"><div class="title">Funds for Better Use</div><div content="0" class="field__item">$0</div></div>'
+    '<div class="field field--name-field-report-link field--type-link field--label-above"><div class="title">External Link</div><div class="field__item"><a href="https://oig.nasa.gov/x.pdf?a=1&amp;b=2">link</a></div></div>'
+)
+
+
 AGENCY_ROWS = [
     ["268", "Justice Department"], ["497", "Treasury Department"], ["221", "Health and Human Services Department"],
     ["410", "Postal Service"], ["6", "Agency for International Development"], ["192", "Federal Trade Commission"],
@@ -148,6 +160,14 @@ class OversightListing(unittest.TestCase):
         self.assertIsNone(r["date"])
         self.assertIsNone(r["agency_reviewed"])
         self.assertIsNone(r["recommendations"])
+
+    def test_a_description_with_its_own_table_does_not_cut_the_highlights(self):
+        row = listing_row("2025-02-25", "Department of Housing and Urban Development", "Boston audit", "Audit", "Agency-Wide", "/reports/audit/boston",
+                          "Department of Housing and Urban Development OIG", "/inspectors-general/hud-oig", number="2025-CH-1001", recs=11,
+                          desc="Findings. <table><tbody><tr><td>1</td></tr></tbody></table> More text.")
+        # the real page puts the number and recommendations after the description
+        parsed = po.parse_listing("<table><tbody>" + row + "</tbody></table>")
+        self.assertEqual((parsed[0]["report_number"], parsed[0]["recommendations"]), ("2025-CH-1001", 11))
 
     def test_node_links_are_kept(self):
         self.assertEqual(self.rows[1]["path"], "/node/192463")
@@ -277,6 +297,43 @@ class RecordsAndTrends(unittest.TestCase):
         self.assertNotIn("agency_id", amtrak["filters"])
 
 
+class ReportPages(unittest.TestCase):
+    def test_report_page_fields_as_printed(self):
+        d = po.parse_report_page(REPORT_PAGE)
+        self.assertEqual((d["date"], d["report_number"], d["recommendations"]), ("2026-10-19", "IG-27-001", 8))
+        self.assertEqual(d["questioned_costs"], {"text": "$1,250,000", "value": 1250000.0})
+        self.assertEqual(d["funds_better_use"], {"text": "$0", "value": 0.0})
+        self.assertEqual(d["external_url"], "https://oig.nasa.gov/x.pdf?a=1&b=2")
+        self.assertEqual(d["file_url"], "https://www.oversight.gov/sites/default/files/documents/reports/2026-10/IG-27-001.pdf")
+
+    def test_missing_fields_are_none_not_zero(self):
+        d = po.parse_report_page("<html></html>")
+        self.assertEqual((d["date"], d["questioned_costs"], d["funds_better_use"], d["file_url"], d["recommendations"]), (None, None, None, None, None))
+
+    def test_record_carries_money_and_links_only_when_the_page_was_read(self):
+        agencies = match.Agencies(AGENCY_ROWS)
+        item = po.parse_listing(OVERSIGHT_PAGE)[0]
+        item["retrieved_at"] = "2026-10-23T08:00:00Z"
+        plain = bo.build_record(item, agencies)
+        self.assertNotIn("questioned_costs", plain["item"]["oversight"])
+        read = bo.build_record(item, agencies, None, po.parse_report_page(REPORT_PAGE))
+        self.assertEqual(read["item"]["oversight"]["questioned_costs"]["value"], 1250000.0)
+        self.assertEqual(dict(read["detail"]["facts"])["Questioned costs (as the report page prints them)"], "$1,250,000")
+        self.assertIn("Report file (hosted on Oversight.gov)", [link["label"] for link in read["item"]["links"]])
+
+    def test_money_totals_only_when_every_report_of_the_oig_was_read(self):
+        agencies = match.Agencies(AGENCY_ROWS)
+        items = po.parse_listing(OVERSIGHT_PAGE)
+        detail = po.parse_report_page(REPORT_PAGE)
+        partial = {bo.detail_key(items[0]["path"]): detail}
+        rows = bo.build_trends(items, agencies, "2026-10-19", None, partial)
+        nasa = next(r for r in rows if r["id"] == "oig:nasa-oig")
+        # NASA has one report in the fixture and it was read, so its money block exists
+        self.assertEqual(nasa["item"]["trend"]["money"]["years"][0]["questioned_costs"], 1250000.0)
+        amtrak = next(r for r in rows if r["id"] == "oig:amtrak-oig")
+        self.assertNotIn("money", amtrak["item"]["trend"])
+
+
 class DojOig(unittest.TestCase):
     def test_listing(self):
         rows = pj.parse_listing(DOJ_LISTING)
@@ -300,6 +357,20 @@ class DojOig(unittest.TestCase):
         self.assertEqual(d["money"]["questioned_costs"], {"text": "$4,577,633", "value": 4577633.0})
         self.assertEqual(d["money"]["funds_better_use"], {"text": "$0", "value": 0.0})
         self.assertEqual(pj.iso_date(d["posted"][0]), "2019-11-27")
+
+    def test_report_file_prefers_the_download_button_and_keeps_non_pdf_files(self):
+        page = '<a class="x" href="/sites/default/files/legacy/reports/INS/a0103.htm" target="_blank">Download report</a><a href="/sites/default/files/other.pdf">x</a>'
+        self.assertEqual(pj.report_file(page), "https://oig.justice.gov/sites/default/files/legacy/reports/INS/a0103.htm")
+        self.assertEqual(pj.report_file('<a href="/sites/default/files/reports/26-1.pdf">PDF</a>'), "https://oig.justice.gov/sites/default/files/reports/26-1.pdf")
+        self.assertIsNone(pj.report_file("<p>nothing</p>"))
+
+    def test_extra_labels_are_kept(self):
+        page = ('<article class="report-detail-full"><div class="doj-field-container"><div class="grid-row"><div class="field__label">Participating OIG</div>'
+                '<div class="field__item">Department of State OIG</div></div></div>'
+                '<div class="doj-field-container"><div class="grid-row"><div class="field__label">Description</div><div class="field__item"><p>A joint review.</p></div></div></div></article>')
+        d = pj.parse_report(page)
+        self.assertEqual(d["participants"], ["Department of State OIG"])
+        self.assertEqual(d["description"], ["A joint review."])
 
     def test_page_without_detail_block_is_none(self):
         self.assertIsNone(pj.parse_report("<html></html>"))
@@ -454,6 +525,14 @@ class Helpers(unittest.TestCase):
         self.assertEqual(rw.money_label(0), "$0")
         self.assertEqual(rw.facts_list([("a", None), ("b", ""), ("c", [1, None, 2]), ("d", 0)]),
                          [["a", "Not recorded"], ["b", "Not recorded"], ["c", "1; 2"], ["d", "0"]])
+
+    def test_visible_text_joins_inline_tags_and_separates_blocks(self):
+        from textclean import clean
+
+        self.assertEqual(clean('<p class="a"><span>Salem</span>, <span>OR</span><br><span>United States</span></p>'), "Salem, OR United States")
+        self.assertEqual(clean("<ul><li>One</li><li>Two&nbsp;three</li></ul>"), "One Two three")
+        self.assertEqual(clean("a &amp; b"), "a & b")
+        self.assertEqual(clean(None), "")
 
     def test_stable_id_is_deterministic(self):
         self.assertEqual(rw.stable_id("x", "a"), rw.stable_id("x", "a"))

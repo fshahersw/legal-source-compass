@@ -6,6 +6,7 @@ import {
   fmtDate,
   fmtInt,
   fmtUsd,
+  fmtUsdAxis,
   groupDocuments,
   moneyYearRows,
   rangeLabel,
@@ -67,6 +68,14 @@ describe("formatters", () => {
     expect(fmtUsd(25_400_000)).toBe("$25.4 million");
     expect(fmtUsd(3_200_000_000)).toBe("$3.2 billion");
     expect(fmtUsd(null)).toBe("Not recorded");
+  });
+
+  it("shortens axis ticks only", () => {
+    expect(fmtUsdAxis(0)).toBe("$0");
+    expect(fmtUsdAxis(35_000_000)).toBe("$35M");
+    expect(fmtUsdAxis(1_250_000)).toBe("$1.3M");
+    expect(fmtUsdAxis(500_000)).toBe("$500K");
+    expect(fmtUsdAxis(2_100_000_000)).toBe("$2.1B");
   });
 
   it("labels result ranges", () => {

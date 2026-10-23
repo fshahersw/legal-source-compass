@@ -201,12 +201,17 @@ def build_trends(items, agencies, as_of, doj_rows=None, details=None):
     out = []
     national = {"scope": "national", "name": "All Offices of Inspector General on Oversight.gov", "as_of": as_of,
                 "totals": totals(items), "years": series(items)}
-    by_oig = defaultdict(list)
+    # Group by the OIG's name. A row can lack the OIG page link (one HUD report does); the page comes from the OIG's other rows,
+    # and two different pages for one name would be an error.
+    by_name = defaultdict(list)
+    pages = defaultdict(set)
     for r in items:
-        by_oig[(r["oig"], r["oig_path"])].append(r)
-    names = [k[0] for k in by_oig if k[0]]
-    if len(names) != len(set(names)):
+        by_name[r["oig"]].append(r)
+        if r["oig_path"]:
+            pages[r["oig"]].add(r["oig_path"])
+    if any(len(p) > 1 for p in pages.values()):
         raise SystemExit("an OIG name appears with more than one OIG page; trends would split it")
+    by_oig = {(name, next(iter(pages[name])) if pages[name] else None): group for name, group in by_name.items()}
     ranking = sorted(((k[0], len(v)) for k, v in by_oig.items() if k[0]), key=lambda kv: (-kv[1], kv[0]))
     paths = {k[0]: k[1] for k in by_oig}
     national["oigs"] = [{"name": n, "slug": oig_slug(paths.get(n)),

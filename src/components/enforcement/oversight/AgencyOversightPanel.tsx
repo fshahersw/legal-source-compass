@@ -84,12 +84,10 @@ export function AgencyOversightPanel({
           note={`On ${fmtInt(t.totals.recsReports)} of ${fmtInt(t.totals.reports)} reports; as reported`}
         />
       </div>
-      <div className="grid gap-2 xl:grid-cols-2">
+      <div className="grid items-start gap-2 xl:grid-cols-2">
         <ReportsByYearChart trend={t} title="Reports per year, by type" />
-        <div className="grid min-w-0 content-start gap-2">
-          <RecsByYearChart trend={t} title="Recommendations stated per year" />
-          <MoneyByYearChart trend={t} />
-        </div>
+        <RecsByYearChart trend={t} title="Recommendations stated per year" />
+        <MoneyByYearChart trend={t} className="xl:col-span-2" />
       </div>
       <Panel
         title="Most recent reports"

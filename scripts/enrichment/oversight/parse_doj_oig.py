@@ -13,12 +13,7 @@ _ROW = re.compile(r'<div class="views-row">(.*?)(?=<div class="views-row">|</div
 _WS = re.compile(r"\s+")
 
 
-def clean(fragment):
-    """Strip tags, unescape entities, collapse whitespace; '' when nothing is left."""
-    if fragment is None:
-        return ""
-    text = re.sub(r"<[^>]+>", " ", fragment)
-    return _WS.sub(" ", html.unescape(text)).strip()
+from textclean import clean  # noqa: E402,F401  (shared visible-text rule)
 
 
 def iso_date(text):
@@ -74,6 +69,9 @@ _LABELS = {
     "Funds for Better Use": "funds_better_use",
     "Dollar-Related Findings": "dollar_findings",
     "Monetary Impact": "monetary",
+    "Description": "description",
+    "Participating OIG": "participants",
+    "Special Projects": "projects",
     # the Spanish-language pages of the semiannual reports
     "Fecha de publicación": "posted",
     "Número de informe": "number",
@@ -127,6 +125,17 @@ def parse_report(page_html):
             out.setdefault(key, values or None)
         elif label:
             out["other"][label] = values or None
-    pdf = re.search(r'href="(/sites/default/files/reports/[^"]+\.pdf)"', page_html)
-    out["pdf"] = BASE + pdf.group(1) if pdf else None
+    out["pdf"] = report_file(page_html)
     return out
+
+
+def report_file(page_html):
+    """The report file the page links: its 'Download report' button, else a PDF under /sites/default/files/. The key is
+    called pdf for history; older reports link an .htm or .txt file, which is kept as linked."""
+    m = re.search(r'<a[^>]*href="([^"]+)"[^>]*>\s*Download report\s*</a>', page_html)
+    if not m:
+        m = re.search(r'href="(/sites/default/files/[^"]+\.pdf)"', page_html)
+    if not m:
+        return None
+    href = html.unescape(m.group(1))
+    return href if href.startswith("http") else BASE + href

@@ -18,10 +18,7 @@ _TRAILING_DATE = re.compile(r"(?:,|\()?\s*((?:%s) \d{1,2}, \d{4})\)?\s*$" % _MON
 _FY = re.compile(r"\bFY\s?(\d{4})\b")
 
 
-def clean(fragment):
-    if fragment is None:
-        return ""
-    return _WS.sub(" ", html.unescape(re.sub(r"<[^>]+>", " ", fragment))).strip()
+from textclean import clean  # noqa: E402,F401  (shared visible-text rule)
 
 
 def absolute(href):

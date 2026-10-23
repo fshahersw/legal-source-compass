@@ -17,6 +17,7 @@ import {
   ALL_OTHER,
   fmtInt,
   fmtUsd,
+  fmtUsdAxis,
   moneyYearRows,
   recsYearRows,
   reportYearRows,
@@ -311,11 +312,11 @@ export function MoneyByYearChart({
               minTickGap={14}
             />
             <YAxis
-              width={64}
+              width={52}
               tick={axisTick}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(v: number) => fmtUsd(v)}
+              tickFormatter={(v: number) => fmtUsdAxis(v)}
             />
             <Tooltip
               contentStyle={tooltipStyle}

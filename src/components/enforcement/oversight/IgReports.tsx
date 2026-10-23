@@ -249,7 +249,9 @@ export function ReportRow({ r }: { r: OversightReport }) {
       <td className="px-2 py-1.5">{r.oig ?? NOT_RECORDED}</td>
       <td className="whitespace-nowrap px-2 py-1.5">{r.type ?? NOT_RECORDED}</td>
       <td className="whitespace-nowrap px-2 py-1.5 font-mono">{r.reportNumber ?? NOT_RECORDED}</td>
-      <td className="px-3 py-1.5 text-right font-mono">{recsLabel(r.recommendations)}</td>
+      <td className="whitespace-nowrap px-3 py-1.5 text-right font-mono">
+        {recsLabel(r.recommendations)}
+      </td>
     </tr>
   );
 }

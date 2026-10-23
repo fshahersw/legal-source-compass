@@ -32,6 +32,15 @@ export function fmtUsd(n: number | null | undefined): string {
   return `$${Math.round(n).toLocaleString("en-US")}`;
 }
 
+/** Compact dollars for a chart axis ("$35M"); tooltips and tables show the full figure with fmtUsd. */
+export function fmtUsdAxis(n: number): string {
+  const a = Math.abs(n);
+  if (a >= 1e9) return `$${(n / 1e9).toLocaleString("en-US", { maximumFractionDigits: 1 })}B`;
+  if (a >= 1e6) return `$${(n / 1e6).toLocaleString("en-US", { maximumFractionDigits: 1 })}M`;
+  if (a >= 1e3) return `$${(n / 1e3).toLocaleString("en-US", { maximumFractionDigits: 0 })}K`;
+  return `$${Math.round(n)}`;
+}
+
 /** "1-25 of 36,309" for a page of results; the total may be unknown. */
 export function rangeLabel(
   page: number,

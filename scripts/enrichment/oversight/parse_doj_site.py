@@ -7,11 +7,7 @@ BASE = "https://www.justice.gov"
 _WS = re.compile(r"\s+")
 
 
-def clean(fragment):
-    if fragment is None:
-        return ""
-    text = html.unescape(re.sub(r"<[^>]+>", " ", fragment)).replace("\xa0", " ")
-    return _WS.sub(" ", text).strip()
+from textclean import clean  # noqa: E402,F401  (shared visible-text rule)
 
 
 def absolute(href):

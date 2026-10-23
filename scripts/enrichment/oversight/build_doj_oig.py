@@ -31,11 +31,13 @@ def build_record(r, oversight_path=None, oversight_ids=None):
     qc, fb = r["questioned_costs"], r["funds_better_use"]
     links = [{"url": r["url"], "label": "DOJ OIG report page"}]
     if r["pdf"]:
-        links.append({"url": r["pdf"], "label": "Report (PDF)"})
+        links.append({"url": r["pdf"], "label": "Report file (as the OIG links it)"})
     ov_id = (oversight_ids or {}).get(oversight_path) if oversight_path else None
     if ov_id:
         links.append({"url": f"/records/oversight_reports/{ov_id}", "label": "Oversight.gov record"})
+    desc, clipped = rw.clip(r["description"], 800)
     body = {
+        "description": desc, "description_clipped": clipped, "participants": r["participants"], "projects": r["projects"],
         "date": r["date"], "year": year, "number": r["number"], "type": r["type"], "components": r["components"],
         "entity": r["entity"], "location": r["location"], "recommendations": r["recommendations"],
         "questioned_costs": qc, "funds_better_use": fb, "dollar_findings": r["dollar_findings"],
@@ -44,7 +46,8 @@ def build_record(r, oversight_path=None, oversight_ids=None):
     facts = [
         ("Report date", r["date"]), ("Report number", r["number"]), ("Report type", r["type"]),
         ("Component(s)", r["components"] or None), ("External entity", r["entity"]), ("Location", r["location"]),
-        ("Number of recommendations", r["recommendations"]),
+        ("Number of recommendations", r["recommendations"]), ("Report file", r["pdf"]),
+        ("Participating OIG(s)", r["participants"]), ("Special projects", r["projects"]),
         ("Questioned costs (as the OIG states them)", qc["text"] if qc else None),
         ("Funds for better use (as the OIG states them)", fb["text"] if fb else None),
         ("Source", "DOJ Office of the Inspector General, oig.justice.gov/reports"),
@@ -59,7 +62,7 @@ def build_record(r, oversight_path=None, oversight_ids=None):
         filters={"type": [r["type"]] if r["type"] else [], "component": list(r["components"]), "year": [str(year)] if year else [],
                  "has_amount": ["yes" if (qc and qc.get("value")) or (fb and fb.get("value")) else "no"]},
         extra={"dojoig": body},
-        text=" ".join(x for x in [r["number"], r["type"], " ".join(r["components"]), r["entity"], r["location"]] if x))
+        text=" ".join(x for x in [r["number"], r["type"], " ".join(r["components"]), r["entity"], r["location"], desc] if x))
 
 
 def main():
@@ -89,7 +92,7 @@ def main():
     }
     lb = rw.listing(
         [("date", "Report date"), ("number", "Report no."), ("type", "Type"), ("component", "Component"), ("questioned", "Questioned costs"), ("better_use", "Funds for better use")],
-        [("type", "Report type", {t: t for t in sorted(types)}), ("component", "DOJ component", {c: c for c in sorted(comps)}), ("year", "Report year", {y: y for y in years}),
+        [("type", "Report type", {t: t for t in sorted(types)}), ("component", "DOJ component", {c: c for c in sorted(comps) if len(c) <= 80}), ("year", "Report year", {y: y for y in years}),
          ("has_amount", "States a dollar amount", {"yes": "Yes, above $0", "no": "No amount above $0 stated"})])
     rw.write_build(DATASET, "DOJ Office of the Inspector General reports (oig.justice.gov)", records, lb, summary, inputs)
 
