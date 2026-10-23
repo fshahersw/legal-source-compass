@@ -116,6 +116,20 @@ describe("compareLatest", () => {
       compareLatest(wy, defs[0]!, [{ id: "us", label: "the U.S.", geo: older }])[0]!.verdict,
     ).toBe("Not recorded for the U.S.");
   });
+  it("shows a count beside the comparator without ranking one area's size against another's", () => {
+    const people: CensusMeasureDef = {
+      ...defs[0]!,
+      key: "poverty_rate",
+      label: "Total population",
+      unit: "people",
+      format: "int",
+      kind: "value",
+    };
+    const [c] = compareLatest(wy, people, [{ id: "us", label: "the U.S.", geo: us }]);
+    expect(c!.diff).toBeNull();
+    expect(c!.verdict).toBe("A count of people; not compared by size");
+    expect(c!.latest?.value).toBe(12.1);
+  });
   it("reports a missing comparator as Not recorded", () => {
     expect(
       compareLatest(wy, defs[0]!, [{ id: "us", label: "the U.S.", geo: null }])[0]!.verdict,

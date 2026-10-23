@@ -267,6 +267,7 @@ function Population({
         </div>
       </Panel>
       <TrendChart
+        band={false}
         title={`Resident population, ${countyName}`}
         unit="residents on July 1"
         format="int"

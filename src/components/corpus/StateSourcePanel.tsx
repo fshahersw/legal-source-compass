@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { ArrowUpRight, BookOpen, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { hiddenCounts, type Hidden } from "@/components/places/state/resourceFilter";
 import type { MergedStateSource } from "@/lib/atlas/stateSources";
 import { filterResources, safeResourceHref } from "@/lib/corpus/resourcePresentation";
 import {
@@ -17,6 +18,8 @@ export function StateSourcePanel({
   error,
   onRetry,
   compact = false,
+  hidden = [],
+  heading = "Laws & research resources",
 }: {
   rows: MergedStateSource[];
   state: string;
@@ -24,6 +27,9 @@ export function StateSourcePanel({
   error: boolean;
   onRetry: () => void;
   compact?: boolean;
+  /** Resources withheld from the list, with the reason (commercial publisher, or another state's host). */
+  hidden?: Hidden<MergedStateSource>[] | undefined;
+  heading?: string | undefined;
 }) {
   const [q, setQ] = useState("");
   const [category, setCategory] = useState("");
@@ -50,7 +56,7 @@ export function StateSourcePanel({
       <div className="research-band">
         <h2 className="flex items-center gap-2 text-sm font-semibold">
           <BookOpen className="size-4" aria-hidden />
-          Laws & research resources
+          {heading}
         </h2>
         <span className="text-xs tabular-nums text-[var(--navy-muted)]" role="status">
           {loading ? "Loading…" : `${shown.length.toLocaleString()}${error ? "+" : ""} resources`}
@@ -181,6 +187,7 @@ export function StateSourcePanel({
           ) : null}
         </div>
       ) : null}
+      {hidden.length ? <HiddenResources hidden={hidden} /> : null}
       {shown.length > limit ? (
         <div className="flex items-center justify-between border-t border-border px-3 py-2 text-xs text-muted-foreground">
           <span>
@@ -192,5 +199,33 @@ export function StateSourcePanel({
         </div>
       ) : null}
     </section>
+  );
+}
+
+/**
+ * Resources the list does not show, and why: a commercial publisher is not a research source, and a resource whose host
+ * belongs to another state is withheld unless the resource itself says it covers this one. Plain text, not links.
+ */
+function HiddenResources({ hidden }: { hidden: Hidden<MergedStateSource>[] }) {
+  const counts = hiddenCounts(hidden);
+  const parts = [
+    counts.commercial ? `${counts.commercial} from commercial publishers` : null,
+    counts.otherState ? `${counts.otherState} that belong to another state` : null,
+  ].filter(Boolean);
+  return (
+    <details className="border-t border-border text-xs" data-testid="hidden-resources">
+      <summary className="cursor-pointer px-3 py-2 text-muted-foreground hover:bg-muted/40">
+        {hidden.length} {hidden.length === 1 ? "resource is" : "resources are"} not shown:{" "}
+        {parts.join(" and ")}
+      </summary>
+      <ul className="m-0 max-h-60 list-none divide-y divide-border/60 overflow-y-auto border-t border-border/60 p-0">
+        {hidden.map(({ row, detail }) => (
+          <li key={row.id} className="px-3 py-1.5">
+            <span className="block truncate text-[12px]">{row.title || row.domain}</span>
+            <span className="block text-[11px] leading-4 text-muted-foreground">{detail}</span>
+          </li>
+        ))}
+      </ul>
+    </details>
   );
 }

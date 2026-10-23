@@ -54,7 +54,19 @@ function Spark({ series, years }: { series: Record<string, number>; years: strin
 }
 
 /** Compact official-metrics panel for a state page: latest value, rank, 5-year change and trend. */
-export function StateMetricsPanel({ usps }: { usps: string }) {
+export function StateMetricsPanel({
+  usps,
+  metrics = PANEL_METRICS,
+  heading = "State metrics",
+  note,
+}: {
+  usps: string;
+  /** Metric keys to list, in order (default: the full panel). */
+  metrics?: string[] | undefined;
+  heading?: string | undefined;
+  /** A line under the list, e.g. where the metrics left out here are shown. */
+  note?: string | undefined;
+}) {
   const fn = useServerFn(getStateMetricsPanel);
   const q = useQuery({
     queryKey: ["state-metrics-panel", usps],
@@ -63,7 +75,7 @@ export function StateMetricsPanel({ usps }: { usps: string }) {
   });
   const defs = new Map((q.data?.metrics ?? []).map((m) => [m.key, m]));
   const profile = q.data?.profile ?? null;
-  const rows = PANEL_METRICS.flatMap((key) => {
+  const rows = metrics.flatMap((key) => {
     const def = defs.get(key);
     const latest = profile?.latest[key];
     return def ? [{ def, latest }] : [];
@@ -73,7 +85,7 @@ export function StateMetricsPanel({ usps }: { usps: string }) {
       <div className="research-band">
         <h2 className="flex items-center gap-2 text-sm font-semibold">
           <BarChart3 className="size-4" aria-hidden />
-          State metrics
+          {heading}
         </h2>
         <span className="text-[11px] text-[var(--navy-muted)]">rank of 50 + DC</span>
       </div>
@@ -105,6 +117,11 @@ export function StateMetricsPanel({ usps }: { usps: string }) {
           ))}
         </ul>
       )}
+      {note ? (
+        <p className="m-0 border-t border-border/70 px-3 py-1.5 text-[11px] leading-4 text-muted-foreground">
+          {note}
+        </p>
+      ) : null}
       <Link
         to="/places/analytics"
         search={{ state: usps }}

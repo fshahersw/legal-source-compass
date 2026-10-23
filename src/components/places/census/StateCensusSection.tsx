@@ -258,6 +258,7 @@ function Population({ data, stateName }: { data: AreaCensus; stateName: string }
         </div>
       </Panel>
       <TrendChart
+        band={false}
         title={`Resident population, ${stateName}`}
         unit="residents on July 1"
         format="int"

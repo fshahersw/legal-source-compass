@@ -3,7 +3,6 @@ import {
   filingsSeries,
   parseDistrict,
   parsePendingMdls,
-  stateFilingsTrend,
   summarizeDistricts,
   type DistrictBench,
 } from "./stateOverviewModel";
@@ -194,41 +193,5 @@ describe("summarizeDistricts", () => {
       activeJudges: null,
       filings: null,
     });
-  });
-});
-
-describe("stateFilingsTrend", () => {
-  const a = parseDistrict(
-    {
-      id: "cand",
-      c: { court: "N.D. Cal." },
-      s: series([
-        [2022, 100],
-        [2023, 110],
-        [2024, 120],
-      ]),
-    },
-    undefined,
-  )!;
-  const b = parseDistrict(
-    {
-      id: "cacd",
-      c: { court: "C.D. Cal." },
-      s: series([
-        [2023, 200],
-        [2024, 210],
-      ]),
-    },
-    undefined,
-  )!;
-  it("sums only the years every district reports", () => {
-    expect(stateFilingsTrend([a, b])).toEqual([
-      { fy: 2023, filings: 310, districts: 2 },
-      { fy: 2024, filings: 330, districts: 2 },
-    ]);
-  });
-  it("is the district's own series for a one-district state and empty for none", () => {
-    expect(stateFilingsTrend([a]).map((p) => p.filings)).toEqual([100, 110, 120]);
-    expect(stateFilingsTrend([])).toEqual([]);
   });
 });

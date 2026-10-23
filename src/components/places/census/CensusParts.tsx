@@ -160,7 +160,7 @@ function diffCell(row: MeasureRow, id: string) {
   const c = row.comparisons.find((x) => x.id === id);
   if (!c) return null;
   return (
-    <td className="px-2 py-1 align-top">
+    <td key={id} className="px-2 py-1 align-top">
       <div className="font-mono tabular-nums">{formatCensus(c.latest?.value, row.def.format)}</div>
       <div className="text-[10.5px] leading-3.5 text-muted-foreground">{c.verdict}</div>
     </td>
@@ -237,7 +237,7 @@ export function MeasureTable({
                     </td>
                     {comparators.map((c) => diffCell(row, c.id) ?? <td key={c.id} />)}
                     <td className="px-2 py-1 align-top font-mono tabular-nums text-muted-foreground">
-                      {row.rank ? `#${row.rank.rank} of ${row.rank.of}` : "—"}
+                      {row.rank ? `#${row.rank.rank} of ${row.rank.of}` : "Not ranked"}
                     </td>
                     <td className="px-2 py-1 align-top">
                       {row.change ? (

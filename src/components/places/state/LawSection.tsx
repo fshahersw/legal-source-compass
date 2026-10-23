@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowUpRight, BookOpen, Clock3, Gavel, Landmark, ScrollText } from "lucide-react";
+import { stateByUsps } from "@/lib/corpus/geo";
 import { StateLegislationPanel } from "@/components/legislation/StateLegislationPanel";
 import { getStateCodeEntry } from "@/lib/law/stateCode.functions";
 import { getStateLaw, type StateLaw } from "@/lib/external/stateLaw.functions";
@@ -69,9 +70,12 @@ export function LawSection({
     queryFn: () => lawFn({ data: { usps } }),
     staleTime: 10 * 60_000,
   });
+  // The statute catalogue is keyed by the 50 states and DC; a territory has no entry, so it is not asked for one.
+  const catalogued = stateByUsps.has(usps);
   const code = useQuery({
     queryKey: ["state-code-entry", usps],
     queryFn: () => codeFn({ data: { state: usps } }),
+    enabled: catalogued,
     staleTime: 60_000,
   });
   return (
@@ -90,8 +94,8 @@ export function LawSection({
         </div>
         <ul className="m-0 list-none divide-y divide-border/70 p-0">
           <CodeRows
-            loading={code.isPending}
-            error={!!code.error}
+            loading={catalogued && code.isPending}
+            error={catalogued && !!code.error}
             rows={code.data ?? []}
             stateName={stateName}
             onRetry={() => void code.refetch()}

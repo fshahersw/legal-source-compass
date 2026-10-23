@@ -335,7 +335,7 @@ export function MetricMap({
         </div>
       ) : null}
       <div className="map-footer flex min-h-10 flex-wrap items-center justify-between gap-x-4 gap-y-1.5 border-t border-border bg-surface/80 px-3 py-2 text-[11px]">
-        <div aria-live="polite" aria-atomic="true" className="min-w-0 flex-1">
+        <div aria-live="polite" aria-atomic="true" className="min-w-0 basis-full">
           {tip ? (
             <>
               <span className="font-semibold">{tip.read.name}</span>

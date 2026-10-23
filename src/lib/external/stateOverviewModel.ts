@@ -178,26 +178,3 @@ export function summarizeDistricts(rows: DistrictRow[]): StateFederalSummary {
     filings,
   };
 }
-
-export type StateFilingsPoint = { fy: number; filings: number; districts: number };
-
-/**
- * Civil filings summed over the state's districts for every fiscal year in which each district reports a complete year.
- * A year missing for any district is left out (never summed over fewer districts than the state has), so the line never
- * dips because one district's year is absent.
- */
-export function stateFilingsTrend(rows: DistrictRow[]): StateFilingsPoint[] {
-  if (!rows.length) return [];
-  const years = new Set(rows.flatMap((r) => r.series.map((p) => p.fy)));
-  const out: StateFilingsPoint[] = [];
-  for (const fy of [...years].sort((a, b) => a - b)) {
-    const values = rows.map((r) => r.series.find((p) => p.fy === fy)?.filings ?? null);
-    if (values.every((v) => v != null))
-      out.push({
-        fy,
-        filings: values.reduce<number>((a, v) => a + (v as number), 0),
-        districts: rows.length,
-      });
-  }
-  return out;
-}

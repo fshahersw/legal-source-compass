@@ -99,6 +99,7 @@ export function TrendChart({
   source,
   how,
   height = 210,
+  band = true,
 }: {
   title: string;
   unit: string;
@@ -109,6 +110,8 @@ export function TrendChart({
   source: { label: string; href: string };
   how: Measure[];
   height?: number;
+  /** Whether the series carry a published margin of error (the shaded band). Population estimates have none. */
+  band?: boolean;
 }) {
   const id = useId();
   const populated = rows.some((r) => series.some((s) => r[s.id] != null));
@@ -150,7 +153,8 @@ export function TrendChart({
           {title}
         </h4>
         <p className="m-0 text-[11px] leading-4 text-muted-foreground">
-          {unit} · {period} · shaded band: margin of error
+          {unit} · {period}
+          {band ? " · shaded band: margin of error" : ""}
         </p>
       </figcaption>
       {populated ? (
@@ -161,7 +165,7 @@ export function TrendChart({
               <XAxis dataKey="year" tick={axisTick} interval="preserveStartEnd" minTickGap={14} />
               <YAxis tick={axisTick} tickFormatter={tick} width={48} domain={["auto", "auto"]} />
               <Tooltip content={tip as never} contentStyle={tooltipStyle} />
-              {series.map((s) => (
+              {(band ? series : []).map((s) => (
                 <Area
                   key={`${s.id}-band`}
                   dataKey={`${s.id}_band`}

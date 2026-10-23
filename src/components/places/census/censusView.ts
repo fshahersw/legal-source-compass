@@ -48,13 +48,19 @@ export function compareLatest(
     const theirs = c.geo?.latest[def.key] ?? null;
     // only the same release can be compared
     const same = mine && theirs && mine.year === theirs.year;
-    const diff = same ? difference(mine, theirs) : null;
+    // a count (people) grows with the size of the area, so it is shown beside the comparator but never ranked against it
+    const count = def.format === "int";
+    const diff = same && !count ? difference(mine, theirs) : null;
     return {
       id: c.id,
       label: c.label,
       latest: theirs,
       diff,
-      verdict: same ? verdictText(c.label, diff, def) : `${NOT_RECORDED} for ${c.label}`,
+      verdict: !same
+        ? `${NOT_RECORDED} for ${c.label}`
+        : count
+          ? "A count of people; not compared by size"
+          : verdictText(c.label, diff, def),
     };
   });
 }
