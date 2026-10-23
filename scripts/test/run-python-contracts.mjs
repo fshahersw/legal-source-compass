@@ -89,6 +89,7 @@ for (const suite of [
     modules: ["test_parse_cic_rtf", "test_capture_originals", "test_stage_historical"],
   },
   { directory: "scripts/legal/state-codes/common", modules: ["test_land_publisher_code_v2"] },
+  { directory: "scripts/legal/state-codes/outline", modules: ["test_outline_release"] },
   {
     directory: "scripts/legal/state-codes",
     modules: [
@@ -98,6 +99,7 @@ for (const suite of [
       "test_nj_parse_bulk",
       "test_nj_stage_bulk",
       "test_nj_reconcile_toc",
+      "test_tx_parse",
     ],
   },
 ]) {
