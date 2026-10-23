@@ -1,11 +1,8 @@
 /**
  * Read-only access to the api-econ corpus datasets for the calculators (server only). Rows come from the corpus through
- * PostgREST (restGet, read-only key from the server environment). Before a dataset is published, a developer can point
- * ECON_STAGED_BUILD_DIR at private/build/w1025_api-econ to preview the staged build files; that switch is ignored in
- * production builds and never reaches the browser.
+ * PostgREST (restGet, read-only key from the server environment). Rows are served only once published; there is no
+ * staged-file preview in the deployed worker (it has no file system to read build files from).
  */
-import fs from "node:fs";
-import path from "node:path";
 import { restGet } from "@/lib/external/rest.server";
 
 export type EconRow = {
@@ -24,18 +21,7 @@ export type EconQuery = {
   fields?: "item" | "cells";
 };
 
-function contains(have: unknown, want: unknown): boolean {
-  if (Array.isArray(want))
-    return Array.isArray(have) && want.every((w) => have.some((h) => contains(h, w)));
-  if (want && typeof want === "object")
-    return (
-      !!have &&
-      typeof have === "object" &&
-      Object.entries(want).every(([k, v]) => contains((have as Record<string, unknown>)[k], v))
-    );
-  return have === want;
-}
-
+/** The api-econ datasets the calculators read (dataset id → staged build file, kept for the builders' manifests). */
 const STAGED_FILES: Record<string, string> = {
   econ_fred_series: "fred/econ_fred_series.json",
   econ_fred_observations: "fred/econ_fred_observations.json",
@@ -48,53 +34,11 @@ const STAGED_FILES: Record<string, string> = {
   census_acs_cvap_counties: "census_cvap/census_acs_cvap_counties.json",
 };
 
-function stagedDir(): string | null {
-  const dir = process.env["ECON_STAGED_BUILD_DIR"];
-  if (!dir || process.env["NODE_ENV"] === "production") return null;
-  return dir;
-}
-
-const stagedCache = new Map<string, EconRow[]>();
-
-function stagedRows(dataset: string): EconRow[] | null {
-  const dir = stagedDir();
-  const file = STAGED_FILES[dataset];
-  if (!dir || !file) return null;
-  const hit = stagedCache.get(dataset);
-  if (hit) return hit;
-  const full = path.join(dir, file);
-  if (!fs.existsSync(full)) return [];
-  const build = JSON.parse(fs.readFileSync(full, "utf8")) as {
-    rows: (EconRow & { filters: Record<string, string[]> })[];
-  };
-  const rows = build.rows.map((r) => ({
-    id: r.id,
-    title: r.title,
-    source_url: r.source_url,
-    item: { ...r.item, _filters: r.filters },
-  }));
-  stagedCache.set(dataset, rows);
-  return rows;
-}
-
 /** Whether rows come from staged build files (shown in the UI so a preview is never mistaken for published data). */
-export const usingStagedBuilds = () => stagedDir() !== null;
+export const usingStagedBuilds = () => false;
 
 export async function econRows(dataset: string, q: EconQuery): Promise<EconRow[]> {
   if (!/^[a-z0-9_]{1,80}$/.test(dataset)) throw new Error("bad dataset id");
-  const staged = stagedRows(dataset);
-  if (staged) {
-    return staged
-      .filter((r) => !q.ids || q.ids.includes(r.id))
-      .filter((r) => {
-        if (!q.filters) return true;
-        const f = (r.item["_filters"] ?? {}) as Record<string, string[]>;
-        return Object.entries(q.filters).every(([k, v]) => (f[k] ?? []).includes(v));
-      })
-      .filter((r) => !q.itemContains || contains(r.item, q.itemContains))
-      .slice(0, q.limit ?? 1000)
-      .map((r) => (q.fields === "cells" ? { ...r, item: { cells: r.item["cells"] } } : r));
-  }
   const parts = [
     q.fields === "cells"
       ? "select=id,title,source_url,cells:item->cells"
@@ -132,14 +76,6 @@ export async function econDatasets(): Promise<
   Record<string, { ready: boolean; records: number | null } | null>
 > {
   const ids = Object.keys(STAGED_FILES);
-  if (stagedDir()) {
-    return Object.fromEntries(
-      ids.map((id) => {
-        const rows = stagedRows(id);
-        return [id, rows && rows.length ? { ready: true, records: rows.length } : null];
-      }),
-    );
-  }
   const { rows } = await restGet<
     { id: string; ready: boolean | null; imported_records: number | null }[]
   >(`corpus_datasets?select=id,ready,imported_records&id=in.(${ids.join(",")})`);
