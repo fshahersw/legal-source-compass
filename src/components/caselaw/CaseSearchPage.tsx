@@ -95,7 +95,16 @@ export function Pager({
   );
 }
 
-export function HitTable({ rows, showMatched }: { rows: CaseHit[]; showMatched?: boolean }) {
+export function HitTable({
+  rows,
+  showMatched,
+  hideCourt,
+}: {
+  rows: CaseHit[];
+  showMatched?: boolean;
+  /** One court's own list: the court column would repeat its name on every row. */
+  hideCourt?: boolean;
+}) {
   return (
     <div className="overflow-x-auto rounded-md border border-border">
       <table className="w-full min-w-[44rem] text-xs">
@@ -103,7 +112,7 @@ export function HitTable({ rows, showMatched }: { rows: CaseHit[]; showMatched?:
         <thead className="bg-muted/40 text-left text-[11px] text-muted-foreground">
           <tr>
             <th className="px-3 py-1.5 font-medium">Case</th>
-            <th className="px-2 py-1.5 font-medium">Court</th>
+            {hideCourt ? null : <th className="px-2 py-1.5 font-medium">Court</th>}
             <th className="px-2 py-1.5 font-medium">Filed</th>
             <th className="px-2 py-1.5 font-medium">Status</th>
             <th
@@ -142,14 +151,16 @@ export function HitTable({ rows, showMatched }: { rows: CaseHit[]; showMatched?:
                     : ""}
                 </div>
               </td>
-              <td className="px-2 py-1.5 text-muted-foreground">
-                {r.court ?? r.courtId}
-                {r.jurisdiction ? (
-                  <span className="ml-1 text-[11px]" title={stateLabel(r.jurisdiction)}>
-                    · {r.jurisdiction}
-                  </span>
-                ) : null}
-              </td>
+              {hideCourt ? null : (
+                <td className="px-2 py-1.5 text-muted-foreground">
+                  {r.court ?? r.courtId}
+                  {r.jurisdiction ? (
+                    <span className="ml-1 text-[11px]" title={stateLabel(r.jurisdiction)}>
+                      · {r.jurisdiction}
+                    </span>
+                  ) : null}
+                </td>
+              )}
               <td className="whitespace-nowrap px-2 py-1.5 tabular-nums">{fmtDay(r.dateFiled)}</td>
               <td className="px-2 py-1.5 text-muted-foreground">
                 {r.precedentialStatus ?? NOT_RECORDED}
@@ -594,14 +605,17 @@ export function CaseSearchPage({ s, nav }: { s: CaseSearchState; nav: Nav }) {
       )}
       <p className="flex items-start gap-1 text-[11px] text-muted-foreground">
         <FileText className="mt-0.5 size-3 shrink-0" aria-hidden />
-        Every court level from CourtListener's bulk data (snapshot 2026-09-30): the Supreme Court,
-        federal courts of appeals, state highest and intermediate appellate courts, federal district
-        courts and other courts. Names and citations are searched here, opinion text where it is
-        indexed; any court's text can also be searched through CourtListener's live service.{" "}
-        <Link to="/cases/courts" className="text-primary hover:underline">
-          Browse by court
-        </Link>
-        .
+        <span>
+          Every court level from CourtListener's bulk data (snapshot 2026-09-30): the Supreme Court,
+          federal courts of appeals, state highest and intermediate appellate courts, federal
+          district courts and other courts. Names and citations are searched here, opinion text
+          where it is indexed; any court's text can also be searched through CourtListener's live
+          service.{" "}
+          <Link to="/cases/courts" className="text-primary hover:underline">
+            Browse by court
+          </Link>
+          .
+        </span>
       </p>
     </div>
   );

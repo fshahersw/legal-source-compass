@@ -3,7 +3,8 @@
     python3 -I -B scripts/caselaw_v2/verify.py --run sample [--reparse]
 
 Checks (every failure is listed; exit status 1 when any check fails):
-  objects     each staged object's bytes match the sha256/size in units/u*.json; it splits into gzip members exactly at
+  objects     each staged object's bytes (local, or read back from storage with --from-storage N for a sample of
+              uploaded objects) match the sha256/size in units/u*.json; it splits into gzip members exactly at
               the attach rows' (s, n) pointers; every member is one "caselaw-read/1" record whose opinion/cluster ids
               match its row, whose text hashes to text_sha256 and whose provenance names the pinned source file
   raw         for every opinion whose raw markup was kept (--keep-raw): sha256(raw) == source.raw_sha256 and the
@@ -46,9 +47,34 @@ class Report:
             self.failures.append(what)
 
 
-def load_records(run_dir: str, rep: Report) -> dict[int, dict]:
-    """opinion_id -> {record, row} for every staged object (objects check included)."""
+class StorageBytes:
+    """Whole-object reads from private storage (GET; the lead's full run deletes local objects after upload)."""
+
+    def __init__(self):
+        import store
+
+        self.st = store.Storage()
+
+    def __call__(self, key: str) -> bytes | None:
+        import uuid
+
+        r = self.st._retry(lambda: self.st.s.get(self.st._object_url(key, True), headers=self.st.h,
+                                                 params={"read": uuid.uuid4().hex}, timeout=self.st.timeout))
+        return r.content if r.status_code == 200 else None
+
+
+def load_records(run_dir: str, rep: Report, from_storage: int = 0) -> dict[int, dict]:
+    """opinion_id -> {record, row} for every staged object (objects check included). Objects no longer on local disk
+    (uploaded and deleted) are read back from storage for a deterministic sample of `from_storage` objects."""
+    import random
+
     out: dict[int, dict] = {}
+    fetch = StorageBytes() if from_storage else None
+    remote_keys: set = set()
+    if from_storage:
+        gone = [o["key"] for up in sorted(glob.glob(os.path.join(run_dir, "units", "u*.json"))) for o in read_json(up)["objects"]
+                if not os.path.exists(os.path.join(ROOT, o["path"]))]
+        remote_keys = set(random.Random(20261025).sample(gone, min(from_storage, len(gone))))
     for up in sorted(glob.glob(os.path.join(run_dir, "units", "u*.json"))):
         unit = read_json(up)
         rows = collections.defaultdict(list)
@@ -56,7 +82,17 @@ def load_records(run_dir: str, rep: Report) -> dict[int, dict]:
             rows[r["key"]].append(r)
         for o in unit["objects"]:
             path = os.path.join(ROOT, o["path"])
-            data = open(path, "rb").read()
+            if os.path.exists(path):
+                data = open(path, "rb").read()
+            elif o["key"] in remote_keys:
+                data = fetch(o["key"])
+                rep.counts["objects_read_from_storage"] += 1
+                if data is None:
+                    rep.fail(f"{o['key']}: not readable from storage")
+                    continue
+            else:
+                rep.counts["objects_not_checked_uploaded"] += 1
+                continue
             rep.counts["objects"] += 1
             if len(data) != o["bytes"] or sha256_bytes(data) != o["sha256"]:
                 rep.fail(f"{o['key']}: bytes or sha256 differ from the unit report")
@@ -282,11 +318,12 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", required=True)
     ap.add_argument("--reparse", action="store_true")
+    ap.add_argument("--from-storage", type=int, default=0, help="read back N uploaded objects (sample) from storage")
     a = ap.parse_args()
     run_dir = os.path.join(WORK, "runs", a.run)
     t0 = time.time()
     rep = Report()
-    recs = load_records(run_dir, rep)
+    recs = load_records(run_dir, rep, a.from_storage)
     check_raw(run_dir, recs, rep)
     check_stage2(recs, rep)
     check_clusters(run_dir, recs, rep)

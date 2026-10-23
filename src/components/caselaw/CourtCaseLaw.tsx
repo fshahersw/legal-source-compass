@@ -219,7 +219,7 @@ export function CourtCaseLaw({
           </Problem>
         ) : cq.data!.rows.length ? (
           <>
-            <HitTable rows={cq.data!.rows} />
+            <HitTable rows={cq.data!.rows} hideCourt />
             <Pager
               page={cq.data!.page}
               hasMore={cq.data!.hasMore}

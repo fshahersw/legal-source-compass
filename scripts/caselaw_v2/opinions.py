@@ -55,7 +55,7 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from common import (BUILDER, FILE_BYTES, OBJECT_TARGET, OPINIONS_ETAG, ROOT, STAGE1_CHECKPOINT, WORK, DiskGuard,  # noqa: E402
-                    V2Error, append_jsonl, gzip_member, now, object_key, read_json, sha256_bytes, write_json)
+                    V2Error, append_jsonl, dir_bytes, gzip_member, now, object_key, read_json, sha256_bytes, write_json)
 
 BATCH_BYTES = 8_000_000
 SEGMENT_MB = 48
@@ -362,6 +362,11 @@ def run_unit(a, u: int, units: dict, sel: Selection, pool, run_dir: str, uploade
                                                               "state": "staged", "at": now()})
         if uploader:
             uploader.submit(desc)
+            # back-pressure: wait for verified uploads (each deletes its local object) instead of failing
+            while dir_bytes(guard.root) > guard.budget and not uploader.errors:
+                time.sleep(2)
+            if uploader.errors:
+                raise V2Error(f"uploads failed: {uploader.errors[:3]}")
         guard.check(f"after staging {desc['key']}")
 
     def collect_one():
@@ -470,7 +475,9 @@ def cmd_run(a) -> int:
     ck = read_json(ck_path, {"units": {}})
     sel = Selection(os.path.join(run_dir, "selection.npz"))
     held, blocked = held_and_blocked(a.run)
-    guard = DiskGuard(run_dir, a.budget_mb * 1_000_000)
+    # the budget counts objects waiting for upload only (meta.duckdb and the row files are not transient)
+    os.makedirs(os.path.join(run_dir, "staged"), exist_ok=True)
+    guard = DiskGuard(os.path.join(run_dir, "staged"), a.budget_mb * 1_000_000)
     uploader = Uploader(run_dir) if a.upload else None
     print(f"[opinions] run {a.run}: {len(sel.ids):,} selected clusters, {len(held):,} held, {len(blocked):,} blocked; units {wanted}", flush=True)
     ctx = mp.get_context("fork")
@@ -515,7 +522,7 @@ def main() -> int:
     r.add_argument("--procs", type=int, default=3)
     r.add_argument("--workers", type=int, default=4, help="parallel bzip2 segment downloads")
     r.add_argument("--keep-raw", type=int, default=0, help="keep raw markup of the first N selected opinions per unit")
-    r.add_argument("--budget-mb", type=int, default=1500, help="stop if the run folder grows past this (staged objects)")
+    r.add_argument("--budget-mb", type=int, default=600, help="stop if staged objects waiting for upload exceed this")
     r.add_argument("--upload", action="store_true", help="lead only: verified upload, then delete each staged object")
     s = sub.add_parser("status")
     s.add_argument("--run", required=True)
