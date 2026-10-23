@@ -39,3 +39,7 @@ export {
 export type { LaneTrack, LanePoint, LaneBin, LaneMarker, LaneRowSpec } from "./Lanes";
 export { TreeExplorer, flattenTree } from "./TreeExplorer";
 export type { TreeItem, TreeChildren } from "./TreeExplorer";
+export { Icicle, icicleLayout, fitLabel } from "./Icicle";
+export type { IcicleDatum, IcicleProps } from "./Icicle";
+export { Swimlanes, laneMarks } from "./Swimlanes";
+export type { SwimEvent, SwimLane, SwimGroup, SwimBar, SwimlanesProps } from "./Swimlanes";

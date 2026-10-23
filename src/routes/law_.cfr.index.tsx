@@ -8,6 +8,7 @@ import { pageHead } from "@/lib/corpus/head";
 import { parseCitation } from "@/lib/external/ecfrFull";
 import { getCfrCollection } from "@/lib/external/ecfrFull.functions";
 import { CfrAgencyIndex } from "@/components/authorities/AgencyPanels";
+import { LawAtlas } from "@/components/lawviz/LawAtlas";
 
 export const Route = createFileRoute("/law_/cfr/")({
   head: () =>
@@ -129,6 +130,9 @@ function CfrIndexPage() {
           </p>
         </>
       )}
+      <div className="mt-6">
+        <LawAtlas corpus="cfr" />
+      </div>
       <div className="mt-4">
         <CfrAgencyIndex />
       </div>

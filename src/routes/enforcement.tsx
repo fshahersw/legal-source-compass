@@ -2,6 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
 import { EnforcementPage } from "@/components/enforcement/EnforcementPage";
 import { epaEnforcementQuery } from "@/components/enforcement/EpaEnforcement";
+import { EnforcementCalendar } from "@/components/lawviz/EnforcementCalendar";
 import {
   ENFORCEMENT_AGENCIES,
   isCanonicalEnforcementQuery,
@@ -64,6 +65,11 @@ function Page() {
         search={search}
         onSearch={(next) => void navigate({ search: next, replace: true, resetScroll: false })}
       />
+      {!search.tab ? (
+        <div className="mt-6">
+          <EnforcementCalendar />
+        </div>
+      ) : null}
     </AppShell>
   );
 }
