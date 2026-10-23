@@ -90,9 +90,13 @@ def wrapper_file(body: bytes, page_url: str) -> str | None:
     soup = pl.soup_of(body)
     root = pl.main_root(soup)
     text = pl.clean(root.get_text(" "))
-    files = [ln.href for ln in pl.extract_links(soup, page_url) if not ln.chrome and pl.FILE_EXT.search(ln.href)]
+    files = [ln for ln in pl.extract_links(soup, page_url) if not ln.chrome and pl.FILE_EXT.search(ln.href)]
     if files and len(text) < 600:
-        return files[0]
+        return files[0].href
+    # a CMS file node whose template keeps the site header in the main region: the page title is the file's name and its one content link is that file
+    title = pl.clean(soup.title.get_text()).split("|")[0].strip().lower() if soup.title else ""
+    if len(files) == 1 and title and pl.clean(files[0].text).lower() == title:
+        return files[0].href
     return None
 
 
@@ -120,7 +124,7 @@ def process(job: dict, store, upload: bool, stop_at: int) -> dict:
         return rec
     body = r.body
     detected = xt.detect_type(body[:4096], job["file_type"], r.ctype)
-    if detected == "html" and job["kind"] == "page":
+    if detected == "html" and job["kind"] in ("page", "file"):  # "file": a link that looks like a file but answers with the CMS page that carries it
         target = wrapper_file(body, r.final_url or url)
         if target and fl.pace_key(urllib.parse.urlparse(target).netloc) == fl.pace_key(urllib.parse.urlparse(url).netloc):
             # a thin page that only carries one file (a CMS "content" node): the file is the document, the page is recorded as its wrapper

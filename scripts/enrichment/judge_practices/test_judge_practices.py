@@ -416,6 +416,42 @@ class CourtAbbreviationsAndPageTitles(unittest.TestCase):
         self.assertEqual([j.title_class for j in js], ["district_judge", "district_judge", "magistrate_judge", "magistrate_judge"])
 
 
+class RosterRowsAndWrapperPages(unittest.TestCase):
+    def test_first_line_roster_keeps_the_name_and_the_rows_documents_but_not_the_number(self):
+        html = (b"<html><body><main><h2>District Judges</h2><table>"
+                b"<tr><td>Judge John D. Rainey<br/>(361) 788-5030</td><td><a href='/sites/txs/files/rainey%20procedures.pdf'>view procedures</a></td></tr>"
+                b"<tr><td>Judge Nelva Gonzales Ramos<br/>(361) 693-6457</td><td><a href='/sites/txs/files/ramos-rules.pdf'>view local rules</a></td></tr>"
+                b"</table></main></body></html>")
+        base = "https://www.txs.uscourts.gov/page/district-magistrate-judges-procedures-schedules"
+        self.assertEqual(pl.text_roster(html, base), [])  # without the option a name with a number under it is not read
+        es = pl.text_roster(html, base, first_line=True)
+        self.assertEqual([pl.strip_name(e.name_text) for e in es], ["John D. Rainey", "Nelva Gonzales Ramos"])
+        self.assertFalse(any(re.search(r"\d{3}", e.name_text or "") for e in es))
+        self.assertEqual([[d.href.rsplit("/", 1)[-1] for d in e.docs] for e in es], [["rainey%20procedures.pdf"], ["ramos-rules.pdf"]])
+
+    def test_override_regexes_accept_percent_escapes_in_capitals(self):
+        import json
+
+        with open(os.path.join(HERE, "site_overrides.json"), encoding="utf-8") as h:
+            ov = json.load(h)
+        links = [pl.Link(text="United States District Judge Diana Saldaña", href="https://www.txs.uscourts.gov/content/united-states-district-judge-diana-salda%C3%B1a",
+                         chrome=False, heading=None, headings=(), block="")]
+        got = pl.regex_entries(links, ov["txsd"]["entry_href_regex"], main_only=True)
+        self.assertEqual(len(got), 1)
+        self.assertTrue(re.search(ov["azd"]["entry_href_regex"], "https://www.azd.uscourts.gov/judge-orders/m%C3%A1rquez-rosemary"))
+
+    def test_a_cms_file_page_with_the_site_header_in_its_main_region_gives_its_file(self):
+        import fetch_docs as fd
+
+        header = "<p>" + "Skip to main content United States Bankruptcy Court Northern District of Georgia " * 12 + "</p>"
+        html = (f"<html><head><title>pwb_rome_date.pdf | Northern District of Georgia</title></head><body><main>{header}"
+                "<a href='/sites/default/files/romepwbupdatefeb2026.pdf'>pwb_rome_date.pdf</a></main></body></html>").encode()
+        self.assertEqual(fd.wrapper_file(html, "https://www.ganb.uscourts.gov/file/pwbdatesrome"),
+                         "https://www.ganb.uscourts.gov/sites/default/files/romepwbupdatefeb2026.pdf")
+        other = html.replace(b"pwb_rome_date.pdf</a>", b"Local rules</a>")  # a link whose text is not the page's title is not a wrapper of long pages
+        self.assertIsNone(fd.wrapper_file(other, "https://www.ganb.uscourts.gov/file/pwbdatesrome"))
+
+
 class AppAdapters(unittest.TestCase):
     """Courts whose pages are single-page apps: the judges and documents come from the court's own JSON service (stored fixtures, no network)."""
 

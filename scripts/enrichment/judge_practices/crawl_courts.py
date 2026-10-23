@@ -157,7 +157,7 @@ def listing_entries(body: bytes, base: str, hosts: set[str], ov: dict, audit: li
                 e.docs = pl.row_docs(soup, base, e.url, e.name_text or None)
         found += rx_found
     if ov.get("text_roster"):
-        found += pl.text_roster(soup, base, scope=ov.get("roster_scope", "main"))
+        found += pl.text_roster(soup, base, scope=ov.get("roster_scope", "main"), first_line=bool(ov.get("roster_first_line")))
     out: dict[str, pl.Entry] = {}
     for e in found:
         if urllib.parse.urlparse(e.url).netloc.lower() not in hosts or pl.is_home(e.url) or re.search(r"\bclerk\b", e.name_text, re.I):

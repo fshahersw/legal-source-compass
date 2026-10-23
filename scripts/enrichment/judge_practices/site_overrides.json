@@ -13,7 +13,7 @@
       "https://www.azd.uscourts.gov/judges/judges-orders"
     ],
     "skip_link_entries": true,
-    "entry_href_regex": "/judge-orders/[a-z%0-9]+-[a-z][a-z%0-9-]*$",
+    "entry_href_regex": "/judge-orders/(?:[a-z0-9]|%[0-9A-Fa-f]{2})+-[a-z](?:[a-z0-9-]|%[0-9A-Fa-f]{2})*$",
     "exclude_href_regex": "/judge-orders/(all-judges|standard-|courtroom-technology)",
     "no_sublistings": true,
     "page_doc_regex": "/content/"
@@ -144,9 +144,11 @@
       "https://www.txs.uscourts.gov/page/district-magistrate-judges-procedures-schedules"
     ],
     "skip_link_entries": true,
-    "entry_href_regex": "/(content|page)/(chief-)?(senior-)?united-states-(district|magistrate)-judge-[a-z0-9%-]+$",
+    "entry_href_regex": "/(content|page)/(chief-)?(senior-)?united-states-(district|magistrate)-judge-(?:[a-z0-9-]|%[0-9A-Fa-f]{2})+$",
     "entry_main_only": true,
     "row_docs": true,
+    "text_roster": true,
+    "roster_first_line": true,
     "no_sublistings": true,
     "no_index_docs": true
   },
@@ -156,7 +158,7 @@
       "https://www.txs.uscourts.gov/page/bankruptcy-judges-procedures-schedules"
     ],
     "skip_link_entries": true,
-    "entry_href_regex": "/(content|page)/(chief-)?united-states-bankruptcy-judge-[a-z0-9%-]+$",
+    "entry_href_regex": "/(content|page)/(chief-)?united-states-bankruptcy-judge-(?:[a-z0-9-]|%[0-9A-Fa-f]{2})+$",
     "entry_main_only": true,
     "row_docs": true,
     "no_sublistings": true,

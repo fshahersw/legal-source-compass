@@ -1130,7 +1130,7 @@ def _judge_name(text: str, split: bool) -> str | None:
     return None
 
 
-def text_roster(body: bytes | BeautifulSoup, base_url: str, *, scope: str = "main") -> list[Entry]:
+def text_roster(body: bytes | BeautifulSoup, base_url: str, *, scope: str = "main", first_line: bool = False) -> list[Entry]:
     """Judges named only in the text of a listing (no page of their own): lines such as "Hon. Brenda K. Sannes, Chief U.S. District Judge"
     or "Judge Richard Schell". The entry's address is the listing page itself (with a fragment naming the judge).
 
@@ -1157,6 +1157,8 @@ def text_roster(body: bytes | BeautifulSoup, base_url: str, *, scope: str = "mai
             cand = br_lines(el)
             if sum(1 for t in cand if _judge_name(t, True)) >= 2:  # "Hon. A<br>Hon. B<br>Hon. C": one judge to a line
                 lines = [(t, True) for t in cand]
+            elif first_line and cand and _judge_name(cand[0], True):  # "Judge A<br>(phone)": the name is the first line only; the number is not kept
+                lines = [(cand[0], False)]
         for text, split in lines:
             if is_group_label(text):
                 if level is None:  # a heading is already in the stack at its own level
