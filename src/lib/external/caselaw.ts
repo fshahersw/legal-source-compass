@@ -297,11 +297,12 @@ export function parseReadingRecord(raw: unknown, expectedOpinionId: number): Opi
     const s = int(a[0], 0);
     const e = int(a[1], 0);
     if (s == null || e == null || e <= s) continue;
+    // held 2: the cited case is blocked in CourtListener; its citation stays plain text, linked nowhere
     citations.push({
       start: map(s),
       end: map(e),
-      clusterId: clusterId(a[2]),
-      opinionId: int(a[3], 1),
+      clusterId: a[4] === 2 ? null : clusterId(a[2]),
+      opinionId: a[4] === 2 ? null : int(a[3], 1),
       held: a[4] === 1,
     });
   }

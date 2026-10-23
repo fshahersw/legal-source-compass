@@ -16,7 +16,8 @@ Row fields (all as CourtListener publishes them; nothing inferred):
   U.S. before S. Ct. before L. Ed., LEXIS/WL last), judges (cluster.judges text), panel (names
   of the panel members CourtListener links, "first middle last suffix"), disposition, scdb ({"id", "decision_direction",
   "votes_majority", "votes_minority"} as CourtListener provides them, only when an SCDB id is present),
-  opinions [{"id", "type", "author", "per_curiam", "key", "s", "n"}] (key/s/n only when the text is in the reading
+  opinions [{"id", "type", "author" (the linked judge's name from the people table when the opinion has an author_id,
+  else CourtListener's author_str), "per_curiam", "key", "s", "n"}] (key/s/n only when the text is in the reading
   store; ordered by CourtListener type code, then id), citator [key, offset, length] (cited-by member),
   authorities_ref [key, offset, length] (cited-authorities member) and the counts cited_by, cited_by_cases,
   parentheticals, authorities.
@@ -89,7 +90,8 @@ def case_row(r: dict, opinions: list[dict]) -> dict:
 
 
 def opinion_entry(o: dict) -> dict:
-    e = {"id": int(o["opinion_id"]), "type": o["type"], "author": clean(o.get("author_str")),
+    # the judge CourtListener links as author (people table, exact id) when there is one, else its author_str
+    e = {"id": int(o["opinion_id"]), "type": o["type"], "author": clean(o.get("author_name")) or clean(o.get("author_str")),
          "per_curiam": bool(o.get("per_curiam")) if o.get("per_curiam") is not None else None}
     if o.get("key"):
         e.update({"key": o["key"], "s": int(o["offset"]), "n": int(o["length"])})
@@ -97,7 +99,11 @@ def opinion_entry(o: dict) -> dict:
 
 
 PREP_SQL = """
-CREATE TEMP TABLE sel AS SELECT opinion_id, cluster_id, tier, type FROM read_parquet('{selection}') WHERE NOT blocked;
+CREATE TEMP TABLE sel AS SELECT opinion_id, cluster_id, tier, type, author_id FROM read_parquet('{selection}') WHERE NOT blocked;
+CREATE TEMP TABLE pnm AS
+  SELECT TRY_CAST(id AS BIGINT) AS person_id,
+         concat_ws(' ', nullif(trim(name_first), ''), nullif(trim(name_middle), ''), nullif(trim(name_last), ''), nullif(trim(name_suffix), '')) AS name
+  FROM small.person;
 """
 
 PART_SQL = """
@@ -112,9 +118,10 @@ CREATE OR REPLACE TEMP TABLE pnames AS
   FROM small.cluster_panel p JOIN small.person pe ON pe.id = p.person_id
   JOIN clp ON clp.cluster_id = TRY_CAST(p.opinioncluster_id AS BIGINT) GROUP BY 1;
 CREATE OR REPLACE TEMP TABLE opl AS
-  SELECT s.cluster_id, list(struct_pack(opinion_id := s.opinion_id, type := s.type, author_str := r.author_str, per_curiam := r.per_curiam,
-                                        key := r.key, "offset" := r."offset", length := r.length) ORDER BY s.opinion_id) AS ops
+  SELECT s.cluster_id, list(struct_pack(opinion_id := s.opinion_id, type := s.type, author_str := r.author_str, author_name := pn.name,
+                                        per_curiam := r.per_curiam, key := r.key, "offset" := r."offset", length := r.length) ORDER BY s.opinion_id) AS ops
   FROM sel s JOIN clp ON clp.cluster_id = s.cluster_id
+  LEFT JOIN pnm pn ON pn.person_id = s.author_id
   LEFT JOIN (SELECT * FROM read_parquet('{ridx}') WHERE cluster_id % {P} = {p}) r ON r.opinion_id = s.opinion_id
   GROUP BY s.cluster_id;
 """

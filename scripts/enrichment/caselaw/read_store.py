@@ -18,7 +18,9 @@ Per opinion (stage-1 record -> reading record, READ_FORMAT):
   * pages are [label, citation_index, offset] triples (offsets into `text`, or into `text_paginated` when
     pages_source is "xml_harvard_text");
   * citations are [start, end, cited_cluster_id|null, cited_opinion_id, held] where held=1 when the cited cluster has a
-    page here (an unblocked cluster of the three tiers, from the stage-1 selection); offsets are code points into text;
+    page here (an unblocked cluster of the three tiers, from the stage-1 selection), 2 when the cited cluster or its
+    docket is blocked in CourtListener (the page shows the citation as plain text, linked nowhere), else 0; offsets
+    are code points into text;
   * the raw markup is not repeated (it stays in the stage-1 shard, which the record names).
 
 Objects: caselaw/read/<snapshot>/<tier>/<court>/<group tag>-<seq>-<sha256[:12]>.jsonl.gz. Inside a stage-1 shard
@@ -104,11 +106,15 @@ def gzip_member(data: bytes) -> bytes:
     return buf.getvalue()
 
 
-def is_held(cluster_id, held) -> int:
-    return 1 if cluster_id is not None and cluster_id in held else 0
+def is_held(cluster_id, held, blocked=frozenset()) -> int:
+    if cluster_id is None:
+        return 0
+    if cluster_id in blocked:
+        return 2
+    return 1 if cluster_id in held else 0
 
 
-def reading_record(rec: dict, held, stage1_key: str, stage1_sha: str) -> dict | None:
+def reading_record(rec: dict, held, stage1_key: str, stage1_sha: str, blocked=frozenset()) -> dict | None:
     """Stage-1 record -> reading record (None for a blocked opinion)."""
     if rec.get("blocked") or rec.get("cluster_blocked") or rec.get("docket_blocked"):
         return None
@@ -119,7 +125,7 @@ def reading_record(rec: dict, held, stage1_key: str, stage1_sha: str) -> dict | 
     cites = []
     for c in rec.get("citations") or []:
         cid = c.get("cluster_id")
-        cites.append([c["start"], c["end"], cid, c.get("opinion_id"), is_held(cid, held)])
+        cites.append([c["start"], c["end"], cid, c.get("opinion_id"), is_held(cid, held, blocked)])
     return {
         "format": READ_FORMAT,
         "opinion_id": rec["opinion_id"], "cluster_id": rec["cluster_id"], "court_id": rec["court_id"], "tier": rec["tier"],
@@ -248,6 +254,21 @@ def load_held(selection: str = SELECTION) -> frozenset:
     return frozenset(r[0] for r in rows)
 
 
+def load_blocked() -> frozenset:
+    """Every CourtListener cluster that is blocked, or whose docket is blocked (any court, from the local tables)."""
+    import duckdb
+
+    con = duckdb.connect()
+    con.execute("PRAGMA threads=1")
+    con.execute("PRAGMA memory_limit='1GB'")
+    db = os.path.join(ROOT, "private", "acq", "courtlistener", "db")
+    for name in ("cluster", "docket"):
+        con.execute(f"ATTACH '{os.path.join(db, name + '.duckdb')}' AS {name} (READ_ONLY)")
+    rows = con.execute("""SELECT k.id FROM cluster.cluster k LEFT JOIN docket.docket d ON d.id = k.docket_id
+                          WHERE coalesce(k.blocked, false) OR coalesce(d.blocked, false)""").fetchall()
+    return frozenset(r[0] for r in rows)
+
+
 # ==================================================================================================== one group
 def _download(st, key: str, sha: str, nbytes: int) -> bytes:
     import uuid
@@ -265,7 +286,7 @@ def _download(st, key: str, sha: str, nbytes: int) -> bytes:
     raise ReadStoreError(f"{key}: stage-1 shard could not be read with the manifest's sha256/size")
 
 
-def build_group(group: str, shards: list[dict], held, st, out: str = OUT, upload: bool = True) -> dict:
+def build_group(group: str, shards: list[dict], held, st, out: str = OUT, upload: bool = True, blocked=frozenset()) -> dict:
     """Read every shard of one group, write the reading objects, upload and verify them, write index and anchors."""
     t0 = time.time()
     members: list[tuple[tuple, int, bytes]] = []
@@ -282,7 +303,7 @@ def build_group(group: str, shards: list[dict], held, st, out: str = OUT, upload
             if oid in seen:
                 raise ReadStoreError(f"opinion {oid} occurs twice in group {group}")
             seen.add(oid)
-            rr = reading_record(rec, held, sh["path"], sh["sha256"])
+            rr = reading_record(rec, held, sh["path"], sh["sha256"], blocked)
             if rr is None:
                 counts["blocked_dropped"] += 1
                 continue
@@ -409,17 +430,22 @@ def read_tsv_gz(path: str):
 
 # ==================================================================================================== driver
 _HELD = None
+_BLOCKED = frozenset()
+READ_BUILDER = "caselaw-read-builder/2"  # 2: held=2 marks citations of blocked clusters
 
 
 def _worker_init(selection: str) -> None:
-    global _HELD
+    global _HELD, _BLOCKED
     _HELD = load_held(selection)
+    _BLOCKED = load_blocked()
 
 
 def _worker(group: str, shards: list[dict]) -> dict:
     import store
 
-    return build_group(group, shards, _HELD, store.Storage())
+    res = build_group(group, shards, _HELD, store.Storage(), blocked=_BLOCKED)
+    res["builder"] = READ_BUILDER
+    return res
 
 
 def load_groups_state(out: str = OUT) -> dict:
@@ -447,7 +473,8 @@ def run(units: str, groups_filter: list[str] | None, workers: int) -> int:
     for g in todo:
         inputs = [{"key": s["path"], "sha256": s["sha256"], "unit": s["unit"]} for s in shards[g]]
         prev = state.get(g)
-        if prev and prev.get("inputs") == inputs and prev.get("format") == READ_FORMAT and all(o.get("readback_ok") for o in prev["objects"]):
+        if (prev and prev.get("inputs") == inputs and prev.get("format") == READ_FORMAT and prev.get("builder") == READ_BUILDER
+                and all(o.get("readback_ok") for o in prev["objects"])):
             continue
         pending.append(g)
     print(f"[read] {len(todo)} groups, {len(pending)} to build ({sum(len(shards[g]) for g in pending)} shards)", flush=True)

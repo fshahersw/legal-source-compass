@@ -74,6 +74,8 @@ class ReadingRecordTests(unittest.TestCase):
         self.assertEqual(rr["format"], rs.READ_FORMAT)
         self.assertEqual(rr["pages"], [["437", 1, 4]])
         self.assertEqual(rr["citations"], [[18, 29, 100, 11, 1], [40, 48, 200, 12, 0], [0, 3, None, 13, 0]])
+        blocked = rs.reading_record(rec, frozenset({100}), "k", "s", blocked=frozenset({200}))
+        self.assertEqual(blocked["citations"][1], [40, 48, 200, 12, 2])
         self.assertEqual(rr["stage1"], {"key": "caselaw/courtlistener/x.jsonl.gz", "sha256": "abc"})
         self.assertNotIn("raw", rr)
         self.assertEqual(rr["author_str"], "Warren")
@@ -400,6 +402,8 @@ class CaseRowTests(unittest.TestCase):
                          {"id": 3, "type": "040dissent", "author": "Harlan", "per_curiam": False, "key": "k", "s": 10, "n": 20})
         self.assertEqual(case_meta.opinion_entry({"opinion_id": 4, "type": "020lead", "author_str": None, "per_curiam": None, "key": None}),
                          {"id": 4, "type": "020lead", "author": None, "per_curiam": None})
+        self.assertEqual(case_meta.opinion_entry({"opinion_id": 5, "type": "020lead", "author_str": "Hunteriii", "author_name": "James Hunter III",
+                                                  "per_curiam": 0})["author"], "James Hunter III")
 
     def test_to_db_row_maps_keys_to_object_ids(self):
         r = {"cluster_id": 1, "opinions": [{"id": 2, "key": "a", "s": 0, "n": 5}, {"id": 3}], "citator": ["b", 4, 6],

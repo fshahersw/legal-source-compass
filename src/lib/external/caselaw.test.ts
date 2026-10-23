@@ -151,6 +151,7 @@ describe("reading records", () => {
         citations: [
           [6, 14, 100, 11, 1],
           [3, 2, 1, 1, 0],
+          [15, 17, 300, 12, 2],
         ],
         pages_source: "chosen_markup",
         source_url: "javascript:alert(1)",
@@ -159,7 +160,8 @@ describe("reading records", () => {
     )!;
     expect(rec.pages).toEqual([{ label: "5", index: 1, offset: 16 }]);
     expect(text.slice(rec.citations[0]!.start, rec.citations[0]!.end)).toBe("1 U.S. 1");
-    expect(rec.citations).toHaveLength(1);
+    expect(rec.citations).toHaveLength(2);
+    expect(rec.citations[1]).toMatchObject({ clusterId: null, opinionId: null, held: false });
     expect(rec.sourceUrl).toBeNull();
     expect(
       parseReadingRecord({ format: "caselaw-read/1", opinion_id: 6, cluster_id: 7, text }, 5),

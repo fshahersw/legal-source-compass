@@ -89,7 +89,10 @@ export type LiveFetch =
   | { ok: false; reason: "not_configured" | "rate_limited" | "upstream_error"; status?: number };
 
 /** GET /api/rest/v4/search/ with the server token; cached for six hours (per instance and at the edge). */
-export async function courtListenerSearch(params: URLSearchParams): Promise<LiveFetch> {
+export async function courtListenerSearch(
+  params: URLSearchParams,
+  timeoutMs = 20_000,
+): Promise<LiveFetch> {
   params.sort();
   const qs = params.toString();
   const now = Date.now();
@@ -112,7 +115,7 @@ export async function courtListenerSearch(params: URLSearchParams): Promise<Live
   if (!token) return { ok: false, reason: "not_configured" };
   if (!takeToken(now)) return { ok: false, reason: "rate_limited" };
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 20_000);
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   let res: Response;
   try {
     res = await fetch(`https://www.courtlistener.com/api/rest/v4/search/?${qs}`, {

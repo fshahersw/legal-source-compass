@@ -63,7 +63,15 @@ export function CaseFacts({ r }: { r: CaseRecord }) {
   );
 }
 
-function OpinionTab({ load, label }: { load: OpinionLoad | undefined; label: string }) {
+function OpinionTab({
+  load,
+  label,
+  author,
+}: {
+  load: OpinionLoad | undefined;
+  label: string;
+  author: string | null;
+}) {
   if (!load || load.status === "not_stored")
     return (
       <p className="rounded-md border border-border px-3 py-2 text-[13px] text-muted-foreground">
@@ -88,7 +96,11 @@ function OpinionTab({ load, label }: { load: OpinionLoad | undefined; label: str
     >
       <p className="mb-3 text-[12px] text-muted-foreground">
         {[
-          o.author ? `By ${o.author}` : o.perCuriam ? "Per curiam" : "Author not recorded",
+          (author ?? o.author)
+            ? `By ${author ?? o.author}`
+            : o.perCuriam
+              ? "Per curiam"
+              : "Author not recorded",
           o.joinedBy ? `joined by ${o.joinedBy}` : null,
           o.pages.length
             ? `${fmtInt(o.pages.length)} reporter page markers`
@@ -198,7 +210,7 @@ export function CaseView({
         </div>
         {ops.map((o) => (
           <TabsContent key={o.id} value={`op-${o.id}`}>
-            <OpinionTab load={loads.get(o.id)} label={o.label} />
+            <OpinionTab load={loads.get(o.id)} label={o.label} author={o.author} />
           </TabsContent>
         ))}
         <TabsContent value="citator">

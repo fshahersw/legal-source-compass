@@ -237,7 +237,17 @@ function LiveResults({ s, nav }: { s: CaseSearchState; nav: Nav }) {
         Type words to search the full text of federal appellate and state highest-court opinions.
       </Problem>
     );
-  if (q.isLoading) return <Skeleton />;
+  if (q.isLoading)
+    return s.semantic ? (
+      <div className="space-y-2">
+        <p role="status" className="text-[12px] text-muted-foreground">
+          Searching by meaning on CourtListener; this usually takes 20 to 30 seconds.
+        </p>
+        <Skeleton />
+      </div>
+    ) : (
+      <Skeleton />
+    );
   if (q.isError)
     return <Problem onRetry={() => void q.refetch()}>The live search could not be run.</Problem>;
   const d = q.data!;
