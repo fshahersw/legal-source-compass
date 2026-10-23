@@ -70,6 +70,7 @@ export function contextualNavigation(path: string): ContextNavigationItem[] {
         { to: "/law", label: "Overview" },
         { to: "/law/codes", label: "State codes" },
         { to: "/cases", label: "Case law" },
+        { to: "/law/legislation", label: "Legislation" },
         { to: "/law/monitoring", label: "Regulatory intelligence" },
         { to: "/law/enforcement", label: "Enforcement" },
         { to: "/agencies", label: "Agencies" },

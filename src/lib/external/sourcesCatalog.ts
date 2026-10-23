@@ -139,6 +139,9 @@ const EXPLICIT: Readonly<Record<string, CategoryId>> = {
   ftc_cases: "enforcement",
   sec_enforcement_actions: "enforcement",
   sam_exclusions: "enforcement",
+  congress_bills: "law",
+  crs_reports: "law",
+  state_bills: "law",
   oig_leie_exclusions: "enforcement",
   fsis_recalls: "safety",
   fsis_enforcement_quarterly: "enforcement",
@@ -234,6 +237,7 @@ export type AppPath =
   | "/law/codes"
   | "/law/monitoring"
   | "/law/enforcement"
+  | "/law/legislation"
   | "/agencies"
   | "/safety"
   | "/safety/signals"
@@ -271,6 +275,7 @@ const P = {
   law: { to: "/law", label: "Law & regulation" },
   codes: { to: "/law/codes", label: "State codes" },
   enforcement: { to: "/law/enforcement", label: "Enforcement" },
+  legislation: { to: "/law/legislation", label: "Legislation" },
   agencies: { to: "/agencies", label: "Agencies" },
   safety: { to: "/safety", label: "Product safety" },
   signals: { to: "/safety/signals", label: "Safety signals" },
@@ -352,6 +357,9 @@ const USED_ON: Readonly<Record<string, readonly AppLink[]>> = {
   settlements: [P.enforcement],
   settlement_claims_official: [P.enforcement],
   sam_exclusions: [P.enforcement],
+  congress_bills: [P.legislation],
+  crs_reports: [P.legislation],
+  state_bills: [P.legislation, P.states],
   oig_leie_exclusions: [P.enforcement],
   fsis_recalls: [P.safety, P.enforcement],
   fsis_enforcement_quarterly: [P.enforcement],
