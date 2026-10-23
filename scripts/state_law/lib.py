@@ -182,9 +182,11 @@ def decode_bytes(body: bytes, encoding: str | None = None) -> str:
             pass
     if body.startswith(b"\xef\xbb\xbf"):
         return body[3:].decode("utf-8", errors="replace")
+    if body.startswith((b"\xff\xfe", b"\xfe\xff")):
+        return body.decode("utf-16", errors="replace")
     head = body[:4096].lower()
     match = re.search(rb"charset=[\"']?([a-z0-9_\-]+)", head) or re.search(rb"encoding=[\"']([a-z0-9_\-]+)", head)
-    if match:
+    if match and not match.group(1).lower().startswith(b"utf-16"):  # a utf-16 label on 8-bit bytes is a page error
         try:
             return body.decode(match.group(1).decode("ascii"))
         except (LookupError, UnicodeDecodeError):
@@ -487,6 +489,11 @@ _STATUS_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
 )
 
 
+_TRAILING_MARK_RE = re.compile(r"\[\s*(Repealed|Reserved|Expired|Renumbered|Transferred|Redesignated)\b[^\]]{0,200}\]\.?\s*$", re.I)
+_TRAILING_STATUS = {"repealed": "repealed", "reserved": "reserved", "expired": "expired", "renumbered": "renumbered",
+                    "transferred": "transferred", "redesignated": "renumbered"}
+
+
 def classify_status(heading: str | None, text: str | None) -> tuple[str | None, str | None]:
     """Shared publisher-marker detector: a heading that *is* a marker (`Repealed.`, `[Reserved]`, `Renumbered as …`)
     or a short body that is only a marker. Returns (status, verbatim marker) or (None, None). States add their own
@@ -498,6 +505,9 @@ def classify_status(heading: str | None, text: str | None) -> tuple[str | None, 
             match = pattern.match(candidate)
             if match:
                 return status, match.group(0).strip()
+    trailing = _TRAILING_MARK_RE.search(norm_ws(heading))
+    if trailing:
+        return _TRAILING_STATUS[trailing.group(1).lower()], trailing.group(0).strip()
     return None, None
 
 
