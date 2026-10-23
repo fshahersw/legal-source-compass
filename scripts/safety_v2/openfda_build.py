@@ -300,6 +300,17 @@ def faers_universe(run, n, max_depth=3):
                         "unresolved_partitions": unresolved}
 
 
+def display_label(name, limit=300):
+    """A subject label of at most `limit` characters (safety.subjects.label). A longer published name (homeopathic
+    combinations list dozens of ingredients) is cut after its last whole ingredient that fits, followed by '…'; the full
+    name stays in the subject's keys and its search expression."""
+    if len(name) <= limit:
+        return name
+    head = name[: limit - 1]
+    cut = head.rfind(", ")
+    return (head[:cut] if cut > 0 else head.rstrip()) + "…"
+
+
 def product_id(prefix, name, used):
     base = f"{prefix}:{c.slug(name, 90)}"
     pid = base if base not in used else f"{base[:90]}-{hashlib.sha1(name.encode()).hexdigest()[:6]}"
@@ -350,7 +361,7 @@ def build_subjects(args):
         ranked, info = faers_universe(run, args.faers_products)
         notes["faers_universe"] = info
         for rank, (term, cnt) in enumerate(ranked, 1):
-            products.append({"id": product_id("faers", term, used), "subject_type": "product", "kind": "drug", "label": term,
+            products.append({"id": product_id("faers", term, used), "subject_type": "product", "kind": "drug", "label": display_label(term),
                              "keys": {"generic_name": term}, "search": {"faers": f'patient.drug.openfda.generic_name.exact:"{term}"'},
                              "rank": rank, "reports_total": cnt, "as_of": date.today().isoformat(),
                              "source_id": "openfda_faers", "source_url": DOCS["openfda_faers"]})

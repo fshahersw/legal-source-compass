@@ -283,11 +283,19 @@ create table if not exists safety.osha_inspections (
   insp_scope text,
   safety_hlth text,
   union_status text,
-  nr_in_estab integer,
+  nr_in_estab bigint,
   open_date date,
   close_conf_date date,
   close_case_date date
 );
+-- nr_in_estab is the employee count as OSHA publishes it; some published values exceed the integer range
+-- (9,999,999,999 on four inspections), so tables created as integer are widened.
+do $$ begin
+  if (select atttypid from pg_attribute
+       where attrelid = 'safety.osha_inspections'::regclass and attname = 'nr_in_estab') = 'integer'::regtype then
+    alter table safety.osha_inspections alter column nr_in_estab type bigint;
+  end if;
+end $$;
 create index if not exists osha_inspections_estab on safety.osha_inspections (estab_name);
 create index if not exists osha_inspections_open on safety.osha_inspections (open_date);
 
@@ -922,7 +930,7 @@ begin
   if v_n > 0 then perform safety.fail('osha_inspections', 'duplicate keys in one call', null); end if;
   with src as (select * from jsonb_to_recordset(p_rows) as x(activity_nr bigint, reporting_id text, state_flag text,
       estab_name text, site_city text, site_state text, site_zip text, owner_type text, naics_code text, sic_code text,
-      insp_type text, insp_scope text, safety_hlth text, union_status text, nr_in_estab integer, open_date date,
+      insp_type text, insp_scope text, safety_hlth text, union_status text, nr_in_estab bigint, open_date date,
       close_conf_date date, close_case_date date)),
   up as (
     insert into safety.osha_inspections as t select * from src

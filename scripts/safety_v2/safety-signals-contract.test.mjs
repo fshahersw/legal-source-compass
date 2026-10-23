@@ -389,6 +389,43 @@ test("record tables: withheld fields are refused, NEISS stays held without the l
   );
 });
 
+test("OSHA employee counts beyond the integer range are stored as published; an integer column is widened", async () => {
+  const db = await fresh();
+  const insp = {
+    activity_nr: 342091386,
+    estab_name: "USDOL OSHA LITTLE ROCK AO",
+    site_state: "AR",
+    nr_in_estab: 9999999999,
+    open_date: "2017-02-06",
+  };
+  assert.equal((await load(db, "osha_inspections", [insp])).inserted, 1);
+  const got = await one(
+    db,
+    "select nr_in_estab::text v from safety.osha_inspections where activity_nr = 342091386",
+  );
+  assert.equal(got.v, "9999999999");
+
+  const old = new PGlite();
+  await old.exec(MOCK);
+  await old.exec(`create schema safety;
+    create table safety.osha_inspections (activity_nr bigint primary key check (activity_nr > 0), reporting_id text,
+      state_flag text, estab_name text, site_city text, site_state text, site_zip text, owner_type text, naics_code text,
+      sic_code text, insp_type text, insp_scope text, safety_hlth text, union_status text, nr_in_estab integer,
+      open_date date, close_conf_date date, close_case_date date);
+    insert into safety.osha_inspections (activity_nr, nr_in_estab) values (1, 25)`);
+  await old.exec(SQL);
+  const t = await one(
+    old,
+    "select format_type(atttypid, atttypmod) t from pg_attribute where attrelid = 'safety.osha_inspections'::regclass and attname = 'nr_in_estab'",
+  );
+  assert.equal(t.t, "bigint");
+  assert.equal(
+    (await one(old, "select nr_in_estab::int n from safety.osha_inspections where activity_nr = 1"))
+      .n,
+    25,
+  );
+});
+
 test("CFPB aggregates and complaints share term ids; records RPC filters by the exact published company", async () => {
   const db = await fresh();
   const agg = (company, n, month = "2025-01") => ({

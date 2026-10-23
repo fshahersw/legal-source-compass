@@ -152,6 +152,16 @@ class OpenfdaTests(unittest.TestCase):
         u = c.openfda_query("drug/event.json", search=ob.prefix_search(f, "A "), count=f, limit=1000)
         self.assertIn("generic_name.exact:A\\%20*&count=", u)
 
+    def test_display_label_fits_the_subject_label_bound(self):
+        self.assertEqual(ob.display_label("ASPIRIN"), "ASPIRIN")
+        name = ", ".join(f"INGREDIENT NUMBER {i}" for i in range(40))
+        label = ob.display_label(name)
+        self.assertLessEqual(len(label), 300)
+        self.assertTrue(label.endswith("…"))
+        self.assertTrue(name.startswith(label[:-1]))
+        self.assertFalse(label[:-1].endswith(","))
+        self.assertEqual(len(ob.display_label("X" * 400)), 300)
+
     def test_maude_record_keeps_published_text_and_drops_placeholders(self):
         r = {"report_number": "1234567-2020-00001", "mdr_report_key": "99", "date_received": "20200105", "event_type": "Injury",
              "device": [{"brand_name": "X", "manufacturer_d_name": "M", "device_report_product_code": "DQX", "model_number": "*"}],
