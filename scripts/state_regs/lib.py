@@ -351,15 +351,29 @@ def squash(s: str) -> str:
 
 
 def contained(needle: str, haystack_squashed: str, window: int = 80) -> tuple[bool, float]:
-    """(all windows found, share of windows found): needle cut into windows of `window` squashed characters."""
-    n = squash(needle)
-    if not n:
+    """(every line found in order, share of lines found) of a parsed text in a squashed reference rendering.
+
+    Each line of the stored text (a block of the publisher's layout) must occur verbatim, whitespace aside, in the
+    reference, after the previous line's match. Navigation glyphs a parser leaves out (permalink marks, buttons) may sit
+    between two lines in the reference; they never sit inside a line. A line longer than `window` squashed characters
+    that is not found whole is scored by its windows, so the share reflects how much of it was found."""
+    lines = [squash(line) for line in (needle or "").split("\n")]
+    lines = [x for x in lines if x]
+    if not lines:
         return False, 0.0
-    if n in haystack_squashed:
-        return True, 1.0
-    parts = [n[i:i + window] for i in range(0, len(n), window)]
-    hit = sum(1 for p in parts if p in haystack_squashed)
-    return hit == len(parts), hit / len(parts)
+    pos = 0
+    found = 0.0
+    for x in lines:
+        i = haystack_squashed.find(x, pos)
+        if i >= 0:
+            found += 1
+            pos = i + len(x)
+            continue
+        if len(x) > window:
+            parts = [x[j:j + window] for j in range(0, len(x), window)]
+            found += sum(1 for p in parts if p in haystack_squashed) / len(parts) * 0.99
+    share = found / len(lines)
+    return share == 1.0, share
 
 
 def write_jsonl_gz(path: str, rows) -> tuple[int, str]:

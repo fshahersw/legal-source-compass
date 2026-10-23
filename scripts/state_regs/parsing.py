@@ -6,13 +6,19 @@ from urllib.parse import urljoin
 
 import lxml.html
 
+import lib
+
 BLOCK = {"p", "div", "br", "li", "tr", "h1", "h2", "h3", "h4", "h5", "h6", "table", "section", "article", "ul", "ol", "dd",
          "dt", "blockquote", "pre", "hr", "td", "th", "center"}
 SKIP = {"script", "style", "noscript", "template", "svg", "head"}
 
 
-def doc(html: str | bytes, base_url: str | None = None):
-    d = lxml.html.fromstring(html if isinstance(html, (bytes, str)) else str(html))
+def doc(html: str | bytes, base_url: str | None = None, content_type: str = ""):
+    """lxml tree of a page; bytes are decoded first (header charset, else <meta charset>, else UTF-8)."""
+    if isinstance(html, bytes):
+        html = lib.decode(html, content_type)
+    html = re.sub(r"^\s*<\?xml[^>]*>", "", html)
+    d = lxml.html.fromstring(html)
     if base_url:
         d.make_links_absolute(base_url, resolve_base_href=True)
     return d

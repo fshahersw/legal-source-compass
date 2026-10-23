@@ -68,8 +68,8 @@ def rule(state: str, *, number: str, citation: str, node_id: str | None, heading
         raise ValueError(f"{state}: no citation key for {citation!r}")
     body = text if text and text.strip() else None
     r = {"id": f"{state.lower()}:{ck}", "state": state, "node_id": node_id, "number": number, "citation": citation,
-         "cite_key": ck, "heading": clean(heading), "agency": clean(agency), "text": body, "history": clean(history),
-         "authority": clean(authority), "status": status, "emergency": emergency, "effective_date": effective_date,
+         "cite_key": ck, "heading": clean(heading), "agency": clean(agency), "text": body, "history": clean_lines(history),
+         "authority": clean_lines(authority), "status": status, "emergency": emergency, "effective_date": effective_date,
          "adopted_date": adopted_date, "register_citation": clean(register_citation), "source_url": source_url,
          "edition": edition, "currency": currency, "retrieved_at": retrieved_at, "raw_sha256": raw_sha256,
          "text_sha256": hashlib.sha256(body.encode()).hexdigest() if body else None, "text_check": None}
@@ -82,6 +82,15 @@ def clean(s: str | None) -> str | None:
         return None
     s = " ".join(s.replace("\xa0", " ").split())
     return s or None
+
+
+def clean_lines(s: str | None) -> str | None:
+    """Whitespace collapsed within lines; line breaks (the publisher's entries) kept; empty lines dropped."""
+    if s is None:
+        return None
+    lines = [" ".join(x.replace("\xa0", " ").split()) for x in s.split("\n")]
+    out = "\n".join(x for x in lines if x)
+    return out or None
 
 
 def check_node(n: dict) -> None:
