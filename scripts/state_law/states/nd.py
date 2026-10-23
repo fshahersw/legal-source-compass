@@ -93,7 +93,7 @@ def restore(value: str | None, raw_text: str) -> str | None:
 def acquire(ctx):
     options = getattr(ctx, "options", {}) or {}
     only = [c.strip() for c in options.get("chapters", "").split(",") if c.strip()]
-    index = ctx.fetch(INDEX)
+    index = ctx.get(INDEX)
     ctx.edition(edition_label="North Dakota Century Code", currency_statement=None, currency_source_url=None)
     titles = parse_nd.parse_index(index.text())
     del index
@@ -106,7 +106,7 @@ def acquire(ctx):
                 continue
             if not chapter["pdf"] or not chapter["sections"]:
                 continue
-            fetched = ctx.fetch(SITE + chapter["pdf"])
+            fetched = ctx.get(SITE + chapter["pdf"])
             raw_lines, created = pdf_lines_raw(fetched.body)
             lines = [line.replace("\u2011", "-") for line in raw_lines]   # parse_nd matches numbers on ASCII hyphens
             where = {id(line): i for i, line in enumerate(lines)}

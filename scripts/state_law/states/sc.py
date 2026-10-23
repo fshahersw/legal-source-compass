@@ -145,7 +145,7 @@ def parse_chapter(raw: bytes):
 def acquire(ctx):
     options = getattr(ctx, "options", {}) or {}
     only = [c.strip() for c in options.get("chapters", "").split(",") if c.strip()]   # e.g. t15c003
-    master = ctx.fetch(MASTER_URL)
+    master = ctx.get(MASTER_URL)
     page = lib.norm_ws(lib.html_text(master.body))
     m = re.search(r"The South Carolina Code on the General Assembly's website is now current through the \d{4} Session "
                   r"of the General Assembly\.", page)
@@ -158,7 +158,7 @@ def acquire(ctx):
     for title_path in titles:
         if only and not any(o.startswith("t" + title_path.split("title")[1].split(".")[0] + "c") for o in only):
             continue
-        tpage = ctx.fetch(BASE + title_path)
+        tpage = ctx.get(BASE + title_path)
         tm = re.search(r"Title\s+(\S+)\s+-\s+([^<]+)<", tpage.text())
         title_no = re.search(r"title([0-9A-Za-z]+)\.php", title_path).group(1)
         title_head = sb.one_line(_html.unescape(tm.group(2))) if tm else None
@@ -170,7 +170,7 @@ def acquire(ctx):
             key = chapter_path.rsplit("/", 1)[1][:-4]
             if only and key not in only:
                 continue
-            fetched = ctx.fetch(BASE + chapter_path)
+            fetched = ctx.get(BASE + chapter_path)
             sections = parse_chapter(fetched.body)
             counts: dict[str, int] = {}
             for s in sections:

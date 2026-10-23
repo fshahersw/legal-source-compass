@@ -135,7 +135,7 @@ def acquire(ctx):
 
     options = getattr(ctx, "options", {}) or {}
     only = [c.strip() for c in options.get("chapters", "").split(",") if c.strip()]
-    index = ctx.fetch(INDEX_URL)
+    index = ctx.get(INDEX_URL)
     h1 = re.findall(r"<h1[^>]*>(.*?)</h1>", index.text(), re.S)
     label = next((sb.one_line(re.sub(r"<[^>]+>", "", h)) for h in h1 if "Minnesota Statutes" in h), None)
     ctx.edition(edition_label=label, currency_statement=label, currency_source_url=INDEX_URL)
@@ -146,12 +146,12 @@ def acquire(ctx):
             part_url.rsplit("/part/", 1)[1]))))
         if wanted_parts and part_name.upper() not in wanted_parts:
             continue
-        part = ctx.fetch(part_url)
+        part = ctx.get(part_url)
         chapters = list_chapters(part.text())
         if only:
             chapters = [c for c in chapters if c[0] in only]
         for chapter, chapter_name in chapters:
-            fetched = ctx.fetch(FULL_URL.format(chapter))
+            fetched = ctx.get(FULL_URL.format(chapter))
             parsed = parse_chapter(fetched.body)
             path = [{"level": "part", "label": "Part", "number": None, "heading": part_name},
                     {"level": "chapter", "label": "Chapter", "number": chapter,

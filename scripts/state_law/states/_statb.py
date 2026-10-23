@@ -143,6 +143,8 @@ class FakeCtx:
             body = body.encode("utf-8")
         return FakeFetched(url, body, method=method)
 
+    get = fetch
+
     def stream(self, url, *, method="publisher_bulk"):
         import contextlib
         import io

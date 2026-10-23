@@ -126,13 +126,13 @@ def parse_title(lines: list[str]):
 
 def discover(ctx):
     """(currency statement, [(title key, label, pdf url)]) from the download page's own template chunk."""
-    page = ctx.fetch(DOWNLOAD_PAGE)
+    page = ctx.get(DOWNLOAD_PAGE)
     main = re.search(r'src="(main-[A-Za-z0-9_-]+\.js)"', page.text())
     if not main:
         raise RuntimeError("download page: no main bundle")
-    bundle = ctx.fetch(f"{SITE}/{main.group(1)}")
+    bundle = ctx.get(f"{SITE}/{main.group(1)}")
     for chunk in dict.fromkeys(re.findall(r"chunk-[A-Za-z0-9_-]+\.js", bundle.text("utf-8"))):
-        body = ctx.fetch(f"{SITE}/{chunk}")
+        body = ctx.get(f"{SITE}/{chunk}")
         text = body.text("utf-8")
         if "Files in Download Format" not in text:
             continue
@@ -155,7 +155,7 @@ def acquire(ctx):
     for key, label, url in titles:
         if key in SKIP_TITLES or (only and key not in only):
             continue
-        fetched = ctx.fetch(url, method="publisher_bulk")
+        fetched = ctx.get(url, method="publisher_bulk")
         (t_no, t_head), sections = parse_title(pdf_layout_lines(fetched.body))
         counts: dict[str, int] = {}
         for s in sections:

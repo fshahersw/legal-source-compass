@@ -93,7 +93,7 @@ def acquire(ctx):
     options = getattr(ctx, "options", {}) or {}
     only = [c.strip() for c in options.get("chapters", "").split(",") if c.strip()]
     run_date = ctx.today.isoformat()
-    index = ctx.fetch(INDEX)
+    index = ctx.get(INDEX)
     ctx.edition(edition_label="Revised Statutes of Nebraska", currency_statement=None, currency_source_url=None)
     chapters = []
     for num, name in re.findall(r'href="/laws/browse-chapters\.php\?chapter=([0-9A-Za-z]+)"[^>]*>(.*?)</a>',
@@ -104,7 +104,7 @@ def acquire(ctx):
         chapters = [c for c in chapters if c[0] in only]
     ctx.log(f"{len(chapters)} chapters listed")
     for chapter, name in chapters:
-        fetched = ctx.fetch(f"{SITE}/laws/display-chapters.php?chapter={chapter}")
+        fetched = ctx.get(f"{SITE}/laws/display-chapters.php?chapter={chapter}")
         sections = parse_chapter(fetched.body, run_date)
         counts: dict[str, int] = {}
         for s in sections:

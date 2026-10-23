@@ -64,11 +64,11 @@ def acquire(ctx):
     if only:
         titles = list(only)   # bounded sample: the ~24 MB sitemap is not needed to name the titles
     else:
-        sitemap = ctx.fetch(f"{SITE}/Statutes.xml", method="publisher_api")
+        sitemap = ctx.get(f"{SITE}/Statutes.xml", method="publisher_api")
         urls = []
         for part in re.findall(r"<loc>([^<]+)</loc>", sitemap.text("utf-8")):
             if part.endswith(".xml"):
-                body = ctx.fetch(part, method="publisher_api")
+                body = ctx.get(part, method="publisher_api")
                 urls.extend(re.findall(r"<loc>([^<]+)</loc>", body.text("utf-8")))
                 del body
             else:
@@ -79,7 +79,7 @@ def acquire(ctx):
                 currency_source_url=f"{SITE}/Statutes")
     ctx.log(f"{len(titles)} titles in the official sitemap")
     for title in titles:
-        fetched = ctx.fetch(f"{SITE}/api/Statutes/{title}.html?all=true", method="publisher_api")
+        fetched = ctx.get(f"{SITE}/api/Statutes/{title}.html?all=true", method="publisher_api")
         parsed = parse_sd.parse_title(fetched.body)
         for err in parsed["errors"]:
             ctx.log(f"title {title}: {err}")

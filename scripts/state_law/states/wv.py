@@ -80,7 +80,7 @@ def parse_article(html_fragment: str):
 def acquire(ctx):
     options = getattr(ctx, "options", {}) or {}
     only = [a.strip() for a in options.get("articles", "").split(",") if a.strip()]   # e.g. 55-2
-    home = ctx.fetch(SITE + "/")
+    home = ctx.get(SITE + "/")
     page = lib.norm_ws(lib.html_text(home.body))
     m = re.search(r"These West Virginia Code sections are updated regularly as new legislation takes effect\.", page)
     ctx.edition(edition_label="West Virginia Code", currency_statement=m.group(0) if m else None,
@@ -92,7 +92,7 @@ def acquire(ctx):
     for chapter, chapter_name in chapters:
         if only and not any(a.split("-")[0] == chapter for a in only):
             continue
-        cpage = ctx.fetch(f"{SITE}/{chapter}/")
+        cpage = ctx.get(f"{SITE}/{chapter}/")
         articles = []
         for key, label in re.findall(rf"<a href='/({re.escape(chapter)}-[0-9A-Z]+)/'>([^<]*)</a>", cpage.text()):
             if key not in [a[0] for a in articles]:
@@ -101,7 +101,7 @@ def acquire(ctx):
             if only and key not in only:
                 continue
             art = key.split("-", 1)[1]
-            fetched = ctx.fetch(AJAX, method="publisher_api", data=f"action=get_all_sections&chp={chapter}&art={art}".encode(),
+            fetched = ctx.get(AJAX, method="publisher_api", data=f"action=get_all_sections&chp={chapter}&art={art}".encode(),
                                 headers={"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
                                          "X-Requested-With": "XMLHttpRequest", "Referer": f"{SITE}/{key}/"})
             sections = parse_article(json.loads(fetched.body)["html"])

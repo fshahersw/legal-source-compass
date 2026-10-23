@@ -152,18 +152,18 @@ def list_chapter_files(listing_html: str):
 def acquire(ctx):
     options = getattr(ctx, "options", {}) or {}
     only = {c.strip() for c in options.get("chapters", "").split(",") if c.strip()}
-    index = ctx.fetch(INDEX_URL)
+    index = ctx.get(INDEX_URL)
     page = lib.html_text(index.body)
     m = re.search(r"Michigan Compiled Laws Complete Through PA \d+ of \d{4}", page)
     ctx.edition(edition_label="Michigan Compiled Laws", currency_statement=m.group(0) if m else None,
                 currency_source_url=INDEX_URL)
-    listing = ctx.fetch(DIR_URL)
+    listing = ctx.get(DIR_URL)
     files = list_chapter_files(listing.text())
     if only:
         files = [f for f in files if f.split("%20", 1)[1][:-4] in only]
     ctx.log(f"{len(files)} chapter files listed by the publisher")
     for name in files:
-        fetched = ctx.fetch(FILE_BASE + name, method="publisher_bulk")
+        fetched = ctx.get(FILE_BASE + name, method="publisher_bulk")
         parsed = parse_chapter(fetched.body)
         chapter_step = {"level": "chapter", "label": "Chapter", "number": parsed["chapter"], "heading": parsed["title"]}
         counts: dict[str, int] = {}

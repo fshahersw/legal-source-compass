@@ -124,7 +124,7 @@ def acquire(ctx):
     options = getattr(ctx, "options", {}) or {}
     only_parts = [p.strip() for p in options.get("parts", "").split(",") if p.strip()]   # e.g. 27-2-2
     run_date = ctx.today.isoformat()
-    home = ctx.fetch(HOME)
+    home = ctx.get(HOME)
     text = lib.html_text(home.body).split("\n")
     label = next((l for l in text if re.fullmatch(r"Montana Code Annotated \d{4}", l)), None)
     updated = next((l for l in text if re.fullmatch(r"Updated [A-Z][a-z]+ \d{4}", l)), None)
@@ -136,23 +136,23 @@ def acquire(ctx):
         title_url = urllib.parse.urljoin(HOME, title_href)
         if only_parts and not any(title_href.startswith(f"title_{int(p.split('-')[0]) * 10:04d}/") for p in only_parts):
             continue
-        tpage = ctx.fetch(title_url)
+        tpage = ctx.get(title_url)
         for chap_href in links(tpage.text(), r"^(?:\./)?chapter_\w+/parts_index\.html$"):
             chap_url = urllib.parse.urljoin(title_url, chap_href)
             if only_parts and not any(f"chapter_{int(p.split('-')[1]) * 10:04d}/" in chap_url and
                                       f"title_{int(p.split('-')[0]) * 10:04d}/" in chap_url for p in only_parts):
                 continue
-            cpage = ctx.fetch(chap_url)
+            cpage = ctx.get(chap_url)
             for part_href in links(cpage.text(), r"^(?:\./)?part_\w+/sections_index\.html$"):
                 part_url = urllib.parse.urljoin(chap_url, part_href)
                 if only_parts and not any(f"part_{int(p.split('-')[2]) * 10:04d}/" in part_url and
                                           f"chapter_{int(p.split('-')[1]) * 10:04d}/" in part_url and
                                           f"title_{int(p.split('-')[0]) * 10:04d}/" in part_url for p in only_parts):
                     continue
-                ppage = ctx.fetch(part_url)
+                ppage = ctx.get(part_url)
                 for sec_href in links(ppage.text(), r"^(?:\./)?section_\w+/[\w-]+ ?\.html$"):
                     sec_url = urllib.parse.urljoin(part_url, sec_href.replace(" ", "%20"))
-                    fetched = ctx.fetch(sec_url)
+                    fetched = ctx.get(sec_url)
                     parsed = parse_section_page(fetched.body)
                     hdr = parsed["header"]
                     t_no, t_head = _split_label(hdr["title"], "TITLE")

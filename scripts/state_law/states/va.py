@@ -95,14 +95,14 @@ def acquire(ctx):
     options = getattr(ctx, "options", {}) or {}
     only = [c.strip() for c in options.get("titles", "").split(",") if c.strip()]
     run_date = ctx.today.isoformat()
-    library = ctx.fetch(LIBRARY_URL)
+    library = ctx.get(LIBRARY_URL)
     ctx.edition(edition_label="Code of Virginia", currency_statement=None, currency_source_url=None)
     titles = list_titles(library.text())
     if only:
         titles = [t for t in titles if t.rsplit("_", 1)[1][:-4] in only]
     ctx.log(f"{len(titles)} title CSV files listed")
     for href in titles:
-        fetched = ctx.fetch(BASE + href, method="publisher_bulk")
+        fetched = ctx.get(BASE + href, method="publisher_bulk")
         rows = list(csv.DictReader(io.StringIO(fetched.body.decode("utf-8-sig"))))
         counts: dict[str, int] = {}
         for row in rows:

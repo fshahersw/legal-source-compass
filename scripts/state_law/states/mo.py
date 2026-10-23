@@ -137,7 +137,7 @@ def acquire(ctx):
     options = getattr(ctx, "options", {}) or {}
     only = [c.strip() for c in options.get("chapters", "").split(",") if c.strip()]
     run_date = ctx.today.isoformat()
-    home = ctx.fetch(HOME_URL)
+    home = ctx.get(HOME_URL)
     page = lib.html_text(home.body)
     parts = []
     m = re.search(r"In accordance with Section 3\.090, the language of statutory sections enacted during a legislative "
@@ -158,7 +158,7 @@ def acquire(ctx):
     for chapter, chapter_name, title_no, title_name in chapters:
         path = ([{"level": "title", "label": "Title", "number": title_no, "heading": title_name}] if title_no else [])
         path.append({"level": "chapter", "label": "Chapter", "number": chapter, "heading": chapter_name})
-        fetched = ctx.fetch(CHAPTER_URL.format(chapter))
+        fetched = ctx.get(CHAPTER_URL.format(chapter))
         sections = parse_chapter(fetched.body, chapter, run_date)
         if not sections:
             ctx.log(f"chapter {chapter}: no sections printed")

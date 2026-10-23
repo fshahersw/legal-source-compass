@@ -223,7 +223,7 @@ def acquire(ctx):
     options = getattr(ctx, "options", {}) or {}
     only = [c.strip() for c in options.get("chapters", "").split(",") if c.strip()]
     run_date = ctx.today.isoformat()
-    toc = ctx.fetch(TOC_URL)
+    toc = ctx.get(TOC_URL)
     page = lib.html_text(toc.body)
     m = re.search(r"The General Statutes include changes through S\.L\. \d{4}-\d+\s*\.?", page)
     statement = sb.one_line(m.group(0)).replace(" .", ".") if m else None
@@ -234,7 +234,7 @@ def acquire(ctx):
         chapters = [c for c in chapters if c in only]
     ctx.log(f"{len(chapters)} chapters listed in the table of contents")
     for chapter in chapters:
-        fetched = ctx.fetch(CHAPTER_URL.format(chapter))
+        fetched = ctx.get(CHAPTER_URL.format(chapter))
         parsed = parse_chapter(fetched.body, chapter)
         chapter_step = {"level": "chapter", "label": "Chapter", "number": chapter, "heading": parsed["chapter_heading"]}
         counts: dict[str, int] = {}

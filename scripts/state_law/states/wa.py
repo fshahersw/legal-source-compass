@@ -74,7 +74,7 @@ def acquire(ctx):
     only_titles = [t.strip() for t in options.get("titles", "").split(",") if t.strip()]
     only_chapters = [c.strip() for c in options.get("chapters", "").split(",") if c.strip()]
     run_date = ctx.today.isoformat()
-    index = ctx.fetch(BASE)
+    index = ctx.get(BASE)
     page = lib.norm_ws(lib.html_text(index.body))
     m = re.search(r"Last update:\s*[A-Z][a-z]+ \d{1,2}, \d{4}", page)
     ctx.edition(edition_label="Revised Code of Washington", currency_statement=m.group(0) if m else None,
@@ -83,13 +83,13 @@ def acquire(ctx):
     if only_titles:
         titles = [t for t in titles if t in only_titles]
     for title in titles:
-        tfetch = ctx.fetch(f"{BASE}?Cite={title}")
+        tfetch = ctx.get(f"{BASE}?Cite={title}")
         tpage = parse_wa.parse_title_page(tfetch.text())
         title_step = {"level": "title", "label": "Title", "number": title, "heading": tpage["caption"] or None}
         for cite, caption in tpage["chapters"]:
             if only_chapters and cite not in only_chapters:
                 continue
-            fetched = ctx.fetch(f"{BASE}?cite={cite}&full=true")
+            fetched = ctx.get(f"{BASE}?cite={cite}&full=true")
             page_ = parse_wa.parse_chapter_page(fetched.text())
             for err in page_["errors"]:
                 ctx.log(f"chapter {cite}: {err}")

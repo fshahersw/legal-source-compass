@@ -137,14 +137,14 @@ def list_chapters(index_html: str):
 def acquire(ctx):
     options = getattr(ctx, "options", {}) or {}
     only = [c.strip() for c in options.get("chapters", "").split(",") if c.strip()]
-    index = ctx.fetch(INDEX_URL)
+    index = ctx.get(INDEX_URL)
     ctx.edition(edition_label="Nevada Revised Statutes", currency_statement=None, currency_source_url=None)
     chapters = list_chapters(index.text())
     if only:
         chapters = [c for c in chapters if c[0] in only]
     ctx.log(f"{len(chapters)} chapters listed")
     for number, href, name, title_no, title_name in chapters:
-        fetched = ctx.fetch(INDEX_URL + href)
+        fetched = ctx.get(INDEX_URL + href)
         parsed = parse_chapter(fetched.body)
         path = []
         if title_no:

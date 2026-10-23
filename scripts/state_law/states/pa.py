@@ -160,7 +160,7 @@ def list_titles(index_html: str):
 def acquire(ctx):
     options = getattr(ctx, "options", {}) or {}
     only = [c.strip() for c in options.get("titles", "").split(",") if c.strip()]
-    index = ctx.fetch(INDEX_URL)
+    index = ctx.get(INDEX_URL)
     ctx.edition(edition_label="Pennsylvania Consolidated Statutes", currency_statement=None,
                 currency_source_url=None)
     titles = list_titles(index.text())
@@ -168,7 +168,7 @@ def acquire(ctx):
         titles = [t for t in titles if t in only]
     ctx.log(f"{len(titles)} titles listed")
     for title in titles:
-        fetched = ctx.fetch(TITLE_URL.format(title))
+        fetched = ctx.get(TITLE_URL.format(title))
         parsed = parse_title(fetched.body)
         counts: dict[str, int] = {}
         for s in parsed["sections"]:

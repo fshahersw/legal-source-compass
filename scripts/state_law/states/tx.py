@@ -300,10 +300,10 @@ def acquire(ctx):
     only = [c.strip().upper() for c in options.get("codes", "").split(",") if c.strip()]
     per_code = int(options.get("per_code", 0) or 0)
     run_date = ctx.today.isoformat()
-    currency = ctx.fetch(CURRENCY_URL, method="publisher_api")
+    currency = ctx.get(CURRENCY_URL, method="publisher_api")
     statement = sb.one_line(currency.text())
     ctx.edition(edition_label=None, currency_statement=statement or None, currency_source_url=CURRENCY_URL)
-    inv = ctx.fetch(INVENTORY_URL, method="publisher_api")
+    inv = ctx.get(INVENTORY_URL, method="publisher_api")
     inventory = json.loads(inv.body)["StatuteCode"]
     for entry in inventory:
         code = entry["code"]

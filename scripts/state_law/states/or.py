@@ -160,7 +160,7 @@ def parse_chapter(raw: bytes):
 def acquire(ctx):
     options = getattr(ctx, "options", {}) or {}
     only = [c.strip() for c in options.get("chapters", "").split(",") if c.strip()]
-    index = ctx.fetch(INDEX_URL)
+    index = ctx.get(INDEX_URL)
     page = lib.norm_ws(lib.html_text(index.body))
     m = re.search(r"The 20\d\d Edition does not include changes to the law .*?for the most up-to-date version of the "
                   r"law\.", page)
@@ -172,7 +172,7 @@ def acquire(ctx):
     for g in groups:
         if only and not any(sb.natural_key(g["start"]) <= sb.natural_key(c) <= sb.natural_key(g["end"]) for c in only):
             continue
-        first = ctx.fetch(chapter_url(g["start"]), accept_status=(200, 404))
+        first = ctx.get(chapter_url(g["start"]), accept_status=(200, 404))
         chapters = title_chapters(first.body) if first.status == 200 else []
         if not chapters:
             chapters = [g["start"]]
@@ -180,7 +180,7 @@ def acquire(ctx):
         if only:
             chapters = [c for c in chapters if c in only]
         for chapter in chapters:
-            fetched = first if chapter == g["start"] and first.status == 200 else ctx.fetch(chapter_url(chapter),
+            fetched = first if chapter == g["start"] and first.status == 200 else ctx.get(chapter_url(chapter),
                                                                                           accept_status=(200, 404))
             if fetched.status != 200:
                 ctx.log(f"chapter {chapter}: HTTP {fetched.status}")
