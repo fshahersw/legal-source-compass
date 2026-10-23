@@ -288,6 +288,11 @@ def verify_cli(argv=None):
                 for field in row:
                     out.append(lib.html_text(field) if "<" in field else lib.norm_lines(_html.unescape(field)))
             return "\n".join(x for x in out if x)
+        # UTF-16 LE without a byte-order mark (South Dakota api/Statutes): lib.decode_bytes reads it as UTF-8
+        if len(body) > 4 and body[1:2] == b"\x00" and body[3:4] == b"\x00" and not body.startswith(b"\xff\xfe"):
+            decoded = body.decode("utf-16-le", errors="replace")
+            # the whole-title response is a run of complete <html> documents; render each one
+            return "\n".join(lib.html_text(doc) for doc in re.split(r"(?=<html\b)", decoded) if doc.strip())
         return shared_render(body, content_type, url)
 
     lib.render_text = render_text
@@ -298,7 +303,7 @@ def verify_cli(argv=None):
     args = parser.parse_args(argv)
     result = shared_verify.verify(args.edition_dir, args.raw)
     result["adapter"] = ("statb: xml_text renders escaped publisher markup via html_text; .csv sources are rendered "
-                         "field by field after CSV unquoting")
+                         "field by field after CSV unquoting; BOM-less UTF-16 LE bodies are decoded as UTF-16")
     (args.edition_dir / "verify.json").write_text(json.dumps(result, indent=2, ensure_ascii=False))
     print(json.dumps({k: result[k] for k in ("edition_id", "ok", "counts", "adapter")}, ensure_ascii=False))
     for item in result["failures"][:20]:
