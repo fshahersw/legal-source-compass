@@ -11,6 +11,7 @@ statutory code" and which acts it includes ("This version includes all acts enac
 """
 from __future__ import annotations
 
+import html as _html
 import pathlib
 import re
 import sys
@@ -103,6 +104,17 @@ def parse_chapter(page: lib.Fetched) -> tuple[list[dict], list[dict]]:
     return path, sections
 
 
+def links(page_text: str, pattern: str) -> list[str]:
+    """Link targets matching `pattern`, in page order, once each. The publisher wraps hrefs in encoded newlines and
+    spaces (href="&#xA;   title1/index.html&#xA; "), so each href is unescaped and trimmed before it is matched."""
+    out = []
+    for raw in re.findall(r'href="([^"]*)"', page_text):
+        m = re.fullmatch(pattern, _html.unescape(raw).strip())
+        if m and m.group(1) not in out:
+            out.append(m.group(1))
+    return out
+
+
 def acquire(ctx: lib.RunContext) -> None:
     home = ctx.get(BASE + "index.html", fallback_fresh=True)
     flat = lib.html_text(home.body)
@@ -110,7 +122,9 @@ def acquire(ctx: lib.RunContext) -> None:
     statement = re.search(r"This version includes all acts enacted as of[^\n]*", flat)
     ctx.edition(edition_label=None, currency_statement=statement.group(0) if statement else None,
                 currency_source_url=BASE)
-    titles = list(dict.fromkeys(re.findall(r'href="\s*(?:\.\./)?(title\d+[a-z]?/index\.html)', home.text())))
+    titles = links(home.text(), r"(?:\.\./)?(title\d+[a-z]?/index\.html)")
+    if not titles:
+        raise RuntimeError(f"{BASE}index.html: no title links found")
     if ctx.sample is not None:
         titles = ["title10/index.html"]
     for title_path in titles:
@@ -119,7 +133,8 @@ def acquire(ctx: lib.RunContext) -> None:
         tpage = ctx.get(BASE + title_path, fallback_fresh=True)
         tdir = title_path.rsplit("/", 1)[0]
         title_no = re.match(r"title(\d+[a-z]?)", tdir).group(1)
-        chapters = list(dict.fromkeys(re.findall(r'href="\s*(c\d+[a-z]?/index\.html)', tpage.text())))
+        # title pages link chapters as "../title10/c001/index.html"
+        chapters = links(tpage.text(), r"(?:\.\./title\d+[a-z]?/)?(c\d+[a-z]?/index\.html)")
         if ctx.sample is not None:
             chapters = ["c081/index.html"]
         queue = [f"{BASE}{tdir}/{c}" for c in chapters]
@@ -128,7 +143,8 @@ def acquire(ctx: lib.RunContext) -> None:
                 break
             url = queue.pop(0)
             page = ctx.get(url, fallback_fresh=True)
-            subs = [urllib.parse.urljoin(url, s) for s in dict.fromkeys(re.findall(r'href="\s*(sc\d+[a-z]?/index\.html)', page.text()))]
+            subs = [urllib.parse.urljoin(url, s) for s in
+                    links(page.text(), r"((?:\.\./)*(?:title\d+[a-z]?/)?(?:c\d+[a-z]?/)?sc\d+[a-z]?/index\.html)")]
             queue = subs + queue
             path, sections = parse_chapter(page)
             for item in sections:
