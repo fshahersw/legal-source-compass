@@ -365,6 +365,38 @@ class CitatorRecordTests(unittest.TestCase):
         self.assertEqual(rec["courts"], {"ca1": "1st Cir."})
 
 
+class CitatorResumeTests(unittest.TestCase):
+    """A rerun skips a partition only when what that kind depends on is unchanged."""
+
+    def prep(self, digest="d1", anchors=10):
+        return {"anchors": anchors, "anchor_files": 2, "anchors_sha256": digest, "parentheticals_file": "/x/p.parquet"}
+
+    def test_citedby_ignores_the_anchors(self):
+        prev = {"anchors": 3, "anchor_files": 1, "parentheticals_file": True}  # state written before the digest existed
+        self.assertTrue(ct.inputs_match("citedby", prev, self.prep()))
+        self.assertFalse(ct.inputs_match("citedby", {"parentheticals_file": False}, self.prep()))
+
+    def test_authorities_need_the_same_anchor_bytes(self):
+        prev = ct.prep_inputs("authorities", self.prep())
+        self.assertTrue(ct.inputs_match("authorities", prev, self.prep()))
+        self.assertFalse(ct.inputs_match("authorities", prev, self.prep(digest="d2")))  # same count, other content
+        self.assertFalse(ct.inputs_match("authorities", {k: v for k, v in prev.items() if k != "anchors_sha256"}, self.prep()))
+        self.assertFalse(ct.inputs_match("authorities", None, self.prep()))
+
+    def test_files_digest_covers_names_and_bytes(self):
+        with tempfile.TemporaryDirectory() as d:
+            a, b = os.path.join(d, "a.tsv.gz"), os.path.join(d, "b.tsv.gz")
+            for p, body in ((a, b"x"), (b, b"y")):
+                with open(p, "wb") as h:
+                    h.write(body)
+            one = ct.files_digest([a, b])
+            self.assertEqual(one, ct.files_digest([a, b]))
+            with open(b, "wb") as h:
+                h.write(b"z")
+            self.assertNotEqual(one, ct.files_digest([a, b]))
+            self.assertNotEqual(ct.files_digest([a]), ct.files_digest([b]))
+
+
 # ==================================================================================================== case rows and loader
 class CaseRowTests(unittest.TestCase):
     def base(self, **kw):

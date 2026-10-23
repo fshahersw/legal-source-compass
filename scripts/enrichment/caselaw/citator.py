@@ -139,7 +139,20 @@ def prepare(con, selection: str = rs.SELECTION, anchors_glob: str | None = None)
                         describing_cluster_id, group_id, rnk, total) WHERE false) TO '{EMPTY_PAREN}' (FORMAT parquet)""")
     con.execute("CREATE TEMP TABLE courts AS SELECT id AS court_id, coalesce(nullif(short_name, ''), full_name) AS name FROM small.courts")
     return {"cases": con.execute("SELECT count(*) FROM cases").fetchone()[0], "anchor_files": len(files), "anchors": n_anchors,
-            "parentheticals_file": PAREN if os.path.exists(PAREN) else None, "seconds": round(time.time() - t0, 1)}
+            "anchors_sha256": files_digest(files), "parentheticals_file": PAREN if os.path.exists(PAREN) else None,
+            "seconds": round(time.time() - t0, 1)}
+
+
+def files_digest(paths: list[str]) -> str:
+    """One sha256 over the names and bytes of the given files (the anchors are deterministic gzip, mtime 0)."""
+    h = hashlib.sha256()
+    for p in paths:
+        h.update(os.path.basename(p).encode() + b"\0")
+        with open(p, "rb") as f:
+            for chunk in iter(lambda: f.read(1 << 20), b""):
+                h.update(chunk)
+        h.update(b"\0")
+    return h.hexdigest()
 
 
 PARTITION_SQL = """
@@ -289,9 +302,19 @@ def authorities_record(row, court_names: dict) -> dict | None:
 BUILDER_VERSION = "caselaw-citator-builder/2"
 
 
-def prep_inputs(prep: dict) -> dict:
-    """What a partition depends on besides the local CourtListener tables (which are a fixed snapshot)."""
-    return {"anchors": prep.get("anchors"), "anchor_files": prep.get("anchor_files"), "parentheticals_file": bool(prep.get("parentheticals_file"))}
+def prep_inputs(kind: str, prep: dict) -> dict:
+    """What a partition depends on besides the local CourtListener tables (which are a fixed snapshot): cited-by members
+    on the parentheticals only, cited authorities on the reading store's anchors (their exact bytes)."""
+    if kind == "citedby":
+        return {"parentheticals_file": bool(prep.get("parentheticals_file"))}
+    return {"anchors": prep.get("anchors"), "anchor_files": prep.get("anchor_files"), "anchors_sha256": prep.get("anchors_sha256"),
+            "parentheticals_file": bool(prep.get("parentheticals_file"))}
+
+
+def inputs_match(kind: str, prev_inputs: dict | None, prep: dict) -> bool:
+    want = prep_inputs(kind, prep)
+    prev_inputs = prev_inputs or {}
+    return all(prev_inputs.get(k) == v for k, v in want.items())
 
 
 KINDS = {
@@ -383,13 +406,13 @@ def run(kind: str, P: int | None, only: list[int] | None, upload: bool) -> int:
         if only and p not in only:
             continue
         prev = state.get(f"{kind}:{p}")
-        if (upload and prev and prev.get("partitions") == P and prev.get("builder") == BUILDER_VERSION and prev.get("inputs") == prep_inputs(prep)
+        if (upload and prev and prev.get("partitions") == P and prev.get("builder") == BUILDER_VERSION and inputs_match(kind, prev.get("inputs"), prep)
                 and all(o.get("readback_ok") for o in prev["objects"])
                 and os.path.exists(os.path.join(OUT, "index", f"{KINDS[kind]['letter']}{p:02d}.tsv.gz"))):
             continue  # already built from the same inputs by this builder version
         res = build_partition(con, kind, p, P, st, court_names, upload)
         res["builder"] = BUILDER_VERSION
-        res["inputs"] = prep_inputs(prep)
+        res["inputs"] = prep_inputs(kind, prep)
         res["prepared"] = prep
         state[f"{kind}:{p}"] = res
         with open(state_path + ".tmp", "w") as h:
