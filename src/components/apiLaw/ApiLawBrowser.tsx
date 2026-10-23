@@ -6,43 +6,17 @@ import { ChevronLeft, ChevronRight, ExternalLink, Search } from "lucide-react";
 import { StateNote } from "@/components/enforcement/parts";
 import { Button } from "@/components/ui/button";
 import { API_LAW_DATASETS, recordHref, type ApiLawHit } from "@/lib/external/apiLaw";
+import type { BrowserSearch } from "./browserSearch";
+
+const selectCls =
+  "h-8 min-w-0 max-w-full rounded-md border border-input bg-background px-2 text-[12.5px] focus-visible:outline-2 focus-visible:outline-ring";
+const fmtN = (n: number) => n.toLocaleString("en-US");
 import {
   getApiLawFacets,
   searchApiLaw,
   type ApiLawFacets,
   type ApiLawSearchResult,
 } from "@/lib/external/apiLaw.functions";
-
-export type BrowserSearch = {
-  q?: string | undefined;
-  page?: number | undefined;
-  /** filter name → value (only the dataset's registry filters are sent) */
-  f?: Record<string, string> | undefined;
-};
-
-const selectCls =
-  "h-8 min-w-0 max-w-full rounded-md border border-input bg-background px-2 text-[12.5px] focus-visible:outline-2 focus-visible:outline-ring";
-const fmtN = (n: number) => n.toLocaleString("en-US");
-
-/** Validate a route's search for a browser: q, page, and f.<name> values the dataset's registry accepts. */
-export function validateBrowserSearch(dataset: string, s: Record<string, unknown>): BrowserSearch {
-  const ds = API_LAW_DATASETS[dataset];
-  const f: Record<string, string> = {};
-  const raw = s["f"] && typeof s["f"] === "object" ? (s["f"] as Record<string, unknown>) : {};
-  for (const def of ds?.filters ?? []) {
-    const v = raw[def.name];
-    if (typeof v === "string" && def.pattern.test(v)) f[def.name] = v;
-  }
-  const page = s["page"];
-  return {
-    q: typeof s["q"] === "string" && s["q"].trim() ? s["q"].slice(0, 200) : undefined,
-    page:
-      typeof page === "number" && Number.isInteger(page) && page >= 1 && page <= 200
-        ? page
-        : undefined,
-    f: Object.keys(f).length ? f : undefined,
-  };
-}
 
 /**
  * Search, filter and page one api-law dataset. Filters and counts come from the dataset's catalog listing; results link

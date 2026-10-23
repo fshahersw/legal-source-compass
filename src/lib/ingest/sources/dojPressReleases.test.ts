@@ -63,7 +63,11 @@ describe("scheduled DOJ run", () => {
   it("builds every release changed since the cursor (a day of overlap) and holds other years", async () => {
     const [, sample] = await buildRelease(results[0]!, lk);
     const changed = String((sample.item["release"] as JsonObject)["changed"]);
-    const other = { ...results[1]!, uuid: "00000000-0000-0000-0000-000000000000", date: "1735732800" }; // 2025-01-01
+    const other = {
+      ...results[1]!,
+      uuid: "00000000-0000-0000-0000-000000000000",
+      date: "1735732800",
+    }; // 2025-01-01
     const urls: string[] = [];
     const http: SourceHttp = {
       requests: [],
@@ -71,7 +75,17 @@ describe("scheduled DOJ run", () => {
       async getText(url) {
         urls.push(url);
         const body = JSON.stringify({ results: url === dojPageUrl(0) ? [...results, other] : [] });
-        return { status: 200, text: body, record: { url, status: 200, bytes: body.length, sha256: "x", retrieved_at: "2026-10-24T00:00:00Z" } };
+        return {
+          status: 200,
+          text: body,
+          record: {
+            url,
+            status: 200,
+            bytes: body.length,
+            sha256: "x",
+            retrieved_at: "2026-10-24T00:00:00Z",
+          },
+        };
       },
     };
     const corpus: CorpusReader = {
@@ -88,9 +102,17 @@ describe("scheduled DOJ run", () => {
         return null as never;
       },
     };
-    const ctx: CollectContext = { http, corpus, cursor: null, now: new Date("2026-10-24T00:00:00Z"), env: () => undefined };
+    const ctx: CollectContext = {
+      http,
+      corpus,
+      cursor: null,
+      now: new Date("2026-10-24T00:00:00Z"),
+      env: () => undefined,
+    };
     const out = await dojPressReleases(2026).collect(ctx);
-    expect(out.held.map((h) => h.reason)).toContain("release year 2025: belongs to doj_press_releases_2025, not this source's partition");
+    expect(out.held.map((h) => h.reason)).toContain(
+      "release year 2025: belongs to doj_press_releases_2025, not this source's partition",
+    );
     expect(out.rows.length).toBeGreaterThan(0);
     expect(out.rows.every((r) => r.dataset === "doj_press_releases_2026")).toBe(true);
     expect(sortReleases(out.rows).map((r) => r.id)).toEqual(out.rows.map((r) => r.id));

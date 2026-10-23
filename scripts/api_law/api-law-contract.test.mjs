@@ -218,4 +218,96 @@ test("api-law contract", async (t) => {
       fs.writeFileSync(path.join(BUILD, "ui/rpc/api_law_regs_overview_v1.json"), JSON.stringify(r));
     }
   });
+
+  await t.test("insights government2: registers, refreshes over the samples, matches direct counts, is idempotent", async () => {
+    const need = ["regulations_gov_documents", "congress_amendments", "congress_nominations", "congress_committee_reports",
+      "govinfo_hearings", "govinfo_bill_versions", "company_sec_legal_proceedings"];
+    if (!need.every((d) => BUILT.has(d))) return;
+    await db.exec(`create schema if not exists caselaw;
+      create table if not exists caselaw.cases (cluster_id bigint primary key, court_id text not null, date_filed date,
+        date_approx boolean not null default false, cited_by integer not null default 0);`);
+    await db.exec(fs.readFileSync("database/contracts/insights-v1.sql", "utf8"));
+    const GOV2 = fs.readFileSync(GOV2_PATH, "utf8");
+    await db.exec(GOV2);
+    await db.exec(GOV2);
+    for (const d of need.slice(1)) {
+      const files = BUILT.get(d);
+      await publish(d, readRows(files.rows, 100000), JSON.parse(fs.readFileSync(files.header, "utf8")));
+    }
+    // the spine: the nation, the twelve agencies' Federal Register ids, the CIKs of the 10-K sample (one left out)
+    const ciks = [...new Set(readRows(BUILT.get("company_sec_legal_proceedings").rows, 100000).map((r) => r.item.filing.cik))].sort();
+    const absentCik = ciks.pop();
+    await db.query(
+      `insert into insights.entities (entity_type, entity_id, label, source_dataset)
+       select * from jsonb_to_recordset($1::jsonb) as x(entity_type text, entity_id text, label text, source_dataset text)
+       on conflict do nothing`,
+      [JSON.stringify([
+        { entity_type: "nation", entity_id: "US", label: "United States", source_dataset: "test" },
+        ...["199", "84", "345", "145", "192", "386", "45", "116", "159", "573", "466"].map((id) => ({
+          entity_type: "agency", entity_id: id, label: `Agency ${id}`, source_dataset: "test" })),
+        ...ciks.map((c) => ({ entity_type: "company", entity_id: c, label: `CIK ${c}`, source_dataset: "test" })),
+      ])],
+    );
+    const res = (await one("select insights.refresh_government2('test') as r")).r;
+    assert.equal(res.status, "succeeded", JSON.stringify(res));
+    assert.ok(res.staged > 0);
+    const facts = await all("select * from insights.facts where metric_id in (select id from insights.metrics where family = 'government2')");
+    const by = (m) => facts.filter((f) => f.metric_id === m);
+    // proposed rules per agency-year equal a direct count; PHMSA (408) is not in this spine, so it has no fact
+    const direct = await all(`select r.filters -> 'agency' ->> 0 as agency, r.filters -> 'year' ->> 0 as y, count(*)::int as n
+      from public.corpus_records r where r.dataset = 'regulations_gov_documents' and r.filters -> 'type' ->> 0 = 'proposed_rule'
+      group by 1, 2`);
+    const fr = { FDA: "199", CPSC: "84", NHTSA: "345", EPA: "145", FTC: "192", OSHA: "386", CMS: "45", DEA: "116", FAA: "159", CFPB: "573", SEC: "466" };
+    for (const d of direct) {
+      const f = by("regs_proposed_rules_posted").find((x) => x.entity_id === fr[d.agency] && x.period === d.y);
+      if (!fr[d.agency]) assert.equal(f, undefined, `${d.agency} is outside the spine`);
+      else assert.equal(Number(f.value), d.n, `${d.agency} ${d.y}`);
+    }
+    assert.ok(!facts.some((f) => f.entity_type === "agency" && f.entity_id === "408"));
+    // comments on proposed rules: a sum only when every proposed rule has a count, else a reason
+    for (const f of by("regs_comments_on_proposed_rules")) {
+      assert.equal(f.value === null, f.not_recorded_reason !== null);
+      if (f.value === null) assert.match(f.not_recorded_reason, /^Comment counts read for \d+ of \d+ proposed rules/);
+      assert.ok(Number(f.n) > 0);
+    }
+    // nominations confirmed equal a direct count by the latest action's year
+    const conf = await all(`select left(r.item -> 'nomination' -> 'latestAction' ->> 'date', 4) as y, count(*)::int as n
+      from public.corpus_records r where r.dataset = 'congress_nominations' and r.filters -> 'status' ->> 0 = 'confirmed'
+      group by 1`);
+    for (const c of conf)
+      assert.equal(Number(by("congress_nominations_confirmed").find((f) => f.period === c.y)?.value), c.n, `confirmed ${c.y}`);
+    // the enrolled versions are a subset of all versions in every year
+    for (const e of by("bill_enrolled_versions_published")) {
+      const all_ = by("bill_text_versions_published").find((f) => f.period === e.period);
+      assert.ok(Number(all_.value) >= Number(e.value));
+    }
+    // 10-K: one fact per company and fiscal period, distinct MDL numbers; the company outside the spine has none
+    const tenk = by("company_10k_mdls_mentioned");
+    assert.ok(tenk.length > 0);
+    assert.ok(!tenk.some((f) => f.entity_id === absentCik));
+    for (const f of tenk) {
+      const rows = await all(`select r.item -> 'mentions' as m from public.corpus_records r
+        where r.dataset = 'company_sec_legal_proceedings' and r.item -> 'filing' ->> 'cik' = $1 and r.item -> 'filing' ->> 'period' = $2
+        order by r.item -> 'filing' ->> 'filed' desc limit 1`, [f.entity_id, f.period]);
+      const distinct = new Set((rows[0].m ?? []).map((x) => x.mdl_number));
+      assert.equal(Number(f.value), distinct.size, `${f.entity_id} ${f.period}`);
+      assert.equal(f.period_end.toISOString().slice(0, 10), f.period);
+    }
+    // hearings: the current and previous year are partial (publication lag)
+    const thisYear = new Date().getUTCFullYear();
+    for (const f of by("congress_hearings_published"))
+      assert.equal(f.partial, Number(f.period) >= thisYear - 1, `hearings ${f.period}`);
+    // a second refresh over unchanged sources changes nothing
+    const again = (await one("select insights.refresh_government2('test') as r")).r;
+    assert.equal(again.status, "succeeded");
+    assert.equal(again.inserted, 0);
+    assert.equal(again.updated, 0);
+    assert.equal(again.deleted, 0);
+    // the family is refreshed when the scheduled ingestion names one of its datasets
+    const via = (await one("select insights.refresh_for_datasets(array['congress_nominations']) as r")).r;
+    assert.ok(via.families.includes("government2"));
+    for (const fn of ["insights.facts_government2()", "insights.refresh_government2(text)"])
+      assert.equal((await one(`select has_function_privilege('anon', '${fn}', 'execute') as ok`)).ok, false, fn);
+  });
+
 });

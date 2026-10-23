@@ -5,7 +5,7 @@ import { Panel, StateNote } from "@/components/enforcement/parts";
 import { getRegsDocket } from "@/lib/external/apiLaw.functions";
 import { HitRow } from "./ApiLawBrowser";
 
-export const docketQueryKey = (id: string) => ["regs-docket", id] as const;
+const docketQueryKey = (id: string) => ["regs-docket", id] as const;
 
 /** One Regulations.gov docket: its facts as published, and every held Rule, Proposed Rule and Notice that names it. */
 export function DocketView({ docketId }: { docketId: string }) {

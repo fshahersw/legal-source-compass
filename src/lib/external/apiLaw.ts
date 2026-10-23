@@ -112,7 +112,8 @@ export const API_LAW_DATASETS: Record<string, ApiLawDataset> = {
       { name: "topic", label: "Topic", pattern: /^[\p{L}\p{N} ,&'()./-]{2,120}$/u },
       { name: "in_force", label: "Entered into force", pattern: YESNO },
     ],
-    sourceNote: "Congress.gov API v3 treaty documents, with titles, parties and the resolution of advice and consent as published.",
+    sourceNote:
+      "Congress.gov API v3 treaty documents, with titles, parties and the resolution of advice and consent as published.",
   },
   congress_committee_reports: {
     id: "congress_committee_reports",
@@ -142,7 +143,8 @@ export const API_LAW_DATASETS: Record<string, ApiLawDataset> = {
       { name: "summary", label: "Summary read", pattern: YESNO },
       { name: "committee", label: "Committee", pattern: /^[a-z]{4}\d{2}$/ },
     ],
-    sourceNote: "GovInfo Congressional Hearings (U.S. Government Publishing Office): titles and dates as published, with the PDF.",
+    sourceNote:
+      "GovInfo Congressional Hearings (U.S. Government Publishing Office): titles and dates as published, with the PDF.",
   },
   govinfo_committee_prints: {
     id: "govinfo_committee_prints",
@@ -168,7 +170,8 @@ export const API_LAW_DATASETS: Record<string, ApiLawDataset> = {
       { name: "enrolled", label: "Enrolled version", pattern: YESNO },
       { name: "held_bill", label: "Bill record in this atlas", pattern: YESNO },
     ],
-    sourceNote: "GovInfo Congressional Bills: every published text version, grouped by bill, with GovInfo's PDF, HTML and XML.",
+    sourceNote:
+      "GovInfo Congressional Bills: every published text version, grouped by bill, with GovInfo's PDF, HTML and XML.",
   },
   govinfo_gao_reports: {
     id: "govinfo_gao_reports",
@@ -180,7 +183,8 @@ export const API_LAW_DATASETS: Record<string, ApiLawDataset> = {
       { name: "year", label: "Year issued", pattern: YEAR },
       { name: "summary", label: "Summary read", pattern: YESNO },
     ],
-    sourceNote: "GovInfo's GAO Reports and Comptroller General Decisions collection (1994-2008). Later GAO work is on gao.gov.",
+    sourceNote:
+      "GovInfo's GAO Reports and Comptroller General Decisions collection (1994-2008). Later GAO work is on gao.gov.",
   },
   gao_legal_decisions: {
     id: "gao_legal_decisions",
@@ -264,7 +268,10 @@ const str = (v: unknown, max = 2000): string | null =>
 export function parseHit(row: unknown): ApiLawHit | null {
   if (!row || typeof row !== "object") return null;
   const r = row as Record<string, unknown>;
-  const item = (r["item"] && typeof r["item"] === "object" ? r["item"] : {}) as Record<string, unknown>;
+  const item = (r["item"] && typeof r["item"] === "object" ? r["item"] : {}) as Record<
+    string,
+    unknown
+  >;
   const id = str(r["id"], 200);
   const title = str(r["title"], 4000);
   if (!id || !title) return null;

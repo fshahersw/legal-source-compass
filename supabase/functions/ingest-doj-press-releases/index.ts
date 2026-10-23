@@ -2,7 +2,10 @@
 // database/contracts/api-law-v1.sql registers one source per yearly partition). Logic and tests:
 // src/lib/ingest/sources/dojPressReleases.ts. No key. Deploy with --no-verify-jwt.
 import { serveIngest } from "../../../src/lib/ingest/edge.ts";
-import { dojPressReleases2026, dojPressReleases2027 } from "../../../src/lib/ingest/sources/dojPressReleases.ts";
+import {
+  dojPressReleases2026,
+  dojPressReleases2027,
+} from "../../../src/lib/ingest/sources/dojPressReleases.ts";
 
 declare const Deno: {
   env: { get(name: string): string | undefined };

@@ -17,7 +17,16 @@
 import { BudgetExhausted, RateLimited } from "../http.ts";
 import { pyStrip } from "../py.ts";
 import { corpusRecord } from "../rows.ts";
-import type { CollectContext, Collected, CorpusRow, HeldRecord, Json, JsonObject, RowContent, SourceAdapter } from "../types.ts";
+import type {
+  CollectContext,
+  Collected,
+  CorpusRow,
+  HeldRecord,
+  Json,
+  JsonObject,
+  RowContent,
+  SourceAdapter,
+} from "../types.ts";
 import { COMPANY_LOOKUP, COURT_LOOKUP } from "./enforcementLookups.ts";
 import {
   Companies,
@@ -64,7 +73,9 @@ const WS = rx("\\s+", "g");
 /** sec_parse.clean */
 export function clean(fragment: string | null | undefined): string | null {
   if (fragment === null || fragment === undefined) return null;
-  const text = pyStrip(htmlUnescape(fragment.replace(TAG, " ")).replaceAll("\xa0", " ").replace(WS, " "));
+  const text = pyStrip(
+    htmlUnescape(fragment.replace(TAG, " ")).replaceAll("\xa0", " ").replace(WS, " "),
+  );
   return text || null;
 }
 
@@ -96,7 +107,9 @@ export function parseListing(text: string): ListingItem[] {
     const row = rm[1]!;
     const date = rx('<time datetime="([0-9T:\\-Z+]+)"').exec(row);
     const resp = rx("<div class='release-view__respondents'>(.*?)</div>", "s").exec(row);
-    const links = resp ? [...resp[1]!.matchAll(rx("<a href='([^']+)'>(.*?)</a>", "gs"))].map((m) => [m[1]!, m[2]!]) : [];
+    const links = resp
+      ? [...resp[1]!.matchAll(rx("<a href='([^']+)'>(.*?)</a>", "gs"))].map((m) => [m[1]!, m[2]!])
+      : [];
     let url = links.length ? links[0]![0] : null;
     if (url && url.startsWith("/")) url = BASE + url;
     const seeAlso: ListingItem["see_also"] = [];
@@ -138,7 +151,9 @@ export function pageTitle(text: string): string | null {
 export function releaseText(raw: string, url: string): [string | null, string | null] {
   if (url.toLowerCase().endsWith(".txt")) {
     const plain = raw.replaceAll("\r\n", "\n").replaceAll("\r", "\n");
-    const paras = plain.split(rx("\\n[ \\t]*\\n")).map((p) => p.replace(rx("[ \\t]*\\n[ \\t]*", "g"), " "));
+    const paras = plain
+      .split(rx("\\n[ \\t]*\\n"))
+      .map((p) => p.replace(rx("[ \\t]*\\n[ \\t]*", "g"), " "));
     return [null, htmlToText(paras.join("</p>"))];
   }
   let body = releaseBody(raw);
@@ -167,11 +182,18 @@ export const defaultLookups = (): SecLookups => ({
   courts: COURT_LOOKUP.courts,
 });
 
-const lrId = (n: string | null) => "sec-lr:" + (n ?? "").replace(/[^A-Za-z0-9-]/g, "").toUpperCase();
-const apId = (n: string | null) => "sec-ap:" + (n ?? "").replace(/[^A-Za-z0-9;.-]/g, "").toUpperCase();
+const lrId = (n: string | null) =>
+  "sec-lr:" + (n ?? "").replace(/[^A-Za-z0-9-]/g, "").toUpperCase();
+const apId = (n: string | null) =>
+  "sec-ap:" + (n ?? "").replace(/[^A-Za-z0-9;.-]/g, "").toUpperCase();
 
 /** One litigation-release row exactly as build_sec.py writes it (title/text from the release page, or null). */
-export function lrRow(item: ListingItem, title: string | null, text: string | null, lk: SecLookups): CorpusRow {
+export function lrRow(
+  item: ListingItem,
+  title: string | null,
+  text: string | null,
+  lk: SecLookups,
+): CorpusRow {
   const number = item.release_number!;
   const rid = lrId(number);
   let civil: ReturnType<typeof extractDockets> = [];
@@ -180,7 +202,9 @@ export function lrRow(item: ListingItem, title: string | null, text: string | nu
   let statutes: ReturnType<typeof extractStatutes> = [];
   let excerpt: string | null = null;
   if (text) {
-    civil = extractDockets(text).filter((d) => d.form !== "MDL number").slice(0, 6);
+    civil = extractDockets(text)
+      .filter((d) => d.form !== "MDL number")
+      .slice(0, 6);
     const cites = extractCourtCites(text, 6);
     const names = extractCourts(text, 6);
     const seen = new Set<string>();
@@ -202,20 +226,37 @@ export function lrRow(item: ListingItem, title: string | null, text: string | nu
     const m = lk.companies.match(part);
     if (m) companyLinks.push({ ...m, as_written: part });
   }
-  const courtIds = [...new Set(courtList.map((c) => c.court_id).filter((x): x is string => Boolean(x)))].sort();
+  const courtIds = [
+    ...new Set(courtList.map((c) => c.court_id).filter((x): x is string => Boolean(x))),
+  ].sort();
   const resolution = amounts
-    .filter((a) => a.value_usd && a.keyword && RESOLUTION_KINDS.has(a.keyword) && a.value_usd < RESOLUTION_CAP_USD)
+    .filter(
+      (a) =>
+        a.value_usd &&
+        a.keyword &&
+        RESOLUTION_KINDS.has(a.keyword) &&
+        a.value_usd < RESOLUTION_CAP_USD,
+    )
     .map((a) => a.value_usd!);
   const maxRes = resolution.length ? Math.max(...resolution) : null;
   const headline = text ? headlineFigure(title, amounts, item.date, 6) : null;
   let noneReason: string | null = null;
-  if (headline === null && maxRes !== null) noneReason = "only figures about an earlier or separate matter";
-  if (headline) headline.differs_from_largest = maxRes !== null && Math.abs(headline.value_usd - maxRes) > 0.005;
+  if (headline === null && maxRes !== null)
+    noneReason = "only figures about an earlier or separate matter";
+  if (headline)
+    headline.differs_from_largest =
+      maxRes !== null && Math.abs(headline.value_usd - maxRes) > 0.005;
   const year = (item.date ?? "").slice(0, 4);
   const links: Json[] = [{ url: item.url!, label: "SEC litigation release" }];
-  for (const s of item.see_also.slice(0, 6)) links.push({ url: s.url, label: s.label || "Related document" });
-  for (const cid of courtIds) links.push({ url: `/courts/${cid}`, label: `Court: ${lk.courts[cid]}` });
-  for (const c of companyLinks) links.push({ url: `/companies/${c["cik"]}`, label: `SEC registrant: ${c["registrant"]} (exact name match)` });
+  for (const s of item.see_also.slice(0, 6))
+    links.push({ url: s.url, label: s.label || "Related document" });
+  for (const cid of courtIds)
+    links.push({ url: `/courts/${cid}`, label: `Court: ${lk.courts[cid]}` });
+  for (const c of companyLinks)
+    links.push({
+      url: `/companies/${c["cik"]}`,
+      label: `SEC registrant: ${c["registrant"]} (exact name match)`,
+    });
   const action: JsonObject = {
     type: "Litigation release",
     release_number: number,
@@ -250,14 +291,27 @@ export function lrRow(item: ListingItem, title: string | null, text: string | nu
       : null;
   return corpusRecord(SEC_DATASET, rid, item.respondents || number, {
     source_url: item.url!,
-    subtitle: [number, item.date, civil.slice(0, 2).map((d) => d.as_written).join("; ") || null].filter(Boolean).join(" · "),
+    subtitle: [
+      number,
+      item.date,
+      civil
+        .slice(0, 2)
+        .map((d) => d.as_written)
+        .join("; ") || null,
+    ]
+      .filter(Boolean)
+      .join(" · "),
     cells: {
       respondents: item.respondents,
       type: "Litigation release",
       release: number,
       date: item.date,
       civil_action: civilText || NOT_RECORDED,
-      court: courtList.slice(0, 2).map((c) => c.as_written).join("; ") || NOT_RECORDED,
+      court:
+        courtList
+          .slice(0, 2)
+          .map((c) => c.as_written)
+          .join("; ") || NOT_RECORDED,
     },
     facts: factsList([
       ["Respondents (as listed by the SEC)", item.respondents],
@@ -268,12 +322,19 @@ export function lrRow(item: ListingItem, title: string | null, text: string | nu
       ["Court (as stated)", courtList.map((c) => c.as_written)],
       ["Headline figure", headlineText],
       ["Largest resolution figure stated", maxRes !== null ? moneyLabel(maxRes) : null],
-      ["Dollar figures stated", amounts.slice(0, 6).map((a) => `${a.as_written} (${a.keyword || "no keyword in sentence"})`)],
+      [
+        "Dollar figures stated",
+        amounts
+          .slice(0, 6)
+          .map((a) => `${a.as_written} (${a.keyword || "no keyword in sentence"})`),
+      ],
       ["Statutes cited", statutes.map((s) => s.cite)],
       ["Release text read", text ? "yes" : "no (listing row only)"],
       ["Source", "sec.gov litigation releases"],
     ]) as unknown as Json,
-    text: [item.respondents, number, title, civil.map((d) => d.as_written).join(" ")].filter(Boolean).join(" "),
+    text: [item.respondents, number, title, civil.map((d) => d.as_written).join(" ")]
+      .filter(Boolean)
+      .join(" "),
     filters: {
       type: ["litigation_release"],
       year: year ? [year] : [],
@@ -300,11 +361,18 @@ export function apRow(item: ListingItem, lk: SecLookups): CorpusRow {
   }
   const year = (item.date ?? "").slice(0, 4);
   const links: Json[] = [{ url: item.url!, label: "SEC administrative proceeding document" }];
-  for (const s of item.see_also.slice(0, 6)) links.push({ url: s.url, label: s.label || "Related document" });
-  for (const c of companyLinks) links.push({ url: `/companies/${c["cik"]}`, label: `SEC registrant: ${c["registrant"]} (exact name match)` });
+  for (const s of item.see_also.slice(0, 6))
+    links.push({ url: s.url, label: s.label || "Related document" });
+  for (const c of companyLinks)
+    links.push({
+      url: `/companies/${c["cik"]}`,
+      label: `SEC registrant: ${c["registrant"]} (exact name match)`,
+    });
   return corpusRecord(SEC_DATASET, rid, item.respondents || number, {
     source_url: item.url!,
-    subtitle: [number, item.date, item.file_number ? `File No. ${item.file_number}` : null].filter(Boolean).join(" · "),
+    subtitle: [number, item.date, item.file_number ? `File No. ${item.file_number}` : null]
+      .filter(Boolean)
+      .join(" · "),
     cells: {
       respondents: item.respondents,
       type: "Administrative proceeding",
@@ -348,7 +416,9 @@ export function apRow(item: ListingItem, lk: SecLookups): CorpusRow {
 
 /** Release numbers (dc:creator) of an SEC RSS feed, in feed order. */
 export function feedNumbers(xml: string): string[] {
-  return [...xml.matchAll(/<dc:creator>([^<]{1,40})<\/dc:creator>/g)].map((m) => clean(m[1]) ?? "").filter(Boolean);
+  return [...xml.matchAll(/<dc:creator>([^<]{1,40})<\/dc:creator>/g)]
+    .map((m) => clean(m[1]) ?? "")
+    .filter(Boolean);
 }
 
 /** The first release number of a listing row ("34-106633, AAER-4605" → "34-106633"): what the feed names. */
@@ -359,7 +429,9 @@ async function heldFor(ctx: CollectContext, ids: string[]): Promise<string[]> {
   const missing = ids.filter((id) => !exact.includes(id));
   if (!missing.length) return exact;
   const like = missing.map((id) => `id.like.${encodeURIComponent(id)}*`).join(",");
-  const rows = await ctx.corpus.query(`corpus_records?select=id&dataset=eq.${SEC_DATASET}&or=(${like})`);
+  const rows = await ctx.corpus.query(
+    `corpus_records?select=id&dataset=eq.${SEC_DATASET}&or=(${like})`,
+  );
   return [...exact, ...rows.map((r) => String(r["id"]))];
 }
 
@@ -392,7 +464,9 @@ export const secEnforcement: SourceAdapter = {
     const rows: CorpusRow[] = [];
     try {
       const get = async (url: string) => {
-        const r = await ctx.http.getText(url, { headers: { Accept: "text/html,application/rss+xml,application/xml" } });
+        const r = await ctx.http.getText(url, {
+          headers: { Accept: "text/html,application/rss+xml,application/xml" },
+        });
         if (r.status !== 200) throw new Error(`sec.gov HTTP ${r.status}`);
         return r.text;
       };
@@ -401,10 +475,16 @@ export const secEnforcement: SourceAdapter = {
       // a feed names only the first number of a multi-number release ("34-106633" for "34-106633, AAER-4605"), so a
       // held row is found by its exact id or by an id that continues that number with a non-digit
       const heldIds = await heldFor(ctx, [...lrFeed.map(lrId), ...apFeed.map(apId)]);
-      const isHeld = (id: string) => heldIds.some((h) => h === id || (h.startsWith(id) && !/\d/.test(h.charAt(id.length))));
+      const isHeld = (id: string) =>
+        heldIds.some((h) => h === id || (h.startsWith(id) && !/\d/.test(h.charAt(id.length))));
       const newLr = new Set(lrFeed.filter((n) => !isHeld(lrId(n))));
       const newAp = new Set(apFeed.filter((n) => !isHeld(apId(n))));
-      notes["feed"] = { litigation_releases: lrFeed.length, proceedings: apFeed.length, new_lr: [...newLr], new_ap: [...newAp] };
+      notes["feed"] = {
+        litigation_releases: lrFeed.length,
+        proceedings: apFeed.length,
+        new_lr: [...newLr],
+        new_ap: [...newAp],
+      };
       for (const [kind, base, wanted] of [
         ["lr", LR_LIST, newLr],
         ["ap", AP_LIST, newAp],
@@ -413,13 +493,17 @@ export const secEnforcement: SourceAdapter = {
         const items: ListingItem[] = [];
         for (let page = 0; page < 2; page++) {
           items.push(...parseListing(await get(listUrl(base, page))));
-          if ([...wanted].every((n) => items.some((i) => firstNumber(i.release_number) === n))) break;
+          if ([...wanted].every((n) => items.some((i) => firstNumber(i.release_number) === n)))
+            break;
         }
         const seen = new Set<string>();
         for (const item of items) {
           fetched++;
           if (!item.release_number || !item.url) {
-            held.push({ key: `${kind}:${item.date ?? "?"}`, reason: "listing row without a release number or link" });
+            held.push({
+              key: `${kind}:${item.date ?? "?"}`,
+              reason: "listing row without a release number or link",
+            });
             continue;
           }
           const rid = kind === "lr" ? lrId(item.release_number) : apId(item.release_number);

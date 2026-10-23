@@ -26,7 +26,12 @@ describe("api-law sources and api-law-v1.sql agree", () => {
     expect(mine.map((s) => s.source).sort()).toEqual(API_LAW_SOURCES.map((s) => s.source).sort());
     for (const a of API_LAW_SOURCES) {
       const s = mine.find((x) => x.source === a.source)!;
-      expect({ dataset: s.dataset, functionName: s.functionName, mode: s.mode, ordinalPolicy: s.ordinalPolicy }).toEqual({
+      expect({
+        dataset: s.dataset,
+        functionName: s.functionName,
+        mode: s.mode,
+        ordinalPolicy: s.ordinalPolicy,
+      }).toEqual({
         dataset: a.dataset,
         functionName: a.functionName,
         mode: a.mode,
@@ -38,10 +43,13 @@ describe("api-law sources and api-law-v1.sql agree", () => {
   });
 
   it("no source id or dataset collides with ingest-v1.sql; schedules are unique and off the hour", () => {
-    expect(mine.filter((s) => base.some((b) => b.source === s.source || b.dataset === s.dataset))).toEqual([]);
+    expect(
+      mine.filter((s) => base.some((b) => b.source === s.source || b.dataset === s.dataset)),
+    ).toEqual([]);
     const all = [...base, ...mine].map((s) => s.schedule);
     expect(new Set(all).size).toBe(all.length);
-    for (const s of mine) expect([0, 30]).not.toContain(Number(s.schedule.split(" ")[0]!.split(",")[0]));
+    for (const s of mine)
+      expect([0, 30]).not.toContain(Number(s.schedule.split(" ")[0]!.split(",")[0]));
   });
 
   it("every function has an edge entrypoint serving its sources", () => {
@@ -54,6 +62,7 @@ describe("api-law sources and api-law-v1.sql agree", () => {
 
   it("id patterns are anchored and secrets are names", () => {
     for (const s of mine) expect(s.idPattern).toMatch(/^\^.*\$$/);
-    for (const a of API_LAW_SOURCES) for (const n of a.secrets) expect(n).toMatch(/^[A-Z][A-Z0-9_]+$/);
+    for (const a of API_LAW_SOURCES)
+      for (const n of a.secrets) expect(n).toMatch(/^[A-Z][A-Z0-9_]+$/);
   });
 });

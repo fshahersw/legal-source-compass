@@ -10,7 +10,16 @@
  */
 import { pyStrip } from "../py.ts";
 import { corpusRecord } from "../rows.ts";
-import type { CollectContext, Collected, CorpusRow, HeldRecord, Json, JsonObject, RowContent, SourceAdapter } from "../types.ts";
+import type {
+  CollectContext,
+  Collected,
+  CorpusRow,
+  HeldRecord,
+  Json,
+  JsonObject,
+  RowContent,
+  SourceAdapter,
+} from "../types.ts";
 import { htmlUnescape } from "./pyHtml.ts";
 import { etDate } from "./regulationsGov.ts";
 
@@ -18,7 +27,14 @@ export const GAO_DATASET = "gao_legal_decisions";
 export const GAO_FEED = "https://www.gao.gov/rss/reportslegal.xml";
 export const GAO_FEEDS_PAGE = "https://www.gao.gov/about/stay-connected";
 
-export type GaoItem = { title: string; link: string; bNumber: string; description: string | null; pubDate: string | null; published: string | null };
+export type GaoItem = {
+  title: string;
+  link: string;
+  bNumber: string;
+  description: string | null;
+  pubDate: string | null;
+  published: string | null;
+};
 
 const tag = (x: string, name: string) => {
   const m = new RegExp(`<${name}>([\\s\\S]*?)</${name}>`).exec(x);
@@ -68,24 +84,37 @@ export function parseFeed(xml: string): GaoItem[] {
 
 export function gaoRow(it: GaoItem, prov: { feed_url: string; retrieved_at: string }): CorpusRow {
   const date = etDate(it.published);
-  return corpusRecord(GAO_DATASET, `gao:${it.bNumber.toLowerCase().replaceAll(", ", ",")}`, it.title, {
-    source_url: it.link,
-    subtitle: [it.bNumber, date ? `published ${date}` : null].filter(Boolean).join(" · "),
-    cells: { b_number: it.bNumber, published: date ?? "Not recorded", summary: it.description ?? "Not recorded" },
-    facts: [
-      ["Decision number (from the link)", it.bNumber],
-      ["Title (as published)", it.title],
-      ["Summary (as published in the feed; GAO shortens it)", it.description ?? "Not recorded"],
-      ["Published", it.pubDate ?? "Not recorded"],
-      ["Decision page", it.link],
-      ["Source", `GAO Legal Products RSS feed (${GAO_FEED}), listed on ${GAO_FEEDS_PAGE}`],
-    ] as unknown as Json,
-    badges: ["GAO legal decision"],
-    links: [{ url: it.link, label: "Decision on gao.gov" }],
-    text: [it.bNumber, it.description].filter(Boolean).join(" "),
-    filters: { year: date ? [date.slice(0, 4)] : [], month: date ? [date.slice(0, 7)] : [] },
-    extra: { kind: "gao_legal_decision", decision: it as unknown as JsonObject, provenance: prov as unknown as JsonObject },
-  });
+  return corpusRecord(
+    GAO_DATASET,
+    `gao:${it.bNumber.toLowerCase().replaceAll(", ", ",")}`,
+    it.title,
+    {
+      source_url: it.link,
+      subtitle: [it.bNumber, date ? `published ${date}` : null].filter(Boolean).join(" · "),
+      cells: {
+        b_number: it.bNumber,
+        published: date ?? "Not recorded",
+        summary: it.description ?? "Not recorded",
+      },
+      facts: [
+        ["Decision number (from the link)", it.bNumber],
+        ["Title (as published)", it.title],
+        ["Summary (as published in the feed; GAO shortens it)", it.description ?? "Not recorded"],
+        ["Published", it.pubDate ?? "Not recorded"],
+        ["Decision page", it.link],
+        ["Source", `GAO Legal Products RSS feed (${GAO_FEED}), listed on ${GAO_FEEDS_PAGE}`],
+      ] as unknown as Json,
+      badges: ["GAO legal decision"],
+      links: [{ url: it.link, label: "Decision on gao.gov" }],
+      text: [it.bNumber, it.description].filter(Boolean).join(" "),
+      filters: { year: date ? [date.slice(0, 4)] : [], month: date ? [date.slice(0, 7)] : [] },
+      extra: {
+        kind: "gao_legal_decision",
+        decision: it as unknown as JsonObject,
+        provenance: prov as unknown as JsonObject,
+      },
+    },
+  );
 }
 
 export const gaoLegalDecisions: SourceAdapter = {
@@ -98,7 +127,9 @@ export const gaoLegalDecisions: SourceAdapter = {
   limits: { maxRequests: 1, minIntervalMs: 420_000 },
   secrets: [],
   async collect(ctx: CollectContext): Promise<Collected> {
-    const res = await ctx.http.getText(GAO_FEED, { headers: { Accept: "application/rss+xml, application/xml" } });
+    const res = await ctx.http.getText(GAO_FEED, {
+      headers: { Accept: "application/rss+xml, application/xml" },
+    });
     if (res.status !== 200) throw new Error(`gao.gov HTTP ${res.status}`);
     const items = parseFeed(res.text);
     const held: HeldRecord[] = [];
@@ -112,7 +143,14 @@ export const gaoLegalDecisions: SourceAdapter = {
       const y = String(((b.item["decision"] ?? {}) as JsonObject)["published"] ?? "");
       return x !== y ? (x < y ? 1 : -1) : a.id < b.id ? 1 : -1;
     });
-    return { rows: ordered, fetched: items.length, held, cursorAfter: null, complete: true, notes: { items: items.length } };
+    return {
+      rows: ordered,
+      fetched: items.length,
+      held,
+      cursorAfter: null,
+      complete: true,
+      notes: { items: items.length },
+    };
   },
   comparable: (c: RowContent) => {
     const item = { ...(c.item as JsonObject) };

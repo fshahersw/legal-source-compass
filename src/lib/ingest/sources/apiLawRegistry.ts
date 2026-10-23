@@ -3,10 +3,20 @@
  * database/contracts/api-law-v1.sql; apiLawRegistry.test.ts keeps the two in step). Kept apart from registry.ts so the
  * api-law contract can be applied and deployed on its own; the lead may fold these into SOURCES when merging.
  */
-import { congressAmendments, congressCommitteeReports, congressNominations, congressTreaties } from "./congressGov.ts";
+import {
+  congressAmendments,
+  congressCommitteeReports,
+  congressNominations,
+  congressTreaties,
+} from "./congressGov.ts";
 import { dojPressReleases2026, dojPressReleases2027 } from "./dojPressReleases.ts";
 import { gaoLegalDecisions } from "./gaoLegal.ts";
-import { govinfoBillVersions, govinfoCommitteePrints, govinfoGaoReports, govinfoHearings } from "./govinfo.ts";
+import {
+  govinfoBillVersions,
+  govinfoCommitteePrints,
+  govinfoGaoReports,
+  govinfoHearings,
+} from "./govinfo.ts";
 import { regulationsGovDockets, regulationsGovDocuments } from "./regulationsGov.ts";
 import { secEnforcement } from "./secEnforcement.ts";
 import type { SourceAdapter } from "../types.ts";

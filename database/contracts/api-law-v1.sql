@@ -1,9 +1,15 @@
 -- api-law/1 — wave 1025 (worker api-law): official law and government APIs as published datasets, their self-updating
 -- sources and the read functions the app needs beyond corpus_records.
 --
--- Datasets (published by the lead with scripts/api_law/publish_stream.py; builders under scripts/api_law/):
+-- Datasets (published by the lead with scripts/api_law/publish_stream.py; builders under scripts/api_law/; RUNBOOK in
+-- docs/api-law-2026-10-25.md):
 --   regulations_gov_documents   Regulations.gov Rules, Proposed Rules and Notices of twelve agencies (+ comment counts)
 --   regulations_gov_dockets     Regulations.gov dockets of the same agencies (+ docket comment counts)
+--   congress_amendments, congress_nominations, congress_treaties, congress_committee_reports   Congress.gov API v3
+--   govinfo_hearings (CHRG), govinfo_committee_prints (CPRT), govinfo_gao_reports (GAOREPORTS), govinfo_bill_versions
+--                               (BILLS, grouped by bill)   GovInfo API
+--   gao_legal_decisions         GAO Legal Products feed (from the first run forward)
+--   company_sec_legal_proceedings   Form 10-K Item 3 and litigation notes (EDGAR; built offline, no scheduled source)
 --
 -- Self-updating sources (rows of ingest.sources; same contract as database/contracts/ingest-v1.sql, which must be
 -- applied first; adapters listed in src/lib/ingest/sources/apiLawRegistry.ts):
@@ -11,6 +17,11 @@
 --   sec_enforcement           → sec_enforcement_actions  edge function ingest-sec-enforcement (no key)
 --   doj_press_releases_2026 / _2027                      edge function ingest-doj-press-releases (no key; enable 2027 once
 --                                                        its partition exists)
+--   congress_amendments, congress_nominations, congress_treaties, congress_committee_reports
+--                                                        edge function ingest-congress-gov (secret DATA_GOV_API_KEY)
+--   govinfo_bill_versions, govinfo_hearings, govinfo_committee_prints, govinfo_gao_reports
+--                                                        edge function ingest-govinfo (secret DATA_GOV_API_KEY)
+--   gao_legal_decisions                                  edge function ingest-gao-legal (no key; one request a run)
 --
 -- Every public function: SECURITY DEFINER, search_path = '', revoked from public/anon/authenticated, granted to
 -- service_role. Idempotent: create or replace; source rows upserted by id without touching `enabled`.
@@ -19,10 +30,10 @@
 -- Deployment (lead):
 --   1. ingest-v1.sql is applied (ingest schema present).
 --   2. publish the datasets (RUNBOOK in docs/api-law-2026-10-25.md), then apply this file.
---   3. supabase functions deploy <name> --project-ref xosqzzsnhxcyehcnirpa --no-verify-jwt for ingest-regulations-gov
---      (needs the DATA_GOV_API_KEY function secret, entered by the owner in the dashboard), ingest-sec-enforcement and
---      ingest-doj-press-releases (each imports src/lib/ingest; if the bundler refuses that, deploy the copies from
---      node scripts/ingest/bundle_functions.mjs <dir>).
+--   3. supabase functions deploy <name> --project-ref xosqzzsnhxcyehcnirpa --no-verify-jwt for ingest-regulations-gov,
+--      ingest-congress-gov and ingest-govinfo (these need the DATA_GOV_API_KEY function secret, entered by the owner in
+--      the dashboard), ingest-sec-enforcement, ingest-doj-press-releases and ingest-gao-legal (each imports
+--      src/lib/ingest; if the bundler refuses that, deploy the copies from node scripts/ingest/bundle_functions.mjs <dir>).
 --   4. first run of each source from SQL (ingest-v1.sql step 5, source ids below), check ingest.runs, then
 --      update ingest.sources set enabled = true where id in (...); and apply this file again (section 3 schedules).
 

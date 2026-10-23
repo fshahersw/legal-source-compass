@@ -34,11 +34,22 @@ describe("enforcement text port equals extract.py on real releases (goldens.py)"
     expect(plain(E.extractCourtCites(t))).toEqual(c.out["court_cites"]);
     expect(plain(E.titleParties(c.title, t))).toEqual(c.out["parties"]);
     expect(plain(E.titleFigures(c.title))).toEqual(c.out["title_figures"]);
-    expect(plain(E.headlineFigure(c.title, amounts, c.date, c.kind === "sec" ? 6 : 2))).toEqual(c.out["headline"]);
+    expect(plain(E.headlineFigure(c.title, amounts, c.date, c.kind === "sec" ? 6 : 2))).toEqual(
+      c.out["headline"],
+    );
     expect(E.clip(t, 1500)).toEqual(c.out["clip_1500"]);
     expect(E.clip(t, 900)).toEqual(c.out["clip_900"]);
-    expect(amounts.filter((a) => a.value_usd !== undefined).map((a) => E.moneyLabel(a.value_usd))).toEqual(c.out["money_labels"]);
-    expect(E.verifySpans(t, [...amounts, ...E.extractStatutes(t), ...E.extractDockets(t), ...E.extractCourts(t)])).toBe(c.out["verify"]);
+    expect(
+      amounts.filter((a) => a.value_usd !== undefined).map((a) => E.moneyLabel(a.value_usd)),
+    ).toEqual(c.out["money_labels"]);
+    expect(
+      E.verifySpans(t, [
+        ...amounts,
+        ...E.extractStatutes(t),
+        ...E.extractDockets(t),
+        ...E.extractCourts(t),
+      ]),
+    ).toBe(c.out["verify"]);
   });
 });
 
@@ -54,9 +65,9 @@ describe("Python details", () => {
     expect(E.moneyLabel(1234.5)).toBe("$1,234.50");
   });
   it("unescapes HTML like Python", () => {
-    expect(htmlUnescape("AT&amp;T &ldquo;x&rdquo; &#8217; &#x2019; &copy2026 &notit; &#128; &#0;")).toBe(
-      "AT&T “x” ’ ’ ©2026 ¬it; € �",
-    );
+    expect(
+      htmlUnescape("AT&amp;T &ldquo;x&rdquo; &#8217; &#x2019; &copy2026 &notit; &#128; &#0;"),
+    ).toBe("AT&T “x” ’ ’ ©2026 ¬it; € �");
   });
   it("reads a case-sensitive abbreviation inside a case-insensitive figure", () => {
     const a = E.extractAmounts("They paid $2.8M and $9 M, then $300 K Street, and $5 Million.");

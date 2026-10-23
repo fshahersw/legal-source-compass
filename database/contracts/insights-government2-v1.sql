@@ -216,13 +216,15 @@ language sql stable set search_path = '' as $$
   from docs d where d.type = 'proposed_rule'
   group by d.fr_id, d.y
   union all
-  select 'congress_amendments_submitted', 'nation', 'US', left(a.d, 4), make_date(left(a.d, 4)::integer, 1, 1),
-         make_date(left(a.d, 4)::integer, 12, 31), count(*)::numeric, null::numeric,
-         insights.year_partial(left(a.d, 4)::integer, (select t from amdt_t))
-           or exists (select 1 from amdt_missing x where x.congress = ((left(a.d, 4)::integer - 1789) / 2 + 1)::text),
+  -- a year overlaps one Congress (even years) or two (odd years: the old Congress ends on January 3)
+  select 'congress_amendments_submitted', 'nation', 'US', a.y::text, make_date(a.y, 1, 1), make_date(a.y, 12, 31),
+         count(*)::numeric, null::numeric,
+         insights.year_partial(a.y, (select t from amdt_t))
+           or exists (select 1 from amdt_missing x
+                      where x.congress in (((a.y - 1789) / 2 + 1)::text, ((a.y - 1790) / 2 + 1)::text)),
          null::numeric, null::text
-  from amdt a where a.d is not null and a.d >= '1789-03-04'
-  group by left(a.d, 4)
+  from (select left(d, 4)::integer as y from amdt where d is not null and d >= '1789-03-04') a
+  group by a.y
   union all
   select 'congress_nominations_received', 'nation', 'US', left(n.received, 4), make_date(left(n.received, 4)::integer, 1, 1),
          make_date(left(n.received, 4)::integer, 12, 31), count(*)::numeric, null::numeric,

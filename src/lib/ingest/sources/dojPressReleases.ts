@@ -19,7 +19,16 @@
 import { BudgetExhausted, RateLimited } from "../http.ts";
 import { pyStrip } from "../py.ts";
 import { corpusRecord } from "../rows.ts";
-import type { CollectContext, Collected, CorpusRow, HeldRecord, Json, JsonObject, RowContent, SourceAdapter } from "../types.ts";
+import type {
+  CollectContext,
+  Collected,
+  CorpusRow,
+  HeldRecord,
+  Json,
+  JsonObject,
+  RowContent,
+  SourceAdapter,
+} from "../types.ts";
 import { COMPANY_LOOKUP, COURT_LOOKUP, DOJ_BOILERPLATE } from "./enforcementLookups.ts";
 import {
   Companies,
@@ -52,13 +61,16 @@ const EXCERPT = 1500;
 const CONTACT_LINE = rx(
   "^(?:CONTACT|Contact|PHONE|Phone|FAX|Fax|E-?MAIL|E-?mail|Email|PRESS OFFICE|Press Office|For Immediate Release|FOR IMMEDIATE RELEASE|Media Contact|MEDIA CONTACT)\\b[^\\n]{0,160}$",
 );
-const USAO = rx("^USAO - (?P<state>[A-Za-z .]+?)(?:, (?:Northern|Southern|Eastern|Western|Middle|Central))?$");
+const USAO = rx(
+  "^USAO - (?P<state>[A-Za-z .]+?)(?:, (?:Northern|Southern|Eastern|Western|Middle|Central))?$",
+);
 
 /* ------------------------------------------------------------------ small Python equivalents */
 
 /** build_doj.epoch_date */
 export function epochDate(value: unknown): string | null {
-  const s = typeof value === "number" ? String(value) : typeof value === "string" ? value.trim() : "";
+  const s =
+    typeof value === "number" ? String(value) : typeof value === "string" ? value.trim() : "";
   if (!/^[+-]?\d+$/.test(s)) return null;
   const t = Number(s) * 1000;
   if (!Number.isFinite(t) || Math.abs(t) > 8.64e15) return null;
@@ -75,7 +87,10 @@ export function timeAttr(value: unknown): string | null {
 export function names(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value
-    .filter((v): v is JsonObject => Boolean(v) && typeof v === "object" && Boolean((v as JsonObject)["name"]))
+    .filter(
+      (v): v is JsonObject =>
+        Boolean(v) && typeof v === "object" && Boolean((v as JsonObject)["name"]),
+    )
     .map((v) => pyStrip(htmlUnescape(String(v["name"] ?? ""))));
 }
 
@@ -102,7 +117,11 @@ export function sha1Hex(text: string): string {
   const view = new DataView(withPad.buffer);
   view.setUint32(withPad.length - 8, Math.floor(ml / 2 ** 32));
   view.setUint32(withPad.length - 4, ml >>> 0);
-  let h0 = 0x67452301, h1 = 0xefcdab89, h2 = 0x98badcfe, h3 = 0x10325476, h4 = 0xc3d2e1f0;
+  let h0 = 0x67452301,
+    h1 = 0xefcdab89,
+    h2 = 0x98badcfe,
+    h3 = 0x10325476,
+    h4 = 0xc3d2e1f0;
   const w = new Uint32Array(80);
   for (let off = 0; off < withPad.length; off += 64) {
     for (let i = 0; i < 16; i++) w[i] = view.getUint32(off + i * 4);
@@ -110,10 +129,20 @@ export function sha1Hex(text: string): string {
       const x = w[i - 3]! ^ w[i - 8]! ^ w[i - 14]! ^ w[i - 16]!;
       w[i] = (x << 1) | (x >>> 31);
     }
-    let a = h0, b = h1, c = h2, d = h3, e = h4;
+    let a = h0,
+      b = h1,
+      c = h2,
+      d = h3,
+      e = h4;
     for (let i = 0; i < 80; i++) {
       const [f, k] =
-        i < 20 ? [(b & c) | (~b & d), 0x5a827999] : i < 40 ? [b ^ c ^ d, 0x6ed9eba1] : i < 60 ? [(b & c) | (b & d) | (c & d), 0x8f1bbcdc] : [b ^ c ^ d, 0xca62c1d6];
+        i < 20
+          ? [(b & c) | (~b & d), 0x5a827999]
+          : i < 40
+            ? [b ^ c ^ d, 0x6ed9eba1]
+            : i < 60
+              ? [(b & c) | (b & d) | (c & d), 0x8f1bbcdc]
+              : [b ^ c ^ d, 0xca62c1d6];
       const t = (((a << 5) | (a >>> 27)) + f + e + k + w[i]!) >>> 0;
       e = d;
       d = c;
@@ -132,18 +161,28 @@ export function sha1Hex(text: string): string {
 
 /** build_doj.sentence_key */
 export function sentenceKey(sentence: string | null | undefined): string {
-  return sha1Hex(pyStrip((sentence ?? "").replace(rx("\\s+", "g"), " ")).toLowerCase()).slice(0, 16);
+  return sha1Hex(pyStrip((sentence ?? "").replace(rx("\\s+", "g"), " ")).toLowerCase()).slice(
+    0,
+    16,
+  );
 }
 
 /** SHA-256 hex of a UTF-8 string (async: crypto.subtle). */
 async function sha256Hex(text: string): Promise<string> {
-  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text) as unknown as ArrayBuffer);
+  const d = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(text) as unknown as ArrayBuffer,
+  );
   return Array.from(new Uint8Array(d), (x) => x.toString(16).padStart(2, "0")).join("");
 }
 
 /* ------------------------------------------------------------------ rows */
 
-export type DojLookups = { companies: Companies; courts: Record<string, string>; boilerplate: Set<string> };
+export type DojLookups = {
+  companies: Companies;
+  courts: Record<string, string>;
+  boilerplate: Set<string>;
+};
 export const defaultDojLookups = (): DojLookups => ({
   companies: new Companies(COMPANY_LOOKUP.rows),
   courts: COURT_LOOKUP.courts,
@@ -152,12 +191,18 @@ export const defaultDojLookups = (): DojLookups => ({
 
 function headlineLabel(h: Headline | null): string | null {
   if (!h) return null;
-  const where = h.source === "title" ? "stated in the title" : `first resolution sentence: “${pyStr(h.sentence)}”`;
+  const where =
+    h.source === "title"
+      ? "stated in the title"
+      : `first resolution sentence: “${pyStr(h.sentence)}”`;
   return `${h.as_written} (${where})`;
 }
 
 /** build_doj.build_release: [year, row, boilerplate figures marked] */
-export async function buildRelease(r: JsonObject, lk: DojLookups): Promise<[string, CorpusRow, number]> {
+export async function buildRelease(
+  r: JsonObject,
+  lk: DojLookups,
+): Promise<[string, CorpusRow, number]> {
   const bodyHtml = String(r["body"] ?? "") || "";
   const text = htmlToText(bodyHtml);
   const title = cleanTitle(String(r["title"] ?? "") || "");
@@ -184,7 +229,13 @@ export async function buildRelease(r: JsonObject, lk: DojLookups): Promise<[stri
     }
   const valued = amounts.filter((a) => a.value_usd !== undefined);
   const resolution = valued
-    .filter((a) => a.keyword && RESOLUTION_KINDS.has(a.keyword) && !a.boilerplate && a.value_usd! < RESOLUTION_CAP_USD)
+    .filter(
+      (a) =>
+        a.keyword &&
+        RESOLUTION_KINDS.has(a.keyword) &&
+        !a.boilerplate &&
+        a.value_usd! < RESOLUTION_CAP_USD,
+    )
     .map((a) => a.value_usd!);
   const maxRes = resolution.length ? Math.max(...resolution) : null;
   const maxAny = valued.length ? Math.max(...valued.map((a) => a.value_usd!)) : null;
@@ -192,7 +243,11 @@ export async function buildRelease(r: JsonObject, lk: DojLookups): Promise<[stri
   let noneReason: string | null = null;
   if (headline === null) {
     if (maxRes !== null) noneReason = "only figures about an earlier or separate matter";
-  } else headline = { ...headline, differs_from_largest: maxRes !== null && Math.abs(headline.value_usd - maxRes) > 0.005 };
+  } else
+    headline = {
+      ...headline,
+      differs_from_largest: maxRes !== null && Math.abs(headline.value_usd - maxRes) > 0.005,
+    };
   // the excerpt skips leading press-contact lines
   let start = 0;
   for (const line of text.split("\n").slice(0, 8)) {
@@ -201,7 +256,9 @@ export async function buildRelease(r: JsonObject, lk: DojLookups): Promise<[stri
   }
   const rest = Array.from(text).slice(start).join("");
   const [excerpt, truncated] = clip(rest, EXCERPT);
-  const courtIds = [...new Set(courtList.map((c) => c.court_id).filter((x): x is string => Boolean(x)))].sort();
+  const courtIds = [
+    ...new Set(courtList.map((c) => c.court_id).filter((x): x is string => Boolean(x))),
+  ].sort();
   const state = usaoState(components);
   const uuid = String(r["uuid"]);
   const url = String(r["url"] ?? "") || "";
@@ -219,7 +276,15 @@ export async function buildRelease(r: JsonObject, lk: DojLookups): Promise<[stri
     teaser: clip(htmlToText(String(r["teaser"] ?? "") || ""), 400)[0],
     amounts: amounts.slice(0, 5).map((a) => {
       const o: JsonObject = {};
-      for (const k of ["as_written", "value_usd", "keyword", "sentence", "range_start", "ambiguous_as_written", "boilerplate"] as const)
+      for (const k of [
+        "as_written",
+        "value_usd",
+        "keyword",
+        "sentence",
+        "range_start",
+        "ambiguous_as_written",
+        "boilerplate",
+      ] as const)
         if (a[k] !== undefined) o[k] = a[k] as Json;
       o["sentence"] = clip(a.sentence ?? null, 220)[0];
       return o;
@@ -231,8 +296,14 @@ export async function buildRelease(r: JsonObject, lk: DojLookups): Promise<[stri
     ...(noneReason ? { headline_none_reason: noneReason } : {}),
     statutes: statutes.slice(0, 12).map((s) => ({ cite: s.cite, as_written: s.as_written })),
     statutes_total: statutes.length,
-    dockets: dockets.slice(0, 10).map((d) => ({ as_written: d.as_written, form: d.form, ...(d.mdl !== undefined ? { mdl: d.mdl } : {}) })),
-    courts: courtList.slice(0, 6).map((c) => ({ as_written: c.as_written, ...(c.court_id ? { court_id: c.court_id } : {}) })),
+    dockets: dockets.slice(0, 10).map((d) => ({
+      as_written: d.as_written,
+      form: d.form,
+      ...(d.mdl !== undefined ? { mdl: d.mdl } : {}),
+    })),
+    courts: courtList
+      .slice(0, 6)
+      .map((c) => ({ as_written: c.as_written, ...(c.court_id ? { court_id: c.court_id } : {}) })),
     parties: parties.slice(0, 6).map((p) => ({ as_written: p.as_written, kind: p.kind })),
     companies: companyLinks,
     office_state: state,
@@ -242,20 +313,39 @@ export async function buildRelease(r: JsonObject, lk: DojLookups): Promise<[stri
     excerpt_offset: start,
   };
   const year = (date || (created ?? "").slice(0, 10) || "0000").slice(0, 4);
-  if (!date) release["date_basis"] = "DOJ release date not recorded; filed under the year the record was created";
-  const links: Json[] = url.startsWith("https://") ? [{ url, label: "DOJ press release (justice.gov)" }] : [];
-  for (const cid of courtIds) links.push({ url: `/courts/${cid}`, label: `Court named in the release: ${lk.courts[cid]}` });
-  for (const c of companyLinks) links.push({ url: `/companies/${c["cik"]}`, label: `SEC registrant: ${c["registrant"]} (exact name match)` });
-  if (state) links.push({ url: `/places/${state}`, label: `Office state (${state}, from the U.S. Attorney's Office component)` });
-  const lead = components.find((c) => c.startsWith("USAO")) ?? (components[0] ?? null);
+  if (!date)
+    release["date_basis"] =
+      "DOJ release date not recorded; filed under the year the record was created";
+  const links: Json[] = url.startsWith("https://")
+    ? [{ url, label: "DOJ press release (justice.gov)" }]
+    : [];
+  for (const cid of courtIds)
+    links.push({ url: `/courts/${cid}`, label: `Court named in the release: ${lk.courts[cid]}` });
+  for (const c of companyLinks)
+    links.push({
+      url: `/companies/${c["cik"]}`,
+      label: `SEC registrant: ${c["registrant"]} (exact name match)`,
+    });
+  if (state)
+    links.push({
+      url: `/places/${state}`,
+      label: `Office state (${state}, from the U.S. Attorney's Office component)`,
+    });
+  const lead = components.find((c) => c.startsWith("USAO")) ?? components[0] ?? null;
   const facts = factsList([
     ["Date", date],
     ["Components", components],
     ["Topics", topics],
     ["Release number", number],
-    ["Headline figure", headlineLabel(headline) || (noneReason ? `None of its own: ${noneReason}` : null)],
+    [
+      "Headline figure",
+      headlineLabel(headline) || (noneReason ? `None of its own: ${noneReason}` : null),
+    ],
     ["Largest resolution figure stated", maxRes !== null ? moneyLabel(maxRes) : null],
-    ["Dollar figures stated (as written; first keyword in the sentence)", amounts.slice(0, 5).map((a) => `${a.as_written} (${a.keyword || "no keyword"})`)],
+    [
+      "Dollar figures stated (as written; first keyword in the sentence)",
+      amounts.slice(0, 5).map((a) => `${a.as_written} (${a.keyword || "no keyword"})`),
+    ],
     ["Statutes cited", statutes.slice(0, 12).map((s) => s.cite)],
     ["Case or docket numbers", dockets.slice(0, 10).map((d) => d.as_written)],
     ["Federal courts named", courtList.slice(0, 6).map((c) => c.as_written)],
@@ -263,34 +353,51 @@ export async function buildRelease(r: JsonObject, lk: DojLookups): Promise<[stri
     ["Excerpt (first 1,500 characters of the release)", excerpt],
     ["Source", "DOJ News API (justice.gov/api/v1/press_releases.json)"],
   ]);
-  const row = corpusRecord(`doj_press_releases_${year}`, `doj-pr:${uuid}`, title || "(untitled release)", {
-    source_url: url || DOJ_API,
-    subtitle: [date, lead, headline ? headline.as_written : null].filter(Boolean).join(" · "),
-    state: state ?? "",
-    cells: {
-      date: date || NOT_RECORDED,
-      title,
-      component: lead || NOT_RECORDED,
-      amount: headline ? headline.as_written : noneReason ? "None of its own" : "No resolution figure stated",
-      largest: maxRes ? moneyLabel(maxRes) : "No resolution figure stated",
+  const row = corpusRecord(
+    `doj_press_releases_${year}`,
+    `doj-pr:${uuid}`,
+    title || "(untitled release)",
+    {
+      source_url: url || DOJ_API,
+      subtitle: [date, lead, headline ? headline.as_written : null].filter(Boolean).join(" · "),
+      state: state ?? "",
+      cells: {
+        date: date || NOT_RECORDED,
+        title,
+        component: lead || NOT_RECORDED,
+        amount: headline
+          ? headline.as_written
+          : noneReason
+            ? "None of its own"
+            : "No resolution figure stated",
+        largest: maxRes ? moneyLabel(maxRes) : "No resolution figure stated",
+      },
+      facts: facts as unknown as Json,
+      text: [
+        title,
+        release["teaser"] as string | null,
+        parties.map((p) => p.as_written).join(" "),
+        dockets
+          .slice(0, 10)
+          .map((d) => d.as_written)
+          .join(" "),
+      ]
+        .filter(Boolean)
+        .join(" "),
+      filters: {
+        year: [year],
+        component: components,
+        topic: topics,
+        amount: [amountBucket(maxRes)],
+        has_docket: [dockets.length ? "yes" : "no"],
+        court: courtIds,
+        state: state ? [state] : [],
+        company: companyLinks.map((c) => c["cik"] as string),
+      },
+      links,
+      extra: { release },
     },
-    facts: facts as unknown as Json,
-    text: [title, release["teaser"] as string | null, parties.map((p) => p.as_written).join(" "), dockets.slice(0, 10).map((d) => d.as_written).join(" ")]
-      .filter(Boolean)
-      .join(" "),
-    filters: {
-      year: [year],
-      component: components,
-      topic: topics,
-      amount: [amountBucket(maxRes)],
-      has_docket: [dockets.length ? "yes" : "no"],
-      court: courtIds,
-      state: state ? [state] : [],
-      company: companyLinks.map((c) => c["cik"] as string),
-    },
-    links,
-    extra: { release },
-  });
+  );
   return [year, row, marked];
 }
 
@@ -302,11 +409,22 @@ export function sortReleases(rows: CorpusRow[]): CorpusRow[] {
   };
   return rows
     .map((r, i) => ({ r, i, k: key(r) }))
-    .sort((a, b) => (a.k[0] !== b.k[0] ? (a.k[0] < b.k[0] ? 1 : -1) : a.k[1] !== b.k[1] ? (a.k[1] < b.k[1] ? 1 : -1) : a.i - b.i))
+    .sort((a, b) =>
+      a.k[0] !== b.k[0]
+        ? a.k[0] < b.k[0]
+          ? 1
+          : -1
+        : a.k[1] !== b.k[1]
+          ? a.k[1] < b.k[1]
+            ? 1
+            : -1
+          : a.i - b.i,
+    )
     .map((x) => x.r);
 }
 
-export const dojPageUrl = (page: number) => `${DOJ_API}?sort=changed&direction=DESC&pagesize=50&page=${page}`;
+export const dojPageUrl = (page: number) =>
+  `${DOJ_API}?sort=changed&direction=DESC&pagesize=50&page=${page}`;
 const MAX_PAGES = 6;
 const OVERLAP_MS = 86400_000;
 
@@ -325,14 +443,18 @@ export function dojPressReleases(year: number): SourceAdapter {
     async collect(ctx: CollectContext): Promise<Collected> {
       const lk = defaultDojLookups();
       const cursor = (ctx.cursor ?? {}) as JsonObject;
-      let since = typeof cursor["changed_through"] === "string" ? Date.parse(String(cursor["changed_through"])) : NaN;
+      let since =
+        typeof cursor["changed_through"] === "string"
+          ? Date.parse(String(cursor["changed_through"]))
+          : NaN;
       if (!Number.isFinite(since)) {
         // first scheduled run: from the newest change the full build holds
         const top = await ctx.corpus.query(
           `corpus_records?select=v:item->release->>changed&dataset=eq.${dataset}&order=item->release->>changed.desc.nullslast&limit=1`,
         );
         since = Date.parse(String(top[0]?.["v"] ?? ""));
-        if (!Number.isFinite(since)) throw new Error(`${dataset} has no stored change time to continue from`);
+        if (!Number.isFinite(since))
+          throw new Error(`${dataset} has no stored change time to continue from`);
       }
       const floor = since - OVERLAP_MS;
       const held: HeldRecord[] = [];
@@ -341,7 +463,9 @@ export function dojPressReleases(year: number): SourceAdapter {
       let newest = since;
       let complete = true;
       let marked = 0;
-      const notes: JsonObject = { boilerplate_base: { keys: DOJ_BOILERPLATE.keys.length, releases: DOJ_BOILERPLATE.releases } };
+      const notes: JsonObject = {
+        boilerplate_base: { keys: DOJ_BOILERPLATE.keys.length, releases: DOJ_BOILERPLATE.releases },
+      };
       try {
         for (let page = 0; ; page++) {
           if (page >= MAX_PAGES) {
@@ -367,7 +491,10 @@ export function dojPressReleases(year: number): SourceAdapter {
             }
             const [y, row, m] = await buildRelease(r, lk);
             if (y !== String(year)) {
-              held.push({ key: row.id, reason: `release year ${y}: belongs to doj_press_releases_${y}, not this source's partition` });
+              held.push({
+                key: row.id,
+                reason: `release year ${y}: belongs to doj_press_releases_${y}, not this source's partition`,
+              });
               continue;
             }
             marked += m;

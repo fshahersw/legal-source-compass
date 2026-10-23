@@ -1,13 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
-import { ApiLawBrowser, validateBrowserSearch, type BrowserSearch } from "@/components/apiLaw/ApiLawBrowser";
+import { ApiLawBrowser } from "@/components/apiLaw/ApiLawBrowser";
+import { validateBrowserSearch, type BrowserSearch } from "@/components/apiLaw/browserSearch";
 import { RegsOverview } from "@/components/apiLaw/RegsOverview";
 import { RulemakingTabs } from "@/components/apiLaw/RulemakingTabs";
 import { pageHead } from "@/lib/corpus/head";
 
 /** Law & government › Rulemaking › Dockets & comments (Regulations.gov). */
 export const Route = createFileRoute("/law_/rulemaking_/dockets/")({
-  validateSearch: (s: Record<string, unknown>): BrowserSearch => validateBrowserSearch("regulations_gov_dockets", s),
+  validateSearch: (s: Record<string, unknown>): BrowserSearch =>
+    validateBrowserSearch("regulations_gov_dockets", s),
   head: () =>
     pageHead(
       "Rulemaking dockets and comments",
@@ -23,7 +25,11 @@ function Page() {
     <AppShell
       title="Rulemaking"
       description="Dockets on Regulations.gov for twelve federal agencies, what is open for comment and how many public comments each docket has posted."
-      breadcrumbs={[{ label: "Law & government", to: "/law" }, { label: "Rulemaking", to: "/law/rulemaking" }, { label: "Dockets & comments" }]}
+      breadcrumbs={[
+        { label: "Law & government", to: "/law" },
+        { label: "Rulemaking", to: "/law/rulemaking" },
+        { label: "Dockets & comments" },
+      ]}
     >
       <RulemakingTabs active="dockets" />
       <div className="space-y-6">

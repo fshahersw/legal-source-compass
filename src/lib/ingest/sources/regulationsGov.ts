@@ -387,13 +387,7 @@ export function documentRow(
     facts: facts as unknown as Json,
     badges: [doc.documentType, ...(doc.withdrawn ? ["Withdrawn"] : [])],
     links,
-    text: [
-      doc.agencyId,
-      agencyName(doc.agencyId),
-      doc.docketId,
-      doc.frDocNum,
-      doc.subtype,
-    ]
+    text: [doc.agencyId, agencyName(doc.agencyId), doc.docketId, doc.frDocNum, doc.subtype]
       .filter(Boolean)
       .join(" "),
     filters: {

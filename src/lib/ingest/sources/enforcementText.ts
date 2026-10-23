@@ -148,7 +148,10 @@ function fullmatch(re: RegExp, s: string): RegExpExecArray | null {
   return r.exec(s);
 }
 function sub(re: RegExp, repl: string, s: string): string {
-  return s.replace(new RegExp(re.source, re.flags.includes("g") ? re.flags : re.flags + "g"), () => repl);
+  return s.replace(
+    new RegExp(re.source, re.flags.includes("g") ? re.flags : re.flags + "g"),
+    () => repl,
+  );
 }
 
 /** The exact decimal expansion of a finite double (|x| < 1e21), as a digit string with a point. */
@@ -181,7 +184,9 @@ export function pyRoundStr(x: number, places: number): string {
   }
   const intPart = places ? digits.slice(0, digits.length - places) || "0" : digits;
   const frac = places ? digits.slice(digits.length - places) : "";
-  const s = places ? `${intPart.replace(/^0+(?=\d)/, "")}.${frac}` : intPart.replace(/^0+(?=\d)/, "");
+  const s = places
+    ? `${intPart.replace(/^0+(?=\d)/, "")}.${frac}`
+    : intPart.replace(/^0+(?=\d)/, "");
   return (neg && /[1-9]/.test(s) ? "-" : "") + s;
 }
 /** round(x, n) */
@@ -229,7 +234,7 @@ const ABBREV = new Set(
     " ",
   ),
 );
-const BOUNDARY = rx("[.!?][\"”’)\\]]*\\s+(?=[\"“(\\[]?[A-Z0-9])", "g");
+const BOUNDARY = rx('[.!?]["”’)\\]]*\\s+(?=["“(\\[]?[A-Z0-9])', "g");
 const TOKEN = rx("([A-Za-z.]+)\\.$");
 
 export type Span = [number, number];
@@ -245,7 +250,13 @@ export function sentenceSpans(text: string): Span[] {
       const prior = seg.slice(start, m.index + 1);
       const token = search(TOKEN, prior);
       const word = token ? token[1]!.toLowerCase().replace(/\.+$/, "") : "";
-      if (word && (ABBREV.has(word) || fullmatch(rx("[a-z]"), word) || fullmatch(rx("(?:[a-z]\\.)+[a-z]"), word))) continue;
+      if (
+        word &&
+        (ABBREV.has(word) ||
+          fullmatch(rx("[a-z]"), word) ||
+          fullmatch(rx("(?:[a-z]\\.)+[a-z]"), word))
+      )
+        continue;
       spans.push([base + start, base + m.index + 1 + rstrip(m[0].slice(1)).length]);
       start = m.index + m[0].length;
     }
@@ -310,7 +321,10 @@ export const KIND_KEYWORDS: [string, RegExp][] = [
       "i",
     ),
   ],
-  ["settlement", rx("\\bsettlements?\\b|\\bto settle\\b|\\bsettles\\b|\\bresolv|\\bagree[sd]? to pay", "i")],
+  [
+    "settlement",
+    rx("\\bsettlements?\\b|\\bto settle\\b|\\bsettles\\b|\\bresolv|\\bagree[sd]? to pay", "i"),
+  ],
   ["penalty or fine", rx("\\bpenalt|\\bfine[ds]?\\b", "i")],
   ["restitution", rx("\\brestitution", "i")],
   ["forfeiture", rx("\\bforfeit", "i")],
@@ -343,10 +357,20 @@ const CUMULATIVE_SPAN = rx(
     "December)\\s+(?:19|20)\\d{2})\\b|\\bto\\s+date\\b",
   "i",
 );
-const CUMULATIVE_VERB = rx("\\b(?:recover(?:ed|ies|y)|collected|secured|imposed|imposing|now\\s+totals?)\\b", "i");
+const CUMULATIVE_VERB = rx(
+  "\\b(?:recover(?:ed|ies|y)|collected|secured|imposed|imposing|now\\s+totals?)\\b",
+  "i",
+);
 const NOT_KEYWORDS = rx("Bank (?:for|of) (?:the )?International Settlements", "gi");
 export const RESOLUTION_CAP_USD = 1e12;
-export const RESOLUTION_KINDS = new Set(["settlement", "penalty or fine", "restitution", "forfeiture", "disgorgement", "judgment"]);
+export const RESOLUTION_KINDS = new Set([
+  "settlement",
+  "penalty or fine",
+  "restitution",
+  "forfeiture",
+  "disgorgement",
+  "judgment",
+]);
 
 /** extract.amount_value */
 export function amountValue(num: string, mult: string | undefined): number | null {
@@ -356,7 +380,10 @@ export function amountValue(num: string, mult: string | undefined): number | nul
   return pyRoundTo(v, 2);
 }
 
-function reading(m: RegExpExecArray, text: string): { value: number | null; ranged: boolean; ambiguous: boolean } {
+function reading(
+  m: RegExpExecArray,
+  text: string,
+): { value: number | null; ranged: boolean; ambiguous: boolean } {
   const g = m.groups ?? {};
   const mult = g["mult"] ?? g["abbr"];
   const value = amountValue(g["num"]!, mult);
@@ -398,10 +425,19 @@ export function extractAmounts(text: string, spans?: Span[], limit?: number): Am
         }
     }
     const end = m.index + m[0].length;
-    if (match(SPECIAL_AFTER, after(text, end, 50)) || search(SPECIAL_BEFORE, before(text, m.index, 50)))
+    if (
+      match(SPECIAL_AFTER, after(text, end, 50)) ||
+      search(SPECIAL_BEFORE, before(text, m.index, 50))
+    )
       kind = "special assessment";
     else if (match(TRANSACTION_AFTER, after(text, end, 60))) kind = "transaction value";
-    else if (kind && RESOLUTION_KINDS.has(kind) && sentence && search(CUMULATIVE_SPAN, sentence) && search(CUMULATIVE_VERB, sentence))
+    else if (
+      kind &&
+      RESOLUTION_KINDS.has(kind) &&
+      sentence &&
+      search(CUMULATIVE_SPAN, sentence) &&
+      search(CUMULATIVE_VERB, sentence)
+    )
       kind = "cumulative total";
     const a: Amount = { as_written: m[0], offset: cpIndex(text, m.index) };
     const v = ranged || ambiguous ? null : value;
@@ -447,7 +483,9 @@ const TITLE_AFTER = rx(
   "i",
 );
 const TITLE_SETTLE_FOR = rx(
-  "\\b(?:settles?|settled|settling|resolves?|resolved|resolving)\\b.*\\bfor\\s+(?:" + QUAL + "\\s+)*$",
+  "\\b(?:settles?|settled|settling|resolves?|resolved|resolving)\\b.*\\bfor\\s+(?:" +
+    QUAL +
+    "\\s+)*$",
   "i",
 );
 const TITLE_NOT_RESOLUTION = rx(
@@ -489,7 +527,8 @@ export function titleFigures(title: string | null | undefined): TitleFigure[] {
     for (const b of finditer(CLAUSE_BREAK, prior)) cut = b.index + b[0].length;
     const clause = prior.slice(cut);
     const attachedAfter = match(TITLE_AFTER, rest) !== null;
-    const attachedBefore = search(TITLE_BEFORE, clause) !== null || search(TITLE_SETTLE_FOR, clause) !== null;
+    const attachedBefore =
+      search(TITLE_BEFORE, clause) !== null || search(TITLE_SETTLE_FOR, clause) !== null;
     const resolution =
       (attachedAfter || (attachedBefore && match(TITLE_NOT_RESOLUTION, rest) === null)) &&
       search(TITLE_NOT_RESOLVED, clause) === null;
@@ -512,20 +551,38 @@ export function titleFigures(title: string | null | undefined): TitleFigure[] {
   });
 }
 
-const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+const MONTHS = [
+  "january",
+  "february",
+  "march",
+  "april",
+  "may",
+  "june",
+  "july",
+  "august",
+  "september",
+  "october",
+  "november",
+  "december",
+];
 const MONTH_RE =
   "(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan\\.|Feb\\.|Mar\\.|Apr\\.|Aug\\.|Sept?\\.|Oct\\.|Nov\\.|Dec\\.)";
 const EARLIER_START = rx(
-  "^(?:In|On|Back in|During)\\s+(?:(?:early|late|mid-?)\\s*)?(?:(?P<month>" + MONTH_RE + ")\\s+)?" +
+  "^(?:In|On|Back in|During)\\s+(?:(?:early|late|mid-?)\\s*)?(?:(?P<month>" +
+    MONTH_RE +
+    ")\\s+)?" +
     "(?:\\d{1,2},?\\s+)?(?:of\\s+)?(?P<year>(?:19|20)\\d{2})\\b",
 );
 const EARLIER_EVENT = rx(
   "\\b(?:settled|resolved|dismissed|paid)\\b" +
-    "(?:\\s+\\w+){0,3}?\\s+in\\s+(?:(?P<month>" + MONTH_RE + ")\\s+)?(?:of\\s+)?(?P<year>(?:19|20)\\d{2})\\b",
+    "(?:\\s+\\w+){0,3}?\\s+in\\s+(?:(?P<month>" +
+    MONTH_RE +
+    ")\\s+)?(?:of\\s+)?(?P<year>(?:19|20)\\d{2})\\b",
   "g",
 );
 const EARLIER_WORDS = rx(
-  "^previously," + "|\\bin (?:a|an) (?:separate|earlier|prior) (?:settlement|case|matter|action|resolution|agreement)\\b",
+  "^previously," +
+    "|\\bin (?:a|an) (?:separate|earlier|prior) (?:settlement|case|matter|action|resolution|agreement)\\b",
   "i",
 );
 
@@ -536,13 +593,20 @@ function monthIndex(m: RegExpExecArray): number {
 }
 
 /** extract.about_earlier_matter */
-export function aboutEarlierMatter(sentence: string | null | undefined, releaseDate: string | null | undefined, minMonths = 2): boolean {
+export function aboutEarlierMatter(
+  sentence: string | null | undefined,
+  releaseDate: string | null | undefined,
+  minMonths = 2,
+): boolean {
   if (!sentence) return false;
   if (search(EARLIER_WORDS, sentence)) return true;
   const m = /^((?:19|20)\d{2})-(\d{2})/.exec(releaseDate ?? "");
   if (!m) return false;
   const released = Number(m[1]) * 12 + Number(m[2]);
-  const events: (RegExpExecArray | null)[] = [match(EARLIER_START, sentence), ...finditer(EARLIER_EVENT, sentence)];
+  const events: (RegExpExecArray | null)[] = [
+    match(EARLIER_START, sentence),
+    ...finditer(EARLIER_EVENT, sentence),
+  ];
   return events.some((e) => e !== null && monthIndex(e) <= released - minMonths);
 }
 
@@ -570,15 +634,30 @@ export function headlineFigure(
   if (stated.length) {
     const first = stated[0]!;
     if (first.value_usd !== undefined && first.value_usd < RESOLUTION_CAP_USD) {
-      const out: Headline = { as_written: first.as_written, value_usd: first.value_usd, source: "title" };
-      if (new Set(stated.map((f) => f.value_usd ?? null)).size > 1) out.title_figures = stated.length;
+      const out: Headline = {
+        as_written: first.as_written,
+        value_usd: first.value_usd,
+        source: "title",
+      };
+      if (new Set(stated.map((f) => f.value_usd ?? null)).size > 1)
+        out.title_figures = stated.length;
       return out;
     }
-    rejected = first.range_start ? "range" : first.ambiguous_as_written ? "ambiguous as written" : "over cap";
+    rejected = first.range_start
+      ? "range"
+      : first.ambiguous_as_written
+        ? "ambiguous as written"
+        : "over cap";
   }
   let skipped = 0;
   for (const a of amounts) {
-    if (a.keyword && RESOLUTION_KINDS.has(a.keyword) && !a.boilerplate && a.value_usd !== undefined && a.value_usd < RESOLUTION_CAP_USD) {
+    if (
+      a.keyword &&
+      RESOLUTION_KINDS.has(a.keyword) &&
+      !a.boilerplate &&
+      a.value_usd !== undefined &&
+      a.value_usd < RESOLUTION_CAP_USD
+    ) {
       if (aboutEarlierMatter(a.sentence, releaseDate, earlierMonths)) {
         skipped++;
         continue;
@@ -610,38 +689,101 @@ const USC_LONG = rx(
     "(?P<section>\\d+[a-zA-Z]{0,3}(?:-\\d+[a-zA-Z]?)?(?:\\([0-9A-Za-z]{1,4}\\))*)",
   "g",
 );
-const CFR = rx("\\b(?P<title>\\d{1,2})\\s?C\\.?\\s?F\\.?\\s?R\\.?\\s?(?:§§?|[Pp]art|[Ss]ection)?\\s?(?P<section>\\d+(?:\\.\\d+[a-z]?)?)", "g");
+const CFR = rx(
+  "\\b(?P<title>\\d{1,2})\\s?C\\.?\\s?F\\.?\\s?R\\.?\\s?(?:§§?|[Pp]art|[Ss]ection)?\\s?(?P<section>\\d+(?:\\.\\d+[a-z]?)?)",
+  "g",
+);
 export const NAMED_ACTS = [
-  "False Claims Act", "Foreign Corrupt Practices Act", "Controlled Substances Act", "Clean Water Act", "Clean Air Act",
-  "Sherman Act", "Clayton Act", "Anti-Kickback Statute", "Bank Secrecy Act", "Lacey Act",
-  "Resource Conservation and Recovery Act", "Comprehensive Environmental Response, Compensation, and Liability Act",
-  "Safe Drinking Water Act", "Oil Pollution Act", "Endangered Species Act", "Migratory Bird Treaty Act",
-  "Toxic Substances Control Act", "Federal Insecticide, Fungicide, and Rodenticide Act",
-  "Americans with Disabilities Act", "Fair Housing Act", "Equal Credit Opportunity Act", "Voting Rights Act",
-  "Civil Rights Act", "Servicemembers Civil Relief Act", "Uniformed Services Employment and Reemployment Rights Act",
-  "Fair Labor Standards Act", "Arms Export Control Act", "International Emergency Economic Powers Act",
-  "Export Control Reform Act", "Trading with the Enemy Act", "Foreign Agents Registration Act", "Travel Act",
-  "Racketeer Influenced and Corrupt Organizations Act", "Hobbs Act", "Mann Act", "Federal Food, Drug, and Cosmetic Act",
-  "Food, Drug, and Cosmetic Act", "Financial Institutions Reform, Recovery, and Enforcement Act",
-  "Consumer Product Safety Act", "Fair Credit Reporting Act", "Fair Debt Collection Practices Act",
-  "Telemarketing Sales Rule", "Telephone Consumer Protection Act", "Children's Online Privacy Protection Act",
-  "Federal Trade Commission Act", "Securities Act of 1933", "Securities Exchange Act of 1934",
-  "Investment Advisers Act of 1940", "Investment Company Act of 1940", "Commodity Exchange Act",
-  "Hart-Scott-Rodino Act", "Stark Law", "Emergency Planning and Community Right-to-Know Act",
-  "Hazardous Materials Transportation Act", "Occupational Safety and Health Act", "Internal Revenue Code",
-  "Identity Theft Penalty Enhancement Act", "Computer Fraud and Abuse Act", "Economic Espionage Act",
-  "Digital Millennium Copyright Act", "Animal Welfare Act", "Archaeological Resources Protection Act",
-  "Freedom of Access to Clinic Entrances Act", "Matthew Shepard and James Byrd, Jr. Hate Crimes Prevention Act",
-  "Church Arson Prevention Act", "Religious Land Use and Institutionalized Persons Act", "Fair Sentencing Act",
-  "First Step Act", "PREP Act", "CARES Act", "Paycheck Protection Program",
+  "False Claims Act",
+  "Foreign Corrupt Practices Act",
+  "Controlled Substances Act",
+  "Clean Water Act",
+  "Clean Air Act",
+  "Sherman Act",
+  "Clayton Act",
+  "Anti-Kickback Statute",
+  "Bank Secrecy Act",
+  "Lacey Act",
+  "Resource Conservation and Recovery Act",
+  "Comprehensive Environmental Response, Compensation, and Liability Act",
+  "Safe Drinking Water Act",
+  "Oil Pollution Act",
+  "Endangered Species Act",
+  "Migratory Bird Treaty Act",
+  "Toxic Substances Control Act",
+  "Federal Insecticide, Fungicide, and Rodenticide Act",
+  "Americans with Disabilities Act",
+  "Fair Housing Act",
+  "Equal Credit Opportunity Act",
+  "Voting Rights Act",
+  "Civil Rights Act",
+  "Servicemembers Civil Relief Act",
+  "Uniformed Services Employment and Reemployment Rights Act",
+  "Fair Labor Standards Act",
+  "Arms Export Control Act",
+  "International Emergency Economic Powers Act",
+  "Export Control Reform Act",
+  "Trading with the Enemy Act",
+  "Foreign Agents Registration Act",
+  "Travel Act",
+  "Racketeer Influenced and Corrupt Organizations Act",
+  "Hobbs Act",
+  "Mann Act",
+  "Federal Food, Drug, and Cosmetic Act",
+  "Food, Drug, and Cosmetic Act",
+  "Financial Institutions Reform, Recovery, and Enforcement Act",
+  "Consumer Product Safety Act",
+  "Fair Credit Reporting Act",
+  "Fair Debt Collection Practices Act",
+  "Telemarketing Sales Rule",
+  "Telephone Consumer Protection Act",
+  "Children's Online Privacy Protection Act",
+  "Federal Trade Commission Act",
+  "Securities Act of 1933",
+  "Securities Exchange Act of 1934",
+  "Investment Advisers Act of 1940",
+  "Investment Company Act of 1940",
+  "Commodity Exchange Act",
+  "Hart-Scott-Rodino Act",
+  "Stark Law",
+  "Emergency Planning and Community Right-to-Know Act",
+  "Hazardous Materials Transportation Act",
+  "Occupational Safety and Health Act",
+  "Internal Revenue Code",
+  "Identity Theft Penalty Enhancement Act",
+  "Computer Fraud and Abuse Act",
+  "Economic Espionage Act",
+  "Digital Millennium Copyright Act",
+  "Animal Welfare Act",
+  "Archaeological Resources Protection Act",
+  "Freedom of Access to Clinic Entrances Act",
+  "Matthew Shepard and James Byrd, Jr. Hate Crimes Prevention Act",
+  "Church Arson Prevention Act",
+  "Religious Land Use and Institutionalized Persons Act",
+  "Fair Sentencing Act",
+  "First Step Act",
+  "PREP Act",
+  "CARES Act",
+  "Paycheck Protection Program",
 ];
 const reEscape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const ACT_RE = rx(
-  "\\b(" + [...NAMED_ACTS].sort((a, b) => b.length - a.length).map(reEscape).join("|") + ")\\b",
+  "\\b(" +
+    [...NAMED_ACTS]
+      .sort((a, b) => b.length - a.length)
+      .map(reEscape)
+      .join("|") +
+    ")\\b",
   "g",
 );
 
-export type Statute = { as_written: string; offset: number; cite: string; kind: string; _unit?: number };
+export type Statute = {
+  as_written: string;
+  offset: number;
+  cite: string;
+  kind: string;
+  _unit?: number;
+};
 
 const withUnit = <T extends object>(o: T, unit: number): T => {
   Object.defineProperty(o, "_unit", { value: unit, enumerable: false });
@@ -658,13 +800,48 @@ export function extractStatutes(text: string, limit?: number): Statute[] {
     found.push(item);
   };
   for (const m of finditer(USC, text))
-    add(withUnit({ as_written: m[0], offset: cpIndex(text, m.index), cite: `${Number(m.groups!["title"])} U.S.C. § ${m.groups!["section"]}`, kind: "U.S.C." }, m.index));
+    add(
+      withUnit(
+        {
+          as_written: m[0],
+          offset: cpIndex(text, m.index),
+          cite: `${Number(m.groups!["title"])} U.S.C. § ${m.groups!["section"]}`,
+          kind: "U.S.C.",
+        },
+        m.index,
+      ),
+    );
   for (const m of finditer(USC_LONG, text))
-    add(withUnit({ as_written: m[0], offset: cpIndex(text, m.index), cite: `${Number(m.groups!["title"])} U.S.C. § ${m.groups!["section"]}`, kind: "U.S.C." }, m.index));
+    add(
+      withUnit(
+        {
+          as_written: m[0],
+          offset: cpIndex(text, m.index),
+          cite: `${Number(m.groups!["title"])} U.S.C. § ${m.groups!["section"]}`,
+          kind: "U.S.C.",
+        },
+        m.index,
+      ),
+    );
   for (const m of finditer(CFR, text))
-    add(withUnit({ as_written: m[0], offset: cpIndex(text, m.index), cite: `${Number(m.groups!["title"])} C.F.R. § ${m.groups!["section"]}`, kind: "C.F.R." }, m.index));
+    add(
+      withUnit(
+        {
+          as_written: m[0],
+          offset: cpIndex(text, m.index),
+          cite: `${Number(m.groups!["title"])} C.F.R. § ${m.groups!["section"]}`,
+          kind: "C.F.R.",
+        },
+        m.index,
+      ),
+    );
   for (const m of finditer(ACT_RE, text))
-    add(withUnit({ as_written: m[0], offset: cpIndex(text, m.index), cite: m[0], kind: "named act" }, m.index));
+    add(
+      withUnit(
+        { as_written: m[0], offset: cpIndex(text, m.index), cite: m[0], kind: "named act" },
+        m.index,
+      ),
+    );
   found.sort((a, b) => a.offset - b.offset);
   return limit ? found.slice(0, limit) : found;
 }
@@ -687,7 +864,13 @@ const SPACED = rx(
   "g",
 );
 
-export type Docket = { as_written: string; offset: number; form: string; mdl?: number; _unit?: number };
+export type Docket = {
+  as_written: string;
+  offset: number;
+  form: string;
+  mdl?: number;
+  _unit?: number;
+};
 
 /** Start index (code units) of a named group: the regex has no d flag, so it is located from the match text. */
 function groupStart(m: RegExpExecArray, name: string): number {
@@ -703,7 +886,12 @@ export function extractDockets(text: string, limit?: number): Docket[] {
   for (const m of finditer(DOCKET, text)) {
     if (!seen.has(m[0])) {
       seen.add(m[0]);
-      out.push(withUnit({ as_written: m[0], offset: cpIndex(text, m.index), form: "federal docket" }, m.index));
+      out.push(
+        withUnit(
+          { as_written: m[0], offset: cpIndex(text, m.index), form: "federal docket" },
+          m.index,
+        ),
+      );
     }
   }
   for (const m of finditer(PREFIXED, text)) {
@@ -711,7 +899,16 @@ export function extractDockets(text: string, limit?: number): Docket[] {
     if (!seen.has(value) && ![...seen].some((s) => s.includes(value) || value.includes(s))) {
       seen.add(value);
       const at = groupStart(m, "num");
-      out.push(withUnit({ as_written: value, offset: cpIndex(text, at), form: "after '" + m[0].split(new RegExp(`[${PY_WS}]+`, "u"))[0] + " No.'" }, at));
+      out.push(
+        withUnit(
+          {
+            as_written: value,
+            offset: cpIndex(text, at),
+            form: "after '" + m[0].split(new RegExp(`[${PY_WS}]+`, "u"))[0] + " No.'",
+          },
+          at,
+        ),
+      );
     }
   }
   for (const m of finditer(SPACED, text)) {
@@ -719,13 +916,28 @@ export function extractDockets(text: string, limit?: number): Docket[] {
     if (!seen.has(value) && ![...seen].some((s) => s.includes(value) || value.includes(s))) {
       seen.add(value);
       const at = groupStart(m, "num");
-      out.push(withUnit({ as_written: value, offset: cpIndex(text, at), form: "civil number (spaced form)" }, at));
+      out.push(
+        withUnit(
+          { as_written: value, offset: cpIndex(text, at), form: "civil number (spaced form)" },
+          at,
+        ),
+      );
     }
   }
   for (const m of finditer(MDL, text)) {
     if (!seen.has(m[0])) {
       seen.add(m[0]);
-      out.push(withUnit({ as_written: m[0], offset: cpIndex(text, m.index), form: "MDL number", mdl: Number(m.groups!["num"]) }, m.index));
+      out.push(
+        withUnit(
+          {
+            as_written: m[0],
+            offset: cpIndex(text, m.index),
+            form: "MDL number",
+            mdl: Number(m.groups!["num"]),
+          },
+          m.index,
+        ),
+      );
     }
   }
   out.sort((a, b) => a.offset - b.offset);
@@ -735,20 +947,71 @@ export function extractDockets(text: string, limit?: number): Docket[] {
 /* ------------------------------------------------------------------ courts */
 
 export const STATES: Record<string, string> = {
-  Alabama: "al", Alaska: "ak", Arizona: "az", Arkansas: "ar", California: "ca", Colorado: "co",
-  Connecticut: "ct", Delaware: "de", Columbia: "dc", Florida: "fl", Georgia: "ga", Hawaii: "hi",
-  Idaho: "id", Illinois: "il", Indiana: "in", Iowa: "ia", Kansas: "ks", Kentucky: "ky",
-  Louisiana: "la", Maine: "me", Maryland: "md", Massachusetts: "ma", Michigan: "mi", Minnesota: "mn",
-  Mississippi: "ms", Missouri: "mo", Montana: "mt", Nebraska: "ne", Nevada: "nv", "New Hampshire": "nh",
-  "New Jersey": "nj", "New Mexico": "nm", "New York": "ny", "North Carolina": "nc", "North Dakota": "nd",
-  Ohio: "oh", Oklahoma: "ok", Oregon: "or", Pennsylvania: "pa", "Rhode Island": "ri",
-  "South Carolina": "sc", "South Dakota": "sd", Tennessee: "tn", Texas: "tx", Utah: "ut", Vermont: "vt",
-  Virginia: "va", Washington: "wa", "West Virginia": "wv", Wisconsin: "wi", Wyoming: "wy",
-  "Puerto Rico": "pr", Guam: "gu", "the Virgin Islands": "vi", "Virgin Islands": "vi",
-  "the Northern Mariana Islands": "nmi", "Northern Mariana Islands": "nmi",
+  Alabama: "al",
+  Alaska: "ak",
+  Arizona: "az",
+  Arkansas: "ar",
+  California: "ca",
+  Colorado: "co",
+  Connecticut: "ct",
+  Delaware: "de",
+  Columbia: "dc",
+  Florida: "fl",
+  Georgia: "ga",
+  Hawaii: "hi",
+  Idaho: "id",
+  Illinois: "il",
+  Indiana: "in",
+  Iowa: "ia",
+  Kansas: "ks",
+  Kentucky: "ky",
+  Louisiana: "la",
+  Maine: "me",
+  Maryland: "md",
+  Massachusetts: "ma",
+  Michigan: "mi",
+  Minnesota: "mn",
+  Mississippi: "ms",
+  Missouri: "mo",
+  Montana: "mt",
+  Nebraska: "ne",
+  Nevada: "nv",
+  "New Hampshire": "nh",
+  "New Jersey": "nj",
+  "New Mexico": "nm",
+  "New York": "ny",
+  "North Carolina": "nc",
+  "North Dakota": "nd",
+  Ohio: "oh",
+  Oklahoma: "ok",
+  Oregon: "or",
+  Pennsylvania: "pa",
+  "Rhode Island": "ri",
+  "South Carolina": "sc",
+  "South Dakota": "sd",
+  Tennessee: "tn",
+  Texas: "tx",
+  Utah: "ut",
+  Vermont: "vt",
+  Virginia: "va",
+  Washington: "wa",
+  "West Virginia": "wv",
+  Wisconsin: "wi",
+  Wyoming: "wy",
+  "Puerto Rico": "pr",
+  Guam: "gu",
+  "the Virgin Islands": "vi",
+  "Virgin Islands": "vi",
+  "the Northern Mariana Islands": "nmi",
+  "Northern Mariana Islands": "nmi",
 };
 const D = (pairs: string): Record<string, string> =>
-  Object.fromEntries(pairs.split(" ").map((p) => { const [k, v] = p.split("="); return [k!, v!]; }));
+  Object.fromEntries(
+    pairs.split(" ").map((p) => {
+      const [k, v] = p.split("=");
+      return [k!, v!];
+    }),
+  );
 // (state code, division letter or "") -> court_spine id, written "state/div=id"
 export const DISTRICTS: Record<string, string> = D(
   "al/n=alnd al/m=almd al/s=alsd ak/=akd az/=azd ar/e=ared ar/w=arwd ca/n=cand ca/e=caed ca/c=cacd ca/s=casd co/=cod " +
@@ -761,18 +1024,38 @@ export const DISTRICTS: Record<string, string> = D(
     "wa/e=waed wa/w=wawd wv/n=wvnd wv/s=wvsd wi/e=wied wi/w=wiwd wy/=wyd pr/=prd gu/=gud vi/=vid nmi/=nmid",
 );
 const CIRCUITS: Record<string, string> = {
-  First: "ca1", Second: "ca2", Third: "ca3", Fourth: "ca4", Fifth: "ca5", Sixth: "ca6",
-  Seventh: "ca7", Eighth: "ca8", Ninth: "ca9", Tenth: "ca10", Eleventh: "ca11",
-  "District of Columbia": "cadc", "D.C.": "cadc", Federal: "cafc",
+  First: "ca1",
+  Second: "ca2",
+  Third: "ca3",
+  Fourth: "ca4",
+  Fifth: "ca5",
+  Sixth: "ca6",
+  Seventh: "ca7",
+  Eighth: "ca8",
+  Ninth: "ca9",
+  Tenth: "ca10",
+  Eleventh: "ca11",
+  "District of Columbia": "cadc",
+  "D.C.": "cadc",
+  Federal: "cafc",
 };
-const DIVISION: Record<string, string> = { Northern: "n", Southern: "s", Eastern: "e", Western: "w", Middle: "m", Central: "c" };
+const DIVISION: Record<string, string> = {
+  Northern: "n",
+  Southern: "s",
+  Eastern: "e",
+  Western: "w",
+  Middle: "m",
+  Central: "c",
+};
 const STATE_ALT = Object.keys(STATES)
   .sort((a, b) => b.length - a.length)
   .map(reEscape)
   .join("|");
 const DISTRICT_COURT = rx(
   "\\b(?:U\\.\\s?S\\.|United States|[Ff]ederal)\\s(?:[Dd]istrict\\s[Cc]ourt)\\s(?:for|in|of)\\sthe\\s" +
-    "(?:(?P<div>Northern|Southern|Eastern|Western|Middle|Central)\\s)?District\\sof\\s(?P<state>" + STATE_ALT + ")\\b",
+    "(?:(?P<div>Northern|Southern|Eastern|Western|Middle|Central)\\s)?District\\sof\\s(?P<state>" +
+    STATE_ALT +
+    ")\\b",
   "g",
 );
 const APPEALS = rx(
@@ -783,7 +1066,13 @@ const SPECIAL: [RegExp, string][] = [
   [rx("\\b(?:U\\.\\s?S\\.|United States)\\sCourt\\sof\\sFederal\\sClaims\\b", "g"), "uscfc"],
   [rx("\\b(?:U\\.\\s?S\\.|United States)\\sCourt\\sof\\sInternational\\sTrade\\b", "g"), "cit"],
   [rx("\\b(?:U\\.\\s?S\\.|United States)\\sTax\\sCourt\\b", "g"), "tax"],
-  [rx("\\b(?:U\\.\\s?S\\.\\sSupreme\\sCourt|Supreme\\sCourt\\sof\\sthe\\sUnited\\sStates|United\\sStates\\sSupreme\\sCourt)\\b", "g"), "scotus"],
+  [
+    rx(
+      "\\b(?:U\\.\\s?S\\.\\sSupreme\\sCourt|Supreme\\sCourt\\sof\\sthe\\sUnited\\sStates|United\\sStates\\sSupreme\\sCourt)\\b",
+      "g",
+    ),
+    "scotus",
+  ],
   [rx("\\bJudicial\\sPanel\\son\\sMultidistrict\\sLitigation\\b", "g"), "jpml"],
 ];
 
@@ -805,7 +1094,8 @@ export function extractCourts(text: string, limit?: number): Court[] {
     seen.add(key);
     out.push(withUnit({ as_written: m[0], offset: cpIndex(text, m.index), _cid: cid }, m.index));
   };
-  for (const m of finditer(DISTRICT_COURT, text)) push(m, districtId(m.groups!["div"], m.groups!["state"]!));
+  for (const m of finditer(DISTRICT_COURT, text))
+    push(m, districtId(m.groups!["div"], m.groups!["state"]!));
   for (const m of finditer(APPEALS, text)) push(m, CIRCUITS[m.groups!["cir"]!]!);
   for (const [pattern, cid] of SPECIAL) for (const m of finditer(pattern, text)) push(m, cid);
   out.sort((a, b) => a.offset - b.offset);
@@ -818,16 +1108,71 @@ export function extractCourts(text: string, limit?: number): Court[] {
 }
 
 const BLUEBOOK_STATE: Record<string, string> = {
-  ala: "al", alaska: "ak", ariz: "az", ark: "ar", cal: "ca", calif: "ca", colo: "co", conn: "ct",
-  del: "de", dc: "dc", fla: "fl", ga: "ga", haw: "hi", hawaii: "hi", idaho: "id", ill: "il",
-  ind: "in", iowa: "ia", kan: "ks", kans: "ks", ky: "ky", la: "la", me: "me", md: "md",
-  mass: "ma", mich: "mi", minn: "mn", miss: "ms", mo: "mo", mont: "mt", neb: "ne", nev: "nv",
-  nh: "nh", nj: "nj", nm: "nm", ny: "ny", nc: "nc", nd: "nd", ohio: "oh", okla: "ok", or: "or",
-  ore: "or", pa: "pa", penn: "pa", ri: "ri", sc: "sc", sd: "sd", tenn: "tn", tex: "tx",
-  utah: "ut", vt: "vt", va: "va", wash: "wa", wva: "wv", wis: "wi", wisc: "wi", wyo: "wy",
-  pr: "pr", guam: "gu", vi: "vi",
+  ala: "al",
+  alaska: "ak",
+  ariz: "az",
+  ark: "ar",
+  cal: "ca",
+  calif: "ca",
+  colo: "co",
+  conn: "ct",
+  del: "de",
+  dc: "dc",
+  fla: "fl",
+  ga: "ga",
+  haw: "hi",
+  hawaii: "hi",
+  idaho: "id",
+  ill: "il",
+  ind: "in",
+  iowa: "ia",
+  kan: "ks",
+  kans: "ks",
+  ky: "ky",
+  la: "la",
+  me: "me",
+  md: "md",
+  mass: "ma",
+  mich: "mi",
+  minn: "mn",
+  miss: "ms",
+  mo: "mo",
+  mont: "mt",
+  neb: "ne",
+  nev: "nv",
+  nh: "nh",
+  nj: "nj",
+  nm: "nm",
+  ny: "ny",
+  nc: "nc",
+  nd: "nd",
+  ohio: "oh",
+  okla: "ok",
+  or: "or",
+  ore: "or",
+  pa: "pa",
+  penn: "pa",
+  ri: "ri",
+  sc: "sc",
+  sd: "sd",
+  tenn: "tn",
+  tex: "tx",
+  utah: "ut",
+  vt: "vt",
+  va: "va",
+  wash: "wa",
+  wva: "wv",
+  wis: "wi",
+  wisc: "wi",
+  wyo: "wy",
+  pr: "pr",
+  guam: "gu",
+  vi: "vi",
 };
-const CITE = rx("\\((?P<cite>(?:[NSEWMC]\\.\\s?)?D\\.\\s?[A-Z][A-Za-z.\\s]{0,10}?)(?=\\s(?:filed|Filed|[A-Z][a-z]{2,4}\\.?\\s\\d)|,|\\))", "g");
+const CITE = rx(
+  "\\((?P<cite>(?:[NSEWMC]\\.\\s?)?D\\.\\s?[A-Z][A-Za-z.\\s]{0,10}?)(?=\\s(?:filed|Filed|[A-Z][a-z]{2,4}\\.?\\s\\d)|,|\\))",
+  "g",
+);
 
 /** extract.bluebook_district_id */
 export function bluebookDistrictId(cite: string): string | null {
@@ -873,7 +1218,10 @@ const OBJECT = rx(
     "(?=\\s(?:[Ff]or|[Oo]ver|[Tt]o|[Ii]n|[Aa]fter|[Aa]lleging|[Rr]egarding|[Oo]n|[Tt]hat|[Ff]ollowing|[Aa]nd\\s(?:Its|Their|Others))\\b|,|$)",
   "g",
 );
-const VERSUS = rx("\\b(?:United States|U\\.S\\.)\\sv\\.\\s(?P<object>[A-Z0-9][^,:;()]{1,120}?)(?=\\s(?:[-–—(]|[Ff]or|[Ii]n)\\b|[,:;(]|$)", "g");
+const VERSUS = rx(
+  "\\b(?:United States|U\\.S\\.)\\sv\\.\\s(?P<object>[A-Z0-9][^,:;()]{1,120}?)(?=\\s(?:[-–—(]|[Ff]or|[Ii]n)\\b|[,:;(]|$)",
+  "g",
+);
 const DESCRIPTORS = new Set(
   (
     "former ex man woman men women couple husband wife father mother son daughter brothers sisters brother sister family owner owners " +
@@ -908,7 +1256,22 @@ const NOT_A_NAME = rx(
 const WORD_RE = rx("[A-Za-z][A-Za-z.'’&-]*", "g");
 const words = (phrase: string) => [...finditer(WORD_RE, phrase)].map((m) => m[0]);
 const stripQuotes = (w: string) => w.toLowerCase().replace(/^[.'’]+|[.'’]+$/g, "");
-const CONNECTORS = new Set(["and", "of", "the", "&", "de", "la", "del", "van", "von", "der", "y", "et", "al.", "al"]);
+const CONNECTORS = new Set([
+  "and",
+  "of",
+  "the",
+  "&",
+  "de",
+  "la",
+  "del",
+  "van",
+  "von",
+  "der",
+  "y",
+  "et",
+  "al.",
+  "al",
+]);
 
 function looksLikeName(phrase: string): boolean {
   const ws = words(phrase);
@@ -916,13 +1279,16 @@ function looksLikeName(phrase: string): boolean {
   if (DESCRIPTORS.has(stripQuotes(ws[0]!))) return false;
   const proper = ws.filter((w) => /^[A-Z]/.test(w) && !DESCRIPTORS.has(stripQuotes(w)));
   if (!proper.length) return false;
-  const descriptorWords = ws.filter((w) => DESCRIPTORS.has(stripQuotes(w)) && !CONNECTORS.has(w.toLowerCase()));
+  const descriptorWords = ws.filter(
+    (w) => DESCRIPTORS.has(stripQuotes(w)) && !CONNECTORS.has(w.toLowerCase()),
+  );
   if (descriptorWords.length && !search(ORG_SUFFIX, phrase)) return false;
   return true;
 }
 
 function isPartyPart(part: string): boolean {
-  if (part in STATES || Object.keys(STATES).some((s) => s.toLowerCase() === part.toLowerCase())) return false;
+  if (part in STATES || Object.keys(STATES).some((s) => s.toLowerCase() === part.toLowerCase()))
+    return false;
   if (search(ORG_SUFFIX, part)) return true;
   const ws = words(part);
   return ws.length >= 2 && ws.length <= 5 && ws.every((w) => /^[A-Z]/.test(w));
@@ -931,7 +1297,10 @@ function isPartyPart(part: string): boolean {
 export type Party = { as_written: string; role: string; kind: string };
 
 /** extract.title_parties */
-export function titleParties(title: string | null | undefined, bodyText: string | null = null): Party[] {
+export function titleParties(
+  title: string | null | undefined,
+  bodyText: string | null = null,
+): Party[] {
   if (!title) return [];
   const t = pyStrip(sub(rx("\\s+", "g"), " ", htmlUnescape(title)));
   const candidates: [string, string][] = [];
@@ -950,7 +1319,11 @@ export function titleParties(title: string | null | undefined, bodyText: string 
     if (phrase in STATES || phrase === "U.S." || phrase === "United States") return false;
     if (bodyText !== null && !bodyText.includes(phrase)) return false;
     seen.add(phrase);
-    out.push({ as_written: phrase, role, kind: search(ORG_SUFFIX, phrase) ? "organization (suffix in name)" : "named in title" });
+    out.push({
+      as_written: phrase,
+      role,
+      kind: search(ORG_SUFFIX, phrase) ? "organization (suffix in name)" : "named in title",
+    });
     return true;
   };
   for (const [role, raw] of candidates) {
@@ -969,8 +1342,24 @@ export function titleParties(title: string | null | undefined, bodyText: string 
 
 /* ------------------------------------------------------------------ names (exact-key matching) */
 
-const SUFFIXES = new Set(["inc", "incorporated", "corp", "corporation", "co", "company", "llc", "ltd", "limited", "plc", "sa", "ag", "nv", "the"]);
-const casefold = (s: string) => s.toLowerCase().replaceAll("ß", "ss").replaceAll("ſ", "s").replaceAll("ς", "σ");
+const SUFFIXES = new Set([
+  "inc",
+  "incorporated",
+  "corp",
+  "corporation",
+  "co",
+  "company",
+  "llc",
+  "ltd",
+  "limited",
+  "plc",
+  "sa",
+  "ag",
+  "nv",
+  "the",
+]);
+const casefold = (s: string) =>
+  s.toLowerCase().replaceAll("ß", "ss").replaceAll("ſ", "s").replaceAll("ς", "σ");
 
 /** extract.normalize_company */
 export function normalizeCompany(name: string | null | undefined): string {
@@ -985,7 +1374,10 @@ export function normalizeCompany(name: string | null | undefined): string {
 }
 
 /** extract.verify_spans (code-point offsets) */
-export function verifySpans(text: string, items: { as_written?: string; offset?: number }[]): number {
+export function verifySpans(
+  text: string,
+  items: { as_written?: string; offset?: number }[],
+): number {
   let bad = 0;
   for (const item of items) {
     if (item.offset === undefined || item.as_written === undefined) {
@@ -1035,7 +1427,12 @@ export function clip(text: string | null | undefined, limit: number): [string | 
 export function factsList(pairs: [string, unknown][]): [string, string][] {
   return pairs.map(([label, value]) => {
     let v: unknown = value;
-    if (Array.isArray(v)) v = v.filter((x) => x !== null && x !== undefined && x !== "").map(pyStr).join("; ") || null;
+    if (Array.isArray(v))
+      v =
+        v
+          .filter((x) => x !== null && x !== undefined && x !== "")
+          .map(pyStr)
+          .join("; ") || null;
     return [label, v === null || v === undefined || v === "" ? NOT_RECORDED : pyStr(v)];
   });
 }
@@ -1061,8 +1458,9 @@ export class Companies {
       const key = normalizeCompany(title);
       if (key) keys.set(key, (keys.get(key) ?? new Set()).add(cik));
     }
-    for (const [k, v] of keys) if (v.size === 1) this.unique.set(k, [...v][0]!);
-    else this.ambiguous.add(k);
+    for (const [k, v] of keys)
+      if (v.size === 1) this.unique.set(k, [...v][0]!);
+      else this.ambiguous.add(k);
   }
   match(name: string): { cik: string; registrant: string; method: string; key: string } | null {
     const key = normalizeCompany(name);

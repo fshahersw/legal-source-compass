@@ -19,7 +19,7 @@ const SOURCES = [
   { label: "Regulations.gov", url: "https://www.regulations.gov/" },
 ];
 
-export const regsOverviewKey = ["regs-overview"] as const;
+const regsOverviewKey = ["regs-overview"] as const;
 
 /**
  * Regulations.gov at a glance for the twelve agencies: documents posted per year by type, documents still open for

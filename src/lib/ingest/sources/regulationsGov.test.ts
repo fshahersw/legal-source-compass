@@ -25,16 +25,33 @@ import {
 const records = fixture.documents.data as unknown as JsonObject[];
 const docs = records.map((r) => normalizeDocument(r)!);
 const frRows = new Map(
-  fixture.fr_links.map((l) => [frUrl(l.doc_num), { id: l.record_id, filters: { cfr_pair: l.cfr_pairs } as JsonObject }]),
+  fixture.fr_links.map((l) => [
+    frUrl(l.doc_num),
+    { id: l.record_id, filters: { cfr_pair: l.cfr_pairs } as JsonObject },
+  ]),
 );
-const prov = { api_url: "https://api.regulations.gov/v4/documents?x", retrieved_at: "2026-10-23T18:51:20Z" };
+const prov = {
+  api_url: "https://api.regulations.gov/v4/documents?x",
+  retrieved_at: "2026-10-23T18:51:20Z",
+};
 
 describe("source records are kept exactly as published", () => {
   it.each(records.map((r) => [r["id"] as string, r] as const))("%s", (_id, rec) => {
     const a = rec["attributes"] as JsonObject;
     const d = normalizeDocument(rec)!;
     expect(d.id).toBe(rec["id"]);
-    for (const k of ["agencyId", "docketId", "documentType", "title", "postedDate", "commentStartDate", "commentEndDate", "lastModifiedDate", "frDocNum", "objectId"] as const)
+    for (const k of [
+      "agencyId",
+      "docketId",
+      "documentType",
+      "title",
+      "postedDate",
+      "commentStartDate",
+      "commentEndDate",
+      "lastModifiedDate",
+      "frDocNum",
+      "objectId",
+    ] as const)
       expect(d[k]).toBe((a[k] as string | null | undefined) || null);
     expect(d.withdrawn).toBe(a["withdrawn"]);
   });
@@ -54,9 +71,15 @@ describe("source records are kept exactly as published", () => {
   });
 
   it("refuses records without an id, agency or type", () => {
-    expect(normalizeDocument({ id: "", attributes: { agencyId: "FDA", documentType: "Rule" } })).toBeNull();
-    expect(normalizeDocument({ id: "FDA-2020-N-1-0001", attributes: { documentType: "Rule" } })).toBeNull();
-    expect(normalizeDocument({ id: "FDA-2020-N-1-0001", attributes: { agencyId: "FDA" } })).toBeNull();
+    expect(
+      normalizeDocument({ id: "", attributes: { agencyId: "FDA", documentType: "Rule" } }),
+    ).toBeNull();
+    expect(
+      normalizeDocument({ id: "FDA-2020-N-1-0001", attributes: { documentType: "Rule" } }),
+    ).toBeNull();
+    expect(
+      normalizeDocument({ id: "FDA-2020-N-1-0001", attributes: { agencyId: "FDA" } }),
+    ).toBeNull();
   });
 });
 
@@ -86,14 +109,22 @@ describe("document rows", () => {
       }
     }
     const other: RegsDocument = { ...docs[0]!, frDocNum: "1999-00001" };
-    expect(frLinkFor(other, frRows)).toEqual({ document_number: "1999-00001", record_id: null, status: "not_in_corpus", cfr_pairs: [] });
+    expect(frLinkFor(other, frRows)).toEqual({
+      document_number: "1999-00001",
+      record_id: null,
+      status: "not_in_corpus",
+      cfr_pairs: [],
+    });
   });
 
   it("have the corpus shape, official links and Not recorded for unknowns", () => {
     for (const d of docs) {
       const fr = frLinkFor(d, frRows);
       const n = (fixture.counts as Record<string, number>)[d.id];
-      const c: CommentCount | null = n === undefined ? null : { posted: n, scope: "document", read_on: "2026-10-23", api_url: "u" };
+      const c: CommentCount | null =
+        n === undefined
+          ? null
+          : { posted: n, scope: "document", read_on: "2026-10-23", api_url: "u" };
       const row = documentRow(d, fr, c, prov);
       expect(row.dataset).toBe("regulations_gov_documents");
       expect(row.category).toBe(row.dataset);
@@ -104,7 +135,11 @@ describe("document rows", () => {
       expect((row.item["cells"] as JsonObject)["comments"]).toBe(c ? String(n) : "Not recorded");
       expect(row.filters["cfr_pair"]).toEqual(fr.cfr_pairs);
       if (fr.record_id)
-        expect((row.item["links"] as JsonObject[]).some((l) => l["url"] === `/records/federal_register_history/${fr.record_id}`)).toBe(true);
+        expect(
+          (row.item["links"] as JsonObject[]).some(
+            (l) => l["url"] === `/records/federal_register_history/${fr.record_id}`,
+          ),
+        ).toBe(true);
       expect(JSON.stringify(row)).not.toMatch(/[?&](api[_-]?key|apikey|access_token|token|key)=/i);
       expect(row.text.startsWith(`${d.id} `)).toBe(true);
     }
@@ -113,18 +148,36 @@ describe("document rows", () => {
   it("change detection ignores read times but not counts", () => {
     const d = docs[0]!;
     const fr = frLinkFor(d, frRows);
-    const a = documentRow(d, fr, { posted: 3, scope: "document", read_on: "2026-10-23", api_url: "u1" }, prov);
-    const b = documentRow(d, fr, { posted: 3, scope: "document", read_on: "2026-11-02", api_url: "u2" }, { ...prov, retrieved_at: "2026-11-02T10:00:00Z", api_url: "v" });
-    const c = documentRow(d, fr, { posted: 4, scope: "document", read_on: "2026-11-02", api_url: "u2" }, prov);
+    const a = documentRow(
+      d,
+      fr,
+      { posted: 3, scope: "document", read_on: "2026-10-23", api_url: "u1" },
+      prov,
+    );
+    const b = documentRow(
+      d,
+      fr,
+      { posted: 3, scope: "document", read_on: "2026-11-02", api_url: "u2" },
+      { ...prov, retrieved_at: "2026-11-02T10:00:00Z", api_url: "v" },
+    );
+    const c = documentRow(
+      d,
+      fr,
+      { posted: 4, scope: "document", read_on: "2026-11-02", api_url: "u2" },
+      prov,
+    );
     expect(canonical(comparableRegs(contentOf(a)))).toBe(canonical(comparableRegs(contentOf(b))));
-    expect(canonical(comparableRegs(contentOf(a)))).not.toBe(canonical(comparableRegs(contentOf(c))));
+    expect(canonical(comparableRegs(contentOf(a)))).not.toBe(
+      canonical(comparableRegs(contentOf(c))),
+    );
     const stored = { ...a, ordinal: 0 } as StoredRow;
     expect(classify(regulationsGovDocuments, [b, c], [stored]).unchanged).toBe(1);
   });
 
   it("dataset order is newest posted first", () => {
     const sorted = sortDocumentsNewestFirst(docs);
-    for (let i = 1; i < sorted.length; i++) expect((sorted[i - 1]!.postedDate ?? "") >= (sorted[i]!.postedDate ?? "")).toBe(true);
+    for (let i = 1; i < sorted.length; i++)
+      expect((sorted[i - 1]!.postedDate ?? "") >= (sorted[i]!.postedDate ?? "")).toBe(true);
   });
 });
 
@@ -144,7 +197,12 @@ describe("dockets", () => {
 
 describe("queries", () => {
   it("documents query names agencies, types and windows; no key", () => {
-    const q = documentsQuery({ agencies: ["CPSC", "FTC"], postedFrom: "2024-01-01", postedTo: "2024-12-31", page: 2 });
+    const q = documentsQuery({
+      agencies: ["CPSC", "FTC"],
+      postedFrom: "2024-01-01",
+      postedTo: "2024-12-31",
+      page: 2,
+    });
     expect(q).toBe(
       "https://api.regulations.gov/v4/documents?filter[agencyId]=CPSC,FTC&filter[documentType]=Rule,Proposed%20Rule,Notice&filter[postedDate][ge]=2024-01-01&filter[postedDate][le]=2024-12-31&sort=lastModifiedDate,documentId&page[size]=250&page[number]=2",
     );
@@ -154,7 +212,10 @@ describe("queries", () => {
 
 /* --------------------------------------------------------------------- a scheduled run against fakes */
 
-function fakeHttp(route: (url: string) => unknown, budget = 100): SourceHttp & { urls: string[]; headers: Record<string, string>[] } {
+function fakeHttp(
+  route: (url: string) => unknown,
+  budget = 100,
+): SourceHttp & { urls: string[]; headers: Record<string, string>[] } {
   const urls: string[] = [];
   const headers: Record<string, string>[] = [];
   let used = 0;
@@ -170,7 +231,17 @@ function fakeHttp(route: (url: string) => unknown, budget = 100): SourceHttp & {
       urls.push(url);
       headers.push(init?.headers ?? {});
       const body = JSON.stringify(route(url));
-      return { status: 200, text: body, record: { url, status: 200, bytes: body.length, sha256: "x", retrieved_at: "2026-10-24T09:00:00Z" } };
+      return {
+        status: 200,
+        text: body,
+        record: {
+          url,
+          status: 200,
+          bytes: body.length,
+          sha256: "x",
+          retrieved_at: "2026-10-24T09:00:00Z",
+        },
+      };
     },
   };
 }
@@ -180,9 +251,19 @@ function fakeCorpus(stored: StoredRow[]): CorpusReader {
     async rowsBy(dataset, column, values) {
       if (dataset === "federal_register_history")
         return values
-          .map((u) => frRows.get(u) && ({ id: frRows.get(u)!.id, source_url: u, filters: frRows.get(u)!.filters } as unknown as StoredRow))
+          .map(
+            (u) =>
+              frRows.get(u) &&
+              ({
+                id: frRows.get(u)!.id,
+                source_url: u,
+                filters: frRows.get(u)!.filters,
+              } as unknown as StoredRow),
+          )
           .filter((x): x is StoredRow => Boolean(x));
-      return stored.filter((s) => s.dataset === dataset && values.includes(column === "id" ? s.id : s.source_url));
+      return stored.filter(
+        (s) => s.dataset === dataset && values.includes(column === "id" ? s.id : s.source_url),
+      );
     },
     async edge() {
       return [];
@@ -198,14 +279,22 @@ function fakeCorpus(stored: StoredRow[]): CorpusReader {
 
 describe("scheduled documents run", () => {
   it("reads modified documents and comment windows, keeps stored counts, sends the key only in a header", async () => {
-    const counted = docs.find((d) => (fixture.counts as Record<string, number>)[d.id] !== undefined)!;
+    const counted = docs.find(
+      (d) => (fixture.counts as Record<string, number>)[d.id] !== undefined,
+    )!;
     const storedRow = {
-      ...documentRow(counted, frLinkFor(counted, frRows), { posted: 7, scope: "document", read_on: "2026-10-01", api_url: "u" }, prov),
+      ...documentRow(
+        counted,
+        frLinkFor(counted, frRows),
+        { posted: 7, scope: "document", read_on: "2026-10-01", api_url: "u" },
+        prov,
+      ),
       ordinal: 0,
     } as StoredRow;
     const http = fakeHttp((url) => {
       if (url.includes("/comments?")) return { data: [], meta: { totalElements: 11 } };
-      if (url.includes("commentEndDate")) return { data: [], meta: { totalElements: 0, hasNextPage: false } };
+      if (url.includes("commentEndDate"))
+        return { data: [], meta: { totalElements: 0, hasNextPage: false } };
       return fixture.documents;
     });
     const ctx: CollectContext = {
@@ -219,23 +308,34 @@ describe("scheduled documents run", () => {
     expect(out.complete).toBe(true);
     expect(out.rows.map((r) => r.id).sort()).toEqual(docs.map((d) => d.id).sort());
     // newest first (prepend policy)
-    const posted = out.rows.map((r) => String((r.item["regs_document"] as JsonObject)["postedDate"] ?? ""));
+    const posted = out.rows.map((r) =>
+      String((r.item["regs_document"] as JsonObject)["postedDate"] ?? ""),
+    );
     expect([...posted].sort().reverse()).toEqual(posted);
     // the stored count was kept for the document it belongs to (not re-read: it already has one)
     const kept = out.rows.find((r) => r.id === counted.id)!;
     expect((kept.item["comments"] as JsonObject)["posted"]).toBe(7);
     // proposed rules without a stored count were counted
-    const pr = out.rows.find((r) => (r.item["regs_document"] as JsonObject)["documentType"] === "Proposed Rule" && r.id !== counted.id)!;
+    const pr = out.rows.find(
+      (r) =>
+        (r.item["regs_document"] as JsonObject)["documentType"] === "Proposed Rule" &&
+        r.id !== counted.id,
+    )!;
     expect((pr.item["comments"] as JsonObject)["posted"]).toBe(11);
     expect(http.urls.every((u) => !/key=/i.test(u))).toBe(true);
     expect(http.headers.every((h) => h["X-Api-Key"] === "test-key-not-real")).toBe(true);
     // the first run continued from the newest stored modification, an hour earlier, in Eastern time
     expect(http.urls[0]).toContain("filter[lastModifiedDate][ge]=2026-10-23%2011%3A37%3A20");
-    expect(out.cursorAfter).toMatchObject({ modified_from_et: expect.stringMatching(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/) });
+    expect(out.cursorAfter).toMatchObject({
+      modified_from_et: expect.stringMatching(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/),
+    });
   });
 
   it("stops without writing when the request budget runs out mid-read", async () => {
-    const http = fakeHttp(() => ({ ...fixture.documents, meta: { totalElements: 9999, hasNextPage: true } }), 3);
+    const http = fakeHttp(
+      () => ({ ...fixture.documents, meta: { totalElements: 9999, hasNextPage: true } }),
+      3,
+    );
     const wrapped: SourceHttp = {
       ...http,
       get remaining() {

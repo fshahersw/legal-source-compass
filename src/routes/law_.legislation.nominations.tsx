@@ -1,10 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
-import {
-  ApiLawBrowser,
-  validateBrowserSearch,
-  type BrowserSearch,
-} from "@/components/apiLaw/ApiLawBrowser";
+import { ApiLawBrowser } from "@/components/apiLaw/ApiLawBrowser";
+import { validateBrowserSearch, type BrowserSearch } from "@/components/apiLaw/browserSearch";
 import { DatasetSwitch } from "@/components/apiLaw/DatasetSwitch";
 import { LegislationTabs } from "@/components/legislation/LegislationTabs";
 import { pageHead } from "@/lib/corpus/head";

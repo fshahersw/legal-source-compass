@@ -12,7 +12,10 @@ export const Route = createFileRoute("/law_/rulemaking_/dockets/$docketId")({
     if (!DOCKET.test(params.docketId)) throw new Error("Not a Regulations.gov docket ID");
   },
   head: ({ params }) =>
-    pageHead(`Docket ${params.docketId}`, `Regulations.gov docket ${params.docketId}: documents, comment periods and public comment counts.`),
+    pageHead(
+      `Docket ${params.docketId}`,
+      `Regulations.gov docket ${params.docketId}: documents, comment periods and public comment counts.`,
+    ),
   component: Page,
   errorComponent: () => <p className="p-6 text-[13px]">That is not a Regulations.gov docket ID.</p>,
 });

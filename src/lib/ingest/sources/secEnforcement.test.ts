@@ -37,7 +37,11 @@ describe("SEC rows equal the rows build_sec.py stored", () => {
   it("parses the listing rows", () => {
     expect(lr).toHaveLength(4);
     expect(ap).toHaveLength(4);
-    expect(lr[0]).toMatchObject({ release_number: "LR-26677", date: "2026-10-21", respondents: "Benjamin Conde" });
+    expect(lr[0]).toMatchObject({
+      release_number: "LR-26677",
+      date: "2026-10-21",
+      respondents: "Benjamin Conde",
+    });
   });
 
   it.each(lr.map((i) => [i.release_number!, i] as const))("litigation release %s", (n, item) => {
@@ -49,15 +53,24 @@ describe("SEC rows equal the rows build_sec.py stored", () => {
     expect(canonical(content(row))).toBe(canonical(content(want!)));
   });
 
-  it.each(ap.map((i) => [i.release_number!, i] as const))("administrative proceeding %s", (_n, item) => {
-    const row = apRow(item, lk);
-    const want = stored.get(row.id);
-    if (!want) return; // newer than the held build
-    expect(canonical(content(row))).toBe(canonical(content(want)));
-  });
+  it.each(ap.map((i) => [i.release_number!, i] as const))(
+    "administrative proceeding %s",
+    (_n, item) => {
+      const row = apRow(item, lk);
+      const want = stored.get(row.id);
+      if (!want) return; // newer than the held build
+      expect(canonical(content(row))).toBe(canonical(content(want)));
+    },
+  );
 
   it("splits respondents as the builder does", () => {
-    expect(respondentParts("A Corp., B LLC, and C; D and E")).toEqual(["A Corp", "B LLC", "C", "D", "E"]);
+    expect(respondentParts("A Corp., B LLC, and C; D and E")).toEqual([
+      "A Corp",
+      "B LLC",
+      "C",
+      "D",
+      "E",
+    ]);
   });
 });
 
@@ -78,8 +91,18 @@ describe("scheduled SEC run", () => {
                 ? fixture.lr_listing
                 : url === AP_LIST
                   ? fixture.ap_listing
-                  : (fixture.pages as Record<string, string>)[url.split("/").pop()!] ?? "";
-        return { status: 200, text, record: { url, status: 200, bytes: text.length, sha256: "x", retrieved_at: "2026-10-24T09:00:00Z" } };
+                  : ((fixture.pages as Record<string, string>)[url.split("/").pop()!] ?? "");
+        return {
+          status: 200,
+          text,
+          record: {
+            url,
+            status: 200,
+            bytes: text.length,
+            sha256: "x",
+            retrieved_at: "2026-10-24T09:00:00Z",
+          },
+        };
       },
     };
     // pretend LR-26677 is not held yet
@@ -98,14 +121,22 @@ describe("scheduled SEC run", () => {
         return null as never;
       },
     };
-    const ctx: CollectContext = { http, corpus, cursor: null, now: new Date("2026-10-24T09:00:00Z"), env: () => undefined };
+    const ctx: CollectContext = {
+      http,
+      corpus,
+      cursor: null,
+      now: new Date("2026-10-24T09:00:00Z"),
+      env: () => undefined,
+    };
     const out = await secEnforcement.collect(ctx);
     expect(out.complete).toBe(true);
     const lrRows = out.rows.filter((r) => r.id.startsWith("sec-lr:"));
     expect(lrRows.map((r) => r.id)).toEqual(["sec-lr:LR-26677"]);
     expect(canonical(content(lrRows[0]!))).toBe(canonical(content(stored.get("sec-lr:LR-26677")!)));
     // the release page of the new number was read, no other release page
-    expect(urls.filter((u) => /\/lr-\d+$/.test(u))).toEqual(["https://www.sec.gov/enforcement-litigation/litigation-releases/lr-26677"]);
+    expect(urls.filter((u) => /\/lr-\d+$/.test(u))).toEqual([
+      "https://www.sec.gov/enforcement-litigation/litigation-releases/lr-26677",
+    ]);
     const order = out.rows.map((r) => String(((r.item["sec_action"] ?? {}) as JsonObject)["date"]));
     expect([...order].sort().reverse()).toEqual(order);
   });

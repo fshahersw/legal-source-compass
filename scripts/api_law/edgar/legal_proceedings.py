@@ -5,6 +5,7 @@ membership) and every held MDL caption they repeat word for word.
 
   python3 -I -B scripts/api_law/edgar/legal_proceedings.py acquire [--years 3] [--ciks 0000200406,...] [--out DIR]
   . private/scratch/env.sh && python3 -I -B scripts/api_law/edgar/legal_proceedings.py build [--out DIR]
+  python3 -I -B scripts/api_law/edgar/legal_proceedings.py verify [--sample 4]   (re-fetch and exact span checks)
 
 acquire  for each company: data.sec.gov submissions → its newest --years Form 10-K filings (10-K, 10-K405, 10-KT; not
          amendments) → the primary document from www.sec.gov/Archives, rendered and extracted in memory; one JSON per
@@ -320,14 +321,50 @@ def build(args):
     print(json.dumps({"dataset": DATASET, "rows": len(rows), **stats}))
 
 
+def verify(args):
+    """Re-fetch a fixed sample of acquired filings and check, exactly: the raw document's sha256, the rendering's sha256,
+    and for every stored span that its text is the rendering's slice [start:end] (sha256 of the full slice, and the
+    stored text equal to the slice's first TEXT_CAP characters)."""
+    out = Path(args.out)
+    files = sorted((out / "filings").glob("*.json"))
+    step = max(1, len(files) // max(1, args.sample))
+    chosen = files[::step][: args.sample]
+    client = Client(args.rps, out / "requests.jsonl")
+    results = []
+    for path in chosen:
+        rec = json.loads(path.read_text())
+        status, raw = client.get(rec["document_url"])
+        entry = {"filing": path.name, "url": rec["document_url"], "status": status, "checks": {}}
+        if status == 200:
+            text = E.render(raw)
+            c = entry["checks"]
+            c["raw_sha256"] = hashlib.sha256(raw).hexdigest() == rec["raw_sha256"]
+            c["text_sha256"] = hashlib.sha256(text.encode("utf-8")).hexdigest() == rec["text_sha256"]
+            spans = ([rec["item3"]] if rec["item3"] else []) + rec["notes"]
+            c["spans"] = len(spans)
+            c["span_sha256"] = all(hashlib.sha256(text[s["start"]:s["end"]].encode("utf-8")).hexdigest() == s["sha256"] for s in spans)
+            c["span_text"] = all(text[s["start"]:s["end"]][:TEXT_CAP] == s["text"] for s in spans)
+            c["headings_at_start"] = all(text[s["start"]:s["end"]].lstrip().startswith(s["heading"].split()[0]) for s in spans)
+        entry["ok"] = status == 200 and all(v for k, v in entry["checks"].items() if k != "spans")
+        results.append(entry)
+        print(json.dumps({"filing": path.name, "ok": entry["ok"], **entry["checks"]}), file=sys.stderr)
+    report = {"verified_at": now(), "sample": len(chosen), "of": len(files), "ok": sum(r["ok"] for r in results), "results": results}
+    (out / "verify.json").write_text(json.dumps(report, indent=1))
+    print(json.dumps({k: report[k] for k in ("sample", "of", "ok")}))
+    return 0 if report["ok"] == len(chosen) else 1
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("stage", choices=["acquire", "build"])
+    ap.add_argument("stage", choices=["acquire", "build", "verify"])
+    ap.add_argument("--sample", type=int, default=4)
     ap.add_argument("--out", default=str(OUT))
     ap.add_argument("--years", type=int, default=3)
     ap.add_argument("--ciks")
     ap.add_argument("--rps", type=float, default=4.0)
     a = ap.parse_args()
+    if a.stage == "verify":
+        sys.exit(verify(a))
     acquire(a) if a.stage == "acquire" else build(a)
 
 

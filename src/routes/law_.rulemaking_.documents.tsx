@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
-import { ApiLawBrowser, validateBrowserSearch, type BrowserSearch } from "@/components/apiLaw/ApiLawBrowser";
+import { ApiLawBrowser } from "@/components/apiLaw/ApiLawBrowser";
+import { validateBrowserSearch, type BrowserSearch } from "@/components/apiLaw/browserSearch";
 import { RulemakingTabs } from "@/components/apiLaw/RulemakingTabs";
 import { pageHead } from "@/lib/corpus/head";
 
 /** Law & government › Rulemaking › Regulations.gov documents (rules, proposed rules, notices). */
 export const Route = createFileRoute("/law_/rulemaking_/documents")({
-  validateSearch: (s: Record<string, unknown>): BrowserSearch => validateBrowserSearch("regulations_gov_documents", s),
+  validateSearch: (s: Record<string, unknown>): BrowserSearch =>
+    validateBrowserSearch("regulations_gov_documents", s),
   head: () =>
     pageHead(
       "Regulations.gov documents",
@@ -22,7 +24,11 @@ function Page() {
     <AppShell
       title="Rulemaking"
       description="Rules, proposed rules and notices on Regulations.gov, each linked to its docket and, by exact document number, to the Federal Register record and its CFR parts."
-      breadcrumbs={[{ label: "Law & government", to: "/law" }, { label: "Rulemaking", to: "/law/rulemaking" }, { label: "Documents" }]}
+      breadcrumbs={[
+        { label: "Law & government", to: "/law" },
+        { label: "Rulemaking", to: "/law/rulemaking" },
+        { label: "Documents" },
+      ]}
     >
       <RulemakingTabs active="documents" />
       <ApiLawBrowser

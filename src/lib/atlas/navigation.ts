@@ -162,7 +162,8 @@ const LAW_STATE =
   /^(state_code|state_constitution|state_regulation_|court_rule_|indiana_code$|sd_statutes$|provider_laws$)/;
 const LAW_TIME_LIMITS = /^(limitation_periods$|statutory_limitations_review$)/;
 const LAW_AGENCIES = /^(fr_agency_|agency_budget_trends$|agency_spending_by_state$)/;
-const LAW_RULEMAKING = /^(unified_agenda_pipeline$|regulatory_federal_register_activity$|regulations_gov_)/;
+const LAW_RULEMAKING =
+  /^(unified_agenda_pipeline$|regulatory_federal_register_activity$|regulations_gov_)/;
 const COURTS_JUDGES = /^(judge|judicial_|cl_people$)/;
 
 /**
