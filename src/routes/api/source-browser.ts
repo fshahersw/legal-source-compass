@@ -29,14 +29,21 @@ export const Route = createFileRoute("/api/source-browser")({
         }
         if (typeof body.url !== "string" || body.url.length > 2000)
           return Response.json({ error: "Bad address." }, { status: 400 });
-        const { startRemoteBrowser } = await import("@/lib/sourceViewer/remote.server");
+        const { serverTiming, startRemoteBrowser } =
+          await import("@/lib/sourceViewer/remote.server");
+        const started = Date.now();
         try {
           const session = await startRemoteBrowser(
             body.url,
             typeof body.width === "number" ? body.width : 1200,
             typeof body.height === "number" ? body.height : 900,
           );
-          return Response.json(session, { headers: { "cache-control": "no-store" } });
+          return Response.json(session, {
+            headers: {
+              "cache-control": "no-store",
+              "server-timing": serverTiming([{ name: "session", dur: Date.now() - started }]),
+            },
+          });
         } catch (error) {
           return Response.json(
             {

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-/** Relays a public file: shown inline for PDFs, images and plain text, otherwise downloaded. HTML is never served inline. */
+/** Relays a public file: shown inline for PDFs, images and text, otherwise downloaded. HTML is never served inline. */
 export const Route = createFileRoute("/api/source-file")({
   server: {
     handlers: {
