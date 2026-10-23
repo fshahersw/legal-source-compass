@@ -220,7 +220,7 @@ def extract_links(body: bytes | BeautifulSoup, base_url: str) -> list[Link]:
 # titles
 
 
-ROLE_MODS = {"inactive", "chief", "senior", "visiting", "recalled", "recall", "retired", "acting", "u.s.", "us", "u.s", "united", "states", "district",
+ROLE_MODS = {"sr.", "mag.", "inactive", "chief", "senior", "visiting", "recalled", "recall", "retired", "acting", "u.s.", "us", "u.s", "united", "states", "district",
              "magistrate", "bankruptcy", "circuit", "article", "iii", "full-time", "part-time", "the", "court", "for", "of", "appeals", "u. s."}
 ROLE_CORE = re.compile(r"\bjudges?\b", re.I)
 
@@ -246,7 +246,7 @@ def role_phrase(text: str) -> str | None:
         kept.pop(0)
     phrase = " ".join([*kept, m.group(0)])
     right = text[m.end():]
-    sbd = re.match(r"\s+(sitting\s+by\s+designation)", right, re.I)
+    sbd = re.match(r"(?:\s+[\w.'’\-]+){0,5},?\s+(sitting\s+by\s+designation)", right, re.I)  # "Judge Peter G. Cary, sitting by designation"
     if sbd:
         phrase += " " + sbd.group(1)
     else:
@@ -269,10 +269,10 @@ def classify_title(text: str | None, court_level: str | None = None) -> tuple[st
     if "sitting by designation" in t or "visiting" in t or ("circuit" in t and "district" not in t and "bankruptcy" not in t and "magistrate" not in t):
         return "other", "text"
     chief = "chief" in t
-    senior = "senior" in t or "recall" in t
+    senior = "senior" in t or "recall" in t or bool(re.search(r"\bsr\b\.?", t))  # "Sr. Judge" is the court's abbreviation of Senior
     if "bankruptcy" in t:
         return ("chief_bankruptcy_judge" if chief else "bankruptcy_judge"), "text"
-    if "magistrate" in t:
+    if "magistrate" in t or re.search(r"\bmag\b\.?", t):
         if chief:
             return "chief_magistrate_judge", "text"
         return ("senior_magistrate_judge" if senior and "recall" in t else "magistrate_judge"), "text"
@@ -302,7 +302,7 @@ TITLE_LABEL = {
 
 HON = re.compile(r"^(?:the\s+)?(?:hon\.?|honorable)\s+", re.I)
 LEAD_ROLE = re.compile(
-    r"^(?:(?:the\s+)?(?:inactive|chief|senior|visiting|recalled|recall|u\.?\s?s\.?|united\s+states|district|magistrate|bankruptcy|circuit|article\s+iii)\s+)*"
+    r"^(?:(?:the\s+)?(?:inactive|chief|senior|sr\.?|mag\.?|visiting|recalled|recall|u\.?\s?s\.?|united\s+states|district|magistrate|bankruptcy|circuit|article\s+iii)\s+)*"
     r"judge\s+", re.I)
 TRAIL_ROLE = re.compile(
     r"\s*[,\-–—|(]\s*(?:(?:chief|senior|visiting|recalled|recall|retired|u\.?\s?s\.?|united\s+states|district|magistrate|bankruptcy|circuit)\s+)*"
@@ -321,7 +321,9 @@ NOT_JUDGE = re.compile(
 
 GENERIC_TAIL = re.compile(r"\s*[-\u2013\u2014|,:]?\s*(?:chambers(?:\s+(?:directory|information|page|contact information))?|opinions?|biograph(?:y|ies)|"
                           r"instructions\s+and\s+forms|(?:court\s+)?procedures?|practices|rules|home\s+page)\s*$", re.I)
-GENERIC_NAMES = {"biography", "biographies", "judge", "judges", "home", "chambers", "opinions", "procedures", "information", "page"}
+GENERIC_NAMES = {"biography", "biographies", "judge", "judges", "home", "chambers", "opinions", "procedures", "information", "page", "remote", "access",
+                 "welcome", "zoom", "telephonic", "appearances", "guidelines", "notice", "notices", "contact", "calendar", "calendars", "tba", "tbd",
+                 "vacant", "vacancy", "vacancies"}
 FUNCTION_WORDS = {"of", "and", "the", "for", "to", "in", "on", "a", "an", "with", "role"}
 
 
@@ -346,17 +348,37 @@ def resolve_name(candidates: list[str | None]) -> tuple[str | None, str | None]:
         if not c:
             continue
         n = strip_name(reorder_last_first(clean(c)))
+        published = proc_title_name(clean(c)) or clean(c)
         if person_like(n):
-            return clean(c), n
+            return published, n
         if single is None and person_like(n, allow_single=True):
-            single = (clean(c), n)
+            single = (published, n)
     return single if single else (None, None)
+
+
+PROC_BEFORE = re.compile(r"^.*?\b(?:procedures?|requirements|practices|rules|calendar|chambers|orders?)\b.*?\b(?:before|of|for)\s+(?:the\s+)?"
+                         r"(?=(?:hon\.?\s*|honorable\s+)\S)", re.I)
+LOCATION_TAIL = re.compile(r"\s+[-–—]\s+[A-Z][A-Za-z.]*(?:\s[A-Z][A-Za-z.]*)?$")
+
+
+def proc_title_name(text: str) -> str | None:
+    """The judge as a page titled "Procedures for Hearings before Hon. Frank J. Santoro - Norfolk" prints the name ("Hon. Frank J. Santoro"), else None."""
+    pb = PROC_BEFORE.match(text)
+    if not pb:
+        return None
+    rest = LOCATION_TAIL.sub("", text[pb.end():])
+    return re.sub(r"^(hon\.?)(?=[A-Za-z])", r"\1 ", rest, flags=re.I)
 
 
 def strip_name(text: str) -> str:
     """The person's name from a link or heading: honorific, title words and trailing role removed; parentheses kept out."""
     t = clean(text)
+    if ">" in t:  # a breadcrumb ("HOME >> JUDGES > CHIEF JUDGE JACOB A. BROWN"): the last step is the page's own name
+        t = clean(t.rsplit(">", 1)[-1])
     t = re.sub(r"^(?:biography|profile|about|chambers of|information)\s*[-\u2013\u2014:]\s*(?=\S)", "", t, flags=re.I)
+    named = proc_title_name(t)
+    if named:  # "Procedures for Hearings before Hon. Frank J. Santoro - Norfolk": the page is titled by what it holds and the judge it is for
+        t = named
     t = HON.sub("", t)
     t = LEAD_ROLE.sub("", t)
     t = TRAIL_ROLE.sub("", t)
@@ -368,10 +390,11 @@ def strip_name(text: str) -> str:
         if t2 == t:
             break
         t = t2
-    return clean(t)
+    t = clean(t)
+    return t.title() if len(t) > 3 and t.isupper() else t  # "JACOB A. BROWN" (a breadcrumb in capitals) -> "Jacob A. Brown"
 
 
-ROLE_WORDS = re.compile(r"\b(?:hon|honorable|the|inactive|chief|senior|visiting|recalled|recall|u\.?\s?s\.?|united|states|district|magistrate|bankruptcy|circuit|"
+ROLE_WORDS =re.compile(r"\b(?:hon|honorable|the|inactive|chief|senior|visiting|recalled|recall|u\.?\s?s\.?|united|states|district|magistrate|bankruptcy|circuit|"
                         r"article|iii|judge|judges|court|for|of)\b\.?", re.I)
 
 
@@ -429,6 +452,15 @@ class Entry:
 FORMER_PATH = re.compile(r"(portrait|former|retired|emerit|memoriam|past-judges|deceased|history|historical|honor-roll|legacy|taxonomy/term|"
                          r"\d{4}-present|1789)", re.I)
 FORMER_HEADING = re.compile(r"\b(?:former|retired|emerit\w*|past|late|deceased|in memoriam|history|historical|portraits?)\b", re.I)
+
+
+FORMER_MARK = re.compile(r"\(\s*(?:ret(?:ired)?|dec(?:eased)?|emerit(?:us|a)|ret\.? ?\d{4}|d\.? ?\d{4}|in memoriam)\.?\s*\)", re.I)
+
+
+def former_marker(text: str) -> str | None:
+    """"Judge Diane Finkle (ret.)", "Judge Arthur N. Votolato (dec.)": a listing that marks the person as retired or deceased in the link text."""
+    m = FORMER_MARK.search(text or "")
+    return f"the listing marks the name '{m.group(0)}'" if m else None
 
 
 def is_former(url: str, headings: tuple[str, ...]) -> str | None:
@@ -886,9 +918,12 @@ def parse_judge_page(body: bytes, url: str, *, court_level: str | None = None, e
 
     heads = [clean(h.get_text(" ")) for h in root.find_all(["h1", "h2", "h3"]) if not in_chrome(h, root)]
     judge_heads = [h for h in heads if h and (looks_like_judge_link(h) or role_phrase(h)) and len(h) < 120]
+    crumb = next((clean(t.get_text(" ")) for t in root.find_all(["strong", "b", "p", "div", "span", "li"])
+                  if not in_chrome(t, root) and ">" in t.get_text() and re.search(r"\bjudge\b", t.get_text(), re.I)
+                  and len(clean(t.get_text(" "))) < 140 and not t.find(["p", "div", "li", "ul"])), None)  # "HOME >> JUDGES > CHIEF JUDGE JACOB A. BROWN"
     name_src, name = resolve_name([h1 if h1 and (looks_like_judge_link(h1) or role_phrase(h1) or is_person_name(h1)) else None,
                                    entry.name_text if entry else None, ptitle if ptitle and looks_like_judge_link(ptitle) else None,
-                                   *judge_heads, h1, ptitle])
+                                   *judge_heads, clean(crumb.rsplit(">", 1)[-1]) if crumb else None, h1, ptitle])
 
     evidence: list[tuple[str, str | None]] = []
     evidence.append(("judge page heading", h1))
@@ -948,8 +983,8 @@ def reorder_last_first(name: str) -> str:
 
 
 _JUDGE_LINE = [
-    re.compile(r"^(?:the\s+)?(?:hon\.?|honorable)\s+(?P<name>[^,()]+?)(?:,\s*(?P<role>[^()]*\bjudge\b.*?))?$", re.I),
-    re.compile(r"^(?P<role>(?:(?:chief|senior|u\.?\s?s\.?|united states|district|magistrate|bankruptcy|visiting|recalled)\s+)*)judge\s+"
+    re.compile(r"^(?:the\s+)?(?:hon\.?|honorable)\s+(?P<name>[^,()]+?)(?:,?\s+(?:jr\.?|sr\.?|ii|iii|iv))?(?:,\s*(?P<role>[^()]*\bjudge\b.*?))?$", re.I),
+    re.compile(r"^(?P<role>(?:(?:chief|senior|sr\.?|mag\.?|u\.?\s?s\.?|united states|district|magistrate|bankruptcy|visiting|recalled)\s+)*)judge\s+"
                r"(?P<name>[^,()]+?)(?:,\s*(?:jr\.?|sr\.?|ii|iii|iv))?$", re.I),
     re.compile(r"^(?P<name>[^,()]+?),\s*(?P<role>(?:(?:chief|senior|u\.?\s?s\.?|united states|district|magistrate|bankruptcy)\s+)*judge\b.*)$",
                re.I),
@@ -969,6 +1004,45 @@ def _anchor_links(anchors: list[Tag], base_url: str, heading: str | None) -> lis
     return out
 
 
+GROUP_LABEL = re.compile(r"^(?:(?:u\.?\s?s\.?|united states|active|senior|article iii|chief|district|bankruptcy|magistrate|court|full-time|part-time)\s+)*"
+                         r"(?:judges?|judicial officers)$", re.I)
+
+
+def br_lines(el: Tag) -> list[str]:
+    """The text of a block split at its <br> tags, one cleaned line each (empty lines dropped)."""
+    out = [""]
+    for node in el.descendants:
+        if isinstance(node, NavigableString):
+            out[-1] += str(node)
+        elif isinstance(node, Tag) and node.name == "br":
+            out.append("")
+    return [x for x in (clean(t) for t in out) if x]
+
+
+def is_group_label(text: str) -> bool:
+    """A line that labels a group of judges ("U.S. District Court Magistrate Judges", "Senior Judges"), as opposed to a judge."""
+    t = clean(text)
+    return len(t) < 60 and bool(GROUP_LABEL.match(t)) and bool(re.search(r"district|bankruptcy|magistrate|senior|chief", t, re.I))
+
+
+def _judge_name(text: str, split: bool) -> str | None:
+    """The judge's name when a line of text reads as a judge ("Hon. Brenda K. Sannes, Chief U.S. District Judge", "Judge Richard Schell")."""
+    if not 6 <= len(text) <= 110 or (text.endswith((".", ";")) and not re.search(r"\b[A-Z]\.$|Jr\.$|Sr\.$", text)):
+        return None
+    match_text = re.sub(r"\s*\([^)]*\)\s*$", "", text) if split else text  # "(Recall Status)" after a name
+    for rx in _JUDGE_LINE:
+        m = rx.match(match_text)
+        if not m:
+            continue
+        name = clean(m.group("name"))
+        if not re.match(r"^[A-Z][A-Za-z'’.\-]+(?:\s+[A-Z][A-Za-z'’.\-]+){1,5}$", name):
+            continue
+        if PERSON_STOP.search(name) and not re.search(r"\b(?:de|la|van|von)\b", name):
+            continue
+        return name
+    return None
+
+
 def text_roster(body: bytes | BeautifulSoup, base_url: str, *, scope: str = "main") -> list[Entry]:
     """Judges named only in the text of a listing (no page of their own): lines such as "Hon. Brenda K. Sannes, Chief U.S. District Judge"
     or "Judge Richard Schell". The entry's address is the listing page itself (with a fragment naming the judge).
@@ -980,7 +1054,7 @@ def text_roster(body: bytes | BeautifulSoup, base_url: str, *, scope: str = "mai
     root = main_root(soup) if scope == "main" else (soup.body or soup)
     flat = [e for e in root.descendants if isinstance(e, Tag)]
     stack: dict[int, str] = {}
-    found: list[tuple[int, Tag, str, str, str, int | None, tuple[str, ...]]] = []   # index, element, text, name, role, section level, headings
+    found: list[tuple[int, Tag, str, str, str, int | None, tuple[str, ...], bool]] = []   # index, element, text, name, role, section level, headings, from a <br> line
     for i, el in enumerate(flat):
         level: int | None = None
         if HEADING.match(el.name or ""):
@@ -991,35 +1065,40 @@ def text_roster(body: bytes | BeautifulSoup, base_url: str, *, scope: str = "mai
                 stack[level] = clean(el.get_text(" "))
         elif el.name not in _BLOCKS or el.find(["li", "p", "td", "tr", "div", "h1", "h2", "h3", "h4"]):
             continue
-        text = clean(el.get_text(" "))
-        if el.name == "a" and re.match(r"^(?:u\.?s\.? )?(?:active |senior |article i+ )?(?:district|magistrate|bankruptcy|senior)(?: court)? judges$", text, re.I):
-            for k in [k for k in stack if k >= 6]:
-                del stack[k]
-            stack[6] = text  # a menu group label ("District Judges") above the names listed under it
-            continue
-        if not 6 <= len(text) <= 110 or (text.endswith((".", ";")) and not re.search(r"\b[A-Z]\.$|Jr\.$|Sr\.$", text)):
-            continue
-        for rx in _JUDGE_LINE:
-            m = rx.match(text)
-            if not m:
+        lines = [(clean(el.get_text(" ")), False)]
+        if el.find("br") and level is None:
+            cand = br_lines(el)
+            if sum(1 for t in cand if _judge_name(t, True)) >= 2:  # "Hon. A<br>Hon. B<br>Hon. C": one judge to a line
+                lines = [(t, True) for t in cand]
+        for text, split in lines:
+            if is_group_label(text):
+                if level is None:  # a heading is already in the stack at its own level
+                    for k in [k for k in stack if k >= 6]:
+                        del stack[k]
+                    stack[6] = text  # a group label that is not a heading ("District Judges", "Mag. Judges") above the names listed under it
                 continue
-            name = clean(m.group("name"))
-            if not re.match(r"^[A-Z][A-Za-z'’.\-]+(?:\s+[A-Z][A-Za-z'’.\-]+){1,5}$", name):
-                continue
-            if PERSON_STOP.search(name) and not re.search(r"\b(?:de|la|van|von)\b", name):
-                continue
-            if level is None and el.name in ("strong", "b", "p") and not el.find_parent(["li", "td", "tr"]):
-                level = 7  # a bold line standing alone heads what follows it
-            found.append((i, el, text, name, role_phrase(text) or "", level, tuple(stack[k] for k in sorted(stack))))
-            break
+            name = _judge_name(text, split)
+            if name:
+                lvl = level
+                if lvl is None and not split and el.name in ("strong", "b", "p") and not el.find_parent(["li", "td", "tr"]):
+                    lvl = 7  # a bold line standing alone heads what follows it
+                found.append((i, el, text, name, role_phrase(text) or "", lvl, tuple(stack[k] for k in sorted(stack)), split))
     seen: dict[str, Entry] = {}
     starts = [f[0] for f in found]
-    for n, (i, el, text, name, role, level, headings) in enumerate(found):
+    row_judges: dict[int, set[str]] = {}
+    for f in found:
+        r_ = f[1].find_parent(["tr", "li"])
+        if r_ is not None:
+            row_judges.setdefault(id(r_), set()).add(norm_name(f[3]))
+    row_counts = {k: len(v) for k, v in row_judges.items()}  # judges named in each row (a judge named twice in one row counts once)
+    for n, (i, el, text, name, role, level, headings, split) in enumerate(found):
         key = norm_name(name)
         if key in seen:
             continue
         docs: list[Link] = []
-        if level is not None:
+        if split:
+            pass  # one of several judges in one paragraph: the links nearby do not belong to any one of them
+        elif level is not None:
             end = len(flat)
             nxt = starts[n + 1] if n + 1 < len(starts) else len(flat)
             for j in range(i + 1, len(flat)):
@@ -1034,7 +1113,7 @@ def text_roster(body: bytes | BeautifulSoup, base_url: str, *, scope: str = "mai
             docs = _anchor_links(anchors, base_url, text)
         else:
             row = el.find_parent(["tr", "li"])
-            if row is not None:
+            if row is not None and row_counts.get(id(row), 0) <= 1:  # a row that names several judges does not say whose its links are
                 anchors = [t for t in row.find_all("a", href=True) if el not in t.parents and t is not el]
                 docs = _anchor_links(anchors, base_url, text)
         slug = re.sub(r"[^a-z0-9]+", "-", key).strip("-")

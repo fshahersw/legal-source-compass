@@ -193,5 +193,181 @@
   },
   "gub": {
     "skip": "The bankruptcy court of Guam is staffed by the District Court of Guam's judges; the shared site lists no separate bankruptcy judge. Nothing was recorded for this court so that no district judge is shown as a bankruptcy judge."
+  },
+  "cacd": {
+    "note": "The court's 'Judges' Procedures and Schedules' app (a single-page app) reads the court's own public JSON service for judges and documents; that service is read with the same pacing and robots.txt rules.",
+    "adapter": "cacd_jps"
+  },
+  "mnd": {
+    "note": "Chambers Contact Information lists every judge by title; the Judges' Practice Pointers page links each judge's document under the judge's name.",
+    "listing_urls": [
+      "https://www.mnd.uscourts.gov/chambers-contact-information"
+    ],
+    "skip_link_entries": true,
+    "text_roster": true,
+    "no_sublistings": true
+  },
+  "iasb": {
+    "listing_urls": [
+      "https://www.iasb.uscourts.gov/judges-chambers"
+    ],
+    "skip_link_entries": true,
+    "text_roster": true,
+    "no_sublistings": true
+  },
+  "akb": {
+    "note": "The judge's page is published as /judges-info/judge-example.",
+    "listing_urls": [
+      "https://www.akb.uscourts.gov/court-contact-information"
+    ],
+    "extra_entry_urls": [
+      "https://www.akb.uscourts.gov/judges-info/judge-example"
+    ],
+    "skip_link_entries": true,
+    "no_sublistings": true
+  },
+  "flmb": {
+    "listing_urls": [
+      "https://www.flmb.uscourts.gov/judges/"
+    ],
+    "entry_href_regex": "flmb\\.uscourts\\.gov/judges/[A-Za-z]+/?$",
+    "no_sublistings": true
+  },
+  "mab": {
+    "listing_urls": [
+      "https://www.mab.uscourts.gov/case-administration-and-courtroom-staff"
+    ],
+    "skip_link_entries": true,
+    "text_roster": true,
+    "no_sublistings": true
+  },
+  "mssb": {
+    "note": "The chambers page names the judges by surname only; full names are taken from the court's own pages where they are printed.",
+    "listing_urls": [
+      "https://www.mssb.uscourts.gov/judges-chambers"
+    ],
+    "manual_roster": [
+      {
+        "source_url": "https://www.mssb.uscourts.gov/judges-chambers",
+        "name": "Katharine M. Samson",
+        "title": "Chief Judge",
+        "evidence": "Katharine M\\. Samson, Chief Judge"
+      },
+      {
+        "source_url": "https://www.mssb.uscourts.gov/hearing-location-information",
+        "name": "Jamie A. Wilson",
+        "title": "Judge",
+        "evidence": "Judge Jamie A\\. Wilson"
+      }
+    ],
+    "skip_link_entries": true,
+    "no_sublistings": true
+  },
+  "ncmb": {
+    "listing_urls": [
+      "https://www.ncmb.uscourts.gov/chambers-contact-procedural-info"
+    ],
+    "skip_link_entries": true,
+    "entry_href_regex": "/content/[a-z]+(?:-[a-z]+)+$",
+    "entry_main_only": true,
+    "no_sublistings": true
+  },
+  "nhb": {
+    "listing_urls": [
+      "https://www.nhb.uscourts.gov/judges-info"
+    ],
+    "manual_roster": [
+      {
+        "source_url": "https://www.nhb.uscourts.gov/judges-info",
+        "name": "Kimberly Bacher",
+        "title": "Chief Bankruptcy Judge",
+        "evidence": "Kimberly Bacher\\s+Chief Bankruptcy Judge"
+      },
+      {
+        "source_url": "https://www.nhb.uscourts.gov/judges-info",
+        "name": "Peter G. Cary",
+        "title": "Judge Peter G. Cary, sitting by designation",
+        "evidence": "Judge Peter G\\. Cary, sitting by designation"
+      },
+      {
+        "source_url": "https://www.nhb.uscourts.gov/judges-info",
+        "name": "Michael A. Fagone",
+        "title": "Judge Michael A. Fagone, sitting by designation",
+        "evidence": "Judge Michael A\\. Fagone, sitting by designation"
+      },
+      {
+        "source_url": "https://www.nhb.uscourts.gov/judges-info",
+        "name": "Christopher J. Panos",
+        "title": "Judge Christopher J. Panos, sitting by designation",
+        "evidence": "Judge Christopher J\\. Panos, sitting by designation"
+      }
+    ],
+    "skip_link_entries": true,
+    "no_sublistings": true
+  },
+  "rib": {
+    "listing_urls": [
+      "https://www.rib.uscourts.gov/us-bankruptcy-court-district-rhode-island"
+    ],
+    "no_sublistings": true
+  },
+  "tnwb": {
+    "listing_urls": [
+      "https://www.tnwb.uscourts.gov/tnw/Chambers.aspx"
+    ],
+    "no_sublistings": true
+  },
+  "vaeb": {
+    "note": "The court has no judge pages; each judge's 'Procedures for Hearings before Hon. ...' page is the judge's page. The division pages list them.",
+    "listing_urls": [
+      "https://www.vaeb.uscourts.gov/content/alexandria",
+      "https://www.vaeb.uscourts.gov/content/richmond",
+      "https://www.vaeb.uscourts.gov/content/norfolk",
+      "https://www.vaeb.uscourts.gov/content/newport-news"
+    ],
+    "skip_link_entries": true,
+    "entry_href_regex": "/(?:content/)?procedures-hearings-hon[a-z]*-[a-z-]+$",
+    "exclude_href_regex": "kenney-and-hon|honorable-judge",
+    "entry_main_only": true,
+    "no_sublistings": true,
+    "no_index_docs": true
+  },
+  "vaed": {
+    "note": "Division pages list the court's judges by title.",
+    "listing_urls": [
+      "https://www.vaed.uscourts.gov/Alexandria",
+      "https://www.vaed.uscourts.gov/Richmond",
+      "https://www.vaed.uscourts.gov/Norfolk",
+      "https://www.vaed.uscourts.gov/Newport%20News"
+    ],
+    "skip_link_entries": true,
+    "text_roster": true,
+    "no_sublistings": true
+  },
+  "nmid": {
+    "note": "The site prints the chief judge and the clerk of court / magistrate judge in its header.",
+    "listing_urls": [
+      "https://www.nmid.uscourts.gov/about-us"
+    ],
+    "manual_roster": [
+      {
+        "source_url": "https://www.nmid.uscourts.gov/",
+        "name": "Ramona V. Manglona",
+        "title": "Chief Judge",
+        "evidence": "Ramona V\\. Manglona, Chief Judge"
+      },
+      {
+        "source_url": "https://www.nmid.uscourts.gov/",
+        "name": "Heather L. Kennedy",
+        "title": "Magistrate Judge",
+        "evidence": "Heather L\\. Kennedy, Clerk of Court/Magistrate Judge"
+      }
+    ],
+    "skip_link_entries": true,
+    "no_sublistings": true
+  },
+  "hid": {
+    "note": "The court's website is a single-page app that reads judges and their requirement files from the court's own content service (/cms); that service is read with the same pacing and robots.txt rules.",
+    "adapter": "hid_cms"
   }
 }

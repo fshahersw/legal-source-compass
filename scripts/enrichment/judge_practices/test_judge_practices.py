@@ -268,5 +268,111 @@ class Fetching(unittest.TestCase):
         self.assertNotEqual(a, fl.page_path("https://www.nysd.uscourts.gov/judges?x=1"))
 
 
+class CourtAbbreviationsAndPageTitles(unittest.TestCase):
+    """Sites that print "Sr. Judge" and "Mag. Judge", and judge pages titled by what they hold ("Procedures for Hearings before Hon. ...")."""
+
+    def test_sr_and_mag_are_read_as_senior_and_magistrate(self):
+        c = pl.classify_title
+        self.assertEqual(c("Sr. Judge", "district"), ("senior_district_judge", "court_type"))
+        self.assertEqual(c("Mag. Judge", "district"), ("magistrate_judge", "text"))
+        self.assertEqual(pl.role_phrase("Sr. Judge Paul A. Magnuson"), "Sr. Judge")
+        self.assertEqual(pl.strip_name("Sr. Judge Paul A. Magnuson"), "Paul A. Magnuson")
+        self.assertEqual(pl.strip_name("Mag. Judge Elizabeth Cowan Wright"), "Elizabeth Cowan Wright")
+
+    def test_text_roster_reads_the_abbreviated_titles(self):
+        html = (b"<html><body><main><h1>Chambers Contact Information</h1><h2>U.S. District Court Judges</h2>"
+                b"<p>Chief Judge Eric C. Tostrud</p><p>Sr. Judge Paul A. Magnuson</p>"
+                b"<h2>U.S. District Court Magistrate Judges</h2><p>Mag. Judge Leo I. Brisbois</p></main></body></html>")
+        es = pl.text_roster(html, "https://www.mnd.uscourts.gov/chambers-contact-information")
+        self.assertEqual([e.name_text for e in es], ["Chief Judge Eric C. Tostrud", "Sr. Judge Paul A. Magnuson", "Mag. Judge Leo I. Brisbois"])
+        titles = [pl.entry_only_judge(e, "district") for e in es]
+        self.assertEqual([t.name for t in titles], ["Eric C. Tostrud", "Paul A. Magnuson", "Leo I. Brisbois"])
+        self.assertEqual([t.title_class for t in titles], ["chief_district_judge", "senior_district_judge", "magistrate_judge"])
+        self.assertEqual(titles[1].title_as_published, "Sr. Judge")  # as printed, never expanded
+
+    def test_name_from_a_procedures_page_title(self):
+        self.assertEqual(pl.strip_name("Procedures for Hearings before Hon. Frank J. Santoro - Norfolk"), "Frank J. Santoro")
+        self.assertEqual(pl.strip_name("Procedures for Hearings before Hon. Brian F. Kenney, Chief Judge"), "Brian F. Kenney")
+        self.assertEqual(pl.strip_name("Hon. Lewis J. Liman"), "Lewis J. Liman")
+        self.assertEqual(pl.strip_name("Procedures for Hearings before Hon.Klinette H. Kindred"), "Klinette H. Kindred")
+        # the name is reported as the page prints it, without the words around it and without the location suffix
+        self.assertEqual(pl.resolve_name(["Procedures for Hearings before Hon. Frank J. Santoro - Norfolk"]), ("Hon. Frank J. Santoro", "Frank J. Santoro"))
+        self.assertEqual(pl.resolve_name(["Procedures for Hearings before Hon.Klinette H. Kindred"]), ("Hon. Klinette H. Kindred", "Klinette H. Kindred"))
+
+    def test_breadcrumb_in_capitals_and_page_labels(self):
+        self.assertEqual(pl.strip_name("HOME >> JUDGES > CHIEF JUDGE JACOB A. BROWN"), "Jacob A. Brown")
+        self.assertFalse(pl.person_like("Remote Access"))
+        self.assertTrue(pl.person_like("Jacob A. Brown"))
+
+    def test_retired_and_deceased_marks_in_a_listing(self):
+        self.assertTrue(pl.former_marker("Judge Diane Finkle (ret.)"))
+        self.assertTrue(pl.former_marker("Judge Arthur N. Votolato (dec.)"))
+        self.assertIsNone(pl.former_marker("Judge John A. Dorsey"))
+
+    def test_text_roster_splits_lines_and_does_not_share_a_rows_links(self):
+        html = (b"<html><body><main><table><tr><td><p><strong>District Judges</strong></p>"
+                b"<p>Hon. Leonie M. Brinkema<br/>Hon. Rossie David Alston, Jr.</p>"
+                b"<p><strong>Magistrate Judges</strong></p><p>Hon. Ivan D. Davis<br/>Hon. John F. Anderson (<em>Recall Status</em>)</p></td>"
+                b"<td><ul><li><a href='/files/telephone.pdf'>Telephone Directory</a></li></ul></td></tr></table></main></body></html>")
+        es = pl.text_roster(html, "https://www.vaed.uscourts.gov/Alexandria")
+        self.assertEqual([pl.strip_name(e.name_text) for e in es], ["Leonie M. Brinkema", "Rossie David Alston, Jr.", "Ivan D. Davis", "John F. Anderson"])
+        self.assertEqual([e.heading for e in es], ["District Judges", "District Judges", "Magistrate Judges", "Magistrate Judges"])
+        self.assertTrue(all(not e.docs for e in es))
+        js = [pl.entry_only_judge(e, "district") for e in es]
+        self.assertEqual([j.title_class for j in js], ["district_judge", "district_judge", "magistrate_judge", "magistrate_judge"])
+
+
+class ManualRoster(unittest.TestCase):
+    """A judge named in an override roster is recorded only when the name (and title) appear verbatim on the page named as the source."""
+
+    PAGE = (b"<html><body><main><h1>Judges' Info</h1><h2>Judges</h2><p>Kimberly Bacher</p><p>Chief Bankruptcy Judge</p>"
+            b"<a href='/x.pdf'>Judge Peter G. Cary, sitting by designation</a></main></body></html>")
+    COURT = {"court_id": "tstb", "host": "www.tstb.uscourts.gov", "home_url": "https://www.tstb.uscourts.gov/", "level": "bankruptcy",
+             "name": "Test Bankruptcy Court", "shared_with": []}
+
+    def run_court(self, roster):
+        from types import SimpleNamespace as NS
+        from unittest import mock
+
+        import crawl_courts as cc
+
+        src = "https://www.tstb.uscourts.gov/judges-info"
+
+        def fake_get_page(url, refresh=False):
+            if url == src:
+                return NS(ok=True, body=self.PAGE, final_url=url, status=200, blocked=None, error=None, cached=True, sha256="0" * 64)
+            return NS(ok=False, body=None, final_url=url, status=404, blocked=None, error=None, cached=True, sha256=None)
+
+        robots = NS(status=200, delay=None, allows=lambda u: True)
+        override = {"listing_urls": [src], "skip_link_entries": True, "no_sublistings": True, "no_index_docs": True, "manual_roster": roster}
+        with mock.patch.object(cc.fl, "robots_for", return_value=robots), mock.patch.object(cc.fl, "get_page", side_effect=fake_get_page), \
+                mock.patch.object(cc, "home_body", return_value=(None, "test")), mock.patch.object(cc.fl, "request_count", return_value=0):
+            return cc.crawl_court(self.COURT, override, False, False), src
+
+    def test_verbatim_entries_are_recorded_with_the_title_as_printed(self):
+        res, src = self.run_court([
+            {"source_url": "https://www.tstb.uscourts.gov/judges-info", "name": "Kimberly Bacher", "title": "Chief Bankruptcy Judge",
+             "evidence": "Kimberly Bacher\\s+Chief Bankruptcy Judge"},
+            {"source_url": "https://www.tstb.uscourts.gov/judges-info", "name": "Peter G. Cary", "title": "Judge Peter G. Cary, sitting by designation",
+             "evidence": "Judge Peter G\\. Cary, sitting by designation"},
+        ])
+        by = {j["name"]: j for j in res["judges"]}
+        self.assertEqual(set(by), {"Kimberly Bacher", "Peter G. Cary"})
+        self.assertEqual(by["Kimberly Bacher"]["title_class"], "chief_bankruptcy_judge")
+        self.assertEqual(by["Peter G. Cary"]["title_class"], "other")
+        self.assertTrue(all(j["listing_only"] for j in res["judges"]))
+        self.assertEqual(res["problems"], [])
+
+    def test_a_name_not_on_the_page_is_not_recorded(self):
+        res, _ = self.run_court([
+            {"source_url": "https://www.tstb.uscourts.gov/judges-info", "name": "Some Other Person", "title": "Bankruptcy Judge",
+             "evidence": "Some Other Person"},
+            {"source_url": "https://www.tstb.uscourts.gov/judges-info", "name": "Kimberly Bacher", "title": "Bankruptcy Judge"},  # no evidence given
+            {"source_url": "https://www.tstb.uscourts.gov/missing", "name": "Kimberly Bacher", "evidence": "Kimberly Bacher"},
+        ])
+        self.assertEqual(res["judges"], [])
+        self.assertEqual(len(res["problems"]), 3)
+
+
 if __name__ == "__main__":
     unittest.main()

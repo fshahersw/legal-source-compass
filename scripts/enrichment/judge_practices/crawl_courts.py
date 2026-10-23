@@ -21,6 +21,7 @@ import os
 import re
 import sys
 import threading
+import unicodedata
 import urllib.parse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -161,6 +162,10 @@ def listing_entries(body: bytes, base: str, hosts: set[str], ov: dict, audit: li
     for e in found:
         if urllib.parse.urlparse(e.url).netloc.lower() not in hosts or pl.is_home(e.url) or re.search(r"\bclerk\b", e.name_text, re.I):
             continue
+        why = pl.former_marker(e.name_text)
+        if why:
+            audit.append({"url": e.url, "name": e.name_text, "reason": f"not a sitting judge: {why}"})
+            continue
         if ov.get("exclude_href_regex") and re.search(ov["exclude_href_regex"], e.url):
             continue
         if e.url not in out or (e.name_text and not out[e.url].name_text):
@@ -178,6 +183,31 @@ MAX_INDEX_PAGES = 2
 def surname(name: str) -> str | None:
     toks = [t for t in pl.norm_name(name).split() if len(t) > 1]
     return toks[-1] if toks else None
+
+
+ROLE_TOKENS = {"sr", "mag", "judge", "judges", "chief", "senior", "hon", "honorable", "district", "magistrate", "bankruptcy", "u", "s", "us",
+               "united", "states", "visiting", "recalled", "the", "court", "jr", "ii", "iii", "iv"}
+
+
+def words(text: str) -> list[str]:
+    t = unicodedata.normalize("NFKD", text or "")
+    return re.findall(r"[a-z]+", "".join(c for c in t if not unicodedata.combining(c)).lower())
+
+
+def names_judge(link_text: str, judge_name: str) -> bool:
+    """The link text holds the judge's first and last name, in that order (so two judges with one surname are told apart)."""
+    toks = pl.norm_name(judge_name).split()
+    w = words(link_text)
+    if len(toks) < 2 or toks[0] not in w or toks[-1] not in w:
+        return False
+    return w.index(toks[0]) < len(w) - 1 - w[::-1].index(toks[-1])
+
+
+def only_the_name(link_text: str, judge_name: str) -> bool:
+    """The link text is nothing but the judge's name with title words ("Mag. Judge Elizabeth Cowan Wright"): it names no document."""
+    nm = set(words(judge_name))
+    rest = [x for x in words(link_text) if x not in ROLE_TOKENS]
+    return bool(rest) and all(x in nm for x in rest)
 
 
 def attach_index_docs(result: dict, court: dict, hosts: set[str], bodies: list[tuple[str, bytes]], judge_urls: set[str], refresh: bool,
@@ -229,10 +259,19 @@ def attach_index_docs(result: dict, court: dict, hosts: set[str], bodies: list[t
                 continue
             docs, _ = pl.document_links(e.docs, url, hosts)
             found.setdefault(id(target), (target, []))[1].extend(docs)
-        # (b) a document title that names exactly one judge by surname
+        # (b) a document whose link text holds exactly one judge's full name, or whose title names exactly one judge by surname
         links = [ln for ln in pl.extract_links(soup, r.final_url or url) if not ln.chrome]
         docs_all, _ = pl.document_links(links, url, hosts)
+        index_heading = pl.page_heading(soup) or pl.page_title(soup)
         for d in docs_all:
+            full = [j for j in judges if names_judge(d.title, j["name"])]
+            if len(full) == 1:
+                if index_heading and only_the_name(d.title, full[0]["name"]):
+                    # the court's link text is only the judge's name; the page it sits on says what the document is
+                    d.note = f"link text on the court's page: {d.title}"
+                    d.title = index_heading
+                found.setdefault(id(full[0]), (full[0], []))[1].append(d)
+                continue
             hay = f"{d.title} {d.heading or ''}".lower()
             hits = [sn for sn in by_surname if re.search(r"\b" + re.escape(sn) + r"\b", hay)]
             if len(hits) == 1 and len(by_surname[hits[0]]) == 1:
@@ -243,7 +282,7 @@ def attach_index_docs(result: dict, court: dict, hosts: set[str], bodies: list[t
                 if d.url in have:
                     continue
                 have.add(d.url)
-                d.note = f"listed on the court's page {url}"
+                d.note = f"listed on the court's page {url}" + (f" ({d.note})" if d.note else "")
                 target.setdefault("documents", []).append(d.__dict__)
                 rec["attached"] += 1
                 attached += 1
@@ -264,6 +303,16 @@ def crawl_court(court: dict, override: dict, refresh: bool, parse_only: bool) ->
     if not robots.allows(court["home_url"]):
         result["problems"].append("robots.txt disallows the court's pages for this crawler; nothing was fetched")
         return result
+    if override.get("adapter") == "cacd_jps":
+        import adapter_cacd
+
+        result["home"] = "the court's own judge service (JSON) used by its Judges' Procedures and Schedules app"
+        return adapter_cacd.crawl(court, override, refresh, parse_only, result)
+    if override.get("adapter") == "hid_cms":
+        import adapter_hid
+
+        result["home"] = "the court's own content service (JSON) used by its website"
+        return adapter_hid.crawl(court, override, refresh, parse_only, result)
     home_html, home_how = home_body(court, refresh)
     result["home"] = home_how
     queue = seed_urls(court, home_html, override)
@@ -275,9 +324,9 @@ def crawl_court(court: dict, override: dict, refresh: bool, parse_only: bool) ->
     max_listings = override.get("max_listings", MAX_LISTINGS)
     stage = 0 if "court_locations" in (home_how or "") else 1  # 0: stale home copy used; 1: live home read; 2: guessed addresses tried
     while True:
-        if not queue and not entries and stage < 2 and not parse_only and not override.get("listing_urls"):
+        if not queue and not entries and stage < 2 and not override.get("listing_urls"):
             stage += 1
-            if stage == 1:
+            if stage == 1 and not parse_only:
                 # the 2026-10-19 copy of the home page may be out of date (sites are rebuilt): read the live one once
                 live = fl.get_page(court["home_url"], refresh=True)
                 result["home"] = (home_how or "") + "; re-fetched live"
@@ -334,6 +383,36 @@ def crawl_court(court: dict, override: dict, refresh: bool, parse_only: bool) ->
     for extra in override.get("extra_entry_urls", []):
         entries.setdefault(extra, pl.Entry(name_text="", url=extra, heading=None, headings=(), role_text=None))
         listing_of.setdefault(extra, "override")
+    # judges the court's page prints in a layout no parser reads (name and title on separate lines, names inside images' captions...): each
+    # one is taken only if the name, and the title when one is given, appear verbatim in the text of the page named as the source
+    for m in override.get("manual_roster", []):
+        src = m["source_url"]
+        if parse_only and fl.cached_page(src) is None:
+            continue
+        if fl.request_count() >= STOP_AT["n"]:
+            raise fl.BudgetExhausted("discovery request allowance used")
+        r = fl.get_page(src, refresh=refresh)
+        lp = next((x for x in result["listing_pages"] if x["url"] == src), None)
+        if lp is None:
+            lp = {"url": src, "final_url": r.final_url or src, "status": r.status, "blocked": r.blocked, "error": r.error, "cached": r.cached,
+                  "entries": 0}
+            result["listing_pages"].append(lp)
+        if not r.ok:
+            result["problems"].append(f"roster source {src} could not be read (HTTP {r.status})")
+            continue
+        page_text = pl.clean(pl.soup_of(r.body).get_text(" "))
+        needles = [m["name"], *([m["title"]] if m.get("title") else [])]
+        # the evidence pattern must tie the name to the title as the page prints them together; without it nothing is recorded
+        if not all(n in page_text for n in needles) or not m.get("evidence") or not re.search(m["evidence"], page_text):
+            result["problems"].append(f"roster entry '{m['name']}' not found as written on {src}; not recorded")
+            continue
+        slug = re.sub(r"[^a-z0-9]+", "-", m["name"].lower()).strip("-")
+        url = f"{(r.final_url or src).split('#')[0]}#{slug}"
+        e = pl.Entry(name_text=m["name"], url=url, heading=None, headings=(), role_text=m.get("title"), block=m["name"])
+        if url not in entries:
+            lp["entries"] += 1
+        entries.setdefault(url, e)
+        listing_of.setdefault(url, src)
     # judge pages (entries whose address is a fragment of a listing are judges known only from the listing text)
     count = 0
     for url, e in entries.items():
