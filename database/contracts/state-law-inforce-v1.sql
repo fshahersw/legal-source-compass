@@ -216,7 +216,7 @@ language sql stable set search_path = '' as $$
     'currency_through', e.currency_through, 'source_last_modified', e.source_last_modified,
     'retrieved_from', e.retrieved_from, 'retrieved_to', e.retrieved_to, 'activated_at', e.activated_at,
     'sections', (e.expected->>'sections')::bigint, 'by_status', e.expected->'by_status',
-    'update_cadence', e.update_cadence, 'terms_note', e.terms_note,
+    'update_cadence', e.update_cadence, 'terms_note', e.terms_note, 'source_mode', e.manifest->>'source_mode',
     'codes', coalesce((select jsonb_agg(jsonb_build_object('code', c.code, 'name', c.name,
       'citation_template', c.citation_template) order by c.ordinal) from state_law.codes c
       where c.edition_id = e.edition_id), '[]'::jsonb))
