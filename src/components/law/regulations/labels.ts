@@ -5,9 +5,9 @@ export const ACQUISITION_LABEL: Record<Acquisition, string> = {
   sample: "Rule text: validation sample",
   parser_ready: "Parser ready, text not loaded",
   index_only: "Index only, text not copied",
-  deferred: "Not acquired yet",
+  deferred: "Deferred (publisher not usable now)",
   blocked: "Not retrieved",
-  not_started: "Not acquired yet",
+  not_started: "No parser yet",
 };
 
 export const STATUS_LABEL: Record<string, string> = {
@@ -115,3 +115,7 @@ export const REG_TABS: { id: RegTab; label: string }[] = [
   { id: "register", label: "Register" },
   { id: "source", label: "Source and coverage" },
 ];
+
+export function plural(n: number, one: string, many: string): string {
+  return `${n.toLocaleString("en-US")} ${n === 1 ? one : many}`;
+}

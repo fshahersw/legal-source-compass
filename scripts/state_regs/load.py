@@ -75,7 +75,7 @@ def state_files(st: str, run: str) -> tuple[str, list[str]]:
     return nodes, [s for s in shards if os.path.exists(s)]
 
 
-def load_state(st: str, run: str, build: str, dry: bool) -> None:
+def load_state(st: str, run: str, build: str, dry: bool, delete_after: bool = False) -> None:
     nodes_path, shards = state_files(st, run)
     nodes = list(lib.read_jsonl_gz(nodes_path)) if os.path.exists(nodes_path) else []
     ids = {n["id"] for n in nodes}
@@ -98,6 +98,8 @@ def load_state(st: str, run: str, build: str, dry: bool) -> None:
             for k in ("rows", "written", "unchanged"):
                 totals[k] += res[k]
         print(json.dumps({"state": st, "shard": os.path.basename(path), **totals}), flush=True)
+        if delete_after and not dry and run == "full":
+            os.remove(path)  # loaded and counted; report-full.json keeps its name, row count and sha256
     if not dry:
         print(json.dumps(rpc("state_reg_finish_v1", {"p_state": st})), flush=True)
 
@@ -109,6 +111,7 @@ def main(argv):
     ap.add_argument("--run", choices=["sample", "full"], default="sample")
     ap.add_argument("--build")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--delete-after-load", action="store_true", help="full runs: remove each shard once loaded (disk)")
     a = ap.parse_args(argv)
     if a.command == "codes":
         rows = json.load(open(os.path.join(lib.BUILD, "codes.json")))
@@ -123,7 +126,7 @@ def main(argv):
             raise SystemExit("--build is required for prune")
         print(json.dumps(rpc("state_reg_prune_v1", {"p_state": st, "p_build": a.build})))
         return
-    load_state(st, a.run, build, a.dry_run)
+    load_state(st, a.run, build, a.dry_run, a.delete_after_load)
 
 
 if __name__ == "__main__":

@@ -25,6 +25,7 @@ import {
   fmtDate,
   issueWhen,
   issuesByYear,
+  plural,
   robotsLine,
 } from "./labels";
 
@@ -223,10 +224,8 @@ export function ContentsPanel({ state, node }: { state: string; node: string | u
               </Link>
               <span className="whitespace-nowrap text-[11px] text-muted-foreground">
                 {n.level}
-                {n.children ? ` · ${n.children.toLocaleString("en-US")} parts` : ""}
-                {n.ruleCount !== null
-                  ? ` · ${n.ruleCount.toLocaleString("en-US")} rules listed`
-                  : ""}
+                {n.children ? ` · ${plural(n.children, "entry", "entries")}` : ""}
+                {n.ruleCount !== null ? ` · ${plural(n.ruleCount, "rule", "rules")} listed` : ""}
                 {n.rulesLoaded ? ` · ${n.rulesLoaded.toLocaleString("en-US")} held` : ""}
               </span>
             </li>
