@@ -118,6 +118,13 @@ class Verifier:
             raise RuntimeError(f"range read of {key} returned {r.status_code} / {len(r.content)} bytes")
         return r.content
 
+    def full_name(self, cid: int) -> str | None:
+        """CourtListener's case_name_full for the cluster, from the names file (streamed from its clusters bulk file)."""
+        if not os.path.exists(NAMES):
+            return None
+        hit = self.con.execute(f"SELECT case_name_full FROM read_parquet('{NAMES}') WHERE cluster_id = ?", [cid]).fetchone()
+        return hit[0] if hit else None
+
     # ------------------------------------------------------------------------------------------------ checks
     def metadata(self, cid: int, row: dict) -> None:
         q = self.con.execute("""
@@ -130,7 +137,8 @@ class Verifier:
         ops = sorted(r[0] for r in self.con.execute("SELECT opinion_id FROM sel WHERE cluster_id = ? AND NOT blocked", [cid]).fetchall())
         tier = self.con.execute("SELECT any_value(tier) FROM sel WHERE cluster_id = ?", [cid]).fetchone()[0]
         name, court, date, status, ccount, docket, judges, scdb_id, sdir, smaj, smin, blocked = q
-        exp = {"case_name": norm(name) or "Not recorded", "court_id": court, "date_filed": date, "precedential_status": norm(status),
+        full = self.full_name(cid) if not norm(name) else None
+        exp = {"case_name": expected_case_name(name, full), "court_id": court, "date_filed": date, "precedential_status": norm(status),
                "citation_count": ccount, "docket_number": norm(docket), "judges": norm(judges), "tier": int(tier[1]),
                "citations": cites, "opinions": ops, "blocked": blocked,
                "scdb": {"id": norm(scdb_id), "decision_direction": sdir, "votes_majority": smaj, "votes_minority": smin} if norm(scdb_id) else None}
@@ -305,7 +313,14 @@ class Verifier:
         return "inconclusive"
 
 
-PHRASE = re.compile(r"(?<![A-Za-z'’.-])[A-Za-z]+(?: [A-Za-z]+){5,7}(?![A-Za-z'’-])")
+# whole words only: no letter of any script (e.g. the "é" of an OCR'd "submittéd") may touch either end of the run
+PHRASE = re.compile(r"(?<![^\W\d_])(?<!['’.-])[A-Za-z]+(?: [A-Za-z]+){5,7}(?![^\W\d_])(?!['’-])")
+
+
+def expected_case_name(short: str | None, full: str | None) -> str:
+    """The name a case page should show: CourtListener's case_name, else its case_name_full (its only published name
+    for some clusters), else "Not recorded"."""
+    return norm(short) or norm(full) or "Not recorded"
 
 
 def quote_phrase(text: str) -> str | None:
@@ -353,6 +368,8 @@ def fulltext_extra(v: "Verifier", items: list[dict]) -> None:
             continue
         v.check(cid, "fulltext_extra", verdict == "found", None if verdict == "found" else f"phrase {phrase!r} misses opinion {it['opinion_id']}")
 
+
+NAMES = os.path.join(BUILD, "meta", "names.parquet")
 
 # decompressed stage-1 shards kept in memory (each can be hundreds of MB as dicts); lower it on a busy machine
 SHARD_CACHE = int(os.environ.get("CASELAW_VERIFY_SHARD_CACHE", "40"))

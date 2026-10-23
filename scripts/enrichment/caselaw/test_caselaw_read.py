@@ -388,6 +388,24 @@ class VerifyPhraseTests(unittest.TestCase):
         self.assertIsNone(vc.quote_phrase("Petition denied."))
         self.assertIsNone(vc.quote_phrase("it is so of the to be an in"))  # no run with four longer words
 
+    def test_phrase_never_starts_or_ends_inside_a_word_with_an_accented_letter(self):
+        import verify_caselaw as vc
+
+        text = "Affidavits were submitt\u00e9d by the carriers which were addressed to the effect of the rule."
+        p = vc.quote_phrase(text)
+        self.assertIsNotNone(p)
+        self.assertFalse(p.startswith("d "), p)
+        i = text.find(p)
+        self.assertTrue(i == 0 or not text[i - 1].isalpha(), p)
+        self.assertTrue(i + len(p) == len(text) or not text[i + len(p)].isalpha(), p)
+
+    def test_expected_name_falls_back_to_the_full_name(self):
+        import verify_caselaw as vc
+
+        self.assertEqual(vc.expected_case_name("Roe v. Wade", "Jane Roe v. Henry Wade"), "Roe v. Wade")
+        self.assertEqual(vc.expected_case_name("", "Peter J. Brennan v. Jerry Sine"), "Peter J. Brennan v. Jerry Sine")
+        self.assertEqual(vc.expected_case_name(" ", None), "Not recorded")
+
 
 class CitatorResumeTests(unittest.TestCase):
     """A rerun skips a partition only when what that kind depends on is unchanged."""
