@@ -6,9 +6,12 @@
  */
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { TrendCardView, type CardState } from "@/components/analytics/hub/TrendCard";
 import { ProfileTrend, StaticTrend, TrendGrid } from "@/components/trends/ProfileTrend";
 import { staticDef } from "@/components/trends/trendDefs";
+import { getCourtStatsDistrict } from "@/lib/external/courtStats.functions";
 import { getMdlHierarchy } from "@/lib/external/mdlNetwork.functions";
+import { buildCourtPlYears } from "@/lib/trends/court";
 import { buildMdlMonthlyPending } from "@/lib/trends/mdl";
 import { PROFILE_KINDS } from "@/lib/trends/profile";
 
@@ -66,8 +69,50 @@ export function MdlAdverseCards({ mdl, systems }: { mdl: number; systems: readon
   );
 }
 
+/** Products-liability cases filed in the transferee court by fiscal year, from the Judicial Business tables. */
+export function MdlCourtPlCard({ courtId }: { courtId: string }) {
+  const q = useQuery({
+    queryKey: ["court-stats-district", courtId],
+    queryFn: () => getCourtStatsDistrict({ data: { id: courtId } }),
+    staleTime: 10 * 60 * 1000,
+  });
+  const def = useMemo(
+    () =>
+      staticDef({
+        id: `court-pl-years-${courtId}`,
+        title: "Products-liability cases filed in the transferee court, by fiscal year",
+        measure: "products-liability cases filed in the court",
+        detail: { to: `/courts/${courtId}`, label: "Court page" },
+      }),
+    [courtId],
+  );
+  const state: CardState = (() => {
+    if (q.isPending) return { kind: "loading" };
+    if (q.isError) return { kind: "error", onRetry: () => void q.refetch() };
+    const p = q.data;
+    const block = p
+      ? buildCourtPlYears({
+          courtId,
+          courtName: p.name,
+          years: p.years,
+          pl: p.pl,
+          civil: p.civil,
+          nationalShare: p.natShare,
+          rank: { pl: p.ranks.pl, of: p.ranks.of },
+        })
+      : null;
+    return block
+      ? { kind: "ok", block }
+      : {
+          kind: "empty",
+          reason: "The Judicial Business tables hold no products-liability count for this court.",
+        };
+  })();
+  return <TrendCardView def={def} state={state} />;
+}
+
 /** The cards that count cases by year: the Federal Judicial Center's file, then the matter registry's member dockets. */
-export function MdlCaseYears({ mdl }: { mdl: number }) {
+export function MdlCaseYears({ mdl, courtId = null }: { mdl: number; courtId?: string | null }) {
   // Same query as the "Member actions and where they started" section, so it is read once.
   const h = useQuery({
     queryKey: ["mdl-hierarchy", mdl],
@@ -76,13 +121,16 @@ export function MdlCaseYears({ mdl }: { mdl: number }) {
   });
   const inRegistry = h.data != null;
   const hasOrigin = (h.data?.origin?.byYear.length ?? 0) > 0;
+  const hasMembers = inRegistry && (h.data?.membersByYear.length ?? 0) > 0;
+  const showTransferred = inRegistry && hasOrigin;
+  // Two or four cards sit in two columns, so a fourth card never stands alone in a third row of three.
+  const cards = 1 + (hasMembers ? 1 : 0) + (showTransferred ? 1 : 0) + (courtId ? 1 : 0);
   return (
-    <TrendGrid>
+    <TrendGrid columns={cards % 2 === 0 ? 2 : 3}>
       <ProfileTrend kind="mdl-fjc-years" id={mdl} />
-      {inRegistry && (h.data?.membersByYear.length ?? 0) > 0 ? (
-        <ProfileTrend kind="mdl-members-years" id={mdl} />
-      ) : null}
-      {inRegistry && hasOrigin ? <ProfileTrend kind="mdl-transferred-years" id={mdl} /> : null}
+      {hasMembers ? <ProfileTrend kind="mdl-members-years" id={mdl} /> : null}
+      {showTransferred ? <ProfileTrend kind="mdl-transferred-years" id={mdl} /> : null}
+      {courtId ? <MdlCourtPlCard courtId={courtId} /> : null}
     </TrendGrid>
   );
 }

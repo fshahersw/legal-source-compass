@@ -154,7 +154,7 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
     <div className="space-y-4">
       <RegistryCard payload={payload} />
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid items-start gap-4 lg:grid-cols-2">
         <Panel title="JPML action counts" note="Each dated report counts actions in this MDL.">
           {o.actions.snapshots.length ? (
             <DataTable caption="JPML action counts by report date" narrow>
