@@ -118,6 +118,10 @@ LEVEL = {"TITLE": "title", "SUBTITLE": "subtitle", "CHAPTER": "chapter", "SUBCHA
          "PART": "part", "ARTICLE": "article"}
 ORDER = ["TITLE", "SUBTITLE", "CHAPTER", "SUBCHAPTER", "PART", "ARTICLE"]
 HEAD = re.compile(r"^(Sec\.|Art\.|SECTION|Section)\s+([0-9A-Za-z][^\s]*?)\.?\s+(.*)$", re.S)
+# Some files print only the number in the bold link ("Sec. 21.252. ") and the catchline as the first words after it
+# ("BIDS ON CONTRACTS OVER $15,000. The district may ..."): the catchline is then the leading capitals-only sentence.
+HEAD_NUMBER_ONLY = re.compile(r"^(Sec\.|Art\.|SECTION|Section)\s+([0-9A-Za-z][^\s]*?)\.?$")
+LEAD_CATCHLINE = re.compile(r"^([A-Z0-9$][^a-z]*?[A-Z][^a-z]*?\.)(?:\s+|$)")
 
 
 def _p_kind(p):
@@ -232,10 +236,13 @@ def parse_member(raw: bytes, code: str, member: str, run_date: str):
             close()
             head_text = sb.one_line(sb.el_text(link))
             m = HEAD.match(head_text)
+            number_only = m is None
+            if number_only:
+                m = HEAD_NUMBER_ONLY.match(head_text)
             if not m:
                 raise ValueError(f"{member}: unparsed heading {head_text[:80]!r}")
             number = m.group(2)
-            heading = m.group(3).strip() or None
+            heading = None if number_only else (m.group(3).strip() or None)
             anchor = (link.get("href") or "").split("#", 1)[1]
             # statute text printed in the same paragraph after the heading link
             rest_parts = []
@@ -246,6 +253,11 @@ def parse_member(raw: bytes, code: str, member: str, run_date: str):
                 if sib.tail:
                     rest_parts.append(sib.tail)
             first = sb.ws("".join(rest_parts))
+            if number_only and first:
+                lead = LEAD_CATCHLINE.match(first)
+                if lead:
+                    heading = lead.group(1)
+                    first = first[lead.end():]
             cur = {"number": number, "heading": heading, "anchor": anchor, "url": link.get("href"),
                    "notes": list(pending_notes), "inner_notes": [], "body": [first] if first else [],
                    "history": [], "path": path()}

@@ -261,6 +261,32 @@ class EarlierModules(unittest.TestCase):
         self.assertIsNone(wy.RAW_SECTION.match("1-3-105. referred to in text"))
 
 
+class Texas(unittest.TestCase):
+    PAGE = (
+        '<html><body><pre>'
+        '<p class="left"><a name="21.251"></a></p>'
+        '<p style="text-indent:7ex;" class="left"><a href="https://statutes.capitol.texas.gov/Docs/SD/htm/SD.21.htm#21.251"'
+        ' style="color:inherit;font-weight:bold;">Sec. 21.251.  CONTRACTS.</a> The district may contract.</p>'
+        '<p class="left"><a name="21.252"></a></p>'
+        '<p style="text-indent:7ex;" class="left"><a href="https://statutes.capitol.texas.gov/Docs/SD/htm/SD.21.htm#21.252"'
+        ' style="color:inherit;font-weight:bold;">Sec. 21.252. </a>BIDS ON CONTRACTS OVER $15,000. The district may'
+        ' enter into a contract only after competitive bidding.</p>'
+        '<p class="left"><a name="21.253"></a></p>'
+        '<p style="text-indent:7ex;" class="left"><a href="https://statutes.capitol.texas.gov/Docs/SD/htm/SD.21.htm#21.253"'
+        ' style="color:inherit;font-weight:bold;">Sec. 21.253. </a>(a) The board may adopt rules.</p>'
+        '</pre></body></html>'
+    )
+
+    def test_catchline_inside_or_after_the_heading_link(self):
+        out = load("tx").parse_member(self.PAGE.encode(), "SD", "sd.21.htm", "2026-10-23")
+        by = {s["number"]: s for s in out["sections"]}
+        self.assertEqual(by["21.251"]["heading"], "CONTRACTS.")
+        self.assertEqual(by["21.252"]["heading"], "BIDS ON CONTRACTS OVER $15,000.")
+        self.assertTrue(by["21.252"]["text"].startswith("The district may enter into a contract"))
+        self.assertIsNone(by["21.253"]["heading"])
+        self.assertTrue(by["21.253"]["text"].startswith("(a) The board may adopt rules."))
+
+
 class Metadata(unittest.TestCase):
     def test_all_modules_validate(self):
         for state in MINE:
