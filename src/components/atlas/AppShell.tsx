@@ -47,6 +47,16 @@ function primaryLinkState(pathname: string, to: string, active: boolean) {
   };
 }
 
+/** Scrolls the tab strip (never the page) so the active tab is in view when the strip overflows. */
+function revealTab(el: HTMLElement | null) {
+  const strip = el?.parentElement;
+  if (!el || !strip) return;
+  const tab = el.getBoundingClientRect();
+  const box = strip.getBoundingClientRect();
+  if (tab.left < box.left) strip.scrollLeft -= box.left - tab.left + 8;
+  else if (tab.right > box.right) strip.scrollLeft += tab.right - box.right + 8;
+}
+
 function AccountBox({ collapsed }: { collapsed: boolean }) {
   const { user, ready } = useSessionUser();
   const navigate = useNavigate();
@@ -286,6 +296,7 @@ export function AppShell({
                   to={item.to}
                   activeOptions={{ exact: true, includeSearch: false }}
                   activeProps={{}}
+                  ref={active ? revealTab : undefined}
                   aria-current={ariaCurrent(pathname, item.to, active)}
                   className={`inline-flex min-h-9 shrink-0 items-center rounded-sm px-2 py-1 text-xs md:min-h-8 ${active ? "bg-muted font-semibold text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
                 >
