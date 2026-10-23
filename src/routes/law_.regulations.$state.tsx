@@ -1,71 +1,145 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ExternalLink } from "lucide-react";
-import { useState } from "react";
 import { AppShell } from "@/components/atlas/AppShell";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
+import { RegulationIndexV1 } from "@/components/law/regulations/RegulationIndexV1";
+import {
+  ContentsPanel,
+  RegTabs,
+  RegisterPanel,
+  RuleReader,
+  SearchPanel,
+  SourcePanel,
+  SourceStrip,
+} from "@/components/law/regulations/StateRegulations";
+import type { RegTab } from "@/components/law/regulations/labels";
 import { pageHead } from "@/lib/corpus/head";
 import { stateByUsps } from "@/lib/corpus/geo";
-import { getRegulationIndex, listRegulationCodes } from "@/lib/external/courtRulesLaw.functions";
-import { cleanHeading, headingStatus } from "@/lib/law/stateCodeHeading";
+import { listRegulationCodes } from "@/lib/external/courtRulesLaw.functions";
+import { NODE_ID, RULE_ID, listStateRegCodes } from "@/lib/external/stateRegs.functions";
 
-/** The printed heading, unless it only repeats the citation (then the publisher printed no heading). */
-function entryHeading(citation: string, heading: string | null): string | null {
-  const clean = cleanHeading(heading);
-  return clean && clean !== cleanHeading(citation) ? clean : null;
-}
+const TABS: RegTab[] = ["search", "register", "source"];
+
+type RegSearchParams = {
+  q: string;
+  level: string | undefined;
+  tab?: RegTab;
+  node?: string;
+  rule?: string;
+};
 
 export const Route = createFileRoute("/law_/regulations/$state")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    q: typeof search["q"] === "string" ? search["q"].slice(0, 200) : "",
-    level:
-      typeof search["level"] === "string" && /^[a-z ]{2,30}$/.test(search["level"])
-        ? search["level"]
-        : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): RegSearchParams => {
+    const out: RegSearchParams = {
+      q: typeof search["q"] === "string" ? search["q"].slice(0, 200) : "",
+      level:
+        typeof search["level"] === "string" && /^[a-z ]{2,30}$/.test(search["level"])
+          ? search["level"]
+          : undefined,
+    };
+    if (TABS.includes(search["tab"] as RegTab)) out.tab = search["tab"] as RegTab;
+    if (typeof search["node"] === "string" && NODE_ID.test(search["node"]))
+      out.node = search["node"];
+    if (typeof search["rule"] === "string" && RULE_ID.test(search["rule"]))
+      out.rule = search["rule"];
+    return out;
+  },
   head: ({ params }) => {
     const name = stateByUsps.get(params.state.toUpperCase())?.name ?? params.state;
     return pageHead(
       `${name} administrative code`,
-      `Table of contents of the ${name} administrative code from its official publisher.`,
+      `The ${name} administrative code from its official publisher: table of contents, rule text, search and the state register.`,
     );
   },
   component: StateRegulationsPage,
 });
 
-const PAGE = 100;
-
 function StateRegulationsPage() {
   const { state: raw } = Route.useParams();
   const state = raw.toUpperCase();
-  const { q, level } = Route.useSearch();
+  const { q, level, tab, node, rule } = Route.useSearch();
   const navigate = useNavigate({ from: "/law/regulations/$state" });
-  const [draft, setDraft] = useState(q);
-  const listFn = useServerFn(listRegulationCodes);
-  const indexFn = useServerFn(getRegulationIndex);
-  const codes = useQuery({
-    queryKey: ["state-regulation-codes"],
-    queryFn: () => listFn(),
+  const v2Fn = useServerFn(listStateRegCodes);
+  const v1Fn = useServerFn(listRegulationCodes);
+  const v2 = useQuery({
+    queryKey: ["state-reg-codes-v2"],
+    queryFn: () => v2Fn(),
     staleTime: 10 * 60 * 1000,
   });
-  const code = codes.data?.find((c) => c.state === state) ?? null;
-  const entries = useInfiniteQuery({
-    queryKey: ["state-regulation-index", state, level ?? null, q],
-    queryFn: ({ pageParam }) =>
-      indexFn({ data: { state, level: level ?? null, q, offset: pageParam } }),
-    initialPageParam: 0,
-    getNextPageParam: (last, pages) => {
-      const loaded = pages.length * PAGE;
-      return last.total !== null && loaded < last.total ? loaded : undefined;
-    },
-    enabled: code?.status === "indexed",
+  const v1 = useQuery({
+    queryKey: ["state-regulation-codes"],
+    queryFn: () => v1Fn(),
     staleTime: 10 * 60 * 1000,
   });
   const name = stateByUsps.get(state)?.name ?? state;
-  const rows = entries.data?.pages.flatMap((p) => p.entries) ?? [];
-  const total = entries.data?.pages[0]?.total ?? null;
-  const dropped = entries.data?.pages.reduce((n, p) => n + p.dropped, 0) ?? 0;
+  const code = v2.data?.find((c) => c.state === state) ?? null;
+  const v1code = v1.data?.find((c) => c.state === state) ?? null;
+  const active: RegTab = tab ?? "contents";
+  const loading = v2.isLoading || (v2.data === null && v1.isLoading);
+  const v1Filter = (next: { q: string; level: string | undefined }) =>
+    void navigate({ search: { q: next.q, level: next.level, ...(tab ? { tab } : {}) } });
+
+  let body: React.ReactNode = null;
+  if (code) {
+    let panel: React.ReactNode;
+    if (rule) panel = <RuleReader id={rule} />;
+    else if (active === "source") panel = <SourcePanel code={code} />;
+    else if (active === "register") panel = <RegisterPanel code={code} />;
+    else if (active === "search")
+      panel =
+        code.textRules > 0 ? (
+          <SearchPanel
+            state={state}
+            q={q}
+            onSearch={(next) =>
+              void navigate({ search: { q: next, level: undefined, tab: "search" } })
+            }
+          />
+        ) : v1code ? (
+          <>
+            <p className="mb-2 text-xs text-muted-foreground">
+              No rule text is held for this state yet; this filters the table of contents.
+            </p>
+            <RegulationIndexV1 code={v1code} q={q} level={level} onFilter={v1Filter} />
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            No rule text or table of contents is held for this state yet.
+          </p>
+        );
+    else
+      panel =
+        code.indexNodes > 0 ? (
+          <ContentsPanel state={state} node={node} />
+        ) : v1code ? (
+          <RegulationIndexV1 code={v1code} q={q} level={level} onFilter={v1Filter} />
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            No table of contents is loaded for {name} yet. Read the code on the publisher's site
+            (link above).
+          </p>
+        );
+    body = (
+      <>
+        <SourceStrip code={code} />
+        <RegTabs state={state} active={rule ? "contents" : active} />
+        {panel}
+      </>
+    );
+  } else if (v2.data === null || (v2.data && !code)) {
+    // the v2 contract is not applied yet (or this state is missing from it): the v1 index, as before
+    body = v1code ? (
+      <RegulationIndexV1 code={v1code} q={q} level={level} onFilter={v1Filter} />
+    ) : v1.data ? (
+      <p className="text-sm text-muted-foreground">
+        No administrative code index is recorded for {name}.{" "}
+        <Link to="/law/regulations" search={{ q: "" }} className="text-primary underline">
+          All states
+        </Link>
+      </p>
+    ) : null;
+  }
   return (
     <AppShell
       breadcrumbs={[
@@ -74,177 +148,21 @@ function StateRegulationsPage() {
         { label: "State administrative codes", to: "/law/regulations" },
         { label: name },
       ]}
-      title={code?.code ?? `${name} administrative code`}
-      {...(code?.publisher ? { description: code.publisher } : {})}
+      title={code?.codeName ?? v1code?.code ?? `${name} administrative code`}
+      {...((code?.publisher ?? v1code?.publisher)
+        ? { description: (code?.publisher ?? v1code?.publisher)! }
+        : {})}
     >
-      {codes.error ? <ExternalError error={codes.error} /> : null}
-      {codes.isLoading ? (
+      {v2.error ? <ExternalError error={v2.error} /> : null}
+      {v1.error && !code ? <ExternalError error={v1.error} /> : null}
+      {loading ? (
         <div
           className="h-24 animate-pulse rounded-lg border border-border bg-muted/40"
           aria-busy="true"
           aria-label="Loading"
         />
       ) : null}
-      {codes.data && !code ? (
-        <p className="text-sm text-muted-foreground">
-          No administrative code index is recorded for {name}.{" "}
-          <Link to="/law/regulations" search={{ q: "" }} className="text-primary underline">
-            All states
-          </Link>
-        </p>
-      ) : null}
-      {code ? (
-        <section
-          aria-label="Source"
-          className="mb-4 rounded-lg border border-border bg-surface px-4 py-3 text-xs"
-        >
-          <p className="m-0 leading-relaxed">
-            {code.status === "indexed"
-              ? `${code.entries.toLocaleString("en-US")} entries (${code.levels.map((l) => `${l.count.toLocaleString("en-US")} ${l.level}${l.count === 1 ? "" : "s"}`).join(", ")}) from the publisher's table of contents${code.retrievedAt ? `, retrieved ${code.retrievedAt.slice(0, 10)}` : ""}. Index only: open an entry to read the rule on the publisher's site.`
-              : `${code.statusLabel}.${code.error ? ` ${code.error}` : ""} Nothing is shown from unofficial copies.`}
-          </p>
-          {code.url ? (
-            <p className="m-0 mt-1.5 text-[11px]">
-              <a
-                href={code.url}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 text-primary hover:underline"
-              >
-                Official table of contents <ExternalLink className="size-3" aria-hidden />
-              </a>
-            </p>
-          ) : null}
-        </section>
-      ) : null}
-      {code?.status === "indexed" ? (
-        <>
-          <form
-            role="search"
-            className="mb-3 flex flex-wrap items-center gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              void navigate({ search: { q: draft.trim(), level } });
-            }}
-          >
-            <label className="sr-only" htmlFor="state-regulation-search">
-              Filter by citation, heading or agency
-            </label>
-            <input
-              id="state-regulation-search"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              placeholder="Citation, heading or agency"
-              className="w-full max-w-sm rounded-md border border-input bg-background px-3 py-1.5 text-sm"
-            />
-            {code.levels.length > 1 ? (
-              <select
-                aria-label="Level"
-                value={level ?? ""}
-                onChange={(e) =>
-                  void navigate({ search: { q, level: e.target.value || undefined } })
-                }
-                className="rounded-md border border-input bg-background px-2 py-1.5 text-xs"
-              >
-                <option value="">All levels</option>
-                {code.levels.map((l) => (
-                  <option key={l.level} value={l.level}>
-                    {l.level} ({l.count.toLocaleString("en-US")})
-                  </option>
-                ))}
-              </select>
-            ) : null}
-            <button
-              type="submit"
-              className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted"
-            >
-              Filter
-            </button>
-          </form>
-          {entries.error ? <ExternalError error={entries.error} /> : null}
-          {entries.isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading entries…</p>
-          ) : null}
-          {entries.data && rows.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No entry matches{q ? ` “${q}”` : ""}.</p>
-          ) : null}
-          {rows.length ? (
-            <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-              <table className="w-full min-w-[40rem] border-collapse text-left text-[13px]">
-                <thead className="border-b border-border text-[11px] text-muted-foreground">
-                  <tr>
-                    <th scope="col" className="px-3 py-2 font-medium">
-                      Citation
-                    </th>
-                    <th scope="col" className="px-3 py-2 font-medium">
-                      Heading
-                    </th>
-                    <th scope="col" className="px-3 py-2 font-medium">
-                      Agency or part of
-                    </th>
-                    <th scope="col" className="px-3 py-2 font-medium">
-                      Level
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/70">
-                  {rows.map((e) => (
-                    <tr key={e.id} className="align-top">
-                      <td className="whitespace-nowrap px-3 py-1.5">
-                        <a
-                          href={e.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-primary hover:underline"
-                        >
-                          {e.citation}
-                        </a>
-                      </td>
-                      <td className="px-3 py-1.5">
-                        {entryHeading(e.citation, e.heading) ?? (
-                          <span className="text-muted-foreground">Not recorded</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-1.5 text-muted-foreground">
-                        {e.agency ?? e.parent ?? "Not recorded"}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-1.5 text-muted-foreground">
-                        {e.level}
-                        {e.status
-                          ? ` · ${e.status}`
-                          : headingStatus(entryHeading(e.citation, e.heading))
-                            ? ` · ${headingStatus(entryHeading(e.citation, e.heading))}`
-                            : ""}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : null}
-          {rows.length ? (
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
-              <span>
-                Showing {rows.length.toLocaleString("en-US")}
-                {total !== null ? ` of ${total.toLocaleString("en-US")}` : ""}
-                {dropped
-                  ? ` · ${dropped.toLocaleString("en-US")} stored entries could not be read`
-                  : ""}
-              </span>
-              {entries.hasNextPage ? (
-                <button
-                  type="button"
-                  onClick={() => void entries.fetchNextPage()}
-                  disabled={entries.isFetchingNextPage}
-                  className="rounded-md border border-border px-2.5 py-1 text-xs text-foreground hover:bg-muted disabled:opacity-60"
-                >
-                  {entries.isFetchingNextPage ? "Loading…" : `Show ${PAGE} more`}
-                </button>
-              ) : null}
-            </div>
-          ) : null}
-        </>
-      ) : null}
+      {body}
     </AppShell>
   );
 }

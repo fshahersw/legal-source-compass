@@ -1,0 +1,170 @@
+{
+ "about": "Citation key vectors: Python (scripts/state_regs/cite.py) and SQL (state_regs.cite_key) must both produce `key` (null = unresolvable).",
+ "vectors": [
+  {
+   "state": "OH",
+   "citation": "Ohio Adm.Code 3745-31-03",
+   "key": "3745-31-3"
+  },
+  {
+   "state": "OH",
+   "citation": "Ohio Admin. Code 4901:1-10-01",
+   "key": "4901:1-10-1"
+  },
+  {
+   "state": "OH",
+   "citation": "OAC 3745-31",
+   "key": null
+  },
+  {
+   "state": "WA",
+   "citation": "WAC 173-400-010",
+   "key": "173-400-10"
+  },
+  {
+   "state": "WA",
+   "citation": "Wash. Admin. Code \u00a7 296-24-235",
+   "key": "296-24-235"
+  },
+  {
+   "state": "WA",
+   "citation": "Chapter 173-400 WAC",
+   "key": null
+  },
+  {
+   "state": "MN",
+   "citation": "Minn. R. 7011.0010",
+   "key": "7011.10"
+  },
+  {
+   "state": "MN",
+   "citation": "Minnesota Rules, part 1400.2010, subp. 2",
+   "key": "1400.2010"
+  },
+  {
+   "state": "OR",
+   "citation": "OAR 581-001-0005",
+   "key": "581-1-5"
+  },
+  {
+   "state": "OR",
+   "citation": "Or. Admin. R. 137-003-0501",
+   "key": "137-3-501"
+  },
+  {
+   "state": "NC",
+   "citation": "15A NCAC 02D .0101",
+   "key": "15a-2d-101"
+  },
+  {
+   "state": "NC",
+   "citation": "15A N.C.A.C. 2D.0101",
+   "key": "15a-2d-101"
+  },
+  {
+   "state": "NC",
+   "citation": "15A NCAC 02A",
+   "key": null
+  },
+  {
+   "state": "MI",
+   "citation": "Mich Admin Code, R 336.1101",
+   "key": "336.1101"
+  },
+  {
+   "state": "MI",
+   "citation": "R 325.17101",
+   "key": "325.17101"
+  },
+  {
+   "state": "IL",
+   "citation": "35 Ill. Adm. Code 101.100",
+   "key": "35-101.100"
+  },
+  {
+   "state": "IL",
+   "citation": "35 IAC 101.100",
+   "key": "35-101.100"
+  },
+  {
+   "state": "IL",
+   "citation": "35 Ill. Admin. Code \u00a7 211.122",
+   "key": "35-211.122"
+  },
+  {
+   "state": "FL",
+   "citation": "Fla. Admin. Code R. 62-296.320",
+   "key": "62-296.320"
+  },
+  {
+   "state": "FL",
+   "citation": "Rule 69A-60.004, F.A.C.",
+   "key": "69a-60.4"
+  },
+  {
+   "state": "FL",
+   "citation": "Chapter 62-296, F.A.C.",
+   "key": null
+  },
+  {
+   "state": "TX",
+   "citation": "16 Tex. Admin. Code \u00a7 3.1",
+   "key": "16-3.1"
+  },
+  {
+   "state": "TX",
+   "citation": "30 TAC \u00a7116.110",
+   "key": "30-116.110"
+  },
+  {
+   "state": "TX",
+   "citation": "Title 16, Part 1",
+   "key": null
+  },
+  {
+   "state": "VA",
+   "citation": "9 VAC 5-40-10",
+   "key": "9-5-40-10"
+  },
+  {
+   "state": "VA",
+   "citation": "9VAC25-260-30",
+   "key": "9-25-260-30"
+  },
+  {
+   "state": "MD",
+   "citation": "COMAR 26.11.06.01",
+   "key": "26.11.6.1"
+  },
+  {
+   "state": "GA",
+   "citation": "Ga. Comp. R. & Regs. 40-7-2-.01",
+   "key": "40-7-2-.1"
+  },
+  {
+   "state": "CO",
+   "citation": "5 CCR 1001-3",
+   "key": "5-1001-3"
+  },
+  {
+   "state": "KY",
+   "citation": "401 KAR 51:010",
+   "key": "401-51:10"
+  },
+  {
+   "state": "PA",
+   "citation": "25 Pa. Code \u00a7 121.1",
+   "key": null
+  },
+  {
+   "state": "XX",
+   "citation": "anything",
+   "key": null
+  },
+  {
+   "state": "OH",
+   "citation": "",
+   "key": null
+  }
+ ]
+}
