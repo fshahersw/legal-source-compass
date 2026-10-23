@@ -112,7 +112,8 @@ begin
   if p_datasets is not null and cardinality(p_datasets) = 0 then
     raise exception 'Choose at least one dataset or pass null' using errcode = '22023'; end if;
   with cand as materialized (
-    select * from semantic.nearest_v1(p_embedding, p_datasets, null, null, least(v_limit * 6, 300))
+    -- a wide pool of passages: a long record (an opinion has dozens) can fill a narrow one alone and leave fewer records
+    select * from semantic.nearest_v1(p_embedding, p_datasets, null, null, least(greatest(v_limit * 20, 100), 600))
   ), best as (
     select distinct on (dataset, record_id) * from cand order by dataset, record_id, distance, chunk_no
   ), ranked as (
@@ -143,7 +144,8 @@ begin
     return jsonb_build_object('indexed', false, 'index_version', (select min(k.index_version) from semantic.corpora k), 'results', '[]'::jsonb);
   end if;
   with cand as materialized (
-    select * from semantic.nearest_v1(v_center, p_datasets, p_dataset, p_record_id, least(v_limit * 6, 300))
+    -- a wide pool of passages: a long record (an opinion has dozens) can fill a narrow one alone and leave fewer records
+    select * from semantic.nearest_v1(v_center, p_datasets, p_dataset, p_record_id, least(greatest(v_limit * 20, 100), 600))
   ), best as (
     select distinct on (dataset, record_id) * from cand order by dataset, record_id, distance, chunk_no
   ), ranked as (
