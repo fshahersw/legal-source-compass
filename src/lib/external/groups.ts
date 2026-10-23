@@ -68,6 +68,8 @@ const EXPLICIT: Record<string, SectionId> = {
   statutory_limitations_review: "law",
   ecfr_hierarchy: "law",
   ecfr_section_text: "law",
+  ecfr_sections_full: "law",
+  ecfr_section_versions: "law",
   ecfr_authority_notes: "law",
   mass_tort_authority_evidence: "law",
   jpml_html_reference: "law",

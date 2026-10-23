@@ -36,9 +36,13 @@ function ProvisionPage() {
   if (!p) return <AppShell breadcrumbs={[{ label: "Home", to: "/" }, { label: "Law & regulation", to: "/law" }, { label: "Not found" }]} title="Provision not found"><p className="text-[13px] text-muted-foreground">No unique provision is recorded for this link. Open the provision from its dataset to retain its collection identity.</p></AppShell>;
 
   const usps = p.state ? (stateByName.get(p.state) ?? stateByUsps.get(p.state))?.usps : undefined;
-  const federal = p.state != null && ["US", "FEDERAL", "Federal"].includes(p.state);
+  // federal regulation rows carry an empty state; their id or citation identifies them as federal
+  const federal =
+    (p.state != null && ["US", "FEDERAL", "Federal"].includes(p.state)) ||
+    id.startsWith("cfr:") ||
+    /\bC\.F\.R\.|\bU\.S\.C\./.test(p.citation ?? "");
   const crumbs: { label: string; to?: string; search?: Record<string, string> }[] = [{ label: "Home", to: "/" }, { label: "Law & regulation", to: "/law" }];
-  crumbs.push(federal ? { label: "Federal", to: "/law", search: { scope: "federal" } } : usps ? { label: p.state!, to: "/law", search: { scope: "states", state: usps } } : { label: p.state ?? "Jurisdiction not recorded" });
+  crumbs.push(federal ? { label: "Federal", to: "/law", search: { scope: "federal" } } : usps ? { label: p.state!, to: "/law", search: { scope: "states", state: usps } } : { label: p.state || "Jurisdiction not recorded" });
   if (p.kind) crumbs.push({ label: kindLabel(p.kind) });
   crumbs.push({ label: p.citation ?? "Provision" });
 
@@ -55,7 +59,7 @@ function ProvisionPage() {
     : null;
 
   return (
-    <AppShell breadcrumbs={crumbs} title={p.title ?? p.citation ?? "Provision"} description={[p.citation, p.state ?? "Jurisdiction not recorded", p.kind ? kindLabel(p.kind) : null, p.status?.replace(/_/g, " ")].filter(Boolean).join(" · ")}>
+    <AppShell breadcrumbs={crumbs} title={p.title ?? p.citation ?? "Provision"} description={[p.citation, p.state || "Jurisdiction not recorded", p.kind ? kindLabel(p.kind) : null, p.status?.replace(/_/g, " ")].filter(Boolean).join(" · ")}>
       {p.publicationReady !== true ? <p role="status" className="mb-3 rounded-lg border border-border bg-muted/50 p-3 text-[13px]">Stored preview · {p.publicationReady === false ? "this collection has not been cleared for publication" : "publication status is not recorded"}. Source dates describe the saved snapshot.</p> : null}
       {frameParts ? <p className="mb-3 text-[12px] text-muted-foreground">{frameParts}{p.frame?.partHeading ? ` — ${p.frame.partHeading}` : ""}</p> : null}
       <div className="mb-4 flex flex-wrap items-center gap-2">

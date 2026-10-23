@@ -169,6 +169,12 @@ function LawPage() {
             link: { to: "/law/constitutions", search: { q: "" } },
           },
           {
+            key: "cfr",
+            label: "Code of Federal Regulations",
+            note: "Full eCFR text of every section, with change history",
+            link: { to: "/law/cfr" },
+          },
+          {
             key: "regulations",
             label: "State administrative codes",
             note: "Tables of contents, 12 states",
