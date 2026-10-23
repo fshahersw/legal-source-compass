@@ -23,7 +23,7 @@ const isFederalMdlView = (path: string) =>
   /^\/matters\/lens\/[^/]+/.test(path);
 export function navigationSection(path: string): NavigationSection | null {
   if (at(path, "/limitations")) return "time-limits";
-  if (["/law", "/laws", "/safety", "/agencies", "/companies"].some((x) => at(path, x)))
+  if (["/law", "/laws", "/cases", "/safety", "/agencies", "/companies"].some((x) => at(path, x)))
     return "law";
   if (
     path === "/" ||
@@ -69,6 +69,7 @@ export function contextualNavigation(path: string): ContextNavigationItem[] {
       return [
         { to: "/law", label: "Overview" },
         { to: "/law/codes", label: "State codes" },
+        { to: "/cases", label: "Case law" },
         { to: "/law/monitoring", label: "Regulatory intelligence" },
         { to: "/law/enforcement", label: "Enforcement" },
         { to: "/agencies", label: "Agencies" },

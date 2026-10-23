@@ -67,7 +67,7 @@ for (const suite of [
   { directory: "scripts/enrichment/agencies_fr", modules: ["test_agencies_fr"] },
   { directory: "scripts/enrichment/courtlistener_rest", modules: ["test_courtlistener_rest"] },
   { directory: "scripts/enrichment/court_rules", modules: ["test_court_rules"] },
-  { directory: "scripts/enrichment/caselaw", modules: ["test_caselaw"] },
+  { directory: "scripts/enrichment/caselaw", modules: ["test_caselaw", "test_caselaw_read"] },
   { directory: "scripts/enrichment/ecfr_full", modules: ["test_ecfr_full"] },
   { directory: "scripts/enrichment/judiciary", modules: ["test_judiciary"] },
   { directory: "scripts/enrichment/enforcement_actions", modules: ["test_enforcement_actions"] },

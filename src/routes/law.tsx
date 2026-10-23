@@ -175,6 +175,12 @@ function LawPage() {
             link: { to: "/law/uscode", search: { q: "" } },
           },
           {
+            key: "caselaw",
+            label: "Case law",
+            note: "Supreme Court, federal appeals and state high courts: opinions, citator, search",
+            link: { to: "/cases" },
+          },
+          {
             key: "cfr",
             label: "Code of Federal Regulations",
             note: "Full eCFR text of every section, with change history",

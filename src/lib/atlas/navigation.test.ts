@@ -38,6 +38,12 @@ describe("state-first navigation", () => {
   it("does not repeat global geographic tabs on an individual state page", () => {
     expect(contextualNavigation("/places/NE")).toEqual([]);
   });
+  it("keeps case law within the law section, after state codes", () => {
+    for (const path of ["/cases", "/cases/abc123"]) expect(navigationSection(path)).toBe("law");
+    const tabs = contextualNavigation("/cases").map((x) => x.to);
+    expect(tabs.indexOf("/cases")).toBe(tabs.indexOf("/law/codes") + 1);
+    expect(PRIMARY_NAVIGATION.map((x) => x.to)).not.toContain("/cases");
+  });
   it("keeps regulatory intelligence within the existing law section", () => {
     expect(navigationSection("/law/monitoring")).toBe("law");
     expect(contextualNavigation("/law/monitoring")).toContainEqual({

@@ -49,6 +49,7 @@ function NotFound() {
     <AppShell
       breadcrumbs={[
         { label: "Home", to: "/" },
+        { label: "Law & regulation", to: "/law" },
         { label: "Case law", to: "/cases" },
         { label: "Not found" },
       ]}
@@ -83,6 +84,7 @@ function Loaded({ id }: { id: number }) {
     <AppShell
       breadcrumbs={[
         { label: "Home", to: "/" },
+        { label: "Law & regulation", to: "/law" },
         { label: "Case law", to: "/cases" },
         { label: r.tierLabel, to: "/cases", search: { tier: String(r.tier) } },
         { label: r.caseName.length > 60 ? `${r.caseName.slice(0, 57)}…` : r.caseName },

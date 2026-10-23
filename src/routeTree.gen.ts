@@ -40,6 +40,8 @@ import { Route as ApiSourceBrowserRouteImport } from './routes/api/source-browse
 import { Route as ApiSourceCheckRouteImport } from './routes/api/source-check'
 import { Route as ApiSourceFileRouteImport } from './routes/api/source-file'
 import { Route as ApiSourceTextRouteImport } from './routes/api/source-text'
+import { Route as CasesIndexRouteImport } from './routes/cases.index'
+import { Route as CasesIdRouteImport } from './routes/cases.$id'
 import { Route as CompaniesIndexRouteImport } from './routes/companies.index'
 import { Route as CompaniesCikRouteImport } from './routes/companies.$cik'
 import { Route as CompaniesPaymentsRouteImport } from './routes/companies.payments'
@@ -262,6 +264,16 @@ const ApiSourceFileRoute = ApiSourceFileRouteImport.update({
 const ApiSourceTextRoute = ApiSourceTextRouteImport.update({
   id: '/api/source-text',
   path: '/api/source-text',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CasesIndexRoute = CasesIndexRouteImport.update({
+  id: '/cases/',
+  path: '/cases/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CasesIdRoute = CasesIdRouteImport.update({
+  id: '/cases/$id',
+  path: '/cases/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CompaniesIndexRoute = CompaniesIndexRouteImport.update({
@@ -636,6 +648,7 @@ export interface FileRoutesByFullPath {
   '/api/source-check': typeof ApiSourceCheckRoute
   '/api/source-file': typeof ApiSourceFileRoute
   '/api/source-text': typeof ApiSourceTextRoute
+  '/cases/$id': typeof CasesIdRoute
   '/companies/$cik': typeof CompaniesCikRoute
   '/companies/payments': typeof CompaniesPaymentsRoute
   '/courts/$id': typeof CourtsIdRoute
@@ -674,6 +687,7 @@ export interface FileRoutesByFullPath {
   '/sources/registry': typeof SourcesRegistryRoute
   '/sources/registry-v22': typeof SourcesRegistryV22Route
   '/agencies/': typeof AgenciesIndexRoute
+  '/cases/': typeof CasesIndexRoute
   '/companies/': typeof CompaniesIndexRoute
   '/courts/': typeof CourtsIndexRoute
   '/data/': typeof DataIndexRoute
@@ -737,6 +751,7 @@ export interface FileRoutesByTo {
   '/api/source-check': typeof ApiSourceCheckRoute
   '/api/source-file': typeof ApiSourceFileRoute
   '/api/source-text': typeof ApiSourceTextRoute
+  '/cases/$id': typeof CasesIdRoute
   '/companies/$cik': typeof CompaniesCikRoute
   '/companies/payments': typeof CompaniesPaymentsRoute
   '/courts/$id': typeof CourtsIdRoute
@@ -770,6 +785,7 @@ export interface FileRoutesByTo {
   '/sources/registry': typeof SourcesRegistryRoute
   '/sources/registry-v22': typeof SourcesRegistryV22Route
   '/agencies': typeof AgenciesIndexRoute
+  '/cases': typeof CasesIndexRoute
   '/companies': typeof CompaniesIndexRoute
   '/courts': typeof CourtsIndexRoute
   '/data': typeof DataIndexRoute
@@ -834,6 +850,7 @@ export interface FileRoutesById {
   '/api/source-check': typeof ApiSourceCheckRoute
   '/api/source-file': typeof ApiSourceFileRoute
   '/api/source-text': typeof ApiSourceTextRoute
+  '/cases/$id': typeof CasesIdRoute
   '/companies/$cik': typeof CompaniesCikRoute
   '/companies/payments': typeof CompaniesPaymentsRoute
   '/courts/$id': typeof CourtsIdRoute
@@ -872,6 +889,7 @@ export interface FileRoutesById {
   '/sources/registry': typeof SourcesRegistryRoute
   '/sources/registry-v22': typeof SourcesRegistryV22Route
   '/agencies/': typeof AgenciesIndexRoute
+  '/cases/': typeof CasesIndexRoute
   '/companies/': typeof CompaniesIndexRoute
   '/courts/': typeof CourtsIndexRoute
   '/data/': typeof DataIndexRoute
@@ -937,6 +955,7 @@ export interface FileRouteTypes {
     | '/api/source-check'
     | '/api/source-file'
     | '/api/source-text'
+    | '/cases/$id'
     | '/companies/$cik'
     | '/companies/payments'
     | '/courts/$id'
@@ -975,6 +994,7 @@ export interface FileRouteTypes {
     | '/sources/registry'
     | '/sources/registry-v22'
     | '/agencies/'
+    | '/cases/'
     | '/companies/'
     | '/courts/'
     | '/data/'
@@ -1038,6 +1058,7 @@ export interface FileRouteTypes {
     | '/api/source-check'
     | '/api/source-file'
     | '/api/source-text'
+    | '/cases/$id'
     | '/companies/$cik'
     | '/companies/payments'
     | '/courts/$id'
@@ -1071,6 +1092,7 @@ export interface FileRouteTypes {
     | '/sources/registry'
     | '/sources/registry-v22'
     | '/agencies'
+    | '/cases'
     | '/companies'
     | '/courts'
     | '/data'
@@ -1134,6 +1156,7 @@ export interface FileRouteTypes {
     | '/api/source-check'
     | '/api/source-file'
     | '/api/source-text'
+    | '/cases/$id'
     | '/companies/$cik'
     | '/companies/payments'
     | '/courts/$id'
@@ -1172,6 +1195,7 @@ export interface FileRouteTypes {
     | '/sources/registry'
     | '/sources/registry-v22'
     | '/agencies/'
+    | '/cases/'
     | '/companies/'
     | '/courts/'
     | '/data/'
@@ -1236,6 +1260,7 @@ export interface RootRouteChildren {
   ApiSourceCheckRoute: typeof ApiSourceCheckRoute
   ApiSourceFileRoute: typeof ApiSourceFileRoute
   ApiSourceTextRoute: typeof ApiSourceTextRoute
+  CasesIdRoute: typeof CasesIdRoute
   CompaniesCikRoute: typeof CompaniesCikRoute
   CompaniesPaymentsRoute: typeof CompaniesPaymentsRoute
   CourtsIdRoute: typeof CourtsIdRoute
@@ -1274,6 +1299,7 @@ export interface RootRouteChildren {
   SourcesRegistryRoute: typeof SourcesRegistryRoute
   SourcesRegistryV22Route: typeof SourcesRegistryV22Route
   AgenciesIndexRoute: typeof AgenciesIndexRoute
+  CasesIndexRoute: typeof CasesIndexRoute
   CompaniesIndexRoute: typeof CompaniesIndexRoute
   CourtsIndexRoute: typeof CourtsIndexRoute
   DataIndexRoute: typeof DataIndexRoute
@@ -1510,6 +1536,20 @@ declare module '@tanstack/react-router' {
       path: '/api/source-text'
       fullPath: '/api/source-text'
       preLoaderRoute: typeof ApiSourceTextRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cases/': {
+      id: '/cases/'
+      path: '/cases'
+      fullPath: '/cases/'
+      preLoaderRoute: typeof CasesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cases/$id': {
+      id: '/cases/$id'
+      path: '/cases/$id'
+      fullPath: '/cases/$id'
+      preLoaderRoute: typeof CasesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/companies/': {
@@ -2118,6 +2158,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiSourceCheckRoute: ApiSourceCheckRoute,
   ApiSourceFileRoute: ApiSourceFileRoute,
   ApiSourceTextRoute: ApiSourceTextRoute,
+  CasesIdRoute: CasesIdRoute,
   CompaniesCikRoute: CompaniesCikRoute,
   CompaniesPaymentsRoute: CompaniesPaymentsRoute,
   CourtsIdRoute: CourtsIdRoute,
@@ -2156,6 +2197,7 @@ const rootRouteChildren: RootRouteChildren = {
   SourcesRegistryRoute: SourcesRegistryRoute,
   SourcesRegistryV22Route: SourcesRegistryV22Route,
   AgenciesIndexRoute: AgenciesIndexRoute,
+  CasesIndexRoute: CasesIndexRoute,
   CompaniesIndexRoute: CompaniesIndexRoute,
   CourtsIndexRoute: CourtsIndexRoute,
   DataIndexRoute: DataIndexRoute,
