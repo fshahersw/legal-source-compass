@@ -115,6 +115,12 @@ _BLOCK_TAGS = {
 _DROP_TAGS = {"script", "style", "noscript", "head", "template", "svg", "iframe", "object"}
 
 
+def _is_class(el: Any, name: str) -> bool:
+    if not isinstance(el.tag, str):
+        return False
+    return el.tag.lower() == name or name in (el.get("class") or "").lower().split()
+
+
 def html_text(fragment: str | bytes | None, *, encoding: str | None = None, drop_tags: Iterable[str] = ()) -> str:
     """Render an HTML fragment/document to plain text: block elements become line breaks, inline text joins,
     entities are decoded, markup never survives. Returns norm_lines() output."""
@@ -148,8 +154,12 @@ def html_text(fragment: str | bytes | None, *, encoding: str | None = None, drop
                 out.append(" ")
             if el.text:
                 out.append(el.text)
+            previous = None
             for child in el:
+                if previous is not None and _is_class(child, "denominator") and _is_class(previous, "numerator"):
+                    out.append("/")
                 walk(child)
+                previous = child
             if block:
                 out.append("\n")
             if el.tail:
