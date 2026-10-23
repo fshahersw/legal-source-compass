@@ -16,6 +16,7 @@ import json
 import os
 import re
 import sys
+import time
 
 import pandas as pd
 
@@ -220,8 +221,46 @@ def verify_catalog():
     check("catalog", "every downloadable file link on the FTC page is a row (dictionaries are columns of their data set's row)", sorted(links - dict_links - listed), [])
 
 
+VALIDATION = []
+
+
+def dashboard_months():
+    """The FTC dashboard's monthly comparison, read with the csv module: {YYYY-MM: {total, robocall, live}}."""
+    out = {}
+    with open(os.path.join(ACQ, "tableau", "DoNotCallComplaints__MonthlyComparison.csv"), encoding="utf-8-sig", newline="") as handle:
+        for rec in csv.DictReader(handle):
+            month = time.strftime("%Y-%m", time.strptime(rec["Month of CY Date (from FY)"], "%B %Y"))
+            slot = out.setdefault(month, {})
+            slot["total"] = int(rec["Main Reference Num Total"].replace(",", ""))
+            slot[{"Robocall": "robocall", "Live Caller": "live"}[rec["Call Type"]]] = int(rec["Main Reference Num"].replace(",", ""))
+    return out
+
+
+def verify_counts():
+    """Months counted through the API: built rows against the stored counts file; the API counts against the dashboard where both exist."""
+    path = os.path.join(ACQ, "dnc", "month_counts.json")
+    if not os.path.exists(path):
+        return
+    raw = json.load(open(path, encoding="utf-8"))["months"]
+    rows = {r["id"]: r for r in load("ftc_dnc_reported_calls")["rows"]}
+    dash = dashboard_months()
+    for month, c in sorted(raw.items()):
+        row = rows.get(f"US-{month}")
+        if row is not None and row["item"]["method"] == "count":
+            m = row["item"]["metrics"]
+            check("dnc_counts", f"US-{month} calls", m["calls"], c["total"])
+            check("dnc_counts", f"US-{month} robocalls", m["robocalls"], c["robo_y"])
+            check("dnc_counts", f"US-{month} not robocalls", m["not_robocalls"], c["robo_n"])
+            check("dnc_counts", f"US-{month} no flag", m["no_flag"], c["total"] - c["robo_y"] - c["robo_n"])
+        d = dash.get(month)
+        if d:
+            VALIDATION.append({"month": month, "api_total": c["total"], "dashboard_total": d["total"], "api_robocall": c["robo_y"], "dashboard_robocall": d["robocall"], "api_not": c["robo_n"], "dashboard_live": d["live"]})
+            COMPARED["api_vs_dashboard"] = COMPARED.get("api_vs_dashboard", 0) + 3
+
+
+
 def main():
-    steps = [("hsr_filings", verify_hsr_filings), ("hsr_notices", verify_hsr_notices), ("dnc", verify_dnc), ("index", verify_index), ("catalog", verify_catalog)]
+    steps = [("hsr_filings", verify_hsr_filings), ("hsr_notices", verify_hsr_notices), ("dnc", verify_dnc), ("dnc_counts", verify_counts), ("index", verify_index), ("catalog", verify_catalog)]
     only = set(sys.argv[1:])
     for name, fn in steps:
         if only and name not in only:
@@ -230,7 +269,7 @@ def main():
             fn()
         except FileNotFoundError as err:
             FAILS.append({"group": name, "what": "missing input", "built": str(err), "raw": None})
-    log = {"compared": COMPARED, "differences": len(FAILS), "examples": FAILS[:25]}
+    log = {"compared": COMPARED, "differences": len(FAILS), "examples": FAILS[:25], "api_vs_dashboard": VALIDATION}
     with open(os.path.join(BUILD, "verify_log.json"), "w", encoding="utf-8") as handle:
         json.dump(log, handle, indent=1)
     print(json.dumps({"compared": COMPARED, "differences": len(FAILS)}))

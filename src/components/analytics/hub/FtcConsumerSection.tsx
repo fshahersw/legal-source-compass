@@ -51,13 +51,39 @@ const EMPTY_REASON = {
   hsr: "The published early termination notices hold no usable year yet.",
 } as const;
 
-export function FtcConsumerSection() {
-  const q = useQuery({
+/** One query shared by the Analytics section and the Enforcement card, so the FTC data is read once per visit. */
+function useFtcConsumerOverview() {
+  return useQuery({
     queryKey: ["ftc-consumer-overview"],
     queryFn: () => getFtcConsumerOverview(),
     staleTime: 10 * 60 * 1000,
     retry: 1,
   });
+}
+
+/** The HSR early-termination card on its own (loading, error, empty and chart states), for the Enforcement page. */
+export function FtcHsrCard() {
+  const q = useFtcConsumerOverview();
+  if (q.isPending) return <TrendCardView def={DEFS.hsr} state={{ kind: "loading" }} />;
+  if (q.isError)
+    return (
+      <TrendCardView def={DEFS.hsr} state={{ kind: "error", onRetry: () => void q.refetch() }} />
+    );
+  return (
+    <TrendCardView
+      def={DEFS.hsr}
+      state={cardState(
+        q.data.hsr,
+        q.data.unavailable.includes("hsr"),
+        EMPTY_REASON.hsr,
+        () => void q.refetch(),
+      )}
+    />
+  );
+}
+
+export function FtcConsumerSection() {
+  const q = useFtcConsumerOverview();
   return (
     <section
       id="group-ftc-consumer"

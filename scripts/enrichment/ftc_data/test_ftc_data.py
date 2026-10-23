@@ -13,6 +13,8 @@ import dnc_agg  # noqa: E402
 import dnc_csv  # noqa: E402
 import hsr_parse as H  # noqa: E402
 import index_parse as IP  # noqa: E402
+import count_api  # noqa: E402
+import fetch_hsr  # noqa: E402
 
 
 def rec(created="2026-09-15 10:00:00", violation="2026-09-14 09:00:00", state="Texas", subject="Dropped call or no message", robo="N", phone="2135369459", area="214", city="Dallas", rid="a"):
@@ -485,6 +487,57 @@ class FetcherTests(unittest.TestCase):
         self.assertEqual(FH.HOST_INTERVAL["www.ftc.gov"], 5.0)
         self.assertEqual(FH.HOST_INTERVAL["public.tableau.com"], 10.0)
         self.assertGreaterEqual(FH.HOST_INTERVAL["api.ftc.gov"], 2.0)
+
+
+class CountApiTests(unittest.TestCase):
+    class Fake:
+        """Answers a one-record page for every offset below n, an empty page from n on."""
+
+        def __init__(self, n):
+            self.n = n
+            self.calls = 0
+
+        def get(self, url):
+            import urllib.parse as up
+
+            self.calls += 1
+            offset = int(up.parse_qs(up.urlparse(url).query)["offset"][0])
+            body = json.dumps({"data": [{"id": "x"}] if offset < self.n else []}).encode()
+            return type("R", (), {"status": 200, "body": body})()
+
+    def test_bisection_finds_the_exact_count(self):
+        for n in (0, 1, 2, 3, 7, 50, 233346, 524287, 524288, 524289, 1_000_000):
+            fake = self.Fake(n)
+            self.assertEqual(count_api.count_window(fake, count_api.day_window("2026-09-16")), n, n)
+            self.assertLessEqual(fake.calls, 42)
+
+    def test_month_window_ends_on_the_last_day(self):
+        self.assertEqual(count_api.month_window("2024-02"), {"created_date_from": '"2024-02-01"', "created_date_to": '"2024-02-29"'})
+
+
+class HsrFetchTests(unittest.TestCase):
+    def test_stable_sort_adds_title_and_id_after_created(self):
+        url = fetch_hsr.page_url(9000, 50, fetch_hsr.STABLE_SORT)
+        self.assertTrue(url.startswith("https://api.ftc.gov/v0/hsr-early-termination-notices?page[offset]=9000&page[limit]=50"))
+        order = [url.index(k) for k in ("sort-created", "sort-title", "sort-id")]
+        self.assertEqual(order, sorted(order))
+        self.assertNotIn("api_key", url)
+        self.assertEqual(fetch_hsr.page_url(0, 1), "https://api.ftc.gov/v0/hsr-early-termination-notices?page[offset]=0&page[limit]=1")
+
+    def test_distinct_ids_are_counted_over_every_stored_pass(self):
+        import gzip
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            for name, ids in (("pass0_off000000", ["a", "b", "b"]), ("passS_off000000", ["b", "c"])):
+                with gzip.open(os.path.join(tmp, name + ".json.gz"), "wb") as handle:
+                    handle.write(json.dumps({"data": [{"id": i} for i in ids]}).encode())
+            old = fetch_hsr.PAGES
+            fetch_hsr.PAGES = tmp
+            try:
+                self.assertEqual(fetch_hsr.stored_ids(), {"a", "b", "c"})
+            finally:
+                fetch_hsr.PAGES = old
 
 
 if __name__ == "__main__":

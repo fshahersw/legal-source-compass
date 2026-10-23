@@ -31,7 +31,9 @@ GOV_TERMS = (
 )
 API_TERMS = (
     "FTC for Developers (https://www.ftc.gov/developer): the FTC API is read-only and open to anyone with an api.data.gov key; it publishes no separate "
-    "licence or use restriction beyond the FTC Website Policy above. The FTC states that none of the information in the Do Not Call reported-call data is verified."
+    "licence or use restriction beyond the FTC Website Policy above. api.data.gov (https://api.data.gov/docs/developer-manual/) issues the key and limits each key by the hour; "
+    "requests over the limit are refused with HTTP 429. In this build a burst of about one request a second was refused with a requested wait of up to about 48 minutes, so requests were "
+    "then spaced two seconds apart."
 )
 PLACES_ROUTABLE = C.routable_places()
 

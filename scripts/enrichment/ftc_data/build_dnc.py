@@ -318,7 +318,7 @@ def build_summary(rows, months_meta, overlap, per_file, official, pop_doc):
             subjects[s] = subjects.get(s, 0) + n
     csv_days = sorted(d for f in per_file for d in f["created_days"])
     return {
-        "label": "FTC Do Not Call reported calls by month, state and subject", "rows": len(rows), "terms": B.GOV_TERMS + " " + B.API_TERMS,
+        "label": "FTC Do Not Call reported calls by month, state and subject", "rows": len(rows), "terms": B.GOV_TERMS + " " + B.API_TERMS + " The FTC states that none of the information in the Do Not Call reported-call data is verified.",
         "coverage": {
             "complete_months": complete, "partial_months": [{"month": k, "first_day": months_meta[k]["first_day"], "last_day": months_meta[k]["last_day"], "days_covered": months_meta[k]["days_covered"]} for k in partial],
             "csv_created_days": [csv_days[0], csv_days[-1]] if csv_days else None, "csv_files": len(per_file),
