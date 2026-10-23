@@ -68,6 +68,7 @@ import { Route as InsightsTrendsRouteImport } from './routes/insights.trends'
 import { Route as JudgesIndexRouteImport } from './routes/judges.index'
 import { Route as JudgesIdRouteImport } from './routes/judges.$id'
 import { Route as JudgesAnalyticsRouteImport } from './routes/judges.analytics'
+import { Route as LawCalculatorsRouteImport } from './routes/law_.calculators'
 import { Route as LawCfrRouteImport } from './routes/law_.cfr'
 import { Route as LawCodesRouteImport } from './routes/law_.codes'
 import { Route as LawConstitutionsRouteImport } from './routes/law_.constitutions'
@@ -430,6 +431,11 @@ const JudgesIdRoute = JudgesIdRouteImport.update({
 const JudgesAnalyticsRoute = JudgesAnalyticsRouteImport.update({
   id: '/judges/analytics',
   path: '/judges/analytics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LawCalculatorsRoute = LawCalculatorsRouteImport.update({
+  id: '/law_/calculators',
+  path: '/law/calculators',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LawCfrRoute = LawCfrRouteImport.update({
@@ -833,6 +839,7 @@ export interface FileRoutesByFullPath {
   '/insights/trends': typeof InsightsTrendsRoute
   '/judges/$id': typeof JudgesIdRoute
   '/judges/analytics': typeof JudgesAnalyticsRoute
+  '/law/calculators': typeof LawCalculatorsRoute
   '/law/cfr': typeof LawCfrRouteWithChildren
   '/law/codes': typeof LawCodesRouteWithChildren
   '/law/constitutions': typeof LawConstitutionsRouteWithChildren
@@ -962,6 +969,7 @@ export interface FileRoutesByTo {
   '/insights/trends': typeof InsightsTrendsRoute
   '/judges/$id': typeof JudgesIdRoute
   '/judges/analytics': typeof JudgesAnalyticsRoute
+  '/law/calculators': typeof LawCalculatorsRoute
   '/law/enforcement': typeof LawEnforcementRoute
   '/law/monitoring': typeof LawMonitoringRoute
   '/law/rulemaking': typeof LawRulemakingRoute
@@ -1084,6 +1092,7 @@ export interface FileRoutesById {
   '/insights/trends': typeof InsightsTrendsRoute
   '/judges/$id': typeof JudgesIdRoute
   '/judges/analytics': typeof JudgesAnalyticsRoute
+  '/law_/calculators': typeof LawCalculatorsRoute
   '/law_/cfr': typeof LawCfrRouteWithChildren
   '/law_/codes': typeof LawCodesRouteWithChildren
   '/law_/constitutions': typeof LawConstitutionsRouteWithChildren
@@ -1215,6 +1224,7 @@ export interface FileRouteTypes {
     | '/insights/trends'
     | '/judges/$id'
     | '/judges/analytics'
+    | '/law/calculators'
     | '/law/cfr'
     | '/law/codes'
     | '/law/constitutions'
@@ -1344,6 +1354,7 @@ export interface FileRouteTypes {
     | '/insights/trends'
     | '/judges/$id'
     | '/judges/analytics'
+    | '/law/calculators'
     | '/law/enforcement'
     | '/law/monitoring'
     | '/law/rulemaking'
@@ -1465,6 +1476,7 @@ export interface FileRouteTypes {
     | '/insights/trends'
     | '/judges/$id'
     | '/judges/analytics'
+    | '/law_/calculators'
     | '/law_/cfr'
     | '/law_/codes'
     | '/law_/constitutions'
@@ -1595,6 +1607,7 @@ export interface RootRouteChildren {
   InsightsTrendsRoute: typeof InsightsTrendsRoute
   JudgesIdRoute: typeof JudgesIdRoute
   JudgesAnalyticsRoute: typeof JudgesAnalyticsRoute
+  LawCalculatorsRoute: typeof LawCalculatorsRoute
   LawCfrRoute: typeof LawCfrRouteWithChildren
   LawCodesRoute: typeof LawCodesRouteWithChildren
   LawConstitutionsRoute: typeof LawConstitutionsRouteWithChildren
@@ -2062,6 +2075,13 @@ declare module '@tanstack/react-router' {
       path: '/judges/analytics'
       fullPath: '/judges/analytics'
       preLoaderRoute: typeof JudgesAnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/law_/calculators': {
+      id: '/law_/calculators'
+      path: '/law/calculators'
+      fullPath: '/law/calculators'
+      preLoaderRoute: typeof LawCalculatorsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/law_/cfr': {
@@ -2744,6 +2764,7 @@ const rootRouteChildren: RootRouteChildren = {
   InsightsTrendsRoute: InsightsTrendsRoute,
   JudgesIdRoute: JudgesIdRoute,
   JudgesAnalyticsRoute: JudgesAnalyticsRoute,
+  LawCalculatorsRoute: LawCalculatorsRoute,
   LawCfrRoute: LawCfrRouteWithChildren,
   LawCodesRoute: LawCodesRouteWithChildren,
   LawConstitutionsRoute: LawConstitutionsRouteWithChildren,

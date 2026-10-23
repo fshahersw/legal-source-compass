@@ -12,7 +12,7 @@ export function Field({
   children,
 }: {
   label: string;
-  hint?: string;
+  hint?: string | undefined;
   htmlFor: string;
   children: ReactNode;
 }) {
@@ -74,7 +74,15 @@ export function Panel({
   );
 }
 
-export function Figure({ label, value, sub }: { label: string; value: string; sub?: string }) {
+export function Figure({
+  label,
+  value,
+  sub,
+}: {
+  label: string;
+  value: string;
+  sub?: string | undefined;
+}) {
   return (
     <div className="min-w-0 rounded-md border border-border px-3 py-2">
       <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
@@ -106,16 +114,17 @@ export function SourceObservations({ rows }: { rows: SourceObservation[] }) {
               <td className="py-1 pr-3">
                 {o.label} <span className="text-muted-foreground">({o.seriesId})</span>
               </td>
-              <td className="py-1 pr-3 tabular-nums">{o.date}</td>
-              <td className="py-1 pr-3 text-right tabular-nums">
-                {o.value} {o.units === "%" ? "%" : ""}
+              <td className="whitespace-nowrap py-1 pr-3 tabular-nums">{o.date}</td>
+              <td className="whitespace-nowrap py-1 pr-3 text-right tabular-nums">
+                {o.value}
+                {o.units === "%" ? "%" : ""}
                 {o.firstVintage !== undefined ? (
                   <span className="block text-[11px] text-muted-foreground">
                     first published {o.firstValue ?? "no value"} ({o.firstVintage})
                   </span>
                 ) : null}
               </td>
-              <td className="py-1 pr-3 tabular-nums">{o.vintage}</td>
+              <td className="whitespace-nowrap py-1 pr-3 tabular-nums">{o.vintage}</td>
               <td className="py-1">
                 <a
                   href={o.url}

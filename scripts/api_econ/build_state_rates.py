@@ -56,7 +56,7 @@ ENTRIES = [
      "quote": "the Chief Financial Officer shall set the rate of interest that shall be payable on judgments or decrees for the calendar quarter beginning January 1 and adjust the rate quarterly on April 1, July 1, and October 1 by averaging the discount rate of the Federal Reserve Bank of New York for the preceding 12 months, then adding 400 basis points to the averaged federal discount rate.",
      "rate_type": "published_periodically", "rate_percent": None, "publisher": "Florida Chief Financial Officer (quarterly)",
      "accrues_from": "Entry of judgment"},
-    {"state": "TX", "kind": "postjudgment", "applies_to": "Money judgments of Texas courts (Tex. Fin. Code § 304.003)",
+    {"state": "TX", "kind": "postjudgment", "applies_to": "Money judgments of Texas courts",
      "provision": "Tex. Fin. Code § 304.003", "source": "tx_occc_letter",
      "quote": "Postjudgment Interest Rate - Sec. 304.003, TEX. FIN. CODE 10/01/26-10/31/26 6.75% 6.75%",
      "rate_type": "published_periodically", "rate_percent": "6.75", "publisher": "Texas Consumer Credit Commissioner (monthly, Texas Credit Letter)",

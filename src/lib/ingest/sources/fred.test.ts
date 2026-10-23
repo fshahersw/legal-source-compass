@@ -3,7 +3,14 @@ import { describe, expect, it } from "vitest";
 import { canonical } from "../rows.ts";
 import { runSource } from "../runner.ts";
 import type { CorpusClient } from "../corpus.ts";
-import type { CorpusRow, JsonObject, RequestRecord, SourceHttp, StoredRow } from "../types.ts";
+import type {
+  CorpusRow,
+  Json,
+  JsonObject,
+  RequestRecord,
+  SourceHttp,
+  StoredRow,
+} from "../types.ts";
 import {
   comparableFred,
   currentObservations,
@@ -217,7 +224,7 @@ describe("current observations and vintages", () => {
         [o],
         "2026-10-23",
       )[0]!;
-      const back = fromTuple((t.item["fred"] as JsonObject)["obs"]![0] as never);
+      const back = fromTuple(((t.item["fred"] as JsonObject)["obs"] as Json[])[0] as never);
       expect(back).toEqual(o);
     }
   });

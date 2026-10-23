@@ -182,7 +182,7 @@ def write_build(out_dir: Path, dataset: str, label: str, listing_block: dict, su
             "rows": rows, "built_at": utc_now(), "inputs": inputs}
     path = out_dir / f"{dataset}.json"
     path.write_text(json.dumps(body))
-    info = {"file": str(path.relative_to(ROOT)), "dataset": dataset, "rows": len(rows), "bytes": path.stat().st_size,
+    info = {"file": str(path.relative_to(ROOT)) if path.is_relative_to(ROOT) else str(path), "dataset": dataset, "rows": len(rows), "bytes": path.stat().st_size,
             "file_sha256": hashlib.sha256(path.read_bytes()).hexdigest(), "rows_sha256": digest(rows)}
     print(json.dumps(info))
     return info

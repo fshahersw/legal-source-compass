@@ -82,15 +82,20 @@ export function PostJudgmentCalculator({ defaults }: { defaults?: PjiDefaults })
       : pjiInputProblem(input);
   const rate =
     week && rateQuery.data?.series ? findRate(rateQuery.data.series, week.weekEnding) : null;
-  const result = useMemo(() => {
-    if (problem || principal === null || !rate) return null;
+  const previous =
+    week && rateQuery.data?.series
+      ? findRate(rateQuery.data.series, addDays(week.weekEnding, -7))
+      : null;
+  const computed = useMemo(() => {
+    if (problem || principal === null || !rate) return { result: null, error: null };
     try {
-      return computePji(input, rate, previous);
-    } catch {
-      return null;
+      return { result: computePji(input, rate, previous), error: null };
+    } catch (e) {
+      return { result: null, error: e instanceof Error ? e.message : "The calculation failed." };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [problem, principal, rate, judgment, payment, basis]);
+  }, [problem, principal, rate, previous, judgment, payment, basis]);
+  const result = computed.result;
 
   let rateState: React.ReactNode = null;
   if (!week) rateState = <Note kind="info">Enter the date the judgment was entered.</Note>;
@@ -210,7 +215,7 @@ export function PostJudgmentCalculator({ defaults }: { defaults?: PjiDefaults })
           {!amount && !problem ? (
             <Note kind="info">Enter the judgment amount to compute interest.</Note>
           ) : null}
-          {rate && !result && !problem && amount ? <Note kind="info">Check the dates.</Note> : null}
+          {computed.error ? <Note kind="error">{computed.error}</Note> : null}
           {rate ? (
             <div className="grid gap-2 sm:grid-cols-3">
               <Figure label="Rate" value={`${rate.value}%`} sub={`Week ending ${rate.date}`} />
