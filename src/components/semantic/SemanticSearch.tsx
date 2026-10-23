@@ -253,6 +253,7 @@ export function SemanticSearch({
   limit = 10,
   className,
   onSearch,
+  quiet = false,
 }: {
   query?: string | undefined;
   initialQuery?: string;
@@ -261,6 +262,8 @@ export function SemanticSearch({
   limit?: number;
   className?: string | undefined;
   onSearch?: ((q: string) => void) | undefined;
+  /** Render nothing while search by meaning is not set up (not configured, index not loaded). */
+  quiet?: boolean;
 }) {
   const driven = query !== undefined;
   const [draft, setDraft] = useState(driven ? query : initialQuery);
@@ -299,6 +302,13 @@ export function SemanticSearch({
       : q.isError
         ? { kind: "error" }
         : { kind: "outcome", outcome: q.data };
+
+  if (
+    quiet &&
+    view.kind === "outcome" &&
+    (view.outcome.status === "not_configured" || view.outcome.status === "not_loaded")
+  )
+    return null;
 
   const run = (text: string) => {
     const n = normalizeQuery(text);

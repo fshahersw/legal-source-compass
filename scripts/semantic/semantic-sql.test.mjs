@@ -82,7 +82,9 @@ async function setup() {
     const keys = Object.keys(args);
     const r = await db.query(
       `select public.${name}(${keys.map((k, i) => `${k} => $${i + 1}`).join(",")}) result`,
-      keys.map((k) => (typeof args[k] === "object" && !Array.isArray(args[k]) ? JSON.stringify(args[k]) : args[k])),
+      keys.map((k) =>
+        typeof args[k] === "object" && !Array.isArray(args[k]) ? JSON.stringify(args[k]) : args[k],
+      ),
     );
     return r.rows[0].result;
   };
@@ -107,7 +109,8 @@ async function setup() {
 }
 
 async function seed(t) {
-  for (const d of ["us_code_sections", "ecfr_sections_full", "congress_bills", "crs_reports"]) await t.corpus(d);
+  for (const d of ["us_code_sections", "ecfr_sections_full", "congress_bills", "crs_reports"])
+    await t.corpus(d);
   await t.load("us_code_sections", [
     row("15:78u-6", 0, vec({ 0: 1 }), { chunk_total: 2 }),
     row("15:78u-6", 1, vec({ 1: 1 }), { chunk_total: 2 }),
@@ -148,21 +151,43 @@ test("semantic contract: structure, grants and settings", { timeout: 120000 }, a
     }
     for (const role of ["anon", "authenticated"]) {
       for (const f of fns) {
-        const oid = (await db.query(`select p.oid::regprocedure::text sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = $1`, [f.proname])).rows[0].sig;
+        const oid = (
+          await db.query(
+            `select p.oid::regprocedure::text sig from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = $1`,
+            [f.proname],
+          )
+        ).rows[0].sig;
         assert.equal(
-          (await db.query(`select has_function_privilege($1, $2, 'execute') ok`, [role, oid])).rows[0].ok,
+          (await db.query(`select has_function_privilege($1, $2, 'execute') ok`, [role, oid]))
+            .rows[0].ok,
           false,
           `${role} must not execute ${f.proname}`,
         );
         assert.equal(
-          (await db.query(`select has_function_privilege('service_role', $1, 'execute') ok`, [oid])).rows[0].ok,
+          (await db.query(`select has_function_privilege('service_role', $1, 'execute') ok`, [oid]))
+            .rows[0].ok,
           true,
         );
       }
-      assert.equal((await db.query(`select has_schema_privilege($1, 'semantic', 'usage') ok`, [role])).rows[0].ok, false);
-      assert.equal((await db.query(`select has_table_privilege($1, 'semantic.chunks', 'select') ok`, [role])).rows[0].ok, false);
+      assert.equal(
+        (await db.query(`select has_schema_privilege($1, 'semantic', 'usage') ok`, [role])).rows[0]
+          .ok,
+        false,
+      );
+      assert.equal(
+        (await db.query(`select has_table_privilege($1, 'semantic.chunks', 'select') ok`, [role]))
+          .rows[0].ok,
+        false,
+      );
     }
-    assert.equal((await db.query(`select relrowsecurity r from pg_class where oid = 'semantic.chunks'::regclass`)).rows[0].r, true);
+    assert.equal(
+      (
+        await db.query(
+          `select relrowsecurity r from pg_class where oid = 'semantic.chunks'::regclass`,
+        )
+      ).rows[0].r,
+      true,
+    );
   } finally {
     await db.close();
   }
@@ -172,111 +197,240 @@ test("semantic contract: load, reload, prune and purge", { timeout: 120000 }, as
   const t = await setup();
   try {
     await t.corpus("us_code_sections");
-    const rows = [row("a", 0, vec({ 0: 1 }), { chunk_total: 2 }), row("a", 1, vec({ 1: 1 }), { chunk_total: 2 }), row("b", 0, vec({ 2: 1 }))];
+    const rows = [
+      row("a", 0, vec({ 0: 1 }), { chunk_total: 2 }),
+      row("a", 1, vec({ 1: 1 }), { chunk_total: 2 }),
+      row("b", 0, vec({ 2: 1 })),
+    ];
     assert.deepEqual(await t.load("us_code_sections", rows), { rows: 3, written: 3, unchanged: 0 });
-    assert.deepEqual(await t.load("us_code_sections", rows), { rows: 3, written: 0, unchanged: 3 }, "an identical reload writes nothing");
+    assert.deepEqual(
+      await t.load("us_code_sections", rows),
+      { rows: 3, written: 0, unchanged: 3 },
+      "an identical reload writes nothing",
+    );
     const changed = [{ ...rows[0], snippet: "A new snippet" }, rows[1], rows[2]];
-    assert.deepEqual(await t.load("us_code_sections", changed), { rows: 3, written: 1, unchanged: 2 });
+    assert.deepEqual(await t.load("us_code_sections", changed), {
+      rows: 3,
+      written: 1,
+      unchanged: 2,
+    });
     const moved = [row("a", 0, vec({ 0: 1, 9: 0.2 })), rows[1], rows[2]];
-    assert.equal((await t.load("us_code_sections", moved)).written, 1, "a changed embedding is written");
+    assert.equal(
+      (await t.load("us_code_sections", moved)).written,
+      1,
+      "a changed embedding is written",
+    );
     // a record that now keeps fewer passages loses the rest
-    assert.equal(await t.rpc("semantic_prune_v1", { p_dataset: "us_code_sections", p_counts: { a: 1, b: 1 } }), 1);
+    assert.equal(
+      await t.rpc("semantic_prune_v1", { p_dataset: "us_code_sections", p_counts: { a: 1, b: 1 } }),
+      1,
+    );
     assert.equal((await t.db.query("select count(*)::int n from semantic.chunks")).rows[0].n, 2);
     // constraints: unknown dataset, in-app links only, hash shape, offsets
     await assert.rejects(t.load("nope", [row("x", 0, vec({ 0: 1 }))]), /foreign key|violates/i);
-    await assert.rejects(t.load("us_code_sections", [row("x", 0, vec({ 0: 1 }), { href: "//evil.example" })]), /violates check/i);
-    await assert.rejects(t.load("us_code_sections", [row("x", 0, vec({ 0: 1 }), { href: "https://evil.example/x" })]), /violates check/i);
-    await assert.rejects(t.load("us_code_sections", [{ ...row("x", 0, vec({ 0: 1 })), text_sha256: "zz" }]), /violates check/i);
-    await assert.rejects(t.load("us_code_sections", [{ ...row("x", 0, vec({ 0: 1 })), char_end: 0 }]), /violates check/i);
+    await assert.rejects(
+      t.load("us_code_sections", [row("x", 0, vec({ 0: 1 }), { href: "//evil.example" })]),
+      /violates check/i,
+    );
+    await assert.rejects(
+      t.load("us_code_sections", [row("x", 0, vec({ 0: 1 }), { href: "https://evil.example/x" })]),
+      /violates check/i,
+    );
+    await assert.rejects(
+      t.load("us_code_sections", [{ ...row("x", 0, vec({ 0: 1 })), text_sha256: "zz" }]),
+      /violates check/i,
+    );
+    await assert.rejects(
+      t.load("us_code_sections", [{ ...row("x", 0, vec({ 0: 1 })), char_end: 0 }]),
+      /violates check/i,
+    );
     await assert.rejects(t.load("us_code_sections", []), /Invalid passage batch/);
-    assert.equal((await t.load("us_code_sections", [row("n", 0, vec({ 4: 1 }), { source_url: "" })])).written, 1);
-    assert.equal((await t.db.query("select source_url from semantic.chunks where record_id = 'n'")).rows[0].source_url, null, "an empty source url is stored as null");
+    assert.equal(
+      (await t.load("us_code_sections", [row("n", 0, vec({ 4: 1 }), { source_url: "" })])).written,
+      1,
+    );
+    assert.equal(
+      (await t.db.query("select source_url from semantic.chunks where record_id = 'n'")).rows[0]
+        .source_url,
+      null,
+      "an empty source url is stored as null",
+    );
     // purge removes a dataset in bounded steps
-    assert.equal(await t.rpc("semantic_purge_v1", { p_dataset: "us_code_sections", p_limit: 2 }), 2);
-    assert.equal(await t.rpc("semantic_purge_v1", { p_dataset: "us_code_sections", p_limit: 2 }), 1);
-    assert.equal(await t.rpc("semantic_purge_v1", { p_dataset: "us_code_sections", p_limit: 2 }), 0);
+    assert.equal(
+      await t.rpc("semantic_purge_v1", { p_dataset: "us_code_sections", p_limit: 2 }),
+      2,
+    );
+    assert.equal(
+      await t.rpc("semantic_purge_v1", { p_dataset: "us_code_sections", p_limit: 2 }),
+      1,
+    );
+    assert.equal(
+      await t.rpc("semantic_purge_v1", { p_dataset: "us_code_sections", p_limit: 2 }),
+      0,
+    );
   } finally {
     await t.db.close();
   }
 });
 
-test("semantic contract: search ranks the best passage per record and honours filters", { timeout: 120000 }, async () => {
-  const t = await setup();
-  try {
-    await seed(t);
-    const out = await t.rpc("semantic_search_v1", { p_embedding: vec({ 0: 1 }), p_limit: 10 });
-    assert.equal(out.index_version, "si-1");
-    const ids = out.results.map((r) => `${r.dataset}/${r.record_id}`);
-    assert.deepEqual(ids, [
-      "us_code_sections/15:78u-6",
-      "us_code_sections/42:1983",
-      "us_code_sections/28:1407",
-      "ecfr_sections_full/cfr:17:240.10b-5",
-      "crs_reports/R12345",
-      "congress_bills/117-hr-1",
-    ]);
-    assert.deepEqual(out.results.map((r) => r.rank), [1, 2, 3, 4, 5, 6]);
-    assert.equal(new Set(ids).size, ids.length, "one result per record");
-    const sec = out.results.find((r) => r.record_id === "42:1983");
-    assert.equal(sec.chunk_no, 1, "the nearer passage of a record represents it");
-    assert.equal(out.results[0].distance, 0);
-    assert.ok(out.results[1].distance > 0 && out.results[1].distance < 0.01);
-    assert.equal(out.results.at(-1).distance, 1);
-    for (const r of out.results) {
-      assert.deepEqual(Object.keys(r).sort(), ["char_end", "char_start", "chunk_no", "chunk_total", "dataset", "distance", "href", "rank", "record_id", "snippet", "source_url", "title"]);
+test(
+  "semantic contract: search ranks the best passage per record and honours filters",
+  { timeout: 120000 },
+  async () => {
+    const t = await setup();
+    try {
+      await seed(t);
+      const out = await t.rpc("semantic_search_v1", { p_embedding: vec({ 0: 1 }), p_limit: 10 });
+      assert.equal(out.index_version, "si-1");
+      const ids = out.results.map((r) => `${r.dataset}/${r.record_id}`);
+      assert.deepEqual(ids, [
+        "us_code_sections/15:78u-6",
+        "us_code_sections/42:1983",
+        "us_code_sections/28:1407",
+        "ecfr_sections_full/cfr:17:240.10b-5",
+        "crs_reports/R12345",
+        "congress_bills/117-hr-1",
+      ]);
+      assert.deepEqual(
+        out.results.map((r) => r.rank),
+        [1, 2, 3, 4, 5, 6],
+      );
+      assert.equal(new Set(ids).size, ids.length, "one result per record");
+      const sec = out.results.find((r) => r.record_id === "42:1983");
+      assert.equal(sec.chunk_no, 1, "the nearer passage of a record represents it");
+      assert.equal(out.results[0].distance, 0);
+      assert.ok(out.results[1].distance > 0 && out.results[1].distance < 0.01);
+      assert.equal(out.results.at(-1).distance, 1);
+      for (const r of out.results) {
+        assert.deepEqual(Object.keys(r).sort(), [
+          "char_end",
+          "char_start",
+          "chunk_no",
+          "chunk_total",
+          "dataset",
+          "distance",
+          "href",
+          "rank",
+          "record_id",
+          "snippet",
+          "source_url",
+          "title",
+        ]);
+      }
+      const only = await t.rpc("semantic_search_v1", {
+        p_embedding: vec({ 0: 1 }),
+        p_datasets: ["ecfr_sections_full", "crs_reports"],
+        p_limit: 10,
+      });
+      assert.deepEqual(
+        only.results.map((r) => r.dataset),
+        ["ecfr_sections_full", "crs_reports"],
+      );
+      const one = await t.rpc("semantic_search_v1", { p_embedding: vec({ 0: 1 }), p_limit: 0 });
+      assert.equal(one.results.length, 1, "a limit below 1 is raised to 1");
+      const none = await t.rpc("semantic_search_v1", {
+        p_embedding: vec({ 0: 1 }),
+        p_datasets: ["not_a_dataset"],
+      });
+      assert.deepEqual(none.results, []);
+      await assert.rejects(
+        t.rpc("semantic_search_v1", { p_embedding: vec({ 0: 1 }), p_datasets: [] }),
+        /at least one dataset/,
+      );
+      await assert.rejects(
+        t.rpc("semantic_search_v1", { p_embedding: "[1,2,3]" }),
+        /1024 dimensions/,
+      );
+    } finally {
+      await t.db.close();
     }
-    const only = await t.rpc("semantic_search_v1", { p_embedding: vec({ 0: 1 }), p_datasets: ["ecfr_sections_full", "crs_reports"], p_limit: 10 });
-    assert.deepEqual(only.results.map((r) => r.dataset), ["ecfr_sections_full", "crs_reports"]);
-    const one = await t.rpc("semantic_search_v1", { p_embedding: vec({ 0: 1 }), p_limit: 0 });
-    assert.equal(one.results.length, 1, "a limit below 1 is raised to 1");
-    const none = await t.rpc("semantic_search_v1", { p_embedding: vec({ 0: 1 }), p_datasets: ["not_a_dataset"] });
-    assert.deepEqual(none.results, []);
-    await assert.rejects(t.rpc("semantic_search_v1", { p_embedding: vec({ 0: 1 }), p_datasets: [] }), /at least one dataset/);
-    await assert.rejects(t.rpc("semantic_search_v1", { p_embedding: "[1,2,3]" }), /1024 dimensions/);
-  } finally {
-    await t.db.close();
-  }
-});
+  },
+);
 
-test("semantic contract: related records exclude the record itself", { timeout: 120000 }, async () => {
-  const t = await setup();
-  try {
-    await seed(t);
-    const rel = await t.rpc("semantic_related_v1", { p_dataset: "us_code_sections", p_record_id: "15:78u-6", p_limit: 5 });
-    assert.equal(rel.indexed, true);
-    assert.equal(rel.passages_used, 2);
-    const ids = rel.results.map((r) => `${r.dataset}/${r.record_id}`);
-    assert.ok(!ids.includes("us_code_sections/15:78u-6"), "the record is never its own related item");
-    assert.equal(ids[0], "crs_reports/R12345", "the record whose passage matches the mean of both passages comes first");
-    assert.equal(rel.results[0].distance, 0);
-    const filtered = await t.rpc("semantic_related_v1", { p_dataset: "us_code_sections", p_record_id: "15:78u-6", p_datasets: ["congress_bills"] });
-    assert.deepEqual(filtered.results.map((r) => r.record_id), ["117-hr-1"]);
-    const missing = await t.rpc("semantic_related_v1", { p_dataset: "us_code_sections", p_record_id: "99:99" });
-    assert.deepEqual(missing, { indexed: false, index_version: "si-1", results: [] });
-    await assert.rejects(t.rpc("semantic_related_v1", { p_dataset: "us_code_sections", p_record_id: "15:78u-6", p_datasets: [] }), /at least one dataset/);
-  } finally {
-    await t.db.close();
-  }
-});
+test(
+  "semantic contract: related records exclude the record itself",
+  { timeout: 120000 },
+  async () => {
+    const t = await setup();
+    try {
+      await seed(t);
+      const rel = await t.rpc("semantic_related_v1", {
+        p_dataset: "us_code_sections",
+        p_record_id: "15:78u-6",
+        p_limit: 5,
+      });
+      assert.equal(rel.indexed, true);
+      assert.equal(rel.passages_used, 2);
+      const ids = rel.results.map((r) => `${r.dataset}/${r.record_id}`);
+      assert.ok(
+        !ids.includes("us_code_sections/15:78u-6"),
+        "the record is never its own related item",
+      );
+      assert.equal(
+        ids[0],
+        "crs_reports/R12345",
+        "the record whose passage matches the mean of both passages comes first",
+      );
+      assert.equal(rel.results[0].distance, 0);
+      const filtered = await t.rpc("semantic_related_v1", {
+        p_dataset: "us_code_sections",
+        p_record_id: "15:78u-6",
+        p_datasets: ["congress_bills"],
+      });
+      assert.deepEqual(
+        filtered.results.map((r) => r.record_id),
+        ["117-hr-1"],
+      );
+      const missing = await t.rpc("semantic_related_v1", {
+        p_dataset: "us_code_sections",
+        p_record_id: "99:99",
+      });
+      assert.deepEqual(missing, { indexed: false, index_version: "si-1", results: [] });
+      await assert.rejects(
+        t.rpc("semantic_related_v1", {
+          p_dataset: "us_code_sections",
+          p_record_id: "15:78u-6",
+          p_datasets: [],
+        }),
+        /at least one dataset/,
+      );
+    } finally {
+      await t.db.close();
+    }
+  },
+);
 
-test("semantic contract: status reports coverage and never the provider", { timeout: 120000 }, async () => {
-  const t = await setup();
-  try {
-    await seed(t);
-    const status = await t.rpc("semantic_status_v1");
-    assert.equal(status.index_version, "si-1");
-    const usc = status.datasets.find((d) => d.dataset === "us_code_sections");
-    assert.equal(usc.loaded_chunks, 5);
-    assert.deepEqual(Object.keys(usc).sort(), ["built_at", "capped_records", "chunks", "composed", "dataset", "label", "loaded_chunks", "records"]);
-    assert.doesNotMatch(JSON.stringify(status), /voyage|model/i);
-    // anon cannot call it
-    await t.db.exec("set role anon");
-    await assert.rejects(t.db.query("select public.semantic_status_v1()"), /permission denied/);
-    await t.db.exec("reset role");
-    await t.db.exec("set role service_role");
-    assert.ok((await t.db.query("select public.semantic_status_v1() s")).rows[0].s);
-    await t.db.exec("reset role");
-  } finally {
-    await t.db.close();
-  }
-});
+test(
+  "semantic contract: status reports coverage and never the provider",
+  { timeout: 120000 },
+  async () => {
+    const t = await setup();
+    try {
+      await seed(t);
+      const status = await t.rpc("semantic_status_v1");
+      assert.equal(status.index_version, "si-1");
+      const usc = status.datasets.find((d) => d.dataset === "us_code_sections");
+      assert.equal(usc.loaded_chunks, 5);
+      assert.deepEqual(Object.keys(usc).sort(), [
+        "built_at",
+        "capped_records",
+        "chunks",
+        "composed",
+        "dataset",
+        "label",
+        "loaded_chunks",
+        "records",
+      ]);
+      assert.doesNotMatch(JSON.stringify(status), /voyage|model/i);
+      // anon cannot call it
+      await t.db.exec("set role anon");
+      await assert.rejects(t.db.query("select public.semantic_status_v1()"), /permission denied/);
+      await t.db.exec("reset role");
+      await t.db.exec("set role service_role");
+      assert.ok((await t.db.query("select public.semantic_status_v1() s")).rows[0].s);
+      await t.db.exec("reset role");
+    } finally {
+      await t.db.close();
+    }
+  },
+);

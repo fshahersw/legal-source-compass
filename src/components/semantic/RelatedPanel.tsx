@@ -212,6 +212,7 @@ export function RelatedPanel({
   heading = "Related",
   className,
   showSnippets = false,
+  quiet = false,
 }: {
   dataset: SemanticDatasetId;
   recordId: string;
@@ -221,6 +222,8 @@ export function RelatedPanel({
   heading?: string;
   className?: string | undefined;
   showSnippets?: boolean;
+  /** Render nothing while the index is not set up (not loaded, record not indexed), instead of saying so. */
+  quiet?: boolean;
 }) {
   const fn = useServerFn(semanticRelated);
   const q = useQuery({
@@ -234,6 +237,12 @@ export function RelatedPanel({
     : q.isError
       ? { kind: "error" }
       : { kind: "outcome", outcome: q.data };
+  if (
+    quiet &&
+    view.kind === "outcome" &&
+    ["not_loaded", "not_indexed", "invalid"].includes(view.outcome.status)
+  )
+    return null;
   return (
     <RelatedPanelView
       view={view}

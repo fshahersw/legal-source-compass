@@ -1,64 +1,582 @@
 {
   "description": "Labeled retrieval check for the semantic index. Each query is a plain-language description written from the stored text of the expected record(s); every expected record carries an `evidence` phrase that must occur in the text the index embeds (scripts/semantic/evaluate.py verify-labels fails otherwise). The queries paraphrase the text instead of quoting its headings. A query is a hit when any expected record is among the top-k records.",
   "queries": [
-    {"id": "usc-01", "query": "pay awards to people who report securities violations to the SEC", "expected": [{"dataset": "us_code_sections", "record_id": "15:78u-6", "evidence": "voluntarily provided original information"}]},
-    {"id": "usc-02", "query": "time limit for a retaliation lawsuit by a securities whistleblower", "expected": [{"dataset": "us_code_sections", "record_id": "15:78u-6", "evidence": "more than 6 years after the date on which the violation"}]},
-    {"id": "usc-03", "query": "suing state officials for violating federal constitutional rights", "expected": [{"dataset": "us_code_sections", "record_id": "42:1983", "evidence": "under color of any statute"}]},
-    {"id": "usc-04", "query": "centralizing similar lawsuits pending in different federal districts before one judge for pretrial proceedings", "expected": [{"dataset": "us_code_sections", "record_id": "28:1407", "evidence": "coordinated or consolidated pretrial proceedings"}]},
-    {"id": "usc-05", "query": "when can a federal court hear a case between citizens of different states", "expected": [{"dataset": "us_code_sections", "record_id": "28:1332", "evidence": "exceeds the sum or value of $75,000"}]},
-    {"id": "usc-06", "query": "federal district courts hear cases that arise under federal law", "expected": [{"dataset": "us_code_sections", "record_id": "28:1331", "evidence": "arising under the Constitution, laws, or treaties"}]},
-    {"id": "usc-07", "query": "four year deadline for claims under federal statutes enacted after 1990", "expected": [{"dataset": "us_code_sections", "record_id": "28:1658", "evidence": "4 years after the cause of action accrues"}]},
-    {"id": "usc-08", "query": "two years after discovery limit for private securities fraud lawsuits", "expected": [{"dataset": "us_code_sections", "record_id": "28:1658", "evidence": "2 years after the discovery of the facts constituting the violation"}]},
-    {"id": "usc-09", "query": "unfair or deceptive practices are unlawful and the commission may stop them", "expected": [{"dataset": "us_code_sections", "record_id": "15:45", "evidence": "unfair or deceptive acts or practices in or affecting commerce, are hereby declared unlawful"}]},
-    {"id": "usc-10", "query": "agreements that unreasonably restrain trade among the states are illegal", "expected": [{"dataset": "us_code_sections", "record_id": "15:1", "evidence": "in restraint of trade or commerce among the several States"}]},
-    {"id": "usc-11", "query": "employees can recover unpaid overtime and an equal amount as liquidated damages", "expected": [{"dataset": "us_code_sections", "record_id": "29:216", "evidence": "liquidated damages"}]},
-    {"id": "usc-12", "query": "twelve weeks of leave in a year for a new child or a serious health condition", "expected": [{"dataset": "us_code_sections", "record_id": "29:2612", "evidence": "12 workweeks of leave during any 12-month period"}]},
-    {"id": "usc-13", "query": "an employer may not discriminate against a qualified person because of a disability", "expected": [{"dataset": "us_code_sections", "record_id": "42:12112", "evidence": "No covered entity shall discriminate against a qualified individual on the basis of disability"}]},
-    {"id": "usc-14", "query": "refusing to hire someone because of race, color, religion, sex or national origin", "expected": [{"dataset": "us_code_sections", "record_id": "42:2000e-2", "evidence": "race, color, religion, sex, or national origin"}]},
-    {"id": "usc-15", "query": "collection efforts against a debtor stop automatically when a bankruptcy petition is filed", "expected": [{"dataset": "us_code_sections", "record_id": "11:362", "evidence": "operates as a stay"}]},
-    {"id": "usc-16", "query": "whoever invents a new and useful machine or process may obtain a patent", "expected": [{"dataset": "us_code_sections", "record_id": "35:101", "evidence": "new and useful process, machine, manufacture, or composition of matter"}]},
-    {"id": "usc-17", "query": "copying a work for criticism, news reporting, teaching or research is not infringement", "expected": [{"dataset": "us_code_sections", "record_id": "17:107", "evidence": "criticism, comment, news reporting, teaching"}]},
-    {"id": "usc-18", "query": "a written arbitration clause in a commercial contract is valid and enforceable", "expected": [{"dataset": "us_code_sections", "record_id": "9:2", "evidence": "shall be valid, irrevocable, and enforceable"}]},
-    {"id": "usc-19", "query": "the IRS has three years after a return is filed to assess more tax", "expected": [{"dataset": "us_code_sections", "record_id": "26:6501", "evidence": "within 3 years after the return was filed"}]},
-    {"id": "usc-20", "query": "criminal liability for accessing a computer without authorization", "expected": [{"dataset": "us_code_sections", "record_id": "18:1030", "evidence": "accessed a computer without authorization or exceeding authorized access"}]},
-    {"id": "usc-21", "query": "it is unlawful to run a business through a pattern of racketeering activity", "expected": [{"dataset": "us_code_sections", "record_id": "18:1962", "evidence": "pattern of racketeering activity"}]},
-    {"id": "usc-22", "query": "agencies must make records available to the public on request, subject to exemptions", "expected": [{"dataset": "us_code_sections", "record_id": "5:552", "evidence": "Each agency shall make available to the public information as follows"}]},
-    {"id": "usc-23", "query": "shipping adulterated or misbranded food or drugs across state lines is prohibited", "expected": [{"dataset": "us_code_sections", "record_id": "21:331", "evidence": "adulterated or misbranded"}]},
-    {"id": "usc-24", "query": "a vehicle maker must notify the government and owners when it learns of a safety defect", "expected": [{"dataset": "us_code_sections", "record_id": "49:30118", "evidence": "learns the vehicle or equipment contains a defect"}]},
-    {"id": "usc-25", "query": "it is unlawful to use manipulative or deceptive devices when buying or selling securities", "expected": [{"dataset": "us_code_sections", "record_id": "15:78j", "evidence": "manipulative or deceptive device or contrivance"}]},
-    {"id": "usc-26", "query": "statute of limitations for actions under the Securities Exchange Act", "expected": [
-      {"dataset": "us_code_sections", "record_id": "28:1658", "evidence": "Securities Exchange Act of 1934"},
-      {"dataset": "us_code_sections", "record_id": "15:78i", "evidence": "within one year after the discovery of the facts constituting the violation"},
-      {"dataset": "us_code_sections", "record_id": "15:78r", "evidence": "within one year after the discovery of the facts constituting the cause of action"},
-      {"dataset": "us_code_sections", "record_id": "15:78u-6", "evidence": "more than 6 years after the date on which the violation"}
-    ]},
-    {"id": "cfr-01", "query": "rule against fraud and misleading statements in connection with buying or selling securities", "expected": [{"dataset": "ecfr_sections_full", "record_id": "cfr:17:240.10b-5", "evidence": "untrue statement of a material fact"}]},
-    {"id": "cfr-02", "query": "employers must keep safety data sheets and label hazardous chemicals", "expected": [{"dataset": "ecfr_sections_full", "record_id": "cfr:29:1910.1200", "evidence": "safety data sheets"}]},
-    {"id": "cfr-03", "query": "an employer must tell OSHA within eight hours when a worker dies on the job", "expected": [{"dataset": "ecfr_sections_full", "record_id": "cfr:29:1904.39", "evidence": "Within eight (8) hours after the death of any employee"}]},
-    {"id": "cfr-04", "query": "telemarketers may not call numbers on the national do not call registry", "expected": [{"dataset": "ecfr_sections_full", "record_id": "cfr:16:310.4", "evidence": "registry, maintained by the Commission, of persons who do not wish to receive outbound telephone calls"}]},
-    {"id": "cfr-05", "query": "when a health plan or provider may use or disclose a patient's health information", "expected": [{"dataset": "ecfr_sections_full", "record_id": "cfr:45:164.502", "evidence": "may not use or disclose protected health information"}]},
-    {"id": "cfr-06", "query": "notify affected patients about a data breach without unreasonable delay", "expected": [{"dataset": "ecfr_sections_full", "record_id": "cfr:45:164.404", "evidence": "without unreasonable delay"}]},
-    {"id": "cfr-07", "query": "a cardholder must dispute a billing error within sixty days of the statement", "expected": [{"dataset": "ecfr_sections_full", "record_id": "cfr:12:1026.13", "evidence": "60 days"}]},
-    {"id": "cfr-08", "query": "a lender must notify the applicant of its decision within thirty days and state the reasons for denial", "expected": [{"dataset": "ecfr_sections_full", "record_id": "cfr:12:1002.9", "evidence": "30 days after receiving a completed application"}]},
-    {"id": "cfr-09", "query": "salary and duties test for the executive overtime exemption", "expected": [{"dataset": "ecfr_sections_full", "record_id": "cfr:29:541.100", "evidence": "bona fide executive capacity"}]},
-    {"id": "cfr-10", "query": "reasons an eligible employee may take family and medical leave", "expected": [{"dataset": "ecfr_sections_full", "record_id": "cfr:29:825.112", "evidence": "For birth of a son or daughter"}]},
-    {"id": "cfr-11", "query": "a person who acquires more than five percent of a class of stock must file a beneficial ownership report", "expected": [{"dataset": "ecfr_sections_full", "record_id": "cfr:17:240.13d-1", "evidence": "more than five percent of the class"}]},
-    {"id": "cfr-12", "query": "a registrant must describe the material factors that make an investment speculative or risky", "expected": [{"dataset": "ecfr_sections_full", "record_id": "cfr:17:229.105", "evidence": "speculative or risky"}]},
-    {"id": "cfr-13", "query": "employers must provide fall protection for workers at heights on construction sites", "expected": [{"dataset": "ecfr_sections_full", "record_id": "cfr:29:1926.501", "evidence": "provide fall protection systems"}]},
-    {"id": "cfr-14", "query": "a landlord must make reasonable accommodations in rules and policies for a tenant with a disability", "expected": [{"dataset": "ecfr_sections_full", "record_id": "cfr:24:100.204", "evidence": "refuse to make reasonable accommodations"}]},
-    {"id": "crs-01", "query": "brief overview of how Congress can overturn agency regulations", "expected": [{"dataset": "crs_reports", "record_id": "IF10023", "evidence": "Congressional Review Act"}]},
-    {"id": "crs-02", "query": "an introduction to class action lawsuits", "expected": [{"dataset": "crs_reports", "record_id": "IF12763", "evidence": "Class Action Lawsuits"}]},
-    {"id": "crs-03", "query": "overview of the law against bribing foreign officials", "expected": [{"dataset": "crs_reports", "record_id": "IF11588", "evidence": "Foreign Corrupt Practices Act"}]},
-    {"id": "crs-04", "query": "an introduction to antitrust law", "expected": [{"dataset": "crs_reports", "record_id": "IF11234", "evidence": "Antitrust Law"}]},
-    {"id": "crs-05", "query": "how Medicaid is financed in Puerto Rico and the other territories", "expected": [{"dataset": "crs_reports", "record_id": "IF11012", "evidence": "Medicaid Financing for the Territories"}]},
-    {"id": "crs-06", "query": "proposed changes to the prevailing wage rules for federal construction contracts", "expected": [{"dataset": "crs_reports", "record_id": "IF12196", "evidence": "Davis-Bacon Act"}]},
-    {"id": "bill-01", "query": "funding for domestic semiconductor production and programs of the federal science agencies", "expected": [{"dataset": "congress_bills", "record_id": "117-hr-4346", "evidence": "domestic production of semiconductors"}]},
-    {"id": "bill-02", "query": "supplemental appropriations for aid to Ukraine, Israel and Indo-Pacific allies", "expected": [{"dataset": "congress_bills", "record_id": "118-hr-815", "evidence": "Ukraine, Israel"}]},
-    {"id": "bill-03", "query": "naming a post office in Tuskegee, Alabama to honor airmen", "expected": [{"dataset": "congress_bills", "record_id": "119-hr-6006", "evidence": "Tuskegee Airmen Memorial Post Office"}]},
-    {"id": "bill-04", "query": "an ombudsman to speed geothermal energy permitting on public lands", "expected": [{"dataset": "congress_bills", "record_id": "119-hr-5631", "evidence": "geothermal ombudsman"}]},
-    {"id": "bill-05", "query": "a program with EPA grants to protect and restore the Mississippi River corridor", "expected": [{"dataset": "congress_bills", "record_id": "117-hr-4729", "evidence": "Mississippi River Corridor"}]},
-    {"id": "rep-01", "query": "inspection of environmental conditions and space needs for museum collection storage", "expected": [{"dataset": "oversight_reports", "record_id": "ovr:0267ee6b3410ee", "evidence": "unacceptable environmental conditions of collections storage"}]},
-    {"id": "rep-02", "query": "FTC data on the false stories scammers use in online romance fraud", "expected": [{"dataset": "ftc_publications_index", "record_id": "spotlight-romance-scammers-favorite-lies-exposed", "evidence": "Romance scammers tell all sorts of lies"}]},
-    {"id": "rep-03", "query": "list of Justice Department inspector general recommendations still open at the end of June 2024", "expected": [{"dataset": "doj_oig_reports", "record_id": "dojoig:recommendations-issued-office-inspector-general-were-not-closed-june-30-2024", "evidence": "had not closed as of the specified date"}]}
+    {
+      "id": "usc-01",
+      "query": "pay awards to people who report securities violations to the SEC",
+      "expected": [
+        {
+          "dataset": "us_code_sections",
+          "record_id": "15:78u-6",
+          "evidence": "voluntarily provided original information"
+        }
+      ]
+    },
+    {
+      "id": "usc-02",
+      "query": "time limit for a retaliation lawsuit by a securities whistleblower",
+      "expected": [
+        {
+          "dataset": "us_code_sections",
+          "record_id": "15:78u-6",
+          "evidence": "more than 6 years after the date on which the violation"
+        }
+      ]
+    },
+    {
+      "id": "usc-03",
+      "query": "suing state officials for violating federal constitutional rights",
+      "expected": [
+        {
+          "dataset": "us_code_sections",
+          "record_id": "42:1983",
+          "evidence": "under color of any statute"
+        }
+      ]
+    },
+    {
+      "id": "usc-04",
+      "query": "centralizing similar lawsuits pending in different federal districts before one judge for pretrial proceedings",
+      "expected": [
+        {
+          "dataset": "us_code_sections",
+          "record_id": "28:1407",
+          "evidence": "coordinated or consolidated pretrial proceedings"
+        }
+      ]
+    },
+    {
+      "id": "usc-05",
+      "query": "when can a federal court hear a case between citizens of different states",
+      "expected": [
+        {
+          "dataset": "us_code_sections",
+          "record_id": "28:1332",
+          "evidence": "exceeds the sum or value of $75,000"
+        }
+      ]
+    },
+    {
+      "id": "usc-06",
+      "query": "federal district courts hear cases that arise under federal law",
+      "expected": [
+        {
+          "dataset": "us_code_sections",
+          "record_id": "28:1331",
+          "evidence": "arising under the Constitution, laws, or treaties"
+        }
+      ]
+    },
+    {
+      "id": "usc-07",
+      "query": "four year deadline for claims under federal statutes enacted after 1990",
+      "expected": [
+        {
+          "dataset": "us_code_sections",
+          "record_id": "28:1658",
+          "evidence": "4 years after the cause of action accrues"
+        }
+      ]
+    },
+    {
+      "id": "usc-08",
+      "query": "two years after discovery limit for private securities fraud lawsuits",
+      "expected": [
+        {
+          "dataset": "us_code_sections",
+          "record_id": "28:1658",
+          "evidence": "2 years after the discovery of the facts constituting the violation"
+        }
+      ]
+    },
+    {
+      "id": "usc-09",
+      "query": "unfair or deceptive practices are unlawful and the commission may stop them",
+      "expected": [
+        {
+          "dataset": "us_code_sections",
+          "record_id": "15:45",
+          "evidence": "unfair or deceptive acts or practices in or affecting commerce, are hereby declared unlawful"
+        }
+      ]
+    },
+    {
+      "id": "usc-10",
+      "query": "agreements that unreasonably restrain trade among the states are illegal",
+      "expected": [
+        {
+          "dataset": "us_code_sections",
+          "record_id": "15:1",
+          "evidence": "in restraint of trade or commerce among the several States"
+        }
+      ]
+    },
+    {
+      "id": "usc-11",
+      "query": "employees can recover unpaid overtime and an equal amount as liquidated damages",
+      "expected": [
+        { "dataset": "us_code_sections", "record_id": "29:216", "evidence": "liquidated damages" }
+      ]
+    },
+    {
+      "id": "usc-12",
+      "query": "twelve weeks of leave in a year for a new child or a serious health condition",
+      "expected": [
+        {
+          "dataset": "us_code_sections",
+          "record_id": "29:2612",
+          "evidence": "12 workweeks of leave during any 12-month period"
+        }
+      ]
+    },
+    {
+      "id": "usc-13",
+      "query": "an employer may not discriminate against a qualified person because of a disability",
+      "expected": [
+        {
+          "dataset": "us_code_sections",
+          "record_id": "42:12112",
+          "evidence": "No covered entity shall discriminate against a qualified individual on the basis of disability"
+        }
+      ]
+    },
+    {
+      "id": "usc-14",
+      "query": "refusing to hire someone because of race, color, religion, sex or national origin",
+      "expected": [
+        {
+          "dataset": "us_code_sections",
+          "record_id": "42:2000e-2",
+          "evidence": "race, color, religion, sex, or national origin"
+        }
+      ]
+    },
+    {
+      "id": "usc-15",
+      "query": "collection efforts against a debtor stop automatically when a bankruptcy petition is filed",
+      "expected": [
+        { "dataset": "us_code_sections", "record_id": "11:362", "evidence": "operates as a stay" }
+      ]
+    },
+    {
+      "id": "usc-16",
+      "query": "whoever invents a new and useful machine or process may obtain a patent",
+      "expected": [
+        {
+          "dataset": "us_code_sections",
+          "record_id": "35:101",
+          "evidence": "new and useful process, machine, manufacture, or composition of matter"
+        }
+      ]
+    },
+    {
+      "id": "usc-17",
+      "query": "copying a work for criticism, news reporting, teaching or research is not infringement",
+      "expected": [
+        {
+          "dataset": "us_code_sections",
+          "record_id": "17:107",
+          "evidence": "criticism, comment, news reporting, teaching"
+        }
+      ]
+    },
+    {
+      "id": "usc-18",
+      "query": "a written arbitration clause in a commercial contract is valid and enforceable",
+      "expected": [
+        {
+          "dataset": "us_code_sections",
+          "record_id": "9:2",
+          "evidence": "shall be valid, irrevocable, and enforceable"
+        }
+      ]
+    },
+    {
+      "id": "usc-19",
+      "query": "the IRS has three years after a return is filed to assess more tax",
+      "expected": [
+        {
+          "dataset": "us_code_sections",
+          "record_id": "26:6501",
+          "evidence": "within 3 years after the return was filed"
+        }
+      ]
+    },
+    {
+      "id": "usc-20",
+      "query": "criminal liability for accessing a computer without authorization",
+      "expected": [
+        {
+          "dataset": "us_code_sections",
+          "record_id": "18:1030",
+          "evidence": "accessed a computer without authorization or exceeding authorized access"
+        }
+      ]
+    },
+    {
+      "id": "usc-21",
+      "query": "it is unlawful to run a business through a pattern of racketeering activity",
+      "expected": [
+        {
+          "dataset": "us_code_sections",
+          "record_id": "18:1962",
+          "evidence": "pattern of racketeering activity"
+        }
+      ]
+    },
+    {
+      "id": "usc-22",
+      "query": "agencies must make records available to the public on request, subject to exemptions",
+      "expected": [
+        {
+          "dataset": "us_code_sections",
+          "record_id": "5:552",
+          "evidence": "Each agency shall make available to the public information as follows"
+        }
+      ]
+    },
+    {
+      "id": "usc-23",
+      "query": "shipping adulterated or misbranded food or drugs across state lines is prohibited",
+      "expected": [
+        {
+          "dataset": "us_code_sections",
+          "record_id": "21:331",
+          "evidence": "adulterated or misbranded"
+        }
+      ]
+    },
+    {
+      "id": "usc-24",
+      "query": "a vehicle maker must notify the government and owners when it learns of a safety defect",
+      "expected": [
+        {
+          "dataset": "us_code_sections",
+          "record_id": "49:30118",
+          "evidence": "learns the vehicle or equipment contains a defect"
+        }
+      ]
+    },
+    {
+      "id": "usc-25",
+      "query": "it is unlawful to use manipulative or deceptive devices when buying or selling securities",
+      "expected": [
+        {
+          "dataset": "us_code_sections",
+          "record_id": "15:78j",
+          "evidence": "manipulative or deceptive device or contrivance"
+        }
+      ]
+    },
+    {
+      "id": "usc-26",
+      "query": "statute of limitations for actions under the Securities Exchange Act",
+      "expected": [
+        {
+          "dataset": "us_code_sections",
+          "record_id": "28:1658",
+          "evidence": "Securities Exchange Act of 1934"
+        },
+        {
+          "dataset": "us_code_sections",
+          "record_id": "15:78i",
+          "evidence": "within one year after the discovery of the facts constituting the violation"
+        },
+        {
+          "dataset": "us_code_sections",
+          "record_id": "15:78r",
+          "evidence": "within one year after the discovery of the facts constituting the cause of action"
+        },
+        {
+          "dataset": "us_code_sections",
+          "record_id": "15:78u-6",
+          "evidence": "more than 6 years after the date on which the violation"
+        }
+      ]
+    },
+    {
+      "id": "cfr-01",
+      "query": "rule against fraud and misleading statements in connection with buying or selling securities",
+      "expected": [
+        {
+          "dataset": "ecfr_sections_full",
+          "record_id": "cfr:17:240.10b-5",
+          "evidence": "untrue statement of a material fact"
+        }
+      ]
+    },
+    {
+      "id": "cfr-02",
+      "query": "employers must keep safety data sheets and label hazardous chemicals",
+      "expected": [
+        {
+          "dataset": "ecfr_sections_full",
+          "record_id": "cfr:29:1910.1200",
+          "evidence": "safety data sheets"
+        }
+      ]
+    },
+    {
+      "id": "cfr-03",
+      "query": "an employer must tell OSHA within eight hours when a worker dies on the job",
+      "expected": [
+        {
+          "dataset": "ecfr_sections_full",
+          "record_id": "cfr:29:1904.39",
+          "evidence": "Within eight (8) hours after the death of any employee"
+        }
+      ]
+    },
+    {
+      "id": "cfr-04",
+      "query": "telemarketers may not call numbers on the national do not call registry",
+      "expected": [
+        {
+          "dataset": "ecfr_sections_full",
+          "record_id": "cfr:16:310.4",
+          "evidence": "registry, maintained by the Commission, of persons who do not wish to receive outbound telephone calls"
+        }
+      ]
+    },
+    {
+      "id": "cfr-05",
+      "query": "when a health plan or provider may use or disclose a patient's health information",
+      "expected": [
+        {
+          "dataset": "ecfr_sections_full",
+          "record_id": "cfr:45:164.502",
+          "evidence": "may not use or disclose protected health information"
+        }
+      ]
+    },
+    {
+      "id": "cfr-06",
+      "query": "notify affected patients about a data breach without unreasonable delay",
+      "expected": [
+        {
+          "dataset": "ecfr_sections_full",
+          "record_id": "cfr:45:164.404",
+          "evidence": "without unreasonable delay"
+        }
+      ]
+    },
+    {
+      "id": "cfr-07",
+      "query": "a cardholder must dispute a billing error within sixty days of the statement",
+      "expected": [
+        { "dataset": "ecfr_sections_full", "record_id": "cfr:12:1026.13", "evidence": "60 days" }
+      ]
+    },
+    {
+      "id": "cfr-08",
+      "query": "a lender must notify the applicant of its decision within thirty days and state the reasons for denial",
+      "expected": [
+        {
+          "dataset": "ecfr_sections_full",
+          "record_id": "cfr:12:1002.9",
+          "evidence": "30 days after receiving a completed application"
+        }
+      ]
+    },
+    {
+      "id": "cfr-09",
+      "query": "salary and duties test for the executive overtime exemption",
+      "expected": [
+        {
+          "dataset": "ecfr_sections_full",
+          "record_id": "cfr:29:541.100",
+          "evidence": "bona fide executive capacity"
+        }
+      ]
+    },
+    {
+      "id": "cfr-10",
+      "query": "reasons an eligible employee may take family and medical leave",
+      "expected": [
+        {
+          "dataset": "ecfr_sections_full",
+          "record_id": "cfr:29:825.112",
+          "evidence": "For birth of a son or daughter"
+        }
+      ]
+    },
+    {
+      "id": "cfr-11",
+      "query": "a person who acquires more than five percent of a class of stock must file a beneficial ownership report",
+      "expected": [
+        {
+          "dataset": "ecfr_sections_full",
+          "record_id": "cfr:17:240.13d-1",
+          "evidence": "more than five percent of the class"
+        }
+      ]
+    },
+    {
+      "id": "cfr-12",
+      "query": "a registrant must describe the material factors that make an investment speculative or risky",
+      "expected": [
+        {
+          "dataset": "ecfr_sections_full",
+          "record_id": "cfr:17:229.105",
+          "evidence": "speculative or risky"
+        }
+      ]
+    },
+    {
+      "id": "cfr-13",
+      "query": "employers must provide fall protection for workers at heights on construction sites",
+      "expected": [
+        {
+          "dataset": "ecfr_sections_full",
+          "record_id": "cfr:29:1926.501",
+          "evidence": "provide fall protection systems"
+        }
+      ]
+    },
+    {
+      "id": "cfr-14",
+      "query": "a landlord must make reasonable accommodations in rules and policies for a tenant with a disability",
+      "expected": [
+        {
+          "dataset": "ecfr_sections_full",
+          "record_id": "cfr:24:100.204",
+          "evidence": "refuse to make reasonable accommodations"
+        }
+      ]
+    },
+    {
+      "id": "crs-01",
+      "query": "brief overview of how Congress can overturn agency regulations",
+      "expected": [
+        { "dataset": "crs_reports", "record_id": "IF10023", "evidence": "Congressional Review Act" }
+      ]
+    },
+    {
+      "id": "crs-02",
+      "query": "an introduction to class action lawsuits",
+      "expected": [
+        { "dataset": "crs_reports", "record_id": "IF12763", "evidence": "Class Action Lawsuits" }
+      ]
+    },
+    {
+      "id": "crs-03",
+      "query": "overview of the law against bribing foreign officials",
+      "expected": [
+        {
+          "dataset": "crs_reports",
+          "record_id": "IF11588",
+          "evidence": "Foreign Corrupt Practices Act"
+        }
+      ]
+    },
+    {
+      "id": "crs-04",
+      "query": "an introduction to antitrust law",
+      "expected": [
+        { "dataset": "crs_reports", "record_id": "IF11234", "evidence": "Antitrust Law" }
+      ]
+    },
+    {
+      "id": "crs-05",
+      "query": "how Medicaid is financed in Puerto Rico and the other territories",
+      "expected": [
+        {
+          "dataset": "crs_reports",
+          "record_id": "IF11012",
+          "evidence": "Medicaid Financing for the Territories"
+        }
+      ]
+    },
+    {
+      "id": "crs-06",
+      "query": "proposed changes to the prevailing wage rules for federal construction contracts",
+      "expected": [
+        { "dataset": "crs_reports", "record_id": "IF12196", "evidence": "Davis-Bacon Act" }
+      ]
+    },
+    {
+      "id": "bill-01",
+      "query": "funding for domestic semiconductor production and programs of the federal science agencies",
+      "expected": [
+        {
+          "dataset": "congress_bills",
+          "record_id": "117-hr-4346",
+          "evidence": "domestic production of semiconductors"
+        }
+      ]
+    },
+    {
+      "id": "bill-02",
+      "query": "supplemental appropriations for aid to Ukraine, Israel and Indo-Pacific allies",
+      "expected": [
+        { "dataset": "congress_bills", "record_id": "118-hr-815", "evidence": "Ukraine, Israel" }
+      ]
+    },
+    {
+      "id": "bill-03",
+      "query": "naming a post office in Tuskegee, Alabama to honor airmen",
+      "expected": [
+        {
+          "dataset": "congress_bills",
+          "record_id": "119-hr-6006",
+          "evidence": "Tuskegee Airmen Memorial Post Office"
+        }
+      ]
+    },
+    {
+      "id": "bill-04",
+      "query": "an ombudsman to speed geothermal energy permitting on public lands",
+      "expected": [
+        {
+          "dataset": "congress_bills",
+          "record_id": "119-hr-5631",
+          "evidence": "geothermal ombudsman"
+        }
+      ]
+    },
+    {
+      "id": "bill-05",
+      "query": "a program with EPA grants to protect and restore the Mississippi River corridor",
+      "expected": [
+        {
+          "dataset": "congress_bills",
+          "record_id": "117-hr-4729",
+          "evidence": "Mississippi River Corridor"
+        }
+      ]
+    },
+    {
+      "id": "rep-01",
+      "query": "inspection of environmental conditions and space needs for museum collection storage",
+      "expected": [
+        {
+          "dataset": "oversight_reports",
+          "record_id": "ovr:0267ee6b3410ee",
+          "evidence": "unacceptable environmental conditions of collections storage"
+        }
+      ]
+    },
+    {
+      "id": "rep-02",
+      "query": "FTC data on the false stories scammers use in online romance fraud",
+      "expected": [
+        {
+          "dataset": "ftc_publications_index",
+          "record_id": "spotlight-romance-scammers-favorite-lies-exposed",
+          "evidence": "Romance scammers tell all sorts of lies"
+        }
+      ]
+    },
+    {
+      "id": "rep-03",
+      "query": "list of Justice Department inspector general recommendations still open at the end of June 2024",
+      "expected": [
+        {
+          "dataset": "doj_oig_reports",
+          "record_id": "dojoig:recommendations-issued-office-inspector-general-were-not-closed-june-30-2024",
+          "evidence": "had not closed as of the specified date"
+        }
+      ]
+    }
   ]
 }
