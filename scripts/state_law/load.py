@@ -97,6 +97,8 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("verify.json reports failures; fix or re-run verify before loading")
     check_files(args.edition_dir, edition)
     counts = edition["counts"]
+    if counts["sections"] < 1 or counts["nodes"] < 1:
+        raise SystemExit("refusing an edition with no sections or no nodes (an empty run is not the publisher's code)")
     rejected = counts.get("rejected", 0)
     share = rejected / max(1, counts["sections"] + rejected)
     if share > MAX_REJECT_SHARE:

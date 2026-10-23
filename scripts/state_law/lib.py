@@ -15,6 +15,7 @@ import datetime as _dt
 import gzip
 import hashlib
 import html as _html
+import http.client
 import io
 import json
 import os
@@ -1015,8 +1016,19 @@ class RetainedStore:
             raise RuntimeError("EXTERNAL_SUPABASE_URL/EXTERNAL_SUPABASE_KEY are required to read retained originals")
         request = urllib.request.Request(f"{base}/storage/v1/object/corpus-originals/{row['object_key']}",
                                          headers={"apikey": key, "Authorization": f"Bearer {key}"})
-        with urllib.request.urlopen(request, timeout=120) as response:
-            body = response.read()
+        # read-only download from the project's own storage: transient network errors and 5xx/429 are retried
+        for attempt in range(5):
+            try:
+                with urllib.request.urlopen(request, timeout=120) as response:
+                    body = response.read()
+                break
+            except urllib.error.HTTPError as error:
+                if error.code not in (429, 500, 502, 503, 504) or attempt == 4:
+                    raise
+            except (urllib.error.URLError, ConnectionError, TimeoutError, http.client.IncompleteRead):
+                if attempt == 4:
+                    raise
+            time.sleep(2 ** attempt)
         digest = hashlib.sha256(body).hexdigest()
         if digest != row["sha256"]:
             raise RuntimeError(f"retained object for {url} does not match its recorded sha256")

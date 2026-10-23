@@ -113,9 +113,12 @@ def acquire(ctx: lib.RunContext) -> None:
     ctx.edition(edition_label=None, currency_statement=statement.group(0) if statement else None,
                 currency_source_url=LANDING)
     titles = []
-    for match in re.finditer(r'arsDetail/\?title=(\d+[A-Z]?)', landing.text()):
+    # the landing page links "arsDetail?title=1"; the title pages themselves are read at "arsDetail/?title=1"
+    for match in re.finditer(r'arsDetail/?\?title=(\d+[A-Z]?)', landing.text()):
         if match.group(1) not in titles:
             titles.append(match.group(1))
+    if not titles:
+        raise RuntimeError(f"{LANDING}: no title links found")
     if ctx.sample is not None:
         titles = ["12"]
     for title in titles:

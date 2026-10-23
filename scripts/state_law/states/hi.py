@@ -47,8 +47,10 @@ META = lib.StateMeta(
 )
 
 LISTING_RE = re.compile(r'(\d{1,2}/\d{1,2}/\d{4})\s+\d{1,2}:\d{2} [AP]M\s+(?:&lt;dir&gt;|\d+) <A HREF="([^"]+)"', re.I)
-NUM = r"\d+[A-Z]?-\d+[0-9A-Za-z.]*"
+# "1-2", "657-7", and the article-numbered code chapters "412:3-604", "490:4-407" (chapter:article-section)
+NUM = r"\d+[A-Z]?(?::\d+[A-Z]?)?-\d+[0-9A-Za-z.]*"
 HEAD_RE = re.compile(rf"^\[?§§?\s*({NUM})\]?\s*(.*)$")
+DASHES = str.maketrans({"\u2010": "-", "\u2011": "-", "\u2012": "-", "\u2013": "-"})
 MULTI_RE = re.compile(rf"^\[?§§\s*({NUM}(?:\s*(?:,|and|&)\s*(?:{NUM}|\d+[0-9A-Za-z.]*))+)\]?\s+(.*)$")
 RANGE_RE = re.compile(rf"^\[?§§\s*{NUM}\s+to\s+{NUM}")
 HISTORY_RE = re.compile(r"\s*\[((?:[^\[\]]*?)\b(?:L|RL|PC|CC|HRS|CL|Sp)\b[^\[\]]*\d{4}[^\[\]]*)\]\s*$")
@@ -110,15 +112,24 @@ def parse_section(page: lib.Fetched) -> dict:
     if not keep:
         raise RuntimeError(f"{page.url}: no section text")
     first, first_text = keep[0]
-    bold = []
+    # the head is the start of the text covered by the leading bold runs; a run may follow the previous one after a
+    # space, a non-bold hyphen ("<b>§1</b>-<b>2 Certain laws ...</b>" is §1-2) or a non-bold "§" / "[" ("§<b>26H-6 ...")
+    head_end = 0
     for b in first.iter("b"):
         bt = lib.norm_ws(b.text_content())
-        if bt and first_text.startswith(lib.norm_ws(" ".join(bold + [bt]))):
-            bold.append(bt)
-    head = lib.norm_ws(" ".join(bold))
+        if not bt:
+            continue
+        at = first_text.find(bt, head_end)
+        if at < 0 or not re.fullmatch(r"[\s\-‐‑–§\[]{0,3}", first_text[head_end:at]):
+            continue
+        head_end = at + len(bt)
+    head = lib.norm_ws(first_text[:head_end])
+    # numbers are matched with the publisher's non-breaking/figure hyphens read as "-" (same length, so the text after
+    # the head is cut at the same place)
+    head_cmp = head.translate(DASHES)
     numbers: list[str] = []
-    multi = MULTI_RE.match(head)
-    if RANGE_RE.match(head):
+    multi = MULTI_RE.match(head_cmp)
+    if RANGE_RE.match(head_cmp):
         return {"range": head}
     if multi:
         listed = re.split(r"\s*(?:,|and|&)\s*", multi.group(1))
@@ -126,7 +137,7 @@ def parse_section(page: lib.Fetched) -> dict:
         numbers = [n if "-" in n else f"{chapter}-{n}" for n in listed]
         heading = multi.group(2) or None
     else:
-        m = HEAD_RE.match(head)
+        m = HEAD_RE.match(head_cmp)
         if not m:
             raise RuntimeError(f"{page.url}: no section line in {head[:80]!r}")
         numbers = [m.group(1)]
@@ -183,7 +194,15 @@ def acquire(ctx: lib.RunContext) -> None:
                 if not ctx.want_more():
                     break
                 page = ctx.get(url, fallback_fresh=True)
-                parsed = parse_section(page)
+                try:
+                    parsed = parse_section(page)
+                except RuntimeError as error:
+                    if ctx.sample is not None:
+                        raise
+                    # one page the parser cannot read is ledgered, never guessed (the loader bounds the share)
+                    ctx._rejects.write({"state": "HI", "code": "HRS", "number": None, "reason": str(error)[:300],
+                                        "source_url": page.url, "source_sha256": page.sha256})
+                    continue
                 if "range" in parsed:
                     ctx._rejects.write({"state": "HI", "code": "HRS", "number": None, "reason": f"range entry: {parsed['range'][:200]}",
                                         "source_url": page.url, "source_sha256": page.sha256})
