@@ -31,7 +31,12 @@ describe("state register listings", () => {
 
   it("reads dates, volumes and issues exactly as printed", () => {
     const tx = parsed("TX").find((i) => i.date === "2026-10-16")!;
-    expect(tx).toMatchObject({ publication: "Texas Register", pages: "7091-7200", volume: null, issue: null });
+    expect(tx).toMatchObject({
+      publication: "Texas Register",
+      pages: "7091-7200",
+      volume: null,
+      issue: null,
+    });
     expect(tx.url).toBe("https://www.sos.texas.gov/texreg/pdf/backview/1016/index.shtml");
     const co = parsed("CO").find((i) => i.date === "2026-01-10")!;
     expect(co).toMatchObject({ volume: "49", issue: "1" });
@@ -55,7 +60,9 @@ describe("state register listings", () => {
   it("never guesses a date", () => {
     expect(longDate("Volume 53")).toBeNull();
     expect(longDate("October 41, 2026")).toBeNull();
-    expect(cleanLabel("Volume 53 I​ssue 10​ &ndash; M​ay 15, 2026")).toBe("Volume 53 Issue 10 – May 15, 2026");
+    expect(cleanLabel("Volume 53 I​ssue 10​ &ndash; M​ay 15, 2026")).toBe(
+      "Volume 53 Issue 10 – May 15, 2026",
+    );
   });
 
   it("builds rows that match the ingest source id pattern and sorts newest first", () => {
@@ -71,19 +78,37 @@ describe("state register listings", () => {
       expect(r.id).toMatch(pattern);
       expect(r.category).toBe("state_register_issues");
       expect(r.source_url).toMatch(/^https:\/\//);
-      expect(JSON.stringify(r)).not.toMatch(/Not recorded".*Not recorded".*Not recorded".*Not recorded".*Not recorded".*Not recorded".*Not recorded/);
+      expect(JSON.stringify(r)).not.toMatch(
+        /Not recorded".*Not recorded".*Not recorded".*Not recorded".*Not recorded".*Not recorded".*Not recorded/,
+      );
     }
     const sorted = sortRows(rows);
     const when = (r: CorpusRow) => {
       const ri = r.item["register_issue"] as Record<string, string | null>;
       return ri["date"] ?? `${ri["period"]}-00`;
     };
-    for (let k = 1; k < sorted.length; k++) expect(when(sorted[k - 1]!) >= when(sorted[k]!)).toBe(true);
-    expect(issueId({ state: "OR", publication: "x", date: null, period: null, volume: null, issue: null, pages: null, label: "", url: "" })).toBeNull();
+    for (let k = 1; k < sorted.length; k++)
+      expect(when(sorted[k - 1]!) >= when(sorted[k]!)).toBe(true);
+    expect(
+      issueId({
+        state: "OR",
+        publication: "x",
+        date: null,
+        period: null,
+        volume: null,
+        issue: null,
+        pages: null,
+        label: "",
+        url: "",
+      }),
+    ).toBeNull();
   });
 
   it("the ingest pattern in state-regs-v1.sql matches the one tested here", () => {
-    const sql = readFileSync(new URL("../../../../database/contracts/state-regs-v1.sql", import.meta.url), "utf8");
+    const sql = readFileSync(
+      new URL("../../../../database/contracts/state-regs-v1.sql", import.meta.url),
+      "utf8",
+    );
     expect(sql).toContain("'^[a-z]{2}-reg:[0-9]{4}-[0-9]{2}(-[0-9]{2})?(:[A-Za-z0-9.-]{1,24})?$'");
     expect(sql).toContain("'ingest-state-registers'");
   });
@@ -97,7 +122,11 @@ describe("state register listings", () => {
         async getText(url: string) {
           const st = REGISTERS.find((r) => r.url === url)!.state;
           const text = st === "KY" ? "<html>moved</html>" : FIX.pages[st]!.anchors;
-          return { status: 200, text, record: { url, status: 200, bytes: text.length, sha256: "", retrieved_at: "" } };
+          return {
+            status: 200,
+            text,
+            record: { url, status: 200, bytes: text.length, sha256: "", retrieved_at: "" },
+          };
         },
       },
       corpus: {} as CollectContext["corpus"],

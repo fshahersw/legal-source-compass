@@ -142,7 +142,9 @@ def do_index(st: str, ctx: Ctx | None = None) -> list[dict]:
     levels: dict = {}
     for x in nodes:
         levels[x["level"]] = levels.get(x["level"], 0) + 1
-    write_report(ctx, "index", {"nodes": n, "nodes_sha256": sha, "levels": levels})
+    write_report(ctx, "index", {"nodes": n, "nodes_sha256": sha, "levels": levels,
+                                "rule_count_listed": sum(x["rule_count"] or 0 for x in nodes)})
+    shutil.rmtree(os.path.join(lib.RAW, st.upper(), "index"), ignore_errors=True)  # manifest keeps url + sha256
     print(json.dumps({"state": st, "nodes": n, "levels": levels}), flush=True)
     return nodes
 

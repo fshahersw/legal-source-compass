@@ -49,15 +49,25 @@ def index(ctx) -> list[dict]:
     r, _e = ctx.get(f"{HOST}/gateway/organization.asp", "index/organization.html")
     d = parsing.doc(r.body, r.final_url)
     nodes: list[dict] = []
-    for href, label in parsing.links(d, r"department\.asp\?id="):
-        did = href.split("id=")[-1]
-        dept = model.node(STATE, f"dept-{did.lower()}", level="department", num=did, heading=label or None, agency=label or None,
+    seen = set()
+    for tr in d.iter("tr"):
+        a = [x for x in tr.iter("a") if re.search(r"Department\.asp\?.*DeptID=", x.get("href") or "", re.I)]
+        if not a:
+            continue
+        href = a[0].get("href")
+        did = re.search(r"DeptID=([^&]+)", href).group(1)
+        if did in seen:
+            continue
+        seen.add(did)
+        cells = [parsing.one_line(td.text_content()) for td in tr.findall("td")]
+        name = next((c for c in cells if c and c != did and not c.isdigit()), None)
+        dept = model.node(STATE, f"dept-{did.lower()}", level="department", num=did, heading=name, agency=name,
                           source_url=href, citation=f"Fla. Admin. Code title {did}", ordinal=len(nodes))
         nodes.append(dept)
         try:
             rd, _ = ctx.get(href, f"index/dept-{did}.html")
             dd = parsing.doc(rd.body, rd.final_url)
-            divs = [h for h, _t in parsing.links(dd, r"Division\.asp\?DivID=")]
+            divs = [h for h, _t in parsing.links(dd, r"(?i)Division\.asp\?.*DivID=")]
         except Exception as err:
             ctx.failures.append({"unit": dept["id"], "error": str(err)[:300]})
             continue

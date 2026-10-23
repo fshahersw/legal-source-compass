@@ -10,7 +10,14 @@
  */
 import { BudgetExhausted, RateLimited } from "../http.ts";
 import { corpusRecord } from "../rows.ts";
-import type { CollectContext, Collected, CorpusRow, Json, JsonObject, SourceAdapter } from "../types.ts";
+import type {
+  CollectContext,
+  Collected,
+  CorpusRow,
+  Json,
+  JsonObject,
+  SourceAdapter,
+} from "../types.ts";
 
 export const DATASET = "state_register_issues";
 const NR = "Not recorded";
@@ -48,9 +55,19 @@ const MONTHS = [
   "november",
   "december",
 ];
-const MONTH_RX = "(January|February|March|April|May|June|July|August|September|October|November|December)";
+const MONTH_RX =
+  "(January|February|March|April|May|June|July|August|September|October|November|December)";
 
-const ENTITIES: Record<string, string> = { amp: "&", nbsp: " ", quot: '"', apos: "'", lt: "<", gt: ">", ndash: "–", mdash: "—" };
+const ENTITIES: Record<string, string> = {
+  amp: "&",
+  nbsp: " ",
+  quot: '"',
+  apos: "'",
+  lt: "<",
+  gt: ">",
+  ndash: "–",
+  mdash: "—",
+};
 
 /** Link text as printed: tags removed, entities decoded, zero-width characters dropped, whitespace collapsed. */
 export function cleanLabel(html: string): string {
@@ -59,7 +76,7 @@ export function cleanLabel(html: string): string {
     .replace(/&#(\d+);/g, (_m, d: string) => String.fromCodePoint(Number(d)))
     .replace(/&#x([0-9a-f]+);/gi, (_m, h: string) => String.fromCodePoint(parseInt(h, 16)))
     .replace(/&([a-z]+);/gi, (m, n: string) => ENTITIES[n.toLowerCase()] ?? m)
-    .replace(/[​‌‍﻿]/g, "")
+    .replace(/\u200b|\u200c|\u200d|\ufeff/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -97,7 +114,11 @@ function monthPeriod(s: string): string | null {
   return `${m[2]}-${String(MONTHS.indexOf(m[1]!.toLowerCase()) + 1).padStart(2, "0")}`;
 }
 
-const issue = (src: Pick<RegisterSource, "state" | "publication">, a: { href: string; text: string }, f: Partial<Issue>): Issue => ({
+const issue = (
+  src: Pick<RegisterSource, "state" | "publication">,
+  a: { href: string; text: string },
+  f: Partial<Issue>,
+): Issue => ({
   state: src.state,
   publication: src.publication,
   date: null,
@@ -141,7 +162,9 @@ export const REGISTERS: RegisterSource[] = [
         anchors(html, base).flatMap((a) => {
           const u = new URL(a.href);
           if (!u.pathname.endsWith("/CCR/RegisterContents.do")) return [];
-          const day = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(u.searchParams.get("publicationDay") ?? "");
+          const day = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(
+            u.searchParams.get("publicationDay") ?? "",
+          );
           if (!day) return [];
           const m = /-\s*(\d+)\s+CR\s+(\d+)$/.exec(a.text);
           return [
@@ -176,7 +199,10 @@ export const REGISTERS: RegisterSource[] = [
     parse(html, base) {
       return unique(
         anchors(html, base).flatMap((a) => {
-          const m = new RegExp(`^(${MONTH_RX}\\s+\\d{1,2},\\s*\\d{4})\\s*-\\s*Volume\\s+(\\d+),\\s*Number\\s+(\\d+)$`, "i").exec(a.text);
+          const m = new RegExp(
+            `^(${MONTH_RX}\\s+\\d{1,2},\\s*\\d{4})\\s*-\\s*Volume\\s+(\\d+),\\s*Number\\s+(\\d+)$`,
+            "i",
+          ).exec(a.text);
           const date = m ? longDate(m[1]!) : null;
           return m && date ? [issue(this, a, { date, volume: m[3]!, issue: m[4]! })] : [];
         }),
@@ -259,7 +285,8 @@ const KEY_PART = /[^A-Za-z0-9.-]+/g;
 export function issueId(i: Issue): string | null {
   const when = i.date ?? i.period;
   if (!when) return null;
-  const vi = i.volume && i.issue ? `:${`${i.volume}-${i.issue}`.replace(KEY_PART, "").slice(0, 24)}` : "";
+  const vi =
+    i.volume && i.issue ? `:${`${i.volume}-${i.issue}`.replace(KEY_PART, "").slice(0, 24)}` : "";
   return `${i.state.toLowerCase()}-reg:${when}${vi}`;
 }
 
@@ -268,7 +295,11 @@ export function issueRow(i: Issue): CorpusRow | null {
   if (!id) return null;
   const when = i.date ?? i.period!;
   const vi =
-    i.volume && i.issue ? `Volume ${i.volume}, Issue ${i.issue}` : i.pages ? `Pages ${i.pages}` : NR;
+    i.volume && i.issue
+      ? `Volume ${i.volume}, Issue ${i.issue}`
+      : i.pages
+        ? `Pages ${i.pages}`
+        : NR;
   const title = `${i.publication}, ${i.date ?? i.label}`;
   return corpusRecord(DATASET, id, title, {
     source_url: i.url,
@@ -314,7 +345,9 @@ export function sortRows(rows: CorpusRow[]): CorpusRow[] {
     const ri = r.item["register_issue"] as JsonObject;
     return String(ri["date"] ?? `${ri["period"]}-00`);
   };
-  return [...rows].sort((a, b) => (when(a) === when(b) ? (a.id < b.id ? -1 : 1) : when(a) < when(b) ? 1 : -1));
+  return [...rows].sort((a, b) =>
+    when(a) === when(b) ? (a.id < b.id ? -1 : 1) : when(a) < when(b) ? 1 : -1,
+  );
 }
 
 export const stateRegisters: SourceAdapter = {
@@ -334,7 +367,9 @@ export const stateRegisters: SourceAdapter = {
     const ids = new Set<string>();
     for (const src of REGISTERS) {
       try {
-        const res = await ctx.http.getText(src.url, { headers: { Accept: "text/html,application/xhtml+xml" } });
+        const res = await ctx.http.getText(src.url, {
+          headers: { Accept: "text/html,application/xhtml+xml" },
+        });
         if (res.status !== 200) {
           notes[src.state] = `HTTP ${res.status}`;
           complete = false;
@@ -358,7 +393,8 @@ export const stateRegisters: SourceAdapter = {
           complete = false;
           break;
         }
-        notes[src.state] = `failed: ${error instanceof Error ? error.message.slice(0, 120) : "error"}`;
+        notes[src.state] =
+          `failed: ${error instanceof Error ? error.message.slice(0, 120) : "error"}`;
         complete = false;
       }
     }
