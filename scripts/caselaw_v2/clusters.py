@@ -15,7 +15,8 @@ citation_count, disposition, source, filepath_json_harvard (the Caselaw Access P
 exact crosswalk), date_modified.
 Blocked clusters or clusters on blocked dockets (CourtListener's flag) are counted per court and never kept; table
 `blocked_ids` lists every blocked cluster of any court (the opinions step shows citations into them as plain text) and
-`no_docket` the clusters whose docket row is missing from the docket table (reported, never guessed).
+`no_docket` the clusters whose docket row is missing from the docket table (reported, never guessed); all_clusters.npz is
+a bitmap of every cluster id in the file (the cited-by count, like stage 2, counts only citing clusters that exist).
 
 Also writes <run>/selection.npz (sorted cluster ids + tier + court index; the opinions step filters with it) and
 <run>/clusters_report.json (counts per court: kept, blocked, expected from the registry; source URL, bytes, seconds).
@@ -26,6 +27,7 @@ import argparse
 import collections
 import json
 import os
+import re
 import sys
 import time
 
@@ -81,6 +83,9 @@ def targets(tiers: list[int], courts: list[str] | None, allow_existing: bool = F
     for c in reg["courts"]:
         tier = c["tier"] if c["tier"] is not None else (existing_tier(c) if allow_existing else None)
         if tier is None:
+            continue
+        if not re.fullmatch(r"[a-z0-9_-]{1,40}", c["court_id"]):
+            print(f"[clusters] court id {c['court_id']!r} does not match the caselaw court id pattern: not loaded", flush=True)
             continue
         if courts:
             if c["court_id"] in courts:
@@ -155,15 +160,24 @@ def main() -> int:
                                              strings_can_be_null=True, null_values=[""]))
     if reader.schema.names != [c for c in header if c in COLS]:
         raise V2Error("the clusters CSV header differs from the recorded header")
+    import numpy as np
+
     t0 = time.time()
     rows = 0
     last = t0
+    seen_ids = np.zeros(16_000_000, dtype=bool)  # every cluster id of the file (citedby.py: a citing cluster must exist)
     blocked = collections.Counter()
     truncated = False
     try:
         for batch in reader:
             con.register("b", pa.Table.from_batches([batch]))
             con.execute(f"CREATE OR REPLACE TEMP TABLE allrows AS {SELECT}")
+            ids_b = con.execute("SELECT cluster_id FROM allrows WHERE cluster_id IS NOT NULL").fetchnumpy()["cluster_id"]
+            if len(ids_b):
+                top = int(ids_b.max()) + 1
+                if top > len(seen_ids):
+                    seen_ids = np.concatenate([seen_ids, np.zeros(top - len(seen_ids) + 1_000_000, dtype=bool)])
+                seen_ids[np.asarray(ids_b, dtype=np.int64)] = True
             # every blocked cluster of any court (citation anchors into them are shown as plain text, linked nowhere)
             con.execute("INSERT INTO blocked_ids SELECT cluster_id, court_id FROM allrows WHERE blocked")
             con.execute("INSERT INTO no_docket SELECT cluster_id, docket_id FROM allrows WHERE court_id IS NULL")
@@ -191,7 +205,8 @@ def main() -> int:
         e["blocked"] = blocked.get(c, 0)
         e["expected_all"] = reg[c].get("expected_clusters")
     # the opinions step's filter: sorted cluster ids with tier and court index
-    import numpy as np
+    np.savez_compressed(os.path.join(out, "all_clusters.npz"), bits=np.packbits(seen_ids), n=np.int64(len(seen_ids)),
+                        count=np.int64(int(seen_ids.sum())))
 
     ids = con.execute("SELECT cluster_id, tier, court_id FROM clusters ORDER BY cluster_id").fetchnumpy()
     court_names = sorted({c for c, _ in tgt})

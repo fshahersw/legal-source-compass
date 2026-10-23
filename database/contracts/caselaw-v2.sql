@@ -238,6 +238,16 @@ language sql stable security definer set search_path = '' as $$
   from caselaw.courts where cases > 0
 $$;
 
+-- one case: the caselaw_case_v1 payload plus the court's level/system/jurisdiction and the v2 provenance columns
+create or replace function public.caselaw_case_v2(p_cluster_id bigint) returns jsonb
+language sql stable security definer set search_path = '' as $$
+  select public.caselaw_case_v1(c.cluster_id) || jsonb_build_object(
+    'court_level', k.level, 'court_system', k.system, 'jurisdiction', k.jurisdiction, 'parent_court_id', k.parent_court_id,
+    'cap_file', c.cap_file, 'source', c.source, 'attached_build', c.attached_build)
+  from caselaw.cases c left join caselaw.courts k on k.court_id = c.court_id
+  where c.cluster_id = p_cluster_id
+$$;
+
 -- names and citations of every tier; filters: tiers, court, jurisdiction (state), system, dates, status
 create or replace function public.caselaw_search_v2(p_q text default null, p_tiers integer[] default null, p_court text default null,
   p_jurisdiction text default null, p_system text default null, p_from date default null, p_to date default null,
@@ -637,7 +647,7 @@ declare f text;
 begin
   foreach f in array array[
     'public.caselaw_search_v1(text,integer,text,date,date,text,text,integer,integer)', 'public.caselaw_courts_v1()',
-    'public.caselaw_courts_v2()', 'public.caselaw_search_v2(text,integer[],text,text,text,date,date,text,text,integer,integer)',
+    'public.caselaw_courts_v2()', 'public.caselaw_case_v2(bigint)', 'public.caselaw_search_v2(text,integer[],text,text,text,date,date,text,text,integer,integer)',
     'public.caselaw_court_years_v2(text)', 'public.caselaw_court_cases_v2(text,integer,text,integer,integer)',
     'public.caselaw_fulltext_v2(text,integer[],text,text,date,date,text,text,integer,integer)',
     'public.caselaw_resolve_v2(text,integer,text)', 'public.caselaw_resolve_many_v2(text[])', 'public.caselaw_status_v2()',
