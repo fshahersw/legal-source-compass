@@ -10,8 +10,10 @@
 -- identical row is left alone; nothing is deleted.
 -- Applied 2026-10-22/23 (worker stage 2) in parts: tables, helpers, read RPCs, load RPCs + grants, then the
 -- authorities_ref column (ALTER TABLE ... ADD COLUMN IF NOT EXISTS on an existing install) with the two RPCs that use it,
--- then migrations caselaw_load_skip_unchanged_v1, caselaw_is_citation_v2 and caselaw_fts_format_2 (parts/fts_format
--- columns, opinion_fts_part, caselaw_fulltext_v1, caselaw_status_v1, caselaw_load_fts_v1).
+-- then migrations caselaw_load_skip_unchanged_v1, caselaw_is_citation_v2, caselaw_fts_format_2 (parts/fts_format
+-- columns, opinion_fts_part, caselaw_fulltext_v1, caselaw_status_v1, caselaw_load_fts_v1), caselaw_search_best_match_v2,
+-- caselaw_order_by_cited_by (cases_cited_by; search, fulltext and status RPCs), caselaw_cases_newest_index and
+-- caselaw_cases_oldest_index. Since then the index cases_cited (CourtListener's count) is no longer used by any query.
 -- Builders: scripts/enrichment/caselaw/{read_store,citator,case_meta,load_caselaw}.py
 
 begin;
@@ -72,6 +74,11 @@ create index if not exists cases_name_tsv on caselaw.cases using gin (name_tsv);
 create index if not exists cases_cite_keys on caselaw.cases using gin (cite_keys);
 create index if not exists cases_court_date on caselaw.cases (court_id, date_filed);
 create index if not exists cases_cited on caselaw.cases (citation_count desc nulls last);
+-- "most cited" orders by the citation-map count the pages show (cited_by); cases_cited (CourtListener's count) is unused
+create index if not exists cases_cited_by on caselaw.cases (cited_by desc nulls last, cluster_id);
+-- browsing by date without a court (k2/k3 then k4, k5 of the search ordering)
+create index if not exists cases_newest on caselaw.cases (date_filed desc nulls last, cited_by desc nulls last, cluster_id);
+create index if not exists cases_oldest on caselaw.cases (date_filed asc nulls last, cited_by desc nulls last, cluster_id);
 
 create table if not exists caselaw.opinion_fts (
   opinion_id bigint primary key,
@@ -204,9 +211,11 @@ begin
     if v_q is null then return jsonb_build_object('mode', 'name', 'rows', '[]'::jsonb, 'has_more', false); end if;
   end if;
   with m as (
-    select c as r, case when coalesce(p_sort, 'relevance') = 'relevance' and v_q is not null then ts_rank(c.name_tsv, v_q) end as k1,
+    -- best match: every word in the short case name (weight A) first, then the full name; then most cited (k4)
+    select c as r, case when coalesce(p_sort, 'relevance') = 'relevance' and v_q is not null
+                        then (pg_catalog.ts_filter(c.name_tsv, '{a}') @@ v_q)::integer end as k1,
            case when p_sort = 'newest' then c.date_filed end as k2, case when p_sort = 'oldest' then c.date_filed end as k3,
-           c.citation_count as k4, c.cluster_id as k5
+           c.cited_by as k4, c.cluster_id as k5
     from caselaw.cases c
     where (v_cite is null or c.cite_keys @> array[v_cite])
       and (v_q is null or c.name_tsv @@ v_q)
@@ -250,7 +259,7 @@ begin
   m as (
     select c as r, p.rk, p.matched, case when coalesce(p_sort, 'relevance') = 'relevance' then p.rk end as k1,
            case when p_sort = 'newest' then c.date_filed end as k2, case when p_sort = 'oldest' then c.date_filed end as k3,
-           c.citation_count as k4, c.cluster_id as k5
+           c.cited_by as k4, c.cluster_id as k5
     from per_case p join caselaw.cases c on c.cluster_id = p.cluster_id
     where (p_from is null or c.date_filed >= p_from) and (p_to is null or c.date_filed <= p_to)
     order by k1 desc nulls last, k2 desc nulls last, k3 asc nulls last, k4 desc nulls last, k5
@@ -294,7 +303,7 @@ language sql stable security definer set search_path = '' as $$
       'cases', pg_total_relation_size('caselaw.cases'), 'cases_heap', pg_relation_size('caselaw.cases'),
       'cases_toast', coalesce(pg_total_relation_size(nullif((select reltoastrelid from pg_catalog.pg_class where oid = 'caselaw.cases'::regclass), 0)), 0),
       'cases_name_tsv_idx', pg_relation_size('caselaw.cases_name_tsv'), 'cases_cite_keys_idx', pg_relation_size('caselaw.cases_cite_keys'),
-      'cases_court_date_idx', pg_relation_size('caselaw.cases_court_date'), 'cases_cited_idx', pg_relation_size('caselaw.cases_cited'),
+      'cases_court_date_idx', pg_relation_size('caselaw.cases_court_date'), 'cases_cited_idx', pg_relation_size('caselaw.cases_cited'), 'cases_cited_by_idx', pg_relation_size('caselaw.cases_cited_by'),
       'cases_pkey', pg_relation_size('caselaw.cases_pkey'),
       'opinion_fts', pg_total_relation_size('caselaw.opinion_fts'), 'opinion_fts_tsv_idx', pg_relation_size('caselaw.opinion_fts_tsv'),
       'opinion_fts_part', pg_total_relation_size('caselaw.opinion_fts_part'),

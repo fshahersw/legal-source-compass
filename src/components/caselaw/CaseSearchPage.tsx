@@ -155,7 +155,9 @@ function CasesResults({ s, nav }: { s: CaseSearchState; nav: Nav }) {
         {d.mode === "citation"
           ? "Cases with this exact citation."
           : d.mode === "name"
-            ? "Case names containing every word (the last word may be the start of a word)."
+            ? s.sort && s.sort !== "relevance"
+              ? "Case names containing every word (the last word may be the start of a word)."
+              : "Case names containing every word (the last word may be the start of a word); cases whose short name has them all come first, most cited first."
             : "All cases, most cited first. Type a case name or a citation such as 384 U.S. 436."}
         {d.dropped ? ` ${d.dropped} malformed rows were left out.` : ""}
       </p>
