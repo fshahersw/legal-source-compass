@@ -9,6 +9,7 @@ import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { externalHref } from "@/lib/external/href";
 import { countyInState } from "@/lib/corpus/stateHub";
 import { CountyAnalysisPanel } from "@/components/places/CountyAnalysisPanel";
+import { CountyCensusPanel } from "@/components/places/census/CountyCensusPanel";
 
 export const Route = createFileRoute("/places/$state/$county")({
   head: ({ params }) =>
@@ -49,6 +50,14 @@ function CountyDetail() {
       <div className="eyebrow">County · FIPS {county}</div>
       <div className="mt-0.5 font-display text-lg">
         {c ? `${c.name} County, ${st?.name ?? state}` : "Unknown county"}
+      </div>
+      <div className="mt-3">
+        <CountyCensusPanel
+          fips={county}
+          countyName={c ? `${c.name} County` : `County ${county}`}
+          stateName={st?.name ?? state}
+          usps={st?.usps ?? state.toUpperCase()}
+        />
       </div>
       <CountyAnalysisPanel fips={county} />
       <CountyProfile

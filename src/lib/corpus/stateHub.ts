@@ -1,7 +1,12 @@
 import { STATES, stateByFips, stateByUsps } from "./geo";
 import { isJudicialCourtRecord } from "./courtDirectoryKind";
 import type { CourtRow, JudgeRow } from "@/lib/external/directoryTree";
-const byName = new Map(STATES.map((s) => [s.name.toLowerCase(), s]));
+/**
+ * Puerto Rico has a state-style page (courts, judges, law, Census figures) but is not one of the 50 states and DC that the
+ * map, rankings and state lists iterate, so it is recognised by identity here and is not part of STATES.
+ */
+export const PUERTO_RICO = { fips: "72", usps: "PR", name: "Puerto Rico" };
+const byName = new Map([...STATES, PUERTO_RICO].map((s) => [s.name.toLowerCase(), s] as const));
 /** Identity only: no caption, substring, venue or fuzzy-name inference. */
 export function canonicalState(value: unknown) {
   if (typeof value !== "string" && typeof value !== "number") return null;
@@ -10,6 +15,9 @@ export function canonicalState(value: unknown) {
     stateByUsps.get(text.toUpperCase()) ??
     byName.get(text.toLowerCase()) ??
     (/^\d{1,2}$/.test(text) ? stateByFips.get(text.padStart(2, "0")) : undefined) ??
+    (text.toUpperCase() === PUERTO_RICO.usps || text === PUERTO_RICO.fips
+      ? PUERTO_RICO
+      : undefined) ??
     null
   );
 }
