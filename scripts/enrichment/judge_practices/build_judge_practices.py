@@ -118,6 +118,14 @@ def main() -> None:
         groups: dict[str, list[dict]] = defaultdict(list)
         for j in judges:
             groups[pl.norm_name(j["name"])].append(j)
+        # a judge named in a list only as "First Last" and the same judge's own page under "First M. Last": one judge (only when exactly one page fits)
+        for key in [k for k, its in groups.items() if len(k.split()) == 2 and all("#" in i["page_url"] for i in its)]:
+            first, last = key.split()
+            fits = [o for o, its in groups.items() if o != key and len(o.split()) >= 3 and o.split()[0] == first and o.split()[-1] == last
+                    and any("#" not in i["page_url"] for i in its)]
+            if len(fits) == 1:
+                groups[fits[0]].extend(groups.pop(key))
+                totals["listing_entries_merged_into_pages"] += 1
         listing_urls = [lp["url"] for lp in (cr["listing_pages"] if cr else []) if lp.get("status") == 200 and lp.get("entries")]
         for key, items in sorted(groups.items()):
             items.sort(key=lambda j: (("#" in j["page_url"]), -(len(j.get("documents") or [])), -bool(j.get("title_class")), j["page_url"]))
@@ -177,6 +185,9 @@ def main() -> None:
     for r in sorted(page_rows, key=lambda r: (r["court"]["court_id"], r["tclass"], r["key"])):
         c, j, m = r["court"], r["j"], r["match"]
         title_pub = j.get("title_as_published")
+        # words that are the heading the court lists many judges under ("United States Magistrate Judges") are shown as that, not as the judge's title
+        heading_title = bool(title_pub) and j.get("title_source") in ("listing heading", "listing page heading")
+        title_shown = (f"Listed under “{title_pub}”" if heading_title else title_pub)
         name_pub = j.get("name_as_published") or j["name"]
         level_word = "district" if c["level"] == "district" else "bankruptcy"
         links = [{"url": f"/courts/{c['court_id']}", "label": "Court page"}] if c["court_id"] in spine_ids else []
@@ -185,7 +196,7 @@ def main() -> None:
         links.append({"url": j["page_url"].split("#")[0], "label": "Judge's page on the court's website"})
         docs_list = r["docs"]
         facts = [
-            ["Name as published", name_pub], ["Name", j["name"]], ["Title as published", title_pub or "Not recorded"],
+            ["Name as published", name_pub], ["Name", j["name"]], ["Heading the court lists the judge under" if heading_title else "Title as published", title_pub or "Not recorded"],
             ["Title class (derived from the published words)", TITLE_LABEL.get(r["tclass"], r["tclass"]) + (
                 f" — read from {j.get('title_source')}" if j.get("title_source") else "") + (f"; basis: {j.get('title_basis')}" if j.get("title_basis") else "")],
             ["Court", c["name"]], ["Court record", c["court_id"]], ["Page address", j["page_url"]],
@@ -216,8 +227,8 @@ def main() -> None:
         }
         pages_out.append(writer.record(
             PAGES_ID, r["rid"], f"{j['name']} — {c['name']}", source_url=j["page_url"].split("#")[0], state=c["state"],
-            subtitle=f"{title_pub or TITLE_LABEL.get(r['tclass'], '')} · {c['name']} · {len(docs_list)} document{'s' if len(docs_list) != 1 else ''}",
-            cells={"judge": j["name"], "title": title_pub or "Not recorded", "title_class": TITLE_LABEL.get(r["tclass"], r["tclass"]), "court": c["name"],
+            subtitle=f"{title_shown or TITLE_LABEL.get(r['tclass'], '')} · {c['name']} · {len(docs_list)} document{'s' if len(docs_list) != 1 else ''}",
+            cells={"judge": j["name"], "title": title_shown or "Not recorded", "title_class": TITLE_LABEL.get(r["tclass"], r["tclass"]), "court": c["name"],
                    "court_id": c["court_id"], "documents": len(docs_list), "profile": "Linked" if m["status"] == "linked" else "Not linked"},
             badges=["Court's own website"] + (["Judge profile linked"] if m["status"] == "linked" else []),
             facts=facts, text=text, links=links,
@@ -227,7 +238,7 @@ def main() -> None:
             extra={"judge_page": judge_page, "sections": sections,
                    # compact form read by the court roster (one query for a whole bench without every document)
                    "roster": {"id": r["rid"], "name": j["name"], "name_as_published": name_pub, "title": title_pub, "title_class": r["tclass"],
-                              "documents": len(docs_list), "documents_retrieved": sum(1 for d in docs_list if d["retrieved"]),
+                              "title_source": j.get("title_source"), "documents": len(docs_list), "documents_retrieved": sum(1 for d in docs_list if d["retrieved"]),
                               "profile_id": m.get("judge_id") if m["status"] == "linked" else None, "profile_status": m["status"],
                               "page_url": j["page_url"].split("#")[0], "page_kind": "listing_entry" if r["fragment"] else "judge_page"}}))
         # sections live in detail as well

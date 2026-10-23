@@ -57,6 +57,8 @@ export type JudgeCourtPage = {
   titleAsPublished: string | null;
   titleClass: TitleClass;
   titleBasis: string | null;
+  /** Where the title words were read: the judge's own page, a link text, or the heading the court lists the judge under. */
+  titleSource: string | null;
   pageUrl: string;
   pageKind: "judge_page" | "listing_entry";
   retrievedAt: string | null;
@@ -69,6 +71,7 @@ export type RosterJudge = {
   name: string;
   nameAsPublished: string;
   title: string | null;
+  titleSource: string | null;
   titleClass: TitleClass;
   documents: number;
   documentsRetrieved: number;
@@ -185,6 +188,7 @@ export function parseJudgePage(raw: unknown): JudgeCourtPage | null {
     titleAsPublished: str(p["title_as_published"], 160),
     titleClass: isTitleClass(titleClass) ? titleClass : "unclassified",
     titleBasis: str(p["title_basis"], 40),
+    titleSource: str(p["title_source"], 80),
     pageUrl,
     pageKind: p["page_kind"] === "listing_entry" ? "listing_entry" : "judge_page",
     retrievedAt: str(p["retrieved_at"], 40),
@@ -210,6 +214,7 @@ export function parseRosterJudge(raw: unknown): RosterJudge | null {
     name,
     nameAsPublished: str(r["name_as_published"], 240) ?? name,
     title: str(r["title"], 160),
+    titleSource: str(r["title_source"], 80),
     titleClass: isTitleClass(titleClass) ? titleClass : "unclassified",
     documents: int(r["documents"]) ?? 0,
     documentsRetrieved: int(r["documents_retrieved"]) ?? 0,

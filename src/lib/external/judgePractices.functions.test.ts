@@ -141,6 +141,17 @@ describe("parseRosterJudge and parseCoverage", () => {
     expect(parseRosterJudge({ ...R, page_url: "http://evil.example/x" })).toBeNull();
   });
 
+  it("keeps where the title words were read", () => {
+    expect(parseRosterJudge(R)!.titleSource).toBeNull();
+    const listed = parseRosterJudge({
+      ...R,
+      title: "United States District Judges",
+      title_source: "listing heading",
+    })!;
+    expect(listed.title).toBe("United States District Judges");
+    expect(listed.titleSource).toBe("listing heading");
+  });
+
   it("reads a coverage record and refuses one for another court", () => {
     const C = {
       court_id: "nysd",

@@ -7,6 +7,16 @@ import {
   type TitleClass,
 } from "@/lib/external/judgePractices.functions";
 
+/** True when the title words are the heading the court lists the judge under ("United States District Judges"), not words said of the judge. */
+export const isListingHeading = (source: string | null): boolean =>
+  !!source && /^listing (page )?heading$/i.test(source);
+
+/** The title line of a judge: the printed words, or a statement that they are the list's heading, or that none is printed. */
+export function titleLine(title: string | null, source: string | null): string {
+  if (!title) return "Title not stated on the page";
+  return isListingHeading(source) ? `Listed under “${title}”` : title;
+}
+
 /** The date as the court prints it beside the link; never a date taken from a file name. */
 export const dateLabel = (d: Pick<PracticeDoc, "dateText" | "date">): string =>
   d.dateText ?? "No date printed";

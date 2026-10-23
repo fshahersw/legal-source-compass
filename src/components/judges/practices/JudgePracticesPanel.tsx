@@ -10,7 +10,7 @@ import {
   type JudgeCourtPage,
   type PracticeDoc,
 } from "@/lib/external/judgePractices.functions";
-import { dateLabel, docsOrdered, retrievedLabel } from "./practiceFormat";
+import { dateLabel, docsOrdered, retrievedLabel, titleLine } from "./practiceFormat";
 
 const FIRST = 8;
 
@@ -77,11 +77,11 @@ function PageCard({ p }: { p: JudgeCourtPage }) {
           {p.retrievedAt ? ` · read ${retrievedLabel(p.retrievedAt)}` : ""}
         </p>
       </header>
-      <div className="space-y-3 px-4 py-3">
+      <div className="flex flex-col gap-3 px-4 py-3">
         <div className="min-w-0 text-[13px] leading-relaxed">
           <p className="m-0 font-medium">{p.nameAsPublished}</p>
           <p className="m-0 text-muted-foreground">
-            {p.titleAsPublished ?? "Title not stated on the page"} ·{" "}
+            {titleLine(p.titleAsPublished, p.titleSource)} ·{" "}
             <Link
               to="/courts/$id"
               params={{ id: p.courtId }}

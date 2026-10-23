@@ -4,6 +4,7 @@ import { ExternalLink, FileText } from "lucide-react";
 import { hostLabel, plural } from "@/components/courts/rules/ruleFormat";
 import {
   groupRoster,
+  isListingHeading,
   rosterTotals,
   STATUS_EXPLANATION,
 } from "@/components/judges/practices/practiceFormat";
@@ -93,8 +94,11 @@ export function CourtJudgesRosterPanel({ courtId }: { courtId: string }) {
 }
 
 function JudgeRow({ j, groupLabel }: { j: RosterJudge; groupLabel: string }) {
+  // the words under a name are the judge's own title; a heading the court lists many judges under is the group, not the judge's title
   const showTitle =
-    j.title && j.title.toLowerCase() !== groupLabel.toLowerCase().replace(/s$/, "")
+    j.title &&
+    !isListingHeading(j.titleSource) &&
+    j.title.toLowerCase() !== groupLabel.toLowerCase().replace(/s$/, "")
       ? j.title
       : null;
   return (
