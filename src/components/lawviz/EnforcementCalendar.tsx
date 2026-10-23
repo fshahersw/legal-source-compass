@@ -29,7 +29,7 @@ import {
 } from "@/lib/lawviz/calendar";
 import { getEnforcementCalendar } from "@/lib/lawviz/lawviz.functions";
 import { HatchSwatch, Notice, RampLegend } from "./parts";
-import { builtNote, fmtDate, fmtInt } from "./format";
+import { builtNote, countOf, fmtDate, fmtInt } from "./format";
 import { RAMP, ZERO_FILL, rampStep } from "./ramp";
 
 const control =
@@ -52,7 +52,7 @@ function DayGrid({
   const weeks = Math.max(...grid.map((c) => c.week)) + 1;
   const describe = (i: number) => {
     const c = grid[i]!;
-    return `${longDay(c.date)}: ${c.value === null ? "not recorded" : `${fmtInt(c.value)} ${series.unit}`}.`;
+    return `${longDay(c.date)}: ${c.value === null ? "not recorded" : countOf(c.value, series.unit)}.`;
   };
   const fill = (v: number | null, hatch: string) =>
     v === null
@@ -292,7 +292,7 @@ export function EnforcementCalendar() {
               ? `${fmtInt(data.dropped)} stored rows could not be read and are left out.`
               : null,
             undated.length
-              ? `Not dated, so not drawn: ${undated.map((s) => `${fmtInt(s.undated)} ${s.unit} (${s.label})`).join("; ")}.`
+              ? `Not dated, so not drawn: ${undated.map((s) => `${countOf(s.undated, s.unit)} (${s.label})`).join("; ")}.`
               : null,
           ]
             .filter(Boolean)
@@ -318,7 +318,7 @@ export function EnforcementCalendar() {
                     <span className="text-[11px] text-muted-foreground">
                       {s.first ? (
                         <>
-                          {fmtInt(n)} {s.unit} in {year} · coverage {fmtDate(s.first)} –{" "}
+                          {countOf(n, s.unit)} in {year} · coverage {fmtDate(s.first)} –{" "}
                           {fmtDate(s.last)}
                         </>
                       ) : (

@@ -54,6 +54,15 @@ const sectionLabel = (identifier: string) =>
 
 function buildLanes(l: Lineage, title: string, part: string, laneLimit: number) {
   const lanes: SwimLane[] = [];
+  if (!l.statutes.length)
+    lanes.push({
+      id: "law-none",
+      group: "law",
+      label: "Exact U.S. Code sections",
+      events: [],
+      emptyText:
+        "None: the authorities are printed as ranges, “et seq.” or other forms (listed below)",
+    });
   for (const s of l.statutes.slice(0, laneLimit)) {
     lanes.push({
       id: `law-${s.id}`,

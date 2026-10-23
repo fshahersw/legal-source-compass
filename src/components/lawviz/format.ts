@@ -20,3 +20,9 @@ export function fmtDate(iso: string | null | undefined): string {
 /** Footnote naming when the database computed the figures (from the build timestamp); none when unknown. */
 export const builtNote = (at: string | null): string[] =>
   at ? [`Figures computed ${fmtDate(at)} from the stored records.`] : [];
+
+/** "1 report entry", "2 report entries", "1 press release" — the unit as the series names it, singular for one. */
+export function countOf(n: number, unit: string): string {
+  const one = unit.endsWith("ies") ? `${unit.slice(0, -3)}y` : unit.replace(/s$/, "");
+  return `${fmtInt(n)} ${n === 1 ? one : unit}`;
+}
