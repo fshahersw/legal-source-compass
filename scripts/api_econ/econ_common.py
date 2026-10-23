@@ -7,6 +7,7 @@ private/scratch/enrich/publish_build.py validates and publishes (lead only). Row
 from __future__ import annotations
 
 import hashlib
+import http.client
 import json
 import os
 import re
@@ -90,7 +91,7 @@ class Http:
                     time.sleep(min(120, int(retry)) if retry and retry.isdigit() else 5 * attempt)
                     continue
                 raise RuntimeError(f"HTTP {e.code} for {redact(record_url or url)}") from None
-            except urllib.error.URLError:
+            except (urllib.error.URLError, http.client.HTTPException, ConnectionError, TimeoutError):
                 if attempt < 4:
                     time.sleep(5 * attempt)
                     continue

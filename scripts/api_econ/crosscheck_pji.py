@@ -113,6 +113,15 @@ def main(argv: list[str]) -> None:
             report["utd"]["differs"].append({"week_ending": we, "court_corrected": corrected, "stored": o[1]})
     out = ec.BUILD / "fred" / "crosscheck_pji.json"
     out.write_text(json.dumps(report, indent=1))
+    # the result travels with the dataset (summary only; rows are unchanged)
+    build["summary"]["crosscheck_uscourts"] = {
+        "method": "scripts/api_econ/crosscheck_pji.py: every row of the District of New Mexico rate tables 2010-2026 and the District of Utah correction table (Oct 2016 - Dec 2019) compared with the stored WGS1YR weekly averages and the Monday-to-Sunday rule.",
+        "sources": [NMID.format(year="YYYY"), UTD],
+        "nmid": {k: v for k, v in report["nmid"].items()},
+        "utd": {k: v for k, v in report["utd"].items()},
+        "reading": "Rows not stored or differing are table entries whose week-ending date is not a Friday or whose figures disagree with the Board's published average (court table errors); the District of Utah lists 125 of its own published rates as corrected, and every corrected rate equals the stored value.",
+    }
+    Path(a.fred_build).write_text(json.dumps(build))
     print(json.dumps({k: {kk: (vv if not isinstance(vv, list) else len(vv)) for kk, vv in v.items()} for k, v in report.items()}, indent=1))
 
 
