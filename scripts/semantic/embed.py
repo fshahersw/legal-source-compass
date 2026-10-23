@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures as cf
+import contextlib
 import gzip
 import hashlib
 import json
@@ -86,6 +87,35 @@ def file_sha256(path: str) -> str:
 
 
 # ------------------------------------------------------------------------------------------------------------------ usage
+@contextlib.contextmanager
+def exclusive_file_lock(path: str) -> Iterator[None]:
+    """An exclusive lock between processes on `path`: flock on POSIX, a one-byte msvcrt lock on Windows."""
+    with open(path, "a+b") as handle:
+        if os.name == "nt":
+            import msvcrt
+
+            while True:
+                handle.seek(0)
+                try:
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+                    break
+                except OSError:
+                    time.sleep(0.05)
+            try:
+                yield
+            finally:
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(handle, fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(handle, fcntl.LOCK_UN)
+
+
 class Usage:
     """Token and request counts per corpus, shared by all runs (also concurrent ones), saved to usage.json.
 
@@ -140,11 +170,8 @@ class Usage:
                 self.ratio_hi = max(0.9 * self.ratio_hi, actual / est)
 
     def save(self, run: dict | None = None) -> None:
-        import fcntl
-
         os.makedirs(os.path.dirname(self.path), exist_ok=True)
-        with self.lock, open(self.path + ".lock", "w") as lock_file:
-            fcntl.flock(lock_file, fcntl.LOCK_EX)
+        with self.lock, exclusive_file_lock(self.path + ".lock"):
             data = self._read()
             data["tokens_used"] += self.pending["tokens"]
             data["requests"] += self.pending["requests"]
