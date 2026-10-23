@@ -291,6 +291,111 @@ def _xml_text_inline(body: bytes, inline: set) -> str:
     return lib.norm_lines(_html.unescape("".join(out)))
 
 
+# --- RTF (Oklahoma complete-title files) ----------------------------------------------------------------------------
+_RTF_TOKEN = re.compile(r"\\([a-z]{1,32})(-?\d{1,10})?[ ]?|\\'([0-9a-f]{2})|\\([^a-z])|([{}])|[\r\n]+|(.)", re.I | re.S)
+_RTF_DESTINATIONS = {
+    "aftncn", "aftnsep", "aftnsepc", "annotation", "atnauthor", "atndate", "atnicn", "atnid", "atnparent", "atnref",
+    "atntime", "atrfend", "atrfstart", "author", "background", "bkmkend", "bkmkstart", "blipuid", "buptim", "category",
+    "colorschememapping", "colortbl", "comment", "company", "creatim", "datafield", "datastore", "defchp", "defpap",
+    "do", "doccomm", "docvar", "dptxbxtext", "ebcend", "ebcstart", "factoidname", "falt", "fchars", "ffdeftext",
+    "ffentrymcr", "ffexitmcr", "ffformat", "ffhelptext", "ffl", "ffname", "ffstattext", "field", "file", "filetbl",
+    "fldinst", "fldtype", "fname", "fontemb", "fontfile", "fonttbl", "footer", "footerf", "footerl", "footerr",
+    "footnote", "formfield", "ftncn", "ftnsep", "ftnsepc", "g", "generator", "gridtbl", "header", "headerf", "headerl",
+    "headerr", "hl", "hlfr", "hlinkbase", "hlloc", "hlsrc", "hsv", "htmltag", "info", "keycode", "keywords",
+    "latentstyles", "lchars", "levelnumbers", "leveltext", "lfolevel", "linkval", "list", "listlevel", "listname",
+    "listoverride", "listoverridetable", "listpicture", "liststylename", "listtable", "listtext", "lsdlockedexcept",
+    "macc", "maccPr", "mailmerge", "maln", "malnScr", "manager", "margPr", "mbar", "mbarPr", "mbaseJc", "mbegChr",
+    "mborderBox", "mborderBoxPr", "mbox", "mboxPr", "mchr", "mcount", "mctrlPr", "md", "mdeg", "mdegHide", "mden",
+    "mdiff", "mdPr", "me", "mendChr", "meqArr", "meqArrPr", "mf", "mfName", "mfPr", "mfunc", "mfuncPr", "mgroupChr",
+    "mgroupChrPr", "mgrow", "mhideBot", "mhideLeft", "mhideRight", "mhideTop", "mhtmltag", "mlim", "mlimloc",
+    "mlimlow", "mlimlowPr", "mlimupp", "mlimuppPr", "mm", "mmaddfieldname", "mmath", "mmathPict", "mmathPr",
+    "mmaxdist", "mmc", "mmcJc", "mmconnectstr", "mmconnectstrdata", "mmcPr", "mmcs", "mmdatasource", "mmheadersource",
+    "mmmailsubject", "mmodso", "mmodsofilter", "mmodsofldmpdata", "mmodsomappedname", "mmodsoname", "mmodsorecipdata",
+    "mmodsosort", "mmodsosrc", "mmodsotable", "mmodsoudl", "mmodsoudldata", "mmodsouniquetag", "mmPr", "mmquery",
+    "mmr", "mnary", "mnaryPr", "mnoBreak", "mnum", "mobjDist", "moMath", "moMathPara", "moMathParaPr", "mopEmu",
+    "mphant", "mphantPr", "mplcHide", "mpos", "mr", "mrad", "mradPr", "mrPr", "msepChr", "mshow", "mshp", "msPre",
+    "msPrePr", "msSub", "msSubPr", "msSubSup", "msSubSupPr", "msSup", "msSupPr", "mstrikeBLTR", "mstrikeH",
+    "mstrikeTLBR", "mstrikeV", "msub", "msubHide", "msup", "msupHide", "mtransp", "mtype", "mvertJc", "mvfmf", "mvfml",
+    "mvtof", "mvtol", "mzeroAsc", "mzeroDesc", "mzeroWid", "nesttableprops", "nextfile", "nonesttables", "objalias",
+    "objclass", "objdata", "object", "objname", "objsect", "objtime", "oldcprops", "oldpprops", "oldsprops",
+    "oldtprops", "oleclsid", "operator", "panose", "password", "passwordhash", "pgp", "pgptbl", "picprop", "pict",
+    "pn", "pnseclvl", "pntext", "pntxta", "pntxtb", "printim", "private", "propname", "protend", "protstart",
+    "protusertbl", "pxe", "result", "revtbl", "revtim", "rsidtbl", "rxe", "shp", "shpgrp", "shpinst", "shppict",
+    "shprslt", "shptxt", "sn", "sp", "staticval", "stylesheet", "subject", "sv", "svb", "tc", "template", "themedata",
+    "title", "txe", "ud", "upr", "userprops", "wgrffmtfilter", "windowcaption", "writereservation",
+    "writereservhash", "xe", "xform", "xmlattrname", "xmlattrvalue", "xmlclose", "xmlname", "xmlnstbl", "xmlopen"}
+_RTF_SPECIAL = {"par": "\n", "sect": "\n\n", "page": "\n\n", "line": "\n", "tab": "\t", "emdash": "\u2014",
+                "endash": "\u2013", "emspace": "\u2003", "enspace": "\u2002", "qmspace": "\u2005",
+                "bullet": "\u2022", "lquote": "\u2018", "rquote": "\u2019", "ldblquote": "\u201c",
+                "rdblquote": "\u201d", "row": "\n", "cell": "\t", "nestcell": "\t", "~": "\u00a0", "-": "",
+                "_": "\u2011"}
+
+
+def rtf_to_text(body: bytes) -> str:
+    """Plain text of an RTF document: paragraph/line/row breaks become newlines, cells and tabs become tabs; the
+    font/colour/style tables, headers/footers, fields' instructions and pictures (RTF destinations) are skipped.
+    The same function renders the source for the exact-text check (verify adapter)."""
+    text = body.decode("latin-1")
+    stack: list[tuple[int, bool]] = []
+    ignorable = False
+    ucskip = 1
+    curskip = 0
+    out: list[str] = []
+    codepage = "cp1252"
+    for match in _RTF_TOKEN.finditer(text):
+        word, arg, hexcode, char, brace, tchar = match.groups()
+        if brace:
+            curskip = 0
+            if brace == "{":
+                stack.append((ucskip, ignorable))
+            elif stack:
+                ucskip, ignorable = stack.pop()
+        elif char:
+            curskip = 0
+            if char == "~":
+                if not ignorable:
+                    out.append("\u00a0")
+            elif char in "{}\\":
+                if not ignorable:
+                    out.append(char)
+            elif char == "*":
+                ignorable = True
+            elif char in _RTF_SPECIAL and not ignorable:
+                out.append(_RTF_SPECIAL[char])
+        elif word:
+            curskip = 0
+            if word in _RTF_DESTINATIONS:
+                ignorable = True
+            elif ignorable:
+                pass
+            elif word in _RTF_SPECIAL:
+                out.append(_RTF_SPECIAL[word])
+            elif word == "uc":
+                ucskip = int(arg or 1)
+            elif word == "ansicpg" and arg:
+                codepage = f"cp{arg}"
+            elif word == "u" and arg is not None:
+                code = int(arg)
+                if code < 0:
+                    code += 0x10000
+                out.append(chr(code))
+                curskip = ucskip
+        elif hexcode:
+            if curskip > 0:
+                curskip -= 1
+            elif not ignorable:
+                try:
+                    out.append(bytes([int(hexcode, 16)]).decode(codepage))
+                except (UnicodeDecodeError, LookupError):
+                    out.append(bytes([int(hexcode, 16)]).decode("cp1252", errors="replace"))
+        elif tchar:
+            if curskip > 0:
+                curskip -= 1
+            elif not ignorable:
+                out.append(tchar)
+    return "".join(out)
+
+
 def verify_cli(argv=None):
     """python3 scripts/state_law/states/_statb.py verify <edition_dir> --raw <raw_root>"""
     import argparse
@@ -316,6 +421,9 @@ def verify_cli(argv=None):
                 for field in row:
                     out.append(lib.html_text(field) if "<" in field else lib.norm_lines(_html.unescape(field)))
             return "\n".join(x for x in out if x)
+        # RTF (Oklahoma complete titles): the same rtf_to_text the parser reads
+        if body[:6] == b"{\\rtf1":
+            return lib.norm_lines(rtf_to_text(body))
         # PDFs: the same `pdftotext -layout` rendering the North Dakota parser reads (lib.pdf_text uses the default
         # reading mode, which drops some non-breaking hyphens the layout mode keeps)
         if body[:5] == b"%PDF-":
@@ -350,7 +458,7 @@ def verify_cli(argv=None):
     args = parser.parse_args(argv)
     result = shared_verify.verify(args.edition_dir, args.raw)
     result["adapter"] = ("statb: xml_text renders escaped publisher markup via html_text; .csv sources are rendered "
-                         "field by field after CSV unquoting; BOM-less UTF-16 LE bodies are decoded as UTF-16; PDFs are rendered with pdftotext -layout; Utah subsection labels are rendered from their number attribute")
+                         "field by field after CSV unquoting; BOM-less UTF-16 LE bodies are decoded as UTF-16; PDFs are rendered with pdftotext -layout; RTF is rendered with statb rtf_to_text; Utah subsection labels are rendered from their number attribute")
     (args.edition_dir / "verify.json").write_text(json.dumps(result, indent=2, ensure_ascii=False))
     print(json.dumps({k: result[k] for k in ("edition_id", "ok", "counts", "adapter")}, ensure_ascii=False))
     for item in result["failures"][:20]:
