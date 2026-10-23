@@ -910,7 +910,7 @@ class _Jsonl:
         return {"sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data), "records": self.count}
 
 
-_MARKUP_RE = re.compile(r"</?[a-zA-Z][a-zA-Z0-9]*(?:\s[^<>]*)?/?>|&(?:nbsp|amp|lt|gt|quot|sect|#\d+|#x[0-9a-fA-F]+);")
+_MARKUP_RE = re.compile(r"</?[a-zA-Z][a-zA-Z0-9]*(?:\s[^<>]*)?/?>|&(?:[a-zA-Z][a-zA-Z0-9]{1,30}|#\d+|#x[0-9a-fA-F]+);")
 
 
 class RunContext:
@@ -942,6 +942,8 @@ class RunContext:
         self._sections = _Jsonl(self.dir / "sections.jsonl.gz")
         self._nodes = _Jsonl(self.dir / "nodes.jsonl.gz")
         self._sources = _Jsonl(self.dir / "sources.jsonl.gz")
+        self._rejects = _Jsonl(self.dir / "rejects.jsonl.gz")
+        self.strict = sample is not None
         self._node_ids: dict[str, int] = {}
         self._section_ids: set[str] = set()
         self._ordinals: set[int] = set()
@@ -1080,7 +1082,21 @@ class RunContext:
         return nid
 
     # sections ---------------------------------------------------------------------------------------------
-    def section(self, *, code: str, number: str, heading: str | None, text: str, source: Fetched | dict,
+    def section(self, **fields: Any) -> str | None:
+        """Emit one section (see _section). Sample runs are strict (a ModelError stops the run); full runs record
+        the rejected record in rejects.jsonl.gz with the reason and continue, so one odd page never hides others."""
+        try:
+            return self._section(**fields)
+        except ModelError as error:
+            if self.strict:
+                raise
+            src = fields.get("source")
+            src = src.source() if isinstance(src, Fetched) else (src or {})
+            self._rejects.write({"state": self.state, "code": fields.get("code"), "number": fields.get("number"),
+                                 "reason": str(error)[:500], "source_url": src.get("url"), "source_sha256": src.get("sha256")})
+            return None
+
+    def _section(self, *, code: str, number: str, heading: str | None, text: str, source: Fetched | dict,
                 node_id: str | None = None, path: list[dict] | None = None, history: str | None = None,
                 status: str | None = None, status_marker: str | None = None, status_basis: str | None = None,
                 effective: dict | None = None, version: str | None = None, version_index: int | None = None,
@@ -1167,6 +1183,7 @@ class RunContext:
             "sections.jsonl.gz": self._sections.close(),
             "nodes.jsonl.gz": self._nodes.close(),
             "sources.jsonl.gz": self._sources.close(),
+            "rejects.jsonl.gz": self._rejects.close(),
         }
         meta = self.meta
         edition = {
@@ -1180,6 +1197,7 @@ class RunContext:
                 for c in meta.codes
             ],
             "counts": {"sections": self.section_count, "nodes": len(self._node_ids), "sources": files["sources.jsonl.gz"]["records"],
+                       "rejected": files["rejects.jsonl.gz"]["records"],
                        "source_bytes": self._source_bytes, "by_status": dict(sorted(self._by_status.items()))},
             "files": files, "parser": meta.parser, "lib": LIB_VERSION,
             "sample": None if self.sample is None else {"limit": self.sample},
