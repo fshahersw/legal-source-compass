@@ -17,6 +17,7 @@ import os
 import random
 import re
 import sys
+import unicodedata
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -40,7 +41,8 @@ def raw_section(title: str, ident: str, cache: dict) -> str | None:
 
 
 def loose(s: str) -> str:
-    return re.sub(r"[^0-9A-Za-z]+", "", s)
+    """Letters and digits only, after NFKC (the stored text prints subscript 2 as ₂ where the XML has <E T="52">2</E>)."""
+    return re.sub(r"[^0-9A-Za-z]+", "", unicodedata.normalize("NFKC", s))
 
 
 def main() -> None:
