@@ -179,6 +179,8 @@ _MARKER = re.compile(
     r"(?=$|[\s.,:;\])\-—]*(?:$|by\b|and\b|eff\.?|effective\b|as\b|to\b|from\b|for\b|pursuant\b|under\b|in\b|on\b|"
     r"\d|[\[(]|L\.|Laws\b|P\.?L\.?|S\.?L\.?|Acts?\b|ch\.?|c\.|section|sec\.|§))", re.I)
 _MAP = {"redesignated": "renumbered", "terminated": "expired"}
+_TRAILING = re.compile(r"(\((repealed|reserved|expired|renumbered|redesignated|transferred|terminated)\b[^()]*\))\.?\s*$",
+                       re.I)
 
 
 def marker_status(heading: str | None, text: str | None):
@@ -201,6 +203,12 @@ def marker_status(heading: str | None, text: str | None):
         if m:
             word = m.group(1).lower()
             return _MAP.get(word, word), cand
+    if not t and h:
+        # catchline followed by the publisher's parenthetical marker: "Salary (Repealed)." (Pennsylvania)
+        m = _TRAILING.search(h)
+        if m:
+            word = m.group(2).lower()
+            return _MAP.get(word, word), m.group(1)
     return None, None
 
 
