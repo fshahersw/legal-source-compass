@@ -19,6 +19,7 @@ import {
 } from "@/components/places/placeSearch";
 import { AreaList } from "@/components/places/state/AreaList";
 import { partitionStateSources } from "@/components/places/state/resourceFacts";
+import { hostKey } from "@/components/places/state/resourceFilter";
 import { StateOverviewTab } from "@/components/places/state/StateOverviewTab";
 import { Button } from "@/components/ui/button";
 import { useAtlas } from "@/lib/atlas/store";
@@ -28,6 +29,8 @@ import { STATES, stateByUsps } from "@/lib/corpus/geo";
 import { canonicalState, PUERTO_RICO, type StateHubSearch } from "@/lib/corpus/stateHub";
 import { pageHead } from "@/lib/corpus/head";
 import { getStateCountyRecords } from "@/lib/external/corpus.functions";
+import { lookupGovernmentDomains } from "@/lib/external/govDomains.functions";
+import { registryStateByHost } from "@/lib/external/govDomainsModel";
 import { useStateCourtDirectory } from "@/lib/external/useStateDirectory";
 import { loadRegistryJurisdiction } from "@/lib/atlas/registryV22";
 import { loadCatalogIndex, loadCatalogJurisdiction } from "@/lib/atlas/catalog";
@@ -113,9 +116,34 @@ function StatePage() {
     [directorySources, catalogState.data, registry.data],
   );
   // Commercial publishers and resources whose host belongs to another state are withheld, with the reason shown.
+  const base = useMemo(() => partitionStateSources(merged, usps), [merged, usps]);
+  // A host the name guess places in another state is checked against the government domain registries: one they register
+  // to this state is shown. Not being listed changes nothing, and a failed check leaves the list as it was.
+  const otherStateHosts = useMemo(
+    () =>
+      [
+        ...new Set(
+          base.hidden
+            .filter((h) => h.reason === "other_state")
+            .map((h) => hostKey(h.row.domain || h.row.url))
+            .filter(Boolean),
+        ),
+      ]
+        .sort()
+        .slice(0, 60),
+    [base.hidden],
+  );
+  const lookupHosts = useServerFn(lookupGovernmentDomains);
+  const govEvidence = useQuery({
+    queryKey: ["gov-registry-hosts", usps, otherStateHosts.join("|")],
+    enabled: loadSources && otherStateHosts.length > 0,
+    staleTime: 10 * 60_000,
+    queryFn: async () =>
+      registryStateByHost((await lookupHosts({ data: { inputs: otherStateHosts } })).results),
+  });
   const { shown: sources, hidden: hiddenSources } = useMemo(
-    () => partitionStateSources(merged, usps),
-    [merged, usps],
+    () => (govEvidence.data?.size ? partitionStateSources(merged, usps, govEvidence.data) : base),
+    [merged, usps, govEvidence.data, base],
   );
   const county = useStateCounty(tab === "counties" ? state?.name : undefined);
   const countyValues = useMemo(

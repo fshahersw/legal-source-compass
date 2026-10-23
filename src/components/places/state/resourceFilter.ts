@@ -6,7 +6,8 @@
  * belongs to another state (an Indiana university guide on the California page) is flagged and not shown unless the
  * resource itself says it covers the page's state. Nothing is deleted: hidden resources stay in the data and are listed,
  * with the reason, beneath the list. The classification is deterministic from the host and the resource's own text; an
- * unrecognised host is never flagged.
+ * unrecognised host is never flagged. A host the government domain registries (CISA .gov registry, GSA list) register to
+ * the page's own state is positive evidence that overrides a host-name guess: it is shown (see `RegistryStates`).
  */
 import { STATES } from "@/lib/corpus/geo";
 
@@ -19,7 +20,15 @@ export type ResourceFacts = {
   /** The resource's own words: the titles it is given and the words of its URL path. Never a list heading or a tag. */
   text: string[];
 };
-export type Classification = { show: true } | { show: false; reason: HiddenReason; detail: string };
+/** `evidence: "registry"` marks a resource shown on registry evidence rather than on the absence of a flag. */
+export type Classification =
+  { show: true; evidence?: "registry" } | { show: false; reason: HiddenReason; detail: string };
+/**
+ * Hosts the government domain registries register to one state: lower-case host -> USPS. Built by the caller from registry
+ * lookups (`registryStateByHost`); only bodies that govern within a state are in it, so a federal, tribal or ambiguous
+ * entry never appears. A host missing from it says nothing.
+ */
+export type RegistryStates = ReadonlyMap<string, string>;
 
 /** Registrable domains of commercial research publishers, directories and aggregators. */
 export const COMMERCIAL_HOSTS: Record<string, string> = {
@@ -202,6 +211,11 @@ function labelsOf(host: string): string[] {
     .filter(Boolean);
 }
 
+/** The lower-case host of a domain or address, as the registry lookup keys it ("https://WWW.IN.gov/x" -> "www.in.gov"). */
+export function hostKey(host: string): string {
+  return labelsOf(host).join(".");
+}
+
 /** Last two labels of a host ("caselaw.findlaw.com" -> "findlaw.com"). */
 export function registrable(host: string): string {
   return labelsOf(host).slice(-2).join(".");
@@ -276,17 +290,25 @@ export function coversState(r: ResourceFacts, usps: string): boolean {
   return NATIONAL.test(text);
 }
 
-export function classifyResource(r: ResourceFacts, usps: string): Classification {
+export function classifyResource(
+  r: ResourceFacts,
+  usps: string,
+  registry?: RegistryStates,
+): Classification {
   const commercial = commercialHost(r.domain || r.url);
   if (commercial)
     return { show: false, reason: "commercial", detail: `${commercial} is a commercial host` };
   const home = hostState(r.domain || r.url);
-  if (home && home !== usps && !coversState(r, usps))
+  if (home && home !== usps && !coversState(r, usps)) {
+    // A registry that registers this very host to the page's state outweighs the host-name guess.
+    if (registry?.get(hostKey(r.domain || r.url)) === usps)
+      return { show: true, evidence: "registry" };
     return {
       show: false,
       reason: "other_state",
       detail: `${r.domain} belongs to ${NAMES.get(home) ?? home}; nothing in the resource says it covers ${NAMES.get(usps) ?? usps}`,
     };
+  }
   return { show: true };
 }
 
@@ -297,11 +319,12 @@ export function partitionResources<T>(
   rows: T[],
   usps: string,
   factsOf: (row: T) => ResourceFacts,
+  registry?: RegistryStates,
 ): { shown: T[]; hidden: Hidden<T>[] } {
   const shown: T[] = [];
   const hidden: Hidden<T>[] = [];
   for (const row of rows) {
-    const c = classifyResource(factsOf(row), usps);
+    const c = classifyResource(factsOf(row), usps, registry);
     if (c.show) shown.push(row);
     else hidden.push({ row, reason: c.reason, detail: c.detail });
   }

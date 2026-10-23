@@ -258,6 +258,7 @@ class RowTests(unittest.TestCase):
         r = rows.gov_row(self.recs["360eldorado.com/government"], META)
         self.assertEqual(r["source_url"], "https://github.com/GSA/govt-urls/blob/" + META["gsa"]["commit"] + "/1_govt_urls_full.csv")
         self.assertEqual(r["item"]["row"]["link"], "http://www.360eldorado.com/Government/CityofElDorado.html")
+        self.assertEqual(r["item"]["row"]["note"], "City of El Dorado, KS")
         self.assertEqual(r["filters"]["entry_kind"], ["path"])
 
     def test_view_only_source_names_the_view_file(self):

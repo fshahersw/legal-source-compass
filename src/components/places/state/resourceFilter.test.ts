@@ -4,6 +4,7 @@ import {
   commercialHost,
   coversState,
   hiddenCounts,
+  hostKey,
   hostState,
   partitionResources,
   registrable,
@@ -174,5 +175,47 @@ describe("partitionResources", () => {
     const copy = JSON.stringify(rows);
     partitionResources(rows, "CA", (r) => r);
     expect(JSON.stringify(rows)).toBe(copy);
+  });
+});
+
+describe("registry evidence", () => {
+  const guide = facts("libguides.law.indiana.edu", "Legal research guide");
+  it("shows an out-of-state-looking host the registry registers to the page's own state", () => {
+    const registry = new Map([["libguides.law.indiana.edu", "CA"]]);
+    expect(classifyResource(guide, "CA", registry)).toEqual({ show: true, evidence: "registry" });
+  });
+  it("does not rescue a host the registry places in another state, or one it does not list", () => {
+    expect(
+      classifyResource(guide, "CA", new Map([["libguides.law.indiana.edu", "IN"]])),
+    ).toMatchObject({
+      show: false,
+      reason: "other_state",
+    });
+    expect(classifyResource(guide, "CA", new Map([["other.example.gov", "CA"]]))).toMatchObject({
+      show: false,
+    });
+    expect(classifyResource(guide, "CA", new Map())).toMatchObject({ show: false });
+  });
+  it("never overrides the commercial rule", () => {
+    const f = facts("caselaw.findlaw.com", "California Cases");
+    expect(classifyResource(f, "CA", new Map([["caselaw.findlaw.com", "CA"]]))).toMatchObject({
+      show: false,
+      reason: "commercial",
+    });
+  });
+  it("keys hosts the way the registry lookup does", () => {
+    expect(hostKey("https://WWW.IN.gov:8080/x?y")).toBe("www.in.gov");
+    expect(hostKey("Law.Indiana.EDU")).toBe("law.indiana.edu");
+  });
+  it("partitions with the registry map and leaves the default behaviour unchanged without it", () => {
+    const rows = [
+      facts("www.in.gov", "Indiana courts"),
+      facts("www.courts.ca.gov", "Judicial Council"),
+    ];
+    const without = partitionResources(rows, "CA", (r) => r);
+    expect(without.hidden.map((h) => h.row.domain)).toEqual(["www.in.gov"]);
+    const withMap = partitionResources(rows, "CA", (r) => r, new Map([["www.in.gov", "CA"]]));
+    expect(withMap.shown.map((r) => r.domain)).toEqual(["www.in.gov", "www.courts.ca.gov"]);
+    expect(withMap.hidden).toEqual([]);
   });
 });

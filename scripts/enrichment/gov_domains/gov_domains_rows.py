@@ -83,6 +83,20 @@ def home_link(rec: dict) -> str | None:
     return None
 
 
+def gsa_note(rec: dict) -> str | None:
+    """GSA's free-text note for the entry (comments minus the trailing "Note added" stamp), first non-empty among its rows."""
+    if not rec["gsa"]:
+        return None
+    for r in rec["gsa"]["rows"]:
+        if r["note"]:
+            return r["note"]
+    for rows in rec["gsa"]["views"].values():
+        for r in rows:
+            if r["note"]:
+                return r["note"]
+    return None
+
+
 def compact_row(rec: dict) -> dict:
     entry = rec["entry"]
     return {
@@ -96,6 +110,7 @@ def compact_row(rec: dict) -> dict:
         "registries": rec["registries"],
         "securityContact": rec["cisa"]["security_contact"] if rec["cisa"] else None,
         "link": home_link(rec),
+        "note": gsa_note(rec),
         "notUsed": bool(rec["not_used"]),
         "conflict": bool(rec["conflicts"]),
     }

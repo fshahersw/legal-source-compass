@@ -8,6 +8,7 @@ import type { MergedStateSource } from "@/lib/atlas/stateSources";
 import type { CourtRow } from "@/lib/external/directoryTree";
 import { CourtsJudgesSection } from "./CourtsJudgesSection";
 import { LawSection } from "./LawSection";
+import { GovDomainsPanel } from "./GovDomainsPanel";
 import { LitigationSection } from "./LitigationSection";
 import type { Hidden } from "./resourceFilter";
 import { StateHeaderBand } from "./StateHeaderBand";
@@ -18,6 +19,7 @@ export const OVERVIEW_SECTIONS = [
   { id: "litigation", label: "Litigation and enforcement" },
   { id: "demographics", label: "Demographics and economy" },
   { id: "resources", label: "Research resources" },
+  { id: "government-sites", label: "Government websites" },
 ] as const;
 
 function Section({
@@ -234,6 +236,13 @@ export function StateOverviewTab(props: {
           error={props.sourcesError}
           onRetry={props.onRetrySources}
         />
+      </Section>
+      <Section
+        id="government-sites"
+        title="Official government websites"
+        note="Domains the CISA .gov registry and the GSA list register to this state, as the publishers give them"
+      >
+        <GovDomainsPanel key={usps} usps={usps} stateName={stateName} />
       </Section>
     </div>
   );

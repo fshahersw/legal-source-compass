@@ -1,6 +1,11 @@
 /** Adapters from the merged state sources (directory, source catalog, Registry V2.2) to the facts the resource filter reads. */
 import type { MergedStateSource } from "@/lib/atlas/stateSources";
-import { partitionResources, type Hidden, type ResourceFacts } from "./resourceFilter";
+import {
+  partitionResources,
+  type Hidden,
+  type RegistryStates,
+  type ResourceFacts,
+} from "./resourceFilter";
 
 /** Readable words of a URL path ("/state-legislative-history-guides" -> "state legislative history guides"). */
 export function pathWords(url: string): string {
@@ -36,6 +41,7 @@ export function factsOfMerged(row: MergedStateSource): ResourceFacts {
 export function partitionStateSources(
   rows: MergedStateSource[],
   usps: string,
+  registry?: RegistryStates,
 ): { shown: MergedStateSource[]; hidden: Hidden<MergedStateSource>[] } {
-  return partitionResources(rows, usps, factsOfMerged);
+  return partitionResources(rows, usps, factsOfMerged, registry);
 }
