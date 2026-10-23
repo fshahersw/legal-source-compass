@@ -88,10 +88,39 @@ def amount_sentence_keys(r):
     return {sentence_key(a.get("sentence")) for a in ex.extract_amounts(text) if a.get("sentence")}
 
 
+def headline_for(title, text, amounts, max_res, checks):
+    """extract.headline_figure, re-checked (the figure is a verbatim span of the title, or of its sentence and the
+    sentence of the body) and counted; `differs_from_largest` when the largest resolution figure is another value."""
+    headline = ex.headline_figure(title, amounts)
+    if headline is None:
+        checks["headline_none"] += 1
+        return None
+    checks["values_checked"] += 1
+    if headline["source"] == "title":
+        checks["headline_from_title"] += 1
+        checks["span_failures"] += headline["as_written"] not in title
+    else:
+        checks["headline_from_first_resolution_sentence"] += 1
+        checks["span_failures"] += headline["as_written"] not in (headline.get("sentence") or "") or headline.get("sentence") not in text
+    if headline.get("title_figure_not_used"):
+        checks["headline_title_figure_not_used"] += 1
+    differs = max_res is not None and abs(headline["value_usd"] - max_res) > 0.005
+    checks["headline_differs_from_largest"] += differs
+    return {**headline, "differs_from_largest": differs}
+
+
+def headline_label(headline):
+    if not headline:
+        return None
+    where = "stated in the title" if headline["source"] == "title" else f"first resolution sentence: “{headline.get('sentence')}”"
+    return f"{headline['as_written']} ({where})"
+
+
 def build_release(r, companies, courts, checks, boilerplate=frozenset()):
     body_html = r.get("body") or ""
     text = ex.html_to_text(body_html)
-    title = html.unescape(re.sub(r"\s+", " ", r.get("title") or "")).strip()
+    # markup in a title ("<br />") is not part of it; entities are decoded after the tags are removed
+    title = re.sub(r"\s+", " ", html.unescape(ex._TAG.sub(" ", r.get("title") or ""))).strip()
     date = epoch_date(r.get("date"))
     components = names(r.get("component"))
     topics = names(r.get("topic"))
@@ -123,6 +152,7 @@ def build_release(r, companies, courts, checks, boilerplate=frozenset()):
                   and a["value_usd"] < ex.RESOLUTION_CAP_USD]
     max_res = max(resolution) if resolution else None
     max_any = max((a["value_usd"] for a in valued), default=None)
+    headline = headline_for(title, text, amounts, max_res, checks)
     # the excerpt is a contiguous span of the body text; leading press-contact lines (CONTACT/PHONE/FAX...) are skipped
     start = 0
     for line in text.split("\n")[:8]:
@@ -142,6 +172,7 @@ def build_release(r, companies, courts, checks, boilerplate=frozenset()):
         "amounts": [{k: a[k] for k in ("as_written", "value_usd", "keyword", "sentence", "range_start", "ambiguous_as_written", "boilerplate") if k in a}
                     | {"sentence": bc.clip(a.get("sentence"), 220)[0]} for a in amounts[:5]],
         "amounts_total": len(amounts), "max_amount_usd": max_any, "max_resolution_amount_usd": max_res,
+        "headline_figure": headline,
         "statutes": [{"cite": s["cite"], "as_written": s["as_written"]} for s in statutes[:12]], "statutes_total": len(statutes),
         "dockets": [{"as_written": d["as_written"], "form": d["form"], **({"mdl": d["mdl"]} if "mdl" in d else {})} for d in dockets[:10]],
         "courts": [{"as_written": c["as_written"], **({"court_id": c["court_id"]} if c.get("court_id") else {})} for c in court_list[:6]],
@@ -173,6 +204,8 @@ def build_release(r, companies, courts, checks, boilerplate=frozenset()):
     lead_component = next((c for c in components if c.startswith("USAO")), components[0] if components else None)
     facts = [
         ("Date", date), ("Components", components), ("Topics", topics), ("Release number", release["number"]),
+        ("Headline figure", headline_label(headline)),
+        ("Largest resolution figure stated", bc.money_label(max_res) if max_res is not None else None),
         ("Dollar figures stated (as written; first keyword in the sentence)",
          [f"{a['as_written']} ({a.get('keyword') or 'no keyword'})" for a in amounts[:5]]),
         ("Statutes cited", [s["cite"] for s in statutes[:12]]), ("Case or docket numbers", [d["as_written"] for d in dockets[:10]]),
@@ -183,10 +216,11 @@ def build_release(r, companies, courts, checks, boilerplate=frozenset()):
     ]
     row = bc.record(
         f"doj_press_releases_{year}", f"doj-pr:{uuid}", title or "(untitled release)", source_url=url or API,
-        subtitle=" · ".join(x for x in [date, lead_component, bc.money_label(max_res) if max_res else None] if x),
+        subtitle=" · ".join(x for x in [date, lead_component, headline["as_written"] if headline else None] if x),
         state=state or "",
         cells={"date": date or bc.NOT_RECORDED, "title": title, "component": lead_component or bc.NOT_RECORDED,
-               "amount": bc.money_label(max_res) if max_res else "No resolution figure stated"},
+               "amount": headline["as_written"] if headline else "No resolution figure stated",
+               "largest": bc.money_label(max_res) if max_res else "No resolution figure stated"},
         facts=facts,
         text=" ".join(filter(None, [title, release["teaser"], " ".join(p["as_written"] for p in parties), " ".join(d["as_written"] for d in dockets[:10])])),
         filters={"year": [year], "component": components, "topic": topics, "amount": [bc.amount_bucket(max_res)],
@@ -290,10 +324,12 @@ def main():
             "partition_of": "doj_press_releases", "year": year, "records": len(ordered),
             "body_storage": "Full release bodies stay gzip-compressed in the raw API pages (private/acq/enforcement_actions/doj/pages); records hold at most a 1,500-character excerpt",
             "extraction": "extract.py: dollar figures (value in USD, sentence, first keyword in the sentence), U.S.C./C.F.R./named-act citations, docket numbers, federal court names (court id only on an exact map) and parties named in the title (verbatim, corroborated in the body); every value is a verbatim span of the release text",
-            "amount_note": "max_resolution_amount_usd is the largest figure whose sentence contains a settlement, penalty/fine, restitution, forfeiture, disgorgement or judgment keyword; statutory maximums, alleged losses, figures in a sentence repeated verbatim in 25 or more releases (stock program paragraphs), figures ambiguous as written (a multiplier on a number of 1,000 or more) and figures of $1 trillion or more are excluded; 'Bank for International Settlements' is not a settlement keyword. It is a stated figure, not a verified payment.",
+            "amount_note": "max_resolution_amount_usd is the largest figure whose sentence contains a settlement, penalty/fine, restitution, forfeiture, disgorgement or judgment keyword; statutory maximums, alleged losses, figures in a sentence repeated verbatim in 25 or more releases (stock program paragraphs), figures ambiguous as written (a multiplier on a number of 1,000 or more) and figures of $1 trillion or more are excluded; 'Bank for International Settlements' is not a settlement keyword. It is a stated figure, not a verified payment. It is used for sorting and the amount filter only.",
+            "headline_note": "headline_figure is the figure a reader takes as the release's own, verbatim: the title's figure when the title states one with a resolution verb or noun (to pay, forfeit, fined, settles/resolves ... for, settlement of, followed by settlement/penalty/fine/restitution/forfeiture/judgment), read exactly (not a range start, not ambiguous as written); otherwise the first resolution figure of the body in reading order (same exclusions as the largest figure). differs_from_largest marks releases whose largest resolution figure is another value, e.g. an earlier, related settlement the release mentions.",
         }
         bc.write_build(dataset, f"DOJ press releases, {year}", ordered,
-                       bc.listing([("date", "Date"), ("title", "Title"), ("component", "Component"), ("amount", "Largest resolution figure stated")],
+                       bc.listing([("date", "Date"), ("title", "Title"), ("component", "Component"), ("amount", "Headline figure"),
+                                   ("largest", "Largest resolution figure stated")],
                                   [("component", "Component", {c: f"{c} ({n:,})" for c, n in top_components}),
                                    ("topic", "Topic", {t: f"{t} ({n:,})" for t, n in top_topics}),
                                    ("amount", "Largest resolution figure stated", bc.AMOUNT_BUCKETS),

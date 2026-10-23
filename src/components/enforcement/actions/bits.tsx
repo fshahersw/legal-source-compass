@@ -4,10 +4,11 @@ import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import type {
   CompanyLink,
   CourtRef,
+  HeadlineFigure,
   StatedAmount,
 } from "@/lib/external/enforcementActions.functions";
 import { cn } from "@/lib/utils";
-import { fmtInt, keywordLabel } from "./format";
+import { figureView, fmtInt, fmtUsd, keywordLabel } from "./format";
 
 export function FilterSelect({
   label,
@@ -198,6 +199,60 @@ export function CompanyList({ companies }: { companies: CompanyLink[] }) {
           {c.registrant}
         </Link>
       ))}
+    </span>
+  );
+}
+
+/** Headline figure, with the largest stated resolution figure on a second line only when it differs. */
+export function FigureCell({
+  headline,
+  largest,
+  none,
+}: {
+  headline: HeadlineFigure | null;
+  largest: number | null;
+  none: string;
+}) {
+  const v = figureView(headline, largest);
+  if (!v.primary) return <span className="font-sans text-muted-foreground">{none}</span>;
+  return (
+    <span title={v.note ?? undefined}>
+      {v.primary}
+      {v.secondary ? (
+        <span className="block font-sans text-[11px] font-normal text-muted-foreground">
+          {v.secondary}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+/** Detail row text: where the headline figure was read, and the largest figure when it differs. */
+export function HeadlineDetail({
+  headline,
+  largest,
+}: {
+  headline: HeadlineFigure | null;
+  largest: number | null;
+}) {
+  if (!headline) return <span className="text-muted-foreground">None stated</span>;
+  return (
+    <span className="block">
+      <span className="font-mono font-medium">{headline.asWritten}</span>{" "}
+      <span className="text-[11px] text-muted-foreground">
+        {headline.source === "title" ? "(stated in the title)" : "(first resolution sentence)"}
+      </span>
+      {headline.sentence ? (
+        <span className="block break-words text-[11px] text-muted-foreground">
+          “{headline.sentence}”
+        </span>
+      ) : null}
+      {headline.differsFromLargest && largest != null ? (
+        <span className="block text-[11px] text-muted-foreground">
+          The largest resolution figure stated in the release is {fmtUsd(largest)}; it can belong to
+          a related or earlier matter, a co-defendant or a total.
+        </span>
+      ) : null}
     </span>
   );
 }

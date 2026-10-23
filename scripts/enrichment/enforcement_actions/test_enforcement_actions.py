@@ -81,6 +81,98 @@ class AmountTests(unittest.TestCase):
         self.assertEqual(ex.verify_spans(text, items), 0)
         self.assertEqual(ex.verify_spans(text, [{"as_written": "$6 million", "offset": 5}]), 1)
 
+    def test_abbreviated_and_hyphenated_multipliers(self):
+        text = "He paid $1-Million, then $2.8M and $13K; they agreed to pay $9 M to resolve it, at $300 K Street."
+        amounts = ex.extract_amounts(text)
+        self.assertEqual([a["as_written"] for a in amounts], ["$1-Million", "$2.8M", "$13K", "$9 M", "$300"])
+        self.assertEqual([a["value_usd"] for a in amounts], [1e6, 2.8e6, 13000.0, 9e6, 300.0])
+        self.assertEqual(ex.extract_amounts("La venta de $13M y $2.5 Medicare")[1]["as_written"], "$2.5")
+
+    def test_special_assessment_is_not_a_resolution_figure(self):
+        amounts = ex.extract_amounts("Watt was ordered to pay a $200.00 special assessment and $500.00 in restitution. "
+                                     "He must pay a special assessment of $100.")
+        self.assertEqual([a["keyword"] for a in amounts], ["special assessment", "restitution", "special assessment"])
+        self.assertEqual(ex.headline_figure("Sentencings for November 15", amounts)["as_written"], "$500.00")
+
+    def test_statutory_maximum_forms(self):
+        for text in ("The charge provides for a sentence of up to 20 years in prison and a fine of $250,000 or twice the gross gain.",
+                     "Each count carries up to five years in prison and a $250,000 fine.",
+                     "He could receive a fine of $1 million."):
+            self.assertEqual(ex.extract_amounts(text)[0]["keyword"], "statutory maximum", text)
+
+    def test_foreign_multiplier_is_ambiguous(self):
+        amounts = ex.extract_amounts("Acuerdo de liquidacion de $13 Mil Millones con el banco.")
+        self.assertTrue(amounts[0]["ambiguous_as_written"])
+        self.assertNotIn("value_usd", amounts[0])
+
+
+class HeadlineTests(unittest.TestCase):
+    DETROL_TITLE = "Pfizer to Pay $14.5 Million for Illegal Marketing of Drug Detrol"
+    DETROL_BODY = ("The other nine suits were settled or dismissed in 2009 as part of the government's global resolution "
+                   "with Pfizer, under which the company agreed to pay $2.3 billion dollars to resolve civil claims. "
+                   "Pfizer Inc. has agreed to pay $14.5 million to resolve False Claims Act allegations.")
+
+    def test_title_figure_is_the_headline(self):
+        amounts = ex.extract_amounts(self.DETROL_BODY)
+        head = ex.headline_figure(self.DETROL_TITLE, amounts)
+        self.assertEqual(head, {"as_written": "$14.5 Million", "value_usd": 14500000.0, "source": "title"})
+        self.assertIn(head["as_written"], self.DETROL_TITLE)
+
+    def test_first_resolution_sentence_without_a_title_figure(self):
+        body = ("The defendant faces a maximum fine of $250,000. The scheme caused losses of $3 million. "
+                "She was ordered to pay $1.2 million in restitution. The court also imposed a $5 million judgment.")
+        head = ex.headline_figure("Woman Sentenced for Health Care Fraud", ex.extract_amounts(body))
+        self.assertEqual(head["source"], "first resolution sentence")
+        self.assertEqual(head["as_written"], "$1.2 million")
+        self.assertEqual(head["keyword"], "restitution")
+        self.assertEqual(head["sentence"], "She was ordered to pay $1.2 million in restitution.")
+
+    def test_stock_paragraph_is_skipped(self):
+        amounts = ex.extract_amounts("The task force has recovered $9 billion in settlements. Acme agreed to pay $2 million to settle.")
+        amounts[0]["boilerplate"] = True
+        self.assertEqual(ex.headline_figure("Acme Settles", amounts)["as_written"], "$2 million")
+
+    def test_title_forms(self):
+        cases = {
+            "Agree to Pay More Than $9 M to Resolve False Claims Act Lawsuit": ("$9 M", 9e6),
+            "Hospital Agrees to Pay Nearly 60M to Resolve Kickback Allegations": ("60M", 6e7),
+            "Bank to Pay $1.2 Billion Settlement": ("$1.2 Billion", 1.2e9),
+            "Kideys Sentenced To 60 Months And 1.4 Million Restitution": ("1.4 Million", 1.4e6),
+            "Owner Ordered to Pay Over 5 Million Dollars in Restitution": ("5 Million", 5e6),
+            "Michigan Man Ordered To Pay Over $1-Million In Restitution": ("$1-Million", 1e6),
+            "Corporation Agrees to $ 1 Million Fine for Filling Wetlands": ("$ 1 Million", 1e6),
+            "Company Settles False Claims Act Allegations for $5 Million": ("$5 Million", 5e6),
+            "CH2M Hill Agrees to Pay United States $1.5 Million to Resolve Liability": ("$1.5 Million", 1.5e6),
+            "Doctor Sentenced to 5 Years, Ordered to Pay $1.2 Million in Restitution": ("$1.2 Million", 1.2e6),
+            "United States Recovers $8.4 Million In Fraudulent COVID Relief Funds From Family": ("$8.4 Million", 8.4e6),
+            "U.S. Attorney's Office Collects More Than $47 Million In Civil And Criminal Actions": ("$47 Million", 4.7e7),
+        }
+        for title, (written, value) in cases.items():
+            head = ex.headline_figure(title, [])
+            self.assertEqual((head["as_written"], head["value_usd"], head["source"]), (written, value, "title"), title)
+            self.assertIn(head["as_written"], title)
+
+    def test_titles_without_a_resolution_figure(self):
+        for title in ("Three Defendants Convicted In $3.2M Medicare Fraud Scheme",
+                      "Former Executive Who Paid $5 Million in Bribes Sentenced",
+                      "Man Faces Up To $250,000 Fine",
+                      "Government Seeks $5M Penalty Against Company",
+                      "Man Sentenced for $5 Million Fraud Scheme, Ordered to Pay Restitution",
+                      "Man Admits To Possessing More Than 5 Million Images",
+                      "3M Company Abandons Its Proposed Acquisition",
+                      "Businessman Sentenced for Trying to Pay His $3.6 Million Tax Debt with Fictitious Instrument",
+                      "Owner charged with failing to pay over $420,000 in taxes he withheld from employees",
+                      "Attorney Who Failed to File Tax Returns and Pay More Than $3.1 Million Owed Sentenced"):
+            self.assertIsNone(ex.headline_figure(title, []), title)
+
+    def test_ambiguous_title_figure_falls_back_to_the_body(self):
+        amounts = ex.extract_amounts("Acme agreed to pay $7 million to settle the claims.")
+        head = ex.headline_figure("Acme to Pay $5 to $10 Million", amounts)
+        self.assertEqual((head["source"], head["as_written"], head["title_figure_not_used"]),
+                         ("first resolution sentence", "$7 million", "range"))
+        head = ex.headline_figure("Acme to Pay $6,705,000 Million", amounts)
+        self.assertEqual(head["title_figure_not_used"], "ambiguous as written")
+
 
 class StatuteTests(unittest.TestCase):
     def test_usc_forms(self):

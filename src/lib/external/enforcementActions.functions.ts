@@ -105,6 +105,41 @@ function parseAmounts(v: unknown): StatedAmount[] {
   });
 }
 
+/**
+ * The figure a reader takes as the release's own resolution figure, verbatim: the title's figure when the title states
+ * one with a resolution verb or noun ("to Pay $14.5 Million"), otherwise the first resolution figure of the text in
+ * reading order. `differsFromLargest` marks releases whose largest stated resolution figure is another value (often a
+ * related earlier settlement, a co-defendant or a total), which is kept for sorting and the amount filter.
+ */
+export type HeadlineFigure = {
+  asWritten: string;
+  valueUsd: number;
+  source: "title" | "first resolution sentence";
+  sentence: string | null;
+  keyword: string | null;
+  differsFromLargest: boolean;
+};
+export function parseHeadline(v: unknown): HeadlineFigure | null {
+  const o = obj(v);
+  const asWritten = str(o?.["as_written"], 60);
+  const valueUsd = num(o?.["value_usd"]);
+  const source = o?.["source"];
+  if (!asWritten || !/\d/.test(asWritten) || valueUsd == null || valueUsd < 0) return null;
+  if (source !== "title" && source !== "first resolution sentence") return null;
+  const sentence = source === "first resolution sentence" ? str(o?.["sentence"], 400) : null;
+  // a figure from the text is shown only with the sentence it was read from
+  if (source === "first resolution sentence" && (!sentence || !sentence.includes(asWritten)))
+    return null;
+  return {
+    asWritten,
+    valueUsd,
+    source,
+    sentence,
+    keyword: str(o?.["keyword"], 60),
+    differsFromLargest: o?.["differs_from_largest"] === true,
+  };
+}
+
 export const AMOUNT_BUCKETS = [
   { id: "1b_plus", label: "$1 billion or more" },
   { id: "100m_plus", label: "$100M to under $1B" },
@@ -205,7 +240,9 @@ export type DojRelease = {
   teaser: string | null;
   amounts: StatedAmount[];
   amountsTotal: number;
+  /** Largest stated resolution figure: sorting and the amount filter only. */
   maxResolutionUsd: number | null;
+  headline: HeadlineFigure | null;
   statutes: string[];
   dockets: string[];
   courts: CourtRef[];
@@ -235,6 +272,11 @@ export function parseDojRelease(
     amounts: parseAmounts(r["amounts"]),
     amountsTotal: int(r["amounts_total"]) ?? 0,
     maxResolutionUsd: num(r["max_resolution_amount_usd"]),
+    headline: (() => {
+      const h = parseHeadline(r["headline_figure"]);
+      // a title figure must be in the title shown
+      return h && (h.source !== "title" || title.includes(h.asWritten)) ? h : null;
+    })(),
     statutes: arr(r["statutes"]).flatMap((s) => {
       const c = str(obj(s)?.["cite"], 200);
       return c ? [c] : [];
@@ -564,7 +606,9 @@ export type SecAction = {
   civilActions: string[];
   courts: CourtRef[];
   amounts: StatedAmount[];
+  /** Largest stated resolution figure: sorting and the amount filter only. */
   maxResolutionUsd: number | null;
+  headline: HeadlineFigure | null;
   statutes: string[];
   seeAlso: { label: string; url: string }[];
   companies: CompanyLink[];
@@ -597,6 +641,11 @@ export function parseSecAction(row: { id?: unknown; s?: unknown }): SecAction | 
     courts: parseCourts(s["courts"]),
     amounts: parseAmounts(s["amounts"]),
     maxResolutionUsd: num(s["max_resolution_amount_usd"]),
+    headline: (() => {
+      const h = parseHeadline(s["headline_figure"]);
+      const pageTitle = str(s["title"], 600) ?? "";
+      return h && (h.source !== "title" || pageTitle.includes(h.asWritten)) ? h : null;
+    })(),
     statutes: strings(s["statutes"], 200),
     seeAlso: arr(s["see_also"]).flatMap((x) => {
       const o = obj(x);

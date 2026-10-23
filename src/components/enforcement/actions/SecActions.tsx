@@ -15,11 +15,13 @@ import {
   CompanyList,
   CourtList,
   DetailRow,
+  FigureCell,
   FilterSelect,
+  HeadlineDetail,
   Pager,
   SearchBox,
 } from "./bits";
-import { fmtUsd, NOT_RECORDED } from "./format";
+import { NOT_RECORDED } from "./format";
 
 type Filters = {
   type?: "litigation_release" | "administrative_proceeding" | undefined;
@@ -62,8 +64,10 @@ export function SecActions() {
         <>
           Source: sec.gov litigation releases and administrative proceedings lists. Respondents are
           shown exactly as the SEC lists them. For litigation releases, civil action numbers, courts
-          and dollar figures are quoted from the release text; administrative proceedings are listed
-          with their release and file numbers only.
+          and dollar figures are quoted from the release text; the headline figure is the first
+          resolution figure in the text, and the largest one is shown below it when it differs
+          (often a total, a penalty or a co-defendant&rsquo;s figure). Administrative proceedings
+          are listed with their release and file numbers only.
         </>
       }
     >
@@ -84,7 +88,7 @@ export function SecActions() {
           options={YEARS.map((y) => ({ value: y, label: y }))}
         />
         <FilterSelect
-          label="Largest resolution figure (litigation releases)"
+          label="Largest resolution figure stated (litigation releases)"
           value={f.amount}
           onChange={(v) => set({ amount: v as AmountBucket | undefined })}
           options={AMOUNT_BUCKETS.map((b) => ({ value: b.id, label: b.label }))}
@@ -161,8 +165,12 @@ function SecTable({ rows, stale }: { rows: SecAction[]; stale: boolean }) {
             <th scope="col" className="hidden px-2 py-1.5 font-medium md:table-cell">
               Civil action / file no.
             </th>
-            <th scope="col" className="px-2 py-1.5 text-right font-medium">
-              Largest resolution figure stated
+            <th
+              scope="col"
+              className="px-2 py-1.5 text-right font-medium"
+              title="The first resolution figure in the release text; the largest stated resolution figure is shown below it when it is another value"
+            >
+              Headline figure
             </th>
           </tr>
         </thead>
@@ -209,13 +217,11 @@ function SecTable({ rows, stale }: { rows: SecAction[]; stale: boolean }) {
                       : (r.fileNumber ?? <span className="text-muted-foreground">Not listed</span>)}
                   </td>
                   <td className="whitespace-nowrap px-2 py-1 text-right font-mono">
-                    {r.maxResolutionUsd != null ? (
-                      fmtUsd(r.maxResolutionUsd)
-                    ) : (
-                      <span className="font-sans text-muted-foreground">
-                        {r.type === "Litigation release" ? "None stated" : "Not in the list"}
-                      </span>
-                    )}
+                    <FigureCell
+                      headline={r.headline}
+                      largest={r.maxResolutionUsd}
+                      none={r.type === "Litigation release" ? "None stated" : "Not in the list"}
+                    />
                   </td>
                 </tr>
                 {expanded ? (
@@ -231,6 +237,9 @@ function SecTable({ rows, stale }: { rows: SecAction[]; stale: boolean }) {
                             </DetailRow>
                             <DetailRow label="Court">
                               <CourtList courts={r.courts} />
+                            </DetailRow>
+                            <DetailRow label="Headline figure">
+                              <HeadlineDetail headline={r.headline} largest={r.maxResolutionUsd} />
                             </DetailRow>
                             <DetailRow label="Dollar figures stated">
                               <AmountList amounts={r.amounts} />

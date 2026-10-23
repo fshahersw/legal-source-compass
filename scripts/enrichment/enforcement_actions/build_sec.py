@@ -62,7 +62,9 @@ def release_text(url, reader):
         return None, None
     raw = body.decode("utf-8", "replace")
     if url.lower().endswith(".txt"):
-        return None, ex.html_to_text(raw.replace("\n\n", "</p>"))
+        # plain-text releases are hard-wrapped (CRLF): a blank line ends a paragraph, a single line break is a space
+        plain = raw.replace("\r\n", "\n").replace("\r", "\n")
+        return None, ex.html_to_text("</p>".join(re.sub(r"[ \t]*\n[ \t]*", " ", p) for p in re.split(r"\n[ \t]*\n", plain)))
     html_body = sec_parse.release_body(raw)
     if html_body is None and ("<html" in raw[:500].lower() or "<!doctype" in raw[:500].lower()):
         # older static releases: the whole page body is the release
@@ -115,6 +117,15 @@ def main():
         resolution = [a["value_usd"] for a in amounts if a.get("value_usd") and a.get("keyword") in ex.RESOLUTION_KINDS
                       and a["value_usd"] < ex.RESOLUTION_CAP_USD]
         max_res = max(resolution) if resolution else None
+        # the release's own figure: the page title's resolution figure, else the first resolution sentence
+        headline = ex.headline_figure(title, amounts) if text else None
+        if headline:
+            stats["lr_headline_from_" + ("title" if headline["source"] == "title" else "first_resolution_sentence")] += 1
+            in_source = headline["as_written"] in (title or "") if headline["source"] == "title" else (
+                headline["as_written"] in (headline.get("sentence") or "") and headline.get("sentence") in text)
+            span_failures += not in_source
+            headline["differs_from_largest"] = max_res is not None and abs(headline["value_usd"] - max_res) > 0.005
+            stats["lr_headline_differs_from_largest"] += headline["differs_from_largest"]
         stats["lr"] += 1
         stats["lr_with_civil_action"] += bool(civil)
         stats["lr_with_court_id"] += bool(court_ids)
@@ -129,7 +140,7 @@ def main():
             "url": item["url"], "title": title, "civil_actions": [{"as_written": d["as_written"]} for d in civil],
             "courts": [{"as_written": c["as_written"], "court_id": c.get("court_id")} for c in court_list],
             "amounts": [{k: a[k] for k in ("as_written", "value_usd", "keyword", "sentence") if k in a} for a in amounts[:6]],
-            "max_resolution_amount_usd": max_res, "statutes": [s["cite"] for s in statutes],
+            "max_resolution_amount_usd": max_res, "headline_figure": headline, "statutes": [s["cite"] for s in statutes],
             "see_also": item["see_also"][:6], "companies": company_links, "text_read": bool(text), "excerpt": excerpt,
         }
         rows.append(bc.record(
@@ -141,6 +152,9 @@ def main():
             facts=[("Respondents (as listed by the SEC)", item["respondents"]), ("Release number", number), ("Date", item["date"]),
                    ("Type", "Litigation release"), ("Civil action number (as stated)", [d["as_written"] for d in civil]),
                    ("Court (as stated)", [c["as_written"] for c in court_list]),
+                   ("Headline figure", (f"{headline['as_written']} (stated in the title)" if headline["source"] == "title"
+                                        else f"{headline['as_written']} (first resolution sentence: “{headline.get('sentence')}”)") if headline else None),
+                   ("Largest resolution figure stated", bc.money_label(max_res) if max_res is not None else None),
                    ("Dollar figures stated", [f"{a['as_written']} ({a.get('keyword') or 'no keyword in sentence'})" for a in amounts[:6]]),
                    ("Statutes cited", [s["cite"] for s in statutes]),
                    ("Release text read", "yes" if text else "no (listing row only)"), ("Source", "sec.gov litigation releases")],

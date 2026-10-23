@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
+import type { HeadlineFigure } from "@/lib/external/enforcementActions.functions";
 import { cn } from "@/lib/utils";
 import { Panel, SourceLink, StateNote } from "../parts";
 import { companyEnforcementQuery } from "./actionsView";
+import { FigureCell } from "./bits";
 import { fmtInt, fmtUsd, NOT_RECORDED } from "./format";
 
 /**
@@ -41,14 +43,29 @@ export function CompanyEnforcementPanel({ cik, className }: { cik: string; class
           names are not listed.
         </StateNote>
       );
-    const items = [
+    type Item = {
+      key: string;
+      date: string | null;
+      source: string;
+      title: string;
+      url: string | null;
+      /** DOJ/SEC: the headline figure, with the largest stated figure below it when it differs. */
+      headline: HeadlineFigure | null;
+      largest: number | null;
+      /** FTC: the ordered amount as listed. */
+      ordered: number | null;
+      note: string | null;
+    };
+    const items: Item[] = [
       ...d.doj.map((r) => ({
         key: r.id,
         date: r.date,
         source: "DOJ",
         title: r.title,
         url: r.url,
-        figure: r.maxResolutionUsd,
+        headline: r.headline,
+        largest: r.maxResolutionUsd,
+        ordered: null,
         note: r.components[0] ?? null,
       })),
       ...d.sec.map((s) => ({
@@ -57,7 +74,9 @@ export function CompanyEnforcementPanel({ cik, className }: { cik: string; class
         source: "SEC",
         title: `${s.releaseNumber}: ${s.respondents}`,
         url: s.url,
-        figure: s.maxResolutionUsd,
+        headline: s.headline,
+        largest: s.maxResolutionUsd,
+        ordered: null,
         note: s.type,
       })),
       ...d.ftcActions.map((a) => ({
@@ -66,7 +85,9 @@ export function CompanyEnforcementPanel({ cik, className }: { cik: string; class
         source: "FTC",
         title: a.name,
         url: a.page ?? a.sourceUrl,
-        figure: a.orderedAmount,
+        headline: null,
+        largest: null,
+        ordered: a.orderedAmount,
         note: a.actionType,
       })),
       ...d.ftcCases.map((c) => ({
@@ -75,7 +96,9 @@ export function CompanyEnforcementPanel({ cik, className }: { cik: string; class
         source: "FTC case",
         title: c.name,
         url: c.url,
-        figure: null,
+        headline: null,
+        largest: null,
+        ordered: null,
         note: [c.actionType, c.status].filter(Boolean).join(" · ") || null,
       })),
     ].sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
@@ -94,8 +117,12 @@ export function CompanyEnforcementPanel({ cik, className }: { cik: string; class
               <th scope="col" className="px-2 py-1.5 font-medium">
                 Action
               </th>
-              <th scope="col" className="px-2 py-1.5 text-right font-medium">
-                Largest figure stated
+              <th
+                scope="col"
+                className="px-2 py-1.5 text-right font-medium"
+                title="DOJ and SEC: the figure the title states with a resolution verb, else the first resolution figure in the text (the largest stated figure below it when it differs). FTC: the ordered amount as listed."
+              >
+                Figure stated
               </th>
             </tr>
           </thead>
@@ -111,10 +138,10 @@ export function CompanyEnforcementPanel({ cik, className }: { cik: string; class
                   ) : null}
                 </td>
                 <td className="whitespace-nowrap px-2 py-1 text-right font-mono">
-                  {i.figure != null ? (
-                    fmtUsd(i.figure)
+                  {i.ordered != null ? (
+                    <span title="Ordered amount, as the FTC lists it">{fmtUsd(i.ordered)}</span>
                   ) : (
-                    <span className="font-sans text-muted-foreground">—</span>
+                    <FigureCell headline={i.headline} largest={i.largest} none="—" />
                   )}
                 </td>
               </tr>
@@ -134,7 +161,7 @@ export function CompanyEnforcementPanel({ cik, className }: { cik: string; class
       title="Enforcement"
       subtitle="DOJ press releases, SEC actions and FTC actions naming this company"
       className={cn(className)}
-      footnote="Matched only when a named party equals the SEC registrant name after exact normalisation (case, punctuation and corporate suffixes); figures are as stated by the agency, not verified payments."
+      footnote="Matched only when a named party equals the SEC registrant name after exact normalisation (case, punctuation and corporate suffixes). Figures are as stated by the agency, not verified payments; a release's largest stated figure can belong to a related or earlier matter, so it is shown only as a second line."
     >
       <div className="p-2">{body}</div>
     </Panel>

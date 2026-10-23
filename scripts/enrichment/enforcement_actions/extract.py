@@ -85,15 +85,26 @@ def sentence_at(text, pos, spans=None, limit=400):
 
 # ------------------------------------------------------------------ dollar amounts
 
-_MULT = {"thousand": 1e3, "million": 1e6, "billion": 1e9, "trillion": 1e12}
-_AMOUNT = re.compile(
-    r"\$\s?(?P<num>\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)"
-    r"(?:\s?(?P<mult>thousand|million|billion|trillion)\b)?",
-    re.I,
-)
-_RANGE_AFTER = re.compile(r"^\s?(?:to|-|–|—|and|or)\s?\$\s?[\d.,]+\s?(?:thousand|million|billion|trillion)\b", re.I)
+_MULT = {"thousand": 1e3, "million": 1e6, "billion": 1e9, "trillion": 1e12,
+         "k": 1e3, "m": 1e6, "mm": 1e6, "mn": 1e6, "mln": 1e6, "b": 1e9, "bn": 1e9}
+_NUM = r"(?P<num>\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)"
+# "$5 million", "$1-Million", "$2.8M", "$9 M", "$13K", "$1.2bn"; abbreviations are case-sensitive (a spaced letter only
+# for M/MM/B/BN, so "$300 K Street" is not $300,000)
+# (spaces only: a figure never runs across a line break, so it stays inside its sentence)
+_MULTIPLIER = (r"(?:[ \t-]?(?P<mult>thousand|million|billion|trillion)\b"
+               r"|(?-i:(?P<abbr>[ \t](?:MM|BN|M|B)|(?:MM|BN|Bn|M|B|K|mm|bn|mln|mn|m|b|k)))\b)")
+_AMOUNT = re.compile(r"\$[ \t]?" + _NUM + _MULTIPLIER + "?", re.I)
+# a figure without a dollar sign is read only in titles, and only with a multiplier ("Nearly 60M", "1.4 Million Restitution")
+_BARE_AMOUNT = re.compile(r"(?<![\w$.,])" + _NUM + _MULTIPLIER, re.I)
+_RANGE_AFTER = re.compile(r"^\s?(?:to|-|–|—|and|or)\s?\$\s?[\d.,]+[\s-]?(?:thousand|million|billion|trillion|(?-i:MM|BN|M|B|K))\b", re.I)
+# "$13 Mil Millones" (Spanish: 13 billion) is not "$13"
+_FOREIGN_MULT_AFTER = re.compile(r"^\s?(?:mil|millones|mill[oó]n|billones)\b", re.I)
 KIND_KEYWORDS = [
-    ("statutory maximum", re.compile(r"\bmaximum|\bpunishable|\bfaces? up to|\bcarr(?:y|ies) (?:a|up)|\bup to \$", re.I)),
+    ("statutory maximum", re.compile(
+        r"\bmaximum|\bpunishable|\bfaces? up to|\bcarr(?:y|ies) (?:a|up)|\bup to \$|\bup to \w+ (?:years?|months?)\b"
+        r"|\bwhichever is (?:greater|the greatest)|\btwice the (?:gross )?(?:gain|loss|pecuniary)|\bstatutory (?:maximum|penalt)"
+        r"|\bprovides? for (?:a )?(?:possible |potential )?(?:sentence|penalty|term)|\b(?:could|may) (?:face|receive|be sentenced)"
+        r"|\bfaces? (?:a )?(?:possible|potential)|\bpotential (?:maximum )?(?:sentence|penalt)", re.I)),
     ("settlement", re.compile(r"\bsettlements?\b|\bto settle\b|\bsettles\b|\bresolv|\bagree[sd]? to pay", re.I)),
     ("penalty or fine", re.compile(r"\bpenalt|\bfine[ds]?\b", re.I)),
     ("restitution", re.compile(r"\brestitution", re.I)),
@@ -102,6 +113,8 @@ KIND_KEYWORDS = [
     ("judgment", re.compile(r"\bjudgment", re.I)),
     ("alleged loss or scheme", re.compile(r"\b(?:loss|defraud|fraud|scheme|brib|kickback|launder|embezzl|stole|stolen|bill|obtain|misappropriat|steal)", re.I)),
 ]
+_SPECIAL_AFTER = re.compile(r"^\s*(?:in\s+)?(?:(?:mandatory|felony|federal)\s+)*(?:special\s+assessments?|mandatory\s+assessments?)\b", re.I)
+_SPECIAL_BEFORE = re.compile(r"\bspecial\s+assessments?\s+(?:fees?\s+)?(?:of|totaling|totalling|in\s+the\s+amount\s+of)?\s*$", re.I)
 # proper names that contain a keyword but say nothing about the figure ("Bank for International Settlements")
 _NOT_KEYWORDS = re.compile(r"Bank (?:for|of) (?:the )?International Settlements", re.I)
 # a resolution figure is a stated settlement/penalty/...; figures of $1 trillion or more are listed but never used as one
@@ -115,8 +128,19 @@ def amount_value(num, mult):
     except ValueError:
         return None
     if mult:
-        value *= _MULT[mult.lower()]
+        value *= _MULT[mult.strip().lower()]
     return round(value, 2)
+
+
+def _reading(m, text):
+    """(value or None, ranged, ambiguous) for an _AMOUNT/_BARE_AMOUNT match in text."""
+    mult = m.group("mult") or m.group("abbr")
+    value = amount_value(m.group("num"), mult)
+    ranged = not mult and _RANGE_AFTER.match(text[m.end():m.end() + 40]) is not None
+    # "$6,705,000 million": a multiplier on a number of 1,000 or more is ambiguous as written; no value is computed
+    ambiguous = (bool(mult) and float(m.group("num").replace(",", "")) >= 1000) or (
+        not mult and _FOREIGN_MULT_AFTER.match(text[m.end():m.end() + 20]) is not None)
+    return value, ranged, ambiguous
 
 
 def extract_amounts(text, spans=None, limit=None):
@@ -125,10 +149,7 @@ def extract_amounts(text, spans=None, limit=None):
     out = []
     for m in _AMOUNT.finditer(text):
         as_written = m.group(0)
-        value = amount_value(m.group("num"), m.group("mult"))
-        ranged = not m.group("mult") and _RANGE_AFTER.match(text[m.end():m.end() + 40]) is not None
-        # "$6,705,000 million": a multiplier on a number of 1,000 or more is ambiguous as written; no value is computed
-        ambiguous = bool(m.group("mult")) and float(m.group("num").replace(",", "")) >= 1000
+        value, ranged, ambiguous = _reading(m, text)
         sentence = sentence_at(text, m.start(), spans)
         kind = None
         if sentence:
@@ -137,6 +158,9 @@ def extract_amounts(text, spans=None, limit=None):
                 if pattern.search(probe):
                     kind = name
                     break
+        # "$100 special assessment" / "a special assessment of $200" is a fixed court fee, whatever the sentence says
+        if _SPECIAL_AFTER.match(text[m.end():m.end() + 50]) or _SPECIAL_BEFORE.search(text[max(0, m.start() - 50):m.start()]):
+            kind = "special assessment"
         out.append({
             "as_written": as_written,
             "offset": m.start(),
@@ -149,6 +173,98 @@ def extract_amounts(text, spans=None, limit=None):
         if limit and len(out) >= limit:
             break
     return [{k: v for k, v in a.items() if v is not None} for a in out]
+
+
+# ------------------------------------------------------------------ headline figure
+
+_QUAL = (r"(?:more\s+than|over|nearly|almost|approximately|about|roughly|at\s+least|up\s+to|a\s+total\s+of|total\s+of|"
+         r"an\s+additional|additional|another|in\s+excess\s+of|close\s+to|just\s+over|just\s+under|upwards\s+of|"
+         r"a\s+record|record|a\s+combined|combined|a|an|the)")
+_RECIPIENT = (r"(?:(?:the\s+)?(?:united\s+states|u\.\s?s\.|government|federal\s+government|states?|victims?|consumers?|"
+              r"customers?|investors?|taxpayers?|medicare|medicaid|irs)\s+)")
+# a resolution verb or noun directly before the figure: "to Pay $14.5 Million", "Ordered to Forfeit $2M", "Fined $1
+# Million", "Settlement of $5 Million"; "paid" is left out ("Executive Who Paid $5 Million in Bribes Sentenced")
+_TITLE_BEFORE = re.compile(
+    r"(?:\b(?:pay|pays|repay|repays|forfeit|forfeits|forfeited|disgorge|disgorges|disgorged|fined|recovers?|recovered|"
+    r"collects?|collected|secures?|secured)\s+" + _RECIPIENT + "?"
+    r"|\b(?:settlements?|judgments?|judgements?|penalt(?:y|ies)|fines?|restitution|forfeiture|disgorgement)\s+"
+    r"(?:of|totaling|totalling)\s+)"
+    r"(?:" + _QUAL + r"\s+)*$", re.I)
+# a resolution noun directly after it: "$1 Million Fine", "$X Settlement", "1.4 Million Restitution"
+_TITLE_AFTER = re.compile(
+    r"^\s*(?:dollars\s+)?(?:(?:in|as)\s+)?(?:(?:a|an|the)\s+)?"
+    r"(?:(?:civil|criminal|monetary|total|combined|global|consent|record|class[- ]action|false\s+claims\s+act|fca|"
+    r"administrative|tax|cash)\s+){0,2}"
+    r"(?:settlements?|penalt(?:y|ies)|fines?|restitution|forfeitures?|judgments?|judgements?|disgorgement|resolution|"
+    r"recover(?:y|ies))\b", re.I)
+# "Settles ... for $5 Million" / "Resolves ... Allegations for $X", within one clause of the title
+_TITLE_SETTLE_FOR = re.compile(r"\b(?:settles?|settled|settling|resolves?|resolved|resolving)\b.*\bfor\s+(?:" + _QUAL + r"\s+)*$", re.I)
+# a loss/scheme noun right after the figure says what it is ("Pay $5 Million Kickbacks"); unless a resolution noun follows
+_TITLE_NOT_RESOLUTION = re.compile(
+    r"^\s*(?:dollars\s+)?(?:(?:in|of)\s+)?(?:(?!(?:for|to|and|in|with|as)\b)\w+[\s-]+){0,2}?"
+    r"(?:bribes?|kickbacks?|fraud|scheme|ponzi|loss|losses|laundering|embezzle\w*|theft|ransom|worth|debts?|taxes|owed)\b", re.I)
+# a figure that is sought, faced, a maximum, or a payment not made is not a resolution ("Faces Up To $250,000 Fine",
+# "Seeks $5M Penalty", "Charged With Failing to Pay Over $420,000 in Taxes", "Trying to Pay His $3.6 Million Tax Debt")
+_TITLE_NOT_RESOLVED = re.compile(
+    r"\b(?:seeks?|sought|seeking|faces?|facing|could|maximum|demands?|requests?|fail(?:s|ed|ing|ure)?|"
+    r"(?:refus\w*|tr(?:y|ies|ied|ying)|attempt\w*|conspir\w*|scheme)\s+to\s+(?:pay|repay))\b", re.I)
+_CLAUSE_BREAK = re.compile(r"[;:|,]|\s[-–—]\s")
+
+
+def title_figures(title):
+    """Dollar figures in a title, in reading order: "$" figures, and bare figures with a multiplier that read as money
+    ("Over 5 Million Dollars", "1.4 Million Restitution"). `resolution` is True when a resolution verb or noun is
+    attached to the figure in the same clause (to pay / forfeit / fined / recovers / collects / secures / settlement of /
+    for, after settles or resolves / followed by settlement, penalty, fine, restitution, forfeiture, judgment,
+    disgorgement), and the clause does not make it sought, faced, a maximum or a payment not made."""
+    if not title:
+        return []
+    found = [(m, True) for m in _AMOUNT.finditer(title)]
+    taken = [(m.start(), m.end()) for m, _ in found]
+    found += [(m, False) for m in _BARE_AMOUNT.finditer(title) if not any(a < m.end() and m.start() < b for a, b in taken)]
+    out = []
+    for m, dollar in sorted(found, key=lambda x: x[0].start()):
+        value, ranged, ambiguous = _reading(m, title)
+        before, after = title[:m.start()], title[m.end():]
+        clause = before[max((b.end() for b in _CLAUSE_BREAK.finditer(before)), default=0):]
+        attached_after = bool(_TITLE_AFTER.match(after))
+        attached_before = bool(_TITLE_BEFORE.search(clause) or _TITLE_SETTLE_FOR.search(clause))
+        resolution = (attached_after or (attached_before and not _TITLE_NOT_RESOLUTION.match(after))) \
+            and not _TITLE_NOT_RESOLVED.search(clause)
+        if not dollar and not resolution and not re.match(r"^\s*dollars\b", after, re.I):
+            continue  # "5 Million Pornographic Images": a bare number is a figure only when it reads as money
+        out.append({"as_written": m.group(0), "offset": m.start(), "value_usd": None if ranged or ambiguous else value,
+                    "range_start": ranged or None, "ambiguous_as_written": ambiguous or None, "resolution": resolution})
+    return [{k: v for k, v in f.items() if v is not None} for f in out]
+
+
+def headline_figure(title, amounts):
+    """The figure a reader takes as the release's own resolution figure, verbatim:
+    - source "title": the title's first figure stated as a resolution (title_figures), when it can be read exactly
+      (not a range start, not ambiguous as written, under RESOLUTION_CAP_USD);
+    - otherwise source "first resolution sentence": the first body figure in reading order whose sentence has a
+      settlement/penalty/restitution/forfeiture/disgorgement/judgment keyword (statutory maximums and alleged losses
+      are never resolution figures), not a stock paragraph (`boilerplate`), readable and under the cap.
+    `amounts` are extract_amounts() results in reading order. Returns None when neither exists."""
+    stated = [f for f in title_figures(title) if f["resolution"]]
+    rejected = None
+    if stated:
+        first = stated[0]
+        if first.get("value_usd") is not None and first["value_usd"] < RESOLUTION_CAP_USD:
+            out = {"as_written": first["as_written"], "value_usd": first["value_usd"], "source": "title"}
+            if len({f.get("value_usd") for f in stated}) > 1:
+                out["title_figures"] = len(stated)
+            return out
+        rejected = "range" if first.get("range_start") else "ambiguous as written" if first.get("ambiguous_as_written") else "over cap"
+    for a in amounts:
+        if (a.get("keyword") in RESOLUTION_KINDS and not a.get("boilerplate") and a.get("value_usd") is not None
+                and a["value_usd"] < RESOLUTION_CAP_USD):
+            out = {"as_written": a["as_written"], "value_usd": a["value_usd"], "source": "first resolution sentence",
+                   "keyword": a["keyword"], "sentence": a.get("sentence")}
+            if rejected:
+                out["title_figure_not_used"] = rejected
+            return out
+    return None
 
 
 # ------------------------------------------------------------------ statutes

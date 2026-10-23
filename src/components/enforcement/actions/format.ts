@@ -1,4 +1,5 @@
 /** Display helpers for enforcement actions. Pure; unknown values render as "Not recorded". */
+import type { HeadlineFigure } from "@/lib/external/enforcementActions.functions";
 
 export const NOT_RECORDED = "Not recorded";
 
@@ -12,6 +13,32 @@ export function fmtUsd(value: number | null | undefined): string {
   if (value >= 1e6)
     return `$${(value / 1e6).toLocaleString("en-US", { maximumFractionDigits: 2 })} million`;
   return `$${value.toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
+}
+
+export type FigureView = {
+  /** The release's headline figure (or, without one, the largest stated resolution figure). */
+  primary: string | null;
+  /** "also states $2.3 billion": the largest stated resolution figure, only when it is another value. */
+  secondary: string | null;
+  /** Where the primary figure was read, verbatim. */
+  note: string | null;
+};
+
+export function figureView(headline: HeadlineFigure | null, largest: number | null): FigureView {
+  if (headline) {
+    return {
+      primary: fmtUsd(headline.valueUsd),
+      secondary:
+        headline.differsFromLargest && largest != null ? `also states ${fmtUsd(largest)}` : null,
+      note:
+        headline.source === "title"
+          ? `As written in the title: ${headline.asWritten}`
+          : `As written in the first resolution sentence: “${headline.sentence ?? headline.asWritten}”`,
+    };
+  }
+  if (largest != null)
+    return { primary: fmtUsd(largest), secondary: null, note: "Largest resolution figure stated" };
+  return { primary: null, secondary: null, note: null };
 }
 
 const DAY = 86_400_000;

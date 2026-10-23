@@ -18,12 +18,14 @@ import {
   CompanyList,
   CourtList,
   DetailRow,
+  FigureCell,
   FilterSelect,
+  HeadlineDetail,
   Pager,
   SearchBox,
 } from "./bits";
 import { dojOverviewQuery } from "./actionsView";
-import { fmtInt, fmtUsd } from "./format";
+import { figureView, fmtInt, fmtUsd } from "./format";
 
 export function DojReleases() {
   const q = useQuery(dojOverviewQuery);
@@ -194,7 +196,7 @@ function Body({ overview }: { overview: DojOverview }) {
               .map((t) => ({ value: t.name, label: `${t.name} (${fmtInt(t.count)})` }))}
           />
           <FilterSelect
-            label="Resolution figure"
+            label="Largest resolution figure stated"
             value={f.amount}
             onChange={(v) => set({ amount: v as AmountBucket | undefined })}
             options={AMOUNT_BUCKETS.map((b) => ({ value: b.id, label: b.label }))}
@@ -267,8 +269,12 @@ function ReleaseTable({ rows, stale }: { rows: DojRelease[]; stale: boolean }) {
             <th scope="col" className="hidden px-2 py-1.5 font-medium md:table-cell">
               Component
             </th>
-            <th scope="col" className="px-2 py-1.5 text-right font-medium">
-              Largest resolution figure stated
+            <th
+              scope="col"
+              className="px-2 py-1.5 text-right font-medium"
+              title="The figure the title states with a resolution verb, else the first resolution figure in the text; the largest stated resolution figure is shown below it when it is another value"
+            >
+              Headline figure
             </th>
           </tr>
         </thead>
@@ -323,11 +329,11 @@ function ReleaseTable({ rows, stale }: { rows: DojRelease[]; stale: boolean }) {
                     {lead ?? "Not recorded"}
                   </td>
                   <td className="whitespace-nowrap px-2 py-1 text-right font-mono">
-                    {r.maxResolutionUsd != null ? (
-                      fmtUsd(r.maxResolutionUsd)
-                    ) : (
-                      <span className="font-sans text-muted-foreground">None stated</span>
-                    )}
+                    <FigureCell
+                      headline={r.headline}
+                      largest={r.maxResolutionUsd}
+                      none="None stated"
+                    />
                   </td>
                 </tr>
                 {expanded ? (
@@ -366,6 +372,9 @@ function ReleaseDetail({ release: r }: { release: DojRelease }) {
           <CompanyList companies={r.companies} />
         </DetailRow>
       ) : null}
+      <DetailRow label="Headline figure">
+        <HeadlineDetail headline={r.headline} largest={r.maxResolutionUsd} />
+      </DetailRow>
       <DetailRow
         label={`Dollar figures stated${r.amountsTotal > r.amounts.length ? ` (first ${r.amounts.length} of ${r.amountsTotal})` : ""}`}
       >
@@ -421,7 +430,7 @@ function Largest() {
     <Panel
       title="Largest stated resolution figures, all years"
       subtitle="Releases whose largest settlement, penalty, restitution, forfeiture, disgorgement or judgment figure is $1 billion or more"
-      footnote="A figure is what the release states in a sentence with one of those keywords; several releases can describe the same resolution, so figures are not summed."
+      footnote="A figure is what the release states in a sentence with one of those keywords; it can belong to a related or earlier matter the release mentions, so the release's own headline figure is shown beside it when it is another value. Several releases can describe the same resolution, so figures are not summed."
     >
       {q.isLoading ? (
         <div className="p-3">
@@ -449,6 +458,14 @@ function Largest() {
                 <span className="min-w-0 truncate" title={r.title}>
                   {r.url ? <SourceLink href={r.url}>{r.title}</SourceLink> : r.title}
                 </span>
+                {r.headline?.differsFromLargest ? (
+                  <span
+                    className="shrink-0 text-[11px] text-muted-foreground"
+                    title={figureView(r.headline, r.maxResolutionUsd).note ?? undefined}
+                  >
+                    headline figure {fmtUsd(r.headline.valueUsd)}
+                  </span>
+                ) : null}
                 {count > 1 ? (
                   <span className="shrink-0 text-[11px] text-muted-foreground">
                     +{fmtInt(count - 1)} more releases state this figure

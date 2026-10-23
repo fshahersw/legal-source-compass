@@ -19,6 +19,7 @@ import {
   parseFacts,
   parseFtcAction,
   parseFtcCase,
+  parseHeadline,
   parseOfficialSettlement,
   parseSecAction,
   readAll,
@@ -26,6 +27,7 @@ import {
   webUrl,
 } from "./enforcementActions.functions";
 import { restGet } from "./rest.server";
+import { figureView } from "@/components/enforcement/actions/format";
 
 describe("readAll", () => {
   it("pages through results 1,000 rows at a time until a short page", async () => {
@@ -144,6 +146,92 @@ describe("parseDojRelease", () => {
     ).toBeNull();
     expect(webUrl("https://www.ftc.gov/a")).toBe("https://www.ftc.gov/a");
     expect(webUrl("/courts/nysd")).toBeNull();
+  });
+});
+
+describe("headline figure", () => {
+  const DETROL = {
+    id: "doj-pr:a3f68cd2-6d87-4358-b700-eb02ab7a5da4",
+    title: "Pfizer to Pay $14.5 Million for Illegal Marketing of Drug Detrol",
+    source_url: "https://www.justice.gov/opa/pr/pfizer-pay-145-million",
+    r: {
+      date: "2011-10-21",
+      max_resolution_amount_usd: 2.3e9,
+      headline_figure: {
+        as_written: "$14.5 Million",
+        value_usd: 14.5e6,
+        source: "title",
+        differs_from_largest: true,
+      },
+    },
+  };
+  it("reads a title figure only when the title shown contains it", () => {
+    const r = parseDojRelease(DETROL, "doj_press_releases_2011")!;
+    expect(r.headline).toEqual({
+      asWritten: "$14.5 Million",
+      valueUsd: 14.5e6,
+      source: "title",
+      sentence: null,
+      keyword: null,
+      differsFromLargest: true,
+    });
+    expect(r.maxResolutionUsd).toBe(2.3e9);
+    expect(
+      parseDojRelease({ ...DETROL, title: "Pfizer Settles Detrol Claims" }, "d")!.headline,
+    ).toBeNull();
+  });
+  it("needs the sentence for a figure read from the text", () => {
+    const sentence = "Pfizer Inc. has agreed to pay $14.5 million to resolve allegations.";
+    expect(
+      parseHeadline({
+        as_written: "$14.5 million",
+        value_usd: 14.5e6,
+        source: "first resolution sentence",
+        sentence,
+        keyword: "settlement",
+      }),
+    ).toMatchObject({ source: "first resolution sentence", sentence, differsFromLargest: false });
+    expect(
+      parseHeadline({
+        as_written: "$14.5 million",
+        value_usd: 14.5e6,
+        source: "first resolution sentence",
+      }),
+    ).toBeNull();
+    expect(parseHeadline({ as_written: "$1", value_usd: 1, source: "largest" })).toBeNull();
+    expect(parseHeadline({ as_written: "n/a", value_usd: 1, source: "title" })).toBeNull();
+  });
+  it("shows the largest figure as a second line only when it differs", () => {
+    const head = parseDojRelease(DETROL, "d")!.headline;
+    expect(figureView(head, 2.3e9)).toEqual({
+      primary: "$14.5 million",
+      secondary: "also states $2.3 billion",
+      note: "As written in the title: $14.5 Million",
+    });
+    expect(figureView({ ...head!, differsFromLargest: false }, 14.5e6).secondary).toBeNull();
+    expect(figureView(null, 5e6)).toMatchObject({ primary: "$5 million", secondary: null });
+    expect(figureView(null, null).primary).toBeNull();
+  });
+  it("SEC litigation releases carry the headline figure too", () => {
+    const s = parseSecAction({
+      id: "sec-lr:LR-17612",
+      s: {
+        type: "Litigation release",
+        release_number: "LR-17612",
+        respondents: "Scott K. Ginsburg",
+        max_resolution_amount_usd: 4.7e6,
+        headline_figure: {
+          as_written: "$1 million",
+          value_usd: 1e6,
+          source: "first resolution sentence",
+          sentence: "Ginsburg was ordered to pay a $1 million civil penalty.",
+          keyword: "penalty or fine",
+          differs_from_largest: true,
+        },
+      },
+    })!;
+    expect(s.headline?.valueUsd).toBe(1e6);
+    expect(figureView(s.headline, s.maxResolutionUsd).secondary).toBe("also states $4.7 million");
   });
 });
 

@@ -125,6 +125,64 @@ def main():
         add("settlement_claims_official", r["id"], "dollar figure", a, f"{s['official_url']}: {context(text, a)}", a in text)
     print("\n".join(out))
     print(f"\n{n} spot checks, {sum(1 for line in out[2:] if line.endswith('| NO |'))} mismatches")
+    headline_checks(pages, overview)
+
+
+DETROL = "doj-pr:a3f68cd2-6d87-4358-b700-eb02ab7a5da4"  # "Pfizer to Pay $14.5 Million ..." (2011-10-21)
+HEADLINE_PICKS = [("title", True, 6), ("first resolution sentence", True, 5), ("title", False, 4),
+                  ("first resolution sentence", False, 4)]
+
+
+def headline_checks(pages, overview):
+    """20 DOJ headline figures (the Detrol release plus deterministic picks across all years: title / first resolution
+    sentence, differing from the largest figure or not), each located in the raw release (title or body text)."""
+    picks = {k: [] for k in HEADLINE_PICKS}
+    fixed = []
+    for p in overview["partitions"]:
+        b = v.load_build(p["dataset"])
+        for r in b["rows"]:
+            rel = r["item"]["release"]
+            h = rel.get("headline_figure")
+            if r["id"] == DETROL:
+                fixed.append(r)
+            if not h or r["id"] == DETROL:
+                continue
+            for key in HEADLINE_PICKS:
+                if h["source"] == key[0] and bool(h.get("differs_from_largest")) == key[1]:
+                    picks[key].append((hashlib.sha256(r["id"].encode()).hexdigest(), r))
+                    picks[key] = sorted(picks[key], key=lambda x: x[0])[:key[2]]
+        del b
+    chosen = fixed + [r for key in HEADLINE_PICKS for _, r in picks[key]]
+    wanted = {r["item"]["release"]["uuid"] for r in chosen}
+    raw = {}
+    for fname in sorted(os.listdir(pages)):
+        for r in json.loads(gzip.open(os.path.join(pages, fname)).read()).get("results") or []:
+            if r.get("uuid") in wanted and (r["uuid"] not in raw or (r.get("changed") or "") > (raw[r["uuid"]][1].get("changed") or "")):
+                raw[r["uuid"]] = (fname, r)
+    out = ["", "Headline figures (DOJ)", "",
+           "| # | record | title | headline figure (source) | largest resolution figure stated | where in the source | match |",
+           "|---|---|---|---|---|---|---|"]
+    bad = 0
+    for i, r in enumerate(chosen, 1):
+        rel = r["item"]["release"]
+        h = rel["headline_figure"]
+        fname, rec = raw[rel["uuid"]]
+        if h["source"] == "title":
+            title = squash(v.BeautifulSoup(rec.get("title") or "", "html.parser").get_text())
+            ok = h["as_written"] in title
+            where = f"{fname} title: {title}"
+        else:
+            body = squash(v.soup_text(rec.get("body")))
+            sentence = squash(h.get("sentence") or "")
+            ok = h["as_written"] in sentence and sentence in body
+            where = f"{fname} body: {context(body, sentence[:160]) or 'sentence not found'}"
+        bad += not ok
+        largest = rel["max_resolution_amount_usd"]
+        out.append(f"| {i} | {r['id']} | {r['title'].replace('|', '/')} | {h['as_written']} ({h['source']}) | "
+                   f"{'$' + format(largest, ',.2f') if largest is not None else 'none'}{' (differs)' if h.get('differs_from_largest') else ''} | "
+                   f"{where.replace('|', '/')} | {'yes' if ok else 'NO'} |")
+    print("\n".join(out))
+    print(f"\n{len(chosen)} headline spot checks, {bad} not found verbatim")
 
 
 if __name__ == "__main__":

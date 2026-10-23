@@ -68,21 +68,74 @@ def write(name, result):
 
 
 MULT = {"thousand": Decimal(1000), "million": Decimal(10) ** 6, "billion": Decimal(10) ** 9, "trillion": Decimal(10) ** 12}
+ABBR = {"K": "thousand", "k": "thousand", "M": "million", "MM": "million", "m": "million", "mm": "million", "mn": "million",
+        "mln": "million", "B": "billion", "BN": "billion", "Bn": "billion", "b": "billion", "bn": "billion"}
 
 
-def decimal_value(as_written):
-    m = re.match(r"^\$\s?([\d,]+(?:\.\d+)?)(?:\s?(thousand|million|billion|trillion))?$", as_written, re.I)
-    if not m:
+def decimal_value(as_written, dollar=True):
+    """Second-path value of a figure as written: "$1,500", "$2.3 billion", "$1-Million", "$9 M", "$13K" (and, for title
+    figures without "$", "1.4 Million" / "60M")."""
+    m = re.match(r"^(\$\s?)?([\d,]+(?:\.\d+)?)(?:[\s-]?((?i:thousand|million|billion|trillion))|\s?(MM|BN|Bn|M|B|K|mm|bn|mln|mn|m|b|k))?$",
+                 as_written.strip())
+    if not m or (dollar and not m.group(1)):
         return None
-    v = Decimal(m.group(1).replace(",", ""))
-    if m.group(2):
-        v *= MULT[m.group(2).lower()]
+    v = Decimal(m.group(2).replace(",", ""))
+    word = (m.group(3) or "").lower() or ABBR.get(m.group(4) or "")
+    if word:
+        v *= MULT[word]
     return v
+
+
+def check_headline(head, title, body_text, fails, checked, max_res):
+    """A headline figure is a verbatim span of the title, or of its sentence and the sentence of the body; its value
+    re-parses; differs_from_largest agrees with the stored largest figure."""
+    if not head:
+        return
+    checked["headline_figures"] += 1
+    if head["source"] == "title":
+        checked["headline_from_title"] += 1
+        if squash(head["as_written"]) not in squash(title):
+            fails["headline_not_in_title"] += 1
+        dv = decimal_value(head["as_written"], dollar=False)
+    elif head["source"] == "first resolution sentence":
+        checked["headline_from_first_resolution_sentence"] += 1
+        sentence = squash(head.get("sentence"))
+        if not sentence or squash(head["as_written"]) not in sentence or sentence not in body_text:
+            fails["headline_not_in_sentence_or_body"] += 1
+        dv = decimal_value(head["as_written"])
+    else:
+        fails["headline_unknown_source"] += 1
+        return
+    if dv is None or abs(float(dv) - head["value_usd"]) > 0.01:
+        fails["headline_value_mismatch"] += 1
+    differs = max_res is not None and abs(head["value_usd"] - max_res) > 0.005
+    if bool(head.get("differs_from_largest")) != differs:
+        fails["headline_differs_flag_wrong"] += 1
+
+
+RESOLUTION = {"settlement", "penalty or fine", "restitution", "forfeiture", "disgorgement", "judgment"}
+
+
+def check_headline_order(head, amounts, fails, checked):
+    """From the stored figures (reading order): without a title figure, the headline is the first stored figure whose
+    sentence has a resolution keyword (not a stock paragraph, readable, under $1 trillion); a release with such a
+    figure always has a headline."""
+    first = next((a for a in amounts if a.get("keyword") in RESOLUTION and not a.get("boilerplate")
+                  and a.get("value_usd") is not None and a["value_usd"] < 1e12), None)
+    if first is None:
+        return
+    checked["headline_order_checks"] += 1
+    if not head:
+        fails["headline_missing"] += 1
+    elif head["source"] == "first resolution sentence" and (
+            head["as_written"] != first["as_written"] or not squash(head.get("sentence")).startswith(squash(first.get("sentence"))[:150])):
+        fails["headline_not_first_resolution_figure"] += 1
 
 
 # ---------------------------------------------------------------- DOJ
 
-def verify_doj(n):
+def verify_doj(n, headline_only=False):
+    """With headline_only, the sample is drawn from releases that have a headline figure (n of them)."""
     pages_dir = os.path.join(ec.ACQ, "doj", "pages")
     raw_ids = set()
     rows_fetched = 0
@@ -117,7 +170,13 @@ def verify_doj(n):
             for c in rel["companies"]:
                 if c["cik"] not in companies.names:
                     fails["cik_not_in_lookup"] += 1
-        sampled.extend(sample(build["rows"], max(1, n * len(build["rows"]) // max(1, overview["total"])) if n else 0, lambda r: r["id"]))
+        # each partition's share of the sample, rounded up so the sample is at least n releases
+        pool = [r for r in build["rows"] if r["item"]["release"].get("headline_figure")] if headline_only else build["rows"]
+        pool_total = (overview["checks"].get("headline_from_title", 0) + overview["checks"].get("headline_from_first_resolution_sentence", 0)
+                      if headline_only else overview["total"])
+        # each partition's share of the sample, rounded up so the sample is at least n releases
+        if pool:
+            sampled.extend(sample(pool, max(1, -(-n * len(pool) // max(1, pool_total))) if n else 0, lambda r: r["id"]))
         del build
     if stored != len(raw_ids):
         fails["stored_vs_unique_raw_uuids"] += abs(stored - len(raw_ids))
@@ -146,6 +205,8 @@ def verify_doj(n):
                 fails["amount_value_mismatch"] += 1
             if a.get("sentence") and squash(a["sentence"]) not in body_text:
                 fails["amount_sentence_not_in_body"] += 1
+        check_headline(rel.get("headline_figure"), title, body_text, fails, checked, rel["max_resolution_amount_usd"])
+        check_headline_order(rel.get("headline_figure"), rel["amounts"], fails, checked)
         for s in rel["statutes"]:
             checked["statutes"] += 1
             if squash(s["as_written"]) not in body_text:
@@ -179,7 +240,9 @@ def verify_doj(n):
               "rows_fetched": rows_fetched, "duplicate_rows_returned_by_api": rows_fetched - len(raw_ids),
               "api_count_now": api_count, "sampled": dict(checked), "failures": dict(fails), "failure_total": sum(fails.values()),
               "note": "The API's count is read live and moves while releases are published (and fluctuated by +/-300 between identical calls during the harvest); records are checked against the raw pages."}
-    write("doj", result)
+    if headline_only:
+        result["dataset"] += ": sample of releases with a headline figure"
+    write("doj_headlines" if headline_only else "doj", result)
     return result
 
 
@@ -313,6 +376,14 @@ def verify_sec(n):
             checked["amounts"] += 1
             if squash(a["as_written"]) not in page:
                 fails["amount_not_in_page"] += 1
+            dv = decimal_value(a["as_written"])
+            if a.get("value_usd") is not None and (dv is None or abs(float(dv) - a["value_usd"]) > 0.01):
+                fails["amount_value_mismatch"] += 1
+        # the page title is part of the page text
+        check_headline(s.get("headline_figure"), s.get("title") or "", page, fails, checked, s["max_resolution_amount_usd"])
+        if s.get("headline_figure") and s["headline_figure"]["source"] == "title" and squash(s["headline_figure"]["as_written"]) not in page:
+            fails["headline_title_not_in_page"] += 1
+        check_headline_order(s.get("headline_figure"), s["amounts"], fails, checked)
     fails = Counter({k: v for k, v in fails.items() if v})
     result = {"dataset": "sec_enforcement_actions", "lr_listed": len(lr_numbers), "ap_listed": len(ap_numbers),
               "lr_built": len(built_lr), "ap_built": len(built_ap), "lr_text_read": len(with_text), "checked": dict(checked),
@@ -383,9 +454,10 @@ def main():
     parser.add_argument("which", choices=["doj", "ftc", "sec", "settlements", "all"])
     parser.add_argument("--sample", type=int, default=3000)
     parser.add_argument("--recheck", action="store_true")
+    parser.add_argument("--with-headline", action="store_true", help="doj: sample only releases that have a headline figure")
     args = parser.parse_args()
     if args.which in ("doj", "all"):
-        verify_doj(args.sample)
+        verify_doj(args.sample, args.with_headline)
     if args.which in ("ftc", "all"):
         verify_ftc(args.sample)
     if args.which in ("sec", "all"):
