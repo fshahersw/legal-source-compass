@@ -1164,11 +1164,11 @@ begin
                                                                'ca10', 'ca11', 'cadc')
                        limit 1) d on true
     left join insights.geo_states g on g.usps = s.state
-    where s.dataset = 'court_spine' and s.id ~ '^[a-z0-9][a-z0-9_-]{0,39}$' and coalesce(s.title, '') <> '';
+    where s.dataset = 'court_spine' and s.id ~ '^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$' and coalesce(s.title, '') <> '';
   insert into pg_temp.insights_stage_links
     select 'court', s.id, 'state', g.usps, 'located_in', 'publisher_stated', 'court_spine', s.id
     from public.corpus_records s join insights.geo_states g on g.usps = s.state
-    where s.dataset = 'court_spine' and s.id ~ '^[a-z0-9][a-z0-9_-]{0,39}$' and coalesce(s.title, '') <> '';
+    where s.dataset = 'court_spine' and s.id ~ '^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$' and coalesce(s.title, '') <> '';
 
   -- Article III judges (FJC Biographical Directory id); their judge page is the directory profile the record names
   insert into pg_temp.insights_stage_entities
@@ -2316,10 +2316,11 @@ begin
             and x.value is not null and not x.partial);
 end $$;
 
--- an entity, its latest complete fact of every metric, and its children; null when the entity is not in the spine
+-- an entity, its latest complete fact of every metric, and its children; {"entity": null, "facts": [], "children": []}
+-- when the entity is not in the spine (an explicit answer, so a caller can tell it from a missing function)
 create or replace function public.insights_entity_v1(p_type text, p_id text) returns jsonb
 language sql stable security definer set search_path = '' as $$
-  select jsonb_build_object(
+  select coalesce((select jsonb_build_object(
     'entity', insights.entity_json(to_jsonb(e)),
     'facts', (select coalesce(jsonb_agg(insights.fact_json(to_jsonb(l)) order by m.ordinal, l.metric_id), '[]'::jsonb)
               from (select distinct on (f.metric_id) f.*
@@ -2330,7 +2331,8 @@ language sql stable security definer set search_path = '' as $$
     'children', (select coalesce(jsonb_agg(insights.entity_json(to_jsonb(c)) order by c.entity_type, c.label, c.entity_id), '[]'::jsonb)
                  from (select * from insights.entities c0 where c0.parent_type = e.entity_type and c0.parent_id = e.entity_id
                        order by c0.entity_type, c0.label, c0.entity_id limit 2000) c))
-  from insights.entities e where e.entity_type = p_type and e.entity_id = p_id
+    from insights.entities e where e.entity_type = p_type and e.entity_id = p_id),
+    jsonb_build_object('entity', null, 'facts', '[]'::jsonb, 'children', '[]'::jsonb))
 $$;
 
 -- links from or to an entity (optionally one relation), at most p_limit (1-1000)
