@@ -32,7 +32,8 @@ sys.path.insert(0, HERE)
 import lib  # noqa: E402
 import model  # noqa: E402
 
-STATE_MODULES = {"OH": "oh", "WA": "wa", "MN": "mn", "OR": "or_", "NC": "nc", "MI": "mi", "IL": "il", "FL": "fl", "GA": "ga"}
+STATE_MODULES = {"OH": "oh", "WA": "wa", "MN": "mn", "OR": "or_", "NC": "nc", "MI": "mi", "IL": "il", "FL": "fl", "GA": "ga",
+                 "CO": "co"}
 
 
 def module(st: str):
@@ -90,14 +91,14 @@ class Ctx:
             self._refs[key] = lib.squash(rendered)
         return self._refs[key]
 
-    def check(self, rule: dict, ref: str, method: str) -> dict:
+    def check(self, rule: dict, ref: str, method: str, ordered: bool = True) -> dict:
         res = {"method": method}
         for field in ("text", "heading", "history"):
             v = rule.get(field)
             if not v:
                 res[field] = "absent"
                 continue
-            ok, share = lib.contained(v, ref)
+            ok, share = lib.contained(v, ref, ordered=ordered)
             res[field] = "confirmed" if ok else ("mostly_confirmed" if share >= 0.9 else "partly_confirmed")
             if not ok:
                 res[field + "_share"] = round(share, 4)

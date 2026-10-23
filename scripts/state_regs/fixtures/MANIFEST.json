@@ -56,6 +56,13 @@
    "sha256_full_page": "79061191d60d437f6f07dec2c732b4c949d90c3d0b7147040c61ae0c182829d3",
    "retrieved_at": "2026-10-23T19:13:18Z",
    "excerpt": false
+  },
+  "co_ruleset.html": {
+   "state": "CO",
+   "url": "https://www.sos.state.co.us/CCR/DisplayRule.do?action=ruleinfo&ruleId=2334&deptID=16&agencyID=7&deptName=Department%20of%20Public%20Health%20and%20Environment&agencyName=Air%20Quality%20Control%20Commission&seriesNum=5%20CCR%201001-2",
+   "sha256_full_page": "65ba3a9427876fb84047b2cf2b7265b18d5cf05d3b4b67e496ae0b6e8cd38a49",
+   "retrieved_at": "2026-10-23T20:13:01Z",
+   "excerpt": false
   }
  }
 }

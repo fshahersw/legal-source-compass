@@ -350,13 +350,14 @@ def squash(s: str) -> str:
     return re.sub(r"\s+", "", s)
 
 
-def contained(needle: str, haystack_squashed: str, window: int = 80) -> tuple[bool, float]:
+def contained(needle: str, haystack_squashed: str, window: int = 80, ordered: bool = True) -> tuple[bool, float]:
     """(every line found in order, share of lines found) of a parsed text in a squashed reference rendering.
 
     Each line of the stored text (a block of the publisher's layout) must occur verbatim, whitespace aside, in the
     reference, after the previous line's match. Navigation glyphs a parser leaves out (permalink marks, buttons) may sit
     between two lines in the reference; they never sit inside a line. A line longer than `window` squashed characters
-    that is not found whole is scored by its windows, so the share reflects how much of it was found."""
+    that is not found whole is scored by its windows, so the share reflects how much of it was found. ordered=False
+    (PDFs: two extraction engines order page furniture and columns differently) drops the order requirement."""
     lines = [squash(line) for line in (needle or "").split("\n")]
     lines = [x for x in lines if x]
     if not lines:
@@ -364,10 +365,10 @@ def contained(needle: str, haystack_squashed: str, window: int = 80) -> tuple[bo
     pos = 0
     found = 0.0
     for x in lines:
-        i = haystack_squashed.find(x, pos)
+        i = haystack_squashed.find(x, pos if ordered else 0)
         if i >= 0:
             found += 1
-            pos = i + len(x)
+            pos = i + len(x) if ordered else 0
             continue
         if len(x) > window:
             parts = [x[j:j + window] for j in range(0, len(x), window)]

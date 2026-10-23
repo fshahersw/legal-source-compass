@@ -19,7 +19,7 @@ import lib  # noqa: E402
 import model  # noqa: E402
 from cite import cite_key, PATTERNS  # noqa: E402
 from sources import SOURCES, check  # noqa: E402
-from states import fl, il, mi, mn, nc, oh, or_, wa, worddoc  # noqa: E402
+from states import co, fl, il, mi, mn, nc, oh, or_, wa, worddoc  # noqa: E402
 
 FIX = os.path.join(HERE, "fixtures")
 ENTRY = {"sha256": "0" * 64, "retrieved_at": "2026-10-23T00:00:00Z"}
@@ -176,6 +176,16 @@ class Parsers(unittest.TestCase):
         self.assertEqual(r["effective_date"], "2019-08-22")
         self.assertEqual(r["agency"], "POLLUTION CONTROL BOARD")
         checked([r], raw, self)
+
+    def test_colorado_current_version(self):
+        cur = co.current_version(fixture("co_ruleset.html"), "https://www.sos.state.co.us/CCR/DisplayRule.do")
+        self.assertEqual(cur["filing_type"], "Permanent Rule")
+        self.assertEqual(model.us_date(cur["effective"]), "2025-12-15")
+        self.assertEqual(model.us_date(cur["adopted"]), "2025-10-17")
+        self.assertEqual(cur["register"], "48 CR 22 (11/25/2025)")
+        self.assertRegex(cur["version_id"], r"^\d+$")
+        self.assertTrue(co._banner("CodeofCol") and co._banner("oradoRegul"))
+        self.assertFalse(co._banner("Definitions"))
 
     def test_florida_word_file(self):
         raw = fixture("fl_rule.doc")
