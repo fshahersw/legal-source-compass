@@ -247,6 +247,17 @@ class EarlierModules(unittest.TestCase):
             self.assertIsNotNone(m, head)
             self.assertEqual((m.group(1), m.group(2)), (number, heading))
 
+    def test_mo_ucc_numbers(self):
+        mo = load("mo")
+        for head, number in (("400.2-313. Express warranties by affirmation, promise, description, sample. —", "400.2-313"),
+                             ("400.4A-101. Short title. —", "400.4A-101"), ("537.090. Damages to be determined by jury —",
+                                                                          "537.090")):
+            m = mo.HEAD.match(head)
+            self.assertIsNotNone(m, head)
+            self.assertEqual(m.group(1), number)
+        line = mo.DATE_LINE.search("-------- 400.2-312 8/28/1963 --------")
+        self.assertEqual(line.group(1), "400.2-312")
+
     def test_nj_section(self):
         nj = load("nj")
         got = nj.split_section("2A:14-1. Actions of trespass to real property.",

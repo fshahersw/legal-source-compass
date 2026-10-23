@@ -36,9 +36,11 @@ HOME_URL = "https://revisor.mo.gov/main/Home.aspx"
 CHAPTER_URL = "https://revisor.mo.gov/main/ViewChapter.aspx?chapter={}"
 SECTION_PAGE = "https://revisor.mo.gov/main/OneSection.aspx?section={}"
 PARSER = "mo-viewchapter-html/1"
-HEAD = re.compile(r"^(\d+\.\d+[A-Za-z]?)\.\s*(.*?)\s*—?\s*$", re.S)
+# "537.090." and the UCC chapter's "400.2-313." / "400.4A-101." (chapter.article-section)
+NUM = r"\d+\.\d+[A-Za-z]?(?:-\d+[A-Za-z]?)?"
+HEAD = re.compile(rf"^({NUM})\.\s*(.*?)\s*—?\s*$", re.S)
 HISTORY = re.compile(r"^(\((?:RSMo|L\.|A\.L\.|CC\b|R\.S\.|Laws|Amended|Transferred|Repealed|Formerly)|Prior revisions:)")
-DATE_LINE = re.compile(r"-{5,}\s*(\d+\.\d+[A-Za-z]?)\s+(\d{1,2})/(\d{1,2})/(\d{4})\s*-{5,}")
+DATE_LINE = re.compile(rf"-{{5,}}\s*({NUM})\s+(\d{{1,2}})/(\d{{1,2}})/(\d{{4}})\s*-{{5,}}")
 
 
 def _meta():
