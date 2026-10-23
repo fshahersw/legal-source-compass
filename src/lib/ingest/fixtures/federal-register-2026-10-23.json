@@ -1,0 +1,513 @@
+{
+  "count": 8,
+  "description": "Documents published from 10/23/2026 to 10/23/2026",
+  "total_pages": 1,
+  "results": [
+    {
+      "document_number": "2026-21631",
+      "title": "Information Collection: Domestic Licensing of Source Material",
+      "type": "Notice",
+      "publication_date": "2026-10-23",
+      "effective_on": null,
+      "dates": "Submit comments by November 23, 2026. Comments received after this date will be considered if it is practical to do so, but the Commission is able to ensure consideration only for comments received on or before this date.",
+      "citation": "91 FR 66874",
+      "html_url": "https://www.federalregister.gov/documents/2026/10/23/2026-21631/information-collection-domestic-licensing-of-source-material",
+      "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-23/pdf/2026-21631.pdf",
+      "raw_text_url": "https://www.federalregister.gov/documents/full_text/text/2026/10/23/2026-21631.txt",
+      "agencies": [
+        {
+          "raw_name": "NUCLEAR REGULATORY COMMISSION",
+          "name": "Nuclear Regulatory Commission",
+          "id": 383,
+          "url": "https://www.federalregister.gov/agencies/nuclear-regulatory-commission",
+          "json_url": "https://www.federalregister.gov/api/v1/agencies/383",
+          "parent_id": null,
+          "slug": "nuclear-regulatory-commission"
+        }
+      ],
+      "cfr_references": [],
+      "related_documents": {
+        "NRC-2024-0220": [
+          {
+            "document_number": "2025-15597",
+            "relationship_type": "refers_to_antecedent_by_citation",
+            "html_url": "/d/2025-15597",
+            "action": "Renewal of existing information collection; request for comment.",
+            "publication_date": "2025-08-15",
+            "title": "Information Collection: Domestic Licensing of Source Material",
+            "docket_number": "NRC-2024-0220"
+          }
+        ]
+      },
+      "correction_of": null,
+      "corrections": [],
+      "regulation_id_numbers": [],
+      "docket_ids": ["NRC-2024-0220"],
+      "start_page": 66874,
+      "end_page": 66875
+    },
+    {
+      "document_number": "2026-21634",
+      "title": "General Applicability Public Interest Waiver to Indian Tribes Proposed Extension of Manufactured Products Waiver",
+      "type": "Notice",
+      "publication_date": "2026-10-23",
+      "effective_on": null,
+      "dates": "Written comments must be submitted online or by mail no later than November 23, 2026. For more information, see SUPPLEMENTARY INFORMATION.",
+      "citation": "91 FR 66871",
+      "html_url": "https://www.federalregister.gov/documents/2026/10/23/2026-21634/general-applicability-public-interest-waiver-to-indian-tribes-proposed-extension-of-manufactured",
+      "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-23/pdf/2026-21634.pdf",
+      "raw_text_url": "https://www.federalregister.gov/documents/full_text/text/2026/10/23/2026-21634.txt",
+      "agencies": [
+        {
+          "raw_name": "DEPARTMENT OF THE INTERIOR",
+          "name": "Interior Department",
+          "id": 253,
+          "url": "https://www.federalregister.gov/agencies/interior-department",
+          "json_url": "https://www.federalregister.gov/api/v1/agencies/253",
+          "parent_id": null,
+          "slug": "interior-department"
+        },
+        {
+          "raw_name": "Office of the Secretary"
+        }
+      ],
+      "cfr_references": [],
+      "related_documents": {},
+      "correction_of": null,
+      "corrections": [],
+      "regulation_id_numbers": [],
+      "docket_ids": [
+        "Docket No. DOI-2026-0232",
+        "267D0102DM, DS6CS00000, DLSN00000.000000, DX6CS25"
+      ],
+      "start_page": 66871,
+      "end_page": 66872
+    },
+    {
+      "document_number": "2026-21635",
+      "title": "Denton County Transportation Authority's Request To Amend Its Positive Train Control Safety Plan and Positive Train Control System",
+      "type": "Notice",
+      "publication_date": "2026-10-23",
+      "effective_on": null,
+      "dates": "FRA will consider comments received by November 12, 2026. FRA may consider comments received after that date to the extent practicable and without delaying implementation of valuable or necessary modifications to a PTC system.",
+      "citation": "91 FR 66912",
+      "html_url": "https://www.federalregister.gov/documents/2026/10/23/2026-21635/denton-county-transportation-authoritys-request-to-amend-its-positive-train-control-safety-plan-and",
+      "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-23/pdf/2026-21635.pdf",
+      "raw_text_url": "https://www.federalregister.gov/documents/full_text/text/2026/10/23/2026-21635.txt",
+      "agencies": [
+        {
+          "raw_name": "DEPARTMENT OF TRANSPORTATION",
+          "name": "Transportation Department",
+          "id": 492,
+          "url": "https://www.federalregister.gov/agencies/transportation-department",
+          "json_url": "https://www.federalregister.gov/api/v1/agencies/492",
+          "parent_id": null,
+          "slug": "transportation-department"
+        },
+        {
+          "raw_name": "Federal Railroad Administration",
+          "name": "Federal Railroad Administration",
+          "id": 185,
+          "url": "https://www.federalregister.gov/agencies/federal-railroad-administration",
+          "json_url": "https://www.federalregister.gov/api/v1/agencies/185",
+          "parent_id": 492,
+          "slug": "federal-railroad-administration"
+        }
+      ],
+      "cfr_references": [],
+      "related_documents": {},
+      "correction_of": null,
+      "corrections": [],
+      "regulation_id_numbers": [],
+      "docket_ids": ["Docket Number FRA-2010-0074"],
+      "start_page": 66912,
+      "end_page": 66913
+    },
+    {
+      "document_number": "2026-21657",
+      "title": "List of Rules To Be Reviewed Pursuant to the Regulatory Flexibility Act",
+      "type": "Proposed Rule",
+      "publication_date": "2026-10-23",
+      "effective_on": null,
+      "dates": "This release was published in the Federal Register on October 23, 2026. Comments should be submitted by November 23, 2026.",
+      "citation": "91 FR 66795",
+      "html_url": "https://www.federalregister.gov/documents/2026/10/23/2026-21657/list-of-rules-to-be-reviewed-pursuant-to-the-regulatory-flexibility-act",
+      "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-23/pdf/2026-21657.pdf",
+      "raw_text_url": "https://www.federalregister.gov/documents/full_text/text/2026/10/23/2026-21657.txt",
+      "agencies": [
+        {
+          "raw_name": "SECURITIES AND EXCHANGE COMMISSION",
+          "name": "Securities and Exchange Commission",
+          "id": 466,
+          "url": "https://www.federalregister.gov/agencies/securities-and-exchange-commission",
+          "json_url": "https://www.federalregister.gov/api/v1/agencies/466",
+          "parent_id": null,
+          "slug": "securities-and-exchange-commission"
+        }
+      ],
+      "cfr_references": [
+        {
+          "chapter": "II",
+          "citation_url": null,
+          "part": null,
+          "title": 17
+        }
+      ],
+      "related_documents": {},
+      "correction_of": null,
+      "corrections": [],
+      "regulation_id_numbers": [],
+      "docket_ids": ["Release Nos. 33-11451", "34-106698", "File No. S7-2026-37"],
+      "start_page": 66795,
+      "end_page": 66796
+    },
+    {
+      "document_number": "2026-21658",
+      "title": "Supplemental Nutrition Assistance Program: Electronic Benefits Transfer Card Security Measures",
+      "type": "Proposed Rule",
+      "publication_date": "2026-10-23",
+      "effective_on": null,
+      "dates": "Written comments must be received on or before December 22, 2026 to be assured of consideration.",
+      "citation": "91 FR 66958",
+      "html_url": "https://www.federalregister.gov/documents/2026/10/23/2026-21658/supplemental-nutrition-assistance-program-electronic-benefits-transfer-card-security-measures",
+      "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-23/pdf/2026-21658.pdf",
+      "raw_text_url": "https://www.federalregister.gov/documents/full_text/text/2026/10/23/2026-21658.txt",
+      "agencies": [
+        {
+          "raw_name": "DEPARTMENT OF AGRICULTURE",
+          "name": "Agriculture Department",
+          "id": 12,
+          "url": "https://www.federalregister.gov/agencies/agriculture-department",
+          "json_url": "https://www.federalregister.gov/api/v1/agencies/12",
+          "parent_id": null,
+          "slug": "agriculture-department"
+        },
+        {
+          "raw_name": "Food and Nutrition Administration",
+          "name": "Food and Nutrition Administration",
+          "id": 625,
+          "url": "https://www.federalregister.gov/agencies/food-and-nutrition-administration",
+          "json_url": "https://www.federalregister.gov/api/v1/agencies/625",
+          "parent_id": 12,
+          "slug": "food-and-nutrition-administration"
+        }
+      ],
+      "cfr_references": [
+        {
+          "chapter": null,
+          "citation_url": null,
+          "part": "271",
+          "title": 7
+        },
+        {
+          "chapter": null,
+          "citation_url": null,
+          "part": "274",
+          "title": 7
+        },
+        {
+          "chapter": null,
+          "citation_url": null,
+          "part": "278",
+          "title": 7
+        }
+      ],
+      "related_documents": {},
+      "correction_of": null,
+      "corrections": [],
+      "regulation_id_numbers": ["0584-AE99"],
+      "docket_ids": ["FNS-2025-0137"],
+      "start_page": 66958,
+      "end_page": 66997
+    },
+    {
+      "document_number": "2026-21664",
+      "title": "Airworthiness Directives; MD Helicopters, LLC Helicopters",
+      "type": "Rule",
+      "publication_date": "2026-10-23",
+      "effective_on": "2026-11-27",
+      "dates": "This AD is effective November 27, 2026.",
+      "citation": "91 FR 66783",
+      "html_url": "https://www.federalregister.gov/documents/2026/10/23/2026-21664/airworthiness-directives-md-helicopters-llc-helicopters",
+      "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-23/pdf/2026-21664.pdf",
+      "raw_text_url": "https://www.federalregister.gov/documents/full_text/text/2026/10/23/2026-21664.txt",
+      "agencies": [
+        {
+          "raw_name": "DEPARTMENT OF TRANSPORTATION",
+          "name": "Transportation Department",
+          "id": 492,
+          "url": "https://www.federalregister.gov/agencies/transportation-department",
+          "json_url": "https://www.federalregister.gov/api/v1/agencies/492",
+          "parent_id": null,
+          "slug": "transportation-department"
+        },
+        {
+          "raw_name": "Federal Aviation Administration",
+          "name": "Federal Aviation Administration",
+          "id": 159,
+          "url": "https://www.federalregister.gov/agencies/federal-aviation-administration",
+          "json_url": "https://www.federalregister.gov/api/v1/agencies/159",
+          "parent_id": 492,
+          "slug": "federal-aviation-administration"
+        }
+      ],
+      "cfr_references": [
+        {
+          "chapter": null,
+          "citation_url": null,
+          "part": "39",
+          "title": 14
+        }
+      ],
+      "related_documents": {
+        "Docket No. FAA-2026-4666": [
+          {
+            "document_number": "2026-13365",
+            "relationship_type": "airworthiness_rule_progression",
+            "html_url": "/d/2026-13365",
+            "action": "Notice of proposed rulemaking (NPRM).",
+            "publication_date": "2026-07-01",
+            "title": "Airworthiness Directives; MD Helicopters, LLC Helicopters",
+            "docket_number": "Docket No. FAA-2026-4666"
+          }
+        ],
+        "Project Identifier AD-2025-01677-R": [
+          {
+            "document_number": "2026-13365",
+            "relationship_type": "airworthiness_rule_progression",
+            "html_url": "/d/2026-13365",
+            "action": "Notice of proposed rulemaking (NPRM).",
+            "publication_date": "2026-07-01",
+            "title": "Airworthiness Directives; MD Helicopters, LLC Helicopters",
+            "docket_number": "Project Identifier AD-2025-01677-R"
+          }
+        ]
+      },
+      "correction_of": null,
+      "corrections": [],
+      "regulation_id_numbers": ["2120-AA64"],
+      "docket_ids": [
+        "Docket No. FAA-2026-4666",
+        "Project Identifier AD-2025-01677-R",
+        "Amendment 39-23494",
+        "AD 2026-21-05"
+      ],
+      "start_page": 66783,
+      "end_page": 66785
+    },
+    {
+      "document_number": "2026-21669",
+      "title": "Hazard Analysis and Risk-Based Preventive Controls for Human Food; Draft Guidance for Industry; Availability",
+      "type": "Proposed Rule",
+      "publication_date": "2026-10-23",
+      "effective_on": null,
+      "dates": "Submit either electronic or written comments on the draft guidance by January 21, 2027 to ensure that the Agency considers your comment on this draft guidance before it begins work on the final version of the guidance.",
+      "citation": "91 FR 66798",
+      "html_url": "https://www.federalregister.gov/documents/2026/10/23/2026-21669/hazard-analysis-and-risk-based-preventive-controls-for-human-food-draft-guidance-for-industry",
+      "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-23/pdf/2026-21669.pdf",
+      "raw_text_url": "https://www.federalregister.gov/documents/full_text/text/2026/10/23/2026-21669.txt",
+      "agencies": [
+        {
+          "raw_name": "DEPARTMENT OF HEALTH AND HUMAN SERVICES",
+          "name": "Health and Human Services Department",
+          "id": 221,
+          "url": "https://www.federalregister.gov/agencies/health-and-human-services-department",
+          "json_url": "https://www.federalregister.gov/api/v1/agencies/221",
+          "parent_id": null,
+          "slug": "health-and-human-services-department"
+        },
+        {
+          "raw_name": "Food and Drug Administration",
+          "name": "Food and Drug Administration",
+          "id": 199,
+          "url": "https://www.federalregister.gov/agencies/food-and-drug-administration",
+          "json_url": "https://www.federalregister.gov/api/v1/agencies/199",
+          "parent_id": 221,
+          "slug": "food-and-drug-administration"
+        }
+      ],
+      "cfr_references": [
+        {
+          "chapter": null,
+          "citation_url": null,
+          "part": "117",
+          "title": 21
+        }
+      ],
+      "related_documents": {
+        "Docket No. FDA-2016-D-2343": [
+          {
+            "document_number": "2016-20177",
+            "relationship_type": null,
+            "html_url": "/d/2016-20177",
+            "action": "Notification of availability.",
+            "publication_date": "2016-08-24",
+            "title": "Hazard Analysis and Risk-Based Preventive Controls for Human Food; Draft Guidance for Industry; Availability",
+            "docket_number": "Docket No. FDA-2016-D-2343"
+          },
+          {
+            "document_number": "2017-18464",
+            "relationship_type": null,
+            "html_url": "/d/2017-18464",
+            "action": "Notification of availability.",
+            "publication_date": "2017-08-31",
+            "title": "Hazard Analysis and Risk-Based Preventive Controls for Human Food: Guidance for Industry; Availability",
+            "docket_number": "Docket No. FDA-2016-D-2343"
+          },
+          {
+            "document_number": "2018-01126",
+            "relationship_type": null,
+            "html_url": "/d/2018-01126",
+            "action": "Notice of availability.",
+            "publication_date": "2018-01-23",
+            "title": "Hazard Analysis and Risk-Based Preventive Controls for Food for Animals; Draft Guidance for Industry; Availability",
+            "docket_number": "Docket No. FDA-2016-D-2343"
+          },
+          {
+            "document_number": "2018-01299",
+            "relationship_type": null,
+            "html_url": "/d/2018-01299",
+            "action": "Notification of availability.",
+            "publication_date": "2018-01-25",
+            "title": "Hazard Analysis and Risk-Based Preventive Controls for Human Food; Draft Guidance for Industry; Availability",
+            "docket_number": "Docket No. FDA-2016-D-2343"
+          },
+          {
+            "document_number": "2019-21643",
+            "relationship_type": null,
+            "html_url": "/d/2019-21643",
+            "action": "Notice of availability.",
+            "publication_date": "2019-10-07",
+            "title": "Hazard Analysis and Risk-Based Preventive Controls for Human Food; Draft Guidance for Industry; Availability",
+            "docket_number": "Docket No. FDA-2016-D-2343"
+          },
+          {
+            "document_number": "2023-20738",
+            "relationship_type": null,
+            "html_url": "/d/2023-20738",
+            "action": "Notification of availability.",
+            "publication_date": "2023-09-27",
+            "title": "Hazard Analysis and Risk-Based Preventive Controls for Human Food; Draft Guidance for Industry; Availability",
+            "docket_number": "Docket No. FDA-2016-D-2343"
+          },
+          {
+            "document_number": "2024-01911",
+            "relationship_type": null,
+            "html_url": "/d/2024-01911",
+            "action": "Notification of availability.",
+            "publication_date": "2024-02-02",
+            "title": "Hazard Analysis and Risk-Based Preventive Controls for Human Food; Draft Guidance for Industry; Availability",
+            "docket_number": "Docket No. FDA-2016-D-2343"
+          },
+          {
+            "document_number": "2024-06118",
+            "relationship_type": null,
+            "html_url": "/d/2024-06118",
+            "action": "Notification of availability; extension of comment period.",
+            "publication_date": "2024-03-22",
+            "title": "Hazard Analysis and Risk-Based Preventive Controls for Human Food; Draft Guidance for Industry; Extension of Comment Period",
+            "docket_number": "Docket No. FDA-2016-D-2343"
+          },
+          {
+            "document_number": "2024-11987",
+            "relationship_type": null,
+            "html_url": "/d/2024-11987",
+            "action": "Notification of availability; extension of comment period.",
+            "publication_date": "2024-05-31",
+            "title": "Hazard Analysis and Risk-Based Preventive Controls for Human Food; Draft Guidance for Industry; Appendix 1; Extension of Comment Period",
+            "docket_number": "Docket No. FDA-2016-D-2343"
+          }
+        ]
+      },
+      "correction_of": null,
+      "corrections": [],
+      "regulation_id_numbers": [],
+      "docket_ids": ["Docket No. FDA-2016-D-2343"],
+      "start_page": 66798,
+      "end_page": 66799
+    },
+    {
+      "document_number": "2026-21706",
+      "title": "Implementing the Guiding and Establishing National Innovation for U.S. Stablecoins Act for the Issuance of Stablecoins by Entities Subject to the Jurisdiction of the Office of the Comptroller of the Currency",
+      "type": "Rule",
+      "publication_date": "2026-10-23",
+      "effective_on": "2027-01-18",
+      "dates": "The final rule is effective on January 18, 2027.",
+      "citation": "91 FR 67000",
+      "html_url": "https://www.federalregister.gov/documents/2026/10/23/2026-21706/implementing-the-guiding-and-establishing-national-innovation-for-us-stablecoins-act-for-the",
+      "pdf_url": "https://www.govinfo.gov/content/pkg/FR-2026-10-23/pdf/2026-21706.pdf",
+      "raw_text_url": "https://www.federalregister.gov/documents/full_text/text/2026/10/23/2026-21706.txt",
+      "agencies": [
+        {
+          "raw_name": "DEPARTMENT OF THE TREASURY",
+          "name": "Treasury Department",
+          "id": 497,
+          "url": "https://www.federalregister.gov/agencies/treasury-department",
+          "json_url": "https://www.federalregister.gov/api/v1/agencies/497",
+          "parent_id": null,
+          "slug": "treasury-department"
+        },
+        {
+          "raw_name": "Office of the Comptroller of the Currency",
+          "name": "Comptroller of the Currency",
+          "id": 80,
+          "url": "https://www.federalregister.gov/agencies/comptroller-of-the-currency",
+          "json_url": "https://www.federalregister.gov/api/v1/agencies/80",
+          "parent_id": 497,
+          "slug": "comptroller-of-the-currency"
+        }
+      ],
+      "cfr_references": [
+        {
+          "chapter": null,
+          "citation_url": null,
+          "part": "3",
+          "title": 12
+        },
+        {
+          "chapter": null,
+          "citation_url": null,
+          "part": "6",
+          "title": 12
+        },
+        {
+          "chapter": null,
+          "citation_url": null,
+          "part": "8",
+          "title": 12
+        },
+        {
+          "chapter": null,
+          "citation_url": null,
+          "part": "15",
+          "title": 12
+        },
+        {
+          "chapter": null,
+          "citation_url": null,
+          "part": "19",
+          "title": 12
+        }
+      ],
+      "related_documents": {
+        "Docket ID OCC-2025-0372": [
+          {
+            "document_number": "2026-04089",
+            "relationship_type": "rule_progression",
+            "html_url": "/d/2026-04089",
+            "action": "Notice of proposed rulemaking.",
+            "publication_date": "2026-03-02",
+            "title": "Implementing the Guiding and Establishing National Innovation for U.S. Stablecoins Act for the Issuance of Stablecoins by Entities Subject to the Jurisdiction of the Office of the Comptroller of the Currency",
+            "docket_number": "Docket ID OCC-2025-0372"
+          }
+        ]
+      },
+      "correction_of": null,
+      "corrections": [],
+      "regulation_id_numbers": ["1557-AF41"],
+      "docket_ids": ["Docket ID OCC-2025-0372"],
+      "start_page": 67000,
+      "end_page": 67194
+    }
+  ]
+}
