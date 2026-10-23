@@ -25,6 +25,13 @@ export type MonthlyReport = {
   total: number | null;
 };
 
+/** A share of a whole as text: one decimal from 1%, two from 0.01%, otherwise "less than 0.01%". */
+export function sharePct(p: number): string {
+  if (p >= 1) return `${p.toFixed(1)}%`;
+  if (p >= 0.01) return `${p.toFixed(2)}%`;
+  return "less than 0.01%";
+}
+
 const monthIndex = (m: string): number => {
   const [y, mo] = m.split("-").map(Number) as [number, number];
   return y * 12 + (mo - 1);
@@ -64,6 +71,11 @@ export function buildMdlMonthlyPending(input: {
     last,
   );
   const span = pending.length;
+  const peak = (points: readonly TrendPoint[]) =>
+    points.reduce((m, p) => (p.value !== null && p.value > m ? p.value : m), 0);
+  // The cumulative total of a mostly closed MDL dwarfs its pending actions and would flatten that line, so it is drawn
+  // only when it is within three times the pending peak.
+  const drawTotal = peak(total) <= 3 * peak(pending);
   return assembleBlock({
     id: `mdl-monthly-pending-${input.mdl}`,
     xKind: monthAxis(first, last),
@@ -71,7 +83,9 @@ export function buildMdlMonthlyPending(input: {
     unit: "actions",
     series: [
       { id: "pending", label: "Pending actions", points: pending },
-      { id: "total", label: "Total actions (pending and closed)", points: total },
+      ...(drawTotal
+        ? [{ id: "total", label: "Total actions (pending and closed)", points: total }]
+        : []),
     ],
     lag: span >= 13 ? 12 : 1,
     source: {
@@ -81,7 +95,9 @@ export function buildMdlMonthlyPending(input: {
     asOf: input.lastReportDate,
     notes: [
       "Each point is the figure the Panel printed for this MDL in that month's report; a month without a report is left as a gap, not drawn as zero.",
-      "Pending actions are the actions still open in the MDL. Total actions is the report's own total column, which also counts actions already closed.",
+      drawTotal
+        ? "Pending actions are the actions still open in the MDL. Total actions is the report's own total column, which also counts actions already closed."
+        : "Pending actions are the actions still open in the MDL. The report's total column also counts actions already closed; it is much larger than the pending line, so it is not drawn and is shown in the summary above.",
       `The series holds the monthly reports kept in this corpus, from ${periodLabel(first, "month")}; earlier years are in the fiscal-year chart.`,
     ],
   });
@@ -145,6 +161,8 @@ export function buildMdlFjcYears(input: {
   rows: readonly FiscalYearCases[];
   /** Filing dates in the file run through this ISO date. */
   through: string | null;
+  /** Civil cases filed in all federal district courts per fiscal year (the same file), the national baseline. */
+  national?: ReadonlyMap<number, number>;
 }): TrendBlockData | null {
   const byFy = new Map<number, number>();
   for (const r of input.rows)
@@ -165,6 +183,22 @@ export function buildMdlFjcYears(input: {
       value: byFy.get(fy) ?? 0,
       ...(fy === partialFy ? { partial: true } : {}),
     });
+  const share = (fy: number): string | null => {
+    const n = input.national?.get(fy);
+    const c = byFy.get(fy);
+    if (n === undefined || n <= 0 || c === undefined || c <= 0) return null;
+    return `In FY${fy} these ${formatCount(c)} cases were ${sharePct((100 * c) / n)} of the ${formatCount(n)} civil cases filed in all federal district courts.`;
+  };
+  const complete = points.filter((p) => !p.partial && p.value !== null);
+  const peakFy = complete.reduce<TrendPoint | null>(
+    (best, p) => (best === null || (p.value ?? 0) > (best.value ?? 0) ? p : best),
+    null,
+  );
+  const lastFy = complete[complete.length - 1];
+  const baseline = [
+    ...(peakFy ? [share(Number(peakFy.x))] : []),
+    ...(lastFy && lastFy.x !== peakFy?.x ? [share(Number(lastFy.x))] : []),
+  ].filter((t): t is string => t !== null);
   return assembleBlock({
     id: `mdl-fjc-years-${input.mdl}`,
     xKind: "fy",
@@ -179,6 +213,7 @@ export function buildMdlFjcYears(input: {
     notes: [
       "A case is counted when its record carries this MDL docket number (field MDLDOCK). That is a historical association in the Federal Judicial Center's file, not the Panel's current membership list, and it counts cases in every district they were filed.",
       "Fiscal years run October 1 to September 30 and are named for the year they end. The file lists every civil case, so a year in the range with none is drawn as zero.",
+      ...baseline,
       ...(partialFy !== null && input.through
         ? [
             `FY${partialFy}* holds filings only through ${longDate(input.through)}; it is drawn faded and is not used for the latest value or its change.`,

@@ -57,6 +57,20 @@ export const PROFILE_KINDS = {
     measure: "member dockets first filed in another court",
     detail: { to: "/matters/analytics", label: "MDL analytics" },
   },
+  "mdl-faers-years": {
+    key: MDL_KEY,
+    group: "adverse-events",
+    title: (k) => `FAERS reports about the product of MDL ${k}, by year received`,
+    measure: "FAERS reports about the MDL's product",
+    detail: { to: "/safety/signals", label: "Mass-tort product signals" },
+  },
+  "mdl-maude-years": {
+    key: MDL_KEY,
+    group: "adverse-events",
+    title: (k) => `MAUDE device reports about the product of MDL ${k}, by year received`,
+    measure: "MAUDE reports about the MDL's product",
+    detail: { to: "/safety/signals", label: "Mass-tort product signals" },
+  },
   "matter-docket-entries": {
     key: MDL_KEY,
     group: "courts",

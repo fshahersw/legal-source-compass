@@ -6,6 +6,7 @@ import {
   buildMdlRegistryYears,
   fiscalYearOf,
   monthAxis,
+  sharePct,
 } from "./mdl";
 
 const values = (b: ReturnType<typeof buildMdlMonthlyPending>, i = 0) =>
@@ -71,6 +72,29 @@ describe("buildMdlMonthlyPending", () => {
     ).toBeNull();
   });
 
+  it("leaves out the cumulative total when it would flatten the pending line", () => {
+    const b = buildMdlMonthlyPending({
+      mdl: 2197,
+      reports: [
+        { month: "2025-09", pending: 120, total: 10400 },
+        { month: "2025-10", pending: 114, total: 10455 },
+      ],
+      lastReportDate: null,
+    });
+    expect(b!.series.map((s) => s.id)).toEqual(["pending"]);
+    expect(b!.notes.join(" ")).toContain("it is not drawn");
+    expect(
+      buildMdlMonthlyPending({
+        mdl: 1,
+        reports: [
+          { month: "2025-09", pending: 120, total: 300 },
+          { month: "2025-10", pending: 114, total: 310 },
+        ],
+        lastReportDate: null,
+      })!.series.map((s) => s.id),
+    ).toEqual(["pending", "total"]);
+  });
+
   it("switches to the plain month axis past three years", () => {
     expect(monthAxis("2020-01", "2023-01")).toBe("year");
     expect(monthAxis("2020-01", "2023-02")).toBe("month");
@@ -123,6 +147,14 @@ describe("buildMdlFyPending", () => {
   });
 });
 
+describe("sharePct", () => {
+  it("keeps enough decimals for a small share and never prints 0.0%", () => {
+    expect(sharePct(33.333)).toBe("33.3%");
+    expect(sharePct(0.456)).toBe("0.46%");
+    expect(sharePct(0.004)).toBe("less than 0.01%");
+  });
+});
+
 describe("fiscalYearOf", () => {
   it("rolls October to December into the next fiscal year", () => {
     expect(fiscalYearOf("2025-09-30")).toBe(2025);
@@ -159,6 +191,30 @@ describe("buildMdlFjcYears", () => {
     expect(b!.latest).toMatchObject({ period: "FY2025", value: 0 });
     expect(b!.notes.join(" ")).toContain("FY2026* holds filings only through June 30, 2026");
     expect(b!.asOf).toBe("2026-06-30");
+  });
+
+  it("states the MDL's share of all civil filings for its peak and its latest complete year", () => {
+    const national = new Map([
+      [2019, 300000],
+      [2021, 200000],
+      [2025, 300000],
+    ]);
+    const withBase = buildMdlFjcYears({
+      mdl: 2885,
+      rows: [
+        { fy: 2019, cases: 60000 },
+        { fy: 2021, cases: 10 },
+        { fy: 2025, cases: 3 },
+      ],
+      through: "2026-06-30",
+      national,
+    })!;
+    const text = withBase.notes.join(" ");
+    expect(text).toContain(
+      "In FY2019 these 60,000 cases were 20.0% of the 300,000 civil cases filed",
+    );
+    expect(text).toContain("In FY2025 these 3 cases were less than 0.01% of the 300,000");
+    expect(text).not.toContain("In FY2021");
   });
 
   it("does not mark a year partial when the file runs through its last day", () => {

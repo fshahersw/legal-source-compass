@@ -4,7 +4,9 @@
  * the record holds nothing to plot; a failed read throws and the card shows its error state with a retry. A record whose
  * own MDL number differs from the requested one is never used. Results are cached per profile. Server-only.
  */
+import { parseNational } from "@/lib/external/courtCaseload.functions";
 import { restGet } from "@/lib/external/rest.server";
+import { memoAsync } from "@/lib/insights/readers/cache";
 import { readAllRows } from "@/lib/analytics/tally.server";
 import {
   arr,
@@ -16,6 +18,7 @@ import {
   year as yearOf,
 } from "@/lib/analytics/parse";
 import { throughDate, type TrendBlockData } from "@/lib/analytics/trend";
+import { buildMdlAdverseYears, type AdverseSystem, type AdverseYear } from "./adverse";
 import { buildDocketEntriesMonthly } from "./entries";
 import {
   buildMdlFjcYears,
@@ -78,13 +81,26 @@ async function fyPending(key: string): Promise<TrendBlockData | null> {
   return buildMdlFyPending({ mdl, rows, leftCensored: h["left_censored"] === true });
 }
 
+/** Civil cases filed in all federal district courts per fiscal year, from the FJC national series; empty when it is not held. */
+const nationalFilings = memoAsync(TTL_MS, async (): Promise<Map<number, number>> => {
+  const r = await restGet<{ p: unknown }[]>(
+    rec("fjc_civil_national", "US:summary", "p:item->profile"),
+  );
+  const national = parseNational(r.rows[0]?.p);
+  const out = new Map<number, number>();
+  for (const y of national?.years ?? [])
+    if (!y.partial && y.filings !== null) out.set(y.fy, y.filings);
+  return out;
+});
+
 async function fjcYears(key: string): Promise<TrendBlockData | null> {
   const mdl = Number(key);
-  const [r, snap] = await Promise.all([
+  const [r, snap, national] = await Promise.all([
     restGet<{ p: unknown }[]>(rec("fjc_civil_mdls", `mdl:${key}`, "p:item->profile")),
     restGet<{ s: unknown }[]>(
       "corpus_datasets?select=s:metadata->summary->>snapshot&id=eq.fjc_civil_mdls&limit=1",
     ),
+    nationalFilings(),
   ]);
   const p = obj(r.rows[0]?.p);
   if (!p || integer(p["mdl"]) !== mdl) return null;
@@ -94,7 +110,7 @@ async function fjcYears(key: string): Promise<TrendBlockData | null> {
     const cases = nonNegative(o?.["cases"]);
     return fy !== null && cases !== null ? [{ fy, cases }] : [];
   });
-  return buildMdlFjcYears({ mdl, rows, through: throughDate(text(snap.rows[0]?.s)) });
+  return buildMdlFjcYears({ mdl, rows, through: throughDate(text(snap.rows[0]?.s)), national });
 }
 
 type Hierarchy = {
@@ -202,12 +218,45 @@ async function docketEntries(key: string): Promise<TrendBlockData | null> {
   });
 }
 
+/** FAERS or MAUDE product series of one MDL (dataset id = the MDL number): reports by the year FDA received them. */
+async function adverseYears(
+  system: AdverseSystem,
+  dataset: string,
+  deathKey: "deaths" | "death",
+  key: string,
+): Promise<TrendBlockData | null> {
+  const mdl = Number(key);
+  const r = await restGet<{ m: unknown; s: unknown; d: unknown }[]>(
+    rec(dataset, key, "m:item->mdl,s:item->series,d:item->>data_through"),
+  );
+  const row = r.rows[0];
+  if (!row || integer(row.m) !== mdl) return null;
+  const rows = arr(row.s).flatMap((e): AdverseYear[] => {
+    const o = obj(e);
+    const y = yearOf(o?.["year"]);
+    return o && y !== null
+      ? [
+          {
+            year: y,
+            reports: nonNegative(o["reports"]),
+            deaths: nonNegative(o[deathKey]),
+            partial: o["partial"] === true,
+            nationalReports: nonNegative(o["national_reports"]),
+          },
+        ]
+      : [];
+  });
+  return buildMdlAdverseYears({ mdl, system, rows, dataThrough: isoDate(row.d) });
+}
+
 const READERS: Record<ProfileKind, (key: string) => Promise<TrendBlockData | null>> = {
   "mdl-monthly-pending": monthlyPending,
   "mdl-fy-pending": fyPending,
   "mdl-fjc-years": fjcYears,
   "mdl-members-years": membersYears,
   "mdl-transferred-years": transferredYears,
+  "mdl-faers-years": (key) => adverseYears("faers", "fda_faers_product_series", "deaths", key),
+  "mdl-maude-years": (key) => adverseYears("maude", "fda_device_event_series", "death", key),
   "matter-docket-entries": docketEntries,
 };
 
@@ -228,5 +277,7 @@ export const EMPTY_REASON: Record<ProfileKind, string> = {
     "The matter registry records no member docket of this MDL with a filing year.",
   "mdl-transferred-years":
     "The registry records no member docket of this MDL that was first filed in another court.",
+  "mdl-faers-years": "No FAERS product series is held for this MDL.",
+  "mdl-maude-years": "No MAUDE product series is held for this MDL.",
   "matter-docket-entries": "The matter registry holds no dated master-docket entry for this MDL.",
 };

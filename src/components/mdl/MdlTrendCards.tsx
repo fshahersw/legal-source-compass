@@ -53,6 +53,19 @@ export function MdlMonthlyPendingCard({
   );
 }
 
+/** Adverse-event report cards for the product of an MDL: one per openFDA system that holds a series for it. */
+export function MdlAdverseCards({ mdl, systems }: { mdl: number; systems: readonly string[] }) {
+  const faers = systems.includes("FAERS");
+  const maude = systems.includes("MAUDE");
+  if (!faers && !maude) return null;
+  return (
+    <TrendGrid columns={2}>
+      {faers ? <ProfileTrend kind="mdl-faers-years" id={mdl} /> : null}
+      {maude ? <ProfileTrend kind="mdl-maude-years" id={mdl} /> : null}
+    </TrendGrid>
+  );
+}
+
 /** The cards that count cases by year: the Federal Judicial Center's file, then the matter registry's member dockets. */
 export function MdlCaseYears({ mdl }: { mdl: number }) {
   // Same query as the "Member actions and where they started" section, so it is read once.

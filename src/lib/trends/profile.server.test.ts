@@ -113,6 +113,22 @@ describe("mdl-fjc-years", () => {
         },
       ],
       [
+        "dataset=eq.fjc_civil_national",
+        {
+          rows: [
+            {
+              p: {
+                latest_fy: 2025,
+                series: [
+                  { fy: 2019, filings: 500 },
+                  { fy: 2021, filings: 200 },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+      [
         "corpus_datasets?select=s:metadata->summary->>snapshot",
         {
           rows: [
@@ -126,6 +142,9 @@ describe("mdl-fjc-years", () => {
     const block = (await (await reader())("mdl-fjc-years", "2885"))!;
     expect(block.series[0]!.points.map((p) => p.value)).toEqual([5, 0, 7]);
     expect(block.asOf).toBe("2026-06-30");
+    expect(block.notes.join(" ")).toContain(
+      "In FY2021 these 7 cases were 3.5% of the 200 civil cases filed",
+    );
   });
 });
 
@@ -177,6 +196,56 @@ describe("registry years", () => {
       ["corpus_datasets", { rows: [{ u: "2026-10-19" }] }],
     ]);
     expect(await (await reader())("mdl-members-years", "2873")).toBeNull();
+  });
+});
+
+describe("adverse-event series", () => {
+  const series = [
+    { year: 2024, reports: 100, deaths: 2, partial: false, national_reports: 2000000 },
+    { year: 2026, reports: 40, deaths: 0, partial: true, national_reports: 900000 },
+  ];
+
+  it("faers: reads the product series of exactly that MDL and its death-outcome counts", async () => {
+    serve([
+      [
+        "dataset=eq.fda_faers_product_series&id=eq.1871",
+        { rows: [{ m: 1871, s: series, d: "2026-06-30" }] },
+      ],
+    ]);
+    const block = (await (await reader())("mdl-faers-years", "1871"))!;
+    expect(block.series[0]!.points.map((p) => [p.x, p.value])).toEqual([
+      ["2024", 100],
+      ["2025", null],
+      ["2026", 40],
+    ]);
+    expect(block.series[1]!.points[0]!.value).toBe(2);
+    expect(block.asOf).toBe("2026-06-30");
+  });
+
+  it("maude: reads the death key of the device series", async () => {
+    serve([
+      [
+        "dataset=eq.fda_device_event_series&id=eq.2197",
+        {
+          rows: [
+            {
+              m: 2197,
+              s: [{ year: 2012, reports: 18781, death: 9, partial: false, national_reports: 1 }],
+              d: "2026-09-30",
+            },
+          ],
+        },
+      ],
+    ]);
+    const block = (await (await reader())("mdl-maude-years", "2197"))!;
+    expect(block.series[1]!.points[0]!.value).toBe(9);
+  });
+
+  it("never uses a record of a different MDL and is null when none is held", async () => {
+    serve([["fda_faers_product_series", { rows: [{ m: 9999, s: series, d: null }] }]]);
+    expect(await (await reader())("mdl-faers-years", "1871")).toBeNull();
+    serve([["fda_faers_product_series", { rows: [] }]]);
+    expect(await (await reader())("mdl-faers-years", "1871")).toBeNull();
   });
 });
 

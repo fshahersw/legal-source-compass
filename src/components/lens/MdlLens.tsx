@@ -20,7 +20,11 @@ import { FDA_COLORS } from "@/components/fda-analytics/chartView";
 import { mdlAnalyticsQuery } from "@/components/matters/MdlAnalytics";
 import { compact, title as litigationTitle } from "@/components/mdl/intelFormat";
 import { LeadershipList } from "@/components/mdl/LeadershipList";
-import { MdlCaseYears, MdlMonthlyPendingCard } from "@/components/mdl/MdlTrendCards";
+import {
+  MdlAdverseCards,
+  MdlCaseYears,
+  MdlMonthlyPendingCard,
+} from "@/components/mdl/MdlTrendCards";
 import { ProfileTrend } from "@/components/trends/ProfileTrend";
 import { CourtOrderLink } from "@/components/mdl/PacerLabel";
 import { getMdlLens, type MdlLens as Lens } from "@/lib/external/mdlLens.functions";
@@ -66,6 +70,10 @@ const lastOf = (values: (number | null)[] | undefined) =>
 const count = (v: number, word: string, many = `${word}s`) => `${n(v)} ${v === 1 ? word : many}`;
 const axisNumber = (v: number) => compact(v);
 const tooltipNumber = (v: unknown) => n(Number(v));
+
+/** FAERS or MAUDE rows mean the page draws the product's reports by year as a trend card. */
+const hasAdverseCard = (rows: readonly { system: string }[]) =>
+  rows.some((r) => r.system === "FAERS" || r.system === "MAUDE");
 
 /** Labels and notes wrap to two lines (full text on hover) so a narrow card never cuts them off. */
 function Kpi({ label, value, note }: { label: string; value: string; note?: string | undefined }) {
@@ -383,7 +391,11 @@ function JudgeCard({
   );
 }
 
-function SignalCard({ signal }: { signal: MassTortSignal }) {
+/**
+ * `showYears` is false when the page already draws this product's reports by year as a trend card (FAERS or MAUDE), which
+ * adds the data table, source, partial-year marking and the national total; the same series is then not drawn twice.
+ */
+function SignalCard({ signal, showYears = true }: { signal: MassTortSignal; showYears?: boolean }) {
   const regulator = REGULATOR[signal.kind];
   const year = new Date().getUTCFullYear();
   const rows = reportYears(signal, year);
@@ -417,25 +429,29 @@ function SignalCard({ signal }: { signal: MassTortSignal }) {
               </p>
             </div>
           </div>
-          <p className="mt-2 text-[11px] text-muted-foreground">
-            Reports per year, complete years {rows[0]?.year}–{year - 1}
-          </p>
-          <div className="h-40">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={rows} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
-                <CartesianGrid stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="year" tick={axis} interval={2} />
-                <YAxis tick={axis} tickFormatter={axisNumber} />
-                <Tooltip contentStyle={{ fontSize: 11 }} formatter={tooltipNumber} />
-                <Bar
-                  dataKey="reports"
-                  name="Reports"
-                  fill={FDA_COLORS[1]}
-                  isAnimationActive={false}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          {showYears ? (
+            <>
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                Reports per year, complete years {rows[0]?.year}–{year - 1}
+              </p>
+              <div className="h-40">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={rows} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
+                    <CartesianGrid stroke="var(--border)" vertical={false} />
+                    <XAxis dataKey="year" tick={axis} interval={2} />
+                    <YAxis tick={axis} tickFormatter={axisNumber} />
+                    <Tooltip contentStyle={{ fontSize: 11 }} formatter={tooltipNumber} />
+                    <Bar
+                      dataKey="reports"
+                      name="Reports"
+                      fill={FDA_COLORS[1]}
+                      isAnimationActive={false}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </>
+          ) : null}
           <p className="mt-1 text-[10.5px] leading-snug text-muted-foreground">{signal.caveat}</p>
         </div>
         <div className="min-w-0 space-y-3">
@@ -1433,6 +1449,7 @@ function RecordedOnly({ mdl, lens }: { mdl: number; lens: Lens }) {
       </section>
 
       <PairedCards slots={slots} />
+      <MdlAdverseCards mdl={mdl} systems={lens.fdaReports.map((r) => r.system)} />
       {courtPage && courtPageFull ? (
         <div className="grid gap-3 lg:grid-cols-2">
           <CourtPageCard
@@ -1449,7 +1466,7 @@ function RecordedOnly({ mdl, lens }: { mdl: number; lens: Lens }) {
       ) : null}
       {lens.signal ? (
         <div className="grid gap-3 lg:grid-cols-2">
-          <SignalCard signal={lens.signal} />
+          <SignalCard signal={lens.signal} showYears={!hasAdverseCard(lens.fdaReports)} />
         </div>
       ) : null}
       {missing.length ? (
@@ -1611,9 +1628,11 @@ export function MdlLens({ mdl }: { mdl: number }) {
         ]}
       />
 
+      <MdlAdverseCards mdl={m.mdl} systems={lens.fdaReports.map((r) => r.system)} />
+
       {lens.signal ? (
         <div className="grid gap-3 lg:grid-cols-2">
-          <SignalCard signal={lens.signal} />
+          <SignalCard signal={lens.signal} showYears={!hasAdverseCard(lens.fdaReports)} />
         </div>
       ) : (
         <p className="rounded-lg border border-dashed border-border px-4 py-3 text-[11.5px] text-muted-foreground">
