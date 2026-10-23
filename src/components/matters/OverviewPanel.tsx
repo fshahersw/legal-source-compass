@@ -11,6 +11,7 @@ import {
   th,
 } from "@/components/matters/common";
 import { ProfileTrend, TrendGrid } from "@/components/trends/ProfileTrend";
+import { MEMBER_MONTHS_MAX } from "@/lib/trends/profile";
 import { evidenceKindLabel } from "@/lib/matters/cases";
 import { entryTypeLabel } from "@/lib/matters/entries";
 import { orNotRecorded } from "@/lib/matters/overview";
@@ -142,6 +143,12 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
   const counsel = o.counsel;
   // The trend cards read by exact MDL number; a number that is not a plain 1-5 digit one gets no card.
   const trendId = /^[1-9]\d{0,4}$/.test(o.mdl) ? o.mdl : null;
+  // Member actions are counted by month when the registry lists few enough to read; larger matters are counted by year.
+  const memberActions = payload.registry?.members.actions ?? null;
+  const memberKind =
+    memberActions !== null && memberActions <= MEMBER_MONTHS_MAX
+      ? "matter-member-months"
+      : "mdl-members-years";
 
   return (
     <div className="space-y-4">
@@ -186,7 +193,7 @@ export function OverviewPanel({ payload }: { payload: MatterOverviewPayload }) {
       {trendId ? (
         <TrendGrid>
           <ProfileTrend kind="matter-docket-entries" id={trendId} />
-          <ProfileTrend kind="mdl-members-years" id={trendId} />
+          <ProfileTrend kind={memberKind} id={trendId} />
           <ProfileTrend kind="mdl-fy-pending" id={trendId} />
         </TrendGrid>
       ) : null}

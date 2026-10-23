@@ -7,7 +7,7 @@
 import { parseNational } from "@/lib/external/courtCaseload.functions";
 import { restGet } from "@/lib/external/rest.server";
 import { memoAsync } from "@/lib/insights/readers/cache";
-import { readAllRows } from "@/lib/analytics/tally.server";
+import { countRows, readAllRows } from "@/lib/analytics/tally.server";
 import {
   arr,
   integer,
@@ -30,7 +30,8 @@ import {
   type MonthlyReport,
   type YearCount,
 } from "./mdl";
-import { keyedMemo, type ProfileKind } from "./profile";
+import { buildMemberMonths } from "./members";
+import { keyedMemo, MEMBER_MONTHS_MAX, type ProfileKind } from "./profile";
 
 const TTL_MS = 30 * 60 * 1000;
 const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -197,6 +198,29 @@ async function transferredYears(key: string): Promise<TrendBlockData | null> {
   });
 }
 
+/** The registry's member actions of a matter, by month filed, read from its dockets (counts_as_action) when there are few enough. */
+async function memberMonths(key: string): Promise<TrendBlockData | null> {
+  const mdl = Number(key);
+  const filter = encodeURIComponent(JSON.stringify({ mdl: key, counts_as_action: "true" }));
+  const total = await countRows(
+    `corpus_records?dataset=eq.sw_matter_dockets_v1&filters=cs.${filter}`,
+  );
+  if (total === 0 || total > MEMBER_MONTHS_MAX) return null;
+  const [rows, published] = await Promise.all([
+    readAllRows<{ d: unknown }>(
+      `corpus_records?select=d:item->cells->>filed&dataset=eq.sw_matter_dockets_v1&filters=cs.${filter}&order=ordinal.asc,id.asc`,
+      { max: MEMBER_MONTHS_MAX },
+    ),
+    publishedAt("sw_matter_dockets_v1"),
+  ]);
+  return buildMemberMonths({
+    mdl,
+    dates: rows.map((r) => isoDate(r.d)),
+    publishedMonth: published ? published.slice(0, 7) : null,
+    sourceUrl: `/records/sw_matters_v1/sw-matter:${key}`,
+  });
+}
+
 async function docketEntries(key: string): Promise<TrendBlockData | null> {
   const mdl = Number(key);
   const filter = encodeURIComponent(JSON.stringify({ mdl: key }));
@@ -257,6 +281,7 @@ const READERS: Record<ProfileKind, (key: string) => Promise<TrendBlockData | nul
   "mdl-transferred-years": transferredYears,
   "mdl-faers-years": (key) => adverseYears("faers", "fda_faers_product_series", "deaths", key),
   "mdl-maude-years": (key) => adverseYears("maude", "fda_device_event_series", "death", key),
+  "matter-member-months": memberMonths,
   "matter-docket-entries": docketEntries,
 };
 
@@ -279,5 +304,7 @@ export const EMPTY_REASON: Record<ProfileKind, string> = {
     "The registry records no member docket of this MDL that was first filed in another court.",
   "mdl-faers-years": "No FAERS product series is held for this MDL.",
   "mdl-maude-years": "No MAUDE product series is held for this MDL.",
+  "matter-member-months":
+    "The matter registry lists no dated member action for this MDL, or more than are read for a monthly count; the yearly card counts those.",
   "matter-docket-entries": "The matter registry holds no dated master-docket entry for this MDL.",
 };

@@ -75,7 +75,7 @@ export function buildFirmLandscapeYears(input: {
     notes: [
       "One appearance is one counsel entry for one party on an MDL master docket; member dockets are not counted.",
       READING,
-      `${formatCount(mdlCount)} master ${mdlCount === 1 ? "docket" : "dockets"} with a recorded filing year ${mdlCount === 1 ? "is" : "are"} plotted.${undated ? ` ${formatCount(undated)} with no recorded filing year ${undated === 1 ? "is" : "are"} left out.` : ""}`,
+      `${formatCount(mdlCount)} master ${mdlCount === 1 ? "docket" : "dockets"} with a recorded filing year ${mdlCount === 1 ? "is" : "are"} plotted.${undated ? ` ${formatCount(undated)} with no recorded filing year ${undated === 1 ? "is" : "are"} left out.` : ""} Counsel for parties on neither side are not drawn, so the total can be lower than the page's appearance count.`,
     ],
   });
   return { ...block, gaps: emptyPeriods(parts) };

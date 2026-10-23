@@ -12,6 +12,9 @@ export type ProfileTrendResult =
 
 const MDL_KEY = /^[1-9]\d{0,4}$/;
 
+/** The most registry member dockets read to count a matter's filings by month; larger matters are counted by year. */
+export const MEMBER_MONTHS_MAX = 12_000;
+
 type KindSpec = {
   /** Shape of the key the kind accepts (an MDL number). */
   key: RegExp;
@@ -70,6 +73,13 @@ export const PROFILE_KINDS = {
     title: (k) => `MAUDE device reports about the product of MDL ${k}, by year received`,
     measure: "MAUDE reports about the MDL's product",
     detail: { to: "/safety/signals", label: "Mass-tort product signals" },
+  },
+  "matter-member-months": {
+    key: MDL_KEY,
+    group: "courts",
+    title: (k) => `Member actions of MDL ${k} in the matter registry, by month filed`,
+    measure: "member actions in the matter registry",
+    detail: { to: "/matters/analytics", label: "MDL analytics" },
   },
   "matter-docket-entries": {
     key: MDL_KEY,

@@ -249,6 +249,44 @@ describe("adverse-event series", () => {
   });
 });
 
+describe("matter-member-months", () => {
+  const filed = ["2018-05-01", "2018-05-09", "2018-07-20"].map((d) => ({ d }));
+
+  it("reads the filing dates of the dockets that count as an action, for the exact MDL", async () => {
+    serve([
+      [
+        "corpus_datasets?select=u:updated_at&id=eq.sw_matter_dockets_v1",
+        { rows: [{ u: "2026-10-04 16:59:00+00" }] },
+      ],
+      ["select=id", { rows: [{ id: "x" }], total: 3 }],
+      ["select=d:item->cells->>filed", { rows: filed, total: 3 }],
+    ]);
+    const block = (await (await reader())("matter-member-months", "2804"))!;
+    expect(block.series[0]!.points.map((p) => [p.x, p.value])).toEqual([
+      ["2018-05", 2],
+      ["2018-06", null],
+      ["2018-07", 1],
+    ]);
+    const docketReads = restGet.mock.calls
+      .map(([p]) => decodeURIComponent(String(p)))
+      .filter((p) => p.includes("dataset=eq.sw_matter_dockets_v1"));
+    expect(docketReads).toHaveLength(2); // the count, then the rows
+    expect(
+      docketReads.every(
+        (p) => p.includes('"mdl":"2804"') && p.includes('"counts_as_action":"true"'),
+      ),
+    ).toBe(true);
+  });
+
+  it("does not read a matter with more dockets than the monthly count allows, or with none", async () => {
+    serve([["select=id", { rows: [{ id: "x" }], total: 12001 }]]);
+    expect(await (await reader())("matter-member-months", "2804")).toBeNull();
+    expect(restGet.mock.calls.some(([p]) => String(p).includes("select=d:"))).toBe(false);
+    serve([["select=id", { rows: [], total: 0 }]]);
+    expect(await (await reader())("matter-member-months", "2804")).toBeNull();
+  });
+});
+
 describe("matter-docket-entries", () => {
   const matter = { c: { mdl_number: 2804, entries_total: 5 } };
   const dates = ["2017-12-05", "2017-12-20", "2018-03-02", null, "2026-10-02"].map((d) => ({ d }));
