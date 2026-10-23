@@ -27,13 +27,18 @@
 -- Deployment (lead; project xosqzzsnhxcyehcnirpa — supabase/config.toml names another project, so pass --project-ref):
 --   1. create extension if not exists pg_net;                    (pg_cron is already installed)
 --   2. apply this file (safe to re-apply; sources stay disabled until step 7).
---   3. function secrets, by name: INGEST_CRON_SECRET (a new random value) and DATA_GOV_API_KEY (ingest-ftc-hsr);
---      the same INGEST_CRON_SECRET value in Vault: select vault.create_secret('<value>', 'ingest_cron_secret');
+--   3. the trigger secret needs no step: section 8 generates it inside the database and keeps it in Vault
+--      (ingest_cron_secret); the functions check a presented token with public.ingest_check_trigger_v1, so the value is
+--      never copied anywhere. ingest-ftc-hsr also needs the function secret DATA_GOV_API_KEY, entered by the owner in the
+--      dashboard (until then that function answers 503 "missing function secrets" and its source stays disabled).
 --   4. from the repository root: supabase functions deploy <name> --project-ref xosqzzsnhxcyehcnirpa --no-verify-jwt
 --      for ingest-federal-register, ingest-openfda-enforcement, ingest-cpsc-recalls, ingest-ftc-hsr (each imports
 --      src/lib/ingest; if the bundler refuses that, deploy the copies from node scripts/ingest/bundle_functions.mjs <dir>).
---   5. first run of each source, one at a time: POST https://xosqzzsnhxcyehcnirpa.supabase.co/functions/v1/<name> with
---      Authorization: Bearer <INGEST_CRON_SECRET> and body {"source": "<id>", "trigger": "manual", "wait": true}.
+--   5. first run of each source, one at a time, from SQL so the secret stays in the database:
+--      select net.http_post(url := 'https://xosqzzsnhxcyehcnirpa.supabase.co/functions/v1/<name>',
+--        headers := jsonb_build_object('Content-Type', 'application/json', 'Authorization', 'Bearer ' ||
+--          (select decrypted_secret from vault.decrypted_secrets where name = 'ingest_cron_secret')),
+--        body := jsonb_build_object('source', '<id>', 'trigger', 'manual'), timeout_milliseconds := 10000);
 --   6. check: select source, status, fetched, inserted, updated, unchanged, held, error, notes from ingest.runs
 --      order by started_at desc limit 20;   and   select public.insights_freshness_v1();
 --   7. update ingest.sources set enabled = true where id in (...); then apply this file again (section 9 schedules).
@@ -551,6 +556,18 @@ begin
     where v is not null), '{}');
 end $$;
 
+-- Whether a token presented to an ingest edge function is the scheduler's trigger secret (Vault: ingest_cron_secret,
+-- generated in section 8). False where Vault is not installed, the secret is missing or the token is short; the digests
+-- are compared, never the stored text returned.
+create or replace function public.ingest_check_trigger_v1(p_token text) returns boolean
+language plpgsql stable security definer set search_path = '' as $$
+declare v text;
+begin
+  if p_token is null or length(p_token) < 32 or to_regclass('vault.decrypted_secrets') is null then return false; end if;
+  execute 'select decrypted_secret from vault.decrypted_secrets where name = $1 limit 1' into v using 'ingest_cron_secret';
+  return v is not null and sha256(convert_to(v, 'UTF8')) = sha256(convert_to(p_token, 'UTF8'));
+end $$;
+
 -- ------------------------------------------------------------------------------------------------ 5. freshness (insights/1)
 -- Freshness[] (src/lib/insights/contract.ts): one entry per configured source.
 --   lastRunAt      start of the latest run (any status)
@@ -595,7 +612,7 @@ begin
   foreach f in array array[
     'public.ingest_open_run_v1(text,text)', 'public.ingest_upsert_v1(uuid,jsonb)', 'public.ingest_catalog_note_v1(uuid,jsonb)',
     'public.ingest_finish_run_v1(uuid,text,integer,integer,integer,jsonb,text,jsonb,jsonb)', 'public.ingest_refresh_insights_v1(uuid)',
-    'public.ingest_distinct_text_v1(text,text[])', 'public.insights_freshness_v1()',
+    'public.ingest_distinct_text_v1(text,text[])', 'public.insights_freshness_v1()', 'public.ingest_check_trigger_v1(text)',
     'ingest.row_problem(jsonb,text,text,text)', 'ingest.filter_values(jsonb,text)', 'ingest.bump_filter_list(jsonb,jsonb,text[])',
     'ingest.catalog_metadata(jsonb,bigint,jsonb,jsonb,text,uuid,text,integer,integer,timestamptz)', 'ingest.clean_error(text)'] loop
     execute format('revoke all on function %s from public, anon, authenticated', f);
@@ -607,10 +624,26 @@ comment on schema ingest is 'Self-updating sources (ingest/1): source registry, 
 
 commit;
 
+-- ------------------------------------------------------------------------------------------------ 8. trigger secret
+-- Generated once, inside the database, where Vault is installed: 64 hex characters (SHA-256 of two random version-4
+-- UUIDs, 244 random bits). Never printed; re-applying this file keeps the existing secret.
+do $secret$
+begin
+  if to_regclass('vault.secrets') is null then
+    raise notice 'ingest trigger secret not created: Vault is not installed';
+    return;
+  end if;
+  if not exists (select 1 from vault.secrets where name = 'ingest_cron_secret') then
+    perform vault.create_secret(
+      encode(sha256(convert_to(gen_random_uuid()::text || gen_random_uuid()::text, 'UTF8')), 'hex'),
+      'ingest_cron_secret',
+      'Bearer token the ingest cron jobs send to the ingest edge functions; generated in the database (ingest-v1.sql)');
+  end if;
+end $secret$;
+
 -- ------------------------------------------------------------------------------------------------ 9. schedule (LEAD)
 -- LEAD: applies only when pg_cron AND pg_net are installed (enable pg_net first: create extension if not exists pg_net;).
--- Before the first scheduled run, store the shared trigger secret in Vault under the name ingest_cron_secret (the same
--- value as the edge-function secret INGEST_CRON_SECRET); the secret is read by name at run time and never written here.
+-- The jobs read the trigger secret from Vault by name (ingest_cron_secret, section 8) at run time; it is never written here.
 -- One job per source (ingest-<source id>), jittered minutes, UTC; a job posts only while its source is enabled. Re-running
 -- this block updates the jobs in place (cron.schedule replaces a job of the same name).
 do $schedule$

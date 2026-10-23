@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sameSecret, serveIngest } from "./edge.ts";
+import { serveIngest } from "./edge.ts";
 import type { Collected, SourceAdapter } from "./types.ts";
 
 const adapter = (source: string, secrets: string[] = []): SourceAdapter => ({
@@ -21,13 +21,21 @@ const adapter = (source: string, secrets: string[] = []): SourceAdapter => ({
   comparable: (c) => c as never,
 });
 
-/** fetch double for the corpus RPCs. */
-function rpcFetch(calls: string[]): typeof fetch {
+/** The trigger secret as the database holds it (64 hex characters, like the generated one). */
+const TOKEN = "a".repeat(64);
+
+/** fetch double for the corpus RPCs; ingest_check_trigger_v1 accepts TOKEN only, or fails when `checkDown`. */
+function rpcFetch(calls: string[], opts: { checkDown?: boolean } = {}): typeof fetch {
   return (async (input: RequestInfo | URL, init?: RequestInit) => {
     const name = String(input).split("/rpc/")[1] ?? "";
     calls.push(name);
     const headers = init?.headers as Record<string, string>;
     expect(headers["apikey"]).toBe("service-key");
+    if (name === "ingest_check_trigger_v1") {
+      if (opts.checkDown) return new Response("{}", { status: 404 });
+      const { p_token } = JSON.parse(String(init?.body)) as { p_token: string };
+      return new Response(JSON.stringify(p_token === TOKEN), { status: 200 });
+    }
     const body =
       name === "ingest_open_run_v1"
         ? { run_id: "00000000-0000-4000-8000-00000000000a", cursor: null }
@@ -42,12 +50,11 @@ const env =
   (extra: Record<string, string> = {}) =>
   (k: string) =>
     ({
-      INGEST_CRON_SECRET: "s3cret",
       SUPABASE_URL: "https://x.supabase.co",
       SUPABASE_SERVICE_ROLE_KEY: "service-key",
       ...extra,
     })[k];
-const post = (body: unknown, auth = "Bearer s3cret") =>
+const post = (body: unknown, auth = `Bearer ${TOKEN}`) =>
   new Request("https://x/functions/v1/ingest-test", {
     method: "POST",
     headers: { Authorization: auth },
@@ -55,20 +62,20 @@ const post = (body: unknown, auth = "Bearer s3cret") =>
   });
 
 describe("serveIngest", () => {
-  it("compares secrets in constant time and refuses empty ones", () => {
-    expect(sameSecret("abc", "abc")).toBe(true);
-    expect(sameSecret("abc", "abd")).toBe(false);
-    expect(sameSecret("", "")).toBe(false);
-  });
-
   it("refuses other methods, a wrong or missing secret, unknown sources and missing source secrets", async () => {
+    const calls: string[] = [];
     const h = serveIngest({
       sources: [adapter("a"), adapter("b", ["DATA_GOV_API_KEY"])],
       env: env(),
+      fetch: rpcFetch(calls),
     });
     expect((await h(new Request("https://x/", { method: "GET" }))).status).toBe(405);
+    // a short token is refused without asking the database; a long wrong one is refused by the database check
     expect((await h(post({ source: "a" }, "Bearer nope"))).status).toBe(401);
     expect((await h(post({ source: "a" }, ""))).status).toBe(401);
+    expect(calls).toEqual([]);
+    expect((await h(post({ source: "a" }, `Bearer ${"b".repeat(64)}`))).status).toBe(401);
+    expect(calls).toEqual(["ingest_check_trigger_v1"]);
     expect((await h(post({}))).status).toBe(400); // two sources: the source must be named
     expect((await h(post({ source: "zzz" }))).status).toBe(400);
     const missing = await h(post({ source: "b" }));
@@ -79,6 +86,13 @@ describe("serveIngest", () => {
     });
     const unset = serveIngest({ sources: [adapter("a")], env: () => undefined });
     expect((await unset(post({ source: "a" }))).status).toBe(503);
+    // the check itself unavailable (SQL not applied): refused as unavailable, never let through
+    const down = serveIngest({
+      sources: [adapter("a")],
+      env: env(),
+      fetch: rpcFetch([], { checkDown: true }),
+    });
+    expect((await down(post({ source: "a" }))).status).toBe(503);
   });
 
   it("schedule: answers 202 at once and runs in the background", async () => {
@@ -95,6 +109,7 @@ describe("serveIngest", () => {
     expect(await res.json()).toEqual({ accepted: true, source: "a", trigger: "schedule" });
     await Promise.all(pending);
     expect(calls).toEqual([
+      "ingest_check_trigger_v1",
       "ingest_open_run_v1",
       "ingest_finish_run_v1",
       "ingest_refresh_insights_v1",
@@ -113,7 +128,7 @@ describe("serveIngest", () => {
     expect(res.status).toBe(200);
     const text = await res.text();
     expect(text).not.toContain("service-key");
-    expect(text).not.toContain("s3cret");
+    expect(text).not.toContain(TOKEN);
     expect(JSON.parse(text)).toMatchObject({
       source: "a",
       status: "ok",

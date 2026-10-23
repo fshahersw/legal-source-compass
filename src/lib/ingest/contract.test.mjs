@@ -186,6 +186,7 @@ test("ingest/1 contract", { timeout: 180000 }, async (t) => {
         "public.ingest_upsert_v1(uuid,jsonb)",
         "public.insights_freshness_v1()",
         "public.ingest_open_run_v1(text,text)",
+        "public.ingest_check_trigger_v1(text)",
       ]) {
         for (const role of ["anon", "authenticated"]) {
           assert.equal(
@@ -204,6 +205,38 @@ test("ingest/1 contract", { timeout: 180000 }, async (t) => {
         false,
       );
     });
+
+    await t.test(
+      "trigger secret: generated once in Vault, checked by digest, refused without Vault",
+      async () => {
+        const check = async (token) =>
+          (await one("select public.ingest_check_trigger_v1($1) as ok", [token])).ok;
+        // no Vault here yet: nothing matches, and the file still loads
+        assert.equal(await check("a".repeat(64)), false);
+        // a minimal stand-in for Supabase Vault (name, secret; decrypted view; create_secret)
+        await db.exec(`
+        create schema vault;
+        create table vault.secrets (name text unique, secret text not null, description text);
+        create view vault.decrypted_secrets as select name, secret as decrypted_secret from vault.secrets;
+        create function vault.create_secret(p_secret text, p_name text, p_description text) returns uuid
+          language sql as $$ insert into vault.secrets values (p_name, p_secret, p_description); select gen_random_uuid() $$;`);
+        await db.exec(SQL);
+        const first = (
+          await one("select secret from vault.secrets where name = 'ingest_cron_secret'")
+        ).secret;
+        assert.match(first, /^[0-9a-f]{64}$/);
+        await db.exec(SQL); // re-applying keeps the secret
+        assert.equal(
+          (await one("select secret from vault.secrets where name = 'ingest_cron_secret'")).secret,
+          first,
+        );
+        assert.equal(await check(first), true);
+        assert.equal(await check(first.slice(0, 63) + (first.endsWith("0") ? "1" : "0")), false);
+        assert.equal(await check(first.slice(0, 31)), false);
+        assert.equal(await check(null), false);
+        await db.exec("drop schema vault cascade");
+      },
+    );
 
     await t.test("freshness before any run: never_run", async () => {
       const f = await rpc("insights_freshness_v1");
