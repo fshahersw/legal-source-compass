@@ -687,5 +687,66 @@
  },
  "fedreg-11": {
   "reviewed": true
+ },
+ "filing-71": {
+  "reviewed": true
+ },
+ "filing-72": {
+  "reviewed": true
+ },
+ "filing-73": {
+  "reviewed": true
+ },
+ "filing-74": {
+  "reviewed": true
+ },
+ "filing-75": {
+  "reviewed": true
+ },
+ "filing-76": {
+  "reviewed": true
+ },
+ "filing-77": {
+  "reviewed": true,
+  "add": [
+   {
+    "text": "49073-49077",
+    "kind": "state_statute",
+    "key": "state-stat:CA:ed:49073-49077",
+    "note": "second item of 'Cal. Ed. Code §§ 49069 and 49073-49077' (state statute lists after §§ are not split)"
+   }
+  ]
+ },
+ "filing-78": {
+  "reviewed": true
+ },
+ "filing-79": {
+  "reviewed": true,
+  "ignore": [
+   "2:19-md-02921-BRM-JAD"
+  ]
+ },
+ "filing-80": {
+  "reviewed": true
+ },
+ "filing-81": {
+  "reviewed": true,
+  "add": [
+   {
+    "text": "707 KAR l:320",
+    "kind": "state_regulation",
+    "key": "state-reg:KY:admin-regs:707:1:320",
+    "note": "OCR reads the digit 1 as the letter l"
+   }
+  ]
+ },
+ "filing-82": {
+  "reviewed": true
+ },
+ "filing-83": {
+  "reviewed": true,
+  "ignore": [
+   "4:22-md-03047-YGR"
+  ]
  }
 }

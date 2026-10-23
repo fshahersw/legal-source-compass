@@ -4,24 +4,24 @@
   "old (documents-extract/1 + shared parser)": {
    "by_kind": {
     "case": {
-     "tp_span": 193,
-     "tp_key": 193,
+     "tp_span": 194,
+     "tp_key": 194,
      "fp": 1,
      "fn": 36,
      "key_wrong": 0,
-     "precision": 0.9948,
-     "recall": 0.8428,
-     "gold": 229
+     "precision": 0.9949,
+     "recall": 0.8435,
+     "gold": 230
     },
     "cfr": {
-     "tp_span": 21,
-     "tp_key": 21,
+     "tp_span": 24,
+     "tp_key": 24,
      "fp": 0,
      "fn": 8,
      "key_wrong": 0,
      "precision": 1.0,
-     "recall": 0.7241,
-     "gold": 29
+     "recall": 0.75,
+     "gold": 32
     },
     "constitution_state": {
      "tp_span": 0,
@@ -44,14 +44,14 @@
      "gold": 2
     },
     "docket": {
-     "tp_span": 88,
-     "tp_key": 88,
+     "tp_span": 89,
+     "tp_key": 89,
      "fp": 0,
-     "fn": 10,
+     "fn": 13,
      "key_wrong": 0,
      "precision": 1.0,
-     "recall": 0.898,
-     "gold": 98
+     "recall": 0.8725,
+     "gold": 102
     },
     "federal_register": {
      "tp_span": 11,
@@ -94,34 +94,44 @@
      "gold": 15
     },
     "public_law": {
-     "tp_span": 8,
-     "tp_key": 8,
+     "tp_span": 9,
+     "tp_key": 9,
      "fp": 0,
      "fn": 0,
      "key_wrong": 0,
      "precision": 1.0,
      "recall": 1.0,
-     "gold": 8
+     "gold": 9
     },
     "short": {
      "tp_span": 0,
      "tp_key": 0,
      "fp": 0,
-     "fn": 83,
+     "fn": 87,
      "key_wrong": 0,
      "precision": null,
      "recall": 0.0,
-     "gold": 83
+     "gold": 87
+    },
+    "state_regulation": {
+     "tp_span": 0,
+     "tp_key": 0,
+     "fp": 0,
+     "fn": 22,
+     "key_wrong": 0,
+     "precision": null,
+     "recall": 0.0,
+     "gold": 22
     },
     "state_statute": {
-     "tp_span": 39,
-     "tp_key": 22,
-     "fp": 0,
-     "fn": 11,
-     "key_wrong": 17,
-     "precision": 0.5641,
-     "recall": 0.44,
-     "gold": 50
+     "tp_span": 52,
+     "tp_key": 29,
+     "fp": 1,
+     "fn": 15,
+     "key_wrong": 23,
+     "precision": 0.5472,
+     "recall": 0.4328,
+     "gold": 67
     },
     "statutes_at_large": {
      "tp_span": 5,
@@ -134,14 +144,14 @@
      "gold": 7
     },
     "usc": {
-     "tp_span": 43,
-     "tp_key": 43,
+     "tp_span": 45,
+     "tp_key": 45,
      "fp": 0,
      "fn": 3,
      "key_wrong": 0,
      "precision": 1.0,
-     "recall": 0.9348,
-     "gold": 46
+     "recall": 0.9375,
+     "gold": 48
     }
    },
    "by_stratum": {
@@ -155,13 +165,13 @@
      "recall": 0.7778
     },
     "filing": {
-     "windows": 70,
-     "gold": 260,
-     "tp_key": 175,
-     "fp": 2,
-     "key_wrong": 12,
-     "precision": 0.9259,
-     "recall": 0.6731
+     "windows": 83,
+     "gold": 314,
+     "tp_key": 190,
+     "fp": 3,
+     "key_wrong": 18,
+     "precision": 0.9005,
+     "recall": 0.6051
     },
     "opinion": {
      "windows": 39,
@@ -183,13 +193,13 @@
     }
    },
    "total": {
-    "tp_span": 419,
-    "tp_key": 402,
-    "fp": 2,
-    "fn": 175,
-    "key_wrong": 17,
-    "precision": 0.9549,
-    "recall": 0.6768
+    "tp_span": 440,
+    "tp_key": 417,
+    "fp": 3,
+    "fn": 208,
+    "key_wrong": 23,
+    "precision": 0.9413,
+    "recall": 0.6435
    },
    "errors_fp_or_key": [
     {
@@ -286,6 +296,54 @@
      "pred": "N.J. Stat. Ann. § 56:9-12(c)",
      "pred_key": "state:NJ:56:9-12(c)",
      "gold_key": "state-stat:NJ:stat:56:9-12",
+     "why": "key"
+    },
+    {
+     "window": "filing-77",
+     "pred": "Cal. Ed. Code § 49076(a)",
+     "pred_key": "state:CA:49076(a)",
+     "gold_key": "state-stat:CA:ed:49076",
+     "why": "key"
+    },
+    {
+     "window": "filing-78",
+     "pred": "Tex. Admin. Code §215.144",
+     "kind": "state_statute",
+     "why": "fp"
+    },
+    {
+     "window": "filing-80",
+     "pred": "N.C. Gen. Stat. Ann. § 75-65(i)",
+     "pred_key": "state:NC:75-65(i)",
+     "gold_key": "state-stat:NC:gen-stat:75-65",
+     "why": "key"
+    },
+    {
+     "window": "filing-80",
+     "pred": "Kan. Stat. Ann. § 50-7a02(e)",
+     "pred_key": "state:KS:50-7a02(e)",
+     "gold_key": "state-stat:KS:stat:50-7a02",
+     "why": "key"
+    },
+    {
+     "window": "filing-80",
+     "pred": "Ky. Rev. Stat. Ann. § 365.732(8)",
+     "pred_key": "state:KY:365.732(8)",
+     "gold_key": "state-stat:KY:rev-stat:365.732",
+     "why": "key"
+    },
+    {
+     "window": "filing-80",
+     "pred": "Cal. Civ. Code § 1798.82(e)",
+     "pred_key": "state:CA:1798.82(e)",
+     "gold_key": "state-stat:CA:civ:1798.82",
+     "why": "key"
+    },
+    {
+     "window": "filing-80",
+     "pred": "Wis. Stat. Ann. § 134.98(3m)(b)",
+     "pred_key": "state:WI:134.98(3m)(b)",
+     "gold_key": "state-stat:WI:stat:134.98",
      "why": "key"
     },
     {
@@ -689,6 +747,171 @@
      "window": "filing-70",
      "gold": "903 F. Supp. 2d at 232-33",
      "kind": "short"
+    },
+    {
+     "window": "filing-71",
+     "gold": "N.M. Admin. Code § 20.2.88.101",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-71",
+     "gold": "id. § 20.2.88.14",
+     "kind": "short"
+    },
+    {
+     "window": "filing-72",
+     "gold": "201 Mass. Code Regs. 17.01-05",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-72",
+     "gold": "201 Mass. Code\nRegs. 17.01-05",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-73",
+     "gold": "Id.",
+     "kind": "short"
+    },
+    {
+     "window": "filing-73",
+     "gold": "390 F. Supp. 3d at 1112",
+     "kind": "short"
+    },
+    {
+     "window": "filing-73",
+     "gold": "Utah Admin. Code § R307-201-4",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-74",
+     "gold": "703 KAR 3 :205",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-75",
+     "gold": "707 KAR 1:340",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-76",
+     "gold": "704 KAR 3:410",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-76",
+     "gold": "704 KAR 3:410",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-76",
+     "gold": "704 KAR 3:410",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-76",
+     "gold": "704 KAR 3:410",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-77",
+     "gold": "Title 5 of the California Code of Regulations § 434",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-77",
+     "gold": "49073-49077",
+     "kind": "state_statute"
+    },
+    {
+     "window": "filing-77",
+     "gold": "5 C.C.R. § 431(c)(2)",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-77",
+     "gold": "5 C.C.R. § 433(a)",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-78",
+     "gold": "43 Tex. Admin. Code §215.144",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-78",
+     "gold": "Rule 23(e)(2)(C)(ii)",
+     "kind": "short"
+    },
+    {
+     "window": "filing-79",
+     "gold": "N.J.A.C. 13:4-1.6(c)",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-80",
+     "gold": "Md. Code Ann. Com.\nLaw § 14-3508",
+     "kind": "state_statute"
+    },
+    {
+     "window": "filing-80",
+     "gold": "N.J. Admin. Code §13:45F-5.2",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-80",
+     "gold": "Tenn. Code Ann. § 47-\n18-2107(i)(2)",
+     "kind": "state_statute"
+    },
+    {
+     "window": "filing-80",
+     "gold": "Md.\nCode Ann. Com. Law § 14-3507",
+     "kind": "state_statute"
+    },
+    {
+     "window": "filing-81",
+     "gold": "707 KAR 1:320",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-81",
+     "gold": "707 KAR l:320",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-81",
+     "gold": "707 KAR 1 :320",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-81",
+     "gold": "707 KAR 1 :350",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-82",
+     "gold": "16-cv-5649",
+     "kind": "docket"
+    },
+    {
+     "window": "filing-82",
+     "gold": "16-cv-2210",
+     "kind": "docket"
+    },
+    {
+     "window": "filing-82",
+     "gold": "15-md-02672-CRB",
+     "kind": "docket"
+    },
+    {
+     "window": "filing-82",
+     "gold": "Utah Admin. Code § R307-201-4",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-83",
+     "gold": "703 KAR 5:280",
+     "kind": "state_regulation"
     },
     {
      "window": "opinion-01",
@@ -1205,24 +1428,24 @@
   "new (citations-v2)": {
    "by_kind": {
     "case": {
-     "tp_span": 216,
-     "tp_key": 216,
+     "tp_span": 217,
+     "tp_key": 217,
      "fp": 1,
      "fn": 13,
      "key_wrong": 0,
      "precision": 0.9954,
-     "recall": 0.9432,
-     "gold": 229
+     "recall": 0.9435,
+     "gold": 230
     },
     "cfr": {
-     "tp_span": 29,
-     "tp_key": 29,
+     "tp_span": 32,
+     "tp_key": 32,
      "fp": 0,
      "fn": 0,
      "key_wrong": 0,
      "precision": 1.0,
      "recall": 1.0,
-     "gold": 29
+     "gold": 32
     },
     "constitution_state": {
      "tp_span": 2,
@@ -1245,14 +1468,14 @@
      "gold": 2
     },
     "docket": {
-     "tp_span": 98,
-     "tp_key": 98,
+     "tp_span": 102,
+     "tp_key": 102,
      "fp": 0,
      "fn": 0,
      "key_wrong": 0,
      "precision": 1.0,
      "recall": 1.0,
-     "gold": 98
+     "gold": 102
     },
     "federal_register": {
      "tp_span": 11,
@@ -1295,34 +1518,44 @@
      "gold": 15
     },
     "public_law": {
-     "tp_span": 8,
-     "tp_key": 8,
+     "tp_span": 9,
+     "tp_key": 9,
      "fp": 0,
      "fn": 0,
      "key_wrong": 0,
      "precision": 1.0,
      "recall": 1.0,
-     "gold": 8
+     "gold": 9
     },
     "short": {
-     "tp_span": 83,
-     "tp_key": 81,
+     "tp_span": 87,
+     "tp_key": 85,
      "fp": 1,
      "fn": 0,
      "key_wrong": 2,
-     "precision": 0.9643,
-     "recall": 0.9759,
-     "gold": 83
+     "precision": 0.9659,
+     "recall": 0.977,
+     "gold": 87
     },
-    "state_statute": {
-     "tp_span": 49,
-     "tp_key": 49,
+    "state_regulation": {
+     "tp_span": 21,
+     "tp_key": 21,
      "fp": 0,
      "fn": 1,
      "key_wrong": 0,
      "precision": 1.0,
-     "recall": 0.98,
-     "gold": 50
+     "recall": 0.9545,
+     "gold": 22
+    },
+    "state_statute": {
+     "tp_span": 65,
+     "tp_key": 65,
+     "fp": 0,
+     "fn": 2,
+     "key_wrong": 0,
+     "precision": 1.0,
+     "recall": 0.9701,
+     "gold": 67
     },
     "statutes_at_large": {
      "tp_span": 6,
@@ -1335,14 +1568,14 @@
      "gold": 7
     },
     "usc": {
-     "tp_span": 46,
-     "tp_key": 46,
+     "tp_span": 48,
+     "tp_key": 48,
      "fp": 0,
      "fn": 0,
      "key_wrong": 0,
      "precision": 1.0,
      "recall": 1.0,
-     "gold": 46
+     "gold": 48
     }
    },
    "by_stratum": {
@@ -1356,13 +1589,13 @@
      "recall": 0.9778
     },
     "filing": {
-     "windows": 70,
-     "gold": 260,
-     "tp_key": 257,
+     "windows": 83,
+     "gold": 314,
+     "tp_key": 309,
      "fp": 1,
      "key_wrong": 2,
-     "precision": 0.9885,
-     "recall": 0.9885
+     "precision": 0.9904,
+     "recall": 0.9841
     },
     "opinion": {
      "windows": 39,
@@ -1384,13 +1617,13 @@
     }
    },
    "total": {
-    "tp_span": 579,
-    "tp_key": 577,
+    "tp_span": 631,
+    "tp_key": 629,
     "fp": 2,
-    "fn": 15,
+    "fn": 17,
     "key_wrong": 2,
-    "precision": 0.9931,
-    "recall": 0.9714
+    "precision": 0.9937,
+    "recall": 0.9707
    },
    "errors_fp_or_key": [
     {
@@ -1425,6 +1658,16 @@
      "window": "filing-58",
      "gold": "California Business & ProfessionsCode § 17200",
      "kind": "state_statute"
+    },
+    {
+     "window": "filing-77",
+     "gold": "49073-49077",
+     "kind": "state_statute"
+    },
+    {
+     "window": "filing-81",
+     "gold": "707 KAR l:320",
+     "kind": "state_regulation"
     },
     {
      "window": "opinion-01",

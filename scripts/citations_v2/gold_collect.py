@@ -124,7 +124,14 @@ STATE_TRIGGER = re.compile(r"(Ann\.|Stat\.|Code|Laws|Regs\.|Admin\.|ILCS|N\.J\.S
 # Second stratum of filings: pages chosen read-only in SQL (seeded hash over an 8% block sample of indexed pages whose
 # text holds a statute/regulation token, STATE_TRIGGER) -- the list is in gold/state_pages.json; the window is anchored
 # on a token occurrence.
-def filings_list(listing: Path, out: Path, seed: str, start_id: int) -> None:
+# Third stratum (state regulations, which the first two strata did not reach): pages chosen read-only in SQL by a
+# repeatable block sample of indexed pages whose text holds an administrative-code token (gold/reg_pages.json); the
+# window is anchored on such a token (REG_TRIGGER).
+REG_TRIGGER = re.compile(r"(Code Regs\.|N\.J\.A\.C\.|Admin\. Code|NYCRR|Ill\. Adm\. Code|Admin\. R\.|Code of Regulations|C\.M\.R\.|WAC |OAR |COMAR|KAR )")
+
+
+def filings_list(listing: Path, out: Path, seed: str, start_id: int, trigger: re.Pattern = STATE_TRIGGER,
+                 stratum: str = "statute_regulation_token") -> None:
     url, key = creds()
     rng = random.Random(seed)
     pairs = json.loads(listing.read_text(encoding="utf-8"))
@@ -142,11 +149,11 @@ def filings_list(listing: Path, out: Path, seed: str, start_id: int) -> None:
         if not pg:
             continue
         p = pg[0]
-        hits = [m.start() for m in STATE_TRIGGER.finditer(p["text"])]
+        hits = [m.start() for m in trigger.finditer(p["text"])]
         off, text = window(p["text"], rng, rng.choice(hits) if hits else None)
         rows.append({"id": f"filing-{start_id + len(rows):02d}", "source": "court_filing", "sha256": sha256, "page": int(page),
                      "page_text_sha256": sha(p["text"]), "page_chars": len(p["text"]), "offset": off, "text": text,
-                     "stratum": "statute_regulation_token",
+                     "stratum": stratum,
                      "provenance": "documents_export_pages_v1 (corpus_ingest.pdf_text_pages, indexed byte sets)"})
         time.sleep(0.3)
     write(out, rows)
@@ -275,7 +282,7 @@ def write(out: Path, rows: list[dict]) -> None:
 
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("what", choices=["filings", "opinions", "reports", "filings-list", "fedreg", "opinions-statutes"])
+    ap.add_argument("what", choices=["filings", "opinions", "reports", "filings-list", "filings-regs", "fedreg", "opinions-statutes"])
     ap.add_argument("--list", default="")
     ap.add_argument("--start-id", type=int, default=1)
     ap.add_argument("--n", type=int, default=30)
@@ -291,6 +298,8 @@ def main(argv: list[str]) -> int:
         reports(out, a.seed)
     elif a.what == "filings-list":
         filings_list(Path(a.list), out, a.seed, a.start_id)
+    elif a.what == "filings-regs":
+        filings_list(Path(a.list), out, a.seed, a.start_id, REG_TRIGGER, "state_regulation_token")
     elif a.what == "fedreg":
         federal_register(out, a.seed)
     else:

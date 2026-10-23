@@ -21,7 +21,7 @@ rule_set, strip_sign; [ ... ] is kept only when every group inside it is non-emp
 
 from __future__ import annotations
 
-VERSION = "citations-v2/2026-10-25.2"
+VERSION = "citations-v2/2026-10-25.3"
 
 # ------------------------------------------------------------------------------------------------ fragments
 FRAGMENTS: dict[str, str] = {
@@ -164,7 +164,7 @@ STATE_STATUTES: list[tuple[str, str, str]] = [
     ("LA", "rev-stat", r"(?:La\.\s+R\.\s?S\.|La\.\s+Rev\.\s+Stat\.{{ANN}}|La\.\s+Stat\.{{ANN}}){{OPT_SIGN}}"),
     ("LA", "civ-code", r"La\.\s+Civ\.\s+Code{{ANN}}\s+(?:art\.|arts\.|Art\.)\s*"),
     ("ME", "rev-stat", r"(?:Me\.\s+(?:Rev\.\s+)?Stat\.{{ANN}}\s+tit\.\s*(?<title>\d{1,2}(?:-[A-Z])?),?|(?<title2>\d{1,2}(?:-[A-Z])?)\s+M\.R\.S\.(?:A\.)?){{SIGN}}"),
-    ("MD", "*", r"Md\.\s+Code{{ANN}},\s*(?:{{WORD}}\s+){1,6}(?=§){{SIGN}}"),
+    ("MD", "*", r"Md\.\s+Code{{ANN}},?\s*(?:{{WORD}}\s+){1,6}(?=§){{SIGN}}"),
     ("MA", "gen-laws", r"(?:Mass\.\s+Gen\.\s+Laws(?:\s+Ann\.)?|Mass\.\s+Ann\.\s+Laws|M\.G\.L\.(?:A\.)?|G\.\s?L\.)\s+(?:[Cc]h\.\s*|c\.\s*)?(?<chapter>\d{1,3}[A-Z]{0,2}),?{{SIGN}}"),
     ("MI", "comp-laws", r"(?:Mich\.\s+Comp\.\s+Laws(?:\s+Ann\.|\s+Serv\.)?|MCL){{SIGN}}"),
     ("MN", "stat", r"Minn\.\s+Stat\.{{ANN}}{{SIGN}}"),
@@ -213,6 +213,7 @@ STATE_REGULATIONS: list[tuple[str, str, str]] = [
     ("AR", "code-r", r"(?:(?<title>\d{3}\.\d{2}\.\d{1,3})\s+)?Ark\.\s+Code\s+R\.\s*(?:§§?\s*)?(?<sec>{{REG_SEC}})"),
     ("CA", "code-regs", r"Cal\.\s+Code\s+(?:of\s+)?Regs\.,?\s+tit\.\s*(?<title>\d{1,2}),?\s*§§?\s*(?<sec>{{REG_SEC}})"),
     ("CA", "code-regs", r"(?<title>\d{1,2})\s+(?:C\.C\.R\.|CCR|Cal\.\s+Code\s+Regs\.)\s*§§?\s*(?<sec>{{REG_SEC}})"),
+    ("CA", "code-regs", r"[Tt]itle\s+(?<title>\d{1,2})\s+of\s+(?:the\s+)?California\s+Code\s+of\s+Regulations,?\s*(?:§§?|[Ss]ections?)\s*(?<sec>{{REG_SEC}})"),
     ("CO", "code-regs", r"(?<title>\d{1,2})\s+(?:Colo\.\s+Code\s+Regs\.|CCR)\s+(?:§§?\s*)?(?<sec>\d{3,4}-\d{1,3}(?::[0-9.]+)?{{SUBS}})"),
     ("CT", "agencies-regs", r"(?:Conn\.\s+Agencies\s+Regs\.|R\.C\.S\.A\.)\s*§§?\s*(?<sec>{{REG_SEC}})"),
     ("DE", "admin-code", r"(?<title>\d{1,2})\s+(?:Del\.|DE)\s+Admin\.\s+Code\s*(?:§§?\s*)?(?<sec>{{REG_SEC}})"),
@@ -228,12 +229,12 @@ STATE_REGULATIONS: list[tuple[str, str, str]] = [
     ("IN", "admin-code", r"(?<title>\d{1,3})\s+Ind\.\s+Admin\.\s+Code\s+(?<sec>{{REG_SEC}})"),
     ("IA", "admin-code", r"Iowa\s+Admin\.\s+Code\s+r\.\s*(?<sec>{{REG_SEC}})"),
     ("KS", "admin-regs", r"(?:Kan\.\s+Admin\.\s+Regs\.|K\.A\.R\.)\s*(?:§§?\s*)?(?<sec>\d{1,3}-\d{1,3}-\d{1,4}[a-z]?{{SUBS}})"),
-    ("KY", "admin-regs", r"(?<title>\d{1,3})\s+(?:Ky\.\s+Admin\.\s+Regs\.|KAR)\s+(?<sec>\d{1,3}:\d{2,3}{{SUBS}})"),
+    ("KY", "admin-regs", r"(?<title>\d{1,3})\s+(?:Ky\.\s+Admin\.\s+Regs\.|KAR)\s+(?<sec>\d{1,3}[ ]?:\d{2,3}{{SUBS}})"),
     ("LA", "admin-code", r"La\.\s+Admin\.\s+Code\s+tit\.\s*(?<title>\d{1,2}),?\s*(?:pt\.\s*(?<part>[IVXL]{1,6}),?\s*)?§§?\s*(?<sec>{{REG_SEC}})"),
     ("LA", "admin-code", r"L\.?A\.?C\.?\s+(?<title>\d{1,2}):(?<part>[IVXL]{1,6})\.(?<sec>\d{1,4}{{SUBS}})"),
     ("ME", "code-r", r"(?<title>\d{2}-\d{3})\s+(?:Me\.\s+Code\s+R\.|C\.M\.R\.|CMR)\s*(?:ch\.|§§?)?\s*(?<sec>\d{1,4}{{SUBS}})"),
     ("MD", "code-regs", r"(?:Md\.\s+Code\s+Regs\.|COMAR)\s*(?<sec>\d{2}\.\d{2}\.\d{2}(?:\.\d{2,3})?{{SUBS}})"),
-    ("MA", "code-regs", r"(?<title>\d{3})\s+(?:Mass\.\s+Code\s+Regs\.|C\.M\.R\.|CMR)\s*(?:§§?\s*)?(?<sec>\d{1,3}\.\d{2,3}{{SUBS}})"),
+    ("MA", "code-regs", r"(?<title>\d{3})\s+(?:Mass\.\s+Code\s+Regs\.|C\.M\.R\.|CMR)\s*(?:§§?\s*)?(?<sec>\d{1,3}\.\d{2,3}(?:[-–]\d{2,3}(?![\d.]))?{{SUBS}})"),
     ("MI", "admin-code", r"Mich\.\s+Admin\.\s+Code\s+(?:r\.|R)\s*(?<sec>\d{1,3}\.\d{1,5}[a-z]?{{SUBS}})"),
     ("MN", "rules", r"Minn\.\s+R\.\s*(?:pt\.\s*)?(?<sec>\d{4}\.\d{4}{{SUBS}})"),
     ("MS", "code-r", r"(?<title>\d{1,2}-\d{1,3})\s+Miss\.\s+Code\s+R\.\s*(?:§§?\s*)?(?<sec>{{REG_SEC}})"),
@@ -244,7 +245,7 @@ STATE_REGULATIONS: list[tuple[str, str, str]] = [
     ("NV", "admin-code", r"(?:Nev\.\s+Admin\.\s+Code|NAC)\s*(?:ch\.\s*|§§?\s*)?(?<sec>\d{1,3}[A-Z]?\.\d{1,4}{{SUBS}})"),
     ("NH", "code-admin-r", r"N\.H\.\s+Code\s+Admin\.\s+R\.(?:\s+Ann\.)?\s*(?<agency>[A-Z][A-Za-z]{1,8}(?:-[A-Z][a-z]{0,3})?)\s*(?<sec>\d{1,4}\.\d{1,3}{{SUBS}})"),
     ("NJ", "admin-code", r"(?:N\.J\.\s+Admin\.\s+Code|N\.J\.A\.C\.)\s*(?:§§?\s*)?(?<sec>\d{1,2}[A-Z]?:\d{1,3}[A-Z]?-\d{1,3}(?:\.\d{1,3})?{{SUBS}})"),
-    ("NM", "code-r", r"N\.M\.\s+Code\s+R\.\s*(?:§§?\s*)?(?<sec>\d{1,2}\.\d{1,3}\.\d{1,3}(?:\.\d{1,4})?{{SUBS}})"),
+    ("NM", "code-r", r"N\.M\.\s+(?:Code\s+R\.|Admin\.\s+Code)\s*(?:§§?\s*)?(?<sec>\d{1,2}\.\d{1,3}\.\d{1,3}(?:\.\d{1,4})?{{SUBS}})"),
     ("NM", "code-r", r"(?<sec>\d{1,2}\.\d{1,3}\.\d{1,3}(?:\.\d{1,4})?{{SUBS}})\s+NMAC"),
     ("NY", "comp-codes", r"N\.Y\.\s+Comp\.\s+Codes\s+R\.\s+&\s+Regs\.,?\s+tit\.\s*(?<title>\d{1,2}[A-Z]?),?\s*§§?\s*(?<sec>{{REG_SEC}})"),
     ("NY", "comp-codes", r"(?<title>\d{1,2}[A-Z]?)\s+N\.?Y\.?C\.?R\.?R\.?\s*(?:§§?\s*)?(?<sec>{{REG_SEC}})"),
@@ -259,7 +260,7 @@ STATE_REGULATIONS: list[tuple[str, str, str]] = [
     ("SD", "admin-r", r"(?:S\.D\.\s+Admin\.\s+R\.|ARSD)\s*(?<sec>\d{1,2}:\d{2}(?::\d{2}){1,2}(?:\.\d{1,2})?{{SUBS}})"),
     ("TN", "comp-r-regs", r"Tenn\.\s+Comp\.\s+R\.\s+&\s+Regs\.\s*(?:r\.\s*)?(?<sec>{{REG_SEC}})"),
     ("TX", "admin-code", r"(?<title>\d{1,2})\s+(?:Tex\.\s+Admin\.\s+Code|TAC|T\.A\.C\.)\s*(?:§§?\s*)?(?<sec>\d{1,4}\.\d{1,4}{{SUBS}})"),
-    ("UT", "admin-code", r"Utah\s+Admin\.\s+Code\s+(?:r\.\s*)?(?<sec>R\d{1,3}-\d{1,4}(?:-\d{1,4}[a-z]?)?{{SUBS}})"),
+    ("UT", "admin-code", r"Utah\s+Admin\.\s+Code\s+(?:r\.\s*|§§?\s*)?(?<sec>R\d{1,3}-\d{1,4}(?:-\d{1,4}[a-z]?)?{{SUBS}})"),
     ("VT", "code-r", r"(?<title>\d{1,2}-\d{3})\s+Vt\.\s+Code\s+R\.\s*(?:§§?\s*)?(?<sec>{{REG_SEC}})"),
     ("VA", "admin-code", r"(?<title>\d{1,2})\s?(?:Va\.\s+Admin\.\s+Code|VAC)\s?(?:§§?\s*)?(?<sec>\d{1,3}-\d{1,3}-\d{1,4}{{SUBS}})"),
     ("WA", "admin-code", r"(?:Wash\.\s+Admin\.\s+Code|WAC)\s*(?:§§?\s*)?(?<sec>\d{1,3}[A-Z]?-\d{1,3}[A-Z]?-\d{1,4}[A-Z]?{{SUBS}})"),

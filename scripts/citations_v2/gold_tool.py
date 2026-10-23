@@ -46,7 +46,7 @@ NET = re.compile(r"§|\b\d{1,4}\s+[A-Z][A-Za-z.'’ ]{0,22}\s?\d[0-9,]{0,7}\b|U\
 
 def windows() -> list[dict]:
     rows = []
-    for name in ("filings", "filings2", "opinions", "opinions2", "reports", "fedreg"):
+    for name in ("filings", "filings2", "filings3", "opinions", "opinions2", "reports", "fedreg"):
         p = WIN_DIR / f"{name}.jsonl"
         rows += [json.loads(ln) for ln in p.read_text(encoding="utf-8").splitlines() if ln.strip()]
     return rows

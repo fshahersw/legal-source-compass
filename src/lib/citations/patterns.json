@@ -1,9 +1,9 @@
 {
- "version": "citations-v2/2026-10-25.2",
+ "version": "citations-v2/2026-10-25.3",
  "source": {
   "reporters_db": "3.2.67",
   "reporters_json_sha256": "d1dee4057eaf051b3737c720fd0c58cd436f74b69286f521c3601d6aa4d332f1",
-  "pattern_source_sha256": "92942520c0ff6c454453f0cee55b60644c32b00f757642c5223ae3e66a566a05"
+  "pattern_source_sha256": "e11623921c7ab496a4387caf274f83f0f61c94780fa726f0120b6a2bb440ff72"
  },
  "rules": [
   {
@@ -923,7 +923,7 @@
    "state": "MD",
    "code": "*",
    "flags": "i",
-   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Md\\.\\s+Code(?:\\s+Ann\\.)?,\\s*(?:(?:[A-Z][A-Za-z'’]*\\.?|&)\\s+){1,6}(?=§)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
+   "pattern": "(?<![A-Za-z0-9_.])(?<code_text>Md\\.\\s+Code(?:\\s+Ann\\.)?,?\\s*(?:(?:[A-Z][A-Za-z'’]*\\.?|&)\\s+){1,6}(?=§)\\s*(?:§§?|[Ss]ec(?:tion)?s?\\.?)\\s*)(?<sec>[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*)(?![A-Za-z0-9_])(?!\\s+Supp\\.)(?![-–]\\s)(?![¬­])",
    "atomic": {
     "sec": "[0-9][0-9A-Za-z]*(?:(?:[.:/–—]|-(?:[ \\t]{0,2}\\n?[ \\t]{0,2})?)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*"
    },
@@ -1725,7 +1725,24 @@
    ]
   },
   {
-   "id": "state_regulation_co_7",
+   "id": "state_regulation_ca_7",
+   "kind": "state_regulation",
+   "builder": "state_regulation",
+   "priority": 36,
+   "state": "CA",
+   "code": "code-regs",
+   "flags": "i",
+   "pattern": "(?<![A-Za-z0-9_.])(?:[Tt]itle\\s+(?<title>\\d{1,2})\\s+of\\s+(?:the\\s+)?California\\s+Code\\s+of\\s+Regulations,?\\s*(?:§§?|[Ss]ections?)\\s*(?<sec>(?:R\\s?)?[0-9][0-9A-Za-z]*(?:(?:[.:\\-–]|-\\.)[0-9A-Za-z]+)*(?:\\([0-9A-Za-z]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
+   "anchors": [
+    "California",
+    "Code",
+    "REG",
+    "Regulations",
+    "SEC"
+   ]
+  },
+  {
+   "id": "state_regulation_co_8",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -1742,7 +1759,7 @@
    ]
   },
   {
-   "id": "state_regulation_ct_8",
+   "id": "state_regulation_ct_9",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -1763,7 +1780,7 @@
    ]
   },
   {
-   "id": "state_regulation_de_9",
+   "id": "state_regulation_de_10",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -1781,7 +1798,7 @@
    ]
   },
   {
-   "id": "state_regulation_dc_10",
+   "id": "state_regulation_dc_11",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -1800,7 +1817,7 @@
    ]
   },
   {
-   "id": "state_regulation_dc_11",
+   "id": "state_regulation_dc_12",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -1815,7 +1832,7 @@
    ]
   },
   {
-   "id": "state_regulation_fl_12",
+   "id": "state_regulation_fl_13",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -1832,7 +1849,7 @@
    ]
   },
   {
-   "id": "state_regulation_fl_13",
+   "id": "state_regulation_fl_14",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -1851,7 +1868,7 @@
    ]
   },
   {
-   "id": "state_regulation_ga_14",
+   "id": "state_regulation_ga_15",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -1869,7 +1886,7 @@
    ]
   },
   {
-   "id": "state_regulation_hi_15",
+   "id": "state_regulation_hi_16",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -1888,7 +1905,7 @@
    ]
   },
   {
-   "id": "state_regulation_id_16",
+   "id": "state_regulation_id_17",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -1905,7 +1922,7 @@
    ]
   },
   {
-   "id": "state_regulation_il_17",
+   "id": "state_regulation_il_18",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -1922,7 +1939,7 @@
    ]
   },
   {
-   "id": "state_regulation_il_18",
+   "id": "state_regulation_il_19",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -1938,7 +1955,7 @@
    ]
   },
   {
-   "id": "state_regulation_in_19",
+   "id": "state_regulation_in_20",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -1955,7 +1972,7 @@
    ]
   },
   {
-   "id": "state_regulation_ia_20",
+   "id": "state_regulation_ia_21",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -1972,7 +1989,7 @@
    ]
   },
   {
-   "id": "state_regulation_ks_21",
+   "id": "state_regulation_ks_22",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -1991,14 +2008,14 @@
    ]
   },
   {
-   "id": "state_regulation_ky_22",
+   "id": "state_regulation_ky_23",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
    "state": "KY",
    "code": "admin-regs",
    "flags": "i",
-   "pattern": "(?<![A-Za-z0-9_.])(?:(?<title>\\d{1,3})\\s+(?:Ky\\.\\s+Admin\\.\\s+Regs\\.|KAR)\\s+(?<sec>\\d{1,3}:\\d{2,3}(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
+   "pattern": "(?<![A-Za-z0-9_.])(?:(?<title>\\d{1,3})\\s+(?:Ky\\.\\s+Admin\\.\\s+Regs\\.|KAR)\\s+(?<sec>\\d{1,3}[ ]?:\\d{2,3}(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Admin.",
     "KAR",
@@ -2008,7 +2025,7 @@
    ]
   },
   {
-   "id": "state_regulation_la_23",
+   "id": "state_regulation_la_24",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2026,7 +2043,7 @@
    ]
   },
   {
-   "id": "state_regulation_la_24",
+   "id": "state_regulation_la_25",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2037,7 +2054,7 @@
    "anchors": []
   },
   {
-   "id": "state_regulation_me_25",
+   "id": "state_regulation_me_26",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2056,7 +2073,7 @@
    ]
   },
   {
-   "id": "state_regulation_md_26",
+   "id": "state_regulation_md_27",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2073,14 +2090,14 @@
    ]
   },
   {
-   "id": "state_regulation_ma_27",
+   "id": "state_regulation_ma_28",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
    "state": "MA",
    "code": "code-regs",
    "flags": "i",
-   "pattern": "(?<![A-Za-z0-9_.])(?:(?<title>\\d{3})\\s+(?:Mass\\.\\s+Code\\s+Regs\\.|C\\.M\\.R\\.|CMR)\\s*(?:§§?\\s*)?(?<sec>\\d{1,3}\\.\\d{2,3}(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
+   "pattern": "(?<![A-Za-z0-9_.])(?:(?<title>\\d{3})\\s+(?:Mass\\.\\s+Code\\s+Regs\\.|C\\.M\\.R\\.|CMR)\\s*(?:§§?\\s*)?(?<sec>\\d{1,3}\\.\\d{2,3}(?:[-–]\\d{2,3}(?![\\d.]))?(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "C.",
     "CMR",
@@ -2093,7 +2110,7 @@
    ]
   },
   {
-   "id": "state_regulation_mi_28",
+   "id": "state_regulation_mi_29",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2109,7 +2126,7 @@
    ]
   },
   {
-   "id": "state_regulation_mn_29",
+   "id": "state_regulation_mn_30",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2124,7 +2141,7 @@
    ]
   },
   {
-   "id": "state_regulation_ms_30",
+   "id": "state_regulation_ms_31",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2141,7 +2158,7 @@
    ]
   },
   {
-   "id": "state_regulation_mo_31",
+   "id": "state_regulation_mo_32",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2160,7 +2177,7 @@
    ]
   },
   {
-   "id": "state_regulation_mo_32",
+   "id": "state_regulation_mo_33",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2174,7 +2191,7 @@
    ]
   },
   {
-   "id": "state_regulation_mt_33",
+   "id": "state_regulation_mt_34",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2191,7 +2208,7 @@
    ]
   },
   {
-   "id": "state_regulation_ne_34",
+   "id": "state_regulation_ne_35",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2208,7 +2225,7 @@
    ]
   },
   {
-   "id": "state_regulation_nv_35",
+   "id": "state_regulation_nv_36",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2225,7 +2242,7 @@
    ]
   },
   {
-   "id": "state_regulation_nh_36",
+   "id": "state_regulation_nh_37",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2245,7 +2262,7 @@
    ]
   },
   {
-   "id": "state_regulation_nj_37",
+   "id": "state_regulation_nj_38",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2264,15 +2281,16 @@
    ]
   },
   {
-   "id": "state_regulation_nm_38",
+   "id": "state_regulation_nm_39",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
    "state": "NM",
    "code": "code-r",
    "flags": "i",
-   "pattern": "(?<![A-Za-z0-9_.])(?:N\\.M\\.\\s+Code\\s+R\\.\\s*(?:§§?\\s*)?(?<sec>\\d{1,2}\\.\\d{1,3}\\.\\d{1,3}(?:\\.\\d{1,4})?(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
+   "pattern": "(?<![A-Za-z0-9_.])(?:N\\.M\\.\\s+(?:Code\\s+R\\.|Admin\\.\\s+Code)\\s*(?:§§?\\s*)?(?<sec>\\d{1,2}\\.\\d{1,3}\\.\\d{1,3}(?:\\.\\d{1,4})?(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
+    "Admin.",
     "Code",
     "M.",
     "N.",
@@ -2281,7 +2299,7 @@
    ]
   },
   {
-   "id": "state_regulation_nm_39",
+   "id": "state_regulation_nm_40",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2295,7 +2313,7 @@
    ]
   },
   {
-   "id": "state_regulation_ny_40",
+   "id": "state_regulation_ny_41",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2315,7 +2333,7 @@
    ]
   },
   {
-   "id": "state_regulation_ny_41",
+   "id": "state_regulation_ny_42",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2326,7 +2344,7 @@
    "anchors": []
   },
   {
-   "id": "state_regulation_nc_42",
+   "id": "state_regulation_nc_43",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2337,7 +2355,7 @@
    "anchors": []
   },
   {
-   "id": "state_regulation_nd_43",
+   "id": "state_regulation_nd_44",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2356,7 +2374,7 @@
    ]
   },
   {
-   "id": "state_regulation_oh_44",
+   "id": "state_regulation_oh_45",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2367,7 +2385,7 @@
    "anchors": []
   },
   {
-   "id": "state_regulation_ok_45",
+   "id": "state_regulation_ok_46",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2384,7 +2402,7 @@
    ]
   },
   {
-   "id": "state_regulation_or_46",
+   "id": "state_regulation_or_47",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2401,7 +2419,7 @@
    ]
   },
   {
-   "id": "state_regulation_pa_47",
+   "id": "state_regulation_pa_48",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2417,7 +2435,7 @@
    ]
   },
   {
-   "id": "state_regulation_ri_48",
+   "id": "state_regulation_ri_49",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2435,7 +2453,7 @@
    ]
   },
   {
-   "id": "state_regulation_sc_49",
+   "id": "state_regulation_sc_50",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2453,7 +2471,7 @@
    ]
   },
   {
-   "id": "state_regulation_sd_50",
+   "id": "state_regulation_sd_51",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2471,7 +2489,7 @@
    ]
   },
   {
-   "id": "state_regulation_tn_51",
+   "id": "state_regulation_tn_52",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2489,7 +2507,7 @@
    ]
   },
   {
-   "id": "state_regulation_tx_52",
+   "id": "state_regulation_tx_53",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2509,14 +2527,14 @@
    ]
   },
   {
-   "id": "state_regulation_ut_53",
+   "id": "state_regulation_ut_54",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
    "state": "UT",
    "code": "admin-code",
    "flags": "i",
-   "pattern": "(?<![A-Za-z0-9_.])(?:Utah\\s+Admin\\.\\s+Code\\s+(?:r\\.\\s*)?(?<sec>R\\d{1,3}-\\d{1,4}(?:-\\d{1,4}[a-z]?)?(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
+   "pattern": "(?<![A-Za-z0-9_.])(?:Utah\\s+Admin\\.\\s+Code\\s+(?:r\\.\\s*|§§?\\s*)?(?<sec>R\\d{1,3}-\\d{1,4}(?:-\\d{1,4}[a-z]?)?(?:\\([a-zA-Z0-9]{1,5}\\))*))(?![A-Za-z0-9_])(?![-–]\\d)",
    "anchors": [
     "Admin.",
     "Code",
@@ -2525,7 +2543,7 @@
    ]
   },
   {
-   "id": "state_regulation_vt_54",
+   "id": "state_regulation_vt_55",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2542,7 +2560,7 @@
    ]
   },
   {
-   "id": "state_regulation_va_55",
+   "id": "state_regulation_va_56",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2553,7 +2571,7 @@
    "anchors": []
   },
   {
-   "id": "state_regulation_wa_56",
+   "id": "state_regulation_wa_57",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2570,7 +2588,7 @@
    ]
   },
   {
-   "id": "state_regulation_wv_57",
+   "id": "state_regulation_wv_58",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2581,7 +2599,7 @@
    "anchors": []
   },
   {
-   "id": "state_regulation_wi_58",
+   "id": "state_regulation_wi_59",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,
@@ -2598,7 +2616,7 @@
    ]
   },
   {
-   "id": "state_regulation_wy_59",
+   "id": "state_regulation_wy_60",
    "kind": "state_regulation",
    "builder": "state_regulation",
    "priority": 36,

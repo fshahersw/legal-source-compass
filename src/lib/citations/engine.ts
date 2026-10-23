@@ -442,14 +442,20 @@ function buildStateRegulation(c: Compiled, rule: CompiledRule, m: Match, mid: nu
   const g = groupsOf(m);
   const sec = nospace(dash(g["sec"] || g["sec2"] || ""));
   if (!sec) return [];
-  const parts = [...["title", "part", "agency"].filter((k) => g[k]).map((k) => nospace(g[k]!)), sec];
+  let section = sec;
+  const sub = /(?:\([0-9A-Za-z]{1,5}\))+$/.exec(section);
+  const pin = sub && sub.index > 0 ? sub[0] : null;
+  if (pin) section = section.slice(0, sub!.index); // "5 C.C.R. § 431(c)(2)": the key names § 431, the paragraphs are the pin
+  const parts = [...["title", "part", "agency"].filter((k) => g[k]).map((k) => nospace(g[k]!)), section];
   const st = rule.state!;
-  const fields: Record<string, string> = { state: st, code_id: rule.code!, section: sec };
+  const fields: Record<string, string> = { state: st, code_id: rule.code!, section };
   for (const k of ["title", "part", "agency"]) if (g[k]) fields[k] = g[k]!;
   const key = `state-reg:${st}:${rule.code}:${parts.join(":")}`.slice(0, 200);
+  let normalized = dash(squash(m[0]));
+  if (pin && nospace(normalized).endsWith(pin)) normalized = normalized.replace(/\s*(?:\(\s*[0-9A-Za-z]{1,5}\s*\)\s*)+$/, "");
   const s = m.index;
   const e = m.index + m[0].length;
-  return [cite(rule, "state_regulation", s, e, [s, e], mid, key, dash(squash(m[0])), fields)];
+  return [cite(rule, "state_regulation", s, e, [s, e], mid, key, normalized, fields, pin)];
 }
 
 function buildId(c: Compiled, rule: CompiledRule, m: Match, mid: number): Raw[] {
@@ -922,9 +928,11 @@ function linkShortForms(c: Compiled, pages: [number, string, Raw[]][]): void {
             } else if (px.kind === "cfr" && sec.includes(".")) {
               x.key = `cfr:${f["title"]}:${sec}`;
               x.normalized = `${f["title"]} C.F.R. § ${sec}`;
-            } else if (px.kind === "state_statute") {
-              x.key = `state-stat:${f["state"]}:${f["code_id"]}:${sec}`;
-              x.normalized = `${f["code"]} § ${sec}`;
+            } else if ((px.kind === "state_statute" || px.kind === "state_regulation") && px.key!.endsWith(f["section"] ?? "\0")) {
+              // the same code (and title or chapter) as the antecedent, another section
+              const old = f["section"]!;
+              x.key = px.key!.slice(0, px.key!.length - old.length) + sec;
+              x.normalized = px.normalized.endsWith(old) ? px.normalized.slice(0, px.normalized.length - old.length) + sec : `§ ${sec}`;
             } else status = "ambiguous";
             if (status === "resolved") {
               x.kind = px.kind !== "cfr_part" ? px.kind : "cfr";

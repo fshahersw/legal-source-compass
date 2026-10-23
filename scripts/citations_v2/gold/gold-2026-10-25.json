@@ -3701,6 +3701,753 @@
   },
   {
    "window": {
+    "id": "filing-71",
+    "source": "court_filing",
+    "sha256": "324eb97ae29985fa6cdc2d927c2d761f1428d3e1b6ec93431edc3fffa35cb954",
+    "page": 6,
+    "page_text_sha256": "fea4117dd17ef601e7a12e879dab0952f7e92dff83a675dcf1092ca652618cd5",
+    "page_chars": 2518,
+    "offset": 567,
+    "stratum": "state_regulation_token",
+    "provenance": "documents_export_pages_v1 (corpus_ingest.pdf_text_pages, indexed byte sets)",
+    "window_sha256": "dd6cbdd4baf46df114bcc721f26594917355fcb06e66163ab490bcfa1795dfb4",
+    "window_chars": 1501
+   },
+   "citations": [
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "start": 826,
+     "end": 856,
+     "matched": "N.M. Admin. Code § 20.2.88.101",
+     "key": "state-reg:NM:code-r:20.2.88.101",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "short",
+     "form": "short",
+     "start": 930,
+     "end": 946,
+     "matched": "id. § 20.2.88.14",
+     "key": "state-reg:NM:code-r:20.2.88.14",
+     "origin": "draft_confirmed"
+    }
+   ],
+   "ignore": [],
+   "reviewed": true
+  },
+  {
+   "window": {
+    "id": "filing-72",
+    "source": "court_filing",
+    "sha256": "88548166556b355f50e9931cacbc4582cf4b8fa36573b676c5f32372715ceb33",
+    "page": 425,
+    "page_text_sha256": "a5e013db9f650831e3e82b4fed9cc0f2928ec067afb95fb36bd2d1c3dad0b29a",
+    "page_chars": 2529,
+    "offset": 0,
+    "stratum": "state_regulation_token",
+    "provenance": "documents_export_pages_v1 (corpus_ingest.pdf_text_pages, indexed byte sets)",
+    "window_sha256": "191e420fc4bcc1f03b599962dcb569a43261b4ee523010b5bda472b4ebc06acc",
+    "window_chars": 1506
+   },
+   "citations": [
+    {
+     "kind": "docket",
+     "form": "full",
+     "start": 157,
+     "end": 170,
+     "matched": "3:25-MD-03149",
+     "key": "docket:3:25-md-03149",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "usc",
+     "form": "full",
+     "start": 547,
+     "end": 561,
+     "matched": "15 U.S.C. § 45",
+     "key": "usc:15:45",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "start": 643,
+     "end": 675,
+     "matched": "Mass. Gen. Laws Ann. Ch. 93H, §2",
+     "key": "state-stat:MA:gen-laws:93H:2",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "start": 677,
+     "end": 706,
+     "matched": "201 Mass. Code Regs. 17.01-05",
+     "key": "state-reg:MA:code-regs:201:17.01-05",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "usc",
+     "form": "full",
+     "start": 1187,
+     "end": 1201,
+     "matched": "15 U.S.C. § 45",
+     "key": "usc:15:45",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "start": 1283,
+     "end": 1316,
+     "matched": "Mass. Gen. Laws Ann. Ch. 93H, § 2",
+     "key": "state-stat:MA:gen-laws:93H:2",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "start": 1318,
+     "end": 1347,
+     "matched": "201 Mass. Code\nRegs. 17.01-05",
+     "key": "state-reg:MA:code-regs:201:17.01-05",
+     "origin": "draft_confirmed"
+    }
+   ],
+   "ignore": [],
+   "reviewed": true
+  },
+  {
+   "window": {
+    "id": "filing-73",
+    "source": "court_filing",
+    "sha256": "131707214d05268efc69f9e98aaf23d9dd4f6fc790e2fbd652f4d2cbc4629ae8",
+    "page": 8,
+    "page_text_sha256": "c670c5ebee5633343a4c0b5316da4bd5c3e0d70604fc514146d826f298ca6b3f",
+    "page_chars": 2843,
+    "offset": 1341,
+    "stratum": "state_regulation_token",
+    "provenance": "documents_export_pages_v1 (corpus_ingest.pdf_text_pages, indexed byte sets)",
+    "window_sha256": "eff4ea34b065a75f3d39b78a71886af28e942c5d73c339b54eec080ec724f93e",
+    "window_chars": 1502
+   },
+   "citations": [
+    {
+     "kind": "short",
+     "form": "short",
+     "start": 162,
+     "end": 165,
+     "matched": "Id.",
+     "key": null,
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "short",
+     "form": "short",
+     "start": 696,
+     "end": 719,
+     "matched": "390 F. Supp. 3d at 1112",
+     "key": null,
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "start": 1293,
+     "end": 1322,
+     "matched": "Utah Admin. Code § R307-201-4",
+     "key": "state-reg:UT:admin-code:R307-201-4",
+     "origin": "draft_confirmed"
+    }
+   ],
+   "ignore": [],
+   "reviewed": true
+  },
+  {
+   "window": {
+    "id": "filing-74",
+    "source": "court_filing",
+    "sha256": "1321fd695f1cb50f6ecfe0abfaec4b15d73ec0c34a95122d878916db1572853c",
+    "page": 2,
+    "page_text_sha256": "666d6872ae3ca237b95712cb2b36ea2ebab6dc0754e9105b65c9c8fa35c92dca",
+    "page_chars": 2230,
+    "offset": 406,
+    "stratum": "state_regulation_token",
+    "provenance": "documents_export_pages_v1 (corpus_ingest.pdf_text_pages, indexed byte sets)",
+    "window_sha256": "19ede8ffd4de1ae5d6886cbabaab5a3453cbc758b9a5e17c582d2c24540ab71b",
+    "window_chars": 1500
+   },
+   "citations": [
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "start": 222,
+     "end": 233,
+     "matched": "KRS 158.780",
+     "key": "state-stat:KY:rev-stat:158.780",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "start": 235,
+     "end": 246,
+     "matched": "KRS 157.785",
+     "key": "state-stat:KY:rev-stat:157.785",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "start": 754,
+     "end": 768,
+     "matched": "703 KAR 3 :205",
+     "key": "state-reg:KY:admin-regs:703:3:205",
+     "origin": "draft_confirmed"
+    }
+   ],
+   "ignore": [],
+   "reviewed": true
+  },
+  {
+   "window": {
+    "id": "filing-75",
+    "source": "court_filing",
+    "sha256": "5a7f39a0831d711a6e7a462ee6f6d27fbe6131153ab23513d6005a199253eb79",
+    "page": 72,
+    "page_text_sha256": "bbcd3492cf7f43476013bc8e5215730b1960745a6e384ba6845857e8a6494d59",
+    "page_chars": 3127,
+    "offset": 1625,
+    "stratum": "state_regulation_token",
+    "provenance": "documents_export_pages_v1 (corpus_ingest.pdf_text_pages, indexed byte sets)",
+    "window_sha256": "122395bdb15d91d2dc7d624cfca1e1b854ed6f51c2a600a20a84ce4c2ef8d7ac",
+    "window_chars": 1502
+   },
+   "citations": [
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "start": 1251,
+     "end": 1264,
+     "matched": "707 KAR 1:340",
+     "key": "state-reg:KY:admin-regs:707:1:340",
+     "origin": "draft_confirmed"
+    }
+   ],
+   "ignore": [],
+   "reviewed": true
+  },
+  {
+   "window": {
+    "id": "filing-76",
+    "source": "court_filing",
+    "sha256": "9ec2cc0f3ab362024c43ebd50d93165488a211fae97b06b76863dd2a31b4716a",
+    "page": 62,
+    "page_text_sha256": "833a652ed8fc875ae75d604a0114aa46299265631e05f7b5b16e9c5a45bf630f",
+    "page_chars": 2095,
+    "offset": 0,
+    "stratum": "state_regulation_token",
+    "provenance": "documents_export_pages_v1 (corpus_ingest.pdf_text_pages, indexed byte sets)",
+    "window_sha256": "55658382a9829d963faa017a0cd815ab3a8a453a272ed1719e21383fdf438fc7",
+    "window_chars": 1508
+   },
+   "citations": [
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "start": 137,
+     "end": 150,
+     "matched": "704 KAR 3:410",
+     "key": "state-reg:KY:admin-regs:704:3:410",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "start": 256,
+     "end": 269,
+     "matched": "704 KAR 3:410",
+     "key": "state-reg:KY:admin-regs:704:3:410",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "start": 393,
+     "end": 406,
+     "matched": "704 KAR 3:410",
+     "key": "state-reg:KY:admin-regs:704:3:410",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "start": 957,
+     "end": 970,
+     "matched": "704 KAR 3:410",
+     "key": "state-reg:KY:admin-regs:704:3:410",
+     "origin": "draft_confirmed"
+    }
+   ],
+   "ignore": [],
+   "reviewed": true
+  },
+  {
+   "window": {
+    "id": "filing-77",
+    "source": "court_filing",
+    "sha256": "9c459ef077b7e8e49f0d38d0d1f1808d79844dc02bb352d58beccdb82e3c1fb4",
+    "page": 24,
+    "page_text_sha256": "0231e32d0f28354af1852b7b89efae176c3acec3839b9308ce46910bed014503",
+    "page_chars": 2964,
+    "offset": 1155,
+    "stratum": "state_regulation_token",
+    "provenance": "documents_export_pages_v1 (corpus_ingest.pdf_text_pages, indexed byte sets)",
+    "window_sha256": "d9829f5fa9d8c91a9aa7862d95b06707474b9758a4abff2cad4e1034b9fe3765",
+    "window_chars": 1506
+   },
+   "citations": [
+    {
+     "kind": "public_law",
+     "form": "full",
+     "start": 65,
+     "end": 82,
+     "matched": "Public Law 93-380",
+     "key": "pl:93:380",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "start": 155,
+     "end": 176,
+     "matched": "Cal. Ed. Code § 49062",
+     "key": "state-stat:CA:ed:49062",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "start": 335,
+     "end": 359,
+     "matched": "Cal. Ed. Code § 49076(a)",
+     "key": "state-stat:CA:ed:49076",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "start": 540,
+     "end": 591,
+     "matched": "Title 5 of the California Code of Regulations § 434",
+     "key": "state-reg:CA:code-regs:5:434",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "start": 642,
+     "end": 664,
+     "matched": "Cal. Ed. Code §§ 49069",
+     "key": "state-stat:CA:ed:49069",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "start": 669,
+     "end": 680,
+     "matched": "49073-49077",
+     "key": "state-stat:CA:ed:49073-49077",
+     "origin": "added_by_review"
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "start": 685,
+     "end": 705,
+     "matched": "5 C.C.R. § 431(c)(2)",
+     "key": "state-reg:CA:code-regs:5:431",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "start": 848,
+     "end": 865,
+     "matched": "5 C.C.R. § 433(a)",
+     "key": "state-reg:CA:code-regs:5:433",
+     "origin": "draft_confirmed"
+    }
+   ],
+   "ignore": [],
+   "reviewed": true
+  },
+  {
+   "window": {
+    "id": "filing-78",
+    "source": "court_filing",
+    "sha256": "0ad66236fd39ca3fc6ee08944ac1cfda384ffd52a4cc88c9ad5539b4edc67c39",
+    "page": 11,
+    "page_text_sha256": "c031f5bce558e75226b1bbb02554b7d2f11da0a83161262bc7293338a2516d15",
+    "page_chars": 2025,
+    "offset": 0,
+    "stratum": "state_regulation_token",
+    "provenance": "documents_export_pages_v1 (corpus_ingest.pdf_text_pages, indexed byte sets)",
+    "window_sha256": "57b1ef8b97d2f0afb372bfccd597e0f78f46103cfc6944a63d5a6631e2aaecca",
+    "window_chars": 1501
+   },
+   "citations": [
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "start": 552,
+     "end": 580,
+     "matched": "43 Tex. Admin. Code §215.144",
+     "key": "state-reg:TX:admin-code:43:215.144",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "short",
+     "form": "short",
+     "start": 752,
+     "end": 772,
+     "matched": "Rule 23(e)(2)(C)(ii)",
+     "key": null,
+     "origin": "draft_confirmed"
+    }
+   ],
+   "ignore": [],
+   "reviewed": true
+  },
+  {
+   "window": {
+    "id": "filing-79",
+    "source": "court_filing",
+    "sha256": "03c62b838f709a3a7287fc90fd353e90c0d6aabe23b3b99c9dab92423318083f",
+    "page": 1,
+    "page_text_sha256": "3bd13aee8fc94e47ab5bb50919b6b3ab0643076d0757f35ac533d604da40c051",
+    "page_chars": 1741,
+    "offset": 0,
+    "stratum": "state_regulation_token",
+    "provenance": "documents_export_pages_v1 (corpus_ingest.pdf_text_pages, indexed byte sets)",
+    "window_sha256": "356345670ff933f4e28aa9acf99fb1bf3b80fcf9809203b329c2d23ae70c888b",
+    "window_chars": 1502
+   },
+   "citations": [
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "start": 35,
+     "end": 55,
+     "matched": "N.J.A.C. 13:4-1.6(c)",
+     "key": "state-reg:NJ:admin-code:13:4-1.6",
+     "origin": "draft_confirmed"
+    }
+   ],
+   "ignore": [
+    {
+     "start": 1448,
+     "end": 1469,
+     "matched": "2:19-md-02921-BRM-JAD",
+     "why": "page furniture cut by the window edge"
+    }
+   ],
+   "reviewed": true
+  },
+  {
+   "window": {
+    "id": "filing-80",
+    "source": "court_filing",
+    "sha256": "077f3ead70486701ebd2195e01d45965907ec3d2f3b9875fd9f7443b1bb73ed0",
+    "page": 77,
+    "page_text_sha256": "290c690d60fe68bb337c988de9911d321ef9d12a7bcdf4a1c8bb24cdf8f09440",
+    "page_chars": 1715,
+    "offset": 0,
+    "stratum": "state_regulation_token",
+    "provenance": "documents_export_pages_v1 (corpus_ingest.pdf_text_pages, indexed byte sets)",
+    "window_sha256": "60c70c7ec883cf5ac1b571f760ec59bbc9566b9bec8f3544db38c6ae861a3743",
+    "window_chars": 1505
+   },
+   "citations": [
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "start": 33,
+     "end": 64,
+     "matched": "N.C. Gen. Stat. Ann. § 75-65(i)",
+     "key": "state-stat:NC:gen-stat:75-65",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "start": 66,
+     "end": 98,
+     "matched": "Md. Code Ann. Com.\nLaw § 14-3508",
+     "key": "state-stat:MD:com:14-3508",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "start": 100,
+     "end": 128,
+     "matched": "N.J. Admin. Code §13:45F-5.2",
+     "key": "state-reg:NJ:admin-code:13:45F-5.2",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "start": 480,
+     "end": 508,
+     "matched": "Kan. Stat. Ann. § 50-7a02(e)",
+     "key": "state-stat:KS:stat:50-7a02",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "start": 510,
+     "end": 542,
+     "matched": "Ky. Rev. Stat. Ann. § 365.732(8)",
+     "key": "state-stat:KY:rev-stat:365.732",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "start": 544,
+     "end": 579,
+     "matched": "Tenn. Code Ann. § 47-\n18-2107(i)(2)",
+     "key": "state-stat:TN:code:47-18-2107",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "start": 854,
+     "end": 881,
+     "matched": "Cal. Civ. Code § 1798.82(e)",
+     "key": "state-stat:CA:civ:1798.82",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "start": 883,
+     "end": 915,
+     "matched": "Md.\nCode Ann. Com. Law § 14-3507",
+     "key": "state-stat:MD:com:14-3507",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "start": 917,
+     "end": 948,
+     "matched": "Wis. Stat. Ann. § 134.98(3m)(b)",
+     "key": "state-stat:WI:stat:134.98",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "cfr",
+     "form": "full",
+     "start": 1223,
+     "end": 1243,
+     "matched": "45 C.F.R. §§ 164.404",
+     "key": "cfr:45:164.404",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "cfr",
+     "form": "full",
+     "start": 1245,
+     "end": 1252,
+     "matched": "164.410",
+     "key": "cfr:45:164.410",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "cfr",
+     "form": "full",
+     "start": 1371,
+     "end": 1390,
+     "matched": "45 C.F.R.\n§ 164.404",
+     "key": "cfr:45:164.404",
+     "origin": "draft_confirmed"
+    }
+   ],
+   "ignore": [],
+   "reviewed": true
+  },
+  {
+   "window": {
+    "id": "filing-81",
+    "source": "court_filing",
+    "sha256": "c165ed8b0f43717ef36ca9270cfe1bdb1f790e733e6400f96578c3f9aada67e6",
+    "page": 74,
+    "page_text_sha256": "7eab365a32092a208dc86f38e9a56ec26829f298ac14ce1a3a4b41da81b71525",
+    "page_chars": 2454,
+    "offset": 0,
+    "stratum": "state_regulation_token",
+    "provenance": "documents_export_pages_v1 (corpus_ingest.pdf_text_pages, indexed byte sets)",
+    "window_sha256": "5fe1de35b666d2ed4f21f993d358f43d16cb2e9529c472bc461fad93f637b1a7",
+    "window_chars": 1510
+   },
+   "citations": [
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "start": 454,
+     "end": 467,
+     "matched": "707 KAR 1:320",
+     "key": "state-reg:KY:admin-regs:707:1:320",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "start": 677,
+     "end": 690,
+     "matched": "707 KAR l:320",
+     "key": "state-reg:KY:admin-regs:707:1:320",
+     "origin": "added_by_review"
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "start": 827,
+     "end": 841,
+     "matched": "707 KAR 1 :320",
+     "key": "state-reg:KY:admin-regs:707:1:320",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "start": 1095,
+     "end": 1109,
+     "matched": "707 KAR 1 :350",
+     "key": "state-reg:KY:admin-regs:707:1:350",
+     "origin": "draft_confirmed"
+    }
+   ],
+   "ignore": [],
+   "reviewed": true
+  },
+  {
+   "window": {
+    "id": "filing-82",
+    "source": "court_filing",
+    "sha256": "102ae73df3f3d427dff32872ffa59e8c377f959d824136952f090e87b2b5f36a",
+    "page": 1,
+    "page_text_sha256": "029d4311486cff989d7ff5d38b1c33c866fb0ec2b337c4fc02969cbda0085cde",
+    "page_chars": 1781,
+    "offset": 30,
+    "stratum": "state_regulation_token",
+    "provenance": "documents_export_pages_v1 (corpus_ingest.pdf_text_pages, indexed byte sets)",
+    "window_sha256": "eba6055ebc513be09eba755294d998ca266561991a2d9aff43a0a5811b5eacb2",
+    "window_chars": 1501
+   },
+   "citations": [
+    {
+     "kind": "docket",
+     "form": "full",
+     "start": 406,
+     "end": 416,
+     "matched": "16-cv-5649",
+     "key": "docket:16-cv-05649",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "docket",
+     "form": "full",
+     "start": 477,
+     "end": 487,
+     "matched": "16-cv-2210",
+     "key": "docket:16-cv-02210",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "docket",
+     "form": "full",
+     "start": 497,
+     "end": 512,
+     "matched": "15-md-02672-CRB",
+     "key": "docket:15-md-02672",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "start": 960,
+     "end": 989,
+     "matched": "Utah Admin. Code § R307-201-4",
+     "key": "state-reg:UT:admin-code:R307-201-4",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "case",
+     "form": "full",
+     "start": 1210,
+     "end": 1223,
+     "matched": "959 F.3d 1201",
+     "key": "case:959:F.3d:1201",
+     "origin": "draft_confirmed"
+    }
+   ],
+   "ignore": [],
+   "reviewed": true
+  },
+  {
+   "window": {
+    "id": "filing-83",
+    "source": "court_filing",
+    "sha256": "646b3e13eedf01b78041d62c1aa0768e16357360396a23c5837f56a271c8f447",
+    "page": 52,
+    "page_text_sha256": "2bfecc3ce94d80f91b8ce75e41737304fb099a1ef038bbed9d743523666fea93",
+    "page_chars": 3146,
+    "offset": 1643,
+    "stratum": "state_regulation_token",
+    "provenance": "documents_export_pages_v1 (corpus_ingest.pdf_text_pages, indexed byte sets)",
+    "window_sha256": "1bde6a4c99f79846cab681700ffec7f8daf1c5c872f185dafca9906914d9d958",
+    "window_chars": 1500
+   },
+   "citations": [
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "start": 1176,
+     "end": 1189,
+     "matched": "703 KAR 5:280",
+     "key": "state-reg:KY:admin-regs:703:5:280",
+     "origin": "draft_confirmed"
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "start": 1221,
+     "end": 1232,
+     "matched": "KRS 160.346",
+     "key": "state-stat:KY:rev-stat:160.346",
+     "origin": "draft_confirmed"
+    }
+   ],
+   "ignore": [
+    {
+     "start": 1441,
+     "end": 1458,
+     "matched": "4:22-md-03047-YGR",
+     "why": "page furniture cut by the window edge"
+    }
+   ],
+   "reviewed": true
+  },
+  {
+   "window": {
     "id": "opinion-01",
     "source": "opinion",
     "opinion_id": "9422841",
@@ -8067,24 +8814,25 @@
   }
  ],
  "counts": {
-  "windows": 140,
-  "citations": 594,
+  "windows": 153,
+  "citations": 648,
   "by_kind": {
-   "case": 229,
-   "cfr": 24,
+   "case": 230,
+   "cfr": 27,
    "cfr_part": 5,
    "constitution_state": 2,
    "constitution_us": 2,
-   "docket": 98,
+   "docket": 102,
    "federal_register": 11,
    "federal_rule": 12,
    "local_rule": 2,
    "mdl": 15,
-   "public_law": 8,
-   "short": 83,
-   "state_statute": 50,
+   "public_law": 9,
+   "short": 87,
+   "state_regulation": 22,
+   "state_statute": 67,
    "statutes_at_large": 7,
-   "usc": 46
+   "usc": 48
   }
  }
 }

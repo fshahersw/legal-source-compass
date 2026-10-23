@@ -1,5 +1,5 @@
 {
- "pattern_version": "citations-v2/2026-10-25.2",
+ "pattern_version": "citations-v2/2026-10-25.3",
  "texts": [
   {
    "id": "cases-parallel",
@@ -3957,7 +3957,7 @@
      "kind": "state_regulation",
      "form": "full",
      "short": null,
-     "rule": "state_regulation_ny_41",
+     "rule": "state_regulation_ny_42",
      "start": 37,
      "end": 51,
      "matched": "10 NYCRR 405.1",
@@ -3984,7 +3984,7 @@
      "kind": "state_regulation",
      "form": "full",
      "short": null,
-     "rule": "state_regulation_ma_27",
+     "rule": "state_regulation_ma_28",
      "start": 53,
      "end": 65,
      "matched": "310 CMR 7.00",
@@ -4011,7 +4011,7 @@
      "kind": "state_regulation",
      "form": "full",
      "short": null,
-     "rule": "state_regulation_md_26",
+     "rule": "state_regulation_md_27",
      "start": 67,
      "end": 84,
      "matched": "COMAR 26.11.01.01",
@@ -4037,7 +4037,7 @@
      "kind": "state_regulation",
      "form": "full",
      "short": null,
-     "rule": "state_regulation_wa_56",
+     "rule": "state_regulation_wa_57",
      "start": 86,
      "end": 101,
      "matched": "WAC 173-303-040",
@@ -4063,7 +4063,7 @@
      "kind": "state_regulation",
      "form": "full",
      "short": null,
-     "rule": "state_regulation_tx_52",
+     "rule": "state_regulation_tx_53",
      "start": 103,
      "end": 130,
      "matched": "30 Tex. Admin. Code § 335.1",
@@ -4090,7 +4090,7 @@
      "kind": "state_regulation",
      "form": "full",
      "short": null,
-     "rule": "state_regulation_pa_47",
+     "rule": "state_regulation_pa_48",
      "start": 132,
      "end": 151,
      "matched": "25 Pa. Code § 109.1",
@@ -4117,7 +4117,7 @@
      "kind": "state_regulation",
      "form": "full",
      "short": null,
-     "rule": "state_regulation_nj_37",
+     "rule": "state_regulation_nj_38",
      "start": 153,
      "end": 170,
      "matched": "N.J.A.C. 7:26-1.4",
@@ -4143,7 +4143,7 @@
      "kind": "state_regulation",
      "form": "full",
      "short": null,
-     "rule": "state_regulation_ky_22",
+     "rule": "state_regulation_ky_23",
      "start": 172,
      "end": 186,
      "matched": "401 KAR 51:010",
@@ -4170,7 +4170,7 @@
      "kind": "state_regulation",
      "form": "full",
      "short": null,
-     "rule": "state_regulation_or_46",
+     "rule": "state_regulation_or_47",
      "start": 188,
      "end": 204,
      "matched": "OAR 340-012-0140",
@@ -4196,7 +4196,7 @@
      "kind": "state_regulation",
      "form": "full",
      "short": null,
-     "rule": "state_regulation_fl_12",
+     "rule": "state_regulation_fl_13",
      "start": 206,
      "end": 241,
      "matched": "Fla. Admin. Code Ann. r. 62-296.320",
@@ -4222,7 +4222,7 @@
      "kind": "state_regulation",
      "form": "full",
      "short": null,
-     "rule": "state_regulation_nc_42",
+     "rule": "state_regulation_nc_43",
      "start": 243,
      "end": 260,
      "matched": "15A NCAC 2D .0101",
@@ -4249,7 +4249,7 @@
      "kind": "state_regulation",
      "form": "full",
      "short": null,
-     "rule": "state_regulation_il_18",
+     "rule": "state_regulation_il_19",
      "start": 262,
      "end": 287,
      "matched": "35 Ill. Adm. Code 721.103",
@@ -4276,7 +4276,7 @@
      "kind": "state_regulation",
      "form": "full",
      "short": null,
-     "rule": "state_regulation_va_55",
+     "rule": "state_regulation_va_56",
      "start": 289,
      "end": 300,
      "matched": "9VAC5-20-10",
@@ -4298,6 +4298,281 @@
      "paren": null,
      "antecedent": null,
      "short_status": null
+    }
+   ]
+  },
+  {
+   "id": "state-regs-2",
+   "text": "See N.M. Admin. Code § 20.2.88.101 (adopting); id. § 20.2.88.14 (waiving). 201 Mass. Code Regs. 17.01-05; Utah Admin. Code § R307-201-4; 703 KAR 3 :205; Title 5 of the California Code of Regulations § 434. 5 C.C.R. § 431(c)(2) governs. Id. § 433(a). 42 Pa. C.S. § 5524 applies. Id. § 5525.",
+   "expected": [
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "short": null,
+     "rule": "state_regulation_nm_39",
+     "start": 4,
+     "end": 34,
+     "matched": "N.M. Admin. Code § 20.2.88.101",
+     "span": [
+      4,
+      34
+     ],
+     "key": "state-reg:NM:code-r:20.2.88.101",
+     "normalized": "N.M. Admin. Code § 20.2.88.101",
+     "pin": null,
+     "fields": {
+      "state": "NM",
+      "code_id": "code-r",
+      "section": "20.2.88.101"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_regulation",
+     "form": "short",
+     "short": "id",
+     "rule": "id",
+     "start": 47,
+     "end": 63,
+     "matched": "id. § 20.2.88.14",
+     "span": [
+      47,
+      63
+     ],
+     "key": "state-reg:NM:code-r:20.2.88.14",
+     "normalized": "N.M. Admin. Code § 20.2.88.14",
+     "pin": null,
+     "fields": {
+      "state": "NM",
+      "code_id": "code-r",
+      "section": "20.2.88.14"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": 0,
+     "short_status": "resolved"
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "short": null,
+     "rule": "state_regulation_ma_28",
+     "start": 75,
+     "end": 104,
+     "matched": "201 Mass. Code Regs. 17.01-05",
+     "span": [
+      75,
+      104
+     ],
+     "key": "state-reg:MA:code-regs:201:17.01-05",
+     "normalized": "201 Mass. Code Regs. 17.01-05",
+     "pin": null,
+     "fields": {
+      "state": "MA",
+      "code_id": "code-regs",
+      "section": "17.01-05",
+      "title": "201"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "short": null,
+     "rule": "state_regulation_ut_54",
+     "start": 106,
+     "end": 135,
+     "matched": "Utah Admin. Code § R307-201-4",
+     "span": [
+      106,
+      135
+     ],
+     "key": "state-reg:UT:admin-code:R307-201-4",
+     "normalized": "Utah Admin. Code § R307-201-4",
+     "pin": null,
+     "fields": {
+      "state": "UT",
+      "code_id": "admin-code",
+      "section": "R307-201-4"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "short": null,
+     "rule": "state_regulation_ky_23",
+     "start": 137,
+     "end": 151,
+     "matched": "703 KAR 3 :205",
+     "span": [
+      137,
+      151
+     ],
+     "key": "state-reg:KY:admin-regs:703:3:205",
+     "normalized": "703 KAR 3 :205",
+     "pin": null,
+     "fields": {
+      "state": "KY",
+      "code_id": "admin-regs",
+      "section": "3:205",
+      "title": "703"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "short": null,
+     "rule": "state_regulation_ca_7",
+     "start": 153,
+     "end": 204,
+     "matched": "Title 5 of the California Code of Regulations § 434",
+     "span": [
+      153,
+      204
+     ],
+     "key": "state-reg:CA:code-regs:5:434",
+     "normalized": "Title 5 of the California Code of Regulations § 434",
+     "pin": null,
+     "fields": {
+      "state": "CA",
+      "code_id": "code-regs",
+      "section": "434",
+      "title": "5"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_regulation",
+     "form": "full",
+     "short": null,
+     "rule": "state_regulation_ca_6",
+     "start": 206,
+     "end": 226,
+     "matched": "5 C.C.R. § 431(c)(2)",
+     "span": [
+      206,
+      226
+     ],
+     "key": "state-reg:CA:code-regs:5:431",
+     "normalized": "5 C.C.R. § 431",
+     "pin": "(c)(2)",
+     "fields": {
+      "state": "CA",
+      "code_id": "code-regs",
+      "section": "431",
+      "title": "5"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_regulation",
+     "form": "short",
+     "short": "id",
+     "rule": "id",
+     "start": 236,
+     "end": 248,
+     "matched": "Id. § 433(a)",
+     "span": [
+      236,
+      248
+     ],
+     "key": "state-reg:CA:code-regs:5:433",
+     "normalized": "5 C.C.R. § 433",
+     "pin": "(a)",
+     "fields": {
+      "state": "CA",
+      "code_id": "code-regs",
+      "section": "433",
+      "title": "5"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": 6,
+     "short_status": "resolved"
+    },
+    {
+     "kind": "state_statute",
+     "form": "full",
+     "short": null,
+     "rule": "state_statute_pa_44",
+     "start": 250,
+     "end": 268,
+     "matched": "42 Pa. C.S. § 5524",
+     "span": [
+      250,
+      268
+     ],
+     "key": "state-stat:PA:cons-stat:42:5524",
+     "normalized": "42 Pa. C.S. § 5524",
+     "pin": null,
+     "fields": {
+      "state": "PA",
+      "code": "42 Pa. C.S.",
+      "code_id": "cons-stat",
+      "section": "5524",
+      "title": "42"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": null,
+     "short_status": null
+    },
+    {
+     "kind": "state_statute",
+     "form": "short",
+     "short": "id",
+     "rule": "id",
+     "start": 278,
+     "end": 288,
+     "matched": "Id. § 5525",
+     "span": [
+      278,
+      288
+     ],
+     "key": "state-stat:PA:cons-stat:42:5525",
+     "normalized": "42 Pa. C.S. § 5525",
+     "pin": null,
+     "fields": {
+      "state": "PA",
+      "code": "42 Pa. C.S.",
+      "code_id": "cons-stat",
+      "section": "5525",
+      "title": "42"
+     },
+     "group": null,
+     "name": null,
+     "paren": null,
+     "antecedent": 8,
+     "short_status": "resolved"
     }
    ]
   },

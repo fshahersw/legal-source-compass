@@ -54,6 +54,9 @@ TEXTS: list[tuple[str, str]] = [
     ("state-regs", "Cal. Code Regs. tit. 22, § 66262.11; 10 NYCRR 405.1; 310 CMR 7.00; COMAR 26.11.01.01; WAC 173-303-040; "
                    "30 Tex. Admin. Code § 335.1; 25 Pa. Code § 109.1; N.J.A.C. 7:26-1.4; 401 KAR 51:010; OAR 340-012-0140; "
                    "Fla. Admin. Code Ann. r. 62-296.320; 15A NCAC 2D .0101; 35 Ill. Adm. Code 721.103; 9VAC5-20-10."),
+    ("state-regs-2", "See N.M. Admin. Code § 20.2.88.101 (adopting); id. § 20.2.88.14 (waiving). 201 Mass. Code Regs. 17.01-05; "
+                     "Utah Admin. Code § R307-201-4; 703 KAR 3 :205; Title 5 of the California Code of Regulations § 434. "
+                     "5 C.C.R. § 431(c)(2) governs. Id. § 433(a). 42 Pa. C.S. § 5524 applies. Id. § 5525."),
     ("mdl-docket", "IN RE: TALC PRODUCTS LIABILITY LITIGATION, MDL No. 2738; MDL 2804; MDL-3092; Multidistrict Litigation No. "
                    "2846; the MDL Court; MDL 3:17-md-2804; No. 3:16-md-2738 and 1:23-cv-818-ABC."),
     ("ecf-header", "Case 3:16-md-02738-MAS-RLS Document 33091 Filed 06/26/24 Page 1 of 3 PageID: 12345\nThe docket "

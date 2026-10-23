@@ -452,6 +452,10 @@ def build_state_regulation(c: Compiled, rule: dict, m: re.Match, mid: int) -> li
     sec = nospace(dash(g.get("sec") or g.get("sec2") or ""))
     if not sec:
         return []
+    sub = re.search(r"(?:\([0-9A-Za-z]{1,5}\))+$", sec)
+    pin = sub.group(0) if sub and sub.start() > 0 else None
+    if pin:
+        sec = sec[: sub.start()]  # "5 C.C.R. § 431(c)(2)": the key names § 431, the paragraphs are the pin
     parts = [nospace(g[k]) for k in ("title", "part", "agency") if g.get(k)] + [sec]
     st = rule["state"]
     fields = {"state": st, "code_id": rule["code"], "section": sec}
@@ -459,8 +463,10 @@ def build_state_regulation(c: Compiled, rule: dict, m: re.Match, mid: int) -> li
         if g.get(k):
             fields[k] = g[k]
     key = f"state-reg:{st}:{rule['code']}:{':'.join(parts)}"[:200]
-    return [_cite(rule, "state_regulation", m.start(), m.end(), (m.start(), m.end()), mid, key,
-                  dash(squash(m.group(0))), fields)]
+    normalized = dash(squash(m.group(0)))
+    if pin and nospace(normalized).endswith(pin):
+        normalized = re.sub(r"\s*(?:\(\s*[0-9A-Za-z]{1,5}\s*\)\s*)+$", "", normalized)
+    return [_cite(rule, "state_regulation", m.start(), m.end(), (m.start(), m.end()), mid, key, normalized, fields, pin=pin)]
 
 
 def build_id(c: Compiled, rule: dict, m: re.Match, mid: int) -> list[dict]:
@@ -873,10 +879,12 @@ def link_short_forms(c: Compiled, pages: list[tuple[int, str, list[dict]]]) -> N
                         elif px["kind"] == "cfr" and "." in sec:
                             x["key"] = f"cfr:{px['fields']['title']}:{sec}"
                             x["normalized"] = f"{px['fields']['title']} C.F.R. § {sec}"
-                        elif px["kind"] == "state_statute":
-                            f = px["fields"]
-                            x["key"] = f"state-stat:{f['state']}:{f['code_id']}:{sec}"
-                            x["normalized"] = f"{f['code']} § {sec}"
+                        elif px["kind"] in ("state_statute", "state_regulation") and px["key"].endswith(px["fields"].get("section", "\0")):
+                            # the same code (and title or chapter) as the antecedent, another section
+                            old = px["fields"]["section"]
+                            x["key"] = px["key"][: len(px["key"]) - len(old)] + sec
+                            x["normalized"] = (px["normalized"][: len(px["normalized"]) - len(old)] + sec
+                                               if px["normalized"].endswith(old) else f"§ {sec}")
                         else:
                             status = "ambiguous"
                         if status == "resolved":
