@@ -116,8 +116,8 @@ def verify(edition_dir: pathlib.Path, raw_root: pathlib.Path | None, *, require_
             if not lib.check_quote(rendered, value):
                 missing = next((line for line in value.split("\n") if lib.norm_ws(line) not in rendered), value)
                 fail(f"quote_{field}", sid, f"not in source rendering: {missing[:300]!r}")
-        tail = row["number"].split(":")[-1]
-        if lib.norm_ws(tail) not in rendered:
+        tail = row["number"].split(":")[-1].split("/")[-1]
+        if lib.norm_ws(tail).translate(lib._DASHES) not in rendered.translate(lib._DASHES):
             fail("number_in_source", sid, tail)
 
     expected = edition["counts"]
