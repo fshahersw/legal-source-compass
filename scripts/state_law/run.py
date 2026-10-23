@@ -56,6 +56,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--keep-raw", action="store_true")
     parser.add_argument("--list", action="store_true")
     parser.add_argument("--option", action="append", default=[], help="state-specific key=value option")
+    parser.add_argument("--retained-index", type=pathlib.Path, default=None,
+                        help="JSONL of retained publisher originals (url, sha256, retrieved_at, object_key): re-parse "
+                             "them instead of fetching; --option source=retained pages the database RPC instead")
     args = parser.parse_args(argv)
     if args.list:
         list_states()
@@ -69,6 +72,10 @@ def main(argv: list[str] | None = None) -> int:
         return 3
     ctx = lib.RunContext(meta, args.out, args.raw, sample=args.sample, keep_raw=args.keep_raw)
     ctx.options = dict(item.split("=", 1) for item in args.option)
+    if args.retained_index:
+        ctx.retained = lib.RetainedStore.from_jsonl(meta.state, args.retained_index)
+    elif ctx.options.get("source") == "retained":
+        ctx.retained = lib.RetainedStore.from_rpc(meta.state)
     started = time.monotonic()
     try:
         module.acquire(ctx)

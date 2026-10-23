@@ -854,6 +854,71 @@ def iter_zip_members(stream: Any, want: Callable[[str], bool] | None = None, *, 
             yield name, out
 
 
+class RetainedStore:
+    """Publisher originals this project already captured and keeps, content-addressed, in private Storage
+    (corpus-originals/state-codes/sha256/..). Index rows: {url, sha256, retrieved_at, bytes, object_key}, from a JSONL
+    file or paged from public.state_law_retained_sources_v1 (needs EXTERNAL_SUPABASE_URL/KEY in the environment).
+    Downloads are read-only GETs; every object is checked against its recorded sha256. The original capture time is
+    kept as retrieved_at, so an edition built this way states when the publisher bytes were actually read."""
+
+    def __init__(self, state: str, rows: Iterable[dict]):
+        self.state = state
+        self.by_url: dict[str, dict] = {}
+        for row in rows:
+            prior = self.by_url.get(row["url"])
+            if prior is None or row["retrieved_at"] > prior["retrieved_at"]:
+                self.by_url[row["url"]] = row
+        self.downloads = 0
+
+    @classmethod
+    def from_jsonl(cls, state: str, path: pathlib.Path) -> "RetainedStore":
+        return cls(state, read_jsonl(path))
+
+    @classmethod
+    def from_rpc(cls, state: str, page_size: int = 5000) -> "RetainedStore":
+        rows, after = [], None
+        while True:
+            got = _admin_rpc("state_law_retained_sources_v1", {"p_jurisdiction": state, "p_after": after, "p_limit": page_size})
+            batch = got.get("rows", [])
+            rows.extend(batch)
+            if len(batch) < page_size:
+                return cls(state, rows)
+            after = batch[-1]["url"]
+
+    def urls(self, prefix: str = "") -> list[str]:
+        return sorted(u for u in self.by_url if u.startswith(prefix))
+
+    def get(self, url: str) -> Fetched:
+        row = self.by_url.get(url)
+        if row is None:
+            raise KeyError(f"no retained original for {url}")
+        base = os.environ.get("EXTERNAL_SUPABASE_URL", "").rstrip("/")
+        key = os.environ.get("EXTERNAL_SUPABASE_KEY", "")
+        if not base or not key:
+            raise RuntimeError("EXTERNAL_SUPABASE_URL/EXTERNAL_SUPABASE_KEY are required to read retained originals")
+        request = urllib.request.Request(f"{base}/storage/v1/object/corpus-originals/{row['object_key']}",
+                                         headers={"apikey": key, "Authorization": f"Bearer {key}"})
+        with urllib.request.urlopen(request, timeout=120) as response:
+            body = response.read()
+        digest = hashlib.sha256(body).hexdigest()
+        if digest != row["sha256"]:
+            raise RuntimeError(f"retained object for {url} does not match its recorded sha256")
+        self.downloads += 1
+        return Fetched(url=url, final_url=url, status=200, headers={}, body=body, sha256=digest, bytes=len(body),
+                       retrieved_at=row["retrieved_at"], method="retained_original")
+
+
+def _admin_rpc(name: str, payload: dict) -> Any:
+    base = os.environ.get("EXTERNAL_SUPABASE_URL", "").rstrip("/")
+    key = os.environ.get("EXTERNAL_SUPABASE_KEY", "")
+    if not base or not key:
+        raise RuntimeError("EXTERNAL_SUPABASE_URL/EXTERNAL_SUPABASE_KEY are required")
+    request = urllib.request.Request(f"{base}/rest/v1/rpc/{name}", data=json.dumps(payload).encode(), method="POST",
+                                     headers={"apikey": key, "Authorization": f"Bearer {key}", "Content-Type": "application/json"})
+    with urllib.request.urlopen(request, timeout=300) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
 # ---------------------------------------------------------------------------------------------------------------
 # State metadata and run context
 # ---------------------------------------------------------------------------------------------------------------
@@ -952,7 +1017,10 @@ class RunContext:
         self._by_status: dict[str, int] = {}
         self._edition: dict[str, Any] = {}
         self._source_bytes = 0
-        self._last_retrieved = self.started
+        self._last_retrieved: str | None = None
+        self._first_retrieved: str | None = None
+        self.retained: RetainedStore | None = None
+        self.options: dict[str, str] = {}
         self.section_count = 0
 
     # logging / bounds -------------------------------------------------------------------------------------
@@ -982,7 +1050,9 @@ class RunContext:
             "member": fetched.member, "raw": raw_path,
         })
         self._source_bytes += fetched.bytes
-        self._last_retrieved = max(self._last_retrieved, fetched.retrieved_at)
+        self._last_retrieved = max(self._last_retrieved or fetched.retrieved_at, fetched.retrieved_at)
+        if self._first_retrieved is None or fetched.retrieved_at < self._first_retrieved:
+            self._first_retrieved = fetched.retrieved_at
 
     def fetch(self, url: str, *, method: str = "publisher_page", data: bytes | None = None, headers: dict | None = None,
               accept_status: Iterable[int] = (200,)) -> Fetched:
@@ -992,6 +1062,18 @@ class RunContext:
         if self.meta.hosts and host not in self.meta.hosts:
             raise ModelError(f"{url} is not on a declared publisher host {self.meta.hosts}")
         fetched = self.fetcher.get(url, data=data, headers=headers, method=method, accept_status=accept_status)
+        self._record_source(fetched)
+        return fetched
+
+    def get(self, url: str, **kwargs: Any) -> Fetched:
+        """fetch() from the publisher, or the retained original of the same URL when the run uses a RetainedStore
+        (run.py --retained-index FILE or --option source=retained)."""
+        if self.retained is None:
+            return self.fetch(url, **kwargs)
+        host = urllib.parse.urlsplit(url).netloc.lower()
+        if self.meta.hosts and host not in self.meta.hosts:
+            raise ModelError(f"{url} is not on a declared publisher host {self.meta.hosts}")
+        fetched = self.retained.get(url)
         self._record_source(fetched)
         return fetched
 
@@ -1024,6 +1106,8 @@ class RunContext:
             "method": "publisher_bulk", "member": None, "raw": None,
         })
         self._source_bytes += reader.count
+        self._last_retrieved = max(self._last_retrieved or retrieved_at, retrieved_at)
+        self._first_retrieved = min(self._first_retrieved or retrieved_at, retrieved_at)
         self.stream_source = {"url": url, "retrieved_at": retrieved_at, "sha256": reader.hash.hexdigest(),
                               "bytes": reader.count}
 
@@ -1192,7 +1276,9 @@ class RunContext:
             "schema": EDITION_SCHEMA, "edition_id": self.edition_id, "state": meta.state, "code_name": meta.code_name,
             "publisher": meta.publisher, "publisher_url": meta.publisher_url, "official_source": meta.official_source,
             "access": meta.access, "edition_label": None, "currency_statement": None, "currency_source_url": None,
-            "currency_through": None, "source_last_modified": None, **self._edition, "retrieved_from": self.started, "retrieved_to": self._last_retrieved,
+            "currency_through": None, "source_last_modified": None, **self._edition,
+            "retrieved_from": self._first_retrieved or self.started, "retrieved_to": self._last_retrieved or self.started,
+            "source_mode": "retained_original" if self.retained is not None else "publisher",
             "codes": [
                 {"code": c.code, "name": c.name, "citation_template": c.citation_template,
                  "patterns": [{"regex": p.regex, "number": p.number} for p in c.all_patterns()]}
