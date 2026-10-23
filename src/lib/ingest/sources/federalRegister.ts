@@ -442,6 +442,10 @@ export const federalRegister: SourceAdapter = {
       matchBy: "source_url",
       preUnchanged: plan.alreadyHeld,
       rebuildHeld,
+      readKeys: docs.map((x) => ({
+        key: `${API_ORIGIN}/d/${x.d.document_number}`,
+        date: x.d.publication_date,
+      })),
       verifyHeld: async () => {
         const report: ParityReport = { compared: 0, identical: 0, mismatches: [] };
         for (const { key, built, stored } of await rebuildHeld()) {

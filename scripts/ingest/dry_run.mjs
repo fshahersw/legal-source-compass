@@ -38,7 +38,7 @@ const { corpusClient } = await import("../../src/lib/ingest/corpus.ts");
 const { runSource } = await import("../../src/lib/ingest/runner.ts");
 const { SOURCES } = await import("../../src/lib/ingest/registry.ts");
 const { comparableOf, contentOf } = await import("../../src/lib/ingest/rows.ts");
-const { snapshotCorpus, classificationSql, COMPARABLE_SQL, FULL_ROW_SQL, jsonbHash } =
+const { snapshotCorpus, classificationSql, presenceSql, COMPARABLE_SQL, FULL_ROW_SQL, jsonbHash } =
   await import("./snapshot.mjs");
 
 const args = process.argv.slice(2);
@@ -113,15 +113,18 @@ for (const adapter of SOURCES) {
     };
   }
   const d = summary.detail;
+  // snapshot mode holds compact stored entries (ids, ordinals, the series cells deltas need), not full rows: for
+  // upsert sources the emitted SQL decides new / identical / changed, so the JS-side samples would mislead
+  const inSql = Boolean(snapshotFile) && adapter.mode === "upsert";
   const line = {
     source: summary.source,
     dataset: summary.dataset,
     status: missing.length > before ? "needs snapshot" : summary.status,
     fetched: summary.fetched,
     candidates: collected?.rows.length ?? null,
-    would_insert: snapshotFile && adapter.mode === "upsert" ? "see SQL" : summary.inserted,
-    would_update: snapshotFile && adapter.mode === "upsert" ? "see SQL" : summary.updated,
-    unchanged: snapshotFile && adapter.mode === "upsert" ? "see SQL" : summary.unchanged,
+    would_insert: inSql ? "see SQL" : summary.inserted,
+    would_update: inSql ? "see SQL" : summary.updated,
+    unchanged: inSql ? "see SQL" : summary.unchanged,
     held: summary.held,
     held_reasons: summary.heldReasons,
     requests: summary.requests,
@@ -129,13 +132,18 @@ for (const adapter of SOURCES) {
     error: summary.error ?? null,
     notes: summary.notes,
     parity: snapshotFile ? "see SQL" : (d?.parity ?? null),
-    sample_inserts: d?.inserts.slice(0, show) ?? [],
-    sample_updates: d?.updates.slice(0, show) ?? [],
-    update_paths: d
-      ? Object.entries(
-          d.updates.flatMap((u) => u.changed).reduce((m, p) => ((m[p] = (m[p] ?? 0) + 1), m), {}),
-        ).sort((a, b) => b[1] - a[1])
-      : [],
+    sample_candidates: inSql
+      ? (d?.inserts ?? []).concat(d?.updates ?? []).slice(0, show)
+      : undefined,
+    sample_inserts: inSql ? "see SQL" : (d?.inserts.slice(0, show) ?? []),
+    sample_updates: inSql ? "see SQL" : (d?.updates.slice(0, show) ?? []),
+    update_paths: inSql
+      ? "see SQL"
+      : d
+        ? Object.entries(
+            d.updates.flatMap((u) => u.changed).reduce((m, p) => ((m[p] = (m[p] ?? 0) + 1), m), {}),
+          ).sort((a, b) => b[1] - a[1])
+        : [],
     missing: missing.slice(before),
   };
   if (snapshotFile && collected && line.status !== "needs snapshot") {
@@ -148,6 +156,19 @@ for (const adapter of SOURCES) {
         COMPARABLE_SQL[adapter.source],
       );
       if (sql) statements.push({ source: adapter.source, kind: "classification", sql });
+    }
+    if (adapter.mode === "insert_only" && collected.readKeys) {
+      const sql = presenceSql(
+        adapter.source,
+        adapter.dataset,
+        collected.matchBy ?? "id",
+        collected.readKeys,
+        String(summary.notes?.newest_held_before ?? ""),
+      );
+      if (sql) statements.push({ source: adapter.source, kind: "presence", sql });
+      line.would_insert = "see SQL";
+      line.unchanged = "see SQL";
+      line.held = "see SQL";
     }
     if (collected.rebuildHeld) {
       const held = await collected.rebuildHeld();

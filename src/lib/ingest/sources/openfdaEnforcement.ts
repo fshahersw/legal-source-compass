@@ -24,6 +24,7 @@ import type {
   CollectContext,
   Collected,
   CorpusRow,
+  HeldRecord,
   Json,
   JsonObject,
   RowContent,
@@ -96,9 +97,14 @@ const isoOf = (raw: unknown): string | null => {
   return /^\d{8}$/.test(s) ? `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}` : null;
 };
 
-/** Every value of the record in published key order (nested in order), as text parts. */
+/**
+ * Every value of the record in published key order (nested in order), as text parts.
+ * Scalars render as Python's str() did in the original builder: booleans are "True"/"False"
+ * (openfda.is_original_packager), which the stored rows carry.
+ */
 export function textParts(v: unknown): string[] {
   if (v === null || v === undefined) return [""];
+  if (typeof v === "boolean") return [v ? "True" : "False"];
   if (Array.isArray(v)) return v.length ? v.flatMap(textParts) : [""];
   if (typeof v === "object") {
     const values = Object.values(v as object);
@@ -235,6 +241,10 @@ export function comparableEnforcement(content: RowContent): Json {
   return v;
 }
 
+/** A recall number usable as a stable row id ('F-1855.2013' occurs; '' and 'N/A' are not identifiers). */
+export const isRecallNumber = (n: string) =>
+  /^[A-Za-z0-9][A-Za-z0-9.-]{0,39}$/.test(n) && n.toUpperCase() !== "N/A";
+
 const day = (d: Date) => d.toISOString().slice(0, 10);
 const compact = (iso: string) => iso.replace(/-/g, "");
 const addDays = (iso: string, n: number) => day(new Date(Date.parse(iso) + n * 86400000));
@@ -275,6 +285,8 @@ export function openfdaEnforcement(kind: Kind): SourceAdapter {
         complete = false;
       }
       const records = new Map<string, { rec: JsonObject; cap: Capture }>();
+      const held: HeldRecord[] = [];
+      let read_total = 0;
       let lastUpdated = "";
       let stopped: string | null = null;
       const windows: Window[] = [
@@ -314,9 +326,16 @@ export function openfdaEnforcement(kind: Kind): SourceAdapter {
               sha256: res.record.sha256,
             };
             for (const rec of doc.results) {
+              read_total++;
               const n = String(rec["recall_number"] ?? "");
-              if (!/^[A-Za-z0-9-]{1,40}$/.test(n))
-                throw new Error("openFDA record without a usable recall_number");
+              if (!isRecallNumber(n)) {
+                held.push({
+                  key: `${String(rec["event_id"] ?? "?")}/${n || "(empty)"}`,
+                  reason:
+                    "no usable recall number (empty or 'N/A'): no stable record id can be made",
+                });
+                continue;
+              }
               records.set(n, { rec, cap });
             }
             read.push({
@@ -348,8 +367,8 @@ export function openfdaEnforcement(kind: Kind): SourceAdapter {
         );
       return {
         rows,
-        fetched: records.size,
-        held: [],
+        fetched: read_total,
+        held,
         cursorAfter: complete
           ? { read_through: to, last_updated: lastUpdated || null }
           : ctx.cursor,

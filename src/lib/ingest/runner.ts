@@ -53,6 +53,39 @@ function countReasons(held: Collected["held"]): Record<string, number> {
   return out;
 }
 
+/**
+ * Which parts the publisher changed across this run's updates (path → rows, most frequent first), so the ledger shows
+ * e.g. a status change apart from a harmonisation change. Paths are folded to four segments with array positions
+ * dropped ($.detail.publisher_record.openfda, $.filters.status[]). Paths only, never values.
+ */
+export function updatedPaths(
+  adapter: Pick<SourceAdapter, "comparable">,
+  updates: CorpusRow[],
+  stored: StoredRow[],
+  matchBy: "id" | "source_url",
+  top = 12,
+): Record<string, number> {
+  const byKey = new Map(stored.map((s) => [matchBy === "id" ? s.id : (s.source_url ?? ""), s]));
+  const counts = new Map<string, number>();
+  for (const row of updates) {
+    const cur = byKey.get(matchBy === "id" ? row.id : row.source_url);
+    if (!cur) continue;
+    const paths = new Set(
+      diffPaths(comparableOf(adapter, cur), comparableOf(adapter, row), 64).map((p) =>
+        p
+          .replace(/\[\d+\]/g, "[]")
+          .split(".")
+          .slice(0, 4)
+          .join("."),
+      ),
+    );
+    for (const p of paths) counts.set(p, (counts.get(p) ?? 0) + 1);
+  }
+  return Object.fromEntries(
+    [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)).slice(0, top),
+  );
+}
+
 async function storedFor(
   deps: RunDeps,
   adapter: SourceAdapter,
@@ -143,6 +176,13 @@ export async function runSource(
     comparedUnchanged += result.unchanged + result.alreadyHeld;
     summary.unchanged = comparedUnchanged;
     if (result.alreadyHeld) summary.notes["already_held"] = result.alreadyHeld;
+    if (result.updates.length)
+      summary.notes["updated_paths"] = updatedPaths(
+        adapter,
+        result.updates,
+        stored,
+        collected.matchBy ?? "id",
+      );
     const send = new Set<CorpusRow>([...result.inserts, ...result.updates]);
     const ordered = collected.rows.filter((r) => send.has(r));
 

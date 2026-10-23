@@ -82,6 +82,8 @@ export type Collected = {
   verifyHeld?: () => Promise<ParityReport>;
   /** The already-held records rebuilt by this port with the provenance their stored rows carry (parity checks). */
   rebuildHeld?: () => Promise<{ key: string; built: CorpusRow; stored: StoredRow }[]>;
+  /** Every source record read, by its match key and date (dry-run presence checks of insert-only sources). */
+  readKeys?: { key: string; date: string | null }[];
 };
 
 export type ParityReport = {

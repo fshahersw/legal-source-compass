@@ -4,7 +4,7 @@ import fixture from "../fixtures/openfda-enforcement.json";
 // @ts-expect-error -- plain JavaScript helper (PostgreSQL jsonb text form) without type declarations
 import { jsonbHash } from "../../../../scripts/ingest/jsonb.mjs";
 import { classify, comparableOf } from "../rows.ts";
-import { runSource } from "../runner.ts";
+import { runSource, updatedPaths } from "../runner.ts";
 import { politeHttp } from "../http.ts";
 import type { CorpusClient } from "../corpus.ts";
 import type { CorpusRow, JsonObject, StoredRow } from "../types.ts";
@@ -79,6 +79,34 @@ describe("openFDA field rules", () => {
     expect(textParts({ a: "x", b: {}, c: ["1", "2"], d: "", e: { f: "y" } }).join(" ")).toBe(
       "x  1 2  y",
     );
+  });
+
+  it("the ledger names what the publisher changed (termination apart from openfda harmonisation)", () => {
+    const rec = records.drug.find((r) => r["recall_number"] === "D-0776-2026")!;
+    const stored = enforcementRow("drug", rec, cap);
+    const terminated = enforcementRow(
+      "drug",
+      { ...rec, status: "Terminated", termination_date: "20261015" },
+      cap,
+    );
+    const unharmonised = enforcementRow("drug", { ...rec, openfda: {} }, cap);
+    const paths = updatedPaths(
+      openfdaEnforcement("drug"),
+      [terminated, unharmonised],
+      [{ ...stored, ordinal: 1 } as unknown as StoredRow],
+      "id",
+    );
+    expect(paths["$.detail.publisher_record.status"]).toBe(1);
+    expect(paths["$.detail.publisher_record.openfda"]).toBe(1);
+    expect(paths["$.text"]).toBe(2);
+    expect(paths["$.filters.status[]"]).toBe(1);
+    expect(Object.keys(paths).every((p) => !/\[\d+\]/.test(p) && p.split(".").length <= 4)).toBe(
+      true,
+    );
+  });
+
+  it("text parts render booleans as the Python builder did (openfda.is_original_packager)", () => {
+    expect(textParts({ a: [true], b: false, c: "true" }).join(" ")).toBe("True False true");
   });
 
   it("dates: ISO, raw kept, date_types only for present dates", () => {
