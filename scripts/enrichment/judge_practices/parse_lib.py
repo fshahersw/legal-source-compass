@@ -334,7 +334,9 @@ def person_like(name: str | None, *, allow_single: bool = False) -> bool:
     toks = [t for t in re.split(r"\s+", name) if re.search(r"[A-Za-z]", t)]
     if not toks or len(toks) > 7 or re.search(r"\d", name):
         return False
-    if any(t.lower().strip(".,") in GENERIC_NAMES or t.lower() in FUNCTION_WORDS for t in toks):
+    # a middle name may be an ordinary word ("M. Page Kelley", "Denise Page Hood"); the first and last words never are page labels
+    edge = toks if len(toks) <= 2 else [toks[0], toks[-1]]
+    if any(t.lower().strip(".,") in GENERIC_NAMES for t in edge) or any(t in FUNCTION_WORDS for t in toks):  # "A" is an initial; only lower case "a" is a word
         return False
     if re.search(r"\b(?:united states|court|district|bankruptcy|office|clerk|division|department|probation|pretrial|services|committee|library)\b", name, re.I):
         return False
@@ -367,7 +369,7 @@ def proc_title_name(text: str) -> str | None:
     if not pb:
         return None
     rest = LOCATION_TAIL.sub("", text[pb.end():])
-    return re.sub(r"^(hon\.?)(?=[A-Za-z])", r"\1 ", rest, flags=re.I)
+    return re.sub(r"^(hon\.)(?=[A-Za-z])", r"\1 ", rest, flags=re.I)
 
 
 def strip_name(text: str) -> str:
@@ -904,6 +906,26 @@ def entry_only_judge(entry: Entry, court_level: str | None) -> JudgePage:
                      title_source=title_source, title_class=tclass, title_basis=basis, page_title=None)
 
 
+NAV_WORDS = re.compile(r"\b(?:judge|judges|chief|senior|district|magistrate|bankruptcy|united|states|court|home|calendars?|opinions?|chambers|procedures?|"
+                       r"biograph\w*|contact|information|search|menu|clerk|visiting|hearings?|schedule)\b", re.I)
+
+
+def full_name_from_text(text: str, surname: str) -> tuple[str, str] | None:
+    """(as printed, name) when a judge known only by surname has one full name printed with an honorific or "Judge" in the given text
+    ("Judge Brenda T. Rhoades"); None when the text prints none, or more than one different name ending in that surname."""
+    rx = re.compile(r"\b(Hon\.?|Honorable|Judge)\s+((?:[A-Z][\w'’\-]*\.?\s+){1,3}" + re.escape(surname) + r")\b")
+    found: dict[str, tuple[str, str]] = {}
+    for m in rx.finditer(text):
+        toks = m.group(2).split()
+        while len(toks) > 2 and toks[0].strip(".").lower() == surname.lower():  # "Maddox Selene D. Maddox": the first word is the neighbouring menu item
+            toks = toks[1:]
+        cand = " ".join(toks)
+        if len(toks) < 2 or toks[0].strip(".").lower() == surname.lower() or NAV_WORDS.search(cand) or not person_like(cand):
+            continue
+        found.setdefault(norm_name(cand), (clean(f"{m.group(1)} {cand}"), cand))
+    return next(iter(found.values())) if len(found) == 1 else None
+
+
 def parse_judge_page(body: bytes, url: str, *, court_level: str | None = None, entry: Entry | None = None,
                      site_hosts: set[str] | None = None, page_doc_regex: str | None = None) -> JudgePage:
     soup = soup_of(body)
@@ -924,6 +946,10 @@ def parse_judge_page(body: bytes, url: str, *, court_level: str | None = None, e
     name_src, name = resolve_name([h1 if h1 and (looks_like_judge_link(h1) or role_phrase(h1) or is_person_name(h1)) else None,
                                    entry.name_text if entry else None, ptitle if ptitle and looks_like_judge_link(ptitle) else None,
                                    *judge_heads, clean(crumb.rsplit(">", 1)[-1]) if crumb else None, h1, ptitle])
+    if name and len(name.split()) == 1:  # only a surname so far ("Judge Rhoades"): take the full name when the page itself prints it once, near the top
+        full = full_name_from_text(clean(root.get_text(" "))[:2500], name)
+        if full:
+            name_src, name = full
 
     evidence: list[tuple[str, str | None]] = []
     evidence.append(("judge page heading", h1))

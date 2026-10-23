@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import re
+import urllib.parse
 
 import fetchlib as fl
 import parse_lib as pl
@@ -80,7 +81,7 @@ def crawl(court: dict, override: dict, refresh: bool, parse_only: bool, result: 
                 path = str(q.get("path") or "")  # no stored file: the app links the path on the court's own site
                 if not path.startswith("/") or path.startswith("//"):
                     continue
-                url = f"{SITE}{path}"
+                url = SITE + urllib.parse.quote(path, safe="/%()")  # the service stores some paths with raw spaces
                 title_x = pl.clean(str(q.get("name") or ""))
                 m = re.search(r"\.([A-Za-z0-9]{2,5})$", path)
                 ext = m.group(1).lower() if m else None

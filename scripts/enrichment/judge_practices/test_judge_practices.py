@@ -299,6 +299,14 @@ class CourtAbbreviationsAndPageTitles(unittest.TestCase):
         self.assertEqual(pl.resolve_name(["Procedures for Hearings before Hon. Frank J. Santoro - Norfolk"]), ("Hon. Frank J. Santoro", "Frank J. Santoro"))
         self.assertEqual(pl.resolve_name(["Procedures for Hearings before Hon.Klinette H. Kindred"]), ("Hon. Klinette H. Kindred", "Klinette H. Kindred"))
 
+    def test_surname_only_names_take_the_full_name_only_when_the_page_prints_exactly_one(self):
+        f = pl.full_name_from_text
+        self.assertEqual(f("Judge Maddox Home Judge Selene D. Maddox Calendars", "Maddox"), ("Judge Selene D. Maddox", "Selene D. Maddox"))
+        self.assertIsNone(f("Judge Maddox Judge Maddox Calendars", "Maddox"))                    # only menu entries
+        self.assertIsNone(f("Judge Pat Jones and Judge Sam Jones", "Jones"))                     # two different people
+        self.assertTrue(pl.person_like("James A Soto") and pl.person_like("M. Page Kelley") and pl.person_like("Denise Page Hood"))
+        self.assertFalse(pl.person_like("Remote Access") or pl.person_like("Page Information") or pl.person_like("Role of the Judge"))
+
     def test_breadcrumb_in_capitals_and_page_labels(self):
         self.assertEqual(pl.strip_name("HOME >> JUDGES > CHIEF JUDGE JACOB A. BROWN"), "Jacob A. Brown")
         self.assertFalse(pl.person_like("Remote Access"))
@@ -320,6 +328,67 @@ class CourtAbbreviationsAndPageTitles(unittest.TestCase):
         self.assertTrue(all(not e.docs for e in es))
         js = [pl.entry_only_judge(e, "district") for e in es]
         self.assertEqual([j.title_class for j in js], ["district_judge", "district_judge", "magistrate_judge", "magistrate_judge"])
+
+
+class AppAdapters(unittest.TestCase):
+    """Courts whose pages are single-page apps: the judges and documents come from the court's own JSON service (stored fixtures, no network)."""
+
+    @staticmethod
+    def fake_get_page(mapping):
+        from types import SimpleNamespace as NS
+
+        def get_page(url, refresh=False):
+            body = mapping.get(url)
+            if body is None:
+                return NS(ok=False, body=None, final_url=url, status=404, blocked=None, error=None, cached=True, sha256=None)
+            return NS(ok=True, body=body, final_url=url, status=200, blocked=None, error=None, cached=True, sha256="0" * 64)
+
+        return get_page
+
+    def test_cacd_judges_titles_documents_and_placeholder(self):
+        from unittest import mock
+
+        import adapter_cacd as ac
+
+        mapping = {ac.LIST_URL: fixture("cacd_judge_list.json"),
+                   f"{ac.API}/judge/0c70dff4-48eb-46eb-3e9d-08ddece20de6": fixture("cacd_judge_detail_gee.json")}
+        result = {"listing_pages": [], "judges": [], "problems": []}
+        with mock.patch.object(ac.fl, "get_page", side_effect=self.fake_get_page(mapping)):
+            out = ac.crawl({"level": "district"}, {}, False, False, result)
+        by = {j["name"]: j for j in out["judges"]}
+        self.assertEqual(set(by), {"Dolly M. Gee", "Percy Anderson", "Alka Sagar"})  # the "Visiting" placeholder is not a person
+        self.assertTrue(any("placeholder 'Visiting'" in p for p in out["problems"]))
+        gee = by["Dolly M. Gee"]
+        self.assertEqual((gee["title_as_published"], gee["title_class"]), ("Chief Judge", "chief_district_judge"))
+        self.assertEqual(gee["page_url"], "https://apps.cacd.uscourts.gov/Jps/honorable-dolly-m-gee")
+        self.assertEqual([(d["title"], d["file_type"]) for d in gee["documents"]],
+                         [("DMG Initial Standing Order.docx", "docx"), ("DMG - Rule16 Sched Conf Setting Order", "pdf")])
+        self.assertEqual(gee["documents"][1]["url"], f"{ac.API}/file/d5968783-db1a-4733-8b0a-9f1ac5138d46")
+        self.assertEqual(by["Alka Sagar"]["title_class"], "magistrate_judge")
+        self.assertEqual(by["Percy Anderson"]["status"], 404)  # detail not served: recorded as unread, never guessed
+        self.assertNotIn("phone", str(out).lower())  # nothing but names, titles, addresses and document titles is kept
+
+    def test_hid_titles_from_the_service_and_document_addresses(self):
+        from unittest import mock
+
+        import adapter_hid as ah
+
+        mapping = {ah.LIST_URL: fixture("hid_judges.json")}
+        result = {"listing_pages": [], "judges": [], "problems": []}
+        with mock.patch.object(ah.fl, "get_page", side_effect=self.fake_get_page(mapping)):
+            out = ah.crawl({"level": "district"}, {}, False, False, result)
+        by = {j["name"]: j for j in out["judges"]}
+        self.assertEqual(set(by), {"Derrick K. Watson", "Jill A. Otake", "Wes Reber Porter", "Helen Gillmor"})
+        self.assertEqual(by["Derrick K. Watson"]["title_class"], "chief_district_judge")
+        self.assertEqual(by["Wes Reber Porter"]["title_class"], "magistrate_judge")
+        self.assertEqual(by["Helen Gillmor"]["title_class"], "senior_district_judge")
+        otake = by["Jill A. Otake"]  # the printed title is only "Judge": the service's own type field says District
+        self.assertEqual((otake["title_as_published"], otake["title_class"], otake["title_basis"]), ("Judge", "district_judge", "court_data"))
+        self.assertEqual(by["Wes Reber Porter"]["name_as_published"], "Mag. Judge Wes Reber Porter")
+        docs = by["Derrick K. Watson"]["documents"]
+        self.assertEqual(docs[0]["url"], "https://www.hid.uscourts.gov/cms/assets/c469aec9-f838-4845-ac11-44df5700d995")
+        self.assertEqual(docs[1]["url"], "https://www.hid.uscourts.gov/reqrmts/DKW/DKW%20Standing%20Order%20Settlement%209%2022.pdf")
+        self.assertEqual([d["file_type"] for d in docs], ["pdf", "pdf"])
 
 
 class ManualRoster(unittest.TestCase):

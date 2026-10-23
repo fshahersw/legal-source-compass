@@ -1,0 +1,10 @@
+[
+ {"id": "0c70dff4-48eb-46eb-3e9d-08ddece20de6", "initials": "DMG", "title": "Chief Judge", "name": "Dolly M. Gee", "titleType": "DJC",
+  "urlAlias": "honorable-dolly-m-gee", "documents": [], "webPage": null},
+ {"id": "dea9cd8a-169c-4510-3e9f-08ddece20de6", "initials": "PA", "title": "District Judge", "name": "Percy Anderson", "titleType": "DJ",
+  "urlAlias": "honorable-percy-anderson", "documents": [], "webPage": null},
+ {"id": "11111111-2222-3333-4444-555555555555", "initials": "MJ1", "title": "Magistrate Judge", "name": "Alka Sagar", "titleType": "MJ",
+  "urlAlias": "honorable-alka-sagar", "documents": [], "webPage": null},
+ {"id": "66666666-7777-8888-9999-000000000000", "initials": "VIS", "title": "Visiting District Judge", "name": "Visiting", "titleType": "DJV",
+  "urlAlias": "honorable-visiting-district-judge", "documents": [], "webPage": null}
+]

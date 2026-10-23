@@ -1,0 +1,13 @@
+{"data": [
+ {"id": 10, "first_name": "Derrick", "middle_name": "K.", "last_name": "Watson", "title": "Chief Judge", "type": "District", "sort_order": 1,
+  "requirements": [
+   {"id": 1, "name": "Civil Trial Procedures", "parent_id": null, "path": "/reqrmts/DKW/DKW Civil Trial Procedures.pdf", "sort_order": 1,
+    "directus_file": {"id": "c469aec9-f838-4845-ac11-44df5700d995", "title": "Civil Trial Procedures", "type": "application/pdf",
+                      "filename_download": "DKW Civil Trial Procedures.pdf", "modified_on": "2026-02-11T00:16:56.000Z"}},
+   {"id": 2, "name": "Standing Order Regarding Settlement", "parent_id": null, "path": "/reqrmts/DKW/DKW Standing Order Settlement 9 22.pdf", "sort_order": 2,
+    "directus_file": null}
+  ]},
+ {"id": 12, "first_name": "Jill", "middle_name": "A.", "last_name": "Otake", "title": "Judge", "type": "District", "sort_order": 3, "requirements": []},
+ {"id": 14, "first_name": "Wes", "middle_name": "Reber", "last_name": "Porter", "title": "Mag. Judge", "type": "Magistrate", "sort_order": 5, "requirements": []},
+ {"id": 5, "first_name": "Helen", "middle_name": "", "last_name": "Gillmor", "title": "Senior Judge", "type": "Senior", "sort_order": 6, "requirements": []}
+]}

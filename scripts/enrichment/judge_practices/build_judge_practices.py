@@ -127,7 +127,8 @@ def main() -> None:
             page_url = j["page_url"]
             fragment = "#" in page_url
             base_url = page_url.split("#")[0]
-            tm = times.get(base_url) or times.get(j.get("final_url", "")) or {}
+            tm = times.get(base_url) or times.get(j.get("final_url", "")) or times.get(j.get("data_url") or "") or {}
+            # a page that is an app shell: what was read is the court's own JSON service response (hash of that response)
             tclass = j.get("title_class") or "unclassified"
             m = index.match(cid, j["name"])
             link_basis[(c["level"], tclass.split("_")[-2] if tclass.endswith("judge") and "_" in tclass else tclass, m["status"])] += 1
@@ -182,7 +183,9 @@ def main() -> None:
                 f" — read from {j.get('title_source')}" if j.get("title_source") else "") + (f"; basis: {j.get('title_basis')}" if j.get("title_basis") else "")],
             ["Court", c["name"]], ["Court record", c["court_id"]], ["Page address", j["page_url"]],
             ["Page kind", "A list on the court's page naming the judge (no page of the judge's own)" if r["fragment"] else "The judge's own page on the court's website"],
-            ["Retrieved", r["retrieved_at"] or "Not recorded"], ["Page SHA-256", r["page_sha256"] or "Not recorded"],
+            ["Retrieved", r["retrieved_at"] or "Not recorded"],
+            ["Data read" if j.get("data_url") else "Page SHA-256", (f"{j['data_url']} (SHA-256 of that response: {r['page_sha256'] or 'not recorded'}); the page is a single-page app that shows this data"
+                                                                    if j.get("data_url") else (r["page_sha256"] or "Not recorded"))],
             ["Documents linked", len(docs_list)],
             ["Profile link", ("Linked: " + m["basis"]) if m["status"] == "linked" else f"Not linked: {m['reason']}" + (f" ({m['candidates']} candidates)" if m["candidates"] else "")],
             ["Source", "The court's own website; chambers telephone numbers, e-mail addresses and staff names are not copied. Read the judge's page for contact details."],
@@ -201,7 +204,7 @@ def main() -> None:
             "name_as_published": name_pub, "title_as_published": title_pub, "title_class": r["tclass"], "title_label": TITLE_LABEL.get(r["tclass"], r["tclass"]),
             "title_source": j.get("title_source"), "title_basis": j.get("title_basis"), "listing_heading": j.get("listing_heading"),
             "page_url": j["page_url"].split("#")[0], "page_kind": "listing_entry" if r["fragment"] else "judge_page", "other_pages": r["other_pages"],
-            "listing_url": j.get("listing_url"), "retrieved_at": r["retrieved_at"], "page_sha256": r["page_sha256"], "profile": profile,
+            "listing_url": j.get("listing_url"), "retrieved_at": r["retrieved_at"], "page_sha256": r["page_sha256"], "data_url": j.get("data_url"), "profile": profile,
             "documents": docs_list,
         }
         pages_out.append(writer.record(

@@ -54,6 +54,9 @@ def crawl(court: dict, override: dict, refresh: bool, parse_only: bool, result: 
         jid = str(row.get("id") or "")
         if not name or not alias or not re.fullmatch(r"[0-9a-f-]{36}", jid):
             continue
+        if len(name.split()) < 2:  # a placeholder for visiting judges ("Visiting"), not a person's name
+            result["problems"].append(f"the service lists a placeholder '{name}' ({row.get('title')}); not recorded as a judge")
+            continue
         page_url = f"{APP}/{alias}"
         detail_url = f"{API}/judge/{jid}"
         if parse_only and fl.cached_page(detail_url) is None:
