@@ -214,7 +214,12 @@ def main() -> None:
             filters={"court": [c["court_id"]], "level": [level_word], "title_class": [r["tclass"]], "has_documents": ["yes" if docs_list else "no"],
                      "profile": [m["status"]], "state": [c["state"]] if c["state"] else [],
                      **({"judge": [m["judge_id"]]} if m["status"] == "linked" else {})},
-            extra={"judge_page": judge_page, "sections": sections}))
+            extra={"judge_page": judge_page, "sections": sections,
+                   # compact form read by the court roster (one query for a whole bench without every document)
+                   "roster": {"id": r["rid"], "name": j["name"], "name_as_published": name_pub, "title": title_pub, "title_class": r["tclass"],
+                              "documents": len(docs_list), "documents_retrieved": sum(1 for d in docs_list if d["retrieved"]),
+                              "profile_id": m.get("judge_id") if m["status"] == "linked" else None, "profile_status": m["status"],
+                              "page_url": j["page_url"].split("#")[0], "page_kind": "listing_entry" if r["fragment"] else "judge_page"}}))
         # sections live in detail as well
         pages_out[-1]["detail"]["sections"] = sections
         pages_out[-1]["detail"]["qualification"] = ("Names, titles and document titles are shown as the court's website prints them. A title class is a reading of the "
