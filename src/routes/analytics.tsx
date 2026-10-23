@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
-import { InsightsHub } from "@/components/insights/InsightsHub";
+import { AnalyticsOverview } from "@/components/analytics/hub/AnalyticsOverview";
 import { pageHead } from "@/lib/corpus/head";
 
 export const Route = createFileRoute("/analytics")({
   head: () =>
     pageHead(
-      "Data visualizations",
-      "One insight of the day for each analytics section (states, courts, judges, MDLs, enforcement, product safety and industry payments), with the figures behind it and a link to the charts.",
+      "Analytics overview",
+      "Trends across the platform's published data: federal civil and criminal filings, MDL actions pending, enforcement activity, recalls and adverse events, consumer complaints, rulemaking, legislation and judicial vacancies, each with its source and period.",
     ),
   component: Page,
 });
@@ -15,11 +15,11 @@ export const Route = createFileRoute("/analytics")({
 function Page() {
   return (
     <AppShell
-      title="Data visualizations"
-      description="The insight of the day for each analytics section, with the main points and a link to its charts."
+      title="Analytics"
+      description="Trends over time across the platform's data, each with its unit, period and source."
       breadcrumbs={[{ label: "Home", to: "/" }, { label: "Analytics" }]}
     >
-      <InsightsHub />
+      <AnalyticsOverview />
     </AppShell>
   );
 }
