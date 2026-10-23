@@ -87,6 +87,23 @@ describe("levelLabel: a designation printed in the heading", () => {
       "recorded",
       null,
     ]);
+    // California prints each code's abbreviation after its name; the recorded code is that abbreviation.
+    expect(label("code", "BPC", "Business and Professions Code - BPC")).toEqual([
+      "Code BPC",
+      "Business and Professions Code",
+      "recorded",
+      null,
+    ]);
+    expect(label("code", "CONS", "* California Constitution - CONS")[1]).toBe(
+      "* California Constitution",
+    );
+    // Only an exact, case-sensitive copy after a dash is dropped.
+    expect(label("code", "BPC", "Business and Professions Code - bpc")[1]).toBe(
+      "Business and Professions Code - bpc",
+    );
+    expect(label("code", "BPC", "Business and Professions Code-BPC")[1]).toBe(
+      "Business and Professions Code-BPC",
+    );
   });
 
   it("keeps the heading whole when the printed number differs from the recorded one", () => {
@@ -156,6 +173,13 @@ describe("cleanHeading", () => {
     expect(cleanHeading("1 Definitions. &#150;")).toBe("1 Definitions. –");
     expect(cleanHeading("One-Cent (1&cent;) Tax")).toBe("One-Cent (1¢) Tax");
     expect(cleanHeading("JURISDICTION%2C CIVIL DIVISIONS")).toBe("JURISDICTION, CIVIL DIVISIONS");
+    // Minnesota part names come from the Revisor's part URLs: %2C, %3A and %3B are the only escapes in the corpus.
+    expect(cleanHeading("EDUCATION CODE%3A PREKINDERGARTEN - GRADE 12")).toBe(
+      "EDUCATION CODE: PREKINDERGARTEN - GRADE 12",
+    );
+    expect(cleanHeading("EMINENT DOMAIN%3B LOCAL DEPOSITORIES AND INVESTMENTS")).toBe(
+      "EMINENT DOMAIN; LOCAL DEPOSITORIES AND INVESTMENTS",
+    );
     expect(cleanHeading("SCHEDULE<br/>To insure")).toBe("SCHEDULE To insure");
     expect(cleanHeading("Children (2432KB)")).toBe("Children");
     expect(cleanHeading("   ")).toBeNull();

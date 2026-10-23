@@ -185,6 +185,7 @@ const URL_ESCAPES: Record<string, string> = {
   "%28": "(",
   "%29": ")",
   "%2C": ",",
+  "%3A": ":",
   "%3B": ";",
 };
 
@@ -209,7 +210,10 @@ export function cleanHeading(value: string | null | undefined): string | null {
   const text = value
     .replace(/<br\s*\/?>/gi, " ")
     .replace(/&(#\d{1,7}|#[xX][0-9a-fA-F]{1,6}|[A-Za-z][A-Za-z0-9]{1,7});/g, decodeReference)
-    .replace(/%(?:20|26|27|28|29|2C|3B)/gi, (escape) => URL_ESCAPES[escape.toUpperCase()] ?? escape)
+    .replace(
+      /%(?:20|26|27|28|29|2C|3A|3B)/gi,
+      (escape) => URL_ESCAPES[escape.toUpperCase()] ?? escape,
+    )
     .replace(/\s+/g, " ")
     .trim()
     .replace(/\s*\(\d+(?:\.\d+)?\s?[KM]B\)$/, "")
@@ -319,6 +323,18 @@ function designationText(kind: string, number: string | null): string {
  * designation fills a missing or internal number. When both are real numbers and disagree, the
  * heading is left whole so nothing printed is hidden.
  */
+/**
+ * A name that ends with a copy of the recorded number after a dash, as California prints its codes ("Business and
+ * Professions Code - BPC" for code BPC), without that copy, so the number is shown once. Exact, case-sensitive match
+ * only; anything else is returned unchanged.
+ */
+function withoutTrailingNumber(name: string | null, number: string): string | null {
+  if (!name) return name;
+  const escaped = number.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = new RegExp(`^(.*\\S)\\s+[-\\u2013\\u2014]\\s+${escaped}$`).exec(name);
+  return match ? match[1]! : name;
+}
+
 export function levelLabel(
   level: string,
   number: string | null | undefined,
@@ -352,6 +368,7 @@ export function levelLabel(
       } else if (ownKind) {
         kind = kindLabel(ownKind);
       }
+      if (!own) name = withoutTrailingNumber(name, real);
     } else {
       // Nothing usable is recorded: a designation the heading begins with supplies kind and number.
       const chain = parseDesignations(clean);

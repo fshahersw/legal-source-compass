@@ -18,6 +18,10 @@ level's identity. Nothing is invented:
   * District of Columbia: the recorded "chapter" is the publisher's table-of-contents path
     ("titles-1-chapters-2-subchapters-IV"); it becomes the levels it names, and the section heading the intake stored on
     it is not used as a level heading. Level names come only from a captured publisher table of contents (--names).
+  * Delaware (titles whose table of contents was captured, de_toc_names.py --names): a Uniform Commercial Code part the
+    intake recorded as the title's heading ("Part 1") and again as an unnamed subchapter ("sc01") becomes one part
+    level under its article; an unnamed unit takes the designation and name the publisher prints for its folder
+    (c002 -> "Article 2. Sales"), the title takes its printed name, and the publisher's subtitles are restored.
 Every section appears exactly once; the build fails otherwise. Files are at most MAX_SHARD_BYTES (one top-level unit
 may exceed it alone, up to the snapshot limit of 16 MiB).
 """
@@ -35,7 +39,7 @@ from pathlib import Path
 SCHEMA = "state-code-outline-release/1"
 MAX_SHARD_BYTES = 3_000_000
 MAX_FILE_BYTES = 16 * 1024 * 1024
-URL_ESCAPES = {"%20": " ", "%26": "&", "%27": "'", "%28": "(", "%29": ")", "%2C": ",", "%3B": ";"}
+URL_ESCAPES = {"%20": " ", "%26": "&", "%27": "'", "%28": "(", "%29": ")", "%2C": ",", "%3A": ":", "%3B": ";"}
 CP1252 = {i: bytes([i]).decode("cp1252", errors="replace") for i in range(128, 160)}
 DC_LEVELS = {"titles": "title", "subtitles": "subtitle", "chapters": "chapter", "subchapters": "subchapter",
              "units": "unit", "articles": "article", "parts": "part", "subparts": "subpart", "divisions": "division"}
@@ -59,7 +63,7 @@ def clean_heading(value):
         return None
     text = re.sub(r"<br\s*/?>", " ", value, flags=re.I)
     text = re.sub(r"&(#\d{1,7}|#[xX][0-9a-fA-F]{1,6}|[A-Za-z][A-Za-z0-9]{1,7});", _reference, text)
-    text = re.sub(r"%(?:20|26|27|28|29|2C|3B)", lambda m: URL_ESCAPES[m.group(0).upper()], text, flags=re.I)
+    text = re.sub(r"%(?:20|26|27|28|29|2C|3A|3B)", lambda m: URL_ESCAPES[m.group(0).upper()], text, flags=re.I)
     text = re.sub(r"\s+", " ", text).strip()
     text = re.sub(r"\s*\(\d+(?:\.\d+)?\s?[KM]B\)$", "", text).strip()
     return text or None
@@ -126,11 +130,53 @@ def restore_steps(jurisdiction, citation, steps, extras):
                 out.append((level, number, extras["names"].get("/".join(key)), None))
             return out
         return [tuple(s) for s in steps]
+    if jurisdiction == "DE":
+        return de_restore(citation, [tuple(s) for s in steps], extras["names"])
     return [tuple(s) for s in steps]
 
 
+def de_slug(number):
+    """The publisher's unit folder for a recorded Delaware chapter number: '2' -> 'c002', '002a' -> 'c002a'."""
+    if isinstance(number, str) and re.fullmatch(r"\d+", number):
+        return f"c{int(number):03d}"
+    if isinstance(number, str) and re.fullmatch(r"\d{3}[a-z0-9_]*", number):
+        return f"c{number}"
+    return None
+
+
+def de_restore(citation, steps, names):
+    """Delaware titles whose table of contents was captured (de_toc_names.py). The intake recorded a Uniform Commercial
+    Code part twice, as the title's heading ("Part 1") and as an unnamed subchapter "sc01" under an unnamed chapter
+    "2" (the UCC article): the part becomes its own level under the article, the title takes its printed name, the
+    unnamed unit takes the publisher's designation and name for its folder (c002 -> "Article 2. Sales"), and the
+    subtitle the publisher prints above it is restored. Recorded headings are kept; nothing is matched by similarity."""
+    if not steps or steps[0][0] != "title" or f"title:{steps[0][1]}" not in names:
+        return steps
+    title = steps[0][1]
+    recorded = clean_heading(steps[0][2])
+    part = re.fullmatch(r"Part (\d+)", recorded or "")
+    out = [("title", title, names[f"title:{title}"] if (recorded is None or part) else steps[0][2], steps[0][3])]
+    rest = steps[1:]
+    if rest and rest[0][0] == "chapter":
+        entry = names.get(f"title:{title}/{de_slug(rest[0][1])}")
+        if entry is None:
+            raise ValueError(f"Delaware title {title} unit not in the captured table of contents: {rest[0][1]!r} ({citation})")
+        if entry["subtitle"]:
+            out.append(("subtitle", entry["subtitle"][0], entry["subtitle"][1], None))
+        out.append(rest[0] if clean_heading(rest[0][2]) else (entry["level"], entry["number"], entry["heading"], rest[0][3]))
+        rest = rest[1:]
+    if part:
+        sub = rest[0] if rest else None
+        if (sub is None or sub[0] != "subchapter" or clean_heading(sub[2])
+                or not re.fullmatch(rf"sc0*{part.group(1)}", sub[1] or "")):
+            raise ValueError(f"Delaware 'Part {part.group(1)}' without its matching unnamed subchapter: {citation}")
+        out.append(("part", part.group(1), None, sub[3]))
+        rest = rest[1:]
+    return out + list(rest)
+
+
 class Node:
-    __slots__ = ("level", "number", "node_id", "headings", "children", "sections", "recorded")
+    __slots__ = ("level", "number", "node_id", "headings", "children", "sections", "recorded", "chosen")
 
     def __init__(self, level, number, node_id):
         self.level, self.number, self.node_id = level, number, node_id
@@ -138,11 +184,14 @@ class Node:
         self.recorded = set()  # headings as the intake recorded them, where a restoration completed them
         self.children = {}
         self.sections = []
+        self.chosen = False  # set by merge_by_citation: the heading to show (None: no recorded heading is dominant)
 
     def count(self):
         return len(self.sections) + sum(c.count() for c in self.children.values())
 
     def heading(self):
+        if self.chosen is not False:
+            return self.chosen
         if not self.headings:
             return None
         # Most sections; then a heading printed without stray whitespace or markup; then the longer (uncut) text.
@@ -217,6 +266,75 @@ def merge_variants(node, report):
         merge_variants(child, report)
 
 
+# Jurisdictions whose citation prints the numbers of its first levels ("11-3-1": title 11, chapter 3). Verified on the
+# exports: every Alabama citation, and every Wyoming one outside the constitution, agrees with the recorded numbers.
+CITATION_PATH = {
+    "AL": (re.compile(r"^([0-9A-Za-z.]+?)-([0-9A-Za-z.]+?)-"), ("title", "chapter")),
+    "WY": (re.compile(r"^([0-9A-Za-z.]+?)-([0-9A-Za-z.]+?)-"), ("title", "chapter")),
+}
+
+
+def subtree_rows(node):
+    yield from node.sections
+    for child in node.children.values():
+        yield from subtree_rows(child)
+
+
+def dominant_heading(headings):
+    """Of a merged unit's recorded headings, the one on at least two thirds of the sections that carry a heading
+    (spellings differing only in whitespace, case or a final period count together); None when none is that dominant.
+    Alabama stores an amending act's or a subtitle's name on some sections' units ("Financial Innovation and Market
+    Expansion Act" on chapters across the code); such a name never becomes the unit's name unless it dominates."""
+    groups, spellings = defaultdict(int), defaultdict(list)
+    for raw, n in headings.items():
+        key = norm_heading(raw)
+        if key:
+            groups[key] += n
+            spellings[key].append(raw)
+    total = sum(groups.values())
+    if not total:
+        return None
+    key, n = max(groups.items(), key=lambda kv: (kv[1], kv[0]))
+    if n * 3 < total * 2:
+        return None
+    return max(spellings[key], key=lambda raw: (headings[raw], raw == clean_heading(raw), len(clean_heading(raw) or "")))
+
+
+def merge_by_citation(node, spec, depth, report):
+    """Siblings at a level the citation prints, with the same recorded number, are one unit when every section under
+    every one of them cites that number at that place ("11-3-1" is in title 11 even where the intake stored a
+    subtitle's heading on the title). The unit shows dominant_heading() of what was recorded; every other recorded
+    heading is kept as a variant. Where the citation does not print a level (Louisiana, Maine), nothing is merged."""
+    pattern, levels = spec
+    if depth >= len(levels):
+        return
+    groups = defaultdict(list)
+    for key, child in node.children.items():
+        if child.level == levels[depth] and child.number is not None:
+            groups[child.number].append(key)
+
+    def cites(row, number):
+        m = pattern.match(row[1] or "")
+        return bool(m) and m.group(depth + 1) == number
+
+    for number, keys in groups.items():
+        if len(keys) < 2 or not all(cites(r, number) for k in keys for r in subtree_rows(node.children[k])):
+            continue
+        keep = max(keys, key=lambda k: node.children[k].count())
+        for k in keys:
+            if k != keep:
+                report["merged_by_citation"] += 1
+                merge_into(node.children[keep], node.children.pop(k))
+        kept = node.children[keep]
+        kept.chosen = dominant_heading(kept.headings)
+        if len(report["citation_merge_examples"]) < 12:
+            report["citation_merge_examples"].append([levels[depth], number, kept.chosen,
+                                                      sorted(h for h in kept.headings if clean_heading(h) and h != kept.chosen)])
+    for child in node.children.values():
+        if child.level == levels[depth]:
+            merge_by_citation(child, spec, depth + 1, report)
+
+
 def node_id_of(parent_id, node):
     raw = "\x1e".join([parent_id, node.level or "", node.number or "", node.node_id or "", norm_heading(node.heading())])
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
@@ -243,7 +361,7 @@ def order_children(children):
 def serialize(node, parent_id):
     nid = node_id_of(parent_id, node)
     heading = node.heading()
-    variants = sorted(h for h in node.headings if h != heading and h is not None)
+    variants = sorted(h for h in node.headings if h != heading and clean_heading(h))
     children = order_children(list(node.children.values()))
     out = {"id": nid, "l": node.level, "n": node.number, "h": heading, "c": node.count()}
     if node.recorded:
@@ -273,6 +391,9 @@ def build(export, extras, built_at):
         steps = restore_steps(jurisdiction, citation, paths[path_index], extras)
         add_section(root, steps, [native_id, citation, heading, status])
     report = {"merged_variants": 0, "merge_examples": []}
+    if jurisdiction in CITATION_PATH:
+        report.update({"merged_by_citation": 0, "citation_merge_examples": []})
+        merge_by_citation(root, CITATION_PATH[jurisdiction], 0, report)
     merge_variants(root, report)
     order = extras.get("tx_order") if jurisdiction == "TX" else None
     children = list(root.children.values())
@@ -324,7 +445,8 @@ def main(argv=None):
     ap.add_argument("--export", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--tx-inventory")
-    ap.add_argument("--names", help="JSON {'title:1': name, 'title:1/chapter:2': name} from a captured publisher TOC")
+    ap.add_argument("--names", help="DC: JSON {'title:1': name} (dc_toc_names.py); DE: de_toc_names.py output; "
+                                    "both from captured publisher tables of contents")
     ap.add_argument("--names-source", default=None, help="URL and sha256 of the captured TOC, recorded on the release")
     ap.add_argument("--tx-wrapped", help="confirmed wrapped Texas headings (tx_verify_continuations.py output)")
     args = ap.parse_args(argv)
@@ -360,8 +482,22 @@ def main(argv=None):
             inputs.append({"path": args.names, "sha256": hashlib.sha256(raw).hexdigest(), "source": args.names_source})
         restorations.append("Levels from the publisher's table-of-contents path recorded on each section "
                             "(titles-N-chapters-N-...); level names only from the captured publisher table of contents.")
+    if jurisdiction == "DE" and args.names:
+        raw = Path(args.names).read_bytes()
+        extras["names"] = json.loads(raw)
+        inputs.append({"path": args.names, "sha256": hashlib.sha256(raw).hexdigest(), "source": args.names_source})
+        titles = sorted(k.split(":", 1)[1] for k in extras["names"] if "/" not in k)
+        restorations.append(f"Title {', '.join(titles)}: Uniform Commercial Code parts the intake recorded as the title "
+                            "heading (\"Part 1\") and again as an unnamed subchapter are one part level under their "
+                            "article; unnamed units, the title name and the subtitles come from the captured publisher "
+                            "table of contents.")
     restorations.append("Level identity includes the recorded heading; siblings with one recorded number whose headings "
                         "are copies or cut-off copies of each other are one unit (variants kept).")
+    if jurisdiction in CITATION_PATH:
+        levels = " and ".join(CITATION_PATH[jurisdiction][1])
+        restorations.append(f"The citation prints the {levels} number (\"11-3-1\"): siblings with one recorded number whose "
+                            "sections all cite it are one unit; it shows the heading recorded on at least two thirds of its "
+                            "headed sections, or none, and keeps the others as variants.")
     top, direct, report = build(export, extras, built_at)
     st = jurisdiction.lower()
     prefix = f"state-codes/{st}/outline-v1/"

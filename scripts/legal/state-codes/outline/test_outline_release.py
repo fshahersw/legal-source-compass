@@ -13,6 +13,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import build_outline_release as b  # noqa: E402
 import dc_toc_names  # noqa: E402
+import de_toc_names  # noqa: E402
 
 
 def export(jurisdiction, rows):
@@ -41,6 +42,7 @@ class Headings(unittest.TestCase):
         self.assertEqual(b.clean_heading("1 Definitions. &#150;"), "1 Definitions. –")
         self.assertEqual(b.clean_heading("One-Cent (1&cent;) Tax"), "One-Cent (1¢) Tax")
         self.assertEqual(b.clean_heading("JURISDICTION%2C CIVIL DIVISIONS"), "JURISDICTION, CIVIL DIVISIONS")
+        self.assertEqual(b.clean_heading("EDUCATION CODE%3A PREKINDERGARTEN - GRADE 12"), "EDUCATION CODE: PREKINDERGARTEN - GRADE 12")
         self.assertEqual(b.clean_heading("SCHEDULE<br/>To insure"), "SCHEDULE To insure")
         self.assertEqual(b.clean_heading("Children (2432KB)"), "Children")
         self.assertIsNone(b.clean_heading("   "))
@@ -162,6 +164,107 @@ class Build(unittest.TestCase):
             shard = json.loads((Path(tmp) / root["top"][0]["shard"]).read_text())
             self.assertEqual(shard["nodes"][0]["k"][0]["s"][0][0], "OH:101.01")
             self.assertEqual(summary["sections"], 1)
+
+
+class CitationProvenUnits(unittest.TestCase):
+    def test_alabama_units_the_citation_proves_are_one(self):
+        data = export("AL", [
+            ("AL:2-1-1", "2-1-1", "a", [("title", "2", "Agriculture."), ("chapter", "1", "General Provisions.")]),
+            ("AL:2-1-2", "2-1-2", "b", [("title", "2", ""), ("chapter", "1", "General Provisions.")]),
+            ("AL:2-1-3", "2-1-3", "c", [("title", "2", ""), ("chapter", "1", "General Provisions.")]),
+            ("AL:2-1-4", "2-1-4", "d", [("title", "2", ""), ("chapter", "1", "Financial Innovation and Market Expansion Act.")]),
+            # Two subtitle names on one title: neither is dominant, so the title shows none.
+            ("AL:11-1-1", "11-1-1", "e", [("title", "11", "Provisions Applicable to Counties Only."), ("chapter", "1", "x")]),
+            ("AL:11-40-1", "11-40-1", "f", [("title", "11", "Provisions Applicable to Municipal Corporations Only."),
+                                            ("chapter", "40", "y")]),
+        ])
+        top, _, report = b.build(data, {"names": {}}, "x")
+        self.assertEqual([(t["n"], t["h"]) for t in top], [("2", "Agriculture."), ("11", None)])
+        self.assertEqual(sorted(top[1]["hv"]), ["Provisions Applicable to Counties Only.",
+                                                "Provisions Applicable to Municipal Corporations Only."])
+        chapter = top[0]["k"]
+        self.assertEqual([(c["n"], c["h"], c["c"]) for c in chapter], [("1", "General Provisions.", 4)])
+        self.assertEqual(chapter[0]["hv"], ["Financial Innovation and Market Expansion Act."])
+        self.assertNotIn("", top[0].get("hv", []))
+        self.assertEqual(report["merged_by_citation"], 3)
+
+    def test_nothing_merges_unless_every_section_cites_the_number(self):
+        data = export("WY", [
+            ("WY:c1", "Article 1, Section 1", "a", [("title", "97", "CONSTITUTION"), ("chapter", "1", "Article 1")]),
+            ("WY:c2", "Article 2, Section 1", "b", [("title", "97", "CONSTITUTION"), ("chapter", "1", "Article 2")]),
+        ])
+        top, _, _ = b.build(data, {"names": {}}, "x")
+        self.assertEqual(sorted(k["h"] for k in top[0]["k"]), ["Article 1", "Article 2"])
+        # Louisiana's citation does not print a chapter: same-numbered chapters with different names stay apart.
+        data = export("LA", [("LA:9:1", "La. R.S. 9:1", "a", [("title", "9", "Civil Code-Ancillaries"), ("chapter", "1", "WOMEN")]),
+                             ("LA:9:2", "La. R.S. 9:2", "b", [("title", "9", "Civil Code-Ancillaries"), ("chapter", "1", "DIVORCE")])])
+        top, _, _ = b.build(data, {"names": {}}, "x")
+        self.assertEqual(len(top[0]["k"]), 2)
+
+    def test_dominant_heading(self):
+        self.assertEqual(b.dominant_heading({"STATE OFFICERS": 140, "WYOMING ECONOMIC DEVELOPMENT ACT": 1, "": 9}), "STATE OFFICERS")
+        self.assertIsNone(b.dominant_heading({"Financial Innovation and Market Expansion Act.": 5, "Consumable Hemp Products": 2,
+                                               "Health Benefits Offered by Nonprofit Agricultural Organizations.": 1}))
+        self.assertEqual(b.dominant_heading({"Courts.": 2, "COURTS": 1, "": 50}), "Courts.")
+        self.assertIsNone(b.dominant_heading({"": 3, None: 1}))
+
+
+class Delaware(unittest.TestCase):
+    NAMES = {"title:6": "Commerce and Trade",
+             "title:6/c002": {"subtitle": ["I", "Uniform Commercial Code"], "level": "article", "number": "2", "heading": "Sales"},
+             "title:6/c012_1": {"subtitle": ["II", "Other Laws Relating to Commerce and Trade"], "level": "chapter",
+                                "number": "12", "heading": "DELAWARE FALSE CLAIMS AND REPORTING ACT"}}
+
+    def test_ucc_part_recorded_as_title_heading_becomes_its_own_level(self):
+        steps = b.restore_steps("DE", "§ 2-101", [["title", "6", "Part 1", None], ["chapter", "2", "", None],
+                                                  ["subchapter", "sc01", "", None]], {"names": self.NAMES})
+        self.assertEqual(steps, [("title", "6", "Commerce and Trade", None), ("subtitle", "I", "Uniform Commercial Code", None),
+                                 ("article", "2", "Sales", None), ("part", "1", None, None)])
+
+    def test_recorded_headings_are_kept(self):
+        steps = b.restore_steps("DE", "§ 1201", [["title", "6", "", None],
+                                                 ["chapter", "012_1", "CHAPTER 12. Delaware False Claims and Reporting Act", None]],
+                                {"names": self.NAMES})
+        self.assertEqual(steps[2], ("chapter", "012_1", "CHAPTER 12. Delaware False Claims and Reporting Act", None))
+        self.assertEqual(steps[1], ("subtitle", "II", "Other Laws Relating to Commerce and Trade", None))
+        # A title without a captured table of contents is untouched.
+        same = [("title", "5", "Banking", None), ("chapter", "1", "", None)]
+        self.assertEqual(b.restore_steps("DE", "§ 101", [list(s) for s in same], {"names": self.NAMES}), same)
+
+    def test_refuses_what_it_cannot_place(self):
+        with self.assertRaises(ValueError):  # unit not in the captured table of contents
+            b.restore_steps("DE", "§ 99-101", [["title", "6", "", None], ["chapter", "99", "", None]], {"names": self.NAMES})
+        with self.assertRaises(ValueError):  # "Part 2" whose subchapter is sc01
+            b.restore_steps("DE", "§ 2-201", [["title", "6", "Part 2", None], ["chapter", "2", "", None],
+                                              ["subchapter", "sc01", "", None]], {"names": self.NAMES})
+
+    def test_one_title_six(self):
+        data = export("DE", [("DE:2-101", "§ 2-101", "a", [("title", "6", "Part 1"), ("chapter", "2", ""), ("subchapter", "sc01", "")]),
+                             ("DE:2-201", "§ 2-201", "b", [("title", "6", "Part 2"), ("chapter", "2", ""), ("subchapter", "sc02", "")]),
+                             ("DE:1201", "§ 1201", "c", [("title", "6", ""), ("chapter", "012_1", "CHAPTER 12. Delaware False Claims")])])
+        top, _, _ = b.build(data, {"names": self.NAMES}, "x")
+        self.assertEqual([(n["l"], n["n"], n["h"]) for n in top], [("title", "6", "Commerce and Trade")])
+        article = top[0]["k"][0]["k"][0]
+        self.assertEqual((article["l"], article["n"], article["h"]), ("article", "2", "Sales"))
+        self.assertEqual([(p["l"], p["n"], p.get("h")) for p in article["k"]], [("part", "1", None), ("part", "2", None)])
+
+    def test_toc_extraction(self):
+        index = ('<a href="&#xA;  title6/index.html&#xA; ">\n  Title 6 - Commerce and Trade</a>'
+                 '<a href="&#xA;  title6/title6.pdf&#xA; ">Authenticated PDF</a>')
+        self.assertEqual(de_toc_names.title_names(index), {"6": "Commerce and Trade"})
+        page = ('<h3> Subtitle I</h3> <h3>Uniform Commercial Code</h3>'
+                '<div class="title-links"><a href="../title6/c002a/index.html"> Article 2A. Leases</a></div>'
+                '<h3> Subtitle II</h3>\n<h3>Other Laws Relating to Commerce and Trade</h3>'
+                '<div class="title-links"><a href="../title6/c012_1/index.html"> Chapter 12. DELAWARE FALSE CLAIMS AND REPORTING ACT</a></div>')
+        self.assertEqual(de_toc_names.title_units("6", page), {
+            "title:6/c002a": {"subtitle": ["I", "Uniform Commercial Code"], "level": "article", "number": "2A", "heading": "Leases"},
+            "title:6/c012_1": {"subtitle": ["II", "Other Laws Relating to Commerce and Trade"], "level": "chapter", "number": "12",
+                               "heading": "DELAWARE FALSE CLAIMS AND REPORTING ACT"}})
+        with self.assertRaises(ValueError):
+            de_toc_names.title_units("6", '<a href="../title6/c001/index.html">General Provisions</a>')
+        self.assertEqual(b.de_slug("2"), "c002")
+        self.assertEqual(b.de_slug("012_1"), "c012_1")
+        self.assertIsNone(b.de_slug("sc01"))
 
 
 class DcToc(unittest.TestCase):
