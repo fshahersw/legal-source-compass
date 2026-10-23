@@ -67,31 +67,34 @@ def main():
     checks, bad = [], 0
 
     for stream in ("faers", "maude"):
-        series = [r for r in rows_of(args.outdir, stream, "series") if r["series"] in SERIES]
-        for r in rnd.sample(series, min(args.n, len(series))):
+        series = [(r, i) for r in rows_of(args.outdir, stream, "series") if r["series"] in SERIES for i in range(len(r["vals"]))]
+        for r, i in rnd.sample(series, min(args.n, len(series))):
             extra, endpoint, field, src = SERIES[r["series"]]
-            a, b = month_window(r["month"])
+            month = c.month_add(r["coverage_from"], i)
+            a, b = month_window(month)
             search = ob.and_clause(ob.and_clause(subj[r["subject_id"]]["search"][src], extra), f"{field}:[{a}+TO+{b}]")
             got, url = total(http, key, endpoint, search)
-            ok = got == r["value"]
+            ok = got == r["vals"][i]
             bad += not ok
-            checks.append({"kind": "series", "subject": r["subject_id"], "series": r["series"], "month": r["month"],
-                           "stored": r["value"], "source": got, "ok": ok, "url": url})
-        brk = [r for r in rows_of(args.outdir, stream, "breakdowns") if r["dim"] in DIMS and r["term"]]
-        for r in rnd.sample(brk, min(args.n, len(brk))):
+            checks.append({"kind": "series", "subject": r["subject_id"], "series": r["series"], "month": month,
+                           "stored": r["vals"][i], "source": got, "ok": ok, "url": url})
+        brk = [(r, i) for r in rows_of(args.outdir, stream, "breakdowns") if r["dim"] in DIMS for i in range(len(r["terms"])) if r["terms"][i]]
+        for r, i in rnd.sample(brk, min(args.n, len(brk))):
             field, endpoint, datefield, src = DIMS[r["dim"]]
-            search = ob.and_clause(subj[r["subject_id"]]["search"][src], f"{field}:{quote(r['term'])}")
+            term, value = r["terms"][i], r["vals"][i]
+            stored_serious = (r.get("serious") or [None] * len(r["vals"]))[i]
+            search = ob.and_clause(subj[r["subject_id"]]["search"][src], f"{field}:{quote(term)}")
             if r["period"] != "all":
                 a, b = ob.period_bounds(r["period"])
                 search = ob.and_clause(search, f"{datefield}:[{a}+TO+{b}]")
             got, url = total(http, key, endpoint, search)
-            ok = got == r["value"]
-            entry = {"kind": "breakdown", "subject": r["subject_id"], "dim": r["dim"], "period": r["period"], "term": r["term"],
-                     "stored": r["value"], "source": got, "ok": ok, "url": url}
-            if ok and r.get("serious") is not None:
+            ok = got == value
+            entry = {"kind": "breakdown", "subject": r["subject_id"], "dim": r["dim"], "period": r["period"], "term": term,
+                     "stored": value, "source": got, "ok": ok, "url": url}
+            if ok and stored_serious is not None:
                 sgot, _ = total(http, key, endpoint, ob.and_clause(search, "serious:1"))
-                entry.update({"stored_serious": r["serious"], "source_serious": sgot})
-                ok = sgot == r["serious"]
+                entry.update({"stored_serious": stored_serious, "source_serious": sgot})
+                ok = sgot == stored_serious
                 entry["ok"] = ok
             bad += not ok
             checks.append(entry)

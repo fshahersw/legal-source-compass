@@ -7,10 +7,12 @@
 --                             totals, each with the exact openFDA search it counts; MDL ↔ subject links ONLY where the
 --                             official JPML title names the product (or class / manufacturer + device), with the title,
 --                             the matched tokens and the basis stored on the link.
---   series / series_meta      monthly counts per subject (FAERS reports, serious, deaths, outcome criteria; MAUDE reports by
---                             event type; FDA enforcement reports and device recalls; NHTSA complaints) with the query URL.
---   terms / breakdowns        term counts per subject and period (MedDRA preferred terms by quarter with serious counts,
---                             device problems, brand names); breakdown_meta records the request limit and whether it was hit.
+--   series                    one row per (subject, series): the monthly counts of the coverage window as an integer array
+--                             (FAERS reports, serious, deaths, outcome criteria; MAUDE reports by event type; FDA enforcement
+--                             reports and device recalls; CAERS; NHTSA complaints) with the exact query URL and method.
+--   terms / breakdowns        one row per (subject, dimension, period): the returned terms (MedDRA preferred terms by quarter
+--                             or year with serious counts, device and patient problems, makers, brand names) as aligned
+--                             arrays, with the request limit and whether it was hit.
 --   maude_reports             record-level MAUDE reports for the devices MDL titles name (record_subjects says which group).
 --   nhtsa_complaints          record-level NHTSA ODI complaints received 2020+ (no VIN, city, dealer contact or operator name).
 --   neiss_cases               record-level NEISS sample cases (HELD: load only after the lead confirms the owner's
@@ -27,7 +29,7 @@
 -- Accuracy rules carried by the data: every count is the number the source returned for the stored query; a value the
 -- source does not give is absent (read RPCs say "not recorded"), never 0 — except series months inside a subject's
 -- coverage window, where openFDA's date counts omit days without reports, so an omitted month inside the window IS 0 and
--- is returned as 0 by product_signals_v1 (coverage window in series_meta). Adverse-event and device reports are
+-- is stored and returned as 0 (series.coverage_from/coverage_to). Adverse-event and device reports are
 -- voluntary, unverified reports; they do not establish that a product caused an event (caveat returned with every series).
 -- Companies are never merged across sources: a company profile is per source, by the exact published name or id.
 --
@@ -106,15 +108,9 @@ create table if not exists safety.mdl_subjects (
 );
 create index if not exists mdl_subjects_subject on safety.mdl_subjects (subject_id);
 
+-- One row per (subject, series): the monthly counts of the whole coverage window as an array (vals[1] = coverage_from,
+-- one element per calendar month, 0 where the source lists no report in that month), with the query that produced it.
 create table if not exists safety.series (
-  subject_id text not null references safety.subjects (id) on delete cascade,
-  series text not null check (series ~ '^[a-z][a-z0-9_]{1,40}$'),
-  month date not null check (extract(day from month) = 1),
-  value integer not null check (value >= 0),
-  primary key (subject_id, series, month)
-);
-
-create table if not exists safety.series_meta (
   subject_id text not null references safety.subjects (id) on delete cascade,
   series text not null check (series ~ '^[a-z][a-z0-9_]{1,40}$'),
   unit text not null,
@@ -124,33 +120,34 @@ create table if not exists safety.series_meta (
   coverage_from date not null check (extract(day from coverage_from) = 1),
   coverage_to date not null check (extract(day from coverage_to) = 1),
   retrieved_at timestamptz not null,
-  total bigint check (total is null or total >= 0),
+  total bigint not null check (total >= 0),
+  vals integer[] not null,
   primary key (subject_id, series),
-  check (coverage_to >= coverage_from)
+  check (coverage_to >= coverage_from),
+  check (cardinality(vals) = ((extract(year from coverage_to) - extract(year from coverage_from)) * 12
+                              + extract(month from coverage_to) - extract(month from coverage_from) + 1)::integer),
+  check (0 <= all (vals))
 );
 
+-- One row per (subject, dimension, period): the terms the source returned (top `limit_n`, most reported first) with their
+-- report counts and, where requested, serious counts (null element = not recorded: the serious request hit its limit
+-- before this term). `returned` = `limit_n` means the source had more terms than were requested.
 create table if not exists safety.breakdowns (
   subject_id text not null references safety.subjects (id) on delete cascade,
   dim text not null check (dim in ('meddra_pt', 'device_problem', 'patient_problem', 'brand_name', 'manufacturer', 'event_type')),
   period text not null check (period = 'all' or period ~ '^[12][0-9]{3}(-Q[1-4])?$'),
-  term_id integer not null references safety.terms (id),
-  value integer not null check (value >= 0),
-  serious integer check (serious is null or (serious >= 0 and serious <= value)),
-  primary key (subject_id, dim, period, term_id)
-);
-create index if not exists breakdowns_term on safety.breakdowns (dim, term_id, period);
-
-create table if not exists safety.breakdown_meta (
-  subject_id text not null references safety.subjects (id) on delete cascade,
-  dim text not null,
-  period text not null,
   limit_n integer not null check (limit_n between 1 and 1000),
   returned integer not null check (returned >= 0),
-  reports bigint check (reports is null or reports >= 0),
   query_url text not null check (query_url ~ '^https://' and query_url !~* '[?&](api[_-]?key|apikey|access_token|token)='),
   retrieved_at timestamptz not null,
-  primary key (subject_id, dim, period)
+  term_ids integer[] not null,
+  vals integer[] not null,
+  serious integer[],
+  primary key (subject_id, dim, period),
+  check (cardinality(term_ids) = cardinality(vals) and (serious is null or cardinality(serious) = cardinality(vals))),
+  check (0 <= all (vals))
 );
+create index if not exists breakdowns_terms on safety.breakdowns using gin (term_ids);
 
 create table if not exists safety.maude_reports (
   report_number text primary key check (report_number ~ '^[A-Za-z0-9][A-Za-z0-9-]{2,40}$'),
@@ -343,8 +340,7 @@ create index if not exists open_payments_product on safety.open_payments (lower(
 do $rls$
 declare t text;
 begin
-  foreach t in array array['sources', 'loads', 'terms', 'subjects', 'mdl_subjects', 'series', 'series_meta', 'breakdowns',
-    'breakdown_meta', 'maude_reports', 'record_subjects', 'nhtsa_complaints', 'neiss_cases', 'cfpb_monthly', 'cfpb_complaints',
+  foreach t in array array['sources', 'loads', 'terms', 'subjects', 'mdl_subjects', 'series', 'breakdowns', 'maude_reports', 'record_subjects', 'nhtsa_complaints', 'neiss_cases', 'cfpb_monthly', 'cfpb_complaints',
     'osha_inspections', 'osha_violations', 'osha_accidents', 'open_payments'] loop
     execute format('alter table safety.%I enable row level security', t);
   end loop;
@@ -525,46 +521,13 @@ begin
   return array[v_ins, v_upd, jsonb_array_length(p_rows) - v_ins - v_upd, v_del];
 end $$;
 
--- Monthly series. A subject's series must be complete inside one call: with {"replace_from": "YYYY-MM"} every stored
--- month >= replace_from of each (subject, series) the call names that the call does not list is deleted (openFDA omits
--- months without reports, so a month that dropped to zero disappears from the source and from here).
-create or replace function safety.load_series(p_rows jsonb, p_opts jsonb) returns integer[]
-language plpgsql set search_path = '' as $$
-declare v_bad jsonb; v_ins integer; v_upd integer; v_del integer := 0; v_n integer; v_from date;
-begin
-  select e into v_bad from jsonb_array_elements(p_rows) e
-   where not exists (select 1 from safety.subjects s where s.id = e->>'subject_id')
-      or coalesce(e->>'series', '') !~ '^[a-z][a-z0-9_]{1,40}$'
-      or safety.month_of(e->>'month') is null
-      or jsonb_typeof(e->'value') <> 'number' or (e->>'value')::numeric < 0 or (e->>'value')::numeric <> floor((e->>'value')::numeric)
-   limit 1;
-  if v_bad is not null then perform safety.fail('series', 'invalid series row', v_bad); end if;
-  select count(*) - count(distinct (e->>'subject_id', e->>'series', e->>'month')) into v_n from jsonb_array_elements(p_rows) e;
-  if v_n > 0 then perform safety.fail('series', 'duplicate keys in one call', null); end if;
-  if p_opts ? 'replace_from' then
-    v_from := safety.month_of(p_opts->>'replace_from');
-    if v_from is null then perform safety.fail('series', 'replace_from must be YYYY-MM', p_opts); end if;
-    with keys as (select distinct e->>'subject_id' sid, e->>'series' ser from jsonb_array_elements(p_rows) e),
-    gone as (
-      delete from safety.series s using keys k
-       where s.subject_id = k.sid and s.series = k.ser and s.month >= v_from
-         and not exists (select 1 from jsonb_array_elements(p_rows) e where e->>'subject_id' = s.subject_id
-                         and e->>'series' = s.series and safety.month_of(e->>'month') = s.month)
-      returning 1)
-    select count(*) into v_del from gone;
-  end if;
-  with src as (
-    select e->>'subject_id' sid, e->>'series' ser, safety.month_of(e->>'month') m, (e->>'value')::integer v
-    from jsonb_array_elements(p_rows) e),
-  up as (
-    insert into safety.series as t (subject_id, series, month, value) select sid, ser, m, v from src
-    on conflict (subject_id, series, month) do update set value = excluded.value where t.value is distinct from excluded.value
-    returning (xmax = 0) as is_new)
-  select count(*) filter (where is_new), count(*) filter (where not is_new) into v_ins, v_upd from up;
-  return array[v_ins, v_upd, jsonb_array_length(p_rows) - v_ins - v_upd, v_del];
-end $$;
+create or replace function safety.months_between(a date, b date) returns integer
+language sql immutable set search_path = '' as $$
+  select ((extract(year from b) - extract(year from a)) * 12 + extract(month from b) - extract(month from a))::integer
+$$;
 
-create or replace function safety.load_series_meta(p_rows jsonb, p_opts jsonb) returns integer[]
+-- Full monthly series: one row per (subject, series) with the whole coverage window. An identical row is left alone.
+create or replace function safety.load_series(p_rows jsonb, p_opts jsonb) returns integer[]
 language plpgsql set search_path = '' as $$
 declare v_bad jsonb; v_ins integer; v_upd integer; v_n integer;
 begin
@@ -573,100 +536,124 @@ begin
       or coalesce(e->>'series', '') !~ '^[a-z][a-z0-9_]{1,40}$'
       or coalesce(e->>'unit', '') = '' or coalesce(e->>'method', '') = ''
       or not exists (select 1 from safety.sources s where s.id = e->>'source_id')
-      or not safety.url_ok(e->>'query_url')
+      or not safety.url_ok(e->>'query_url') or (e->>'retrieved_at') is null
       or safety.month_of(e->>'coverage_from') is null or safety.month_of(e->>'coverage_to') is null
       or safety.month_of(e->>'coverage_to') < safety.month_of(e->>'coverage_from')
-      or (e->>'retrieved_at') is null
+      or jsonb_typeof(e->'vals') <> 'array'
+      or jsonb_array_length(e->'vals') <> safety.months_between(safety.month_of(e->>'coverage_from'), safety.month_of(e->>'coverage_to')) + 1
+      or exists (select 1 from jsonb_array_elements(e->'vals') v where jsonb_typeof(v) <> 'number' or v::text !~ '^[0-9]+$')
    limit 1;
-  if v_bad is not null then perform safety.fail('series_meta', 'invalid series meta', v_bad); end if;
+  if v_bad is not null then perform safety.fail('series', 'invalid series row (vals must hold one non-negative integer per month of the window)', v_bad); end if;
   select count(*) - count(distinct (e->>'subject_id', e->>'series')) into v_n from jsonb_array_elements(p_rows) e;
-  if v_n > 0 then perform safety.fail('series_meta', 'duplicate keys in one call', null); end if;
+  if v_n > 0 then perform safety.fail('series', 'duplicate keys in one call', null); end if;
   with src as (
     select e->>'subject_id' sid, e->>'series' ser, e->>'unit' unit, e->>'source_id' src_id, e->>'query_url' url, e->>'method' method,
            safety.month_of(e->>'coverage_from') cf, safety.month_of(e->>'coverage_to') ct, (e->>'retrieved_at')::timestamptz ra,
-           (e->>'total')::bigint total
+           array(select v::text::integer from jsonb_array_elements(e->'vals') with ordinality x(v, i) order by i) vals
     from jsonb_array_elements(p_rows) e),
   up as (
-    insert into safety.series_meta as t (subject_id, series, unit, source_id, query_url, method, coverage_from, coverage_to, retrieved_at, total)
-    select sid, ser, unit, src_id, url, method, cf, ct, ra, total from src
-    on conflict (subject_id, series) do update set unit = excluded.unit, source_id = excluded.source_id,
-      query_url = excluded.query_url, method = excluded.method, coverage_from = excluded.coverage_from,
-      coverage_to = excluded.coverage_to, retrieved_at = excluded.retrieved_at, total = excluded.total
-    where (t.unit, t.source_id, t.query_url, t.method, t.coverage_from, t.coverage_to, t.retrieved_at, t.total)
+    insert into safety.series as t (subject_id, series, unit, source_id, query_url, method, coverage_from, coverage_to, retrieved_at, total, vals)
+    select sid, ser, unit, src_id, url, method, cf, ct, ra, (select coalesce(sum(x), 0) from unnest(vals) x), vals from src
+    on conflict (subject_id, series) do update set unit = excluded.unit, source_id = excluded.source_id, query_url = excluded.query_url,
+      method = excluded.method, coverage_from = excluded.coverage_from, coverage_to = excluded.coverage_to,
+      retrieved_at = excluded.retrieved_at, total = excluded.total, vals = excluded.vals
+    where (t.unit, t.source_id, t.query_url, t.method, t.coverage_from, t.coverage_to, t.total, t.vals)
       is distinct from (excluded.unit, excluded.source_id, excluded.query_url, excluded.method, excluded.coverage_from,
-                        excluded.coverage_to, excluded.retrieved_at, excluded.total)
+                        excluded.coverage_to, excluded.total, excluded.vals)
     returning (xmax = 0) as is_new)
   select count(*) filter (where is_new), count(*) filter (where not is_new) into v_ins, v_upd from up;
   return array[v_ins, v_upd, jsonb_array_length(p_rows) - v_ins - v_upd, 0];
 end $$;
 
--- Term counts. Rows name the term by its label; ids come from safety.terms (kind = dim). With {"replace": true} each
--- (subject, dim, period) the call names is replaced as a whole.
-create or replace function safety.load_breakdowns(p_rows jsonb, p_opts jsonb) returns integer[]
+-- A refresh of the latest months of a stored series (scheduled runs): {subject_id, series, window_from, window_to,
+-- months: {"YYYY-MM": n}, query_url, retrieved_at}. Every month of [window_from, window_to] takes the given value or 0
+-- (the request covered the whole window); the coverage end moves to window_to when later; months before window_from keep
+-- their stored values. window_from must lie inside the stored window.
+create or replace function safety.load_series_patch(p_rows jsonb, p_opts jsonb) returns integer[]
 language plpgsql set search_path = '' as $$
-declare v_bad jsonb; v_ins integer; v_upd integer; v_del integer := 0; v_n integer;
+declare e jsonb; r safety.series; v_from date; v_to date; v_new_to date; v_vals integer[]; v_m date; v_i integer;
+  v_upd integer := 0; v_same integer := 0; v_n integer;
 begin
-  select e into v_bad from jsonb_array_elements(p_rows) e
-   where not exists (select 1 from safety.subjects s where s.id = e->>'subject_id')
-      or coalesce(e->>'dim', '') not in ('meddra_pt', 'device_problem', 'patient_problem', 'brand_name', 'manufacturer', 'event_type')
-      or not (e->>'period' = 'all' or coalesce(e->>'period', '') ~ '^[12][0-9]{3}(-Q[1-4])?$')
-      or jsonb_typeof(e->'term') <> 'string' or length(e->>'term') > 500
-      or jsonb_typeof(e->'value') <> 'number' or (e->>'value')::numeric < 0
-      or (e ? 'serious' and jsonb_typeof(e->'serious') = 'number' and ((e->>'serious')::numeric < 0 or (e->>'serious')::numeric > (e->>'value')::numeric))
-   limit 1;
-  if v_bad is not null then perform safety.fail('breakdowns', 'invalid breakdown row', v_bad); end if;
-  select count(*) - count(distinct (e->>'subject_id', e->>'dim', e->>'period', e->>'term')) into v_n from jsonb_array_elements(p_rows) e;
-  if v_n > 0 then perform safety.fail('breakdowns', 'duplicate keys in one call', null); end if;
-  -- terms (kind = dim)
-  perform safety.term_ids(d.dim, d.labels)
-    from (select e->>'dim' dim, array_agg(distinct e->>'term') labels from jsonb_array_elements(p_rows) e group by 1) d;
-  if coalesce((p_opts->>'replace')::boolean, false) then
-    with keys as (select distinct e->>'subject_id' sid, e->>'dim' dim, e->>'period' per from jsonb_array_elements(p_rows) e),
-    gone as (
-      delete from safety.breakdowns b using keys k, safety.terms t
-       where b.subject_id = k.sid and b.dim = k.dim and b.period = k.per and t.id = b.term_id
-         and not exists (select 1 from jsonb_array_elements(p_rows) e where e->>'subject_id' = b.subject_id and e->>'dim' = b.dim
-                         and e->>'period' = b.period and e->>'term' = t.label)
-      returning 1)
-    select count(*) into v_del from gone;
-  end if;
-  with src as (
-    select e->>'subject_id' sid, e->>'dim' dim, e->>'period' per, t.id tid, (e->>'value')::integer v,
-           case when jsonb_typeof(e->'serious') = 'number' then (e->>'serious')::integer end ser
-    from jsonb_array_elements(p_rows) e join safety.terms t on t.kind = e->>'dim' and t.label = e->>'term'),
-  up as (
-    insert into safety.breakdowns as b (subject_id, dim, period, term_id, value, serious) select sid, dim, per, tid, v, ser from src
-    on conflict (subject_id, dim, period, term_id) do update set value = excluded.value, serious = excluded.serious
-    where (b.value, b.serious) is distinct from (excluded.value, excluded.serious)
-    returning (xmax = 0) as is_new)
-  select count(*) filter (where is_new), count(*) filter (where not is_new) into v_ins, v_upd from up;
-  return array[v_ins, v_upd, jsonb_array_length(p_rows) - v_ins - v_upd, v_del];
+  select count(*) - count(distinct (x->>'subject_id', x->>'series')) into v_n from jsonb_array_elements(p_rows) x;
+  if v_n > 0 then perform safety.fail('series_patch', 'duplicate keys in one call', null); end if;
+  for e in select x from jsonb_array_elements(p_rows) x loop
+    select * into r from safety.series where subject_id = e->>'subject_id' and series = e->>'series' for update;
+    v_from := safety.month_of(e->>'window_from');
+    v_to := safety.month_of(e->>'window_to');
+    if r.subject_id is null or v_from is null or v_to is null or v_to < v_from or v_from < r.coverage_from
+       or jsonb_typeof(e->'months') <> 'object' or not safety.url_ok(e->>'query_url') or (e->>'retrieved_at') is null
+       or exists (select 1 from jsonb_each(e->'months') kv where safety.month_of(kv.key) is null
+                    or safety.month_of(kv.key) not between v_from and v_to or kv.value::text !~ '^[0-9]+$') then
+      perform safety.fail('series_patch', 'invalid patch (the series must exist and the window lie inside it)', e);
+    end if;
+    v_new_to := greatest(r.coverage_to, v_to);
+    v_vals := r.vals || array_fill(0, array[safety.months_between(r.coverage_to, v_new_to)]);
+    v_m := v_from;
+    while v_m <= v_to loop
+      v_i := safety.months_between(r.coverage_from, v_m) + 1;
+      v_vals[v_i] := coalesce((e->'months'->>to_char(v_m, 'YYYY-MM'))::integer, 0);
+      v_m := (v_m + interval '1 month')::date;
+    end loop;
+    if v_vals is not distinct from r.vals and v_new_to = r.coverage_to then
+      v_same := v_same + 1;
+      update safety.series set retrieved_at = (e->>'retrieved_at')::timestamptz where subject_id = r.subject_id and series = r.series;
+    else
+      update safety.series set vals = v_vals, coverage_to = v_new_to, total = (select coalesce(sum(x), 0) from unnest(v_vals) x),
+             retrieved_at = (e->>'retrieved_at')::timestamptz, query_url = e->>'query_url'
+       where subject_id = r.subject_id and series = r.series;
+      v_upd := v_upd + 1;
+    end if;
+  end loop;
+  return array[0, v_upd, v_same, 0];
 end $$;
 
-create or replace function safety.load_breakdown_meta(p_rows jsonb, p_opts jsonb) returns integer[]
+-- Term counts: one row per (subject, dim, period) replacing the stored one. Rows give the terms as labels (ids from
+-- safety.terms, kind = dim), counts aligned with them and optional serious counts (null = not recorded).
+create or replace function safety.load_breakdowns(p_rows jsonb, p_opts jsonb) returns integer[]
 language plpgsql set search_path = '' as $$
 declare v_bad jsonb; v_ins integer; v_upd integer; v_n integer;
 begin
   select e into v_bad from jsonb_array_elements(p_rows) e
    where not exists (select 1 from safety.subjects s where s.id = e->>'subject_id')
-      or coalesce(e->>'dim', '') = '' or coalesce(e->>'period', '') = ''
+      or coalesce(e->>'dim', '') not in ('meddra_pt', 'device_problem', 'patient_problem', 'brand_name', 'manufacturer', 'event_type')
+      or not (e->>'period' = 'all' or coalesce(e->>'period', '') ~ '^[12][0-9]{3}(-Q[1-4])?$')
       or coalesce((e->>'limit_n')::integer, 0) not between 1 and 1000 or coalesce((e->>'returned')::integer, -1) < 0
       or not safety.url_ok(e->>'query_url') or (e->>'retrieved_at') is null
+      or jsonb_typeof(e->'terms') <> 'array' or jsonb_typeof(e->'vals') <> 'array'
+      or jsonb_array_length(e->'terms') <> jsonb_array_length(e->'vals')
+      or exists (select 1 from jsonb_array_elements(e->'terms') t where jsonb_typeof(t) <> 'string' or length(t #>> '{}') > 500)
+      or (select count(distinct t #>> '{}') from jsonb_array_elements(e->'terms') t) <> jsonb_array_length(e->'terms')
+      or exists (select 1 from jsonb_array_elements(e->'vals') v where v::text !~ '^[0-9]+$')
+      or (e ? 'serious' and jsonb_typeof(e->'serious') <> 'null' and (jsonb_typeof(e->'serious') <> 'array'
+          or jsonb_array_length(e->'serious') <> jsonb_array_length(e->'vals')
+          or exists (select 1 from jsonb_array_elements(e->'serious') with ordinality sv(v, i)
+                     where jsonb_typeof(sv.v) <> 'null' and (sv.v::text !~ '^[0-9]+$'
+                       or (sv.v::text)::integer > ((e->'vals')->>(sv.i::integer - 1))::integer))))
    limit 1;
-  if v_bad is not null then perform safety.fail('breakdown_meta', 'invalid breakdown meta', v_bad); end if;
+  if v_bad is not null then perform safety.fail('breakdowns', 'invalid breakdown row', v_bad); end if;
   select count(*) - count(distinct (e->>'subject_id', e->>'dim', e->>'period')) into v_n from jsonb_array_elements(p_rows) e;
-  if v_n > 0 then perform safety.fail('breakdown_meta', 'duplicate keys in one call', null); end if;
+  if v_n > 0 then perform safety.fail('breakdowns', 'duplicate keys in one call', null); end if;
+  perform safety.term_ids(d.dim, d.labels)
+    from (select e->>'dim' dim, array_agg(distinct t #>> '{}') labels
+            from jsonb_array_elements(p_rows) e cross join jsonb_array_elements(e->'terms') t group by 1) d;
   with src as (
     select e->>'subject_id' sid, e->>'dim' dim, e->>'period' per, (e->>'limit_n')::integer lim, (e->>'returned')::integer ret,
-           (e->>'reports')::bigint reports, e->>'query_url' url, (e->>'retrieved_at')::timestamptz ra
+           e->>'query_url' url, (e->>'retrieved_at')::timestamptz ra,
+           array(select tm.id from jsonb_array_elements_text(e->'terms') with ordinality x(lbl, i)
+                   join safety.terms tm on tm.kind = e->>'dim' and tm.label = x.lbl order by x.i) tids,
+           array(select v::text::integer from jsonb_array_elements(e->'vals') with ordinality x(v, i) order by i) vals,
+           case when jsonb_typeof(e->'serious') = 'array' then
+             array(select case when jsonb_typeof(v) = 'number' then v::text::integer end
+                     from jsonb_array_elements(e->'serious') with ordinality x(v, i) order by i) end ser
     from jsonb_array_elements(p_rows) e),
   up as (
-    insert into safety.breakdown_meta as t (subject_id, dim, period, limit_n, returned, reports, query_url, retrieved_at)
-    select sid, dim, per, lim, ret, reports, url, ra from src
+    insert into safety.breakdowns as t (subject_id, dim, period, limit_n, returned, query_url, retrieved_at, term_ids, vals, serious)
+    select sid, dim, per, lim, ret, url, ra, tids, vals, ser from src
     on conflict (subject_id, dim, period) do update set limit_n = excluded.limit_n, returned = excluded.returned,
-      reports = excluded.reports, query_url = excluded.query_url, retrieved_at = excluded.retrieved_at
-    where (t.limit_n, t.returned, t.reports, t.query_url, t.retrieved_at)
-      is distinct from (excluded.limit_n, excluded.returned, excluded.reports, excluded.query_url, excluded.retrieved_at)
+      query_url = excluded.query_url, retrieved_at = excluded.retrieved_at, term_ids = excluded.term_ids, vals = excluded.vals,
+      serious = excluded.serious
+    where (t.limit_n, t.returned, t.query_url, t.term_ids, t.vals, t.serious)
+      is distinct from (excluded.limit_n, excluded.returned, excluded.query_url, excluded.term_ids, excluded.vals, excluded.serious)
     returning (xmax = 0) as is_new)
   select count(*) filter (where is_new), count(*) filter (where not is_new) into v_ins, v_upd from up;
   return array[v_ins, v_upd, jsonb_array_length(p_rows) - v_ins - v_upd, 0];
@@ -1043,8 +1030,7 @@ returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare v integer[]; v_id bigint;
 begin
-  if p_target is null or p_target not in ('subjects', 'mdl_subjects', 'series', 'series_meta', 'breakdowns', 'breakdown_meta',
-      'maude_reports', 'record_subjects', 'nhtsa_complaints', 'neiss_cases', 'cfpb_monthly', 'cfpb_complaints',
+  if p_target is null or p_target not in ('subjects', 'mdl_subjects', 'series', 'series_patch', 'breakdowns', 'maude_reports', 'record_subjects', 'nhtsa_complaints', 'neiss_cases', 'cfpb_monthly', 'cfpb_complaints',
       'osha_inspections', 'osha_violations', 'osha_accidents', 'open_payments') then
     raise exception 'unknown target %', left(coalesce(p_target, ''), 40) using errcode = '22023';
   end if;
@@ -1105,17 +1091,12 @@ begin
   return query
   with links as (
     select ms.subject_id, ms.basis || ' — ' || ms.basis_note as why
-      from safety.mdl_subjects ms where ms.mdl = v_mdl and ms.relation = 'mdl_group'),
-  meta as (
-    select l.subject_id, l.why, m.series as stored, m.unit, m.source_id, m.query_url, m.coverage_from, m.coverage_to
-      from links l join safety.series_meta m on m.subject_id = l.subject_id
-     where safety.public_series(m.series) is not null),
-  grid as (
-    select mt.*, g::date as m from meta mt
-     cross join lateral generate_series(mt.coverage_from, mt.coverage_to, interval '1 month') g)
-  select safety.public_series(g.stored), to_char(g.m, 'YYYY-MM'), coalesce(s.value, 0)::numeric, g.unit, g.source_id,
-         g.query_url, g.why
-    from grid g left join safety.series s on s.subject_id = g.subject_id and s.series = g.stored and s.month = g.m
+      from safety.mdl_subjects ms where ms.mdl = v_mdl and ms.relation = 'mdl_group')
+  select safety.public_series(t.series), to_char((t.coverage_from + make_interval(months => (x.i - 1)::integer))::date, 'YYYY-MM'),
+         x.v::numeric, t.unit, t.source_id, t.query_url, l.why
+    from links l join safety.series t on t.subject_id = l.subject_id
+    cross join lateral unnest(t.vals) with ordinality x(v, i)
+   where safety.public_series(t.series) is not null
   union all
   -- filings: JPML pending reports, total actions, month-over-month change between consecutive monthly reports
   select 'filings', h.month, (h.total - h.prev_total)::numeric, 'actions added between consecutive JPML monthly reports',
@@ -1223,23 +1204,17 @@ begin
                'unit', m.unit, 'source_id', m.source_id, 'query_url', m.query_url, 'method', m.method,
                'coverage_from', to_char(m.coverage_from, 'YYYY-MM'), 'coverage_to', to_char(m.coverage_to, 'YYYY-MM'),
                'retrieved_at', m.retrieved_at, 'total', m.total, 'caveat', safety.caveat(m.source_id),
-               'points', (select coalesce(jsonb_agg(jsonb_build_array(to_char(g::date, 'YYYY-MM'), coalesce(v.value, 0))
-                                                     order by g), '[]'::jsonb)
-                            from generate_series(m.coverage_from, m.coverage_to, interval '1 month') g
-                            left join safety.series v on v.subject_id = m.subject_id and v.series = m.series and v.month = g::date))
-               order by m.series)
-             from safety.series_meta m where m.subject_id = s.id), '[]'::jsonb),
-    'breakdowns', coalesce((select jsonb_object_agg(bm.dim, jsonb_build_object('period', bm.period, 'limit_n', bm.limit_n,
-               'returned', bm.returned, 'truncated', bm.returned >= bm.limit_n, 'reports', bm.reports, 'query_url', bm.query_url,
-               'retrieved_at', bm.retrieved_at,
-               'rows', (select coalesce(jsonb_agg(jsonb_build_object('term', t.label, 'value', b.value, 'serious', b.serious)
-                                                  order by b.value desc, t.label), '[]'::jsonb)
-                          from (select * from safety.breakdowns b0 where b0.subject_id = s.id and b0.dim = bm.dim
-                                  and b0.period = bm.period order by b0.value desc limit 60) b
-                          join safety.terms t on t.id = b.term_id)))
-             from safety.breakdown_meta bm where bm.subject_id = s.id and bm.period = 'all'), '{}'::jsonb),
-    'quarters', coalesce((select jsonb_agg(distinct bm.period order by bm.period) from safety.breakdown_meta bm
-               where bm.subject_id = s.id and bm.period ~ '-Q'), '[]'::jsonb),
+               'vals', to_jsonb(m.vals)) order by m.series)
+             from safety.series m where m.subject_id = s.id), '[]'::jsonb),
+    'breakdowns', coalesce((select jsonb_object_agg(b.dim, jsonb_build_object('period', b.period, 'limit_n', b.limit_n,
+               'returned', b.returned, 'truncated', b.returned >= b.limit_n, 'query_url', b.query_url, 'retrieved_at', b.retrieved_at,
+               'rows', (select coalesce(jsonb_agg(jsonb_build_object('term', t.label, 'value', x.v, 'serious', b.serious[x.i])
+                                                  order by x.i), '[]'::jsonb)
+                          from unnest(b.term_ids[1:60], b.vals[1:60]) with ordinality x(tid, v, i)
+                          join safety.terms t on t.id = x.tid)))
+             from safety.breakdowns b where b.subject_id = s.id and b.period = 'all'), '{}'::jsonb),
+    'periods', coalesce((select jsonb_agg(jsonb_build_object('dim', b.dim, 'period', b.period) order by b.dim, b.period)
+             from safety.breakdowns b where b.subject_id = s.id and b.period <> 'all'), '[]'::jsonb),
     'records', jsonb_build_object(
        'maude', (select count(*) from safety.record_subjects r where r.subject_id = s.id and r.source = 'maude'),
        'nhtsa', (select count(*) from safety.record_subjects r where r.subject_id = s.id and r.source = 'nhtsa')));
@@ -1249,22 +1224,24 @@ end $$;
 create or replace function public.safety_breakdown_v1(p_id text, p_dim text, p_period text default 'all', p_limit integer default 100)
 returns jsonb
 language plpgsql stable security definer set search_path = '' as $$
+declare b safety.breakdowns;
 begin
   if p_id is null or p_id !~ '^[a-z][a-z0-9_]{1,20}:[A-Za-z0-9][A-Za-z0-9._-]{0,99}$' then raise exception 'Invalid subject' using errcode = '22023'; end if;
   if p_dim is null or p_dim !~ '^[a-z_]{3,30}$' then raise exception 'Invalid dimension' using errcode = '22023'; end if;
   if p_period is null or not (p_period = 'all' or p_period ~ '^[12][0-9]{3}(-Q[1-4])?$') then raise exception 'Invalid period' using errcode = '22023'; end if;
   if p_limit is null or p_limit not between 1 and 1000 then raise exception 'Invalid limit' using errcode = '22023'; end if;
+  select * into b from safety.breakdowns where subject_id = p_id and dim = p_dim and period = p_period;
+  if not found then return jsonb_build_object('meta', null, 'rows', '[]'::jsonb); end if;
   return jsonb_build_object(
-    'meta', (select jsonb_build_object('limit_n', bm.limit_n, 'returned', bm.returned, 'truncated', bm.returned >= bm.limit_n,
-               'reports', bm.reports, 'query_url', bm.query_url, 'retrieved_at', bm.retrieved_at)
-               from safety.breakdown_meta bm where bm.subject_id = p_id and bm.dim = p_dim and bm.period = p_period),
-    'rows', coalesce((select jsonb_agg(jsonb_build_object('term', t.label, 'value', b.value, 'serious', b.serious)
-               order by b.value desc, t.label)
-               from (select * from safety.breakdowns b0 where b0.subject_id = p_id and b0.dim = p_dim and b0.period = p_period
-                      order by b0.value desc limit p_limit) b join safety.terms t on t.id = b.term_id), '[]'::jsonb));
+    'meta', jsonb_build_object('limit_n', b.limit_n, 'returned', b.returned, 'truncated', b.returned >= b.limit_n,
+               'query_url', b.query_url, 'retrieved_at', b.retrieved_at),
+    'rows', (select coalesce(jsonb_agg(jsonb_build_object('term', t.label, 'value', x.v, 'serious', b.serious[x.i]) order by x.i), '[]'::jsonb)
+               from unnest(b.term_ids[1:p_limit], b.vals[1:p_limit]) with ordinality x(tid, v, i) join safety.terms t on t.id = x.tid));
 end $$;
 
--- Quarter-by-term matrix (reaction or problem heatmap): the given terms (or the subject's top terms) per quarter.
+-- Period-by-term matrix (reaction or problem heatmap): the given terms (or the subject's top all-time terms) for every
+-- stored period (quarters, or calendar years for lower-ranked products). A term missing from a period whose breakdown
+-- was truncated (truncated = true) is not recorded, not zero; missing from a complete period it is 0.
 create or replace function public.safety_term_quarters_v1(p_id text, p_dim text, p_terms text[] default null,
   p_from text default null, p_to text default null, p_top integer default 12) returns jsonb
 language plpgsql stable security definer set search_path = '' as $$
@@ -1272,23 +1249,25 @@ declare v_terms text[];
 begin
   if p_id is null or p_id !~ '^[a-z][a-z0-9_]{1,20}:[A-Za-z0-9][A-Za-z0-9._-]{0,99}$' then raise exception 'Invalid subject' using errcode = '22023'; end if;
   if p_dim is null or p_dim !~ '^[a-z_]{3,30}$' then raise exception 'Invalid dimension' using errcode = '22023'; end if;
-  if (p_from is not null and p_from !~ '^[12][0-9]{3}-Q[1-4]$') or (p_to is not null and p_to !~ '^[12][0-9]{3}-Q[1-4]$') then
-    raise exception 'Invalid quarter' using errcode = '22023'; end if;
+  if (p_from is not null and p_from !~ '^[12][0-9]{3}(-Q[1-4])?$') or (p_to is not null and p_to !~ '^[12][0-9]{3}(-Q[1-4])?$') then
+    raise exception 'Invalid period' using errcode = '22023'; end if;
   if p_top is null or p_top not between 1 and 50 or cardinality(coalesce(p_terms, '{}')) > 50 then
     raise exception 'Invalid term count' using errcode = '22023'; end if;
   v_terms := coalesce(p_terms, array(
-    select t.label from safety.breakdowns b join safety.terms t on t.id = b.term_id
-     where b.subject_id = p_id and b.dim = p_dim and b.period = 'all' order by b.value desc, t.label limit p_top));
+    select t.label from safety.breakdowns b cross join lateral unnest(b.term_ids[1:p_top]) with ordinality x(tid, i)
+      join safety.terms t on t.id = x.tid
+     where b.subject_id = p_id and b.dim = p_dim and b.period = 'all' order by x.i));
   return jsonb_build_object(
     'terms', to_jsonb(v_terms),
-    'quarters', coalesce((select jsonb_agg(jsonb_build_object('period', bm.period, 'limit_n', bm.limit_n, 'returned', bm.returned,
-                  'truncated', bm.returned >= bm.limit_n, 'reports', bm.reports, 'query_url', bm.query_url) order by bm.period)
-                  from safety.breakdown_meta bm
-                 where bm.subject_id = p_id and bm.dim = p_dim and bm.period ~ '-Q'
-                   and (p_from is null or bm.period >= p_from) and (p_to is null or bm.period <= p_to)), '[]'::jsonb),
-    'cells', coalesce((select jsonb_agg(jsonb_build_array(b.period, t.label, b.value, b.serious) order by b.period, t.label)
-                  from safety.breakdowns b join safety.terms t on t.id = b.term_id
-                 where b.subject_id = p_id and b.dim = p_dim and b.period ~ '-Q' and t.label = any (v_terms)
+    'periods', coalesce((select jsonb_agg(jsonb_build_object('period', b.period, 'limit_n', b.limit_n, 'returned', b.returned,
+                  'truncated', b.returned >= b.limit_n, 'query_url', b.query_url) order by b.period)
+                  from safety.breakdowns b
+                 where b.subject_id = p_id and b.dim = p_dim and b.period <> 'all'
+                   and (p_from is null or b.period >= p_from) and (p_to is null or b.period <= p_to)), '[]'::jsonb),
+    'cells', coalesce((select jsonb_agg(jsonb_build_array(b.period, t.label, x.v, b.serious[x.i]) order by b.period, t.label)
+                  from safety.breakdowns b cross join lateral unnest(b.term_ids, b.vals) with ordinality x(tid, v, i)
+                  join safety.terms t on t.id = x.tid
+                 where b.subject_id = p_id and b.dim = p_dim and b.period <> 'all' and t.label = any (v_terms)
                    and (p_from is null or b.period >= p_from) and (p_to is null or b.period <= p_to)), '[]'::jsonb));
 end $$;
 
@@ -1528,6 +1507,7 @@ language sql stable security definer set search_path = '' as $$
                  from pg_catalog.pg_stat_user_tables t where t.schemaname = 'safety'),
     'subjects', (select coalesce(jsonb_object_agg(k, n), '{}'::jsonb) from (select subject_type || ':' || kind k, count(*) n from safety.subjects group by 1) s),
     'mdl_links', (select count(*) from safety.mdl_subjects),
+    'series', (select count(*) from safety.series),
     'loads', (select coalesce(jsonb_agg(to_jsonb(l) order by l.id desc), '[]'::jsonb) from (select * from safety.loads order by id desc limit 20) l))
 $$;
 
@@ -1551,14 +1531,13 @@ begin
   return jsonb_build_object('source', p_source, 'subjects', coalesce((
     select jsonb_agg(jsonb_build_object('id', s.id, 'search', s.search->(case when p_source = 'safety_faers_series' then 'faers' else 'maude' end),
              'series', (select coalesce(jsonb_agg(jsonb_build_object('series', m.series, 'coverage_from', to_char(m.coverage_from, 'YYYY-MM'),
-                           'coverage_to', to_char(m.coverage_to, 'YYYY-MM'), 'unit', m.unit, 'method', m.method)
-                           order by m.series), '[]'::jsonb)
-                          from safety.series_meta m where m.subject_id = s.id
+                           'coverage_to', to_char(m.coverage_to, 'YYYY-MM'), 'unit', m.unit) order by m.series), '[]'::jsonb)
+                          from safety.series m where m.subject_id = s.id
                            and m.source_id = case when p_source = 'safety_faers_series' then 'openfda_faers' else 'openfda_maude' end))
              order by case s.subject_type when 'mdl_group' then 0 when 'national' then 1 else 2 end, s.rank nulls last, s.id)
       from safety.subjects s
      where s.search ? (case when p_source = 'safety_faers_series' then 'faers' else 'maude' end)
-       and exists (select 1 from safety.series_meta m where m.subject_id = s.id
+       and exists (select 1 from safety.series m where m.subject_id = s.id
                     and m.source_id = case when p_source = 'safety_faers_series' then 'openfda_faers' else 'openfda_maude' end)), '[]'::jsonb));
 end $$;
 
@@ -1573,7 +1552,7 @@ begin
   if v_status <> 'running' then raise exception 'run is not open' using errcode = '22023'; end if;
   if v_source not in ('safety_faers_series', 'safety_maude_series', 'safety_cfpb_complaints') then
     raise exception 'not a safety ingest source' using errcode = '22023'; end if;
-  if (v_source in ('safety_faers_series', 'safety_maude_series') and p_target not in ('series', 'series_meta'))
+  if (v_source in ('safety_faers_series', 'safety_maude_series') and p_target <> 'series_patch')
      or (v_source = 'safety_cfpb_complaints' and p_target <> 'cfpb_complaints') then
     raise exception 'target % is not written by source %', p_target, v_source using errcode = '22023'; end if;
   v_res := public.safety_load_v1(p_target, p_rows, p_opts, jsonb_build_object('source', v_source, 'part', 'ingest', 'run_id', p_run::text));

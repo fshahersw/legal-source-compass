@@ -343,8 +343,17 @@ def and_clause(search, extra):
     return search if not extra else f"({search})+AND+{extra}"
 
 
+def series_row(subject_id, series, unit, source_id, url, method, months, first, through):
+    """One series row: the monthly counts from `first` to `through` as an array (0 where the source lists no report)."""
+    window = c.month_span(first, through)
+    vals = [int(months.get(m, 0)) for m in window]
+    return {"subject_id": subject_id, "series": series, "unit": unit, "source_id": source_id, "query_url": url,
+            "method": method, "coverage_from": first, "coverage_to": through, "retrieved_at": c.utc_now(), "vals": vals}
+
+
 def series_task(run, subject, stream, series, extra, unit, endpoint, date_field, floor, through, source_id):
-    """One count=<date> request → the subject's monthly series (complete) and its meta row."""
+    """One count=<date> request → the subject's monthly series row. The subject's first report month (from its main
+    series, fetched first) opens the window for all its series; months before the floor are not stored."""
     key = f"series|{subject['id']}|{series}"
     if key in run.done:
         return None
@@ -353,25 +362,18 @@ def series_task(run, subject, stream, series, extra, unit, endpoint, date_field,
     data, pub = run.get(url)
     months = c.day_counts_to_months((data or {}).get("results", []))
     if series in ("faers_reports", "maude_reports", "caers_reports"):
-        first = next((m for m, v in months.items() if v > 0 and m >= floor), None)
-        st["first_month"] = first
-        st["total"] = sum(v for m, v in months.items() if floor <= m <= through)
+        st["first_month"] = next((m for m, v in months.items() if v > 0 and floor <= m <= through), None)
     first = st.get("first_month")
-    rows = [{"subject_id": subject["id"], "series": series, "month": m, "value": v}
-            for m, v in months.items() if first and first <= m <= through and v > 0]
-    run.writer("series", {"replace_from": "1900-01"}, source_id).add_group(rows) if rows else None
     if first:
-        run.writer("series_meta", None, source_id).add({
-            "subject_id": subject["id"], "series": series, "unit": unit, "source_id": source_id, "query_url": pub,
-            "method": f"openFDA count={date_field} (reports per day), summed by calendar month; months without reports inside the window are 0",
-            "coverage_from": first, "coverage_to": through, "retrieved_at": c.utc_now(),
-            "total": sum(v for m, v in months.items() if first <= m <= through)})
+        method = (f"openFDA count={date_field} (reports per day) summed by calendar month, from the subject's first report "
+                  f"month to the last complete month of the data; 0 = no report that month")
+        run.writer("series", None, source_id).add(series_row(subject["id"], series, unit, source_id, pub, method, months, first, through))
     run.mark(key)
     return months
 
 
 def breakdown_task(run, subject, stream, endpoint, dim, count_field, period, limit, search_extra, serious_clause, source_id):
-    """One term-count request (and its serious companion) → one (subject, dim, period) group."""
+    """One term-count request (and its serious companion) → one (subject, dim, period) row."""
     key = f"breakdown|{subject['id']}|{dim}|{period}"
     if key in run.done:
         return
@@ -383,29 +385,19 @@ def breakdown_task(run, subject, stream, endpoint, dim, count_field, period, lim
     if serious_clause and res:
         sdata, _ = run.get(c.openfda_query(endpoint, search=and_clause(search, serious_clause), count=count_field, limit=limit))
         sres = (sdata or {}).get("results", [])
-        serious = ({r["term"]: r["count"] for r in sres}, len(sres) >= limit)
-    rows = []
-    for r in res:
+        serious = ({str(r["term"])[:500]: r["count"] for r in sres}, len(sres) >= limit)
+    merged = {}
+    for r in res:  # keep the first (largest) count of a term; openFDA can return a trimmed term twice
         term = str(r["term"])[:500]
-        row = {"subject_id": subject["id"], "dim": dim, "period": period, "term": term, "value": int(r["count"])}
-        if serious is not None:
-            got, truncated = serious
-            if term in got:
-                row["serious"] = min(int(got[term]), int(r["count"]))
-            elif not truncated:
-                row["serious"] = 0
-        rows.append(row)
-    dedup = {}
-    for row in rows:  # openFDA may return the same exact term twice after trimming; keep the larger count
-        k = row["term"]
-        if k not in dedup or row["value"] > dedup[k]["value"]:
-            dedup[k] = row
-    rows = list(dedup.values())
-    if rows:
-        run.writer("breakdowns", {"replace": True}, source_id).add_group(rows)
-    run.writer("breakdown_meta", None, source_id).add({
-        "subject_id": subject["id"], "dim": dim, "period": period, "limit_n": limit, "returned": len(res),
-        "query_url": pub, "retrieved_at": c.utc_now()})
+        if term not in merged:
+            merged[term] = int(r["count"])
+    terms = list(merged)
+    row = {"subject_id": subject["id"], "dim": dim, "period": period, "limit_n": limit, "returned": len(res),
+           "query_url": pub, "retrieved_at": c.utc_now(), "terms": terms, "vals": [merged[t] for t in terms]}
+    if serious is not None:
+        got, truncated = serious
+        row["serious"] = [min(int(got[t]), merged[t]) if t in got else (None if truncated else 0) for t in terms]
+    run.writer("breakdowns", None, source_id).add(row)
     run.mark(key)
 
 
@@ -568,14 +560,9 @@ def build_other(args):
             data, pub = run.get(url)
             months = c.day_counts_to_months((data or {}).get("results", []))
             cov_from, cov_to = endpoints[ep]
-            rows = [{"subject_id": g["id"], "series": series, "month": m, "value": v} for m, v in months.items() if cov_from <= m <= cov_to and v > 0]
-            if rows:
-                run.writer("series", {"replace_from": "1900-01"}, source_id).add_group(rows)
-            run.writer("series_meta", None, source_id).add({
-                "subject_id": g["id"], "series": series, "unit": unit, "source_id": source_id, "query_url": pub,
-                "method": f"openFDA {ep} count={field}, summed by calendar month; the window is the endpoint's own coverage, so a month without a matching record is 0",
-                "coverage_from": cov_from, "coverage_to": cov_to, "retrieved_at": c.utc_now(),
-                "total": sum(v for m, v in months.items() if cov_from <= m <= cov_to)})
+            method = (f"openFDA {ep} count={field} summed by calendar month; the window is the endpoint's own coverage, so a "
+                      f"month without a matching record is 0")
+            run.writer("series", None, source_id).add(series_row(g["id"], series, unit, source_id, pub, method, months, cov_from, cov_to))
             run.mark(key)
     outputs = run.close()
     c.write_manifest(run.out, "openfda/other", outputs, {"endpoints": endpoints}, {"requests": run.http.requests})
@@ -663,7 +650,7 @@ def build_records(args):
                     if not rec["report_number"] or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9-]{2,40}", rec["report_number"]):
                         continue
                     links.append({"subject_id": g["id"], "source": "maude", "record_id": rec["report_number"],
-                                  "rule": g["search"]["maude"]})
+                                  "rule": "subject search.maude"})
                     if rec["report_number"] not in seen:
                         seen.add(rec["report_number"])
                         rows.append(rec)
