@@ -54,9 +54,10 @@ def _meta():
         state="NC", code_name="General Statutes of North Carolina", publisher="North Carolina General Assembly",
         publisher_url=TOC_URL, official_source=True, access="html", hosts=("www.ncleg.gov",),
         codes=(lib.Code("GS", "General Statutes of North Carolina", "N.C. Gen. Stat. § {n}",
-                        patterns=((r"^n\.?c\.?g\.?s\.?\s*(?:§\s*)?([0-9]+[a-z]*-[0-9a-z.]+)$", r"\1"),
-                                  (r"^g\.\s?s\.\s*(?:§\s*)?([0-9]+[a-z]*-[0-9a-z.]+)$", r"\1"),
-                                  (r"^n\.c\. gen\. stat\.(?: ann\.)?\s*§\s*([0-9]+[a-z]*-[0-9a-z.]+)$", r"\1"))),),
+                        # numbers include the article-numbered chapters' "25-2-314"
+                        patterns=((r"^n\.?c\.?g\.?s\.?\s*(?:§\s*)?([0-9]+[a-z]*-[0-9a-z.]+(?:-[0-9a-z.]+)?)$", r"\1"),
+                                  (r"^g\.\s?s\.\s*(?:§\s*)?([0-9]+[a-z]*-[0-9a-z.]+(?:-[0-9a-z.]+)?)$", r"\1"),
+                                  (r"^n\.c\. gen\. stat\.(?: ann\.)?\s*§\s*([0-9]+[a-z]*-[0-9a-z.]+(?:-[0-9a-z.]+)?)$", r"\1"))),),
         parser=PARSER, min_interval_s=2.0,
         terms_note=("Statutory text is public domain (Georgia v. Public.Resource.Org, 2020). robots.txt allows the "
                     "statute paths and asks for Crawl-delay: 2."),

@@ -269,6 +269,19 @@ class EarlierModules(unittest.TestCase):
         bold_page = [("bold", "SECTION 36-2-313. Express warranties."), ("line", "SECTION 36-2-314 is cited here.")]
         self.assertEqual(sc._plain_heads(bold_page), bold_page)
 
+    def test_mo_nc_citation_forms(self):
+        import sys as _sys
+        _sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
+        from state_law import lib as _lib
+        mo, nc = load("mo"), load("nc")
+        for cite, want in (("Mo. Rev. Stat. Ann. § 537.090", "537.090"), ("Mo. Stat. § 27.060", "27.060"),
+                           ("MO. STAT. §§ 407.010", "407.010"), ("Mo. Rev. Stat. § 400.2-313", "400.2-313"),
+                           ("§ 537.090 RSMo", "537.090"), ("V.A.M.S. § 516.120", "516.120")):
+            self.assertIn(("RSMO", want), _lib.apply_patterns(mo.META.codes, cite), cite)
+        for cite, want in (("N.C. Gen. Stat. Ann. § 25-2-314", "25-2-314"), ("N.C.G.S. § 75-1.1", "75-1.1"),
+                           ("N.C. Gen. Stat. § 28A-18-2", "28a-18-2")):
+            self.assertIn(("GS", want), _lib.apply_patterns(nc.META.codes, cite), cite)
+
     def test_nj_section(self):
         nj = load("nj")
         got = nj.split_section("2A:14-1. Actions of trespass to real property.",

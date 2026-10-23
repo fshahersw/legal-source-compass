@@ -51,9 +51,13 @@ def _meta():
         state="MO", code_name="Revised Statutes of Missouri", publisher="Missouri Revisor of Statutes (Committee on Legislative Research)",
         publisher_url=HOME_URL, official_source=True, access="html", hosts=("revisor.mo.gov",),
         codes=(lib.Code("RSMO", "Revised Statutes of Missouri", "Mo. Rev. Stat. § {n}",
-                        patterns=((r"^(?:§\s*)?([0-9]+\.[0-9]+[a-z]?),?\s*rsmo(?:\s*(?:supp\.\s*)?\d{4})?$", r"\1"),
-                                  (r"^rsmo\.?\s*§?\s*([0-9]+\.[0-9]+[a-z]?)$", r"\1"),
-                                  (r"^mo\. ann\. stat\.\s*§\s*([0-9]+\.[0-9]+[a-z]?)$", r"\1"))),),
+                        # numbers include the UCC chapter's "400.2-313"; "Mo. Rev. Stat. Ann.", "Mo. Stat." and
+                        # V.A.M.S. are read as well as the template's "Mo. Rev. Stat. §"
+                        patterns=((r"^(?:§\s*)?([0-9]+\.[0-9]+[a-z]?(?:-[0-9]+[a-z]?)?),?\s*rsmo(?:\s*(?:supp\.\s*)?\d{4})?$", r"\1"),
+                                  (r"^rsmo\.?\s*§?\s*([0-9]+\.[0-9]+[a-z]?(?:-[0-9]+[a-z]?)?)$", r"\1"),
+                                  (r"^mo\. ann\. stat\.\s*§\s*([0-9]+\.[0-9]+[a-z]?(?:-[0-9]+[a-z]?)?)$", r"\1"),
+                                  (r"^mo\.\s?(?:rev\.\s?)?stat\.(?:\s?ann\.)?\s?§\s?([0-9]+\.[0-9]+[a-z]?(?:-[0-9]+[a-z]?)?)$", r"\1"),
+                                  (r"^v\.\s?a\.\s?m\.\s?s\.\s?§?\s?([0-9]+\.[0-9]+[a-z]?(?:-[0-9]+[a-z]?)?)$", r"\1"))),),
         parser=PARSER, min_interval_s=1.0,
         terms_note=("Statutory text is public domain (Georgia v. Public.Resource.Org, 2020). The Revisor states the "
                     "posted statutes are uncertified and unofficial; it is nonetheless the state's own publisher and "
