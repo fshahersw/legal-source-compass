@@ -7,6 +7,7 @@ import type { CasePage, OpinionLoad } from "@/lib/external/caselaw.functions";
 import { citeLine, fmtDay, fmtInt, NOT_RECORDED } from "./caseFormat";
 import { AuthoritiesPanel, CitatorPanel } from "./CitatorPanel";
 import { OpinionBody } from "./OpinionBody";
+import { RelatedPanel } from "@/components/semantic/RelatedPanel";
 
 function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -222,6 +223,10 @@ export function CaseView({
           {tab === "authorities" ? <AuthoritiesPanel id={r.clusterId} /> : null}
         </TabsContent>
       </Tabs>
+      {/* Supreme Court opinions are in the semantic index (the most-cited majority or lead opinions) */}
+      {r.courtId === "scotus" ? (
+        <RelatedPanel dataset="caselaw_scotus" recordId={String(r.clusterId)} quiet />
+      ) : null}
       <details className="text-[12px] text-muted-foreground">
         <summary className="cursor-pointer">Technical details</summary>
         <dl className="mt-2 grid grid-cols-[9rem_1fr] gap-x-3 gap-y-1">
