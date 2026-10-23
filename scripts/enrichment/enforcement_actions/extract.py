@@ -101,6 +101,10 @@ KIND_KEYWORDS = [
     ("judgment", re.compile(r"\bjudgment", re.I)),
     ("alleged loss or scheme", re.compile(r"\b(?:loss|defraud|fraud|scheme|brib|kickback|launder|embezzl|stole|stolen|bill|obtain|misappropriat|steal)", re.I)),
 ]
+# proper names that contain a keyword but say nothing about the figure ("Bank for International Settlements")
+_NOT_KEYWORDS = re.compile(r"Bank (?:for|of) (?:the )?International Settlements", re.I)
+# a resolution figure is a stated settlement/penalty/...; figures of $1 trillion or more are listed but never used as one
+RESOLUTION_CAP_USD = 1e12
 RESOLUTION_KINDS = {"settlement", "penalty or fine", "restitution", "forfeiture", "disgorgement", "judgment"}
 
 
@@ -127,8 +131,9 @@ def extract_amounts(text, spans=None, limit=None):
         sentence = sentence_at(text, m.start(), spans)
         kind = None
         if sentence:
+            probe = _NOT_KEYWORDS.sub(" ", sentence)
             for name, pattern in KIND_KEYWORDS:
-                if pattern.search(sentence):
+                if pattern.search(probe):
                     kind = name
                     break
         out.append({

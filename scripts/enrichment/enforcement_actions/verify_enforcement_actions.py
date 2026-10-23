@@ -36,7 +36,10 @@ from bs4 import BeautifulSoup  # noqa: E402
 
 
 def soup_text(html):
-    text = BeautifulSoup(html or "", "lxml").get_text(" ")
+    soup = BeautifulSoup(html or "", "lxml")
+    for tag in soup(["script", "style", "template"]):  # not page text; the builders leave them out too
+        tag.decompose()
+    text = re.sub("[​‌‍﻿]", "", soup.get_text(" "))  # zero-width characters are invisible
     return re.sub(r"\s+", " ", text.replace("\xa0", " ")).strip()
 
 
@@ -81,12 +84,14 @@ def decimal_value(as_written):
 
 def verify_doj(n):
     pages_dir = os.path.join(ec.ACQ, "doj", "pages")
-    raw = {}
+    raw_ids = set()
+    rows_fetched = 0
     for fname in sorted(os.listdir(pages_dir)):
         if fname.endswith(".json.gz"):
             for r in json.loads(gzip.open(os.path.join(pages_dir, fname)).read()).get("results") or []:
+                rows_fetched += 1
                 if r.get("uuid"):
-                    raw[r["uuid"]] = r
+                    raw_ids.add(r["uuid"])
     index = load_build("doj_press_releases")
     overview = next(r for r in index["rows"] if r["id"] == "doj-index:overview")["item"]["overview"]
     fails = Counter()
@@ -102,9 +107,9 @@ def verify_doj(n):
         stored += len(build["rows"])
         for row in build["rows"]:
             rel = row["item"]["release"]
-            if row["id"] != f"doj-pr:{rel['uuid']}" or rel["uuid"] not in raw:
+            if row["id"] != f"doj-pr:{rel['uuid']}" or rel["uuid"] not in raw_ids:
                 fails["id_not_in_raw"] += 1
-            if row["dataset"] != p["dataset"] or (rel["date"] or "0000")[:4] != p["year"]:
+            if row["dataset"] != p["dataset"] or (rel["date"] or (rel["created"] or "")[:10] or "0000")[:4] != p["year"]:
                 fails["wrong_partition"] += 1
             for c in rel["courts"]:
                 if c.get("court_id") and not courts.valid(c["court_id"]):
@@ -113,8 +118,17 @@ def verify_doj(n):
                 if c["cik"] not in companies.names:
                     fails["cik_not_in_lookup"] += 1
         sampled.extend(sample(build["rows"], max(1, n * len(build["rows"]) // max(1, overview["total"])) if n else 0, lambda r: r["id"]))
-    if stored != len(raw):
-        fails["stored_vs_unique_raw_uuids"] += abs(stored - len(raw))
+        del build
+    if stored != len(raw_ids):
+        fails["stored_vs_unique_raw_uuids"] += abs(stored - len(raw_ids))
+    wanted = {row["item"]["release"]["uuid"] for row in sampled}
+    raw = {}
+    for fname in sorted(os.listdir(pages_dir)):
+        if fname.endswith(".json.gz"):
+            for r in json.loads(gzip.open(os.path.join(pages_dir, fname)).read()).get("results") or []:
+                # the API returns some releases twice; like the builder, keep the copy with the latest "changed"
+                if r.get("uuid") in wanted and (r["uuid"] not in raw or (r.get("changed") or "") > (raw[r["uuid"]].get("changed") or "")):
+                    raw[r["uuid"]] = r
     for row in sampled:
         rel = row["item"]["release"]
         r = raw.get(rel["uuid"])
@@ -161,7 +175,8 @@ def verify_doj(n):
         api_count = int(json.loads(body)["metadata"]["resultset"]["count"])
     except Exception as error:  # the count is informational; the check below records it
         api_count = f"not read: {error}"
-    result = {"dataset": "doj_press_releases (+ partitions)", "stored_records": stored, "unique_raw_uuids": len(raw),
+    result = {"dataset": "doj_press_releases (+ partitions)", "stored_records": stored, "unique_raw_uuids": len(raw_ids),
+              "rows_fetched": rows_fetched, "duplicate_rows_returned_by_api": rows_fetched - len(raw_ids),
               "api_count_now": api_count, "sampled": dict(checked), "failures": dict(fails), "failure_total": sum(fails.values()),
               "note": "The API's count is read live and moves while releases are published (and fluctuated by +/-300 between identical calls during the harvest); records are checked against the raw pages."}
     write("doj", result)

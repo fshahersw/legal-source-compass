@@ -61,6 +61,10 @@ class AmountTests(unittest.TestCase):
         self.assertNotIn("value_usd", amounts[0])
         self.assertNotEqual(amounts[0].get("keyword"), "settlement")
 
+    def test_bis_is_not_a_settlement_keyword(self):
+        amounts = ex.extract_amounts("The Bank of International Settlements estimated contracts at $450 trillion.")
+        self.assertIsNone(amounts[0].get("keyword"))
+
     def test_no_amounts(self):
         self.assertEqual(ex.extract_amounts("No money was mentioned."), [])
 

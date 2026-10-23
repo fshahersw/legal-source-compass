@@ -119,7 +119,8 @@ def build_release(r, companies, courts, checks, boilerplate=frozenset()):
             checks["boilerplate_figures"] += 1
     valued = [a for a in amounts if a.get("value_usd") is not None]
     # the largest resolution figure ignores stock paragraphs repeated across many releases (program totals)
-    resolution = [a["value_usd"] for a in valued if a.get("keyword") in ex.RESOLUTION_KINDS and not a.get("boilerplate")]
+    resolution = [a["value_usd"] for a in valued if a.get("keyword") in ex.RESOLUTION_KINDS and not a.get("boilerplate")
+                  and a["value_usd"] < ex.RESOLUTION_CAP_USD]
     max_res = max(resolution) if resolution else None
     max_any = max((a["value_usd"] for a in valued), default=None)
     # the excerpt is a contiguous span of the body text; leading press-contact lines (CONTACT/PHONE/FAX...) are skipped
@@ -289,7 +290,7 @@ def main():
             "partition_of": "doj_press_releases", "year": year, "records": len(ordered),
             "body_storage": "Full release bodies stay gzip-compressed in the raw API pages (private/acq/enforcement_actions/doj/pages); records hold at most a 1,500-character excerpt",
             "extraction": "extract.py: dollar figures (value in USD, sentence, first keyword in the sentence), U.S.C./C.F.R./named-act citations, docket numbers, federal court names (court id only on an exact map) and parties named in the title (verbatim, corroborated in the body); every value is a verbatim span of the release text",
-            "amount_note": "max_resolution_amount_usd is the largest figure whose sentence contains a settlement, penalty/fine, restitution, forfeiture, disgorgement or judgment keyword; statutory maximums, alleged losses, figures in a sentence repeated verbatim in 25 or more releases (stock program paragraphs) and figures ambiguous as written (a multiplier on a number of 1,000 or more) are excluded. It is a stated figure, not a verified payment.",
+            "amount_note": "max_resolution_amount_usd is the largest figure whose sentence contains a settlement, penalty/fine, restitution, forfeiture, disgorgement or judgment keyword; statutory maximums, alleged losses, figures in a sentence repeated verbatim in 25 or more releases (stock program paragraphs), figures ambiguous as written (a multiplier on a number of 1,000 or more) and figures of $1 trillion or more are excluded; 'Bank for International Settlements' is not a settlement keyword. It is a stated figure, not a verified payment.",
         }
         bc.write_build(dataset, f"DOJ press releases, {year}", ordered,
                        bc.listing([("date", "Date"), ("title", "Title"), ("component", "Component"), ("amount", "Largest resolution figure stated")],

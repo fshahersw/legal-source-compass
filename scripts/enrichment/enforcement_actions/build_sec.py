@@ -112,7 +112,8 @@ def main():
             if m:
                 company_links.append({**m, "as_written": part})
         court_ids = sorted({c["court_id"] for c in court_list if c.get("court_id")})
-        resolution = [a["value_usd"] for a in amounts if a.get("value_usd") and a.get("keyword") in ex.RESOLUTION_KINDS]
+        resolution = [a["value_usd"] for a in amounts if a.get("value_usd") and a.get("keyword") in ex.RESOLUTION_KINDS
+                      and a["value_usd"] < ex.RESOLUTION_CAP_USD]
         max_res = max(resolution) if resolution else None
         stats["lr"] += 1
         stats["lr_with_civil_action"] += bool(civil)
