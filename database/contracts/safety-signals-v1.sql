@@ -1582,7 +1582,7 @@ begin
        'Same key and limits as FAERS: requests 0.5 s apart, at most 90 per run; cursor rotation (12 runs every Tuesday).'),
       ('safety_cfpb_complaints', 'safety_cfpb_companies', 'CFPB complaints received (record level, rolling window)',
        'Consumer Financial Protection Bureau', 'https://www.consumerfinance.gov/data-research/consumer-complaints/search/api/v1/',
-       'ingest-cfpb-complaints', '37 13 * * *', interval '3 days', 'upsert', 'append', 'safety_cfpb_companies', '^[0-9]{1,15}$',
+       'ingest-cfpb-complaints', '37 13 * * *', interval '3 days', 'upsert', 'append', 'safety_cfpb_companies', '^cfpb_company:[A-Za-z0-9._-]{1,100}$',
        '{}', 'CFPB Consumer Complaint Database API, no key; data CC0 as stated in the API metadata.',
        'No published limit; requests 1 s apart, pages of 1,000, at most 20 pages per run (the last 7 days of the products in scope).')
     on conflict (id) do update set dataset = excluded.dataset, label = excluded.label, publisher = excluded.publisher,
