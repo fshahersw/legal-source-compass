@@ -31,9 +31,14 @@ def _chapter(ctx, cid: str, label: str | None, nodes: list[dict]) -> None:
     h1 = d.find(".//div[@id='content']/h1")
     h2 = d.find(".//div[@id='content']/h2")
     agency = parsing.one_line(h1.text_content()) if h1 is not None else None
-    num = re.sub(r"^Chapter\s+", "", parsing.one_line(h2.text_content()) or "") if h2 is not None else (label or "").split(" - ")[0]
-    if not re.fullmatch(r"[0-9]{3}", num or ""):
+    h2t = parsing.one_line(h2.text_content()) or "" if h2 is not None else ""
+    m = re.search(r"(?:^|\s-\s|^)Chapter\s+([0-9]{3})$", h2t)
+    num = m.group(1) if m else None
+    if not num:
         raise RuntimeError(f"chapter number not found on {url}")
+    sub = h2t[: m.start()].strip(" -") if m else ""
+    if sub:  # "Public Employees' Benefit Board - Chapter 101": the board within the agency
+        agency = f"{agency}, {sub}" if agency else sub
     ch = model.node(STATE, num, level="chapter", num=num, heading=agency, agency=agency, source_url=url,
                     citation=f"OAR chapter {num}", ordinal=len(nodes))
     nodes.append(ch)

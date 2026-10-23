@@ -40,6 +40,11 @@ NOTES = {
 }
 
 
+CODE_CURRENCY = {
+    "IL": "Database maintained and updated weekly by the Illinois General Assembly (statement on the code's title page)",
+}
+
+
 def load_json(path):
     with open(path, encoding="utf-8") as h:
         return json.load(h)
@@ -74,13 +79,9 @@ def main():
         else:
             verdict, reason = "not_started", "Publisher reachable; no parser yet in this wave." if code_p.get("result") == "ok" else (
                 f"Publisher page answered {code_p.get('result')}.")
-        currency = None
-        if sample:
-            rules = list(lib.read_jsonl_gz(os.path.join(lib.BUILD, st, sample["shard"]["file"])))
-            cur = [r["currency"] for r in rules if r.get("currency")]
-            currency = cur[0] if cur else None
-        if not currency and code_p.get("currency_statements"):
-            currency = code_p["currency_statements"][0]
+        # A code-level currency statement is recorded only where the publisher prints one for the whole code; the
+        # statements found on single pages (a rule's "Last updated", a chapter's "Last update") stay with those rules.
+        currency = CODE_CURRENCY.get(st)
         acq = {"text": verdict, "reason": reason,
                "sample": {"rules": sample["summary"]["rules"], "checks": sample["summary"]["checks"],
                           "file": sample["shard"]["file"], "sha256": sample["shard"]["sha256"]} if sample else None,

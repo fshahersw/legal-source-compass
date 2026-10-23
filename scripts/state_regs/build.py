@@ -32,8 +32,7 @@ sys.path.insert(0, HERE)
 import lib  # noqa: E402
 import model  # noqa: E402
 
-STATE_MODULES = {"OH": "oh", "WA": "wa", "MN": "mn", "OR": "or_", "NC": "nc", "MI": "mi", "IL": "il", "FL": "fl", "GA": "ga",
-                 "VA": "va", "CO": "co"}
+STATE_MODULES = {"OH": "oh", "WA": "wa", "MN": "mn", "OR": "or_", "NC": "nc", "MI": "mi", "IL": "il", "FL": "fl", "GA": "ga"}
 
 
 def module(st: str):
@@ -134,10 +133,15 @@ def do_index(st: str, ctx: Ctx | None = None) -> list[dict]:
     nodes = mod.index(ctx)
     for n in nodes:
         model.check_node(n)
-    ids = [n["id"] for n in nodes]
-    if len(ids) != len(set(ids)):
-        dup = sorted({i for i in ids if ids.count(i) > 1})[:5]
-        raise SystemExit(f"{st}: duplicate node ids {dup}")
+    seen: set[str] = set()
+    kept = []
+    for n in nodes:
+        if n["id"] in seen:  # a later duplicate heading is recorded, not merged and not allowed to abort the crawl
+            ctx.failures.append({"unit": n["id"], "error": f"duplicate node id; later occurrence dropped ({n['source_url']})"})
+            continue
+        seen.add(n["id"])
+        kept.append(n)
+    nodes = kept
     n, sha = lib.write_jsonl_gz(os.path.join(ctx.out, "nodes.jsonl.gz"), nodes)
     levels: dict = {}
     for x in nodes:

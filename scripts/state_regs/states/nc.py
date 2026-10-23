@@ -38,6 +38,13 @@ def _chapter(ctx, folder: str, title_node: dict | None, nodes: list[dict]) -> No
     m = re.search(r"Title (\d+[A-Z]?) - ([^\\]+)\\Chapter (\d+[A-Z]?) - (.+)$", folder)
     tnum, tname, cnum, cname = m.groups()
     ch_key = f"{tnum.lower()}-{cnum}"
+    used = {n["id"] for n in nodes}
+    k = 2
+    suffix = ""
+    while f"nc:{ch_key}{suffix}" in used:  # two folders print the same chapter number (e.g. a transferred chapter)
+        suffix = f"({k})"
+        k += 1
+    ch_key += suffix
     ch = model.node(STATE, ch_key, level="chapter", num=f"{tnum} NCAC {cnum}", heading=cname, agency=tname,
                     parent_id=title_node["id"] if title_node else None, source_url=url,
                     citation=f"{tnum} NCAC {cnum}", ordinal=len(nodes), rule_count=0)
@@ -57,7 +64,7 @@ def _chapter(ctx, folder: str, title_node: dict | None, nodes: list[dict]) -> No
         sm = re.match(r"SubChapter ([A-Z]{1,2})$", label)
         if sm:
             html_link = [x.get("href") for x in tr.iter("a") if (x.get("href") or "").endswith(" rules.html")]
-            key = f"{tnum.lower()}-{cnum}{sm.group(1).lower()}"
+            key = f"{tnum.lower()}-{cnum}{sm.group(1).lower()}{suffix}"
             sub = model.node(STATE, key, level="subchapter", num=f"{tnum} NCAC {cnum}{sm.group(1)}", heading=desc,
                              agency=tname, parent_id=ch["id"], citation=f"{tnum} NCAC {cnum}{sm.group(1)}",
                              source_url=_u(html_link[0]) if html_link else _u(href), ordinal=len(nodes), rule_count=0)

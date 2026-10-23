@@ -71,6 +71,12 @@ def index(ctx) -> list[dict]:
         except Exception as err:
             ctx.failures.append({"unit": dept["id"], "error": str(err)[:300]})
             continue
+        div_ids = []
+        for u in divs:
+            m = re.search(r"DivID=(\d+)", u)
+            if m and m.group(1) not in div_ids:
+                div_ids.append(m.group(1))
+        divs = [f"{HOST}/gateway/Division.asp?DivID={x}" for x in div_ids]
         for div_url in divs:
             try:
                 _division(ctx, div_url, dept, nodes)

@@ -1,0 +1,61 @@
+{
+ "about": "Excerpts of official publisher pages retrieved 2026-10-23 (the beginning of each page, cut before a later rule; closing tags appended), for offline parser tests. sha256_full_page is the hash of the full response.",
+ "files": {
+  "oh_chapter_excerpt.html": {
+   "state": "OH",
+   "url": "https://codes.ohio.gov/ohio-administrative-code/chapter-3745-4",
+   "sha256_full_page": "288252535c4fba97728cc1d9893174d397f6554d2649d1bcb2fec5aebe7d7a5e",
+   "retrieved_at": "2026-10-23T19:04:35Z",
+   "excerpt": true
+  },
+  "wa_chapter_excerpt.html": {
+   "state": "WA",
+   "url": "https://app.leg.wa.gov/wac/default.aspx?cite=173-400&full=true",
+   "sha256_full_page": "121e6129a507419748c5b40200ce23e5a1adbdcdcf174dcea022ad7027747216",
+   "retrieved_at": "2026-10-23T19:04:40Z",
+   "excerpt": true
+  },
+  "mn_full_excerpt.html": {
+   "state": "MN",
+   "url": "https://www.revisor.mn.gov/rules/1400/full",
+   "sha256_full_page": "718a9d972fd2b218bc8e0505a56af82c6083568187561bd8562111d8212e682a",
+   "retrieved_at": "2026-10-23T19:04:29Z",
+   "excerpt": true
+  },
+  "or_division_excerpt.html": {
+   "state": "OR",
+   "url": "https://secure.sos.state.or.us/oard/displayDivisionRules.action?selectedDivision=2550",
+   "sha256_full_page": "ddef8f1296c442fd7dd88c67d703f67ca6262ec669c82359dba4a9066ff4bea4",
+   "retrieved_at": "2026-10-23T19:05:40Z",
+   "excerpt": true
+  },
+  "nc_subchapter_excerpt.html": {
+   "state": "NC",
+   "url": "http://reports.oah.state.nc.us/ncac/title%2015a%20-%20environmental%20quality/chapter%2002%20-%20environmental%20management/subchapter%20a/subchapter%20a%20rules.html",
+   "sha256_full_page": "b452e3fe2f8f2845b841739cdae5d57b97e7012fa16be672c6b55ab2f49d9a63",
+   "retrieved_at": "2026-10-23T19:10:10Z",
+   "excerpt": true
+  },
+  "mi_set_excerpt.html": {
+   "state": "MI",
+   "url": "https://ars.apps.lara.state.mi.us/AdminCode/DownloadAdminCodeFile?FileName=R%20336.201%20to%20R%20336.205.pdf&ReturnHTML=True",
+   "sha256_full_page": "266de6ea83e17379f5b99ba9817e01691c15e671293e8b6f74c2854b3c03c270",
+   "retrieved_at": "2026-10-23T19:09:50Z",
+   "excerpt": true
+  },
+  "il_section.html": {
+   "state": "IL",
+   "url": "https://www.ilga.gov/ftp/JCAR/AdminCode/035/035001010A01000R.html",
+   "sha256_full_page": "eca66e6d0ad43fcab3f8ff93d532caa4bf890f72d82bc67785cb790701628c14",
+   "retrieved_at": "2026-10-23T19:12:00Z",
+   "excerpt": true
+  },
+  "fl_rule.doc": {
+   "state": "FL",
+   "url": "https://flrules.org/gateway/readFile.asp?sid=0&type=1&tid=11275685&file=62-296.341.doc",
+   "sha256_full_page": "79061191d60d437f6f07dec2c732b4c949d90c3d0b7147040c61ae0c182829d3",
+   "retrieved_at": "2026-10-23T19:13:18Z",
+   "excerpt": false
+  }
+ }
+}
