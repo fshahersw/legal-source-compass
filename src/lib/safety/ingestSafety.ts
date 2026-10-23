@@ -231,8 +231,8 @@ export async function runOpenfdaEvents(
   const http = politeHttp({
     maxRequests: opts.maxRequests ?? 90,
     minIntervalMs: opts.minIntervalMs ?? 500,
-    fetch: opts.fetch,
-    sleep: opts.sleep,
+    ...(opts.fetch ? { fetch: opts.fetch } : {}),
+    ...(opts.sleep ? { sleep: opts.sleep } : {}),
   });
   const keyed = (url: string) => (key ? `${url}&api_key=${encodeURIComponent(key)}` : url);
   const cursor = (open.cursor ?? {}) as { index?: number; cycle?: number };
@@ -331,8 +331,8 @@ export async function runCfpbComplaints(opts: RunOptions): Promise<RunSummary> {
   const http = politeHttp({
     maxRequests: opts.maxRequests ?? 20,
     minIntervalMs: opts.minIntervalMs ?? 1000,
-    fetch: opts.fetch,
-    sleep: opts.sleep,
+    ...(opts.fetch ? { fetch: opts.fetch } : {}),
+    ...(opts.sleep ? { sleep: opts.sleep } : {}),
   });
   let written = 0;
   let fetched = 0;
