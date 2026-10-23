@@ -6,7 +6,8 @@ section printed in the supplement replaces the revision's text (the supplement h
 repealed since the revision). Pages: titles.htm -> title_NN.htm -> chap_NNN.htm. A chapter page prints each section
 as <p><span class="catchln" id="sec_52-577">Sec. 52-577. Catchline.</span> text</p>, further <p> paragraphs, then
 `source` paragraphs (kept as history) and `history`, `cross-ref`, `annotation` paragraphs (editorial; dropped).
-"Secs. x to y." range entries (reserved/repealed ranges) are not single sections and are ledgered, not emitted.
+"Secs. x to y." range entries (reserved/repealed ranges) are not single sections and are ledgered, not emitted;
+"Secs. x and y." / "Secs. x, y and z." name their numbers and are emitted once per number with the shared text.
 The host omits its intermediate certificate (completed from scripts/state_law/certs/; verification stays on).
 """
 from __future__ import annotations
@@ -45,6 +46,10 @@ META = lib.StateMeta(
 )
 
 CATCH_RE = re.compile(r"^Sec\.\s+([0-9A-Za-z][0-9A-Za-z.\-]*?)\.\s*(.*)$")
+_NUM = r"[0-9A-Za-z][0-9A-Za-z.\-]*?"
+# "Secs. 1-19 and 1-19a." / "Secs. 3-72, 3-72a and 3-73." name each number: one entry per listed number, sharing the
+# printed heading and text (usually a joint "Repealed, P.A. ..." line). "Secs. 1-42 to 1-54." ranges stay ledgered.
+LIST_RE = re.compile(rf"^Secs\.\s+({_NUM}(?:\s*,\s*{_NUM})*,?\s+and\s+{_NUM})\.(?:\s+(.*))?$")
 DROP = ("history", "cross-ref", "annotation", "front-note", "nav", "toc", "chap", "part")
 
 
@@ -58,16 +63,21 @@ def chapter_sections(page: lib.Fetched) -> list[dict]:
         if span is not None:
             label = lib.norm_ws(span.text_content())
             m = CATCH_RE.match(label)
-            if not m:
+            listed = None if m else LIST_RE.match(label)
+            if not m and not listed:
                 out.append({"range": label})
                 current = None
                 continue
+            numbers = [m.group(1)] if m else re.split(r"\s*,\s*(?:and\s+)?|\s+and\s+", listed.group(1))
             span_text = lib.norm_ws(span.text_content())
             whole = lib.html_text(lxml_html.tostring(p, encoding="unicode"))
             first = lib.norm_ws(whole[len(span_text):]) if whole.startswith(span_text) else whole
-            current = {"number": m.group(1), "heading": m.group(2) or None, "paras": [first] if first else [],
-                       "history": []}
-            out.append(current)
+            paras: list[str] = [first] if first else []
+            history: list[str] = []
+            entries = [{"number": n, "heading": (m or listed).group(2) or None, "paras": paras, "history": history}
+                       for n in numbers]
+            out.extend(entries)
+            current = entries[0]  # the lists are shared, so later paragraphs reach every listed number
             continue
         if current is None:
             continue

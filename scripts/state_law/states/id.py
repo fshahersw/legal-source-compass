@@ -134,7 +134,17 @@ def acquire(ctx: lib.RunContext) -> None:
     for title in titles:
         if not ctx.want_more():
             break
-        tpage = ctx.get(f"{BASE}{title}/", fallback_fresh=True)
+        try:
+            tpage = ctx.get(f"{BASE}{title}/", fallback_fresh=True)
+        except RuntimeError as error:
+            if ctx.sample is not None or "HTTP 404" not in str(error):
+                raise
+            # a title the index lists but the publisher does not serve (Title 22 on 2026-10-23) is ledgered as
+            # unavailable; the loader refuses such an edition until the gap is accepted and named in its note
+            ctx._rejects.write({"state": "ID", "code": "IC", "number": None,
+                                "reason": f"unavailable: {BASE}{title}/ returned HTTP 404",
+                                "source_url": f"{BASE}{title}/", "source_sha256": None})
+            continue
         chapters = list(dict.fromkeys(re.findall(rf'href="({re.escape(title)}/T\d+[A-Z]?CH[0-9A-Z]+)/?"', tpage.text())))
         if ctx.sample is not None:
             chapters = [f"{title}/T5CH2"]

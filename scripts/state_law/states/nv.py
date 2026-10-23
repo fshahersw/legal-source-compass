@@ -163,8 +163,12 @@ def acquire(ctx):
             if counts[s["number"]] > 1:
                 seen[s["number"]] = seen.get(s["number"], 0) + 1
                 index_ = seen[s["number"]]
+            # the page anchors "NRS388DSec010" for 388D.010; a number printed without a period gets the page itself
+            fragment = s["number"].split(".", 1)[1] if "." in s["number"] else None
+            if fragment is None:
+                ctx.log(f"NRS {s['number']!r} ({href}): no period in the number; linked to the chapter page")
             source = dict(fetched.source(), page_revised=parsed["revised"],
-                          display_url=f"{INDEX_URL}{href}#NRS{href[4:-5]}Sec{s['number'].split('.', 1)[1]}")
+                          display_url=f"{INDEX_URL}{href}#NRS{href[4:-5]}Sec{fragment}" if fragment else f"{INDEX_URL}{href}")
             ctx.section(code="NRS", number=s["number"], heading=s["heading"], text=s["text"], path=path,
                         source=source, history=s["history"], version_index=index_, **status)
             if not ctx.want_more():

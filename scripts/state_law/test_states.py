@@ -292,6 +292,67 @@ class DelawareTests(unittest.TestCase):
         self.assertEqual(de.links(chap, r"(?:\.\./title\d+[a-z]?/)?(c\d+[a-z]?/index\.html)"), ["c001/index.html"])
 
 
+class ConnecticutTests(unittest.TestCase):
+    PAGE = ('<html><head><meta charset="utf-8"></head><body>'
+            '<p><span class="catchln" id="sec_1-18">Sec. 1-18. Disposition of documents.</span> Any record may be '
+            'disposed of.</p><p class="source">(1949 Rev., S. 3611.)</p>'
+            '<p><span class="catchln">Secs. 1-19 and 1-19a.</span> Repealed, P.A. 75-342, S. 17.</p>'
+            '<p><span class="catchln">Secs. 3-72, 3-72a and 3-73. Funds to be paid to General Fund.</span> '
+            'Transferred to Secs. 3-60 to 3-62.</p>'
+            '<p><span class="catchln">Secs. 1-42 to 1-54.</span> Repealed, P.A. 15-240, S. 52.</p>'
+            '<p class="history">History: editorial note.</p></body></html>')
+
+    def test_listed_numbers_share_one_entry_and_ranges_stay_ledgered(self):
+        ct = load("ct")
+        items = ct.chapter_sections(fetched("https://www.cga.ct.gov/current/pub/chap_001.htm", self.PAGE.encode()))
+        self.assertEqual([i.get("number") or i["range"] for i in items],
+                         ["1-18", "1-19", "1-19a", "3-72", "3-72a", "3-73", "Secs. 1-42 to 1-54."])
+        self.assertEqual(items[0]["history"], ["(1949 Rev., S. 3611.)"])
+        self.assertEqual(items[1]["paras"], ["Repealed, P.A. 75-342, S. 17."])
+        self.assertIs(items[1]["paras"], items[2]["paras"])
+        self.assertIsNone(items[1]["heading"])
+        self.assertEqual(items[5]["heading"], "Funds to be paid to General Fund.")
+
+
+class LoaderRejectBoundTests(unittest.TestCase):
+    def _edition(self, tmp: pathlib.Path, sections: int, rejects: list[str]) -> pathlib.Path:
+        import gzip
+        import json
+        d = tmp / "xx-20261024"
+        d.mkdir()
+        with gzip.open(d / "rejects.jsonl.gz", "wt") as fh:
+            for reason in rejects:
+                fh.write(json.dumps({"reason": reason}) + "\n")
+        with gzip.open(d / "sections.jsonl.gz", "wt") as fh:
+            fh.write(json.dumps({"section_id": "XX:X:1"}) + "\n")
+        files = {}
+        for name in ("rejects.jsonl.gz", "sections.jsonl.gz"):
+            files[name] = {"sha256": hashlib.sha256((d / name).read_bytes()).hexdigest()}
+        (d / "edition.json").write_text(json.dumps({"edition_id": "xx-20261024", "state": "XX", "sample": None,
+                                                    "files": files, "counts": {"sections": sections, "nodes": 3,
+                                                                               "rejected": len(rejects)}}))
+        return d
+
+    def test_range_entries_are_not_bounded_but_parse_failures_are(self):
+        load_spec = importlib.util.spec_from_file_location("state_law_load", HERE / "load.py")
+        loader = importlib.util.module_from_spec(load_spec)
+        load_spec.loader.exec_module(loader)
+        with tempfile.TemporaryDirectory() as t:
+            ok = self._edition(pathlib.Path(t), 100, ["range entry: Secs. 1-42 to 1-54."] * 40 + ["unparsed head"] * 3)
+            self.assertEqual(loader.main([str(ok), "--dry-run"]), 0)
+        with tempfile.TemporaryDirectory() as t:
+            bad = self._edition(pathlib.Path(t), 100, ["range entry: x"] * 2 + ["unparsed head"] * 6)
+            with self.assertRaises(SystemExit) as raised:
+                loader.main([str(bad), "--dry-run"])
+            self.assertIn("6 rejected rows (besides 2 range entries)", str(raised.exception))
+        with tempfile.TemporaryDirectory() as t:
+            gap = self._edition(pathlib.Path(t), 100, ["unavailable: https://x/Title22/ returned HTTP 404"])
+            with self.assertRaises(SystemExit) as raised:
+                loader.main([str(gap), "--dry-run"])
+            self.assertIn("not served by the publisher", str(raised.exception))
+            self.assertEqual(loader.main([str(gap), "--dry-run", "--accept-rejects", "Title 22 returned HTTP 404"]), 0)
+
+
 class BlockedStates(unittest.TestCase):
     def test_blocked_modules_never_fetch(self):
         for code in ("ga", "ar", "co"):

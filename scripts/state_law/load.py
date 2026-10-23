@@ -32,6 +32,12 @@ MAX_BATCH_BYTES = 7 * 1024 * 1024
 # A run that rejected more than this share of what it parsed is not the publisher's code (MO 2026-10-23: an ordinal
 # counter stopped after one duplicate id and 25,424 of 29,112 sections were rejected, yet verify passed on the rest).
 MAX_REJECT_SHARE = 0.05
+# Rejects the module contract ledgers on purpose, never parser failures: "Secs. 1-42 to 1-54." / "§§ 166-169." range
+# entries (repealed or reserved ranges a module does not expand into numbers). They are counted and printed, not bounded.
+DELIBERATE_REJECTS = ("range entry",)
+# A part of the code the publisher did not serve ("unavailable: .../Title22/ returned HTTP 404"): never loaded silently,
+# whatever the share; --accept-rejects names the gap in the edition note.
+UNAVAILABLE_REJECTS = ("unavailable:",)
 
 
 def rpc(name: str, payload: dict, *, attempts: int = 5):
@@ -100,15 +106,31 @@ def main(argv: list[str] | None = None) -> int:
     if counts["sections"] < 1 or counts["nodes"] < 1:
         raise SystemExit("refusing an edition with no sections or no nodes (an empty run is not the publisher's code)")
     rejected = counts.get("rejected", 0)
-    share = rejected / max(1, counts["sections"] + rejected)
+    deliberate = 0
+    unavailable: list[str] = []
+    if rejected and (args.edition_dir / "rejects.jsonl.gz").exists():
+        for row in lib.read_jsonl(args.edition_dir / "rejects.jsonl.gz"):
+            reason = str(row.get("reason") or "")
+            deliberate += reason.startswith(DELIBERATE_REJECTS)
+            if reason.startswith(UNAVAILABLE_REJECTS):
+                unavailable.append(reason)
+    if unavailable:
+        if not args.accept_rejects.strip():
+            raise SystemExit(f"{len(unavailable)} part(s) of the code were not served by the publisher: "
+                             + "; ".join(unavailable[:5]) + ". Re-run later, or pass --accept-rejects '<reason>' to "
+                             "load without them (the reason is recorded in the edition note)")
+        args.note = ((args.note + "; ") if args.note else "") + f"not included: {args.accept_rejects.strip()}"
+    share = (rejected - deliberate - len(unavailable)) / max(1, counts["sections"] + rejected - deliberate - len(unavailable))
     if share > MAX_REJECT_SHARE:
         if not args.accept_rejects.strip():
-            raise SystemExit(f"{rejected} rejected rows are {share:.1%} of what the run parsed (bound "
+            raise SystemExit(f"{rejected - deliberate - len(unavailable)} rejected rows (besides {deliberate} range entries) "
+                             f"are {share:.1%} of what the run parsed (bound "
                              f"{MAX_REJECT_SHARE:.0%}); read rejects.jsonl.gz and fix the module, or pass "
                              "--accept-rejects '<reason>' when they are deliberate exclusions")
-        args.note = ((args.note + "; ") if args.note else "") + f"rejects accepted: {args.accept_rejects.strip()}"
+        if not unavailable:
+            args.note = ((args.note + "; ") if args.note else "") + f"rejects accepted: {args.accept_rejects.strip()}"
     print(json.dumps({"edition_id": edition["edition_id"], "state": edition["state"], "sections": counts["sections"],
-                      "nodes": counts["nodes"], "rejected": counts.get("rejected", 0),
+                      "nodes": counts["nodes"], "rejected": rejected, "range_entries": deliberate,
                       "currency_statement": edition.get("currency_statement")}, ensure_ascii=False))
     if args.dry_run:
         n_batches = sum(1 for _ in batches(lib.read_jsonl(args.edition_dir / "sections.jsonl.gz"), 500))
