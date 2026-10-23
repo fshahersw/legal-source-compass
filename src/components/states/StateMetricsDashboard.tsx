@@ -488,6 +488,7 @@ function Dashboard({
               format={def.format}
               unit={def.unit}
               title={`${def.label}, ${year}`}
+              yearLabel={String(year)}
               selected={selectedProfile?.usps ?? null}
               onSelect={select}
             />
