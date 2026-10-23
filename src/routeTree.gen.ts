@@ -101,6 +101,8 @@ import { Route as LawCodesStateRouteImport } from './routes/law_.codes.$state'
 import { Route as LawConstitutionsIndexRouteImport } from './routes/law_.constitutions.index'
 import { Route as LawConstitutionsStateRouteImport } from './routes/law_.constitutions.$state'
 import { Route as LawLegislationIndexRouteImport } from './routes/law_.legislation.index'
+import { Route as LawLegislationCommitteesRouteImport } from './routes/law_.legislation.committees'
+import { Route as LawLegislationMembersRouteImport } from './routes/law_.legislation.members'
 import { Route as LawProvisionIdRouteImport } from './routes/law_.provision.$id'
 import { Route as LawRegulationsIndexRouteImport } from './routes/law_.regulations.index'
 import { Route as LawRegulationsStateRouteImport } from './routes/law_.regulations.$state'
@@ -115,6 +117,10 @@ import { Route as PrototypesMdlIdRouteImport } from './routes/prototypes.mdl.$id
 import { Route as RecordsDatasetIdRouteImport } from './routes/records.$dataset.$id'
 import { Route as LawCfrTitleIndexRouteImport } from './routes/law_.cfr.$title.index'
 import { Route as LawCfrTitleSectionRouteImport } from './routes/law_.cfr.$title.$section'
+import { Route as LawLegislationCommitteesIndexRouteImport } from './routes/law_.legislation.committees.index'
+import { Route as LawLegislationCommitteesCodeRouteImport } from './routes/law_.legislation.committees.$code'
+import { Route as LawLegislationMembersIndexRouteImport } from './routes/law_.legislation.members.index'
+import { Route as LawLegislationMembersBioguideRouteImport } from './routes/law_.legislation.members.$bioguide'
 import { Route as LawLegislationStateIdRouteImport } from './routes/law_.legislation.state.$id'
 import { Route as LawUscodeTitleSectionRouteImport } from './routes/law_.uscode.$title.$section'
 import { Route as LawCfrTitlePartPartRouteImport } from './routes/law_.cfr.$title.part.$part'
@@ -580,6 +586,17 @@ const LawLegislationIndexRoute = LawLegislationIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LawLegislationRoute,
 } as any)
+const LawLegislationCommitteesRoute =
+  LawLegislationCommitteesRouteImport.update({
+    id: '/committees',
+    path: '/committees',
+    getParentRoute: () => LawLegislationRoute,
+  } as any)
+const LawLegislationMembersRoute = LawLegislationMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => LawLegislationRoute,
+} as any)
 const LawProvisionIdRoute = LawProvisionIdRouteImport.update({
   id: '/law_/provision/$id',
   path: '/law/provision/$id',
@@ -651,6 +668,30 @@ const LawCfrTitleSectionRoute = LawCfrTitleSectionRouteImport.update({
   path: '/$title/$section',
   getParentRoute: () => LawCfrRoute,
 } as any)
+const LawLegislationCommitteesIndexRoute =
+  LawLegislationCommitteesIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => LawLegislationCommitteesRoute,
+  } as any)
+const LawLegislationCommitteesCodeRoute =
+  LawLegislationCommitteesCodeRouteImport.update({
+    id: '/$code',
+    path: '/$code',
+    getParentRoute: () => LawLegislationCommitteesRoute,
+  } as any)
+const LawLegislationMembersIndexRoute =
+  LawLegislationMembersIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => LawLegislationMembersRoute,
+  } as any)
+const LawLegislationMembersBioguideRoute =
+  LawLegislationMembersBioguideRouteImport.update({
+    id: '/$bioguide',
+    path: '/$bioguide',
+    getParentRoute: () => LawLegislationMembersRoute,
+  } as any)
 const LawLegislationStateIdRoute = LawLegislationStateIdRouteImport.update({
   id: '/state/$id',
   path: '/state/$id',
@@ -762,6 +803,8 @@ export interface FileRoutesByFullPath {
   '/data/tables/$table': typeof DataTablesTableRoute
   '/law/codes/$state': typeof LawCodesStateRoute
   '/law/constitutions/$state': typeof LawConstitutionsStateRoute
+  '/law/legislation/committees': typeof LawLegislationCommitteesRouteWithChildren
+  '/law/legislation/members': typeof LawLegislationMembersRouteWithChildren
   '/law/provision/$id': typeof LawProvisionIdRoute
   '/law/regulations/$state': typeof LawRegulationsStateRoute
   '/law/uscode/$title': typeof LawUscodeTitleRouteWithChildren
@@ -779,9 +822,13 @@ export interface FileRoutesByFullPath {
   '/law/regulations/': typeof LawRegulationsIndexRoute
   '/law/uscode/': typeof LawUscodeIndexRoute
   '/law/cfr/$title/$section': typeof LawCfrTitleSectionRoute
+  '/law/legislation/committees/$code': typeof LawLegislationCommitteesCodeRoute
+  '/law/legislation/members/$bioguide': typeof LawLegislationMembersBioguideRoute
   '/law/legislation/state/$id': typeof LawLegislationStateIdRoute
   '/law/uscode/$title/$section': typeof LawUscodeTitleSectionRoute
   '/law/cfr/$title/': typeof LawCfrTitleIndexRoute
+  '/law/legislation/committees/': typeof LawLegislationCommitteesIndexRoute
+  '/law/legislation/members/': typeof LawLegislationMembersIndexRoute
   '/law/cfr/$title/part/$part': typeof LawCfrTitlePartPartRoute
   '/law/legislation/federal/$congress/$type/$number': typeof LawLegislationFederalCongressTypeNumberRoute
 }
@@ -885,9 +932,13 @@ export interface FileRoutesByTo {
   '/law/regulations': typeof LawRegulationsIndexRoute
   '/law/uscode': typeof LawUscodeIndexRoute
   '/law/cfr/$title/$section': typeof LawCfrTitleSectionRoute
+  '/law/legislation/committees/$code': typeof LawLegislationCommitteesCodeRoute
+  '/law/legislation/members/$bioguide': typeof LawLegislationMembersBioguideRoute
   '/law/legislation/state/$id': typeof LawLegislationStateIdRoute
   '/law/uscode/$title/$section': typeof LawUscodeTitleSectionRoute
   '/law/cfr/$title': typeof LawCfrTitleIndexRoute
+  '/law/legislation/committees': typeof LawLegislationCommitteesIndexRoute
+  '/law/legislation/members': typeof LawLegislationMembersIndexRoute
   '/law/cfr/$title/part/$part': typeof LawCfrTitlePartPartRoute
   '/law/legislation/federal/$congress/$type/$number': typeof LawLegislationFederalCongressTypeNumberRoute
 }
@@ -981,6 +1032,8 @@ export interface FileRoutesById {
   '/data/tables/$table': typeof DataTablesTableRoute
   '/law_/codes/$state': typeof LawCodesStateRoute
   '/law_/constitutions/$state': typeof LawConstitutionsStateRoute
+  '/law_/legislation/committees': typeof LawLegislationCommitteesRouteWithChildren
+  '/law_/legislation/members': typeof LawLegislationMembersRouteWithChildren
   '/law_/provision/$id': typeof LawProvisionIdRoute
   '/law_/regulations/$state': typeof LawRegulationsStateRoute
   '/law_/uscode/$title': typeof LawUscodeTitleRouteWithChildren
@@ -998,9 +1051,13 @@ export interface FileRoutesById {
   '/law_/regulations/': typeof LawRegulationsIndexRoute
   '/law_/uscode/': typeof LawUscodeIndexRoute
   '/law_/cfr/$title/$section': typeof LawCfrTitleSectionRoute
+  '/law_/legislation/committees/$code': typeof LawLegislationCommitteesCodeRoute
+  '/law_/legislation/members/$bioguide': typeof LawLegislationMembersBioguideRoute
   '/law_/legislation/state/$id': typeof LawLegislationStateIdRoute
   '/law_/uscode/$title/$section': typeof LawUscodeTitleSectionRoute
   '/law_/cfr/$title/': typeof LawCfrTitleIndexRoute
+  '/law_/legislation/committees/': typeof LawLegislationCommitteesIndexRoute
+  '/law_/legislation/members/': typeof LawLegislationMembersIndexRoute
   '/law_/cfr/$title/part/$part': typeof LawCfrTitlePartPartRoute
   '/law_/legislation/federal/$congress/$type/$number': typeof LawLegislationFederalCongressTypeNumberRoute
 }
@@ -1095,6 +1152,8 @@ export interface FileRouteTypes {
     | '/data/tables/$table'
     | '/law/codes/$state'
     | '/law/constitutions/$state'
+    | '/law/legislation/committees'
+    | '/law/legislation/members'
     | '/law/provision/$id'
     | '/law/regulations/$state'
     | '/law/uscode/$title'
@@ -1112,9 +1171,13 @@ export interface FileRouteTypes {
     | '/law/regulations/'
     | '/law/uscode/'
     | '/law/cfr/$title/$section'
+    | '/law/legislation/committees/$code'
+    | '/law/legislation/members/$bioguide'
     | '/law/legislation/state/$id'
     | '/law/uscode/$title/$section'
     | '/law/cfr/$title/'
+    | '/law/legislation/committees/'
+    | '/law/legislation/members/'
     | '/law/cfr/$title/part/$part'
     | '/law/legislation/federal/$congress/$type/$number'
   fileRoutesByTo: FileRoutesByTo
@@ -1218,9 +1281,13 @@ export interface FileRouteTypes {
     | '/law/regulations'
     | '/law/uscode'
     | '/law/cfr/$title/$section'
+    | '/law/legislation/committees/$code'
+    | '/law/legislation/members/$bioguide'
     | '/law/legislation/state/$id'
     | '/law/uscode/$title/$section'
     | '/law/cfr/$title'
+    | '/law/legislation/committees'
+    | '/law/legislation/members'
     | '/law/cfr/$title/part/$part'
     | '/law/legislation/federal/$congress/$type/$number'
   id:
@@ -1313,6 +1380,8 @@ export interface FileRouteTypes {
     | '/data/tables/$table'
     | '/law_/codes/$state'
     | '/law_/constitutions/$state'
+    | '/law_/legislation/committees'
+    | '/law_/legislation/members'
     | '/law_/provision/$id'
     | '/law_/regulations/$state'
     | '/law_/uscode/$title'
@@ -1330,9 +1399,13 @@ export interface FileRouteTypes {
     | '/law_/regulations/'
     | '/law_/uscode/'
     | '/law_/cfr/$title/$section'
+    | '/law_/legislation/committees/$code'
+    | '/law_/legislation/members/$bioguide'
     | '/law_/legislation/state/$id'
     | '/law_/uscode/$title/$section'
     | '/law_/cfr/$title/'
+    | '/law_/legislation/committees/'
+    | '/law_/legislation/members/'
     | '/law_/cfr/$title/part/$part'
     | '/law_/legislation/federal/$congress/$type/$number'
   fileRoutesById: FileRoutesById
@@ -2079,6 +2152,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LawLegislationIndexRouteImport
       parentRoute: typeof LawLegislationRoute
     }
+    '/law_/legislation/committees': {
+      id: '/law_/legislation/committees'
+      path: '/committees'
+      fullPath: '/law/legislation/committees'
+      preLoaderRoute: typeof LawLegislationCommitteesRouteImport
+      parentRoute: typeof LawLegislationRoute
+    }
+    '/law_/legislation/members': {
+      id: '/law_/legislation/members'
+      path: '/members'
+      fullPath: '/law/legislation/members'
+      preLoaderRoute: typeof LawLegislationMembersRouteImport
+      parentRoute: typeof LawLegislationRoute
+    }
     '/law_/provision/$id': {
       id: '/law_/provision/$id'
       path: '/law/provision/$id'
@@ -2177,6 +2264,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LawCfrTitleSectionRouteImport
       parentRoute: typeof LawCfrRoute
     }
+    '/law_/legislation/committees/': {
+      id: '/law_/legislation/committees/'
+      path: '/'
+      fullPath: '/law/legislation/committees/'
+      preLoaderRoute: typeof LawLegislationCommitteesIndexRouteImport
+      parentRoute: typeof LawLegislationCommitteesRoute
+    }
+    '/law_/legislation/committees/$code': {
+      id: '/law_/legislation/committees/$code'
+      path: '/$code'
+      fullPath: '/law/legislation/committees/$code'
+      preLoaderRoute: typeof LawLegislationCommitteesCodeRouteImport
+      parentRoute: typeof LawLegislationCommitteesRoute
+    }
+    '/law_/legislation/members/': {
+      id: '/law_/legislation/members/'
+      path: '/'
+      fullPath: '/law/legislation/members/'
+      preLoaderRoute: typeof LawLegislationMembersIndexRouteImport
+      parentRoute: typeof LawLegislationMembersRoute
+    }
+    '/law_/legislation/members/$bioguide': {
+      id: '/law_/legislation/members/$bioguide'
+      path: '/$bioguide'
+      fullPath: '/law/legislation/members/$bioguide'
+      preLoaderRoute: typeof LawLegislationMembersBioguideRouteImport
+      parentRoute: typeof LawLegislationMembersRoute
+    }
     '/law_/legislation/state/$id': {
       id: '/law_/legislation/state/$id'
       path: '/state/$id'
@@ -2252,13 +2367,48 @@ const LawConstitutionsRouteChildren: LawConstitutionsRouteChildren = {
 const LawConstitutionsRouteWithChildren =
   LawConstitutionsRoute._addFileChildren(LawConstitutionsRouteChildren)
 
+interface LawLegislationCommitteesRouteChildren {
+  LawLegislationCommitteesCodeRoute: typeof LawLegislationCommitteesCodeRoute
+  LawLegislationCommitteesIndexRoute: typeof LawLegislationCommitteesIndexRoute
+}
+
+const LawLegislationCommitteesRouteChildren: LawLegislationCommitteesRouteChildren =
+  {
+    LawLegislationCommitteesCodeRoute: LawLegislationCommitteesCodeRoute,
+    LawLegislationCommitteesIndexRoute: LawLegislationCommitteesIndexRoute,
+  }
+
+const LawLegislationCommitteesRouteWithChildren =
+  LawLegislationCommitteesRoute._addFileChildren(
+    LawLegislationCommitteesRouteChildren,
+  )
+
+interface LawLegislationMembersRouteChildren {
+  LawLegislationMembersBioguideRoute: typeof LawLegislationMembersBioguideRoute
+  LawLegislationMembersIndexRoute: typeof LawLegislationMembersIndexRoute
+}
+
+const LawLegislationMembersRouteChildren: LawLegislationMembersRouteChildren = {
+  LawLegislationMembersBioguideRoute: LawLegislationMembersBioguideRoute,
+  LawLegislationMembersIndexRoute: LawLegislationMembersIndexRoute,
+}
+
+const LawLegislationMembersRouteWithChildren =
+  LawLegislationMembersRoute._addFileChildren(
+    LawLegislationMembersRouteChildren,
+  )
+
 interface LawLegislationRouteChildren {
+  LawLegislationCommitteesRoute: typeof LawLegislationCommitteesRouteWithChildren
+  LawLegislationMembersRoute: typeof LawLegislationMembersRouteWithChildren
   LawLegislationIndexRoute: typeof LawLegislationIndexRoute
   LawLegislationStateIdRoute: typeof LawLegislationStateIdRoute
   LawLegislationFederalCongressTypeNumberRoute: typeof LawLegislationFederalCongressTypeNumberRoute
 }
 
 const LawLegislationRouteChildren: LawLegislationRouteChildren = {
+  LawLegislationCommitteesRoute: LawLegislationCommitteesRouteWithChildren,
+  LawLegislationMembersRoute: LawLegislationMembersRouteWithChildren,
   LawLegislationIndexRoute: LawLegislationIndexRoute,
   LawLegislationStateIdRoute: LawLegislationStateIdRoute,
   LawLegislationFederalCongressTypeNumberRoute:

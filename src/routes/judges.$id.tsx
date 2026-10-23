@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { EntityError, EntityPage, entityQuery } from "@/components/corpus/EntityPage";
 import { JudgeFjcPanel } from "@/components/corpus/JudgeFjcPanel";
+import { JudgePracticesPanel } from "@/components/judges/practices/JudgePracticesPanel";
 import { JudgeCourtListenerPanel } from "@/components/judges/JudgeCourtListenerPanel";
 import { JudgeDisclosuresPanel } from "@/components/judges/clb/JudgeDisclosuresPanel";
 import { JudgePanelServicePanel } from "@/components/judges/clb/JudgePanelServicePanel";
@@ -66,6 +67,7 @@ function Page() {
       extra={() => (
         <>
           <JudgeFjcPanel judgeId={id} />
+          <JudgePracticesPanel judgeId={id} />
           <NominationPanel judgeId={id} />
           <JudgeCourtListenerPanel judgeId={id} />
           <JudgePanelServicePanel judgeId={id} />

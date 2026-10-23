@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { blocksInGroup, groupsOnPage, type AnalyticsPageId } from "@/lib/analytics/registry";
 import { FtcConsumerSection } from "./FtcConsumerSection";
+import { SecRegistrationTrends } from "@/components/enforcement/regulatory/SecRegistrationTrends";
 import { TrendCard } from "./TrendCard";
 
 const READING_NOTE =
@@ -74,6 +75,7 @@ export function AnalyticsOverview() {
     <div className="space-y-5">
       <AnalyticsPageBody page="overview" />
       <FtcConsumerSection />
+      <SecRegistrationTrends />
     </div>
   );
 }

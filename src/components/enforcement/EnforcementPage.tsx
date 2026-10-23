@@ -1,5 +1,7 @@
 import {
+  FileSearch,
   FileText,
+  GitMerge,
   Handshake,
   HardHat,
   Landmark,
@@ -17,9 +19,20 @@ import { ExclusionsSearch } from "./extra/ExclusionsSearch";
 import { EpaEnforcement } from "./EpaEnforcement";
 import { OshaEnforcement } from "./OshaEnforcement";
 import { SettlementNotices } from "./SettlementNotices";
+import { OversightReports } from "./oversight/OversightReports";
+import { FtcMergerReview } from "./FtcMergerReview";
 
 export type EnforcementTab =
-  "epa" | "rulemaking" | "cpsc" | "cfpb" | "osha" | "settlements" | "exclusions" | "sources";
+  | "epa"
+  | "rulemaking"
+  | "cpsc"
+  | "cfpb"
+  | "osha"
+  | "settlements"
+  | "exclusions"
+  | "oversight"
+  | "merger"
+  | "sources";
 export type EnforcementSearch = { tab?: EnforcementTab; state?: string };
 
 const TABS: { id: EnforcementTab; label: string; Icon: typeof Landmark }[] = [
@@ -30,6 +43,8 @@ const TABS: { id: EnforcementTab; label: string; Icon: typeof Landmark }[] = [
   { id: "osha", label: "Workplace safety (OSHA)", Icon: HardHat },
   { id: "settlements", label: "Settlement notices", Icon: Handshake },
   { id: "exclusions", label: "Exclusions", Icon: UserX },
+  { id: "oversight", label: "Oversight reports", Icon: FileSearch },
+  { id: "merger", label: "Merger review (HSR)", Icon: GitMerge },
   { id: "sources", label: "Agency data sources", Icon: ListChecks },
 ];
 
@@ -43,6 +58,8 @@ export function normalizeEnforcementSearch(raw: Record<string, unknown>): Enforc
     raw["tab"] === "osha" ||
     raw["tab"] === "settlements" ||
     raw["tab"] === "exclusions" ||
+    raw["tab"] === "oversight" ||
+    raw["tab"] === "merger" ||
     raw["tab"] === "sources"
   )
     out.tab = raw["tab"];
@@ -109,6 +126,10 @@ export function EnforcementPage({
           <SettlementNotices />
         ) : tab === "exclusions" ? (
           <ExclusionsSearch />
+        ) : tab === "oversight" ? (
+          <OversightReports />
+        ) : tab === "merger" ? (
+          <FtcMergerReview />
         ) : tab === "sources" ? (
           <EnforcementSources />
         ) : (

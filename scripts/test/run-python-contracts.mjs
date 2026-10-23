@@ -78,6 +78,11 @@ for (const suite of [
   { directory: "scripts/enrichment/state_statutes", modules: ["test_state_statutes"] },
   { directory: "scripts/enrichment/census", modules: ["test_census"] },
   { directory: "scripts/enrichment/regfin", modules: ["test_regfin"] },
+  { directory: "scripts/enrichment/gov_domains", modules: ["test_gov_domains"] },
+  { directory: "scripts/enrichment/congress", modules: ["test_congress"] },
+  { directory: "scripts/enrichment/judge_practices", modules: ["test_judge_practices"] },
+  { directory: "scripts/enrichment/oversight", modules: ["test_oversight"] },
+  { directory: "scripts/enrichment/ftc_data", modules: ["test_ftc_data"] },
   {
     directory: "scripts/enrichment/uscourts_tables",
     modules: ["test_uscourts_tables", "test_normalize", "test_build_tables", "test_pdf"],

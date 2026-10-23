@@ -13,6 +13,8 @@ import { normalizeCompanySearch } from "@/components/companies/companySearch";
 import { isCikAddress, paddedCik, requestedCik } from "@/components/companies/cik";
 import { pageHead } from "@/lib/corpus/head";
 import { CompanyEnforcementPanel } from "@/components/enforcement/actions/CompanyEnforcementPanel";
+import { RegulatoryRecordPanel } from "@/components/enforcement/regulatory/RegulatoryRecordPanel";
+import { CompanyCepPanel } from "@/components/enforcement/oversight/CompanyCepPanel";
 import { CompanyEnforcementTrend } from "@/components/companies/CompanyEnforcementTrend";
 
 const COMPANY_CRUMBS = [
@@ -95,6 +97,8 @@ function Page() {
       />
       <CompanyEnforcementTrend cik={cik} className="mt-3" />
       <CompanyEnforcementPanel cik={cik} className="mt-3" />
+      <RegulatoryRecordPanel cik={cik} className="mt-3" />
+      <CompanyCepPanel cik={cik} className="mt-3" />
     </AppShell>
   );
 }

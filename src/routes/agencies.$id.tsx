@@ -18,6 +18,7 @@ import {
 import { getAgencyProfile } from "@/lib/external/agencyProfile.functions";
 import { isDepartment, SAFETY_AGENCY } from "@/lib/external/agencyTree";
 import { pageHead } from "@/lib/corpus/head";
+import { AgencyOversightPanel } from "@/components/enforcement/oversight/AgencyOversightPanel";
 
 export const Route = createFileRoute("/agencies/$id")({
   remountDeps: ({ params }) => ({ id: params.id }),
@@ -282,6 +283,7 @@ function AgencyPage() {
                     ) : null}
                   </>
                 )}
+                <AgencyOversightPanel agencyId={id} />
                 <AgencyProvenance id={id} asOf={prof.data?.trends?.asOf ?? null} />
               </div>
             ) : null}

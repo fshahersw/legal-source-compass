@@ -50,6 +50,9 @@ vi.mock("@/components/atlas/AppShell", () => ({
   AppShell: ({ children }: { children: ReactNode }) => createElement("main", null, children),
 }));
 vi.mock("@/components/corpus/EntityArtwork", () => ({ AgencyMark: () => null }));
+vi.mock("@/components/enforcement/oversight/AgencyOversightPanel", () => ({
+  AgencyOversightPanel: () => null,
+}));
 vi.mock("@/components/corpus/DatasetBrowser", () => ({
   DatasetBrowser: ({ dataset }: { dataset: string }) =>
     createElement("div", null, `browser:${dataset}`),

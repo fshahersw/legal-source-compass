@@ -1,3 +1,5 @@
+import { GovEvidenceTag } from "@/components/corpus/govEvidence";
+import { useGovEvidence } from "@/components/corpus/useGovEvidence";
 import {
   AlignLeft,
   ArrowUpRight,
@@ -502,6 +504,8 @@ export function SourceViewer() {
     return () => window.clearTimeout(timer);
   }, [source]);
 
+  const govEvidence = useGovEvidence(source ? [target] : [], !!source);
+
   if (!mounted || !source) return null;
 
   const data = check.status === "ready" ? check.data : null;
@@ -807,8 +811,12 @@ export function SourceViewer() {
           <h2 className="m-0 truncate text-[13.5px] font-semibold" title={title}>
             {title}
           </h2>
-          <p className="m-0 truncate text-[11.5px] text-muted-foreground" title={target}>
-            {target.replace(/^https?:\/\//, "")}
+          <p
+            className="m-0 flex min-w-0 items-center gap-1.5 text-[11.5px] text-muted-foreground"
+            title={target}
+          >
+            <span className="truncate">{target.replace(/^https?:\/\//, "")}</span>
+            <GovEvidenceTag result={govEvidence.get(target)} />
           </p>
         </div>
         <div className="flex items-center gap-0.5">

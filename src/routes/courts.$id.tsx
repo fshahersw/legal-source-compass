@@ -24,6 +24,7 @@ import { OralArgumentsPanel } from "@/components/courts/clb/OralArgumentsPanel";
 import { DistrictGlancePanel } from "@/components/courts/clb/DistrictGlancePanel";
 import { ProsecutionsPanel } from "@/components/enforcement/extra/ProsecutionsPanel";
 import { SentencingPanel } from "@/components/enforcement/extra/SentencingPanel";
+import { CourtJudgesRosterPanel } from "@/components/courts/CourtJudgesRosterPanel";
 
 export const Route = createFileRoute("/courts/$id")({
   loader: ({ context, params }) =>
@@ -82,6 +83,7 @@ function Page() {
           <CourtStructurePanel courtId={id} />
           <CourtLocationsPanel courtId={id} />
           <CourtRulesPanel courtId={id} />
+          <CourtJudgesRosterPanel courtId={id} />
           <CourtAnalyticsPanel courtId={id} />
           <CaseloadHistoryPanel courtId={id} />
           <CourtStatsTrendsPanel courtId={id} />

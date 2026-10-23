@@ -6,6 +6,7 @@ import { DojReleases } from "./DojReleases";
 import { FtcActions } from "./FtcActions";
 import { OfficialSettlements } from "./OfficialSettlements";
 import { SecActions } from "./SecActions";
+import { FrbActions } from "../regulatory/FrbActions";
 
 export function ActionsNav({
   view,
@@ -66,6 +67,8 @@ export function ActionsPanel({ view }: { view: ActionsView }) {
         <FtcActions />
       ) : view === "sec" ? (
         <SecActions />
+      ) : view === "frb" ? (
+        <FrbActions />
       ) : (
         <OfficialSettlements />
       )}

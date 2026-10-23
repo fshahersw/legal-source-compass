@@ -1,4 +1,4 @@
-import { Building2, FileCheck2, Gavel, Landmark, Scale } from "lucide-react";
+import { Banknote, Building2, FileCheck2, Gavel, Landmark, Scale } from "lucide-react";
 import {
   getCompanyEnforcement,
   getDojOverview,
@@ -6,7 +6,7 @@ import {
 } from "@/lib/external/enforcementActions.functions";
 
 /** Sections of /law/enforcement: the agency data sets (existing tabs) and the enforcement-action sources. */
-export type ActionsView = "doj" | "ftc" | "sec" | "settlements";
+export type ActionsView = "doj" | "ftc" | "sec" | "frb" | "settlements";
 
 export const ACTION_VIEWS: { id: ActionsView | "agency"; label: string; Icon: typeof Landmark }[] =
   [
@@ -14,12 +14,15 @@ export const ACTION_VIEWS: { id: ActionsView | "agency"; label: string; Icon: ty
     { id: "doj", label: "DOJ press releases", Icon: Scale },
     { id: "ftc", label: "FTC cases and actions", Icon: Building2 },
     { id: "sec", label: "SEC actions", Icon: Gavel },
+    { id: "frb", label: "Federal Reserve", Icon: Banknote },
     { id: "settlements", label: "Confirmed settlements", Icon: FileCheck2 },
   ];
 
 /** `?actions=` value, or undefined for the agency-data tabs; anything unrecognised is dropped. */
 export function normalizeActionsView(raw: unknown): ActionsView | undefined {
-  return raw === "doj" || raw === "ftc" || raw === "sec" || raw === "settlements" ? raw : undefined;
+  return raw === "doj" || raw === "ftc" || raw === "sec" || raw === "frb" || raw === "settlements"
+    ? raw
+    : undefined;
 }
 
 export const dojOverviewQuery = {

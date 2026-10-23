@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { ArrowUpRight, BookOpen, Clock3, Gavel, Landmark, ScrollText } from "lucide-react";
 import { stateByUsps } from "@/lib/corpus/geo";
 import { StateLegislationPanel } from "@/components/legislation/StateLegislationPanel";
+import { StateDelegationPanel } from "@/components/legislation/StateDelegationPanel";
 import { getStateCodeEntry } from "@/lib/law/stateCode.functions";
 import { getStateLaw, type StateLaw } from "@/lib/external/stateLaw.functions";
 import { externalHref } from "@/lib/external/href";
@@ -111,6 +112,7 @@ export function LawSection({
           />
         </ul>
       </section>
+      <StateDelegationPanel key={`delegation-${usps}`} usps={usps} />
       <StateLegislationPanel key={`legislation-${usps}`} usps={usps} />
     </div>
   );
