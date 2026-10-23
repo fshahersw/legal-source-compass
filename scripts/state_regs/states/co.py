@@ -127,17 +127,21 @@ def pdf_lines(raw: bytes) -> str:
             h.write(raw)
         out = subprocess.run([exe, "-layout", "-enc", "UTF-8", src, "-"], capture_output=True, timeout=600, check=True)
     lines = [" ".join(x.replace("\xa0", " ").split()) for x in out.stdout.decode("utf-8", "replace").replace("\f", "\n").split("\n")]
-    return "\n".join(x for x in lines if x and not _banner(x))
+    lines = [x for x in lines if x]
+    while lines and _banner(lines[0]):  # the rotated banner opens page 1; nothing else is dropped
+        lines.pop(0)
+    return "\n".join(lines)
 
 
-# The PDFs print "Code of Colorado Regulations" / "Secretary of State" / "State of Colorado" as a rotated side banner;
-# a text extractor returns it as word fragments ("CodeofCol", "oradoRegul"). Those fragments are page furniture.
+# Page 1 of every rule-set PDF carries a rotated side banner ("Code of Colorado Regulations", "Secretary of State",
+# "State of Colorado"); text extraction returns it as word fragments ("CodeofCol", "oradoRegul", "ati", "e", "St") at the
+# very start of the text. Only that leading run is page furniture: a later line such as "Regulations" is rule text.
 BANNERS = ("codeofcoloradoregulations", "secretaryofstate", "stateofcolorado")
 
 
 def _banner(line: str) -> bool:
     s = re.sub(r"\s+", "", line).lower()
-    return 3 <= len(s) <= 25 and s.isalpha() and any(s in b for b in BANNERS)
+    return 1 <= len(s) <= 25 and s.isalpha() and any(s in b for b in BANNERS)
 
 
 def pypdf_reference(raw: bytes) -> str:
