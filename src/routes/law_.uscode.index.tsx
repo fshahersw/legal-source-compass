@@ -255,7 +255,7 @@ function ReleaseRow({ p }: { p: ReleasePoint }) {
           <span className="ml-2 font-sans text-[11px] text-muted-foreground">current</span>
         ) : null}
       </td>
-      <td className="px-3 py-1.5">{p.lawDateText ?? "Not recorded"}</td>
+      <td className="whitespace-nowrap px-3 py-1.5">{p.lawDateText ?? "Not recorded"}</td>
       <td className="px-3 py-1.5">{p.titles.length ? p.titles.join(", ") : "Not stated"}</td>
       <td className="px-3 py-1.5 text-muted-foreground">
         {p.changes

@@ -34,6 +34,13 @@ export const Route = createFileRoute("/law_/uscode/$title/$section")({
 /** Lines rendered before "Show the full text"; a handful of sections (e.g. 42 U.S.C. § 1395ww) print thousands. */
 const BODY_LIMIT = 600;
 
+/**
+ * The heading under the page title. A bracketed status unit prints "[§ 14. Repealed. … 116 Stat. 1812]"; the "[" sits
+ * in its number, so the closing bracket is dropped here (the text panel keeps the printed form).
+ */
+const pageSubtitle = (s: UscSection) =>
+  s.num?.startsWith("[") && s.heading?.endsWith("]") ? s.heading.slice(0, -1) : (s.heading ?? "");
+
 const longDate = (iso: string | null) =>
   iso
     ? new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-US", {
@@ -68,7 +75,7 @@ function SectionPage() {
         { label: s ? s.citation : section },
       ]}
       title={s ? s.citation : `${title} U.S.C. ${section}`}
-      {...(s?.heading ? { description: s.heading } : {})}
+      {...(s?.heading ? { description: pageSubtitle(s) } : {})}
     >
       {!valid ? (
         <p className="text-sm text-muted-foreground">
