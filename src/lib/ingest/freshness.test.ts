@@ -104,7 +104,7 @@ describe("wording", () => {
     ).toEqual({
       text: "Updated Oct 12, 2026",
       tone: "warning",
-      note: "No successful run since 2026-10-12",
+      note: "No successful update since Oct 12, 2026.",
     });
     expect(
       describeFreshness(

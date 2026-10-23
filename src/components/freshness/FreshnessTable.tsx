@@ -180,7 +180,7 @@ function Body({
                     <span className="text-muted-foreground">Not recorded</span>
                   )}
                 </td>
-                <td className="px-3 py-1.5 text-right tabular-nums">
+                <td className="whitespace-nowrap px-3 py-1.5 text-right tabular-nums">
                   {row.newRecords !== null ? (
                     row.newRecords.toLocaleString("en-US")
                   ) : (
@@ -188,8 +188,10 @@ function Body({
                   )}
                 </td>
                 <td className="px-3 py-1.5 text-muted-foreground">
-                  {row.message ??
-                    (row.lastRunAt ? `Last checked ${formatUtcDateTime(row.lastRunAt)}` : "")}
+                  {row.status === "stale"
+                    ? d.note
+                    : (row.message ??
+                      (row.lastRunAt ? `Last checked ${formatUtcDateTime(row.lastRunAt)}` : ""))}
                 </td>
               </tr>
             );

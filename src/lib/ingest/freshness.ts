@@ -131,7 +131,10 @@ export function describeFreshness(row: Freshness): {
       return {
         text: since ? `Updated ${since}` : "Update overdue",
         tone: "warning",
-        note: row.message ?? "No successful update within the expected interval.",
+        // the RPC's message is "No successful run since <ISO day>"; worded here with the table's date format
+        note: since
+          ? `No successful update since ${since}.`
+          : (row.message ?? "No successful update within the expected interval."),
       };
     case "failed":
       return {
