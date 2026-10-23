@@ -32,6 +32,8 @@ export type Issue = {
   pages: string | null;
   label: string; // the listing's link text, whitespace collapsed
   url: string;
+  /** Further files of the same issue (a month the listing splits into parts A, B, C), in listing order. */
+  parts?: string[];
 };
 
 export type RegisterSource = {
@@ -280,6 +282,24 @@ export const REGISTERS: RegisterSource[] = [
   },
 ];
 
+/** Links the listing gives for one issue (same date or month and number) become one issue with its further files. */
+export function mergeParts(list: Issue[]): Issue[] {
+  const out: Issue[] = [];
+  const byId = new Map<string, Issue>();
+  for (const i of list) {
+    const id = issueId(i);
+    const first = id ? byId.get(id) : undefined;
+    if (first) {
+      first.parts = [...(first.parts ?? []), i.url];
+      continue;
+    }
+    const copy = { ...i };
+    if (id) byId.set(id, copy);
+    out.push(copy);
+  }
+  return out;
+}
+
 const KEY_PART = /[^A-Za-z0-9.-]+/g;
 
 export function issueId(i: Issue): string | null {
@@ -320,6 +340,7 @@ export function issueRow(i: Issue): CorpusRow | null {
       ["Pages", i.pages ?? NR],
       ["As listed", i.label],
       ["Official address", i.url],
+      ...(i.parts?.length ? [["Further files of this issue", i.parts.join(" ")]] : []),
     ],
     text: [i.publication, i.label].join(" "),
     filters: { state: [i.state], year: [when.slice(0, 4)] },
@@ -334,6 +355,7 @@ export function issueRow(i: Issue): CorpusRow | null {
         pages: i.pages,
         label: i.label,
         url: i.url,
+        ...(i.parts?.length ? { parts: i.parts } : {}),
       } as JsonObject,
     },
   });
@@ -375,7 +397,7 @@ export const stateRegisters: SourceAdapter = {
           complete = false;
           continue;
         }
-        const issues = src.parse(res.text, src.url);
+        const issues = mergeParts(src.parse(res.text, src.url));
         fetched += issues.length;
         let n = 0;
         let dup = 0;

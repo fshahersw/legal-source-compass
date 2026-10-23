@@ -6,6 +6,7 @@ import {
   issueId,
   issueRow,
   longDate,
+  mergeParts,
   sortRows,
   stateRegisters,
   type Issue,
@@ -55,6 +56,19 @@ describe("state register listings", () => {
     expect(or.url).not.toMatch(/JSESSIONID/);
     const ky = parsed("KY").find((i) => i.period === "2026-07")!;
     expect(ky.url).toMatch(/^https:\/\/apps\.legislature\.ky\.gov\/law\/kar\/registers\/.+\.pdf$/);
+  });
+
+  it("merges the parts of one issue (Kentucky splits some months into A, B, C files)", () => {
+    const ky = mergeParts(parsed("KY"));
+    const june = ky.filter((i) => i.period === "2007-06");
+    expect(june).toHaveLength(1);
+    expect(june[0]!.url).toMatch(/12_Jun_A\.pdf$/);
+    expect(june[0]!.parts).toEqual([
+      expect.stringMatching(/12_Jun_B\.pdf$/),
+      expect.stringMatching(/12_Jun_C\.pdf$/),
+    ]);
+    const row = issueRow(june[0]!)!;
+    expect(JSON.stringify(row.detail)).toContain("Further files of this issue");
   });
 
   it("never guesses a date", () => {
