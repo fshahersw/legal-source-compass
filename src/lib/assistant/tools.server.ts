@@ -16,6 +16,8 @@ import { LEGISLATION_EXECUTORS, LEGISLATION_TOOL_DEFINITIONS } from "./legislati
 import { FTC_DATA_EXECUTORS, FTC_DATA_TOOL_DEFINITIONS } from "./ftcDataTools.server";
 import { CONGRESS_EXECUTORS, CONGRESS_TOOL_DEFINITIONS } from "./congressTools.server";
 import { OVERSIGHT_EXECUTORS, OVERSIGHT_TOOL_DEFINITIONS } from "./oversightTools.server";
+import { SEMANTIC_EXECUTORS, SEMANTIC_TOOL_DEFINITIONS } from "./semanticTools.server";
+import { semanticConfigured } from "@/lib/semantic/semantic.server";
 import {
   CITATION_EXECUTORS,
   CITATION_TOOL_DEFINITIONS,
@@ -156,6 +158,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   },
   ...OFFICIAL_TOOL_DEFINITIONS,
   ...STATUTE_TOOL_DEFINITIONS,
+  ...SEMANTIC_TOOL_DEFINITIONS,
   ...LEGISLATION_TOOL_DEFINITIONS,
   ...FTC_DATA_TOOL_DEFINITIONS,
   ...CONGRESS_TOOL_DEFINITIONS,
@@ -505,6 +508,7 @@ const EXECUTORS: Record<
   search_case_law: caseLawTool,
   ...OFFICIAL_EXECUTORS,
   ...STATUTE_EXECUTORS,
+  ...SEMANTIC_EXECUTORS,
   ...LEGISLATION_EXECUTORS,
   ...FTC_DATA_EXECUTORS,
   ...CONGRESS_EXECUTORS,
@@ -522,6 +526,7 @@ export function availableTools(): ToolDefinition[] {
     if (t.name === "read_web_page") return !!env("FIRECRAWL_API_KEY");
     if (t.name === "search_case_law") return !!env("COURTLISTENER_API_KEY");
     if (t.name === "search_court_filings") return !!env("DOCKETBIRD_API_KEY");
+    if (t.name === "semantic_search") return semanticConfigured();
     // verify_citations stays on without the key: statutes and regulations need none, and case citations then report
     // that they could not be checked.
     if (t.name === "get_opinion") return caseLawConfigured();

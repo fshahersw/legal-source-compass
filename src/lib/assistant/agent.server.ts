@@ -43,6 +43,7 @@ const STEP_LABELS: Record<string, string> = {
   search_ecfr: "Searching the Code of Federal Regulations",
   read_cfr_section: "Reading a CFR section",
   read_usc_section: "Reading a U.S. Code section",
+  semantic_search: "Searching by meaning",
   list_cfr_parts_citing_usc: "Looking up regulations that cite a statute",
   list_authorities_for_cfr_part: "Looking up the authorities for a CFR part",
   ftc_dnc_trends: "Reading Do Not Call report trends",
