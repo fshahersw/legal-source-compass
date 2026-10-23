@@ -43,14 +43,15 @@ def has_record(fetcher, window, offset, robo, stats):
 
 
 def count_window(fetcher, window, robo=None, stats=None):
-    """Number of records for the window: exponential search for an upper bound, then bisection."""
+    """Number of records for the window: bisection between a record that exists (offset 0) and an offset past the end.
+
+    The upper bound starts at 2**19 (524,288, about twice the busiest month) and doubles if a record still exists there."""
     stats = stats if stats is not None else {"requests": 0}
     if not has_record(fetcher, window, 0, robo, stats):
         return 0
-    hi = 1
+    lo, hi = 0, 1 << 19
     while has_record(fetcher, window, hi, robo, stats):
-        hi *= 2
-    lo = hi // 2  # a record exists at lo; none at hi
+        lo, hi = hi, hi * 2  # a record exists at lo; none at hi (checked next)
     while hi - lo > 1:
         mid = (lo + hi) // 2
         if has_record(fetcher, window, mid, robo, stats):
