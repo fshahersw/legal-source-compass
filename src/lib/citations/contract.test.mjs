@@ -378,6 +378,18 @@ test("read RPCs: document, cited-by, top authorities, co-citation, profile, map,
   for (const l of map.links) assert.ok(ids.has(l.source) && ids.has(l.target), JSON.stringify(l));
   assert.equal(map.documents_total, 2);
 
+  // documents.links-shaped view: mentions are the edge counts, never multiplied by the pages an edge spans
+  const dl = (await db.query("select document_id, to_type, to_id, relation, mentions, first_page, pages from citations.document_links order by 1,2,3,4")).rows;
+  const d3 = dl.find((r) => r.document_id === SETS.D3.id && r.to_id === "usc:42:1983");
+  assert.deepEqual([d3.mentions, d3.first_page, d3.pages], [2, 1, [1, 2]], "an edge on two pages counts its mentions once");
+  for (const r of dl) {
+    const direct = await one(db, `select sum(e.mentions)::int n, min(e.first_page) f from citations.edges e join citations.authorities a
+      on a.key = e.key and a.resolution = 'resolved' and a.link_type = $2 and a.link_id = $3
+      where e.citing_type = 'document' and e.citing_id = $1 and e.relation = $4`, [r.document_id, r.to_type, r.to_id, r.relation]);
+    assert.deepEqual([r.mentions, r.first_page], [direct.n, direct.f], JSON.stringify(r));
+  }
+  assert.ok(dl.some((r) => r.pages.length > 1), "the fixture has a link spanning several pages");
+
   const links = await rpc(db, "citations_links_v2", "record", `documents/${SETS.D1.id}`, null, 100);
   assert.ok(links.some((l) => l.to.type === "law_unit" && l.to.id === "usc:42:1983" && l.relation === "cites"));
   assert.ok(links.some((l) => l.to.type === "record" && l.to.id === "caselaw/1"));

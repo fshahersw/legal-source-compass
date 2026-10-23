@@ -512,16 +512,23 @@ language sql immutable set search_path = '' as $$
   select case when p_resolution = 'resolved' then p_dataset || '/' || p_id else 'key/' || p_key end
 $$;
 
--- edges as rows of documents.links (documents/1 shape): resolved authorities that have a documents/1 link id
+-- edges as rows of documents.links (documents/1 shape): resolved authorities that have a documents/1 link id. Mentions
+-- are summed over the edges first; pages are collected separately (unnesting pages before the sum would count an edge
+-- once per page it appears on).
 create or replace view citations.document_links as
-  select e.citing_id as document_id, a.link_type as to_type, a.link_id as to_id, e.relation, 'exact_id'::text as evidence,
-         sum(e.mentions)::integer as mentions, min(e.first_page) as first_page,
-         (array_agg(distinct p order by p))[1:20] as pages
-    from citations.edges e
-    join citations.authorities a on a.key = e.key and a.resolution = 'resolved' and a.link_type is not null
-    cross join lateral unnest(e.pages) p
-   where e.citing_type = 'document'
-   group by e.citing_id, a.link_type, a.link_id, e.relation;
+  select g.citing_id as document_id, g.link_type as to_type, g.link_id as to_id, g.relation, 'exact_id'::text as evidence,
+         g.mentions, g.first_page,
+         (select (array_agg(distinct p order by p))[1:20]
+            from citations.edges e2
+            join citations.authorities a2 on a2.key = e2.key and a2.resolution = 'resolved'
+                 and a2.link_type = g.link_type and a2.link_id = g.link_id
+            cross join lateral unnest(e2.pages) p
+           where e2.citing_type = 'document' and e2.citing_id = g.citing_id and e2.relation = g.relation) as pages
+    from (select e.citing_id, a.link_type, a.link_id, e.relation, sum(e.mentions)::integer as mentions, min(e.first_page) as first_page
+            from citations.edges e
+            join citations.authorities a on a.key = e.key and a.resolution = 'resolved' and a.link_type is not null
+           where e.citing_type = 'document'
+           group by e.citing_id, a.link_type, a.link_id, e.relation) g;
 revoke all on citations.document_links from public, anon, authenticated;
 
 -- ------------------------------------------------------------------------------------------------ lookup indexes
