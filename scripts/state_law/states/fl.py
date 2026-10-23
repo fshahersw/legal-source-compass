@@ -39,7 +39,7 @@ META = lib.StateMeta(
     parser="fl-online-sunshine/1",
     min_interval_s=1.0,
     codes=(lib.Code("FS", "Florida Statutes", "Fla. Stat. § {n}",
-                    lib.alias_patterns(["Fla. Stat.", "Fla. Stat. Ann.", "F.S.", "Florida Statutes", "F.S.A.", "Fla. Stat. ch."])),),
+                    lib.alias_patterns(["Fla. Stat.", "Fla. Stat. Ann.", "F.S.", "Florida Statutes", "F.S.A."])),),
     terms_note="Florida Statutes published by the Legislature on Online Sunshine; public record; robots.txt permits.",
     update_cadence="Annual edition after each regular session (new edition usually by mid-year); re-check monthly.",
 )

@@ -76,6 +76,7 @@ for (const suite of [
   { directory: "scripts/enrichment/legislation", modules: ["test_legislation"] },
   { directory: "scripts/enrichment/ecfr_authorities", modules: ["test_ecfr_authorities"] },
   { directory: "scripts/enrichment/state_statutes", modules: ["test_state_statutes"] },
+  { directory: "scripts/state_law", modules: ["test_lib", "test_states"] },
   { directory: "scripts/enrichment/census", modules: ["test_census"] },
   { directory: "scripts/enrichment/regfin", modules: ["test_regfin"] },
   { directory: "scripts/enrichment/gov_domains", modules: ["test_gov_domains"] },

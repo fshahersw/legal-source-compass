@@ -166,5 +166,13 @@ class RunContextTests(unittest.TestCase):
                 ctx.fetch("https://www.commercial-host.example.com/x")
 
 
+class VectorTests(unittest.TestCase):
+    def test_vectors_are_current(self):
+        from state_law import gen_vectors
+
+        stored = json.loads((HERE / "norm_vectors.json").read_text())
+        self.assertEqual(stored, json.loads(json.dumps(gen_vectors.build())))
+
+
 if __name__ == "__main__":
     unittest.main()

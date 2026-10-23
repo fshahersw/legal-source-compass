@@ -333,6 +333,7 @@ def norm_number(value: str) -> str:
     return value.rstrip(".")
 
 
+_UNIT_WORD_RE = r"[\s,]*(?:subds?\.|subdivisions?|subsecs?\.|subsections?|paras?\.|paragraphs?|cls?\.|clauses?)$"
 _PINPOINT_RE = re.compile(r"((?:\s*\((?:[0-9]{1,4}|[a-z]{1,4}|[ivxlc]{1,8})\))+)\s*$")
 
 
@@ -350,6 +351,7 @@ def norm_cite(value: str) -> tuple[str, str | None]:
     if match and match.start() > 0:
         pinpoint = re.sub(r"\s+", "", match.group(1))
         value = value[: match.start()].rstrip()
+    value = re.sub(_UNIT_WORD_RE, "", value)
     return value, pinpoint
 
 
@@ -395,7 +397,7 @@ def format_citation(template: str, number: str) -> str:
     return template.replace("{n}", number).replace("{t}", head if sep else "").replace("{s}", tail if sep else number)
 
 
-_NUM_CAPTURE = r"([0-9a-z][0-9a-z.:/\-]*)"
+_NUM_CAPTURE = r"([0-9][0-9a-z.:/\-]*)"
 
 
 def template_regex(template: str) -> tuple[str, str]:
@@ -465,7 +467,7 @@ def alias_patterns(aliases: Iterable[str], *, prefix: str | None = None, number:
         normalized, _ = norm_cite(alias)
         escaped = "".join(("\\s?" if ch == " " else re.escape(ch)) for ch in normalized.rstrip("."))
         alts.append(escaped + r"\.?")
-    alts = sorted(set(alts), key=len, reverse=True)
+    alts = sorted(set(alts), key=lambda a: (-len(a), a))
     regex = (prefix or "") + "(?:" + "|".join(alts) + ")" + r"\s?,?\s?(?:§\s?)?" + number
     return (Pattern(regex, r"\1"),)
 

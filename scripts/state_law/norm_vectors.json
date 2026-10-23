@@ -1,0 +1,3614 @@
+{
+ "norm_number": [
+  {
+   "input": "§ 95.11",
+   "expected": "95.11"
+  },
+  {
+   "input": "13–202",
+   "expected": "13-202"
+  },
+  {
+   "input": " 2A. ",
+   "expected": "2a"
+  },
+  {
+   "input": "Sec. 5-101",
+   "expected": "5-101"
+  },
+  {
+   "input": "735:5/13-202",
+   "expected": "735:5/13-202"
+  },
+  {
+   "input": "Section 1234",
+   "expected": "1234"
+  },
+  {
+   "input": "§§ 12-542",
+   "expected": "12-542"
+  },
+  {
+   "input": "10:8106",
+   "expected": "10:8106"
+  },
+  {
+   "input": "4C1/2",
+   "expected": "4c1/2"
+  },
+  {
+   "input": "  Sec 3 ",
+   "expected": "3"
+  }
+ ],
+ "norm_cite": [
+  {
+   "input": "Fla. Stat. § 95.11(3)(a)",
+   "expected": [
+    "fla. stat. § 95.11",
+    "(3)(a)"
+   ]
+  },
+  {
+   "input": "Fla. Stat. §§95.11 et seq.",
+   "expected": [
+    "fla. stat. § 95.11",
+    null
+   ]
+  },
+  {
+   "input": "M.G.L. c. 260, section 2A",
+   "expected": [
+    "m.g.l. c. 260, § 2a",
+    null
+   ]
+  },
+  {
+   "input": "735 ILCS 5/13–202.",
+   "expected": [
+    "735 ilcs 5/13-202",
+    null
+   ]
+  },
+  {
+   "input": "(a)",
+   "expected": [
+    "(a)",
+    null
+   ]
+  },
+  {
+   "input": "Cal. Civ. Proc. Code § 335.1",
+   "expected": [
+    "cal. civ. proc. code § 335.1",
+    null
+   ]
+  },
+  {
+   "input": "Code Civ. Proc. sec. 335.1 (b)(2)",
+   "expected": [
+    "code civ. proc. § 335.1",
+    "(b)(2)"
+   ]
+  },
+  {
+   "input": "Md. Code Ann., Cts. & Jud. Proc. § 5-101",
+   "expected": [
+    "md. code ann., cts. & jud. proc. § 5-101",
+    null
+   ]
+  },
+  {
+   "input": "Mass. Gen. Laws ch. 93A, § 9",
+   "expected": [
+    "mass. gen. laws ch. 93a, § 9",
+    null
+   ]
+  },
+  {
+   "input": "Pen. Code, § 187, subd. (a)",
+   "expected": [
+    "pen. code, § 187",
+    "(a)"
+   ]
+  },
+  {
+   "input": "  FLA.  STAT.  §  768.81 ",
+   "expected": [
+    "fla. stat. § 768.81",
+    null
+   ]
+  },
+  {
+   "input": "Fla. Stat. ch. 95",
+   "expected": [
+    "fla. stat. ch. 95",
+    null
+   ]
+  }
+ ],
+ "patterns": [
+  {
+   "state": "FL",
+   "input": "Fla. Stat. § 95.11(3)(a)",
+   "expected": [
+    [
+     "FS",
+     "95.11"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "FS",
+     "regex": "(?:fla\\.\\s?stat\\.\\s?ann\\.?|florida\\s?statutes\\.?|fla\\.\\s?stat\\.?|f\\.s\\.a\\.?|f\\.s\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FS",
+     "regex": "fla\\.\\s?stat\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "FL",
+   "input": "F.S. 95.11",
+   "expected": [
+    [
+     "FS",
+     "95.11"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "FS",
+     "regex": "(?:fla\\.\\s?stat\\.\\s?ann\\.?|florida\\s?statutes\\.?|fla\\.\\s?stat\\.?|f\\.s\\.a\\.?|f\\.s\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FS",
+     "regex": "fla\\.\\s?stat\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "FL",
+   "input": "Florida Statutes section 768.81",
+   "expected": [
+    [
+     "FS",
+     "768.81"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "FS",
+     "regex": "(?:fla\\.\\s?stat\\.\\s?ann\\.?|florida\\s?statutes\\.?|fla\\.\\s?stat\\.?|f\\.s\\.a\\.?|f\\.s\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FS",
+     "regex": "fla\\.\\s?stat\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "FL",
+   "input": "Fla. Stat. ch. 95",
+   "expected": [],
+   "patterns": [
+    {
+     "code": "FS",
+     "regex": "(?:fla\\.\\s?stat\\.\\s?ann\\.?|florida\\s?statutes\\.?|fla\\.\\s?stat\\.?|f\\.s\\.a\\.?|f\\.s\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FS",
+     "regex": "fla\\.\\s?stat\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "CA",
+   "input": "Cal. Civ. Proc. Code § 335.1",
+   "expected": [
+    [
+     "CCP",
+     "335.1"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "BPC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:business\\s?and\\s?professions\\s?code\\.?|bus\\.\\s?\\&\\s?prof\\.\\s?code\\.?|b\\&p\\s?code\\.?|bpc\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "BPC",
+     "regex": "cal\\.\\s?bus\\.\\s?\\&\\s?prof\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCP",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:code\\s?of\\s?civil\\s?procedure\\.?|civ\\.\\s?proc\\.\\s?code\\.?|code\\s?civ\\.\\s?proc\\.?|c\\.c\\.p\\.?|ccp\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCP",
+     "regex": "cal\\.\\s?civ\\.\\s?proc\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CIV",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:civ\\.\\s?code\\.?|civil\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CIV",
+     "regex": "cal\\.\\s?civ\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "COM",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:u\\.\\s?com\\.\\s?code\\.?|commercial\\s?code\\.?|com\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "COM",
+     "regex": "cal\\.\\s?com\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CORP",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:corporations\\s?code\\.?|corp\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CORP",
+     "regex": "cal\\.\\s?corp\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EDC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:education\\s?code\\.?|educ\\.\\s?code\\.?|ed\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EDC",
+     "regex": "cal\\.\\s?educ\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "ELEC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:elections\\s?code\\.?|elec\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "ELEC",
+     "regex": "cal\\.\\s?elec\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EVID",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:evidence\\s?code\\.?|evid\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EVID",
+     "regex": "cal\\.\\s?evid\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAM",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:family\\s?code\\.?|fam\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAM",
+     "regex": "cal\\.\\s?fam\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FIN",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:financial\\s?code\\.?|fin\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FIN",
+     "regex": "cal\\.\\s?fin\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FGC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:fish\\s?and\\s?game\\s?code\\.?|fish\\s?\\&\\s?game\\s?code\\.?|fish\\s?\\&\\s?g\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FGC",
+     "regex": "cal\\.\\s?fish\\s?\\&\\s?game\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:food\\s?and\\s?agricultural\\s?code\\.?|food\\s?\\&\\s?agric\\.\\s?code\\.?|food\\s?\\&\\s?agr\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAC",
+     "regex": "cal\\.\\s?food\\s?\\&\\s?agric\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GOV",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:government\\s?code\\.?|govt\\.\\s?code\\.?|gov't\\s?code\\.?|gov\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GOV",
+     "regex": "cal\\.\\s?gov't\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HNC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:harbors\\s?and\\s?navigation\\s?code\\.?|harb\\.\\s?\\&\\s?nav\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HNC",
+     "regex": "cal\\.\\s?harb\\.\\s?\\&\\s?nav\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HSC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:health\\s?and\\s?safety\\s?code\\.?|health\\s?\\&\\s?safety\\s?code\\.?|health\\s?\\&\\s?saf\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HSC",
+     "regex": "cal\\.\\s?health\\s?\\&\\s?safety\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "INS",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:insurance\\s?code\\.?|ins\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "INS",
+     "regex": "cal\\.\\s?ins\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "LAB",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:lab\\.\\s?code\\.?|labor\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "LAB",
+     "regex": "cal\\.\\s?lab\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "MVC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:military\\s?and\\s?veterans\\s?code\\.?|mil\\.\\s?\\&\\s?vet\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "MVC",
+     "regex": "cal\\.\\s?mil\\.\\s?\\&\\s?vet\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PEN",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:pen\\.\\s?code\\.?|penal\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PEN",
+     "regex": "cal\\.\\s?penal\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PROB",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:probate\\s?code\\.?|prob\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PROB",
+     "regex": "cal\\.\\s?prob\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PCC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:public\\s?contract\\s?code\\.?|pub\\.\\s?contract\\s?code\\.?|pub\\.\\s?cont\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PCC",
+     "regex": "cal\\.\\s?pub\\.\\s?cont\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PRC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:public\\s?resources\\s?code\\.?|pub\\.\\s?resources\\s?code\\.?|pub\\.\\s?res\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PRC",
+     "regex": "cal\\.\\s?pub\\.\\s?res\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PUC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:public\\s?utilities\\s?code\\.?|pub\\.\\s?utilities\\s?code\\.?|pub\\.\\s?util\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PUC",
+     "regex": "cal\\.\\s?pub\\.\\s?util\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "RTC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:revenue\\s?and\\s?taxation\\s?code\\.?|rev\\.\\s?\\&\\s?tax\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "RTC",
+     "regex": "cal\\.\\s?rev\\.\\s?\\&\\s?tax\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "SHC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:streets\\s?and\\s?highways\\s?code\\.?|sts\\.\\s?\\&\\s?high\\.\\s?code\\.?|sts\\.\\s?\\&\\s?hy\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "SHC",
+     "regex": "cal\\.\\s?sts\\.\\s?\\&\\s?high\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "UIC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:unemployment\\s?insurance\\s?code\\.?|unemp\\.\\s?ins\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "UIC",
+     "regex": "cal\\.\\s?unemp\\.\\s?ins\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "VEH",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:vehicle\\s?code\\.?|veh\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "VEH",
+     "regex": "cal\\.\\s?veh\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WAT",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:wat\\.\\s?code\\.?|water\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WAT",
+     "regex": "cal\\.\\s?water\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WIC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:welfare\\s?and\\s?institutions\\s?code\\.?|welf\\.\\s?\\&\\s?inst\\.\\s?code\\.?|w\\&i\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WIC",
+     "regex": "cal\\.\\s?welf\\.\\s?\\&\\s?inst\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "CA",
+   "input": "Code Civ. Proc. § 335.1",
+   "expected": [
+    [
+     "CCP",
+     "335.1"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "BPC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:business\\s?and\\s?professions\\s?code\\.?|bus\\.\\s?\\&\\s?prof\\.\\s?code\\.?|b\\&p\\s?code\\.?|bpc\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "BPC",
+     "regex": "cal\\.\\s?bus\\.\\s?\\&\\s?prof\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCP",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:code\\s?of\\s?civil\\s?procedure\\.?|civ\\.\\s?proc\\.\\s?code\\.?|code\\s?civ\\.\\s?proc\\.?|c\\.c\\.p\\.?|ccp\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCP",
+     "regex": "cal\\.\\s?civ\\.\\s?proc\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CIV",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:civ\\.\\s?code\\.?|civil\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CIV",
+     "regex": "cal\\.\\s?civ\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "COM",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:u\\.\\s?com\\.\\s?code\\.?|commercial\\s?code\\.?|com\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "COM",
+     "regex": "cal\\.\\s?com\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CORP",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:corporations\\s?code\\.?|corp\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CORP",
+     "regex": "cal\\.\\s?corp\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EDC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:education\\s?code\\.?|educ\\.\\s?code\\.?|ed\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EDC",
+     "regex": "cal\\.\\s?educ\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "ELEC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:elections\\s?code\\.?|elec\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "ELEC",
+     "regex": "cal\\.\\s?elec\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EVID",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:evidence\\s?code\\.?|evid\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EVID",
+     "regex": "cal\\.\\s?evid\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAM",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:family\\s?code\\.?|fam\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAM",
+     "regex": "cal\\.\\s?fam\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FIN",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:financial\\s?code\\.?|fin\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FIN",
+     "regex": "cal\\.\\s?fin\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FGC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:fish\\s?and\\s?game\\s?code\\.?|fish\\s?\\&\\s?game\\s?code\\.?|fish\\s?\\&\\s?g\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FGC",
+     "regex": "cal\\.\\s?fish\\s?\\&\\s?game\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:food\\s?and\\s?agricultural\\s?code\\.?|food\\s?\\&\\s?agric\\.\\s?code\\.?|food\\s?\\&\\s?agr\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAC",
+     "regex": "cal\\.\\s?food\\s?\\&\\s?agric\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GOV",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:government\\s?code\\.?|govt\\.\\s?code\\.?|gov't\\s?code\\.?|gov\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GOV",
+     "regex": "cal\\.\\s?gov't\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HNC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:harbors\\s?and\\s?navigation\\s?code\\.?|harb\\.\\s?\\&\\s?nav\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HNC",
+     "regex": "cal\\.\\s?harb\\.\\s?\\&\\s?nav\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HSC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:health\\s?and\\s?safety\\s?code\\.?|health\\s?\\&\\s?safety\\s?code\\.?|health\\s?\\&\\s?saf\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HSC",
+     "regex": "cal\\.\\s?health\\s?\\&\\s?safety\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "INS",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:insurance\\s?code\\.?|ins\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "INS",
+     "regex": "cal\\.\\s?ins\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "LAB",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:lab\\.\\s?code\\.?|labor\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "LAB",
+     "regex": "cal\\.\\s?lab\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "MVC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:military\\s?and\\s?veterans\\s?code\\.?|mil\\.\\s?\\&\\s?vet\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "MVC",
+     "regex": "cal\\.\\s?mil\\.\\s?\\&\\s?vet\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PEN",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:pen\\.\\s?code\\.?|penal\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PEN",
+     "regex": "cal\\.\\s?penal\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PROB",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:probate\\s?code\\.?|prob\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PROB",
+     "regex": "cal\\.\\s?prob\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PCC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:public\\s?contract\\s?code\\.?|pub\\.\\s?contract\\s?code\\.?|pub\\.\\s?cont\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PCC",
+     "regex": "cal\\.\\s?pub\\.\\s?cont\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PRC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:public\\s?resources\\s?code\\.?|pub\\.\\s?resources\\s?code\\.?|pub\\.\\s?res\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PRC",
+     "regex": "cal\\.\\s?pub\\.\\s?res\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PUC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:public\\s?utilities\\s?code\\.?|pub\\.\\s?utilities\\s?code\\.?|pub\\.\\s?util\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PUC",
+     "regex": "cal\\.\\s?pub\\.\\s?util\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "RTC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:revenue\\s?and\\s?taxation\\s?code\\.?|rev\\.\\s?\\&\\s?tax\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "RTC",
+     "regex": "cal\\.\\s?rev\\.\\s?\\&\\s?tax\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "SHC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:streets\\s?and\\s?highways\\s?code\\.?|sts\\.\\s?\\&\\s?high\\.\\s?code\\.?|sts\\.\\s?\\&\\s?hy\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "SHC",
+     "regex": "cal\\.\\s?sts\\.\\s?\\&\\s?high\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "UIC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:unemployment\\s?insurance\\s?code\\.?|unemp\\.\\s?ins\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "UIC",
+     "regex": "cal\\.\\s?unemp\\.\\s?ins\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "VEH",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:vehicle\\s?code\\.?|veh\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "VEH",
+     "regex": "cal\\.\\s?veh\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WAT",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:wat\\.\\s?code\\.?|water\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WAT",
+     "regex": "cal\\.\\s?water\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WIC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:welfare\\s?and\\s?institutions\\s?code\\.?|welf\\.\\s?\\&\\s?inst\\.\\s?code\\.?|w\\&i\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WIC",
+     "regex": "cal\\.\\s?welf\\.\\s?\\&\\s?inst\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "CA",
+   "input": "CCP 335.1",
+   "expected": [
+    [
+     "CCP",
+     "335.1"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "BPC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:business\\s?and\\s?professions\\s?code\\.?|bus\\.\\s?\\&\\s?prof\\.\\s?code\\.?|b\\&p\\s?code\\.?|bpc\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "BPC",
+     "regex": "cal\\.\\s?bus\\.\\s?\\&\\s?prof\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCP",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:code\\s?of\\s?civil\\s?procedure\\.?|civ\\.\\s?proc\\.\\s?code\\.?|code\\s?civ\\.\\s?proc\\.?|c\\.c\\.p\\.?|ccp\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCP",
+     "regex": "cal\\.\\s?civ\\.\\s?proc\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CIV",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:civ\\.\\s?code\\.?|civil\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CIV",
+     "regex": "cal\\.\\s?civ\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "COM",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:u\\.\\s?com\\.\\s?code\\.?|commercial\\s?code\\.?|com\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "COM",
+     "regex": "cal\\.\\s?com\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CORP",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:corporations\\s?code\\.?|corp\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CORP",
+     "regex": "cal\\.\\s?corp\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EDC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:education\\s?code\\.?|educ\\.\\s?code\\.?|ed\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EDC",
+     "regex": "cal\\.\\s?educ\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "ELEC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:elections\\s?code\\.?|elec\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "ELEC",
+     "regex": "cal\\.\\s?elec\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EVID",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:evidence\\s?code\\.?|evid\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EVID",
+     "regex": "cal\\.\\s?evid\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAM",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:family\\s?code\\.?|fam\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAM",
+     "regex": "cal\\.\\s?fam\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FIN",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:financial\\s?code\\.?|fin\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FIN",
+     "regex": "cal\\.\\s?fin\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FGC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:fish\\s?and\\s?game\\s?code\\.?|fish\\s?\\&\\s?game\\s?code\\.?|fish\\s?\\&\\s?g\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FGC",
+     "regex": "cal\\.\\s?fish\\s?\\&\\s?game\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:food\\s?and\\s?agricultural\\s?code\\.?|food\\s?\\&\\s?agric\\.\\s?code\\.?|food\\s?\\&\\s?agr\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAC",
+     "regex": "cal\\.\\s?food\\s?\\&\\s?agric\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GOV",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:government\\s?code\\.?|govt\\.\\s?code\\.?|gov't\\s?code\\.?|gov\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GOV",
+     "regex": "cal\\.\\s?gov't\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HNC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:harbors\\s?and\\s?navigation\\s?code\\.?|harb\\.\\s?\\&\\s?nav\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HNC",
+     "regex": "cal\\.\\s?harb\\.\\s?\\&\\s?nav\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HSC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:health\\s?and\\s?safety\\s?code\\.?|health\\s?\\&\\s?safety\\s?code\\.?|health\\s?\\&\\s?saf\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HSC",
+     "regex": "cal\\.\\s?health\\s?\\&\\s?safety\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "INS",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:insurance\\s?code\\.?|ins\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "INS",
+     "regex": "cal\\.\\s?ins\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "LAB",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:lab\\.\\s?code\\.?|labor\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "LAB",
+     "regex": "cal\\.\\s?lab\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "MVC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:military\\s?and\\s?veterans\\s?code\\.?|mil\\.\\s?\\&\\s?vet\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "MVC",
+     "regex": "cal\\.\\s?mil\\.\\s?\\&\\s?vet\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PEN",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:pen\\.\\s?code\\.?|penal\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PEN",
+     "regex": "cal\\.\\s?penal\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PROB",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:probate\\s?code\\.?|prob\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PROB",
+     "regex": "cal\\.\\s?prob\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PCC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:public\\s?contract\\s?code\\.?|pub\\.\\s?contract\\s?code\\.?|pub\\.\\s?cont\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PCC",
+     "regex": "cal\\.\\s?pub\\.\\s?cont\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PRC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:public\\s?resources\\s?code\\.?|pub\\.\\s?resources\\s?code\\.?|pub\\.\\s?res\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PRC",
+     "regex": "cal\\.\\s?pub\\.\\s?res\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PUC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:public\\s?utilities\\s?code\\.?|pub\\.\\s?utilities\\s?code\\.?|pub\\.\\s?util\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PUC",
+     "regex": "cal\\.\\s?pub\\.\\s?util\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "RTC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:revenue\\s?and\\s?taxation\\s?code\\.?|rev\\.\\s?\\&\\s?tax\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "RTC",
+     "regex": "cal\\.\\s?rev\\.\\s?\\&\\s?tax\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "SHC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:streets\\s?and\\s?highways\\s?code\\.?|sts\\.\\s?\\&\\s?high\\.\\s?code\\.?|sts\\.\\s?\\&\\s?hy\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "SHC",
+     "regex": "cal\\.\\s?sts\\.\\s?\\&\\s?high\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "UIC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:unemployment\\s?insurance\\s?code\\.?|unemp\\.\\s?ins\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "UIC",
+     "regex": "cal\\.\\s?unemp\\.\\s?ins\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "VEH",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:vehicle\\s?code\\.?|veh\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "VEH",
+     "regex": "cal\\.\\s?veh\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WAT",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:wat\\.\\s?code\\.?|water\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WAT",
+     "regex": "cal\\.\\s?water\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WIC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:welfare\\s?and\\s?institutions\\s?code\\.?|welf\\.\\s?\\&\\s?inst\\.\\s?code\\.?|w\\&i\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WIC",
+     "regex": "cal\\.\\s?welf\\.\\s?\\&\\s?inst\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "CA",
+   "input": "Pen. Code, § 187, subd. (a)",
+   "expected": [
+    [
+     "PEN",
+     "187"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "BPC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:business\\s?and\\s?professions\\s?code\\.?|bus\\.\\s?\\&\\s?prof\\.\\s?code\\.?|b\\&p\\s?code\\.?|bpc\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "BPC",
+     "regex": "cal\\.\\s?bus\\.\\s?\\&\\s?prof\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCP",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:code\\s?of\\s?civil\\s?procedure\\.?|civ\\.\\s?proc\\.\\s?code\\.?|code\\s?civ\\.\\s?proc\\.?|c\\.c\\.p\\.?|ccp\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCP",
+     "regex": "cal\\.\\s?civ\\.\\s?proc\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CIV",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:civ\\.\\s?code\\.?|civil\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CIV",
+     "regex": "cal\\.\\s?civ\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "COM",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:u\\.\\s?com\\.\\s?code\\.?|commercial\\s?code\\.?|com\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "COM",
+     "regex": "cal\\.\\s?com\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CORP",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:corporations\\s?code\\.?|corp\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CORP",
+     "regex": "cal\\.\\s?corp\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EDC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:education\\s?code\\.?|educ\\.\\s?code\\.?|ed\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EDC",
+     "regex": "cal\\.\\s?educ\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "ELEC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:elections\\s?code\\.?|elec\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "ELEC",
+     "regex": "cal\\.\\s?elec\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EVID",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:evidence\\s?code\\.?|evid\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EVID",
+     "regex": "cal\\.\\s?evid\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAM",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:family\\s?code\\.?|fam\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAM",
+     "regex": "cal\\.\\s?fam\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FIN",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:financial\\s?code\\.?|fin\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FIN",
+     "regex": "cal\\.\\s?fin\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FGC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:fish\\s?and\\s?game\\s?code\\.?|fish\\s?\\&\\s?game\\s?code\\.?|fish\\s?\\&\\s?g\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FGC",
+     "regex": "cal\\.\\s?fish\\s?\\&\\s?game\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:food\\s?and\\s?agricultural\\s?code\\.?|food\\s?\\&\\s?agric\\.\\s?code\\.?|food\\s?\\&\\s?agr\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAC",
+     "regex": "cal\\.\\s?food\\s?\\&\\s?agric\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GOV",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:government\\s?code\\.?|govt\\.\\s?code\\.?|gov't\\s?code\\.?|gov\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GOV",
+     "regex": "cal\\.\\s?gov't\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HNC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:harbors\\s?and\\s?navigation\\s?code\\.?|harb\\.\\s?\\&\\s?nav\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HNC",
+     "regex": "cal\\.\\s?harb\\.\\s?\\&\\s?nav\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HSC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:health\\s?and\\s?safety\\s?code\\.?|health\\s?\\&\\s?safety\\s?code\\.?|health\\s?\\&\\s?saf\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HSC",
+     "regex": "cal\\.\\s?health\\s?\\&\\s?safety\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "INS",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:insurance\\s?code\\.?|ins\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "INS",
+     "regex": "cal\\.\\s?ins\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "LAB",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:lab\\.\\s?code\\.?|labor\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "LAB",
+     "regex": "cal\\.\\s?lab\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "MVC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:military\\s?and\\s?veterans\\s?code\\.?|mil\\.\\s?\\&\\s?vet\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "MVC",
+     "regex": "cal\\.\\s?mil\\.\\s?\\&\\s?vet\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PEN",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:pen\\.\\s?code\\.?|penal\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PEN",
+     "regex": "cal\\.\\s?penal\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PROB",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:probate\\s?code\\.?|prob\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PROB",
+     "regex": "cal\\.\\s?prob\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PCC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:public\\s?contract\\s?code\\.?|pub\\.\\s?contract\\s?code\\.?|pub\\.\\s?cont\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PCC",
+     "regex": "cal\\.\\s?pub\\.\\s?cont\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PRC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:public\\s?resources\\s?code\\.?|pub\\.\\s?resources\\s?code\\.?|pub\\.\\s?res\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PRC",
+     "regex": "cal\\.\\s?pub\\.\\s?res\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PUC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:public\\s?utilities\\s?code\\.?|pub\\.\\s?utilities\\s?code\\.?|pub\\.\\s?util\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PUC",
+     "regex": "cal\\.\\s?pub\\.\\s?util\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "RTC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:revenue\\s?and\\s?taxation\\s?code\\.?|rev\\.\\s?\\&\\s?tax\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "RTC",
+     "regex": "cal\\.\\s?rev\\.\\s?\\&\\s?tax\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "SHC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:streets\\s?and\\s?highways\\s?code\\.?|sts\\.\\s?\\&\\s?high\\.\\s?code\\.?|sts\\.\\s?\\&\\s?hy\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "SHC",
+     "regex": "cal\\.\\s?sts\\.\\s?\\&\\s?high\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "UIC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:unemployment\\s?insurance\\s?code\\.?|unemp\\.\\s?ins\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "UIC",
+     "regex": "cal\\.\\s?unemp\\.\\s?ins\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "VEH",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:vehicle\\s?code\\.?|veh\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "VEH",
+     "regex": "cal\\.\\s?veh\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WAT",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:wat\\.\\s?code\\.?|water\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WAT",
+     "regex": "cal\\.\\s?water\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WIC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:welfare\\s?and\\s?institutions\\s?code\\.?|welf\\.\\s?\\&\\s?inst\\.\\s?code\\.?|w\\&i\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WIC",
+     "regex": "cal\\.\\s?welf\\.\\s?\\&\\s?inst\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "CA",
+   "input": "Cal. Penal Code § 187(a)",
+   "expected": [
+    [
+     "PEN",
+     "187"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "BPC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:business\\s?and\\s?professions\\s?code\\.?|bus\\.\\s?\\&\\s?prof\\.\\s?code\\.?|b\\&p\\s?code\\.?|bpc\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "BPC",
+     "regex": "cal\\.\\s?bus\\.\\s?\\&\\s?prof\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCP",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:code\\s?of\\s?civil\\s?procedure\\.?|civ\\.\\s?proc\\.\\s?code\\.?|code\\s?civ\\.\\s?proc\\.?|c\\.c\\.p\\.?|ccp\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCP",
+     "regex": "cal\\.\\s?civ\\.\\s?proc\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CIV",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:civ\\.\\s?code\\.?|civil\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CIV",
+     "regex": "cal\\.\\s?civ\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "COM",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:u\\.\\s?com\\.\\s?code\\.?|commercial\\s?code\\.?|com\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "COM",
+     "regex": "cal\\.\\s?com\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CORP",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:corporations\\s?code\\.?|corp\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CORP",
+     "regex": "cal\\.\\s?corp\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EDC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:education\\s?code\\.?|educ\\.\\s?code\\.?|ed\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EDC",
+     "regex": "cal\\.\\s?educ\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "ELEC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:elections\\s?code\\.?|elec\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "ELEC",
+     "regex": "cal\\.\\s?elec\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EVID",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:evidence\\s?code\\.?|evid\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EVID",
+     "regex": "cal\\.\\s?evid\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAM",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:family\\s?code\\.?|fam\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAM",
+     "regex": "cal\\.\\s?fam\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FIN",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:financial\\s?code\\.?|fin\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FIN",
+     "regex": "cal\\.\\s?fin\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FGC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:fish\\s?and\\s?game\\s?code\\.?|fish\\s?\\&\\s?game\\s?code\\.?|fish\\s?\\&\\s?g\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FGC",
+     "regex": "cal\\.\\s?fish\\s?\\&\\s?game\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:food\\s?and\\s?agricultural\\s?code\\.?|food\\s?\\&\\s?agric\\.\\s?code\\.?|food\\s?\\&\\s?agr\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAC",
+     "regex": "cal\\.\\s?food\\s?\\&\\s?agric\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GOV",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:government\\s?code\\.?|govt\\.\\s?code\\.?|gov't\\s?code\\.?|gov\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GOV",
+     "regex": "cal\\.\\s?gov't\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HNC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:harbors\\s?and\\s?navigation\\s?code\\.?|harb\\.\\s?\\&\\s?nav\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HNC",
+     "regex": "cal\\.\\s?harb\\.\\s?\\&\\s?nav\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HSC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:health\\s?and\\s?safety\\s?code\\.?|health\\s?\\&\\s?safety\\s?code\\.?|health\\s?\\&\\s?saf\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HSC",
+     "regex": "cal\\.\\s?health\\s?\\&\\s?safety\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "INS",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:insurance\\s?code\\.?|ins\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "INS",
+     "regex": "cal\\.\\s?ins\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "LAB",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:lab\\.\\s?code\\.?|labor\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "LAB",
+     "regex": "cal\\.\\s?lab\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "MVC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:military\\s?and\\s?veterans\\s?code\\.?|mil\\.\\s?\\&\\s?vet\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "MVC",
+     "regex": "cal\\.\\s?mil\\.\\s?\\&\\s?vet\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PEN",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:pen\\.\\s?code\\.?|penal\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PEN",
+     "regex": "cal\\.\\s?penal\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PROB",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:probate\\s?code\\.?|prob\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PROB",
+     "regex": "cal\\.\\s?prob\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PCC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:public\\s?contract\\s?code\\.?|pub\\.\\s?contract\\s?code\\.?|pub\\.\\s?cont\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PCC",
+     "regex": "cal\\.\\s?pub\\.\\s?cont\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PRC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:public\\s?resources\\s?code\\.?|pub\\.\\s?resources\\s?code\\.?|pub\\.\\s?res\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PRC",
+     "regex": "cal\\.\\s?pub\\.\\s?res\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PUC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:public\\s?utilities\\s?code\\.?|pub\\.\\s?utilities\\s?code\\.?|pub\\.\\s?util\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PUC",
+     "regex": "cal\\.\\s?pub\\.\\s?util\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "RTC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:revenue\\s?and\\s?taxation\\s?code\\.?|rev\\.\\s?\\&\\s?tax\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "RTC",
+     "regex": "cal\\.\\s?rev\\.\\s?\\&\\s?tax\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "SHC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:streets\\s?and\\s?highways\\s?code\\.?|sts\\.\\s?\\&\\s?high\\.\\s?code\\.?|sts\\.\\s?\\&\\s?hy\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "SHC",
+     "regex": "cal\\.\\s?sts\\.\\s?\\&\\s?high\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "UIC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:unemployment\\s?insurance\\s?code\\.?|unemp\\.\\s?ins\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "UIC",
+     "regex": "cal\\.\\s?unemp\\.\\s?ins\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "VEH",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:vehicle\\s?code\\.?|veh\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "VEH",
+     "regex": "cal\\.\\s?veh\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WAT",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:wat\\.\\s?code\\.?|water\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WAT",
+     "regex": "cal\\.\\s?water\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WIC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:welfare\\s?and\\s?institutions\\s?code\\.?|welf\\.\\s?\\&\\s?inst\\.\\s?code\\.?|w\\&i\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WIC",
+     "regex": "cal\\.\\s?welf\\.\\s?\\&\\s?inst\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "CA",
+   "input": "Civ. Code § 1714",
+   "expected": [
+    [
+     "CIV",
+     "1714"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "BPC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:business\\s?and\\s?professions\\s?code\\.?|bus\\.\\s?\\&\\s?prof\\.\\s?code\\.?|b\\&p\\s?code\\.?|bpc\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "BPC",
+     "regex": "cal\\.\\s?bus\\.\\s?\\&\\s?prof\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCP",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:code\\s?of\\s?civil\\s?procedure\\.?|civ\\.\\s?proc\\.\\s?code\\.?|code\\s?civ\\.\\s?proc\\.?|c\\.c\\.p\\.?|ccp\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCP",
+     "regex": "cal\\.\\s?civ\\.\\s?proc\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CIV",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:civ\\.\\s?code\\.?|civil\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CIV",
+     "regex": "cal\\.\\s?civ\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "COM",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:u\\.\\s?com\\.\\s?code\\.?|commercial\\s?code\\.?|com\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "COM",
+     "regex": "cal\\.\\s?com\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CORP",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:corporations\\s?code\\.?|corp\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CORP",
+     "regex": "cal\\.\\s?corp\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EDC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:education\\s?code\\.?|educ\\.\\s?code\\.?|ed\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EDC",
+     "regex": "cal\\.\\s?educ\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "ELEC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:elections\\s?code\\.?|elec\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "ELEC",
+     "regex": "cal\\.\\s?elec\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EVID",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:evidence\\s?code\\.?|evid\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EVID",
+     "regex": "cal\\.\\s?evid\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAM",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:family\\s?code\\.?|fam\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAM",
+     "regex": "cal\\.\\s?fam\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FIN",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:financial\\s?code\\.?|fin\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FIN",
+     "regex": "cal\\.\\s?fin\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FGC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:fish\\s?and\\s?game\\s?code\\.?|fish\\s?\\&\\s?game\\s?code\\.?|fish\\s?\\&\\s?g\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FGC",
+     "regex": "cal\\.\\s?fish\\s?\\&\\s?game\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:food\\s?and\\s?agricultural\\s?code\\.?|food\\s?\\&\\s?agric\\.\\s?code\\.?|food\\s?\\&\\s?agr\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAC",
+     "regex": "cal\\.\\s?food\\s?\\&\\s?agric\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GOV",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:government\\s?code\\.?|govt\\.\\s?code\\.?|gov't\\s?code\\.?|gov\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GOV",
+     "regex": "cal\\.\\s?gov't\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HNC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:harbors\\s?and\\s?navigation\\s?code\\.?|harb\\.\\s?\\&\\s?nav\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HNC",
+     "regex": "cal\\.\\s?harb\\.\\s?\\&\\s?nav\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HSC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:health\\s?and\\s?safety\\s?code\\.?|health\\s?\\&\\s?safety\\s?code\\.?|health\\s?\\&\\s?saf\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HSC",
+     "regex": "cal\\.\\s?health\\s?\\&\\s?safety\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "INS",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:insurance\\s?code\\.?|ins\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "INS",
+     "regex": "cal\\.\\s?ins\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "LAB",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:lab\\.\\s?code\\.?|labor\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "LAB",
+     "regex": "cal\\.\\s?lab\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "MVC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:military\\s?and\\s?veterans\\s?code\\.?|mil\\.\\s?\\&\\s?vet\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "MVC",
+     "regex": "cal\\.\\s?mil\\.\\s?\\&\\s?vet\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PEN",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:pen\\.\\s?code\\.?|penal\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PEN",
+     "regex": "cal\\.\\s?penal\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PROB",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:probate\\s?code\\.?|prob\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PROB",
+     "regex": "cal\\.\\s?prob\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PCC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:public\\s?contract\\s?code\\.?|pub\\.\\s?contract\\s?code\\.?|pub\\.\\s?cont\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PCC",
+     "regex": "cal\\.\\s?pub\\.\\s?cont\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PRC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:public\\s?resources\\s?code\\.?|pub\\.\\s?resources\\s?code\\.?|pub\\.\\s?res\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PRC",
+     "regex": "cal\\.\\s?pub\\.\\s?res\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PUC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:public\\s?utilities\\s?code\\.?|pub\\.\\s?utilities\\s?code\\.?|pub\\.\\s?util\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PUC",
+     "regex": "cal\\.\\s?pub\\.\\s?util\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "RTC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:revenue\\s?and\\s?taxation\\s?code\\.?|rev\\.\\s?\\&\\s?tax\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "RTC",
+     "regex": "cal\\.\\s?rev\\.\\s?\\&\\s?tax\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "SHC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:streets\\s?and\\s?highways\\s?code\\.?|sts\\.\\s?\\&\\s?high\\.\\s?code\\.?|sts\\.\\s?\\&\\s?hy\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "SHC",
+     "regex": "cal\\.\\s?sts\\.\\s?\\&\\s?high\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "UIC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:unemployment\\s?insurance\\s?code\\.?|unemp\\.\\s?ins\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "UIC",
+     "regex": "cal\\.\\s?unemp\\.\\s?ins\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "VEH",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:vehicle\\s?code\\.?|veh\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "VEH",
+     "regex": "cal\\.\\s?veh\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WAT",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:wat\\.\\s?code\\.?|water\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WAT",
+     "regex": "cal\\.\\s?water\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WIC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:welfare\\s?and\\s?institutions\\s?code\\.?|welf\\.\\s?\\&\\s?inst\\.\\s?code\\.?|w\\&i\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WIC",
+     "regex": "cal\\.\\s?welf\\.\\s?\\&\\s?inst\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "CA",
+   "input": "Gov't Code § 12940",
+   "expected": [
+    [
+     "GOV",
+     "12940"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "BPC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:business\\s?and\\s?professions\\s?code\\.?|bus\\.\\s?\\&\\s?prof\\.\\s?code\\.?|b\\&p\\s?code\\.?|bpc\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "BPC",
+     "regex": "cal\\.\\s?bus\\.\\s?\\&\\s?prof\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCP",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:code\\s?of\\s?civil\\s?procedure\\.?|civ\\.\\s?proc\\.\\s?code\\.?|code\\s?civ\\.\\s?proc\\.?|c\\.c\\.p\\.?|ccp\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CCP",
+     "regex": "cal\\.\\s?civ\\.\\s?proc\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CIV",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:civ\\.\\s?code\\.?|civil\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CIV",
+     "regex": "cal\\.\\s?civ\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "COM",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:u\\.\\s?com\\.\\s?code\\.?|commercial\\s?code\\.?|com\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "COM",
+     "regex": "cal\\.\\s?com\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CORP",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:corporations\\s?code\\.?|corp\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "CORP",
+     "regex": "cal\\.\\s?corp\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EDC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:education\\s?code\\.?|educ\\.\\s?code\\.?|ed\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EDC",
+     "regex": "cal\\.\\s?educ\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "ELEC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:elections\\s?code\\.?|elec\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "ELEC",
+     "regex": "cal\\.\\s?elec\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EVID",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:evidence\\s?code\\.?|evid\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "EVID",
+     "regex": "cal\\.\\s?evid\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAM",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:family\\s?code\\.?|fam\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAM",
+     "regex": "cal\\.\\s?fam\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FIN",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:financial\\s?code\\.?|fin\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FIN",
+     "regex": "cal\\.\\s?fin\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FGC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:fish\\s?and\\s?game\\s?code\\.?|fish\\s?\\&\\s?game\\s?code\\.?|fish\\s?\\&\\s?g\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FGC",
+     "regex": "cal\\.\\s?fish\\s?\\&\\s?game\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:food\\s?and\\s?agricultural\\s?code\\.?|food\\s?\\&\\s?agric\\.\\s?code\\.?|food\\s?\\&\\s?agr\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "FAC",
+     "regex": "cal\\.\\s?food\\s?\\&\\s?agric\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GOV",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:government\\s?code\\.?|govt\\.\\s?code\\.?|gov't\\s?code\\.?|gov\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GOV",
+     "regex": "cal\\.\\s?gov't\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HNC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:harbors\\s?and\\s?navigation\\s?code\\.?|harb\\.\\s?\\&\\s?nav\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HNC",
+     "regex": "cal\\.\\s?harb\\.\\s?\\&\\s?nav\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HSC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:health\\s?and\\s?safety\\s?code\\.?|health\\s?\\&\\s?safety\\s?code\\.?|health\\s?\\&\\s?saf\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "HSC",
+     "regex": "cal\\.\\s?health\\s?\\&\\s?safety\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "INS",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:insurance\\s?code\\.?|ins\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "INS",
+     "regex": "cal\\.\\s?ins\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "LAB",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:lab\\.\\s?code\\.?|labor\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "LAB",
+     "regex": "cal\\.\\s?lab\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "MVC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:military\\s?and\\s?veterans\\s?code\\.?|mil\\.\\s?\\&\\s?vet\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "MVC",
+     "regex": "cal\\.\\s?mil\\.\\s?\\&\\s?vet\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PEN",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:pen\\.\\s?code\\.?|penal\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PEN",
+     "regex": "cal\\.\\s?penal\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PROB",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:probate\\s?code\\.?|prob\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PROB",
+     "regex": "cal\\.\\s?prob\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PCC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:public\\s?contract\\s?code\\.?|pub\\.\\s?contract\\s?code\\.?|pub\\.\\s?cont\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PCC",
+     "regex": "cal\\.\\s?pub\\.\\s?cont\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PRC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:public\\s?resources\\s?code\\.?|pub\\.\\s?resources\\s?code\\.?|pub\\.\\s?res\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PRC",
+     "regex": "cal\\.\\s?pub\\.\\s?res\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PUC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:public\\s?utilities\\s?code\\.?|pub\\.\\s?utilities\\s?code\\.?|pub\\.\\s?util\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "PUC",
+     "regex": "cal\\.\\s?pub\\.\\s?util\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "RTC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:revenue\\s?and\\s?taxation\\s?code\\.?|rev\\.\\s?\\&\\s?tax\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "RTC",
+     "regex": "cal\\.\\s?rev\\.\\s?\\&\\s?tax\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "SHC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:streets\\s?and\\s?highways\\s?code\\.?|sts\\.\\s?\\&\\s?high\\.\\s?code\\.?|sts\\.\\s?\\&\\s?hy\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "SHC",
+     "regex": "cal\\.\\s?sts\\.\\s?\\&\\s?high\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "UIC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:unemployment\\s?insurance\\s?code\\.?|unemp\\.\\s?ins\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "UIC",
+     "regex": "cal\\.\\s?unemp\\.\\s?ins\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "VEH",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:vehicle\\s?code\\.?|veh\\.\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "VEH",
+     "regex": "cal\\.\\s?veh\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WAT",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:wat\\.\\s?code\\.?|water\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WAT",
+     "regex": "cal\\.\\s?water\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WIC",
+     "regex": "(?:cal(?:ifornia)?\\.?\\s?)?(?:welfare\\s?and\\s?institutions\\s?code\\.?|welf\\.\\s?\\&\\s?inst\\.\\s?code\\.?|w\\&i\\s?code\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "WIC",
+     "regex": "cal\\.\\s?welf\\.\\s?\\&\\s?inst\\.\\s?code\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "IL",
+   "input": "735 ILCS 5/13-202",
+   "expected": [
+    [
+     "ILCS",
+     "735:5/13-202"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "ILCS",
+     "regex": "(\\d+)\\s?ilcs\\s?((?:\\d+(?:\\.\\d+)?)/[0-9a-z][0-9a-z.\\-]*)",
+     "number": "\\1:\\2"
+    },
+    {
+     "code": "ILCS",
+     "regex": "(\\d+)\\s?ill\\.\\s?comp\\.\\s?stat\\.\\s?(?:ann\\.\\s?)?(?:§\\s?)?((?:\\d+(?:\\.\\d+)?)/[0-9a-z][0-9a-z.\\-]*)",
+     "number": "\\1:\\2"
+    },
+    {
+     "code": "ILCS",
+     "regex": "([0-9a-z][0-9a-z.\\-]*)\\s?ill\\.\\s?comp\\.\\s?stat\\.\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1:\\2"
+    }
+   ]
+  },
+  {
+   "state": "IL",
+   "input": "735 Ill. Comp. Stat. 5/13-202",
+   "expected": [
+    [
+     "ILCS",
+     "735:5/13-202"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "ILCS",
+     "regex": "(\\d+)\\s?ilcs\\s?((?:\\d+(?:\\.\\d+)?)/[0-9a-z][0-9a-z.\\-]*)",
+     "number": "\\1:\\2"
+    },
+    {
+     "code": "ILCS",
+     "regex": "(\\d+)\\s?ill\\.\\s?comp\\.\\s?stat\\.\\s?(?:ann\\.\\s?)?(?:§\\s?)?((?:\\d+(?:\\.\\d+)?)/[0-9a-z][0-9a-z.\\-]*)",
+     "number": "\\1:\\2"
+    },
+    {
+     "code": "ILCS",
+     "regex": "([0-9a-z][0-9a-z.\\-]*)\\s?ill\\.\\s?comp\\.\\s?stat\\.\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1:\\2"
+    }
+   ]
+  },
+  {
+   "state": "IL",
+   "input": "735 ILCS 5/13-202.1(a)",
+   "expected": [
+    [
+     "ILCS",
+     "735:5/13-202.1"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "ILCS",
+     "regex": "(\\d+)\\s?ilcs\\s?((?:\\d+(?:\\.\\d+)?)/[0-9a-z][0-9a-z.\\-]*)",
+     "number": "\\1:\\2"
+    },
+    {
+     "code": "ILCS",
+     "regex": "(\\d+)\\s?ill\\.\\s?comp\\.\\s?stat\\.\\s?(?:ann\\.\\s?)?(?:§\\s?)?((?:\\d+(?:\\.\\d+)?)/[0-9a-z][0-9a-z.\\-]*)",
+     "number": "\\1:\\2"
+    },
+    {
+     "code": "ILCS",
+     "regex": "([0-9a-z][0-9a-z.\\-]*)\\s?ill\\.\\s?comp\\.\\s?stat\\.\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1:\\2"
+    }
+   ]
+  },
+  {
+   "state": "MA",
+   "input": "Mass. Gen. Laws ch. 260, § 2A",
+   "expected": [
+    [
+     "MGL",
+     "260:2a"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "MGL",
+     "regex": "(?:mass\\.?\\s?gen\\.?\\s?laws(?:\\s?ann\\.?)?|m\\.?\\s?g\\.?\\s?l\\.?(?:\\s?a\\.?)?|g\\.?\\s?l\\.?|alm\\s?gl)\\s?(?:c\\.|ch\\.|chapter)\\s?([0-9]+[a-z]{0,2}),?\\s?(?:§|s\\.)\\s?([0-9][0-9a-z.\\-/]*)",
+     "number": "\\1:\\2"
+    },
+    {
+     "code": "MGL",
+     "regex": "mass\\.\\s?gen\\.\\s?laws\\s?ch\\.\\s?([0-9a-z][0-9a-z.\\-]*),\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1:\\2"
+    }
+   ]
+  },
+  {
+   "state": "MA",
+   "input": "M.G.L. c. 93A, § 9",
+   "expected": [
+    [
+     "MGL",
+     "93a:9"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "MGL",
+     "regex": "(?:mass\\.?\\s?gen\\.?\\s?laws(?:\\s?ann\\.?)?|m\\.?\\s?g\\.?\\s?l\\.?(?:\\s?a\\.?)?|g\\.?\\s?l\\.?|alm\\s?gl)\\s?(?:c\\.|ch\\.|chapter)\\s?([0-9]+[a-z]{0,2}),?\\s?(?:§|s\\.)\\s?([0-9][0-9a-z.\\-/]*)",
+     "number": "\\1:\\2"
+    },
+    {
+     "code": "MGL",
+     "regex": "mass\\.\\s?gen\\.\\s?laws\\s?ch\\.\\s?([0-9a-z][0-9a-z.\\-]*),\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1:\\2"
+    }
+   ]
+  },
+  {
+   "state": "MA",
+   "input": "G.L. c. 260, s. 2A",
+   "expected": [
+    [
+     "MGL",
+     "260:2a"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "MGL",
+     "regex": "(?:mass\\.?\\s?gen\\.?\\s?laws(?:\\s?ann\\.?)?|m\\.?\\s?g\\.?\\s?l\\.?(?:\\s?a\\.?)?|g\\.?\\s?l\\.?|alm\\s?gl)\\s?(?:c\\.|ch\\.|chapter)\\s?([0-9]+[a-z]{0,2}),?\\s?(?:§|s\\.)\\s?([0-9][0-9a-z.\\-/]*)",
+     "number": "\\1:\\2"
+    },
+    {
+     "code": "MGL",
+     "regex": "mass\\.\\s?gen\\.\\s?laws\\s?ch\\.\\s?([0-9a-z][0-9a-z.\\-]*),\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1:\\2"
+    }
+   ]
+  },
+  {
+   "state": "MA",
+   "input": "MGL ch. 260 § 4C1/2",
+   "expected": [
+    [
+     "MGL",
+     "260:4c1/2"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "MGL",
+     "regex": "(?:mass\\.?\\s?gen\\.?\\s?laws(?:\\s?ann\\.?)?|m\\.?\\s?g\\.?\\s?l\\.?(?:\\s?a\\.?)?|g\\.?\\s?l\\.?|alm\\s?gl)\\s?(?:c\\.|ch\\.|chapter)\\s?([0-9]+[a-z]{0,2}),?\\s?(?:§|s\\.)\\s?([0-9][0-9a-z.\\-/]*)",
+     "number": "\\1:\\2"
+    },
+    {
+     "code": "MGL",
+     "regex": "mass\\.\\s?gen\\.\\s?laws\\s?ch\\.\\s?([0-9a-z][0-9a-z.\\-]*),\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1:\\2"
+    }
+   ]
+  },
+  {
+   "state": "MD",
+   "input": "Md. Code Ann., Cts. & Jud. Proc. § 5-101",
+   "expected": [
+    [
+     "GCJ",
+     "5-101"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "GAG",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:agriculture\\.?|agric\\.?|ag\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GAG",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?agric\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GAB",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:alcoholic\\s?beverages\\s?and\\s?cannabis\\.?|alc\\.\\s?bev\\.\\s?\\&\\s?cannabis\\.?|alc\\.\\s?bev\\.?|ab\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GAB",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?alc\\.\\s?bev\\.\\s?\\&\\s?cannabis\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GBO",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:business\\s?occupations\\s?and\\s?professions\\.?|bus\\.\\s?occ\\.\\s?\\&\\s?prof\\.?|bop\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GBO",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?bus\\.\\s?occ\\.\\s?\\&\\s?prof\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GBR",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:business\\s?regulation\\.?|bus\\.\\s?reg\\.?|br\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GBR",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?bus\\.\\s?reg\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCL",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:commercial\\s?law\\.?|com\\.\\s?law\\.?|cl\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCL",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?com\\.\\s?law\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCA",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:corporations\\s?and\\s?associations\\.?|corps\\.\\s?\\&\\s?ass'ns\\.?|ca\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCA",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?corps\\.\\s?\\&\\s?ass'ns\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCS",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:correctional\\s?services\\.?|corr\\.\\s?servs\\.?|cs\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCS",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?corr\\.\\s?servs\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCJ",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:courts\\s?and\\s?judicial\\s?proceedings\\.?|courts\\s?\\&\\s?jud\\.\\s?proc\\.?|cts\\.\\s?\\&\\s?jud\\.\\s?proc\\.?|cjp\\.?|cj\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCJ",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?cts\\.\\s?\\&\\s?jud\\.\\s?proc\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCR",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:criminal\\s?law\\.?|crim\\.\\s?law\\.?|cr\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCR",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?crim\\.\\s?law\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCP",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:criminal\\s?procedure\\.?|crim\\.\\s?proc\\.?|cp\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCP",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?crim\\.\\s?proc\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GEC",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:economic\\s?development\\.?|econ\\.\\s?dev\\.?|ec\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GEC",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?econ\\.\\s?dev\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GED",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:education\\.?|educ\\.?|ed\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GED",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?educ\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GEL",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:election\\s?law\\.?|elec\\.\\s?law\\.?|el\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GEL",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?elec\\.\\s?law\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GEN",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:environment\\.?|env't\\.?|envir\\.?|en\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GEN",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?env't\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GET",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:estates\\s?and\\s?trusts\\.?|est\\.\\s?\\&\\s?trusts\\.?|et\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GET",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?est\\.\\s?\\&\\s?trusts\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GFL",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:family\\s?law\\.?|fam\\.\\s?law\\.?|fl\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GFL",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?fam\\.\\s?law\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GFI",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:financial\\s?institutions\\.?|fin\\.\\s?inst\\.?|fi\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GFI",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?fin\\.\\s?inst\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GGP",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:general\\s?provisions\\.?|gen\\.\\s?provis\\.?|gp\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GGP",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?gen\\.\\s?provis\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GHG",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:health\\s?\\-\\s?general\\.?|health\\s?general\\.?|health\\-general\\.?|health\\-gen\\.?|hg\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GHG",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?health\\-gen\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GHO",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:health\\s?occupations\\.?|health\\s?occ\\.?|ho\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GHO",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?health\\s?occ\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GHS",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:housing\\s?and\\s?community\\s?development\\.?|hous\\.\\s?\\&\\s?cmty\\.\\s?dev\\.?|hcd\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GHS",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?hous\\.\\s?\\&\\s?cmty\\.\\s?dev\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GHU",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:human\\s?services\\.?|hum\\.\\s?servs\\.?|hs\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GHU",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?hum\\.\\s?servs\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GIN",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:insurance\\.?|ins\\.?|in\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GIN",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?ins\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GLE",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:labor\\s?and\\s?employment\\.?|lab\\.\\s?\\&\\s?empl\\.?|le\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GLE",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?lab\\.\\s?\\&\\s?empl\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GLU",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:land\\s?use\\.?|lu\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GLU",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?land\\s?use\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GLG",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:local\\s?government\\.?|local\\s?gov't\\.?|lg\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GLG",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?local\\s?gov't\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GNR",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:natural\\s?resources\\.?|nat\\.\\s?res\\.?|nr\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GNR",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?nat\\.\\s?res\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GPS",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:public\\s?safety\\.?|pub\\.\\s?safety\\.?|ps\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GPS",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?pub\\.\\s?safety\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GPU",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:public\\s?utilities\\.?|pub\\.\\s?util\\.?|pua\\.?|pu\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GPU",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?pub\\.\\s?util\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GRP",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:real\\s?property\\.?|real\\s?prop\\.?|rp\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GRP",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?real\\s?prop\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GSF",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:state\\s?finance\\s?and\\s?procurement\\.?|state\\s?fin\\.\\s?\\&\\s?proc\\.?|sfp\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GSF",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?state\\s?fin\\.\\s?\\&\\s?proc\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GSG",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:state\\s?government\\.?|state\\s?gov't\\.?|sg\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GSG",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?state\\s?gov't\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GSP",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:state\\s?personnel\\s?and\\s?pensions\\.?|state\\s?pers\\.\\s?\\&\\s?pens\\.?|spp\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GSP",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?state\\s?pers\\.\\s?\\&\\s?pens\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GTG",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:tax\\s?\\-\\s?general\\.?|tax\\s?general\\.?|tax\\-general\\.?|tax\\-gen\\.?|tg\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GTG",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?tax\\-gen\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GTP",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:tax\\s?\\-\\s?property\\.?|tax\\s?property\\.?|tax\\-property\\.?|tax\\-prop\\.?|tp\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GTP",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?tax\\-prop\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GTR",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:transportation\\.?|transp\\.?|tr\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GTR",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?transp\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "MD",
+   "input": "CJP § 5-101",
+   "expected": [
+    [
+     "GCJ",
+     "5-101"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "GAG",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:agriculture\\.?|agric\\.?|ag\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GAG",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?agric\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GAB",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:alcoholic\\s?beverages\\s?and\\s?cannabis\\.?|alc\\.\\s?bev\\.\\s?\\&\\s?cannabis\\.?|alc\\.\\s?bev\\.?|ab\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GAB",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?alc\\.\\s?bev\\.\\s?\\&\\s?cannabis\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GBO",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:business\\s?occupations\\s?and\\s?professions\\.?|bus\\.\\s?occ\\.\\s?\\&\\s?prof\\.?|bop\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GBO",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?bus\\.\\s?occ\\.\\s?\\&\\s?prof\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GBR",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:business\\s?regulation\\.?|bus\\.\\s?reg\\.?|br\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GBR",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?bus\\.\\s?reg\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCL",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:commercial\\s?law\\.?|com\\.\\s?law\\.?|cl\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCL",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?com\\.\\s?law\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCA",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:corporations\\s?and\\s?associations\\.?|corps\\.\\s?\\&\\s?ass'ns\\.?|ca\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCA",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?corps\\.\\s?\\&\\s?ass'ns\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCS",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:correctional\\s?services\\.?|corr\\.\\s?servs\\.?|cs\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCS",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?corr\\.\\s?servs\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCJ",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:courts\\s?and\\s?judicial\\s?proceedings\\.?|courts\\s?\\&\\s?jud\\.\\s?proc\\.?|cts\\.\\s?\\&\\s?jud\\.\\s?proc\\.?|cjp\\.?|cj\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCJ",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?cts\\.\\s?\\&\\s?jud\\.\\s?proc\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCR",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:criminal\\s?law\\.?|crim\\.\\s?law\\.?|cr\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCR",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?crim\\.\\s?law\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCP",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:criminal\\s?procedure\\.?|crim\\.\\s?proc\\.?|cp\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCP",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?crim\\.\\s?proc\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GEC",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:economic\\s?development\\.?|econ\\.\\s?dev\\.?|ec\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GEC",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?econ\\.\\s?dev\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GED",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:education\\.?|educ\\.?|ed\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GED",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?educ\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GEL",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:election\\s?law\\.?|elec\\.\\s?law\\.?|el\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GEL",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?elec\\.\\s?law\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GEN",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:environment\\.?|env't\\.?|envir\\.?|en\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GEN",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?env't\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GET",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:estates\\s?and\\s?trusts\\.?|est\\.\\s?\\&\\s?trusts\\.?|et\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GET",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?est\\.\\s?\\&\\s?trusts\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GFL",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:family\\s?law\\.?|fam\\.\\s?law\\.?|fl\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GFL",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?fam\\.\\s?law\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GFI",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:financial\\s?institutions\\.?|fin\\.\\s?inst\\.?|fi\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GFI",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?fin\\.\\s?inst\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GGP",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:general\\s?provisions\\.?|gen\\.\\s?provis\\.?|gp\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GGP",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?gen\\.\\s?provis\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GHG",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:health\\s?\\-\\s?general\\.?|health\\s?general\\.?|health\\-general\\.?|health\\-gen\\.?|hg\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GHG",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?health\\-gen\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GHO",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:health\\s?occupations\\.?|health\\s?occ\\.?|ho\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GHO",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?health\\s?occ\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GHS",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:housing\\s?and\\s?community\\s?development\\.?|hous\\.\\s?\\&\\s?cmty\\.\\s?dev\\.?|hcd\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GHS",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?hous\\.\\s?\\&\\s?cmty\\.\\s?dev\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GHU",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:human\\s?services\\.?|hum\\.\\s?servs\\.?|hs\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GHU",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?hum\\.\\s?servs\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GIN",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:insurance\\.?|ins\\.?|in\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GIN",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?ins\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GLE",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:labor\\s?and\\s?employment\\.?|lab\\.\\s?\\&\\s?empl\\.?|le\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GLE",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?lab\\.\\s?\\&\\s?empl\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GLU",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:land\\s?use\\.?|lu\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GLU",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?land\\s?use\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GLG",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:local\\s?government\\.?|local\\s?gov't\\.?|lg\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GLG",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?local\\s?gov't\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GNR",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:natural\\s?resources\\.?|nat\\.\\s?res\\.?|nr\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GNR",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?nat\\.\\s?res\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GPS",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:public\\s?safety\\.?|pub\\.\\s?safety\\.?|ps\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GPS",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?pub\\.\\s?safety\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GPU",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:public\\s?utilities\\.?|pub\\.\\s?util\\.?|pua\\.?|pu\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GPU",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?pub\\.\\s?util\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GRP",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:real\\s?property\\.?|real\\s?prop\\.?|rp\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GRP",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?real\\s?prop\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GSF",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:state\\s?finance\\s?and\\s?procurement\\.?|state\\s?fin\\.\\s?\\&\\s?proc\\.?|sfp\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GSF",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?state\\s?fin\\.\\s?\\&\\s?proc\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GSG",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:state\\s?government\\.?|state\\s?gov't\\.?|sg\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GSG",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?state\\s?gov't\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GSP",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:state\\s?personnel\\s?and\\s?pensions\\.?|state\\s?pers\\.\\s?\\&\\s?pens\\.?|spp\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GSP",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?state\\s?pers\\.\\s?\\&\\s?pens\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GTG",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:tax\\s?\\-\\s?general\\.?|tax\\s?general\\.?|tax\\-general\\.?|tax\\-gen\\.?|tg\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GTG",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?tax\\-gen\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GTP",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:tax\\s?\\-\\s?property\\.?|tax\\s?property\\.?|tax\\-property\\.?|tax\\-prop\\.?|tp\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GTP",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?tax\\-prop\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GTR",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:transportation\\.?|transp\\.?|tr\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GTR",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?transp\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  },
+  {
+   "state": "MD",
+   "input": "Md. Code, Courts and Judicial Proceedings § 5-101",
+   "expected": [
+    [
+     "GCJ",
+     "5-101"
+    ]
+   ],
+   "patterns": [
+    {
+     "code": "GAG",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:agriculture\\.?|agric\\.?|ag\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GAG",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?agric\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GAB",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:alcoholic\\s?beverages\\s?and\\s?cannabis\\.?|alc\\.\\s?bev\\.\\s?\\&\\s?cannabis\\.?|alc\\.\\s?bev\\.?|ab\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GAB",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?alc\\.\\s?bev\\.\\s?\\&\\s?cannabis\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GBO",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:business\\s?occupations\\s?and\\s?professions\\.?|bus\\.\\s?occ\\.\\s?\\&\\s?prof\\.?|bop\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GBO",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?bus\\.\\s?occ\\.\\s?\\&\\s?prof\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GBR",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:business\\s?regulation\\.?|bus\\.\\s?reg\\.?|br\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GBR",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?bus\\.\\s?reg\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCL",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:commercial\\s?law\\.?|com\\.\\s?law\\.?|cl\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCL",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?com\\.\\s?law\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCA",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:corporations\\s?and\\s?associations\\.?|corps\\.\\s?\\&\\s?ass'ns\\.?|ca\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCA",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?corps\\.\\s?\\&\\s?ass'ns\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCS",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:correctional\\s?services\\.?|corr\\.\\s?servs\\.?|cs\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCS",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?corr\\.\\s?servs\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCJ",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:courts\\s?and\\s?judicial\\s?proceedings\\.?|courts\\s?\\&\\s?jud\\.\\s?proc\\.?|cts\\.\\s?\\&\\s?jud\\.\\s?proc\\.?|cjp\\.?|cj\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCJ",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?cts\\.\\s?\\&\\s?jud\\.\\s?proc\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCR",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:criminal\\s?law\\.?|crim\\.\\s?law\\.?|cr\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCR",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?crim\\.\\s?law\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCP",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:criminal\\s?procedure\\.?|crim\\.\\s?proc\\.?|cp\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GCP",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?crim\\.\\s?proc\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GEC",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:economic\\s?development\\.?|econ\\.\\s?dev\\.?|ec\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GEC",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?econ\\.\\s?dev\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GED",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:education\\.?|educ\\.?|ed\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GED",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?educ\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GEL",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:election\\s?law\\.?|elec\\.\\s?law\\.?|el\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GEL",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?elec\\.\\s?law\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GEN",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:environment\\.?|env't\\.?|envir\\.?|en\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GEN",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?env't\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GET",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:estates\\s?and\\s?trusts\\.?|est\\.\\s?\\&\\s?trusts\\.?|et\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GET",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?est\\.\\s?\\&\\s?trusts\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GFL",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:family\\s?law\\.?|fam\\.\\s?law\\.?|fl\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GFL",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?fam\\.\\s?law\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GFI",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:financial\\s?institutions\\.?|fin\\.\\s?inst\\.?|fi\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GFI",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?fin\\.\\s?inst\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GGP",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:general\\s?provisions\\.?|gen\\.\\s?provis\\.?|gp\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GGP",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?gen\\.\\s?provis\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GHG",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:health\\s?\\-\\s?general\\.?|health\\s?general\\.?|health\\-general\\.?|health\\-gen\\.?|hg\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GHG",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?health\\-gen\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GHO",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:health\\s?occupations\\.?|health\\s?occ\\.?|ho\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GHO",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?health\\s?occ\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GHS",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:housing\\s?and\\s?community\\s?development\\.?|hous\\.\\s?\\&\\s?cmty\\.\\s?dev\\.?|hcd\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GHS",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?hous\\.\\s?\\&\\s?cmty\\.\\s?dev\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GHU",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:human\\s?services\\.?|hum\\.\\s?servs\\.?|hs\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GHU",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?hum\\.\\s?servs\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GIN",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:insurance\\.?|ins\\.?|in\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GIN",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?ins\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GLE",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:labor\\s?and\\s?employment\\.?|lab\\.\\s?\\&\\s?empl\\.?|le\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GLE",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?lab\\.\\s?\\&\\s?empl\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GLU",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:land\\s?use\\.?|lu\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GLU",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?land\\s?use\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GLG",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:local\\s?government\\.?|local\\s?gov't\\.?|lg\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GLG",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?local\\s?gov't\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GNR",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:natural\\s?resources\\.?|nat\\.\\s?res\\.?|nr\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GNR",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?nat\\.\\s?res\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GPS",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:public\\s?safety\\.?|pub\\.\\s?safety\\.?|ps\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GPS",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?pub\\.\\s?safety\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GPU",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:public\\s?utilities\\.?|pub\\.\\s?util\\.?|pua\\.?|pu\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GPU",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?pub\\.\\s?util\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GRP",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:real\\s?property\\.?|real\\s?prop\\.?|rp\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GRP",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?real\\s?prop\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GSF",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:state\\s?finance\\s?and\\s?procurement\\.?|state\\s?fin\\.\\s?\\&\\s?proc\\.?|sfp\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GSF",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?state\\s?fin\\.\\s?\\&\\s?proc\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GSG",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:state\\s?government\\.?|state\\s?gov't\\.?|sg\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GSG",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?state\\s?gov't\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GSP",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:state\\s?personnel\\s?and\\s?pensions\\.?|state\\s?pers\\.\\s?\\&\\s?pens\\.?|spp\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GSP",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?state\\s?pers\\.\\s?\\&\\s?pens\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GTG",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:tax\\s?\\-\\s?general\\.?|tax\\s?general\\.?|tax\\-general\\.?|tax\\-gen\\.?|tg\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GTG",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?tax\\-gen\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GTP",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:tax\\s?\\-\\s?property\\.?|tax\\s?property\\.?|tax\\-property\\.?|tax\\-prop\\.?|tp\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GTP",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?tax\\-prop\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GTR",
+     "regex": "(?:md\\.?\\s?code(?:\\s?ann\\.?)?,?\\s?|md\\.?\\s?)?(?:transportation\\.?|transp\\.?|tr\\.?)\\s?,?\\s?(?:§\\s?)?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    },
+    {
+     "code": "GTR",
+     "regex": "md\\.\\s?code\\s?ann\\.,\\s?transp\\.\\s?§\\s?([0-9][0-9a-z.:/\\-]*)",
+     "number": "\\1"
+    }
+   ]
+  }
+ ]
+}

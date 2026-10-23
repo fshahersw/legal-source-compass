@@ -32,7 +32,7 @@ META = lib.StateMeta(
     parser="ma-malegislature-api/1",
     min_interval_s=1.0,
     codes=(lib.Code("MGL", "General Laws", "Mass. Gen. Laws ch. {t}, § {s}", (
-        lib.Pattern(r"(?:mass\.?\s?gen\.?\s?laws(?:\s?ann\.?)?|m\.?\s?g\.?\s?l\.?(?:\s?a\.?)?|g\.?\s?l\.?|alm\s?gl)\s?(?:c\.|ch\.|chapter)\s?([0-9]+[a-z]{0,2}),?\s?§\s?([0-9a-z][0-9a-z.\-]*)", r"\1:\2"),
+        lib.Pattern(r"(?:mass\.?\s?gen\.?\s?laws(?:\s?ann\.?)?|m\.?\s?g\.?\s?l\.?(?:\s?a\.?)?|g\.?\s?l\.?|alm\s?gl)\s?(?:c\.|ch\.|chapter)\s?([0-9]+[a-z]{0,2}),?\s?(?:§|s\.)\s?([0-9][0-9a-z.\-/]*)", r"\1:\2"),
     )),),
     terms_note=("Public JSON API of the General Court; the site states it is not the official version (the official "
                 "edition is printed every two years)."),
