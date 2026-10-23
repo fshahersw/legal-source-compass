@@ -413,6 +413,18 @@ export const federalRegister: SourceAdapter = {
       new Set(held.map((r: StoredRow) => r.source_url)),
     );
     const lastDay = days.at(-1)?.day ?? null;
+    // already-held documents of the window, rebuilt with the id, ordinal, collection date and coverage of their stored rows
+    const rebuildHeld = async () => {
+      const stored = urls.length ? await ctx.corpus.rowsBy(DATASET, "source_url", urls) : [];
+      const byUrl = new Map(docs.map((x) => [`${API_ORIGIN}/d/${x.d.document_number}`, x.d]));
+      const out: { key: string; built: CorpusRow; stored: StoredRow }[] = [];
+      for (const row of stored) {
+        const d = byUrl.get(row.source_url);
+        const c = ctxFromStored(row);
+        if (d && c) out.push({ key: row.source_url, built: projectRecord(d, c), stored: row });
+      }
+      return out;
+    };
     const notes: JsonObject = {
       window: { from, through: lastDay },
       days: days.map((d) => ({ day: d.day, listed: d.count })) as Json,
@@ -429,29 +441,25 @@ export const federalRegister: SourceAdapter = {
       notes,
       matchBy: "source_url",
       preUnchanged: plan.alreadyHeld,
+      rebuildHeld,
       verifyHeld: async () => {
-        const stored = urls.length ? await ctx.corpus.rowsBy(DATASET, "source_url", urls) : [];
-        const byUrl = new Map(docs.map((x) => [`${API_ORIGIN}/d/${x.d.document_number}`, x.d]));
         const report: ParityReport = { compared: 0, identical: 0, mismatches: [] };
-        for (const row of stored) {
-          const d = byUrl.get(row.source_url);
-          const c = ctxFromStored(row);
-          if (!d || !c) continue;
+        for (const { key, built, stored } of await rebuildHeld()) {
           report.compared++;
-          const built = projectRecord(d, c);
           const a = { ...rowContent(built), id: built.id, ordinal: built.ordinal ?? null };
-          const b = { ...rowContent(row), id: row.id, ordinal: Number(row.ordinal) };
+          const b = { ...rowContent(stored), id: stored.id, ordinal: Number(stored.ordinal) };
           if (canonical(a) === canonical(b)) report.identical++;
           else if (report.mismatches.length < 20)
-            report.mismatches.push({ key: row.source_url, paths: diffPaths(b, a, 8) });
+            report.mismatches.push({ key, paths: diffPaths(b, a, 8) });
         }
         return report;
       },
     };
   },
 
-  comparable(row) {
-    return { ...(row as unknown as JsonObject), ordinal: null, id: null } as Json;
+  // insert-only: an existing document is never compared for an update (ids derive from ordinals)
+  comparable(content) {
+    return { ...(content as unknown as JsonObject), id: null };
   },
 
   /** run.mjs updateDatasetMetadata: listing qualification and a continuation entry, when rows were added. */

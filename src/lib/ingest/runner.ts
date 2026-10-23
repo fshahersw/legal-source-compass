@@ -7,8 +7,9 @@
  */
 import type { CorpusClient } from "./corpus.ts";
 import { politeHttp } from "./http.ts";
-import { batchesFor, boundBatches, classify, diffPaths } from "./rows.ts";
+import { batchesFor, boundBatches, classify, comparableOf, diffPaths } from "./rows.ts";
 import type {
+  ParityReport,
   Collected,
   CorpusRow,
   Json,
@@ -30,12 +31,16 @@ export type RunDeps = {
   batchSize?: number;
   /** Dry run only: cursor to start from (the stored cursor is not readable without the RPCs). */
   cursor?: Json;
+  /** Dry run only: receives what the adapter collected (candidate rows, parity hooks). */
+  onCollected?: (collected: Collected) => void;
   log?: (line: JsonObject) => void;
 };
 
 export type DryRunDetail = {
   inserts: { id: string; title: string }[];
   updates: { id: string; title: string; changed: string[] }[];
+  /** Already-held records rebuilt by this port and compared with the stored rows (insert-only sources). */
+  parity?: ParityReport;
 };
 
 function errorText(e: unknown): string {
@@ -142,6 +147,7 @@ export async function runSource(
     const ordered = collected.rows.filter((r) => send.has(r));
 
     if (deps.dryRun) {
+      deps.onCollected?.(collected);
       summary.inserted = result.inserts.length;
       summary.updated = result.updates.length;
       const byKey = new Map(
@@ -154,10 +160,11 @@ export async function runSource(
           return {
             id: r.id,
             title: r.title.slice(0, 120),
-            changed: cur ? diffPaths(adapter.comparable(cur), adapter.comparable(r), 8) : [],
+            changed: cur ? diffPaths(comparableOf(adapter, cur), comparableOf(adapter, r), 8) : [],
           };
         }),
       };
+      if (collected.verifyHeld) summary.detail.parity = await collected.verifyHeld();
       summary.requests = http.requests.length;
       return summary;
     }

@@ -4,7 +4,15 @@
  *   canonical     — key-sorted JSON used to compare rows the way jsonb compares them
  *   classify      — split candidate rows into inserts / updates / unchanged against the stored rows
  */
-import type { Classified, CorpusRow, Json, JsonObject, SourceAdapter, StoredRow } from "./types.ts";
+import type {
+  Classified,
+  CorpusRow,
+  Json,
+  JsonObject,
+  RowContent,
+  SourceAdapter,
+  StoredRow,
+} from "./types.ts";
 
 /** Python `str(part)` for the values corpus_writer joins into `text`. */
 function pyStr(v: unknown): string {
@@ -97,6 +105,19 @@ export function rowContent(row: CorpusRow | StoredRow): JsonObject {
   };
 }
 
+/** The compared columns plus the id: the input of every adapter's comparable(). */
+export function contentOf(row: CorpusRow | StoredRow): RowContent {
+  return { ...(rowContent(row) as unknown as Omit<RowContent, "id">), id: row.id };
+}
+
+/** What change detection compares for one row of an adapter. */
+export function comparableOf(
+  adapter: Pick<SourceAdapter, "comparable">,
+  row: CorpusRow | StoredRow,
+): Json {
+  return adapter.comparable(contentOf(row));
+}
+
 /** Replace the value at `path` (keys; '*' = every array element) with a fixed marker. Returns a copy. */
 export function maskPath(v: Json, path: readonly string[], marker: Json = "<masked>"): Json {
   if (path.length === 0) return marker;
@@ -120,7 +141,7 @@ export function classify(
     const cur = byKey.get(matchBy === "id" ? row.id : row.source_url);
     if (!cur) out.inserts.push(row);
     else if (adapter.mode === "insert_only") out.alreadyHeld++;
-    else if (canonical(adapter.comparable(cur)) === canonical(adapter.comparable(row)))
+    else if (canonical(comparableOf(adapter, cur)) === canonical(comparableOf(adapter, row)))
       out.unchanged++;
     else out.updates.push(row);
   }

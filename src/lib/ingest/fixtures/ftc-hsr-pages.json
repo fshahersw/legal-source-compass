@@ -1,0 +1,2361 @@
+[
+  {
+    "jsonapi": {
+      "version": "1.0",
+      "meta": {
+        "links": {
+          "self": {
+            "href": "http://jsonapi.org/format/1.0/"
+          }
+        }
+      }
+    },
+    "data": [
+      {
+        "type": "early_termination_notice",
+        "id": "3cfbd38f-3003-47c9-9146-ec0bf31f6a8b",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/3cfbd38f-3003-47c9-9146-ec0bf31f6a8b?resourceVersion=id%3A445103"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/3cfbd38f-3003-47c9-9146-ec0bf31f6a8b?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262194: Intercontinental Exchange, Inc.; MarketAxess Holdings Inc.",
+          "created": "2026-10-22T13:22:50+00:00",
+          "updated": "2026-10-22T13:22:50+00:00",
+          "acquired-party": "MarketAxess Holdings Inc.",
+          "acquiring-party": "Intercontinental Exchange, Inc.",
+          "date": "2026-10-21",
+          "acquired-entities": ["MarketAxess Holdings Inc."],
+          "transaction-number": "20262194"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/3cfbd38f-3003-47c9-9146-ec0bf31f6a8b/relationships/node_type?resourceVersion=id%3A445103"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/3cfbd38f-3003-47c9-9146-ec0bf31f6a8b/feeds_item?resourceVersion=id%3A445103"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/3cfbd38f-3003-47c9-9146-ec0bf31f6a8b/relationships/feeds_item?resourceVersion=id%3A445103"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "c45ac53d-b56f-4e88-8393-3ddadad0bfb0",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/c45ac53d-b56f-4e88-8393-3ddadad0bfb0?resourceVersion=id%3A444918"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/c45ac53d-b56f-4e88-8393-3ddadad0bfb0?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262136: Publicis Groupe S.A.; LiveRamp Holdings, Inc.",
+          "created": "2026-10-20T13:21:52+00:00",
+          "updated": "2026-10-20T13:21:52+00:00",
+          "acquired-party": "LiveRamp Holdings, Inc.",
+          "acquiring-party": "Publicis Groupe S.A.",
+          "date": "2026-10-19",
+          "acquired-entities": ["LiveRamp Holdings, Inc."],
+          "transaction-number": "20262136"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/c45ac53d-b56f-4e88-8393-3ddadad0bfb0/relationships/node_type?resourceVersion=id%3A444918"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/c45ac53d-b56f-4e88-8393-3ddadad0bfb0/feeds_item?resourceVersion=id%3A444918"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/c45ac53d-b56f-4e88-8393-3ddadad0bfb0/relationships/feeds_item?resourceVersion=id%3A444918"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "19f053af-fdb3-4940-a680-e29bd9b6658b",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/19f053af-fdb3-4940-a680-e29bd9b6658b?resourceVersion=id%3A444732"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/19f053af-fdb3-4940-a680-e29bd9b6658b?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262412: Caterpillar Inc.; John Fabick Tractor Company",
+          "created": "2026-10-16T13:47:07+00:00",
+          "updated": "2026-10-16T13:47:07+00:00",
+          "acquired-party": "John Fabick Tractor Company",
+          "acquiring-party": "Caterpillar Inc.",
+          "date": "2026-10-15",
+          "acquired-entities": ["John Fabick Tractor Company"],
+          "transaction-number": "20262412"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/19f053af-fdb3-4940-a680-e29bd9b6658b/relationships/node_type?resourceVersion=id%3A444732"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/19f053af-fdb3-4940-a680-e29bd9b6658b/feeds_item?resourceVersion=id%3A444732"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/19f053af-fdb3-4940-a680-e29bd9b6658b/relationships/feeds_item?resourceVersion=id%3A444732"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "beeb2190-056c-4b5a-a6b4-4fb315e93022",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/beeb2190-056c-4b5a-a6b4-4fb315e93022?resourceVersion=id%3A444731"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/beeb2190-056c-4b5a-a6b4-4fb315e93022?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262409: WEG Parent, LLC; SP-AI Holdings, LP",
+          "created": "2026-10-16T13:47:07+00:00",
+          "updated": "2026-10-16T13:47:07+00:00",
+          "acquired-party": "SP-AI Holdings, LP",
+          "acquiring-party": "WEG Parent, LLC",
+          "date": "2026-10-15",
+          "acquired-entities": ["SP-AI Holdings, LP"],
+          "transaction-number": "20262409"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/beeb2190-056c-4b5a-a6b4-4fb315e93022/relationships/node_type?resourceVersion=id%3A444731"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/beeb2190-056c-4b5a-a6b4-4fb315e93022/feeds_item?resourceVersion=id%3A444731"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/beeb2190-056c-4b5a-a6b4-4fb315e93022/relationships/feeds_item?resourceVersion=id%3A444731"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "0de42b3f-68c5-4ce8-a96f-72a020ced68d",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/0de42b3f-68c5-4ce8-a96f-72a020ced68d?resourceVersion=id%3A444729"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/0de42b3f-68c5-4ce8-a96f-72a020ced68d?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262383: Main Capital IX Cooperatief U.A.; Washington Master Seller LLC",
+          "created": "2026-10-16T13:47:05+00:00",
+          "updated": "2026-10-16T13:47:05+00:00",
+          "acquired-party": "Washington Master Seller LLC",
+          "acquiring-party": "Main Capital IX Cooperatief U.A.",
+          "date": "2026-10-15",
+          "acquired-entities": ["Watermark Holdings, LLC"],
+          "transaction-number": "20262383"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/0de42b3f-68c5-4ce8-a96f-72a020ced68d/relationships/node_type?resourceVersion=id%3A444729"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/0de42b3f-68c5-4ce8-a96f-72a020ced68d/feeds_item?resourceVersion=id%3A444729"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/0de42b3f-68c5-4ce8-a96f-72a020ced68d/relationships/feeds_item?resourceVersion=id%3A444729"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "a051610a-a734-46c5-9661-5fa4f8bdb009",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/a051610a-a734-46c5-9661-5fa4f8bdb009?resourceVersion=id%3A444727"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/a051610a-a734-46c5-9661-5fa4f8bdb009?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262367: GC Ferry Parent, L.P.; Victory Capital Holdings, Inc.",
+          "created": "2026-10-16T13:47:05+00:00",
+          "updated": "2026-10-16T13:47:05+00:00",
+          "acquired-party": "Victory Capital Holdings, Inc.",
+          "acquiring-party": "GC Ferry Parent, L.P.",
+          "date": "2026-10-15",
+          "acquired-entities": ["Victory Capital Holdings, Inc."],
+          "transaction-number": "20262367"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/a051610a-a734-46c5-9661-5fa4f8bdb009/relationships/node_type?resourceVersion=id%3A444727"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/a051610a-a734-46c5-9661-5fa4f8bdb009/feeds_item?resourceVersion=id%3A444727"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/a051610a-a734-46c5-9661-5fa4f8bdb009/relationships/feeds_item?resourceVersion=id%3A444727"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "e1ec31f0-82d6-4ffc-b228-28130c6be212",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/e1ec31f0-82d6-4ffc-b228-28130c6be212?resourceVersion=id%3A444728"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/e1ec31f0-82d6-4ffc-b228-28130c6be212?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262376: EQT X (No.1) EUR SCSp; Thunderbolt Cayman Limited",
+          "created": "2026-10-16T13:47:05+00:00",
+          "updated": "2026-10-16T13:47:05+00:00",
+          "acquired-party": "Thunderbolt Cayman Limited",
+          "acquiring-party": "EQT X (No.1) EUR SCSp",
+          "date": "2026-10-15",
+          "acquired-entities": ["McGill and Partners Group Ltd"],
+          "transaction-number": "20262376"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/e1ec31f0-82d6-4ffc-b228-28130c6be212/relationships/node_type?resourceVersion=id%3A444728"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/e1ec31f0-82d6-4ffc-b228-28130c6be212/feeds_item?resourceVersion=id%3A444728"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/e1ec31f0-82d6-4ffc-b228-28130c6be212/relationships/feeds_item?resourceVersion=id%3A444728"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "e62d6362-9bb5-4e52-a3e7-e87cbafd2e37",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/e62d6362-9bb5-4e52-a3e7-e87cbafd2e37?resourceVersion=id%3A444730"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/e62d6362-9bb5-4e52-a3e7-e87cbafd2e37?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262395: Cognex Corporation; RealSense, Inc.",
+          "created": "2026-10-16T13:47:05+00:00",
+          "updated": "2026-10-16T13:47:05+00:00",
+          "acquired-party": "RealSense, Inc.",
+          "acquiring-party": "Cognex Corporation",
+          "date": "2026-10-15",
+          "acquired-entities": ["RealSense, Inc."],
+          "transaction-number": "20262395"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/e62d6362-9bb5-4e52-a3e7-e87cbafd2e37/relationships/node_type?resourceVersion=id%3A444730"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/e62d6362-9bb5-4e52-a3e7-e87cbafd2e37/feeds_item?resourceVersion=id%3A444730"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/e62d6362-9bb5-4e52-a3e7-e87cbafd2e37/relationships/feeds_item?resourceVersion=id%3A444730"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "0b13ec32-a38e-48c2-8346-65a95887bc09",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/0b13ec32-a38e-48c2-8346-65a95887bc09?resourceVersion=id%3A444726"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/0b13ec32-a38e-48c2-8346-65a95887bc09?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262366: Victory Capital Holdings, Inc.; GC Ferry Parent, L.P.",
+          "created": "2026-10-16T13:47:02+00:00",
+          "updated": "2026-10-16T13:47:02+00:00",
+          "acquired-party": "GC Ferry Parent, L.P.",
+          "acquiring-party": "Victory Capital Holdings, Inc.",
+          "date": "2026-10-15",
+          "acquired-entities": ["GC Ferry Holdings, Inc."],
+          "transaction-number": "20262366"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/0b13ec32-a38e-48c2-8346-65a95887bc09/relationships/node_type?resourceVersion=id%3A444726"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/0b13ec32-a38e-48c2-8346-65a95887bc09/feeds_item?resourceVersion=id%3A444726"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/0b13ec32-a38e-48c2-8346-65a95887bc09/relationships/feeds_item?resourceVersion=id%3A444726"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "238c1500-fbe1-421f-b149-7bed6b2542af",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/238c1500-fbe1-421f-b149-7bed6b2542af?resourceVersion=id%3A444637"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/238c1500-fbe1-421f-b149-7bed6b2542af?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262349: Bain Capital Double Impact Fund III, L.P.; Rentokil Initial plc",
+          "created": "2026-10-15T14:21:35+00:00",
+          "updated": "2026-10-15T14:21:35+00:00",
+          "acquired-party": "Rentokil Initial plc",
+          "acquiring-party": "Bain Capital Double Impact Fund III, L.P.",
+          "date": "2026-10-14",
+          "acquired-entities": ["Solitude Lake Management, LLC"],
+          "transaction-number": "20262349"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/238c1500-fbe1-421f-b149-7bed6b2542af/relationships/node_type?resourceVersion=id%3A444637"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/238c1500-fbe1-421f-b149-7bed6b2542af/feeds_item?resourceVersion=id%3A444637"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/238c1500-fbe1-421f-b149-7bed6b2542af/relationships/feeds_item?resourceVersion=id%3A444637"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "b4144a5a-ccea-4e49-b4a8-debfe22d418d",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/b4144a5a-ccea-4e49-b4a8-debfe22d418d?resourceVersion=id%3A444636"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/b4144a5a-ccea-4e49-b4a8-debfe22d418d?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262334: InMed Pharmaceuticals Inc; Mentari Therapeutics, Inc.",
+          "created": "2026-10-15T14:21:35+00:00",
+          "updated": "2026-10-15T14:21:35+00:00",
+          "acquired-party": "Mentari Therapeutics, Inc.",
+          "acquiring-party": "InMed Pharmaceuticals Inc",
+          "date": "2026-10-14",
+          "acquired-entities": ["Mentari Therapeutics, Inc."],
+          "transaction-number": "20262334"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/b4144a5a-ccea-4e49-b4a8-debfe22d418d/relationships/node_type?resourceVersion=id%3A444636"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/b4144a5a-ccea-4e49-b4a8-debfe22d418d/feeds_item?resourceVersion=id%3A444636"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/b4144a5a-ccea-4e49-b4a8-debfe22d418d/relationships/feeds_item?resourceVersion=id%3A444636"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "e5d49b79-22b2-472d-904b-853841707e5e",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/e5d49b79-22b2-472d-904b-853841707e5e?resourceVersion=id%3A444635"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/e5d49b79-22b2-472d-904b-853841707e5e?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262329: Xin Jin; Daniel Chiu",
+          "created": "2026-10-15T14:21:35+00:00",
+          "updated": "2026-10-15T14:21:35+00:00",
+          "acquired-party": "Daniel Chiu",
+          "acquiring-party": "Xin Jin",
+          "date": "2026-10-14",
+          "acquired-entities": ["PrimeGen US, Inc."],
+          "transaction-number": "20262329"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/e5d49b79-22b2-472d-904b-853841707e5e/relationships/node_type?resourceVersion=id%3A444635"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/e5d49b79-22b2-472d-904b-853841707e5e/feeds_item?resourceVersion=id%3A444635"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/e5d49b79-22b2-472d-904b-853841707e5e/relationships/feeds_item?resourceVersion=id%3A444635"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "499ea6d5-ecad-4d5f-bb94-441ec6dff94a",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/499ea6d5-ecad-4d5f-bb94-441ec6dff94a?resourceVersion=id%3A444634"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/499ea6d5-ecad-4d5f-bb94-441ec6dff94a?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262317: Credit Union 1; Gulf Coast Federal Credit Union",
+          "created": "2026-10-15T14:21:34+00:00",
+          "updated": "2026-10-15T14:21:34+00:00",
+          "acquired-party": "Gulf Coast Federal Credit Union",
+          "acquiring-party": "Credit Union 1",
+          "date": "2026-10-14",
+          "acquired-entities": ["Gulf Coast Federal Credit Union"],
+          "transaction-number": "20262317"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/499ea6d5-ecad-4d5f-bb94-441ec6dff94a/relationships/node_type?resourceVersion=id%3A444634"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/499ea6d5-ecad-4d5f-bb94-441ec6dff94a/feeds_item?resourceVersion=id%3A444634"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/499ea6d5-ecad-4d5f-bb94-441ec6dff94a/relationships/feeds_item?resourceVersion=id%3A444634"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "bc064096-6322-48e2-b03a-02ab3133272a",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/bc064096-6322-48e2-b03a-02ab3133272a?resourceVersion=id%3A444633"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/bc064096-6322-48e2-b03a-02ab3133272a?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262277: Platinum Equity Capital QIQ Partners International VI; Nestle S.A.",
+          "created": "2026-10-15T14:21:34+00:00",
+          "updated": "2026-10-15T14:21:34+00:00",
+          "acquired-party": "Nestle S.A.",
+          "acquiring-party": "Platinum Equity Capital QIQ Partners International VI",
+          "date": "2026-10-14",
+          "acquired-entities": ["WPB JVco S.a r.l."],
+          "transaction-number": "20262277"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/bc064096-6322-48e2-b03a-02ab3133272a/relationships/node_type?resourceVersion=id%3A444633"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/bc064096-6322-48e2-b03a-02ab3133272a/feeds_item?resourceVersion=id%3A444633"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/bc064096-6322-48e2-b03a-02ab3133272a/relationships/feeds_item?resourceVersion=id%3A444633"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "5eafb3af-45af-4793-831c-7100b26864ba",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/5eafb3af-45af-4793-831c-7100b26864ba?resourceVersion=id%3A444037"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/5eafb3af-45af-4793-831c-7100b26864ba?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262359: Anderson Automotive Enterprises, LLC; Group 1 Automotive, Inc.",
+          "created": "2026-10-07T13:22:14+00:00",
+          "updated": "2026-10-07T13:22:14+00:00",
+          "acquired-party": "Group 1 Automotive, Inc.",
+          "acquiring-party": "Anderson Automotive Enterprises, LLC",
+          "date": "2026-10-05",
+          "acquired-entities": ["GPI FL-LX, LLC", "GPI FL-HA, LLC"],
+          "transaction-number": "20262359"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/5eafb3af-45af-4793-831c-7100b26864ba/relationships/node_type?resourceVersion=id%3A444037"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/5eafb3af-45af-4793-831c-7100b26864ba/feeds_item?resourceVersion=id%3A444037"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/5eafb3af-45af-4793-831c-7100b26864ba/relationships/feeds_item?resourceVersion=id%3A444037"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "736d72b8-104f-4e11-a1c3-91c98c73e5aa",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/736d72b8-104f-4e11-a1c3-91c98c73e5aa?resourceVersion=id%3A444036"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/736d72b8-104f-4e11-a1c3-91c98c73e5aa?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262351: Diversified Energy Company; Elliott International Limited",
+          "created": "2026-10-07T13:22:14+00:00",
+          "updated": "2026-10-07T13:22:14+00:00",
+          "acquired-party": "Elliott International Limited",
+          "acquiring-party": "Diversified Energy Company",
+          "date": "2026-10-05",
+          "acquired-entities": [
+            "Birch Permian Holdings, Inc.",
+            "Milkwater, LLC",
+            "Birch II EOC, LLC",
+            "Birch Permian, LLC"
+          ],
+          "transaction-number": "20262351"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/736d72b8-104f-4e11-a1c3-91c98c73e5aa/relationships/node_type?resourceVersion=id%3A444036"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/736d72b8-104f-4e11-a1c3-91c98c73e5aa/feeds_item?resourceVersion=id%3A444036"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/736d72b8-104f-4e11-a1c3-91c98c73e5aa/relationships/feeds_item?resourceVersion=id%3A444036"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "3721783b-f081-4cac-b466-ad642187740e",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/3721783b-f081-4cac-b466-ad642187740e?resourceVersion=id%3A444035"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/3721783b-f081-4cac-b466-ad642187740e?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262337: ABB Ltd; Rotork plc",
+          "created": "2026-10-07T13:22:12+00:00",
+          "updated": "2026-10-07T13:22:12+00:00",
+          "acquired-party": "Rotork plc",
+          "acquiring-party": "ABB Ltd",
+          "date": "2026-10-05",
+          "acquired-entities": ["Rotork plc"],
+          "transaction-number": "20262337"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/3721783b-f081-4cac-b466-ad642187740e/relationships/node_type?resourceVersion=id%3A444035"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/3721783b-f081-4cac-b466-ad642187740e/feeds_item?resourceVersion=id%3A444035"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/3721783b-f081-4cac-b466-ad642187740e/relationships/feeds_item?resourceVersion=id%3A444035"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "4064548f-2bd5-46a9-8c32-dff1b4df368b",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/4064548f-2bd5-46a9-8c32-dff1b4df368b?resourceVersion=id%3A444031"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/4064548f-2bd5-46a9-8c32-dff1b4df368b?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262332: Crane Company; FR Industrials Opportunities Fund, L.P.",
+          "created": "2026-10-07T13:22:12+00:00",
+          "updated": "2026-10-07T13:22:12+00:00",
+          "acquired-party": "FR Industrials Opportunities Fund, L.P.",
+          "acquiring-party": "Crane Company",
+          "date": "2026-10-05",
+          "acquired-entities": ["FR Flow Control Pumps US Bidco, Inc."],
+          "transaction-number": "20262332"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/4064548f-2bd5-46a9-8c32-dff1b4df368b/relationships/node_type?resourceVersion=id%3A444031"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/4064548f-2bd5-46a9-8c32-dff1b4df368b/feeds_item?resourceVersion=id%3A444031"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/4064548f-2bd5-46a9-8c32-dff1b4df368b/relationships/feeds_item?resourceVersion=id%3A444031"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "9fb182bc-4804-4a10-821e-55dc8b7143f5",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/9fb182bc-4804-4a10-821e-55dc8b7143f5?resourceVersion=id%3A444032"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/9fb182bc-4804-4a10-821e-55dc8b7143f5?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262333: KKR Core II Holding Company AIV LLC; A1 Garage Equity, LLC",
+          "created": "2026-10-07T13:22:12+00:00",
+          "updated": "2026-10-07T13:22:12+00:00",
+          "acquired-party": "A1 Garage Equity, LLC",
+          "acquiring-party": "KKR Core II Holding Company AIV LLC",
+          "date": "2026-10-05",
+          "acquired-entities": ["A1 Garage Acquisition, LLC"],
+          "transaction-number": "20262333"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/9fb182bc-4804-4a10-821e-55dc8b7143f5/relationships/node_type?resourceVersion=id%3A444032"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/9fb182bc-4804-4a10-821e-55dc8b7143f5/feeds_item?resourceVersion=id%3A444032"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/9fb182bc-4804-4a10-821e-55dc8b7143f5/relationships/feeds_item?resourceVersion=id%3A444032"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "dfd2c1cd-5334-4058-85ae-8d1558f10d5a",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/dfd2c1cd-5334-4058-85ae-8d1558f10d5a?resourceVersion=id%3A444033"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/dfd2c1cd-5334-4058-85ae-8d1558f10d5a?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262335: GHK Fund II LP; MSouth Equity Partners IV, L.P.",
+          "created": "2026-10-07T13:22:12+00:00",
+          "updated": "2026-10-07T13:22:12+00:00",
+          "acquired-party": "MSouth Equity Partners IV, L.P.",
+          "acquiring-party": "GHK Fund II LP",
+          "date": "2026-10-05",
+          "acquired-entities": ["USA Hometown Experts, Inc."],
+          "transaction-number": "20262335"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/dfd2c1cd-5334-4058-85ae-8d1558f10d5a/relationships/node_type?resourceVersion=id%3A444033"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/dfd2c1cd-5334-4058-85ae-8d1558f10d5a/feeds_item?resourceVersion=id%3A444033"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/dfd2c1cd-5334-4058-85ae-8d1558f10d5a/relationships/feeds_item?resourceVersion=id%3A444033"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "fa7f4fa0-4108-4aba-a5a0-eb2a608feb88",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/fa7f4fa0-4108-4aba-a5a0-eb2a608feb88?resourceVersion=id%3A444034"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/fa7f4fa0-4108-4aba-a5a0-eb2a608feb88?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262336: Bad Boy Mowers JV Investments, LP; Stanley Black & Decker, Inc.",
+          "created": "2026-10-07T13:22:12+00:00",
+          "updated": "2026-10-07T13:22:12+00:00",
+          "acquired-party": "Stanley Black & Decker, Inc.",
+          "acquiring-party": "Bad Boy Mowers JV Investments, LP",
+          "date": "2026-10-05",
+          "acquired-entities": ["MTD Products Australia Pty Ltd.", "Excel Industries, LLC"],
+          "transaction-number": "20262336"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/fa7f4fa0-4108-4aba-a5a0-eb2a608feb88/relationships/node_type?resourceVersion=id%3A444034"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/fa7f4fa0-4108-4aba-a5a0-eb2a608feb88/feeds_item?resourceVersion=id%3A444034"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/fa7f4fa0-4108-4aba-a5a0-eb2a608feb88/relationships/feeds_item?resourceVersion=id%3A444034"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "4cc85e71-3dac-43a3-9d52-13ac97a16ac9",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/4cc85e71-3dac-43a3-9d52-13ac97a16ac9?resourceVersion=id%3A444026"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/4cc85e71-3dac-43a3-9d52-13ac97a16ac9?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262294: AE EventsCo Holdings LLC; ICG Strategic Equity Fund IV (Feeder) SCsP",
+          "created": "2026-10-07T13:22:08+00:00",
+          "updated": "2026-10-07T13:22:08+00:00",
+          "acquired-party": "ICG Strategic Equity Fund IV (Feeder) SCsP",
+          "acquiring-party": "AE EventsCo Holdings LLC",
+          "date": "2026-10-05",
+          "acquired-entities": ["IE Investments S.A R.L."],
+          "transaction-number": "20262294"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/4cc85e71-3dac-43a3-9d52-13ac97a16ac9/relationships/node_type?resourceVersion=id%3A444026"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/4cc85e71-3dac-43a3-9d52-13ac97a16ac9/feeds_item?resourceVersion=id%3A444026"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/4cc85e71-3dac-43a3-9d52-13ac97a16ac9/relationships/feeds_item?resourceVersion=id%3A444026"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "50058ce5-6111-4507-9c93-5fd290cd3624",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/50058ce5-6111-4507-9c93-5fd290cd3624?resourceVersion=id%3A444029"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/50058ce5-6111-4507-9c93-5fd290cd3624?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262305: Stichting Administratiekantoor Lauwerecht; Canadian Standards Association",
+          "created": "2026-10-07T13:22:08+00:00",
+          "updated": "2026-10-07T13:22:08+00:00",
+          "acquired-party": "Canadian Standards Association",
+          "acquiring-party": "Stichting Administratiekantoor Lauwerecht",
+          "date": "2026-10-05",
+          "acquired-entities": ["CSA Group Testing & Certification Inc."],
+          "transaction-number": "20262305"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/50058ce5-6111-4507-9c93-5fd290cd3624/relationships/node_type?resourceVersion=id%3A444029"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/50058ce5-6111-4507-9c93-5fd290cd3624/feeds_item?resourceVersion=id%3A444029"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/50058ce5-6111-4507-9c93-5fd290cd3624/relationships/feeds_item?resourceVersion=id%3A444029"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "6df91c06-ab02-44c0-b8ff-006b45e776f1",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/6df91c06-ab02-44c0-b8ff-006b45e776f1?resourceVersion=id%3A444030"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/6df91c06-ab02-44c0-b8ff-006b45e776f1?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262324: Enbridge Inc.; AF V Energy II AIV, L.P.",
+          "created": "2026-10-07T13:22:08+00:00",
+          "updated": "2026-10-07T13:22:08+00:00",
+          "acquired-party": "AF V Energy II AIV, L.P.",
+          "acquiring-party": "Enbridge Inc.",
+          "date": "2026-10-05",
+          "acquired-entities": ["FS Crude Holdings, LLC"],
+          "transaction-number": "20262324"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/6df91c06-ab02-44c0-b8ff-006b45e776f1/relationships/node_type?resourceVersion=id%3A444030"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/6df91c06-ab02-44c0-b8ff-006b45e776f1/feeds_item?resourceVersion=id%3A444030"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/6df91c06-ab02-44c0-b8ff-006b45e776f1/relationships/feeds_item?resourceVersion=id%3A444030"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "a9fd5783-95b0-44b6-97a1-86e641483af6",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/a9fd5783-95b0-44b6-97a1-86e641483af6?resourceVersion=id%3A444028"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/a9fd5783-95b0-44b6-97a1-86e641483af6?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262304: Unilever PLC; McCormick & Company, Inc.",
+          "created": "2026-10-07T13:22:08+00:00",
+          "updated": "2026-10-07T13:22:08+00:00",
+          "acquired-party": "McCormick & Company, Inc.",
+          "acquiring-party": "Unilever PLC",
+          "date": "2026-10-05",
+          "acquired-entities": ["McCormick & Company, Inc."],
+          "transaction-number": "20262304"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/a9fd5783-95b0-44b6-97a1-86e641483af6/relationships/node_type?resourceVersion=id%3A444028"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/a9fd5783-95b0-44b6-97a1-86e641483af6/feeds_item?resourceVersion=id%3A444028"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/a9fd5783-95b0-44b6-97a1-86e641483af6/relationships/feeds_item?resourceVersion=id%3A444028"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "fb437af4-1cc2-4df5-aa99-ba98d3e7d794",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/fb437af4-1cc2-4df5-aa99-ba98d3e7d794?resourceVersion=id%3A444027"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/fb437af4-1cc2-4df5-aa99-ba98d3e7d794?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262300: RA Capital Healthcare Fund, L.P.; Tyra Biosciences, Inc.",
+          "created": "2026-10-07T13:22:08+00:00",
+          "updated": "2026-10-07T13:22:08+00:00",
+          "acquired-party": "Tyra Biosciences, Inc.",
+          "acquiring-party": "RA Capital Healthcare Fund, L.P.",
+          "date": "2026-10-05",
+          "acquired-entities": ["Tyra Biosciences, Inc."],
+          "transaction-number": "20262300"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/fb437af4-1cc2-4df5-aa99-ba98d3e7d794/relationships/node_type?resourceVersion=id%3A444027"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/fb437af4-1cc2-4df5-aa99-ba98d3e7d794/feeds_item?resourceVersion=id%3A444027"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/fb437af4-1cc2-4df5-aa99-ba98d3e7d794/relationships/feeds_item?resourceVersion=id%3A444027"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "b2e121d9-98a6-457a-8c89-060291efb343",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/b2e121d9-98a6-457a-8c89-060291efb343?resourceVersion=id%3A444025"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/b2e121d9-98a6-457a-8c89-060291efb343?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262276: Susan Y. Kim; Amkor Technology, Inc.",
+          "created": "2026-10-07T13:22:05+00:00",
+          "updated": "2026-10-07T13:22:05+00:00",
+          "acquired-party": "Amkor Technology, Inc.",
+          "acquiring-party": "Susan Y. Kim",
+          "date": "2026-10-05",
+          "acquired-entities": ["Amkor Technology, Inc."],
+          "transaction-number": "20262276"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/b2e121d9-98a6-457a-8c89-060291efb343/relationships/node_type?resourceVersion=id%3A444025"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/b2e121d9-98a6-457a-8c89-060291efb343/feeds_item?resourceVersion=id%3A444025"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/b2e121d9-98a6-457a-8c89-060291efb343/relationships/feeds_item?resourceVersion=id%3A444025"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "2e83d2ab-8ef3-47e0-8fad-d87c16095312",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/2e83d2ab-8ef3-47e0-8fad-d87c16095312?resourceVersion=id%3A443686"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/2e83d2ab-8ef3-47e0-8fad-d87c16095312?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262326: Watsco, Inc.; BBH Capital Partners VI, L.P.",
+          "created": "2026-09-30T12:38:23+00:00",
+          "updated": "2026-09-30T12:38:23+00:00",
+          "acquired-party": "BBH Capital Partners VI, L.P.",
+          "acquiring-party": "Watsco, Inc.",
+          "date": "2026-09-29",
+          "acquired-entities": ["Granite Group Holdings LLC"],
+          "transaction-number": "20262326"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/2e83d2ab-8ef3-47e0-8fad-d87c16095312/relationships/node_type?resourceVersion=id%3A443686"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/2e83d2ab-8ef3-47e0-8fad-d87c16095312/feeds_item?resourceVersion=id%3A443686"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/2e83d2ab-8ef3-47e0-8fad-d87c16095312/relationships/feeds_item?resourceVersion=id%3A443686"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "2a5d8f75-5524-462c-a7df-38426cad7526",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/2a5d8f75-5524-462c-a7df-38426cad7526?resourceVersion=id%3A443685"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/2a5d8f75-5524-462c-a7df-38426cad7526?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262310: Velocity I Aggregator, LP; AG FCH Aggregator Holdings, LP",
+          "created": "2026-09-30T12:38:22+00:00",
+          "updated": "2026-09-30T12:38:22+00:00",
+          "acquired-party": "AG FCH Aggregator Holdings, LP",
+          "acquiring-party": "Velocity I Aggregator, LP",
+          "date": "2026-09-29",
+          "acquired-entities": [
+            "FCH Intermediate Holdings, Inc.",
+            "FCH Intermediate Holdings II, Inc."
+          ],
+          "transaction-number": "20262310"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/2a5d8f75-5524-462c-a7df-38426cad7526/relationships/node_type?resourceVersion=id%3A443685"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/2a5d8f75-5524-462c-a7df-38426cad7526/feeds_item?resourceVersion=id%3A443685"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/2a5d8f75-5524-462c-a7df-38426cad7526/relationships/feeds_item?resourceVersion=id%3A443685"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "5eefeec7-5294-42e0-b924-c19e43bc35fe",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/5eefeec7-5294-42e0-b924-c19e43bc35fe?resourceVersion=id%3A443684"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/5eefeec7-5294-42e0-b924-c19e43bc35fe?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262303: Blackstone Capital Partners VIII L.P.; Delta Star, Inc.",
+          "created": "2026-09-30T12:38:22+00:00",
+          "updated": "2026-09-30T12:38:22+00:00",
+          "acquired-party": "Delta Star, Inc.",
+          "acquiring-party": "Blackstone Capital Partners VIII L.P.",
+          "date": "2026-09-29",
+          "acquired-entities": ["Delta Star, Inc."],
+          "transaction-number": "20262303"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/5eefeec7-5294-42e0-b924-c19e43bc35fe/relationships/node_type?resourceVersion=id%3A443684"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/5eefeec7-5294-42e0-b924-c19e43bc35fe/feeds_item?resourceVersion=id%3A443684"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/5eefeec7-5294-42e0-b924-c19e43bc35fe/relationships/feeds_item?resourceVersion=id%3A443684"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "92a5d339-4ff6-49bc-80db-5613d9170378",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/92a5d339-4ff6-49bc-80db-5613d9170378?resourceVersion=id%3A443683"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/92a5d339-4ff6-49bc-80db-5613d9170378?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262302: OCP Trust; Michael Shelton",
+          "created": "2026-09-30T12:38:22+00:00",
+          "updated": "2026-09-30T12:38:22+00:00",
+          "acquired-party": "Michael Shelton",
+          "acquiring-party": "OCP Trust",
+          "date": "2026-09-29",
+          "acquired-entities": ["Shelton Energy Solutions, LLC"],
+          "transaction-number": "20262302"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/92a5d339-4ff6-49bc-80db-5613d9170378/relationships/node_type?resourceVersion=id%3A443683"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/92a5d339-4ff6-49bc-80db-5613d9170378/feeds_item?resourceVersion=id%3A443683"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/92a5d339-4ff6-49bc-80db-5613d9170378/relationships/feeds_item?resourceVersion=id%3A443683"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "0a0f17ad-75f1-418b-a145-aa5e6c704a9b",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/0a0f17ad-75f1-418b-a145-aa5e6c704a9b?resourceVersion=id%3A443680"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/0a0f17ad-75f1-418b-a145-aa5e6c704a9b?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262250: Xylem Inc.; Flow Controls Holding, LLC",
+          "created": "2026-09-30T12:38:21+00:00",
+          "updated": "2026-09-30T12:38:21+00:00",
+          "acquired-party": "Flow Controls Holding, LLC",
+          "acquiring-party": "Xylem Inc.",
+          "date": "2026-09-29",
+          "acquired-entities": ["Flow Controls Holding, LLC"],
+          "transaction-number": "20262250"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/0a0f17ad-75f1-418b-a145-aa5e6c704a9b/relationships/node_type?resourceVersion=id%3A443680"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/0a0f17ad-75f1-418b-a145-aa5e6c704a9b/feeds_item?resourceVersion=id%3A443680"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/0a0f17ad-75f1-418b-a145-aa5e6c704a9b/relationships/feeds_item?resourceVersion=id%3A443680"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "0d8c6442-999e-4062-81ee-95c0a13619db",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/0d8c6442-999e-4062-81ee-95c0a13619db?resourceVersion=id%3A443679"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/0d8c6442-999e-4062-81ee-95c0a13619db?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262247: Nasdaq, Inc.; LeveL Holdings, LLC",
+          "created": "2026-09-30T12:38:21+00:00",
+          "updated": "2026-09-30T12:38:21+00:00",
+          "acquired-party": "LeveL Holdings, LLC",
+          "acquiring-party": "Nasdaq, Inc.",
+          "date": "2026-09-29",
+          "acquired-entities": ["LeveL Holdings, LLC"],
+          "transaction-number": "20262247"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/0d8c6442-999e-4062-81ee-95c0a13619db/relationships/node_type?resourceVersion=id%3A443679"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/0d8c6442-999e-4062-81ee-95c0a13619db/feeds_item?resourceVersion=id%3A443679"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/0d8c6442-999e-4062-81ee-95c0a13619db/relationships/feeds_item?resourceVersion=id%3A443679"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "17668e26-b488-43e3-a735-f7a0214cb2f6",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/17668e26-b488-43e3-a735-f7a0214cb2f6?resourceVersion=id%3A443681"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/17668e26-b488-43e3-a735-f7a0214cb2f6?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262268: Navitas Semiconductor Corporation; Red Cell Partners, LLC",
+          "created": "2026-09-30T12:38:21+00:00",
+          "updated": "2026-09-30T12:38:21+00:00",
+          "acquired-party": "Red Cell Partners, LLC",
+          "acquiring-party": "Navitas Semiconductor Corporation",
+          "date": "2026-09-29",
+          "acquired-entities": ["Claros, Inc."],
+          "transaction-number": "20262268"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/17668e26-b488-43e3-a735-f7a0214cb2f6/relationships/node_type?resourceVersion=id%3A443681"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/17668e26-b488-43e3-a735-f7a0214cb2f6/feeds_item?resourceVersion=id%3A443681"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/17668e26-b488-43e3-a735-f7a0214cb2f6/relationships/feeds_item?resourceVersion=id%3A443681"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "87ef7fff-c1f7-4716-9919-4051b9f64a70",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/87ef7fff-c1f7-4716-9919-4051b9f64a70?resourceVersion=id%3A443682"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/87ef7fff-c1f7-4716-9919-4051b9f64a70?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262273: ITOCHU Corporation; Tokyo Century Corporation",
+          "created": "2026-09-30T12:38:21+00:00",
+          "updated": "2026-09-30T12:38:21+00:00",
+          "acquired-party": "Tokyo Century Corporation",
+          "acquiring-party": "ITOCHU Corporation",
+          "date": "2026-09-29",
+          "acquired-entities": ["TC Skyward Aviation U.S., Inc."],
+          "transaction-number": "20262273"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/87ef7fff-c1f7-4716-9919-4051b9f64a70/relationships/node_type?resourceVersion=id%3A443682"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/87ef7fff-c1f7-4716-9919-4051b9f64a70/feeds_item?resourceVersion=id%3A443682"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/87ef7fff-c1f7-4716-9919-4051b9f64a70/relationships/feeds_item?resourceVersion=id%3A443682"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "9628ee29-ba86-4337-911d-e5802743d8cd",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/9628ee29-ba86-4337-911d-e5802743d8cd?resourceVersion=id%3A443678"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/9628ee29-ba86-4337-911d-e5802743d8cd?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262239: KKR Armstrong Aggregator L.P.; Integer Holdings Corporation",
+          "created": "2026-09-30T12:38:19+00:00",
+          "updated": "2026-09-30T12:38:19+00:00",
+          "acquired-party": "Integer Holdings Corporation",
+          "acquiring-party": "KKR Armstrong Aggregator L.P.",
+          "date": "2026-09-29",
+          "acquired-entities": ["Integer Holdings Corporation"],
+          "transaction-number": "20262239"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/9628ee29-ba86-4337-911d-e5802743d8cd/relationships/node_type?resourceVersion=id%3A443678"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/9628ee29-ba86-4337-911d-e5802743d8cd/feeds_item?resourceVersion=id%3A443678"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/9628ee29-ba86-4337-911d-e5802743d8cd/relationships/feeds_item?resourceVersion=id%3A443678"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "99aa43e1-9e36-4307-962e-33af52938088",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/99aa43e1-9e36-4307-962e-33af52938088?resourceVersion=id%3A443677"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/99aa43e1-9e36-4307-962e-33af52938088?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262162: Kirin Holdings Company, Limited; Jamieson Wellness Inc.",
+          "created": "2026-09-30T12:38:19+00:00",
+          "updated": "2026-09-30T12:38:19+00:00",
+          "acquired-party": "Jamieson Wellness Inc.",
+          "acquiring-party": "Kirin Holdings Company, Limited",
+          "date": "2026-09-29",
+          "acquired-entities": ["Jamieson Wellness Inc."],
+          "transaction-number": "20262162"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/99aa43e1-9e36-4307-962e-33af52938088/relationships/node_type?resourceVersion=id%3A443677"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/99aa43e1-9e36-4307-962e-33af52938088/feeds_item?resourceVersion=id%3A443677"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/99aa43e1-9e36-4307-962e-33af52938088/relationships/feeds_item?resourceVersion=id%3A443677"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "9274c0c3-d1c6-4af1-adf7-ce709ce62d36",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/9274c0c3-d1c6-4af1-adf7-ce709ce62d36?resourceVersion=id%3A443643"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/9274c0c3-d1c6-4af1-adf7-ce709ce62d36?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20261642: BSIV Blueline Holdings, LP; Sherry Rowley and Brett Rowley",
+          "created": "2026-09-29T16:31:02+00:00",
+          "updated": "2026-09-29T16:31:02+00:00",
+          "acquired-party": "Sherry Rowley and Brett Rowley",
+          "acquiring-party": "BSIV Blueline Holdings, LP",
+          "date": "2026-09-28",
+          "acquired-entities": ["Off Duty Management, Inc."],
+          "transaction-number": "20261642"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/9274c0c3-d1c6-4af1-adf7-ce709ce62d36/relationships/node_type?resourceVersion=id%3A443643"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/9274c0c3-d1c6-4af1-adf7-ce709ce62d36/feeds_item?resourceVersion=id%3A443643"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/9274c0c3-d1c6-4af1-adf7-ce709ce62d36/relationships/feeds_item?resourceVersion=id%3A443643"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "460df3a5-e714-4dcf-9136-0332bfc1c781",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/460df3a5-e714-4dcf-9136-0332bfc1c781?resourceVersion=id%3A443231"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/460df3a5-e714-4dcf-9136-0332bfc1c781?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262284: Novo Tellus PE Fund 3, L.P.; Elma Payton",
+          "created": "2026-09-22T14:09:38+00:00",
+          "updated": "2026-09-22T14:09:38+00:00",
+          "acquired-party": "Elma Payton",
+          "acquiring-party": "Novo Tellus PE Fund 3, L.P.",
+          "date": "2026-09-21",
+          "acquired-entities": ["TTL Holdings, LLC"],
+          "transaction-number": "20262284"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/460df3a5-e714-4dcf-9136-0332bfc1c781/relationships/node_type?resourceVersion=id%3A443231"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/460df3a5-e714-4dcf-9136-0332bfc1c781/feeds_item?resourceVersion=id%3A443231"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/460df3a5-e714-4dcf-9136-0332bfc1c781/relationships/feeds_item?resourceVersion=id%3A443231"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "b03fdeb3-a686-4b2e-8042-ac3eb5cdafe3",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/b03fdeb3-a686-4b2e-8042-ac3eb5cdafe3?resourceVersion=id%3A443232"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/b03fdeb3-a686-4b2e-8042-ac3eb5cdafe3?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262285: Korea Zinc Co., Ltd.; SOLARCYCLE, Inc.",
+          "created": "2026-09-22T14:09:38+00:00",
+          "updated": "2026-09-22T14:09:38+00:00",
+          "acquired-party": "SOLARCYCLE, Inc.",
+          "acquiring-party": "Korea Zinc Co., Ltd.",
+          "date": "2026-09-21",
+          "acquired-entities": ["SCI LLC"],
+          "transaction-number": "20262285"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/b03fdeb3-a686-4b2e-8042-ac3eb5cdafe3/relationships/node_type?resourceVersion=id%3A443232"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/b03fdeb3-a686-4b2e-8042-ac3eb5cdafe3/feeds_item?resourceVersion=id%3A443232"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/b03fdeb3-a686-4b2e-8042-ac3eb5cdafe3/relationships/feeds_item?resourceVersion=id%3A443232"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "b0dcdb87-0bb1-43f9-90c0-09bc2ec9a56e",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/b0dcdb87-0bb1-43f9-90c0-09bc2ec9a56e?resourceVersion=id%3A443233"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/b0dcdb87-0bb1-43f9-90c0-09bc2ec9a56e?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262290: Madison Industries Holdings LLC; ebm-papst Mulfingen GmbH & Co. KGaA & Co. KG",
+          "created": "2026-09-22T14:09:38+00:00",
+          "updated": "2026-09-22T14:09:38+00:00",
+          "acquired-party": "ebm-papst Mulfingen GmbH & Co. KGaA & Co. KG",
+          "acquiring-party": "Madison Industries Holdings LLC",
+          "date": "2026-09-21",
+          "acquired-entities": ["ebm-papst Mulfingen GmbH & Co. KGaA & Co. KG"],
+          "transaction-number": "20262290"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/b0dcdb87-0bb1-43f9-90c0-09bc2ec9a56e/relationships/node_type?resourceVersion=id%3A443233"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/b0dcdb87-0bb1-43f9-90c0-09bc2ec9a56e/feeds_item?resourceVersion=id%3A443233"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/b0dcdb87-0bb1-43f9-90c0-09bc2ec9a56e/relationships/feeds_item?resourceVersion=id%3A443233"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "4c7f1ee7-de41-433c-ac3e-f39d55c70108",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/4c7f1ee7-de41-433c-ac3e-f39d55c70108?resourceVersion=id%3A443228"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/4c7f1ee7-de41-433c-ac3e-f39d55c70108?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262265: KKR Global Infrastructure Investors V (USD) SCSp; DCC Energy plc",
+          "created": "2026-09-22T14:09:36+00:00",
+          "updated": "2026-09-22T14:09:36+00:00",
+          "acquired-party": "DCC Energy plc",
+          "acquiring-party": "KKR Global Infrastructure Investors V (USD) SCSp",
+          "date": "2026-09-21",
+          "acquired-entities": ["DCC Energy plc"],
+          "transaction-number": "20262265"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/4c7f1ee7-de41-433c-ac3e-f39d55c70108/relationships/node_type?resourceVersion=id%3A443228"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/4c7f1ee7-de41-433c-ac3e-f39d55c70108/feeds_item?resourceVersion=id%3A443228"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/4c7f1ee7-de41-433c-ac3e-f39d55c70108/relationships/feeds_item?resourceVersion=id%3A443228"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "519fdb49-40df-4455-8f6f-372666960f3c",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/519fdb49-40df-4455-8f6f-372666960f3c?resourceVersion=id%3A443227"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/519fdb49-40df-4455-8f6f-372666960f3c?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262264: Bain Capital Insurance Fund, L.P.; Spitfire Topco Ltd.",
+          "created": "2026-09-22T14:09:36+00:00",
+          "updated": "2026-09-22T14:09:36+00:00",
+          "acquired-party": "Spitfire Topco Ltd.",
+          "acquiring-party": "Bain Capital Insurance Fund, L.P.",
+          "date": "2026-09-21",
+          "acquired-entities": ["Blackwood Bidco LLC"],
+          "transaction-number": "20262264"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/519fdb49-40df-4455-8f6f-372666960f3c/relationships/node_type?resourceVersion=id%3A443227"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/519fdb49-40df-4455-8f6f-372666960f3c/feeds_item?resourceVersion=id%3A443227"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/519fdb49-40df-4455-8f6f-372666960f3c/relationships/feeds_item?resourceVersion=id%3A443227"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "aa041c51-e273-47fa-b3c6-d8ec9664cbda",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/aa041c51-e273-47fa-b3c6-d8ec9664cbda?resourceVersion=id%3A443230"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/aa041c51-e273-47fa-b3c6-d8ec9664cbda?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262275: nVent Electric plc; Dennis T. Currier",
+          "created": "2026-09-22T14:09:36+00:00",
+          "updated": "2026-09-22T14:09:36+00:00",
+          "acquired-party": "Dennis T. Currier",
+          "acquiring-party": "nVent Electric plc",
+          "date": "2026-09-21",
+          "acquired-entities": ["Maverick Power, LLC"],
+          "transaction-number": "20262275"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/aa041c51-e273-47fa-b3c6-d8ec9664cbda/relationships/node_type?resourceVersion=id%3A443230"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/aa041c51-e273-47fa-b3c6-d8ec9664cbda/feeds_item?resourceVersion=id%3A443230"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/aa041c51-e273-47fa-b3c6-d8ec9664cbda/relationships/feeds_item?resourceVersion=id%3A443230"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "ecfc0ae7-0040-45fa-a05d-b4cb46867228",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/ecfc0ae7-0040-45fa-a05d-b4cb46867228?resourceVersion=id%3A443229"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/ecfc0ae7-0040-45fa-a05d-b4cb46867228?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262266: ECP VI-D, LP; DCC Energy plc",
+          "created": "2026-09-22T14:09:36+00:00",
+          "updated": "2026-09-22T14:09:36+00:00",
+          "acquired-party": "DCC Energy plc",
+          "acquiring-party": "ECP VI-D, LP",
+          "date": "2026-09-21",
+          "acquired-entities": ["DCC Energy plc"],
+          "transaction-number": "20262266"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/ecfc0ae7-0040-45fa-a05d-b4cb46867228/relationships/node_type?resourceVersion=id%3A443229"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/ecfc0ae7-0040-45fa-a05d-b4cb46867228/feeds_item?resourceVersion=id%3A443229"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/ecfc0ae7-0040-45fa-a05d-b4cb46867228/relationships/feeds_item?resourceVersion=id%3A443229"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "61008f67-c766-4a52-902f-0e13754131ce",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/61008f67-c766-4a52-902f-0e13754131ce?resourceVersion=id%3A443226"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/61008f67-c766-4a52-902f-0e13754131ce?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262263: BP UFT Aggregator, L.P.; Shad Stringfellow",
+          "created": "2026-09-22T14:09:34+00:00",
+          "updated": "2026-09-22T14:09:34+00:00",
+          "acquired-party": "Shad Stringfellow",
+          "acquiring-party": "BP UFT Aggregator, L.P.",
+          "date": "2026-09-21",
+          "acquired-entities": [
+            "ClearWater, LLC",
+            "ClearElectric, LLC",
+            "Custom Control Technologies, LLC"
+          ],
+          "transaction-number": "20262263"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/61008f67-c766-4a52-902f-0e13754131ce/relationships/node_type?resourceVersion=id%3A443226"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/61008f67-c766-4a52-902f-0e13754131ce/feeds_item?resourceVersion=id%3A443226"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/61008f67-c766-4a52-902f-0e13754131ce/relationships/feeds_item?resourceVersion=id%3A443226"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "c1ec142c-db7f-4c28-b0bc-54a2a9467d47",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/c1ec142c-db7f-4c28-b0bc-54a2a9467d47?resourceVersion=id%3A443225"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/c1ec142c-db7f-4c28-b0bc-54a2a9467d47?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262262: Vertiv Holdings Co.; Mr. Sidney Hinton",
+          "created": "2026-09-22T14:09:34+00:00",
+          "updated": "2026-09-22T14:09:34+00:00",
+          "acquired-party": "Mr. Sidney Hinton",
+          "acquiring-party": "Vertiv Holdings Co.",
+          "date": "2026-09-21",
+          "acquired-entities": ["Utility Innovation Holding, Inc."],
+          "transaction-number": "20262262"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/c1ec142c-db7f-4c28-b0bc-54a2a9467d47/relationships/node_type?resourceVersion=id%3A443225"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/c1ec142c-db7f-4c28-b0bc-54a2a9467d47/feeds_item?resourceVersion=id%3A443225"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/c1ec142c-db7f-4c28-b0bc-54a2a9467d47/relationships/feeds_item?resourceVersion=id%3A443225"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "c4a3d1d0-2621-4fcb-ac4b-ae9691939c3a",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/c4a3d1d0-2621-4fcb-ac4b-ae9691939c3a?resourceVersion=id%3A443223"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/c4a3d1d0-2621-4fcb-ac4b-ae9691939c3a?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262254: Blackstone Private Equity Strategies Fund L.P.; VSC Synapse, LLC",
+          "created": "2026-09-22T14:09:34+00:00",
+          "updated": "2026-09-22T14:09:34+00:00",
+          "acquired-party": "VSC Synapse, LLC",
+          "acquiring-party": "Blackstone Private Equity Strategies Fund L.P.",
+          "date": "2026-09-21",
+          "acquired-entities": ["VSC Synapse, LLC"],
+          "transaction-number": "20262254"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/c4a3d1d0-2621-4fcb-ac4b-ae9691939c3a/relationships/node_type?resourceVersion=id%3A443223"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/c4a3d1d0-2621-4fcb-ac4b-ae9691939c3a/feeds_item?resourceVersion=id%3A443223"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/c4a3d1d0-2621-4fcb-ac4b-ae9691939c3a/relationships/feeds_item?resourceVersion=id%3A443223"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "e6439252-61fa-4219-a348-40b2b2b63310",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/e6439252-61fa-4219-a348-40b2b2b63310?resourceVersion=id%3A443224"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/e6439252-61fa-4219-a348-40b2b2b63310?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262256: CDW Corporation; Analytics and Insights Holdings, LLC",
+          "created": "2026-09-22T14:09:34+00:00",
+          "updated": "2026-09-22T14:09:34+00:00",
+          "acquired-party": "Analytics and Insights Holdings, LLC",
+          "acquiring-party": "CDW Corporation",
+          "date": "2026-09-21",
+          "acquired-entities": ["Lovelytics Data LLC"],
+          "transaction-number": "20262256"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/e6439252-61fa-4219-a348-40b2b2b63310/relationships/node_type?resourceVersion=id%3A443224"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/e6439252-61fa-4219-a348-40b2b2b63310/feeds_item?resourceVersion=id%3A443224"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/e6439252-61fa-4219-a348-40b2b2b63310/relationships/feeds_item?resourceVersion=id%3A443224"
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "early_termination_notice",
+        "id": "20ada635-27a3-4420-a38b-60e5021d5ef4",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/20ada635-27a3-4420-a38b-60e5021d5ef4?resourceVersion=id%3A443222"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/20ada635-27a3-4420-a38b-60e5021d5ef4?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20262249: Genstar Capital Partners XI, L.P.; Apax X USD L.P.",
+          "created": "2026-09-22T14:09:32+00:00",
+          "updated": "2026-09-22T14:09:32+00:00",
+          "acquired-party": "Apax X USD L.P.",
+          "acquiring-party": "Genstar Capital Partners XI, L.P.",
+          "date": "2026-09-21",
+          "acquired-entities": ["Lakehouse TopCo Inc."],
+          "transaction-number": "20262249"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/20ada635-27a3-4420-a38b-60e5021d5ef4/relationships/node_type?resourceVersion=id%3A443222"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/20ada635-27a3-4420-a38b-60e5021d5ef4/feeds_item?resourceVersion=id%3A443222"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/20ada635-27a3-4420-a38b-60e5021d5ef4/relationships/feeds_item?resourceVersion=id%3A443222"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "meta": {
+      "count": 28172
+    }
+  },
+  {
+    "jsonapi": {
+      "version": "1.0",
+      "meta": {
+        "links": {
+          "self": {
+            "href": "http://jsonapi.org/format/1.0/"
+          }
+        }
+      }
+    },
+    "data": [
+      {
+        "type": "early_termination_notice",
+        "id": "15b2f56c-0357-48df-b4c4-be69b6aafa84",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/15b2f56c-0357-48df-b4c4-be69b6aafa84?resourceVersion=id%3A425492"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/15b2f56c-0357-48df-b4c4-be69b6aafa84?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20260358: ACP Vault, LP; US Fertility Holdings, LLC",
+          "created": "2025-12-29T14:09:54+00:00",
+          "updated": "2025-12-29T14:14:05+00:00",
+          "acquired-party": "US Fertility Holdings, LLC",
+          "acquiring-party": "ACP Vault, LP",
+          "date": "2025-12-23",
+          "acquired-entities": ["US Fertility Holdings, LLC"],
+          "transaction-number": "20260358"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/15b2f56c-0357-48df-b4c4-be69b6aafa84/relationships/node_type?resourceVersion=id%3A425492"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/15b2f56c-0357-48df-b4c4-be69b6aafa84/feeds_item?resourceVersion=id%3A425492"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/15b2f56c-0357-48df-b4c4-be69b6aafa84/relationships/feeds_item?resourceVersion=id%3A425492"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "meta": {
+      "count": 1
+    }
+  },
+  {
+    "jsonapi": {
+      "version": "1.0",
+      "meta": {
+        "links": {
+          "self": {
+            "href": "http://jsonapi.org/format/1.0/"
+          }
+        }
+      }
+    },
+    "data": [
+      {
+        "type": "early_termination_notice",
+        "id": "fbfb3ea0-8a09-4a17-b386-2d91e2cadf58",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/fbfb3ea0-8a09-4a17-b386-2d91e2cadf58?resourceVersion=id%3A425479"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/fbfb3ea0-8a09-4a17-b386-2d91e2cadf58?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": "20260358: ACP Vault, LP; US Fertility Holdings, LLC",
+          "created": "2025-12-29T13:53:52+00:00",
+          "updated": "2025-12-29T13:53:52+00:00",
+          "acquired-party": "US Fertility Holdings, LLC",
+          "acquiring-party": "ACP Vault, LP",
+          "date": "2025-12-23",
+          "acquired-entities": ["US Fertility Holdings, LLC"],
+          "transaction-number": "20260358"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/fbfb3ea0-8a09-4a17-b386-2d91e2cadf58/relationships/node_type?resourceVersion=id%3A425479"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/fbfb3ea0-8a09-4a17-b386-2d91e2cadf58/feeds_item?resourceVersion=id%3A425479"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/fbfb3ea0-8a09-4a17-b386-2d91e2cadf58/relationships/feeds_item?resourceVersion=id%3A425479"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "meta": {
+      "count": 1
+    }
+  },
+  {
+    "jsonapi": {
+      "version": "1.0",
+      "meta": {
+        "links": {
+          "self": {
+            "href": "http://jsonapi.org/format/1.0/"
+          }
+        }
+      }
+    },
+    "data": [
+      {
+        "type": "early_termination_notice",
+        "id": "21701b34-106d-418a-8268-61c33ca3edcc",
+        "links": {
+          "self": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/21701b34-106d-418a-8268-61c33ca3edcc?resourceVersion=id%3A433299"
+          },
+          "working-copy": {
+            "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/21701b34-106d-418a-8268-61c33ca3edcc?resourceVersion=rel%3Aworking-copy"
+          }
+        },
+        "attributes": {
+          "title": ": ; New Mountain Partners VI, L.P.",
+          "created": "2026-04-29T15:25:27+00:00",
+          "updated": "2026-04-29T15:25:27+00:00",
+          "acquired-party": "New Mountain Partners VI, L.P.",
+          "acquiring-party": "Green Equity Investors Side IX, L.P.",
+          "date": "2026-04-28",
+          "acquired-entities": ["Chartwell Parent, Inc."],
+          "transaction-number": "20261224"
+        },
+        "relationships": {
+          "node_type": {
+            "data": null,
+            "links": {
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/21701b34-106d-418a-8268-61c33ca3edcc/relationships/node_type?resourceVersion=id%3A433299"
+              }
+            }
+          },
+          "feeds_item": {
+            "data": [],
+            "links": {
+              "related": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/21701b34-106d-418a-8268-61c33ca3edcc/feeds_item?resourceVersion=id%3A433299"
+              },
+              "self": {
+                "href": "https://www.ftc.gov/v0/hsr-early-termination-notices/21701b34-106d-418a-8268-61c33ca3edcc/relationships/feeds_item?resourceVersion=id%3A433299"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "meta": {
+      "count": 1
+    }
+  }
+]

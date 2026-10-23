@@ -26,6 +26,20 @@ export type CorpusRow = {
 /** A stored row as read back from the corpus (only the compared columns are required). */
 export type StoredRow = Omit<CorpusRow, "ordinal"> & { ordinal: number };
 
+/** The compared columns of a row plus its id (rows.contentOf): what change detection sees. */
+export type RowContent = {
+  id: string;
+  category: string;
+  state: string;
+  county_geoids: string[];
+  title: string;
+  source_url: string;
+  item: JsonObject;
+  detail: JsonObject;
+  text: string;
+  filters: JsonObject;
+};
+
 /** One HTTP request a run made: recorded in ingest.runs.requests. The URL never carries a key. */
 export type RequestRecord = {
   url: string;
@@ -66,6 +80,8 @@ export type Collected = {
    * provenance the stored row was written with). Not called by scheduled runs.
    */
   verifyHeld?: () => Promise<ParityReport>;
+  /** The already-held records rebuilt by this port with the provenance their stored rows carry (parity checks). */
+  rebuildHeld?: () => Promise<{ key: string; built: CorpusRow; stored: StoredRow }[]>;
 };
 
 export type ParityReport = {
@@ -132,7 +148,7 @@ export interface SourceAdapter {
    * The parts of a row compared for change detection. Capture-time provenance that a full rebuild would also restate
    * (retrieval date, capture timestamps) is masked, so an unchanged source record never rewrites a row.
    */
-  comparable(row: CorpusRow | StoredRow): Json;
+  comparable(content: RowContent): Json;
   /**
    * Catalog text the source restates after adding rows (public.ingest_catalog_note_v1), e.g. the listing qualification
    * with the new coverage end. Only for sources whose catalog config allows notes.

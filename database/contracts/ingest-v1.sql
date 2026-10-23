@@ -23,6 +23,21 @@
 -- service_role. Idempotent (create if not exists / create or replace / on conflict). Section 9 (cron) is a guarded block
 -- that does nothing until pg_cron and pg_net are both installed: apply this file again after enabling pg_net.
 -- Offline test: src/lib/ingest/contract.test.mjs (pglite).
+--
+-- Deployment (lead; project xosqzzsnhxcyehcnirpa — supabase/config.toml names another project, so pass --project-ref):
+--   1. create extension if not exists pg_net;                    (pg_cron is already installed)
+--   2. apply this file (safe to re-apply; sources stay disabled until step 7).
+--   3. function secrets, by name: INGEST_CRON_SECRET (a new random value) and DATA_GOV_API_KEY (ingest-ftc-hsr);
+--      the same INGEST_CRON_SECRET value in Vault: select vault.create_secret('<value>', 'ingest_cron_secret');
+--   4. from the repository root: supabase functions deploy <name> --project-ref xosqzzsnhxcyehcnirpa --no-verify-jwt
+--      for ingest-federal-register, ingest-openfda-enforcement, ingest-cpsc-recalls, ingest-ftc-hsr (each imports
+--      src/lib/ingest; if the bundler refuses that, deploy the copies from node scripts/ingest/bundle_functions.mjs <dir>).
+--   5. first run of each source, one at a time: POST https://xosqzzsnhxcyehcnirpa.supabase.co/functions/v1/<name> with
+--      Authorization: Bearer <INGEST_CRON_SECRET> and body {"source": "<id>", "trigger": "manual", "wait": true}.
+--   6. check: select source, status, fetched, inserted, updated, unchanged, held, error, notes from ingest.runs
+--      order by started_at desc limit 20;   and   select public.insights_freshness_v1();
+--   7. update ingest.sources set enabled = true where id in (...); then apply this file again (section 9 schedules).
+--   The manual continuation scripts/ingest/federal-register/run.mjs must not run once ingest-federal-register is enabled.
 
 begin;
 
