@@ -4,6 +4,7 @@ import {
   buildMdlFyPending,
   buildMdlMonthlyPending,
   buildMdlRegistryYears,
+  casesWere,
   fiscalYearOf,
   monthAxis,
   sharePct,
@@ -144,6 +145,14 @@ describe("buildMdlFyPending", () => {
       buildMdlFyPending({ mdl: 1, rows: [{ fy: 2020, pending: null }], leftCensored: false }),
     ).toBeNull();
     expect(buildMdlFyPending({ mdl: 1, rows: [], leftCensored: false })).toBeNull();
+  });
+});
+
+describe("casesWere", () => {
+  it("agrees in number with the count", () => {
+    expect(casesWere(1)).toBe("this 1 case was");
+    expect(casesWere(2)).toBe("these 2 cases were");
+    expect(casesWere(11324)).toBe("these 11,324 cases were");
   });
 });
 

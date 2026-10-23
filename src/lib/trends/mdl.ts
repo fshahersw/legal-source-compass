@@ -32,6 +32,11 @@ export function sharePct(p: number): string {
   return "less than 0.01%";
 }
 
+/** "these 9 cases were", or "this 1 case was" for a single case. */
+export function casesWere(n: number): string {
+  return n === 1 ? "this 1 case was" : `these ${formatCount(n)} cases were`;
+}
+
 const monthIndex = (m: string): number => {
   const [y, mo] = m.split("-").map(Number) as [number, number];
   return y * 12 + (mo - 1);
@@ -187,7 +192,7 @@ export function buildMdlFjcYears(input: {
     const n = input.national?.get(fy);
     const c = byFy.get(fy);
     if (n === undefined || n <= 0 || c === undefined || c <= 0) return null;
-    return `In FY${fy} these ${formatCount(c)} cases were ${sharePct((100 * c) / n)} of the ${formatCount(n)} civil cases filed in all federal district courts.`;
+    return `In FY${fy} ${casesWere(c)} ${sharePct((100 * c) / n)} of the ${formatCount(n)} civil cases filed in all federal district courts.`;
   };
   const complete = points.filter((p) => !p.partial && p.value !== null);
   const peakFy = complete.reduce<TrendPoint | null>(

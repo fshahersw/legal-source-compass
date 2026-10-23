@@ -4,7 +4,7 @@
  * nationally and its rank as the baselines. A year the tables do not give is a gap, not zero.
  */
 import { assembleBlock, yearPoints, type TrendBlockData } from "@/lib/analytics/trend";
-import { sharePct } from "./mdl";
+import { casesWere, sharePct } from "./mdl";
 
 const sharePercent = (p: number): string => sharePct(p);
 
@@ -37,7 +37,7 @@ export function buildCourtPlYears(input: {
   const baseline: string[] = [];
   if (fy !== null && filed !== null && civil !== null && civil > 0)
     baseline.push(
-      `In FY${fy} these ${filed.toLocaleString("en-US")} cases were ${sharePercent((100 * filed) / civil)} of the ${civil.toLocaleString("en-US")} civil cases filed in the court.`,
+      `In FY${fy} ${casesWere(filed)} ${sharePercent((100 * filed) / civil)} of the ${civil.toLocaleString("en-US")} civil cases filed in the court.`,
     );
   if (fy !== null && national !== null)
     baseline.push(
