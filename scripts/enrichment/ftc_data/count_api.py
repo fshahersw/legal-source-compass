@@ -42,16 +42,20 @@ def has_record(fetcher, window, offset, robo, stats):
     return bool(data)
 
 
-def count_window(fetcher, window, robo=None, stats=None):
+def count_window(fetcher, window, robo=None, stats=None, upper=None):
     """Number of records for the window: bisection between a record that exists (offset 0) and an offset past the end.
 
-    The upper bound starts at 2**19 (524,288, about twice the busiest month) and doubles if a record still exists there."""
+    With no known bound the search starts at an upper offset of 2**18 (262,144, above the busiest month so far) and doubles while
+    a record still exists there. upper is a count the answer cannot exceed (a month's total bounds each of its robocall counts)."""
     stats = stats if stats is not None else {"requests": 0}
     if not has_record(fetcher, window, 0, robo, stats):
         return 0
-    lo, hi = 0, 1 << 19
-    while has_record(fetcher, window, hi, robo, stats):
-        lo, hi = hi, hi * 2  # a record exists at lo; none at hi (checked next)
+    if upper is not None:
+        lo, hi = 0, upper  # a record exists at offset 0 and none at offset upper, because the count is at most upper
+    else:
+        lo, hi = 0, 1 << 18
+        while has_record(fetcher, window, hi, robo, stats):
+            lo, hi = hi, hi * 2  # a record exists at lo; none at hi (checked next)
     while hi - lo > 1:
         mid = (lo + hi) // 2
         if has_record(fetcher, window, mid, robo, stats):
@@ -93,8 +97,8 @@ def main():
             stats = {"requests": 0}
             w = month_window(month)
             total = count_window(fetcher, w, None, stats)
-            y = count_window(fetcher, w, True, stats)
-            n = count_window(fetcher, w, False, stats)
+            y = count_window(fetcher, w, True, stats, upper=total)
+            n = count_window(fetcher, w, False, stats, upper=total - y)
             done[month] = {"total": total, "robo_y": y, "robo_n": n, "requests": stats["requests"], "seconds": round(time.time() - t0), "counted_at": fh.now_utc(), "method": METHOD}
             os.makedirs(os.path.dirname(args.out), exist_ok=True)
             with open(args.out, "w", encoding="utf-8") as handle:

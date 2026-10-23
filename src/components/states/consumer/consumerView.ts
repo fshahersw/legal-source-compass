@@ -268,7 +268,10 @@ export function callsRows(calls: readonly StateCallsMonth[]): CallsRow[] {
       reports: count(c.calls),
       per100k:
         c.per100k != null
-          ? c.per100k.toLocaleString("en-US", { maximumFractionDigits: 1 })
+          ? c.per100k.toLocaleString("en-US", {
+              minimumFractionDigits: 1,
+              maximumFractionDigits: 1,
+            })
           : NOT_RECORDED,
       rank:
         c.rankPer100k != null && c.rankedOf != null

@@ -511,6 +511,13 @@ class CountApiTests(unittest.TestCase):
             self.assertEqual(count_api.count_window(fake, count_api.day_window("2026-09-16")), n, n)
             self.assertLessEqual(fake.calls, 42)
 
+    def test_a_known_bound_shortens_the_search_and_stays_exact(self):
+        for n in (0, 1, 2, 99, 1000):
+            plain, bounded = self.Fake(n), self.Fake(n)
+            self.assertEqual(count_api.count_window(bounded, {}, True, None, upper=1000), n)
+            count_api.count_window(plain, {}, True)
+            self.assertLessEqual(bounded.calls, plain.calls)
+
     def test_month_window_ends_on_the_last_day(self):
         self.assertEqual(count_api.month_window("2024-02"), {"created_date_from": '"2024-02-01"', "created_date_to": '"2024-02-29"'})
 

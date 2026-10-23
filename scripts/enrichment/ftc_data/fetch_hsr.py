@@ -88,10 +88,11 @@ def probe():
     fetcher = new_fetcher()
     a = ids_of(fetcher, 9000, 50, STABLE_SORT)
     b = ids_of(fetcher, 9000, 50, STABLE_SORT)
-    c = ids_of(fetcher, 8975, 100, STABLE_SORT)
+    c = ids_of(fetcher, 8975, 50, STABLE_SORT)  # the second half of c is the first half of a
+    d = ids_of(fetcher, 9025, 50, STABLE_SORT)  # the first half of d is the second half of a
     same_page = a == b
-    overlap = c[25:75] == a
-    print(json.dumps({"same_page_twice": same_page, "overlapping_window": overlap, "distinct_in_page": len(set(a)), "page_len": len(a)}))
+    overlap = c[25:] == a[:25] and d[:25] == a[25:]
+    print(json.dumps({"same_page_twice": same_page, "overlapping_windows": overlap, "distinct_in_page": len(set(a)), "page_len": len(a)}))
     return same_page and overlap and len(set(a)) == len(a) == 50
 
 
