@@ -16,6 +16,8 @@ const usd = (v: number | null | undefined) =>
     ? `$${Math.round(v).toLocaleString("en-US")}`
     : "Not recorded";
 
+const sentence = (s: string) => (s ? s[0]!.toUpperCase() + s.slice(1) : s);
+
 export function CompanyProfile({ name }: { name: string }) {
   const q = useQuery(companyQuery(name));
   if (q.isLoading) return <LoadingBlock label="Loading the company" />;
@@ -138,7 +140,7 @@ export function CompanyProfile({ name }: { name: string }) {
       {p.maude ? (
         <Panel
           title="MAUDE device reports (stored records)"
-          subtitle={`${p.maude.scope}. ${p.maude.caveat}`}
+          subtitle={`${sentence(p.maude.scope)}. ${p.maude.caveat}`}
         >
           <div className="p-3">
             <Kpi
