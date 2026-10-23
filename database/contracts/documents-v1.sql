@@ -736,7 +736,8 @@ create or replace function public.documents_link_v1() returns jsonb
 language plpgsql security definer set search_path = '' as $$
 declare n integer;
 begin
-  delete from documents.links;
+  -- every link (document_id is never null); the explicit condition is required for requests through the API
+  delete from documents.links where document_id is not null;
   insert into documents.links (document_id, to_type, to_id, relation, evidence, mentions, first_page, pages)
   select d.id, e.target_type, e.target_id, case e.kind when 'mdl_number' then 'mentions' else 'cites' end, 'exact_id',
          count(*), min(e.page), (array_agg(distinct e.page order by e.page))[1:20]
