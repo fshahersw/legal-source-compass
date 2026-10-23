@@ -48,8 +48,8 @@ function Page() {
           : "Official state-by-state series with per-capita rates, ranks, five-year trends, correlations and outlier flags."
       }
       breadcrumbs={[
-        { label: "States & courts", to: "/" },
-        { label: "Places", to: "/places" },
+        { label: "Home", to: "/" },
+        { label: "Analytics", to: "/analytics" },
         { label: "State analytics" },
       ]}
     >
