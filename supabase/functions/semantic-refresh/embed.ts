@@ -184,7 +184,11 @@ export function embeddingClient(opts: ClientOptions): Embedder {
         let wait = delay;
         if (ra && /^\d+(\.\d+)?$/.test(ra.trim())) wait = Math.max(wait, Number(ra.trim()) * 1000);
         if (wait > maxWait)
-          throw new EmbeddingError(`embedding service asked to wait ${Math.round(wait / 1000)} s`, res.status, "no");
+          throw new EmbeddingError(
+            `embedding service asked to wait ${Math.round(wait / 1000)} s`,
+            res.status,
+            "no",
+          );
         await sleep(wait);
         delay *= 2;
       }

@@ -32,7 +32,12 @@ export class RpcError extends Error {
 }
 
 /** POST /rest/v1/rpc/<name>. Only read-only RPCs are retried (a write is never repeated blindly). */
-export function rpcClient(opts: { url: string; key: string; fetch?: typeof fetch; timeoutMs?: number }): Rpc {
+export function rpcClient(opts: {
+  url: string;
+  key: string;
+  fetch?: typeof fetch;
+  timeoutMs?: number;
+}): Rpc {
   const base = opts.url.replace(/\/$/, "") + "/rest/v1/rpc/";
   const doFetch = opts.fetch ?? fetch;
   const headers: Record<string, string> = {
@@ -95,7 +100,8 @@ export function serveRefresh(opts: ServeOptions): (req: Request) => Promise<Resp
     if (req.method !== "POST") return json(405, { error: "POST only" });
     const url = opts.env("SUPABASE_URL");
     const key = opts.env("SUPABASE_SERVICE_ROLE_KEY");
-    if (!url || !key) return json(503, { error: "SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not available" });
+    if (!url || !key)
+      return json(503, { error: "SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not available" });
     const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
     if (token.length < 32) return json(401, { error: "unauthorized" });
     const rpc = rpcClient({ url, key, ...(opts.fetch ? { fetch: opts.fetch } : {}) });
@@ -117,12 +123,15 @@ export function serveRefresh(opts: ServeOptions): (req: Request) => Promise<Resp
     const embedKey = opts.env("VOYAGE_API_KEY");
     const run: Promise<RunSummary> = runRefresh({
       rpc,
-      embedder: embedKey ? embeddingClient({ key: embedKey, ...(opts.fetch ? { fetch: opts.fetch } : {}) }) : null,
+      embedder: embedKey
+        ? embeddingClient({ key: embedKey, ...(opts.fetch ? { fetch: opts.fetch } : {}) })
+        : null,
       trigger,
       ...(opts.now ? { now: opts.now } : {}),
       log: (line) => console.log(JSON.stringify({ fn: "semantic-refresh", ...line })),
     }).catch((error: unknown) => {
-      const message = error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "unknown error";
+      const message =
+        error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "unknown error";
       console.error(JSON.stringify({ fn: "semantic-refresh", step: "run-error", error: message }));
       return { status: "failed", error: message } as unknown as RunSummary;
     });

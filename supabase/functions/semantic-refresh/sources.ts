@@ -97,9 +97,13 @@ function pyReprString(s: string): string {
     else if (ch === "\n") out += "\\n";
     else if (ch === "\r") out += "\\r";
     else if (ch === "\t") out += "\\t";
-    else if (cp < 0x20 || cp === 0x7f || (cp >= 0x80 && cp < 0xa0)) out += `\\x${cp.toString(16).padStart(2, "0")}`;
+    else if (cp < 0x20 || cp === 0x7f || (cp >= 0x80 && cp < 0xa0))
+      out += `\\x${cp.toString(16).padStart(2, "0")}`;
     else if (/[\p{C}\p{Z}]/u.test(ch) && ch !== " ")
-      out += cp > 0xffff ? `\\U${cp.toString(16).padStart(8, "0")}` : `\\u${cp.toString(16).padStart(4, "0")}`;
+      out +=
+        cp > 0xffff
+          ? `\\U${cp.toString(16).padStart(8, "0")}`
+          : `\\u${cp.toString(16).padStart(4, "0")}`;
     else out += ch;
   }
   return quote + out + quote;
@@ -149,6 +153,7 @@ const HEX2 = /^[0-9A-Fa-f]{2}/;
 export function pyUnquote(s: string): string {
   if (!s.includes("%")) return s;
   let out = "";
+  // eslint-disable-next-line no-control-regex -- urllib unquotes runs of ASCII, control characters included
   const re = /[\x00-\x7f]+/g;
   let prev = 0;
   for (let m = re.exec(s); m; m = re.exec(s)) {
@@ -245,7 +250,9 @@ export function cfrDoc(row: SourceRow): Doc | null {
   const titleNo = pyStr(pyOr(get(d, "title_number"), ""));
   const ident = pyStr(pyOr(get(d, "identifier"), ""));
   if (!titleNo || !ident) return null;
-  const where = oneLine(pyOr(get(obj(pyOr(get(row, "item"), {})), "subtitle"), get(d, "subtitle") ?? null));
+  const where = oneLine(
+    pyOr(get(obj(pyOr(get(row, "item"), {})), "subtitle"), get(d, "subtitle") ?? null),
+  );
   const title = oneLine(get(row, "title"));
   return {
     dataset: "ecfr_sections_full",
@@ -265,14 +272,20 @@ export function cfrDoc(row: SourceRow): Doc | null {
 export function crsDoc(row: SourceRow): Doc | null {
   const crs = obj(pyOr(get(obj(pyOr(get(row, "detail"), {})), "crs"), {}));
   const title = oneLine(
-    pyOr(get(crs, "title"), get(obj(get(obj(pyOr(get(row, "item"), {})), "cells")), "title") ?? null),
+    pyOr(
+      get(crs, "title"),
+      get(obj(get(obj(pyOr(get(row, "item"), {})), "cells")), "title") ?? null,
+    ),
   );
   if (!title) return null;
   const topics = pyIter(pyOr(get(crs, "topics"), []))
     .filter((t): t is string => typeof t === "string" && pyStrip(t) !== "")
     .map(oneLine);
   const kind = oneLine(get(crs, "contentType"));
-  const body = joinLines([topics.length ? `Topics: ${topics.join("; ")}` : "", kind ? `Type: ${kind}` : ""]);
+  const body = joinLines([
+    topics.length ? `Topics: ${topics.join("; ")}` : "",
+    kind ? `Type: ${kind}` : "",
+  ]);
   const rid = pyStr(get(row, "id"));
   return {
     dataset: "crs_reports",
@@ -288,7 +301,12 @@ export function crsDoc(row: SourceRow): Doc | null {
 
 function summaryLines(summary: Json | undefined): string[] {
   const out: string[] = [];
-  if (summary === null || summary === undefined || typeof summary !== "object" || Array.isArray(summary))
+  if (
+    summary === null ||
+    summary === undefined ||
+    typeof summary !== "object" ||
+    Array.isArray(summary)
+  )
     return out;
   for (const block of pyIter(get(obj(pyOr(summary, {})), "blocks") ?? [])) {
     const b = obj(block);
@@ -355,7 +373,9 @@ export function oversightDoc(row: SourceRow): Doc | null {
   const desc = oneLine(get(o, "description"));
   const body = joinLines([
     pyTruthy(get(o, "oig")) ? `Reported by: ${oneLine(get(o, "oig"))}` : "",
-    pyTruthy(get(o, "agency_reviewed")) ? `Agency reviewed: ${oneLine(get(o, "agency_reviewed"))}` : "",
+    pyTruthy(get(o, "agency_reviewed"))
+      ? `Agency reviewed: ${oneLine(get(o, "agency_reviewed"))}`
+      : "",
     pyTruthy(get(o, "type")) ? `Report type: ${oneLine(get(o, "type"))}` : "",
     desc ? `Description: ${desc}` : "",
   ]);

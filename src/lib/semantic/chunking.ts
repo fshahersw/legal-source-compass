@@ -50,12 +50,33 @@ const BMP_DIGIT_CLASS =
 
 /** Python 3.13 decimal digits at or above U+10000 (inclusive ranges). */
 const ASTRAL_DIGITS: readonly (readonly [number, number])[] = [
-  [0x104a0, 0x104a9], [0x10d30, 0x10d39], [0x11066, 0x1106f], [0x110f0, 0x110f9], [0x11136, 0x1113f],
-  [0x111d0, 0x111d9], [0x112f0, 0x112f9], [0x11450, 0x11459], [0x114d0, 0x114d9], [0x11650, 0x11659],
-  [0x116c0, 0x116c9], [0x11730, 0x11739], [0x118e0, 0x118e9], [0x11950, 0x11959], [0x11c50, 0x11c59],
-  [0x11d50, 0x11d59], [0x11da0, 0x11da9], [0x11f50, 0x11f59], [0x16a60, 0x16a69], [0x16ac0, 0x16ac9],
-  [0x16b50, 0x16b59], [0x1d7ce, 0x1d7ff], [0x1e140, 0x1e149], [0x1e2f0, 0x1e2f9], [0x1e4f0, 0x1e4f9],
-  [0x1e950, 0x1e959], [0x1fbf0, 0x1fbf9],
+  [0x104a0, 0x104a9],
+  [0x10d30, 0x10d39],
+  [0x11066, 0x1106f],
+  [0x110f0, 0x110f9],
+  [0x11136, 0x1113f],
+  [0x111d0, 0x111d9],
+  [0x112f0, 0x112f9],
+  [0x11450, 0x11459],
+  [0x114d0, 0x114d9],
+  [0x11650, 0x11659],
+  [0x116c0, 0x116c9],
+  [0x11730, 0x11739],
+  [0x118e0, 0x118e9],
+  [0x11950, 0x11959],
+  [0x11c50, 0x11c59],
+  [0x11d50, 0x11d59],
+  [0x11da0, 0x11da9],
+  [0x11f50, 0x11f59],
+  [0x16a60, 0x16a69],
+  [0x16ac0, 0x16ac9],
+  [0x16b50, 0x16b59],
+  [0x1d7ce, 0x1d7ff],
+  [0x1e140, 0x1e149],
+  [0x1e2f0, 0x1e2f9],
+  [0x1e4f0, 0x1e4f9],
+  [0x1e950, 0x1e959],
+  [0x1fbf0, 0x1fbf9],
 ];
 
 function isAstralDigit(cp: number): boolean {
@@ -177,7 +198,8 @@ function linesOf(text: string, start: number, end: number): [number, number][] {
 function cutPoints(text: string, start: number, end: number, depth: number): number[] {
   const points: number[] = [];
   for (const [s, e] of linesOf(text, start, end)) {
-    if (s > start && hasNonSpace(text, s, e) && lineLevel(text.slice(s, e)) <= depth) points.push(s);
+    if (s > start && hasNonSpace(text, s, e) && lineLevel(text.slice(s, e)) <= depth)
+      points.push(s);
   }
   return points;
 }
@@ -213,7 +235,13 @@ function wordSplit(text: string, start: number, end: number, limit: number): [nu
   return pieces;
 }
 
-function split(text: string, start: number, end: number, depth: number, limit: number): [number, number][] {
+function split(
+  text: string,
+  start: number,
+  end: number,
+  depth: number,
+  limit: number,
+): [number, number][] {
   if (end - start <= limit) return [[start, end]];
   if (depth <= 3) {
     const points = cutPoints(text, start, end, depth);
@@ -252,13 +280,15 @@ export function splitSpans(text: string, maxChars: number = MAX_CHARS): Span[] {
   const merged: Span[] = [];
   for (const piece of pieces) {
     const last = merged[merged.length - 1];
-    if (last && piece.end - last.start <= maxChars) merged[merged.length - 1] = { start: last.start, end: piece.end };
+    if (last && piece.end - last.start <= maxChars)
+      merged[merged.length - 1] = { start: last.start, end: piece.end };
     else merged.push(piece);
   }
   return merged;
 }
 
 // ------------------------------------------------------------------------------------------------- embed strings, snippets
+// eslint-disable-next-line no-control-regex -- the corpus keeps U+001E/U+001F marks before heading lines
 const STRIP_MARKS = /[\x1e\x1f]/g;
 const INDENT = /\n[\t ]+/g;
 const RUNS = /[\t ]{2,}/g;
@@ -365,6 +395,10 @@ export function estimateTokens(text: string): number {
 }
 
 /** embed.py embed_key: identity of one embedding input (model, input type and the exact string). */
-export function embedKey(text: string, model: string, inputType: string = "document"): Promise<string> {
+export function embedKey(
+  text: string,
+  model: string,
+  inputType: string = "document",
+): Promise<string> {
   return sha256Hex(`${model}\x00${inputType}\x00${text}`);
 }

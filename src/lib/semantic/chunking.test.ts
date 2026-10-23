@@ -123,7 +123,8 @@ describe("chunker constants and Python character classes", () => {
   });
 
   it("line levels match", () => {
-    for (const [line, level] of G.line_levels) expect([line, lineLevel(line)]).toEqual([line, level]);
+    for (const [line, level] of G.line_levels)
+      expect([line, lineLevel(line)]).toEqual([line, level]);
   });
 });
 
@@ -176,7 +177,9 @@ describe("real rows of every collection", () => {
     it(`${r.dataset} ${r.id} (${r.rule}): Doc and passages from the pruned row`, async () => {
       expect(isSourceDataset(r.dataset)).toBe(true);
       const input = ROWS.find((x) => x["dataset"] === r.dataset && x["id"] === r.id)!;
-      const pruned: SourceRow = r.pruned_has_text ? { ...r.pruned, text: input["text"] ?? null } : r.pruned;
+      const pruned: SourceRow = r.pruned_has_text
+        ? { ...r.pruned, text: input["text"] ?? null }
+        : r.pruned;
       const doc = buildDoc(r.dataset as never, pruned);
       if (r.doc === null) {
         expect(doc).toBeNull();
@@ -184,7 +187,11 @@ describe("real rows of every collection", () => {
       }
       expect(doc).not.toBeNull();
       const { text, ...fields } = doc!;
-      expect({ ...fields, text_sha256: await sha256Hex(text), text_chars: Array.from(text).length }).toEqual(r.doc);
+      expect({
+        ...fields,
+        text_sha256: await sha256Hex(text),
+        text_chars: Array.from(text).length,
+      }).toEqual(r.doc);
       await expectChunks(chunkDoc(doc!), r.chunks);
     });
   }
@@ -197,7 +204,8 @@ describe("float16 vector text", () => {
     for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
     const view = new DataView(bytes.buffer);
     const got: string[] = [];
-    for (let i = 0; i < bytes.length / 4; i++) got.push(formatG5(toHalf(view.getFloat32(i * 4, true))));
+    for (let i = 0; i < bytes.length / 4; i++)
+      got.push(formatG5(toHalf(view.getFloat32(i * 4, true))));
     expect(got).toEqual(G.vectors.f16_text);
   });
 });

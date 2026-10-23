@@ -53,7 +53,12 @@ export type PendingItem = {
   attempts?: number;
   source?: SourceRow | null;
   source_ready?: boolean | null;
-  ledger?: { state: "indexed" | "no_doc"; doc_sha256: string | null; chunks: number; fingerprint?: string } | null;
+  ledger?: {
+    state: "indexed" | "no_doc";
+    doc_sha256: string | null;
+    chunks: number;
+    fingerprint?: string;
+  } | null;
   stored?: StoredPassage[];
   stored_count?: number;
 };
@@ -128,14 +133,20 @@ function samePassages(rows: NewPassage[], stored: StoredPassage[]): boolean {
 }
 
 function removalPlan(item: PendingItem, settings: RunSettings, nowMs: number): Plan {
-  if (item.source_ready !== true) return { kind: "hold", item, reason: "source_collection_not_ready" };
+  if (item.source_ready !== true)
+    return { kind: "hold", item, reason: "source_collection_not_ready" };
   const missing = item.missing_since ? Date.parse(item.missing_since) : NaN;
-  if (Number.isNaN(missing) || nowMs - missing < settings.removal_grace_seconds * 1000) return { kind: "defer", item };
+  if (Number.isNaN(missing) || nowMs - missing < settings.removal_grace_seconds * 1000)
+    return { kind: "defer", item };
   return { kind: "remove", item };
 }
 
 /** What to do with one queued record (pure apart from hashing). */
-export async function planRecord(item: PendingItem, settings: RunSettings, nowMs: number): Promise<Plan> {
+export async function planRecord(
+  item: PendingItem,
+  settings: RunSettings,
+  nowMs: number,
+): Promise<Plan> {
   if (item.same)
     return {
       kind: "unchanged",
@@ -148,7 +159,8 @@ export async function planRecord(item: PendingItem, settings: RunSettings, nowMs
     if (item.source) return { kind: "unchanged", item, state: "indexed", doc_sha256: null };
     return removalPlan(item, settings, nowMs);
   }
-  if (!isSourceDataset(item.dataset)) return { kind: "hold", item, reason: "dataset_not_rebuildable" };
+  if (!isSourceDataset(item.dataset))
+    return { kind: "hold", item, reason: "dataset_not_rebuildable" };
   if (!item.source) return removalPlan(item, settings, nowMs);
   let doc;
   try {
@@ -183,10 +195,20 @@ export async function planRecord(item: PendingItem, settings: RunSettings, nowMs
     });
   }
   const docSha = await sha256Hex(
-    JSON.stringify([doc.dataset, doc.record_id, doc.title, doc.heading, doc.text, doc.href, doc.source_url, doc.max_chunks]),
+    JSON.stringify([
+      doc.dataset,
+      doc.record_id,
+      doc.title,
+      doc.heading,
+      doc.text,
+      doc.href,
+      doc.source_url,
+      doc.max_chunks,
+    ]),
   );
   const stored = item.stored ?? [];
-  if (samePassages(rows, stored)) return { kind: "unchanged", item, state: "indexed", doc_sha256: docSha };
+  if (samePassages(rows, stored))
+    return { kind: "unchanged", item, state: "indexed", doc_sha256: docSha };
   if (
     !settings.reembed_unseeded &&
     stored.some((s) => s.embed_sha256 === null && rows.some((r) => r.text_sha256 === s.text_sha256))
@@ -205,7 +227,15 @@ export async function planRecord(item: PendingItem, settings: RunSettings, nowMs
       );
     }) &&
     rows.some((r, i) => r.embed_sha256 !== stored[i]!.embed_sha256);
-  return { kind: "index", item, rows, texts, doc_sha256: docSha, drift, added: stored.length === 0 };
+  return {
+    kind: "index",
+    item,
+    rows,
+    texts,
+    doc_sha256: docSha,
+    drift,
+    added: stored.length === 0,
+  };
 }
 
 // ------------------------------------------------------------------------------------------------------------ the run
@@ -220,7 +250,12 @@ export type RunDeps = {
   cpuNow?: () => number;
   log?: (line: Record<string, unknown>) => void;
   /** Overrides of the run bounds (the local runner raises them; the edge function uses the stored settings). */
-  limits?: Partial<Pick<RunSettings, "max_records_per_run" | "max_seconds_per_run" | "max_cpu_ms_per_run" | "page_records">>;
+  limits?: Partial<
+    Pick<
+      RunSettings,
+      "max_records_per_run" | "max_seconds_per_run" | "max_cpu_ms_per_run" | "page_records"
+    >
+  >;
   /** Dry run only: the bounds to use (no run is opened, so the stored settings are read from the status RPC). */
   datasets?: string[];
 };
@@ -257,7 +292,8 @@ function bump(c: Counts, dataset: string, key: string, n = 1) {
 }
 
 function mergeCounts(into: Counts, from: Counts | undefined) {
-  for (const [d, kv] of Object.entries(from ?? {})) for (const [k, n] of Object.entries(kv)) bump(into, d, k, n);
+  for (const [d, kv] of Object.entries(from ?? {}))
+    for (const [k, n] of Object.entries(kv)) bump(into, d, k, n);
 }
 
 type ApplyRecord = Record<string, unknown>;
@@ -266,11 +302,23 @@ function decision(p: Plan, known: Set<string>, holdReason: string | null): Apply
   const base = { dataset: p.item.dataset, record_id: p.item.record_id, seq: p.item.seq };
   switch (p.kind) {
     case "unchanged":
-      return { ...base, action: "unchanged", fingerprint: p.item.fingerprint, state: p.state, doc_sha256: p.doc_sha256 };
+      return {
+        ...base,
+        action: "unchanged",
+        fingerprint: p.item.fingerprint,
+        state: p.state,
+        doc_sha256: p.doc_sha256,
+      };
     case "index": {
       const missing = p.rows.some((r) => !known.has(r.embed_sha256));
       if (missing) return { ...base, action: "hold", reason: holdReason ?? "vectors_pending" };
-      return { ...base, action: "index", fingerprint: p.item.fingerprint, doc_sha256: p.doc_sha256, rows: p.rows };
+      return {
+        ...base,
+        action: "index",
+        fingerprint: p.item.fingerprint,
+        doc_sha256: p.doc_sha256,
+        rows: p.rows,
+      };
     }
     case "no_doc":
       return { ...base, action: "no_doc", fingerprint: p.item.fingerprint };
@@ -340,8 +388,14 @@ export async function runRefresh(deps: RunDeps): Promise<RunSummary> {
   let settings: RunSettings;
   let usage: Usage;
   if (dry) {
-    const status = await deps.rpc<{ settings: RunSettings & { removal_grace: string }; usage: Usage }>("semantic_refresh_status_v1", {});
-    settings = { ...status.settings, removal_grace_seconds: parseInterval(status.settings.removal_grace) };
+    const status = await deps.rpc<{
+      settings: RunSettings & { removal_grace: string };
+      usage: Usage;
+    }>("semantic_refresh_status_v1", {});
+    settings = {
+      ...status.settings,
+      removal_grace_seconds: parseInterval(status.settings.removal_grace),
+    };
     usage = status.usage;
   } else {
     const opened = await deps.rpc<{
@@ -367,7 +421,9 @@ export async function runRefresh(deps: RunDeps): Promise<RunSummary> {
 
   try {
     if (!dry) {
-      summary.detect = await deps.rpc<Record<string, unknown>>("semantic_refresh_detect_v1", { p_run: runId });
+      summary.detect = await deps.rpc<Record<string, unknown>>("semantic_refresh_detect_v1", {
+        p_run: runId,
+      });
       log({ step: "detected", ...summary.detect });
     }
     let cursor: unknown = null;
@@ -403,21 +459,30 @@ export async function runRefresh(deps: RunDeps): Promise<RunSummary> {
       const plans: Plan[] = [];
       for (const item of page.items) plans.push(await planRecord(item, settings, now()));
       cpuMs += cpuNow() - c0;
-      for (const p of plans) bump(summary.plans, p.item.dataset, p.kind === "index" && p.added ? "add" : p.kind);
+      for (const p of plans)
+        bump(summary.plans, p.item.dataset, p.kind === "index" && p.added ? "add" : p.kind);
 
       // which new passages need a request: neither the record's own stored passages nor any other stored passage/cache
-      const indexPlans = plans.filter((p): p is Extract<Plan, { kind: "index" }> => p.kind === "index");
+      const indexPlans = plans.filter(
+        (p): p is Extract<Plan, { kind: "index" }> => p.kind === "index",
+      );
       const candidate = new Set<string>();
       for (const p of indexPlans) {
-        const own = new Set((p.item.stored ?? []).map((s) => s.embed_sha256).filter((k): k is string => !!k));
-        for (const r of p.rows) if (!own.has(r.embed_sha256) && !embeddedKnown.has(r.embed_sha256)) candidate.add(r.embed_sha256);
+        const own = new Set(
+          (p.item.stored ?? []).map((s) => s.embed_sha256).filter((k): k is string => !!k),
+        );
+        for (const r of p.rows)
+          if (!own.has(r.embed_sha256) && !embeddedKnown.has(r.embed_sha256))
+            candidate.add(r.embed_sha256);
       }
       const known = new Set<string>(embeddedKnown);
       for (const p of indexPlans)
         for (const s of p.item.stored ?? []) if (s.embed_sha256) known.add(s.embed_sha256);
       const list = [...candidate];
       for (let i = 0; i < list.length; i += 4000) {
-        const got = await deps.rpc<string[]>("semantic_refresh_known_keys_v1", { p_keys: list.slice(i, i + 4000) });
+        const got = await deps.rpc<string[]>("semantic_refresh_known_keys_v1", {
+          p_keys: list.slice(i, i + 4000),
+        });
         for (const k of got ?? []) known.add(k);
       }
       // own stored keys are reusable only for the record itself until it is applied; the database resolves them by key
@@ -425,9 +490,11 @@ export async function runRefresh(deps: RunDeps): Promise<RunSummary> {
 
       // heading-drift guard: re-embedding passages whose text is unchanged (a heading changed) is capped per run
       const finalPlans: Plan[] = plans.map((p) => {
-        if (p.kind !== "index" || !p.drift || p.rows.every((r) => known.has(r.embed_sha256))) return p;
+        if (p.kind !== "index" || !p.drift || p.rows.every((r) => known.has(r.embed_sha256)))
+          return p;
         driftRecords += 1;
-        if (driftRecords > settings.drift_guard) return { kind: "hold", item: p.item, reason: "heading_drift_guard" };
+        if (driftRecords > settings.drift_guard)
+          return { kind: "hold", item: p.item, reason: "heading_drift_guard" };
         return p;
       });
 
@@ -439,7 +506,11 @@ export async function runRefresh(deps: RunDeps): Promise<RunSummary> {
         for (const r of p.rows) {
           if (known.has(r.embed_sha256) || seen.has(r.embed_sha256)) continue;
           seen.add(r.embed_sha256);
-          need.push({ key: r.embed_sha256, text: p.texts.get(r.embed_sha256)!, dataset: p.item.dataset });
+          need.push({
+            key: r.embed_sha256,
+            text: p.texts.get(r.embed_sha256)!,
+            dataset: p.item.dataset,
+          });
         }
       }
       summary.unknownKeys += need.length;
@@ -447,7 +518,8 @@ export async function runRefresh(deps: RunDeps): Promise<RunSummary> {
         summary.reservedUpperBound += reserveFor(n.text);
         summary.estimatedTokens += estimateTokens(n.text);
       }
-      if (need.length && !dry && summary.embeddingStop === null && !deps.embedder) summary.embeddingStop = "embedding_key_missing";
+      if (need.length && !dry && summary.embeddingStop === null && !deps.embedder)
+        summary.embeddingStop = "embedding_key_missing";
       let at = 0;
       while (!dry && summary.embeddingStop === null && at < need.length) {
         if (now() - t0 > settings.max_seconds_per_run * 1000) {
@@ -468,10 +540,14 @@ export async function runRefresh(deps: RunDeps): Promise<RunSummary> {
           summary.embeddingStop = totalRemaining < dailyRemaining ? "total_cap" : "daily_cap";
           break;
         }
-        const res = await deps.rpc<Usage & { ok: boolean; reason?: string; reservation_id: number | null }>(
-          "semantic_refresh_reserve_v1",
-          { p_run: runId, p_dataset: batch[0]!.dataset, p_reserve: reserve, p_inputs: batch.length },
-        );
+        const res = await deps.rpc<
+          Usage & { ok: boolean; reason?: string; reservation_id: number | null }
+        >("semantic_refresh_reserve_v1", {
+          p_run: runId,
+          p_dataset: batch[0]!.dataset,
+          p_reserve: reserve,
+          p_inputs: batch.length,
+        });
         dailyRemaining = res.daily_remaining;
         totalRemaining = res.total_remaining;
         if (!res.ok || res.reservation_id === null) {
@@ -483,15 +559,25 @@ export async function runRefresh(deps: RunDeps): Promise<RunSummary> {
           out = await deps.embedder!.embed(batch.map((b) => b.text));
         } catch (error) {
           const billedUnknown = !(error instanceof EmbeddingError) || error.billed === "unknown";
-          await deps.rpc("semantic_refresh_settle_v1", { p_reservation: res.reservation_id, p_tokens: billedUnknown ? null : 0 });
+          await deps.rpc("semantic_refresh_settle_v1", {
+            p_reservation: res.reservation_id,
+            p_tokens: billedUnknown ? null : 0,
+          });
           summary.embeddingStop = "embedding_failed";
-          log({ step: "embedding-failed", status: error instanceof EmbeddingError ? error.status : 0, billed: billedUnknown ? "unknown" : "no" });
+          log({
+            step: "embedding-failed",
+            status: error instanceof EmbeddingError ? error.status : 0,
+            billed: billedUnknown ? "unknown" : "no",
+          });
           break;
         }
-        const settled = await deps.rpc<Usage & { overrun: boolean; tokens: number }>("semantic_refresh_settle_v1", {
-          p_reservation: res.reservation_id,
-          p_tokens: out.tokens,
-        });
+        const settled = await deps.rpc<Usage & { overrun: boolean; tokens: number }>(
+          "semantic_refresh_settle_v1",
+          {
+            p_reservation: res.reservation_id,
+            p_tokens: out.tokens,
+          },
+        );
         dailyRemaining = settled.daily_remaining;
         totalRemaining = settled.total_remaining;
         summary.tokens += out.tokens;
@@ -505,7 +591,12 @@ export async function runRefresh(deps: RunDeps): Promise<RunSummary> {
           known.add(b.key);
           embeddedKnown.add(b.key);
         }
-        log({ step: "embedded", inputs: batch.length, tokens: out.tokens, daily_remaining: dailyRemaining });
+        log({
+          step: "embedded",
+          inputs: batch.length,
+          tokens: out.tokens,
+          daily_remaining: dailyRemaining,
+        });
         if (settled.overrun) summary.embeddingStop = "reservation_overrun";
       }
 
@@ -513,22 +604,36 @@ export async function runRefresh(deps: RunDeps): Promise<RunSummary> {
       const records: ApplyRecord[] = [];
       for (const p of finalPlans) {
         if (p.kind === "hold" && summary.holds.length < 50)
-          summary.holds.push({ dataset: p.item.dataset, record_id: p.item.record_id, reason: p.reason });
+          summary.holds.push({
+            dataset: p.item.dataset,
+            record_id: p.item.record_id,
+            reason: p.reason,
+          });
         const d = decision(p, known, summary.embeddingStop ?? (dry ? "dry_run" : null));
         if (d) records.push(d);
       }
       if (!dry) {
         for (const batch of applyBatches(records)) {
-          const res = await deps.rpc<{ counts: Counts }>("semantic_refresh_apply_v1", { p_run: runId, p_records: batch });
+          const res = await deps.rpc<{ counts: Counts }>("semantic_refresh_apply_v1", {
+            p_run: runId,
+            p_records: batch,
+          });
           mergeCounts(summary.applied, res.counts);
         }
       }
-      log({ step: "page", page: summary.pages, records: page.items.length, unknown_keys: need.length, embedding_stop: summary.embeddingStop });
+      log({
+        step: "page",
+        page: summary.pages,
+        records: page.items.length,
+        unknown_keys: need.length,
+        embedding_stop: summary.embeddingStop,
+      });
       cursor = page.next;
       if (!page.more) break;
     }
     if (!dry) {
-      const status = summary.stopReason === "complete" && summary.embeddingStop === null ? "ok" : "partial";
+      const status =
+        summary.stopReason === "complete" && summary.embeddingStop === null ? "ok" : "partial";
       const finished = await deps.rpc<{ usage: Usage }>("semantic_refresh_finish_run_v1", {
         p_run: runId,
         p_status: status,
@@ -552,7 +657,8 @@ export async function runRefresh(deps: RunDeps): Promise<RunSummary> {
     }
   } catch (error) {
     summary.status = "failed";
-    summary.error = error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "unknown error";
+    summary.error =
+      error instanceof Error ? `${error.name}: ${error.message}`.slice(0, 500) : "unknown error";
     if (!dry && runId) {
       try {
         await deps.rpc("semantic_refresh_finish_run_v1", {
@@ -567,7 +673,14 @@ export async function runRefresh(deps: RunDeps): Promise<RunSummary> {
       }
     }
   }
-  log({ step: "finished", status: summary.status, stop: summary.stopReason, embedding_stop: summary.embeddingStop, tokens: summary.tokens, records: summary.records });
+  log({
+    step: "finished",
+    status: summary.status,
+    stop: summary.stopReason,
+    embedding_stop: summary.embeddingStop,
+    tokens: summary.tokens,
+    records: summary.records,
+  });
   return summary;
 }
 

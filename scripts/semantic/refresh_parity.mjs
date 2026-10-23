@@ -9,7 +9,8 @@
  *
  * Rows come from the build files sources.py reads (the exact rows published to corpus_records). U.S. Code sections have
  * no build file on this machine any more; with --live-usc they are read from corpus_records by read-only REST GETs
- * (EXTERNAL_SUPABASE_URL / EXTERNAL_SUPABASE_KEY in the environment, never printed).
+ * (EXTERNAL_SUPABASE_URL / EXTERNAL_SUPABASE_KEY in the environment, never printed). --live reads the other named
+ * collections from corpus_records the same way (what the refresh will see), instead of the build files.
  */
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -19,14 +20,26 @@ import zlib from "node:zlib";
 import { fileURLToPath } from "node:url";
 
 if (!process.execArgv.includes("--experimental-strip-types") && !process.features?.typescript) {
-  const r = spawnSync(process.execPath, ["--experimental-strip-types", "--no-warnings", fileURLToPath(import.meta.url), ...process.argv.slice(2)], { stdio: "inherit" });
+  const r = spawnSync(
+    process.execPath,
+    [
+      "--experimental-strip-types",
+      "--no-warnings",
+      fileURLToPath(import.meta.url),
+      ...process.argv.slice(2),
+    ],
+    { stdio: "inherit" },
+  );
   process.exit(r.status ?? 1);
 }
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const { chunkDoc, chunkEmbedText, embedKey, sha256Hex, snippetOf } = await import("../../src/lib/semantic/chunking.ts");
-const { buildDoc, encodeHref } = await import("../../supabase/functions/semantic-refresh/sources.ts");
-const { EMBEDDING_MODEL, EMBEDDING_INPUT_TYPE } = await import("../../supabase/functions/semantic-refresh/embed.ts");
+const { chunkDoc, chunkEmbedText, embedKey, sha256Hex, snippetOf } =
+  await import("../../src/lib/semantic/chunking.ts");
+const { buildDoc, encodeHref } =
+  await import("../../supabase/functions/semantic-refresh/sources.ts");
+const { EMBEDDING_MODEL, EMBEDDING_INPUT_TYPE } =
+  await import("../../supabase/functions/semantic-refresh/embed.ts");
 
 const BUILD = path.join(ROOT, "private", "build");
 const FILES = {
@@ -42,15 +55,22 @@ const args = process.argv.slice(2);
 const wanted = [];
 let out = path.join(BUILD, "w1025_semantic", "parity_report.json");
 let liveUsc = false;
+let liveAll = false; // --live: read the named collections from corpus_records instead of the build files
 for (let i = 0; i < args.length; i++) {
   if (args[i] === "--dataset") wanted.push(args[++i]);
   else if (args[i] === "--out") out = path.resolve(args[++i]);
   else if (args[i] === "--live-usc") liveUsc = true;
+  else if (args[i] === "--live") liveAll = true;
 }
-const datasets = wanted.length ? wanted : [...Object.keys(FILES), ...(liveUsc ? ["us_code_sections"] : [])];
+const datasets = wanted.length
+  ? wanted
+  : [...Object.keys(FILES), ...(liveUsc ? ["us_code_sections"] : [])];
 
 async function* jsonlGz(file) {
-  const rl = readline.createInterface({ input: fs.createReadStream(file).pipe(zlib.createGunzip()), crlfDelay: Infinity });
+  const rl = readline.createInterface({
+    input: fs.createReadStream(file).pipe(zlib.createGunzip()),
+    crlfDelay: Infinity,
+  });
   for await (const line of rl) if (line.trim()) yield JSON.parse(line);
 }
 
@@ -63,7 +83,8 @@ async function* rowsOf(dataset) {
 async function rest(pathAndQuery) {
   const url = (process.env.EXTERNAL_SUPABASE_URL ?? "").replace(/\/$/, "");
   const key = process.env.EXTERNAL_SUPABASE_KEY ?? "";
-  if (!url || !key) throw new Error("EXTERNAL_SUPABASE_URL / EXTERNAL_SUPABASE_KEY are needed for --live-usc");
+  if (!url || !key)
+    throw new Error("EXTERNAL_SUPABASE_URL / EXTERNAL_SUPABASE_KEY are needed for --live-usc");
   const headers = { apikey: key, Accept: "application/json" };
   if (!key.startsWith("sb_")) headers.Authorization = `Bearer ${key}`;
   for (let attempt = 1; ; attempt++) {
@@ -74,8 +95,23 @@ async function rest(pathAndQuery) {
   }
 }
 
+/** Live rows of a small composed collection (read-only REST, keyset by id). */
+async function* liveRows(dataset) {
+  let after = "";
+  for (;;) {
+    const page = await rest(
+      `corpus_records?select=id,title,source_url,text,detail,item&dataset=eq.${dataset}&order=id.asc&limit=1000${after ? `&id=gt.${encodeURIComponent(after)}` : ""}`,
+    );
+    yield* page;
+    if (page.length < 1000) return;
+    after = page[page.length - 1].id;
+  }
+}
+
 async function* uscRows() {
-  const titles = await rest("corpus_records?select=ordinal,id,number:detail->usc_title->number,name:detail->usc_title->name&dataset=eq.us_code_titles&order=ordinal.asc,id.asc");
+  const titles = await rest(
+    "corpus_records?select=ordinal,id,number:detail->usc_title->number,name:detail->usc_title->name&dataset=eq.us_code_titles&order=ordinal.asc,id.asc",
+  );
   const byNumber = new Map();
   for (const t of titles) {
     if (t.number === null || t.number === undefined) continue;
@@ -88,9 +124,18 @@ async function* uscRows() {
     const q = `corpus_records?select=id,title,source_url,text,usc:detail->usc&dataset=eq.us_code_sections&order=id.asc&limit=1000${after ? `&id=gt.${encodeURIComponent(after)}` : ""}`;
     const page = await rest(q);
     for (const r of page) {
-      const t = r.usc && typeof r.usc === "object" && !Array.isArray(r.usc) ? r.usc.title : undefined;
-      const k = t === undefined || t === null ? null : typeof t === "string" ? t : JSON.stringify(t);
-      yield { id: r.id, title: r.title, source_url: r.source_url, text: r.text, detail: { usc: r.usc ?? null }, _title_names: (k !== null && byNumber.get(k)) || [] };
+      const t =
+        r.usc && typeof r.usc === "object" && !Array.isArray(r.usc) ? r.usc.title : undefined;
+      const k =
+        t === undefined || t === null ? null : typeof t === "string" ? t : JSON.stringify(t);
+      yield {
+        id: r.id,
+        title: r.title,
+        source_url: r.source_url,
+        text: r.text,
+        detail: { usc: r.usc ?? null },
+        _title_names: (k !== null && byNumber.get(k)) || [],
+      };
     }
     if (page.length < 1000) return;
     after = page[page.length - 1].id;
@@ -102,7 +147,9 @@ function readMetas(dataset) {
   const manifest = JSON.parse(fs.readFileSync(path.join(dir, "manifest.json"), "utf8"));
   const byRecord = new Map();
   for (const shard of manifest.shards) {
-    const text = zlib.gunzipSync(fs.readFileSync(path.join(dir, `${shard.name}.meta.jsonl.gz`))).toString("utf8");
+    const text = zlib
+      .gunzipSync(fs.readFileSync(path.join(dir, `${shard.name}.meta.jsonl.gz`)))
+      .toString("utf8");
     for (const line of text.split("\n")) {
       if (!line) continue;
       const m = JSON.parse(line);
@@ -113,13 +160,39 @@ function readMetas(dataset) {
   return { manifest, byRecord };
 }
 
-const FIELDS = ["chunk_total", "char_start", "char_end", "text_sha256", "embed_sha256", "title", "href", "source_url", "snippet"];
+const FIELDS = [
+  "chunk_total",
+  "char_start",
+  "char_end",
+  "text_sha256",
+  "embed_sha256",
+  "title",
+  "href",
+  "source_url",
+  "snippet",
+];
 
 async function check(dataset) {
   const t0 = Date.now();
   const { manifest, byRecord } = readMetas(dataset);
-  const rows = dataset === "us_code_sections" ? uscRows() : rowsOf(dataset);
-  const stat = { dataset, records_in_shards: byRecord.size, chunks_in_shards: manifest.totals.chunks, rows: 0, docs: 0, no_doc: 0, records_equal: 0, chunks_compared: 0, record_mismatch: 0, field_mismatch: {}, missing_in_shards: 0, missing_from_rows: 0, build_errors: 0, samples: [] };
+  const rows =
+    dataset === "us_code_sections" ? uscRows() : liveAll ? liveRows(dataset) : rowsOf(dataset);
+  const stat = {
+    dataset,
+    records_in_shards: byRecord.size,
+    chunks_in_shards: manifest.totals.chunks,
+    rows: 0,
+    docs: 0,
+    no_doc: 0,
+    records_equal: 0,
+    chunks_compared: 0,
+    record_mismatch: 0,
+    field_mismatch: {},
+    missing_in_shards: 0,
+    missing_from_rows: 0,
+    build_errors: 0,
+    samples: [],
+  };
   const seen = new Set();
   for await (const row of rows) {
     stat.rows++;
@@ -128,19 +201,25 @@ async function check(dataset) {
       doc = buildDoc(dataset, row);
     } catch (e) {
       stat.build_errors++;
-      if (stat.samples.length < 20) stat.samples.push({ record_id: String(row.id), problem: `build error ${e?.name}` });
+      if (stat.samples.length < 20)
+        stat.samples.push({ record_id: String(row.id), problem: `build error ${e?.name}` });
       continue;
     }
     if (!doc) {
       stat.no_doc++;
-      if (byRecord.has(String(row.id)) && stat.samples.length < 20) stat.samples.push({ record_id: String(row.id), problem: "no document here but passages in the shards" });
+      if (byRecord.has(String(row.id)) && stat.samples.length < 20)
+        stat.samples.push({
+          record_id: String(row.id),
+          problem: "no document here but passages in the shards",
+        });
       continue;
     }
     stat.docs++;
     const metas = byRecord.get(doc.record_id);
     if (!metas) {
       stat.missing_in_shards++;
-      if (stat.samples.length < 20) stat.samples.push({ record_id: doc.record_id, problem: "record not in the shards" });
+      if (stat.samples.length < 20)
+        stat.samples.push({ record_id: doc.record_id, problem: "record not in the shards" });
       continue;
     }
     seen.add(doc.record_id);
@@ -154,13 +233,30 @@ async function check(dataset) {
       if (!m) continue;
       stat.chunks_compared++;
       const et = chunkEmbedText(c);
-      const ours = { chunk_total: c.chunk_total, char_start: c.start, char_end: c.end, text_sha256: await sha256Hex(c.body), embed_sha256: await embedKey(et, EMBEDDING_MODEL, EMBEDDING_INPUT_TYPE), title: c.title, href: c.href, source_url: c.source_url, snippet: snippetOf(c.body) };
+      const ours = {
+        chunk_total: c.chunk_total,
+        char_start: c.start,
+        char_end: c.end,
+        text_sha256: await sha256Hex(c.body),
+        embed_sha256: await embedKey(et, EMBEDDING_MODEL, EMBEDDING_INPUT_TYPE),
+        title: c.title,
+        href: c.href,
+        source_url: c.source_url,
+        snippet: snippetOf(c.body),
+      };
       const theirs = { ...m, href: encodeHref(m.href) };
       for (const f of FIELDS) {
         if (ours[f] !== theirs[f]) {
           equal = false;
           stat.field_mismatch[f] = (stat.field_mismatch[f] ?? 0) + 1;
-          if (stat.samples.length < 20) stat.samples.push({ record_id: doc.record_id, chunk_no: c.chunk_no, field: f, ours: String(ours[f]).slice(0, 120), shards: String(theirs[f]).slice(0, 120) });
+          if (stat.samples.length < 20)
+            stat.samples.push({
+              record_id: doc.record_id,
+              chunk_no: c.chunk_no,
+              field: f,
+              ours: String(ours[f]).slice(0, 120),
+              shards: String(theirs[f]).slice(0, 120),
+            });
         }
       }
     }
@@ -172,11 +268,29 @@ async function check(dataset) {
   return stat;
 }
 
-const report = { checked_at: new Date().toISOString().replace(/\.\d{3}Z$/, "Z"), method: "scripts/semantic/refresh_parity.mjs: TypeScript rebuild of every published row vs the batch build's shard metadata", datasets: {} };
+const report = {
+  checked_at: new Date().toISOString().replace(/\.\d{3}Z$/, "Z"),
+  method:
+    "scripts/semantic/refresh_parity.mjs: TypeScript rebuild of every published row vs the batch build's shard metadata",
+  datasets: {},
+};
 for (const d of datasets) {
   const s = await check(d);
   report.datasets[d] = s;
-  console.log(JSON.stringify({ dataset: d, rows: s.rows, docs: s.docs, records_equal: s.records_equal, record_mismatch: s.record_mismatch, chunks_compared: s.chunks_compared, missing_in_shards: s.missing_in_shards, missing_from_rows: s.missing_from_rows, field_mismatch: s.field_mismatch, seconds: s.seconds }));
+  console.log(
+    JSON.stringify({
+      dataset: d,
+      rows: s.rows,
+      docs: s.docs,
+      records_equal: s.records_equal,
+      record_mismatch: s.record_mismatch,
+      chunks_compared: s.chunks_compared,
+      missing_in_shards: s.missing_in_shards,
+      missing_from_rows: s.missing_from_rows,
+      field_mismatch: s.field_mismatch,
+      seconds: s.seconds,
+    }),
+  );
 }
 fs.mkdirSync(path.dirname(out), { recursive: true });
 fs.writeFileSync(out, JSON.stringify(report, null, 1) + "\n");
