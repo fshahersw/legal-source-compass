@@ -28,6 +28,8 @@ create function extensions.vector_dims(v extensions.halfvec) returns integer lan
 create function extensions.hv_cos(a extensions.halfvec, b extensions.halfvec) returns float8 language sql immutable as $$
   select 1 - sum(x * y) / nullif(sqrt(sum(x * x)) * sqrt(sum(y * y)), 0) from unnest(extensions.hv_arr(a), extensions.hv_arr(b)) t(x, y) $$;
 create operator extensions.<=> (leftarg = extensions.halfvec, rightarg = extensions.halfvec, function = extensions.hv_cos);
+create function extensions.hv_ne(a extensions.halfvec, b extensions.halfvec) returns boolean language sql immutable as $$ select extensions.hv_arr(a) <> extensions.hv_arr(b) $$;
+create operator extensions.<> (leftarg = extensions.halfvec, rightarg = extensions.halfvec, function = extensions.hv_ne);
 create function extensions.hv_avg_step(s float8[], v extensions.halfvec) returns float8[] language sql immutable as $$
   select case when s is null then extensions.hv_arr(v) || 1::float8
     else (select array_agg(a + b order by i) from unnest(s[1:cardinality(s) - 1], extensions.hv_arr(v)) with ordinality t(a, b, i)) || (s[cardinality(s)] + 1) end $$;
@@ -429,6 +431,58 @@ test(
       await t.db.exec("set role service_role");
       assert.ok((await t.db.query("select public.semantic_status_v1() s")).rows[0].s);
       await t.db.exec("reset role");
+    } finally {
+      await t.db.close();
+    }
+  },
+);
+
+test(
+  "semantic contract: small filtered sets are answered exactly, with the same ranking as the index path",
+  { timeout: 120000 },
+  async () => {
+    const t = await setup();
+    try {
+      await seed(t);
+      const sig = "semantic.nearest_v1(extensions.halfvec,text[],text,text,integer)";
+      for (const role of ["anon", "authenticated", "service_role"])
+        assert.equal(
+          (await t.db.query(`select has_function_privilege($1, $2, 'execute') ok`, [role, sig]))
+            .rows[0].ok,
+          false,
+          `${role} must not call the nearest-passages helper directly`,
+        );
+      // the record's own dataset is in the filter: it is still never its own related item
+      const exact = await t.rpc("semantic_related_v1", {
+        p_dataset: "us_code_sections",
+        p_record_id: "15:78u-6",
+        p_datasets: ["us_code_sections"],
+      });
+      assert.deepEqual(
+        exact.results.map((r) => r.record_id),
+        ["42:1983", "28:1407"],
+      );
+      const exactSearch = await t.rpc("semantic_search_v1", {
+        p_embedding: vec({ 0: 1 }),
+        p_datasets: ["us_code_sections"],
+      });
+      // recorded chunk counts above the exact-scan bound send the same request through the index path
+      await t.corpus("us_code_sections", { chunks: 30000 });
+      const indexed = await t.rpc("semantic_related_v1", {
+        p_dataset: "us_code_sections",
+        p_record_id: "15:78u-6",
+        p_datasets: ["us_code_sections"],
+      });
+      assert.deepEqual(indexed.results, exact.results);
+      const indexedSearch = await t.rpc("semantic_search_v1", {
+        p_embedding: vec({ 0: 1 }),
+        p_datasets: ["us_code_sections"],
+      });
+      assert.deepEqual(indexedSearch.results, exactSearch.results);
+      assert.deepEqual(
+        exactSearch.results.map((r) => r.record_id),
+        ["15:78u-6", "42:1983", "28:1407"],
+      );
     } finally {
       await t.db.close();
     }

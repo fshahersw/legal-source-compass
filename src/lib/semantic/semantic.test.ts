@@ -14,6 +14,7 @@ import {
 } from "./semantic";
 import {
   EMBEDDING_MODEL,
+  embeddingUrl,
   relatedSemantic,
   resetSemanticState,
   searchSemantic,
@@ -483,5 +484,30 @@ describe("semanticCoverage", () => {
     expect(await semanticCoverage(d)).toEqual({ status: "unavailable", reason: "database" });
     expect(await semanticCoverage(d)).toEqual({ status: "unavailable", reason: "database" });
     expect(broken).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("embeddingUrl", () => {
+  const env = (value: string | null) => ({
+    env: (n: string) => (n === "SEMANTIC_EMBEDDING_URL" ? value : null),
+  });
+  it("uses the service address unless a loopback stand-in is configured", () => {
+    const service = embeddingUrl(env(null));
+    expect(service.startsWith("https://")).toBe(true);
+    expect(embeddingUrl(env("http://127.0.0.1:5489/v1/embeddings"))).toBe(
+      "http://127.0.0.1:5489/v1/embeddings",
+    );
+    expect(embeddingUrl(env("http://localhost:5489/e"))).toBe("http://localhost:5489/e");
+  });
+  it("never sends the key to another host", () => {
+    const service = embeddingUrl(env(null));
+    for (const v of [
+      "https://example.com/v1/embeddings",
+      "http://10.0.0.5/v1/embeddings",
+      "http://127.0.0.1.example.com/x",
+      "https://127.0.0.1/x",
+      "not a url",
+    ])
+      expect(embeddingUrl(env(v))).toBe(service);
   });
 });

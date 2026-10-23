@@ -112,6 +112,7 @@ for (const suite of [
       "test_tx_parse",
     ],
   },
+  { directory: "scripts/semantic", modules: ["test_semantic"] },
 ]) {
   const result = spawnSync(
     python.command,

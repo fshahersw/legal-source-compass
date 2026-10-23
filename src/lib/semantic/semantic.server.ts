@@ -78,6 +78,23 @@ export function resetSemanticState(): void {
 }
 
 // ---------------------------------------------------------------------------------------------------- embedding
+/**
+ * Where query embeddings are requested. SEMANTIC_EMBEDDING_URL may point at a local stand-in for browser checks; only a
+ * plain-http loopback address is honoured, so a mistaken value can never send the key to another host.
+ */
+export function embeddingUrl(deps: Pick<Deps, "env"> = realDeps): string {
+  const override = deps.env("SEMANTIC_EMBEDDING_URL");
+  if (!override) return DEFAULT_EMBEDDING_URL;
+  try {
+    const u = new URL(override);
+    if (u.protocol === "http:" && (u.hostname === "127.0.0.1" || u.hostname === "localhost"))
+      return u.href;
+  } catch {
+    /* not a URL */
+  }
+  return DEFAULT_EMBEDDING_URL;
+}
+
 type EmbedResult =
   { ok: true; literal: string } | { ok: false; reason: "not_configured" | "embedding" | "busy" };
 
@@ -91,7 +108,7 @@ async function embedQuery(query: string, deps: Deps): Promise<EmbedResult> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), EMBED_TIMEOUT_MS);
   try {
-    const res = await deps.fetch(deps.env("SEMANTIC_EMBEDDING_URL") ?? DEFAULT_EMBEDDING_URL, {
+    const res = await deps.fetch(embeddingUrl(deps), {
       method: "POST",
       signal: controller.signal,
       headers: { "content-type": "application/json", authorization: `Bearer ${key}` },

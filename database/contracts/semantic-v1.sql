@@ -63,11 +63,48 @@ alter table semantic.corpora enable row level security;
 alter table semantic.chunks enable row level security;
 
 -- ================================================================================================ PART 2: read and load RPCs
+-- Nearest passages of a query vector (helper of the two read RPCs; not granted to any API role). A filter that keeps few
+-- passages (at most 25,000 of the datasets' recorded chunks) is answered exactly by a scan of those passages: the approximate
+-- index would have to visit about p_n / (share of passages kept) entries, more than its scan bound allows for the smallest
+-- datasets, and could return fewer neighbours than exist. Every other request uses the HNSW index with an iterative scan.
+create or replace function semantic.nearest_v1(
+  p_query extensions.halfvec, p_datasets text[], p_exclude_dataset text, p_exclude_record text, p_n integer
+) returns table (
+  dataset text, record_id text, chunk_no integer, chunk_total integer, char_start integer, char_end integer,
+  title text, href text, source_url text, snippet text, distance float8
+)
+language plpgsql stable set search_path = '' set hnsw.iterative_scan = 'relaxed_order' set hnsw.ef_search = '100' set hnsw.max_scan_tuples = '100000' as $$
+#variable_conflict use_column
+begin
+  if p_datasets is not null
+     and (select coalesce(sum(k.chunks), 0) from semantic.corpora k where k.dataset = any (p_datasets)) <= 25000 then
+    return query
+      select c.dataset, c.record_id, c.chunk_no, c.chunk_total, c.char_start, c.char_end, c.title, c.href, c.source_url, c.snippet,
+             (c.embedding operator(extensions.<=>) p_query)::float8
+      from semantic.chunks c
+      where c.dataset = any (p_datasets)
+        and (p_exclude_record is null or not (c.dataset = p_exclude_dataset and c.record_id = p_exclude_record))
+      -- "+ 0" keeps the planner off the index: an exact ordering of the filtered passages
+      order by (c.embedding operator(extensions.<=>) p_query)::float8 + 0, c.dataset, c.record_id, c.chunk_no
+      limit p_n;
+  else
+    return query
+      select c.dataset, c.record_id, c.chunk_no, c.chunk_total, c.char_start, c.char_end, c.title, c.href, c.source_url, c.snippet,
+             (c.embedding operator(extensions.<=>) p_query)::float8
+      from semantic.chunks c
+      where (p_datasets is null or c.dataset = any (p_datasets))
+        and (p_exclude_record is null or not (c.dataset = p_exclude_dataset and c.record_id = p_exclude_record))
+      order by c.embedding operator(extensions.<=>) p_query
+      limit p_n;
+  end if;
+end $$;
+revoke all on function semantic.nearest_v1(extensions.halfvec, text[], text, text, integer) from public, anon, authenticated;
+
 -- Nearest passages of an embedded query, best passage per record. p_datasets null = every dataset; an empty list is refused.
 create or replace function public.semantic_search_v1(
   p_embedding extensions.halfvec, p_datasets text[] default null, p_limit integer default 10
 ) returns jsonb
-language plpgsql stable security definer set search_path = '' set hnsw.iterative_scan = 'relaxed_order' set hnsw.ef_search = '100' set hnsw.max_scan_tuples = '100000' as $$
+language plpgsql stable security definer set search_path = '' as $$
 declare v_limit integer := least(greatest(coalesce(p_limit, 10), 1), 50); v_out jsonb;
 begin
   if p_embedding is null or extensions.vector_dims(p_embedding) <> 1024 then
@@ -75,12 +112,7 @@ begin
   if p_datasets is not null and cardinality(p_datasets) = 0 then
     raise exception 'Choose at least one dataset or pass null' using errcode = '22023'; end if;
   with cand as materialized (
-    select c.dataset, c.record_id, c.chunk_no, c.chunk_total, c.char_start, c.char_end, c.title, c.href, c.source_url, c.snippet,
-           (c.embedding operator(extensions.<=>) p_embedding)::float8 as distance
-    from semantic.chunks c
-    where p_datasets is null or c.dataset = any (p_datasets)
-    order by c.embedding operator(extensions.<=>) p_embedding
-    limit least(v_limit * 6, 300)
+    select * from semantic.nearest_v1(p_embedding, p_datasets, null, null, least(v_limit * 6, 300))
   ), best as (
     select distinct on (dataset, record_id) * from cand order by dataset, record_id, distance, chunk_no
   ), ranked as (
@@ -100,7 +132,7 @@ end $$;
 create or replace function public.semantic_related_v1(
   p_dataset text, p_record_id text, p_limit integer default 8, p_datasets text[] default null
 ) returns jsonb
-language plpgsql stable security definer set search_path = '' set hnsw.iterative_scan = 'relaxed_order' set hnsw.ef_search = '100' set hnsw.max_scan_tuples = '100000' as $$
+language plpgsql stable security definer set search_path = '' as $$
 declare v_limit integer := least(greatest(coalesce(p_limit, 8), 1), 50); v_center extensions.halfvec; v_n integer; v_out jsonb;
 begin
   if p_datasets is not null and cardinality(p_datasets) = 0 then
@@ -111,12 +143,7 @@ begin
     return jsonb_build_object('indexed', false, 'index_version', (select min(k.index_version) from semantic.corpora k), 'results', '[]'::jsonb);
   end if;
   with cand as materialized (
-    select c.dataset, c.record_id, c.chunk_no, c.chunk_total, c.char_start, c.char_end, c.title, c.href, c.source_url, c.snippet,
-           (c.embedding operator(extensions.<=>) v_center)::float8 as distance
-    from semantic.chunks c
-    where (p_datasets is null or c.dataset = any (p_datasets)) and not (c.dataset = p_dataset and c.record_id = p_record_id)
-    order by c.embedding operator(extensions.<=>) v_center
-    limit least(v_limit * 6, 300)
+    select * from semantic.nearest_v1(v_center, p_datasets, p_dataset, p_record_id, least(v_limit * 6, 300))
   ), best as (
     select distinct on (dataset, record_id) * from cand order by dataset, record_id, distance, chunk_no
   ), ranked as (
@@ -178,7 +205,8 @@ begin
       where (t.chunk_total, t.char_start, t.char_end, t.text_sha256, t.title, t.href, t.source_url, t.snippet)
               is distinct from (excluded.chunk_total, excluded.char_start, excluded.char_end, excluded.text_sha256, excluded.title,
                                 excluded.href, excluded.source_url, excluded.snippet)
-         or t.embedding is distinct from excluded.embedding
+         -- both sides are not null; the operator is named because search_path is empty
+         or t.embedding operator(extensions.<>) excluded.embedding
     returning 1)
   select count(*)::integer into v_changed from ins;
   return jsonb_build_object('rows', v_n, 'written', v_changed, 'unchanged', v_n - v_changed);
