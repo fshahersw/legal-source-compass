@@ -15,6 +15,7 @@ import { pageHead } from "@/lib/corpus/head";
 import { CompanyEnforcementPanel } from "@/components/enforcement/actions/CompanyEnforcementPanel";
 import { RegulatoryRecordPanel } from "@/components/enforcement/regulatory/RegulatoryRecordPanel";
 import { CompanyCepPanel } from "@/components/enforcement/oversight/CompanyCepPanel";
+import { CompanyLegalProceedings } from "@/components/apiLaw/CompanyLegalProceedings";
 import { CompanyEnforcementTrend } from "@/components/companies/CompanyEnforcementTrend";
 
 const COMPANY_CRUMBS = [
@@ -99,6 +100,7 @@ function Page() {
       <CompanyEnforcementPanel cik={cik} className="mt-3" />
       <RegulatoryRecordPanel cik={cik} className="mt-3" />
       <CompanyCepPanel cik={cik} className="mt-3" />
+      <CompanyLegalProceedings cik={cik} className="mt-3" />
     </AppShell>
   );
 }

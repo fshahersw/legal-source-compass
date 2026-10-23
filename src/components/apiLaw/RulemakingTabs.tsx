@@ -12,11 +12,23 @@ const tab =
  */
 export function RulemakingTabs({ active }: { active: RulemakingSection }) {
   const cls = (on: boolean) =>
-    cn(tab, on ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground");
+    cn(
+      tab,
+      on
+        ? "border-primary text-foreground"
+        : "border-transparent text-muted-foreground hover:text-foreground",
+    );
   const current = (on: boolean) => (on ? { "aria-current": "page" as const } : {});
   return (
-    <nav aria-label="Rulemaking sections" className="mb-3 flex flex-wrap gap-1 border-b border-border">
-      <Link to="/law/rulemaking" className={cls(active === "activity")} {...current(active === "activity")}>
+    <nav
+      aria-label="Rulemaking sections"
+      className="mb-3 flex flex-wrap gap-1 border-b border-border"
+    >
+      <Link
+        to="/law/rulemaking"
+        className={cls(active === "activity")}
+        {...current(active === "activity")}
+      >
         Federal Register activity
       </Link>
       <Link

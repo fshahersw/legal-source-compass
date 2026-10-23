@@ -10,9 +10,19 @@ export const docketQueryKey = (id: string) => ["regs-docket", id] as const;
 /** One Regulations.gov docket: its facts as published, and every held Rule, Proposed Rule and Notice that names it. */
 export function DocketView({ docketId }: { docketId: string }) {
   const fn = useServerFn(getRegsDocket);
-  const q = useQuery({ queryKey: docketQueryKey(docketId), queryFn: () => fn({ data: { docketId } }), staleTime: 10 * 60 * 1000 });
+  const q = useQuery({
+    queryKey: docketQueryKey(docketId),
+    queryFn: () => fn({ data: { docketId } }),
+    staleTime: 10 * 60 * 1000,
+  });
   if (q.isLoading)
-    return <div className="h-64 animate-pulse rounded-md border border-border bg-muted/40" aria-busy="true" aria-label="Loading the docket" />;
+    return (
+      <div
+        className="h-64 animate-pulse rounded-md border border-border bg-muted/40"
+        aria-busy="true"
+        aria-label="Loading the docket"
+      />
+    );
   if (q.isError)
     return (
       <StateNote
@@ -29,9 +39,14 @@ export function DocketView({ docketId }: { docketId: string }) {
   if (!q.data)
     return (
       <StateNote>
-        No docket {docketId} is held. It may belong to an agency outside the twelve this atlas reads, or the collection is
-        not loaded yet.{" "}
-        <a href={`https://www.regulations.gov/docket/${encodeURIComponent(docketId)}`} target="_blank" rel="noreferrer" className="text-primary underline">
+        No docket {docketId} is held. It may belong to an agency outside the twelve this atlas
+        reads, or the collection is not loaded yet.{" "}
+        <a
+          href={`https://www.regulations.gov/docket/${encodeURIComponent(docketId)}`}
+          target="_blank"
+          rel="noreferrer"
+          className="text-primary underline"
+        >
           Open it on Regulations.gov
         </a>
       </StateNote>
@@ -45,7 +60,13 @@ export function DocketView({ docketId }: { docketId: string }) {
           title="Docket"
           subtitle={docket.subtitle}
           actions={external.map((l) => (
-            <a key={l.url} href={l.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-[12px] text-primary hover:underline">
+            <a
+              key={l.url}
+              href={l.url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-0.5 text-[12px] text-primary hover:underline"
+            >
               {l.label}
               <ExternalLink className="size-3" aria-hidden />
             </a>
@@ -62,7 +83,8 @@ export function DocketView({ docketId }: { docketId: string }) {
         </Panel>
       ) : (
         <StateNote>
-          The docket record is not held (it was not in the agencies' docket listing when read); the documents below name it.
+          The docket record is not held (it was not in the agencies' docket listing when read); the
+          documents below name it.
         </StateNote>
       )}
       <Panel
@@ -92,7 +114,8 @@ export function DocketView({ docketId }: { docketId: string }) {
           </ol>
         ) : (
           <p className="px-3 py-4 text-[12.5px] text-muted-foreground">
-            No Rule, Proposed Rule or Notice in this docket is held. Its other documents are on Regulations.gov.
+            No Rule, Proposed Rule or Notice in this docket is held. Its other documents are on
+            Regulations.gov.
           </p>
         )}
       </Panel>

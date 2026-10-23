@@ -41,9 +41,20 @@ export async function runApiLawSearch(input: ApiLawSearchInput): Promise<ApiLawS
   const d = searchInput.parse(input);
   const { path, mode } = searchPath({ dataset: d.dataset, q: d.q, filters: d.filters });
   const start = (d.page - 1) * API_LAW_PAGE_SIZE;
-  const r = await restGet<unknown[]>(path, { count: true, range: [start, start + API_LAW_PAGE_SIZE - 1] });
+  const r = await restGet<unknown[]>(path, {
+    count: true,
+    range: [start, start + API_LAW_PAGE_SIZE - 1],
+  });
   const rows = r.rows.map(parseHit).filter((x): x is ApiLawHit => !!x);
-  return { dataset: d.dataset, mode, rows, total: r.total, page: d.page, pageSize: API_LAW_PAGE_SIZE, dropped: r.rows.length - rows.length };
+  return {
+    dataset: d.dataset,
+    mode,
+    rows,
+    total: r.total,
+    page: d.page,
+    pageSize: API_LAW_PAGE_SIZE,
+    dropped: r.rows.length - rows.length,
+  };
 }
 
 export const searchApiLaw = createServerFn({ method: "GET" })
@@ -71,11 +82,14 @@ export const getApiLawFacets = createServerFn({ method: "GET" })
     );
     const row = r.rows[0];
     if (!row) return null;
-    const summary = (row["summary"] && typeof row["summary"] === "object" ? row["summary"] : {}) as Record<string, unknown>;
+    const summary = (
+      row["summary"] && typeof row["summary"] === "object" ? row["summary"] : {}
+    ) as Record<string, unknown>;
     const s = (v: unknown, max = 600) => (typeof v === "string" && v.length <= max ? v : null);
     return {
       ready: typeof row["ready"] === "boolean" ? (row["ready"] as boolean) : null,
-      records: typeof row["imported_records"] === "number" ? (row["imported_records"] as number) : null,
+      records:
+        typeof row["imported_records"] === "number" ? (row["imported_records"] as number) : null,
       facets: parseFacets(data.dataset, row["listing"]),
       source: s(summary["source"]),
       builtAt: s(summary["built_at"], 40),
@@ -106,7 +120,13 @@ export type RegsOpenDoc = {
   docket: string | null;
   posted: number | null;
 };
-export type RegsTopDocket = { id: string; title: string; agency: string; posted: number; docket_type: string | null };
+export type RegsTopDocket = {
+  id: string;
+  title: string;
+  agency: string;
+  posted: number;
+  docket_type: string | null;
+};
 export type RegsYearRow = { year: string; type: string; n: number };
 export type RegsOverview = {
   as_of: string;
@@ -117,15 +137,20 @@ export type RegsOverview = {
 } | null;
 
 /** api_law_regs_overview_v1 (database/contracts/api-law-v1.sql); null until that contract is applied. */
-export const getRegsOverview = createServerFn({ method: "GET" }).handler(async (): Promise<RegsOverview> => {
-  const r = await rpcPostOptional<RegsOverview>("api_law_regs_overview_v1", {});
-  return r && typeof r === "object" && Array.isArray((r as { agencies?: unknown }).agencies) ? r : null;
-});
+export const getRegsOverview = createServerFn({ method: "GET" }).handler(
+  async (): Promise<RegsOverview> => {
+    const r = await rpcPostOptional<RegsOverview>("api_law_regs_overview_v1", {});
+    return r && typeof r === "object" && Array.isArray((r as { agencies?: unknown }).agencies)
+      ? r
+      : null;
+  },
+);
 
 const docketInput = z.object({ docketId: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9_.-]{2,120}$/) });
 
 export type RegsDocketPage = {
-  docket: (ApiLawHit & { facts: [string, string][]; links: { url: string; label: string }[] }) | null;
+  docket:
+    (ApiLawHit & { facts: [string, string][]; links: { url: string; label: string }[] }) | null;
   documents: ApiLawHit[];
   documentsTotal: number | null;
 } | null;
@@ -146,10 +171,15 @@ export const getRegsDocket = createServerFn({ method: "GET" })
     ]);
     const raw = dk.rows[0];
     const hit = raw ? parseHit(raw) : null;
-    const detail = (raw?.["detail"] && typeof raw["detail"] === "object" ? raw["detail"] : {}) as Record<string, unknown>;
+    const detail = (
+      raw?.["detail"] && typeof raw["detail"] === "object" ? raw["detail"] : {}
+    ) as Record<string, unknown>;
     const facts = Array.isArray(detail["facts"])
       ? (detail["facts"] as unknown[])
-          .filter((f): f is [string, string] => Array.isArray(f) && typeof f[0] === "string" && typeof f[1] === "string")
+          .filter(
+            (f): f is [string, string] =>
+              Array.isArray(f) && typeof f[0] === "string" && typeof f[1] === "string",
+          )
           .map(([a, b]) => [a, b] as [string, string])
       : [];
     const links = Array.isArray(detail["links"])
@@ -165,3 +195,177 @@ export const getRegsDocket = createServerFn({ method: "GET" })
 export const API_LAW_SOURCES = Object.fromEntries(
   Object.values(API_LAW_DATASETS).map((d) => [d.id, d.sourceNote]),
 ) as Record<string, string>;
+
+/* ---------------------------------------------------------------- bill text versions (GovInfo) */
+
+export type BillVersionLink = {
+  code: string;
+  label: string;
+  date: string | null;
+  packageId: string;
+  details: string;
+  pdf: string;
+  html: string;
+  xml: string;
+};
+export type BillVersions = { id: string; versions: BillVersionLink[] } | null;
+
+const billIdInput = z.object({
+  billId: z.string().regex(/^\d{2,3}-(hr|s|hjres|sjres|hconres|sconres|hres|sres)-\d{1,5}$/),
+});
+
+/** The GovInfo text versions of one bill (govinfo_bill_versions; same id as congress_bills). */
+export const getBillVersions = createServerFn({ method: "GET" })
+  .inputValidator((d: { billId: string }) => billIdInput.parse(d))
+  .handler(async ({ data }): Promise<BillVersions> => {
+    const r = await restGet<{ id: string; versions: unknown }[]>(
+      `corpus_records?select=id,versions:item->versions&dataset=eq.govinfo_bill_versions&id=eq.${encodeURIComponent(data.billId)}&limit=1`,
+    );
+    const row = r.rows[0];
+    if (!row || !Array.isArray(row.versions)) return null;
+    const ok = (u: unknown) => typeof u === "string" && /^https:\/\/www\.govinfo\.gov\//.test(u);
+    const versions = (row.versions as Record<string, unknown>[])
+      .filter((v) => typeof v["packageId"] === "string" && ok(v["details"]) && ok(v["pdf"]))
+      .map((v) => ({
+        code: String(v["code"] ?? ""),
+        label: String(v["label"] ?? v["code"] ?? ""),
+        date: typeof v["date"] === "string" ? (v["date"] as string) : null,
+        packageId: String(v["packageId"]),
+        details: String(v["details"]),
+        pdf: String(v["pdf"]),
+        html: String(v["html"]),
+        xml: String(v["xml"]),
+      }));
+    return { id: row.id, versions };
+  });
+
+/* ---------------------------------------------------------------- 10-K legal proceedings (EDGAR) */
+
+export type LegalSection = {
+  heading: string;
+  chars: number;
+  truncated: boolean;
+  start: number;
+  end: number;
+  label: string;
+};
+export type LegalFiling = {
+  id: string;
+  form: string;
+  filed: string;
+  period: string | null;
+  accession: string;
+  documentUrl: string;
+  indexUrl: string;
+  sections: LegalSection[];
+  mentions: {
+    as_written: string;
+    mdl_number: number;
+    section: string;
+    form: string;
+    held_mdl: boolean;
+  }[];
+};
+
+const cikInput = z.object({ cik: z.string().regex(/^\d{10}$/) });
+
+export function parseLegalFiling(r: Record<string, unknown>): LegalFiling | null {
+  const f = (r["filing"] ?? {}) as Record<string, unknown>;
+  const s = (v: unknown) => (typeof v === "string" ? v : null);
+  if (typeof r["id"] !== "string" || !s(f["document_url"]) || !s(f["accession"])) return null;
+  const section = (x: unknown, label: string): LegalSection | null => {
+    const o = (x ?? null) as Record<string, unknown> | null;
+    if (!o || typeof o["heading"] !== "string") return null;
+    return {
+      label,
+      heading: o["heading"] as string,
+      chars: Number(o["chars"] ?? 0),
+      truncated: o["truncated"] === true,
+      start: Number(o["start"] ?? 0),
+      end: Number(o["end"] ?? 0),
+    };
+  };
+  const sections = [
+    section(r["item3"], "Item 3"),
+    ...(Array.isArray(r["notes"]) ? (r["notes"] as unknown[]) : []).map((n) =>
+      section(n, `Note ${String(((n ?? {}) as Record<string, unknown>)["number"] ?? "")}`),
+    ),
+  ].filter((x): x is LegalSection => Boolean(x));
+  return {
+    id: r["id"] as string,
+    form: s(f["form"]) ?? "10-K",
+    filed: s(f["filed"]) ?? "",
+    period: s(f["period"]),
+    accession: s(f["accession"])!,
+    documentUrl: s(f["document_url"])!,
+    indexUrl: s(f["index_url"]) ?? s(f["document_url"])!,
+    sections,
+    mentions: (Array.isArray(r["mentions"])
+      ? (r["mentions"] as Record<string, unknown>[])
+      : []
+    ).map((m) => ({
+      as_written: String(m["as_written"] ?? ""),
+      mdl_number: Number(m["mdl_number"] ?? 0),
+      section: String(m["section"] ?? ""),
+      form: String(m["form"] ?? ""),
+      held_mdl: m["held_mdl"] === true,
+    })),
+  };
+}
+
+/** A company's 10-K legal-proceedings records (newest first), without the section texts; null when not published. */
+export const getCompanyLegalProceedings = createServerFn({ method: "GET" })
+  .inputValidator((d: { cik: string }) => cikInput.parse(d))
+  .handler(async ({ data }): Promise<LegalFiling[] | null> => {
+    const [cat, r] = await Promise.all([
+      restGet<{ id: string }[]>(
+        `corpus_datasets?select=id&id=eq.company_sec_legal_proceedings&limit=1`,
+      ),
+      restGet<Record<string, unknown>[]>(
+        `corpus_records?select=id,filing:item->filing,i3h:item->item3->heading,i3c:item->item3->chars,i3t:item->item3->truncated,notes:item->notes,mentions:item->mentions&dataset=eq.company_sec_legal_proceedings&filters=cs.${encodeURIComponent(JSON.stringify({ cik: [data.cik] }))}&order=ordinal.asc&limit=10`,
+      ),
+    ]);
+    if (!cat.rows.length) return null;
+    return r.rows
+      .map((row) => {
+        const notes = Array.isArray(row["notes"])
+          ? (row["notes"] as Record<string, unknown>[]).map((n) => {
+              const o = { ...n };
+              delete o["text"];
+              return o;
+            })
+          : [];
+        const item3 =
+          typeof row["i3h"] === "string"
+            ? { heading: row["i3h"], chars: row["i3c"], truncated: row["i3t"] }
+            : null;
+        return parseLegalFiling({ ...row, item3, notes });
+      })
+      .filter((x): x is LegalFiling => Boolean(x))
+      .sort((a, b) => (a.filed !== b.filed ? (a.filed < b.filed ? 1 : -1) : a.id < b.id ? 1 : -1));
+  });
+
+const legalTextInput = z.object({
+  id: z.string().regex(/^10k:\d{10}:\d{10}-\d{2}-\d{6}$/),
+  section: z.string().regex(/^(Item 3|Note [0-9A-Za-z]{1,4})$/),
+});
+
+/** The verbatim text of one extracted section of a 10-K record. */
+export const getLegalProceedingsText = createServerFn({ method: "GET" })
+  .inputValidator((d: { id: string; section: string }) => legalTextInput.parse(d))
+  .handler(async ({ data }): Promise<{ text: string; truncated: boolean } | null> => {
+    const r = await restGet<Record<string, unknown>[]>(
+      `corpus_records?select=item3:item->item3,notes:item->notes&dataset=eq.company_sec_legal_proceedings&id=eq.${encodeURIComponent(data.id)}&limit=1`,
+    );
+    const row = r.rows[0];
+    if (!row) return null;
+    const pick =
+      data.section === "Item 3"
+        ? (row["item3"] as Record<string, unknown> | null)
+        : ((Array.isArray(row["notes"]) ? (row["notes"] as Record<string, unknown>[]) : []).find(
+            (n) => `Note ${String(n["number"])}` === data.section,
+          ) ?? null);
+    return pick && typeof pick["text"] === "string"
+      ? { text: pick["text"] as string, truncated: pick["truncated"] === true }
+      : null;
+  });

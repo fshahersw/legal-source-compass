@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/atlas/AppShell";
 import { StateNote } from "@/components/enforcement/parts";
 import { FederalBillView } from "@/components/legislation/FederalBillView";
+import { BillTextVersions } from "@/components/apiLaw/BillTextVersions";
 import { RelatedPanel } from "@/components/semantic/RelatedPanel";
 import { pageHead } from "@/lib/corpus/head";
 import {
@@ -90,6 +91,7 @@ function FederalBillPage() {
       ) : q.data ? (
         <>
           <FederalBillView bill={q.data.bill} crs={q.data.crs} crsFailed={q.data.crsFailed} />
+          <BillTextVersions billId={`${congress}-${type}-${number}`} className="mt-4" />
           <RelatedPanel
             dataset="congress_bills"
             recordId={`${congress}-${type}-${number}`}
@@ -98,17 +100,20 @@ function FederalBillPage() {
           />
         </>
       ) : (
-        <StateNote>
-          No Bill Status record for {cite} is stored. GovInfo publishes every numbered measure of
-          the 108th–119th Congress; a number that was never introduced has no record.{" "}
-          <Link
-            to="/law/legislation"
-            search={{ q: `${TYPE_CITE[type as BillType]} ${number}`, congress }}
-            className="text-primary underline"
-          >
-            Search instead
-          </Link>
-        </StateNote>
+        <>
+          <StateNote>
+            No Bill Status record for {cite} is stored. GovInfo publishes every numbered measure of
+            the 108th–119th Congress; a number that was never introduced has no record.{" "}
+            <Link
+              to="/law/legislation"
+              search={{ q: `${TYPE_CITE[type as BillType]} ${number}`, congress }}
+              className="text-primary underline"
+            >
+              Search instead
+            </Link>
+          </StateNote>
+          <BillTextVersions billId={`${congress}-${type}-${number}`} className="mt-4" />
+        </>
       )}
     </AppShell>
   );

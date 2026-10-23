@@ -36,7 +36,10 @@ export function validateBrowserSearch(dataset: string, s: Record<string, unknown
   const page = s["page"];
   return {
     q: typeof s["q"] === "string" && s["q"].trim() ? s["q"].slice(0, 200) : undefined,
-    page: typeof page === "number" && Number.isInteger(page) && page >= 1 && page <= 200 ? page : undefined,
+    page:
+      typeof page === "number" && Number.isInteger(page) && page >= 1 && page <= 200
+        ? page
+        : undefined,
     f: Object.keys(f).length ? f : undefined,
   };
 }
@@ -91,7 +94,8 @@ export function ApiLawBrowser({
   if (facets.data === null)
     return (
       <StateNote>
-        {ds.label} is not published yet. When the lead loads it, the {ds.noun} appear here with their official links.
+        {ds.label} is not published yet. When the lead loads it, the {ds.noun} appear here with
+        their official links.
       </StateNote>
     );
 
@@ -122,7 +126,10 @@ export function ApiLawBrowser({
       </form>
       <div className="flex flex-wrap items-center gap-2" aria-label="Filters">
         {facets.isLoading ? (
-          <span className="h-8 w-64 animate-pulse rounded-md bg-muted/50" aria-label="Loading filters" />
+          <span
+            className="h-8 w-64 animate-pulse rounded-md bg-muted/50"
+            aria-label="Loading filters"
+          />
         ) : (
           (facets.data?.facets ?? [])
             .filter((f) => !hiddenFilters.includes(f.name) && f.options.length > 0)
@@ -148,7 +155,9 @@ export function ApiLawBrowser({
             size="sm"
             variant="ghost"
             onClick={() => {
-              const kept = Object.fromEntries(Object.entries(search.f ?? {}).filter(([k]) => hiddenFilters.includes(k)));
+              const kept = Object.fromEntries(
+                Object.entries(search.f ?? {}).filter(([k]) => hiddenFilters.includes(k)),
+              );
               set({ f: Object.keys(kept).length ? kept : undefined });
             }}
           >
@@ -159,14 +168,21 @@ export function ApiLawBrowser({
       {results.isLoading ? (
         <div className="space-y-1.5" aria-busy="true" aria-label={`Loading ${ds.noun}`}>
           {Array.from({ length: 8 }, (_, i) => (
-            <div key={i} className="h-12 animate-pulse rounded-md border border-border bg-muted/40" />
+            <div
+              key={i}
+              className="h-12 animate-pulse rounded-md border border-border bg-muted/40"
+            />
           ))}
         </div>
       ) : results.isError ? (
         <StateNote
           tone="error"
           action={
-            <button type="button" className="text-primary underline" onClick={() => void results.refetch()}>
+            <button
+              type="button"
+              className="text-primary underline"
+              onClick={() => void results.refetch()}
+            >
               Retry
             </button>
           }
@@ -207,7 +223,11 @@ function Results({
   const to = from + r.rows.length - 1;
   const last = r.total != null ? Math.max(1, Math.ceil(r.total / r.pageSize)) : null;
   return (
-    <section aria-label="Results" aria-busy={fetching} className={fetching ? "opacity-70" : undefined}>
+    <section
+      aria-label="Results"
+      aria-busy={fetching}
+      className={fetching ? "opacity-70" : undefined}
+    >
       <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2 text-[12px] text-muted-foreground">
         <span role="status">
           {r.rows.length
@@ -215,11 +235,19 @@ function Results({
             : `No ${noun} match.`}
           {r.mode === "id" ? " · exact identifier" : ""}
           {r.dropped ? ` · ${r.dropped} malformed row${r.dropped === 1 ? "" : "s"} not shown` : ""}
-          {facets?.ready === false ? " · the collection is being loaded; counts may be partial" : ""}
+          {facets?.ready === false
+            ? " · the collection is being loaded; counts may be partial"
+            : ""}
         </span>
         {r.rows.length ? (
           <span className="flex items-center gap-1">
-            <Button size="sm" variant="ghost" disabled={r.page <= 1} onClick={() => onPage(r.page - 1)} aria-label="Previous page">
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={r.page <= 1}
+              onClick={() => onPage(r.page - 1)}
+              aria-label="Previous page"
+            >
               <ChevronLeft className="size-4" />
             </Button>
             <span className="tabular-nums">
@@ -229,7 +257,9 @@ function Results({
             <Button
               size="sm"
               variant="ghost"
-              disabled={(last != null && r.page >= last) || r.rows.length < r.pageSize || r.page >= 200}
+              disabled={
+                (last != null && r.page >= last) || r.rows.length < r.pageSize || r.page >= 200
+              }
               onClick={() => onPage(r.page + 1)}
               aria-label="Next page"
             >
@@ -253,12 +283,23 @@ function Results({
   );
 }
 
-export function HitRow({ h, dataset, columns }: { h: ApiLawHit; dataset: string; columns: [string, string][] }) {
+export function HitRow({
+  h,
+  dataset,
+  columns,
+}: {
+  h: ApiLawHit;
+  dataset: string;
+  columns: [string, string][];
+}) {
   const href = recordHref(dataset, h.id);
   return (
     <li className="min-w-0 px-3 py-2">
       <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
-        <Link to={href as never} className="min-w-0 break-words font-semibold text-primary hover:underline">
+        <Link
+          to={href as never}
+          className="min-w-0 break-words font-semibold text-primary hover:underline"
+        >
           {h.title}
         </Link>
         {h.badges.map((b) => (
@@ -270,7 +311,9 @@ export function HitRow({ h, dataset, columns }: { h: ApiLawHit; dataset: string;
           </span>
         ))}
       </div>
-      {h.subtitle ? <p className="m-0 break-words text-[12px] text-muted-foreground">{h.subtitle}</p> : null}
+      {h.subtitle ? (
+        <p className="m-0 break-words text-[12px] text-muted-foreground">{h.subtitle}</p>
+      ) : null}
       <dl className="m-0 mt-0.5 flex flex-wrap gap-x-4 gap-y-0.5 text-[11.5px]">
         {columns
           .filter(([k]) => h.cells[k] !== undefined)
@@ -283,7 +326,12 @@ export function HitRow({ h, dataset, columns }: { h: ApiLawHit; dataset: string;
         {h.sourceUrl && /^https:\/\//.test(h.sourceUrl) ? (
           <div className="flex gap-1">
             <dd className="m-0">
-              <a href={h.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-primary hover:underline">
+              <a
+                href={h.sourceUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-0.5 text-primary hover:underline"
+              >
                 Official page
                 <ExternalLink className="size-3" aria-hidden />
               </a>

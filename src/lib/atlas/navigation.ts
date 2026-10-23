@@ -155,13 +155,14 @@ const LITIGATION_DOCKETS = /^(cl_docket_metadata$|sw_docket_)/;
 const LITIGATION = /^(mdl|jpml_|sw_|seeger$|verdict_reports$|expert_rulings$|state_proceedings$)/;
 const PLACES =
   /^(census_|county_profiles$|city_profiles$|counties$|state_metrics_|state_cross_analysis$|county_legal_activity$)/;
-const LAW_LEGISLATION = /^(congress_|state_bills$|public_laws|crs_reports$)/;
+const LAW_LEGISLATION =
+  /^(congress_|state_bills$|public_laws|crs_reports$|govinfo_(hearings|committee_prints|bill_versions|gao_reports)$|gao_legal_decisions$)/;
 const LAW_FEDERAL = /^(us_code_|ecfr_|federal_regulations_|federal_register_history$|federal$)/;
 const LAW_STATE =
   /^(state_code|state_constitution|state_regulation_|court_rule_|indiana_code$|sd_statutes$|provider_laws$)/;
 const LAW_TIME_LIMITS = /^(limitation_periods$|statutory_limitations_review$)/;
 const LAW_AGENCIES = /^(fr_agency_|agency_budget_trends$|agency_spending_by_state$)/;
-const LAW_RULEMAKING = /^(unified_agenda_pipeline$|regulatory_federal_register_activity$)/;
+const LAW_RULEMAKING = /^(unified_agenda_pipeline$|regulatory_federal_register_activity$|regulations_gov_)/;
 const COURTS_JUDGES = /^(judge|judicial_|cl_people$)/;
 
 /**

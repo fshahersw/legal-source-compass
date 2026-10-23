@@ -27,6 +27,15 @@ const tag = (x: string, name: string) => {
   return pyStrip(htmlUnescape(v)) || null;
 };
 
+/**
+ * The feed escapes descriptions twice ("Test &amp;amp; Technology" for "Test & Technology", while the title of the same
+ * item reads "Test &amp; Technology"): a description that still holds an entity after one decoding is decoded once more.
+ */
+export function unescapeTwice(v: string | null): string | null {
+  if (v === null) return null;
+  return /&(?:amp|lt|gt|quot|apos|#[0-9]{1,7}|#x[0-9a-fA-F]{1,6});/.test(v) ? htmlUnescape(v) : v;
+}
+
 /** Items of the feed, values as published (entities decoded, edge whitespace trimmed). */
 export function parseFeed(xml: string): GaoItem[] {
   const out: GaoItem[] = [];
@@ -49,7 +58,7 @@ export function parseFeed(xml: string): GaoItem[] {
       title,
       link,
       bNumber: b[1]!.toUpperCase().replaceAll(",", ", "),
-      description: tag(x, "description"),
+      description: unescapeTwice(tag(x, "description")),
       pubDate,
       published: Number.isFinite(t) ? new Date(t).toISOString().replace(/\.\d{3}Z$/, "Z") : null,
     });
