@@ -215,6 +215,10 @@ _PREFIXED = re.compile(
     r"(?P<num>(?=[0-9A-Z:\-]*\d)(?=[0-9A-Za-z:\-.]*-)[0-9A-Za-z][0-9A-Za-z:\-.]{3,28}[0-9A-Za-z])"
 )
 _MDL = re.compile(r"\bMDL\s?(?:No\.\s?)?(?P<num>\d{3,4})\b")
+# older SDNY/NDIL-style civil numbers written with spaces: "Civil Action No. 01 C 6574", "No. 98 Civ. 2183"
+_SPACED = re.compile(
+    r"\b(?:Civil Action|Case|Civ\. Action|Civil)? ?No\.? (?P<num>(?:\d:)?\d{2} (?:C|CV|Civ\.|CIV|Cr\.|CR) ?\d{2,6})(?![\w])"
+)
 
 
 def extract_dockets(text, limit=None):
@@ -230,6 +234,11 @@ def extract_dockets(text, limit=None):
         if value not in seen and not any(value in s or s in value for s in seen):
             seen.add(value)
             out.append({"as_written": value, "offset": m.start("num"), "form": "after '" + m.group(0).split()[0] + " No.'"})
+    for m in _SPACED.finditer(text):
+        value = m.group("num")
+        if value not in seen and not any(value in s or s in value for s in seen):
+            seen.add(value)
+            out.append({"as_written": value, "offset": m.start("num"), "form": "civil number (spaced form)"})
     for m in _MDL.finditer(text):
         value = m.group(0)
         if value not in seen:

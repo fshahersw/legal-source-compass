@@ -95,6 +95,11 @@ class DocketTests(unittest.TestCase):
         dockets = ex.extract_dockets("Civil Action No. 2:19-1234 was filed.")
         self.assertEqual(dockets[0]["as_written"], "2:19-1234")
 
+    def test_spaced_civil_numbers(self):
+        dockets = [d["as_written"] for d in ex.extract_dockets("SEC v. Doe, Civil Action No. 01 C 6574 (N.D. Ill.); No. 98 Civ. 2183 (S.D.N.Y.)")]
+        self.assertEqual(dockets, ["01 C 6574", "98 Civ. 2183"])
+        self.assertEqual(ex.extract_dockets("No. 98 people attended in 2001"), [])
+
     def test_phone_numbers_and_dates_are_not_dockets(self):
         self.assertEqual(ex.extract_dockets("Call 202-514-2007 on 10-22-2026."), [])
 
