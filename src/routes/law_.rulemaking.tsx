@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
+import { RulemakingTabs } from "@/components/apiLaw/RulemakingTabs";
 import { HubLinks } from "@/components/atlas/hub/SectionHub";
 import { RulemakingActivity, rulemakingQuery } from "@/components/rulemaking/RulemakingActivity";
 import { pageHead } from "@/lib/corpus/head";
@@ -25,6 +26,7 @@ function Page() {
       description="Final rules, proposed rules and notices each federal agency publishes in the Federal Register, and where to read the rules and the regulatory agenda."
       breadcrumbs={[]}
     >
+      <RulemakingTabs active="activity" />
       <div className="space-y-5">
         <RulemakingActivity />
         <HubLinks
