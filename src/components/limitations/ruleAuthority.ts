@@ -170,12 +170,22 @@ const day = (value: string | undefined | null) => (value ? value.slice(0, 10) : 
  * page-fetching or extraction service a capture went through, so the display describes the service instead. The release
  * data itself is unchanged.
  */
-const SERVICE_NAMES: ReadonlyArray<readonly [RegExp, string]> = [
-  [/\bthe (?:firecrawl|tavily) (?:fetch )?proxy\b/gi, "an external page-fetching service"],
+const SERVICE = "(?:firecrawl|tavily)(?:\\s+mcp)?(?:\\s+(?:firecrawl_scrape|tavily_extract))?";
+const capitalised = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const SERVICE_NAMES: ReadonlyArray<
+  readonly [RegExp, string | ((match: string, ...groups: string[]) => string)]
+> = [
+  // a label that starts with the service name ("Tavily advanced HTML extraction"): keep the recorded words
   [
-    /\b(?:firecrawl|tavily)(?:\s+mcp)?(?:\s+(?:firecrawl_scrape|tavily_extract))?\b/gi,
-    "an external page-fetching service",
+    new RegExp(
+      `^${SERVICE}\\s+(?!mcp\\b|firecrawl_scrape\\b|tavily_extract\\b|through\\b|via\\b)([a-z][\\s\\S]*)$`,
+      "i",
+    ),
+    (_m, rest) => `${capitalised(rest ?? "")} through an external page-fetching service`,
   ],
+  [/\(route=proxied, (?:firecrawl|tavily)\)/gi, "(route=proxied)"],
+  [/\bthe (?:firecrawl|tavily) (?:fetch )?proxy\b/gi, "an external page-fetching service"],
+  [new RegExp(`\\b${SERVICE}\\b`, "gi"), "an external page-fetching service"],
   [/\b(?:firecrawl_scrape|tavily_extract)\b/gi, "an external page-fetching service"],
   [/\bbrowser[ _-]?use\b/gi, "a remote browser service"],
 ];
@@ -183,7 +193,12 @@ const NAMES_A_SERVICE =
   /\b(?:firecrawl|tavily|firecrawl_scrape|tavily_extract|browser[ _-]?use)\b/i;
 
 export function describeServices(text: string): string {
-  return SERVICE_NAMES.reduce((out, [pattern, words]) => out.replace(pattern, words), text);
+  const out = SERVICE_NAMES.reduce(
+    (acc, [pattern, words]) =>
+      typeof words === "string" ? acc.replace(pattern, words) : acc.replace(pattern, words),
+    text,
+  );
+  return out !== text && /^[A-Z]/.test(text) ? capitalised(out) : out;
 }
 
 export function fetchRouteLabel(route: FetchRoute | undefined, method?: string): string {
@@ -191,17 +206,9 @@ export function fetchRouteLabel(route: FetchRoute | undefined, method?: string):
   if (!route) {
     const recorded = method?.trim();
     if (!recorded) return NOT_RECORDED;
-    if (!NAMES_A_SERVICE.test(recorded)) return `Capture method as recorded: ${recorded}`;
-    const rest = recorded
-      .replace(
-        /\b(?:firecrawl|tavily)(?:\s+mcp)?\b|\b(?:firecrawl_scrape|tavily_extract)\b|\bbrowser[ _-]?use\b/gi,
-        "",
-      )
-      .replace(/\s+/g, " ")
-      .trim();
-    return rest
-      ? `Capture method: ${rest}, through an external page-fetching service`
-      : "Captured through an external page-fetching service";
+    return NAMES_A_SERVICE.test(recorded)
+      ? `Capture method: ${describeServices(recorded)}`
+      : `Capture method as recorded: ${recorded}`;
   }
   if (route.kind === "direct") return "Direct fetch from the publisher";
   if (route.kind === "extraction") return "Extraction from the captured publisher file";
@@ -285,7 +292,7 @@ export function ruleAuthorityFacts(
       ? [
           {
             id,
-            title: s.title,
+            title: describeServices(s.title),
             url: s.url,
             retrieved: day(s.capturedAt),
             kind: s.authorityKind,

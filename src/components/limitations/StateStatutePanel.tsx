@@ -60,7 +60,7 @@ function StatuteCard({
   return (
     <article
       className="rounded-md border border-border bg-background p-3"
-      aria-label={source.title}
+      aria-label={describeServices(source.title)}
       data-testid="cited-statute"
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -71,7 +71,7 @@ function StatuteCard({
             rel="noreferrer"
             className="text-base font-semibold text-primary underline"
           >
-            {source.title}
+            {describeServices(source.title)}
           </a>
           <p className="mt-1 text-xs text-muted-foreground">
             {kindLabel[source.authorityKind] ?? source.authorityKind} · {source.publisher} ·

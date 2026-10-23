@@ -226,7 +226,7 @@ describe("rule authority facts", () => {
     } as unknown as LimitationsSnapshot;
     // the recorded words are shown, the service is described rather than named
     expect(ruleAuthorityFacts(freeText, base).sources[0]?.route).toBe(
-      "Capture method: advanced HTML extraction, through an external page-fetching service",
+      "Capture method: Advanced HTML extraction through an external page-fetching service",
     );
     const plain = {
       sources: [
@@ -253,6 +253,27 @@ describe("rule authority facts", () => {
     }
     expect(describeServices("Read through Firecrawl on 2026-10-06")).toBe(
       "Read through an external page-fetching service on 2026-10-06",
+    );
+    // release wording seen in the New York sources (titles, methods)
+    expect(
+      describeServices(
+        "Cross-check: same page re-captured through the proxied fetch broker (route=proxied, firecrawl) on 2026-10-06",
+      ),
+    ).toBe(
+      "Cross-check: same page re-captured through the proxied fetch broker (route=proxied) on 2026-10-06",
+    );
+    expect(describeServices("Tavily advanced HTML extraction")).toBe(
+      "Advanced HTML extraction through an external page-fetching service",
+    );
+    expect(
+      describeServices(
+        "Text obtained through an extraction intermediary (proxied fetch via Firecrawl of the official page)",
+      ),
+    ).toBe(
+      "Text obtained through an extraction intermediary (proxied fetch via an external page-fetching service of the official page)",
+    );
+    expect(describeServices("Firecrawl MCP firecrawl_scrape (public page read)")).toBe(
+      "An external page-fetching service (public page read)",
     );
     const untouched = "Official page unchanged; 3 quoted passages found.";
     expect(describeServices(untouched)).toBe(untouched);

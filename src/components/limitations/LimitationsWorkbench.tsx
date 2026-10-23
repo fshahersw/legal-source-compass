@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { STATES } from "@/lib/corpus/geo";
 import { loadLimitations } from "@/lib/limitations/load";
 import {
+  describeServices,
   NOT_RECORDED,
   ruleAuthorityFacts,
   sourceCurrencyFacts,
@@ -263,7 +264,7 @@ function Citations({ snapshot, rule }: { snapshot: LimitationsSnapshot; rule: Li
                   rel="noreferrer"
                   className="font-medium text-primary underline"
                 >
-                  {source.title}
+                  {describeServices(source.title)}
                 </a>
                 <span
                   className={`inline-block rounded border px-1.5 py-0.5 text-xs ${toneClass[currency.tone]}`}
@@ -551,7 +552,7 @@ export function LimitationsWorkbench({
                           rel="noreferrer"
                           className="mt-1 block text-primary underline"
                         >
-                          {source.title}
+                          {describeServices(source.title)}
                         </a>
                       ))}
                     </td>
