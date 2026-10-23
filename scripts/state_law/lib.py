@@ -591,6 +591,7 @@ class Fetcher:
         verdict = "allowed"
         try:
             status, _headers, body, _final = self._raw_get(robots_url, {}, None)
+            self._last[host] = time.monotonic()  # the robots request counts toward the host's pacing
         except Exception as error:  # noqa: BLE001
             status, body = 0, b""
             verdict = f"unreachable ({type(error).__name__}: {error})"
