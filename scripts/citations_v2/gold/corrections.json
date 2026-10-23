@@ -1,0 +1,752 @@
+{
+ "filing-01": {
+  "reviewed": true
+ },
+ "filing-02": {
+  "reviewed": true
+ },
+ "filing-03": {
+  "reviewed": true,
+  "note": "Rule 7.1 of the JPML Rules of Procedure: a rule citation of a set the extractor does not name; scored as an unlinked short form"
+ },
+ "filing-04": {
+  "reviewed": true
+ },
+ "filing-05": {
+  "reviewed": true
+ },
+ "filing-06": {
+  "reviewed": true
+ },
+ "filing-07": {
+  "reviewed": true
+ },
+ "filing-08": {
+  "reviewed": true,
+  "note": "'No. 06 C 6730' (old N.D. Ill. docket form) is outside the docket scope"
+ },
+ "filing-09": {
+  "reviewed": true,
+  "note": "'Civ. A. No. 09-703' (no case-type letters) is outside the docket scope"
+ },
+ "filing-10": {
+  "reviewed": true,
+  "ignore": [
+   "1:22-md-03043-DLC"
+  ]
+ },
+ "filing-11": {
+  "reviewed": true
+ },
+ "filing-12": {
+  "reviewed": true
+ },
+ "filing-13": {
+  "reviewed": true
+ },
+ "filing-14": {
+  "reviewed": true
+ },
+ "filing-15": {
+  "reviewed": true
+ },
+ "filing-16": {
+  "reviewed": true,
+  "note": "Id. refers to Syngenta (the quoted case), not to Shamrock cited in its parenthetical"
+ },
+ "filing-17": {
+  "reviewed": true
+ },
+ "filing-18": {
+  "reviewed": true
+ },
+ "filing-19": {
+  "reviewed": true,
+  "ignore": [
+   "2:14-md-02591-JWL-JPO"
+  ]
+ },
+ "filing-20": {
+  "reviewed": true
+ },
+ "filing-21": {
+  "reviewed": true
+ },
+ "filing-22": {
+  "reviewed": true
+ },
+ "filing-23": {
+  "reviewed": true
+ },
+ "filing-24": {
+  "reviewed": true,
+  "note": "Id. paragraphs refer to a record document (the complaint); kept as short forms without an authority"
+ },
+ "filing-25": {
+  "reviewed": true
+ },
+ "filing-26": {
+  "reviewed": true
+ },
+ "filing-27": {
+  "reviewed": true,
+  "ignore": [
+   "2:19-md-02921-BRM-JAD"
+  ],
+  "note": "garbled text layer"
+ },
+ "filing-28": {
+  "reviewed": true
+ },
+ "filing-29": {
+  "reviewed": true
+ },
+ "filing-30": {
+  "reviewed": true
+ },
+ "filing-31": {
+  "reviewed": true
+ },
+ "filing-32": {
+  "reviewed": true
+ },
+ "filing-33": {
+  "reviewed": true
+ },
+ "filing-34": {
+  "reviewed": true
+ },
+ "filing-35": {
+  "reviewed": true
+ },
+ "filing-36": {
+  "reviewed": true
+ },
+ "filing-37": {
+  "reviewed": true
+ },
+ "filing-38": {
+  "reviewed": true
+ },
+ "filing-39": {
+  "reviewed": true,
+  "add": [
+   {
+    "kind": "mdl",
+    "text": "MDL No. 24-3108",
+    "key": "mdl:3108"
+   }
+  ]
+ },
+ "filing-40": {
+  "reviewed": true,
+  "add": [
+   {
+    "kind": "docket",
+    "text": "3:19md2885",
+    "key": "docket:3:19-md-02885"
+   }
+  ],
+  "note": "both Id. refer to 28 U.S.C. § 636(b)(1), which they quote"
+ },
+ "filing-41": {
+  "reviewed": true,
+  "add": [
+   {
+    "kind": "local_rule",
+    "text": "Civil L.R. 11.3",
+    "key": "local-rule::11.3"
+   }
+  ]
+ },
+ "filing-42": {
+  "reviewed": true
+ },
+ "filing-43": {
+  "reviewed": true
+ },
+ "filing-44": {
+  "reviewed": true
+ },
+ "filing-45": {
+  "reviewed": true
+ },
+ "filing-46": {
+  "reviewed": true,
+  "add": [
+   {
+    "kind": "mdl",
+    "text": "MDL 3144",
+    "key": "mdl:3144"
+   }
+  ]
+ },
+ "filing-47": {
+  "reviewed": true
+ },
+ "filing-48": {
+  "reviewed": true,
+  "note": "'Misc. No. 21-1230' (no case-type letters) is outside the docket scope"
+ },
+ "opinion-01": {
+  "reviewed": true,
+  "add": [
+   {
+    "kind": "case",
+    "text": "211 Tenn 139",
+    "key": "case:211:Tenn.:139"
+   }
+  ],
+  "note": "'Tenn' written without its period is not read (bare-word reporter spellings are excluded for precision)"
+ },
+ "opinion-02": {
+  "reviewed": true
+ },
+ "opinion-03": {
+  "reviewed": true
+ },
+ "opinion-04": {
+  "reviewed": true
+ },
+ "opinion-05": {
+  "reviewed": true,
+  "note": "'Section 924(c)(5)' written as a word is a narrative reference (outside scope); § forms are short forms"
+ },
+ "opinion-06": {
+  "reviewed": true
+ },
+ "opinion-07": {
+  "reviewed": true
+ },
+ "opinion-08": {
+  "reviewed": true
+ },
+ "opinion-09": {
+  "reviewed": true,
+  "add": [
+   {
+    "kind": "case",
+    "text": "5 Cranch, 368",
+    "key": "case:5:Cranch:368"
+   },
+   {
+    "kind": "case",
+    "text": "9 Cranch, 104",
+    "key": "case:9:Cranch:104"
+   }
+  ]
+ },
+ "opinion-10": {
+  "reviewed": true,
+  "add": [
+   {
+    "kind": "case",
+    "text": "21 Pick 378",
+    "key": "case:21:Pick.:378"
+   },
+   {
+    "kind": "case",
+    "text": "23 Wend. 425",
+    "key": "case:23:Wend.:425"
+   }
+  ]
+ },
+ "opinion-11": {
+  "reviewed": true
+ },
+ "opinion-12": {
+  "reviewed": true
+ },
+ "opinion-13": {
+  "reviewed": true
+ },
+ "opinion-14": {
+  "reviewed": true,
+  "note": "'Section 2, art. 3, of the constitution of the United States' is a narrative reference; treatise cites are outside scope"
+ },
+ "opinion-15": {
+  "reviewed": true,
+  "add": [
+   {
+    "kind": "case",
+    "text": "21 Pick 378",
+    "key": "case:21:Pick.:378"
+   }
+  ],
+  "note": "second window of the opinion of opinion-10 (overlapping text)"
+ },
+ "opinion-16": {
+  "reviewed": true,
+  "note": "the two § 1503(a) before the full citation have no antecedent (short forms only look back)"
+ },
+ "opinion-17": {
+  "reviewed": true
+ },
+ "opinion-18": {
+  "reviewed": true
+ },
+ "opinion-19": {
+  "reviewed": true
+ },
+ "opinion-20": {
+  "reviewed": true,
+  "add": [
+   {
+    "kind": "case",
+    "text": "7 Harris 485",
+    "key": "case:7:Harris:485"
+   },
+   {
+    "kind": "case",
+    "text": "8 Wright 189",
+    "key": "case:8:Wright:189"
+   },
+   {
+    "kind": "case",
+    "text": "3 P. F. Smith 382",
+    "key": "case:3:P.F. Smith:382"
+   },
+   {
+    "kind": "case",
+    "text": "18 Id. 482",
+    "key": "case:18:P.F. Smith:482"
+   }
+  ],
+  "note": "Pennsylvania nominative reporters written as bare names; '18 Id. 482' repeats the previous reporter"
+ },
+ "opinion-21": {
+  "reviewed": true,
+  "note": "'(Evid. Code, § 605.)' names no state in the text: scored as an unlinked § short form"
+ },
+ "opinion-22": {
+  "reviewed": true
+ },
+ "opinion-23": {
+  "reviewed": true,
+  "add": [
+   {
+    "kind": "case",
+    "text": "12 Wright 524",
+    "key": "case:12:Wright:524"
+   },
+   {
+    "kind": "case",
+    "text": "12 Harris 52",
+    "key": "case:12:Harris:52"
+   },
+   {
+    "kind": "case",
+    "text": "10 Casey 17",
+    "key": "case:10:Casey:17"
+   },
+   {
+    "kind": "case",
+    "text": "12 Wright 518",
+    "key": "case:12:Wright:518"
+   },
+   {
+    "kind": "case",
+    "text": "6 Barr 360",
+    "key": "case:6:Barr:360"
+   }
+  ]
+ },
+ "opinion-24": {
+  "reviewed": true,
+  "note": "'See, supra, note 4' is an internal note reference, not a citation; Pa.R.C.P. (state rules of court) and a title-only '42 Pa.C.S.' are outside scope"
+ },
+ "opinion-25": {
+  "reviewed": true
+ },
+ "opinion-26": {
+  "reviewed": true
+ },
+ "opinion-27": {
+  "reviewed": true,
+  "note": "Illinois Supreme Court Rule 604(a)(1): a state court rule, scored as an unlinked rule short form"
+ },
+ "report-01": {
+  "reviewed": true,
+  "note": "GAO decision numbers ('B-307767, Nov. 13, 2006') are outside scope; Comp. Gen. and Op. Att'y Gen. are reporter citations (case kind)"
+ },
+ "report-02": {
+  "reviewed": true
+ },
+ "report-03": {
+  "reviewed": true
+ },
+ "report-04": {
+  "reviewed": true,
+  "remove": [
+   "§ 3.5"
+  ],
+  "note": "'§ 3.5' is a treatise section"
+ },
+ "report-05": {
+  "reviewed": true
+ },
+ "report-06": {
+  "reviewed": true,
+  "note": "'S. Doc. No. 113-18' and GAO B-numbers are outside scope"
+ },
+ "report-07": {
+  "reviewed": true
+ },
+ "report-08": {
+  "reviewed": true
+ },
+ "report-09": {
+  "reviewed": true
+ },
+ "report-10": {
+  "reviewed": true
+ },
+ "report-11": {
+  "reviewed": true,
+  "add": [
+   {
+    "kind": "usc",
+    "text": "43 U.S.C. Chapter 46",
+    "key": "usc-ch:43:46"
+   }
+  ]
+ },
+ "report-12": {
+  "reviewed": true,
+  "add": [
+   {
+    "kind": "usc",
+    "text": "43 U.S.C. Chapter 46",
+    "key": "usc-ch:43:46"
+   }
+  ],
+  "note": "overlaps the window of report-11"
+ },
+ "report-13": {
+  "reviewed": true
+ },
+ "report-14": {
+  "reviewed": true,
+  "note": "'Geospatial Data Act of 2018 Subsection 759(a)' and 'GDA 759(a)(2)' are narrative act references"
+ },
+ "report-15": {
+  "reviewed": true
+ },
+ "report-16": {
+  "reviewed": true
+ },
+ "report-17": {
+  "reviewed": true
+ },
+ "report-18": {
+  "reviewed": true
+ },
+ "report-19": {
+  "reviewed": true
+ },
+ "report-20": {
+  "reviewed": true
+ },
+ "filing-49": {
+  "reviewed": true
+ },
+ "filing-50": {
+  "reviewed": true
+ },
+ "filing-51": {
+  "reviewed": true,
+  "ignore": [
+   "2:21-mc-01230-JFC"
+  ],
+  "remove": [
+   "132 F.R.D. 597"
+  ],
+  "rekey": {
+   "Id.#4": "case:208:F.R.D.:?"
+  },
+  "note": "132 F.R.D. 597 is a law-review-style article printed in F.R.D. (not a decision); the last Id. refers to Propulsid (first page not in the window), not to § 1407 quoted inside it"
+ },
+ "filing-52": {
+  "reviewed": true
+ },
+ "filing-53": {
+  "reviewed": true,
+  "note": "'Section 2.607(c)(1) of the Texas Business and Commerce Code' and 'Section 2.314' are narrative references"
+ },
+ "filing-54": {
+  "reviewed": true
+ },
+ "filing-55": {
+  "reviewed": true,
+  "note": "'[under § 6–2–3]' sits inside a quotation; scored as an unlinked short form"
+ },
+ "filing-56": {
+  "reviewed": true,
+  "note": "'Minn. Stat. §§ 325F.68-70' is a range; the gold keys its first section"
+ },
+ "filing-57": {
+  "reviewed": true
+ },
+ "filing-58": {
+  "reviewed": true,
+  "add": [
+   {
+    "kind": "state_statute",
+    "text": "California Business & ProfessionsCode § 17200",
+    "key": "state-stat:CA:busprof:17200"
+   }
+  ],
+  "note": "OCR text; the state code written out in full is not read; 'Cal Bus. & Prof. Code 4 17200' (§ read as 4) is not a readable citation"
+ },
+ "filing-59": {
+  "reviewed": true,
+  "ignore": [
+   "0:22-md-03031-JRT-JFD"
+  ],
+  "add": [
+   {
+    "kind": "state_statute",
+    "text": "12 Okla. Stat. § 12-2023(C)(4)",
+    "key": "state-stat:OK:stat:12:12-2023"
+   }
+  ],
+  "note": "'2022CV365400' and 'CJ-2019-6084' (state court case numbers) are outside the docket scope"
+ },
+ "filing-60": {
+  "reviewed": true,
+  "rekey": {
+   "Id. at *4": "case:2025:WL:1693649"
+  }
+ },
+ "filing-61": {
+  "reviewed": true
+ },
+ "filing-62": {
+  "reviewed": true,
+  "ignore": [
+   "2:23-md-03080-BRM-RLS"
+  ]
+ },
+ "filing-63": {
+  "reviewed": true
+ },
+ "filing-64": {
+  "reviewed": true,
+  "note": "the id. refers to the opposition brief (a record document): no authority"
+ },
+ "filing-65": {
+  "reviewed": true
+ },
+ "filing-66": {
+  "reviewed": true,
+  "rekey": {
+   "id.": "record:opposition"
+  },
+  "note": "the id. refers to Meta's Opposition (a record document), not to 15 U.S.C. § 6501"
+ },
+ "filing-67": {
+  "reviewed": true
+ },
+ "filing-68": {
+  "reviewed": true
+ },
+ "filing-69": {
+  "reviewed": true
+ },
+ "filing-70": {
+  "reviewed": true
+ },
+ "opinion-28": {
+  "reviewed": true,
+  "note": "'See supra at 370' is an internal reference"
+ },
+ "opinion-29": {
+  "reviewed": true,
+  "note": "'Revenue and Taxation Code § 4986' names no state in the text: unlinked § short form"
+ },
+ "opinion-30": {
+  "reviewed": true,
+  "add": [
+   {
+    "kind": "state_statute",
+    "text": "Ill. Rev. Stat. 1981, ch. 111 par. 5732(e)(20)",
+    "key": "state-stat:IL:rev-stat:111:5732"
+   },
+   {
+    "kind": "constitution_state",
+    "text": "Ill. Const. 1970, art. I, secs. 2",
+    "key": "const:IL:art-1:sec-2"
+   }
+  ],
+  "note": "'secs. 2, 4' cites two sections; the extractor keeps the first section of a constitution list"
+ },
+ "opinion-31": {
+  "reviewed": true,
+  "add": [
+   {
+    "kind": "state_statute",
+    "text": "Ill. Rev. Stat. 1977, ch. 121, par. 2—202",
+    "key": "state-stat:IL:rev-stat:121:2-202"
+   }
+  ]
+ },
+ "opinion-32": {
+  "reviewed": true,
+  "add": [
+   {
+    "kind": "short",
+    "form": "short",
+    "text": "NLRB v. Columbus Printing Pressmen, Union 252, supra at 1171",
+    "key": null
+   }
+  ]
+ },
+ "opinion-33": {
+  "reviewed": true
+ },
+ "opinion-34": {
+  "reviewed": true,
+  "note": "'Section 26, chap. 32, Eev. Stat. 1874' is OCR-garbled"
+ },
+ "opinion-35": {
+  "reviewed": true,
+  "add": [
+   {
+    "kind": "constitution_state",
+    "text": "Pa.Const. art. V, § 10",
+    "key": "const:PA:art-5:sec-10"
+   }
+  ],
+  "note": "Rule 1100 (Pa. R. Crim. P.) is a state rule: unlinked rule short form"
+ },
+ "opinion-36": {
+  "reviewed": true,
+  "add": [
+   {
+    "kind": "statutes_at_large",
+    "text": "70A Stat. 91",
+    "key": "stat:70A:91"
+   }
+  ]
+ },
+ "opinion-37": {
+  "reviewed": true,
+  "add": [
+   {
+    "kind": "case",
+    "text": "467 U.S. 638",
+    "key": "case:467:U.S.:638"
+   }
+  ],
+  "note": "the star-page marker '*748' is glued to the volume ('*748467 U.S. 638'): not read"
+ },
+ "opinion-38": {
+  "reviewed": true
+ },
+ "opinion-39": {
+  "reviewed": true,
+  "note": "'Former RCW 28B.10.900-.903' is a range keyed by its first section"
+ },
+ "fedreg-01": {
+  "reviewed": true
+ },
+ "fedreg-02": {
+  "reviewed": true
+ },
+ "fedreg-03": {
+  "reviewed": true
+ },
+ "fedreg-04": {
+  "reviewed": true
+ },
+ "fedreg-05": {
+  "reviewed": true,
+  "add": [
+   {
+    "text": "104 stat. 3909",
+    "kind": "statutes_at_large",
+    "key": "stat:104:3909",
+    "note": "lower-case 'stat.' (publisher typo); the extractor reads only 'Stat.'"
+   }
+  ]
+ },
+ "fedreg-06": {
+  "reviewed": true
+ },
+ "fedreg-07": {
+  "reviewed": true
+ },
+ "fedreg-08": {
+  "reviewed": true
+ },
+ "fedreg-09": {
+  "reviewed": true
+ },
+ "fedreg-10": {
+  "reviewed": true
+ },
+ "fedreg-11": {
+  "reviewed": true
+ },
+ "filing-71": {
+  "reviewed": true
+ },
+ "filing-72": {
+  "reviewed": true
+ },
+ "filing-73": {
+  "reviewed": true
+ },
+ "filing-74": {
+  "reviewed": true
+ },
+ "filing-75": {
+  "reviewed": true
+ },
+ "filing-76": {
+  "reviewed": true
+ },
+ "filing-77": {
+  "reviewed": true,
+  "add": [
+   {
+    "text": "49073-49077",
+    "kind": "state_statute",
+    "key": "state-stat:CA:ed:49073-49077",
+    "note": "second item of 'Cal. Ed. Code §§ 49069 and 49073-49077' (state statute lists after §§ are not split)"
+   }
+  ]
+ },
+ "filing-78": {
+  "reviewed": true
+ },
+ "filing-79": {
+  "reviewed": true,
+  "ignore": [
+   "2:19-md-02921-BRM-JAD"
+  ]
+ },
+ "filing-80": {
+  "reviewed": true
+ },
+ "filing-81": {
+  "reviewed": true,
+  "add": [
+   {
+    "text": "707 KAR l:320",
+    "kind": "state_regulation",
+    "key": "state-reg:KY:admin-regs:707:1:320",
+    "note": "OCR reads the digit 1 as the letter l"
+   }
+  ]
+ },
+ "filing-82": {
+  "reviewed": true
+ },
+ "filing-83": {
+  "reviewed": true,
+  "ignore": [
+   "4:22-md-03047-YGR"
+  ]
+ }
+}

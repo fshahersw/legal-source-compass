@@ -1,0 +1,1745 @@
+{
+ "gold_version": "citations-gold/2026-10-25.1",
+ "extractors": {
+  "old (documents-extract/1 + shared parser)": {
+   "by_kind": {
+    "case": {
+     "tp_span": 194,
+     "tp_key": 194,
+     "fp": 1,
+     "fn": 36,
+     "key_wrong": 0,
+     "precision": 0.9949,
+     "recall": 0.8435,
+     "gold": 230
+    },
+    "cfr": {
+     "tp_span": 24,
+     "tp_key": 24,
+     "fp": 0,
+     "fn": 8,
+     "key_wrong": 0,
+     "precision": 1.0,
+     "recall": 0.75,
+     "gold": 32
+    },
+    "constitution_state": {
+     "tp_span": 0,
+     "tp_key": 0,
+     "fp": 0,
+     "fn": 2,
+     "key_wrong": 0,
+     "precision": null,
+     "recall": 0.0,
+     "gold": 2
+    },
+    "constitution_us": {
+     "tp_span": 0,
+     "tp_key": 0,
+     "fp": 0,
+     "fn": 2,
+     "key_wrong": 0,
+     "precision": null,
+     "recall": 0.0,
+     "gold": 2
+    },
+    "docket": {
+     "tp_span": 89,
+     "tp_key": 89,
+     "fp": 0,
+     "fn": 13,
+     "key_wrong": 0,
+     "precision": 1.0,
+     "recall": 0.8725,
+     "gold": 102
+    },
+    "federal_register": {
+     "tp_span": 11,
+     "tp_key": 11,
+     "fp": 0,
+     "fn": 0,
+     "key_wrong": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "gold": 11
+    },
+    "federal_rule": {
+     "tp_span": 0,
+     "tp_key": 0,
+     "fp": 0,
+     "fn": 12,
+     "key_wrong": 0,
+     "precision": null,
+     "recall": 0.0,
+     "gold": 12
+    },
+    "local_rule": {
+     "tp_span": 0,
+     "tp_key": 0,
+     "fp": 0,
+     "fn": 2,
+     "key_wrong": 0,
+     "precision": null,
+     "recall": 0.0,
+     "gold": 2
+    },
+    "mdl": {
+     "tp_span": 11,
+     "tp_key": 11,
+     "fp": 1,
+     "fn": 4,
+     "key_wrong": 0,
+     "precision": 0.9167,
+     "recall": 0.7333,
+     "gold": 15
+    },
+    "public_law": {
+     "tp_span": 9,
+     "tp_key": 9,
+     "fp": 0,
+     "fn": 0,
+     "key_wrong": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "gold": 9
+    },
+    "short": {
+     "tp_span": 0,
+     "tp_key": 0,
+     "fp": 0,
+     "fn": 87,
+     "key_wrong": 0,
+     "precision": null,
+     "recall": 0.0,
+     "gold": 87
+    },
+    "state_regulation": {
+     "tp_span": 0,
+     "tp_key": 0,
+     "fp": 0,
+     "fn": 22,
+     "key_wrong": 0,
+     "precision": null,
+     "recall": 0.0,
+     "gold": 22
+    },
+    "state_statute": {
+     "tp_span": 52,
+     "tp_key": 29,
+     "fp": 1,
+     "fn": 15,
+     "key_wrong": 23,
+     "precision": 0.5472,
+     "recall": 0.4328,
+     "gold": 67
+    },
+    "statutes_at_large": {
+     "tp_span": 5,
+     "tp_key": 5,
+     "fp": 0,
+     "fn": 2,
+     "key_wrong": 0,
+     "precision": 1.0,
+     "recall": 0.7143,
+     "gold": 7
+    },
+    "usc": {
+     "tp_span": 45,
+     "tp_key": 45,
+     "fp": 0,
+     "fn": 3,
+     "key_wrong": 0,
+     "precision": 1.0,
+     "recall": 0.9375,
+     "gold": 48
+    }
+   },
+   "by_stratum": {
+    "fedreg": {
+     "windows": 11,
+     "gold": 45,
+     "tp_key": 35,
+     "fp": 0,
+     "key_wrong": 0,
+     "precision": 1.0,
+     "recall": 0.7778
+    },
+    "filing": {
+     "windows": 83,
+     "gold": 314,
+     "tp_key": 190,
+     "fp": 3,
+     "key_wrong": 18,
+     "precision": 0.9005,
+     "recall": 0.6051
+    },
+    "opinion": {
+     "windows": 39,
+     "gold": 228,
+     "tp_key": 142,
+     "fp": 0,
+     "key_wrong": 5,
+     "precision": 0.966,
+     "recall": 0.6228
+    },
+    "report": {
+     "windows": 20,
+     "gold": 61,
+     "tp_key": 50,
+     "fp": 0,
+     "key_wrong": 0,
+     "precision": 1.0,
+     "recall": 0.8197
+    }
+   },
+   "total": {
+    "tp_span": 440,
+    "tp_key": 417,
+    "fp": 3,
+    "fn": 208,
+    "key_wrong": 23,
+    "precision": 0.9413,
+    "recall": 0.6435
+   },
+   "errors_fp_or_key": [
+    {
+     "window": "filing-03",
+     "pred": "MDL No. 2921",
+     "kind": "mdl",
+     "why": "fp"
+    },
+    {
+     "window": "filing-51",
+     "pred": "132 F.R.D. 597",
+     "kind": "case",
+     "why": "fp"
+    },
+    {
+     "window": "filing-53",
+     "pred": "Tex. Bus. & Comm. Code § 2.701(c)(1)",
+     "pred_key": "state:TX:2.701(c)(1)",
+     "gold_key": "state-stat:TX:buscomm:2.701",
+     "why": "key"
+    },
+    {
+     "window": "filing-59",
+     "pred": "O.C.G.A. § 9-11-23(c)(2)",
+     "pred_key": "state:GA:9-11-23(c)(2)",
+     "gold_key": "state-stat:GA:code:9-11-23",
+     "why": "key"
+    },
+    {
+     "window": "filing-61",
+     "pred": "Cal. Civ.\nCode § 56.36(b)(1)",
+     "pred_key": "state:CA:56.36(b)(1)",
+     "gold_key": "state-stat:CA:civ:56.36",
+     "why": "key"
+    },
+    {
+     "window": "filing-63",
+     "pred": "Utah Code Ann. § 13-11-3(5)",
+     "pred_key": "state:UT:13-11-3(5)",
+     "gold_key": "state-stat:UT:code:13-11-3",
+     "why": "key"
+    },
+    {
+     "window": "filing-63",
+     "pred": "Utah Code Ann. § 13-11-3(5)",
+     "pred_key": "state:UT:13-11-3(5)",
+     "gold_key": "state-stat:UT:code:13-11-3",
+     "why": "key"
+    },
+    {
+     "window": "filing-63",
+     "pred": "Utah Code\nAnn. § 13-11-3(2)(a)",
+     "pred_key": "state:UT:13-11-3(2)(a)",
+     "gold_key": "state-stat:UT:code:13-11-3",
+     "why": "key"
+    },
+    {
+     "window": "filing-63",
+     "pred": "Utah Code Ann. § 13-11-4(2)",
+     "pred_key": "state:UT:13-11-4(2)",
+     "gold_key": "state-stat:UT:code:13-11-4",
+     "why": "key"
+    },
+    {
+     "window": "filing-64",
+     "pred": "Cal. Gov’t Code § 12965(d)(6)",
+     "pred_key": "state:CA:12965(d)(6)",
+     "gold_key": "state-stat:CA:govt:12965",
+     "why": "key"
+    },
+    {
+     "window": "filing-65",
+     "pred": "D.C. Code § 11-721(d)",
+     "pred_key": "state:DC:11-721(d)",
+     "gold_key": "state-stat:DC:code:11-721",
+     "why": "key"
+    },
+    {
+     "window": "filing-67",
+     "pred": "Va. Code Ann.\n§ 59.1-200(A)(5)",
+     "pred_key": "state:VA:59.1-200(A)(5)",
+     "gold_key": "state-stat:VA:code:59.1-200",
+     "why": "key"
+    },
+    {
+     "window": "filing-69",
+     "pred": "N.J. Stat. Ann. § 56:8-4(b)",
+     "pred_key": "state:NJ:56:8-4(b)",
+     "gold_key": "state-stat:NJ:stat:56:8-4",
+     "why": "key"
+    },
+    {
+     "window": "filing-70",
+     "pred": "N.J. Stat. Ann. § 56:9-12(c)",
+     "pred_key": "state:NJ:56:9-12(c)",
+     "gold_key": "state-stat:NJ:stat:56:9-12",
+     "why": "key"
+    },
+    {
+     "window": "filing-77",
+     "pred": "Cal. Ed. Code § 49076(a)",
+     "pred_key": "state:CA:49076(a)",
+     "gold_key": "state-stat:CA:ed:49076",
+     "why": "key"
+    },
+    {
+     "window": "filing-78",
+     "pred": "Tex. Admin. Code §215.144",
+     "kind": "state_statute",
+     "why": "fp"
+    },
+    {
+     "window": "filing-80",
+     "pred": "N.C. Gen. Stat. Ann. § 75-65(i)",
+     "pred_key": "state:NC:75-65(i)",
+     "gold_key": "state-stat:NC:gen-stat:75-65",
+     "why": "key"
+    },
+    {
+     "window": "filing-80",
+     "pred": "Kan. Stat. Ann. § 50-7a02(e)",
+     "pred_key": "state:KS:50-7a02(e)",
+     "gold_key": "state-stat:KS:stat:50-7a02",
+     "why": "key"
+    },
+    {
+     "window": "filing-80",
+     "pred": "Ky. Rev. Stat. Ann. § 365.732(8)",
+     "pred_key": "state:KY:365.732(8)",
+     "gold_key": "state-stat:KY:rev-stat:365.732",
+     "why": "key"
+    },
+    {
+     "window": "filing-80",
+     "pred": "Cal. Civ. Code § 1798.82(e)",
+     "pred_key": "state:CA:1798.82(e)",
+     "gold_key": "state-stat:CA:civ:1798.82",
+     "why": "key"
+    },
+    {
+     "window": "filing-80",
+     "pred": "Wis. Stat. Ann. § 134.98(3m)(b)",
+     "pred_key": "state:WI:134.98(3m)(b)",
+     "gold_key": "state-stat:WI:stat:134.98",
+     "why": "key"
+    },
+    {
+     "window": "opinion-28",
+     "pred": "Minn. Stat. Ann. § 253B.08(5)(a)",
+     "pred_key": "state:MN:253B.08(5)(a)",
+     "gold_key": "state-stat:MN:stat:253B.08",
+     "why": "key"
+    },
+    {
+     "window": "opinion-28",
+     "pred": "Tex. Health & Safety Code Ann. § 841.061(d)",
+     "pred_key": "state:TX:841.061(d)",
+     "gold_key": "state-stat:TX:healthsafety:841.061",
+     "why": "key"
+    },
+    {
+     "window": "opinion-28",
+     "pred": "Wis. Stat. Ann. § 980.05(1m)",
+     "pred_key": "state:WI:980.05(1m)",
+     "gold_key": "state-stat:WI:stat:980.05",
+     "why": "key"
+    },
+    {
+     "window": "opinion-32",
+     "pred": "RCW 41.56.030(4)",
+     "pred_key": "state:WA:41.56.030(4)",
+     "gold_key": "state-stat:WA:rev-code:41.56.030",
+     "why": "key"
+    },
+    {
+     "window": "opinion-33",
+     "pred": "RCW 5.40.060(1)",
+     "pred_key": "state:WA:5.40.060(1)",
+     "gold_key": "state-stat:WA:rev-code:5.40.060",
+     "why": "key"
+    }
+   ],
+   "missed": [
+    {
+     "window": "filing-03",
+     "gold": "Rule 7.1",
+     "kind": "short"
+    },
+    {
+     "window": "filing-04",
+     "gold": "Rules 16",
+     "kind": "federal_rule"
+    },
+    {
+     "window": "filing-04",
+     "gold": "26(b)",
+     "kind": "federal_rule"
+    },
+    {
+     "window": "filing-04",
+     "gold": "34",
+     "kind": "federal_rule"
+    },
+    {
+     "window": "filing-04",
+     "gold": "45 of the Federal Rules of Civil Procedure",
+     "kind": "federal_rule"
+    },
+    {
+     "window": "filing-04",
+     "gold": "Rule 37(b)(2)(A)",
+     "kind": "short"
+    },
+    {
+     "window": "filing-05",
+     "gold": "20-MD-2924",
+     "kind": "docket"
+    },
+    {
+     "window": "filing-05",
+     "gold": "24-cv-80266",
+     "kind": "docket"
+    },
+    {
+     "window": "filing-06",
+     "gold": "Rule 53(b)(3)(A) of the Federal Rules of Civil Procedure",
+     "kind": "federal_rule"
+    },
+    {
+     "window": "filing-07",
+     "gold": "260 F.3d at 252",
+     "kind": "short"
+    },
+    {
+     "window": "filing-08",
+     "gold": "Id. at *13",
+     "kind": "short"
+    },
+    {
+     "window": "filing-13",
+     "gold": "Local Rule 7.1(a)",
+     "kind": "local_rule"
+    },
+    {
+     "window": "filing-14",
+     "gold": "MDL NO. 2672",
+     "kind": "mdl"
+    },
+    {
+     "window": "filing-16",
+     "gold": "Id.",
+     "kind": "short"
+    },
+    {
+     "window": "filing-18",
+     "gold": "2:12-md-02323-AB",
+     "kind": "docket"
+    },
+    {
+     "window": "filing-19",
+     "gold": "14-md-2591-JWL-JPO",
+     "kind": "docket"
+    },
+    {
+     "window": "filing-24",
+     "gold": "Id. ¶¶ 348",
+     "kind": "short"
+    },
+    {
+     "window": "filing-24",
+     "gold": "Id. ¶¶ 398",
+     "kind": "short"
+    },
+    {
+     "window": "filing-24",
+     "gold": "Id. ¶¶ 275",
+     "kind": "short"
+    },
+    {
+     "window": "filing-24",
+     "gold": "Id. ¶¶ 302",
+     "kind": "short"
+    },
+    {
+     "window": "filing-24",
+     "gold": "Id. ¶ 322",
+     "kind": "short"
+    },
+    {
+     "window": "filing-24",
+     "gold": "Id. ¶ 323",
+     "kind": "short"
+    },
+    {
+     "window": "filing-24",
+     "gold": "Id. ¶ 333",
+     "kind": "short"
+    },
+    {
+     "window": "filing-24",
+     "gold": "Id.",
+     "kind": "short"
+    },
+    {
+     "window": "filing-24",
+     "gold": "Id. ¶ 338",
+     "kind": "short"
+    },
+    {
+     "window": "filing-34",
+     "gold": "MDL DOCKET NO. 2800",
+     "kind": "mdl"
+    },
+    {
+     "window": "filing-34",
+     "gold": "Federal Rule of Civil Procedure 41(a)(1)(A)(ii)",
+     "kind": "federal_rule"
+    },
+    {
+     "window": "filing-39",
+     "gold": "MDL No. 24-3108",
+     "kind": "mdl"
+    },
+    {
+     "window": "filing-39",
+     "gold": "25-cv-179",
+     "kind": "docket"
+    },
+    {
+     "window": "filing-40",
+     "gold": "3:19md2885",
+     "kind": "docket"
+    },
+    {
+     "window": "filing-40",
+     "gold": "Id.",
+     "kind": "short"
+    },
+    {
+     "window": "filing-40",
+     "gold": "Id.",
+     "kind": "short"
+    },
+    {
+     "window": "filing-41",
+     "gold": "Civil L.R. 11.3",
+     "kind": "local_rule"
+    },
+    {
+     "window": "filing-46",
+     "gold": "MDL 3144",
+     "kind": "mdl"
+    },
+    {
+     "window": "filing-48",
+     "gold": "22-mc-152",
+     "kind": "docket"
+    },
+    {
+     "window": "filing-49",
+     "gold": "25-md-3149-BEN-MSB",
+     "kind": "docket"
+    },
+    {
+     "window": "filing-49",
+     "gold": "Fed. R. Civ. P. 4",
+     "kind": "federal_rule"
+    },
+    {
+     "window": "filing-49",
+     "gold": "Fed. R. Civ. P. 8",
+     "kind": "federal_rule"
+    },
+    {
+     "window": "filing-49",
+     "gold": "Fed. R. Civ. P. 9(b)",
+     "kind": "federal_rule"
+    },
+    {
+     "window": "filing-49",
+     "gold": "Fed. R. Civ. P. 12(b)(1)",
+     "kind": "federal_rule"
+    },
+    {
+     "window": "filing-49",
+     "gold": "Fed. R. Civ. P. 12(b)(2)",
+     "kind": "federal_rule"
+    },
+    {
+     "window": "filing-49",
+     "gold": "Fed. R. Civ. P. 12(b)(5)",
+     "kind": "federal_rule"
+    },
+    {
+     "window": "filing-50",
+     "gold": "18-MD-02843-VC",
+     "kind": "docket"
+    },
+    {
+     "window": "filing-50",
+     "gold": "2016 IL 120110",
+     "kind": "case"
+    },
+    {
+     "window": "filing-50",
+     "gold": "id.",
+     "kind": "short"
+    },
+    {
+     "window": "filing-50",
+     "gold": "336 Ill. App. 3d at\n81",
+     "kind": "short"
+    },
+    {
+     "window": "filing-51",
+     "gold": "Id.",
+     "kind": "short"
+    },
+    {
+     "window": "filing-51",
+     "gold": "Rule 8",
+     "kind": "short"
+    },
+    {
+     "window": "filing-51",
+     "gold": "Rule 42(a)(3)",
+     "kind": "short"
+    },
+    {
+     "window": "filing-51",
+     "gold": "Id.",
+     "kind": "short"
+    },
+    {
+     "window": "filing-51",
+     "gold": "208 F.R.D. at 141",
+     "kind": "short"
+    },
+    {
+     "window": "filing-51",
+     "gold": "Id.",
+     "kind": "short"
+    },
+    {
+     "window": "filing-51",
+     "gold": "Id.",
+     "kind": "short"
+    },
+    {
+     "window": "filing-52",
+     "gold": "25-md-3149-BEN-MSB",
+     "kind": "docket"
+    },
+    {
+     "window": "filing-52",
+     "gold": "Ind. Code § 24-5-0.5- 2(a)(8)",
+     "kind": "state_statute"
+    },
+    {
+     "window": "filing-54",
+     "gold": "N.C. GEN. STAT. § 75-1.1",
+     "kind": "state_statute"
+    },
+    {
+     "window": "filing-55",
+     "gold": "§ 6–2–3",
+     "kind": "short"
+    },
+    {
+     "window": "filing-55",
+     "gold": "Id.",
+     "kind": "short"
+    },
+    {
+     "window": "filing-58",
+     "gold": "California Business & ProfessionsCode § 17200",
+     "kind": "state_statute"
+    },
+    {
+     "window": "filing-58",
+     "gold": "§ 17200",
+     "kind": "short"
+    },
+    {
+     "window": "filing-59",
+     "gold": "12 Okla. Stat. § 12-2023(C)(4)",
+     "kind": "state_statute"
+    },
+    {
+     "window": "filing-60",
+     "gold": "738 F. Supp. 2d at\n1023",
+     "kind": "short"
+    },
+    {
+     "window": "filing-60",
+     "gold": "643 F. Supp. 2d at 1150",
+     "kind": "short"
+    },
+    {
+     "window": "filing-60",
+     "gold": "Id. at *4",
+     "kind": "short"
+    },
+    {
+     "window": "filing-62",
+     "gold": "§ 4-88-105",
+     "kind": "state_statute"
+    },
+    {
+     "window": "filing-62",
+     "gold": "§ 4-88-113",
+     "kind": "state_statute"
+    },
+    {
+     "window": "filing-64",
+     "gold": "id. at 2",
+     "kind": "short"
+    },
+    {
+     "window": "filing-65",
+     "gold": "558 U.S. at 109",
+     "kind": "short"
+    },
+    {
+     "window": "filing-65",
+     "gold": "558 U.S. at 110",
+     "kind": "short"
+    },
+    {
+     "window": "filing-66",
+     "gold": "id.",
+     "kind": "short"
+    },
+    {
+     "window": "filing-68",
+     "gold": "740 Ill. Comp. Stat. Ann.\n14/15(e)",
+     "kind": "state_statute"
+    },
+    {
+     "window": "filing-70",
+     "gold": "903 F. Supp. 2d at 232",
+     "kind": "short"
+    },
+    {
+     "window": "filing-70",
+     "gold": "903 F. Supp. 2d at 232-33",
+     "kind": "short"
+    },
+    {
+     "window": "filing-71",
+     "gold": "N.M. Admin. Code § 20.2.88.101",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-71",
+     "gold": "id. § 20.2.88.14",
+     "kind": "short"
+    },
+    {
+     "window": "filing-72",
+     "gold": "201 Mass. Code Regs. 17.01-05",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-72",
+     "gold": "201 Mass. Code\nRegs. 17.01-05",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-73",
+     "gold": "Id.",
+     "kind": "short"
+    },
+    {
+     "window": "filing-73",
+     "gold": "390 F. Supp. 3d at 1112",
+     "kind": "short"
+    },
+    {
+     "window": "filing-73",
+     "gold": "Utah Admin. Code § R307-201-4",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-74",
+     "gold": "703 KAR 3 :205",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-75",
+     "gold": "707 KAR 1:340",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-76",
+     "gold": "704 KAR 3:410",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-76",
+     "gold": "704 KAR 3:410",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-76",
+     "gold": "704 KAR 3:410",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-76",
+     "gold": "704 KAR 3:410",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-77",
+     "gold": "Title 5 of the California Code of Regulations § 434",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-77",
+     "gold": "49073-49077",
+     "kind": "state_statute"
+    },
+    {
+     "window": "filing-77",
+     "gold": "5 C.C.R. § 431(c)(2)",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-77",
+     "gold": "5 C.C.R. § 433(a)",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-78",
+     "gold": "43 Tex. Admin. Code §215.144",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-78",
+     "gold": "Rule 23(e)(2)(C)(ii)",
+     "kind": "short"
+    },
+    {
+     "window": "filing-79",
+     "gold": "N.J.A.C. 13:4-1.6(c)",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-80",
+     "gold": "Md. Code Ann. Com.\nLaw § 14-3508",
+     "kind": "state_statute"
+    },
+    {
+     "window": "filing-80",
+     "gold": "N.J. Admin. Code §13:45F-5.2",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-80",
+     "gold": "Tenn. Code Ann. § 47-\n18-2107(i)(2)",
+     "kind": "state_statute"
+    },
+    {
+     "window": "filing-80",
+     "gold": "Md.\nCode Ann. Com. Law § 14-3507",
+     "kind": "state_statute"
+    },
+    {
+     "window": "filing-81",
+     "gold": "707 KAR 1:320",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-81",
+     "gold": "707 KAR l:320",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-81",
+     "gold": "707 KAR 1 :320",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-81",
+     "gold": "707 KAR 1 :350",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-82",
+     "gold": "16-cv-5649",
+     "kind": "docket"
+    },
+    {
+     "window": "filing-82",
+     "gold": "16-cv-2210",
+     "kind": "docket"
+    },
+    {
+     "window": "filing-82",
+     "gold": "15-md-02672-CRB",
+     "kind": "docket"
+    },
+    {
+     "window": "filing-82",
+     "gold": "Utah Admin. Code § R307-201-4",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "filing-83",
+     "gold": "703 KAR 5:280",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "opinion-01",
+     "gold": "211 Tenn 139",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-01",
+     "gold": "4 Wheat. 316",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-02",
+     "gold": "Id., at 501-502",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-03",
+     "gold": "561 U. S., at 402",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-03",
+     "gold": "§1346",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-03",
+     "gold": "§1346",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-03",
+     "gold": "Id., at 402–405",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-03",
+     "gold": "§1346",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-03",
+     "gold": "§1346",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-03",
+     "gold": "561 U. S., at 404–\n405",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-03",
+     "gold": "561 U. S., at 404",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-03",
+     "gold": "Id., at 407",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-03",
+     "gold": "13 F. 4th, at 196",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-03",
+     "gold": "§1346",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-05",
+     "gold": "§ 924(c)(5)(A)",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-05",
+     "gold": "§ 924(c)(5)(B)(i)",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-05",
+     "gold": "§ 924(c)(5)",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-05",
+     "gold": "§ 924(c)(5)",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-05",
+     "gold": "§ 924(c)(5)",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-05",
+     "gold": "Ibid.",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-06",
+     "gold": "2005 OK CR 14",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-07",
+     "gold": "10 Wall. 423",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-09",
+     "gold": "5 Cranch, 368",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-09",
+     "gold": "9 Cranch, 104",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-09",
+     "gold": "13 Pet. 486",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-10",
+     "gold": "21 Pick 378",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-10",
+     "gold": "23 Wend. 425",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-11",
+     "gold": "§ 2255",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-14",
+     "gold": "21 Wall. 162",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-15",
+     "gold": "21 Pick 378",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-15",
+     "gold": "23 Wend. 425",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-16",
+     "gold": "§ 1503(a)",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-16",
+     "gold": "§ 1503(a)",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-16",
+     "gold": "Id.",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-16",
+     "gold": "§ 1503(a)",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-20",
+     "gold": "1 W. & S. 396",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-20",
+     "gold": "7 Harris 485",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-20",
+     "gold": "8 Wright 189",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-20",
+     "gold": "3 P. F. Smith 382",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-20",
+     "gold": "18 Id. 482",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-21",
+     "gold": "§ 605",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-21",
+     "gold": "Rells, supra",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-22",
+     "gold": "Hillman’s, supra",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-22",
+     "gold": "Swift & Co., supra",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-22",
+     "gold": "National Tea Co., supra",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-22",
+     "gold": "Cudahy Bros. Co., supra",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-22",
+     "gold": "Greenwood, supra",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-22",
+     "gold": "J. P. Squire Co., supra",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-22",
+     "gold": "Mann, supra",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-23",
+     "gold": "12 Wright 524",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-23",
+     "gold": "12 Harris 52",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-23",
+     "gold": "10 Casey 17",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-23",
+     "gold": "12 Wright 518",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-23",
+     "gold": "Mullin, supra",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-23",
+     "gold": "6 Barr 360",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-27",
+     "gold": "Rule 604(a)(1)",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-27",
+     "gold": "2019 IL App (5th) 170221-U",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-27",
+     "gold": "U.S. Const., amend. V",
+     "kind": "constitution_us"
+    },
+    {
+     "window": "opinion-27",
+     "gold": "2019 IL App (5th) 170221-U",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-27",
+     "gold": "Id. ¶ 49",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-28",
+     "gold": "442 U.S. at 600",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-28",
+     "gold": "725 Ill. Comp. Stat. 207/25(c)(3)",
+     "kind": "state_statute"
+    },
+    {
+     "window": "opinion-29",
+     "gold": "§ 4986",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-30",
+     "gold": "Ill. Rev. Stat. 1981, ch. 111 par. 5732(e)(20)",
+     "kind": "state_statute"
+    },
+    {
+     "window": "opinion-30",
+     "gold": "Ill. Const. 1970, art. I, secs. 2",
+     "kind": "constitution_state"
+    },
+    {
+     "window": "opinion-30",
+     "gold": "U.S. Const., amend. I",
+     "kind": "constitution_us"
+    },
+    {
+     "window": "opinion-31",
+     "gold": "Ill. Rev. Stat. 1977, ch. 121, par. 2—202",
+     "kind": "state_statute"
+    },
+    {
+     "window": "opinion-32",
+     "gold": "NLRB v. Columbus Printing Pressmen, Union 252, supra at 1171",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-32",
+     "gold": "35 Wn. App. 280",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-32",
+     "gold": "77 Wn.2d 542",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-33",
+     "gold": "28 Wn. App. 2d at 803-\n05",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-34",
+     "gold": "31 Pa. St. 114",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-35",
+     "gold": "Rule 1100",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-35",
+     "gold": "Pa.Const. art. V, § 10",
+     "kind": "constitution_state"
+    },
+    {
+     "window": "opinion-35",
+     "gold": "Rule 1100",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-36",
+     "gold": "70A Stat. 91",
+     "kind": "statutes_at_large"
+    },
+    {
+     "window": "opinion-37",
+     "gold": "483 U.S. at 284",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-37",
+     "gold": "467 U.S. 638",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-37",
+     "gold": "483 U.S. at 284",
+     "kind": "short"
+    },
+    {
+     "window": "opinion-38",
+     "gold": "2021 IL App (4th) 190114",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-38",
+     "gold": "725 ILCS 5/103-\n5(a)",
+     "kind": "state_statute"
+    },
+    {
+     "window": "report-01",
+     "gold": "55 Comp. Gen. 307",
+     "kind": "case"
+    },
+    {
+     "window": "report-02",
+     "gold": "Id. at 158",
+     "kind": "short"
+    },
+    {
+     "window": "report-03",
+     "gold": "9 Op. Att’y Gen. 57",
+     "kind": "case"
+    },
+    {
+     "window": "report-03",
+     "gold": "55 Comp. Gen. 307",
+     "kind": "case"
+    },
+    {
+     "window": "report-03",
+     "gold": "38 Comp. Gen. 229",
+     "kind": "case"
+    },
+    {
+     "window": "report-04",
+     "gold": "Id. at 222",
+     "kind": "short"
+    },
+    {
+     "window": "report-05",
+     "gold": "29 Comp. Gen. 143",
+     "kind": "case"
+    },
+    {
+     "window": "report-05",
+     "gold": "56 Comp. Gen. 655",
+     "kind": "case"
+    },
+    {
+     "window": "report-11",
+     "gold": "43 U.S.C. Chapter 46",
+     "kind": "usc"
+    },
+    {
+     "window": "report-12",
+     "gold": "43 U.S.C. Chapter 46",
+     "kind": "usc"
+    },
+    {
+     "window": "report-13",
+     "gold": "43 U.S.C. Chapter 46",
+     "kind": "usc"
+    },
+    {
+     "window": "fedreg-05",
+     "gold": "104 stat. 3909",
+     "kind": "statutes_at_large"
+    },
+    {
+     "window": "fedreg-08",
+     "gold": "76 FR at 48213",
+     "kind": "short"
+    },
+    {
+     "window": "fedreg-08",
+     "gold": "52.39(c)",
+     "kind": "cfr"
+    },
+    {
+     "window": "fedreg-08",
+     "gold": "52.2140",
+     "kind": "cfr"
+    },
+    {
+     "window": "fedreg-08",
+     "gold": "52.2141",
+     "kind": "cfr"
+    },
+    {
+     "window": "fedreg-09",
+     "gold": "52.39",
+     "kind": "cfr"
+    },
+    {
+     "window": "fedreg-10",
+     "gold": "52.39(f)",
+     "kind": "cfr"
+    },
+    {
+     "window": "fedreg-11",
+     "gold": "52.39(j)",
+     "kind": "cfr"
+    },
+    {
+     "window": "fedreg-11",
+     "gold": "52.39(f)(4)",
+     "kind": "cfr"
+    },
+    {
+     "window": "fedreg-11",
+     "gold": "52.39(k)",
+     "kind": "cfr"
+    }
+   ]
+  },
+  "new (citations-v2)": {
+   "by_kind": {
+    "case": {
+     "tp_span": 217,
+     "tp_key": 217,
+     "fp": 1,
+     "fn": 13,
+     "key_wrong": 0,
+     "precision": 0.9954,
+     "recall": 0.9435,
+     "gold": 230
+    },
+    "cfr": {
+     "tp_span": 32,
+     "tp_key": 32,
+     "fp": 0,
+     "fn": 0,
+     "key_wrong": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "gold": 32
+    },
+    "constitution_state": {
+     "tp_span": 2,
+     "tp_key": 2,
+     "fp": 0,
+     "fn": 0,
+     "key_wrong": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "gold": 2
+    },
+    "constitution_us": {
+     "tp_span": 2,
+     "tp_key": 2,
+     "fp": 0,
+     "fn": 0,
+     "key_wrong": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "gold": 2
+    },
+    "docket": {
+     "tp_span": 102,
+     "tp_key": 102,
+     "fp": 0,
+     "fn": 0,
+     "key_wrong": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "gold": 102
+    },
+    "federal_register": {
+     "tp_span": 11,
+     "tp_key": 11,
+     "fp": 0,
+     "fn": 0,
+     "key_wrong": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "gold": 11
+    },
+    "federal_rule": {
+     "tp_span": 12,
+     "tp_key": 12,
+     "fp": 0,
+     "fn": 0,
+     "key_wrong": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "gold": 12
+    },
+    "local_rule": {
+     "tp_span": 2,
+     "tp_key": 2,
+     "fp": 0,
+     "fn": 0,
+     "key_wrong": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "gold": 2
+    },
+    "mdl": {
+     "tp_span": 15,
+     "tp_key": 15,
+     "fp": 0,
+     "fn": 0,
+     "key_wrong": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "gold": 15
+    },
+    "public_law": {
+     "tp_span": 9,
+     "tp_key": 9,
+     "fp": 0,
+     "fn": 0,
+     "key_wrong": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "gold": 9
+    },
+    "short": {
+     "tp_span": 87,
+     "tp_key": 85,
+     "fp": 1,
+     "fn": 0,
+     "key_wrong": 2,
+     "precision": 0.9659,
+     "recall": 0.977,
+     "gold": 87
+    },
+    "state_regulation": {
+     "tp_span": 21,
+     "tp_key": 21,
+     "fp": 0,
+     "fn": 1,
+     "key_wrong": 0,
+     "precision": 1.0,
+     "recall": 0.9545,
+     "gold": 22
+    },
+    "state_statute": {
+     "tp_span": 65,
+     "tp_key": 65,
+     "fp": 0,
+     "fn": 2,
+     "key_wrong": 0,
+     "precision": 1.0,
+     "recall": 0.9701,
+     "gold": 67
+    },
+    "statutes_at_large": {
+     "tp_span": 6,
+     "tp_key": 6,
+     "fp": 0,
+     "fn": 1,
+     "key_wrong": 0,
+     "precision": 1.0,
+     "recall": 0.8571,
+     "gold": 7
+    },
+    "usc": {
+     "tp_span": 48,
+     "tp_key": 48,
+     "fp": 0,
+     "fn": 0,
+     "key_wrong": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "gold": 48
+    }
+   },
+   "by_stratum": {
+    "fedreg": {
+     "windows": 11,
+     "gold": 45,
+     "tp_key": 44,
+     "fp": 0,
+     "key_wrong": 0,
+     "precision": 1.0,
+     "recall": 0.9778
+    },
+    "filing": {
+     "windows": 83,
+     "gold": 314,
+     "tp_key": 309,
+     "fp": 1,
+     "key_wrong": 2,
+     "precision": 0.9904,
+     "recall": 0.9841
+    },
+    "opinion": {
+     "windows": 39,
+     "gold": 228,
+     "tp_key": 215,
+     "fp": 0,
+     "key_wrong": 0,
+     "precision": 1.0,
+     "recall": 0.943
+    },
+    "report": {
+     "windows": 20,
+     "gold": 61,
+     "tp_key": 61,
+     "fp": 1,
+     "key_wrong": 0,
+     "precision": 0.9839,
+     "recall": 1.0
+    }
+   },
+   "total": {
+    "tp_span": 631,
+    "tp_key": 629,
+    "fp": 2,
+    "fn": 17,
+    "key_wrong": 2,
+    "precision": 0.9937,
+    "recall": 0.9707
+   },
+   "errors_fp_or_key": [
+    {
+     "window": "filing-51",
+     "pred": "Id.",
+     "pred_key": null,
+     "gold_key": "case:208:F.R.D.:?",
+     "why": "key"
+    },
+    {
+     "window": "filing-51",
+     "pred": "132 F.R.D. 597",
+     "kind": "case",
+     "why": "fp"
+    },
+    {
+     "window": "filing-66",
+     "pred": "id.",
+     "pred_key": null,
+     "gold_key": "record:opposition",
+     "why": "key"
+    },
+    {
+     "window": "report-04",
+     "pred": "§ 3.5",
+     "kind": "short",
+     "why": "fp"
+    }
+   ],
+   "missed": [
+    {
+     "window": "filing-58",
+     "gold": "California Business & ProfessionsCode § 17200",
+     "kind": "state_statute"
+    },
+    {
+     "window": "filing-77",
+     "gold": "49073-49077",
+     "kind": "state_statute"
+    },
+    {
+     "window": "filing-81",
+     "gold": "707 KAR l:320",
+     "kind": "state_regulation"
+    },
+    {
+     "window": "opinion-01",
+     "gold": "211 Tenn 139",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-10",
+     "gold": "21 Pick 378",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-15",
+     "gold": "21 Pick 378",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-20",
+     "gold": "7 Harris 485",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-20",
+     "gold": "8 Wright 189",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-20",
+     "gold": "3 P. F. Smith 382",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-20",
+     "gold": "18 Id. 482",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-23",
+     "gold": "12 Wright 524",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-23",
+     "gold": "12 Harris 52",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-23",
+     "gold": "10 Casey 17",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-23",
+     "gold": "12 Wright 518",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-23",
+     "gold": "6 Barr 360",
+     "kind": "case"
+    },
+    {
+     "window": "opinion-37",
+     "gold": "467 U.S. 638",
+     "kind": "case"
+    },
+    {
+     "window": "fedreg-05",
+     "gold": "104 stat. 3909",
+     "kind": "statutes_at_large"
+    }
+   ]
+  }
+ }
+}

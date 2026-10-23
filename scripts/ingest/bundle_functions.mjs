@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Fallback for deploying the ingest edge functions when the bundler will not follow imports outside supabase/functions:
- * writes self-contained copies (index.ts + the src/lib/ingest modules it uses under ./_ingest/, imports rewritten) to an
+ * writes self-contained copies (index.ts + the src/lib modules it uses under ./_lib/<module>/, imports rewritten) to an
  * output directory. Deploy from there, e.g. `supabase functions deploy <name> --project-ref xosqzzsnhxcyehcnirpa
  * --no-verify-jwt` with that directory as supabase/functions, or pass the files to the deploy tool. Nothing is changed in
  * the repository.
@@ -14,7 +14,8 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const FUNCTIONS = path.join(ROOT, "supabase", "functions");
-const LIB = path.join(ROOT, "src", "lib", "ingest");
+// src/lib/ingest and the modules it shares with the functions (src/lib/citations for ingest-citations)
+const LIB = path.join(ROOT, "src", "lib");
 const IMPORT = /(from\s+|import\s*\(\s*)"([^"]+)"/g;
 
 export function bundle(out) {
@@ -28,9 +29,9 @@ export function bundle(out) {
     let index = fs.readFileSync(entry, "utf8").replace(IMPORT, (m, pre, spec) => {
       const abs = path.resolve(path.dirname(entry), spec);
       if (!abs.startsWith(LIB + path.sep))
-        throw new Error(`${fn}: import outside src/lib/ingest: ${spec}`);
+        throw new Error(`${fn}: import outside src/lib: ${spec}`);
       queue.push(abs);
-      return `${pre}"./_ingest/${path.relative(LIB, abs).split(path.sep).join("/")}"`;
+      return `${pre}"./_lib/${path.relative(LIB, abs).split(path.sep).join("/")}"`;
     });
     fs.mkdirSync(dest, { recursive: true });
     fs.writeFileSync(path.join(dest, "index.ts"), index);
@@ -46,13 +47,13 @@ export function bundle(out) {
           throw new Error(`${path.relative(ROOT, file)}: non-relative import ${spec}`);
         const abs = path.resolve(path.dirname(file), spec);
         if (!abs.startsWith(LIB + path.sep))
-          throw new Error(`${path.relative(ROOT, file)}: import outside src/lib/ingest: ${spec}`);
+          throw new Error(`${path.relative(ROOT, file)}: import outside src/lib: ${spec}`);
         queue.push(abs);
       }
       const rel = path.relative(LIB, file);
-      fs.mkdirSync(path.join(dest, "_ingest", path.dirname(rel)), { recursive: true });
-      fs.writeFileSync(path.join(dest, "_ingest", rel), code);
-      written.push(path.join(fn, "_ingest", rel));
+      fs.mkdirSync(path.join(dest, "_lib", path.dirname(rel)), { recursive: true });
+      fs.writeFileSync(path.join(dest, "_lib", rel), code);
+      written.push(path.join(fn, "_lib", rel));
     }
     index = null;
   }

@@ -1,0 +1,35 @@
+{
+  "package": "reporters-db",
+  "version": "3.2.67",
+  "source": "https://files.pythonhosted.org/packages/a2/5c/fcd11d54c39540c45fd258d41195b588265b301f4ed0a569ae01446f70b8/reporters_db-3.2.67.tar.gz",
+  "source_sha256": "0c82a8692be9c326c42ec78d58af6195aaa9279b4a8b75867c1b35eeef6c6743",
+  "upstream_paths": {
+    "reporters.json": "reporters_db/data/reporters.json",
+    "laws.json": "reporters_db/data/laws.json",
+    "state_abbreviations.json": "reporters_db/data/state_abbreviations.json",
+    "LICENSE": "LICENSE"
+  },
+  "retrieved": "2026-10-23",
+  "files": [
+    {
+      "file": "reporters.json",
+      "bytes": 908014,
+      "sha256": "d1dee4057eaf051b3737c720fd0c58cd436f74b69286f521c3601d6aa4d332f1"
+    },
+    {
+      "file": "laws.json",
+      "bytes": 211528,
+      "sha256": "cba1f8f2225a27600b4906c0ed6cb5ede00fbba0983538845e628f77fb0fce69"
+    },
+    {
+      "file": "state_abbreviations.json",
+      "bytes": 1231,
+      "sha256": "e1f6a465f88c3d9319b3d81c11f5ab2d4180be309dce16268c073025b2f14ab8"
+    },
+    {
+      "file": "LICENSE",
+      "bytes": 1300,
+      "sha256": "a84c58fa06060e74682fe4808403a082a3472fc39e6e4ac299241df9f9c7f1be"
+    }
+  ]
+}
