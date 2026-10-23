@@ -173,11 +173,22 @@ def html_text(fragment: str | bytes | None, *, encoding: str | None = None, drop
     return norm_lines("".join(out).replace(BR, "\n"))
 
 
+# Labels a browser decodes as windows-1252 (WHATWG Encoding Standard): pages labelled ISO-8859-1 routinely carry
+# cp1252 dashes and quotes (0x96, 0x97, 0x93 …), which a strict latin-1 decode turns into C1 control characters.
+_WINDOWS_1252_LABELS = {"iso-8859-1", "iso8859-1", "latin1", "latin-1", "l1", "us-ascii", "ascii", "iso_8859-1",
+                        "cp819", "ibm819", "windows-1252", "cp1252", "x-cp1252"}
+
+
+def _codec(label: str) -> str:
+    return "cp1252" if label.strip().lower() in _WINDOWS_1252_LABELS else label
+
+
 def decode_bytes(body: bytes, encoding: str | None = None) -> str:
-    """Decode publisher bytes: declared encoding, then BOM/meta charset, then utf-8, then cp1252."""
+    """Decode publisher bytes: declared encoding, then BOM/meta charset, then utf-8, then cp1252. Latin-1/ASCII labels
+    decode as windows-1252, as browsers do."""
     if encoding:
         try:
-            return body.decode(encoding)
+            return body.decode(_codec(encoding))
         except (LookupError, UnicodeDecodeError):
             pass
     if body.startswith(b"\xef\xbb\xbf"):
@@ -188,7 +199,7 @@ def decode_bytes(body: bytes, encoding: str | None = None) -> str:
     match = re.search(rb"charset=[\"']?([a-z0-9_\-]+)", head) or re.search(rb"encoding=[\"']([a-z0-9_\-]+)", head)
     if match and not match.group(1).lower().startswith(b"utf-16"):  # a utf-16 label on 8-bit bytes is a page error
         try:
-            return body.decode(match.group(1).decode("ascii"))
+            return body.decode(_codec(match.group(1).decode("ascii")))
         except (LookupError, UnicodeDecodeError):
             pass
     try:
