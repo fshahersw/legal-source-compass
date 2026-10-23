@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { assembleBlock, type TrendBlockData } from "@/lib/analytics/trend";
 import {
   SERIES_COLORS,
+  axisInterval,
   axisTicks,
   chartRows,
   describeChart,
@@ -81,6 +82,35 @@ describe("chartRows", () => {
       }),
     );
     expect(rows.map((r) => r["x"])).toEqual(["97", "100", "108"]);
+  });
+});
+
+describe("axisInterval", () => {
+  const years = (n: number) =>
+    block({
+      series: [
+        {
+          id: "a",
+          label: "v",
+          points: Array.from({ length: n }, (_, i) => ({ x: String(2000 + i), value: i })),
+        },
+      ],
+    });
+  it("labels every period of a short axis", () => {
+    expect(axisInterval(years(5))).toBe(0);
+    expect(axisInterval(years(8))).toBe(0);
+  });
+  it("labels a long axis at a regular step, never an irregular subset", () => {
+    expect(axisInterval(years(12))).toBe("equidistantPreserveStart");
+  });
+  it("labels every fixed tick of a long monthly axis", () => {
+    const points = [];
+    for (let y = 1981; y <= 2012; y += 1)
+      for (let m = 1; m <= 12; m += 1)
+        points.push({ x: `${y}-${String(m).padStart(2, "0")}`, value: 1 });
+    expect(axisInterval(block({ xKind: "month", series: [{ id: "a", label: "v", points }] }))).toBe(
+      0,
+    );
   });
 });
 

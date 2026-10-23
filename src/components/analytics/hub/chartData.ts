@@ -68,6 +68,19 @@ export function axisTicks(block: TrendBlockData): string[] | undefined {
   return ticks.length ? ticks : undefined;
 }
 
+/** Periods up to this many always get a label each; a skipped label reads like a missing period. */
+export const LABEL_EVERY_PERIOD_MAX = 8;
+
+/**
+ * Which x labels the chart draws: every label for a short axis or one with fixed ticks; otherwise every n-th label at a
+ * regular step that fits (never an irregular subset, which hides which bar belongs to which period).
+ */
+export function axisInterval(block: TrendBlockData): 0 | "equidistantPreserveStart" {
+  if (axisTicks(block)) return 0;
+  const periods = new Set(block.series.flatMap((s) => s.points.map((p) => p.x))).size;
+  return periods <= LABEL_EVERY_PERIOD_MAX ? 0 : "equidistantPreserveStart";
+}
+
 /** True when the point at `index` is recorded but both neighbours are not: a line would draw nothing for it. */
 export function isolatedPoint(rows: readonly ChartRow[], index: number, key: string): boolean {
   const here = rows[index]?.[key];

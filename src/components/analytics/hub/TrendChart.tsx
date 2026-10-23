@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import { formatTick, periodLabel, tickLabel, type TrendBlockData } from "@/lib/analytics/trend";
 import {
+  axisInterval,
   axisTicks,
   chartRows,
   describeChart,
@@ -82,6 +83,7 @@ function TrendTooltip({
 export function TrendChart({ block, measure }: { block: TrendBlockData; measure: string }) {
   const rows = useMemo(() => chartRows(block), [block]);
   const ticks = useMemo(() => axisTicks(block), [block]);
+  const interval = useMemo(() => axisInterval(block), [block]);
   const xAxis = (
     <XAxis
       dataKey="x"
@@ -89,7 +91,7 @@ export function TrendChart({ block, measure }: { block: TrendBlockData; measure:
       tickFormatter={(x: string) => tickLabel(x, block.xKind)}
       tickLine={false}
       axisLine={{ stroke: "var(--border)" }}
-      interval={ticks ? 0 : "preserveStartEnd"}
+      interval={interval}
       minTickGap={14}
       {...(ticks ? { ticks } : {})}
     />
