@@ -321,6 +321,55 @@ def caml_text(body: bytes | str) -> str:
     return norm_lines("".join(out).replace("\x1e", "\n"))
 
 
+SLIM_NS = "urn:legix:slim"
+XHTML_NS = "http://www.w3.org/1999/xhtml"
+# empty <span class=…/> elements the Iowa Legislature's "slim" XML uses for characters and spacing
+SLIM_CHARS = {"em-dash": "\u2014", "en-dash": "\u2013", "em-space": " ", "en-space": " ", "thin-space": " ",
+              "dotLeader": " ____ ", "tabLeader": " ____ ", "single-solid-line": " ____ "}
+SLIM_BREAKS = {"new-line", "blank-line"}
+SLIM_SKIP = {"About", "TOC"}
+
+
+def slim_inline(el, out: list[str]) -> None:
+    """Inline rendering of an element of a slim document into `out` (\x1e marks a line break): character spans become
+    their character, an identifier span is followed by a space, block children (div, p, Heading …) are surrounded by
+    breaks."""
+    ns, name = xml_local(el)
+    cls = el.get("class") or ""
+    if ns == SLIM_NS and name in SLIM_SKIP:
+        if el.tail:
+            out.append(el.tail.replace("\n", " "))
+        return
+    block = not (ns == XHTML_NS and name == "span")
+    if name == "span" and cls in SLIM_CHARS and not len(el) and not el.text:
+        out.append(SLIM_CHARS[cls])
+    elif name == "span" and cls in SLIM_BREAKS and not len(el) and not el.text:
+        out.append("\x1e")
+    else:
+        if block:
+            out.append("\x1e")
+        if el.text:
+            out.append(el.text.replace("\n", " "))
+        for child in el:
+            slim_inline(child, out)
+        if name == "span" and cls == "identifier":
+            out.append(" ")
+        if block:
+            out.append("\x1e")
+    if el.tail:
+        out.append(el.tail.replace("\n", " "))
+
+
+def slim_text(body: bytes | str) -> str:
+    """Iowa Legislature slim XML (urn:legix:slim) rendering; see slim_inline."""
+    from xml.etree import ElementTree as ET
+
+    root = ET.fromstring(body if isinstance(body, bytes) else body.encode("utf-8"))
+    out: list[str] = []
+    slim_inline(root, out)
+    return norm_lines("".join(out).replace("\x1e", "\n"))
+
+
 def render_text(body: bytes, content_type: str | None = None, url: str | None = None) -> str:
     """The `.txt` rendering every stored quote is checked against (AGENTS.md capture rule)."""
     kind = (content_type or "").lower()
@@ -328,6 +377,8 @@ def render_text(body: bytes, content_type: str | None = None, url: str | None = 
     head = body.lstrip()[:400]
     if b"caml:Content" in head or CAML_NS.encode() in head:
         return caml_text(body)
+    if SLIM_NS.encode() in head:
+        return slim_text(body)
     if kind.startswith("text/plain") or kind.startswith("text/tab-separated") or path.endswith((".dat", ".txt", ".tsv")):
         return norm_lines(decode_bytes(body, "utf-8"))
     if "pdf" in kind or path.endswith(".pdf") or body[:5] == b"%PDF-":
