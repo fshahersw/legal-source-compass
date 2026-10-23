@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ExternalBadge, ExternalError } from "@/components/corpus/ExternalBadge";
 import { CorpusRecordLink } from "@/components/corpus/DatasetBrowser";
+import { SemanticSearch } from "@/components/semantic/SemanticSearch";
 import { searchCorpus } from "@/lib/external/catalog.functions";
 import { listStateCodes, searchStateCodes } from "@/lib/law/stateCode.functions";
 import { datasetDisplayName } from "@/lib/external/domainRegistry";
@@ -251,6 +252,7 @@ function SearchPage() {
           </Button>
         </div>
       ) : null}
+      {q.trim().length >= 2 ? <SemanticSearch query={q} limit={8} quiet className="mt-6" /> : null}
     </AppShell>
   );
 }

@@ -7,6 +7,7 @@ import { AppShell } from "@/components/atlas/AppShell";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { CfrBlocks, CfrNotes } from "@/components/regulatory/CfrText";
 import { AsOfPicker, CfrVersionList } from "@/components/regulatory/CfrHistory";
+import { RelatedPanel } from "@/components/semantic/RelatedPanel";
 import { Button } from "@/components/ui/button";
 import { pageHead } from "@/lib/corpus/head";
 import {
@@ -291,6 +292,7 @@ function SectionBody({
               No change history is recorded for this section.
             </section>
           )}
+          {!s.reserved ? <RelatedPanel dataset="ecfr_sections_full" recordId={s.id} quiet /> : null}
         </aside>
       </div>
     </div>

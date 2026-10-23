@@ -5,6 +5,7 @@ import { datasetDisplayName } from "@/lib/external/domainRegistry";
 import { Button } from "@/components/ui/button";
 import { downloadText } from "@/lib/atlas/exports";
 import { BillForPublicLawRecord } from "@/components/legislation/BillForLaw";
+import { RelatedPanel } from "@/components/semantic/RelatedPanel";
 
 export const Route = createFileRoute("/records/$dataset/$id")({
   loader: ({ context, params }) => {
@@ -21,11 +22,17 @@ export const Route = createFileRoute("/records/$dataset/$id")({
   notFoundComponent: () => <p className="p-6 text-[13px]">Record not found.</p>,
 });
 
+/** Report datasets whose semantic record ids are their corpus record ids (statutes, regulations and bills have their own pages). */
+const RELATED_ON_RECORD_PAGE = new Set(["crs_reports", "oversight_reports", "doj_oig_reports", "ftc_publications_index"] as const);
+type RecordPageDataset = typeof RELATED_ON_RECORD_PAGE extends Set<infer T> ? T : never;
+const relatedOnRecordPage = (d: string): d is RecordPageDataset => RELATED_ON_RECORD_PAGE.has(d as RecordPageDataset);
+
 function Page() {
   const { dataset, id } = Route.useParams();
   return <EntityPage dataset={dataset} id={id} crumbs={[{ label: "Home", to: "/" }, { label: datasetDisplayName(dataset), to: `/data/${dataset}` }]} extra={(raw) => <div className="mb-5 space-y-3">
     {typeof raw["qualification"] === "string" && raw["qualification"] ? <p role="note" className="rounded-lg border border-border bg-muted/40 p-3 text-[13px]">{raw["qualification"]}</p> : null}
     {dataset === "public_laws_enacted" ? <BillForPublicLawRecord raw={raw} /> : null}
+    {relatedOnRecordPage(dataset) ? <RelatedPanel dataset={dataset} recordId={id} quiet /> : null}
     {raw["text_truncated"] === true ? <p className="text-[12px] text-muted-foreground">The stored text is a preview. Use the original source link to check the complete document.</p> : null}
     <Button size="sm" variant="outline" onClick={() => downloadText(`${dataset}-${id.replace(/[^a-zA-Z0-9_-]/g, "_")}.json`, "application/json", JSON.stringify({ schema_version: "corpus-detail-export.1", dataset, record_id: id, exported_at: new Date().toISOString(), record: raw }, null, 2))}>Download record metadata</Button>
   </div>} />;

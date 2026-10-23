@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/atlas/AppShell";
 import { StateNote } from "@/components/enforcement/parts";
 import { FederalBillView } from "@/components/legislation/FederalBillView";
+import { RelatedPanel } from "@/components/semantic/RelatedPanel";
 import { pageHead } from "@/lib/corpus/head";
 import {
   BILL_NUMBER,
@@ -87,7 +88,15 @@ function FederalBillPage() {
           This bill could not be loaded.
         </StateNote>
       ) : q.data ? (
-        <FederalBillView bill={q.data.bill} crs={q.data.crs} crsFailed={q.data.crsFailed} />
+        <>
+          <FederalBillView bill={q.data.bill} crs={q.data.crs} crsFailed={q.data.crsFailed} />
+          <RelatedPanel
+            dataset="congress_bills"
+            recordId={`${congress}-${type}-${number}`}
+            quiet
+            className="mt-6"
+          />
+        </>
       ) : (
         <StateNote>
           No Bill Status record for {cite} is stored. GovInfo publishes every numbered measure of

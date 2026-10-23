@@ -7,6 +7,7 @@ import { AppShell } from "@/components/atlas/AppShell";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { BodyLines, Fact, Footnotes, StatusBadge } from "@/components/uscode/UsCodeText";
 import { RegulationsUnderSectionPanel } from "@/components/authorities/RegulationsUnderSectionPanel";
+import { RelatedPanel } from "@/components/semantic/RelatedPanel";
 import { pageHead } from "@/lib/corpus/head";
 import { cn } from "@/lib/utils";
 import {
@@ -225,6 +226,9 @@ function SectionBody({ s }: { s: UscSection }) {
           ) : null}
         </section>
         <Editions s={s} />
+        {s.kind === "section" ? (
+          <RelatedPanel dataset="us_code_sections" recordId={`${s.title}:${s.key}`} quiet />
+        ) : null}
         {s.prev || s.next ? (
           <nav
             aria-label="Neighbouring units"

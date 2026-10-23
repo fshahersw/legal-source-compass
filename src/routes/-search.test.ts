@@ -34,6 +34,7 @@ vi.mock("@/components/atlas/AppShell", () => ({
   AppShell: ({ children }: { children: ReactNode }) => createElement("main", null, children),
 }));
 vi.mock("@/components/corpus/DatasetBrowser", () => ({ CorpusRecordLink: () => null }));
+vi.mock("@/components/semantic/SemanticSearch", () => ({ SemanticSearch: () => null }));
 
 const options = (
   Route as unknown as {
