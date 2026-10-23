@@ -611,6 +611,23 @@ class LoaderTests(unittest.TestCase):
             self.assertEqual(n, jload(os.path.join(directory, "manifest.json"))["totals"]["chunks"])
 
 
+class ExportStdoutTests(unittest.TestCase):
+    def test_export_to_standard_output_streams_the_same_lines(self):
+        import contextlib
+        import io
+
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = LoaderTests().build(tmp)
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                n = ld.export_copy("us_code_sections", "-", directory=directory)
+            out = os.path.join(tmp, "x.tsv.gz")
+            ld.export_copy("us_code_sections", out, directory=directory)
+            with gzip.open(out, "rt", encoding="utf-8") as fh:
+                self.assertEqual(buf.getvalue(), fh.read())
+            self.assertEqual(n, len(buf.getvalue().splitlines()))
+
+
 class OpinionTests(unittest.TestCase):
     def member(self, text, sha=None):
         rec = {"opinion_id": 1, "text": text, "text_sha256": sha or hashlib.sha256(text.encode()).hexdigest()}

@@ -12,9 +12,9 @@ in batches to semantic_load_v1, which upserts by (dataset, record_id, chunk_no) 
 be rerun; progress is kept in <dataset>/load_progress.json. `--prune` also removes passages a record no longer has (a reload that
 kept fewer). Afterwards run PART 3 of the contract (the HNSW index) and `status`.
 
-`export-copy` writes a tab-separated file in PostgreSQL COPY text format for an initial bulk load with psql:
-    \\copy semantic.chunks (dataset, record_id, chunk_no, chunk_total, char_start, char_end, text_sha256, title, href, source_url,
-        snippet, embedding) from program 'gzip -dc /path/us_code_sections.tsv.gz'
+`export-copy` writes PostgreSQL COPY text format (tab separated, \\N for null) for an initial bulk load with psql, to a gzip file or, with
+`--out -`, to standard output so it can be piped without storing it (the text is about 7 KB per passage):
+    python3 -I -B scripts/semantic/load.py export-copy --corpus us_code_sections --out - | psql "$DATABASE_URL" -c "\\copy semantic.chunks (dataset, record_id, chunk_no, chunk_total, char_start, char_end, text_sha256, title, href, source_url, snippet, embedding) from stdin"
 (register the corpus row first with `load --corpus X --corpus-only`; COPY has no upsert, so use it only into an empty dataset).
 """
 from __future__ import annotations
@@ -187,11 +187,19 @@ def export_copy(dataset: str, out_path: str, directory: str | None = None) -> in
     directory = directory or os.path.join(em.OUT, dataset)
     manifest = em.read_json(os.path.join(directory, "manifest.json"))
     n = 0
-    with gzip.open(out_path, "wt", encoding="utf-8", compresslevel=3) as out:
+
+    def write_all(out) -> None:
+        nonlocal n
         for shard in manifest["shards"]:
             for m, vec in iter_shard(directory, shard):
                 out.write(copy_line(m, vec))
                 n += 1
+
+    if out_path == "-":
+        write_all(sys.stdout)
+    else:
+        with gzip.open(out_path, "wt", encoding="utf-8", compresslevel=3) as out:
+            write_all(out)
     return n
 
 
@@ -210,7 +218,8 @@ def main(argv: list[str] | None = None) -> int:
     c.add_argument("--out", required=True)
     args = p.parse_args(argv)
     if args.cmd == "export-copy":
-        print(f"{export_copy(args.corpus, args.out):,} rows written")
+        n = export_copy(args.corpus, args.out)
+        print(f"{n:,} rows written", file=sys.stderr if args.out == "-" else sys.stdout)
         return 0
     rpc = Rpc()
     if args.cmd == "status":

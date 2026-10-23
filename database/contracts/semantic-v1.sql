@@ -67,7 +67,7 @@ alter table semantic.chunks enable row level security;
 create or replace function public.semantic_search_v1(
   p_embedding extensions.halfvec, p_datasets text[] default null, p_limit integer default 10
 ) returns jsonb
-language plpgsql stable security definer set search_path = '' set hnsw.iterative_scan = 'relaxed_order' set hnsw.ef_search = '100' as $$
+language plpgsql stable security definer set search_path = '' set hnsw.iterative_scan = 'relaxed_order' set hnsw.ef_search = '100' set hnsw.max_scan_tuples = '100000' as $$
 declare v_limit integer := least(greatest(coalesce(p_limit, 10), 1), 50); v_out jsonb;
 begin
   if p_embedding is null or extensions.vector_dims(p_embedding) <> 1024 then
@@ -100,7 +100,7 @@ end $$;
 create or replace function public.semantic_related_v1(
   p_dataset text, p_record_id text, p_limit integer default 8, p_datasets text[] default null
 ) returns jsonb
-language plpgsql stable security definer set search_path = '' set hnsw.iterative_scan = 'relaxed_order' set hnsw.ef_search = '100' as $$
+language plpgsql stable security definer set search_path = '' set hnsw.iterative_scan = 'relaxed_order' set hnsw.ef_search = '100' set hnsw.max_scan_tuples = '100000' as $$
 declare v_limit integer := least(greatest(coalesce(p_limit, 8), 1), 50); v_center extensions.halfvec; v_n integer; v_out jsonb;
 begin
   if p_datasets is not null and cardinality(p_datasets) = 0 then

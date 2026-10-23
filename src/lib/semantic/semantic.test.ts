@@ -71,6 +71,9 @@ describe("pure helpers", () => {
     for (const ok of [
       "/law/uscode/15/78u-6",
       "/law/cfr/17/240.10b-5",
+      "/law/cfr/2/Appendix%20A%20to%20Part%2025",
+      "/law/uscode/41/41%2B42",
+      "/records/oversight_reports/ovr%3A0267ee6b3410ee",
       "/cases/108356",
       "/law/legislation/federal/119/hr/5631",
       "/records/crs_reports/IF10333",
