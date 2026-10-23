@@ -2,8 +2,10 @@
 
 Source: the publisher's MCL XML directory `https://www.legislature.mi.gov/documents/mcl/` lists one UTF-16 XML file
 per MCL chapter (`Chapter%20<n>.xml`, 241 files, ~474 MB in all, largest ~24 MB). The Chapter Index page prints the
-currency line ("Michigan Compiled Laws Complete Through PA 114 of 2026"). robots.txt is answered with the site's
-404 page (no rules).
+currency line ("Michigan Compiled Laws Complete Through PA 114 of 2026"). On 2026-10-23 robots.txt answered HTTP 502
+(the site's error page); RFC 9309 and the shared fetcher treat a 5xx robots.txt as complete disallow, so a live run is
+refused (Blocked) until robots.txt answers normally; nothing else changes then. The project's retained originals
+(205 chapter XML files + directory + index, captured 2026-10-06) are re-parsed with `--option source=retained`.
 
 Parsing (`mi-mcl-xml/1`): `MCLChapterInfo` (chapter `Name`/`Title`) > `MCLStatuteInfo` (the act: `Name` "Act 236 of
 1961", `Heading`) > optional nested `MCLDocumentInfoCollection`s > `MCLSectionInfo` (`MCLNumber`, `CatchLine`,
@@ -36,6 +38,8 @@ INDEX_URL = "https://legislature.mi.gov/Laws/ChapterIndex"
 DIR_URL = "https://www.legislature.mi.gov/documents/mcl/"
 FILE_BASE = "https://www.legislature.mi.gov/documents/mcl/"
 SECTION_PAGE = "https://www.legislature.mi.gov/Laws/MCL?objectName=mcl-{}"
+RETAINED_INDEX_URL = "https://www.legislature.mi.gov/Laws/ChapterIndex"
+RETAINED_DIR_URL = "https://legislature.mi.gov/documents/mcl/"
 PARSER = "mi-mcl-xml/1"
 
 
@@ -52,7 +56,8 @@ def _meta():
                                   (r"^mich\. comp\. laws serv\.\s*§\s*([0-9]+\.[0-9a-z]+)$", r"\1"))),),
         parser=PARSER, min_interval_s=1.0,
         terms_note=("Statutory text is public domain (Georgia v. Public.Resource.Org, 2020). The Legislature publishes "
-                    "the MCL as per-chapter XML in an open directory; robots.txt answers the site's 404 page."),
+                    "the MCL as per-chapter XML in an open directory. robots.txt answered HTTP 502 on 2026-10-23 "
+                    "(treated as disallow-all); retained originals of 2026-10-06 are re-parsed instead."),
         update_cadence="Chapter files are rewritten as public acts are compiled (file dates in the directory); "
                        "re-run monthly, comparing the 'Complete Through PA n of yyyy' line.")
 
@@ -152,18 +157,22 @@ def list_chapter_files(listing_html: str):
 def acquire(ctx):
     options = getattr(ctx, "options", {}) or {}
     only = {c.strip() for c in options.get("chapters", "").split(",") if c.strip()}
-    index = ctx.get(INDEX_URL)
+    retained = getattr(ctx, "retained", None)
+    # the 2026-10-06 capture recorded the index on www. and the directory and files without it
+    index_url, dir_url, file_base = (RETAINED_INDEX_URL, RETAINED_DIR_URL, RETAINED_DIR_URL) if retained is not None \
+        else (INDEX_URL, DIR_URL, FILE_BASE)
+    index = ctx.get(index_url)
     page = lib.html_text(index.body)
     m = re.search(r"Michigan Compiled Laws Complete Through PA \d+ of \d{4}", page)
     ctx.edition(edition_label="Michigan Compiled Laws", currency_statement=m.group(0) if m else None,
-                currency_source_url=INDEX_URL)
-    listing = ctx.get(DIR_URL)
+                currency_source_url=index_url if m else None)
+    listing = ctx.get(dir_url)
     files = list_chapter_files(listing.text())
     if only:
         files = [f for f in files if f.split("%20", 1)[1][:-4] in only]
     ctx.log(f"{len(files)} chapter files listed by the publisher")
     for name in files:
-        fetched = ctx.get(FILE_BASE + name, method="publisher_bulk")
+        fetched = ctx.get(file_base + name, method="publisher_bulk")
         parsed = parse_chapter(fetched.body)
         chapter_step = {"level": "chapter", "label": "Chapter", "number": parsed["chapter"], "heading": parsed["title"]}
         counts: dict[str, int] = {}
