@@ -1,0 +1,72 @@
+{
+ "alsd_judge_dubose.html": {
+  "fixture_bytes": 18952,
+  "original_bytes": 24708,
+  "original_sha256": "6e030cf34134517a596ed9dd728c0601e214b2ed8f41383433dc303d67940af2",
+  "retrieved_at": "2026-10-23T04:30:58Z",
+  "url": "https://www.alsd.uscourts.gov/judges/us-district-judge-kristi-k-dubose"
+ },
+ "alsd_listing.html": {
+  "fixture_bytes": 19125,
+  "original_bytes": 24763,
+  "original_sha256": "d498846bf95582f9f0f05bd61d557d3601cf0a8ffcd8d7250dac49ab10f02045",
+  "retrieved_at": "2026-10-23T04:26:13Z",
+  "url": "https://www.alsd.uscourts.gov/judges-information"
+ },
+ "cand_judge_ygr.html": {
+  "fixture_bytes": 166986,
+  "original_bytes": 204271,
+  "original_sha256": "cd3e71988e9f6133120ae00fa16e156b8d058a1bdefb6741bc6375ed836a22b6",
+  "retrieved_at": "2026-10-23T04:27:48Z",
+  "url": "https://www.cand.uscourts.gov/judges/ygr/gonzalez-rogers-yvonne"
+ },
+ "cand_listing.html": {
+  "fixture_bytes": 143077,
+  "original_bytes": 180757,
+  "original_sha256": "8b393ec09666863df3dbf31ac7167dac172f5ba0f3ba4e68a7afc648b52d1e04",
+  "retrieved_at": "2026-10-23T04:26:03Z",
+  "url": "https://www.cand.uscourts.gov/judges"
+ },
+ "cod_judge_domenico.html": {
+  "fixture_bytes": 32359,
+  "original_bytes": 38380,
+  "original_sha256": "d116dde3d92154c18f38f3679c80c0746959d38ca68c38fe66a23781c2bf1f52",
+  "retrieved_at": "2026-10-23T04:30:38Z",
+  "url": "http://www.cod.uscourts.gov/JudicialOfficers/ActiveArticleIIIJudges/HonDanielDDomenico.aspx"
+ },
+ "cod_listing.html": {
+  "fixture_bytes": 33469,
+  "original_bytes": 39287,
+  "original_sha256": "8798a75a98c62358a14533564dad26c57bd042bc419242ac99f80bafd71f53bf",
+  "retrieved_at": "2026-10-23T04:30:29Z",
+  "url": "http://www.cod.uscourts.gov/JudicialOfficers.aspx"
+ },
+ "kyed_listing_table.html": {
+  "fixture_bytes": 13215,
+  "original_bytes": 19061,
+  "original_sha256": "239fd2939f78387ff293cc4187a28d4da2eb7120b427f9e8654f9c11bc2d3e7a",
+  "retrieved_at": "2026-10-23T04:26:34Z",
+  "url": "https://www.kyed.uscourts.gov/judges"
+ },
+ "nysd_judge_liman.html": {
+  "fixture_bytes": 24530,
+  "original_bytes": 41592,
+  "original_sha256": "38537b79b732cdf259bc5568b0d527f2c41cbca593307f5f2dbf2310f2a9a0d9",
+  "retrieved_at": "2026-10-23T04:31:13Z",
+  "url": "https://www.nysd.uscourts.gov/hon-lewis-j-liman"
+ },
+ "nysd_judge_parker_magistrate.html": {
+  "fixture_bytes": 26946,
+  "original_bytes": 44009,
+  "original_sha256": "4309f086dbbbb71dbccd02cb7d3532c5f86e412c987f743800d4330503651634",
+  "retrieved_at": "2026-10-23T04:27:49Z",
+  "url": "https://www.nysd.uscourts.gov/hon-katharine-h-parker"
+ },
+ "nysd_listing_district.html": {
+  "fixture_bytes": 67599,
+  "original_bytes": 80930,
+  "original_sha256": "4c9d3a96d403ad396891817c676cd13810cc0f4b054d27a69cf2532bd734d248",
+  "retrieved_at": "2026-10-23T04:25:54Z",
+  "url": "https://www.nysd.uscourts.gov/judges/district-judges"
+ }
+}

@@ -1,0 +1,197 @@
+{
+  "ctd": {
+    "note": "Judge pages are linked only as 'Biography'; the judge's name is on the page.",
+    "listing_urls": [
+      "https://www.ctd.uscourts.gov/judges-information"
+    ],
+    "entry_href_regex": "/biography-[a-z-]*judge-[a-z]",
+    "no_sublistings": true
+  },
+  "azd": {
+    "note": "Judges' Orders, Forms & Procedures page: one section per judge, each headed by a link to the judge's own page.",
+    "listing_urls": [
+      "https://www.azd.uscourts.gov/judges/judges-orders"
+    ],
+    "skip_link_entries": true,
+    "entry_href_regex": "/judge-orders/[a-z]+-[a-z][a-z-]*$",
+    "exclude_href_regex": "/judge-orders/(all-judges|standard-|courtroom-technology)",
+    "no_sublistings": true,
+    "page_doc_regex": "/content/"
+  },
+  "mad": {
+    "listing_urls": [
+      "https://www.mad.uscourts.gov/general/judges.htm"
+    ],
+    "entry_href_regex": "mad\\.uscourts\\.gov/(boston|worcester|springfield)/[a-z]+\\.htm$",
+    "no_sublistings": true
+  },
+  "nynd": {
+    "note": "One page lists every judge with title and biography; there are no separate judge pages.",
+    "listing_urls": [
+      "https://www.nynd.uscourts.gov/judge-biographies"
+    ],
+    "skip_link_entries": true,
+    "text_roster": true,
+    "no_sublistings": true
+  },
+  "casd": {
+    "note": "Judges are listed in the site menu; each entry is a form postback, not an address, so the listing page itself is the record.",
+    "listing_urls": [
+      "https://www.casd.uscourts.gov/Judges.aspx"
+    ],
+    "skip_link_entries": true,
+    "text_roster": true,
+    "roster_scope": "page",
+    "no_sublistings": true
+  },
+  "nhd": {
+    "listing_urls": [
+      "https://www.nhd.uscourts.gov/court-information"
+    ],
+    "skip_link_entries": true,
+    "text_roster": true,
+    "no_sublistings": true
+  },
+  "sdd": {
+    "listing_urls": [
+      "https://www.sdd.uscourts.gov/judges-info"
+    ],
+    "skip_link_entries": true,
+    "text_roster": true,
+    "no_sublistings": true
+  },
+  "scd": {
+    "listing_urls": [
+      "https://www.scd.uscourts.gov/Judges/distjudge.asp",
+      "https://www.scd.uscourts.gov/Judges/magjudge.asp"
+    ],
+    "skip_link_entries": true,
+    "text_roster": true,
+    "no_sublistings": true
+  },
+  "med": {
+    "listing_urls": [
+      "https://www.med.uscourts.gov/courtroom-practices"
+    ],
+    "entry_href_regex": "med\\.uscourts\\.gov/judge-[a-z]+$",
+    "no_sublistings": true
+  },
+  "txwd": {
+    "listing_urls": [
+      "https://www.txwd.uscourts.gov/judges-information/judges-directory-biographies/"
+    ],
+    "skip_link_entries": true,
+    "entry_href_regex": "/team/[a-z0-9-]+/?$",
+    "no_sublistings": true
+  },
+  "paed": {
+    "listing_urls": [
+      "https://www.paed.uscourts.gov/judges/District%20Court%20Judges",
+      "https://www.paed.uscourts.gov/judges/Senior%20Judges",
+      "https://www.paed.uscourts.gov/judges/Magistrate%20Judges"
+    ],
+    "entry_href_regex": "/judges-info/(district-court-judges|senior-judges|magistrate-judges)/[a-z-]+$",
+    "no_sublistings": true
+  },
+  "nyed": {
+    "listing_urls": [
+      "https://www.nyed.uscourts.gov/district-judges",
+      "https://www.nyed.uscourts.gov/magistrate-judges"
+    ],
+    "no_sublistings": true
+  },
+  "okwd": {
+    "note": "Chambers Rules page: each judge's name heads a list of that judge's rules.",
+    "listing_urls": [
+      "https://www.okwd.uscourts.gov/chambers-rules"
+    ],
+    "skip_link_entries": true,
+    "text_roster": true,
+    "no_sublistings": true
+  },
+  "wiwd": {
+    "listing_urls": [
+      "https://www.wiwd.uscourts.gov/judges.html"
+    ],
+    "skip_link_entries": true,
+    "text_roster": true,
+    "no_sublistings": true
+  },
+  "gasd": {
+    "note": "Each judge has one 'Instructions and Forms' page, linked from the home page menu.",
+    "listing_urls": [
+      "https://www.gasd.uscourts.gov/"
+    ],
+    "skip_link_entries": true,
+    "entry_href_regex": "/judge-[a-z]+-instructions-and-forms$",
+    "no_sublistings": true
+  },
+  "wvsd": {
+    "listing_urls": [
+      "https://www.wvsd.uscourts.gov/judges-info/district-court-judges/frank-w-volk"
+    ],
+    "skip_link_entries": true,
+    "entry_href_regex": "/judges-info/(district-court-judges|magistrate-court-judges)/[a-z-]+$",
+    "no_sublistings": true
+  },
+  "txsd": {
+    "note": "Shared site with the bankruptcy court. Main table: one row per judge with 'view home page' and 'view procedures'.",
+    "listing_urls": [
+      "https://www.txs.uscourts.gov/page/district-magistrate-judges-procedures-schedules"
+    ],
+    "skip_link_entries": true,
+    "entry_href_regex": "/(content|page)/(chief-)?(senior-)?united-states-(district|magistrate)-judge-[a-z0-9-]+$",
+    "entry_main_only": true,
+    "row_docs": true,
+    "no_sublistings": true,
+    "no_index_docs": true
+  },
+  "txsb": {
+    "note": "Shared site with the district court.",
+    "listing_urls": [
+      "https://www.txs.uscourts.gov/page/bankruptcy-judges-procedures-schedules"
+    ],
+    "skip_link_entries": true,
+    "entry_href_regex": "/(content|page)/(chief-)?united-states-bankruptcy-judge-[a-z0-9-]+$",
+    "entry_main_only": true,
+    "row_docs": true,
+    "no_sublistings": true,
+    "no_index_docs": true
+  },
+  "mowd": {
+    "note": "Shared site with the bankruptcy court; the district listing page also names the bankruptcy judges, who are left to the bankruptcy court.",
+    "listing_urls": [
+      "https://www.mow.uscourts.gov/district/judges"
+    ],
+    "exclude_href_regex": "/judges/(norton|fenimore|johnson)$",
+    "no_sublistings": true
+  },
+  "mowb": {
+    "note": "Shared site with the district court.",
+    "listing_urls": [
+      "https://www.mow.uscourts.gov/bankruptcy/judges"
+    ],
+    "no_sublistings": true
+  },
+  "idd": {
+    "note": "Shared site with the bankruptcy court.",
+    "listing_urls": [
+      "https://www.id.uscourts.gov/district/judges/Submit_Proposed_Orders.cfm"
+    ],
+    "skip_link_entries": true,
+    "entry_href_regex": "/district/judges/[a-z]+/\\?lni=",
+    "no_sublistings": true
+  },
+  "idb": {
+    "note": "Shared site with the district court.",
+    "listing_urls": [
+      "https://www.id.uscourts.gov/bankruptcy/judges/Submit_Proposed_Orders.cfm"
+    ],
+    "skip_link_entries": true,
+    "entry_href_regex": "/bankruptcy/judges/[a-z]+/\\?lni=",
+    "no_sublistings": true
+  },
+  "gub": {
+    "skip": "The bankruptcy court of Guam is staffed by the District Court of Guam's judges; the shared site lists no separate bankruptcy judge. Nothing was recorded for this court so that no district judge is shown as a bankruptcy judge."
+  }
+}

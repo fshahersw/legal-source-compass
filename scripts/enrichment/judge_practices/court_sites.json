@@ -1,0 +1,1686 @@
+{
+ "courts": [
+  {
+   "court_id": "akb",
+   "home_url": "https://www.akb.uscourts.gov/",
+   "host": "www.akb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. Alaska",
+   "shared_with": [],
+   "state": "AK"
+  },
+  {
+   "court_id": "almb",
+   "home_url": "https://www.almb.uscourts.gov/",
+   "host": "www.almb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, M.D. Alabama",
+   "shared_with": [],
+   "state": "AL"
+  },
+  {
+   "court_id": "alnb",
+   "home_url": "https://www.alnb.uscourts.gov/",
+   "host": "www.alnb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, N.D. Alabama",
+   "shared_with": [],
+   "state": "AL"
+  },
+  {
+   "court_id": "alsb",
+   "home_url": "https://www.alsb.uscourts.gov/",
+   "host": "www.alsb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, S.D. Alabama",
+   "shared_with": [],
+   "state": "AL"
+  },
+  {
+   "court_id": "arb",
+   "home_url": "https://www.azb.uscourts.gov/",
+   "host": "www.azb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. Arizona",
+   "shared_with": [],
+   "state": "AZ"
+  },
+  {
+   "court_id": "areb",
+   "home_url": "https://www.areb.uscourts.gov/",
+   "host": "www.areb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, E.D. Arkansas",
+   "shared_with": [],
+   "state": "AR"
+  },
+  {
+   "court_id": "cacb",
+   "home_url": "https://www.cacb.uscourts.gov/",
+   "host": "www.cacb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, C.D. California",
+   "shared_with": [],
+   "state": "CA"
+  },
+  {
+   "court_id": "caeb",
+   "home_url": "https://www.caeb.uscourts.gov/",
+   "host": "www.caeb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, E.D. California",
+   "shared_with": [],
+   "state": "CA"
+  },
+  {
+   "court_id": "canb",
+   "home_url": "https://www.canb.uscourts.gov/",
+   "host": "www.canb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, N.D. California",
+   "shared_with": [],
+   "state": "CA"
+  },
+  {
+   "court_id": "casb",
+   "home_url": "https://www.casb.uscourts.gov/",
+   "host": "www.casb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, S.D. California",
+   "shared_with": [],
+   "state": "CA"
+  },
+  {
+   "court_id": "cob",
+   "home_url": "https://www.cob.uscourts.gov/",
+   "host": "www.cob.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. Colorado",
+   "shared_with": [],
+   "state": "CO"
+  },
+  {
+   "court_id": "ctb",
+   "home_url": "https://www.ctb.uscourts.gov/",
+   "host": "www.ctb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. Connecticut",
+   "shared_with": [],
+   "state": "CT"
+  },
+  {
+   "court_id": "dcb",
+   "home_url": "https://www.dcb.uscourts.gov/",
+   "host": "www.dcb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, District of Columbia",
+   "shared_with": [],
+   "state": "DC"
+  },
+  {
+   "court_id": "deb",
+   "home_url": "https://www.deb.uscourts.gov/",
+   "host": "www.deb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. Delaware",
+   "shared_with": [],
+   "state": "DE"
+  },
+  {
+   "court_id": "flmb",
+   "home_url": "https://www.flmb.uscourts.gov/",
+   "host": "www.flmb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, M.D. Florida",
+   "shared_with": [],
+   "state": "FL"
+  },
+  {
+   "court_id": "flnb",
+   "home_url": "https://www.flnb.uscourts.gov/",
+   "host": "www.flnb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, N.D. Florida",
+   "shared_with": [],
+   "state": "FL"
+  },
+  {
+   "court_id": "flsb",
+   "home_url": "https://www.flsb.uscourts.gov/",
+   "host": "www.flsb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, S.D. Florida.",
+   "shared_with": [],
+   "state": "FL"
+  },
+  {
+   "court_id": "gamb",
+   "home_url": "https://www.gamb.uscourts.gov/",
+   "host": "www.gamb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, M.D. Georgia",
+   "shared_with": [],
+   "state": "GA"
+  },
+  {
+   "court_id": "ganb",
+   "home_url": "https://www.ganb.uscourts.gov/",
+   "host": "www.ganb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, N.D. Georgia",
+   "shared_with": [],
+   "state": "GA"
+  },
+  {
+   "court_id": "gasb",
+   "home_url": "https://www.gasb.uscourts.gov/",
+   "host": "www.gasb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, S.D. Georgia",
+   "shared_with": [],
+   "state": "GA"
+  },
+  {
+   "court_id": "gub",
+   "home_url": "https://www.gud.uscourts.gov/",
+   "host": "www.gud.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. Guam",
+   "shared_with": [
+    "gud"
+   ],
+   "state": "GU"
+  },
+  {
+   "court_id": "hib",
+   "home_url": "https://www.hib.uscourts.gov/",
+   "host": "www.hib.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. Hawaii",
+   "shared_with": [],
+   "state": "HI"
+  },
+  {
+   "court_id": "ianb",
+   "home_url": "https://www.ianb.uscourts.gov/",
+   "host": "www.ianb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, N.D. Iowa",
+   "shared_with": [],
+   "state": "IA"
+  },
+  {
+   "court_id": "iasb",
+   "home_url": "https://www.iasb.uscourts.gov/",
+   "host": "www.iasb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, S.D. Iowa",
+   "shared_with": [],
+   "state": "IA"
+  },
+  {
+   "court_id": "idb",
+   "home_url": "https://www.id.uscourts.gov/",
+   "host": "www.id.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. Idaho",
+   "shared_with": [
+    "idd"
+   ],
+   "state": "ID"
+  },
+  {
+   "court_id": "ilcb",
+   "home_url": "https://www.ilcb.uscourts.gov/",
+   "host": "www.ilcb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, C.D. Illinois",
+   "shared_with": [],
+   "state": "IL"
+  },
+  {
+   "court_id": "ilnb",
+   "home_url": "https://www.ilnb.uscourts.gov/",
+   "host": "www.ilnb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, N.D. Illinois",
+   "shared_with": [],
+   "state": "IL"
+  },
+  {
+   "court_id": "ilsb",
+   "home_url": "https://www.ilsb.uscourts.gov/",
+   "host": "www.ilsb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, S.D. Illinois",
+   "shared_with": [],
+   "state": "IL"
+  },
+  {
+   "court_id": "innb",
+   "home_url": "https://www.innb.uscourts.gov/",
+   "host": "www.innb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, N.D. Indiana",
+   "shared_with": [],
+   "state": "IN"
+  },
+  {
+   "court_id": "insb",
+   "home_url": "https://www.insb.uscourts.gov/",
+   "host": "www.insb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, S.D. Indiana",
+   "shared_with": [],
+   "state": "IN"
+  },
+  {
+   "court_id": "ksb",
+   "home_url": "https://www.ksb.uscourts.gov/",
+   "host": "www.ksb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. Kansas",
+   "shared_with": [],
+   "state": "KS"
+  },
+  {
+   "court_id": "kyeb",
+   "home_url": "https://www.kyeb.uscourts.gov/",
+   "host": "www.kyeb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, E.D. Kentucky",
+   "shared_with": [],
+   "state": "KY"
+  },
+  {
+   "court_id": "kywb",
+   "home_url": "https://www.kywb.uscourts.gov/",
+   "host": "www.kywb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, W.D. Kentucky",
+   "shared_with": [],
+   "state": "KY"
+  },
+  {
+   "court_id": "laeb",
+   "home_url": "https://www.laeb.uscourts.gov/",
+   "host": "www.laeb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, E.D. Louisiana",
+   "shared_with": [],
+   "state": "LA"
+  },
+  {
+   "court_id": "lamb",
+   "home_url": "https://www.lamb.uscourts.gov/",
+   "host": "www.lamb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, M.D. Louisiana",
+   "shared_with": [],
+   "state": "LA"
+  },
+  {
+   "court_id": "lawb",
+   "home_url": "https://www.lawb.uscourts.gov/",
+   "host": "www.lawb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, W.D. Louisiana",
+   "shared_with": [],
+   "state": "LA"
+  },
+  {
+   "court_id": "mab",
+   "home_url": "https://www.mab.uscourts.gov/",
+   "host": "www.mab.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. Massachusetts",
+   "shared_with": [],
+   "state": "MA"
+  },
+  {
+   "court_id": "mdb",
+   "home_url": "https://www.mdb.uscourts.gov/",
+   "host": "www.mdb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. Maryland",
+   "shared_with": [],
+   "state": "MD"
+  },
+  {
+   "court_id": "meb",
+   "home_url": "https://www.meb.uscourts.gov/",
+   "host": "www.meb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. Maine",
+   "shared_with": [],
+   "state": "ME"
+  },
+  {
+   "court_id": "mieb",
+   "home_url": "https://www.mieb.uscourts.gov/",
+   "host": "www.mieb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, E.D. Michigan",
+   "shared_with": [],
+   "state": "MI"
+  },
+  {
+   "court_id": "miwb",
+   "home_url": "https://www.miwb.uscourts.gov/",
+   "host": "www.miwb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, W.D. Michigan",
+   "shared_with": [],
+   "state": "MI"
+  },
+  {
+   "court_id": "mnb",
+   "home_url": "https://www.mnb.uscourts.gov/",
+   "host": "www.mnb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. Minnesota",
+   "shared_with": [],
+   "state": "MN"
+  },
+  {
+   "court_id": "moeb",
+   "home_url": "https://www.moeb.uscourts.gov/",
+   "host": "www.moeb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, E.D. Missouri",
+   "shared_with": [],
+   "state": "MO"
+  },
+  {
+   "court_id": "mowb",
+   "home_url": "https://www.mow.uscourts.gov/",
+   "host": "www.mow.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, W.D. Missouri",
+   "shared_with": [
+    "mowd"
+   ],
+   "state": "MO"
+  },
+  {
+   "court_id": "msnb",
+   "home_url": "https://www.msnb.uscourts.gov/",
+   "host": "www.msnb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, N.D. Mississippi",
+   "shared_with": [],
+   "state": "MS"
+  },
+  {
+   "court_id": "mssb",
+   "home_url": "https://www.mssb.uscourts.gov/",
+   "host": "www.mssb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, S.D. Mississippi",
+   "shared_with": [],
+   "state": "MS"
+  },
+  {
+   "court_id": "mtb",
+   "home_url": "https://www.mtb.uscourts.gov/",
+   "host": "www.mtb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. Montana",
+   "shared_with": [],
+   "state": "MT"
+  },
+  {
+   "court_id": "nceb",
+   "home_url": "https://www.nceb.uscourts.gov/",
+   "host": "www.nceb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, E.D. North Carolina",
+   "shared_with": [],
+   "state": "NC"
+  },
+  {
+   "court_id": "ncmb",
+   "home_url": "https://www.ncmb.uscourts.gov/",
+   "host": "www.ncmb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, M.D. North Carolina",
+   "shared_with": [],
+   "state": "NC"
+  },
+  {
+   "court_id": "ncwb",
+   "home_url": "https://www.ncwb.uscourts.gov/",
+   "host": "www.ncwb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, W.D. North Carolina",
+   "shared_with": [],
+   "state": "NC"
+  },
+  {
+   "court_id": "ndb",
+   "home_url": "https://www.ndb.uscourts.gov/",
+   "host": "www.ndb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. North Dakota",
+   "shared_with": [],
+   "state": "ND"
+  },
+  {
+   "court_id": "nebraskab",
+   "home_url": "https://www.neb.uscourts.gov/",
+   "host": "www.neb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. Nebraska",
+   "shared_with": [],
+   "state": "NE"
+  },
+  {
+   "court_id": "nhb",
+   "home_url": "https://www.nhb.uscourts.gov/",
+   "host": "www.nhb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. New Hampshire",
+   "shared_with": [],
+   "state": "NH"
+  },
+  {
+   "court_id": "njb",
+   "home_url": "https://www.njb.uscourts.gov/",
+   "host": "www.njb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. New Jersey",
+   "shared_with": [],
+   "state": "NJ"
+  },
+  {
+   "court_id": "nmb",
+   "home_url": "https://www.nmb.uscourts.gov/",
+   "host": "www.nmb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. New Mexico",
+   "shared_with": [],
+   "state": "NM"
+  },
+  {
+   "court_id": "nvb",
+   "home_url": "https://www.nvb.uscourts.gov/",
+   "host": "www.nvb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. Nevada",
+   "shared_with": [],
+   "state": "NV"
+  },
+  {
+   "court_id": "nyeb",
+   "home_url": "https://www.nyeb.uscourts.gov/",
+   "host": "www.nyeb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, E.D. New York",
+   "shared_with": [],
+   "state": "NY"
+  },
+  {
+   "court_id": "nynb",
+   "home_url": "https://www.nynb.uscourts.gov/",
+   "host": "www.nynb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, N.D. New York",
+   "shared_with": [],
+   "state": "NY"
+  },
+  {
+   "court_id": "nysb",
+   "home_url": "https://www.nysb.uscourts.gov/",
+   "host": "www.nysb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, S.D. New York",
+   "shared_with": [],
+   "state": "NY"
+  },
+  {
+   "court_id": "nywb",
+   "home_url": "https://www.nywb.uscourts.gov/",
+   "host": "www.nywb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, W.D. New York",
+   "shared_with": [],
+   "state": "NY"
+  },
+  {
+   "court_id": "ohnb",
+   "home_url": "https://www.ohnb.uscourts.gov/",
+   "host": "www.ohnb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, N.D. Ohio",
+   "shared_with": [],
+   "state": "OH"
+  },
+  {
+   "court_id": "ohsb",
+   "home_url": "https://www.ohsb.uscourts.gov/",
+   "host": "www.ohsb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, S.D. Ohio",
+   "shared_with": [],
+   "state": "OH"
+  },
+  {
+   "court_id": "okeb",
+   "home_url": "https://www.okeb.uscourts.gov/",
+   "host": "www.okeb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, E.D. Oklahoma",
+   "shared_with": [],
+   "state": "OK"
+  },
+  {
+   "court_id": "oknb",
+   "home_url": "https://www.oknb.uscourts.gov/",
+   "host": "www.oknb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, N.D. Oklahoma",
+   "shared_with": [],
+   "state": "OK"
+  },
+  {
+   "court_id": "okwb",
+   "home_url": "https://www.okwb.uscourts.gov/",
+   "host": "www.okwb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, W.D. Oklahoma",
+   "shared_with": [],
+   "state": "OK"
+  },
+  {
+   "court_id": "orb",
+   "home_url": "https://www.orb.uscourts.gov/",
+   "host": "www.orb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. Oregon",
+   "shared_with": [],
+   "state": "OR"
+  },
+  {
+   "court_id": "paeb",
+   "home_url": "https://www.paeb.uscourts.gov/",
+   "host": "www.paeb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, E.D. Pennsylvania",
+   "shared_with": [],
+   "state": "PA"
+  },
+  {
+   "court_id": "pamb",
+   "home_url": "https://www.pamb.uscourts.gov/",
+   "host": "www.pamb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, M.D. Pennsylvania",
+   "shared_with": [],
+   "state": "PA"
+  },
+  {
+   "court_id": "pawb",
+   "home_url": "https://www.pawb.uscourts.gov/",
+   "host": "www.pawb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, W.D. Pennsylvania",
+   "shared_with": [],
+   "state": "PA"
+  },
+  {
+   "court_id": "prb",
+   "home_url": "https://www.prb.uscourts.gov/",
+   "host": "www.prb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. Puerto Rico",
+   "shared_with": [],
+   "state": "PR"
+  },
+  {
+   "court_id": "rib",
+   "home_url": "https://www.rib.uscourts.gov/",
+   "host": "www.rib.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. Rhode Island",
+   "shared_with": [],
+   "state": "RI"
+  },
+  {
+   "court_id": "scb",
+   "home_url": "https://www.scb.uscourts.gov/",
+   "host": "www.scb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. South Carolina",
+   "shared_with": [],
+   "state": "SC"
+  },
+  {
+   "court_id": "sdb",
+   "home_url": "https://www.sdb.uscourts.gov/",
+   "host": "www.sdb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. South Dakota",
+   "shared_with": [],
+   "state": "SD"
+  },
+  {
+   "court_id": "tneb",
+   "home_url": "https://www.tneb.uscourts.gov/",
+   "host": "www.tneb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, E.D. Tennessee",
+   "shared_with": [],
+   "state": "TN"
+  },
+  {
+   "court_id": "tnmb",
+   "home_url": "https://www.tnmb.uscourts.gov/",
+   "host": "www.tnmb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, M.D. Tennessee",
+   "shared_with": [],
+   "state": "TN"
+  },
+  {
+   "court_id": "tnwb",
+   "home_url": "https://www.tnwb.uscourts.gov/",
+   "host": "www.tnwb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, W.D. Tennessee",
+   "shared_with": [],
+   "state": "TN"
+  },
+  {
+   "court_id": "txeb",
+   "home_url": "https://www.txeb.uscourts.gov/",
+   "host": "www.txeb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, E.D. Texas",
+   "shared_with": [],
+   "state": "TX"
+  },
+  {
+   "court_id": "txnb",
+   "home_url": "https://www.txnb.uscourts.gov/",
+   "host": "www.txnb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, N.D. Texas",
+   "shared_with": [],
+   "state": "TX"
+  },
+  {
+   "court_id": "txsb",
+   "home_url": "https://www.txs.uscourts.gov/",
+   "host": "www.txs.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, S.D. Texas",
+   "shared_with": [
+    "txsd"
+   ],
+   "state": "TX"
+  },
+  {
+   "court_id": "txwb",
+   "home_url": "https://www.txwb.uscourts.gov/",
+   "host": "www.txwb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, W.D. Texas",
+   "shared_with": [],
+   "state": "TX"
+  },
+  {
+   "court_id": "utb",
+   "home_url": "https://www.utb.uscourts.gov/",
+   "host": "www.utb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. Utah",
+   "shared_with": [],
+   "state": "UT"
+  },
+  {
+   "court_id": "vaeb",
+   "home_url": "https://www.vaeb.uscourts.gov/",
+   "host": "www.vaeb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, E.D. Virginia",
+   "shared_with": [],
+   "state": "VA"
+  },
+  {
+   "court_id": "vawb",
+   "home_url": "https://www.vawb.uscourts.gov/",
+   "host": "www.vawb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, W.D. Virginia",
+   "shared_with": [],
+   "state": "VA"
+  },
+  {
+   "court_id": "vtb",
+   "home_url": "https://www.vtb.uscourts.gov/",
+   "host": "www.vtb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. Vermont",
+   "shared_with": [],
+   "state": "VT"
+  },
+  {
+   "court_id": "waeb",
+   "home_url": "https://www.waeb.uscourts.gov/",
+   "host": "www.waeb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, E.D. Washington",
+   "shared_with": [],
+   "state": "WA"
+  },
+  {
+   "court_id": "wawb",
+   "home_url": "https://www.wawb.uscourts.gov/",
+   "host": "www.wawb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, W.D. Washington",
+   "shared_with": [],
+   "state": "WA"
+  },
+  {
+   "court_id": "wieb",
+   "home_url": "https://www.wieb.uscourts.gov/",
+   "host": "www.wieb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, E.D. Wisconsin",
+   "shared_with": [],
+   "state": "WI"
+  },
+  {
+   "court_id": "wiwb",
+   "home_url": "https://www.wiwb.uscourts.gov/",
+   "host": "www.wiwb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, W.D. Wisconsin",
+   "shared_with": [],
+   "state": "WI"
+  },
+  {
+   "court_id": "wvnb",
+   "home_url": "https://www.wvnb.uscourts.gov/",
+   "host": "www.wvnb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, N.D. West Virginia",
+   "shared_with": [],
+   "state": "WV"
+  },
+  {
+   "court_id": "wvsb",
+   "home_url": "https://www.wvsb.uscourts.gov/",
+   "host": "www.wvsb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, S.D. West Virginia",
+   "shared_with": [],
+   "state": "WV"
+  },
+  {
+   "court_id": "wyb",
+   "home_url": "https://www.wyb.uscourts.gov/",
+   "host": "www.wyb.uscourts.gov",
+   "level": "bankruptcy",
+   "name": "United States Bankruptcy Court, D. Wyoming",
+   "shared_with": [],
+   "state": "WY"
+  },
+  {
+   "court_id": "akd",
+   "home_url": "https://www.akd.uscourts.gov/",
+   "host": "www.akd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. Alaska",
+   "shared_with": [],
+   "state": "AK"
+  },
+  {
+   "court_id": "almd",
+   "home_url": "https://www.almd.uscourts.gov/",
+   "host": "www.almd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, M.D. Alabama",
+   "shared_with": [],
+   "state": "AL"
+  },
+  {
+   "court_id": "alnd",
+   "home_url": "https://www.alnd.uscourts.gov/",
+   "host": "www.alnd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, N.D. Alabama",
+   "shared_with": [],
+   "state": "AL"
+  },
+  {
+   "court_id": "alsd",
+   "home_url": "https://www.alsd.uscourts.gov/",
+   "host": "www.alsd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, S.D. Alabama",
+   "shared_with": [],
+   "state": "AL"
+  },
+  {
+   "court_id": "ared",
+   "home_url": "https://www.are.uscourts.gov/",
+   "host": "www.are.uscourts.gov",
+   "level": "district",
+   "name": "District Court, E.D. Arkansas",
+   "shared_with": [],
+   "state": "AR"
+  },
+  {
+   "court_id": "arwd",
+   "home_url": "https://www.arwd.uscourts.gov/",
+   "host": "www.arwd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, W.D. Arkansas",
+   "shared_with": [],
+   "state": "AR"
+  },
+  {
+   "court_id": "azd",
+   "home_url": "https://www.azd.uscourts.gov/",
+   "host": "www.azd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. Arizona",
+   "shared_with": [],
+   "state": "AZ"
+  },
+  {
+   "court_id": "cacd",
+   "home_url": "https://www.cacd.uscourts.gov/",
+   "host": "www.cacd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, C.D. California",
+   "shared_with": [],
+   "state": "CA"
+  },
+  {
+   "court_id": "caed",
+   "home_url": "https://www.caed.uscourts.gov/",
+   "host": "www.caed.uscourts.gov",
+   "level": "district",
+   "name": "District Court, E.D. California",
+   "shared_with": [],
+   "state": "CA"
+  },
+  {
+   "court_id": "cand",
+   "home_url": "https://www.cand.uscourts.gov/",
+   "host": "www.cand.uscourts.gov",
+   "level": "district",
+   "name": "District Court, N.D. California",
+   "shared_with": [],
+   "state": "CA"
+  },
+  {
+   "court_id": "casd",
+   "home_url": "https://www.casd.uscourts.gov/",
+   "host": "www.casd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, S.D. California",
+   "shared_with": [],
+   "state": "CA"
+  },
+  {
+   "court_id": "cod",
+   "home_url": "https://www.cod.uscourts.gov/",
+   "host": "www.cod.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. Colorado",
+   "shared_with": [],
+   "state": "CO"
+  },
+  {
+   "court_id": "ctd",
+   "home_url": "https://www.ctd.uscourts.gov/",
+   "host": "www.ctd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. Connecticut",
+   "shared_with": [],
+   "state": "CT"
+  },
+  {
+   "court_id": "dcd",
+   "home_url": "https://www.dcd.uscourts.gov/",
+   "host": "www.dcd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, District of Columbia",
+   "shared_with": [],
+   "state": "DC"
+  },
+  {
+   "court_id": "ded",
+   "home_url": "https://www.ded.uscourts.gov/",
+   "host": "www.ded.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. Delaware",
+   "shared_with": [],
+   "state": "DE"
+  },
+  {
+   "court_id": "flmd",
+   "home_url": "https://www.flmd.uscourts.gov/",
+   "host": "www.flmd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, M.D. Florida",
+   "shared_with": [],
+   "state": "FL"
+  },
+  {
+   "court_id": "flnd",
+   "home_url": "https://www.flnd.uscourts.gov/",
+   "host": "www.flnd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, N.D. Florida",
+   "shared_with": [],
+   "state": "FL"
+  },
+  {
+   "court_id": "flsd",
+   "home_url": "https://www.flsd.uscourts.gov/",
+   "host": "www.flsd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, S.D. Florida",
+   "shared_with": [],
+   "state": "FL"
+  },
+  {
+   "court_id": "gamd",
+   "home_url": "https://www.gamd.uscourts.gov/",
+   "host": "www.gamd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, M.D. Georgia",
+   "shared_with": [],
+   "state": "GA"
+  },
+  {
+   "court_id": "gand",
+   "home_url": "https://www.gand.uscourts.gov/",
+   "host": "www.gand.uscourts.gov",
+   "level": "district",
+   "name": "District Court, N.D. Georgia",
+   "shared_with": [],
+   "state": "GA"
+  },
+  {
+   "court_id": "gasd",
+   "home_url": "https://www.gasd.uscourts.gov/",
+   "host": "www.gasd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, S.D. Georgia",
+   "shared_with": [],
+   "state": "GA"
+  },
+  {
+   "court_id": "gud",
+   "home_url": "https://www.gud.uscourts.gov/",
+   "host": "www.gud.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. Guam",
+   "shared_with": [
+    "gub"
+   ],
+   "state": "GU"
+  },
+  {
+   "court_id": "hid",
+   "home_url": "https://www.hid.uscourts.gov/",
+   "host": "www.hid.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. Hawaii",
+   "shared_with": [],
+   "state": "HI"
+  },
+  {
+   "court_id": "iand",
+   "home_url": "https://www.iand.uscourts.gov/",
+   "host": "www.iand.uscourts.gov",
+   "level": "district",
+   "name": "District Court, N.D. Iowa",
+   "shared_with": [],
+   "state": "IA"
+  },
+  {
+   "court_id": "iasd",
+   "home_url": "https://www.iasd.uscourts.gov/",
+   "host": "www.iasd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, S.D. Iowa",
+   "shared_with": [],
+   "state": "IA"
+  },
+  {
+   "court_id": "idd",
+   "home_url": "https://www.id.uscourts.gov/",
+   "host": "www.id.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. Idaho",
+   "shared_with": [
+    "idb"
+   ],
+   "state": "ID"
+  },
+  {
+   "court_id": "ilcd",
+   "home_url": "https://www.ilcd.uscourts.gov/",
+   "host": "www.ilcd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, C.D. Illinois",
+   "shared_with": [],
+   "state": "IL"
+  },
+  {
+   "court_id": "ilnd",
+   "home_url": "https://www.ilnd.uscourts.gov/",
+   "host": "www.ilnd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, N.D. Illinois",
+   "shared_with": [],
+   "state": "IL"
+  },
+  {
+   "court_id": "ilsd",
+   "home_url": "https://www.ilsd.uscourts.gov/",
+   "host": "www.ilsd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, S.D. Illinois",
+   "shared_with": [],
+   "state": "IL"
+  },
+  {
+   "court_id": "innd",
+   "home_url": "https://www.innd.uscourts.gov/",
+   "host": "www.innd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, N.D. Indiana",
+   "shared_with": [],
+   "state": "IN"
+  },
+  {
+   "court_id": "insd",
+   "home_url": "https://www.insd.uscourts.gov/",
+   "host": "www.insd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, S.D. Indiana",
+   "shared_with": [],
+   "state": "IN"
+  },
+  {
+   "court_id": "ksd",
+   "home_url": "https://www.ksd.uscourts.gov/",
+   "host": "www.ksd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. Kansas",
+   "shared_with": [],
+   "state": "KS"
+  },
+  {
+   "court_id": "kyed",
+   "home_url": "https://www.kyed.uscourts.gov/",
+   "host": "www.kyed.uscourts.gov",
+   "level": "district",
+   "name": "District Court, E.D. Kentucky",
+   "shared_with": [],
+   "state": "KY"
+  },
+  {
+   "court_id": "kywd",
+   "home_url": "https://www.kywd.uscourts.gov/",
+   "host": "www.kywd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, W.D. Kentucky",
+   "shared_with": [],
+   "state": "KY"
+  },
+  {
+   "court_id": "laed",
+   "home_url": "https://www.laed.uscourts.gov/",
+   "host": "www.laed.uscourts.gov",
+   "level": "district",
+   "name": "District Court, E.D. Louisiana",
+   "shared_with": [],
+   "state": "LA"
+  },
+  {
+   "court_id": "lamd",
+   "home_url": "https://www.lamd.uscourts.gov/",
+   "host": "www.lamd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, M.D. Louisiana",
+   "shared_with": [],
+   "state": "LA"
+  },
+  {
+   "court_id": "lawd",
+   "home_url": "https://www.lawd.uscourts.gov/",
+   "host": "www.lawd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, W.D. Louisiana",
+   "shared_with": [],
+   "state": "LA"
+  },
+  {
+   "court_id": "mad",
+   "home_url": "https://www.mad.uscourts.gov/",
+   "host": "www.mad.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. Massachusetts",
+   "shared_with": [],
+   "state": "MA"
+  },
+  {
+   "court_id": "mdd",
+   "home_url": "https://www.mdd.uscourts.gov/",
+   "host": "www.mdd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. Maryland",
+   "shared_with": [],
+   "state": "MD"
+  },
+  {
+   "court_id": "med",
+   "home_url": "https://www.med.uscourts.gov/",
+   "host": "www.med.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. Maine",
+   "shared_with": [],
+   "state": "ME"
+  },
+  {
+   "court_id": "mied",
+   "home_url": "https://www.mied.uscourts.gov/",
+   "host": "www.mied.uscourts.gov",
+   "level": "district",
+   "name": "District Court, E.D. Michigan",
+   "shared_with": [],
+   "state": "MI"
+  },
+  {
+   "court_id": "miwd",
+   "home_url": "https://www.miwd.uscourts.gov/",
+   "host": "www.miwd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, W.D. Michigan",
+   "shared_with": [],
+   "state": "MI"
+  },
+  {
+   "court_id": "mnd",
+   "home_url": "https://www.mnd.uscourts.gov/",
+   "host": "www.mnd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. Minnesota",
+   "shared_with": [],
+   "state": "MN"
+  },
+  {
+   "court_id": "moed",
+   "home_url": "https://www.moed.uscourts.gov/",
+   "host": "www.moed.uscourts.gov",
+   "level": "district",
+   "name": "District Court, E.D. Missouri",
+   "shared_with": [],
+   "state": "MO"
+  },
+  {
+   "court_id": "mowd",
+   "home_url": "https://www.mow.uscourts.gov/",
+   "host": "www.mow.uscourts.gov",
+   "level": "district",
+   "name": "District Court, W.D. Missouri",
+   "shared_with": [
+    "mowb"
+   ],
+   "state": "MO"
+  },
+  {
+   "court_id": "msnd",
+   "home_url": "https://www.msnd.uscourts.gov/",
+   "host": "www.msnd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, N.D. Mississippi",
+   "shared_with": [],
+   "state": "MS"
+  },
+  {
+   "court_id": "mssd",
+   "home_url": "https://www.mssd.uscourts.gov/",
+   "host": "www.mssd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, S.D. Mississippi",
+   "shared_with": [],
+   "state": "MS"
+  },
+  {
+   "court_id": "mtd",
+   "home_url": "https://www.mtd.uscourts.gov/",
+   "host": "www.mtd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. Montana",
+   "shared_with": [],
+   "state": "MT"
+  },
+  {
+   "court_id": "nced",
+   "home_url": "https://www.nced.uscourts.gov/",
+   "host": "www.nced.uscourts.gov",
+   "level": "district",
+   "name": "District Court, E.D. North Carolina",
+   "shared_with": [],
+   "state": "NC"
+  },
+  {
+   "court_id": "ncmd",
+   "home_url": "https://www.ncmd.uscourts.gov/",
+   "host": "www.ncmd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, M.D. North Carolina",
+   "shared_with": [],
+   "state": "NC"
+  },
+  {
+   "court_id": "ncwd",
+   "home_url": "https://www.ncwd.uscourts.gov/",
+   "host": "www.ncwd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, W.D. North Carolina",
+   "shared_with": [],
+   "state": "NC"
+  },
+  {
+   "court_id": "ndd",
+   "home_url": "https://www.ndd.uscourts.gov/",
+   "host": "www.ndd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. North Dakota",
+   "shared_with": [],
+   "state": "ND"
+  },
+  {
+   "court_id": "ned",
+   "home_url": "https://www.ned.uscourts.gov/",
+   "host": "www.ned.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. Nebraska",
+   "shared_with": [],
+   "state": "NE"
+  },
+  {
+   "court_id": "nhd",
+   "home_url": "https://www.nhd.uscourts.gov/",
+   "host": "www.nhd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. New Hampshire",
+   "shared_with": [],
+   "state": "NH"
+  },
+  {
+   "court_id": "njd",
+   "home_url": "https://www.njd.uscourts.gov/",
+   "host": "www.njd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. New Jersey",
+   "shared_with": [],
+   "state": "NJ"
+  },
+  {
+   "court_id": "nmd",
+   "home_url": "https://www.nmd.uscourts.gov/",
+   "host": "www.nmd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. New Mexico",
+   "shared_with": [],
+   "state": "NM"
+  },
+  {
+   "court_id": "nmid",
+   "home_url": "https://www.nmid.uscourts.gov/",
+   "host": "www.nmid.uscourts.gov",
+   "level": "district",
+   "name": "District Court, Northern Mariana Islands",
+   "shared_with": [],
+   "state": "MP"
+  },
+  {
+   "court_id": "nvd",
+   "home_url": "https://www.nvd.uscourts.gov/",
+   "host": "www.nvd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. Nevada",
+   "shared_with": [],
+   "state": "NV"
+  },
+  {
+   "court_id": "nyed",
+   "home_url": "https://www.nyed.uscourts.gov/",
+   "host": "www.nyed.uscourts.gov",
+   "level": "district",
+   "name": "District Court, E.D. New York",
+   "shared_with": [],
+   "state": "NY"
+  },
+  {
+   "court_id": "nynd",
+   "home_url": "https://www.nynd.uscourts.gov/",
+   "host": "www.nynd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, N.D. New York",
+   "shared_with": [],
+   "state": "NY"
+  },
+  {
+   "court_id": "nysd",
+   "home_url": "https://www.nysd.uscourts.gov/",
+   "host": "www.nysd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, S.D. New York",
+   "shared_with": [],
+   "state": "NY"
+  },
+  {
+   "court_id": "nywd",
+   "home_url": "https://www.nywd.uscourts.gov/",
+   "host": "www.nywd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, W.D. New York",
+   "shared_with": [],
+   "state": "NY"
+  },
+  {
+   "court_id": "ohnd",
+   "home_url": "https://www.ohnd.uscourts.gov/",
+   "host": "www.ohnd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, N.D. Ohio",
+   "shared_with": [],
+   "state": "OH"
+  },
+  {
+   "court_id": "ohsd",
+   "home_url": "https://www.ohsd.uscourts.gov/",
+   "host": "www.ohsd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, S.D. Ohio",
+   "shared_with": [],
+   "state": "OH"
+  },
+  {
+   "court_id": "oked",
+   "home_url": "https://www.oked.uscourts.gov/",
+   "host": "www.oked.uscourts.gov",
+   "level": "district",
+   "name": "District Court, E.D. Oklahoma",
+   "shared_with": [],
+   "state": "OK"
+  },
+  {
+   "court_id": "oknd",
+   "home_url": "https://www.oknd.uscourts.gov/",
+   "host": "www.oknd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, N.D. Oklahoma",
+   "shared_with": [],
+   "state": "OK"
+  },
+  {
+   "court_id": "okwd",
+   "home_url": "https://www.okwd.uscourts.gov/",
+   "host": "www.okwd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, W.D. Oklahoma",
+   "shared_with": [],
+   "state": "OK"
+  },
+  {
+   "court_id": "ord",
+   "home_url": "https://www.ord.uscourts.gov/",
+   "host": "www.ord.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. Oregon",
+   "shared_with": [],
+   "state": "OR"
+  },
+  {
+   "court_id": "paed",
+   "home_url": "https://www.paed.uscourts.gov/",
+   "host": "www.paed.uscourts.gov",
+   "level": "district",
+   "name": "District Court, E.D. Pennsylvania",
+   "shared_with": [],
+   "state": "PA"
+  },
+  {
+   "court_id": "pamd",
+   "home_url": "https://www.pamd.uscourts.gov/",
+   "host": "www.pamd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, M.D. Pennsylvania",
+   "shared_with": [],
+   "state": "PA"
+  },
+  {
+   "court_id": "pawd",
+   "home_url": "https://www.pawd.uscourts.gov/",
+   "host": "www.pawd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, W.D. Pennsylvania",
+   "shared_with": [],
+   "state": "PA"
+  },
+  {
+   "court_id": "prd",
+   "home_url": "https://www.prd.uscourts.gov/",
+   "host": "www.prd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. Puerto Rico",
+   "shared_with": [],
+   "state": "PR"
+  },
+  {
+   "court_id": "rid",
+   "home_url": "https://www.rid.uscourts.gov/",
+   "host": "www.rid.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. Rhode Island",
+   "shared_with": [],
+   "state": "RI"
+  },
+  {
+   "court_id": "scd",
+   "home_url": "https://www.scd.uscourts.gov/",
+   "host": "www.scd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. South Carolina",
+   "shared_with": [],
+   "state": "SC"
+  },
+  {
+   "court_id": "sdd",
+   "home_url": "https://www.sdd.uscourts.gov/",
+   "host": "www.sdd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. South Dakota",
+   "shared_with": [],
+   "state": "SD"
+  },
+  {
+   "court_id": "tned",
+   "home_url": "https://www.tned.uscourts.gov/",
+   "host": "www.tned.uscourts.gov",
+   "level": "district",
+   "name": "District Court, E.D. Tennessee",
+   "shared_with": [],
+   "state": "TN"
+  },
+  {
+   "court_id": "tnmd",
+   "home_url": "https://www.tnmd.uscourts.gov/",
+   "host": "www.tnmd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, M.D. Tennessee",
+   "shared_with": [],
+   "state": "TN"
+  },
+  {
+   "court_id": "tnwd",
+   "home_url": "https://www.tnwd.uscourts.gov/",
+   "host": "www.tnwd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, W.D. Tennessee",
+   "shared_with": [],
+   "state": "TN"
+  },
+  {
+   "court_id": "txed",
+   "home_url": "https://www.txed.uscourts.gov/",
+   "host": "www.txed.uscourts.gov",
+   "level": "district",
+   "name": "District Court, E.D. Texas",
+   "shared_with": [],
+   "state": "TX"
+  },
+  {
+   "court_id": "txnd",
+   "home_url": "https://www.txnd.uscourts.gov/",
+   "host": "www.txnd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, N.D. Texas",
+   "shared_with": [],
+   "state": "TX"
+  },
+  {
+   "court_id": "txsd",
+   "home_url": "https://www.txs.uscourts.gov/",
+   "host": "www.txs.uscourts.gov",
+   "level": "district",
+   "name": "District Court, S.D. Texas",
+   "shared_with": [
+    "txsb"
+   ],
+   "state": "TX"
+  },
+  {
+   "court_id": "txwd",
+   "home_url": "https://www.txwd.uscourts.gov/",
+   "host": "www.txwd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, W.D. Texas",
+   "shared_with": [],
+   "state": "TX"
+  },
+  {
+   "court_id": "utd",
+   "home_url": "https://www.utd.uscourts.gov/",
+   "host": "www.utd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. Utah",
+   "shared_with": [],
+   "state": "UT"
+  },
+  {
+   "court_id": "vaed",
+   "home_url": "https://www.vaed.uscourts.gov/",
+   "host": "www.vaed.uscourts.gov",
+   "level": "district",
+   "name": "District Court, E.D. Virginia",
+   "shared_with": [],
+   "state": "VA"
+  },
+  {
+   "court_id": "vawd",
+   "home_url": "https://www.vawd.uscourts.gov/",
+   "host": "www.vawd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, W.D. Virginia",
+   "shared_with": [],
+   "state": "VA"
+  },
+  {
+   "court_id": "vid",
+   "home_url": "https://www.vid.uscourts.gov/",
+   "host": "www.vid.uscourts.gov",
+   "level": "district",
+   "name": "District Court, Virgin Islands",
+   "shared_with": [],
+   "state": "VI"
+  },
+  {
+   "court_id": "vtd",
+   "home_url": "https://www.vtd.uscourts.gov/",
+   "host": "www.vtd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. Vermont",
+   "shared_with": [],
+   "state": "VT"
+  },
+  {
+   "court_id": "waed",
+   "home_url": "https://www.waed.uscourts.gov/",
+   "host": "www.waed.uscourts.gov",
+   "level": "district",
+   "name": "District Court, E.D. Washington",
+   "shared_with": [],
+   "state": "WA"
+  },
+  {
+   "court_id": "wawd",
+   "home_url": "https://www.wawd.uscourts.gov/",
+   "host": "www.wawd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, W.D. Washington",
+   "shared_with": [],
+   "state": "WA"
+  },
+  {
+   "court_id": "wied",
+   "home_url": "https://www.wied.uscourts.gov/",
+   "host": "www.wied.uscourts.gov",
+   "level": "district",
+   "name": "District Court, E.D. Wisconsin",
+   "shared_with": [],
+   "state": "WI"
+  },
+  {
+   "court_id": "wiwd",
+   "home_url": "https://www.wiwd.uscourts.gov/",
+   "host": "www.wiwd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, W.D. Wisconsin",
+   "shared_with": [],
+   "state": "WI"
+  },
+  {
+   "court_id": "wvnd",
+   "home_url": "https://www.wvnd.uscourts.gov/",
+   "host": "www.wvnd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, N.D. West Virginia",
+   "shared_with": [],
+   "state": "WV"
+  },
+  {
+   "court_id": "wvsd",
+   "home_url": "https://www.wvsd.uscourts.gov/",
+   "host": "www.wvsd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, S.D. West Virginia",
+   "shared_with": [],
+   "state": "WV"
+  },
+  {
+   "court_id": "wyd",
+   "home_url": "https://www.wyd.uscourts.gov/",
+   "host": "www.wyd.uscourts.gov",
+   "level": "district",
+   "name": "District Court, D. Wyoming",
+   "shared_with": [],
+   "state": "WY"
+  }
+ ],
+ "source": "court_locations.site_courts over the uscourts.gov Court Website Links page"
+}
