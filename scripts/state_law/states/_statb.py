@@ -265,6 +265,32 @@ def _xml_text_rendering_markup(body):
     return lib.norm_lines(_html.unescape("".join(out)))
 
 
+def _xml_text_inline(body: bytes, inline: set) -> str:
+    """XML text rendering where the named inline elements (Utah <modchap>, <xref>, <format>, <tab>) join their
+    surrounding text instead of starting a new line; every other element boundary is a line break."""
+    from xml.etree import ElementTree as ET
+    from state_law import lib  # type: ignore
+
+    root = ET.fromstring(body)
+    out: list[str] = []
+
+    def walk(el):
+        block = el.tag not in inline
+        if block:
+            out.append("\n")
+        elif el.tag == "tab":
+            out.append(" ")
+        out.append(el.text or "")
+        for child in el:
+            walk(child)
+        if block:
+            out.append("\n")
+        out.append(el.tail or "")
+
+    walk(root)
+    return lib.norm_lines(_html.unescape("".join(out)))
+
+
 def verify_cli(argv=None):
     """python3 scripts/state_law/states/_statb.py verify <edition_dir> --raw <raw_root>"""
     import argparse
@@ -302,6 +328,13 @@ def verify_cli(argv=None):
                 done = subprocess.run(["pdftotext", "-layout", "-enc", "UTF-8", handle.name, "-"], capture_output=True,
                                       check=True)
             return lib.norm_lines(done.stdout.decode("utf-8", errors="replace"))
+        # Utah title XML: the publisher's page prints each subsection's label from its number attribute
+        # ("78B-2-307(1)(a)" -> "(a)"); render it the same way before reading the text nodes
+        if body[:200].lstrip().startswith(b"<title number=") and b"<subsection number=" in body:
+            labelled = re.sub(rb'(<subsection number="[^"]*?(\([^()"]+\))">)', rb"\1\2 ", body)
+            labelled = re.sub(rb'(<section number="([^"]+)">)', rb"\1\2 ", labelled)   # the page prints the number
+            return _xml_text_inline(labelled, {"modchap", "xref", "ext_ref", "format", "tab", "b", "i", "u", "sup", "sub",
+                                               "em", "strong", "span"})
         # UTF-16 LE without a byte-order mark (South Dakota api/Statutes): lib.decode_bytes reads it as UTF-8
         if len(body) > 4 and body[1:2] == b"\x00" and body[3:4] == b"\x00" and not body.startswith(b"\xff\xfe"):
             decoded = body.decode("utf-16-le", errors="replace")
@@ -317,7 +350,7 @@ def verify_cli(argv=None):
     args = parser.parse_args(argv)
     result = shared_verify.verify(args.edition_dir, args.raw)
     result["adapter"] = ("statb: xml_text renders escaped publisher markup via html_text; .csv sources are rendered "
-                         "field by field after CSV unquoting; BOM-less UTF-16 LE bodies are decoded as UTF-16; PDFs are rendered with pdftotext -layout")
+                         "field by field after CSV unquoting; BOM-less UTF-16 LE bodies are decoded as UTF-16; PDFs are rendered with pdftotext -layout; Utah subsection labels are rendered from their number attribute")
     (args.edition_dir / "verify.json").write_text(json.dumps(result, indent=2, ensure_ascii=False))
     print(json.dumps({k: result[k] for k in ("edition_id", "ok", "counts", "adapter")}, ensure_ascii=False))
     for item in result["failures"][:20]:
