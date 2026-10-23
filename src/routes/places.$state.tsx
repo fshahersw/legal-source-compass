@@ -17,13 +17,14 @@ import {
   type PlaceHubSearch,
   type PlaceHubTab,
 } from "@/components/places/placeSearch";
+import { AreaList } from "@/components/places/state/AreaList";
 import { partitionStateSources } from "@/components/places/state/resourceFacts";
 import { StateOverviewTab } from "@/components/places/state/StateOverviewTab";
 import { Button } from "@/components/ui/button";
 import { useAtlas } from "@/lib/atlas/store";
 import { useCorpus } from "@/lib/corpus/store";
 import { sourcesForState } from "@/lib/corpus/join";
-import { STATES } from "@/lib/corpus/geo";
+import { STATES, stateByUsps } from "@/lib/corpus/geo";
 import { canonicalState, PUERTO_RICO, type StateHubSearch } from "@/lib/corpus/stateHub";
 import { pageHead } from "@/lib/corpus/head";
 import { getStateCountyRecords } from "@/lib/external/corpus.functions";
@@ -288,7 +289,18 @@ function StatePage() {
               Counts are partial: the response is limited to 5,000 records.
             </p>
           ) : null}
-          {corpus.geo ? (
+          {!stateByUsps.has(usps) ? (
+            countyMatch ? (
+              <details className="resource-panel">
+                <summary className="cursor-pointer px-3 py-2 text-xs font-medium hover:bg-muted/40">
+                  Choose another area of {state.name}
+                </summary>
+                <AreaList usps={usps} stateName={state.name} />
+              </details>
+            ) : (
+              <AreaList usps={usps} stateName={state.name} />
+            )
+          ) : corpus.geo ? (
             <UsMap
               geo={corpus.geo}
               values={countyValues}

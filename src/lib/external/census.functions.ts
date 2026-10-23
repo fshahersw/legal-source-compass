@@ -148,3 +148,32 @@ export const getCountyCensus = createServerFn({ method: "GET" })
     if (!unavailable.length) cache.set(`c:${data.fips}`, { at: Date.now(), value });
     return value;
   });
+
+export type CensusAreaRow = { fips: string; name: string; population: number | null };
+
+/**
+ * The counties (or equivalents) of one state that have Census figures, for a state whose county map has no geometry
+ * (Puerto Rico's municipios). Rows come from census_acs_counties by exact state FIPS prefix; the population is the
+ * latest ACS 5-year estimate, Not recorded when absent.
+ */
+export const listCensusAreas = createServerFn({ method: "GET" })
+  .inputValidator((d) => z.object({ usps: z.string().regex(/^[A-Z]{2}$/) }).parse(d))
+  .handler(async ({ data }): Promise<CensusAreaRow[]> => {
+    const state = canonicalState(data.usps);
+    if (!state) return [];
+    const { rows } = await restGet<{ id: string; n: unknown; p: unknown }[]>(
+      `corpus_records?select=id,n:item->census->>name,p:item->census->latest->pop->>0&dataset=eq.census_acs_counties&id=like.${state.fips}*&order=id.asc&limit=200`,
+    );
+    return rows.flatMap((r) => {
+      const population = Number(r.p);
+      return /^\d{5}$/.test(r.id) && r.id.startsWith(state.fips) && typeof r.n === "string" && r.n
+        ? [
+            {
+              fips: r.id,
+              name: r.n.slice(0, 120),
+              population: r.p != null && Number.isFinite(population) ? population : null,
+            },
+          ]
+        : [];
+    });
+  });

@@ -15,7 +15,16 @@ import { Spark } from "./CensusCharts";
 import { MEASURE_GROUPS, type Comparator, type KeyFigure, type MeasureRow } from "./censusView";
 
 /** One headline figure: value with its margin of error, rank, trend, and how it compares with each comparator. */
-export function KeyTile({ fig, areaLatestYear }: { fig: KeyFigure; areaLatestYear: number }) {
+export function KeyTile({
+  fig,
+  areaLatestYear,
+  rankScope = "states and DC",
+}: {
+  fig: KeyFigure;
+  areaLatestYear: number;
+  /** What the rank counts: "states and DC" on a state page, "counties in Wyoming" on a county page. */
+  rankScope?: string;
+}) {
   const { def, latest } = fig;
   return (
     <li
@@ -38,7 +47,7 @@ export function KeyTile({ fig, areaLatestYear }: { fig: KeyFigure; areaLatestYea
             ? `${areaLatestYear - 4}–${areaLatestYear}`
             : `${latest.year} release (latest published)`
           : NOT_RECORDED}
-        {fig.rank ? ` · #${fig.rank.rank} of ${fig.rank.of} states and DC` : ""}
+        {fig.rank ? ` · #${fig.rank.rank} of ${fig.rank.of} ${rankScope}` : ""}
       </div>
       {fig.comparisons.map((c) => (
         <div key={c.id} className="mt-1 text-[11px] leading-4">

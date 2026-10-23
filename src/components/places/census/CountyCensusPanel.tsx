@@ -132,7 +132,12 @@ function Body({
           >
             <ul className="m-0 grid list-none grid-cols-1 gap-2 p-3 sm:grid-cols-2 xl:grid-cols-3">
               {keyFigures(area, defs, [...KEY_MEASURES], comparators).map((f) => (
-                <KeyTile key={f.def.key} fig={f} areaLatestYear={area.latestYear} />
+                <KeyTile
+                  key={f.def.key}
+                  fig={f}
+                  areaLatestYear={area.latestYear}
+                  rankScope={`counties in ${stateName}`}
+                />
               ))}
             </ul>
             <p className="m-0 border-t border-border/60 px-3 py-1.5 text-[11px] leading-4 text-muted-foreground">

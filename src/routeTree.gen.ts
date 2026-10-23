@@ -80,6 +80,7 @@ import { Route as PlacesIndexRouteImport } from './routes/places.index'
 import { Route as PlacesStateRouteImport } from './routes/places.$state'
 import { Route as PlacesAnalyticsRouteImport } from './routes/places.analytics'
 import { Route as PrototypesIndexRouteImport } from './routes/prototypes.index'
+import { Route as PrototypesAuthoritiesRouteImport } from './routes/prototypes.authorities'
 import { Route as RegistryIndexRouteImport } from './routes/registry.index'
 import { Route as RegistryIdRouteImport } from './routes/registry.$id'
 import { Route as SafetySignalsRouteImport } from './routes/safety_.signals'
@@ -474,6 +475,11 @@ const PrototypesIndexRoute = PrototypesIndexRouteImport.update({
   path: '/prototypes/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrototypesAuthoritiesRoute = PrototypesAuthoritiesRouteImport.update({
+  id: '/prototypes/authorities',
+  path: '/prototypes/authorities',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RegistryIndexRoute = RegistryIndexRouteImport.update({
   id: '/registry/',
   path: '/registry/',
@@ -730,6 +736,7 @@ export interface FileRoutesByFullPath {
   '/matters/seeger-weiss': typeof MattersSeegerWeissRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/places/analytics': typeof PlacesAnalyticsRoute
+  '/prototypes/authorities': typeof PrototypesAuthoritiesRoute
   '/registry/$id': typeof RegistryIdRoute
   '/safety/signals': typeof SafetySignalsRoute
   '/sources/analysis': typeof SourcesAnalysisRoute
@@ -835,6 +842,7 @@ export interface FileRoutesByTo {
   '/matters/seeger-weiss': typeof MattersSeegerWeissRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/places/analytics': typeof PlacesAnalyticsRoute
+  '/prototypes/authorities': typeof PrototypesAuthoritiesRoute
   '/registry/$id': typeof RegistryIdRoute
   '/safety/signals': typeof SafetySignalsRoute
   '/sources/analysis': typeof SourcesAnalysisRoute
@@ -947,6 +955,7 @@ export interface FileRoutesById {
   '/matters/seeger-weiss': typeof MattersSeegerWeissRoute
   '/places/$state': typeof PlacesStateRouteWithChildren
   '/places/analytics': typeof PlacesAnalyticsRoute
+  '/prototypes/authorities': typeof PrototypesAuthoritiesRoute
   '/registry/$id': typeof RegistryIdRoute
   '/safety_/signals': typeof SafetySignalsRoute
   '/sources/analysis': typeof SourcesAnalysisRoute
@@ -1060,6 +1069,7 @@ export interface FileRouteTypes {
     | '/matters/seeger-weiss'
     | '/places/$state'
     | '/places/analytics'
+    | '/prototypes/authorities'
     | '/registry/$id'
     | '/safety/signals'
     | '/sources/analysis'
@@ -1165,6 +1175,7 @@ export interface FileRouteTypes {
     | '/matters/seeger-weiss'
     | '/places/$state'
     | '/places/analytics'
+    | '/prototypes/authorities'
     | '/registry/$id'
     | '/safety/signals'
     | '/sources/analysis'
@@ -1276,6 +1287,7 @@ export interface FileRouteTypes {
     | '/matters/seeger-weiss'
     | '/places/$state'
     | '/places/analytics'
+    | '/prototypes/authorities'
     | '/registry/$id'
     | '/safety_/signals'
     | '/sources/analysis'
@@ -1388,6 +1400,7 @@ export interface RootRouteChildren {
   MattersSeegerWeissRoute: typeof MattersSeegerWeissRoute
   PlacesStateRoute: typeof PlacesStateRouteWithChildren
   PlacesAnalyticsRoute: typeof PlacesAnalyticsRoute
+  PrototypesAuthoritiesRoute: typeof PrototypesAuthoritiesRoute
   RegistryIdRoute: typeof RegistryIdRoute
   SafetySignalsRoute: typeof SafetySignalsRoute
   SourcesAnalysisRoute: typeof SourcesAnalysisRoute
@@ -1919,6 +1932,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrototypesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/prototypes/authorities': {
+      id: '/prototypes/authorities'
+      path: '/prototypes/authorities'
+      fullPath: '/prototypes/authorities'
+      preLoaderRoute: typeof PrototypesAuthoritiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/registry/': {
       id: '/registry/'
       path: '/registry'
@@ -2364,6 +2384,7 @@ const rootRouteChildren: RootRouteChildren = {
   MattersSeegerWeissRoute: MattersSeegerWeissRoute,
   PlacesStateRoute: PlacesStateRouteWithChildren,
   PlacesAnalyticsRoute: PlacesAnalyticsRoute,
+  PrototypesAuthoritiesRoute: PrototypesAuthoritiesRoute,
   RegistryIdRoute: RegistryIdRoute,
   SafetySignalsRoute: SafetySignalsRoute,
   SourcesAnalysisRoute: SourcesAnalysisRoute,
