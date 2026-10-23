@@ -58,9 +58,12 @@ export function DocumentsPanel({
   const def: BlockDef = {
     id: `documents-${type}-${id.replace(/[^a-z0-9_-]/gi, "-")}`,
     group: "courts",
+    // the counts are of this collection's filings, not of all filings in the court or MDL
     title:
-      type === "law_unit" || type === "case" ? "Filings citing it, per year" : "Filings per year",
-    measure: `Filings per year for this ${ENTITY_NOUN[type]}`,
+      type === "law_unit" || type === "case"
+        ? "Collected filings citing it, per year"
+        : "Collected filings per year",
+    measure: `Filings in this collection per year for this ${ENTITY_NOUN[type]}`,
     detail: detailFor(type, id),
   };
   const state: CardState = q.isPending
