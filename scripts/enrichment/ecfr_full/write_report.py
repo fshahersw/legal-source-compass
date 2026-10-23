@@ -101,7 +101,8 @@ def main(argv: list[str]) -> None:
         "the document lists the CFR title and part, its effective date equals the version's amendment date, and it was published by "
         "the eCFR issue date. Basis recorded per version: source_note (a candidate whose page range holds a citation printed in the "
         "section's own source note), only_rule_for_part_on_date, rules_for_part_on_date (all candidates listed), none.",
-        f"- Counts: {vs['fr_link_basis_counts']}. FR documents loaded {vs['fr_documents_loaded']:,}, linked {vs['fr_documents_linked']:,}.",
+        f"- Counts per version (\"baseline\" = dated before 2017-01-03; \"none\" includes editorial, non-substantive versions, which "
+        f"are not linked): {vs['fr_link_basis_counts']}. FR documents loaded {vs['fr_documents_loaded']:,}, linked {vs['fr_documents_linked']:,}.",
         "",
         "## Spot checks",
     ]

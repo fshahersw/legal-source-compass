@@ -186,7 +186,7 @@ export const getCfrPart = createServerFn({ method: "GET" })
         "select=id,title,source_url,text,detail",
       ),
       pagedRows<unknown>(
-        `corpus_records?select=id,title,c:item->cells,s:filters->subpart&dataset=eq.${SECTIONS_DATASET}&filters=cs.${cs({ title: [data.title], part: [data.part] })}&order=ordinal.asc`,
+        `corpus_records?select=id,title,c:item->cells,s:filters->subpart,p:detail->path&dataset=eq.${SECTIONS_DATASET}&filters=cs.${cs({ title: [data.title], part: [data.part] })}&order=ordinal.asc`,
       ),
     ]);
     const parsed = list.rows.map(parseListRow);

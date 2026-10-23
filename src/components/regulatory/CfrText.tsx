@@ -31,7 +31,6 @@ function Table({ rows }: { rows: Extract<CfrBlock, { kind: "table" }>["rows"] })
   const bodyRows = rows.slice(k);
   const cell = (c: (typeof rows)[number][number], i: number, head: boolean) => {
     const props = {
-      key: i,
       ...(c.colspan > 1 ? { colSpan: c.colspan } : {}),
       ...(c.rowspan > 1 ? { rowSpan: c.rowspan } : {}),
       className: cn(
@@ -40,11 +39,11 @@ function Table({ rows }: { rows: Extract<CfrBlock, { kind: "table" }>["rows"] })
       ),
     };
     return head || c.header ? (
-      <th scope="col" {...props}>
+      <th key={i} scope={head ? "col" : "row"} {...props}>
         <ScriptText text={c.text} />
       </th>
     ) : (
-      <td {...props}>
+      <td key={i} {...props}>
         <ScriptText text={c.text} />
       </td>
     );
@@ -153,7 +152,10 @@ export function CfrNotes({ notes, title }: { notes: CfrNote[]; title: string }) 
           <div key={k} className="contents">
             <dt className="text-muted-foreground">
               {n.label}
-              {n.scope ? <span className="block text-[11px]">{n.scope}</span> : null}
+              {/* A note printed for the whole part needs no scope here; subpart notes name their subpart. */}
+              {n.scope && !/^parts?\s/i.test(n.scope) ? (
+                <span className="block text-[11px]">{n.scope}</span>
+              ) : null}
             </dt>
             <dd className="m-0 whitespace-pre-line break-words">
               <ScriptText text={n.text} />

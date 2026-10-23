@@ -7,7 +7,7 @@ import { AppShell } from "@/components/atlas/AppShell";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { CfrBlocks, CfrNotes } from "@/components/regulatory/CfrText";
 import { pageHead } from "@/lib/corpus/head";
-import { CFR_PART, CFR_TITLE, type CfrListItem } from "@/lib/external/ecfrFull";
+import { CFR_PART, CFR_TITLE, listHeading, type CfrListItem } from "@/lib/external/ecfrFull";
 import { getCfrPart } from "@/lib/external/ecfrFull.functions";
 
 export const Route = createFileRoute("/law_/cfr/$title/part/$part")({
@@ -18,12 +18,6 @@ export const Route = createFileRoute("/law_/cfr/$title/part/$part")({
     ),
   component: CfrPartPage,
 });
-
-function shortHeading(item: CfrListItem, title: string): string {
-  // Row titles read "21 CFR 314.70 Supplements ..." (sections) or "21 CFR Appendix A to Part 314—..." (appendices).
-  const prefix = item.kind === "section" ? `${title} CFR ${item.identifier}` : `${title} CFR `;
-  return item.title.startsWith(prefix) ? item.title.slice(prefix.length).trim() : item.title;
-}
 
 function CfrPartPage() {
   const { title, part } = Route.useParams();
@@ -39,13 +33,13 @@ function CfrPartPage() {
   const items = useMemo(() => q.data?.items ?? [], [q.data]);
   const groups = useMemo(() => {
     const f = filter.trim().toLowerCase();
-    const out: { subpart: string | null; items: CfrListItem[] }[] = [];
+    const out: { subpart: string | null; label: string | null; items: CfrListItem[] }[] = [];
     for (const it of items) {
       if (f && !it.title.toLowerCase().includes(f) && !it.identifier.toLowerCase().includes(f))
         continue;
       const last = out[out.length - 1];
       if (last && last.subpart === it.subpart) last.items.push(it);
-      else out.push({ subpart: it.subpart, items: [it] });
+      else out.push({ subpart: it.subpart, label: it.subpartLabel, items: [it] });
     }
     return out;
   }, [items, filter]);
@@ -140,8 +134,8 @@ function CfrPartPage() {
                 groups.map((g, k) => (
                   <div key={`${g.subpart ?? "none"}-${k}`}>
                     {g.subpart ? (
-                      <h3 className="m-0 border-b border-border/70 bg-muted/30 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                        Subpart {g.subpart}
+                      <h3 className="m-0 border-b border-border/70 bg-muted/30 px-4 py-1.5 text-[12px] font-semibold text-muted-foreground">
+                        {g.label ?? `Subpart ${g.subpart}`}
                       </h3>
                     ) : null}
                     <ul className="m-0 list-none divide-y divide-border/60 p-0">
@@ -160,9 +154,9 @@ function CfrPartPage() {
                             <span className="mr-2 font-medium tabular-nums">
                               {it.kind === "section" ? `§ ${it.identifier}` : ""}
                             </span>
-                            {shortHeading(it, title)}
+                            {listHeading(it, title)}
                           </Link>
-                          {it.reserved ? (
+                          {it.reserved && !/reserved/i.test(listHeading(it, title)) ? (
                             <span className="ml-2 text-[11px] text-muted-foreground">Reserved</span>
                           ) : null}
                           {it.kind === "appendix" ? (

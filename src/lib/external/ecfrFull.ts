@@ -331,9 +331,11 @@ export type CfrListItem = {
   characters: number | null;
   sections: number | null;
   subpart: string | null;
+  /** The printed subpart heading ("Subpart B—Applications") from the row's path, when selected. */
+  subpartLabel: string | null;
 };
 
-/** A listing row (select=id,title,c:item->cells,s:filters->subpart). */
+/** A listing row (select=id,title,c:item->cells,s:filters->subpart[,p:detail->path]). */
 export function parseListRow(row: unknown): CfrListItem | null {
   const r = obj(row);
   const c = obj(r?.["c"]);
@@ -359,7 +361,18 @@ export function parseListRow(row: unknown): CfrListItem | null {
     characters: nat(c["characters"], 50_000_000),
     sections: nat(c["sections"], 100_000),
     subpart: str(arr(r!["s"])[0], 60),
+    subpartLabel: parsePath(r!["p"]).find((n) => n.type === "subpart")?.label ?? null,
   };
+}
+
+/** A list heading without the citation it repeats ("§ 314.120 [Reserved]" -> "[Reserved]"). */
+export function listHeading(item: CfrListItem, title: string): string {
+  // Row titles read "21 CFR 314.70 Supplements ..." (sections) or "21 CFR Appendix A to Part 314—..." (appendices).
+  const prefix = item.kind === "section" ? `${title} CFR ${item.identifier}` : `${title} CFR `;
+  const rest = item.title.startsWith(prefix) ? item.title.slice(prefix.length).trim() : item.title;
+  if (item.kind !== "section") return rest;
+  const id = item.identifier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return rest.replace(new RegExp(`^§§?\\s*${id}(?![\\w.-])\\s*`), "").trim() || rest;
 }
 
 export type FrRef = {

@@ -45,6 +45,19 @@ export function CfrVersionList({
   const [all, setAll] = useState(false);
   const versions = [...history.versions].reverse();
   const shown = all ? versions : versions.slice(0, VISIBLE);
+  const asOfOf = (v: CfrVersion) => (v.date < POINT_IN_TIME_START ? POINT_IN_TIME_START : v.date);
+  // One "text as of" link per date: several versions can share a date (an editorial and a substantive change),
+  // and the newest date is the current text.
+  const linked = new Set<string>();
+  const linkFor = versions.map((v, k) => {
+    const d = asOfOf(v);
+    if (k === 0 || v.removed || linked.has(d)) {
+      linked.add(d);
+      return false;
+    }
+    linked.add(d);
+    return true;
+  });
   return (
     <div>
       <ol className="m-0 list-none space-y-2 p-0 text-[12px]">
@@ -58,41 +71,42 @@ export function CfrVersionList({
                 <span className="text-[11px] text-muted-foreground">
                   {v.removed
                     ? "Removed"
-                    : before
-                      ? "In effect when the record begins"
-                      : v.substantive
-                        ? "Substantive change"
-                        : "Editorial change"}
+                    : !v.substantive
+                      ? "Editorial change"
+                      : before
+                        ? "In effect when the record begins"
+                        : "Substantive change"}
                 </span>
               </div>
+              {v.issueDate && v.issueDate !== v.date ? (
+                <div className="text-[10px] leading-tight text-muted-foreground tabular-nums">
+                  Incorporated in the eCFR {v.issueDate}
+                </div>
+              ) : null}
               <FrLinks v={v} labels={history.basisLabels} />
-              {!v.removed ? (
-                latest ? (
-                  <button
-                    type="button"
-                    onClick={() => onPick(null)}
-                    className={cn(
-                      "mt-0.5 text-[11px] hover:underline",
-                      selected === null ? "text-muted-foreground" : "text-primary",
-                    )}
-                    disabled={selected === null}
-                  >
-                    {selected === null ? "Shown: current text" : "Show current text"}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => onPick(before ? POINT_IN_TIME_START : v.date)}
-                    className={cn(
-                      "mt-0.5 text-[11px] hover:underline",
-                      selected === (before ? POINT_IN_TIME_START : v.date)
-                        ? "font-medium text-foreground"
-                        : "text-primary",
-                    )}
-                  >
-                    Text as of {before ? POINT_IN_TIME_START : v.date}
-                  </button>
-                )
+              {latest && !v.removed ? (
+                <button
+                  type="button"
+                  onClick={() => onPick(null)}
+                  className={cn(
+                    "mt-0.5 text-[11px] hover:underline",
+                    selected === null ? "text-muted-foreground" : "text-primary",
+                  )}
+                  disabled={selected === null}
+                >
+                  {selected === null ? "Shown: current text" : "Show current text"}
+                </button>
+              ) : linkFor[k] ? (
+                <button
+                  type="button"
+                  onClick={() => onPick(asOfOf(v))}
+                  className={cn(
+                    "mt-0.5 text-[11px] hover:underline",
+                    selected === asOfOf(v) ? "font-medium text-foreground" : "text-primary",
+                  )}
+                >
+                  Text as of {asOfOf(v)}
+                </button>
               ) : null}
             </li>
           );

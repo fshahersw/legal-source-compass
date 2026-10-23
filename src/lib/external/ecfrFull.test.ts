@@ -5,6 +5,7 @@ import {
   decodeBody,
   ecfrOnDateUrl,
   graphicUrl,
+  listHeading,
   parseCitation,
   parseListRow,
   parsePartRow,
@@ -155,6 +156,36 @@ describe("rows", () => {
     expect(
       parseListRow({ id: "x", title: "t", c: { kind: "chapter", identifier: "I" } }),
     ).toBeNull();
+  });
+  it("reads the subpart heading from the path and drops a repeated section number", () => {
+    const reserved = parseListRow({
+      id: "cfr:21:314.120",
+      title: "21 CFR 314.120 § 314.120 [Reserved]",
+      c: { kind: "section", identifier: "314.120", part: "314", reserved: true },
+      s: ["D"],
+      p: [
+        ["part", "314", "Part 314—Applications for FDA Approval to Market a New Drug"],
+        ["subpart", "D", "Subpart D—FDA Action on Applications and Abbreviated Applications"],
+      ],
+    })!;
+    expect(reserved.subpartLabel).toBe(
+      "Subpart D—FDA Action on Applications and Abbreviated Applications",
+    );
+    expect(listHeading(reserved, "21")).toBe("[Reserved]");
+    const plain = parseListRow({
+      id: "cfr:21:314.1",
+      title: "21 CFR 314.1 Scope of this part.",
+      c: { kind: "section", identifier: "314.1", part: "314" },
+    })!;
+    expect([plain.subpartLabel, listHeading(plain, "21")]).toEqual([null, "Scope of this part."]);
+    // "§ 314.1" must not strip the start of "§ 314.10 ..." printed under another number.
+    expect(listHeading({ ...plain, title: "21 CFR 314.1 § 314.10 x" }, "21")).toBe("§ 314.10 x");
+    const appendix = parseListRow({
+      id: "cfr:21:Appendix A to Part 314",
+      title: "21 CFR Appendix A to Part 314—Tables",
+      c: { kind: "appendix", identifier: "Appendix A to Part 314", part: "314" },
+    })!;
+    expect(listHeading(appendix, "21")).toBe("Appendix A to Part 314—Tables");
   });
   it("parses version history with Federal Register links of the federalregister.gov shape only", () => {
     const h = parseVersionsRow({
