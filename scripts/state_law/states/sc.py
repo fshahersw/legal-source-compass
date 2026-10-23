@@ -81,6 +81,29 @@ def _lines(content: str):
     return out
 
 
+def _plain_heads(lines):
+    """A few chapters (UCC Articles 2A and 4A: t36c002A.php, t36c004A.php) print every line plainly: no bold section
+    lines and no centred headings ("Part 1" / "General Provisions" / "SECTION 36-2A-101. Short title."). On such a
+    page a plain line that is a section line is read as one, and a plain "Part 1" line and the name after it as a
+    heading. Pages that print any bold section line are left as they are."""
+    if any(kind == "bold" and SECTION_LINE.match(sb.one_line(text)) for kind, text in lines):
+        return lines
+    out, expect_name = [], False
+    for kind, text in lines:
+        one = sb.one_line(text)
+        if kind == "line" and HIER.match(one):
+            out.append(("center", text))
+            expect_name = True
+            continue
+        if kind == "line" and expect_name and not SECTION_LINE.match(one):
+            out.append(("center", text))
+            expect_name = False
+            continue
+        expect_name = False
+        out.append(("bold", text) if kind == "line" and SECTION_LINE.match(one) else (kind, text))
+    return out
+
+
 def parse_chapter(raw: bytes):
     page = raw.decode("utf-8", errors="replace")
     start = page.find('id="contentsection"')
@@ -90,7 +113,7 @@ def parse_chapter(raw: bytes):
     end = page.find('<div class="mainwidepanel', start)
     end = page.find("<!-- mainwidepanel", start) if end < 0 else end
     content = page[start:end if end > 0 else len(page)]
-    lines = _lines(content)
+    lines = _plain_heads(_lines(content))
     hier: dict[str, tuple] = {}
     order = ["chapter", "subchapter", "article", "subarticle", "part", "subpart", "division", "subdivision"]
     pending = None

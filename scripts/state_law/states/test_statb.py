@@ -258,6 +258,17 @@ class EarlierModules(unittest.TestCase):
         line = mo.DATE_LINE.search("-------- 400.2-312 8/28/1963 --------")
         self.assertEqual(line.group(1), "400.2-312")
 
+    def test_sc_plain_markup_chapter(self):
+        sc = load("sc")
+        lines = [("center", "CHAPTER 2A"), ("center", "Commercial Code\u2014Leases"), ("line", "Introduction"),
+                 ("line", "Article 2A of the Uniform Commercial Code ..."), ("line", "Part 1"), ("line", "General Provisions"),
+                 ("line", "SECTION 36-2A-101. Short title."), ("line", "This chapter may be cited as ..."),
+                 ("line", "HISTORY: 2001 Act No. 67, SECTION 2.")]
+        got = sc._plain_heads(lines)
+        self.assertEqual([k for k, _ in got], ["center", "center", "line", "line", "center", "center", "bold", "line", "line"])
+        bold_page = [("bold", "SECTION 36-2-313. Express warranties."), ("line", "SECTION 36-2-314 is cited here.")]
+        self.assertEqual(sc._plain_heads(bold_page), bold_page)
+
     def test_nj_section(self):
         nj = load("nj")
         got = nj.split_section("2A:14-1. Actions of trespass to real property.",
