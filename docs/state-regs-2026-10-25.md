@@ -88,9 +88,23 @@ Blocked or deferred, with the reason recorded in `state_regs.codes.blocked_reaso
 ## 2. Normalized model (state-regs/1)
 
 Field names follow the state-statutes model (`src/lib/law/stateCodeContract.ts`, `scripts/enrichment/state_statutes/codebuild.py`:
-citation, heading, text, history, edition, currency, source_url, status). The shared state-law library
-(`/home/user/wt/stat-a/scripts/state_law/lib.py`, MODEL.md) did not exist during this wave; `scripts/state_regs/lib.py`
-imports it by path when it appears (`lib.shared_lib()`), nothing depends on it. Definitions: `scripts/state_regs/model.py`.
+citation, heading, text, history, edition, currency, source_url, status). The shared state-law contract
+(`/home/user/wt/stat-a/scripts/state_law/MODEL.md`, `state-law/1`) appeared only at the end of this wave; the stream was
+not rebuilt on it. `scripts/state_regs/lib.py` imports its `lib.py` by path when present (`lib.shared_lib()`), nothing
+depends on it. Definitions: `scripts/state_regs/model.py`. Field correspondence (`state-law/1` → `state-regs/1`):
+
+| state-law/1 | state-regs/1 | difference |
+|---|---|---|
+| `section_id` `<ST>:<CODE>:<number>` | `id` `<st>:<cite_key>` | lowercase state, key from `cite_patterns.json` |
+| `number`, `citation`, `heading`, `text`, `history` | same names | `text` is null (not `""`) for status-only entries |
+| `number_norm` | `cite_key` | both lowercase, no whitespace; `cite_key` also drops leading zeros |
+| `status` (`in_force`…) + `status_basis` + `status_marker` | `status` (`active`…, as printed) | no basis/marker fields; map `active` → `in_force` / `current_compilation` |
+| `effective {start,end,note}` | `effective_date`, `adopted_date` | flat dates, only when printed |
+| `node_id`, `path` | `node_id` (path via `state_reg_tree_v1`) | node ids are `<st>:<key>`, not slash paths |
+| `source {url, sha256, retrieved_at…}`, `text_sha256` | `source_url`, `raw_sha256`, `retrieved_at`, `text_sha256` | flat |
+| edition `currency_statement`, `edition_label` | `currency`, `edition` (per rule) | per rule, as printed |
+| `state_law_resolve_v1` `result` | `state_reg_resolve_v1` `status` | same values plus `not_covered`/`invalid`; never a neighbour |
+| — | `agency`, `authority`, `emergency`, `register_citation`, `text_check` | regulation-only fields |
 
 - **Node** (one heading of the official table of contents): `id` (`<st>:<key from the official numbering>`), `state`,
   `parent_id`, `level` (the publisher's word: title, agency, department, bureau, chapter, subchapter, division, part,
