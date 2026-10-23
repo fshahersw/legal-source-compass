@@ -397,7 +397,7 @@ def rtf_to_text(body: bytes) -> str:
 
 
 def verify_cli(argv=None):
-    """python3 scripts/state_law/states/_statb.py verify <edition_dir> --raw <raw_root>"""
+    """python3 scripts/state_law/states/_statb.py verify <edition_dir> --raw <raw_root> [--no-require-raw]"""
     import argparse
     import json
     import pathlib
@@ -455,8 +455,9 @@ def verify_cli(argv=None):
     parser.add_argument("cmd", choices=["verify"])
     parser.add_argument("edition_dir", type=pathlib.Path)
     parser.add_argument("--raw", type=pathlib.Path, default=None)
+    parser.add_argument("--no-require-raw", action="store_true", help="full runs (raw bytes streamed and discarded)")
     args = parser.parse_args(argv)
-    result = shared_verify.verify(args.edition_dir, args.raw)
+    result = shared_verify.verify(args.edition_dir, args.raw, require_raw=not args.no_require_raw)
     result["adapter"] = ("statb: xml_text renders escaped publisher markup via html_text; .csv sources are rendered "
                          "field by field after CSV unquoting; BOM-less UTF-16 LE bodies are decoded as UTF-16; PDFs are rendered with pdftotext -layout; RTF is rendered with statb rtf_to_text; Utah subsection labels are rendered from their number attribute")
     (args.edition_dir / "verify.json").write_text(json.dumps(result, indent=2, ensure_ascii=False))
