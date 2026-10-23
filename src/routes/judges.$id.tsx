@@ -7,6 +7,7 @@ import { JudgePanelServicePanel } from "@/components/judges/clb/JudgePanelServic
 import { JudgeHeadshot } from "@/components/judges/JudgeHeadshot";
 import { JudgeMdlPanel } from "@/components/judges/JudgeMdlPanel";
 import { JudgeMdlFlowsPanel } from "@/components/judges/JudgeMdlFlowsPanel";
+import { NominationPanel } from "@/components/judiciary/NominationPanel";
 import { pageHead } from "@/lib/corpus/head";
 import { canonicalState } from "@/lib/corpus/stateHub";
 import { buildEntityView } from "@/lib/external/entityView";
@@ -65,6 +66,7 @@ function Page() {
       extra={() => (
         <>
           <JudgeFjcPanel judgeId={id} />
+          <NominationPanel judgeId={id} />
           <JudgeCourtListenerPanel judgeId={id} />
           <JudgePanelServicePanel judgeId={id} />
           <JudgeDisclosuresPanel judgeId={id} />

@@ -12,6 +12,10 @@ import { CourtLocationsPanel } from "@/components/courts/CourtLocationsPanel";
 import { CourtRulesPanel } from "@/components/courts/rules/CourtRulesPanel";
 import { CourtStructurePanel } from "@/components/courts/CourtStructurePanel";
 import { CourtJudgesPanel } from "@/components/corpus/JudgeFjcPanel";
+import { AppealsOutcomesPanel } from "@/components/judiciary/AppealsOutcomesPanel";
+import { BankruptcyFilingsPanel } from "@/components/judiciary/BankruptcyFilingsPanel";
+import { CourtVacanciesPanel } from "@/components/judiciary/CourtVacanciesPanel";
+import { CriminalCaseloadPanel } from "@/components/judiciary/CriminalCaseloadPanel";
 import { CourtCollectionPanel } from "@/components/courts/clb/CourtCollectionPanel";
 import { AppellatePanel } from "@/components/courts/clb/AppellatePanel";
 import { BankruptcyActivityPanel } from "@/components/courts/clb/BankruptcyActivityPanel";
@@ -78,6 +82,10 @@ function Page() {
           <CourtAnalyticsPanel courtId={id} />
           <CaseloadHistoryPanel courtId={id} />
           <CourtJudgesPanel courtId={id} />
+          <CourtVacanciesPanel courtId={id} />
+          <AppealsOutcomesPanel courtId={id} />
+          <CriminalCaseloadPanel courtId={id} />
+          <BankruptcyFilingsPanel courtId={id} />
           <DistrictGlancePanel courtId={id} />
           <CourtCollectionPanel courtId={id} />
           <BankruptcyActivityPanel courtId={id} />

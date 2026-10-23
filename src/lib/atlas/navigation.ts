@@ -60,6 +60,7 @@ export function contextualNavigation(path: string): ContextNavigationItem[] {
         { to: "/courts/collection", label: "Collection" },
         { to: "/courts/firms", label: "Law firms" },
         { to: "/courts/securities", label: "Securities suits" },
+        { to: "/courts/vacancies", label: "Vacancies" },
         { to: "/judges", label: "All judges" },
         { to: "/judges/analytics", label: "Judge analytics" },
         { to: "/analytics", label: "Data visualizations" },

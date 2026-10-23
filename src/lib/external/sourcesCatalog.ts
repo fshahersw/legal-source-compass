@@ -100,6 +100,12 @@ const EXPLICIT: Readonly<Record<string, CategoryId>> = {
   clb_disclosure_coverage: "judges",
   clb_judge_disclosures: "judges",
   court_cjra_judges: "judges",
+  fjc_appeals_outcomes: "courts",
+  fjc_criminal_districts: "courts",
+  fjc_bankruptcy_districts: "courts",
+  judicial_vacancies: "courts",
+  judicial_nominations: "judges",
+  judicial_confirmation_votes: "judges",
   cl_docket_metadata: "matters",
   fjc_civil_mdls: "matters",
   jpml_pending_history_mdls: "matters",
@@ -200,6 +206,7 @@ export type AppPath =
   | "/courts/collection"
   | "/courts/firms"
   | "/courts/securities"
+  | "/courts/vacancies"
   | "/judges"
   | "/judges/analytics"
   | "/matters"
@@ -238,6 +245,7 @@ const P = {
   collection: { to: "/courts/collection", label: "Collection" },
   firms: { to: "/courts/firms", label: "Law firms" },
   securities: { to: "/courts/securities", label: "Securities suits" },
+  vacancies: { to: "/courts/vacancies", label: "Judicial vacancies" },
   judges: { to: "/judges", label: "Judge pages" },
   judgeAnalytics: { to: "/judges/analytics", label: "Judge analytics" },
   matters: { to: "/matters", label: "Matters" },
@@ -290,6 +298,12 @@ const USED_ON: Readonly<Record<string, readonly AppLink[]>> = {
   cl_people: [P.judges, P.courts],
   judges: [P.judges],
   judge_profiles_fjc: [P.judges],
+  fjc_appeals_outcomes: [P.courts],
+  fjc_criminal_districts: [P.courts],
+  fjc_bankruptcy_districts: [P.courts],
+  judicial_vacancies: [P.vacancies, P.courts],
+  judicial_nominations: [P.judges],
+  judicial_confirmation_votes: [P.judges],
   judge_cl_crosswalk: [P.judges],
   "judge_cross_*": [P.judgeAnalytics],
   firm_profiles: [P.firms],
@@ -602,6 +616,7 @@ export const WORKFLOWS: readonly Workflow[] = [
       { to: "/courts/caseload", label: "Caseload by district and nature of suit" },
       { to: "/courts/collection", label: "Dockets, opinions and citations" },
       { to: "/courts/securities", label: "Securities class actions by circuit" },
+      { to: "/courts/vacancies", label: "Judicial vacancies and nominations" },
     ],
     categories: ["courts"],
   },

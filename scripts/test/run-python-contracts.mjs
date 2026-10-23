@@ -69,6 +69,7 @@ for (const suite of [
   { directory: "scripts/enrichment/court_rules", modules: ["test_court_rules"] },
   { directory: "scripts/enrichment/caselaw", modules: ["test_caselaw"] },
   { directory: "scripts/enrichment/ecfr_full", modules: ["test_ecfr_full"] },
+  { directory: "scripts/enrichment/judiciary", modules: ["test_judiciary"] },
   { directory: "scripts/enrichment/state_statutes", modules: ["test_state_statutes"] },
   {
     directory: "scripts/limitations/backfill",
