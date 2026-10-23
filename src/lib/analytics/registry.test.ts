@@ -1,6 +1,64 @@
 import { describe, expect, it } from "vitest";
-import { BLOCKS, BLOCK_GROUPS, BLOCK_IDS, blockDef, blocksInGroup } from "./registry";
+import {
+  BLOCKS,
+  BLOCK_GROUPS,
+  BLOCK_IDS,
+  blockDef,
+  blocksInGroup,
+  blocksOnPage,
+  groupsOnPage,
+  type AnalyticsPageId,
+} from "./registry";
 import { READER_IDS } from "./overview.server";
+
+const PAGES: AnalyticsPageId[] = ["overview", "enforcement", "safety"];
+
+describe("Analytics pages", () => {
+  it("lays every group and block out on exactly one page", () => {
+    for (const g of BLOCK_GROUPS) expect(PAGES, g.id).toContain(g.page);
+    const onPages = PAGES.flatMap((p) => blocksOnPage(p).map((b) => b.id));
+    expect([...onPages].sort()).toEqual([...BLOCK_IDS].sort());
+    expect(new Set(onPages).size).toBe(onPages.length);
+  });
+  it("keeps the overview to the 21 cross-platform blocks and puts the depth blocks on their own pages", () => {
+    expect(blocksOnPage("overview")).toHaveLength(21);
+    expect(blocksOnPage("enforcement").map((b) => b.id)).toEqual([
+      "doj-divisions",
+      "doj-amounts",
+      "sec-amounts",
+      "epa-penalties",
+      "osha-penalties",
+    ]);
+    expect(blocksOnPage("safety").map((b) => b.id)).toEqual([
+      "faers-outcomes",
+      "saferproducts-reports",
+      "cpsc-hazards",
+      "cpsc-deaths",
+      "fda-class-i",
+    ]);
+  });
+  it("offers a deeper page only where the page exists and has blocks", () => {
+    const withMore = BLOCK_GROUPS.filter((g) => g.more);
+    expect(withMore.map((g) => g.more!.to).sort()).toEqual([
+      "/analytics/enforcement",
+      "/analytics/safety",
+    ]);
+    for (const g of withMore) {
+      const page = g.more!.to.replace("/analytics/", "") as AnalyticsPageId;
+      expect(groupsOnPage(page).length, g.id).toBeGreaterThan(0);
+    }
+  });
+  it("returns groups in registry order", () => {
+    expect(groupsOnPage("overview").map((g) => g.id)).toEqual([
+      "courts",
+      "enforcement",
+      "safety",
+      "consumer",
+      "rulemaking",
+      "judiciary",
+    ]);
+  });
+});
 
 describe("Analytics block registry", () => {
   it("has unique block ids and every block in a known group", () => {

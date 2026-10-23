@@ -91,6 +91,8 @@ describe("AppShell section tabs", () => {
     ["/judges/analytics", "Judge analytics", "page"],
     ["/analytics", "Overview", "page"],
     ["/analytics/insights", "Insights of the day", "page"],
+    ["/analytics/enforcement", "Enforcement trends", "page"],
+    ["/analytics/safety", "Safety trends", "page"],
     ["/limitations", "Time limits", "page"],
     ["/limitations/statutory", "Time limits", "true"],
     ["/saved-sources", "Saved work", "page"],
@@ -110,6 +112,8 @@ describe("AppShell section tabs", () => {
       const { tabs, primary, mobile } = render(path);
       expect(tabs?.map((t) => t.href)).toEqual([
         "/analytics",
+        "/analytics/enforcement",
+        "/analytics/safety",
         "/places/analytics",
         "/courts/analytics",
         "/judges/analytics",

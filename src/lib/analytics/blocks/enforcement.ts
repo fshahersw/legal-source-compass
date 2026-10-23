@@ -303,8 +303,8 @@ export function buildOshaInspections(input: {
       },
     ],
     source: {
-      label: "U.S. Department of Labor, OSHA inspection data",
-      url: "https://enforcedata.dol.gov/views/data_catalogs.php",
+      label: "U.S. Department of Labor, OSHA inspection data set (open data portal)",
+      url: "https://dataportal.dol.gov/datasets/10334",
     },
     asOf: input.snapshot,
     notes: [

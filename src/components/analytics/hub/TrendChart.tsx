@@ -26,6 +26,18 @@ import {
 const axisTick = { fontSize: 10, fill: "var(--muted-foreground)" } as const;
 const MARGIN = { top: 14, right: 8, bottom: 0, left: 0 } as const;
 
+type MarkerBox = { x?: number; y?: number };
+
+/** A marker's caption sits in the top margin, above the plot, so it never covers a bar or a line. */
+function MarkerLabel({ viewBox, text }: { viewBox?: MarkerBox | undefined; text: string }) {
+  if (typeof viewBox?.x !== "number" || typeof viewBox.y !== "number") return null;
+  return (
+    <text x={viewBox.x + 4} y={viewBox.y - 4} fontSize={10} fill="var(--muted-foreground)">
+      {text}
+    </text>
+  );
+}
+
 function TrendTooltip({
   active,
   payload,
@@ -112,10 +124,10 @@ export function TrendChart({ block, measure }: { block: TrendBlockData; measure:
       stroke="var(--muted-foreground)"
       strokeDasharray="3 3"
       label={{
-        value: m.label,
         position: "insideTopLeft",
-        fontSize: 10,
-        fill: "var(--muted-foreground)",
+        content: (props: { viewBox?: unknown }) => (
+          <MarkerLabel viewBox={props.viewBox as MarkerBox | undefined} text={m.label} />
+        ),
       }}
     />
   ));

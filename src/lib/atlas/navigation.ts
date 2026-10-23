@@ -73,6 +73,8 @@ export function contextualNavigation(path: string): ContextNavigationItem[] {
     case "analytics":
       return [
         { to: "/analytics", label: "Overview" },
+        { to: "/analytics/enforcement", label: "Enforcement trends" },
+        { to: "/analytics/safety", label: "Safety trends" },
         { to: "/places/analytics", label: "State analytics" },
         { to: "/courts/analytics", label: "Court analytics" },
         { to: "/judges/analytics", label: "Judge analytics" },

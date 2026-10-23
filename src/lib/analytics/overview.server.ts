@@ -7,8 +7,6 @@
  */
 import { restGet } from "@/lib/external/rest.server";
 import { parseNational } from "@/lib/external/courtCaseload.functions";
-import { parseDojOverview } from "@/lib/external/enforcementActions.functions";
-import { parseOshaEnforcement } from "@/lib/external/oshaEnforcement.functions";
 import { memoAsync, READ_TTL_MS } from "@/lib/insights/readers/cache";
 import { readCaers, readCpsc, readFaers } from "@/lib/insights/readers/safety";
 import { readCfpb } from "@/lib/insights/readers/shared";
@@ -60,38 +58,23 @@ import {
   tallyYears,
   text,
 } from "./parse";
-import { countRows, jsonPath, mapLimit, readAllRows } from "./tally.server";
+import { countRows, mapLimit, readAllRows } from "./tally.server";
+import {
+  FDA_DATASETS,
+  LONG_TTL_MS,
+  datasetSummary,
+  fdaYearCount,
+  latestDate,
+  readDojIndex,
+  readFdaBounds,
+  readEpaSeries,
+  readOshaSeries,
+  readSecRows,
+  today,
+  type FdaKey,
+} from "./shared.server";
+import { DEPTH_READERS } from "./depth.server";
 import { throughDate, type TrendBlockData } from "./trend";
-
-/** Heavier reads (many pages or counts) are kept longer: the datasets change only when a build is published. */
-const LONG_TTL_MS = 30 * 60 * 1000;
-const today = () => new Date().toISOString().slice(0, 10);
-
-/** Selected keys of a dataset's `metadata.summary`. `suffix` is the JSON path after `summary`: "->>snapshot" (text) or "->by_year" (JSON). */
-async function datasetSummary<K extends string>(
-  dataset: string,
-  keys: Record<K, string>,
-): Promise<Partial<Record<K, unknown>>> {
-  const select = Object.entries(keys)
-    .map(([alias, suffix]) => `${alias}:metadata->summary${String(suffix)}`)
-    .join(",");
-  const r = await restGet<Record<string, unknown>[]>(
-    `corpus_datasets?select=${select}&id=eq.${dataset}&limit=1`,
-  );
-  return (r.rows[0] ?? {}) as Partial<Record<K, unknown>>;
-}
-
-/** The latest date held in a dataset, read by ordering on a JSON path (ISO dates sort as text). */
-async function latestDate(
-  dataset: string,
-  jsonOrder: string,
-  jsonText: string,
-): Promise<string | null> {
-  const r = await restGet<{ d: unknown }[]>(
-    `corpus_records?select=d:${jsonText}&dataset=eq.${dataset}&order=${jsonOrder}.desc.nullslast&limit=1`,
-  );
-  return isoDate(r.rows[0]?.d);
-}
 
 // ------------------------------------------------------------------------------------------------ courts
 
@@ -184,32 +167,17 @@ const readNominations = memoAsync(LONG_TTL_MS, async () => {
 // ------------------------------------------------------------------------------------------------ enforcement
 
 const readDojPress = memoAsync(LONG_TTL_MS, async () => {
-  const overview = parseDojOverview(
-    (
-      await restGet<{ o: unknown }[]>(
-        "corpus_records?select=o:item->overview&dataset=eq.doj_press_releases&id=eq.doj-index:overview&limit=1",
-      )
-    ).rows[0]?.o,
-  );
-  if (!overview) return null;
-  const last = overview.partitions[overview.partitions.length - 1];
-  const latest = last
-    ? await latestDate(last.dataset, "item->release->date", "item->release->>date")
-    : null;
+  const index = await readDojIndex();
+  if (!index) return null;
   return buildDojPress({
-    byYear: overview.byYear.map((y) => ({ year: Number(y.year), count: y.count })),
-    latestDate: latest,
+    byYear: index.overview.byYear.map((y) => ({ year: Number(y.year), count: y.count })),
+    latestDate: index.latest,
     today: today(),
   });
 });
 
 const readSecReleases = memoAsync(LONG_TTL_MS, async () => {
-  const [rows, latest] = await Promise.all([
-    readAllRows<{ y: unknown; t: unknown }>(
-      "corpus_records?select=y:filters->year->>0,t:filters->type->>0&dataset=eq.sec_enforcement_actions&order=ordinal.asc,id.asc",
-    ),
-    latestDate("sec_enforcement_actions", "item->sec_action->date", "item->sec_action->>date"),
-  ]);
+  const { rows, latest } = await readSecRows();
   return buildSecReleases({ years: tallySec(rows), latestDate: latest, today: today() });
 });
 
@@ -225,36 +193,16 @@ const readFtcActions = memoAsync(LONG_TTL_MS, async () => {
 });
 
 const readEpaCases = memoAsync(READ_TTL_MS, async () => {
-  const [rows, summary] = await Promise.all([
-    restGet<{ cells: unknown }[]>(
-      "corpus_records?select=cells:item->cells&dataset=eq.epa_echo_case_series&id=like.epa-echo-series:US:*&order=ordinal.asc&limit=200",
-    ),
-    datasetSummary("epa_echo_case_series", {
-      fileDate: "->>file_date",
-      latestFy: "->>latest_complete_fy",
-    }),
-  ]);
-  const latestFy = integer(Number(text(summary.latestFy)));
+  const series = await readEpaSeries();
   return buildEpaCases({
-    years: parseEpaYears(rows.rows.map((r) => r.cells)),
-    latestCompleteFy: latestFy,
-    fileDate: isoDate(summary.fileDate),
+    years: parseEpaYears(series.cells),
+    latestCompleteFy: series.latestCompleteFy,
+    fileDate: series.fileDate,
   });
 });
 
 const readOshaInspections = memoAsync(READ_TTL_MS, async () => {
-  const [profile, summary] = await Promise.all([
-    restGet<{ p: unknown }[]>(
-      "corpus_records?select=p:item->profile&dataset=eq.osha_inspections_national&id=eq.osha-national:summary&limit=1",
-    ),
-    datasetSummary("osha_inspections_national", { snapshot: "->>snapshot" }),
-  ]);
-  const parsed = parseOshaEnforcement({
-    summary: profile.rows[0]?.p,
-    year: undefined,
-    sir: undefined,
-    employers: [],
-  });
+  const { parsed, snapshot } = await readOshaSeries();
   if (!parsed) return null;
   return buildOshaInspections({
     years: parsed.series.map((y) => ({
@@ -263,7 +211,7 @@ const readOshaInspections = memoAsync(READ_TTL_MS, async () => {
       statePlan: y.statePlan,
       partial: y.partial,
     })),
-    snapshot: isoDate(summary.snapshot),
+    snapshot,
   });
 });
 
@@ -300,41 +248,13 @@ const readFsisRecalls = memoAsync(READ_TTL_MS, async () => {
   });
 });
 
-const FDA_DATASETS = [
-  { key: "drug", dataset: "agency_safety_openfda_drug_enforcement" },
-  { key: "device", dataset: "agency_safety_openfda_device_enforcement" },
-  { key: "food", dataset: "agency_safety_openfda_food_enforcement" },
-] as const;
-
 const readFdaRecalls = memoAsync(LONG_TTL_MS, async () => {
-  const date = jsonPath("filters->>report_date");
-  const bounds = await Promise.all(
-    FDA_DATASETS.map(async ({ dataset }) => {
-      const [min, max] = await Promise.all([
-        restGet<{ d: unknown }[]>(
-          `corpus_records?select=d:filters->>report_date&dataset=eq.${dataset}&order=filters->report_date.asc.nullslast&limit=1`,
-        ),
-        restGet<{ d: unknown }[]>(
-          `corpus_records?select=d:filters->>report_date&dataset=eq.${dataset}&order=filters->report_date.desc.nullslast&limit=1`,
-        ),
-      ]);
-      return { min: isoDate(min.rows[0]?.d), max: isoDate(max.rows[0]?.d) };
-    }),
-  );
-  const mins = bounds.flatMap((b) => (b.min ? [Number(b.min.slice(0, 4))] : []));
-  const maxes = bounds.flatMap((b) => (b.max ? [b.max] : []));
-  if (!mins.length || !maxes.length) return null;
-  const first = Math.min(...mins);
-  const latest = maxes.sort().at(-1)!;
-  const last = Number(latest.slice(0, 4));
-  const jobs: { year: number; key: (typeof FDA_DATASETS)[number]["key"]; dataset: string }[] = [];
-  for (let year = first; year <= last; year += 1)
+  const bounds = await readFdaBounds();
+  if (!bounds) return null;
+  const jobs: { year: number; key: FdaKey; dataset: string }[] = [];
+  for (let year = bounds.first; year <= bounds.last; year += 1)
     for (const d of FDA_DATASETS) jobs.push({ year, key: d.key, dataset: d.dataset });
-  const counts = await mapLimit(jobs, 6, (j) =>
-    countRows(
-      `corpus_records?dataset=eq.${j.dataset}&${date}=gte.${j.year}-01-01&${date}=lt.${j.year + 1}-01-01`,
-    ),
-  );
+  const counts = await mapLimit(jobs, 6, (j) => fdaYearCount(j.dataset, j.year));
   const years = new Map<number, FdaYear>();
   jobs.forEach((j, i) => {
     const entry = years.get(j.year) ?? { year: j.year, drug: 0, device: 0, food: 0 };
@@ -343,7 +263,7 @@ const readFdaRecalls = memoAsync(LONG_TTL_MS, async () => {
   });
   return buildFdaRecalls({
     years: [...years.values()].sort((a, b) => a.year - b.year),
-    latestDate: latest,
+    latestDate: bounds.latest,
     today: today(),
   });
 });
@@ -428,6 +348,7 @@ const readBills = memoAsync(LONG_TTL_MS, async () => {
 // ------------------------------------------------------------------------------------------------ dispatch
 
 const READERS: Record<string, () => Promise<TrendBlockData | null>> = {
+  ...DEPTH_READERS,
   "federal-civil": readFederalCivil,
   "federal-criminal": readFederalCriminal,
   "mdl-pending": readMdlPending,

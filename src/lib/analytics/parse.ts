@@ -31,7 +31,7 @@ export const integer = (v: unknown): number | null => {
 };
 export const text = (v: unknown): string | null =>
   typeof v === "string" && v.trim() ? v.trim() : null;
-const year = (v: unknown): number | null => {
+export const year = (v: unknown): number | null => {
   const n = integer(v);
   return n !== null && n >= 1700 && n <= 2200 ? n : null;
 };

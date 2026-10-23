@@ -113,10 +113,14 @@ describe("Analytics section", () => {
     });
     expect(navigationSection("/analytics")).toBe("analytics");
     expect(navigationSection("/analytics/insights")).toBe("analytics");
+    expect(navigationSection("/analytics/enforcement")).toBe("analytics");
+    expect(navigationSection("/analytics/safety")).toBe("analytics");
     expect(contextualNavigation("/analytics")[0]).toEqual({ to: "/analytics", label: "Overview" });
     expect(activeContextualPath("/analytics")).toBe("/analytics");
     expect(activeContextualPath("/analytics/")).toBe("/analytics");
     expect(activeContextualPath("/analytics/insights")).toBe("/analytics/insights");
+    expect(activeContextualPath("/analytics/enforcement")).toBe("/analytics/enforcement");
+    expect(activeContextualPath("/analytics/safety/")).toBe("/analytics/safety");
     expect(activeContextualPath("/places/analytics")).toBe("/places/analytics");
     expect(activeContextualPath("/courts/analytics")).toBe("/courts/analytics");
     expect(activeContextualPath("/judges/analytics")).toBe("/judges/analytics");
@@ -125,6 +129,8 @@ describe("Analytics section", () => {
     const tabs = contextualNavigation("/analytics");
     expect(tabs.map((x) => x.label)).toEqual([
       "Overview",
+      "Enforcement trends",
+      "Safety trends",
       "State analytics",
       "Court analytics",
       "Judge analytics",
@@ -240,6 +246,8 @@ describe("active section tab", () => {
     ["/places/analytics", "/places/analytics"],
     ["/analytics", "/analytics"],
     ["/analytics/insights", "/analytics/insights"],
+    ["/analytics/enforcement", "/analytics/enforcement"],
+    ["/analytics/safety", "/analytics/safety"],
     ["/matters/analytics", "/courts/analytics"],
     ["/matters/intel", "/courts/analytics"],
     ["/matters/lens/3026", "/courts/analytics"],

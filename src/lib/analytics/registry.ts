@@ -4,8 +4,20 @@
  * data arrives. The data itself comes from `getAnalyticsBlock` (overview.functions.ts).
  */
 
+/** The pages of the Analytics section that show trend blocks. */
+export type AnalyticsPageId = "overview" | "enforcement" | "safety";
+
 export type BlockGroupId =
-  "courts" | "enforcement" | "safety" | "consumer" | "rulemaking" | "judiciary";
+  | "courts"
+  | "enforcement"
+  | "safety"
+  | "consumer"
+  | "rulemaking"
+  | "judiciary"
+  | "doj-sec"
+  | "penalties"
+  | "adverse-events"
+  | "recalls";
 
 export type BlockDetailLink = {
   /** In-app path, no query string. */
@@ -24,36 +36,77 @@ export type BlockDef = {
   detail: BlockDetailLink;
 };
 
-export const BLOCK_GROUPS: readonly { id: BlockGroupId; title: string; lede: string }[] = [
+export type BlockGroup = {
+  id: BlockGroupId;
+  page: AnalyticsPageId;
+  title: string;
+  lede: string;
+  /** A deeper page on the same subject, offered beside the group's heading. */
+  more?: { to: string; label: string };
+};
+
+export const BLOCK_GROUPS: readonly BlockGroup[] = [
   {
     id: "courts",
+    page: "overview",
     title: "Federal courts and litigation",
     lede: "Civil and criminal filings, multidistrict litigation and securities class actions, by year.",
   },
   {
     id: "enforcement",
+    page: "overview",
     title: "Enforcement activity",
     lede: "What federal agencies published or recorded each year. Counts are of published items, not of every action taken.",
+    more: { to: "/analytics/enforcement", label: "More enforcement trends" },
   },
   {
     id: "safety",
+    page: "overview",
     title: "Recalls and adverse events",
     lede: "Recalls by agency and adverse-event reports. Reports are submissions, not confirmed causes.",
+    more: { to: "/analytics/safety", label: "More safety trends" },
   },
   {
     id: "consumer",
+    page: "overview",
     title: "Consumer complaints",
     lede: "Complaints and reports consumers filed with federal agencies. They are not findings of wrongdoing.",
   },
   {
     id: "rulemaking",
+    page: "overview",
     title: "Rulemaking and legislation",
     lede: "Federal Register documents and bills introduced and enacted in Congress.",
   },
   {
     id: "judiciary",
+    page: "overview",
     title: "Federal judiciary",
     lede: "Judgeships vacant and nominations received by the Senate.",
+  },
+  {
+    id: "doj-sec",
+    page: "enforcement",
+    title: "Department of Justice and SEC releases",
+    lede: "Which DOJ divisions issue the releases, and how many DOJ and SEC releases state a resolution figure of $10 million or more. A stated figure is what the release says, not a verified payment.",
+  },
+  {
+    id: "penalties",
+    page: "enforcement",
+    title: "Penalties recorded by EPA and OSHA",
+    lede: "Dollar totals computed from the penalty amounts each agency's own files record. Not adjusted for inflation; one large case can dominate a year.",
+  },
+  {
+    id: "adverse-events",
+    page: "safety",
+    title: "Adverse-event and injury reports",
+    lede: "Reports are submissions, not confirmed causes, and are not rates: they cannot be turned into incidence without exposure data.",
+  },
+  {
+    id: "recalls",
+    page: "safety",
+    title: "Recalls by kind",
+    lede: "CPSC recalls by hazard in the announcement and by whether the injury statement mentions a death, and the most serious FDA recall class.",
   },
 ];
 
@@ -205,12 +258,91 @@ export const BLOCKS: readonly BlockDef[] = [
     measure: "judicial nominations",
     detail: { to: "/courts/vacancies", label: "Judicial vacancies" },
   },
+  {
+    id: "doj-divisions",
+    group: "doj-sec",
+    title: "DOJ press releases tagged to each of the four largest divisions",
+    measure: "DOJ press releases by division",
+    detail: { to: "/law/enforcement", search: { actions: "doj" }, label: "DOJ press releases" },
+  },
+  {
+    id: "doj-amounts",
+    group: "doj-sec",
+    title: "DOJ press releases stating a resolution figure of $10 million or more",
+    measure: "DOJ press releases by stated resolution size",
+    detail: { to: "/law/enforcement", search: { actions: "doj" }, label: "DOJ press releases" },
+  },
+  {
+    id: "sec-amounts",
+    group: "doj-sec",
+    title: "SEC litigation releases stating a resolution figure of $10 million or more",
+    measure: "SEC litigation releases by stated resolution size",
+    detail: { to: "/law/enforcement", search: { actions: "sec" }, label: "SEC actions" },
+  },
+  {
+    id: "epa-penalties",
+    group: "penalties",
+    title: "Federal penalties recorded on EPA cases, by the fiscal year the case opened",
+    measure: "EPA federal penalties",
+    detail: { to: "/law/enforcement", label: "EPA enforcement" },
+  },
+  {
+    id: "osha-penalties",
+    group: "penalties",
+    title: "Penalties recorded on OSHA inspections, by the fiscal year the inspection opened",
+    measure: "OSHA penalties",
+    detail: { to: "/law/enforcement", search: { tab: "osha" }, label: "Workplace safety (OSHA)" },
+  },
+  {
+    id: "faers-outcomes",
+    group: "adverse-events",
+    title: "FAERS reports with a serious outcome, a death outcome and a lawyer as primary reporter",
+    measure: "FAERS reports by outcome and reporter",
+    detail: { to: "/law/monitoring", label: "Regulatory intelligence" },
+  },
+  {
+    id: "saferproducts-reports",
+    group: "adverse-events",
+    title: "Consumer product reports published on SaferProducts.gov",
+    measure: "SaferProducts.gov reports",
+    detail: { to: "/safety", search: { view: "reports" }, label: "SaferProducts.gov reports" },
+  },
+  {
+    id: "cpsc-hazards",
+    group: "recalls",
+    title: "CPSC recalls by hazard in the announcement",
+    measure: "CPSC recalls by hazard",
+    detail: { to: "/law/enforcement", search: { tab: "cpsc" }, label: "CPSC recalls" },
+  },
+  {
+    id: "cpsc-deaths",
+    group: "recalls",
+    title: "CPSC recalls whose injury statement mentions a product-related death",
+    measure: "CPSC recalls mentioning a death",
+    detail: { to: "/law/enforcement", search: { tab: "cpsc" }, label: "CPSC recalls" },
+  },
+  {
+    id: "fda-class-i",
+    group: "recalls",
+    title: "FDA Class I recall enforcement-report entries (drug, device, food)",
+    measure: "FDA Class I recall entries",
+    detail: { to: "/safety", search: { agency: "FDA" }, label: "FDA safety records" },
+  },
 ];
 
 export const BLOCK_IDS = BLOCKS.map((b) => b.id) as [string, ...string[]];
 
 export function blocksInGroup(group: BlockGroupId): BlockDef[] {
   return BLOCKS.filter((b) => b.group === group);
+}
+
+export function groupsOnPage(page: AnalyticsPageId): BlockGroup[] {
+  return BLOCK_GROUPS.filter((g) => g.page === page);
+}
+
+export function blocksOnPage(page: AnalyticsPageId): BlockDef[] {
+  const groups = new Set(groupsOnPage(page).map((g) => g.id));
+  return BLOCKS.filter((b) => groups.has(b.group));
 }
 
 export function blockDef(id: string): BlockDef | undefined {
