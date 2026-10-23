@@ -36,6 +36,12 @@ const MEASURES = [
       "FY2008 counts may differ slightly from the published FY2008 tables (FJC codebook note).",
   },
   {
+    term: "Subch. V",
+    means: "Chapter 11 small-business cases under Subchapter V.",
+    caveat:
+      "The IDB records the election only from the December 31, 2022 snapshot; earlier years show Not recorded.",
+  },
+  {
     term: "Pending",
     means: "Cases open at the end of the period.",
   },

@@ -19,6 +19,7 @@ import {
   parseAppealsCell,
   parseAppealsProfile,
   parseBankruptcyFilings,
+  parseBankruptcyPeriod,
   parseCoverage,
   parseCriminalProfile,
   parseCriminalYear,
@@ -226,6 +227,13 @@ describe("bankruptcy", () => {
     expect(parseBankruptcyFilings(REC, "nysb")!.series).toHaveLength(1);
     expect(parseBankruptcyFilings(REC, "nysd")!.ranks.of).toBe(94);
     expect(parseBankruptcyFilings(REC, "nyed")).toBeNull();
+  });
+
+  it("reports Subchapter V as not recorded before the field existed", () => {
+    expect(parseBankruptcyPeriod({ ...PERIOD, filed_subchapter_v: 46 })!.subchapterV).toBe(46);
+    expect(
+      parseBankruptcyPeriod({ ...PERIOD, period: "2021", filed_subchapter_v: 0 })!.subchapterV,
+    ).toBeNull();
   });
 
   it("shows nothing when the court filter matches more than one record", async () => {

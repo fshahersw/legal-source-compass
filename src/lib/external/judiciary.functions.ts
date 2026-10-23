@@ -435,7 +435,8 @@ export type BankruptcyPeriod = {
   business: number;
   consumer: number;
   businessCh11: number;
-  subchapterV: number;
+  /** Recorded in the IDB only from the Dec 31, 2022 snapshot; earlier fiscal years are null (not recorded), not zero. */
+  subchapterV: number | null;
   businessSharePct: number | null;
 };
 export type BankruptcyFilings = {
@@ -473,7 +474,7 @@ export function parseBankruptcyPeriod(v: unknown): BankruptcyPeriod | null {
     business: c("filed_business"),
     consumer: c("filed_consumer"),
     businessCh11: c("filed_business_ch11"),
-    subchapterV: c("filed_subchapter_v"),
+    subchapterV: Number(period.slice(0, 4)) >= 2023 ? c("filed_subchapter_v") : null,
     businessSharePct: pct(o["business_share_pct"]),
   };
 }

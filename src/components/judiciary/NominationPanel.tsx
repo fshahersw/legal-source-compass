@@ -140,6 +140,18 @@ function Body({
   );
 }
 
+/** Hearing days grouped by their printed hearing record: "Mar 21, 2022; Mar 22, 2022 (S.Hrg. 117-422)". */
+function hearingText(hearings: Nomination["hearings"]): string {
+  const groups = new Map<string, string[]>();
+  for (const h of hearings) {
+    const key = h.citation ?? "";
+    groups.set(key, [...(groups.get(key) ?? []), fmtDay(h.date)]);
+  }
+  return [...groups.entries()]
+    .map(([cit, days]) => `${days.join("; ")}${cit ? ` (${cit})` : ""}`)
+    .join("; ");
+}
+
 function Step({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="min-w-0">
@@ -174,11 +186,7 @@ function Appointment({ s, n }: { s: FjcService; n: Nomination | null }) {
           {fmtDay(n?.referral?.date ?? s.committeeReferral)}
         </Step>
         <Step label="Hearing">
-          {n?.hearings.length
-            ? n.hearings
-                .map((h) => `${fmtDay(h.date)}${h.citation ? ` (${h.citation})` : ""}`)
-                .join("; ")
-            : fmtDay(s.hearing)}
+          {n?.hearings.length ? hearingText(n.hearings) : fmtDay(s.hearing)}
         </Step>
         <Step label="Committee action">
           {s.committeeAction
