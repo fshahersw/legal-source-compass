@@ -12,19 +12,23 @@ YEAR = re.compile(r"^(19|20)\d{2}$")
 
 
 def read_workbook(path):
+    # read_only workbooks keep the file open until close(); Windows cannot delete an open file
     wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
-    notes = {}
-    tables = {}
-    for ws in wb.worksheets:
-        rows = [list(r) for r in ws.iter_rows(values_only=True)]
-        if ws.title == "Notes":
-            for r in rows:
-                if len(r) >= 2 and r[0] and r[1] and str(r[0]).startswith("Tab."):
-                    notes[str(r[0]).strip()] = str(r[1]).strip()
-            continue
-        if ws.title.startswith("Tab."):
-            tables[ws.title] = rows
-    return notes, tables
+    try:
+        notes = {}
+        tables = {}
+        for ws in wb.worksheets:
+            rows = [list(r) for r in ws.iter_rows(values_only=True)]
+            if ws.title == "Notes":
+                for r in rows:
+                    if len(r) >= 2 and r[0] and r[1] and str(r[0]).startswith("Tab."):
+                        notes[str(r[0]).strip()] = str(r[1]).strip()
+                continue
+            if ws.title.startswith("Tab."):
+                tables[ws.title] = rows
+        return notes, tables
+    finally:
+        wb.close()
 
 
 def parse_table(tab, rows, note):
