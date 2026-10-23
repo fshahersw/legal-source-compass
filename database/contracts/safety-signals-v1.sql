@@ -404,6 +404,7 @@ $$;
 -- term ids for (kind, label) pairs, inserting the missing ones
 create or replace function safety.term_ids(p_kind text, p_labels text[]) returns table (label text, id integer)
 language plpgsql set search_path = '' as $$
+#variable_conflict use_column
 begin
   insert into safety.terms (kind, label)
     select distinct p_kind, l from unnest(p_labels) l where l is not null
