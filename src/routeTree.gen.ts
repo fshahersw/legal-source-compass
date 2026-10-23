@@ -31,6 +31,9 @@ import { Route as SourceDatasetsRouteImport } from './routes/source-datasets'
 import { Route as SourceFamiliesRouteImport } from './routes/source-families'
 import { Route as AgenciesIndexRouteImport } from './routes/agencies.index'
 import { Route as AgenciesIdRouteImport } from './routes/agencies.$id'
+import { Route as AnalyticsEnforcementRouteImport } from './routes/analytics_.enforcement'
+import { Route as AnalyticsInsightsRouteImport } from './routes/analytics_.insights'
+import { Route as AnalyticsSafetyRouteImport } from './routes/analytics_.safety'
 import { Route as ApiAssistantRouteImport } from './routes/api/assistant'
 import { Route as ApiAssistantTranscribeRouteImport } from './routes/api/assistant-transcribe'
 import { Route as ApiBundlesRouteImport } from './routes/api/bundles'
@@ -224,6 +227,21 @@ const AgenciesIndexRoute = AgenciesIndexRouteImport.update({
 const AgenciesIdRoute = AgenciesIdRouteImport.update({
   id: '/agencies/$id',
   path: '/agencies/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsEnforcementRoute = AnalyticsEnforcementRouteImport.update({
+  id: '/analytics_/enforcement',
+  path: '/analytics/enforcement',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsInsightsRoute = AnalyticsInsightsRouteImport.update({
+  id: '/analytics_/insights',
+  path: '/analytics/insights',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsSafetyRoute = AnalyticsSafetyRouteImport.update({
+  id: '/analytics_/safety',
+  path: '/analytics/safety',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAssistantRoute = ApiAssistantRouteImport.update({
@@ -671,6 +689,9 @@ export interface FileRoutesByFullPath {
   '/source-datasets': typeof SourceDatasetsRoute
   '/source-families': typeof SourceFamiliesRoute
   '/agencies/$id': typeof AgenciesIdRoute
+  '/analytics/enforcement': typeof AnalyticsEnforcementRoute
+  '/analytics/insights': typeof AnalyticsInsightsRoute
+  '/analytics/safety': typeof AnalyticsSafetyRoute
   '/api/assistant': typeof ApiAssistantRoute
   '/api/assistant-transcribe': typeof ApiAssistantTranscribeRoute
   '/api/bundles': typeof ApiBundlesRoute
@@ -779,6 +800,9 @@ export interface FileRoutesByTo {
   '/source-datasets': typeof SourceDatasetsRoute
   '/source-families': typeof SourceFamiliesRoute
   '/agencies/$id': typeof AgenciesIdRoute
+  '/analytics/enforcement': typeof AnalyticsEnforcementRoute
+  '/analytics/insights': typeof AnalyticsInsightsRoute
+  '/analytics/safety': typeof AnalyticsSafetyRoute
   '/api/assistant': typeof ApiAssistantRoute
   '/api/assistant-transcribe': typeof ApiAssistantTranscribeRoute
   '/api/bundles': typeof ApiBundlesRoute
@@ -882,6 +906,9 @@ export interface FileRoutesById {
   '/source-datasets': typeof SourceDatasetsRoute
   '/source-families': typeof SourceFamiliesRoute
   '/agencies/$id': typeof AgenciesIdRoute
+  '/analytics_/enforcement': typeof AnalyticsEnforcementRoute
+  '/analytics_/insights': typeof AnalyticsInsightsRoute
+  '/analytics_/safety': typeof AnalyticsSafetyRoute
   '/api/assistant': typeof ApiAssistantRoute
   '/api/assistant-transcribe': typeof ApiAssistantTranscribeRoute
   '/api/bundles': typeof ApiBundlesRoute
@@ -992,6 +1019,9 @@ export interface FileRouteTypes {
     | '/source-datasets'
     | '/source-families'
     | '/agencies/$id'
+    | '/analytics/enforcement'
+    | '/analytics/insights'
+    | '/analytics/safety'
     | '/api/assistant'
     | '/api/assistant-transcribe'
     | '/api/bundles'
@@ -1100,6 +1130,9 @@ export interface FileRouteTypes {
     | '/source-datasets'
     | '/source-families'
     | '/agencies/$id'
+    | '/analytics/enforcement'
+    | '/analytics/insights'
+    | '/analytics/safety'
     | '/api/assistant'
     | '/api/assistant-transcribe'
     | '/api/bundles'
@@ -1202,6 +1235,9 @@ export interface FileRouteTypes {
     | '/source-datasets'
     | '/source-families'
     | '/agencies/$id'
+    | '/analytics_/enforcement'
+    | '/analytics_/insights'
+    | '/analytics_/safety'
     | '/api/assistant'
     | '/api/assistant-transcribe'
     | '/api/bundles'
@@ -1311,6 +1347,9 @@ export interface RootRouteChildren {
   SourceDatasetsRoute: typeof SourceDatasetsRoute
   SourceFamiliesRoute: typeof SourceFamiliesRoute
   AgenciesIdRoute: typeof AgenciesIdRoute
+  AnalyticsEnforcementRoute: typeof AnalyticsEnforcementRoute
+  AnalyticsInsightsRoute: typeof AnalyticsInsightsRoute
+  AnalyticsSafetyRoute: typeof AnalyticsSafetyRoute
   ApiAssistantRoute: typeof ApiAssistantRoute
   ApiAssistantTranscribeRoute: typeof ApiAssistantTranscribeRoute
   ApiBundlesRoute: typeof ApiBundlesRoute
@@ -1535,6 +1574,27 @@ declare module '@tanstack/react-router' {
       path: '/agencies/$id'
       fullPath: '/agencies/$id'
       preLoaderRoute: typeof AgenciesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics_/enforcement': {
+      id: '/analytics_/enforcement'
+      path: '/analytics/enforcement'
+      fullPath: '/analytics/enforcement'
+      preLoaderRoute: typeof AnalyticsEnforcementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics_/insights': {
+      id: '/analytics_/insights'
+      path: '/analytics/insights'
+      fullPath: '/analytics/insights'
+      preLoaderRoute: typeof AnalyticsInsightsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics_/safety': {
+      id: '/analytics_/safety'
+      path: '/analytics/safety'
+      fullPath: '/analytics/safety'
+      preLoaderRoute: typeof AnalyticsSafetyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/assistant': {
@@ -2263,6 +2323,9 @@ const rootRouteChildren: RootRouteChildren = {
   SourceDatasetsRoute: SourceDatasetsRoute,
   SourceFamiliesRoute: SourceFamiliesRoute,
   AgenciesIdRoute: AgenciesIdRoute,
+  AnalyticsEnforcementRoute: AnalyticsEnforcementRoute,
+  AnalyticsInsightsRoute: AnalyticsInsightsRoute,
+  AnalyticsSafetyRoute: AnalyticsSafetyRoute,
   ApiAssistantRoute: ApiAssistantRoute,
   ApiAssistantTranscribeRoute: ApiAssistantTranscribeRoute,
   ApiBundlesRoute: ApiBundlesRoute,
