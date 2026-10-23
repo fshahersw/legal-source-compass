@@ -7,6 +7,7 @@ import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { pageHead } from "@/lib/corpus/head";
 import { parseCitation } from "@/lib/external/ecfrFull";
 import { getCfrCollection } from "@/lib/external/ecfrFull.functions";
+import { CfrAgencyIndex } from "@/components/authorities/AgencyPanels";
 
 export const Route = createFileRoute("/law_/cfr/")({
   head: () =>
@@ -128,6 +129,9 @@ function CfrIndexPage() {
           </p>
         </>
       )}
+      <div className="mt-4">
+        <CfrAgencyIndex />
+      </div>
     </AppShell>
   );
 }

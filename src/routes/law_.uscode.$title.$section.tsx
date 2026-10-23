@@ -6,6 +6,7 @@ import { useState } from "react";
 import { AppShell } from "@/components/atlas/AppShell";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { BodyLines, Fact, Footnotes, StatusBadge } from "@/components/uscode/UsCodeText";
+import { RegulationsUnderSectionPanel } from "@/components/authorities/RegulationsUnderSectionPanel";
 import { pageHead } from "@/lib/corpus/head";
 import {
   getUsCodeSection,
@@ -178,6 +179,9 @@ function SectionBody({ s }: { s: UscSection }) {
         </section>
         {s.notes.length ? <Notes notes={s.notes} /> : null}
         <AmendingLaws title={s.title} section={s.key} />
+        {s.kind === "section" ? (
+          <RegulationsUnderSectionPanel title={s.title} sectionKey={s.key} />
+        ) : null}
       </div>
       <aside className="space-y-3 self-start xl:sticky xl:top-2">
         <section

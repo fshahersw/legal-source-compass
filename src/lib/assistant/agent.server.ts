@@ -43,6 +43,8 @@ const STEP_LABELS: Record<string, string> = {
   search_ecfr: "Searching the Code of Federal Regulations",
   read_cfr_section: "Reading a CFR section",
   read_usc_section: "Reading a U.S. Code section",
+  list_cfr_parts_citing_usc: "Looking up regulations that cite a statute",
+  list_authorities_for_cfr_part: "Looking up the authorities for a CFR part",
   search_bills: "Searching bills",
   get_bill: "Reading a bill",
   search_sec_filings: "Searching SEC filings",

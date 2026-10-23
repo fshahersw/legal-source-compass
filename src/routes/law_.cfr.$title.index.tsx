@@ -7,6 +7,7 @@ import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { pageHead } from "@/lib/corpus/head";
 import { CFR_TITLE } from "@/lib/external/ecfrFull";
 import { getCfrCollection, getCfrTitleParts } from "@/lib/external/ecfrFull.functions";
+import { AgenciesForTitlePanel } from "@/components/authorities/AgencyPanels";
 
 export const Route = createFileRoute("/law_/cfr/$title/")({
   head: ({ params }) =>
@@ -48,6 +49,11 @@ function CfrTitlePage() {
       title={`CFR title ${title}`}
       {...(name ? { description: name } : {})}
     >
+      {valid ? (
+        <div className="mb-4">
+          <AgenciesForTitlePanel title={title} />
+        </div>
+      ) : null}
       {!valid ? (
         <p className="text-[13px] text-muted-foreground">CFR titles are numbered 1 to 50.</p>
       ) : q.isLoading ? (
@@ -97,7 +103,7 @@ function CfrTitlePage() {
                   {p.reserved
                     ? "Reserved"
                     : p.sections !== null
-                      ? `${p.sections.toLocaleString("en-US")} sections`
+                      ? `${p.sections.toLocaleString("en-US")} ${p.sections === 1 ? "section" : "sections"}`
                       : ""}
                 </span>
               </li>
