@@ -300,7 +300,7 @@ export function issueRow(i: Issue): CorpusRow | null {
       : i.pages
         ? `Pages ${i.pages}`
         : NR;
-  const title = `${i.publication}, ${i.date ?? i.label}`;
+  const title = `${i.publication}: ${i.label}`;
   return corpusRecord(DATASET, id, title, {
     source_url: i.url,
     subtitle: i.state,
@@ -378,14 +378,20 @@ export const stateRegisters: SourceAdapter = {
         const issues = src.parse(res.text, src.url);
         fetched += issues.length;
         let n = 0;
+        let dup = 0;
         for (const i of issues) {
           const row = issueRow(i);
-          if (!row || ids.has(row.id)) continue;
+          if (!row) continue;
+          if (ids.has(row.id)) {
+            dup++; // a second link for the same issue (same date and number): the first listed is kept
+            continue;
+          }
           ids.add(row.id);
           rows.push(row);
           n++;
         }
         notes[src.state] = n;
+        if (dup) notes[`${src.state}_same_issue_links`] = dup;
         if (n === 0) complete = false; // a listing that yields nothing has changed shape: the run is partial
       } catch (error) {
         if (error instanceof BudgetExhausted || error instanceof RateLimited) {

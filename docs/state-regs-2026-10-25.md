@@ -135,8 +135,12 @@ conversion of the same bytes.
 | MI | rule-set HTML rendering | R 336.1101–1128, R 336.201–205 | 27 | 26 (1 rescinded) / 27 / 27 |
 | IL | JCAR section file (Crawl-delay 10 s) | 35 Ill. Adm. Code 101 (first 12 sections) | 12 | 12 / 12 / 10 |
 | FL | chapter page + Word rule file | 62-296, 64B8-9 (12 rules each) | 24 | 18 (6 repealed) / 24 / 24 (LibreOffice) |
+| CO | rule-set page + official PDF (unit = rule set, the unit the CCR cites) | 5 CCR 1001-1, 1001-2 | 2 | 1 confirmed, 1 mostly (99.9%: a table header the two PDF engines lay out differently); lines compared without order |
 
-No check failed in any sample (no `mostly_confirmed` / `partly_confirmed`). Reports with every request URL and sha256:
+No HTML or Word check failed in any sample (no `mostly_confirmed` / `partly_confirmed`); Colorado's PDF check is reported as
+measured. Colorado text is extracted with `pdftotext -layout` (the default mode re-joins hyphenated words across lines and
+so changes citations such as "25-7-101"); the rotated side banner ("Code of Colorado Regulations", "Secretary of State")
+is page furniture and is dropped by an explicit rule. Reports with every request URL and sha256:
 `private/build/w1025_regs/<ST>/report-sample.json`; shards: `rules-sample.jsonl.gz`.
 
 Index v2 (full table of contents, crawled 2026-10-23): OH 2,844 nodes (328 agencies, 2,516 chapters); WA 2,646
