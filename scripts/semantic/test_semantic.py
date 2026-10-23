@@ -489,6 +489,30 @@ class PipelineTests(unittest.TestCase):
         em.Store(self.dir, "us_code_sections", self.params)
         self.assertFalse(os.path.exists(orphan))
 
+    def test_a_batch_over_the_services_token_limit_is_halved_and_resent(self):
+        class Limited(FakeClient):
+            def embed(self, texts, input_type):
+                if len(texts) > 3:
+                    raise vg.EmbeddingError('HTTP 400: {"detail":"The max allowed tokens per submitted batch is 120000. Your batch has 172139 tokens"}')
+                return super().embed(texts, input_type)
+
+        client = Limited()
+        status, _, store, _ = self.run_once(docs(20), client=client, window=16)
+        self.assertEqual(status, "complete")
+        self.assertEqual(store.manifest["totals"]["records"], 20)
+        self.assertTrue(all(len(r) <= 3 for r in client.requests))
+        sent = sorted(t for r in client.requests for t in r)
+        self.assertEqual(len(sent), len(set(sent)), "no passage is embedded twice")
+
+    def test_an_error_that_is_not_a_token_limit_fails_the_run_and_keeps_earlier_shards(self):
+        class Broken(FakeClient):
+            def embed(self, texts, input_type):
+                raise vg.EmbeddingError("HTTP 400: bad request")
+
+        with self.assertRaises(vg.EmbeddingError):
+            self.run_once(docs(5), client=Broken())
+        self.assertEqual(jload(os.path.join(self.dir, "manifest.json"))["status"], "failed")
+
     def test_two_runs_share_one_usage_file_without_losing_counts(self):
         path = os.path.join(self.tmp, "shared_usage.json")
         a, b = em.Usage(path, 1000), em.Usage(path, 1000)

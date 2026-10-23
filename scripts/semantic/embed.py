@@ -50,7 +50,7 @@ MIN_FREE_BYTES = 3_600_000_000
 SHARD_ROWS = 5000
 WINDOW_CHUNKS = 1600
 BATCH_TEXTS = 100
-BATCH_EST_TOKENS = 70_000
+BATCH_EST_TOKENS = 50_000
 ROW_DISK_BYTES = 2048 + 400
 
 
@@ -351,6 +351,7 @@ class Runner:
         self.stop_flag = threading.Event()
         self.run_tokens = 0
         self.run_chunks = 0
+        self.split_batches = 0
         self.t0 = time.time()
 
     def _check_room(self, n_chunks: int, est_tokens: int) -> None:
@@ -396,18 +397,28 @@ class Runner:
         if texts:
             batches = make_batches(texts)
 
-            def send(idx: list[int]) -> tuple[list[int], np.ndarray, int]:
-                v, t = self.client.embed([texts[i] for i in idx], "document")
+            def send(idx: list[int]) -> list[tuple[list[int], np.ndarray, int]]:
+                """One request; when the service refuses it as over its per-request token limit (dense tables tokenize far
+                below 3.4 characters per token), the batch is halved and each half sent again."""
+                try:
+                    v, t = self.client.embed([texts[i] for i in idx], "document")
+                except vg.EmbeddingError as exc:
+                    if len(idx) > 1 and "max allowed tokens" in str(exc):
+                        mid = len(idx) // 2
+                        self.split_batches += 1
+                        return send(idx[:mid]) + send(idx[mid:])
+                    raise
                 self.usage.add(self.dataset, t, 1, len(idx))
                 self.usage.note_ratio(sum(ck.estimate_tokens(texts[i]) for i in idx), t)
-                return idx, v, t
+                return [(idx, v, t)]
 
             with cf.ThreadPoolExecutor(max_workers=self.workers) as pool:
-                for idx, v, t in pool.map(send, batches):
-                    for j, i in enumerate(idx):
-                        vectors[need[i]] = v[j]
-                    tokens += t
-                    requests += 1
+                for parts in pool.map(send, batches):
+                    for idx, v, t in parts:
+                        for j, i in enumerate(idx):
+                            vectors[need[i]] = v[j]
+                        tokens += t
+                        requests += 1
         reused = len(flat) - len(need)
         for k in keys:
             if k not in vectors:
@@ -604,7 +615,7 @@ def cmd_run(args) -> int:
     )
     signal.signal(signal.SIGTERM, lambda *_: runner.stop_flag.set())
     status = runner.run()
-    store.manifest["client"] = {"retries": client.retries, "rate_limited": client.rate_limited}
+    store.manifest["client"] = {"retries": client.retries, "rate_limited": client.rate_limited, "split_batches": runner.split_batches}
     usage.add(ds, 0, requests=0, retries=client.retries, rate_limited=client.rate_limited)
     usage.save()
     store.flush()
