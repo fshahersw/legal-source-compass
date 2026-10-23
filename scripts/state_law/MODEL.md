@@ -108,7 +108,10 @@ Status rules (only from the publisher's own markers):
   "source_last_modified": "…",                              // additive: what the publisher's files state about their
                                                             // age when no currency sentence exists (Last-Modified,
                                                             // listing dates, build/codified dates), verbatim values
-  "source_mode": "fresh",                                   // additive: fresh | retained_original | mixed
+  "source_mode": "publisher",                               // additive: publisher (read from the publisher during
+                                                            // the run) | retained_original (re-parsed from this
+                                                            // project's sha256-checked captures; pages the capture
+                                                            // lacked are read fresh and listed in sources.jsonl.gz)
   "retrieved_from": "2026-10-24T01:00:00Z", "retrieved_to": "…",   // min/max retrieved_at of the sources; in
                                                             // retained mode these are the original capture times
   "codes": [{"code":"FS","name":"Florida Statutes","citation_template":"Fla. Stat. § {n}",

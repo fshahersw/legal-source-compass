@@ -84,11 +84,21 @@ function EditionHeader({ edition }: { edition: StateLawEdition }) {
         </dd>
         <dt className="text-muted-foreground">Currency (publisher)</dt>
         <dd className="leading-relaxed" data-testid="currency-statement">
-          {edition.currencyStatement ?? "Not recorded"}
-          {edition.currencyThrough ? ` (through ${shortDate(edition.currencyThrough)})` : ""}
-          {!edition.currencyStatement && edition.sourceLastModified
-            ? ` · bulk file last modified ${edition.sourceLastModified}`
-            : ""}
+          {edition.currencyStatement ? (
+            <>
+              {edition.currencyStatement}
+              {edition.currencyThrough ? ` (through ${shortDate(edition.currencyThrough)})` : ""}
+            </>
+          ) : edition.currencyThrough ? (
+            `Publisher states the text is current through ${shortDate(edition.currencyThrough)}`
+          ) : (
+            "No currency statement from the publisher"
+          )}
+          {!edition.currencyStatement && edition.sourceLastModified ? (
+            <span className="block text-muted-foreground">
+              Source files: {edition.sourceLastModified}
+            </span>
+          ) : null}
         </dd>
         <dt className="text-muted-foreground">Retrieved</dt>
         <dd>{retrievedLine(edition)}</dd>

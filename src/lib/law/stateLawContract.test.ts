@@ -35,6 +35,16 @@ describe("state-law contract parsing", () => {
     expect(e?.currencyStatement).toBeNull();
     expect(currencyLine(e!)).toBe("The 2026 Florida Statutes");
     expect(currencyLine({ currencyStatement: null, editionLabel: null })).toBe("Not recorded");
+    expect(
+      currencyLine({ currencyStatement: null, editionLabel: null, currencyThrough: "2026-10-20" }),
+    ).toBe("Publisher states the text is current through Oct 20, 2026");
+    expect(
+      currencyLine({
+        currencyStatement: null,
+        editionLabel: null,
+        sourceLastModified: "hrscurrent volume folders dated 1/6/2026",
+      }),
+    ).toBe("No currency statement · source files: hrscurrent volume folders dated 1/6/2026");
     expect(e?.byStatus).toEqual({ in_force: 24990, repealed: 3 });
     expect(e?.codes[0]?.code).toBe("FS");
   });

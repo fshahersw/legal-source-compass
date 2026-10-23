@@ -372,11 +372,21 @@ export function shortDate(iso: string | null): string | null {
   });
 }
 
-/** One line for an index row: the publisher's own statement, else its edition label, else "Not recorded". */
+/**
+ * One line for an index row, in order of what the publisher itself states: its currency sentence (verbatim), a
+ * current-through date it states without a sentence, its edition label, what its source files state about their
+ * age, else "Not recorded". Nothing is inferred.
+ */
 export function currencyLine(
-  e: Pick<StateLawEdition, "currencyStatement" | "editionLabel">,
+  e: Pick<StateLawEdition, "currencyStatement" | "editionLabel"> &
+    Partial<Pick<StateLawEdition, "currencyThrough" | "sourceLastModified">>,
 ): string {
-  return e.currencyStatement ?? e.editionLabel ?? "Not recorded";
+  if (e.currencyStatement) return e.currencyStatement;
+  const through = shortDate(e.currencyThrough ?? null);
+  if (through) return `Publisher states the text is current through ${through}`;
+  if (e.editionLabel) return e.editionLabel;
+  if (e.sourceLastModified) return `No currency statement · source files: ${e.sourceLastModified}`;
+  return "Not recorded";
 }
 
 /** Node label as printed: "Chapter 95", "Title VIII", or the heading for unnumbered groups. */
