@@ -334,11 +334,17 @@ indexes. The local disk needs only the cursor file.
    abandoned after 3 h, or by the next `open`. When the export is finished, the command resolves (`citations_resolve_v2`
    until pending = 0) and links (`citations_link_v2` over every byte set, 500 per call), then closes the run as `ok`.
    Use `--max-sets N` for a bounded first pass.
-4. Deploy the nightly function:
-   `supabase functions deploy ingest-citations --project-ref xosqzzsnhxcyehcnirpa --no-verify-jwt`. If the bundler
-   refuses imports outside `supabase/functions`, use `node scripts/ingest/bundle_functions.mjs <dir>`, which now copies
-   `src/lib/{citations,ingest}`. Then make one manual post (SQL in the header of `citations-v2-schedule.sql`), and apply
-   `citations-v2-schedule.sql`.
+4. Deploy the nightly function from a bundle: `node scripts/citations_v2/upload_patterns.mjs --execute` (with the
+   environment of step 3) stores `src/lib/citations/patterns.json` content-addressed in private storage
+   (`corpus-exports/citations/patterns/<sha256>.json`, readback-checked, never overwritten); then
+   `node scripts/ingest/bundle_functions.mjs <dir>` writes `<dir>/ingest-citations` (it copies `src/lib/{citations,ingest}`
+   and replaces the 330 KB `patterns.data.ts` with a loader that fetches that object at cold start and refuses bytes
+   whose SHA-256 differs from `patterns.json` at bundle time, `src/lib/citations/patterns.remote.ts`). Deploy the
+   bundle's files with verify_jwt off. A new pattern table needs both steps again. Then make one manual post (SQL in the
+   header of `citations-v2-schedule.sql`), and apply `citations-v2-schedule.sql`.
+   Deployed 2026-10-23: version 1, the six runtime files byte-identical to the bundle of that day (pattern table
+   `0f06cc29…54c2`, `citations-v2/2026-10-25.3`); the formatter later wrapped one line of `patterns.remote.ts`
+   (no code change), so the next deploy differs from version 1 only there.
 5. Run `select insights.refresh_citations('initial');`.
 6. When CASELAW, STAT-A or REGS deploy their resolvers, run
    `select public.citations_requeue_v2(null, 'unresolved_target_missing');` (or with the kind `'case'`), then

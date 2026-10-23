@@ -8,6 +8,7 @@
  *
  *   node scripts/ingest/bundle_functions.mjs <out-dir>
  */
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,6 +18,33 @@ const FUNCTIONS = path.join(ROOT, "supabase", "functions");
 // src/lib/ingest and the modules it shares with the functions (src/lib/citations for ingest-citations)
 const LIB = path.join(ROOT, "src", "lib");
 const IMPORT = /(from\s+|import\s*\(\s*)"([^"]+)"/g;
+
+// The generated citation pattern table (about 330 KB) is too large for the deploy tool: the bundle gets a small module
+// that loads src/lib/citations/patterns.json from private storage at cold start, checked against its SHA-256 here
+// (src/lib/citations/patterns.remote.ts; upload the file first with scripts/citations_v2/upload_patterns.mjs).
+const PATTERNS_DATA = path.join(LIB, "citations", "patterns.data.ts");
+const PATTERNS_REMOTE = path.join(LIB, "citations", "patterns.remote.ts");
+
+export function patternsSha256() {
+  return createHash("sha256")
+    .update(fs.readFileSync(path.join(LIB, "citations", "patterns.json")))
+    .digest("hex");
+}
+
+function remotePatternsModule() {
+  return `// Written by scripts/ingest/bundle_functions.mjs in place of the generated patterns.data.ts: the table is loaded at
+// cold start from private storage and must have the SHA-256 of src/lib/citations/patterns.json when this was bundled.
+import { loadPatternTable } from "./patterns.remote.ts";
+import type { PatternTable } from "./types.ts";
+
+declare const Deno: { env: { get(name: string): string | undefined } };
+
+export const PATTERNS: PatternTable = await loadPatternTable({
+  env: (name) => Deno.env.get(name),
+  sha256: "${patternsSha256()}",
+});
+`;
+}
 
 export function bundle(out) {
   const written = [];
@@ -40,7 +68,8 @@ export function bundle(out) {
       const file = queue.shift();
       if (seen.has(file)) continue;
       seen.add(file);
-      const code = fs.readFileSync(file, "utf8");
+      const code = file === PATTERNS_DATA ? remotePatternsModule() : fs.readFileSync(file, "utf8");
+      if (file === PATTERNS_DATA) queue.push(PATTERNS_REMOTE);
       for (const m of code.matchAll(IMPORT)) {
         const spec = m[2];
         if (!spec.startsWith("."))
