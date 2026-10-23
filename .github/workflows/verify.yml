@@ -33,7 +33,19 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: scripts/test/requirements.txt
-      - run: bun install --frozen-lockfile
+      # The lockfile resolves some packages through Lovable's npm mirror, which answers HTTP 429 when it is busy;
+      # retry the same frozen install with backoff instead of failing the run on a temporary rate limit.
+      - name: Install dependencies (frozen lockfile, retried on rate limits)
+        shell: bash
+        run: |
+          for attempt in 1 2 3 4; do
+            if bun install --frozen-lockfile; then exit 0; fi
+            if [ "$attempt" -lt 4 ]; then
+              echo "bun install failed (attempt $attempt of 4); retrying in $((attempt * 45))s"
+              sleep $((attempt * 45))
+            fi
+          done
+          exit 1
       - run: python -m pip install -r scripts/test/requirements.txt
       - run: npm run verify
       - run: npm install --prefix private/tools/publisher-code-contract-tests --no-audit --no-fund @electric-sql/pglite@0.5.8
