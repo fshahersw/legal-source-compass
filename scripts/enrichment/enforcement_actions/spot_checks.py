@@ -11,16 +11,22 @@ import hashlib
 import io
 import json
 import os
+import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import enf_common as ec  # noqa: E402
+import extract as ex  # noqa: E402
 import verify_enforcement_actions as v  # noqa: E402
 
 
 def pick(rows, n, key="id"):
     return sorted(rows, key=lambda r: hashlib.sha256(r[key].encode()).hexdigest())[:n]
+
+
+def squash(s):
+    return re.sub(r"\s+", " ", s)
 
 
 def context(text, needle, width=60):
@@ -57,11 +63,18 @@ def main():
                 raw[r["uuid"]] = (fname, r)
     for r in chosen:
         rel = r["item"]["release"]
-        a = next(x for x in rel["amounts"] if x.get("value_usd") == rel["max_resolution_amount_usd"]) if any(x.get("value_usd") == rel["max_resolution_amount_usd"] for x in rel["amounts"]) else rel["amounts"][0]
+        # the amount the builder used: equal value, resolution keyword, not a stock paragraph (another figure in the
+        # release can state the same value in a different sentence, e.g. an alleged loss equal to the forfeiture)
+        same = [x for x in rel["amounts"] if x.get("value_usd") == rel["max_resolution_amount_usd"]]
+        a = next((x for x in same if x.get("keyword") in ex.RESOLUTION_KINDS and not x.get("boilerplate")),
+                 same[0] if same else rel["amounts"][0])
         fname, rec = raw[rel["uuid"]]
-        text = v.soup_text(rec["body"])
+        text = squash(v.soup_text(rec["body"]))
+        sentence = squash(a.get("sentence") or "")
+        i = sentence.find(a["as_written"])
+        needle = sentence[max(0, i - 40):i + len(a["as_written"])] if i >= 0 else a["as_written"]
         add("doj_press_releases_" + rel["date"][:4], r["id"], f"resolution figure ({a.get('keyword')})", a["as_written"],
-            f"{fname} uuid {rel['uuid'][:8]}: {context(text, a['as_written'])}", a["as_written"] in text)
+            f"{fname} uuid {rel['uuid'][:8]}: {context(text, needle)}", needle in text)
     # SEC litigation releases with a civil action number
     sec = v.load_build("sec_enforcement_actions")
     lr = ec.PackReader(os.path.join(ec.ACQ, "sec", "releases"))
