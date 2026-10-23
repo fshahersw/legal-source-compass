@@ -118,7 +118,18 @@ export function StateBillView({ bill: b }: { bill: StateBill }) {
           {b.documents.length ? <Documents title="Documents" items={b.documents} empty="" /> : null}
         </div>
         <aside className="min-w-0 space-y-4">
-          <MilestoneTrack milestones={b.milestones} rule={RULE} />
+          <MilestoneTrack
+            milestones={b.milestones.filter(
+              (m) =>
+                !(
+                  (m.key === "passed_lower" || m.key === "passed_upper") &&
+                  !m.date &&
+                  b.milestones.some((x) => x.key === "passed_legislature" && x.date)
+                ),
+            )}
+            rule={RULE}
+            hideUnreached={["executive_veto", "passed_legislature"]}
+          />
           <Section title="Sponsors" aside={`${b.sponsors.length}`}>
             {b.sponsors.length ? (
               <Capped

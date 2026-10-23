@@ -7,6 +7,22 @@ import { fmtDay } from "./format";
 
 const CONGRESS = /^(10[89]|11[0-9])$/;
 
+const asObj = (v: unknown): Record<string, unknown> | null =>
+  v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+
+/**
+ * For a public_laws_enacted record page: reads the law number GovInfo printed (law.public_law {congress, number}) from
+ * the record and shows its originating bill. A number GovInfo prints on more than one measure (pl_shared) is not used.
+ */
+export function BillForPublicLawRecord({ raw }: { raw: Record<string, unknown> }) {
+  const law = asObj(raw["law"]) ?? asObj(asObj(raw["detail"])?.["law"]);
+  const pl = asObj(law?.["public_law"]);
+  const c = pl?.["congress"];
+  const n = pl?.["number"];
+  if (law?.["pl_shared"] === true || typeof c !== "number" || typeof n !== "number") return null;
+  return <BillForLaw congress={c} lawNumber={n} />;
+}
+
 /**
  * The originating bill of a public law, for law pages: the measure whose GovInfo Bill Status file lists this law number
  * (exact Congress and number). Outside the 108th–119th Congress nothing is shown; no match says so.

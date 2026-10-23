@@ -30,8 +30,17 @@ export function StatusChip({ status, label }: { status: string; label: string })
  * The published milestones as a compact track: reached milestones show their date; a vitiated passage is marked; a
  * milestone with no qualifying action is "Not recorded" (never assumed).
  */
-export function MilestoneTrack({ milestones, rule }: { milestones: Milestone[]; rule: string }) {
-  const shown = milestones.filter((m) => m.date || m.key !== "vetoed");
+export function MilestoneTrack({
+  milestones,
+  rule,
+  hideUnreached = ["vetoed"],
+}: {
+  milestones: Milestone[];
+  rule: string;
+  /** Milestones that only matter when they happened (a veto, a unicameral passage) are hidden until reached. */
+  hideUnreached?: string[];
+}) {
+  const shown = milestones.filter((m) => m.date || !hideUnreached.includes(m.key));
   return (
     <section aria-label="Milestones" className="rounded-md border border-border bg-surface p-3">
       <h2 className="eyebrow mb-2">Milestones</h2>

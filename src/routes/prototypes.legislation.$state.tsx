@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/atlas/AppShell";
 import { BillForLaw } from "@/components/legislation/BillForLaw";
 import { StateLegislationPanel } from "@/components/legislation/StateLegislationPanel";
-import { PrototypeNotice } from "@/components/prototypes/PrototypeNotice";
 import { pageHead } from "@/lib/corpus/head";
 import { STATE } from "@/lib/external/legislation";
 
@@ -29,7 +28,13 @@ function Page() {
       title="Legislation panels"
       description="The state page panel and the law page box as they would appear when mounted."
     >
-      <PrototypeNotice />
+      <p
+        role="note"
+        className="mb-4 rounded-md border border-border bg-muted/40 px-3 py-2 text-[12px] text-muted-foreground"
+      >
+        Preview of components that are not mounted yet: the panel for state pages and the
+        originating-bill box for public law pages. Every figure is live corpus data.
+      </p>
       {STATE.test(usps) ? (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
           <div className="min-w-0 space-y-3">
