@@ -1,0 +1,544 @@
+{
+ "source": "src/lib/assistant/citations.ts extractCitations(text, 200)",
+ "cases": [
+  {
+   "text": "See Obergefell v. Hodges, 576 U.S. 644, 651-52, 135 S. Ct. 2584 (2015); Ashcroft v. Iqbal, 556 U.S. 662 (2009).",
+   "expected": [
+    {
+     "kind": "case",
+     "text": "576 U.S. 644",
+     "key": "case:576 U.S. 644",
+     "normalized": "576 U.S. 644",
+     "start": 26,
+     "end": 38,
+     "pin": "651-52",
+     "volume": 576,
+     "reporter": "U.S.",
+     "page": 644,
+     "group": 1
+    },
+    {
+     "kind": "case",
+     "text": "135 S. Ct. 2584",
+     "key": "case:135 S.Ct. 2584",
+     "normalized": "135 S. Ct. 2584",
+     "start": 48,
+     "end": 63,
+     "pin": null,
+     "volume": 135,
+     "reporter": "S. Ct.",
+     "page": 2584,
+     "group": 1
+    },
+    {
+     "kind": "case",
+     "text": "556 U.S. 662",
+     "key": "case:556 U.S. 662",
+     "normalized": "556 U.S. 662",
+     "start": 91,
+     "end": 103,
+     "pin": null,
+     "volume": 556,
+     "reporter": "U.S.",
+     "page": 662,
+     "group": 2
+    }
+   ]
+  },
+  {
+   "text": "Plaintiffs sue under 42 U.S.C. §§ 1981, 1983 and 1985(3), and under 28 U.S.C. § 1332(d)(2).",
+   "expected": [
+    {
+     "kind": "usc",
+     "text": "42 U.S.C. §§ 1981, 1983 and 1985(3)",
+     "key": "usc:42:1981",
+     "normalized": "42 U.S.C. § 1981",
+     "start": 21,
+     "end": 56,
+     "pin": null,
+     "title": 42,
+     "section": "1981",
+     "sectionEnd": null,
+     "group": null
+    },
+    {
+     "kind": "usc",
+     "text": "42 U.S.C. §§ 1981, 1983 and 1985(3)",
+     "key": "usc:42:1983",
+     "normalized": "42 U.S.C. § 1983",
+     "start": 21,
+     "end": 56,
+     "pin": null,
+     "title": 42,
+     "section": "1983",
+     "sectionEnd": null,
+     "group": null
+    },
+    {
+     "kind": "usc",
+     "text": "42 U.S.C. §§ 1981, 1983 and 1985(3)",
+     "key": "usc:42:1985",
+     "normalized": "42 U.S.C. § 1985",
+     "start": 21,
+     "end": 56,
+     "pin": "(3)",
+     "title": 42,
+     "section": "1985",
+     "sectionEnd": null,
+     "group": null
+    },
+    {
+     "kind": "usc",
+     "text": "28 U.S.C. § 1332(d)(2)",
+     "key": "usc:28:1332",
+     "normalized": "28 U.S.C. § 1332",
+     "start": 68,
+     "end": 90,
+     "pin": "(d)(2)",
+     "title": 28,
+     "section": "1332",
+     "sectionEnd": null,
+     "group": null
+    }
+   ]
+  },
+  {
+   "text": "Jurisdiction lies under 28 U.S.C. §§ 1331–1332 and 15 USC 78j(b); see also 42 U.S.C.A. § 2000e-2(a)(1).",
+   "expected": [
+    {
+     "kind": "usc",
+     "text": "28 U.S.C. §§ 1331–1332",
+     "key": "usc:28:1331:1332",
+     "normalized": "28 U.S.C. §§ 1331–1332",
+     "start": 24,
+     "end": 46,
+     "pin": null,
+     "title": 28,
+     "section": "1331",
+     "sectionEnd": "1332",
+     "group": null
+    },
+    {
+     "kind": "usc",
+     "text": "15 USC 78j(b)",
+     "key": "usc:15:78j",
+     "normalized": "15 U.S.C. § 78j",
+     "start": 51,
+     "end": 64,
+     "pin": "(b)",
+     "title": 15,
+     "section": "78j",
+     "sectionEnd": null,
+     "group": null
+    },
+    {
+     "kind": "usc",
+     "text": "42 U.S.C.A. § 2000e-2(a)(1)",
+     "key": "usc:42:2000e-2",
+     "normalized": "42 U.S.C. § 2000e-2",
+     "start": 75,
+     "end": 102,
+     "pin": "(a)(1)",
+     "title": 42,
+     "section": "2000e-2",
+     "sectionEnd": null,
+     "group": null
+    }
+   ]
+  },
+  {
+   "text": "FDA regulations at 21 C.F.R. § 314.50(d)(5) and 21 CFR Part 11, as well as 21 C.F.R. parts 210-211, and 40 C.F.R. §§ 63.10–63.15.",
+   "expected": [
+    {
+     "kind": "cfr",
+     "text": "21 C.F.R. § 314.50(d)(5)",
+     "key": "cfr:21:314.50",
+     "normalized": "21 C.F.R. § 314.50",
+     "start": 19,
+     "end": 43,
+     "pin": "(d)(5)",
+     "title": 21,
+     "part": 314,
+     "section": "50",
+     "sectionEnd": null,
+     "group": null
+    },
+    {
+     "kind": "cfr",
+     "text": "21 CFR Part 11",
+     "key": "cfr-part:21:11",
+     "normalized": "21 C.F.R. part 11",
+     "start": 48,
+     "end": 62,
+     "pin": null,
+     "title": 21,
+     "part": 11,
+     "sectionEnd": null,
+     "group": null
+    },
+    {
+     "kind": "cfr",
+     "text": "21 C.F.R. parts 210-211",
+     "key": "cfr-part:21:210",
+     "normalized": "21 C.F.R. part 210",
+     "start": 75,
+     "end": 98,
+     "pin": null,
+     "title": 21,
+     "part": 210,
+     "sectionEnd": null,
+     "group": null
+    },
+    {
+     "kind": "cfr",
+     "text": "21 C.F.R. parts 210-211",
+     "key": "cfr-part:21:211",
+     "normalized": "21 C.F.R. part 211",
+     "start": 75,
+     "end": 98,
+     "pin": null,
+     "title": 21,
+     "part": 211,
+     "sectionEnd": null,
+     "group": null
+    },
+    {
+     "kind": "cfr",
+     "text": "40 C.F.R. §§ 63.10–63.15",
+     "key": "cfr:40:63.10:63.15",
+     "normalized": "40 C.F.R. §§ 63.10–63.15",
+     "start": 104,
+     "end": 128,
+     "pin": null,
+     "title": 40,
+     "part": 63,
+     "section": "10",
+     "sectionEnd": "63.15",
+     "group": null
+    }
+   ]
+  },
+  {
+   "text": "The rule was published at 85 Fed. Reg. 12,345 (Mar. 2, 2020) under Pub. L. No. 111-148, 124 Stat. 119.",
+   "expected": [
+    {
+     "kind": "federal_register",
+     "text": "85 Fed. Reg. 12,345",
+     "key": "fr:85:12345",
+     "normalized": "85 Fed. Reg. 12345",
+     "start": 26,
+     "end": 45,
+     "pin": null,
+     "volume": 85,
+     "page": 12345,
+     "group": null
+    },
+    {
+     "kind": "public_law",
+     "text": "Pub. L. No. 111-148",
+     "key": "pl:111:148",
+     "normalized": "Pub. L. No. 111-148",
+     "start": 67,
+     "end": 86,
+     "pin": null,
+     "congress": 111,
+     "law": 148,
+     "group": null
+    },
+    {
+     "kind": "statute",
+     "text": "124 Stat. 119",
+     "key": "stat:124:119",
+     "normalized": "124 Stat. 119",
+     "start": 88,
+     "end": 101,
+     "pin": null,
+     "volume": 124,
+     "page": 119,
+     "group": null
+    }
+   ]
+  },
+  {
+   "text": "Compare In re Zantac, 2021 WL 1234567, at *3 (S.D. Fla. 2021), with Doe v. Roe, 123 F. Supp. 3d 456, 460 n.4 (D.N.J. 2015).",
+   "expected": [
+    {
+     "kind": "case",
+     "text": "2021 WL 1234567",
+     "key": "case:2021 WL 1234567",
+     "normalized": "2021 WL 1234567",
+     "start": 22,
+     "end": 37,
+     "pin": null,
+     "volume": 2021,
+     "reporter": "WL",
+     "page": 1234567,
+     "group": 1
+    },
+    {
+     "kind": "case",
+     "text": "123 F. Supp. 3d 456",
+     "key": "case:123 F.Supp.3d 456",
+     "normalized": "123 F. Supp. 3d 456",
+     "start": 80,
+     "end": 99,
+     "pin": "460 n.4",
+     "volume": 123,
+     "reporter": "F. Supp. 3d",
+     "page": 456,
+     "group": 2
+    }
+   ]
+  },
+  {
+   "text": "Smith v. Jones, 45 F.4th 789 (3d Cir. 2022); Brown v. Green, 12 F. App’x 34 (2d Cir. 2001); 99 Cal. App. 4th 1 (2002).",
+   "expected": [
+    {
+     "kind": "case",
+     "text": "45 F.4th 789",
+     "key": "case:45 F.4th 789",
+     "normalized": "45 F.4th 789",
+     "start": 16,
+     "end": 28,
+     "pin": null,
+     "volume": 45,
+     "reporter": "F.4th",
+     "page": 789,
+     "group": 1
+    },
+    {
+     "kind": "case",
+     "text": "12 F. App’x 34",
+     "key": "case:12 F.App'x 34",
+     "normalized": "12 F. App'x 34",
+     "start": 61,
+     "end": 75,
+     "pin": null,
+     "volume": 12,
+     "reporter": "F. App'x",
+     "page": 34,
+     "group": 2
+    },
+    {
+     "kind": "case",
+     "text": "99 Cal. App. 4th 1",
+     "key": "case:99 Cal.App.4th 1",
+     "normalized": "99 Cal. App. 4th 1",
+     "start": 92,
+     "end": 110,
+     "pin": null,
+     "volume": 99,
+     "reporter": "Cal. App. 4th",
+     "page": 1,
+     "group": 3
+    }
+   ]
+  },
+  {
+   "text": "Id. at 650. Supra note 3. 576 U.S. at 650. These short forms are not citations.",
+   "expected": []
+  },
+  {
+   "text": "Under 26 U.S.C. sec. 501(c)(3) and 29 U.S.C. section 1132(a)(1)(B), the plan administrator must act.",
+   "expected": [
+    {
+     "kind": "usc",
+     "text": "26 U.S.C. sec. 501(c)(3)",
+     "key": "usc:26:501",
+     "normalized": "26 U.S.C. § 501",
+     "start": 6,
+     "end": 30,
+     "pin": "(c)(3)",
+     "title": 26,
+     "section": "501",
+     "sectionEnd": null,
+     "group": null
+    },
+    {
+     "kind": "usc",
+     "text": "29 U.S.C. section 1132(a)(1)(B)",
+     "key": "usc:29:1132",
+     "normalized": "29 U.S.C. § 1132",
+     "start": 35,
+     "end": 66,
+     "pin": "(a)(1)(B)",
+     "title": 29,
+     "section": "1132",
+     "sectionEnd": null,
+     "group": null
+    }
+   ]
+  },
+  {
+   "text": "No citation here: the court set the trial for June 5, 2024 and awarded $1,250,000.00 in damages.",
+   "expected": []
+  },
+  {
+   "text": "12 C.F.R. 1026.18 and 16 CFR §§ 433.1, 433.2 and 433.3 apply; see 5 U.S.C. 552a.",
+   "expected": [
+    {
+     "kind": "cfr",
+     "text": "12 C.F.R. 1026.18",
+     "key": "cfr:12:1026.18",
+     "normalized": "12 C.F.R. § 1026.18",
+     "start": 0,
+     "end": 17,
+     "pin": null,
+     "title": 12,
+     "part": 1026,
+     "section": "18",
+     "sectionEnd": null,
+     "group": null
+    },
+    {
+     "kind": "cfr",
+     "text": "16 CFR §§ 433.1, 433.2 and 433.3",
+     "key": "cfr:16:433.1",
+     "normalized": "16 C.F.R. § 433.1",
+     "start": 22,
+     "end": 54,
+     "pin": null,
+     "title": 16,
+     "part": 433,
+     "section": "1",
+     "sectionEnd": null,
+     "group": null
+    },
+    {
+     "kind": "cfr",
+     "text": "16 CFR §§ 433.1, 433.2 and 433.3",
+     "key": "cfr:16:433.2",
+     "normalized": "16 C.F.R. § 433.2",
+     "start": 22,
+     "end": 54,
+     "pin": null,
+     "title": 16,
+     "part": 433,
+     "section": "2",
+     "sectionEnd": null,
+     "group": null
+    },
+    {
+     "kind": "cfr",
+     "text": "16 CFR §§ 433.1, 433.2 and 433.3",
+     "key": "cfr:16:433.3",
+     "normalized": "16 C.F.R. § 433.3",
+     "start": 22,
+     "end": 54,
+     "pin": null,
+     "title": 16,
+     "part": 433,
+     "section": "3",
+     "sectionEnd": null,
+     "group": null
+    },
+    {
+     "kind": "usc",
+     "text": "5 U.S.C. 552a",
+     "key": "usc:5:552a",
+     "normalized": "5 U.S.C. § 552a",
+     "start": 66,
+     "end": 79,
+     "pin": null,
+     "title": 5,
+     "section": "552a",
+     "sectionEnd": null,
+     "group": null
+    }
+   ]
+  },
+  {
+   "text": "Kumho Tire Co. v. Carmichael, 526 U.S. 137, 119 S. Ct. 1167, 143 L. Ed. 2d 238 (1999).",
+   "expected": [
+    {
+     "kind": "case",
+     "text": "526 U.S. 137",
+     "key": "case:526 U.S. 137",
+     "normalized": "526 U.S. 137",
+     "start": 30,
+     "end": 42,
+     "pin": null,
+     "volume": 526,
+     "reporter": "U.S.",
+     "page": 137,
+     "group": 1
+    },
+    {
+     "kind": "case",
+     "text": "119 S. Ct. 1167",
+     "key": "case:119 S.Ct. 1167",
+     "normalized": "119 S. Ct. 1167",
+     "start": 44,
+     "end": 59,
+     "pin": null,
+     "volume": 119,
+     "reporter": "S. Ct.",
+     "page": 1167,
+     "group": 1
+    },
+    {
+     "kind": "case",
+     "text": "143 L. Ed. 2d 238",
+     "key": "case:143 L.Ed.2d 238",
+     "normalized": "143 L. Ed. 2d 238",
+     "start": 61,
+     "end": 78,
+     "pin": null,
+     "volume": 143,
+     "reporter": "L. Ed. 2d",
+     "page": 238,
+     "group": 1
+    }
+   ]
+  },
+  {
+   "text": "The statute, 42 U.S.C. § 300aa-11(c)(1), and 42 U.S.C. § 1395y(b)(2)(A)(ii) both apply.",
+   "expected": [
+    {
+     "kind": "usc",
+     "text": "42 U.S.C. § 300aa-11(c)(1)",
+     "key": "usc:42:300aa-11",
+     "normalized": "42 U.S.C. § 300aa-11",
+     "start": 13,
+     "end": 39,
+     "pin": "(c)(1)",
+     "title": 42,
+     "section": "300aa-11",
+     "sectionEnd": null,
+     "group": null
+    },
+    {
+     "kind": "usc",
+     "text": "42 U.S.C. § 1395y(b)(2)(A)(ii)",
+     "key": "usc:42:1395y",
+     "normalized": "42 U.S.C. § 1395y",
+     "start": 45,
+     "end": 75,
+     "pin": "(b)(2)(A)(ii)",
+     "title": 42,
+     "section": "1395y",
+     "sectionEnd": null,
+     "group": null
+    }
+   ]
+  },
+  {
+   "text": "Mass. Gen. Laws ch. 93A and 42 U.S.C. § 1983 with no-break spaces.",
+   "expected": [
+    {
+     "kind": "usc",
+     "text": "42 U.S.C. § 1983",
+     "key": "usc:42:1983",
+     "normalized": "42 U.S.C. § 1983",
+     "start": 28,
+     "end": 44,
+     "pin": null,
+     "title": 42,
+     "section": "1983",
+     "sectionEnd": null,
+     "group": null
+    }
+   ]
+  }
+ ]
+}
