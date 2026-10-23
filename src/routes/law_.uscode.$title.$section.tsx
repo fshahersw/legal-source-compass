@@ -31,6 +31,9 @@ export const Route = createFileRoute("/law_/uscode/$title/$section")({
   component: SectionPage,
 });
 
+/** Lines rendered before "Show the full text"; a handful of sections (e.g. 42 U.S.C. § 1395ww) print thousands. */
+const BODY_LIMIT = 600;
+
 const longDate = (iso: string | null) =>
   iso
     ? new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-US", {
@@ -150,7 +153,7 @@ function SectionBody({ s }: { s: UscSection }) {
             <StatusBadge status={s.status} />
           </h2>
           {s.lines.length ? (
-            <BodyLines lines={s.lines} />
+            <BodyLines key={s.key} lines={s.lines} limit={BODY_LIMIT} />
           ) : (
             <p className="m-0 text-[13px] text-muted-foreground">
               {s.status
@@ -175,7 +178,7 @@ function SectionBody({ s }: { s: UscSection }) {
           className="rounded-lg border border-border bg-surface px-4 py-3"
         >
           <dl className="m-0 grid gap-y-1.5 text-xs">
-            <Fact label="Release point">
+            <Fact label="Release point" wrap>
               {s.release} (through Public Law {s.release}, {longDate(s.lawDate)})
             </Fact>
             <Fact label="Kind">

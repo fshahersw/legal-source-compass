@@ -98,7 +98,7 @@ def section_rows(release, rel, tkey, head, containers, units, urls, years, granu
         label = STATUS_LABELS.get(status)
         url, url_kind = unit_url(release, tkey, u, urls)
         anc = [containers[a] for a in u["ancestors"]]
-        path = [[c["index"], c["kind"], c["num"], c["heading"]] for c in anc if c["depth"] > 0 or c["kind"] != "title"]
+        path = [[c["index"], c["kind"], c["num"], c["heading"]] for c in anc if c["depth"] > 0]
         prev_u = units[i - 1] if i else None
         next_u = units[i + 1] if i + 1 < len(units) else None
         title_text = f"{citation} {heading}".strip()

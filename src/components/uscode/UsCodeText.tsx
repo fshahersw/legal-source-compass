@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { STATUS_LABELS, type BodyLine } from "@/lib/external/usCode.functions";
 
@@ -21,12 +21,26 @@ function groupLines(lines: BodyLine[]): Group[] {
   return out;
 }
 
-/** A unit's printed lines: subdivisions indented as printed, number-and-heading lines set apart, tables as tables. */
-export function BodyLines({ lines, className }: { lines: BodyLine[]; className?: string }) {
+/**
+ * A unit's printed lines: subdivisions indented as printed, number-and-heading lines set apart, tables as tables.
+ * Very long units (a few run to thousands of lines) show the first `limit` lines until the reader asks for the rest.
+ */
+export function BodyLines({
+  lines,
+  className,
+  limit,
+}: {
+  lines: BodyLine[];
+  className?: string;
+  limit?: number;
+}) {
+  const [all, setAll] = useState(false);
   if (!lines.length) return null;
+  const cut = !all && limit !== undefined && lines.length > limit;
+  const shown = cut ? lines.slice(0, limit) : lines;
   return (
     <div className={cn("space-y-1.5 text-[13px] leading-relaxed", className)}>
-      {groupLines(lines).map((g, n) =>
+      {groupLines(shown).map((g, n) =>
         g.kind === "table" ? (
           <div key={n} className="overflow-x-auto" style={pad(g.rows[0]!.indent)}>
             <table className="my-1 min-w-[16rem] border-collapse text-[12px]">
@@ -63,6 +77,18 @@ export function BodyLines({ lines, className }: { lines: BodyLine[]; className?:
           </p>
         ),
       )}
+      {cut ? (
+        <p className="m-0 border-t border-border/70 pt-2 text-[12px] text-muted-foreground">
+          Showing the first {limit.toLocaleString()} of {lines.length.toLocaleString()} lines.{" "}
+          <button
+            type="button"
+            onClick={() => setAll(true)}
+            className="text-primary hover:underline focus-visible:underline focus-visible:outline-none"
+          >
+            Show the full text
+          </button>
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -90,11 +116,19 @@ export function StatusBadge({ status }: { status: string | null }) {
   );
 }
 
-export function Fact({ label, children }: { label: string; children: ReactNode }) {
+export function Fact({
+  label,
+  children,
+  wrap,
+}: {
+  label: string;
+  children: ReactNode;
+  wrap?: boolean;
+}) {
   return (
     <div className="min-w-0">
       <dt className="text-[11px] text-muted-foreground">{label}</dt>
-      <dd className="m-0 truncate">{children}</dd>
+      <dd className={cn("m-0", wrap ? "break-words" : "truncate")}>{children}</dd>
     </div>
   );
 }

@@ -141,7 +141,11 @@ describe("sections", () => {
       num: "§ 1983.",
       heading: "Civil action for deprivation of rights",
       status: null,
-      path: [[411, "chapter", "CHAPTER 21—", "CIVIL RIGHTS"], ["bad"]],
+      path: [
+        [0, "title", "Title 42—", "THE PUBLIC HEALTH AND WELFARE"],
+        [411, "chapter", "CHAPTER 21—", "CIVIL RIGHTS"],
+        ["bad"],
+      ],
       footnotes: [],
       credit: "(R.S. § 1979; Pub. L. 96–170, § 1, Dec. 29, 1979, 93 Stat. 1284.)",
       notes: [

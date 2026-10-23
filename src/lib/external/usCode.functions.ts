@@ -355,7 +355,8 @@ export function parseSection(row: unknown): UscSection | null {
   const path: PathStep[] = Array.isArray(u["path"])
     ? u["path"]
         .filter(
-          (p): p is unknown[] => Array.isArray(p) && int(p[0]) !== null && typeof p[1] === "string",
+          (p): p is unknown[] =>
+            Array.isArray(p) && int(p[0]) !== null && p[0] !== 0 && typeof p[1] === "string",
         )
         .map((p) => ({
           index: p[0] as number,
