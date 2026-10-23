@@ -150,7 +150,10 @@ def load_laws():
 
 def govinfo_links(law):
     out = []
-    if law.get("stat"):
+    # the link service resolves Statutes at Large pages only for bound volumes GovInfo has published (1-138);
+    # a page cited only by a slip law file is linked through the slip law
+    bound = any(s["source"] == "statute" for s in law["sources"]) and law.get("stat_from") != "plaw"
+    if law.get("stat") and bound:
         out.append({"label": f"{law['stat']['volume']} Stat. {law['stat']['page']} on GovInfo",
                     "url": f"https://www.govinfo.gov/link/statute/{law['stat']['volume']}/{law['stat']['page']}"})
     pl = law.get("public_law")

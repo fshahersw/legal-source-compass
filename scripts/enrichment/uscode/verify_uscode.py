@@ -369,20 +369,30 @@ def net_checks(rp, laws, rng):
     found = [v["url"] for v in urls["units"].values() if v.get("url")]
     out["official_url_other_found"] = {"checked": len(found), "failures": 0,
                                        "note": "each resolved with HTTP 200 by check_official_urls.py"}
-    sample = rng.sample(laws, 30)
+    slip_only = [r for r in laws if all(s["source"] == "plaw" for s in r["detail"]["law"]["sources"])]
+    sample = rng.sample(laws, 30) + rng.sample(slip_only, min(10, len(slip_only)))
     bad, checked = [], 0
     for r in sample:
         for link in r["detail"]["law"]["govinfo"]:
             checked += 1
-            status, _, hdrs, _ = fetchlib.request(link["url"], follow=False, retries=3, interval=1.0)
+            try:
+                status, _, hdrs, _ = fetchlib.request(link["url"], follow=False, retries=3, interval=1.0)
+            except RuntimeError as error:
+                status, hdrs = str(error)[-12:], {}
             loc = hdrs.get("location", "")
             if status != 302 or "/content/pkg/" not in loc:
                 bad.append([r["id"], link["url"], status])
     out["govinfo_law_links"] = {"checked": checked, "failures": len(bad), "examples": bad[:10]}
+    # section pages link only the editions whose GovInfo granule list holds the section (check_edition_links.py);
+    # govinfo_editions.json's link_checks only tested the URL pattern on random title years
+    ec = json.loads((fetchlib.BUILD / "edition_link_checks.json").read_text())
+    out["govinfo_edition_links"] = {"checked": len(ec["checks"]),
+                                    "failures": sum(1 for c in ec["checks"] if not c["resolved"]),
+                                    "examples": [c for c in ec["checks"] if not c["resolved"]][:10]}
     ed = json.loads((fetchlib.BUILD / "govinfo_editions.json").read_text())
-    lc = ed.get("link_checks", [])
-    out["govinfo_edition_links"] = {"checked": len(lc), "failures": sum(1 for c in lc if not c["resolved"]),
-                                    "examples": [c for c in lc if not c["resolved"]][:10]}
+    latest = [c for c in ed.get("link_checks", []) if c.get("latest")]
+    out["govinfo_edition_pattern_latest_year"] = {"checked": len(latest),
+                                                  "failures": sum(1 for c in latest if not c["resolved"])}
     return out
 
 
