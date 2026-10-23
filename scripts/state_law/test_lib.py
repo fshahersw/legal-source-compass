@@ -81,6 +81,7 @@ class NormTests(unittest.TestCase):
         self.assertEqual(lib.node_id("FL", "FS", [("title", "VIII"), ("chapter", "95")]), "FL:FS/title:VIII/chapter:95")
         self.assertEqual(lib.node_id("IL", "ILCS", [("chapter", "735"), ("act", "5/1")]), "IL:ILCS/chapter:735/act:5%2F1")
         self.assertEqual(lib.node_id("CA", "CIV", [("division", None)]), "CA:CIV/division:~0")
+        self.assertEqual(lib.node_id("CA", "CIV", [("other", None, "Preliminary Provisions")]), "CA:CIV/other:~preliminary-provisions")
         self.assertEqual(lib.section_id("MA", "MGL", "260:2A"), "MA:MGL:260:2A")
         self.assertEqual(lib.section_id("CA", "CIV", "1234", 2), "CA:CIV:1234@2")
         with self.assertRaises(lib.ModelError):

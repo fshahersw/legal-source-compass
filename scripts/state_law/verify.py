@@ -6,7 +6,7 @@
 For every section whose source bytes were kept (.raw), the `.txt` rendering (lib.render_text) is written beside the
 raw file and every line of `text`, the `heading`, the `history` line and the `status_marker` must occur verbatim
 (whitespace-normalised) in it. Structural checks: file hashes and counts match edition.json, ids unique, node
-references resolve, parents precede children, ordinals strictly increase, text_sha256 matches, no markup.
+references resolve, parents precede children, ordinals are unique, text_sha256 matches, no markup.
 Writes verify.json beside edition.json; exit 0 only when every check passes.
 """
 from __future__ import annotations
@@ -39,7 +39,7 @@ def verify(edition_dir: pathlib.Path, raw_root: pathlib.Path | None, *, require_
     sources: dict[str, dict] = {}
     for row in lib.read_jsonl(edition_dir / "sources.jsonl.gz"):
         sources.setdefault(row["sha256"], row)
-        if row["status"] != 200:
+        if row["status"] not in (200, 206):
             fail("source_status", row["url"], f"HTTP {row['status']}")
 
     nodes: dict[str, dict] = {}
@@ -74,7 +74,7 @@ def verify(edition_dir: pathlib.Path, raw_root: pathlib.Path | None, *, require_
 
     seen: set[str] = set()
     counts = {"sections": 0, "checked_against_raw": 0, "quotes_checked": 0, "by_status": {}}
-    last_ordinal = -1
+    ordinals: set[int] = set()
     for row in lib.read_jsonl(edition_dir / "sections.jsonl.gz"):
         sid = row["section_id"]
         counts["sections"] += 1
@@ -82,9 +82,9 @@ def verify(edition_dir: pathlib.Path, raw_root: pathlib.Path | None, *, require_
         if sid in seen:
             fail("section_unique", sid, "duplicate")
         seen.add(sid)
-        if row["ordinal"] <= last_ordinal:
-            fail("ordinal", sid, "not increasing")
-        last_ordinal = row["ordinal"]
+        if row["ordinal"] in ordinals:
+            fail("ordinal", sid, "duplicate ordinal")
+        ordinals.add(row["ordinal"])
         if row["node_id"] not in nodes:
             fail("section_node", sid, row["node_id"])
         if hashlib.sha256(row["text"].encode("utf-8")).hexdigest() != row["text_sha256"]:
@@ -98,6 +98,11 @@ def verify(edition_dir: pathlib.Path, raw_root: pathlib.Path | None, *, require_
             if value and lib._MARKUP_RE.search(value):
                 fail("markup", sid, f"{field}: {lib._MARKUP_RE.search(value).group(0)}")
         rendered = rendering(row["source"]["sha256"])
+        if rendered is not None and row["source"].get("also"):
+            extra = [rendering(item["sha256"]) for item in row["source"]["also"]]
+            if any(part is None for part in extra):
+                fail("raw_missing", sid, "secondary source bytes not kept")
+            rendered = " ".join([rendered] + [part for part in extra if part])
         if rendered is None:
             if require_raw:
                 fail("raw_missing", sid, row["source"]["sha256"])

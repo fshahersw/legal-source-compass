@@ -237,10 +237,56 @@ def json_text(body: bytes | str) -> str:
     return "\n".join(part for part in out if part)
 
 
+CAML_NS = "http://lc.ca.gov/legalservices/schemas/caml.1#"
+_CAML_SPACES = {"EnSpace": " ", "EmSpace": " ", "ThinSpace": " ", "NbSpace": " "}
+
+
+def caml_text(body: bytes | str) -> str:
+    """California Legislative Counsel CAML (`caml:Content`) rendering: paragraphs/headings/rows end lines, the
+    publisher's empty spacing spans (EnSpace, EmSpace, ThinSpace, NbSpace) become a space, a Fraction prints as
+    numerator/denominator, table cells are separated by a space."""
+    from xml.etree import ElementTree as ET
+
+    root = ET.fromstring(body if isinstance(body, bytes) else body.encode("utf-8"))
+    out: list[str] = []
+
+    def local(el: ET.Element) -> str:
+        return el.tag.rsplit("}", 1)[-1] if isinstance(el.tag, str) else ""
+
+    def walk(el: ET.Element) -> None:
+        name = local(el)
+        if name == "span" and el.get("class") in _CAML_SPACES and not len(el) and not (el.text or ""):
+            out.append(_CAML_SPACES[el.get("class")])
+        elif name == "br":
+            out.append("\n")
+        else:
+            if el.text:
+                out.append(el.text)
+            children = list(el)
+            for index, child in enumerate(children):
+                if name == "Fraction" and local(child) == "Denominator" and index > 0:
+                    out.append("/")
+                if name == "tr" and index > 0:
+                    out.append(" ")
+                walk(child)
+                if child.tail:
+                    out.append(child.tail)
+            if name in ("p", "h1", "h2", "h3", "tr", "table", "li", "div"):
+                out.append("\n")
+
+    walk(root)
+    return norm_lines("".join(out))
+
+
 def render_text(body: bytes, content_type: str | None = None, url: str | None = None) -> str:
     """The `.txt` rendering every stored quote is checked against (AGENTS.md capture rule)."""
     kind = (content_type or "").lower()
     path = (urllib.parse.urlparse(url).path.lower() if url else "")
+    head = body.lstrip()[:400]
+    if b"caml:Content" in head or CAML_NS.encode() in head:
+        return caml_text(body)
+    if kind.startswith("text/plain") or kind.startswith("text/tab-separated") or path.endswith((".dat", ".txt", ".tsv")):
+        return norm_lines(decode_bytes(body, "utf-8"))
     if "pdf" in kind or path.endswith(".pdf") or body[:5] == b"%PDF-":
         return pdf_text(body)
     if "json" in kind or path.endswith(".json"):
@@ -300,13 +346,23 @@ def _escape_id(value: str) -> str:
     return value.replace("%", "%25").replace("/", "%2F").replace(":", "%3A").replace(" ", "%20")
 
 
-def node_id(state: str, code: str, steps: Iterable[tuple[str, str | None]]) -> str:
-    """`FL:FS/title:VIII/chapter:95`; an unnumbered step passes number None and gets `~<k>` (k = position)."""
+def _slug(value: str | None) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", unicodedata.normalize("NFKD", value or "").encode("ascii", "ignore").decode().lower()).strip("-")[:48]
+
+
+def node_id(state: str, code: str, steps: Iterable[tuple]) -> str:
+    """`FL:FS/title:VIII/chapter:95`. Steps are (level, number) or (level, number, heading); an unnumbered step
+    gets `~<heading-slug>` (or `~<position>` without a heading)."""
     out = f"{state}:{code}"
-    for index, (level, number) in enumerate(steps):
+    for index, step in enumerate(steps):
+        level, number = step[0], step[1]
+        heading = step[2] if len(step) > 2 else None
         if level not in LEVELS or level == "code":
             raise ModelError(f"unknown hierarchy level {level!r}")
-        token = _escape_id(norm_ws(number)) if number not in (None, "") else f"~{index}"
+        if number not in (None, ""):
+            token = _escape_id(norm_ws(number))
+        else:
+            token = "~" + (_slug(heading) or str(index))
         out += f"/{level}:{token}"
     return out
 
@@ -387,6 +443,20 @@ def apply_patterns(codes: Iterable[Code], citation: str) -> list[tuple[str, str]
                 if hit not in hits:
                     hits.append(hit)
     return hits
+
+
+def alias_patterns(aliases: Iterable[str], *, prefix: str | None = None, number: str = _NUM_CAPTURE) -> tuple[Pattern, ...]:
+    """One Pattern matching `<optional prefix><alias> [§] <number>` for every alias (written as people cite it,
+    e.g. "Code Civ. Proc.", "Civ. Proc. Code"). Aliases are normalised like citations and regex-escaped; spaces are
+    optional. `prefix` is a regex (common subset) such as r"(?:cal\\.?\\s?)?"."""
+    alts = []
+    for alias in aliases:
+        normalized, _ = norm_cite(alias)
+        escaped = "".join(("\\s?" if ch == " " else re.escape(ch)) for ch in normalized.rstrip("."))
+        alts.append(escaped + r"\.?")
+    alts = sorted(set(alts), key=len, reverse=True)
+    regex = (prefix or "") + "(?:" + "|".join(alts) + ")" + r"\s?,?\s?(?:§\s?)?" + number
+    return (Pattern(regex, r"\1"),)
 
 
 _STATUS_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
@@ -858,6 +928,7 @@ class RunContext:
         self._sources = _Jsonl(self.dir / "sources.jsonl.gz")
         self._node_ids: dict[str, int] = {}
         self._section_ids: set[str] = set()
+        self._ordinals: set[int] = set()
         self._by_status: dict[str, int] = {}
         self._edition: dict[str, Any] = {}
         self._source_bytes = 0
@@ -938,7 +1009,8 @@ class RunContext:
 
     # edition ----------------------------------------------------------------------------------------------
     def edition(self, *, edition_label: str | None = None, currency_statement: str | None = None,
-                currency_source_url: str | None = None, currency_through: str | None = None) -> None:
+                currency_source_url: str | None = None, currency_through: str | None = None,
+                source_last_modified: str | None = None) -> None:
         if currency_through is not None and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", currency_through):
             raise ModelError("currency_through must be an ISO date the publisher states")
         self._edition = {
@@ -946,6 +1018,7 @@ class RunContext:
             "currency_statement": norm_lines(currency_statement) or None,
             "currency_source_url": currency_source_url,
             "currency_through": currency_through,
+            "source_last_modified": source_last_modified,
         }
 
     # hierarchy --------------------------------------------------------------------------------------------
@@ -961,7 +1034,7 @@ class RunContext:
             })
         return root
 
-    def node(self, code: str, steps: list[tuple[str, str | None]], label: str, heading: str | None = None,
+    def node(self, code: str, steps: list[tuple], label: str, heading: str | None = None,
              source_url: str | None = None) -> str:
         parent = self._ensure_root(code) if len(steps) == 1 else node_id(self.state, code, steps[:-1])
         if parent not in self._node_ids:
@@ -969,7 +1042,7 @@ class RunContext:
         nid = node_id(self.state, code, steps)
         if nid in self._node_ids:
             return nid
-        level, number = steps[-1]
+        level, number = steps[-1][0], steps[-1][1]
         self._node_ids[nid] = len(self._node_ids)
         self._nodes.write({
             "schema": NODE_SCHEMA, "node_id": nid, "edition_id": self.edition_id, "state": self.state, "code": code,
@@ -985,7 +1058,7 @@ class RunContext:
         steps: list[tuple[str, str | None]] = []
         nid = f"{self.state}:{code}"
         for step in path:
-            steps.append((step["level"], step.get("number")))
+            steps.append((step["level"], step.get("number"), step.get("heading")))
             nid = self.node(code, list(steps), step.get("label") or step["level"].title(), step.get("heading"),
                             source_url)
         return nid
@@ -994,7 +1067,8 @@ class RunContext:
     def section(self, *, code: str, number: str, heading: str | None, text: str, source: Fetched | dict,
                 node_id: str | None = None, path: list[dict] | None = None, history: str | None = None,
                 status: str | None = None, status_marker: str | None = None, status_basis: str | None = None,
-                effective: dict | None = None, version: str | None = None, version_index: int | None = None) -> str:
+                effective: dict | None = None, version: str | None = None, version_index: int | None = None,
+                also: Iterable[Fetched | dict] = (), ordinal: int | None = None) -> str:
         info = self.meta.code(code)
         number = norm_ws(number)
         if path is None:
@@ -1042,6 +1116,14 @@ class RunContext:
         if src["method"] not in METHODS:
             raise ModelError(f"bad source method {src['method']}")
         src.setdefault("member", None)
+        extra = [a.source() if isinstance(a, Fetched) else dict(a) for a in also]
+        if extra:
+            src["also"] = [{"url": a["url"], "sha256": a["sha256"], "member": a.get("member")} for a in extra]
+        if ordinal is None:
+            ordinal = self.section_count
+        if ordinal in self._ordinals:
+            raise ModelError(f"duplicate ordinal {ordinal}")
+        self._ordinals.add(ordinal)
         sid = section_id(self.state, code, number, version_index)
         if sid in self._section_ids:
             raise ModelError(f"duplicate section id {sid} (pass version/version_index for multiple versions)")
@@ -1055,7 +1137,7 @@ class RunContext:
                 {"level": p["level"], "label": norm_ws(p.get("label")) or p["level"].title(),
                  "number": norm_ws(p.get("number")) or None, "heading": norm_ws(p.get("heading")) or None}
                 for p in path
-            ], "ordinal": self.section_count, "source": src,
+            ], "ordinal": ordinal, "source": src,
             "text_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(), "parser": self.meta.parser,
         }
         self._sections.write(record)
@@ -1075,7 +1157,7 @@ class RunContext:
             "schema": EDITION_SCHEMA, "edition_id": self.edition_id, "state": meta.state, "code_name": meta.code_name,
             "publisher": meta.publisher, "publisher_url": meta.publisher_url, "official_source": meta.official_source,
             "access": meta.access, "edition_label": None, "currency_statement": None, "currency_source_url": None,
-            "currency_through": None, **self._edition, "retrieved_from": self.started, "retrieved_to": self._last_retrieved,
+            "currency_through": None, "source_last_modified": None, **self._edition, "retrieved_from": self.started, "retrieved_to": self._last_retrieved,
             "codes": [
                 {"code": c.code, "name": c.name, "citation_template": c.citation_template,
                  "patterns": [{"regex": p.regex, "number": p.number} for p in c.all_patterns()]}
