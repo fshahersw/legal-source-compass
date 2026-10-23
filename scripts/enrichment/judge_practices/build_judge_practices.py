@@ -163,7 +163,8 @@ def main() -> None:
                               "retrieved_at": tm.get("retrieved_at"), "page_sha256": tm.get("sha256") or j.get("sha256"), "listing_urls": listing_urls})
             totals["judges"] += 1
         # ---- coverage
-        kinds = Counter("listing" if "#" in x["page_url"] else "page" for x in judges)
+        # counted on the consolidated judges (a judge on a page and also named in a list is one judge with a page)
+        kinds = Counter("listing" if r["fragment"] else "page" for r in page_rows if r["court"]["court_id"] == cid)
         if not cr:
             status, note = "not_checked", "This court was not crawled."
         elif cr["robots"] and not cr["robots"].get("home_allowed"):
