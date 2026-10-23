@@ -167,7 +167,13 @@ def acquire(ctx: lib.RunContext) -> None:
             section_page = ctx.get(row["url"])
             number, heading, text = parse_section(section_page)
             if not printed_matches(number, row["number"], row["url"]):
-                raise RuntimeError(f"{row['url']} prints {number}, index lists {row['number']}")
+                if ctx.sample is not None:
+                    raise RuntimeError(f"{row['url']} prints {number}, index lists {row['number']}")
+                # ledgered, never guessed (the loader bounds the share of such rejects)
+                ctx._rejects.write({"state": "AZ", "code": "ARS", "number": number,
+                                    "reason": f"page prints {number}, index lists {row['number']}"[:300],
+                                    "source_url": section_page.url, "source_sha256": section_page.sha256})
+                continue
             read.append((row, section_page, number, heading, text))
         printed: dict[str, int] = {}
         for _row, _page, number, _h, _t in read:
