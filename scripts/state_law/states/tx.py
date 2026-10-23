@@ -346,9 +346,16 @@ def acquire(ctx):
                 path = [{"level": lvl, "label": label, "number": num, "heading": head}
                         for lvl, num, label, head in s["path"]]
                 source = dict(src, display_url=s["url"])
+                if s["status"]:
+                    status = {"status": s["status"], "status_marker": s["status_marker"],
+                              "status_basis": "publisher_marker"}
+                else:
+                    status = sb.status_kwargs(s["heading"], s["text"])
+                if status is None:
+                    ctx.log(f"{code} {s['number']}: no text and no status marker; skipped")
+                    continue
                 ctx.section(code=code, number=s["number"], heading=s["heading"], text=s["text"], path=path,
-                            source=source, history=s["history"], status=s["status"],
-                            status_marker=s["status_marker"], effective=s["effective"],
+                            source=source, history=s["history"], effective=s["effective"], **status,
                             version=s["version"] or (next((n for n in result["chapter_notes"]
                                                            if "consisting of" in n), None) if index else None),
                             version_index=index)

@@ -170,3 +170,178 @@ class FakeCtx:
 
     def log(self, msg):
         self.logs.append(msg)
+
+
+# --- status from the publisher's own markers (stricter than lib.classify_status; see module docstring) ----------
+
+_MARKER = re.compile(
+    r"^[\[(]?\s*(repealed|reserved|expired|renumbered|redesignated|transferred|terminated)"
+    r"(?=$|[\s.,:;\])\-—]*(?:$|by\b|and\b|eff\.?|effective\b|as\b|to\b|from\b|for\b|pursuant\b|under\b|in\b|on\b|"
+    r"\d|[\[(]|L\.|Laws\b|P\.?L\.?|S\.?L\.?|Acts?\b|ch\.?|c\.|section|sec\.|§))", re.I)
+_MAP = {"redesignated": "renumbered", "terminated": "expired"}
+
+
+def marker_status(heading: str | None, text: str | None):
+    """(status, verbatim marker) when the publisher printed a status-only entry, else (None, None).
+
+    A heading counts only when no statute text is printed under it; a short text counts only when the marker word
+    starts it and is followed by end of text, punctuation, or a citation/date word ("Repealed by L.2005, c.83",
+    "[Reserved]", "Expired." , "Renumbered as 12-3-4"). Ordinary catchlines such as "Reserved name." or
+    "Transferred employees; ..." over operative text never set a status.
+    """
+    t = one_line(text or "")
+    h = one_line(heading or "")
+    candidates = []
+    if t and len(t) <= 400:
+        candidates.append(t)
+    if not t and h:
+        candidates.append(h)
+    for cand in candidates:
+        m = _MARKER.match(cand)
+        if m:
+            word = m.group(1).lower()
+            return _MAP.get(word, word), cand
+    return None, None
+
+
+def status_kwargs(heading: str | None, text: str | None, *, flag_status: str | None = None,
+                  flag_marker: str | None = None):
+    """kwargs for ctx.section(status=..., status_marker=..., status_basis=...), or None when the entry has neither
+    text nor a publisher marker (the caller logs and skips it). `flag_status` is a structured publisher flag (e.g.
+    Michigan's <Repealed>true</Repealed>) and needs the verbatim marker text the publisher prints with it."""
+    status, marker = marker_status(heading, text)
+    if flag_status and flag_marker:
+        return {"status": flag_status, "status_marker": flag_marker, "status_basis": "publisher_marker"}
+    if status:
+        return {"status": status, "status_marker": marker, "status_basis": "publisher_marker"}
+    if one_line(text or ""):
+        return {"status": "in_force", "status_marker": None, "status_basis": "current_compilation"}
+    return None
+
+
+# --- local verify adapter ---------------------------------------------------------------------------------------
+
+def _xml_text_rendering_markup(body):
+    """lib.xml_text, except that a text node carrying the publisher's escaped markup (Michigan MCL `BodyText`:
+    `&lt;Paragraph&gt;&lt;P&gt;...&lt;Emph&gt;`) is rendered through lib.html_text, as lib.json_text already does for
+    JSON string values. Requested from STAT-A as an additive lib change; until then STAT-B verifies through this."""
+    from xml.etree import ElementTree as ET
+    from state_law import lib  # type: ignore
+
+    if isinstance(body, str):
+        body = body.encode("utf-8")
+    root = ET.fromstring(body)
+    out: list[str] = []
+
+    def piece(value):
+        if value and "<" in value and ">" in value and re.search(r"<[A-Za-z][^>]*>", value):
+            return "\n" + lib.html_text(value) + "\n"
+        return value or ""
+
+    def walk(el):
+        out.append("\n")
+        out.append(piece(el.text))
+        for child in el:
+            walk(child)
+        out.append("\n")
+        out.append(piece(el.tail))
+
+    walk(root)
+    return lib.norm_lines(_html.unescape("".join(out)))
+
+
+def verify_cli(argv=None):
+    """python3 scripts/state_law/states/_statb.py verify <edition_dir> --raw <raw_root>"""
+    import argparse
+    import json
+    import pathlib
+    import sys as _sys
+
+    _sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
+    from state_law import lib  # type: ignore
+    from state_law import verify as shared_verify  # type: ignore
+
+    lib.xml_text = _xml_text_rendering_markup
+    parser = argparse.ArgumentParser()
+    parser.add_argument("cmd", choices=["verify"])
+    parser.add_argument("edition_dir", type=pathlib.Path)
+    parser.add_argument("--raw", type=pathlib.Path, default=None)
+    args = parser.parse_args(argv)
+    result = shared_verify.verify(args.edition_dir, args.raw)
+    result["adapter"] = "statb: xml_text renders escaped publisher markup via html_text"
+    (args.edition_dir / "verify.json").write_text(json.dumps(result, indent=2, ensure_ascii=False))
+    print(json.dumps({k: result[k] for k in ("edition_id", "ok", "counts", "adapter")}, ensure_ascii=False))
+    for item in result["failures"][:20]:
+        print("FAIL", json.dumps(item, ensure_ascii=False))
+    return 0 if result["ok"] else 2
+
+
+# --- replay of bytes already captured from the publisher (parser proof when the live fetcher must stop) -----------
+
+class ReplayFetcher:
+    """Serves publisher bytes captured earlier (url -> (path, retrieved_at)) through the lib.Fetcher interface.
+    Every Fetched is labelled method `retained_original`; nothing touches the network."""
+
+    def __init__(self, captures: dict):
+        self.captures = captures
+        self.requests = 0
+
+    def get(self, url, *, data=None, headers=None, method="publisher_page", accept_status=(200,)):
+        import pathlib
+        from state_law import lib  # type: ignore
+
+        if url not in self.captures:
+            raise lib.Blocked(f"no retained capture for {url} (live fetching is not allowed for this run)")
+        path, retrieved_at = self.captures[url]
+        body = pathlib.Path(path).read_bytes()
+        self.requests += 1
+        return lib.Fetched(url=url, final_url=url, status=200, headers={}, body=body, sha256=sha256(body),
+                           bytes=len(body), retrieved_at=retrieved_at, method="retained_original")
+
+    def open_stream(self, url, *, headers=None):
+        raise RuntimeError("replay of streamed archives is not supported")
+
+
+def replay_cli(argv=None):
+    """python3 _statb.py replay <xx> --capture URL=PATH@ISO ... --out DIR --raw DIR [--sample N] [--option k=v]"""
+    import argparse
+    import importlib.util
+    import json
+    import pathlib
+    import sys as _sys
+
+    _sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
+    from state_law import lib  # type: ignore
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("cmd", choices=["replay"])
+    parser.add_argument("state")
+    parser.add_argument("--capture", action="append", default=[])
+    parser.add_argument("--out", type=pathlib.Path, required=True)
+    parser.add_argument("--raw", type=pathlib.Path, required=True)
+    parser.add_argument("--sample", type=int, default=None)
+    parser.add_argument("--option", action="append", default=[])
+    args = parser.parse_args(argv)
+    captures = {}
+    for item in args.capture:
+        url, rest = item.split("=", 1)
+        path, at = rest.rsplit("@", 1)
+        captures[url] = (path, at)
+    here = pathlib.Path(__file__).resolve().parent
+    spec = importlib.util.spec_from_file_location(f"state_law.states.{args.state}", here / f"{args.state}.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    ctx = lib.RunContext(module.META, args.out, args.raw, sample=args.sample, keep_raw=True,
+                         fetcher=ReplayFetcher(captures))
+    ctx.options = dict(o.split("=", 1) for o in args.option)
+    ctx.log("REPLAY of retained publisher captures (method retained_original); no live requests")
+    module.acquire(ctx)
+    edition = ctx.finish()
+    (ctx.dir / "replay.json").write_text(json.dumps({"captures": captures}, indent=2))
+    print(json.dumps({"edition_dir": str(ctx.dir), "counts": edition["counts"]}))
+    return 0
+
+
+if __name__ == "__main__":
+    import sys as _sys
+    _sys.exit(replay_cli() if len(_sys.argv) > 1 and _sys.argv[1] == "replay" else verify_cli())
