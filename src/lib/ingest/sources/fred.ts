@@ -105,8 +105,7 @@ export type Observation = {
 };
 /** Stored form: [date, value, vintage] or, when the first published value differs, [date, value, vintage, first, firstVintage]. */
 export type ObsTuple =
-  | [string, string | null, string]
-  | [string, string | null, string, string | null, string];
+  [string, string | null, string] | [string, string | null, string, string | null, string];
 
 function fredJson(text: string, what: string): JsonObject {
   let doc: unknown;
@@ -227,13 +226,16 @@ export function currentObservations(raw: RawObservation[]): Observation[] {
     const rows = byDate
       .get(date)!
       .slice()
-      .sort((a, b) => (a.realtime_start < b.realtime_start ? -1 : a.realtime_start > b.realtime_start ? 1 : 0));
+      .sort((a, b) =>
+        a.realtime_start < b.realtime_start ? -1 : a.realtime_start > b.realtime_start ? 1 : 0,
+      );
     let cur = -1;
     for (let i = 0; i < rows.length; i++) if (rows[i]!.realtime_end === ALL_REALTIME.end) cur = i;
     if (cur < 0) continue; // the date is no longer published in the current vintage
     const current = rows[cur]!;
     let vintage = current.realtime_start;
-    for (let i = cur - 1; i >= 0 && rows[i]!.value === current.value; i--) vintage = rows[i]!.realtime_start;
+    for (let i = cur - 1; i >= 0 && rows[i]!.value === current.value; i--)
+      vintage = rows[i]!.realtime_start;
     const obs: Observation = { date, value: pubValue(current.value), vintage };
     const first = rows[0]!;
     if (first.value !== current.value) {
@@ -251,7 +253,8 @@ export const toTuple = (o: Observation): ObsTuple =>
     : [o.date, o.value, o.vintage, o.firstValue ?? null, o.firstVintage];
 
 export const fromTuple = (t: Json): Observation | null => {
-  if (!Array.isArray(t) || t.length < 3 || typeof t[0] !== "string" || typeof t[2] !== "string") return null;
+  if (!Array.isArray(t) || t.length < 3 || typeof t[0] !== "string" || typeof t[2] !== "string")
+    return null;
   const o: Observation = {
     date: t[0],
     value: typeof t[1] === "string" ? t[1] : null,
@@ -292,7 +295,12 @@ export const obsMetaOf = (
   seasonal_adjustment_short: meta.seasonal_adjustment_short,
 });
 
-export function observationRow(m: ObsMeta, year: string, obs: Observation[], asOf: string): CorpusRow {
+export function observationRow(
+  m: ObsMeta,
+  year: string,
+  obs: Observation[],
+  asOf: string,
+): CorpusRow {
   const rid = obsRowId(m.id, year);
   const withValue = obs.filter((o) => o.value !== null).length;
   const revised = obs.filter((o) => o.firstVintage !== undefined).length;
@@ -359,7 +367,12 @@ export function observationRow(m: ObsMeta, year: string, obs: Observation[], asO
 }
 
 /** Year rows for every year at or after `fromYear` that has observations, oldest first. */
-export function observationRows(m: ObsMeta, obs: Observation[], asOf: string, fromYear = 0): CorpusRow[] {
+export function observationRows(
+  m: ObsMeta,
+  obs: Observation[],
+  asOf: string,
+  fromYear = 0,
+): CorpusRow[] {
   const byYear = new Map<string, Observation[]>();
   for (const o of obs) {
     const y = o.date.slice(0, 4);
@@ -379,7 +392,9 @@ export type SeriesSummary = {
 };
 
 const fmtObs = (o: Observation | null, units: string) =>
-  o && o.value !== null ? `${o.value} ${units} (${o.date}; current value since ${o.vintage})` : NOT_RECORDED;
+  o && o.value !== null
+    ? `${o.value} ${units} (${o.date}; current value since ${o.vintage})`
+    : NOT_RECORDED;
 
 export function seriesRow(
   spec: FredSpec,
@@ -398,7 +413,8 @@ export function seriesRow(
   if (release?.link && /^https?:\/\//.test(release.link))
     links.push({ url: release.link, label: `Release: ${release.name}` });
   for (const s of sources)
-    if (s.link && /^https?:\/\//.test(s.link)) links.push({ url: s.link, label: `Source: ${s.name}` });
+    if (s.link && /^https?:\/\//.test(s.link))
+      links.push({ url: s.link, label: `Source: ${s.name}` });
   const period = `${meta.observation_start} to ${meta.observation_end}`;
   const facts: [string, string][] = [
     ["Title (as published)", meta.title],
@@ -409,7 +425,12 @@ export function seriesRow(
     ["Seasonal adjustment", meta.seasonal_adjustment],
     ["Observation period (FRED)", period],
     ["Latest observation", fmtObs(summary.latest, meta.units_short)],
-    ["Stored years", summary.years.length ? `${summary.years[0]} to ${summary.years.at(-1)} (${summary.years.length} year rows)` : NOT_RECORDED],
+    [
+      "Stored years",
+      summary.years.length
+        ? `${summary.years[0]} to ${summary.years.at(-1)} (${summary.years.length} year rows)`
+        : NOT_RECORDED,
+    ],
     ["FRED last updated", meta.last_updated],
     ["Release", release ? release.name : NOT_RECORDED],
     ["Source", sourceNames || NOT_RECORDED],
@@ -519,7 +540,11 @@ export function comparableFred(content: Parameters<SourceAdapter["comparable"]>[
 export const MAX_VINTAGES = 1900;
 
 /** Real-time windows of at most `size` vintage dates covering `start` to 9999-12-31 (the last window ends there). */
-export function vintageWindows(vintageDates: string[], start: string, size = MAX_VINTAGES): { start: string; end: string }[] {
+export function vintageWindows(
+  vintageDates: string[],
+  start: string,
+  size = MAX_VINTAGES,
+): { start: string; end: string }[] {
   const dates = [...new Set(vintageDates.filter((d) => ISO.test(d) && d >= start))].sort();
   const out: { start: string; end: string }[] = [];
   let from = start;
@@ -566,9 +591,14 @@ async function fetchWindow(
 }
 
 /** Vintage dates of a series on or after `start` (fred/series/vintagedates, paged). */
-export async function fetchVintageDates(http: SourceHttp, key: string, seriesId: string, start: string): Promise<string[]> {
+export async function fetchVintageDates(
+  http: SourceHttp,
+  key: string,
+  seriesId: string,
+  start: string,
+): Promise<string[]> {
   const out: string[] = [];
-  for (let offset = 0; ; ) {
+  for (let offset = 0; ;) {
     const url = fredUrl("series/vintagedates", {
       series_id: seriesId,
       realtime_start: start,
@@ -576,8 +606,13 @@ export async function fetchVintageDates(http: SourceHttp, key: string, seriesId:
       limit: 10000,
       offset,
     });
-    const doc = fredJson(await getJson(http, key, url, "series/vintagedates"), "series/vintagedates");
-    const list = Array.isArray(doc["vintage_dates"]) ? (doc["vintage_dates"] as Json[]).filter((d): d is string => typeof d === "string") : [];
+    const doc = fredJson(
+      await getJson(http, key, url, "series/vintagedates"),
+      "series/vintagedates",
+    );
+    const list = Array.isArray(doc["vintage_dates"])
+      ? (doc["vintage_dates"] as Json[]).filter((d): d is string => typeof d === "string")
+      : [];
     out.push(...list);
     offset += list.length;
     if (!list.length || offset >= Number(doc["count"] ?? 0)) return out;
@@ -619,12 +654,24 @@ async function getJson(http: SourceHttp, key: string, url: string, what: string)
 export const fetchSeriesMeta = async (http: SourceHttp, key: string, id: string) =>
   parseSeriesMeta(await getJson(http, key, fredUrl("series", { series_id: id }), "series"));
 export const fetchRelease = async (http: SourceHttp, key: string, id: string) =>
-  parseRelease(await getJson(http, key, fredUrl("series/release", { series_id: id }), "series/release"));
+  parseRelease(
+    await getJson(http, key, fredUrl("series/release", { series_id: id }), "series/release"),
+  );
 export const fetchSources = async (http: SourceHttp, key: string, releaseId: number) =>
   parseSources(
-    await getJson(http, key, fredUrl("release/sources", { release_id: releaseId }), "release/sources"),
+    await getJson(
+      http,
+      key,
+      fredUrl("release/sources", { release_id: releaseId }),
+      "release/sources",
+    ),
   );
-export const fetchReleaseDates = async (http: SourceHttp, key: string, releaseId: number, since: string) =>
+export const fetchReleaseDates = async (
+  http: SourceHttp,
+  key: string,
+  releaseId: number,
+  since: string,
+) =>
   parseReleaseDates(
     await getJson(
       http,
@@ -650,7 +697,11 @@ const daysBetween = (a: string, b: string) =>
 export const isHighFrequency = (freqShort: string) => /^(D|W|BW)/.test(freqShort);
 
 /** First observation date a refresh rereads (1 January of that year, so every rebuilt year row is complete). */
-export function lookbackStart(freqShort: string, through: string | null, observationStart: string): string {
+export function lookbackStart(
+  freqShort: string,
+  through: string | null,
+  observationStart: string,
+): string {
   if (!through || !ISO.test(through)) return `${observationStart.slice(0, 4)}-01-01`;
   if (isHighFrequency(freqShort)) return `${addDays(through, -31).slice(0, 4)}-01-01`;
   return `${Number(through.slice(0, 4)) - 5}-01-01`;
@@ -660,7 +711,13 @@ export function lookbackStart(freqShort: string, through: string | null, observa
 export function nextPeriodEnded(freqShort: string, through: string | null, today: string): boolean {
   if (!through || !ISO.test(through)) return true;
   if (isHighFrequency(freqShort)) return true;
-  const months = freqShort.startsWith("Q") ? 3 : freqShort.startsWith("SA") ? 6 : freqShort.startsWith("A") ? 12 : 1;
+  const months = freqShort.startsWith("Q")
+    ? 3
+    : freqShort.startsWith("SA")
+      ? 6
+      : freqShort.startsWith("A")
+        ? 12
+        : 1;
   const d = new Date(`${through}T00:00:00Z`);
   // end of the next period = start + 2 periods - 1 day
   const endNext = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 2 * months, 1) - DAY);
@@ -722,7 +779,8 @@ async function readStoredSeries(ctx: CollectContext): Promise<StoredSeries[]> {
     .map((r) => ({ id: String(r["id"]).replace(/^fred:/, ""), fred: r["f"] as JsonObject }));
 }
 
-const lastUpdatedDate = (s: string) => (/^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(0, 10) : "1970-01-01");
+const lastUpdatedDate = (s: string) =>
+  /^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(0, 10) : "1970-01-01";
 
 export const fredObservations: SourceAdapter = {
   source: "fred_observations",
@@ -738,7 +796,8 @@ export const fredObservations: SourceAdapter = {
     if (!key) throw new Error("FRED_API_KEY is not set for this function");
     const day = today(ctx.now);
     const stored = await readStoredSeries(ctx);
-    if (!stored.length) throw new Error(`${SERIES_DATASET} holds no series rows; publish the full build first`);
+    if (!stored.length)
+      throw new Error(`${SERIES_DATASET} holds no series rows; publish the full build first`);
     const byId = new Map(stored.map((s) => [s.id, s]));
     const cursorIn = (ctx.cursor ?? {}) as JsonObject;
     const state: Record<string, SeriesState> = {
@@ -747,7 +806,8 @@ export const fredObservations: SourceAdapter = {
     // a series never read by a scheduled run starts from what the full build stored
     for (const s of stored) {
       if (state[s.id]) continue;
-      const through = typeof s.fred["observation_end"] === "string" ? String(s.fred["observation_end"]) : null;
+      const through =
+        typeof s.fred["observation_end"] === "string" ? String(s.fred["observation_end"]) : null;
       const seen = lastUpdatedDate(String(s.fred["last_updated"] ?? ""));
       state[s.id] = { through, seen, fetched: seen };
     }
@@ -765,7 +825,11 @@ export const fredObservations: SourceAdapter = {
     let complete = true;
     let stopped: string | null = null;
     const releaseDates = new Map<number, string[]>();
-    const releases = [...new Set([...meta.values()].map((m) => m.release_id).filter((r): r is number => r !== null))];
+    const releases = [
+      ...new Set(
+        [...meta.values()].map((m) => m.release_id).filter((r): r is number => r !== null),
+      ),
+    ];
     try {
       for (const r of releases.sort((a, b) => a - b)) {
         const seen = stored
@@ -781,7 +845,10 @@ export const fredObservations: SourceAdapter = {
           rows: [],
           fetched: 0,
           held,
-          cursorAfter: { series: state, releases_checked: (cursorIn["releases_checked"] as string) ?? null } as unknown as Json,
+          cursorAfter: {
+            series: state,
+            releases_checked: (cursorIn["releases_checked"] as string) ?? null,
+          } as unknown as Json,
           complete: false,
           notes: { stopped: error.message },
         };
@@ -789,7 +856,10 @@ export const fredObservations: SourceAdapter = {
       throw error;
     }
     notes["release_dates"] = Object.fromEntries(
-      [...releaseDates].map(([r, d]) => [String(r), d.length ? `${d[0]} to ${d.at(-1)} (${d.length})` : "none"]),
+      [...releaseDates].map(([r, d]) => [
+        String(r),
+        d.length ? `${d[0]} to ${d.at(-1)} (${d.length})` : "none",
+      ]),
     );
 
     const order = FRED_SERIES.map((s) => s.id).filter((id) => byId.has(id));
@@ -831,7 +901,8 @@ export const fredObservations: SourceAdapter = {
       read.push(id);
     }
     notes["read"] = read.length;
-    if (due.length > read.length) notes["still_due"] = due.slice(read.length).join(",").slice(0, 900);
+    if (due.length > read.length)
+      notes["still_due"] = due.slice(read.length).join(",").slice(0, 900);
     if (stopped) notes["stopped"] = stopped;
     return {
       rows,
@@ -882,7 +953,12 @@ export const fredSeries: SourceAdapter = {
     }
     // latest stored observation of each series: its last year row, else the one before (a new year may hold only ".")
     const latest = new Map<string, Observation | null>();
-    const lastRows = [...years].flatMap(([id, ys]) => ys.sort().slice(-2).map((y) => obsRowId(id, y)));
+    const lastRows = [...years].flatMap(([id, ys]) =>
+      ys
+        .sort()
+        .slice(-2)
+        .map((y) => obsRowId(id, y)),
+    );
     for (let i = 0; i < lastRows.length; i += 40) {
       const chunk = lastRows.slice(i, i + 40);
       const rows = await ctx.corpus.query(
@@ -909,7 +985,10 @@ export const fredSeries: SourceAdapter = {
     }
 
     const held: HeldRecord[] = [];
-    const fresh = new Map<string, { meta: FredSeriesMeta; release: FredRelease | null; sources: FredSource[] }>();
+    const fresh = new Map<
+      string,
+      { meta: FredSeriesMeta; release: FredRelease | null; sources: FredSource[] }
+    >();
     const sourcesByRelease = new Map<number, FredSource[]>();
     for (const s of stored.values()) {
       const sm = storedMeta(s.fred);
@@ -923,7 +1002,10 @@ export const fredSeries: SourceAdapter = {
         const meta = await fetchSeriesMeta(ctx.http, key, id);
         if (meta.id !== id) throw new SourceError(`FRED returned series ${meta.id} for ${id}`, 0);
         if (isRestricted(meta)) {
-          held.push({ key: id, reason: "FRED notes mark the series as copyrighted by a third party; not published" });
+          held.push({
+            key: id,
+            reason: "FRED notes mark the series as copyrighted by a third party; not published",
+          });
           advanced++;
           continue;
         }

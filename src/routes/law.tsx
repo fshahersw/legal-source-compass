@@ -188,6 +188,12 @@ function LawPage() {
             link: { to: "/limitations" },
           },
           {
+            key: "calculators",
+            label: "Litigation calculators",
+            note: "Post-judgment interest (28 U.S.C. § 1961), inflation, present value, life expectancy, state rates",
+            link: { to: "/law/calculators" },
+          },
+          {
             key: "constitutions",
             label: "State constitutions",
             note: "41 states from official publishers, article by article",

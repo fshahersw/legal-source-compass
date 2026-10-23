@@ -39,9 +39,11 @@ export type PvResult = {
 };
 
 export function pvInputProblem(i: PvInput): string | null {
-  if (!Number.isFinite(i.amount) || i.amount <= 0) return "Enter an annual amount greater than zero.";
+  if (!Number.isFinite(i.amount) || i.amount <= 0)
+    return "Enter an annual amount greater than zero.";
   if (i.amount > 1e12) return "The amount is larger than this calculator handles.";
-  if (!Number.isInteger(i.years) || i.years < 1 || i.years > 80) return "Enter a whole number of years from 1 to 80.";
+  if (!Number.isInteger(i.years) || i.years < 1 || i.years > 80)
+    return "Enter a whole number of years from 1 to 80.";
   if (!Number.isFinite(i.growthPercent) || i.growthPercent < -50 || i.growthPercent > 50)
     return "Enter a growth rate between −50% and 50% (0 for none).";
   return null;

@@ -26,7 +26,13 @@ export type SeriesObservations = {
   units: string;
   frequency: string;
   url: string;
-  obs: { date: string; value: string | null; vintage: string; firstValue?: string | null; firstVintage?: string }[];
+  obs: {
+    date: string;
+    value: string | null;
+    vintage: string;
+    firstValue?: string | null;
+    firstVintage?: string;
+  }[];
 };
 
 /** A value the calculation could not use, with the reason shown in place of a number. */

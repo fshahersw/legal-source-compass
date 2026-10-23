@@ -39,11 +39,26 @@ export function anniversary(iso: string, years: number): string {
 }
 
 /** "2026-10" for a month key; the FRED date of a monthly value is the first of the month. */
-export const isMonthKey = (s: unknown): s is string => typeof s === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(s);
+export const isMonthKey = (s: unknown): s is string =>
+  typeof s === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(s);
 export const monthStart = (month: string) => `${month}-01`;
 
-const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-export const monthLabel = (month: string) => `${MONTHS[Number(month.slice(5, 7)) - 1]} ${month.slice(0, 4)}`;
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+export const monthLabel = (month: string) =>
+  `${MONTHS[Number(month.slice(5, 7)) - 1]} ${month.slice(0, 4)}`;
 export function dateLabel(iso: string): string {
   return `${MONTHS[Number(iso.slice(5, 7)) - 1]} ${Number(iso.slice(8, 10))}, ${iso.slice(0, 4)}`;
 }

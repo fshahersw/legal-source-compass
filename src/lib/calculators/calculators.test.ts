@@ -49,7 +49,9 @@ describe("28 U.S.C. § 1961 rate week", () => {
       expect(w.effectiveTo).toBe(to);
     }
     // the day before the window belongs to the previous week
-    expect(rateWeekFor(from).weekEnding).not.toBe(rateWeekFor(to === from ? from : addDay(from, -1)).weekEnding);
+    expect(rateWeekFor(from).weekEnding).not.toBe(
+      rateWeekFor(to === from ? from : addDay(from, -1)).weekEnding,
+    );
   });
 
   it("finds exactly that week or nothing (never the nearest week)", () => {
@@ -65,7 +67,10 @@ function addDay(iso: string, n: number) {
 describe("28 U.S.C. § 1961 interest", () => {
   const rate = findRate(WGS1YR, "2026-10-09")!;
   it("one full year at 4.45%: 4,450.00 on 100,000, compounded at the anniversary", () => {
-    const r = computePji({ principal: 100000, judgmentDate: "2026-10-14", paymentDate: "2027-10-14", dayBasis: "365" }, rate);
+    const r = computePji(
+      { principal: 100000, judgmentDate: "2026-10-14", paymentDate: "2027-10-14", dayBasis: "365" },
+      rate,
+    );
     expect(r.week.weekEnding).toBe("2026-10-09");
     expect(r.days).toBe(365);
     expect(r.periods).toHaveLength(1);
@@ -78,7 +83,10 @@ describe("28 U.S.C. § 1961 interest", () => {
   it("two years and 30 days, 365-day basis: 9,509.84 (hand computation in decimal arithmetic)", () => {
     // year 1: 100,000 × 0.0445 = 4,450.00; year 2 (366 days, leap year): 104,450 × 0.0445 × 366/365 = 4,660.7593;
     // 30 days: 109,110.7593 × 0.0445 × 30/365 = 399.0763; total 9,509.8357
-    const r = computePji({ principal: 100000, judgmentDate: "2026-10-14", paymentDate: "2028-11-13", dayBasis: "365" }, rate);
+    const r = computePji(
+      { principal: 100000, judgmentDate: "2026-10-14", paymentDate: "2028-11-13", dayBasis: "365" },
+      rate,
+    );
     expect(r.periods.map((p) => [p.from, p.to, p.days, p.compounded])).toEqual([
       ["2026-10-14", "2027-10-14", 365, true],
       ["2027-10-14", "2028-10-14", 366, true],
@@ -90,24 +98,81 @@ describe("28 U.S.C. § 1961 interest", () => {
   });
 
   it("actual days of each judgment year: 9,497.05", () => {
-    const r = computePji({ principal: 100000, judgmentDate: "2026-10-14", paymentDate: "2028-11-13", dayBasis: "actual" }, rate);
+    const r = computePji(
+      {
+        principal: 100000,
+        judgmentDate: "2026-10-14",
+        paymentDate: "2028-11-13",
+        dayBasis: "actual",
+      },
+      rate,
+    );
     expect(r.periods[1]!.basisDays).toBe(366);
     expect(r.periods[1]!.interest).toBeCloseTo(4648.025, 6);
     expect(roundCents(r.interest)).toBe(9497.05);
   });
 
   it("refuses what it cannot compute and says why", () => {
-    expect(pjiInputProblem({ principal: 0, judgmentDate: "2026-10-14", paymentDate: "2027-10-14", dayBasis: "365" })).toMatch(/greater than zero/);
-    expect(pjiInputProblem({ principal: 10, judgmentDate: "2026-10-14", paymentDate: "2026-10-13", dayBasis: "365" })).toMatch(/before the judgment/);
-    expect(pjiInputProblem({ principal: 10, judgmentDate: "1999-05-03", paymentDate: "2001-01-01", dayBasis: "365" })).toMatch(/52-week Treasury bill/);
-    const same = computePji({ principal: 5000, judgmentDate: "2026-10-14", paymentDate: "2026-10-14", dayBasis: "365" }, rate);
+    expect(
+      pjiInputProblem({
+        principal: 0,
+        judgmentDate: "2026-10-14",
+        paymentDate: "2027-10-14",
+        dayBasis: "365",
+      }),
+    ).toMatch(/greater than zero/);
+    expect(
+      pjiInputProblem({
+        principal: 10,
+        judgmentDate: "2026-10-14",
+        paymentDate: "2026-10-13",
+        dayBasis: "365",
+      }),
+    ).toMatch(/before the judgment/);
+    expect(
+      pjiInputProblem({
+        principal: 10,
+        judgmentDate: "1999-05-03",
+        paymentDate: "2001-01-01",
+        dayBasis: "365",
+      }),
+    ).toMatch(/52-week Treasury bill/);
+    const same = computePji(
+      { principal: 5000, judgmentDate: "2026-10-14", paymentDate: "2026-10-14", dayBasis: "365" },
+      rate,
+    );
     expect(same.interest).toBe(0);
     expect(same.periods).toHaveLength(0);
   });
 
+  it("names the release-day difference between courts when the judgment is entered on or before the release date", () => {
+    const prev = findRate(WGS1YR, "2026-10-02")!;
+    // week ending 10/09/2026 was released Tuesday 10/13 (Monday 10/12 was a federal holiday)
+    const r = computePji(
+      { principal: 1000, judgmentDate: "2026-10-13", paymentDate: "2027-01-01", dayBasis: "365" },
+      rate,
+      prev,
+    );
+    expect(r.notes.join(" ")).toMatch(/District of Utah.*week ending 2026-10-02: 4\.52%/);
+    const later = computePji(
+      { principal: 1000, judgmentDate: "2026-10-14", paymentDate: "2027-01-01", dayBasis: "365" },
+      rate,
+      prev,
+    );
+    expect(later.notes.join(" ")).not.toMatch(/District of Utah/);
+  });
+
   it("shows a revised weekly figure beside the current one", () => {
-    const revised: SourceObservation = { ...rate, firstValue: "4.40", firstVintage: "2026-10-13", vintage: "2026-11-02" };
-    const r = computePji({ principal: 1000, judgmentDate: "2026-10-14", paymentDate: "2027-01-01", dayBasis: "365" }, revised);
+    const revised: SourceObservation = {
+      ...rate,
+      firstValue: "4.40",
+      firstVintage: "2026-10-13",
+      vintage: "2026-11-02",
+    };
+    const r = computePji(
+      { principal: 1000, judgmentDate: "2026-10-14", paymentDate: "2027-01-01", dayBasis: "365" },
+      revised,
+    );
     expect(r.notes.join(" ")).toMatch(/first published 4\.40/);
   });
 });
@@ -122,13 +187,23 @@ const CPI: SeriesObservations = {
     { date: "2020-01-01", value: "257.971", vintage: "2020-02-13" },
     { date: "2024-01-01", value: "308.417", vintage: "2024-02-13" },
     { date: "2025-10-01", value: null, vintage: "2025-12-18" },
-    { date: "2016-05-01", value: "240.229", vintage: "2016-10-18", firstValue: "240.236", firstVintage: "2016-06-16" },
+    {
+      date: "2016-05-01",
+      value: "240.229",
+      vintage: "2016-10-18",
+      firstValue: "240.236",
+      firstVintage: "2016-06-16",
+    },
   ],
 };
 
 describe("inflation adjustment", () => {
   it("$1,000 in January 2020 is $1,195.55 in January 2024 (308.417 ÷ 257.971)", () => {
-    const r = computeInflation({ amount: 1000, fromMonth: "2020-01", toMonth: "2024-01", seriesId: "CPIAUCNS" }, CPI, CPI);
+    const r = computeInflation(
+      { amount: 1000, fromMonth: "2020-01", toMonth: "2024-01", seriesId: "CPIAUCNS" },
+      CPI,
+      CPI,
+    );
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.factor).toBeCloseTo(1.1955491121, 9);
@@ -138,7 +213,11 @@ describe("inflation adjustment", () => {
   });
 
   it("does not substitute a month BLS did not publish", () => {
-    const r = computeInflation({ amount: 1000, fromMonth: "2025-10", toMonth: "2024-01", seriesId: "CPIAUCNS" }, CPI, CPI);
+    const r = computeInflation(
+      { amount: 1000, fromMonth: "2025-10", toMonth: "2024-01", seriesId: "CPIAUCNS" },
+      CPI,
+      CPI,
+    );
     expect(r.ok).toBe(false);
     if (r.ok) return;
     expect(r.reason).toMatch(/Not recorded.*October 2025/);
@@ -146,14 +225,39 @@ describe("inflation adjustment", () => {
   });
 
   it("notes a corrected value", () => {
-    const r = computeInflation({ amount: 100, fromMonth: "2016-05", toMonth: "2024-01", seriesId: "CPIAUCNS" }, CPI, CPI);
+    const r = computeInflation(
+      { amount: 100, fromMonth: "2016-05", toMonth: "2024-01", seriesId: "CPIAUCNS" },
+      CPI,
+      CPI,
+    );
     expect(r.ok && r.notes.join(" ")).toMatch(/first 240\.236/);
   });
 
   it("validates inputs", () => {
-    expect(inflationInputProblem({ amount: -1, fromMonth: "2020-01", toMonth: "2024-01", seriesId: "CPIAUCNS" })).toBeTruthy();
-    expect(inflationInputProblem({ amount: 1, fromMonth: "2020-13", toMonth: "2024-01", seriesId: "CPIAUCNS" })).toBeTruthy();
-    expect(inflationInputProblem({ amount: 1, fromMonth: "2020-01", toMonth: "2024-01", seriesId: "AAA" })).toBeTruthy();
+    expect(
+      inflationInputProblem({
+        amount: -1,
+        fromMonth: "2020-01",
+        toMonth: "2024-01",
+        seriesId: "CPIAUCNS",
+      }),
+    ).toBeTruthy();
+    expect(
+      inflationInputProblem({
+        amount: 1,
+        fromMonth: "2020-13",
+        toMonth: "2024-01",
+        seriesId: "CPIAUCNS",
+      }),
+    ).toBeTruthy();
+    expect(
+      inflationInputProblem({
+        amount: 1,
+        fromMonth: "2020-01",
+        toMonth: "2024-01",
+        seriesId: "AAA",
+      }),
+    ).toBeTruthy();
   });
 });
 
@@ -168,32 +272,61 @@ describe("present value", () => {
     url: "https://fred.stlouisfed.org/series/DGS3",
   };
   it("three end-of-year payments of 10,000 at 4%: 27,750.91 (annuity factor 2.775091)", () => {
-    const r = computePv({ amount: 10000, years: 3, growthPercent: 0, timing: "end", basis: "annual" }, rate);
+    const r = computePv(
+      { amount: 10000, years: 3, growthPercent: 0, timing: "end", basis: "annual" },
+      rate,
+    );
     expect(roundCents(r.presentValue)).toBe(27750.91);
     expect(r.nominalTotal).toBe(30000);
     expect(r.rows.map((x) => x.t)).toEqual([1, 2, 3]);
   });
   it("semiannual (bond-equivalent) treatment: r = 1.02² − 1 = 4.04%, PV 27,729.86", () => {
     expect(annualRateOf(4, "semiannual")).toBeCloseTo(0.0404, 12);
-    const r = computePv({ amount: 10000, years: 3, growthPercent: 0, timing: "end", basis: "semiannual" }, rate);
+    const r = computePv(
+      { amount: 10000, years: 3, growthPercent: 0, timing: "end", basis: "semiannual" },
+      rate,
+    );
     expect(roundCents(r.presentValue)).toBe(27729.86);
   });
   it("start-of-year timing discounts the first payment by nothing; growth compounds from the second payment", () => {
-    const r = computePv({ amount: 1000, years: 2, growthPercent: 10, timing: "start", basis: "annual" }, rate);
+    const r = computePv(
+      { amount: 1000, years: 2, growthPercent: 10, timing: "start", basis: "annual" },
+      rate,
+    );
     expect(r.rows[0]).toMatchObject({ t: 0, payment: 1000, factor: 1 });
     expect(r.rows[1]!.payment).toBeCloseTo(1100, 9);
     expect(roundCents(r.presentValue)).toBe(roundCents(1000 + 1100 / 1.04));
   });
   it("validates inputs", () => {
-    expect(pvInputProblem({ amount: 1, years: 0, growthPercent: 0, timing: "end", basis: "annual" })).toBeTruthy();
-    expect(pvInputProblem({ amount: 1, years: 2.5, growthPercent: 0, timing: "end", basis: "annual" })).toBeTruthy();
+    expect(
+      pvInputProblem({ amount: 1, years: 0, growthPercent: 0, timing: "end", basis: "annual" }),
+    ).toBeTruthy();
+    expect(
+      pvInputProblem({ amount: 1, years: 2.5, growthPercent: 0, timing: "end", basis: "annual" }),
+    ).toBeTruthy();
   });
 });
 
 describe("life expectancy", () => {
   const rows: string[][] = [
-    ["0-1", "5.5314125493168831E-3", "100000", "553.1412353515625", "99515.4453125", "7897103", "78.971031188964844"],
-    ["1-2", "4.006756644230336E-4", "99446.859375", "39.845935821533203", "99426.9375", "7797587.5", "78.409591674804688"],
+    [
+      "0-1",
+      "5.5314125493168831E-3",
+      "100000",
+      "553.1412353515625",
+      "99515.4453125",
+      "7897103",
+      "78.971031188964844",
+    ],
+    [
+      "1-2",
+      "4.006756644230336E-4",
+      "99446.859375",
+      "39.845935821533203",
+      "99426.9375",
+      "7797587.5",
+      "78.409591674804688",
+    ],
     ["2-3", "2.59958062088117E-4", "99407.0", "25.8", "99394.1", "7698160.5", "77.44"],
     ["3 and over", "1", "99381.2", "99381.2", "7598766", "7598766", "76.46"],
   ];
@@ -206,7 +339,8 @@ describe("life expectancy", () => {
     group: "total",
     sex: "total",
     rows,
-    sourceUrl: "https://ftp.cdc.gov/pub/Health_Statistics/NCHS/Publications/NVSR/75-05/Table01.xlsx",
+    sourceUrl:
+      "https://ftp.cdc.gov/pub/Health_Statistics/NCHS/Publications/NVSR/75-05/Table01.xlsx",
   };
   it("reads e(x) at the age at last birthday and prints it as the report does (79.0 at birth, 2024)", () => {
     const r = lifeExpectancy(table, 0);

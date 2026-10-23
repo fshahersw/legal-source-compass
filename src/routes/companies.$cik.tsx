@@ -16,6 +16,7 @@ import { CompanyEnforcementPanel } from "@/components/enforcement/actions/Compan
 import { RegulatoryRecordPanel } from "@/components/enforcement/regulatory/RegulatoryRecordPanel";
 import { CompanyCepPanel } from "@/components/enforcement/oversight/CompanyCepPanel";
 import { CompanyEnforcementTrend } from "@/components/companies/CompanyEnforcementTrend";
+import { CompanyFederalAwardsPanel } from "@/components/calculators/CompanyFederalAwardsPanel";
 
 const COMPANY_CRUMBS = [
   { label: "Home", to: "/" },
@@ -99,6 +100,7 @@ function Page() {
       <CompanyEnforcementPanel cik={cik} className="mt-3" />
       <RegulatoryRecordPanel cik={cik} className="mt-3" />
       <CompanyCepPanel cik={cik} className="mt-3" />
+      <CompanyFederalAwardsPanel cik={cik} className="mt-3" />
     </AppShell>
   );
 }

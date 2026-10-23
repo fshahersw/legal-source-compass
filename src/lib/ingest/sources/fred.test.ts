@@ -42,8 +42,14 @@ function sameRequest(a: string, b: string) {
   const ua = new URL(a);
   const ub = new URL(b);
   if (ua.pathname !== ub.pathname) return false;
-  const pa = [...ua.searchParams].filter(([k]) => k !== "api_key").sort().join("&");
-  const pb = [...ub.searchParams].filter(([k]) => k !== "api_key").sort().join("&");
+  const pa = [...ua.searchParams]
+    .filter(([k]) => k !== "api_key")
+    .sort()
+    .join("&");
+  const pb = [...ub.searchParams]
+    .filter(([k]) => k !== "api_key")
+    .sort()
+    .join("&");
   return pa === pb;
 }
 
@@ -66,9 +72,23 @@ function fakeHttp(responses: Fixture[], maxRequests = 100): SourceHttp & { urls:
       urls.push(init.recordUrl ?? url);
       expect(init.recordUrl ?? "", "recorded URL never carries the key").not.toMatch(/api_key/);
       const hit = responses.find((r) => sameRequest(r.url, url));
-      if (!hit) return { status: 400, text: JSON.stringify({ error_code: 400, error_message: `no fixture for ${new URL(url).pathname}` }), record: { url, status: 400, bytes: 0, sha256: "", retrieved_at: "" } };
+      if (!hit)
+        return {
+          status: 400,
+          text: JSON.stringify({
+            error_code: 400,
+            error_message: `no fixture for ${new URL(url).pathname}`,
+          }),
+          record: { url, status: 400, bytes: 0, sha256: "", retrieved_at: "" },
+        };
       const body = JSON.stringify(hit.body);
-      const record = { url: init.recordUrl ?? url, status: 200, bytes: body.length, sha256: "x", retrieved_at: "2026-10-23T00:00:00Z" };
+      const record = {
+        url: init.recordUrl ?? url,
+        status: 200,
+        bytes: body.length,
+        sha256: "x",
+        retrieved_at: "2026-10-23T00:00:00Z",
+      };
       requests.push(record);
       return { status: 200, text: body, record };
     },
@@ -83,7 +103,10 @@ describe("parsing", () => {
     expect(m.units_short).toBe("%");
     expect(m.seasonal_adjustment_short).toBe("NSA");
     expect(m.title).toMatch(/1-Year Constant Maturity/);
-    expect(parseRelease(text("release_WGS1YR"))).toMatchObject({ id: 18, name: "H.15 Selected Interest Rates" });
+    expect(parseRelease(text("release_WGS1YR"))).toMatchObject({
+      id: 18,
+      name: "H.15 Selected Interest Rates",
+    });
     expect(parseSources(text("sources_18"))[0]!.name).toMatch(/Board of Governors/);
     const cpiDates = parseReleaseDates(text("dates_10"));
     expect(cpiDates).toContain("2026-10-14");
@@ -91,15 +114,35 @@ describe("parsing", () => {
   });
 
   it("turns FRED error bodies into errors without echoing the request", () => {
-    expect(() => parseSeriesMeta(JSON.stringify({ error_code: 400, error_message: "Bad Request.  The series does not exist." }))).toThrow(/does not exist/);
+    expect(() =>
+      parseSeriesMeta(
+        JSON.stringify({
+          error_code: 400,
+          error_message: "Bad Request.  The series does not exist.",
+        }),
+      ),
+    ).toThrow(/does not exist/);
     expect(() => parseObservationPage("<html>")).toThrow(/not JSON/);
     expect(() =>
-      parseObservationPage(JSON.stringify({ observations: [{ realtime_start: "2020-01-01", realtime_end: "9999-12-31", date: "2020-01-01", value: "abc" }] })),
+      parseObservationPage(
+        JSON.stringify({
+          observations: [
+            {
+              realtime_start: "2020-01-01",
+              realtime_end: "9999-12-31",
+              date: "2020-01-01",
+              value: "abc",
+            },
+          ],
+        }),
+      ),
     ).toThrow(/not a number/);
   });
 
   it("flags third-party copyrighted series", () => {
-    expect(isRestricted({ title: "Moody's Seasoned Aaa", notes: "Copyright, 2024, Moody's" })).toBe(true);
+    expect(isRestricted({ title: "Moody's Seasoned Aaa", notes: "Copyright, 2024, Moody's" })).toBe(
+      true,
+    );
     expect(isRestricted(parseSeriesMeta(text("meta_WGS1YR")))).toBe(false);
   });
 });
@@ -130,7 +173,12 @@ describe("current observations and vintages", () => {
   });
 
   it("merges a value's runs (also across windows) and drops dates missing from the current vintage", () => {
-    const r = (date: string, value: string, start: string, end: string): RawObservation => ({ date, value, realtime_start: start, realtime_end: end });
+    const r = (date: string, value: string, start: string, end: string): RawObservation => ({
+      date,
+      value,
+      realtime_start: start,
+      realtime_end: end,
+    });
     const obs = currentObservations([
       r("2020-01-01", "1.0", "2020-02-01", "2020-05-31"),
       r("2020-01-01", "1.1", "2020-06-01", "2021-12-31"),
@@ -139,13 +187,21 @@ describe("current observations and vintages", () => {
       r("2020-03-01", ".", "2020-04-01", "9999-12-31"),
     ]);
     expect(obs).toEqual([
-      { date: "2020-01-01", value: "1.1", vintage: "2020-06-01", firstValue: "1.0", firstVintage: "2020-02-01" },
+      {
+        date: "2020-01-01",
+        value: "1.1",
+        vintage: "2020-06-01",
+        firstValue: "1.0",
+        firstVintage: "2020-02-01",
+      },
       { date: "2020-03-01", value: null, vintage: "2020-04-01" },
     ]);
   });
 
   it("splits a long real-time history into windows FRED accepts", () => {
-    const dates = Array.from({ length: 4000 }, (_, i) => new Date(Date.UTC(2000, 0, 1) + i * 86400000).toISOString().slice(0, 10));
+    const dates = Array.from({ length: 4000 }, (_, i) =>
+      new Date(Date.UTC(2000, 0, 1) + i * 86400000).toISOString().slice(0, 10),
+    );
     const w = vintageWindows(dates, "1999-06-01");
     expect(w.length).toBe(3);
     expect(w[0]).toEqual({ start: "1999-06-01", end: dates[1899] });
@@ -156,7 +212,11 @@ describe("current observations and vintages", () => {
 
   it("round-trips the stored tuple form", () => {
     for (const o of currentObservations(raw("obs_CPIAUCSL_2023"))) {
-      const t = observationRows(obsMetaOf(SPEC_BY_ID.get("CPIAUCSL")!, parseSeriesMeta(text("meta_CPIAUCSL"))), [o], "2026-10-23")[0]!;
+      const t = observationRows(
+        obsMetaOf(SPEC_BY_ID.get("CPIAUCSL")!, parseSeriesMeta(text("meta_CPIAUCSL"))),
+        [o],
+        "2026-10-23",
+      )[0]!;
       const back = fromTuple((t.item["fred"] as JsonObject)["obs"]![0] as never);
       expect(back).toEqual(o);
     }
@@ -175,8 +235,17 @@ describe("rows", () => {
     expect(r.dataset).toBe(OBS_DATASET);
     expect(r.category).toBe(OBS_DATASET);
     expect(r.source_url).toBe("https://fred.stlouisfed.org/series/WGS1YR");
-    expect(r.filters).toEqual({ _listing: ["yes"], series: ["WGS1YR"], year: ["2026"], group: ["judgment_rate"] });
-    expect((r.item["fred"] as JsonObject)["obs"]).toContainEqual(["2026-10-09", "4.45", "2026-10-13"]);
+    expect(r.filters).toEqual({
+      _listing: ["yes"],
+      series: ["WGS1YR"],
+      year: ["2026"],
+      group: ["judgment_rate"],
+    });
+    expect((r.item["fred"] as JsonObject)["obs"]).toContainEqual([
+      "2026-10-09",
+      "4.45",
+      "2026-10-13",
+    ]);
     expect(JSON.stringify(r)).not.toMatch(/api_key/);
     expect(r.id).toMatch(/^fred:[A-Z0-9]{2,30}(:[0-9]{4})?$/);
   });
@@ -192,11 +261,15 @@ describe("rows", () => {
     );
     expect(row.id).toBe("fred:WGS1YR");
     expect(row.dataset).toBe(SERIES_DATASET);
-    const facts = Object.fromEntries((row.detail["facts"] as [string, string][]).map(([k, v]) => [k, v]));
+    const facts = Object.fromEntries(
+      (row.detail["facts"] as [string, string][]).map(([k, v]) => [k, v]),
+    );
     expect(facts["Units"]).toBe("Percent");
     expect(facts["Release"]).toBe("H.15 Selected Interest Rates");
     expect(facts["Use here"]).toMatch(/28 U\.S\.C\. § 1961\(a\)/);
-    expect(facts["Notice"]).toMatch(/not endorsed or certified by the Federal Reserve Bank of St\. Louis/);
+    expect(facts["Notice"]).toMatch(
+      /not endorsed or certified by the Federal Reserve Bank of St\. Louis/,
+    );
     expect(facts["Latest observation"]).toMatch(/^4\.49 % \(2026-10-16;/);
   });
 
@@ -214,7 +287,9 @@ describe("spec", () => {
   it("lists unique ids, every state and DC once, and no third-party series", () => {
     const ids = FRED_SERIES.map((s) => s.id);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(FRED_SERIES.filter((s) => s.group === "state_unemployment").length).toBe(UR_STATES.length);
+    expect(FRED_SERIES.filter((s) => s.group === "state_unemployment").length).toBe(
+      UR_STATES.length,
+    );
     expect(UR_STATES.length).toBe(52);
     expect(ids).not.toContain("AAA");
     expect(ids).not.toContain("BAA");
@@ -253,13 +328,36 @@ describe("scheduling", () => {
       [18, ["2026-10-19", "2026-10-20", "2026-10-21"]],
       [10, ["2026-09-11", "2026-10-14"]],
     ]);
-    expect(dueSeries({ order: ["WGS1YR", "GS10", "CPIAUCNS"], stored, state, releaseDates, today: "2026-10-22" })).toEqual(["WGS1YR", "CPIAUCNS"]);
+    expect(
+      dueSeries({
+        order: ["WGS1YR", "GS10", "CPIAUCNS"],
+        stored,
+        state,
+        releaseDates,
+        today: "2026-10-22",
+      }),
+    ).toEqual(["WGS1YR", "CPIAUCNS"]);
     // nothing new: only the safety interval brings a series back
-    const quiet = new Map([[18, ["2026-10-19"]], [10, ["2026-09-11"]]]);
-    expect(dueSeries({ order: ["WGS1YR", "GS10", "CPIAUCNS"], stored, state, releaseDates: quiet, today: "2026-10-22" })).toEqual([]);
-    expect(dueSeries({ order: ["WGS1YR"], stored, state, releaseDates: quiet, today: "2026-10-26" })).toEqual(["WGS1YR"]);
+    const quiet = new Map([
+      [18, ["2026-10-19"]],
+      [10, ["2026-09-11"]],
+    ]);
+    expect(
+      dueSeries({
+        order: ["WGS1YR", "GS10", "CPIAUCNS"],
+        stored,
+        state,
+        releaseDates: quiet,
+        today: "2026-10-22",
+      }),
+    ).toEqual([]);
+    expect(
+      dueSeries({ order: ["WGS1YR"], stored, state, releaseDates: quiet, today: "2026-10-26" }),
+    ).toEqual(["WGS1YR"]);
     // a series with no series row yet is left to the series source
-    expect(dueSeries({ order: ["UNRATE"], stored, state, releaseDates, today: "2026-10-22" })).toEqual([]);
+    expect(
+      dueSeries({ order: ["UNRATE"], stored, state, releaseDates, today: "2026-10-22" }),
+    ).toEqual([]);
   });
 });
 
@@ -270,7 +368,9 @@ function fakeCorpus(rows: Record<string, CorpusRow[]>): CorpusClient {
   const asStored = (r: CorpusRow, i: number) => ({ ...r, ordinal: i }) as StoredRow;
   return {
     async rowsBy(dataset, column, values) {
-      return (rows[dataset] ?? []).map(asStored).filter((r) => values.includes(column === "id" ? r.id : r.source_url));
+      return (rows[dataset] ?? [])
+        .map(asStored)
+        .filter((r) => values.includes(column === "id" ? r.id : r.source_url));
     },
     async edge() {
       return [];
@@ -281,7 +381,10 @@ function fakeCorpus(rows: Record<string, CorpusRow[]>): CorpusClient {
       let list = (rows[dataset] ?? []).slice();
       const id = u.searchParams.get("id");
       if (id?.startsWith("in.(")) {
-        const ids = id.slice(4, -1).split(",").map((x) => x.replace(/^"|"$/g, ""));
+        const ids = id
+          .slice(4, -1)
+          .split(",")
+          .map((x) => x.replace(/^"|"$/g, ""));
         list = list.filter((r) => ids.includes(r.id));
       }
       const offset = Number(u.searchParams.get("offset") ?? 0);
@@ -315,7 +418,14 @@ describe("scheduled sources (dry run, recorded responses)", () => {
 
   it("fred_observations rebuilds the current year exactly as the full build did (unchanged), and reads only due series", async () => {
     // the stored state: the full build of 2026 (through 2026-10-16), the series row from that build
-    const series = seriesRow(spec, meta, release, sources, { years: ["2026"], latest: obs.at(-1)! }, "2026-10-20");
+    const series = seriesRow(
+      spec,
+      meta,
+      release,
+      sources,
+      { years: ["2026"], latest: obs.at(-1)! },
+      "2026-10-20",
+    );
     const corpus = fakeCorpus({ [SERIES_DATASET]: [series], [OBS_DATASET]: full });
     const releaseDatesUrl = fredUrl("release/dates", {
       release_id: 18,
@@ -334,20 +444,34 @@ describe("scheduled sources (dry run, recorded responses)", () => {
       dryRun: true,
       http,
       now: new Date("2026-10-23T22:17:00Z"),
-      cursor: { series: { WGS1YR: { through: "2026-10-16", seen: "2026-10-14", fetched: "2026-10-14" } }, releases_checked: "2026-10-14" },
+      cursor: {
+        series: { WGS1YR: { through: "2026-10-16", seen: "2026-10-14", fetched: "2026-10-14" } },
+        releases_checked: "2026-10-14",
+      },
     });
     expect(summary.status).toBe("ok");
     expect(summary.inserted).toBe(0);
     expect(summary.updated).toBe(0);
     expect(summary.unchanged).toBe(1);
-    expect(http.urls.some((u) => u.includes("series/observations") && u.includes("WGS1YR"))).toBe(true);
-    const cursor = summary.cursorAfter as { series: Record<string, { through: string; seen: string }> };
+    expect(http.urls.some((u) => u.includes("series/observations") && u.includes("WGS1YR"))).toBe(
+      true,
+    );
+    const cursor = summary.cursorAfter as {
+      series: Record<string, { through: string; seen: string }>;
+    };
     expect(cursor.series["WGS1YR"]!.through).toBe("2026-10-16");
     expect(JSON.stringify(summary)).not.toMatch(/test-key/);
   });
 
   it("fred_observations stops at its request budget and stays resumable", async () => {
-    const series = seriesRow(spec, meta, release, sources, { years: ["2026"], latest: obs.at(-1)! }, "2026-10-20");
+    const series = seriesRow(
+      spec,
+      meta,
+      release,
+      sources,
+      { years: ["2026"], latest: obs.at(-1)! },
+      "2026-10-20",
+    );
     const corpus = fakeCorpus({ [SERIES_DATASET]: [series], [OBS_DATASET]: full });
     const http = fakeHttp([], 1);
     const summary = await runSource(fredObservations, {
@@ -361,7 +485,14 @@ describe("scheduled sources (dry run, recorded responses)", () => {
   });
 
   it("fred_series restates the latest stored observation without reading FRED for series outside its slice", async () => {
-    const stale = seriesRow(spec, meta, release, sources, { years: ["2026"], latest: obs.at(-2)! }, "2026-10-20");
+    const stale = seriesRow(
+      spec,
+      meta,
+      release,
+      sources,
+      { years: ["2026"], latest: obs.at(-2)! },
+      "2026-10-20",
+    );
     const corpus = fakeCorpus({ [SERIES_DATASET]: [stale], [OBS_DATASET]: full });
     // the rotation starts past WGS1YR, and every other spec series has no row: give the budget only to WGS1YR's metadata
     const http = fakeHttp([{ url: FX["meta_WGS1YR"]!.url, body: FX["meta_WGS1YR"]!.body }], 0);

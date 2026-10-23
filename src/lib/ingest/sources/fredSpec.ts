@@ -281,31 +281,33 @@ export const FRED_SERIES: readonly FredSpec[] = [
     label: "Unemployment rate, not seasonally adjusted",
     purpose: "National unemployment rate, not seasonally adjusted.",
   },
-  ...UR_STATES.map(
-    ([usps, name]): FredSpec => ({
-      id: `${usps}UR`,
-      group: "state_unemployment",
-      label: `Unemployment rate, ${name}, seasonally adjusted`,
-      purpose: `State unemployment rate for ${name} (Local Area Unemployment Statistics, BLS).`,
-      state: usps,
-    }),
-  ),
+  ...UR_STATES.map(([usps, name]): FredSpec => ({
+    id: `${usps}UR`,
+    group: "state_unemployment",
+    label: `Unemployment rate, ${name}, seasonally adjusted`,
+    purpose: `State unemployment rate for ${name} (Local Area Unemployment Statistics, BLS).`,
+    state: usps,
+  })),
 ];
 
 export const SPEC_BY_ID: ReadonlyMap<string, FredSpec> = new Map(FRED_SERIES.map((s) => [s.id, s]));
 
 /** Treasury maturities offered as present-value discount rates: label → daily and monthly series ids. */
-export const TREASURY_MATURITIES: readonly { label: string; years: number; daily: string; monthly: string }[] =
-  [
-    { label: "1-month", years: 1 / 12, daily: "DGS1MO", monthly: "" },
-    { label: "3-month", years: 0.25, daily: "DGS3MO", monthly: "GS3M" },
-    { label: "6-month", years: 0.5, daily: "DGS6MO", monthly: "GS6M" },
-    { label: "1-year", years: 1, daily: "DGS1", monthly: "GS1" },
-    { label: "2-year", years: 2, daily: "DGS2", monthly: "GS2" },
-    { label: "3-year", years: 3, daily: "DGS3", monthly: "GS3" },
-    { label: "5-year", years: 5, daily: "DGS5", monthly: "GS5" },
-    { label: "7-year", years: 7, daily: "DGS7", monthly: "GS7" },
-    { label: "10-year", years: 10, daily: "DGS10", monthly: "GS10" },
-    { label: "20-year", years: 20, daily: "DGS20", monthly: "GS20" },
-    { label: "30-year", years: 30, daily: "DGS30", monthly: "GS30" },
-  ];
+export const TREASURY_MATURITIES: readonly {
+  label: string;
+  years: number;
+  daily: string;
+  monthly: string;
+}[] = [
+  { label: "1-month", years: 1 / 12, daily: "DGS1MO", monthly: "" },
+  { label: "3-month", years: 0.25, daily: "DGS3MO", monthly: "GS3M" },
+  { label: "6-month", years: 0.5, daily: "DGS6MO", monthly: "GS6M" },
+  { label: "1-year", years: 1, daily: "DGS1", monthly: "GS1" },
+  { label: "2-year", years: 2, daily: "DGS2", monthly: "GS2" },
+  { label: "3-year", years: 3, daily: "DGS3", monthly: "GS3" },
+  { label: "5-year", years: 5, daily: "DGS5", monthly: "GS5" },
+  { label: "7-year", years: 7, daily: "DGS7", monthly: "GS7" },
+  { label: "10-year", years: 10, daily: "DGS10", monthly: "GS10" },
+  { label: "20-year", years: 20, daily: "DGS20", monthly: "GS20" },
+  { label: "30-year", years: 30, daily: "DGS30", monthly: "GS30" },
+];

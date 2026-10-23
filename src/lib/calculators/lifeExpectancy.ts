@@ -62,13 +62,19 @@ export function oneDecimal(v: string): string {
 export function rowForAge(rows: string[][], age: number): string[] | null {
   if (!Number.isInteger(age) || age < 0) return null;
   const open = rows.at(-1);
-  const openStart = open ? Number(/^(\d+) and (?:over|older)$/.exec(open[0] ?? "")?.[1] ?? NaN) : NaN;
+  const openStart = open
+    ? Number(/^(\d+) and (?:over|older)$/.exec(open[0] ?? "")?.[1] ?? NaN)
+    : NaN;
   if (Number.isFinite(openStart) && age >= openStart) return open!;
   return rows.find((r) => r[0] === `${age}-${age + 1}`) ?? null;
 }
 
 export function lifeExpectancy(table: LifeTable | null, age: number): LifeResult {
-  if (!table) return { ok: false, reason: "Not recorded: NCHS did not publish a table for that year and group." };
+  if (!table)
+    return {
+      ok: false,
+      reason: "Not recorded: NCHS did not publish a table for that year and group.",
+    };
   if (!Number.isInteger(age) || age < 0 || age > 120)
     return { ok: false, reason: "Enter the age at last birthday as a whole number from 0 to 120." };
   const row = rowForAge(table.rows, age);
@@ -95,7 +101,8 @@ export function lifeExpectancy(table: LifeTable | null, age: number): LifeResult
       },
       {
         label: "Reading",
-        detail: "A period life table: the average remaining years for a person of this age if the mortality rates of the table year held for the rest of their life. It is not a forecast for an individual.",
+        detail:
+          "A period life table: the average remaining years for a person of this age if the mortality rates of the table year held for the rest of their life. It is not a forecast for an individual.",
       },
     ],
   };

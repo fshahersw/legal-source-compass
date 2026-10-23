@@ -11,40 +11,46 @@ import { isMonthKey, monthLabel, monthStart } from "./dates";
 import type { MethodStep, SeriesObservations, SourceObservation } from "./types";
 
 /** Index series offered (all monthly, BLS via FRED). */
-export const INFLATION_SERIES: readonly { id: string; label: string; bls: string; note: string }[] = [
-  {
-    id: "CPIAUCNS",
-    label: "CPI-U, all items, U.S. city average (not seasonally adjusted)",
-    bls: "CUUR0000SA0",
-    note: "The index BLS's own inflation calculator uses; BLS does not revise it after publication except to correct errors.",
-  },
-  {
-    id: "CPIMEDNS",
-    label: "CPI-U, medical care (not seasonally adjusted)",
-    bls: "CUUR0000SAM",
-    note: "Medical care component of the CPI-U.",
-  },
-  {
-    id: "CUUR0000SAM2",
-    label: "CPI-U, medical care services (not seasonally adjusted)",
-    bls: "CUUR0000SAM2",
-    note: "Medical care services component of the CPI-U.",
-  },
-  {
-    id: "CWUR0000SA0",
-    label: "CPI-W, all items (not seasonally adjusted)",
-    bls: "CWUR0000SA0",
-    note: "CPI for urban wage earners and clerical workers.",
-  },
-  {
-    id: "CPIAUCSL",
-    label: "CPI-U, all items (seasonally adjusted)",
-    bls: "CUSR0000SA0",
-    note: "Seasonally adjusted values are revised each February for the previous five years; BLS recommends unadjusted data for escalation.",
-  },
-];
+export const INFLATION_SERIES: readonly { id: string; label: string; bls: string; note: string }[] =
+  [
+    {
+      id: "CPIAUCNS",
+      label: "CPI-U, all items, U.S. city average (not seasonally adjusted)",
+      bls: "CUUR0000SA0",
+      note: "The index BLS's own inflation calculator uses; BLS does not revise it after publication except to correct errors.",
+    },
+    {
+      id: "CPIMEDNS",
+      label: "CPI-U, medical care (not seasonally adjusted)",
+      bls: "CUUR0000SAM",
+      note: "Medical care component of the CPI-U.",
+    },
+    {
+      id: "CUUR0000SAM2",
+      label: "CPI-U, medical care services (not seasonally adjusted)",
+      bls: "CUUR0000SAM2",
+      note: "Medical care services component of the CPI-U.",
+    },
+    {
+      id: "CWUR0000SA0",
+      label: "CPI-W, all items (not seasonally adjusted)",
+      bls: "CWUR0000SA0",
+      note: "CPI for urban wage earners and clerical workers.",
+    },
+    {
+      id: "CPIAUCSL",
+      label: "CPI-U, all items (seasonally adjusted)",
+      bls: "CUSR0000SA0",
+      note: "Seasonally adjusted values are revised each February for the previous five years; BLS recommends unadjusted data for escalation.",
+    },
+  ];
 
-export type InflationInput = { amount: number; fromMonth: string; toMonth: string; seriesId: string };
+export type InflationInput = {
+  amount: number;
+  fromMonth: string;
+  toMonth: string;
+  seriesId: string;
+};
 
 export type InflationResult =
   | {
@@ -68,7 +74,10 @@ export function inflationInputProblem(i: InflationInput): string | null {
   return null;
 }
 
-export function observationFor(series: SeriesObservations, month: string): SourceObservation | null {
+export function observationFor(
+  series: SeriesObservations,
+  month: string,
+): SourceObservation | null {
   const o = series.obs.find((x) => x.date === monthStart(month));
   if (!o || o.value === null) return null;
   return {
@@ -78,7 +87,9 @@ export function observationFor(series: SeriesObservations, month: string): Sourc
     value: o.value,
     units: series.units,
     vintage: o.vintage,
-    ...(o.firstVintage !== undefined ? { firstValue: o.firstValue ?? null, firstVintage: o.firstVintage } : {}),
+    ...(o.firstVintage !== undefined
+      ? { firstValue: o.firstValue ?? null, firstVintage: o.firstVintage }
+      : {}),
     url: series.url,
   };
 }
