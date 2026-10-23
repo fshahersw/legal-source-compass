@@ -280,12 +280,15 @@ $$;
 create or replace function insights.stage_open() returns void
 language plpgsql set search_path = '' as $$
 begin
-  create temp table if not exists insights_stage (
-    metric_id text not null, entity_type text not null, entity_id text not null, period text not null,
-    period_start date not null, period_end date not null, value numeric, moe numeric, partial boolean not null,
-    n numeric, not_recorded_reason text,
-    primary key (metric_id, entity_type, entity_id, period));
-  truncate pg_temp.insights_stage;
+  if to_regclass('pg_temp.insights_stage') is null then
+    create temp table insights_stage (
+      metric_id text not null, entity_type text not null, entity_id text not null, period text not null,
+      period_start date not null, period_end date not null, value numeric, moe numeric, partial boolean not null,
+      n numeric, not_recorded_reason text,
+      primary key (metric_id, entity_type, entity_id, period));
+  else
+    truncate pg_temp.insights_stage;
+  end if;
 end $$;
 
 -- Validate the staged facts of one family and merge them into insights.facts. Raises on any invalid row, so a family
@@ -324,11 +327,13 @@ begin
     order by s.metric_id, s.entity_type, s.entity_id limit 1;
   if v_bad is not null then raise exception 'Fact for an entity missing from the spine: %', v_bad using errcode = '23503'; end if;
 
-  delete from insights.facts f
-    where f.metric_id = any (v_metrics)
-      and not exists (select 1 from pg_temp.insights_stage s where s.metric_id = f.metric_id and s.entity_type = f.entity_type
-                      and s.entity_id = f.entity_id and s.period = f.period);
-  get diagnostics v_deleted = row_count;
+  with gone as (
+    delete from insights.facts f
+      where f.metric_id = any (v_metrics)
+        and not exists (select 1 from pg_temp.insights_stage s where s.metric_id = f.metric_id and s.entity_type = f.entity_type
+                        and s.entity_id = f.entity_id and s.period = f.period)
+      returning 1)
+  select count(*) into v_deleted from gone;
 
   update insights.facts f set period_start = s.period_start, period_end = s.period_end, value = s.value, moe = s.moe,
       partial = s.partial, n = s.n, not_recorded_reason = s.not_recorded_reason, computed_at = now()
@@ -1111,15 +1116,21 @@ on conflict (id) do update set family = excluded.family, ordinal = excluded.ordi
 create or replace function insights.stage_entities() returns void
 language plpgsql set search_path = '' as $$
 begin
-  create temp table if not exists insights_stage_entities (
-    entity_type text not null, entity_id text not null, label text not null, parent_type text, parent_id text,
-    keys jsonb not null, href text, source_dataset text not null, primary key (entity_type, entity_id));
-  create temp table if not exists insights_stage_links (
-    from_type text not null, from_id text not null, to_type text not null, to_id text not null, relation text not null,
-    evidence text not null, source_dataset text not null, source_record_id text not null,
-    primary key (from_type, from_id, to_type, to_id, relation, source_dataset, source_record_id));
-  truncate pg_temp.insights_stage_entities;
-  truncate pg_temp.insights_stage_links;
+  if to_regclass('pg_temp.insights_stage_entities') is null then
+    create temp table insights_stage_entities (
+      entity_type text not null, entity_id text not null, label text not null, parent_type text, parent_id text,
+      keys jsonb not null, href text, source_dataset text not null, primary key (entity_type, entity_id));
+  else
+    truncate pg_temp.insights_stage_entities;
+  end if;
+  if to_regclass('pg_temp.insights_stage_links') is null then
+    create temp table insights_stage_links (
+      from_type text not null, from_id text not null, to_type text not null, to_id text not null, relation text not null,
+      evidence text not null, source_dataset text not null, source_record_id text not null,
+      primary key (from_type, from_id, to_type, to_id, relation, source_dataset, source_record_id));
+  else
+    truncate pg_temp.insights_stage_links;
+  end if;
 
   -- nation, states, DC, territories
   insert into pg_temp.insights_stage_entities values
@@ -1293,15 +1304,19 @@ begin
     where not exists (select 1 from insights.entities e where e.entity_type = s.entity_type and e.entity_id = s.entity_id);
   get diagnostics v_ins = row_count;
   -- an entity no source names any more is removed unless facts still refer to it (they go at their family's refresh)
-  delete from insights.entities e
-    where not exists (select 1 from pg_temp.insights_stage_entities s where s.entity_type = e.entity_type and s.entity_id = e.entity_id)
-      and not exists (select 1 from insights.facts f where f.entity_type = e.entity_type and f.entity_id = e.entity_id);
-  get diagnostics v_del = row_count;
-  delete from insights.links l
-    where not exists (select 1 from pg_temp.insights_stage_links s where s.from_type = l.from_type and s.from_id = l.from_id
-                      and s.to_type = l.to_type and s.to_id = l.to_id and s.relation = l.relation
-                      and s.source_dataset = l.source_dataset and s.source_record_id = l.source_record_id);
-  get diagnostics v_ldel = row_count;
+  with gone as (
+    delete from insights.entities e
+      where not exists (select 1 from pg_temp.insights_stage_entities s where s.entity_type = e.entity_type and s.entity_id = e.entity_id)
+        and not exists (select 1 from insights.facts f where f.entity_type = e.entity_type and f.entity_id = e.entity_id)
+      returning 1)
+  select count(*) into v_del from gone;
+  with gone as (
+    delete from insights.links l
+      where not exists (select 1 from pg_temp.insights_stage_links s where s.from_type = l.from_type and s.from_id = l.from_id
+                        and s.to_type = l.to_type and s.to_id = l.to_id and s.relation = l.relation
+                        and s.source_dataset = l.source_dataset and s.source_record_id = l.source_record_id)
+      returning 1)
+  select count(*) into v_ldel from gone;
   insert into insights.links (from_type, from_id, to_type, to_id, relation, evidence, source_dataset, source_record_id)
     select s.from_type, s.from_id, s.to_type, s.to_id, s.relation, s.evidence, s.source_dataset, s.source_record_id
     from pg_temp.insights_stage_links s
@@ -1967,13 +1982,14 @@ language sql stable set search_path = '' as $$
     select left(r.item -> 'cells' ->> 'introduced', 4)::integer as y, r.item -> 'cells' ->> 'introduced' as d
     from public.corpus_records r
     where r.dataset = 'congress_bills' and r.filters -> 'type' ->> 0 in ('hr', 's', 'hjres', 'sjres')
-      and insights.iso_date(r.item -> 'cells' ->> 'introduced') is not null
+      and insights.iso_date(r.item -> 'cells' ->> 'introduced') >= '1789-03-04'
   ), bills_t as (select max(d) as t from bills),
   laws as (
     select left(r.item -> 'cells' ->> 'enacted', 4)::integer as y, r.item -> 'cells' ->> 'enacted' as d
     from public.corpus_records r
     where r.dataset = 'public_laws_enacted' and r.filters -> 'kind' ->> 0 = 'Public law'
-      and insights.iso_date(r.item -> 'cells' ->> 'enacted') is not null
+      -- a date before the First Congress (a placeholder such as 0001-01-01 in the source file) is not counted
+      and insights.iso_date(r.item -> 'cells' ->> 'enacted') >= '1789-03-04'
   ), laws_t as (select max(d) as t from laws),
   dump as (
     select to_char(to_date(substring(d.metadata -> 'summary' -> 'dump' ->> 'last_modified'

@@ -972,6 +972,10 @@ export const RECORDS = [
     item: { cells: { enacted: "2025-06-12" } },
     filters: { kind: ["Public law"] },
   }),
+  rec("public_laws_enacted", "stat-120-2641", {
+    item: { cells: { enacted: "0001-01-01" } },
+    filters: { kind: ["Public law"] },
+  }),
   rec("public_laws_enacted", "stat-64-1", {
     item: { cells: { enacted: "1950-06-12" } },
     filters: { kind: ["Public act (chapter)"] },

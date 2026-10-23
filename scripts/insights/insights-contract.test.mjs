@@ -513,6 +513,8 @@ test("insights/1 contract", { timeout: 300000 }, async (t) => {
     await expectValue("congress_bills_introduced", "nation", "US", "2025", "2");
     await expectValue("public_laws_enacted", "nation", "US", "2025", "1");
     await expectAbsent("public_laws_enacted", "nation", "US", "1950");
+    // a placeholder enactment date in the source file is left out, not counted as year 1
+    await expectAbsent("public_laws_enacted", "nation", "US", "1");
     await expectValue("state_bills_current_session", "state", "CA", "2026-10-01", "2");
     await expectValue("cfpb_complaints", "state", "CA", "2026", "529804", { partial: true });
     await expectValue("cfpb_complaints_per_100k", "state", "CA", "2024", rate(12345, 400500), {
