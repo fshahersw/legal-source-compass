@@ -162,7 +162,7 @@ function SecTable({ rows, stale }: { rows: SecAction[]; stale: boolean }) {
               Civil action / file no.
             </th>
             <th scope="col" className="px-2 py-1.5 text-right font-medium">
-              Resolution figure
+              Largest resolution figure stated
             </th>
           </tr>
         </thead>

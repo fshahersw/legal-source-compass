@@ -95,7 +95,7 @@ export function CompanyEnforcementPanel({ cik, className }: { cik: string; class
                 Action
               </th>
               <th scope="col" className="px-2 py-1.5 text-right font-medium">
-                Figure stated
+                Largest figure stated
               </th>
             </tr>
           </thead>

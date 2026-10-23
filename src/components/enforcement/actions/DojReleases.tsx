@@ -268,7 +268,7 @@ function ReleaseTable({ rows, stale }: { rows: DojRelease[]; stale: boolean }) {
               Component
             </th>
             <th scope="col" className="px-2 py-1.5 text-right font-medium">
-              Resolution figure
+              Largest resolution figure stated
             </th>
           </tr>
         </thead>
@@ -400,7 +400,22 @@ function Largest() {
     staleTime: 10 * 60 * 1000,
   });
   const [expanded, setExpanded] = useState(false);
-  const rows = useMemo(() => q.data ?? [], [q.data]);
+  // releases stating the same figure (often follow-up releases about one resolution) are grouped, newest shown
+  const rows = useMemo(() => {
+    const groups = new Map<number, { latest: DojRelease; count: number }>();
+    for (const r of q.data ?? []) {
+      const key = r.maxResolutionUsd ?? 0;
+      const g = groups.get(key);
+      if (!g) groups.set(key, { latest: r, count: 1 });
+      else {
+        g.count += 1;
+        if ((r.date ?? "") > (g.latest.date ?? "")) g.latest = r;
+      }
+    }
+    return [...groups.values()].sort(
+      (a, b) => (b.latest.maxResolutionUsd ?? 0) - (a.latest.maxResolutionUsd ?? 0),
+    );
+  }, [q.data]);
   const shown = expanded ? rows.slice(0, 100) : rows.slice(0, 12);
   return (
     <Panel
@@ -423,7 +438,7 @@ function Largest() {
       ) : (
         <div className="px-3 py-2">
           <ol className="space-y-1 text-xs" id="doj-largest">
-            {shown.map((r) => (
+            {shown.map(({ latest: r, count }) => (
               <li key={r.id} className="flex min-w-0 items-baseline gap-2">
                 <span className="w-28 shrink-0 text-right font-mono">
                   {fmtUsd(r.maxResolutionUsd)}
@@ -434,6 +449,11 @@ function Largest() {
                 <span className="min-w-0 truncate" title={r.title}>
                   {r.url ? <SourceLink href={r.url}>{r.title}</SourceLink> : r.title}
                 </span>
+                {count > 1 ? (
+                  <span className="shrink-0 text-[11px] text-muted-foreground">
+                    +{fmtInt(count - 1)} more releases state this figure
+                  </span>
+                ) : null}
               </li>
             ))}
           </ol>
