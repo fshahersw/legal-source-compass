@@ -6,6 +6,7 @@ import { DocketPanel } from "@/components/matters/DocketPanel";
 import { DocumentsPanel } from "@/components/matters/DocumentsPanel";
 import { DocumentsPanel as FilingsPanel } from "@/components/documents/DocumentsPanel";
 import { EvidencePanel } from "@/components/matters/EvidencePanel";
+import { MatterLifecyclePanel } from "@/components/litviz/MatterLifecyclePanel";
 import { MatterHeader } from "@/components/matters/MatterHeader";
 import { OverviewPanel } from "@/components/matters/OverviewPanel";
 import { PartiesPanel } from "@/components/matters/PartiesPanel";
@@ -19,7 +20,7 @@ import {
 } from "@/lib/matters/search";
 import type { MatterOverviewPayload } from "@/lib/matters/types";
 
-/** One matter: header, then tabs for cases, docket, documents, parties and evidence. */
+/** One matter: header, then tabs for cases, docket, documents, parties, evidence and the lifecycle charts. */
 export function MatterPage({
   payload,
   search,
@@ -92,6 +93,7 @@ export function MatterPage({
           ) : null}
           {tab === "parties" ? <PartiesPanel payload={payload} /> : null}
           {tab === "evidence" ? <EvidencePanel payload={payload} /> : null}
+          {tab === "lifecycle" ? <MatterLifecyclePanel mdl={o.mdl} /> : null}
         </div>
       </div>
     </AppShell>

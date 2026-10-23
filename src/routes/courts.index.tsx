@@ -7,6 +7,7 @@ import { FolderGrid } from "@/components/corpus/FolderGrid";
 import { CourtArtwork } from "@/components/corpus/CourtArtwork";
 import { StateMark } from "@/components/corpus/EntityArtwork";
 import { Input } from "@/components/ui/input";
+import { CourtHierarchy } from "@/components/litviz/CourtHierarchy";
 import { pageHead } from "@/lib/corpus/head";
 import { stateByUsps } from "@/lib/corpus/geo";
 import { countBy, NOT_RECORDED, type CourtRow } from "@/lib/external/directoryTree";
@@ -172,7 +173,16 @@ function CourtsPage() {
           : "Open a folder to narrow down, then open a court for its full page."
       }
     >
-      {landing ? <SectionHub section="courts">{body}</SectionHub> : body}
+      {landing ? (
+        <SectionHub section="courts">
+          {body}
+          <div className="mt-4">
+            <CourtHierarchy />
+          </div>
+        </SectionHub>
+      ) : (
+        body
+      )}
     </AppShell>
   );
 }
