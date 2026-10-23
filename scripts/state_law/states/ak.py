@@ -40,8 +40,10 @@ META = lib.StateMeta(
     update_cadence="Annual edition (Alaska Statutes <year>); re-check each autumn.",
 )
 
-SEC_RE = re.compile(r"^Secs?\.\s+([0-9]{2}\.[0-9]{2}\.[0-9]{3}[0-9A-Za-z]*)\.?\s*(.*)$")
-RANGE_RE = re.compile(r"^Secs\.\s+[0-9.]+\s*(?:[-–—]|to|and|,)")
+SEC_RE = re.compile(r"^(?:Secs?\.|§)\s+([0-9]{2}\.[0-9]{2}\.[0-9]{3}[0-9A-Za-z]*)\.?\s*(.*)$")
+# "Secs. 09.10.010 — 09.10.030 ..." and "§§ 03.05.025 — 03.05.026 Seafood processing permits ..." (one printed entry
+# for several numbers): ledgered, never split into numbers
+RANGE_RE = re.compile(r"^(?:Secs\.|§§)\s*[0-9.]+\s*(?:[-–—]|to|and|,)")
 CHAPTER_RE = re.compile(r'loadTOC\("([0-9]{2}\.[0-9]{2}[0-9A-Za-z]*)"\);[^>]*>\s*<b>\s*Chapter\s+([0-9A-Za-z]+)\.\s*([^<]*)<BR>', re.I)
 TOC_SEC_RE = re.compile(r"#([0-9]{2}\.[0-9]{2}\.[0-9]{3}[0-9A-Za-z]*)\s*>")
 ARTICLE_RE = re.compile(r"^Article\s+([0-9A-Za-z]+)\.\s*(.*)$")
@@ -73,7 +75,8 @@ def parse_print(page: lib.Fetched) -> list[dict]:
             continue
         m = SEC_RE.match(head)
         if not m:
-            raise RuntimeError(f"{page.url}: unparsed section head {head[:80]!r}")
+            out.append({"unparsed": head})
+            continue
         out.append({"number": m.group(1), "heading": m.group(2) or None, "text": lib.html_text(body_html),
                     "article": article})
     return out
@@ -113,6 +116,14 @@ def acquire(ctx: lib.RunContext) -> None:
                     break
                 if "range" in item:
                     ctx._rejects.write({"state": "AK", "code": "AS", "number": None, "reason": f"range entry: {item['range'][:200]}",
+                                        "source_url": page.url, "source_sha256": page.sha256})
+                    continue
+                if "unparsed" in item:
+                    if ctx.sample is not None:
+                        raise RuntimeError(f"{page.url}: unparsed section head {item['unparsed'][:80]!r}")
+                    # ledgered, never guessed (the loader bounds the share of such rejects)
+                    ctx._rejects.write({"state": "AK", "code": "AS", "number": None,
+                                        "reason": f"unparsed section head: {item['unparsed'][:200]}",
                                         "source_url": page.url, "source_sha256": page.sha256})
                     continue
                 path = [title_step, chapter_step] + ([item["article"]] if item["article"] else [])

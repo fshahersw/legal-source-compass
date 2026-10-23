@@ -382,6 +382,16 @@ class KansasTests(unittest.TestCase):
         self.assertIn("Repealed, L. 2025, ch. 125", got["history"])
 
 
+class AlaskaHeadTests(unittest.TestCase):
+    def test_section_sign_heads_and_ranges(self):
+        ak = load("ak")
+        self.assertTrue(ak.RANGE_RE.match("\u00a7\u00a7 03.05.025 \u2014 03.05.026 Seafood processing permits"))
+        self.assertTrue(ak.RANGE_RE.match("Secs. 09.10.010 \u2014 09.10.030. Repealed."))
+        self.assertIsNone(ak.RANGE_RE.match("Sec. 09.10.010. Jurisdiction of actions."))
+        m = ak.SEC_RE.match("\u00a7 03.05.010. Powers and duties.")
+        self.assertEqual((m.group(1), m.group(2)), ("03.05.010", "Powers and duties."))
+
+
 class BlockedStates(unittest.TestCase):
     def test_blocked_modules_never_fetch(self):
         for code in ("ga", "ar", "co"):
