@@ -149,8 +149,14 @@ def run(queries_path: str, k: int) -> dict:
     for ds in sorted({e["dataset"] for q in queries for e in q["expected"]}):
         ids = [q["id"] for q in queries if q["expected"][0]["dataset"] == ds]
         by_ds[ds] = recall_at_k({i: ranked_all[i] for i in ids}, {i: expected[i] for i in ids}, k)
+    present = set(keys)
+    evaluable = {i: e for i, e in expected.items() if e & present}
+    not_embedded = sorted(set(expected) - set(evaluable))
     result = {
         "k": k,
+        "queries_whose_expected_records_are_not_embedded": not_embedded,
+        "overall_evaluable_queries": recall_at_k({i: ranked_all[i] for i in evaluable}, evaluable, k),
+        "overall_within_expected_dataset_evaluable": recall_at_k({i: ranked_in[i] for i in evaluable}, evaluable, k),
         "built_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "passages_scored": len(keys),
         "datasets_loaded": sorted(set(ds_of.tolist())),
@@ -186,6 +192,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"recall@{res['k']} over all loaded datasets: {a['hits']}/{a['queries']} = {a['recall']:.3f}; within the expected dataset: {b['hits']}/{b['queries']} = {b['recall']:.3f}; MRR {res['mrr_all_datasets']:.3f}")
     for ds, v in res["by_dataset"].items():
         print(f"  {ds}: {v['hits']}/{v['queries']}")
+    e, ei = res["overall_evaluable_queries"], res["overall_within_expected_dataset_evaluable"]
+    print(f"queries whose expected record is embedded: {e['queries']} of {a['queries']}; recall@{res['k']} over all datasets {e['hits']}/{e['queries']} = {e['recall']:.3f}; within the expected dataset {ei['hits']}/{ei['queries']} = {ei['recall']:.3f}")
+    print("not embedded (excluded from the line above):", ", ".join(res["queries_whose_expected_records_are_not_embedded"]) or "none")
     print("misses (all datasets):", ", ".join(a["misses"]) or "none")
     return 0
 
