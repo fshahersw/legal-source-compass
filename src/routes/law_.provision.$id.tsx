@@ -70,7 +70,10 @@ function ProvisionPage() {
             <Button asChild size="sm" variant="outline"><a href={u} target="_blank" rel="noreferrer"><ExternalLink className="mr-1 size-3.5" />Current eCFR</a></Button>
             <Button asChild size="sm" variant="outline"><Link to="/data/$dataset" params={{ dataset: "federal_register_history" }} search={{ q: `${m[1]} CFR ${m[2]}` }}>Federal Register for part {m[2]} →</Link></Button>
           </>; })()}
-        <span className="text-[12px] text-muted-foreground">{p.text && p.sourceUrl ? "Text saved · official source linked" : p.text ? "Text saved · no source link recorded" : p.sourceUrl ? "No saved text — open the official source" : ""}</span>
+        {p.cfrPage ? (
+          <Button asChild size="sm" variant="outline"><Link to="/law/cfr/$title/$section" params={{ title: p.cfrPage.title, section: p.cfrPage.identifier }}>Full text, history and past versions →</Link></Button>
+        ) : null}
+        <span className="text-[12px] text-muted-foreground">{p.cfrPage ? `Text: full eCFR text as of ${p.cfrPage.asOf ?? "the collection date"}` : p.text && p.sourceUrl ? "Text saved · official source linked" : p.text ? "Text saved · no source link recorded" : p.sourceUrl ? "No saved text — open the official source" : ""}</span>
       </div>
 
       <section className="rounded-lg border border-border bg-surface p-4 shadow-card">

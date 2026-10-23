@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<DLPSTEXTCLASS>
+<TEXT>
+<BODY>
+<ECFRBRWS>
+<DIV1 N="99" NODE="99:1" TYPE="TITLE">
+<HEAD>Title 99—Testing--Volume 1</HEAD>
+<CFRTOC>
+<PTHD>Part</PTHD>
+</CFRTOC>
+<DIV3 N="I" NODE="99:1.0.1" TYPE="CHAPTER">
+<HEAD>CHAPTER I—TEST AGENCY</HEAD>
+<DIV5 N="99" NODE="99:1.0.1.1.1" TYPE="PART">
+<HEAD>PART 99—TEST RULES
+</HEAD>
+<AUTH>
+<HED>Authority:</HED><PSPACE>5 U.S.C. 301.
+</PSPACE></AUTH>
+<SOURCE>
+<HED>Source:</HED><PSPACE>80 FR 100, Jan. 2, 2015, unless otherwise noted.
+</PSPACE></SOURCE>
+<P>Part-level text printed before the sections.
+</P>
+<DIV6 N="A" NODE="99:1.0.1.1.1.1" TYPE="SUBPART">
+<HEAD>Subpart A—General</HEAD>
+<SOURCE>
+<HED>Source:</HED><PSPACE>81 FR 200, Feb. 1, 2016, unless otherwise noted.
+</PSPACE></SOURCE>
+<DIV8 N="§ 99.11" NODE="99:1.0.1.1.1.1.1.1" TYPE="SECTION">
+<HEAD>§ 99.11   [Reserved]</HEAD>
+</DIV8>
+<DIV8 N="§ 99.12" NODE="99:1.0.1.1.1.1.1.2" TYPE="SECTION">
+<HEAD>§ 99.12   Notes kept apart.</HEAD>
+<XREF ID="20260409" REFID="18">Link to an amendment published at 91 FR 18168, Apr. 9, 2026.</XREF>
+<P>The rule text.
+</P>
+<SECAUTH TYPE="N">(Authority: 44 U.S.C. 2103)
+</SECAUTH>
+<APPRO TYPE="N">(Approved by the Office of Management and Budget under control number 0000-0001)
+</APPRO>
+<CITA TYPE="N">[81 FR 200, Feb. 1, 2016, as amended at 90 FR 300, Mar. 1, 2025]
+</CITA>
+<EDNOTE>
+<HED>Editorial Note:</HED><PSPACE>An editorial note.</PSPACE></EDNOTE>
+<EFFDNOT>
+<HED>Effective Date Note:</HED><PSPACE>At 91 FR 18168, Apr. 9, 2026, § 99.12 was amended, effective Jan. 1, 2027.</PSPACE></EFFDNOT>
+</DIV8>
+</DIV6>
+</DIV5>
+</DIV3>
+</DIV1>
+</ECFRBRWS>
+</BODY>
+</TEXT>
+</DLPSTEXTCLASS>

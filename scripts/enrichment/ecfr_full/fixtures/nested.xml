@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<DIV8 N="§ 99.10" NODE="99:1.0.1.1.1.0.1.1" TYPE="SECTION">
+<HEAD>§ 99.10   Nested paragraphs.</HEAD>
+<P>(a) <I>Scope.</I> (1)(i) First child printed inside paragraph (a).
+</P>
+<P>(ii) Second roman under paragraph (a)(1).
+</P>
+<P>(2) Second number.
+</P>
+<P>(i) Roman under (2).
+</P>
+<P>(A) Upper case under (i).
+</P>
+<P>(<I>1</I>) Italic number under (A).
+</P>
+<P>(<I>i</I>) Italic roman under the italic number.
+</P>
+<P>(b) Letter b.
+</P>
+<P>An unmarked paragraph keeps the depth of the one before it.
+</P>
+<P>(c) Letter c.
+</P>
+<P>(h) Letter h.
+</P>
+<P>(i) Letter i after h.
+</P>
+<P>(j) Letter j.
+</P>
+<FP-1>A flush paragraph, indented one level.
+</FP-1>
+<P>
+
+</P>
+<CITA TYPE="N">[85 FR 1234, Jan. 2, 2020, as amended at 88 FR 5678, Mar. 3, 2023]
+</CITA>
+</DIV8>

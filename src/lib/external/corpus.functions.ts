@@ -148,6 +148,8 @@ export type LawProvision = {
   frCitations: string[] | null;
   authorityNote: string | null;
   sourceNote: string | null;
+  /** When the full eCFR text collection (ecfr_sections_full) holds this CFR section: its page and text date. */
+  cfrPage: { title: string; identifier: string; asOf: string | null } | null;
 };
 
 /** The provision `detail` JSON as stored; every field is optional and checked before it is shown. */
@@ -214,6 +216,31 @@ export const getLawProvision = createServerFn({ method: "GET" })
     const publication = await restGet<{ ready: boolean }[]>(
       `corpus_datasets?select=ready&id=eq.${encodeURIComponent(row.dataset)}&limit=1`,
     );
+    // CFR sections: read the full current eCFR text (ecfr_sections_full, same record id) when it is published;
+    // otherwise keep this dataset's stored text.
+    let cfrPage: LawProvision["cfrPage"] = null;
+    const cfr =
+      row.dataset === "federal_regulations_sections"
+        ? /^cfr:(\d{1,2}):(.{1,200})$/.exec(row.id)
+        : null;
+    if (cfr) {
+      try {
+        const full = await restGet<{ text: string | null; as_of: string | null }[]>(
+          `corpus_records?select=text,as_of:detail->>as_of&dataset=eq.ecfr_sections_full&id=eq.${encodeURIComponent(row.id)}&limit=1`,
+        );
+        const f = full.rows[0];
+        if (f) {
+          cfrPage = {
+            title: cfr[1]!,
+            identifier: cfr[2]!,
+            asOf: typeof f.as_of === "string" ? f.as_of : null,
+          };
+          if (typeof f.text === "string" && f.text.trim()) row.text = f.text.replace(/\t/g, " · ");
+        }
+      } catch {
+        cfrPage = null; // the stored text below is the fallback
+      }
+    }
     const d = row.detail ?? {};
     const md = d.metadata ?? {};
     const src =
@@ -261,6 +288,7 @@ export const getLawProvision = createServerFn({ method: "GET" })
       frCitations: strArr(d.printed_fr_citations),
       authorityNote: str(d.authority_note_as_printed),
       sourceNote: str(d.source_note_as_printed),
+      cfrPage,
     };
   });
 

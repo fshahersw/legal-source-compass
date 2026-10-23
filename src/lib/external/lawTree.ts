@@ -23,6 +23,7 @@ export const STATE_DATASETS: Record<string, string> = {
 export function lawGroup(id: string): LawGroup {
   if (id === "public_laws") return "statutes";
   if (id.startsWith("federal_regulations_")) return "regulations";
+  if (id === "ecfr_sections_full" || id === "ecfr_section_versions") return "regulations";
   if (id === "federal_register_history") return "register";
   // Recorded collection: "Federal court websites and legal reference resources".
   if (id === "federal") return "reference";

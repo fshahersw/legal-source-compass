@@ -32,6 +32,10 @@ describe("law & safety folders", () => {
   it("keeps the recorded federal court website collection in reference tools", () => {
     expect(lawGroup("federal")).toBe("reference");
   });
+  it("files the full eCFR text and its change history under regulations", () => {
+    expect(lawGroup("ecfr_sections_full")).toBe("regulations");
+    expect(lawGroup("ecfr_section_versions")).toBe("regulations");
+  });
   it("puts every law dataset in exactly one folder", () => {
     for (const id of LAW) {
       expect(sectionOf(id)).toBe("law");

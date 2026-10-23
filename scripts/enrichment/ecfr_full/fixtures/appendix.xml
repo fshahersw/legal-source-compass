@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<DIV9 N="Appendix A" NODE="99:1.0.1.1.1.0.1.3" TYPE="APPENDIX">
+<HEAD>Appendix A to Part 99—Forms and Examples
+</HEAD>
+<HD1>I. Purpose
+</HD1>
+<P>1. This appendix gives forms.<SU>2</SU>
+</P>
+<EXTRACT>
+<FP>(Certified to be a true copy of the original)</FP>
+<FP-2>Signature: ______</FP-2></EXTRACT>
+<img src="/graphics/er01ja20.000.gif" />
+<NOTE>
+<HED>Note:</HED>
+<P>(1) A note paragraph is boxed and keeps its own numbering.</P></NOTE>
+<FTNT>
+<P>
+<SU>2</SU> A footnote.</P></FTNT>
+<LDRWK>
+<FL-2>Wash temperature </FL-2>
+<LDRFIG>150 °F
+</LDRFIG>
+<FL-2>Final rinse temperature </FL-2>
+<LDRFIG>180 °F</LDRFIG></LDRWK>
+<STARS/>
+<UNKNOWNTAG>Kept as a paragraph.</UNKNOWNTAG>
+</DIV9>
