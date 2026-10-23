@@ -1,6 +1,7 @@
 import { useId, useMemo, useState } from "react";
 import type { GeoData } from "@/lib/corpus/geo";
 import { stateFromGeometry } from "@/lib/corpus/stateHub";
+import { competitionRank } from "@/lib/external/mapMetricsModel";
 import type { MetricFormat } from "@/lib/external/stateMetrics.functions";
 import { formatValue, NOT_RECORDED } from "./stateMetricsMath";
 
@@ -15,6 +16,7 @@ export function StateChoropleth({
   format,
   unit,
   title,
+  yearLabel,
   selected,
   onSelect,
 }: {
@@ -24,12 +26,24 @@ export function StateChoropleth({
   format: MetricFormat;
   unit: string;
   title: string;
+  /** The year or period the values describe, shown in the legend. */
+  yearLabel?: string | undefined;
   selected: string | null;
   onSelect: (usps: string) => void;
 }) {
   const hatchId = useId().replace(/:/g, "");
   const headingId = useId();
-  const [hover, setHover] = useState<{ name: string; value: number | undefined } | null>(null);
+  const [hover, setHover] = useState<{
+    name: string;
+    value: number | undefined;
+    rank: string | null;
+  } | null>(null);
+  // Rank among the states that report the value (1 = highest value), so a state's place is read, not guessed from shade.
+  const ranks = useMemo(() => competitionRank(Object.fromEntries(values), values.keys()), [values]);
+  const rankText = (usps: string) => {
+    const r = ranks[usps];
+    return r ? `rank ${r.rank} of ${r.of}` : null;
+  };
   const [min, max] = useMemo(() => {
     const nums = [...values.values()].filter(Number.isFinite);
     return nums.length ? [Math.min(...nums), Math.max(...nums)] : [0, 0];
@@ -81,7 +95,8 @@ export function StateChoropleth({
           if (!id) return null;
           const value = values.get(id.usps);
           const active = selected === id.usps;
-          const label = `${id.name}: ${value == null ? NOT_RECORDED : `${formatValue(value, format)} ${unit}`}`;
+          const rank = rankText(id.usps);
+          const label = `${id.name}: ${value == null ? NOT_RECORDED : `${formatValue(value, format)} ${unit}${rank ? `, ${rank}` : ""}`}`;
           return (
             <path
               key={id.fips}
@@ -98,9 +113,9 @@ export function StateChoropleth({
                 stroke: active ? "var(--map-active)" : "var(--surface)",
                 strokeWidth: active ? 2.6 : 0.9,
               }}
-              onMouseEnter={() => setHover({ name: id.name, value })}
+              onMouseEnter={() => setHover({ name: id.name, value, rank })}
               onMouseLeave={() => setHover(null)}
-              onFocus={() => setHover({ name: id.name, value })}
+              onFocus={() => setHover({ name: id.name, value, rank })}
               onBlur={() => setHover(null)}
               onClick={() => onSelect(id.usps)}
               onKeyDown={(e) => {
@@ -121,7 +136,9 @@ export function StateChoropleth({
             <>
               <span className="font-semibold">{hover.name}</span>
               <span className="ml-2 text-muted-foreground">
-                {hover.value == null ? NOT_RECORDED : `${formatValue(hover.value, format)} ${unit}`}
+                {hover.value == null
+                  ? NOT_RECORDED
+                  : `${formatValue(hover.value, format)} ${unit}${hover.rank ? ` · ${hover.rank}` : ""}`}
               </span>
             </>
           ) : (
@@ -131,6 +148,10 @@ export function StateChoropleth({
           )}
         </div>
         <div className="flex flex-wrap items-center gap-3 text-muted-foreground">
+          <span>
+            {unit}
+            {yearLabel ? ` · ${yearLabel}` : ""}
+          </span>
           {values.size ? (
             <span className="flex items-center gap-1.5">
               <span className="font-mono">{formatValue(min, format)}</span>

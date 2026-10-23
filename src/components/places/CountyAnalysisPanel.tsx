@@ -277,7 +277,7 @@ function Body({ c }: { c: CountyAnalysis }) {
         <div className="research-band">
           <h3 className="flex items-center gap-2 text-sm font-semibold">
             <Scale className="size-4" aria-hidden />
-            People, economy and housing
+            People, economy and housing across the state's counties
           </h3>
           <span className="text-[11px] text-[var(--navy-muted)]">
             dot: this county · band: middle half of the state's counties

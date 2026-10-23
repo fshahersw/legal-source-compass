@@ -1,8 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PlacesMap } from "@/components/corpus/PlacesMap";
+import { parseMapSearch, type MapSearch } from "@/components/places/mapSearch";
 import { pageHead } from "@/lib/corpus/head";
 
 export const Route = createFileRoute("/places/")({
-  head: () => pageHead("Places Map", "Interactive U.S. state and county map of litigation research sources and saved case rows."),
+  validateSearch: (search: Record<string, unknown>): MapSearch => parseMapSearch(search),
+  head: () =>
+    pageHead(
+      "Places Map",
+      "Interactive U.S. state and county map of federal civil filings, MDL actions, judges, enforcement, complaints and Census figures.",
+    ),
   component: () => <PlacesMap />,
 });

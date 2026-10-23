@@ -73,6 +73,15 @@ describe("state-first identity and directory boundaries", () => {
       expect(canonicalState(input)?.usps).toBe(state.usps);
     expect(canonicalState(Number(state.fips))?.usps).toBe(state.usps);
   });
+  it("recognises Puerto Rico by identity without making it one of the 50 states and DC", () => {
+    for (const input of ["PR", "pr", "72", 72, "Puerto Rico", " puerto rico "])
+      expect(canonicalState(input)).toEqual({ fips: "72", usps: "PR", name: "Puerto Rico" });
+    expect(STATES.some((s) => s.usps === "PR")).toBe(false);
+    expect(STATES).toHaveLength(51);
+    expect(countyInState("72127", "PR")).toBe(true);
+    expect(countyInState("72127", "NE")).toBe(false);
+    expect(stateFromGeometry({ id: "72", name: "Puerto Rico" })).toBeNull();
+  });
   it("never guesses a state from a partial or descriptive string", () => {
     for (const s of [
       "Nebr",

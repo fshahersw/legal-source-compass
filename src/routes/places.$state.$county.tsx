@@ -1,14 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useCorpus } from "@/lib/corpus/store";
 import { stateByUsps } from "@/lib/corpus/geo";
+import { getCountyCensus } from "@/lib/external/census.functions";
 import { pageHead } from "@/lib/corpus/head";
 import { useStateCounty } from "./places.$state";
 import { CountyProfile } from "@/components/corpus/LinkedPanels";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { externalHref } from "@/lib/external/href";
-import { countyInState } from "@/lib/corpus/stateHub";
+import { canonicalState, countyInState } from "@/lib/corpus/stateHub";
 import { CountyAnalysisPanel } from "@/components/places/CountyAnalysisPanel";
+import { CountyCensusPanel } from "@/components/places/census/CountyCensusPanel";
 
 export const Route = createFileRoute("/places/$state/$county")({
   head: ({ params }) =>
@@ -24,8 +28,18 @@ function CountyDetail() {
   const { geo } = useCorpus();
   const belongs = countyInState(county, state);
   const c = belongs ? geo?.counties.find((x) => x.id === county) : undefined;
-  const st = stateByUsps.get(state.toUpperCase());
+  // canonicalState also knows Puerto Rico, which has no map geometry
+  const st = canonicalState(state);
   const q = useStateCounty(belongs ? st?.name : undefined);
+  // The Census Bureau's own name for an area the map geometry does not name (Puerto Rico's municipios, Connecticut's planning regions).
+  const censusFn = useServerFn(getCountyCensus);
+  const census = useQuery({
+    queryKey: ["county-census", county],
+    queryFn: () => censusFn({ data: { fips: county } }),
+    enabled: belongs,
+    staleTime: 10 * 60_000,
+  });
+  const censusName = census.data?.area?.name.replace(/,\s*[^,]+$/, "") ?? null;
   const rows = useMemo(
     () => (q.data?.records ?? []).filter((r) => r.county_geoids.includes(county)),
     [q.data, county],
@@ -48,7 +62,17 @@ function CountyDetail() {
     >
       <div className="eyebrow">County · FIPS {county}</div>
       <div className="mt-0.5 font-display text-lg">
-        {c ? `${c.name} County, ${st?.name ?? state}` : "Unknown county"}
+        {c
+          ? `${c.name} County, ${st?.name ?? state}`
+          : `${censusName ?? `County ${county}`}, ${st?.name ?? state}`}
+      </div>
+      <div className="mt-3">
+        <CountyCensusPanel
+          fips={county}
+          countyName={c ? `${c.name} County` : (censusName ?? `County ${county}`)}
+          stateName={st?.name ?? state}
+          usps={st?.usps ?? state.toUpperCase()}
+        />
       </div>
       <CountyAnalysisPanel fips={county} />
       <CountyProfile
