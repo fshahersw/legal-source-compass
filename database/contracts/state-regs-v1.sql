@@ -283,7 +283,10 @@ begin
   k := state_regs.cite_key(st, p_citation);
   if k is null then
     return jsonb_build_object('status', 'unresolved', 'state', st, 'citation', p_citation, 'key', null,
-      'reason', 'not a rule citation of this state''s administrative code', 'code_url', c.code_url);
+      'reason', case when exists (select 1 from state_regs.cite_patterns p where p.state = st)
+                     then 'not a rule citation of this state''s administrative code'
+                     else 'citations of this state''s code are not parsed yet' end,
+      'code_url', c.code_url);
   end if;
   select count(*) into n from state_regs.rules where state = st and cite_key = k;
   if n = 1 then

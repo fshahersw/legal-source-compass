@@ -146,7 +146,8 @@ is page furniture and is dropped by an explicit rule. Reports with every request
 Index v2 (full table of contents, crawled 2026-10-23): OH 2,844 nodes (328 agencies, 2,516 chapters); WA 2,646
 (197 titles, 2,449 chapters); MN 832 chapters; OR 3,334 (181 chapters, 3,153 divisions; 40,824 rules listed); MI 884
 (19 departments, 97 bureaus, 768 rule sets); IL 2,604 (33 titles, 2,571 parts; 54,670 section files listed); FL 3,312
-(54 departments, 390 divisions, 2,868 chapters); NC and GA: see the handoff (crawls were finishing at hand-off time).
+(54 departments, 390 divisions, 2,868 chapters); NC 1,589 (30 titles, 533 chapters, 1,026 subchapters; 35,002 rules
+listed); CO and GA: see `report-index.json` in their folders.
 
 ## 4. State register issue index (self-updating)
 
@@ -180,8 +181,8 @@ Server functions: `src/lib/external/stateRegs.functions.ts`.
 ## 6. Size estimates
 
 Average stored rule row in the samples: OH 7.0 KB, WA 5.8 KB, MN 2.2 KB, OR 3.6 KB, NC 8.9 KB, MI 4.6 KB, IL 5.2 KB,
-FL 8.6 KB. Rule counts listed by the publishers: OR 40,824; IL 54,670 section files. The other six are not listed in
-their tables of contents; at the samples' rules per unit they are in the order of 20,000–60,000 each. For the eight
+FL 8.6 KB (Colorado stores one row per rule set: ≈1,100 rows of up to several MB each). Rule counts listed by the
+publishers: OR 40,824; NC 35,002; IL 54,670 section files. The other five are not listed in their tables of contents; at the samples' rules per unit they are in the order of 20,000–60,000 each. For the eight
 states (≈250,000–350,000 rules) expect ≈1.5–2.5 GB of row JSON, stored in Postgres as ≈0.6–0.9 GB of TOAST-compressed
 text plus ≈0.4–0.7 GB for the GIN index and ≈0.1 GB of btree indexes. Build shards (gzip) ≈ 25–30% of the row JSON:
 load and delete shard by shard (`--delete-after-load`) to stay inside the disk budget.
@@ -196,20 +197,21 @@ LibreOffice (`soffice`, present). Credentials are sourced only inside the comman
 2. **Coverage rows** (51): `python3 -I -B scripts/state_regs/coverage.py` then
    `. private/scratch/env.sh && python3 -I -B scripts/state_regs/load.py codes` → `{"codes": 51, ...}`.
 3. **Indexes** (already built under `private/build/w1025_regs/<ST>/nodes.jsonl.gz`; to refresh:
-   `python3 -I -B scripts/state_regs/build.py index OH WA MN OR NC MI IL FL GA`, ≈ 5–40 min per state, raw pages deleted
+   `python3 -I -B scripts/state_regs/build.py index OH WA MN OR NC MI IL FL CO GA`, ≈ 5–40 min per state, raw pages deleted
    after each state).
-4. **Validation samples** (already built): `. private/scratch/env.sh && for s in OH WA MN OR NC MI IL FL; do
+4. **Validation samples** (already built): `. private/scratch/env.sh && for s in OH WA MN OR NC MI IL FL CO; do
    python3 -I -B scripts/state_regs/load.py state $s --run sample; done` (nodes then rules, then `state_reg_finish_v1`).
    GA: `load.py state GA --run sample` loads its index only (no rule text by design).
 5. **Full acquisition, streamed, one state at a time** (resumable; each shard = 25 units; raw bytes of a shard are
    deleted once its rules are written; `report-full.json` records every shard's file, row count and sha256):
-   `python3 -I -B scripts/state_regs/build.py full OH` (likewise WA, MN, OR, NC, MI, FL; IL in chunks:
+   `python3 -I -B scripts/state_regs/build.py full OH` (likewise WA, MN, OR, NC, MI, CO, FL; IL in chunks:
    `build.py full IL --limit 200` repeated — Crawl-delay 10 s).
    Then load and free the disk: `. private/scratch/env.sh && python3 -I -B scripts/state_regs/load.py state OH --run full
    --build oh-full-2026-10-26 --delete-after-load`. After a complete run only: `load.py prune OH --build oh-full-2026-10-26`
    (removes rows of older builds of that state; the nodes must have been loaded with the same build id).
    Expected requests / time at the publishers' pace: OH ≈2,500 chapter pages (≈1 h), WA ≈2,450 (≈1 h), MN 832 (≈15 min),
-   OR 3,153 divisions (≈1 h), NC ≈ one request per subchapter (≈1 h), MI 768 rule sets (≈15 min), FL 2,868 chapter
+   OR 3,153 divisions (≈1 h), NC 1,026 subchapter files (≈20 min), MI 768 rule sets (≈15 min), CO ≈1,100 rule sets
+   (page + official PDF each, ≈40 min; PDFs up to tens of MB: use `--shard 5`), FL 2,868 chapter
    pages + one Word file per rule (≈25,000–35,000 requests, ≈9–10 h; LibreOffice check on 1 rule in 20, set
    `STATE_REGS_DOC_CHECK_EVERY=1` to check all), IL 54,670 section files at 10 s (≈6.3 days; run `--limit` chunks).
    Disk: ≤ 30 MB transient raw per shard; gzip shards ≈ 25–30% of row JSON — delete after load.

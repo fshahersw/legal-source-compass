@@ -168,6 +168,9 @@ test("state-regs/1 contract", { timeout: 180000 }, async (t) => {
       assert.equal(wa.status, "unresolved");
       assert.equal(wa.reason, "no rule text of this state is held");
       assert.equal((await rpc("state_reg_resolve_v1", ["ZZ", "1.1"])).status, "not_covered");
+      await rpc("state_reg_load_codes_v1", [JSON.stringify([code("PA")])]);
+      const pa = await rpc("state_reg_resolve_v1", ["PA", "25 Pa. Code § 121.1"]);
+      assert.deepEqual([pa.status, pa.reason], ["unresolved", "citations of this state's code are not parsed yet"]);
       assert.equal((await rpc("state_reg_resolve_v1", ["ohio", "1.1"])).status, "invalid");
     });
 
@@ -192,7 +195,7 @@ test("state-regs/1 contract", { timeout: 180000 }, async (t) => {
       const byCite = await rpc("state_reg_search_v1", ["OH", "OAC 3745-4-01", 10, 0]);
       assert.equal(byCite.exact.id, "oh:3745-4-1");
       const codes = await rpc("state_reg_codes_v1");
-      assert.deepEqual(codes.map((c) => c.state), ["CA", "OH", "WA"]);
+      assert.deepEqual(codes.map((c) => c.state), ["CA", "OH", "PA", "WA"]);
       assert.equal(codes[1].text_rules, 2);
       const status = await rpc("state_reg_status_v1");
       assert.equal(status.rules, 2);
