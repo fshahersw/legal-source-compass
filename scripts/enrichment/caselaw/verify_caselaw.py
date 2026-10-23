@@ -15,7 +15,10 @@ For every sampled case (stratified over the three tiers, among cases whose text 
              parenthetical count; the authorities member against the stage-1 records' own citation anchors;
   search     caselaw_search_v1 finds the case by its first citation and by its exact name (with its court and date as
              filters, since a common name can have thousands of namesakes); for the Supreme Court tier
-             caselaw_fulltext_v1 finds it by an eight-word phrase quoted from its text.
+             caselaw_fulltext_v1 finds it by a six- to eight-word phrase quoted exactly from its text (narrowed to
+             its date, since order boilerplate recurs; more than 1,050 same-day matches counts as inconclusive);
+  full text  besides, --fulltext-extra (default 40) substantive Supreme Court opinions read back by range: an exact
+             phrase of each finds its case (date-narrowed); how often it is in the unfiltered top 50 is reported.
 Writes private/build/caselaw_read/verify_report.json; exit status 1 when anything fails.
 """
 from __future__ import annotations
@@ -272,24 +275,88 @@ class Verifier:
         self.counts["name_found_unfiltered_top25"] += any(r["cluster_id"] == cid for r in unfiltered["rows"])
         if row["tier"] == 1 and stage1:
             text = max((s["text"] for s in stage1.values()), key=len)
-            words = re.findall(r"[A-Za-z]{4,}", text)
-            if len(words) >= 40:
-                mid = len(words) // 2
-                phrase = " ".join(words[mid:mid + 8])
-                fts = self.rpc.call("caselaw_fulltext_v1", {"p_q": f'"{phrase}"', "p_limit": 50})
+            phrase = quote_phrase(text)
+            if not phrase:
+                self.counts["fulltext_skipped_short"] += 1
+            else:
                 self.counts["fulltext_checked"] += 1
-                if not any(r["cluster_id"] == cid for r in fts["rows"]):
-                    # a phrase built from words alone may straddle punctuation; fall back to the words without quotes
-                    fts2 = self.rpc.call("caselaw_fulltext_v1", {"p_q": phrase, "p_limit": 50})
-                    if not any(r["cluster_id"] == cid for r in fts2["rows"]):
-                        problems.append(f"full-text search misses the case ({phrase!r})")
+                top = self.rpc.call("caselaw_fulltext_v1", {"p_q": f'"{phrase}"', "p_limit": 50})
+                self.counts["fulltext_found_unfiltered_top50"] += any(r["cluster_id"] == cid for r in top["rows"])
+                # Boilerplate (orders, cert denials) recurs in many cases, so like the name search this one is narrowed
+                # to the case's date and paged.
+                verdict = self.fulltext_finds(cid, f'"{phrase}"', row["date_filed"])
+                if verdict == "inconclusive":
+                    self.counts["fulltext_inconclusive_identical_texts"] += 1
+                elif verdict == "missing":
+                    words = self.fulltext_finds(cid, phrase, row["date_filed"])
+                    problems.append(f"full-text phrase search misses the case ({phrase!r}; the words without quotes: {words})")
         self.check(cid, "search", not problems, problems)
+
+    def fulltext_finds(self, cid: int, q: str, date: str | None) -> str:
+        """found / missing / inconclusive (more than 1,050 same-day hits: identical texts cannot be told apart)."""
+        for offset in range(0, 1001, 50):
+            res = self.rpc.call("caselaw_fulltext_v1", {"p_q": q, "p_from": date, "p_to": date, "p_limit": 50, "p_offset": offset})
+            if any(r["cluster_id"] == cid for r in res["rows"]):
+                return "found"
+            if not res["has_more"]:
+                return "missing"
+        return "inconclusive"
+
+
+PHRASE = re.compile(r"(?<![A-Za-z'’.-])[A-Za-z]+(?: [A-Za-z]+){5,7}(?![A-Za-z'’-])")
+
+
+def quote_phrase(text: str) -> str | None:
+    """Six to eight consecutive words exactly as they stand in the text (single spaces, no punctuation inside), with at
+    least four words of four letters or more, taken nearest the middle of the opinion; None when the text has none."""
+    runs = [m for m in PHRASE.finditer(text) if sum(len(w) >= 4 for w in m.group(0).split()) >= 4]
+    if not runs:
+        return None
+    mid = len(text) // 2
+    return min(runs, key=lambda m: abs(m.start() - mid)).group(0)
+
+
+def sample_long_scotus(n: int, seed: int, min_member: int = 4000) -> list[dict]:
+    """Supreme Court opinions whose stored member is at least min_member bytes (substantive opinions, not orders)."""
+    pool = []
+    for path in sorted(glob.glob(os.path.join(BUILD, "meta", "cases-p*.jsonl.gz"))):
+        with gzip.open(path, "rt", encoding="utf-8") as h:
+            for line in h:
+                r = json.loads(line)
+                if r["tier"] != 1:
+                    continue
+                for o in r["opinions"]:
+                    if "key" in o and o["n"] >= min_member:
+                        pool.append({"cluster_id": r["cluster_id"], "opinion_id": o["id"], "key": o["key"], "s": o["s"], "n": o["n"],
+                                     "date_filed": r.get("date_filed")})
+    pool.sort(key=lambda x: x["opinion_id"])
+    return random.Random(seed).sample(pool, min(n, len(pool)))
+
+
+def fulltext_extra(v: "Verifier", items: list[dict]) -> None:
+    """For substantive Supreme Court opinions: an exact phrase from the stored text finds the case (date-narrowed), and
+    how often it is already in the unfiltered top 50."""
+    for it in items:
+        cid = it["cluster_id"]
+        rec = json.loads(zlib.decompress(v.ranged(it["key"], it["s"], it["n"]), 31).decode("utf-8"))
+        phrase = quote_phrase(rec["text"])
+        if not phrase:
+            v.counts["fulltext_extra_no_phrase"] += 1
+            continue
+        top = v.rpc.call("caselaw_fulltext_v1", {"p_q": f'"{phrase}"', "p_limit": 50})
+        v.counts["fulltext_extra_found_unfiltered_top50"] += any(r["cluster_id"] == cid for r in top["rows"])
+        verdict = v.fulltext_finds(cid, f'"{phrase}"', it["date_filed"])
+        if verdict == "inconclusive":
+            v.counts["fulltext_extra_inconclusive"] += 1
+            continue
+        v.check(cid, "fulltext_extra", verdict == "found", None if verdict == "found" else f"phrase {phrase!r} misses opinion {it['opinion_id']}")
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--sample", type=int, default=200)
     ap.add_argument("--seed", type=int, default=20261022)
+    ap.add_argument("--fulltext-extra", type=int, default=40, help="substantive Supreme Court opinions for the phrase check")
     a = ap.parse_args(argv)
     t0 = time.time()
     v = Verifier()
@@ -310,7 +377,13 @@ def main(argv=None) -> int:
             v.check(cid, "exception", False, f"{type(exc).__name__}: {exc}"[:300])
         if (i + 1) % 25 == 0:
             print(f"[verify] {i + 1}/{len(cases)} cases, {len(v.fail)} failures ({time.time() - t0:.0f}s)", flush=True)
-    report = {"sample": len(cases), "seed": a.seed, "tiers": dict(collections.Counter(c["tier"] for c in cases)),
+    if a.fulltext_extra:
+        try:
+            fulltext_extra(v, sample_long_scotus(a.fulltext_extra, a.seed + 1))
+        except Exception as exc:  # noqa: BLE001
+            v.check(0, "exception", False, f"fulltext_extra: {type(exc).__name__}: {exc}"[:300])
+        print(f"[verify] full-text phrase check of {a.fulltext_extra} Supreme Court opinions, {len(v.fail)} failures", flush=True)
+    report ={"sample": len(cases), "seed": a.seed, "tiers": dict(collections.Counter(c["tier"] for c in cases)),
               "counts": dict(v.counts), "failures": len(v.fail), "failure_detail": v.fail[:200],
               "seconds": round(time.time() - t0, 1), "checked_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
     with open(os.path.join(BUILD, "verify_report.json"), "w") as h:

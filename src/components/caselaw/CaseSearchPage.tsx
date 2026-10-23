@@ -238,15 +238,15 @@ function LiveResults({ s, nav }: { s: CaseSearchState; nav: Nav }) {
       </Problem>
     );
   if (q.isLoading)
-    return s.semantic ? (
+    return (
       <div className="space-y-2">
         <p role="status" className="text-[12px] text-muted-foreground">
-          Searching by meaning on CourtListener; this usually takes 20 to 30 seconds.
+          {s.semantic
+            ? "Searching by meaning on CourtListener; this usually takes 20 to 30 seconds."
+            : "Searching on CourtListener; a search over many courts can take up to half a minute."}
         </p>
         <Skeleton />
       </div>
-    ) : (
-      <Skeleton />
     );
   if (q.isError)
     return <Problem onRetry={() => void q.refetch()}>The live search could not be run.</Problem>;

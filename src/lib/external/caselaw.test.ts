@@ -322,4 +322,18 @@ describe("search rows", () => {
     ).toBe(courtListenerCaseUrl(1, "x"));
     expect(snippetText("  ")).toBeNull();
   });
+  it("shows highlighted live-hit fields as plain text", () => {
+    const h = parseLiveHit({
+      cluster_id: 7,
+      caseName: "United States Department of the Air <mark>Force</mark> v. FLRA &amp; Others",
+      court: "Court of Appeals for the <mark>D.C.</mark> Circuit",
+      citation: ["680 <mark>F.3d</mark> 826"],
+      docketNumber: "<mark>11</mark>-1092",
+    })!;
+    expect(h.caseName).toBe("United States Department of the Air Force v. FLRA & Others");
+    expect(h.court).toBe("Court of Appeals for the D.C. Circuit");
+    expect(h.citations).toEqual(["680 F.3d 826"]);
+    expect(h.docketNumber).toBe("11-1092");
+    expect(parseLiveHit({ cluster_id: 8, caseName: "<mark></mark>" })).toBeNull();
+  });
 });

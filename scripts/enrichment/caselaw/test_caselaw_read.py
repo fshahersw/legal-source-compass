@@ -365,6 +365,30 @@ class CitatorRecordTests(unittest.TestCase):
         self.assertEqual(rec["courts"], {"ca1": "1st Cir."})
 
 
+class PageMarkerSpanTests(unittest.TestCase):
+    def test_only_markers_present_at_their_offsets(self):
+        text = "to conduct *710investigations which may é *711 lead"
+        pages = [["710", 3, text.index("*710")], ["711", 4, text.index("*711")], ["712", 5, 0], ["9", 6, 10_000]]
+        spans = load_caselaw.page_marker_spans(text, pages)
+        self.assertEqual(spans, [[text.index("*710"), 4], [text.index("*711"), 4]])
+        blanked = list(text)
+        for off, n in spans:
+            blanked[off:off + n] = " " * n
+        self.assertIn(" investigations which", "".join(blanked))
+
+
+class VerifyPhraseTests(unittest.TestCase):
+    def test_phrase_is_a_literal_run_of_words(self):
+        import verify_caselaw as vc
+
+        text = "Mr. Chief Justice Warren delivered the opinion. The cases before us raise questions which go to the roots of it."
+        p = vc.quote_phrase(text)
+        self.assertIn(p, text)
+        self.assertRegex(p, r"^[A-Za-z]+(?: [A-Za-z]+){5,7}$")
+        self.assertIsNone(vc.quote_phrase("Petition denied."))
+        self.assertIsNone(vc.quote_phrase("it is so of the to be an in"))  # no run with four longer words
+
+
 class CitatorResumeTests(unittest.TestCase):
     """A rerun skips a partition only when what that kind depends on is unchanged."""
 

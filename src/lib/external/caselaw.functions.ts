@@ -382,8 +382,9 @@ export const searchCaselawLive = createServerFn({ method: "GET" })
       ])
         p.set(`stat_${s}`, "on");
     if (data.cursor) p.set("cursor", decodeURIComponent(data.cursor));
-    // CourtListener's semantic search embeds the query on its side and answers in about 20 seconds
-    const res = await courtListenerSearch(p, data.semantic ? 60_000 : 20_000);
+    // CourtListener answers a keyword search over many courts in up to about 25 seconds and a semantic search (the
+    // query is embedded on its side) in about 20-30 seconds; a failed call still spends quota, so wait generously
+    const res = await courtListenerSearch(p, data.semantic ? 60_000 : 45_000);
     if (!res.ok) return { ok: false, reason: res.reason };
     const body = (res.body ?? {}) as Record<string, unknown>;
     const hits = (Array.isArray(body["results"]) ? body["results"] : [])

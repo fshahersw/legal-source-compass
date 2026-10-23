@@ -632,10 +632,27 @@ export function snippetText(v: unknown): string | null {
   return t || null;
 }
 
+/** A field CourtListener returns with highlighting on (`<mark>` around matched words) as plain text. */
+export function unhighlighted(v: unknown, max: number): string | null {
+  const s = str(v, max * 2);
+  if (!s) return null;
+  const t = s
+    .replace(/<[^>]*>/g, "")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&#x27;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, max);
+  return t || null;
+}
+
 export function parseLiveHit(raw: unknown): Omit<LiveHit, "held"> | null {
   const r = obj(raw);
   const id = clusterId(r?.["cluster_id"]);
-  const name = str(r?.["caseName"], 5000);
+  const name = unhighlighted(r?.["caseName"], 5000);
   if (!r || id == null || !name) return null;
   const abs = str(r["absolute_url"], 500);
   const ops = arr(r["opinions"]).map(obj);
@@ -643,12 +660,12 @@ export function parseLiveHit(raw: unknown): Omit<LiveHit, "held"> | null {
     clusterId: id,
     caseName: name,
     courtId: courtId(r["court_id"]),
-    court: str(r["court"], 300),
+    court: unhighlighted(r["court"], 300),
     dateFiled: isoDay(typeof r["dateFiled"] === "string" ? r["dateFiled"].slice(0, 10) : null),
     citations: arr(r["citation"])
-      .map((c) => str(c, 120))
+      .map((c) => unhighlighted(c, 120))
       .filter((c): c is string => !!c),
-    docketNumber: str(r["docketNumber"], 500),
+    docketNumber: unhighlighted(r["docketNumber"], 500),
     status: str(r["status"], 40),
     citeCount: int(r["citeCount"]),
     snippet: snippetText(ops.find((o) => str(o?.["snippet"]))?.["snippet"] ?? null),

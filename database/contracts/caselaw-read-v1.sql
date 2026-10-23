@@ -6,9 +6,12 @@
 -- (the text itself is not stored here).
 -- Blocked clusters/dockets (CourtListener's flag) are never loaded.
 -- Every function: SECURITY DEFINER, search_path = '', revoked from public/anon/authenticated, granted to service_role.
--- Idempotent (create if not exists / create or replace). A reload upserts by cluster_id / opinion_id; nothing is deleted.
+-- Idempotent (create if not exists / create or replace). A reload upserts by cluster_id / opinion_id (and part); an
+-- identical row is left alone; nothing is deleted.
 -- Applied 2026-10-22/23 (worker stage 2) in parts: tables, helpers, read RPCs, load RPCs + grants, then the
--- authorities_ref column (ALTER TABLE ... ADD COLUMN IF NOT EXISTS on an existing install) with the two RPCs that use it.
+-- authorities_ref column (ALTER TABLE ... ADD COLUMN IF NOT EXISTS on an existing install) with the two RPCs that use it,
+-- then migrations caselaw_load_skip_unchanged_v1, caselaw_is_citation_v2 and caselaw_fts_format_2 (parts/fts_format
+-- columns, opinion_fts_part, caselaw_fulltext_v1, caselaw_status_v1, caselaw_load_fts_v1).
 -- Builders: scripts/enrichment/caselaw/{read_store,citator,case_meta,load_caselaw}.py
 
 begin;
@@ -81,6 +84,26 @@ create table if not exists caselaw.opinion_fts (
 );
 create index if not exists opinion_fts_tsv on caselaw.opinion_fts using gin (tsv);
 create index if not exists opinion_fts_cluster on caselaw.opinion_fts (cluster_id);
+-- Index format 2 (2026-10-23): star-page markers ("*710" at the recorded page offsets) are blanked before indexing, so
+-- the word glued to a marker is indexed as a word; the text is indexed in parts of 8,000 words (+40 words of overlap)
+-- because tsvector positions stop at 16,383, beyond which phrase search fails. opinion_fts holds part 0 of every
+-- opinion (parts = how many), opinion_fts_part the further parts of long opinions.
+alter table caselaw.opinion_fts add column if not exists parts smallint;
+alter table caselaw.opinion_fts add column if not exists fts_format smallint;
+create table if not exists caselaw.opinion_fts_part (
+  opinion_id bigint not null,
+  part smallint not null check (part >= 1),
+  cluster_id bigint not null,
+  type text,
+  tsv tsvector not null,
+  tsv_mode smallint not null default 0 check (tsv_mode in (0, 1, 2)),
+  text_sha256 text not null check (text_sha256 ~ '^[a-f0-9]{64}$'),  -- of the whole opinion text
+  build text not null,
+  primary key (opinion_id, part)
+);
+create index if not exists opinion_fts_part_tsv on caselaw.opinion_fts_part using gin (tsv);
+create index if not exists opinion_fts_part_cluster on caselaw.opinion_fts_part (cluster_id);
+alter table caselaw.opinion_fts_part enable row level security;
 
 alter table caselaw.objects enable row level security;
 alter table caselaw.courts enable row level security;
@@ -99,9 +122,11 @@ language sql immutable parallel safe set search_path = '' as $$
   select regexp_replace(lower(coalesce(p, '')), '[^[:alnum:]]+', '', 'g')
 $$;
 
+-- "volume reporter page": reporters such as "Mart. (N.S.)", "Serg. & Rawle", "F. App’x", "A.F.T.R. (P-H)", WL numbers,
+-- CCH paragraph numbers ("43,870") and suffixed pages ("2005 MT 251N", "2011 NY Slip Op 98720(U)")
 create or replace function caselaw.is_citation(p text) returns boolean
 language sql immutable parallel safe set search_path = '' as $$
-  select coalesce(p ~ '^\s*[0-9]{1,5}\s+[A-Za-z][A-Za-z0-9.'' ]{0,30}\s+[0-9]{1,6}\s*$', false)
+  select coalesce(p ~ '^\s*[0-9]{1,5}\s+[A-Za-z][A-Za-z0-9.''’&(), -]{0,60}\s+[0-9][0-9,]{0,11}[A-Za-z]{0,2}(\([A-Za-z]{1,3}\))?\s*$', false)
 $$;
 
 -- name tokens AND-ed, last token as a prefix; null when nothing searchable remains
@@ -212,10 +237,16 @@ begin
   with hits as (
     select f.cluster_id, f.opinion_id, f.type, ts_rank_cd(f.tsv, v_q, 32) rk
     from caselaw.opinion_fts f
+    where f.tsv @@ v_q and (p_type is null or f.type = p_type)
+    union all
+    select f.cluster_id, f.opinion_id, f.type, ts_rank_cd(f.tsv, v_q, 32) rk
+    from caselaw.opinion_fts_part f
     where f.tsv @@ v_q and (p_type is null or f.type = p_type)),
+  per_opinion as (
+    select h.cluster_id, h.opinion_id, h.type, max(h.rk) rk from hits h group by h.cluster_id, h.opinion_id, h.type),
   per_case as (
     select h.cluster_id, max(h.rk) rk, jsonb_agg(jsonb_build_object('opinion_id', h.opinion_id, 'type', h.type) order by h.rk desc, h.opinion_id) matched
-    from hits h group by h.cluster_id),
+    from per_opinion h group by h.cluster_id),
   m as (
     select c as r, p.rk, p.matched, case when coalesce(p_sort, 'relevance') = 'relevance' then p.rk end as k1,
            case when p_sort = 'newest' then c.date_filed end as k2, case when p_sort = 'oldest' then c.date_filed end as k3,
@@ -254,6 +285,8 @@ language sql stable security definer set search_path = '' as $$
     'cases_with_authorities', (select count(*) from caselaw.cases where authorities_ref is not null),
     'opinion_fts', (select count(*) from caselaw.opinion_fts),
     'fts_modes', (select jsonb_object_agg(tsv_mode, n) from (select tsv_mode, count(*) n from caselaw.opinion_fts group by 1) t),
+    'fts_formats', (select jsonb_object_agg(coalesce(fts_format, 1), n) from (select fts_format, count(*) n from caselaw.opinion_fts group by 1) t),
+    'opinion_fts_parts', (select count(*) from caselaw.opinion_fts_part where tsv <> ''::tsvector),
     'objects', (select jsonb_object_agg(kind, n) from (select kind, count(*) n from caselaw.objects group by 1) t),
     'courts', (select count(*) from caselaw.courts),
     'builds', (select jsonb_object_agg(build, n) from (select build, count(*) n from caselaw.cases group by 1) t),
@@ -264,6 +297,7 @@ language sql stable security definer set search_path = '' as $$
       'cases_court_date_idx', pg_relation_size('caselaw.cases_court_date'), 'cases_cited_idx', pg_relation_size('caselaw.cases_cited'),
       'cases_pkey', pg_relation_size('caselaw.cases_pkey'),
       'opinion_fts', pg_total_relation_size('caselaw.opinion_fts'), 'opinion_fts_tsv_idx', pg_relation_size('caselaw.opinion_fts_tsv'),
+      'opinion_fts_part', pg_total_relation_size('caselaw.opinion_fts_part'),
       'objects', pg_total_relation_size('caselaw.objects'), 'courts', pg_total_relation_size('caselaw.courts'),
       'schema_total', (select sum(pg_total_relation_size(c.oid)) from pg_catalog.pg_class c join pg_catalog.pg_namespace n on n.oid = c.relnamespace
                        where n.nspname = 'caselaw' and c.relkind = 'r')))
@@ -332,39 +366,88 @@ begin
     cited_by = excluded.cited_by, cited_by_cases = excluded.cited_by_cases, parentheticals = excluded.parentheticals,
     authorities = excluded.authorities, citations = excluded.citations, cite_keys = excluded.cite_keys, judges = excluded.judges,
     panel = excluded.panel, disposition = excluded.disposition, scdb = excluded.scdb, opinions = excluded.opinions,
-    citator = excluded.citator, authorities_ref = excluded.authorities_ref, name_tsv = excluded.name_tsv, build = excluded.build;
-  get diagnostics n = row_count;
+    citator = excluded.citator, authorities_ref = excluded.authorities_ref, name_tsv = excluded.name_tsv, build = excluded.build
+  -- an identical row is left alone (no new row version, no index churn): build is the build that last changed the row
+  where (caselaw.cases.tier, caselaw.cases.court_id, caselaw.cases.date_filed, caselaw.cases.date_approx, caselaw.cases.case_name,
+         caselaw.cases.case_name_full, caselaw.cases.docket_number, caselaw.cases.precedential_status, caselaw.cases.citation_count,
+         caselaw.cases.cited_by, caselaw.cases.cited_by_cases, caselaw.cases.parentheticals, caselaw.cases.authorities,
+         caselaw.cases.citations, caselaw.cases.cite_keys, caselaw.cases.judges, caselaw.cases.panel, caselaw.cases.disposition,
+         caselaw.cases.scdb, caselaw.cases.opinions, caselaw.cases.citator, caselaw.cases.authorities_ref, caselaw.cases.name_tsv)
+    is distinct from
+        (excluded.tier, excluded.court_id, excluded.date_filed, excluded.date_approx, excluded.case_name, excluded.case_name_full,
+         excluded.docket_number, excluded.precedential_status, excluded.citation_count, excluded.cited_by, excluded.cited_by_cases,
+         excluded.parentheticals, excluded.authorities, excluded.citations, excluded.cite_keys, excluded.judges, excluded.panel,
+         excluded.disposition, excluded.scdb, excluded.opinions, excluded.citator, excluded.authorities_ref, excluded.name_tsv);
+  get diagnostics n = row_count;  -- rows inserted or changed
   return n;
 end $$;
 
 create or replace function public.caselaw_load_fts_v1(p_build text, p_rows jsonb) returns jsonb
 language plpgsql security definer set search_path = '' as $$
-declare r jsonb; v tsvector; mode smallint; n integer := 0; stripped integer := 0; truncated integer := 0; t text;
+declare r jsonb; b record; v tsvector; mode smallint; n integer := 0; stripped integer := 0; truncated integer := 0;
+  unchanged integer := 0; parts_total integer := 0; t text; pieces text[]; pos integer; w text[]; nw integer; np integer;
+  k integer; chunk text; v_id bigint; v_cl bigint; v_type text; v_sha text;
+  c_words constant integer := 8000; c_overlap constant integer := 40; c_format constant smallint := 2;
 begin
   if p_build !~ '^[a-z0-9_.-]{1,40}$' then raise exception 'Invalid build' using errcode = '22023'; end if;
   if jsonb_typeof(p_rows) is distinct from 'array' or jsonb_array_length(p_rows) not between 1 and 2000 then
     raise exception 'Invalid text batch' using errcode = '22023'; end if;
   for r in select * from jsonb_array_elements(p_rows) loop
-    t := r ->> 'text';
-    if encode(sha256(convert_to(t, 'UTF8')), 'hex') is distinct from r ->> 'text_sha256' then
-      raise exception 'Text of opinion % does not match its sha256', r ->> 'opinion_id' using errcode = '22023'; end if;
-    mode := 0;
-    begin
-      v := to_tsvector('english', t);
-    exception when program_limit_exceeded then
+    t := r ->> 'text'; v_id := (r ->> 'opinion_id')::bigint; v_cl := (r ->> 'cluster_id')::bigint; v_type := r ->> 'type';
+    v_sha := r ->> 'text_sha256';
+    if encode(sha256(convert_to(t, 'UTF8')), 'hex') is distinct from v_sha then
+      raise exception 'Text of opinion % does not match its sha256', v_id using errcode = '22023'; end if;
+    -- the same text already indexed in this format for the same case and type: nothing to recompute or rewrite
+    if exists (select 1 from caselaw.opinion_fts f where f.opinion_id = v_id and f.text_sha256 = v_sha and f.cluster_id = v_cl
+               and f.type is not distinct from v_type and f.fts_format = c_format) then
+      unchanged := unchanged + 1;
+      continue;
+    end if;
+    -- star-page markers at the recorded offsets (code points, as the reading store records them) become spaces
+    pieces := '{}'; pos := 0;
+    if jsonb_typeof(r -> 'blank') = 'array' then
+      for b in select (e ->> 0)::integer st, (e ->> 1)::integer ln from jsonb_array_elements(r -> 'blank') e order by 1 loop
+        if b.st >= pos and b.ln between 2 and 24 and b.st + b.ln <= length(t) and substr(t, b.st + 1, b.ln) ~ '^[*][^[:space:]]+$' then
+          pieces := pieces || substr(t, pos + 1, b.st - pos) || repeat(' ', b.ln);
+          pos := b.st + b.ln;
+        end if;
+      end loop;
+    end if;
+    w := regexp_split_to_array(btrim(array_to_string(pieces, '') || substr(t, pos + 1)), '\s+');
+    nw := coalesce(array_length(w, 1), 0);
+    np := greatest(1, ceil(greatest(nw - c_overlap, 1)::numeric / c_words)::integer);
+    for k in 0 .. np - 1 loop
+      chunk := array_to_string(w[k * c_words + 1 : (k + 1) * c_words + c_overlap], ' ');
+      mode := 0;
       begin
-        v := strip(to_tsvector('english', t)); mode := 1;
+        v := to_tsvector('english', chunk);
       exception when program_limit_exceeded then
-        v := strip(to_tsvector('english', left(t, 400000))); mode := 2;
+        begin
+          v := strip(to_tsvector('english', chunk)); mode := 1;
+        exception when program_limit_exceeded then
+          v := strip(to_tsvector('english', left(chunk, 400000))); mode := 2;
+        end;
       end;
-    end;
-    insert into caselaw.opinion_fts(opinion_id, cluster_id, type, tsv, tsv_mode, text_sha256, build)
-    values ((r ->> 'opinion_id')::bigint, (r ->> 'cluster_id')::bigint, r ->> 'type', v, mode, r ->> 'text_sha256', p_build)
-    on conflict (opinion_id) do update set cluster_id = excluded.cluster_id, type = excluded.type, tsv = excluded.tsv,
-      tsv_mode = excluded.tsv_mode, text_sha256 = excluded.text_sha256, build = excluded.build;
-    n := n + 1; stripped := stripped + (mode = 1)::integer; truncated := truncated + (mode = 2)::integer;
+      if k = 0 then
+        insert into caselaw.opinion_fts(opinion_id, cluster_id, type, tsv, tsv_mode, text_sha256, build, parts, fts_format)
+        values (v_id, v_cl, v_type, v, mode, v_sha, p_build, np, c_format)
+        on conflict (opinion_id) do update set cluster_id = excluded.cluster_id, type = excluded.type, tsv = excluded.tsv,
+          tsv_mode = excluded.tsv_mode, text_sha256 = excluded.text_sha256, build = excluded.build, parts = excluded.parts,
+          fts_format = excluded.fts_format;
+      else
+        insert into caselaw.opinion_fts_part(opinion_id, part, cluster_id, type, tsv, tsv_mode, text_sha256, build)
+        values (v_id, k, v_cl, v_type, v, mode, v_sha, p_build)
+        on conflict (opinion_id, part) do update set cluster_id = excluded.cluster_id, type = excluded.type, tsv = excluded.tsv,
+          tsv_mode = excluded.tsv_mode, text_sha256 = excluded.text_sha256, build = excluded.build;
+      end if;
+      stripped := stripped + (mode = 1)::integer; truncated := truncated + (mode = 2)::integer;
+    end loop;
+    -- parts left from an earlier, longer text are emptied (rows are never removed)
+    update caselaw.opinion_fts_part p set tsv = ''::tsvector, tsv_mode = 0, text_sha256 = v_sha, build = p_build
+      where p.opinion_id = v_id and p.part >= np and p.tsv <> ''::tsvector;
+    n := n + 1; parts_total := parts_total + np;
   end loop;
-  return jsonb_build_object('rows', n, 'stripped', stripped, 'truncated', truncated);
+  return jsonb_build_object('rows', n, 'parts', parts_total, 'stripped', stripped, 'truncated', truncated, 'unchanged', unchanged);
 end $$;
 
 do $grants$

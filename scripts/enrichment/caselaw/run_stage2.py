@@ -18,6 +18,13 @@ Steps (each is its own script, logged to private/build/caselaw_read/logs/<step>.
   status       load_caselaw.py status                           sizes and counts -> load_status.json
   verify       verify_caselaw.py --sample 200                   0 failures expected
 Credentials are read from the environment or private/scratch/env.sh by the scripts themselves; nothing is printed.
+
+Rerunning a step is cheap where nothing changed: the reading store skips groups with the same input shards, the citator
+partitions with the same inputs (cited authorities: the same anchor bytes), and the load RPCs leave identical rows
+alone (cases_written / "unchanged" in their output). After the cases and fts steps, run in the SQL editor
+    VACUUM (ANALYZE) caselaw.cases;  VACUUM (ANALYZE) caselaw.opinion_fts;
+so the space of replaced row versions is reused (PostgREST cannot vacuum). Once verify reports 0 failures,
+cleanup_objects.py lists the stage-2 objects no state or row references any more (the trial build's); --delete removes them.
 """
 from __future__ import annotations
 

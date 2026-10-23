@@ -150,7 +150,8 @@ def load_cases(build: str, parts: list[int] | None, workers: int) -> None:
         paths = [p for p in paths if int(p.rsplit("-p", 1)[1].split(".")[0]) in parts]
     rpcs = [Rpc() for _ in range(workers)]
     t0 = time.time()
-    total = 0
+    total = 0  # rows inserted or changed (an identical row is left alone by the RPC)
+    sent = 0
 
     def batches():
         for path in paths:
@@ -168,15 +169,27 @@ def load_cases(build: str, parts: list[int] | None, workers: int) -> None:
         pending = set()
         for i, b in enumerate(batches()):
             pending.add(ex.submit(rpcs[i % workers].call, "caselaw_load_cases_v1", {"p_build": build, "p_rows": b}))
+            sent += len(b)
             if len(pending) >= workers * 2:
                 done, pending = cf.wait(pending, return_when=cf.FIRST_COMPLETED)
                 for f in done:
                     total += f.result()
-                if total and total % 100000 < 1000:
-                    print(f"[load] {total:,} cases ({time.time() - t0:.0f}s)", flush=True)
+                if sent % 100000 < 1000:
+                    print(f"[load] {sent:,} cases sent, {total:,} written ({time.time() - t0:.0f}s)", flush=True)
         for f in cf.as_completed(pending):
             total += f.result()
-    print(json.dumps({"cases_loaded": total, "seconds": round(time.time() - t0, 1)}))
+    print(json.dumps({"cases_sent": sent, "cases_written": total, "seconds": round(time.time() - t0, 1)}))
+
+
+def page_marker_spans(text: str, pages: list) -> list[list[int]]:
+    """[offset, length] of each star-page marker ("*710") present in the text at its recorded offset (code points), the
+    same rule the reading page uses; the full-text RPC indexes them as spaces so the word after a marker stays a word."""
+    out = []
+    for label, _idx, off in pages:
+        marker = f"*{label}"
+        if isinstance(off, int) and 0 <= off and text.startswith(marker, off) and 2 <= len(marker) <= 24:
+            out.append([off, len(marker)])
+    return out
 
 
 def fts_batches(tiers: list[str], st):
@@ -199,7 +212,7 @@ def fts_batches(tiers: list[str], st):
             if rec["opinion_id"] != int(r["opinion_id"]) or hashlib.sha256(rec["text"].encode("utf-8")).hexdigest() != r["text_sha256"]:
                 raise SystemExit(f"text sha256 mismatch for opinion {r['opinion_id']}")
             item = {"opinion_id": rec["opinion_id"], "cluster_id": rec["cluster_id"], "type": rec["type"], "text": rec["text"],
-                    "text_sha256": rec["text_sha256"]}
+                    "text_sha256": rec["text_sha256"], "blank": page_marker_spans(rec["text"], rec.get("pages") or [])}
             batch.append(item)
             size += len(rec["text"].encode("utf-8"))
             if size >= FTS_BATCH_BYTES or len(batch) >= 1000:
@@ -215,7 +228,7 @@ def load_fts(build: str, tiers: list[str], workers: int) -> None:
     st = store.Storage()
     rpcs = [Rpc() for _ in range(workers)]
     t0 = time.time()
-    agg = {"rows": 0, "stripped": 0, "truncated": 0}
+    agg = {"rows": 0, "parts": 0, "stripped": 0, "truncated": 0, "unchanged": 0}
     with cf.ThreadPoolExecutor(max_workers=workers) as ex:
         pending = set()
         for i, b in enumerate(fts_batches(tiers, st)):
@@ -224,11 +237,11 @@ def load_fts(build: str, tiers: list[str], workers: int) -> None:
                 done, pending = cf.wait(pending, return_when=cf.FIRST_COMPLETED)
                 for f in done:
                     for k, v in f.result().items():
-                        agg[k] += v
-                print(f"[fts] {agg['rows']:,} opinions ({time.time() - t0:.0f}s)", flush=True)
+                        agg[k] = agg.get(k, 0) + v
+                print(f"[fts] {agg['rows']:,} opinions indexed, {agg['unchanged']:,} unchanged ({time.time() - t0:.0f}s)", flush=True)
         for f in cf.as_completed(pending):
             for k, v in f.result().items():
-                agg[k] += v
+                agg[k] = agg.get(k, 0) + v
     agg["seconds"] = round(time.time() - t0, 1)
     print(json.dumps(agg))
 
