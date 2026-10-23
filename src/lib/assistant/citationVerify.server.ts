@@ -2,9 +2,10 @@
  * Citation verification for the assistant. Case citations are looked up in the free case-law archive's citation-lookup API
  * (one batched request, at most 60 citations a minute) with the court added from one batched search; U.S.C., C.F.R., Statutes
  * at Large, public law and Federal Register citations are resolved at the official publishers (GovInfo link service, eCFR),
- * which need no key. Every citation gets a status and a reason; nothing is guessed, and a citation that could not be checked
+ * which need no key, and U.S.C. sections first against the stored current Code from the Law Revision Counsel. Every citation gets a status and a reason; nothing is guessed, and a citation that could not be checked
  * says so. Results are cached in this server process for a few hours so a conversation does not look the same cite up twice.
  */
+import { restGet } from "@/lib/external/rest.server";
 import { extractCitations, uniqueCitations, type ExtractedCitation } from "./citations";
 import {
   citationSummary,
@@ -569,6 +570,106 @@ async function resolveLinkOnly(
   };
 }
 
+/** One stored section of the current U.S. Code (us_code_sections), as the Law Revision Counsel publishes it. */
+type StoredUsc = {
+  citation: string;
+  heading: string | null;
+  status: string | null;
+  url: string | null;
+  release: string | null;
+  lawDate: string | null;
+};
+const USC_STATUS = new Set([
+  "repealed",
+  "omitted",
+  "transferred",
+  "renumbered",
+  "reserved",
+  "vacant",
+]);
+const OLRC_URL = /^https:\/\/uscode\.house\.gov\/[^\s"<>]{1,500}$/;
+
+/** The cited sections found in the stored current Code, by section number; null when the corpus cannot be read. */
+async function storedUscSections(
+  title: number,
+  sections: string[],
+): Promise<Map<string, StoredUsc> | null> {
+  const s = (v: unknown, n: number) =>
+    typeof v === "string" && v.trim() ? v.trim().slice(0, n) : null;
+  try {
+    const ids = sections.map((sec) => `${title}:${sec}`);
+    const r = await restGet<Record<string, unknown>[]>(
+      `corpus_records?select=id,citation:detail->usc->>citation,heading:detail->usc->>heading,status:detail->usc->>status,url:detail->usc->>url,release:detail->usc->>release,law_date:detail->usc->>law_date&dataset=eq.us_code_sections&id=in.(${ids
+        .map((id) => encodeURIComponent(`"${id}"`))
+        .join(",")})`,
+    );
+    const out = new Map<string, StoredUsc>();
+    for (const row of r.rows) {
+      const id = s(row["id"], 200);
+      const citation = s(row["citation"], 300);
+      const sec = id && ids.includes(id) ? id.slice(id.indexOf(":") + 1) : null;
+      if (!sec || !citation) continue;
+      const status = s(row["status"], 20);
+      const url = s(row["url"], 600);
+      out.set(sec, {
+        citation,
+        heading: s(row["heading"], 600),
+        status: status && USC_STATUS.has(status) ? status : null,
+        url: url && OLRC_URL.test(url) ? url : null,
+        release: s(row["release"], 20),
+        lawDate: s(row["law_date"], 10),
+      });
+    }
+    return out;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * U.S.C. citations are checked against the stored current Code first (it runs ahead of GovInfo's latest annual edition), then
+ * at the GovInfo link service. A section the current Code marks repealed or transferred is found, with that status stated.
+ */
+async function resolveUsc(c: ExtractedCitation, signal?: AbortSignal): Promise<CheckedCitation> {
+  const sections = [c.section!, ...(c.sectionEnd ? [c.sectionEnd] : [])];
+  const stored = await storedUscSections(c.title!, sections);
+  const units = stored ? sections.map((sec) => stored.get(sec) ?? null) : [];
+  if (stored && units.every((u) => u !== null)) {
+    const found = units as StoredUsc[];
+    const first = found[0]!;
+    const marked = found.filter((u) => u.status).map((u) => `${u.citation} is marked ${u.status}`);
+    return {
+      ...base(c),
+      status: "found",
+      reason: `Found in the current U.S. Code as the Office of the Law Revision Counsel publishes it (release point ${
+        first.release ?? "not recorded"
+      }${first.lawDate ? `, current through ${first.lawDate}` : ""})${marked.length ? `; ${marked.join("; ")}` : ""}.`,
+      title: first.heading,
+      url: first.url,
+      links: found.flatMap((u, i) => {
+        const label =
+          found.length > 1 ? (i ? "Range end" : "Range start") : "Official text (current)";
+        const page = `/law/uscode/${c.title}/${encodeURIComponent(sections[i]!)}`;
+        return [
+          ...(u.url ? [{ label, url: u.url }] : []),
+          { label: found.length > 1 ? `${label}: section page` : "Section page", url: page },
+        ];
+      }),
+    };
+  }
+  const official = await resolveLinkOnly(c, signal);
+  if (!stored) return official;
+  const absent = sections.filter((_, i) => !units[i]).map((sec) => `${c.title} U.S.C. § ${sec}`);
+  return {
+    ...official,
+    reason: `${official.reason} Not in the current U.S. Code text stored in this workspace: ${absent.join(", ")}${
+      official.status === "found"
+        ? " (it may have been repealed or renumbered since that edition)"
+        : ""
+    }.`,
+  };
+}
+
 async function resolveCfr(c: ExtractedCitation, signal?: AbortSignal): Promise<CheckedCitation> {
   const item = base(c);
   const lookups = officialLookups(c);
@@ -669,6 +770,7 @@ async function resolveOfficial(
         "Not checked: the official link service covers public laws from the 104th Congress (1995) on. Check the Statutes at Large citation instead.",
     };
   if (c.kind === "cfr") return resolveCfr(c, signal);
+  if (c.kind === "usc") return resolveUsc(c, signal);
   return resolveLinkOnly(c, signal);
 }
 

@@ -129,6 +129,36 @@ function caseLawRoute(call: Call): Response {
   return json(404, {});
 }
 
+// The stored current U.S. Code: null means the corpus cannot be read (the checker then uses the link service alone).
+const corpus = vi.hoisted(() => ({
+  rows: null as Record<string, unknown>[] | null,
+  paths: [] as string[],
+}));
+vi.mock("@/lib/external/rest.server", () => ({
+  restGet: vi.fn(async (path: string) => {
+    corpus.paths.push(path);
+    if (!corpus.rows) throw new Error("corpus not configured");
+    const wanted = decodeURIComponent(path);
+    return {
+      rows: corpus.rows.filter((r) => wanted.includes(`"${String(r["id"])}"`)),
+      total: null,
+    };
+  }),
+}));
+const storedUsc = (id: string, citation: string, extra: Record<string, unknown> = {}) => {
+  const [title, sec] = id.split(":");
+  return {
+    id,
+    citation,
+    heading: "Statements or entries generally",
+    status: null,
+    url: `https://uscode.house.gov/us/usc/119-124/t${title}/s${sec}/`,
+    release: "119-124",
+    law_date: "2026-10-15",
+    ...extra,
+  };
+};
+
 const savedEnv = { ...process.env };
 beforeEach(() => {
   __resetCitationState(0);
@@ -137,6 +167,8 @@ beforeEach(() => {
 afterEach(() => {
   vi.unstubAllGlobals();
   process.env = { ...savedEnv };
+  corpus.rows = null;
+  corpus.paths.length = 0;
 });
 
 describe("case citations", () => {
@@ -294,6 +326,62 @@ describe("statutes and regulations", () => {
       expect(c.redirect).toBe("manual");
   });
 
+  it("finds U.S.C. sections in the stored current Code without asking the link service", async () => {
+    corpus.rows = [
+      storedUsc("18:1001", "18 U.S.C. § 1001"),
+      storedUsc("18:14", "18 U.S.C. § 14", { heading: "Repealed.", status: "repealed" }),
+    ];
+    const calls = mockFetch(officialRoute);
+    const [current, repealed] = await checkCitations(
+      extractCitations("18 U.S.C. § 1001(a); 18 U.S.C. § 14"),
+    );
+    expect(current).toMatchObject({
+      status: "found",
+      title: "Statements or entries generally",
+      url: "https://uscode.house.gov/us/usc/119-124/t18/s1001/",
+      links: [
+        {
+          label: "Official text (current)",
+          url: "https://uscode.house.gov/us/usc/119-124/t18/s1001/",
+        },
+        { label: "Section page", url: "/law/uscode/18/1001" },
+      ],
+    });
+    expect(current!.reason).toMatch(/release point 119-124, current through 2026-10-15/);
+    expect(repealed!.status).toBe("found");
+    expect(repealed!.reason).toMatch(/18 U\.S\.C\. § 14 is marked repealed/);
+    expect(calls.some((c) => c.url.includes("/link/uscode/"))).toBe(false);
+    expect(corpus.paths.map((p) => decodeURIComponent(p))).toContainEqual(
+      expect.stringContaining('dataset=eq.us_code_sections&id=in.("18:1001")'),
+    );
+  });
+
+  it("falls back to the link service when the stored Code lacks a section, and says so", async () => {
+    corpus.rows = [storedUsc("42:1981", "42 U.S.C. § 1981")];
+    mockFetch((call) =>
+      call.url.includes("/link/uscode/18/1001")
+        ? redirect(
+            "https://www.govinfo.gov/content/pkg/USCODE-2024-title18/html/USCODE-2024-title18-partI-chap47-sec1001.htm",
+          )
+        : call.url.includes("/link/uscode/42/")
+          ? redirect("https://www.govinfo.gov/content/pkg/USCODE-2024-title42/html/x.htm")
+          : noResults(),
+    );
+    const [onlyEdition, missing, range] = await checkCitations(
+      extractCitations("18 U.S.C. § 1001; 18 U.S.C. § 99999; 42 U.S.C. §§ 1981–1983"),
+    );
+    expect(onlyEdition!.status).toBe("found");
+    expect(onlyEdition!.reason).toMatch(
+      /2024 edition of the U\.S\. Code\. Not in the current U\.S\. Code text stored in this workspace: 18 U\.S\.C\. § 1001 \(it may have been repealed or renumbered since that edition\)\./,
+    );
+    expect(missing!.status).toBe("not_found");
+    expect(missing!.reason).toMatch(
+      /Not in the current U\.S\. Code text stored in this workspace: 18 U\.S\.C\. § 99999\.$/,
+    );
+    expect(range!.status).toBe("found");
+    expect(range!.reason).toMatch(/stored in this workspace: 42 U\.S\.C\. § 1983 \(/);
+  });
+
   it("checks C.F.R. sections against the current eCFR and the annual edition", async () => {
     mockFetch(officialRoute);
     const [current, removed, missing] = await checkCitations(
@@ -441,6 +529,8 @@ describe("protocol", () => {
           links: [
             { label: "Decision", url: "https://www.courtlistener.com/opinion/2812209/x/" },
             { label: "Bad", url: "data:text/html,x" },
+            { label: "Section page", url: "/law/uscode/42/1983" },
+            { label: "Elsewhere", url: "//evil.example/x" },
           ],
           matches: [],
         },
@@ -452,6 +542,7 @@ describe("protocol", () => {
     expect(check.items[0]!.url).toBeNull();
     expect(check.items[0]!.links).toEqual([
       { label: "Decision", url: "https://www.courtlistener.com/opinion/2812209/x/" },
+      { label: "Section page", url: "/law/uscode/42/1983" },
     ]);
     expect(sanitizeCitationCheck({ items: "nope" })).toBeNull();
     expect(sanitizeCitationCheck(null)).toBeNull();

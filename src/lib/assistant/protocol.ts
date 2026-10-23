@@ -163,6 +163,9 @@ const safeUrl = (v: unknown): string | null => {
     return null;
   }
 };
+/** A page of this site ("/law/uscode/42/1983"); never protocol-relative. */
+const appPath = (v: unknown): string | null =>
+  typeof v === "string" && /^\/(?!\/)[A-Za-z0-9/_.~%-]{1,300}$/.test(v) ? v : null;
 const intOrNull = (v: unknown): number | null =>
   typeof v === "number" && Number.isInteger(v) && v >= 0 ? v : null;
 
@@ -210,7 +213,7 @@ export function sanitizeCitationCheck(raw: unknown): CitationCheck | null {
             .slice(0, 6)
             .map((l) => {
               const o = (l ?? {}) as Record<string, unknown>;
-              const url = safeUrl(o["url"]);
+              const url = safeUrl(o["url"]) ?? appPath(o["url"]);
               const label = shortText(o["label"], 60);
               return url && label ? { label, url } : null;
             })

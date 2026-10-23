@@ -2,28 +2,41 @@ import { ChevronRight } from "lucide-react";
 import { useState } from "react";
 import type { CheckedCitation, CitationCheck } from "@/lib/assistant/protocol";
 import { cn } from "@/lib/utils";
+import { InternalLink } from "./AssistantMarkdown";
 import { CITATION_ORDER as ORDER, CITATION_STATUS } from "./citationStatus";
 import { safeHref } from "./markdownLinks";
 
-function ExternalLinks({ links }: { links: { label: string; url: string }[] }) {
+const LINK =
+  "text-primary underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-ring";
+
+/** Official sources open in a new tab; pages of this site (a stored section) open in place. */
+function CitationLinks({ links }: { links: { label: string; url: string }[] }) {
   const safe = links
     .map((l) => ({ label: l.label, href: safeHref(l.url) }))
-    .filter((l) => l.href && !l.href.internal);
+    .filter(
+      (l): l is { label: string; href: NonNullable<ReturnType<typeof safeHref>> } => !!l.href,
+    );
   if (!safe.length) return null;
   return (
     <span className="mt-0.5 flex flex-wrap gap-x-2.5">
-      {safe.map((l) => (
-        <a
-          key={`${l.label}-${l.href!.url}`}
-          href={l.href!.url}
-          target="_blank"
-          rel="noreferrer"
-          className="text-primary underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
-          title={l.href!.url}
-        >
-          {l.label}
-        </a>
-      ))}
+      {safe.map((l) =>
+        l.href.internal ? (
+          <InternalLink key={`${l.label}-${l.href.url}`} href={l.href.url} className={LINK}>
+            {l.label}
+          </InternalLink>
+        ) : (
+          <a
+            key={`${l.label}-${l.href.url}`}
+            href={l.href.url}
+            target="_blank"
+            rel="noreferrer"
+            className={LINK}
+            title={l.href.url}
+          >
+            {l.label}
+          </a>
+        ),
+      )}
     </span>
   );
 }
@@ -69,7 +82,7 @@ function Item({ item }: { item: CheckedCitation }) {
             })}
           </ul>
         ) : (
-          <ExternalLinks links={item.links} />
+          <CitationLinks links={item.links} />
         )}
       </div>
     </li>

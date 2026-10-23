@@ -5,12 +5,20 @@ import { CITATION_STATUS, type CitationMark } from "./citationStatus";
 import { safeHref } from "./markdownLinks";
 
 /** In-app link that navigates without a page load (modifier clicks open normally). */
-function InternalLink({ href, children }: { href: string; children: ReactNode }) {
+export function InternalLink({
+  href,
+  children,
+  className = "text-primary underline underline-offset-2",
+}: {
+  href: string;
+  children: ReactNode;
+  className?: string;
+}) {
   const router = useRouter();
   return (
     <a
       href={href}
-      className="text-primary underline underline-offset-2"
+      className={className}
       onClick={(e) => {
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
         e.preventDefault();
