@@ -113,7 +113,7 @@ export function RelatedRow({
 export function RelatedPanelView({
   view,
   onRetry,
-  heading = "Related",
+  heading = "Similar by meaning",
   className,
   showSnippets = false,
 }: {
@@ -209,7 +209,7 @@ export function RelatedPanel({
   recordId,
   limit = 6,
   scope,
-  heading = "Related",
+  heading = "Similar by meaning",
   className,
   showSnippets = false,
   quiet = false,
