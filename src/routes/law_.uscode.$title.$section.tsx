@@ -8,6 +8,7 @@ import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { BodyLines, Fact, Footnotes, StatusBadge } from "@/components/uscode/UsCodeText";
 import { RegulationsUnderSectionPanel } from "@/components/authorities/RegulationsUnderSectionPanel";
 import { RelatedPanel } from "@/components/semantic/RelatedPanel";
+import { DocumentsPanel } from "@/components/documents/DocumentsPanel";
 import { pageHead } from "@/lib/corpus/head";
 import { cn } from "@/lib/utils";
 import {
@@ -26,6 +27,8 @@ import {
   type UscSection,
 } from "@/lib/external/usCode.functions";
 
+/** Section ids the filings index accepts (documents_for_entity_v1 law_unit). */
+const USC_UNIT = /^usc:[0-9]{1,2}a?:[0-9][0-9A-Za-z.-]{0,40}$/;
 export const Route = createFileRoute("/law_/uscode/$title/$section")({
   head: ({ params }) =>
     pageHead(
@@ -187,6 +190,9 @@ function SectionBody({ s }: { s: UscSection }) {
         <AmendingLaws title={s.title} section={s.key} />
         {s.kind === "section" ? (
           <RegulationsUnderSectionPanel title={s.title} sectionKey={s.key} />
+        ) : null}
+        {s.kind === "section" && USC_UNIT.test(`usc:${s.title}:${s.key}`) ? (
+          <DocumentsPanel type="law_unit" id={`usc:${s.title}:${s.key}`} quiet />
         ) : null}
       </div>
       <aside className="space-y-3 self-start xl:sticky xl:top-2">

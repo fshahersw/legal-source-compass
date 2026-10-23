@@ -113,6 +113,7 @@ for (const suite of [
     ],
   },
   { directory: "scripts/semantic", modules: ["test_semantic"] },
+  { directory: "scripts/documents", modules: ["test_documents"] },
 ]) {
   const result = spawnSync(
     python.command,

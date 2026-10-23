@@ -94,6 +94,7 @@ const EXPECTED: Record<string, NavigationSection | null> = {
   "/prototypes/judge/$id": "courts",
   "/litigation": "litigation",
   "/litigation/settlements": "litigation",
+  "/litigation/documents": "litigation",
   "/cases": "litigation",
   "/cases/$id": "litigation",
   "/matters": "litigation",

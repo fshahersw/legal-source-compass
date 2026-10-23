@@ -3,6 +3,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/atlas/AppShell";
 import { caseQuery } from "@/components/caselaw/caseQueries";
 import { CaseView } from "@/components/caselaw/CaseView";
+import { DocumentsPanel } from "@/components/documents/DocumentsPanel";
 import { citeLine, fmtDay } from "@/components/caselaw/caseFormat";
 import { pageHead } from "@/lib/corpus/head";
 
@@ -100,6 +101,7 @@ function Loaded({ id }: { id: number }) {
         initialTab={tab}
         onTab={(t) => void navigate({ search: { tab: t }, replace: true, resetScroll: false })}
       />
+      <DocumentsPanel type="case" id={String(r.clusterId)} quiet className="mt-6" />
     </AppShell>
   );
 }

@@ -278,12 +278,15 @@ $$;
 -- ------------------------------------------------------------------------------------------------ build: documents
 create or replace function public.documents_refresh_v1(p_build text) returns jsonb
 language plpgsql security definer set search_path = '' as $$
-declare v_counts jsonb; v_changed integer; v_removed integer; v_excluded jsonb;
+declare v_counts jsonb; v_changed integer; v_removed integer; v_excluded jsonb; v_n integer;
 begin
   if p_build is null or p_build !~ '^[a-z0-9_.-]{1,40}$' then raise exception 'Invalid build' using errcode = '22023'; end if;
   insert into documents.builds(build) values (p_build) on conflict (build) do nothing;
-  drop table if exists pg_temp._doc_keys, pg_temp._doc_cand, pg_temp._doc_out, pg_temp._doc_db, pg_temp._doc_cl,
-    pg_temp._doc_dk, pg_temp._doc_new;
+  -- the work tables are dropped at commit; a second call in the same transaction starts from fresh ones
+  if to_regclass('pg_temp._doc_keys') is not null then
+    drop table if exists pg_temp._doc_keys, pg_temp._doc_cand, pg_temp._doc_out, pg_temp._doc_db, pg_temp._doc_cl,
+      pg_temp._doc_dk, pg_temp._doc_new;
+  end if;
 
   -- case ids the published matter pages request, each with its one MDL
   create temp table _doc_keys on commit drop as
@@ -338,7 +341,10 @@ begin
                     and (a.provider_flags -> 'withheld_by_policy' = 'true'::jsonb or a.provider_flags -> 'is_sealed' = 'true'::jsonb
                          or a.provider_flags -> 'restricted' = 'true'::jsonb
                          or a.provider_flags -> 'sealing_related_locator_held' = 'true'::jsonb));
-  delete from _doc_cand c using _doc_out o where o.source_system = c.source_system and o.native_document_id = c.native_document_id;
+  with gone as (
+    delete from _doc_cand c using _doc_out o where o.source_system = c.source_system and o.native_document_id = c.native_document_id
+    returning 1)
+  select count(*) into v_n from gone;
   select coalesce(jsonb_object_agg(reason, n), '{}'::jsonb) into v_excluded
     from (select reason, count(*) as n from _doc_out group by reason) s;
 
@@ -502,16 +508,28 @@ begin
   get diagnostics v_changed = row_count;
 
   -- documents no longer eligible leave the layer with their links; text of bytes no document serves is dropped
-  delete from documents.links l where not exists (select 1 from _doc_new n where n.id = l.document_id);
-  delete from documents.documents d where not exists (select 1 from _doc_new n where n.id = d.id);
-  get diagnostics v_removed = row_count;
-  delete from documents.links l using documents.documents d
-   where d.id = l.document_id and d.text_status not in ('text_layer', 'partial_text');
-  delete from documents.pages p where not exists (select 1 from documents.documents d where d.sha256 = p.sha256
-                                                    and d.text_status in ('text_layer', 'partial_text', 'pending_index'));
-  delete from documents.page_sets s where not exists (select 1 from documents.documents d where d.sha256 = s.sha256);
-  delete from documents.extractions e where not exists (select 1 from documents.documents d where d.sha256 = e.sha256
-                                                          and d.text_status in ('text_layer', 'partial_text'));
+  with gone as (delete from documents.links l where not exists (select 1 from _doc_new n where n.id = l.document_id) returning 1)
+  select count(*) into v_n from gone;
+  with gone as (delete from documents.documents d where not exists (select 1 from _doc_new n where n.id = d.id) returning 1)
+  select count(*) into v_removed from gone;
+  with gone as (
+    delete from documents.links l using documents.documents d
+     where d.id = l.document_id and d.text_status not in ('text_layer', 'partial_text')
+    returning 1)
+  select count(*) into v_n from gone;
+  with gone as (
+    delete from documents.pages p where not exists (select 1 from documents.documents d where d.sha256 = p.sha256
+                                                      and d.text_status in ('text_layer', 'partial_text', 'pending_index'))
+    returning 1)
+  select count(*) into v_n from gone;
+  with gone as (
+    delete from documents.page_sets s where not exists (select 1 from documents.documents d where d.sha256 = s.sha256) returning 1)
+  select count(*) into v_n from gone;
+  with gone as (
+    delete from documents.extractions e where not exists (select 1 from documents.documents d where d.sha256 = e.sha256
+                                                            and d.text_status in ('text_layer', 'partial_text'))
+    returning 1)
+  select count(*) into v_n from gone;
 
   select jsonb_build_object(
     'documents', (select count(*) from documents.documents),
@@ -533,7 +551,7 @@ end $$;
 -- page hit withholds every page of those bytes), then one english tsvector per page and the first ECF header.
 create or replace function public.documents_build_pages_v1(p_build text, p_limit integer default 100) returns jsonb
 language plpgsql security definer set search_path = '' as $$
-declare s record; v_hit integer; v_ecf jsonb; v_pages integer; v_chars bigint; v_ocr integer;
+declare s record; v_hit integer; v_ecf jsonb; v_pages integer; v_chars bigint; v_ocr integer; v_n integer;
   n_indexed integer := 0; n_withheld integer := 0; n_pages integer := 0; v_remaining integer;
 begin
   if p_build is null or p_build !~ '^[a-z0-9_.-]{1,40}$' then raise exception 'Invalid build' using errcode = '22023'; end if;
@@ -549,8 +567,8 @@ begin
      limit p_limit
   loop
     select min(p.page) into v_hit from corpus_ingest.pdf_text_pages p where p.sha256 = s.sha256 and documents.withheld_text(p.text);
-    delete from documents.pages p where p.sha256 = s.sha256;
-    delete from documents.extractions e where e.sha256 = s.sha256;
+    with gone as (delete from documents.pages p where p.sha256 = s.sha256 returning 1) select count(*) into v_n from gone;
+    with gone as (delete from documents.extractions e where e.sha256 = s.sha256 returning 1) select count(*) into v_n from gone;
     if v_hit is not null then
       insert into documents.page_sets as ps (sha256, fingerprint, status, pages, chars, ocr_pages, policy_page, ecf, build, built_at)
       values (s.sha256, s.fp, 'withheld_policy', 0, 0, 0, v_hit, null, p_build, now())

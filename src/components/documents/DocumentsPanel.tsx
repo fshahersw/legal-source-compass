@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { FileText } from "lucide-react";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 import { TrendCardView, type CardState } from "@/components/analytics/hub/TrendCard";
 import type { BlockDef } from "@/lib/analytics/registry";
 import {
@@ -35,19 +36,25 @@ function detailFor(type: EntityType, id: string): BlockDef["detail"] {
 /**
  * "Documents" panel for a court, judge, MDL, statute / regulation or decision page: the filings per year (trend card),
  * what the count is based on, and the latest filings, each opening in the viewer. Every state is drawn: loading,
- * error, not built yet, none, and loaded.
+ * error, not built yet, none, and loaded. `quiet` (statute, regulation and decision pages, where most units are cited
+ * by no filing) draws the panel only once filings are found.
  */
 export function DocumentsPanel({
   type,
   id,
   limit = 6,
+  quiet = false,
+  className,
 }: {
   type: EntityType;
   id: string;
   limit?: number;
+  quiet?: boolean;
+  className?: string;
 }) {
   const q = useQuery(entityDocumentsQuery(type, id, limit));
   const [open, setOpen] = useState<OpenDocument | null>(null);
+  if (quiet && !(q.data?.available && q.data.docs.total > 0)) return null;
   const def: BlockDef = {
     id: `documents-${type}-${id.replace(/[^a-z0-9_-]/gi, "-")}`,
     group: "courts",
@@ -71,7 +78,7 @@ export function DocumentsPanel({
                 : `No filing in the collection is listed for this ${ENTITY_NOUN[type]}.`,
             };
   return (
-    <section aria-labelledby={`documents-${def.id}`} className="space-y-2">
+    <section aria-labelledby={`documents-${def.id}`} className={cn("space-y-2", className)}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 id={`documents-${def.id}`} className="text-sm font-semibold">
           {HEADING[type]}

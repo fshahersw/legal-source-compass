@@ -4,6 +4,7 @@ import { AppShell } from "@/components/atlas/AppShell";
 import { CasesPanel } from "@/components/matters/CasesPanel";
 import { DocketPanel } from "@/components/matters/DocketPanel";
 import { DocumentsPanel } from "@/components/matters/DocumentsPanel";
+import { DocumentsPanel as FilingsPanel } from "@/components/documents/DocumentsPanel";
 import { EvidencePanel } from "@/components/matters/EvidencePanel";
 import { MatterHeader } from "@/components/matters/MatterHeader";
 import { OverviewPanel } from "@/components/matters/OverviewPanel";
@@ -77,6 +78,9 @@ export function MatterPage({
           {tab === "overview" ? <OverviewPanel payload={payload} /> : null}
           {tab === "cases" ? <CasesPanel payload={payload} /> : null}
           {tab === "docket" ? <DocketPanel payload={payload} /> : null}
+          {tab === "documents" && /^[1-9][0-9]{0,5}$/.test(o.mdl) ? (
+            <FilingsPanel type="mdl" id={o.mdl} className="mb-6" />
+          ) : null}
           {tab === "documents" ? (
             <DocumentsPanel
               payload={payload}

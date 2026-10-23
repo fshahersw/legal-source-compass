@@ -8,6 +8,7 @@ import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { CfrBlocks, CfrNotes } from "@/components/regulatory/CfrText";
 import { AuthoritiesForPartPanel } from "@/components/authorities/AuthoritiesForPartPanel";
 import { SubjectsForPartPanel } from "@/components/authorities/SubjectsForPartPanel";
+import { DocumentsPanel } from "@/components/documents/DocumentsPanel";
 import { pageHead } from "@/lib/corpus/head";
 import { CFR_PART, CFR_TITLE, listHeading, type CfrListItem } from "@/lib/external/ecfrFull";
 import { getCfrPart } from "@/lib/external/ecfrFull.functions";
@@ -113,6 +114,9 @@ function CfrPartPage() {
           ) : null}
           <AuthoritiesForPartPanel title={title} part={part} />
           <SubjectsForPartPanel title={title} part={part} />
+          {/^[0-9]{1,2}$/.test(title) && /^[0-9]{1,5}$/.test(part) ? (
+            <DocumentsPanel type="law_unit" id={`cfr:${title}:${part}`} quiet />
+          ) : null}
           {p?.blocks.length ? (
             <section
               aria-label="Text printed for the part"

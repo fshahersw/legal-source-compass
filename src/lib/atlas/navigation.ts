@@ -365,6 +365,7 @@ const SECTIONS: readonly SectionSpec[] = [
           at(p, "/registry") ||
           at(p, "/sources/analysis") ||
           at(p, "/sources/docket-documents") ||
+          at(p, "/litigation/documents") ||
           recordIn("litigation", "dockets")(p),
       },
       {

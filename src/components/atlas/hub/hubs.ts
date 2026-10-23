@@ -185,6 +185,12 @@ export const HUBS: Readonly<Record<Exclude<PrimarySection, "insights">, HubSpec>
         counts: [{ dataset: "clb_docket_master", label: "docket statistics rows" }],
       },
       {
+        to: "/litigation/documents",
+        label: "Court filings",
+        description:
+          "Full-text search of the MDL filings the matter pages list: open filings only, with sealed or redacted material left out.",
+      },
+      {
         to: "/courts/securities",
         label: "Securities class actions",
         description:

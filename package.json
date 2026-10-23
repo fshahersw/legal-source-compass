@@ -20,7 +20,7 @@
     "test:contracts": "node scripts/test/run-offline-contracts.mjs",
     "test:python": "node scripts/test/run-python-contracts.mjs",
     "test:assets": "node scripts/enrichment/verify_court_artwork.mjs",
-    "test:sql": "node --test --test-concurrency=1 scripts/legal/state-codes/publisher-code-intake.test.mjs scripts/legal/state-codes/publisher-code-intake-v2.test.mjs scripts/legal/state-codes/publisher-code-multicode-v3.test.mjs scripts/legal/state-codes/publisher-code-outline-v4.test.mjs scripts/legal/state-codes/ca-parser4-promotion.test.mjs src/lib/regulatory/contract.test.mjs src/lib/fda-analytics/contract.test.mjs scripts/insights/insights-contract.test.mjs src/lib/ingest/contract.test.mjs scripts/ingest/jsonb.test.mjs scripts/semantic/semantic-sql.test.mjs",
+    "test:sql": "node --test --test-concurrency=1 scripts/legal/state-codes/publisher-code-intake.test.mjs scripts/legal/state-codes/publisher-code-intake-v2.test.mjs scripts/legal/state-codes/publisher-code-multicode-v3.test.mjs scripts/legal/state-codes/publisher-code-outline-v4.test.mjs scripts/legal/state-codes/ca-parser4-promotion.test.mjs src/lib/regulatory/contract.test.mjs src/lib/fda-analytics/contract.test.mjs scripts/insights/insights-contract.test.mjs src/lib/ingest/contract.test.mjs scripts/ingest/jsonb.test.mjs scripts/semantic/semantic-sql.test.mjs src/lib/documents/contract.test.mjs",
     "typecheck": "tsc --noEmit",
     "verify": "npm run typecheck && npm test && npm run test:contracts && npm run test:python && npm run test:assets && npm run build",
     "audit:corpus": "node scripts/audit-corpus.mjs",

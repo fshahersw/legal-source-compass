@@ -18,6 +18,7 @@ import { BankruptcyFilingsPanel } from "@/components/judiciary/BankruptcyFilings
 import { CourtVacanciesPanel } from "@/components/judiciary/CourtVacanciesPanel";
 import { CriminalCaseloadPanel } from "@/components/judiciary/CriminalCaseloadPanel";
 import { CourtCollectionPanel } from "@/components/courts/clb/CourtCollectionPanel";
+import { DocumentsPanel } from "@/components/documents/DocumentsPanel";
 import { AppellatePanel } from "@/components/courts/clb/AppellatePanel";
 import { BankruptcyActivityPanel } from "@/components/courts/clb/BankruptcyActivityPanel";
 import { OralArgumentsPanel } from "@/components/courts/clb/OralArgumentsPanel";
@@ -26,6 +27,8 @@ import { ProsecutionsPanel } from "@/components/enforcement/extra/ProsecutionsPa
 import { SentencingPanel } from "@/components/enforcement/extra/SentencingPanel";
 import { CourtJudgesRosterPanel } from "@/components/courts/CourtJudgesRosterPanel";
 
+/** Court ids the filings index accepts (documents_for_entity_v1). */
+const COURT_ID = /^[a-z0-9_-]{1,40}$/;
 export const Route = createFileRoute("/courts/$id")({
   loader: ({ context, params }) =>
     context.queryClient.ensureQueryData(entityQuery("court_spine", params.id)),
@@ -103,6 +106,7 @@ function Page() {
           <SentencingPanel courtId={id} />
           <ProsecutionsPanel courtId={id} />
           <CourtCollectionPanel courtId={id} />
+          {COURT_ID.test(id) ? <DocumentsPanel type="court" id={id} className="mb-6" /> : null}
           <BankruptcyActivityPanel courtId={id} />
           <AppellatePanel courtId={id} />
           <OralArgumentsPanel courtId={id} />

@@ -8,6 +8,7 @@ import { JudgePanelServicePanel } from "@/components/judges/clb/JudgePanelServic
 import { JudgeHeadshot } from "@/components/judges/JudgeHeadshot";
 import { JudgeMdlPanel } from "@/components/judges/JudgeMdlPanel";
 import { JudgeMdlFlowsPanel } from "@/components/judges/JudgeMdlFlowsPanel";
+import { DocumentsPanel } from "@/components/documents/DocumentsPanel";
 import { NominationPanel } from "@/components/judiciary/NominationPanel";
 import { pageHead } from "@/lib/corpus/head";
 import { canonicalState } from "@/lib/corpus/stateHub";
@@ -71,6 +72,9 @@ function Page() {
           <JudgeDisclosuresPanel judgeId={id} />
           <JudgeMdlPanel judgeId={id} />
           <JudgeMdlFlowsPanel judgeId={id} />
+          {/^[0-9a-f]{32}$/.test(id) ? (
+            <DocumentsPanel type="judge" id={id} quiet className="mb-6" />
+          ) : null}
           {states.length ? (
             <div className="mb-5 flex flex-wrap items-center gap-2 text-xs">
               <span className="text-muted-foreground">Recorded state associations:</span>

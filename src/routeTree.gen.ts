@@ -80,6 +80,7 @@ import { Route as LawUscodeRouteImport } from './routes/law_.uscode'
 import { Route as LimitationsStatutoryRouteImport } from './routes/limitations_.statutory'
 import { Route as LitigationIndexRouteImport } from './routes/litigation.index'
 import { Route as LitigationSettlementsRouteImport } from './routes/litigation.settlements'
+import { Route as LitigationDocumentsRouteImport } from './routes/litigation_.documents'
 import { Route as MattersIndexRouteImport } from './routes/matters.index'
 import { Route as MattersIdRouteImport } from './routes/matters.$id'
 import { Route as MattersAnalyticsRouteImport } from './routes/matters.analytics'
@@ -491,6 +492,11 @@ const LitigationSettlementsRoute = LitigationSettlementsRouteImport.update({
   path: '/litigation/settlements',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LitigationDocumentsRoute = LitigationDocumentsRouteImport.update({
+  id: '/litigation_/documents',
+  path: '/litigation/documents',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MattersIndexRoute = MattersIndexRouteImport.update({
   id: '/matters/',
   path: '/matters/',
@@ -838,6 +844,7 @@ export interface FileRoutesByFullPath {
   '/law/uscode': typeof LawUscodeRouteWithChildren
   '/limitations/statutory': typeof LimitationsStatutoryRoute
   '/litigation/settlements': typeof LitigationSettlementsRoute
+  '/litigation/documents': typeof LitigationDocumentsRoute
   '/matters/$id': typeof MattersIdRoute
   '/matters/analytics': typeof MattersAnalyticsRoute
   '/matters/cases': typeof MattersCasesRoute
@@ -960,6 +967,7 @@ export interface FileRoutesByTo {
   '/law/rulemaking': typeof LawRulemakingRoute
   '/limitations/statutory': typeof LimitationsStatutoryRoute
   '/litigation/settlements': typeof LitigationSettlementsRoute
+  '/litigation/documents': typeof LitigationDocumentsRoute
   '/matters/$id': typeof MattersIdRoute
   '/matters/analytics': typeof MattersAnalyticsRoute
   '/matters/cases': typeof MattersCasesRoute
@@ -1087,6 +1095,7 @@ export interface FileRoutesById {
   '/law_/uscode': typeof LawUscodeRouteWithChildren
   '/limitations_/statutory': typeof LimitationsStatutoryRoute
   '/litigation/settlements': typeof LitigationSettlementsRoute
+  '/litigation_/documents': typeof LitigationDocumentsRoute
   '/matters/$id': typeof MattersIdRoute
   '/matters/analytics': typeof MattersAnalyticsRoute
   '/matters/cases': typeof MattersCasesRoute
@@ -1217,6 +1226,7 @@ export interface FileRouteTypes {
     | '/law/uscode'
     | '/limitations/statutory'
     | '/litigation/settlements'
+    | '/litigation/documents'
     | '/matters/$id'
     | '/matters/analytics'
     | '/matters/cases'
@@ -1339,6 +1349,7 @@ export interface FileRouteTypes {
     | '/law/rulemaking'
     | '/limitations/statutory'
     | '/litigation/settlements'
+    | '/litigation/documents'
     | '/matters/$id'
     | '/matters/analytics'
     | '/matters/cases'
@@ -1465,6 +1476,7 @@ export interface FileRouteTypes {
     | '/law_/uscode'
     | '/limitations_/statutory'
     | '/litigation/settlements'
+    | '/litigation_/documents'
     | '/matters/$id'
     | '/matters/analytics'
     | '/matters/cases'
@@ -1594,6 +1606,7 @@ export interface RootRouteChildren {
   LawUscodeRoute: typeof LawUscodeRouteWithChildren
   LimitationsStatutoryRoute: typeof LimitationsStatutoryRoute
   LitigationSettlementsRoute: typeof LitigationSettlementsRoute
+  LitigationDocumentsRoute: typeof LitigationDocumentsRoute
   MattersIdRoute: typeof MattersIdRoute
   MattersAnalyticsRoute: typeof MattersAnalyticsRoute
   MattersCasesRoute: typeof MattersCasesRoute
@@ -2133,6 +2146,13 @@ declare module '@tanstack/react-router' {
       path: '/litigation/settlements'
       fullPath: '/litigation/settlements'
       preLoaderRoute: typeof LitigationSettlementsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/litigation_/documents': {
+      id: '/litigation_/documents'
+      path: '/litigation/documents'
+      fullPath: '/litigation/documents'
+      preLoaderRoute: typeof LitigationDocumentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/matters/': {
@@ -2735,6 +2755,7 @@ const rootRouteChildren: RootRouteChildren = {
   LawUscodeRoute: LawUscodeRouteWithChildren,
   LimitationsStatutoryRoute: LimitationsStatutoryRoute,
   LitigationSettlementsRoute: LitigationSettlementsRoute,
+  LitigationDocumentsRoute: LitigationDocumentsRoute,
   MattersIdRoute: MattersIdRoute,
   MattersAnalyticsRoute: MattersAnalyticsRoute,
   MattersCasesRoute: MattersCasesRoute,
