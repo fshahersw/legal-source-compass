@@ -22,6 +22,11 @@ Changes after first commit are additive only; anything breaking gets a `/2` sche
   nodes.jsonl.gz        state-law-node/1      (one per hierarchy node, parents before children)
   sections.jsonl.gz     state-law-section/1   (one per section, document order)
   sources.jsonl.gz      state-law-source/1    (one per fetched object: url, sha256, bytes, status, time)
+  rejects.jsonl.gz      ledger of records not emitted: {state, code, number, reason, source_url, source_sha256}
+                        (full runs only; a sample run stops on the first ModelError instead). Reasons include a
+                        record that fails a model check, "range entry: Secs. x to y …" (not one section),
+                        "superseded version" (a version whose stated end date has passed) and publisher copies that
+                        are not the current text (DC "(Perm)" copies)
   verify.json           exact-text proof (sample runs; optional on full runs)
 <raw>/<xx>/<sha256[:2]>/<sha256>.raw  + .txt      (only with --keep-raw; validation samples always keep raw)
 ```
@@ -38,7 +43,7 @@ same day. One edition = one acquisition of the publisher's current compilation.
 | `edition_id` | text | |
 | `state` | `^[A-Z]{2}$` | USPS code (DC included) |
 | `code` | `^[A-Z0-9]{1,12}$` | code key within the state (`FS`, `PEN`, `ILCS`, `RS`, `CC`, `GBR`…). Single-code states still use a key. |
-| `number` | text | the section designation **as printed**, without `§`/`Sec.`/trailing period. Where the state's numbering is only unique inside a title/chapter, the container is prefixed with `:` — `DE 10:8106`, `ME 14:752`, `MA 260:2A`, `IL 735:5/13-202`, `LA RS 9:2800.6`, `VT 12:511`. |
+| `number` | text | the section designation **as printed**, without `§`/`Sec.`/trailing period. Where the state's numbering is only unique inside a title/chapter, the container is prefixed with `:` — `DE 10:8106`, `ME 14:752`, `MA 260:2A`, `IL 735:5/13-202`, `LA RS 9:2800.6`, `VT 12:511`. A publisher's own punctuation stays (`KS 79-32,117`, `DC 28:2-725`); editorial brackets around a number are dropped (`DC [3-1210.12]` → `3-1210.12`). |
 | `number_norm` | text | `lib.norm_number(number)`: lowercase, unicode dashes → `-`, whitespace removed, leading `§`/`sec.` removed. SQL mirrors it exactly. |
 | `version` | text\|null | verbatim version label when >1 versions (e.g. `(Text of section operative January 1, 2027)`), else null |
 | `citation` | text | canonical citation, Bluebook style for the state, from the code's `citation_template` (`{n}` = number, `{t}`/`{s}` = the parts before/after the first `:`). E.g. `Fla. Stat. § 95.11`, `Cal. Civ. Proc. Code § 335.1`, `735 Ill. Comp. Stat. 5/13-202`, `Del. Code Ann. tit. 10, § 8106`, `Mass. Gen. Laws ch. 260, § 2A`, `Md. Code Ann., Cts. & Jud. Proc. § 5-101`. |
@@ -52,7 +57,7 @@ same day. One edition = one acquisition of the publisher's current compilation.
 | `node_id` | text | the innermost hierarchy node containing the section (§3) |
 | `path` | array | `[{"level","label","number","heading"}]` root→leaf (code root excluded), native labels |
 | `ordinal` | int | document order within the edition (0-based, strictly increasing) |
-| `source` | object | `{"url","retrieved_at","sha256","bytes","method","member"}` — `method` ∈ `publisher_page`, `publisher_bulk`, `publisher_api`, `retained_original`; `member` = path inside an archive or null; `sha256` = sha256 of the exact source bytes the section was cut from |
+| `source` | object | `{"url","retrieved_at","sha256","bytes","method","member"}` — `method` ∈ `publisher_page`, `publisher_bulk`, `publisher_api`, `retained_original`; `member` = path inside an archive or null; `sha256` = sha256 of the exact source bytes the section was cut from. Additive: `also` = `[{"url","sha256",…}]` further publisher objects a quote may come from (e.g. KS takes a repealed section's marker from the chapter list); verify.py checks quotes against the union of the renderings |
 | `text_sha256` | hex | sha256 of UTF-8 `text` |
 | `parser` | text | `<xx>-<name>/<int>` |
 
@@ -64,7 +69,14 @@ Status rules (only from the publisher's own markers):
 - `in_force`: none of the above and the edition is the publisher's current official compilation. `status_basis =
   current_compilation`. It means "printed as operative text in the publisher's compilation as of its currency
   statement" — the UI always shows the currency statement beside it.
-- `not_recorded`: the edition is not current or not official, or the publisher's markers are ambiguous.
+- `not_recorded`: the edition is not current or not official, or the publisher's markers are ambiguous, or the
+  publisher marks the text as not operative in a way the enum does not name (DC "Not Funded", "Not Applicable",
+  "[Omitted]"; a heading-only entry) — the verbatim marker is still kept in `status_marker`.
+- `lib.classify_status` only treats a heading or short body as a marker when it *is* the marker: the marker word must
+  be followed by the end, punctuation, a number, or a word introducing its particulars (`Repealed by …`, `Renumbered
+  as …`, `Expired July 1, 2020`, `Reserved for future use`); a trailing bracket (`Limitations. [Repealed]`) also counts.
+  `Transferred employees; rights.`, `Reserved powers.`, `Repealed Laws Not Revived.` and `Sunset.` are catchlines,
+  not markers.
 
 ## 3. Hierarchy node — `state-law-node/1`
 
@@ -93,10 +105,15 @@ Status rules (only from the publisher's own markers):
   "currency_statement": "…verbatim…",                       // verbatim or null
   "currency_source_url": "https://…",                       // where the statement was read
   "currency_through": "2026-06-30",                         // only a date the publisher states, else null
-  "retrieved_from": "2026-10-24T01:00:00Z", "retrieved_to": "…",
+  "source_last_modified": "…",                              // additive: what the publisher's files state about their
+                                                            // age when no currency sentence exists (Last-Modified,
+                                                            // listing dates, build/codified dates), verbatim values
+  "source_mode": "fresh",                                   // additive: fresh | retained_original | mixed
+  "retrieved_from": "2026-10-24T01:00:00Z", "retrieved_to": "…",   // min/max retrieved_at of the sources; in
+                                                            // retained mode these are the original capture times
   "codes": [{"code":"FS","name":"Florida Statutes","citation_template":"Fla. Stat. § {n}",
              "patterns":[{"regex":"…","number":"\\1"}]}],
-  "counts": {"sections": 0, "nodes": 0, "sources": 0, "by_status": {"in_force": 0}},
+  "counts": {"sections": 0, "nodes": 0, "sources": 0, "rejected": 0, "source_bytes": 0, "by_status": {"in_force": 0}},
   "files": {"sections.jsonl.gz": {"sha256": "…", "bytes": 0, "records": 0}},
   "parser": "fl-online-sunshine/1", "lib": "state-law-lib/1",
   "sample": null,                                            // or {"limit": N} for bounded samples
@@ -171,5 +188,36 @@ lib.render_text(body, content_type) -> str  (the .txt rendering used by the exac
 lib.node_id(state, code, steps) -> str      lib.section_id(state, code, number, version_index=None) -> str
 ```
 
-CLI: `python3 scripts/state_law/run.py <xx> --out private/build/w1025_<you>/state_law --raw private/acq/w1025_<you>/state_law [--sample N] [--keep-raw]`
-then `python3 scripts/state_law/verify.py <edition dir> --raw <raw dir>` for the exact-text proof.
+Additive API (all backwards compatible):
+
+```python
+ctx.get(url, fallback_fresh=False, keep_raw=True, **fetch_kwargs) -> lib.Fetched
+    # the publisher (fresh) or, in retained mode, this project's earlier capture of the same URL (sha256-checked);
+    # fallback_fresh reads the publisher when no capture exists; keep_raw=False records a bulk archive without
+    # keeping its bytes (members are kept through ctx.member)
+ctx.fetch(..., keep_raw=True)
+ctx.member(archive_fetched_or_dict, name, body) -> lib.Fetched   # an archive member (or a file at a repository
+    # revision: pass {"url": <file URL at that revision>, "retrieved_at": …}) recorded as its own source
+ctx.edition(..., source_last_modified=None)                      # may be called again later in acquire()
+ctx.section(..., version_index=None, also=(), ordinal=None)
+ctx.today                                                         # run date (UTC) for effective-date comparisons
+ctx.sample, ctx.raw_root, ctx.retained, ctx._rejects.write({...})
+lib.RetainedStore.from_jsonl(state, path) / .from_rpc(state)      # retained originals index (url, sha256, bytes,
+    # object_key, retrieved_at); downloads need EXTERNAL_SUPABASE_URL/KEY in the environment
+lib.alias_patterns(aliases, prefix=None)  lib.apply_patterns(codes, citation) -> [(code, number_norm)]
+lib.xml_text / caml_text / slim_text / pdf_text / json_text       # renderers behind lib.render_text
+lib.decode_bytes(body, encoding=None)    # BOM, declared charset (ISO-8859-1/ASCII labels decode as windows-1252,
+                                         # as browsers do; a utf-16 label on 8-bit bytes is ignored), utf-8, cp1252
+lib.Blocked                               # raised by acquire() when the publisher refuses or the state is blocked
+```
+
+Renderings (the `.txt` every quote is checked against): HTML (`html_text`: block boundaries are lines, raw newlines
+are spaces except in `<pre>`), XML (`xml_text`: element boundaries are lines except inline elements — `cite`, `em`,
+`strong`, `span`, `a`, … — and DC codification instructions are left out), California CAML (`caml_text`), Iowa slim
+XML (`slim_text`: empty character spans become their characters, an identifier span is followed by a space), PDF
+(`pdftotext -layout`), JSON, plain text.
+
+CLI: `python3 scripts/state_law/run.py <xx> --out private/build/w1025_<you>/state_law --raw private/acq/w1025_<you>/state_law [--sample N] [--keep-raw] [--option k=v] [--retained-index FILE]`
+(`--option source=retained` pages the retained index from `public.state_law_retained_sources_v1`; exit 3 = blocked,
+`blocked.json` written) then `python3 scripts/state_law/verify.py <edition dir> --raw <raw dir>` for the exact-text
+proof (`--no-require-raw` for a structural check of a full run).
