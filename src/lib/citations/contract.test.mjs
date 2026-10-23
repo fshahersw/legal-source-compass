@@ -389,3 +389,25 @@ test("read RPCs: document, cited-by, top authorities, co-citation, profile, map,
   assert.equal(st.resolvers.state_law_resolve_v1, true);
   assert.equal(st.resolvers.caselaw_resolve_v2, false);
 });
+
+test("insights family 'citations' (insights-citations-v1.sql) counts the graph for spine entities", async () => {
+  await db.exec("set check_function_bodies = off");
+  await db.exec(await fs.readFile(path.resolve("database/contracts/insights-v1.sql"), "utf8"));
+  await db.exec("set check_function_bodies = on");
+  await db.exec(await fs.readFile(path.resolve("database/contracts/insights-citations-v1.sql"), "utf8"));
+  await db.exec(await fs.readFile(path.resolve("database/contracts/insights-citations-v1.sql"), "utf8")); // idempotent
+  for (const [t, id] of [["mdl", "2738"], ["mdl", "3166"], ["court", "njd"]])
+    await db.query("insert into insights.entities(entity_type, entity_id, label, source_dataset) values ($1,$2,$3,'test')", [t, id, id]);
+  const r = (await one(db, "select insights.refresh_citations('test') v")).v;
+  assert.equal(r.status, "succeeded", JSON.stringify(r));
+  const f = (await db.query("select metric_id, entity_type, entity_id, period, value::int v, n::int n from insights.facts order by 1,2,3,4")).rows;
+  const get = (m, t, id, p) => f.find((x) => x.metric_id === m && x.entity_type === t && x.entity_id === id && (p === undefined || x.period === p));
+  // MDL 2738: D1 (2021) and D2 (2023) cite; D4 is held and not counted
+  assert.deepEqual([get("citations_filings_citing", "mdl", "2738", "2021").v, get("citations_filings_citing", "mdl", "2738", "2021").n], [1, 1]);
+  assert.equal(get("citations_filings_citing", "court", "njd", "2023").v, 1);
+  assert.equal(get("citations_filings_citing", "court", "cand", "2025"), undefined, "cand is not in the spine");
+  assert.equal(get("citations_decisions_cited", "mdl", "2738").v, 2);
+  assert.ok(get("citations_provisions_cited", "mdl", "2738").v >= 5);
+  const again = (await one(db, "select insights.refresh_citations('test') v")).v;
+  assert.equal(again.unchanged, f.length);
+});

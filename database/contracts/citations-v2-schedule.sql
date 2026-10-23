@@ -19,7 +19,8 @@
 --        headers := jsonb_build_object('Content-Type', 'application/json', 'Authorization', 'Bearer ' ||
 --          (select decrypted_secret from vault.decrypted_secrets where name = 'ingest_cron_secret')),
 --        body := jsonb_build_object('trigger', 'manual'), timeout_milliseconds := 10000);
---   4. apply this file. Re-applying replaces the job; select cron.unschedule('citations-nightly'); removes it.
+--   4. apply this file (after insights-citations-v1.sql if the insights family is wanted). Re-applying replaces the
+--      jobs; select cron.unschedule('citations-nightly'); and cron.unschedule('citations-insights-nightly') remove them.
 do $schedule$
 begin
   if not exists (select 1 from pg_extension where extname = 'pg_cron') or not exists (select 1 from pg_extension where extname = 'pg_net') then
@@ -38,4 +39,8 @@ select net.http_post(
   body := jsonb_build_object('trigger', 'schedule'),
   timeout_milliseconds := 10000)
 where not exists (select 1 from citations.runs where kind = 'nightly' and status = 'running' and started_at > now() - interval '3 hours')$cmd$);
+  -- the insights family 'citations' (insights-citations-v1.sql), after the last nightly invocation
+  if to_regprocedure('insights.refresh_citations(text)') is not null then
+    perform cron.schedule('citations-insights-nightly', '17 8 * * *', $cmd$select insights.refresh_citations('schedule')$cmd$);
+  end if;
 end $schedule$;
