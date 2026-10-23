@@ -6,14 +6,21 @@ import { AppShell } from "@/components/atlas/AppShell";
 import { DatasetCodeBrowser } from "@/components/corpus/DatasetCodeBrowser";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { FullCodeEntry } from "@/components/corpus/FullCodeEntry";
+import { InForceCodeBrowser } from "@/components/law/InForceCodeBrowser";
 import { ProjectionCodeBrowser } from "@/components/corpus/ProjectionCodeBrowser";
 import { TexasCodeBrowser } from "@/components/corpus/TexasCodeBrowser";
 import { pageHead } from "@/lib/corpus/head";
 import { stateByUsps } from "@/lib/corpus/geo";
 import { getStateCodeEntry } from "@/lib/law/stateCode.functions";
+import { listStateLawEditions } from "@/lib/law/stateLaw.functions";
+import { NODE_ID_MAX, SECTION_ID_MAX } from "@/lib/law/stateLawContract";
 import { parseHierarchyPath, type HierarchyStep } from "@/lib/law/stateCodeContract";
 
 type CodeSearch = {
+  view?: "inforce" | "captured" | undefined;
+  node?: string | undefined;
+  sec?: string | undefined;
+  lq?: string | undefined;
   code?: string | undefined;
   chapter?: string | undefined;
   section?: string | undefined;
@@ -35,6 +42,11 @@ const text = (value: unknown, max: number) => {
 
 export const Route = createFileRoute("/law_/codes/$state")({
   validateSearch: (search: Record<string, unknown>): CodeSearch => ({
+    view:
+      search["view"] === "inforce" || search["view"] === "captured" ? search["view"] : undefined,
+    node: text(search["node"], NODE_ID_MAX),
+    sec: text(search["sec"], SECTION_ID_MAX),
+    lq: text(search["lq"], 200),
     code: text(search["code"], 40),
     chapter: text(search["chapter"], 400),
     section: text(search["section"], 512),
@@ -80,6 +92,7 @@ function StateCodePage() {
   }) => {
     void navigate({
       search: {
+        view: search.view,
         code: search.code,
         q: search.q,
         path: search.path,
@@ -89,6 +102,18 @@ function StateCodePage() {
       },
     });
   };
+
+  const editionsFn = useServerFn(listStateLawEditions);
+  const editions = useQuery({
+    queryKey: ["state-law-editions"],
+    queryFn: () => editionsFn(),
+    staleTime: 60_000,
+    enabled: !!place,
+  });
+  const inForce = editions.data?.editions.find((e) => e.state === usps) ?? null;
+  // Deep links into a captured edition (section/path/code/chapter/title) keep opening that edition.
+  const legacy = !!(search.section || search.path || search.code || search.chapter || search.title);
+  const view = search.view ?? (inForce && !legacy ? "inforce" : "captured");
 
   let body: ReactNode;
   if (!place)
@@ -109,6 +134,7 @@ function StateCodePage() {
         onNavigate={(next) => {
           void navigate({
             search: {
+              view: search.view,
               q: search.q,
               path: next.path.length ? JSON.stringify(next.path) : undefined,
               section: next.section,
@@ -139,9 +165,55 @@ function StateCodePage() {
     );
   }
 
+  const tabs = inForce ? (
+    <div role="tablist" aria-label="Code views" className="mb-4 flex gap-1 border-b border-border">
+      {(
+        [
+          ["inforce", "In force (official publisher)"],
+          ["captured", "Captured editions"],
+        ] as const
+      ).map(([key, label]) => (
+        <button
+          key={key}
+          type="button"
+          role="tab"
+          aria-selected={view === key}
+          className={`-mb-px border-b-2 px-3 py-2 text-sm ${view === key ? "border-primary font-medium" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+          onClick={() =>
+            void navigate({
+              search: key === "inforce" ? { view: "inforce" } : { view: "captured", q: search.q },
+            })
+          }
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  ) : null;
+
   return (
-    <AppShell breadcrumbs={crumbs} title={listing?.codeName ?? `${place?.name ?? usps} code`}>
-      {body}
+    <AppShell
+      breadcrumbs={crumbs}
+      title={
+        view === "inforce" && inForce
+          ? inForce.codeName
+          : (listing?.codeName ?? `${place?.name ?? usps} code`)
+      }
+    >
+      {tabs}
+      {place && view === "inforce" && inForce ? (
+        <InForceCodeBrowser
+          state={usps}
+          nav={{ node: search.node, sec: search.sec, lq: search.lq }}
+          onNavigate={(next) =>
+            void navigate({
+              search: { view: "inforce", node: next.node, sec: next.sec, lq: next.lq },
+            })
+          }
+        />
+      ) : (
+        body
+      )}
     </AppShell>
   );
 }

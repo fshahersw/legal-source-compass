@@ -6,7 +6,9 @@ import { AppShell } from "@/components/atlas/AppShell";
 import { FolderGrid } from "@/components/corpus/FolderGrid";
 import { ExternalError } from "@/components/corpus/ExternalBadge";
 import { pageHead } from "@/lib/corpus/head";
+import { CodeCurrencyTable } from "@/components/law/CodeCurrencyTable";
 import { searchStateCodes, listStateCodes } from "@/lib/law/stateCode.functions";
+import { listStateLawEditions } from "@/lib/law/stateLaw.functions";
 import { showRecorded } from "@/lib/law/stateCodeContract";
 
 export const Route = createFileRoute("/law_/codes/")({
@@ -32,6 +34,12 @@ function StateCodesPage() {
     queryKey: ["full-state-codes"],
     queryFn: () => listFn(),
     staleTime: 0,
+  });
+  const editionsFn = useServerFn(listStateLawEditions);
+  const inForce = useQuery({
+    queryKey: ["state-law-editions"],
+    queryFn: () => editionsFn(),
+    staleTime: 60_000,
   });
   const found = useQuery({
     queryKey: ["state-code-search", q],
@@ -78,6 +86,19 @@ function StateCodesPage() {
       {codes.error ? <ExternalError error={codes.error} /> : null}
       {codes.isLoading ? (
         <p className="text-sm text-muted-foreground">Loading captured codes…</p>
+      ) : null}
+      {inForce.error ? <ExternalError error={inForce.error} /> : null}
+      {codes.data || inForce.data ? (
+        <CodeCurrencyTable
+          editions={inForce.data?.editions ?? []}
+          installed={inForce.data?.installed ?? false}
+          captured={(codes.data ?? []).map((row) => ({
+            state: row.state,
+            edition: row.edition,
+            currency: row.currency,
+            sections: row.sectionCount,
+          }))}
+        />
       ) : null}
       {codes.data ? (
         <FolderGrid
