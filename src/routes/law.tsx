@@ -169,6 +169,12 @@ function LawPage() {
             link: { to: "/law/constitutions", search: { q: "" } },
           },
           {
+            key: "uscode",
+            label: "United States Code",
+            note: "Official text from the Law Revision Counsel, with enacting and amending laws",
+            link: { to: "/law/uscode", search: { q: "" } },
+          },
+          {
             key: "cfr",
             label: "Code of Federal Regulations",
             note: "Full eCFR text of every section, with change history",

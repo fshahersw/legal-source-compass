@@ -62,6 +62,7 @@ import { Route as LawConstitutionsRouteImport } from './routes/law_.constitution
 import { Route as LawEnforcementRouteImport } from './routes/law_.enforcement'
 import { Route as LawMonitoringRouteImport } from './routes/law_.monitoring'
 import { Route as LawRegulationsRouteImport } from './routes/law_.regulations'
+import { Route as LawUscodeRouteImport } from './routes/law_.uscode'
 import { Route as LimitationsStatutoryRouteImport } from './routes/limitations_.statutory'
 import { Route as MattersIndexRouteImport } from './routes/matters.index'
 import { Route as MattersIdRouteImport } from './routes/matters.$id'
@@ -95,6 +96,8 @@ import { Route as LawConstitutionsStateRouteImport } from './routes/law_.constit
 import { Route as LawProvisionIdRouteImport } from './routes/law_.provision.$id'
 import { Route as LawRegulationsIndexRouteImport } from './routes/law_.regulations.index'
 import { Route as LawRegulationsStateRouteImport } from './routes/law_.regulations.$state'
+import { Route as LawUscodeIndexRouteImport } from './routes/law_.uscode.index'
+import { Route as LawUscodeTitleRouteImport } from './routes/law_.uscode.$title'
 import { Route as MattersLensMdlRouteImport } from './routes/matters.lens.$mdl'
 import { Route as PlacesStateCountyRouteImport } from './routes/places.$state.$county'
 import { Route as PrototypesCourtIdRouteImport } from './routes/prototypes.court.$id'
@@ -103,6 +106,7 @@ import { Route as PrototypesMdlIdRouteImport } from './routes/prototypes.mdl.$id
 import { Route as RecordsDatasetIdRouteImport } from './routes/records.$dataset.$id'
 import { Route as LawCfrTitleIndexRouteImport } from './routes/law_.cfr.$title.index'
 import { Route as LawCfrTitleSectionRouteImport } from './routes/law_.cfr.$title.$section'
+import { Route as LawUscodeTitleSectionRouteImport } from './routes/law_.uscode.$title.$section'
 import { Route as LawCfrTitlePartPartRouteImport } from './routes/law_.cfr.$title.part.$part'
 
 const IndexRoute = IndexRouteImport.update({
@@ -370,6 +374,11 @@ const LawRegulationsRoute = LawRegulationsRouteImport.update({
   path: '/law/regulations',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LawUscodeRoute = LawUscodeRouteImport.update({
+  id: '/law_/uscode',
+  path: '/law/uscode',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LimitationsStatutoryRoute = LimitationsStatutoryRouteImport.update({
   id: '/limitations_/statutory',
   path: '/limitations/statutory',
@@ -535,6 +544,16 @@ const LawRegulationsStateRoute = LawRegulationsStateRouteImport.update({
   path: '/$state',
   getParentRoute: () => LawRegulationsRoute,
 } as any)
+const LawUscodeIndexRoute = LawUscodeIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LawUscodeRoute,
+} as any)
+const LawUscodeTitleRoute = LawUscodeTitleRouteImport.update({
+  id: '/$title',
+  path: '/$title',
+  getParentRoute: () => LawUscodeRoute,
+} as any)
 const MattersLensMdlRoute = MattersLensMdlRouteImport.update({
   id: '/matters/lens/$mdl',
   path: '/matters/lens/$mdl',
@@ -574,6 +593,11 @@ const LawCfrTitleSectionRoute = LawCfrTitleSectionRouteImport.update({
   id: '/$title/$section',
   path: '/$title/$section',
   getParentRoute: () => LawCfrRoute,
+} as any)
+const LawUscodeTitleSectionRoute = LawUscodeTitleSectionRouteImport.update({
+  id: '/$section',
+  path: '/$section',
+  getParentRoute: () => LawUscodeTitleRoute,
 } as any)
 const LawCfrTitlePartPartRoute = LawCfrTitlePartPartRouteImport.update({
   id: '/$title/part/$part',
@@ -630,6 +654,7 @@ export interface FileRoutesByFullPath {
   '/law/enforcement': typeof LawEnforcementRoute
   '/law/monitoring': typeof LawMonitoringRoute
   '/law/regulations': typeof LawRegulationsRouteWithChildren
+  '/law/uscode': typeof LawUscodeRouteWithChildren
   '/limitations/statutory': typeof LimitationsStatutoryRoute
   '/matters/$id': typeof MattersIdRoute
   '/matters/analytics': typeof MattersAnalyticsRoute
@@ -664,6 +689,7 @@ export interface FileRoutesByFullPath {
   '/law/constitutions/$state': typeof LawConstitutionsStateRoute
   '/law/provision/$id': typeof LawProvisionIdRoute
   '/law/regulations/$state': typeof LawRegulationsStateRoute
+  '/law/uscode/$title': typeof LawUscodeTitleRouteWithChildren
   '/matters/lens/$mdl': typeof MattersLensMdlRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
   '/prototypes/court/$id': typeof PrototypesCourtIdRoute
@@ -674,7 +700,9 @@ export interface FileRoutesByFullPath {
   '/law/codes/': typeof LawCodesIndexRoute
   '/law/constitutions/': typeof LawConstitutionsIndexRoute
   '/law/regulations/': typeof LawRegulationsIndexRoute
+  '/law/uscode/': typeof LawUscodeIndexRoute
   '/law/cfr/$title/$section': typeof LawCfrTitleSectionRoute
+  '/law/uscode/$title/$section': typeof LawUscodeTitleSectionRoute
   '/law/cfr/$title/': typeof LawCfrTitleIndexRoute
   '/law/cfr/$title/part/$part': typeof LawCfrTitlePartPartRoute
 }
@@ -757,6 +785,7 @@ export interface FileRoutesByTo {
   '/law/constitutions/$state': typeof LawConstitutionsStateRoute
   '/law/provision/$id': typeof LawProvisionIdRoute
   '/law/regulations/$state': typeof LawRegulationsStateRoute
+  '/law/uscode/$title': typeof LawUscodeTitleRouteWithChildren
   '/matters/lens/$mdl': typeof MattersLensMdlRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
   '/prototypes/court/$id': typeof PrototypesCourtIdRoute
@@ -767,7 +796,9 @@ export interface FileRoutesByTo {
   '/law/codes': typeof LawCodesIndexRoute
   '/law/constitutions': typeof LawConstitutionsIndexRoute
   '/law/regulations': typeof LawRegulationsIndexRoute
+  '/law/uscode': typeof LawUscodeIndexRoute
   '/law/cfr/$title/$section': typeof LawCfrTitleSectionRoute
+  '/law/uscode/$title/$section': typeof LawUscodeTitleSectionRoute
   '/law/cfr/$title': typeof LawCfrTitleIndexRoute
   '/law/cfr/$title/part/$part': typeof LawCfrTitlePartPartRoute
 }
@@ -821,6 +852,7 @@ export interface FileRoutesById {
   '/law_/enforcement': typeof LawEnforcementRoute
   '/law_/monitoring': typeof LawMonitoringRoute
   '/law_/regulations': typeof LawRegulationsRouteWithChildren
+  '/law_/uscode': typeof LawUscodeRouteWithChildren
   '/limitations_/statutory': typeof LimitationsStatutoryRoute
   '/matters/$id': typeof MattersIdRoute
   '/matters/analytics': typeof MattersAnalyticsRoute
@@ -855,6 +887,7 @@ export interface FileRoutesById {
   '/law_/constitutions/$state': typeof LawConstitutionsStateRoute
   '/law_/provision/$id': typeof LawProvisionIdRoute
   '/law_/regulations/$state': typeof LawRegulationsStateRoute
+  '/law_/uscode/$title': typeof LawUscodeTitleRouteWithChildren
   '/matters/lens/$mdl': typeof MattersLensMdlRoute
   '/places/$state/$county': typeof PlacesStateCountyRoute
   '/prototypes/court/$id': typeof PrototypesCourtIdRoute
@@ -865,7 +898,9 @@ export interface FileRoutesById {
   '/law_/codes/': typeof LawCodesIndexRoute
   '/law_/constitutions/': typeof LawConstitutionsIndexRoute
   '/law_/regulations/': typeof LawRegulationsIndexRoute
+  '/law_/uscode/': typeof LawUscodeIndexRoute
   '/law_/cfr/$title/$section': typeof LawCfrTitleSectionRoute
+  '/law_/uscode/$title/$section': typeof LawUscodeTitleSectionRoute
   '/law_/cfr/$title/': typeof LawCfrTitleIndexRoute
   '/law_/cfr/$title/part/$part': typeof LawCfrTitlePartPartRoute
 }
@@ -920,6 +955,7 @@ export interface FileRouteTypes {
     | '/law/enforcement'
     | '/law/monitoring'
     | '/law/regulations'
+    | '/law/uscode'
     | '/limitations/statutory'
     | '/matters/$id'
     | '/matters/analytics'
@@ -954,6 +990,7 @@ export interface FileRouteTypes {
     | '/law/constitutions/$state'
     | '/law/provision/$id'
     | '/law/regulations/$state'
+    | '/law/uscode/$title'
     | '/matters/lens/$mdl'
     | '/places/$state/$county'
     | '/prototypes/court/$id'
@@ -964,7 +1001,9 @@ export interface FileRouteTypes {
     | '/law/codes/'
     | '/law/constitutions/'
     | '/law/regulations/'
+    | '/law/uscode/'
     | '/law/cfr/$title/$section'
+    | '/law/uscode/$title/$section'
     | '/law/cfr/$title/'
     | '/law/cfr/$title/part/$part'
   fileRoutesByTo: FileRoutesByTo
@@ -1047,6 +1086,7 @@ export interface FileRouteTypes {
     | '/law/constitutions/$state'
     | '/law/provision/$id'
     | '/law/regulations/$state'
+    | '/law/uscode/$title'
     | '/matters/lens/$mdl'
     | '/places/$state/$county'
     | '/prototypes/court/$id'
@@ -1057,7 +1097,9 @@ export interface FileRouteTypes {
     | '/law/codes'
     | '/law/constitutions'
     | '/law/regulations'
+    | '/law/uscode'
     | '/law/cfr/$title/$section'
+    | '/law/uscode/$title/$section'
     | '/law/cfr/$title'
     | '/law/cfr/$title/part/$part'
   id:
@@ -1110,6 +1152,7 @@ export interface FileRouteTypes {
     | '/law_/enforcement'
     | '/law_/monitoring'
     | '/law_/regulations'
+    | '/law_/uscode'
     | '/limitations_/statutory'
     | '/matters/$id'
     | '/matters/analytics'
@@ -1144,6 +1187,7 @@ export interface FileRouteTypes {
     | '/law_/constitutions/$state'
     | '/law_/provision/$id'
     | '/law_/regulations/$state'
+    | '/law_/uscode/$title'
     | '/matters/lens/$mdl'
     | '/places/$state/$county'
     | '/prototypes/court/$id'
@@ -1154,7 +1198,9 @@ export interface FileRouteTypes {
     | '/law_/codes/'
     | '/law_/constitutions/'
     | '/law_/regulations/'
+    | '/law_/uscode/'
     | '/law_/cfr/$title/$section'
+    | '/law_/uscode/$title/$section'
     | '/law_/cfr/$title/'
     | '/law_/cfr/$title/part/$part'
   fileRoutesById: FileRoutesById
@@ -1208,6 +1254,7 @@ export interface RootRouteChildren {
   LawEnforcementRoute: typeof LawEnforcementRoute
   LawMonitoringRoute: typeof LawMonitoringRoute
   LawRegulationsRoute: typeof LawRegulationsRouteWithChildren
+  LawUscodeRoute: typeof LawUscodeRouteWithChildren
   LimitationsStatutoryRoute: typeof LimitationsStatutoryRoute
   MattersIdRoute: typeof MattersIdRoute
   MattersAnalyticsRoute: typeof MattersAnalyticsRoute
@@ -1619,6 +1666,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LawRegulationsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/law_/uscode': {
+      id: '/law_/uscode'
+      path: '/law/uscode'
+      fullPath: '/law/uscode'
+      preLoaderRoute: typeof LawUscodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/limitations_/statutory': {
       id: '/limitations_/statutory'
       path: '/limitations/statutory'
@@ -1850,6 +1904,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LawRegulationsStateRouteImport
       parentRoute: typeof LawRegulationsRoute
     }
+    '/law_/uscode/': {
+      id: '/law_/uscode/'
+      path: '/'
+      fullPath: '/law/uscode/'
+      preLoaderRoute: typeof LawUscodeIndexRouteImport
+      parentRoute: typeof LawUscodeRoute
+    }
+    '/law_/uscode/$title': {
+      id: '/law_/uscode/$title'
+      path: '/$title'
+      fullPath: '/law/uscode/$title'
+      preLoaderRoute: typeof LawUscodeTitleRouteImport
+      parentRoute: typeof LawUscodeRoute
+    }
     '/matters/lens/$mdl': {
       id: '/matters/lens/$mdl'
       path: '/matters/lens/$mdl'
@@ -1905,6 +1973,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/law/cfr/$title/$section'
       preLoaderRoute: typeof LawCfrTitleSectionRouteImport
       parentRoute: typeof LawCfrRoute
+    }
+    '/law_/uscode/$title/$section': {
+      id: '/law_/uscode/$title/$section'
+      path: '/$section'
+      fullPath: '/law/uscode/$title/$section'
+      preLoaderRoute: typeof LawUscodeTitleSectionRouteImport
+      parentRoute: typeof LawUscodeTitleRoute
     }
     '/law_/cfr/$title/part/$part': {
       id: '/law_/cfr/$title/part/$part'
@@ -1974,6 +2049,32 @@ const LawRegulationsRouteWithChildren = LawRegulationsRoute._addFileChildren(
   LawRegulationsRouteChildren,
 )
 
+interface LawUscodeTitleRouteChildren {
+  LawUscodeTitleSectionRoute: typeof LawUscodeTitleSectionRoute
+}
+
+const LawUscodeTitleRouteChildren: LawUscodeTitleRouteChildren = {
+  LawUscodeTitleSectionRoute: LawUscodeTitleSectionRoute,
+}
+
+const LawUscodeTitleRouteWithChildren = LawUscodeTitleRoute._addFileChildren(
+  LawUscodeTitleRouteChildren,
+)
+
+interface LawUscodeRouteChildren {
+  LawUscodeTitleRoute: typeof LawUscodeTitleRouteWithChildren
+  LawUscodeIndexRoute: typeof LawUscodeIndexRoute
+}
+
+const LawUscodeRouteChildren: LawUscodeRouteChildren = {
+  LawUscodeTitleRoute: LawUscodeTitleRouteWithChildren,
+  LawUscodeIndexRoute: LawUscodeIndexRoute,
+}
+
+const LawUscodeRouteWithChildren = LawUscodeRoute._addFileChildren(
+  LawUscodeRouteChildren,
+)
+
 interface PlacesStateRouteChildren {
   PlacesStateCountyRoute: typeof PlacesStateCountyRoute
 }
@@ -2035,6 +2136,7 @@ const rootRouteChildren: RootRouteChildren = {
   LawEnforcementRoute: LawEnforcementRoute,
   LawMonitoringRoute: LawMonitoringRoute,
   LawRegulationsRoute: LawRegulationsRouteWithChildren,
+  LawUscodeRoute: LawUscodeRouteWithChildren,
   LimitationsStatutoryRoute: LimitationsStatutoryRoute,
   MattersIdRoute: MattersIdRoute,
   MattersAnalyticsRoute: MattersAnalyticsRoute,

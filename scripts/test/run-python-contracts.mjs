@@ -71,6 +71,7 @@ for (const suite of [
   { directory: "scripts/enrichment/ecfr_full", modules: ["test_ecfr_full"] },
   { directory: "scripts/enrichment/judiciary", modules: ["test_judiciary"] },
   { directory: "scripts/enrichment/enforcement_actions", modules: ["test_enforcement_actions"] },
+  { directory: "scripts/enrichment/uscode", modules: ["test_uscode"] },
   { directory: "scripts/enrichment/state_statutes", modules: ["test_state_statutes"] },
   {
     directory: "scripts/limitations/backfill",
