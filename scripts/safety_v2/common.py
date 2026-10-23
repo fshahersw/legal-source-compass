@@ -35,6 +35,7 @@ def utc_now():
 def public_url(url):
     """The URL as it may be recorded: any credential parameter removed."""
     out = KEY_PARAM.sub(lambda m: m.group(1), url)
+    out = re.sub(r"&{2,}", "&", out)
     return out.replace("?&", "?").rstrip("?&")
 
 

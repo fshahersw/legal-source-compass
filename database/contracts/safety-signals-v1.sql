@@ -1163,19 +1163,25 @@ begin
   if p_kind is not null and p_kind !~ '^[a-z_]{2,20}$' then raise exception 'Invalid kind' using errcode = '22023'; end if;
   if p_q is not null and length(p_q) > 100 then raise exception 'Query too long' using errcode = '22023'; end if;
   v_q := nullif(lower(btrim(coalesce(p_q, ''))), '');
+  -- reports_total: the ranked count stored with the subject, else the total of its main stored series (MDL groups)
   with hits as (
-    select s.* from safety.subjects s
+    select s.*, coalesce(s.reports_total, (select t.total from safety.series t where t.subject_id = s.id
+             and t.series in ('faers_reports', 'maude_reports', 'caers_reports', 'nhtsa_complaints')
+           order by array_position(array['faers_reports', 'maude_reports', 'caers_reports', 'nhtsa_complaints'], t.series)
+           limit 1)) as tot
+      from safety.subjects s
      where (p_type is null or s.subject_type = p_type) and (p_kind is null or s.kind = p_kind)
        and (v_q is null or position(v_q in lower(s.label)) > 0 or position(v_q in lower(s.id)) > 0
-            or position(v_q in lower(coalesce(s.keys->>'brand_names', ''))) > 0))
+            or position(v_q in lower(coalesce(s.keys->>'brand_names', ''))) > 0
+            or position(v_q in lower(coalesce(s.keys->>'title', ''))) > 0))
   select (select count(*) from hits),
          coalesce((select jsonb_agg(jsonb_build_object('id', h.id, 'subject_type', h.subject_type, 'kind', h.kind,
-                     'label', h.label, 'keys', h.keys, 'rank', h.rank, 'reports_total', h.reports_total, 'as_of', h.as_of,
+                     'label', h.label, 'keys', h.keys, 'rank', h.rank, 'reports_total', h.tot, 'as_of', h.as_of,
                      'source_id', h.source_id,
                      'mdls', (select coalesce(jsonb_agg(ms.mdl order by ms.mdl), '[]'::jsonb) from safety.mdl_subjects ms
                               where ms.subject_id = h.id))
-                     order by h.rank nulls last, h.reports_total desc nulls last, h.id)
-                   from (select * from hits order by rank nulls last, reports_total desc nulls last, id
+                     order by h.rank nulls last, h.tot desc nulls last, h.id)
+                   from (select * from hits order by rank nulls last, tot desc nulls last, id
                          limit p_limit offset p_offset) h), '[]'::jsonb)
     into v_total, v_rows;
   return jsonb_build_object('total', v_total, 'rows', v_rows, 'limit', p_limit, 'offset', p_offset);

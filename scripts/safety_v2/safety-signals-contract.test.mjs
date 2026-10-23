@@ -380,6 +380,12 @@ test("subject profile and listing", async () => {
   const list = await one(db, "select public.safety_subjects_v1('product', null, 'doce', 10, 0) r");
   assert.equal(list.r.total, 1);
   assert.equal(list.r.rows[0].id, "faers:docetaxel");
+  // an MDL group has no ranked count: its listing total is its main stored series total, else null (never invented)
+  let groups = await one(db, "select public.safety_subjects_v1('mdl_group', null, null, 10, 0) r");
+  assert.equal(groups.r.rows[0].reports_total, null);
+  await load(db, "series", [seriesRow("mdl:2740", "faers_reports", "2024-01", "2024-03", [5, 0, 2])]);
+  groups = await one(db, "select public.safety_subjects_v1('mdl_group', null, null, 10, 0) r");
+  assert.equal(Number(groups.r.rows[0].reports_total), 7);
   const prof = await one(db, "select public.safety_subject_v1('faers:docetaxel') r");
   assert.equal(prof.r.subject.label, "DOCETAXEL");
   assert.match(prof.r.subject.caveat, /does not establish/);
