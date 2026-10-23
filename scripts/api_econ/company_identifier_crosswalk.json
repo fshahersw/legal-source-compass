@@ -1,0 +1,4 @@
+{
+  "about": "Exact SEC CIK to SAM UEI/DUNS pairs, each stated together in one official record (cite it in source_url). Used by build_usaspending.py to link SEC companies to federal awards. No pair may be inferred from names. Empty until such a record is found: SEC filings and USAspending publish no common identifier.",
+  "entries": []
+}
