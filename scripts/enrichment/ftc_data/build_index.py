@@ -220,6 +220,14 @@ def build_catalog(entries=None):
     for f in files:
         base = os.path.basename(f["url"])
         loaded = LOADED_AS.get(base)
+        loaded_how = None
+        edition = re.search(r"(\d{4})$", f["name"])
+        year = int(edition.group(1)) if edition else None
+        # Data Book editions whose figures are on the platform were read from the Data Book PDFs, not from these downloads
+        if f["group"] == "csn_databook" and year and 2017 <= year <= 2024:
+            loaded, loaded_how = "ftc_sentinel_states", "the edition's figures were read from the Data Book PDF (also ftc_sentinel_national), not from this download"
+        elif f["group"] == "dnc_databook" and year and 2021 <= year <= 2025:
+            loaded, loaded_how = "ftc_dnc_states", "the edition's figures were read from the Data Book PDF, not from this download"
         got = entries.get(f["url"])
         if got:
             inputs.append(B.input_ref(got))
@@ -228,9 +236,9 @@ def build_catalog(entries=None):
         rows.append(
             B.record(
                 "ftc_open_data_catalog", rid, f["name"], source_url=OPEN_GOV, subtitle=f"FTC download, {file_format(f['url'])}",
-                cells={"name": f["name"], "kind": "Download", "period": (f["description"] or f"Edition {f['name'].split(' ')[-1]}")[:160], "download": f"Yes ({file_format(f['url'])}" + (f", {f['size']})" if f["size"] else ")"), "loaded": loaded or "Not loaded"},
+                cells={"name": f["name"], "kind": "Download", "period": (f["description"] or f"Edition {f['name'].split(' ')[-1]}")[:160], "download": f"Yes ({file_format(f['url'])}" + (f", {f['size']})" if f["size"] else ")"), "loaded": (loaded + " (from the PDF edition)" if loaded_how else loaded) or "Not loaded"},
                 facts=[("Name", f["name"]), ("Format and size as listed", f"{file_format(f['url'])}" + (f", {f['size']}" if f["size"] else "")), ("File", f["url"]), ("Dictionary", f["dictionary_url"]), ("What the FTC says", f["description"]),
-                       ("On this platform", loaded or "Not loaded here (the file is listed, not read)"), ("Read by this build", f"Yes, sha256 {got['sha256']}" if got else "No"), ("Listed on", OPEN_GOV)],
+                       ("On this platform", (f"{loaded}: {loaded_how}" if loaded_how else loaded) or "Not loaded here (the file is listed, not read)"), ("Read by this build", f"Yes, sha256 {got['sha256']}" if got else "No"), ("Listed on", OPEN_GOV)],
                 links=[{"url": f["url"], "label": "Download from ftc.gov"}] + ([{"url": f"/data/{loaded}", "label": "Dataset on this platform"}] if loaded else []),
                 text=" ".join([f["name"], f["description"] or "", "FTC open government data set download"]),
                 filters={"kind": [f["group"]]}, extra={"kind": "download", "group": f["group"], "url": f["url"], "loaded_as": loaded, "retrieved": bool(got)},

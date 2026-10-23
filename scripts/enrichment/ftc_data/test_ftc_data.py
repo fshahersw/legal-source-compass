@@ -287,5 +287,205 @@ class IndexParseTests(unittest.TestCase):
         self.assertEqual(IP.parse_contributors("<main><p>nothing</p></main>")["contributors"], [])
 
 
+import build_dnc as BD  # noqa: E402
+import build_hsr as BH  # noqa: E402
+import build_index as BI  # noqa: E402
+import ftc_http as FH  # noqa: E402
+
+POP = {"source": "test", "source_url": "https://example.test/pop.csv", "year": 2025, "vintage": 2025, "population": {"TX": 1_000_000, "OH": 500_000, "PR": 250_000}}
+
+
+def day_agg(**counts):
+    """{key: n} from keyword-free helper: pass state|subject|flag keys as a dict via day_agg(**{"Texas|Charities|Y": 3})."""
+    return {k.replace("|", "\t"): n for k, n in counts.items()}
+
+
+def day(agg):
+    return {"agg": agg, "quality": dnc_agg.new_quality(), "source": "csv"}
+
+
+class DncBuildTests(unittest.TestCase):
+    def setUp(self):
+        self.days = {
+            "2026-02-01": day(day_agg(**{"Texas|Charities|Y": 6, "Texas|Other|N": 2, "Ohio|Other|Y": 1, "|Other|": 1})),
+            "2026-02-02": day(day_agg(**{"Texas|Charities|Y": 4, "Ohio|Other|N": 3, "British Columbia, Canada|Other|Y": 1})),
+        }
+
+    def test_combine_prefers_the_ftc_file_and_reports_overlap(self):
+        api = {"2026-02-01": {"agg": day_agg(**{"Texas|Charities|Y": 6}), "quality": dnc_agg.new_quality(), "source": "api"}, "2026-02-09": {"agg": {}, "quality": dnc_agg.new_quality(), "source": "api"}}
+        days, overlap = BD.combine_days(self.days, api)
+        self.assertEqual(days["2026-02-01"]["source"], "csv")
+        self.assertEqual(days["2026-02-09"]["source"], "api")
+        self.assertEqual(overlap, [{"day": "2026-02-01", "records_csv": 10, "records_api": 6, "identical": False}])
+
+    def test_month_summary_counts_by_flag_state_and_subject_and_keeps_unassigned_states_out_of_states(self):
+        s = BD.summarize_month(sorted(self.days), self.days)
+        self.assertEqual((s["total"], s["robo_y"], s["robo_n"], s["robo_blank"]), (18, 12, 5, 1))
+        self.assertEqual(s["by_state"]["TX"]["total"], 12)
+        self.assertEqual(s["by_state"]["OH"]["total"], 4)
+        self.assertEqual(s["unassigned_state"], {"Not recorded": 1, "British Columbia, Canada": 1})
+        self.assertEqual(s["subjects"]["Charities"], 10)
+
+    def test_rows_flag_a_partial_month_and_compute_rank_per_100k_and_share(self):
+        rows, meta, overlap, per_file, official, pop_doc = BD.build(days=self.days, overlap=[], per_file=[], month_counts={}, official=[], population=POP, entries={})
+        ids = [r["id"] for r in rows]
+        self.assertEqual(ids, ["US-2026-02", "OH-2026-02", "TX-2026-02"])
+        us = rows[0]["item"]
+        self.assertFalse(us["complete"])  # 2 of 28 days
+        self.assertEqual(us["days_covered"], 2)
+        self.assertEqual(us["analytics"]["robocall_share_pct"], round(12 / 17 * 100, 2))
+        tx = rows[2]["item"]
+        self.assertEqual(tx["analytics"]["per100k"], 1.2)  # 12 / 1,000,000 * 100,000
+        self.assertEqual(tx["analytics"]["rank_per100k"], 1)  # Texas 1.2 per 100,000 beats Ohio 0.8
+        self.assertEqual(rows[1]["item"]["analytics"]["per100k"], 0.8)  # 4 / 500,000 * 100,000
+        self.assertEqual(rows[1]["item"]["analytics"]["rank_per100k"], 2)
+        self.assertEqual(rows[1]["state"], "OH")
+
+    def test_a_month_with_every_day_is_complete(self):
+        days = {f"2026-02-{d:02d}": day(day_agg(**{"Texas|Other|Y": 1})) for d in range(1, 29)}
+        rows, meta, *_ = BD.build(days=days, overlap=[], per_file=[], month_counts={}, official=[], population=POP, entries={})
+        self.assertTrue(meta["2026-02"]["complete"])
+        self.assertEqual(rows[0]["item"]["days_covered"], 28)
+
+    def test_count_only_month_has_no_subjects_or_state_rows(self):
+        rows, meta, *_ = BD.build(days={}, overlap=[], per_file=[], month_counts={"2024-04": {"total": 1000, "robo_y": 600, "robo_n": 300}}, official=[], population=POP, entries={})
+        self.assertEqual([r["id"] for r in rows], ["US-2024-04"])
+        item = rows[0]["item"]
+        self.assertEqual((item["method"], item["complete"], item["subjects"], item["metrics"]["no_flag"]), ("count", True, {}, None))
+        self.assertEqual(meta["2024-04"]["method"], "count")
+
+    def test_official_months_become_rows_and_crosscheck_compares_totals(self):
+        official = [{"month": "2026-02", "live": 4, "robocall": 14, "total": 18, "parts_sum_equals_total": True}, {"month": "2026-03", "live": 1, "robocall": 1, "total": 2, "parts_sum_equals_total": True}]
+        rows, meta, overlap, per_file, off, pop_doc = BD.build(days=self.days, overlap=[], per_file=[], month_counts={}, official=official, population=POP, entries={})
+        self.assertIn("official-2026-03", [r["id"] for r in rows])
+        check = BD.crosscheck_official(meta, official)
+        self.assertEqual(check[0]["status"], "equal")
+        self.assertEqual(check[1]["status"], "no matching month in this build")
+
+    def test_named_subjects_leave_out_the_catch_all_buckets(self):
+        self.assertEqual(BD.named_subjects({"Other": 9, "No Subject Provided": 8, "Charities": 1, "Medical & prescriptions": 5}), [("Medical & prescriptions", 5), ("Charities", 1)])
+
+    def test_robocall_share_needs_both_answers(self):
+        self.assertEqual(BD.robocall_share(3, 1), 75.0)
+        self.assertIsNone(BD.robocall_share(None, 1))
+        self.assertIsNone(BD.robocall_share(0, 0))
+
+
+class HsrBuildTests(unittest.TestCase):
+    def pages(self):
+        return [("p0", {"data": [notice(rid="a", txn="20200001", date="2020-03-05"), notice(rid="b", txn="20200002", date="2020-10-05"), notice(rid="b", txn="20200002", date="2020-10-05")]}),
+                ("p1", {"data": [notice(rid="c", txn="20200002", date="2020-10-06", acquiring="Other Co", title=": ; x"), {"id": "e", "attributes": {"title": ": ;", "acquired-party": None, "acquiring-party": None, "date": None, "acquired-entities": [], "transaction-number": None}}]})]
+
+    def test_notice_rows_are_one_per_distinct_notice_with_series_and_empty_records_set_aside(self):
+        rows, summary, inputs, meta = BH.build_notices(pages=self.pages(), entries={}, filing_fy_rows=[{"fy": 2020, "et_granted": 2}, {"fy": 2019, "et_granted": 9}])
+        ids = [r["id"] for r in rows]
+        self.assertEqual(ids, ["20200001", "20200002-1", "20200002-2", "series-by-year"])
+        self.assertEqual(summary["empty_records_excluded"], 1)
+        self.assertEqual(summary["passes"]["distinct"], 4)
+        series = rows[-1]["item"]["series"]
+        self.assertEqual(series["calendar_year"], {"2020": 3})
+        self.assertEqual(series["fiscal_year"], {"2020": 1, "2021": 2})
+        self.assertEqual(rows[-1]["filters"]["_listing"], ["no"])
+        self.assertEqual(meta["crosscheck"], [{"fiscal_year": 2020, "notices_in_api": 1, "transactions_granted_in_ftc_table": 2}, {"fiscal_year": 2019, "notices_in_api": None, "transactions_granted_in_ftc_table": 9}])
+        self.assertEqual(rows[2]["item"]["notice"]["title_status"], "differs")
+        self.assertEqual(rows[0]["source_url"], "https://api.ftc.gov/v0/hsr-early-termination-notices?filter[id][value]=a")
+        self.assertNotIn("api_key", json.dumps(rows))
+
+    def test_published_party_names_are_never_changed_beyond_spacing(self):
+        rows, *_ = BH.build_notices(pages=[("p", {"data": [notice(acquiring="Alan R.  Viterbi", title="20262194: Alan R. Viterbi; MarketAxess Holdings Inc.")]})], entries={})
+        item = rows[0]["item"]["notice"]
+        self.assertEqual(item["acquiring_party"], "Alan R. Viterbi")
+        self.assertEqual(item["title_status"], "matches")
+
+
+class IndexBuildTests(unittest.TestCase):
+    def test_open_government_tables(self):
+        html = (
+            "<main><table><tr><th>Data Set Name</th><th>Dictionary</th><th>Description</th></tr>"
+            '<tr><td><a href="/system/files/ftc_gov/data/A.csv">FTC A (CSV, 39.4&nbsp;KB)</a></td><td><a href="/system/files/ftc_gov/data/A-dictionary.csv">dict</a></td><td>Describes A.</td></tr>'
+            '<tr><td><a href="/x/b.xlsx">B (CSV, 1 KB)</a></td><td></td><td>Describes B.</td></tr></table>'
+            '<table><tr><th>Consumer Sentinel Network Data Book</th></tr><tr><td><a href="/x/csn.zip">CY 2024</a></td></tr></table>'
+            '<table><tr><th>Do Not Call Data Books</th></tr><tr><td><a href="/x/dnc.zip">FY 2025 Data Book</a></td></tr></table></main>'
+        )
+        out = BI.parse_open_gov(html)
+        self.assertEqual([o["name"] for o in out], ["FTC A", "B", "Consumer Sentinel Network Data Book CY 2024", "Do Not Call Data Book FY 2025"])
+        self.assertEqual(out[0]["size"], "39.4 KB")
+        self.assertEqual(out[0]["dictionary_url"], "https://www.ftc.gov/system/files/ftc_gov/data/A-dictionary.csv")
+        self.assertIsNone(out[1]["dictionary_url"])
+        self.assertEqual(BI.file_format("https://www.ftc.gov/x/b.xlsx"), "XLSX")
+
+    def test_ids_stay_unique(self):
+        taken = set()
+        self.assertEqual([BI.unique("a", taken), BI.unique("a", taken), BI.unique("a", taken)], ["a", "a-2", "a-3"])
+
+
+class FakeResponse:
+    def __init__(self, status, body=b"{}", headers=None):
+        self.status, self._body, self.headers = status, body, headers or {}
+
+    def read(self):
+        return self._body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+class FetcherTests(unittest.TestCase):
+    """The fetcher is exercised with a fake opener: no socket is opened."""
+
+    def run_fetch(self, responses, host_url="https://api.ftc.gov/v0/x", **kw):
+        import urllib.error
+        import urllib.request
+
+        calls = []
+
+        def fake_open(req, timeout=None):
+            calls.append(req)
+            nxt = responses.pop(0)
+            if nxt.status >= 400:
+                raise urllib.error.HTTPError(req.full_url, nxt.status, "err", nxt.headers, __import__("io").BytesIO(nxt._body))
+            return nxt
+
+        old_open, old_sleep, old_key = urllib.request.urlopen, FH.time.sleep, FH.api_key
+        urllib.request.urlopen, FH.time.sleep, FH.api_key = fake_open, lambda s: None, lambda: "SECRET-KEY"
+        try:
+            f = FH.Fetcher(interval_override={"api.ftc.gov": 0, "www.ftc.gov": 0}, **kw)
+            return f, calls, f.get(host_url)
+        finally:
+            urllib.request.urlopen, FH.time.sleep, FH.api_key = old_open, old_sleep, old_key
+
+    def test_key_travels_in_a_header_never_in_the_url(self):
+        f, calls, resp = self.run_fetch([FakeResponse(200, b'{"data":[]}', {"X-Ratelimit-Remaining": "19000"})])
+        self.assertEqual(calls[0].full_url, "https://api.ftc.gov/v0/x")
+        self.assertEqual(calls[0].get_header("X-api-key"), "SECRET-KEY")
+        self.assertNotIn("SECRET-KEY", calls[0].full_url)
+        self.assertEqual(f.api_remaining, 19000)
+
+    def test_transient_errors_are_retried_then_succeed(self):
+        f, calls, resp = self.run_fetch([FakeResponse(503), FakeResponse(429, headers={"Retry-After": "1"}), FakeResponse(200)])
+        self.assertEqual((resp.status, resp.attempts, len(calls)), (200, 3, 3))
+
+    def test_a_long_retry_after_stops_the_run_instead_of_sleeping(self):
+        with self.assertRaises(FH.RateLimited) as ctx:
+            self.run_fetch([FakeResponse(429, headers={"Retry-After": "1406"})])
+        self.assertEqual(ctx.exception.retry_after, 1406)
+
+    def test_a_bot_wall_is_reported_not_retried(self):
+        with self.assertRaises(FH.BotWall):
+            self.run_fetch([FakeResponse(403)], host_url="https://www.ftc.gov/x")
+
+    def test_gives_up_after_the_attempt_limit(self):
+        with self.assertRaises(FH.FetchError):
+            self.run_fetch([FakeResponse(500) for _ in range(3)], max_attempts=3)
+
+    def test_ftc_gov_is_spaced_by_its_crawl_delay(self):
+        self.assertEqual(FH.HOST_INTERVAL["www.ftc.gov"], 5.0)
+        self.assertEqual(FH.HOST_INTERVAL["public.tableau.com"], 10.0)
+        self.assertGreaterEqual(FH.HOST_INTERVAL["api.ftc.gov"], 2.0)
+
+
 if __name__ == "__main__":
     unittest.main()

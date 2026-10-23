@@ -382,4 +382,41 @@ describe("buildStateConsumerData", () => {
     expect(v.terms).toBeNull();
     expect(v.unavailable).toEqual(["dnc"]);
   });
+
+  it("carries the state's monthly Do Not Call rows and never another state's", () => {
+    const row = (id: string) => ({
+      id,
+      source_url: "https://www.ftc.gov/policy-notices/open-government/data-sets/do-not-call-data",
+      complete: false,
+      first: "2026-09-16",
+      last: "2026-09-30",
+      m: { calls: 11387, robocalls: 7686, population: 31709821, population_year: 2025 },
+      a: { per100k: 35.9, rank_per100k: 31, ranked_of: 52, robocall_share_pct: 73.03 },
+      subj: { Other: 4519, "Medical & prescriptions": 1097 },
+    });
+    const v = buildStateConsumerData("TX", {
+      sentinel: [],
+      dnc: [],
+      calls: [row("TX-2026-09"), row("OH-2026-09")],
+      refunds: [],
+      national: [],
+      summaries: [],
+    });
+    expect(v.calls.map((c) => c.month)).toEqual(["2026-09"]);
+    expect(v.calls[0]).toMatchObject({
+      calls: 11387,
+      per100k: 35.9,
+      rankPer100k: 31,
+      complete: false,
+    });
+    expect(
+      buildStateConsumerData("TX", {
+        sentinel: [],
+        dnc: [],
+        refunds: [],
+        national: [],
+        summaries: [],
+      }).calls,
+    ).toEqual([]);
+  });
 });

@@ -48,16 +48,25 @@ export type FtcConsumerOverview = {
   unavailable: FtcConsumerPart[];
 };
 
-const cs = (filters: Record<string, string[]>) => `filters=cs.${encodeURIComponent(JSON.stringify(filters))}`;
+const cs = (filters: Record<string, string[]>) =>
+  `filters=cs.${encodeURIComponent(JSON.stringify(filters))}`;
 
 const DNC_SELECT =
   "id,month:item->>month,complete:item->complete,method:item->>method,first:item->>first_day,last:item->>last_day,days:item->days_covered,dim:item->days_in_month,m:item->metrics,a:item->analytics,subj:item->subjects,source_url";
 
-async function readDnc(): Promise<Pick<FtcConsumerOverview, "monthly" | "share" | "subjects"> & { terms: string | null }> {
+async function readDnc(): Promise<
+  Pick<FtcConsumerOverview, "monthly" | "share" | "subjects"> & { terms: string | null }
+> {
   const [national, official, summary] = await Promise.all([
-    restGet<unknown[]>(`corpus_records?select=${DNC_SELECT}&dataset=eq.ftc_dnc_reported_calls&${cs({ kind: ["national"] })}&order=id.asc&limit=400`),
-    restGet<unknown[]>(`corpus_records?select=${DNC_SELECT}&dataset=eq.ftc_dnc_reported_calls&${cs({ kind: ["official"] })}&order=id.asc&limit=100`),
-    restGet<{ terms: unknown }[]>("corpus_datasets?select=terms:metadata->summary->>terms&id=eq.ftc_dnc_reported_calls&limit=1"),
+    restGet<unknown[]>(
+      `corpus_records?select=${DNC_SELECT}&dataset=eq.ftc_dnc_reported_calls&${cs({ kind: ["national"] })}&order=id.asc&limit=400`,
+    ),
+    restGet<unknown[]>(
+      `corpus_records?select=${DNC_SELECT}&dataset=eq.ftc_dnc_reported_calls&${cs({ kind: ["official"] })}&order=id.asc&limit=100`,
+    ),
+    restGet<{ terms: unknown }[]>(
+      "corpus_datasets?select=terms:metadata->summary->>terms&id=eq.ftc_dnc_reported_calls&limit=1",
+    ),
   ]);
   const months = parseDncMonths(national.rows);
   const dashboard = parseOfficialMonths(official.rows);
@@ -86,8 +95,12 @@ async function readDnc(): Promise<Pick<FtcConsumerOverview, "monthly" | "share" 
 
 async function readHsr(): Promise<TrendBlockData | null> {
   const [series, filings] = await Promise.all([
-    restGet<unknown[]>("corpus_records?select=id,s:item->series,cells:item->cells&dataset=eq.ftc_hsr_early_terminations&id=eq.series-by-year&limit=1"),
-    restGet<unknown[]>("corpus_records?select=id,m:item->metrics,partial:item->partial&dataset=eq.ftc_hsr_filings&id=like.fy-*&order=id.asc&limit=100"),
+    restGet<unknown[]>(
+      "corpus_records?select=id,s:item->series,cells:item->cells&dataset=eq.ftc_hsr_early_terminations&id=eq.series-by-year&limit=1",
+    ),
+    restGet<unknown[]>(
+      "corpus_records?select=id,m:item->metrics,partial:item->partial&dataset=eq.ftc_hsr_filings&id=like.fy-*&order=id.asc&limit=100",
+    ),
   ]);
   const parsed = parseHsrSeries(series.rows[0]);
   if (!parsed) return null;
@@ -109,7 +122,10 @@ export const readFtcConsumerOverview = memoAsync<FtcConsumerOverview>(READ_TTL_M
   if (spotlight.status === "rejected") unavailable.push("spotlight");
   if (unavailable.length === 3) throw new Error("FTC consumer data could not be read.");
   for (const r of [dnc, hsr, spotlight])
-    if (r.status === "rejected") console.error(`FTC consumer overview part failed: ${r.reason instanceof Error ? r.reason.message : "unknown error"}`);
+    if (r.status === "rejected")
+      console.error(
+        `FTC consumer overview part failed: ${r.reason instanceof Error ? r.reason.message : "unknown error"}`,
+      );
   return {
     monthly: dnc.status === "fulfilled" ? dnc.value.monthly : null,
     share: dnc.status === "fulfilled" ? dnc.value.share : null,

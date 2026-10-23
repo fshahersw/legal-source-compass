@@ -9,6 +9,7 @@ import {
   usdCompact,
   type Takeaway,
 } from "@/components/analysis/analysisFormat";
+import { dayRange, monthName, subjectShares, type StateCallsMonth } from "@/lib/external/ftcData";
 import type {
   ConsumerYear,
   DncYear,
@@ -230,4 +231,77 @@ export function consumerTakeaways(d: StateConsumerData): Takeaway[] {
         }
       : null,
   ]);
+}
+
+// ------------------------------------------------------------------------------------------------ Do Not Call reports by month
+
+export type CallsRow = {
+  key: string;
+  /** "September 2026", with an asterisk while the month is only partly counted. */
+  label: string;
+  partial: boolean;
+  /** The days counted when the month is partial ("September 16 to 30, 2026"), else null. */
+  coverage: string | null;
+  reports: string;
+  per100k: string;
+  rank: string;
+  robocallShare: string;
+};
+
+const count = (n: number) => n.toLocaleString("en-US");
+
+/** One row per month, newest first; an unknown value is Not recorded. */
+export function callsRows(calls: readonly StateCallsMonth[]): CallsRow[] {
+  return [...calls]
+    .sort((a, b) => b.month.localeCompare(a.month))
+    .map((c) => ({
+      key: c.month,
+      label: `${monthName(c.month)}${c.complete ? "" : "*"}`,
+      partial: !c.complete,
+      coverage: !c.complete && c.firstDay && c.lastDay ? dayRange(c.firstDay, c.lastDay) : null,
+      reports: count(c.calls),
+      per100k:
+        c.per100k != null
+          ? c.per100k.toLocaleString("en-US", { maximumFractionDigits: 1 })
+          : NOT_RECORDED,
+      rank:
+        c.rankPer100k != null && c.rankedOf != null
+          ? `${c.rankPer100k} of ${c.rankedOf}`
+          : NOT_RECORDED,
+      robocallShare:
+        c.robocallSharePct != null ? `${c.robocallSharePct.toFixed(1)}%` : NOT_RECORDED,
+    }));
+}
+
+/** Window the counted months cover, "complaints created September 16 to October 20, 2026", or null with no days recorded. */
+export function callsWindow(calls: readonly StateCallsMonth[]): string | null {
+  const first = [...calls]
+    .sort((a, b) => a.month.localeCompare(b.month))
+    .find((c) => c.firstDay)?.firstDay;
+  const last = [...calls]
+    .sort((a, b) => b.month.localeCompare(a.month))
+    .find((c) => c.lastDay)?.lastDay;
+  return first && last ? `complaints created ${dayRange(first, last)}` : null;
+}
+
+/** The subjects consumers reported for the state over the counted months: named subjects ranked, catch-all buckets apart. */
+export function callsSubjects(calls: readonly StateCallsMonth[]): {
+  total: number;
+  items: { label: string; sharePct: number }[];
+  catchAll: string | null;
+} | null {
+  const shares = subjectShares(calls);
+  if (!shares.total || !shares.named.length) return null;
+  return {
+    total: shares.total,
+    items: shares.named.slice(0, 8).map((s) => ({ label: s.subject, sharePct: s.sharePct })),
+    catchAll: shares.catchAll.length
+      ? shares.catchAll.map((s) => `${s.subject} ${s.sharePct}%`).join(", ")
+      : null,
+  };
+}
+
+/** The newest month with a rank, as a sentence fragment for a takeaway: "rank 31 of 52 among the states, DC and Puerto Rico". */
+export function callsLatest(calls: readonly StateCallsMonth[]): StateCallsMonth | null {
+  return [...calls].sort((a, b) => b.month.localeCompare(a.month))[0] ?? null;
 }

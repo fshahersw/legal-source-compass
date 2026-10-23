@@ -67,7 +67,8 @@ export function parseDncMonths(rows: unknown[]): DncMonth[] {
     const r = obj(raw);
     const id = str(r?.["id"]);
     const month = str(r?.["month"]);
-    if (!r || !id || !month || id !== `US-${month}` || !MONTH.test(month) || out.has(month)) continue;
+    if (!r || !id || !month || id !== `US-${month}` || !MONTH.test(month) || out.has(month))
+      continue;
     const metrics = obj(r["m"]);
     const calls = int(metrics?.["calls"]);
     if (calls === null || calls < 0) continue;
@@ -113,7 +114,16 @@ export function parseOfficialMonths(rows: unknown[]): OfficialMonth[] {
     const id = str(r?.["id"]);
     const month = str(r?.["month"]);
     const m = obj(r?.["m"]);
-    if (!r || !id || !month || id !== `official-${month}` || !MONTH.test(month) || !m || out.has(month)) continue;
+    if (
+      !r ||
+      !id ||
+      !month ||
+      id !== `official-${month}` ||
+      !MONTH.test(month) ||
+      !m ||
+      out.has(month)
+    )
+      continue;
     const total = int(m["calls"]);
     const robocall = int(m["robocalls"]);
     const live = int(m["live_callers"]);
@@ -192,7 +202,8 @@ export function subjectShares(months: readonly { subjects: SubjectCount[] }[]): 
   catchAll: SubjectShare[];
 } {
   const sums = new Map<string, number>();
-  for (const m of months) for (const s of m.subjects) sums.set(s.subject, (sums.get(s.subject) ?? 0) + s.calls);
+  for (const m of months)
+    for (const s of m.subjects) sums.set(s.subject, (sums.get(s.subject) ?? 0) + s.calls);
   const total = [...sums.values()].reduce((a, b) => a + b, 0);
   const rows = [...sums.entries()]
     .map(([subject, calls]) => ({
@@ -330,8 +341,18 @@ export function parseSpotlight(rows: unknown[]): SpotlightPost[] {
 // ------------------------------------------------------------------------------------------------ labels
 
 const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 /** "September 2026" for "2026-09"; the input itself when it is not a month key. */

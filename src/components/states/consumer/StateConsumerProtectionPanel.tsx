@@ -25,6 +25,10 @@ import {
 import {
   FTC_CREDIT,
   NOT_RECORDED,
+  callsLatest,
+  callsRows,
+  callsSubjects,
+  callsWindow,
   consumerTakeaways,
   dncChange,
   definitionYears,
@@ -86,6 +90,7 @@ export function StateConsumerProtectionPanel({ usps }: { usps: string }) {
 const SECTION_LABEL = {
   reports: "Consumer Sentinel reports",
   dnc: "Do Not Call",
+  calls: "Do Not Call reports by month",
   refunds: "refunds",
   national: "national comparison",
   sources: "edition details",
@@ -93,7 +98,7 @@ const SECTION_LABEL = {
 
 function Body({ data, onRetry }: { data: StateConsumerData; onRetry: () => void }) {
   const y = latest(data.years);
-  if (!y && !data.dnc.length && !data.refunds.length)
+  if (!y && !data.dnc.length && !data.calls.length && !data.refunds.length)
     return data.unavailable.length ? (
       <PanelState tone="error" action={<RetryButton onClick={onRetry} />}>
         FTC consumer data could not load.
@@ -205,13 +210,18 @@ function Body({ data, onRetry }: { data: StateConsumerData; onRetry: () => void 
           </PanelSection>
         </>
       ) : null}
-      {data.dnc.length ? (
+      {data.dnc.length || data.calls.length ? (
         <PanelSection
           id="consumer-dnc"
           title="Do Not Call complaints"
-          hint={`FY${data.dnc[0]!.fy}–FY${data.dnc[data.dnc.length - 1]!.fy}`}
+          hint={
+            data.dnc.length
+              ? `FY${data.dnc[0]!.fy}–FY${data.dnc[data.dnc.length - 1]!.fy}${data.calls.length ? " · by month" : ""}`
+              : "by month"
+          }
         >
           <DoNotCall data={data} />
+          {data.calls.length ? <ReportedCalls data={data} /> : null}
         </PanelSection>
       ) : null}
       {data.refunds.length ? (
@@ -395,7 +405,10 @@ function Categories({ data }: { data: StateConsumerData }) {
 }
 
 function DoNotCall({ data }: { data: StateConsumerData }) {
-  if (!data.dnc.length) return <Note>Do Not Call figures are {NOT_RECORDED} for this state.</Note>;
+  if (!data.dnc.length)
+    return data.calls.length ? null : (
+      <Note>Do Not Call figures are {NOT_RECORDED} for this state.</Note>
+    );
   const rows = data.dnc;
   const byFy = new Map(rows.map((r) => [r.fy, r]));
   const last = rows[rows.length - 1]!;
@@ -493,6 +506,93 @@ function DoNotCall({ data }: { data: StateConsumerData }) {
         {data.editions.dnc[last.fy] ? ` (${data.editions.dnc[last.fy]!.name})` : ""}
       </Note>
     </>
+  );
+}
+
+/** Do Not Call reports counted by month for the state: rows, subjects and what the counted days are. */
+function ReportedCalls({ data }: { data: StateConsumerData }) {
+  const rows = callsRows(data.calls);
+  const subjects = callsSubjects(data.calls);
+  const window = callsWindow(data.calls);
+  const newest = callsLatest(data.calls);
+  const source = newest?.sourceUrl ?? null;
+  return (
+    <div
+      className="space-y-2 border-t border-border/60 pt-2"
+      aria-label="Do Not Call reports by month"
+    >
+      <h4 className="text-xs font-semibold">
+        Reports by month created
+        <span className="ml-1 font-normal text-muted-foreground">
+          reports from consumers who gave this state
+        </span>
+      </h4>
+      <ResponsiveTable
+        caption="Do Not Call reports by month for this state"
+        rows={rows}
+        rowKey={(r) => r.key}
+        columns={[
+          { id: "m", header: "Month", role: "title", cell: (r) => r.label },
+          { id: "n", header: "Reports", align: "right", role: "value", cell: (r) => r.reports },
+          {
+            id: "p",
+            header: "Per 100K residents",
+            align: "right",
+            role: "detail",
+            cell: (r) => r.per100k,
+          },
+          { id: "r", header: "Rank", align: "right", role: "detail", cell: (r) => r.rank },
+          {
+            id: "s",
+            header: "Robocall share",
+            align: "right",
+            role: "detail",
+            cell: (r) => r.robocallShare,
+          },
+        ]}
+      />
+      {rows.some((r) => r.partial) ? (
+        <Note>
+          * Partial month:{" "}
+          {rows
+            .filter((r) => r.partial && r.coverage)
+            .map((r) => `${r.label.replace("*", "")} covers complaints created ${r.coverage}`)
+            .join("; ")}
+          . A partial month is not comparable with a whole one.
+        </Note>
+      ) : null}
+      {subjects ? (
+        <div className="space-y-1">
+          <h4 className="text-xs font-semibold">
+            Subjects reported
+            <span className="ml-1 font-normal text-muted-foreground">
+              share of this state&apos;s {subjects.total.toLocaleString("en-US")} reports
+              {window ? `, ${window}` : ""}
+            </span>
+          </h4>
+          <ShareBars items={subjects.items} />
+          {subjects.catchAll ? (
+            <Note>The FTC&apos;s catch-all choices, not ranked above: {subjects.catchAll}.</Note>
+          ) : null}
+        </div>
+      ) : null}
+      <Note>
+        Every report was counted from the FTC&apos;s daily Do Not Call files (complaints are
+        consumers&apos; reports, which the FTC says are not verified). The state is the one the
+        consumer gave; reports with no state are in the national count only. Per 100,000 uses the
+        Census resident population of July 1, {newest?.populationYear ?? NOT_RECORDED} (Population
+        Estimates, vintage {newest?.populationYear ?? NOT_RECORDED}); the rank is among the 50
+        states, DC and Puerto Rico in the same month. Robocall share is reports answered as a
+        recorded message divided by reports answered either way. Months before the first day above
+        are not counted here; the fiscal-year table above is the FTC&apos;s Data Book.
+        {source ? (
+          <>
+            {" "}
+            <SourceLink href={source}>FTC Do Not Call reported calls data</SourceLink>
+          </>
+        ) : null}
+      </Note>
+    </div>
   );
 }
 

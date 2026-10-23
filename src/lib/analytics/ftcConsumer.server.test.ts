@@ -36,8 +36,25 @@ const national = {
   subj: { Other: 500, Charities: 100, "No Subject Provided": 150, "Medical & prescriptions": 250 },
   source_url: "https://www.ftc.gov/policy-notices/open-government/data-sets/do-not-call-data",
 };
-const seriesRow = { id: "series-by-year", s: { calendar_year: { "2025": 5 }, fiscal_year: { "2025": 5, "2026": 7 }, undated: 0, notices: 12 }, cells: { period: "2025-01-02 to 2026-03-04" } };
-const post = { id: "spotlight-a", title: "A post", published: "April 27, 2026", iso: "2026-04-27", summary: "s", url: "https://www.ftc.gov/a", files: [] };
+const seriesRow = {
+  id: "series-by-year",
+  s: {
+    calendar_year: { "2025": 5 },
+    fiscal_year: { "2025": 5, "2026": 7 },
+    undated: 0,
+    notices: 12,
+  },
+  cells: { period: "2025-01-02 to 2026-03-04" },
+};
+const post = {
+  id: "spotlight-a",
+  title: "A post",
+  published: "April 27, 2026",
+  iso: "2026-04-27",
+  summary: "s",
+  url: "https://www.ftc.gov/a",
+  files: [],
+};
 
 const base = (): [string, Reply | Error][] => [
   ["%22national%22", { rows: [national] }],
@@ -57,11 +74,18 @@ describe("readFtcConsumerOverview", () => {
     serve(base());
     const r = await (await reader())();
     expect(r.unavailable).toEqual([]);
-    expect(r.monthly?.series[0]!.points.at(-1)).toMatchObject({ x: "2026-09", value: 1000, partial: true });
+    expect(r.monthly?.series[0]!.points.at(-1)).toMatchObject({
+      x: "2026-09",
+      value: 1000,
+      partial: true,
+    });
     expect(r.share?.format).toBe("pct");
     expect(r.subjects?.window).toBe("complaints created September 16 to September 30, 2026");
     expect(r.subjects?.total).toBe(1000);
-    expect(r.subjects?.named.map((s) => s.subject)).toEqual(["Medical & prescriptions", "Charities"]);
+    expect(r.subjects?.named.map((s) => s.subject)).toEqual([
+      "Medical & prescriptions",
+      "Charities",
+    ]);
     expect(r.subjects?.catchAll.map((s) => s.subject)).toEqual(["Other", "No Subject Provided"]);
     expect(r.hsr?.series.map((s) => s.id)).toEqual(["notices", "table"]);
     expect(r.spotlight.map((p) => p.title)).toEqual(["A post"]);
@@ -87,7 +111,24 @@ describe("readFtcConsumerOverview", () => {
   });
 
   it("shows no subject card when no month was read record by record", async () => {
-    serve([["%22national%22", { rows: [{ ...national, id: "US-2026-08", month: "2026-08", method: "count", complete: true, subj: {} }] }], ...base()]);
+    serve([
+      [
+        "%22national%22",
+        {
+          rows: [
+            {
+              ...national,
+              id: "US-2026-08",
+              month: "2026-08",
+              method: "count",
+              complete: true,
+              subj: {},
+            },
+          ],
+        },
+      ],
+      ...base(),
+    ]);
     const r = await (await reader())();
     expect(r.subjects).toBeNull();
     expect(r.monthly?.series[0]!.points.at(-1)!.value).toBe(1000);

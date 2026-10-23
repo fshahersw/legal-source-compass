@@ -26,14 +26,27 @@ const month = (key: string, over: Partial<DncMonth> = {}): DncMonth => ({
   sourceUrl: null,
   ...over,
 });
-const official = (key: string, robocall: number, live: number): OfficialMonth => ({ month: key, total: robocall + live, robocall, live, sourceUrl: null });
+const official = (key: string, robocall: number, live: number): OfficialMonth => ({
+  month: key,
+  total: robocall + live,
+  robocall,
+  live,
+  sourceUrl: null,
+});
 
 describe("mergeMonths", () => {
   it("prefers the build's own count and adds the FTC dashboard only for a month the build did not count", () => {
-    const m = mergeMonths([month("2026-05", { calls: 233346, robocalls: 176472, notRobocalls: 56874 })], [official("2026-05", 1, 1), official("2026-04", 170295, 62553)]);
+    const m = mergeMonths(
+      [month("2026-05", { calls: 233346, robocalls: 176472, notRobocalls: 56874 })],
+      [official("2026-05", 1, 1), official("2026-04", 170295, 62553)],
+    );
     expect([...m.keys()].sort()).toEqual(["2026-04", "2026-05"]);
     expect(m.get("2026-05")!.calls).toBe(233346);
-    expect(m.get("2026-04")).toMatchObject({ calls: 232848, robocalls: 170295, origin: "dashboard" });
+    expect(m.get("2026-04")).toMatchObject({
+      calls: 232848,
+      robocalls: 170295,
+      origin: "dashboard",
+    });
   });
 });
 
@@ -42,7 +55,11 @@ describe("buildDncMonthly", () => {
     expect(buildDncMonthly({ months: [], official: [], asOf: null })).toBeNull();
   });
   it("leaves uncounted months between two counted ones as gaps, never zero", () => {
-    const block = buildDncMonthly({ months: [month("2026-06"), month("2026-09")], official: [], asOf: null })!;
+    const block = buildDncMonthly({
+      months: [month("2026-06"), month("2026-09")],
+      official: [],
+      asOf: null,
+    })!;
     const all = block.series[0]!.points;
     expect(all.map((p) => p.x)).toEqual(["2026-06", "2026-07", "2026-08", "2026-09"]);
     expect(all.map((p) => p.value)).toEqual([1000, null, null, 1000]);
@@ -50,27 +67,51 @@ describe("buildDncMonthly", () => {
   });
   it("marks a partial month, never makes it the latest value, and says which days it covers", () => {
     const block = buildDncMonthly({
-      months: [month("2026-08", { method: "records", firstDay: "2026-08-01", lastDay: "2026-08-31" }), month("2026-09", { method: "records", complete: false, firstDay: "2026-09-01", lastDay: "2026-09-20", calls: 400, robocalls: 300 })],
+      months: [
+        month("2026-08", { method: "records", firstDay: "2026-08-01", lastDay: "2026-08-31" }),
+        month("2026-09", {
+          method: "records",
+          complete: false,
+          firstDay: "2026-09-01",
+          lastDay: "2026-09-20",
+          calls: 400,
+          robocalls: 300,
+        }),
+      ],
       official: [],
       asOf: "2026-09-20",
     })!;
-    expect(block.series[0]!.points.at(-1)).toMatchObject({ x: "2026-09", value: 400, partial: true });
+    expect(block.series[0]!.points.at(-1)).toMatchObject({
+      x: "2026-09",
+      value: 400,
+      partial: true,
+    });
     expect(block.latest?.period).toBe("August 2026");
     expect(block.notes.join(" ")).toContain("complaints created August 1 to September 20, 2026");
     expect(block.notes.join(" ")).toMatch(/August 2026 and September 2026: every record was read/);
     expect(block.notes.join(" ")).toMatch(/September 2026\* covers only the days stated above/);
   });
   it("labels months that come from the FTC dashboard", () => {
-    const block = buildDncMonthly({ months: [], official: [official("2026-04", 170295, 62553), official("2026-05", 176472, 56874)], asOf: null })!;
+    const block = buildDncMonthly({
+      months: [],
+      official: [official("2026-04", 170295, 62553), official("2026-05", 176472, 56874)],
+      asOf: null,
+    })!;
     expect(block.series[1]!.points.map((p) => p.value)).toEqual([170295, 176472]);
-    expect(block.notes.join(" ")).toMatch(/April 2026, May 2026\) are the figures on the FTC's Do Not Call Complaints dashboard/);
+    expect(block.notes.join(" ")).toMatch(
+      /April 2026, May 2026\) are the figures on the FTC's Do Not Call Complaints dashboard/,
+    );
   });
 });
 
 describe("buildDncRobocallShare", () => {
   it("computes robocall / (robocall + not robocall) and leaves a month with no answers as a gap", () => {
     const block = buildDncRobocallShare({
-      months: [month("2026-07", { robocalls: 700, notRobocalls: 300 }), month("2026-08", { robocalls: null, notRobocalls: null }), month("2026-09", { robocalls: 3, notRobocalls: 1 })],
+      months: [
+        month("2026-07", { robocalls: 700, notRobocalls: 300 }),
+        month("2026-08", { robocalls: null, notRobocalls: null }),
+        month("2026-09", { robocalls: 3, notRobocalls: 1 }),
+      ],
       official: [],
       asOf: null,
     })!;
@@ -81,7 +122,13 @@ describe("buildDncRobocallShare", () => {
     expect(block.latest?.changeNote).toMatch(/August 2026 is not recorded/);
   });
   it("is null when no month has both answers", () => {
-    expect(buildDncRobocallShare({ months: [month("2026-07", { robocalls: null })], official: [], asOf: null })).toBeNull();
+    expect(
+      buildDncRobocallShare({
+        months: [month("2026-07", { robocalls: null })],
+        official: [],
+        asOf: null,
+      }),
+    ).toBeNull();
   });
 });
 
@@ -99,7 +146,11 @@ describe("fiscal-year helpers", () => {
   });
 });
 
-const series = (fiscal: [number, number][], first = "1999-01-04", last = "2026-10-21"): HsrSeries => ({
+const series = (
+  fiscal: [number, number][],
+  first = "1999-01-04",
+  last = "2026-10-21",
+): HsrSeries => ({
   calendar: [],
   fiscal: fiscal.map(([year, count]) => ({ year, count })),
   undated: 0,
@@ -107,11 +158,30 @@ const series = (fiscal: [number, number][], first = "1999-01-04", last = "2026-1
   firstDate: first,
   lastDate: last,
 });
-const fy = (n: number, etGranted: number | null): HsrFiscalYear => ({ fy: n, partial: false, transactions: null, filings: null, secondRequests: null, etRequested: null, etGranted, etNotGranted: null });
+const fy = (n: number, etGranted: number | null): HsrFiscalYear => ({
+  fy: n,
+  partial: false,
+  transactions: null,
+  filings: null,
+  secondRequests: null,
+  etRequested: null,
+  etGranted,
+  etNotGranted: null,
+});
 
 describe("buildHsrEarlyTerminations", () => {
   it("draws the API's notices and the FTC table side by side, with years before the API starts as gaps", () => {
-    const block = buildHsrEarlyTerminations({ series: series([[1999, 800], [2000, 900], [2021, 439], [2025, 252], [2026, 700], [2027, 27]]), filings: [fy(1998, 1100), fy(1999, 1300), fy(2022, 5), fy(2025, 265)] })!;
+    const block = buildHsrEarlyTerminations({
+      series: series([
+        [1999, 800],
+        [2000, 900],
+        [2021, 439],
+        [2025, 252],
+        [2026, 700],
+        [2027, 27],
+      ]),
+      filings: [fy(1998, 1100), fy(1999, 1300), fy(2022, 5), fy(2025, 265)],
+    })!;
     const api = block.series[0]!.points;
     expect(api[0]).toMatchObject({ x: "1998", value: null });
     expect(api.find((p) => p.x === "1999")).toMatchObject({ value: 800, partial: true });

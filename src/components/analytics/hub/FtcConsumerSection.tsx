@@ -5,7 +5,10 @@ import { ArrowRight, ExternalLink, FileText, RefreshCw, Table2 } from "lucide-re
 import { ShareBars } from "@/components/states/consumer/ShareBars";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getFtcConsumerOverview, type FtcConsumerOverview } from "@/lib/analytics/ftcConsumer.functions";
+import {
+  getFtcConsumerOverview,
+  type FtcConsumerOverview,
+} from "@/lib/analytics/ftcConsumer.functions";
 import type { FtcSubjects } from "@/lib/analytics/ftcConsumer.server";
 import type { BlockDef } from "@/lib/analytics/registry";
 import { formatCount } from "@/lib/analytics/trend";
@@ -56,7 +59,11 @@ export function FtcConsumerSection() {
     retry: 1,
   });
   return (
-    <section id="group-ftc-consumer" aria-labelledby="group-ftc-consumer-title" className="scroll-mt-4">
+    <section
+      id="group-ftc-consumer"
+      aria-labelledby="group-ftc-consumer-title"
+      className="scroll-mt-4"
+    >
       <div className="flex flex-wrap items-baseline justify-between gap-x-4">
         <h2 id="group-ftc-consumer-title" className="text-sm font-semibold">
           FTC consumer protection and merger review
@@ -71,8 +78,8 @@ export function FtcConsumerSection() {
       </div>
       <p className="mb-2 max-w-4xl text-xs leading-5 text-muted-foreground">
         Do Not Call reports, HSR early terminations and the FTC&apos;s Data Spotlight posts, from
-        the FTC&apos;s own data files and API. Reports are consumers&apos; submissions, not
-        findings of wrongdoing.
+        the FTC&apos;s own data files and API. Reports are consumers&apos; submissions, not findings
+        of wrongdoing.
       </p>
       <div className="grid gap-3 md:grid-cols-2">
         {q.isPending ? (
@@ -83,7 +90,10 @@ export function FtcConsumerSection() {
             <LoadingFrame label="Loading Data Spotlight posts" />
           </>
         ) : q.isError ? (
-          <div role="alert" className="space-y-2 rounded-md border border-border bg-surface px-3 py-3 text-xs md:col-span-2">
+          <div
+            role="alert"
+            className="space-y-2 rounded-md border border-border bg-surface px-3 py-3 text-xs md:col-span-2"
+          >
             <p className="text-destructive">
               This section could not be read just now. The other sections are unaffected.
             </p>
@@ -110,15 +120,30 @@ function cardState(
   return block ? { kind: "ok", block } : { kind: "empty", reason: empty };
 }
 
-export function Loaded({ data, onRetry = () => undefined }: { data: FtcConsumerOverview; onRetry?: () => void }) {
+export function Loaded({
+  data,
+  onRetry = () => undefined,
+}: {
+  data: FtcConsumerOverview;
+  onRetry?: () => void;
+}) {
   const dncFailed = data.unavailable.includes("dnc");
   const hsrFailed = data.unavailable.includes("hsr");
   return (
     <>
-      <TrendCardView def={DEFS.monthly} state={cardState(data.monthly, dncFailed, EMPTY_REASON.dnc, onRetry)} />
-      <TrendCardView def={DEFS.share} state={cardState(data.share, dncFailed, EMPTY_REASON.dnc, onRetry)} />
+      <TrendCardView
+        def={DEFS.monthly}
+        state={cardState(data.monthly, dncFailed, EMPTY_REASON.dnc, onRetry)}
+      />
+      <TrendCardView
+        def={DEFS.share}
+        state={cardState(data.share, dncFailed, EMPTY_REASON.dnc, onRetry)}
+      />
       <SubjectsCard subjects={data.subjects} failed={dncFailed} />
-      <TrendCardView def={DEFS.hsr} state={cardState(data.hsr, hsrFailed, EMPTY_REASON.hsr, onRetry)} />
+      <TrendCardView
+        def={DEFS.hsr}
+        state={cardState(data.hsr, hsrFailed, EMPTY_REASON.hsr, onRetry)}
+      />
       <SpotlightCard posts={data.spotlight} failed={data.unavailable.includes("spotlight")} />
       {data.terms ? (
         <p className="text-[11px] leading-4 text-muted-foreground md:col-span-2">{data.terms}</p>
@@ -187,7 +212,13 @@ function SourceFooter({ label, url, extra }: { label: string; url: string; extra
 }
 
 /** Subjects consumers gave, as shares of the calls counted in the window; the FTC's catch-all buckets are listed apart. */
-export function SubjectsCard({ subjects, failed }: { subjects: FtcSubjects | null; failed: boolean }) {
+export function SubjectsCard({
+  subjects,
+  failed,
+}: {
+  subjects: FtcSubjects | null;
+  failed: boolean;
+}) {
   const [showData, setShowData] = useState(false);
   const tableId = useId();
   const title = "Subjects of Do Not Call reports";
@@ -209,17 +240,15 @@ export function SubjectsCard({ subjects, failed }: { subjects: FtcSubjects | nul
     );
   const all = [...subjects.named, ...subjects.catchAll];
   return (
-    <CardFrame
-      id="ftc-dnc-subjects"
-      title={title}
-      period={`Share of reports · ${subjects.window}`}
-    >
+    <CardFrame id="ftc-dnc-subjects" title={title} period={`Share of reports · ${subjects.window}`}>
       <div className="px-3 pt-2">
         <p className="text-[11px] leading-4 text-muted-foreground">
           {formatCount(subjects.total)} reports counted; the ten named subjects the most reported
         </p>
         <div className="mt-1.5">
-          <ShareBars items={subjects.named.map((s) => ({ label: s.subject, sharePct: s.sharePct }))} />
+          <ShareBars
+            items={subjects.named.map((s) => ({ label: s.subject, sharePct: s.sharePct }))}
+          />
         </div>
         {subjects.catchAll.length ? (
           <p className="mt-2 text-[11px] leading-4 text-muted-foreground">
@@ -257,19 +286,28 @@ export function SubjectsCard({ subjects, failed }: { subjects: FtcSubjects | nul
           >
             <table className="w-full border-collapse text-[11px]">
               <caption className="sr-only">
-                Reports by subject, {subjects.window}. Shares are of all {formatCount(subjects.total)} reports counted.
+                Reports by subject, {subjects.window}. Shares are of all{" "}
+                {formatCount(subjects.total)} reports counted.
               </caption>
               <thead className="sticky top-0 bg-surface">
                 <tr className="border-b border-border text-left text-muted-foreground">
-                  <th scope="col" className="px-3 py-1 font-medium">Subject</th>
-                  <th scope="col" className="px-2 py-1 text-right font-medium">Reports</th>
-                  <th scope="col" className="px-2 py-1 text-right font-medium">Share</th>
+                  <th scope="col" className="px-3 py-1 font-medium">
+                    Subject
+                  </th>
+                  <th scope="col" className="px-2 py-1 text-right font-medium">
+                    Reports
+                  </th>
+                  <th scope="col" className="px-2 py-1 text-right font-medium">
+                    Share
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {all.map((s) => (
                   <tr key={s.subject} className="border-b border-border/50 last:border-0">
-                    <th scope="row" className="px-3 py-0.5 text-left font-normal">{s.subject}</th>
+                    <th scope="row" className="px-3 py-0.5 text-left font-normal">
+                      {s.subject}
+                    </th>
                     <td className="px-2 py-0.5 text-right tabular-nums">{formatCount(s.calls)}</td>
                     <td className="px-2 py-0.5 text-right tabular-nums">{s.sharePct}%</td>
                   </tr>
@@ -293,16 +331,28 @@ export function SubjectsCard({ subjects, failed }: { subjects: FtcSubjects | nul
             This is the window of daily files the FTC lists as downloadable now, not a year: shares
             can move from one period to the next.
           </li>
-          <li>Reports are unverified; a subject is what the consumer said, not what the caller sold.</li>
+          <li>
+            Reports are unverified; a subject is what the consumer said, not what the caller sold.
+          </li>
         </ul>
       </details>
-      <SourceFooter label="FTC Do Not Call reported calls data" url={subjects.sourceUrl} extra={`Period: ${subjects.window}`} />
+      <SourceFooter
+        label="FTC Do Not Call reported calls data"
+        url={subjects.sourceUrl}
+        extra={`Period: ${subjects.window}`}
+      />
     </CardFrame>
   );
 }
 
 /** The FTC's newest Data Spotlight posts, linked to the FTC's pages; text is the FTC's own summary. */
-export function SpotlightCard({ posts, failed }: { posts: readonly SpotlightPost[]; failed: boolean }) {
+export function SpotlightCard({
+  posts,
+  failed,
+}: {
+  posts: readonly SpotlightPost[];
+  failed: boolean;
+}) {
   const title = "FTC Data Spotlight posts";
   if (failed)
     return (
@@ -321,7 +371,11 @@ export function SpotlightCard({ posts, failed }: { posts: readonly SpotlightPost
       </CardFrame>
     );
   return (
-    <CardFrame id="ftc-spotlight" title={title} period="Newest first · published by the FTC from Consumer Sentinel reports">
+    <CardFrame
+      id="ftc-spotlight"
+      title={title}
+      period="Newest first · published by the FTC from Consumer Sentinel reports"
+    >
       <ul className="divide-y divide-border/60">
         {posts.slice(0, 6).map((p) => (
           <li key={p.id} className="px-3 py-2">
@@ -348,7 +402,9 @@ export function SpotlightCard({ posts, failed }: { posts: readonly SpotlightPost
                     href={p.fileUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className={cn("inline-flex items-center gap-0.5 text-primary underline-offset-2 hover:underline")}
+                    className={cn(
+                      "inline-flex items-center gap-0.5 text-primary underline-offset-2 hover:underline",
+                    )}
                   >
                     <FileText className="size-3" aria-hidden />
                     PDF
@@ -357,7 +413,9 @@ export function SpotlightCard({ posts, failed }: { posts: readonly SpotlightPost
               ) : null}
             </p>
             {p.summary ? (
-              <p className="mt-0.5 line-clamp-2 text-[11px] leading-4 text-muted-foreground">{p.summary}</p>
+              <p className="mt-0.5 line-clamp-2 text-[11px] leading-4 text-muted-foreground">
+                {p.summary}
+              </p>
             ) : null}
           </li>
         ))}
@@ -371,7 +429,10 @@ export function SpotlightCard({ posts, failed }: { posts: readonly SpotlightPost
           <ArrowRight className="size-3" aria-hidden />
         </Link>
       </div>
-      <SourceFooter label="FTC Data Spotlight" url="https://www.ftc.gov/news-events/data-visualizations/data-spotlight" />
+      <SourceFooter
+        label="FTC Data Spotlight"
+        url="https://www.ftc.gov/news-events/data-visualizations/data-spotlight"
+      />
     </CardFrame>
   );
 }

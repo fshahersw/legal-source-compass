@@ -10,6 +10,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { restGet } from "./rest.server";
+import { parseStateCallsMonths, type StateCallsMonth } from "./ftcData";
 
 const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
 const strOrNull = (v: unknown) => (typeof v === "string" && v.trim() ? v : null);
@@ -102,12 +103,14 @@ export type NationalYear = {
 
 export type Edition = { name: string; url: string | null };
 
-export type ConsumerSection = "reports" | "dnc" | "refunds" | "national" | "sources";
+export type ConsumerSection = "reports" | "dnc" | "calls" | "refunds" | "national" | "sources";
 
 export type StateConsumerData = {
   usps: string;
   years: ConsumerYear[];
   dnc: DncYear[];
+  /** Do Not Call reports counted by month for this state (ftc_dnc_reported_calls); empty when none are published. */
+  calls: StateCallsMonth[];
   refunds: RefundYear[];
   national: NationalYear[];
   /** Edition metadata from each dataset summary, keyed by Data Book year / fiscal year / report year. */
@@ -333,6 +336,7 @@ export function buildStateConsumerData(
   input: {
     sentinel: unknown[];
     dnc: unknown[];
+    calls?: unknown[];
     refunds: unknown[];
     national: unknown[];
     summaries: unknown[];
@@ -344,6 +348,7 @@ export function buildStateConsumerData(
     usps,
     years: parseConsumerYears(input.sentinel, usps),
     dnc: parseDncYears(input.dnc, usps),
+    calls: parseStateCallsMonths(input.calls ?? [], usps),
     refunds: parseRefundYears(input.refunds, usps),
     national: parseNationalYears(input.national),
     editions,
@@ -363,12 +368,15 @@ export const getStateConsumerData = createServerFn({ method: "GET" })
     if (hit && Date.now() - hit.at < TTL) return hit.value;
     const read = (path: string) => restGet<unknown[]>(path).then((r) => r.rows);
     const state = `state=eq.${u}`;
-    const [sentinel, dnc, refunds, national, summaries] = await Promise.allSettled([
+    const [sentinel, dnc, calls, refunds, national, summaries] = await Promise.allSettled([
       read(
         `corpus_records?select=id,source_url,cells:item->cells,m:item->metrics,a:item->analytics,tc:item->top_categories,it:item->identity_theft_types,pop:item->population_basis_year,cv:item->caveats,wh:item->provenance->withheld&dataset=eq.ftc_sentinel_states&${state}&order=id.asc&limit=20`,
       ),
       read(
         `corpus_records?select=id,source_url,cells:item->cells,m:item->metrics,a:item->analytics,pop:item->population_basis_year&dataset=eq.ftc_dnc_states&${state}&order=id.asc&limit=20`,
+      ),
+      read(
+        `corpus_records?select=id,source_url,complete:item->complete,first:item->>first_day,last:item->>last_day,m:item->metrics,a:item->analytics,subj:item->subjects&dataset=eq.ftc_dnc_reported_calls&${state}&id=like.${u}-2*&order=id.asc&limit=100`,
       ),
       read(
         `corpus_records?select=id,source_url,cells:item->cells,v:item->values,a:item->analytics&dataset=eq.ftc_refunds&${state}&id=like.*-state-${u}&order=id.asc&limit=20`,
@@ -380,7 +388,7 @@ export const getStateConsumerData = createServerFn({ method: "GET" })
         "corpus_datasets?select=id,terms:metadata->summary->terms,src:metadata->summary->sources&id=in.(ftc_sentinel_states,ftc_dnc_states,ftc_refunds)",
       ),
     ]);
-    const settled = { reports: sentinel, dnc, refunds, national, sources: summaries };
+    const settled = { reports: sentinel, dnc, calls, refunds, national, sources: summaries };
     const unavailable = (Object.keys(settled) as ConsumerSection[]).filter(
       (k) => settled[k].status === "rejected",
     );
@@ -395,6 +403,7 @@ export const getStateConsumerData = createServerFn({ method: "GET" })
     const value = buildStateConsumerData(u, {
       sentinel: rows(sentinel),
       dnc: rows(dnc),
+      calls: rows(calls),
       refunds: rows(refunds),
       national: rows(national),
       summaries: rows(summaries),

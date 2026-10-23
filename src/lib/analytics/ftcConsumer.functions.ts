@@ -12,7 +12,9 @@ export const getFtcConsumerOverview = createServerFn({ method: "GET" }).handler(
     try {
       return await readFtcConsumerOverview();
     } catch (error) {
-      console.error(`FTC consumer overview failed: ${error instanceof Error ? error.message : "unknown error"}`);
+      console.error(
+        `FTC consumer overview failed: ${error instanceof Error ? error.message : "unknown error"}`,
+      );
       throw new Error("This section could not be read.");
     }
   },

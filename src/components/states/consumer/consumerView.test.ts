@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { StateCallsMonth } from "@/lib/external/ftcData";
 import type {
   ConsumerYear,
   DncYear,
@@ -9,6 +10,10 @@ import type {
 } from "@/lib/external/stateConsumer.functions";
 import { niceMax } from "./chartScale";
 import {
+  callsLatest,
+  callsRows,
+  callsSubjects,
+  callsWindow,
   categoryBars,
   consumerTakeaways,
   definitionYears,
@@ -96,6 +101,7 @@ const data = (over: Partial<StateConsumerData> = {}): StateConsumerData => ({
   usps: "CA",
   years: [year(2017, { per100k: p("414", 414) }), year(2024, { per100k: p("1,291", 1291) })],
   dnc: [dnc(2025)],
+  calls: [],
   refunds: [refund(2023, 25631641), refund(2024, 24919399)],
   national: [nat(2024, ["2024: categories were renamed"])],
   editions: { sentinel: {}, dnc: {}, refunds: {} },
@@ -262,5 +268,91 @@ describe("niceMax", () => {
     expect(niceMax(0)).toBe(1);
     expect(niceMax(Number.NaN)).toBe(1);
     expect(niceMax(-5)).toBe(1);
+  });
+});
+
+describe("Do Not Call reports by month", () => {
+  const month = (m: string, over: Partial<StateCallsMonth> = {}): StateCallsMonth => ({
+    month: m,
+    complete: true,
+    calls: 1000,
+    robocalls: 700,
+    robocallSharePct: 73.7,
+    per100k: 31.55,
+    rankPer100k: 12,
+    rankedOf: 52,
+    population: 3_000_000,
+    populationYear: 2025,
+    firstDay: null,
+    lastDay: null,
+    subjects: [],
+    sourceUrl: null,
+    ...over,
+  });
+  it("lists months newest first, marks a partial month and says which days it covers", () => {
+    const rows = callsRows([
+      month("2026-09", {
+        complete: false,
+        firstDay: "2026-09-16",
+        lastDay: "2026-09-30",
+        calls: 11387,
+      }),
+      month("2026-10", { complete: false, firstDay: "2026-10-01", lastDay: "2026-10-20" }),
+    ]);
+    expect(rows.map((r) => r.label)).toEqual(["October 2026*", "September 2026*"]);
+    expect(rows[1]).toMatchObject({
+      reports: "11,387",
+      per100k: "31.6",
+      rank: "12 of 52",
+      robocallShare: "73.7%",
+      partial: true,
+    });
+    expect(rows[1]!.coverage).toBe("September 16 to September 30, 2026");
+  });
+  it("shows Not recorded for what the record leaves out, never a zero", () => {
+    const [r] = callsRows([
+      month("2026-08", { per100k: null, rankPer100k: null, robocallSharePct: null }),
+    ]);
+    expect(r).toMatchObject({
+      per100k: "Not recorded",
+      rank: "Not recorded",
+      robocallShare: "Not recorded",
+      partial: false,
+      coverage: null,
+    });
+  });
+  it("names the window of counted complaints from the first and last day recorded", () => {
+    expect(
+      callsWindow([
+        month("2026-09", { firstDay: "2026-09-16", lastDay: "2026-09-30" }),
+        month("2026-10", { firstDay: "2026-10-01", lastDay: "2026-10-20" }),
+      ]),
+    ).toBe("complaints created September 16 to October 20, 2026");
+    expect(callsWindow([month("2026-09")])).toBeNull();
+  });
+  it("ranks named subjects by share of all reports and keeps the catch-all buckets out of the ranking", () => {
+    const s = callsSubjects([
+      month("2026-09", {
+        subjects: [
+          { subject: "Other", calls: 500 },
+          { subject: "Charities", calls: 100 },
+          { subject: "Medical & prescriptions", calls: 300 },
+          { subject: "No Subject Provided", calls: 100 },
+        ],
+      }),
+    ]);
+    expect(s!.total).toBe(1000);
+    expect(s!.items).toEqual([
+      { label: "Medical & prescriptions", sharePct: 30 },
+      { label: "Charities", sharePct: 10 },
+    ]);
+    expect(s!.catchAll).toBe("Other 50%, No Subject Provided 10%");
+    expect(callsSubjects([month("2026-09")])).toBeNull();
+  });
+  it("finds the newest month", () => {
+    expect(callsLatest([month("2026-08"), month("2026-10"), month("2026-09")])!.month).toBe(
+      "2026-10",
+    );
+    expect(callsLatest([])).toBeNull();
   });
 });

@@ -102,7 +102,9 @@ export function formatUsd(v: number | null | undefined): string {
 
 /** "74.5%" with one decimal; a missing value is Not recorded. */
 export function formatPct(v: number | null | undefined): string {
-  return finite(v) ? `${v.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%` : NOT_RECORDED;
+  return finite(v)
+    ? `${v.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`
+    : NOT_RECORDED;
 }
 
 export function formatValue(v: number | null | undefined, format: ValueFormat): string {

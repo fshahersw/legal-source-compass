@@ -241,7 +241,10 @@ describe("change text", () => {
       ),
     ).toBe("+3.3 percentage points vs August 2026");
     expect(
-      formatChange({ comparedWith: "2025", previousValue: 80, absolute: -1.25, percent: -1.6 }, "pct"),
+      formatChange(
+        { comparedWith: "2025", previousValue: 80, absolute: -1.25, percent: -1.6 },
+        "pct",
+      ),
     ).toBe("−1.3 percentage points vs 2025");
   });
   it("reads the direction", () => {

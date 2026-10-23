@@ -11,23 +11,53 @@ import {
   type HsrSeries,
   type OfficialMonth,
 } from "@/lib/external/ftcData";
-import { assembleBlock, densifyMonths, formatCount, longDate, type TrendBlockData, type TrendPoint } from "../trend";
+import {
+  assembleBlock,
+  densifyMonths,
+  formatCount,
+  longDate,
+  type TrendBlockData,
+  type TrendPoint,
+} from "../trend";
 
-export const DNC_DATA_URL = "https://www.ftc.gov/policy-notices/open-government/data-sets/do-not-call-data";
+export const DNC_DATA_URL =
+  "https://www.ftc.gov/policy-notices/open-government/data-sets/do-not-call-data";
 export const DNC_DASHBOARD_URL =
   "https://public.tableau.com/app/profile/federal.trade.commission/viz/DoNotCallComplaints/MonthlyComparison";
 
-type MonthValue = { calls: number; robocalls: number | null; notRobocalls: number | null; partial: boolean; origin: "records" | "count" | "dashboard" };
+type MonthValue = {
+  calls: number;
+  robocalls: number | null;
+  notRobocalls: number | null;
+  partial: boolean;
+  origin: "records" | "count" | "dashboard";
+};
 
 /** One value per month: the build's own counts first, then the FTC dashboard's figure for a month the build did not count. */
-export function mergeMonths(months: readonly DncMonth[], official: readonly OfficialMonth[]): Map<string, MonthValue> {
+export function mergeMonths(
+  months: readonly DncMonth[],
+  official: readonly OfficialMonth[],
+): Map<string, MonthValue> {
   const out = new Map<string, MonthValue>();
   for (const m of months) {
     if (m.calls === null) continue;
-    out.set(m.month, { calls: m.calls, robocalls: m.robocalls, notRobocalls: m.notRobocalls, partial: !m.complete, origin: m.method });
+    out.set(m.month, {
+      calls: m.calls,
+      robocalls: m.robocalls,
+      notRobocalls: m.notRobocalls,
+      partial: !m.complete,
+      origin: m.method,
+    });
   }
   for (const o of official)
-    if (!out.has(o.month)) out.set(o.month, { calls: o.total, robocalls: o.robocall, notRobocalls: o.live, partial: false, origin: "dashboard" });
+    if (!out.has(o.month))
+      out.set(o.month, {
+        calls: o.total,
+        robocalls: o.robocall,
+        notRobocalls: o.live,
+        partial: false,
+        origin: "dashboard",
+      });
   return out;
 }
 
@@ -38,7 +68,11 @@ function monthRange(values: Map<string, MonthValue>): { first: string; last: str
 
 function originNotes(months: readonly DncMonth[], values: Map<string, MonthValue>): string[] {
   const notes: string[] = [];
-  const keysOf = (origin: MonthValue["origin"]) => [...values.entries()].filter(([, v]) => v.origin === origin).map(([k]) => k).sort();
+  const keysOf = (origin: MonthValue["origin"]) =>
+    [...values.entries()]
+      .filter(([, v]) => v.origin === origin)
+      .map(([k]) => k)
+      .sort();
   const records = months.filter((m) => m.method === "records");
   const recordsKeys = keysOf("records");
   if (recordsKeys.length) {
@@ -75,10 +109,15 @@ export function buildDncMonthly(input: {
   const range = monthRange(values);
   if (!range) return null;
   const point = (pick: (v: MonthValue) => number | null) =>
-    densifyMonths(new Map([...values].map(([k, v]) => [k, pick(v)] as const)), range.first, range.last).map(
-      (p): TrendPoint => (values.get(p.x)?.partial ? { ...p, partial: true } : p),
-    );
-  const partial = [...values.entries()].filter(([, v]) => v.partial).map(([k]) => k).sort();
+    densifyMonths(
+      new Map([...values].map(([k, v]) => [k, pick(v)] as const)),
+      range.first,
+      range.last,
+    ).map((p): TrendPoint => (values.get(p.x)?.partial ? { ...p, partial: true } : p));
+  const partial = [...values.entries()]
+    .filter(([, v]) => v.partial)
+    .map(([k]) => k)
+    .sort();
   return assembleBlock({
     id: "ftc-dnc-monthly",
     xKind: "month",
@@ -86,7 +125,11 @@ export function buildDncMonthly(input: {
     unit: "reported calls",
     series: [
       { id: "all", label: "All reported calls", points: point((v) => v.calls) },
-      { id: "robocalls", label: "of which reported as a recording or robocall", points: point((v) => v.robocalls) },
+      {
+        id: "robocalls",
+        label: "of which reported as a recording or robocall",
+        points: point((v) => v.robocalls),
+      },
     ],
     source: { label: "FTC Do Not Call reported calls data", url: DNC_DATA_URL },
     asOf: input.asOf,
@@ -94,7 +137,9 @@ export function buildDncMonthly(input: {
       ...SHARED_NOTES,
       ...originNotes(input.months, values),
       ...(partial.length
-        ? [`${partial.map((k) => `${monthName(k)}*`).join(" and ")} cover${partial.length === 1 ? "s" : ""} only the days stated above, drawn dashed, and ${partial.length === 1 ? "is" : "are"} never the latest value.`]
+        ? [
+            `${partial.map((k) => `${monthName(k)}*`).join(" and ")} cover${partial.length === 1 ? "s" : ""} only the days stated above, drawn dashed, and ${partial.length === 1 ? "is" : "are"} never the latest value.`,
+          ]
         : []),
       "Months with no point were not counted; they are gaps, not zero.",
     ],
@@ -113,9 +158,11 @@ export function buildDncRobocallShare(input: {
     v.robocalls !== null && v.notRobocalls !== null && v.robocalls + v.notRobocalls > 0
       ? Math.round((v.robocalls / (v.robocalls + v.notRobocalls)) * 1000) / 10
       : null;
-  const points = densifyMonths(new Map([...values].map(([k, v]) => [k, shareOf(v)] as const)), range.first, range.last).map(
-    (p): TrendPoint => (values.get(p.x)?.partial ? { ...p, partial: true } : p),
-  );
+  const points = densifyMonths(
+    new Map([...values].map(([k, v]) => [k, shareOf(v)] as const)),
+    range.first,
+    range.last,
+  ).map((p): TrendPoint => (values.get(p.x)?.partial ? { ...p, partial: true } : p));
   if (!points.some((p) => p.value !== null)) return null;
   return assembleBlock({
     id: "ftc-dnc-robocall-share",
@@ -161,7 +208,10 @@ export function buildHsrEarlyTerminations(input: {
 }): TrendBlockData | null {
   const api = new Map(input.series.fiscal.map((f) => [f.year, f.count] as const));
   const lastFy = fiscalYearOf(input.series.lastDate);
-  const openFiscalYear = lastFy !== null && input.series.lastDate !== null && input.series.lastDate < `${lastFy}-09-30` ? lastFy : null;
+  const openFiscalYear =
+    lastFy !== null && input.series.lastDate !== null && input.series.lastDate < `${lastFy}-09-30`
+      ? lastFy
+      : null;
   const firstPartialFiscalYear = firstFiscalYearIsPartial(input.series.firstDate);
   const ftc = new Map(input.filings.map((f) => [f.fy, f.etGranted] as const));
   const years = [...api.keys(), ...ftc.keys()];
@@ -174,7 +224,11 @@ export function buildHsrEarlyTerminations(input: {
     const firstApi = Math.min(...api.keys());
     const inside = y >= firstApi;
     const partial = y === openFiscalYear || y === firstPartialFiscalYear;
-    return { x: String(y), value: inside ? (api.get(y) ?? 0) : null, ...(partial && inside ? { partial: true } : {}) };
+    return {
+      x: String(y),
+      value: inside ? (api.get(y) ?? 0) : null,
+      ...(partial && inside ? { partial: true } : {}),
+    };
   });
   const ftcPoints: TrendPoint[] = range.map((y) => ({ x: String(y), value: ftc.get(y) ?? null }));
   const lastDate = input.series.lastDate;
@@ -185,9 +239,16 @@ export function buildHsrEarlyTerminations(input: {
     unit: "early terminations",
     series: [
       { id: "notices", label: "Notices in the FTC API, by date granted", points: apiPoints },
-      { id: "table", label: "Transactions granted, in the FTC's fiscal-year table", points: ftcPoints },
+      {
+        id: "table",
+        label: "Transactions granted, in the FTC's fiscal-year table",
+        points: ftcPoints,
+      },
     ],
-    source: { label: "FTC HSR early termination notices API and HSR data sets", url: "https://www.ftc.gov/legal-library/browse/early-termination-notices" },
+    source: {
+      label: "FTC HSR early termination notices API and HSR data sets",
+      url: "https://www.ftc.gov/legal-library/browse/early-termination-notices",
+    },
     asOf: lastDate,
     notes: [
       "A notice is the FTC's public record that early termination of the Hart-Scott-Rodino waiting period was granted for one transaction. It does not say the deal closed.",
