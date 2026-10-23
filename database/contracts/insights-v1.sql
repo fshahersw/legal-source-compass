@@ -635,7 +635,7 @@ insert into insights.metrics (id, family, ordinal, label, description, unit, for
  array['uscourts_tables_district', 'uscourts_tables_circuit'],
  '[{"label": "U.S. Courts, statistical tables (Table C-5)", "url": "https://www.uscourts.gov/data-news/data-tables"}]',
  'Median time interval in months, total cases, Table C-5', null,
- 'Value as printed; n is the printed number of cases terminated.',
+ 'Value of the published table''s spreadsheet cell (it can carry more decimals than the printed page, which rounds to one); n is the number of cases terminated in the same table.',
  array['Table C-5 excludes land condemnation, prisoner petitions, deportation reviews, recovery of overpayments and enforcement of judgments.'],
  'higher_is_less'),
 ('usc_civil_pending_3yr_pct', 'courts_tables', 3004, 'Civil cases pending three years or more (Table C-6)',
@@ -644,7 +644,7 @@ insert into insights.metrics (id, family, ordinal, label, description, unit, for
  array['uscourts_tables_district', 'uscourts_tables_circuit'],
  '[{"label": "U.S. Courts, statistical tables (Table C-6)", "url": "https://www.uscourts.gov/data-news/data-tables"}]',
  'Civil cases pending three years or more, Table C-6', 'All civil cases pending on the same date (Table C-6 total)',
- 'Percent as printed; n is the printed number pending three years or more.',
+ 'Percent of the published table''s spreadsheet cell (it can carry more decimals than the printed page); n is the number pending three years or more in the same table.',
  array['Pending MDL member actions are counted in the transferee district and can dominate a district''s share.'],
  'higher_is_less'),
 ('usc_weighted_filings_per_judgeship', 'courts_tables', 3005, 'Weighted filings per authorized judgeship (Table X-1A)',
@@ -653,7 +653,7 @@ insert into insights.metrics (id, family, ordinal, label, description, unit, for
  array['uscourts_tables_district'],
  '[{"label": "U.S. Courts, statistical tables (Table X-1A)", "url": "https://www.uscourts.gov/data-news/data-tables"}]',
  'Weighted filings per judgeship, total column of Table X-1A', 'Authorized judgeships as printed in the same table',
- 'Value as printed.',
+ 'Value of the published table''s spreadsheet cell (it can carry more decimals than the printed page, which shows whole numbers).',
  array['Case weights reflect the Judicial Conference''s weighting study in force for the period; weights changed over time.'],
  'neutral'),
 ('usc_judgeships', 'courts_tables', 3006, 'Authorized district judgeships (Table X-1A)',
@@ -1505,7 +1505,7 @@ language sql stable set search_path = '' as $$
          v.value, null::numeric, false, v.n,
          case when v.value is not null then null
               when v.dashed then 'The table prints a dash for this court and period.'
-              else 'The table prints no figure for this court and period.' end
+              else 'No figure is stored for this court and period of the table.' end
   from v
   -- the two Arkansas districts' combined bankruptcy row has no court of its own (it counts in the national total)
   where not (v.metric = 'usc_bankruptcy_filed' and v.court = 'arcomb')
@@ -1517,7 +1517,7 @@ language sql stable set search_path = '' as $$
          case when count(distinct v.nat) = 1 then null
               when count(distinct v.nat) > 1 then 'The national total differs between the court records of this table.'
               when bool_or(v.nat_dashed) then 'The table prints a dash for the national total.'
-              else 'The table prints no national total for this period.' end
+              else 'No national total is stored for this period of the table.' end
   from v where v.national
   group by v.metric, v.want, v.period_end
 $$;
