@@ -26,6 +26,7 @@ import {
   type Side,
 } from "@/lib/external/firmIntel.functions";
 import { cn } from "@/lib/utils";
+import { FirmLandscapeYearsCard, FirmProfileYearsCard } from "./FirmTrendCards";
 import { Facts, FirmName, RankScatter, ShareMeter, SideBar, SideLegend } from "./FirmVisuals";
 import {
   isOrganisation,
@@ -63,7 +64,10 @@ export function FirmsPage({ search, onNavigate }: { search: FirmSearch; onNaviga
       <Overview />
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <TopFirms />
-        <Network />
+        <div className="min-w-0 space-y-4">
+          <Network />
+          <LandscapeYears />
+        </div>
       </div>
       <MdlConcentration selected={search.mdl} onSelect={(mdl) => set({ mdl })} />
       <Associations />
@@ -114,6 +118,13 @@ function Overview() {
       />
     </KpiGrid>
   );
+}
+
+/** Appearances by the year the MDL was filed; renders nothing until the landscape has loaded. */
+function LandscapeYears() {
+  const q = useQuery(landscapeQuery);
+  if (!q.data?.mdls.length) return null;
+  return <FirmLandscapeYearsCard mdls={q.data.mdls} />;
 }
 
 // ------------------------------------------------------------------------------------------------ top firms
@@ -1039,6 +1050,7 @@ function FirmProfileView({ p }: { p: FirmProfile }) {
         ) : null}
       </div>
       <div className="min-w-0 space-y-3">
+        <FirmProfileYearsCard p={p} />
         <RelatedList
           title="Co-counsel (parties in common)"
           rows={p.cocounsel.map((c) => ({

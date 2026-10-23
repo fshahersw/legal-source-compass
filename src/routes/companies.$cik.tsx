@@ -13,6 +13,7 @@ import { normalizeCompanySearch } from "@/components/companies/companySearch";
 import { isCikAddress, paddedCik, requestedCik } from "@/components/companies/cik";
 import { pageHead } from "@/lib/corpus/head";
 import { CompanyEnforcementPanel } from "@/components/enforcement/actions/CompanyEnforcementPanel";
+import { CompanyEnforcementTrend } from "@/components/companies/CompanyEnforcementTrend";
 
 const COMPANY_CRUMBS = [
   { label: "Home", to: "/" },
@@ -92,6 +93,7 @@ function Page() {
           void navigate({ search: next, replace: opts?.replace ?? true, resetScroll: false })
         }
       />
+      <CompanyEnforcementTrend cik={cik} className="mt-3" />
       <CompanyEnforcementPanel cik={cik} className="mt-3" />
     </AppShell>
   );

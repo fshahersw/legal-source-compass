@@ -1,4 +1,5 @@
 import { BadgeDollarSign } from "lucide-react";
+import { HubTrend, TrendGrid } from "@/components/trends/ProfileTrend";
 import { cn } from "@/lib/utils";
 import { ACTION_VIEWS, type ActionsView } from "./actionsView";
 import { DojReleases } from "./DojReleases";
@@ -41,9 +42,24 @@ export function ActionsNav({
   );
 }
 
+/** The Analytics series that count each source's own published items, shown above its listing. */
+const ACTION_TREND_BLOCKS: Partial<Record<ActionsView, readonly string[]>> = {
+  doj: ["doj-press", "doj-divisions", "doj-amounts"],
+  ftc: ["ftc-actions"],
+  sec: ["sec-releases", "sec-amounts"],
+};
+
 export function ActionsPanel({ view }: { view: ActionsView }) {
+  const trends = ACTION_TREND_BLOCKS[view] ?? [];
   return (
-    <div className="min-w-0">
+    <div className="min-w-0 space-y-3">
+      {trends.length ? (
+        <TrendGrid>
+          {trends.map((id) => (
+            <HubTrend key={id} id={id} />
+          ))}
+        </TrendGrid>
+      ) : null}
       {view === "doj" ? (
         <DojReleases />
       ) : view === "ftc" ? (

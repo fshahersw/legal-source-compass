@@ -15,6 +15,7 @@ import {
 import { NeissEstimates } from "@/components/safety/neiss/NeissEstimates";
 import { FsisRecallsTable } from "@/components/enforcement/extra/FsisRecallsTable";
 import { SaferProductsReports } from "@/components/safety/saferproducts/SaferProductsReports";
+import { SafetyRecallTrends, SafetyAgencyTrends } from "@/components/safety/SafetyTrendCards";
 import { SafetyTabPanel, SafetyTabs } from "@/components/safety/SafetyTabs";
 import { safetyViewOf, type SafetyView } from "@/components/safety/safetyView";
 import { sectionOf } from "@/lib/external/groups";
@@ -141,6 +142,7 @@ function SafetyPage() {
         <SafetyTabPanel mode="landing" active="overview" className="space-y-6">
           <DailyInsightCard section="safety" />
           <SafetyIntelligence />
+          <SafetyRecallTrends />
           <FsisRecallsTable />
           {/* Notes wrap (two lines, full text on hover) so a description is never cut mid-word at 1024–1280 px. */}
           <FolderGrid
@@ -172,24 +174,27 @@ function SafetyPage() {
     );
   } else {
     body = (
-      <FolderGrid
-        title="Record kind"
-        items={list
-          .filter((d) => safetyAgency(d.id) === agency)
-          .sort((a, b) => (b.records ?? -1) - (a.records ?? -1))
-          .map((d) => ({
-            key: d.id,
-            label: safetyKind(d.id),
-            count: d.records ?? undefined,
-            note: [
-              d.ready === false ? "Held for publication" : null,
-              d.records == null ? "Count not recorded" : datasetRecordGrain(d.id)?.unit,
-            ]
-              .filter(Boolean)
-              .join(" · "),
-            link: { to: "/safety", search: { agency, ds: d.id } },
-          }))}
-      />
+      <div className="space-y-4">
+        <SafetyAgencyTrends agency={agency} />
+        <FolderGrid
+          title="Record kind"
+          items={list
+            .filter((d) => safetyAgency(d.id) === agency)
+            .sort((a, b) => (b.records ?? -1) - (a.records ?? -1))
+            .map((d) => ({
+              key: d.id,
+              label: safetyKind(d.id),
+              count: d.records ?? undefined,
+              note: [
+                d.ready === false ? "Held for publication" : null,
+                d.records == null ? "Count not recorded" : datasetRecordGrain(d.id)?.unit,
+              ]
+                .filter(Boolean)
+                .join(" · "),
+              link: { to: "/safety", search: { agency, ds: d.id } },
+            }))}
+        />
+      </div>
     );
   }
   return (

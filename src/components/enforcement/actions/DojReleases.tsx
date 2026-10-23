@@ -92,7 +92,6 @@ function Body({ overview }: { overview: DojOverview }) {
       s + Object.entries(y.amount).reduce((t, [k, n]) => t + (k === "none" ? 0 : (n ?? 0)), 0),
     0,
   );
-  const maxCount = Math.max(...overview.byYear.map((y) => y.count), 1);
 
   return (
     <div className="space-y-3">
@@ -123,42 +122,11 @@ function Body({ overview }: { overview: DojOverview }) {
         />
       </div>
 
-      <Panel
-        title="Releases by year"
-        subtitle="Release date year; select a year to list its releases"
-        footnote="Counts are releases in the DOJ News API on the harvest date. Releases before 2009 are in DOJ's static archive and are not included."
-      >
-        <div
-          className="flex h-24 items-end gap-0.5 overflow-x-auto px-3 py-2"
-          role="list"
-          aria-label="Releases by year"
-        >
-          {overview.byYear.map((y) => (
-            <button
-              key={y.year}
-              type="button"
-              role="listitem"
-              onClick={() => set({ year: y.year })}
-              aria-pressed={f.year === y.year}
-              title={`${y.year}: ${fmtInt(y.count)} releases`}
-              className="group flex h-full min-w-[1.6rem] flex-1 flex-col items-center justify-end gap-0.5 focus-visible:outline-2 focus-visible:outline-ring"
-            >
-              <span
-                className={cn(
-                  "w-full rounded-sm",
-                  f.year === y.year
-                    ? "bg-primary"
-                    : "bg-muted-foreground/30 group-hover:bg-muted-foreground/50",
-                )}
-                style={{ height: `${Math.max(4, (y.count / maxCount) * 100)}%` }}
-              />
-              <span className="text-[9px] tabular-nums text-muted-foreground">
-                {y.year.slice(2)}
-              </span>
-            </button>
-          ))}
-        </div>
-      </Panel>
+      <p className="text-[11px] text-muted-foreground">
+        The charts above count releases by release date; choose a year in the list below to read its
+        releases. Counts are releases in the DOJ News API on the harvest date. Releases before 2009
+        are in DOJ&rsquo;s static archive and are not included.
+      </p>
 
       <Panel
         title={`DOJ press releases, ${f.year}`}

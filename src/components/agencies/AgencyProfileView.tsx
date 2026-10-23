@@ -5,6 +5,7 @@ import { HowToRead } from "@/components/analysis/HowToRead";
 import { Kpi, Panel, SourceLink, StateNote } from "@/components/enforcement/parts";
 import type { AgencyProfileData } from "@/lib/external/agencyProfile.functions";
 import { ActivityChart } from "./ActivityChart";
+import { AgencySeriesCards } from "./AgencySeriesCards";
 import {
   AdminTable,
   AgendaPanelBody,
@@ -314,6 +315,8 @@ export function AgencyProfileView({ data }: { data: AgencyProfileData }) {
       <Panel id="agency-structure" title="Structure and mission">
         <StructurePanelBody profile={profile} />
       </Panel>
+
+      <AgencySeriesCards agencyId={profile.id} label={profile.shortName ?? profile.name} />
 
       <Panel title="Enforcement and program data in this corpus">
         <EnforcementPanelBody profile={profile} />
