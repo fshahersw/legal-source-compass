@@ -436,7 +436,7 @@ export type ResultingLaw = {
   number: string;
   type: string | null;
   govinfo: string | null;
-  resolution: "resolved" | "ambiguous" | "not_found" | "not_checked";
+  resolution: "resolved" | "ambiguous" | "not_found" | "not_checked" | "inconsistent";
   recordId: string | null;
   note: string | null;
 };
@@ -613,7 +613,10 @@ export function parseFederalBill(id: string, raw: unknown): FederalBill | null {
       const res = obj(l["resolution"]);
       const status = str(res?.["status"], 20);
       const resolution =
-        status === "resolved" || status === "ambiguous" || status === "not_found"
+        status === "resolved" ||
+        status === "ambiguous" ||
+        status === "not_found" ||
+        status === "inconsistent"
           ? status
           : "not_checked";
       return {

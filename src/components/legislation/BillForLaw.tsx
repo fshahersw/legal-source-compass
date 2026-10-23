@@ -79,6 +79,9 @@ export function BillForLaw({
               <span className="ml-1">{b.title}</span>
               <span className="block text-[11px] text-muted-foreground">
                 {b.sponsor ?? "Sponsor not recorded"} · introduced {fmtDay(b.introduced)}
+                {b.status === "became_law"
+                  ? ""
+                  : " · lists this law, but no became-law action is recorded for this measure"}
               </span>
             </li>
           ))}

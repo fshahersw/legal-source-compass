@@ -296,7 +296,10 @@ export async function readBillForLaw(d: z.infer<typeof lawInput>): Promise<BillF
   const r = await restGet<unknown[]>(
     `corpus_records?${LIST}&dataset=eq.${FEDERAL_DATASET}&filters=cs.${cs({ law: [law] })}&order=ordinal.asc&limit=5`,
   );
-  return { law, bills: r.rows.map(parseFederalHit).filter((x): x is FederalHit => !!x) };
+  const bills = r.rows.map(parseFederalHit).filter((x): x is FederalHit => !!x);
+  // the measure whose own actions record the enactment first; a measure that only lists the law comes after it
+  bills.sort((a, b) => Number(b.status === "became_law") - Number(a.status === "became_law"));
+  return { law, bills };
 }
 
 export const getBillForLaw = createServerFn({ method: "GET" })

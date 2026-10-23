@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import gzip
 import hashlib
+import http.client
 import json
 import os
 import threading
@@ -80,7 +81,7 @@ def http_get(url: str, headers: dict | None = None, attempts: int = 6, timeout: 
                 time.sleep(pause)
                 continue
             return status, b"", hdrs
-        except (urllib.error.URLError, TimeoutError, ConnectionError) as err:
+        except (urllib.error.URLError, TimeoutError, ConnectionError, http.client.HTTPException) as err:
             if attempt < attempts - 1:
                 time.sleep(min(120, 5 * 2 ** attempt))
                 continue

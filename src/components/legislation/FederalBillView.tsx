@@ -84,6 +84,7 @@ export function FederalBillView({ bill: b, crs }: { bill: FederalBill; crs: CrsH
 }
 
 function LawCallout({ bill: b }: { bill: FederalBill }) {
+  const enacted = b.laws.filter((l) => l.resolution !== "inconsistent");
   return (
     <section
       aria-label="Resulting law"
@@ -91,7 +92,9 @@ function LawCallout({ bill: b }: { bill: FederalBill }) {
     >
       <h2 className="m-0 flex items-center gap-1.5 text-sm font-semibold">
         <Landmark className="size-4" aria-hidden />
-        Became {b.laws.map((l) => l.label).join(" and ")}
+        {enacted.length
+          ? `Became ${enacted.map((l) => l.label).join(" and ")}`
+          : "Law number listed in the record"}
       </h2>
       <ul className="m-0 mt-1 list-none space-y-1 p-0 text-[12.5px]">
         {b.laws.map((l) => (
@@ -107,11 +110,13 @@ function LawCallout({ bill: b }: { bill: FederalBill }) {
               </Link>
             ) : (
               <span className="text-[11.5px] text-muted-foreground">
-                {l.resolution === "ambiguous"
-                  ? "The number matches more than one enacted-law record, so none is linked."
-                  : l.resolution === "not_found"
-                    ? "Not yet in the enacted-laws collection."
-                    : "No corpus law record checked."}
+                {l.resolution === "inconsistent"
+                  ? "Listed in the Bill Status file, but this number's Congress is not the measure's Congress; shown as published, not linked."
+                  : l.resolution === "ambiguous"
+                    ? "The number matches more than one enacted-law record, so none is linked."
+                    : l.resolution === "not_found"
+                      ? "Not yet in the enacted-laws collection."
+                      : "No corpus law record checked."}
               </span>
             )}
             {l.govinfo ? <SourceLink href={l.govinfo}>GovInfo</SourceLink> : null}

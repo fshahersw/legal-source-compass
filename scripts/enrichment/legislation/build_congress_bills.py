@@ -152,7 +152,7 @@ def build_row(rec: dict, unit: dict, known: set[str], lookup: dict | None, stats
     actions, votes, dropped = compact_actions(rec.get("actions", []), rec.get("billVotes"))
     ms = bc.milestones(rec, rec.get("actions", []))
     st, st_label = bc.status(btype, ms)
-    laws = [bc.law_entry(l, lookup) for l in rec.get("laws", [])]
+    laws = [bc.law_entry(l, lookup, congress) for l in rec.get("laws", [])]
     for l in laws:
         stats[f"law_{(l.get('resolution') or {}).get('status')}"] += 1
     sponsors = [person(p) for p in rec.get("sponsors", [])]
@@ -230,7 +230,8 @@ def build_row(rec: dict, unit: dict, known: set[str], lookup: dict | None, stats
     filters = {"congress": [str(congress)], "type": [btype], "number": [str(number)], "status": [st],
                "milestone": [m for m in bc.MILESTONE_ORDER if ms.get(m) and not ms[m].get("vitiated")],
                "chamber": [rec.get("originChamber")] if rec.get("originChamber") else [],
-               "law": [l["number"] for l in laws if l.get("number")], "has_law": ["yes" if laws else "no"]}
+               "law": [l["number"] for l in laws if l.get("number") and (l.get("resolution") or {}).get("status") != "inconsistent"],
+               "has_law": ["yes" if laws else "no"]}
     if rec.get("policyArea"):
         filters["policy_area"] = [rec["policyArea"]]
     if rec.get("subjects"):
@@ -335,7 +336,7 @@ def main() -> None:
         "milestone_rules": bc.MILESTONE_RULES, "vitiation_rule": bc.VITIATION_RULE,
         "action_rule": "All published actions are kept; an action is dropped only when an earlier action of the same measure has the identical date, text and action code (a copy from another source system).",
         "summary_rule": SUMMARY_NOTE,
-        "law_link_rule": "A resulting public law links to public_laws_enacted only when exactly one record there has the same Congress and law number and the number is not marked shared; otherwise the number and the GovInfo Link Service URL are shown.",
+        "law_link_rule": "A resulting public law links to public_laws_enacted only when exactly one record there has the same Congress and law number and the number is not marked shared; otherwise the number and the GovInfo Link Service URL are shown. A law number whose Congress differs from the measure's own Congress (a publisher error seen on 2 measures) is shown as published but not linked and not used to find a law's bill.",
         "report_link_rule": "Committee report citations link to the GovInfo package page for the report (https://www.govinfo.gov/app/details/CRPT-{congress}{hrpt|srpt}{number}), with the GovInfo Link Service URL for the same report kept beside it; Part/Book/Errata suffixes are shown as printed.",
         "stats": dict(sorted(stats.items())), "per_congress_type": per_unit,
         "public_laws_enacted_lookup": "used" if lookup is not None else "not available",

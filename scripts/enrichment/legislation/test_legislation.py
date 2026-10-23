@@ -225,6 +225,9 @@ class BillsCommon(unittest.TestCase):
         self.assertEqual(bc.law_entry({"type": "Public Law", "number": "118-11"}, lookup)["resolution"]["status"], "not_found")
         self.assertEqual(bc.law_entry({"type": "Private Law", "number": "118-1"}, lookup)["resolution"]["status"], "not_checked")
         self.assertEqual(bc.law_entry({"type": "Public Law", "number": "118-63"}, None)["resolution"]["status"], "not_checked")
+        odd = bc.law_entry({"type": "Public Law", "number": "106-246"}, lookup, 110)
+        self.assertEqual(odd["resolution"]["status"], "inconsistent")
+        self.assertNotIn("govinfo", odd)
 
     def test_text_version(self):
         t = bc.text_version({"type": "Introduced in House", "date": "2023-06-09",

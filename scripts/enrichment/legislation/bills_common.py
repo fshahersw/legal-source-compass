@@ -222,7 +222,7 @@ def committee_report(citation_: str) -> dict:
 LAW = re.compile(r"^(\d+)-(\d+)$")
 
 
-def law_entry(law: dict, lookup: dict | None) -> dict:
+def law_entry(law: dict, lookup: dict | None, congress: int | None = None) -> dict:
     """A resulting law as published (type + number), its GovInfo Link Service URL and, for public laws, whether the
     number resolves to exactly one public_laws_enacted record (exact Congress + number; shared numbers never link)."""
     ltype, number = law.get("type"), law.get("number") or ""
@@ -233,6 +233,11 @@ def law_entry(law: dict, lookup: dict | None) -> dict:
         out["resolution"] = {"status": "not_checked", "reason": "number not in the form congress-number"}
         return out
     c, n = int(m.group(1)), int(m.group(2))
+    if congress is not None and c != congress:
+        # a measure can only be enacted in its own Congress: the number is shown as published but neither linked nor used
+        out["resolution"] = {"status": "inconsistent",
+                             "reason": f"the number's Congress ({c}) is not the measure's Congress ({congress}); shown as published, not linked"}
+        return out
     out["govinfo"] = f"https://www.govinfo.gov/link/plaw/{c}/{kind}/{n}"
     if kind != "public":
         out["resolution"] = {"status": "not_checked", "reason": "private laws are not in public_laws_enacted"}
